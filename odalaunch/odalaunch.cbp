@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_project_file>
-	<FileVersion major="1" minor="5" />
+	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="launcher" />
 		<Option default_target="Debug" />
@@ -120,175 +120,56 @@
 			<Add before="res/wxrc /c /o res/xrc_resource.h res/dlgmain.xrc res/dlgconfig.xrc" />
 		</ExtraCommands>
 		<Unit filename="res\dlgconfig.xrc">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
 			<Option weight="0" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
 		</Unit>
 		<Unit filename="res\dlgmain.xrc">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
 			<Option weight="0" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
 		</Unit>
 		<Unit filename="res\odalaunch.rc">
 			<Option compilerVar="WINDRES" />
-			<Option objectName="res\odalaunch.res" />
 			<Option target="Win Release" />
 			<Option target="Win Debug" />
 		</Unit>
 		<Unit filename="res\resource.h">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
 			<Option target="Win Release" />
 			<Option target="Win Debug" />
 		</Unit>
-		<Unit filename="res\xrc_resource.h">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-		</Unit>
+		<Unit filename="res\xrc_resource.h" />
 		<Unit filename="src\dlg_config.cpp">
-			<Option compilerVar="CPP" />
 			<Option virtualFolder="dialogs\" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
 		</Unit>
 		<Unit filename="src\dlg_config.h">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
 			<Option virtualFolder="dialogs\" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
 		</Unit>
 		<Unit filename="src\dlg_main.cpp">
-			<Option compilerVar="CPP" />
 			<Option virtualFolder="dialogs\" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
 		</Unit>
 		<Unit filename="src\dlg_main.h">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
 			<Option virtualFolder="dialogs\" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
 		</Unit>
-		<Unit filename="src\lst_custom.cpp">
-			<Option compilerVar="CPP" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-		</Unit>
-		<Unit filename="src\lst_custom.h">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-		</Unit>
-		<Unit filename="src\main.cpp">
-			<Option compilerVar="CPP" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-		</Unit>
-		<Unit filename="src\main.h">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-		</Unit>
+		<Unit filename="src\lst_custom.cpp" />
+		<Unit filename="src\lst_custom.h" />
+		<Unit filename="src\main.cpp" />
+		<Unit filename="src\main.h" />
 		<Unit filename="src\misc.cpp">
 			<Option compilerVar="CC" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Debug" />
-			<Option target="Unix Release" />
 		</Unit>
-		<Unit filename="src\misc.h">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Debug" />
-			<Option target="Unix Release" />
-		</Unit>
+		<Unit filename="src\misc.h" />
 		<Unit filename="src\net_io.cpp">
-			<Option compilerVar="CPP" />
 			<Option virtualFolder="network\" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Debug" />
-			<Option target="Unix Release" />
 		</Unit>
 		<Unit filename="src\net_io.h">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
 			<Option virtualFolder="network\" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Debug" />
-			<Option target="Unix Release" />
 		</Unit>
 		<Unit filename="src\net_packet.cpp">
-			<Option compilerVar="CPP" />
 			<Option virtualFolder="network\" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Debug" />
-			<Option target="Unix Release" />
 		</Unit>
 		<Unit filename="src\net_packet.h">
-			<Option compilerVar="CPP" />
-			<Option compile="0" />
-			<Option link="0" />
 			<Option virtualFolder="network\" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Debug" />
-			<Option target="Unix Release" />
 		</Unit>
 		<Unit filename="src\wx_pch.h">
-			<Option compilerVar="CPP" />
-			<Option link="0" />
+			<Option compile="1" />
 			<Option weight="0" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Debug" />
-			<Option target="Unix Release" />
 		</Unit>
 		<Extensions>
 			<code_completion />

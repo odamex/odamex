@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_project_file>
-	<FileVersion major="1" minor="5" />
+	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="master" />
 		<Option pch_mode="0" />
-		<Option default_target="" />
 		<Option compiler="gcc" />
-		<Option virtualFolders="" />
 		<Build>
 			<Target title="Win Release">
 				<Option output="..\bin\odamaster.exe" prefix_auto="0" extension_auto="1" />
@@ -93,29 +91,11 @@
 			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
 			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
 		</VirtualTargets>
-		<Unit filename="i_net.cpp">
-			<Option compilerVar="CPP" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-		</Unit>
-		<Unit filename="i_net.h">
-			<Option compilerVar="" />
-			<Option compile="0" />
-			<Option link="0" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-		</Unit>
-		<Unit filename="main.cpp">
-			<Option compilerVar="CPP" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-		</Unit>
-		<Extensions />
+		<Unit filename="i_net.cpp" />
+		<Unit filename="i_net.h" />
+		<Unit filename="main.cpp" />
+		<Extensions>
+			<code_completion />
+		</Extensions>
 	</Project>
 </CodeBlocks_project_file>
