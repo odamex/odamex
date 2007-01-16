@@ -1715,3 +1715,6 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	P_CheckMissileSpawn (th);
 }
 
+
+VERSION_CONTROL (p_mobj_cpp, "$Id:$")
+

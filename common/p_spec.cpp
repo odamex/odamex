@@ -2138,3 +2138,6 @@ static void P_SpawnPushers(void)
 // phares 3/20/98: End of Pusher effects
 //
 ////////////////////////////////////////////////////////////////////////////
+
+VERSION_CONTROL (p_spec_cpp, "$Id:$")
+

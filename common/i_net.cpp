@@ -724,3 +724,6 @@ void I_SetPort(netadr_t &addr, int port)
 {
    addr.port = htons(port);
 }
+
+VERSION_CONTROL (i_net_cpp, "$Id:$")
+

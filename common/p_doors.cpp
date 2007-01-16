@@ -354,3 +354,6 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 	door->m_TopWait = (150*TICRATE)/35;
 	door->m_TopCountdown = 5 * 60 * TICRATE;
 }
+
+VERSION_CONTROL (p_doors_cpp, "$Id:$")
+

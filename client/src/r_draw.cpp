@@ -1309,3 +1309,6 @@ void R_InitColumnDrawers (BOOL is8bit)
 		R_DrawSpan				= R_DrawSpanD;
 	}
 }
+
+VERSION_CONTROL (r_draw_cpp, "$Id:$")
+

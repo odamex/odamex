@@ -347,3 +347,6 @@ bool SDLVideo::Blit (DCanvas *src, int sx, int sy, int sw, int sh, DCanvas *dst,
 {
    return false;
 }
+
+VERSION_CONTROL (i_sdlvideo_cpp, "$Id:$")
+

@@ -446,3 +446,6 @@ P_CheckSightEdges
 
 	return contact;
 }	
+
+VERSION_CONTROL (p_sight_cpp, "$Id:$")
+

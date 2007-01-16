@@ -1847,3 +1847,6 @@ BOOL CheckIfExitIsGood (AActor *self)
 	return false;
 }
 
+
+VERSION_CONTROL (g_game_cpp, "$Id:$")
+

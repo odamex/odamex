@@ -1346,3 +1346,6 @@ void A_Ambient (AActor *actor)
 {
 }
 
+
+VERSION_CONTROL (s_sound_cpp, "$Id:$")
+

@@ -664,3 +664,6 @@ BEGIN_COMMAND (testcolor)
 	}
 }
 END_COMMAND (testcolor)
+
+VERSION_CONTROL (v_palette_cpp, "$Id:$")
+

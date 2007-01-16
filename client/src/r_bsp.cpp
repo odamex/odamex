@@ -894,3 +894,6 @@ void R_RenderBSPNode (int bspnum)
 	}
 	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
+
+VERSION_CONTROL (r_bsp_cpp, "$Id:$")
+

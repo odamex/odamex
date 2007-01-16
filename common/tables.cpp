@@ -42,3 +42,6 @@ fixed_t finetangent[FINEANGLES/2];
 fixed_t finesine[5*FINEANGLES/4];
 angle_t tantoangle[SLOPERANGE+1];
 
+
+VERSION_CONTROL (tables_cpp, "$Id:$")
+

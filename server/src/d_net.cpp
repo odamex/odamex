@@ -95,3 +95,6 @@ void TryRunTics (void)
 	// denis - server uses different looping, see SV_RunTics
 }
 
+
+VERSION_CONTROL (d_net_cpp, "$Id:$")
+

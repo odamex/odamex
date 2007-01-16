@@ -791,3 +791,6 @@ BOOL R_AlignFlat (int linenum, int side, int fc)
 
 	return true;
 }
+
+VERSION_CONTROL (r_plane_cpp, "$Id:$")
+

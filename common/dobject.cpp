@@ -167,3 +167,6 @@ void STACK_ARGS DObject::StaticShutdown ()
 	// denis - thinkers should be destroyed, but possibly not here?
 	DThinker::DestroyAllThinkers();
 }
+
+VERSION_CONTROL (dobject_cpp, "$Id:$")
+

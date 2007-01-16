@@ -280,3 +280,6 @@ void DArgs::SetArgs(const char *cmdline)
 	return;
 }
 
+
+VERSION_CONTROL (m_argv_cpp, "$Id:$")
+

@@ -80,6 +80,7 @@
 * marcus.geelnard at home.se
 *************************************************************************/
 
+#include "version.h"
 #include "huffman.h"
 
 // For a memcpy
@@ -617,4 +618,7 @@ void huffman_client::reset()
 	alpha.reset();
 	beta.reset();
 }
+
+
+VERSION_CONTROL (huffman_cpp, "$Id:$")
 

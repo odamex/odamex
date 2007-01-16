@@ -443,3 +443,6 @@ int wipe_ScreenWipe (int ticks)
 
 	return !go;
 }
+
+VERSION_CONTROL (f_wipe_cpp, "$Id:$")
+

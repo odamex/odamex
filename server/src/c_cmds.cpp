@@ -183,3 +183,6 @@ BEGIN_COMMAND (logfile)
 }
 END_COMMAND (logfile)
 
+
+VERSION_CONTROL (c_cmds_cpp, "$Id:$")
+

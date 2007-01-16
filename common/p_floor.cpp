@@ -908,3 +908,6 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 	}
 	return rtn;
 }
+
+VERSION_CONTROL (p_floor_cpp, "$Id:$")
+

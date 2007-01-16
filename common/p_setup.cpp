@@ -1380,3 +1380,6 @@ void P_Init (void)
 
 
 
+
+VERSION_CONTROL (p_setup_cpp, "$Id:$")
+

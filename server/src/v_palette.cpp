@@ -127,3 +127,6 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 {
 	return NULL;
 }
+
+VERSION_CONTROL (v_palette_cpp, "$Id:$")
+

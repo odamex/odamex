@@ -115,3 +115,6 @@ void M_ClearRandom (void)
 	rndindex = prndindex = 0;
 }
 
+
+VERSION_CONTROL (m_random_cpp, "$Id:$")
+

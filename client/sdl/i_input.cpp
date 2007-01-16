@@ -296,3 +296,6 @@ void I_StartTic (void)
 void I_StartFrame (void)
 {
 }
+
+VERSION_CONTROL (i_input_cpp, "$Id:$")
+

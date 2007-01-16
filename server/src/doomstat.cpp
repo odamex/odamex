@@ -45,3 +45,6 @@ CVAR (developer, "0", 0)
 CVAR (var_friction, "1", CVAR_ARCHIVE); // removeme 
 CVAR (var_pushers, "1", CVAR_ARCHIVE); // removeme 
 
+
+VERSION_CONTROL (doomstat_cpp, "$Id:$")
+

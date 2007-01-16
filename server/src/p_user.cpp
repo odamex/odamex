@@ -652,3 +652,6 @@ void player_s::Serialize (FArchive &arc)
 			userinfo = dummyuserinfo;
 	}
 }
+
+VERSION_CONTROL (p_user_cpp, "$Id:$")
+

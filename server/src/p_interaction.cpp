@@ -1305,3 +1305,6 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 }
 
 BOOL CheckCheatmode (void);
+
+VERSION_CONTROL (p_interaction_cpp, "$Id:$")
+

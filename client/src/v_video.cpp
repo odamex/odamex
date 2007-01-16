@@ -668,3 +668,6 @@ void DCanvas::DetachPalette ()
 		m_Palette = NULL;
 	}
 }
+
+VERSION_CONTROL (v_video_cpp, "$Id:$")
+

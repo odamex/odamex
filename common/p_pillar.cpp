@@ -175,3 +175,6 @@ BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 	}
 	return rtn;
 }
+
+VERSION_CONTROL (p_pillar_cpp, "$Id:$")
+

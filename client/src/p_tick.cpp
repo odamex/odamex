@@ -59,3 +59,6 @@ void P_Ticker (void)
 	// for par times
 	level.time++;
 }
+
+VERSION_CONTROL (p_tick_cpp, "$Id:$")
+

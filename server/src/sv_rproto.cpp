@@ -220,3 +220,6 @@ void SV_AcknowledgePacket(player_t &player)
 
 	cl->last_sequence = sequence;
 }
+
+VERSION_CONTROL (sv_rproto_cpp, "$Id:$")
+

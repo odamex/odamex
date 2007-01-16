@@ -152,3 +152,6 @@ gameinfo_t CommercialGameInfo =
 	"GRNROCK",
 	&DoomBorder
 };
+
+VERSION_CONTROL (gi_cpp, "$Id:$")
+

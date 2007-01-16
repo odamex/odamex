@@ -460,3 +460,6 @@ static void C_TabComplete (void)
 	makestartposgood ();
 }
 
+
+VERSION_CONTROL (c_console_cpp, "$Id:$")
+

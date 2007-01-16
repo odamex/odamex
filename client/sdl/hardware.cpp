@@ -433,3 +433,6 @@ BEGIN_COMMAND (vid_currentmode)
 	Printf (PRINT_HIGH, "%dx%dx%d\n", DisplayWidth, DisplayHeight, DisplayBits);
 }
 END_COMMAND (vid_currentmode)
+
+VERSION_CONTROL (hardware_cpp, "$Id:$")
+

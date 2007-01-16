@@ -20,8 +20,12 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "version.h"
 
 #include <stdio.h>
 
 // [RH] Tutti-Frutti fix
 unsigned int	dc_mask;
+
+VERSION_CONTROL (r_draw_cpp, "$Id:$")
+

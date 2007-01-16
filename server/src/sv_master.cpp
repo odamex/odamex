@@ -381,3 +381,6 @@ BEGIN_COMMAND (masters)
 }
 END_COMMAND (masters)
 
+
+VERSION_CONTROL (sv_master_cpp, "$Id:$")
+

@@ -321,3 +321,6 @@ void STACK_ARGS I_ShutdownSound (void)
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }
 
+
+VERSION_CONTROL (i_sound_cpp, "$Id:$")
+

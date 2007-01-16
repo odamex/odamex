@@ -882,3 +882,6 @@ int V_GetColorFromString (const DWORD *palette, const char *cstr)
 			   ((c[1])      & 0x00ff00) |
 			   ((c[2] >> 8));
 }
+
+VERSION_CONTROL (v_draw_cpp, "$Id:$")
+

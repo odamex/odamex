@@ -2565,3 +2565,6 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 	}
 }
 
+
+VERSION_CONTROL (sv_main_cpp, "$Id:$")
+

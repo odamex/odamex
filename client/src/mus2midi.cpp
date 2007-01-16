@@ -26,6 +26,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "version.h"
 
 #include <stdio.h>
 
@@ -602,4 +603,7 @@ int mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 
 	return 0;
 }
+
+
+VERSION_CONTROL (mus2midi_cpp, "$Id:$")
 

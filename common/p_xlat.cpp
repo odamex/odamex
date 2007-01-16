@@ -688,3 +688,6 @@ int P_TranslateSectorSpecial (int special)
 			((special & 0xfe0) << 3) |
 			((special & 0x01f) + (((special & 0x1f) < 21) ? 64 : -20));
 }
+
+VERSION_CONTROL (p_xlat_cpp, "$Id:$")
+

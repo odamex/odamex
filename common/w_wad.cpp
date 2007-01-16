@@ -757,3 +757,6 @@ int W_FindLump (const char *name, int *lastlump)
 	return -1;
 }
 
+
+VERSION_CONTROL (w_wad_cpp, "$Id:$")
+

@@ -883,3 +883,6 @@ FArchive &operator>> (FArchive &arc, pspdef_t &def)
 {
 	return arc >> def.state >> def.tics >> def.sx >> def.sy;
 }
+
+VERSION_CONTROL (p_pspr_cpp, "$Id:$")
+

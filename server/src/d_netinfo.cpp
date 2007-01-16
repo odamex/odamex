@@ -105,3 +105,6 @@ FArchive &operator>> (FArchive &arc, userinfo_t &info) // removeme
 {
 	return arc;
 }
+
+VERSION_CONTROL (d_netinfo_cpp, "$Id:$")
+

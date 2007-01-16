@@ -508,3 +508,6 @@ BEGIN_COMMAND (mem)
 			);
 }
 END_COMMAND (mem)
+
+VERSION_CONTROL (z_zone_cpp, "$Id:$")
+

@@ -566,3 +566,6 @@ void EV_StartLightFading (int tag, int value, int tics)
 	}
 }
 
+
+VERSION_CONTROL (p_lights_cpp, "$Id:$")
+

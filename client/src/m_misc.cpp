@@ -350,3 +350,6 @@ BEGIN_COMMAND (screenshot)
 		G_ScreenShot (argv[1]);
 }
 END_COMMAND (screenshot)
+
+VERSION_CONTROL (m_misc_cpp, "$Id:$")
+

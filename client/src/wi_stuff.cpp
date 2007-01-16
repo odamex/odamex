@@ -886,3 +886,6 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 	S_StopAllChannels ();
 // 	SN_StopAllSequences ();
 }
+
+VERSION_CONTROL (wi_stuff_cpp, "$Id:$")
+

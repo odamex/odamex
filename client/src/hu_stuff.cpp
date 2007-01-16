@@ -1303,3 +1303,6 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 	odacanvas->Dim ();
 	odacanvas->Blit(0, 0, (xb - xa), (yb - ya), screen, xa, ya, (xb - xa), (yb - ya));
 }
+
+VERSION_CONTROL (hu_stuff_cpp, "$Id:$")
+

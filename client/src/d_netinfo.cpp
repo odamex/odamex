@@ -192,3 +192,6 @@ FArchive &operator>> (FArchive &arc, userinfo_t &info)
 	arc >> info.aimdist >> info.color >> info.skin >> neverswitch;
 	return arc;
 }
+
+VERSION_CONTROL (d_netinfo_cpp, "$Id:$")
+

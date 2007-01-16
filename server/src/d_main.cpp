@@ -969,3 +969,6 @@ void D_DoomMain (void)
 
 	D_DoomLoop (); // never returns
 }
+
+VERSION_CONTROL (d_main_cpp, "$Id:$")
+

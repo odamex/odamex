@@ -1406,3 +1406,6 @@ void M_Init (void)
 	for (i = 0; i < 255; i++)
 		FireRemap[i] = BestColor (DefaultPalette->basecolors, i, 0, 0, DefaultPalette->numcolors);
 }
+
+VERSION_CONTROL (m_menu_cpp, "$Id:$")
+

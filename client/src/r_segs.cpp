@@ -1069,3 +1069,6 @@ R_StoreWallRange
 	ds_p++;
 }
 
+
+VERSION_CONTROL (r_segs_cpp, "$Id:$")
+

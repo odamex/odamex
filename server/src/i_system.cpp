@@ -506,3 +506,6 @@ std::string I_ConsoleInput (void)
 }
 
 #endif
+
+VERSION_CONTROL (i_system_cpp, "$Id:$")
+

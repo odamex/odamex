@@ -547,3 +547,6 @@ void InitItems (void)
 	num_items = sizeof(itemlist)/sizeof(itemlist[0]) - 1;
 }
 
+
+VERSION_CONTROL (d_items_cpp, "$Id:$")
+

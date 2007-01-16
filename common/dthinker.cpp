@@ -187,3 +187,6 @@ void DThinker::operator delete (void *mem)
 {
 	Z_Free (mem);
 }
+
+VERSION_CONTROL (dthinker_cpp, "$Id:$")
+

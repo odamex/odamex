@@ -1540,3 +1540,6 @@ void R_DrawMasked (void)
 		R_DrawPlayerSprites ();
 	}
 }
+
+VERSION_CONTROL (r_things_cpp, "$Id:$")
+

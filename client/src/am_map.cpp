@@ -1542,3 +1542,6 @@ void AM_Drawer (void)
 
 	}
 }
+
+VERSION_CONTROL (am_map_cpp, "$Id:$")
+

@@ -30,8 +30,16 @@ enum { VERSION = 10 };
 #define CONFIGVERSIONSTR "10"
 #define GAMEVER (0*256+10)
 
-#define SVN_REVISION "$Rev: 2124 $"
 #define DOTVERSIONSTR "0.1"
+
+// denis - per-file svn version stamps
+class file_version
+{
+public:
+	file_version(const char *uid, const char *id, const char *p, int l, const char *t, const char *d);	
+};
+
+#define VERSION_CONTROL(uid, id) static file_version file_version_unique_##uid(#uid, id, __FILE__, __LINE__, __TIME__, __DATE__);
 
 #endif //__VERSION_H__
 

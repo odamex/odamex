@@ -314,3 +314,6 @@ subsector_t *R_PointInSubsector (fixed_t x, fixed_t y)
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
 }
 
+
+VERSION_CONTROL (r_main_cpp, "$Id:$")
+

@@ -806,3 +806,6 @@ BOOL P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 	// go through the sorted list
 	return P_TraverseIntercepts ( trav, FRACUNIT );
 }
+
+VERSION_CONTROL (p_maputl_cpp, "$Id:$")
+

@@ -1707,3 +1707,6 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 	delete[] PatchFile;
 	Printf (PRINT_HIGH, "Patch installed\n");
 }
+
+VERSION_CONTROL (d_dehacked_cpp, "$Id:$")
+

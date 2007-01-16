@@ -258,3 +258,6 @@ void CL_PredictMove (void)
 	CL_PredictSectors();
 }
 
+
+VERSION_CONTROL (cl_pred_cpp, "$Id:$")
+

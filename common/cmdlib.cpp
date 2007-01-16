@@ -311,3 +311,6 @@ BOOL IsNum (char *str)
 	return result;
 }
 
+
+VERSION_CONTROL (cmdlib_cpp, "$Id:$")
+

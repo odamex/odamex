@@ -102,3 +102,6 @@ BEGIN_COMMAND (stat)
 }
 END_COMMAND (stat)
 
+
+VERSION_CONTROL (stats_cpp, "$Id:$")
+

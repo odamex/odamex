@@ -1395,3 +1395,6 @@ BEGIN_COMMAND (menu_video)
 }
 END_COMMAND (menu_video)
 
+
+VERSION_CONTROL (m_options_cpp, "$Id:$")
+

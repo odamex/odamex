@@ -58,3 +58,6 @@ void DBoundingBox::AddToBox (fixed_t x, fixed_t y)
 
 
 
+
+VERSION_CONTROL (m_bbox_cpp, "$Id:$")
+

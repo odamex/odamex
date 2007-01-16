@@ -1034,3 +1034,6 @@ void R_DrawMaskedColumnHoriz (column_t *column)
 		column = (column_t *)((byte *)column + column->length + 4);
 	}
 }
+
+VERSION_CONTROL (r_drawt_cpp, "$Id:$")
+

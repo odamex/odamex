@@ -1591,3 +1591,6 @@ lnSpecFunc LineSpecials[256] =
 	LS_Ceiling_LowerToFloor,
 	LS_Ceiling_CrushRaiseAndStaySilA
 };
+
+VERSION_CONTROL (p_lnspec_cpp, "$Id:$")
+

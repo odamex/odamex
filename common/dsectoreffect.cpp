@@ -274,3 +274,6 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 	}
 	return ok;
 }
+
+VERSION_CONTROL (dsectoreffect_cpp, "$Id:$")
+

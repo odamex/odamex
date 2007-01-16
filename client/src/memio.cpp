@@ -214,3 +214,6 @@ char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
 {
     return (char *)stream->buf;
 }
+
+VERSION_CONTROL (memio_cpp, "$Id:$")
+

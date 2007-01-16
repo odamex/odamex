@@ -63,3 +63,6 @@ fixed_t FixedDiv_C (fixed_t a, fixed_t b)
 }
 
 #endif
+
+VERSION_CONTROL (m_fixed_cpp, "$Id:$")
+

@@ -968,3 +968,6 @@ FArchive &operator>> (FArchive &arc, player_s *&p)
 		p = &players[ofs]; // denis - todo - security
 	return arc;
 }
+
+VERSION_CONTROL (farchive_cpp, "$Id:$")
+

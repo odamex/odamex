@@ -1306,3 +1306,6 @@ void D_DoomMain (void)
 
 
 
+
+VERSION_CONTROL (d_main_cpp, "$Id:$")
+

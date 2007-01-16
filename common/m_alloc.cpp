@@ -57,3 +57,6 @@ void *Realloc (void *memblock, size_t size)
 
 	return zone;
 }
+
+VERSION_CONTROL (m_alloc_cpp, "$Id:$")
+

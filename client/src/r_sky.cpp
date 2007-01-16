@@ -102,3 +102,6 @@ void R_InitSkyMap ()
 	if (texturewidthmask[skytexture] >= 256*2-1)
 		skyshift -= skystretch;
 }
+
+VERSION_CONTROL (r_sky_cpp, "$Id:$")
+

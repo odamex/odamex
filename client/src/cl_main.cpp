@@ -2247,3 +2247,6 @@ void CL_RunTics (void)
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
+
+VERSION_CONTROL (cl_main_cpp, "$Id:$")
+

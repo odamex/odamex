@@ -242,3 +242,6 @@ typedef struct
 	unsigned char		data;			// unbounded
 } pcx_t;
 
+
+VERSION_CONTROL (m_misc_cpp, "$Id:$")
+

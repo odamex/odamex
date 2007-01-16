@@ -654,3 +654,6 @@ void ReplaceString (char **ptr, char *str)
 	}
 	*ptr = copystring (str);
 }
+
+VERSION_CONTROL (dstrings_cpp, "$Id:$")
+

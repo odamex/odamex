@@ -623,3 +623,6 @@ void V_FreeBrokenLines (brokenlines_t *lines)
 	}
 }
 
+
+VERSION_CONTROL (v_text_cpp, "$Id:$")
+

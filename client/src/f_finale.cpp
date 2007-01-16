@@ -716,3 +716,6 @@ void F_Drawer (void)
 			break;
 	}
 }
+
+VERSION_CONTROL (f_finale_cpp, "$Id:$")
+

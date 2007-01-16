@@ -137,3 +137,6 @@ void TryRunTics (void)
 	DObject::EndFrame ();
 }
 
+
+VERSION_CONTROL (d_net_cpp, "$Id:$")
+

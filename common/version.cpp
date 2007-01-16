@@ -1,0 +1,99 @@
+/*
+ 
+	Copyright(C) 2006 The Odamex Team
+ 
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
+ 
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+ 
+	You should have received a copy of the GNU General Public License
+	along with this program; if not, write to the Free Software
+	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+	02111-1307, USA.
+ 
+	AUTHOR:			Denis Lukianov
+	DESCRIPTION:    Source code and protocol versioning
+ 
+ */
+
+#include <map>
+#include <string>
+#include <sstream>
+
+#include "version.h"
+#include "c_dispatch.h"
+
+using std::string;
+
+typedef std::map<string, string> source_files_t;
+
+source_files_t &get_source_files()
+{
+	static source_files_t source_files;
+	return source_files;
+}
+
+unsigned int last_revision = 0;
+string revision_str;
+
+file_version::file_version(const char *uid, const char *id, const char *pp, int l, const char *t, const char *d)
+{
+	std::stringstream rs(id), ss;
+	string p = pp;
+	
+	size_t e = p.find_last_of("/\\");
+	string file = p.substr(e == std::string::npos ? 0 : e + 1);
+
+	ss << id << " " << l << " " << t << " " << d << " " << p.substr(e == std::string::npos ? 0 : e + 1);
+	
+	get_source_files()[file] = ss.str();
+
+	// file with latest revision indicates the revision of the distribution
+	string tmp;
+	unsigned int rev = 0;
+	rs >> tmp >> tmp;
+	if(rs)
+		rs >> rev;
+	if(last_revision < rev)
+	{
+		last_revision = rev;
+		revision_str = ss.str();
+	}
+}
+
+BEGIN_COMMAND (version)
+{
+	using namespace std;
+	
+	if (argc == 1)
+	{
+		// distribution
+		Printf(PRINT_HIGH, "Odamex %s r%d Copyright(C) 2007 The Odamex Team", DOTVERSIONSTR, last_revision);
+	}
+	else
+	{
+		// specific file version
+		std::map<string, string>::iterator i = get_source_files().find(argv[1]);
+		
+		if(i == get_source_files().end())
+		{
+			Printf(PRINT_HIGH, "no such file: %s", argv[1]);
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "%s", i->second.c_str());
+		}
+	}
+}
+END_COMMAND (version)	
+
+VERSION_CONTROL(version_cpp, "$Id$")
+
+
+

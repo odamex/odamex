@@ -1069,3 +1069,6 @@ void R_MultiresInit (void)
 	R_PlaneInitData ();
 	R_OldBlend = ~0;
 }
+
+VERSION_CONTROL (r_main_cpp, "$Id:$")
+

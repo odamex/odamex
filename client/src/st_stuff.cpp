@@ -1475,3 +1475,6 @@ void ST_Init (void)
 
 	ST_loadData();
 }
+
+VERSION_CONTROL (st_stuff_cpp, "$Id:$")
+

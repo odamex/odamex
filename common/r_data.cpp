@@ -949,3 +949,6 @@ void R_PrecacheLevel (void)
 
 	delete[] hitlist;
 }
+
+VERSION_CONTROL (r_data_cpp, "$Id:$")
+

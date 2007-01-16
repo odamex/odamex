@@ -2087,3 +2087,6 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 	tmbbox[2] = last_tmbbox[2];
 	tmbbox[3] = last_tmbbox[3];
 }
+
+VERSION_CONTROL (p_map_cpp, "$Id:$")
+

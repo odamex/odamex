@@ -310,3 +310,6 @@ void DActiveButton::RunThink ()
 		Destroy ();
 	}
 }
+
+VERSION_CONTROL (p_switch_cpp, "$Id:$")
+

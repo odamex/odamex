@@ -176,3 +176,6 @@ int main (int argc, char **argv)
 }
 
 #endif
+
+VERSION_CONTROL (i_main_cpp, "$Id:$")
+

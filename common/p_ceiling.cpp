@@ -474,3 +474,6 @@ BOOL EV_CeilingCrushStop (int tag)
 
 	return rtn;
 }
+
+VERSION_CONTROL (p_ceiling_cpp, "$Id:$")
+

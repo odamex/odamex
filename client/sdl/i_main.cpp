@@ -181,3 +181,6 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+
+VERSION_CONTROL (i_main_cpp, "$Id:$")
+

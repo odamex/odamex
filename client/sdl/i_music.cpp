@@ -238,3 +238,6 @@ bool I_QrySongPlaying (int handle)
 	
 	return Mix_PlayingMusic() ? true : false;
 }
+
+VERSION_CONTROL (i_music_cpp, "$Id:$")
+

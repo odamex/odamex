@@ -224,3 +224,6 @@ FArchive &operator>> (FArchive &arc, usercmd_t &cmd)
 	return arc;
 }
 
+
+VERSION_CONTROL (d_protocol_cpp, "$Id:$")
+

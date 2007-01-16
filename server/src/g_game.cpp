@@ -838,3 +838,6 @@ BOOL CheckIfExitIsGood (AActor *self)
 
 }
 
+
+VERSION_CONTROL (g_game_cpp, "$Id:$")
+

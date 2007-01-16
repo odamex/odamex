@@ -254,3 +254,6 @@ void ST_nameDraw (int y)
 	else
 		screen->DrawTextCleanLuc (CR_GREEN, x, y, string);
 }
+
+VERSION_CONTROL (st_new_cpp, "$Id:$")
+

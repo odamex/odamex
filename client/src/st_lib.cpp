@@ -302,3 +302,6 @@ STlib_updateBinIcon
 
 }
 
+
+VERSION_CONTROL (st_lib_cpp, "$Id:$")
+

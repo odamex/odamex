@@ -450,3 +450,6 @@ const char *C_GetBinding (int key)
 {
 	return Bindings[key].c_str();
 }
+
+VERSION_CONTROL (c_bind_cpp, "$Id:$")
+

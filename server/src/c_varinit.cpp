@@ -30,3 +30,6 @@
 
 extern cvar_t *CVars;
 
+
+VERSION_CONTROL (c_varinit_cpp, "$Id:$")
+

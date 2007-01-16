@@ -283,3 +283,6 @@ void R_ConcatRotations (const float in1[3][3], const float in2[3][3], float out[
 				in1[2][2] * in2[2][2];
 }
 
+
+VERSION_CONTROL (vectors_cpp, "$Id:$")
+

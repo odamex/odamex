@@ -668,3 +668,6 @@ void player_s::Serialize (FArchive &arc)
 
 	}
 }
+
+VERSION_CONTROL (p_user_cpp, "$Id:$")
+

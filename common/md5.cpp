@@ -55,9 +55,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include "version.h"
 #include "md5.h"
-#include <string.h>
 
 #undef BYTE_ORDER	/* 1 = big-endian, -1 = little-endian, 0 = unknown */
 #ifdef ARCH_IS_BIG_ENDIAN
@@ -415,3 +414,6 @@ std::string MD5SUM(std::string in)
 {
 	return MD5SUM(in.c_str(), in.length());
 }
+
+VERSION_CONTROL (md5_cpp, "$Id:$")
+

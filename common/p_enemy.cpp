@@ -2064,3 +2064,6 @@ void A_PlayerScream (AActor *mo)
 	
 	S_Sound (mo, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
+
+VERSION_CONTROL (p_enemy_cpp, "$Id:$")
+

@@ -536,3 +536,6 @@ BEGIN_COMMAND (cvarlist)
 	cvar_t::cvarlist();
 }
 END_COMMAND (cvarlist)
+
+VERSION_CONTROL (c_cvars_cpp, "$Id:$")
+

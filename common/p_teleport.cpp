@@ -302,3 +302,6 @@ BOOL EV_SilentLineTeleport (line_t *line, AActor *thing, int id,
 		}
 	return false;
 }
+
+VERSION_CONTROL (p_teleport_cpp, "$Id:$")
+

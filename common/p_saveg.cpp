@@ -230,3 +230,6 @@ void P_SerializeSounds (FArchive &arc)
 	// denis - todo
 }
 
+
+VERSION_CONTROL (p_saveg_cpp, "$Id:$")
+

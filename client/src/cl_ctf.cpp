@@ -571,3 +571,6 @@ void DRAW_FlagsBox (void)
 
 }
 
+
+VERSION_CONTROL (cl_ctf_cpp, "$Id:$")
+

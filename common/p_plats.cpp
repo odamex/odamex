@@ -412,3 +412,6 @@ void EV_StopPlat (int tag)
 	}
 }
 
+
+VERSION_CONTROL (p_plats_cpp, "$Id:$")
+

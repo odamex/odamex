@@ -377,3 +377,6 @@ BEGIN_COMMAND (spectate)
 }
 END_COMMAND (spectate)
 
+
+VERSION_CONTROL (c_cmds_cpp, "$Id:$")
+

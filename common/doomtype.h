@@ -25,6 +25,7 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
+#include "version.h"
 
 #ifndef __BYTEBOOL__
 #define __BYTEBOOL__

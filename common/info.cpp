@@ -5756,3 +5756,6 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0x10000
 	},
 };
+
+VERSION_CONTROL (info_cpp, "$Id:$")
+

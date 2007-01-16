@@ -45,3 +45,6 @@ CVAR (developer, "0", 0)
 CVAR (var_friction, "1", CVAR_ARCHIVE);
 CVAR (var_pushers, "1", CVAR_ARCHIVE);
 
+
+VERSION_CONTROL (doomstat_cpp, "$Id:$")
+

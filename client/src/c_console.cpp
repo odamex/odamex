@@ -1521,3 +1521,6 @@ static void C_TabComplete (void)
 
 
 
+
+VERSION_CONTROL (c_console_cpp, "$Id:$")
+

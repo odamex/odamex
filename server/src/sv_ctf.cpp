@@ -455,3 +455,6 @@ void CTF_Sound (flag_t f, flag_score_t event)
 		SV_SoundTeam (CHAN_VOICE, flag_sound[event][f == (flag_t)i], ATTN_NONE, i);
 }
 
+
+VERSION_CONTROL (sv_ctf_cpp, "$Id:$")
+

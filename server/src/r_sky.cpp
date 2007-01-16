@@ -32,3 +32,6 @@ int 		skyflatnum;
 int 		skytexture;
 
 fixed_t		skypos=0,		skyspeed=0;
+
+VERSION_CONTROL (r_sky_cpp, "$Id:$")
+

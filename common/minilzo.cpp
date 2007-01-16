@@ -39,6 +39,7 @@
 // 
 //-----------------------------------------------------------------------------
 
+#include "version.h"
 
 //
 // * NOTE:
@@ -1955,7 +1956,7 @@ const char __lzo_copyright[] =
     "$Copyright: LZO (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005 Markus Franz Xaver Johannes Oberhumer\n"
     "<markus@oberhumer.com>\n"
     "http://www.oberhumer.com $\n\n"
-    "$Id: LZO version: v" LZO_VERSION_STRING ", " LZO_VERSION_DATE " $\n"
+    "$Id$\n"
     "$Built: " __DATE__ " " __TIME__ " $\n"
     "$Info: " LZO_INFO_STRING " $\n";
 #endif
@@ -3831,4 +3832,7 @@ lookbehind_overrun:
 #endif
 
 /***** End of minilzo.c *****/
+
+
+VERSION_CONTROL (minilzo_cpp, "$Id:$")
 

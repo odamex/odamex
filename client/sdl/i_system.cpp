@@ -650,3 +650,6 @@ int I_FindNext (long handle, findstate_t *fileinfo) {return 0;}
 int I_FindClose (long handle) {return 0;}
 
 #endif
+
+VERSION_CONTROL (i_system_cpp, "$Id:$")
+

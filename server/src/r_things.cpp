@@ -534,3 +534,6 @@ void R_InitSprites (char **namelist)
 	skins[0].sprite = SPR_PLAY;
 	skins[0].namespc = ns_global;
 }
+
+VERSION_CONTROL (r_things_cpp, "$Id:$")
+

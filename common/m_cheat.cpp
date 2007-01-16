@@ -365,3 +365,6 @@ void cht_Suicide (player_t *plyr)
 		P_DamageMobj (plyr->mo, plyr->mo, plyr->mo, 10000, MOD_SUICIDE);
 	plyr->mo->flags &= ~MF_SHOOTABLE;
 }
+
+VERSION_CONTROL (m_cheat_cpp, "$Id:$")
+
