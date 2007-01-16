@@ -323,12 +323,6 @@ FUNC(LS_Pillar_Build)
 	return EV_DoPillar (DPillar::pillarBuild, ln->args[0], SPEED(ln->args[1]), ln->args[2]*FRACUNIT, 0, -1);
 }
 
-FUNC(LS_Pillar_BuildAndCrush)
-// Pillar_BuildAndCrush (tag, speed, height, crush)
-{
-	return EV_DoPillar (DPillar::pillarBuild, ln->args[0], SPEED(ln->args[1]), ln->args[2]*FRACUNIT, 0, ln->args[3]);
-}
-
 FUNC(LS_Pillar_Open)
 // Pillar_Open (tag, speed, f_height, c_height)
 {
@@ -763,18 +757,6 @@ FUNC(LS_Thing_SetGoal)
 	}
 
 	return true;
-}
-
-FUNC(LS_FloorAndCeiling_LowerByValue)
-// FloorAndCeiling_LowerByValue (tag, speed, height)
-{
-	return EV_DoElevator (ln, DElevator::elevateLower, SPEED(ln->args[1]), ln->args[2]*FRACUNIT, ln->args[0]);
-}
-
-FUNC(LS_FloorAndCeiling_RaiseByValue)
-// FloorAndCeiling_RaiseByValue (tag, speed, height)
-{
-	return EV_DoElevator (ln, DElevator::elevateRaise, SPEED(ln->args[1]), ln->args[2]*FRACUNIT, ln->args[0]);
 }
 
 FUNC(LS_FloorAndCeiling_LowerRaise)
