@@ -1,0 +1,1345 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="5" />
+	<Project>
+		<Option title="server" />
+		<Option pch_mode="0" />
+		<Option default_target="" />
+		<Option compiler="gcc" />
+		<Option virtualFolders="" />
+		<Build>
+			<Target title="Win Release">
+				<Option output="../../bin/odasrv.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../bin" />
+				<Option object_output="../../obj/server/release/" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-lwinmm -lwsock32" />
+				</Linker>
+			</Target>
+			<Target title="Win Debug">
+				<Option output="../../bin/odasrv-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../bin" />
+				<Option object_output="../../obj/server/debug/" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_DEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-lwinmm -lwsock32" />
+				</Linker>
+			</Target>
+			<Target title="Unix Release">
+				<Option output="../../odasrv" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../bin" />
+				<Option object_output="../../obj/server/release/" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Unix Debug">
+				<Option output="../../odasrv-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../../bin" />
+				<Option object_output="../../obj/server/debug/" />
+				<Option deps_output="../../deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+					<Add option="-DDEBUG" />
+				</Compiler>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
+			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-fexceptions" />
+			<Add option="-DNOASM" />
+			<Add directory="." />
+			<Add directory="../src" />
+			<Add directory="../../common" />
+		</Compiler>
+		<Unit filename="../../common/actor.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/c_cvars.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/c_cvars.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/c_dispatch.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/c_dispatch.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/cmdlib.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/cmdlib.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_dehacked.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_dehacked.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_event.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_items.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_items.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_net.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_netinf.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_protocol.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_protocol.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/d_ticcmd.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/dobject.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/dobject.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/doomdata.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/doomdef.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/doomtype.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/dsectoreffect.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/dsectoreffect.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/dstrings.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/dstrings.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/dthinker.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/dthinker.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/errors.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/f_finale.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/f_wipe.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/farchive.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/farchive.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/gi.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/gi.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/huffman.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/huffman.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/i_net.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/i_net.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/info.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/info.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/lzoconf.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_alloc.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_alloc.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_argv.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_argv.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_bbox.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_bbox.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_cheat.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_cheat.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_fixed.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_fixed.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_random.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_random.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/m_swap.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/md5.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/md5.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/minilzo.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/minilzo.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_ceiling.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_doors.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_enemy.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_floor.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_inter.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_lights.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_lnspec.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_lnspec.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_local.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_map.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_maputl.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_pillar.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_plats.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_pspr.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_saveg.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_saveg.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_setup.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_setup.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_sight.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_spec.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_spec.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_switch.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_teleport.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/p_xlat.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/r_data.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/r_data.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/r_defs.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/r_local.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/r_state.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/r_things.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/st_stuff.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/stats.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/stats.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/sv_vars.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/szp.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/tables.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/tables.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/tarray.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/v_video.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/vectors.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/vectors.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/version.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/w_wad.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/w_wad.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/z_zone.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../../common/z_zone.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/c_cmds.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/c_console.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/c_console.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/d_main.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/d_main.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/d_net.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/d_netinfo.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/d_player.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/doomstat.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/doomstat.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/g_game.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/g_game.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/g_level.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/g_level.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/hu_stuff.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/i_main.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/i_system.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/i_system.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/m_misc.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/m_misc.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/p_interaction.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/p_mobj.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/p_mobj.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/p_pspr.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/p_tick.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/p_tick.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/p_user.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/r_draw.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/r_draw.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/r_main.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/r_plane.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/r_plane.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/r_sky.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/r_sky.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/r_things.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/s_sound.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/s_sound.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/sv_ctf.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/sv_ctf.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/sv_main.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/sv_main.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/sv_master.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/sv_master.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/sv_rproto.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/v_palette.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/v_palette.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="../src/v_text.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="i_main.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+		</Unit>
+		<Unit filename="i_system.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+		</Unit>
+		<Unit filename="i_system.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Debug" />
+			<Option target="Win Release" />
+		</Unit>
+		<Unit filename="resource.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+		</Unit>
+		<Unit filename="server.rc">
+			<Option compilerVar="WINDRES" />
+			<Option objectName="server/win32/server.res" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+		</Unit>
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>

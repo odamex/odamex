@@ -1,0 +1,183 @@
+// Emacs style mode select   -*- C++ -*- 
+//-----------------------------------------------------------------------------
+//
+// $Id:$
+//
+// Copyright (C) 2006-2007 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:  
+//	Launcher packet structure file
+//  AUTHOR:	Russell Rice (russell at odamex dot net)
+//
+//-----------------------------------------------------------------------------
+
+
+#ifndef NETPACKET_H
+#define NETPACKET_H
+
+#include <wx/mstream.h>
+#include <wx/datstrm.h>
+
+#include "net_io.h"
+
+#define MASTER_CHALLENGE    777123
+#define MASTER_RESPONSE     777123
+#define SERVER_CHALLENGE    777123
+#define SERVER_RESPONSE     5560020
+
+struct player_t         // Player info structure
+{
+    wxString    name;
+    wxInt16     frags;
+    wxInt32     ping;
+    wxInt8      team;
+};
+
+struct teamplay_t       // Teamplay score structure 
+{
+    wxInt32     scorelimit;
+    wxInt8      blue, red, gold;
+    wxInt32     bluescore, redscore, goldscore;
+};
+
+struct serverinfo_t     // Server information structure
+{
+    wxString        name;           // Server name
+    wxInt8          numplayers;     // Number of players playing
+    wxInt8          maxplayers;     // Maximum number of possible players
+    wxString        map;            // Current map
+    wxInt8          numpwads;       // Number of PWAD files
+    wxString        iwad;           // The main game file
+    wxString        *pwads;         // Array of PWAD file names
+    wxInt8          gametype;       // Gametype (0 = Coop, 1 = DM)
+    wxInt8          gameskill;      // Gameskill
+    wxInt8          teamplay;       // Teamplay enabled?
+    player_t        *playerinfo;    // Player information array, use numplayers
+    wxString        *wad_hashes;    // IWAD and PWAD hashes
+    wxInt8          ctf;            // CTF enabled?
+    wxString        webaddr;        // Website address of server
+    teamplay_t      teamplayinfo;   // Teamplay information if enabled
+};
+
+class ServerBase  // [Russell] - Defines an abstract class for all packets
+{
+    protected:      
+        static BufferedSocket Socket;
+        
+        // Magic numbers
+        wxInt32 challenge;
+        wxInt32 response;
+           
+        // The time in milliseconds a packet was received
+        wxInt32 Ping;
+       
+    public:
+        // Constructor
+        ServerBase() 
+        {           
+        }
+        
+        // Destructor
+        virtual ~ServerBase()
+        {
+        }
+        
+        // Parse a packet, the parameter is the packet
+        virtual void Parse() { };
+        
+        // Query the server
+        wxInt32 Query(wxInt32 Timeout);
+        
+		void SetAddress(wxString Address, wxInt16 Port) { Socket.SetAddress(Address, Port); }
+        void SetAddress(wxString AddressAndPort) { Socket.SetAddress(AddressAndPort); }
+        
+		wxString GetAddress() { return Socket.GetAddress(); }
+		wxInt32 GetPing() { return Socket.GetPing(); }
+};
+
+class MasterServer : public ServerBase  // [Russell] - A master server packet
+{
+    private:
+        // Address format structure
+        struct addr_t
+        {
+            wxUint8     ip[4];
+            wxUint16    port;
+        };
+
+        wxUint16    server_count;   // Number of servers
+        addr_t     *addresses;      // Server array
+        
+    public:
+        MasterServer() 
+        { 
+            challenge = MASTER_CHALLENGE;
+            response = MASTER_CHALLENGE;
+                        
+            server_count = 0;
+            
+            addresses = NULL; 
+        }
+        
+        virtual ~MasterServer() 
+        { 
+            if (addresses != NULL) 
+            {
+                free(addresses); 
+                addresses = NULL;
+            }
+        }
+        
+		wxInt32 GetServerCount() { return server_count; }
+               
+        addr_t GetServerAddress(wxInt32 index) 
+        {  
+            if ((addresses != NULL) && (server_count > 0))
+            if ((index >= 0) && (index < server_count))
+            {
+                return addresses[index];
+            }
+        }
+        
+        void GetServerAddress(wxInt32 index, wxString &Address, wxInt16 &Port)
+        {
+            if ((addresses != NULL) && (server_count > 0))
+            if ((index >= 0) && (index < server_count))
+            {
+                Address.Printf(_T("%d.%d.%d.%d"),addresses[index].ip[0],
+                                                         addresses[index].ip[1],
+                                                         addresses[index].ip[2],
+                                                         addresses[index].ip[3]);
+                                                         
+                Port = addresses[index].port;
+            }
+        }
+        
+        void Parse();
+};
+
+class Server : public ServerBase  // [Russell] - A single server
+{           
+    public:
+
+        
+        serverinfo_t info; // this could be better, but who cares
+        
+        Server();
+        
+        virtual  ~Server();
+        
+        void Parse();
+};
+
+#endif // NETPACKET_H

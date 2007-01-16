@@ -1,0 +1,46 @@
+SOURCES = src/dlg_config.cpp \
+ src/lst_custom.cpp \
+ src/misc.cpp \
+ src/net_packet.cpp \
+ src/dlg_main.cpp \
+ src/main.cpp \
+ src/net_io.cpp
+
+HEADERS = src/*.h
+
+CC = g++
+LD = g++
+
+WXBASE = /usr/local
+WXCONFIG = $(WXBASE)/bin/wx-config
+WXRC = $(WXBASE)/bin/wxrc
+CFLAGS = $(shell $(WXCONFIG) --cflags) -g
+LFLAGS = $(shell $(WXCONFIG) --libs) -g
+
+RESOURCES = res/dlgconfig.xrc res/dlgmain.xrc
+
+OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
+
+odalaunch.app: odalaunch
+	rm -rf odalaunch.app 
+	mkdir odalaunch.app
+	mkdir odalaunch.app/Contents
+	mkdir odalaunch.app/Contents/MacOS
+	mkdir odalaunch.app/Contents/MacOS/Resources
+	echo -n "APPL????" > odalaunch.app/Contents/PkgInfo
+	cp odalaunch odalaunch.app/Contents/MacOS
+
+odalaunch: $(OBJECTS)
+	$(LD) $(OBJECTS) -o odalaunch $(LFLAGS)
+
+%.o: %.cpp res/xrc_resource.h $(HEADERS)
+	$(CC) -c $< -o $@ $(CFLAGS) -I.
+
+res/xrc_resource.h: $(RESOURCES)
+	$(WXRC) -c -o $@ res/*.xrc
+
+clean:
+	rm -rf odalaunch.app
+	rm -rf odalaunch
+	rm -rf $(OBJECTS)
+	rm -rf res/xrc_resource.h

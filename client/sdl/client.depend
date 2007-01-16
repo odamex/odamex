@@ -1,0 +1,1779 @@
+# depslib dependency file v1.0
+1163298689 source:g:\odamex\trunk\client\sdl\hardware.cpp
+	<stdio.h>
+	<stdlib.h>
+	"hardware.h"
+	"i_video.h"
+	"i_system.h"
+	"c_console.h"
+	"c_cvars.h"
+	"c_dispatch.h"
+	"m_argv.h"
+	"i_sdlvideo.h"
+
+1163298689 g:\odamex\trunk\client\sdl\hardware.h
+	"i_video.h"
+
+1163298689 g:\odamex\trunk\client\sdl\i_video.h
+	"doomtype.h"
+	"v_video.h"
+
+1163298686 g:\odamex\trunk\common\doomtype.h
+	<iostream>
+	<values.h>
+
+1163298686 g:\odamex\trunk\common\v_video.h
+	<string>
+	"doomtype.h"
+	"v_palette.h"
+	"doomdef.h"
+	"r_data.h"
+
+1163298690 g:\odamex\trunk\client\src\v_palette.h
+	"doomtype.h"
+
+1163298686 g:\odamex\trunk\common\doomdef.h
+	<stdio.h>
+	<string.h>
+	"farchive.h"
+
+1163298686 g:\odamex\trunk\common\farchive.h
+	"doomtype.h"
+	"dobject.h"
+	<string>
+
+1163298686 g:\odamex\trunk\common\dobject.h
+	<stdlib.h>
+	"tarray.h"
+	"doomtype.h"
+	"farchive.h"
+
+1163298686 g:\odamex\trunk\common\tarray.h
+	<stdlib.h>
+	<string.h>
+	"m_alloc.h"
+
+1163298686 g:\odamex\trunk\common\m_alloc.h
+	<stdlib.h>
+
+1163298686 g:\odamex\trunk\common\r_data.h
+	"r_defs.h"
+	"r_state.h"
+
+1163298686 g:\odamex\trunk\common\r_defs.h
+	"doomdef.h"
+	"m_fixed.h"
+	"m_swap.h"
+	"actor.h"
+	"dthinker.h"
+
+1163298686 g:\odamex\trunk\common\m_fixed.h
+	<stdlib.h>
+	"doomtype.h"
+
+1163298686 g:\odamex\trunk\common\m_swap.h
+
+1163367157 g:\odamex\trunk\common\actor.h
+	"tables.h"
+	"m_fixed.h"
+	"dthinker.h"
+	"doomdata.h"
+	"info.h"
+	"szp.h"
+	<vector>
+	<map>
+
+1163298686 g:\odamex\trunk\common\tables.h
+	<math.h>
+	"m_fixed.h"
+
+1163298686 g:\odamex\trunk\common\dthinker.h
+	<stdlib.h>
+	"dobject.h"
+
+1163298686 g:\odamex\trunk\common\doomdata.h
+	"doomtype.h"
+	"doomdef.h"
+
+1163298686 g:\odamex\trunk\common\info.h
+	"dthinker.h"
+	"farchive.h"
+
+1163367157 g:\odamex\trunk\common\szp.h
+	"errors.h"
+
+1163298686 g:\odamex\trunk\common\errors.h
+	<string>
+
+1163298686 g:\odamex\trunk\common\r_state.h
+	"d_player.h"
+	"r_data.h"
+
+1163298690 g:\odamex\trunk\client\src\d_player.h
+	<vector>
+	<time.h>
+	"d_ticcmd.h"
+	"d_items.h"
+	"p_pspr.h"
+	"actor.h"
+	"d_netinf.h"
+
+1163298686 g:\odamex\trunk\common\d_ticcmd.h
+	"doomtype.h"
+	"d_protocol.h"
+
+1163298686 g:\odamex\trunk\common\d_protocol.h
+	"doomstat.h"
+	"doomtype.h"
+	"doomdef.h"
+	"m_fixed.h"
+	"farchive.h"
+
+1163298690 g:\odamex\trunk\client\src\doomstat.h
+	<vector>
+	"doomdata.h"
+	"d_net.h"
+	"g_level.h"
+	"c_cvars.h"
+
+1163298686 g:\odamex\trunk\common\d_net.h
+	"doomdef.h"
+
+1163298690 g:\odamex\trunk\client\src\g_level.h
+	"doomtype.h"
+	"doomdef.h"
+	"m_fixed.h"
+
+1163367157 g:\odamex\trunk\common\c_cvars.h
+	"doomtype.h"
+	"tarray.h"
+	<string>
+
+1163298686 g:\odamex\trunk\common\d_items.h
+	"doomdef.h"
+	"doomtype.h"
+	"info.h"
+
+1163298686 g:\odamex\trunk\common\p_pspr.h
+	"m_fixed.h"
+	"tables.h"
+	"info.h"
+
+1163298686 g:\odamex\trunk\common\d_netinf.h
+	"c_cvars.h"
+
+1163298689 g:\odamex\trunk\client\sdl\i_system.h
+	<io.h>
+	"d_ticcmd.h"
+	"d_event.h"
+	<string>
+
+1163298686 g:\odamex\trunk\common\d_event.h
+	"doomtype.h"
+
+1163298690 g:\odamex\trunk\client\src\c_console.h
+	<stdio.h>
+	<stdarg.h>
+	"doomtype.h"
+	"doomdef.h"
+	"d_event.h"
+	"cmdlib.h"
+
+1163298686 g:\odamex\trunk\common\cmdlib.h
+	<string>
+	"doomtype.h"
+	<stdio.h>
+	<string.h>
+	<stdlib.h>
+	<errno.h>
+	<ctype.h>
+	<stdarg.h>
+
+1163469816 g:\odamex\trunk\common\c_dispatch.h
+	"dobject.h"
+	<string>
+	<vector>
+
+1163298686 g:\odamex\trunk\common\m_argv.h
+	"dobject.h"
+	"doomtype.h"
+	<string>
+	<vector>
+
+1163298689 g:\odamex\trunk\client\sdl\i_sdlvideo.h
+	<SDL.h>
+	"hardware.h"
+	"i_video.h"
+	"c_console.h"
+
+1163745844 source:g:\odamex\trunk\client\sdl\i_input.cpp
+	<SDL.h>
+	<stdarg.h>
+	"doomtype.h"
+	"doomdef.h"
+	"doomstat.h"
+	"m_argv.h"
+	"i_input.h"
+	"v_video.h"
+	"d_main.h"
+	"c_console.h"
+	"c_cvars.h"
+	"i_system.h"
+	"i_video.h"
+	"s_sound.h"
+	"c_dispatch.h"
+
+1163298689 g:\odamex\trunk\client\sdl\i_input.h
+	"doomtype.h"
+
+1163298690 g:\odamex\trunk\client\src\d_main.h
+	"d_event.h"
+	<vector>
+	<string>
+
+1163298690 g:\odamex\trunk\client\src\s_sound.h
+	<string>
+	"m_fixed.h"
+
+1163298689 source:g:\odamex\trunk\client\sdl\client.rc
+	"resource.h"
+	"afxres.h"
+
+1163298689 g:\odamex\trunk\client\sdl\resource.h
+
+1163298689 source:g:\odamex\trunk\client\sdl\i_main.cpp
+	<windows.h>
+	<new>
+	<iostream>
+	<SDL.h>
+	"errors.h"
+	"hardware.h"
+	"doomtype.h"
+	"m_argv.h"
+	"d_main.h"
+	"i_system.h"
+	"c_console.h"
+	"z_zone.h"
+	"version.h"
+	"i_video.h"
+	"i_sound.h"
+
+1163298686 g:\odamex\trunk\common\z_zone.h
+	<stdio.h>
+
+1163298686 g:\odamex\trunk\common\version.h
+
+1163298689 g:\odamex\trunk\client\sdl\i_sound.h
+	"doomdef.h"
+	"doomstat.h"
+	"s_sound.h"
+
+1163646196 source:g:\odamex\trunk\client\sdl\i_music.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomtype.h"
+	"m_argv.h"
+	"i_music.h"
+	"w_wad.h"
+	"c_console.h"
+	"c_dispatch.h"
+	"z_zone.h"
+	"i_system.h"
+	"SDL_mixer.h"
+	"mus2midi.h"
+
+1163298689 g:\odamex\trunk\client\sdl\i_music.h
+	"doomstat.h"
+
+1163824255 g:\odamex\trunk\common\w_wad.h
+	"doomtype.h"
+	<string>
+	<vector>
+
+1163646196 g:\odamex\trunk\client\src\mus2midi.h
+	"memio.h"
+
+1163298689 source:g:\odamex\trunk\client\sdl\i_sdlvideo.cpp
+	<stdio.h>
+	<stdlib.h>
+	"v_palette.h"
+	"i_sdlvideo.h"
+	"i_system.h"
+
+1163298689 source:g:\odamex\trunk\client\sdl\i_sound.cpp
+	<SDL.h>
+	<SDL_mixer.h>
+	<stdio.h>
+	<stdlib.h>
+	"z_zone.h"
+	"i_system.h"
+	"i_sound.h"
+	"i_music.h"
+	"m_argv.h"
+	"m_misc.h"
+	"w_wad.h"
+	"doomdef.h"
+
+1163298690 g:\odamex\trunk\client\src\m_misc.h
+	<string>
+	"doomtype.h"
+
+1163646196 source:g:\odamex\trunk\client\sdl\i_system.cpp
+	<SDL.h>
+	<stdlib.h>
+	<Carbon/Carbon.h>
+	<io.h>
+	<process.h>
+	<windows.h>
+	<pwd.h>
+	<sstream>
+	<stdarg.h>
+	<sys/types.h>
+	<sys/timeb.h>
+	<sys/stat.h>
+	"hardware.h"
+	"errors.h"
+	<math.h>
+	"doomtype.h"
+	"version.h"
+	"doomdef.h"
+	"cmdlib.h"
+	"m_argv.h"
+	"m_misc.h"
+	"i_video.h"
+	"i_sound.h"
+	"d_main.h"
+	"d_net.h"
+	"g_game.h"
+	"i_input.h"
+	"i_system.h"
+	"c_dispatch.h"
+	"cl_main.h"
+	<X11/Xlib.h>
+	<X11/Xatom.h>
+
+1163298690 g:\odamex\trunk\client\src\g_game.h
+	"doomdef.h"
+	"d_event.h"
+	"d_player.h"
+
+1163298690 g:\odamex\trunk\client\src\cl_main.h
+	"i_net.h"
+	"d_ticcmd.h"
+
+1163298686 g:\odamex\trunk\common\i_net.h
+	"doomtype.h"
+	"huffman.h"
+
+1163298686 g:\odamex\trunk\common\huffman.h
+	<iostream>
+
+1163298690 source:g:\odamex\trunk\client\src\am_map.cpp
+	<stdio.h>
+	"doomdef.h"
+	"g_level.h"
+	"z_zone.h"
+	"doomdef.h"
+	"st_stuff.h"
+	"p_local.h"
+	"p_lnspec.h"
+	"w_wad.h"
+	"m_cheat.h"
+	"i_system.h"
+	"c_dispatch.h"
+	"v_video.h"
+	"v_text.h"
+	"doomstat.h"
+	"r_state.h"
+	"dstrings.h"
+	"am_map.h"
+
+1163298686 g:\odamex\trunk\common\st_stuff.h
+	"doomtype.h"
+	"d_event.h"
+
+1163298686 g:\odamex\trunk\common\p_local.h
+	"r_local.h"
+	"p_spec.h"
+
+1163298686 g:\odamex\trunk\common\r_local.h
+	"tables.h"
+	"doomdef.h"
+	"r_data.h"
+	"r_main.h"
+	"r_bsp.h"
+	"r_segs.h"
+	"r_plane.h"
+	"r_data.h"
+	"r_things.h"
+	"r_draw.h"
+
+1163298690 g:\odamex\trunk\client\src\r_main.h
+	"d_player.h"
+	"r_data.h"
+
+1163298686 g:\odamex\trunk\common\r_bsp.h
+
+1163298686 g:\odamex\trunk\common\r_segs.h
+	"c_cvars.h"
+
+1163298690 g:\odamex\trunk\client\src\r_plane.h
+	"r_data.h"
+
+1163298686 g:\odamex\trunk\common\r_things.h
+
+1163298690 g:\odamex\trunk\client\src\r_draw.h
+
+1163298686 g:\odamex\trunk\common\p_spec.h
+	"dsectoreffect.h"
+
+1163298686 g:\odamex\trunk\common\dsectoreffect.h
+	"dobject.h"
+	"dthinker.h"
+	"r_defs.h"
+
+1163298686 g:\odamex\trunk\common\p_lnspec.h
+	"doomtype.h"
+
+1163298686 g:\odamex\trunk\common\m_cheat.h
+
+1163298690 g:\odamex\trunk\client\src\v_text.h
+	"doomtype.h"
+
+1163298686 g:\odamex\trunk\common\dstrings.h
+
+1163298690 g:\odamex\trunk\client\src\am_map.h
+	"d_event.h"
+
+1163298690 source:g:\odamex\trunk\client\src\c_bind.cpp
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+	"doomtype.h"
+	"doomdef.h"
+	"cmdlib.h"
+	"c_dispatch.h"
+	"c_bind.h"
+	"g_level.h"
+	"dstrings.h"
+	"hu_stuff.h"
+
+1163298690 g:\odamex\trunk\client\src\c_bind.h
+	<string>
+	"doomtype.h"
+	"d_event.h"
+	<stdio.h>
+
+1163298690 g:\odamex\trunk\client\src\hu_stuff.h
+	"d_event.h"
+
+1163745967 source:g:\odamex\trunk\client\src\c_cmds.cpp
+	<time.h>
+	"version.h"
+	"c_console.h"
+	"c_dispatch.h"
+	"i_system.h"
+	"doomstat.h"
+	"dstrings.h"
+	"s_sound.h"
+	"g_game.h"
+	"d_items.h"
+	"p_inter.h"
+	"z_zone.h"
+	"w_wad.h"
+	"g_level.h"
+	"gi.h"
+	"r_defs.h"
+	"d_player.h"
+	"r_main.h"
+	"cl_main.h"
+
+1163298686 g:\odamex\trunk\common\p_inter.h
+
+1163298686 g:\odamex\trunk\common\gi.h
+	"doomtype.h"
+
+1163469817 source:g:\odamex\trunk\client\src\c_console.cpp
+	<stdarg.h>
+	"m_alloc.h"
+	"version.h"
+	"dstrings.h"
+	"g_game.h"
+	"c_console.h"
+	"c_cvars.h"
+	"c_dispatch.h"
+	"hu_stuff.h"
+	"i_system.h"
+	"i_video.h"
+	"m_swap.h"
+	"v_palette.h"
+	"v_video.h"
+	"v_text.h"
+	"w_wad.h"
+	"z_zone.h"
+	"r_main.h"
+	"r_draw.h"
+	"st_stuff.h"
+	"s_sound.h"
+	"doomstat.h"
+	"gi.h"
+	<string>
+	<vector>
+
+1163298690 source:g:\odamex\trunk\client\src\cl_ctf.cpp
+	"c_dispatch.h"
+	"cl_main.h"
+	"w_wad.h"
+	"z_zone.h"
+	"v_video.h"
+	"p_local.h"
+	"cl_ctf.h"
+
+1163298690 g:\odamex\trunk\client\src\cl_ctf.h
+	"p_local.h"
+	"d_netinf.h"
+
+1163824255 source:g:\odamex\trunk\client\src\cl_main.cpp
+	"doomtype.h"
+	"doomstat.h"
+	"d_player.h"
+	"g_game.h"
+	"d_net.h"
+	"p_local.h"
+	"s_sound.h"
+	"gi.h"
+	"i_net.h"
+	"i_system.h"
+	"c_dispatch.h"
+	"st_stuff.h"
+	"m_argv.h"
+	"cl_main.h"
+	"c_console.h"
+	"d_main.h"
+	"cl_ctf.h"
+	"m_random.h"
+	"w_wad.h"
+	"md5.h"
+	<string>
+	<vector>
+	<map>
+
+1163298686 g:\odamex\trunk\common\md5.h
+	<string>
+
+1163298690 source:g:\odamex\trunk\client\src\cl_pred.cpp
+	"doomtype.h"
+	"doomstat.h"
+	"d_player.h"
+	"g_game.h"
+	"p_local.h"
+	"gi.h"
+	"i_system.h"
+	"c_dispatch.h"
+	"st_stuff.h"
+	"m_argv.h"
+	"c_console.h"
+	"cl_main.h"
+
+1163646196 source:g:\odamex\trunk\client\src\d_main.cpp
+	<sstream>
+	<string>
+	<vector>
+	<algorithm>
+	<windows.h>
+	<sys/stat.h>
+	<unistd.h>
+	<dirent.h>
+	<time.h>
+	<math.h>
+	"errors.h"
+	"m_alloc.h"
+	"m_random.h"
+	"minilzo.h"
+	"doomdef.h"
+	"doomstat.h"
+	"dstrings.h"
+	"z_zone.h"
+	"w_wad.h"
+	"s_sound.h"
+	"v_video.h"
+	"f_finale.h"
+	"f_wipe.h"
+	"m_argv.h"
+	"m_misc.h"
+	"m_menu.h"
+	"c_console.h"
+	"c_dispatch.h"
+	"i_system.h"
+	"i_sound.h"
+	"i_video.h"
+	"g_game.h"
+	"hu_stuff.h"
+	"wi_stuff.h"
+	"st_stuff.h"
+	"am_map.h"
+	"p_setup.h"
+	"r_local.h"
+	"r_sky.h"
+	"d_main.h"
+	"d_dehacked.h"
+	"cmdlib.h"
+	"s_sound.h"
+	"m_swap.h"
+	"v_text.h"
+	"gi.h"
+	"stats.h"
+	"cl_ctf.h"
+	"cl_main.h"
+
+1163298686 g:\odamex\trunk\common\m_random.h
+	"actor.h"
+
+1163298686 g:\odamex\trunk\common\minilzo.h
+	"lzoconf.h"
+
+1163298686 g:\odamex\trunk\common\lzoconf.h
+	<config.h>
+	<limits.h>
+	<stddef.h>
+	"lzodefs.h"
+
+1163298686 g:\odamex\trunk\common\lzodefs.h
+
+1163298690 g:\odamex\trunk\client\src\f_finale.h
+	"doomtype.h"
+	"d_event.h"
+
+1163298690 g:\odamex\trunk\client\src\f_wipe.h
+
+1163298690 g:\odamex\trunk\client\src\m_menu.h
+	"d_event.h"
+	"c_cvars.h"
+
+1163298690 g:\odamex\trunk\client\src\wi_stuff.h
+	"doomdef.h"
+	"d_player.h"
+
+1163298686 g:\odamex\trunk\common\p_setup.h
+
+1163298690 g:\odamex\trunk\client\src\r_sky.h
+	"c_cvars.h"
+
+1163298686 g:\odamex\trunk\common\d_dehacked.h
+
+1163298686 g:\odamex\trunk\common\stats.h
+	<vector>
+	<string>
+	<algorithm>
+
+1163298690 source:g:\odamex\trunk\client\src\d_net.cpp
+	"version.h"
+	"m_alloc.h"
+	"m_menu.h"
+	"m_random.h"
+	"i_system.h"
+	"i_video.h"
+	"i_net.h"
+	"g_game.h"
+	"doomdef.h"
+	"doomstat.h"
+	"c_console.h"
+	"d_netinf.h"
+	"cmdlib.h"
+	"s_sound.h"
+	"m_cheat.h"
+	"p_local.h"
+	"c_dispatch.h"
+	"gi.h"
+	"cl_main.h"
+
+1163298690 source:g:\odamex\trunk\client\src\d_netinfo.cpp
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+	<string.h>
+	"doomtype.h"
+	"doomdef.h"
+	"doomstat.h"
+	"d_netinf.h"
+	"d_net.h"
+	"d_protocol.h"
+	"v_palette.h"
+	"v_video.h"
+	"i_system.h"
+	"r_draw.h"
+	"r_state.h"
+	"st_stuff.h"
+	"cl_main.h"
+	"cl_ctf.h"
+
+1163298690 source:g:\odamex\trunk\client\src\doomstat.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomstat.h"
+	"c_cvars.h"
+
+1163298690 source:g:\odamex\trunk\client\src\f_finale.cpp
+	<stdio.h>
+	<stdlib.h>
+	<ctype.h>
+	<math.h>
+	"i_system.h"
+	"m_swap.h"
+	"z_zone.h"
+	"v_video.h"
+	"v_text.h"
+	"w_wad.h"
+	"s_sound.h"
+	"dstrings.h"
+	"doomstat.h"
+	"r_state.h"
+	"hu_stuff.h"
+	"gi.h"
+
+1163298690 source:g:\odamex\trunk\client\src\f_wipe.cpp
+	"z_zone.h"
+	"v_video.h"
+	"m_random.h"
+	"m_alloc.h"
+	"doomdef.h"
+	"f_wipe.h"
+	"c_cvars.h"
+
+1163367157 source:g:\odamex\trunk\client\src\g_game.cpp
+	"version.h"
+	"minilzo.h"
+	"m_alloc.h"
+	"doomdef.h"
+	"doomstat.h"
+	"d_protocol.h"
+	"d_netinf.h"
+	"z_zone.h"
+	"f_finale.h"
+	"m_argv.h"
+	"m_misc.h"
+	"m_menu.h"
+	"m_random.h"
+	"i_system.h"
+	"p_setup.h"
+	"p_saveg.h"
+	"p_tick.h"
+	"d_main.h"
+	"wi_stuff.h"
+	"hu_stuff.h"
+	"st_stuff.h"
+	"am_map.h"
+	"c_console.h"
+	"c_cvars.h"
+	"c_bind.h"
+	"c_dispatch.h"
+	"v_video.h"
+	"w_wad.h"
+	"p_local.h"
+	"s_sound.h"
+	"dstrings.h"
+	"r_data.h"
+	"r_sky.h"
+	"r_draw.h"
+	"g_game.h"
+	"g_level.h"
+	"cl_main.h"
+	"gi.h"
+
+1163298686 g:\odamex\trunk\common\p_saveg.h
+	"farchive.h"
+
+1163298690 g:\odamex\trunk\client\src\p_tick.h
+
+1163298690 source:g:\odamex\trunk\client\src\g_level.cpp
+	"d_main.h"
+	"m_alloc.h"
+	"g_level.h"
+	"g_game.h"
+	"s_sound.h"
+	"d_event.h"
+	"m_random.h"
+	"doomstat.h"
+	"wi_stuff.h"
+	"r_data.h"
+	"w_wad.h"
+	"am_map.h"
+	"c_dispatch.h"
+	"z_zone.h"
+	"i_system.h"
+	"p_setup.h"
+	"p_local.h"
+	"r_sky.h"
+	"c_console.h"
+	"f_finale.h"
+	"dstrings.h"
+	"v_video.h"
+	"st_stuff.h"
+	"hu_stuff.h"
+	"p_saveg.h"
+	"d_protocol.h"
+	"v_text.h"
+	"cl_main.h"
+	"gi.h"
+	"minilzo.h"
+
+1163298690 source:g:\odamex\trunk\client\src\hu_stuff.cpp
+	<algorithm>
+	"doomdef.h"
+	"z_zone.h"
+	"m_swap.h"
+	"hu_stuff.h"
+	"w_wad.h"
+	"s_sound.h"
+	"doomstat.h"
+	"st_stuff.h"
+	"dstrings.h"
+	"c_console.h"
+	"c_dispatch.h"
+	"c_cvars.h"
+	"v_text.h"
+	"v_video.h"
+	"cl_main.h"
+	"cl_ctf.h"
+
+1163298690 source:g:\odamex\trunk\client\src\m_menu.cpp
+	"doomdef.h"
+	"dstrings.h"
+	"c_console.h"
+	"c_dispatch.h"
+	"d_main.h"
+	"i_system.h"
+	"i_video.h"
+	"z_zone.h"
+	"v_video.h"
+	"w_wad.h"
+	"r_local.h"
+	"hu_stuff.h"
+	"g_game.h"
+	"m_argv.h"
+	"m_swap.h"
+	"m_random.h"
+	"s_sound.h"
+	"doomstat.h"
+	"m_menu.h"
+	"v_text.h"
+	"st_stuff.h"
+	"cl_ctf.h"
+	"gi.h"
+
+1163469817 source:g:\odamex\trunk\client\src\m_misc.cpp
+	<stdio.h>
+	<stdlib.h>
+	<sys/stat.h>
+	<sys/types.h>
+	<fcntl.h>
+	<errno.h>
+	<SDL.h>
+	"doomtype.h"
+	"version.h"
+	<io.h>
+	<unistd.h>
+	<ctype.h>
+	"m_alloc.h"
+	"doomdef.h"
+	"z_zone.h"
+	"m_swap.h"
+	"m_argv.h"
+	"w_wad.h"
+	"c_cvars.h"
+	"c_dispatch.h"
+	"c_bind.h"
+	"i_system.h"
+	"i_video.h"
+	"v_video.h"
+	"hu_stuff.h"
+	"doomstat.h"
+	"dstrings.h"
+	"m_misc.h"
+	"cmdlib.h"
+	"g_game.h"
+
+1163298690 source:g:\odamex\trunk\client\src\m_options.cpp
+	"doomdef.h"
+	"dstrings.h"
+	"c_console.h"
+	"c_dispatch.h"
+	"c_bind.h"
+	"d_main.h"
+	"i_system.h"
+	"i_video.h"
+	"z_zone.h"
+	"v_video.h"
+	"v_text.h"
+	"w_wad.h"
+	"r_local.h"
+	"hu_stuff.h"
+	"g_game.h"
+	"m_argv.h"
+	"m_swap.h"
+	"s_sound.h"
+	"doomstat.h"
+	"m_misc.h"
+	"m_menu.h"
+
+1163646196 source:g:\odamex\trunk\client\src\mus2midi.cpp
+	<stdio.h>
+	"memio.h"
+	"mus2midi.h"
+	"m_swap.h"
+
+1163367157 source:g:\odamex\trunk\client\src\p_interaction.cpp
+	"doomdef.h"
+	"dstrings.h"
+	"doomstat.h"
+	"m_random.h"
+	"i_system.h"
+	"am_map.h"
+	"c_console.h"
+	"c_dispatch.h"
+	"p_local.h"
+	"s_sound.h"
+	"p_inter.h"
+	"p_lnspec.h"
+	"p_interaction.h"
+	"cl_ctf.h"
+
+1163298690 g:\odamex\trunk\client\src\p_interaction.h
+
+1163732007 source:g:\odamex\trunk\client\src\p_mobj.cpp
+	"m_alloc.h"
+	"i_system.h"
+	"z_zone.h"
+	"m_random.h"
+	"doomdef.h"
+	"p_local.h"
+	"p_lnspec.h"
+	"st_stuff.h"
+	"hu_stuff.h"
+	"s_sound.h"
+	"doomstat.h"
+	"v_video.h"
+	"c_cvars.h"
+	"cl_main.h"
+	"vectors.h"
+	"cl_ctf.h"
+
+1163298686 g:\odamex\trunk\common\vectors.h
+	"tables.h"
+
+1163367157 source:g:\odamex\trunk\client\src\p_pspr.cpp
+	<stdlib.h>
+	"doomdef.h"
+	"d_event.h"
+	"c_cvars.h"
+	"m_random.h"
+	"p_local.h"
+	"s_sound.h"
+	"doomstat.h"
+	"p_pspr.h"
+	"cl_main.h"
+
+1163298690 source:g:\odamex\trunk\client\src\p_tick.cpp
+	"z_zone.h"
+	"p_local.h"
+	"c_console.h"
+	"doomstat.h"
+	"cl_main.h"
+
+1163469817 source:g:\odamex\trunk\client\src\p_user.cpp
+	"doomdef.h"
+	"d_event.h"
+	"p_local.h"
+	"doomstat.h"
+	"s_sound.h"
+	"i_system.h"
+	"cl_main.h"
+
+1163298690 source:g:\odamex\trunk\client\src\r_bsp.cpp
+	"m_alloc.h"
+	"doomdef.h"
+	"m_bbox.h"
+	"i_system.h"
+	"r_main.h"
+	"r_plane.h"
+	"r_draw.h"
+	"r_things.h"
+	"doomstat.h"
+	"r_state.h"
+	"v_palette.h"
+
+1163298686 g:\odamex\trunk\common\m_bbox.h
+	"doomtype.h"
+	"dobject.h"
+	"m_fixed.h"
+
+1163298690 source:g:\odamex\trunk\client\src\r_draw.cpp
+	<stddef.h>
+	"m_alloc.h"
+	"doomdef.h"
+	"i_system.h"
+	"z_zone.h"
+	"w_wad.h"
+	"r_local.h"
+	"v_video.h"
+	"doomstat.h"
+	"st_stuff.h"
+	"gi.h"
+
+1163298690 source:g:\odamex\trunk\client\src\r_drawt.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomtype.h"
+	"doomdef.h"
+	"r_defs.h"
+	"r_draw.h"
+	"r_main.h"
+	"r_things.h"
+	"v_video.h"
+
+1163367157 source:g:\odamex\trunk\client\src\r_main.cpp
+	"m_alloc.h"
+	<stdlib.h>
+	<math.h>
+	"doomdef.h"
+	"d_net.h"
+	"doomstat.h"
+	"m_random.h"
+	"m_bbox.h"
+	"p_local.h"
+	"r_local.h"
+	"r_sky.h"
+	"st_stuff.h"
+	"c_cvars.h"
+	"v_video.h"
+	"stats.h"
+	"z_zone.h"
+	"i_video.h"
+
+1163298690 source:g:\odamex\trunk\client\src\r_plane.cpp
+	<stdio.h>
+	<stdlib.h>
+	"i_system.h"
+	"z_zone.h"
+	"w_wad.h"
+	"doomdef.h"
+	"doomstat.h"
+	"r_local.h"
+	"r_sky.h"
+	"m_alloc.h"
+	"v_video.h"
+
+1163298690 source:g:\odamex\trunk\client\src\r_segs.cpp
+	<stdio.h>
+	<stdlib.h>
+	<stddef.h>
+	"m_alloc.h"
+	"i_system.h"
+	"doomdef.h"
+	"doomstat.h"
+	"r_local.h"
+	"r_sky.h"
+	"v_video.h"
+
+1163367157 source:g:\odamex\trunk\client\src\r_sky.cpp
+	<stdio.h>
+	<stdlib.h>
+	"m_fixed.h"
+	"r_data.h"
+	"c_cvars.h"
+	"g_level.h"
+	"r_sky.h"
+
+1163646196 source:g:\odamex\trunk\client\src\s_sound.cpp
+	<algorithm>
+	"m_alloc.h"
+	"i_system.h"
+	"i_sound.h"
+	"i_music.h"
+	"s_sound.h"
+	"c_dispatch.h"
+	"z_zone.h"
+	"m_random.h"
+	"w_wad.h"
+	"doomdef.h"
+	"p_local.h"
+	"doomstat.h"
+	"cmdlib.h"
+	"v_video.h"
+	"v_text.h"
+	"vectors.h"
+
+1163298690 source:g:\odamex\trunk\client\src\st_lib.cpp
+	<ctype.h>
+	"doomdef.h"
+	"z_zone.h"
+	"v_video.h"
+	"m_swap.h"
+	"i_system.h"
+	"w_wad.h"
+	"st_stuff.h"
+	"st_lib.h"
+	"r_local.h"
+	"c_cvars.h"
+	"m_swap.h"
+
+1163298690 g:\odamex\trunk\client\src\st_lib.h
+	"r_defs.h"
+
+1163298690 source:g:\odamex\trunk\client\src\st_new.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomtype.h"
+	"doomdef.h"
+	"doomstat.h"
+	"d_items.h"
+	"v_video.h"
+	"v_text.h"
+	"w_wad.h"
+	"z_zone.h"
+	"i_system.h"
+	"m_swap.h"
+	"st_stuff.h"
+	"c_cvars.h"
+
+1163298690 source:g:\odamex\trunk\client\src\st_stuff.cpp
+	"i_system.h"
+	"i_video.h"
+	"z_zone.h"
+	"m_random.h"
+	"w_wad.h"
+	"doomdef.h"
+	"g_game.h"
+	"st_stuff.h"
+	"st_lib.h"
+	"r_local.h"
+	"p_local.h"
+	"p_inter.h"
+	"am_map.h"
+	"m_cheat.h"
+	"s_sound.h"
+	"v_video.h"
+	"v_text.h"
+	"doomstat.h"
+	"dstrings.h"
+	"c_cvars.h"
+	"c_dispatch.h"
+	"version.h"
+	"cl_ctf.h"
+
+1163298690 source:g:\odamex\trunk\client\src\v_draw.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomtype.h"
+	"v_video.h"
+	"m_swap.h"
+	"i_system.h"
+	"cmdlib.h"
+
+1163298690 source:g:\odamex\trunk\client\src\v_palette.cpp
+	<string.h>
+	<math.h>
+	"v_video.h"
+	"m_alloc.h"
+	"r_main.h"
+	"w_wad.h"
+	"z_zone.h"
+	"i_video.h"
+	"c_dispatch.h"
+	"g_level.h"
+	"st_stuff.h"
+
+1163298690 source:g:\odamex\trunk\client\src\v_text.cpp
+	<stdio.h>
+	<stdlib.h>
+	<ctype.h>
+	"v_text.h"
+	"i_system.h"
+	"v_video.h"
+	"hu_stuff.h"
+	"w_wad.h"
+	"z_zone.h"
+	"m_swap.h"
+	"doomstat.h"
+
+1163298690 source:g:\odamex\trunk\client\src\v_video.cpp
+	<stdio.h>
+	"minilzo.h"
+	"m_alloc.h"
+	"i_system.h"
+	"i_video.h"
+	"r_local.h"
+	"r_draw.h"
+	"r_plane.h"
+	"r_state.h"
+	"doomdef.h"
+	"doomdata.h"
+	"doomstat.h"
+	"c_console.h"
+	"hu_stuff.h"
+	"m_argv.h"
+	"m_bbox.h"
+	"m_swap.h"
+	"m_menu.h"
+	"i_video.h"
+	"v_video.h"
+	"v_text.h"
+	"w_wad.h"
+	"z_zone.h"
+	"c_cvars.h"
+	"c_dispatch.h"
+	"cmdlib.h"
+
+1163298690 source:g:\odamex\trunk\client\src\wi_stuff.cpp
+	<ctype.h>
+	<stdio.h>
+	"z_zone.h"
+	"m_random.h"
+	"m_swap.h"
+	"i_system.h"
+	"w_wad.h"
+	"g_game.h"
+	"g_level.h"
+	"r_local.h"
+	"s_sound.h"
+	"doomstat.h"
+	"v_video.h"
+	"wi_stuff.h"
+	"c_console.h"
+	"hu_stuff.h"
+	"v_palette.h"
+	"hu_stuff.h"
+
+1163298686 source:g:\odamex\trunk\common\c_cvars.cpp
+	<string.h>
+	<stdio.h>
+	"cmdlib.h"
+	"c_console.h"
+	"c_dispatch.h"
+	"m_alloc.h"
+	"doomstat.h"
+	"c_cvars.h"
+	"d_player.h"
+	"d_netinf.h"
+	"dstrings.h"
+	"i_system.h"
+
+1163469816 source:g:\odamex\trunk\common\c_dispatch.cpp
+	<string>
+	<vector>
+	<fstream>
+	<algorithm>
+	"doomtype.h"
+	"cmdlib.h"
+	"c_console.h"
+	"c_dispatch.h"
+	"m_argv.h"
+	"doomstat.h"
+	"m_alloc.h"
+	"d_player.h"
+
+1163646195 source:g:\odamex\trunk\common\cmdlib.cpp
+	<stdio.h>
+	<stdlib.h>
+	<windows.h>
+	"doomtype.h"
+	"cmdlib.h"
+	"i_system.h"
+	<sys/types.h>
+	<sys/stat.h>
+	"m_alloc.h"
+
+1163298686 source:g:\odamex\trunk\common\d_dehacked.cpp
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<stddef.h>
+	"doomtype.h"
+	"doomstat.h"
+	"info.h"
+	"d_dehacked.h"
+	"s_sound.h"
+	"d_items.h"
+	"g_level.h"
+	"m_cheat.h"
+	"cmdlib.h"
+	"dstrings.h"
+	"m_alloc.h"
+	"m_misc.h"
+	"w_wad.h"
+	"d_player.h"
+
+1163298686 source:g:\odamex\trunk\common\d_items.cpp
+	"info.h"
+	"d_items.h"
+
+1163298686 source:g:\odamex\trunk\common\d_protocol.cpp
+	<stdio.h>
+	<stdlib.h>
+	"m_alloc.h"
+	"i_system.h"
+	"d_protocol.h"
+	"d_ticcmd.h"
+	"d_net.h"
+	"doomdef.h"
+	"doomstat.h"
+	"cmdlib.h"
+	"z_zone.h"
+
+1163298686 source:g:\odamex\trunk\common\dobject.cpp
+	"dobject.h"
+	"m_alloc.h"
+	"doomstat.h"
+	"d_player.h"
+	"z_zone.h"
+	"r_state.h"
+
+1163298686 source:g:\odamex\trunk\common\dsectoreffect.cpp
+	<stdio.h>
+	<stdlib.h>
+	"dsectoreffect.h"
+	"p_local.h"
+
+1163298686 source:g:\odamex\trunk\common\dstrings.cpp
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"c_cvars.h"
+	"doomtype.h"
+	"doomstat.h"
+	"dstrings.h"
+	"d_protocol.h"
+	"m_argv.h"
+	"w_wad.h"
+	"z_zone.h"
+	"cmdlib.h"
+	"g_level.h"
+
+1163367157 source:g:\odamex\trunk\common\dthinker.cpp
+	<stdio.h>
+	<stdlib.h>
+	"dthinker.h"
+	"z_zone.h"
+	"stats.h"
+	"p_local.h"
+
+1163298686 source:g:\odamex\trunk\common\farchive.cpp
+	<stdio.h>
+	<stdlib.h>
+	<stddef.h>
+	<string.h>
+	"doomtype.h"
+	"farchive.h"
+	"m_alloc.h"
+	"m_swap.h"
+	"minilzo.h"
+	"cmdlib.h"
+	"dstrings.h"
+	"i_system.h"
+	"c_cvars.h"
+	"d_player.h"
+	"dobject.h"
+
+1163298686 source:g:\odamex\trunk\common\gi.cpp
+	<stdio.h>
+	<stdlib.h>
+	"info.h"
+	"gi.h"
+
+1163298686 source:g:\odamex\trunk\common\huffman.cpp
+	"huffman.h"
+	<cstring>
+
+1163339764 source:g:\odamex\trunk\common\i_net.cpp
+	<stdlib.h>
+	<string.h>
+	<stdio.h>
+	<windows.h>
+	<winsock.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<netinet/in.h>
+	<arpa/inet.h>
+	<errno.h>
+	<unistd.h>
+	<netdb.h>
+	<sys/ioctl.h>
+	<sys/time.h>
+	"doomtype.h"
+	"i_system.h"
+	"d_event.h"
+	"d_net.h"
+	"m_argv.h"
+	"m_alloc.h"
+	"m_swap.h"
+	"doomstat.h"
+	"d_player.h"
+	"g_game.h"
+	"i_net.h"
+	"minilzo.h"
+
+1163298686 source:g:\odamex\trunk\common\info.cpp
+	"m_fixed.h"
+	"info.h"
+	"actor.h"
+
+1163298686 source:g:\odamex\trunk\common\m_alloc.cpp
+	<stdio.h>
+	<stdlib.h>
+	"i_system.h"
+	"m_alloc.h"
+
+1163298686 source:g:\odamex\trunk\common\m_argv.cpp
+	<algorithm>
+	"cmdlib.h"
+	"m_argv.h"
+
+1163298686 source:g:\odamex\trunk\common\m_bbox.cpp
+	<stdio.h>
+	"m_bbox.h"
+
+1163298686 source:g:\odamex\trunk\common\m_cheat.cpp
+	<stdlib.h>
+	<math.h>
+	"m_cheat.h"
+	"d_player.h"
+	"doomstat.h"
+	"dstrings.h"
+	"p_inter.h"
+	"d_items.h"
+	"p_local.h"
+
+1163298686 source:g:\odamex\trunk\common\m_fixed.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomtype.h"
+	"i_system.h"
+	"m_fixed.h"
+
+1163298686 source:g:\odamex\trunk\common\m_random.cpp
+	<time.h>
+	"doomstat.h"
+	"m_random.h"
+	"farchive.h"
+
+1163298686 source:g:\odamex\trunk\common\md5.cpp
+	"md5.h"
+	<string.h>
+	<string>
+	<sstream>
+	<algorithm>
+	<cctype>
+	<sstream>
+	<iomanip>
+
+1163298686 source:g:\odamex\trunk\common\minilzo.cpp
+	<config.h>
+	<limits.h>
+	<stddef.h>
+	"minilzo.h"
+	"lzo/lzoconf.h"
+	<string.h>
+	<string.h>
+	<assert.h>
+	<unchecked.h>
+	"lzo/lzo1x.h"
+
+1163298686 source:g:\odamex\trunk\common\p_ceiling.cpp
+	"m_alloc.h"
+	"z_zone.h"
+	"doomdef.h"
+	"p_local.h"
+	"s_sound.h"
+	"doomstat.h"
+	"r_state.h"
+
+1163298686 source:g:\odamex\trunk\common\p_doors.cpp
+	"z_zone.h"
+	"doomdef.h"
+	"p_local.h"
+	"s_sound.h"
+	"doomstat.h"
+	"r_state.h"
+	"dstrings.h"
+	"c_console.h"
+
+1163367157 source:g:\odamex\trunk\common\p_enemy.cpp
+	"m_random.h"
+	"m_alloc.h"
+	"i_system.h"
+	"doomdef.h"
+	"p_local.h"
+	"p_lnspec.h"
+	"s_sound.h"
+	"g_game.h"
+	"doomstat.h"
+	"r_state.h"
+	"c_cvars.h"
+	"gi.h"
+	"d_player.h"
+	"vectors.h"
+
+1163298686 source:g:\odamex\trunk\common\p_floor.cpp
+	"z_zone.h"
+	"doomdef.h"
+	"p_local.h"
+	"p_lnspec.h"
+	"s_sound.h"
+	"doomstat.h"
+	"r_state.h"
+	"tables.h"
+
+1163298686 source:g:\odamex\trunk\common\p_lights.cpp
+	"z_zone.h"
+	"m_random.h"
+	"doomdef.h"
+	"p_local.h"
+	"p_lnspec.h"
+	"r_state.h"
+
+1163298686 source:g:\odamex\trunk\common\p_lnspec.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomstat.h"
+	"p_local.h"
+	"p_lnspec.h"
+	"g_level.h"
+	"v_palette.h"
+	"tables.h"
+	"i_system.h"
+
+1163367157 source:g:\odamex\trunk\common\p_map.cpp
+	"vectors.h"
+	"m_alloc.h"
+	"m_bbox.h"
+	"m_random.h"
+	"i_system.h"
+	"doomdef.h"
+	"p_local.h"
+	"p_lnspec.h"
+	"s_sound.h"
+	"doomstat.h"
+	"r_state.h"
+	"z_zone.h"
+
+1163298686 source:g:\odamex\trunk\common\p_maputl.cpp
+	"m_bbox.h"
+	"doomdef.h"
+	"doomstat.h"
+	"p_local.h"
+	"r_state.h"
+
+1163298686 source:g:\odamex\trunk\common\p_pillar.cpp
+	"z_zone.h"
+	"doomdef.h"
+	"p_local.h"
+	"p_spec.h"
+	"g_level.h"
+	"s_sound.h"
+
+1163298686 source:g:\odamex\trunk\common\p_plats.cpp
+	<stdio.h>
+	<stdlib.h>
+	"m_alloc.h"
+	"i_system.h"
+	"z_zone.h"
+	"m_random.h"
+	"doomdef.h"
+	"p_local.h"
+	"doomstat.h"
+	"r_state.h"
+	"s_sound.h"
+
+1163298686 source:g:\odamex\trunk\common\p_saveg.cpp
+	<stdio.h>
+	<stdlib.h>
+	"i_system.h"
+	"z_zone.h"
+	"p_local.h"
+	"dobject.h"
+	"doomstat.h"
+	"r_state.h"
+	"m_random.h"
+	"p_saveg.h"
+	"v_palette.h"
+
+1163298686 source:g:\odamex\trunk\common\p_setup.cpp
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+	"m_alloc.h"
+	"m_argv.h"
+	"z_zone.h"
+	"m_swap.h"
+	"m_bbox.h"
+	"g_game.h"
+	"i_system.h"
+	"w_wad.h"
+	"doomdef.h"
+	"p_local.h"
+	"s_sound.h"
+	"doomstat.h"
+	"p_lnspec.h"
+	"v_palette.h"
+	"c_console.h"
+	"p_setup.h"
+
+1163298686 source:g:\odamex\trunk\common\p_sight.cpp
+	"doomdef.h"
+	"i_system.h"
+	"p_local.h"
+	"m_random.h"
+	"vectors.h"
+	"r_state.h"
+
+1163298686 source:g:\odamex\trunk\common\p_spec.cpp
+	"m_alloc.h"
+	"doomdef.h"
+	"doomstat.h"
+	"dstrings.h"
+	"i_system.h"
+	"z_zone.h"
+	"m_argv.h"
+	"m_random.h"
+	"m_bbox.h"
+	"w_wad.h"
+	"r_local.h"
+	"p_local.h"
+	"p_lnspec.h"
+	"g_game.h"
+	"s_sound.h"
+	"r_state.h"
+	"c_console.h"
+	"r_sky.h"
+
+1163298686 source:g:\odamex\trunk\common\p_switch.cpp
+	<stdio.h>
+	<stdlib.h>
+	"i_system.h"
+	"doomdef.h"
+	"p_local.h"
+	"p_lnspec.h"
+	"g_game.h"
+	"s_sound.h"
+	"doomstat.h"
+	"r_state.h"
+	"z_zone.h"
+	"w_wad.h"
+	"gi.h"
+
+1163298686 source:g:\odamex\trunk\common\p_teleport.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomtype.h"
+	"doomdef.h"
+	"s_sound.h"
+	"p_local.h"
+	"r_state.h"
+
+1163298686 source:g:\odamex\trunk\common\p_xlat.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomtype.h"
+	"g_level.h"
+	"p_lnspec.h"
+	"doomdata.h"
+	"r_data.h"
+	"m_swap.h"
+	"p_spec.h"
+	"p_local.h"
+
+1163298686 source:g:\odamex\trunk\common\r_data.cpp
+	"i_system.h"
+	"z_zone.h"
+	"m_alloc.h"
+	"m_swap.h"
+	"w_wad.h"
+	"doomdef.h"
+	"r_local.h"
+	"p_local.h"
+	"doomstat.h"
+	"r_sky.h"
+	"r_data.h"
+	"v_palette.h"
+	"v_video.h"
+	<algorithm>
+
+1163298686 source:g:\odamex\trunk\common\stats.cpp
+	<stdio.h>
+	<stdlib.h>
+	"doomtype.h"
+	"v_video.h"
+	"v_text.h"
+	"st_stuff.h"
+	"c_dispatch.h"
+	"m_swap.h"
+	"stats.h"
+	"i_system.h"
+
+1163298686 source:g:\odamex\trunk\common\tables.cpp
+	"tables.h"
+
+1163298686 source:g:\odamex\trunk\common\vectors.cpp
+	<stdio.h>
+	"vectors.h"
+	"actor.h"
+	"tables.h"
+
+1163824255 source:g:\odamex\trunk\common\w_wad.cpp
+	<ctype.h>
+	<string.h>
+	<alloca.h>
+	<unistd.h>
+	<io.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<fcntl.h>
+	<ctype.h>
+	"doomtype.h"
+	"m_swap.h"
+	"i_system.h"
+	"z_zone.h"
+	"cmdlib.h"
+	"m_argv.h"
+	"md5.h"
+	"w_wad.h"
+	<string>
+	<sstream>
+	<algorithm>
+	<vector>
+	<iomanip>
+
+1163298686 source:g:\odamex\trunk\common\z_zone.cpp
+	<stdlib.h>
+	"z_zone.h"
+	"i_system.h"
+	"doomdef.h"
+	"c_dispatch.h"
+
+1163309216 source:g:\odamex\trunk\client\src\r_things.cpp
+	"m_alloc.h"
+	"doomdef.h"
+	"m_swap.h"
+	"m_argv.h"
+	"i_system.h"
+	"z_zone.h"
+	"w_wad.h"
+	"r_local.h"
+	"c_console.h"
+	"c_cvars.h"
+	"c_dispatch.h"
+	"doomstat.h"
+	"v_video.h"
+	"cmdlib.h"
+	"s_sound.h"
+
+1163646196 g:\odamex\trunk\client\src\memio.h
+
+1163646196 source:g:\odamex\trunk\client\src\memio.cpp
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"memio.h"
+	"doomtype.h"
+	"z_zone.h"
+

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="All (WIN32)" />
+	<File name="i_input.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="3001" topLine="162" />
+	</File>
+	<File name="i_main.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="2074" topLine="94" />
+	</File>
+	<File name="..\src\am_map.cpp" open="0" top="0" tabpos="6">
+		<Cursor position="30873" topLine="1421" />
+	</File>
+	<File name="..\src\c_cmds.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="1967" topLine="105" />
+	</File>
+	<File name="..\src\cl_ctf.cpp" open="0" top="0" tabpos="1">
+		<Cursor position="4941" topLine="226" />
+	</File>
+	<File name="..\src\cl_main.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="20974" topLine="924" />
+	</File>
+	<File name="..\src\f_finale.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="14581" topLine="665" />
+	</File>
+	<File name="..\src\f_wipe.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="5845" topLine="253" />
+	</File>
+	<File name="..\src\g_game.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="18182" topLine="803" />
+	</File>
+	<File name="..\src\hu_stuff.cpp" open="0" top="0" tabpos="1">
+		<Cursor position="17898" topLine="646" />
+	</File>
+	<File name="..\src\m_menu.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="1084" topLine="1266" />
+	</File>
+	<File name="..\src\m_options.cpp" open="0" top="0" tabpos="2">
+		<Cursor position="10033" topLine="292" />
+	</File>
+	<File name="..\src\p_mobj.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="9591" topLine="443" />
+	</File>
+	<File name="..\src\p_user.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="6075" topLine="218" />
+	</File>
+	<File name="..\src\r_bsp.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="21237" topLine="749" />
+	</File>
+	<File name="..\src\r_draw.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="23263" topLine="1064" />
+	</File>
+	<File name="..\src\r_main.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="19079" topLine="752" />
+	</File>
+	<File name="..\src\r_segs.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="2160" topLine="73" />
+	</File>
+	<File name="..\src\r_things.cpp" open="0" top="0" tabpos="7">
+		<Cursor position="36972" topLine="1455" />
+	</File>
+	<File name="..\src\st_lib.cpp" open="0" top="0" tabpos="4">
+		<Cursor position="1406" topLine="45" />
+	</File>
+	<File name="..\src\st_stuff.cpp" open="0" top="0" tabpos="5">
+		<Cursor position="30826" topLine="1440" />
+	</File>
+	<File name="..\..\common\p_lnspec.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="37015" topLine="1493" />
+	</File>
+	<File name="..\..\common\p_lnspec.h" open="0" top="0" tabpos="0">
+		<Cursor position="1019" topLine="21" />
+	</File>
+	<File name="..\..\common\v_video.h" open="0" top="0" tabpos="0">
+		<Cursor position="2148" topLine="53" />
+	</File>
+</CodeBlocks_layout_file>

@@ -1,0 +1,140 @@
+<resource>
+    <object class="wxFrame" name="dlgMain">
+        <title>Odamex Launcher</title>
+        <icon>../res/odalaunch-sysmenu.ico</icon>
+        <centered>1</centered>
+        <style>wxDEFAULT_FRAME_STYLE</style>
+        <bg>wxSYS_COLOUR_BTNFACE</bg>      
+        <object class="wxFlexGridSizer">
+            <rows>0</rows>
+            <cols>0</cols>
+            <vgap>0</vgap>
+            <hgap>0</hgap>
+            <growablecols>0</growablecols>
+            <growablerows>0</growablerows>
+            <object class="sizeritem">
+                <border>4</border>
+                <flag>wxALL|wxEXPAND</flag>
+                <object class="wxSplitterWindow" name="spWINMAIN">
+                    <minsize>200</minsize>
+                    <style>wxSP_NOBORDER</style>
+                    <object class="wxListCtrl" name="ID_LSTSERVERS" subclass="wxAdvancedListCtrl">
+                        <size>-1,-1</size>
+                        <style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+                    </object>
+                    <object class="wxListCtrl" name="ID_LSTPLAYERS" subclass="wxAdvancedListCtrl">
+                        <size>-1,-1</size>
+                        <style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+    <object class="wxToolBar" name="ID_TOOLBAR">
+        <bitmapsize>38,38</bitmapsize>
+        <separation>5</separation>
+        <style>wxTB_FLAT|wxTB_HORIZONTAL|wxTB_DOCKABLE</style>
+        <margins>2,2</margins>
+        <object class="tool" name="ID_MNULAUNCH">
+            <bitmap>../res/odalaunch-sysmenu.ico</bitmap>
+            <tooltip>Connect to the selected server</tooltip>
+            <longhelp>Connect to the selected server</longhelp>
+        </object>
+        <object class="separator" />
+        <object class="tool" name="ID_MNUREFRESHSERVER">
+            <bitmap>../res/btnrefresh.ico</bitmap>
+            <tooltip>Refresh the selected server</tooltip>
+            <longhelp>Refresh the selected server</longhelp>
+        </object>
+        <object class="tool" name="ID_MNUREFRESHALL">
+            <bitmap>../res/btnrefreshall.ico</bitmap>
+            <tooltip>Refresh all servers currently displayed</tooltip>
+            <longhelp>Refresh all servers currently displayed</longhelp>
+        </object>
+        <object class="tool" name="ID_MNUGETLIST">
+            <bitmap>../res/btnlist.ico</bitmap>
+            <tooltip>Get a new list of servers</tooltip>
+            <longhelp>Get a new list of servers</longhelp>
+        </object>
+        <object class="separator" />
+        <object class="tool" name="ID_MNUSETTINGS">
+            <bitmap>../res/btnsettings.ico</bitmap>
+            <tooltip>Configure the launcher</tooltip>
+            <longhelp>Configure the launcher</longhelp>
+        </object>
+        <object class="tool" name="ID_MNUABOUT">
+            <bitmap>../res/btnhelp.ico</bitmap>
+            <tooltip>Get help with Odamex</tooltip>
+            <longhelp>Get help with Odamex</longhelp>
+        </object>
+        <object class="separator" />
+        <object class="tool" name="ID_MNUEXIT">
+            <bitmap>../res/btnexit.ico</bitmap>
+            <tooltip>Exit the launcher</tooltip>
+            <longhelp>Exit the launcher</longhelp>
+        </object>
+    </object>
+    <object class="wxMenuBar" name="ID_MENUBAR">
+        <object class="wxMenu" name="ID_FILEMENU">
+            <label>File</label>
+            <object class="wxMenuItem" name="ID_MNUSETTINGS">
+                <label>Settings</label>
+                <help>Configure the launcher</help>
+            </object>
+            <object class="separator" />
+            <object class="wxMenuItem" name="ID_MNUEXIT">
+                <label>Exit</label>
+                <help>Exit the launcher</help>
+            </object>
+        </object>
+        <object class="wxMenu" name="ID_ACTIONMENU">
+            <label>Action</label>
+            <object class="wxMenuItem" name="ID_MNULAUNCH">
+                <label>Launch</label>
+                <help>Connect to the selected server</help>
+            </object>
+            <object class="separator" />
+            <object class="wxMenuItem" name="ID_MNUGETLIST">
+                <label>Get Master List</label>
+                <help>Get a new list of servers</help>
+            </object>
+            <object class="wxMenuItem" name="ID_MNUREFRESHALL">
+                <label>Refresh All</label>
+                <help>Refresh all servers currently displayed</help>
+            </object>
+            <object class="wxMenuItem" name="ID_MNUREFRESHSERVER">
+                <label>Refresh Selected</label>
+                <help>Refresh the selected server</help>
+            </object>
+        </object>
+        <object class="wxMenu" name="ID_HELPMENU">
+            <label>Help</label>   
+            <object class="wxMenuItem" name="ID_MNUWEBSITE">
+                <label>Website</label>
+                <help>Go to the Odamex website</help>
+            </object>
+            <object class="wxMenuItem" name="ID_MNUFORUM">
+                <label>Forum</label>
+                <help>Visit the Odamex forum</help>
+            </object>
+            <object class="wxMenuItem" name="ID_MNUWIKI">
+                <label>Wiki</label>
+                <help>Visit the Odamex Wiki</help>
+            </object>
+            <object class="separator" />
+            <object class="wxMenuItem" name="ID_MNUCHANGELOG">
+                <label>Changelog</label>
+                <help>Open the Changelog</help>
+            </object>
+            <object class="wxMenuItem" name="ID_MNUREPORTBUG">
+                <label>Report Bug</label>
+                <help>Report a bug</help>
+            </object>
+            <object class="separator" />
+            <object class="wxMenuItem" name="ID_MNUABOUT">
+                <label>About</label>
+                <help>About the Odamex Launcher</help>
+            </object>
+        </object>
+    </object>
+</resource>

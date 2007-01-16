@@ -1,0 +1,138 @@
+===============================================================================
+                              Odamex v1.0 README
+                              http://odamex.net/
+                                 Authored by:
+                            Dean "deathz0r" Joseph
+                            Alex "AlexMax" Mayfield
+                          Revision date: xx Month Year
+===============================================================================
+
+Table of contents:
+	1. Introduction
+		1.1 What is Odamex?
+		1.2 Features at a Glance
+
+	2. Installation
+		2.1 Requirements
+		2.2 Installation - binary download
+		2.3 Installation - source download
+
+	3. Setting up Odamex
+		3.1 Client
+		3.2 Server
+		3.3 Launcher
+		3.4 Master
+
+	4. Gamemodes
+		4.1 Deathmatch
+		4.2 Team Deathmatch
+		4.3 Capture the Flag
+		4.4 Co-operative
+
+	5. Reference
+		5.1 Odamex client configuration
+		5.2 Odamex server configuration
+		5.3 Console commands
+
+	6. Troubleshooting
+		6.1 Frequently Asked Questions
+		6.2 If you still need help...
+
+[I added two more sections -AlexMax]
+(I believe 5.1 and 5.2 are more or less "duplicates" of 3.1 and 3.2, as I was
+ intending to mention server configuration in 3.2 -deathz0r)
+
+===============================================================================
+
+Section 1: Introduction
+
+1.1 - What is Odamex?
+
+Odamex is a modification of DOOM to allow players to compete with each other
+over the internet using the client/server architecture. Thanks to the source
+code release of DOOM by id Software in December 1997, there have been many
+modifcations that enhanced DOOM in various ways. These modifications are known
+as "source ports", as early modifications mainly ported DOOM to other platforms
+and operating systems such as Windows and Macintosh.
+
+Odamex is based on the CSDoom 0.62 source code originally created by Sergey 
+Makovkin, which is based on the ZDoom 1.22 source code created by Randy Heit.
+
+Odamex is released under the GNU General Public License v2. Please read 
+LICENSES for further details regarding the license.
+
+
+1.2 - Features at a Glance
+
+Odamex features:
+
+ * The popular ZDoom 1.22 core engine and CSDoom 0.62 core netcode
+ * Compatability with many major operating systems, including Windows, Linux,
+   FreeBSD and Mac OSX
+ * Core gameplay modeled on the original doom2.exe
+ * Streamlined WAD loading, allowing the server and clients to load WAD files
+   on the fly without needing to restart the client or server
+ * Compatability with Boom, MBF and CTF Standard maps
+ * Deathmatch, Cooperative, Team Deathmatch and CTF gametypes
+ * Jumping, Mouselook and other non-standard features available as server-side
+   options
+ * Comprehensive cheat and exploit countermeasures
+ * An open source code base licensed under the GPL, available for anyone to
+   examine, compile, or modify to their liking
+
+===============================================================================
+
+Section 2: Installation
+
+2.1 - Requirements
+
+Odamex requires the following in order to operate:
+
+	* A Pentium-compatible or PowerPC microprocessor
+	* 32MB of RAM (confirm?)
+	* An internet connection
+	* 3MB of hard disk space
+
+
+2.2 - Installation - binary download
+
+Binary downloads of Odamex are available from *insert url here*. There are
+binaries available as Windows, MacOS X, (possibly?) Unix and (possibly?) BSD 
+platforms.
+
+For Windows, extract the contents of odamex-1.0-win32.zip to a desired location
+and run odamex.exe.
+
+For MacOS, *need info from Denis*
+
+For Unix, *need info*
+
+For BSD, *need info from Russ/Dash*
+
+
+2.3 - Installation - source download
+
+The source code of release versions are available from *insert url here*. If
+you are interested in the bleeding edge development of Odamex, you can access
+the SVN at svn://svn.odamex.net:2000/ with anonymous read access. Be warned however
+that it might be incompatible with current release versions, and stability is
+not guaranteed.
+
+The following libraries are required:
+	
+	* SDL v1.2.9+ (http://libsdl.org/)
+	* SDL_mixer v1.2.6+ (http://libsdl.org/projects/SDL_mixer/)
+
+For Windows, you will need Microsoft Visual C++ 6 or later with nasm
+(http://nasm.sourceforge.net/), or MingW32 (http://mingw.org/) with MSYS,
+Codeblocks (http://codeblocks.org/) or any other program that can be used to
+assist compiling Odamex with MingW. There is a Win32 makefile and a Codeblocks
+project availble for Odamex compilation.
+
+For MacOS, *need info from Denis*
+
+For *nix, *need info from Alex/Denis*
+
+For BSD, *need info from Russ/Dash*
+
+===============================================================================

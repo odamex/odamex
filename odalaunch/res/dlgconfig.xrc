@@ -1,0 +1,206 @@
+<resource>
+    <object class="wxDialog" name="dlgConfig">
+        <title>Configure Settings</title>
+        <centered>1</centered>
+        <style>wxDEFAULT_DIALOG_STYLE</style>
+        <object class="wxFlexGridSizer">
+            <rows>0</rows>
+            <cols>1</cols>
+            <vgap>0</vgap>
+            <hgap>0</hgap>
+            <object class="sizeritem">
+                <border>5</border>
+                <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                        <object class="wxCheckBox" name="ID_CHKLISTONSTART">
+                            <label>Get Master List on application start</label>
+                            <pos>0,76</pos>
+                        </object>
+                    </object>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <border>5</border>
+                <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                        <object class="wxCheckBox" name="ID_CHKSHOWBLOCKEDSERVERS">
+                            <label>Show blocked servers</label>
+                            <pos>0,114</pos>
+                        </object>
+                    </object>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <border>5</border>
+                <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                        <object class="wxStaticText" name="wxID_STATIC">
+                            <label>WAD directory:</label>
+                            <pos>0,152</pos>
+                        </object>
+                    </object>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <border>5</border>
+                <flag>wxALL|wxALIGN_CENTER</flag>
+                <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP|wxEXPAND</flag>
+                        <object class="wxBoxSizer">
+                            <orient>wxVERTICAL</orient>
+                            <object class="sizeritem">
+                                <border>5</border>
+                                <flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_TOP</flag>
+                                <object class="wxListBox" name="ID_LSTWADDIR">
+                                    <pos>0,190</pos>
+                                    <size>500,160</size>
+                                    <style>wxLB_SINGLE</style>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <border>5</border>
+                                <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+                                <object class="wxButton" name="ID_BTNGETENV">
+                                    <label>Get DOOMWADDIR</label>
+                                    <size>-1,-1</size>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+                        <object class="wxBoxSizer">
+                            <orient>wxVERTICAL</orient>
+                            <object class="sizeritem">
+                                <border>5</border>
+                                <flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_TOP</flag>
+                                <object class="wxButton" name="ID_BTNADD">
+                                    <label>Add</label>
+                                    <pos>540,214</pos>
+                                    <size>-1,-1</size>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <border>5</border>
+                                <flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_TOP</flag>
+                                <object class="wxButton" name="ID_BTNREPLACE">
+                                    <label>Replace</label>
+                                    <pos>540,252</pos>
+                                    <size>-1,-1</size>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <border>5</border>
+                                <flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_TOP</flag>
+                                <object class="wxButton" name="ID_BTNDELETE">
+                                    <label>Delete</label>
+                                    <pos>540,290</pos>
+                                    <size>-1,-1</size>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <border>5</border>
+                                <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP|wxEXPAND</flag>
+                                <object class="wxStaticLine" name="wxID_STATIC">
+                                    <style>wxLI_HORIZONTAL</style>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <border>5</border>
+                                <flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_TOP</flag>
+                                <object class="wxButton" name="ID_BTNUP">
+                                    <label>Up</label>
+                                    <size>-1,-1</size>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <border>5</border>
+                                <flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_TOP</flag>
+                                <object class="wxButton" name="ID_BTNDOWN">
+                                    <label>Down</label>
+                                    <size>-1,-1</size>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <border>5</border>
+                <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP|wxEXPAND</flag>
+                <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                        <object class="wxTextCtrl" name="ID_TXTWADDIR">
+                            <value></value>
+                            <pos>0,370</pos>
+                            <size>540,-1</size>
+                        </object>
+                    </object>
+                    <object class="spacer">
+                        <option>1</option>
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                    </object>
+                    <object class="sizeritem">
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                        <object class="wxButton" name="ID_BTNCHOOSEDIR">
+                            <label>...</label>
+                            <pos>540,370</pos>
+                            <size>40,-1</size>
+                        </object>
+                    </object>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <border>5</border>
+                <flag>wxLEFT|wxTOP|wxBOTTOM|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+                <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                        <object class="wxButton" name="ID_BTNCLOSE">
+                            <label>Close</label>
+                            <pos>0,408</pos>
+                            <size>-1,-1</size>
+                        </object>
+                    </object>
+                    <object class="spacer">
+                        <option>1</option>
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                    </object>
+                    <object class="sizeritem">
+                        <border>5</border>
+                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+                        <object class="wxButton" name="ID_BTNOK">
+                            <label>OK</label>
+                            <pos>540,408</pos>
+                            <size>-1,-1</size>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+</resource>

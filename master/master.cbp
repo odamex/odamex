@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="5" />
+	<Project>
+		<Option title="master" />
+		<Option pch_mode="0" />
+		<Option default_target="" />
+		<Option compiler="gcc" />
+		<Option virtualFolders="" />
+		<Build>
+			<Target title="Win Release">
+				<Option output="..\bin\odamaster.exe" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\..\obj\master\release" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-fexceptions" />
+					<Add option="-DWIN32" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_MBCS" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-lwsock32" />
+				</Linker>
+			</Target>
+			<Target title="Win Debug">
+				<Option output="..\bin\odamaster-dbg.exe" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\..\obj\master\debug" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-fexceptions" />
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_MBCS" />
+				</Compiler>
+				<Linker>
+					<Add option="-lwsock32" />
+				</Linker>
+			</Target>
+			<Target title="Unix Release">
+				<Option output="..\odamaster.exe" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\..\obj\master\release" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-fexceptions" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Unix Debug">
+				<Option output="..\odamaster-dbg.exe" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\..\obj\master\debug" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-fexceptions" />
+					<Add option="-DUNIX" />
+					<Add option="-DLINUX" />
+					<Add option="-DDEBUG" />
+				</Compiler>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
+			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
+		</VirtualTargets>
+		<Unit filename="i_net.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="i_net.h">
+			<Option compilerVar="" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="main.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>

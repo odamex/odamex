@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="5" />
+	<Project>
+		<Option title="launcher" />
+		<Option default_target="Debug" />
+		<Option compiler="gcc" />
+		<Option virtualFolders="dialogs\;network\;" />
+		<Build>
+			<Target title="Win Release">
+				<Option output="..\bin\odalaunch.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\obj\odalaunch\release" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Os" />
+					<Add option="-D__GNUWIN32__" />
+					<Add option="-D__WXMSW__" />
+					<Add option="-DHAVE_W32API_H" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
+				</Linker>
+				<Environment>
+					<Variable name="WX_PLAT" value="msw" />
+				</Environment>
+			</Target>
+			<Target title="Win Debug">
+				<Option output="..\bin\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\obj\odalaunch\debug" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-D__GNUWIN32__" />
+					<Add option="-D__WXMSW__" />
+					<Add option="-DHAVE_W32API_H" />
+					<Add option="-D__WXDEBUG__" />
+				</Compiler>
+				<Linker>
+					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
+				</Linker>
+				<Environment>
+					<Variable name="WX_PLAT" value="msw" />
+					<Variable name="WX_CFG" value="ud" />
+				</Environment>
+			</Target>
+			<Target title="Unix Release">
+				<Option output="..\bin\odalaunch" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\obj\odalaunch\release" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Os" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+				<Environment>
+					<Variable name="WX_PLAT" value="unix" />
+				</Environment>
+			</Target>
+			<Target title="Unix Debug">
+				<Option output="..\bin\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\obj\odalaunch\debug" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-D__WXDEBUG__" />
+				</Compiler>
+				<Environment>
+					<Variable name="WX_PLAT" value="unix" />
+					<Variable name="WX_CFG" value="ud" />
+				</Environment>
+			</Target>
+			<Environment>
+				<Variable name="WX_VER" value="28" />
+				<Variable name="WX_LIB" value="lib" />
+				<Variable name="WX_CFG" value="u" />
+			</Environment>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
+			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-pipe" />
+			<Add option="-mthreads" />
+			<Add option="-fmessage-length=0" />
+			<Add option="-fexceptions" />
+			<Add option='-include &quot;wx_pch.h&quot;' />
+			<Add option="-Winvalid-pch" />
+			<Add option="-DUSE_PCH" />
+			<Add option="-DwxUSE_UNICODE" />
+			<Add directory="$(#WX.include)" />
+			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
+			<Add directory="$(#WX)\contrib\include" />
+			<Add directory=".\src" />
+			<Add directory=".\res" />
+		</Compiler>
+		<ResourceCompiler>
+			<Add directory="$(#WX.include)" />
+			<Add directory=".\res" />
+		</ResourceCompiler>
+		<Linker>
+			<Add option="-lwx$(WX_PLAT)$(WX_VER)$(WX_CFG)_xrc -lwx$(WX_PLAT)$(WX_VER)$(WX_CFG)_adv -lwx$(WX_PLAT)$(WX_VER)$(WX_CFG)_html -lwx$(WX_PLAT)$(WX_VER)$(WX_CFG)_core -lwxbase$(WX_VER)$(WX_CFG) -lwxbase$(WX_VER)$(WX_CFG)_net -lwxbase$(WX_VER)$(WX_CFG)_xml -lwxpng -lwxtiff -lwxjpeg -lwxzlib -lwxregex$(WX_CFG) -lwxexpat -mthreads" />
+			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)" />
+			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
+			<Add directory=".\res" />
+		</Linker>
+		<ExtraCommands>
+			<Add before="res/wxrc /c /o res/xrc_resource.h res/dlgmain.xrc res/dlgconfig.xrc" />
+		</ExtraCommands>
+		<Unit filename="res\dlgconfig.xrc">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option weight="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="res\dlgmain.xrc">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option weight="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="res\odalaunch.rc">
+			<Option compilerVar="WINDRES" />
+			<Option objectName="res\odalaunch.res" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+		</Unit>
+		<Unit filename="res\resource.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+		</Unit>
+		<Unit filename="res\xrc_resource.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="src\dlg_config.cpp">
+			<Option compilerVar="CPP" />
+			<Option virtualFolder="dialogs\" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="src\dlg_config.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option virtualFolder="dialogs\" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="src\dlg_main.cpp">
+			<Option compilerVar="CPP" />
+			<Option virtualFolder="dialogs\" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="src\dlg_main.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option virtualFolder="dialogs\" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="src\lst_custom.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="src\lst_custom.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="src\main.cpp">
+			<Option compilerVar="CPP" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="src\main.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+		</Unit>
+		<Unit filename="src\misc.cpp">
+			<Option compilerVar="CC" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Debug" />
+			<Option target="Unix Release" />
+		</Unit>
+		<Unit filename="src\misc.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Debug" />
+			<Option target="Unix Release" />
+		</Unit>
+		<Unit filename="src\net_io.cpp">
+			<Option compilerVar="CPP" />
+			<Option virtualFolder="network\" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Debug" />
+			<Option target="Unix Release" />
+		</Unit>
+		<Unit filename="src\net_io.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option virtualFolder="network\" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Debug" />
+			<Option target="Unix Release" />
+		</Unit>
+		<Unit filename="src\net_packet.cpp">
+			<Option compilerVar="CPP" />
+			<Option virtualFolder="network\" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Debug" />
+			<Option target="Unix Release" />
+		</Unit>
+		<Unit filename="src\net_packet.h">
+			<Option compilerVar="CPP" />
+			<Option compile="0" />
+			<Option link="0" />
+			<Option virtualFolder="network\" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Debug" />
+			<Option target="Unix Release" />
+		</Unit>
+		<Unit filename="src\wx_pch.h">
+			<Option compilerVar="CPP" />
+			<Option link="0" />
+			<Option weight="0" />
+			<Option target="Win Release" />
+			<Option target="Win Debug" />
+			<Option target="Unix Debug" />
+			<Option target="Unix Release" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
