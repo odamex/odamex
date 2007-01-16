@@ -172,10 +172,11 @@ void P_LoadSegs (int lump)
 	byte *data;
 	byte *vertchanged = (byte *)Z_Malloc (numvertexes,PU_LEVEL,0);	// phares 10/4/98
 	line_t* line;		// phares 10/4/98
-	int ptp_angle;		// phares 10/4/98
-	int delta_angle;	// phares 10/4/98
-	int dis;			// phares 10/4/98
-	int dx,dy;			// phares 10/4/98
+   // SoM: Changed variables to the correct types.
+	angle_t ptp_angle;		// phares 10/4/98
+	angle_t delta_angle;	// phares 10/4/98
+	fixed_t dis;			// phares 10/4/98
+	fixed_t dx,dy;			// phares 10/4/98
 	int vnum1,vnum2;	// phares 10/4/98
 
 	memset (vertchanged,0,numvertexes); // phares 10/4/98
@@ -251,7 +252,7 @@ void P_LoadSegs (int lump)
 
 		ptp_angle = R_PointToAngle2(li->v1->x,li->v1->y,li->v2->x,li->v2->y);
 		dis = 0;
-		delta_angle = ( abs(ptp_angle-li->angle) >> ANGLETOFINESHIFT )*360/8192;
+		delta_angle = ((ptp_angle-li->angle) >> ANGLETOFINESHIFT) * 360 / 8192;
 
 		if (delta_angle != 0)
 		{
