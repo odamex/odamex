@@ -40,7 +40,6 @@ source_files_t &get_source_files()
 }
 
 unsigned int last_revision = 0;
-string revision_str;
 
 file_version::file_version(const char *uid, const char *id, const char *pp, int l, const char *t, const char *d)
 {
@@ -61,10 +60,7 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 	if(rs)
 		rs >> rev;
 	if(last_revision < rev)
-	{
 		last_revision = rev;
-		revision_str = ss.str();
-	}
 }
 
 BEGIN_COMMAND (version)
