@@ -9,7 +9,7 @@
 			<Target title="Win Release">
 				<Option output="..\bin\odamaster.exe" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\bin" />
-				<Option object_output="..\..\obj\master\release" />
+				<Option object_output="..\obj\master\release" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -30,7 +30,7 @@
 			<Target title="Win Debug">
 				<Option output="..\bin\odamaster-dbg.exe" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\bin" />
-				<Option object_output="..\..\obj\master\debug" />
+				<Option object_output="..\obj\master\debug" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -50,9 +50,9 @@
 				</Linker>
 			</Target>
 			<Target title="Unix Release">
-				<Option output="..\odamaster.exe" prefix_auto="0" extension_auto="1" />
+				<Option output="..\bin\odamaster.exe" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\bin" />
-				<Option object_output="..\..\obj\master\release" />
+				<Option object_output="..\obj\master\release" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -69,9 +69,9 @@
 				</Linker>
 			</Target>
 			<Target title="Unix Debug">
-				<Option output="..\odamaster-dbg.exe" prefix_auto="0" extension_auto="1" />
+				<Option output="..\bin\odamaster-dbg.exe" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\bin" />
-				<Option object_output="..\..\obj\master\debug" />
+				<Option object_output="..\obj\master\debug" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
