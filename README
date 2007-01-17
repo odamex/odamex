@@ -1,10 +1,10 @@
 ===============================================================================
-                              Odamex v1.0 README
+                              Odamex v0.1a README
                               http://odamex.net/
                                  Authored by:
                             Dean "deathz0r" Joseph
                             Alex "AlexMax" Mayfield
-                          Revision date: xx Month Year
+                        Revision date: 18th January 2007
 ===============================================================================
 
 Table of contents:
@@ -37,10 +37,6 @@ Table of contents:
 	6. Troubleshooting
 		6.1 Frequently Asked Questions
 		6.2 If you still need help...
-
-[I added two more sections -AlexMax]
-(I believe 5.1 and 5.2 are more or less "duplicates" of 3.1 and 3.2, as I was
- intending to mention server configuration in 3.2 -deathz0r)
 
 ===============================================================================
 
@@ -89,7 +85,7 @@ Section 2: Installation
 Odamex requires the following in order to operate:
 
 	* A Pentium-compatible or PowerPC microprocessor
-	* 32MB of RAM (confirm?)
+	* 32MB of RAM
 	* An internet connection
 	* 3MB of hard disk space
 
@@ -100,21 +96,21 @@ Binary downloads of Odamex are available from *insert url here*. There are
 binaries available as Windows, MacOS X, (possibly?) Unix and (possibly?) BSD 
 platforms.
 
-For Windows, extract the contents of odamex-1.0-win32.zip to a desired location
+For Windows, extract the contents of odamex-win32-0.1a.zip to a desired location
 and run odamex.exe.
 
-For MacOS, *need info from Denis*
+For MacOS, TBA
 
-For Unix, *need info*
+For Linux, TBA
 
-For BSD, *need info from Russ/Dash*
+For BSD, TBA
 
 
 2.3 - Installation - source download
 
 The source code of release versions are available from *insert url here*. If
 you are interested in the bleeding edge development of Odamex, you can access
-the SVN at svn://svn.odamex.net:2000/ with anonymous read access. Be warned however
+the SVN at http://odamex.net/svn/co with anonymous read access. Be warned however
 that it might be incompatible with current release versions, and stability is
 not guaranteed.
 
@@ -129,10 +125,10 @@ Codeblocks (http://codeblocks.org/) or any other program that can be used to
 assist compiling Odamex with MingW. There is a Win32 makefile and a Codeblocks
 project availble for Odamex compilation.
 
-For MacOS, *need info from Denis*
+For MacOS, you can use the makefile with gcc.
 
-For *nix, *need info from Alex/Denis*
+For Linux, you can use the makefile with gcc.
 
-For BSD, *need info from Russ/Dash*
+For BSD, you can use the makefile with gcc.
 
 ===============================================================================
