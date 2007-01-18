@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -42,9 +42,9 @@ BOOL			modifiedgame;
 CVAR (developer, "0", 0)
 
 // [RH] Feature control cvars
-CVAR (var_friction, "1", CVAR_ARCHIVE); // removeme 
-CVAR (var_pushers, "1", CVAR_ARCHIVE); // removeme 
+CVAR (var_friction, "1", CVAR_NULL); // removeme 
+CVAR (var_pushers, "1", CVAR_NULL); // removeme 
 
 
-VERSION_CONTROL (doomstat_cpp, "$Id:$")
+VERSION_CONTROL (doomstat_cpp, "$Id$")
 

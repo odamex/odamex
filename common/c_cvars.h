@@ -38,6 +38,7 @@ CVARS (console variables)
 ==========================================================
 */
 
+#define CVAR_NULL 0		// [deathz0r] no special properties
 #define CVAR_ARCHIVE	1	// set to cause it to be saved to vars.rc
 #define CVAR_USERINFO	2	// added to userinfo  when changed
 #define CVAR_SERVERINFO	4	// [Toke - todo] Changed the meaning of this flag

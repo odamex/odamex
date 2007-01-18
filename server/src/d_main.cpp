@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -103,7 +103,7 @@ extern BOOL gameisdead;
 extern BOOL demorecording;
 extern DThinker ThinkerCap;
 
-CVAR (def_patch, "", CVAR_ARCHIVE); // removeme ??
+CVAR (def_patch, "", CVAR_NULL); // removeme ??
 
 
 std::vector<std::string> wadfiles;		// [RH] remove limit on # of loaded wads
@@ -970,5 +970,5 @@ void D_DoomMain (void)
 	D_DoomLoop (); // never returns
 }
 
-VERSION_CONTROL (d_main_cpp, "$Id:$")
+VERSION_CONTROL (d_main_cpp, "$Id$")
 
