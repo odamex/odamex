@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -501,9 +501,9 @@ void G_InitNew (char *mapname)
 	
 	bool old_deathmatch = deathmatch ? true : false;
 
-    CTF_Load();
-
 	cvar_t::UnlatchCVars ();
+
+    CTF_Load();
 
 	if(old_deathmatch != (deathmatch ? true : false))
 		unnatural_level_progression = true;
@@ -2220,5 +2220,5 @@ cluster_info_t ClusterInfos[] = {
 
 
 
-VERSION_CONTROL (g_level_cpp, "$Id:$")
+VERSION_CONTROL (g_level_cpp, "$Id$")
 
