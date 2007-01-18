@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2006-2007 by The Odamex Team.
 //
@@ -322,7 +322,7 @@ void CTF_RunTics (void)
 //
 void CTF_DrawHud (void)
 {
-	if(!ctfmode)
+	if(!ctfmode || gamestate != GS_LEVEL)
 		return;
 	
 	player_t &co = consoleplayer();
@@ -572,5 +572,5 @@ void DRAW_FlagsBox (void)
 }
 
 
-VERSION_CONTROL (cl_ctf_cpp, "$Id:$")
+VERSION_CONTROL (cl_ctf_cpp, "$Id$")
 
