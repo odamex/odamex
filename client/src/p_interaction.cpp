@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -183,7 +183,7 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
-		if (deathmatch)
+		if (deathmatch || ctfmode)
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 5);
 		else
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 2);
@@ -1225,5 +1225,5 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 }
 
 
-VERSION_CONTROL (p_interaction_cpp, "$Id:$")
+VERSION_CONTROL (p_interaction_cpp, "$Id$")
 
