@@ -183,7 +183,7 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
-		if (deathmatch || teamplay || ctfmode)
+		if (deathmatch || ctfmode)
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 5);
 		else
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 2);
