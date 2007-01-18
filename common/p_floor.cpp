@@ -724,7 +724,7 @@ manual_stair:
 
 				// create and initialize a thinker for the next step
 				floor = new DFloor (sec);
-                                floor->StartFloorSound (floor);
+                                floor->StartFloorSound ();
 				floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
 				floor->m_FloorDestHeight = height;
 				// [RH] Set up delay values
@@ -800,7 +800,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_Texture = s3->floorpic;
 			floor->m_NewSpecial = 0;
 			floor->m_FloorDestHeight = s3->floorheight;
-			floor->StartFloorSound (floor);
+			floor->StartFloorSound ();
 
 			//	Spawn lowering donut-hole
 			floor = new DFloor (s1);
@@ -810,7 +810,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_Sector = s1;
 			floor->m_Speed = pillarspeed;
 			floor->m_FloorDestHeight = s3->floorheight;
-			floor->StartFloorSound (floor);
+			floor->StartFloorSound ();
 			break;
 		}
 	}
