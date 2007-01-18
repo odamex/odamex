@@ -1217,7 +1217,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		}
 
 		// only armordamage with friendlyfire
-		if (!friendlyfire && (teamplay || !deathmatch) && source && source->player && target != source &&
+		if (!friendlyfire && (teamplay || ctfmode || !deathmatch) && source && source->player && target != source &&
 			target->player->userinfo.team == source->player->userinfo.team && (mod != MOD_TELEFRAG))
 			damage = 0;
 
