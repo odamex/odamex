@@ -84,6 +84,7 @@ extern	BOOL			multiplayer;
 EXTERN_CVAR (deathmatch)
 
 // [RH] Teamplay mode
+EXTERN_CVAR (teamplay)
 
 
 // [Toke - CTF] Capture The Flag mode
