@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -142,7 +142,7 @@ void DFloor::RunThink ()
 		return;
 
 	res = MoveFloor (m_Speed, m_FloorDestHeight, m_Crush, m_Direction);
-	
+
 	if (res == pastdest)
 	{
 		S_StopSound (m_Sector->soundorg);
@@ -724,7 +724,7 @@ manual_stair:
 
 				// create and initialize a thinker for the next step
 				floor = new DFloor (sec);
-				floor->StartFloorSound ();
+                                floor->StartFloorSound (floor);
 				floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
 				floor->m_FloorDestHeight = height;
 				// [RH] Set up delay values
@@ -800,7 +800,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_Texture = s3->floorpic;
 			floor->m_NewSpecial = 0;
 			floor->m_FloorDestHeight = s3->floorheight;
-			floor->StartFloorSound ();
+			floor->StartFloorSound (floor);
 
 			//	Spawn lowering donut-hole
 			floor = new DFloor (s1);
@@ -810,7 +810,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_Sector = s1;
 			floor->m_Speed = pillarspeed;
 			floor->m_FloorDestHeight = s3->floorheight;
-			floor->StartFloorSound ();
+			floor->StartFloorSound (floor);
 			break;
 		}
 	}
@@ -909,5 +909,5 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 	return rtn;
 }
 
-VERSION_CONTROL (p_floor_cpp, "$Id:$")
+VERSION_CONTROL (p_floor_cpp, "$Id$")
 
