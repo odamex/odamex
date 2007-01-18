@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -41,7 +41,6 @@
 
 #include "z_zone.h"
 
-EXTERN_CVAR (sv_gravity)
 EXTERN_CVAR (infiniteheight)
 
 fixed_t 		tmbbox[4];
@@ -86,7 +85,7 @@ msecnode_t* sector_list = NULL;		// phares 3/16/98
 
 //
 // TELEPORT MOVE
-// 
+//
 
 //
 // PIT_StompThing
@@ -105,7 +104,7 @@ BOOL PIT_StompThing (AActor *thing)
 		return true;
 
 	blockdist = thing->radius + tmthing->radius;
-	
+
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
 		// didn't hit it
@@ -145,16 +144,16 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	int 				yh;
 	int 				bx;
 	int 				by;
-	
+
 	subsector_t*		newsubsec;
-	
+
 	// kill anything occupying the position
 	tmthing = thing;
-		
+
 	tmx = x;
 	tmy = y;
 	tmz = z;
-		
+
 	tmbbox[BOXTOP] = y + tmthing->radius;
 	tmbbox[BOXBOTTOM] = y - tmthing->radius;
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
@@ -162,14 +161,14 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 
 	newsubsec = R_PointInSubsector (x,y);
 	ceilingline = NULL;
-	
+
 	// The base floor/ceiling is from the subsector
 	// that contains the point.
 	// Any contacted lines the step closer together
 	// will adjust them.
 	tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
 	tmceilingz = newsubsec->sector->ceilingheight;
-						
+
 	validcount++;
 	numspechit = 0;
 
@@ -185,12 +184,12 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 		for (by=yl ; by<=yh ; by++)
 			if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
 				return false;
-	
+
 	// the move is ok,
 	// so link the thing into its new position
 	thing->SetOrigin (x, y, z);
 	thing->floorz = tmfloorz;
-	thing->ceilingz = tmceilingz;		
+	thing->ceilingz = tmceilingz;
 
 	return true;
 }
@@ -228,7 +227,7 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 				mo->z <= sec->heightsec->floorheight)))
 			  friction = sec->friction, movefactor = sec->movefactor;
 	}
-  
+
 	if (frictionfactor)
 		*frictionfactor = movefactor;
 
@@ -337,10 +336,10 @@ BOOL PIT_CheckLine (line_t *ld)
 
 	if (P_BoxOnLineSide (tmbbox, ld) != -1)
 		return true;
-				
-	
+
+
     // A line has been hit
-    
+
     // The moving thing's destination position will cross
     // the given line.
     // If this should not be allowed, return false.
@@ -349,7 +348,7 @@ BOOL PIT_CheckLine (line_t *ld)
     // NOTE: specials are NOT sorted by order,
     // so two special lines that are only 8 pixels apart
     // could be crossed in either order.
-	
+
 	if (!ld->backsector)
 		return false;		// one sided line
 
@@ -357,14 +356,14 @@ BOOL PIT_CheckLine (line_t *ld)
     {
 		if ( ld->flags & ML_BLOCKING )
 			return false;	// explicitly blocking everything
-		
+
 		if ( !tmthing->player && ld->flags & ML_BLOCKMONSTERS )
 			return false;	// block monsters only
     }
 
 	// set openrange, opentop, openbottom
-	P_LineOpening (ld); 
-		
+	P_LineOpening (ld);
+
 	// adjust floor / ceiling heights
 	if (opentop < tmceilingz)
 	{
@@ -377,7 +376,7 @@ BOOL PIT_CheckLine (line_t *ld)
 
 	if (lowfloor < tmdropoffz)
 		tmdropoffz = lowfloor;
-	
+
 	// if contacted a special line, add it to the list
 	if (ld->special)
 		AddSpecialLine (ld);
@@ -394,20 +393,20 @@ BOOL PIT_CheckThing (AActor *thing)
 	fixed_t blockdist;
 	BOOL 	solid;
 	int 	damage;
-				
+
 	// don't clip against self
 	if (thing == tmthing)
 		return true;
-	
+
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)) )
 		return true;	// can't hit thing
-	
+
 	blockdist = thing->radius + tmthing->radius;
 
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
 		// didn't hit thing
-		return true;	
+		return true;
 	}
 
     // check for skulls slamming into things
@@ -429,9 +428,9 @@ BOOL PIT_CheckThing (AActor *thing)
 			return true;				// overhead
 		if (tmthing->z+tmthing->height < thing->z)
 			return true;				// underneath
-	
+
 		if (tmthing->target && (
-			tmthing->target->type == thing->type || 
+			tmthing->target->type == thing->type ||
 			(tmthing->target->type == MT_KNIGHT && thing->type == MT_BRUISER)||
 			(tmthing->target->type == MT_BRUISER && thing->type == MT_KNIGHT) ) )
 		{
@@ -446,13 +445,13 @@ BOOL PIT_CheckThing (AActor *thing)
 				return false;
 			}
 		}
-		
+
 		if (!(thing->flags & MF_SHOOTABLE))
 		{
 			// didn't do any damage
-			return !(thing->flags & MF_SOLID);	
+			return !(thing->flags & MF_SOLID);
 		}
-		
+
 		// damage / explode
 		if (tmthing->info->damage)
 		{
@@ -560,7 +559,7 @@ BOOL Check_Sides(AActor* actor, int x, int y)
 // P_CheckPosition
 // This is purely informative, nothing is modified
 // (except things picked up).
-// 
+//
 // in:
 //	a AActor (can be valid or invalid)
 //	a position to be checked
@@ -585,10 +584,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	subsector_t *newsubsec;
 
 	tmthing = thing;
-		
+
 	tmx = x;
 	tmy = y;
-		
+
 	tmbbox[BOXTOP] = y + tmthing->radius;
 	tmbbox[BOXBOTTOM] = y - tmthing->radius;
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
@@ -613,7 +612,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 	if (tmthing->flags & MF_NOCLIP)
 		return true;
-	
+
 	// Check things first, possibly picking things up.
 	// The bounding box is extended by MAXRADIUS
 	// because DActors are grouped into mapblocks
@@ -658,14 +657,14 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 	floatok = false;
     if (!P_CheckPosition (thing, x, y))
 		return false;		// solid wall or thing
-	
+
 	if (!(thing->flags & MF_NOCLIP))
 	{
 		if (tmceilingz - tmfloorz < thing->height)
 			return false;		// doesn't fit
 
 		floatok = true;
-		
+
 		if (!(thing->flags & MF_TELEPORT)
 			&& tmceilingz - thing->z < thing->height)
 		{
@@ -789,7 +788,7 @@ void P_HitSlideLine (line_t* ld)
 	angle_t lineangle;
 	angle_t moveangle;
 	angle_t deltaangle;
-	
+
 	fixed_t movelen;
 	fixed_t newlen;
 	BOOL	icyfloor;	// is floor icy?							// phares
@@ -802,7 +801,7 @@ void P_HitSlideLine (line_t* ld)
 	// Check for the special cases of horz or vert walls.
 
 	// killough 10/98: only bounce if hit hard (prevents wobbling)
-	icyfloor = 
+	icyfloor =
 		(P_AproxDistance(tmxmove, tmymove) > 4*FRACUNIT) &&
 		var_friction &&  // killough 8/28/98: calc friction on demand
 		slidemo->z <= slidemo->floorz &&
@@ -884,28 +883,28 @@ void P_HitSlideLine (line_t* ld)
 BOOL PTR_SlideTraverse (intercept_t* in)
 {
 	line_t* 	li;
-		
+
 	if (!in->isaline)
 		I_Error ("PTR_SlideTraverse: not a line?");
-				
+
 	li = in->d.line;
-	
+
 	if ( ! (li->flags & ML_TWOSIDED) )
 	{
 		if (P_PointOnLineSide (slidemo->x, slidemo->y, li))
 		{
 			// don't hit the back side
-			return true;				
+			return true;
 		}
 		goto isblocking;
 	}
 
 	// set openrange, opentop, openbottom
 	P_LineOpening (li);
-	
+
 	if (openrange < slidemo->height)
 		goto isblocking;				// doesn't fit
-				
+
 	if (opentop - slidemo->z < slidemo->height)
 		goto isblocking;				// mobj is too high
 
@@ -913,11 +912,11 @@ BOOL PTR_SlideTraverse (intercept_t* in)
 		goto isblocking;				// too big a step up
 
 	// this line doesn't block movement
-	return true;				
-		
+	return true;
+
 	// the line does block movement,
 	// see if it is closer than best so far
-  isblocking:			
+  isblocking:
 	if (in->frac < bestslidefrac)
 	{
 		secondslidefrac = bestslidefrac;
@@ -925,7 +924,7 @@ BOOL PTR_SlideTraverse (intercept_t* in)
 		bestslidefrac = in->frac;
 		bestslideline = li;
 	}
-		
+
 	return false;		// stop
 }
 
@@ -949,14 +948,14 @@ void P_SlideMove (AActor *mo)
     fixed_t		newx;
     fixed_t		newy;
     int			hitcount;
-	
+
 	slidemo = mo;
 	hitcount = 3;
-	
+
   retry:
 	if (!--hitcount)
 		goto stairstep; 		// don't loop forever
-	
+
 	// trace along the three leading corners
 	if (mo->momx > 0)
 	{
@@ -981,14 +980,14 @@ void P_SlideMove (AActor *mo)
 	}
 
 	bestslidefrac = FRACUNIT+1;
-		
+
 	P_PathTraverse ( leadx, leady, leadx+mo->momx, leady+mo->momy,
 					 PT_ADDLINES, PTR_SlideTraverse );
 	P_PathTraverse ( trailx, leady, trailx+mo->momx, leady+mo->momy,
 					 PT_ADDLINES, PTR_SlideTraverse );
 	P_PathTraverse ( leadx, traily, leadx+mo->momx, traily+mo->momy,
 					 PT_ADDLINES, PTR_SlideTraverse );
-	
+
 	// move up to the wall
 	if (bestslidefrac == FRACUNIT+1)
 	{
@@ -1008,7 +1007,7 @@ void P_SlideMove (AActor *mo)
 	{
 		newx = FixedMul (mo->momx, bestslidefrac);
 		newy = FixedMul (mo->momy, bestslidefrac);
-		
+
 		// killough 3/15/98: Allow objects to drop off ledges
 		if (!P_TryMove (mo, mo->x+newx, mo->y+newy))
 			goto stairstep;
@@ -1028,7 +1027,7 @@ void P_SlideMove (AActor *mo)
 
 	mo->momx = tmxmove;
 	mo->momy = tmymove;
-	
+
 	// killough 10/98: affect the bobbing the same way (but not voodoo dolls)
 	/*if (mo->player && mo->player->mo == mo)
 	{
@@ -1052,7 +1051,7 @@ AActor* 		shootthing;
 
 // Height if not aiming up or down
 // ???: use slope for monsters?
-fixed_t 		shootz; 
+fixed_t 		shootz;
 
 int 			la_damage;
 fixed_t 		attackrange;
@@ -1078,22 +1077,22 @@ BOOL PTR_AimTraverse (intercept_t* in)
 	fixed_t 			thingtopslope;
 	fixed_t 			thingbottomslope;
 	fixed_t 			dist;
-				
+
 	if (in->isaline)
 	{
 		li = in->d.line;
-		
+
 		if ( !(li->flags & ML_TWOSIDED) )
 			return false;				// stop
-		
+
 		// Crosses a two sided line.
 		// A two sided line will restrict
 		// the possible target ranges.
 		P_LineOpening (li);
-		
+
 		if (openbottom >= opentop)
 			return false;				// stop
-		
+
 		dist = FixedMul (attackrange, in->frac);
 
 		if (li->frontsector->floorheight != li->backsector->floorheight)
@@ -1102,25 +1101,25 @@ BOOL PTR_AimTraverse (intercept_t* in)
 			if (slope > bottomslope)
 				bottomslope = slope;
 		}
-				
+
 		if (li->frontsector->ceilingheight != li->backsector->ceilingheight)
 		{
 			slope = FixedDiv (opentop - shootz , dist);
 			if (slope < topslope)
 				topslope = slope;
 		}
-				
+
 		if (topslope <= bottomslope)
 			return false;				// stop
-						
+
 		return true;					// shot continues
 	}
-	
+
 	// shoot a thing
 	th = in->d.thing;
 	if (th == shootthing)
 		return true;					// can't shoot self
-	
+
 	if (!(th->flags&MF_SHOOTABLE))
 		return true;					// corpse or something
 
@@ -1135,11 +1134,11 @@ BOOL PTR_AimTraverse (intercept_t* in)
 
 	if (thingbottomslope > topslope)
 		return true;					// shot under the thing
-	
+
 	// this thing can be hit!
 	if (thingtopslope > topslope)
 		thingtopslope = topslope;
-	
+
 	if (thingbottomslope < bottomslope)
 		thingbottomslope = bottomslope;
 
@@ -1161,7 +1160,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	AActor *th;
 	fixed_t dist, slope;
 	fixed_t thingtopslope, thingbottomslope;
-				
+
 	if (in->isaline)
 	{
 		li = in->d.line;
@@ -1171,14 +1170,14 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 		//		to have it here for Hexen compatibility.
 		if (li->special)
 			P_ShootSpecialLine (shootthing, li);
-		
+
 		// position a bit closer
 		frac = in->frac - FixedDiv (4*FRACUNIT,attackrange);
 		z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
 		if (!(li->flags & ML_TWOSIDED))
 			goto hitline;
-		
+
 		// crosses a two sided line
 		P_LineOpening (li);
 
@@ -1192,14 +1191,14 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 			if (slope > aimslope)
 				goto hitline;
 		}
-		
+
 		if (li->frontsector->ceilingheight != li->backsector->ceilingheight)
 		{
 			slope = FixedDiv (opentop - shootz , dist);
 			if (slope < aimslope)
 				goto hitline;
 		}
-		
+
 		// shot continues
 
 		// [RH] set opentop and openbottom for P_LineAttack
@@ -1211,8 +1210,8 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 			openbottom = li->backsector->floorheight;
 		}*/
 		return true;
-		
-		
+
+
 		// hit line
 	  hitline:
 		// position a bit closer
@@ -1220,34 +1219,34 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 		x = trace.x + FixedMul (trace.dx, frac);
 		y = trace.y + FixedMul (trace.dy, frac);
 		z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
-		
+
 		if (li->frontsector->ceilingpic == skyflatnum)
 		{
 	    // don't shoot the sky!
 			if (z > li->frontsector->ceilingheight)
 				return false;
-			
+
 	    // it's a sky hack wall
 			if	(li->backsector && li->backsector->ceilingpic == skyflatnum)
-				return false;		
+				return false;
 		}
-		
+
 
 		// Spawn bullet puffs.
 		P_SpawnPuff (x,y,z,0,0);
 
 		// don't go any farther
-		return false;	
+		return false;
 	}
-	
+
 	// shoot a thing
 	th = in->d.thing;
 	if (th == shootthing)
 		return true;			// can't shoot self
-	
+
 	if (!(th->flags & MF_SHOOTABLE))
 		return true;			// corpse or something
-				
+
 	// check angles to see if the thing can be aimed at
 	dist = FixedMul (attackrange, in->frac);
 	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
@@ -1260,7 +1259,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	if (thingbottomslope > aimslope)
 		return true;			// shot under the thing
 
-	
+
 	// hit thing
 	// position a bit closer
 	frac = in->frac - FixedDiv (10*FRACUNIT,attackrange);
@@ -1321,10 +1320,10 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 {
 	fixed_t x2;
 	fixed_t y2;
-		
+
 	angle >>= ANGLETOFINESHIFT;
 	shootthing = t1;
-	
+
 	x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
 	y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
 	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
@@ -1349,21 +1348,21 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	}
 	else
 	{
-		topslope = 100*FRACUNIT/160;	
+		topslope = 100*FRACUNIT/160;
 		bottomslope = -100*FRACUNIT/160;
-	}		
-	
+	}
+
 	attackrange = distance;
 	linetarget = NULL;
-		
+
 	P_PathTraverse (t1->x, t1->y, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_AimTraverse);
-				
+
 	if (linetarget)
 		return aimslope;
 
 	return 0;
 }
- 
+
 
 //
 // P_LineAttack
@@ -1374,7 +1373,7 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 				   fixed_t slope, int damage)
 {
 	fixed_t x2, y2;
-		
+
 	angle >>= ANGLETOFINESHIFT;
 	shootthing = t1;
 	la_damage = damage;
@@ -1450,7 +1449,7 @@ BOOL PTR_CameraTraverse (intercept_t* in)
 
 	if (!(li->flags & ML_TWOSIDED))
 		goto hitline;
-	
+
 	// crosses a two sided line
 	P_LineOpening (li);
 
@@ -1549,17 +1548,17 @@ BOOL PTR_UseTraverse (intercept_t *in)
 		if (openrange <= 0)
 		{
 			S_Sound (usething, CHAN_VOICE, "*grunt1", 1, ATTN_IDLE);
-			
+
 			// can't use through a wall
 			return false;
 		}
-		
+
 		// not a special line, but keep checking
 		return true;
 	}
-	
+
 	int side = (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1);
-		
+
     P_UseSpecialLine (usething, in->d.line, side);
 
     // can't use for than one special line in a row
@@ -1594,7 +1593,7 @@ BOOL PTR_NoWayTraverse (intercept_t *in)
 // P_UseLines
 // Looks for special lines in front of the player to activate.
 //
-void P_UseLines (player_t *player) 
+void P_UseLines (player_t *player)
 {
 	int 		angle;
 	fixed_t 	x1;
@@ -1603,7 +1602,7 @@ void P_UseLines (player_t *player)
 	fixed_t 	y2;
 
 	usething = player->mo;
-				
+
 	//Added by MC: Check if bot and use special activating (spin round) if it is.
 	angle = player->mo->angle >> ANGLETOFINESHIFT;
 
@@ -1649,7 +1648,7 @@ BOOL PIT_RadiusAttack (AActor *thing)
     fixed_t	dx;
     fixed_t	dy;
     fixed_t	dist;
-	
+
     if (!(thing->flags & MF_SHOOTABLE) )
 	return true;
 
@@ -1657,11 +1656,11 @@ BOOL PIT_RadiusAttack (AActor *thing)
     // take no damage from concussion.
     if (thing->type == MT_CYBORG
 	|| thing->type == MT_SPIDER)
-	return true;	
-		
+	return true;
+
     dx = abs(thing->x - bombspot->x);
     dy = abs(thing->y - bombspot->y);
-    
+
     dist = dx>dy ? dx : dy;
     dist = (dist - thing->radius) >> FRACBITS;
 
@@ -1676,7 +1675,7 @@ BOOL PIT_RadiusAttack (AActor *thing)
 		// must be in direct path
 		P_DamageMobj (thing, bombspot, bombsource, bombdamage - dist, bombmod);
     }
-    
+
     return true;
 }
 
@@ -1688,14 +1687,14 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 {
 	int 		x;
 	int 		y;
-	
+
 	int 		xl;
 	int 		xh;
 	int 		yl;
 	int 		yh;
-	
+
 	fixed_t 	dist;
-		
+
 	dist = (damage+MAXRADIUS)<<FRACBITS;
 	yh = (spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT;
 	yl = (spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT;
@@ -1705,7 +1704,7 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 	bombsource = source;
 	bombdamage = damage;
 	bombmod = mod;
-		
+
 	for (y=yl ; y<=yh ; y++)
 		for (x=xl ; x<=xh ; x++)
 			P_BlockThingsIterator (x, y, PIT_RadiusAttack);
@@ -1757,7 +1756,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 	if (thing->flags & MF_DROPPED)
 	{
 		thing->Destroy ();
-		
+
 		// keep checking
 		return true;
 	}
@@ -1780,7 +1779,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 			AActor *mo = new AActor (thing->x,
 									 thing->y,
 									 thing->z + thing->height/2, MT_BLOOD);
-				
+
 			mo->momx = (P_Random (mo) - P_Random (mo)) << 12;
 			mo->momy = (P_Random (mo) - P_Random (mo)) << 12;
 		}
@@ -2019,7 +2018,7 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 	int bx;
 	int by;
 	msecnode_t *node;
-	
+
 	// First, clear out the existing m_thing fields. As each node is
 	// added or verified as needed, m_thing will be set properly. When
 	// finished, delete all nodes where m_thing is still NULL. These
@@ -2088,5 +2087,5 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 	tmbbox[3] = last_tmbbox[3];
 }
 
-VERSION_CONTROL (p_map_cpp, "$Id:$")
+VERSION_CONTROL (p_map_cpp, "$Id$")
 

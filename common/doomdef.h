@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -52,7 +52,7 @@ enum GameMode_t
   // DOOM 2 german edition not handled
   retail,		// DOOM 1 retail, E4, M36
   undetermined	// Well, no IWAD found.
-  
+
 };
 
 
@@ -90,7 +90,7 @@ enum Language_t
 
 // The current state of the game: whether we are
 // playing, gazing at the intermission screen,
-// the game final animation, or a demo. 
+// the game final animation, or a demo.
 enum gamestate_t
 {
 	GS_LEVEL,
@@ -118,6 +118,9 @@ enum gamestate_t
 // Deaf monsters/do not react to sound.
 #define MTF_AMBUSH				8
 
+// Gravity
+#define GRAVITY		FRACUNIT
+
 enum skill_t
 {
 	sk_baby = 1,
@@ -138,9 +141,9 @@ enum card_t
 	it_blueskull,
 	it_yellowskull,
 	it_redskull,
-	
+
 	NUMCARDS,
-              
+
         NoKey,
         RCard,
         BCard,
@@ -163,7 +166,7 @@ enum flag_t
 	it_blueflag,
 	it_redflag,
 	it_goldflag,
-	
+
 	NUMFLAGS
 };
 
@@ -193,7 +196,7 @@ enum weapontype_t
 	wp_supershotgun,
 
 	NUMWEAPONS,
-	
+
 	// No pending weapon change.
 	wp_nochange
 
@@ -217,7 +220,7 @@ enum ammotype_t
 	am_cell,	// Plasma rifle, BFG.
 	am_misl,	// Missile launcher.
 	NUMAMMO,
-	am_noammo	// Unlimited for chainsaw / fist.		
+	am_noammo	// Unlimited for chainsaw / fist.
 
 };
 

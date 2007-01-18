@@ -43,7 +43,6 @@ int 				itemrespawntime[ITEMQUESIZE];
 int 				iquehead;
 int 				iquetail;
 
-CVAR	(sv_gravity,	"800",		CVAR_ARCHIVE)  // removeme (should always be fixed at this setting)
 CVAR	(sv_friction,	"0.90625",	CVAR_ARCHIVE)  // removeme (should always be fixed at this setting)
 CVAR	(infiniteheight, "1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 CVAR	(weaponstay,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial weapons wont be removed after picked up when true. - does not work yet
@@ -449,7 +448,6 @@ void P_ZMovement (AActor *mo)
 {
    fixed_t	dist;
    fixed_t	delta;
-   fixed_t      gravity = (fixed_t)(sv_gravity * mo->subsector->sector->gravity * -163.84);
 
     // check for smooth step up
    if (mo->player && mo->z < mo->floorz)
@@ -511,19 +509,19 @@ void P_ZMovement (AActor *mo)
         // So we need to check that this is either retail or commercial
         // (but not doom2)
 
-      /* joek - we don't have any of this crap. Looks like souls will bounce wrongly :/
-      int correct_lost_soul_bounce = gameversion >= exe_ultimate;
+      /*int correct_lost_soul_bounce = gameversion >= exe_ultimate;
 
       if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
       {
 	    // the skull slammed into something
-      mo->momz = -mo->momz;
-   }*/
+         mo->momz = -mo->momz;
+      }
+      */
 
       if (mo->momz < 0)
       {
          if (mo->player
-             && mo->momz < gravity * 3)
+             && mo->momz < -GRAVITY*8)
          {
 		// Squat down.
 		// Decrease viewheight for a moment
@@ -556,9 +554,9 @@ void P_ZMovement (AActor *mo)
    else if (! (mo->flags & MF_NOGRAVITY) )
    {
       if (mo->momz == 0)
-         mo->momz = gravity;
+         mo->momz = -GRAVITY*2;
       else
-         mo->momz -= (gravity/-2);
+         mo->momz -= GRAVITY;
    }
 
    if (mo->z + mo->height > mo->ceilingz)
