@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -979,11 +979,11 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 					TEAMpoints[splayer->userinfo.team]--;
 			}
 			// [Toke] Minus a team frag for killing team mate
-			else if ((teamplay && !ctfmode) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay]
+			else if ((teamplay || ctfmode) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
 			{
 				splayer->fragcount--;
 
-				if (teamplay && !ctfmode)
+				if (teamplay)
 					TEAMpoints[splayer->userinfo.team]--;
 			}
 			else
@@ -1306,5 +1306,5 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 BOOL CheckCheatmode (void);
 
-VERSION_CONTROL (p_interaction_cpp, "$Id:$")
+VERSION_CONTROL (p_interaction_cpp, "$Id$")
 
