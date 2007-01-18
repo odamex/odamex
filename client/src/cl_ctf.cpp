@@ -322,13 +322,13 @@ void CTF_RunTics (void)
 //
 void CTF_DrawHud (void)
 {
-	if(!ctfmode || gamestate != GS_LEVEL)
+	if(!ctfmode)
 		return;
 	
 	player_t &co = consoleplayer();
 	for(size_t i = 0; i < NUMFLAGS; i++)
 	{
-		if(CTFdata[i].flagger == co.id)
+		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == co.id)
 		{
 			// Tint the screen as we have the flag!
 			if(i == it_blueflag)

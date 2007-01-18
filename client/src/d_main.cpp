@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -311,9 +311,6 @@ void D_Display (void)
 		y = (automapactive && !viewactive) ? 4 : viewwindowy + 4;
 		screen->DrawPatchCleanNoMove (pause, (screen->width-(pause->width())*CleanXfac)/2, y);
 	}
-
-	if (ctfmode && gamestate == GS_LEVEL) // [Toke - CTF] Draw status bar stuff
-		CTF_DrawHud ();
 
 	// [RH] Draw icon, if any
 	if (D_DrawIcon)
@@ -1307,5 +1304,5 @@ void D_DoomMain (void)
 
 
 
-VERSION_CONTROL (d_main_cpp, "$Id:$")
+VERSION_CONTROL (d_main_cpp, "$Id$")
 

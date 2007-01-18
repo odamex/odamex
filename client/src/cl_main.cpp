@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
@@ -1835,6 +1835,8 @@ void CL_LoadMap(void)
 	G_InitNew (mapname);
 
 	real_plats.clear();
+	
+	CTF_CheckFlags(consoleplayer());
 
 	gameaction = ga_nothing;
 }
@@ -2248,5 +2250,5 @@ void CL_RunTics (void)
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
 
-VERSION_CONTROL (cl_main_cpp, "$Id:$")
+VERSION_CONTROL (cl_main_cpp, "$Id$")
 
