@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -38,6 +38,10 @@
 #include "sv_ctf.h"
 
 #define MASTERPORT			15000
+
+// [Russell] - default master list
+#define MASTER_NUM          2
+const char def_masterlist[MASTER_NUM][14] = { "odamex.net", "voxelsoft.com" };
 
 class masterserver
 {
@@ -85,6 +89,15 @@ void SV_InitMaster(void)
 {
 	if (!usemasters)
 		Printf(PRINT_MEDIUM, "Masters will not be contacted because usemasters is 0");
+    else
+    {
+        // [Russell] - Add some default masters
+        // so we can dump them to the server cfg file if
+        // one does not exist
+        if (!masters.size())
+            for(int i = 0; i < MASTER_NUM; i++)
+                SV_AddMaster(def_masterlist[i]);
+    }
 }
 
 //
@@ -382,5 +395,5 @@ BEGIN_COMMAND (masters)
 END_COMMAND (masters)
 
 
-VERSION_CONTROL (sv_master_cpp, "$Id:$")
+VERSION_CONTROL (sv_master_cpp, "$Id$")
 
