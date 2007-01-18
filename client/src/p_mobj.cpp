@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -196,7 +196,7 @@ AActor &AActor::operator= (const AActor &other)
 BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 {
     state_t*	st;
-	
+
 	// denis - prevent harmful state cycles
 	static unsigned int callstack;
 	if(callstack++ > 16)
@@ -204,38 +204,38 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 		callstack = 0;
 		I_Error("P_SetMobjState: callstack depth exceeded bounds");
 	}
-	
+
     do
     {
 		if (state == S_NULL)
 		{
 			mobj->state = (state_t *) S_NULL;
 			mobj->Destroy();
-			
+
 			callstack--;
 			return false;
 		}
-		
+
 		st = &states[state];
 		mobj->state = st;
 		mobj->tics = st->tics;
 		mobj->sprite = st->sprite;
 		mobj->frame = st->frame;
-		
+
 		// Modified handling.
 		// Call action functions when the state is set
-		if (st->action.acp1)		
-			st->action.acp1(mobj);	
-		
+		if (st->action.acp1)
+			st->action.acp1(mobj);
+
 		state = st->nextstate;
     } while (!mobj->tics);
-	
+
 	callstack--;
     return true;
 }
 
 //
-// P_ExplodeMissile  
+// P_ExplodeMissile
 //
 void P_ExplodeMissile (AActor* mo)
 {
@@ -442,7 +442,7 @@ void P_ZMovement (AActor *mo)
    fixed_t	dist;
    fixed_t	delta;
    fixed_t      gravity = (fixed_t)(sv_gravity * mo->subsector->sector->gravity * -163.84);
-    
+
     // check for smooth step up
    if (mo->player && mo->z < mo->floorz)
    {
@@ -451,10 +451,10 @@ void P_ZMovement (AActor *mo)
       mo->player->deltaviewheight
             = (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
-    
+
     // adjust height
    mo->z += mo->momz;
-	
+
    if ( mo->flags & MF_FLOAT
         && mo->target)
    {
@@ -464,17 +464,17 @@ void P_ZMovement (AActor *mo)
       {
          dist = P_AproxDistance (mo->x - mo->target->x,
                                  mo->y - mo->target->y);
-	    
+
          delta =(mo->target->z + (mo->height>>1)) - mo->z;
 
          if (delta<0 && dist < -(delta*3) )
             mo->z -= FLOATSPEED;
          else if (delta>0 && dist < (delta*3) )
-            mo->z += FLOATSPEED;			
+            mo->z += FLOATSPEED;
       }
-	
+
    }
-    
+
     // clip movement
    if (mo->z <= mo->floorz)
    {
@@ -492,7 +492,7 @@ void P_ZMovement (AActor *mo)
 	//  Final Doom and Ultimate Doom.  So we test demo_compatibility *and*
 	//  gamemission. (Note we assume that Doom1 is always Ult Doom, which
 	//  seems to hold for most published demos.)
-      //  
+      //
         //  fraggle - cph got the logic here slightly wrong.  There are three
         //  versions of Doom 1.9:
       //
@@ -502,7 +502,7 @@ void P_ZMovement (AActor *mo)
       //
         // So we need to check that this is either retail or commercial
         // (but not doom2)
-	
+
       /* joek - we don't have any of this crap. Looks like souls will bounce wrongly :/
       int correct_lost_soul_bounce = gameversion >= exe_ultimate;
 
@@ -511,11 +511,10 @@ void P_ZMovement (AActor *mo)
 	    // the skull slammed into something
          mo->momz = -mo->momz;
       }*/
-	
+
       if (mo->momz < 0)
       {
-         if (mo->player
-             && mo->momz < gravity*8)	
+         if (mo->player && mo->momz < gravity * 3)
          {
 		// Squat down.
 		// Decrease viewheight for a moment
@@ -552,7 +551,7 @@ void P_ZMovement (AActor *mo)
       else
          mo->momz -= (gravity/-2);
    }
-	
+
    if (mo->z + mo->height > mo->ceilingz)
    {
 	// hit the ceiling
@@ -566,7 +565,7 @@ void P_ZMovement (AActor *mo)
       {	// the skull slammed into something
          mo->momz = -mo->momz;
       }
-	
+
       if ( (mo->flags & MF_MISSILE)
             && !(mo->flags & MF_NOCLIP) )
       {
@@ -574,7 +573,7 @@ void P_ZMovement (AActor *mo)
          return;
       }
    }
-} 
+}
 
 
 //
@@ -806,7 +805,7 @@ void AActor::RunThink ()
 	if ((z != floorz) || momz)
 	{
 		P_ZMovement (this);
-		
+
 		if (ObjectFlags & OF_MassDestruction)
 			return;		// actor was destroyed
 	}
@@ -985,7 +984,7 @@ void P_RespawnSpecials (void)
 	subsector_t*			ss;
 	AActor* 						mo;
 	mapthing2_t* 		mthing;
-	
+
 	int 				i;
 
 	if(!serverside)
@@ -1060,10 +1059,10 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	//		To make things simpler, figure out which player is being
 	//		spawned here.
 	player_t *p = &player;
-	
+
 	if (p->playerstate == PST_REBORN)
 		G_PlayerReborn (*p);
-	
+
 	AActor *mobj = new AActor (mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
 	// not playing?
@@ -1354,18 +1353,18 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 {
 	if(!serverside)
 		return;
-	
+
 	AActor *puff;
-	
+
 	z += (P_Random () - P_Random ()) << 10;
 
 	puff = new AActor (x, y, z, MT_PUFF);
 	puff->momz = FRACUNIT;
 	puff->tics -= P_Random (puff) & 3;
-	
+
 	if (puff->tics < 1)
 		puff->tics = 1;
-	
+
 	// don't make punches spark on the wall
 	if (attackrange == MELEERANGE)
 		P_SetMobjState (puff, S_PUFF3);
@@ -1434,18 +1433,18 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     angle_t	an;
     int		dist;
     fixed_t     dest_x, dest_y, dest_z, dest_flags;
-	
+
 	// denis: missile spawn code from chocolate doom
 	//
     // fraggle: This prevents against *crashes* when dest == NULL.
-    // For example, when loading a game saved when a mancubus was 
+    // For example, when loading a game saved when a mancubus was
     // in the middle of firing, mancubus->target == NULL.  SpawnMissile
     // then gets called with dest == NULL.
     //
     // However, this is not the *correct* behavior.  At the moment,
     // the missile is aimed at 0,0,0.  In reality, monsters seem to aim
     // somewhere else.
-	
+
     if (dest)
     {
         dest_x = dest->x;
@@ -1460,36 +1459,36 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
         dest_z = 0;
         dest_flags = 0;
     }
-	
+
     th = new AActor (source->x,
 					  source->y,
 					  source->z + 4*8*FRACUNIT, type);
-    
+
     if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
-	
+
     th->target = source->ptr();	// where it came from
-    an = R_PointToAngle2 (source->x, source->y, dest_x, dest_y);	
-	
+    an = R_PointToAngle2 (source->x, source->y, dest_x, dest_y);
+
     // fuzzy player
     if (dest_flags & MF_SHADOW)
-		an += (P_Random()-P_Random())<<20;	
-	
+		an += (P_Random()-P_Random())<<20;
+
     th->angle = an;
     an >>= ANGLETOFINESHIFT;
     th->momx = FixedMul (th->info->speed, finecosine[an]);
     th->momy = FixedMul (th->info->speed, finesine[an]);
-	
+
     dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
     dist = dist / th->info->speed;
-	
+
     if (dist < 1)
 		dist = 1;
-	
+
     th->momz = (dest_z - source->z) / dist;
 
     P_CheckMissileSpawn (th);
-	
+
     return th;
 }
 
@@ -1503,14 +1502,14 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 {
 	if(!serverside)
 		return;
-		
+
 	angle_t an;
 	fixed_t slope;
 	fixed_t pitchslope = finetangent[FINEANGLES/4-(source->pitch>>ANGLETOFINESHIFT)];
-	
+
 	// see which target is to be aimed at
 	an = source->angle;
-	
+
 	if (source->player &&
 		source->player->userinfo.aimdist == 0 &&
 		freelook)
@@ -1520,29 +1519,29 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	else
 	{
 		slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-		
+
 		if (!linetarget)
 		{
 			an += 1<<26;
 			slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-			
+
 			if (!linetarget)
 			{
 				an -= 2<<26;
 				slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
 			}
-			
+
 			if (!linetarget)
 			{
 				an = source->angle;
-				
+
 				if(freelook)
 					slope = pitchslope;
 				else
 					slope = 0;
 			}
 		}
-		
+
 		if (linetarget && source->player)
 		{
 			if (freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
@@ -1552,22 +1551,22 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			}
 		}
 	}
-	
+
 	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
-	
+
 	fixed_t speed = th->info->speed;
-	
+
 	th->target = source->ptr();
 	th->angle = an;
     th->momx = FixedMul(speed, finecosine[an>>ANGLETOFINESHIFT]);
     th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);
     th->momz = FixedMul(speed, slope);
-	
+
 	if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
-	
+
 	P_CheckMissileSpawn (th);
 }
 
-VERSION_CONTROL (p_mobj_cpp, "$Id:$")
+VERSION_CONTROL (p_mobj_cpp, "$Id$")
 

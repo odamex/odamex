@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -195,7 +195,7 @@ AActor &AActor::operator= (const AActor &other)
 BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 {
     state_t*	st;
-	
+
 	// denis - prevent harmful state cycles
 	static unsigned int callstack;
 	if(callstack++ > 16)
@@ -203,38 +203,38 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 		callstack = 0;
 		I_Error("P_SetMobjState: callstack depth exceeded bounds");
 	}
-	
+
     do
     {
 		if (state == S_NULL)
 		{
 			mobj->state = (state_t *) S_NULL;
 			mobj->Destroy();
-			
+
 			callstack--;
 			return false;
 		}
-		
+
 		st = &states[state];
 		mobj->state = st;
 		mobj->tics = st->tics;
 		mobj->sprite = st->sprite;
 		mobj->frame = st->frame;
-		
+
 		// Modified handling.
 		// Call action functions when the state is set
-		if (st->action.acp1)		
-			st->action.acp1(mobj);	
-		
+		if (st->action.acp1)
+			st->action.acp1(mobj);
+
 		state = st->nextstate;
     } while (!mobj->tics);
-	
+
 	callstack--;
     return true;
 }
 
 //
-// P_ExplodeMissile  
+// P_ExplodeMissile
 //
 void P_ExplodeMissile (AActor* mo)
 {
@@ -382,10 +382,10 @@ void P_XYMovement (AActor *mo)
 
 	if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
 		return; 	// no friction for missiles ever
-	
+
 	if (mo->z > mo->floorz && !mo->waterlevel)
 		return;		// no friction when airborne
-	
+
 	if (mo->flags & MF_CORPSE)
 	{
 		// do not stop sliding
@@ -450,7 +450,7 @@ void P_ZMovement (AActor *mo)
    fixed_t	dist;
    fixed_t	delta;
    fixed_t      gravity = (fixed_t)(sv_gravity * mo->subsector->sector->gravity * -163.84);
-    
+
     // check for smooth step up
    if (mo->player && mo->z < mo->floorz)
    {
@@ -459,10 +459,10 @@ void P_ZMovement (AActor *mo)
       mo->player->deltaviewheight
             = (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
-    
+
     // adjust height
    mo->z += mo->momz;
-	
+
    if ( mo->flags & MF_FLOAT
         && mo->target)
    {
@@ -472,17 +472,17 @@ void P_ZMovement (AActor *mo)
       {
          dist = P_AproxDistance (mo->x - mo->target->x,
                                  mo->y - mo->target->y);
-	    
+
          delta =(mo->target->z + (mo->height>>1)) - mo->z;
 
          if (delta<0 && dist < -(delta*3) )
             mo->z -= FLOATSPEED;
          else if (delta>0 && dist < (delta*3) )
-            mo->z += FLOATSPEED;			
+            mo->z += FLOATSPEED;
       }
-	
+
    }
-    
+
     // clip movement
    if (mo->z <= mo->floorz)
    {
@@ -500,7 +500,7 @@ void P_ZMovement (AActor *mo)
 	//  Final Doom and Ultimate Doom.  So we test demo_compatibility *and*
 	//  gamemission. (Note we assume that Doom1 is always Ult Doom, which
 	//  seems to hold for most published demos.)
-      //  
+      //
         //  fraggle - cph got the logic here slightly wrong.  There are three
         //  versions of Doom 1.9:
       //
@@ -510,7 +510,7 @@ void P_ZMovement (AActor *mo)
       //
         // So we need to check that this is either retail or commercial
         // (but not doom2)
-	
+
       /* joek - we don't have any of this crap. Looks like souls will bounce wrongly :/
       int correct_lost_soul_bounce = gameversion >= exe_ultimate;
 
@@ -519,11 +519,11 @@ void P_ZMovement (AActor *mo)
 	    // the skull slammed into something
       mo->momz = -mo->momz;
    }*/
-	
+
       if (mo->momz < 0)
       {
          if (mo->player
-             && mo->momz < gravity*8)	
+             && mo->momz < gravity * 3)
          {
 		// Squat down.
 		// Decrease viewheight for a moment
@@ -560,7 +560,7 @@ void P_ZMovement (AActor *mo)
       else
          mo->momz -= (gravity/-2);
    }
-	
+
    if (mo->z + mo->height > mo->ceilingz)
    {
 	// hit the ceiling
@@ -574,7 +574,7 @@ void P_ZMovement (AActor *mo)
       {	// the skull slammed into something
          mo->momz = -mo->momz;
       }
-	
+
       if ( (mo->flags & MF_MISSILE)
             && !(mo->flags & MF_NOCLIP) )
       {
@@ -582,7 +582,7 @@ void P_ZMovement (AActor *mo)
          return;
       }
    }
-} 
+}
 
 //
 // P_NightmareRespawn
@@ -591,52 +591,52 @@ void P_NightmareRespawn (AActor *mobj)
 {
     fixed_t		x;
     fixed_t		y;
-    fixed_t		z; 
-    subsector_t*	ss; 
+    fixed_t		z;
+    subsector_t*	ss;
     mapthing2_t*		mthing;
-	
-    x = mobj->spawnpoint.x << FRACBITS; 
-    y = mobj->spawnpoint.y << FRACBITS; 
-	
+
+    x = mobj->spawnpoint.x << FRACBITS;
+    y = mobj->spawnpoint.y << FRACBITS;
+
     // somthing is occupying it's position?
-    if (!P_CheckPosition (mobj, x, y) ) 
+    if (!P_CheckPosition (mobj, x, y) )
 		return;	// no respwan
-	
+
     // spawn a teleport fog at old spot
     // because of removal of the body?
 	new AActor (mobj->x,
 					  mobj->y,
-					  mobj->subsector->sector->floorheight , MT_TFOG); 
-	
+					  mobj->subsector->sector->floorheight , MT_TFOG);
+
     // spawn a teleport fog at the new spot
-    ss = R_PointInSubsector (x,y); 
-	
-    new AActor (x, y, ss->sector->floorheight , MT_TFOG); 
-	
+    ss = R_PointInSubsector (x,y);
+
+    new AActor (x, y, ss->sector->floorheight , MT_TFOG);
+
     // spawn the new monster
     mthing = &mobj->spawnpoint;
-	
+
     // spawn it
     if (mobj->info->flags & MF_SPAWNCEILING)
 		z = ONCEILINGZ;
     else
 		z = ONFLOORZ;
-	
+
     // inherit attributes from deceased one
 	if(serverside)
 	{
 		AActor *mo = new AActor (x,y,z, mobj->type);
-		mo->spawnpoint = mobj->spawnpoint;	
+		mo->spawnpoint = mobj->spawnpoint;
 		mo->angle = ANG45 * (mthing->angle/45);
-		
+
 	    if (mthing->flags & MTF_AMBUSH)
 			mo->flags |= MF_AMBUSH;
-			
+
 		SV_SpawnMobj(mo);
-		
+
 		mo->reactiontime = 18;
 	}
-	
+
     // remove the old monster,
 	mobj->Destroy();
 }
@@ -788,7 +788,7 @@ void AActor::RunThink ()
 		this->Destroy();
 		return;
 	}
-	
+
 	// [RH] Fade a stealth monster in and out of visibility
 	if (visdir > 0)
 	{
@@ -996,7 +996,7 @@ void AActor::Destroy ()
 
 	// stop any playing sound
 	//	S_RelinkSound (this, NULL);
-	
+
 	// Zero all pointers generated by this->ptr()
 	self.update_all(NULL);
 
@@ -1291,7 +1291,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 					MSG_WriteShort (&cl->reliablebuf, p.maxammo[j]);
 					MSG_WriteShort (&cl->reliablebuf, p.ammo[j]);
 				}
-				
+
 				MSG_WriteByte (&cl->reliablebuf, p.health);
 				MSG_WriteByte (&cl->reliablebuf, p.armorpoints);
 				MSG_WriteByte (&cl->reliablebuf, p.armortype);
@@ -1302,37 +1302,37 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 		return;
 	}
-	
+
 	// [Toke - CTF] Setup flag sockets
 	if (mthing->type >= ID_BLUE_FLAG && mthing->type <= ID_GOLD_FLAG) // Check for items with flag socks ID's
 	{
 		if (mthing->type == ID_BLUE_FLAG)
 		{
 			Printf (PRINT_HIGH, "Map contains BLUE FLAG, enabling TEAM BLUE \n");
-			
+
 			CTF_Load ();
 			TEAMenabled[it_blueflag] = true;
-			
+
 			CTF_RememberFlagPos (mthing);
 		}
-		
+
 		if (mthing->type == ID_RED_FLAG)
 		{
 			Printf (PRINT_HIGH, "Map contains RED FLAG, enabling TEAM RED \n");
-			
+
 			CTF_Load ();
 			TEAMenabled[it_redflag] = true;
-			
+
 			CTF_RememberFlagPos (mthing);
 		}
-		
+
 		if (mthing->type == ID_GOLD_FLAG)
 		{
 			Printf (PRINT_HIGH, "Map contains GOLD FLAG, enabling TEAM GOLD \n");
-			
+
 			CTF_Load ();
 			TEAMenabled[it_goldflag] = true;
-			
+
 			CTF_RememberFlagPos (mthing);
 		}
 	}
@@ -1679,7 +1679,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			if (!linetarget)
 			{
 				an = source->angle;
-				
+
 				if(freelook)
 					slope = pitchslope;
 				else
@@ -1706,7 +1706,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
     th->momx = FixedMul(speed, finecosine[an>>ANGLETOFINESHIFT]);
     th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);
     th->momz = FixedMul(speed, slope);
-	
+
 	SV_SpawnMobj(th);
 
 	if (th->info->seesound)
@@ -1716,5 +1716,5 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 }
 
 
-VERSION_CONTROL (p_mobj_cpp, "$Id:$")
+VERSION_CONTROL (p_mobj_cpp, "$Id$")
 
