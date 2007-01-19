@@ -309,7 +309,7 @@ void BufferedSocket::Write8(wxInt8 val)
         
     return;
 }
-
+/*
 wxInt32 BufferedSocket::SetAddress(wxString AddressAndPort)
 {
     wxStringTokenizer tokstr(AddressAndPort, _T(':'));
@@ -330,7 +330,7 @@ wxInt32 BufferedSocket::SetAddress(wxString AddressAndPort)
     
     return 0;
 }
-
+*/
 wxString BufferedSocket::GetAddress() 
 {
     wxString retstr;

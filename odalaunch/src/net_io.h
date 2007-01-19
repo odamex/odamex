@@ -64,7 +64,7 @@ class BufferedSocket
         
         // Set the outgoing address
         virtual void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
-        virtual wxInt32 SetAddress(wxString AddressAndPort);
+        //virtual wxInt32 SetAddress(wxString AddressAndPort);
         wxString    GetAddress(); // Get the outgoing address
 
         // Send/receive data using the outgoing address 

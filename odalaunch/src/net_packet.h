@@ -81,6 +81,8 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         // The time in milliseconds a packet was received
         wxInt32 Ping;
        
+        wxIPV4address to_addr;
+       
     public:
         // Constructor
         ServerBase() 
@@ -98,10 +100,10 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         // Query the server
         wxInt32 Query(wxInt32 Timeout);
         
-		void SetAddress(wxString Address, wxInt16 Port) { Socket.SetAddress(Address, Port); }
-        void SetAddress(wxString AddressAndPort) { Socket.SetAddress(AddressAndPort); }
+		void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
+//        void SetAddress(wxString AddressAndPort) { Socket.SetAddress(AddressAndPort); }
         
-		wxString GetAddress() { return Socket.GetAddress(); }
+		wxString GetAddress() { return to_addr.IPAddress() << _T(':') << to_addr.Service(); }
 		wxInt32 GetPing() { return Socket.GetPing(); }
 };
 
@@ -168,9 +170,9 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
 
 class Server : public ServerBase  // [Russell] - A single server
 {           
+   
     public:
-
-        
+       
         serverinfo_t info; // this could be better, but who cares
         
         Server();

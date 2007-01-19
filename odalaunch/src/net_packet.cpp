@@ -36,9 +36,9 @@ BufferedSocket ServerBase::Socket;
 */
 wxInt32 ServerBase::Query(wxInt32 Timeout)
 {
-    wxString Address = Socket.GetAddress();
+    Socket.SetAddress(to_addr.IPAddress(), to_addr.Service());
     
-//    wxMessageBox(Address);
+    wxString Address = Socket.GetAddress();   
     
     if (Address != _T(""))
     {
@@ -105,7 +105,7 @@ void MasterServer::Parse()
 
 // Server constructor
 Server::Server()
-{
+{   
     // please keep this clean
     challenge = SERVER_CHALLENGE;
     response = SERVER_RESPONSE;
@@ -164,8 +164,7 @@ Server::~Server()
 }
 
 void Server::Parse()
-{
-    
+{   
     wxInt32 temp_response = Socket.Read32();
     
     if (temp_response == response)
