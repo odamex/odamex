@@ -89,11 +89,12 @@ CVAR (fastmonsters,		"0", CVAR_SERVERINFO)
 CVAR (allowexit,		"0", CVAR_SERVERINFO)
 CVAR (fragexitswitch,   "0", CVAR_SERVERINFO)       //  [ML] 03/4/06: Activate to allow exit switch at maxfrags, must click to exit
 CVAR (allowjump,		"0", CVAR_SERVERINFO)
-CVAR (freelook,			"0", CVAR_SERVERINFO)
 CVAR (scorelimit,		"0", CVAR_SERVERINFO)
 CVAR (monstersrespawn,	"0", CVAR_SERVERINFO)
 CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
 CVAR (sv_cheats,		"0", CVAR_SERVERINFO)
+
+CVAR (freelook,			"0", CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
