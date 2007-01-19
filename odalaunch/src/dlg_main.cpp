@@ -294,6 +294,9 @@ void dlgMain::OnGetList(wxCommandEvent &event)
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
 {   
+    wxString Address = _T("");
+    wxInt16 Port = 0;
+    
     if ((SERVER_LIST->GetItemCount() > 0) && (SERVER_LIST->GetSelectedItemCount() == 1))
     {
         PLAYER_LIST->DeleteAllItems();
@@ -301,6 +304,10 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
         wxInt32 i = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
         totalPlayers -= QServer[i].info.numplayers;
+        
+        MServer->GetServerAddress(i, Address, Port);
+        
+        QServer[i].SetAddress(Address, Port);
         
         QServer[i].Query(800);
         
@@ -317,6 +324,9 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
 
 void dlgMain::OnRefreshAll(wxCommandEvent &event)
 {
+    wxString Address = _T("");
+    wxInt16 Port = 0;
+            
     if (MServer->GetServerCount() > 0)
     {
         SERVER_LIST->DeleteAllItems();
@@ -325,7 +335,11 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
         totalPlayers = 0;
         
         for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
-        {    
+        {
+            MServer->GetServerAddress(i, Address, Port);
+            
+            QServer[i].SetAddress(Address, Port);
+            
             QServer[i].Query(800);
        
             AddServerToList(SERVER_LIST, QServer[i], i);
