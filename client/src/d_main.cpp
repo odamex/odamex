@@ -23,6 +23,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "version.h" // SHUT UP COMPILER WARNING
+
 #include <sstream>
 #include <string>
 #include <vector>

@@ -695,6 +695,10 @@ SOURCE=..\..\common\vectors.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\version.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\common\version.h
 # End Source File
 # Begin Source File

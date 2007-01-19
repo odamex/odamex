@@ -40,12 +40,6 @@ typedef int BOOL;
 typedef unsigned char byte;
 #endif
 
-#if _MSC_VER == 1200
-// MSVC6, disable broken warnings about truncated stl lines
-#pragma warning(disable:4786)
-#include <iostream>
-#endif
-
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 #define STACK_ARGS __cdecl
 #else

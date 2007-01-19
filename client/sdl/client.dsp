@@ -258,10 +258,6 @@ SOURCE=..\src\v_video.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\common\version.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\wi_stuff.cpp
 # End Source File
 # End Group
@@ -867,6 +863,10 @@ SOURCE=..\..\common\vectors.cpp
 # Begin Source File
 
 SOURCE=..\..\common\vectors.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\version.cpp
 # End Source File
 # Begin Source File
 

@@ -22,11 +22,12 @@
  
  */
 
+#include "version.h"
+
 #include <map>
 #include <string>
 #include <sstream>
 
-#include "version.h"
 #include "c_dispatch.h"
 
 using std::string;

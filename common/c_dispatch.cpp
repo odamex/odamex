@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -21,6 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
+#if _MSC_VER == 1200
+// MSVC6, disable broken warnings about truncated stl lines
+#pragma warning(disable:4786)
+#endif
 
 #include <string>
 #include <vector>
@@ -750,5 +754,5 @@ void C_ExecCmdLineParams (bool onlyset)
 
 
 
-VERSION_CONTROL (c_dispatch_cpp, "$Id:$")
+VERSION_CONTROL (c_dispatch_cpp, "$Id$")
 

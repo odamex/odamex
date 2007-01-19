@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#if _MSC_VER == 1200
+// MSVC6, disable broken warnings about truncated stl lines
+#pragma warning(disable:4786)
+#endif
 
 #include "version.h"
 #include "m_alloc.h"
@@ -96,5 +101,5 @@ void TryRunTics (void)
 }
 
 
-VERSION_CONTROL (d_net_cpp, "$Id:$")
+VERSION_CONTROL (d_net_cpp, "$Id$")
 
