@@ -164,7 +164,7 @@ void LaunchGame(Server &s, wxString waddirs)
         return;
     }
 
-    cmdline += wxString::Format(_T(" -waddirs %s -connect %s"), waddirs.c_str(), s.GetAddress().c_str());
+    cmdline += wxString::Format(_T(" -waddir %s -connect %s"), waddirs.c_str(), s.GetAddress().c_str());
 	
 	wxExecute(cmdline.c_str(), wxEXEC_ASYNC, NULL);
 	
