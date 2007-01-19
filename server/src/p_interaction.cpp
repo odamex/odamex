@@ -1038,7 +1038,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 
 			// [JDC] Minus a team frag
 			if (teamplay && !ctfmode)
-				TEAMpoints[splayer->userinfo.team]++;
+				TEAMpoints[tplayer->userinfo.team]--;
 		}
 
 		SV_UpdateFrags (*tplayer);
