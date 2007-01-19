@@ -306,9 +306,10 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
         
         AddServerToList(SERVER_LIST, QServer[i], i, 0);
         
+        AddPlayersToList(PLAYER_LIST, QServer[i]);
+        
         totalPlayers += QServer[i].info.numplayers;
         
-        GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
         GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
         GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
     }
