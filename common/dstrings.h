@@ -459,9 +459,7 @@ typedef struct gamestring_s {
 #define D2_INTBG6			(Strings[348].string)
 #define D2_INTBG7			(Strings[349].string)
 
-#define QUITTODOS			(Strings[350].string)
-
-#define NUMSTRINGS			351
+#define NUMSTRINGS			349
 
 extern gamestring_t Strings[];
 

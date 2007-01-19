@@ -641,7 +641,6 @@ gamestring_t Strings[NUMSTRINGS] = {
 	{ str_notchanged, "D2_INTBG5", "RROCK13", NULL },
 	{ str_notchanged, "D2_INTBG6", "RROCK19", NULL },
 	{ str_notchanged, "D2_INTBG7", "BOSSBACK", NULL },
-	{ str_notchanged, "QUITTODOS", "%s\n\n(press y to quit to dos.)", NULL },
 };
 
 void D_InitStrings (void)
