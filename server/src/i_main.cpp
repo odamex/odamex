@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -175,7 +175,7 @@ int main (int argc, char **argv)
     return 0;
 }
 
-#endif
+VERSION_CONTROL (i_main_cpp, "$Id$")
 
-VERSION_CONTROL (i_main_cpp, "$Id:$")
+#endif
 
