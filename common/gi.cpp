@@ -72,22 +72,22 @@ gameinfo_t SharewareGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	"D_VICTOR",
-	"FLOOR4_8",
+	{ 'D','_','V','I','C','T','O','R' },
+	{ 'F','L','O','O','R','4','_','8' },
 	"HELP2",
-	"VICTORY2",
+	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "HELP2" } },
 	quitsounds,
 	1,
-	"FLOOR7_2",
+	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder
 };
 
 gameinfo_t RegisteredGameInfo =
 {
 	GI_NOCRAZYDEATH,
-	"TITLEPIC",
+	{ 'T','I','T','L','E','P','I','C' },
 	"CREDIT",
 	"HELP2",
 	"D_INTRO",
@@ -95,22 +95,22 @@ gameinfo_t RegisteredGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	"D_VICTOR",
-	"FLOOR4_8",
+	{ 'D','_','V','I','C','T','O','R' },
+	{ 'F','L','O','O','R','4','_','8' },
 	"HELP2",
-	"VICTORY2",
+	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "HELP2" } },
 	quitsounds,
 	2,
-	"FLOOR7_2",
+	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder
 };
 
 gameinfo_t RetailGameInfo =
 {
 	GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH,
-	"TITLEPIC",
+	{ 'T','I','T','L','E','P','I','C' },
 	"CREDIT",
 	"CREDIT",
 	"D_INTRO",
@@ -118,30 +118,30 @@ gameinfo_t RetailGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	"D_VICTOR",
-	"FLOOR4_8",
+	{ 'D','_','V','I','C','T','O','R' },
+	{ 'F','L','O','O','R','4','_','8' },
 	"CREDIT",
-	"VICTORY2",
+	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "CREDIT" } },
 	quitsounds,
 	2,
-	"FLOOR7_2",
+	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder
 };
 
 gameinfo_t CommercialGameInfo =
 {
 	GI_MAPxx | GI_MENUHACK_COMMERCIAL,
-	"TITLEPIC",
+	{ 'T','I','T','L','E','P','I','C' },
 	"CREDIT",
 	"CREDIT",
-	"D_DM2TTL",
+	{ 'D','_','D','M','2','T','T','L' },
 	11,
 	0,
 	200/35,
 	"misc/chat",
-	"D_READ_M",
+	{ 'D','_','R','E','A','D','_','M' },
 	"SLIME16",
 	"CREDIT",
 	"CREDIT",
