@@ -115,9 +115,6 @@
 			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 			<Add directory=".\res" />
 		</Linker>
-		<ExtraCommands>
-			<Add before="res/wxrc /c /o res/xrc_resource.h res/dlgmain.xrc res/dlgconfig.xrc" />
-		</ExtraCommands>
 		<Unit filename="res\dlgconfig.xrc">
 			<Option weight="0" />
 		</Unit>
