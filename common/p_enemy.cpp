@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -517,7 +517,11 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 	if(!sector)
 		return false;
 		
-	size_t realnum = players.size();
+	size_t s = players.size();
+	size_t realnum = 0;
+	for(size_t i = 0; i < s; i++)
+		if(players[i].ingame())
+			realnum++;
 	
 	if(!realnum)
 		return false;
@@ -2065,5 +2069,5 @@ void A_PlayerScream (AActor *mo)
 	S_Sound (mo, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
 
-VERSION_CONTROL (p_enemy_cpp, "$Id:$")
+VERSION_CONTROL (p_enemy_cpp, "$Id$")
 
