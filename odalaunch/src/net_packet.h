@@ -72,7 +72,7 @@ struct serverinfo_t     // Server information structure
 class ServerBase  // [Russell] - Defines an abstract class for all packets
 {
     protected:      
-        BufferedSocket Socket;
+        static BufferedSocket Socket;
         
         // Magic numbers
         wxInt32 challenge;
