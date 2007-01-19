@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -72,22 +72,22 @@ gameinfo_t SharewareGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOR4_8",
 	"HELP2",
-	{ 'V','I','C','T','O','R','Y','2' },
+	"VICTORY2",
 	"ENDPIC",
 	{ { "HELP1", "HELP2" } },
 	quitsounds,
 	1,
-	{ 'F','L','O','O','R','7','_','2' },
+	"FLOOR7_2",
 	&DoomBorder
 };
 
 gameinfo_t RegisteredGameInfo =
 {
 	GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"HELP2",
 	"D_INTRO",
@@ -95,22 +95,22 @@ gameinfo_t RegisteredGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOR4_8",
 	"HELP2",
-	{ 'V','I','C','T','O','R','Y','2' },
+	"VICTORY2",
 	"ENDPIC",
 	{ { "HELP1", "HELP2" } },
 	quitsounds,
 	2,
-	{ 'F','L','O','O','R','7','_','2' },
+	"FLOOR7_2",
 	&DoomBorder
 };
 
 gameinfo_t RetailGameInfo =
 {
 	GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"CREDIT",
 	"D_INTRO",
@@ -118,30 +118,30 @@ gameinfo_t RetailGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOR4_8",
 	"CREDIT",
-	{ 'V','I','C','T','O','R','Y','2' },
+	"VICTORY2",
 	"ENDPIC",
 	{ { "HELP1", "CREDIT" } },
 	quitsounds,
 	2,
-	{ 'F','L','O','O','R','7','_','2' },
+	"FLOOR7_2",
 	&DoomBorder
 };
 
 gameinfo_t CommercialGameInfo =
 {
 	GI_MAPxx | GI_MENUHACK_COMMERCIAL,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"CREDIT",
-	{ 'D','_','D','M','2','T','T','L' },
+	"D_DM2TTL",
 	11,
 	0,
 	200/35,
 	"misc/chat",
-	{ 'D','_','R','E','A','D','_','M' },
+	"D_READ_M",
 	"SLIME16",
 	"CREDIT",
 	"CREDIT",
@@ -153,5 +153,5 @@ gameinfo_t CommercialGameInfo =
 	&DoomBorder
 };
 
-VERSION_CONTROL (gi_cpp, "$Id:$")
+VERSION_CONTROL (gi_cpp, "$Id$")
 
