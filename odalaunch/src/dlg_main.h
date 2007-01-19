@@ -21,7 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef LAUNCHER_H
 #define LAUNCHER_H
 
@@ -50,6 +49,8 @@ class dlgMain : public wxFrame
 		
         Server          *QServer;
         MasterServer    *MServer;
+        
+        launchercfg_t launchercfg_s;
 	protected:
 
         void OnOpenSettingsDialog(wxCommandEvent& event);

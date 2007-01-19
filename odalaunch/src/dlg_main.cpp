@@ -88,6 +88,10 @@ END_EVENT_TABLE()
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
+    launchercfg_s.get_list_on_start = 1;
+    launchercfg_s.show_blocked_servers = 1;
+    launchercfg_s.wad_paths = _T("");
+
 	wxXmlResource::Get()->LoadFrame(this, parent, _T("dlgMain")); 
   
     SERVER_LIST = wxStaticCast((*this).FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
@@ -98,7 +102,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     SPLITTER_WINDOW->SetSashGravity(1.0);
 
     /* Init config dialog and load settings */
-    config_dlg = new dlgConfig(NULL);
+    config_dlg = new dlgConfig(&launchercfg_s, NULL);
 
     // Set menu and status bar
     // Menu item id's are determined automatically when its loaded it seems
@@ -213,12 +217,10 @@ void dlgMain::OnAbout(wxCommandEvent& event)
 void dlgMain::OnLaunch(wxCommandEvent &event)
 {
     wxInt32 i = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-    
-    wxString doomwaddir = launchercfg_s.wad_paths;
-    
+       
     if (i > -1)
     {
-        LaunchGame(QServer[i], doomwaddir);
+        LaunchGame(QServer[i], launchercfg_s.wad_paths);
     }
 }
 

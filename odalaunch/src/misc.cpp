@@ -164,9 +164,18 @@ void LaunchGame(Server &s, wxString waddirs)
         return;
     }
 
-    cmdline += wxString::Format(_T(" -waddir %s -connect %s"), waddirs.c_str(), s.GetAddress().c_str());
+    // when adding waddir string, return 1 less, to get rid of extra delimiter
+    wxString dirs = waddirs.Mid(0, waddirs.Length() - 1);
+    
+    cmdline += wxString::Format(_T(" -waddir %s -connect %s"), dirs.c_str(), s.GetAddress().c_str());
 	
-	wxExecute(cmdline.c_str(), wxEXEC_ASYNC, NULL);
+    #ifdef __WXMSW__
+    cmdline.Replace(_T("\\\\"),_T("\\"), true);
+    #else
+    cmdline.Replace(_T("////"),_T("//"), true);
+    #endif
+	
+	wxExecute(cmdline, wxEXEC_ASYNC, NULL);
 	
 }
 

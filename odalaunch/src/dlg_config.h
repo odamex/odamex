@@ -25,6 +25,14 @@
 #ifndef DLGCONFIG_H
 #define DLGCONFIG_H
 
+// configuration file structure
+struct launchercfg_t
+{
+    wxInt32     get_list_on_start;
+    wxInt32     show_blocked_servers;
+    wxString    wad_paths;
+};
+
 #include <wx/dialog.h>
 #include <wx/intl.h>
 #include <wx/settings.h>
@@ -45,7 +53,7 @@ class dlgConfig: public wxDialog
 {
 	public:
 
-		dlgConfig(wxWindow* parent, wxWindowID id = -1);
+		dlgConfig(launchercfg_t *cfg, wxWindow* parent, wxWindowID id = -1);
 		virtual ~dlgConfig();
 
         void LoadSettings();
@@ -91,6 +99,8 @@ class dlgConfig: public wxDialog
         wxTextCtrl *DIR_BOX;
 
         wxFileConfig ConfigInfo;
+
+        launchercfg_t *cfg_file;
         
         wxInt32 UserChangedSetting;
 
@@ -98,13 +108,5 @@ class dlgConfig: public wxDialog
 
 		DECLARE_EVENT_TABLE()
 };
-
-// configuration file structure
-static struct
-{
-    wxInt32     get_list_on_start;
-    wxInt32     show_blocked_servers;
-    wxString    wad_paths;
-} launchercfg_s = { 1, 1, _T("") };
 
 #endif

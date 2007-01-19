@@ -78,7 +78,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 END_EVENT_TABLE()
 
 // Window constructor
-dlgConfig::dlgConfig(wxWindow *parent, wxWindowID id)
+dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
 {
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
@@ -101,6 +101,11 @@ dlgConfig::dlgConfig(wxWindow *parent, wxWindowID id)
     WAD_LIST = wxStaticCast((*this).FindWindow(ID_LSTWADDIR),wxListBox);
     
     DIR_BOX = wxStaticCast((*this).FindWindow(ID_TXTWADDIR),wxTextCtrl);
+    
+    // Load current configuration from global configuration structure
+    cfg_file = cfg;
+    
+    LoadSettings();
 }
 
 // Window destructor
@@ -110,17 +115,14 @@ dlgConfig::~dlgConfig()
 }
 
 void dlgConfig::Show()
-{
-    // Load current configuration from global configuration structure
-    LoadSettings();
-    
-    MASTER_CHECKBOX->SetValue(launchercfg_s.get_list_on_start);
-    BLOCKED_CHECKBOX->SetValue(launchercfg_s.show_blocked_servers);
+{  
+    MASTER_CHECKBOX->SetValue(cfg_file->get_list_on_start);
+    BLOCKED_CHECKBOX->SetValue(cfg_file->show_blocked_servers);
     
     // Load wad path list
     WAD_LIST->Clear();
     
-    wxStringTokenizer wadlist(launchercfg_s.wad_paths, _T(';'));
+    wxStringTokenizer wadlist(cfg_file->wad_paths, _T(';'));
     
     UserChangedSetting = 0;
     
@@ -133,7 +135,7 @@ void dlgConfig::Show()
         #else
         path.Replace(_T("////"),_T("//"), true);
         #endif
-        
+
         WAD_LIST->AppendString(path);
     }
     
@@ -164,14 +166,14 @@ void dlgConfig::OnOK(wxCommandEvent &event)
         UserChangedSetting = 0;
         
         // Store data into global launcher configuration structure
-        launchercfg_s.get_list_on_start = MASTER_CHECKBOX->GetValue();
-        launchercfg_s.show_blocked_servers = BLOCKED_CHECKBOX->GetValue();
+        cfg_file->get_list_on_start = MASTER_CHECKBOX->GetValue();
+        cfg_file->show_blocked_servers = BLOCKED_CHECKBOX->GetValue();
         
-        launchercfg_s.wad_paths = _T("");
+        cfg_file->wad_paths = _T("");
         
         if (WAD_LIST->GetCount() > 0)
             for (wxInt32 i = 0; i < WAD_LIST->GetCount(); i++)
-                launchercfg_s.wad_paths.Append(WAD_LIST->GetString(i) + _T(';'));
+                cfg_file->wad_paths.Append(WAD_LIST->GetString(i) + _T(';'));
                 
         // Save settings to configuration file        
         SaveSettings();
@@ -353,17 +355,17 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
 // Load settings from configuration file
 void dlgConfig::LoadSettings()
 {   
-    ConfigInfo.Read(_T(GETLISTONSTART), &launchercfg_s.get_list_on_start, launchercfg_s.get_list_on_start);	
-    ConfigInfo.Read(_T(SHOWBLOCKEDSERVERS), &launchercfg_s.show_blocked_servers, launchercfg_s.show_blocked_servers);
-	launchercfg_s.wad_paths = ConfigInfo.Read(_T(DELIMWADPATHS), launchercfg_s.wad_paths);
+    ConfigInfo.Read(_T(GETLISTONSTART), &cfg_file->get_list_on_start, 1);	
+    ConfigInfo.Read(_T(SHOWBLOCKEDSERVERS), &cfg_file->show_blocked_servers, cfg_file->show_blocked_servers);
+	cfg_file->wad_paths = ConfigInfo.Read(_T(DELIMWADPATHS), cfg_file->wad_paths);
 }
 
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
-    ConfigInfo.Write(_T(GETLISTONSTART), launchercfg_s.get_list_on_start);
-	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), launchercfg_s.show_blocked_servers);
-	ConfigInfo.Write(_T(DELIMWADPATHS), launchercfg_s.wad_paths);
+    ConfigInfo.Write(_T(GETLISTONSTART), cfg_file->get_list_on_start);
+	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
+	ConfigInfo.Write(_T(DELIMWADPATHS), cfg_file->wad_paths);
     
 	ConfigInfo.Flush();
 }
