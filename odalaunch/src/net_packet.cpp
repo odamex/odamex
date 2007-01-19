@@ -24,7 +24,7 @@
 
 #include "net_packet.h"
 
-BufferedSocket ServerBase::Socket;
+//BufferedSocket ServerBase::Socket;
 
 /*
     Create a packet to send, which in turn will
