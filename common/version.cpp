@@ -57,7 +57,7 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 	string tmp;
 	unsigned int rev = 0;
 	rs >> tmp >> tmp;
-	if(rs)
+	if(!rs.eof())
 		rs >> rev;
 	if(last_revision < rev)
 		last_revision = rev;

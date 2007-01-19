@@ -258,6 +258,10 @@ SOURCE=..\src\v_video.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\version.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\wi_stuff.cpp
 # End Source File
 # End Group
