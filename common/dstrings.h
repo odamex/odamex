@@ -447,7 +447,21 @@ typedef struct gamestring_s {
 #define STARTUP4			(Strings[337].string)
 #define STARTUP5			(Strings[338].string)
 
-#define NUMSTRINGS			339
+#define D1_INTBG1			(Strings[339].string)
+#define D1_INTBG2			(Strings[340].string)
+#define D1_INTBG3			(Strings[341].string)
+#define D1_INTBG4			(Strings[342].string)
+#define D2_INTBG1			(Strings[343].string)
+#define D2_INTBG2			(Strings[344].string)
+#define D2_INTBG3			(Strings[345].string)
+#define D2_INTBG4			(Strings[346].string)
+#define D2_INTBG5			(Strings[347].string)
+#define D2_INTBG6			(Strings[348].string)
+#define D2_INTBG7			(Strings[349].string)
+
+#define QUITTODOS			(Strings[350].string)
+
+#define NUMSTRINGS			351
 
 extern gamestring_t Strings[];
 

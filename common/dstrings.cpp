@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -630,6 +630,18 @@ gamestring_t Strings[NUMSTRINGS] = {
 	{ str_notchanged, "STARTUP3", "", NULL },
 	{ str_notchanged, "STARTUP4", "", NULL },
 	{ str_notchanged, "STARTUP5", "", NULL },
+	{ str_notchanged, "D1_INTBG1", "FLOOR4_8", NULL },
+	{ str_notchanged, "D1_INTBG2", "SFLR6_1", NULL },
+	{ str_notchanged, "D1_INTBG3", "MFLR8_4", NULL },
+	{ str_notchanged, "D1_INTBG4", "MFLR8_3", NULL },
+	{ str_notchanged, "D2_INTBG1", "SLIME16", NULL },
+	{ str_notchanged, "D2_INTBG2", "RROCK14", NULL },
+	{ str_notchanged, "D2_INTBG3", "RROCK07", NULL },
+	{ str_notchanged, "D2_INTBG4", "RROCK17", NULL },
+	{ str_notchanged, "D2_INTBG5", "RROCK13", NULL },
+	{ str_notchanged, "D2_INTBG6", "RROCK19", NULL },
+	{ str_notchanged, "D2_INTBG7", "BOSSBACK", NULL },
+	{ str_notchanged, "QUITTODOS", "%s\n\n(press y to quit to dos.)", NULL },
 };
 
 void D_InitStrings (void)
@@ -655,5 +667,5 @@ void ReplaceString (char **ptr, char *str)
 	*ptr = copystring (str);
 }
 
-VERSION_CONTROL (dstrings_cpp, "$Id:$")
+VERSION_CONTROL (dstrings_cpp, "$Id$")
 
