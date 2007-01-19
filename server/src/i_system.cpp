@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -505,7 +505,8 @@ std::string I_ConsoleInput (void)
     return "";
 }
 
+VERSION_CONTROL (i_system_cpp, "$Id$")
+
 #endif
 
-VERSION_CONTROL (i_system_cpp, "$Id:$")
 
