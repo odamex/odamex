@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -289,7 +289,8 @@ manual_plat:
 			plat->m_High = P_FindNextHighestFloor (sec, sec->floorheight);
 			plat->m_Status = DPlat::up;
 			//plat->PlayPlatSound ("Floor");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			//S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
 			break;
 
 		case DPlat::platUpByValue:
@@ -297,14 +298,16 @@ manual_plat:
 			plat->m_High = sec->floorheight + height;
 			plat->m_Status = DPlat::up;
 			//plat->PlayPlatSound ("Floor");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			//S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
 			break;
 		
 		case DPlat::platDownByValue:
 			plat->m_Low = sec->floorheight - height;
 			plat->m_Status = DPlat::down;
 			//plat->PlayPlatSound ("Floor");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			//S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
 			break;
 
 		case DPlat::platDownWaitUpStay:
@@ -413,5 +416,5 @@ void EV_StopPlat (int tag)
 }
 
 
-VERSION_CONTROL (p_plats_cpp, "$Id:$")
+VERSION_CONTROL (p_plats_cpp, "$Id$")
 
