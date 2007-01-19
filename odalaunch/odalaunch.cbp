@@ -46,7 +46,7 @@
 				</Linker>
 				<Environment>
 					<Variable name="WX_PLAT" value="msw" />
-					<Variable name="WX_CFG" value="ud" />
+					<Variable name="WX_CFG" value="d" />
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
@@ -78,13 +78,13 @@
 				</Compiler>
 				<Environment>
 					<Variable name="WX_PLAT" value="unix" />
-					<Variable name="WX_CFG" value="ud" />
+					<Variable name="WX_CFG" value="d" />
 				</Environment>
 			</Target>
 			<Environment>
 				<Variable name="WX_VER" value="28" />
 				<Variable name="WX_LIB" value="lib" />
-				<Variable name="WX_CFG" value="u" />
+				<Variable name="WX_CFG" value="" />
 			</Environment>
 		</Build>
 		<VirtualTargets>
@@ -99,7 +99,6 @@
 			<Add option='-include &quot;wx_pch.h&quot;' />
 			<Add option="-Winvalid-pch" />
 			<Add option="-DUSE_PCH" />
-			<Add option="-DwxUSE_UNICODE" />
 			<Add directory="$(#WX.include)" />
 			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 			<Add directory="$(#WX)\contrib\include" />
