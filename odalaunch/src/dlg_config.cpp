@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -31,7 +31,7 @@
 #include <wx/msgdlg.h>
 #include <wx/wfstream.h>
 #include <wx/tokenzr.h>
-#include <wx/dirdlg.h> 
+#include <wx/dirdlg.h>
 //#include <wx/generic/dirdlgg.h>
 
 #include "main.h"
@@ -59,14 +59,14 @@ wxInt32 ID_TXTWADDIR = XRCID("ID_TXTWADDIR");
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	// Window events
 	EVT_CLOSE(dlgConfig::OnCloseWindow)
-	
+
 	// Button events
 	EVT_BUTTON(ID_BTNCHOOSEDIR, dlgConfig::OnChooseDir)
 	EVT_BUTTON(ID_BTNADD, dlgConfig::OnAddDir)
 	EVT_BUTTON(ID_BTNREPLACE, dlgConfig::OnReplaceDir)
 	EVT_BUTTON(ID_BTNDELETE, dlgConfig::OnDeleteDir)
     EVT_BUTTON(ID_BTNUP, dlgConfig::OnUpClick)
-    EVT_BUTTON(ID_BTNDOWN, dlgConfig::OnDownClick) 
+    EVT_BUTTON(ID_BTNDOWN, dlgConfig::OnDownClick)
 
     EVT_BUTTON(ID_BTNGETENV, dlgConfig::OnGetEnvClick)
 
@@ -82,52 +82,52 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
 {
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
-    
+
     MASTER_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKLISTONSTART), wxCheckBox);
     BLOCKED_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKSHOWBLOCKEDSERVERS), wxCheckBox);
-    
+
     ADD_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNADD),wxButton);
     REPLACE_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNREPLACE),wxButton);
     DELETE_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNDELETE),wxButton);
     CHOOSEDIR_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNCHOOSEDIR),wxButton);
-    UP_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNUP),wxButton);    
-    DOWN_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNDOWN),wxButton);   
-    
-    GETENV_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNGETENV),wxButton); 
-    
+    UP_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNUP),wxButton);
+    DOWN_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNDOWN),wxButton);
+
+    GETENV_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNGETENV),wxButton);
+
     CLOSE_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNCLOSE),wxButton);
     OK_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNOK),wxButton);
-    
+
     WAD_LIST = wxStaticCast((*this).FindWindow(ID_LSTWADDIR),wxListBox);
-    
+
     DIR_BOX = wxStaticCast((*this).FindWindow(ID_TXTWADDIR),wxTextCtrl);
-    
+
     // Load current configuration from global configuration structure
     cfg_file = cfg;
-    
+
     LoadSettings();
 }
 
 // Window destructor
 dlgConfig::~dlgConfig()
 {
-    
+
 }
 
 void dlgConfig::Show()
-{  
+{
     MASTER_CHECKBOX->SetValue(cfg_file->get_list_on_start);
     BLOCKED_CHECKBOX->SetValue(cfg_file->show_blocked_servers);
-    
+
     // Load wad path list
     WAD_LIST->Clear();
-    
+
     wxStringTokenizer wadlist(cfg_file->wad_paths, _T(';'));
-    
+
     UserChangedSetting = 0;
-    
+
     while (wadlist.HasMoreTokens())
-    {       
+    {
         wxString path = wadlist.GetNextToken();
 
         #ifdef __WXMSW__
@@ -138,7 +138,7 @@ void dlgConfig::Show()
 
         WAD_LIST->AppendString(path);
     }
-    
+
     ShowModal();
 }
 
@@ -156,31 +156,31 @@ void dlgConfig::OnCheckedBox(wxCommandEvent &event)
 // User pressed ok button
 void dlgConfig::OnOK(wxCommandEvent &event)
 {
-    wxMessageDialog msgdlg(this, _T("Save settings?"), _T("Save settings?"), 
+    wxMessageDialog msgdlg(this, _T("Save settings?"), _T("Save settings?"),
                            wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
-    
+
     if (UserChangedSetting == 1)
     if (msgdlg.ShowModal() == wxID_YES)
     {
         // reset 'dirty' flag
         UserChangedSetting = 0;
-        
+
         // Store data into global launcher configuration structure
         cfg_file->get_list_on_start = MASTER_CHECKBOX->GetValue();
         cfg_file->show_blocked_servers = BLOCKED_CHECKBOX->GetValue();
-        
+
         cfg_file->wad_paths = _T("");
-        
+
         if (WAD_LIST->GetCount() > 0)
             for (wxInt32 i = 0; i < WAD_LIST->GetCount(); i++)
                 cfg_file->wad_paths.Append(WAD_LIST->GetString(i) + _T(';'));
-                
-        // Save settings to configuration file        
+
+        // Save settings to configuration file
         SaveSettings();
     }
     else
         UserChangedSetting = 0;
-        
+
     // Close window
     Close();
 }
@@ -201,14 +201,14 @@ void dlgConfig::OnAddDir(wxCommandEvent &event)
     if (DIR_BOX->GetLabel().IsEmpty())
     {
         wxDirDialog dirchoose(this, _T("Choose a WAD directory"));
-    
+
         // User pressed OK?
         if (dirchoose.ShowModal() == wxID_OK)
             DIR_BOX->SetLabel(dirchoose.GetPath());
         else
             return;
     }
-    
+
     // Check to see if the path exists on the system
     if (wxDirExists(DIR_BOX->GetLabel()))
     {
@@ -216,7 +216,7 @@ void dlgConfig::OnAddDir(wxCommandEvent &event)
         if (WAD_LIST->FindString(DIR_BOX->GetLabel()) == wxNOT_FOUND)
         {
             WAD_LIST->Append(DIR_BOX->GetLabel());
-            
+
             UserChangedSetting = 1;
         }
     }
@@ -233,8 +233,8 @@ void dlgConfig::OnReplaceDir(wxCommandEvent &event)
         // Get the selected item and replace it, if
         // it is selected.
         wxInt32 i = WAD_LIST->GetSelection();
-        
-        if (i != wxNOT_FOUND)       
+
+        if (i != wxNOT_FOUND)
         {
             WAD_LIST->SetString(i,DIR_BOX->GetLabel());
 
@@ -253,11 +253,11 @@ void dlgConfig::OnDeleteDir(wxCommandEvent &event)
     // Get the selected item and delete it, if
     // it is selected.
     wxInt32 i = WAD_LIST->GetSelection();
-        
+
     if (i != wxNOT_FOUND)
     {
         WAD_LIST->Delete(i);
-        
+
         UserChangedSetting = 1;
     }
     else
@@ -268,7 +268,7 @@ void dlgConfig::OnDeleteDir(wxCommandEvent &event)
 void dlgConfig::OnChooseDir(wxCommandEvent &event)
 {
     wxDirDialog dirchoose(this, _T("Choose a WAD directory"));
-    
+
     // User pressed ok?
     if (dirchoose.ShowModal() == wxID_OK)
         DIR_BOX->SetLabel(dirchoose.GetPath());
@@ -279,17 +279,17 @@ void dlgConfig::OnUpClick(wxCommandEvent &event)
 {
     // Get the selected item
     wxInt32 i = WAD_LIST->GetSelection();
-    
+
     if ((i != wxNOT_FOUND) && (i > 0))
     {
         wxString str = WAD_LIST->GetString(i);
-    
+
         WAD_LIST->Delete(i);
-        
+
         WAD_LIST->Insert(str, i - 1);
-        
+
         WAD_LIST->SetSelection(i - 1);
-        
+
         UserChangedSetting = 1;
     }
 }
@@ -305,11 +305,11 @@ void dlgConfig::OnDownClick(wxCommandEvent &event)
         wxString str = WAD_LIST->GetString(i);
 
         WAD_LIST->Delete(i);
-       
+
         WAD_LIST->Insert(str, i + 1);
-        
+
         WAD_LIST->SetSelection(i + 1);
-        
+
         UserChangedSetting = 1;
     }
 }
@@ -318,29 +318,29 @@ void dlgConfig::OnDownClick(wxCommandEvent &event)
 void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
 {
     wxString doomwaddir = _T("");
-    
+
     if (wxGetEnv(_T("DOOMWADDIR"),&doomwaddir))
     {
         wxInt32 path_count = 0;
-        
+
         wxStringTokenizer wadlist(doomwaddir, _T(';'));
-    
+
         while (wadlist.HasMoreTokens())
-        {       
+        {
             wxString path = wadlist.GetNextToken();
-            
+
             if (WAD_LIST->FindString(path) == wxNOT_FOUND)
             {
                 WAD_LIST->Append(path);
-                
+
                 path_count++;
             }
         }
-        
+
         if (path_count > 0)
         {
             wxMessageBox(_T("DOOMWADDIR environment variable import successful!"));
-            
+
             UserChangedSetting = 1;
         }
         else
@@ -348,14 +348,14 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
     }
     else
         wxMessageBox(_T("DOOMWADDIR environment variable not found!"));
-        
-    
+
+
 }
 
 // Load settings from configuration file
 void dlgConfig::LoadSettings()
-{   
-    ConfigInfo.Read(_T(GETLISTONSTART), &cfg_file->get_list_on_start, 1);	
+{
+    ConfigInfo.Read(_T(GETLISTONSTART), &cfg_file->get_list_on_start, 1);
     ConfigInfo.Read(_T(SHOWBLOCKEDSERVERS), &cfg_file->show_blocked_servers, cfg_file->show_blocked_servers);
 	cfg_file->wad_paths = ConfigInfo.Read(_T(DELIMWADPATHS), cfg_file->wad_paths);
 }
@@ -366,6 +366,6 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(_T(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
 	ConfigInfo.Write(_T(DELIMWADPATHS), cfg_file->wad_paths);
-    
+
 	ConfigInfo.Flush();
 }
