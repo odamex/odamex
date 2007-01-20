@@ -59,7 +59,7 @@ char* endmsg[NUM_QUITMESSAGES+1]=
 };
 
 
-gamestring_t Strings[NUMSTRINGS] = {
+gamestring_t Strings[] = {
 	{ str_notchanged, "NULL", "NULL", NULL },
 	{ str_notchanged, "D_DEVSTR", "Useless mode ON.\n", NULL },
 	{ str_notchanged, "PRESSKEY", "press a key.", NULL },
@@ -625,6 +625,7 @@ gamestring_t Strings[NUMSTRINGS] = {
 	{ str_notchanged, "OB_FRIENDLY3", "gets a frag for the other team", NULL },
 	{ str_notchanged, "OB_FRIENDLY4", "loses another friend", NULL },
 	{ str_notchanged, "OB_RAILGUN", "was railed by %s", NULL },
+	{ str_notchanged, "SAVEGAMENAME", "odasav", NULL },
 	{ str_notchanged, "STARTUP1", "", NULL },
 	{ str_notchanged, "STARTUP2", "", NULL },
 	{ str_notchanged, "STARTUP3", "", NULL },
@@ -641,15 +642,19 @@ gamestring_t Strings[NUMSTRINGS] = {
 	{ str_notchanged, "D2_INTBG5", "RROCK13", NULL },
 	{ str_notchanged, "D2_INTBG6", "RROCK19", NULL },
 	{ str_notchanged, "D2_INTBG7", "BOSSBACK", NULL },
+	{ str_notchanged, NULL, NULL, NULL },
 };
 
 void D_InitStrings (void)
 {
-	int i;
+	int i = 0;
 
-	for (i = 0; i < NUMSTRINGS; i++) {
+	while(Strings[i].name)
+	{
 		if (Strings[i].type == str_notchanged)
 			ReplaceString (&Strings[i].string, Strings[i].builtin);
+		
+		i++;
 	}
 
 	endmsg[0] = QUITMSG;

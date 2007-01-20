@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -1465,13 +1465,17 @@ static int PatchText (int oldSize)
 
 	
 	// Search through most other texts
-	for (i = 0; i < NUMSTRINGS; i++) {
+	i = 0;
+	while(Strings[i].name)
+	{
 		if (!stricmp (Strings[i].builtin, oldStr)) {
 			ReplaceString (&Strings[i].string, newStr);
 			Strings[i].type = str_patched;
 			good = true;
 			break;
 		}
+		
+		i++;
 	}
 
 	if (!good)
@@ -1519,11 +1523,12 @@ static int PatchStrings (int dummy)
 				Line2 = NULL;
 		} while (Line2 && *Line2);
 
-		for (i = 0; i < NUMSTRINGS; i++)
-			if (!stricmp (Strings[i].name, Line1))
+		i = 0;
+		while(Strings[i].name)
+			if (!stricmp (Strings[i++].name, Line1))
 				break;
 
-		if (i == NUMSTRINGS) {
+		if (!Strings[i].name) {
 			Printf (PRINT_HIGH, "Unknown string: %s\n", Line1);
 		} else {
 			ReplaceSpecialChars (holdstring);
@@ -1708,5 +1713,5 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 	Printf (PRINT_HIGH, "Patch installed\n");
 }
 
-VERSION_CONTROL (d_dehacked_cpp, "$Id:$")
+VERSION_CONTROL (d_dehacked_cpp, "$Id$")
 
