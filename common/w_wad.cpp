@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,7 +24,6 @@
 #ifdef UNIX
 #include <ctype.h>
 #include <string.h>
-#include <alloca.h>
 #include <unistd.h>
 #ifndef O_BINARY
 #define O_BINARY		0
@@ -758,5 +757,5 @@ int W_FindLump (const char *name, int *lastlump)
 }
 
 
-VERSION_CONTROL (w_wad_cpp, "$Id:$")
+VERSION_CONTROL (w_wad_cpp, "$Id$")
 
