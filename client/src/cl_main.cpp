@@ -755,7 +755,9 @@ bool CL_Connect(void)
 		CL_RequestDownload(missing_file, missing_hash);
 
 	compressor.reset();
+
 	connected = true;
+    multiplayer = true;
 
 	CL_Decompress(0);
 	CL_ParseCommands();
@@ -782,7 +784,6 @@ bool CL_Connect(void)
 void CL_InitNetwork (void)
 {
     netgame = false;  // for old network code
-    multiplayer = true;
 
     const char *v = Args.CheckValue ("-port");
     if (v)
