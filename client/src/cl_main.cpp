@@ -89,12 +89,13 @@ CVAR (fastmonsters,		"0", CVAR_SERVERINFO)
 CVAR (allowexit,		"0", CVAR_SERVERINFO)
 CVAR (fragexitswitch,   "0", CVAR_SERVERINFO)       //  [ML] 03/4/06: Activate to allow exit switch at maxfrags, must click to exit
 CVAR (allowjump,		"0", CVAR_SERVERINFO)
+CVAR (freelook,			"0", CVAR_SERVERINFO)
 CVAR (scorelimit,		"0", CVAR_SERVERINFO)
 CVAR (monstersrespawn,	"0", CVAR_SERVERINFO)
 CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
 CVAR (sv_cheats,		"0", CVAR_SERVERINFO)
 
-CVAR (freelook,			"0", CVAR_ARCHIVE | CVAR_SERVERINFO)
+CVAR (cl_freelook,		"0", CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -1576,13 +1577,9 @@ void CL_ReadPacketHeader(void)
 
 EXTERN_CVAR (color)
 
-char backupskin[10];
-
 void CL_GetServerSettings(void)
 {
-	int	ctf;
-
-	ctf = MSG_ReadByte();
+	ctfmode = MSG_ReadByte() ? true : false;
 
 	// General server settings
 	maxplayers.Set((int)MSG_ReadShort());
@@ -1606,19 +1603,15 @@ void CL_GetServerSettings(void)
 	fragexitswitch.Set((BOOL)MSG_ReadByte());
 	allowjump.Set((BOOL)MSG_ReadByte());
 	freelook.Set((BOOL)MSG_ReadByte());
+	if(!cl_freelook)
+		freelook = "0";
 	infiniteammo.Set((BOOL)MSG_ReadByte());
 	infiniteheight.Set(MSG_ReadByte());
 
 	// Teamplay/CTF
-//	usectf		   = (BOOL)MSG_ReadByte();
 	scorelimit.Set((int)MSG_ReadShort());
 	friendlyfire.Set((BOOL)MSG_ReadByte());
 	teamplaymode		   = (BOOL)MSG_ReadByte();
-
-	if (ctf)
-		ctfmode = true;
-	else
-		ctfmode = false;
 
 	cvar_t::UnlatchCVars ();
 }
@@ -1665,11 +1658,6 @@ void CL_RememberSkin(void)
 
 	if (!strcmp (skin.cstring(), "RedTeam"))
 		return;
-
-//	if (!strcmp (skins[players[consoleplayer].userinfo.skin].name, "GoldTeam")
-//		strcpy (backupskin, "base");
-
-	strcpy (backupskin, skin.cstring());
 }
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -90,7 +90,7 @@ EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookspring)
 EXTERN_CVAR (lookstrafe)
 EXTERN_CVAR (crosshair)
-EXTERN_CVAR (freelook)
+EXTERN_CVAR (cl_freelook)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -224,7 +224,7 @@ static menuitem_t MouseItems[] =
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ discrete	,	"Use Dynamic Resolution"				, {&dynres_state},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Show Mouse Values"						, {&displaymouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Always FreeLook"						, {&freelook},			{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete	,	"Always FreeLook"						, {&cl_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
 	{ discrete	,	"Autoaim"								, {&autoaim},			{2.0},		{0.0},		{0.0},		{Auto_Aim}					},
@@ -1396,5 +1396,5 @@ BEGIN_COMMAND (menu_video)
 END_COMMAND (menu_video)
 
 
-VERSION_CONTROL (m_options_cpp, "$Id:$")
+VERSION_CONTROL (m_options_cpp, "$Id$")
 
