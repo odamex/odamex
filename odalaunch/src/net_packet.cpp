@@ -52,6 +52,8 @@ wxInt32 ServerBase::Query(wxInt32 Timeout)
         if (!Socket.GetData(Timeout))
             return 0;
         
+        Ping = Socket.GetPing();
+        
         Parse();
         
         return 1;

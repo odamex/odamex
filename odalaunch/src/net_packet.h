@@ -86,7 +86,8 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
     public:
         // Constructor
         ServerBase() 
-        {           
+        {
+            Ping = 0;           
         }
         
         // Destructor
@@ -104,7 +105,7 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
 //        void SetAddress(wxString AddressAndPort) { Socket.SetAddress(AddressAndPort); }
         
 		wxString GetAddress() { return to_addr.IPAddress() << _T(':') << to_addr.Service(); }
-		wxInt32 GetPing() { return Socket.GetPing(); }
+		wxInt32 GetPing() { return Ping; }
 };
 
 class MasterServer : public ServerBase  // [Russell] - A master server packet
