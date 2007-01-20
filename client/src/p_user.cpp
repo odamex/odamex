@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -251,13 +251,13 @@ void P_MovePlayer (player_t *player)
 				P_SideThrust (player, mo->angle, sidemove);
 			}
 		}
+
+		if (mo->state == &states[S_PLAY])
+		{
+			P_SetMobjState (player->mo, S_PLAY_RUN1);
+		}		
 	}
 
-	if (mo->state == &states[S_PLAY])
-	{
-		P_SetMobjState (player->mo, S_PLAY_RUN1);
-	}
-	
 	if (player->cheats & CF_REVERTPLEASE)
 	{
 		player->cheats &= ~CF_REVERTPLEASE;
@@ -669,5 +669,5 @@ void player_s::Serialize (FArchive &arc)
 	}
 }
 
-VERSION_CONTROL (p_user_cpp, "$Id:$")
+VERSION_CONTROL (p_user_cpp, "$Id$")
 
