@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -308,8 +308,6 @@ void SV_InitNetwork (void)
 	}
 
 	gametime = I_GetTime ();
-
-	SV_InitMaster();	
 }
 
 
@@ -2566,5 +2564,5 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 }
 
 
-VERSION_CONTROL (sv_main_cpp, "$Id:$")
+VERSION_CONTROL (sv_main_cpp, "$Id$")
 

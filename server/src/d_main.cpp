@@ -834,10 +834,10 @@ void D_DoomMain (void)
 
 	I_Init ();
 
-	D_CheckNetGame ();
-
 	M_LoadDefaults ();			// load before initing other systems
 	C_ExecCmdLineParams (true);	// [RH] do all +set commands on the command line
+	
+	D_CheckNetGame ();
 
 	//D_AddDefWads();
 	//SV_InitMultipleFiles (wadfiles);

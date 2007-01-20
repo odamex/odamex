@@ -40,8 +40,7 @@
 #define MASTERPORT			15000
 
 // [Russell] - default master list
-#define MASTER_NUM          2
-const char def_masterlist[MASTER_NUM][14] = { "odamex.net", "voxelsoft.com" };
+const char *def_masterlist[] = { "odamex.net", "voxelsoft.com", NULL };
 
 class masterserver
 {
@@ -95,8 +94,11 @@ void SV_InitMaster(void)
         // so we can dump them to the server cfg file if
         // one does not exist
         if (!masters.size())
-            for(int i = 0; i < MASTER_NUM; i++)
-                SV_AddMaster(def_masterlist[i]);
+		{
+			int i = 0;
+            while(def_masterlist[i])
+                SV_AddMaster(def_masterlist[i++]);
+		}
     }
 }
 
