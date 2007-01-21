@@ -1225,9 +1225,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		if (player->health <= 0)
 			player->health = 0;
 		
-		if(source)
-			player->attacker = source->ptr();
-
+		player->attacker = source ? source->ptr() : AActor::AActorPtr();
 		player->damagecount += damage;	// add damage after armor / invuln
 
 		if (player->damagecount > 100)

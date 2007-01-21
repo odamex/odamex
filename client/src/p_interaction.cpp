@@ -1071,7 +1071,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 {
 	if(!serverside)
 		return;
-	
+
 	unsigned	ang;
 	int 		saved;
 	player_t*	player;
@@ -1082,7 +1082,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 				
 	if (target->health <= 0)
 		return;
-	
+
 	MeansOfDeath = mod;
 	
 	if ( target->flags & MF_SKULLFLY )
@@ -1172,9 +1172,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		if (player->health <= 0)
 			player->health = 0;
 		
-		if(source)
-			player->attacker = source->ptr();
-		
+		player->attacker = source ? source->ptr() : AActor::AActorPtr();		
 		player->damagecount += damage;	// add damage after armor / invuln
 		
 		if (player->damagecount > 100)
