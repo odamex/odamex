@@ -178,11 +178,3 @@ void LaunchGame(Server &s, wxString waddirs)
 	wxExecute(cmdline, wxEXEC_ASYNC, NULL);
 	
 }
-
-wxInt32 FindServerInArray(Server s[], wxInt32 itemcnt, wxString Address)
-{
-    for (wxInt32 i = 0; i < itemcnt; i++)
-        if (s[i].GetAddress().IsSameAs(Address))
-            return i;
-}
-

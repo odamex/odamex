@@ -28,4 +28,3 @@
 void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert = 1);
 void AddPlayersToList(wxAdvancedListCtrl *list, Server &s);
 void LaunchGame(Server &s, wxString waddirs);
-int FindServerIndex(wxListCtrl *list, wxString Address);

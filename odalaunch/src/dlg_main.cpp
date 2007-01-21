@@ -217,6 +217,15 @@ void dlgMain::OnAbout(wxCommandEvent& event)
 void dlgMain::OnLaunch(wxCommandEvent &event)
 {
     wxInt32 i = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+        
+    wxListItem item;
+    item.SetId(i);
+    item.SetColumn(7);
+    item.SetMask(wxLIST_MASK_TEXT);
+        
+    SERVER_LIST->GetItem(item);
+        
+    i = FindServer(item.GetText()); 
        
     if (i > -1)
     {
@@ -300,6 +309,18 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
         
         wxInt32 i = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
+        wxListItem item;
+        item.SetId(i);
+        item.SetColumn(7);
+        item.SetMask(wxLIST_MASK_TEXT);
+        
+        SERVER_LIST->GetItem(item);
+        
+        i = FindServer(item.GetText()); 
+        
+        if (i == -1)
+            return;
+                
         totalPlayers -= QServer[i].info.numplayers;
         
         QServer[i].Query(500);
@@ -353,7 +374,17 @@ void dlgMain::OnServerListClick(wxListEvent& event)
         
         wxInt32 i = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
-        AddPlayersToList(PLAYER_LIST, QServer[i]);
+        wxListItem item;
+        item.SetId(i);
+        item.SetColumn(7);
+        item.SetMask(wxLIST_MASK_TEXT);
+        
+        SERVER_LIST->GetItem(item);
+        
+        i = FindServer(item.GetText()); 
+        
+        if (i > -1)
+            AddPlayersToList(PLAYER_LIST, QServer[i]);
     }
 }
 
@@ -367,6 +398,17 @@ void dlgMain::OnServerListDoubleClick(wxListEvent& event)
         wxPostEvent(this, event);
     }
 }
+
+// returns a index of the server address as the internal array index
+wxInt32 dlgMain::FindServer(wxString Address)
+{
+    for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
+        if (QServer[i].GetAddress().IsSameAs(Address))
+            return i;
+    
+    return -1;
+}
+
 
 void dlgMain::OnOpenWebsite(wxCommandEvent &event)
 {

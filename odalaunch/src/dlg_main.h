@@ -73,6 +73,8 @@ class dlgMain : public wxFrame
 		
 		void OnComboSelectMaster(wxCommandEvent& event);
 		
+		wxInt32 FindServer(wxString Address);
+		
 		wxSplitterWindow *SPLITTER_WINDOW;
 		wxAdvancedListCtrl *SERVER_LIST;
 		wxAdvancedListCtrl *PLAYER_LIST;
