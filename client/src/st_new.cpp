@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
@@ -183,18 +183,16 @@ void ST_newDraw (void)
 	// Draw armor
 	if (plyr->armortype && plyr->armorpoints)
 	{
-		if (armors[plyr->armortype])
+		const patch_t *current_armor = armors[1];
+		if(plyr->armortype == 1)
+			current_armor = armors[0];
+		
+		if (current_armor)
 		{
 			if (hud_scale)
-				screen->DrawPatchCleanNoMove (plyr->armortype > 2 ?
-											  armors[1] :
-											  armors[plyr->armortype-1],
-											  20 * CleanXfac,
-											  y - 4*CleanYfac);
+				screen->DrawPatchCleanNoMove (current_armor, 20 * CleanXfac, y - 4*CleanYfac);
 			else
-				screen->DrawPatch (plyr->armortype > 2 ? armors[1] :
-								   armors[plyr->armortype - 1],
-								   20, y - 4);
+				screen->DrawPatch (current_armor, 20, y - 4);
 		}
 		ST_DrawNum (40*xscale, y - (armors[0]->height()+3)*yscale,
 					 screen, plyr->armorpoints);
@@ -255,5 +253,5 @@ void ST_nameDraw (int y)
 		screen->DrawTextCleanLuc (CR_GREEN, x, y, string);
 }
 
-VERSION_CONTROL (st_new_cpp, "$Id:$")
+VERSION_CONTROL (st_new_cpp, "$Id$")
 

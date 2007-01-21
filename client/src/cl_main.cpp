@@ -1178,7 +1178,7 @@ void CL_PlayerInfo(void)
 
 	p->health = MSG_ReadByte ();
 	p->armorpoints = MSG_ReadByte ();
-	p->armortype = MSG_ReadByte () ? true : false;
+	p->armortype = MSG_ReadByte ();
 	p->pendingweapon = (weapontype_t)MSG_ReadByte ();
 	p->backpack = MSG_ReadByte () ? true : false;
 
