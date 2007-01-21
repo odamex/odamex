@@ -277,17 +277,14 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
 	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
 	{ control,	"Toggle automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
-//	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },        // [ML] 16/3/06 Not worth much to have
 	{ control,	"View Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
+	{ control,	"Console",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} }
 };
 
 menu_t ControlsMenu = {
 	{ 'M','_','C','O','N','T','R','O' },
 	1,
-	21,	// TIJ	Was: 19
-		//		Now: 21 (2 more Control menu items: Prev and Next Weapon)
-		// [ML] Now: 23 (16/3/06 - added spacer and View Scoreboard)
-		// [ML] Now: 21 (17/3/06 - removed Chasecam menu option)
+	22,
 	0,
 	ControlsItems,
 };
@@ -303,9 +300,7 @@ EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
 EXTERN_CVAR (st_scale)
 EXTERN_CVAR (am_usecustomcolors)
-// EXTERN_CVAR (r_detail)           // [ML] Removed 16/3/06 - No more detail mode switching!
 EXTERN_CVAR (r_stretchsky)
-// EXTERN_CVAR (r_columnmethod)     // [ML] Removed 16/3/07 - Now always 0 (Original)
 EXTERN_CVAR (r_drawfuzz)
 EXTERN_CVAR (cl_rockettrails)
 EXTERN_CVAR (wipetype)
@@ -337,8 +332,6 @@ static menuitem_t VideoItems[] = {
 	{ slider,	"Screen size",			{&screenblocks},	   	{3.0}, {12.0},	{1.0}, {NULL} },
 	{ slider,	"Brightness",			{&Gamma},			   	{1.0}, {3.0},	{0.1}, {NULL} },
 	{ discrete,	"Crosshair",			{&crosshair},		   	{9.0}, {0.0},	{0.0}, {Crosshairs} },
-//	{ discrete, "Column render mode",	{&r_columnmethod},		{2.0}, {0.0},	{0.0}, {ColumnMethods} },   // [ML] Removed 16/3/06, now always 0 (Original)
-//	{ discrete, "Detail mode",			{&r_detail},		   	{4.0}, {0.0},	{0.0}, {DetailModes} },     // [ML] Removed 16/3/06 because who needs it?
 	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Screen wipe style",	{&wipetype},			{4.0}, {0.0},	{0.0}, {Wipes} },

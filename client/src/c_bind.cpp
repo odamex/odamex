@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -39,7 +39,7 @@
  * to the original DOOM's keymappings.
  */
 char DefBindings[] =
-	"bind ` toggleconsole; "			// <- This is new
+	"bind grave toggleconsole; "			// <- This is new
 	"bind 1 \"impulse 1\"; "
 	"bind 2 \"impulse 2\"; "
 	"bind 3 \"impulse 3\"; "
@@ -103,7 +103,7 @@ const char *KeyNames[NUM_KEYS] = {
    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 48 - 4F
    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // 50 - 57
    NULL,    NULL,    NULL,     "[",    "\\",     "]",     "^",     "_", // 58 - 5F
-    "`",     "a",     "b",     "c",     "d",     "e",     "f",     "g", // 60 - 67
+"grave",     "a",     "b",     "c",     "d",     "e",     "f",     "g", // 60 - 67
     "h",     "i",     "j",     "k",     "l",     "m",     "n",     "o", // 68 - 6F
     "p",     "q",     "r",     "s",     "t",     "u",     "v",     "w", // 70 - 77
     "x",     "y",     "z",    NULL,    NULL,    NULL,    NULL,   "del", // 78 - 7F
@@ -451,5 +451,5 @@ const char *C_GetBinding (int key)
 	return Bindings[key].c_str();
 }
 
-VERSION_CONTROL (c_bind_cpp, "$Id:$")
+VERSION_CONTROL (c_bind_cpp, "$Id$")
 
