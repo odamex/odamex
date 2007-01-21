@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -281,13 +281,13 @@ BEGIN_COMMAND (bumpgamma)
 	// on the fly for *any* gamma level.
 	// Q: What are reasonable limits to use here?
 
-	float newgamma = Gamma + 0.1;
+	float newgamma = gammalevel + 1.0;
 
-	if (newgamma > 3.0)
+	if (newgamma > 4.0)
 		newgamma = 1.0;
 
-	Gamma.Set (newgamma);
-	Printf (PRINT_HIGH, "Gamma correction level %g\n", Gamma.value());
+	gammalevel.Set (newgamma);
+	Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value());
 }
 END_COMMAND (bumpgamma)
 
@@ -1407,5 +1407,5 @@ void M_Init (void)
 		FireRemap[i] = BestColor (DefaultPalette->basecolors, i, 0, 0, DefaultPalette->numcolors);
 }
 
-VERSION_CONTROL (m_menu_cpp, "$Id:$")
+VERSION_CONTROL (m_menu_cpp, "$Id$")
 

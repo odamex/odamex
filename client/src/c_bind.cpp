@@ -83,6 +83,7 @@ char DefBindings[] =
 	"bind sysrq screenshot; "			// <- Also known as the Print Screen key
 	"bind t messagemode; "
 	"bind \\ +showscores; "				// <- Another new command
+	"bind f11 bumpgamma; "
 	"bind f12 spynext";
 
 

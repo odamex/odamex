@@ -330,7 +330,7 @@ static menuitem_t VideoItems[] = {
 	{ more,		"Messages",				{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)StartMessagesMenu} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ slider,	"Screen size",			{&screenblocks},	   	{3.0}, {12.0},	{1.0}, {NULL} },
-	{ slider,	"Brightness",			{&Gamma},			   	{1.0}, {3.0},	{0.1}, {NULL} },
+	{ slider,	"Brightness",			{&gammalevel},			{1.0}, {4.0},	{1.0}, {NULL} },
 	{ discrete,	"Crosshair",			{&crosshair},		   	{9.0}, {0.0},	{0.0}, {Crosshairs} },
 	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },
@@ -560,7 +560,7 @@ BEGIN_COMMAND (togglemessages)
 }
 END_COMMAND (togglemessages)
 
-	void M_SizeDisplay (float diff)
+void M_SizeDisplay (float diff)
 {
 	// changing screenblocks automatically resizes the display
 	screenblocks.Set (screenblocks + diff);
@@ -573,7 +573,7 @@ BEGIN_COMMAND (sizedown)
 }
 END_COMMAND (sizedown)
 
-	BEGIN_COMMAND (sizeup)
+BEGIN_COMMAND (sizeup)
 {
 	M_SizeDisplay(1.0);
 	S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);

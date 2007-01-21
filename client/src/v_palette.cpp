@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -54,15 +54,15 @@ int		BlendR, BlendG, BlendB, BlendA;
 /**************************/
 
 byte newgamma[256];
-BEGIN_CUSTOM_CVAR (Gamma, "1", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE)
 {
 	static float lastgamma = 0;
 	double invgamma;
 	int i;
 
-	if (var == 0)
+	if (var <= 0 || var > 4)
 	{
-		// Gamma values of 0 are illegal.
+		// Only gamma values of 1 to 4 are legal.
 		var.Set (1);
 		return;
 	}
@@ -92,8 +92,7 @@ BEGIN_CUSTOM_CVAR (Gamma, "1", CVAR_ARCHIVE)
 		}
 	}
 }
-END_CUSTOM_CVAR (gamma)
-
+END_CUSTOM_CVAR (gammalevel)
 
 /****************************/
 /* Palette management stuff */
@@ -665,5 +664,5 @@ BEGIN_COMMAND (testcolor)
 }
 END_COMMAND (testcolor)
 
-VERSION_CONTROL (v_palette_cpp, "$Id:$")
+VERSION_CONTROL (v_palette_cpp, "$Id$")
 

@@ -428,8 +428,8 @@ extern	DCanvas *screen;
 
 extern	DBoundingBox 	dirtybox;
 
-extern	byte	newgamma[256];
-EXTERN_CVAR (Gamma) // removeme
+extern byte newgamma[256];
+EXTERN_CVAR (gammalevel)
 
 // Translucency tables
 extern unsigned int Col2RGB8[65][256];
