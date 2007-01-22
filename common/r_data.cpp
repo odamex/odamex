@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -55,6 +55,8 @@
 
 #include "v_palette.h"
 #include "v_video.h"
+
+#include <ctype.h>
 
 #include <algorithm>
 
@@ -950,5 +952,5 @@ void R_PrecacheLevel (void)
 	delete[] hitlist;
 }
 
-VERSION_CONTROL (r_data_cpp, "$Id:$")
+VERSION_CONTROL (r_data_cpp, "$Id$")
 
