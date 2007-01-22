@@ -858,8 +858,6 @@ void D_DoomMain (void)
 
 	devparm = Args.CheckParm ("-devparm");
 
-	deathmatch.Set (1.0f);
-
     // get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
