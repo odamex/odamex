@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		92A68F870B646045004AA40D /* i_net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A68F6F0B645EE9004AA40D /* i_net.cpp */; };
+		92A68F880B646045004AA40D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A68F710B645EE9004AA40D /* main.cpp */; };
+		92A68F8A0B64605F004AA40D /* dlg_config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2DAD90B64491800FD5B07 /* dlg_config.cpp */; };
+		92A68F8B0B646060004AA40D /* dlg_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2DADB0B64491800FD5B07 /* dlg_main.cpp */; };
+		92A68F8C0B646061004AA40D /* lst_custom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2DADD0B64491800FD5B07 /* lst_custom.cpp */; };
+		92A68F8D0B646061004AA40D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2DADF0B64491800FD5B07 /* main.cpp */; };
+		92A68F8E0B646062004AA40D /* misc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2DAE10B64491800FD5B07 /* misc.cpp */; };
+		92A68F8F0B646063004AA40D /* net_io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2DAE30B64491800FD5B07 /* net_io.cpp */; };
+		92A68F900B646064004AA40D /* net_packet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2DAE50B64491800FD5B07 /* net_packet.cpp */; };
 		92CE7EBA0B645C7800DCACF0 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CE7EB90B645C7800DCACF0 /* SDLMain.m */; };
 		92CE7ECD0B645CD500DCACF0 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CE7ECC0B645CD500DCACF0 /* Cocoa.framework */; };
 		92D2D76E0B62BA7600FD5B07 /* hardware.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6B20B62B89B00FD5B07 /* hardware.h */; };
@@ -901,6 +910,11 @@
 		920D7BC50B4D212B000AA4A2 /* w_wad.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = w_wad.h; sourceTree = "<group>"; };
 		920D7BC60B4D212C000AA4A2 /* z_zone.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = z_zone.cpp; sourceTree = "<group>"; };
 		920D7BC70B4D212C000AA4A2 /* z_zone.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = z_zone.h; sourceTree = "<group>"; };
+		92A68F6F0B645EE9004AA40D /* i_net.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_net.cpp; sourceTree = "<group>"; };
+		92A68F700B645EE9004AA40D /* i_net.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_net.h; sourceTree = "<group>"; };
+		92A68F710B645EE9004AA40D /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		92A68F780B645F1C004AA40D /* odamaster */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odamaster; sourceTree = BUILT_PRODUCTS_DIR; };
+		92A68F800B645FE6004AA40D /* odalaunch */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "compiled.mach-o.executable"; name = odalaunch; path = build/Release/odalaunch; sourceTree = "<group>"; };
 		92CE7E240B6451D200DCACF0 /* odasrv */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odasrv; sourceTree = BUILT_PRODUCTS_DIR; };
 		92CE7EB90B645C7800DCACF0 /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = SDLMain.m; sourceTree = "<group>"; };
 		92CE7ECC0B645CD500DCACF0 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
@@ -996,7 +1010,7 @@
 		92D2D9C70B643FD200FD5B07 /* i_system.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_system.h; sourceTree = "<group>"; };
 		92D2D9C80B643FD200FD5B07 /* odaserv.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = odaserv.ico; sourceTree = "<group>"; };
 		92D2D9C90B643FD200FD5B07 /* resource.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = resource.h; sourceTree = "<group>"; };
-		92D2DA840B6444B300FD5B07 /* odamex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "compiled.mach-o.executable"; path = odamex; sourceTree = BUILT_PRODUCTS_DIR; };
+		92D2DA840B6444B300FD5B07 /* odamex */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odamex; sourceTree = BUILT_PRODUCTS_DIR; };
 		92D2DAC80B64491800FD5B07 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		92D2DACB0B64491800FD5B07 /* btnexit.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = btnexit.ico; sourceTree = "<group>"; };
 		92D2DACC0B64491800FD5B07 /* btnhelp.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = btnhelp.ico; sourceTree = "<group>"; };
@@ -1049,6 +1063,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		92A68F760B645F1C004AA40D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		92A68F7E0B645FE6004AA40D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		92D2DA260B6442EA00FD5B07 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1072,7 +1100,6 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				92D2D80E0B62BB0B00FD5B07 /* Libraries */,
 				92D5334F0AB81EB700CF2FB2 /* trunk */,
 			);
 			name = Source;
@@ -1255,9 +1282,20 @@
 			path = common;
 			sourceTree = "<group>";
 		};
+		92A68F5C0B645EE9004AA40D /* master */ = {
+			isa = PBXGroup;
+			children = (
+				92A68F6F0B645EE9004AA40D /* i_net.cpp */,
+				92A68F700B645EE9004AA40D /* i_net.h */,
+				92A68F710B645EE9004AA40D /* main.cpp */,
+			);
+			path = master;
+			sourceTree = "<group>";
+		};
 		92D2D6AB0B62B89B00FD5B07 /* client */ = {
 			isa = PBXGroup;
 			children = (
+				92D2D80E0B62BB0B00FD5B07 /* libraries */,
 				92D2D6AC0B62B89B00FD5B07 /* sdl */,
 				92D2D6C10B62B89B00FD5B07 /* src */,
 			);
@@ -1365,7 +1403,7 @@
 			path = src;
 			sourceTree = "<group>";
 		};
-		92D2D80E0B62BB0B00FD5B07 /* Libraries */ = {
+		92D2D80E0B62BB0B00FD5B07 /* libraries */ = {
 			isa = PBXGroup;
 			children = (
 				92CE7ECC0B645CD500DCACF0 /* Cocoa.framework */,
@@ -1373,7 +1411,8 @@
 				92D53A100AB96D8E00CF2FB2 /* SDL.framework */,
 				92D53A0A0AB96D8700CF2FB2 /* SDL_mixer.framework */,
 			);
-			name = Libraries;
+			name = libraries;
+			path = ..;
 			sourceTree = "<group>";
 		};
 		92D2D9C40B643FD200FD5B07 /* win32 */ = {
@@ -1393,6 +1432,8 @@
 			children = (
 				92D2DA840B6444B300FD5B07 /* odamex */,
 				92CE7E240B6451D200DCACF0 /* odasrv */,
+				92A68F780B645F1C004AA40D /* odamaster */,
+				92A68F800B645FE6004AA40D /* odalaunch */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1461,6 +1502,7 @@
 				920D7ADB0B4D211D000AA4A2 /* server */,
 				92D2D6AB0B62B89B00FD5B07 /* client */,
 				92D2DAC70B64491800FD5B07 /* odalaunch */,
+				92A68F5C0B645EE9004AA40D /* master */,
 			);
 			name = trunk;
 			sourceTree = "<group>";
@@ -1491,6 +1533,38 @@
 			name = odamex;
 			productName = odasrv;
 			productReference = 92D2DA840B6444B300FD5B07 /* odamex */;
+			productType = "com.apple.product-type.tool";
+		};
+		92A68F770B645F1C004AA40D /* odamaster */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 92A68F7A0B645F39004AA40D /* Build configuration list for PBXNativeTarget "odamaster" */;
+			buildPhases = (
+				92A68F750B645F1C004AA40D /* Sources */,
+				92A68F760B645F1C004AA40D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = odamaster;
+			productName = odamaster;
+			productReference = 92A68F780B645F1C004AA40D /* odamaster */;
+			productType = "com.apple.product-type.tool";
+		};
+		92A68F7F0B645FE6004AA40D /* odalaunch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 92A68F820B646005004AA40D /* Build configuration list for PBXNativeTarget "odalaunch" */;
+			buildPhases = (
+				92A68F7D0B645FE6004AA40D /* Sources */,
+				92A68F7E0B645FE6004AA40D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = odalaunch;
+			productName = odalaunch;
+			productReference = 92A68F800B645FE6004AA40D /* odalaunch */;
 			productType = "com.apple.product-type.tool";
 		};
 		92D2D9D90B6442EA00FD5B07 /* odasrv */ = {
@@ -1524,6 +1598,8 @@
 			targets = (
 				920D7C380B4D21E2000AA4A2 /* odamex */,
 				92D2D9D90B6442EA00FD5B07 /* odasrv */,
+				92A68F770B645F1C004AA40D /* odamaster */,
+				92A68F7F0B645FE6004AA40D /* odalaunch */,
 			);
 		};
 /* End PBXProject section */
@@ -1631,6 +1707,29 @@
 				92D2DC200B644F4900FD5B07 /* w_wad.cpp in Sources */,
 				92D2DC220B644F4900FD5B07 /* z_zone.cpp in Sources */,
 				92CE7EBA0B645C7800DCACF0 /* SDLMain.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		92A68F750B645F1C004AA40D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				92A68F870B646045004AA40D /* i_net.cpp in Sources */,
+				92A68F880B646045004AA40D /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		92A68F7D0B645FE6004AA40D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				92A68F8A0B64605F004AA40D /* dlg_config.cpp in Sources */,
+				92A68F8B0B646060004AA40D /* dlg_main.cpp in Sources */,
+				92A68F8C0B646061004AA40D /* lst_custom.cpp in Sources */,
+				92A68F8D0B646061004AA40D /* main.cpp in Sources */,
+				92A68F8E0B646062004AA40D /* misc.cpp in Sources */,
+				92A68F8F0B646063004AA40D /* net_io.cpp in Sources */,
+				92A68F900B646064004AA40D /* net_packet.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1801,13 +1900,70 @@
 			};
 			name = Release;
 		};
+		92A68F7B0B645F39004AA40D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "$(HOME)/bin";
+				PREBINDING = NO;
+				PRODUCT_NAME = odamaster;
+				ZERO_LINK = NO;
+			};
+			name = Debug;
+		};
+		92A68F7C0B645F39004AA40D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				PREBINDING = NO;
+				PRODUCT_NAME = odamaster;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		92A68F830B646005004AA40D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "$(HOME)/bin";
+				PREBINDING = NO;
+				PRODUCT_NAME = odalaunch;
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		92A68F840B646005004AA40D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				PREBINDING = NO;
+				PRODUCT_NAME = odalaunch;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
 		92D2DA7B0B6442EA00FD5B07 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					ppc,
-					i386,
-				);
+				ARCHS = ppc;
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
@@ -1827,10 +1983,7 @@
 		92D2DA7C0B6442EA00FD5B07 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					ppc,
-					i386,
-				);
+				ARCHS = ppc;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1861,6 +2014,24 @@
 			buildConfigurations = (
 				920D7C3E0B4D2243000AA4A2 /* Debug */,
 				920D7C3F0B4D2243000AA4A2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		92A68F7A0B645F39004AA40D /* Build configuration list for PBXNativeTarget "odamaster" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				92A68F7B0B645F39004AA40D /* Debug */,
+				92A68F7C0B645F39004AA40D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		92A68F820B646005004AA40D /* Build configuration list for PBXNativeTarget "odalaunch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				92A68F830B646005004AA40D /* Debug */,
+				92A68F840B646005004AA40D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
