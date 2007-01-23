@@ -268,6 +268,9 @@ wxInt32 Server::Parse()
             info.teamplayinfo.goldscore = Socket.Read32();
     }
     
+    // version
+    Socket.Read16();
+    
     Socket.ClearRecvBuffer();
     
     return 1;

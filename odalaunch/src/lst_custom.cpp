@@ -37,6 +37,27 @@ struct sortinfo_t
     wxAdvancedListCtrl *ctrl;
 };
 
+wxInt32 GetFirstNumber(wxString str)
+{
+    //const wxChar num_arr[10] = { '0', '1', '2', '3', '4', 
+    //                            '5', '6', '7', '8', '9' };
+    
+    wxString ascii_num = _T("");
+    
+    if (str == _T(""))
+        return 0;
+    
+    for (wxInt32 i = 0; i < str.length(); i++)
+    {
+        if (wxIsdigit(str[i]))
+            ascii_num += str[i];
+        else
+            break;
+    }
+    
+    return wxAtoi(ascii_num.c_str());
+}
+
 int wxCALLBACK SortRoutine(long item1, long item2, long sortData) 
 {    
     sortinfo_t *sortinfo = (sortinfo_t *)sortData;
@@ -55,6 +76,17 @@ int wxCALLBACK SortRoutine(long item1, long item2, long sortData)
     
     wxString item1str = lstitem1.GetText();
     wxString item2str = lstitem2.GetText();
+    
+    if (wxIsdigit(item1str[0]) && wxIsdigit(item2str[0]))
+    {
+        wxInt32 item1val = GetFirstNumber(item1str);
+        wxInt32 item2val = GetFirstNumber(item2str);
+        
+        if (sortinfo->SortOrder)
+            return (item1val > item2val);
+        else
+            return (item1val < item2val);
+    }
     
     if (sortinfo->SortOrder == 1) 
         return item1str.CmpNoCase(item2str);
