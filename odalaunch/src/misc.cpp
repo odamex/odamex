@@ -53,6 +53,9 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
     
     wxInt32 ping = s.GetPing();
     
+    if (s.GetAddress() != _T("0.0.0.0:0"))
+        list->SetItem(idx, 7, s.GetAddress());
+    
     if (ping > 0)
     {
         list->SetItem(idx, 1, wxString::Format(_T("%d"),ping));
@@ -105,8 +108,6 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
         list->SetItem(idx, 5, gmode);
         list->SetItem(idx, 6, s.info.iwad);
     }
-    
-    list->SetItem(idx, 7, s.GetAddress());
 }
 
 void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)

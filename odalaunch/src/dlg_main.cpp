@@ -284,11 +284,17 @@ void dlgMain::OnGetList(wxCommandEvent &event)
 
             QServer[i].SetAddress(Address, Port);
             
-            QServer[i].Query(500);
-       
-            AddServerToList(SERVER_LIST, QServer[i], i);
+            if (QServer[i].Query(500))
+            {
+                AddServerToList(SERVER_LIST, QServer[i], i);
             
-            totalPlayers += QServer[i].info.numplayers;
+                totalPlayers += QServer[i].info.numplayers;
+            }
+            else
+            {
+                if (launchercfg_s.show_blocked_servers)
+                    AddServerToList(SERVER_LIST, QServer[i], i);
+            }
 
             SERVER_LIST->ColourListItem(i);
             
@@ -347,12 +353,18 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
         
         for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
         {    
-            QServer[i].Query(500);
-       
-            AddServerToList(SERVER_LIST, QServer[i], i);
+            if (QServer[i].Query(500))
+            {
+                AddServerToList(SERVER_LIST, QServer[i], i);
             
-            totalPlayers += QServer[i].info.numplayers;
-        
+                totalPlayers += QServer[i].info.numplayers;
+            }
+            else
+            {
+                if (launchercfg_s.show_blocked_servers)
+                    AddServerToList(SERVER_LIST, QServer[i], i);
+            }
+              
             SERVER_LIST->ColourListItem(i);
         
             wxSafeYield(this, true);

@@ -96,7 +96,7 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         }
         
         // Parse a packet, the parameter is the packet
-        virtual void Parse() { };
+        virtual wxInt32 Parse() { };
         
         // Query the server
         wxInt32 Query(wxInt32 Timeout);
@@ -166,7 +166,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             }
         }
         
-        void Parse();
+        wxInt32 Parse();
 };
 
 class Server : public ServerBase  // [Russell] - A single server
@@ -180,7 +180,7 @@ class Server : public ServerBase  // [Russell] - A single server
         
         virtual  ~Server();
         
-        void Parse();
+        wxInt32 Parse();
 };
 
 #endif // NETPACKET_H
