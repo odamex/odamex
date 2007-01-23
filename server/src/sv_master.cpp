@@ -368,6 +368,8 @@ void SV_SendServerInfo()
 				MSG_WriteLong(&ml_message, TEAMpoints[i]);
 		}
 	}
+	
+	MSG_WriteShort(&ml_message, VERSION);
 
 	NET_SendPacket(ml_message, net_from);
 }

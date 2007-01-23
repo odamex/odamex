@@ -1027,6 +1027,12 @@ void SV_UpdateSectors(client_t* cl)
 			MSG_WriteShort (&cl->netbuf, sec->floorheight>>FRACBITS);
 			MSG_WriteShort (&cl->netbuf, sec->ceilingheight>>FRACBITS);
 			
+			if(cl->version != 62) // denis - removeme - remove the 'if' condition on this block of code - legacy protocol did not have these lines
+			{
+				MSG_WriteShort (&cl->netbuf, sec->floorpic);
+				MSG_WriteShort (&cl->netbuf, sec->ceilingpic);
+			}
+			
 			/*if(sec->floordata->IsKindOf(RUNTIME_CLASS(DMover)))
 			{
 				DMover *d = sec->floordata;
@@ -1315,12 +1321,14 @@ void SV_ConnectClient (void)
 	MSG_WriteByte   (&cl->reliablebuf, PRINT_HIGH);
 	MSG_WriteString (&cl->reliablebuf, welcomestring);
 
-	short version = MSG_ReadShort();
+	cl->version = MSG_ReadShort();
 	byte connection_type = MSG_ReadByte();
 
 	// wrong version
-	if (version != VERSION)
+	if (cl->version != VERSION
+		&& cl->version != 62) // denis - removeme - allow legacy protocol support
 	{
+		MSG_WriteString (&cl->reliablebuf, "Incompatible protocol version");
 		MSG_WriteMarker (&cl->reliablebuf, svc_disconnect);
 
 		SV_SendPacket (players[n]);

@@ -121,7 +121,10 @@ public:
 				playerstate == PST_REBORN;
 	}
 
+	// player identifier on server
 	byte		id;
+	
+	// current player state, see playerstate_t
 	byte		playerstate;
 
 	AActor::AActorPtr	mo;
@@ -217,6 +220,9 @@ public:
 		
 		buf_t       netbuf;
 		buf_t       reliablebuf;
+		
+		// protocol version supported by the client
+		short		version;
 
 		// for reliable protocol
 		buf_t       relpackets; // save reliable packets here
@@ -258,6 +264,7 @@ public:
 			: address(other.address),
 			netbuf(other.netbuf),
 			reliablebuf(other.reliablebuf),
+			version(other.version),
 			relpackets(other.relpackets),
 			sequence(other.sequence),
 			last_sequence(other.last_sequence),

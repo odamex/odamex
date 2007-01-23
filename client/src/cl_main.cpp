@@ -51,6 +51,9 @@
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 
+// denis - client version (VERSION or other supported)
+short version;
+
 buf_t     net_buffer(MAX_UDP_PACKET);
 
 bool      noservermsgs;
@@ -717,6 +720,11 @@ bool CL_PrepareConnect(void)
 		if (MSG_ReadByte())
 			MSG_ReadLong();
 	}
+	
+	version = MSG_ReadShort();
+	
+	if(version != 62 && version != VERSION)
+		version = 62;
 
 	Printf(PRINT_HIGH, "\n");
 
@@ -833,7 +841,7 @@ void CL_TryToConnect(DWORD server_token)
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, CHALLENGE); // send challenge
 		MSG_WriteLong(&net_buffer, server_token); // confirm server token
-		MSG_WriteShort(&net_buffer, VERSION); // send client version
+		MSG_WriteShort(&net_buffer, version); // send client version
 
 		if(gamestate == GS_DOWNLOAD)
 			MSG_WriteByte(&net_buffer, 1); // send type of connection (play/spectate/rcon/download)
@@ -1471,13 +1479,27 @@ void CL_UpdateSector(void)
 	unsigned short s = (unsigned short)MSG_ReadShort();
 	unsigned short fh = MSG_ReadShort();
 	unsigned short ch = MSG_ReadShort();
+	
+	unsigned short fp = 0, cp = 0;
+	if(version != 62)
+	{
+		fp = MSG_ReadShort();
+		cp = MSG_ReadShort();
+	}
 
 	if(!sectors || s >= numsectors)
 		return;
-
+		
 	sector_t *sec = &sectors[s];
 	sec->floorheight = fh << FRACBITS;
 	sec->ceilingheight = ch << FRACBITS;
+	
+	if(version != 62)
+	{
+		sec->floorpic = fp; // denis - todo - security
+		sec->ceilingpic = cp;
+	}
+		
 	P_ChangeSector (sec, false);
 }
 
