@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -577,6 +577,13 @@ void HU_DMScores2 (player_t *player)
 				  locx + DMBOARDWIDTH  + DMBORDER,
 				  locy + DMBOARDHEIGHT + DMBORDER);
 
+	// Scoreboard Identify
+    // Dan - Tells which current game mode is being played
+    if (deathmatch)
+        screen->DrawText (CR_GOLD,locx + 135,locy + 0,"Deathmatch");
+    else
+        screen->DrawText (CR_GOLD,locx + 150,locy + 0,"Cooperative");
+		
 	// Player scores header
 	screen->DrawText	  (CR_GREY	,locx + 8		,locy + 0	,"PLAYERS:"		);
 	if(deathmatch)
@@ -1051,8 +1058,11 @@ void HU_TeamScores2 (player_t *player)
 //				   glocx + 30,
 //				   231);
 
-
-
+	// Scoreboard Identify
+	// Dan - Tells which current game mode is being played
+    if (ctfmode)
+        screen->DrawText (CR_GOLD,blocx + 275,blocy + 0,"Capture The Flag");
+	
 	// BLUE
 	screen->DrawText	  (CR_GREY	,blocx + 8	,blocy + 16	,"SCORE:"			);
 	if(ctfmode)
@@ -1304,5 +1314,5 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 	odacanvas->Blit(0, 0, (xb - xa), (yb - ya), screen, xa, ya, (xb - xa), (yb - ya));
 }
 
-VERSION_CONTROL (hu_stuff_cpp, "$Id:$")
+VERSION_CONTROL (hu_stuff_cpp, "$Id$")
 
