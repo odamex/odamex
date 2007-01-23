@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -253,7 +253,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	if(suggestion.length())
 	{
 		std::string found = BaseFileSearch(suggestion, ".WAD");
-	
+
 		if(found.length())
 			iwad = found;
 		else
@@ -277,7 +277,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			}
 		}
 	}
-	
+
 	if(!iwad.length())
 	{
 		// Search for a pre-defined IWAD from the list above
@@ -387,7 +387,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	{
 		gameinfo = SharewareGameInfo;
 	}
-	
+
 	if (iwad.length())
 		wadfiles.push_back(iwad);
 
@@ -417,7 +417,7 @@ static std::string IdentifyVersion (std::string custwad)
 std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext, std::string hash = "")
 {
 	std::string found;
-	
+
 	if(dir[dir.length() - 1] != '/')
 		dir += "/";
 
@@ -445,7 +445,7 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 		{
 			if(d_name == "." || d_name == "..")
 				continue;
-			
+
 			std::string tmp = d_name;
 			std::transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
 
@@ -462,38 +462,38 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 #else
 	if(dir[dir.length() - 1] != '/')
 		dir += "/";
-	
+
 	std::string all_ext = dir + "*";
 	//all_ext += ext;
-	
+
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
 	DWORD dwError = GetLastError();
-	
+
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		Printf (PRINT_HIGH, "FindFirstFile failed. GetLastError: %d\n", dwError);
 		return "";
 	}
-	
+
 	while (true)
 	{
 		if(!FindNextFile(hFind, &FindFileData))
 		{
 			dwError = GetLastError();
-			
+
 			if(dwError != ERROR_NO_MORE_FILES)
 				Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
-			
+
 			break;
 		}
-		
+
 		if(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
-		
+
 		std::string tmp = FindFileData.cFileName;
 		std::transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
-		
+
 		if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 		{
 			if(!hash.length() || hash == W_MD5((dir + FindFileData.cFileName).c_str()))
@@ -503,7 +503,7 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 			}
 		}
 	}
-	
+
 	FindClose(hFind);
 #endif
 
@@ -819,6 +819,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames)
 // D_DoomMain
 //
 // [NightFang] - Cause I cant call ArgsSet from g_level.cpp
+// [ML] 23/1/07 - Add Response file support back in
 int teamplayset;
 
 void D_DoomMain (void)
@@ -835,8 +836,10 @@ void D_DoomMain (void)
 	I_Init ();
 
 	M_LoadDefaults ();			// load before initing other systems
+	M_FindResponseFile();         //[ ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true);	// [RH] do all +set commands on the command line
-	
+
+
 	D_CheckNetGame ();
 
 	//D_AddDefWads();

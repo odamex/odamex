@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -17,7 +17,7 @@
 //
 // DESCRIPTION:
 //  Command-line arguments
-//    
+//
 //-----------------------------------------------------------------------------
 
 
@@ -71,6 +71,8 @@ private:
 };
 
 extern DArgs Args;
+
+void M_FindResponseFile(void);
 
 #endif //__M_ARGV_H__
 

@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,7 +17,7 @@
 //
 // DESCRIPTION:
 //  Command-line arguments
-//    
+//
 //-----------------------------------------------------------------------------
 
 
@@ -25,6 +25,7 @@
 
 #include "cmdlib.h"
 #include "m_argv.h"
+#include "i_system.h"
 
 IMPLEMENT_CLASS (DArgs, DObject)
 
@@ -130,7 +131,7 @@ const char *DArgs::GetArg (size_t arg) const
 const std::vector<std::string> DArgs::GetArgList (size_t start) const
 {
 	std::vector<std::string> out;
-	
+
 	if(start < args.size())
 	{
 		out.resize(args.size() - start);
@@ -273,13 +274,96 @@ void DArgs::SetArgs(const char *cmdline)
 	}
 
 	CopyArgs(outputargc, outputargv);
-	
+
 	free(outputargv);
 	free(outputline);
 
 	return;
 }
 
+#define MAXARGVS 400
+//
+// Load a Response File
+//
+//[ ML] 23/1/07 - Add Response file support back in
+static void LoadResponseFile (unsigned argv_index)
+{
+	char		**argv;
+	FILE		*handle;
+	int 		size;
+	int 		k;
+	unsigned 	index;
+	int 		indexinfile;
+	char		*infile;
+	char		*file;
 
-VERSION_CONTROL (m_argv_cpp, "$Id:$")
+	// READ THE RESPONSE FILE INTO MEMORY
+	handle = fopen (Args.GetArg(argv_index) + 1,"rb");
+	if (!handle)
+		I_FatalError ("\nNo such response file!");
+
+	Printf (PRINT_HIGH, "Found response file %s!\n", Args.GetArg(argv_index) + 1);
+	fseek (handle, 0, SEEK_END);
+	size = ftell (handle);
+	fseek (handle, 0, SEEK_SET);
+	file = new char[size];
+	fread (file, size, 1, handle);
+	fclose (handle);
+
+		argv = new char *[size]; // denis - todo - worst case for now (all characters are \n)
+	for (index = 0; index < argv_index; index++)
+		argv[index] = strdup(Args.GetArg (index));
+
+	infile = file;
+	k = 0;
+	indexinfile = index;
+	do
+	{
+		argv[indexinfile++] = infile+k;
+		while(k < size &&
+			  ((*(infile+k)>= ' '+1) && (*(infile+k)<='z')))
+			k++;
+		*(infile+k) = 0;
+		while(k < size &&
+			  ((*(infile+k)<= ' ') || (*(infile+k)>'z')))
+			k++;
+	} while(k < size);
+
+	for (index = argv_index + 1; index < Args.NumArgs (); index++)
+		argv[indexinfile++] = strdup(Args.GetArg (index));
+
+	DArgs newargs (indexinfile, argv);
+	Args = newargs;
+
+	delete[] file;
+	delete[] argv;
+
+#if 0
+	// Disabled - Vanilla Doom does not do this.
+	// Display arguments
+
+	Printf (PRINT_HIGH, "%d command-line args:\n", Args.NumArgs ());
+	for (k = 1; k < Args.NumArgs (); k++)
+		Printf (PRINT_HIGH, "%s\n", Args.GetArg (k));
+#endif
+}
+
+//
+// Find a Response File
+//
+void M_FindResponseFile(void)
+{
+	unsigned i;
+
+	for (i = 1; i < Args.NumArgs(); i++)
+	{
+		if (Args.GetArg(i)[0] == '@')
+		{
+			LoadResponseFile(i);
+		}
+	}
+}
+
+
+VERSION_CONTROL (m_argv_cpp, "$Id$")
 
