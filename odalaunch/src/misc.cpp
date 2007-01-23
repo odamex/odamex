@@ -71,7 +71,7 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
         
         list->SetItem(idx, 3, wadlist);
      
-        list->SetItem(idx, 4, s.info.map);
+        list->SetItem(idx, 4, s.info.map.Upper());
     
         wxString gmode = _T("");
     
@@ -104,9 +104,13 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
                 gmode += _T("CTF ");
                 break;
         }
-    
+          
         list->SetItem(idx, 5, gmode);
-        list->SetItem(idx, 6, s.info.iwad);
+
+        // trim off the .wad
+        wxString iwad = s.info.iwad.Mid(0, s.info.iwad.Find('.'));
+        
+        list->SetItem(idx, 6, iwad);
     }
 }
 
