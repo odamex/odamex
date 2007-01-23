@@ -983,7 +983,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 			{
 				splayer->fragcount--;
 
-				if (teamplay)
+				if (teamplay && !ctfmode)
 					TEAMpoints[splayer->userinfo.team]--;
 			}
 			else
@@ -991,7 +991,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 				splayer->fragcount++;
 
 				// [Toke] Add a team frag
-				if (teamplay)
+				if (teamplay && !ctfmode)
 					TEAMpoints[splayer->userinfo.team]++;
 			}
 
