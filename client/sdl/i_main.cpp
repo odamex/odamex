@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -26,6 +26,12 @@
 #ifdef _WIN32
 #include <windows.h>
 #undef GetMessage
+#endif
+
+#ifdef UNIX
+// for getuid and geteuid
+#include <unistd.h>
+#include <sys/types.h>
 #endif
 
 #include <new>
@@ -182,5 +188,5 @@ int main(int argc, char *argv[])
 }
 
 
-VERSION_CONTROL (i_main_cpp, "$Id:$")
+VERSION_CONTROL (i_main_cpp, "$Id$")
 

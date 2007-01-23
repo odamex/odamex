@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -38,6 +38,9 @@
 
 #ifdef UNIX
 #define HAVE_PWD_H
+// for getuid and geteuid
+#include <unistd.h>
+#include <sys/types.h>
 #endif
 
 #ifdef HAVE_PWD_H
@@ -651,5 +654,5 @@ int I_FindClose (long handle) {return 0;}
 
 #endif
 
-VERSION_CONTROL (i_system_cpp, "$Id:$")
+VERSION_CONTROL (i_system_cpp, "$Id$")
 

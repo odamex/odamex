@@ -26,9 +26,10 @@
 #include <iostream>
 
 #include <unistd.h>
+#include <sys/types.h>
+
 #include <stdlib.h>
 #include <signal.h>
-#include <sys/param.h>
 #include <time.h>
 
 #include "m_argv.h"
