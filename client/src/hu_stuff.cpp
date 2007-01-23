@@ -424,6 +424,13 @@ void HU_DMScores1 (player_t *player)
 	}
 */
 
+	// Scoreboard Identify
+	// Dan - Tells which current game mode is being played
+	if (deathmatch)
+		screen->DrawText (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Deathmatch");
+	else
+		screen->DrawText (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Cooperative");
+		
 	//	Header display
 	screen->DrawTextClean (CR_GREY,	16	* CleanXfac,	25	* CleanYfac, "NAME");
 
@@ -770,6 +777,11 @@ void HU_TeamScores1 (player_t *player)
 	bluey = 26 * CleanYfac;
 
 	redy  = 98 * CleanYfac;
+
+	// Scoreboard Identify
+	// Dan - Tells which current game mode is being played
+	if (ctfmode)
+		screen->DrawText (CR_GOLD,100 * CleanXfac,0 * CleanYfac,"Capture The Flag");
 
 	// Draw team stats header
 	screen->DrawTextClean	  (CR_GREY	,	243	* CleanXfac	,	26	* CleanYfac	,	"SCORE:"	);
