@@ -41,6 +41,9 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
 {
     wxInt32 i = 0, idx = 0;
     
+    if (s.GetAddress() == _T("0.0.0.0:0"))
+        return;
+        
     // are we adding a new item?
     if (insert == 1)    
         idx = list->InsertItem(index, s.info.name);
@@ -53,8 +56,7 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
     
     wxInt32 ping = s.GetPing();
     
-    if (s.GetAddress() != _T("0.0.0.0:0"))
-        list->SetItem(idx, 7, s.GetAddress());
+    list->SetItem(idx, 7, s.GetAddress());
     
     if (ping > 0)
     {
