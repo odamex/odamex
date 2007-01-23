@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -254,7 +254,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 	int 		secnum;
 	sector_t*	sec;
 
-	if (lock && !P_CheckKeys (thing->player, lock, tag))
+	if (lock && thing && !P_CheckKeys (thing->player, lock, tag))
 		return false;
 
 	if (tag == 0)
@@ -265,7 +265,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		// if the wrong side of door is pushed, give oof sound
 		if (line->sidenum[1]==-1)				// killough
 		{
-			S_Sound (thing, CHAN_VOICE, "*grunt1", 1, ATTN_NORM);
+			S_Sound (thing->x, thing->y, CHAN_VOICE, "*grunt1", 1, ATTN_NORM);
 			return false;
 		}
 
@@ -290,7 +290,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					//		run into them (otherwise opening them would be
 					//		a real pain).
 				{
-					if (!thing->player)
+					if (thing && !thing->player)
 						return false;	// JDC: bad guys never close doors
 
 					door->m_Direction = -1;	// start going down immediately
@@ -355,5 +355,5 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 	door->m_TopCountdown = 5 * 60 * TICRATE;
 }
 
-VERSION_CONTROL (p_doors_cpp, "$Id:$")
+VERSION_CONTROL (p_doors_cpp, "$Id$")
 

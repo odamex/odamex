@@ -126,15 +126,6 @@ void CL_SetMobjSpeedAndAngle(void);
 void CL_RememberSkin(void);
 void P_PlayerLookUpDown (player_t *p);
 
-void WriteDebug(char *Message)
-{
-    FILE *fn;
-
-    fn = fopen("cs.dbg", "a+");
-    fprintf(fn, "%s", Message);
-    fclose(fn);
-}
-
 
 void Host_EndGame(char *msg)
 {
@@ -1812,23 +1803,23 @@ void CL_ActivateLine(void)
 	byte side = MSG_ReadByte();
 	byte activationType = MSG_ReadByte();
 
-	if (l >= (unsigned)numlines || !mo) // denis - fixme - security
+	if (l >= (unsigned)numlines)
 		return;
 
-	if(mo != consoleplayer().mo)
+	if(mo == consoleplayer().mo)
+		return;
+
+	switch (activationType)
 	{
-		switch (activationType)
-		{
-		case 0:
-			P_CrossSpecialLine(l, side, mo);
-			break;
-		case 1:
-			P_UseSpecialLine(mo, &lines[l], side);
-			break;
-		case 2:
-			P_ShootSpecialLine(mo, &lines[l]);
-			break;
-		}
+	case 0:
+		P_CrossSpecialLine(l, side, mo);
+		break;
+	case 1:
+		P_UseSpecialLine(mo, &lines[l], side);
+		break;
+	case 2:
+		P_ShootSpecialLine(mo, &lines[l]);
+		break;
 	}
 }
 

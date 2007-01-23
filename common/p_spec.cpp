@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -898,50 +898,53 @@ P_CrossSpecialLine
 {
     line_t*	line = &lines[linenum];
     
-	if (!(line->flags & ML_SPECIAL_CROSS))
-		return;
+	if(thing)
+	{
+		if (!(line->flags & ML_SPECIAL_CROSS))
+			return;
 
-    //	Triggers that other things can activate
-    if (!thing->player)
-    {
-		// Things that should NOT trigger specials...
-		switch(thing->type)
+		//	Triggers that other things can activate
+		if (!thing->player)
 		{
-			case MT_ROCKET:
-			case MT_PLASMA:
-			case MT_BFG:
-			case MT_TROOPSHOT:
-			case MT_HEADSHOT:
-			case MT_BRUISERSHOT:
+			// Things that should NOT trigger specials...
+			switch(thing->type)
+			{
+				case MT_ROCKET:
+				case MT_PLASMA:
+				case MT_BFG:
+				case MT_TROOPSHOT:
+				case MT_HEADSHOT:
+				case MT_BRUISERSHOT:
+					return;
+					break;
+					
+				default: break;
+			}
+		
+			if(!(line->flags & ML_SPECIAL_MONSTER))
 				return;
-				break;
-				
-			default: break;
 		}
-	
-		if(!(line->flags & ML_SPECIAL_MONSTER))
-			return;
-    }
-	else
-	{
-		// Likewise, player should not trigger monster lines
-		if(line->flags & ML_SPECIAL_MONSTER_ONLY)
-			return;
-	}
-
-	// Do not teleport on the wrong side
-	if(side)
-	{
-		switch(line->special)
+		else
 		{
-			case Teleport:
-			case Teleport_NoFog:
-			case Teleport_NewMap:
-			case Teleport_EndGame:
-			case Teleport_Line:
+			// Likewise, player should not trigger monster lines
+			if(line->flags & ML_SPECIAL_MONSTER_ONLY)
 				return;
-				break;
-			default: break;
+		}
+
+		// Do not teleport on the wrong side
+		if(side)
+		{
+			switch(line->special)
+			{
+				case Teleport:
+				case Teleport_NoFog:
+				case Teleport_NewMap:
+				case Teleport_EndGame:
+				case Teleport_Line:
+					return;
+					break;
+				default: break;
+			}
 		}
 	}
 	
@@ -960,22 +963,24 @@ P_ShootSpecialLine
 ( AActor*	thing,
   line_t*	line )
 {
-	if (!(line->flags & ML_SPECIAL_SHOOT))
-		return;
-		
-	if (thing->flags & MF_MISSILE)
-		return;
+	if(thing)
+	{
+		if (!(line->flags & ML_SPECIAL_SHOOT))
+			return;
+			
+		if (thing->flags & MF_MISSILE)
+			return;
 
-	if (!thing->player && !(line->flags & ML_SPECIAL_MONSTER))
-		return;
+		if (!thing->player && !(line->flags & ML_SPECIAL_MONSTER))
+			return;
+	}
 	
 	if(LineSpecials[line->special] (line, thing))
 	{
 		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+		OnActivatedLine(line, thing, 0, 2);
 		OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
 	}
-
-	OnActivatedLine(line, thing, 0, 2);
 }
 
 
@@ -990,29 +995,31 @@ P_UseSpecialLine
   line_t*	line,
   int		side )
 {
-	if (!(line->flags & ML_SPECIAL_USE))
-		return false;
+	if(thing)
+	{
+		if (!(line->flags & ML_SPECIAL_USE))
+			return false;
 
-    // Switches that other things can activate.
-    if (!thing->player)
-    {
-		// not for monsters?
-		if (!(line->flags & ML_SPECIAL_MONSTER))
-			return false;
-		
-		// never open secret doors
-		if (line->flags & ML_SECRET)
-			return false;
-    }
-	
+		// Switches that other things can activate.
+		if (!thing->player)
+		{
+			// not for monsters?
+			if (!(line->flags & ML_SPECIAL_MONSTER))
+				return false;
+			
+			// never open secret doors
+			if (line->flags & ML_SECRET)
+				return false;
+		}
+	}
+
 	if(LineSpecials[line->special] (line, thing))
 	{
 		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+		OnActivatedLine(line, thing, side, 1);
 		OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
 	}
 	
-	OnActivatedLine(line, thing, side, 1);
-
     return true;
 }
 
@@ -2139,5 +2146,5 @@ static void P_SpawnPushers(void)
 //
 ////////////////////////////////////////////////////////////////////////////
 
-VERSION_CONTROL (p_spec_cpp, "$Id:$")
+VERSION_CONTROL (p_spec_cpp, "$Id$")
 

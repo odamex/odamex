@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -33,15 +33,6 @@
 #include "i_net.h"
 
 CVAR (sv_networkcompression, "0", CVAR_ARCHIVE)
-
-void WriteDebug(char *Message)
-{
-    FILE *fn;
-
-    fn = fopen("cs.dbg", "a+");
-    fprintf(fn, "%s", Message);
-    fclose(fn);
-}
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);
@@ -221,5 +212,5 @@ void SV_AcknowledgePacket(player_t &player)
 	cl->last_sequence = sequence;
 }
 
-VERSION_CONTROL (sv_rproto_cpp, "$Id:$")
+VERSION_CONTROL (sv_rproto_cpp, "$Id$")
 

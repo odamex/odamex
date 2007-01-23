@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -580,7 +580,7 @@ FUNC(LS_Generic_Lift)
 FUNC(LS_Exit_Normal)
 // Exit_Normal (position)
 {
-	if (CheckIfExitIsGood (it))
+	if (it && CheckIfExitIsGood (it))
 	{
 		G_ExitLevel (0);
 		return true;
@@ -591,7 +591,7 @@ FUNC(LS_Exit_Normal)
 FUNC(LS_Exit_Secret)
 // Exit_Secret (position)
 {
-	if (CheckIfExitIsGood (it))
+	if (it && CheckIfExitIsGood (it))
 	{
 		G_SecretExitLevel (0);
 		return true;
@@ -604,7 +604,7 @@ FUNC(LS_Teleport_NewMap)
 {
 	level_info_t *info = FindLevelByNum (ln->args[0]);
 
-	if (info && CheckIfExitIsGood (it))
+	if (it && (info && CheckIfExitIsGood (it)))
 	{
 		strncpy (level.nextmap, info->mapname, 8);
 		G_ExitLevel (ln->args[1]);
@@ -617,19 +617,21 @@ FUNC(LS_Teleport_NewMap)
 FUNC(LS_Teleport)
 // Teleport (tid)
 {
+	if(!it) return false;
 	return EV_Teleport (ln->args[0], it);
 }
 
 FUNC(LS_Teleport_NoFog)
 // Teleport_NoFog (tid)
 {
+	if(!it) return false;
 	return EV_SilentTeleport (ln->args[0], ln, it);
 }
 
 FUNC(LS_Teleport_EndGame)
 // Teleport_EndGame ()
 {
-	if (CheckIfExitIsGood (it))
+	if (it && CheckIfExitIsGood (it))
 	{
 		strncpy (level.nextmap, "EndGameC", 8);
 		G_ExitLevel (0);
@@ -641,35 +643,34 @@ FUNC(LS_Teleport_EndGame)
 FUNC(LS_Teleport_Line)
 // Teleport_Line (thisid, destid, reversed)
 {
+	if(!it) return false;
 	return EV_SilentLineTeleport (ln, it, ln->args[1], ln->args[2]);
 }
 
 FUNC(LS_ThrustThing)
 // ThrustThing (angle, force)
 {
-	if (it)
-	{
-		angle_t angle = BYTEANGLE(ln->args[0]) >> ANGLETOFINESHIFT;
+	if(!it) return false;
+	
+	angle_t angle = BYTEANGLE(ln->args[0]) >> ANGLETOFINESHIFT;
 
-		it->momx = ln->args[1] * finecosine[angle];
-		it->momy = ln->args[1] * finesine[angle];
-		return true;
-	}
-	return false;
+	it->momx = ln->args[1] * finecosine[angle];
+	it->momy = ln->args[1] * finesine[angle];
+	
+	return true;
 }
 
 FUNC(LS_DamageThing)
 // DamageThing (damage)
 {
-	if (it)
-	{
-		if (ln->args[0])
-			P_DamageMobj (it, NULL, NULL, ln->args[0], MOD_UNKNOWN);
-		else
-			P_DamageMobj (it, NULL, NULL, 10000, MOD_UNKNOWN);
-	}
+	if(!it) return false;
+	
+	if (ln->args[0])
+		P_DamageMobj (it, NULL, NULL, ln->args[0], MOD_UNKNOWN);
+	else
+		P_DamageMobj (it, NULL, NULL, 10000, MOD_UNKNOWN);
 
-	return it ? true : false;
+	return true;
 }
 
 BOOL P_GiveBody (player_t *, int);
@@ -677,21 +678,20 @@ BOOL P_GiveBody (player_t *, int);
 FUNC(LS_HealThing)
 // HealThing (amount)
 {
-	if (it)
+	if(!it) return false;
+
+	if (it->player)
 	{
-		if (it->player)
-		{
-			P_GiveBody (it->player, ln->args[0]);
-		}
-		else
-		{
-			it->health += ln->args[0];
-			if (mobjinfo[it->type].spawnhealth > it->health)
-				it->health = mobjinfo[it->type].spawnhealth;
-		}
+		P_GiveBody (it->player, ln->args[0]);
+	}
+	else
+	{
+		it->health += ln->args[0];
+		if (mobjinfo[it->type].spawnhealth > it->health)
+			it->health = mobjinfo[it->type].spawnhealth;
 	}
 
-	return it ? true : false;
+	return true;
 }
 /*
 FUNC(LS_Thing_Activate)
@@ -1272,6 +1272,8 @@ FUNC(LS_SetPlayerProperty)
 #define PROP_FROZEN		0
 #define PROP_NOTARGET	1
 
+	if(!it) return false;
+
 	int mask = 0;
 
 	if (!it->player && !ln->args[0])
@@ -1592,5 +1594,5 @@ lnSpecFunc LineSpecials[256] =
 	LS_Ceiling_CrushRaiseAndStaySilA
 };
 
-VERSION_CONTROL (p_lnspec_cpp, "$Id:$")
+VERSION_CONTROL (p_lnspec_cpp, "$Id$")
 
