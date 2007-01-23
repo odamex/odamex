@@ -836,7 +836,7 @@ void D_DoomMain (void)
 	I_Init ();
 
 	M_LoadDefaults ();			// load before initing other systems
-	M_FindResponseFile();         //[ ML] 23/1/07 - Add Response file support back in
+	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true);	// [RH] do all +set commands on the command line
 
 

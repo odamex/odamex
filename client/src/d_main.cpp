@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -182,7 +182,7 @@ void D_Display (void)
 {
 	BOOL wipe;
     static  int			borderdrawcount;
-	
+
 	if (nodrawers)
 		return; 				// for comparative timing / profiling
 
@@ -271,7 +271,7 @@ void D_Display (void)
 				R_DrawViewBorder ();    // erase old menu stuff
 				borderdrawcount--;
 			}
-					
+
 			if (viewactive)
 				R_RenderPlayerView (&consoleplayer());
 			if (automapactive)
@@ -379,10 +379,10 @@ void D_DoomLoop (void)
 
 			if (!connected)
 				CL_RequestConnectInfo();
-	
+
 			// [RH] Use the consoleplayer's camera to update sounds
 			S_UpdateSounds (consoleplayer().mo);	// move positional sounds
-	
+
 			// Update display, next frame, with current state.
 			D_Display ();
 		}
@@ -594,7 +594,7 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 		{
 			if(d_name == "." || d_name == "..")
 				continue;
-			
+
 			std::string tmp = d_name;
 			std::transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
 
@@ -611,35 +611,35 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 #else
 	std::string all_ext = dir + "*";
 	//all_ext += ext;
-	
+
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
 	DWORD dwError = GetLastError();
-	
+
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		Printf (PRINT_HIGH, "FindFirstFile failed. GetLastError: %d\n", dwError);
 		return "";
 	}
-	
+
 	while (true)
 	{
 		if(!FindNextFile(hFind, &FindFileData))
 		{
 			dwError = GetLastError();
-			
+
 			if(dwError != ERROR_NO_MORE_FILES)
 				Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
 
 			break;
 		}
-		
+
 		if(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
-		
+
 		std::string tmp = FindFileData.cFileName;
 		std::transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
-		
+
 		if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 		{
 			if(!hash.length() || hash == W_MD5((dir + FindFileData.cFileName).c_str()))
@@ -649,7 +649,7 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 			}
 		}
 	}
-		
+
 	FindClose(hFind);
 #endif
 
@@ -766,7 +766,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	if(suggestion.length())
 	{
 		std::string found = BaseFileSearch(suggestion, ".WAD");
-	
+
 		if(found.length())
 			iwad = found;
 		else
@@ -790,7 +790,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			}
 		}
 	}
-	
+
 	if(!iwad.length())
 	{
 		// Search for a pre-defined IWAD from the list above
@@ -1085,10 +1085,10 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 	using namespace std;
 	vector<size_t> fails;
 	size_t i;
-	
+
 	static vector<std::string> last_wadnames, last_hashes;
 	static bool last_success = false;
-			
+
 	// already loaded these?
 	if(last_success && wadnames == last_wadnames && (needhashes.empty() || needhashes == last_hashes))
 	{
@@ -1166,12 +1166,12 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 	ST_Init();
 
 	NoWipe = 1;
-	
+
 	// preserve state
 	last_success = fails.empty();
 	last_wadnames = wadnames;
 	last_hashes = needhashes;
-	
+
 	return fails;
 }
 
@@ -1188,12 +1188,13 @@ void D_DoomMain (void)
 		I_FatalError ("Could not initialize LZO routines");
 
 	M_LoadDefaults ();			// load before initing other systems
+	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true);	// [RH] do all +set commands on the command line
 
 	const char *iwad = Args.CheckValue("-iwad");
 	if(!iwad)
 		iwad = "";
-	
+
 	D_AddDefWads(iwad);
 
 	W_InitMultipleFiles (wadfiles);
@@ -1224,13 +1225,13 @@ void D_DoomMain (void)
 
 	// [csDoom] It's always dm
 	// deathmatch.Set (1.0f);
-	
+
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 	autostart = false;
-	
+
 	skill.Set(1.0f);
-	
+
 	if (devparm)
 		Printf (PRINT_HIGH, "%s", Strings[0].builtin);        // D_DEVSTR
 
@@ -1289,7 +1290,7 @@ void D_DoomMain (void)
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
 	gamestate = GS_FULLCONSOLE;
-	
+
 	// denis - bring back the demos
     if ( gameaction != ga_loadgame )
     {
@@ -1298,7 +1299,7 @@ void D_DoomMain (void)
 		else
 			D_StartTitle (); // start up intro loop
     }
-	
+
 	D_DoomLoop ();		// never returns
 }
 

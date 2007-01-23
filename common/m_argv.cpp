@@ -310,9 +310,9 @@ static void LoadResponseFile (unsigned argv_index)
 	fread (file, size, 1, handle);
 	fclose (handle);
 
-		argv = new char *[size]; // denis - todo - worst case for now (all characters are \n)
+	argv = new char *[size]; // denis - todo - worst case for now (all characters are \n)
 	for (index = 0; index < argv_index; index++)
-		argv[index] = strdup(Args.GetArg (index));
+		argv[index] = (char *) Args.GetArg (index);
 
 	infile = file;
 	k = 0;
@@ -330,7 +330,7 @@ static void LoadResponseFile (unsigned argv_index)
 	} while(k < size);
 
 	for (index = argv_index + 1; index < Args.NumArgs (); index++)
-		argv[indexinfile++] = strdup(Args.GetArg (index));
+		argv[indexinfile++] = (char *) Args.GetArg (index);
 
 	DArgs newargs (indexinfile, argv);
 	Args = newargs;
