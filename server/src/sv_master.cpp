@@ -356,7 +356,7 @@ void SV_SendServerInfo()
 
 	MSG_WriteString(&ml_message, website.cstring());
 
-	if (ctfmode)
+	if (ctfmode || teamplay)
 	{
 		MSG_WriteLong(&ml_message, scorelimit);
 		
