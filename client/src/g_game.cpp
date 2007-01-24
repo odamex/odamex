@@ -382,8 +382,7 @@ BEGIN_COMMAND (spynext)
 		if(!deathmatch || ((teamplaymode || ctfmode) && players[curr].userinfo.team == consoleplayer().userinfo.team))
 		{
 			displayplayer_id = players[curr].id;
-			consoleplayer().camera = displayplayer().mo;
-			return;
+			break;
 		}
 	}
 }

@@ -273,7 +273,7 @@ void D_Display (void)
 			}
 
 			if (viewactive)
-				R_RenderPlayerView (&consoleplayer());
+				R_RenderPlayerView (&displayplayer());
 			if (automapactive)
 				AM_Drawer ();
 			C_DrawMid ();
@@ -284,7 +284,7 @@ void D_Display (void)
 
 		case GS_INTERMISSION:
 			if (viewactive)
-				R_RenderPlayerView (&consoleplayer());
+				R_RenderPlayerView (&displayplayer());
 			C_DrawMid ();
 			ST_Drawer ();
 			CTF_DrawHud ();
