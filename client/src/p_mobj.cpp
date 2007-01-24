@@ -838,6 +838,9 @@ void AActor::RunThink ()
 		}
 	}
 
+	if(predicting)
+		return;
+	
     // cycle through states,
     // calling action functions at transitions
 	if (tics != -1)
