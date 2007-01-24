@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -219,19 +219,6 @@ void M_LoadDefaults (void)
 	{
 		AddCommandString ("alias idclip noclip");
 		AddCommandString ("alias idspispopd noclip");
-
-		/*if (configver < 117.2f)
-		{
-         // SoM: WTF?
-			//dimamount.Set (dimamount / 4);
-			if (configver <= 113.0f)
-			{
-				AddCommandString ("bind t messagemode; bind \\ +showscores;"
-								  "bind f12 spynext; bind sysrq screenshot");
-				if (C_GetBinding (KEY_F5) && !stricmp (C_GetBinding (KEY_F5), "menu_video"))
-					AddCommandString ("bind f5 menu_display");
-			}
-		}*/
 	}
 
 	DefaultsLoaded = true;
@@ -351,5 +338,5 @@ BEGIN_COMMAND (screenshot)
 }
 END_COMMAND (screenshot)
 
-VERSION_CONTROL (m_misc_cpp, "$Id:$")
+VERSION_CONTROL (m_misc_cpp, "$Id$")
 

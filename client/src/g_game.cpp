@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -365,6 +365,30 @@ BEGIN_COMMAND (weapprev)
 }
 END_COMMAND (weapprev)
 
+BEGIN_COMMAND (spynext)
+{
+	extern bool ctfmode, teamplaymode;
+	
+	size_t curr;
+	size_t s = players.size();
+	for(curr = 0; curr < s; curr++)
+		if(players[curr].id == displayplayer().id)
+			break;
+	
+	for(size_t i = 0; i < s; i++)
+	{
+		curr = (curr+1)%s;
+		
+		if(!deathmatch || ((teamplaymode || ctfmode) && players[curr].userinfo.team == consoleplayer().userinfo.team))
+		{
+			displayplayer_id = players[curr].id;
+			consoleplayer().camera = displayplayer().mo;
+			return;
+		}
+	}
+}
+END_COMMAND (spynext)
+
 extern constate_e ConsoleState;
 
 //
@@ -610,7 +634,6 @@ BOOL G_Responder (event_t *ev)
 				stricmp (cmd, "sizedown") &&
 				stricmp (cmd, "togglemap") &&
 				stricmp (cmd, "spynext") &&
-				stricmp (cmd, "spyprev") &&
 				stricmp (cmd, "chase") &&
 				stricmp (cmd, "+showscores") &&
 				stricmp (cmd, "bumpgamma") &&
@@ -1848,5 +1871,5 @@ BOOL CheckIfExitIsGood (AActor *self)
 }
 
 
-VERSION_CONTROL (g_game_cpp, "$Id:$")
+VERSION_CONTROL (g_game_cpp, "$Id$")
 

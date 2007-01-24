@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -675,7 +675,7 @@ void ST_updateFaceWidget(void)
 	static int	priority = 0;
 	BOOL	 	doevilgrin;
 	
-	player_t *plyr = &displayplayer();
+	player_t *plyr = &consoleplayer();
 
 	if (priority < 10)
 	{
@@ -843,7 +843,7 @@ void ST_updateWidgets(void)
 	static int	largeammo = 1994; // means "n/a"
 	int 		i;
 
-	player_t *plyr = &displayplayer();
+	player_t *plyr = &consoleplayer();
 
 	// must redirect the pointer if the ready weapon has changed.
 	//	if (w_ready.data != plyr->readyweapon)
@@ -933,7 +933,7 @@ void ST_doPaletteStuff(void)
     int		cnt;
     int		bzc;
 
-	player_t *plyr = &displayplayer();
+	player_t *plyr = &consoleplayer();
 
     cnt = plyr->damagecount;
 
@@ -1111,7 +1111,7 @@ void ST_loadGraphics(void)
 	int facenum;
 	char namebuf[9];
 
-	player_t *plyr = &displayplayer();
+	player_t *plyr = &consoleplayer();
 
 	namebuf[8] = 0;
 	if (plyr)
@@ -1476,5 +1476,5 @@ void ST_Init (void)
 	ST_loadData();
 }
 
-VERSION_CONTROL (st_stuff_cpp, "$Id:$")
+VERSION_CONTROL (st_stuff_cpp, "$Id$")
 

@@ -164,7 +164,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 
 void ST_newDraw (void)
 {
-	player_t *plyr = &displayplayer();
+	player_t *plyr = &consoleplayer();
 	int y, i;
 	ammotype_t ammo = weaponinfo[plyr->readyweapon].ammo;
 	int xscale = hud_scale ? CleanXfac : 1;

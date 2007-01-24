@@ -181,6 +181,13 @@ void CL_DisconnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
 
+	// if this was our displayplayer, update camera
+	if(&player == &displayplayer())
+	{
+		displayplayer_id = consoleplayer_id;
+		consoleplayer().camera = consoleplayer().mo;
+	}
+
 	if(player.mo)
 		player.mo->Destroy();
 
