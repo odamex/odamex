@@ -1806,7 +1806,7 @@ void CL_ActivateLine(void)
 	if (l >= (unsigned)numlines)
 		return;
 
-	if(mo == consoleplayer().mo)
+	if(mo == consoleplayer().mo && activationType != 2)
 		return;
 
 	switch (activationType)
