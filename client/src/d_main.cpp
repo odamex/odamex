@@ -1230,8 +1230,6 @@ void D_DoomMain (void)
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 	autostart = false;
 
-	skill.Set(1.0f);
-
 	if (devparm)
 		Printf (PRINT_HIGH, "%s", Strings[0].builtin);        // D_DEVSTR
 

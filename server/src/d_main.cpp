@@ -869,8 +869,6 @@ void D_DoomMain (void)
 	{
 		skill.Set (val[0]-'0');
 	}
-	else
-		skill.Set (1.0f);  // default
 
 	p = Args.CheckParm ("-warp");
 	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
