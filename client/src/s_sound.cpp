@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -85,7 +85,7 @@ int sfx_itemup, sfx_tink;
 int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
 
 // joek - hack for silent bfg
-int sfx_noway;
+int sfx_noway, sfx_oof;
 
 // [RH] Use surround sounds?
 CVAR (snd_surround, "1", CVAR_ARCHIVE)
@@ -559,7 +559,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	}
 
 	// joek - hack for silent bfg
-	if(sfx_id == sfx_noway)
+	if(sfx_id == sfx_noway || sfx_id == sfx_oof)
 		S_StopSound (pt);
 		
 	S_StopSound (pt, channel);
@@ -1309,6 +1309,7 @@ void S_ParseSndInfo (void)
 	sfx_empty = W_CheckNumForName ("dsempty");
 
 	sfx_noway = S_FindSoundByLump (W_CheckNumForName ("dsnoway"));
+	sfx_oof = S_FindSoundByLump (W_CheckNumForName ("dsoof"));
 }
 
 BEGIN_COMMAND (soundlist)
@@ -1347,5 +1348,5 @@ void A_Ambient (AActor *actor)
 }
 
 
-VERSION_CONTROL (s_sound_cpp, "$Id:$")
+VERSION_CONTROL (s_sound_cpp, "$Id$")
 
