@@ -934,7 +934,7 @@ void D_AddDefWads (std::string iwad)
 			wadfiles.push_back(wad);
 		else
 			I_FatalError ("Cannot find odamex.wad");
-		wad = BaseFileSearch ("zvox.wad");
+
 		if (wad.length())
 			wadfiles.push_back(wad);
 	}
