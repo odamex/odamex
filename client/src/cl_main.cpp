@@ -1148,8 +1148,6 @@ void CL_SpawnPlayer()
 	p->attacker = AActor::AActorPtr();
 	p->viewz = z + VIEWHEIGHT;
 
-	consoleplayer().camera = displayplayer().mo;
-
 	// spawn a teleport fog
 	// tfog = new AActor (x, y, z, MT_TFOG);
 
