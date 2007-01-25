@@ -2537,7 +2537,6 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	line->wastoggled = 1;
 	
 	unsigned state = 0, time = 0;
-	P_ChangeSwitchTexture (line, useAgain);
 	P_GetButtonInfo(line, state, time);
 
 	for (size_t i=0; i < players.size(); i++)

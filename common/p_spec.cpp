@@ -979,7 +979,12 @@ P_ShootSpecialLine
 	{
 		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
 		OnActivatedLine(line, thing, 0, 2);
-		OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+
+		if(serverside)
+		{
+			P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+			OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+		}
 	}
 }
 
@@ -1017,7 +1022,12 @@ P_UseSpecialLine
 	{
 		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
 		OnActivatedLine(line, thing, side, 1);
-		OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+
+		if(serverside)
+		{
+			P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+			OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+		}
 	}
 	
     return true;
