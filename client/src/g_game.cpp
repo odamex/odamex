@@ -65,7 +65,7 @@
 #define TURN180_TICKS	9				// [RH] # of ticks to complete a turn180
 
 BOOL	G_CheckDemoStatus (void);
-void	G_ReadDemoTiccmd (ticcmd_t* cmd, int player);
+void	G_ReadDemoTiccmd ();
 void	G_WriteDemoTiccmd (ticcmd_t* cmd, int player, int buf);
 void	G_PlayerReborn (player_t &player);
 void	G_DoReborn (player_t &playernum);
@@ -868,13 +868,7 @@ void G_Ticker (void)
 	if (demoplayback)
 	{
 		// play all player commands
-		for(size_t i = 0; i < players.size(); i++)
-		{
-			G_ReadDemoTiccmd(&players[i].cmd, i);
-			
-			players[i].cmd.ucmd.forwardmove <<= 8;
-			players[i].cmd.ucmd.sidemove <<= 8;
-		}
+		G_ReadDemoTiccmd();
 	}
     else if (connected)
     {
@@ -1417,77 +1411,86 @@ static void MakeEmptyUserCmd (void)
 	memset (&LastUserCmd, 0, sizeof(usercmd_t));
 }
 
-void G_ReadDemoTiccmd (ticcmd_t *cmd, int player)
+void G_ReadDemoTiccmd ()
 {
 	if(demoversion == LMP_DOOM_1_9 || demoversion == LMP_DOOM_1_9_1)
 	{
-		if ((demoversion == LMP_DOOM_1_9 && demo_e - demo_p < 4)
-		|| (demoversion == LMP_DOOM_1_9_1 && demo_e - demo_p < 5)
-		|| (*demo_p == DEMOMARKER))
+		for(size_t i = 0; i < players.size(); i++)
 		{
-			// end of demo data stream 
-			G_CheckDemoStatus (); 
-			return; 
+			if ((demoversion == LMP_DOOM_1_9 && demo_e - demo_p < 4)
+			|| (demoversion == LMP_DOOM_1_9_1 && demo_e - demo_p < 5)
+			|| (*demo_p == DEMOMARKER))
+			{
+				// end of demo data stream 
+				G_CheckDemoStatus (); 
+				return; 
+			}
+			
+			usercmd_t *ucmd = &players[i].cmd.ucmd;
+
+			ucmd->forwardmove = ((signed char)*demo_p++)<<8;
+			ucmd->sidemove = ((signed char)*demo_p++)<<8;
+			if(demoversion == LMP_DOOM_1_9)
+				ucmd->yaw = ((unsigned char)*demo_p++)<<8;
+			else
+			{
+				ucmd->yaw = ((unsigned short)*demo_p++);
+				ucmd->yaw |= ((unsigned short)*demo_p++)<<8;
+			}
+			ucmd->buttons = (unsigned char)*demo_p++;
 		}
 		
-		usercmd_t *ucmd = &cmd->ucmd;
-		ucmd->forwardmove = ((signed char)*demo_p++);
-		ucmd->sidemove = ((signed char)*demo_p++);
-		if(demoversion == LMP_DOOM_1_9)
-			ucmd->yaw = ((unsigned char)*demo_p++)<<8;
-		else
-		{
-			ucmd->yaw = ((unsigned short)*demo_p++);
-			ucmd->yaw |= ((unsigned short)*demo_p++)<<8;
-		}
-		ucmd->buttons = (unsigned char)*demo_p++;
 		return;
 	}
 	
 	if(demoversion == ZDOOM_FORM)
 	{
-		static int clonecount = 0;
-		int id = DEM_BAD;
-
-		while (!clonecount && id != DEM_USERCMD && id != DEM_USERCMDCLONE)
+		for(size_t i = 0; i < players.size(); i++)
 		{
-			if (!demorecording && demo_p >= zdembodyend)
+			static int clonecount = 0;
+			int id = DEM_BAD;
+			ticcmd_t *cmd = &players[i].cmd;
+
+			while (!clonecount && id != DEM_USERCMD && id != DEM_USERCMDCLONE)
 			{
-				// nothing left in the BODY chunk, so end playback.
-				G_CheckDemoStatus ();
-				break;
+				if (!demorecording && demo_p >= zdembodyend)
+				{
+					// nothing left in the BODY chunk, so end playback.
+					G_CheckDemoStatus ();
+					break;
+				}
+
+				id = ReadByte (&demo_p);
+
+				switch (id)
+				{
+				case DEM_STOP:
+					// end of demo stream
+					G_CheckDemoStatus ();
+					break;
+				case DEM_USERCMD:
+					UnpackUserCmd (&cmd->ucmd, &demo_p);
+					memcpy (&LastUserCmd, &cmd->ucmd, sizeof(usercmd_t));
+					break;
+				case DEM_USERCMDCLONE:
+					clonecount = ReadByte (&demo_p) + 1;
+					break;
+
+				case DEM_DROPPLAYER:
+		//			i = ReadByte (&demo_p);
+		//			if (players.valid(i))
+		//				players[i].state = player_t::disconnected;
+
+				default:
+		//			Net_DoCommand (id, &demo_p, player);
+					break;
+				}
 			}
-
-			id = ReadByte (&demo_p);
-
-			switch (id)
+			if (clonecount)
 			{
-			case DEM_STOP:
-				// end of demo stream
-				G_CheckDemoStatus ();
-				break;
-			case DEM_USERCMD:
-				UnpackUserCmd (&cmd->ucmd, &demo_p);
-				memcpy (&LastUserCmd, &cmd->ucmd, sizeof(usercmd_t));
-				break;
-			case DEM_USERCMDCLONE:
-				clonecount = ReadByte (&demo_p) + 1;
-				break;
-
-			case DEM_DROPPLAYER:
-	//			i = ReadByte (&demo_p);
-	//			if (players.valid(i))
-	//				players[i].state = player_t::disconnected;
-
-			default:
-	//			Net_DoCommand (id, &demo_p, player);
-				break;
+				clonecount--;
+				memcpy (&cmd->ucmd, &LastUserCmd, sizeof(usercmd_t));
 			}
-		}
-		if (clonecount)
-		{
-			clonecount--;
-			memcpy (&cmd->ucmd, &LastUserCmd, sizeof(usercmd_t));
 		}
 	}
 }
