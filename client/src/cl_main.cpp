@@ -1037,6 +1037,9 @@ void CL_Corpse(void)
 	if(version >= 64)
 	{
 		tics = MSG_ReadByte();
+		
+		if(tics == 0xFF)
+			tics = -1;
 	}
 	
 	if (!mo)
