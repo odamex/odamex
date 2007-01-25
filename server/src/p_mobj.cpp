@@ -43,7 +43,6 @@ int 				itemrespawntime[ITEMQUESIZE];
 int 				iquehead;
 int 				iquetail;
 
-CVAR	(sv_friction,	"0.90625",	CVAR_NULL)  // removeme (should always be fixed at this setting)
 CVAR	(weaponstay,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial weapons wont be removed after picked up when true. - does not work yet
 
 EXTERN_CVAR (chasedemo) // removeme
