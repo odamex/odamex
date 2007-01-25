@@ -2083,10 +2083,11 @@ void SV_Spectate (player_t &player)
 			SV_Suicide(player);
 
 		player.playerstate = PST_SPECTATE;
+		player.respawn_time = level.time;
 	}
 	else
 	{
-		if(player.mo && level.time > player.respawn_time + TICRATE*10)
+		if(player.playerstate == PST_SPECTATE && level.time > player.respawn_time + TICRATE*2)
 			player.playerstate = PST_REBORN;
 	}
 }
