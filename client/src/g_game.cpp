@@ -375,7 +375,7 @@ BEGIN_COMMAND (spynext)
 		if(players[curr].id == displayplayer().id)
 			break;
 	
-	for(size_t i = 0; i < s - 1; i++)
+	for(size_t i = 1; i < s; i++)
 	{
 		curr = (curr+1)%s;
 		
