@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -95,14 +95,6 @@ DThinker::DThinker ()
 
 DThinker::~DThinker ()
 {
-	if (FirstThinker == this)
-		FirstThinker = m_Next;
-	if (LastThinker == this)
-		LastThinker = m_Prev;
-	if (m_Next)
-		m_Next->m_Prev = m_Prev;
-	if (m_Prev)
-		m_Prev->m_Next = m_Next;
 }
 
 void DThinker::Destroy ()
@@ -115,7 +107,7 @@ void DThinker::Destroy ()
 		m_Next->m_Prev = m_Prev;
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
-	m_Next = m_Prev = NULL;
+	
 	Super::Destroy ();
 }
 
@@ -188,5 +180,5 @@ void DThinker::operator delete (void *mem)
 	Z_Free (mem);
 }
 
-VERSION_CONTROL (dthinker_cpp, "$Id:$")
+VERSION_CONTROL (dthinker_cpp, "$Id$")
 
