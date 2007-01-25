@@ -1421,9 +1421,9 @@ void G_ReadDemoTiccmd (ticcmd_t *cmd, int player)
 {
 	if(demoversion == LMP_DOOM_1_9 || demoversion == LMP_DOOM_1_9_1)
 	{
-		if ((*demo_p == DEMOMARKER)
-		|| (demoversion == LMP_DOOM_1_9 && demo_e - demo_p < 4)
-		|| (demoversion == LMP_DOOM_1_9_1 && demo_e - demo_p < 5))
+		if ((demoversion == LMP_DOOM_1_9 && demo_e - demo_p < 4)
+		|| (demoversion == LMP_DOOM_1_9_1 && demo_e - demo_p < 5)
+		|| (*demo_p == DEMOMARKER))
 		{
 			// end of demo data stream 
 			G_CheckDemoStatus (); 
