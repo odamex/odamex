@@ -141,7 +141,7 @@ BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 int				iffdemover;
 byte*			demobuffer;
-byte*			demo_p;
+byte			*demo_p, *demo_e;
 size_t			maxdemosize;
 byte*			zdemformend;			// end of FORM ZDEM chunk
 byte*			zdembodyend;			// end of ZDEM BODY chunk
@@ -1421,12 +1421,15 @@ void G_ReadDemoTiccmd (ticcmd_t *cmd, int player)
 {
 	if(demoversion == LMP_DOOM_1_9 || demoversion == LMP_DOOM_1_9_1)
 	{
-		if (*demo_p == DEMOMARKER) 
+		if ((*demo_p == DEMOMARKER)
+		|| (demoversion == LMP_DOOM_1_9 && demo_e - demo_p < 4)
+		|| (demoversion == LMP_DOOM_1_9_1 && demo_e - demo_p < 5))
 		{
 			// end of demo data stream 
 			G_CheckDemoStatus (); 
 			return; 
 		}
+		
 		usercmd_t *ucmd = &cmd->ucmd;
 		ucmd->forwardmove = ((signed char)*demo_p++);
 		ucmd->sidemove = ((signed char)*demo_p++);
@@ -1652,6 +1655,8 @@ void G_DoPlayDemo (void)
 		bytelen = M_ReadFile (defdemoname.c_str(), &demobuffer);
 		demo_p = demobuffer;
 	}
+
+	demo_e = demo_p + bytelen;
 
 	if(bytelen < 4)
 	{
