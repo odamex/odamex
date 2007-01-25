@@ -1497,7 +1497,14 @@ void CL_UpdateSector(void)
 	
 	if(version > 62)
 	{
-		sec->floorpic = fp; // denis - todo - security
+		if(fp >= numflats)
+			fp = numflats;
+
+		sec->floorpic = fp;
+
+		if(cp >= numflats)
+			cp = numflats;
+
 		sec->ceilingpic = cp;
 	}
 		

@@ -109,7 +109,7 @@ typedef struct
 
 int 			firstflat;
 int 			lastflat;
-static int		numflats;
+int				numflats;
 
 int 			firstspritelump;
 int 			lastspritelump;
@@ -613,6 +613,10 @@ void R_InitFlats (void)
 		
 	firstflat = W_GetNumForName ("F_START") + 1;
 	lastflat = W_GetNumForName ("F_END") - 1;
+	
+	if(firstflat >= lastflat)
+		I_Error("no flats");
+	
 	numflats = lastflat - firstflat + 1;
 				
 	if(flattranslation) // [Toke - memleak]
@@ -657,6 +661,9 @@ void R_InitSpriteLumps (void)
 
 	numspritelumps = lastspritelump - firstspritelump + 1;
 
+	if(firstspritelump > lastspritelump)
+		I_Error("no sprite lumps");
+
 	// [RH] Rather than maintaining separate spritewidth, spriteoffset,
 	//		and spritetopoffset arrays, this data has now been moved into
 	//		the sprite frame definition and gets initialized by
@@ -700,7 +707,12 @@ void R_InitColormaps (void)
 	if (firstfakecmap == -1 || lastfakecmap == -1)
 		numfakecmaps = 1;
 	else
+	{
+		if(firstfakecmap > lastfakecmap)
+			I_Error("no fake cmaps");
+
 		numfakecmaps = lastfakecmap - firstfakecmap;
+	}
 	
 	realcolormaps = (byte *)Z_Malloc (256*(NUMCOLORMAPS+1)*numfakecmaps+255,PU_STATIC,0);
 	realcolormaps = (byte *)(((ptrdiff_t)realcolormaps + 255) & ~255);

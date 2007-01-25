@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -556,7 +556,8 @@ void R_DrawPlanes (void)
 				
 					// MBF's linedef-controlled skies
 					// Sky Linedef
-					const line_t *l = &lines[(pl->picnum & ~PL_SKYFLAT)-1];
+					short picnum = (pl->picnum & ~PL_SKYFLAT)-1;
+					const line_t *l = &lines[picnum < numlines ? picnum : 0];
 
 					// Sky transferred from first sidedef
 					const side_t *s = *l->sidenum + sides;
@@ -604,7 +605,7 @@ void R_DrawPlanes (void)
 			{
 				// regular flat
 				int light, stop, x;
-				int useflatnum = flattranslation[pl->picnum];
+				int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
 
 				ds_color += 4;	// [RH] color if r_drawflat is 1
 
@@ -792,5 +793,5 @@ BOOL R_AlignFlat (int linenum, int side, int fc)
 	return true;
 }
 
-VERSION_CONTROL (r_plane_cpp, "$Id:$")
+VERSION_CONTROL (r_plane_cpp, "$Id$")
 

@@ -46,6 +46,7 @@ extern "C" int			viewheight;
 extern "C" int			realviewheight;
 
 extern int				firstflat;
+extern int				numflats;
 
 // for global animation
 extern bool*			flatwarp;
