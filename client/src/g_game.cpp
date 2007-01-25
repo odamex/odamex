@@ -375,10 +375,13 @@ BEGIN_COMMAND (spynext)
 		if(players[curr].id == displayplayer().id)
 			break;
 	
-	for(size_t i = 0; i < s; i++)
+	for(size_t i = 0; i < s - 1; i++)
 	{
 		curr = (curr+1)%s;
 		
+		if(!players[curr].mo)
+			continue;
+			
 		if(!deathmatch || ((teamplaymode || ctfmode) && players[curr].userinfo.team == consoleplayer().userinfo.team))
 		{
 			displayplayer_id = players[curr].id;
