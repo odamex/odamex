@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -377,6 +377,13 @@ BEGIN_COMMAND (spectate)
 }
 END_COMMAND (spectate)
 
+BEGIN_COMMAND (joingame)
+{
+	MSG_WriteMarker(&net_buffer, clc_spectate);
+	MSG_WriteByte(&net_buffer, false);
+}
+END_COMMAND (joingame)
 
-VERSION_CONTROL (c_cmds_cpp, "$Id:$")
+
+VERSION_CONTROL (c_cmds_cpp, "$Id$")
 
