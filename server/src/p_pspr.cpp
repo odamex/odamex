@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -787,6 +787,9 @@ void A_BFGSpray (AActor *mo)
 	int 				j;
 	int 				damage;
 	angle_t 			an;
+	
+	if(!serverside)
+		return;
 
 	// [RH] Don't crash if no target
 	if (!mo->target)
@@ -912,5 +915,5 @@ FArchive &operator>> (FArchive &arc, pspdef_t &def)
 	return arc >> def.state >> def.tics >> def.sx >> def.sy;
 }
 
-VERSION_CONTROL (p_pspr_cpp, "$Id:$")
+VERSION_CONTROL (p_pspr_cpp, "$Id$")
 
