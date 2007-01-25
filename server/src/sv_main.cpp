@@ -2086,7 +2086,8 @@ void SV_Spectate (player_t &player)
 	}
 	else
 	{
-		player.playerstate = PST_REBORN;
+		if(player.mo && level.time > player.respawn_time + TICRATE*10)
+			player.playerstate = PST_REBORN;
 	}
 }
 
