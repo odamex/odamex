@@ -78,7 +78,6 @@ netid_map_t actor_by_netid;
 
 EXTERN_CVAR (skin)
 EXTERN_CVAR (team)
-EXTERN_CVAR (infiniteheight)
 CVAR (friendlyfire,		"1", CVAR_SERVERINFO)
 EXTERN_CVAR (weaponstay)
 EXTERN_CVAR (sv_cheats)
@@ -1640,7 +1639,7 @@ void CL_GetServerSettings(void)
 	if(!cl_freelook)
 		freelook = "0";
 	infiniteammo.Set((BOOL)MSG_ReadByte());
-	infiniteheight.Set(MSG_ReadByte());
+	MSG_ReadByte(); // denis - todo - use this for something
 
 	// Teamplay/CTF
 	scorelimit.Set((int)MSG_ReadShort());

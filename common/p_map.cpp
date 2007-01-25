@@ -41,8 +41,6 @@
 
 #include "z_zone.h"
 
-EXTERN_CVAR (infiniteheight)
-
 fixed_t 		tmbbox[4];
 static AActor  *tmthing;
 static fixed_t	tmx;

@@ -132,7 +132,6 @@ CVAR (fragexitswitch,   "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)             
 CVAR (allowjump,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Jump command functions when true.
 CVAR (freelook,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Freelook works when true.
 CVAR (infiniteammo,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players have infinite ammo when true.
-EXTERN_CVAR (infiniteheight)
 
 // Teamplay/CTF
 CVAR (usectf,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// CTF will automaticly be enabled on maps that contain flags when true.
@@ -1218,7 +1217,7 @@ void SV_SendServerSettings (client_t *cl)
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowjump);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)freelook);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)infiniteammo);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)infiniteheight);
+	MSG_WriteByte   (&cl->reliablebuf, 0); // denis - todo - use this for something
 
 	// Teamplay/CTF
 //	MSG_WriteByte   (&cl->reliablebuf, (BOOL)usectf);
