@@ -36,7 +36,7 @@
 
 #define CHALLENGE 5560020  // challenge
 #define LAUNCHER_CHALLENGE 777123  // csdl challenge
-#define VERSION 63
+#define VERSION 64
 
 extern int   localport;
 extern int   msg_badread;

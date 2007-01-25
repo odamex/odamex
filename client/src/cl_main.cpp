@@ -718,7 +718,9 @@ bool CL_PrepareConnect(void)
 	
 	version = MSG_ReadShort();
 	
-	if(version != 62 && version != VERSION)
+	if(version > VERSION)
+		version = VERSION;
+	if(version < 62)
 		version = 62;
 
 	Printf(PRINT_HIGH, "\n");
@@ -1031,18 +1033,22 @@ void CL_Corpse(void)
 {
 	AActor *mo = CL_FindThingById(MSG_ReadShort());
 	int frame = MSG_ReadByte();
-
+	int tics = -1;
+	if(version >= 64)
+	{
+		tics = MSG_ReadByte();
+	}
+	
 	if (!mo)
 		return;
 
 	P_SetMobjState(mo, mo->info->deathstate);
-	mo->tics = -1;
 
 	if(mo->sprite >= NUMSPRITES || (frame&FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
 		return;
 
 	mo->frame = frame;
-
+	mo->tics = tics;
 	mo->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
 	mo->flags |= MF_CORPSE|MF_DROPOFF;
 	mo->height >>= 2;
@@ -1476,7 +1482,7 @@ void CL_UpdateSector(void)
 	unsigned short ch = MSG_ReadShort();
 	
 	unsigned short fp = 0, cp = 0;
-	if(version != 62)
+	if(version > 62)
 	{
 		fp = MSG_ReadShort();
 		cp = MSG_ReadShort();
@@ -1489,7 +1495,7 @@ void CL_UpdateSector(void)
 	sec->floorheight = fh << FRACBITS;
 	sec->ceilingheight = ch << FRACBITS;
 	
-	if(version != 62)
+	if(version > 62)
 	{
 		sec->floorpic = fp; // denis - todo - security
 		sec->ceilingpic = cp;
