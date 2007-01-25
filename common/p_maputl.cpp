@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -429,15 +429,13 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 		return true;
 
-	int	offset;
-	int *list;
-	
-	offset = *(blockmap + (bmapwidth*y + x));
-	list = blockmaplump + offset;
-	
+	int offset = *(blockmap + (bmapwidth*y + x));
+	int *list = blockmaplump + offset;
+
 	// [RH] Get past starting 0 (from BOOM)
-	list++;
-	
+	// denis - not so fast, this breaks doom1.wad 1.9 demo1
+	//list++;
+
 	for (; *list != -1; list++)
 	{
 		line_t *ld = &lines[*list];
@@ -807,5 +805,5 @@ BOOL P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 	return P_TraverseIntercepts ( trav, FRACUNIT );
 }
 
-VERSION_CONTROL (p_maputl_cpp, "$Id:$")
+VERSION_CONTROL (p_maputl_cpp, "$Id$")
 
