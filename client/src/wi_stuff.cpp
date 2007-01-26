@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -293,7 +293,7 @@ static patch_t* 		num[10];
 static patch_t* 		wiminus;
 
 // "Finished!" graphics
-static patch_t* 		finished;
+//static patch_t* 		finished; (Removed) Dan - Did we really need this?
 
 // "Entering" graphic
 static patch_t* 		entering;
@@ -374,7 +374,7 @@ void WI_drawLF (void)
 	}
 
 	// draw "Finished!"
-	FB->DrawPatchClean (finished, (320 - finished->width())/2, y);
+//	FB->DrawPatchClean (finished, (320 - finished->width())/2, y); (Removed) Dan - Did we really need this?
 }
 
 
@@ -794,7 +794,7 @@ void WI_loadData (void)
 	}
 
 	// "finished"
-	finished = (patch_t *)W_CacheLumpName ("WIF", PU_STATIC);
+	//finished = (patch_t *)W_CacheLumpName ("WIF", PU_STATIC); (Removed) Dan - Did we really need this?
 
 	// "entering"
 	entering = (patch_t *)W_CacheLumpName ("WIENTER", PU_STATIC);
@@ -836,7 +836,7 @@ void WI_unloadData (void)
 		}
 	}
 
-	Z_ChangeTag (finished, PU_CACHE);
+	//Z_ChangeTag (finished, PU_CACHE); (Removed) Dan - Did we really need this? 
 	Z_ChangeTag (entering, PU_CACHE);
 
 	Z_ChangeTag (p, PU_CACHE);
@@ -887,5 +887,5 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 // 	SN_StopAllSequences ();
 }
 
-VERSION_CONTROL (wi_stuff_cpp, "$Id:$")
+VERSION_CONTROL (wi_stuff_cpp, "$Id$")
 
