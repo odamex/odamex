@@ -63,16 +63,22 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
         list->SetItem(idx, 1, wxString::Format(_T("%d"),ping));
         list->SetItem(idx, 2, wxString::Format(_T("%d/%d"),s.info.numplayers,s.info.maxplayers));       
     
-        // pwad list
-        wxString wadlist = _T("");    
-    
         // build a list of pwads
         if (s.info.numpwads > 0)
+        {
+            // pwad list
+            wxString wadlist = _T("");
+            wxString pwad = _T("");
+            
             for (i = 0; i < s.info.numpwads; i++)
-                wadlist += wxString::Format(_T("%s "), s.info.pwads[i].c_str());
-        
-        list->SetItem(idx, 3, wadlist);
-     
+            {
+                pwad = s.info.pwads[i].Mid(0, s.info.pwads[i].Find('.'));
+                wadlist += wxString::Format(_T("%s "), pwad.c_str());
+            }
+            
+            list->SetItem(idx, 3, wadlist);
+        }
+            
         list->SetItem(idx, 4, s.info.map.Upper());
     
         wxString gmode = _T("");

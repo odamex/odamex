@@ -71,6 +71,26 @@ EXTERN_CVAR (maxplayers)
 
 EXTERN_CVAR (port)
 
+//bond===========================
+EXTERN_CVAR (timelimit)			
+EXTERN_CVAR (fraglimit)			
+EXTERN_CVAR (email)
+EXTERN_CVAR (itemsrespawn)
+EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (friendlyfire)
+EXTERN_CVAR (allowexit)
+EXTERN_CVAR (infiniteammo)
+EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (monstersrespawn)
+EXTERN_CVAR (fastmonsters)
+EXTERN_CVAR (allowjump)
+EXTERN_CVAR (freelook)
+EXTERN_CVAR (waddownload)
+EXTERN_CVAR (emptyreset)
+EXTERN_CVAR (cleanmaps)
+EXTERN_CVAR (fragexitswitch)
+//bond===========================
+
 // if set, advetise user-defined natport value to the master
 CVAR(natport,	"0", CVAR_ARCHIVE)
 
@@ -370,6 +390,45 @@ void SV_SendServerInfo()
 	}
 	
 	MSG_WriteShort(&ml_message, VERSION);
+
+//bond===========================
+	MSG_WriteString(&ml_message, (char *)email.cstring());
+
+	int timeleft = timelimit - level.time/(TICRATE*60);
+	if (timeleft<0) timeleft=0;
+
+	MSG_WriteShort(&ml_message,(int)timelimit);
+	MSG_WriteShort(&ml_message,timeleft);
+	MSG_WriteShort(&ml_message,(int)fraglimit);
+
+	MSG_WriteByte(&ml_message,(BOOL)itemsrespawn);
+	MSG_WriteByte(&ml_message,(BOOL)weaponstay);
+	MSG_WriteByte(&ml_message,(BOOL)friendlyfire);
+	MSG_WriteByte(&ml_message,(BOOL)allowexit);
+	MSG_WriteByte(&ml_message,(BOOL)infiniteammo);
+	MSG_WriteByte(&ml_message,(BOOL)nomonsters);
+	MSG_WriteByte(&ml_message,(BOOL)monstersrespawn);
+	MSG_WriteByte(&ml_message,(BOOL)fastmonsters);
+	MSG_WriteByte(&ml_message,(BOOL)allowjump);
+	MSG_WriteByte(&ml_message,(BOOL)freelook);
+	MSG_WriteByte(&ml_message,(BOOL)waddownload);
+	MSG_WriteByte(&ml_message,(BOOL)emptyreset);
+	MSG_WriteByte(&ml_message,(BOOL)cleanmaps);
+	MSG_WriteByte(&ml_message,(BOOL)fragexitswitch);
+
+	for (i = 0; i < players.size(); ++i)
+	{
+		if (players[i].ingame())
+		{
+			MSG_WriteShort(&ml_message, players[i].killcount);
+			MSG_WriteShort(&ml_message, players[i].deathcount);
+			
+			int timeingame = (time(NULL) - players[i].JoinTime)/60;
+			if (timeingame<0) timeingame=0;
+			MSG_WriteShort(&ml_message, timeingame);
+		}
+	}
+//bond===========================
 
 	NET_SendPacket(ml_message, net_from);
 }
