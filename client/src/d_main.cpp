@@ -1014,9 +1014,9 @@ void D_AddDefWads (std::string iwad)
 		modifiedgame = true;			// homebrew levels
 		for (size_t i = 0; i < files.NumArgs(); i++)
 		{
-			std::string f = BaseFileSearch (files.GetArg (i), ".WAD");
-			if (f.length())
-				wadfiles.push_back(files.GetArg (i));
+			std::string file = BaseFileSearch (files.GetArg (i), ".WAD");
+			if (file.length())
+				wadfiles.push_back(file);
 		}
 	}
 }

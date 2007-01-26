@@ -583,6 +583,7 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 			if(dir[dir.length() - 1] != '/')
 				dir += "/";
 
+			printf("%s\n", (dir + found).c_str());
 			return dir + found;
 		}
 	}
