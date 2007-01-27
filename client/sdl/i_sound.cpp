@@ -104,9 +104,9 @@ static Uint8 *expand_sound_data(Uint8 *data, int samplerate, int length)
 // Expands the 11025Hz, 8bit, mono sound effects in Doom to
 // 22050Hz, 16bit stereo
 
-static Uint8 *ExpandSoundData(byte *data, int samplerate, int length)
+static Uint8 *ExpandSoundData(Uint8 *data, int samplerate, int length)
 {
-   byte *expanded = NULL;
+   Uint8 *expanded = NULL;
    int expanded_length;
    int expand_ratio;
    int i;
@@ -156,7 +156,7 @@ static Uint8 *ExpandSoundData(byte *data, int samplerate, int length)
       expanded_length = (length * 22050) / samplerate;
       expand_ratio = (length << 8) / expanded_length;
 
-      expanded = (Uint8 *)Z_Malloc(expanded_length * 2, PU_STATIC, NULL);
+      expanded = (Uint8 *)Z_Malloc(expanded_length * expand_ratio, PU_STATIC, NULL);
 
 
       for (i=0; i<expanded_length; ++i)
