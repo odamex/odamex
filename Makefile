@@ -16,6 +16,7 @@ mingw	  := false
 bigendian := false
 cygwin	  := false
 osx     := false
+solaris	:= false
 
 ifneq ($(strip $(shell $(CC) -v 2>&1 |grep "FreeBSD")),)
  freebsd = true
@@ -44,6 +45,10 @@ endif
 
 ifneq ($(strip $(shell $(CC) -v 2>&1 |grep "cygming")),)
  cygwin = true
+endif
+
+ifneq ($(strip $(shell $(CC) -v 2>&1 |grep "solaris")),)
+ solaris = true
 endif
 
 # Flags to deutex
@@ -100,6 +105,10 @@ endif
 
 ifeq ($(strip $(bigendian)), true)
 CFLAGS_PLATFORM := $(CFLAGS_PLATFORM) -D__BIG_ENDIAN__
+endif
+
+ifeq ($(strip $(solaris)), true)
+CFLAGS_PLATFORM := $(CFLAGS_PLATFORM) -DBSD_COMP
 endif
 
 # Directories
