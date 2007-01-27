@@ -317,7 +317,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	if(sep > 255)
 		sep = 255;
 
-	if(snd_crossover)
+	if(!snd_crossover)
 		sep = 255 - sep;
 
 	int volume = (int)((float)MIX_MAX_VOLUME * basevolume * vol);
