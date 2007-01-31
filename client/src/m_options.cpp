@@ -395,7 +395,7 @@ static menuitem_t VideoItems[] = {
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	12,
+	18,
 	0,
 	VideoItems,
 };
