@@ -103,12 +103,13 @@ ifeq ($(strip $(linux)), true)
 CFLAGS_PLATFORM = -DUNIX -DLINUX
 endif
 
-ifeq ($(strip $(bigendian)), true)
-CFLAGS_PLATFORM := $(CFLAGS_PLATFORM) -D__BIG_ENDIAN__
+ifeq ($(strip $(solaris)), true)
+LFLAGS_PLATFORM = -lsocket -lnsl
+CFLAGS_PLATFORM = -DSOLARIS -DUNIX -DBSD_COMP -gstabs+
 endif
 
-ifeq ($(strip $(solaris)), true)
-CFLAGS_PLATFORM := $(CFLAGS_PLATFORM) -DBSD_COMP
+ifeq ($(strip $(bigendian)), true)
+CFLAGS_PLATFORM := $(CFLAGS_PLATFORM) -D__BIG_ENDIAN__
 endif
 
 # Directories

@@ -267,12 +267,12 @@ static int				cnt;
 // used for timing of background animation
 static int				bcnt;
 
-struct cnt_t
+struct count_t
 {
 	int cnt_kills, cnt_items, cnt_secret, cnt_frags;
 };
 
-static std::vector<cnt_t> stats;
+static std::vector<count_t> stats;
 static std::vector<int> dm_totals;
 
 
