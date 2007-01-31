@@ -313,29 +313,29 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
     {
         PLAYER_LIST->DeleteAllItems();
         
-        wxInt32 i = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+        wxInt32 listindex = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
         wxListItem item;
-        item.SetId(i);
+        item.SetId(listindex);
         item.SetColumn(7);
         item.SetMask(wxLIST_MASK_TEXT);
         
         SERVER_LIST->GetItem(item);
         
-        i = FindServer(item.GetText()); 
+        wxInt32 arrayindex = FindServer(item.GetText()); 
         
-        if (i == -1)
+        if (arrayindex == -1)
             return;
                 
-        totalPlayers -= QServer[i].info.numplayers;
+        totalPlayers -= QServer[arrayindex].info.numplayers;
         
-        QServer[i].Query(500);
+        QServer[arrayindex].Query(500);
         
-        AddServerToList(SERVER_LIST, QServer[i], i, 0);
+        AddServerToList(SERVER_LIST, QServer[arrayindex], listindex, 0);
         
-        AddPlayersToList(PLAYER_LIST, QServer[i]);
+        AddPlayersToList(PLAYER_LIST, QServer[arrayindex]);
         
-        totalPlayers += QServer[i].info.numplayers;
+        totalPlayers += QServer[arrayindex].info.numplayers;
         
         GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
         GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
