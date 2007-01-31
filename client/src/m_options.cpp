@@ -305,6 +305,8 @@ EXTERN_CVAR (r_drawfuzz)
 EXTERN_CVAR (cl_rockettrails)
 EXTERN_CVAR (wipetype)
 EXTERN_CVAR (screenblocks)
+EXTERN_CVAR (dimamount)
+EXTERN_CVAR (dumcvar)
 
 static value_t Crosshairs[] =
 {
@@ -326,11 +328,60 @@ static value_t Wipes[] = {
 	{ 3.0, "Crossfade" }
 };
 
+static void M_SendUINewColor (int red, int green, int blue);
+static void M_SlideUIRed (int);
+static void M_SlideUIGreen (int);
+static void M_SlideUIBlue (int);
+
+int dummy = 0;
+
+BEGIN_CUSTOM_CVAR(ui_transred, "0", CVAR_ARCHIVE)
+{   
+    if (var > 255)
+        var.Set(255);
+    
+    if (var < 0)
+        var.Set(0.0f);
+    
+    M_SlideUIRed((int)var);
+}
+END_CUSTOM_CVAR(ui_transred)
+
+BEGIN_CUSTOM_CVAR(ui_transgreen, "0", CVAR_ARCHIVE)
+{   
+    if (var > 255)
+        var.Set(255);
+    
+    if (var < 0)
+        var.Set(0.0f);
+    
+    M_SlideUIGreen((int)var);
+}
+END_CUSTOM_CVAR(ui_transgreen)
+
+BEGIN_CUSTOM_CVAR(ui_transblue, "0", CVAR_ARCHIVE)
+{   
+    if (var > 255)
+        var.Set(255);
+    
+    if (var < 0)
+        var.Set(0.0f);
+    
+    M_SlideUIBlue((int)var);
+}
+END_CUSTOM_CVAR(ui_transblue)
+
 static menuitem_t VideoItems[] = {
 	{ more,		"Messages",				{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)StartMessagesMenu} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ slider,	"Screen size",			{&screenblocks},	   	{3.0}, {12.0},	{1.0}, {NULL} },
 	{ slider,	"Brightness",			{&gammalevel},			{1.0}, {4.0},	{1.0}, {NULL} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ slider,   "UI Transperancy",      {&dimamount},           {0.1}, {1.0},   {0.1}, {NULL} },
+	{ slider,   "UI Trans Red",         {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
+	{ slider,   "UI Trans Green",       {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
+	{ slider,   "UI Trans Blue",        {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },	
 	{ discrete,	"Crosshair",			{&crosshair},		   	{9.0}, {0.0},	{0.0}, {Crosshairs} },
 	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },
@@ -478,6 +529,41 @@ menu_t ModesMenu = {
 };
 
 static cvar_t *flagsvar;
+
+EXTERN_CVAR(dimcolor);
+
+// [Russell] - Modified to send new colours
+static void M_SendUINewColor (int red, int green, int blue)
+{
+	char command[24];
+
+	sprintf (command, "dimcolor \"%02x %02x %02x\"", red, green, blue);
+	AddCommandString (command);
+}
+
+static void M_SlideUIRed (int val)
+{
+	int color = V_GetColorFromString(NULL, dimcolor.cstring());
+	int red = val;
+
+	M_SendUINewColor (red, GPART(color), BPART(color));
+}
+
+static void M_SlideUIGreen (int val)
+{
+    int color = V_GetColorFromString(NULL, dimcolor.cstring());
+	int green = val;
+
+	M_SendUINewColor (RPART(color), green, BPART(color));
+}
+
+static void M_SlideUIBlue (int val)
+{
+    int color = V_GetColorFromString(NULL, dimcolor.cstring());
+	int blue = val;
+
+	M_SendUINewColor (RPART(color), GPART(color), blue);
+}
 
 void M_FreeValues (value_t **values, int num)
 {
