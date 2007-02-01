@@ -53,8 +53,8 @@ struct teamplay_t       // Teamplay score structure
 struct serverinfo_t     // Server information structure
 {
     wxString        name;           // Server name
-    wxInt8          numplayers;     // Number of players playing
-    wxInt8          maxplayers;     // Maximum number of possible players
+    wxUint8         numplayers;     // Number of players playing
+    wxUint8         maxplayers;     // Maximum number of possible players
     wxString        map;            // Current map
     wxInt8          numpwads;       // Number of PWAD files
     wxString        iwad;           // The main game file
