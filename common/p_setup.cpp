@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -1340,12 +1340,12 @@ void P_SetupLevel (char *lumpname, int position)
 	P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
 	
     // if deathmatch, randomly spawn the active players
-    if (serverside && deathmatch)
+    if (serverside)
     {
 		for (i=0 ; i<players.size() ; i++)
 			if (players[i].ingame())
 			{
-				G_DeathMatchSpawnPlayer (players[i]);
+				G_DeathMatchSpawnPlayer (players[i]); // denis - this function checks for deathmatch internally
 			}				
     }
 	
@@ -1381,5 +1381,5 @@ void P_Init (void)
 
 
 
-VERSION_CONTROL (p_setup_cpp, "$Id:$")
+VERSION_CONTROL (p_setup_cpp, "$Id$")
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -560,86 +560,89 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	return &deathmatchstarts[i];
 }
 
-void G_DeathMatchSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this function to accept teamplay starts
+void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this function to accept teamplay starts
 {
 	int selections;
 	mapthing2_t *spot;
 
-	if(!serverside)
-		return;
+	selections = 0;
 
-	if (!ctfmode)
+	if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
 	{
-		selections = deathmatch_p - deathmatchstarts;
-		// [RH] We can get by with just 1 deathmatch start
+		selections = blueteam_p - blueteamstarts;
+
 		if (selections < 1)
-			I_Error ("No deathmatch starts");
-		
-		// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-		spot = SelectRandomDeathmatchSpot (player, selections);
-
-		if (!spot && !playerstarts.empty()) 
-		{
-			// no good spot, so the player will probably get stuck
-			spot = &playerstarts[player.id%playerstarts.size()];
-		} 
-		else 
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;	// [RH] > 4 players
-		}
-
-
+			I_Error ("No blue team starts");
 	}
-	else
+
+	if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
 	{
-		selections = 0;
-
-		if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
-		{
-			selections = blueteam_p - blueteamstarts;
-
-			if (selections < 1)
-				I_Error ("No blue team starts");
-		}
-
-		if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
-		{
-			selections = redteam_p - redteamstarts;
-
-			if (selections < 1)
-				I_Error ("No red team starts");
-		}
-
-		if (player.userinfo.team == TEAM_GOLD)  // [Toke - CTF - starts]
-		{
-			selections = goldteam_p - goldteamstarts;
-
-			if (selections < 1)
-				I_Error ("No gold team starts");
-		}
+		selections = redteam_p - redteamstarts;
 
 		if (selections < 1)
-			I_Error ("No team starts");
+			I_Error ("No red team starts");
+	}
 
-		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
+	if (player.userinfo.team == TEAM_GOLD)  // [Toke - CTF - starts]
+	{
+		selections = goldteam_p - goldteamstarts;
 
-		if (!spot && !playerstarts.empty())
-			spot = &playerstarts[player.id%playerstarts.size()];
+		if (selections < 1)
+			I_Error ("No gold team starts");
+	}
 
-		else 
-		{
-			if (player.id < 4)
-				spot->type = player.id+1;
-			else
-				spot->type = player.id+4001-4;
-		}
-	
+	if (selections < 1)
+		I_Error ("No team starts");
+
+	spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
+
+	if (!spot && !playerstarts.empty())
+		spot = &playerstarts[player.id%playerstarts.size()];
+	else 
+	{
+		if (player.id < 4)
+			spot->type = player.id+1;
+		else
+			spot->type = player.id+4001-4;
 	}
 
 	P_SpawnPlayer (player, spot);
+}
+
+void G_DeathMatchSpawnPlayer (player_t &player)
+{
+	int selections;
+	mapthing2_t *spot;
+	
+	if(teamplay || ctfmode)
+	{
+		G_TeamSpawnPlayer (player);
+		return;
+	}
+	
+	if(!deathmatch)
+		return;
+
+	selections = deathmatch_p - deathmatchstarts;
+	// [RH] We can get by with just 1 deathmatch start
+	if (selections < 1)
+		I_Error ("No deathmatch starts");
+	
+	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
+	spot = SelectRandomDeathmatchSpot (player, selections);
+	
+	if (!spot && !playerstarts.empty()) 
+	{
+		// no good spot, so the player will probably get stuck
+		spot = &playerstarts[player.id%playerstarts.size()];
+	} 
+	else 
+	{
+		if (player.id < 4)
+			spot->type = player.id+1;
+		else
+			spot->type = player.id+4001-4;	// [RH] > 4 players
+	}
 }
 
 //
@@ -665,8 +668,18 @@ void G_DoReborn (player_t &player)
 		player.mo = AActor::AActorPtr();
 	}
 	
+	if(!serverside)
+		return;
+		
+	// spawn at random team spot if in team game
+	if(teamplay || ctfmode)
+	{
+		G_TeamSpawnPlayer (player);
+		return;
+	}
+
 	// spawn at random spot if in death match
-	if (deathmatch)
+	if(deathmatch)
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
@@ -839,5 +852,5 @@ BOOL CheckIfExitIsGood (AActor *self)
 }
 
 
-VERSION_CONTROL (g_game_cpp, "$Id:$")
+VERSION_CONTROL (g_game_cpp, "$Id$")
 
