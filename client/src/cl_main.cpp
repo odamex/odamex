@@ -82,6 +82,13 @@ CVAR (friendlyfire,		"1", CVAR_SERVERINFO)
 EXTERN_CVAR (weaponstay)
 EXTERN_CVAR (sv_cheats)
 
+EXTERN_CVAR (cl_name)
+EXTERN_CVAR (cl_color)
+EXTERN_CVAR (cl_autoaim)
+EXTERN_CVAR (cl_team)
+EXTERN_CVAR (cl_skin)
+EXTERN_CVAR (cl_gender)
+
 CVAR (maxplayers,		"0", CVAR_SERVERINFO)
 CVAR (infiniteammo,		"0", CVAR_SERVERINFO)
 CVAR (fraglimit,		"0", CVAR_SERVERINFO)
@@ -107,7 +114,6 @@ void CL_TryToConnect(DWORD server_token);
 void CL_Decompress(int sequence);
 
 //	[Toke - CTF]
-void CL_CheckSkin (void);
 void CalcTeamFrags (void);
 
 // some doom functions (not csDoom)
@@ -122,9 +128,10 @@ void P_CalcHeight (player_t *player);
 BOOL P_CheckMissileSpawn (AActor* th);
 void CL_SetMobjSpeedAndAngle(void);
 
-void CL_RememberSkin(void);
 void P_PlayerLookUpDown (player_t *p);
-
+team_t D_TeamByName (const char *team);
+gender_t D_GenderByName (const char *gender);
+int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 
 void Host_EndGame(char *msg)
 {
@@ -451,15 +458,24 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(void)
 {
-	player_t &p = consoleplayer();
-
+	userinfo_t coninfo;
+	
+    memset (&coninfo, 0, sizeof(coninfo));
+	
+	strncpy (coninfo.netname, cl_name.cstring(), MAXPLAYERNAME);
+	coninfo.team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams] 
+	coninfo.aimdist = (fixed_t)(cl_autoaim * 16384.0);
+	coninfo.color	 = V_GetColorFromString (NULL, cl_color.cstring());
+	coninfo.skin	 = R_FindSkin (cl_skin.cstring());
+	coninfo.gender  = D_GenderByName (cl_gender.cstring());
+	
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, p.userinfo.netname);
-	MSG_WriteByte	(&net_buffer, p.userinfo.team); // [Toke]
-	MSG_WriteLong	(&net_buffer, p.userinfo.gender);
-	MSG_WriteLong	(&net_buffer, p.userinfo.color);
-	MSG_WriteString	(&net_buffer, (char *)skins[p.userinfo.skin].name); // [Toke - skins]
-	MSG_WriteLong	(&net_buffer, p.userinfo.aimdist);
+	MSG_WriteString	(&net_buffer, coninfo.netname);
+	MSG_WriteByte	(&net_buffer, coninfo.team); // [Toke]
+	MSG_WriteLong	(&net_buffer, coninfo.gender);
+	MSG_WriteLong	(&net_buffer, coninfo.color);
+	MSG_WriteString	(&net_buffer, (char *)skins[coninfo.skin].name); // [Toke - skins]
+	MSG_WriteLong	(&net_buffer, coninfo.aimdist);
 }
 
 
@@ -516,6 +532,9 @@ void CL_SetupUserInfo(void)
 
 	if (p->mo)
 		p->mo->sprite = skins[p->userinfo.skin].sprite;
+	
+	extern bool st_firsttime;
+	st_firsttime = true;
 }
 
 
@@ -819,8 +838,6 @@ void CL_InitNetwork (void)
 	G_SetDefaultTurbo ();
 
     connected = false;
-
-	CL_RememberSkin ();
 }
 
 void CL_TryToConnect(DWORD server_token)
@@ -1649,52 +1666,6 @@ void CL_GetServerSettings(void)
 	cvar_t::UnlatchCVars ();
 }
 
-
-void CL_CheckSkin (void)
-{
-	switch (consoleplayer().userinfo.team)
-	{
-		case TEAM_BLUE:
-			if (stricmp (skins[consoleplayer().userinfo.skin].name, "BlueTeam"))
-				skin.Set("BlueTeam");
-
-			break;
-
-		case TEAM_RED:
-			if (stricmp (skins[consoleplayer().userinfo.skin].name, "RedTeam"))
-				skin.Set("RedTeam");
-
-			break;
-
-		case TEAM_GOLD:
-			if (stricmp (skins[consoleplayer().userinfo.skin].name, "GoldTeam"))
-				skin.Set("GoldTeam");
-
-			break;
-			
-		default:
-			break;
-	}
-}
-
-
-
-
-//	[Toke - CTF]
-// CL_RememberSkin
-// Saves a players skin setting
-//
-void CL_RememberSkin(void)
-{
-	if (!strcmp (skin.cstring(), "BlueTeam"))
-		return;
-
-	if (!strcmp (skin.cstring(), "RedTeam"))
-		return;
-}
-
-
-
 //
 // CL_SetMobjState
 //
@@ -1717,40 +1688,11 @@ void CL_SetMobjState()
 
 void CL_ForceSetTeam (void)
 {
-	int t = MSG_ReadShort ();
+	unsigned int t = MSG_ReadShort ();
 
-	switch (t)
-	{
-	case TEAM_NONE:
-		consoleplayer().userinfo.team = TEAM_NONE;
-		team.Set("none");
-		skin.Set("base");
-
-		break;
-
-	case TEAM_BLUE:
-		consoleplayer().userinfo.team = TEAM_BLUE;
-		team.Set("blue");
-		skin.Set("BlueTeam");
-		break;
-
-	case TEAM_RED:
-		consoleplayer().userinfo.team = TEAM_RED;
-		team.Set("red");
-		skin.Set("RedTeam");
-		break;
-
-	case TEAM_GOLD:
-		consoleplayer().userinfo.team = TEAM_GOLD;
-		team.Set("gold");
-		skin.Set("base");
-		break;
-
-	}
+	if(t < NUMTEAMS || t == TEAM_NONE)
+		consoleplayer().userinfo.team = (team_t)t;
 }
-
-
-
 
 //
 // CL_Actor_Movedir

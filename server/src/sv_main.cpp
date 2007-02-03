@@ -677,11 +677,19 @@ void SV_SetupUserInfo (player_t &player)
 	p->userinfo.team	= (team_t)MSG_ReadByte();	// [Toke - Teams]
 	p->userinfo.gender	= (gender_t)MSG_ReadLong();
 	p->userinfo.color	= MSG_ReadLong();
-	skin	= MSG_ReadString();	// [Toke - Skins] Player skin
-	p->userinfo.aimdist = MSG_ReadLong();
+
+	skin = MSG_ReadString();	// [Toke - Skins] Player skin
 
 	// Make sure the skin is valid
 	p->userinfo.skin = R_FindSkin(skin);
+	
+	p->userinfo.aimdist = MSG_ReadLong();
+	
+	// Make sure the aimdist is valid
+	if (p->userinfo.aimdist < 0.0f)
+		p->userinfo.aimdist = 0.0f;
+	if (p->userinfo.aimdist > 5000.0f)
+		p->userinfo.aimdist = 5000.0f;
 
 	// Make sure the gender is valid
 	if(p->userinfo.gender >= NUMGENDER)
@@ -2454,7 +2462,7 @@ BEGIN_COMMAND (playerinfo)
 		size_t who = atoi(argv[1]);
 		player_t &p = idplayer(who);
 
-		if(!validplayer(p) || !players[who].ingame())
+		if(!validplayer(p) || !p.ingame())
 		{
 			Printf (PRINT_HIGH, "Bad player number\n");
 			return;

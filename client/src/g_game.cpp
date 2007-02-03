@@ -1804,19 +1804,8 @@ void G_TimeDemo (char* name)
 ===================
 */
 
-EXTERN_CVAR (name)
-EXTERN_CVAR (autoaim)
-EXTERN_CVAR (color)
-
 BOOL G_CheckDemoStatus (void)
 {
-	if (!demorecording)
-	{ // [RH] Restore the player's userinfo settings.
-		D_UserInfoChanged (&name);
-		D_UserInfoChanged (&autoaim);
-		D_UserInfoChanged (&color);
-	}
-
 	if (demoplayback)
 	{
 		extern int starttime;
@@ -1828,14 +1817,14 @@ BOOL G_CheckDemoStatus (void)
 		cvar_t::C_RestoreCVars ();		// [RH] Restore cvars demo might have changed
 
 		Z_Free (demobuffer);
+		
 		demoplayback = false;
 		netdemo = false;
 		netgame = false;
 		multiplayer = false;
 		serverside = false;
-		{
-			players.clear();
-		}
+		
+		players.clear();
 
 		if (singledemo || timingdemo) {
 			if (timingdemo)

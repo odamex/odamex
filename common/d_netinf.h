@@ -27,8 +27,6 @@
 
 #include "c_cvars.h"
 
-EXTERN_CVAR (autoaim)
-
 #define MAXPLAYERNAME	15
 
 enum gender_t

@@ -68,9 +68,8 @@ bool				messageNeedsInput;
 void	(*messageRoutine)(int response);
 void	CL_SendUserInfo(void); 
 void	M_ChangeTeam (int choice);
-void	CL_RememberSkin(void);
-
-team_t playersteam;
+team_t D_TeamByName (const char *team);
+gender_t D_GenderByName (const char *gender);
 
 #define SAVESTRINGSIZE	24
 
@@ -200,7 +199,7 @@ enum psetup_t
 oldmenuitem_t PlayerSetupMenu[] =
 {
 	{ 1,"", M_EditPlayerName, 'N' },
-	{ 1,"", M_ChangeTeam, 'T' },
+	{ 2,"", M_ChangeTeam, 'T' },
 	{ 2,"", M_SlidePlayerRed, 'R' },
 	{ 2,"", M_SlidePlayerGreen, 'G' },
 	{ 2,"", M_SlidePlayerBlue, 'B' },
@@ -409,13 +408,17 @@ static char *genders[3] = { "male", "female", "cyborg" };
 static state_t *PlayerState;
 static int PlayerTics;
 
-EXTERN_CVAR (name)
-EXTERN_CVAR (team)
+EXTERN_CVAR (cl_name)
+EXTERN_CVAR (cl_team)
+EXTERN_CVAR (cl_color)
+EXTERN_CVAR (cl_skin)
+EXTERN_CVAR (cl_autoaim)
+EXTERN_CVAR (cl_gender)
 
 void M_PlayerSetup (int choice)
 {
 	choice = 0;
-	strcpy (savegamestrings[0], name.cstring());
+	strcpy (savegamestrings[0], cl_name.cstring());
 //	strcpy (savegamestrings[1], team.cstring());	if (t = 1) // [Toke - Teams]
 	M_DemoNoPlay = true;
 	if (demoplayback)
@@ -630,8 +633,9 @@ static void M_PlayerSetupDrawer (void)
 		}
 	}
 	{
+		unsigned skin = R_FindSkin(cl_skin.cstring());
 		spriteframe_t *sprframe =
-			&sprites[skins[consoleplayer().userinfo.skin].sprite].spriteframes[PlayerState->frame & FF_FRAMEMASK];
+			&sprites[skins[skin].sprite].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
 		V_ColorMap = translationtables + consoleplayer().id * 256;
 		screen->DrawTranslatedPatchClean ((patch_t *)W_CacheLumpNum (sprframe->lump[0], PU_CACHE),
@@ -649,7 +653,7 @@ static void M_PlayerSetupDrawer (void)
 
 	{
 		int x = V_StringWidth ("Green") + 8 + PSetupDef.x;
-		int color = consoleplayer().userinfo.color;
+		int color = V_GetColorFromString(NULL, cl_color.cstring());
 
 		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, RPART(color));
 		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, GPART(color));
@@ -658,16 +662,18 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw team setting
 	{
+		team_t team = D_TeamByName(cl_team.cstring());
 		int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, playersteam == TEAM_NONE ? "NONE" : team_names[playersteam]);
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : team_names[team]);
 	}
 
 	// Draw gender setting
 	{
+		gender_t gender = D_GenderByName(cl_gender.cstring());
 		int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[consoleplayer().userinfo.gender]);
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[gender]);
 	}
 
 	// Draw skin setting
@@ -676,14 +682,14 @@ static void M_PlayerSetupDrawer (void)
 		{
 			int x = V_StringWidth ("Skin") + 8 + PSetupDef.x;
 			screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Skin");
-			screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6, skins[consoleplayer().userinfo.skin].name);
+			screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6, cl_skin.cstring());
 		}
 	}
 
 	// Draw autoaim setting
 	{
 		int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
-		float aim = autoaim;
+		float aim = cl_autoaim;
 
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Autoaim");
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*7,
@@ -698,104 +704,62 @@ static void M_PlayerSetupDrawer (void)
 
 void M_ChangeTeam (int choice) // [Toke - Teams]
 {
-	team_t t = playersteam;
-
-	if (t == TEAM_NONE)
-		if (choice)
-			t = TEAM_BLUE;
-		else
-			t = TEAM_GOLD;
-
-
-	else if (t == TEAM_BLUE)
-		if (choice)
-			t = TEAM_RED;
-		else
-			t = TEAM_NONE;
-
-
-	else if (t == TEAM_RED)
-		if (choice)
-			t = TEAM_GOLD;
-		else
-			t = TEAM_BLUE;
-
-
-	else if (t == TEAM_GOLD)
-		if (choice)
-			t = TEAM_NONE;
-		else
-			t = TEAM_RED;
-
-	if (ctfmode || teamplaymode)
+	team_t team = D_TeamByName(cl_team.cstring());
+	
+	if(choice)
 	{
-		char command[16] = "";
-		
-		if (t == TEAM_BLUE)
-			sprintf (command, "skin BlueTeam");
-
-		else if (t == TEAM_RED)
-			sprintf (command, "skin RedTeam");
-
-		else if (t == TEAM_GOLD)
-			sprintf (command, "skin none");
-
-		else 
-			sprintf (command, "skin none");
-
-		AddCommandString (command);
+		switch(team)
+		{
+			case TEAM_NONE: team = TEAM_BLUE; break;
+			case TEAM_BLUE: team = TEAM_RED; break;
+			case TEAM_RED: team = TEAM_GOLD; break;
+			default:
+			case TEAM_GOLD: team = TEAM_NONE; break;
+		}
 	}
-
-	playersteam = t;
+	else
+	{
+		switch(team)
+		{
+			case TEAM_NONE: team = TEAM_GOLD; break;
+			case TEAM_RED: team = TEAM_BLUE; break;
+			case TEAM_GOLD: team = TEAM_RED; break;
+			default:
+			case TEAM_BLUE: team = TEAM_NONE; break;
+		}
+	}
+	
+	cl_team = (team == TEAM_NONE) ? "" : team_names[team];
 }
 
 static void M_ChangeGender (int choice)
 {
-	int gender = consoleplayer().userinfo.gender;
+	int gender = D_GenderByName(cl_gender.cstring());
 
 	if (!choice)
 		gender = (gender == 0) ? 2 : gender - 1;
 	else
 		gender = (gender == 2) ? 0 : gender + 1;
 
-	cvar_t::cvar_set ("gender", genders[gender]);
+	cl_gender = genders[gender];
 }
 
 static void M_ChangeSkin (int choice) // [Toke - Skins]
 {
-	unsigned skin = consoleplayer().userinfo.skin;
+	unsigned skin = R_FindSkin(cl_skin.cstring());
 
 	if (!choice)
 		skin = (skin == 0) ? numskins - 1 : skin - 1;
 	else
-		skin = (skin < numskins - 1) ? skin + 1 : 0;
+		skin = (skin + 1 < numskins) ? skin + 1 : 0;
 
-	// denis - doing the following on the clientside is pointless and confusing
-
-	if (!ctfmode && !teamplaymode) 
-	{
-		// prevent players from selecting team skins
-		// toke - todo - do this serverside
-		while (!stricmp(skins[skin].name, "blueteam") || 
-                !stricmp (skins[skin].name, "redteam") || 
-                !stricmp (skins[skin].name, "goldteam"))
-		{
-			skin++;
-
-			if (skin == (numskins - 1))
-				skin = 0;
-		}
-	}
-
-	cvar_t::cvar_set ("skin", skins[skin].name);
-
-	CL_RememberSkin(); 
+	cl_skin = skins[skin].name;
 }
 
 static void M_ChangeAutoAim (int choice)
 {
 	static const float ranges[] = { 0, 0.25, 0.5, 1, 2, 3, 5000 };
-	float aim = autoaim;
+	float aim = cl_autoaim;
 	int i;
 
 	if (!choice) {
@@ -818,7 +782,7 @@ static void M_ChangeAutoAim (int choice)
 		}
 	}
 
-	autoaim.Set (aim);
+	cl_autoaim.Set (aim);
 }
 
 static void M_EditPlayerName (int choice)
@@ -839,7 +803,7 @@ static void M_PlayerNameChanged (int choice)
 {
 	char command[SAVESTRINGSIZE+8];
 
-	sprintf (command, "name \"%s\"", savegamestrings[0]);
+	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);
 }
 
@@ -847,7 +811,7 @@ static void M_PlayerTeamChanged (int choice)
 {
 	char command[SAVESTRINGSIZE+8];
 
-	sprintf (command, "team \"%s\"", savegamestrings[1]);
+	sprintf (command, "cl_team \"%s\"", savegamestrings[1]);
 	AddCommandString (command);
 }
 
@@ -856,13 +820,13 @@ static void SendNewColor (int red, int green, int blue)
 {
 	char command[24];
 
-	sprintf (command, "color \"%02x %02x %02x\"", red, green, blue);
+	sprintf (command, "cl_color \"%02x %02x %02x\"", red, green, blue);
 	AddCommandString (command);
 }
 
 static void M_SlidePlayerRed (int choice)
 {
-	int color = consoleplayer().userinfo.color;
+	int color = V_GetColorFromString(NULL, cl_color.cstring());
 	int red = RPART(color);
 
 	if (choice == 0) {
@@ -880,7 +844,7 @@ static void M_SlidePlayerRed (int choice)
 
 static void M_SlidePlayerGreen (int choice)
 {
-	int color = consoleplayer().userinfo.color;
+	int color = V_GetColorFromString(NULL, cl_color.cstring());
 	int green = GPART(color);
 
 	if (choice == 0) {
@@ -898,7 +862,7 @@ static void M_SlidePlayerGreen (int choice)
 
 static void M_SlidePlayerBlue (int choice)
 {
-	int color = consoleplayer().userinfo.color;
+	int color = V_GetColorFromString(NULL, cl_color.cstring());
 	int blue = BPART(color);
 
 	if (choice == 0) {
@@ -1203,8 +1167,6 @@ bool M_Responder (event_t* ev)
 //
 void M_StartControlPanel (void)
 {
-	playersteam = consoleplayer().userinfo.team;
-
 	// intro might call this repeatedly
 	if (menuactive)
 		return;
@@ -1305,13 +1267,8 @@ void M_ClearMenus (void)
 	if (gamestate != GS_FULLCONSOLE)
 		I_ResumeMouse ();	// [RH] Recapture the mouse in windowed modes.
 
-	consoleplayer().userinfo.team = playersteam; // [Toke - teams]
-
-        // joek - update skies (otherwise won't update if stretched or not.)
-        R_InitSkyMap ();
-        
-	if(playersteam < NUMTEAMS)
-		cvar_t::cvar_set ("team", team_names[playersteam]);
+	// joek - update skies (otherwise won't update if stretched or not.)
+	R_InitSkyMap ();
 }
 
 

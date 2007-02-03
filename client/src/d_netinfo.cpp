@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -44,41 +44,12 @@
 #include "cl_ctf.h"
 
 
-CVAR (autoaim,				"5000",		CVAR_USERINFO | CVAR_ARCHIVE)
-CVAR (name,				"Player",	CVAR_USERINFO | CVAR_ARCHIVE)
-CVAR (color,				"40 cf 00",	CVAR_USERINFO | CVAR_ARCHIVE)
-CVAR (gender,				"male",		CVAR_USERINFO | CVAR_ARCHIVE)
-//CVAR (skin,					"base",		CVAR_USERINFO | CVAR_ARCHIVE)
-
-
-BEGIN_CUSTOM_CVAR (skin, "base", CVAR_USERINFO | CVAR_ARCHIVE)
-{
-}
-END_CUSTOM_CVAR (skin)
-
-
-
-BEGIN_CUSTOM_CVAR (team, "blue", CVAR_USERINFO | CVAR_ARCHIVE) // [Toke - Defaults] [Toke - Teams] 
-{
-	if (gamestate == GS_LEVEL)
-	{
-		if (ctfmode || teamplaymode)
-		{
-			if (!stricmp(var.cstring(), "blue"))
-				skin.Set ("BlueTeam");
-
-			if (!stricmp(var.cstring(), "red"))
-				skin.Set ("RedTeam");
-
-//			if (!stricmp(var.cstring(), "gold"))
-//				skin.Set ("GoldTeam");
-
-//			CL_SendUserInfo();
-		}
-	}
-}
-END_CUSTOM_CVAR (team)
-
+CVAR (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE)
+CVAR (cl_name,		"Player",	CVAR_USERINFO | CVAR_ARCHIVE)
+CVAR (cl_color,		"40 cf 00",	CVAR_USERINFO | CVAR_ARCHIVE)
+CVAR (cl_gender,	"male",		CVAR_USERINFO | CVAR_ARCHIVE)
+CVAR (cl_skin,		"base",		CVAR_USERINFO | CVAR_ARCHIVE)
+CVAR (cl_team,		"blue",		CVAR_USERINFO | CVAR_ARCHIVE)
 
 enum
 {
@@ -122,37 +93,12 @@ team_t D_TeamByName (const char *team)
 
 void D_SetupUserInfo (void)
 {
-	userinfo_t *coninfo = &consoleplayer().userinfo;
-
-    memset (coninfo, 0, sizeof(userinfo_t));
-
-	strncpy (coninfo->netname, name.cstring(), MAXPLAYERNAME);
-	coninfo->team	 = D_TeamByName (team.cstring()); // [Toke - Teams] 
-	coninfo->aimdist = (fixed_t)(autoaim * 16384.0);
-	coninfo->color	 = V_GetColorFromString (NULL, color.cstring());
-	coninfo->skin	 = R_FindSkin (skin.cstring());
-	coninfo->gender  = D_GenderByName (gender.cstring());
-	R_BuildPlayerTranslation (consoleplayer().id, coninfo->color);
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
 {
-	if (cvar == &autoaim)
-	{
-		if (cvar->value() < 0.0f)
-		{
-			cvar->Set (0.0f);
-			return;
-		}
-		else if (cvar->value() > 5000.0f)
-		{
-			cvar->Set (5000.0f);
-			return;
-		}
-	}
-
-	if (gamestate != GS_STARTUP)
-		D_SetupUserInfo();
+//	if (gamestate != GS_STARTUP)
+//		D_SetupUserInfo();
 
 	if (connected)
 		CL_SendUserInfo();
@@ -193,5 +139,5 @@ FArchive &operator>> (FArchive &arc, userinfo_t &info)
 	return arc;
 }
 
-VERSION_CONTROL (d_netinfo_cpp, "$Id:$")
+VERSION_CONTROL (d_netinfo_cpp, "$Id$")
 
