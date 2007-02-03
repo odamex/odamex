@@ -1340,7 +1340,7 @@ void P_SetupLevel (char *lumpname, int position)
 	P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
 	
     // if deathmatch, randomly spawn the active players
-    if (serverside && deathmatch)
+    if (serverside)
     {
 		for (i=0 ; i<players.size() ; i++)
 			if (players[i].ingame())
