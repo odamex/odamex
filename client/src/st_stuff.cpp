@@ -71,7 +71,7 @@ EXTERN_CVAR (localflagtype)
 
 
 CVAR (idmypos, "0", 0)
-BEGIN_CUSTOM_CVAR (st_scale, "0", CVAR_ARCHIVE)		// Stretch status bar to full screen width?
+BEGIN_CUSTOM_CVAR (st_scale, "1", CVAR_ARCHIVE)		// Stretch status bar to full screen width?
 {
 	if (var)
 	{

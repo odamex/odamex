@@ -98,7 +98,7 @@ static channel_t *Channel;
 
 // Maximum volume of a sound effect.
 // Internal default is max out of 0-15.
-BEGIN_CUSTOM_CVAR (snd_sfxvolume, "1", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (snd_sfxvolume, "0.5", CVAR_ARCHIVE)
 {
 	S_SetSfxVolume (var);
 }
