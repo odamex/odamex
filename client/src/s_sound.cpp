@@ -87,9 +87,6 @@ int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
 // joek - hack for silent bfg
 int sfx_noway, sfx_oof;
 
-// [RH] Use surround sounds?
-CVAR (snd_surround, "1", CVAR_ARCHIVE)
-
 // [RH] Print sound debugging info?
 cvar_t noisedebug ("noise", "0", 0);
 
