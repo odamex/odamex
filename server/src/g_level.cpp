@@ -503,8 +503,6 @@ void G_InitNew (char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-    CTF_Load();
-
 	if(old_deathmatch != (deathmatch ? true : false))
 		unnatural_level_progression = true;
 
