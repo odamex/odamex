@@ -1215,9 +1215,9 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 	
-	if(!serverside)
+	if(!serverside || !deathmatch)
 		return;
-	
+
 	//if (!ctfmode)
 	{
 		selections = deathmatch_p - deathmatchstarts;
