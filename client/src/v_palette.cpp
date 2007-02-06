@@ -140,7 +140,7 @@ int		BlendR, BlendG, BlendB, BlendA;
 /**************************/
 
 byte newgamma[256];
-BEGIN_CUSTOM_CVAR (gammalevel, "0", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE)
 {
 	static int lastgamma = 0;
 	int i;
