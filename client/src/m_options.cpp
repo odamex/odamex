@@ -376,7 +376,7 @@ static menuitem_t VideoItems[] = {
 	{ more,		"Messages",				{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)StartMessagesMenu} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ slider,	"Screen size",			{&screenblocks},	   	{3.0}, {12.0},	{1.0}, {NULL} },
-	{ slider,	"Brightness",			{&gammalevel},			{1.0}, {4.0},	{1.0}, {NULL} },
+	{ slider,	"Brightness",			{&gammalevel},			{1.0}, {5.0},	{1.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ slider,   "UI Transperancy",      {&dimamount},           {0.1}, {1.0},   {0.1}, {NULL} },
 	{ slider,   "UI Trans Red",         {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },

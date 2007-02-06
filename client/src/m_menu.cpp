@@ -280,13 +280,17 @@ BEGIN_COMMAND (bumpgamma)
 	// on the fly for *any* gamma level.
 	// Q: What are reasonable limits to use here?
 
-	float newgamma = gammalevel + 1.0;
+	float newgamma = gammalevel + 1;
 
-	if (newgamma > 4.0)
+	if (newgamma > 5.0)
 		newgamma = 1.0;
 
 	gammalevel.Set (newgamma);
-	Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value());
+	
+	if (gammalevel.value() == 1.0)
+        Printf (PRINT_HIGH, "Gamma correction off\n");
+    else
+        Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value() - 1);
 }
 END_COMMAND (bumpgamma)
 

@@ -686,10 +686,10 @@ void SV_SetupUserInfo (player_t &player)
 	p->userinfo.aimdist = MSG_ReadLong();
 	
 	// Make sure the aimdist is valid
-	if (p->userinfo.aimdist < 0.0f)
-		p->userinfo.aimdist = 0.0f;
-	if (p->userinfo.aimdist > 5000.0f)
-		p->userinfo.aimdist = 5000.0f;
+	if (p->userinfo.aimdist < 0)
+		p->userinfo.aimdist = 0;
+	if (p->userinfo.aimdist > 5000)
+		p->userinfo.aimdist = 5000;
 
 	// Make sure the gender is valid
 	if(p->userinfo.gender >= NUMGENDER)
