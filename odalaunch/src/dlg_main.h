@@ -36,7 +36,6 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/splitter.h>
 //#include <wx/listctrl.h>
-#include <wx/aboutdlg.h>
 
 #include "net_packet.h"
 
@@ -81,8 +80,6 @@ class dlgMain : public wxFrame
 		wxStatusBar *status_bar;
         
         dlgConfig *config_dlg;
-        
-        wxAboutDialogInfo AboutDlg;
         
 		wxInt32 totalPlayers;
 

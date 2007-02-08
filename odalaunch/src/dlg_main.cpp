@@ -135,21 +135,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     
     QServer = NULL;
     
-    /* About dialog */   
-    AboutDlg.SetName(_T("Odamex Launcher"));
-    AboutDlg.SetVersion(_T("1.0"));
-    AboutDlg.SetWebSite(_T("http://odamex.net"));
-    AboutDlg.SetCopyright(_T("(C) 2006 The Odamex Team"));
-    
-    AboutDlg.AddDeveloper(_T("Russell Rice"));
-    AboutDlg.AddDeveloper(_T("John Corrado"));
-    AboutDlg.AddDeveloper(_T("Denis Lukianov"));
-    
-    AboutDlg.AddArtist(_T("Mike Lightner"));
-    
-    AboutDlg.AddDocWriter(_T("Dean Joseph"));
-    AboutDlg.AddDocWriter(_T("Alex Mayfield"));
-    
     // get master list on application start
     if (launchercfg_s.get_list_on_start)
     {
@@ -204,13 +189,10 @@ void dlgMain::OnQuit(wxCloseEvent& event)
 // About information
 void dlgMain::OnAbout(wxCommandEvent& event)
 {
-    wxAboutBox(AboutDlg);
+    wxString strAbout = _T("Odamex Launcher 1.0 - "
+                            "Copyright 2007 The Odamex Team");
     
-/*    wxString strAbout = _T("Odamex Launcher 1.0 - "
-                            "Copyright 2006 The Odamex Team");
-    
-    wxMessageBox(strAbout, strAbout);*/
-    
+    wxMessageBox(strAbout, strAbout);
 }
 
 // Launch button click
