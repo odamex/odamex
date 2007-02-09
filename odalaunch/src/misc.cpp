@@ -164,23 +164,16 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
 
 void LaunchGame(Server &s, wxString waddirs)
 {
-#ifdef __WXMSW__
-    wxString cmdline = _T("odamex.exe");
-#else
-    wxString cmdline = _T("./odamex");
-#endif
-
-    if (!wxFileExists(cmdline))
-    {
-        wxMessageBox(wxString::Format(_T("%s not found!"), cmdline.c_str()));
-        
-        return;
-    }
+    wxString binname = _T("odamex");
+    wxString cmdline = _T("");
 
     // when adding waddir string, return 1 less, to get rid of extra delimiter
     wxString dirs = waddirs.Mid(0, waddirs.Length() - 1);
     
-    cmdline += wxString::Format(_T(" -waddir \"%s\" -connect %s"), dirs.c_str(), s.GetAddress().c_str());
+    cmdline += wxString::Format(_T("%s -waddir \"%s\" -connect %s"), 
+                                binname.c_str(), 
+                                dirs.c_str(), 
+                                s.GetAddress().c_str());
 	
     #ifdef __WXMSW__
     cmdline.Replace(_T("\\\\"),_T("\\"), true);
@@ -188,6 +181,8 @@ void LaunchGame(Server &s, wxString waddirs)
     cmdline.Replace(_T("////"),_T("//"), true);
     #endif
 	
-	wxExecute(cmdline, wxEXEC_ASYNC, NULL);
+	if (wxExecute(cmdline, wxEXEC_ASYNC, NULL) == -1)
+        wxMessageBox(wxString::Format(_T("Could not start %s!"), 
+                                        binname.c_str()));
 	
 }
