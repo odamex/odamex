@@ -68,8 +68,8 @@ wxInt32 Application::OnExit()
 	if(m_checker)
 		delete m_checker;
 		
-	if(MAIN_DIALOG)
-		delete MAIN_DIALOG;
+	//if(MAIN_DIALOG)
+	//	delete MAIN_DIALOG;
 
     return 0;
 }

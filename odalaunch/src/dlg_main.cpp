@@ -174,15 +174,15 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 }
 
 // Exit button click
-void dlgMain::OnExitClick(wxCommandEvent& event)
+void dlgMain::OnExitClick(wxCommandEvent& WXUNUSED(event))
 { 
-    Close();
+    this->Destroy();
 }
 
 // User clicks window X button
 void dlgMain::OnQuit(wxCloseEvent& event)
 {               
-    Close();
+    this->Destroy();
 }
 
 // About information
