@@ -176,14 +176,13 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 // Exit button click
 void dlgMain::OnExitClick(wxCommandEvent& event)
 { 
-    // calls OnQuit
     Close();
 }
 
-// Our shutting down event
+// User clicks window X button
 void dlgMain::OnQuit(wxCloseEvent& event)
 {               
-    wxExit();
+    Close();
 }
 
 // About information
