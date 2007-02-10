@@ -43,6 +43,7 @@ struct launchercfg_t
 #include <wx/checkbox.h>
 #include <wx/listbox.h>
 #include <wx/sizer.h>
+#include <wx/textctrl.h>
 
 // config file value names
 #define GETLISTONSTART      "GET_LIST_ON_START"

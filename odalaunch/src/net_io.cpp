@@ -81,7 +81,7 @@ BufferedSocket::BufferedSocket()
 		
 		Socket = new wxDatagramSocket(local_addr, wxSOCKET_WAITALL);
         
-		if(!Socket->IsOk())
+		if(!Socket)
 		{
 			delete Socket;
 			Socket = NULL;
@@ -126,7 +126,8 @@ wxInt32 BufferedSocket::SendData(wxInt32 Timeout)
 {   
     // create a transfer buffer, from memory stream to socket
     wxChar data[MAX_PAYLOAD];
-
+    wxStopWatch sw;
+    
     // clear it
     memset(data, 0, sizeof(data));
     
@@ -135,7 +136,7 @@ wxInt32 BufferedSocket::SendData(wxInt32 Timeout)
     
     // set the start ping
     // (Horrible, needs to be improved)
-    SendPing = wxGetLocalTimeMillis().ToLong();
+    SendPing = sw.Time();
                 
     // send the data
     if (!Socket->WaitForWrite(0,Timeout))
@@ -164,6 +165,8 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
        
     // create an array of stuff
     wxChar data[MAX_PAYLOAD];
+    
+    wxStopWatch sw;
 
     // clear it
     memset(data, 0, sizeof(data));
@@ -187,7 +190,7 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
 
     // apply the receive ping
     // (Horrible, needs to be improved)
-    RecvPing = wxGetLocalTimeMillis().ToLong();
+    RecvPing = sw.Time();
 
     // get number of bytes received
     wxInt32 num_recv = Socket->LastCount();
