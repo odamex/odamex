@@ -164,23 +164,26 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
 
 void LaunchGame(Server &s, wxString waddirs)
 {
+    #ifdef __WXMSW__
     wxString binname = _T("odamex");
+    #else
+    wxString binname = _T("./odamex");
+    #endif
+    
     wxString cmdline = _T("");
 
     // when adding waddir string, return 1 less, to get rid of extra delimiter
     wxString dirs = waddirs.Mid(0, waddirs.Length() - 1);
     
-    cmdline += wxString::Format(_T("%s -waddir \"%s\" -connect %s"), 
+    cmdline += wxString::Format(_T("%s -connect %s"), 
                                 binname.c_str(), 
-                                dirs.c_str(), 
                                 s.GetAddress().c_str());
 	
-    #ifdef __WXMSW__
-    cmdline.Replace(_T("\\\\"),_T("\\"), true);
-    #else
-    cmdline.Replace(_T("////"),_T("//"), true);
-    #endif
-	
+	// this is so the client won't mess up parsing
+	if (!dirs.IsEmpty())
+        cmdline += wxString::Format(_T(" -waddir \"%s\""), 
+                                    dirs.c_str());
+
 	if (wxExecute(cmdline, wxEXEC_ASYNC, NULL) == -1)
         wxMessageBox(wxString::Format(_T("Could not start %s!"), 
                                         binname.c_str()));
