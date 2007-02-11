@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2006-2007 by The Odamex Team.
 //
@@ -201,7 +201,6 @@ int I_RegisterSong (char *data, size_t musicLen)
 			if(!fp)
 			{
 				Printf(PRINT_HIGH, "Could not open temporary music file %s, not playing track\n", TEMP_MIDI);
-				fclose(fp);
 				
 				break;
 			}
@@ -239,5 +238,5 @@ bool I_QrySongPlaying (int handle)
 	return Mix_PlayingMusic() ? true : false;
 }
 
-VERSION_CONTROL (i_music_cpp, "$Id:$")
+VERSION_CONTROL (i_music_cpp, "$Id$")
 
