@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -24,7 +24,7 @@
 #include "version.h"
 #include "minilzo.h"
 #include "m_alloc.h"
-#include "doomdef.h" 
+#include "doomdef.h"
 #include "doomstat.h"
 #include "d_protocol.h"
 #include "d_netinf.h"
@@ -42,7 +42,7 @@
 #include "c_dispatch.h"
 #include "v_video.h"
 #include "w_wad.h"
-#include "p_local.h" 
+#include "p_local.h"
 #include "s_sound.h"
 #include "dstrings.h"
 #include "r_data.h"
@@ -58,55 +58,55 @@
 
 #define TURN180_TICKS	9				// [RH] # of ticks to complete a turn180
 
-BOOL	G_CheckDemoStatus (void); 
-void	G_ReadDemoTiccmd (ticcmd_t* cmd, int player); 
-void	G_WriteDemoTiccmd (ticcmd_t* cmd, int player, int buf); 
-void	G_PlayerReborn (player_t &player); 
- 
-void	G_DoReborn (player_t &playernum); 
- 
-void	G_DoNewGame (void); 
-void	G_DoLoadGame (void); 
-void	G_DoPlayDemo (void); 
-void	G_DoCompleted (void); 
-void	G_DoVictory (void); 
-void	G_DoWorldDone (void); 
-void	G_DoSaveGame (void); 
- 
+BOOL	G_CheckDemoStatus (void);
+void	G_ReadDemoTiccmd (ticcmd_t* cmd, int player);
+void	G_WriteDemoTiccmd (ticcmd_t* cmd, int player, int buf);
+void	G_PlayerReborn (player_t &player);
+
+void	G_DoReborn (player_t &playernum);
+
+void	G_DoNewGame (void);
+void	G_DoLoadGame (void);
+void	G_DoPlayDemo (void);
+void	G_DoCompleted (void);
+void	G_DoVictory (void);
+void	G_DoWorldDone (void);
+void	G_DoSaveGame (void);
+
 void	SV_GameTics (void);
 
 
-CVAR (chasedemo, "0", 0); // removeme 
+CVAR (chasedemo, "0", 0); // removeme
 
-gameaction_t	gameaction; 
-gamestate_t 	gamestate = GS_STARTUP; 
+gameaction_t	gameaction;
+gamestate_t 	gamestate = GS_STARTUP;
 BOOL 			respawnmonsters;
- 
-BOOL 			paused; 
-BOOL 			sendpause;				// send a pause event next tic 
-BOOL			sendsave;				// send a save event next tic 
+
+BOOL 			paused;
+BOOL 			sendpause;				// send a pause event next tic
+BOOL			sendsave;				// send a save event next tic
 BOOL 			usergame;				// ok to save / end game
 BOOL			sendcenterview;			// send a center view event next tic
- 
-BOOL			timingdemo; 			// if true, exit with report on completion 
-BOOL 			nodrawers;				// for comparative timing purposes 
-BOOL 			noblit; 				// for comparative timing purposes 
- 
-BOOL	 		viewactive; 
- 
-BOOL 						netgame;				// only true if packets are broadcast 
+
+BOOL			timingdemo; 			// if true, exit with report on completion
+BOOL 			nodrawers;				// for comparative timing purposes
+BOOL 			noblit; 				// for comparative timing purposes
+
+BOOL	 		viewactive;
+
+BOOL 						netgame;				// only true if packets are broadcast
 BOOL						multiplayer;
 std::vector<player_t>		players;
 player_t					nullplayer;				// null player
 
-byte			consoleplayer_id;			// player taking events and displaying 
-byte			displayplayer_id;			// view being displayed 
-int 			gametic; 
- 
-char			demoname[256]; 
-BOOL 			demorecording; 
-BOOL 			demoplayback; 
-BOOL 			netdemo; 
+byte			consoleplayer_id;			// player taking events and displaying
+byte			displayplayer_id;			// view being displayed
+int 			gametic;
+
+char			demoname[256];
+BOOL 			demorecording;
+BOOL 			demoplayback;
+BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 int				demover;
 byte*			demobuffer;
@@ -114,17 +114,17 @@ byte*			demo_p;
 size_t			maxdemosize;
 byte*			zdemformend;			// end of FORM ZDEM chunk
 byte*			zdembodyend;			// end of ZDEM BODY chunk
-BOOL 			singledemo; 			// quit after playing a demo from cmdline 
- 
-BOOL 			precache = true;		// if true, load all graphics at start 
- 
-wbstartstruct_t wminfo; 				// parms for world map / intermission 
+BOOL 			singledemo; 			// quit after playing a demo from cmdline
+
+BOOL 			precache = true;		// if true, load all graphics at start
+
+wbstartstruct_t wminfo; 				// parms for world map / intermission
 
 byte*			savebuffer;
- 
- 
-#define MAXPLMOVE				(forwardmove[1]) 
- 
+
+
+#define MAXPLMOVE				(forwardmove[1])
+
 #define TURBOTHRESHOLD	12800
 
 float	 		normforwardmove[2] = {0x19, 0x32};		// [RH] For setting turbo from console
@@ -135,13 +135,13 @@ fixed_t 		angleturn[3] = {640, 1280, 320};		// + slow turn
 fixed_t			flyspeed[2] = {1*256, 3*256};
 int				lookspeed[2] = {450, 512};
 
-#define SLOWTURNTICS	6 
- 
-int 			turnheld;								// for accelerative turning 
- 
-// mouse values are used once 
+#define SLOWTURNTICS	6
+
+int 			turnheld;								// for accelerative turning
+
+// mouse values are used once
 int 			mousex;
-int 			mousey; 		
+int 			mousey;
 
 // joystick values are repeated
 // [RH] now, if the joystick is enabled, it will generate an event every tick
@@ -149,9 +149,9 @@ int 			mousey;
 //		use_joystick gets set to 0 when the joystick is off center)
 int 			joyxmove;
 int 			joyymove;
- 
-int 			savegameslot; 
-char			savedescription[32]; 
+
+int 			savegameslot;
+char			savedescription[32];
 
 player_t		&consoleplayer()
 {
@@ -193,13 +193,13 @@ bool validplayer(player_t &ref)
 {
 	if (&ref == &nullplayer)
 		return false;
-	
+
 	if(players.empty())
 		return false;
 
 	return true;
-} 
- 
+}
+
 /* [RH] Impulses: Temporary hack to get weapon changing
  * working with keybindings until I can get the
  * inventory system working.
@@ -236,8 +236,8 @@ END_COMMAND (pause)
 //
 void G_BuildTiccmd (ticcmd_t *cmd)
 {
-} 
- 
+}
+
 
 // [RH] Spy mode has been separated into two console commands.
 //		One goes forward; the other goes backward.
@@ -248,15 +248,15 @@ static void ChangeSpy (void)
 */
 
 //
-// G_Responder	
+// G_Responder
 // Get info needed to make ticcmd_ts for the players.
-// 
-BOOL G_Responder (event_t *ev) 
-{ 
-	return false; 
-} 
- 
- 
+//
+BOOL G_Responder (event_t *ev)
+{
+	return false;
+}
+
+
 //
 // G_Ticker
 // Make ticcmd_ts for the players.
@@ -264,57 +264,57 @@ BOOL G_Responder (event_t *ev)
 extern DCanvas *page;
 int mapchange;
 
-void G_Ticker (void) 
-{ 
+void G_Ticker (void)
+{
 	size_t i;
-	
+
 	SV_GameTics ();
 
 	// do player reborns if needed
 	if(serverside)
-		for (i = 0; i < players.size(); i++) 
-			if (players[i].ingame() && players[i].playerstate == PST_REBORN) 
+		for (i = 0; i < players.size(); i++)
+			if (players[i].ingame() && players[i].playerstate == PST_REBORN)
 				G_DoReborn (players[i]);
 
 	// do things to change the game state
 	gamestate_t oldgamestate = gamestate;
-	while (gameaction != ga_nothing) 
-	{ 
-		switch (gameaction) 
-		{ 
-		case ga_loadlevel: 
-			G_DoLoadLevel (-1); 
-			break; 
-		case ga_newgame: 
-			G_DoNewGame (); 
-			break; 
-		case ga_loadgame: 
-			gameaction = ga_nothing; 
-			break; 
-		case ga_savegame: 
-			gameaction = ga_nothing; 
-			break; 
-		case ga_playdemo: 
-			gameaction = ga_nothing; 
-			break; 
-		case ga_completed: 
-			G_DoCompleted (); 
-			break; 
-		case ga_victory: 
+	while (gameaction != ga_nothing)
+	{
+		switch (gameaction)
+		{
+		case ga_loadlevel:
+			G_DoLoadLevel (-1);
+			break;
+		case ga_newgame:
+			G_DoNewGame ();
+			break;
+		case ga_loadgame:
+			gameaction = ga_nothing;
+			break;
+		case ga_savegame:
+			gameaction = ga_nothing;
+			break;
+		case ga_playdemo:
+			gameaction = ga_nothing;
+			break;
+		case ga_completed:
+			G_DoCompleted ();
+			break;
+		case ga_victory:
 		    gameaction = ga_nothing;
-			break; 
-		case ga_worlddone: 
-			G_DoWorldDone (); 
-			break; 
-		case ga_screenshot: 
-			gameaction = ga_nothing; 
-			break; 
+			break;
+		case ga_worlddone:
+			G_DoWorldDone ();
+			break;
+		case ga_screenshot:
+			gameaction = ga_nothing;
+			break;
 		case ga_fullconsole:
 //			C_FullConsole ();
 			gameaction = ga_nothing;
 			break;
-		case ga_nothing: 
-			break; 
+		case ga_nothing:
+			break;
 		}
 		C_AdjustBottom ();
 	}
@@ -324,7 +324,7 @@ void G_Ticker (void)
 		delete page;
 		page = NULL;
 	}
-	
+
 	// do main actions
 	switch (gamestate)
 	{
@@ -344,7 +344,7 @@ void G_Ticker (void)
 	}
 
 	SV_WriteCommands();
-	
+
 	// send packets, rotating the send order
 	// so that players[0] does not always get an advantage
 	{
@@ -359,7 +359,7 @@ void G_Ticker (void)
 		if(++fair_send >= num_players)
 			fair_send = 0;
 	}
-	
+
 	SV_ClearClientsBPS();
 
 	SV_CheckTimeouts();
@@ -461,10 +461,10 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 }
 
 //
-// G_CheckSpot	
+// G_CheckSpot
 // Returns false if the player cannot be respawned
-// at the given mapthing2_t spot  
-// because something is occupying it 
+// at the given mapthing2_t spot
+// because something is occupying it
 //
 void P_SpawnPlayer (player_t &player, mapthing2_t* mthing);
 
@@ -514,9 +514,9 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 
 //
-// G_DeathMatchSpawnPlayer 
-// Spawns a player at one of the random death match spots 
-// called at level load and each death 
+// G_DeathMatchSpawnPlayer
+// Spawns a player at one of the random death match spots
+// called at level load and each death
 //
 
 // [RH] Returns the distance of the closest player to the given mapthing2_t.
@@ -598,7 +598,7 @@ void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this
 
 	if (!spot && !playerstarts.empty())
 		spot = &playerstarts[player.id%playerstarts.size()];
-	else 
+	else
 	{
 		if (player.id < 4)
 			spot->type = player.id+1;
@@ -613,13 +613,13 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 {
 	int selections;
 	mapthing2_t *spot;
-	
+
 	if(teamplay || ctfmode)
 	{
 		G_TeamSpawnPlayer (player);
 		return;
 	}
-	
+
 	if(!deathmatch)
 		return;
 
@@ -627,22 +627,24 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	// [RH] We can get by with just 1 deathmatch start
 	if (selections < 1)
 		I_Error ("No deathmatch starts");
-	
+
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
 	spot = SelectRandomDeathmatchSpot (player, selections);
-	
-	if (!spot && !playerstarts.empty()) 
+
+	if (!spot && !playerstarts.empty())
 	{
 		// no good spot, so the player will probably get stuck
 		spot = &playerstarts[player.id%playerstarts.size()];
-	} 
-	else 
+	}
+	else
 	{
 		if (player.id < 4)
 			spot->type = player.id+1;
 		else
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
+
+	P_SpawnPlayer (player, spot);
 }
 
 //
@@ -659,7 +661,7 @@ void G_DoReborn (player_t &player)
 		gameaction = ga_loadlevel;
 		return;
 	}
-	
+
 	// respawn at the start
 	// first disassociate the corpse
 	if (player.mo)
@@ -667,10 +669,10 @@ void G_DoReborn (player_t &player)
 		player.mo->player = NULL;
 		player.mo = AActor::AActorPtr();
 	}
-	
+
 	if(!serverside)
 		return;
-		
+
 	// spawn at random team spot if in team game
 	if(teamplay || ctfmode)
 	{
@@ -689,13 +691,13 @@ void G_DoReborn (player_t &player)
 		I_Error("No player starts");
 
 	unsigned int playernum = player.id - 1;
-	
+
 	if (G_CheckSpot (player, &playerstarts[playernum%playerstarts.size()]) )
 	{
 		P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
 		return;
 	}
-	
+
 	// try to spawn at one of the other players' spots
 	for (size_t i = 0; i < playerstarts.size(); i++)
 	{
@@ -705,7 +707,7 @@ void G_DoReborn (player_t &player)
 			return;
 		}
 	}
-	
+
 	// he's going to be inside something.  Too bad.
 	P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
 }
@@ -814,7 +816,7 @@ void G_TimeDemo (char* name)
 
 BOOL G_CheckDemoStatus (void)
 {
-	return false; 
+	return false;
 }
 
 EXTERN_CVAR (fraglimit)
@@ -825,25 +827,25 @@ BOOL CheckIfExitIsGood (AActor *self)
 {
 	if (self == NULL)
 		return false;
-		        
+
 	// [Toke - dmflags] Old location of DF_NO_EXIT
-    // [ML] 04/4/06: Check for fragexitswitch - seems a bit hacky    
-    
+    // [ML] 04/4/06: Check for fragexitswitch - seems a bit hacky
+
     unsigned int i;
-    
+
     for(i = 0; i < players.size(); i++)
         if(players[i].fragcount == fraglimit)
             break;
-    
+
     if (deathmatch && self)
     {
         if (!allowexit && fragexitswitch && i == players.size())
             return false;
-        
+
         if (!allowexit && !fragexitswitch)
             return false;
     }
-    
+
 	if(self->player)
 		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname);
 
