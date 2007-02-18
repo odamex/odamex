@@ -314,41 +314,47 @@ void dlgConfig::OnDownClick(wxCommandEvent &event)
     }
 }
 
-// Get the environment variable DOOMWADDIR
+// Get the environment variables
 void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
 {
     wxString doomwaddir = _T("");
+    wxString env_paths[NUM_ENVVARS];
+    wxInt32 i = 0;
 
-    if (wxGetEnv(_T("DOOMWADDIR"),&doomwaddir))
+    // create a small list of paths
+    for (i = 0; i < NUM_ENVVARS; i++)
     {
-        wxInt32 path_count = 0;
+        // only add paths if the variable exists and path isn't blank
+        if (wxGetEnv(env_vars[i], &env_paths[i]))
+            if (!env_paths[i].IsEmpty())
+                doomwaddir += env_paths[i] + _T(';');
+    }
 
-        wxStringTokenizer wadlist(doomwaddir, _T(';'));
+    wxInt32 path_count = 0;
 
-        while (wadlist.HasMoreTokens())
+    wxStringTokenizer wadlist(doomwaddir, _T(';'));
+
+    while (wadlist.HasMoreTokens())
+    {
+        wxString path = wadlist.GetNextToken();
+
+        // make sure the path doesn't already exist in the list box
+        if (WAD_LIST->FindString(path) == wxNOT_FOUND)
         {
-            wxString path = wadlist.GetNextToken();
-
-            if (WAD_LIST->FindString(path) == wxNOT_FOUND)
-            {
                 WAD_LIST->Append(path);
 
                 path_count++;
-            }
         }
+    }
 
-        if (path_count > 0)
-        {
-            wxMessageBox(_T("DOOMWADDIR environment variable import successful!"));
+    if (path_count)
+    {
+        wxMessageBox(_T("Environment variables import successful!"));
 
-            UserChangedSetting = 1;
-        }
-        else
-            wxMessageBox(_T("DOOMWADDIR environment variable contains paths that have been already imported."));
+        UserChangedSetting = 1;
     }
     else
-        wxMessageBox(_T("DOOMWADDIR environment variable not found!"));
-
+        wxMessageBox(_T("Environment variables contains paths that have been already imported."));
 
 }
 

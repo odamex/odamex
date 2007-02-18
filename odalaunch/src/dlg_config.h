@@ -50,6 +50,11 @@ struct launchercfg_t
 #define SHOWBLOCKEDSERVERS  "SHOW_BLOCKED_SERVERS"
 #define DELIMWADPATHS       "DELIMITED_WAD_PATHS"
 
+// a more dynamic way of adding environment variables, even if they are
+// hardcoded.
+#define NUM_ENVVARS 2
+const wxString env_vars[NUM_ENVVARS] = { _T("DOOMWADDIR"), _T("DOOMPATHDIR") };
+
 class dlgConfig: public wxDialog
 {
 	public:
