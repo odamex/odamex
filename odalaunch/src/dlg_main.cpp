@@ -104,10 +104,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     /* Init config dialog and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, NULL);
 
-    // Set menu and status bar
-    // Menu item id's are determined automatically when its loaded it seems
-	SetMenuBar(wxXmlResource::Get()->LoadMenuBar(_T("ID_MENUBAR")));
-
 	status_bar = new wxStatusBar(this, -1);
 	SetStatusBar(status_bar);
 	

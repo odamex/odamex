@@ -1,31 +1,89 @@
 <resource>
     <object class="wxFrame" name="dlgMain">
         <title>Odamex Launcher</title>
-        <icon>../res/odalaunch-sysmenu.ico</icon>
         <centered>1</centered>
-        <style>wxDEFAULT_FRAME_STYLE</style>
-        <bg>wxSYS_COLOUR_BTNFACE</bg>      
+        <icon>../res/odalaunch-sysmenu.ico</icon>
+        <bg>wxSYS_COLOUR_BTNFACE</bg>
         <object class="wxFlexGridSizer">
-            <rows>0</rows>
-            <cols>0</cols>
-            <vgap>0</vgap>
-            <hgap>0</hgap>
             <growablecols>0</growablecols>
             <growablerows>0</growablerows>
             <object class="sizeritem">
-                <border>4</border>
-                <flag>wxALL|wxEXPAND</flag>
                 <object class="wxSplitterWindow" name="spWINMAIN">
                     <minsize>200</minsize>
                     <style>wxSP_NOBORDER</style>
                     <object class="wxListCtrl" name="ID_LSTSERVERS" subclass="wxAdvancedListCtrl">
-                        <size>-1,-1</size>
                         <style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+                        <size>-1,-1</size>
                     </object>
                     <object class="wxListCtrl" name="ID_LSTPLAYERS" subclass="wxAdvancedListCtrl">
-                        <size>-1,-1</size>
                         <style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+                        <size>-1,-1</size>
                     </object>
+                </object>
+                <flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
+                <border>4</border>
+            </object>
+        </object>
+        <object class="wxMenuBar">
+            <object class="wxMenu">
+                <label>File</label>
+                <object class="wxMenuItem" name="ID_MNUSETTINGS">
+                    <label>Settings</label>
+                    <help>Configure the launcher</help>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="ID_MNUEXIT">
+                    <label>Exit</label>
+                    <help>Exit the launcher</help>
+                </object>
+            </object>
+            <object class="wxMenu">
+                <label>Action</label>
+                <object class="wxMenuItem" name="ID_MNULAUNCH">
+                    <label>Launch</label>
+                    <help>Connect to the selected server</help>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="ID_MNUGETLIST">
+                    <label>Get Master List</label>
+                    <help>Get a new list of servers</help>
+                </object>
+                <object class="wxMenuItem" name="ID_MNUREFRESHALL">
+                    <label>Refresh All</label>
+                    <help>Refresh all servers currently displayed</help>
+                </object>
+                <object class="wxMenuItem" name="ID_MNUREFRESHSERVER">
+                    <label>Refresh Selected</label>
+                    <help>Refresh the selected server</help>
+                </object>
+            </object>
+            <object class="wxMenu">
+                <label>Help</label>
+                <object class="wxMenuItem" name="ID_MNUWEBSITE">
+                    <label>Website</label>
+                    <help>Go to the Odamex website</help>
+                </object>
+                <object class="wxMenuItem" name="ID_MNUFORUM">
+                    <label>Forum</label>
+                    <help>Visit the Odamex forum</help>
+                </object>
+                <object class="wxMenuItem" name="ID_MNUWIKI">
+                    <label>Wiki</label>
+                    <help>Visit the Odamex Wiki</help>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="ID_MNUCHANGELOG">
+                    <label>Changelog</label>
+                    <help>Open the Changelog</help>
+                </object>
+                <object class="wxMenuItem" name="ID_MNUREPORTBUG">
+                    <label>Report Bug</label>
+                    <help>Report a bug</help>
+                </object>
+                <object class="separator" />
+                <object class="wxMenuItem" name="ID_MNUABOUT">
+                    <label>About</label>
+                    <help>About the Odamex Launcher</help>
                 </object>
             </object>
         </object>
@@ -72,69 +130,6 @@
             <bitmap>../res/btnexit.ico</bitmap>
             <tooltip>Exit the launcher</tooltip>
             <longhelp>Exit the launcher</longhelp>
-        </object>
-    </object>
-    <object class="wxMenuBar" name="ID_MENUBAR">
-        <object class="wxMenu" name="ID_FILEMENU">
-            <label>File</label>
-            <object class="wxMenuItem" name="ID_MNUSETTINGS">
-                <label>Settings</label>
-                <help>Configure the launcher</help>
-            </object>
-            <object class="separator" />
-            <object class="wxMenuItem" name="ID_MNUEXIT">
-                <label>Exit</label>
-                <help>Exit the launcher</help>
-            </object>
-        </object>
-        <object class="wxMenu" name="ID_ACTIONMENU">
-            <label>Action</label>
-            <object class="wxMenuItem" name="ID_MNULAUNCH">
-                <label>Launch</label>
-                <help>Connect to the selected server</help>
-            </object>
-            <object class="separator" />
-            <object class="wxMenuItem" name="ID_MNUGETLIST">
-                <label>Get Master List</label>
-                <help>Get a new list of servers</help>
-            </object>
-            <object class="wxMenuItem" name="ID_MNUREFRESHALL">
-                <label>Refresh All</label>
-                <help>Refresh all servers currently displayed</help>
-            </object>
-            <object class="wxMenuItem" name="ID_MNUREFRESHSERVER">
-                <label>Refresh Selected</label>
-                <help>Refresh the selected server</help>
-            </object>
-        </object>
-        <object class="wxMenu" name="ID_HELPMENU">
-            <label>Help</label>   
-            <object class="wxMenuItem" name="ID_MNUWEBSITE">
-                <label>Website</label>
-                <help>Go to the Odamex website</help>
-            </object>
-            <object class="wxMenuItem" name="ID_MNUFORUM">
-                <label>Forum</label>
-                <help>Visit the Odamex forum</help>
-            </object>
-            <object class="wxMenuItem" name="ID_MNUWIKI">
-                <label>Wiki</label>
-                <help>Visit the Odamex Wiki</help>
-            </object>
-            <object class="separator" />
-            <object class="wxMenuItem" name="ID_MNUCHANGELOG">
-                <label>Changelog</label>
-                <help>Open the Changelog</help>
-            </object>
-            <object class="wxMenuItem" name="ID_MNUREPORTBUG">
-                <label>Report Bug</label>
-                <help>Report a bug</help>
-            </object>
-            <object class="separator" />
-            <object class="wxMenuItem" name="ID_MNUABOUT">
-                <label>About</label>
-                <help>About the Odamex Launcher</help>
-            </object>
         </object>
     </object>
 </resource>
