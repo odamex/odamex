@@ -53,7 +53,7 @@ struct launchercfg_t
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
 #define NUM_ENVVARS 2
-const wxString env_vars[NUM_ENVVARS] = { _T("DOOMWADDIR"), _T("DOOMPATHDIR") };
+const wxString env_vars[NUM_ENVVARS] = { _T("DOOMWADDIR"), _T("DOOMWADPATH") };
 
 class dlgConfig: public wxDialog
 {
