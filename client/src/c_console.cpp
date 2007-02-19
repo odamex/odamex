@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -868,11 +868,12 @@ void C_FullConsole (void)
 
 void C_ToggleConsole (void)
 {
-	if (gamestate == GS_DEMOSCREEN || demoplayback)
-	{
-		gameaction = ga_fullconsole;
-	}
-	else if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising))
+//	if (gamestate == GS_DEMOSCREEN || demoplayback)
+//	{
+//		gameaction = ga_fullconsole;
+//	}
+//	else 
+	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising))
 	{
 		ConsoleState = c_falling;
 		HistPos = NULL;
@@ -1177,7 +1178,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
 			// if it's closed.
-			if (gamestate == GS_FULLCONSOLE || gamestate == GS_STARTUP)
+			if (gamestate == GS_FULLCONSOLE)
 				return false;
 			buffer[0] = buffer[1] = buffer[len+4] = 0;
 			HistPos = NULL;
@@ -1522,5 +1523,6 @@ static void C_TabComplete (void)
 
 
 
-VERSION_CONTROL (c_console_cpp, "$Id:$")
+VERSION_CONTROL (c_console_cpp, "$Id$")
+
 

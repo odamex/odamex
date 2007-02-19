@@ -1287,15 +1287,24 @@ void D_DoomMain (void)
 	Printf(PRINT_HIGH, "Type connect <internet address> or use Odamex Launcher to connect to a game.\n");
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
-	gamestate = GS_FULLCONSOLE;
-
+    //gamestate = GS_FULLCONSOLE;
+	
 	// denis - bring back the demos
     if ( gameaction != ga_loadgame )
     {
 		if (autostart || netgame)
+		{
 			G_InitNew (startmap);
-		else
+		}
+        else
+		{
+            if (gamestate != GS_CONNECTING)
+                gamestate = GS_HIDECONSOLE;
+
+			C_ToggleConsole();
+
 			D_StartTitle (); // start up intro loop
+		}
     }
 
 	D_DoomLoop ();		// never returns
@@ -1306,4 +1315,5 @@ void D_DoomMain (void)
 
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
+
 
