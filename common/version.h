@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -30,18 +30,18 @@
 #endif
 
 // Lots of different representations for the version number
-enum { VERSION = 10 };
-#define VERSIONSTR "10"
-#define CONFIGVERSIONSTR "10"
-#define GAMEVER (0*256+10)
+enum { VERSION = 20 };
+#define VERSIONSTR "20"
+#define CONFIGVERSIONSTR "20"
+#define GAMEVER (0*256+20)
 
-#define DOTVERSIONSTR "0.1"
+#define DOTVERSIONSTR "0.2"
 
 // denis - per-file svn version stamps
 class file_version
 {
 public:
-	file_version(const char *uid, const char *id, const char *p, int l, const char *t, const char *d);	
+	file_version(const char *uid, const char *id, const char *p, int l, const char *t, const char *d);
 };
 
 #define VERSION_CONTROL(uid, id) static file_version file_version_unique_##uid(#uid, id, __FILE__, __LINE__, __TIME__, __DATE__);
