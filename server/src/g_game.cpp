@@ -568,33 +568,27 @@ void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this
 	selections = 0;
 
 	if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
-	{
 		selections = blueteam_p - blueteamstarts;
 
-		if (selections < 1)
-			I_Error ("No blue team starts");
-	}
-
 	if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
-	{
 		selections = redteam_p - redteamstarts;
 
-		if (selections < 1)
-			I_Error ("No red team starts");
-	}
-
 	if (player.userinfo.team == TEAM_GOLD)  // [Toke - CTF - starts]
-	{
 		selections = goldteam_p - goldteamstarts;
 
-		if (selections < 1)
-			I_Error ("No gold team starts");
-	}
-
+	// denis - fall back to deathmatch spawnpoints, if no team ones available
 	if (selections < 1)
-		I_Error ("No team starts");
-
-	spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
+	{
+		selections = deathmatch_p - deathmatchstarts;
+		spot = SelectRandomDeathmatchSpot (player, selections);
+	}
+	else
+	{
+		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
+	}
+	
+	if (selections < 1)
+		I_Error ("No appropriate team starts");
 
 	if (!spot && !playerstarts.empty())
 		spot = &playerstarts[player.id%playerstarts.size()];
@@ -614,14 +608,14 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 
+	if(!deathmatch)
+		return;
+
 	if(teamplay || ctfmode)
 	{
 		G_TeamSpawnPlayer (player);
 		return;
 	}
-
-	if(!deathmatch)
-		return;
 
 	selections = deathmatch_p - deathmatchstarts;
 	// [RH] We can get by with just 1 deathmatch start
