@@ -281,89 +281,162 @@ void DArgs::SetArgs(const char *cmdline)
 	return;
 }
 
-#define MAXARGVS 400
 //
-// Load a Response File
+// bond - PROC M_FindResponseFile
 //
-//[ ML] 23/1/07 - Add Response file support back in
-static void LoadResponseFile (unsigned argv_index)
+
+static long ParseCommandLine (const char *args, int *argc, char **argv);
+
+void M_FindResponseFile (void)
 {
-	char		**argv;
-	FILE		*handle;
-	int 		size;
-	int 		k;
-	unsigned 	index;
-	int 		indexinfile;
-	char		*infile;
-	char		*file;
-
-	// READ THE RESPONSE FILE INTO MEMORY
-	handle = fopen (Args.GetArg(argv_index) + 1,"rb");
-	if (!handle)
-		I_FatalError ("\nNo such response file!");
-
-	Printf (PRINT_HIGH, "Found response file %s!\n", Args.GetArg(argv_index) + 1);
-	fseek (handle, 0, SEEK_END);
-	size = ftell (handle);
-	fseek (handle, 0, SEEK_SET);
-	file = new char[size];
-	fread (file, size, 1, handle);
-	fclose (handle);
-
-	argv = new char *[size]; // denis - todo - worst case for now (all characters are \n)
-	for (index = 0; index < argv_index; index++)
-		argv[index] = (char *) Args.GetArg (index);
-
-	infile = file;
-	k = 0;
-	indexinfile = index;
-	do
-	{
-		argv[indexinfile++] = infile+k;
-		while(k < size &&
-			  ((*(infile+k)>= ' '+1) && (*(infile+k)<='z')))
-			k++;
-		*(infile+k) = 0;
-		while(k < size &&
-			  ((*(infile+k)<= ' ') || (*(infile+k)>'z')))
-			k++;
-	} while(k < size);
-
-	for (index = argv_index + 1; index < Args.NumArgs (); index++)
-		argv[indexinfile++] = (char *) Args.GetArg (index);
-
-	DArgs newargs (indexinfile, argv);
-	Args = newargs;
-
-	delete[] file;
-	delete[] argv;
-
-#if 0
-	// Disabled - Vanilla Doom does not do this.
-	// Display arguments
-
-	Printf (PRINT_HIGH, "%d command-line args:\n", Args.NumArgs ());
-	for (k = 1; k < Args.NumArgs (); k++)
-		Printf (PRINT_HIGH, "%s\n", Args.GetArg (k));
-#endif
-}
-
-//
-// Find a Response File
-//
-void M_FindResponseFile(void)
-{
-	unsigned i;
-
-	for (i = 1; i < Args.NumArgs(); i++)
+	for (size_t i = 1; i < Args.NumArgs(); i++)
 	{
 		if (Args.GetArg(i)[0] == '@')
 		{
-			LoadResponseFile(i);
+			char	**argv;
+			char	*file;
+			int		argc;
+			int		argcinresp;
+			FILE	*handle;
+			int 	size;
+			long	argsize;
+			size_t 	index;
+
+			// READ THE RESPONSE FILE INTO MEMORY
+			handle = fopen (Args.GetArg(i) + 1,"rb");
+			if (!handle)
+			{ // [RH] Make this a warning, not an error.
+				Printf (PRINT_HIGH,"No such response file (%s)!", Args.GetArg(i) + 1);
+				continue;
+			}
+
+			Printf (PRINT_HIGH,"Found response file %s!\n", Args.GetArg(i) + 1);
+			fseek (handle, 0, SEEK_END);
+			size = ftell (handle);
+			fseek (handle, 0, SEEK_SET);
+			file = new char[size+1];
+			fread (file, size, 1, handle);
+			file[size] = 0;
+			fclose (handle);
+
+			argsize = ParseCommandLine (file, &argcinresp, NULL);
+			argc = argcinresp + Args.NumArgs() - 1;
+
+			if (argc != 0)
+			{
+				argv = (char **)malloc (argc*sizeof(char *) + argsize);
+				argv[i] = (char *)argv + argc*sizeof(char *);
+				ParseCommandLine (file, NULL, argv+i);
+
+				for (index = 0; index < i; ++index)
+					argv[index] = (char*)Args.GetArg (index);
+
+				for (index = i + 1, i += argcinresp; index < Args.NumArgs (); ++index)
+					argv[i++] = (char*)Args.GetArg (index);
+
+				DArgs newargs (i, argv);
+				Args = newargs;
+				
+				free(argv);
+			}
+
+			delete[] file;
+		
+			// DISPLAY ARGS
+			Printf (PRINT_HIGH,"%d command-line args:\n", Args.NumArgs ());
+			for (size_t k = 1; k < Args.NumArgs (); k++)
+				Printf (PRINT_HIGH,"%s\n", Args.GetArg (k));
+
+			break;
 		}
 	}
 }
 
+// ParseCommandLine
+//
+// bond - This is just like the version in c_dispatch.cpp, except it does not
+// do cvar expansion.
+
+static long ParseCommandLine (const char *args, int *argc, char **argv)
+{
+	int count;
+	char *buffplace;
+
+	count = 0;
+	buffplace = NULL;
+	if (argv != NULL)
+	{
+		buffplace = argv[0];
+	}
+
+	for (;;)
+	{
+		while (*args <= ' ' && *args)
+		{ // skip white space
+			args++;
+		}
+		if (*args == 0)
+		{
+			break;
+		}
+		else if (*args == '\"')
+		{ // read quoted string
+			char stuff;
+			if (argv != NULL)
+			{
+				argv[count] = buffplace;
+			}
+			count++;
+			args++;
+			do
+			{
+				stuff = *args++;
+				if (stuff == '\\' && *args == '\"')
+				{
+					stuff = '\"', args++;
+				}
+				else if (stuff == '\"')
+				{
+					stuff = 0;
+				}
+				else if (stuff == 0)
+				{
+					args--;
+				}
+				if (argv != NULL)
+				{
+					*buffplace = stuff;
+				}
+				buffplace++;
+			} while (stuff);
+		}
+		else
+		{ // read unquoted string
+			const char *start = args++, *end;
+
+			while (*args && *args > ' ' && *args != '\"')
+				args++;
+			end = args;
+			if (argv != NULL)
+			{
+				argv[count] = buffplace;
+				while (start < end)
+					*buffplace++ = *start++;
+				*buffplace++ = 0;
+			}
+			else
+			{
+				buffplace += end - start + 1;
+			}
+			count++;
+		}
+	}
+	if (argc != NULL)
+	{
+		*argc = count;
+	}
+	return (long)(buffplace - (char *)0);
+}
 
 VERSION_CONTROL (m_argv_cpp, "$Id$")
 
