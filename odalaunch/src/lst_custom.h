@@ -22,6 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
+#ifndef LSTCUSTOM_H
+#define LSTCUSTOM_H
+
 #include <wx/listctrl.h>
 #include <wx/sizer.h>
 
@@ -87,3 +90,5 @@ class wxAdvancedListCtrl : public wxListCtrl
         DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
         DECLARE_EVENT_TABLE()
 };
+
+#endif

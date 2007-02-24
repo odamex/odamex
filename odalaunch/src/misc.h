@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#ifndef MISC_H
+#define MISC_H
 
 #include <wx/process.h>
 #include <wx/tokenzr.h>
@@ -28,3 +30,5 @@
 void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert = 1);
 void AddPlayersToList(wxAdvancedListCtrl *list, Server &s);
 void LaunchGame(Server &s, wxString waddirs);
+
+#endif

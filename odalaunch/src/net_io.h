@@ -22,6 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
+#ifndef NETIO_H
+#define NETIO_H
+
 #include <wx/socket.h>
 #include <wx/mstream.h>
 #include <wx/datstrm.h>
@@ -97,3 +100,5 @@ class BufferedSocket
         
                
 };
+
+#endif

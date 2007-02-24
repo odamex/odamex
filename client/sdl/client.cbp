@@ -169,7 +169,6 @@
 		<Unit filename="..\src\p_tick.h" />
 		<Unit filename="..\src\p_user.cpp" />
 		<Unit filename="..\src\r_bsp.cpp" />
-		<Unit filename="..\src\r_bsp.h" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_draw.h" />
 		<Unit filename="..\src\r_drawt.cpp" />
@@ -178,11 +177,9 @@
 		<Unit filename="..\src\r_plane.cpp" />
 		<Unit filename="..\src\r_plane.h" />
 		<Unit filename="..\src\r_segs.cpp" />
-		<Unit filename="..\src\r_segs.h" />
 		<Unit filename="..\src\r_sky.cpp" />
 		<Unit filename="..\src\r_sky.h" />
 		<Unit filename="..\src\r_things.cpp" />
-		<Unit filename="..\src\r_things.h" />
 		<Unit filename="..\src\s_sound.cpp" />
 		<Unit filename="..\src\s_sound.h" />
 		<Unit filename="..\src\st_lib.cpp" />
@@ -198,7 +195,6 @@
 		<Unit filename="..\src\wi_stuff.cpp" />
 		<Unit filename="..\src\wi_stuff.h" />
 		<Unit filename="..\..\common\actor.h" />
-		<Unit filename="..\..\common\byteptr.h" />
 		<Unit filename="..\..\common\c_cvars.cpp" />
 		<Unit filename="..\..\common\c_cvars.h" />
 		<Unit filename="..\..\common\c_dispatch.cpp" />

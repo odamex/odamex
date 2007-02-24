@@ -125,8 +125,6 @@
 		<Unit filename="..\..\common\dthinker.cpp" />
 		<Unit filename="..\..\common\dthinker.h" />
 		<Unit filename="..\..\common\errors.h" />
-		<Unit filename="..\..\common\f_finale.h" />
-		<Unit filename="..\..\common\f_wipe.h" />
 		<Unit filename="..\..\common\farchive.cpp" />
 		<Unit filename="..\..\common\farchive.h" />
 		<Unit filename="..\..\common\gi.cpp" />
@@ -188,7 +186,6 @@
 		<Unit filename="..\..\common\st_stuff.h" />
 		<Unit filename="..\..\common\stats.cpp" />
 		<Unit filename="..\..\common\stats.h" />
-		<Unit filename="..\..\common\sv_vars.h" />
 		<Unit filename="..\..\common\szp.h" />
 		<Unit filename="..\..\common\tables.cpp" />
 		<Unit filename="..\..\common\tables.h" />
@@ -216,7 +213,6 @@
 		<Unit filename="..\src\g_game.h" />
 		<Unit filename="..\src\g_level.cpp" />
 		<Unit filename="..\src\g_level.h" />
-		<Unit filename="..\src\hu_stuff.h" />
 		<Unit filename="..\src\i_main.cpp">
 			<Option target="Unix Release" />
 			<Option target="Unix Debug" />
