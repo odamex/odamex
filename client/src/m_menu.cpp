@@ -139,7 +139,7 @@ static void M_PlayerSetupTicker (void);
 static void M_PlayerSetupDrawer (void);
 static void M_EditPlayerName (int choice);
 //static void M_EditPlayerTeam (int choice);
-static void M_PlayerTeamChanged (int choice);
+//static void M_PlayerTeamChanged (int choice);
 static void M_PlayerNameChanged (int choice);
 static void M_SlidePlayerRed (int choice);
 static void M_SlidePlayerGreen (int choice);
@@ -810,7 +810,7 @@ static void M_PlayerNameChanged (int choice)
 	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);
 }
-
+/*
 static void M_PlayerTeamChanged (int choice)
 {
 	char command[SAVESTRINGSIZE+8];
@@ -818,7 +818,7 @@ static void M_PlayerTeamChanged (int choice)
 	sprintf (command, "cl_team \"%s\"", savegamestrings[1]);
 	AddCommandString (command);
 }
-
+*/
 
 static void SendNewColor (int red, int green, int blue)
 {

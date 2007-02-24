@@ -172,7 +172,7 @@ void dlgConfig::OnOK(wxCommandEvent &event)
         cfg_file->wad_paths = _T("");
 
         if (WAD_LIST->GetCount() > 0)
-            for (wxInt32 i = 0; i < WAD_LIST->GetCount(); i++)
+            for (wxUint32 i = 0; i < WAD_LIST->GetCount(); i++)
                 cfg_file->wad_paths.Append(WAD_LIST->GetString(i) + _T(';'));
 
         // Save settings to configuration file
@@ -298,7 +298,7 @@ void dlgConfig::OnUpClick(wxCommandEvent &event)
 void dlgConfig::OnDownClick(wxCommandEvent &event)
 {
     // Get the selected item
-    wxInt32 i = WAD_LIST->GetSelection();
+    wxUint32 i = WAD_LIST->GetSelection();
 
     if ((i != wxNOT_FOUND) && (i + 1 < WAD_LIST->GetCount()))
     {

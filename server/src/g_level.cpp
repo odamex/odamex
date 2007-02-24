@@ -608,6 +608,7 @@ void G_SecretExitLevel (int position)
 		secretexit = true;
 	gameaction = ga_completed;*/
 
+    secretexit = true;
 	G_ExitLevel(position);
 }
 

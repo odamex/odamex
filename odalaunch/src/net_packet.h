@@ -96,7 +96,7 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         }
         
         // Parse a packet, the parameter is the packet
-        virtual wxInt32 Parse() { };
+        virtual wxInt32 Parse() { return -1; }
         
         // Query the server
         wxInt32 Query(wxInt32 Timeout);

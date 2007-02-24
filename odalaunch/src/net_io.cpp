@@ -32,38 +32,39 @@ const wxByte BufferedSocket::BigEndian = false;
 // we need to do something with this, one day
 void BufferedSocket::CheckError()
 {   
+/*
     if (Socket->Error())
         switch(Socket->LastError())
         {
             case wxSOCKET_INVOP:
-//                wxMessageBox(_T("Error: Invalid Operation"));
+                wxMessageBox(_T("Error: Invalid Operation"));
                 break;
             case wxSOCKET_IOERR:
-//                wxMessageBox(_T("Error: I/O Error"));
+                wxMessageBox(_T("Error: I/O Error"));
                 break;
             case wxSOCKET_INVADDR:
-//                wxMessageBox(_T("Error: Invalid address passed to Socket"));
+                wxMessageBox(_T("Error: Invalid address passed to Socket"));
                 break;
             case wxSOCKET_INVSOCK:
-//                wxMessageBox(_T("Error: Invalid socket (uninitialized)."));
+                wxMessageBox(_T("Error: Invalid socket (uninitialized)."));
                 break;                
             case wxSOCKET_NOHOST:
-//                wxMessageBox(_T("Error: No corresponding host."));
+                wxMessageBox(_T("Error: No corresponding host."));
                 break;
             case wxSOCKET_INVPORT:
-//                wxMessageBox(_T("Error: Invalid port."));
+                wxMessageBox(_T("Error: Invalid port."));
                 break;
             case wxSOCKET_WOULDBLOCK:
-//                wxMessageBox(_T("Error: The socket is non-blocking and the operation would block."));
+                wxMessageBox(_T("Error: The socket is non-blocking and the operation would block."));
                 break;
             case wxSOCKET_TIMEDOUT:
-//                wxMessageBox(_T("Error: The timeout for this operation expired."));
+                wxMessageBox(_T("Error: The timeout for this operation expired."));
                 break;
             case wxSOCKET_MEMERR:
-//                wxMessageBox(_T("Error: Memory exhausted."));    
+                wxMessageBox(_T("Error: Memory exhausted."));    
                 break;
         }
-    
+*/    
 }
 
 //  Constructor
@@ -170,9 +171,6 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
 
     // clear it
     memset(data, 0, sizeof(data));
-
-    // wait until the data is received
-    wxInt32 t = 0;
     
     if (!Socket->WaitForRead(0, Timeout))
     {

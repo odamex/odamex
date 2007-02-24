@@ -60,7 +60,7 @@ class BufferedSocket
     public:
         BufferedSocket(); // Create a blank instance with stuff initialized
 
-        ~BufferedSocket(); // "Choose! Choose the form of the destructor!"
+        virtual ~BufferedSocket(); // "Choose! Choose the form of the destructor!"
         
         // Set the outgoing address
         virtual void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }

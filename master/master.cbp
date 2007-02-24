@@ -7,6 +7,7 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Win Release">
+				<Option platforms="Windows;" />
 				<Option output="..\bin\odamaster.exe" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\master\release" />
@@ -28,6 +29,7 @@
 				</Linker>
 			</Target>
 			<Target title="Win Debug">
+				<Option platforms="Windows;" />
 				<Option output="..\bin\odamaster-dbg.exe" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\master\debug" />
@@ -37,7 +39,7 @@
 				<Option use_console_runner="0" />
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
-					<Add option="-W" />
+					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fexceptions" />
 					<Add option="-DWIN32" />
@@ -50,6 +52,7 @@
 				</Linker>
 			</Target>
 			<Target title="Unix Release">
+				<Option platforms="Unix;" />
 				<Option output="..\bin\odamaster.exe" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\master\release" />
@@ -69,6 +72,7 @@
 				</Linker>
 			</Target>
 			<Target title="Unix Debug">
+				<Option platforms="Unix;" />
 				<Option output="..\bin\odamaster-dbg.exe" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\master\debug" />
@@ -78,7 +82,7 @@
 				<Option use_console_runner="0" />
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
-					<Add option="-W" />
+					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fexceptions" />
 					<Add option="-DUNIX" />

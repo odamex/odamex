@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -47,8 +47,8 @@
 #include <string>
 #include <vector>
 
-static void C_TabComplete (void);
-static BOOL TabbedLast;		// Last key pressed was tab
+//static void C_TabComplete (void);
+//static BOOL TabbedLast;		// Last key pressed was tab
 
 extern int KeyRepeatDelay;
 
@@ -87,7 +87,7 @@ struct History
 // CmdLine[1]  = cursor position
 // CmdLine[2+] = command line (max 255 chars + NULL)
 // CmdLine[259]= offset from beginning of cmdline to display
-static byte CmdLine[260];
+//static byte CmdLine[260];
 
 static byte printxormask;
 
@@ -317,7 +317,7 @@ void C_SetTicker (unsigned int at)
 	TickerAt = at > TickerMax ? TickerMax : at;
 	maybedrawnow ();
 }
-
+/*
 static void makestartposgood (void)
 {
 	int n;
@@ -343,7 +343,7 @@ static void makestartposgood (void)
 		n = 0;
 	CmdLine[259] = n;
 }
-
+*/
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 {
 	return true;
@@ -423,7 +423,7 @@ void C_RemoveTabCommand (const char *name)
 		if(!--i->second)
 			TabCommands().erase(i);
 }
-
+/*
 static void C_TabComplete (void)
 {
 	static unsigned int	TabStart;			// First char in CmdLine to use for tab completion
@@ -459,7 +459,7 @@ static void C_TabComplete (void)
 	
 	makestartposgood ();
 }
+*/
 
-
-VERSION_CONTROL (c_console_cpp, "$Id:$")
+VERSION_CONTROL (c_console_cpp, "$Id$")
 

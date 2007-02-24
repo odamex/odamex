@@ -377,7 +377,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 		va_list argptr;
 		va_start (argptr, error);
 		index = vsprintf (errortext, error, argptr);
-		sprintf (errortext + index, "\nGetLastError = %d", GetLastError());
+		sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
 		va_end (argptr);
 
 		// Record error to log (if logging)

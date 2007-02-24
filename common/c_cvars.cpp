@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -244,7 +244,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, bool compact)
 	if (compact)
 	{
 		TArray<cvar_t *> cvars;
-		ptr += sprintf ((char *)ptr, "\\\\%ux", filter);
+		ptr += sprintf ((char *)ptr, "\\\\%ux", (unsigned int)filter);
 		FilterCompactCVars (cvars, filter);
 		while (cvars.Pop (cvar))
 		{
@@ -537,5 +537,5 @@ BEGIN_COMMAND (cvarlist)
 }
 END_COMMAND (cvarlist)
 
-VERSION_CONTROL (c_cvars_cpp, "$Id:$")
+VERSION_CONTROL (c_cvars_cpp, "$Id$")
 

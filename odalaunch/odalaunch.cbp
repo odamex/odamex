@@ -8,6 +8,7 @@
 		<Option virtualFolders="dialogs\;network\;" />
 		<Build>
 			<Target title="Win Release">
+				<Option platforms="Windows;" />
 				<Option output="..\bin\odalaunch.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\release" />
@@ -28,13 +29,14 @@
 				</Environment>
 			</Target>
 			<Target title="Win Debug">
+				<Option platforms="Windows;" />
 				<Option output="..\bin\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\debug" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-W" />
+					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
@@ -50,6 +52,7 @@
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
+				<Option platforms="Unix;" />
 				<Option output="..\bin\odalaunch" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\release" />
@@ -66,19 +69,20 @@
 				</Environment>
 			</Target>
 			<Target title="Unix Debug">
+				<Option platforms="Unix;" />
 				<Option output="..\bin\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\debug" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-W" />
+					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-D__WXDEBUG__" />
 				</Compiler>
 				<Environment>
-					<Variable name="WX_PLAT" value="unix" />
 					<Variable name="WX_CFG" value="d" />
+					<Variable name="WX_PLAT" value="unix" />
 				</Environment>
 			</Target>
 			<Environment>

@@ -47,6 +47,8 @@ static int nextchannel = 0;
 
 CVAR (snd_crossover, "0", CVAR_ARCHIVE);
 
+// Old code
+/*
 static Uint8 *expand_sound_data(Uint8 *data, int samplerate, int length)
 {
    Uint8 *expanded = NULL;
@@ -99,7 +101,7 @@ static Uint8 *expand_sound_data(Uint8 *data, int samplerate, int length)
 
 	return expanded;
 }
-
+*/
 
 // Expands the 11025Hz, 8bit, mono sound effects in Doom to
 // 22050Hz, 16bit stereo

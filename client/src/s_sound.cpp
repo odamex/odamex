@@ -1336,10 +1336,6 @@ BEGIN_COMMAND (soundlinks)
 }
 END_COMMAND (soundlinks)
 
-static void SetTicker (int *tics, struct AmbientSound *ambient)
-{
-}
-
 void A_Ambient (AActor *actor)
 {
 }

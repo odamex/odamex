@@ -394,7 +394,7 @@ void SV_SendServerInfo()
 //bond===========================
 	MSG_WriteString(&ml_message, (char *)email.cstring());
 
-	int timeleft = timelimit - level.time/(TICRATE*60);
+	int timeleft = (int)(timelimit - level.time/(TICRATE*60));
 	if (timeleft<0) timeleft=0;
 
 	MSG_WriteShort(&ml_message,(int)timelimit);
