@@ -232,7 +232,9 @@ wxInt32 Server::Parse()
                     info.playerinfo[i].team = Socket.Read8();
             }
     }
-        
+    
+    info.iwad_hash = Socket.ReadString();
+    
     if (info.numpwads > 0)
     {          
         if (info.wad_hashes != NULL)
@@ -269,8 +271,38 @@ wxInt32 Server::Parse()
     }
     
     // version
-    Socket.Read16();
+    info.version = Socket.Read16();
     
+    info.emailaddr = Socket.ReadString();
+    info.timelimit = Socket.Read16();
+    info.timeleft = Socket.Read16();
+    info.fraglimit = Socket.Read16();
+
+    info.itemrespawn = Socket.Read8();
+    info.weaponstay = Socket.Read8();
+    info.friendlyfire = Socket.Read8();
+    info.allowexit = Socket.Read8();
+    info.infiniteammo = Socket.Read8();
+    info.nomonsters = Socket.Read8();
+    info.monstersrespawn = Socket.Read8();
+    info.fastmonsters = Socket.Read8();
+    info.allowjump = Socket.Read8();
+    info.allowfreelook = Socket.Read8();
+    info.waddownload = Socket.Read8();
+    info.emptyreset = Socket.Read8();
+    info.cleanmaps = Socket.Read8();
+    info.fragonexit = Socket.Read8();
+
+    if ((info.numplayers) && (info.playerinfo != NULL))
+    {
+        for (i = 0; i < info.numplayers; i++)
+        {
+            info.playerinfo[i].killcount = Socket.Read16();
+            info.playerinfo[i].deathcount = Socket.Read16();
+            info.playerinfo[i].timeingame = Socket.Read16();
+        }
+    }
+
     Socket.ClearRecvBuffer();
     
     return 1;

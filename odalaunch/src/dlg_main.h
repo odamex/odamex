@@ -69,6 +69,7 @@ class dlgMain : public wxFrame
 		
 		void OnServerListClick(wxListEvent& event);
 		void OnServerListDoubleClick(wxListEvent& event);
+		void OnServerListRightClick(wxListEvent& event);
 		
 		void OnComboSelectMaster(wxCommandEvent& event);
 		

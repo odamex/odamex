@@ -29,6 +29,7 @@
 #include <wx/statusbr.h>
 #include <wx/msgdlg.h>
 #include <wx/utils.h>
+#include <wx/tipwin.h>
 
 #include "main.h"
 #include "misc.h"
@@ -81,6 +82,7 @@ BEGIN_EVENT_TABLE(dlgMain,wxFrame)
     // misc events
     EVT_LIST_ITEM_SELECTED(ID_LSTSERVERS, dlgMain::OnServerListClick)
     EVT_LIST_ITEM_ACTIVATED(ID_LSTSERVERS, dlgMain::OnServerListDoubleClick)
+    EVT_LIST_ITEM_RIGHT_CLICK(ID_LSTSERVERS, dlgMain::OnServerListRightClick)
 //    EVT_LIST_COL_CLICK(ID_LSTSERVERS, dlgMain::OnListColClick)
 //    EVT_LIST_COL_CLICK(ID_LSTPLAYERS, dlgMain::OnListColClick)
 END_EVENT_TABLE()
@@ -160,7 +162,89 @@ dlgMain::~dlgMain()
         delete config_dlg;
 		
 	if (status_bar != NULL)
-		delete status_bar;
+		delete status_bar;		
+}
+
+// display extra information for a server
+void dlgMain::OnServerListRightClick(wxListEvent& event)
+{
+    //if (SERVER_LIST != event.GetEventObject())
+    //    return;
+    
+    if (!SERVER_LIST->GetItemCount() || !SERVER_LIST->GetSelectedItemCount())
+        return;
+  
+    wxInt32 i = SERVER_LIST->GetNextItem(-1, 
+                                        wxLIST_NEXT_ALL, 
+                                        wxLIST_STATE_SELECTED);
+        
+    wxListItem item;
+    item.SetId(i);
+    item.SetColumn(7);
+    item.SetMask(wxLIST_MASK_TEXT);
+        
+    SERVER_LIST->GetItem(item);
+        
+    i = FindServer(item.GetText());
+
+    static wxString text = _T("");
+    
+    text = wxString::Format(_T("Extra information:\n\n"
+                              "Protocol version: %d\n"
+                              "Email: %s\n"
+                              "Website: %s\n\n"
+                              "Timeleft: %d\n"
+                              "Timelimit: %d\n"
+                              "Fraglimit: %d\n\n"
+                              "Item respawn: %s\n"
+                              "Weapons stay: %s\n"
+                              "Friendly fire: %s\n"
+                              "Allow exiting: %s\n"
+                              "Infinite ammo: %s\n"
+                              "No monsters: %s\n"
+                              "Monsters respawn: %s\n"
+                              "Fast monsters: %s\n"
+                              "Allow jumping: %s\n"
+                              "Allow freelook: %s\n"
+                              "WAD downloading: %s\n"
+                              "Empty reset: %s\n"
+                              "Clean maps: %s\n"
+                              "Frag on exit: %s"),
+                              QServer[i].info.version,
+                              
+                              QServer[i].info.emailaddr.c_str(),
+                              QServer[i].info.webaddr.c_str(),
+                              QServer[i].info.timeleft,
+                              QServer[i].info.timelimit,
+                              QServer[i].info.fraglimit,
+                              
+                              BOOLSTR(QServer[i].info.itemrespawn),
+                              BOOLSTR(QServer[i].info.weaponstay),
+                              BOOLSTR(QServer[i].info.friendlyfire),
+                              BOOLSTR(QServer[i].info.allowexit),
+                              BOOLSTR(QServer[i].info.infiniteammo),
+                              BOOLSTR(QServer[i].info.nomonsters),
+                              BOOLSTR(QServer[i].info.monstersrespawn),
+                              BOOLSTR(QServer[i].info.fastmonsters),
+                              BOOLSTR(QServer[i].info.allowjump),
+                              BOOLSTR(QServer[i].info.allowfreelook),
+                              BOOLSTR(QServer[i].info.waddownload),
+                              BOOLSTR(QServer[i].info.emptyreset),
+                              BOOLSTR(QServer[i].info.cleanmaps),
+                              BOOLSTR(QServer[i].info.fragonexit));
+    
+    static wxTipWindow *tw = NULL;
+                              
+    if (tw)
+	{
+		tw->SetTipWindowPtr(NULL);
+		tw->Close();
+	}
+	
+	tw = NULL;
+
+	if (!text.empty())
+		tw = new wxTipWindow(SERVER_LIST, text, 100, &tw);
 }
 
 void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
@@ -193,6 +277,9 @@ void dlgMain::OnAbout(wxCommandEvent& event)
 // Launch button click
 void dlgMain::OnLaunch(wxCommandEvent &event)
 {
+    if (!SERVER_LIST->GetItemCount() || !SERVER_LIST->GetSelectedItemCount())
+        return;
+        
     wxInt32 i = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
     wxListItem item;
@@ -221,7 +308,7 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     
     wxString Address = _T("");
     wxInt16 Port = 0;
-    
+	
 	MServer->SetAddress(masters[index], 15000);
 
     if (!MServer->Query(500))
@@ -238,125 +325,127 @@ void dlgMain::OnGetList(wxCommandEvent &event)
         }
     }
     
-    if (MServer->GetServerCount() > 0)
-    {    
-        if (QServer != NULL)
-        {
-            delete[] QServer;
+    if (!MServer->GetServerCount())
+        return;
+        
+    if (QServer != NULL)
+    {
+        delete[] QServer;
             
-            QServer = new Server [MServer->GetServerCount()];
+        QServer = new Server [MServer->GetServerCount()];
+    }
+    else
+        QServer = new Server [MServer->GetServerCount()];
+        
+    PLAYER_LIST->DeleteAllItems();
+    SERVER_LIST->DeleteAllItems();
+        
+    totalPlayers = 0;
+               
+    for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
+    {    
+        MServer->GetServerAddress(i, Address, Port);
+
+        QServer[i].SetAddress(Address, Port);
+            
+        if (QServer[i].Query(500))
+        {
+            AddServerToList(SERVER_LIST, QServer[i], i);
+            
+            totalPlayers += QServer[i].info.numplayers;
         }
         else
-            QServer = new Server [MServer->GetServerCount()];
-        
-        PLAYER_LIST->DeleteAllItems();
-        
-        SERVER_LIST->DeleteAllItems();
-        
-        totalPlayers = 0;
-               
-        for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
-        {    
-            MServer->GetServerAddress(i, Address, Port);
-
-            QServer[i].SetAddress(Address, Port);
-            
-            if (QServer[i].Query(500))
-            {
+        {
+            if (launchercfg_s.show_blocked_servers)
                 AddServerToList(SERVER_LIST, QServer[i], i);
-            
-                totalPlayers += QServer[i].info.numplayers;
-            }
-            else
-            {
-                if (launchercfg_s.show_blocked_servers)
-                    AddServerToList(SERVER_LIST, QServer[i], i);
-            }
-
-            SERVER_LIST->ColourListItem(i);
-            
-            wxSafeYield(this, true);
         }
-        
-        GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
-        GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
-        GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
+
+        SERVER_LIST->ColourListItem(i);
+            
+        wxSafeYield(this, true);
     }
+        
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
 {   
-    if ((SERVER_LIST->GetItemCount() > 0) && (SERVER_LIST->GetSelectedItemCount() == 1))
-    {
-        PLAYER_LIST->DeleteAllItems();
+   
+    if (!SERVER_LIST->GetItemCount() || !SERVER_LIST->GetSelectedItemCount())
+        return;
         
-        wxInt32 listindex = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    PLAYER_LIST->DeleteAllItems();
         
-        wxListItem item;
-        item.SetId(listindex);
-        item.SetColumn(7);
-        item.SetMask(wxLIST_MASK_TEXT);
+    wxInt32 listindex = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
-        SERVER_LIST->GetItem(item);
+    wxListItem item;
+    item.SetId(listindex);
+    item.SetColumn(7);
+    item.SetMask(wxLIST_MASK_TEXT);
         
-        wxInt32 arrayindex = FindServer(item.GetText()); 
+    SERVER_LIST->GetItem(item);
         
-        if (arrayindex == -1)
-            return;
+    wxInt32 arrayindex = FindServer(item.GetText()); 
+        
+    if (arrayindex == -1)
+        return;
                 
-        totalPlayers -= QServer[arrayindex].info.numplayers;
+    totalPlayers -= QServer[arrayindex].info.numplayers;
         
-        QServer[arrayindex].Query(500);
+    QServer[arrayindex].Query(500);
         
-        AddServerToList(SERVER_LIST, QServer[arrayindex], listindex, 0);
+    AddServerToList(SERVER_LIST, QServer[arrayindex], listindex, 0);
         
-        AddPlayersToList(PLAYER_LIST, QServer[arrayindex]);
+    AddPlayersToList(PLAYER_LIST, QServer[arrayindex]);
         
-        totalPlayers += QServer[arrayindex].info.numplayers;
+    totalPlayers += QServer[arrayindex].info.numplayers;
         
-        GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
-        GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
-    }
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
 }
 
 void dlgMain::OnRefreshAll(wxCommandEvent &event)
 {
-    if (MServer->GetServerCount() > 0)
-    {
-        SERVER_LIST->DeleteAllItems();
-        PLAYER_LIST->DeleteAllItems();
+    if (!MServer->GetServerCount())
+        return;
         
-        totalPlayers = 0;
+    SERVER_LIST->DeleteAllItems();
+    PLAYER_LIST->DeleteAllItems();
         
-        for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
-        {    
-            if (QServer[i].Query(500))
-            {
-                AddServerToList(SERVER_LIST, QServer[i], i);
+    totalPlayers = 0;
+        
+    for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
+    {    
+        if (QServer[i].Query(500))
+        {
+            AddServerToList(SERVER_LIST, QServer[i], i);
             
-                totalPlayers += QServer[i].info.numplayers;
-            }
-            else
-            {
-                if (launchercfg_s.show_blocked_servers)
-                    AddServerToList(SERVER_LIST, QServer[i], i);
-            }
-              
-            SERVER_LIST->ColourListItem(i);
-        
-            wxSafeYield(this, true);
+            totalPlayers += QServer[i].info.numplayers;
         }
+        else
+        {
+            if (launchercfg_s.show_blocked_servers)
+                AddServerToList(SERVER_LIST, QServer[i], i);
+        }
+              
+        SERVER_LIST->ColourListItem(i);
         
-        GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
-        GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
-        GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
+        wxSafeYield(this, true);
     }
-    
+        
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);    
 }
 
 // when the user clicks on the server list
 void dlgMain::OnServerListClick(wxListEvent& event)
 {
+    // clear any tooltips remaining
+    SERVER_LIST->SetToolTip(_T(""));
+    
     if ((SERVER_LIST->GetItemCount() > 0) && (SERVER_LIST->GetSelectedItemCount() == 1))
     {
         PLAYER_LIST->DeleteAllItems();

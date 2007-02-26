@@ -41,6 +41,9 @@ struct player_t         // Player info structure
     wxInt16     frags;
     wxInt32     ping;
     wxInt8      team;
+    wxInt16     killcount;
+    wxInt16     deathcount;
+    wxUint16    timeingame;    
 };
 
 struct teamplay_t       // Teamplay score structure 
@@ -56,17 +59,40 @@ struct serverinfo_t     // Server information structure
     wxUint8         numplayers;     // Number of players playing
     wxUint8         maxplayers;     // Maximum number of possible players
     wxString        map;            // Current map
-    wxInt8          numpwads;       // Number of PWAD files
+    wxUint8         numpwads;       // Number of PWAD files
     wxString        iwad;           // The main game file
+    wxString        iwad_hash;      // IWAD hash
     wxString        *pwads;         // Array of PWAD file names
-    wxInt8          gametype;       // Gametype (0 = Coop, 1 = DM)
-    wxInt8          gameskill;      // Gameskill
-    wxInt8          teamplay;       // Teamplay enabled?
+    wxUint8         gametype;       // Gametype (0 = Coop, 1 = DM)
+    wxUint8         gameskill;      // Gameskill
+    wxUint8         teamplay;       // Teamplay enabled?
     player_t        *playerinfo;    // Player information array, use numplayers
     wxString        *wad_hashes;    // IWAD and PWAD hashes
-    wxInt8          ctf;            // CTF enabled?
+    wxUint8         ctf;            // CTF enabled?
     wxString        webaddr;        // Website address of server
     teamplay_t      teamplayinfo;   // Teamplay information if enabled
+    wxUint16        version;
+    // added on settings for bond
+    wxString        emailaddr;
+    wxUint16        timelimit;
+    wxUint16        timeleft;
+    wxUint16        fraglimit;
+    
+    wxUint8         itemrespawn;
+    wxUint8         weaponstay;
+    wxUint8         friendlyfire;
+    wxUint8         allowexit;
+    wxUint8         infiniteammo;
+    wxUint8         nomonsters;
+    wxUint8         monstersrespawn;
+    wxUint8         fastmonsters;
+    wxUint8         allowjump;
+    wxUint8         allowfreelook;
+    wxUint8         waddownload;
+    wxUint8         emptyreset;
+    wxUint8         cleanmaps;
+    wxUint8         fragonexit;
+    
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets

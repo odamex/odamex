@@ -27,6 +27,8 @@
 #include <wx/process.h>
 #include <wx/tokenzr.h>
 
+#define BOOLSTR(b) ((b) ? "Yes" : "No")
+
 void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert = 1);
 void AddPlayersToList(wxAdvancedListCtrl *list, Server &s);
 void LaunchGame(Server &s, wxString waddirs);
