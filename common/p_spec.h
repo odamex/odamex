@@ -35,7 +35,7 @@ typedef enum
 {
 	floor_special,
 	ceiling_special,
-	lighting_special,
+	lighting_special
 } special_e;
 
 // killough 3/7/98: Add generalized scroll effects
@@ -531,7 +531,7 @@ public:
 		doorOpen,
 		doorRaise,
 		doorRaiseIn5Mins,
-		doorCloseWaitOpen,
+		doorCloseWaitOpen
 	};
 
 	DDoor (sector_t *sector);
@@ -799,7 +799,7 @@ inline FArchive &operator>> (FArchive &arc, DElevator::EElevator &out)
 enum EChange
 {
 	trigChangeOnly,
-	numChangeOnly,
+	numChangeOnly
 };
 
 BOOL EV_DoChange (line_t *line, EChange changetype, int tag);

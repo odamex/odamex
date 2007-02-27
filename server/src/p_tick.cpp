@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -33,7 +33,7 @@
 extern constate_e ConsoleState;
 extern gamestate_t wipegamestate;
 
-EXTERN_CVAR (sv_speedhackfix);
+EXTERN_CVAR (sv_speedhackfix)
 EXTERN_CVAR (allowexit)
 EXTERN_CVAR (fragexitswitch)
 EXTERN_CVAR (fraglimit)
@@ -122,5 +122,5 @@ void P_Ticker (void)
 	level.time++;
 }
 
-VERSION_CONTROL (p_tick_cpp, "$Id:$")
+VERSION_CONTROL (p_tick_cpp, "$Id$")
 

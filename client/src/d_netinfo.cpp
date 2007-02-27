@@ -58,7 +58,7 @@ enum
 	INFO_Color,
 	INFO_Skin,
 	INFO_Team,
-	INFO_Gender,
+	INFO_Gender
 };
 
 

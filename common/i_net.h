@@ -149,7 +149,7 @@ enum svc_compressed_masks
 	adaptive_mask = 1,
 	adaptive_select_mask = 2,
 	adaptive_record_mask = 4,
-	minilzo_mask = 8,
+	minilzo_mask = 8
 };
 
 typedef struct

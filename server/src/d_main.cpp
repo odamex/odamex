@@ -104,7 +104,7 @@ extern BOOL gameisdead;
 extern BOOL demorecording;
 extern DThinker ThinkerCap;
 
-CVAR (def_patch, "", CVAR_NULL); // removeme ??
+CVAR (def_patch, "", CVAR_NULL) // removeme ??
 
 
 std::vector<std::string> wadfiles;		// [RH] remove limit on # of loaded wads

@@ -102,6 +102,7 @@
 			<Add option="-fexceptions" />
 			<Add option='-include &quot;wx_pch.h&quot;' />
 			<Add option="-Winvalid-pch" />
+			<Add option="-Wno-long-long" />
 			<Add option="-DUSE_PCH" />
 			<Add directory="$(#WX.include)" />
 			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />

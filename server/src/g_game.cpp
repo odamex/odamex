@@ -76,7 +76,7 @@ void	G_DoSaveGame (void);
 void	SV_GameTics (void);
 
 
-CVAR (chasedemo, "0", 0); // removeme
+CVAR (chasedemo, "0", 0) // removeme
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -42,7 +42,7 @@ enum
 	wipe_NUMWIPES
 };
 
-CVAR (wipetype, "1", CVAR_ARCHIVE);
+CVAR (wipetype, "1", CVAR_ARCHIVE)
 static int CurrentWipeType;
 
 static short *wipe_scr_start;
@@ -444,5 +444,5 @@ int wipe_ScreenWipe (int ticks)
 	return !go;
 }
 
-VERSION_CONTROL (f_wipe_cpp, "$Id:$")
+VERSION_CONTROL (f_wipe_cpp, "$Id$")
 

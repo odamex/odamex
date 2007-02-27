@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
@@ -37,7 +37,7 @@
 
 typedef enum {
 	MODE_READ,
-	MODE_WRITE,
+	MODE_WRITE
 } memfile_mode_t;
 
 struct _MEMFILE {
@@ -215,5 +215,5 @@ char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
     return (char *)stream->buf;
 }
 
-VERSION_CONTROL (memio_cpp, "$Id:$")
+VERSION_CONTROL (memio_cpp, "$Id$")
 

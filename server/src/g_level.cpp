@@ -60,10 +60,10 @@
 extern int nextupdate;
 extern int shotclock;
 
-CVAR (endmapscript, "", CVAR_ARCHIVE);		// script to run at end of each map (e.g. to choose next map)
-CVAR (startmapscript, "", CVAR_ARCHIVE);	// script to run at start of each map (e.g. to override cvars)
-CVAR (curmap, "", CVAR_NOSET);				// tracks last played map
-CVAR (nextmap, "", CVAR_NULL);			// tracks next map to be played
+CVAR (endmapscript, "", CVAR_ARCHIVE)		// script to run at end of each map (e.g. to choose next map)
+CVAR (startmapscript, "", CVAR_ARCHIVE)	// script to run at start of each map (e.g. to override cvars)
+CVAR (curmap, "", CVAR_NOSET)				// tracks last played map
+CVAR (nextmap, "", CVAR_NULL)			// tracks next map to be played
 
 EXTERN_CVAR(updatemins)
 

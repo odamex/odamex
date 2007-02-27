@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -42,9 +42,9 @@ BOOL			modifiedgame;
 CVAR (developer, "0", 0)
 
 // [RH] Feature control cvars
-CVAR (var_friction, "1", CVAR_ARCHIVE);
-CVAR (var_pushers, "1", CVAR_ARCHIVE);
+CVAR (var_friction, "1", CVAR_ARCHIVE)
+CVAR (var_pushers, "1", CVAR_ARCHIVE)
 
 
-VERSION_CONTROL (doomstat_cpp, "$Id:$")
+VERSION_CONTROL (doomstat_cpp, "$Id$")
 

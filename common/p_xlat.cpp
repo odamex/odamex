@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -104,7 +104,7 @@ typedef enum
   GunOnce,
   GunMany,
   PushOnce,
-  PushMany,
+  PushMany
 } triggertype_e;
 
 
@@ -689,5 +689,5 @@ int P_TranslateSectorSpecial (int special)
 			((special & 0x01f) + (((special & 0x1f) < 21) ? 64 : -20));
 }
 
-VERSION_CONTROL (p_xlat_cpp, "$Id:$")
+VERSION_CONTROL (p_xlat_cpp, "$Id$")
 

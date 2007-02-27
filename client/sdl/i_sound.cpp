@@ -45,7 +45,7 @@ static bool sound_initialized = false;
 static int sounds_in_use[256];
 static int nextchannel = 0;
 
-CVAR (snd_crossover, "0", CVAR_ARCHIVE);
+CVAR (snd_crossover, "0", CVAR_ARCHIVE)
 
 // Old code
 /*

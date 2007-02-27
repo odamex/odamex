@@ -286,7 +286,7 @@ typedef enum {
 	Scroll_SouthEast_Fast = 221,
 	Scroll_SouthWest_Slow = 222,
 	Scroll_SouthWest_Medium = 223,
-	Scroll_SouthWest_Fast = 224,
+	Scroll_SouthWest_Fast = 224
 } sectorspecial_t;
 
 // [RH] Equivalents for BOOM's generalized sector types

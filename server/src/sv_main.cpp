@@ -118,7 +118,7 @@ BEGIN_CUSTOM_CVAR (skill,		"5",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	//
 }
 END_CUSTOM_CVAR(skill)
 
-EXTERN_CVAR(weaponstay);
+EXTERN_CVAR(weaponstay)
 CVAR (itemsrespawn,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial items will respawn after being picked up when true.
 CVAR (monstersrespawn,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Monsters will respawn after killed when true. - does not work yet
 CVAR (fastmonsters,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Monsters move and shoot at double speed when true. - does not work yet
@@ -150,7 +150,7 @@ BEGIN_CUSTOM_CVAR (password,	"",			CVAR_ARCHIVE)									// Remote console passw
 	if(strlen(var.cstring()))
 		Printf(PRINT_HIGH, "join password set");
 }
-END_CUSTOM_CVAR(password);
+END_CUSTOM_CVAR(password)
 
 BEGIN_CUSTOM_CVAR (spectate_password,	"",			CVAR_ARCHIVE)									// Remote console password.
 {
@@ -158,7 +158,7 @@ BEGIN_CUSTOM_CVAR (spectate_password,	"",			CVAR_ARCHIVE)									// Remote cons
 	if(strlen(var.cstring()))
 		Printf(PRINT_HIGH, "spectate password set");
 }
-END_CUSTOM_CVAR(spectate_password);
+END_CUSTOM_CVAR(spectate_password)
 
 BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE)									// Remote console password.
 {
@@ -175,7 +175,7 @@ BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE)									// Remote console 
 	else
 		Printf(PRINT_HIGH, "rcon password set");
 }
-END_CUSTOM_CVAR(rcon_password);
+END_CUSTOM_CVAR(rcon_password)
 
 client_c clients;
 
@@ -202,7 +202,7 @@ bool P_CheckSightEdges (const AActor* t1, const AActor* t2, float radius_boost =
 
 void WinCheck (void);
 
-EXTERN_CVAR (sv_speedhackfix);
+EXTERN_CVAR (sv_speedhackfix)
 
 // denis - kick player
 BEGIN_COMMAND (kick)

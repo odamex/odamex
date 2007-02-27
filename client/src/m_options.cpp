@@ -531,7 +531,7 @@ menu_t ModesMenu = {
 
 static cvar_t *flagsvar;
 
-EXTERN_CVAR(dimcolor);
+EXTERN_CVAR(dimcolor)
 
 // [Russell] - Modified to send new colours
 static void M_SendUINewColor (int red, int green, int blue)

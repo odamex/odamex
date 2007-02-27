@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -32,8 +32,8 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
 EXTERN_CVAR (usectf)
 
-CVAR(ctf_manualreturn, "0", CVAR_ARCHIVE);
-CVAR(ctf_flagtimeout, "600", CVAR_ARCHIVE); // Flag timeout in gametics
+CVAR(ctf_manualreturn, "0", CVAR_ARCHIVE)
+CVAR(ctf_flagtimeout, "600", CVAR_ARCHIVE) // Flag timeout in gametics
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];
@@ -456,5 +456,5 @@ void CTF_Sound (flag_t f, flag_score_t event)
 }
 
 
-VERSION_CONTROL (sv_ctf_cpp, "$Id:$")
+VERSION_CONTROL (sv_ctf_cpp, "$Id$")
 

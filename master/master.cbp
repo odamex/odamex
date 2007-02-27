@@ -95,6 +95,11 @@
 			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
 			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
 		</VirtualTargets>
+		<Compiler>
+			<Add option="-pedantic" />
+			<Add option="-fexceptions" />
+			<Add option="-Wno-long-long" />
+		</Compiler>
 		<Unit filename="i_net.cpp" />
 		<Unit filename="i_net.h" />
 		<Unit filename="main.cpp" />

@@ -30,7 +30,7 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
 
-IMPLEMENT_APP(Application);
+IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {

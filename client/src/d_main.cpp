@@ -114,7 +114,7 @@ extern DThinker ThinkerCap;
 extern int NoWipe;		// [RH] Don't wipe when travelling in hubs
 
 
-CVAR (def_patch, "", CVAR_ARCHIVE);
+CVAR (def_patch, "", CVAR_ARCHIVE)
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm

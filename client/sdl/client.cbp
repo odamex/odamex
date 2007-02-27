@@ -91,7 +91,9 @@
 			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
 		</VirtualTargets>
 		<Compiler>
+			<Add option="-pedantic" />
 			<Add option="-fexceptions" />
+			<Add option="-Wno-long-long" />
 			<Add option="-DNOASM" />
 			<Add directory="." />
 			<Add directory="..\src" />

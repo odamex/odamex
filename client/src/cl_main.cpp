@@ -872,7 +872,7 @@ void CL_TryToConnect(DWORD server_token)
 	connecttimeout--;
 }
 
-EXTERN_CVAR (show_messages);
+EXTERN_CVAR (show_messages)
 
 //
 // CL_Print

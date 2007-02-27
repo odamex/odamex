@@ -80,14 +80,14 @@ void	G_DoSaveGame (void);
 
 void	CL_RunTics (void);
 
-CVAR (skill, "1", CVAR_ARCHIVE); // [Toke - todo] should not be cvar on client
-CVAR (deathmatch, "1", CVAR_ARCHIVE);  // [Toke - todo] should not be cvar on client
+CVAR (skill, "1", CVAR_ARCHIVE) // [Toke - todo] should not be cvar on client
+CVAR (deathmatch, "1", CVAR_ARCHIVE)  // [Toke - todo] should not be cvar on client
 
 EXTERN_CVAR (novert)
 
 
 
-CVAR (chasedemo, "0", 0);
+CVAR (chasedemo, "0", 0)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
