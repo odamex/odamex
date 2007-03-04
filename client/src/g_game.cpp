@@ -941,7 +941,7 @@ void G_Ticker (void)
 	switch (gamestate)
 	{
 	case GS_LEVEL:
-		if(!demoplayback)
+		if(clientside && !serverside)
 			CL_PredictMove ();
 		P_Ticker ();
 		ST_Ticker ();

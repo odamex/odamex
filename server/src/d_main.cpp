@@ -824,8 +824,6 @@ int teamplayset;
 
 void D_DoomMain (void)
 {
-	unsigned p;
-
 	M_ClearRandom();
 
 	gamestate = GS_STARTUP;
@@ -870,7 +868,7 @@ void D_DoomMain (void)
 		skill.Set (val[0]-'0');
 	}
 
-	p = Args.CheckParm ("-warp");
+	unsigned p = Args.CheckParm ("-warp");
 	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
 	{
 		int ep, map;

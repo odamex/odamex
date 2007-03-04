@@ -158,7 +158,7 @@ void DThinker::RunThinkers ()
 		if ( currentthinker->IsKindOf (RUNTIME_CLASS (AActor))
 				   && static_cast<AActor *>(currentthinker)->player
 				   && static_cast<AActor *>(currentthinker)->player->playerstate != PST_DEAD
-				   && !sv_speedhackfix && !demoplayback)
+				   && !sv_speedhackfix && !demoplayback && (serverside && !clientside))
 			;
 		else
 			currentthinker->RunThink ();

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -41,15 +41,14 @@ void P_ZMovement (AActor *mo);
 //
 void P_Ticker (void)
 {
-	if (noservermsgs && !demoplayback)
-		return;
-
 	if(serverside)
 	{
 		for(size_t i = 0; i < players.size(); i++)
 			if(players[i].ingame())
 				P_PlayerThink (&players[i]);
 	}
+	else if (noservermsgs && !demoplayback)
+		return;
 
     DThinker::RunThinkers ();
 	
@@ -60,5 +59,5 @@ void P_Ticker (void)
 	level.time++;
 }
 
-VERSION_CONTROL (p_tick_cpp, "$Id:$")
+VERSION_CONTROL (p_tick_cpp, "$Id$")
 

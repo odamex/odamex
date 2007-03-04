@@ -938,9 +938,7 @@ ticcmd_t localcmds[MAXSAVETICS];
 
 void CL_SaveCmd(void)
 {
-	ticcmd_t *cmd;
-	cmd = &localcmds[gametic%MAXSAVETICS];
-	memcpy (cmd, &consoleplayer().cmd, sizeof(ticcmd_t));
+	memcpy (&localcmds[gametic%MAXSAVETICS], &consoleplayer().cmd, sizeof(ticcmd_t));
 }
 
 //

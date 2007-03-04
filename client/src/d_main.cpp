@@ -23,7 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h" // SHUT UP COMPILER WARNING
+#include "version.h"
 
 #include <sstream>
 #include <string>
@@ -90,7 +90,6 @@ extern void R_ExecuteSetViewSize (void);
 
 void D_CheckNetGame (void);
 void D_ProcessEvents (void);
-void G_BuildTiccmd (ticcmd_t* cmd);
 void D_DoAdvanceDemo (void);
 
 void D_DoomLoop (void);
@@ -1223,13 +1222,43 @@ void D_DoomMain (void)
 
 	devparm = Args.CheckParm ("-devparm");
 
-	// [csDoom] It's always dm
-	// deathmatch.Set (1.0f);
-
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
-	autostart = false;
 
+	const char *val = Args.CheckValue ("-skill");
+	if (val)
+	{
+		skill.Set (val[0]-'0');
+	}
+	
+	unsigned p = Args.CheckParm ("-warp");
+	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
+	{
+		int ep, map;
+		
+		if (gameinfo.flags & GI_MAPxx)
+		{
+			ep = 1;
+			map = atoi (Args.GetArg(p+1));
+		}
+		else
+		{
+			ep = Args.GetArg(p+1)[0]-'0';
+			map = Args.GetArg(p+2)[0]-'0';
+		}
+		
+		strncpy (startmap, CalcMapName (ep, map), 8);
+		autostart = true;
+	}
+	
+	// [RH] Hack to handle +map
+	p = Args.CheckParm ("+map");
+	if (p && p < Args.NumArgs()-1)
+	{
+		strncpy (startmap, Args.GetArg (p+1), 8);
+		((char *)Args.GetArg (p))[0] = '-';
+		autostart = true;
+	}
 	if (devparm)
 		Printf (PRINT_HIGH, "%s", Strings[0].builtin);        // D_DEVSTR
 
@@ -1294,6 +1323,17 @@ void D_DoomMain (void)
     {
 		if (autostart || netgame)
 		{
+			if(autostart)
+			{
+				// single player warp
+				serverside = true;
+				
+				players.clear();
+				players.push_back(player_t());
+				players.back().playerstate = PST_REBORN;
+				consoleplayer_id = displayplayer_id = players.back().id = 1;
+			}
+			
 			G_InitNew (startmap);
 		}
         else
