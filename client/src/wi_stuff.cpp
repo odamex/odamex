@@ -248,7 +248,7 @@ static char names[NUMEPISODES][NUMMAPS][8] = {
 
 
 // used to accelerate or skip a stage
-static int				acceleratestage;
+static bool				acceleratestage;
 
 // wbs->pnum
 static unsigned			me;
@@ -287,10 +287,10 @@ static patch_t* 		yah[2];
 static patch_t* 		splat;
 
 // 0-9 graphic
-static patch_t* 		num[10];
+//static patch_t* 		num[10];
 
 // minus sign
-static patch_t* 		wiminus;
+//static patch_t* 		wiminus;
 
 // "Finished!" graphics
 //static patch_t* 		finished; (Removed) Dan - Did we really need this?
@@ -579,13 +579,14 @@ void WI_updateNoState (void)
 	WI_updateAnimatedBack();
 
 	// denis - let the server decide when to load the next map
-	/*
-	if (!--cnt)
+	if(serverside)
 	{
-		WI_End();
-		G_WorldDone();
+		if (!--cnt || acceleratestage)
+		{
+			WI_End();
+			G_WorldDone();
+		}
 	}
-	*/
 }
 
 static BOOL snl_pointeron = false;
@@ -603,10 +604,13 @@ void WI_updateShowNextLoc (void)
 {
 	WI_updateAnimatedBack();
 
-	if (!--cnt || acceleratestage)
-		WI_initNoState();
-	else
-		snl_pointeron = (cnt & 31) < 20;
+	if(serverside)
+	{
+		if (!--cnt || acceleratestage)
+			WI_initNoState();
+		else
+			snl_pointeron = (cnt & 31) < 20;
+	}
 }
 
 void WI_drawShowNextLoc (void)
@@ -661,6 +665,38 @@ void WI_drawNetgameStats (void)
 	HU_DrawScores (&players[me]);
 }
 
+void WI_checkForAccelerate(void)
+{
+	if(!serverside)
+		return;
+	
+    // check for button presses to skip delays
+    for (size_t i = 0; i < players.size() ; i++)
+    {
+		if (players[i].ingame())
+		{
+			player_t *player = &players[i];
+			
+			if (player->cmd.ucmd.buttons & BT_ATTACK)
+			{
+				if (!player->attackdown)
+					acceleratestage = 1;
+				player->attackdown = true;
+			}
+			else
+				player->attackdown = false;
+			if (player->cmd.ucmd.buttons & BT_USE)
+			{
+				if (!player->usedown)
+					acceleratestage = 1;
+				player->usedown = true;
+			}
+			else
+				player->usedown = false;
+		}
+    }
+}
+
 // Updates stuff each tick
 void WI_Ticker (void)
 {
@@ -676,10 +712,12 @@ void WI_Ticker (void)
 			S_ChangeMusic ("d_inter", true);
 	}
 
+    WI_checkForAccelerate();
+	
 	switch (state)
 	{
 		case StatCount:
-			WI_updateAnimatedBack();
+			WI_updateNoState();
 			break;
 
 		case ShowNextLoc:
@@ -804,7 +842,7 @@ void WI_loadData (void)
 
 void WI_unloadData (void)
 {
-	int i, j;
+/*	int i, j;
 
 	Z_ChangeTag (wiminus, PU_CACHE);
 
@@ -839,7 +877,7 @@ void WI_unloadData (void)
 	//Z_ChangeTag (finished, PU_CACHE); (Removed) Dan - Did we really need this? 
 	Z_ChangeTag (entering, PU_CACHE);
 
-	Z_ChangeTag (p, PU_CACHE);
+	Z_ChangeTag (p, PU_CACHE);*/
 }
 
 void WI_Drawer (void)

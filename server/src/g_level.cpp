@@ -589,10 +589,13 @@ static int		startpos;	// [RH] Support for multiple starts per level
 void G_ExitLevel (int position)
 {
 	SV_ExitLevel();
+
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
 	mapchange = TICRATE*10;  // wait 10 seconds
 
+    secretexit = false;
+	
 	// denis - this will skip wi_stuff and allow some time for finale text
 	G_WorldDone();
 }
@@ -600,16 +603,21 @@ void G_ExitLevel (int position)
 // Here's for the german edition.
 void G_SecretExitLevel (int position)
 {
+	SV_ExitLevel();
+
+	gamestate = GS_INTERMISSION;
+	shotclock = 0;
+	mapchange = TICRATE*10;  // wait 10 seconds
+
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	/*if ( (gamemode == commercial)
+	if ( (gamemode == commercial)
 	&& (W_CheckNumForName("map31")<0))
 		secretexit = false;
 	else
 		secretexit = true;
-	gameaction = ga_completed;*/
 
-    secretexit = true;
-	G_ExitLevel(position);
+	// denis - this will skip wi_stuff and allow some time for finale text
+	G_WorldDone();
 }
 
 void G_DoCompleted (void)

@@ -1864,9 +1864,37 @@ BOOL G_CheckDemoStatus (void)
 	return false;
 }
 
+EXTERN_CVAR (fraglimit)
+EXTERN_CVAR (allowexit)
+EXTERN_CVAR (fragexitswitch)
+
 BOOL CheckIfExitIsGood (AActor *self)
 {
-	return false;
+	if (self == NULL)
+		return false;
+	
+	// [Toke - dmflags] Old location of DF_NO_EXIT
+    // [ML] 04/4/06: Check for fragexitswitch - seems a bit hacky
+	
+    unsigned int i;
+	
+    for(i = 0; i < players.size(); i++)
+        if(players[i].fragcount == fraglimit)
+            break;
+	
+    if (deathmatch && self)
+    {
+        if (!allowexit && fragexitswitch && i == players.size())
+            return false;
+		
+        if (!allowexit && !fragexitswitch)
+            return false;
+    }
+	
+	if(self->player)
+		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname);
+	
+    return true;
 }
 
 

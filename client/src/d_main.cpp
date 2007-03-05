@@ -132,6 +132,8 @@ DCanvas *page;
 static int demosequence;
 static int pagetic;
 
+EXTERN_CVAR (allowexit)
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -1100,7 +1102,9 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_FatalError ("\nYou cannot switch WAD with the shareware version. Register!");
 
-	G_ExitLevel(0);
+	if(gamestate == GS_LEVEL)
+		G_ExitLevel(0);
+	
 	DThinker::DestroyAllThinkers();
 
 	Z_Init();
@@ -1327,6 +1331,7 @@ void D_DoomMain (void)
 			{
 				// single player warp
 				serverside = true;
+				allowexit = true;
 				
 				players.clear();
 				players.push_back(player_t());

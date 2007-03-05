@@ -781,6 +781,7 @@ bool CL_Connect(void)
 
 	connected = true;
     multiplayer = true;
+	serverside = false;
 
 	CL_Decompress(0);
 	CL_ParseCommands();
@@ -1788,12 +1789,14 @@ void CL_ConsolePlayer(void)
 
 void CL_LoadMap(void)
 {
+	char *mapname = MSG_ReadString ();
+
 	if(gamestate == GS_DOWNLOAD)
 		return;
 	
-	char *mapname = MSG_ReadString ();
-
-	G_ExitLevel (0);
+	if(gamestate == GS_LEVEL)
+		G_ExitLevel (0);
+	
 	G_InitNew (mapname);
 
 	real_plats.clear();

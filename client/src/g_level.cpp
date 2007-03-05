@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -313,11 +313,22 @@ static int		startpos;	// [RH] Support for multiple starts per level
 
 void G_ExitLevel (int position)
 {
+	secretexit = false;
+	
+	gameaction = ga_completed; 
 }
 
 // Here's for the german edition.
 void G_SecretExitLevel (int position)
 {
+	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
+	if ( (gamemode == commercial)
+		 && (W_CheckNumForName("map31")<0))
+		secretexit = false;
+	else
+		secretexit = true;
+	
+	gameaction = ga_completed;
 }
 
 void G_DoCompleted (void)
@@ -1978,5 +1989,5 @@ cluster_info_t ClusterInfos[] = {
 	}
 };
 
-VERSION_CONTROL (g_level_cpp, "$Id:$")
+VERSION_CONTROL (g_level_cpp, "$Id$")
 
