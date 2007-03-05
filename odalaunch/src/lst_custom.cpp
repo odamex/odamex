@@ -130,13 +130,13 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
     ColourList();
 }
 
-void wxAdvancedListCtrl::ColourListItem(wxInt32 item)
+void wxAdvancedListCtrl::ColourListItem(wxInt32 item, wxInt32 grey)
 {
     // reset colours back
     wxColour col;
      
     // light grey coolness
-    if ((item % 2) == 0)
+    if (grey)
         col.Set(colRed, colGreen, colBlue);
     else
         col.Set(255, 255, 255);
@@ -148,8 +148,14 @@ void wxAdvancedListCtrl::ColourListItem(wxInt32 item)
 void wxAdvancedListCtrl::ColourList()
 {  
     // iterate through, changing background colour for each row
+    wxInt32 colswitch = 0;
+    
     for (wxInt32 i = 0; i < this->GetItemCount(); i++)
-        ColourListItem(i);
+    {     
+        ColourListItem(i, colswitch);
+        
+        colswitch = !colswitch;
+    }
 }
 
 // get an index location of the text field in the list

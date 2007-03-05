@@ -45,7 +45,7 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
         return;
         
     // are we adding a new item?
-    if (insert == 1)    
+    if (insert)    
         idx = list->InsertItem(index, s.info.name);
     else
     {
@@ -58,73 +58,56 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
     
     list->SetItem(idx, 7, s.GetAddress());
     
-    if (ping > 0)
-    {
-        list->SetItem(idx, 1, wxString::Format(_T("%d"),ping));
-        list->SetItem(idx, 2, wxString::Format(_T("%d/%d"),s.info.numplayers,s.info.maxplayers));       
-    
-        // build a list of pwads
-        if (s.info.numpwads > 0)
-        {
-            // pwad list
-            wxString wadlist = _T("");
-            wxString pwad = _T("");
-            
-            for (i = 0; i < s.info.numpwads; i++)
-            {
-                pwad = s.info.pwads[i].Mid(0, s.info.pwads[i].Find('.'));
-                wadlist += wxString::Format(_T("%s "), pwad.c_str());
-            }
-            
-            list->SetItem(idx, 3, wadlist);
-        }
-            
-        list->SetItem(idx, 4, s.info.map.Upper());
-    
-        wxString gmode = _T("");
-    
-        switch(s.info.teamplay)
-        {
-            case 1:
-                gmode += _T("TM ");
-                break;
-        }
-
-        switch (s.info.gametype)
-        {
-            case 0:
-                gmode += _T("COOP ");
-                break;
-            case 1:
-                gmode += _T("DM ");
-                break;
-            case 2:
-                gmode += _T("DM2 ");
-                break;
-            default:
-                gmode += _T("?? ");
-                break;
-        }
-
-        switch(s.info.ctf)
-        {
-            case 1:
-                gmode += _T("CTF ");
-                break;
-        }
-          
-        list->SetItem(idx, 5, gmode);
-
-        // trim off the .wad
-        wxString iwad = s.info.iwad.Mid(0, s.info.iwad.Find('.'));
+    // just add the address if the server is blocked
+    if (!ping)
+        return;
         
-        list->SetItem(idx, 6, iwad);
+    list->SetItem(idx, 1, wxString::Format(_T("%d"),ping));
+    list->SetItem(idx, 2, wxString::Format(_T("%d/%d"),s.info.numplayers,s.info.maxplayers));       
+    
+    // build a list of pwads
+    if (s.info.numpwads)
+    {
+        // pwad list
+        wxString wadlist = _T("");
+        wxString pwad = _T("");
+            
+        for (i = 0; i < s.info.numpwads; i++)
+        {
+            pwad = s.info.pwads[i].Mid(0, s.info.pwads[i].Find('.'));
+            wadlist += wxString::Format(_T("%s "), pwad.c_str());
+        }
+            
+        list->SetItem(idx, 3, wadlist);
     }
+            
+    list->SetItem(idx, 4, s.info.map.Upper());
+    
+    // what game type do we like to play
+    wxString gmode = _T("ERROR");
+
+    if(!s.info.gametype)
+        gmode = _T("COOP");
+    else
+        gmode = _T("DM");
+    if(s.info.gametype && s.info.teamplay)
+        gmode = _T("TEAM DM");
+    if(s.info.ctf)
+        gmode = _T("CTF");
+              
+    list->SetItem(idx, 5, gmode);
+
+    // trim off the .wad
+    wxString iwad = s.info.iwad.Mid(0, s.info.iwad.Find('.'));
+        
+    list->SetItem(idx, 6, iwad);
 }
 
 void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
 {   
-    if (s.info.numplayers > 0)
+    if (!s.info.numplayers)
+        return;
+        
     for (wxInt32 i = 0; i < s.info.numplayers; i++)
     {
         wxInt32 idx = list->InsertItem(i,s.info.playerinfo[i].name);
@@ -134,7 +117,7 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
         list->SetItem(idx, 1, wxString::Format(_T("%d"),s.info.playerinfo[i].frags));
         list->SetItem(idx, 2, wxString::Format(_T("%d"),s.info.playerinfo[i].ping));
         
-        if (s.info.teamplay == 1)
+        if (s.info.teamplay)
 		{
             switch(s.info.playerinfo[i].team)
 			{
@@ -157,8 +140,9 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
             list->SetItem(idx, 3, teamstr);
         }
             
-        list->ColourListItem(i);
     }
+
+    list->ColourList();
     
 }
 

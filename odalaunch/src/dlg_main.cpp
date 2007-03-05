@@ -359,11 +359,11 @@ void dlgMain::OnGetList(wxCommandEvent &event)
             if (launchercfg_s.show_blocked_servers)
                 AddServerToList(SERVER_LIST, QServer[i], i);
         }
-
-        SERVER_LIST->ColourListItem(i);
             
         wxSafeYield(this, true);
     }
+
+    SERVER_LIST->ColourList();
         
     GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
@@ -429,12 +429,12 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
             if (launchercfg_s.show_blocked_servers)
                 AddServerToList(SERVER_LIST, QServer[i], i);
         }
-              
-        SERVER_LIST->ColourListItem(i);
-        
+                     
         wxSafeYield(this, true);
     }
-        
+
+    SERVER_LIST->ColourList();
+
     GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);    

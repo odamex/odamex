@@ -111,7 +111,11 @@ oldmenu_t *currentMenu;
 //
 // PROTOTYPES
 //
+void M_NewGame(int choice);
+void M_LoadGame(int choice);
+void M_SaveGame(int choice);
 void M_Options(int choice);
+void M_ReadThis(int choice);
 void M_EndGame(int choice);
 void M_QuitDOOM(int choice);
 
@@ -156,7 +160,11 @@ static DCanvas *FireScreen;
 //
 enum main_t
 {
-	options = 0,					// [RH] Moved
+	newgame = 0,
+	options,					// [RH] Moved
+	loadgame,
+	savegame,
+	readthis,
 	playersetup,					// [RH] Player setup
 	quitdoom,
 	main_end
@@ -164,7 +172,11 @@ enum main_t
 
 oldmenuitem_t MainMenu[]=
 {
+	{1,"M_NGAME",M_NewGame,'N'},
 	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
+    {1,"M_LOADG",M_LoadGame,'L'},
+    {1,"M_SAVEG",M_SaveGame,'S'},
+    {1,"M_RDTHIS",M_ReadThis,'R'},
 	{1,"M_PSETUP",M_PlayerSetup,'P'},	// [RH] Player setup
 	{1,"M_QUITG",M_QuitDOOM,'Q'}
 };
@@ -174,7 +186,7 @@ oldmenu_t MainDef =
 	main_end,
 	MainMenu,
 	M_DrawMainMenu,
-	97,108,
+	97,64,
 	0
 };
 
@@ -294,6 +306,27 @@ BEGIN_COMMAND (bumpgamma)
 }
 END_COMMAND (bumpgamma)
 
+// [Russell] - dummies to fix menus for some wads
+void M_NewGame (int choice)
+{
+    // dummy
+}
+
+void M_LoadGame (int choice)
+{
+    // dummy
+}
+
+void M_SaveGame (int choice)
+{
+    // dummy
+}
+
+void M_ReadThis (int choice)
+{
+    // dummy
+}
+
 //
 // Draw border for the savegame description
 // [RH] Width of the border is variable
@@ -318,7 +351,7 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu (void)
 {
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_DOOM",PU_CACHE), 94, 42);
+	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_DOOM",PU_CACHE), 94, 2);
 }
 
 //
@@ -424,9 +457,9 @@ void M_PlayerSetup (int choice)
 	choice = 0;
 	strcpy (savegamestrings[0], cl_name.cstring());
 //	strcpy (savegamestrings[1], team.cstring());	if (t = 1) // [Toke - Teams]
-	M_DemoNoPlay = true;
-	if (demoplayback)
-		G_CheckDemoStatus ();
+	//M_DemoNoPlay = true;
+	//if (demoplayback)
+	//	G_CheckDemoStatus ();
 	M_SetupNextMenu (&PSetupDef);
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
 	PlayerTics = PlayerState->tics;

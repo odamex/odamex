@@ -37,9 +37,9 @@ class wxAdvancedListCtrl : public wxListCtrl
             SortOrder = 0; 
             SortCol = 0; 
 
-            colRed = 238;
-            colGreen = 238;
-            colBlue = 238;
+            colRed = 245;
+            colGreen = 245;
+            colBlue = 245;
 
         }
         
@@ -70,7 +70,7 @@ class wxAdvancedListCtrl : public wxListCtrl
         ~wxAdvancedListCtrl() { }
       
         void ColourList();
-        void ColourListItem(wxInt32 item);
+        void ColourListItem(wxInt32 item, wxInt32 grey);
         
         wxInt32 GetIndex(wxString str);
         
