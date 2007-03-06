@@ -897,6 +897,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 	flags = info->flags;
 	health = info->spawnhealth;
 	translucency = info->translucency;
+	rndindex = M_Random();
 
 	if (skill != sk_nightmare)
 		reactiontime = info->reactiontime;
