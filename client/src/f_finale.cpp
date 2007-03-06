@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -113,13 +113,14 @@ BOOL F_Responder (event_t *event)
 //
 void F_Ticker (void)
 {
+	// denis - do this serverside only
 	// check for skipping
 	// [RH] Non-commercial can be skipped now, too
-	if (finalecount > 50 && finalestage != 1) {
+	if (serverside && finalecount > 50 && finalestage != 1) {
 		// go on to the next level
 		// [RH] or just reveal the entire message if we're still ticking it
-		/*size_t i;
-		for (i = 0; i < players.size(); i++) // denis - todo - do this serverside
+		size_t i;
+		for (i = 0; i < players.size(); i++)
 			if (players[i].cmd.ucmd.buttons)
 				break;
 
@@ -151,7 +152,7 @@ void F_Ticker (void)
 					gameaction = ga_worlddone;
 				}
 			}
-		}*/
+		}
 	}
 	
 	// advance animation
@@ -717,5 +718,5 @@ void F_Drawer (void)
 	}
 }
 
-VERSION_CONTROL (f_finale_cpp, "$Id:$")
+VERSION_CONTROL (f_finale_cpp, "$Id$")
 
