@@ -2167,12 +2167,9 @@ void CL_SendCmd(void)
     // send the current cmds in the message
     cmd = &consoleplayer().cmd;
 
-	// Look up/down stuff
-	P_PlayerLookUpDown(p);
-
 	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
 	MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
-	MSG_WriteShort(&net_buffer, p->mo->pitch >> 16);
+	MSG_WriteShort(&net_buffer, (p->mo->pitch + (cmd->ucmd.pitch << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
 	MSG_WriteByte(&net_buffer, cmd->ucmd.impulse);

@@ -167,7 +167,47 @@ void P_CalcHeight (player_t *player)
 		player->viewz = player->mo->ceilingz-4*FRACUNIT;
 }
 
-
+//
+// P_PlayerLookUpDown
+//
+void P_PlayerLookUpDown (player_t *p)
+{
+	ticcmd_t *cmd = &p->cmd;
+	
+	// [RH] Look up/down stuff
+	if (!freelook)
+	{
+		p->mo->pitch = 0;
+	}
+	else
+	{
+		int look = cmd->ucmd.pitch << 16;
+		
+		// The player's view pitch is clamped between -32 and +56 degrees,
+		// which translates to about half a screen height up and (more than)
+		// one full screen height down from straight ahead when view panning
+		// is used.
+		if (look)
+		{
+			if (look == -32768 << 16)
+			{ // center view
+				p->mo->pitch = 0;
+			}
+			else if (look > 0)
+			{ // look up
+				p->mo->pitch -= look;
+				if (p->mo->pitch < -ANG(32))
+					p->mo->pitch = -ANG(32);
+			}
+			else
+			{ // look down
+				p->mo->pitch -= look;
+				if (p->mo->pitch > ANG(56))
+					p->mo->pitch = ANG(56);
+			}
+		}
+	}
+}
 
 //
 // P_MovePlayer
@@ -206,7 +246,11 @@ void P_MovePlayer (player_t *player)
 		player->mo->momz = cmd->ucmd.upmove << 8;
 	}
 
+	// Look left/right
 	mo->angle += cmd->ucmd.yaw << 16;
+
+	// Look up/down stuff
+	P_PlayerLookUpDown(player);
 
 	onground = (mo->z <= mo->floorz);
 	
@@ -329,49 +373,6 @@ void P_DeathThink (player_t *player)
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
 		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE))
 			player->playerstate = PST_REBORN;
-	}
-}
-
-
-//
-// P_PlayerLookUpDown
-//
-void P_PlayerLookUpDown (player_t *p)
-{
-	ticcmd_t *cmd = &p->cmd;
-
-	// [RH] Look up/down stuff
-	if (!freelook)
-	{
-		p->mo->pitch = 0;
-	}
-	else
-	{
-		int look = cmd->ucmd.pitch << 16;
-
-		// The player's view pitch is clamped between -32 and +56 degrees,
-		// which translates to about half a screen height up and (more than)
-		// one full screen height down from straight ahead when view panning
-		// is used.
-		if (look)
-		{
-			if (look == -32768 << 16)
-			{ // center view
-				p->mo->pitch = 0;
-			}
-			else if (look > 0)
-			{ // look up
-				p->mo->pitch -= look;
-				if (p->mo->pitch < -ANG(32))
-					p->mo->pitch = -ANG(32);
-			}
-			else
-			{ // look down
-				p->mo->pitch -= look;
-				if (p->mo->pitch > ANG(56))
-					p->mo->pitch = ANG(56);
-			}
-		}
 	}
 }
 
