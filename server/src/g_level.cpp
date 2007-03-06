@@ -622,6 +622,13 @@ void G_SecretExitLevel (int position)
 
 void G_DoCompleted (void)
 {
+	size_t i;
+	
+	gameaction = ga_nothing;
+	
+	for(i = 0; i < players.size(); i++)
+		if(players[i].ingame())
+			G_PlayerFinishLevel(players[i]);
 }
 
 //

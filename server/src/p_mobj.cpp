@@ -1245,32 +1245,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (!deathmatch &&
 			(validplayer(p) && p.ingame()))
 		{
-			if(unnatural_level_progression)
-			{
-				P_SpawnPlayer (p, mthing);
-				return;
-			}
-
-			// denis - carry weapons and keys over to next level
-			int			weaponowned[NUMWEAPONS];
-			int			ammo[NUMAMMO];
-			int			maxammo[NUMAMMO];
-			weapontype_t readyweapon;
-			bool		backpack;
-
-			memcpy(weaponowned, p.weaponowned, sizeof(weaponowned));
-			memcpy(ammo, p.ammo, sizeof(ammo));
-			memcpy(maxammo, p.maxammo, sizeof(maxammo));
-			readyweapon = p.readyweapon;
-			backpack = p.backpack;
+			if(!unnatural_level_progression)
+				p.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
 
 			P_SpawnPlayer (p, mthing);
-
-			memcpy(p.weaponowned, weaponowned, sizeof(weaponowned));
-			memcpy(p.ammo, ammo, sizeof(ammo));
-			memcpy(p.maxammo, maxammo, sizeof(maxammo));
-			p.readyweapon = readyweapon;
-			p.backpack = backpack;
 
 			// inform client
 			{

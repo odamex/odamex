@@ -1061,14 +1061,14 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	//		spawned here.
 	player_t *p = &player;
 
+	// not playing?
+	if(!p->ingame())
+		return;
+
 	if (p->playerstate == PST_REBORN)
 		G_PlayerReborn (*p);
 
 	AActor *mobj = new AActor (mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
-
-	// not playing?
-	if(!p->ingame())
-		return;
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.

@@ -336,6 +336,10 @@ void G_DoCompleted (void)
 	size_t i;
 
 	gameaction = ga_nothing;
+	
+	for(i = 0; i < players.size(); i++)
+		if(players[i].ingame())
+			G_PlayerFinishLevel(players[i]);
 
 	// [RH] Mark this level as having been visited
 	if (!(level.flags & LEVEL_CHANGEMAPCHEAT))

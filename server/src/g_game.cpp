@@ -398,39 +398,6 @@ void G_PlayerFinishLevel (player_t &player)
 //
 void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 {
-	/*player_t*	p;
-	int 		i;
-	int			id;
-	int			fragcount;	// [RH] Cumulative frags
-	int			deathcount;	 // [Toke - Scores - deaths]
-	int 		killcount;
-	int         ping;
-	time_t			JoinTime;
-	int			points; // [Toke - score]
-	userinfo_t  userinfo;	// [RH] Save userinfo
-
-	p = &player;
-
-	id = p->id;
-	points = p->points; // [Toke - Score]
-	fragcount = p->fragcount;
-	deathcount = p->deathcount; // [Toke - Scores - deaths]
-	killcount = p->killcount;
-	ping = p->ping;
-	JoinTime = p->JoinTime;
-	memcpy (&userinfo, &p->userinfo, sizeof(userinfo));
-
-	//memset (p, 0, sizeof(*p) - sizeof(p->client));
-
-	p->id = id;
-	p->points = points; // [Toke - Score]
-	p->fragcount = fragcount;
-	p->deathcount = deathcount; // [Toke - Scores - deaths]
-	p->killcount = killcount;
-	p->ping = ping;
-	p->JoinTime = JoinTime
-	memcpy (&p->userinfo, &userinfo, sizeof(userinfo));
-*/
 	size_t i;
 	for (i = 0; i < NUMAMMO; i++)
 	{
