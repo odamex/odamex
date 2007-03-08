@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2006-2007 by The Odamex Team.
 //
@@ -272,12 +272,12 @@ bool SDLVideo::AllocateSurface (DCanvas *scrn, int width, int height, int bits, 
    }
 
    if(!s)
-      return false;
+	   I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
+	   
+   if(s->pitch != (width * (bits / 8)))
+	   Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
 
    scrn->pitch = s->pitch;
-
-   if(s->pitch != (width * (bits / 8)))
-     I_FatalError("SDLVideo::AllocateSurface was given a surface with an abnormally wide pitch. This is an internal error.\nPlease contact the ODAMEX team.");
 
    if(!primary)
    {
@@ -348,5 +348,5 @@ bool SDLVideo::Blit (DCanvas *src, int sx, int sy, int sw, int sh, DCanvas *dst,
    return false;
 }
 
-VERSION_CONTROL (i_sdlvideo_cpp, "$Id:$")
+VERSION_CONTROL (i_sdlvideo_cpp, "$Id$")
 
