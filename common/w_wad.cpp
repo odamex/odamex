@@ -179,13 +179,9 @@ std::string W_MD5(std::string filename)
 // Other files are single lumps with the base filename
 //  for the lump name.
 //
-// If filename starts with a tilde, the file is handled
-//  specially to allow map reloads.
-// But: the reload feature is a fragile hack...
-
-int			reloadlump;
-char*			reloadname;
-
+// Map reloads are supported through WAD reload
+// so no need for vanilla tilde reload hack here
+//
 
 std::string W_AddFile (std::string filename)
 {
@@ -197,7 +193,6 @@ std::string W_AddFile (std::string filename)
 	size_t			startlump;
 	filelump_t*		fileinfo;
 	filelump_t		singleinfo;
-	int				storehandle;
     
 	FixPathSeparator (filename);
 	std::string name = filename;
@@ -239,7 +234,6 @@ std::string W_AddFile (std::string filename)
 		numlumps += header.numlumps;
 		Printf (PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}
-	
     
     // Fill in lumpinfo
 	lumpinfo = (lumpinfo_t *)Realloc (lumpinfo, numlumps*sizeof(lumpinfo_t));
@@ -249,18 +243,13 @@ std::string W_AddFile (std::string filename)
 	
 	lump_p = &lumpinfo[startlump];
 	
-	storehandle = reloadname ? -1 : handle;
-	
 	for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
 	{
-		lump_p->handle = storehandle;
+		lump_p->handle = handle;
 		lump_p->position = LONG(fileinfo->filepos);
 		lump_p->size = LONG(fileinfo->size);
 		strncpy (lump_p->name, fileinfo->name, 8);
 	}
-	
-	if (reloadname)
-		close (handle);
 	
 	return W_MD5(filename);
 }
@@ -280,12 +269,10 @@ static BOOL IsMarker (const lumpinfo_t *lump, const char *marker)
 }
 
 //
-//
 // W_MergeLumps
 //
 // Merge multiple tagged groups into one
 // Basically from BOOM, too, although I tried to write it independently.
-//
 //
 
 void W_MergeLumps (const char *start, const char *end, int space)
@@ -609,35 +596,17 @@ W_ReadLump
 {
 	int		c;
 	lumpinfo_t*	l;
-	int		handle;
-	
+
 	if (lump >= numlumps)
 		I_Error ("W_ReadLump: %i >= numlumps",lump);
 	
-	l = lumpinfo+lump;
+	l = lumpinfo + lump;
 	
-    // ??? I_BeginRead ();
-	
-	if (l->handle == -1)
-	{
-		// reloadable file, so use open / read / close
-		if ( (handle = open (reloadname,O_RDONLY | O_BINARY)) == -1)
-			I_Error ("W_ReadLump: couldn't open %s",reloadname);
-	}
-	else
-		handle = l->handle;
-	
-	lseek (handle, l->position, SEEK_SET);
-	c = read (handle, dest, l->size);
+	lseek (l->handle, l->position, SEEK_SET);
+	c = read (l->handle, dest, l->size);
 	
 	if (c < l->size)
-		I_Error ("W_ReadLump: only read %i of %i on lump %i",
-		c,l->size,lump);	
-	
-	if (l->handle == -1)
-		close (handle);
-	
-    // ??? I_EndRead ();
+		I_Error ("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);	
 }
 
 //
