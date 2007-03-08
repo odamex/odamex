@@ -335,15 +335,15 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 {
 	int i;
 		
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_LSLEFT",PU_CACHE), x-8, y+7);
+	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
 		
 	for (i = 0; i < len; i++)
 	{
-		screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_LSCNTR",PU_CACHE), x, y+7);
+		screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
 		x += 8;
 	}
 
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_LSRGHT",PU_CACHE), x, y+7);
+	screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
 }
 
 //
@@ -351,7 +351,7 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu (void)
 {
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_DOOM",PU_CACHE), 94, 2);
+	screen->DrawPatchClean (W_CachePatch("M_DOOM"), 94, 2);
 }
 
 //
@@ -359,7 +359,7 @@ void M_DrawMainMenu (void)
 //
 void M_DrawOptions(void)
 {
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_OPTTTL",PU_CACHE), 108, 15);
+	screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
 }
 
 void M_Options(int choice)
@@ -485,7 +485,7 @@ static void M_PlayerSetupDrawer (void)
 {
 	// Draw title
 	{
-		patch_t *patch = (patch_t *)W_CacheLumpName ("M_PSTTL", PU_CACHE);
+		patch_t *patch = W_CachePatch ("M_PSTTL");
 
 		screen->DrawPatchClean (patch,
 			160 - (patch->width() >> 1),
@@ -675,10 +675,10 @@ static void M_PlayerSetupDrawer (void)
 			&sprites[skins[skin].sprite].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
 		V_ColorMap = translationtables + consoleplayer().id * 256;
-		screen->DrawTranslatedPatchClean ((patch_t *)W_CacheLumpNum (sprframe->lump[0], PU_CACHE),
+		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
 			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
 	}
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_PBOX", PU_CACHE),
+	screen->DrawPatchClean (W_CachePatch ("M_PBOX"),
 		320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
 
 	// Draw player color sliders
@@ -921,13 +921,13 @@ static void M_SlidePlayerBlue (int choice)
 //
 void M_DrawEmptyCell (oldmenu_t *menu, int item)
 {
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_CELL1",PU_CACHE),
+	screen->DrawPatchClean (W_CachePatch("M_CELL1"),
 		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
 }
 
 void M_DrawSelCell (oldmenu_t *menu, int item)
 {
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_CELL2",PU_CACHE),
+	screen->DrawPatchClean (W_CachePatch("M_CELL2"),
 		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
 }
 
@@ -1270,7 +1270,7 @@ void M_Drawer (void)
 			for (i = 0; i < max; i++)
 			{
 				if (currentMenu->menuitems[i].name[0])
-					screen->DrawPatchClean ((patch_t *)W_CacheLumpName(currentMenu->menuitems[i].name ,PU_CACHE), x, y);
+					screen->DrawPatchClean (W_CachePatch(currentMenu->menuitems[i].name), x, y);
 				y += LINEHEIGHT;
 			}
 
@@ -1278,7 +1278,7 @@ void M_Drawer (void)
 			// DRAW SKULL
 			if (drawSkull)
 			{
-				screen->DrawPatchClean ((patch_t *)W_CacheLumpName(skullName[whichSkull],PU_CACHE),
+				screen->DrawPatchClean (W_CachePatch(skullName[whichSkull]),
 					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
 			}
 		}

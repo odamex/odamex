@@ -25,6 +25,7 @@
 #define __W_WAD__
 
 #include "doomtype.h"
+#include "r_defs.h"
 
 #include <string>
 #include <vector>
@@ -93,13 +94,15 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 int		W_CheckNumForName (const char *name, int ns = ns_global);
 int		W_GetNumForName (const char *name);
 
-int			W_LumpLength (unsigned lump);
+unsigned	W_LumpLength (unsigned lump);
 void		W_ReadLump (unsigned lump, void *dest);
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
 
 void *W_CacheLumpNum (unsigned lump, int tag);
 void *W_CacheLumpName (const char *name, int tag);
-		
+patch_t* W_CachePatch (unsigned lump);
+patch_t* W_CachePatch (const char *name);
+
 void	W_Profile (const char *fname);
 
 int		W_FindLump (const char *name, int *lastlump);	// [RH]	Find lumps with duplication

@@ -1100,7 +1100,7 @@ static patch_t *LoadFaceGraphic (char *name, int namespc)
 		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
 		lump = W_GetNumForName (othername);
 	}
-	return (patch_t *)W_CacheLumpNum (lump, PU_STATIC);
+	return W_CachePatch (lump);
 }
 
 void ST_loadGraphics(void)
@@ -1123,25 +1123,25 @@ void ST_loadGraphics(void)
 	for (i=0;i<10;i++)
 	{
 		sprintf(namebuf, "STTNUM%d", i);
-		tallnum[i] = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
+		tallnum[i] = W_CachePatch(namebuf);
 
 		sprintf(namebuf, "STYSNUM%d", i);
-		shortnum[i] = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
+		shortnum[i] = W_CachePatch(namebuf);
 	}
 
 	// Load percent key.
 	//Note: why not load STMINUS here, too?
-	tallpercent = (patch_t *) W_CacheLumpName("STTPRCNT", PU_STATIC);
+	tallpercent = W_CachePatch("STTPRCNT");
 
 	// key cards
 	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
 	{
 		sprintf(namebuf, "STKEYS%d", i);
-		keys[i] = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
+		keys[i] = W_CachePatch(namebuf);
 	}
 
 	// arms background
-	armsbg = (patch_t *) W_CacheLumpName("STARMS", PU_STATIC);
+	armsbg = W_CachePatch("STARMS");
 
 	// arms ownership widgets
 	for (i=0;i<6;i++)
@@ -1149,7 +1149,7 @@ void ST_loadGraphics(void)
 		sprintf(namebuf, "STGNUM%d", i+2);
 
 		// gray #
-		arms[i][0] = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
+		arms[i][0] = W_CachePatch(namebuf);
 
 		// yellow #
 		arms[i][1] = shortnum[i+2];
@@ -1158,10 +1158,10 @@ void ST_loadGraphics(void)
 	// face backgrounds for different color players
 	// [RH] only one face background used for all players
 	//		different colors are accomplished with translations
-	faceback = (patch_t *) W_CacheLumpName("STFBANY", PU_STATIC);
+	faceback = W_CachePatch("STFBANY");
 
 	// status bar background bits
-	sbar = (patch_t *) W_CacheLumpName("STBAR", PU_STATIC);
+	sbar = W_CachePatch("STBAR");
 
 	// face states
 	facenum = 0;

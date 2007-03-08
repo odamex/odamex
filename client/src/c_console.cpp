@@ -220,7 +220,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 				isRaw = gameinfo.flags & GI_PAGESARERAW;
 			}
 
-			bg = (patch_t *)W_CacheLumpNum (num, PU_CACHE);
+			bg = W_CachePatch (num);
 
 			if (isRaw)
 				conback = new DCanvas (320, 200, 8);

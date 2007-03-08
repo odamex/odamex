@@ -732,12 +732,12 @@ void M_DrawSlider (int x, int y, float min, float max, float cur)
 
 	cur -= min;
 
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("LSLIDE", PU_CACHE), x, y);
+	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
 	for (i = 1; i < 11; i++)
-		screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("MSLIDE", PU_CACHE), x + i*8, y);
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("RSLIDE", PU_CACHE), x + 88, y);
+		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
+	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("CSLIDE", PU_CACHE), x + 5 + (int)((cur * 78.0) / range), y);
+	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)((cur * 78.0) / range), y);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
@@ -759,7 +759,7 @@ void M_OptDrawer (void)
 	menuitem_t *item;
 	patch_t *title;
 
-	title = (patch_t *)W_CacheLumpName (CurrentMenu->title, PU_CACHE);
+	title = W_CachePatch (CurrentMenu->title);
 
 	screen->DrawPatchClean (title, 160-title->width()/2, 10);
 
@@ -871,7 +871,7 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey))
 			{
-				screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("LITLCURS", PU_CACHE), CurrentMenu->indent + 3, y);
+				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
 			}
 		}
 		else
@@ -905,7 +905,7 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey)) || testingmode))
 			{
-				screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("LITLCURS", PU_CACHE), item->a.selmode * 104 + 8, y);
+				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
 			}
 
 		}

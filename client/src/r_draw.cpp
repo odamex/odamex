@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -1164,29 +1164,29 @@ void R_DrawViewBorder (void)
 
 	for (x = viewwindowx; x < viewwindowx + realviewwidth; x += size)
 	{
-		screen->DrawPatch ((patch_t *)W_CacheLumpName (border->t, PU_CACHE),
+		screen->DrawPatch (W_CachePatch (border->t),
 			x, viewwindowy - offset);
-		screen->DrawPatch ((patch_t *)W_CacheLumpName (border->b, PU_CACHE),
+		screen->DrawPatch (W_CachePatch (border->b),
 			x, viewwindowy + realviewheight);
 	}
 	for (y = viewwindowy; y < viewwindowy + realviewheight; y += size)
 	{
-		screen->DrawPatch ((patch_t *)W_CacheLumpName (border->l, PU_CACHE),
+		screen->DrawPatch (W_CachePatch (border->l),
 			viewwindowx - offset, y);
-		screen->DrawPatch ((patch_t *)W_CacheLumpName (border->r, PU_CACHE),
+		screen->DrawPatch (W_CachePatch (border->r),
 			viewwindowx + realviewwidth, y);
 	}
 	// Draw beveled edge.
-	screen->DrawPatch ((patch_t *)W_CacheLumpName (border->tl, PU_CACHE),
+	screen->DrawPatch (W_CachePatch (border->tl),
 		viewwindowx-offset, viewwindowy-offset);
 	
-	screen->DrawPatch ((patch_t *)W_CacheLumpName (border->tr, PU_CACHE),
+	screen->DrawPatch (W_CachePatch (border->tr),
 		viewwindowx+realviewwidth, viewwindowy-offset);
 	
-	screen->DrawPatch ((patch_t *)W_CacheLumpName (border->bl, PU_CACHE),
+	screen->DrawPatch (W_CachePatch (border->bl),
 		viewwindowx-offset, viewwindowy+realviewheight);
 	
-	screen->DrawPatch ((patch_t *)W_CacheLumpName (border->br, PU_CACHE),
+	screen->DrawPatch (W_CachePatch (border->br),
 		viewwindowx+realviewwidth, viewwindowy+realviewheight);
 
 	V_MarkRect (0, 0, screen->width, ST_Y);
@@ -1310,5 +1310,5 @@ void R_InitColumnDrawers (BOOL is8bit)
 	}
 }
 
-VERSION_CONTROL (r_draw_cpp, "$Id:$")
+VERSION_CONTROL (r_draw_cpp, "$Id$")
 

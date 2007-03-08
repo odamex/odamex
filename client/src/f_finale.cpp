@@ -501,7 +501,7 @@ void F_CastDrawer (void)
 	patch_t*			patch;
 	
 	// erase the entire screen to a background
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName ("BOSSBACK", PU_CACHE), 0, 0);
+	screen->DrawPatchIndirect (W_CachePatch ("BOSSBACK"), 0, 0);
 
 	screen->DrawTextClean (CR_RED,
 		(screen->width - V_StringWidth (castorder[castnum].name) * CleanXfac)/2,
@@ -513,7 +513,7 @@ void F_CastDrawer (void)
 	lump = sprframe->lump[0];
 	flip = (BOOL)sprframe->flip[0];
 						
-	patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
+	patch = W_CachePatch (lump);
 	if (flip)
 		screen->DrawPatchFlipped (patch, 160, 170);
 	else
@@ -638,8 +638,8 @@ void F_BunnyScroll (void)
 	int 		stage;
 	static int	laststage;
 				
-	p1 = (patch_t *)W_CacheLumpName ("PFUB2", PU_LEVEL);
-	p2 = (patch_t *)W_CacheLumpName ("PFUB1", PU_LEVEL);
+	p1 = W_CachePatch ("PFUB2");
+	p2 = W_CachePatch ("PFUB1");
 
 	V_MarkRect (0, 0, screen->width, screen->height);
 		
@@ -661,7 +661,7 @@ void F_BunnyScroll (void)
 		return;
 	if (finalecount < 1180)
 	{
-		screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName ("END0",PU_CACHE),
+		screen->DrawPatchIndirect (W_CachePatch ("END0"),
 			(320-13*8)/2, (200-8*8)/2);
 		laststage = 0;
 		return;
@@ -677,7 +677,7 @@ void F_BunnyScroll (void)
 	}
 		
 	sprintf (name,"END%i",stage);
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (name,PU_CACHE),
+	screen->DrawPatchIndirect (W_CachePatch (name),
 		(320-13*8)/2, (200-8*8)/2);
 }
 
@@ -698,16 +698,16 @@ void F_Drawer (void)
 			{
 				default:
 				case '1':
-					screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.finalePage1, PU_CACHE), 0, 0);
+					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage1), 0, 0);
 					break;
 				case '2':
-					screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.finalePage2, PU_CACHE), 0, 0);
+					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage2), 0, 0);
 					break;
 				case '3':
 					F_BunnyScroll ();
 					break;
 				case '4':
-					screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.finalePage3, PU_CACHE), 0, 0);
+					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage3), 0, 0);
 					break;
 			}
 			break;

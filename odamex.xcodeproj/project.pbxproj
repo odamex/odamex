@@ -914,7 +914,7 @@
 		92A68F700B645EE9004AA40D /* i_net.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_net.h; sourceTree = "<group>"; };
 		92A68F710B645EE9004AA40D /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		92A68F780B645F1C004AA40D /* odamaster */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odamaster; sourceTree = BUILT_PRODUCTS_DIR; };
-		92A68F800B645FE6004AA40D /* odalaunch */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "compiled.mach-o.executable"; name = odalaunch; path = build/Release/odalaunch; sourceTree = "<group>"; };
+		92A68F800B645FE6004AA40D /* odalaunch */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odalaunch; sourceTree = BUILT_PRODUCTS_DIR; };
 		92CE7E240B6451D200DCACF0 /* odasrv */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odasrv; sourceTree = BUILT_PRODUCTS_DIR; };
 		92CE7EB90B645C7800DCACF0 /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = SDLMain.m; sourceTree = "<group>"; };
 		92CE7ECC0B645CD500DCACF0 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };

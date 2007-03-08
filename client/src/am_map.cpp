@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -572,7 +572,7 @@ void AM_loadPics(void)
 	for (i = 0; i < 10; i++)
 	{
 		sprintf(namebuf, "AMMNUM%d", i);
-		marknums[i] = (patch_t *)W_CacheLumpName (namebuf, PU_STATIC);
+		marknums[i] = W_CachePatch (namebuf);
 	}
 }
 
@@ -1543,5 +1543,5 @@ void AM_Drawer (void)
 	}
 }
 
-VERSION_CONTROL (am_map_cpp, "$Id:$")
+VERSION_CONTROL (am_map_cpp, "$Id$")
 

@@ -209,7 +209,7 @@ void R_GenerateComposite (int texnum)
 
 	for (; --i >=0; patch++)
 	{
-		patch_t *realpatch = (patch_t *)W_CacheLumpNum (patch->patch, PU_CACHE);
+		patch_t *realpatch = W_CachePatch (patch->patch);
 		int x1 = patch->originx, x2 = x1 + realpatch->width();
 		const int *cofs = realpatch->columnofs-x1;
 		if (x1<0)
@@ -294,7 +294,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 		while (--i >= 0)
 		{
 			int pat = patch->patch;
-			const patch_t *realpatch = (patch_t *)W_CacheLumpNum (pat, PU_CACHE);
+			const patch_t *realpatch = W_CachePatch (pat);
 			int x1 = patch++->originx, x2 = x1 + realpatch->width(), x = x1;
 			const int *cofs = realpatch->columnofs-x1;
 

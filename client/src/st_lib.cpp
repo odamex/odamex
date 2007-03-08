@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -56,7 +56,7 @@ patch_t*				sttminus;
 
 void STlib_init(void)
 {
-	sttminus = (patch_t *) W_CacheLumpName("STTMINUS", PU_STATIC);
+	sttminus = W_CachePatch("STTMINUS");
 }
 
 
@@ -303,5 +303,5 @@ STlib_updateBinIcon
 }
 
 
-VERSION_CONTROL (st_lib_cpp, "$Id:$")
+VERSION_CONTROL (st_lib_cpp, "$Id$")
 

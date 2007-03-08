@@ -335,7 +335,7 @@ static int WI_DrawName (char *str, int x, int y)
 		lump = W_CheckNumForName (charname);
 		if (lump != -1)
 		{
-			p = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
+			p = W_CachePatch (lump);
 			FB->DrawPatchClean (p, x, y);
 			x += p->width() - 1;
 		}
@@ -346,7 +346,7 @@ static int WI_DrawName (char *str, int x, int y)
 		str++;
 	}
 
-	p = (patch_t *)W_CacheLumpName ("FONTB39", PU_CACHE);
+	p = W_CachePatch ("FONTB39");
 	return (5*(p->height()-p->topoffset()))/4;
 }
 
@@ -744,7 +744,7 @@ static int WI_CalcWidth (char *str)
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
 		lump = W_CheckNumForName (charname);
 		if (lump != -1) {
-			p = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
+			p = W_CachePatch (lump);
 			w += p->width() - 1;
 		} else {
 			w += 12;
@@ -769,7 +769,7 @@ void WI_loadData (void)
 		sprintf (name, "WIMAP%d", wbs->epsd);
 
 	// background
-	bg = (patch_t *)W_CacheLumpName (name, PU_CACHE);
+	bg = W_CachePatch (name);
 	background = new DCanvas (bg->width(), bg->height(), 8);
 	background->Lock ();
 	background->DrawPatch (bg, 0, 0);
@@ -786,7 +786,7 @@ void WI_loadData (void)
 
 		if (j >= 0)
 		{
-			lnames[i] = (patch_t *)W_CacheLumpNum (j, PU_STATIC);
+			lnames[i] = W_CachePatch (j);
 		}
 		else
 		{
@@ -799,13 +799,13 @@ void WI_loadData (void)
 	if (gamemode != commercial)
 	{
 		// you are here
-		yah[0] = (patch_t *)W_CacheLumpName ("WIURH0", PU_STATIC);
+		yah[0] = W_CachePatch ("WIURH0");
 
 		// you are here (alt.)
-		yah[1] = (patch_t *)W_CacheLumpName ("WIURH1", PU_STATIC);
+		yah[1] = W_CachePatch ("WIURH1");
 
 		// splat
-		splat = (patch_t *)W_CacheLumpName ("WISPLAT", PU_STATIC);
+		splat = W_CachePatch ("WISPLAT");
 
 		if (wbs->epsd < 3)
 		{
@@ -819,7 +819,7 @@ void WI_loadData (void)
 					{
 						// animations
 						sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
-						a->p[i] = (patch_t *)W_CacheLumpName (name, PU_STATIC);
+						a->p[i] = W_CachePatch (name);
 					}
 					else
 					{
@@ -832,12 +832,12 @@ void WI_loadData (void)
 	}
 
 	// "finished"
-	//finished = (patch_t *)W_CacheLumpName ("WIF", PU_STATIC); (Removed) Dan - Did we really need this?
+	//finished = W_CachePatch ("WIF") Dan - Did we really need this?
 
 	// "entering"
-	entering = (patch_t *)W_CacheLumpName ("WIENTER", PU_STATIC);
+	entering = W_CachePatch ("WIENTER");
 
-	p = (patch_t *)W_CacheLumpName ("STPBANY", PU_STATIC);
+	p = W_CachePatch ("STPBANY");
 }
 
 void WI_unloadData (void)

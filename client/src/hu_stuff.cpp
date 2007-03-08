@@ -129,7 +129,7 @@ void HU_Init (void)
 	for (i = 0; i < HU_FONTSIZE; i++)
 	{
 		sprintf (buffer, tplate, j++ - sub);
-		hu_font[i] = (patch_t *) W_CacheLumpName(buffer, PU_STATIC);
+		hu_font[i] = W_CachePatch(buffer);
 	}
 }
 
@@ -274,7 +274,7 @@ void HU_Drawer (void)
 	// denis - moved to hu_stuff and uncommented
 	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL) )
 	{
-		patch_t *netlag = (patch_t *)W_CacheLumpName ("NET", PU_CACHE);
+		patch_t *netlag = W_CachePatch ("NET");
 		screen->DrawPatchCleanNoMove (netlag, 50*CleanXfac, CleanYfac);
 
 		// SoM: Not here.

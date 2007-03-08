@@ -308,7 +308,7 @@ void D_Display (void)
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		patch_t *pause = (patch_t *)W_CacheLumpName ("M_PAUSE", PU_CACHE);
+		patch_t *pause = W_CachePatch ("M_PAUSE");
 		int y;
 
 		y = (automapactive && !viewactive) ? 4 : viewwindowy + 4;
@@ -323,7 +323,7 @@ void D_Display (void)
 		D_DrawIcon = NULL;
 		if (lump >= 0)
 		{
-			patch_t *p = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
+			patch_t *p = W_CachePatch (lump);
 
 			screen->DrawPatchIndirect (p, 160-p->width()/2, 100-p->height()/2);
 		}
@@ -464,7 +464,7 @@ void D_DoAdvanceDemo (void)
 				if (page)
 				{
 					//page->Lock ();
-					//page->DrawPatch ((patch_t *)W_CacheLumpName ("ADVISOR", PU_CACHE), 4, 160);
+					//page->DrawPatch (W_CachePatch ("ADVISOR");
 					//page->Unlock ();
 				}
 				demosequence = 1;
@@ -521,13 +521,13 @@ void D_DoAdvanceDemo (void)
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
-			data = (patch_t *)W_CacheLumpName (pagename, PU_CACHE);
+			data = W_CachePatch (pagename);
 			width = 320;
 			height = 200;
 		}
 		else
 		{
-			data = (patch_t *)W_CacheLumpName (pagename, PU_CACHE);
+			data = W_CachePatch (pagename);
 			width = data->width();
 			height = data->height();
 		}

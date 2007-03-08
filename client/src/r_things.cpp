@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -119,7 +119,7 @@ void R_CacheSprite (spritedef_t *sprite)
 			{
 				if (sprite->spriteframes[i].lump[r] == -1)
 					I_Error ("Sprite %d, rotation %d has no lump", i, r);
-				patch = (patch_t *)W_CacheLumpNum (sprite->spriteframes[i].lump[r], PU_CACHE);
+				patch = W_CachePatch (sprite->spriteframes[i].lump[r]);
 				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
 				sprite->spriteframes[i].topoffset[r] = patch->topoffset()<<FRACBITS;
@@ -523,7 +523,7 @@ static void R_InitCrosshair()
 		}
 		
 		if(xhair != -1)
-			crosshair_patch = (patch_t *)W_CacheLumpNum (xhair, PU_STATIC);
+			crosshair_patch = W_CachePatch (xhair);
 	}
 }
 
@@ -688,7 +688,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 //		return;
 	}
 
-	patch = (patch_t *)W_CacheLumpNum (vis->patch, PU_CACHE);
+	patch = W_CachePatch (vis->patch);
 
 	dc_colormap = vis->colormap;
 	colfunc = basecolfunc;
@@ -1541,5 +1541,5 @@ void R_DrawMasked (void)
 	}
 }
 
-VERSION_CONTROL (r_things_cpp, "$Id:$")
+VERSION_CONTROL (r_things_cpp, "$Id$")
 

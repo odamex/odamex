@@ -398,7 +398,7 @@ void CTF_DrawHud (void)
 // --------------------------
 void DRAW_Bhome (void)
 {
-	patch_t *ctfstuff2 = (patch_t *)W_CacheLumpName ("BIND0", PU_CACHE);
+	patch_t *ctfstuff2 = W_CachePatch ("BIND0");
 
 	if (st_scale && screenblocks < 11)
 		screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
@@ -413,7 +413,7 @@ void DRAW_Bhome (void)
 // --------------------------
 void DRAW_Rhome (void)
 {
-	patch_t *ctfstuff3 = (patch_t *)W_CacheLumpName ("RIND0", PU_CACHE);
+	patch_t *ctfstuff3 = W_CachePatch ("RIND0");
 
 	if (st_scale && screenblocks < 11)
 		screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 180 * screen->height / 200);
@@ -428,7 +428,7 @@ void DRAW_Rhome (void)
 // --------------------------
 void DRAW_Ghome (void)
 {
-	patch_t *ctfstuff4 = (patch_t *)W_CacheLumpName ("GIND0", PU_CACHE);
+	patch_t *ctfstuff4 = W_CachePatch ("GIND0");
 
 	if (st_scale && screenblocks < 11)
 		screen->DrawPatchCleanNoMove (ctfstuff4, 237 * screen->width / 320, 190 * screen->height / 200);
@@ -451,9 +451,9 @@ void DRAW_Bdropped (void)
 		CTFdata[it_blueflag].sb_tick = 0;
 
 	if (CTFdata[it_blueflag].sb_tick < 8)
-		ctfstuff2 = (patch_t *)W_CacheLumpName ("BIND0", PU_CACHE);
+		ctfstuff2 = W_CachePatch ("BIND0");
 	else
-		ctfstuff2 = (patch_t *)W_CacheLumpName ("BIND1", PU_CACHE);
+		ctfstuff2 = W_CachePatch ("BIND1");
 
 	if (st_scale && screenblocks < 11)
 		screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
@@ -476,9 +476,9 @@ void DRAW_Rdropped (void)
 		CTFdata[it_redflag].sb_tick = 0;
 
 	if (CTFdata[it_redflag].sb_tick < 8)
-		ctfstuff3 = (patch_t *)W_CacheLumpName ("RIND0", PU_CACHE);
+		ctfstuff3 = W_CachePatch ("RIND0");
 	else
-		ctfstuff3 = (patch_t *)W_CacheLumpName ("RIND1", PU_CACHE);
+		ctfstuff3 = W_CachePatch ("RIND1");
 
 	if (st_scale && screenblocks < 11)
 		screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 180 * screen->height / 200);
@@ -501,9 +501,9 @@ void DRAW_Gdropped (void)
 		CTFdata[it_goldflag].sb_tick = 0;
 
 	if (CTFdata[it_goldflag].sb_tick < 8)
-		ctfstuff4 = (patch_t *)W_CacheLumpName ("GIND0", PU_CACHE);
+		ctfstuff4 = W_CachePatch ("GIND0");
 	else
-		ctfstuff4 = (patch_t *)W_CacheLumpName ("GIND1", PU_CACHE);
+		ctfstuff4 = W_CachePatch ("GIND1");
 
 	if (st_scale && screenblocks < 11)
 		screen->DrawPatchCleanNoMove (ctfstuff4, 237 * screen->width / 320, 190 * screen->height / 200);
@@ -518,7 +518,7 @@ void DRAW_Gdropped (void)
 // --------------------------
 void DRAW_Btaken (void)
 {
-	patch_t *ctfstuff2 = (patch_t *)W_CacheLumpName ("BIND1", PU_CACHE);
+	patch_t *ctfstuff2 = W_CachePatch ("BIND1");
 
 
 	if (st_scale && screenblocks < 11)
@@ -534,7 +534,7 @@ void DRAW_Btaken (void)
 // --------------------------
 void DRAW_Rtaken (void)
 {
-	patch_t *ctfstuff3 = (patch_t *)W_CacheLumpName ("RIND1", PU_CACHE);
+	patch_t *ctfstuff3 = W_CachePatch ("RIND1");
 
 	if (st_scale && screenblocks < 11)
 		screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 180 * screen->height / 200);
@@ -549,7 +549,7 @@ void DRAW_Rtaken (void)
 // --------------------------
 void DRAW_Gtaken (void)
 {
-	patch_t *ctfstuff4 = (patch_t *)W_CacheLumpName ("GIND1", PU_CACHE);
+	patch_t *ctfstuff4 = W_CachePatch ("GIND1");
 
 	if (st_scale && screenblocks < 11)
 		screen->DrawPatchCleanNoMove (ctfstuff4, 237 * screen->width / 320, 190 * screen->height / 200);
@@ -564,7 +564,7 @@ void DRAW_Gtaken (void)
 // --------------------------
 void DRAW_FlagsBox (void)
 {
-	patch_t *stflags = (patch_t *)W_CacheLumpName ("STFLAGS", PU_CACHE);
+	patch_t *stflags = W_CachePatch ("STFLAGS");
 
 	if (st_scale && screenblocks < 11)
 		screen->DrawPatchCleanNoMove (stflags, 108 * screen->width / 320, 189 * screen->height / 200);

@@ -88,16 +88,16 @@ void ST_initNew (void)
 	for (i = 0; i < 2; i++) {
 		name[3] = i + '1';
 		if ((lump = W_CheckNumForName (name, ns_sprites)) != -1)
-			armors[i] = (patch_t *)W_CacheLumpNum (lump, PU_STATIC);
+			armors[i] = W_CachePatch (lump);
 	}
 
 	for (i = 0; i < 4; i++) {
 		if ((lump = W_CheckNumForName (ammopatches[i], ns_sprites)) != -1)
-			ammos[i] = (patch_t *)W_CacheLumpNum (lump, PU_STATIC);
+			ammos[i] = W_CachePatch (lump);
 	}
 
 	if ((lump = W_CheckNumForName ("MEDIA0", ns_sprites)) != -1)
-		medi = (patch_t *)W_CacheLumpNum (lump, PU_STATIC);
+		medi = W_CachePatch (lump);
 
 	widestnum = widest;
 	numheight = tallnum[0]->height();

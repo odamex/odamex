@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -53,7 +53,7 @@ void V_InitConChars (byte transcolor)
 	int x, y, z, a;
 	DCanvas temp (128, 128, 8);
 
-	chars = (patch_t *)W_CacheLumpName ("CONCHARS", PU_CACHE);
+	chars = W_CachePatch ("CONCHARS");
 	temp.Lock ();
 
 	{
@@ -624,5 +624,5 @@ void V_FreeBrokenLines (brokenlines_t *lines)
 }
 
 
-VERSION_CONTROL (v_text_cpp, "$Id:$")
+VERSION_CONTROL (v_text_cpp, "$Id$")
 

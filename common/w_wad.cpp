@@ -587,7 +587,7 @@ int W_GetNumForName (const char* name)
 // W_LumpLength
 // Returns the buffer size needed to load the given lump.
 //
-int W_LumpLength (unsigned lump)
+unsigned W_LumpLength (unsigned lump)
 {
 	if (lump >= numlumps)
 		I_Error ("W_LumpLength: %i >= numlumps",lump);
@@ -718,6 +718,26 @@ W_CacheLumpName
  int		tag )
 {
 	return W_CacheLumpNum (W_GetNumForName(name), tag);
+}
+
+//
+// W_CachePatch
+//
+patch_t* W_CachePatch
+( unsigned	lump )
+{
+	patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
+	
+	// denis - todo - would be good to check whether the patch violates W_LumpLength here
+	// denis - todo - would be good to check for width/height == 0 here, and maybe replace those with a valid patch
+	
+	return patch;
+}
+
+patch_t* W_CachePatch
+( const char*		name)
+{
+	return W_CachePatch(W_GetNumForName(name)); // denis - todo - would be good to replace non-existant patches with a default '404' patch
 }
 
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -91,7 +91,7 @@ void R_CacheSprite (spritedef_t *sprite)
 			{
 				if (sprite->spriteframes[i].lump[r] == -1)
 					I_Error ("Sprite %d, rotation %d has no lump", i, r);
-				patch = (patch_t *)W_CacheLumpNum (sprite->spriteframes[i].lump[r], PU_CACHE);
+				patch = W_CachePatch (sprite->spriteframes[i].lump[r]);
 				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
 				sprite->spriteframes[i].topoffset[r] = patch->topoffset()<<FRACBITS;
@@ -535,5 +535,5 @@ void R_InitSprites (char **namelist)
 	skins[0].namespc = ns_global;
 }
 
-VERSION_CONTROL (r_things_cpp, "$Id:$")
+VERSION_CONTROL (r_things_cpp, "$Id$")
 
