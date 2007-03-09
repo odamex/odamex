@@ -49,7 +49,7 @@ class IVideo
 	virtual void StartModeIterator (int bits) = 0;
 	virtual bool NextMode (int *width, int *height) = 0;
 
-	virtual bool AllocateSurface (DCanvas *scrn, int width, int height, int bits, bool primary = false) = 0;
+	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false) = 0;
 	virtual void ReleaseSurface (DCanvas *scrn) = 0;
 	virtual void LockSurface (DCanvas *scrn) = 0;
 	virtual void UnlockSurface (DCanvas *scrn) = 0;

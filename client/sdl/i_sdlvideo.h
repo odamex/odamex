@@ -54,7 +54,7 @@ class SDLVideo : public IVideo
 	virtual void StartModeIterator (int bits);
 	virtual bool NextMode (int *width, int *height);
 
-	virtual bool AllocateSurface (DCanvas *scrn, int width, int height, int bits, bool primary = false);
+	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);
 	virtual void ReleaseSurface (DCanvas *scrn);
 	virtual void LockSurface (DCanvas *scrn);
 	virtual void UnlockSurface (DCanvas *scrn);

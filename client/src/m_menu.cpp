@@ -464,7 +464,7 @@ void M_PlayerSetup (int choice)
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
 	PlayerTics = PlayerState->tics;
 	if (FireScreen == NULL)
-		FireScreen = new DCanvas (72, 72+5, 8);
+		FireScreen = I_AllocateScreen (72, 72+5, 8);
 }
 
 static void M_PlayerSetupTicker (void)
@@ -1293,7 +1293,7 @@ void M_ClearMenus (void)
 {
 	if (FireScreen)
 	{
-		delete FireScreen;
+		I_FreeScreen(FireScreen);
 		FireScreen = NULL;
 	}
 	MenuStackDepth = 0;

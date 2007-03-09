@@ -65,7 +65,7 @@ bool I_SetResolution (int width, int height, int bpp);
 void I_StartModeIterator (int bits);
 bool I_NextMode (int *width, int *height);
 
-bool I_AllocateScreen (DCanvas *canvas, int width, int height, int bits, bool primary = false);
+DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary = false);
 void I_FreeScreen (DCanvas *canvas);
 
 void I_LockScreen (DCanvas *canvas);

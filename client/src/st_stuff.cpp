@@ -1468,10 +1468,10 @@ void ST_Stop (void)
 void ST_Init (void)
 {
 	if(!stbarscreen)
-		stbarscreen = new DCanvas (320, 32, 8);
+		stbarscreen = I_AllocateScreen (320, 32, 8);
 	
 	if(!stnumscreen)
-		stnumscreen = new DCanvas (320, 32, 8);
+		stnumscreen = I_AllocateScreen (320, 32, 8);
 
 	ST_loadData();
 }

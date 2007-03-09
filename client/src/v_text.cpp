@@ -28,6 +28,7 @@
 #include "v_text.h"
 
 #include "i_system.h"
+#include "i_video.h"
 #include "v_video.h"
 #include "hu_stuff.h"
 #include "w_wad.h"
@@ -51,7 +52,8 @@ void V_InitConChars (byte transcolor)
 	byte *d, *s, v, *src;
 	patch_t *chars;
 	int x, y, z, a;
-	DCanvas temp (128, 128, 8);
+	DCanvas *scrn = I_AllocateScreen(128, 128, 8);
+	DCanvas &temp = *scrn;
 
 	chars = W_CachePatch ("CONCHARS");
 	temp.Lock ();
@@ -105,6 +107,7 @@ void V_InitConChars (byte transcolor)
 	}
 
 	temp.Unlock ();
+	I_FreeScreen(scrn);
 }
 
 

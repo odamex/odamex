@@ -534,12 +534,12 @@ void D_DoAdvanceDemo (void)
 
 		if (page && (page->width != width || page->height != height))
 		{
-			delete page;
+			I_FreeScreen(page);
 			page = NULL;
 		}
 
 		if (page == NULL)
-			page = new DCanvas (width, height, 8);
+			page = I_AllocateScreen (width, height, 8);
 
 		page->Lock ();
 		if (gameinfo.flags & GI_PAGESARERAW)

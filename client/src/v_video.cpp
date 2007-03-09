@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -103,18 +103,15 @@ void V_MarkRect (int x, int y, int width, int height)
 }
 
 
-DCanvas::DCanvas (int _width, int _height, int _bits, bool primary)
+DCanvas::DCanvas ()
 {
 	buffer = NULL;
 	m_LockCount = 0;
 	m_Private = NULL;
-	I_AllocateScreen (this, _width, _height, _bits, primary);
-
 }
 
 DCanvas::~DCanvas ()
 {
-	I_FreeScreen (this);
 }
 
 // [RH] Fill an area with a 64x64 flat texture
@@ -466,7 +463,7 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	// Free the virtual framebuffer
 	if(screen)
 	{
-		delete screen;
+		I_FreeScreen(screen);
 		screen = NULL;
 	}
 
@@ -482,7 +479,7 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	DisplayBits = bits;
 
 	// Allocate a new virtual framebuffer
-	screen = new DCanvas (width, height, bits, true);
+	screen = I_AllocateScreen (width, height, bits, true);
 
 	V_ForceBlend (0,0,0,0);
 	if (bits == 8)
@@ -669,5 +666,5 @@ void DCanvas::DetachPalette ()
 	}
 }
 
-VERSION_CONTROL (v_video_cpp, "$Id:$")
+VERSION_CONTROL (v_video_cpp, "$Id$")
 

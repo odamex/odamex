@@ -244,48 +244,47 @@ bool SDLVideo::NextMode (int *width, int *height)
 }
 
 
-bool SDLVideo::AllocateSurface (DCanvas *scrn, int width, int height, int bits, bool primary)
+DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primary)
 {
-   if(scrn->m_Private)
-      ReleaseSurface(scrn);
+	DCanvas *scrn = new DCanvas;
+	
+	scrn->width = width;
+	scrn->height = height;
+	scrn->is8bit = bits == 8 ? true : false;
+	scrn->bits = screenbits;
+	scrn->m_LockCount = 0;
+	scrn->m_Palette = NULL;
+	scrn->buffer = NULL;
 
-   scrn->width = width;
-   scrn->height = height;
-   scrn->is8bit = bits == 8 ? true : false;
-   scrn->bits = screenbits;
-   scrn->m_LockCount = 0;
-   scrn->m_Palette = NULL;
-   scrn->buffer = NULL;
+	SDL_Surface *s;
 
-   SDL_Surface *s;
+	if(primary)
+	{
+	  scrn->m_Private = s = sdlScreen; // denis - let the engine write directly to screen
+	}
+	else
+	{
+	  if(bits == 8)
+		 scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0, 0, 0, 0);
+	  else
+		 scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0xff0000, 0x00ff00, 0x0000ff, 0);
+	}
 
-   if(primary)
-   {
-      scrn->m_Private = s = sdlScreen; // denis - let the engine write directly to screen
-   }
-   else
-   {
-      if(bits == 8)
-         scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0, 0, 0, 0);
-      else
-         scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0xff0000, 0x00ff00, 0x0000ff, 0);
-   }
-
-   if(!s)
+	if(!s)
 	   I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
 	   
-   if(s->pitch != (width * (bits / 8)))
+	if(s->pitch != (width * (bits / 8)))
 	   Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
 
-   scrn->pitch = s->pitch;
+	scrn->pitch = s->pitch;
 
-   if(!primary)
-   {
-      cChain *nnode = new cChain(scrn);
-      nnode->linkTo(chainHead);
-   }
+	if(!primary)
+	{
+	  cChain *nnode = new cChain(scrn);
+	  nnode->linkTo(chainHead);
+	}
 
-   return true;   
+	return scrn;   
 }
 
 
@@ -314,6 +313,8 @@ void SDLVideo::ReleaseSurface (DCanvas *scrn)
          break;
       }
    }
+   
+   delete scrn;
 }
 
 

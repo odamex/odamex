@@ -203,7 +203,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
       if(altconback)
          delete altconback;
 
-      altconback = new DCanvas(width, height, 8);
+      altconback = I_AllocateScreen(width, height, 8);
 
 		if (!gotconback)
 		{
@@ -223,9 +223,9 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			bg = W_CachePatch (num);
 
 			if (isRaw)
-				conback = new DCanvas (320, 200, 8);
+				conback = I_AllocateScreen (320, 200, 8);
 			else
-				conback = new DCanvas (bg->width(), bg->height(), 8);
+				conback = I_AllocateScreen (bg->width(), bg->height(), 8);
 
 			conback->Lock ();
 

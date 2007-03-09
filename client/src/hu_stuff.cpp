@@ -38,6 +38,7 @@
 #include "v_video.h"
 #include "cl_main.h"
 #include "cl_ctf.h"
+#include "i_video.h"
 
 #define QUEUESIZE		128
 #define MESSAGESIZE		256
@@ -1307,7 +1308,7 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 	{
 		if (odacanvas)
 		{
-			delete odacanvas;
+			I_FreeScreen(odacanvas);
 			odacanvas = NULL;
 		}
 	}
@@ -1319,7 +1320,7 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 		return;
 
 	if (!odacanvas)
-		odacanvas = new DCanvas((xb - xa), (yb - ya), 8);
+		odacanvas = I_AllocateScreen((xb - xa), (yb - ya), 8);
 
 	screen->CopyRect(xa, ya, (xb - xa), (yb - ya), 0, 0, odacanvas);
 	odacanvas->Dim ();

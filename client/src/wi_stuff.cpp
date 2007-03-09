@@ -28,6 +28,7 @@
 #include "m_random.h"
 #include "m_swap.h"
 #include "i_system.h"
+#include "i_video.h"
 #include "w_wad.h"
 #include "g_game.h"
 #include "g_level.h"
@@ -563,8 +564,12 @@ extern patch_t *hu_font[HU_FONTSIZE];
 void WI_End (void)
 {
 	WI_unloadData();
-	delete background;
-	background = NULL;
+	
+	if(background)
+	{
+		I_FreeScreen(background);
+		background = NULL;
+	}
 }
 
 void WI_initNoState (void)
@@ -770,7 +775,7 @@ void WI_loadData (void)
 
 	// background
 	bg = W_CachePatch (name);
-	background = new DCanvas (bg->width(), bg->height(), 8);
+	background = I_AllocateScreen (bg->width(), bg->height(), 8);
 	background->Lock ();
 	background->DrawPatch (bg, 0, 0);
 	background->Unlock ();

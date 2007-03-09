@@ -68,9 +68,8 @@ public:
 		EWrapper_ColoredLucent = 5	// Mixes a solid color in the patch area with the background
 	};
 
-	//DCanvas ();
-	DCanvas (int width, int height, int bits, bool primary = false);
-	~DCanvas ();
+	DCanvas ();
+	virtual ~DCanvas ();
 
 	int bits;
 	byte *buffer;

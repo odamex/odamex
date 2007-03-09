@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2006-2007 by The Odamex Team.
 //
@@ -248,14 +248,17 @@ bool I_NextMode (int *width, int *height)
 	return Video->NextMode (width, height);
 }
 
-bool I_AllocateScreen (DCanvas *canvas, int width, int height, int bits, bool primary)
+DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary)
 {
-	if (!Video->AllocateSurface (canvas, width, height, bits, primary))
+	DCanvas *scrn = Video->AllocateSurface (width, height, bits, primary);
+	
+	if (!scrn)
 	{
 		I_FatalError ("Failed to allocate a %dx%dx%d surface",
 					  width, height, bits);
 	}
-	return true;
+	
+	return scrn;
 }
 
 void I_FreeScreen (DCanvas *canvas)
@@ -434,5 +437,5 @@ BEGIN_COMMAND (vid_currentmode)
 }
 END_COMMAND (vid_currentmode)
 
-VERSION_CONTROL (hardware_cpp, "$Id:$")
+VERSION_CONTROL (hardware_cpp, "$Id$")
 
