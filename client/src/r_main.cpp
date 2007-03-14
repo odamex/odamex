@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -710,7 +710,8 @@ END_CUSTOM_CVAR (screenblocks)
 //
 
 // [ML] Disabled 16/3/06, now always 0 (Original)
-BEGIN_CUSTOM_CVAR (r_columnmethod, "0", CVAR_ARCHIVE)
+// [Russell] Reenabled 14/3/07, fixes smudging of graphics
+BEGIN_CUSTOM_CVAR (r_columnmethod, "1", CVAR_ARCHIVE)
 {
     /*
 	if (var != 0 && var != 1)
@@ -1070,5 +1071,5 @@ void R_MultiresInit (void)
 	R_OldBlend = ~0;
 }
 
-VERSION_CONTROL (r_main_cpp, "$Id:$")
+VERSION_CONTROL (r_main_cpp, "$Id$")
 
