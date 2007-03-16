@@ -213,7 +213,6 @@ void SV_UpdateMasterServer(masterserver &m)
 			MSG_WriteShort(&ml_message, natport);
 		else
 			MSG_WriteShort(&ml_message, port);
-		MSG_WriteShort(&ml_message, port);
 
 		NET_SendPacket(ml_message, m.masteraddr);
 }
