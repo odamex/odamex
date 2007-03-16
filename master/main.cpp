@@ -412,6 +412,11 @@ int main()
 				}
 			    break;
 			case LAUNCHER_CHALLENGE:
+				if(MSG_BytesLeft() > 0)
+				{
+					printf("Master syncing server list (ignored), IP = %s\n", NET_AdrToString(net_from));
+				}
+				else
 				{
 					printf("Client request IP = %s\n", NET_AdrToString(net_from));
 					SZ_Clear(&message);
