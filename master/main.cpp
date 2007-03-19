@@ -319,8 +319,14 @@ void dumpServersToFile(char *file = "./latest")
 void writeServerData(void)
 {
 	list<SServer>::iterator itr;
+	size_t num_verified = 0;
 
-	MSG_WriteShort(&message, (int)servers.size());
+	// count verified servers
+	for (itr = servers.begin(); itr != servers.end(); ++itr)
+		if((*itr).verified)
+			num_verified++;
+	
+	MSG_WriteShort(&message, num_verified);
 
 	for (itr = servers.begin(); itr != servers.end(); ++itr)
 	{
