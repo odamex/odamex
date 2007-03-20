@@ -91,7 +91,7 @@ byte *I_ZoneBase (size_t *size)
     if (p)
                 mb_used = (float)atof (p);
     *size = (int)(mb_used*1024*1024);
-    return (byte *) malloc (*size);
+    return (byte *) Malloc (*size);
 }
 
 void I_BeginRead(void)
@@ -106,7 +106,7 @@ byte *I_AllocLow(int length)
 {
     byte *mem;
 
-    mem = (byte *)malloc (length);
+    mem = (byte *)Malloc (length);
     if (mem) {
                 memset (mem,0,length);
     }
