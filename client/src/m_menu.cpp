@@ -112,18 +112,28 @@ oldmenu_t *currentMenu;
 // PROTOTYPES
 //
 void M_NewGame(int choice);
+void M_Episode(int choice);
+void M_ChooseSkill(int choice);
 void M_LoadGame(int choice);
 void M_SaveGame(int choice);
 void M_Options(int choice);
-void M_ReadThis(int choice);
 void M_EndGame(int choice);
+void M_ReadThis(int choice);
+void M_ReadThis2(int choice);
 void M_QuitDOOM(int choice);
 
 void M_ChangeDetail(int choice);
 void M_StartGame(int choice);
 void M_Sound(int choice);
 
+void M_FinishReadThis(int choice);
+void M_ReadSaveStrings(void);
+
 void M_DrawMainMenu(void);
+void M_DrawReadThis1(void);
+void M_DrawReadThis2(void);
+void M_DrawNewGame(void);
+void M_DrawEpisode(void);
 void M_DrawOptions(void);
 void M_DrawSound(void);
 
@@ -190,6 +200,68 @@ oldmenu_t MainDef =
 	0
 };
 
+
+
+//
+// EPISODE SELECT
+//
+enum
+{
+	ep1,
+	ep2,
+	ep3,
+	ep4,
+	ep_end
+} episodes_e;
+
+oldmenuitem_t EpisodeMenu[]=
+{
+	{1,"M_EPI1", M_Episode,'k'},
+	{1,"M_EPI2", M_Episode,'t'},
+	{1,"M_EPI3", M_Episode,'i'},
+	{1,"M_EPI4", M_Episode,'t'}
+};
+
+oldmenu_t EpiDef =
+{
+	ep4,	 			// # of menu items
+	EpisodeMenu,		// oldmenuitem_t ->
+	M_DrawEpisode,		// drawing routine ->
+	48,63,				// x,y
+	ep1 				// lastOn
+};
+
+//
+// NEW GAME
+//
+enum
+{
+	killthings,
+	toorough,
+	hurtme,
+	violence,
+	nightmare,
+	newg_end
+} newgame_e;
+
+oldmenuitem_t NewGameMenu[]=
+{
+	{1,"M_JKILL",		M_ChooseSkill, 'i'},
+	{1,"M_ROUGH",		M_ChooseSkill, 'h'},
+	{1,"M_HURT",		M_ChooseSkill, 'h'},
+	{1,"M_ULTRA",		M_ChooseSkill, 'u'},
+	{1,"M_NMARE",		M_ChooseSkill, 'n'}
+};
+
+oldmenu_t NewDef =
+{
+	newg_end,			// # of menu items
+	NewGameMenu,		// oldmenuitem_t ->
+	M_DrawNewGame,		// drawing routine ->
+	48,63,				// x,y
+	hurtme				// lastOn
+};
+
 //
 // [RH] Player Setup Menu
 //
@@ -241,6 +313,50 @@ oldmenu_t OptionsDef =
 	NULL,
 	NULL,
 	0,0,
+	0
+};
+
+
+//
+// Read This! MENU 1 & 2
+//
+enum
+{
+	rdthsempty1,
+	read1_end
+} read_e;
+
+oldmenuitem_t ReadMenu1[] =
+{
+	{1,"",M_ReadThis2,0}
+};
+
+oldmenu_t	ReadDef1 =
+{
+	read1_end,
+	ReadMenu1,
+	M_DrawReadThis1,
+	280,185,
+	0
+};
+
+enum
+{
+	rdthsempty2,
+	read2_end
+} read_e2;
+
+oldmenuitem_t ReadMenu2[]=
+{
+	{1,"",M_FinishReadThis,0}
+};
+
+oldmenu_t ReadDef2 =
+{
+	read2_end,
+	ReadMenu2,
+	M_DrawReadThis2,
+	330,175,
 	0
 };
 
@@ -306,12 +422,6 @@ BEGIN_COMMAND (bumpgamma)
 }
 END_COMMAND (bumpgamma)
 
-// [Russell] - dummies to fix menus for some wads
-void M_NewGame (int choice)
-{
-    // dummy
-}
-
 void M_LoadGame (int choice)
 {
     // dummy
@@ -322,9 +432,29 @@ void M_SaveGame (int choice)
     // dummy
 }
 
-void M_ReadThis (int choice)
+//
+// M_ReadThis
+//
+void M_ReadThis(int choice)
 {
-    // dummy
+	choice = 0;
+	drawSkull = false;
+	M_SetupNextMenu(&ReadDef1);
+}
+
+void M_ReadThis2(int choice)
+{
+	choice = 0;
+	drawSkull = false;
+	M_SetupNextMenu(&ReadDef2);
+}
+
+void M_FinishReadThis(int choice)
+{
+	choice = 0;
+	drawSkull = true;
+	MenuStackDepth = 0;
+	M_SetupNextMenu(&MainDef);
 }
 
 //
@@ -352,6 +482,95 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 void M_DrawMainMenu (void)
 {
 	screen->DrawPatchClean (W_CachePatch("M_DOOM"), 94, 2);
+}
+
+void M_DrawNewGame(void)
+{
+	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_NEWG",PU_CACHE), 96, 14);
+	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_SKILL",PU_CACHE), 54, 38);
+}
+
+void M_NewGame(int choice)
+{
+	if (netgame && !demoplayback)
+	{
+		M_StartMessage(NEWGAME,NULL,false);
+		return;
+	}
+		
+	if (gameinfo.flags & GI_MAPxx)
+		M_SetupNextMenu(&NewDef);
+	else
+		M_SetupNextMenu(&EpiDef);
+}
+
+
+//
+//		M_Episode
+//
+int 	epi;
+
+void M_DrawEpisode(void)
+{
+	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_EPISOD",PU_CACHE), 54, 38);
+}
+
+void M_VerifyNightmare(int ch)
+{
+	if (ch != 'y')
+		return;
+	
+	skill.Set (nightmare);
+	G_DeferedInitNew (CalcMapName (epi+1, 1));
+	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
+	M_ClearMenus ();
+}
+
+void M_ChooseSkill(int choice)
+{
+	if (choice == nightmare)
+	{
+		M_StartMessage(NIGHTMARE,M_VerifyNightmare,true);
+		return;
+	}
+
+	skill.Set ((float)choice);
+	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
+	G_DeferedInitNew (CalcMapName (epi+1, 1));
+	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
+	M_ClearMenus ();
+}
+
+void M_Episode (int choice)
+{
+	if ((gameinfo.flags & GI_SHAREWARE) && choice)
+	{
+		M_StartMessage(SWSTRING,NULL,false);
+		M_SetupNextMenu(&ReadDef1);
+		return;
+	}
+
+	epi = choice;
+	M_SetupNextMenu(&NewDef);
+}
+
+//
+// Read This Menus
+// Had a "quick hack to fix romero bug"
+//
+void M_DrawReadThis1 (void)
+{
+	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[0], PU_CACHE), 0, 0);
+}
+
+
+
+//
+// Read This Menus - optional second page.
+//
+void M_DrawReadThis2 (void)
+{
+	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[1], PU_CACHE), 0, 0);
 }
 
 //
