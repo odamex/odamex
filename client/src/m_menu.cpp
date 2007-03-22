@@ -205,7 +205,7 @@ oldmenu_t MainDef =
 //
 // EPISODE SELECT
 //
-enum
+enum episodes_t
 {
 	ep1,
 	ep2,
@@ -234,7 +234,7 @@ oldmenu_t EpiDef =
 //
 // NEW GAME
 //
-enum
+enum newgame_t
 {
 	killthings,
 	toorough,
@@ -320,7 +320,7 @@ oldmenu_t OptionsDef =
 //
 // Read This! MENU 1 & 2
 //
-enum
+enum read_t
 {
 	rdthsempty1,
 	read1_end
@@ -340,7 +340,7 @@ oldmenu_t	ReadDef1 =
 	0
 };
 
-enum
+enum read_t2
 {
 	rdthsempty2,
 	read2_end
@@ -520,7 +520,7 @@ void M_VerifyNightmare(int ch)
 	if (ch != 'y')
 		return;
 	
-	skill.Set (nightmare);
+	skill.Set (nightmare+1);
 	G_DeferedInitNew (CalcMapName (epi+1, 1));
 	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	M_ClearMenus ();
@@ -534,7 +534,7 @@ void M_ChooseSkill(int choice)
 		return;
 	}
 
-	skill.Set ((float)choice);
+	skill.Set ((float)choice+1);
 	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	G_DeferedInitNew (CalcMapName (epi+1, 1));
 	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;

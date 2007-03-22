@@ -62,6 +62,7 @@ static cluster_info_t *FindDefClusterInfo (int cluster);
 extern int timingdemo;
 
 EXTERN_CVAR(fastmonsters)
+EXTERN_CVAR(monstersrespawn)
 
 // Start time for timing demos
 int starttime;
@@ -260,8 +261,11 @@ void G_InitNew (char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	respawnmonsters = false;
-
+	if (skill == sk_nightmare || monstersrespawn)
+		respawnmonsters = true;
+	else
+		respawnmonsters = false;
+	
 	static bool isFast = false;
 	bool wantFast = fastmonsters || (skill == sk_nightmare);
 	if (wantFast != isFast)
