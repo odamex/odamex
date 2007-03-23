@@ -75,8 +75,6 @@ extern int mousex, mousey;
 extern int joyxmove, joyymove, Impulse;
 extern BOOL sendpause, sendsave, sendcenterview;
 
-void *statcopy;					// for statistics driver
-
 level_locals_t level;			// info about current level
 
 static level_pwad_info_t *wadlevelinfos;

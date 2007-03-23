@@ -83,8 +83,6 @@ BOOL savegamerestore;
 extern int mousex, mousey, joyxmove, joyymove, Impulse;
 extern BOOL sendpause, sendsave, sendcenterview;
 
-void *statcopy;					// for statistics driver
-
 level_locals_t level;			// info about current level
 
 static level_pwad_info_t *wadlevelinfos;
@@ -2227,12 +2225,6 @@ cluster_info_t ClusterInfos[] = {
 		0		// End-of-clusters marker
 	}
 };
-
-
-
-
-
-
 
 VERSION_CONTROL (g_level_cpp, "$Id$")
 
