@@ -134,7 +134,7 @@ public class ServerPacket
 				
 				// Server TItle
 				
-				int intIndex = 4;
+				int intIndex = 8;
 				int intLength;
 
 				intLength = ServerPacket.asciizLength(intIndex);
@@ -157,17 +157,17 @@ public class ServerPacket
 				intLength = ServerPacket.asciizLength(intIndex);
 				strMapName = new String(bytResponse, intIndex, intLength);
 				
-				// IWAD Name
-
-				intIndex += (intLength + 1);
-				intLength = ServerPacket.asciizLength(intIndex);
-				strIWADName = new String(bytResponse, intIndex, intLength);
-
-				// PWAD Names
+				// IWAD/PWAD Names
 				
 				intIndex += (intLength + 1);
 				short shoPWAD = Math.toShort(bytResponse[intIndex]);
+
+				// IWAD Name
+				
 				intIndex += 1;
+				intLength = ServerPacket.asciizLength(intIndex);
+				strIWADName = new String(bytResponse, intIndex, intLength);
+				intIndex += (intLength + 1);
 
 				for(int i = 1; i <= shoPWAD; i++)
 				{
