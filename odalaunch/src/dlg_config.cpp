@@ -57,8 +57,6 @@ static wxInt32 ID_TXTWADDIR = XRCID("ID_TXTWADDIR");
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
-	// Window events
-	EVT_CLOSE(dlgConfig::OnCloseWindow)
 
 	// Button events
 	EVT_BUTTON(ID_BTNCHOOSEDIR, dlgConfig::OnChooseDir)
@@ -85,18 +83,6 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
 
     MASTER_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKLISTONSTART), wxCheckBox);
     BLOCKED_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKSHOWBLOCKEDSERVERS), wxCheckBox);
-
-    ADD_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNADD),wxButton);
-    REPLACE_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNREPLACE),wxButton);
-    DELETE_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNDELETE),wxButton);
-    CHOOSEDIR_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNCHOOSEDIR),wxButton);
-    UP_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNUP),wxButton);
-    DOWN_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNDOWN),wxButton);
-
-    GETENV_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNGETENV),wxButton);
-
-    CLOSE_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNCLOSE),wxButton);
-    OK_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNOK),wxButton);
 
     WAD_LIST = wxStaticCast((*this).FindWindow(ID_LSTWADDIR),wxListBox);
 
@@ -140,12 +126,6 @@ void dlgConfig::Show()
     }
 
     ShowModal();
-}
-
-// Close window
-void dlgConfig::OnCloseWindow(wxCloseEvent &event)
-{
-    (*this).EndModal(0);
 }
 
 void dlgConfig::OnCheckedBox(wxCommandEvent &event)

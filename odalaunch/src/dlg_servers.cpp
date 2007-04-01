@@ -45,21 +45,20 @@ static wxInt32 ID_SRVIPPORT = XRCID("ID_SRVIPPORT");
 static wxInt32 ID_CHKSUBST = XRCID("ID_CHKSUBST");
 static wxInt32 ID_CHKSUBIPPORT = XRCID("ID_SRVSUBIPPORT");
 
-static wxInt32 ID_BTNCLOSE = XRCID("ID_BTNCLOSE");
-static wxInt32 ID_BTNOK = XRCID("ID_BTNOK");
+static wxInt32 ID_BTNSRVOK = XRCID("ID_BTNSRVOK");
+static wxInt32 ID_BTNSRVCLOSE = XRCID("ID_BTNSRVCLOSE");
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgServers,wxDialog)
 	// Window events
-//	EVT_CLOSE(dlgConfig::OnCloseWindow)
-//	EVT_BUTTON(ID_BTNOK, dlgServers::OnOK)
-//	EVT_BUTTON(ID_BTNCLOSE, dlgServers::OnClose)
+    EVT_BUTTON(ID_BTNSRVOK, dlgServers::OnButtonOK)
+    EVT_BUTTON(ID_BTNSRVCLOSE, dlgServers::OnButtonClose)
 
 	// Button events
-//  EVT_BUTTON(ID_BTNSRVADD, dlgConfig::OnAddServer)
-//  EVT_BUTTON(ID_BTNSRVDEL, dlgConfig::OnDelServer)
-//  EVT_BUTTON(ID_BTNSRVUP, dlgConfig::OnUpServer)
-//  EVT_BUTTON(ID_BTNSRVDWN, dlgConfig::OnDownServer) 
+    EVT_BUTTON(ID_BTNSRVADD, dlgServers::OnButtonAddServer)
+    EVT_BUTTON(ID_BTNSRVDEL, dlgServers::OnButtonDelServer)
+    EVT_BUTTON(ID_BTNSRVUP, dlgServers::OnButtonMoveServerUp)
+    EVT_BUTTON(ID_BTNSRVDWN, dlgServers::OnButtonMoveServerDown) 
 
 	// Misc events
 //	EVT_CHECKBOX(ID_CHKSUBST, dlgConfig::OnSubstChecked)
@@ -70,21 +69,6 @@ dlgServers::dlgServers(wxWindow *parent, wxWindowID id)
 {
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgServers"));
-
-//    MASTER_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKLISTONSTART), wxCheckBox);
-//    BLOCKED_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKSHOWBLOCKEDSERVERS), wxCheckBox);
-
-//    ADD_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNADD),wxButton);
-//    REPLACE_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNREPLACE),wxButton);
-//    DELETE_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNDELETE),wxButton);
-//    CHOOSEDIR_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNCHOOSEDIR),wxButton);
-//    UP_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNUP),wxButton);
-//    DOWN_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNDOWN),wxButton);
-
-//    GETENV_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNGETENV),wxButton);
-
-//    CLOSE_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNCLOSE),wxButton);
-//    OK_BUTTON = wxStaticCast((*this).FindWindow(ID_BTNOK),wxButton);
 
 //    WAD_LIST = wxStaticCast((*this).FindWindow(ID_LSTWADDIR),wxListBox);
 
@@ -97,3 +81,38 @@ dlgServers::~dlgServers()
 
 }
 
+// OK button
+void dlgServers::OnButtonOK(wxCommandEvent &event)
+{
+    Close();
+}
+
+// Close button
+void dlgServers::OnButtonClose(wxCommandEvent &event)
+{
+    Close();
+}
+
+// Add Server button
+void dlgServers::OnButtonAddServer(wxCommandEvent &event)
+{
+    
+}
+
+// Delete Server button
+void dlgServers::OnButtonDelServer(wxCommandEvent &event)
+{
+    
+}
+
+// Move Server Up button
+void dlgServers::OnButtonMoveServerUp(wxCommandEvent &event)
+{
+    
+}
+
+// Move Server Down button
+void dlgServers::OnButtonMoveServerDown(wxCommandEvent &event)
+{
+    
+}

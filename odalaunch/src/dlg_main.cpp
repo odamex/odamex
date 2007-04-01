@@ -43,6 +43,8 @@ static wxInt32 ID_LSTSERVERS = XRCID("ID_LSTSERVERS");
 static wxInt32 ID_LSTPLAYERS = XRCID("ID_LSTPLAYERS");
 
 // menus
+static wxInt32 ID_MNUSERVERS = XRCID("ID_MNUSERVERS");
+
 static wxInt32 ID_MNULAUNCH = XRCID("ID_MNULAUNCH");
 static wxInt32 ID_MNUGETLIST = XRCID("ID_MNUGETLIST");
 static wxInt32 ID_MNUREFRESHSERVER = XRCID("ID_MNUREFRESHSERVER");
@@ -57,12 +59,15 @@ static wxInt32 ID_MNUWIKI = XRCID("ID_MNUWIKI");
 static wxInt32 ID_MNUCHANGELOG = XRCID("ID_MNUCHANGELOG");
 static wxInt32 ID_MNUREPORTBUG = XRCID("ID_MNUREPORTBUG");
 
+
 // Event handlers
 BEGIN_EVENT_TABLE(dlgMain,wxFrame)
 	// normal events
 	EVT_CLOSE(dlgMain::OnQuit)
 
 	// menu item events
+    EVT_MENU(ID_MNUSERVERS, dlgMain::OnMenuServers)
+
 	EVT_MENU(ID_MNULAUNCH, dlgMain::OnLaunch)
 
 	EVT_MENU(ID_MNUGETLIST, dlgMain::OnGetList)
@@ -103,8 +108,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     SPLITTER_WINDOW->SetSashGravity(1.0);
 
-    /* Init config dialog and load settings */
+    /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, NULL);
+    server_dlg = new dlgServers(NULL);
 
 	status_bar = new wxStatusBar(this, -1);
 	SetStatusBar(status_bar);
@@ -160,9 +166,14 @@ dlgMain::~dlgMain()
         
     if (config_dlg != NULL)
         config_dlg->Destroy();
+
+    if (server_dlg != NULL)
+        server_dlg->Destroy();
 		
 	if (status_bar != NULL)
-		delete status_bar;		
+		delete status_bar;
+	
+    this->Destroy();
 }
 
 // display extra information for a server
@@ -246,6 +257,15 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
 	if (!text.empty())
 		tw = new wxTipWindow(SERVER_LIST, text, 100, &tw);
 }
+
+
+// Custom Servers menu item
+void dlgMain::OnMenuServers(wxCommandEvent &event)
+{
+    if (server_dlg)
+        server_dlg->Show();
+}
+
 
 void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 {

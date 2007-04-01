@@ -45,39 +45,34 @@ class dlgServers: public wxDialog
 		dlgServers(wxWindow* parent, wxWindowID id = -1);
 		virtual ~dlgServers();
 
-//        void Show();
-
 	protected:
 
-        void OnCloseWindow(wxCloseEvent &event);
-//        void OnOK(wxCommandEvent &event);
-//        void OnClose(wxCommandEvent &event);
+        void OnButtonOK(wxCommandEvent &event);
+        void OnButtonClose(wxCommandEvent &event);
+        
+        void OnButtonAddServer(wxCommandEvent &event);
+        void OnButtonDelServer(wxCommandEvent &event);
+        
+        void OnButtonMoveServerUp(wxCommandEvent &event);
+        void OnButtonMoveServerDown(wxCommandEvent &event);
+
 /*        
-        void OnChooseDir(wxCommandEvent &event);
-        void OnAddDir(wxCommandEvent &event);
-        void OnReplaceDir(wxCommandEvent &event);
-        void OnDeleteDir(wxCommandEvent &event);
-        
-        void OnUpClick(wxCommandEvent &event);
-        void OnDownClick(wxCommandEvent &event);
-        
         void OnGetEnvClick(wxCommandEvent &event);
         
         void OnCheckedBox(wxCommandEvent &event);
                
         wxCheckListBox *SERVER_CHKLISTBOX;
-        wxCheckBox *BLOCKED_CHECKBOX;
+        wxFileConfig ConfigInfo;
+*/
         
 		wxButton *ADD_SERVER_BUTTON;
 		wxButton *DEL_SERVER_BUTTON;
         wxButton *UP_SERVER_BUTTON;
-        wxButton *DWN_SERVER_BUTTON;
+        wxButton *DOWN_SERVER_BUTTON;
 
 		wxButton *CLOSE_BUTTON;
 		wxButton *OK_BUTTON;
 
-        wxFileConfig ConfigInfo;
-*/
         wxInt32 UserChangedSetting;
 
 	private:

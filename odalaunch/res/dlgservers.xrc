@@ -1,5 +1,5 @@
 <resource>
-    <object class="wxDialog" name="dlgConfig">
+    <object class="wxDialog" name="dlgServers">
         <title>Custom Servers</title>
         <object class="wxBoxSizer">
             <orient>wxVERTICAL</orient>

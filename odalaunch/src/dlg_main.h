@@ -27,6 +27,7 @@
 #include "lst_custom.h"
 
 #include "dlg_config.h"
+#include "dlg_servers.h"
 
 #include <wx/frame.h>
 #include <wx/intl.h>
@@ -51,6 +52,7 @@ class dlgMain : public wxFrame
         
         launchercfg_t launchercfg_s;
 	protected:
+        void OnMenuServers(wxCommandEvent& event);
 
         void OnOpenSettingsDialog(wxCommandEvent& event);
         void OnOpenWebsite(wxCommandEvent &event);
@@ -81,6 +83,7 @@ class dlgMain : public wxFrame
 		wxStatusBar *status_bar;
         
         dlgConfig *config_dlg;
+        dlgServers *server_dlg;
         
 		wxInt32 totalPlayers;
 

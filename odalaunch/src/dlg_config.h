@@ -68,8 +68,6 @@ class dlgConfig: public wxDialog
         void Show();
 
 	protected:
-
-        void OnCloseWindow(wxCloseEvent &event);
         void OnOK(wxCommandEvent &event);
         void OnClose(wxCommandEvent &event);
         
@@ -87,18 +85,6 @@ class dlgConfig: public wxDialog
                
         wxCheckBox *MASTER_CHECKBOX;
         wxCheckBox *BLOCKED_CHECKBOX;
-        
-		wxButton *ADD_BUTTON;
-		wxButton *REPLACE_BUTTON;
-		wxButton *DELETE_BUTTON;
-		wxButton *CHOOSEDIR_BUTTON;
-        wxButton *UP_BUTTON;
-        wxButton *DOWN_BUTTON;
-
-        wxButton *GETENV_BUTTON;
-
-		wxButton *CLOSE_BUTTON;
-		wxButton *OK_BUTTON;
 
         wxListBox *WAD_LIST;
 
