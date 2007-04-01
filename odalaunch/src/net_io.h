@@ -22,8 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef NETIO_H
-#define NETIO_H
+#ifndef NET_IO_H
+#define NET_IO_H
 
 #include <wx/socket.h>
 #include <wx/mstream.h>

@@ -21,8 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef LAUNCHER_H
-#define LAUNCHER_H
+#ifndef DLG_MAIN_H
+#define DLG_MAIN_H
 
 #include "lst_custom.h"
 

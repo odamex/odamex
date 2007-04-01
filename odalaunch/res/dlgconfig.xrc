@@ -75,28 +75,34 @@
                         <object class="wxBoxSizer">
                             <orient>wxVERTICAL</orient>
                             <object class="sizeritem">
-                                <object class="wxButton" name="ID_BTNADD">
-                                    <label>Add</label>
+                                <object class="wxBitmapButton" name="ID_BTNADD">
+                                    <bitmap stock_id="wxART_FOLDER" />
                                     <pos>540,214</pos>
                                     <size>-1,-1</size>
+                                    <tooltip>Add</tooltip>
+                                    <helptext>Add</helptext>
                                 </object>
                                 <flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
                                 <border>5</border>
                             </object>
                             <object class="sizeritem">
-                                <object class="wxButton" name="ID_BTNREPLACE">
-                                    <label>Replace</label>
+                                <object class="wxBitmapButton" name="ID_BTNREPLACE">
+                                    <bitmap stock_id="wxART_NEW_DIR" />
                                     <pos>540,252</pos>
                                     <size>-1,-1</size>
+                                    <tooltip>Replace</tooltip>
+                                    <helptext>Replace</helptext>
                                 </object>
                                 <flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
                                 <border>5</border>
                             </object>
                             <object class="sizeritem">
-                                <object class="wxButton" name="ID_BTNDELETE">
-                                    <label>Delete</label>
+                                <object class="wxBitmapButton" name="ID_BTNDELETE">
+                                    <bitmap stock_id="wxART_CROSS_MARK" />
                                     <pos>540,290</pos>
                                     <size>-1,-1</size>
+                                    <tooltip>Delete</tooltip>
+                                    <helptext>Delete</helptext>
                                 </object>
                                 <flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
                                 <border>5</border>
@@ -107,17 +113,21 @@
                                 <border>5</border>
                             </object>
                             <object class="sizeritem">
-                                <object class="wxButton" name="ID_BTNUP">
-                                    <label>Up</label>
+                                <object class="wxBitmapButton" name="ID_BTNUP">
+                                    <bitmap stock_id="wxART_GO_UP" />
                                     <size>-1,-1</size>
+                                    <tooltip>Move Up</tooltip>
+                                    <helptext>Move Up</helptext>
                                 </object>
                                 <flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
                                 <border>5</border>
                             </object>
                             <object class="sizeritem">
-                                <object class="wxButton" name="ID_BTNDOWN">
-                                    <label>Down</label>
+                                <object class="wxBitmapButton" name="ID_BTNDOWN">
+                                    <bitmap stock_id="wxART_GO_DOWN" />
                                     <size>-1,-1</size>
+                                    <tooltip>Move Up</tooltip>
+                                    <helptext>Move Up</helptext>
                                 </object>
                                 <flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
                                 <border>5</border>
@@ -146,12 +156,6 @@
                         </object>
                         <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
                         <border>5</border>
-                    </object>
-                    <object class="spacer">
-                        <flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-                        <border>5</border>
-                        <option>1</option>
-                        <size>21,20</size>
                     </object>
                 </object>
                 <flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>

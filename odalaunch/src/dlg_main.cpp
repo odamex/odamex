@@ -38,24 +38,24 @@
 // application icon
 
 // lists
-wxInt32 spWINMAIN = XRCID("spWINMAIN");
-wxInt32 ID_LSTSERVERS = XRCID("ID_LSTSERVERS");
-wxInt32 ID_LSTPLAYERS = XRCID("ID_LSTPLAYERS");
+static wxInt32 spWINMAIN = XRCID("spWINMAIN");
+static wxInt32 ID_LSTSERVERS = XRCID("ID_LSTSERVERS");
+static wxInt32 ID_LSTPLAYERS = XRCID("ID_LSTPLAYERS");
 
 // menus
-wxInt32 ID_MNULAUNCH = XRCID("ID_MNULAUNCH");
-wxInt32 ID_MNUGETLIST = XRCID("ID_MNUGETLIST");
-wxInt32 ID_MNUREFRESHSERVER = XRCID("ID_MNUREFRESHSERVER");
-wxInt32 ID_MNUREFRESHALL = XRCID("ID_MNUREFRESHALL");
-wxInt32 ID_MNUABOUT = XRCID("ID_MNUABOUT");
-wxInt32 ID_MNUSETTINGS = XRCID("ID_MNUSETTINGS");
-wxInt32 ID_MNUEXIT = XRCID("ID_MNUEXIT");
+static wxInt32 ID_MNULAUNCH = XRCID("ID_MNULAUNCH");
+static wxInt32 ID_MNUGETLIST = XRCID("ID_MNUGETLIST");
+static wxInt32 ID_MNUREFRESHSERVER = XRCID("ID_MNUREFRESHSERVER");
+static wxInt32 ID_MNUREFRESHALL = XRCID("ID_MNUREFRESHALL");
+static wxInt32 ID_MNUABOUT = XRCID("ID_MNUABOUT");
+static wxInt32 ID_MNUSETTINGS = XRCID("ID_MNUSETTINGS");
+static wxInt32 ID_MNUEXIT = XRCID("ID_MNUEXIT");
 
-wxInt32 ID_MNUWEBSITE = XRCID("ID_MNUWEBSITE");
-wxInt32 ID_MNUFORUM = XRCID("ID_MNUFORUM");
-wxInt32 ID_MNUWIKI = XRCID("ID_MNUWIKI");
-wxInt32 ID_MNUCHANGELOG = XRCID("ID_MNUCHANGELOG");
-wxInt32 ID_MNUREPORTBUG = XRCID("ID_MNUREPORTBUG");
+static wxInt32 ID_MNUWEBSITE = XRCID("ID_MNUWEBSITE");
+static wxInt32 ID_MNUFORUM = XRCID("ID_MNUFORUM");
+static wxInt32 ID_MNUWIKI = XRCID("ID_MNUWIKI");
+static wxInt32 ID_MNUCHANGELOG = XRCID("ID_MNUCHANGELOG");
+static wxInt32 ID_MNUREPORTBUG = XRCID("ID_MNUREPORTBUG");
 
 // Event handlers
 BEGIN_EVENT_TABLE(dlgMain,wxFrame)
@@ -142,9 +142,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     }
 
     // set window size
-    this->SetSize(wxSize(760, 500));
+    this->SetSize(wxSize(780, 500));
     // set minimum window size
-    this->SetSizeHints(wxSize(760, 500));
+    this->SetSizeHints(wxSize(780, 500));
     
     this->CentreOnScreen();
 }
@@ -159,7 +159,7 @@ dlgMain::~dlgMain()
         delete[] QServer;
         
     if (config_dlg != NULL)
-        delete config_dlg;
+        config_dlg->Destroy();
 		
 	if (status_bar != NULL)
 		delete status_bar;		

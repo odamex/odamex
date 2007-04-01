@@ -22,8 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef NETPACKET_H
-#define NETPACKET_H
+#ifndef NET_PACKET_H
+#define NET_PACKET_H
 
 #include <wx/mstream.h>
 #include <wx/datstrm.h>

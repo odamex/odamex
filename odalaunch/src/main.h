@@ -22,8 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef APP_H
-#define APP_H
+#ifndef MAIN_H
+#define MAIN_H
 
 #include <wx/wxprec.h>
 #include <wx/snglinst.h>

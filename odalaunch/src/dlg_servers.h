@@ -16,22 +16,14 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Config dialog
+//	Custom Servers dialog
 //  AUTHOR:	Russell Rice, John D Corrado
 //
 //-----------------------------------------------------------------------------
 
 
-#ifndef DLG_CONFIG_H
-#define DLG_CONFIG_H
-
-// configuration file structure
-struct launchercfg_t
-{
-    wxInt32     get_list_on_start;
-    wxInt32     show_blocked_servers;
-    wxString    wad_paths;
-};
+#ifndef DLG_SERVERS_H
+#define DLG_SERVERS_H
 
 #include <wx/dialog.h>
 #include <wx/intl.h>
@@ -45,34 +37,22 @@ struct launchercfg_t
 #include <wx/sizer.h>
 #include <wx/textctrl.h>
 
-// config file value names
-#define GETLISTONSTART      "GET_LIST_ON_START"
-#define SHOWBLOCKEDSERVERS  "SHOW_BLOCKED_SERVERS"
-#define DELIMWADPATHS       "DELIMITED_WAD_PATHS"
 
-// a more dynamic way of adding environment variables, even if they are
-// hardcoded.
-#define NUM_ENVVARS 2
-const wxString env_vars[NUM_ENVVARS] = { _T("DOOMWADDIR"), _T("DOOMWADPATH") };
-
-class dlgConfig: public wxDialog
+class dlgServers: public wxDialog
 {
 	public:
 
-		dlgConfig(launchercfg_t *cfg, wxWindow* parent, wxWindowID id = -1);
-		virtual ~dlgConfig();
+		dlgServers(wxWindow* parent, wxWindowID id = -1);
+		virtual ~dlgServers();
 
-        void LoadSettings();
-        void SaveSettings();
-
-        void Show();
+//        void Show();
 
 	protected:
 
         void OnCloseWindow(wxCloseEvent &event);
-        void OnOK(wxCommandEvent &event);
-        void OnClose(wxCommandEvent &event);
-        
+//        void OnOK(wxCommandEvent &event);
+//        void OnClose(wxCommandEvent &event);
+/*        
         void OnChooseDir(wxCommandEvent &event);
         void OnAddDir(wxCommandEvent &event);
         void OnReplaceDir(wxCommandEvent &event);
@@ -85,29 +65,19 @@ class dlgConfig: public wxDialog
         
         void OnCheckedBox(wxCommandEvent &event);
                
-        wxCheckBox *MASTER_CHECKBOX;
+        wxCheckListBox *SERVER_CHKLISTBOX;
         wxCheckBox *BLOCKED_CHECKBOX;
         
-		wxButton *ADD_BUTTON;
-		wxButton *REPLACE_BUTTON;
-		wxButton *DELETE_BUTTON;
-		wxButton *CHOOSEDIR_BUTTON;
-        wxButton *UP_BUTTON;
-        wxButton *DOWN_BUTTON;
-
-        wxButton *GETENV_BUTTON;
+		wxButton *ADD_SERVER_BUTTON;
+		wxButton *DEL_SERVER_BUTTON;
+        wxButton *UP_SERVER_BUTTON;
+        wxButton *DWN_SERVER_BUTTON;
 
 		wxButton *CLOSE_BUTTON;
 		wxButton *OK_BUTTON;
 
-        wxListBox *WAD_LIST;
-
-        wxTextCtrl *DIR_BOX;
-
         wxFileConfig ConfigInfo;
-
-        launchercfg_t *cfg_file;
-        
+*/
         wxInt32 UserChangedSetting;
 
 	private:

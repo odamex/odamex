@@ -22,8 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef LSTCUSTOM_H
-#define LSTCUSTOM_H
+#ifndef LST_CUSTOM_H
+#define LST_CUSTOM_H
 
 #include <wx/listctrl.h>
 #include <wx/sizer.h>
