@@ -1851,7 +1851,7 @@ void SV_WriteCommands(void)
 		if (gametic % 2) 
 			for (j=0; j < players.size(); j++)
 			{
-				if (!players[j].ingame())
+				if (!players[j].ingame() || !players[j].mo)
 					continue;
 		   
 				if (j == i)
