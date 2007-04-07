@@ -686,6 +686,8 @@ bool CL_PrepareConnect(void)
 	size_t i;
 	DWORD server_token = MSG_ReadLong();
 	string server_host = MSG_ReadString();
+	
+	byte recv_teamplay_stats = 0;
 
 	byte playercount = MSG_ReadByte(); // players
 	MSG_ReadByte(); // max_players
@@ -701,10 +703,10 @@ bool CL_PrepareConnect(void)
 	for(i = 0; i < server_wads; i++)
 		wadnames[i] = MSG_ReadString();
 
-	MSG_ReadByte(); // gametype
-	MSG_ReadByte(); // skill
-	MSG_ReadByte(); // teamplay
-	MSG_ReadByte(); // ctf
+	MSG_ReadByte();							// gametype
+	MSG_ReadByte();							// skill
+	recv_teamplay_stats |= MSG_ReadByte();	// teamplay
+	recv_teamplay_stats |= MSG_ReadByte();	// ctf
 
 	for(i = 0; i < playercount; i++)
 	{
@@ -734,7 +736,23 @@ bool CL_PrepareConnect(void)
 			MSG_ReadLong();
 	}
 	
+	// Receive conditional teamplay information
+	if (recv_teamplay_stats)
+	{
+		MSG_ReadLong();
+		
+		for(size_t i = 0; i < NUMTEAMS; i++)
+		{
+			byte enabled = MSG_ReadByte();
+
+			if (enabled)
+				MSG_ReadLong();
+		}
+	}
+	
 	version = MSG_ReadShort();
+	
+	Printf(PRINT_HIGH, "> Server protocol version: %i\n", version);
 	
 	if(version > VERSION)
 		version = VERSION;
@@ -2213,4 +2231,5 @@ void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
+
 
