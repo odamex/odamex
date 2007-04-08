@@ -524,9 +524,9 @@ void M_VerifyNightmare(int ch)
 	M_StartGame(nightmare);
 }
 
-EXTERN_CVAR(allowexit);
-EXTERN_CVAR(nomonsters);
-EXTERN_CVAR(deathmatch);
+EXTERN_CVAR(allowexit)
+EXTERN_CVAR(nomonsters)
+EXTERN_CVAR(deathmatch)
 
 void M_StartGame(int choice)
 {
