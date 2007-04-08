@@ -1,0 +1,19 @@
+{
+    IBClasses = (
+        {
+            CLASS = CocoaUIController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                masterPing = NSTextField; 
+                playersTableView = NSTableView; 
+                serversTableView = NSTableView; 
+                totalPlayers = NSTextField; 
+                totalServers = NSTextField; 
+                window = NSWindow; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }
+    ); 
+    IBVersion = 1; 
+}
