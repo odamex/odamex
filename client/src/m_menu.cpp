@@ -44,6 +44,7 @@
 #include "st_stuff.h"
 #include "cl_ctf.h"
 #include "r_sky.h"
+#include "cl_main.h"
 
 #include "gi.h"
 
@@ -492,12 +493,12 @@ void M_DrawNewGame(void)
 
 void M_NewGame(int choice)
 {
-	if (netgame && !demoplayback)
+/*	if (netgame && !demoplayback)
 	{
 		M_StartMessage(NEWGAME,NULL,false);
 		return;
 	}
-		
+*/	
 	if (gameinfo.flags & GI_MAPxx)
 		M_SetupNextMenu(&NewDef);
 	else
@@ -520,7 +521,31 @@ void M_VerifyNightmare(int ch)
 	if (ch != 'y')
 		return;
 	
-	skill.Set (nightmare+1);
+	M_StartGame(nightmare);
+}
+
+EXTERN_CVAR(allowexit);
+EXTERN_CVAR(nomonsters);
+EXTERN_CVAR(deathmatch);
+
+void M_StartGame(int choice)
+{
+	CL_QuitNetGame();
+	
+	// denis - single player warp (like in d_main)
+	serverside = true;
+	allowexit = "1";
+	nomonsters = "0";
+	deathmatch = "0";
+	
+	players.clear();
+	players.push_back(player_t());
+	players.back().playerstate = PST_REBORN;
+	consoleplayer_id = displayplayer_id = players.back().id = 1;
+	
+	skill.Set ((float)choice+1);
+
+	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	G_DeferedInitNew (CalcMapName (epi+1, 1));
 	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	M_ClearMenus ();
@@ -533,12 +558,8 @@ void M_ChooseSkill(int choice)
 		M_StartMessage(NIGHTMARE,M_VerifyNightmare,true);
 		return;
 	}
-
-	skill.Set ((float)choice+1);
-	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
-	G_DeferedInitNew (CalcMapName (epi+1, 1));
-	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
-	M_ClearMenus ();
+	
+	M_StartGame(choice);
 }
 
 void M_Episode (int choice)
