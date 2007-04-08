@@ -183,6 +183,9 @@ void G_DeferedInitNew (char *mapname)
 	gameaction = ga_newgame;
 }
 
+EXTERN_CVAR(allowexit);
+EXTERN_CVAR(nomonsters);
+EXTERN_CVAR(deathmatch);
 
 void G_DoNewGame (void)
 {
@@ -192,20 +195,26 @@ void G_DoNewGame (void)
 		demoplayback = false;
 		D_SetupUserInfo ();
 	}
+	
+	CL_QuitNetGame();
+	
 	netdemo = false;
 	netgame = false;
 	multiplayer = false;
-//	deathmatch = false;
-//	{
-//		for (size_t i = 1; i < players.size(); i++)
-//			players[i].state = player_t::disconnected;
-//	}
-//	respawnparm = false;
-//	fastparm = 0;
-//	nomonsters = false;
-//	consoleplayer_id = 0;
+
+	// denis - single player warp (like in d_main)
+	serverside = true;
+	allowexit = "1";
+	nomonsters = "0";
+	deathmatch = "0";
+
+	players.clear();
+	players.push_back(player_t());
+	players.back().playerstate = PST_REBORN;
+	consoleplayer_id = displayplayer_id = players.back().id = 1;
+
 	G_InitNew (d_mapname);
-	gameaction = ga_nothing;
+	gameaction = ga_nothing;	
 }
 
 void G_InitNew (char *mapname)

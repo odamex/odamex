@@ -44,7 +44,6 @@
 #include "st_stuff.h"
 #include "cl_ctf.h"
 #include "r_sky.h"
-#include "cl_main.h"
 
 #include "gi.h"
 
@@ -524,30 +523,11 @@ void M_VerifyNightmare(int ch)
 	M_StartGame(nightmare);
 }
 
-EXTERN_CVAR(allowexit)
-EXTERN_CVAR(nomonsters)
-EXTERN_CVAR(deathmatch)
-
 void M_StartGame(int choice)
 {
-	CL_QuitNetGame();
-	
-	// denis - single player warp (like in d_main)
-	serverside = true;
-	allowexit = "1";
-	nomonsters = "0";
-	deathmatch = "0";
-	
-	players.clear();
-	players.push_back(player_t());
-	players.back().playerstate = PST_REBORN;
-	consoleplayer_id = displayplayer_id = players.back().id = 1;
-	
 	skill.Set ((float)choice+1);
 
-	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	G_DeferedInitNew (CalcMapName (epi+1, 1));
-	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	M_ClearMenus ();
 }
 

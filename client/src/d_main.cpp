@@ -133,6 +133,7 @@ static int demosequence;
 static int pagetic;
 
 EXTERN_CVAR (allowexit)
+EXTERN_CVAR (nomonsters);
 
 //
 // D_ProcessEvents
@@ -1329,9 +1330,11 @@ void D_DoomMain (void)
 		{
 			if(autostart)
 			{
-				// single player warp
+				// single player warp (like in g_level)
 				serverside = true;
-				allowexit = true;
+				allowexit = "1";
+				nomonsters = "0";
+				deathmatch = "0";
 				
 				players.clear();
 				players.push_back(player_t());
