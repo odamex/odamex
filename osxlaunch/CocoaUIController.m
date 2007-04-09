@@ -1,5 +1,6 @@
 #import "CocoaUIController.h"
 #import "i_net.h"
+#import "../common/version.h"
 
 @implementation CocoaUIController
 
@@ -58,6 +59,7 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	[toolbar setDelegate: self];
 	
 	[window setToolbar: toolbar];
+	[window setTitle: @"Odamex v" DOTVERSIONSTR " - OSX Launcher"];
 	
 	/*
 	 *	bind the double-click event of servers NSTableView to the controller
@@ -419,7 +421,10 @@ static NSString *serverColumns[] = {
 		for(i = 0; i < sizeof(Masters)/sizeof(char *); i++)
 		{
 			NET_StringToAdr(Masters[i], &expect);
-
+			
+			if(MSG_ReadLong() != LAUNCHER_CHALLENGE)
+				continue;
+			
 			if(NET_CompareAdr(expect, net_from))
 			{
 				// populate server list
