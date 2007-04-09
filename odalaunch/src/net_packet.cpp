@@ -81,9 +81,12 @@ wxInt32 MasterServer::Parse()
         
     // only free the array if the response is valid
     // the coder may still want the addresses for refreshing
-    //if (&addresses != NULL)
-    //    free(addresses);
-        
+    if (addresses != NULL)
+    {
+        free(addresses);
+        addresses = NULL;
+    }
+    
     server_count = Socket.Read16();
     
     if (!server_count)

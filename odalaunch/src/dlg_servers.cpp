@@ -61,6 +61,7 @@ BEGIN_EVENT_TABLE(dlgServers,wxDialog)
     EVT_BUTTON(ID_BTNSRVDWN, dlgServers::OnButtonMoveServerDown) 
 
 	// Misc events
+    EVT_LISTBOX(ID_SRVCHKLST, dlgServers::OnCheckServerListClick) 
 //	EVT_CHECKBOX(ID_CHKSUBST, dlgConfig::OnSubstChecked)
 END_EVENT_TABLE()
 
@@ -70,9 +71,8 @@ dlgServers::dlgServers(wxWindow *parent, wxWindowID id)
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgServers"));
 
-//    WAD_LIST = wxStaticCast((*this).FindWindow(ID_LSTWADDIR),wxListBox);
-
-//    DIR_BOX = wxStaticCast((*this).FindWindow(ID_TXTWADDIR),wxTextCtrl); 
+    SERVER_LIST = wxStaticCast(FindWindow(ID_SRVCHKLST),wxCheckListBox);
+    SERVER_IPPORT_BOX = wxStaticCast(FindWindow(ID_SRVIPPORT),wxTextCtrl); 
 }
 
 // Window destructor
@@ -93,26 +93,79 @@ void dlgServers::OnButtonClose(wxCommandEvent &event)
     Close();
 }
 
+// Server Check List Clicked
+void dlgServers::OnCheckServerListClick(wxCommandEvent &event)
+{
+    SERVER_IPPORT_BOX->SetLabel(SERVER_LIST->GetStringSelection());
+}
+
 // Add Server button
 void dlgServers::OnButtonAddServer(wxCommandEvent &event)
 {
+    wxString ted_result = _T("");
+    wxTextEntryDialog ted(this, 
+                            _T("Please enter IP Address and Port"), 
+                            _T("Please enter IP Address and Port"),
+                            _T("0.0.0.0:0"));
+    // Show it
+    ted.ShowModal();
+    ted_result = ted.GetValue();
     
+    if (!ted_result.IsEmpty() && 
+        ted_result != _T("0.0.0.0:0") &&
+        SERVER_LIST->FindString(ted_result) == wxNOT_FOUND)
+    {
+        SERVER_LIST->Append(ted_result);
+//        UserChangedSetting = 1;
+    }
 }
 
 // Delete Server button
 void dlgServers::OnButtonDelServer(wxCommandEvent &event)
 {
-    
+    if (SERVER_LIST->GetSelection() != wxNOT_FOUND)
+    {
+        SERVER_LIST->Delete(SERVER_LIST->GetSelection());
+//        UserChangedSetting = 1;
+    }
 }
 
 // Move Server Up button
 void dlgServers::OnButtonMoveServerUp(wxCommandEvent &event)
 {
-    
+    // Get the selected item
+    wxInt32 i = SERVER_LIST->GetSelection();
+
+    if ((i != wxNOT_FOUND) && (i > 0))
+    {
+        wxString str = SERVER_LIST->GetString(i);
+
+        SERVER_LIST->Delete(i);
+
+        SERVER_LIST->Insert(str, i - 1);
+
+        SERVER_LIST->SetSelection(i - 1);
+
+//        UserChangedSetting = 1;
+    }
 }
 
 // Move Server Down button
 void dlgServers::OnButtonMoveServerDown(wxCommandEvent &event)
 {
-    
+    // Get the selected item
+    wxUint32 i = SERVER_LIST->GetSelection();
+
+    if ((i != wxNOT_FOUND) && (i + 1 < SERVER_LIST->GetCount()))
+    {
+        wxString str = SERVER_LIST->GetString(i);
+
+        SERVER_LIST->Delete(i);
+
+        SERVER_LIST->Insert(str, i + 1);
+
+        SERVER_LIST->SetSelection(i + 1);
+
+//        UserChangedSetting = 1;
+    }
 }

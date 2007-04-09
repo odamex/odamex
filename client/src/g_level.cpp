@@ -183,9 +183,9 @@ void G_DeferedInitNew (char *mapname)
 	gameaction = ga_newgame;
 }
 
-EXTERN_CVAR(allowexit);
-EXTERN_CVAR(nomonsters);
-EXTERN_CVAR(deathmatch);
+EXTERN_CVAR(allowexit)
+EXTERN_CVAR(nomonsters)
+EXTERN_CVAR(deathmatch)
 
 void G_DoNewGame (void)
 {

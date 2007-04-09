@@ -133,7 +133,7 @@ static int demosequence;
 static int pagetic;
 
 EXTERN_CVAR (allowexit)
-EXTERN_CVAR (nomonsters);
+EXTERN_CVAR (nomonsters)
 
 //
 // D_ProcessEvents

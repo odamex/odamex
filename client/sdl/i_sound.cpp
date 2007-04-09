@@ -108,96 +108,165 @@ static Uint8 *expand_sound_data(Uint8 *data, int samplerate, int length)
 
 static Uint8 *ExpandSoundData(Uint8 *data, int samplerate, int length)
 {
-   Uint8 *expanded = NULL;
-   int expanded_length;
-   int expand_ratio;
-   int i;
+    Uint8 *expanded = NULL;
+    int expanded_length;
+    int expand_ratio;
+    int i;
 
-   if (samplerate == 11025)
-   {
+    if (samplerate == 11025)
+    {
         // Most of Doom's sound effects are 11025Hz
 
         // need to expand to 2 channels, 11025->22050 and 8->16 bit
 
-      expanded = (Uint8 *)Z_Malloc(length * 8, PU_STATIC, NULL);
+        expanded = (Uint8 *)Z_Malloc(length * 8, PU_STATIC, NULL);
 
-      for (i=0; i<length; ++i)
-      {
-         Uint16 sample;
+        for (i=0; i<length; ++i)
+        {
+            Uint16 sample;
 
-         sample = data[i] | (data[i] << 8);
-         sample -= 32768;
+            sample = data[i] | (data[i] << 8);
+            sample -= 32768;
 
-         expanded[i * 8] = expanded[i * 8 + 2]
-               = expanded[i * 8 + 4] = expanded[i * 8 + 6] = sample & 0xff;
-         expanded[i * 8 + 1] = expanded[i * 8 + 3]
-               = expanded[i * 8 + 5] = expanded[i * 8 + 7] = (sample >> 8) & 0xff;
-      }
-   }
-   else if (samplerate == 22050)
-   {
+            expanded[i * 8] = expanded[i * 8 + 2]
+                = expanded[i * 8 + 4] = expanded[i * 8 + 6] = sample & 0xff;
+            expanded[i * 8 + 1] = expanded[i * 8 + 3]
+                = expanded[i * 8 + 5] = expanded[i * 8 + 7] = (sample >> 8) & 0xff;
+        }
+    }
+    else if (samplerate == 22050)
+    {
 
-      expanded = (Uint8 *)Z_Malloc(length * 4, PU_STATIC, NULL);
+        expanded = (Uint8 *)Z_Malloc(length * 4, PU_STATIC, NULL);
 
-      for (i=0; i<length; ++i)
-      {
-         Uint16 sample;
+        for (i=0; i<length; ++i)
+        {
+            Uint16 sample;
 
-         sample = data[i] | (data[i] << 8);
-         sample -= 32768;
+            sample = data[i] | (data[i] << 8);
+            sample -= 32768;
 
-         expanded[i * 4] = expanded[i * 4 + 2] = sample & 0xff;
-         expanded[i * 4 + 1] = expanded[i * 4 + 3] = (sample >> 8) & 0xff;
-      }
-   }
-   else
-   {
+            expanded[i * 4] = expanded[i * 4 + 2] = sample & 0xff;
+            expanded[i * 4 + 1] = expanded[i * 4 + 3] = (sample >> 8) & 0xff;
+        }
+    }
+    else
+    {
         // Generic expansion function for all other sample rates
 
         // number of samples in the converted sound
-      expanded_length = (length * 22050) / samplerate;
-      expand_ratio = (length << 8) / expanded_length;
+        expanded_length = (length * 22050) / samplerate;
+        expand_ratio = (length << 8) / expanded_length;
 
-      expanded = (Uint8 *)Z_Malloc(expanded_length * expand_ratio, PU_STATIC, NULL);
+        expanded = (Uint8 *)Z_Malloc(expanded_length * expand_ratio, PU_STATIC, NULL);
 
 
-      for (i=0; i<expanded_length; ++i)
-      {
-         Uint16 sample;
-         int src;
+        for (i=0; i<expanded_length; ++i)
+        {
+            Uint16 sample;
+            int src;
 
-         src = (i * expand_ratio) >> 8;
+            src = (i * expand_ratio) >> 8;
 
-         sample = data[src] | (data[src] << 8);
-         sample -= 32768;
+            sample = data[src] | (data[src] << 8);
+            sample -= 32768;
 
             // expand 8->16 bits, mono->stereo
 
-         expanded[i * 4] = expanded[i * 4 + 2] = sample & 0xff;
-         expanded[i * 4 + 1] = expanded[i * 4 + 3] = (sample >> 8) & 0xff;
-      }
-   }
+            expanded[i * 4] = expanded[i * 4 + 2] = sample & 0xff;
+            expanded[i * 4 + 1] = expanded[i * 4 + 3] = (sample >> 8) & 0xff;
+        }
+    }
 
-   return expanded;
+    return expanded;
+}
+
+static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
+{
+    Mix_Chunk *chunk;
+    SDL_RWops *mem_op;
+    Uint8 *ret_data;
+    
+    // load, allocate and convert the format from memory
+    mem_op = SDL_RWFromMem(data, size);
+    
+    if (!mem_op)
+    {
+        Printf(PRINT_HIGH, 
+                "perform_sdlmix_conv - SDL_RWFromConstMem: %s\n", Mix_GetError());
+                
+        return NULL;
+    }
+    
+    chunk = Mix_LoadWAV_RW(mem_op, 1);
+    
+    if (!chunk)
+    {
+        Printf(PRINT_HIGH, 
+                "perform_sdlmix_conv - Mix_LoadWAV_RW: %s\n", Mix_GetError());
+                
+        return NULL;
+    }
+    
+    // return the size
+    *newsize = chunk->alen;
+    
+    // allocate some space in the zone heap
+    ret_data = (Uint8 *)Z_Malloc(chunk->alen, PU_STATIC, NULL);
+    
+    if (!ret_data)
+    {
+        Printf(PRINT_HIGH, 
+                "perform_sdlmix_conv - Z_Malloc: could not allocate: %d bytes\n",
+                chunk->alen);
+        
+        Mix_FreeChunk(chunk);
+        chunk = NULL;
+        
+        return NULL;
+    }
+    
+    // copy the converted data to the return buffer
+    memcpy(ret_data, chunk->abuf, chunk->alen);
+    
+    // clean up
+    Mix_FreeChunk(chunk);
+    chunk = NULL;
+    
+    return ret_data;
 }
 
 static void getsfx (struct sfxinfo_struct *sfx)
 {
-	int samplerate;
+    int samplerate;
 	int length ,expanded_length;
 	Uint8 *data;
+	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
 
-        data = (Uint8 *)W_CacheLumpNum(sfx->lumpnum, PU_STATIC);
-
+    data = (Uint8 *)W_CacheLumpNum(sfx->lumpnum, PU_STATIC);
+  
+    // [Russell] is it not a doom sound lump?
+    if (((data[1] << 8) | data[0]) != 3)
+    {
+        chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
+        chunk->allocated = 1;
+        chunk->abuf = perform_sdlmix_conv(data, sfx->length, &new_size);
+        chunk->alen = new_size;
+        chunk->volume = MIX_MAX_VOLUME;
+        
+        sfx->data = chunk;
+        
+        return;        
+    }
+    
 	samplerate = (data[3] << 8) | data[2];
-	length = (data[5] << 8) | data[4];
-
-        expanded_length = (length * 22050) / (samplerate / 4);
+    length = (data[5] << 8) | data[4];
+    expanded_length = (length * 22050) / (samplerate / 4);
 
 	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
 	chunk->allocated = 1;
-        chunk->abuf = (Uint8 *)ExpandSoundData(data + 8, samplerate, length);
+    chunk->abuf = (Uint8 *)ExpandSoundData(data + 8, samplerate, length);
 	chunk->alen = expanded_length;
 	chunk->volume = MIX_MAX_VOLUME;
 	sfx->data = chunk;
@@ -368,7 +437,7 @@ void I_InitSound (void)
 	}
 
 
-        if (Mix_OpenAudio(22050, AUDIO_S16LSB, 2, 1024) < 0)
+        if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 1024) < 0)
 	{
 		Printf(PRINT_HIGH, "Error initializing SDL_mixer: %s\n", SDL_GetError());
 		return;

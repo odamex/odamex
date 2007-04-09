@@ -47,6 +47,8 @@ class dlgServers: public wxDialog
 
 	protected:
 
+        void OnCheckServerListClick(wxCommandEvent &event);
+
         void OnButtonOK(wxCommandEvent &event);
         void OnButtonClose(wxCommandEvent &event);
         
@@ -60,11 +62,13 @@ class dlgServers: public wxDialog
         void OnGetEnvClick(wxCommandEvent &event);
         
         void OnCheckedBox(wxCommandEvent &event);
-               
-        wxCheckListBox *SERVER_CHKLISTBOX;
+*/               
         wxFileConfig ConfigInfo;
-*/
+
+        wxCheckListBox *SERVER_LIST;
         
+        wxTextCtrl *SERVER_IPPORT_BOX;
+                
 		wxButton *ADD_SERVER_BUTTON;
 		wxButton *DEL_SERVER_BUTTON;
         wxButton *UP_SERVER_BUTTON;

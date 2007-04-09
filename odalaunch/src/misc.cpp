@@ -146,6 +146,51 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
     
 }
 
+wxString *CheckPWADS(wxString pwads, wxString waddirs)
+{
+    wxStringTokenizer wads(pwads, _T(' '));
+    wxStringTokenizer dirs(waddirs, _T(' '));
+    wxString wadfn = _T("");
+    
+    // validity array counter
+    wxUint32 i = 0;
+    
+    // allocate enough space for all wads
+    wxString *inv_wads = new wxString [wads.CountTokens()];
+    
+    if (!inv_wads)
+        return NULL;
+       
+    // begin checking
+    while (dirs.HasMoreTokens())
+    {
+        while (wads.HasMoreTokens())
+        {
+            #ifdef __WXMSW__
+            wadfn = wxString::Format(_T("%s\%s"), dirs.GetNextToken().c_str(), wads.GetNextToken().c_str());
+            #else
+            wadfn = wxString::Format(_T("%s/%s"), dirs.GetNextToken().c_str(), wads.GetNextToken().c_str());
+            #endif
+            
+            if (wxFileExists(wadfn))
+            {
+                inv_wads[i] = wadfn;                
+
+                i++;                
+            }
+        }
+    }
+    
+    if (i)
+        return inv_wads;
+    else
+    {
+        delete[] inv_wads;
+        
+        return NULL;
+    }
+}
+
 void LaunchGame(Server &s, wxString waddirs)
 {
     #ifdef __WXMSW__
