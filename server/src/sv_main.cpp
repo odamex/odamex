@@ -1242,13 +1242,11 @@ void SV_SendServerSettings (client_t *cl)
 //
 void SV_ServerSettingChange (void)
 {
-	if (gamestate == GS_LEVEL)
-	{
-		for (size_t i = 0; i < players.size(); i++)
-		{
-			SV_SendServerSettings (&clients[i]);
-		}
-	}
+	if (gamestate != GS_LEVEL)
+		return;
+	
+	for (size_t i = 0; i < players.size(); i++)
+		SV_SendServerSettings (&clients[i]);
 }
 
 //

@@ -479,6 +479,7 @@ EXTERN_CVAR (monstersrespawn)
 EXTERN_CVAR (fastmonsters)
 
 void G_PlayerReborn (player_t &player);
+void SV_ServerSettingChange();
 
 void G_InitNew (char *mapname)
 {
@@ -498,20 +499,14 @@ void G_InitNew (char *mapname)
 	}
 	
 	bool old_deathmatch = deathmatch ? true : false;
+	bool old_ctfmode = ctfmode ? true : false;
 
 	cvar_t::UnlatchCVars ();
 
 	if(old_deathmatch != (deathmatch ? true : false))
 		unnatural_level_progression = true;
 
-	for(i = 0; i < players.size(); i++)
-	{
-		if(!players[i].ingame())
-			continue;
-
-		client_t *cl = &clients[i];
-		SV_SendServerSettings(cl);
-	}
+	SV_ServerSettingChange();
 
 	if (paused)
 		paused = false;
@@ -576,6 +571,10 @@ void G_InitNew (char *mapname)
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
+
+	// denis - hack to fix ctfmode, as it is only known after the map is processed!
+	if(old_ctfmode != ctfmode)
+		SV_ServerSettingChange();
 }
 
 //
