@@ -30,6 +30,8 @@
 	 */
 	NSTableView *serversTableView;
 	NSTableView *playersTableView;
+	
+	int refreshListPosition;
 }
 
 - (void)awakeFromNib;
@@ -75,6 +77,7 @@
 - (void)reloadMasters;
 - (void)reloadServers;
 
-- (void)thread:(id)param;
+- (void)timerRefresh:(NSTimer*)theTimer;
+- (void)threadRecv:(id)param;
 
 @end

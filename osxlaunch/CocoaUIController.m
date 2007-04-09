@@ -1,6 +1,19 @@
+#include <sstream>
+#include <time.h>
+
 #import "CocoaUIController.h"
 #import "i_net.h"
 #import "../common/version.h"
+
+unsigned long I_MSTime (void)
+{
+	struct timeval tv;
+	struct timezone tz;
+	
+	gettimeofday(&tv, &tz);
+	
+	return (unsigned long)(tv.tv_sec)*1000 + (unsigned long)(tv.tv_usec)/1000;
+}
 
 @implementation CocoaUIController
 
@@ -16,12 +29,12 @@ struct PrvToolbarItemInfo {
 };
 
 static struct PrvToolbarItemInfo toolbarItemsInfo[] = {
-	{ @"launch", @"odalaunch", @"Tool 0", @"Increment the ping counter (not useful :P)" },
-	{ @"refresh", @"btnrefresh", @"Tool 1", @"Reload server list" },
-	{ @"refreshall", @"btnrefreshall", @"Tool 2", @"Tool 2 tooltip" },
-	{ @"prev", @"btnlist", @"Preview", @"Preview the file" },
-	{ @"pref", @"btnsettings", @"Preferences", @"Show the preferences dialog" },
-	{ @"help", @"btnhelp", @"Help", @"Show help window" },
+	{ @"launch", @"odalaunch", @"Connect", @"Connect to selected server" },
+	{ @"refresh", @"btnrefresh", @"Refresh", @"Refresh servers" },
+	{ @"refreshall", @"btnrefreshall", @"Reload", @"Reload server list" },
+	{ @"prev", @"btnlist", @"RefreshSelected", @"Refresh selected server" },
+	{ @"pref", @"btnsettings", @"Preferences", @"Preferences" },
+	{ @"help", @"btnhelp", @"Help", @"Help" },
 	{ @"quit", @"btnexit", @"Quit", @"Quit Cocoa UI" }
 };
 
@@ -78,7 +91,9 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	InitNetCommon();
 	
 	// Startup packet receiving thread
-	[NSThread detachNewThreadSelector: @selector(thread:) toTarget:self withObject:nil];
+	[NSThread detachNewThreadSelector: @selector(threadRecv:) toTarget:self withObject:nil];
+//	[NSTimer scheduledTimerWithTimeInterval:invocation:repeats:]
+	[NSTimer scheduledTimerWithTimeInterval:(NSTimeInterval)0.2 target:self selector:@selector(timerRefresh:) userInfo:nil repeats:(BOOL)true];
 	
 	[self reloadMasters];
 }
@@ -133,12 +148,12 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 /*
  *	Servers NSTableView column keys
  */
-static NSString *serverColumns[] = { 
+/*static NSString *serverColumns[] = { 
 	@"serverName", @"ping", @"players", 
 	@"wads", @"map", @"type", 
 	@"gameIWAD", @"addressPort"
 };
-
+*/
 /*
  *	Players NSTableView column keys
  */
@@ -152,20 +167,17 @@ static NSString *serverColumns[] = {
  */
 - (void)fillServersArray
 {
-	int i;
-	
 	if (serversArray != nil) [serversArray release];
 	serversArray = [[NSMutableArray alloc] init]; 
 
 	unsigned short servers = MSG_ReadShort();
 
-	for (i = 0; i < servers; i++) {
-	
+	for (size_t i = 0; i < servers; i++)
+	{
 		if(MSG_BytesLeft() < 6)
 			break;
 
 		NSMutableDictionary *row = [[NSMutableDictionary alloc] init];
-		//int j;
 		
 		netadr_t remote;
 		remote.ip[0] = MSG_ReadByte();
@@ -174,47 +186,13 @@ static NSString *serverColumns[] = {
 		remote.ip[3] = MSG_ReadByte();
 		remote.port = ntohs(MSG_ReadShort());
 		
-		/*
-		 *	build one row
-		 */
-		/*for (j = 0; j < sizeof(serverColumns) / sizeof(NSString *); j++) {
-			NSString *value;
-			
-			switch (j) {
-			case 0:
-				value = [NSString stringWithFormat: @"Server Name %d", i];
-				break;
-			case 1:
-				value = [NSString stringWithFormat: @"Ping %d", i];
-				break;
-			case 2:
-				value = [NSString stringWithFormat: @"Players %d", i];
-				break;
-			case 3:
-				value = [NSString stringWithFormat: @"WADs %d", i];
-				break;
-			case 4:
-				value = [NSString stringWithFormat: @"Map %d", i];
-				break;
-			case 5:
-				value = [NSString stringWithFormat: @"Type %d", i];
-				break;
-			case 6:
-				value = [NSString stringWithFormat: @"Game IWAD %d", i];
-				break;
-			case 7:
-				value = [NSString stringWithFormat: @"Address : Port %d", i];
-				break;
-			}*/
-		[row setObject:[NSString stringWithCString:NET_AdrToString(remote)] forKey: serverColumns[7]]; 
-		//}
+		[row setObject:[NSString stringWithCString:NET_AdrToString(remote)] forKey: @"addressPort"];
 		
 		[serversArray addObject: row];
 		[row release];
 	}
-	
-	[totalServers setStringValue: 
-		[NSString stringWithFormat: @"Total Servers: %d", [serversArray count]]];
+
+	[totalServers setStringValue: [NSString stringWithFormat: @"Total Servers: %d", [serversArray count]]];
 	[serversTableView reloadData];
 }
 
@@ -286,17 +264,12 @@ static NSString *serverColumns[] = {
 	if ([itemIdent isEqualToString: @"launch"])
 	{
 		[self launch:serversTableView];
-		/*
-		 *	Tool 0 - increments the master ping count
-		 */	
 		//[masterPing setStringValue: 
 		//	[NSString stringWithFormat: @"Master Ping: %d", masterPingCount++]];
 	}
-	else if ([itemIdent isEqualToString: @"refresh"]) {
-		/*
-		 *	Tool 1 - reload the server list
-		 */
-		[serversTableView reloadData];
+	else if ([itemIdent isEqualToString: @"refresh"])
+	{
+		refreshListPosition = 0;
 	}
 	else if ([itemIdent isEqualToString: @"refreshall"])
 	{
@@ -306,26 +279,27 @@ static NSString *serverColumns[] = {
 		/*
 		 *	Preview - not implemented
 		 */
-		NSRunAlertPanel(@"Cocoa UI", @"Preview code goes here...", @"OK", nil, nil);
-	} else if ([itemIdent isEqualToString: @"pref"]) {
-		/*
-		 *	Preferences - not implemented
-		 */
-		//NSRunAlertPanel(@"Cocoa UI", @"Preferences code goes here...", @"OK", nil, nil);
-//		preferencesWindow = [window ]
-		//[self addChildWindow:windowPreferences ];
+		NSRunAlertPanel(@"Cocoa UI", @"Not implemented", @"OK", nil, nil);
+	}
+	else if ([itemIdent isEqualToString: @"pref"])
+	{
 		[windowPreferences makeKeyAndOrderFront:nil];
-	} else if ([itemIdent isEqualToString: @"help"]) {
+	}
+	else if ([itemIdent isEqualToString: @"help"])
+	{
 		/*
 		 *	Help - not implemented
 		 */
 		NSRunAlertPanel(@"Odamex OSX Launcher", @"By Denis Lukianov\nCopyright (C) 2007 The Odamex Team", @"OK", nil, nil);						
-	} else if ([itemIdent isEqualToString: @"quit"]) {
+	}
+	else if ([itemIdent isEqualToString: @"quit"])
+	{
 		/*
 		 *	Quit - terminate the application
 		 */
 		[NSApp terminate: self];
-	} else 
+	}
+	else 
 		NSLog(@"Item clicked: %@", [toolbarItem itemIdentifier]);
 }
 
@@ -420,7 +394,37 @@ static NSString *serverColumns[] = {
 	}
 }
 
-- (void)thread:(id)param;
+- (void)threadServerPing:(id)param;
+{
+
+}
+
+- (void)timerRefresh:(NSTimer*)theTimer
+{
+	size_t num_servers = [serversArray count];
+
+	netadr_t to;
+	buf_t buf(16);
+	SZ_Clear(&buf);
+	MSG_WriteLong(&buf, LAUNCHER_CHALLENGE);
+	MSG_WriteLong(&buf, 1234); // todo check this anti-spoof key on reply, use random
+
+	NSString *timestr = [NSString stringWithFormat: @"%d", I_MSTime()];
+
+	for(size_t i = 0; i < 4 && refreshListPosition < num_servers; i++) // several servers at a time
+	{
+		NSMutableDictionary *row = [serversArray objectAtIndex:refreshListPosition++];
+
+		NSString *address = [row objectForKey:@"addressPort"];
+
+		NET_StringToAdr((char *)[address UTF8String], &to);
+		NET_SendPacket(buf.cursize, buf.data, to);
+
+		[row setObject:timestr forKey: @"pingSent"];
+	}
+}
+
+- (void)threadRecv:(id)param;
 {
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	netadr_t expect;
@@ -433,16 +437,18 @@ static NSString *serverColumns[] = {
 		{
 			NET_StringToAdr(Masters[i], &expect);
 			
-			if(MSG_ReadLong() != LAUNCHER_CHALLENGE)
-				continue;
-			
 			if(NET_CompareAdr(expect, net_from))
 			{
+				if(MSG_ReadLong() != LAUNCHER_CHALLENGE)
+					break;
+				
 				// populate server list
 				[self fillServersArray];
 				
 				// initiate a server refresh
-				//todo
+				refreshListPosition = 0;
+				
+				//todo multiple masters can contribute to the list? (merge)
 				
 				break;
 			}
@@ -456,22 +462,81 @@ static NSString *serverColumns[] = {
 		
 		for(i = 0; i < num_servers; i++)
 		{
-			NSString *address = [[serversArray objectAtIndex:i] objectForKey:@"addressPort"];
+			NSMutableDictionary *row = [serversArray objectAtIndex:i];
+			NSString *address = [row objectForKey:@"addressPort"];
 			NET_StringToAdr((char *)[address UTF8String], &expect);
-
-			if(MSG_ReadLong() != CHALLENGE)
-				break;
 
 			if(NET_CompareAdr(expect, net_from))
 			{
+				if(MSG_ReadLong() != CHALLENGE)
+					break;
+
+				std::stringstream sst([[row objectForKey: @"pingSent"] UTF8String]);
+				if(sst.str() != "N/A")
+				{
+					time_t old, current = I_MSTime();
+					sst >> old;
+
+					[row setObject:[NSString stringWithFormat: @"%d", current - old] forKey: @"ping"];
+					[row setObject:@"N/A" forKey: @"pingSent"];
+				}
+
 				// enrich row entry
 				MSG_ReadLong(); // token we don't really need here
 				MSG_ReadLong(); // launcher key to prevent spoofing
 				
 				char *title = MSG_ReadString();
-				NSLog([NSString stringWithCString:title]);
 				
-				//  (void)replaceObjectAtIndex:(unsigned)index withObject:(id)anObject
+				[row setObject:[NSString stringWithCString:title] forKey: @"serverName"];
+
+				unsigned players = MSG_ReadByte();
+				unsigned maxplayers = MSG_ReadByte();
+				
+				std::stringstream ss;
+				ss << players << "/" << maxplayers;
+
+				[row setObject:[NSString stringWithCString:ss.str().c_str()] forKey: @"players"];
+
+				char *map = MSG_ReadString();
+
+				[row setObject:[NSString stringWithCString:map] forKey: @"map"];
+
+				unsigned char numwads = MSG_ReadByte();
+				
+				[row setObject:[NSString stringWithCString:MSG_ReadString()] forKey: @"gameIWAD"];
+
+				std::stringstream ssw;
+				for(unsigned j = 1; j < numwads; j++)
+					ssw << MSG_ReadString() << " ";
+
+				[row setObject:[NSString stringWithCString:ssw.str().c_str()] forKey: @"wads"];
+
+				bool deathmatch = MSG_ReadByte();
+				MSG_ReadByte(); // skill
+				bool teamplay = MSG_ReadByte();
+				bool ctfmode = MSG_ReadByte();
+				
+				if(ctfmode)
+				{
+					[row setObject:[NSString stringWithCString:"CTF"] forKey: @"type"];
+				}
+				else if (teamplay)
+				{
+					if (deathmatch)
+						[row setObject:[NSString stringWithCString:"TEAM"] forKey: @"type"];
+					else
+						[row setObject:[NSString stringWithCString:"TEAM COOP"] forKey: @"type"];
+				}
+				else if (deathmatch)
+				{
+					[row setObject:[NSString stringWithCString:"DM"] forKey: @"type"];
+				}
+				else
+				{
+					[row setObject:[NSString stringWithCString:"COOP"] forKey: @"type"];
+				}
+				
+				[serversTableView reloadData];
 			}
 		}
 	}
