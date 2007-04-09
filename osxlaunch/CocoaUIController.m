@@ -16,9 +16,9 @@ struct PrvToolbarItemInfo {
 };
 
 static struct PrvToolbarItemInfo toolbarItemsInfo[] = {
-	{ @"tool0", @"odalaunch", @"Tool 0", @"Increment the ping counter (not useful :P)" },
-	{ @"tool1", @"btnrefresh", @"Tool 1", @"Reload server list" },
-	{ @"tool2", @"btnrefreshall", @"Tool 2", @"Tool 2 tooltip" },
+	{ @"launch", @"odalaunch", @"Tool 0", @"Increment the ping counter (not useful :P)" },
+	{ @"refresh", @"btnrefresh", @"Tool 1", @"Reload server list" },
+	{ @"refreshall", @"btnrefreshall", @"Tool 2", @"Tool 2 tooltip" },
 	{ @"prev", @"btnlist", @"Preview", @"Preview the file" },
 	{ @"pref", @"btnsettings", @"Preferences", @"Show the preferences dialog" },
 	{ @"help", @"btnhelp", @"Help", @"Show help window" },
@@ -105,10 +105,10 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	 *	(including the separators)
 	 */
 	return [NSArray arrayWithObjects: 
-		@"tool0", 
+		@"launch", 
 		NSToolbarSeparatorItemIdentifier,
-		@"tool1", 
-		@"tool2", 
+		@"refresh", 
+		@"refreshall", 
 		@"prev", 
 		NSToolbarSeparatorItemIdentifier,
 		@"pref",
@@ -156,7 +156,7 @@ static NSString *serverColumns[] = {
 	
 	if (serversArray != nil) [serversArray release];
 	serversArray = [[NSMutableArray alloc] init]; 
-	
+
 	unsigned short servers = MSG_ReadShort();
 
 	for (i = 0; i < servers; i++) {
@@ -283,23 +283,26 @@ static NSString *serverColumns[] = {
 {
 	NSString *itemIdent = [toolbarItem itemIdentifier];
 	
-	if ([itemIdent isEqualToString: @"tool0"]) {
+	if ([itemIdent isEqualToString: @"launch"])
+	{
+		[self launch:serversTableView];
 		/*
 		 *	Tool 0 - increments the master ping count
 		 */	
-		[masterPing setStringValue: 
-			[NSString stringWithFormat: @"Master Ping: %d", masterPingCount++]];
-	} else if ([itemIdent isEqualToString: @"tool1"]) {
+		//[masterPing setStringValue: 
+		//	[NSString stringWithFormat: @"Master Ping: %d", masterPingCount++]];
+	}
+	else if ([itemIdent isEqualToString: @"refresh"]) {
 		/*
 		 *	Tool 1 - reload the server list
 		 */
 		[serversTableView reloadData];
-	} else if ([itemIdent isEqualToString: @"tool2"]) {
-		/*
-		 *	Tool 2 - not implemented
-		 */
-		NSRunAlertPanel(@"Cocoa UI", @"Tool 2 code goes here...", @"OK", nil, nil);
-	} else if ([itemIdent isEqualToString: @"prev"]) {
+	}
+	else if ([itemIdent isEqualToString: @"refreshall"])
+	{
+		[self reloadMasters];
+	}
+	else if ([itemIdent isEqualToString: @"prev"]) {
 		/*
 		 *	Preview - not implemented
 		 */
@@ -308,12 +311,15 @@ static NSString *serverColumns[] = {
 		/*
 		 *	Preferences - not implemented
 		 */
-		NSRunAlertPanel(@"Cocoa UI", @"Preferences code goes here...", @"OK", nil, nil);
+		//NSRunAlertPanel(@"Cocoa UI", @"Preferences code goes here...", @"OK", nil, nil);
+//		preferencesWindow = [window ]
+		//[self addChildWindow:windowPreferences ];
+		[windowPreferences makeKeyAndOrderFront:nil];
 	} else if ([itemIdent isEqualToString: @"help"]) {
 		/*
 		 *	Help - not implemented
 		 */
-		NSRunAlertPanel(@"Cocoa UI", @"Help code goes here...", @"OK", nil, nil);						
+		NSRunAlertPanel(@"Odamex OSX Launcher", @"By Denis Lukianov\nCopyright (C) 2007 The Odamex Team", @"OK", nil, nil);						
 	} else if ([itemIdent isEqualToString: @"quit"]) {
 		/*
 		 *	Quit - terminate the application
@@ -323,9 +329,9 @@ static NSString *serverColumns[] = {
 		NSLog(@"Item clicked: %@", [toolbarItem itemIdentifier]);
 }
 
-- (void)serversTableViewDoubleClicked: (NSTableView *)tableView
+- (void)launch: (NSTableView *)tableView
 {
-	int clickedRowIndex = [tableView clickedRow];
+	int clickedRowIndex = [tableView selectedRow];
 	
 	/*
 	 * check if a row was clicked
@@ -338,11 +344,16 @@ static NSString *serverColumns[] = {
 	NSString *address = [[serversArray objectAtIndex:clickedRowIndex] objectForKey:@"addressPort"];
 	NSArray *arguments;
     arguments = [NSArray arrayWithObjects:@"-connect", address, nil];
-
+	
     [odamex setLaunchPath:@"../../../odamex"];
 	[odamex setArguments:arguments];
-
+	
 	[odamex launch];
+}
+
+- (void)serversTableViewDoubleClicked: (NSTableView *)tableView
+{
+	[self launch:tableView];
 }
 
 - (void)tableViewSelectionDidChange: (NSNotification *)notification
@@ -448,10 +459,19 @@ static NSString *serverColumns[] = {
 			NSString *address = [[serversArray objectAtIndex:i] objectForKey:@"addressPort"];
 			NET_StringToAdr((char *)[address UTF8String], &expect);
 
+			if(MSG_ReadLong() != CHALLENGE)
+				break;
+
 			if(NET_CompareAdr(expect, net_from))
 			{
 				// enrich row entry
-				continue;
+				MSG_ReadLong(); // token we don't really need here
+				MSG_ReadLong(); // launcher key to prevent spoofing
+				
+				char *title = MSG_ReadString();
+				NSLog([NSString stringWithCString:title]);
+				
+				//  (void)replaceObjectAtIndex:(unsigned)index withObject:(id)anObject
 			}
 		}
 	}

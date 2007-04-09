@@ -5,6 +5,7 @@
 @interface CocoaUIController : NSObject
 {
     IBOutlet NSWindow *window;
+    IBOutlet NSWindow *windowPreferences;
 	
 	NSMutableDictionary *toolbarItems;
 	NSToolbar *toolbar;	/* toolbar outlet */
@@ -28,7 +29,7 @@
 	 * NSTableView outlets
 	 */
 	NSTableView *serversTableView;
-	NSTableView *playersTableView;	
+	NSTableView *playersTableView;
 }
 
 - (void)awakeFromNib;
@@ -65,6 +66,7 @@
 - (void)tableViewSelectionDidChange: (NSNotification *)notification;
 - (void)playersTableViewDoubleClicked: (NSTableView *)tableView;
 - (void)tableView: (NSTableView*)inTableView didClickTableColumn:(NSTableColumn *)inTableColumn;
+- (void)launch: (NSTableView *)tableView;
 
 /*
  * Server processes
