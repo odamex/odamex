@@ -73,4 +73,6 @@
 - (void)reloadMasters;
 - (void)reloadServers;
 
+- (void)thread:(id)param;
+
 @end

@@ -412,8 +412,6 @@ char *MSG_ReadString(void)
 //
 void InitNetCommon(void)
 {
-   unsigned long _true = true;
-
 #ifdef WIN32
    WSADATA wsad;
    WSAStartup(0x0101, &wsad);
@@ -421,8 +419,9 @@ void InitNetCommon(void)
 
    net_socket = UDPsocket();
    BindToLocalPort(net_socket, localport);
-   if (ioctlsocket(net_socket, FIONBIO, &_true) == -1)
-       printf("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+//   unsigned long _true = true;
+//   if (ioctlsocket(net_socket, FIONBIO, &_true) == -1)
+//       printf("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
    SZ_Clear(&net_message);
 }

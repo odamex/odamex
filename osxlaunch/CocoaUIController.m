@@ -58,7 +58,6 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	[toolbar setDelegate: self];
 	
 	[window setToolbar: toolbar];
-	[self fillServersArray];
 	
 	/*
 	 *	bind the double-click event of servers NSTableView to the controller
@@ -73,7 +72,11 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	[playersTableView setDoubleAction: @selector(playersTableViewDoubleClicked:)];
 
 	// Startup networking
+	localport = LAUNCHERPORT;
 	InitNetCommon();
+	
+	// Startup packet receiving thread
+	[NSThread detachNewThreadSelector: @selector(thread:) toTarget:self withObject:nil];
 	
 	[self reloadMasters];
 }
@@ -137,9 +140,9 @@ static NSString *serverColumns[] = {
 /*
  *	Players NSTableView column keys
  */
-static NSString *playerColums[] = { 
-	@"playerName", @"frags", @"ping", @"unknown" 
-};
+//static NSString *playerColums[] = { 
+//	@"playerName", @"frags", @"ping", @"unknown" 
+//};
 
 
 /*
@@ -152,14 +155,27 @@ static NSString *playerColums[] = {
 	if (serversArray != nil) [serversArray release];
 	serversArray = [[NSMutableArray alloc] init]; 
 	
-	for (i = 0; i < 15; i++) {
+	unsigned short servers = MSG_ReadShort();
+
+	for (i = 0; i < servers; i++) {
+	
+		if(MSG_BytesLeft() < 6)
+			break;
+
 		NSMutableDictionary *row = [[NSMutableDictionary alloc] init];
-		int j;
+		//int j;
+		
+		netadr_t remote;
+		remote.ip[0] = MSG_ReadByte();
+		remote.ip[1] = MSG_ReadByte();
+		remote.ip[2] = MSG_ReadByte();
+		remote.ip[3] = MSG_ReadByte();
+		remote.port = ntohs(MSG_ReadShort());
 		
 		/*
 		 *	build one row
 		 */
-		for (j = 0; j < sizeof(serverColumns) / sizeof(NSString *); j++) {
+		/*for (j = 0; j < sizeof(serverColumns) / sizeof(NSString *); j++) {
 			NSString *value;
 			
 			switch (j) {
@@ -187,10 +203,9 @@ static NSString *playerColums[] = {
 			case 7:
 				value = [NSString stringWithFormat: @"Address : Port %d", i];
 				break;
-			}
-			
-			[row setObject: value forKey: serverColumns[j]]; 
-		}
+			}*/
+		[row setObject:[NSString stringWithCString:NET_AdrToString(remote)] forKey: serverColumns[7]]; 
+		//}
 		
 		[serversArray addObject: row];
 		[row release];
@@ -198,11 +213,12 @@ static NSString *playerColums[] = {
 	
 	[totalServers setStringValue: 
 		[NSString stringWithFormat: @"Total Servers: %d", [serversArray count]]];
+	[serversTableView reloadData];
 }
 
 - (void)fillPlayersArray: (int)rowIndex
 {
-	static NSString *values[2][3][4] = {
+	/*static NSString *values[2][3][4] = {
 		{
 			{ @"Homer Simpson", @"12", @"13", @"Duh!!!" },
 			{ @"Bugs Bunny", @"12", @"5", @"What's up doc ?" },
@@ -231,7 +247,8 @@ static NSString *playerColums[] = {
 	}
 	
 	[totalPlayers setStringValue: 
-		[NSString stringWithFormat: @"Total Players: %d", [playersArray count]]];
+		[NSString stringWithFormat: @"Total Players: %d", [playersArray count]]];*/
+	[playersTableView reloadData];
 }
 
 - (int)numberOfRowsInTableView: (NSTableView *)tableView
@@ -361,18 +378,80 @@ static NSString *playerColums[] = {
 {
 	// Request server list from master
 	netadr_t to;
-	SZ_Clear(&net_message);
-	MSG_WriteLong(&net_message, 777123);
+	buf_t buf(16);
+	SZ_Clear(&buf);
+	MSG_WriteLong(&buf, LAUNCHER_CHALLENGE);
 	
 	for(size_t i = 0; i < sizeof(Masters)/sizeof(char *); i++)
 	{
 		NET_StringToAdr(Masters[i], &to);
-		NET_SendPacket(net_message.cursize, net_message.data, to);
+		NET_SendPacket(buf.cursize, buf.data, to);
 	}
 }
 
 - (void)reloadServers
 {
+	// Request all server replies
+	netadr_t to;
+	buf_t buf(16);
+	SZ_Clear(&buf);
+	MSG_WriteLong(&buf, LAUNCHER_CHALLENGE);
+	
+	size_t num_servers = [serversArray count];
+	
+	for(size_t i = 0; i < num_servers; i++)
+	{
+		NSString *address = [[serversArray objectAtIndex:i] objectForKey:@"addressPort"];
+		NET_StringToAdr((char *)[address UTF8String], &to);
+		NET_SendPacket(buf.cursize, buf.data, to);
+	}
+}
+
+- (void)thread:(id)param;
+{
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	netadr_t expect;
+	size_t i;
+
+	while(NET_GetPacket())
+	{
+		// reply from a master?
+		for(i = 0; i < sizeof(Masters)/sizeof(char *); i++)
+		{
+			NET_StringToAdr(Masters[i], &expect);
+
+			if(NET_CompareAdr(expect, net_from))
+			{
+				// populate server list
+				[self fillServersArray];
+				
+				// initiate a server refresh
+				//todo
+				
+				break;
+			}
+		}
+		
+		if(i != sizeof(Masters)/sizeof(char *))
+			continue;
+			
+		// reply from a server, then?
+		size_t num_servers = [serversArray count];
+		
+		for(i = 0; i < num_servers; i++)
+		{
+			NSString *address = [[serversArray objectAtIndex:i] objectForKey:@"addressPort"];
+			NET_StringToAdr((char *)[address UTF8String], &expect);
+
+			if(NET_CompareAdr(expect, net_from))
+			{
+				// enrich row entry
+				continue;
+			}
+		}
+	}
+	
+	[pool release];
 }
 
 @end
