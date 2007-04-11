@@ -85,6 +85,40 @@
 					<Variable name="WX_PLAT" value="unix" />
 				</Environment>
 			</Target>
+			<Target title="Mac Release">
+				<Option platforms="Mac;" />
+				<Option output="..\bin\odalaunch" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\obj\odalaunch\release" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Os" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+				<Environment>
+					<Variable name="WX_PLAT" value="unix" />
+				</Environment>
+			</Target>
+			<Target title="Mac Debug">
+				<Option platforms="Mac;" />
+				<Option output="..\bin\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\bin" />
+				<Option object_output="..\obj\odalaunch\debug" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-D__WXDEBUG__" />
+				</Compiler>
+				<Environment>
+					<Variable name="WX_PLAT" value="unix" />
+					<Variable name="WX_CFG" value="d" />
+				</Environment>
+			</Target>
 			<Environment>
 				<Variable name="WX_VER" value="28" />
 				<Variable name="WX_LIB" value="lib" />
@@ -92,6 +126,7 @@
 			</Environment>
 		</Build>
 		<VirtualTargets>
+			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
 			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
 			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
 		</VirtualTargets>
