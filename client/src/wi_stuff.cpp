@@ -281,6 +281,9 @@ static std::vector<int> dm_totals;
 //		GRAPHICS
 //
 
+// Scoreboard Border - Dan
+static patch_t* 		sbborder;
+
 // You Are Here graphic
 static patch_t* 		yah[2];
 
@@ -294,7 +297,7 @@ static patch_t* 		splat;
 //static patch_t* 		wiminus;
 
 // "Finished!" graphics
-//static patch_t* 		finished; (Removed) Dan - Did we really need this?
+//static patch_t* 		finished; (Removed) Dan - Causes GUI Issues |FIX-ME|
 
 // "Entering" graphic
 static patch_t* 		entering;
@@ -352,7 +355,8 @@ static int WI_DrawName (char *str, int x, int y)
 }
 
 
-// Draws "<Levelname> Finished!"
+
+//Draws "<Levelname> Finished!"
 void WI_drawLF (void)
 {
 	int y;
@@ -375,7 +379,7 @@ void WI_drawLF (void)
 	}
 
 	// draw "Finished!"
-//	FB->DrawPatchClean (finished, (320 - finished->width())/2, y); (Removed) Dan - Did we really need this?
+//	FB->DrawPatchClean (finished, (320 - finished->width())/2, y);  (Removed) Dan - Causes GUI Issues |FIX-ME|
 }
 
 
@@ -837,7 +841,7 @@ void WI_loadData (void)
 	}
 
 	// "finished"
-	//finished = W_CachePatch ("WIF") Dan - Did we really need this?
+	//finished = W_CachePatch ("WIF") (Removed) Dan - Causes GUI Issues |FIX-ME|
 
 	// "entering"
 	entering = W_CachePatch ("WIENTER");
@@ -879,7 +883,7 @@ void WI_unloadData (void)
 		}
 	}
 
-	//Z_ChangeTag (finished, PU_CACHE); (Removed) Dan - Did we really need this? 
+	//Z_ChangeTag (finished, PU_CACHE); (Removed) Dan - Causes GUI Issues |FIX-ME|
 	Z_ChangeTag (entering, PU_CACHE);
 
 	Z_ChangeTag (p, PU_CACHE);*/
