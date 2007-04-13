@@ -437,7 +437,7 @@ void I_InitSound (void)
 	}
 
 
-        if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 1024) < 0)
+        if (Mix_OpenAudio(22050, AUDIO_S16LSB, 2, 1024) < 0)
 	{
 		Printf(PRINT_HIGH, "Error initializing SDL_mixer: %s\n", SDL_GetError());
 		return;
