@@ -31,6 +31,9 @@
 	NSTableView *serversTableView;
 	NSTableView *playersTableView;
 	
+	// Popup preferences window
+	NSTextField *clientParameters;
+	
 	int refreshListPosition;
 }
 

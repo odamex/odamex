@@ -4,6 +4,7 @@
             CLASS = CocoaUIController; 
             LANGUAGE = ObjC; 
             OUTLETS = {
+                clientParameters = NSTextField; 
                 masterPing = NSTextField; 
                 playersTableView = NSTableView; 
                 serversTableView = NSTableView; 
@@ -14,7 +15,12 @@
             }; 
             SUPERCLASS = NSObject; 
         }, 
-        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            ACTIONS = {"" = id; }; 
+            CLASS = FirstResponder; 
+            LANGUAGE = ObjC; 
+            SUPERCLASS = NSObject; 
+        }, 
         {CLASS = NSSegmentedControl; LANGUAGE = ObjC; SUPERCLASS = NSControl; }
     ); 
     IBVersion = 1; 

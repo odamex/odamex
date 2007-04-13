@@ -98,6 +98,11 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	[self reloadMasters];
 }
 
+- (void)textDidEndEditing:(NSNotification *)aNotification
+{
+	NSLog(@"lol!!!");
+}
+
 - (void)release
 {
 	/*[toolbarItems release];*/
@@ -317,7 +322,7 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	
 	NSString *address = [[serversArray objectAtIndex:clickedRowIndex] objectForKey:@"addressPort"];
 	NSArray *arguments;
-    arguments = [NSArray arrayWithObjects:@"-connect", address, nil];
+    arguments = [NSArray arrayWithObjects:@"-connect", address, [clientParameters stringValue], nil];
 	
     [odamex setLaunchPath:@"../../../odamex"];
 	[odamex setArguments:arguments];
@@ -535,6 +540,14 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 				{
 					[row setObject:[NSString stringWithCString:"COOP"] forKey: @"type"];
 				}
+				
+				stringstream ssp;
+				/*
+				for(unsigned k = 0; k < players; k++)
+				{
+					ssp << MSG_ReadString() << " ";
+				}*/
+//				[row setObject:[NSString stringWithCString:encoded] forKey: @"playerinfos"];
 				
 				[serversTableView reloadData];
 			}
