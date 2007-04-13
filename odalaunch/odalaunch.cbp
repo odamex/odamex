@@ -115,8 +115,8 @@
 					<Add option="-D__WXDEBUG__" />
 				</Compiler>
 				<Environment>
-					<Variable name="WX_PLAT" value="unix" />
 					<Variable name="WX_CFG" value="d" />
+					<Variable name="WX_PLAT" value="unix" />
 				</Environment>
 			</Target>
 			<Environment>
@@ -138,6 +138,7 @@
 			<Add option='-include &quot;wx_pch.h&quot;' />
 			<Add option="-Winvalid-pch" />
 			<Add option="-Wno-long-long" />
+			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DUSE_PCH" />
 			<Add directory="$(#WX.include)" />
 			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />

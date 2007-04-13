@@ -132,6 +132,7 @@
 			<Add option="-pedantic" />
 			<Add option="-fexceptions" />
 			<Add option="-Wno-long-long" />
+			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DNOASM" />
 			<Add directory="." />
 			<Add directory="..\src" />

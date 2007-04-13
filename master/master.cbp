@@ -139,6 +139,7 @@
 			<Add option="-pedantic" />
 			<Add option="-fexceptions" />
 			<Add option="-Wno-long-long" />
+			<Add option="-fno-optimize-sibling-calls" />
 		</Compiler>
 		<Unit filename="i_net.cpp" />
 		<Unit filename="i_net.h" />
