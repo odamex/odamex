@@ -318,16 +318,11 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	if (clickedRowIndex == -1)
 		return;
 	
-	NSTask *odamex = [[NSTask alloc] init];
-	
 	NSString *address = [[serversArray objectAtIndex:clickedRowIndex] objectForKey:@"addressPort"];
-	NSArray *arguments;
-    arguments = [NSArray arrayWithObjects:@"-connect", address, [clientParameters stringValue], nil];
+	NSArray *arguments = [NSArray arrayWithObjects:@"-connect", address, [clientParameters stringValue], nil];
+	NSString *path = [NSString stringWithFormat:@"%@/../odamex", [[NSBundle mainBundle] bundlePath]];
 	
-    [odamex setLaunchPath:@"../../../odamex"];
-	[odamex setArguments:arguments];
-	
-	[odamex launch];
+	[NSTask launchedTaskWithLaunchPath:path arguments:arguments];
 }
 
 - (void)serversTableViewDoubleClicked: (NSTableView *)tableView
@@ -541,8 +536,8 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 					[row setObject:[NSString stringWithCString:"COOP"] forKey: @"type"];
 				}
 				
-				stringstream ssp;
 				/*
+				 std::stringstream ssp;
 				for(unsigned k = 0; k < players; k++)
 				{
 					ssp << MSG_ReadString() << " ";
