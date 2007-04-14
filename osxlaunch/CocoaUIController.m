@@ -320,9 +320,14 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	
 	NSString *address = [[serversArray objectAtIndex:clickedRowIndex] objectForKey:@"addressPort"];
 	NSArray *arguments = [NSArray arrayWithObjects:@"-connect", address, [clientParameters stringValue], nil];
-	NSString *path = [NSString stringWithFormat:@"%@/../odamex", [[NSBundle mainBundle] bundlePath]];
+	NSString *path = [NSString stringWithFormat:@"%@/..", [[NSBundle mainBundle] bundlePath]];
 	
-	[NSTask launchedTaskWithLaunchPath:path arguments:arguments];
+	NSTask *odamex = [[NSTask alloc] init];
+	[odamex setCurrentDirectoryPath:path];
+	[odamex setArguments:arguments];
+	[odamex setLaunchPath:[NSString stringWithFormat:@"%@/odamex", path]];
+
+	[odamex launch];
 }
 
 - (void)serversTableViewDoubleClicked: (NSTableView *)tableView
