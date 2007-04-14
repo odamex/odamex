@@ -203,36 +203,25 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 
 - (void)fillPlayersArray: (int)rowIndex
 {
-	/*static NSString *values[2][3][4] = {
-		{
-			{ @"Homer Simpson", @"12", @"13", @"Duh!!!" },
-			{ @"Bugs Bunny", @"12", @"5", @"What's up doc ?" },
-			{ @"Mickey Mouse", @"33", @"2", @"" }
-		},
-		{
-			{ @"James Bond", @"12", @"34", @"My name is Bond, James Bond." },
-			{ @"Popeye", @"44", @"3", @"" },
-			{ @"Jackie Chan", @"55", @"44", @"" }
-		}
-	};
-	int k = rowIndex % 2;
-	int i, j;
-	
 	if (playersArray != nil) [playersArray release];
 	playersArray = [[NSMutableArray alloc] init];
-	
-	for (j = 0; j < 3; j++) {
-		NSMutableDictionary *row = [[NSMutableDictionary alloc] init];
-		
-		for (i = 0; i < 4; i++)
-			[row setObject: values[k][j][i] forKey: playerColums[i]];
-			
-		[playersArray addObject: row];
-		[row release];
-	}
-	
-	[totalPlayers setStringValue: 
-		[NSString stringWithFormat: @"Total Players: %d", [playersArray count]]];*/
+
+	NSMutableDictionary *server_row = [serversArray objectAtIndex:rowIndex];
+	NSMutableArray *players = [server_row objectForKey:@"playerinfos"];
+
+	size_t count = [players count];
+
+	for (size_t j = 0; j < count; j++)
+	{
+		NSMutableDictionary *player = [players objectAtIndex:j];
+		NSMutableDictionary *player_row = [[NSMutableDictionary alloc] init];
+		[player_row setObject:[player objectForKey:@"playerName"] forKey:@"playerName"];
+		[player_row setObject:[player objectForKey:@"frags"] forKey:@"frags"];
+		[player_row setObject:[player objectForKey:@"ping"] forKey:@"ping"];
+		[player_row setObject:[player objectForKey:@"team"] forKey:@"team"];
+		[playersArray addObject:player_row];
+	}	
+
 	[playersTableView reloadData];
 }
 
@@ -318,9 +307,11 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	if (clickedRowIndex == -1)
 		return;
 	
-	NSString *address = [[serversArray objectAtIndex:clickedRowIndex] objectForKey:@"addressPort"];
-	NSArray *arguments = [NSArray arrayWithObjects:@"-connect", address, [clientParameters stringValue], nil];
+	NSArray *arguments = [[clientParameters stringValue] componentsSeparatedByString:@" "];
 	NSString *path = [NSString stringWithFormat:@"%@/..", [[NSBundle mainBundle] bundlePath]];
+	NSString *address = [[serversArray objectAtIndex:clickedRowIndex] objectForKey:@"addressPort"];
+	NSArray *connect = [NSArray arrayWithObjects:@"-connect", address, nil];
+	arguments = [connect arrayByAddingObjectsFromArray:arguments];
 	
 	NSTask *odamex = [[NSTask alloc] init];
 	[odamex setCurrentDirectoryPath:path];
@@ -541,13 +532,36 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 					[row setObject:[NSString stringWithCString:"COOP"] forKey: @"type"];
 				}
 				
-				/*
-				 std::stringstream ssp;
+				
+				NSMutableArray *playerinfos = [[NSMutableArray alloc] init];
 				for(unsigned k = 0; k < players; k++)
 				{
-					ssp << MSG_ReadString() << " ";
-				}*/
-//				[row setObject:[NSString stringWithCString:encoded] forKey: @"playerinfos"];
+					NSMutableDictionary *player = [[NSMutableDictionary alloc] init];
+					
+					[player setObject:[NSString stringWithCString:MSG_ReadString()] forKey:@"playerName"];
+
+					int frags = MSG_ReadShort(), ping = MSG_ReadLong(), team;
+					if (teamplay || ctfmode)
+						team = MSG_ReadByte();
+					
+					std::stringstream fss, pss, tss;
+					fss << frags;
+					pss << ping;
+					tss << team;
+					[player setObject:[NSString stringWithCString:fss.str().c_str()] forKey:@"frags"];
+					[player setObject:[NSString stringWithCString:pss.str().c_str()] forKey:@"ping"];
+
+					if (teamplay || ctfmode)
+						[player setObject:[NSString stringWithCString:tss.str().c_str()] forKey:@"team"];
+					else
+						[player setObject:[NSString stringWithCString:"N/A"] forKey:@"team"];
+
+					[playerinfos addObject:player];
+				}
+				[row setObject:playerinfos forKey: @"playerinfos"];
+				
+				if(i == [serversTableView selectedRow])
+					[self fillPlayersArray:i];
 				
 				[serversTableView reloadData];
 			}
