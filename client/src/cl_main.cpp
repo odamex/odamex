@@ -793,7 +793,17 @@ bool CL_Connect(void)
 	MSG_WriteLong(&net_buffer, 0);
 
 	if(gamestate == GS_DOWNLOAD && missing_file.length())
+	{
+		// denis - do not download commercial wads
+		if(W_IsCommercial(missing_file, missing_hash))
+		{
+			Printf(PRINT_HIGH, "This is a commercial wad and will not be downloaded.\n");
+			CL_QuitNetGame();
+			return false;
+		}
+		
 		CL_RequestDownload(missing_file, missing_hash);
+	}
 
 	compressor.reset();
 
@@ -1853,13 +1863,6 @@ struct download_t
 //
 void CL_RequestDownload(std::string filename, std::string filehash)
 {
-	// denis - do not download commercial wads
-	if(W_IsCommercial(filename, filehash))
-	{
-		Printf(PRINT_HIGH, "This is a commercial wad and will not be downloaded.\n");
-		return;
-	}
-
 	// denis todo clear previous downloads
 	MSG_WriteMarker(&net_buffer, clc_wantwad);
 	MSG_WriteString(&net_buffer, filename.c_str());
