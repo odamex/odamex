@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -65,7 +65,6 @@ void CL_ResetSectors (void)
 				break;
 			
 			continue;
-			//new DMovingFloor(sec);
 		}
 
 		if(sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat)))
@@ -259,5 +258,5 @@ void CL_PredictMove (void)
 }
 
 
-VERSION_CONTROL (cl_pred_cpp, "$Id:$")
+VERSION_CONTROL (cl_pred_cpp, "$Id$")
 

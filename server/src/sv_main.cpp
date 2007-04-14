@@ -2564,6 +2564,8 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 		if(&lines[l] == line)
 			break;
 	
+	line->wastoggled = 1;
+	
 	for (size_t i = 0; i < players.size(); i++)
 	{
 		if (!players[i].ingame())

@@ -1571,6 +1571,11 @@ void CL_UpdateMovingSector(void)
 		return;
 
 	plat_pred_t pred = {s, state, count, fh};
+	sector_t *sec = &sectors[s];
+
+	if(!sec->floordata)
+		sec->floordata = new DMovingFloor(sec);
+
 	size_t i;
 
 	for(i = 0; i < real_plats.size(); i++)
@@ -1774,12 +1779,18 @@ void CL_Switch()
 	byte state = MSG_ReadByte();
 	unsigned time = MSG_ReadLong();
 
-	if (l >= (unsigned)numlines || state >= 3)
+	if (!lines || l >= (unsigned)numlines || state >= 3)
 		return;
 
 	if(!P_SetButtonInfo(&lines[l], state, time)) // denis - fixme - security
 		if(wastoggled)
 			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_SPECIAL_REPEAT);  // denis - fixme - security
+
+	if(wastoggled && !(lines[l].flags & ML_SPECIAL_REPEAT)) // non repeat special
+	{
+		Printf(PRINT_HIGH, "omg\n");
+		lines[l].special = NULL;
+	}
 }
 
 void CL_ActivateLine(void)
@@ -1789,7 +1800,7 @@ void CL_ActivateLine(void)
 	byte side = MSG_ReadByte();
 	byte activationType = MSG_ReadByte();
 
-	if (l >= (unsigned)numlines)
+	if (!lines || l >= (unsigned)numlines)
 		return;
 
 	if(mo == consoleplayer().mo && activationType != 2)

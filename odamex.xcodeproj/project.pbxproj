@@ -1002,7 +1002,7 @@
 		92D2D9C70B643FD200FD5B07 /* i_system.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_system.h; sourceTree = "<group>"; };
 		92D2D9C80B643FD200FD5B07 /* odaserv.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = odaserv.ico; sourceTree = "<group>"; };
 		92D2D9C90B643FD200FD5B07 /* resource.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = resource.h; sourceTree = "<group>"; };
-		92D2DA840B6444B300FD5B07 /* odamex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "compiled.mach-o.executable"; path = odamex; sourceTree = BUILT_PRODUCTS_DIR; };
+		92D2DA840B6444B300FD5B07 /* odamex */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odamex; sourceTree = BUILT_PRODUCTS_DIR; };
 		92D2DAC80B64491800FD5B07 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		92D2DACB0B64491800FD5B07 /* btnexit.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = btnexit.ico; sourceTree = "<group>"; };
 		92D2DACC0B64491800FD5B07 /* btnhelp.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = btnhelp.ico; sourceTree = "<group>"; };
