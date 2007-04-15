@@ -186,53 +186,53 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     Mix_Chunk *chunk;
     SDL_RWops *mem_op;
     Uint8 *ret_data;
-    
+
     // load, allocate and convert the format from memory
     mem_op = SDL_RWFromMem(data, size);
-    
+
     if (!mem_op)
     {
-        Printf(PRINT_HIGH, 
+        Printf(PRINT_HIGH,
                 "perform_sdlmix_conv - SDL_RWFromConstMem: %s\n", Mix_GetError());
-                
+
         return NULL;
     }
-    
+
     chunk = Mix_LoadWAV_RW(mem_op, 1);
-    
+
     if (!chunk)
     {
-        Printf(PRINT_HIGH, 
+        Printf(PRINT_HIGH,
                 "perform_sdlmix_conv - Mix_LoadWAV_RW: %s\n", Mix_GetError());
-                
+
         return NULL;
     }
-    
+
     // return the size
     *newsize = chunk->alen;
-    
+
     // allocate some space in the zone heap
     ret_data = (Uint8 *)Z_Malloc(chunk->alen, PU_STATIC, NULL);
-    
+
     if (!ret_data)
     {
-        Printf(PRINT_HIGH, 
+        Printf(PRINT_HIGH,
                 "perform_sdlmix_conv - Z_Malloc: could not allocate: %d bytes\n",
                 chunk->alen);
-        
+
         Mix_FreeChunk(chunk);
         chunk = NULL;
-        
+
         return NULL;
     }
-    
+
     // copy the converted data to the return buffer
     memcpy(ret_data, chunk->abuf, chunk->alen);
-    
+
     // clean up
     Mix_FreeChunk(chunk);
     chunk = NULL;
-    
+
     return ret_data;
 }
 
@@ -245,7 +245,7 @@ static void getsfx (struct sfxinfo_struct *sfx)
 	Mix_Chunk *chunk;
 
     data = (Uint8 *)W_CacheLumpNum(sfx->lumpnum, PU_STATIC);
-  
+
     // [Russell] is it not a doom sound lump?
     if (((data[1] << 8) | data[0]) != 3)
     {
@@ -254,15 +254,15 @@ static void getsfx (struct sfxinfo_struct *sfx)
         chunk->abuf = perform_sdlmix_conv(data, sfx->length, &new_size);
         chunk->alen = new_size;
         chunk->volume = MIX_MAX_VOLUME;
-        
+
         sfx->data = chunk;
-        
-        return;        
+
+        return;
     }
-    
+
 	samplerate = (data[3] << 8) | data[2];
     length = (data[5] << 8) | data[4];
-    expanded_length = (length * 22050) / (samplerate / 4);
+    expanded_length = (length * 22050 * 4) / samplerate;
 
 	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
 	chunk->allocated = 1;
