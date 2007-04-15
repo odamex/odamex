@@ -183,17 +183,62 @@ void G_DeferedInitNew (char *mapname)
 	gameaction = ga_newgame;
 }
 
-BEGIN_COMMAND (map) //[cSc] MAP command
+BEGIN_COMMAND (map)
 {
-if (argc > 1)
+	if (argc > 1)
 	{
+		// [Dash|RD] -- We can make a safe assumption that the user might not specify
+		//              the whole lumpname for the level, and might opt for just the
+		//              number. This makes sense, so why isn't there any code for it?
 		if (W_CheckNumForName (argv[1]) == -1)
-			Printf (PRINT_HIGH, "Map Not Found: %s\n", argv[1]);
+		{ // The map name isn't valid, so lets try to make some assumptions for the user.
+			char mapname[32];
+
+			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
+			if ( argc == 2 )
+			{
+				sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
+			}
+			else if ( argc == 3 )
+			{
+				sprintf( mapname, "E%iM%i", atoi( argv[1] ), atoi( argv[2] ) );
+			}
+
+			if (W_CheckNumForName (mapname) == -1)
+			{ // Still no luck, oh well.
+				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
+			}
+			else
+			{ // Success
+				G_DeferedInitNew (mapname);
+			}
+
+		}
 		else
-		G_DeferedInitNew (argv[1]);
+		{
+			G_DeferedInitNew (argv[1]);
+		}
 	}
 }
-END_COMMAND (map) 
+END_COMMAND (map)
+
+BEGIN_COMMAND (wad) // denis - changes wads
+{
+	std::vector<std::string> wads;
+	std::vector<std::string> hashes;
+	
+	int i = 1;
+
+	while(i < argc)
+		wads.push_back(argv[i++]);
+
+    hashes.resize(wads.size());
+
+	D_DoomWadReboot(wads, hashes);
+
+	G_DeferedInitNew (startmap);
+}
+END_COMMAND (wad)
 
 EXTERN_CVAR(allowexit)
 EXTERN_CVAR(nomonsters)
