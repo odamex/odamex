@@ -2,6 +2,7 @@
     <object class="wxDialog" name="dlgConfig">
         <title>Configure Settings</title>
         <centered>1</centered>
+        <icon>../res/odalaunch-sysmenu.ico</icon>
         <object class="wxFlexGridSizer">
             <cols>1</cols>
             <object class="sizeritem">
@@ -62,7 +63,8 @@
                                 <object class="wxButton" name="ID_BTNGETENV">
                                     <label>Get Environment</label>
                                     <size>-1,-1</size>
-                                    <helptext>Retrieves $DOOMWADDIR and $DOOMPATHDIR environment variable data</helptext>
+                                    <tooltip>Loads the list with DOOMWADDIR and DOOMWADPATH environment variable data</tooltip>
+                                    <helptext>Loads the list with DOOMWADDIR and DOOMWADPATH environment variable data</helptext>
                                 </object>
                                 <flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
                                 <border>5</border>
@@ -126,8 +128,8 @@
                                 <object class="wxBitmapButton" name="ID_BTNDOWN">
                                     <bitmap stock_id="wxART_GO_DOWN" />
                                     <size>-1,-1</size>
-                                    <tooltip>Move Up</tooltip>
-                                    <helptext>Move Up</helptext>
+                                    <tooltip>Move Down</tooltip>
+                                    <helptext>Move Down</helptext>
                                 </object>
                                 <flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
                                 <border>5</border>

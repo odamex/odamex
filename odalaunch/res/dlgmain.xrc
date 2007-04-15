@@ -29,6 +29,7 @@
                 <label>File</label>
                 <object class="wxMenuItem" name="ID_MNUSERVERS">
                     <label>Custom Servers</label>
+                    <enabled>0</enabled>
                     <help>Set-up Custom Servers</help>
                 </object>
                 <object class="wxMenuItem" name="ID_MNUSETTINGS">
