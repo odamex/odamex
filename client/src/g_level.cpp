@@ -236,6 +236,11 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	D_DoomWadReboot(wads, hashes);
 
+	// get skill / episode / map from parms
+	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+
+    S_StopMusic();
+
 	G_DeferedInitNew (startmap);
 }
 END_COMMAND (wad)
