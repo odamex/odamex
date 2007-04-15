@@ -183,6 +183,18 @@ void G_DeferedInitNew (char *mapname)
 	gameaction = ga_newgame;
 }
 
+BEGIN_COMMAND (map) //[cSc] MAP command
+{
+if (argc > 1)
+	{
+		if (W_CheckNumForName (argv[1]) == -1)
+			Printf (PRINT_HIGH, "Map Not Found: %s\n", argv[1]);
+		else
+		G_DeferedInitNew (argv[1]);
+	}
+}
+END_COMMAND (map) 
+
 EXTERN_CVAR(allowexit)
 EXTERN_CVAR(nomonsters)
 EXTERN_CVAR(deathmatch)
@@ -2005,4 +2017,6 @@ cluster_info_t ClusterInfos[] = {
 };
 
 VERSION_CONTROL (g_level_cpp, "$Id$")
+
+
 
