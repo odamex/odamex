@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -132,6 +132,7 @@ void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
 void A_Ambient(AActor*);		// [RH] Play ambient sound
+void A_Gibify(AActor*); // denis - squash thing
 
 state_t	states[NUMSTATES] = {
 	{SPR_TROO,0,-1,{(void *)NULL},S_NULL,0,0},	// S_NULL
@@ -1029,7 +1030,7 @@ state_t	states[NUMSTATES] = {
 	{SPR_PLAY,13,-1,{(void *)NULL},S_NULL,0,0},	// S_DEADTORSO
 	{SPR_PLAY,18,-1,{(void *)NULL},S_NULL,0,0},	// S_DEADBOTTOM
 	{SPR_POL2,0,-1,{(void *)NULL},S_NULL,0,0},	// S_HEADSONSTICK
-	{SPR_POL5,0,-1,{(void *)NULL},S_NULL,0,0},	// S_GIBS
+	{SPR_POL5,0,-1,{(void *)A_Gibify},S_NULL,0,0},	// S_GIBS
 	{SPR_POL4,0,-1,{(void *)NULL},S_NULL,0,0},	// S_HEADONASTICK
 	{SPR_POL3,32768,6,{(void *)NULL},S_HEADCANDLES2,0,0},	// S_HEADCANDLES
 	{SPR_POL3,32769,6,{(void *)NULL},S_HEADCANDLES,0,0},	// S_HEADCANDLES2
@@ -5757,5 +5758,5 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	},
 };
 
-VERSION_CONTROL (info_cpp, "$Id:$")
+VERSION_CONTROL (info_cpp, "$Id$")
 

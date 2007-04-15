@@ -860,8 +860,8 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 		}
 	}
 	
-	// corpses
-	if(mo->flags & MF_CORPSE)
+	// animating corpses
+	if((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_corpse);
 		MSG_WriteShort (&cl->reliablebuf, mo->netid);

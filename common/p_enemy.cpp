@@ -2069,5 +2069,12 @@ void A_PlayerScream (AActor *mo)
 	S_Sound (mo, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
 
+void A_Gibify(AActor *mo) // denis - squash thing
+{
+	mo->flags &= ~MF_SOLID;
+	mo->height = 0;
+	mo->radius = 0;
+}
+
 VERSION_CONTROL (p_enemy_cpp, "$Id$")
 

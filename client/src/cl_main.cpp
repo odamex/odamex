@@ -1047,7 +1047,7 @@ void CL_SpawnMobj()
 	mo->rndindex = rndindex;
 	
 	if (state < NUMSTATES)
-		mo->state = states + state;
+		P_SetMobjState(mo, (statenum_t)state);
 
 	if(mo->flags & MF_MISSILE)
 	{
@@ -1085,7 +1085,7 @@ void CL_Corpse(void)
 			tics = -1;
 	}
 	
-	if (!mo)
+	if (!mo || mo->state - states == S_GIBS)
 		return;
 
 	P_SetMobjState(mo, mo->info->deathstate);
