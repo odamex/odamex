@@ -701,9 +701,10 @@ W_CacheLumpName
 // W_CachePatch
 //
 patch_t* W_CachePatch
-( unsigned	lump )
+( unsigned	lump,
+ int		tag )
 {
-	patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
+	patch_t *patch = (patch_t *)W_CacheLumpNum (lump, tag);
 	
 	// denis - todo - would be good to check whether the patch violates W_LumpLength here
 	// denis - todo - would be good to check for width/height == 0 here, and maybe replace those with a valid patch
@@ -712,9 +713,10 @@ patch_t* W_CachePatch
 }
 
 patch_t* W_CachePatch
-( const char*		name)
+( const char* name,
+ int		tag )
 {
-	return W_CachePatch(W_GetNumForName(name)); // denis - todo - would be good to replace non-existant patches with a default '404' patch
+	return W_CachePatch(W_GetNumForName(name), tag); // denis - todo - would be good to replace non-existant patches with a default '404' patch
 }
 
 //

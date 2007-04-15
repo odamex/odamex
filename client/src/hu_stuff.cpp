@@ -130,7 +130,7 @@ void HU_Init (void)
 	for (i = 0; i < HU_FONTSIZE; i++)
 	{
 		sprintf (buffer, tplate, j++ - sub);
-		hu_font[i] = W_CachePatch(buffer);
+		hu_font[i] = W_CachePatch(buffer, PU_STATIC);
 	}
 }
 

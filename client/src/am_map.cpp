@@ -572,7 +572,7 @@ void AM_loadPics(void)
 	for (i = 0; i < 10; i++)
 	{
 		sprintf(namebuf, "AMMNUM%d", i);
-		marknums[i] = W_CachePatch (namebuf);
+		marknums[i] = W_CachePatch (namebuf, PU_STATIC);
 	}
 }
 

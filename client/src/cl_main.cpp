@@ -1573,8 +1573,8 @@ void CL_UpdateMovingSector(void)
 	plat_pred_t pred = {s, state, count, fh};
 	sector_t *sec = &sectors[s];
 
-	if(!sec->floordata)
-		sec->floordata = new DMovingFloor(sec);
+//	if(!sec->floordata)
+//		sec->floordata = new DMovingFloor(sec);
 
 	size_t i;
 
@@ -1787,10 +1787,7 @@ void CL_Switch()
 			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_SPECIAL_REPEAT);  // denis - fixme - security
 
 	if(wastoggled && !(lines[l].flags & ML_SPECIAL_REPEAT)) // non repeat special
-	{
-		Printf(PRINT_HIGH, "omg\n");
 		lines[l].special = NULL;
-	}
 }
 
 void CL_ActivateLine(void)

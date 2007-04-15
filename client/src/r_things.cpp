@@ -52,7 +52,7 @@ extern fixed_t FocalLengthX, FocalLengthY;
 //void R_DrawColumn (void);
 //void R_DrawFuzzColumn (void);
 
-static patch_t *crosshair_patch;
+static int crosshair_lump;
 
 static void R_InitCrosshair();
 
@@ -503,8 +503,6 @@ END_COMMAND (skins)
 
 static void R_InitCrosshair()
 {
-	crosshair_patch = NULL;
-	
 	int xhairnum = (int)crosshair;
 	
 	if (xhairnum)
@@ -523,7 +521,7 @@ static void R_InitCrosshair()
 		}
 		
 		if(xhair != -1)
-			crosshair_patch = W_CachePatch (xhair);
+			crosshair_lump = xhair;
 	}
 }
 
@@ -1487,14 +1485,14 @@ static void R_DrawCrosshair (void)
 	if (camera->player && (camera->player->cheats & CF_CHASECAM))
 		return;
 
-	if(crosshair && crosshair_patch)
+	if(crosshair && crosshair_lump)
 	{
 		if (crosshair < 0)
-			screen->DrawLucentPatch (crosshair_patch,
+			screen->DrawLucentPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
 		else
-			screen->DrawPatch (crosshair_patch,
+			screen->DrawPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
 	}

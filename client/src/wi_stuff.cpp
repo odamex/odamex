@@ -795,7 +795,7 @@ void WI_loadData (void)
 
 		if (j >= 0)
 		{
-			lnames[i] = W_CachePatch (j);
+			lnames[i] = W_CachePatch (j, PU_STATIC);
 		}
 		else
 		{
@@ -808,13 +808,13 @@ void WI_loadData (void)
 	if (gamemode != commercial)
 	{
 		// you are here
-		yah[0] = W_CachePatch ("WIURH0");
+		yah[0] = W_CachePatch ("WIURH0", PU_STATIC);
 
 		// you are here (alt.)
-		yah[1] = W_CachePatch ("WIURH1");
+		yah[1] = W_CachePatch ("WIURH1", PU_STATIC);
 
 		// splat
-		splat = W_CachePatch ("WISPLAT");
+		splat = W_CachePatch ("WISPLAT", PU_STATIC);
 
 		if (wbs->epsd < 3)
 		{
@@ -828,7 +828,7 @@ void WI_loadData (void)
 					{
 						// animations
 						sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
-						a->p[i] = W_CachePatch (name);
+						a->p[i] = W_CachePatch (name, PU_STATIC);
 					}
 					else
 					{
@@ -841,12 +841,12 @@ void WI_loadData (void)
 	}
 
 	// "finished"
-	//finished = W_CachePatch ("WIF") (Removed) Dan - Causes GUI Issues |FIX-ME|
+	//finished = W_CachePatch ("WIF", PU_STATIC) (Removed) Dan - Causes GUI Issues |FIX-ME|
 
 	// "entering"
-	entering = W_CachePatch ("WIENTER");
+	entering = W_CachePatch ("WIENTER", PU_STATIC);
 
-	p = W_CachePatch ("STPBANY");
+	p = W_CachePatch ("STPBANY", PU_STATIC);
 }
 
 void WI_unloadData (void)

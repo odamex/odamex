@@ -25,6 +25,7 @@
 #define __W_WAD__
 
 #include "doomtype.h"
+#include "z_zone.h"
 #include "r_defs.h"
 
 #include <string>
@@ -100,8 +101,8 @@ unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest,
 
 void *W_CacheLumpNum (unsigned lump, int tag);
 void *W_CacheLumpName (const char *name, int tag);
-patch_t* W_CachePatch (unsigned lump);
-patch_t* W_CachePatch (const char *name);
+patch_t* W_CachePatch (unsigned lump, int tag = PU_CACHE);
+patch_t* W_CachePatch (const char *name, int tag = PU_CACHE);
 
 void	W_Profile (const char *fname);
 
