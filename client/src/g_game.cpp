@@ -210,15 +210,14 @@ player_t		&displayplayer()
 player_t		&idplayer(size_t id)
 {
 	// attempt a quick cached resolution
-	size_t translation[MAXPLAYERS];
+	size_t translation[MAXPLAYERS] = {0};
 	size_t size = players.size();
 
 	if(id >= MAXPLAYERS)
 		return nullplayer;
 
 	size_t tid = translation[id];
-	if(tid < size
-	&& players[tid].id == id)
+	if(tid < size && players[tid].id == id)
 		return players[tid];
 
 	// full search

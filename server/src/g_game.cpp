@@ -166,7 +166,7 @@ player_t		&displayplayer()
 player_t		&idplayer(size_t id)
 {
 	// attempt a quick cached resolution
-	size_t translation[MAXPLAYERS];
+	size_t translation[MAXPLAYERS] = {0};
 	size_t size = players.size();
 
 	if(id >= MAXPLAYERS)
