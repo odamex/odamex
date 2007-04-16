@@ -556,11 +556,22 @@ DConsoleAlias::~DConsoleAlias ()
 }
 
 void DConsoleAlias::Run()
-{
+{  
 	if(!state_lock)
 	{
 		state_lock = true;
-		AddCommandString (m_Command.c_str());
+		
+        m_CommandParam = m_Command;
+		
+		// [Russell] - Allows for aliases with parameters
+		if (argc > 1)
+        {           
+            for (size_t i = 1; i < argc; i++)
+                m_CommandParam += argv[i];
+        }
+        
+        AddCommandString (m_CommandParam.c_str());
+		
 		state_lock = false;
 	}
 	else

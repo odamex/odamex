@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -206,6 +206,12 @@ void M_LoadDefaults (void)
 	AddCommandString (cmd.c_str());
 	cvar_defflags = 0;
 
+	if (configver < 118.0f)
+	{
+		AddCommandString ("alias idclev map");		
+		AddCommandString ("alias changemap map");	
+	}
+
 	DefaultsLoaded = true;
 	atterm (M_SaveDefaults);
 }
@@ -243,5 +249,5 @@ typedef struct
 } pcx_t;
 
 
-VERSION_CONTROL (m_misc_cpp, "$Id:$")
+VERSION_CONTROL (m_misc_cpp, "$Id$")
 

@@ -219,6 +219,10 @@ void M_LoadDefaults (void)
 	{
 		AddCommandString ("alias idclip noclip");
 		AddCommandString ("alias idspispopd noclip");
+		AddCommandString ("alias iddqd god");
+		AddCommandString ("alias idclev map");		
+		AddCommandString ("alias changemap map");	
+		AddCommandString ("alias changemus idmus");
 	}
 
 	DefaultsLoaded = true;

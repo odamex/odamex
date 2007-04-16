@@ -94,6 +94,7 @@ public:
 	static void C_ArchiveAliases (FILE *f);
 protected:
 	std::string m_Command;
+	std::string m_CommandParam;
 };
 
 // Actions

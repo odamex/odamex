@@ -74,15 +74,6 @@ BEGIN_COMMAND (quit)
 }
 END_COMMAND (quit)
 
-BEGIN_COMMAND (changemus)
-{
-	if (argc > 1)
-	{
-		S_ChangeMusic (argv[1], 1);
-	}
-}
-END_COMMAND (changemus)
-
 /*
 ==================
 Cmd_God
@@ -103,18 +94,6 @@ BEGIN_COMMAND (god)
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
 }
 END_COMMAND (god)
-
-BEGIN_COMMAND (iddqd)
-{
-	if (CheckCheatmode ())
-		return;
-
-	//consoleplayer().cheats ^= CF_GODMODE;
-
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
-}
-END_COMMAND (iddqd)
 
 BEGIN_COMMAND (notarget)
 {
@@ -192,61 +171,6 @@ BEGIN_COMMAND (chase)
 	}
 }
 END_COMMAND (chase)
-
-BEGIN_COMMAND (idclev)
-{
-	if (CheckCheatmode ())
-		return;
-
-	if ((argc > 1) && (*(argv[1] + 2) == 0) && *(argv[1] + 1) && *argv[1])
-	{
-		int epsd, map;
-		char buf[2];
-		char *mapname;
-
-		buf[0] = argv[1][0] - '0';
-		buf[1] = argv[1][1] - '0';
-
-		if (gameinfo.flags & GI_MAPxx)
-		{
-			epsd = 1;
-			map = buf[0]*10 + buf[1];
-		}
-		else
-		{
-			epsd = buf[0];
-			map = buf[1];
-		}
-
-		// Catch invalid maps.
-		mapname = CalcMapName (epsd, map);
-		if (W_CheckNumForName (mapname) == -1)
-			return;
-
-		// So be it.
-		Printf (PRINT_HIGH, "%s\n", STSTR_CLEV);
-      	G_DeferedInitNew (mapname);
-	}
-}
-END_COMMAND (idclev)
-
-BEGIN_COMMAND (changemap)
-{
-	if (argc > 1)
-	{
-		if (W_CheckNumForName (argv[1]) == -1)
-		{
-			Printf (PRINT_HIGH, "No map %s\n", argv[1]);
-		}
-		else
-		{
-			//Net_WriteByte (DEM_CHANGEMAP);
-			//Net_WriteString (argv[1]);
-			// todo: new network message
-		}
-	}
-}
-END_COMMAND (changemap)
 
 BEGIN_COMMAND (idmus)
 {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -58,81 +58,6 @@ BEGIN_COMMAND (quit)
 }
 END_COMMAND (quit)
 
-BEGIN_COMMAND (idclev)
-{
-	if ((argc > 1) && (*(argv[1] + 2) == 0) && *(argv[1] + 1) && *argv[1])
-	{
-		int epsd, map;
-		char buf[2];
-		char *mapname;
-
-		buf[0] = argv[1][0] - '0';
-		buf[1] = argv[1][1] - '0';
-
-		if (gameinfo.flags & GI_MAPxx)
-		{
-			epsd = 1;
-			map = buf[0]*10 + buf[1];
-		}
-		else
-		{
-			epsd = buf[0];
-			map = buf[1];
-		}
-
-		// Catch invalid maps.
-		mapname = CalcMapName (epsd, map);
-		if (W_CheckNumForName (mapname) == -1)
-			return;
-
-		// So be it.
-		Printf (PRINT_HIGH, "%s\n", STSTR_CLEV);
-
-		unnatural_level_progression = true;
-      	G_DeferedInitNew (mapname);
-	}
-}
-END_COMMAND (idclev)
-
-BEGIN_COMMAND (changemap)
-{
-	if (argc > 1)
-	{
-		// [Dash|RD] -- We can make a safe assumption that the user might not specify
-		//		the whole lumpname for the level, and might opt for just the
-		//		number. This makes sense, so why isn't there any code for it?
-		if (W_CheckNumForName (argv[1]) == -1)
-		{ // The map name isn't valid, so lets try to make some assumptions for the user.
-			char mapname[32];
-
-			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
-			if ( argc == 2 )
-				sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
-			else if ( argc == 3 )
-			{
-				sprintf( mapname, "E%iM%i", atoi( argv[1] ), atoi( argv[2] ) );
-			}
-
-			if (W_CheckNumForName (mapname) == -1)
-			{ // Still no luck, oh well.
-				Printf (PRINT_HIGH, "Map %s not found\n", argv[1]);
-			}
-			else
-			{ // Success
-//				Net_WriteByte (DEM_CHANGEMAP);
-//				Net_WriteString (mapname);
-			}
-
-		}
-		else
-		{
-//			Net_WriteByte (DEM_CHANGEMAP);
-//			Net_WriteString (argv[1]);
-		}
-	}
-}
-END_COMMAND (changemap)
-
 BEGIN_COMMAND (gameversion)
 {
 	Printf (PRINT_HIGH, "%d.%d : " __DATE__ "\n", VERSION / 100, VERSION % 100);
@@ -184,5 +109,5 @@ BEGIN_COMMAND (logfile)
 END_COMMAND (logfile)
 
 
-VERSION_CONTROL (c_cmds_cpp, "$Id:$")
+VERSION_CONTROL (c_cmds_cpp, "$Id$")
 
