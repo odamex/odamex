@@ -1158,6 +1158,10 @@ void CL_SpawnPlayer()
 	}
 
 	G_PlayerReborn (*p);
+	
+	// denis - if this concerns the local player, restart the status bar
+	if(p->id == consoleplayer_id)
+		ST_Start ();
 
 	mobj = new AActor (x, y, z, MT_PLAYER);
 
@@ -1204,8 +1208,6 @@ void CL_SpawnPlayer()
 	if(deathmatch)
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
-
-	ST_Start ();
 }
 
 //
