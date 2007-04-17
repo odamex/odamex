@@ -534,7 +534,9 @@ bool ST_Responder (event_t *ev)
 		{
 			if (CheckCheatmode ())
 				return false;
-
+            
+            AddCommandString("god");
+            
 //			Net_WriteByte (DEM_GENERICCHEAT);
 //			Net_WriteByte (CHT_IDDQD);
 			eatkey = true;
@@ -545,7 +547,11 @@ bool ST_Responder (event_t *ev)
 		{
 			if (CheckCheatmode ())
 				return false;
-
+            
+            Printf(PRINT_HIGH, "Ammo (No keys) Added\n");
+            
+            AddCommandString("give ammo");
+            AddCommandString("give weapons");
 //			Net_WriteByte (DEM_GENERICCHEAT);
 //			Net_WriteByte (CHT_IDFA);
 			eatkey = true;
@@ -556,6 +562,13 @@ bool ST_Responder (event_t *ev)
 		{
 			if (CheckCheatmode ())
 				return false;
+
+            Printf(PRINT_HIGH, "Very Happy Ammo Added\n");
+
+            AddCommandString("give armor");
+            AddCommandString("give ammo");
+            AddCommandString("give weapons");
+            AddCommandString("give keys");
 
 //			Net_WriteByte (DEM_GENERICCHEAT);
 //			Net_WriteByte (CHT_IDKFA);
@@ -569,6 +582,8 @@ bool ST_Responder (event_t *ev)
 		{
 			if (CheckCheatmode ())
 				return false;
+
+            AddCommandString("noclip");
 
 //			Net_WriteByte (DEM_GENERICCHEAT);
 //			Net_WriteByte (CHT_NOCLIP);
@@ -600,6 +615,8 @@ bool ST_Responder (event_t *ev)
 		// 'choppers' invulnerability & chainsaw
 		else if (cht_CheckCheat(&cheat_choppers, (char)ev->data2))
 		{
+            Printf(PRINT_HIGH, "... Doesn't suck - GM\n");
+            AddCommandString("give chainsaw");
 //			Net_WriteByte (DEM_GENERICCHEAT);
 //			Net_WriteByte (CHT_CHAINSAW);
 			eatkey = true;
