@@ -43,6 +43,7 @@ static wxInt32 ID_LSTSERVERS = XRCID("ID_LSTSERVERS");
 static wxInt32 ID_LSTPLAYERS = XRCID("ID_LSTPLAYERS");
 
 // menus
+static wxInt32 ID_MNUCONMAN = XRCID("ID_MNUCONMAN");
 static wxInt32 ID_MNUSERVERS = XRCID("ID_MNUSERVERS");
 
 static wxInt32 ID_MNULAUNCH = XRCID("ID_MNULAUNCH");
@@ -59,7 +60,6 @@ static wxInt32 ID_MNUWIKI = XRCID("ID_MNUWIKI");
 static wxInt32 ID_MNUCHANGELOG = XRCID("ID_MNUCHANGELOG");
 static wxInt32 ID_MNUREPORTBUG = XRCID("ID_MNUREPORTBUG");
 
-
 // Event handlers
 BEGIN_EVENT_TABLE(dlgMain,wxFrame)
 	// normal events
@@ -67,6 +67,7 @@ BEGIN_EVENT_TABLE(dlgMain,wxFrame)
 
 	// menu item events
     EVT_MENU(ID_MNUSERVERS, dlgMain::OnMenuServers)
+    EVT_MENU(ID_MNUCONMAN, dlgMain::OnManualConnect)
 
 	EVT_MENU(ID_MNULAUNCH, dlgMain::OnLaunch)
 
@@ -174,6 +175,23 @@ dlgMain::~dlgMain()
 		delete status_bar;
 	
     this->Destroy();
+}
+
+// manually connect to a server
+void dlgMain::OnManualConnect(wxCommandEvent &event)
+{
+    wxString ted_result = _T("");
+    wxTextEntryDialog ted(this, 
+                            _T("Please enter IP Address and Port"), 
+                            _T("Please enter IP Address and Port"),
+                            _T("0.0.0.0:0"));
+                            
+    // show it
+    ted.ShowModal();
+    ted_result = ted.GetValue();
+    
+    if (!ted_result.IsEmpty() && ted_result != _T("0.0.0.0:0"))
+        LaunchGame(ted_result, launchercfg_s.wad_paths);
 }
 
 // display extra information for a server
@@ -313,7 +331,7 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
        
     if (i > -1)
     {
-        LaunchGame(QServer[i], launchercfg_s.wad_paths);
+        LaunchGame(QServer[i].GetAddress(), launchercfg_s.wad_paths);
     }
 }
 

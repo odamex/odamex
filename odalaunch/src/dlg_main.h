@@ -53,7 +53,8 @@ class dlgMain : public wxFrame
         launchercfg_t launchercfg_s;
 	protected:
         void OnMenuServers(wxCommandEvent& event);
-
+        void OnManualConnect(wxCommandEvent& event);
+        
         void OnOpenSettingsDialog(wxCommandEvent& event);
         void OnOpenWebsite(wxCommandEvent &event);
         void OnOpenForum(wxCommandEvent &event);

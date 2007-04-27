@@ -191,7 +191,7 @@ wxString *CheckPWADS(wxString pwads, wxString waddirs)
     }
 }
 
-void LaunchGame(Server &s, wxString waddirs)
+void LaunchGame(wxString Address, wxString waddirs)
 {
     #ifdef __WXMSW__
     wxString binname = _T("odamex");
@@ -206,7 +206,7 @@ void LaunchGame(Server &s, wxString waddirs)
     
     cmdline += wxString::Format(_T("%s -connect %s"), 
                                 binname.c_str(), 
-                                s.GetAddress().c_str());
+                                Address.c_str());
 	
 	// this is so the client won't mess up parsing
 	if (!dirs.IsEmpty())

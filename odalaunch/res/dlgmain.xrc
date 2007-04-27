@@ -27,11 +27,6 @@
         <object class="wxMenuBar">
             <object class="wxMenu">
                 <label>File</label>
-                <object class="wxMenuItem" name="ID_MNUSERVERS">
-                    <label>Custom Servers</label>
-                    <enabled>0</enabled>
-                    <help>Set-up Custom Servers</help>
-                </object>
                 <object class="wxMenuItem" name="ID_MNUSETTINGS">
                     <label>Settings</label>
                     <help>Configure the launcher</help>
@@ -60,6 +55,18 @@
                 <object class="wxMenuItem" name="ID_MNUREFRESHSERVER">
                     <label>Refresh Selected</label>
                     <help>Refresh the selected server</help>
+                </object>
+            </object>
+            <object class="wxMenu">
+                <label>Advanced</label>
+                <object class="wxMenuItem" name="ID_MNUCONMAN">
+                    <label>Manual Connect</label>
+                    <help>Manually connect to a server by specifying Address:Port</help>
+                </object>
+                <object class="wxMenuItem" name="ID_MNUSERVERS">
+                    <label>Custom Servers</label>
+                    <enabled>0</enabled>
+                    <help>Set-up Custom Servers</help>
                 </object>
             </object>
             <object class="wxMenu">
