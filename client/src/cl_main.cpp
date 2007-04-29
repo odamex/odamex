@@ -1789,7 +1789,7 @@ void CL_Switch()
 			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_SPECIAL_REPEAT);  // denis - fixme - security
 
 	if(wastoggled && !(lines[l].flags & ML_SPECIAL_REPEAT)) // non repeat special
-		lines[l].special = NULL;
+		lines[l].special = 0;
 }
 
 void CL_ActivateLine(void)
