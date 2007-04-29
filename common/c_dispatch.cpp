@@ -584,7 +584,7 @@ std::string BuildString (size_t argc, const char **argv)
 {
 	std::string out;
 
-	for(int i = 0; i < argc; i++)
+	for(size_t i = 0; i < argc; i++)
 	{
 		if(strchr(argv[i], ' '))
 		{

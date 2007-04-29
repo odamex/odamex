@@ -224,10 +224,9 @@ END_COMMAND (map)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
-	std::vector<std::string> wads;
-	std::vector<std::string> hashes;
+	std::vector<std::string> wads, hashes;
 	
-	int i = 1;
+	size_t i = 1;
 
 	while(i < argc)
 		wads.push_back(argv[i++]);
