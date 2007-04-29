@@ -392,14 +392,23 @@ BEGIN_COMMAND (maplist_next)
 }
 END_COMMAND (maplist_next)
 
+BOOL 			secretexit;
+static int		startpos;	// [RH] Support for multiple starts per level
+
 void G_ChangeMap (void)
 {
 	unnatural_level_progression = false;
 
 	if (!MapListPointer)
 	{
+		char *next = level.nextmap;
+
 		// if deathmatch, stay on same level
-		char *next = deathmatch ? level.mapname : level.nextmap;
+		if(deathmatch) 
+			next = level.mapname;
+		else
+			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
+				next = level.secretmap;
 		
 		if (!strncmp (next, "EndGame", 7))
 			next = CalcMapName(1, 1);
@@ -580,8 +589,6 @@ void G_InitNew (char *mapname)
 //
 // G_DoCompleted
 //
-BOOL 			secretexit;
-static int		startpos;	// [RH] Support for multiple starts per level
 
 void G_ExitLevel (int position)
 {
