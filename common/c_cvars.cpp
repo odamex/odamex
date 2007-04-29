@@ -485,8 +485,9 @@ BEGIN_COMMAND (set)
 			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);
 		else if (var->flags() & CVAR_LATCH)
 		{
-			if(strcmp(var->cstring(), argv[2]))
-				Printf (PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
+			if(strcmp(var->cstring(), argv[2])) // if different from current value
+				if(strcmp(var->latched(), argv[2])) // and if different from latched value
+					Printf (PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
 		}
 
 		var->Set (argv[2]);

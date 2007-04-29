@@ -42,7 +42,7 @@ void AddCommandString (std::string cmd, bool onlycvar = false);
 const char *ParseString (const char *data);
 
 // build a single string out of multiple strings
-std::string BuildString (int argc, const char **argv);
+std::string BuildString (size_t argc, const char **argv);
 std::string BuildString (size_t argc, std::vector<std::string> args);
 
 class DConsoleCommand : public DObject
@@ -61,7 +61,7 @@ protected:
 	DConsoleCommand ();
 
 	AActor *m_Instigator;
-	int argc;
+	size_t argc;
 	char **argv;
 	char *args;
 

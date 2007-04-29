@@ -132,7 +132,7 @@ bool safemode = false;
 
 void C_DoCommand (const char *cmd)
 {
-	int argc, argsize;
+	size_t argc, argsize;
 	char **argv;
 	char *args, *arg, *realargs;
 	const char *data;
@@ -580,7 +580,7 @@ void DConsoleAlias::Run()
 	}
 }
 
-std::string BuildString (int argc, const char **argv)
+std::string BuildString (size_t argc, const char **argv)
 {
 	std::string out;
 
