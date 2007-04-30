@@ -865,11 +865,9 @@ void G_Ticker (void)
     int packet_size;
 
 	if (demoplayback)
-	{
-		// play all player commands
-		G_ReadDemoTiccmd();
-	}
-    else if (connected)
+		G_ReadDemoTiccmd(); // play all player commands
+
+    if (connected)
     {
        while ((packet_size = NET_GetPacket()) )
        {
