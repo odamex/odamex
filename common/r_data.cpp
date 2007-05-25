@@ -306,10 +306,23 @@ static void R_GenerateLookup(int texnum, int *const errors)
 			{
 				// killough 4/9/98: keep a count of the number of posts in column,
 				// to fix Medusa bug while allowing for transparent multipatches.
-
 				const column_t *col = (column_t*)((byte*)realpatch+LONG(cofs[x]));
+
 				for (;col->topdelta != 0xff; count[x].posts++)
+				{
 					col = (column_t *)((byte *) col + (col->length || nottall ? col->length : 256) + 4);
+
+					// denis - prevent a crash when col goes out of range
+					int n = (const byte *)col - (const byte *)realpatch;
+					if(n >= W_LumpLength(pat))
+					{
+						if(texture->height < 256) // bigger textures are assumed to have a single post anyway
+							Printf(PRINT_HIGH, "R_GenerateLookup warning: post truncated for texture %d\n", texnum);
+						
+						count[x].posts--;
+						break;
+					}
+				}
 				count[x].patches++;
 				collump[x] = pat;
 				colofs[x] = LONG(cofs[x])+3;
