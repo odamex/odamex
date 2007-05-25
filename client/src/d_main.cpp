@@ -667,6 +667,12 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 	std::transform(file.begin(), file.end(), file.begin(), toupper);
 	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
 	std::vector<std::string> dirs;
+	
+	#ifdef WIN32
+		const char separator = ';';
+	#else
+		const char separator = ':';
+	#endif
 
 	const char *awd = Args.CheckValue("-waddir");
 	if(awd)
@@ -677,7 +683,7 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 
 		while(!ss.eof())
 		{
-			std::getline(ss, segment, ';');
+			std::getline(ss, segment, separator);
 
 			if(!segment.length())
 				continue;
@@ -715,7 +721,7 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 
 		while(!ss.eof())
 		{
-			std::getline(ss, segment, ';');
+			std::getline(ss, segment, separator);
 
 			if(!segment.length())
 				continue;
