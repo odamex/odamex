@@ -12,9 +12,8 @@ HEADERS = src/*.h
 CC = g++
 LD = g++
 
-WXBASE = /usr/local
-WXCONFIG = $(WXBASE)/bin/wx-config
-WXRC = $(WXBASE)/bin/wxrc
+WXCONFIG = wx-config
+WXRC = wxrc
 CFLAGS = $(shell $(WXCONFIG) --cflags) -g
 LFLAGS = $(shell $(WXCONFIG) --libs) -g
 
