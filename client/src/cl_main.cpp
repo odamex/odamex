@@ -1070,7 +1070,7 @@ void CL_SpawnMobj()
 
 //
 // CL_Corpse
-// Called after killed player is created.
+// Called after killed thing is created.
 //
 void CL_Corpse(void)
 {
@@ -1084,17 +1084,18 @@ void CL_Corpse(void)
 		if(tics == 0xFF)
 			tics = -1;
 	}
-	
+
+	// already spawned as gibs?
 	if (!mo || mo->state - states == S_GIBS)
 		return;
 
-	P_SetMobjState(mo, mo->info->deathstate);
-
-	if(mo->sprite >= NUMSPRITES || (frame&FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
+	if((frame&FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
 		return;
 
 	mo->frame = frame;
 	mo->tics = tics;
+
+	// from P_KillMobj
 	mo->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
 	mo->flags |= MF_CORPSE|MF_DROPOFF;
 	mo->height >>= 2;

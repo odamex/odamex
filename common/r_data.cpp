@@ -313,7 +313,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 					col = (column_t *)((byte *) col + (col->length || nottall ? col->length : 256) + 4);
 
 					// denis - prevent a crash when col goes out of range
-					int n = (const byte *)col - (const byte *)realpatch;
+					unsigned int n = (const byte *)col - (const byte *)realpatch;
 					if(n >= W_LumpLength(pat))
 					{
 						if(texture->height < 256) // bigger textures are assumed to have a single post anyway
