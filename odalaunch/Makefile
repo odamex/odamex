@@ -3,6 +3,7 @@ SOURCES = src/dlg_config.cpp \
  src/misc.cpp \
  src/net_packet.cpp \
  src/dlg_main.cpp \
+ src/dlg_servers.cpp \
  src/main.cpp \
  src/net_io.cpp
 

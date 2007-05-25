@@ -36,7 +36,8 @@
 #include <wx/listbox.h>
 #include <wx/sizer.h>
 #include <wx/textctrl.h>
-
+#include <wx/checklst.h>
+#include <wx/textdlg.h>
 
 class dlgServers: public wxDialog
 {
