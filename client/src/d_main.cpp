@@ -695,8 +695,22 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 	const char *dwd = getenv("DOOMWADDIR");
 	if(dwd)
 	{
+		std::string segment(dwd);
+		
+		FixPathSeparator(segment);
+		I_ExpandHomeDir(segment);
+
+		if(segment[segment.length() - 1] != '/')
+			segment += "/";
+
+		dirs.push_back(segment);
+	}
+	
+	const char *dwp = getenv("DOOMWADPATH");
+	if(dwp)
+	{
 		// search through dwd
-		std::stringstream ss(dwd);
+		std::stringstream ss(dwp);
 		std::string segment;
 
 		while(!ss.eof())
