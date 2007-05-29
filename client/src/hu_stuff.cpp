@@ -266,7 +266,7 @@ void HU_Drawer (void)
 
 	if(consoleplayer().camera)
 	if (((Actions[ACTION_SHOWSCORES]) ||
-		 consoleplayer().camera->health <= 0))
+		 consoleplayer().camera->health <= 0) && gamestate != GS_INTERMISSION)
 	{
 		HU_DrawScores (&consoleplayer());
 	}
