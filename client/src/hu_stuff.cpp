@@ -354,25 +354,28 @@ CVAR (usehighresboard, "1",	CVAR_ARCHIVE)
 //
 void HU_DrawScores (player_t *player)
 {
-	if (ctfmode || teamplaymode)
-	{
-		if (usehighresboard)
-		{
-			if (screen->width > (CTFBOARDWIDTH * 2)) // If board will fit
-				HU_TeamScores2 (player);
-			else
-				HU_TeamScores1 (player);
-		}
-		else
-			HU_TeamScores1 (player);
-	}
-	else
-	{
-		if (usehighresboard && screen->width != 320)
-			HU_DMScores2 (player);
-		else
-			HU_DMScores1 (player);
-	}
+    if (multiplayer)
+    {
+        if (ctfmode || teamplaymode)
+        {
+            if (usehighresboard)
+            {
+                if (screen->width > (CTFBOARDWIDTH * 2)) // If board will fit
+                    HU_TeamScores2 (player);
+                else
+                    HU_TeamScores1 (player);
+            }
+            else
+                HU_TeamScores1 (player);
+        }
+        else
+        {
+            if (usehighresboard && screen->width != 320)
+                HU_DMScores2 (player);
+            else
+                HU_DMScores1 (player);
+        }
+    }
 }
 
 //
