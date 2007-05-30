@@ -57,7 +57,7 @@ EXTERN_CVAR (sv_cheats)
 
 bool CheckCheatmode (void)
 {
-	if (((skill == sk_nightmare) || netgame || deathmatch) && !sv_cheats)
+	if (((skill == sk_nightmare) || multiplayer || deathmatch) && !sv_cheats)
 	{
 		Printf (PRINT_HIGH, "You must run the server with '+set sv_cheats 1' to enable this command.\n");
 		return true;

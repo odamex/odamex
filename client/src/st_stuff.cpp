@@ -69,6 +69,8 @@ static int		lu_palette;
 // [Toke - CTF]
 EXTERN_CVAR (localflagtype)
 
+// [deathz0r] We don't want desyncs in a server
+EXTERN_CVAR (sv_cheats)
 
 CVAR (idmypos, "0", 0)
 BEGIN_CUSTOM_CVAR (st_scale, "1", CVAR_ARCHIVE)		// Stretch status bar to full screen width?
@@ -504,6 +506,7 @@ bool CheckCheatmode (void);
 // [RH] Cheats eatkey the last keypress used to trigger them
 bool ST_Responder (event_t *ev)
 {
+	  player_t *plyr = &consoleplayer();
 	  bool eatkey = false;
 	  int i;
 
@@ -524,138 +527,161 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-	else if (ev->type == ev_keydown)
-	{
-		// cheats are now allowed in netgames if
-		// 'sv_cheats' cvar is set...
+    else if (ev->type == ev_keydown)
+    {
+        // 'dqd' cheat for toggleable god mode
+        if (cht_CheckCheat(&cheat_god, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
 
-		// 'dqd' cheat for toggleable god mode
-		if (cht_CheckCheat(&cheat_god, (char)ev->data2))
-		{
-			if (CheckCheatmode ())
-				return false;
-            
             AddCommandString("god");
-            
-//			Net_WriteByte (DEM_GENERICCHEAT);
-//			Net_WriteByte (CHT_IDDQD);
-			eatkey = true;
-		}
 
-		// 'fa' cheat for killer fucking arsenal
-		else if (cht_CheckCheat(&cheat_ammonokey, (char)ev->data2))
-		{
-			if (CheckCheatmode ())
-				return false;
-            
+            // Net_WriteByte (DEM_GENERICCHEAT);
+            // Net_WriteByte (CHT_IDDQD);
+            eatkey = true;
+        }
+        
+        // 'fa' cheat for killer fucking arsenal
+        else if (cht_CheckCheat(&cheat_ammonokey, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
             Printf(PRINT_HIGH, "Ammo (No keys) Added\n");
-            
-            AddCommandString("give ammo");
-            AddCommandString("give weapons");
-//			Net_WriteByte (DEM_GENERICCHEAT);
-//			Net_WriteByte (CHT_IDFA);
-			eatkey = true;
-		}
 
-		// 'kfa' cheat for key full ammo
-		else if (cht_CheckCheat(&cheat_ammo, (char)ev->data2))
-		{
-			if (CheckCheatmode ())
-				return false;
+            plyr->armorpoints = deh.FAArmor;
+            plyr->armortype = deh.FAAC;
+            for (i=0; i<NUMWEAPONS; i++)
+                plyr->weaponowned[i] = true;
+
+            for (i=0; i<NUMAMMO; i++)
+                plyr->ammo[i] = plyr->maxammo[i];
+
+            // Net_WriteByte (DEM_GENERICCHEAT);
+            // Net_WriteByte (CHT_IDFA);
+            eatkey = true;
+        }
+
+        // 'kfa' cheat for key full ammo
+        else if (cht_CheckCheat(&cheat_ammo, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
 
             Printf(PRINT_HIGH, "Very Happy Ammo Added\n");
 
-            AddCommandString("give armor");
-            AddCommandString("give ammo");
-            AddCommandString("give weapons");
-            AddCommandString("give keys");
+            plyr->armorpoints = deh.KFAArmor;
+            plyr->armortype = deh.KFAAC;
+            for (i=0; i<NUMWEAPONS; i++)
+                plyr->weaponowned[i] = true;
 
-//			Net_WriteByte (DEM_GENERICCHEAT);
-//			Net_WriteByte (CHT_IDKFA);
-			eatkey = true;
-		}
+            for (i=0; i<NUMAMMO; i++)
+                plyr->ammo[i] = plyr->maxammo[i];
 
-		// Simplified, accepting both "noclip" and "idspispopd".
-		// no clipping mode cheat
-		else if ( cht_CheckCheat(&cheat_noclip, (char)ev->data2)
-				|| cht_CheckCheat(&cheat_commercial_noclip,(char)ev->data2) )
-		{
-			if (CheckCheatmode ())
-				return false;
+            for (i=0; i<NUMCARDS; i++)
+                plyr->cards[i] = true;
 
+            // Net_WriteByte (DEM_GENERICCHEAT);
+            // Net_WriteByte (CHT_IDKFA);
+            eatkey = true;
+        }
+
+        // Simplified, accepting both "noclip" and "idspispopd".
+        // no clipping mode cheat
+        else if ( cht_CheckCheat(&cheat_noclip, (char)ev->data2)
+            || cht_CheckCheat(&cheat_commercial_noclip,(char)ev->data2) )
+        {
+            if (CheckCheatmode ())
+                return false;
+                
             AddCommandString("noclip");
 
-//			Net_WriteByte (DEM_GENERICCHEAT);
-//			Net_WriteByte (CHT_NOCLIP);
-			eatkey = true;
-		}
-		// 'behold?' power-up cheats
-		for (i=0;i<6;i++)
-		{
-			if (cht_CheckCheat(&cheat_powerup[i], (char)ev->data2))
-			{
-				if (CheckCheatmode ())
-					return false;
+            // Net_WriteByte (DEM_GENERICCHEAT);
+            // Net_WriteByte (CHT_NOCLIP);
+            eatkey = true;
+        }
+        // 'behold?' power-up cheats
+        for (i=0; i<6; i++)
+        {
+            if (cht_CheckCheat(&cheat_powerup[i], (char)ev->data2))
+            {
+                if (CheckCheatmode ())
+                    return false;
 
-//				Net_WriteByte (DEM_GENERICCHEAT);
-//				Net_WriteByte ((byte)(CHT_BEHOLDV + i));
-				eatkey = true;
-			}
-		}
+                Printf(PRINT_HIGH, "Power-up toggled\n");
+                if (!plyr->powers[i])
+                    P_GivePower( plyr, i);
+                else if (i!=pw_strength)
+                    plyr->powers[i] = 1;
+                else    
+                    plyr->powers[i] = 0;
+                // Net_WriteByte (DEM_GENERICCHEAT);
+                // Net_WriteByte ((byte)(CHT_BEHOLDV + i));
+                eatkey = true;
+            }
+        }
 
-		// 'behold' power-up menu
-		if (cht_CheckCheat(&cheat_powerup[6], (char)ev->data2))
-		{
-			if (CheckCheatmode ())
-				return false;
+        // 'behold' power-up menu
+        if (cht_CheckCheat(&cheat_powerup[6], (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
 
-			Printf (PRINT_HIGH, "%s\n", STSTR_BEHOLD);
-		}
+            Printf (PRINT_HIGH, "%s\n", STSTR_BEHOLD);
 
-		// 'choppers' invulnerability & chainsaw
-		else if (cht_CheckCheat(&cheat_choppers, (char)ev->data2))
-		{
+        }
+
+        // 'choppers' invulnerability & chainsaw
+        else if (cht_CheckCheat(&cheat_choppers, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
             Printf(PRINT_HIGH, "... Doesn't suck - GM\n");
-            AddCommandString("give chainsaw");
-//			Net_WriteByte (DEM_GENERICCHEAT);
-//			Net_WriteByte (CHT_CHAINSAW);
-			eatkey = true;
-		}
+            plyr->weaponowned[wp_chainsaw] = true;
+            // Net_WriteByte (DEM_GENERICCHEAT);
+            // Net_WriteByte (CHT_CHAINSAW);
+            eatkey = true;
+        }
 
-		// 'mypos' for player position
-		else if (cht_CheckCheat(&cheat_mypos, (char)ev->data2))
-		{
-			AddCommandString ("toggle idmypos");
-			eatkey = true;
-		}
+        // 'clev' change-level cheat
+        else if (cht_CheckCheat(&cheat_clev, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
 
-		// 'clev' change-level cheat
-		else if (cht_CheckCheat(&cheat_clev, (char)ev->data2))
-		{
-			char cmd[16];
+            char cmd[16];
 
-			strcpy (cmd, "idclev ");
-			cht_GetParam(&cheat_clev, &cmd[7]);
-			cmd[9] = 0;
-			AddCommandString (cmd);
-			eatkey = true;
-		}
+            strcpy (cmd, "idclev ");
+            cht_GetParam(&cheat_clev, &cmd[7]);
+            cmd[9] = 0;
+            AddCommandString (cmd);
+            eatkey = true;
+        }
 
-		// 'idmus' change-music cheat
-		else if (cht_CheckCheat(&cheat_mus, (char)ev->data2))
-		{
-			char buf[16];
+        // 'mypos' for player position
+        else if (cht_CheckCheat(&cheat_mypos, (char)ev->data2))
+        {
+            AddCommandString ("toggle idmypos");
+            eatkey = true;
+        }
 
-			cht_GetParam(&cheat_mus, buf);
-			buf[2] = 0;
+        // 'idmus' change-music cheat
+        else if (cht_CheckCheat(&cheat_mus, (char)ev->data2))
+        {
+            char buf[16];
 
-			sprintf (buf + 3, "idmus %s\n", buf);
-			AddCommandString (buf + 3);
-			eatkey = true;
-		}
-	}
+            cht_GetParam(&cheat_mus, buf);
+            buf[2] = 0;
 
-	return eatkey;
+            sprintf (buf + 3, "idmus %s\n", buf);
+            AddCommandString (buf + 3);
+            eatkey = true;
+        }
+    }
+
+    return eatkey;
 }
 
 
