@@ -534,6 +534,10 @@ bool ST_Responder (event_t *ev)
         {
             if (CheckCheatmode ())
                 return false;
+            
+            // [Russell] - give full health
+            plyr->mo->health = deh.StartHealth;
+            plyr->health = deh.StartHealth;
 
             AddCommandString("god");
 
