@@ -8,7 +8,6 @@
 		<Option virtualFolders="dialogs\;network\;" />
 		<Build>
 			<Target title="Win Release">
-				<Option platforms="Windows;" />
 				<Option output="..\bin\odalaunch.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\release" />
@@ -29,7 +28,6 @@
 				</Environment>
 			</Target>
 			<Target title="Win Debug">
-				<Option platforms="Windows;" />
 				<Option output="..\bin\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\debug" />
@@ -52,7 +50,6 @@
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
-				<Option platforms="Unix;" />
 				<Option output="..\bin\odalaunch" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\release" />
@@ -69,7 +66,6 @@
 				</Environment>
 			</Target>
 			<Target title="Unix Debug">
-				<Option platforms="Unix;" />
 				<Option output="..\bin\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\debug" />
@@ -81,12 +77,11 @@
 					<Add option="-D__WXDEBUG__" />
 				</Compiler>
 				<Environment>
-					<Variable name="WX_CFG" value="d" />
 					<Variable name="WX_PLAT" value="unix" />
+					<Variable name="WX_CFG" value="d" />
 				</Environment>
 			</Target>
 			<Target title="Mac Release">
-				<Option platforms="Mac;" />
 				<Option output="..\bin\odalaunch" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\release" />
@@ -103,7 +98,6 @@
 				</Environment>
 			</Target>
 			<Target title="Mac Debug">
-				<Option platforms="Mac;" />
 				<Option output="..\bin\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\bin" />
 				<Option object_output="..\obj\odalaunch\debug" />
@@ -115,8 +109,8 @@
 					<Add option="-D__WXDEBUG__" />
 				</Compiler>
 				<Environment>
-					<Variable name="WX_CFG" value="d" />
 					<Variable name="WX_PLAT" value="unix" />
+					<Variable name="WX_CFG" value="d" />
 				</Environment>
 			</Target>
 			<Environment>
@@ -156,6 +150,9 @@
 			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 			<Add directory=".\res" />
 		</Linker>
+		<ExtraCommands>
+			<Add before="$(#WX)\utils\wxrc\gcc_msw\wxrc /c /o res\xrc_resource.h res\dlgmain.xrc res\dlgservers.xrc" />
+		</ExtraCommands>
 		<Unit filename="res\dlgconfig.xrc">
 			<Option weight="0" />
 		</Unit>
