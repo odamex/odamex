@@ -34,7 +34,6 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-iwad tnt.wad" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
@@ -339,6 +338,7 @@
 		<Unit filename="..\..\common\z_zone.h" />
 		<Extensions>
 			<code_completion />
+			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

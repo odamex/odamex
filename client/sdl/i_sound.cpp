@@ -106,12 +106,12 @@ static Uint8 *expand_sound_data(Uint8 *data, int samplerate, int length)
 // Expands the 11025Hz, 8bit, mono sound effects in Doom to
 // 22050Hz, 16bit stereo
 
-static Uint8 *ExpandSoundData(Uint8 *data, int samplerate, int length)
+static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length)
 {
     Uint8 *expanded = NULL;
-    int expanded_length;
-    int expand_ratio;
-    int i;
+    Uint32 expanded_length;
+    Uint32 expand_ratio;
+    Uint32 i;
 
     if (samplerate == 11025)
     {
@@ -238,13 +238,16 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 
 static void getsfx (struct sfxinfo_struct *sfx)
 {
-    int samplerate;
-	int length ,expanded_length;
+    Uint32 samplerate;
+	Uint32 length ,expanded_length;
 	Uint8 *data;
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
 
     data = (Uint8 *)W_CacheLumpNum(sfx->lumpnum, PU_STATIC);
+    // [Russell] - ICKY QUICKY HACKY SPACKY *I HATE THIS SOUND MANAGEMENT SYSTEM!*
+    // get the lump size, shouldn't this be filled in elsewhere?
+    sfx->length = W_LumpLength(sfx->lumpnum);
 
     // [Russell] is it not a doom sound lump?
     if (((data[1] << 8) | data[0]) != 3)
@@ -262,6 +265,11 @@ static void getsfx (struct sfxinfo_struct *sfx)
 
 	samplerate = (data[3] << 8) | data[2];
     length = (data[5] << 8) | data[4];
+
+    // [Russell] - Ignore doom's sound format length info
+    // if the lump is longer than the value, fixes exec.wad's ssg
+    length = (sfx->length - 8 > length) ? sfx->length - 8 : length;
+
     expanded_length = (length * 22050 * 4) / samplerate;
 
 	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
