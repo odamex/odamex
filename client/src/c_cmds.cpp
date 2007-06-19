@@ -181,10 +181,10 @@ BEGIN_COMMAND (chase)
 	}
 	else
 	{
-		if (deathmatch && CheckCheatmode ())
+		if (CheckCheatmode ())
 			return;
 
-		consoleplayer().cheats ^= CF_NOCLIP;
+		consoleplayer().cheats ^= CF_CHASECAM;
 
 		MSG_WriteMarker(&net_buffer, clc_cheat);
 		MSG_WriteByte(&net_buffer, consoleplayer().cheats);
