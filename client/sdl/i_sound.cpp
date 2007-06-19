@@ -155,7 +155,7 @@ static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length)
         // Generic expansion function for all other sample rates
 
         // number of samples in the converted sound
-        expanded_length = (length * 22050) / samplerate;
+        expanded_length = (length * 22050 / samplerate) * 4;
         expand_ratio = (length << 8) / expanded_length;
 
         expanded = (Uint8 *)Z_Malloc(expanded_length * expand_ratio, PU_STATIC, NULL);
@@ -269,8 +269,13 @@ static void getsfx (struct sfxinfo_struct *sfx)
     // [Russell] - Ignore doom's sound format length info
     // if the lump is longer than the value, fixes exec.wad's ssg
     length = (sfx->length - 8 > length) ? sfx->length - 8 : length;
-
-    expanded_length = (length * 22050 * 4) / samplerate;
+    expanded_length = (length * 22050 / samplerate) * 4;
+    
+    #ifdef _DEBUG
+    Printf(PRINT_HIGH, "SFX DEBUG, getsfx()\n");
+    Printf(PRINT_HIGH, "name: %s, data length %u, length %u\n", sfx->name, sfx->length, length);
+    Printf(PRINT_HIGH, "sample rate: %u, expanded length: %u\n", samplerate, expanded_length);
+    #endif
 
 	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
 	chunk->allocated = 1;
