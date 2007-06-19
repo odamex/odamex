@@ -155,7 +155,7 @@ static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length)
         // Generic expansion function for all other sample rates
 
         // number of samples in the converted sound
-        expanded_length = (length * 22050 / samplerate) * 4;
+        expanded_length = (length * 22050) / samplerate;
         expand_ratio = (length << 8) / expanded_length;
 
         expanded = (Uint8 *)Z_Malloc(expanded_length * expand_ratio, PU_STATIC, NULL);
