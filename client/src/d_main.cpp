@@ -1342,7 +1342,8 @@ void D_DoomMain (void)
 	}
 
 	Printf(PRINT_HIGH, "\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
-	Printf(PRINT_HIGH, "Type connect <internet address> or use Odamex Launcher to connect to a game.\n");
+	if(gamestate != GS_CONNECTING)
+		Printf(PRINT_HIGH, "Type connect <internet address> or use Odamex Launcher to connect to a game.\n");
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
     //gamestate = GS_FULLCONSOLE;
