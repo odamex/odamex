@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -69,7 +69,7 @@ typedef struct
 	char finalePage3[8];
 	union
 	{
-		char infoPage[2][8];
+		char infoPage[3][8];
 		struct
 		{
 			char basePage[8];

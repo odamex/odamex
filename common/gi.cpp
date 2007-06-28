@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -77,7 +77,7 @@ gameinfo_t SharewareGameInfo =
 	"HELP2",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
-	{ { "HELP1", "HELP2" } },
+	{ { "HELP1", "HELP2", "CREDIT" } },
 	quitsounds,
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
@@ -100,7 +100,7 @@ gameinfo_t RegisteredGameInfo =
 	"HELP2",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
-	{ { "HELP1", "HELP2" } },
+	{ { "HELP1", "HELP2", "CREDIT" } },
 	quitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
@@ -123,7 +123,7 @@ gameinfo_t RetailGameInfo =
 	"CREDIT",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
-	{ { "HELP1", "CREDIT" } },
+	{ { "HELP1", "CREDIT", "CREDIT"  } },
 	quitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
@@ -146,7 +146,7 @@ gameinfo_t CommercialGameInfo =
 	"CREDIT",
 	"CREDIT",
 	"CREDIT",
-	{ { "HELP", "CREDIT" } },
+	{ { "HELP", "CREDIT", "CREDIT" } },
 	quitsounds2,
 	3,
 	"GRNROCK",

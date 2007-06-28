@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -50,23 +50,23 @@
 extern patch_t* 	hu_font[HU_FONTSIZE];
 
 // temp for screenblocks (0-9)
-int 				screenSize;			
+int 				screenSize;
 
  // 1 = message to be printed
 int 				messageToPrint;
 // ...and here is the message string!
-char*				messageString;			
+char*				messageString;
 
 // message x & y
-int 				messx;					
+int 				messx;
 int 				messy;
 int 				messageLastMenuActive;
 
 // timed message = no input from user
-bool				messageNeedsInput;	   
+bool				messageNeedsInput;
 
 void	(*messageRoutine)(int response);
-void	CL_SendUserInfo(void); 
+void	CL_SendUserInfo(void);
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
@@ -80,7 +80,7 @@ void	(*genStringEnd)(int slot);
 int 				saveSlot;		// which slot to save in
 int 				saveCharIndex;	// which char we're editing
 // old save description before edit
-char				saveOldString[SAVESTRINGSIZE];	
+char				saveOldString[SAVESTRINGSIZE];
 
 bool 				menuactive;
 
@@ -106,7 +106,7 @@ bool				drawSkull;			// [RH] don't always draw skull
 char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
 
 // current menudef
-oldmenu_t *currentMenu;						  
+oldmenu_t *currentMenu;
 
 //
 // PROTOTYPES
@@ -120,6 +120,7 @@ void M_Options(int choice);
 void M_EndGame(int choice);
 void M_ReadThis(int choice);
 void M_ReadThis2(int choice);
+void M_ReadThis3(int choice);
 void M_QuitDOOM(int choice);
 
 void M_ChangeDetail(int choice);
@@ -132,6 +133,7 @@ void M_ReadSaveStrings(void);
 void M_DrawMainMenu(void);
 void M_DrawReadThis1(void);
 void M_DrawReadThis2(void);
+void M_DrawReadThis3(void);
 void M_DrawNewGame(void);
 void M_DrawEpisode(void);
 void M_DrawOptions(void);
@@ -318,7 +320,7 @@ oldmenu_t OptionsDef =
 
 
 //
-// Read This! MENU 1 & 2
+// Read This!
 //
 enum read_t
 {
@@ -348,7 +350,7 @@ enum read_t2
 
 oldmenuitem_t ReadMenu2[]=
 {
-	{1,"",M_FinishReadThis,0}
+	{1,"",M_ReadThis3,0}
 };
 
 oldmenu_t ReadDef2 =
@@ -360,23 +362,98 @@ oldmenu_t ReadDef2 =
 	0
 };
 
+enum read_t3
+{
+	rdthsempty3,
+	read3_end
+} read_e3;
+
+
+oldmenuitem_t ReadMenu3[]=
+{
+	{1,"",M_FinishReadThis,0}
+};
+
+oldmenu_t ReadDef3 =
+{
+	read3_end,
+	ReadMenu3,
+	M_DrawReadThis3,
+	330,175,
+	0
+};
+
 // [RH] Most menus can now be accessed directly
 // through console commands.
 BEGIN_COMMAND (menu_main)
 {
+    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SetupNextMenu (&MainDef);
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
 }
 END_COMMAND (menu_main)
 
+BEGIN_COMMAND (menu_help)
+{
+    // F1
+    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	M_StartControlPanel ();
+	M_ReadThis(0);
+}
+END_COMMAND (menu_help)
+
+BEGIN_COMMAND (menu_save)
+{
+    // F2
+	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+    // dummy
+}
+END_COMMAND (menu_save)
+
+BEGIN_COMMAND (menu_load)
+{
+    // F3
+	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+    // dummy
+}
+END_COMMAND (menu_load)
+
+BEGIN_COMMAND (menu_options)
+{
+    // F4
+    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    M_StartControlPanel ();
+	M_Options(0);
+}
+END_COMMAND (menu_options)
+
+BEGIN_COMMAND (quicksave)
+{
+    // F6
+	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+    // dummy
+}
+END_COMMAND (quicksave)
+
 BEGIN_COMMAND (menu_endgame)
 {	// F7
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_EndGame(0);
 }
 END_COMMAND (menu_endgame)
+
+BEGIN_COMMAND (quickload)
+{
+    // F9
+	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+    // dummy
+}
+END_COMMAND (quickload)
 
 BEGIN_COMMAND (menu_quit)
 {	// F10
@@ -385,25 +462,18 @@ BEGIN_COMMAND (menu_quit)
 	M_QuitDOOM(0);
 }
 END_COMMAND (menu_quit)
-								
-BEGIN_COMMAND (menu_options)
-{
-	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
-	M_Options(0);
-}
-END_COMMAND (menu_options)
 
 BEGIN_COMMAND (menu_player)
 {
+    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
 	M_PlayerSetup(0);
 }
 END_COMMAND (menu_player)
 
 BEGIN_COMMAND (bumpgamma)
 {
+    // F11
 	// [RH] Gamma correction tables are now generated
 	// on the fly for *any* gamma level.
 	// Q: What are reasonable limits to use here?
@@ -414,7 +484,7 @@ BEGIN_COMMAND (bumpgamma)
 		newgamma = 1.0;
 
 	gammalevel.Set (newgamma);
-	
+
 	if (gammalevel.value() == 1.0)
         Printf (PRINT_HIGH, "Gamma correction off\n");
     else
@@ -449,6 +519,17 @@ void M_ReadThis2(int choice)
 	M_SetupNextMenu(&ReadDef2);
 }
 
+void M_ReadThis3(int choice)
+{
+    if (gameinfo.flags & GI_SHAREWARE) {
+        choice = 0;
+        drawSkull = false;
+        M_SetupNextMenu(&ReadDef3);
+    } else {
+        M_FinishReadThis(0);
+    }
+}
+
 void M_FinishReadThis(int choice)
 {
 	choice = 0;
@@ -464,9 +545,9 @@ void M_FinishReadThis(int choice)
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
 	int i;
-		
+
 	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
-		
+
 	for (i = 0; i < len; i++)
 	{
 		screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
@@ -497,7 +578,7 @@ void M_NewGame(int choice)
 		M_StartMessage(NEWGAME,NULL,false);
 		return;
 	}
-*/	
+*/
 	if (gameinfo.flags & GI_MAPxx)
 		M_SetupNextMenu(&NewDef);
 	else
@@ -517,9 +598,11 @@ void M_DrawEpisode(void)
 
 void M_VerifyNightmare(int ch)
 {
-	if (ch != 'y')
+	if (ch != 'y') {
+	    M_ClearMenus ();
 		return;
-	
+	}
+
 	M_StartGame(nightmare);
 }
 
@@ -538,7 +621,7 @@ void M_ChooseSkill(int choice)
 		M_StartMessage(NIGHTMARE,M_VerifyNightmare,true);
 		return;
 	}
-	
+
 	M_StartGame(choice);
 }
 
@@ -547,7 +630,8 @@ void M_Episode (int choice)
 	if ((gameinfo.flags & GI_SHAREWARE) && choice)
 	{
 		M_StartMessage(SWSTRING,NULL,false);
-		M_SetupNextMenu(&ReadDef1);
+		//M_SetupNextMenu(&ReadDef1);
+		M_ClearMenus ();
 		return;
 	}
 
@@ -575,6 +659,14 @@ void M_DrawReadThis2 (void)
 }
 
 //
+// Read This Menus - shareware third page.
+//
+void M_DrawReadThis3 (void)
+{
+	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[2], PU_CACHE), 0, 0);
+}
+
+//
 // M_Options
 //
 void M_DrawOptions(void)
@@ -593,9 +685,11 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if (toupper(ch) != 'Y')
+	if (toupper(ch) != 'Y') {
+	    M_ClearMenus ();
 		return;
-				
+	}
+
 	currentMenu->lastOn = itemOn;
 	M_ClearMenus ();
 	D_StartTitle ();
@@ -609,13 +703,14 @@ void M_EndGame(int choice)
 		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
 		return;
 	}
-		
-	if (netgame)
+
+	if (multiplayer)
 	{
 		M_StartMessage(NETEND,NULL,false);
+		M_ClearMenus ();
 		return;
 	}
-		
+
 	M_StartMessage(ENDGAME,M_EndGameResponse,true);
 }
 
@@ -625,10 +720,12 @@ void M_EndGame(int choice)
 
 void M_QuitResponse(int ch)
 {
-	if (toupper(ch) != 'Y')
+	if (toupper(ch) != 'Y') {
+	    M_ClearMenus ();
 		return;
+	}
 
-	if (!netgame)
+	if (!multiplayer)
 	{
 		if (gameinfo.quitSounds)
 		{
@@ -648,7 +745,7 @@ void M_QuitDOOM (int choice)
 	sprintf(endstring,"%s\n\n%s", endmsg[0], DOSY );
   else
 	sprintf(endstring,"%s\n\n%s", endmsg[ (gametic%(NUM_QUITMESSAGES-2))+1 ], DOSY);
-  
+
   M_StartMessage(endstring,M_QuitResponse,true);
 }
 
@@ -962,7 +1059,7 @@ static void M_PlayerSetupDrawer (void)
 void M_ChangeTeam (int choice) // [Toke - Teams]
 {
 	team_t team = D_TeamByName(cl_team.cstring());
-	
+
 	if(choice)
 	{
 		switch(team)
@@ -985,7 +1082,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 			case TEAM_BLUE: team = TEAM_NONE; break;
 		}
 	}
-	
+
 	cl_team = (team == TEAM_NONE) ? "" : team_names[team];
 }
 
@@ -1048,7 +1145,7 @@ static void M_EditPlayerName (int choice)
 	genStringEnter = 1;
 	genStringEnd = M_PlayerNameChanged;
 	genStringLen = MAXPLAYERNAME;
-	
+
 	saveSlot = 0;
 	strcpy(saveOldString,savegamestrings[0]);
 	if (!strcmp(savegamestrings[0],EMPTYSTRING))
@@ -1180,12 +1277,12 @@ int M_StringHeight(char* string)
 {
 	int h;
 	int height = hu_font[0]->height();
-		
+
 	h = height;
 	while (*string)
 		if ((*string++) == '\n')
 			h += height;
-				
+
 	return h;
 }
 
@@ -1215,7 +1312,7 @@ bool M_Responder (event_t* ev)
 		ch = ev->data1; 		// scancode
 		ch2 = ev->data2;		// ASCII
 	}
-	
+
 	if (ch == -1 || headsupactive)
 		return false;
 
@@ -1223,7 +1320,7 @@ bool M_Responder (event_t* ev)
 		M_OptResponder (ev);
 		return true;
 	}
-	
+
 	// Save Game string input
 	// [RH] and Player Name string input
 	if (genStringEnter)
@@ -1243,14 +1340,14 @@ bool M_Responder (event_t* ev)
 			M_ClearMenus ();
 			strcpy(&savegamestrings[saveSlot][0],saveOldString);
 			break;
-								
+
 		  case KEY_ENTER:
 			genStringEnter = 0;
 			M_ClearMenus ();
 			if (savegamestrings[saveSlot][0])
 				genStringEnd(saveSlot);	// [RH] Function to call when enter is pressed
 			break;
-								
+
 		  default:
 			ch = toupper(ev->data3);	// [RH] Use user keymap
 			if (ch != 32)
@@ -1268,27 +1365,27 @@ bool M_Responder (event_t* ev)
 		}
 		return true;
 	}
-	
+
 	// Take care of any messages that need input
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
 			!(ch2 == ' ' || toupper(ch2) == 'N' || toupper(ch2) == 'Y' || ch == KEY_ESCAPE))
 			return true;
-				
+
 		menuactive = messageLastMenuActive;
 		messageToPrint = 0;
 		if (messageRoutine)
 			messageRoutine(ch2);
-						
+
 		menuactive = false;
 		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
 		return true;
 	}
-		
+
 	// [RH] F-Keys are now just normal keys that can be bound,
 	//		so they aren't checked here anymore.
-	
+
 	// If devparm is set, pressing F1 always takes a screenshot no matter
 	// what it's bound to. (for those who don't bother to read the docs)
 	if (devparm && ch == KEY_F1) {
@@ -1309,7 +1406,7 @@ bool M_Responder (event_t* ev)
 		return false;
 	}
 
-	
+
 	// Keys usable within menu
 	switch (ch)
 	{
@@ -1318,27 +1415,27 @@ bool M_Responder (event_t* ev)
 		{
 			if (itemOn+1 > currentMenu->numitems-1)
 				itemOn = 0;
-			else 
-			{	
+			else
+			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
 				if ((ctfmode || teamplaymode) && currentMenu == &PSetupDef && itemOn == 5)
-					itemOn = itemOn + 2;	
+					itemOn = itemOn + 2;
 				else	itemOn++;
 			}
 			S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
-				
+
 	  case KEY_UPARROW:
 		do
 		{
 			if (!itemOn)
 				itemOn = currentMenu->numitems-1;
-			else 
-			{	 
+			else
+			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
 				if ((ctfmode || teamplaymode) && currentMenu == &PSetupDef && itemOn == 7)
-					itemOn = itemOn - 2;	
+					itemOn = itemOn - 2;
 				else itemOn--;
 			}
 			S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
@@ -1353,7 +1450,7 @@ bool M_Responder (event_t* ev)
 			currentMenu->menuitems[itemOn].routine(0);
 		}
 		return true;
-				
+
 	  case KEY_RIGHTARROW:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
@@ -1380,7 +1477,7 @@ bool M_Responder (event_t* ev)
 			}
 		}
 		return true;
-				
+
 	  // [RH] Escape now moves back one menu instead of
 	  //	  quitting the menu system. Thus, backspace
 	  //	  is now ignored.
@@ -1388,7 +1485,7 @@ bool M_Responder (event_t* ev)
 		currentMenu->lastOn = itemOn;
 		M_PopMenuStack ();
 		return true;
-		
+
 	  default:
 		if (ch2) {
 			for (i = itemOn+1;i < currentMenu->numitems;i++)
@@ -1407,7 +1504,7 @@ bool M_Responder (event_t* ev)
 				}
 		}
 		break;
-		
+
 	}
 
 	// [RH] Menu now eats all keydown events while active
@@ -1427,7 +1524,7 @@ void M_StartControlPanel (void)
 	// intro might call this repeatedly
 	if (menuactive)
 		return;
-	
+
 	drawSkull = true;
 	MenuStackDepth = 0;
 	menuactive = 1;
@@ -1481,7 +1578,7 @@ void M_Drawer (void)
 		{
 			if (currentMenu->routine)
 				currentMenu->routine(); 		// call Draw routine
-		
+
 			// DRAW MENU
 			x = currentMenu->x;
 			y = currentMenu->y;
@@ -1494,7 +1591,7 @@ void M_Drawer (void)
 				y += LINEHEIGHT;
 			}
 
-			
+
 			// DRAW SKULL
 			if (drawSkull)
 			{
@@ -1586,7 +1683,7 @@ void M_Ticker (void)
 		// [Toke - CTF] skip skins selection
 		if (ctfmode || teamplaymode)
 			if (itemOn == 6)
-				itemOn = 5;	
+				itemOn = 5;
 
 		M_PlayerSetupTicker ();
 	}
