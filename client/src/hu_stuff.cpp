@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -291,7 +291,7 @@ static void ShoveChatStr (std::string str, byte who)
 
 	if(str.length() > MESSAGESIZE)
 		str.resize(MESSAGESIZE);
-		
+
 	MSG_WriteMarker (&net_buffer, clc_say);
 	MSG_WriteByte (&net_buffer, who);
 	MSG_WriteString (&net_buffer, str.c_str());
@@ -434,7 +434,7 @@ void HU_DMScores1 (player_t *player)
 		screen->DrawText (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Deathmatch");
 	else
 		screen->DrawText (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Cooperative");
-		
+
 	//	Header display
 	screen->DrawTextClean (CR_GREY,	16	* CleanXfac,	25	* CleanYfac, "NAME");
 
@@ -594,7 +594,7 @@ void HU_DMScores2 (player_t *player)
         screen->DrawText (CR_GOLD,locx + 135,locy + 0,"Deathmatch");
     else
         screen->DrawText (CR_GOLD,locx + 150,locy + 0,"Cooperative");
-		
+
 	// Player scores header
 	screen->DrawText	  (CR_GREY	,locx + 8		,locy + 0	,"PLAYERS:"		);
 	if(deathmatch)
@@ -707,13 +707,13 @@ void HU_DMScores2 (player_t *player)
 
 		// PLAYER COUNT
 		sprintf (str, "%d", playercount);
-		screen->DrawText	  (CR_BLUE	,locx + 68		,locy + 0	,	str	);
+		screen->DrawText	  (CR_GREEN	,locx + 68		,locy + 0	,	str	);
 
 		// FRAGLIMIT
 		if (deathmatch)
 		{
 			sprintf (str, "%d", (int)fraglimit);
-			screen->DrawText	  (CR_BLUE	,locx + 336		,locy + 0	,	str	);
+			screen->DrawText	  (CR_GREEN	,locx + 336		,locy + 0	,	str	);
 		}
 
 	}
@@ -976,7 +976,7 @@ void HU_TeamScores1 (player_t *player)
 			sprintf (str, "%d", rpavg);
 			screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	146	* CleanYfac	,	str	);
 		}
-			
+
 		else
 		{
 			// Average red frags
@@ -1078,7 +1078,7 @@ void HU_TeamScores2 (player_t *player)
 	// Dan - Tells which current game mode is being played
     if (ctfmode)
         screen->DrawText (CR_GOLD,blocx + 275,blocy + 0,"Capture The Flag");
-	
+
 	// BLUE
 	screen->DrawText	  (CR_GREY	,blocx + 8	,blocy + 16	,"SCORE:"			);
 	if(ctfmode)

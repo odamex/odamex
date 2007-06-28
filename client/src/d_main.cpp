@@ -667,7 +667,7 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 	std::transform(file.begin(), file.end(), file.begin(), toupper);
 	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
 	std::vector<std::string> dirs;
-	
+
 	#ifdef WIN32
 		const char separator = ';';
 	#else
@@ -702,7 +702,7 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 	if(dwd)
 	{
 		std::string segment(dwd);
-		
+
 		FixPathSeparator(segment);
 		I_ExpandHomeDir(segment);
 
@@ -711,7 +711,7 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 
 		dirs.push_back(segment);
 	}
-	
+
 	const char *dwp = getenv("DOOMWADPATH");
 	if(dwp)
 	{
@@ -935,10 +935,13 @@ static std::string IdentifyVersion (std::string custwad)
 {
 	std::string titlestring = "Public DOOM - ";
 
+	Printf(PRINT_HIGH, "\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
+                       "\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
+
 	if(!CheckIWAD(custwad, titlestring))
-		Printf (PRINT_HIGH, "Game mode indeterminate, no standard wad found.\n");
+		Printf_Bold ("Game mode indeterminate, no standard wad found.\n\n");
 	else
-		Printf (PRINT_HIGH, "%s\n", titlestring.c_str());
+		Printf_Bold ("%s\n\n", titlestring.c_str());
 
 	return titlestring;
 }
@@ -1125,7 +1128,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel(0);
-	
+
 	DThinker::DestroyAllThinkers();
 
 	Z_Init();
@@ -1149,7 +1152,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 		size_t slash = tmp.find_last_of('/');
 		if(slash != std::string::npos)
 			tmp = tmp.substr(slash + 1, tmp.length() - slash);
-        
+
         // [Russell] - Generate a hash if it doesn't exist already
         if (!needhashes[i].empty())
             needhashes[i] = W_MD5(tmp);
@@ -1193,7 +1196,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 	S_Init (snd_sfxvolume, snd_musicvolume);
 	ST_Init();
 
-	NoWipe = 1;
+	//NoWipe = 1;
 
 	// preserve state
 	last_success = fails.empty();
@@ -1214,6 +1217,8 @@ void D_DoomMain (void)
 
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError ("Could not initialize LZO routines");
+
+	AddCommandString("version");
 
 	M_LoadDefaults ();			// load before initing other systems
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
@@ -1259,12 +1264,12 @@ void D_DoomMain (void)
 	{
 		skill.Set (val[0]-'0');
 	}
-	
+
 	unsigned p = Args.CheckParm ("-warp");
 	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
 	{
 		int ep, map;
-		
+
 		if (gameinfo.flags & GI_MAPxx)
 		{
 			ep = 1;
@@ -1275,11 +1280,11 @@ void D_DoomMain (void)
 			ep = Args.GetArg(p+1)[0]-'0';
 			map = Args.GetArg(p+2)[0]-'0';
 		}
-		
+
 		strncpy (startmap, CalcMapName (ep, map), 8);
 		autostart = true;
 	}
-	
+
 	// [RH] Hack to handle +map
 	p = Args.CheckParm ("+map");
 	if (p && p < Args.NumArgs()-1)
@@ -1341,13 +1346,14 @@ void D_DoomMain (void)
 		debugfile = fopen (filename, "w");
 	}
 
-	Printf(PRINT_HIGH, "\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
+	Printf_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
 	if(gamestate != GS_CONNECTING)
 		Printf(PRINT_HIGH, "Type connect <internet address> or use Odamex Launcher to connect to a game.\n");
+    Printf(PRINT_HIGH, "\n");
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
     //gamestate = GS_FULLCONSOLE;
-	
+
 	// denis - bring back the demos
     if ( gameaction != ga_loadgame )
     {
@@ -1360,13 +1366,13 @@ void D_DoomMain (void)
 				allowexit = "1";
 				nomonsters = "0";
 				deathmatch = "0";
-				
+
 				players.clear();
 				players.push_back(player_t());
 				players.back().playerstate = PST_REBORN;
 				consoleplayer_id = displayplayer_id = players.back().id = 1;
 			}
-			
+
 			G_InitNew (startmap);
 		}
         else

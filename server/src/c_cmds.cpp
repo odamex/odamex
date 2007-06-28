@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -98,7 +98,8 @@ BEGIN_COMMAND (logfile)
 	{
 		if ( (Logfile = fopen (argv[1], "w")) )
 		{
-			Printf (PRINT_HIGH, "Log started: %s\n", timestr);
+			Printf (PRINT_HIGH, "Log started: %s", timestr);
+            AddCommandString("version");
 		}
 		else
 		{

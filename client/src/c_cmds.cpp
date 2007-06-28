@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -94,7 +94,7 @@ BEGIN_COMMAND (god)
         Printf(PRINT_HIGH, "Degreelessness mode on\n");
     else
         Printf(PRINT_HIGH, "Degreelessness mode off\n");
-        
+
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
 }
@@ -236,7 +236,7 @@ BEGIN_COMMAND (give)
 
 	if (argc < 2)
 		return;
-	
+
 	std::string name = BuildString (argc - 1, (const char **)(argv + 1));
 	if (name.length())
 	{
@@ -287,7 +287,9 @@ BEGIN_COMMAND (logfile)
 	{
 		if ( (Logfile = fopen (argv[1], "w")) )
 		{
-			Printf (PRINT_HIGH, "Log started: %s\n", timestr);
+			Printf (PRINT_HIGH, "Log started: %s", timestr);
+			AddCommandString("version");
+			Printf (PRINT_HIGH, "\n");
 		}
 		else
 		{
@@ -304,7 +306,7 @@ BEGIN_COMMAND (fov)
 		Printf (PRINT_HIGH, "cannot change fov: not in game\n");
 		return;
 	}
-		
+
 	if (argc != 2)
 		Printf (PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
 	else if (sv_cheats)

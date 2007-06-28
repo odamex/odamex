@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -116,7 +116,7 @@ MapHandlers[] =
 	{ MITYPE_MAPNAME,	lioffset(nextmap), 0 },
 	{ MITYPE_MAPNAME,	lioffset(secretmap), 0 },
 	{ MITYPE_CLUSTER,	lioffset(cluster), 0 },
-	{ MITYPE_SKY,		lioffset(skypic), 0 },				//[ML] 5/11/06 - Remove sky scrolling 
+	{ MITYPE_SKY,		lioffset(skypic), 0 },				//[ML] 5/11/06 - Remove sky scrolling
 	{ MITYPE_COLOR,		lioffset(fadeto), 0 },
 	{ MITYPE_COLOR,		lioffset(outsidefog), 0 },
 	{ MITYPE_LUMPNAME,	lioffset(pname), 0 },
@@ -225,7 +225,7 @@ END_COMMAND (map)
 BEGIN_COMMAND (wad) // denis - changes wads
 {
 	std::vector<std::string> wads, hashes;
-	
+
 	size_t i = 1;
 
 	while(i < argc)
@@ -256,9 +256,9 @@ void G_DoNewGame (void)
 		demoplayback = false;
 		D_SetupUserInfo ();
 	}
-	
+
 	CL_QuitNetGame();
-	
+
 	netdemo = false;
 	netgame = false;
 	multiplayer = false;
@@ -275,7 +275,7 @@ void G_DoNewGame (void)
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 
 	G_InitNew (d_mapname);
-	gameaction = ga_nothing;	
+	gameaction = ga_nothing;
 }
 
 void G_InitNew (char *mapname)
@@ -333,7 +333,7 @@ void G_InitNew (char *mapname)
 		respawnmonsters = true;
 	else
 		respawnmonsters = false;
-	
+
 	static bool isFast = false;
 	bool wantFast = fastmonsters || (skill == sk_nightmare);
 	if (wantFast != isFast)
@@ -386,8 +386,8 @@ static int		startpos;	// [RH] Support for multiple starts per level
 void G_ExitLevel (int position)
 {
 	secretexit = false;
-	
-	gameaction = ga_completed; 
+
+	gameaction = ga_completed;
 }
 
 // Here's for the german edition.
@@ -399,7 +399,7 @@ void G_SecretExitLevel (int position)
 		secretexit = false;
 	else
 		secretexit = true;
-	
+
 	gameaction = ga_completed;
 }
 
@@ -408,7 +408,7 @@ void G_DoCompleted (void)
 	size_t i;
 
 	gameaction = ga_nothing;
-	
+
 	for(i = 0; i < players.size(); i++)
 		if(players[i].ingame())
 			G_PlayerFinishLevel(players[i]);
@@ -493,8 +493,10 @@ void G_DoLoadLevel (int position)
 	Printf (PRINT_HIGH,
 			"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
 			"\36\36\36\36\36\36\36\36\36\36\36\36\37\n"
-			TEXTCOLOR_BOLD "%s\n\n",
-			level.level_name);
+			//TEXTCOLOR_BOLD "%s\n\n",
+			//level.level_name);
+			TEXTCOLOR_BOLD "%s: \"%s\"\n\n",
+			level.mapname, level.level_name);
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
@@ -648,7 +650,7 @@ void G_InitLevelLocals ()
 
 	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
-		
+
 		// [ML] 5/11/06 - Remove sky scrolling and sky2
 		level.info = (level_info_t *)pinfo;
 		info = (level_info_t *)pinfo;
@@ -678,7 +680,7 @@ void G_InitLevelLocals ()
 		strncpy (level.nextmap, info->nextmap, 8);
 		strncpy (level.secretmap, info->secretmap, 8);
 		strncpy (level.music, info->music, 8);
-		strncpy (level.skypic, info->skypic, 8);		
+		strncpy (level.skypic, info->skypic, 8);
 	} else {
 		level.partime = level.cluster = 0;
 		strcpy (level.level_name, "Unnamed");
@@ -902,7 +904,7 @@ void G_UnSnapshotLevel (bool hubLoad)
 void G_ClearSnapshots (void)
 {
 	size_t i;
-	
+
 	for (i = 0; i < numwadlevelinfos; i++)
 		if (wadlevelinfos[i].snapshot)
 		{

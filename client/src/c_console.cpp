@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -872,7 +872,7 @@ void C_ToggleConsole (void)
 //	{
 //		gameaction = ga_fullconsole;
 //	}
-//	else 
+//	else
 	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising))
 	{
 		ConsoleState = c_falling;
@@ -1089,14 +1089,14 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		// Paste from clipboard
 		{
 			std::string text = I_GetClipboardText();
-			
+
 			for(size_t i = 0; i < text.length(); i++)
 			{
 				// Add each character to command line
 				if (buffer[0] < len)
 				{
 					char data = text[i];
-					
+
 					if (buffer[1] == buffer[0])
 					{
 						buffer[buffer[0] + 2] = data;
@@ -1104,13 +1104,13 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 					else
 					{
 						char *c, *e;
-						
+
 						e = (char *)&buffer[buffer[0] + 1];
 						c = (char *)&buffer[buffer[1] + 2];
-						
+
 						for (; e >= c; e--)
 							*(e + 1) = *e;
-						
+
 						*c = data;
 					}
 					buffer[0]++;
@@ -1190,14 +1190,14 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
  			if(KeysCtrl && (ev->data1 == 'v' || ev->data1 == 'V'))
 			{
 				std::string text = I_GetClipboardText();
-				
+
 				for(size_t i = 0; i < text.length(); i++)
 				{
 					// Add each character to command line
 					if (buffer[0] < len)
 					{
 						char data = text[i];
-	
+
 						if (buffer[1] == buffer[0])
 						{
 							buffer[buffer[0] + 2] = data;
@@ -1205,13 +1205,13 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 						else
 						{
 							char *c, *e;
-	
+
 							e = (char *)&buffer[buffer[0] + 1];
 							c = (char *)&buffer[buffer[1] + 2];
-	
+
 							for (; e >= c; e--)
 								*(e + 1) = *e;
-	
+
 							*c = data;
 						}
 						buffer[0]++;
@@ -1322,7 +1322,7 @@ BOOL C_Responder (event_t *ev)
 		RepeatEvent = *ev;
 		return C_HandleKey (ev, CmdLine, 255);
 	}
-	
+
 	if(ev->type == ev_mouse)
 		return true;
 
@@ -1379,11 +1379,12 @@ void C_MidPrint (const char *msg)
 	if (msg)
 	{
 		midprinting = true;
-		Printf (PRINT_HIGH,
-			"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-			"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n%s\n"
-			"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-			"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n", msg);
+		//Printf (PRINT_HIGH,
+		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
+		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n%s\n"
+		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
+		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n", msg);
+		Printf (PRINT_HIGH, "%s\n", msg);
 		midprinting = false;
 
 		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)msg)) )
@@ -1448,9 +1449,9 @@ void C_DrawMid (void)
 EXTERN_CVAR (revealsecrets)
 void C_RevealSecret()
 {
-	if(!revealsecrets) // [ML] 09/4/06: Check for revealsecrets
-		return;
-	
+	if(!revealsecrets || deathmatch) // [ML] 09/4/06: Check for revealsecrets
+		return;                      // NES - Also check for deathmatch
+
 	C_MidPrint ("A secret is revealed!");
 	S_Sound (consoleplayer().mo, CHAN_AUTO, "misc/secret", 1, ATTN_NORM);
 }
@@ -1467,7 +1468,7 @@ tabcommand_map_t &TabCommands()
 void C_AddTabCommand (const char *name)
 {
 	tabcommand_map_t::iterator i = TabCommands().find(name);
-	
+
 	if(i != TabCommands().end())
 		TabCommands()[name]++;
 	else
@@ -1477,7 +1478,7 @@ void C_AddTabCommand (const char *name)
 void C_RemoveTabCommand (const char *name)
 {
 	tabcommand_map_t::iterator i = TabCommands().find(name);
-	
+
 	if(i != TabCommands().end())
 		if(!--i->second)
 			TabCommands().erase(i);
@@ -1494,15 +1495,15 @@ static void C_TabComplete (void)
 		for (TabStart = 2; TabStart < CmdLine[0]; TabStart++)
 			if (CmdLine[TabStart] != ' ')
 				break;
-		
+
 		TabSize = CmdLine[0] - TabStart + 2;
 		TabbedLast = true;
 	}
-	
+
 	// Find next near match
 	std::string TabPos = std::string((char *)(CmdLine + TabStart), CmdLine[0] - TabStart + 2);
 	tabcommand_map_t::iterator i = TabCommands().lower_bound(TabPos);
-	
+
 	// Does this near match fail to actually match what the user typed in?
 	if(i == TabCommands().end() || strnicmp((char *)(CmdLine + TabStart), i->first.c_str(), TabSize) != 0)
 	{
@@ -1510,12 +1511,12 @@ static void C_TabComplete (void)
 		CmdLine[0] = CmdLine[1] = TabSize + TabStart - 2;
 		return;
 	}
-	
+
 	// Found a valid replacement
 	strcpy ((char *)(CmdLine + TabStart), i->first.c_str());
 	CmdLine[0] = CmdLine[1] = strlen ((char *)(CmdLine + 2)) + 1;
 	CmdLine[CmdLine[0] + 1] = ' ';
-	
+
 	makestartposgood ();
 }
 
