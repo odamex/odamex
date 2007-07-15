@@ -770,9 +770,6 @@ AActor* 		slidemo;
 fixed_t 		tmxmove;
 fixed_t 		tmymove;
 
-extern BOOL		onground;
-
-
 //
 // P_HitSlideLine
 // Adjusts the xmove / ymove
