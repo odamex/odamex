@@ -1233,6 +1233,8 @@ void D_DoomMain (void)
 
 	W_InitMultipleFiles (wadfiles);
 
+	D_DoDefDehackedPatch ();
+
 	// [RH] Moved these up here so that we can do most of our
 	//		startup output in a fullscreen console.
 
@@ -1245,8 +1247,6 @@ void D_DoomMain (void)
 
 	// [RH] Initialize configurable strings.
 	D_InitStrings ();
-
-	D_DoDefDehackedPatch ();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
 	if (STARTUP1[0])	Printf (PRINT_HIGH, "%s\n", STARTUP1);
