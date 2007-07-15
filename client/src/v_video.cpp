@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -92,10 +92,11 @@ BOOL	setmodeneeded = false;
 // [RH] Resolution to change to when setmodeneeded is true
 int		NewWidth, NewHeight, NewBits;
 
+EXTERN_CVAR (fullscreen)
 
 //
-// V_MarkRect 
-// 
+// V_MarkRect
+//
 void V_MarkRect (int x, int y, int width, int height)
 {
 	dirtybox.AddToBox (x, y);
@@ -348,7 +349,7 @@ std::string V_GetColorStringByName (const char *name)
 				}
 				*newchar = 0;
 			}
-			
+
 			if (!stricmp (com_token, name)) {
 				sprintf (descr, "%04x %04x %04x",
 						 (c[0] << 8) | c[0],
@@ -368,7 +369,7 @@ BEGIN_COMMAND (setcolor)
 		Printf (PRINT_HIGH, "Usage: setcolor <cvar> <color>\n");
 		return;
 	}
-	
+
 	std::string name = BuildString (argc - 2, (const char **)(argv + 2));
 	if (name.length())
 	{
@@ -565,12 +566,19 @@ BEGIN_COMMAND (vid_setmode)
 }
 END_COMMAND (vid_setmode)
 
+BEGIN_COMMAND (checkres)
+{
+    Printf (PRINT_HIGH, "Resolution: %d x %d x %d (%s)\n", screen->width, screen->height, screen->bits,
+        (fullscreen ? "FULLSCREEN" : "WINDOWED")); // NES - Simple resolution checker.
+}
+END_COMMAND (checkres)
+
 //
 // V_InitPalette
 //
 
 void V_InitPalette (void)
-{	
+{
 	// [RH] Initialize palette subsystem
 	if (!(DefaultPalette = InitPalettes ("PLAYPAL")))
 		I_FatalError ("Could not initialize palette");
@@ -589,8 +597,8 @@ void V_InitPalette (void)
 // V_Init
 //
 
-void V_Init (void) 
-{ 
+void V_Init (void)
+{
 	int width, height, bits;
 
 	width = height = bits = 0;
@@ -635,9 +643,10 @@ void V_Init (void)
 	I_ClosestResolution (&width, &height, bits);
 
 	if (!V_SetResolution (width, height, bits))
-		I_FatalError ("Could not set resolution to %d x %d x %d", width, height, bits);
+		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
+            (fullscreen ? "FULLSCREEN" : "WINDOWED"));
 	else
-		Printf (PRINT_HIGH, "Resolution: %d x %d x %d\n", screen->width, screen->height, screen->bits);
+        AddCommandString("checkres");
 
 	V_InitConChars (0xf7);
 	C_InitConsole (screen->width, screen->height, true);
