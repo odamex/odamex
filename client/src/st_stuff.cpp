@@ -132,7 +132,7 @@ float BaseBlendA;
 #define ST_TOGGLECHAT			KEY_ENTER
 
 // Location of status bar face
-#define ST_FX					(142)
+#define ST_FX					(143)
 
 // Should be set to patch width
 //	for tall numbers later on
