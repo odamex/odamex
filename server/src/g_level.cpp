@@ -66,6 +66,7 @@ CVAR (curmap, "", CVAR_NOSET)			// tracks last played map
 CVAR (nextmap, "", CVAR_NULL)			// tracks next map to be played
 CVAR (loopepisode, "0", CVAR_ARCHIVE)	// NES - Determines whether Doom 1 episodes should carry over.
 
+
 EXTERN_CVAR(updatemins)
 
 static level_info_t *FindDefLevelInfo (char *mapname);
