@@ -170,6 +170,18 @@ BEGIN_CUSTOM_CVAR (msgmidcolor, "5", CVAR_ARCHIVE)
 }
 END_CUSTOM_CVAR (msgmidcolor)
 
+BEGIN_CUSTOM_CVAR (conscrlock, "1", CVAR_ARCHIVE)
+{
+	// NES - Activating this locks the scroll position in place when
+	//       scrolling up. Otherwise, any new messages will
+	//       automatically pull the console back to the bottom.
+
+	// conscrlock 0 = All new lines bring scroll to the bottom.
+	// conscrlock 1 = Only input commands bring scroll to the bottom.
+	// conscrlock 2 = Nothing brings scroll to the bottom.
+}
+END_CUSTOM_CVAR (conscrlock)
+
 static void maybedrawnow (void)
 {
 /*	if (vidactive &&
@@ -309,7 +321,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 		gamestate = GS_FORCEWIPE;
 		Logfile = NULL;
 
-		for (row = 0, zap = old; row < rows; row++, zap += cols + 2)
+		for (row = 0, zap = old; row < rows - 1; row++, zap += cols + 2)
 		{
 			memcpy (string, &zap[2], zap[1]);
 			if (!zap[0])
@@ -491,7 +503,11 @@ int PrintString (int printlevel, const char *outline)
 			if (scroll)
 			{
 				SkipRows = 1;
-				RowAdjust = 0;
+
+				if (conscrlock > 0 && RowAdjust != 0)
+					RowAdjust++;
+				else
+					RowAdjust = 0;
 			}
 			else
 			{
@@ -1126,8 +1142,10 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		if (ev->data2 == '\r')
 		{
 			// Execute command line (ENTER)
-
 			buffer[2 + buffer[0]] = 0;
+
+			if (conscrlock == 1) // NES - If conscrlock = 1, send console scroll to bottom.
+				RowAdjust = 0;   // conscrlock = 0 does it automatically.
 
 			if (HistHead && stricmp (HistHead->String, (char *)&buffer[2]) == 0)
 			{
