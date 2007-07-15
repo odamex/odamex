@@ -43,8 +43,6 @@
 // 16 pixels of bob
 #define MAXBOB			0x100000
 
-BOOL onground;
-
 EXTERN_CVAR (allowjump)
 
 //
@@ -124,7 +122,7 @@ void P_CalcHeight (player_t *player)
 			player->bob = MAXBOB;
 	}
 
-    if ((player->cheats & CF_NOMOMENTUM) || !onground)
+    if ((player->cheats & CF_NOMOMENTUM) || !player->mo->onground)
 	{
 		player->viewz = player->mo->z + VIEWHEIGHT;
 
@@ -179,7 +177,7 @@ void P_MovePlayer (player_t *player)
 
 //	mo->angle += cmd->ucmd.yaw << 16;
 
-	onground = (mo->z <= mo->floorz);
+	mo->onground = (mo->z <= mo->floorz);
 
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
@@ -200,7 +198,7 @@ void P_MovePlayer (player_t *player)
 
 		movefactor = P_GetMoveFactor (mo, &friction);
 		bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
-		if (!onground && !player->mo->waterlevel)
+		if (!mo->onground && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
 			movefactor >>= 8;
@@ -209,12 +207,12 @@ void P_MovePlayer (player_t *player)
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
 
-		if (forwardmove && onground)
+		if (forwardmove && mo->onground)
 		{
 			//P_Bob (player, mo->angle, (cmd->ucmd.forwardmove * bobfactor) >> 8);
 			P_ForwardThrust (player, mo->angle, forwardmove);
 		}
-		if (sidemove && onground)
+		if (sidemove && mo->onground)
 		{
 			//P_Bob (player, mo->angle-ANG90, (cmd->ucmd.sidemove * bobfactor) >> 8);
 			P_SideThrust (player, mo->angle, sidemove);
@@ -246,7 +244,7 @@ void P_DeathThink (player_t *player)
 	angle_t 			delta;
 
 	P_MovePsprites (player);
-	onground = (player->mo->z <= player->mo->floorz);
+	player->mo->onground = (player->mo->z <= player->mo->floorz);
 		
 	// fall to the ground
 	if (player->viewheight > 6*FRACUNIT)
@@ -413,7 +411,7 @@ void P_PlayerThink (player_t *player)
 				{
 					player->mo->momz = 4*FRACUNIT;
 				}
-				else if (allowjump && onground && !player->mo->momz)
+				else if (allowjump && player->mo->onground && !player->mo->momz)
 				{
 					player->mo->momz += 7*FRACUNIT;
 					S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
