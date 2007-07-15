@@ -170,17 +170,14 @@ BEGIN_CUSTOM_CVAR (msgmidcolor, "5", CVAR_ARCHIVE)
 }
 END_CUSTOM_CVAR (msgmidcolor)
 
-BEGIN_CUSTOM_CVAR (conscrlock, "1", CVAR_ARCHIVE)
-{
-	// NES - Activating this locks the scroll position in place when
-	//       scrolling up. Otherwise, any new messages will
-	//       automatically pull the console back to the bottom.
-
-	// conscrlock 0 = All new lines bring scroll to the bottom.
-	// conscrlock 1 = Only input commands bring scroll to the bottom.
-	// conscrlock 2 = Nothing brings scroll to the bottom.
-}
-END_CUSTOM_CVAR (conscrlock)
+// NES - Activating this locks the scroll position in place when
+//       scrolling up. Otherwise, any new messages will
+//       automatically pull the console back to the bottom.
+//
+// conscrlock 0 = All new lines bring scroll to the bottom.
+// conscrlock 1 = Only input commands bring scroll to the bottom.
+// conscrlock 2 = Nothing brings scroll to the bottom.
+CVAR (conscrlock, "0", CVAR_ARCHIVE)
 
 static void maybedrawnow (void)
 {
