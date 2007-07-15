@@ -60,10 +60,11 @@
 extern int nextupdate;
 extern int shotclock;
 
-CVAR (endmapscript, "", CVAR_ARCHIVE)		// script to run at end of each map (e.g. to choose next map)
+CVAR (endmapscript, "", CVAR_ARCHIVE)	// script to run at end of each map (e.g. to choose next map)
 CVAR (startmapscript, "", CVAR_ARCHIVE)	// script to run at start of each map (e.g. to override cvars)
-CVAR (curmap, "", CVAR_NOSET)				// tracks last played map
+CVAR (curmap, "", CVAR_NOSET)			// tracks last played map
 CVAR (nextmap, "", CVAR_NULL)			// tracks next map to be played
+CVAR (loopepisode, "0", CVAR_ARCHIVE)	// NES - Determines whether Doom 1 episodes should carry over.
 
 EXTERN_CVAR(updatemins)
 
@@ -411,7 +412,16 @@ void G_ChangeMap (void)
 				next = level.secretmap;
 		
 		if (!strncmp (next, "EndGame", 7))
-			next = CalcMapName(1, 1);
+		{
+			// NES - exiting a Doom 1 episode moves to the next episode, rather than always going back to E1M1
+			if (gameinfo.flags & GI_MAPxx || gamemode == shareware || (!loopepisode &&
+				((gamemode == registered && level.cluster == 3) || (gamemode == retail && level.cluster == 4))))
+					next = CalcMapName(1, 1);
+				else if (loopepisode)
+					next = CalcMapName(level.cluster, 1);
+				else
+					next = CalcMapName(level.cluster+1, 1);
+		}
 		
 		G_DeferedInitNew(next);
 	}
