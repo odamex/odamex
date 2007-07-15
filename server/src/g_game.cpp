@@ -304,7 +304,7 @@ void G_Ticker (void)
 		    gameaction = ga_nothing;
 			break;
 		case ga_worlddone:
-			G_DoWorldDone ();
+			//G_DoWorldDone ();
 			break;
 		case ga_screenshot:
 			gameaction = ga_nothing;

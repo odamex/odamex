@@ -612,7 +612,7 @@ void G_ExitLevel (int position)
     secretexit = false;
 	
 	// denis - this will skip wi_stuff and allow some time for finale text
-	G_WorldDone();
+	//G_WorldDone();
 }
 
 // Here's for the german edition.
@@ -632,7 +632,7 @@ void G_SecretExitLevel (int position)
 		secretexit = true;
 
 	// denis - this will skip wi_stuff and allow some time for finale text
-	G_WorldDone();
+	//G_WorldDone();
 }
 
 void G_DoCompleted (void)
@@ -748,7 +748,6 @@ void G_DoLoadLevel (int position)
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
 	//	C_FlushDisplay ();
 }
-
 
 //
 // G_WorldDone
