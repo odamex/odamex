@@ -329,7 +329,6 @@ int
 		// Still no channels we can use, don't bother with that sound
 		if(cnum == -1)
 		{
-	    		// FUCK!  No lower priority.  Sorry, Charlie.    
 			return -1;
 		}
 		else

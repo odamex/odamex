@@ -1710,7 +1710,10 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 	} while (cont);
 
 	delete[] PatchFile;
-	Printf (PRINT_HIGH, "Patch installed\n");
+	if (autoloading)
+		Printf (PRINT_HIGH, "DeHackEd patch lump installed\n");
+	else
+		Printf (PRINT_HIGH, "DeHackEd patch installed:\n  %s\n", file.c_str());
 }
 
 VERSION_CONTROL (d_dehacked_cpp, "$Id$")
