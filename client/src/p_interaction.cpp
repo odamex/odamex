@@ -957,11 +957,12 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
     if (message)
     {
-        char work[256];
-
         SexMessage (message, gendermessage, gender);
-        sprintf (work, "%%s %s\n", gendermessage);
-        Printf (PRINT_MEDIUM, work, self->player->userinfo.netname,
+
+		std::string work = "%s";
+		work += gendermessage;
+
+		Printf (PRINT_MEDIUM, work.c_str(), self->player->userinfo.netname,
             attacker->player->userinfo.netname);
         return;
     }
