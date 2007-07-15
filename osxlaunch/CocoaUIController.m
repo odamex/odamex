@@ -39,6 +39,7 @@ static struct PrvToolbarItemInfo toolbarItemsInfo[] = {
 };
 
 static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
+static bool MasterReply[] = {false, false}, MasterFirstReply;
 
 - (void)awakeFromNib
 {
@@ -170,11 +171,19 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 /*
  *	recreate the array on each call
  */
-- (void)fillServersArray
+- (void)fillServersArray: (bool)merge
 {
-	if (serversArray != nil) [serversArray release];
-	serversArray = [[NSMutableArray alloc] init]; 
-
+	if(!merge)
+	{
+		if (serversArray != nil) [serversArray release];
+		serversArray = [[NSMutableArray alloc] init];
+	}
+	else
+	{
+		if(serversArray == nil)
+			serversArray = [[NSMutableArray alloc] init]; 
+	}
+	
 	unsigned short servers = MSG_ReadShort();
 
 	for (size_t i = 0; i < servers; i++)
@@ -182,19 +191,47 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 		if(MSG_BytesLeft() < 6)
 			break;
 
-		NSMutableDictionary *row = [[NSMutableDictionary alloc] init];
-		
 		netadr_t remote;
 		remote.ip[0] = MSG_ReadByte();
 		remote.ip[1] = MSG_ReadByte();
 		remote.ip[2] = MSG_ReadByte();
 		remote.ip[3] = MSG_ReadByte();
 		remote.port = ntohs(MSG_ReadShort());
-		
-		[row setObject:[NSString stringWithCString:NET_AdrToString(remote)] forKey: @"addressPort"];
-		
-		[serversArray addObject: row];
-		[row release];
+
+		if(merge)
+		{
+			size_t num_servers = [serversArray count], j;
+			
+			for(j = 0; j < num_servers; j++)
+			{
+				netadr_t expect;
+				
+				NSMutableDictionary *r = [serversArray objectAtIndex:j];
+				NSString *address = [r objectForKey:@"addressPort"];
+				NET_StringToAdr((char *)[address UTF8String], &expect);
+
+				if(NET_CompareAdr(expect, remote))
+					break;
+			}
+			
+			NSMutableDictionary *row = [[NSMutableDictionary alloc] init];
+			[row setObject:[NSString stringWithCString:NET_AdrToString(remote)] forKey: @"addressPort"];
+			
+			if(j == num_servers)
+			{
+				[serversArray addObject: row];
+			}
+			else
+			{
+				[serversArray replaceObjectAtIndex: j withObject: row];
+			}
+		}
+		else
+		{
+			NSMutableDictionary *row = [[NSMutableDictionary alloc] init];
+			[row setObject:[NSString stringWithCString:NET_AdrToString(remote)] forKey: @"addressPort"];
+			[serversArray addObject: row];
+		}
 	}
 
 	[totalServers setStringValue: [NSString stringWithFormat: @"Total Servers: %d", [serversArray count]]];
@@ -365,10 +402,13 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 	SZ_Clear(&buf);
 	MSG_WriteLong(&buf, LAUNCHER_CHALLENGE);
 	
+	MasterFirstReply = false;
+	
 	for(size_t i = 0; i < sizeof(Masters)/sizeof(char *); i++)
 	{
 		NET_StringToAdr(Masters[i], &to);
 		NET_SendPacket(buf.cursize, buf.data, to);
+		MasterReply[i] = false;
 	}
 }
 
@@ -422,7 +462,6 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 
 - (void)threadRecv:(id)param;
 {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	netadr_t expect;
 	size_t i;
 
@@ -433,26 +472,36 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 		{
 			NET_StringToAdr(Masters[i], &expect);
 			
-			if(NET_CompareAdr(expect, net_from))
-			{
-				if(MSG_ReadLong() != LAUNCHER_CHALLENGE)
-					break;
+			if(!NET_CompareAdr(expect, net_from))
+				continue;
 				
-				// populate server list
-				[self fillServersArray];
-				
-				// initiate a server refresh
-				refreshListPosition = 0;
-				
-				//todo multiple masters can contribute to the list? (merge)
-				
+			if(MSG_ReadLong() != LAUNCHER_CHALLENGE)
 				break;
+				
+			// already got this master's rply?
+			if(MasterReply[i])
+				break;
+
+			MasterReply[i] = true;
+				
+			// first master reply wipes the list
+			if(MasterFirstReply)
+			{
+				if (serversArray != nil) [serversArray release];
+				serversArray = [[NSMutableArray alloc] init];
+				MasterFirstReply = true;
 			}
+
+			// merge results into server list
+			[self fillServersArray: true];
+			
+			// initiate a server refresh
+			refreshListPosition = 0;
 		}
 		
 		if(i != sizeof(Masters)/sizeof(char *))
 			continue;
-			
+		
 		// reply from a server, then?
 		size_t num_servers = [serversArray count];
 		
@@ -566,9 +615,7 @@ static char *Masters[] = { "odamex.net:15000", "voxelsoft.com:15000"};
 				[serversTableView reloadData];
 			}
 		}
-	}
-	
-	[pool release];
+	} // end while
 }
 
 @end

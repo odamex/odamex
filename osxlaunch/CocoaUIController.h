@@ -54,7 +54,7 @@
  *	NSTableView related methods
  */
 
-- (void)fillServersArray;
+- (void)fillServersArray: (bool)merge;
 - (void)fillPlayersArray: (int)rowIndex;
 
 - (int)numberOfRowsInTableView: (NSTableView *)tableView;
