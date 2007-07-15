@@ -76,7 +76,7 @@ gamestring_t Strings[] = {
 	{ str_notchanged, "SWSTRING", "this is the shareware version of doom.\n\nyou need to order the entire trilogy.\n\npress a key.", NULL },
 	{ str_notchanged, "MSGOFF", "Messages OFF", NULL },
 	{ str_notchanged, "MSGON", "Messages ON", NULL },
-	{ str_notchanged, "NETEND", "you can't end a netgame!\n\npress a key.", NULL },
+	{ str_notchanged, "NETEND", "are you sure you want to disconnect\nfrom the game?\n\npress y or n.", NULL },
 	{ str_notchanged, "ENDGAME", "are you sure you want to end the game?\n\npress y or n.", NULL },
 	{ str_notchanged, "DOSY", "(press y to quit)", NULL },
 	{ str_notchanged, "EMPTYSTRING", "empty slot", NULL },

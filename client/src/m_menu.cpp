@@ -704,14 +704,7 @@ void M_EndGame(int choice)
 		return;
 	}
 
-	if (multiplayer)
-	{
-		M_StartMessage(NETEND,NULL,false);
-		M_ClearMenus ();
-		return;
-	}
-
-	M_StartMessage(ENDGAME,M_EndGameResponse,true);
+	M_StartMessage((multiplayer ? NETEND : ENDGAME), M_EndGameResponse, true);
 }
 
 //
