@@ -44,6 +44,7 @@
 #include "st_stuff.h"
 #include "cl_ctf.h"
 #include "r_sky.h"
+#include "cl_main.h"
 
 #include "gi.h"
 
@@ -693,6 +694,7 @@ void M_EndGameResponse(int ch)
 	currentMenu->lastOn = itemOn;
 	M_ClearMenus ();
 	D_StartTitle ();
+	CL_QuitNetGame();
 }
 
 void M_EndGame(int choice)
