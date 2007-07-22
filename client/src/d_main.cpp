@@ -556,7 +556,7 @@ void D_DoAdvanceDemo (void)
 //
 void D_StartTitle (void)
 {
-	CL_QuitNetGame();
+	// CL_QuitNetGame();
 	gameaction = ga_nothing;
 	demosequence = -1;
 	D_AdvanceDemo ();
