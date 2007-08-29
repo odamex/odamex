@@ -1464,7 +1464,7 @@ void C_DrawMid (void)
 EXTERN_CVAR (revealsecrets)
 void C_RevealSecret()
 {
-	if(!revealsecrets || deathmatch) // [ML] 09/4/06: Check for revealsecrets
+	if(!revealsecrets || deathmatch || !show_messages) // [ML] 09/4/06: Check for revealsecrets
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint ("A secret is revealed!");
@@ -1540,5 +1540,6 @@ static void C_TabComplete (void)
 
 
 VERSION_CONTROL (c_console_cpp, "$Id$")
+
 
 
