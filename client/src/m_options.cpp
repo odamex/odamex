@@ -295,6 +295,7 @@ menu_t ControlsMenu = {
  *
  *=======================================*/
 static void StartMessagesMenu (void);
+void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
@@ -323,6 +324,13 @@ static value_t Wipes[] = {
 	{ 1.0, "Melt" },
 	{ 2.0, "Burn" },
 	{ 3.0, "Crossfade" }
+};
+
+static value_t Overlays[] = {
+    { 0.0, "Off" },
+    { 1.0, "Standard" },
+    { 2.0, "Full" },
+    { 3.0, "Full Only" }
 };
 
 static void M_SendUINewColor (int red, int green, int blue);
@@ -385,14 +393,15 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Screen wipe style",	{&wipetype},			{4.0}, {0.0},	{0.0}, {Wipes} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Overlay automap",		{&am_overlay},			{2.0}, {0.0},	{0.0}, {OnOff} },
+	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0}, {Overlays} },
 	{ discrete, "Standard map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0}, {NoYes} },
+	{ more,     "Reset custom map colors", {NULL},              {0.0}, {0.0},   {0.0}, {(value_t *)ResetCustomColors} }
 };
 
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	18,
+	19,
 	0,
 	VideoItems,
 };
@@ -1282,6 +1291,11 @@ void Reset2Saved (void)
 static void StartMessagesMenu (void)
 {
 	M_SwitchMenu (&MessagesMenu);
+}
+
+void ResetCustomColors (void)
+{
+	AddCommandString ("resetcustomcolors");
 }
 
 void MouseSetup (void) // [Toke] for mouse menu

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -1485,6 +1485,10 @@ static void R_DrawCrosshair (void)
 	if (camera->player && (camera->player->cheats & CF_CHASECAM))
 		return;
 
+    // Don't draw the crosshair in overlay mode
+    if (automapactive and viewactive)
+        return;
+
 	if(crosshair && crosshair_lump)
 	{
 		if (crosshair < 0)
@@ -1540,4 +1544,5 @@ void R_DrawMasked (void)
 }
 
 VERSION_CONTROL (r_things_cpp, "$Id$")
+
 
