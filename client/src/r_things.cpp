@@ -87,6 +87,7 @@ short			*screenheightarray;
 CVAR (r_drawplayersprites, "1", 0)	// [RH] Draw player sprites?
 
 CVAR (crosshairdim, "0", CVAR_ARCHIVE)   // [Nes] Crosshair transparency.
+CVAR (crosshairscale, "0", CVAR_ARCHIVE) // [Nes] Crosshair scaling.
 
 //
 // INITIALIZATION FUNCTIONS
@@ -1493,7 +1494,15 @@ static void R_DrawCrosshair (void)
 
 	if(crosshair && crosshair_lump)
 	{
-		if (crosshairdim)
+		if (crosshairdim && crosshairscale)
+			screen->DrawLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
+				realviewwidth / 2 + viewwindowx,
+				realviewheight / 2 + viewwindowy);
+        else if (crosshairscale)
+			screen->DrawPatchCleanNoMove (W_CachePatch (crosshair_lump),
+				realviewwidth / 2 + viewwindowx,
+				realviewheight / 2 + viewwindowy);
+        else if (crosshairdim)
 			screen->DrawLucentPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
