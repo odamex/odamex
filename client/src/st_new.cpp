@@ -38,6 +38,7 @@
 #include "m_swap.h"
 #include "st_stuff.h"
 #include "c_cvars.h"
+#include "cl_ctf.h"
 
 static int		widestnum, numheight;
 static const patch_t	*medi;
@@ -214,7 +215,11 @@ void ST_newDraw (void)
 						 plyr->ammo[ammo]);
 	}
 
-	if (deathmatch)
+    if (ctfmode)
+    {
+		ST_DrawNumRight (screen->width - 2, 1, screen, TEAMpoints[plyr->userinfo.team]);
+    }
+	else if (deathmatch)
 	{
 		// Draw frags (in DM)
 		ST_DrawNumRight (screen->width - 2, 1, screen, plyr->fragcount);
@@ -254,4 +259,5 @@ void ST_nameDraw (int y)
 }
 
 VERSION_CONTROL (st_new_cpp, "$Id$")
+
 

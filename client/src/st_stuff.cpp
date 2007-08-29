@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -945,9 +945,9 @@ void ST_updateWidgets(void)
 	st_fragson = (int)deathmatch && st_statusbaron;
 
 	//	[Toke - CTF]
-//	if (ctfmode)
-//		st_fragscount = plyr->userinfo.points; // denis - todo - scoring for ctf
-//	else
+	if (ctfmode)
+		st_fragscount = TEAMpoints[plyr->userinfo.team]; // denis - todo - scoring for ctf
+	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
 
 	// get rid of chat window if up because of message

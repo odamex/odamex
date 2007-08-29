@@ -28,11 +28,14 @@
 #include	"v_video.h"
 #include	"p_local.h"
 #include	"cl_ctf.h"
+#include    "st_stuff.h"
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];
 
-char *team_names[NUMTEAMS] = 
+static int tintglow = 0;
+
+char *team_names[NUMTEAMS] =
 {
 	"BLUE", "RED", "GOLD"
 };
@@ -310,81 +313,100 @@ void TintScreen(int color)
 //
 void CTF_RunTics (void)
 {
+
+    // NES - Glowing effect on screen tint.
+    if (tintglow < 45)
+        tintglow++;
+    else
+        tintglow = 0;
+
 	// Move the physical clientside flag sprites
 	CTF_MoveFlags();
-}		
-	
+}
+
 //
 //	[Toke - CTF - Hud] CTF_DrawHud
 //	Draws the CTF Hud, duH
 //
 void CTF_DrawHud (void)
 {
+    int tintglowtype;
+
 	if(!ctfmode)
 		return;
-	
+
 	player_t &co = consoleplayer();
 	for(size_t i = 0; i < NUMFLAGS; i++)
 	{
 		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == co.id)
 		{
+		    if (tintglow < 15)
+		        tintglowtype = tintglow;
+            else if (tintglow < 30)
+                tintglowtype = 30 - tintglow;
+            else
+                tintglowtype = 0;
+
 			// Tint the screen as we have the flag!
 			if(i == it_blueflag)
-				TintScreen(BLUECOLOR);
+				TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
+                                      (int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));
 			else if(i == it_redflag)
-				TintScreen(REDCOLOR);
+				TintScreen(BestColor (DefaultPalette->basecolors, 255,
+                                      (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
 			else if(i == it_goldflag)
-				TintScreen(GOLDCOLOR);
+				TintScreen(BestColor (DefaultPalette->basecolors, 255,
+                                      255, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
 		}
 	}
-	
+
 	// Flag radar box tells player the states of all flags
 	DRAW_FlagsBox ();
 
-	switch(CTFdata[it_blueflag].state)
-	{
-		case flag_home:
-			DRAW_Bhome ();
-			break;
-		case flag_dropped:
-			DRAW_Bdropped ();
-			break;
-		case flag_carried:
-			DRAW_Btaken ();
-			break;
-		default:
-			break;
-	}
-	
-	switch(CTFdata[it_redflag].state)
-	{
-		case flag_home:
-			DRAW_Rhome ();
-			break;
-		case flag_dropped:
-			DRAW_Rdropped ();
-			break;
-		case flag_carried:
-			DRAW_Rtaken ();
-			break;
-		default:
-			break;
-	}
+    switch(CTFdata[it_blueflag].state)
+    {
+        case flag_home:
+            DRAW_Bhome ();
+            break;
+        case flag_dropped:
+            DRAW_Bdropped ();
+            break;
+        case flag_carried:
+            DRAW_Btaken ();
+            break;
+        default:
+            break;
+    }
 
-	switch(CTFdata[it_goldflag].state)
-	{
-		case flag_home:
-			DRAW_Ghome ();
-			break;
-		case flag_dropped:
-			DRAW_Gdropped ();
-			break;
-		case flag_carried:
-			DRAW_Gtaken ();
-			break;
-		default:
-			break;
-	}
+    switch(CTFdata[it_redflag].state)
+    {
+        case flag_home:
+            DRAW_Rhome ();
+            break;
+        case flag_dropped:
+            DRAW_Rdropped ();
+            break;
+        case flag_carried:
+            DRAW_Rtaken ();
+            break;
+        default:
+            break;
+    }
+
+    switch(CTFdata[it_goldflag].state)
+    {
+        case flag_home:
+            DRAW_Ghome ();
+            break;
+        case flag_dropped:
+            DRAW_Gdropped ();
+            break;
+        case flag_carried:
+            DRAW_Gtaken ();
+            break;
+        default:
+            break;
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -396,12 +418,27 @@ void CTF_DrawHud (void)
 // --------------------------
 void DRAW_Bhome (void)
 {
-	patch_t *ctfstuff2 = W_CachePatch ("BIND0");
+    if (NUMTEAMS == 3) {
+        patch_t *ctfstuff2 = W_CachePatch ("BINDB0");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
-	else
-		screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4));
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff2, ST_X + 237, ST_Y + 2);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), (screen->height / 4));
+    } else {
+        patch_t *ctfstuff2 = W_CachePatch ("BIND0");
+
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff2, ST_X + 237, ST_Y + 2);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4));
+    }
 }
 
 
@@ -411,12 +448,27 @@ void DRAW_Bhome (void)
 // --------------------------
 void DRAW_Rhome (void)
 {
-	patch_t *ctfstuff3 = W_CachePatch ("RIND0");
+    if (NUMTEAMS == 3) {
+        patch_t *ctfstuff3 = W_CachePatch ("RINDB0");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 180 * screen->height / 200);
-	else
-		screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 9);
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 185 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff3, ST_X + 237, ST_Y + 17);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), (screen->height / 4) + (screen->height / 200) * 14);
+    } else {
+        patch_t *ctfstuff3 = W_CachePatch ("RIND0");
+
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 180 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff3, ST_X + 237, ST_Y + 12);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 9);
+    }
 }
 
 
@@ -426,12 +478,17 @@ void DRAW_Rhome (void)
 // --------------------------
 void DRAW_Ghome (void)
 {
-	patch_t *ctfstuff4 = W_CachePatch ("GIND0");
+    if (NUMTEAMS != 3) {
+        patch_t *ctfstuff4 = W_CachePatch ("GIND0");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (ctfstuff4, 237 * screen->width / 320, 190 * screen->height / 200);
-	else
-		screen->DrawPatchCleanNoMove (ctfstuff4, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 18);
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff4, 237 * screen->width / 320, 190 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff4, ST_X + 237, ST_Y + 22);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff4, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 18);
+    }
 }
 
 
@@ -445,18 +502,39 @@ void DRAW_Bdropped (void)
 
 	CTFdata[it_blueflag].sb_tick++;
 
-	if (CTFdata[it_blueflag].sb_tick == 10)
-		CTFdata[it_blueflag].sb_tick = 0;
+    if (NUMTEAMS == 3) {
+        if (CTFdata[it_blueflag].sb_tick == 10)
+            CTFdata[it_blueflag].sb_tick = 0;
 
-	if (CTFdata[it_blueflag].sb_tick < 8)
-		ctfstuff2 = W_CachePatch ("BIND0");
-	else
-		ctfstuff2 = W_CachePatch ("BIND1");
+        if (CTFdata[it_blueflag].sb_tick < 8)
+            ctfstuff2 = W_CachePatch ("BINDB0");
+        else
+            ctfstuff2 = W_CachePatch ("BINDB1");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
-	else
-		screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4));
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff2, ST_X + 237, ST_Y + 2);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), (screen->height / 4));
+    } else {
+        if (CTFdata[it_blueflag].sb_tick == 10)
+            CTFdata[it_blueflag].sb_tick = 0;
+
+        if (CTFdata[it_blueflag].sb_tick < 8)
+            ctfstuff2 = W_CachePatch ("BIND0");
+        else
+            ctfstuff2 = W_CachePatch ("BIND1");
+
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff2, ST_X + 237, ST_Y + 2);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4));
+    }
 }
 
 
@@ -470,18 +548,39 @@ void DRAW_Rdropped (void)
 
 	CTFdata[it_redflag].sb_tick++;
 
-	if (CTFdata[it_redflag].sb_tick == 10)
-		CTFdata[it_redflag].sb_tick = 0;
+    if (NUMTEAMS == 3) {
+        if (CTFdata[it_redflag].sb_tick == 10)
+            CTFdata[it_redflag].sb_tick = 0;
 
-	if (CTFdata[it_redflag].sb_tick < 8)
-		ctfstuff3 = W_CachePatch ("RIND0");
-	else
-		ctfstuff3 = W_CachePatch ("RIND1");
+        if (CTFdata[it_redflag].sb_tick < 8)
+            ctfstuff3 = W_CachePatch ("RINDB0");
+        else
+            ctfstuff3 = W_CachePatch ("RINDB1");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 180 * screen->height / 200);
-	else
-		screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 9);
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 185 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff3, ST_X + 237, ST_Y + 17);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), (screen->height / 4) + (screen->height / 200) * 14);
+    } else {
+        if (CTFdata[it_redflag].sb_tick == 10)
+            CTFdata[it_redflag].sb_tick = 0;
+
+        if (CTFdata[it_redflag].sb_tick < 8)
+            ctfstuff3 = W_CachePatch ("RIND0");
+        else
+            ctfstuff3 = W_CachePatch ("RIND1");
+
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 180 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff3, ST_X + 237, ST_Y + 12);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 9);
+    }
 }
 
 
@@ -491,22 +590,27 @@ void DRAW_Rdropped (void)
 // --------------------------
 void DRAW_Gdropped (void)
 {
-	patch_t *ctfstuff4;
+    if (NUMTEAMS != 3) {
+        patch_t *ctfstuff4;
 
-	CTFdata[it_goldflag].sb_tick++;
+        CTFdata[it_goldflag].sb_tick++;
 
-	if (CTFdata[it_goldflag].sb_tick == 10)
-		CTFdata[it_goldflag].sb_tick = 0;
+        if (CTFdata[it_goldflag].sb_tick == 10)
+            CTFdata[it_goldflag].sb_tick = 0;
 
-	if (CTFdata[it_goldflag].sb_tick < 8)
-		ctfstuff4 = W_CachePatch ("GIND0");
-	else
-		ctfstuff4 = W_CachePatch ("GIND1");
+        if (CTFdata[it_goldflag].sb_tick < 8)
+            ctfstuff4 = W_CachePatch ("GIND0");
+        else
+            ctfstuff4 = W_CachePatch ("GIND1");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (ctfstuff4, 237 * screen->width / 320, 190 * screen->height / 200);
-	else
-		screen->DrawPatchCleanNoMove (ctfstuff4, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 18);
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff4, 237 * screen->width / 320, 190 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff4, ST_X + 237, ST_Y + 22);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff4, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 18);
+    }
 }
 
 
@@ -516,13 +620,27 @@ void DRAW_Gdropped (void)
 // --------------------------
 void DRAW_Btaken (void)
 {
-	patch_t *ctfstuff2 = W_CachePatch ("BIND1");
+    if (NUMTEAMS == 3) {
+        patch_t *ctfstuff2 = W_CachePatch ("BINDB1");
 
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff2, ST_X + 237, ST_Y + 2);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), (screen->height / 4));
+    } else {
+        patch_t *ctfstuff2 = W_CachePatch ("BIND1");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
-	else
-		screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4));
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff2, 237 * screen->width / 320, 170 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff2, ST_X + 237, ST_Y + 2);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4));
+    }
 }
 
 
@@ -532,12 +650,27 @@ void DRAW_Btaken (void)
 // --------------------------
 void DRAW_Rtaken (void)
 {
-	patch_t *ctfstuff3 = W_CachePatch ("RIND1");
+    if (NUMTEAMS == 3) {
+        	patch_t *ctfstuff3 = W_CachePatch ("RINDB1");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 180 * screen->height / 200);
-	else
-		screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 9);
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 185 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff3, ST_X + 237, ST_Y + 17);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), (screen->height / 4) + (screen->height / 200) * 14);
+    } else {
+        patch_t *ctfstuff3 = W_CachePatch ("RIND1");
+
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff3, 237 * screen->width / 320, 180 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff3, ST_X + 237, ST_Y + 12);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 9);
+    }
 }
 
 
@@ -547,12 +680,17 @@ void DRAW_Rtaken (void)
 // --------------------------
 void DRAW_Gtaken (void)
 {
-	patch_t *ctfstuff4 = W_CachePatch ("GIND1");
+    if (NUMTEAMS != 3) {
+        patch_t *ctfstuff4 = W_CachePatch ("GIND1");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (ctfstuff4, 237 * screen->width / 320, 190 * screen->height / 200);
-	else
-		screen->DrawPatchCleanNoMove (ctfstuff4, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 18);
+        if (screenblocks < 11 || (automapactive && !viewactive))
+            if (st_scale)
+                screen->DrawPatchCleanNoMove (ctfstuff4, 237 * screen->width / 320, 190 * screen->height / 200);
+            else
+                screen->DrawPatch (ctfstuff4, ST_X + 237, ST_Y + 22);
+        else if (screenblocks == 11)
+            screen->DrawPatchCleanNoMove (ctfstuff4, screen->width - (screen->width / 320 * 15), screen->height - (screen->height / 4) + (screen->height / 200) * 18);
+    }
 }
 
 
@@ -564,8 +702,11 @@ void DRAW_FlagsBox (void)
 {
 	patch_t *stflags = W_CachePatch ("STFLAGS");
 
-	if (st_scale && screenblocks < 11)
-		screen->DrawPatchCleanNoMove (stflags, 108 * screen->width / 320, 189 * screen->height / 200);
+	if (screenblocks < 11 || (automapactive && !viewactive))
+        if (st_scale)
+            screen->DrawPatchCleanNoMove (stflags, 108 * screen->width / 320, 189 * screen->height / 200);
+        else
+            screen->DrawPatch (stflags, ST_X + 108, ST_Y + 21);
 
 }
 
