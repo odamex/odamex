@@ -197,7 +197,6 @@ void STACK_ARGS M_SaveDefaults (void)
 // M_LoadDefaults
 //
 extern int cvar_defflags;
-EXTERN_CVAR (dimamount)
 
 void M_LoadDefaults (void)
 {
@@ -343,4 +342,5 @@ BEGIN_COMMAND (screenshot)
 END_COMMAND (screenshot)
 
 VERSION_CONTROL (m_misc_cpp, "$Id$")
+
 

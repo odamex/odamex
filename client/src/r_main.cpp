@@ -711,8 +711,8 @@ END_CUSTOM_CVAR (screenblocks)
 
 // [ML] Disabled 16/3/06, now always 0 (Original)
 // [Russell] Reenabled 14/3/07, fixes smudging of graphics
-BEGIN_CUSTOM_CVAR (r_columnmethod, "1", CVAR_ARCHIVE)
-{
+//BEGIN_CUSTOM_CVAR (r_columnmethod, "1", CVAR_ARCHIVE)
+//{
     /*
 	if (var != 0 && var != 1)
 		var.Set (1);
@@ -720,8 +720,9 @@ BEGIN_CUSTOM_CVAR (r_columnmethod, "1", CVAR_ARCHIVE)
 		// Trigger the change
 		r_detail.Callback ();
     */
-}
-END_CUSTOM_CVAR (r_columnmethod)
+//}
+//END_CUSTOM_CVAR (r_columnmethod)
+CVAR (r_columnmethod, "1", CVAR_ARCHIVE)
 
 //
 //
@@ -1072,4 +1073,5 @@ void R_MultiresInit (void)
 }
 
 VERSION_CONTROL (r_main_cpp, "$Id$")
+
 

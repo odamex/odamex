@@ -30,8 +30,6 @@
 extern constate_e ConsoleState;
 extern gamestate_t wipegamestate;
 
-EXTERN_CVAR (cl_predict_players)
-
 
 void P_XYMovement (AActor *mo);
 void P_ZMovement (AActor *mo);
@@ -60,4 +58,5 @@ void P_Ticker (void)
 }
 
 VERSION_CONTROL (p_tick_cpp, "$Id$")
+
 

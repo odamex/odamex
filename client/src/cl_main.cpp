@@ -76,11 +76,8 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
-EXTERN_CVAR (skin)
-EXTERN_CVAR (team)
 CVAR (friendlyfire,		"1", CVAR_SERVERINFO)
 EXTERN_CVAR (weaponstay)
-EXTERN_CVAR (sv_cheats)
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
@@ -1657,11 +1654,6 @@ void CL_ReadPacketHeader(void)
 	packetnum++;
 }
 
-// [NightFang] - Simple function to detect teamplay and if teamplay
-// is set.  Change the user's color.
-
-EXTERN_CVAR (color)
-
 void CL_GetServerSettings(void)
 {
 	ctfmode = MSG_ReadByte() ? true : false;
@@ -2245,5 +2237,6 @@ void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
+
 
 

@@ -40,11 +40,9 @@ int		clipammo[NUMAMMO]	= {10, 4, 20, 1};
 int		MeansOfDeath;
 
 
-
-EXTERN_CVAR (fraglimit) 
-
 #define BONUSADD		6
 
 
 #endif
+
 

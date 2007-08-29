@@ -97,7 +97,6 @@ EXTERN_CVAR (cl_autoaim)
 void MouseSetup (void);
 EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (m_side)
-EXTERN_CVAR (m_yaw)
 EXTERN_CVAR (m_forward)
 EXTERN_CVAR (displaymouse)
 
@@ -302,12 +301,9 @@ EXTERN_CVAR (am_overlay)
 EXTERN_CVAR (st_scale)
 EXTERN_CVAR (am_usecustomcolors)
 EXTERN_CVAR (r_stretchsky)
-EXTERN_CVAR (r_drawfuzz)
-EXTERN_CVAR (cl_rockettrails)
 EXTERN_CVAR (wipetype)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (dimamount)
-EXTERN_CVAR (dumcvar)
 
 static value_t Crosshairs[] =
 {
@@ -1477,4 +1473,5 @@ END_COMMAND (menu_video)
 
 
 VERSION_CONTROL (m_options_cpp, "$Id$")
+
 

@@ -84,7 +84,7 @@ extern	BOOL			multiplayer;
 EXTERN_CVAR (deathmatch)
 
 // [RH] Teamplay mode
-EXTERN_CVAR (teamplay)
+//EXTERN_CVAR (teamplay)
 
 
 // [Toke - CTF] Capture The Flag mode
@@ -274,5 +274,6 @@ struct DehInfo
 extern struct DehInfo deh;
 
 #endif
+
 
 

@@ -66,12 +66,6 @@ bool		st_firsttime;
 static int		lu_palette;
 
 
-// [Toke - CTF]
-EXTERN_CVAR (localflagtype)
-
-// [deathz0r] We don't want desyncs in a server
-EXTERN_CVAR (sv_cheats)
-
 CVAR (idmypos, "0", 0)
 BEGIN_CUSTOM_CVAR (st_scale, "1", CVAR_ARCHIVE)		// Stretch status bar to full screen width?
 {
@@ -1524,4 +1518,5 @@ void ST_Init (void)
 }
 
 VERSION_CONTROL (st_stuff_cpp, "$Id$")
+
 

@@ -49,8 +49,6 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 };
 
 EXTERN_CVAR		(screenblocks)
-EXTERN_CVAR		(team)
-EXTERN_CVAR		(skin)
 EXTERN_CVAR		(st_scale)
 
 BEGIN_COMMAND	(ctf)
@@ -573,4 +571,5 @@ void DRAW_FlagsBox (void)
 
 
 VERSION_CONTROL (cl_ctf_cpp, "$Id$")
+
 

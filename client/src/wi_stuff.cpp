@@ -41,8 +41,6 @@
 #include "hu_stuff.h"
 #include "v_palette.h"
 
-CVAR (wi_percents, "1", CVAR_ARCHIVE)
-
 void WI_unloadData(void);
 
 //
@@ -935,4 +933,5 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 }
 
 VERSION_CONTROL (wi_stuff_cpp, "$Id$")
+
 

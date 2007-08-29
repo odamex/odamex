@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -53,10 +53,7 @@ int			skyshift;					//		[ML] 5/11/06 - remove sky2 remenants
 fixed_t		skypos=0,		skyspeed=0;
 
 // [RH] Stretch sky texture if not taller than 128 pixels?
-BEGIN_CUSTOM_CVAR (r_stretchsky, "1", CVAR_ARCHIVE)
-{
-}
-END_CUSTOM_CVAR (r_stretchsky)
+CVAR (r_stretchsky, "1", CVAR_ARCHIVE)
 
 char SKYFLATNAME[8] = "F_SKY1";
 
@@ -103,5 +100,6 @@ void R_InitSkyMap ()
 		skyshift -= skystretch;
 }
 
-VERSION_CONTROL (r_sky_cpp, "$Id:$")
+VERSION_CONTROL (r_sky_cpp, "$Id$")
+
 

@@ -40,18 +40,35 @@
 #include "i_sdlvideo.h"
 
 extern constate_e ConsoleState;
+extern int NewWidth, NewHeight, NewBits, DisplayBits;
 
 //static bool MouseShouldBeGrabbed ();
-
-CVAR (vid_fps, "0", 0)
-CVAR (ticker, "0", 0)
-EXTERN_CVAR (fullscreen)
-EXTERN_CVAR (vid_winscale)
 
 static IVideo *Video;
 //static IKeyboard *Keyboard;
 //static IMouse *Mouse;
 //static IJoystick *Joystick;
+
+CVAR (vid_fps, "0", 0)
+CVAR (ticker, "0", 0)
+CVAR (fullscreen, "0", CVAR_ARCHIVE)
+
+BEGIN_CUSTOM_CVAR (vid_winscale, "1.0", CVAR_ARCHIVE)
+{
+	if (var < 1.f)
+	{
+		var.Set (1.f);
+	}
+	else if (Video)
+	{
+		Video->SetWindowedScale (var);
+		NewWidth = screen->width;
+		NewHeight = screen->height;
+		NewBits = DisplayBits;
+		setmodeneeded = true;
+	}
+}
+END_CUSTOM_CVAR (vid_winscale)
 
 void STACK_ARGS I_ShutdownHardware ()
 {
@@ -384,37 +401,6 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 		I_UnlockScreen (dest);
 }
 
-extern int NewWidth, NewHeight, NewBits, DisplayBits;
-
-BEGIN_CUSTOM_CVAR (fullscreen, "0", CVAR_ARCHIVE)
-{
-	/*if (Video->FullscreenChanged (var ? true : false))
-	{
-		NewWidth = screen->width;
-		NewHeight = screen->height;
-		NewBits = DisplayBits;
-		setmodeneeded = true;
-	}*/
-}
-END_CUSTOM_CVAR (fullscreen)
-
-BEGIN_CUSTOM_CVAR (vid_winscale, "1.0", CVAR_ARCHIVE)
-{
-	if (var < 1.f)
-	{
-		var.Set (1.f);
-	}
-	else if (Video)
-	{
-		Video->SetWindowedScale (var);
-		NewWidth = screen->width;
-		NewHeight = screen->height;
-		NewBits = DisplayBits;
-		setmodeneeded = true;
-	}
-}
-END_CUSTOM_CVAR (vid_winscale)
-
 BEGIN_COMMAND (vid_listmodes)
 {
 	int width, height, bits;
@@ -438,4 +424,5 @@ BEGIN_COMMAND (vid_currentmode)
 END_COMMAND (vid_currentmode)
 
 VERSION_CONTROL (hardware_cpp, "$Id$")
+
 

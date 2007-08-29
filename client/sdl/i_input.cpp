@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2006-2007 by The Odamex Team.
 //
@@ -35,8 +35,6 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 
-EXTERN_CVAR (fullscreen)
-
 static BOOL mousepaused = true; // SoM: This should start off true
 static BOOL havefocus = false;
 static BOOL noidle = false;
@@ -54,15 +52,15 @@ BOOL mousegrabbed = false;
 
 extern constate_e ConsoleState;
 
-CVAR (i_remapkeypad, "1", CVAR_ARCHIVE)
-CVAR (use_mouse, "1", CVAR_ARCHIVE)
-
-CVAR (use_joystick, "0", CVAR_ARCHIVE)
-CVAR (joy_speedmultiplier, "1", CVAR_ARCHIVE)
-CVAR (joy_xsensitivity, "1", CVAR_ARCHIVE)
-CVAR (joy_ysensitivity, "-1", CVAR_ARCHIVE)
-CVAR (joy_xthreshold, "0.15", CVAR_ARCHIVE)
-CVAR (joy_ythreshold, "0.15", CVAR_ARCHIVE)
+// NES - Currently unused. Make some use of these if possible.
+//CVAR (i_remapkeypad, "1", CVAR_ARCHIVE)
+//CVAR (use_mouse, "1", CVAR_ARCHIVE)
+//CVAR (use_joystick, "0", CVAR_ARCHIVE)
+//CVAR (joy_speedmultiplier, "1", CVAR_ARCHIVE)
+//CVAR (joy_xsensitivity, "1", CVAR_ARCHIVE)
+//CVAR (joy_ysensitivity, "-1", CVAR_ARCHIVE)
+//CVAR (joy_xthreshold, "0.15", CVAR_ARCHIVE)
+//CVAR (joy_ythreshold, "0.15", CVAR_ARCHIVE)
 
 //
 // I_InitInput
@@ -297,5 +295,6 @@ void I_StartFrame (void)
 {
 }
 
-VERSION_CONTROL (i_input_cpp, "$Id:$")
+VERSION_CONTROL (i_input_cpp, "$Id$")
+
 
