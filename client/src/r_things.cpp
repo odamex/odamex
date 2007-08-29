@@ -86,6 +86,8 @@ short			*screenheightarray;
 
 CVAR (r_drawplayersprites, "1", 0)	// [RH] Draw player sprites?
 
+CVAR (crosshairdim, "0", CVAR_ARCHIVE)   // [Nes] Crosshair transparency.
+
 //
 // INITIALIZATION FUNCTIONS
 //
@@ -504,22 +506,22 @@ END_COMMAND (skins)
 static void R_InitCrosshair()
 {
 	int xhairnum = (int)crosshair;
-	
+
 	if (xhairnum)
 	{
 		if (xhairnum < 0)
 			xhairnum = -xhairnum;
-		
+
 		char xhairname[16];
 		int xhair;
-		
+
 		sprintf (xhairname, "XHAIR%d", xhairnum);
-		
+
 		if ((xhair = W_CheckNumForName (xhairname)) == -1)
 		{
 			xhair = W_CheckNumForName ("XHAIR1");
 		}
-		
+
 		if(xhair != -1)
 			crosshair_lump = xhair;
 	}
@@ -583,7 +585,7 @@ void R_InitSprites (char **namelist)
 	skins[0].face[2] = 'F';
 	skins[0].sprite = SPR_PLAY;
 	skins[0].namespc = ns_global;
-	
+
 	// set up the crosshair
 	R_InitCrosshair();
 }
@@ -896,7 +898,7 @@ void R_ProjectSprite (AActor *thing)
 
 	if (thing->translucency == 0)
 		return;
-	
+
 	// transform the origin point
 	tr_x = thing->x - viewx;
 	tr_y = thing->y - viewy;
@@ -1491,7 +1493,7 @@ static void R_DrawCrosshair (void)
 
 	if(crosshair && crosshair_lump)
 	{
-		if (crosshair < 0)
+		if (crosshairdim)
 			screen->DrawLucentPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
