@@ -851,13 +851,13 @@ void D_DoomMain (void)
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError ("Could not initialize LZO routines");
 
-    AddCommandString("version");
+    C_ExecCmdLineParams (false, true);	// [Nes] test for +logfile command
 
 	I_Init ();
 
 	M_LoadDefaults ();			// load before initing other systems
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
-	C_ExecCmdLineParams (true);	// [RH] do all +set commands on the command line
+	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
 	D_CheckNetGame ();
 
@@ -980,7 +980,7 @@ void D_DoomMain (void)
 
 	// [RH] Now that all game subsystems have been initialized,
 	// do all commands on the command line other than +set
-	C_ExecCmdLineParams (false);
+	C_ExecCmdLineParams (false, false);
 
 	strncpy(level.mapname, startmap, sizeof(level.mapname));
 

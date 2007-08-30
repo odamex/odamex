@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -32,7 +32,7 @@
 
 #define HASH_SIZE	251				// I think this is prime
 
-void C_ExecCmdLineParams (bool onlyset);
+void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
 // add commands to the console as if they were typed in
 // for map changing, etc

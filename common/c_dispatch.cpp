@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -201,7 +201,7 @@ void C_DoCommand (const char *cmd)
 		if (c != Commands().end())
 		{
 			com = c->second;
-			
+
 			if(!safemode
 			|| strcmp(argv[0], "if")==0
 			|| strcmp(argv[0], "exec")==0)
@@ -227,11 +227,11 @@ void C_DoCommand (const char *cmd)
 				if (argc >= 2)
 				{
 					c = Commands().find("set");
-					
+
 					if(c != Commands().end())
 					{
 						com = c->second;
-						
+
 						com->argc = argc + 1;
 						com->argv = argv - 1;	// Hack
 						com->m_Instigator = consoleplayer().mo;
@@ -289,12 +289,12 @@ void AddCommandString (std::string cmd, bool onlycvars)
 		}
 
 		safemode |= onlycvars;
-		
+
 		C_DoCommand (copy);
-		
+
 		if(onlycvars)
 			safemode = false;
-		
+
 		if (more)
 		{
 			*brkpt = ';';
@@ -315,16 +315,16 @@ BEGIN_COMMAND (exec)
 
 	if (argc < 2)
 		return;
-		
+
 	static vector<string> exec_stack;
 	static vector<bool>	tag_stack;
-	
+
 	if(find(exec_stack.begin(), exec_stack.end(), argv[1]) != exec_stack.end())
 	{
 		Printf (PRINT_HIGH, "Ignoring recursive exec \"%s\"\n", argv[1]);
 		return;
 	}
-	
+
 	if(exec_stack.size() >= MAX_EXEC_DEPTH)
 	{
 		Printf (PRINT_HIGH, "Ignoring recursive exec \"%s\"\n", argv[1]);
@@ -332,7 +332,7 @@ BEGIN_COMMAND (exec)
 	}
 
 	ifstream ifs(argv[1]);
-	
+
 	if(ifs.fail())
 	{
 		Printf (PRINT_HIGH, "Could not open \"%s\"\n", argv[1]);
@@ -340,25 +340,25 @@ BEGIN_COMMAND (exec)
 	}
 
 	exec_stack.push_back(argv[1]);
-	
+
 	while(ifs)
 	{
 		string line;
 		getline(ifs, line);
-		
+
 		if(!line.length())
 			continue;
-		
+
 		// commented line
 		if(line.length() > 1 && line[0] == '/' && line[1] == '/')
 			continue;
-		
+
 		// start tag
 		if(line.substr(0, 3) == "#if")
 		{
 			AddCommandString(line.c_str() + 1);
 			tag_stack.push_back(if_command_result);
-			
+
 			continue;
 		}
 
@@ -369,7 +369,7 @@ BEGIN_COMMAND (exec)
 				Printf(PRINT_HIGH, "Ignoring stray #else\n");
 			else
 				tag_stack.back() = !tag_stack.back();
-			
+
 			continue;
 		}
 
@@ -380,17 +380,17 @@ BEGIN_COMMAND (exec)
 				Printf(PRINT_HIGH, "Ignoring stray #endif\n");
 			else
 				tag_stack.pop_back();
-				
+
 			continue;
 		}
-		
+
 		// inside tag that evaluated false?
 		if(!tag_stack.empty() && !tag_stack.back())
 			continue;
-			
+
 		AddCommandString(line);
 	}
-	
+
 	exec_stack.pop_back();
 }
 END_COMMAND (exec)
@@ -401,21 +401,21 @@ BEGIN_COMMAND (if)
 {
 	using namespace std;
 	if_command_result = false;
-	
+
 	if (argc < 4)
 		return;
 
 	cvar_t *var, *dummy;
 	var = cvar_t::FindCVar (argv[1], &dummy);
-	
+
 	if (!var)
 	{
 		Printf(PRINT_HIGH, "if: no cvar named %s\n", argv[1]);
 		return;
 	}
-	
+
 	string op = argv[2];
-	
+
 	if(op == "eq")
 	{
 		if_command_result = !strcmp(var->cstring(), argv[3]);
@@ -430,7 +430,7 @@ BEGIN_COMMAND (if)
 		Printf(PRINT_HIGH, "if: operators are eq, ne\n");
 		return;
 	}
-	
+
 	if(if_command_result && argc > 4)
 	{
 		std::string param = BuildString (argc - 4, (const char **)&argv[4]);
@@ -556,22 +556,22 @@ DConsoleAlias::~DConsoleAlias ()
 }
 
 void DConsoleAlias::Run()
-{  
+{
 	if(!state_lock)
 	{
 		state_lock = true;
-		
+
         m_CommandParam = m_Command;
-		
+
 		// [Russell] - Allows for aliases with parameters
 		if (argc > 1)
-        {           
+        {
             for (size_t i = 1; i < argc; i++)
                 m_CommandParam += argv[i];
         }
-        
+
         AddCommandString (m_CommandParam.c_str());
-		
+
 		state_lock = false;
 	}
 	else
@@ -671,7 +671,7 @@ BEGIN_COMMAND (alias)
 	else
 	{
 		command_map_t::iterator i = Commands().find(argv[1]);
-		
+
 		if(i != Commands().end())
 		{
 			if(i->second->IsAlias())
@@ -731,16 +731,20 @@ END_COMMAND (key)
 // These all begin with '+' as opposed to '-'.
 // If onlyset is true, only "set" commands will be executed,
 // otherwise only non-"set" commands are executed.
-void C_ExecCmdLineParams (bool onlyset)
+// If onlylogfile is true... well, you get the point.
+void C_ExecCmdLineParams (bool onlyset, bool onlylogfile)
 {
 	size_t cmdlen, argstart;
+	int didlogfile = 0;
 
 	for (size_t currArg = 1; currArg < Args.NumArgs(); )
 	{
 		if (*Args.GetArg (currArg++) == '+')
 		{
 			int setComp = stricmp (Args.GetArg (currArg - 1) + 1, "set");
-			if ((onlyset && setComp) || (!onlyset && !setComp))
+			int logfileComp = stricmp (Args.GetArg (currArg - 1) + 1, "logfile");
+			if ((onlyset && setComp) || (onlylogfile && logfileComp) ||
+                (!onlyset && !setComp) || (!onlylogfile && !logfileComp))
 			{
 				continue;
 			}
@@ -757,10 +761,15 @@ void C_ExecCmdLineParams (bool onlyset)
 			}
 
 			std::string cmdString = BuildString (cmdlen, Args.GetArgList(argstart));
-			if (cmdString.length())
+			if (cmdString.length()) {
 				C_DoCommand (cmdString.c_str() + 1);
+				if (onlylogfile) didlogfile = 1;
+			}
 		}
 	}
+
+    // [Nes] - Calls version at startup if no logfile.
+	if (onlylogfile && !didlogfile) AddCommandString("version");
 }
 
 
