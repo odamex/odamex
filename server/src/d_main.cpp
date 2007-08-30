@@ -114,7 +114,6 @@ int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
 char startmap[8];
 BOOL autostart;
 BOOL advancedemo;
-FILE *debugfile;
 event_t events[MAXEVENTS];
 int eventhead;
 int eventtail;

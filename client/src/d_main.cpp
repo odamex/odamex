@@ -122,7 +122,6 @@ int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
 char startmap[8];
 BOOL autostart;
 BOOL advancedemo;
-FILE *debugfile;
 event_t events[MAXEVENTS];
 int eventhead;
 int eventtail;
@@ -1338,14 +1337,6 @@ void D_DoomMain (void)
 	// [RH] Now that all game subsystems have been initialized,
 	// do all commands on the command line other than +set
 	C_ExecCmdLineParams (false, false);
-
-	if (Args.CheckParm ("-debugfile"))
-	{
-		char	filename[20];
-		sprintf (filename,"debug%i.txt", consoleplayer().id);
-		Printf (PRINT_HIGH, "debug output to: %s\n", filename);
-		debugfile = fopen (filename, "w");
-	}
 
 	Printf_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
 	if(gamestate != GS_CONNECTING)

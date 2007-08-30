@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -68,7 +68,7 @@ extern	char			startmap[8];		// [RH] Actual map name now
 
 extern	BOOL 			autostart;
 
-// Selected by user. 
+// Selected by user.
 EXTERN_CVAR (skill)
 
 // Nightmare mode flag, single player.
@@ -156,7 +156,7 @@ extern	BOOL			demorecording;
 extern	int				demover;
 
 // Quit after playing a demo from cmdline.
-extern	BOOL			singledemo; 	
+extern	BOOL			singledemo;
 
 
 
@@ -187,7 +187,7 @@ extern std::vector<mapthing2_t> playerstarts;
 
 // Intermission stats.
 // Parameters for world map / intermission.
-extern	struct wbstartstruct_s wminfo; 
+extern	struct wbstartstruct_s wminfo;
 
 
 // LUT of ammunition limits for each kind.
@@ -197,9 +197,6 @@ extern	int 			maxammo[NUMAMMO];
 //-----------------------------------------
 // Internal parameters, used for engine.
 //
-
-// File handling stuff.
-extern	FILE*			debugfile;
 
 // if true, load all graphics at level load
 extern	BOOL	 		precache;

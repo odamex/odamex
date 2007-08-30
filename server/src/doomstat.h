@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -68,7 +68,7 @@ extern	char			startmap[8];		// [RH] Actual map name now
 
 extern	BOOL 			autostart;
 
-// Selected by user. 
+// Selected by user.
 EXTERN_CVAR (skill)
 
 // Nightmare mode flag, single player.
@@ -85,7 +85,7 @@ EXTERN_CVAR (deathmatch)
 
 // [RH] Teamplay mode
 EXTERN_CVAR (teamplay)
-		
+
 // -------------------------
 // Internal parameters for sound rendering.
 // These have been taken from the DOS version,
@@ -150,7 +150,7 @@ extern	BOOL			demorecording;
 extern	int				demover;
 
 // Quit after playing a demo from cmdline.
-extern	BOOL			singledemo; 	
+extern	BOOL			singledemo;
 
 
 
@@ -180,7 +180,7 @@ extern	mapthing2_t*	deathmatch_p;
 extern std::vector<mapthing2_t> playerstarts;
 
 // ----------------------------------------------
-//	[Toke - CTF - starts] 
+//	[Toke - CTF - starts]
 
 		// Blue team starts
 extern	mapthing2_t		*blueteamstarts;
@@ -200,7 +200,7 @@ extern	mapthing2_t*	goldteam_p;
 
 // Intermission stats.
 // Parameters for world map / intermission.
-extern	struct wbstartstruct_s wminfo; 
+extern	struct wbstartstruct_s wminfo;
 
 
 // LUT of ammunition limits for each kind.
@@ -214,9 +214,6 @@ extern	int 			maxammo[NUMAMMO];
 //-----------------------------------------
 // Internal parameters, used for engine.
 //
-
-// File handling stuff.
-extern	FILE*			debugfile;
 
 // if true, load all graphics at level load
 extern	BOOL	 		precache;
@@ -245,7 +242,7 @@ extern	int 			ticdup;
 
 
 // ---- [RH] ----
-EXTERN_CVAR (developer) // removeme 
+EXTERN_CVAR (developer) // removeme
 
 // Use MMX routines? (Only if USEASM is defined)
 //extern	BOOL			UseMMX;
@@ -262,8 +259,8 @@ extern "C" void EndMMX (void);
 
 #endif
 */
-EXTERN_CVAR (var_friction) // removeme 
-EXTERN_CVAR (var_pushers) // removeme 
+EXTERN_CVAR (var_friction) // removeme
+EXTERN_CVAR (var_pushers) // removeme
 
 
 // [RH] Miscellaneous info for DeHackEd support
