@@ -490,13 +490,9 @@ void G_DoLoadLevel (int position)
 
 	G_InitLevelLocals ();
 
-	Printf (PRINT_HIGH,
-			"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-			"\36\36\36\36\36\36\36\36\36\36\36\36\37\n"
-			//TEXTCOLOR_BOLD "%s\n\n",
-			//level.level_name);
-			TEXTCOLOR_BOLD "%s: \"%s\"\n\n",
-			level.mapname, level.level_name);
+    Printf_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
+                 "\36\36\36\36\36\36\36\36\36\36\36\36\37\n"
+                 "%s: \"%s\"\n\n", level.mapname, level.level_name);
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;

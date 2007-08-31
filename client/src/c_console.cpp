@@ -533,7 +533,7 @@ extern BOOL gameisdead;
 
 int VPrintf (int printlevel, const char *format, va_list parms)
 {
-	char outline[8192];
+	char outline[8192], outlinelog[8192], *c;
 
 	if (gameisdead)
 		return 0;
@@ -542,7 +542,36 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 
 	if (Logfile)
 	{
-		fputs (outline, Logfile);
+	    strcpy(outlinelog, outline);
+
+        // Change all left horizontal rule to '='.
+        do
+	    {
+            if (strchr(outlinelog, '\35')) {
+                c = strchr(outlinelog, '\35');
+                *c = '=';
+            }
+	    } while (strchr(outlinelog, '\35'));
+
+        // Change all right horizontal rule to '='.
+	    do
+	    {
+            if (strchr(outlinelog, '\36')) {
+                c = strchr(outlinelog, '\36');
+                *c = '=';
+            }
+	    } while (strchr(outlinelog, '\36'));
+
+        // Change all center horizontal rule to '='.
+        do
+	    {
+            if (strchr(outlinelog, '\37')) {
+                c = strchr(outlinelog, '\37');
+                *c = '=';
+            }
+	    } while (strchr(outlinelog, '\37'));
+
+		fputs (outlinelog, Logfile);
 		fflush (Logfile);
 	}
 
