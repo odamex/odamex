@@ -71,7 +71,7 @@ LFLAGS_PLATFORM =
 ifeq ($(strip $(osx)), true)
 # osx does not use X11 for copy&paste, it uses Carbon
 CFLAGS_PLATFORM = -DUNIX -DOSX
-LFLAGS_PLATFORM = -framework Carbon
+LFLAGS_PLATFORM = -framework Carbon -framework AudioToolbox -framework AudioUnit
 X11_LFLAGS = 
 endif
 

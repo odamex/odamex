@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		92325F2E0C89B6C0006D7EEF /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92325F2D0C89B6C0006D7EEF /* AudioToolbox.framework */; };
+		9232603E0C89D378006D7EEF /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9232603D0C89D378006D7EEF /* AudioUnit.framework */; };
 		92A68F870B646045004AA40D /* i_net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A68F6F0B645EE9004AA40D /* i_net.cpp */; };
 		92A68F880B646045004AA40D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A68F710B645EE9004AA40D /* main.cpp */; };
 		92CE7EBA0B645C7800DCACF0 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CE7EB90B645C7800DCACF0 /* SDLMain.m */; };
@@ -903,6 +905,8 @@
 		920D7BC50B4D212B000AA4A2 /* w_wad.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = w_wad.h; sourceTree = "<group>"; };
 		920D7BC60B4D212C000AA4A2 /* z_zone.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = z_zone.cpp; sourceTree = "<group>"; };
 		920D7BC70B4D212C000AA4A2 /* z_zone.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = z_zone.h; sourceTree = "<group>"; };
+		92325F2D0C89B6C0006D7EEF /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = /System/Library/Frameworks/AudioToolbox.framework; sourceTree = "<absolute>"; };
+		9232603D0C89D378006D7EEF /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		92A68F6F0B645EE9004AA40D /* i_net.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_net.cpp; sourceTree = "<group>"; };
 		92A68F700B645EE9004AA40D /* i_net.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_net.h; sourceTree = "<group>"; };
 		92A68F710B645EE9004AA40D /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
@@ -1052,6 +1056,8 @@
 				92D2DC260B64505100FD5B07 /* SDL_mixer.framework in Frameworks */,
 				92D2DC290B6450A400FD5B07 /* Carbon.framework in Frameworks */,
 				92CE7ECD0B645CD500DCACF0 /* Cocoa.framework in Frameworks */,
+				92325F2E0C89B6C0006D7EEF /* AudioToolbox.framework in Frameworks */,
+				9232603E0C89D378006D7EEF /* AudioUnit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1391,6 +1397,8 @@
 		92D2D80E0B62BB0B00FD5B07 /* libraries */ = {
 			isa = PBXGroup;
 			children = (
+				9232603D0C89D378006D7EEF /* AudioUnit.framework */,
+				92325F2D0C89B6C0006D7EEF /* AudioToolbox.framework */,
 				92CE7ECC0B645CD500DCACF0 /* Cocoa.framework */,
 				92D2DC280B6450A400FD5B07 /* Carbon.framework */,
 				92D53A100AB96D8E00CF2FB2 /* SDL.framework */,

@@ -37,6 +37,19 @@
 #include "mus2midi.h"
 
 #define MUSIC_TRACKS 1
+#undef OSX
+// denis - midi via SDL+timidity on OSX crashes miserably after a while
+// this is not our fault, but we have to live with it until someone
+// bothers to fix it, therefore use native midi on OSX for now
+#ifdef OSX
+#include <AudioToolbox/AudioToolbox.h>
+static MusicPlayer player;
+static MusicSequence sequence;
+static AUGraph graph;
+static AUNode synth, output;
+static AudioUnit unit;
+static CFDataRef cfd;
+#endif
 
 // [Russell] - define a temporary midi file, for consistency
 // SDL < 1.2.7
@@ -54,7 +67,19 @@ void I_SetMusicVolume (float volume)
 	if(!music_initialized)
 		return;
 
+#ifdef OSX
+
+	if(AudioUnitSetParameter(unit, kAudioUnitParameterUnit_LinearGain, kAudioUnitScope_Output, 0, volume, 0) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_InitMusic: AudioUnitSetParameter failed\n");
+		return;
+	}
+
+#else
+
 	Mix_VolumeMusic((int)(volume * MIX_MAX_VOLUME));
+	
+#endif
 }
 
 void I_InitMusic (void)
@@ -64,8 +89,64 @@ void I_InitMusic (void)
 		Printf (PRINT_HIGH, "I_InitMusic: Music playback disabled\n");
 		return;    
 	}
+	
+#ifdef OSX
+	
+	NewAUGraph(&graph);
+	
+	ComponentDescription d;
 
+	d.componentType = kAudioUnitType_MusicDevice;
+	d.componentSubType = kAudioUnitSubType_DLSSynth;
+	d.componentManufacturer = kAudioUnitManufacturer_Apple;
+	d.componentFlags = 0;
+	d.componentFlagsMask = 0;
+	AUGraphNewNode(graph, &d, 0, NULL, &synth);
+   
+	d.componentType = kAudioUnitType_Output;
+	d.componentSubType = kAudioUnitSubType_DefaultOutput;
+	d.componentManufacturer = kAudioUnitManufacturer_Apple;
+	d.componentFlags = 0;        
+	d.componentFlagsMask = 0;   
+	AUGraphNewNode(graph, &d, 0, NULL, &output);
+	
+	if(AUGraphConnectNodeInput(graph, synth, 0, output, 0) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		return;
+	}
+
+	if(AUGraphOpen(graph) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		return;
+	}
+
+	if(AUGraphInitialize(graph) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		return;
+	}
+	
+	if(AUGraphGetNodeInfo(graph, output, NULL, NULL, NULL, &unit) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		return;
+	}
+
+	if(NewMusicPlayer(&player) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_InitMusic: Music player creation failed using AudioToolbox\n");
+		return;
+	}
+	
+	Printf (PRINT_HIGH, "I_InitMusic: Music playback enabled using AudioToolbox\n");
+	
+#else
+	
 	Printf (PRINT_HIGH, "I_InitMusic: Music playback enabled\n");
+	
+#endif
 	
 	music_initialized = true;
 }
@@ -75,8 +156,18 @@ void STACK_ARGS I_ShutdownMusic(void)
 {
 	if(!music_initialized)
 		return;
+		
+#ifdef OSX
+	
+	DisposeMusicPlayer(player);	
+	AUGraphClose(graph);
+	
+#else
 	
 	Mix_HaltMusic();
+	
+#endif
+
 	I_UnRegisterSong(0);
 
 	music_initialized = false;
@@ -86,14 +177,62 @@ void I_PlaySong (int handle, int _looping)
 {
 	if(!music_initialized)
 		return;
-
-	_looping = _looping ? -1 : 1;
-
+		
 	if(handle < 0 || handle >= MUSIC_TRACKS)
 		return;
 
 	if(!registered_tracks[handle])
 		return;
+
+#ifdef OSX
+	  
+	UInt32 outNumberOfTracks = 0;
+	if(MusicSequenceGetTrackCount(sequence, &outNumberOfTracks) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_PlaySong: MusicSequenceGetTrackCount failed\n");
+		return;
+	}
+		
+	for(UInt32 i = 0; i < outNumberOfTracks; i++)
+	{
+		MusicTrack track;
+
+		if(MusicSequenceGetIndTrack(sequence, i, &track) != noErr)
+		{
+			Printf (PRINT_HIGH, "I_PlaySong: MusicSequenceGetIndTrack failed\n");
+			return;
+		}
+
+		MusicTimeStamp loops = _looping;
+
+		if(MusicTrackSetProperty(track, kSequenceTrackProperty_LoopInfo, &loops, sizeof(loops)) != noErr)
+		{
+			Printf (PRINT_HIGH, "I_PlaySong: MusicTrackSetProperty failed\n");
+			return;
+		}
+	}
+	
+	if(MusicSequenceSetAUGraph(sequence, graph) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_PlaySong: MusicSequenceSetAUGraph failed\n");
+		return;
+	}
+
+	if(MusicPlayerSetSequence(player, sequence) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_PlaySong: MusicPlayerSetSequence failed\n");
+		return;
+	}
+
+	if(MusicPlayerStart(player) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_PlaySong: MusicPlayerStart failed\n");
+		return;
+	}
+
+#else
+		
+	_looping = _looping ? -1 : 1;
 
 	if(Mix_PlayMusic(registered_tracks[handle], _looping) == -1)
 	{
@@ -101,8 +240,10 @@ void I_PlaySong (int handle, int _looping)
 		current_track = 0;
 		return;
 	}
-	else
-		current_track = handle;
+	
+#endif
+	
+	current_track = handle;
 }
 
 void I_PauseSong (int handle)
@@ -110,7 +251,9 @@ void I_PauseSong (int handle)
 	if(!music_initialized)
 		return;
 
+#ifndef OSX
 	Mix_PauseMusic();
+#endif
 }
 
 void I_ResumeSong (int handle)
@@ -118,7 +261,9 @@ void I_ResumeSong (int handle)
 	if(!music_initialized)
 		return;
 	
+#ifndef OSX
 	Mix_ResumeMusic();
+#endif
 }
 
 void I_StopSong (int handle)
@@ -126,8 +271,16 @@ void I_StopSong (int handle)
 	if(!music_initialized)
 		return;
 	
+#ifdef OSX
+	
+	MusicPlayerStop(player);
+	
+#else
+	
 	Mix_FadeOutMusic(100);
 	current_track = 0;
+	
+#endif
 }
 
 void I_UnRegisterSong (int handle)
@@ -143,8 +296,17 @@ void I_UnRegisterSong (int handle)
 
 	if(handle == current_track)
 		I_StopSong(current_track);
+		
+#ifdef OSX
+	
+	DisposeMusicSequence(sequence);
+	
+#else
 
 	Mix_FreeMusic(registered_tracks[handle]);
+	
+#endif
+
 	registered_tracks[handle] = 0;
 }
 
@@ -170,6 +332,30 @@ int I_RegisterSong (char *data, size_t musicLen)
             break;
         case 0:
         case 2:
+		
+#ifdef OSX
+		
+		if (NewMusicSequence(&sequence) != noErr)
+			return 0;
+  
+		cfd = CFDataCreate(NULL, (const Uint8 *)mem_fgetbuf(midi), mem_fsize(midi));
+		
+		if(!cfd)
+		{
+			DisposeMusicSequence(sequence);
+			return 0;
+		}
+		
+		if (MusicSequenceLoadSMFData(sequence, (CFDataRef)cfd) != noErr)
+		{
+			DisposeMusicSequence(sequence);
+			CFRelease(cfd);
+			return 0;
+		}
+
+		registered_tracks[0] = (Mix_Music*)1;
+		
+#else
             
 		// older versions of sdl-mixer require a physical midi file to be read, 1.2.7+ can read from memory
 #ifndef TEMP_MIDI // SDL >= 1.2.7
@@ -217,10 +403,12 @@ int I_RegisterSong (char *data, size_t musicLen)
 				Printf(PRINT_HIGH, "Mix_LoadMUS: %s\n", Mix_GetError());
 				break;
 			}
+
 #endif
 
-            registered_tracks[0] = music;
-            
+		registered_tracks[0] = music;
+		
+#endif // OSX
             break;
     }
         
@@ -234,8 +422,18 @@ bool I_QrySongPlaying (int handle)
 {
 	if(!music_initialized)
 		return false;
+
+#ifdef OSX
+	
+	Boolean result;
+	MusicPlayerIsPlaying(player, &result);
+	return result;
+	
+#else
 	
 	return Mix_PlayingMusic() ? true : false;
+	
+#endif
 }
 
 VERSION_CONTROL (i_music_cpp, "$Id$")
