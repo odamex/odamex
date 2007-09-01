@@ -37,7 +37,7 @@
 #include "mus2midi.h"
 
 #define MUSIC_TRACKS 1
-#undef OSX
+
 // denis - midi via SDL+timidity on OSX crashes miserably after a while
 // this is not our fault, but we have to live with it until someone
 // bothers to fix it, therefore use native midi on OSX for now
