@@ -1242,7 +1242,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (!deathmatch &&
+		if (!deathmatch && !ctfmode &&
 			(validplayer(p) && p.ingame()))
 		{
 			if(!unnatural_level_progression)
