@@ -1378,12 +1378,29 @@ void D_DoomMain (void)
 		}
     }
 
-	D_DoomLoop ();		// never returns
+	// denis - this will run a demo and quit
+	p = Args.CheckParm ("+demotest");
+	if (p && p < Args.NumArgs()-1)
+	{
+		extern std::string defdemoname;
+		void	G_DoPlayDemo (void);
+		void	G_Ticker (void);
+		defdemoname = Args.GetArg (p+1);
+		G_DoPlayDemo();
+		
+		while(demoplayback)
+			G_Ticker();
+		
+		AActor *mo = consoleplayer().mo;
+		
+		if(mo)
+			printf("%d %d %d\n", mo->x, mo->y, mo->z);
+		else
+			printf("demotest: no player\n");
+	}
+	else	
+		D_DoomLoop ();		// never returns
 }
-
-
-
-
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
 

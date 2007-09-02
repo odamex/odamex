@@ -104,9 +104,7 @@ void STACK_ARGS I_Error (const char *error, ...);
 void STACK_ARGS I_FatalError (const char *error, ...);
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
-
 #define atterm(t) addterm (t, #t)
-void popterm ();
 
 // Print a console string
 void I_PrintStr (int x, const char *str, int count, BOOL scroll);

@@ -1852,8 +1852,6 @@ BOOL G_CheckDemoStatus (void)
 		multiplayer = false;
 		serverside = false;
 		
-		players.clear();
-
 		if (singledemo || timingdemo) {
 			if (timingdemo)
 				// Trying to get back to a stable state after timing a demo

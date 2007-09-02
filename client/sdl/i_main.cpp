@@ -35,6 +35,8 @@
 #endif
 
 #include <new>
+#include <map>
+#include <stack>
 #include <iostream>
 
 #include <SDL.h>
@@ -56,29 +58,19 @@ DArgs Args;
 
 extern float mb_used;
 
-#define MAX_TERMS	16
-void (STACK_ARGS *TermFuncs[MAX_TERMS])(void);
-static int NumTerms;
+// functions to be called at shutdown are stored in this stack
+typedef void (STACK_ARGS *term_func_t)(void);
+std::stack< std::pair<term_func_t, std::string> > TermFuncs;
 
-void atterm (void (STACK_ARGS *func)(void))
+void addterm (void (STACK_ARGS *func) (), const char *name)
 {
-	if (NumTerms == MAX_TERMS)
-		I_FatalError ("Too many exit functions registered.\nIncrease MAX_TERMS in i_main.cpp");
-	TermFuncs[NumTerms++] = func;
-}
-
-void popterm ()
-{
-	if (NumTerms)
-		NumTerms--;
+	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
 static void STACK_ARGS call_terms (void)
 {
-	while (NumTerms > 0)
-	{
-		TermFuncs[--NumTerms]();
-	}
+	while (!TermFuncs.empty())
+		TermFuncs.top().first(), TermFuncs.pop();
 }
 
 FILE *errout;
@@ -119,23 +111,12 @@ int main(int argc, char *argv[])
 
 		atterm(closelog);
 		
-		// [Russell] - A basic version string that will eventually get replaced
-		//             better than "Odamex SDL Alpha Build 001" or something :P
-		
-		std::string title = "Odamex - v";
-		title += DOTVERSIONSTR;
-		
-		std::cerr << title << "\n";
-		
-		if (SDL_Init (SDL_INIT_VIDEO|SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
+		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
 		{
 			fprintf (errout, "Could not initialize SDL:\n%s\n", SDL_GetError());
 			exit(-1);
 		}
 		atterm (SDL_Quit);
-		
-		// [Russell] - Update window caption with name
-		SDL_WM_SetCaption (title.c_str(), title.c_str());
 		
 		Args.SetArgs (argc, argv);
 		

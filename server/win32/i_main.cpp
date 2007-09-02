@@ -23,6 +23,8 @@
 
 #ifdef WIN32
 
+#include <stack>
+#include <map>
 #include <string>
 
 #ifdef WIN32
@@ -53,29 +55,19 @@ DArgs Args;
 extern UINT TimerPeriod;
 #endif
 
-#define MAX_TERMS	16
-void (STACK_ARGS *TermFuncs[MAX_TERMS])(void);
-static int NumTerms;
+// functions to be called at shutdown are stored in this stack
+typedef void (STACK_ARGS *term_func_t)(void);
+std::stack< std::pair<term_func_t, std::string> > TermFuncs;
 
-void atterm (void (STACK_ARGS *func)(void))
+void addterm (void (STACK_ARGS *func) (), const char *name)
 {
-	if (NumTerms == MAX_TERMS)
-		I_FatalError ("Too many exit functions registered.\nIncrease MAX_TERMS in i_main.cpp");
-	TermFuncs[NumTerms++] = func;
-}
-
-void popterm ()
-{
-	if (NumTerms)
-		NumTerms--;
+	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
 static void STACK_ARGS call_terms (void)
 {
-	while (NumTerms > 0)
-	{
-		TermFuncs[--NumTerms]();
-	}
+	while (!TermFuncs.empty())
+		TermFuncs.top().first(), TermFuncs.pop();
 }
 
 int __cdecl main(int argc, char *argv[])

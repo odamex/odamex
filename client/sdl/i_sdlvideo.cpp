@@ -30,6 +30,20 @@
 
 SDLVideo::SDLVideo(int parm)
 {
+	if (SDL_InitSubSystem (SDL_INIT_VIDEO) == -1)
+	{
+		I_FatalError("Could not initialize SDL video.\n");
+		return;
+	}
+
+	// [Russell] - A basic version string that will eventually get replaced
+	//             better than "Odamex SDL Alpha Build 001" or something :P
+	std::string title = "Odamex - v";
+	title += DOTVERSIONSTR;
+		
+	// [Russell] - Update window caption with name
+	SDL_WM_SetCaption (title.c_str(), title.c_str());
+
    sdlScreen = NULL;
    infullscreen = false;
    screenw = screenh = screenbits = 0;

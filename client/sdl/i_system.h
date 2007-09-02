@@ -98,8 +98,8 @@ byte* I_AllocLow (int length);
 void STACK_ARGS I_Error (const char *error, ...);
 void STACK_ARGS I_FatalError (const char *error, ...);
 
-void atterm (void (STACK_ARGS *func)(void));
-void popterm ();
+void addterm (void (STACK_ARGS *func)(void), const char *name);
+#define atterm(t) addterm (t, #t)
 
 // Repaint the pre-game console
 void I_PaintConsole (void);

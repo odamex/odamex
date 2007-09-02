@@ -24,6 +24,8 @@
 #ifdef UNIX
 
 #include <iostream>
+#include <stack>
+#include <map>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -43,37 +45,19 @@
 
 DArgs Args;
 
-#define MAX_TERMS	16
-void (STACK_ARGS *TermFuncs[MAX_TERMS]) ();
-const char *TermNames[MAX_TERMS];
-static int NumTerms;
+// functions to be called at shutdown are stored in this stack
+typedef void (STACK_ARGS *term_func_t)(void);
+std::stack< std::pair<term_func_t, std::string> > TermFuncs;
 
 void addterm (void (STACK_ARGS *func) (), const char *name)
 {
-    if (NumTerms == MAX_TERMS)
-	{
-		func ();
-		I_FatalError (
-			"Too many exit functions registered.\n"
-			"Increase MAX_TERMS in i_main.cpp");
-	}
-	TermNames[NumTerms] = name;
-    TermFuncs[NumTerms++] = func;
+	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
-void popterm ()
+static void STACK_ARGS call_terms (void)
 {
-	if (NumTerms)
-		NumTerms--;
-}
-
-void STACK_ARGS call_terms ()
-{
-    while (NumTerms > 0)
-	{
-//		Printf ("term %d - %s\n", NumTerms, TermNames[NumTerms-1]);
-		TermFuncs[--NumTerms] ();
-	}
+	while (!TermFuncs.empty())
+		TermFuncs.top().first(), TermFuncs.pop();
 }
 
 // cleanup handling -- killough:

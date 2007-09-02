@@ -186,14 +186,12 @@ void I_WaitVBL (int count)
 //
 void I_Init (void)
 {
-	// TODO: CPU identification here (Does SDL have that? Doesn't look like it does.)
-	
 	I_GetTime = I_GetTimePolled;
 	I_WaitForTic = I_WaitForTicPolled;
 	
 	I_InitSound ();
-	I_InitInput ();
 	I_InitHardware ();
+	I_InitInput ();
 }
 
 std::string I_GetCWD ()
