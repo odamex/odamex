@@ -343,6 +343,11 @@ static bool STACK_ARGS compare_player_kills (const player_t *arg1, const player_
 	return arg2->killcount < arg1->killcount;
 }
 
+static bool STACK_ARGS compare_player_points (const player_t *arg1, const player_t *arg2)
+{
+	return arg2->points < arg1->points;
+}
+
 CVAR (usehighresboard, "1",	CVAR_ARCHIVE)
 
 #define CTFBOARDWIDTH	236
@@ -761,7 +766,7 @@ void HU_TeamScores1 (player_t *player)
 	for (j = 0; j < sortedplayers.size(); j++)
 		sortedplayers[j] = &players[j];
 
-	std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+	std::sort(sortedplayers.begin(), sortedplayers.end(), ctfmode ? compare_player_points : compare_player_frags);
 
 	maxwidth = 60;
 
@@ -1023,7 +1028,7 @@ void HU_TeamScores2 (player_t *player)
 	for (j = 0; j < sortedplayers.size(); j++)
 		sortedplayers[j] = &players[j];
 
-	std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+	std::sort(sortedplayers.begin(), sortedplayers.end(), ctfmode ? compare_player_points : compare_player_frags);
 
 	// Board locations
 	int marginx = (screen->width - (CTFBOARDWIDTH * 2)) / 4;
