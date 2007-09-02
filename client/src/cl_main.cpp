@@ -150,6 +150,8 @@ void CL_QuitNetGame(void)
 	memset (&serveraddr, 0, sizeof(serveraddr));
 	connected = false;
 	gameaction = ga_fullconsole;
+	
+	serverside = clientside = true;
 
 	actor_by_netid.clear();
 	players.clear();
