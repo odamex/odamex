@@ -186,6 +186,24 @@ void I_PlaySong (int handle, int _looping)
 
 #ifdef OSX
 	  
+	if(MusicSequenceSetAUGraph(sequence, graph) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_PlaySong: MusicSequenceSetAUGraph failed\n");
+		return;
+	}
+
+	if(MusicPlayerSetSequence(player, sequence) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_PlaySong: MusicPlayerSetSequence failed\n");
+		return;
+	}
+	
+	if(MusicPlayerPreroll(player) != noErr)
+	{
+		Printf (PRINT_HIGH, "I_PlaySong: MusicPlayerPreroll failed\n");
+		return;
+	}
+
 	UInt32 outNumberOfTracks = 0;
 	if(MusicSequenceGetTrackCount(sequence, &outNumberOfTracks) != noErr)
 	{
@@ -203,27 +221,37 @@ void I_PlaySong (int handle, int _looping)
 			return;
 		}
 
-		MusicTimeStamp loops = _looping;
+		struct s_loopinfo
+		{
+			MusicTimeStamp time;
+			long loops;
+		}LoopInfo;
+		
+		UInt32 inLength = sizeof(LoopInfo);
+				
+		if(MusicTrackGetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo, &inLength) != noErr)
+		{
+			Printf (PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
+			return;
+		}
+		
+		inLength = sizeof(LoopInfo.time);
+		
+		if(MusicTrackGetProperty(track, kSequenceTrackProperty_TrackLength, &LoopInfo.time, &inLength) != noErr)
+		{
+			Printf (PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
+			return;
+		}
+		
+		LoopInfo.loops = _looping ? 0 : 1;
 
-		if(MusicTrackSetProperty(track, kSequenceTrackProperty_LoopInfo, &loops, sizeof(loops)) != noErr)
+		if(MusicTrackSetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo, sizeof(LoopInfo)) != noErr)
 		{
 			Printf (PRINT_HIGH, "I_PlaySong: MusicTrackSetProperty failed\n");
 			return;
 		}
 	}
 	
-	if(MusicSequenceSetAUGraph(sequence, graph) != noErr)
-	{
-		Printf (PRINT_HIGH, "I_PlaySong: MusicSequenceSetAUGraph failed\n");
-		return;
-	}
-
-	if(MusicPlayerSetSequence(player, sequence) != noErr)
-	{
-		Printf (PRINT_HIGH, "I_PlaySong: MusicPlayerSetSequence failed\n");
-		return;
-	}
-
 	if(MusicPlayerStart(player) != noErr)
 	{
 		Printf (PRINT_HIGH, "I_PlaySong: MusicPlayerStart failed\n");
@@ -323,8 +351,6 @@ int I_RegisterSong (char *data, size_t musicLen)
 
 	int result = mus2mid(mus, midi);
 
-	Mix_Music *music = 0;
-	
 	switch(result)
     {
         case 1:
@@ -332,7 +358,7 @@ int I_RegisterSong (char *data, size_t musicLen)
             break;
         case 0:
         case 2:
-		
+		{
 #ifdef OSX
 		
 		if (NewMusicSequence(&sequence) != noErr)
@@ -357,6 +383,8 @@ int I_RegisterSong (char *data, size_t musicLen)
 		
 #else
             
+		Mix_Music *music = 0;
+	
 		// older versions of sdl-mixer require a physical midi file to be read, 1.2.7+ can read from memory
 #ifndef TEMP_MIDI // SDL >= 1.2.7
 
@@ -410,6 +438,7 @@ int I_RegisterSong (char *data, size_t musicLen)
 		
 #endif // OSX
             break;
+		} // case 2
     }
         
 	mem_fclose(mus);
