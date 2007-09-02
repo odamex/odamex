@@ -106,10 +106,9 @@ static Uint8 *expand_sound_data(Uint8 *data, int samplerate, int length)
 // Expands the 11025Hz, 8bit, mono sound effects in Doom to
 // 22050Hz, 16bit stereo
 
-static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length)
+static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length, Uint32 &expanded_length)
 {
     Uint8 *expanded = NULL;
-    Uint32 expanded_length;
     Uint32 expand_ratio;
     Uint32 i;
 
@@ -118,8 +117,8 @@ static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length)
         // Most of Doom's sound effects are 11025Hz
 
         // need to expand to 2 channels, 11025->22050 and 8->16 bit
-
-        expanded = (Uint8 *)Z_Malloc(length * 8, PU_STATIC, NULL);
+		expanded_length = length * 8;
+        expanded = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, NULL);
 
         for (i=0; i<length; ++i)
         {
@@ -137,7 +136,8 @@ static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length)
     else if (samplerate == 22050)
     {
 
-        expanded = (Uint8 *)Z_Malloc(length * 4, PU_STATIC, NULL);
+		expanded_length = length * 4;
+        expanded = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, NULL);
 
         for (i=0; i<length; ++i)
         {
@@ -176,6 +176,8 @@ static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length)
             expanded[i * 4] = expanded[i * 4 + 2] = sample & 0xff;
             expanded[i * 4 + 1] = expanded[i * 4 + 3] = (sample >> 8) & 0xff;
         }
+		
+		expanded_length *= 4;
     }
 
     return expanded;
@@ -269,17 +271,10 @@ static void getsfx (struct sfxinfo_struct *sfx)
     // [Russell] - Ignore doom's sound format length info
     // if the lump is longer than the value, fixes exec.wad's ssg
     length = (sfx->length - 8 > length) ? sfx->length - 8 : length;
-    expanded_length = (length * 22050 / samplerate) * 4;
     
-    #ifdef _DEBUG
-    Printf(PRINT_HIGH, "SFX DEBUG, getsfx()\n");
-    Printf(PRINT_HIGH, "name: %s, data length %u, length %u\n", sfx->name, sfx->length, length);
-    Printf(PRINT_HIGH, "sample rate: %u, expanded length: %u\n", samplerate, expanded_length);
-    #endif
-
 	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
 	chunk->allocated = 1;
-    chunk->abuf = (Uint8 *)ExpandSoundData(data + 8, samplerate, length);
+    chunk->abuf = (Uint8 *)ExpandSoundData(data + 8, samplerate, length, expanded_length);
 	chunk->alen = expanded_length;
 	chunk->volume = MIX_MAX_VOLUME;
 	sfx->data = chunk;
