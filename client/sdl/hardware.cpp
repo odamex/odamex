@@ -83,7 +83,11 @@ void I_InitHardware ()
 	num[1] = 0;
 	ticker.SetDefault (num);
 
-	Video = new SDLVideo (0);
+	if(Args.CheckParm ("-novideo"))
+		Video = new IVideo();
+	else
+		Video = new SDLVideo (0);
+	
 	if (Video == NULL)
 		I_FatalError ("Failed to initialize display");
 
@@ -400,6 +404,52 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
     if (!dest->m_LockCount)
 		I_UnlockScreen (dest);
 }
+
+// denis - here is a blank implementation of IVideo that allows the client
+// to run without actual video output (e.g. script-controlled demo testing)
+EDisplayType IVideo::GetDisplayType () { return DISPLAY_Both; }
+
+bool IVideo::FullscreenChanged (bool fs) { return true; }
+void IVideo::SetWindowedScale (float scale) {}
+bool IVideo::CanBlit () { return true; }
+
+bool IVideo::SetMode (int width, int height, int bits, bool fs) { return true; }
+void IVideo::SetPalette (DWORD *palette) {}
+
+void IVideo::SetOldPalette (byte *doompalette) {}
+void IVideo::UpdateScreen (DCanvas *canvas) {}
+void IVideo::ReadScreen (byte *block) {}
+
+int IVideo::GetModeCount () { return 1; }
+void IVideo::StartModeIterator (int bits) {}
+bool IVideo::NextMode (int *width, int *height) { static int w = 320, h = 240; width = &w; height = &h; return false; }
+
+DCanvas *IVideo::AllocateSurface (int width, int height, int bits, bool primary)
+{
+	DCanvas *scrn = new DCanvas;
+
+	scrn->width = width;
+	scrn->height = height;
+	scrn->is8bit = bits == 8 ? true : false;
+	scrn->bits = bits;
+	scrn->m_LockCount = 0;
+	scrn->m_Palette = NULL;
+	scrn->buffer = new byte[width*height*(bits/8)];
+	scrn->pitch = width * (bits / 8);
+
+	return scrn;   
+}
+
+void IVideo::ReleaseSurface (DCanvas *scrn)
+{
+	delete[] scrn->buffer;
+	delete scrn;
+}
+
+void IVideo::LockSurface (DCanvas *scrn) {}
+void IVideo::UnlockSurface (DCanvas *scrn)  {}
+bool IVideo::Blit (DCanvas *src, int sx, int sy, int sw, int sh,
+			   DCanvas *dst, int dx, int dy, int dw, int dh) { return true; }
 
 BEGIN_COMMAND (vid_listmodes)
 {

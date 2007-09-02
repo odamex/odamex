@@ -31,30 +31,30 @@ class IVideo
  public:
 	virtual ~IVideo () {}
 
-	virtual EDisplayType GetDisplayType () = 0;
-	virtual bool FullscreenChanged (bool fs) = 0;
-	virtual void SetWindowedScale (float scale) = 0;
-	virtual bool CanBlit () = 0;
+	virtual EDisplayType GetDisplayType ();
+	virtual bool FullscreenChanged (bool fs);
+	virtual void SetWindowedScale (float scale);
+	virtual bool CanBlit ();
 
-	virtual bool SetMode (int width, int height, int bits, bool fs) = 0;
-	virtual void SetPalette (DWORD *palette) = 0;
+	virtual bool SetMode (int width, int height, int bits, bool fs);
+	virtual void SetPalette (DWORD *palette);
 	
 	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
-	virtual void SetOldPalette (byte *doompalette) = 0;
+	virtual void SetOldPalette (byte *doompalette);
 		
-	virtual void UpdateScreen (DCanvas *canvas) = 0;
-	virtual void ReadScreen (byte *block) = 0;
+	virtual void UpdateScreen (DCanvas *canvas);
+	virtual void ReadScreen (byte *block);
 
-	virtual int GetModeCount () = 0;
-	virtual void StartModeIterator (int bits) = 0;
-	virtual bool NextMode (int *width, int *height) = 0;
+	virtual int GetModeCount ();
+	virtual void StartModeIterator (int bits);
+	virtual bool NextMode (int *width, int *height);
 
-	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false) = 0;
-	virtual void ReleaseSurface (DCanvas *scrn) = 0;
-	virtual void LockSurface (DCanvas *scrn) = 0;
-	virtual void UnlockSurface (DCanvas *scrn) = 0;
+	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);
+	virtual void ReleaseSurface (DCanvas *scrn);
+	virtual void LockSurface (DCanvas *scrn);
+	virtual void UnlockSurface (DCanvas *scrn);
 	virtual bool Blit (DCanvas *src, int sx, int sy, int sw, int sh,
-					   DCanvas *dst, int dx, int dy, int dw, int dh) = 0;
+					   DCanvas *dst, int dx, int dy, int dw, int dh);
 };
 
 class IInputDevice
