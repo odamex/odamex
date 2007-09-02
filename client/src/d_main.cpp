@@ -1394,7 +1394,7 @@ void D_DoomMain (void)
 		AActor *mo = consoleplayer().mo;
 		
 		if(mo)
-			printf("%d %d %d\n", mo->x, mo->y, mo->z);
+			printf("%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
 		else
 			printf("demotest: no player\n");
 	}
