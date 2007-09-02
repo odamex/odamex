@@ -1027,8 +1027,6 @@ void ST_drawWidgets(bool refresh)
 {
 	int i;
 
-	ST_updateWidgets();
-
 	// used by w_arms[] widgets
 	st_armson = st_statusbaron && !((int)deathmatch);
 
