@@ -39,6 +39,9 @@ void P_ZMovement (AActor *mo);
 //
 void P_Ticker (void)
 {
+	if(paused)
+		return;
+
 	if(serverside)
 	{
 		for(size_t i = 0; i < players.size(); i++)

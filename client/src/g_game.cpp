@@ -933,6 +933,33 @@ void G_Ticker (void)
 			}
 		}
 	}
+	
+	// check for special buttons
+	if(serverside && consoleplayer().ingame())
+    {
+		player_t &player = consoleplayer();
+		
+		if (player.cmd.ucmd.buttons & BT_SPECIAL) 
+		{ 
+			switch (player.cmd.ucmd.buttons & BT_SPECIALMASK) 
+			{ 
+			  case BTS_PAUSE: 
+				paused ^= 1; 
+				if (paused) 
+					S_PauseSound (); 
+				else 
+					S_ResumeSound (); 
+				break; 
+						 
+			  case BTS_SAVEGAME: 
+				if (!savedescription[0]) 
+					strcpy (savedescription, "NET GAME"); 
+				savegameslot =  (player.cmd.ucmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT; 
+				gameaction = ga_savegame; 
+				break; 
+			} 
+		} 
+    }
 
 	// do main actions
 	switch (gamestate)
@@ -1415,11 +1442,11 @@ void G_ReadDemoTiccmd ()
 {
 	if(demoversion == LMP_DOOM_1_9 || demoversion == LMP_DOOM_1_9_1)
 	{
+		int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
+		
 		for(size_t i = 0; i < players.size(); i++)
 		{
-			if ((demoversion == LMP_DOOM_1_9 && demo_e - demo_p < 4)
-			|| (demoversion == LMP_DOOM_1_9_1 && demo_e - demo_p < 5)
-			|| (*demo_p == DEMOMARKER))
+			if ((demo_e - demo_p < demostep) || (*demo_p == DEMOMARKER))
 			{
 				// end of demo data stream 
 				G_CheckDemoStatus (); 
@@ -1430,6 +1457,7 @@ void G_ReadDemoTiccmd ()
 
 			ucmd->forwardmove = ((signed char)*demo_p++)<<8;
 			ucmd->sidemove = ((signed char)*demo_p++)<<8;
+			
 			if(demoversion == LMP_DOOM_1_9)
 				ucmd->yaw = ((unsigned char)*demo_p++)<<8;
 			else
