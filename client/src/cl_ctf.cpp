@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -44,7 +44,7 @@ bool		ctfmode		 = false;
 bool		teamplaymode = false;
 
 // denis - this is a lot clearer than doubly nested switches
-static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] = 
+static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 {
 	{MT_BFLG, MT_BDWN, MT_BCAR},
 	{MT_RFLG, MT_RDWN, MT_RCAR},
@@ -68,19 +68,19 @@ END_COMMAND		(ctf)
 void CTF_Connect()
 {
 	size_t i;
-	
+
 	// clear player flags client may have imagined
 	for(i = 0; i < players.size(); i++)
 		for(size_t j = 0; j < NUMFLAGS; j++)
 			players[i].flags[j] = false;
-	
+
 	for(i = 0; i < NUMFLAGS; i++)
 	{
 		CTFdata[i].state = (flag_state_t)MSG_ReadByte();
 		byte flagger = MSG_ReadByte();
 
 		player_t &player = idplayer(flagger);
-		
+
 		if(validplayer(player))
 			CTF_CarryFlag(player, (flag_t)i);
 	}
@@ -93,23 +93,23 @@ void CTF_Connect()
 void CL_CTFEvent (void)
 {
 	flag_score_t event = (flag_score_t)MSG_ReadByte();
-	
+
 	if(event == SCORE_NONE) // CTF state refresh
 	{
 		CTF_Connect();
 		return;
 	}
-	
+
 	flag_t flag = (flag_t)MSG_ReadByte();
 	player_t &player = idplayer(MSG_ReadByte());
 	int points = MSG_ReadLong();
-	
+
 	if(validplayer(player))
 		player.points = points;
-	
+
 	for(size_t i = 0; i < NUMFLAGS; i++)
 		TEAMpoints[i] = MSG_ReadLong ();
-	
+
 	switch(event)
 	{
 		case SCORE_NONE:
@@ -118,16 +118,16 @@ void CL_CTFEvent (void)
 
 		case SCORE_KILL:
 			break;
-			
+
 		case SCORE_GRAB:
 			if(validplayer(player))
 				CTF_CarryFlag(player, flag);
 			break;
-			
+
 		case SCORE_RETURN:
 			CTFdata[flag].state = flag_home;
 			break;
-			
+
 		case SCORE_CAPTURE:
 			if(validplayer(player))
 				CTF_CheckFlags(player);
@@ -137,7 +137,7 @@ void CL_CTFEvent (void)
 			if(CTFdata[flag].actor)
 				CTFdata[flag].actor->Destroy();
 			break;
-			
+
 		case SCORE_DROP:
 			if(validplayer(player))
 				CTF_CheckFlags(player);
@@ -195,7 +195,7 @@ void CTF_CarryFlag (player_t &player, flag_t flag)
 {
 	if (!validplayer(player))
 		return;
-		
+
 	player.flags[flag] = true;
 	CTFdata[flag].flagger = player.id;
 	CTFdata[flag].state = flag_carried;
@@ -229,23 +229,23 @@ void CTF_MoveFlags ()
 				flag->UnlinkFromWorld ();
 				return;
 			}
-			
+
 			extern fixed_t tmfloorz;
 			extern fixed_t tmceilingz;
-			
+
 			unsigned an = player.mo->angle >> ANGLETOFINESHIFT;
 			fixed_t x = (player.mo->x + FixedMul (-2*FRACUNIT, finecosine[an]));
 			fixed_t y = (player.mo->y + FixedMul (-2*FRACUNIT, finesine[an]));
-			
+
 			P_CheckPosition (player.mo, player.mo->x, player.mo->y);
 			flag->UnlinkFromWorld ();
-			
+
 			flag->x = x;
 			flag->y = y;
 			flag->z = player.mo->z;
 			flag->floorz = tmfloorz;
 			flag->ceilingz = tmceilingz;
-			
+
 			flag->LinkToWorld ();
 		}
 	}
@@ -260,19 +260,19 @@ void TintScreen(int color)
 						   screen->width / 100,
 						   screen->height - ST_HEIGHT,
 						   color);
-			
+
 			screen->Clear (0,
 						   0,
 						   screen->width,
 						   screen->height / 100,
 						   color);
-			
+
 			screen->Clear (screen->width - (screen->width / 100),
 						   0,
 						   screen->width,
 						   screen->height - ST_HEIGHT,
 						   color);
-			
+
 			screen->Clear (0,
 						   (screen->height - ST_HEIGHT) - (screen->height / 100),
 						   screen->width,
@@ -286,19 +286,19 @@ void TintScreen(int color)
 						   screen->width / 100,
 						   screen->height,
 						   color);
-			
+
 			screen->Clear (0,
 						   0,
 						   screen->width,
 						   screen->height / 100,
 						   color);
-			
+
 			screen->Clear (screen->width - (screen->width / 100),
 						   0,
 						   screen->width,
 						   screen->height,
 						   color);
-			
+
 			screen->Clear (0,
 						   (screen->height) - (screen->height / 100),
 						   screen->width,
@@ -419,7 +419,7 @@ void CTF_DrawHud (void)
 void DRAW_Bhome (void)
 {
     if (NUMTEAMS == 3) {
-        patch_t *ctfstuff2 = W_CachePatch ("BINDB0");
+        patch_t *ctfstuff2 = W_CachePatch ("BINDB1");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
@@ -429,7 +429,7 @@ void DRAW_Bhome (void)
         else if (screenblocks == 11)
             screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), (screen->height / 4));
     } else {
-        patch_t *ctfstuff2 = W_CachePatch ("BIND0");
+        patch_t *ctfstuff2 = W_CachePatch ("BIND1");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
@@ -449,7 +449,7 @@ void DRAW_Bhome (void)
 void DRAW_Rhome (void)
 {
     if (NUMTEAMS == 3) {
-        patch_t *ctfstuff3 = W_CachePatch ("RINDB0");
+        patch_t *ctfstuff3 = W_CachePatch ("RINDB1");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
@@ -459,7 +459,7 @@ void DRAW_Rhome (void)
         else if (screenblocks == 11)
             screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), (screen->height / 4) + (screen->height / 200) * 14);
     } else {
-        patch_t *ctfstuff3 = W_CachePatch ("RIND0");
+        patch_t *ctfstuff3 = W_CachePatch ("RIND1");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
@@ -479,7 +479,7 @@ void DRAW_Rhome (void)
 void DRAW_Ghome (void)
 {
     if (NUMTEAMS != 3) {
-        patch_t *ctfstuff4 = W_CachePatch ("GIND0");
+        patch_t *ctfstuff4 = W_CachePatch ("GIND1");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
@@ -621,7 +621,7 @@ void DRAW_Gdropped (void)
 void DRAW_Btaken (void)
 {
     if (NUMTEAMS == 3) {
-        patch_t *ctfstuff2 = W_CachePatch ("BINDB1");
+        patch_t *ctfstuff2 = W_CachePatch ("BINDB0");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
@@ -631,7 +631,7 @@ void DRAW_Btaken (void)
         else if (screenblocks == 11)
             screen->DrawPatchCleanNoMove (ctfstuff2, screen->width - (screen->width / 320 * 15), (screen->height / 4));
     } else {
-        patch_t *ctfstuff2 = W_CachePatch ("BIND1");
+        patch_t *ctfstuff2 = W_CachePatch ("BIND0");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
@@ -651,7 +651,7 @@ void DRAW_Btaken (void)
 void DRAW_Rtaken (void)
 {
     if (NUMTEAMS == 3) {
-        	patch_t *ctfstuff3 = W_CachePatch ("RINDB1");
+        	patch_t *ctfstuff3 = W_CachePatch ("RINDB0");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
@@ -661,7 +661,7 @@ void DRAW_Rtaken (void)
         else if (screenblocks == 11)
             screen->DrawPatchCleanNoMove (ctfstuff3, screen->width - (screen->width / 320 * 15), (screen->height / 4) + (screen->height / 200) * 14);
     } else {
-        patch_t *ctfstuff3 = W_CachePatch ("RIND1");
+        patch_t *ctfstuff3 = W_CachePatch ("RIND0");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
@@ -681,7 +681,7 @@ void DRAW_Rtaken (void)
 void DRAW_Gtaken (void)
 {
     if (NUMTEAMS != 3) {
-        patch_t *ctfstuff4 = W_CachePatch ("GIND1");
+        patch_t *ctfstuff4 = W_CachePatch ("GIND0");
 
         if (screenblocks < 11 || (automapactive && !viewactive))
             if (st_scale)
