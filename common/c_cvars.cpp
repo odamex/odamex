@@ -492,6 +492,21 @@ BEGIN_COMMAND (set)
 					Printf (PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
 		}
 
+        // [Russell] - Allow the user to specify either 'enable' and 'disable', 
+        // this will get converted to either 1 or 0
+        if (!strcmp("enabled", argv[2]))
+        {
+            var->Set(1.0);
+            
+            return;
+        }
+        else if (!strcmp("disabled", argv[2]))
+        {
+            var->Set(0.0);
+            
+            return;
+        }
+        
 		var->Set (argv[2]);
 	}
 }
@@ -505,7 +520,14 @@ BEGIN_COMMAND (get)
 	{
 		if ( (var = cvar_t::FindCVar (argv[1], &prev)) )
 		{
-			Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+			// [Russell] - Don't make the user feel inadequate, tell
+			// them its either enabled, disabled or its other value
+			if (var->cstring()[0] == '1')
+                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
+            else if (var->cstring()[0] == '0')
+                Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
+            else
+                Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
 		}
 		else
 		{
@@ -528,7 +550,15 @@ BEGIN_COMMAND (toggle)
 		if ( (var = cvar_t::FindCVar (argv[1], &prev)) )
 		{
 			var->Set ((float)(!var->value()));
-			Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+			
+			// [Russell] - Don't make the user feel inadequate, tell
+			// them its either enabled, disabled or its other value
+			if (var->cstring()[0] == '1')
+                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
+            else if (var->cstring()[0] == '0')
+                Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
+            else
+                Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
 		}
 	}
 }

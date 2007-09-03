@@ -239,7 +239,14 @@ void C_DoCommand (const char *cmd)
 					}
 					else Printf (PRINT_HIGH, "set command not found\n");
 				}
-				else Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+                // [Russell] - Don't make the user feel inadequate, tell
+                // them its either enabled, disabled or its other value
+                else if (var->cstring()[0] == '1')
+                    Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
+                else if (var->cstring()[0] == '0')
+                    Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
+                else
+                    Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
 			}
 			else
 			{

@@ -90,6 +90,10 @@ typedef enum {
 	nochoice
 } itemtype;
 
+typedef void (*cvarfunc)(cvar_t *cvar, float newval);
+typedef void (*voidfunc)(void);
+typedef void (*intfunc)(int);
+
 typedef struct menuitem_s {
 	itemtype		  type;
 	char			 *label;
@@ -115,9 +119,9 @@ typedef struct menuitem_s {
 	union {
 		struct value_s	 *values;
 		char			 *command;
-		void			(*cfunc)(cvar_t *cvar, float newval);
-		void			(*mfunc)(void);
-		void			(*lfunc)(int);
+        cvarfunc          cfunc;
+        voidfunc          mfunc;
+        intfunc           lfunc;
 		int				  highlight;
 		int				 *flagint;
 	} e;
