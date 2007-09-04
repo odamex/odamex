@@ -178,7 +178,7 @@ void I_PlaySong (int handle, int _looping)
 	if(!music_initialized)
 		return;
 		
-	if(handle < 0 || handle >= MUSIC_TRACKS)
+	if(--handle < 0 || handle >= MUSIC_TRACKS)
 		return;
 
 	if(!registered_tracks[handle])
@@ -444,7 +444,7 @@ int I_RegisterSong (char *data, size_t musicLen)
 	mem_fclose(mus);
 	mem_fclose(midi);
 
-	return 0;
+	return 1;
 }
 
 bool I_QrySongPlaying (int handle)
