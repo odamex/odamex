@@ -5,7 +5,7 @@
 
 ./odasrv | awk '{}' &
 
-./odamex -novideo -nosound -connect localhost > tmp &
+./odamex -novideo -nosound -connect localhost +set print_stdout 1 > tmp &
 
 sleep 10
 
