@@ -86,6 +86,7 @@ static bool midprinting;
 #define SCROLLNO 0
 
 EXTERN_CVAR (show_messages)
+CVAR (print_stdout, "0", CVAR_ARCHIVE)
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -428,6 +429,9 @@ int PrintString (int printlevel, const char *outline)
 	int newxp;
 	int mask;
 	BOOL scroll;
+	
+	if(print_stdout)
+		printf("%s", outline);
 
 	if (printlevel < (int)msglevel)
 		return 0;
