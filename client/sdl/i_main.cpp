@@ -106,6 +106,37 @@ int main(int argc, char *argv[])
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
+
+// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
+		Args.SetArgs (argc, argv);
+   
+#ifdef WIN32
+    	// Allow -gdi as a shortcut for using the windib driver.
+
+   		//!
+    	// @category video 
+    	// @platform windows
+    	//
+    	// Use the Windows GDI driver instead of DirectX.
+    	//
+
+		const char *sdlv = getenv("SDL_VIDEODRIVER");
+
+    	// From the SDL 1.2.10 release notes: 
+    	//
+    	// > The "windib" video driver is the default now, to prevent 
+    	// > problems with certain laptops, 64-bit Windows, and Windows 
+    	// > Vista. 
+    	//
+    	// The hell with that.
+   
+   		// SoM: the gdi interface is much faster for windowed modes which are more
+   		// commonly used. Thus, GDI is default.
+     	if (Args.CheckParm ("-directx"))
+        	putenv("SDL_VIDEODRIVER=directx");     
+    	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-gdi") > 0)
+        	putenv("SDL_VIDEODRIVER=windib");
+#endif
 		
 		openlog();
 
@@ -117,8 +148,6 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 		atterm (SDL_Quit);
-		
-		Args.SetArgs (argc, argv);
 		
 		/*
 		killough 1/98:
