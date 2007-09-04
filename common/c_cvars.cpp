@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -133,7 +133,7 @@ void cvar_t::ForceSet (const char *val)
 		else
 			m_String = "";
 		m_Value = atof (val);
-		
+
 		if (m_Flags & CVAR_USERINFO)
 			D_UserInfoChanged (this);
 		if (m_Flags & CVAR_SERVERINFO)
@@ -492,21 +492,21 @@ BEGIN_COMMAND (set)
 					Printf (PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
 		}
 
-        // [Russell] - Allow the user to specify either 'enable' and 'disable', 
+        // [Russell] - Allow the user to specify either 'enable' and 'disable',
         // this will get converted to either 1 or 0
-        if (!strcmp("enabled", argv[2]))
+        if (!strcmp("enabled", argv[2]) && !(var->flags() & CVAR_NOENABLEDISABLE))
         {
             var->Set(1.0);
-            
+
             return;
         }
-        else if (!strcmp("disabled", argv[2]))
+        else if (!strcmp("disabled", argv[2]) && !(var->flags() & CVAR_NOENABLEDISABLE))
         {
             var->Set(0.0);
-            
+
             return;
         }
-        
+
 		var->Set (argv[2]);
 	}
 }
@@ -550,7 +550,7 @@ BEGIN_COMMAND (toggle)
 		if ( (var = cvar_t::FindCVar (argv[1], &prev)) )
 		{
 			var->Set ((float)(!var->value()));
-			
+
 			// [Russell] - Don't make the user feel inadequate, tell
 			// them its either enabled, disabled or its other value
 			if (var->cstring()[0] == '1')

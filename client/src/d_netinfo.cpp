@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -44,12 +44,12 @@
 #include "cl_ctf.h"
 
 
-CVAR (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE)
-CVAR (cl_name,		"Player",	CVAR_USERINFO | CVAR_ARCHIVE)
-CVAR (cl_color,		"40 cf 00",	CVAR_USERINFO | CVAR_ARCHIVE)
-CVAR (cl_gender,	"male",		CVAR_USERINFO | CVAR_ARCHIVE)
-CVAR (cl_skin,		"base",		CVAR_USERINFO | CVAR_ARCHIVE)
-CVAR (cl_team,		"blue",		CVAR_USERINFO | CVAR_ARCHIVE)
+CVAR (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_name,		"Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_color,		"40 cf 00",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_gender,	"male",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_skin,		"base",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_team,		"blue",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 enum
 {
@@ -83,7 +83,7 @@ team_t D_TeamByName (const char *team)
 
 	else if (!stricmp (team, "red"))
 		return TEAM_RED;
-	
+
 	else if (!stricmp (team, "gold"))
 		return TEAM_GOLD;
 

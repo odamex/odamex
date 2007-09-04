@@ -64,7 +64,7 @@ static int Background, YourColor, WallColor, TSWallColor,
 static int lockglow = 0;
 
 CVAR (am_rotate,			"0",		CVAR_ARCHIVE)
-CVAR (am_overlay,			"0",		CVAR_ARCHIVE)
+CVAR (am_overlay,			"0",		CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_showsecrets,		"1",		CVAR_ARCHIVE)
 CVAR (am_showmonsters,		"1",		CVAR_ARCHIVE)
 CVAR (am_showtime,			"1",		CVAR_ARCHIVE)
@@ -72,32 +72,32 @@ CVAR (am_classicmapstring,  "0",        CVAR_ARCHIVE)
 CVAR (am_usecustomcolors,	"1",		CVAR_ARCHIVE)
 CVAR (am_ovshare,           "0",        CVAR_ARCHIVE)
 
-CVAR (am_backcolor,			"00 00 3a",	CVAR_ARCHIVE)
-CVAR (am_yourcolor,		    "d8 e8 fc",	CVAR_ARCHIVE)
-CVAR (am_wallcolor,		    "00 8b ff",	CVAR_ARCHIVE)
-CVAR (am_tswallcolor,		"10 32 7e",	CVAR_ARCHIVE)
-CVAR (am_fdwallcolor,		"1a 1a 8a",	CVAR_ARCHIVE)
-CVAR (am_cdwallcolor,		"00 00 5a",	CVAR_ARCHIVE)
-CVAR (am_thingcolor,		"9f d3 ff",	CVAR_ARCHIVE)
-CVAR (am_gridcolor,		    "44 44 88", CVAR_ARCHIVE)
-CVAR (am_xhaircolor,		"80 80 80",	CVAR_ARCHIVE)
-CVAR (am_notseencolor,	    "00 22 6e",	CVAR_ARCHIVE)
-CVAR (am_lockedcolor,	    "bb bb bb",	CVAR_ARCHIVE)
-CVAR (am_exitcolor,		    "ff ff 00", CVAR_ARCHIVE)
-CVAR (am_teleportcolor,	    "ff a3 00", CVAR_ARCHIVE)
+CVAR (am_backcolor,			"00 00 3a",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_yourcolor,		    "d8 e8 fc",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_wallcolor,		    "00 8b ff",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_tswallcolor,		"10 32 7e",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_fdwallcolor,		"1a 1a 8a",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_cdwallcolor,		"00 00 5a",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_thingcolor,		"9f d3 ff",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_gridcolor,		    "44 44 88", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_xhaircolor,		"80 80 80",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_notseencolor,	    "00 22 6e",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_lockedcolor,	    "bb bb bb",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_exitcolor,		    "ff ff 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_teleportcolor,	    "ff a3 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR (am_ovyourcolor,		"d8 e8 fc",	CVAR_ARCHIVE)
-CVAR (am_ovwallcolor,		"00 8b ff",	CVAR_ARCHIVE)
-CVAR (am_ovtswallcolor,		"10 32 7e",	CVAR_ARCHIVE)
-CVAR (am_ovfdwallcolor,		"1a 1a 8a",	CVAR_ARCHIVE)
-CVAR (am_ovcdwallcolor,		"00 00 5a",	CVAR_ARCHIVE)
-CVAR (am_ovthingcolor,		"9f d3 ff",	CVAR_ARCHIVE)
-CVAR (am_ovgridcolor,		"44 44 88", CVAR_ARCHIVE)
-CVAR (am_ovxhaircolor,		"80 80 80",	CVAR_ARCHIVE)
-CVAR (am_ovnotseencolor,	"00 22 6e",	CVAR_ARCHIVE)
-CVAR (am_ovlockedcolor,	    "bb bb bb",	CVAR_ARCHIVE)
-CVAR (am_ovexitcolor,		"ff ff 00", CVAR_ARCHIVE)
-CVAR (am_ovteleportcolor,	"ff a3 00", CVAR_ARCHIVE)
+CVAR (am_ovyourcolor,		"d8 e8 fc",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovwallcolor,		"00 8b ff",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovtswallcolor,		"10 32 7e",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovfdwallcolor,		"1a 1a 8a",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovcdwallcolor,		"00 00 5a",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovthingcolor,		"9f d3 ff",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovgridcolor,		"44 44 88", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovxhaircolor,		"80 80 80",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovnotseencolor,	"00 22 6e",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovlockedcolor,	    "bb bb bb",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovexitcolor,		"ff ff 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (am_ovteleportcolor,	"ff a3 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 BEGIN_COMMAND (resetcustomcolors)
 {
@@ -289,7 +289,7 @@ static fixed_t	m_h;
 
 // based on level size
 static fixed_t	min_x;
-static fixed_t	min_y; 
+static fixed_t	min_y;
 static fixed_t	max_x;
 static fixed_t	max_y;
 
@@ -414,19 +414,19 @@ void AM_findMinMaxBoundaries(void)
 
 	min_x = min_y =  MAXINT;
 	max_x = max_y = -MAXINT;
-  
+
 	for (i=0;i<numvertexes;i++) {
 		if (vertexes[i].x < min_x)
 			min_x = vertexes[i].x;
 		else if (vertexes[i].x > max_x)
 			max_x = vertexes[i].x;
-    
+
 		if (vertexes[i].y < min_y)
 			min_y = vertexes[i].y;
 		else if (vertexes[i].y > max_y)
 			max_y = vertexes[i].y;
 	}
-  
+
 	max_w = max_x - min_x;
 	max_h = max_y - min_y;
 
@@ -458,7 +458,7 @@ void AM_changeWindowLoc(void)
 		m_x = max_x - m_w/2;
 	else if (m_x + m_w/2 < min_x)
 		m_x = min_x - m_w/2;
-  
+
 	if (m_y + m_h/2 > max_y)
 		m_y = max_y - m_h/2;
 	else if (m_y + m_h/2 < min_y)
@@ -532,7 +532,7 @@ static void GetComponents (int color, DWORD *palette, float &r, float &g, float 
 void AM_initColors (BOOL overlayed)
 {
 	DWORD *palette;
-	
+
 	palette = DefaultPalette->colors;
 
 	if (overlayed && !am_ovshare)
@@ -611,13 +611,13 @@ void AM_initColors (BOOL overlayed)
 }
 
 //
-// 
+//
 //
 void AM_loadPics(void)
 {
 	int i;
 	char namebuf[9];
-  
+
 	for (i = 0; i < 10; i++)
 	{
 		sprintf(namebuf, "AMMNUM%d", i);
@@ -628,7 +628,7 @@ void AM_loadPics(void)
 void AM_unloadPics(void)
 {
 	int i;
-  
+
 	for (i = 0; i < 10; i++)
 	{
 		if (marknums[i])
@@ -979,7 +979,7 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 		BOTTOM	=4,
 		TOP	=8
 	};
-    
+
 	register int outcode1 = 0;
 	register int outcode2 = 0;
 	register int outside;
@@ -988,7 +988,7 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 	int dx;
 	int dy;
 
-    
+
 #define DOOUTCODE(oc, mx, my) \
 	(oc) = 0; \
 	if ((my) < 0) (oc) |= TOP; \
@@ -1006,7 +1006,7 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 		outcode2 = TOP;
 	else if (ml->b.y < m_y)
 		outcode2 = BOTTOM;
-    
+
 	if (outcode1 & outcode2)
 		return false; // trivially outside
 
@@ -1014,12 +1014,12 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 		outcode1 |= LEFT;
 	else if (ml->a.x > m_x2)
 		outcode1 |= RIGHT;
-    
+
 	if (ml->b.x < m_x)
 		outcode2 |= LEFT;
 	else if (ml->b.x > m_x2)
 		outcode2 |= RIGHT;
-    
+
 	if (outcode1 & outcode2)
 		return false; // trivially outside
 
@@ -1042,7 +1042,7 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 			outside = outcode1;
 		else
 			outside = outcode2;
-	
+
 		// clip to each side
 		if (outside & TOP) {
 			dy = fl->a.y - fl->b.y;
@@ -1073,7 +1073,7 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 			fl->b = tmp;
 			DOOUTCODE(outcode2, fl->b.x, fl->b.y);
 		}
-	
+
 		if (outcode1 & outcode2)
 			return false; // trivially outside
 	}
@@ -1135,7 +1135,7 @@ AM_drawFline
 						d += ay;
 					}
 
-			} 
+			}
 			else {
 				d = ax - ay/2;
 					while (1) {
@@ -1354,7 +1354,7 @@ AM_rotate
     tmpx =
 	FixedMul(*x,finecosine[a>>ANGLETOFINESHIFT])
 	- FixedMul(*y,finesine[a>>ANGLETOFINESHIFT]);
-    
+
     *y   =
 	FixedMul(*x,finesine[a>>ANGLETOFINESHIFT])
 	+ FixedMul(*y,finecosine[a>>ANGLETOFINESHIFT]);
@@ -1463,7 +1463,7 @@ void AM_drawPlayers(void)
 							   GPART(p->userinfo.color),
 							   BPART(p->userinfo.color),
 							   DefaultPalette->numcolors);
-				
+
 		pt.x = p->mo->x;
 		pt.y = p->mo->y;
 		angle = p->mo->angle;
@@ -1561,7 +1561,7 @@ void AM_Drawer (void)
 
 		AM_clearFB(Background);
 	}
-	else 
+	else
 	{
 		f_x = viewwindowx;
 		f_y = viewwindowy;
@@ -1571,7 +1571,7 @@ void AM_Drawer (void)
 	}
 	AM_activateNewScale();
 
-	if (grid)	
+	if (grid)
 		AM_drawGrid(GridColor);
 
 	AM_drawWalls();

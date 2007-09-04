@@ -113,7 +113,7 @@ extern DThinker ThinkerCap;
 extern int NoWipe;		// [RH] Don't wipe when travelling in hubs
 
 
-CVAR (def_patch, "", CVAR_ARCHIVE)
+CVAR (def_patch, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
@@ -1387,18 +1387,18 @@ void D_DoomMain (void)
 		void	G_Ticker (void);
 		defdemoname = Args.GetArg (p+1);
 		G_DoPlayDemo();
-		
+
 		while(demoplayback)
 			G_Ticker();
-		
+
 		AActor *mo = consoleplayer().mo;
-		
+
 		if(mo)
 			printf("%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
 		else
 			printf("demotest: no player\n");
 	}
-	else	
+	else
 		D_DoomLoop ();		// never returns
 }
 

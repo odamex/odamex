@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -140,7 +140,7 @@ int		BlendR, BlendG, BlendB, BlendA;
 /**************************/
 
 byte newgamma[256];
-BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	static int lastgamma = 0;
 	int i;
@@ -158,7 +158,7 @@ BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE)
 		// value is different from the old one.
 
 		lastgamma = var;
-		
+
 		// I found this formula on the web at
 		// http://panda.mostang.com/sane/sane-gamma.html
 
@@ -342,7 +342,7 @@ palette_t *FindPalette (char *name, unsigned flags)
 
 	v1 = name8.x[0];
 	v2 = name8.x[1];
-	
+
 	while (pal) {
 		if (pal->name.nameint[0] == v1 && pal->name.nameint[1] == v2) {
 			if ((flags == (unsigned)~0) || (flags == pal->flags))
@@ -732,7 +732,7 @@ BEGIN_COMMAND (testcolor)
 	{
 		Printf (PRINT_HIGH, "testcolor <color>\n");
 	}
-	else 
+	else
 	{
 		std::string colorstring = V_GetColorStringByName (argv[1]);
 

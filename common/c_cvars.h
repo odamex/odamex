@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -52,6 +52,7 @@ CVARS (console variables)
 #define CVAR_MODIFIED	128	// set each time the cvar_t is changed
 #define CVAR_ISDEFAULT	256	// is cvar unchanged since creation?
 #define CVAR_AUTO		512	// allocated, needs to be freed when destroyed
+#define CVAR_NOENABLEDISABLE 1024 // [Nes] No substitution (0=disable, 1=enable)
 
 class cvar_t
 {
@@ -77,7 +78,7 @@ public:
 
 	static void EnableNoSet ();		// enable the honoring of CVAR_NOSET
 	static void EnableCallbacks ();
-	
+
 	unsigned int m_Flags;
 
 	// Writes all cvars that could effect demo sync to *demo_p. These are
@@ -116,18 +117,18 @@ public:
 	static cvar_t *cvar_forceset (const char *var_name, const char *value);
 
 	static void cvarlist();
-	
+
 	cvar_t &operator = (float other) { ForceSet(other); return *this; }
 	cvar_t &operator = (const char *other) { ForceSet(other); return *this; }
 
 private:
-	
+
 	cvar_t (const cvar_t &var) {}
 
 	void InitSelf (const char *name, const char *def, DWORD flags, void (*callback)(cvar_t &));
 	void (*m_Callback)(cvar_t &);
 	cvar_t *m_Next;
-	
+
 	std::string m_Name, m_String;
 	float m_Value;
 
@@ -149,7 +150,7 @@ private:
 	static void cvarfunc_##name(cvar_t &); \
 	cvar_t name (#name, def, flags, cvarfunc_##name); \
 	static void cvarfunc_##name(cvar_t &var)
-	
+
 #define END_CUSTOM_CVAR(name)
 
 #define CVAR(name,def,flags) \

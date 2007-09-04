@@ -1488,8 +1488,8 @@ BOOL PTR_CameraTraverse (intercept_t* in)
 //
 // [RH] P_AimCamera
 //
-CVAR (chase_height, "-8", CVAR_ARCHIVE)
-CVAR (chase_dist, "90", CVAR_ARCHIVE)
+CVAR (chase_height, "-8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chase_dist, "90", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 void P_AimCamera (AActor *t1)
 {

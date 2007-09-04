@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -53,7 +53,7 @@ CVAR (vid_fps, "0", 0)
 CVAR (ticker, "0", 0)
 CVAR (fullscreen, "0", CVAR_ARCHIVE)
 
-BEGIN_CUSTOM_CVAR (vid_winscale, "1.0", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (vid_winscale, "1.0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	if (var < 1.f)
 	{
@@ -87,7 +87,7 @@ void I_InitHardware ()
 		Video = new IVideo();
 	else
 		Video = new SDLVideo (0);
-	
+
 	if (Video == NULL)
 		I_FatalError ("Failed to initialize display");
 
@@ -119,7 +119,7 @@ void I_FinishUpdate ()
 		static int framecount = 0, lastcount = 0;
 		char fpsbuff[40];
 		int chars;
-		
+
 		QWORD ms = I_MSTime ();
 		QWORD howlong = ms - lastms;
 		if (howlong > 0)
@@ -138,7 +138,7 @@ void I_FinishUpdate ()
 		}
 		lastms = ms;
 	}
-	
+
     // draws little dots on the bottom of the screen
     if (ticker)
     {
@@ -147,13 +147,13 @@ void I_FinishUpdate ()
 		QWORD tics = i - lasttic;
 		lasttic = i;
 		if (tics > 20) tics = 20;
-		
+
 		for (i=0 ; i<tics*2 ; i+=2)
 			screen->buffer[(screen->height-1)*screen->pitch + i] = 0xff;
 		for ( ; i<20*2 ; i+=2)
 			screen->buffer[(screen->height-1)*screen->pitch + i] = 0x0;
     }
-	
+
 	Video->UpdateScreen (screen);
 	screen->Unlock(); // SoM: we should probably do this, eh?
 }
@@ -257,7 +257,7 @@ void I_ClosestResolution (int *width, int *height, int bits)
 			return;
 		}
 	}
-}	
+}
 
 void I_StartModeIterator (int bits)
 {
@@ -272,13 +272,13 @@ bool I_NextMode (int *width, int *height)
 DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary)
 {
 	DCanvas *scrn = Video->AllocateSurface (width, height, bits, primary);
-	
+
 	if (!scrn)
 	{
 		I_FatalError ("Failed to allocate a %dx%dx%d surface",
 					  width, height, bits);
 	}
-	
+
 	return scrn;
 }
 
@@ -437,7 +437,7 @@ DCanvas *IVideo::AllocateSurface (int width, int height, int bits, bool primary)
 	scrn->buffer = new byte[width*height*(bits/8)];
 	scrn->pitch = width * (bits / 8);
 
-	return scrn;   
+	return scrn;
 }
 
 void IVideo::ReleaseSurface (DCanvas *scrn)

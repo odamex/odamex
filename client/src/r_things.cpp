@@ -56,7 +56,7 @@ static int crosshair_lump;
 
 static void R_InitCrosshair();
 
-BEGIN_CUSTOM_CVAR (crosshair, "0", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (crosshair, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	R_InitCrosshair();
 }

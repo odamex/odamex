@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -85,7 +85,7 @@
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
 // put into newer configfiles.
-static CVAR (configver, CONFIGVERSIONSTR, CVAR_ARCHIVE)
+static CVAR (configver, CONFIGVERSIONSTR, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 bool M_WriteFile (char const *name, void *source, int length)
 {
@@ -219,8 +219,8 @@ void M_LoadDefaults (void)
 		AddCommandString ("alias idclip noclip");
 		AddCommandString ("alias idspispopd noclip");
 		AddCommandString ("alias iddqd god");
-		AddCommandString ("alias idclev map");		
-		AddCommandString ("alias changemap map");	
+		AddCommandString ("alias idclev map");
+		AddCommandString ("alias changemap map");
 		AddCommandString ("alias changemus idmus");
 	}
 
@@ -272,9 +272,9 @@ void M_ScreenShot (const char *filename)
 		// munge planar buffer to linear
 		linear = new byte[screen->width * screen->height];
 		I_ReadScreen (linear);
-       
+
         // [Russell] - Spit out a bitmap file
-        
+
         // check endianess
         #if SDL_BYTEORDER == SDL_BIG_ENDIAN
             Uint32 rmask = 0xff000000;
@@ -287,16 +287,16 @@ void M_ScreenShot (const char *filename)
             Uint32 bmask = 0x00ff0000;
             Uint32 amask = 0xff000000;
         #endif
-		
+
 		SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(linear, screen->width, screen->height, 8, screen->width * 1, rmask,gmask,bmask,amask);
-		
+
 		SDL_Colour colors[256];
-		
+
 		// stolen from the WritePCXfile function, write palette data into SDL_Colour
 		DWORD *pal;
-		
+
 		pal = IndexedPalette;
-		
+
 		for (int i = 0; i < 256; i+=1, pal++)
             {
                 colors[i].r = RPART(*pal);
@@ -304,15 +304,15 @@ void M_ScreenShot (const char *filename)
                 colors[i].b = BPART(*pal);
                 colors[i].unused = 0;
             }
-		
+
         // set the palette
         SDL_SetColors(surface, colors, 0, 256);
-		
+
 		// save the bmp file
 		if (SDL_SaveBMP(surface, filename) == -1)
         {
             Printf (PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
-            
+
             SDL_FreeSurface(surface);
             delete[] linear;
             return;

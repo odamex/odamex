@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -80,8 +80,8 @@ void	G_DoSaveGame (void);
 
 void	CL_RunTics (void);
 
-CVAR (skill, "1", CVAR_ARCHIVE) // [Toke - todo] should not be cvar on client
-CVAR (deathmatch, "1", CVAR_ARCHIVE)  // [Toke - todo] should not be cvar on client
+CVAR (skill, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE) // [Toke - todo] should not be cvar on client
+CVAR (deathmatch, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // [Toke - todo] should not be cvar on client
 
 EXTERN_CVAR (novert)
 
@@ -171,10 +171,10 @@ int				lookspeed[2] = {450, 512};
 CVAR (cl_run,		"1",	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
 CVAR (invertmouse,	"0",	CVAR_ARCHIVE)		// Invert mouse look down/up?
 CVAR (lookstrafe,	"0",	CVAR_ARCHIVE)		// Always strafe with mouse?
-CVAR (m_pitch,		"1.0",	CVAR_ARCHIVE)		// Mouse speeds
-CVAR (m_yaw,		"1.0",	CVAR_ARCHIVE)
-CVAR (m_forward,	"1.0",	CVAR_ARCHIVE)
-CVAR (m_side,		"2.0",	CVAR_ARCHIVE)
+CVAR (m_pitch,		"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)		// Mouse speeds
+CVAR (m_yaw,		"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (m_forward,	"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (m_side,		"2.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (displaymouse,	"0",	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
 
 int 			turnheld;								// for accelerative turning
@@ -237,7 +237,7 @@ bool validplayer(player_t &ref)
 {
 	if (&ref == &nullplayer)
 		return false;
-	
+
 	if(players.empty())
 		return false;
 
@@ -367,20 +367,20 @@ END_COMMAND (weapprev)
 BEGIN_COMMAND (spynext)
 {
 	extern bool ctfmode, teamplaymode;
-	
+
 	size_t curr;
 	size_t s = players.size();
 	for(curr = 0; curr < s; curr++)
 		if(players[curr].id == displayplayer().id)
 			break;
-	
+
 	for(size_t i = 1; i < s; i++)
 	{
 		curr = (curr+1)%s;
-		
+
 		if(!players[curr].mo)
 			continue;
-			
+
 		if(!deathmatch || ((teamplaymode || ctfmode) && players[curr].userinfo.team == consoleplayer().userinfo.team))
 		{
 			displayplayer_id = players[curr].id;
@@ -803,8 +803,8 @@ void G_Ticker (void)
 
 	// do player reborns if needed
 	if(serverside)
-		for (i = 0; i < players.size(); i++) 
-			if (players[i].ingame() && players[i].playerstate == PST_REBORN) 
+		for (i = 0; i < players.size(); i++)
+			if (players[i].ingame() && players[i].playerstate == PST_REBORN)
 				G_DoReborn (players[i]);
 
 	// do things to change the game state
@@ -933,32 +933,32 @@ void G_Ticker (void)
 			}
 		}
 	}
-	
+
 	// check for special buttons
 	if(serverside && consoleplayer().ingame())
     {
 		player_t &player = consoleplayer();
-		
-		if (player.cmd.ucmd.buttons & BT_SPECIAL) 
-		{ 
-			switch (player.cmd.ucmd.buttons & BT_SPECIALMASK) 
-			{ 
-			  case BTS_PAUSE: 
-				paused ^= 1; 
-				if (paused) 
-					S_PauseSound (); 
-				else 
-					S_ResumeSound (); 
-				break; 
-						 
-			  case BTS_SAVEGAME: 
-				if (!savedescription[0]) 
-					strcpy (savedescription, "NET GAME"); 
-				savegameslot =  (player.cmd.ucmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT; 
-				gameaction = ga_savegame; 
-				break; 
-			} 
-		} 
+
+		if (player.cmd.ucmd.buttons & BT_SPECIAL)
+		{
+			switch (player.cmd.ucmd.buttons & BT_SPECIALMASK)
+			{
+			  case BTS_PAUSE:
+				paused ^= 1;
+				if (paused)
+					S_PauseSound ();
+				else
+					S_ResumeSound ();
+				break;
+
+			  case BTS_SAVEGAME:
+				if (!savedescription[0])
+					strcpy (savedescription, "NET GAME");
+				savegameslot =  (player.cmd.ucmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT;
+				gameaction = ga_savegame;
+				break;
+			}
+		}
     }
 
 	// do main actions
@@ -982,9 +982,9 @@ void G_Ticker (void)
 		break;
 
 	case GS_DEMOSCREEN:
-		D_PageTicker (); 
+		D_PageTicker ();
 		break;
-	
+
 	default:
 		break;
 	}
@@ -1008,10 +1008,10 @@ void G_PlayerFinishLevel (player_t &player)
 
 	memset (p->powers, 0, sizeof (p->powers));
 	memset (p->cards, 0, sizeof (p->cards));
-	
+
 	if(p->mo)
 		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
-	
+
 	p->extralight = 0;					// cancel gun flashes
 	p->fixedcolormap = 0;				// cancel ir goggles
 	p->damagecount = 0; 				// no palette changes
@@ -1046,7 +1046,7 @@ void G_PlayerReborn (player_t &p)
 	killcount = p->killcount;
 	ping = p->ping;
 	GameTime = p->GameTime;
-	
+
 	memcpy (&userinfo, &p->userinfo, sizeof(userinfo));
 
 	p->camera = p->mo = p->attacker = AActor::AActorPtr();
@@ -1061,7 +1061,7 @@ void G_PlayerReborn (player_t &p)
 	p->killcount = killcount;
 	p->ping = ping;
 	p->GameTime = GameTime;
-	
+
 	memcpy (&p->userinfo, &userinfo, sizeof(userinfo));
 
 	p->usedown = p->attackdown = true;	// don't do anything immediately
@@ -1090,7 +1090,7 @@ void G_PlayerReborn (player_t &p)
 	for (i = 0; i < NUMFLAGS; i++)
 		p.flags[i] = false;
 	p.backpack = false;
-	
+
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
 	p.health = deh.StartHealth;		// [RH] Used to be MAXHEALTH
@@ -1100,7 +1100,7 @@ void G_PlayerReborn (player_t &p)
 	p.weaponowned[wp_fist] = true;
 	p.weaponowned[wp_pistol] = true;
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
-	
+
 	p.respawn_time = level.time;
 	p.tic = 0;
 }
@@ -1223,7 +1223,7 @@ static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
 {
 	int i, j;
-	
+
 	for (j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
@@ -1232,7 +1232,7 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 			return &deathmatchstarts[i];
 		}
 	}
-	
+
 	// [RH] return a spot anyway, since we allow telefragging when a player spawns
 	return &deathmatchstarts[i];
 }
@@ -1241,7 +1241,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 {
 	int selections;
 	mapthing2_t *spot;
-	
+
 	if(!serverside || !deathmatch)
 		return;
 
@@ -1251,62 +1251,62 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 		// [RH] We can get by with just 1 deathmatch start
 		if (selections < 1)
 			I_Error ("No deathmatch starts");
-		
+
 		// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
 		spot = SelectRandomDeathmatchSpot (player, selections);
-		
-		if (!spot && !playerstarts.empty()) 
+
+		if (!spot && !playerstarts.empty())
 		{
 			// no good spot, so the player will probably get stuck
 			spot = &playerstarts[player.id%playerstarts.size()];
-		} 
-		else 
+		}
+		else
 		{
 			if (player.id < 4)
 				spot->type = player.id+1;
 			else
 				spot->type = player.id+4001-4;	// [RH] > 4 players
 		}
-		
-		
+
+
 	}
 	/*else
 	{
 		selections = 0;
-		
+
 		if (player.userinfo.team == TEAM_BLUE)  // [Toke - CTF - starts]
 		{
 			selections = blueteam_p - blueteamstarts;
-			
+
 			if (selections < 1)
 				I_Error ("No blue team starts");
 		}
-		
+
 		if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
 		{
 			selections = redteam_p - redteamstarts;
-			
+
 			if (selections < 1)
 				I_Error ("No red team starts");
 		}
-		
+
 		if (player.userinfo.team == TEAM_GOLD)  // [Toke - CTF - starts]
 		{
 			selections = goldteam_p - goldteamstarts;
-			
+
 			if (selections < 1)
 				I_Error ("No gold team starts");
 		}
-		
+
 		if (selections < 1)
 			I_Error ("No team starts");
-		
+
 		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
-		
+
 		if (!spot && !playerstarts.empty())
 			spot = &playerstarts[player.id%playerstarts.size()];
-		
-		else 
+
+		else
 		{
 			if (player.id < 4)
 				spot->type = player.id+1;
@@ -1314,7 +1314,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 				spot->type = player.id+4001-4;
 		}
 	}*/
-	
+
 	P_SpawnPlayer (player, spot);
 }
 
@@ -1325,14 +1325,14 @@ void G_DoReborn (player_t &player)
 {
 	if(!serverside)
 		return;
-	
+
 	if (!multiplayer)
 	{
 		// reload the level from scratch
 		gameaction = ga_loadlevel;
 		return;
 	}
-	
+
 	// respawn at the start
 	// first disassociate the corpse
 	if (player.mo)
@@ -1340,25 +1340,25 @@ void G_DoReborn (player_t &player)
 		player.mo->player = NULL;
 		player.mo = AActor::AActorPtr();
 	}
-	
+
 	// spawn at random spot if in death match
 	if (deathmatch)
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
 	}
-	
+
 	if(playerstarts.empty())
 		I_Error("No player starts");
-	
+
 	unsigned int playernum = player.id - 1;
-	
+
 	if (G_CheckSpot (player, &playerstarts[playernum%playerstarts.size()]) )
 	{
 		P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
 		return;
 	}
-	
+
 	// try to spawn at one of the other players' spots
 	for (size_t i = 0; i < playerstarts.size(); i++)
 	{
@@ -1368,7 +1368,7 @@ void G_DoReborn (player_t &player)
 			return;
 		}
 	}
-	
+
 	// he's going to be inside something.  Too bad.
 	P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
 }
@@ -1443,21 +1443,21 @@ void G_ReadDemoTiccmd ()
 	if(demoversion == LMP_DOOM_1_9 || demoversion == LMP_DOOM_1_9_1)
 	{
 		int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
-		
+
 		for(size_t i = 0; i < players.size(); i++)
 		{
 			if ((demo_e - demo_p < demostep) || (*demo_p == DEMOMARKER))
 			{
-				// end of demo data stream 
-				G_CheckDemoStatus (); 
-				return; 
+				// end of demo data stream
+				G_CheckDemoStatus ();
+				return;
 			}
-			
+
 			usercmd_t *ucmd = &players[i].cmd.ucmd;
 
 			ucmd->forwardmove = ((signed char)*demo_p++)<<8;
 			ucmd->sidemove = ((signed char)*demo_p++)<<8;
-			
+
 			if(demoversion == LMP_DOOM_1_9)
 				ucmd->yaw = ((unsigned char)*demo_p++)<<8;
 			else
@@ -1467,10 +1467,10 @@ void G_ReadDemoTiccmd ()
 			}
 			ucmd->buttons = (unsigned char)*demo_p++;
 		}
-		
+
 		return;
 	}
-	
+
 	if(demoversion == ZDOOM_FORM)
 	{
 		for(size_t i = 0; i < players.size(); i++)
@@ -1696,12 +1696,12 @@ void G_DoPlayDemo (void)
 		gameaction = ga_nothing;
 		return;
 	}
-		
+
 	Printf (PRINT_HIGH, "Playing demo %s\n", defdemoname.c_str());
 
 	cvar_t::C_BackupCVars ();		// [RH] Save cvars that might be affected by demo
 	MakeEmptyUserCmd ();
-	
+
 	if(demo_p[0] == DOOM_1_4_DEMO
 	|| demo_p[0] == DOOM_1_5_DEMO
 	|| demo_p[0] == DOOM_1_6_DEMO
@@ -1718,7 +1718,7 @@ void G_DoPlayDemo (void)
 			gameaction = ga_nothing;
 			return;
 		}
-		
+
 		demoversion = *demo_p++ == DOOM_1_9_1_DEMO ? LMP_DOOM_1_9_1 : LMP_DOOM_1_9;
 		float s = (float)((*demo_p++)+1);
 		skill = s;
@@ -1729,10 +1729,10 @@ void G_DoPlayDemo (void)
 		fastmonsters = *demo_p++;
 		nomonsters = *demo_p++;
 		byte who = *demo_p++;
-		
+
 		players.clear();
 
-		for (size_t i=0 ; i < MAXPLAYERS_VANILLA; i++) 
+		for (size_t i=0 ; i < MAXPLAYERS_VANILLA; i++)
 		{
 			if(*demo_p++)
 			{
@@ -1741,9 +1741,9 @@ void G_DoPlayDemo (void)
 				players.back().id = i + 1;
 			}
 		}
-		
+
 		player_t &con = idplayer(who + 1);
-		
+
 		if(!validplayer(con))
 		{
 			Z_Free(demobuffer);
@@ -1751,7 +1751,7 @@ void G_DoPlayDemo (void)
 			gameaction = ga_nothing;
 			return;
 		}
-		
+
 		consoleplayer_id = displayplayer_id = con.id;
 
 		if(players.size() > 1)
@@ -1768,7 +1768,7 @@ void G_DoPlayDemo (void)
 		}
 
 		char mapname[32];
-		
+
 		if(gameinfo.flags & GI_MAPxx)
 			sprintf(mapname, "MAP%02d", (int)map);
 		else
@@ -1777,16 +1777,16 @@ void G_DoPlayDemo (void)
 		serverside = true;
 
 		G_InitNew (mapname);
-				
+
 		usergame = false;
 		demoplayback = true;
-		
+
 		// comatibility
 		freelook = "0";
 
 		return;
 	}
-	
+
 	if (ReadLong (&demo_p) != FORM_ID) {
 			Printf (PRINT_HIGH, "Unknown demo format.\n");
 			gameaction = ga_nothing;
@@ -1845,13 +1845,13 @@ BOOL G_CheckDemoStatus (void)
 		cvar_t::C_RestoreCVars ();		// [RH] Restore cvars demo might have changed
 
 		Z_Free (demobuffer);
-		
+
 		demoplayback = false;
 		netdemo = false;
 		netgame = false;
 		multiplayer = false;
 		serverside = false;
-		
+
 		if (singledemo || timingdemo) {
 			if (timingdemo)
 				// Trying to get back to a stable state after timing a demo
@@ -1898,28 +1898,28 @@ BOOL CheckIfExitIsGood (AActor *self)
 {
 	if (self == NULL)
 		return false;
-	
+
 	// [Toke - dmflags] Old location of DF_NO_EXIT
     // [ML] 04/4/06: Check for fragexitswitch - seems a bit hacky
-	
+
     unsigned int i;
-	
+
     for(i = 0; i < players.size(); i++)
         if(players[i].fragcount == fraglimit)
             break;
-	
+
     if (deathmatch && self)
     {
         if (!allowexit && fragexitswitch && i == players.size())
             return false;
-		
+
         if (!allowexit && !fragexitswitch)
             return false;
     }
-	
+
 	if(self->player && multiplayer)
 		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname);
-	
+
     return true;
 }
 

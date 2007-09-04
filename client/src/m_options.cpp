@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -68,9 +68,9 @@
 //CVAR (mouse_sensitivity, "1.0", CVAR_ARCHIVE)
 //CVAR (cont_preset,			"0",	CVAR_ARCHIVE)
 CVAR (dynres_state,			"0",	CVAR_ARCHIVE)
-CVAR (dynresval,			"1.0",	CVAR_ARCHIVE)
+CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 //CVAR (mouse_preset,			"0",	CVAR_ARCHIVE)
-CVAR (mouse_sensitivity,	"25.0", CVAR_ARCHIVE)
+CVAR (mouse_sensitivity,	"25.0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_type,			"0",	CVAR_ARCHIVE)
 CVAR (novert,				"0",	CVAR_ARCHIVE)
 
@@ -160,7 +160,7 @@ static menuitem_t OptionItems[] =
 	{ discrete, "Lookspring",			{&lookspring},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Lookstrafe",			{&lookstrafe},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete,	"Always Run",			{&cl_run},				{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },	
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
 };
@@ -340,38 +340,38 @@ static void M_SlideUIBlue (int);
 
 int dummy = 0;
 
-BEGIN_CUSTOM_CVAR(ui_transred, "0", CVAR_ARCHIVE)
-{   
+BEGIN_CUSTOM_CVAR(ui_transred, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+{
     if (var > 255)
         var.Set(255);
-    
+
     if (var < 0)
         var.Set(0.0f);
-    
+
     M_SlideUIRed((int)var);
 }
 END_CUSTOM_CVAR(ui_transred)
 
-BEGIN_CUSTOM_CVAR(ui_transgreen, "0", CVAR_ARCHIVE)
-{   
+BEGIN_CUSTOM_CVAR(ui_transgreen, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+{
     if (var > 255)
         var.Set(255);
-    
+
     if (var < 0)
         var.Set(0.0f);
-    
+
     M_SlideUIGreen((int)var);
 }
 END_CUSTOM_CVAR(ui_transgreen)
 
-BEGIN_CUSTOM_CVAR(ui_transblue, "0", CVAR_ARCHIVE)
-{   
+BEGIN_CUSTOM_CVAR(ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+{
     if (var > 255)
         var.Set(255);
-    
+
     if (var < 0)
         var.Set(0.0f);
-    
+
     M_SlideUIBlue((int)var);
 }
 END_CUSTOM_CVAR(ui_transblue)
@@ -386,7 +386,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Trans Red",         {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Trans Green",       {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Trans Blue",        {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },	
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete,	"Crosshair",			{&crosshair},		   	{9.0}, {0.0},	{0.0}, {Crosshairs} },
 	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },

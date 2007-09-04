@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -150,7 +150,7 @@ void CL_QuitNetGame(void)
 	memset (&serveraddr, 0, sizeof(serveraddr));
 	connected = false;
 	gameaction = ga_fullconsole;
-	
+
 	serverside = clientside = true;
 
 	actor_by_netid.clear();
@@ -223,7 +223,7 @@ BEGIN_COMMAND (connect)
 	{
 		std::string target = argv[1];
 
-		// denis - what if user typed "localhost 10666" instead of "localhost:10666" 
+		// denis - what if user typed "localhost 10666" instead of "localhost:10666"
 		if(argc > 2)
 		{
 			target += ":";
@@ -377,7 +377,7 @@ BEGIN_CUSTOM_CVAR (cl_predict_players, "1", CVAR_ARCHIVE)
 END_CUSTOM_CVAR (cl_predict_players)
 
 
-BEGIN_CUSTOM_CVAR (rate, "10000", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	if (var < 100)
 	{
@@ -458,16 +458,16 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 void CL_SendUserInfo(void)
 {
 	userinfo_t coninfo;
-	
+
     memset (&coninfo, 0, sizeof(coninfo));
-	
+
 	strncpy (coninfo.netname, cl_name.cstring(), MAXPLAYERNAME);
-	coninfo.team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams] 
+	coninfo.team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
 	coninfo.aimdist = (fixed_t)(cl_autoaim * 16384.0);
 	coninfo.color	 = V_GetColorFromString (NULL, cl_color.cstring());
 	coninfo.skin	 = R_FindSkin (cl_skin.cstring());
 	coninfo.gender  = D_GenderByName (cl_gender.cstring());
-	
+
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
 	MSG_WriteString	(&net_buffer, coninfo.netname);
 	MSG_WriteByte	(&net_buffer, coninfo.team); // [Toke]
@@ -490,12 +490,12 @@ player_t &CL_FindPlayer(size_t id)
 	{
 		if(players.size() >= MAXPLAYERS)
 			return *p;
-		
+
 		players.push_back(player_s());
-		
+
 		p = &players.back();
 		p->id = id;
-		
+
 		// repair mo after player pointers are reset
 		for(size_t i = 0; i < players.size(); i++)
 		{
@@ -531,7 +531,7 @@ void CL_SetupUserInfo(void)
 
 	if (p->mo)
 		p->mo->sprite = skins[p->userinfo.skin].sprite;
-	
+
 	extern bool st_firsttime;
 	st_firsttime = true;
 }
@@ -543,7 +543,7 @@ void CL_SetupUserInfo(void)
 void CL_UpdateFrags(void)
 {
 	player_t &p = CL_FindPlayer(MSG_ReadByte());
-    
+
 	if(deathmatch)
 		p.fragcount = MSG_ReadShort();
 	else
@@ -583,15 +583,15 @@ void CL_SetThingId(AActor *mo, size_t newnetid)
 void CL_ClearID(size_t id)
 {
     AActor *mo = CL_FindThingById(id);
-	
+
 	if(!mo)
 		return;
-	
+
 	if(mo->player)
 	{
 		if(mo->player->mo == mo)
 			mo->player->mo = AActor::AActorPtr();
-		
+
 		mo->player = NULL;
 	}
 
@@ -609,7 +609,7 @@ void CL_MoveMobj(void)
 
 	netid = MSG_ReadShort();
 	mo = CL_FindThingById (netid);
-	
+
 	byte rndindex = MSG_ReadByte();
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
@@ -685,7 +685,7 @@ bool CL_PrepareConnect(void)
 	size_t i;
 	DWORD server_token = MSG_ReadLong();
 	string server_host = MSG_ReadString();
-	
+
 	byte recv_teamplay_stats = 0;
 
 	byte playercount = MSG_ReadByte(); // players
@@ -734,12 +734,12 @@ bool CL_PrepareConnect(void)
 		if (MSG_ReadByte())
 			MSG_ReadLong();
 	}
-	
+
 	// Receive conditional teamplay information
 	if (recv_teamplay_stats)
 	{
 		MSG_ReadLong();
-		
+
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
 			byte enabled = MSG_ReadByte();
@@ -748,11 +748,11 @@ bool CL_PrepareConnect(void)
 				MSG_ReadLong();
 		}
 	}
-	
+
 	version = MSG_ReadShort();
-	
+
 	Printf(PRINT_HIGH, "> Server protocol version: %i\n", version);
-	
+
 	if(version > VERSION)
 		version = VERSION;
 	if(version < 62)
@@ -770,7 +770,7 @@ bool CL_PrepareConnect(void)
 		gamestate = GS_DOWNLOAD;
 		Printf(PRINT_HIGH, "Will download \"%s\" from server\n", missing_file.c_str());
 	}
-	
+
 	connecttimeout = 0;
 	CL_TryToConnect(server_token);
 
@@ -800,7 +800,7 @@ bool CL_Connect(void)
 			CL_QuitNetGame();
 			return false;
 		}
-		
+
 		CL_RequestDownload(missing_file, missing_hash);
 	}
 
@@ -851,7 +851,7 @@ void CL_InitNetwork (void)
     SZ_Clear(&net_buffer);
 
     const char *ipaddress = Args.CheckValue ("-connect");
-    
+
     if (ipaddress)
     {
 		NET_StringToAdr (ipaddress, &serveraddr);
@@ -930,7 +930,7 @@ void CL_UpdatePlayer()
 			MSG_ReadByte();
 		return;
 	}
-	
+
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
 	z = MSG_ReadLong();
@@ -1031,7 +1031,7 @@ void CL_SpawnMobj()
 	CL_ClearID(netid);
 
 	mo = new AActor (x, y, z, (mobjtype_t)type);
-	
+
 	// denis - puff hack
 	if(mo->type == MT_PUFF)
 	{
@@ -1044,7 +1044,7 @@ void CL_SpawnMobj()
 	mo->angle = angle;
 	CL_SetThingId(mo, netid);
 	mo->rndindex = rndindex;
-	
+
 	if (state < NUMSTATES)
 		P_SetMobjState(mo, (statenum_t)state);
 
@@ -1079,7 +1079,7 @@ void CL_Corpse(void)
 	if(version >= 64)
 	{
 		tics = MSG_ReadByte();
-		
+
 		if(tics == 0xFF)
 			tics = -1;
 	}
@@ -1158,7 +1158,7 @@ void CL_SpawnPlayer()
 	}
 
 	G_PlayerReborn (*p);
-	
+
 	// denis - if this concerns the local player, restart the status bar
 	if(p->id == consoleplayer_id)
 		ST_Start ();
@@ -1477,10 +1477,10 @@ void CL_Sound(void)
 	{
 		// so far away that it becomes directionless
 		AActor *mo = consoleplayer().mo;
-		
+
 		if(mo)
 			S_SoundID (mo->x, mo->y, attenuation, sfx_id, volume, attenuation);
-		
+
 		return;
 	}
 
@@ -1526,7 +1526,7 @@ void CL_UpdateSector(void)
 	unsigned short s = (unsigned short)MSG_ReadShort();
 	unsigned short fh = MSG_ReadShort();
 	unsigned short ch = MSG_ReadShort();
-	
+
 	unsigned short fp = 0, cp = 0;
 	if(version > 62)
 	{
@@ -1536,11 +1536,11 @@ void CL_UpdateSector(void)
 
 	if(!sectors || s >= numsectors)
 		return;
-		
+
 	sector_t *sec = &sectors[s];
 	sec->floorheight = fh << FRACBITS;
 	sec->ceilingheight = ch << FRACBITS;
-	
+
 	if(version > 62)
 	{
 		if(fp >= numflats)
@@ -1553,7 +1553,7 @@ void CL_UpdateSector(void)
 
 		sec->ceilingpic = cp;
 	}
-		
+
 	P_ChangeSector (sec, false);
 }
 
@@ -1612,7 +1612,7 @@ void CL_CheckMissedPacket(void)
 		{
 			for (int i=0; i<size; i++)
 				MSG_ReadByte();
-			
+
 			#ifdef _DEBUG
                 Printf (PRINT_LOW, "warning: duplicate packet\n");
 			#endif
@@ -1627,15 +1627,15 @@ void CL_Decompress(int sequence)
 		return;
 	else
 		MSG_ReadByte();
-	
+
 	byte method = MSG_ReadByte();
-		
+
 	if(method & minilzo_mask)
 		MSG_DecompressMinilzo();
 
 	if(method & adaptive_mask)
 		MSG_DecompressAdaptive(compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0));
-	
+
 	if(method & adaptive_record_mask)
 		compressor.ack_sent(net_message.ptr(), MSG_BytesLeft());
 }
@@ -1826,14 +1826,14 @@ void CL_LoadMap(void)
 
 	if(gamestate == GS_DOWNLOAD)
 		return;
-	
+
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel (0);
-	
+
 	G_InitNew (mapname);
 
 	real_plats.clear();
-	
+
 	CTF_CheckFlags(consoleplayer());
 
 	gameaction = ga_nothing;
@@ -1895,7 +1895,7 @@ void CL_DownloadStart()
 		Printf(PRINT_HIGH, "Server initiated download failed\n");
 		return;
 	}
-	
+
 	// don't go for more than 100 megs
 	if(file_len > 100*1024*1024)
 	{
@@ -1957,7 +1957,7 @@ void CL_Download()
 	if(percent != old_percent)
 	{
 		Printf(PRINT_HIGH, ".");
-		
+
 		if(!(percent % 10))
 			Printf(PRINT_HIGH, "%d%%", percent);
 
@@ -2132,11 +2132,11 @@ void CL_ParseCommands(void)
 		if(i == cmds.end())
 		{
 			Printf(PRINT_HIGH, "CL_ParseCommands: Unknown server message %d: ", (int)cmd);
-			
+
 			for(size_t j = 0; j < history.size(); j++)
 				Printf(PRINT_HIGH, "%d ", history[j]);
 			Printf(PRINT_HIGH, "\n");
-			
+
 			CL_QuitNetGame();
 			break;
 		}
@@ -2231,7 +2231,7 @@ void CL_RunTics (void)
 		TicCount = 0;
 	}
 
-	if (ctfmode) 
+	if (ctfmode)
 		CTF_RunTics ();
 }
 

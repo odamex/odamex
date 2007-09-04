@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -50,7 +50,7 @@ extern int *walllights;
 extern BOOL DrawNewHUD;
 extern dyncolormap_t NormalLight;
 
-CVAR (r_viewsize, "0", CVAR_NOSET)
+CVAR (r_viewsize, "0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
@@ -72,7 +72,7 @@ fixed_t 		centeryfrac;
 fixed_t			yaspectmul;
 
 // just for profiling purposes
-int 			framecount; 	
+int 			framecount;
 int 			linecount;
 int 			loopcount;
 
@@ -95,7 +95,7 @@ angle_t 		clipangle;
 // The viewangletox[viewangle + FINEANGLES/4] lookup
 // maps the visible view angles to screen X coordinates,
 // flattening the arc to a flat projection plane.
-// There will be many angles mapped to the same X. 
+// There will be many angles mapped to the same X.
 int 			viewangletox[FINEANGLES/2];
 
 // The xtoviewangleangle[] table maps a screen pixel
@@ -160,10 +160,10 @@ int R_PointOnSide (fixed_t x, fixed_t y, node_t *node)
 
 	if (!node->dy)
 		return y <= node->y ? node->dx < 0 : node->dx > 0;
-        
+
 	x -= node->x;
 	y -= node->y;
-  
+
 	// Try to quickly decide by looking at sign bits.
 	if ((node->dy ^ node->dx ^ x ^ y) < 0)
 		return (node->dy ^ x) < 0;  // (left is negative)
@@ -192,10 +192,10 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 
 	if (!ldy)
 		return y <= ly ? ldx < 0 : ldx > 0;
-  
+
 	x -= lx;
 	y -= ly;
-      
+
 	// Try to quickly decide by looking at sign bits.
 	if ((ldy ^ ldx ^ x ^ y) < 0)
 		return (ldy ^ x) < 0;          // (left is negative)
@@ -212,11 +212,11 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 //
 
 angle_t R_PointToAngle2 (fixed_t x1, fixed_t y1, fixed_t x, fixed_t y)
-{		
+{
   return (y -= y1, (x -= x1) || y) ?
     x >= 0 ?
-      y >= 0 ? 
-        (x > y) ? tantoangle[SlopeDiv(y,x)] :						// octant 0 
+      y >= 0 ?
+        (x > y) ? tantoangle[SlopeDiv(y,x)] :						// octant 0
                 ANG90-1-tantoangle[SlopeDiv(x,y)] :					// octant 1
         x > (y = -y) ? (angle_t)-(SDWORD)tantoangle[SlopeDiv(y,x)] :	// octant 8
                        ANG270+tantoangle[SlopeDiv(x,y)] :			// octant 7
@@ -234,7 +234,7 @@ angle_t
 R_PointToAngle
 ( fixed_t	x,
   fixed_t	y )
-{	
+{
     return R_PointToAngle2 (viewx, viewy, x, y);
 }
 
@@ -347,7 +347,7 @@ void R_InitTables (void)
 {
 	int i;
 	float a, fv;
-	
+
 	// viewangle tangent table
 	for (i = 0; i < FINEANGLES/2; i++)
 	{
@@ -355,7 +355,7 @@ void R_InitTables (void)
 		fv = FRACUNIT*tan (a);
 		finetangent[i] = (fixed_t)fv;
 	}
-	
+
 	// finesine table
 	for (i = 0; i < 5*FINEANGLES/4; i++)
 	{
@@ -375,7 +375,7 @@ void R_InitTables (void)
 void R_InitTextureMapping (void)
 {
 	int i, t, x;
-	
+
 	// Use tangent table to generate viewangletox: viewangletox will give
 	// the next greatest x after the view angle.
 
@@ -406,7 +406,7 @@ void R_InitTextureMapping (void)
 		}
 		viewangletox[i] = t;
 	}
-	
+
 	// Scan viewangletox[] to generate xtoviewangle[]:
 	//	xtoviewangle will give the smallest view angle
 	//	that maps to x.
@@ -417,19 +417,19 @@ void R_InitTextureMapping (void)
 			i++;
 		xtoviewangle[x] = (i<<ANGLETOFINESHIFT)-ANG90;
 	}
-	
+
 	// Take out the fencepost cases from viewangletox.
 	for (i = 0; i < FINEANGLES/2; i++)
 	{
 		t = FixedMul (finetangent[i], FocalLengthX);
 		t = centerx - t;
-		
+
 		if (viewangletox[i] == -1)
 			viewangletox[i] = 0;
 		else if (viewangletox[i] == highend)
 			viewangletox[i]--;
 	}
-		
+
 	clipangle = xtoviewangle[0];
 }
 
@@ -476,7 +476,7 @@ void R_InitLightTables (void)
 	int i;
 	int j;
 	int level;
-	int startmap;		
+	int startmap;
 	int scale;
 	int lightmapsize = 8 + (screen->is8bit ? 0 : 2);
 
@@ -490,7 +490,7 @@ void R_InitLightTables (void)
 			scale = FixedDiv (160*FRACUNIT, (j+1)<<LIGHTZSHIFT);
 			scale >>= LIGHTSCALESHIFT-LIGHTSCALEMULBITS;
 			level = startmap - scale/DISTMAP;
-			
+
 			if (level < 0)
 				level = 0;
 			else if (level >= NUMCOLORMAPS)
@@ -526,7 +526,7 @@ void R_SetViewSize (int blocks)
 //
 //
 
-BEGIN_CUSTOM_CVAR (r_detail, "0", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (r_detail, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	static BOOL badrecovery = false;
 
@@ -603,7 +603,7 @@ void R_ExecuteSetViewSize (void)
 		DrawNewHUD = true;
 	else
 		DrawNewHUD = false;
-	
+
 	viewwidth = realviewwidth >> detailxshift;
 	viewheight = realviewheight >> detailyshift;
 	freelookviewheight >>= detailyshift;
@@ -641,7 +641,7 @@ void R_ExecuteSetViewSize (void)
 
 	R_InitBuffer (viewwidth, viewheight);
 	R_InitTextureMapping ();
-	
+
 	// psprite scales
 	pspritexscale = centerxfrac / 160;
 	pspriteyscale = FixedMul (pspritexscale, yaspectmul);
@@ -653,7 +653,7 @@ void R_ExecuteSetViewSize (void)
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
 		screenheightarray[i] = (short)viewheight;
-	
+
 	// planes
 	for (i = 0; i < viewwidth; i++)
 	{
@@ -690,7 +690,7 @@ void R_ExecuteSetViewSize (void)
 //
 //
 
-BEGIN_CUSTOM_CVAR (screenblocks, "10", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (screenblocks, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	if (var > 12.0)
 		var.Set (12.0);
@@ -758,9 +758,9 @@ subsector_t *R_PointInSubsector (fixed_t x, fixed_t y)
 	int nodenum;
 
 	// single subsector is a special case
-	if (!numnodes)								
+	if (!numnodes)
 		return subsectors;
-				
+
 	nodenum = numnodes-1;
 
 	while (! (nodenum & NF_SUBSECTOR) )
@@ -769,7 +769,7 @@ subsector_t *R_PointInSubsector (fixed_t x, fixed_t y)
 		side = R_PointOnSide (x, y, node);
 		nodenum = node->children[side];
 	}
-		
+
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
 }
 
@@ -780,9 +780,9 @@ subsector_t *R_PointInSubsector (fixed_t x, fixed_t y)
 //
 
 void R_SetupFrame (player_t *player)
-{				
+{
 	unsigned int newblend;
-	
+
 	camera = player->camera;	// [RH] Use camera instead of viewplayer
 
 	if(!camera || !camera->subsector)
@@ -808,7 +808,7 @@ void R_SetupFrame (player_t *player)
 
 	viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
 	viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
-		
+
 	// killough 3/20/98, 4/4/98: select colormap based on player status
 	// [RH] Can also select a blend
 
@@ -870,7 +870,7 @@ void R_SetupFrame (player_t *player)
 					(DefaultPalette->maps.shades
 					+ player->fixedcolormap*256);
 		}
-		
+
 		walllights = scalelightfixed;
 
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
@@ -973,7 +973,7 @@ void R_SetupFrame (player_t *player)
 		}
 		lastcenteryfrac = centeryfrac;
 	}
-		
+
 	framecount++;
 	validcount++;
 }
@@ -993,7 +993,7 @@ void R_RenderPlayerView (player_t *player)
 	R_ClearDrawSegs ();
 	R_ClearPlanes ();
 	R_ClearSprites ();
-	
+
 	// [RH] Show off segs if r_drawflat is 1
 	if (r_drawflat)
 	{
@@ -1012,7 +1012,7 @@ void R_RenderPlayerView (player_t *player)
 		hcolfunc_post2 = rt_map2cols;
 		hcolfunc_post4 = rt_map4cols;
 	}
-	
+
 	// Never draw the player unless in chasecam mode
 	if(camera)
 	if (camera->player && !(player->cheats & CF_CHASECAM))
@@ -1025,7 +1025,7 @@ void R_RenderPlayerView (player_t *player)
 	R_DrawPlanes ();
 
 	spanfunc = R_DrawSpan;
-	
+
 	R_DrawMasked ();
 
 	// [RH] Apply detail mode doubling

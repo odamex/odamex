@@ -111,7 +111,7 @@ static int HistSize;
 
 #define NUMNOTIFIES 4
 
-CVAR (con_notifytime, "3", CVAR_ARCHIVE)
+CVAR (con_notifytime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (con_scaletext, "0", CVAR_ARCHIVE)		// Scale notify text at high resolutions?
 
 static struct NotifyText
@@ -134,37 +134,37 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
 
 cvar_t msglevel ("msg", "0", CVAR_ARCHIVE);
 
-BEGIN_CUSTOM_CVAR (msg0color, "6", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (msg0color, "6", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	setmsgcolor (0, var.cstring());
 }
 END_CUSTOM_CVAR (msg0color)
 
-BEGIN_CUSTOM_CVAR (msg1color, "5", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (msg1color, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	setmsgcolor (1, var.cstring());
 }
 END_CUSTOM_CVAR (msg1color)
 
-BEGIN_CUSTOM_CVAR (msg2color, "2", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (msg2color, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	setmsgcolor (2, var.cstring());
 }
 END_CUSTOM_CVAR (msg2color)
 
-BEGIN_CUSTOM_CVAR (msg3color, "3", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (msg3color, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	setmsgcolor (3, var.cstring());
 }
 END_CUSTOM_CVAR (msg3color)
 
-BEGIN_CUSTOM_CVAR (msg4color, "3", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (msg4color, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	setmsgcolor (4, var.cstring());
 }
 END_CUSTOM_CVAR (msg4color)
 
-BEGIN_CUSTOM_CVAR (msgmidcolor, "5", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (msgmidcolor, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	setmsgcolor (PRINTLEVELS, var.cstring());
 }
@@ -177,7 +177,7 @@ END_CUSTOM_CVAR (msgmidcolor)
 // conscrlock 0 = All new lines bring scroll to the bottom.
 // conscrlock 1 = Only input commands bring scroll to the bottom.
 // conscrlock 2 = Nothing brings scroll to the bottom.
-CVAR (conscrlock, "0", CVAR_ARCHIVE)
+CVAR (conscrlock, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 static void maybedrawnow (void)
 {
@@ -1411,7 +1411,7 @@ END_COMMAND (echo)
 
 static brokenlines_t *MidMsg = NULL;
 static int MidTicker = 0, MidLines;
-CVAR (con_midtime, "3", CVAR_ARCHIVE)
+CVAR (con_midtime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 void C_MidPrint (const char *msg)
 {

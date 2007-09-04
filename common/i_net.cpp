@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -87,7 +87,7 @@ int         msg_badread;
 buf_t compressed, decompressed;
 lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
 
-CVAR(port,		"0", CVAR_NOSET)
+CVAR(port,		"0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
 //
 // UDPsocket
@@ -130,7 +130,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 			return;
 		}
 	}while (v == SOCKET_ERROR);
-	
+
 	char tmp[32] = "";
 	sprintf(tmp, "%d", next - 1);
 	port.ForceSet(tmp);
@@ -280,9 +280,9 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
     struct sockaddr_in    addr;
 
     NetadrToSockadr (&to, &addr);
-		
+
 	ret = sendto (net_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
-	
+
 	buf.clear();
 
     if (ret == -1)
@@ -360,7 +360,7 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 void MSG_WriteMarker (buf_t *b, svc_t c)
 {
     byte    *buf;
-	
+
     buf = SZ_GetSpace (b, 1);
     buf[0] = c;
 }
@@ -374,7 +374,7 @@ void MSG_WriteMarker (buf_t *b, svc_t c)
 void MSG_WriteMarker (buf_t *b, clc_t c)
 {
     byte    *buf;
-	
+
     buf = SZ_GetSpace (b, 1);
     buf[0] = c;
 }
@@ -496,14 +496,14 @@ bool MSG_DecompressMinilzo ()
 {
 	// decompress back onto the receive buffer
 	size_t left = MSG_BytesLeft();
-	
+
 	if(decompressed.maxsize() < net_message.maxsize())
 		decompressed.resize(net_message.maxsize());
-	
+
 	lzo_uint newlen = net_message.maxsize();
-	
+
 	unsigned int r = lzo1x_decompress_safe (net_message.ptr() + msg_readcount, left, decompressed.data, &newlen, NULL);
-	
+
 	if(r != LZO_E_OK)
 	{
 		msg_badread = false;
@@ -513,11 +513,11 @@ bool MSG_DecompressMinilzo ()
 	}
 
 	memcpy(net_message.ptr(), decompressed.data, newlen);
-	
+
 	msg_badread = false;
 	msg_readcount = 0;
 	net_message.cursize = newlen;
-	
+
 	return true;
 }
 
@@ -534,13 +534,13 @@ bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
 
 	if(compressed.maxsize() < total_len)
 		compressed.resize(total_len);
-	
+
 	int r = lzo1x_1_compress (buf.ptr() + start_offset,
 							  buf.size() - start_offset,
 							  compressed.ptr() + start_offset + write_gap,
 							  &outlen,
 							  wrkmem);
-							  
+
 	// worth the effort?
 	if(r != LZO_E_OK || outlen >= (buf.size() - start_offset - write_gap))
 		return false;
@@ -560,23 +560,23 @@ bool MSG_DecompressAdaptive (huffman &huff)
 {
 	// decompress back onto the receive buffer
 	size_t left = MSG_BytesLeft();
-	
+
 	if(decompressed.maxsize() < net_message.maxsize())
 		decompressed.resize(net_message.maxsize());
-	
+
 	size_t newlen = net_message.maxsize();
-	
+
 	bool r = huff.decompress (net_message.ptr() + msg_readcount, left, decompressed.ptr(), newlen);
-	
+
 	if(!r)
 		return false;
 
 	memcpy(net_message.ptr(), decompressed.ptr(), newlen);
-	
+
 	msg_badread = false;
 	msg_readcount = 0;
 	net_message.cursize = newlen;
-	
+
 	return true;
 }
 
@@ -590,12 +590,12 @@ bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_
 
 	if(compressed.maxsize() < total_len)
 		compressed.resize(total_len);
-	
+
 	bool r = huff.compress (buf.ptr() + start_offset,
 							  buf.size() - start_offset,
 							  compressed.ptr() + start_offset + write_gap,
 							  outlen);
-	
+
 	// worth the effort?
 	if(!r || outlen >= (buf.size() - start_offset - write_gap))
 		return false;
@@ -701,12 +701,12 @@ bool NetWaitOrTimeout(size_t ms)
 
 	FD_ZERO(&fds);
 	FD_SET(net_socket, &fds);
-	
+
 	int ret = select(net_socket + 1, &fds, NULL, NULL, &timeout);
 
 	if(ret == 1)
 		return true;
-	
+
 	#ifdef WIN32
 		// handle SOCKET_ERROR
 		if(ret == SOCKET_ERROR)
@@ -716,7 +716,7 @@ bool NetWaitOrTimeout(size_t ms)
 		if(ret < 0)
 			Printf(PRINT_HIGH, "select returned %d: %d\n", ret, errno);
 	#endif
-		
+
 	return false;
 }
 
@@ -725,5 +725,5 @@ void I_SetPort(netadr_t &addr, int port)
    addr.port = htons(port);
 }
 
-VERSION_CONTROL (i_net_cpp, "$Id:$")
+VERSION_CONTROL (i_net_cpp, "$Id$")
 

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -55,7 +55,7 @@
 // Distance tp origin when sounds should be maxed out.
 // This should relate to movement clipping resolution
 // (see BLOCKMAP handling).
-// In the source code release: (160*0x10000).  Changed back to the 
+// In the source code release: (160*0x10000).  Changed back to the
 // Vanilla value of 200 (why was this changed?)
 #define S_CLOSE_DIST		(200*0x10000)
 
@@ -95,14 +95,14 @@ static channel_t *Channel;
 
 // Maximum volume of a sound effect.
 // Internal default is max out of 0-15.
-BEGIN_CUSTOM_CVAR (snd_sfxvolume, "0.5", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	S_SetSfxVolume (var);
 }
 END_CUSTOM_CVAR (snd_sfxvolume)
 
 // Maximum volume of Music.
-BEGIN_CUSTOM_CVAR (snd_musicvolume, "0.5", CVAR_ARCHIVE)
+BEGIN_CUSTOM_CVAR (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	I_SetMusicVolume (var);
 }
@@ -119,7 +119,7 @@ static struct mus_playing_t
 } mus_playing;
 
 // number of channels available
-CVAR (snd_channels, "8", CVAR_ARCHIVE)
+CVAR (snd_channels, "8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 size_t			numChannels;
 
 static int		nextcleanup;
@@ -152,7 +152,7 @@ void S_NoiseDebug (void)
 {
 	fixed_t ox, oy;
 	unsigned int i;
-	int y; 
+	int y;
 	int color;
 
 	y = 32 * CleanYfac;
@@ -251,7 +251,7 @@ void S_Init (float sfxVolume, float musicVolume)
 		Channel[i].priority = 0;
 		Channel[i].sfxinfo = 0;
 		Channel[i].handle = -1;
-		Channel[i].entchannel = 0;		
+		Channel[i].entchannel = 0;
 	}
 	I_SetChannels (numChannels);
 
@@ -314,7 +314,7 @@ int
 			break;
 		}
 	}
-		
+
 	// No open channels, cnum hasn't changed
 	if (cnum == -1)
 	{
@@ -325,7 +325,7 @@ int
 				cnum = i;
 				break;
 			}
-		
+
 		// Still no channels we can use, don't bother with that sound
 		if(cnum == -1)
 		{
@@ -341,7 +341,7 @@ int
     // channel is decided to be cnum.
 	Channel[cnum].sfxinfo = sfxinfo;
 	Channel[cnum].pt = (fixed_t *) origin;
-	
+
 	return cnum;
 }
 
@@ -376,10 +376,10 @@ int
 
     // From _GG1_ p.428. Appox. eucledian distance fast.
 	approx_dist = adx + ady - ((adx < ady ? adx : ady)>>1);
-    
+
 	if (level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
 		return 0;
-    
+
     // angle of source to listener
 	angle = R_PointToAngle2(listener->x,
 				listener->y,
@@ -409,15 +409,15 @@ int
 
 		*vol = 15+ ((snd_sfxvolume-15)
 				*((S_CLIPPING_DIST - approx_dist)>>FRACBITS)) / S_ATTENUATOR;
-	}		
+	}
 	else
 	{
 	// distance effect
 		*vol = (snd_sfxvolume
 				* ((S_CLIPPING_DIST - approx_dist)>>FRACBITS))
-	    / S_ATTENUATOR; 
+	    / S_ATTENUATOR;
 	}
-    
+
 	return (*vol > 0);
 }
 
@@ -437,20 +437,20 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	sfxinfo_t*	sfx;
 	int		cnum;
 	int handle;
-	
+
   	// check for bogus sound #
 	if (sfx_id < 1 || sfx_id > numsfx)
 	{
 		Printf(PRINT_HIGH,"Bad sfx #: %d\n", sfx_id);
                 return;
 	}
-  
+
 	// check volume +ve
 	if(volume <= 0)
 		return;
-	
+
 	sfx = &S_sfx[sfx_id];
-  
+
   	// check for bogus sound lump
 	if (sfx->lumpnum < 0 || sfx->lumpnum > (int)numlumps)
 	{
@@ -467,42 +467,42 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		x = pt[0];
 		y = pt[1];
 	}
-	
+
 // Remove some duplicate sounds (mainly for plasma)
 	 S_StopSoundID(sfx_id);
-		
+
 	if (sfx->link)
 		sfx = sfx->link;
-	
+
 	if (!sfx->data) {
 		I_LoadSound (sfx);
 		if (sfx->link)
 			sfx = sfx->link;
-	}	  
+	}
 
   // Check to see if it is audible,
   //  and if not, modify the params
 	if (pt)
 	{
-		
+
 		rc = S_AdjustSoundParams(consoleplayer().mo, pt, &volume, &sep, &pitch);
-	
+
 		if (consoleplayer().mo && x == consoleplayer().mo->x
 				  && y == consoleplayer().mo->y)
-		{	
+		{
 			sep = NORM_SEP;
 		}
-    
+
 		if (!rc)
 			return;
-	}	
+	}
 	else
 	{
 		sep = NORM_SEP;
   	}
- 
+
 	pitch = NORM_PITCH;
-	
+
 	if (sfx->lumpnum == sfx_empty)
 	{
 		basepriority = -1000;
@@ -533,21 +533,21 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			basepriority += 50;
 	}
 	priority = basepriority;
-	
+
   // hacks to vary the sfx pitches
 	if (sfx_id >= sfx_sawup && sfx_id <= sfx_sawhit)
-	{	
+	{
 		pitch += 8 - (M_Random()&15);
-    
+
 		if (pitch<0)
 			pitch = 0;
 		else if (pitch>255)
-			pitch = 255;	
+			pitch = 255;
 	}
 	else if (sfx_id != sfx_itemup && sfx_id != sfx_tink)
 	{
 		pitch += 16 - (M_Random()&31);
-    
+
 		if (pitch<0)
 			pitch = 0;
 		else if (pitch>255)
@@ -557,30 +557,30 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	// joek - hack for silent bfg
 	if(sfx_id == sfx_noway || sfx_id == sfx_oof)
 		S_StopSound (pt);
-		
+
 	S_StopSound (pt, channel);
-	
+
   // try to find a channel
 	cnum = S_getChannel(pt, sfx, priority);
-  
+
   // no channel found
 	if (cnum < 0)
 		return;
-	
+
 	handle = I_StartSound(sfx_id,
 			     (int)volume,
 			     sep,
 			     Channel[cnum].pitch,
 			     looping);
-        
+
   // Assigns the handle to one of the channels in the
   //  mix/output buffer.
 	Channel[cnum].handle = handle;
-		
+
   // increase the usefulness
 	if (sfx->usefulness++ < 0)
 		sfx->usefulness = 1;
-			
+
 	Channel[cnum].sound_id = sfx_id;
 	Channel[cnum].pt = pt;
 	Channel[cnum].sfxinfo = sfx;
@@ -740,21 +740,21 @@ void S_StopAllChannels (void)
 
 bool S_StopSoundID(int sound_id)
 {
-	int i; 
+	int i;
 	int duplicates = 0;
-	
+
 	for(i = 0; i < (int)numChannels; i++)
 	{
 		if(Channel[i].sound_id == sound_id)
 		{
 			duplicates++;
-			
+
 			// Limit reached so take this one out
 			if(duplicates > DUPLICATE_LIMIT)
 				S_StopChannel(i);
 		}
 	}
-	
+
 	// If we've taken any out, return 1
 	return duplicates>DUPLICATE_LIMIT;
 }
@@ -831,14 +831,14 @@ void S_UpdateSounds (void *listener_p)
 	int		pitch;
 	sfxinfo_t*	sfx;
 	channel_t*	c;
-    
+
 	AActor *listener = (AActor *)listener_p;
 
 
-    
+
     // Clean up unused data.
     // This is currently not done for 16bit (sounds cached static).
-    // DOS 8bit remains. 
+    // DOS 8bit remains.
     /*if (gametic > nextcleanup)
 	{
 	for (i=1 ; i<NUMSFX ; i++)
@@ -855,7 +855,7 @@ void S_UpdateSounds (void *listener_p)
 }
 	nextcleanup = gametic + 15;
 }*/
-	  
+
 	for (cnum=0 ; cnum < (int)numChannels ; cnum++)
 	{
 		c = &Channel[cnum];
@@ -874,7 +874,7 @@ void S_UpdateSounds (void *listener_p)
 				{
 					pitch = Channel[cnum].pitch;
 					volume += Channel[cnum].volume;
-					
+
 					if (volume <= 0)
 					{
 						S_StopChannel(cnum);
@@ -895,7 +895,7 @@ void S_UpdateSounds (void *listener_p)
 							&volume,
 							&sep,
 							&pitch);
-		    
+
 					if (!audible)
 					{
 						S_StopChannel(cnum);
@@ -1014,18 +1014,18 @@ void S_StopMusic (void)
 }
 
 static void S_StopChannel (unsigned int cnum)
-{	
+{
 	unsigned int i;
 	channel_t* c;
-			
+
 	if(cnum > numChannels - 1)
 	{
 		printf("Trying to stop invalid channel %d", cnum);
 		return;
 	}
-	
+
 	c = &Channel[cnum];
-	
+
 	if (c->sfxinfo && c->handle >= 0)
 	{
 		// stop the sound playing
@@ -1049,7 +1049,7 @@ static void S_StopChannel (unsigned int cnum)
 		c->sound_id = -1;
 		c->pt = NULL;
 		c->priority = 0;
-		c->basepriority = 0;		
+		c->basepriority = 0;
 	}
 }
 

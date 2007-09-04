@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -42,7 +42,7 @@ enum
 	wipe_NUMWIPES
 };
 
-CVAR (wipetype, "1", CVAR_ARCHIVE)
+CVAR (wipetype, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 static int CurrentWipeType;
 
 static short *wipe_scr_start;
@@ -82,15 +82,15 @@ void wipe_shittyColMajorXform (short *array)
 int wipe_initMelt (int ticks)
 {
 	int i, r;
-	
+
 	// copy start screen to main screen
 	screen->DrawBlock (0, 0, screen->width, screen->height, (byte *)wipe_scr_start);
-	
+
 	// makes this wipe faster (in theory)
 	// to have stuff in column-major format
 	wipe_shittyColMajorXform (wipe_scr_start);
 	wipe_shittyColMajorXform (wipe_scr_end);
-	
+
 	// setup initial column positions
 	// (y<0 => not ready to scroll yet)
 	y = new int[screen->width*sizeof(int)];
@@ -112,7 +112,7 @@ int wipe_doMelt (int ticks)
 	int 		j;
 	int 		dy;
 	int 		idx;
-	
+
 	short*		s;
 	short*		d;
 	BOOL	 	done = true;
@@ -126,7 +126,7 @@ int wipe_doMelt (int ticks)
 			if (y[i]<0)
 			{
 				y[i]++; done = false;
-			} 
+			}
 			else if (y[i] < screen->height)
 			{
 				dy = (y[i] < 16) ? y[i]+1 : 8;

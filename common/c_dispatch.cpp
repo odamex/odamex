@@ -241,9 +241,9 @@ void C_DoCommand (const char *cmd)
 				}
                 // [Russell] - Don't make the user feel inadequate, tell
                 // them its either enabled, disabled or its other value
-                else if (var->cstring()[0] == '1')
+                else if (var->cstring()[0] == '1' && !(var->m_Flags & CVAR_NOENABLEDISABLE))
                     Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-                else if (var->cstring()[0] == '0')
+                else if (var->cstring()[0] == '0' && !(var->m_Flags & CVAR_NOENABLEDISABLE))
                     Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
                 else
                     Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
