@@ -1154,7 +1154,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 			tmp = tmp.substr(slash + 1, tmp.length() - slash);
 
         // [Russell] - Generate a hash if it doesn't exist already
-        if (!needhashes[i].empty())
+        if (needhashes[i].empty())
             needhashes[i] = W_MD5(tmp);
 
 		string file = BaseFileSearch(tmp, ".wad", needhashes[i]);
