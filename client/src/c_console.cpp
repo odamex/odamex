@@ -582,6 +582,12 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		fflush (Logfile);
 	}
 
+	// denis - 0x07 is a system beep, which can DoS the console (lol)
+	int len = strlen(outline);
+	for(size_t i = 0; i < len; i++)
+		if(outline[i] == 0x07)
+			outline[i] = '.';
+
 	return PrintString (printlevel, outline);
 }
 
