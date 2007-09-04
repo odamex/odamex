@@ -252,10 +252,7 @@ $(WADFILE_TARGET) :
 # Checker
 check: test
 test: server
-	$(SERVER_TARGET) +quit&
-	sleep 1
-	$(CLIENT_TARGET) +connect localhost&
-	sleep 1
+	tests/all.sh
 
 # Installer
 install: $(CLIENT_TARGET) $(SERVER_TARGET)

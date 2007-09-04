@@ -431,7 +431,10 @@ int PrintString (int printlevel, const char *outline)
 	BOOL scroll;
 	
 	if(print_stdout)
+	{
 		printf("%s", outline);
+		fflush(stdout);
+	}
 
 	if (printlevel < (int)msglevel)
 		return 0;
