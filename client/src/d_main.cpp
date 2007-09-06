@@ -1394,7 +1394,10 @@ void D_DoomMain (void)
 		G_DoPlayDemo();
 
 		while(demoplayback)
+		{
 			G_Ticker();
+			gametic++;
+		}
 
 		AActor *mo = consoleplayer().mo;
 
