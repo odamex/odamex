@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -61,11 +61,18 @@ Mix_Music *registered_tracks[MUSIC_TRACKS];
 int current_track;
 static bool music_initialized = false;
 
+// [Nes] - For pausing the music during... pause.
+int curpause = 0;
+EXTERN_CVAR (snd_musicvolume)
+
 // [Russell] - A better name, since we support multiple formats now
 void I_SetMusicVolume (float volume)
 {
 	if(!music_initialized)
 		return;
+
+    if (curpause && volume != 0.0)
+        return;
 
 #ifdef OSX
 
@@ -78,7 +85,7 @@ void I_SetMusicVolume (float volume)
 #else
 
 	Mix_VolumeMusic((int)(volume * MIX_MAX_VOLUME));
-	
+
 #endif
 }
 
@@ -87,13 +94,13 @@ void I_InitMusic (void)
 	if(Args.CheckParm("-nomusic"))
 	{
 		Printf (PRINT_HIGH, "I_InitMusic: Music playback disabled\n");
-		return;    
+		return;
 	}
-	
+
 #ifdef OSX
-	
+
 	NewAUGraph(&graph);
-	
+
 	ComponentDescription d;
 
 	d.componentType = kAudioUnitType_MusicDevice;
@@ -102,14 +109,14 @@ void I_InitMusic (void)
 	d.componentFlags = 0;
 	d.componentFlagsMask = 0;
 	AUGraphNewNode(graph, &d, 0, NULL, &synth);
-   
+
 	d.componentType = kAudioUnitType_Output;
 	d.componentSubType = kAudioUnitSubType_DefaultOutput;
 	d.componentManufacturer = kAudioUnitManufacturer_Apple;
-	d.componentFlags = 0;        
-	d.componentFlagsMask = 0;   
+	d.componentFlags = 0;
+	d.componentFlagsMask = 0;
 	AUGraphNewNode(graph, &d, 0, NULL, &output);
-	
+
 	if(AUGraphConnectNodeInput(graph, synth, 0, output, 0) != noErr)
 	{
 		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
@@ -127,7 +134,7 @@ void I_InitMusic (void)
 		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
 		return;
 	}
-	
+
 	if(AUGraphGetNodeInfo(graph, output, NULL, NULL, NULL, &unit) != noErr)
 	{
 		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
@@ -139,15 +146,15 @@ void I_InitMusic (void)
 		Printf (PRINT_HIGH, "I_InitMusic: Music player creation failed using AudioToolbox\n");
 		return;
 	}
-	
+
 	Printf (PRINT_HIGH, "I_InitMusic: Music playback enabled using AudioToolbox\n");
-	
+
 #else
-	
+
 	Printf (PRINT_HIGH, "I_InitMusic: Music playback enabled\n");
-	
+
 #endif
-	
+
 	music_initialized = true;
 }
 
@@ -156,16 +163,16 @@ void STACK_ARGS I_ShutdownMusic(void)
 {
 	if(!music_initialized)
 		return;
-		
+
 #ifdef OSX
-	
-	DisposeMusicPlayer(player);	
+
+	DisposeMusicPlayer(player);
 	AUGraphClose(graph);
-	
+
 #else
-	
+
 	Mix_HaltMusic();
-	
+
 #endif
 
 	I_UnRegisterSong(0);
@@ -177,7 +184,7 @@ void I_PlaySong (int handle, int _looping)
 {
 	if(!music_initialized)
 		return;
-		
+
 	if(--handle < 0 || handle >= MUSIC_TRACKS)
 		return;
 
@@ -185,7 +192,7 @@ void I_PlaySong (int handle, int _looping)
 		return;
 
 #ifdef OSX
-	  
+
 	if(MusicSequenceSetAUGraph(sequence, graph) != noErr)
 	{
 		Printf (PRINT_HIGH, "I_PlaySong: MusicSequenceSetAUGraph failed\n");
@@ -197,7 +204,7 @@ void I_PlaySong (int handle, int _looping)
 		Printf (PRINT_HIGH, "I_PlaySong: MusicPlayerSetSequence failed\n");
 		return;
 	}
-	
+
 	if(MusicPlayerPreroll(player) != noErr)
 	{
 		Printf (PRINT_HIGH, "I_PlaySong: MusicPlayerPreroll failed\n");
@@ -210,7 +217,7 @@ void I_PlaySong (int handle, int _looping)
 		Printf (PRINT_HIGH, "I_PlaySong: MusicSequenceGetTrackCount failed\n");
 		return;
 	}
-		
+
 	for(UInt32 i = 0; i < outNumberOfTracks; i++)
 	{
 		MusicTrack track;
@@ -226,23 +233,23 @@ void I_PlaySong (int handle, int _looping)
 			MusicTimeStamp time;
 			long loops;
 		}LoopInfo;
-		
+
 		UInt32 inLength = sizeof(LoopInfo);
-				
+
 		if(MusicTrackGetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo, &inLength) != noErr)
 		{
 			Printf (PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
 			return;
 		}
-		
+
 		inLength = sizeof(LoopInfo.time);
-		
+
 		if(MusicTrackGetProperty(track, kSequenceTrackProperty_TrackLength, &LoopInfo.time, &inLength) != noErr)
 		{
 			Printf (PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
 			return;
 		}
-		
+
 		LoopInfo.loops = _looping ? 0 : 1;
 
 		if(MusicTrackSetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo, sizeof(LoopInfo)) != noErr)
@@ -251,7 +258,7 @@ void I_PlaySong (int handle, int _looping)
 			return;
 		}
 	}
-	
+
 	if(MusicPlayerStart(player) != noErr)
 	{
 		Printf (PRINT_HIGH, "I_PlaySong: MusicPlayerStart failed\n");
@@ -259,7 +266,7 @@ void I_PlaySong (int handle, int _looping)
 	}
 
 #else
-		
+
 	_looping = _looping ? -1 : 1;
 
 	if(Mix_PlayMusic(registered_tracks[handle], _looping) == -1)
@@ -268,9 +275,9 @@ void I_PlaySong (int handle, int _looping)
 		current_track = 0;
 		return;
 	}
-	
+
 #endif
-	
+
 	current_track = handle;
 }
 
@@ -278,6 +285,9 @@ void I_PauseSong (int handle)
 {
 	if(!music_initialized)
 		return;
+
+    curpause = 1;
+    I_SetMusicVolume (0.0);
 
 #ifndef OSX
 	Mix_PauseMusic();
@@ -288,7 +298,10 @@ void I_ResumeSong (int handle)
 {
 	if(!music_initialized)
 		return;
-	
+
+    curpause = 0;
+    I_SetMusicVolume (snd_musicvolume);
+
 #ifndef OSX
 	Mix_ResumeMusic();
 #endif
@@ -298,16 +311,16 @@ void I_StopSong (int handle)
 {
 	if(!music_initialized)
 		return;
-	
+
 #ifdef OSX
-	
+
 	MusicPlayerStop(player);
-	
+
 #else
-	
+
 	Mix_FadeOutMusic(100);
 	current_track = 0;
-	
+
 #endif
 }
 
@@ -315,7 +328,7 @@ void I_UnRegisterSong (int handle)
 {
 	if(!music_initialized)
 		return;
-	
+
 	if(handle < 0 || handle >= MUSIC_TRACKS)
 		return;
 
@@ -324,25 +337,25 @@ void I_UnRegisterSong (int handle)
 
 	if(handle == current_track)
 		I_StopSong(current_track);
-		
+
 #ifdef OSX
-	
+
 	DisposeMusicSequence(sequence);
-	
+
 #else
 
 	Mix_FreeMusic(registered_tracks[handle]);
-	
+
 #endif
 
 	registered_tracks[handle] = 0;
 }
 
 int I_RegisterSong (char *data, size_t musicLen)
-{	
+{
 	if(!music_initialized)
 		return 0;
-	
+
 	// input mus memory file and midi
 	MEMFILE *mus = mem_fopen_read(data, musicLen);
 	MEMFILE *midi = mem_fopen_write();
@@ -360,18 +373,18 @@ int I_RegisterSong (char *data, size_t musicLen)
         case 2:
 		{
 #ifdef OSX
-		
+
 		if (NewMusicSequence(&sequence) != noErr)
 			return 0;
-  
+
 		cfd = CFDataCreate(NULL, (const Uint8 *)mem_fgetbuf(midi), mem_fsize(midi));
-		
+
 		if(!cfd)
 		{
 			DisposeMusicSequence(sequence);
 			return 0;
 		}
-		
+
 		if (MusicSequenceLoadSMFData(sequence, (CFDataRef)cfd) != noErr)
 		{
 			DisposeMusicSequence(sequence);
@@ -380,29 +393,29 @@ int I_RegisterSong (char *data, size_t musicLen)
 		}
 
 		registered_tracks[0] = (Mix_Music*)1;
-		
+
 #else
-            
+
 		Mix_Music *music = 0;
-	
+
 		// older versions of sdl-mixer require a physical midi file to be read, 1.2.7+ can read from memory
 #ifndef TEMP_MIDI // SDL >= 1.2.7
 
             SDL_RWops *rw = SDL_RWFromMem(mem_fgetbuf(midi), mem_fsize(midi));
-            
+
             if (!rw)
             {
                 Printf(PRINT_HIGH, "SDL_RWFromMem: %s\n", Mix_GetError());
                 break;
             }
-            
+
             music = Mix_LoadMUS_RW(rw);
 
 			if(!music)
             {
                 Printf(PRINT_HIGH, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
                 SDL_FreeRW(rw);
-                
+
                 break;
             }
 
@@ -411,19 +424,19 @@ int I_RegisterSong (char *data, size_t musicLen)
 #else // SDL <= 1.2.6 - Create a file so it can load the midi
 
 			FILE *fp = fopen(TEMP_MIDI, "wb+");
-			
+
 			if(!fp)
 			{
 				Printf(PRINT_HIGH, "Could not open temporary music file %s, not playing track\n", TEMP_MIDI);
-				
+
 				break;
 			}
 
 			for(int i = 0; i < mem_fsize(midi); i++)
 				fputc(mem_fgetbuf(midi)[i], fp);
-				
+
 			fclose(fp);
-			
+
             music = Mix_LoadMUS(TEMP_MIDI);
 
             if(!music)
@@ -435,12 +448,12 @@ int I_RegisterSong (char *data, size_t musicLen)
 #endif
 
 		registered_tracks[0] = music;
-		
+
 #endif // OSX
             break;
 		} // case 2
     }
-        
+
 	mem_fclose(mus);
 	mem_fclose(midi);
 
@@ -453,15 +466,15 @@ bool I_QrySongPlaying (int handle)
 		return false;
 
 #ifdef OSX
-	
+
 	Boolean result;
 	MusicPlayerIsPlaying(player, &result);
 	return result;
-	
+
 #else
-	
+
 	return Mix_PlayingMusic() ? true : false;
-	
+
 #endif
 }
 
