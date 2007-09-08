@@ -733,6 +733,7 @@ void HU_TeamScores1 (player_t *player)
 	char frags[80];
 	char ping[80];
 	char points[80];
+	char deaths[80];
 
 	std::vector<player_t *> sortedplayers(players.size());
 	int x, y, maxwidth, margin;
@@ -822,14 +823,24 @@ void HU_TeamScores1 (player_t *player)
 	}
 
 	// Player scores header
-	screen->DrawTextClean	  (CR_GREY	,	10	* CleanXfac	,	18	* CleanYfac	,	"NAME"		);	if (ctfmode)
-	screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	18	* CleanYfac	,	"POINT"		);
-	screen->DrawTextClean	  (CR_GREY	,	171	* CleanXfac	,	18	* CleanYfac	,	"FRAG"		);
+	screen->DrawTextClean	  (CR_GREY	,	10	* CleanXfac	,	18	* CleanYfac	,	"NAME"		);
+	if (ctfmode) {
+        screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	18	* CleanYfac	,	"POINT"		);
+        screen->DrawTextClean	  (CR_GREY	,	171	* CleanXfac	,	18	* CleanYfac	,	"FRAG"		);
+	} else {
+        screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	18	* CleanYfac	,	"FRAG"		);
+        screen->DrawTextClean	  (CR_GREY	,	165	* CleanXfac	,	18	* CleanYfac	,	"DEATH"		);
+	}
 	screen->DrawTextClean	  (CR_GREY	,	210	* CleanXfac	,	18	* CleanYfac	,	"PING"		);
 
-	screen->DrawTextClean	  (CR_GREY	,	10	* CleanXfac	,	90	* CleanYfac	,	"NAME"		);	if (ctfmode)
-	screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	90	* CleanYfac	,	"POINT"		);
-	screen->DrawTextClean	  (CR_GREY	,	171	* CleanXfac	,	90	* CleanYfac	,	"FRAG"		);
+	screen->DrawTextClean	  (CR_GREY	,	10	* CleanXfac	,	90	* CleanYfac	,	"NAME"		);
+	if (ctfmode) {
+        screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	90	* CleanYfac	,	"POINT"		);
+        screen->DrawTextClean	  (CR_GREY	,	171	* CleanXfac	,	90	* CleanYfac	,	"FRAG"		);
+	} else {
+        screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	90	* CleanYfac	,	"FRAG"		);
+        screen->DrawTextClean	  (CR_GREY	,	165	* CleanXfac	,	90	* CleanYfac	,	"DEATH"		);
+	}
 	screen->DrawTextClean	  (CR_GREY	,	210	* CleanXfac	,	90	* CleanYfac	,	"PING"		);
 
 	for (i = 0; i < sortedplayers.size(); i++)
@@ -843,6 +854,8 @@ void HU_TeamScores1 (player_t *player)
 
 			if (ctfmode)
 			sprintf (points, "%d", sortedplayers[i]->points);
+			else
+			sprintf (deaths, "%d", sortedplayers[i]->deathcount);
 
             sprintf (ping, "%d", (sortedplayers[i]->ping));
 
@@ -871,9 +884,14 @@ void HU_TeamScores1 (player_t *player)
 
 				screen->Clear (1, bluey, (7 * CleanXfac), bluey + (7 * CleanYfac), blob);
 
-				screen->DrawTextClean (colorblue	,	10	* CleanXfac,			bluey			,			str				);	if (ctfmode)
-				screen->DrawTextClean (colorblue	,	128	* CleanXfac,			bluey			,			points			);
-				screen->DrawTextClean (colorblue	,	171	* CleanXfac,			bluey			,			frags			);
+				screen->DrawTextClean (colorblue	,	10	* CleanXfac,			bluey			,			str				);
+				if (ctfmode) {
+                    screen->DrawTextClean (colorblue	,	128	* CleanXfac,			bluey			,			points			);
+                    screen->DrawTextClean (colorblue	,	171	* CleanXfac,			bluey			,			frags			);
+				} else {
+                    screen->DrawTextClean (colorblue	,	128	* CleanXfac,			bluey			,			frags			);
+                    screen->DrawTextClean (colorblue	,	165	* CleanXfac,			bluey			,			deaths			);
+				}
 				screen->DrawTextClean (colorblue	,	210	* CleanXfac,			bluey			,			ping			);
 
 				bfrags = bfrags + sortedplayers[i]->fragcount;
@@ -906,9 +924,14 @@ void HU_TeamScores1 (player_t *player)
 
 				screen->Clear (1, redy, (7 * CleanXfac), redy + (7 * CleanYfac), blob);
 
-				screen->DrawTextClean (colorred 	,	10	* CleanXfac,			redy			,			str				);	if (ctfmode)
-				screen->DrawTextClean (colorred 	,	128	* CleanXfac,			redy			,			points			);
-				screen->DrawTextClean (colorred 	,	171	* CleanXfac,			redy			,			frags			);
+				screen->DrawTextClean (colorred 	,	10	* CleanXfac,			redy			,			str				);
+				if (ctfmode) {
+                    screen->DrawTextClean (colorred 	,	128	* CleanXfac,			redy			,			points			);
+                    screen->DrawTextClean (colorred 	,	171	* CleanXfac,			redy			,			frags			);
+				} else {
+                    screen->DrawTextClean (colorred 	,	128	* CleanXfac,			redy			,			frags			);
+                    screen->DrawTextClean (colorred 	,	165	* CleanXfac,			redy			,			deaths			);
+				}
 				screen->DrawTextClean (colorred 	,	210	* CleanXfac,			redy			,			ping			);
 
 				rfrags = rfrags + sortedplayers[i]->fragcount;
@@ -1092,9 +1115,13 @@ void HU_TeamScores2 (player_t *player)
 		screen->DrawText	  (CR_GREY	,blocx + 111	,rlocy + 16	,"TOTAL POINTS:"	);
 
 	screen->DrawText	  (CR_GREY	,blocx + 8	,blocy + 32	,"NAME"				);
-	if(ctfmode)
-	screen->DrawText	  (CR_GREY	,blocx + 126	,blocy + 32	,"POINT"			);
-	screen->DrawText	  (CR_GREY	,blocx + 169	,blocy + 32	,"FRAG"				);
+	if(ctfmode) {
+        screen->DrawText	  (CR_GREY	,blocx + 126	,blocy + 32	,"POINT"			);
+        screen->DrawText	  (CR_GREY	,blocx + 169	,blocy + 32	,"FRAG"				);
+	} else {
+        screen->DrawText	  (CR_GREY	,blocx + 126	,blocy + 32	,"FRAG"			);
+        screen->DrawText	  (CR_GREY	,blocx + 163	,blocy + 32	,"DEATH"				);
+	}
 	screen->DrawText	  (CR_GREY	,blocx + 208	,blocy + 32	,"PING"				);
 
 
@@ -1109,9 +1136,13 @@ void HU_TeamScores2 (player_t *player)
 		screen->DrawText	  (CR_GREY	,rlocx + 111	,rlocy + 16	,"TOTAL POINTS:"	);
 
 	screen->DrawText	  (CR_GREY	,rlocx + 8		,rlocy + 32	,"NAME"			);
-	if(ctfmode)
-	screen->DrawText	  (CR_GREY	,rlocx + 126	,rlocy + 32	,"POINT"			);
-	screen->DrawText	  (CR_GREY	,rlocx + 169	,rlocy + 32	,"FRAG"				);
+	if(ctfmode) {
+        screen->DrawText	  (CR_GREY	,rlocx + 126	,rlocy + 32	,"POINT"			);
+        screen->DrawText	  (CR_GREY	,rlocx + 169	,rlocy + 32	,"FRAG"				);
+	} else {
+        screen->DrawText	  (CR_GREY	,rlocx + 126	,rlocy + 32	,"FRAG"			);
+        screen->DrawText	  (CR_GREY	,rlocx + 163	,rlocy + 32	,"DEATH"				);
+	}
 	screen->DrawText	  (CR_GREY	,rlocx + 208	,rlocy + 32	,"PING"				);
 
 
@@ -1184,14 +1215,23 @@ void HU_TeamScores2 (player_t *player)
 				strcpy (str, sortedplayers[i]->userinfo.netname);
 				screen->DrawText	  (colorgrey	,blocx + 8		,blocy + bluey	,	str	);
 
-				// POINTS
-				if (ctfmode){
-				sprintf (str, "%d", sortedplayers[i]->points);
-				screen->DrawText	  (colorblue	,blocx + 126	,blocy + bluey	,	str	);}
+				if (ctfmode) {
+                    // POINTS
+                    sprintf (str, "%d", sortedplayers[i]->points);
+                    screen->DrawText	  (colorblue	,blocx + 126	,blocy + bluey	,	str	);
 
-				// FRAGS
-				sprintf (str, "%d", sortedplayers[i]->fragcount);
-				screen->DrawText	  (colorgrey	,blocx + 169	,blocy + bluey	,	str	);
+                    // FRAGS
+                    sprintf (str, "%d", sortedplayers[i]->fragcount);
+                    screen->DrawText	  (colorgrey	,blocx + 169	,blocy + bluey	,	str	);
+                } else {
+                    // FRAGS
+                    sprintf (str, "%d", sortedplayers[i]->fragcount);
+                    screen->DrawText	  (colorblue	,blocx + 126	,blocy + bluey	,	str	);
+
+                    // DEATHS
+                    sprintf (str, "%d", sortedplayers[i]->deathcount);
+                    screen->DrawText	  (colorgrey	,blocx + 163	,blocy + bluey	,	str	);
+                }
 
 				// PING
 				sprintf (str, "%d", (sortedplayers[i]->ping));
@@ -1237,14 +1277,23 @@ void HU_TeamScores2 (player_t *player)
 				strcpy (str, sortedplayers[i]->userinfo.netname);
 				screen->DrawText	  (colorgrey	,rlocx + 8		,rlocy + redy	,	str	);
 
-				// POINTS
-				if (ctfmode){
-				sprintf (str, "%d", sortedplayers[i]->points);
-				screen->DrawText	  (colorblue	,rlocx + 126	,rlocy + redy	,	str	);}
+				if (ctfmode) {
+                    // POINTS
+                    sprintf (str, "%d", sortedplayers[i]->points);
+                    screen->DrawText	  (colorblue	,rlocx + 126	,rlocy + redy	,	str	);
 
-				// FRAGS
-				sprintf (str, "%d", sortedplayers[i]->fragcount);
-				screen->DrawText	  (colorgrey	,rlocx + 169	,rlocy + redy	,	str	);
+                    // FRAGS
+                    sprintf (str, "%d", sortedplayers[i]->fragcount);
+                    screen->DrawText	  (colorgrey	,rlocx + 169	,rlocy + redy	,	str	);
+				} else {
+                    // FRAGS
+                    sprintf (str, "%d", sortedplayers[i]->fragcount);
+                    screen->DrawText	  (colorblue	,rlocx + 126	,rlocy + redy	,	str	);
+
+                    // DEATHS
+                    sprintf (str, "%d", sortedplayers[i]->deathcount);
+                    screen->DrawText	  (colorgrey	,rlocx + 163	,rlocy + redy	,	str	);
+				}
 
 				// PING
 				sprintf (str, "%d", (sortedplayers[i]->ping));
