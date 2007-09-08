@@ -429,7 +429,7 @@ int PrintString (int printlevel, const char *outline)
 	int newxp;
 	int mask;
 	BOOL scroll;
-	
+
 	if(print_stdout)
 	{
 		printf("%s", outline);
@@ -540,53 +540,33 @@ extern BOOL gameisdead;
 
 int VPrintf (int printlevel, const char *format, va_list parms)
 {
-	char outline[8192], outlinelog[8192], *c;
+	char outline[8192], outlinelog[8192];
+	int len;
 
 	if (gameisdead)
 		return 0;
 
 	vsprintf (outline, format, parms);
 
+	// denis - 0x07 is a system beep, which can DoS the console (lol)
+	len = strlen(outline);
+	for(size_t i = 0; i < len; i++)
+		if(outline[i] == 0x07)
+			outline[i] = '.';
+
 	if (Logfile)
 	{
 	    strcpy(outlinelog, outline);
 
-        // Change all left horizontal rule to '='.
-        do
-	    {
-            if (strchr(outlinelog, '\35')) {
-                c = strchr(outlinelog, '\35');
-                *c = '=';
-            }
-	    } while (strchr(outlinelog, '\35'));
-
-        // Change all right horizontal rule to '='.
-	    do
-	    {
-            if (strchr(outlinelog, '\36')) {
-                c = strchr(outlinelog, '\36');
-                *c = '=';
-            }
-	    } while (strchr(outlinelog, '\36'));
-
-        // Change all center horizontal rule to '='.
-        do
-	    {
-            if (strchr(outlinelog, '\37')) {
-                c = strchr(outlinelog, '\37');
-                *c = '=';
-            }
-	    } while (strchr(outlinelog, '\37'));
+        // [Nes] - Horizontal line won't show up as is in the logfile.
+        for(size_t i = 0; i < len; i++)
+            if(outlinelog[i] == '\35' || outline[i] == '\36' ||
+               outlinelog[i] == '\37')
+                outlinelog[i] = '=';
 
 		fputs (outlinelog, Logfile);
 		fflush (Logfile);
 	}
-
-	// denis - 0x07 is a system beep, which can DoS the console (lol)
-	int len = strlen(outline);
-	for(size_t i = 0; i < len; i++)
-		if(outline[i] == 0x07)
-			outline[i] = '.';
 
 	return PrintString (printlevel, outline);
 }
