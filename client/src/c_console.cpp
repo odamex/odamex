@@ -541,7 +541,7 @@ extern BOOL gameisdead;
 int VPrintf (int printlevel, const char *format, va_list parms)
 {
 	char outline[8192], outlinelog[8192];
-	int len;
+	int len, i;
 
 	if (gameisdead)
 		return 0;
@@ -550,7 +550,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	len = strlen(outline);
-	for(size_t i = 0; i < len; i++)
+	for(i = 0; i < len; i++)
 		if(outline[i] == 0x07)
 			outline[i] = '.';
 
@@ -558,9 +558,9 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 	{
 	    strcpy(outlinelog, outline);
 
-        // [Nes] - Horizontal line won't show up as is in the logfile.
-        for(size_t i = 0; i < len; i++)
-            if(outlinelog[i] == '\35' || outline[i] == '\36' ||
+        // [Nes] - Horizontal line won't show up as-is in the logfile.
+        for(i = 0; i < len; i++)
+            if(outlinelog[i] == '\35' || outlinelog[i] == '\36' ||
                outlinelog[i] == '\37')
                 outlinelog[i] = '=';
 
