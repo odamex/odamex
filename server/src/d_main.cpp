@@ -784,7 +784,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames)
 
 	SV_SendReconnectSignal();
 
-	G_ExitLevel(0);
+	G_ExitLevel(0, 0);
 	DThinker::DestroyAllThinkers();
 
 	Z_Init();

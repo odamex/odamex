@@ -383,16 +383,24 @@ void G_InitNew (char *mapname)
 BOOL 			secretexit;
 static int		startpos;	// [RH] Support for multiple starts per level
 
-void G_ExitLevel (int position)
+void G_ExitLevel (int position, int drawscores)
 {
+    //if (multiplayer && drawscores && interscoredraw)
+    //    AddCommandString("displayscores");
+    // Never called.
+
 	secretexit = false;
 
 	gameaction = ga_completed;
 }
 
 // Here's for the german edition.
-void G_SecretExitLevel (int position)
+void G_SecretExitLevel (int position, int drawscores)
 {
+    //if (multiplayer && drawscores && interscoredraw)
+    //    AddCommandString("displayscores");
+    // Never called.
+
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gamemode == commercial)
 		 && (W_CheckNumForName("map31")<0))

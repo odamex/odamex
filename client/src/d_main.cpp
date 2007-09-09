@@ -1127,7 +1127,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 		I_FatalError ("\nYou cannot switch WAD with the shareware version. Register!");
 
 	if(gamestate == GS_LEVEL)
-		G_ExitLevel(0);
+		G_ExitLevel(0, 0);
 
 	DThinker::DestroyAllThinkers();
 
@@ -1308,7 +1308,7 @@ void D_DoomMain (void)
 		I_FatalError ("You cannot -file with the shareware version. Register!");
 
 #ifdef WIN32
-	const char *sdlv = getenv("SDL_VIDEODRIVER");	
+	const char *sdlv = getenv("SDL_VIDEODRIVER");
 	Printf (PRINT_HIGH, "Using %s video driver.\n",sdlv);
 #endif
 

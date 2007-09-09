@@ -103,6 +103,8 @@ CVAR (sv_cheats,		"0", CVAR_SERVERINFO)
 
 CVAR (cl_freelook,		"0", CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
+
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
 void CL_GetServerSettings(void);
@@ -1828,7 +1830,7 @@ void CL_LoadMap(void)
 		return;
 
 	if(gamestate == GS_LEVEL)
-		G_ExitLevel (0);
+		G_ExitLevel (0, 0);
 
 	G_InitNew (mapname);
 
@@ -1851,8 +1853,11 @@ void CL_FullGame()
 
 void CL_ExitLevel()
 {
-	if(gamestate != GS_DOWNLOAD)
+	if(gamestate != GS_DOWNLOAD) {
+        if (multiplayer && interscoredraw)
+            AddCommandString("displayscores");
 		gameaction = ga_completed;
+	}
 }
 
 struct download_t

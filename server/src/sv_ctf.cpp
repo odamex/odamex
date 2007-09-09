@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -42,19 +42,19 @@ bool TEAMenabled[NUMFLAGS];
 bool ctfmode = false;
 
 // denis - this is a lot clearer than doubly nested switches
-static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] = 
+static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 {
 	{MT_BFLG, MT_BDWN, MT_BCAR},
 	{MT_RFLG, MT_RDWN, MT_RCAR},
 	{MT_GFLG, MT_GDWN, MT_GCAR}
 };
 
-char *team_names[NUMTEAMS] = 
+char *team_names[NUMTEAMS] =
 {
 	"BLUE", "RED", "GOLD"
 };
 
-static int ctf_points[NUM_CTF_SCORE] = 
+static int ctf_points[NUM_CTF_SCORE] =
 {
 	0, 1, 3, 5, 25, 0
 };
@@ -90,21 +90,21 @@ void SV_CTFEvent (flag_t f, flag_score_t event, player_t &who)
 {
 	if(event == SCORE_NONE)
 		return;
-	
+
 	if(validplayer(who))
 		who.points += ctf_points[event];
-		
+
 	for (size_t i = 0; i < players.size(); ++i)
 	{
 		if (!players[i].ingame())
 			continue;
-			
+
 		client_t *cl = &players[i].client;
-		
+
 		MSG_WriteMarker (&cl->reliablebuf, svc_ctfevent);
 		MSG_WriteByte (&cl->reliablebuf, event);
 		MSG_WriteByte (&cl->reliablebuf, f);
-		
+
 		if(validplayer(who))
 		{
 			MSG_WriteByte (&cl->reliablebuf, who.id);
@@ -115,7 +115,7 @@ void SV_CTFEvent (flag_t f, flag_score_t event, player_t &who)
 			MSG_WriteByte (&cl->reliablebuf, 0);
 			MSG_WriteLong (&cl->reliablebuf, 0);
 		}
-		
+
 		for(size_t j = 0; j < NUMFLAGS; j++)
 			MSG_WriteLong (&cl->reliablebuf, TEAMpoints[j]);
 	}
@@ -151,7 +151,7 @@ void SV_FlagGrab (player_t &player, flag_t f)
 	CTFdata[f].flagger = player.id;
 	CTFdata[f].state = flag_carried;
 	CTFdata[f].pickup_time = I_MSTime();
-		
+
 	SV_CTFEvent (f, SCORE_GRAB, player);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname, team_names[f]);
@@ -191,7 +191,7 @@ void SV_FlagReturn (player_t &player, flag_t f)
 static const char *CTF_TimeMSG(unsigned int milliseconds)
 {
 	static char msg[64];
-	
+
 	milliseconds /= 10;
 	int ms = milliseconds%100;
 	milliseconds -= ms;
@@ -202,7 +202,7 @@ static const char *CTF_TimeMSG(unsigned int milliseconds)
 	int mi = milliseconds;
 
 	sprintf((char *)&msg, "%d:%.2d.%.2d", mi, se, ms);
-	
+
 	return msg;
 }
 
@@ -215,7 +215,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 	TEAMpoints[player.userinfo.team]++;
 
 	SV_CTFEvent (f, SCORE_CAPTURE, player);
-	
+
 	int time_held = I_MSTime() - CTFdata[f].pickup_time;
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has captured the %s flag (held for %s)\n", player.userinfo.netname, team_names[f], CTF_TimeMSG(time_held));
@@ -229,7 +229,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 	if(TEAMpoints[player.userinfo.team] >= scorelimit)
 	{
 		SV_BroadcastPrintf (PRINT_HIGH, "%s team wins!\n", team_names[player.userinfo.team]);
-		G_ExitLevel (0);
+		G_ExitLevel (0, 1);
 	}
 }
 
@@ -248,7 +248,7 @@ bool SV_FlagTouch (player_t &player, flag_t f)
 				if(player.userinfo.team != (team_t)i)
 					if(player.flags[i])
 						SV_FlagScore(player, (flag_t)i);
-			
+
 			return false;
 		}
 		else
@@ -258,7 +258,7 @@ bool SV_FlagTouch (player_t &player, flag_t f)
 	{
 		SV_FlagGrab(player, f);
 	}
-	
+
 	// returning true should make P_TouchSpecial destroy the touched flag
 	return true;
 }
@@ -277,7 +277,7 @@ void SV_FlagDrop (player_t &player, flag_t f)
 
 	player.flags[f] = false; // take ex-carrier's flag
 	CTFdata[f].flagger = 0;
-	
+
 	CTF_SpawnDroppedFlag (f,
 				   player.mo->x,
 				   player.mo->y,
@@ -304,16 +304,16 @@ void CTF_RunTics (void)
 	for(size_t i = 0; i < NUMFLAGS; i++)
 	{
 		flagdata *data = &CTFdata[i];
-		
+
 		if(data->state != flag_dropped)
 			continue;
-			
+
 		if(data->timeout--)
 			continue;
-			
+
 		if(data->actor)
 			data->actor->Destroy();
-			
+
 		SV_CTFEvent ((flag_t)i, SCORE_RETURN, idplayer(0));
 
 		SV_BroadcastPrintf (PRINT_HIGH, "%s flag timed out\n", team_names[i]);
@@ -329,9 +329,9 @@ void CTF_RunTics (void)
 void CTF_SpawnFlag (flag_t f)
 {
 	flagdata *data = &CTFdata[f];
-	
+
 	AActor *flag = new AActor (data->x, data->y, data->z, flag_table[f][flag_home]);
-	
+
 	SV_SpawnMobj(flag);
 
 	data->actor = flag->ptr();
@@ -346,9 +346,9 @@ void CTF_SpawnFlag (flag_t f)
 void CTF_SpawnDroppedFlag (flag_t f, int x, int y, int z)
 {
 	flagdata *data = &CTFdata[f];
-	
+
 	AActor *flag = new AActor (x, y, z, flag_table[f][flag_dropped]);
-	
+
 	SV_SpawnMobj(flag);
 
 	data->actor = flag->ptr();
@@ -376,7 +376,7 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 {
 	if (!ctfmode)
 		return;
-	
+
 	flag_t f;
 
 	switch(mthing->type)
@@ -435,7 +435,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
 }
 
 // sounds played differ depending on your team, [0] for event on own team, [1] for others
-static char *flag_sound[NUM_CTF_SCORE][2] = 
+static char *flag_sound[NUM_CTF_SCORE][2] =
 {
 	{"", ""}, // NONE
 	{"", ""}, // KILL

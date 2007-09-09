@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -582,7 +582,7 @@ FUNC(LS_Exit_Normal)
 {
 	if (it && CheckIfExitIsGood (it))
 	{
-		G_ExitLevel (0);
+		G_ExitLevel (0, 1);
 		return true;
 	}
 	return false;
@@ -593,7 +593,7 @@ FUNC(LS_Exit_Secret)
 {
 	if (it && CheckIfExitIsGood (it))
 	{
-		G_SecretExitLevel (0);
+		G_SecretExitLevel (0, 1);
 		return true;
 	}
 	return false;
@@ -607,7 +607,7 @@ FUNC(LS_Teleport_NewMap)
 	if (it && (info && CheckIfExitIsGood (it)))
 	{
 		strncpy (level.nextmap, info->mapname, 8);
-		G_ExitLevel (ln->args[1]);
+		G_ExitLevel (ln->args[1], 1);
 		return true;
 	}
 
@@ -634,7 +634,7 @@ FUNC(LS_Teleport_EndGame)
 	if (it && CheckIfExitIsGood (it))
 	{
 		strncpy (level.nextmap, "EndGameC", 8);
-		G_ExitLevel (0);
+		G_ExitLevel (0, 1);
 		return true;
 	}
 	return false;
@@ -651,12 +651,12 @@ FUNC(LS_ThrustThing)
 // ThrustThing (angle, force)
 {
 	if(!it) return false;
-	
+
 	angle_t angle = BYTEANGLE(ln->args[0]) >> ANGLETOFINESHIFT;
 
 	it->momx = ln->args[1] * finecosine[angle];
 	it->momy = ln->args[1] * finesine[angle];
-	
+
 	return true;
 }
 
@@ -664,7 +664,7 @@ FUNC(LS_DamageThing)
 // DamageThing (damage)
 {
 	if(!it) return false;
-	
+
 	if (ln->args[0])
 		P_DamageMobj (it, NULL, NULL, ln->args[0], MOD_UNKNOWN);
 	else

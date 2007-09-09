@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,8 +18,8 @@
 // DESCRIPTION:
 //	Enemy thinking, AI.
 //	Action Pointer Functions
-//	that are associated with states/frames. 
-//	
+//	that are associated with states/frames.
+//
 //-----------------------------------------------------------------------------
 
 
@@ -98,34 +98,34 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 	int 		i;
 	line_t* 	check;
 	sector_t*	other;
-		
+
 	// wake up all monsters in this sector
 	if (sec->validcount == validcount
 		&& sec->soundtraversed <= soundblocks+1)
 	{
 		return; 		// already flooded
 	}
-	
+
 	sec->validcount = validcount;
 	sec->soundtraversed = soundblocks+1;
 	sec->soundtarget = soundtarget->ptr();
-		
+
 	for (i=0 ;i<sec->linecount ; i++)
 	{
 		check = sec->lines[i];
 		if (! (check->flags & ML_TWOSIDED) )
 			continue;
-		
+
 		P_LineOpening (check);
 
 		if (openrange <= 0)
 			continue;	// closed door
-		
+
 		if ( sides[ check->sidenum[0] ].sector == sec)
 			other = sides[ check->sidenum[1] ] .sector;
 		else
 			other = sides[ check->sidenum[0] ].sector;
-		
+
 		if (check->flags & ML_SOUNDBLOCK)
 		{
 			if (!soundblocks)
@@ -162,10 +162,10 @@ BOOL P_CheckMeleeRange (AActor *actor)
 {
 	AActor *pl;
 	fixed_t dist;
-		
+
 	if (!actor->target)
 		return false;
-				
+
 	pl = actor->target;
 	dist = P_AproxDistance (pl->x-actor->x, pl->y-actor->y);
 
@@ -181,11 +181,11 @@ BOOL P_CheckMeleeRange (AActor *actor)
 		return false;
 	if (pl->z + pl->height < actor->z)
 		return false;*/
-		
+
 	if (!P_CheckSight (actor, pl))
 		return false;
-														
-	return true;				
+
+	return true;
 }
 
 //
@@ -194,10 +194,10 @@ BOOL P_CheckMeleeRange (AActor *actor)
 BOOL P_CheckMissileRange (AActor *actor)
 {
 	fixed_t dist;
-		
+
 	if (!P_CheckSight (actor, actor->target))
 		return false;
-		
+
 	if (actor->flags & MF_JUSTHIT)
 	{
 		// the target just hit the enemy,
@@ -205,14 +205,14 @@ BOOL P_CheckMissileRange (AActor *actor)
 		actor->flags &= ~MF_JUSTHIT;
 		return true;
 	}
-		
+
 	if (actor->reactiontime)
 		return false;	// do not attack yet
-				
+
 	// OPTIMIZE: get this from a global checksight
 	dist = P_AproxDistance ( actor->x-actor->target->x,
 							 actor->y-actor->target->y) - 64*FRACUNIT;
-	
+
 	if (!actor->info->meleestate)
 		dist -= 128*FRACUNIT;	// no melee attack, so fire more
 
@@ -220,18 +220,18 @@ BOOL P_CheckMissileRange (AActor *actor)
 
 	if (actor->type == MT_VILE)
 	{
-		if (dist > 14*64)		
+		if (dist > 14*64)
 			return false;		// too far away
 	}
-		
+
 
 	if (actor->type == MT_UNDEAD)
 	{
-		if (dist < 196) 
+		if (dist < 196)
 			return false;		// close for fist attack
 		dist >>= 1;
 	}
-		
+
 
 	if (actor->type == MT_CYBORG
 		|| actor->type == MT_SPIDER
@@ -239,16 +239,16 @@ BOOL P_CheckMissileRange (AActor *actor)
 	{
 		dist >>= 1;
 	}
-	
+
 	if (dist > 200)
 		dist = 200;
-				
+
 	if (actor->type == MT_CYBORG && dist > 160)
 		dist = 160;
-				
+
 	if (P_Random (actor) < dist)
 		return false;
-				
+
 	return true;
 }
 
@@ -278,7 +278,7 @@ BOOL P_Move (AActor *actor)
 
 	if ((unsigned)actor->movedir >= 8)
 		I_Error ("Weird actor->movedir!");
-	
+
 	speed = actor->info->speed;
 
 #if 0	// [RH] I'm not so sure this is such a good idea
@@ -341,11 +341,11 @@ BOOL P_Move (AActor *actor)
 	{
 		actor->flags &= ~MF_INFLOAT;
 	}
-		
+
 	if (!(actor->flags & MF_FLOAT))
 		actor->z = actor->floorz;
 
-	return true; 
+	return true;
 }
 
 
@@ -361,7 +361,7 @@ BOOL P_Move (AActor *actor)
 // an OpenDoor call is made to start it opening.
 //
 BOOL P_TryWalk (AActor *actor)
-{		
+{
 	if (!P_Move (actor))
 	{
 		return false;
@@ -378,17 +378,17 @@ void P_NewChaseDir (AActor *actor)
 {
 	fixed_t 	deltax;
 	fixed_t 	deltay;
-	
+
 	dirtype_t	d[3];
-	
+
 	int			tdir;
 	dirtype_t	olddir;
-	
+
 	dirtype_t	turnaround;
 
 	if (!actor->target)
 		I_Error ("P_NewChaseDir: called with no target");
-				
+
 	olddir = (dirtype_t)actor->movedir;
 	turnaround = opposite[olddir];
 
@@ -429,7 +429,7 @@ void P_NewChaseDir (AActor *actor)
 		d[1] = DI_NODIR;
 	if (d[2] == turnaround)
 		d[2] = DI_NODIR;
-		
+
 	if (d[1] != DI_NODIR)
 	{
 		actor->movedir = d[1];
@@ -459,14 +459,14 @@ void P_NewChaseDir (AActor *actor)
 	}
 
 	// randomly determine direction of search
-	if (P_Random (actor) & 1)	
+	if (P_Random (actor) & 1)
 	{
 		for (tdir = DI_EAST; tdir <= DI_SOUTHEAST; tdir++)
 		{
 			if (tdir != turnaround)
 			{
 				actor->movedir = tdir;
-				
+
 				if ( P_TryWalk(actor) )
 					return;
 			}
@@ -479,7 +479,7 @@ void P_NewChaseDir (AActor *actor)
 			if (tdir != turnaround)
 			{
 				actor->movedir = tdir;
-				
+
 				if ( P_TryWalk(actor) )
 					return;
 			}
@@ -511,18 +511,18 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 	sector_t*		sector;
 	angle_t			an;
 	fixed_t			dist;
-	
+
 	sector = actor->subsector->sector;
-	
+
 	if(!sector)
 		return false;
-		
+
 	size_t s = players.size();
 	size_t realnum = 0;
 	for(size_t i = 0; i < s; i++)
 		if(players[i].ingame())
 			realnum++;
-	
+
 	if(!realnum)
 		return false;
 
@@ -535,7 +535,7 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 
 	c = 0;
 	stop = actor->lastlook > 0 ? actor->lastlook - 1 : num - 1;
-	
+
 	for( ; ; actor->lastlook = (actor->lastlook+1)%num)
 	{
 		if(actor->lastlook >= realnum)
@@ -555,7 +555,7 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 			}
 			return false;
 		}
-		
+
 		player = &players[actor->lastlook];
 
 		if (player->cheats & CF_NOTARGET)
@@ -574,15 +574,15 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 			sightcheckfailed[actor->lastlook] = true;
 			continue;			// out of sight
 		}
-						
+
 		if (!allaround)
 		{
 			an = R_PointToAngle2 (actor->x,
-								  actor->y, 
+								  actor->y,
 								  player->mo->x,
 								  player->mo->y)
 				- actor->angle;
-			
+
 			if (an > ANG90 && an < ANG270)
 			{
 				dist = P_AproxDistance (player->mo->x - actor->x,
@@ -592,7 +592,7 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 					continue;	// behind back
 			}
 		}
-		
+
 		// [RH] Need to be sure the reactiontime is 0 if the monster is
 		//		leaving its goal to go after a player.
 		if (actor->goal && actor->target == actor->goal)
@@ -614,7 +614,7 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 void A_KeenDie (AActor *actor)
 {
 	A_Fall (actor);
-	
+
 	// scan the remaining thinkers
 	// to see if all Keens are dead
 	AActor *other;
@@ -645,7 +645,7 @@ void A_KeenDie (AActor *actor)
 void A_Look (AActor *actor)
 {
 	AActor *targ;
-	
+
 	if(!actor->subsector)
 		return;
 
@@ -667,11 +667,11 @@ void A_Look (AActor *actor)
 		else
 			goto seeyou;
 	}
-		
-		
+
+
 	if (!P_LookForPlayers (actor, false))
 		return;
-				
+
 	// go into chase state
   seeyou:
 	// [RH] Don't start chasing after a goal if it isn't time yet.
@@ -709,7 +709,7 @@ void A_Look (AActor *actor)
 void A_Chase (AActor *actor)
 {
 	int delta;
-	
+
 	if (actor->reactiontime)
 		actor->reactiontime--;
 
@@ -723,13 +723,13 @@ void A_Chase (AActor *actor)
 		else
 			actor->threshold--;
 	}
-	
+
 	// turn towards movement direction if not there yet
 	if (actor->movedir < 8)
 	{
 		actor->angle &= (angle_t)(7<<29);
 		delta = actor->angle - (actor->movedir << 29);
-		
+
 		if (delta > 0)
 			actor->angle -= ANG90/2;
 		else if (delta < 0)
@@ -745,11 +745,11 @@ void A_Chase (AActor *actor)
 		// look for a new target
 		if (P_LookForPlayers (actor, true) && actor->target != actor->goal)
 			return; 	// got a new target
-		
+
 		P_SetMobjState (actor, actor->info->spawnstate); // denis - todo - this sometimes leads to a stack overflow due to infinite recursion: A_Chase->SetMobjState->A_Look->SetMobjState
 		return;
 	}
-	
+
 	// do not attack twice in a row
 	if (actor->flags & MF_JUSTATTACKED)
 	{
@@ -768,7 +768,7 @@ void A_Chase (AActor *actor)
 		P_SetMobjState (actor, actor->info->meleestate);
 		return;
 	}
-	
+
 	// check for missile attack
 	if (actor->info->missilestate)
 	{
@@ -777,10 +777,10 @@ void A_Chase (AActor *actor)
 		{
 			goto nomissile;
 		}
-		
+
 		if (!P_CheckMissileRange (actor))
 			goto nomissile;
-		
+
 		P_SetMobjState (actor, actor->info->missilestate);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
@@ -796,13 +796,13 @@ void A_Chase (AActor *actor)
 		if (P_LookForPlayers(actor,true))
 			return; 	// got a new target
 	}
-	
+
 	// chase towards player
 	if (--actor->movecount < 0 || !P_Move (actor))
 	{
 		P_NewChaseDir (actor);
 	}
-	
+
 	// make active sound
 	if (actor->info->activesound && P_Random (actor) < 3)
 	{
@@ -820,12 +820,12 @@ void A_FaceTarget (AActor *actor)
 		return;
 
 	actor->flags &= ~MF_AMBUSH;
-		
+
 	actor->angle = R_PointToAngle2 (actor->x,
 									actor->y,
 									actor->target->x,
 									actor->target->y);
-	
+
 	if (actor->target->flags & MF_SHADOW)
 		actor->angle += (P_Random(actor) - P_Random(actor))<<21;
 }
@@ -838,10 +838,10 @@ void A_PosAttack (AActor *actor)
 	int angle;
 	int damage;
 	int slope;
-		
+
 	if (!actor->target)
 		return;
-				
+
 	A_FaceTarget (actor);
 	angle = actor->angle;
 	slope = P_AimLineAttack (actor, angle, MISSILERANGE);
@@ -857,7 +857,7 @@ void A_SPosAttack (AActor *actor)
 	int i;
 	int bangle;
 	int slope;
-		
+
 	if (!actor->target)
 		return;
 
@@ -880,7 +880,7 @@ void A_CPosAttack (AActor *actor)
 	int bangle;
 	int damage;
 	int slope;
-		
+
 	if (!actor->target)
 		return;
 
@@ -895,7 +895,7 @@ void A_CPosAttack (AActor *actor)
 }
 
 void A_CPosRefire (AActor *actor)
-{		
+{
 	// keep firing unless target got out of sight
 	A_FaceTarget (actor);
 
@@ -912,7 +912,7 @@ void A_CPosRefire (AActor *actor)
 
 
 void A_SpidRefire (AActor *actor)
-{		
+{
 	// keep firing unless target got out of sight
 	A_FaceTarget (actor);
 
@@ -928,7 +928,7 @@ void A_SpidRefire (AActor *actor)
 }
 
 void A_BspiAttack (AActor *actor)
-{		
+{
 	if (!actor->target)
 		return;
 
@@ -947,7 +947,7 @@ void A_TroopAttack (AActor *actor)
 {
 	if (!actor->target)
 		return;
-				
+
 	A_FaceTarget (actor);
 	if (P_CheckMeleeRange (actor))
 	{
@@ -967,7 +967,7 @@ void A_SargAttack (AActor *actor)
 {
 	if (!actor->target)
 		return;
-				
+
 	A_FaceTarget (actor);
 	if (P_CheckMeleeRange (actor))
 	{
@@ -980,7 +980,7 @@ void A_HeadAttack (AActor *actor)
 {
 	if (!actor->target)
 		return;
-				
+
 	A_FaceTarget (actor);
 	if (P_CheckMeleeRange (actor))
 	{
@@ -988,7 +988,7 @@ void A_HeadAttack (AActor *actor)
 		P_DamageMobj (actor->target, actor, actor, damage, MOD_HIT);
 		return;
 	}
-	
+
 	// launch a missile
 	if(serverside)
 		P_SpawnMissile (actor, actor->target, MT_HEADSHOT);
@@ -998,9 +998,9 @@ void A_CyberAttack (AActor *actor)
 {
 	if (!actor->target)
 		return;
-				
+
 	A_FaceTarget (actor);
-	
+
 	if(serverside)
 	{
 		P_SpawnMissile (actor, actor->target, MT_ROCKET);
@@ -1012,7 +1012,7 @@ void A_BruisAttack (AActor *actor)
 {
 	if (!actor->target)
 		return;
-				
+
 	if (P_CheckMeleeRange (actor))
 	{
 		int damage = (P_Random (actor)%8+1)*10;
@@ -1020,7 +1020,7 @@ void A_BruisAttack (AActor *actor)
 		P_DamageMobj (actor->target, actor, actor, damage, MOD_HIT);
 		return;
 	}
-	
+
 	// launch a missile
 	if(serverside)
 		P_SpawnMissile (actor, actor->target, MT_BRUISERSHOT);
@@ -1031,10 +1031,10 @@ void A_BruisAttack (AActor *actor)
 // A_SkelMissile
 //
 void A_SkelMissile (AActor *actor)
-{		
+{
 	if (!actor->target)
 		return;
-				
+
 	A_FaceTarget (actor);
 
 	if(serverside)
@@ -1064,7 +1064,7 @@ void A_Tracer (AActor *actor)
 
 	if (level.time & 3)
 		return;
-	
+
 	// spawn a puff of smoke behind the rocket
 	if(clientside)
 	{
@@ -1079,14 +1079,14 @@ void A_Tracer (AActor *actor)
 		if (th->tics < 1)
 			th->tics = 1;
 	}
-	
+
 	// adjust direction
 	AActor *dest = actor->tracer;
-		
+
 	if (!dest || dest->health <= 0)
 		return;
-	
-	// change angle 	
+
+	// change angle
 	angle_t exact = R_PointToAngle2 (actor->x,
 							 actor->y,
 							 dest->x,
@@ -1107,15 +1107,15 @@ void A_Tracer (AActor *actor)
 				actor->angle = exact;
 		}
 	}
-		
+
 	exact = actor->angle>>ANGLETOFINESHIFT;
 	actor->momx = FixedMul (actor->info->speed, finecosine[exact]);
 	actor->momy = FixedMul (actor->info->speed, finesine[exact]);
-	
+
 	// change slope
 	fixed_t dist = P_AproxDistance (dest->x - actor->x,
 							dest->y - actor->y);
-	
+
 	dist = dist / actor->info->speed;
 
 	if (dist < 1)
@@ -1141,9 +1141,9 @@ void A_SkelFist (AActor *actor)
 {
 	if (!actor->target)
 		return;
-				
+
 	A_FaceTarget (actor);
-		
+
 	if (P_CheckMeleeRange (actor))
 	{
 		int damage = ((P_Random (actor)%10)+1)*6;
@@ -1167,22 +1167,22 @@ BOOL PIT_VileCheck (AActor *thing)
 {
 	int 	maxdist;
 	BOOL 	check;
-		
+
 	if (!(thing->flags & MF_CORPSE) )
 		return true;	// not a monster
-	
+
 	if (thing->tics != -1)
 		return true;	// not lying still yet
-	
+
 	if (thing->info->raisestate == S_NULL)
 		return true;	// monster doesn't have a raise state
-	
+
 	maxdist = thing->info->radius + mobjinfo[MT_VILE].radius;
-		
+
 	if ( abs(thing->x - viletryx) > maxdist
 		 || abs(thing->y - viletryy) > maxdist )
 		return true;			// not actually touching
-				
+
 	corpsehit = thing;
 	corpsehit->momx = corpsehit->momy = 0;
 	// [RH] Check against real height and radius
@@ -1216,18 +1216,18 @@ void A_VileChase (AActor *actor)
 		A_Chase (actor);
 		return;
 	}
-	
+
 	int 				xl;
 	int 				xh;
 	int 				yl;
 	int 				yh;
-	
+
 	int 				bx;
 	int 				by;
 
 	mobjinfo_t* 		info;
 	AActor::AActorPtr 	temp;
-		
+
 	if (actor->movedir != DI_NODIR)
 	{
 		// check for corpses to raise
@@ -1240,7 +1240,7 @@ void A_VileChase (AActor *actor)
 		xh = (viletryx - bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
 		yl = (viletryy - bmaporgy - MAXRADIUS*2)>>MAPBLOCKSHIFT;
 		yh = (viletryy - bmaporgy + MAXRADIUS*2)>>MAPBLOCKSHIFT;
-		
+
 		vileobj = actor;
 		for (bx=xl ; bx<=xh ; bx++)
 		{
@@ -1256,11 +1256,11 @@ void A_VileChase (AActor *actor)
 					actor->target = corpsehit->ptr();
 					A_FaceTarget (actor);
 					actor->target = temp;
-										
+
 					P_SetMobjState (actor, S_VILE_HEAL1);
 					S_Sound (corpsehit, CHAN_BODY, "vile/raise", 1, ATTN_IDLE);
 					info = corpsehit->info;
-					
+
 					P_SetMobjState (corpsehit,info->raisestate);
 
 					corpsehit->height = info->height;	// [RH] Use real mobj height
@@ -1311,11 +1311,11 @@ void A_Fire (AActor *actor)
 {
 	AActor* 	dest;
 	unsigned	an;
-				
+
 	dest = actor->tracer;
 	if (!dest)
 		return;
-				
+
 	// don't move it if the vile lost sight
 	if (!P_CheckSight (actor->target, dest) )
 		return;
@@ -1336,7 +1336,7 @@ void A_Fire (AActor *actor)
 void A_VileTarget (AActor *actor)
 {
 	AActor *fog;
-		
+
 	if (!actor->target)
 		return;
 
@@ -1345,7 +1345,7 @@ void A_VileTarget (AActor *actor)
 	fog = new AActor (actor->target->x,
 					  actor->target->x,
 					  actor->target->z, MT_FIRE);
-	
+
 	actor->tracer = fog->ptr();
 	fog->target = actor->ptr();
 	fog->tracer = actor->target;
@@ -1359,13 +1359,13 @@ void A_VileTarget (AActor *actor)
 // A_VileAttack
 //
 void A_VileAttack (AActor *actor)
-{		
+{
 	AActor *fire;
 	int an;
-		
+
 	if (!actor->target)
 		return;
-	
+
 	A_FaceTarget (actor);
 
 	if (!P_CheckSight (actor, actor->target) )
@@ -1374,17 +1374,17 @@ void A_VileAttack (AActor *actor)
 	S_Sound (actor, CHAN_WEAPON, "vile/stop", 1, ATTN_NORM);
 	P_DamageMobj (actor->target, actor, actor, 20, MOD_UNKNOWN);
 	actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
-		
+
 	an = actor->angle >> ANGLETOFINESHIFT;
 
 	fire = actor->tracer;
 
 	if (!fire)
 		return;
-				
+
 	// move the fire between the vile and the player
 	fire->x = actor->target->x - FixedMul (24*FRACUNIT, finecosine[an]);
-	fire->y = actor->target->y - FixedMul (24*FRACUNIT, finesine[an]);	
+	fire->y = actor->target->y - FixedMul (24*FRACUNIT, finesine[an]);
 	P_RadiusAttack (fire, actor, 70, MOD_UNKNOWN);
 }
 
@@ -1394,7 +1394,7 @@ void A_VileAttack (AActor *actor)
 //
 // Mancubus attack,
 // firing three missiles (bruisers) in three different directions?
-// Doesn't look like it. 
+// Doesn't look like it.
 //
 #define FATSPREAD		(ANG90/8)
 
@@ -1453,7 +1453,7 @@ void A_FatAttack3 (AActor *actor)
 		return;
 
 	A_FaceTarget (actor);
-	
+
 	if(serverside)
 	{
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
@@ -1485,8 +1485,8 @@ void A_SkullAttack (AActor *actor)
 
 	if (!actor->target)
 		return;
-				
-	dest = actor->target;		
+
+	dest = actor->target;
 	actor->flags |= MF_SKULLFLY;
 
 	S_Sound (actor, CHAN_VOICE, actor->info->attacksound, 1, ATTN_NORM);
@@ -1496,7 +1496,7 @@ void A_SkullAttack (AActor *actor)
 	actor->momy = FixedMul (SKULLSPEED, finesine[an]);
 	dist = P_AproxDistance (dest->x - actor->x, dest->y - actor->y);
 	dist = dist / SKULLSPEED;
-	
+
 	if (dist < 1)
 		dist = 1;
 	actor->momz = (dest->z+(dest->height>>1) - actor->z) / dist;
@@ -1512,7 +1512,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	fixed_t 	x;
 	fixed_t 	y;
 	fixed_t 	z;
-	
+
 	AActor* 	other;
 	angle_t 	an;
 	int 		prestep;
@@ -1539,13 +1539,13 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 
 	// okay, there's room for another one
 	an = angle >> ANGLETOFINESHIFT;
-	
+
 	prestep = 4*FRACUNIT + 3*(actor->info->radius + mobjinfo[MT_SKULL].radius)/2;
-	
+
 	x = actor->x + FixedMul (prestep, finecosine[an]);
 	y = actor->y + FixedMul (prestep, finesine[an]);
 	z = actor->z + 8*FRACUNIT;
-				
+
 	// Check whether the Lost Soul is being fired through a 1-sided	// phares
 	// wall or an impassible line, or a "monsters can't cross" line.//   |
 	// If it is, then we don't allow the spawn.						//   V
@@ -1573,10 +1573,10 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
     if (!P_TryMove (other, other->x, other->y))
 	{
 		// kill it immediately
-		P_DamageMobj (other, actor, actor, 10000, MOD_UNKNOWN);		
+		P_DamageMobj (other, actor, actor, 10000, MOD_UNKNOWN);
 		return;
 	}
-				
+
 	other->target = actor->target;
 	A_SkullAttack (other);
 }
@@ -1585,7 +1585,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 //
 // A_PainAttack
 // Spawn a lost soul and launch it at the target
-// 
+//
 void A_PainAttack (AActor *actor)
 {
 	if (!actor->target)
@@ -1644,7 +1644,7 @@ void A_XScream (AActor *actor)
 void A_Pain (AActor *actor)
 {
 	if (actor->info->painsound)
-		S_Sound (actor, CHAN_VOICE, actor->info->painsound, 1, ATTN_NORM);	
+		S_Sound (actor, CHAN_VOICE, actor->info->painsound, 1, ATTN_NORM);
 }
 
 
@@ -1761,10 +1761,10 @@ void A_BossDeath (AActor *actor)
 	for (i = 0; i < players.size(); i++)
 		if (players[i].ingame() && players[i].health > 0)
 			break;
-	
+
 	if (i == players.size())
 		return; // no one left alive, so do not end game
-	
+
 	// scan the remaining thinkers to see if all bosses are dead
 	TThinkerIterator<AActor> iterator;
 	AActor *other;
@@ -1777,7 +1777,7 @@ void A_BossDeath (AActor *actor)
 			return;
 		}
 	}
-		
+
 	// victory!
 	if (level.flags & LEVEL_MAP07SPECIAL)
 	{
@@ -1786,7 +1786,7 @@ void A_BossDeath (AActor *actor)
 			EV_DoFloor (DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 			return;
 		}
-		
+
 		if (actor->type == MT_BABY)
 		{
 			EV_DoFloor (DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
@@ -1800,7 +1800,7 @@ void A_BossDeath (AActor *actor)
 			case LEVEL_SPECLOWERFLOOR:
 				EV_DoFloor (DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 				return;
-			
+
 			case LEVEL_SPECOPENDOOR:
 				EV_DoDoor (DDoor::doorOpen, NULL, NULL, 666, 8*TICRATE, 0, NoKey);
 				return;
@@ -1811,7 +1811,7 @@ void A_BossDeath (AActor *actor)
 	if (deathmatch && !allowexit)
 		return;
 
-	G_ExitLevel (0);
+	G_ExitLevel (0, 1);
 }
 
 
@@ -1890,7 +1890,7 @@ void A_BrainScream (AActor *mo)
 	int 		y;
 	int 		z;
 	AActor* 	th;
-		
+
 	for (x=mo->x - 196*FRACUNIT ; x< mo->x + 320*FRACUNIT ; x+= FRACUNIT*8)
 	{
 		y = mo->y - 320*FRACUNIT;
@@ -1904,7 +1904,7 @@ void A_BrainScream (AActor *mo)
 		if (th->tics < 1)
 			th->tics = 1;
 	}
-		
+
 	S_Sound (mo, CHAN_VOICE, "brain/death", 1, ATTN_SURROUND);
 }
 
@@ -1935,7 +1935,7 @@ void A_BrainDie (AActor *mo)
 	if (deathmatch && !allowexit)
 		return;
 
-	G_ExitLevel (0);
+	G_ExitLevel (0, 1);
 }
 
 void A_BrainSpit (AActor *mo)
@@ -1953,7 +1953,7 @@ void A_BrainSpit (AActor *mo)
 	brain.easy ^= 1;		// killough 3/26/98: use brain struct
 	if (skill <= sk_easy && (!brain.easy))
 		return;
-				
+
 	// shoot a cube at current target
 	targ = braintargets[brain.targeton++];	// killough 3/26/98:
 	brain.targeton %= numbraintargets;		// Use brain struct for targets
@@ -1976,7 +1976,7 @@ void A_BrainSpit (AActor *mo)
 void A_SpawnFly (AActor *mo);
 
 // travelling cube sound
-void A_SpawnSound (AActor *mo)	
+void A_SpawnSound (AActor *mo)
 {
 	S_Sound (mo, CHAN_BODY, "brain/cube", 1, ATTN_IDLE);
 	A_SpawnFly(mo);
@@ -1989,10 +1989,10 @@ void A_SpawnFly (AActor *mo)
 	AActor* 	targ;
 	int 		r;
 	mobjtype_t	type;
-		
+
 	if (--mo->reactiontime)
 		return; // still flying
-		
+
 	if(!serverside)
 		return;
 
@@ -2033,7 +2033,7 @@ void A_SpawnFly (AActor *mo)
 	newmobj = new AActor (targ->x, targ->y, targ->z, type);
 	if (P_LookForPlayers (newmobj, true))
 		P_SetMobjState (newmobj, newmobj->info->seestate);
-		
+
 	// telefrag anything in this spot
 	P_TeleportMove (newmobj, newmobj->x, newmobj->y, newmobj->z, true);
 
@@ -2054,7 +2054,7 @@ void A_PlayerScream (AActor *mo)
 		A_XScream (mo);
 		return;
 	}
-	
+
 	if (!(gameinfo.flags & GI_NOCRAZYDEATH) && (mo->health < -50))
 	{
 		// IF THE PLAYER DIES LESS THAN -50% WITHOUT GIBBING
@@ -2065,7 +2065,7 @@ void A_PlayerScream (AActor *mo)
 		sprintf (nametemp, "*death1");
 		sound = nametemp;
 	}
-	
+
 	S_Sound (mo, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
 

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -155,8 +155,8 @@ void G_ChangeMap (void);
 // but a warp test can start elsewhere
 void G_DeferedInitNew (char *mapname);
 
-void G_ExitLevel (int position);
-void G_SecretExitLevel (int position);
+void G_ExitLevel (int position, int drawscores);
+void G_SecretExitLevel (int position, int drawscores);
 
 void G_DoLoadLevel (int position);
 

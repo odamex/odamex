@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -64,7 +64,8 @@ CVAR (endmapscript, "", CVAR_ARCHIVE)	// script to run at end of each map (e.g. 
 CVAR (startmapscript, "", CVAR_ARCHIVE)	// script to run at start of each map (e.g. to override cvars)
 CVAR (curmap, "", CVAR_NOSET)			// tracks last played map
 CVAR (nextmap, "", CVAR_NULL)			// tracks next map to be played
-CVAR (loopepisode, "0", CVAR_ARCHIVE)	// NES - Determines whether Doom 1 episodes should carry over.
+CVAR (loopepisode, "0", CVAR_ARCHIVE)	// Nes - Determines whether Doom 1 episodes should carry over.
+CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
 
 
 EXTERN_CVAR(updatemins)
@@ -126,7 +127,7 @@ MapHandlers[] =
 	{ MITYPE_MAPNAME,	lioffset(nextmap), 0 },
 	{ MITYPE_MAPNAME,	lioffset(secretmap), 0 },
 	{ MITYPE_CLUSTER,	lioffset(cluster), 0 },
-	{ MITYPE_SKY,		lioffset(skypic), 0 },				//[ML] 5/11/06 - Remove sky scrolling 
+	{ MITYPE_SKY,		lioffset(skypic), 0 },				//[ML] 5/11/06 - Remove sky scrolling
 	{ MITYPE_COLOR,		lioffset(fadeto), 0 },
 	{ MITYPE_COLOR,		lioffset(outsidefog), 0 },
 	{ MITYPE_LUMPNAME,	lioffset(pname), 0 },
@@ -406,12 +407,12 @@ void G_ChangeMap (void)
 		char *next = level.nextmap;
 
 		// if deathmatch, stay on same level
-		if(deathmatch) 
+		if(deathmatch)
 			next = level.mapname;
 		else
 			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
 				next = level.secretmap;
-		
+
 		if (!strncmp (next, "EndGame", 7))
 		{
 			// NES - exiting a Doom 1 episode moves to the next episode, rather than always going back to E1M1
@@ -423,7 +424,7 @@ void G_ChangeMap (void)
 				else
 					next = CalcMapName(level.cluster+1, 1);
 		}
-		
+
 		G_DeferedInitNew(next);
 	}
 	else
@@ -441,7 +442,7 @@ void G_ChangeMap (void)
 		G_DeferedInitNew(MapListPointer->MapName);
 		MapListPointer = MapListPointer->Next;
 	}
-	
+
 	// run script at the end of each map
 	if(strlen(endmapscript.cstring()))
 		AddCommandString(endmapscript.cstring(), true);
@@ -478,7 +479,7 @@ void G_DoNewGame (void)
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
-	
+
 	// run script at the start of each map
 	if(strlen(startmapscript.cstring()))
 		AddCommandString(startmapscript.cstring(), true);
@@ -517,7 +518,7 @@ void G_InitNew (char *mapname)
 		for (i = 0; LevelInfos[i].mapname[0]; i++)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
-	
+
 	bool old_deathmatch = deathmatch ? true : false;
 	bool old_ctfmode = ctfmode ? true : false;
 
@@ -601,24 +602,30 @@ void G_InitNew (char *mapname)
 // G_DoCompleted
 //
 
-void G_ExitLevel (int position)
+void G_ExitLevel (int position, int drawscores)
 {
 	SV_ExitLevel();
+
+	if (drawscores && interscoredraw)
+        SV_DrawScores();
 
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
 	mapchange = TICRATE*10;  // wait 10 seconds
 
     secretexit = false;
-	
+
 	// denis - this will skip wi_stuff and allow some time for finale text
 	//G_WorldDone();
 }
 
 // Here's for the german edition.
-void G_SecretExitLevel (int position)
+void G_SecretExitLevel (int position, int drawscores)
 {
 	SV_ExitLevel();
+
+    if (drawscores && interscoredraw)
+        SV_DrawScores();
 
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
@@ -638,9 +645,9 @@ void G_SecretExitLevel (int position)
 void G_DoCompleted (void)
 {
 	size_t i;
-	
+
 	gameaction = ga_nothing;
-	
+
 	for(i = 0; i < players.size(); i++)
 		if(players[i].ingame())
 			G_PlayerFinishLevel(players[i]);

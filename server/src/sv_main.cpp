@@ -1536,6 +1536,196 @@ void SV_ExitLevel()
 	}
 }
 
+static bool STACK_ARGS compare_player_frags (const player_t *arg1, const player_t *arg2)
+{
+	return arg2->fragcount < arg1->fragcount;
+}
+
+static bool STACK_ARGS compare_player_kills (const player_t *arg1, const player_t *arg2)
+{
+	return arg2->killcount < arg1->killcount;
+}
+
+static bool STACK_ARGS compare_player_points (const player_t *arg1, const player_t *arg2)
+{
+	return arg2->points < arg1->points;
+}
+
+//
+// SV_DrawScores
+// Draws scoreboard to console. Used during level exit or a command.
+//
+void SV_DrawScores()
+{
+    char str[80], str2[80];
+    std::vector<player_t *> sortedplayers(players.size());
+    unsigned int i, j;
+
+    // Player list sorting
+	for (i = 0; i < sortedplayers.size(); i++)
+		sortedplayers[i] = &players[i];
+
+    if (ctfmode) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
+
+        Printf (PRINT_HIGH, "\n");
+        Printf_Bold("--------------------------------------");
+        Printf_Bold("           CAPTURE THE FLAG");
+
+        if (scorelimit)
+            sprintf (str, "Scorelimit: %-6d", (int)scorelimit);
+        else
+            sprintf (str, "Scorelimit: N/A    ");
+
+        if (timelimit)
+            sprintf (str2, "Timelimit: %-7d", (int)timelimit);
+        else
+            sprintf (str2, "Timelimit: N/A");
+
+        Printf_Bold("%s  %18s", str, str2);
+
+        for (j = 0; j < 2; j++) {
+            if (j == 0) {
+                Printf (PRINT_HIGH, "\n");
+                Printf_Bold("-----------------------------BLUE TEAM");
+            } else {
+                Printf (PRINT_HIGH, "\n");
+                Printf_Bold("------------------------------RED TEAM");
+            }
+            Printf_Bold("Name            Points Caps Frags Time");
+            Printf_Bold("--------------------------------------");
+
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->userinfo.team == j) {
+                    Printf(PRINT_HIGH, "%-15s %-6d N/A  %-5d  N/A",
+                        sortedplayers[i]->userinfo.netname,
+                        sortedplayers[i]->points,
+                        //sortedplayers[i]->captures,
+                        sortedplayers[i]->fragcount);
+                        //sortedplayers[i]->GameTime / 60);
+                }
+            }
+        }
+    } else if (teamplay) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+
+        Printf (PRINT_HIGH, "\n");
+        Printf_Bold("--------------------------------------");
+        Printf_Bold("           TEAM DEATHMATCH");
+
+        if (fraglimit)
+            sprintf (str, "Fraglimit: %-7d", (int)fraglimit);
+        else
+            sprintf (str, "Fraglimit: N/A    ");
+
+        if (timelimit)
+            sprintf (str2, "Timelimit: %-7d", (int)timelimit);
+        else
+            sprintf (str2, "Timelimit: N/A");
+
+        Printf_Bold("%s  %18s", str, str2);
+
+        for (j = 0; j < 2; j++) {
+            if (j == 0) {
+                Printf (PRINT_HIGH, "\n");
+                Printf_Bold("-----------------------------BLUE TEAM");
+            } else {
+                Printf (PRINT_HIGH, "\n");
+                Printf_Bold("------------------------------RED TEAM");
+            }
+            Printf_Bold("Name            Frags Deaths  K/D Time");
+            Printf_Bold("--------------------------------------");
+
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->userinfo.team == j) {
+                    if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
+                        sprintf (str, "0.0");
+                    else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
+                        sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
+                    else
+                        sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
+
+                    Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A\n",
+                        sortedplayers[i]->userinfo.netname,
+                        sortedplayers[i]->fragcount,
+                        sortedplayers[i]->deathcount,
+                        str);
+                        //sortedplayers[i]->GameTime / 60);
+                }
+            }
+        }
+    } else if (deathmatch) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+
+        Printf (PRINT_HIGH, "\n");
+        Printf_Bold("--------------------------------------");
+        Printf_Bold("              DEATHMATCH");
+
+        if (fraglimit)
+            sprintf (str, "Fraglimit: %-7d", (int)fraglimit);
+        else
+            sprintf (str, "Fraglimit: N/A    ");
+
+        if (timelimit)
+            sprintf (str2, "Timelimit: %-7d", (int)timelimit);
+        else
+            sprintf (str2, "Timelimit: N/A");
+
+        Printf_Bold("%s  %18s", str, str2);
+
+        Printf_Bold("Name            Frags Deaths  K/D Time");
+        Printf_Bold("--------------------------------------");
+
+        for (i = 0; i < sortedplayers.size(); i++) {
+            if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
+                sprintf (str, "0.0");
+            else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
+                sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
+            else
+                sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
+
+            Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A",
+                sortedplayers[i]->userinfo.netname,
+                sortedplayers[i]->fragcount,
+                sortedplayers[i]->deathcount,
+                str);
+                //sortedplayers[i]->GameTime / 60);
+        }
+    } else if (multiplayer) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
+
+        Printf (PRINT_HIGH, "\n");
+        Printf_Bold("--------------------------------------");
+        Printf_Bold("             COOPERATIVE");
+        Printf_Bold("Name            Kills Deaths  K/D Time");
+        Printf_Bold("--------------------------------------");
+
+        for (i = 0; i < sortedplayers.size(); i++) {
+            if (sortedplayers[i]->killcount <= 0) // Copied from HU_DMScores1.
+                sprintf (str, "0.0");
+            else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0)
+                sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount);
+            else
+                sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
+
+            Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A",
+                sortedplayers[i]->userinfo.netname,
+                sortedplayers[i]->killcount,
+                sortedplayers[i]->deathcount,
+                str);
+                //sortedplayers[i]->GameTime / 60);
+        }
+    }
+
+    Printf (PRINT_HIGH, "\n");
+}
+
+BEGIN_COMMAND (displayscores)
+{
+    SV_DrawScores();
+}
+END_COMMAND (displayscores)
+
 //
 // SV_BroadcastPrintf
 // Sends text to all active clients.
@@ -2351,7 +2541,7 @@ void WinCheck (void)
 				if(TEAMpoints[i] >= fraglimit)
 				{
 					SV_BroadcastPrintf (PRINT_HIGH, "Fraglimit hit. %s team wins!\n", team_names[i]);
-					G_ExitLevel (0);
+					G_ExitLevel (0, 1);
 				}
 			}
 		}
@@ -2362,7 +2552,7 @@ void WinCheck (void)
 			{
 				SV_BroadcastPrintf (PRINT_HIGH, "Fraglimit hit.  Game won by %s!\n", WinPlayer->userinfo.netname);
 
-				G_ExitLevel (0);
+				G_ExitLevel (0, 1);
 			}
 		}
 	}

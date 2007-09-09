@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -26,7 +26,7 @@
 //	*Scrollers/Conveyors
 //	*Friction
 //	*Wind/Current
-//	
+//
 //-----------------------------------------------------------------------------
 
 
@@ -897,7 +897,7 @@ P_CrossSpecialLine
   AActor*	thing )
 {
     line_t*	line = &lines[linenum];
-    
+
 	if(thing)
 	{
 		if (!(line->flags & ML_SPECIAL_CROSS))
@@ -917,10 +917,10 @@ P_CrossSpecialLine
 				case MT_BRUISERSHOT:
 					return;
 					break;
-					
+
 				default: break;
 			}
-		
+
 			if(!(line->flags & ML_SPECIAL_MONSTER))
 				return;
 		}
@@ -947,7 +947,7 @@ P_CrossSpecialLine
 			}
 		}
 	}
-	
+
 	if(LineSpecials[line->special] (line, thing))
 		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
 
@@ -967,14 +967,14 @@ P_ShootSpecialLine
 	{
 		if (!(line->flags & ML_SPECIAL_SHOOT))
 			return;
-			
+
 		if (thing->flags & MF_MISSILE)
 			return;
 
 		if (!thing->player && !(line->flags & ML_SPECIAL_MONSTER))
 			return;
 	}
-	
+
 	if(LineSpecials[line->special] (line, thing))
 	{
 		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
@@ -1011,7 +1011,7 @@ P_UseSpecialLine
 			// not for monsters?
 			if (!(line->flags & ML_SPECIAL_MONSTER))
 				return false;
-			
+
 			// never open secret doors
 			if (line->flags & ML_SECRET)
 				return false;
@@ -1029,7 +1029,7 @@ P_UseSpecialLine
 			OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
 		}
 	}
-	
+
     return true;
 }
 
@@ -1089,7 +1089,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			if(!deathmatch || allowexit)
 			{
 				if (gamestate == GS_LEVEL && player->health <= 10)
-					G_ExitLevel(0);
+					G_ExitLevel(0, 1);
 			}
 			break;
 

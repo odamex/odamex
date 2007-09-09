@@ -59,6 +59,8 @@ extern	DCanvas *screen;
 
 EXTERN_CVAR (con_scaletext)
 EXTERN_CVAR (fraglimit)
+EXTERN_CVAR (timelimit)
+EXTERN_CVAR (scorelimit)
 
 // Chat
 void HU_Init (void);
@@ -68,6 +70,7 @@ BOOL HU_Responder (event_t *ev);
 patch_t *hu_font[HU_FONTSIZE];
 
 void HU_DrawScores (player_t *plyr);
+void HU_ConsoleScores (player_t *plyr);
 
 // [Toke - Scores]
 void HU_DMScores1 (player_t *player);
@@ -1380,6 +1383,220 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 	odacanvas->Dim ();
 	odacanvas->Blit(0, 0, (xb - xa), (yb - ya), screen, xa, ya, (xb - xa), (yb - ya));
 }
+
+//
+// HU_ConsoleScores
+// Draws scoreboard to console.
+//
+void HU_ConsoleScores (player_t *player)
+{
+    char str[80];
+    std::vector<player_t *> sortedplayers(players.size());
+    unsigned int i, j;
+
+    C_ToggleConsole(); // One of these at each end prevents the following from
+                       // drawing on the screen itself.
+
+    // Player list sorting
+	for (i = 0; i < sortedplayers.size(); i++)
+		sortedplayers[i] = &players[i];
+
+    if (ctfmode) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
+
+        Printf_Bold("\n--------------------------------------\n");
+        Printf_Bold("           CAPTURE THE FLAG\n");
+
+        if (scorelimit)
+            sprintf (str, "Scorelimit: %-6d", (int)scorelimit);
+        else
+            sprintf (str, "Scorelimit: N/A   ");
+
+        Printf_Bold("%s  ", str);
+
+        if (timelimit)
+            sprintf (str, "Timelimit: %-7d", (int)timelimit);
+        else
+            sprintf (str, "Timelimit: N/A");
+
+        Printf_Bold("%18s\n", str);
+
+        for (j = 0; j < 2; j++) {
+            if (j == 0)
+                Printf_Bold("\n-----------------------------BLUE TEAM\n");
+            else
+                Printf_Bold("\n------------------------------RED TEAM\n");
+            Printf_Bold("Name            Points Caps Frags Time\n");
+            Printf_Bold("--------------------------------------\n");
+
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->userinfo.team == j) {
+                    if (sortedplayers[i] != player)
+                        Printf(PRINT_HIGH, "%-15s %-6d N/A  %-5d %4d\n",
+                            sortedplayers[i]->userinfo.netname,
+                            sortedplayers[i]->points,
+                            //sortedplayers[i]->captures,
+                            sortedplayers[i]->fragcount,
+                            sortedplayers[i]->GameTime / 60);
+
+                    else
+                        Printf_Bold("%-15s %-6d N/A  %-5d %4d\n",
+                            player->userinfo.netname,
+                            player->points,
+                            //player->captures,
+                            player->fragcount,
+                            player->GameTime / 60);
+                }
+            }
+        }
+    } else if (teamplaymode) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+
+        Printf_Bold("\n--------------------------------------\n");
+        Printf_Bold("           TEAM DEATHMATCH\n");
+
+        if (fraglimit)
+            sprintf (str, "Fraglimit: %-7d", (int)fraglimit);
+        else
+            sprintf (str, "Fraglimit: N/A    ");
+
+        Printf_Bold("%s  ", str);
+
+        if (timelimit)
+            sprintf (str, "Timelimit: %-7d", (int)timelimit);
+        else
+            sprintf (str, "Timelimit: N/A");
+
+        Printf_Bold("%18s\n", str);
+
+        for (j = 0; j < 2; j++) {
+            if (j == 0)
+                Printf_Bold("\n-----------------------------BLUE TEAM\n");
+            else
+                Printf_Bold("\n------------------------------RED TEAM\n");
+            Printf_Bold("Name            Frags Deaths  K/D Time\n");
+            Printf_Bold("--------------------------------------\n");
+
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->userinfo.team == j) {
+                    if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
+                        sprintf (str, "0.0");
+                    else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
+                        sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
+                    else
+                        sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
+
+                    if (sortedplayers[i] != player)
+                        Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
+                            sortedplayers[i]->userinfo.netname,
+                            sortedplayers[i]->fragcount,
+                            sortedplayers[i]->deathcount,
+                            str,
+                            sortedplayers[i]->GameTime / 60);
+
+                    else
+                        Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
+                            player->userinfo.netname,
+                            player->fragcount,
+                            player->deathcount,
+                            str,
+                            player->GameTime / 60);
+                }
+            }
+        }
+    } else if (deathmatch) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+
+        Printf_Bold("\n--------------------------------------\n");
+        Printf_Bold("              DEATHMATCH\n");
+
+        if (fraglimit)
+            sprintf (str, "Fraglimit: %-7d", (int)fraglimit);
+        else
+            sprintf (str, "Fraglimit: N/A    ");
+
+        Printf_Bold("%s  ", str);
+
+        if (timelimit)
+            sprintf (str, "Timelimit: %-7d", (int)timelimit);
+        else
+            sprintf (str, "Timelimit: N/A");
+
+        Printf_Bold("%18s\n", str);
+
+        Printf_Bold("Name            Frags Deaths  K/D Time\n");
+        Printf_Bold("--------------------------------------\n");
+
+        for (i = 0; i < sortedplayers.size(); i++) {
+            if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
+                sprintf (str, "0.0");
+            else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
+                sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
+            else
+                sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
+
+			if (sortedplayers[i] != player)
+				Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
+                    sortedplayers[i]->userinfo.netname,
+                    sortedplayers[i]->fragcount,
+                    sortedplayers[i]->deathcount,
+                    str,
+                    sortedplayers[i]->GameTime / 60);
+
+			else
+				Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
+                    player->userinfo.netname,
+                    player->fragcount,
+                    player->deathcount,
+                    str,
+                    player->GameTime / 60);
+        }
+    } else if (multiplayer) {
+        std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
+
+        Printf_Bold("\n--------------------------------------\n");
+        Printf_Bold("             COOPERATIVE\n");
+        Printf_Bold("Name            Kills Deaths  K/D Time\n");
+        Printf_Bold("--------------------------------------\n");
+
+        for (i = 0; i < sortedplayers.size(); i++) {
+            if (sortedplayers[i]->killcount <= 0) // Copied from HU_DMScores1.
+                sprintf (str, "0.0");
+            else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0)
+                sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount);
+            else
+                sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
+
+			if (sortedplayers[i] != player)
+				Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
+                    sortedplayers[i]->userinfo.netname,
+                    sortedplayers[i]->killcount,
+                    sortedplayers[i]->deathcount,
+                    str,
+                    sortedplayers[i]->GameTime / 60);
+
+			else
+				Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
+                    player->userinfo.netname,
+                    player->killcount,
+                    player->deathcount,
+                    str,
+                    player->GameTime / 60);
+        }
+    } else {
+        Printf (PRINT_HIGH, "This command is only used for multiplayer games.");
+    }
+
+    Printf (PRINT_HIGH, "\n");
+
+    C_ToggleConsole();
+}
+
+BEGIN_COMMAND (displayscores)
+{
+    HU_ConsoleScores(&consoleplayer());
+}
+END_COMMAND (displayscores)
 
 VERSION_CONTROL (hu_stuff_cpp, "$Id$")
 

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -89,7 +89,7 @@ struct level_pwad_info_s
 	DWORD		flags;
 	int			cluster;
 	FLZOMemFile	*snapshot;
-	
+
 	// level_pwad_info_s				[ML] 5/11/06 Removed sky scrolling/sky2
 	DWORD		fadeto;
 	char		fadetable[8];
@@ -154,8 +154,8 @@ void G_InitNew (char *mapname);
 // but a warp test can start elsewhere
 void G_DeferedInitNew (char *mapname);
 
-void G_ExitLevel (int position);
-void G_SecretExitLevel (int position);
+void G_ExitLevel (int position, int drawscores);
+void G_SecretExitLevel (int position, int drawscores);
 
 void G_DoLoadLevel (int position);
 

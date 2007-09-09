@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -58,6 +58,7 @@ void SV_InitNetwork (void);
 void SV_SendDisconnectSignal();
 void SV_SendReconnectSignal();
 void SV_ExitLevel();
+void SV_DrawScores();
 
 bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 byte SV_PlayerHearingLoss(player_t &cl, fixed_t &x, fixed_t &y);

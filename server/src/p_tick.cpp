@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -41,14 +41,14 @@ EXTERN_CVAR (timelimit)
 
 //
 //	WinningTeam					[Toke - teams]
-//	
+//
 //	Determines the winning team, if there is one
 //
 team_t WinningTeam (void)
 {
 	int max = 0;
 	team_t team = TEAM_NONE;
-	
+
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
 		if(TEAMpoints[i] > max)
@@ -57,7 +57,7 @@ team_t WinningTeam (void)
 			team = (team_t)i;
 		}
 	}
-	
+
 	return team;
 }
 
@@ -67,21 +67,21 @@ void SV_LevelTimer()
 	if (level.time >= (int)(timelimit * TICRATE * 60))
 	{
 		if (timelimit)
-		{		
+		{
 			if (deathmatch && !teamplay && !ctfmode)
 				SV_BroadcastPrintf (PRINT_HIGH, "Timelimit hit.\n");
 
 			if (teamplay && !ctfmode)
 			{
 				team_t winteam = WinningTeam ();
-				
+
 				if(winteam == TEAM_NONE)
 					SV_BroadcastPrintf(PRINT_HIGH, "No team won this game!\n");
 				else
 					SV_BroadcastPrintf(PRINT_HIGH, "%s team wins with a total of %d %s!\n", team_names[winteam], TEAMpoints[winteam], ctfmode ? "captures" : "frags");
 			}
 
-			G_ExitLevel(0);
+			G_ExitLevel(0, 1);
 		}
 	}
 }
@@ -98,7 +98,7 @@ void P_Ticker (void)
 	for (int i=0; i<numsectors; i++)
 	{
 		sector_t* sec = &sectors[i];
-	
+
 		if ((sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DMover)))
 		|| (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DMover))))
 			sec->moveable = true;
@@ -110,7 +110,7 @@ void P_Ticker (void)
 			if(players[i].ingame())
 				P_PlayerThink (&players[i]);
 	}
-	
+
 	DThinker::RunThinkers ();
 
 	SV_LevelTimer();
