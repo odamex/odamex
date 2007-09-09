@@ -88,6 +88,7 @@ BEGIN_CUSTOM_CVAR (st_scale, "1", CVAR_ARCHIVE)		// Stretch status bar to full s
 	ST_Y = screen->height - ST_HEIGHT;
 
 	setsizeneeded = true;
+	st_firsttime = true;
 }
 END_CUSTOM_CVAR (st_scale)
 
@@ -528,7 +529,7 @@ bool ST_Responder (event_t *ev)
         {
             if (CheckCheatmode ())
                 return false;
-            
+
             // [Russell] - give full health
             plyr->mo->health = deh.StartHealth;
             plyr->health = deh.StartHealth;
@@ -539,7 +540,7 @@ bool ST_Responder (event_t *ev)
             // Net_WriteByte (CHT_IDDQD);
             eatkey = true;
         }
-        
+
         // 'fa' cheat for killer fucking arsenal
         else if (cht_CheckCheat(&cheat_ammonokey, (char)ev->data2))
         {
@@ -592,7 +593,7 @@ bool ST_Responder (event_t *ev)
         {
             if (CheckCheatmode ())
                 return false;
-                
+
             AddCommandString("noclip");
 
             // Net_WriteByte (DEM_GENERICCHEAT);
@@ -612,7 +613,7 @@ bool ST_Responder (event_t *ev)
                     P_GivePower( plyr, i);
                 else if (i!=pw_strength)
                     plyr->powers[i] = 1;
-                else    
+                else
                     plyr->powers[i] = 0;
                 // Net_WriteByte (DEM_GENERICCHEAT);
                 // Net_WriteByte ((byte)(CHT_BEHOLDV + i));
@@ -715,7 +716,7 @@ void ST_updateFaceWidget(void)
 	static int	lastattackdown = -1;
 	static int	priority = 0;
 	BOOL	 	doevilgrin;
-	
+
 	player_t *plyr = &consoleplayer();
 
 	if (priority < 10)
@@ -903,10 +904,10 @@ void ST_updateWidgets(void)
 	// tic++;
 	// }
 	w_ready.data = plyr->readyweapon;
-	
+
 	st_health = plyr->health;
 	st_armor = plyr->armorpoints;
-	
+
 	for(i = 0; i < 4; i++)
 	{
 		st_ammo[i] = plyr->ammo[i];
@@ -986,11 +987,11 @@ void ST_doPaletteStuff(void)
         if (bzc > cnt)
             cnt = bzc;
     }
-	
+
     if (cnt)
     {
         palette = (cnt+7)>>3;
-	
+
         if (palette >= NUMREDPALS)
             palette = NUMREDPALS-1;
 
@@ -1009,7 +1010,7 @@ void ST_doPaletteStuff(void)
 
     else if ( plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
         palette = RADIATIONPAL;
-    
+
     else
         palette = 0;
 
@@ -1017,7 +1018,7 @@ void ST_doPaletteStuff(void)
     {
         st_palette = palette;
         pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
-	   
+
         I_SetOldPalette (pal);
     }
 
@@ -1065,7 +1066,7 @@ void ST_drawWidgets(bool refresh)
 void ST_doRefresh(void)
 {
 	st_firsttime = false;
-	
+
 	// draw status bar background to off-screen buff
 	ST_refreshBackground();
 
@@ -1508,7 +1509,7 @@ void ST_Init (void)
 {
 	if(!stbarscreen)
 		stbarscreen = I_AllocateScreen (320, 32, 8);
-	
+
 	if(!stnumscreen)
 		stnumscreen = I_AllocateScreen (320, 32, 8);
 
