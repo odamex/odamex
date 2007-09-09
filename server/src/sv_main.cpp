@@ -1559,7 +1559,7 @@ void SV_DrawScores()
 {
     char str[80], str2[80];
     std::vector<player_t *> sortedplayers(players.size());
-    unsigned int i, j;
+    int i, j;
 
     // Player list sorting
 	for (i = 0; i < sortedplayers.size(); i++)
