@@ -128,6 +128,7 @@ float BaseBlendA;
 
 // Location of status bar face
 #define ST_FX					(143)
+#define ST_FY					(0)
 
 // Should be set to patch width
 //	for tall numbers later on
@@ -327,7 +328,7 @@ static bool			st_oldchat;
 static bool			st_cursoron;
 
 // !deathmatch
-static bool			st_notdeathmatch;
+//static bool			st_notdeathmatch;
 
 // !deathmatch && st_statusbaron
 static bool			st_armson;
@@ -374,7 +375,7 @@ static st_number_t		w_frags;
 static st_percent_t 	w_health;
 
 // arms background
-static st_binicon_t 	w_armsbg;
+//static st_binicon_t 	w_armsbg;
 
 
 // weapon ownership widgets
@@ -478,12 +479,15 @@ void ST_refreshBackground(void)
 
 		BG->DrawPatch (sbar, 0, 0);
 
+        if (!deathmatch)
+            BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
+
 		if (multiplayer)
 		{
 			// [RH] Always draw faceback with the player's color
 			//		using a translation rather than a different patch.
 			V_ColorMap = translationtables + (consoleplayer().id) * 256;
-			BG->DrawTranslatedPatch (faceback, ST_FX, 0);
+			BG->DrawTranslatedPatch (faceback, ST_FX, ST_FY);
 		}
 
 		BG->Blit (0, 0, 320, 32, stnumscreen, 0, 0, 320, 32);
@@ -937,7 +941,7 @@ void ST_updateWidgets(void)
 	ST_updateFaceWidget();
 
 	// used by the w_armsbg widget
-	st_notdeathmatch = !((int)deathmatch);
+	//st_notdeathmatch = !((int)deathmatch);
 
 	// used by w_arms[] widgets
 	st_armson = st_statusbaron && !((int)deathmatch);
@@ -1045,7 +1049,7 @@ void ST_drawWidgets(bool refresh)
 	STlib_updatePercent (&w_health, refresh);
 	STlib_updatePercent (&w_armor, refresh);
 
-	STlib_updateBinIcon(&w_armsbg, refresh);
+	//STlib_updateBinIcon(&w_armsbg, refresh);
 
 	for (i = 0; i < 6; i++)
 		STlib_updateMultIcon (&w_arms[i], refresh);
@@ -1347,12 +1351,14 @@ void ST_createWidgets(void)
 					  tallpercent);
 
 	// arms background
+	/*
 	STlib_initBinIcon(&w_armsbg,
 					  ST_ARMSBGX,
 					  ST_ARMSBGY,
 					  armsbg,
 					  &st_notdeathmatch,
 					  &st_statusbaron);
+					  */
 
 	// weapons owned
 	for(i=0;i<6;i++)

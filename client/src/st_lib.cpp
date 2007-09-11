@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -46,7 +46,7 @@
 
 
 // in AM_map.c
-extern BOOL			automapactive; 
+extern BOOL			automapactive;
 
 //
 // Hack display negative frags.
@@ -100,7 +100,7 @@ STlib_initNum
 }
 
 
-// 
+//
 // A fairly efficient way to draw a number
 //	based on differences from the old number.
 // Note: worth the trouble?
@@ -110,11 +110,11 @@ void STlib_drawNum (st_number_t *n, bool refresh)
 
 	int 		numdigits = n->width;
 	int 		num = *n->num;
-	
+
 	int 		w = n->p[0]->width();
 	int 		h = n->p[0]->height();
 	int 		x = n->x;
-	
+
 	int 		neg;
 
 	n->oldnum = *n->num;
@@ -127,7 +127,7 @@ void STlib_drawNum (st_number_t *n, bool refresh)
 			num = -9;
 		else if (numdigits == 3 && num < -99)
 			num = -99;
-		
+
 		num = -num;
 	}
 
@@ -196,7 +196,7 @@ STlib_updatePercent
 	if (refresh && *per->n.on) {
 		STlib_scalePatch (per->n.x, per->n.y, per->p);
 	}
-	
+
 	STlib_updateNum(&per->n, refresh);
 }
 
@@ -253,8 +253,9 @@ STlib_updateMultIcon
 	}
 }
 
-
-
+// [Nes] - w_armsbg was the only one that used the Binary Icon widget.
+// Now that armsbg has been made more efficient, we need no use for this.
+/*
 void
 STlib_initBinIcon
 ( st_binicon_t* 		b,
@@ -301,7 +302,7 @@ STlib_updateBinIcon
 	}
 
 }
-
+*/
 
 VERSION_CONTROL (st_lib_cpp, "$Id$")
 

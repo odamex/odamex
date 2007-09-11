@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -55,11 +55,11 @@ struct st_number_s
 	int 		y;
 
 	// max # of digits in number
-	int width;	  
+	int width;
 
 	// last number value
 	int 		oldnum;
-	
+
 	// pointer to current value
 	int*		num;
 
@@ -72,7 +72,7 @@ struct st_number_s
 
 	// user data
 	int data;
-	
+
 };
 typedef struct st_number_s st_number_t;
 
@@ -87,7 +87,7 @@ struct st_percent_s
 
 	// percent sign graphic
 	patch_t*			p;
-	
+
 };
 typedef struct st_percent_s st_percent_t;
 
@@ -111,10 +111,10 @@ struct st_multicon_s
 
 	// list of icons
 	patch_t**			p;
-	
+
 	// user data
 	int 				data;
-	
+
 };
 typedef struct st_multicon_s st_multicon_t;
 
@@ -136,12 +136,12 @@ struct st_binicon_s
 
 	// pointer to bool
 	//	stating whether to update icon
-	bool*			on;  
+	bool*			on;
 
 
 	patch_t*			p;		// icon
 	int 				data;	// user data
-	
+
 };
 typedef struct st_binicon_s st_binicon_t;
 
@@ -210,7 +210,7 @@ STlib_updateMultIcon
   bool				refresh );
 
 // Binary Icon widget routines
-
+/*
 void
 STlib_initBinIcon
 ( st_binicon_t* 		b,
@@ -224,6 +224,7 @@ void
 STlib_updateBinIcon
 ( st_binicon_t* 		bi,
   bool				refresh );
+*/
 
 #endif
 
