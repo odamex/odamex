@@ -86,20 +86,6 @@ void	CTF_MoveFlags	(void);
 // void	CTF_TossFlag	(void);                                 [ML] 04/4/06: Remove buggy flagtossing
 void	CTF_RunTics		(void);
 
-void	DRAW_Bhome		(void);
-void	DRAW_Rhome		(void);
-void	DRAW_Ghome		(void);
-
-void	DRAW_Bdropped	(void);
-void	DRAW_Rdropped	(void);
-void	DRAW_Gdropped	(void);
-
-void	DRAW_Btaken		(void);
-void	DRAW_Rtaken		(void);
-void	DRAW_Gtaken		(void);
-
-void	DRAW_FlagsBox	(void);
-
 // Client-side CTF Game Data
 extern flagdata CTFdata[NUMFLAGS];
 extern int TEAMpoints[NUMFLAGS];

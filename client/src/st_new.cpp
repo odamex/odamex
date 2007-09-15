@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -44,6 +44,14 @@ static int		widestnum, numheight;
 static const patch_t	*medi;
 static const patch_t	*armors[2];
 static const patch_t	*ammos[4];
+static const patch_t	*flagiconbcur;
+static const patch_t	*flagiconrcur;
+static const patch_t	*flagiconbhome;
+static const patch_t	*flagiconrhome;
+static const patch_t	*flagiconbtaken;
+static const patch_t	*flagiconrtaken;
+static const patch_t	*flagiconbdropped;
+static const patch_t	*flagiconrdropped;
 static const char		ammopatches[4][8] = { "CLIPA0", "SHELA0", "CELLA0", "ROCKA0" };
 static int		NameUp = -1;
 
@@ -53,6 +61,7 @@ extern patch_t	*faces[];
 extern int		st_faceindex;
 extern patch_t	*keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
+extern flagdata CTFdata[NUMFLAGS];
 
 CVAR (hud_scale, "0", CVAR_ARCHIVE)
 
@@ -61,6 +70,15 @@ void ST_unloadNew (void)
 	int i;
 
 	Z_ChangeTag (medi, PU_CACHE);
+
+	Z_ChangeTag (flagiconbcur, PU_CACHE);
+	Z_ChangeTag (flagiconrcur, PU_CACHE);
+	Z_ChangeTag (flagiconbhome, PU_CACHE);
+	Z_ChangeTag (flagiconrhome, PU_CACHE);
+	Z_ChangeTag (flagiconbtaken, PU_CACHE);
+	Z_ChangeTag (flagiconrtaken, PU_CACHE);
+	Z_ChangeTag (flagiconbdropped, PU_CACHE);
+	Z_ChangeTag (flagiconrdropped, PU_CACHE);
 
 	for (i = 0; i < 2; i++)
 		Z_ChangeTag (armors[i], PU_CACHE);
@@ -99,6 +117,15 @@ void ST_initNew (void)
 
 	if ((lump = W_CheckNumForName ("MEDIA0", ns_sprites)) != -1)
 		medi = W_CachePatch (lump, PU_STATIC);
+
+	flagiconbcur = W_CachePatch ("FLAGICOB", PU_STATIC);
+	flagiconrcur = W_CachePatch ("FLAGICOR", PU_STATIC);
+	flagiconbhome = W_CachePatch ("FLAGIC2B", PU_STATIC);
+	flagiconrhome = W_CachePatch ("FLAGIC2R", PU_STATIC);
+	flagiconbtaken = W_CachePatch ("FLAGIC3B", PU_STATIC);
+	flagiconrtaken = W_CachePatch ("FLAGIC3R", PU_STATIC);
+	flagiconbdropped = W_CachePatch ("FLAGIC4B", PU_STATIC);
+	flagiconrdropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
 
 	widestnum = widest;
 	numheight = tallnum[0]->height();
@@ -215,9 +242,72 @@ void ST_newDraw (void)
 						 plyr->ammo[ammo]);
 	}
 
+	// Draw top-right info. (Keys/Frags/Score)
     if (ctfmode)
     {
-		ST_DrawNumRight (screen->width - 2, 1, screen, TEAMpoints[plyr->userinfo.team]);
+
+    	const patch_t *flagbluepatch = flagiconbhome;
+    	const patch_t *flagredpatch = flagiconrhome;
+
+		switch(CTFdata[it_blueflag].state)
+		{
+			case flag_carried:
+				flagbluepatch = flagiconbtaken;
+				break;
+			case flag_dropped:
+				flagbluepatch = flagiconbdropped;
+				break;
+			default:
+				break;
+		}
+
+		switch(CTFdata[it_redflag].state)
+		{
+			case flag_carried:
+				flagredpatch = flagiconrtaken;
+				break;
+			case flag_dropped:
+				flagredpatch = flagiconrdropped;
+				break;
+			default:
+				break;
+		}
+
+    	// Draw score (in CTF)
+		if (hud_scale) {
+
+			if (plyr->userinfo.team == TEAM_BLUE)
+				screen->DrawPatchCleanNoMove (flagiconbcur,
+											  screen->width - 19 * CleanXfac,
+											  1 * CleanYfac);
+			else if (plyr->userinfo.team == TEAM_RED)
+				screen->DrawPatchCleanNoMove (flagiconrcur,
+											  screen->width - 19 * CleanXfac,
+											  19 * CleanYfac);
+
+			screen->DrawPatchCleanNoMove (flagbluepatch,
+										  screen->width - 18 * CleanXfac,
+										  2 * CleanYfac);
+			screen->DrawPatchCleanNoMove (flagredpatch,
+										  screen->width - 18 * CleanXfac,
+										  20 * CleanYfac);
+		} else {
+
+			if (plyr->userinfo.team == TEAM_BLUE)
+				screen->DrawPatch (flagiconbcur, screen->width - 19,
+								   1);
+			else if (plyr->userinfo.team == TEAM_RED)
+				screen->DrawPatch (flagiconrcur, screen->width - 19,
+								   19);
+
+			screen->DrawPatch (flagbluepatch, screen->width - 18,
+							   2);
+			screen->DrawPatch (flagredpatch, screen->width - 18,
+							   20);
+		}
+
+		ST_DrawNumRight (screen->width - 20 * xscale, 2 * yscale, screen, TEAMpoints[TEAM_BLUE]);
+		ST_DrawNumRight (screen->width - 20 * xscale, 20 * yscale, screen, TEAMpoints[TEAM_RED]);
     }
 	else if (deathmatch)
 	{

@@ -193,6 +193,10 @@ float BaseBlendA;
 #define ST_ARMSXSPACE			12
 #define ST_ARMSYSPACE			10
 
+// Flags pos.
+#define ST_FLAGSBGX				(106)
+#define ST_FLAGSBGY				(0)
+
 // Frags pos.
 #define ST_FRAGSX				(138)
 #define ST_FRAGSY				(3)
@@ -202,6 +206,14 @@ float BaseBlendA;
 #define ST_ARMORWIDTH			3
 #define ST_ARMORX				(221)
 #define ST_ARMORY				(3)
+
+// Flagbox positions.
+#define ST_FLGBOXX				(236)
+#define ST_FLGBOXY				(0)
+#define ST_FLGBOXBLUX			(239)
+#define ST_FLGBOXBLUY			(3)
+#define ST_FLGBOXREDX			(239)
+#define ST_FLGBOXREDY			(18)
 
 // Key icon positions.
 #define ST_KEY0WIDTH			8
@@ -336,6 +348,12 @@ static bool			st_armson;
 // !deathmatch
 static bool			st_fragson;
 
+// show flagbox blue indicator
+static bool			st_flagboxbluon;
+
+// show flagbox red indicator
+static bool			st_flagboxredon;
+
 // main bar left
 static patch_t* 		sbar;
 
@@ -362,6 +380,18 @@ static patch_t* 		faceback;
  // main bar right
 static patch_t* 		armsbg;
 
+// score/flags
+static patch_t* 		flagsbg;
+
+// flagbox
+static patch_t* 		flagbox;
+
+// flagbox blue indicator
+static patch_t* 		flagboxblu;
+
+// flagbox red indicator
+static patch_t* 		flagboxred;
+
 // weapon ownership patches
 static patch_t* 		arms[6][2];
 
@@ -373,10 +403,6 @@ static st_number_t		w_frags;
 
 // health widget
 static st_percent_t 	w_health;
-
-// arms background
-//static st_binicon_t 	w_armsbg;
-
 
 // weapon ownership widgets
 static st_multicon_t	w_arms[6];
@@ -395,6 +421,12 @@ static st_number_t		w_ammo[4];
 
 // max ammo widgets
 static st_number_t		w_maxammo[4];
+
+// flagbox blue indicator widget
+static st_binicon_t		w_flagboxblu;
+
+// flagbox red indicator widger
+static st_binicon_t		w_flagboxred;
 
 // number of frags so far in deathmatch
 static int		st_fragscount;
@@ -434,6 +466,9 @@ extern byte cheat_commercial_noclip_seq[7];
 extern byte cheat_powerup_seq[7][10];
 extern byte cheat_clev_seq[10];
 extern byte cheat_mypos_seq[8];
+
+// CTF...
+extern flagdata CTFdata[NUMFLAGS];
 
 // Now what?
 cheatseq_t		cheat_mus = { cheat_mus_seq, 0 };
@@ -479,8 +514,11 @@ void ST_refreshBackground(void)
 
 		BG->DrawPatch (sbar, 0, 0);
 
-        if (!deathmatch)
-            BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
+		if (ctfmode) {
+			BG->DrawPatch (flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
+			BG->DrawPatch (flagbox, ST_FLGBOXX, ST_FLGBOXY);
+		} else if (!deathmatch)
+			BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
 
 		if (multiplayer)
 		{
@@ -940,9 +978,6 @@ void ST_updateWidgets(void)
 	// refresh everything if this is him coming back to life
 	ST_updateFaceWidget();
 
-	// used by the w_armsbg widget
-	//st_notdeathmatch = !((int)deathmatch);
-
 	// used by w_arms[] widgets
 	st_armson = st_statusbaron && !((int)deathmatch);
 
@@ -954,6 +989,53 @@ void ST_updateWidgets(void)
 		st_fragscount = TEAMpoints[plyr->userinfo.team]; // denis - todo - scoring for ctf
 	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
+
+	if (ctfmode) {
+		switch(CTFdata[it_blueflag].state)
+		{
+			case flag_home:
+				st_flagboxbluon = true;
+				break;
+			case flag_carried:
+				st_flagboxbluon = false;
+				break;
+			case flag_dropped:
+				CTFdata[it_blueflag].sb_tick++;
+
+				if (CTFdata[it_blueflag].sb_tick == 10)
+					CTFdata[it_blueflag].sb_tick = 0;
+
+				if (CTFdata[it_blueflag].sb_tick < 8)
+					st_flagboxbluon = false;
+				else
+					st_flagboxbluon = true;
+				break;
+			default:
+				break;
+		}
+		switch(CTFdata[it_redflag].state)
+		{
+			case flag_home:
+				st_flagboxredon = true;
+				break;
+			case flag_carried:
+				st_flagboxredon = false;
+				break;
+			case flag_dropped:
+				CTFdata[it_redflag].sb_tick++;
+
+				if (CTFdata[it_redflag].sb_tick == 10)
+					CTFdata[it_redflag].sb_tick = 0;
+
+				if (CTFdata[it_redflag].sb_tick < 8)
+					st_flagboxredon = false;
+				else
+					st_flagboxredon = true;
+				break;
+			default:
+				break;
+		}
+	}
 
 	// get rid of chat window if up because of message
 	if (!--st_msgcounter)
@@ -1049,8 +1131,6 @@ void ST_drawWidgets(bool refresh)
 	STlib_updatePercent (&w_health, refresh);
 	STlib_updatePercent (&w_armor, refresh);
 
-	//STlib_updateBinIcon(&w_armsbg, refresh);
-
 	for (i = 0; i < 6; i++)
 		STlib_updateMultIcon (&w_arms[i], refresh);
 
@@ -1061,6 +1141,11 @@ void ST_drawWidgets(bool refresh)
 			STlib_updateMultIcon (&w_keyboxes[i], refresh);
 
 	STlib_updateNum (&w_frags, refresh);
+
+	if (ctfmode) {
+		STlib_updateBinIcon (&w_flagboxblu, refresh);
+		STlib_updateBinIcon (&w_flagboxred, refresh);
+	}
 
 	if (st_scale && st_statusbaron)
 		stnumscreen->Blit (0, 0, 320, 32,
@@ -1187,6 +1272,18 @@ void ST_loadGraphics(void)
 	// arms background
 	armsbg = W_CachePatch("STARMS", PU_STATIC);
 
+	// flags background
+	flagsbg = W_CachePatch("STFLAGS", PU_STATIC);
+
+	// flagbox
+	flagbox = W_CachePatch("STFLGBOX", PU_STATIC);
+
+	// blue flag indicator
+	flagboxblu = W_CachePatch("STFLGBXB", PU_STATIC);
+
+	// red flag indicator
+	flagboxred = W_CachePatch("STFLGBXR", PU_STATIC);
+
 	// arms ownership widgets
 	for (i=0;i<6;i++)
 	{
@@ -1267,6 +1364,14 @@ void ST_unloadGraphics (void)
 
 	// unload arms background
 	Z_ChangeTag(armsbg, PU_CACHE);
+
+	// unload flags background
+	Z_ChangeTag(flagsbg, PU_CACHE);
+
+	// unload flagbox
+	Z_ChangeTag(flagbox, PU_CACHE);
+	Z_ChangeTag(flagboxblu, PU_CACHE);
+	Z_ChangeTag(flagboxred, PU_CACHE);
 
 	// unload gray #'s
 	for (i=0;i<6;i++)
@@ -1350,16 +1455,6 @@ void ST_createWidgets(void)
 					  &st_statusbaron,
 					  tallpercent);
 
-	// arms background
-	/*
-	STlib_initBinIcon(&w_armsbg,
-					  ST_ARMSBGX,
-					  ST_ARMSBGY,
-					  armsbg,
-					  &st_notdeathmatch,
-					  &st_statusbaron);
-					  */
-
 	// weapons owned
 	for(i=0;i<6;i++)
 	{
@@ -1417,6 +1512,21 @@ void ST_createWidgets(void)
 					   keys,
 					   &keyboxes[2],
 					   &st_statusbaron);
+
+	// flagbox indicator
+	STlib_initBinIcon(&w_flagboxblu,
+					  ST_FLGBOXBLUX,
+					  ST_FLGBOXBLUY,
+					  flagboxblu,
+					  &st_flagboxbluon,
+					  &st_statusbaron);
+
+	STlib_initBinIcon(&w_flagboxred,
+					  ST_FLGBOXREDX,
+					  ST_FLGBOXREDY,
+					  flagboxred,
+					  &st_flagboxredon,
+					  &st_statusbaron);
 
 	// ammo count (all four kinds)
 	STlib_initNum(&w_ammo[0],

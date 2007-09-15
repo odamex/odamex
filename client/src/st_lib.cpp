@@ -253,9 +253,8 @@ STlib_updateMultIcon
 	}
 }
 
-// [Nes] - w_armsbg was the only one that used the Binary Icon widget.
-// Now that armsbg has been made more efficient, we need no use for this.
-/*
+
+
 void
 STlib_initBinIcon
 ( st_binicon_t* 		b,
@@ -302,7 +301,6 @@ STlib_updateBinIcon
 	}
 
 }
-*/
 
 VERSION_CONTROL (st_lib_cpp, "$Id$")
 
