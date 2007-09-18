@@ -798,6 +798,8 @@ void G_Ticker (void)
 	gamestate_t	oldgamestate;
 	size_t i;
 
+	DObject::BeginFrame ();
+
 	// Run client tics;
 	CL_RunTics ();
 
@@ -988,6 +990,8 @@ void G_Ticker (void)
 	default:
 		break;
 	}
+
+	DObject::EndFrame ();
 }
 
 

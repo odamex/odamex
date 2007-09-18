@@ -268,6 +268,8 @@ void G_Ticker (void)
 {
 	size_t i;
 
+	DObject::BeginFrame ();
+
 	SV_GameTics ();
 
 	// do player reborns if needed
@@ -363,6 +365,8 @@ void G_Ticker (void)
 	SV_ClearClientsBPS();
 
 	SV_CheckTimeouts();
+
+	DObject::EndFrame ();
 }
 
 

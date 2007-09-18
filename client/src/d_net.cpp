@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -118,8 +118,6 @@ void TryRunTics (void)
 	QWORD realtics = entertic - oldentertics;
 	oldentertics = entertic;
 	
-	DObject::BeginFrame ();
-	
 	NetUpdate ();  // check for new console commands
 
 	// run the realtics tics
@@ -133,10 +131,8 @@ void TryRunTics (void)
 		G_Ticker ();
 		gametic++;
 	}
-	
-	DObject::EndFrame ();
 }
 
 
-VERSION_CONTROL (d_net_cpp, "$Id:$")
+VERSION_CONTROL (d_net_cpp, "$Id$")
 

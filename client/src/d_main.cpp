@@ -1395,10 +1395,7 @@ void D_DoomMain (void)
 
 		while(demoplayback)
 		{
-			DObject::BeginFrame ();
 			G_Ticker();
-			DObject::EndFrame ();
-			
 			gametic++;
 		}
 

@@ -1559,7 +1559,7 @@ void SV_DrawScores()
 {
     char str[80], str2[80];
     std::vector<player_t *> sortedplayers(players.size());
-    int i, j;
+    size_t i, j;
 
     // Player list sorting
 	for (i = 0; i < sortedplayers.size(); i++)
@@ -2641,8 +2641,6 @@ void SV_RunTics (void)
 			AddCommandString (cmd.c_str());
 		}
 
-		DObject::BeginFrame ();
-
 		// run the newtime tics
 		while (newtics--)
 		{
@@ -2651,8 +2649,6 @@ void SV_RunTics (void)
 			SV_UpdateMaster();
 			gametic++;
 		}
-
-		DObject::EndFrame ();
 
 		gametime = nowtime;
 	}
