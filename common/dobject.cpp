@@ -157,6 +157,7 @@ void DObject::EndFrame ()
 		{
 			obj->ObjectFlags |= OF_Cleanup;
 			LingerDestroy.erase(LingerDestroy.begin() + i);
+			l--; i--;
 			delete obj;
 		}
 	}
