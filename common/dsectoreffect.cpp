@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -37,6 +37,10 @@ DSectorEffect::DSectorEffect ()
 
 DSectorEffect::~DSectorEffect ()
 {
+}
+
+void DSectorEffect::Destroy ()
+{
 	if (m_Sector)
 	{
 		if (m_Sector->floordata == this)
@@ -46,6 +50,8 @@ DSectorEffect::~DSectorEffect ()
 		if (m_Sector->lightingdata == this)
 			m_Sector->lightingdata = NULL;
 	}
+	
+	Super::Destroy();
 }
 
 DSectorEffect::DSectorEffect (sector_t *sector)
@@ -275,5 +281,5 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 	return ok;
 }
 
-VERSION_CONTROL (dsectoreffect_cpp, "$Id:$")
+VERSION_CONTROL (dsectoreffect_cpp, "$Id$")
 

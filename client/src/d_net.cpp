@@ -118,6 +118,8 @@ void TryRunTics (void)
 	QWORD realtics = entertic - oldentertics;
 	oldentertics = entertic;
 	
+	DObject::BeginFrame ();
+	
 	NetUpdate ();  // check for new console commands
 
 	// run the realtics tics
@@ -131,6 +133,8 @@ void TryRunTics (void)
 		G_Ticker ();
 		gametic++;
 	}
+	
+	DObject::EndFrame ();
 }
 
 

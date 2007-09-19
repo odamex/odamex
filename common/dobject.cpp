@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -66,11 +66,13 @@ TypeInfo DObject::_StaticType("DObject", NULL, sizeof(DObject));
 TArray<DObject *> DObject::Objects;
 TArray<size_t> DObject::FreeIndices;
 TArray<DObject *> DObject::ToDestroy;
+std::vector<DObject *> LingerDestroy;
 bool DObject::Inactive;
 
 DObject::DObject ()
 {
 	ObjectFlags = 0;
+	refCount = 0;
 	if (FreeIndices.Pop (Index))
 		Objects[Index] = this;
 	else
@@ -125,18 +127,37 @@ void DObject::BeginFrame ()
 
 void DObject::EndFrame ()
 {
+	DObject *obj;
+
 	if (ToDestroy.Size ())
 	{
 		//Printf (PRINT_HIGH, "Destroyed %d objects\n", ToDestroy.Size());
 
-		DObject *obj;
 		while (ToDestroy.Pop (obj))
 		{
 			if (obj)
 			{
-				obj->ObjectFlags |= OF_Cleanup;
-				delete obj;
+				if(!obj->refCount)
+				{
+					obj->ObjectFlags |= OF_Cleanup;
+					delete obj;
+				}
+				else
+					LingerDestroy.push_back(obj); // something is still finding this pointer useful
 			}
+		}
+	}
+	
+	size_t l = LingerDestroy.size();
+	
+	for(size_t i = 0; i < l; i++)
+	{
+		obj = LingerDestroy[i];
+		if(!obj->refCount)
+		{
+			obj->ObjectFlags |= OF_Cleanup;
+			LingerDestroy.erase(LingerDestroy.begin() + i);
+			delete obj;
 		}
 	}
 }
@@ -168,5 +189,5 @@ void STACK_ARGS DObject::StaticShutdown ()
 	DThinker::DestroyAllThinkers();
 }
 
-VERSION_CONTROL (dobject_cpp, "$Id:$")
+VERSION_CONTROL (dobject_cpp, "$Id$")
 

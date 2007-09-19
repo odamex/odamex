@@ -24,12 +24,12 @@
 //  To destroy an object, one cycled though all the others searching for its 
 //  pointer and resetting every copy to NULL. Then one did the cycling for 
 //  the players, then the sector sound origins, and so on; with hack upon 
-//  hack.  Ironically, zero dereferencing is what often crashed the 
+//  hack. Ironically, zero dereferencing is what often crashed the 
 //  program altogether.
 //  
 //  The idea behind szp is that all copies of one szp pointer can be made 
-//  to point to the same object in O(1) time. This means that having knowing 
-//  a single szp of an actor, you can set them all to NULL without iteration. 
+//  to point to the same object in O(1) time. This means that having a 
+//  single szp of an actor, you can set them all to NULL without iteration. 
 //  And, as a bonus, on every pointer access, a NULL check can throw a 
 //  specific exception. Naturally, you should always be careful with pointers.
 //

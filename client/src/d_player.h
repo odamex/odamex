@@ -166,7 +166,7 @@ public:
 	int			damagecount, bonuscount;
 
 	// Who did damage (NULL for floors/ceilings).
-	AActor::AActorPtr attacker;
+	AActor::AActorPtrCounted attacker;
 
     // So gun flashes light up areas.
 	int			extralight;

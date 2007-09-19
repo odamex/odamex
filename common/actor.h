@@ -215,6 +215,50 @@ class AActor : public DThinker
 	DECLARE_SERIAL (AActor, DThinker)
 	typedef szp<AActor> AActorPtr;
 	AActorPtr self;
+
+	class AActorPtrCounted
+	{
+		AActorPtr ptr;
+
+		public:
+		
+		AActorPtrCounted() {}
+		
+		AActorPtr &operator= (AActorPtr other)
+		{
+			if(ptr)
+				ptr->refCount--;
+			if(other)
+				other->refCount++;
+			ptr = other;
+			return ptr;
+		}
+		
+		~AActorPtrCounted()
+		{
+			if(ptr)
+				ptr->refCount--;
+		}
+		
+		operator AActorPtr()
+		{
+			return ptr;
+		}
+		operator AActor*()
+		{
+			return ptr;
+		}
+
+		AActor &operator *()
+		{
+			return *ptr;
+		}
+		AActor *operator ->()
+		{
+			return ptr;
+		}
+	};
+	
 public:
 	AActor ();
 	AActor (const AActor &other);

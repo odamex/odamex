@@ -59,7 +59,7 @@ class DThinker : public DObject
 
 public:
 	DThinker ();
-	void Destroy ();
+	virtual void Destroy ();
 	virtual ~DThinker ();
 	virtual void RunThink () {}
 
@@ -73,7 +73,7 @@ public:
 	static void DestroyAllThinkers ();
 	static void DestroyMostThinkers ();
 	static void SerializeAll (FArchive &arc, bool keepPlayers);
-
+	
 private:
 	DThinker *m_Next, *m_Prev;
 

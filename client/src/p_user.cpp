@@ -597,7 +597,7 @@ void player_s::Serialize (FArchive &arc)
 			<< killcount
 			<< damagecount
 			<< bonuscount
-			<< attacker
+			<< attacker->netid
 			<< extralight
 			<< fixedcolormap
 			<< respawn_time

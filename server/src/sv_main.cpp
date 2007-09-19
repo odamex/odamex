@@ -2640,6 +2640,8 @@ void SV_RunTics (void)
 		{
 			AddCommandString (cmd.c_str());
 		}
+		
+		DObject::BeginFrame ();
 
 		// run the newtime tics
 		while (newtics--)
@@ -2649,6 +2651,8 @@ void SV_RunTics (void)
 			SV_UpdateMaster();
 			gametic++;
 		}
+		
+		DObject::EndFrame ();
 
 		gametime = nowtime;
 	}
