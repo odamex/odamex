@@ -37,6 +37,8 @@ IMPLEMENT_SERIAL (DThinker, DObject)
 DThinker *DThinker::FirstThinker = NULL;
 DThinker *DThinker::LastThinker = NULL;
 
+std::vector<DThinker *> LingerDestroy;
+
 void DThinker::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -91,6 +93,7 @@ DThinker::DThinker ()
 	if (!FirstThinker)
 		FirstThinker = this;
 	LastThinker = this;
+	refCount = 0;
 }
 
 DThinker::~DThinker ()
@@ -108,7 +111,25 @@ void DThinker::Destroy ()
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
 	
-	Super::Destroy ();
+	if(refCount)
+	{
+		LingerDestroy.push_back(this); // something is still finding this pointer useful
+	}
+	else
+		Super::Destroy ();
+
+	size_t l = LingerDestroy.size();	
+	for(size_t i = 0; i < l; i++)
+	{
+		DThinker *obj = LingerDestroy[i];
+		if(!obj->refCount)
+		{
+			obj->ObjectFlags |= OF_Cleanup;
+			LingerDestroy.erase(LingerDestroy.begin() + i);
+			l--; i--;
+			delete obj;
+		}
+	}
 }
 
 // Destroy every thinker
@@ -122,6 +143,18 @@ void DThinker::DestroyAllThinkers ()
 		currentthinker = next;
 	}
 	DObject::EndFrame ();
+	
+	size_t l = LingerDestroy.size();	
+	for(size_t i = 0; i < l; i++)
+	{
+		DThinker *obj = LingerDestroy[i];
+//		if(!obj->refCount)
+		{
+			obj->ObjectFlags |= OF_Cleanup;
+			delete obj;
+		}
+	}
+	LingerDestroy.clear();
 }
 
 // Destroy all thinkers except for player-controlled actors

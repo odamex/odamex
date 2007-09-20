@@ -66,13 +66,11 @@ TypeInfo DObject::_StaticType("DObject", NULL, sizeof(DObject));
 TArray<DObject *> DObject::Objects;
 TArray<size_t> DObject::FreeIndices;
 TArray<DObject *> DObject::ToDestroy;
-std::vector<DObject *> LingerDestroy;
 bool DObject::Inactive;
 
 DObject::DObject ()
 {
 	ObjectFlags = 0;
-	refCount = 0;
 	if (FreeIndices.Pop (Index))
 		Objects[Index] = this;
 	else
@@ -137,28 +135,9 @@ void DObject::EndFrame ()
 		{
 			if (obj)
 			{
-				if(!obj->refCount)
-				{
-					obj->ObjectFlags |= OF_Cleanup;
-					delete obj;
-				}
-				else
-					LingerDestroy.push_back(obj); // something is still finding this pointer useful
+				obj->ObjectFlags |= OF_Cleanup;
+				delete obj;
 			}
-		}
-	}
-	
-	size_t l = LingerDestroy.size();
-	
-	for(size_t i = 0; i < l; i++)
-	{
-		obj = LingerDestroy[i];
-		if(!obj->refCount)
-		{
-			obj->ObjectFlags |= OF_Cleanup;
-			LingerDestroy.erase(LingerDestroy.begin() + i);
-			l--; i--;
-			delete obj;
 		}
 	}
 }

@@ -78,6 +78,10 @@ private:
 	DThinker *m_Next, *m_Prev;
 
 	friend class FThinkerIterator;
+	
+protected:
+	
+	size_t refCount;
 };
 
 class FThinkerIterator

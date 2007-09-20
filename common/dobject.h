@@ -194,7 +194,6 @@ public:
 	static void EndFrame ();
 
 	DWORD ObjectFlags;
-	size_t refCount;
 
 	static void STACK_ARGS StaticShutdown ();
 
