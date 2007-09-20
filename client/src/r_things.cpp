@@ -1489,7 +1489,7 @@ static void R_DrawCrosshair (void)
 		return;
 
     // Don't draw the crosshair in overlay mode
-    if (automapactive and viewactive)
+    if (automapactive && viewactive)
         return;
 
 	if(crosshair && crosshair_lump)

@@ -73,15 +73,13 @@ public:
 	static void DestroyAllThinkers ();
 	static void DestroyMostThinkers ();
 	static void SerializeAll (FArchive &arc, bool keepPlayers);
+
+	size_t refCount;
 	
 private:
 	DThinker *m_Next, *m_Prev;
 
 	friend class FThinkerIterator;
-	
-protected:
-	
-	size_t refCount;
 };
 
 class FThinkerIterator

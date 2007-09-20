@@ -234,6 +234,16 @@ class AActor : public DThinker
 			return ptr;
 		}
 		
+		AActorPtr &operator= (AActorPtrCounted other)
+		{
+			if(ptr)
+				ptr->refCount--;
+			if(other)
+				other->refCount++;
+			ptr = other.ptr;
+			return ptr;
+		}
+
 		~AActorPtrCounted()
 		{
 			if(ptr)

@@ -205,7 +205,8 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 	
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	int len = strlen(outline);
-	for(size_t i = 0; i < len; i++)
+	size_t i;
+	for(i = 0; i < len; i++)
 		if(outline[i] == 0x07)
 			outline[i] = '.';
 
@@ -218,7 +219,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 
 	// send to any rcon players
 	client_t *cl;
-	for (size_t i = 0; i < players.size(); i++)
+	for (i = 0; i < players.size(); i++)
 	{
 		cl = &clients[i];
 		
