@@ -33,8 +33,6 @@
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
 
-EXTERN_CVAR(freelook)
-
 //
 // Movement.
 //
@@ -43,6 +41,7 @@ EXTERN_CVAR(freelook)
 #define MAXBOB			0x100000
 
 EXTERN_CVAR (allowjump)
+EXTERN_CVAR (freelook)
 
 //
 // P_Thrust
@@ -75,25 +74,6 @@ void P_ForwardThrust (player_t *player, angle_t angle, fixed_t move)
 }
 
 //
-// P_Bob
-// Same as P_Thrust, but only affects bobbing.
-//
-// killough 10/98: We apply thrust separately between the real physical player
-// and the part which affects bobbing. This way, bobbing only comes from player
-// motion, nothing external, avoiding many problems, e.g. bobbing should not
-// occur on conveyors, unless the player walks on one, and bobbing should be
-// reduced at a regular rate, even on ice (where the player coasts).
-//
-
-/*void P_Bob (player_t *player, angle_t angle, fixed_t move)
-{
-	angle >>= ANGLETOFINESHIFT;
-
-	player->momx += FixedMul(move,finecosine[angle]);
-	player->momy += FixedMul(move,finesine[angle]);
-}*/
-
-//
 // P_CalcHeight
 // Calculate the walking / running height adjustment
 //
@@ -112,16 +92,14 @@ void P_CalcHeight (player_t *player)
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
 
-	if (!predicting)
+	if (serverside || !predicting)
 	{
-		{	
-			player->bob = FixedMul (player->mo->momx, player->mo->momx)
-						+ FixedMul (player->mo->momy, player->mo->momy);
-			player->bob >>= 2;
+		player->bob = FixedMul (player->mo->momx, player->mo->momx)
+					+ FixedMul (player->mo->momy, player->mo->momy);
+		player->bob >>= 2;
 
-			if (player->bob > MAXBOB)
-				player->bob = MAXBOB;
-		}
+		if (player->bob > MAXBOB)
+			player->bob = MAXBOB;
 	}
 
     if ((player->cheats & CF_NOMOMENTUM) || !player->mo->onground)
@@ -233,11 +211,6 @@ void P_MovePlayer (player_t *player)
 		{
 			player->mo->momz = 4*FRACUNIT;
 		}
-/*		else if (allowjump && player->mo->onground) // [Toke - todo] this creates a problem but clientside jumping is needed
-		{
-			player->mo->momz += 7*FRACUNIT;
-			S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
-		}*/
 	}
 
 	if (cmd->ucmd.upmove &&
@@ -393,11 +366,6 @@ void P_PlayerThink (player_t *player)
 	else
 		player->mo->flags &= ~MF_NOCLIP;
 	
-	if (player->cheats & CF_FLY)
-		player->mo->flags |= MF_NOGRAVITY;
-	else
-		player->mo->flags &= ~MF_NOGRAVITY;
-
 	// chain saw run forward
 	cmd = &player->cmd;
 	if (player->mo->flags & MF_JUSTATTACKED)
@@ -493,7 +461,6 @@ void P_PlayerThink (player_t *player)
 		}
 	}
 
-
 	// check for use
 	if (cmd->ucmd.buttons & BT_USE)
 	{
@@ -533,7 +500,6 @@ void P_PlayerThink (player_t *player)
 				
 	if (player->bonuscount)
 		player->bonuscount--;
-
 
 	// Handling colormaps.
 	if (player->powers[pw_invulnerability])
@@ -664,7 +630,6 @@ void player_s::Serialize (FArchive &arc)
 
 		if (&consoleplayer() != this)
 			userinfo = dummyuserinfo;
-
 	}
 }
 

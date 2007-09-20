@@ -22,7 +22,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "doomdef.h"
 #include "d_event.h"
 #include "p_local.h"
@@ -31,10 +30,8 @@
 #include "i_system.h"
 #include "sv_main.h"
 
-
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
-
 
 //
 // Movement.
@@ -44,6 +41,7 @@
 #define MAXBOB			0x100000
 
 EXTERN_CVAR (allowjump)
+EXTERN_CVAR (freelook)
 
 //
 // P_Thrust
@@ -76,25 +74,6 @@ void P_ForwardThrust (player_t *player, angle_t angle, fixed_t move)
 }
 
 //
-// P_Bob
-// Same as P_Thrust, but only affects bobbing.
-//
-// killough 10/98: We apply thrust separately between the real physical player
-// and the part which affects bobbing. This way, bobbing only comes from player
-// motion, nothing external, avoiding many problems, e.g. bobbing should not
-// occur on conveyors, unless the player walks on one, and bobbing should be
-// reduced at a regular rate, even on ice (where the player coasts).
-//
-
-/*void P_Bob (player_t *player, angle_t angle, fixed_t move)
-{
-	angle >>= ANGLETOFINESHIFT;
-
-	player->momx += FixedMul(move,finecosine[angle]);
-	player->momy += FixedMul(move,finesine[angle]);
-}*/
-
-//
 // P_CalcHeight
 // Calculate the walking / running height adjustment
 //
@@ -113,6 +92,7 @@ void P_CalcHeight (player_t *player)
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
 
+	if(serverside)
 	{
 		player->bob = FixedMul (player->mo->momx, player->mo->momx)
 					+ FixedMul (player->mo->momy, player->mo->momy);
@@ -165,7 +145,47 @@ void P_CalcHeight (player_t *player)
 		player->viewz = player->mo->ceilingz-4*FRACUNIT;
 }
 
-
+//
+// P_PlayerLookUpDown
+//
+void P_PlayerLookUpDown (player_t *p)
+{
+	ticcmd_t *cmd = &p->cmd;
+	
+	// [RH] Look up/down stuff
+	if (!freelook)
+	{
+		p->mo->pitch = 0;
+	}
+	else
+	{
+		int look = cmd->ucmd.pitch << 16;
+		
+		// The player's view pitch is clamped between -32 and +56 degrees,
+		// which translates to about half a screen height up and (more than)
+		// one full screen height down from straight ahead when view panning
+		// is used.
+		if (look)
+		{
+			if (look == -32768 << 16)
+			{ // center view
+				p->mo->pitch = 0;
+			}
+			else if (look > 0)
+			{ // look up
+				p->mo->pitch -= look;
+				if (p->mo->pitch < -ANG(32))
+					p->mo->pitch = -ANG(32);
+			}
+			else
+			{ // look down
+				p->mo->pitch -= look;
+				if (p->mo->pitch > ANG(56))
+					p->mo->pitch = ANG(56);
+			}
+		}
+	}
+}
 
 //
 // P_MovePlayer
@@ -209,12 +229,10 @@ void P_MovePlayer (player_t *player)
 
 		if (forwardmove && mo->onground)
 		{
-			//P_Bob (player, mo->angle, (cmd->ucmd.forwardmove * bobfactor) >> 8);
 			P_ForwardThrust (player, mo->angle, forwardmove);
 		}
 		if (sidemove && mo->onground)
 		{
-			//P_Bob (player, mo->angle-ANG90, (cmd->ucmd.sidemove * bobfactor) >> 8);
 			P_SideThrust (player, mo->angle, sidemove);
 		}
 
@@ -322,9 +340,6 @@ void P_DeathThink (player_t *player)
 	}
 }
 
-EXTERN_CVAR (freelook)
-
-
 //
 // P_PlayerThink
 //
@@ -344,8 +359,6 @@ void P_PlayerThink (player_t *player)
 	else
 		player->mo->flags &= ~MF_NOCLIP;
 	
-        // joek - 01/14/06 - removed flying-cheat code 
-
 	// chain saw run forward
 	cmd = &player->cmd;
 	if (player->mo->flags & MF_JUSTATTACKED)
@@ -356,47 +369,17 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
-	if (player->playerstate == PST_DEAD)
-	{
-		P_DeathThink (player);
-		return;
-	}
-
-	// [RH] Look up/down stuff
-	if (!freelook)
-		player->mo->pitch = 0;
-
-	else
-	{
-		int look = cmd->ucmd.pitch << 16;
-
-		// The player's view pitch is clamped between -32 and +56 degrees,
-		// which translates to about half a screen height up and (more than)
-		// one full screen height down from straight ahead when view panning
-		// is used.
-		if (look)
-		{
-			if (look == -32768 << 16)
-			{ // center view
-				player->mo->pitch = 0;
-			}
-			else if (look > 0)
-			{ // look up
-				player->mo->pitch -= look;
-				if (player->mo->pitch < -ANG(32))
-					player->mo->pitch = -ANG(32);
-			}
-			else
-			{ // look down
-				player->mo->pitch -= look;
-				if (player->mo->pitch > ANG(56))
-					player->mo->pitch = ANG(56);
-			}
-		}
-	}
-
 	if(serverside)
 	{
+		if (player->playerstate == PST_DEAD)
+		{
+			P_DeathThink (player);
+			return;
+		}
+
+		// Look up/down stuff
+		P_PlayerLookUpDown(player);
+
 		// Move around.
 		// Reactiontime is used to prevent movement
 		//	for a bit after a teleport.
@@ -514,7 +497,6 @@ void P_PlayerThink (player_t *player)
 	if (player->bonuscount)
 		player->bonuscount--;
 
-
 	// Handling colormaps.
 	if (player->powers[pw_invulnerability])
 	{
@@ -586,8 +568,6 @@ void player_s::Serialize (FArchive &arc)
 			arc << powers[i];
 		for (i = 0; i < NUMCARDS; i++)
 			arc << cards[i];
-//		for (i = 0; i < players.size(); i++)
-//			arc << frags[i];
 		for (i = 0; i < NUMWEAPONS; i++)
 			arc << weaponowned[i];
 		for (i = 0; i < NUMAMMO; i++)
@@ -633,8 +613,6 @@ void player_s::Serialize (FArchive &arc)
 			arc >> powers[i];
 		for (i = 0; i < NUMCARDS; i++)
 			arc >> cards[i];
-//		for (i = 0; i < players.size(); i++)
-//			arc >> frags[i];
 		for (i = 0; i < NUMWEAPONS; i++)
 			arc >> weaponowned[i];
 		for (i = 0; i < NUMAMMO; i++)
@@ -646,7 +624,7 @@ void player_s::Serialize (FArchive &arc)
 
 		camera = mo;
 
-		if (consoleplayer().id != id)
+		if (&consoleplayer() != this)
 			userinfo = dummyuserinfo;
 	}
 }
