@@ -111,6 +111,12 @@ extern	BOOL	 advancedemo;
 
 void TryRunTics (void)
 {
+	std::string cmd = I_ConsoleInput();
+	if (cmd.length())
+	{
+		AddCommandString (cmd.c_str());
+	}
+		
 	// get real tics
 	static QWORD oldentertics;
 

@@ -439,6 +439,54 @@ void I_SetTitleString (const char *title)
 		DoomStartupTitle[i] = title[i] | 0x80;
 }
 
+//
+// I_ConsoleInput
+//
+std::string I_ConsoleInput (void)
+{
+	std::string ret;
+    static char     text[1024] = {0};
+    int             len;
+	
+    fd_set fdr;
+    FD_ZERO(&fdr);
+    FD_SET(0, &fdr);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+
+    if (!select(1, &fdr, NULL, NULL, &tv))
+        return "";
+	
+    len = read (0, text + strlen(text), sizeof(text) - strlen(text));
+
+    if (len < 1)
+        return "";
+
+	len = strlen(text);
+
+	if (strlen(text) >= sizeof(text))
+	{
+		if(text[len-1] == '\n' || text[len-1] == '\r')
+			text[len-1] = 0; // rip off the /n and terminate
+		
+		ret = text;
+		memset(text, 0, sizeof(text));
+		return ret;
+	}
+
+	if(text[len-1] == '\n' || text[len-1] == '\r')
+	{
+		text[len-1] = 0;
+
+		ret = text;
+		memset(text, 0, sizeof(text));
+		return ret;
+	}
+
+    return "";
+}
+
 #ifdef LINUX
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
