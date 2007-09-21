@@ -62,6 +62,24 @@ extern constate_e ConsoleState;
 //CVAR (joy_xthreshold, "0.15", CVAR_ARCHIVE)
 //CVAR (joy_ythreshold, "0.15", CVAR_ARCHIVE)
 
+#ifdef WIN32
+#define _WIN32_WINNT 0x0400
+#include <windows.h>
+HHOOK g_hKeyboardHook;
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    if (nCode < 0 || nCode != HC_ACTION )  // do not process message 
+        return CallNextHookEx( g_hKeyboardHook, nCode, wParam, lParam); 
+ 
+	KBDLLHOOKSTRUCT* p = (KBDLLHOOKSTRUCT*)lParam;
+	if((wParam == WM_KEYDOWN || wParam == WM_KEYUP)
+		&& (mousegrabbed && ((p->vkCode == VK_LWIN) || (p->vkCode == VK_RWIN))))
+		return 1;
+
+	return CallNextHookEx( g_hKeyboardHook, nCode, wParam, lParam );
+}
+#endif
+
 //
 // I_InitInput
 //
@@ -74,6 +92,10 @@ bool I_InitInput (void)
 	SDL_EnableUNICODE(true);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
+#ifdef WIN32
+	g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
+#endif
+
 	return true;
 }
 
@@ -83,6 +105,10 @@ bool I_InitInput (void)
 void STACK_ARGS I_ShutdownInput (void)
 {
 	I_PauseMouse();
+
+#ifdef WIN32
+	UnhookWindowsHookEx(g_hKeyboardHook);
+#endif
 }
 
 //
