@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
@@ -95,7 +95,7 @@ static unsigned int queuedtime = 0;
 
 // Counter for the length of the track
 
-static unsigned int tracksize = 0; 
+static unsigned int tracksize; 
 
 static unsigned char mus2midi_translation[] = 
 { 
@@ -411,7 +411,8 @@ int mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 	// writing MIDI data...
 
 	mem_fwrite(midiheader, 1, 22, midioutput);
-
+    tracksize = 0;
+    
 	// Now, process the MUS file:
 	while (!hitscoreend) 
 	{
@@ -605,5 +606,5 @@ int mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 }
 
 
-VERSION_CONTROL (mus2midi_cpp, "$Id:$")
+VERSION_CONTROL (mus2midi_cpp, "$Id$")
 
