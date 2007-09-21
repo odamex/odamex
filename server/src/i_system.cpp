@@ -476,7 +476,7 @@ std::string I_ConsoleInput (void)
     if (!select(1, &fdr, NULL, NULL, &tv))
         return "";
 	
-    len = read (0, text + strlen(text), sizeof(text) - strlen(text));
+    len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
 
     if (len < 1)
         return "";
