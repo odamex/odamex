@@ -137,7 +137,7 @@ CVAR (infiniteammo,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players have i
 CVAR (usectf,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// CTF will automaticly be enabled on maps that contain flags when true.
 CVAR (scorelimit,		"10",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Sets the winning flag capture total for CTF games.
 CVAR (friendlyfire,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players on the same team cannot cause eachother damage in team games when true.
-CVAR (teamplay,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// TeamDM is eneabled when true - requires deathmatch being true.
+CVAR (teamplay,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// TeamDM is enabled when true - requires deathmatch being true.
 CVAR (blueteam,			"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team BLUE when true - TeamDM only.
 CVAR (redteam,			"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team RED  when true - TeamDM only.
 CVAR (goldteam,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team GOLD when true - TeamDM only.
@@ -906,7 +906,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 	else if(player.mo && mo->player && SV_IsTeammate(player, *mo->player))
 		ok = true;
-	else if(player.mo && mo->player && P_CheckSightEdges(player.mo, mo, 5))
+	else if(player.mo && mo->player && P_CheckSightEdges(player.mo, mo, 5)/*player.awaresector[sectors - mo->subsector->sector]*/)
 		ok = true;
 
 	std::vector<size_t>::iterator a = std::find(mo->players_aware.begin(), mo->players_aware.end(), player.id);
@@ -1793,7 +1793,6 @@ void SV_Say(player_t &player)
 		SV_BroadcastPrintf (PRINT_CHAT, "%s: %s\n", player.userinfo.netname, s);
 	else
 		SV_TeamPrintf (PRINT_TEAMCHAT, player.id, "%s> %s\n", player.userinfo.netname, s);
-
 }
 
 //
@@ -2624,6 +2623,23 @@ void SV_GameTics (void)
 }
 
 //
+// SV_SetMoveableSectors
+//
+void SV_SetMoveableSectors()
+{
+	// [csDoom] if the floor or the ceiling of a sector is moving,
+	// mark it as moveable
+	for (int i=0; i<numsectors; i++)
+	{
+		sector_t* sec = &sectors[i];
+
+		if ((sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DMover)))
+		|| (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DMover))))
+			sec->moveable = true;
+	}
+}
+
+//
 // SV_RunTics
 //
 void SV_RunTics (void)
@@ -2646,6 +2662,7 @@ void SV_RunTics (void)
 		// run the newtime tics
 		while (newtics--)
 		{
+			SV_SetMoveableSectors();
 			C_Ticker ();
 			G_Ticker ();
 			SV_UpdateMaster();

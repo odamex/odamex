@@ -20,19 +20,12 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "z_zone.h"
 #include "p_local.h"
 #include "c_console.h"
 #include "doomstat.h"
-#include "cl_main.h"
 
-extern constate_e ConsoleState;
-extern gamestate_t wipegamestate;
-
-
-void P_XYMovement (AActor *mo);
-void P_ZMovement (AActor *mo);
+EXTERN_CVAR (sv_speedhackfix)
 
 //
 // P_Ticker
@@ -42,16 +35,14 @@ void P_Ticker (void)
 	if(paused)
 		return;
 
-	if(serverside)
+	if(clientside || (serverside && sv_speedhackfix))
 	{
 		for(size_t i = 0; i < players.size(); i++)
 			if(players[i].ingame())
 				P_PlayerThink (&players[i]);
 	}
-	else if (noservermsgs && !demoplayback)
-		return;
 
-    DThinker::RunThinkers ();
+	DThinker::RunThinkers ();
 	
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();

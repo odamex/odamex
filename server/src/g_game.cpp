@@ -75,6 +75,7 @@ void	G_DoSaveGame (void);
 
 void	SV_GameTics (void);
 
+EXTERN_CVAR (timelimit)
 
 CVAR (chasedemo, "0", 0) // removeme
 
@@ -256,6 +257,49 @@ BOOL G_Responder (event_t *ev)
 	return false;
 }
 
+//
+//	G_WinningTeam					[Toke - teams]
+//
+//	Determines the winning team, if there is one
+//
+team_t G_WinningTeam (void)
+{
+	int max = 0;
+	team_t team = TEAM_NONE;
+
+	for(size_t i = 0; i < NUMTEAMS; i++)
+	{
+		if(TEAMpoints[i] > max)
+		{
+			max = TEAMpoints[i];
+			team = (team_t)i;
+		}
+	}
+
+	return team;
+}
+
+//
+//	G_TimelimitHit
+//
+void G_TimelimitHit()
+{
+	// LEVEL TIMER
+	if (deathmatch && !teamplay && !ctfmode)
+		SV_BroadcastPrintf (PRINT_HIGH, "Timelimit hit.\n");
+
+	if (teamplay && !ctfmode)
+	{
+		team_t winteam = G_WinningTeam ();
+
+		if(winteam == TEAM_NONE)
+			SV_BroadcastPrintf(PRINT_HIGH, "No team won this game!\n");
+		else
+			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins with a total of %d %s!\n", team_names[winteam], TEAMpoints[winteam], ctfmode ? "captures" : "frags");
+	}
+
+	G_ExitLevel(0, 1);
+}
 
 //
 // G_Ticker
@@ -343,6 +387,9 @@ void G_Ticker (void)
 		break;
 	}
 
+	if(serverside && timelimit && level.time >= (int)(timelimit * TICRATE * 60))
+		G_TimelimitHit();
+	
 	SV_WriteCommands();
 
 	// send packets, rotating the send order
