@@ -627,13 +627,29 @@ bool ST_Responder (event_t *ev)
             // Net_WriteByte (CHT_IDKFA);
             eatkey = true;
         }
-
-        // Simplified, accepting both "noclip" and "idspispopd".
-        // no clipping mode cheat
-        else if ( cht_CheckCheat(&cheat_noclip, (char)ev->data2)
-            || cht_CheckCheat(&cheat_commercial_noclip,(char)ev->data2) )
+        // [Russell] - Only doom 1/registered can have idspispopd and
+        // doom 2/final can have idclip
+        else if (cht_CheckCheat(&cheat_noclip, (char)ev->data2))
         {
             if (CheckCheatmode ())
+                return false;
+
+            if ((gamemode != shareware) && (gamemode != registered) &&
+                (gamemode != retail))
+                return false;
+                
+            AddCommandString("noclip");
+
+            // Net_WriteByte (DEM_GENERICCHEAT);
+            // Net_WriteByte (CHT_NOCLIP);
+            eatkey = true;
+        }
+        else if (cht_CheckCheat(&cheat_commercial_noclip, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
+            if (gamemode != commercial)
                 return false;
 
             AddCommandString("noclip");
