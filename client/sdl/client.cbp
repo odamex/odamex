@@ -205,8 +205,6 @@
 		<Unit filename="..\src\p_interaction.h" />
 		<Unit filename="..\src\p_mobj.cpp" />
 		<Unit filename="..\src\p_pspr.cpp" />
-		<Unit filename="..\src\p_tick.cpp" />
-		<Unit filename="..\src\p_tick.h" />
 		<Unit filename="..\src\p_user.cpp" />
 		<Unit filename="..\src\r_bsp.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
@@ -314,6 +312,8 @@
 		<Unit filename="..\..\common\p_spec.h" />
 		<Unit filename="..\..\common\p_switch.cpp" />
 		<Unit filename="..\..\common\p_teleport.cpp" />
+		<Unit filename="..\..\common\p_tick.cpp" />
+		<Unit filename="..\..\common\p_tick.h" />
 		<Unit filename="..\..\common\p_xlat.cpp" />
 		<Unit filename="..\..\common\r_data.cpp" />
 		<Unit filename="..\..\common\r_data.h" />
@@ -339,6 +339,7 @@
 		<Extensions>
 			<code_completion />
 			<envvars />
+			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

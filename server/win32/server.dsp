@@ -123,10 +123,6 @@ SOURCE=..\src\p_pspr.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\p_tick.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\p_user.cpp
 # End Source File
 # Begin Source File
@@ -216,10 +212,6 @@ SOURCE=..\src\p_local.h
 # Begin Source File
 
 SOURCE=..\src\p_mobj.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\p_tick.h
 # End Source File
 # Begin Source File
 
@@ -616,6 +608,14 @@ SOURCE=..\..\common\p_switch.cpp
 # Begin Source File
 
 SOURCE=..\..\common\p_teleport.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\p_tick.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\p_tick.h
 # End Source File
 # Begin Source File
 
