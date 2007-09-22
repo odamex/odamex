@@ -811,14 +811,14 @@ void WI_initStats(void)
 void WI_updateStats(void)
 {
 
-    WI_updateAnimatedBack(); // wminfo.plyr[0].skills to wminfo.skills?
+    WI_updateAnimatedBack();
 
     if (acceleratestage && sp_state != 10)
     {
 	acceleratestage = 0;
-	cnt_kills = (level.killed_monsters * 100) / wminfo.maxkills;
-	cnt_items = (level.found_items * 100) / wminfo.maxitems;
-	cnt_secret = (level.found_secrets * 100) / wminfo.maxsecret;
+	cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
+	cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
+	cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
 	cnt_time = level.time / TICRATE;
 	cnt_par = wminfo.partime / TICRATE;
 	S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
@@ -832,9 +832,9 @@ void WI_updateStats(void)
 	if (!(bcnt&3))
 	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (cnt_kills >= (level.killed_monsters * 100) /wminfo.maxkills)
+	if (!wminfo.maxkills || cnt_kills >= (level.killed_monsters * 100) / wminfo.maxkills)
 	{
-	    cnt_kills = (level.killed_monsters * 100) / wminfo.maxkills;
+	    cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
 	    S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
 	    sp_state++;
 	}
@@ -846,9 +846,9 @@ void WI_updateStats(void)
 	if (!(bcnt&3))
 	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (cnt_items >= (level.found_items * 100) / wminfo.maxitems)
+	if (!wminfo.maxitems || cnt_items >= (level.found_items * 100) / wminfo.maxitems)
 	{
-	    cnt_items = (level.found_items * 100) / wminfo.maxitems;
+	    cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
 	    S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
 	    sp_state++;
 	}
@@ -860,9 +860,9 @@ void WI_updateStats(void)
 	if (!(bcnt&3))
 	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
+	if (!wminfo.maxsecret || cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
 	{
-	    cnt_secret = (level.found_secrets * 100) / wminfo.maxsecret;
+	    cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
 	    S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
 	    sp_state++;
 	}
