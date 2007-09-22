@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -444,8 +444,9 @@ void P_PlayerThink (player_t *player)
 			{
 				newweapon = wp_chainsaw;
 			}
-			
-			if (newweapon == wp_shotgun 
+
+			if (gamemode == commercial
+				&& newweapon == wp_shotgun
 				&& player->weaponowned[wp_supershotgun]
 				&& player->readyweapon != wp_supershotgun)
 			{
@@ -457,7 +458,12 @@ void P_PlayerThink (player_t *player)
 			&& player->weaponowned[newweapon]
 			&& newweapon != player->readyweapon)
 		{
-			player->pendingweapon = newweapon;
+			// NEVER go to plasma or BFG in shareware,
+			if ((newweapon != wp_plasma && newweapon != wp_bfg)
+			|| (gamemode != shareware) )
+			{
+				player->pendingweapon = newweapon;
+			}
 		}
 	}
 

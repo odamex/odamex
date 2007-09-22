@@ -332,6 +332,12 @@ BEGIN_COMMAND (weapnext)
 			continue;
 		if (!plyr->ammo[weaponinfo[itemlist[index].offset].ammo])
 			continue;
+		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
+			continue;
+		if (itemlist[index].offset == wp_bfg && gamemode == shareware)
+			continue;
+		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial)
+			continue;
 		Impulse = itemlist[index].offset + 50;
 		return;
 	}
@@ -357,6 +363,12 @@ BEGIN_COMMAND (weapprev)
 		if (!plyr->weaponowned[itemlist[index].offset])
 			continue;
 		if (!plyr->ammo[weaponinfo[itemlist[index].offset].ammo])
+			continue;
+		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
+			continue;
+		if (itemlist[index].offset == wp_bfg && gamemode == shareware)
+			continue;
+		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial)
 			continue;
 		Impulse = itemlist[index].offset + 50;
 		return;
