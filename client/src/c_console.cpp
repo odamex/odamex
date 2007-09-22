@@ -676,7 +676,7 @@ void C_Ticker (void)
 			if (ConBottom >= screen->height / 2)
 			{
 				ConBottom = screen->height / 2;
-				ConsoleState = c_down;
+				ConsoleState = c_half;
 			}
 		} else if (ConsoleState == c_rising)
 		{

@@ -506,6 +506,9 @@ void G_DoLoadLevel (int position)
 		wipegamestate = GS_FORCEWIPE;
 
 	gamestate = GS_LEVEL;
+	
+	if(ConsoleState == c_down)
+		C_HideConsole();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
