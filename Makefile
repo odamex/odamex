@@ -51,6 +51,12 @@ ifneq ($(strip $(shell $(CC) -v 2>&1 |grep "solaris")),)
  solaris = true
 endif
 
+# warn if using non-gnu make
+
+ifeq ($(strip $(shell make -v |grep "GNU")),)
+ $(warning WARNING: You are using non-gnu make, try "gmake" if build fails)
+endif
+
 # Flags to deutex
 
 DEUTEX_FLAGS = -rgb 0 255 255 
