@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -64,6 +64,11 @@ void WI_unloadData(void);
 #define WI_TITLEY				2
 #define WI_SPACINGY 			33
 
+// Single Player
+#define SP_STATSX		50
+#define SP_STATSY		50
+#define SP_TIMEX		16
+#define SP_TIMEY		168
 
 typedef enum
 {
@@ -266,13 +271,21 @@ static int				cnt;
 // used for timing of background animation
 static int				bcnt;
 
-struct count_t
+/*struct count_t
 {
 	int cnt_kills, cnt_items, cnt_secret, cnt_frags;
 };
 
 static std::vector<count_t> stats;
-static std::vector<int> dm_totals;
+static std::vector<int> dm_totals;*/
+
+// Since classic is used for singleplayer only...
+static int			cnt_kills;
+static int			cnt_items;
+static int			cnt_secret;
+static int			cnt_time;
+static int			cnt_par;
+static int			cnt_pause;
 
 
 //
@@ -288,17 +301,32 @@ static patch_t* 		yah[2];
 // splat
 static patch_t* 		splat;
 
+// %, : graphics
+static patch_t*			percent;
+static patch_t*			colon;
+
 // 0-9 graphic
-//static patch_t* 		num[10];
+static patch_t* 		num[10];
 
 // minus sign
-//static patch_t* 		wiminus;
+static patch_t* 		wiminus;
 
 // "Finished!" graphics
-//static patch_t* 		finished; (Removed) Dan - Causes GUI Issues |FIX-ME|
+static patch_t* 		finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
+// [Nes] Re-added for singleplayer
 
 // "Entering" graphic
 static patch_t* 		entering;
+
+ // "Kills", "Items", "Secrets"
+static patch_t*			kills;
+static patch_t*			secret;
+static patch_t*			items;
+
+// Time sucks.
+static patch_t*			timepatch;
+static patch_t*			par;
+static patch_t*			sucks;
 
 static patch_t* 		p;		// [RH] Only one
 
@@ -377,7 +405,8 @@ void WI_drawLF (void)
 	}
 
 	// draw "Finished!"
-//	FB->DrawPatchClean (finished, (320 - finished->width())/2, y);  (Removed) Dan - Causes GUI Issues |FIX-ME|
+	if (!multiplayer)
+		FB->DrawPatchClean (finished, (320 - finished->width())/2, y);  // (Removed) Dan - Causes GUI Issues |FIX-ME|
 }
 
 
@@ -672,6 +701,248 @@ void WI_drawNetgameStats (void)
 	HU_DrawScores (&players[me]);
 }
 
+int WI_drawNum (int n, int x, int y, int digits)
+{
+
+    int		fontwidth = SHORT(num[0]->width());
+    int		neg;
+    int		temp;
+
+    if (digits < 0)
+    {
+	if (!n)
+	{
+	    // make variable-length zeros 1 digit long
+	    digits = 1;
+	}
+	else
+	{
+	    // figure out # of digits in #
+	    digits = 0;
+	    temp = n;
+
+	    while (temp)
+	    {
+		temp /= 10;
+		digits++;
+	    }
+	}
+    }
+
+    neg = n < 0;
+    if (neg)
+	n = -n;
+
+    // if non-number, do not draw it
+    if (n == 1994)
+	return 0;
+
+    // draw the new number
+    while (digits--)
+    {
+	x -= fontwidth;
+	screen->DrawPatchClean(num[ n % 10 ], x, y);
+	n /= 10;
+    }
+
+    // draw a minus sign if necessary
+    if (neg)
+	screen->DrawPatchClean(wiminus, x-=8, y);
+
+    return x;
+
+}
+
+void WI_drawPercent (int p, int x, int y)
+{
+    if (p < 0)
+	return;
+
+	screen->DrawPatchClean(percent, x, y);
+    WI_drawNum(p, x, y, -1);
+}
+
+void WI_drawTime (int t, int x, int y)
+{
+
+    int		div;
+    int		n;
+
+    if (t<0)
+	return;
+
+    if (t <= 61*59)
+    {
+	div = 1;
+
+	do
+	{
+	    n = (t / div) % 60;
+	    x = WI_drawNum(n, x, y, 2) - SHORT(colon->width());
+	    div *= 60;
+
+	    // draw
+	    if (div==60 || t / div)
+		screen->DrawPatchClean(colon, x, y);
+
+	} while (t / div);
+    }
+    else
+    {
+	// "sucks"
+	screen->DrawPatchClean(sucks, x - SHORT(sucks->width()), y);
+    }
+}
+
+static int	sp_state;
+
+void WI_initStats(void)
+{
+    state = StatCount;
+    acceleratestage = 0;
+    sp_state = 1;
+    cnt_kills = cnt_items = cnt_secret = -1;
+    cnt_time = cnt_par = -1;
+    cnt_pause = TICRATE;
+
+    WI_initAnimatedBack();
+}
+
+void WI_updateStats(void)
+{
+
+    WI_updateAnimatedBack(); // wminfo.plyr[0].skills to wminfo.skills?
+
+    if (acceleratestage && sp_state != 10)
+    {
+	acceleratestage = 0;
+	cnt_kills = (level.killed_monsters * 100) / wminfo.maxkills;
+	cnt_items = (level.found_items * 100) / wminfo.maxitems;
+	cnt_secret = (level.found_secrets * 100) / wminfo.maxsecret;
+	cnt_time = level.time / TICRATE;
+	cnt_par = wminfo.partime / TICRATE;
+	S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+	sp_state = 10;
+    }
+
+    if (sp_state == 2)
+    {
+	cnt_kills += 2;
+
+	if (!(bcnt&3))
+	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+
+	if (cnt_kills >= (level.killed_monsters * 100) /wminfo.maxkills)
+	{
+	    cnt_kills = (level.killed_monsters * 100) / wminfo.maxkills;
+	    S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+	    sp_state++;
+	}
+    }
+    else if (sp_state == 4)
+    {
+	cnt_items += 2;
+
+	if (!(bcnt&3))
+	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+
+	if (cnt_items >= (level.found_items * 100) / wminfo.maxitems)
+	{
+	    cnt_items = (level.found_items * 100) / wminfo.maxitems;
+	    S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+	    sp_state++;
+	}
+    }
+    else if (sp_state == 6)
+    {
+	cnt_secret += 2;
+
+	if (!(bcnt&3))
+	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+
+	if (cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
+	{
+	    cnt_secret = (level.found_secrets * 100) / wminfo.maxsecret;
+	    S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+	    sp_state++;
+	}
+    }
+
+    else if (sp_state == 8)
+    {
+	if (!(bcnt&3))
+	    S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+
+	cnt_time += 3;
+
+	if (cnt_time >= level.time / TICRATE)
+	    cnt_time = level.time / TICRATE;
+
+	cnt_par += 3;
+
+	if (cnt_par >= wminfo.partime / TICRATE)
+	{
+	    cnt_par = wminfo.partime / TICRATE;
+
+	    if (cnt_time >= level.time / TICRATE)
+	    {
+		S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
+		sp_state++;
+	    }
+	}
+    }
+    else if (sp_state == 10)
+    {
+	if (acceleratestage)
+	{
+	    S_Sound (CHAN_VOICE, "weapons/shotgr", 1, ATTN_NONE);
+
+	    if (gamemode == commercial)
+		WI_initNoState();
+	    else
+		WI_initShowNextLoc();
+	}
+    }
+    else if (sp_state & 1)
+    {
+	if (!--cnt_pause)
+	{
+	    sp_state++;
+	    cnt_pause = TICRATE;
+	}
+    }
+
+}
+
+void WI_drawStats (void)
+{
+    // line height
+    int lh = (3*SHORT(num[0]->height()))/2;
+
+    // draw animated background
+    WI_drawAnimatedBack();
+    WI_drawLF();
+
+    screen->DrawPatchClean(kills, SP_STATSX, SP_STATSY);
+    WI_drawPercent(cnt_kills, 320 - SP_STATSX, SP_STATSY);
+
+    screen->DrawPatchClean(items, SP_STATSX, SP_STATSY+lh);
+    WI_drawPercent(cnt_items, 320 - SP_STATSX, SP_STATSY+lh);
+
+    screen->DrawPatchClean(secret, SP_STATSX, SP_STATSY+2*lh);
+    WI_drawPercent(cnt_secret, 320 - SP_STATSX, SP_STATSY+2*lh);
+
+    screen->DrawPatchClean(timepatch, SP_TIMEX, SP_TIMEY);
+    WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
+
+	if (gamemode == commercial || wbs->epsd < 3)
+    {
+    	screen->DrawPatchClean(par, SP_TIMEX + 160, SP_TIMEY);
+    	WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
+    }
+
+}
+
 void WI_checkForAccelerate(void)
 {
 	if(!serverside)
@@ -724,7 +995,10 @@ void WI_Ticker (void)
 	switch (state)
 	{
 		case StatCount:
-			WI_updateNoState();
+			if (multiplayer)
+				WI_updateNoState();
+			else
+				WI_updateStats();
 			break;
 
 		case ShowNextLoc:
@@ -838,13 +1112,46 @@ void WI_loadData (void)
 		}
 	}
 
+	for (i=0;i<10;i++)
+    {
+		 // numbers 0-9
+		sprintf(name, "WINUM%d", i);
+		num[i] = W_CachePatch (name, PU_STATIC);
+    }
+
+    wiminus = W_CachePatch ("WIMINUS", PU_STATIC);
+
+	// percent sign
+    percent = W_CachePatch ("WIPCNT", PU_STATIC);
+
+	// ":"
+    colon = W_CachePatch ("WICOLON", PU_STATIC);
+
 	// "finished"
-	//finished = W_CachePatch ("WIF", PU_STATIC) (Removed) Dan - Causes GUI Issues |FIX-ME|
+	finished = W_CachePatch ("WIF", PU_STATIC); // (Removed) Dan - Causes GUI Issues |FIX-ME|
 
 	// "entering"
 	entering = W_CachePatch ("WIENTER", PU_STATIC);
 
 	p = W_CachePatch ("STPBANY", PU_STATIC);
+
+	// "kills"
+    kills = W_CachePatch ("WIOSTK", PU_STATIC);
+
+	// "items"
+    items = W_CachePatch ("WIOSTI", PU_STATIC);
+
+	// "secret"
+    secret = W_CachePatch ("WISCRT2", PU_STATIC);
+
+	// "time"
+    timepatch = W_CachePatch ("WITIME", PU_STATIC);
+
+    // "sucks"
+    sucks =W_CachePatch ("WISUCKS", PU_STATIC);
+
+    // "par"
+    par = W_CachePatch ("WIPAR", PU_STATIC);
 }
 
 void WI_unloadData (void)
@@ -885,6 +1192,24 @@ void WI_unloadData (void)
 	Z_ChangeTag (entering, PU_CACHE);
 
 	Z_ChangeTag (p, PU_CACHE);*/
+
+	int i;
+
+	for (i=0 ; i<10 ; i++)
+		Z_ChangeTag(num[i], PU_CACHE);
+
+	Z_ChangeTag(wiminus, PU_CACHE);
+    Z_ChangeTag(percent, PU_CACHE);
+    Z_ChangeTag(colon, PU_CACHE);
+	Z_ChangeTag(kills, PU_CACHE);
+	Z_ChangeTag(secret, PU_CACHE);
+	Z_ChangeTag(items, PU_CACHE);
+    Z_ChangeTag(finished, PU_CACHE);
+    Z_ChangeTag(entering, PU_CACHE);
+    Z_ChangeTag(timepatch, PU_CACHE);
+    Z_ChangeTag(sucks, PU_CACHE);
+    Z_ChangeTag(par, PU_CACHE);
+    Z_ChangeTag(p, PU_CACHE);
 }
 
 void WI_Drawer (void)
@@ -896,7 +1221,10 @@ void WI_Drawer (void)
 		switch (state)
 		{
 		case StatCount:
-			WI_drawNetgameStats();
+			if (multiplayer)
+				WI_drawNetgameStats();
+			else
+				WI_drawStats();
 			break;
 
 		case ShowNextLoc:
@@ -926,7 +1254,10 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 	WI_initVariables (wbstartstruct);
 	WI_loadData ();
 
-	WI_initAnimatedBack();
+	if (netgame)
+		WI_initAnimatedBack();
+	else
+		WI_initStats();
 	V_SetBlend (0,0,0,0);
 	S_StopAllChannels ();
 // 	SN_StopAllSequences ();

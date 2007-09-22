@@ -1392,7 +1392,8 @@ void HU_ConsoleScores (player_t *player)
 {
     char str[80];
     std::vector<player_t *> sortedplayers(players.size());
-    int i, j;
+    int j;
+    unsigned int i;
 
     C_ToggleConsole(); // One of these at each end prevents the following from
                        // drawing on the screen itself.

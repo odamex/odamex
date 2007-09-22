@@ -649,7 +649,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
 	}
 
-	if (special->flags & MF_COUNTITEM)
+	if (serverside && special->flags & MF_COUNTITEM)
 	{
 		level.found_items++;
 	}
@@ -990,6 +990,9 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 
 	// [RH] Also set the thing's tid to 0. [why?]
 	target->tid = 0;
+
+	if (serverside && target->flags & MF_COUNTKILL)
+		level.killed_monsters++;
 
 	if (target->player)
 	{
