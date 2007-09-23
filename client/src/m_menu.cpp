@@ -227,7 +227,7 @@ oldmenuitem_t EpisodeMenu[]=
 
 oldmenu_t EpiDef =
 {
-	ep4,	 			// # of menu items
+	ep_end,	 			// # of menu items
 	EpisodeMenu,		// oldmenuitem_t ->
 	M_DrawEpisode,		// drawing routine ->
 	48,63,				// x,y
