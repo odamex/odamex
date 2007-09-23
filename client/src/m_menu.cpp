@@ -227,7 +227,7 @@ oldmenuitem_t EpisodeMenu[]=
 
 oldmenu_t EpiDef =
 {
-	ep_end,	 			// # of menu items
+	ep4,	 			// # of menu items
 	EpisodeMenu,		// oldmenuitem_t ->
 	M_DrawEpisode,		// drawing routine ->
 	48,63,				// x,y
@@ -582,8 +582,17 @@ void M_NewGame(int choice)
 */
 	if (gameinfo.flags & GI_MAPxx)
 		M_SetupNextMenu(&NewDef);
+	else if (gameinfo.flags & GI_MENUHACK_RETAIL)
+	{
+	    EpiDef.numitems = ep_end;
+	    M_SetupNextMenu(&EpiDef);
+	}
 	else
+	{
+		EpiDef.numitems = ep4;
 		M_SetupNextMenu(&EpiDef);
+	}
+    
 }
 
 
