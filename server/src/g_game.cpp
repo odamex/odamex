@@ -73,8 +73,6 @@ void	G_DoVictory (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
-void	SV_GameTics (void);
-
 EXTERN_CVAR (timelimit)
 
 CVAR (chasedemo, "0", 0) // removeme
@@ -258,50 +256,6 @@ BOOL G_Responder (event_t *ev)
 }
 
 //
-//	G_WinningTeam					[Toke - teams]
-//
-//	Determines the winning team, if there is one
-//
-team_t G_WinningTeam (void)
-{
-	int max = 0;
-	team_t team = TEAM_NONE;
-
-	for(size_t i = 0; i < NUMTEAMS; i++)
-	{
-		if(TEAMpoints[i] > max)
-		{
-			max = TEAMpoints[i];
-			team = (team_t)i;
-		}
-	}
-
-	return team;
-}
-
-//
-//	G_TimelimitHit
-//
-void G_TimelimitHit()
-{
-	// LEVEL TIMER
-	if (deathmatch && !teamplay && !ctfmode)
-		SV_BroadcastPrintf (PRINT_HIGH, "Timelimit hit.\n");
-
-	if (teamplay && !ctfmode)
-	{
-		team_t winteam = G_WinningTeam ();
-
-		if(winteam == TEAM_NONE)
-			SV_BroadcastPrintf(PRINT_HIGH, "No team won this game!\n");
-		else
-			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins with a total of %d %s!\n", team_names[winteam], TEAMpoints[winteam], ctfmode ? "captures" : "frags");
-	}
-
-	G_ExitLevel(0, 1);
-}
-
-//
 // G_Ticker
 // Make ticcmd_ts for the players.
 //
@@ -311,8 +265,6 @@ int mapchange;
 void G_Ticker (void)
 {
 	size_t i;
-
-	SV_GameTics ();
 
 	// do player reborns if needed
 	if(serverside)
@@ -374,7 +326,6 @@ void G_Ticker (void)
 	{
 	case GS_LEVEL:
 		P_Ticker ();
-		SV_RemoveCorpses ();
 		break;
 
 	case GS_INTERMISSION:
@@ -386,30 +337,6 @@ void G_Ticker (void)
 	default:
 		break;
 	}
-
-	if(serverside && timelimit && level.time >= (int)(timelimit * TICRATE * 60))
-		G_TimelimitHit();
-	
-	SV_WriteCommands();
-
-	// send packets, rotating the send order
-	// so that players[0] does not always get an advantage
-	{
-		static size_t fair_send = 0;
-		size_t num_players = players.size();
-
-		for (i = 0; i < num_players; i++)
-		{
-			SV_SendPacket(players[(i+fair_send)%num_players]);
-		}
-
-		if(++fair_send >= num_players)
-			fair_send = 0;
-	}
-
-	SV_ClearClientsBPS();
-
-	SV_CheckTimeouts();
 }
 
 

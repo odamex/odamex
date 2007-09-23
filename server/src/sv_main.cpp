@@ -200,7 +200,7 @@ void SV_ServerSettingChange (void);
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor);
 bool P_CheckSightEdges (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
 
-void WinCheck (void);
+void SV_WinCheck (void);
 
 EXTERN_CVAR (sv_speedhackfix)
 
@@ -2043,6 +2043,27 @@ void SV_ClearClientsBPS(void)
 }
 
 //
+// SV_SendPackets
+//
+void SV_SendPackets(void)
+{
+	// send packets, rotating the send order
+	// so that players[0] does not always get an advantage
+	{
+		static size_t fair_send = 0;
+		size_t num_players = players.size();
+
+		for (size_t i = 0; i < num_players; i++)
+		{
+			SV_SendPacket(players[(i+fair_send)%num_players]);
+		}
+
+		if(++fair_send >= num_players)
+			fair_send = 0;
+	}
+}
+
+//
 // SV_WriteCommands
 //
 void SV_WriteCommands(void)
@@ -2525,9 +2546,9 @@ void SV_ParseCommands(player_t &player)
 }
 
 //
-// WinCheck - Checks to see if a game has been won
+// SV_WinCheck - Checks to see if a game has been won
 //
-void WinCheck (void)
+void SV_WinCheck (void)
 {
 	if (shotclock)
 	{
@@ -2608,6 +2629,53 @@ void SV_WadDownloads (void)
 }
 
 //
+//	SV_WinningTeam					[Toke - teams]
+//
+//	Determines the winning team, if there is one
+//
+team_t SV_WinningTeam (void)
+{
+	int max = 0;
+	team_t team = TEAM_NONE;
+
+	for(size_t i = 0; i < NUMTEAMS; i++)
+	{
+		if(TEAMpoints[i] > max)
+		{
+			max = TEAMpoints[i];
+			team = (team_t)i;
+		}
+	}
+
+	return team;
+}
+
+//
+//	SV_TimelimitCheck
+//
+void SV_TimelimitCheck()
+{
+	if(!timelimit || level.time < (int)(timelimit * TICRATE * 60))
+		return;
+	
+	// LEVEL TIMER
+	if (deathmatch && !teamplay && !ctfmode)
+		SV_BroadcastPrintf (PRINT_HIGH, "Timelimit hit.\n");
+
+	if (teamplay && !ctfmode)
+	{
+		team_t winteam = SV_WinningTeam ();
+
+		if(winteam == TEAM_NONE)
+			SV_BroadcastPrintf(PRINT_HIGH, "No team won this game!\n");
+		else
+			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins with a total of %d %s!\n", team_names[winteam], TEAMpoints[winteam], ctfmode ? "captures" : "frags");
+	}
+
+	G_ExitLevel(0, 1);
+}
+
+//
 // SV_GameTics
 //
 //	Runs once gametic (35 per second gametic)
@@ -2615,11 +2683,17 @@ void SV_WadDownloads (void)
 void SV_GameTics (void)
 {
 	if (ctfmode)
-		CTF_RunTics ();
+		CTF_RunTics();
 
-	WinCheck ();
+	if(gamestate == GS_LEVEL)
+	{
+		SV_RemoveCorpses();
+		SV_WinCheck();	
+		SV_TimelimitCheck();
+	}
 
 	SV_WadDownloads();
+	SV_UpdateMaster();
 }
 
 //
@@ -2664,8 +2738,16 @@ void SV_RunTics (void)
 		{
 			SV_SetMoveableSectors();
 			C_Ticker ();
+
+			SV_GameTics ();
+
 			G_Ticker ();
-			SV_UpdateMaster();
+			
+			SV_WriteCommands();
+			SV_SendPackets();
+			SV_ClearClientsBPS();
+			SV_CheckTimeouts();
+
 			gametic++;
 		}
 		
