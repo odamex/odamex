@@ -35,7 +35,7 @@ void P_Ticker (void)
 	if(paused)
 		return;
 
-	if(clientside || (serverside && sv_speedhackfix))
+	if(serverside && sv_speedhackfix)
 	{
 		for(size_t i = 0; i < players.size(); i++)
 			if(players[i].ingame())
