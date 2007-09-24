@@ -1210,19 +1210,19 @@ void P_GroupLines (void)
 		// adjust bounding box to map blocks
 		block = (bbox.Top()-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
 		block = block >= bmapheight ? bmapheight-1 : block;
-		//sector->blockbox.Top()=block;
+		sector->blockbox[BOXTOP]=block;
 
 		block = (bbox.Bottom()-bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
 		block = block < 0 ? 0 : block;
-		//sector->blockbox.Bottom()=block;
+		sector->blockbox[BOXBOTTOM]=block;
 
 		block = (bbox.Right()-bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
 		block = block >= bmapwidth ? bmapwidth-1 : block;
-		//sector->blockbox.Right()=block;
+		sector->blockbox[BOXRIGHT]=block;
 
 		block = (bbox.Left()-bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
 		block = block < 0 ? 0 : block;
-		//sector->blockbox.Left()=block;
+		sector->blockbox[BOXLEFT]=block;
 	}
 
 }

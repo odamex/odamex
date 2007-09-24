@@ -103,7 +103,7 @@ struct sector_s
 	AActor::AActorPtr 	soundtarget;
 
 	// mapblock bounding box for height changes
-	//int 		blockbox[4];
+	int 		blockbox[4];
 
 	// origin for any sounds played by the sector
 	fixed_t		soundorg[3];
