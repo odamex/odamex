@@ -436,7 +436,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
                 index = vsprintf (errortext, error, argptr);
                 #ifdef WIN32
                 sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
-                #else
+				#endif
                 va_end (argptr);
 
                 // Record error to log (if logging)
