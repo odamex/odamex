@@ -43,7 +43,6 @@
 		92D2D7E60B62BA8800FD5B07 /* memio.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E50B62B89B00FD5B07 /* memio.h */; };
 		92D2D7E80B62BA8800FD5B07 /* mus2midi.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E70B62B89B00FD5B07 /* mus2midi.h */; };
 		92D2D7EA0B62BA8800FD5B07 /* p_interaction.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E90B62B89B00FD5B07 /* p_interaction.h */; };
-		92D2D7EE0B62BA8800FD5B07 /* p_tick.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6ED0B62B89B00FD5B07 /* p_tick.h */; };
 		92D2D7F20B62BA8800FD5B07 /* r_draw.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6F10B62B89B00FD5B07 /* r_draw.h */; };
 		92D2D7F50B62BA8800FD5B07 /* r_main.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6F40B62B89B00FD5B07 /* r_main.h */; };
 		92D2D7F70B62BA8800FD5B07 /* r_plane.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6F60B62B89B00FD5B07 /* r_plane.h */; };
@@ -493,7 +492,6 @@
 				92D2D7E60B62BA8800FD5B07 /* memio.h in CopyFiles */,
 				92D2D7E80B62BA8800FD5B07 /* mus2midi.h in CopyFiles */,
 				92D2D7EA0B62BA8800FD5B07 /* p_interaction.h in CopyFiles */,
-				92D2D7EE0B62BA8800FD5B07 /* p_tick.h in CopyFiles */,
 				92D2D7F20B62BA8800FD5B07 /* r_draw.h in CopyFiles */,
 				92D2D7F50B62BA8800FD5B07 /* r_main.h in CopyFiles */,
 				92D2D7F70B62BA8800FD5B07 /* r_plane.h in CopyFiles */,
@@ -972,7 +970,6 @@
 		92D2D6E90B62B89B00FD5B07 /* p_interaction.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = p_interaction.h; sourceTree = "<group>"; };
 		92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_mobj.cpp; sourceTree = "<group>"; };
 		92D2D6EB0B62B89B00FD5B07 /* p_pspr.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_pspr.cpp; sourceTree = "<group>"; };
-		92D2D6ED0B62B89B00FD5B07 /* p_tick.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = p_tick.h; path = /Users/denis/Projects/odamex5/trunk/client/src/p_tick.h; sourceTree = "<absolute>"; };
 		92D2D6EE0B62B89B00FD5B07 /* p_user.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_user.cpp; sourceTree = "<group>"; };
 		92D2D6EF0B62B89B00FD5B07 /* r_bsp.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = r_bsp.cpp; sourceTree = "<group>"; };
 		92D2D6F00B62B89B00FD5B07 /* r_draw.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = r_draw.cpp; sourceTree = "<group>"; };
@@ -1000,9 +997,6 @@
 		92D2D7060B62B89B00FD5B07 /* v_video.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = v_video.cpp; sourceTree = "<group>"; };
 		92D2D7070B62B89B00FD5B07 /* wi_stuff.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = wi_stuff.cpp; sourceTree = "<group>"; };
 		92D2D7080B62B89B00FD5B07 /* wi_stuff.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wi_stuff.h; sourceTree = "<group>"; };
-		92D2D9C50B643FD200FD5B07 /* i_main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_main.cpp; sourceTree = "<group>"; };
-		92D2D9C60B643FD200FD5B07 /* i_system.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_system.cpp; sourceTree = "<group>"; };
-		92D2D9C70B643FD200FD5B07 /* i_system.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_system.h; sourceTree = "<group>"; };
 		92D2D9C80B643FD200FD5B07 /* odaserv.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = odaserv.ico; sourceTree = "<group>"; };
 		92D2D9C90B643FD200FD5B07 /* resource.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = resource.h; sourceTree = "<group>"; };
 		92D2DA840B6444B300FD5B07 /* odamex */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odamex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1408,9 +1402,6 @@
 		92D2D9C40B643FD200FD5B07 /* win32 */ = {
 			isa = PBXGroup;
 			children = (
-				92D2D9C50B643FD200FD5B07 /* i_main.cpp */,
-				92D2D9C60B643FD200FD5B07 /* i_system.cpp */,
-				92D2D9C70B643FD200FD5B07 /* i_system.h */,
 				92D2D9C80B643FD200FD5B07 /* odaserv.ico */,
 				92D2D9C90B643FD200FD5B07 /* resource.h */,
 			);
