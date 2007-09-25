@@ -49,16 +49,8 @@
 #include <sys/time.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <dirent.h>
 
-#endif
-
-// [Russell] - What the hell is going on here?!
-#ifdef OSF1
-#define _XOPEN_SOURCE_EXTENDED
-#endif
-#include <unistd.h>
-#ifdef OSF1
-#undef _XOPEN_SOURCE_EXTENDED
 #endif
 
 #include "errors.h"

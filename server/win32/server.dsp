@@ -98,12 +98,10 @@ SOURCE=..\src\g_level.cpp
 # Begin Source File
 
 SOURCE=..\src\i_main.cpp
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\src\i_system.cpp
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
@@ -265,18 +263,6 @@ SOURCE=..\..\common\tmap.nas
 # Begin Group "Win32 Files"
 
 # PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\i_main.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\i_system.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\i_system.h
-# End Source File
 # Begin Source File
 
 SOURCE=.\odmserv.ico
