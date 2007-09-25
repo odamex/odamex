@@ -177,6 +177,8 @@ BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE)									// Remote console 
 }
 END_CUSTOM_CVAR(rcon_password)
 
+CVAR (antiwallhack,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)		// Enable/disable anti wallhack check, temporary
+
 client_c clients;
 
 #define CLIENT_TIMEOUT 65 // 65 seconds
@@ -906,7 +908,9 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 	else if(player.mo && mo->player && SV_IsTeammate(player, *mo->player))
 		ok = true;
-	else if(player.mo && mo->player && P_CheckSightEdges(player.mo, mo, 5)/*player.awaresector[sectors - mo->subsector->sector]*/)
+	else if(player.mo && mo->player && !antiwallhack)
+		ok = true;
+	else if(player.mo && mo->player && antiwallhack && P_CheckSightEdges(player.mo, mo, 5)/*player.awaresector[sectors - mo->subsector->sector]*/)
 		ok = true;
 
 	std::vector<size_t>::iterator a = std::find(mo->players_aware.begin(), mo->players_aware.end(), player.id);
