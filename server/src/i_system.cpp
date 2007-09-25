@@ -297,7 +297,6 @@ std::string I_GetUserFileName (const char *file)
 #endif
 
 #ifdef WIN32
-	char tmp[MAX_PATH*2];
 	std::string path = I_GetBinaryDir();
 
 	if(path[path.length() - 1] != '/')
@@ -435,11 +434,10 @@ void STACK_ARGS I_FatalError (const char *error, ...)
                 int index;
                 va_list argptr;
                 va_start (argptr, error);
+                index = vsprintf (errortext, error, argptr);
                 #ifdef WIN32
                 sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
                 #else
-                index = vsprintf (errortext, error, argptr);
-                #endif
                 va_end (argptr);
 
                 // Record error to log (if logging)
