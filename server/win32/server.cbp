@@ -256,24 +256,9 @@
 		<Unit filename="..\src\g_game.h" />
 		<Unit filename="..\src\g_level.cpp" />
 		<Unit filename="..\src\g_level.h" />
-		<Unit filename="..\src\i_main.cpp">
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-			<Option target="Mac Release" />
-			<Option target="Mac Debug" />
-		</Unit>
-		<Unit filename="..\src\i_system.cpp">
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-			<Option target="Mac Release" />
-			<Option target="Mac Debug" />
-		</Unit>
-		<Unit filename="..\src\i_system.h">
-			<Option target="Unix Release" />
-			<Option target="Unix Debug" />
-			<Option target="Mac Release" />
-			<Option target="Mac Debug" />
-		</Unit>
+		<Unit filename="..\src\i_main.cpp" />
+		<Unit filename="..\src\i_system.cpp" />
+		<Unit filename="..\src\i_system.h" />
 		<Unit filename="..\src\m_misc.cpp" />
 		<Unit filename="..\src\m_misc.h" />
 		<Unit filename="..\src\p_interaction.cpp" />
@@ -301,9 +286,6 @@
 		<Unit filename="..\src\v_palette.cpp" />
 		<Unit filename="..\src\v_palette.h" />
 		<Unit filename="..\src\v_text.h" />
-		<Unit filename="i_main.cpp" />
-		<Unit filename="i_system.cpp" />
-		<Unit filename="i_system.h" />
 		<Unit filename="resource.h">
 			<Option target="Win Release" />
 			<Option target="Win Debug" />

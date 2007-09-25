@@ -20,25 +20,39 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifdef UNIX
-
 #include <sstream>
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <fnmatch.h>
-#include <sys/stat.h>
+#include <stdarg.h>
+#include <math.h>
+
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+
+#include <conio.h>
+#include <io.h>
+#include <process.h>
+
+#include <windows.h>
+#include <mmsystem.h>
+#include <DIRECT.H> // SoM: I don't know HOW this has been overlooked until now...
+#endif
 
 #ifdef UNIX
 #define HAVE_PWD_H
-#endif
 
-#ifdef HAVE_PWD_H
+#include <fnmatch.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/time.h>
 #include <pwd.h>
+#include <unistd.h>
+
 #endif
 
+// [Russell] - What the hell is going on here?!
 #ifdef OSF1
 #define _XOPEN_SOURCE_EXTENDED
 #endif
@@ -47,12 +61,7 @@
 #undef _XOPEN_SOURCE_EXTENDED
 #endif
 
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/time.h>
-
 #include "errors.h"
-#include <math.h>
 
 #include "doomtype.h"
 #include "version.h"
@@ -68,6 +77,10 @@
 #include "i_net.h"
 #include "c_dispatch.h"
 #include "sv_main.h"
+
+#ifdef WIN32
+UINT TimerPeriod;
+#endif
 
 float mb_used = 32.0;
 
@@ -88,9 +101,12 @@ int I_GetHeapSize (void)
 byte *I_ZoneBase (size_t *size)
 {
     const char *p = Args.CheckValue ("-heapsize");
+    
     if (p)
-                mb_used = (float)atof (p);
-    *size = (int)(mb_used*1024*1024);
+        mb_used = (float)atof (p);
+    
+    *size = (int)I_GetHeapSize();
+    
     return (byte *) Malloc (*size);
 }
 
@@ -107,13 +123,41 @@ byte *I_AllocLow(int length)
     byte *mem;
 
     mem = (byte *)Malloc (length);
-    if (mem) {
-                memset (mem,0,length);
-    }
+    
+    if (mem)
+        memset (mem, 0, length);
+        
     return mem;
 }
 
+#ifdef WIN32
+// denis - use this unless you want your program
+// to get confused every 49 days due to DWORD limit
+QWORD I_UnwrapTime(DWORD now32)
+{
+	static QWORD last = 0;
+	QWORD now = now32;
 
+	if(now < last%UINT_MAX)
+		last += (UINT_MAX-(last%UINT_MAX)) + now;
+	else
+		last = now;
+
+	return last;
+}
+
+// [RH] Returns time in milliseconds
+QWORD I_MSTime (void)
+{
+	static QWORD basetime = 0;
+	QWORD now = I_UnwrapTime(timeGetTime());
+
+	if(!basetime)
+		basetime = now;
+
+	return now - basetime;
+}
+#else
 // [RH] Returns time in milliseconds
 QWORD I_MSTime (void)
 {
@@ -140,6 +184,7 @@ QWORD I_MSTime (void)
 
 	return now;
 }
+#endif
 
 //
 // I_GetTime
@@ -161,14 +206,22 @@ QWORD I_WaitForTicPolled (QWORD prevtic)
 
 void I_Yield(void)
 {
+	#ifdef WIN32
+	Sleep(1);
+	#else
 	usleep(1000);
+	#endif
 }
 
 void I_WaitVBL (int count)
 {
     // I_WaitVBL is never used to actually synchronize to the
     // vertical blank. Instead, it's used for delay purposes.
+    #ifdef WIN32
+    Sleep (1000 * count / 70);
+    #else
     usleep (1000000 * count / 70);
+    #endif
 }
 
 //
@@ -224,6 +277,9 @@ std::string I_GetUserFileName (const char *file)
 {
 #ifdef UNIX
 	std::string path = I_GetHomeDir();
+
+	if(path[path.length() - 1] != '/')
+		path += "/";
 
 	path += ".odamex";
 
@@ -356,6 +412,10 @@ void STACK_ARGS I_Quit (void)
 {
     has_exited = 1;             /* Prevent infinitely recursive exits -- killough */
 
+    #ifdef WIN32
+    timeEndPeriod (TimerPeriod);
+    #endif
+
     G_ClearSnapshots ();
     SV_SendDisconnectSignal();
     
@@ -383,7 +443,11 @@ void STACK_ARGS I_FatalError (const char *error, ...)
                 int index;
                 va_list argptr;
                 va_start (argptr, error);
+                #ifdef WIN32
+                sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
+                #else
                 index = vsprintf (errortext, error, argptr);
+                #endif
                 va_end (argptr);
 
                 // Record error to log (if logging)
@@ -460,6 +524,60 @@ int I_FindAttr (findstate_t *fileinfo)
 //
 // I_ConsoleInput
 //
+#ifdef WIN32
+std::string I_ConsoleInput (void)
+{
+	// denis - todo - implement this properly!!!
+    static char     text[1024] = {0};
+    static char     buffer[1024] = {0};
+    unsigned int    len = strlen(buffer);
+
+	while(kbhit() && len < sizeof(text))
+	{
+		char ch = (char)getch();
+
+		// input the character
+		if(ch == '\b' && len)
+		{
+			buffer[--len] = 0;
+			// john - backspace hack
+			fwrite(&ch, 1, 1, stdout);
+			ch = ' ';
+			fwrite(&ch, 1, 1, stdout);
+			ch = '\b';
+		}
+		else
+			buffer[len++] = ch;
+		buffer[len] = 0;
+
+		// recalculate length
+		len = strlen(buffer);
+
+		// echo character back to user
+		fwrite(&ch, 1, 1, stdout);
+		fflush(stdout);
+	}
+
+	if(len && buffer[len - 1] == '\n' || buffer[len - 1] == '\r')
+	{
+		// echo newline back to user
+		char ch = '\n';
+		fwrite(&ch, 1, 1, stdout);
+		fflush(stdout);
+
+		strcpy(text, buffer);
+		text[len-1] = 0; // rip off the /n and terminate
+		buffer[0] = 0;
+		len = 0;
+
+		return text;
+	}
+
+	return "";
+}
+
+#else
+
 std::string I_ConsoleInput (void)
 {
 	std::string ret;
@@ -504,9 +622,7 @@ std::string I_ConsoleInput (void)
 
     return "";
 }
-
-VERSION_CONTROL (i_system_cpp, "$Id$")
-
 #endif
 
+VERSION_CONTROL (i_system_cpp, "$Id$")
 

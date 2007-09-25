@@ -20,18 +20,25 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <stack>
+#include <iostream>
+#include <map>
+#include <string>
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 #ifdef UNIX
-
-#include <iostream>
-#include <stack>
-#include <map>
-
 #include <unistd.h>
 #include <sys/types.h>
+#include <signal.h>
+#endif
 
 #include <stdlib.h>
-#include <signal.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <math.h>
 #include <time.h>
 
 #include "m_argv.h"
@@ -43,7 +50,15 @@
 #include "i_net.h"
 #include "sv_main.h"
 
+using namespace std;
+
+void AddCommandString(std::string cmd);
+
 DArgs Args;
+
+#ifdef WIN32
+extern UINT TimerPeriod;
+#endif
 
 // functions to be called at shutdown are stored in this stack
 typedef void (STACK_ARGS *term_func_t)(void);
@@ -60,6 +75,54 @@ static void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
+int PrintString (int printlevel, char const *outline)
+{
+	return printf("%s", outline);
+}
+
+#ifdef WIN32
+int __cdecl main(int argc, char *argv[])
+{
+    try
+    {
+		Args.SetArgs (argc, argv);
+
+		// Set the timer to be as accurate as possible
+		TIMECAPS tc;
+		if (timeGetDevCaps (&tc, sizeof(tc) != TIMERR_NOERROR))
+			TimerPeriod = 1;	// Assume minimum resolution of 1 ms
+		else
+			TimerPeriod = tc.wPeriodMin;
+
+		timeBeginPeriod (TimerPeriod);
+
+		atexit (call_terms);
+
+		Z_Init();
+
+		atterm (I_Quit);
+		atterm (DObject::StaticShutdown);
+
+		progdir = I_GetBinaryDir();
+		startdir = I_GetCWD();
+
+		C_InitConsole (80*8, 25*8, false);
+		D_DoomMain ();
+    }
+    catch (CDoomError &error)
+    {
+		fprintf (stderr, "%s\n", error.GetMessage().c_str());
+		exit (-1);
+    }
+    catch (...)
+    {
+		call_terms ();
+		throw;
+    }
+    return 0;
+}
+#else
+
 // cleanup handling -- killough:
 static void handler (int s)
 {
@@ -75,11 +138,6 @@ static void handler (int s)
 		   s==SIGTERM ? "Killed" : "Terminated by signal %s");
 
     I_FatalError (buf, s);
-}
-
-int PrintString (int printlevel, char const *outline)
-{
-	return printf("%s", outline);
 }
 
 //
@@ -160,7 +218,7 @@ int main (int argc, char **argv)
     return 0;
 }
 
-VERSION_CONTROL (i_main_cpp, "$Id$")
-
 #endif
+
+VERSION_CONTROL (i_main_cpp, "$Id$")
 

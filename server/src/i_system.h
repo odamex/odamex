@@ -20,13 +20,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-/////////////////////////////////// WINDOWS
-#ifdef _WIN32
-#include "../win32/i_system.h"
-#endif
-
-/////////////////////////////////// UNIX
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
@@ -106,6 +99,9 @@ void STACK_ARGS I_FatalError (const char *error, ...);
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
 
+// Repaint the pre-game console
+void I_PaintConsole (void);
+
 // Print a console string
 void I_PrintStr (int x, const char *str, int count, BOOL scroll);
 
@@ -153,5 +149,6 @@ int I_FindAttr (findstate_t *fileinfo);
 #define FA_ARCH		16
 
 #endif
+
 
 
