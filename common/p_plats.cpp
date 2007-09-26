@@ -344,7 +344,7 @@ manual_plat:
 			if (plat->m_High < sec->floorheight)
 				plat->m_High = sec->floorheight;
 
-			plat->m_Status = P_Random () & 1 ? DPlat::up : DPlat::down;
+			plat->m_Status = P_Random () & 1 ? DPlat::down : DPlat::up;
 
 			//plat->PlayPlatSound ("Platform");
 			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
