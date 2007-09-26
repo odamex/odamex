@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
@@ -29,6 +29,8 @@
 #include "vectors.h"
 #include "actor.h"
 #include "tables.h"
+
+#include <math.h>
 
 #ifndef M_PI
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
@@ -284,5 +286,5 @@ void R_ConcatRotations (const float in1[3][3], const float in2[3][3], float out[
 }
 
 
-VERSION_CONTROL (vectors_cpp, "$Id:$")
+VERSION_CONTROL (vectors_cpp, "$Id$")
 

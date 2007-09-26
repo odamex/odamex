@@ -60,6 +60,8 @@
 #include "cl_main.h"
 #include "gi.h"
 
+#include <math.h> // for pow()
+
 #define SAVESTRINGSIZE	24
 
 #define TURN180_TICKS	9				// [RH] # of ticks to complete a turn180
