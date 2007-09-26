@@ -605,17 +605,16 @@ void P_BulletSlope (AActor *mo)
 			bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
 			// [RH] If we never found a target, use actor's pitch to
 			// determine bulletslope
-			if (!linetarget)
+			if (freelook && !linetarget)
 			{
 				an = mo->angle;
 				bulletslope = pitchslope;
 			}
 		}
 	}
-	if (linetarget && mo->player)
+	if (freelook && linetarget && mo->player)
 	{
-		if (freelook
-			&& abs(bulletslope - pitchslope) > mo->player->userinfo.aimdist)
+		if (abs(bulletslope - pitchslope) > mo->player->userinfo.aimdist)
 		{
 			bulletslope = pitchslope;
 			an = mo->angle;
