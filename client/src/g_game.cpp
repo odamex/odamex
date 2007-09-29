@@ -139,6 +139,7 @@ int 			gametic;
 char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
+BOOL			democlassic;
 BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 int				iffdemover;
@@ -1733,6 +1734,8 @@ void G_DoPlayDemo (void)
 			return;
 		}
 
+		democlassic = true;
+
 		demoversion = *demo_p++ == DOOM_1_9_1_DEMO ? LMP_DOOM_1_9_1 : LMP_DOOM_1_9;
 		float s = (float)((*demo_p++)+1);
 		skill = s;
@@ -1799,6 +1802,8 @@ void G_DoPlayDemo (void)
 		freelook = "0";
 
 		return;
+	} else {
+		democlassic = false;
 	}
 
 	if (ReadLong (&demo_p) != FORM_ID) {

@@ -154,6 +154,7 @@ extern	BOOL			usergame;
 extern	BOOL			demoplayback;
 extern	BOOL			demorecording;
 extern	int				demover;
+extern	BOOL			democlassic;
 
 // Quit after playing a demo from cmdline.
 extern	BOOL			singledemo;

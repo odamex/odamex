@@ -1263,8 +1263,14 @@ void A_VileChase (AActor *actor)
 
 					P_SetMobjState (corpsehit,info->raisestate);
 
-					corpsehit->height = info->height;	// [RH] Use real mobj height
-					corpsehit->radius = info->radius;	// [RH] Use real radius
+					// [Nes] - Classic demo compatability: Ghost monster bug.
+					if (demoplayback && democlassic) {
+						corpsehit->height <<= 2;
+					} else {
+						corpsehit->height = info->height;	// [RH] Use real mobj height
+						corpsehit->radius = info->radius;	// [RH] Use real radius
+					}
+
 					corpsehit->flags = info->flags;
 					corpsehit->health = info->spawnhealth;
 					corpsehit->target = AActor::AActorPtr();

@@ -106,6 +106,7 @@ int 			gametic;
 char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
+BOOL			democlassic;
 BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 int				demover;
