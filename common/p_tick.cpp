@@ -35,6 +35,9 @@ void P_Ticker (void)
 	if(paused)
 		return;
 
+	if (!multiplayer && !demoplayback && menuactive && players[0].viewz != 1)
+		return;
+
 	if((serverside && sv_speedhackfix) || (clientside && serverside))
 	{
 		for(size_t i = 0; i < players.size(); i++)

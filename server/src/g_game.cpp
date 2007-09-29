@@ -86,6 +86,7 @@ BOOL 			sendpause;				// send a pause event next tic
 BOOL			sendsave;				// send a save event next tic
 BOOL 			usergame;				// ok to save / end game
 BOOL			sendcenterview;			// send a center view event next tic
+BOOL			menuactive;				// only to make sure p_tick doesn't bitch
 
 BOOL			timingdemo; 			// if true, exit with report on completion
 BOOL 			nodrawers;				// for comparative timing purposes
