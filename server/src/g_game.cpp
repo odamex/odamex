@@ -420,6 +420,8 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	fixed_t 			y;
 	fixed_t				z, oldz;
 	subsector_t*		ss;
+	unsigned			an;
+	AActor* 			mo;
 	size_t 				i;
 
 	x = mthing->x << FRACBITS;
@@ -427,7 +429,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	z = mthing->z << FRACBITS;
 
 	ss = R_PointInSubsector (x,y);
-	z += ss->sector->floorheight;
+	z = ss->sector->floorheight;
 
 	if (!player.mo)
 	{
@@ -454,6 +456,17 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	player.mo->z = oldz;	// [RH] Restore corpse's height
 	if (!i)
 		return false;
+
+	// spawn a teleport fog
+	an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+
+	mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
+
+	// send new object
+	SV_SpawnMobj(mo);
+	
+	if (level.time)
+		SV_Sound (mo->x, mo->y, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 
 	return true;
 }
@@ -605,10 +618,7 @@ void G_DoReborn (player_t &player)
 	// respawn at the start
 	// first disassociate the corpse
 	if (player.mo)
-	{
 		player.mo->player = NULL;
-		player.mo = AActor::AActorPtr();
-	}
 
 	if(!serverside)
 		return;

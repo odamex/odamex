@@ -1137,17 +1137,14 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 			p->cards[i] = true;
 	}
 
-	// [RH] If someone is in the way, kill them
-	P_TeleportMove (mobj, mobj->x, mobj->y, mobj->z, true);
+	if(serverside)
+	{
+		// [RH] If someone is in the way, kill them
+		P_TeleportMove (mobj, mobj->x, mobj->y, mobj->z, true);
 
-	// send new player object
-	SV_SpawnMobj(mobj);
-
-	// send teleport fog
-	AActor *tfog = new AActor (mobj->x, mobj->y, mobj->z, MT_TFOG);
-	SV_SpawnMobj(tfog);
-
-	SV_Sound (mobj->x, mobj->y, CHAN_VOICE, "misc/teleport", ATTN_NORM);
+		// send new objects
+		SV_SpawnMobj(mobj);
+	}
 }
 
 

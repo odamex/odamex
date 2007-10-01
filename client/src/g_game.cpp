@@ -1140,10 +1140,9 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
-	z = mthing->z << FRACBITS;
 
 	ss = R_PointInSubsector (x,y);
-	z += ss->sector->floorheight;
+	z = ss->sector->floorheight;
 
 	if (!player.mo)
 	{
@@ -1172,7 +1171,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		return false;
 
 	// spawn a teleport fog
-	an = ( ANG45 * (mthing->angle/45) ) >> ANGLETOFINESHIFT;
+	an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
 
 	mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
 
@@ -1351,10 +1350,7 @@ void G_DoReborn (player_t &player)
 	// respawn at the start
 	// first disassociate the corpse
 	if (player.mo)
-	{
 		player.mo->player = NULL;
-		player.mo = AActor::AActorPtr();
-	}
 
 	// spawn at random spot if in death match
 	if (deathmatch)
