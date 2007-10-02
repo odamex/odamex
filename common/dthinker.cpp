@@ -186,8 +186,6 @@ void DThinker::RunThinkers ()
 	currentthinker = FirstThinker;
 	while (currentthinker)
 	{
-		DThinker *next = currentthinker->m_Next;
-		
 		if ( currentthinker->IsKindOf (RUNTIME_CLASS (AActor))
 				   && static_cast<AActor *>(currentthinker)->player
 				   && static_cast<AActor *>(currentthinker)->player->playerstate != PST_DEAD
@@ -195,8 +193,8 @@ void DThinker::RunThinkers ()
 			;
 		else
 			currentthinker->RunThink ();
-		
-		currentthinker = next;
+
+		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);
 }
