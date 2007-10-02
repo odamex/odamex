@@ -81,7 +81,7 @@
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
 // put into newer configfiles.
-static CVAR (configver, CONFIGVERSIONSTR, CVAR_ARCHIVE)
+static CVAR (configver, CONFIGVERSIONSTR, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 bool M_WriteFile (char const *name, void *source, int length)
 {

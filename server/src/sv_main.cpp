@@ -63,14 +63,14 @@ extern level_locals_t level;
 bool clientside = false, serverside = true;
 
 // General server settings
-CVAR (hostname,			"Unnamed",	CVAR_ARCHIVE | CVAR_SERVERINFO)					// A servers name that will apear in the launcher.
-CVAR (email,			"",			CVAR_ARCHIVE | CVAR_SERVERINFO)					// Server admin's e-mail address. - does not work yet
+CVAR (hostname,			"Unnamed",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// A servers name that will apear in the launcher.
+CVAR (email,			"",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Server admin's e-mail address. - does not work yet
 CVAR (usemasters,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Server apears in the server list when true.
 CVAR (waddownload,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Send wad files to clients who request them.
 CVAR (emptyreset,       "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)                 // Reset current map when last player leaves.
-CVAR (clientcount,		"0",        CVAR_NOSET)										// tracks number of connected players for scripting
+CVAR (clientcount,		"0",        CVAR_NOSET | CVAR_NOENABLEDISABLE)										// tracks number of connected players for scripting
 
-BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Describes the max number of clients that are allowed to connect. - does not work yet
+BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
 	if(var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
@@ -105,11 +105,11 @@ CVAR (deathmatch,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Deathma
 CVAR (fraglimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Sets the winning frag total for deathmatch and teamDM.
 CVAR (timelimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Sets the max time in minutes for each game.
 
-CVAR (maxcorpses, 		"200", 		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (maxcorpses, 		"200", 		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 		// joek - max number of corpses. < 0 is infinite
 
 // Map behavior
-BEGIN_CUSTOM_CVAR (skill,		"5",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Game skill setting.
+BEGIN_CUSTOM_CVAR (skill,		"5",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Game skill setting.
 {
 	if(var < sk_baby)
 		var.Set(sk_baby);
@@ -135,7 +135,7 @@ CVAR (infiniteammo,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players have i
 
 // Teamplay/CTF
 CVAR (usectf,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// CTF will automaticly be enabled on maps that contain flags when true.
-CVAR (scorelimit,		"10",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Sets the winning flag capture total for CTF games.
+CVAR (scorelimit,		"10",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the winning flag capture total for CTF games.
 CVAR (friendlyfire,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players on the same team cannot cause eachother damage in team games when true.
 CVAR (teamplay,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// TeamDM is enabled when true - requires deathmatch being true.
 CVAR (blueteam,			"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team BLUE when true - TeamDM only.
@@ -144,7 +144,7 @@ CVAR (goldteam,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allow
 
 //									Private server settings
 
-BEGIN_CUSTOM_CVAR (password,	"",			CVAR_ARCHIVE)									// Remote console password.
+BEGIN_CUSTOM_CVAR (password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)									// Remote console password.
 {
 	// denis - todo implement use of this
 	if(strlen(var.cstring()))
@@ -152,7 +152,7 @@ BEGIN_CUSTOM_CVAR (password,	"",			CVAR_ARCHIVE)									// Remote console passw
 }
 END_CUSTOM_CVAR(password)
 
-BEGIN_CUSTOM_CVAR (spectate_password,	"",			CVAR_ARCHIVE)									// Remote console password.
+BEGIN_CUSTOM_CVAR (spectate_password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)									// Remote console password.
 {
 	// denis - todo implement use of this
 	if(strlen(var.cstring()))
@@ -160,7 +160,7 @@ BEGIN_CUSTOM_CVAR (spectate_password,	"",			CVAR_ARCHIVE)									// Remote cons
 }
 END_CUSTOM_CVAR(spectate_password)
 
-BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE)									// Remote console password.
+BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)									// Remote console password.
 {
 	if(strlen(var.cstring()) < 5)
 	{

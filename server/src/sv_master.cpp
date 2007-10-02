@@ -92,9 +92,9 @@ EXTERN_CVAR (fragexitswitch)
 //bond===========================
 
 // if set, advetise user-defined natport value to the master
-CVAR(natport,	"0", CVAR_ARCHIVE)
+CVAR(natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR (website, "", CVAR_ARCHIVE)
+CVAR (website, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 buf_t     ml_message(MAX_UDP_PACKET);
 
