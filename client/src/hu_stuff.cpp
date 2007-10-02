@@ -536,7 +536,7 @@ void HU_DMScores2 (player_t *player)
 {
 	char str[80];
 	std::vector<player_t *> sortedplayers(players.size());
-	unsigned int i, j, playercount = 0;
+	unsigned int i, j;
 
 	if (player->camera->player)
 		player = player->camera->player;
@@ -602,8 +602,16 @@ void HU_DMScores2 (player_t *player)
 
 	// Player scores header
 	screen->DrawText	  (CR_GREY	,locx + 8		,locy + 0	,"PLAYERS:"		);
-	if(deathmatch)
+	sprintf (str, "%d", (unsigned int)sortedplayers.size());
+	screen->DrawText	  (CR_GREEN	,locx + 68		,locy + 0	,	str	);
+
+	// Fraglimit
+	if (deathmatch)
+	{
 		screen->DrawText	  (CR_GREY	,locx + 266		,locy + 0	,"FRAGLIMIT:"	);
+		sprintf (str, "%d", (int)fraglimit);
+		screen->DrawText	  (CR_GREEN	,locx + 336		,locy + 0	,	str	);
+	}
 
 	screen->Clear (locx + 8,
 				   locy + 8,
@@ -626,101 +634,86 @@ void HU_DMScores2 (player_t *player)
 	screen->DrawText	  (CR_GREY	,locx + 301		,locy + 11	,"PING"			);
 	screen->DrawText	  (CR_GREY	,locx + 339		,locy + 11	,"TIME"			);
 
-	i = sortedplayers.size();
 
+	i = sortedplayers.size();
 
 	//	Draw player info
 	for (i = 0; i < sortedplayers.size() && y < ST_Y - 12 * CleanYfac; i++)
 	{
 		int color = sortedplayers[i]->userinfo.color;
 
-		if (sortedplayers[i]->ingame())
+		if (!sortedplayers[i]->ingame())
+			continue;
+		// Define text color
+		if (sortedplayers[i] != player)
+			color = CR_BRICK;
+		else
+			color = CR_GREEN;
+
+
+
+		int blob = sortedplayers[i]->userinfo.color;
+
+
+		blob = BestColor (DefaultPalette->basecolors,
+						  RPART(blob),
+						  GPART(blob),
+						  BPART(blob),
+						  DefaultPalette->numcolors);
+
+
+		screen->Clear (locx,
+					   locy + y,
+					   locx + 7,
+					   locy + y + 7,
+					   blob);
+
+
+		// NAME
+		strcpy (str, sortedplayers[i]->userinfo.netname);
+		screen->DrawText	  (color	,locx + 8							,locy + y	,	str	);
+
+		// [deathz0r] FRAG for deathmatch, KILLS for coop
+		if(deathmatch)
+			sprintf (str, "%d", sortedplayers[i]->fragcount);
+		else
+			sprintf (str, "%d", sortedplayers[i]->killcount);
+		screen->DrawText	  (color	,locx + (166 - V_StringWidth (str))	,locy + y	,	str	);
+
+		// [deathz0r] FRAGS/DEATHS (dm) or KILLS/DEATHS (coop) RATIO
+		if(deathmatch)
 		{
-			// Define text color
-			if (sortedplayers[i] != player)
-				color = CR_BRICK;
+			if (sortedplayers[i]->fragcount <= 0) // Displays a 0.0 when frags are 0 or negative
+				sprintf (str, "0.0"); // [deathz0r] Buggy? [anarkavre] just explicitly print as string
+			else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0) // [deathz0r] Do not divide by zero
+				sprintf (str, "%5.1f", (float)sortedplayers[i]->fragcount); // [anarkavre] dividing by 1 will just end up fragcount
 			else
-				color = CR_GREEN;
-
-
-
-			int blob = sortedplayers[i]->userinfo.color;
-
-
-			blob = BestColor (DefaultPalette->basecolors,
-							  RPART(blob),
-							  GPART(blob),
-							  BPART(blob),
-							  DefaultPalette->numcolors);
-
-
-			screen->Clear (locx,
-						   locy + y,
-						   locx + 7,
-						   locy + y + 7,
-						   blob);
-
-
-			// NAME
-			strcpy (str, sortedplayers[i]->userinfo.netname);
-			screen->DrawText	  (color	,locx + 8							,locy + y	,	str	);
-
-			// [deathz0r] FRAG for deathmatch, KILLS for coop
-			if(deathmatch)
-				sprintf (str, "%d", sortedplayers[i]->fragcount);
-			else
-				sprintf (str, "%d", sortedplayers[i]->killcount);
-			screen->DrawText	  (color	,locx + (166 - V_StringWidth (str))	,locy + y	,	str	);
-
-			// [deathz0r] FRAGS/DEATHS (dm) or KILLS/DEATHS (coop) RATIO
-			if(deathmatch)
-			{
-				if (sortedplayers[i]->fragcount <= 0) // Displays a 0.0 when frags are 0 or negative
-					sprintf (str, "0.0"); // [deathz0r] Buggy? [anarkavre] just explicitly print as string
-				else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0) // [deathz0r] Do not divide by zero
-					sprintf (str, "%5.1f", (float)sortedplayers[i]->fragcount); // [anarkavre] dividing by 1 will just end up fragcount
-				else
-					sprintf (str, "%5.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
-			}
-			else
-			{
-				if (sortedplayers[i]->killcount == 0) // [deathz0r] Displays a 0.0 when kills are 0
-					sprintf (str, "0.0"); // Buggy?
-				else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0) // [deathz0r] Do not divide by zero
-					sprintf (str, "%5.1f", (float)sortedplayers[i]->killcount);
-				else
-					sprintf (str, "%5.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
-			}
-			screen->DrawText	  (color	,locx + (231 - V_StringWidth (str))	,locy + y	,	str	);
-
-			// DEATHS
-			sprintf (str, "%d", sortedplayers[i]->deathcount);
-			screen->DrawText	  (color	,locx + (281 - V_StringWidth (str))	,locy + y	,	str	);
-
-			// PING
-			sprintf (str, "%d", sortedplayers[i]->ping);
-			screen->DrawText	  (color	,locx + (326 - V_StringWidth (str))	,locy + y	,	str	);
-
-			// TIME
-			sprintf (str, "%d", (sortedplayers[i]->GameTime / 60));
-			screen->DrawText	  (color	,locx + (368 - V_StringWidth (str))	,locy + y	,	str	);
-
-			playercount++;
-
-			y += 10;
+				sprintf (str, "%5.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
 		}
-
-		// PLAYER COUNT
-		sprintf (str, "%d", playercount);
-		screen->DrawText	  (CR_GREEN	,locx + 68		,locy + 0	,	str	);
-
-		// FRAGLIMIT
-		if (deathmatch)
+		else
 		{
-			sprintf (str, "%d", (int)fraglimit);
-			screen->DrawText	  (CR_GREEN	,locx + 336		,locy + 0	,	str	);
+			if (sortedplayers[i]->killcount == 0) // [deathz0r] Displays a 0.0 when kills are 0
+				sprintf (str, "0.0"); // Buggy?
+			else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0) // [deathz0r] Do not divide by zero
+				sprintf (str, "%5.1f", (float)sortedplayers[i]->killcount);
+			else
+				sprintf (str, "%5.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
 		}
+		screen->DrawText	  (color	,locx + (231 - V_StringWidth (str))	,locy + y	,	str	);
 
+		// DEATHS
+		sprintf (str, "%d", sortedplayers[i]->deathcount);
+		screen->DrawText	  (color	,locx + (281 - V_StringWidth (str))	,locy + y	,	str	);
+
+		// PING
+		sprintf (str, "%d", sortedplayers[i]->ping);
+		screen->DrawText	  (color	,locx + (326 - V_StringWidth (str))	,locy + y	,	str	);
+
+		// TIME
+		sprintf (str, "%d", (sortedplayers[i]->GameTime / 60));
+		screen->DrawText	  (color	,locx + (368 - V_StringWidth (str))	,locy + y	,	str	);
+
+		y += 10;
 	}
 }
 
