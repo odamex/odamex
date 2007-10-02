@@ -283,7 +283,6 @@ END_COMMAND (ctf)
 void SV_InitNetwork (void)
 {
 	netgame = false;  // for old network code
-	multiplayer = true;
 
 	const char *v = Args.CheckValue ("-port");
     if (v)

@@ -498,6 +498,7 @@ void G_DoNewGame (void)
 EXTERN_CVAR (skill)
 EXTERN_CVAR (monstersrespawn)
 EXTERN_CVAR (fastmonsters)
+EXTERN_CVAR (maxplayers)
 
 void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
@@ -584,6 +585,12 @@ void G_InitNew (char *mapname)
 			players[i].playerstate = PST_REBORN;
 		}
 	}
+
+	// if only one player allowed, then this is a single player server
+	if(maxplayers == 1)
+		multiplayer = false;
+	else
+		multiplayer = true;
 
 	usergame = true;				// will be set false if a demo
 	paused = false;
