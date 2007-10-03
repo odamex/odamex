@@ -924,6 +924,8 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	}
 	if (iwad.length())
 		wadfiles.push_back(iwad);
+	else
+		I_Error("Cannot find IWAD (try -waddir)");
 
 	return iwad.length() ? true : false;
 }

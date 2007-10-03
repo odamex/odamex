@@ -179,6 +179,9 @@ int main(int argc, char *argv[])
 	catch (CDoomError &error)
 	{
 		fprintf (errout, "%s\n", error.GetMessage().c_str());
+#ifdef WIN32
+		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
+#endif
 		exit (-1);
 	}
 #ifndef _DEBUG
