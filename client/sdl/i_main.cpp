@@ -111,17 +111,6 @@ int main(int argc, char *argv[])
 		Args.SetArgs (argc, argv);
    
 #ifdef WIN32
-    	// Allow -gdi as a shortcut for using the windib driver.
-
-   		//!
-    	// @category video 
-    	// @platform windows
-    	//
-    	// Use the Windows GDI driver instead of DirectX.
-    	//
-
-		const char *sdlv = getenv("SDL_VIDEODRIVER");
-
     	// From the SDL 1.2.10 release notes: 
     	//
     	// > The "windib" video driver is the default now, to prevent 

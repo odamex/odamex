@@ -23,7 +23,9 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add option="-lmingw32 -mwindows -lwinmm -lwsock32" />
+					<Add library="mingw32" />
+					<Add library="winmm" />
+					<Add library="wsock32" />
 				</Linker>
 			</Target>
 			<Target title="Win Debug">
@@ -44,7 +46,9 @@
 					<Add option="-D_DEBUG" />
 				</Compiler>
 				<Linker>
-					<Add option="-lmingw32 -mwindows -lwinmm -lwsock32" />
+					<Add library="mingw32" />
+					<Add library="winmm" />
+					<Add library="wsock32" />
 				</Linker>
 			</Target>
 			<Target title="Unix Release">
@@ -123,9 +127,9 @@
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
-			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
-			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
+			<Add alias="All (MAC)" targets="Mac Release;Mac Debug" />
+			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug" />
+			<Add alias="All (WIN32)" targets="Win Release;Win Debug" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
@@ -138,7 +142,9 @@
 			<Add directory="..\..\common" />
 		</Compiler>
 		<Linker>
-			<Add option="-lSDLmain -lSDL -lSDL_mixer" />
+			<Add library="SDLmain" />
+			<Add library="SDL" />
+			<Add library="SDL_mixer" />
 		</Linker>
 		<Unit filename="client.rc">
 			<Option compilerVar="WINDRES" />
