@@ -278,16 +278,15 @@ void D_Display (void)
 			if (automapactive)
 				AM_Drawer ();
 			C_DrawMid ();
-			ST_Drawer ();
 			CTF_DrawHud ();
 			HU_Drawer ();
+			ST_Drawer ();
 			break;
 
 		case GS_INTERMISSION:
 			if (viewactive)
 				R_RenderPlayerView (&displayplayer());
 			C_DrawMid ();
-			ST_Drawer ();
 			CTF_DrawHud ();
 			WI_Drawer ();
 			HU_Drawer ();
