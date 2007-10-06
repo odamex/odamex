@@ -1767,11 +1767,26 @@ void G_DoPlayDemo (void)
 
 		consoleplayer_id = displayplayer_id = con.id;
 
+		int pcol[4] = {(0x0000FF00), (0x006060B0), (0x00B0B030), (0x00C00000)};
+		char pnam[4][MAXPLAYERNAME] = {"GREEN", "INDIGO", "BROWN", "RED"};
+		
 		if(players.size() > 1)
 		{
 			netgame = true;
 			netdemo = true;
 			multiplayer = true;
+			
+			for (size_t i = 0; i < 4; i++) {
+				if (players[i].ingame()) {
+					strcpy(players[i].userinfo.netname, pnam[i]);
+					players[i].userinfo.team = TEAM_NONE;
+					players[i].userinfo.gender = GENDER_NEUTER;
+					players[i].userinfo.color = pcol[i];
+					players[i].userinfo.skin = 0;
+					players[i].GameTime = 0;
+					R_BuildPlayerTranslation (players[i].id, players[i].userinfo.color);
+				}
+			}
 		}
 		else
 		{
