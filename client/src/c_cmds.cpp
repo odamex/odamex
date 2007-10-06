@@ -55,9 +55,16 @@ END_COMMAND (toggleconsole)
 
 EXTERN_CVAR (sv_cheats)
 
+// Checks whether cheats are enabled or not, returns true if they're NOT enabled
+// and false if they ARE enabled (stupid huh? not my work [Russell])
 bool CheckCheatmode (void)
 {
-	if (((skill == sk_nightmare) || multiplayer || deathmatch) && !sv_cheats)
+	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats 
+	// are disabled
+	if (skill == sk_nightmare && !multiplayer)
+        return true;
+	
+	if ((multiplayer || deathmatch) && !sv_cheats)
 	{
 		Printf (PRINT_HIGH, "You must run the server with '+set sv_cheats 1' to enable this command.\n");
 		return true;
