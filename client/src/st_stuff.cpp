@@ -450,7 +450,7 @@ static int		keyboxes[3];
 // copy of player info
 static int		st_health, st_armor;
 static int		st_ammo[4], st_maxammo[4];
-static int		st_weaponowned[6], st_current_ammo;
+static int		st_weaponowned[6] = {0}, st_current_ammo;
 
 // a random number per tick
 static int		st_randomnumber;
@@ -749,13 +749,19 @@ int ST_calcPainOffset(void)
 	static int	lastcalc;
 	static int	oldhealth = -1;
 
-	health = consoleplayer().health > 100 ? 100 : consoleplayer().health;
+	health = consoleplayer().health;
+	
+	if(health < -1)
+		health = -1;
+	else if(health > 100)
+		health = 100;
 
 	if (health != oldhealth)
 	{
 		lastcalc = ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
 		oldhealth = health;
 	}
+	
 	return lastcalc;
 }
 
@@ -973,7 +979,7 @@ void ST_updateWidgets(void)
 	}
 	for(i = 0; i < 6; i++)
 	{
-		st_weaponowned[i] = plyr->weaponowned[i+1] ? 1 : 0;
+		st_weaponowned[i] = plyr->weaponowned[i+1] == false ? 1 : 0;
 	}
 	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
 	// if (*w_ready.on)
