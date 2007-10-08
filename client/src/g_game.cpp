@@ -87,6 +87,7 @@ CVAR (deathmatch, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // [Toke - todo] sh
 
 EXTERN_CVAR (novert)
 
+EXTERN_CVAR (monstersrespawn)
 
 
 CVAR (chasedemo, "0", 0)
@@ -1738,7 +1739,7 @@ void G_DoPlayDemo (void)
 		byte episode = *demo_p++;
 		byte map = *demo_p++;
 		deathmatch = *demo_p++;
-		respawnmonsters = *demo_p++;
+		monstersrespawn = *demo_p++;
 		fastmonsters = *demo_p++;
 		nomonsters = *demo_p++;
 		byte who = *demo_p++;
