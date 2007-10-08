@@ -1603,9 +1603,6 @@ static void P_SpawnScrollers(void)
 		// killough 3/15/98: Add acceleration. Types 214-218 are the same but
 		// are accelerative.
 
-		// [RH] Assume that it's a scroller and zero the line's special.
-		l->special = 0;
-
 		if (special == Scroll_Ceiling ||
 			special == Scroll_Floor ||
 			special == Scroll_Texture_Model) {
@@ -1697,8 +1694,6 @@ static void P_SpawnScrollers(void)
 				break;
 
 			default:
-				// [RH] It wasn't a scroller after all, so restore the special.
-				l->special = special;
 				break;
 		}
 	}
