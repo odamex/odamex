@@ -979,7 +979,7 @@ void ST_updateWidgets(void)
 	}
 	for(i = 0; i < 6; i++)
 	{
-		st_weaponowned[i] = plyr->weaponowned[i+1] == false ? 1 : 0;
+		st_weaponowned[i] = plyr->weaponowned[i+1] == true ? 1 : 0;
 	}
 	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
 	// if (*w_ready.on)
