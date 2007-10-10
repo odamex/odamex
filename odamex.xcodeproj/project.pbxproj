@@ -457,6 +457,7 @@
 		92D2DC250B64505100FD5B07 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D53A100AB96D8E00CF2FB2 /* SDL.framework */; };
 		92D2DC260B64505100FD5B07 /* SDL_mixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D53A0A0AB96D8700CF2FB2 /* SDL_mixer.framework */; };
 		92D2DC290B6450A400FD5B07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D2DC280B6450A400FD5B07 /* Carbon.framework */; };
+		92EC0A0F0CBD3B5400A804A6 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92EC0A0E0CBD3B5400A804A6 /* OpenGL.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -999,7 +1000,7 @@
 		92D2D7080B62B89B00FD5B07 /* wi_stuff.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wi_stuff.h; sourceTree = "<group>"; };
 		92D2D9C80B643FD200FD5B07 /* odaserv.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = odaserv.ico; sourceTree = "<group>"; };
 		92D2D9C90B643FD200FD5B07 /* resource.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = resource.h; sourceTree = "<group>"; };
-		92D2DA840B6444B300FD5B07 /* odamex */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odamex; sourceTree = BUILT_PRODUCTS_DIR; };
+		92D2DA840B6444B300FD5B07 /* odamex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "compiled.mach-o.executable"; path = odamex; sourceTree = BUILT_PRODUCTS_DIR; };
 		92D2DAC80B64491800FD5B07 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		92D2DACB0B64491800FD5B07 /* btnexit.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = btnexit.ico; sourceTree = "<group>"; };
 		92D2DACC0B64491800FD5B07 /* btnhelp.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = btnhelp.ico; sourceTree = "<group>"; };
@@ -1037,6 +1038,7 @@
 		92D2DC280B6450A400FD5B07 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 		92D53A0A0AB96D8700CF2FB2 /* SDL_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_mixer.framework; path = /Library/Frameworks/SDL_mixer.framework; sourceTree = "<absolute>"; };
 		92D53A100AB96D8E00CF2FB2 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
+		92EC0A0E0CBD3B5400A804A6 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		C6859E8B029090EE04C91782 /* odamex.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = odamex.1; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1051,6 +1053,7 @@
 				92CE7ECD0B645CD500DCACF0 /* Cocoa.framework in Frameworks */,
 				92325F2E0C89B6C0006D7EEF /* AudioToolbox.framework in Frameworks */,
 				9232603E0C89D378006D7EEF /* AudioUnit.framework in Frameworks */,
+				92EC0A0F0CBD3B5400A804A6 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1388,6 +1391,7 @@
 		92D2D80E0B62BB0B00FD5B07 /* libraries */ = {
 			isa = PBXGroup;
 			children = (
+				92EC0A0E0CBD3B5400A804A6 /* OpenGL.framework */,
 				9232603D0C89D378006D7EEF /* AudioUnit.framework */,
 				92325F2D0C89B6C0006D7EEF /* AudioToolbox.framework */,
 				92CE7ECC0B645CD500DCACF0 /* Cocoa.framework */,

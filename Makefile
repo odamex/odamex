@@ -77,7 +77,7 @@ LFLAGS_PLATFORM =
 ifeq ($(strip $(osx)), true)
 # osx does not use X11 for copy&paste, it uses Carbon
 CFLAGS_PLATFORM = -DUNIX -DOSX
-LFLAGS_PLATFORM = -framework Carbon -framework AudioToolbox -framework AudioUnit
+LFLAGS_PLATFORM = -framework Carbon -framework AudioToolbox -framework AudioUnit -framework OpenGL
 X11_LFLAGS = 
 endif
 
@@ -146,7 +146,7 @@ CLIENT_SOURCES = $(wildcard $(CLIENT_DIR)/*.cpp)
 CLIENT_OBJS = $(patsubst $(CLIENT_DIR)/%.cpp,$(OBJDIR)/$(CLIENT_DIR)/%.o,$(CLIENT_SOURCES))
 CLIENT_TARGET = $(BINDIR)/odamex
 CLIENT_CFLAGS = -I../client/src -Iclient/src
-CLIENT_LFLAGS =
+CLIENT_LFLAGS = 
 
 # Master
 MASTER_DIR = master
@@ -202,7 +202,7 @@ CLIENT_OBJS = $(patsubst $(CLIENT_DIR)/%.cpp,$(OBJDIR)/$(CLIENT_DIR)/%.o,$(CLIEN
 CLIENT_SOURCES = $(CLIENT_SOURCES_2) $(CLIENT_SOURCES_WIN32)
 CLIENT_HEADERS = $(CLIENT_HEADERS_2) $(CLIENT_HEADERS_WIN32)
 CLIENT_CFLAGS = -I../client/sdl -Iclient/sdl -I../client/src -Iclient/src $(SDL_CFLAGS)
-CLIENT_LFLAGS =  $(SDL_LFLAGS) -lSDL_mixer
+CLIENT_LFLAGS = $(SDL_LFLAGS) -lSDL_mixer
 #-ldmalloc
 # denis - end fixme
 
