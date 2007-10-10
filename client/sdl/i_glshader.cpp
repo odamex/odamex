@@ -73,7 +73,7 @@ const char *shaders[][2] =
 
 int selected_shader;
 
-typedef void (*glActiveTextureARB_t)(GLenum texture);
+typedef void (*_glActiveTextureARB_t)(GLenum texture);
 typedef GLhandleARB (*glCreateProgramObjectARB_t)(void);
 typedef GLhandleARB (*glCreateShaderObjectARB_t)(GLenum shaderType);
 typedef void (*glShaderSourceARB_t)(GLhandleARB shader,
@@ -96,7 +96,7 @@ typedef void (*glBindProgramARB_t)(GLenum target, GLuint program);
 typedef void (*glDeleteProgramsARB_t)(GLsizei n, const GLuint *programs);
 typedef void (*glGenProgramsARB_t)(GLsizei n, GLuint *programs);
 
-glActiveTextureARB_t glActiveTextureARB;
+_glActiveTextureARB_t _glActiveTextureARB;
 glCreateProgramObjectARB_t glCreateProgramObjectARB;
 glCreateShaderObjectARB_t glCreateShaderObjectARB;
 glShaderSourceARB_t glShaderSourceARB;
@@ -151,7 +151,7 @@ void EnableShader()
 	}
 
 	// get opengl function pointers
-	glActiveTextureARB = (glActiveTextureARB_t)SDL_GL_GetProcAddress("glActiveTextureARB");
+	_glActiveTextureARB = (_glActiveTextureARB_t)SDL_GL_GetProcAddress("glActiveTextureARB");
 	glCreateProgramObjectARB = (glCreateProgramObjectARB_t)SDL_GL_GetProcAddress("glCreateProgramObjectARB");
 	glCreateShaderObjectARB = (glCreateShaderObjectARB_t)SDL_GL_GetProcAddress("glCreateShaderObjectARB");
 	glShaderSourceARB = (glShaderSourceARB_t)SDL_GL_GetProcAddress("glShaderSourceARB");
@@ -231,7 +231,7 @@ void UpdateShaderPalette(SDL_Color *colors)
 	if(len > 256)
 		len = 256;
 	
-	glActiveTextureARB(GL_TEXTURE1_ARB);
+	_glActiveTextureARB(GL_TEXTURE1_ARB);
 	if(!once)
 	{
 		glGenTextures(1, &texture1);
@@ -264,7 +264,7 @@ void UpdateShaderPalette(SDL_Color *colors)
 
 	glDisable(GL_TEXTURE_2D);
 
-	glActiveTextureARB(GL_TEXTURE0_ARB);
+	_glActiveTextureARB(GL_TEXTURE0_ARB);
 }
 
 void DisableShader()
@@ -380,13 +380,13 @@ void RenderedTextureToScreen(size_t screenw, size_t screenh)
 		glEnable(GL_FRAGMENT_PROGRAM_ARB);
 		glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, shader);
 
-		glActiveTextureARB(GL_TEXTURE1_ARB);
+		_glActiveTextureARB(GL_TEXTURE1_ARB);
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, texture1);
 	}
 	if(selected_shader == 2)
 	{
-		glActiveTextureARB(GL_TEXTURE1_ARB);
+		_glActiveTextureARB(GL_TEXTURE1_ARB);
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, texture1);
 
@@ -401,7 +401,7 @@ void RenderedTextureToScreen(size_t screenw, size_t screenh)
 
 	if(selected_shader == 1 || selected_shader == 0)
 	{
-		glActiveTextureARB(GL_TEXTURE0_ARB);
+		_glActiveTextureARB(GL_TEXTURE0_ARB);
 				
 		glDisable(GL_FRAGMENT_PROGRAM_ARB);
 	}

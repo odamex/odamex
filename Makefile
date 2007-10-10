@@ -202,7 +202,7 @@ CLIENT_OBJS = $(patsubst $(CLIENT_DIR)/%.cpp,$(OBJDIR)/$(CLIENT_DIR)/%.o,$(CLIEN
 CLIENT_SOURCES = $(CLIENT_SOURCES_2) $(CLIENT_SOURCES_WIN32)
 CLIENT_HEADERS = $(CLIENT_HEADERS_2) $(CLIENT_HEADERS_WIN32)
 CLIENT_CFLAGS = -I../client/sdl -Iclient/sdl -I../client/src -Iclient/src $(SDL_CFLAGS)
-CLIENT_LFLAGS = $(SDL_LFLAGS) -lSDL_mixer
+CLIENT_LFLAGS =  $(SDL_LFLAGS) -lSDL_mixer -lGL -lGLU
 #-ldmalloc
 # denis - end fixme
 
