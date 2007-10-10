@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -46,7 +46,7 @@ using namespace std;
 
 #define FLAT_WIDTH 64
 
-CVAR(opengl, "1", 0);
+CVAR(opengl, "1", 0)
 
 bool R_CheckBBox (fixed_t *bspcoord);
 void R_ClearPlanes ();
@@ -83,7 +83,7 @@ void PurgeTextures()
 	{
 		glDeleteTextures(1, &i->second.texture);
 	}
-	flats.clear();	
+	flats.clear();
 
 	for(i = loaded.begin(); i != loaded.end(); i++)
 	{
@@ -97,9 +97,9 @@ void PurgeTextures()
 {
 	if(!opengl)
 		return;
-		
+
 	const char *ext = (const char *)glGetString(GL_EXTENSIONS);
-	
+
 	if(!ext || !strstr(ext, "GL_EXT_texture_filter_anisotropic"))
 	{
 		Printf(PRINT_HIGH, "GL_EXT_texture_filter_anisotropic: not supported by this renderer\n");
@@ -107,16 +107,16 @@ void PurgeTextures()
 		Printf(PRINT_HIGH, "OpenGL: %s", glGetString(GL_VERSION));
 		return;
 	}
-	
+
 	float max = 0.0f;
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max);
-	
+
 	if(anisotropy > max)
 	{
 		Printf(PRINT_HIGH, "anisotropy: renderer is limited to %d levels\n", (int)max);
 		anisotropy = max;
 	}
-	
+
 	PurgeTextures();
 }
 END_CUSTOM_CVAR(anisotropy)*/
@@ -124,42 +124,42 @@ END_CUSTOM_CVAR(anisotropy)*/
 size_t next_pow2(size_t in)
 {
 	size_t pow2 = 1;
-	
+
 	while(in > pow2)
 		pow2 *= 2;
-	
+
 	return pow2;
 }
 
 glpatch_t &get_glpatch(size_t patchnum)
 {
 	mapi_t::iterator it = loaded.find(patchnum);
-	
+
 	if(it == loaded.end())
 	{
 		patch_t *p = (patch_t *)W_CacheLumpNum (patchnum, PU_CACHE);
-		
+
 		if(!p)
 			I_Error("bad patch requested of get_glpatch"); // denis - todo use a placeholder texture
-		
+
 		// upload to gfx card
 		glpatch_t tmp;
-		
+
 		glEnable(GL_TEXTURE_2D);
 		glGenTextures(1, &tmp.texture);
 		glBindTexture(GL_TEXTURE_2D, tmp.texture);
-		
+
 		size_t pow2w = next_pow2(p->width()), pow2h = next_pow2(p->height()), bypp = 4;
-		
+
 		size_t size = pow2w * pow2h * bypp;
 		byte *mem = (byte *)malloc(size);
 		memset(mem, 0, size);
-		
+
 		for(size_t i = 0; i < p->width(); i++)
 		{
 			byte *render = mem + (pow2h*i*bypp);
 			column_t *column = (column_t *)((byte *)p + LONG(p->columnofs[i]));
-			
+
 			while (column->topdelta != 0xff)
 			{
 				DWORD *r = (DWORD *)(render + column->topdelta*bypp);
@@ -173,17 +173,17 @@ glpatch_t &get_glpatch(size_t patchnum)
 					((byte *)(&r[j]))[1] = 0; // make alpha non-transparent
 					((byte *)(&r[j]))[0] = s; // make alpha non-transparent
 				}
-				
+
 				column = (column_t *)(	(byte *)column + column->length + 4);
 			}
 		}
-		
+
 		glTexImage2D(GL_TEXTURE_2D, 0, bypp, pow2h, pow2w, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void *)mem);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		
+
 /*		if(anisotropy)
 		{
 			float max = 0.0f;
@@ -195,41 +195,41 @@ glpatch_t &get_glpatch(size_t patchnum)
 
 		tmp.w = (float)p->width()/pow2w;
 		tmp.h = (float)p->height()/pow2h;
-		
+
 		loaded.insert(mapi_t::value_type(patchnum, tmp));
 		it = loaded.find(patchnum);
-		
+
 		free(mem);
 	}
-	
+
 	return it->second;
 }
 
 glpatch_t &get_glflat(size_t useflatnum)
 {
 	mapi_t::iterator it = flats.find(useflatnum);
-	
+
 	if(it == flats.end())
 	{
 		byte *ds_source = (byte *)W_CacheLumpNum (firstflat + useflatnum, 1);
-		
+
 		if(!ds_source)
 			I_Error("bad flat requested of get_glflat"); // denis - todo use a placeholder texture
 
 		// upload to gfx card
 		glpatch_t tmp;
-		
+
 		glEnable(GL_TEXTURE_2D);
 		glGenTextures(1, &tmp.texture);
 		glBindTexture(GL_TEXTURE_2D, tmp.texture);
-		
+
 		size_t pow2 = next_pow2(FLAT_WIDTH), bypp = 4;
-		
+
 		size_t size = pow2 * pow2 * bypp;
 		byte *mem = (byte *)malloc(size);
 		memset(mem, 0, size);
 		DWORD *r = (DWORD *)(mem);
-		
+
 		for(size_t j = 0; j < FLAT_WIDTH; j++)
 			for(size_t i = 0; i < FLAT_WIDTH; i++)
 			{
@@ -240,7 +240,7 @@ glpatch_t &get_glflat(size_t useflatnum)
 				((byte *)(&r[j*FLAT_WIDTH+i]))[2] = s; // make alpha non-transparent
 				((byte *)(&r[j*FLAT_WIDTH+i]))[3] = 0xFF; // make alpha non-transparent
 			}
-		
+
 		glTexImage2D(GL_TEXTURE_2D, 0, 1, pow2, pow2, 0, GL_RED, GL_UNSIGNED_BYTE, (void *)ds_source);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -255,16 +255,16 @@ glpatch_t &get_glflat(size_t useflatnum)
 				max = anisotropy;
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max);
 		}*/
-		
+
 		tmp.w = (float)FLAT_WIDTH/pow2;
 		tmp.h = (float)FLAT_WIDTH/pow2;
-		
+
 		flats.insert(mapi_t::value_type(useflatnum, tmp));
 		it = flats.find(useflatnum);
-		
+
 		free(mem);
 	}
-	
+
 	return it->second;
 }
 
@@ -277,7 +277,7 @@ typedef struct
 	// Block origin (always UL),
 	// which has already accounted
 	// for the internal origin of the patch.
-	int 		originx;		
+	int 		originx;
 	int 		originy;
 	int 		patch;
 } texpatch_t;
@@ -291,18 +291,18 @@ typedef struct
 	char		name[9];
 	short		width;
 	short		height;
-	
+
 	// [RH] Use a hash table similar to the one now used
 	//		in w_wad.c, thus speeding up level loads.
 	//		(possibly quite considerably for larger levels)
 	int			index;
 	int			next;
-	
+
 	// All the patches[patchcount]
 	//	are drawn back to front into the cached texture.
 	short		patchcount;
 	texpatch_t	patches[1];
-	
+
 } texture_t;
 
 
@@ -317,28 +317,28 @@ void R_GenerateComposite (int texnum);
 glpatch_t &get_glcomposite(size_t tex)
 {
 	mapi_t::iterator it = compos.find(tex);
-	
+
 	if(it == compos.end())
 	{
 		extern int numtextures;
-		
+
 		if(tex >= numtextures)
 			I_Error("bad composite texture requested of get_glcomposite"); // denis - todo use a placeholder texture
 		//R_GenerateComposite(tex);
-		
+
 		// upload to gfx card
 		glpatch_t tmp;
-		
+
 		glEnable(GL_TEXTURE_2D);
 		glGenTextures(1, &tmp.texture);
 		glBindTexture(GL_TEXTURE_2D, tmp.texture);
-		
+
 		size_t pow2w = next_pow2(textures[tex]->width), pow2h = next_pow2(textures[tex]->height), bypp = 4;
 
 		size_t size = pow2w * pow2h * bypp;
 		byte *mem = (byte *)malloc(size);
 		memset(mem, 0, size);
-		
+
 		for(size_t i = 0; i < textures[tex]->width; i++)
 		{
 			byte *render = mem + (pow2h*i*bypp);
@@ -365,7 +365,7 @@ glpatch_t &get_glcomposite(size_t tex)
 				while (column->topdelta != 0xff && column->topdelta + column->length <= textures[tex]->height)
 				{
 					DWORD *r = (DWORD *)(render + column->topdelta*bypp);
-					
+
 					for(int j = 0; j < column->length; j++)
 					{
 						byte s = *((byte *)(column) + 3 + j);
@@ -375,7 +375,7 @@ glpatch_t &get_glcomposite(size_t tex)
 						((byte *)(&r[j]))[1] = s; // make alpha non-transparent
 						((byte *)(&r[j]))[0] = s; // make alpha non-transparent
 					}
-					
+
 					column = (column_t *)(	(byte *)column + column->length + 4);
 				}
 			}
@@ -389,7 +389,7 @@ glpatch_t &get_glcomposite(size_t tex)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		
+
 		/*if(anisotropy)
 		{
 			float max = 0.0f;
@@ -398,14 +398,14 @@ glpatch_t &get_glcomposite(size_t tex)
 				max = anisotropy;
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max);
 		}*/
-		
+
 		tmp.w = (float)textures[tex]->width/pow2w;
 		tmp.h = (float)textures[tex]->height/pow2h;
-		
+
 		compos.insert(mapi_t::value_type(tex, tmp));
 		it = compos.find(tex);
 	}
-	
+
 	return it->second;
 }
 
@@ -428,7 +428,7 @@ GLvoid CALLBACK end_callback()
 GLvoid CALLBACK error_callback(GLenum error)
 {
 	static bool once = true;
-	
+
 	if(once)
 	{
 		Printf(PRINT_HIGH, "GLU tessellation error: %s", gluErrorString(error));
@@ -451,7 +451,7 @@ void DrawFlats()
 {
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
-	
+
 	// denis - never did get subsectors to work
 	/*
 	for(size_t i = 0; i < numsubsectors; i++)
@@ -464,9 +464,9 @@ void DrawFlats()
 	}
 	glEnd();
 	}
-	
+
 	return;*/
-	
+
 	// Blast flats to screen
 	{
 	#ifdef UNIX
@@ -482,40 +482,40 @@ void DrawFlats()
 		typedef void (*fn)();
 #endif
 	#endif
-		
+
 		GLUtesselator *tess = gluNewTess();
-		
+
 		gluTessCallback(tess, GLU_TESS_BEGIN, (fn)&begin_callback);
 		gluTessCallback(tess, GLU_TESS_VERTEX, (fn)&vertex_callback);
 		gluTessCallback(tess, GLU_TESS_END, (fn)&end_callback);
 		gluTessCallback(tess, GLU_TESS_COMBINE, (fn)&combine_callback);
 		gluTessCallback(tess, GLU_TESS_ERROR, (fn)&error_callback);
-		
-		gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD); 
-		
+
+		gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD);
+
 		for(size_t i = 0; i < numsectors; i++)
 		{
 			if(use_bsp && !sectors_visible[i])
 				continue;
-			
+
 			vector< line_t * > draw, draw2;
 			size_t j;
-			
+
 			for(j = 0; j < numlines; j++)
 			{
 				if((lines[j].frontsector == sectors + i || lines[j].backsector == sectors + i)
 				   && lines[j].frontsector != lines[j].backsector)
 					draw.push_back(&lines[j]);
 			}
-			
+
 			// arrange lines by connectivity
 			size_t s = draw.size();
-			
+
 			if(!s)
 				continue;
-			
-			vector<vertex_t *> vert; 
-			
+
+			vector<vertex_t *> vert;
+
 			int f = sectors[i].floorheight;
 			int c = sectors[i].ceilingheight;
 
@@ -523,24 +523,24 @@ void DrawFlats()
 			if (light >= LIGHTLEVELS)
 				light = LIGHTLEVELS-1;
 			else if (light < 0)
-				light = 0;				
+				light = 0;
 			light /= LIGHTLEVELS;
 			glColor4f(1, 1, light, 1);
-			
+
 			draw2 = draw;
-			
+
 			// FLOOR
 			if(sectors[i].floorpic != skyflatnum)
 			{
 				glpatch_t &glp = get_glflat(flattranslation[sectors[i].floorpic]);
 				glBindTexture(GL_TEXTURE_2D, glp.texture);
-				
+
 				gluTessBeginPolygon(tess, NULL);
-				
+
 				vert.push_back(draw[0]->v1);
 				vert.push_back(draw[0]->v2);
 				draw.erase(draw.begin());
-				
+
 				while(draw.size())
 				{
 					for(j = 0; j < draw.size(); j++)
@@ -570,12 +570,12 @@ void DrawFlats()
 							break;
 						}
 					}
-					
+
 					if(j == draw.size() || !draw.size())
 					{
 						// a contour has been completed
 						gluTessBeginContour(tess);
-						
+
 						// draw concave contour in order
 						s = vert.size();
 						for(j = 0; j < s; j++)
@@ -589,11 +589,11 @@ void DrawFlats()
 							z.push_back(lol);
 							gluTessVertex(tess, lol, lol);
 						}
-						
+
 						gluTessEndContour(tess);
-						
+
 						vert.clear();
-						
+
 						// prepare for next cycle
 						if(draw.size())
 						{
@@ -603,24 +603,24 @@ void DrawFlats()
 						}
 					}
 				}
-				
+
 				gluTessEndPolygon(tess);
 			}
-			
+
 			draw = draw2;
-			
+
 			// CEILING
 			if(sectors[i].ceilingpic != skyflatnum)
 			{
 				glpatch_t &glp = get_glflat(flattranslation[sectors[i].ceilingpic]);
 				glBindTexture(GL_TEXTURE_2D, glp.texture);
-				
+
 				gluTessBeginPolygon(tess, NULL);
-				
+
 				vert.push_back(draw[0]->v1);
 				vert.push_back(draw[0]->v2);
 				draw.erase(draw.begin());
-				
+
 				while(draw.size())
 				{
 					for(j = 0; j < draw.size(); j++)
@@ -650,12 +650,12 @@ void DrawFlats()
 							break;
 						}
 					}
-					
+
 					if(j == draw.size() || !draw.size())
 					{
 						// a contour has been completed
 						gluTessBeginContour(tess);
-						
+
 						// draw concave contour in order
 						s = vert.size();
 						for(j = 0; j < s; j++)
@@ -669,11 +669,11 @@ void DrawFlats()
 							z.push_back(lol);
 							gluTessVertex(tess, lol, lol);
 						}
-						
+
 						gluTessEndContour(tess);
-						
+
 						vert.clear();
-						
+
 						// prepare for next cycle
 						if(draw.size())
 						{
@@ -683,10 +683,10 @@ void DrawFlats()
 						}
 					}
 				}
-				
+
 				gluTessEndPolygon(tess);
 			}
-			
+
 			for(j = 0; j < z.size(); j++)
 			{
 				delete[] z[j];
@@ -701,7 +701,7 @@ void DrawFlats()
 			}
 			glEnd();*/
 		}
-		
+
 		gluDeleteTess(tess);
 	}
 }
@@ -709,19 +709,19 @@ void DrawFlats()
 void DrawWalls()
 {
 	glEnable(GL_DEPTH_TEST);
-	
+
 	// Blast walls to screen
 	for(int j = 0; j < numlines; j++)
 	{
 		line_t *l = &lines[j];
 		side_t *frontside = &sides[l->sidenum[0]];
 		side_t *backside = l->sidenum[1] < 0 ? 0 : &sides[l->sidenum[1]];
-		
+
 		fixed_t top, topmid, botmid, bot;
-		
+
 		top = topmid = l->frontsector->ceilingheight;
 		bot = botmid = l->frontsector->floorheight;
-		
+
 		if(use_bsp && !sectors_visible[l->frontsector - sectors])
 			continue;
 
@@ -731,36 +731,36 @@ void DrawWalls()
 				top = l->backsector->ceilingheight;
 			else
 				topmid = l->backsector->ceilingheight;
-			
+
 			if(bot > l->backsector->floorheight)
 				bot = l->backsector->floorheight;
 			else
 				botmid = l->backsector->floorheight;
 		}
-		
+
 		texture_t *texture;
 		int patchnum;
-		
+
 //		float light = l->frontsector->lightlevel/255.0;
 //		glColor4f(light,light,light,1);
 		int light = (l->frontsector->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 		if (light >= LIGHTLEVELS)
 			light = LIGHTLEVELS-1;
 		else if (light < 0)
-			light = 0;				
+			light = 0;
 		light /= LIGHTLEVELS;
 		glColor4f(1, 1, light, 1);
-		
+
 		#define MAG(dx,dy) (sqrt((dx*dx)+(dy*dy)))
 		float wall_length = MAG(FIXED2FLOAT(l->v1->x - l->v2->x), FIXED2FLOAT(l->v1->y - l->v2->y));
-		
+
 		if(frontside->midtexture)
 		{
 			if(texture == (texture_t*)-1)
 				continue;
-			
+
 			texture = textures[texturetranslation[frontside->midtexture]];
-			
+
 			glpatch_t &glp = get_glcomposite(texturetranslation[frontside->midtexture]);
 
 			glEnable(GL_TEXTURE_2D);
@@ -778,28 +778,28 @@ void DrawWalls()
 				glDisable(GL_BLEND);
 				glDisable(GL_ALPHA_TEST);
 			}
-									
+
 			float tow = glp.w*FIXED2FLOAT(frontside->textureoffset)/texture->width;
 			float tlw = glp.w*wall_length/texture->width;
-			
+
 			float wall_height = FIXED2FLOAT(topmid-botmid);
 			float toh = glp.h*FIXED2FLOAT(frontside->rowoffset);
 			float tlh = glp.h*wall_height/texture->height;
-			
+
 			glBegin(GL_QUADS);
-			
+
 			glTexCoord2f(toh + tlh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(botmid), FIXED2FLOAT(l->v1->x));
-				
+
 			glTexCoord2f(toh + tlh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(botmid), FIXED2FLOAT(l->v2->x));
-				
+
 			glTexCoord2f(toh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(topmid), FIXED2FLOAT(l->v2->x));
-				
+
 			glTexCoord2f(toh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(topmid), FIXED2FLOAT(l->v1->x));
-				
+
 			glEnd();
 
 			if(l->backsector)
@@ -809,48 +809,48 @@ void DrawWalls()
 		{
 			glDisable(GL_BLEND);
 			glDisable(GL_ALPHA_TEST);
-			
+
 			texture = textures[texturetranslation[frontside->toptexture]];
-			
+
 			glpatch_t &glp = get_glcomposite(texturetranslation[frontside->toptexture]);
-			
+
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, glp.texture);
-			
+
 			float tow = glp.w*FIXED2FLOAT(frontside->textureoffset)/texture->width;
 			float tlw = glp.w*wall_length/texture->width;
 
 			float wall_height = FIXED2FLOAT(top-topmid);
 			float toh = glp.h - glp.h*FIXED2FLOAT(frontside->rowoffset);
 			float tlh = glp.h*(wall_height)/texture->height;
-			
+
 			glBegin(GL_QUADS);
 
 			glTexCoord2f(toh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(topmid), FIXED2FLOAT(l->v1->x));
-			
+
 			glTexCoord2f(toh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(topmid), FIXED2FLOAT(l->v2->x));
-			
+
 			glTexCoord2f(toh - tlh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(top), FIXED2FLOAT(l->v2->x));
-			
+
 			glTexCoord2f(toh - tlh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(top), FIXED2FLOAT(l->v1->x));
-			
+
 			glEnd();
 		}
 		if(frontside->bottomtexture)
 		{
 			glDisable(GL_BLEND);
 			glDisable(GL_ALPHA_TEST);
-			
+
 			texture = textures[texturetranslation[frontside->bottomtexture]];
 			glpatch_t &glp = get_glcomposite(texturetranslation[frontside->bottomtexture]);
-			
+
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, glp.texture);
-			
+
 			float tow = glp.w*FIXED2FLOAT(frontside->textureoffset)/texture->width;
 			float tlw = glp.w*wall_length/texture->width;
 
@@ -859,88 +859,88 @@ void DrawWalls()
 			float tlh = glp.h*wall_height/texture->height;
 
 			glBegin(GL_QUADS);
-			
+
 			glTexCoord2f(toh + tlh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(bot), FIXED2FLOAT(l->v1->x));
-			
+
 			glTexCoord2f(toh + tlh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(bot), FIXED2FLOAT(l->v2->x));
-			
+
 			glTexCoord2f(toh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(botmid), FIXED2FLOAT(l->v2->x));
-			
+
 			glTexCoord2f(toh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(botmid), FIXED2FLOAT(l->v1->x));
-			
+
 			glEnd();
 		}
 		if(backside && backside->toptexture)
 		{
 			glDisable(GL_BLEND);
 			glDisable(GL_ALPHA_TEST);
-			
+
 			texture = textures[texturetranslation[backside->toptexture]];
-			
+
 			glpatch_t &glp = get_glcomposite(texturetranslation[backside->toptexture]);
-			
+
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, glp.texture);
-			
+
 			float tow = glp.w*FIXED2FLOAT(frontside->textureoffset)/texture->width;
 			float tlw = glp.w*wall_length/texture->width;
-			
+
 			float wall_height = FIXED2FLOAT(top-topmid);
 			float toh = glp.h - glp.h*FIXED2FLOAT(frontside->rowoffset);
 			float tlh = glp.h*(wall_height)/texture->height;
-			
+
 			glBegin(GL_QUADS);
-			
+
 			glTexCoord2f(toh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(topmid), FIXED2FLOAT(l->v1->x));
-			
+
 			glTexCoord2f(toh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(topmid), FIXED2FLOAT(l->v2->x));
-			
+
 			glTexCoord2f(toh - tlh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(top), FIXED2FLOAT(l->v2->x));
-			
+
 			glTexCoord2f(toh - tlh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(top), FIXED2FLOAT(l->v1->x));
-			
+
 			glEnd();
 		}
 		if(backside && backside->bottomtexture)
 		{
 			glDisable(GL_BLEND);
 			glDisable(GL_ALPHA_TEST);
-			
+
 			texture = textures[texturetranslation[backside->bottomtexture]];
 			glpatch_t &glp = get_glcomposite(texturetranslation[backside->bottomtexture]);
-			
+
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, glp.texture);
-			
+
 			float tow = glp.w*FIXED2FLOAT(frontside->textureoffset)/texture->width;
 			float tlw = glp.w*wall_length/texture->width;
-			
+
 			float wall_height = FIXED2FLOAT(botmid - bot);
 			float toh = glp.h*FIXED2FLOAT(frontside->rowoffset);
 			float tlh = glp.h*wall_height/texture->height;
-			
+
 			glBegin(GL_QUADS);
-			
+
 			glTexCoord2f(toh + tlh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(bot), FIXED2FLOAT(l->v1->x));
-			
+
 			glTexCoord2f(toh + tlh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(bot), FIXED2FLOAT(l->v2->x));
-			
+
 			glTexCoord2f(toh, tlw + tow);
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(botmid), FIXED2FLOAT(l->v2->x));
-			
+
 			glTexCoord2f(toh, tow);
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(botmid), FIXED2FLOAT(l->v1->x));
-			
+
 			glEnd();
 		}
 	}
@@ -953,7 +953,7 @@ void DrawActors()
 	glEnable(GL_ALPHA_TEST);
 	glEnable(GL_TEXTURE_2D);
 	glColor4f(1,1,1,1);
-	
+
 	AActor *mo;
 	AActor *co = displayplayer().mo;
 	TThinkerIterator<AActor> iterator;
@@ -965,26 +965,26 @@ void DrawActors()
 	{
 		if(!mo->subsector || (use_bsp && !sectors_visible[mo->subsector->sector - sectors]))
 			continue;
-		
+
 		if(mo->sprite >= numsprites)
 			continue;
-		
+
 		if(mo->translucency == 0 || mo->state - states == S_NULL)
 			continue;
-		
+
 		if(mo == displayplayer().mo)
 			continue;
-		
+
 		spritedef_t *sprdef = &sprites[mo->sprite];
-		
+
 		if(!sprdef->numframes)
 			continue;
-		
+
 		spriteframe_t *sprframe = &sprdef->spriteframes[mo->frame & FF_FRAMEMASK];
-		
+
 		int lump = 0;
 		bool flip;
-		
+
 		if (sprframe->rotate)
 		{
 				// choose a different rotation based on player view
@@ -998,7 +998,7 @@ void DrawActors()
 			lump = sprframe->lump[0];
 			flip = (bool)sprframe->flip[0];
 		}
-		
+
 		if(lump == -1)
 			continue;
 
@@ -1006,14 +1006,14 @@ void DrawActors()
 		if (light >= LIGHTLEVELS)
 			light = LIGHTLEVELS-1;
 		else if (light < 0)
-			light = 0;				
+			light = 0;
 		light /= LIGHTLEVELS;
 		glColor4f(1, 1, light, 1);
-		
+
 		patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
 		glpatch_t &glp = get_glpatch(lump);
 		glBindTexture(GL_TEXTURE_2D, glp.texture);
-		
+
 			// denis - from my P_CheckSightEdges code
 			// c = normalized vector perpendicular to player's line of sight
 			// r = normalized vector parallel to c
@@ -1036,21 +1036,21 @@ void DrawActors()
 		r[1] = c[0];
 		r[0] = -c[1];
 		VectorScale(r, patch->leftoffset(), s); // patch left offset
-		
+
 		glBegin(GL_QUADS);
-		
+
 		glTexCoord2f(0, glp.w);
 		glVertex3f(FIXED2FLOAT(mo->y)-w[1], FIXED2FLOAT(mo->z) + patch->topoffset(), FIXED2FLOAT(mo->x)-w[0]);
-		
+
 		glTexCoord2f(0, 0);
 		glVertex3f(FIXED2FLOAT(mo->y)+s[1], FIXED2FLOAT(mo->z) + patch->topoffset(), FIXED2FLOAT(mo->x)+s[0]);
-		
+
 		glTexCoord2f(glp.h, 0);
 		glVertex3f(FIXED2FLOAT(mo->y)+s[1], FIXED2FLOAT(mo->z) - patch->height() + patch->topoffset(), FIXED2FLOAT(mo->x)+s[0]);
-		
+
 		glTexCoord2f(glp.h, glp.w);
 		glVertex3f(FIXED2FLOAT(mo->y)-w[1], FIXED2FLOAT(mo->z) - patch->height() + patch->topoffset(), FIXED2FLOAT(mo->x)-w[0]);
-		
+
 		glEnd();
 
 //			glDisable(GL_TEXTURE_2D);
@@ -1070,34 +1070,34 @@ void DetermineVisibleSectorsBSP (int bspnum)
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
 		node_t *bsp = &nodes[bspnum];
-		
+
 		// Decide which side the view point is on.
 		int side = R_PointOnSide(viewx, viewy, bsp);
-		
+
 		// Recursively divide front space.
 		DetermineVisibleSectorsBSP(bsp->children[side]);
-		
+
 		// Possibly divide back space.
 		if (!R_CheckBBox(bsp->bbox[side^1]))
 			return;
-		
+
 		bspnum = bsp->children[side^1];
 	}
-	
+
 	if(bspnum < 0)
 		bspnum = 0;
 	else
 		bspnum &= ~NF_SUBSECTOR;
-	
+
 	R_Subsector(bspnum);
-	
+
 	sectors_visible[subsectors[bspnum].sector - sectors] = 1;
 
 	subsector_t &sub = subsectors[bspnum];
 	for(size_t i = sub.firstline; i != sub.numlines+sub.firstline; i++)
 	{
 		sectors_visible[segs[i].frontsector - sectors] = 1;
-		
+
 		if(segs[i].backsector)
 			sectors_visible[segs[i].backsector - sectors] = 1;
 	}
@@ -1111,24 +1111,24 @@ void DetermineVisibleSectorsBSP ()
 	viewx = displayplayer().mo->x;
 	viewy = displayplayer().mo->y;
 	viewangle = displayplayer().mo->angle;
-	
+
 	if(numsectors_visible != numsectors)
 	{
 		if(sectors_visible)
 			delete[] sectors_visible;
-			
+
 		sectors_visible = new char[numsectors];
 		numsectors_visible = numsectors;
 	}
-	
+
 	memset(sectors_visible, 0, numsectors_visible);
-	
+
 	// Clear buffers.
 	R_ClearClipSegs ();
 	R_ClearDrawSegs ();
 	R_ClearPlanes ();
 	R_ClearSprites ();
-	
+
 	DetermineVisibleSectorsBSP(numnodes - 1);
 }
 
@@ -1136,21 +1136,21 @@ void DetermineVisibleSectorsBSP ()
 void DrawCameraSetup()
 {
 	glScalef(0.01, 0.01, 0.01);
-	
+
 	if(displayplayer().mo)
 	{
 		AActor *mo = displayplayer().mo;
-		
+
 		if(mo)
 		{
 				// pitch
 			glRotatef(mo->pitch/ANG(1), 1, 0, 0);
-			
+
 				// yaw
 			glRotatef(-mo->angle/ANG(1), 0, 1, 0);
 			glRotatef(180, 0, 1, 0);
-			
-			
+
+
 			glTranslatef(-FIXED2FLOAT(mo->y), -FIXED2FLOAT(consoleplayer().viewz), -FIXED2FLOAT(mo->x));
 		}
 	}
@@ -1169,21 +1169,21 @@ void DrawSky()
 	patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
 	glpatch_t &glp = get_glcomposite(lump);
 	glBindTexture(GL_TEXTURE_2D, glp.texture);
-	
+
 	glPushMatrix();
-	
+
 	AActor *mo = displayplayer().mo;
-	
+
 	if(mo)
 	{
 				// pitch
 		glRotatef(mo->pitch/ANG(1), 1, 0, 0);
-		
+
 				// yaw
 		glRotatef(-mo->angle/ANG(1), 0, 1, 0);
 		glRotatef(180, 0, 1, 0);
 	}
-	
+
 	glBegin(GL_QUADS);
 
 		glTexCoord2f(0, 0); glVertex3f(w,w,w);
@@ -1217,7 +1217,7 @@ void DrawSky()
 		glTexCoord2f(1, 0); glVertex3f(-w,w,-w);
 
 	glEnd();
-	
+
 	glPopMatrix();
 }
 
@@ -1227,25 +1227,25 @@ void DrawTexturedQuad(float x, float y, float w, float h, float tw, float th, fl
 void DrawScreenSprites()
 {
 	AActor *camera = displayplayer().camera;
-	
+
 	if(!camera)
 		return;
-	
+
 	pspdef_t* psp = camera->player->psprites;
 	GLuint last_texture = 0;
-	
+
 	// add all active psprites
 	for (int i=0; i < NUMPSPRITES; i++, psp++)
 	{
 		if (!psp->state)
 			continue;
-		
+
 		spritedef_t *sprdef = &sprites[psp->state->sprite];
 		spriteframe_t *sprframe = &sprdef->spriteframes[ psp->state->frame & FF_FRAMEMASK ];
-		
+
 		int lump = sprframe->lump[0];
 		bool flip = (bool)sprframe->flip[0];
-		
+
 		patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
 		glpatch_t &glp = get_glpatch(lump);
 		if(glp.texture != last_texture)
@@ -1256,12 +1256,12 @@ void DrawScreenSprites()
 
 		float xscale = 1/320.0f;
 		float yscale = 1/200.0f;
-		
+
 		float w = xscale*patch->width();
 		float h = yscale*patch->height();
 		float x = -(patch->leftoffset() + FIXED2FLOAT(psp->sx))*xscale;
 		float y = -(patch->topoffset() - FIXED2FLOAT(psp->sy))*yscale;
-		
+
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_BLEND);
 		glEnable(GL_ALPHA_TEST);
@@ -1274,31 +1274,31 @@ void DrawScreenSprites()
 void DrawConsoleBackground()
 {
 	int num = W_GetNumForName("ODAMEX");
-	
+
 	if(num == -1)
 		return;
-	
+
 	glpatch_t &glp = get_glpatch(num);
 	glBindTexture(GL_TEXTURE_2D, glp.texture);
-	
+
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
 	glColor4f(1, 1, 1, 1);
-	
+
 	DrawTexturedQuad(0, 0, 1, 1, glp.h, glp.w);
 }
 
-EXTERN_CVAR(crosshair);
+EXTERN_CVAR(crosshair)
 
 void DrawCrosshair()
 {
 /*	extern patch_t *crosshair_patch;
 	extern int crosshair_lump;
-	
+
 	if(!crosshair || !crosshair_patch)
 		return;
-	
+
 	glpatch_t &glp = get_glpatch(crosshair_lump);
 	glBindTexture(GL_TEXTURE_2D, glp.texture);
 
@@ -1324,12 +1324,12 @@ void DrawConsoleText(size_t screenw, size_t screenh)
 	extern int ConBottom;
 	extern char *Lines, *Last;
 	extern int SkipRows, ConBottom, ConScroll, RowAdjust;
-	
+
 	// Junk from C_DrawConsole
 	int lines, left, offset;
 	static int oldbottom = 0;
 	char *zap = Last - (SkipRows + RowAdjust) * (ConCols + 2);
-	
+
 	left = 8;
 	lines = (ConBottom-12)/8;
 	if (-12 + lines*8 > ConBottom - 28)
@@ -1337,15 +1337,15 @@ void DrawConsoleText(size_t screenw, size_t screenh)
 	else
 		offset = -12;
 	zap = Last - (SkipRows + RowAdjust) * (ConCols + 2);
-	
+
 	// Draw
 	if (lines <= 0)
 		return;
-	
+
 	float w = 8.0f/screenw;
-	
+
 	glColor4f(1,1,1,1);
-	
+
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glEnable(GL_ALPHA_TEST);
@@ -1354,7 +1354,7 @@ void DrawConsoleText(size_t screenw, size_t screenh)
 	int num = W_GetNumForName ("CONCHARS");
 	glpatch_t &glp = get_glpatch(num);
 	glBindTexture(GL_TEXTURE_2D, glp.texture);
-	
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -1388,7 +1388,7 @@ void SaturateDepth()
 	glColor4f(0,0,0,0.06);
 
 	AActor *mo = displayplayer().mo, *co = mo;
-	
+
 	if(!mo)
 	 return;
 
@@ -1431,7 +1431,7 @@ void SaturateDepth()
 		fixed_t distance = i << LIGHTZSHIFT;
 		fixed_t x = mo->x + c[0]*distance, y = mo->y + c[1]*distance;
 		glColor4f(0,(float)i/LIGHTLEVELS,0,1);
-		
+
 		// last shade run should shade in everything that is not already shaded
 		if(i == LIGHTLEVELS-1)
 		{
@@ -1439,16 +1439,16 @@ void SaturateDepth()
 			glDepthFunc(GL_ALWAYS);
 			glBegin(GL_QUADS);
 		}
-		
+
 		glVertex3f(FIXED2FLOAT(y)-w[1], FIXED2FLOAT(mo->z) - height, FIXED2FLOAT(x)-w[0]);
-		glVertex3f(FIXED2FLOAT(y)+w[1], FIXED2FLOAT(mo->z) - height, FIXED2FLOAT(x)+w[0]);	
+		glVertex3f(FIXED2FLOAT(y)+w[1], FIXED2FLOAT(mo->z) - height, FIXED2FLOAT(x)+w[0]);
 		glVertex3f(FIXED2FLOAT(y)+w[1], FIXED2FLOAT(mo->z) + height, FIXED2FLOAT(x)+w[0]);
 		glVertex3f(FIXED2FLOAT(y)-w[1], FIXED2FLOAT(mo->z) + height, FIXED2FLOAT(x)-w[0]);
 	}
 
 	glEnd();
 	glColorMask(1,1,1,1);
-	
+
 	glDepthFunc(GL_LESS);
 	glStencilFunc(GL_ALWAYS, 1, 1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -1458,26 +1458,26 @@ void RenderWorld()
 {
 	if(!displayplayer().mo)
 		return;
-		
+
 	camera = displayplayer().mo;
 
 	DrawSky();
-	
+
 	DrawCameraSetup();
 
 	if(use_bsp)
 		DetermineVisibleSectorsBSP();
-	
+
 	// Draw fullbright fully textured scene
 	DrawWalls();
 	DrawFlats();
 	DrawActors();
-	
+
 	// Saturate depth buffer for pixels that are close, to keep them from being shaded later
 	SaturateDepth();
-	
+
 	// Blend scene lighting onto screen using GL_EQUALS for depth buffer comparison
-	
+
 	// Draw distance shading grades using GL_LEQUAL
 }
 

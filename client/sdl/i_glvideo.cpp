@@ -34,7 +34,7 @@ GLVideo::GLVideo(int parm)
 	//             better than "Odamex SDL Alpha Build 001" or something :P
 	std::string title = "Odamex - v";
 	title += DOTVERSIONSTR;
-		
+
 	// [Russell] - Update window caption with name
 	SDL_WM_SetCaption (title.c_str(), title.c_str());
 
@@ -60,7 +60,7 @@ GLVideo::GLVideo(int parm)
    {
 	  // no fullscreen modes, but we could still try windowed
 	  Printf(PRINT_HIGH, "SDL_ListModes returned NULL. No fullscreen video modes are available.\n");
-      vidModeList = NULL; 
+      vidModeList = NULL;
 	  vidModeCount = 0;
 	  return;
    }
@@ -136,7 +136,7 @@ void GLVideo::GL_Test()
 		// Niceness
 		glClearColor(0.0f,0.0f,0.0f,0.0f);
 		glClearDepth(1.0f);
-		glDepthFunc(GL_LEQUAL); 
+		glDepthFunc(GL_LEQUAL);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_STENCIL_TEST);
 		glShadeModel(GL_SMOOTH);
@@ -152,7 +152,7 @@ void GLVideo::GL_Test()
 	EnableShader();
 }
 
-EXTERN_CVAR(opengl);
+EXTERN_CVAR(opengl)
 
 void PurgeTextures();
 
@@ -167,7 +167,7 @@ bool GLVideo::SetMode (int width, int height, int bits, bool fs)
 	{
 		flags |= SDL_OPENGL;
 		bits = 32;
-		
+
 		SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 1 );
 	}
 
@@ -206,7 +206,7 @@ void GLVideo::SetPalette (DWORD *palette)
 }
 
 void GLVideo::SetOldPalette (byte *doompalette)
-{ 
+{
     for(size_t i = 0; i < sizeof(newPalette)/sizeof(SDL_Color); i++)
     {
       newPalette[i].r = newgamma[*doompalette++];
@@ -255,20 +255,20 @@ void DrawTint()
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
-	
+
 	extern int st_palette;
-	
+
 	glColor4f(0, 0, 0, 0);
-	
+
 	if(st_palette >= STARTREDPALS && st_palette < STARTREDPALS+NUMREDPALS)
 		glColor4f(1, 0, 0, (st_palette-STARTREDPALS)/(float)NUMREDPALS);
 	else if(st_palette >= STARTBONUSPALS && st_palette < STARTBONUSPALS+NUMBONUSPALS)
 		glColor4f(0.5, 0.5, 0, 0.5f*(st_palette-STARTBONUSPALS)/(float)NUMBONUSPALS);
 	else if(st_palette == RADIATIONPAL)
 		glColor4f(0, 1, 0, 0.5f);
-	
+
 	DrawQuad(0, 0, 1, 1);
-	
+
 	glColor4f(1, 1, 1, 1);
 	glEnable(GL_ALPHA_TEST);
 	glEnable(GL_TEXTURE_2D);
@@ -283,7 +283,7 @@ void DimArea(float x, float y, float w, float h, float alpha)
 
 	glColor4f(0, 0, 0, alpha);
 	DrawQuad(x, y, w, h);
-	
+
 	glColor4f(1, 1, 1, 1);
 	glEnable(GL_ALPHA_TEST);
 	glEnable(GL_TEXTURE_2D);
@@ -293,7 +293,7 @@ void DrawMenu()
 {
 	if(!menuactive)
 		return;
-	
+
 	// Darken behind menu
 //	DimArea(0, 0, 1, 1, 0.5);
 }
@@ -305,14 +305,14 @@ void DrawConsoleBackground();
 void DrawConsole(size_t screenw, size_t screenh)
 {
 	extern int ConBottom;
-	
+
 	// Draw notify messages
 
 	if(gamestate == GS_FULLCONSOLE || gamestate == GS_STARTUP)
 	{
 		// Draw full console background
 		DrawConsoleBackground();
-		
+
 		// Draw console text
 		DrawConsoleText(screenw, screenh);
 	}
@@ -335,46 +335,46 @@ void DrawConsole(size_t screenw, size_t screenh)
 void RenderAutomap()
 {
 	size_t i;
-	
+
 	glDisable(GL_TEXTURE_2D);
-	
+
 	glColor4f(0.2,0.2,0,1);
 	DrawQuad(0,0,1,1);
 
 	glColor4f(1,1,1,1);
-	
+
 	glPushMatrix();
 
 	glTranslatef(0.5, 0.5, 0);
 
 	glScalef(-0.001, 0.001, 0.001);
 
-	AActor *mo = consoleplayer().mo;	
+	AActor *mo = consoleplayer().mo;
 	if(mo)
 		glTranslatef(FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y), 0);
 	glRotatef(180, 0, 0, 1);
-	
+
 	glBegin(GL_LINES);
-	
+
 	// grid
-	
+
 	// walls
 	for(i = 0; i < numlines; i++)
 	{
 		if (!(lines[i].flags & ML_MAPPED))
 			continue;
-		
+
 		glVertex2f(FIXED2FLOAT(lines[i].v1->x), FIXED2FLOAT(lines[i].v1->y));
 		glVertex2f(FIXED2FLOAT(lines[i].v2->x), FIXED2FLOAT(lines[i].v2->y));
 	}
-	
+
 	// players
 	for (i = 0; i < players.size(); i++)
 	{
 	}
-	
+
 	// things
-	
+
 	glEnd();
 
 	glPopMatrix();
@@ -390,12 +390,12 @@ void GLVideo::UpdateScreen (DCanvas *canvas)
 	   UpdateShaderPalette(newPalette);
 	   palettechanged = false;
    }
-   
+
 	SDL_GL_SwapBuffers();
 	// viewheight or viewwidth not the same as screen?
 	if(screenw != realviewheight || screenh != realviewheight)
 		glViewport(viewwindowx, screenh - (realviewheight + viewwindowy), realviewwidth, realviewheight);
-	
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// make textures transparent where they are black?
@@ -407,35 +407,35 @@ void GLVideo::UpdateScreen (DCanvas *canvas)
 	// Switch to 3D
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	
+
 	float aspect = (float)realviewwidth/realviewheight;
 	float fov = 70.0;
-	
+
 	gluPerspective(fov, aspect, 0.08f, 100.0f);
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	
+
 	// Render doom level
 	if(gamestate == GS_LEVEL && !automapactive)
 		RenderWorld();
-	
+
 	// Switch to 2D
 	glDisable(GL_DEPTH_TEST);
-	
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	
+
 	glOrtho(0.0f, 1, 1, 0.0f, -1.0f, 1.0f);
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	
+
 	if(gamestate == GS_LEVEL && !automapactive)
 	{
 		// Draw player weapon
 		DrawScreenSprites();
-			
+
 		// Draw crosshair
 		DrawCrosshair();
 	}
@@ -463,22 +463,22 @@ void GLVideo::UpdateScreen (DCanvas *canvas)
 		extern int ST_X, ST_Y, ST_WIDTH, ST_HEIGHT;
 		DrawQuad((float)ST_X/screenw, (float)ST_Y/screenh, (float)ST_WIDTH/screenw, (float)ST_HEIGHT/screenh);
 	}
-	
+
 	// Draw status bar border
-	
+
 	// Draw player redscreen, berserk, pickup
 //	DrawTint();
 
 	// Console
 	DrawConsole(screenw, screenh);
-	
+
 	// Menu
 	DrawMenu();
-	
+
 	// Render the grayscale+colormap result to a texture
 	extern void RenderToTexture(size_t screenw, size_t screenh);
 	RenderToTexture(screenw, screenh);
-	
+
 	// Shader will convert this into RGB output
 	extern void RenderedTextureToScreen(size_t screenw, size_t screenh);
 	RenderedTextureToScreen(screenw, screenh);
@@ -493,13 +493,13 @@ void GLVideo::ReadScreen (byte *block)
    glFlush();
 
    glReadPixels(0, 0, screenw, screenh, GL_RGBA, GL_UNSIGNED_BYTE, block);
-   
+
    unsigned int pitch = screenw*4;
-   
+
    // Set Alpha to max
    for(size_t i = 3; i < screenh*pitch; i+=4)
 	   block[i] = 255;
-   
+
    int *tmp = new int[pitch];
 
    // Flip
@@ -512,7 +512,7 @@ void GLVideo::ReadScreen (byte *block)
 	   memcpy(t, b, pitch);
 	   memcpy(b, tmp, pitch);
    }
-   
+
    delete[] tmp;
 }
 
@@ -567,7 +567,7 @@ class DGLCanvas : public DCanvas
 	{
 		if(!m_Private)
 			return;
-		
+
 		patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
 		glpatch_t &glp = get_glpatch(lump);
 		glBindTexture(GL_TEXTURE_2D, glp.texture);
@@ -581,7 +581,7 @@ class DGLCanvas : public DCanvas
 	{
 		if(!m_Private)
 			return;
-		
+
 		patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
 		glpatch_t &glp = get_glpatch(lump);
 		glBindTexture(GL_TEXTURE_2D, glp.texture);
@@ -594,7 +594,7 @@ class DGLCanvas : public DCanvas
 DCanvas *GLVideo::AllocateSurface (int width, int height, int bits, bool primary)
 {
 	DCanvas *scrn = new DGLCanvas;
-	
+
 	scrn->width = width;
 	scrn->height = height;
 	scrn->is8bit = bits == 8 ? true : false;
@@ -604,15 +604,15 @@ DCanvas *GLVideo::AllocateSurface (int width, int height, int bits, bool primary
 	scrn->buffer = NULL;
 	scrn->pitch = width * (bits / 8);
 	scrn->buffer = new byte[width*height*4];
-	
+
 	if(!primary)
 	{
 		cChain *nnode = new cChain(scrn);
 		nnode->linkTo(chainHead);
 	}
-	
+
 	scrn->m_Private = (void *)primary;
-	
+
 	return scrn;
 }
 

@@ -127,9 +127,9 @@
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="All (MAC)" targets="Mac Release;Mac Debug" />
-			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug" />
-			<Add alias="All (WIN32)" targets="Win Release;Win Debug" />
+			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
+			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
+			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
@@ -145,6 +145,8 @@
 			<Add library="SDLmain" />
 			<Add library="SDL" />
 			<Add library="SDL_mixer" />
+			<Add library="opengl32" />
+			<Add library="glu32" />
 		</Linker>
 		<Unit filename="client.rc">
 			<Option compilerVar="WINDRES" />
@@ -153,6 +155,10 @@
 		</Unit>
 		<Unit filename="hardware.cpp" />
 		<Unit filename="hardware.h" />
+		<Unit filename="i_glrender.cpp" />
+		<Unit filename="i_glshader.cpp" />
+		<Unit filename="i_glvideo.cpp" />
+		<Unit filename="i_glvideo.h" />
 		<Unit filename="i_input.cpp" />
 		<Unit filename="i_input.h" />
 		<Unit filename="i_main.cpp" />
