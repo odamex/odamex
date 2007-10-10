@@ -458,6 +458,10 @@
 		92D2DC260B64505100FD5B07 /* SDL_mixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D53A0A0AB96D8700CF2FB2 /* SDL_mixer.framework */; };
 		92D2DC290B6450A400FD5B07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D2DC280B6450A400FD5B07 /* Carbon.framework */; };
 		92EC0A0F0CBD3B5400A804A6 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92EC0A0E0CBD3B5400A804A6 /* OpenGL.framework */; };
+		92EC0A1C0CBD42D700A804A6 /* i_glrender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0A180CBD42D700A804A6 /* i_glrender.cpp */; };
+		92EC0A1D0CBD42D700A804A6 /* i_glshader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0A190CBD42D700A804A6 /* i_glshader.cpp */; };
+		92EC0A1E0CBD42D700A804A6 /* i_glvideo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0A1A0CBD42D700A804A6 /* i_glvideo.cpp */; };
+		92EC0A1F0CBD42D700A804A6 /* i_glvideo.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92EC0A1B0CBD42D700A804A6 /* i_glvideo.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -656,6 +660,7 @@
 				92D2DC210B644F4900FD5B07 /* w_wad.h in CopyFiles */,
 				92D2DC230B644F4900FD5B07 /* z_zone.h in CopyFiles */,
 				92A745490CA52B1E007321ED /* p_tick.h in CopyFiles */,
+				92EC0A1F0CBD42D700A804A6 /* i_glvideo.h in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
@@ -1000,7 +1005,7 @@
 		92D2D7080B62B89B00FD5B07 /* wi_stuff.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wi_stuff.h; sourceTree = "<group>"; };
 		92D2D9C80B643FD200FD5B07 /* odaserv.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = odaserv.ico; sourceTree = "<group>"; };
 		92D2D9C90B643FD200FD5B07 /* resource.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = resource.h; sourceTree = "<group>"; };
-		92D2DA840B6444B300FD5B07 /* odamex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "compiled.mach-o.executable"; path = odamex; sourceTree = BUILT_PRODUCTS_DIR; };
+		92D2DA840B6444B300FD5B07 /* odamex */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odamex; sourceTree = BUILT_PRODUCTS_DIR; };
 		92D2DAC80B64491800FD5B07 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		92D2DACB0B64491800FD5B07 /* btnexit.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = btnexit.ico; sourceTree = "<group>"; };
 		92D2DACC0B64491800FD5B07 /* btnhelp.ico */ = {isa = PBXFileReference; lastKnownFileType = image.ico; path = btnhelp.ico; sourceTree = "<group>"; };
@@ -1039,6 +1044,10 @@
 		92D53A0A0AB96D8700CF2FB2 /* SDL_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_mixer.framework; path = /Library/Frameworks/SDL_mixer.framework; sourceTree = "<absolute>"; };
 		92D53A100AB96D8E00CF2FB2 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
 		92EC0A0E0CBD3B5400A804A6 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
+		92EC0A180CBD42D700A804A6 /* i_glrender.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_glrender.cpp; sourceTree = "<group>"; };
+		92EC0A190CBD42D700A804A6 /* i_glshader.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_glshader.cpp; sourceTree = "<group>"; };
+		92EC0A1A0CBD42D700A804A6 /* i_glvideo.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_glvideo.cpp; sourceTree = "<group>"; };
+		92EC0A1B0CBD42D700A804A6 /* i_glvideo.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_glvideo.h; sourceTree = "<group>"; };
 		C6859E8B029090EE04C91782 /* odamex.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = odamex.1; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1292,6 +1301,10 @@
 		92D2D6AC0B62B89B00FD5B07 /* sdl */ = {
 			isa = PBXGroup;
 			children = (
+				92EC0A180CBD42D700A804A6 /* i_glrender.cpp */,
+				92EC0A190CBD42D700A804A6 /* i_glshader.cpp */,
+				92EC0A1A0CBD42D700A804A6 /* i_glvideo.cpp */,
+				92EC0A1B0CBD42D700A804A6 /* i_glvideo.h */,
 				92D2D6B10B62B89B00FD5B07 /* hardware.cpp */,
 				92D2D6B20B62B89B00FD5B07 /* hardware.h */,
 				92D2D6B30B62B89B00FD5B07 /* i_input.cpp */,
@@ -1674,6 +1687,9 @@
 				92D2DC220B644F4900FD5B07 /* z_zone.cpp in Sources */,
 				92CE7EBA0B645C7800DCACF0 /* SDLMain.m in Sources */,
 				92A745480CA52B1E007321ED /* p_tick.cpp in Sources */,
+				92EC0A1C0CBD42D700A804A6 /* i_glrender.cpp in Sources */,
+				92EC0A1D0CBD42D700A804A6 /* i_glshader.cpp in Sources */,
+				92EC0A1E0CBD42D700A804A6 /* i_glvideo.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
