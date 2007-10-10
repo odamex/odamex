@@ -124,7 +124,7 @@ static byte*	textureheightmask;		// [RH] Tutti-Frutti fix
 // needed for texture pegging
 fixed_t*		textureheight;
 static int*		texturecompositesize;
-static short** 	texturecolumnlump;
+ short** 	texturecolumnlump;
 static unsigned **texturecolumnofs;	// killough 4/9/98: make 32-bit
 static byte**	texturecomposite;
 

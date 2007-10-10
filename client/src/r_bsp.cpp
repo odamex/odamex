@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -674,7 +674,7 @@ static const int checkcoord[12][4] = // killough -- static const
 };
 
 
-static BOOL R_CheckBBox (fixed_t *bspcoord)	// killough 1/28/98: static
+bool R_CheckBBox (fixed_t *bspcoord)	// killough 1/28/98: static
 {
 	int 				boxx;
 	int 				boxy;
@@ -895,5 +895,5 @@ void R_RenderBSPNode (int bspnum)
 	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 
-VERSION_CONTROL (r_bsp_cpp, "$Id:$")
+VERSION_CONTROL (r_bsp_cpp, "$Id$")
 

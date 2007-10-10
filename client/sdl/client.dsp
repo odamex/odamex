@@ -80,7 +80,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib msvcrt.lib msvcprt.lib oldnames.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib sdl.lib sdlmain.lib sdl_mixer.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"libcmt LIBCMTD" /nodefaultlib /out:"..\..\dbg\odamex.exe" /pdbtype:sept
+# ADD LINK32 msvcrt.lib msvcprt.lib oldnames.lib sdl.lib sdlmain.lib sdl_mixer.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib opengl32.lib glu32.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"libcmt LIBCMTD" /nodefaultlib /out:"..\..\dbg\odamex.exe" /pdbtype:sept
 # SUBTRACT LINK32 /profile
 
 !ENDIF 
@@ -411,6 +411,18 @@ SOURCE=.\hardware.cpp
 # Begin Source File
 
 SOURCE=.\hardware.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\i_glrender.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\i_glshader.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\i_glvideo.cpp
 # End Source File
 # Begin Source File
 

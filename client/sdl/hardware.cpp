@@ -38,6 +38,7 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "i_sdlvideo.h"
+#include "i_glvideo.h"
 
 extern constate_e ConsoleState;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
@@ -76,6 +77,8 @@ void STACK_ARGS I_ShutdownHardware ()
 		delete Video, Video = NULL;
 }
 
+EXTERN_CVAR(opengl)
+
 void I_InitHardware ()
 {
 	char num[4];
@@ -86,7 +89,12 @@ void I_InitHardware ()
 	if(Args.CheckParm ("-novideo"))
 		Video = new IVideo();
 	else
-		Video = new SDLVideo (0);
+	{
+		if(opengl)
+			Video = new GLVideo (0);
+		else
+			Video = new SDLVideo (0);
+	}
 
 	if (Video == NULL)
 		I_FatalError ("Failed to initialize display");

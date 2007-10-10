@@ -34,6 +34,15 @@
 #define GPART(c)			(((c)>>8)&0xff)
 #define BPART(c)			((c)&0xff)
 
+// Palette indices.
+// For damage/bonus red-/gold-shifts
+#define STARTREDPALS		1
+#define STARTBONUSPALS		9
+#define NUMREDPALS			8
+#define NUMBONUSPALS		4
+// Radiation suit, green shift.
+#define RADIATIONPAL		13
+
 struct palette_s {
 	struct palette_s *next, *prev;
 

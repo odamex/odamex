@@ -1072,7 +1072,7 @@ void ST_Ticker (void)
 	st_oldhealth = consoleplayer().health;
 }
 
-static int st_palette = 0;
+int st_palette = 0;
 
 /* Original redscreen palette method - replaces ZDoom method - ML       */
 void ST_doPaletteStuff(void)
