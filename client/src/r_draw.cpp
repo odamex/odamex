@@ -1024,6 +1024,22 @@ void R_InitTranslationTables (void)
 
 }
 
+// [Nes] Vanilla player translation table.
+void R_BuildClassicPlayerTranslation (int player, int color)
+{
+	int i;
+	
+	if (color == 1) // Indigo
+		for (i = 0x70; i < 0x80; i++)
+			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
+	else if (color == 2) // Brown
+		for (i = 0x70; i < 0x80; i++)
+			translationtables[i+(player * 256)] = 0x40 + (i&0xf);	
+	else if (color == 3) // Red
+		for (i = 0x70; i < 0x80; i++)
+			translationtables[i+(player * 256)] = 0x20 + (i&0xf);	
+}
+
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
 void R_BuildPlayerTranslation (int player, int color)
