@@ -267,7 +267,7 @@ void HU_Drawer (void)
 		}
 	}
 
-	if(multiplayer && consoleplayer().camera)
+	if(multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
 	if (((Actions[ACTION_SHOWSCORES]) ||
 		 consoleplayer().camera->health <= 0) && gamestate != GS_INTERMISSION)
 	{
