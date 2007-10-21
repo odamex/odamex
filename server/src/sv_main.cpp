@@ -102,8 +102,8 @@ END_CUSTOM_CVAR (maxplayers)
 // Game settings
 CVAR (sv_cheats,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Players are allowed to use cheatcodes when try. - does not work yet
 CVAR (deathmatch,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Deathmatch mode when true, this includes teamDM and CTF.
-CVAR (fraglimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Sets the winning frag total for deathmatch and teamDM.
-CVAR (timelimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Sets the max time in minutes for each game.
+CVAR (fraglimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the winning frag total for deathmatch and teamDM.
+CVAR (timelimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the max time in minutes for each game.
 
 CVAR (maxcorpses, 		"200", 		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 		// joek - max number of corpses. < 0 is infinite

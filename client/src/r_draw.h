@@ -211,6 +211,9 @@ void R_InitTranslationTables (void);
 // [RH] Actually create a player's translation table.
 void R_BuildPlayerTranslation (int player, int color);
 
+// [Nes] Classic player translation table.
+void R_BuildClassicPlayerTranslation (int player, int color);
+
 
 // If the view size is not full screen, draws a border around it.
 void R_DrawViewBorder (void);

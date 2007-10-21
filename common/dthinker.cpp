@@ -94,6 +94,7 @@ DThinker::DThinker ()
 		FirstThinker = this;
 	LastThinker = this;
 	refCount = 0;
+	destroyed = false;
 }
 
 DThinker::~DThinker ()
@@ -102,6 +103,10 @@ DThinker::~DThinker ()
 
 void DThinker::Destroy ()
 {
+	// denis - allow this function to be safely called multiple times
+	if(destroyed)
+		return;
+		
 	if (FirstThinker == this)
 		FirstThinker = m_Next;
 	if (LastThinker == this)

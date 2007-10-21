@@ -1037,7 +1037,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 		target->tics = 1;
 
 	// [RH] Death messages
-	if (target->player && level.time && multiplayer)
+	if (target->player && level.time && multiplayer && !(demoplayback && democlassic))
 		ClientObituary (target, inflictor, source);
 
 	// Drop stuff.

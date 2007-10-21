@@ -78,6 +78,7 @@ public:
 	
 private:
 	DThinker *m_Next, *m_Prev;
+	bool destroyed;
 
 	friend class FThinkerIterator;
 };

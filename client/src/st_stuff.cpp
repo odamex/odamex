@@ -377,6 +377,9 @@ patch_t* 				faces[ST_NUMFACES];
 // face background
 static patch_t* 		faceback;
 
+// classic face background
+static patch_t*			faceclassic[4];
+
  // main bar right
 static patch_t* 		armsbg;
 
@@ -522,10 +525,14 @@ void ST_refreshBackground(void)
 
 		if (multiplayer)
 		{
-			// [RH] Always draw faceback with the player's color
-			//		using a translation rather than a different patch.
-			V_ColorMap = translationtables + (consoleplayer().id) * 256;
-			BG->DrawTranslatedPatch (faceback, ST_FX, ST_FY);
+			if (!demoplayback || !democlassic) {
+				// [RH] Always draw faceback with the player's color
+				//		using a translation rather than a different patch.
+				V_ColorMap = translationtables + (consoleplayer().id) * 256;
+				BG->DrawTranslatedPatch (faceback, ST_FX, ST_FY);
+			} else {
+				BG->DrawPatch (faceclassic[consoleplayer().id-1], ST_FX, ST_FY);
+			}
 		}
 
 		BG->Blit (0, 0, 320, 32, stnumscreen, 0, 0, 320, 32);
@@ -1322,6 +1329,12 @@ void ST_loadGraphics(void)
 	// [RH] only one face background used for all players
 	//		different colors are accomplished with translations
 	faceback = W_CachePatch("STFBANY", PU_STATIC);
+	
+	// [Nes] Classic vanilla lifebars.
+	for (i = 0; i < 4; i++) {
+		sprintf(namebuf, "STFB%d", i);
+		faceclassic[i] = W_CachePatch(namebuf, PU_STATIC);
+	}
 
 	// status bar background bits
 	sbar = W_CachePatch("STBAR", PU_STATIC);

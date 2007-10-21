@@ -521,7 +521,7 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 	size_t realnum = 0;
 	for(size_t i = 0; i < s; i++)
 		if(players[i].ingame())
-			realnum++;
+			realnum = i + 1;
 
 	if(!realnum)
 		return false;
