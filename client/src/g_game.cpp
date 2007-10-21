@@ -382,7 +382,7 @@ END_COMMAND (weapprev)
 
 BEGIN_COMMAND (spynext)
 {
-	extern bool ctfmode, teamplaymode;
+	extern bool ctfmode, teamplaymode, st_firsttime;
 
 	size_t curr;
 	size_t s = players.size();
@@ -401,6 +401,7 @@ BEGIN_COMMAND (spynext)
 		{
 			consoleplayer_id = players[curr].id;
 			displayplayer_id = players[curr].id;
+			st_firsttime = true;
 			break;
 		}
 		else if(!deathmatch || ((teamplaymode || ctfmode) && players[curr].userinfo.team == consoleplayer().userinfo.team))
