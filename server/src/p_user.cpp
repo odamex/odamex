@@ -28,7 +28,6 @@
 #include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
-#include "sv_main.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -195,7 +194,32 @@ void P_MovePlayer (player_t *player)
 	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
 
-//	mo->angle += cmd->ucmd.yaw << 16;
+	// Move around.
+	// Reactiontime is used to prevent movement
+	//	for a bit after a teleport.
+	if (player->mo->reactiontime)
+	{
+		player->mo->reactiontime--;
+		return;
+	}
+
+	// [RH] check for swim/jump
+	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
+	{
+		if (player->mo->waterlevel >= 2)
+		{
+			player->mo->momz = 4*FRACUNIT;
+		}
+	}
+	
+	// Look left/right
+	if(clientside)
+	{
+		mo->angle += cmd->ucmd.yaw << 16;
+
+		// Look up/down stuff
+		P_PlayerLookUpDown (player);
+	}
 
 	mo->onground = (mo->z <= mo->floorz);
 
@@ -377,38 +401,7 @@ void P_PlayerThink (player_t *player)
 			return;
 		}
 
-		// Look up/down stuff
-		P_PlayerLookUpDown(player);
-
-		// Move around.
-		// Reactiontime is used to prevent movement
-		//	for a bit after a teleport.
-		if (player->mo->reactiontime)
-			player->mo->reactiontime--;
-		else
-		{
-			// [RH] check for swim/jump
-			if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
-			{
-				if (player->mo->waterlevel >= 2)
-				{
-					player->mo->momz = 4*FRACUNIT;
-				}
-				else if (allowjump && player->mo->onground && !player->mo->momz)
-				{
-					player->mo->momz += 7*FRACUNIT;
-					S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
-				}
-			}
-
-			if (cmd->ucmd.upmove &&
-				(player->mo->waterlevel >= 2))
-			{
-				player->mo->momz = cmd->ucmd.upmove << 8;
-			}
-
-			P_MovePlayer (player);
-		}
+		P_MovePlayer (player);
 
 		P_CalcHeight (player);
 	}
@@ -453,7 +446,12 @@ void P_PlayerThink (player_t *player)
 			&& player->weaponowned[newweapon]
 			&& newweapon != player->readyweapon)
 		{
-			player->pendingweapon = newweapon;
+			// NEVER go to plasma or BFG in shareware,
+			if ((newweapon != wp_plasma && newweapon != wp_bfg)
+			|| (gamemode != shareware) )
+			{
+				player->pendingweapon = newweapon;
+			}
 		}
 	}
 
