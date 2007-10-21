@@ -397,7 +397,13 @@ BEGIN_COMMAND (spynext)
 		if(!players[curr].mo)
 			continue;
 
-		if(!deathmatch || ((teamplaymode || ctfmode) && players[curr].userinfo.team == consoleplayer().userinfo.team))
+		if(demoplayback)
+		{
+			consoleplayer_id = players[curr].id;
+			displayplayer_id = players[curr].id;
+			break;
+		}
+		else if(!deathmatch || ((teamplaymode || ctfmode) && players[curr].userinfo.team == consoleplayer().userinfo.team))
 		{
 			displayplayer_id = players[curr].id;
 			break;
