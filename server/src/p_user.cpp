@@ -16,9 +16,9 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Player related stuff.
-//	Bobbing POV/weapon, movement.
-//	Pending weapon.
+//		Player related stuff.
+//		Bobbing POV/weapon, movement.
+//		Pending weapon.
 //
 //-----------------------------------------------------------------------------
 
@@ -212,17 +212,23 @@ void P_MovePlayer (player_t *player)
 		}
 	}
 	
+	if (cmd->ucmd.upmove &&
+		(player->mo->waterlevel >= 2))
+	{
+		player->mo->momz = cmd->ucmd.upmove << 8;
+	}
+	
 	// Look left/right
 	if(clientside)
 	{
 		mo->angle += cmd->ucmd.yaw << 16;
 
 		// Look up/down stuff
-		P_PlayerLookUpDown (player);
+		P_PlayerLookUpDown(player);
 	}
 
 	mo->onground = (mo->z <= mo->floorz);
-
+	
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
 		return;
@@ -251,13 +257,16 @@ void P_MovePlayer (player_t *player)
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
 
-		if (forwardmove && mo->onground)
+		if (mo->onground)
 		{
-			P_ForwardThrust (player, mo->angle, forwardmove);
-		}
-		if (sidemove && mo->onground)
-		{
-			P_SideThrust (player, mo->angle, sidemove);
+			if (forwardmove)
+			{
+				P_ForwardThrust (player, mo->angle, forwardmove);
+			}
+			if (sidemove)
+			{
+				P_SideThrust (player, mo->angle, sidemove);
+			}
 		}
 
 		if (mo->state == &states[S_PLAY])
@@ -271,7 +280,7 @@ void P_MovePlayer (player_t *player)
 		player->cheats &= ~CF_REVERTPLEASE;
 		player->camera = player->mo;
 	}
-}		
+}
 
 //
 // P_DeathThink
@@ -297,7 +306,7 @@ void P_DeathThink (player_t *player)
 
 	player->deltaviewheight = 0;
 	P_CalcHeight (player);
-		
+	
 	if(!serverside)
 	{
 		if (player->damagecount)
@@ -322,7 +331,7 @@ void P_DeathThink (player_t *player)
 			// Looking at killer,
 			//	so fade damage flash down.
 			player->mo->angle = angle;
-
+			
 			if (player->damagecount)
 				player->damagecount--;
 		}
@@ -400,7 +409,7 @@ void P_PlayerThink (player_t *player)
 			P_DeathThink (player);
 			return;
 		}
-
+		
 		P_MovePlayer (player);
 
 		P_CalcHeight (player);
@@ -408,12 +417,12 @@ void P_PlayerThink (player_t *player)
 
 	if (player->mo->subsector->sector->special || player->mo->subsector->sector->damage)
 		P_PlayerInSpecialSector (player);
-
+	
 	// Check for weapon change.
 
 	// A special event has no other buttons.
 	if (cmd->ucmd.buttons & BT_SPECIAL)
-		cmd->ucmd.buttons = 0;						
+		cmd->ucmd.buttons = 0;
 	
 	if ((cmd->ucmd.buttons & BT_CHANGE) || cmd->ucmd.impulse >= 50)
 	{
@@ -434,7 +443,8 @@ void P_PlayerThink (player_t *player)
 				newweapon = wp_chainsaw;
 			}
 			
-			if (newweapon == wp_shotgun 
+			if (gamemode == commercial
+				&& newweapon == wp_shotgun 
 				&& player->weaponowned[wp_supershotgun]
 				&& player->readyweapon != wp_supershotgun)
 			{
