@@ -317,8 +317,6 @@ void P_DeathThink (player_t *player)
 
 	if (player->attacker && player->attacker != player->mo)
 	{
-		angle_t old_angle = player->mo->angle;
-		
 		angle = R_PointToAngle2 (player->mo->x,
 								 player->mo->y,
 								 player->attacker->x,
@@ -339,27 +337,6 @@ void P_DeathThink (player_t *player)
 			player->mo->angle += ANG5;
 		else
 			player->mo->angle -= ANG5;
-		
-		if(player->mo->angle != old_angle)
-		{
-			client_t *cl = &player->client;
-			
-			MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
-			MSG_WriteByte(&cl->netbuf, player->id);     // player number
-			MSG_WriteLong(&cl->netbuf, player->mo->x);
-			MSG_WriteLong(&cl->netbuf, player->mo->y);
-			MSG_WriteLong(&cl->netbuf, player->mo->z);
-			MSG_WriteLong(&cl->netbuf, player->mo->angle);
-			if (player->mo->frame == 32773)
-				MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
-			else
-				MSG_WriteByte(&cl->netbuf, player->mo->frame);
-
-				// write velocity
-			MSG_WriteLong(&cl->netbuf, player->mo->momx);
-			MSG_WriteLong(&cl->netbuf, player->mo->momy);
-			MSG_WriteLong(&cl->netbuf, player->mo->momz);
-		}
 	}
 	else if (player->damagecount)
 		player->damagecount--;
