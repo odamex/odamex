@@ -1339,6 +1339,14 @@ void A_Ambient (AActor *actor)
 {
 }
 
+//
+// UV_SoundAvoidCl
+// Sends a sound to clients, but doesn't send it to client 'player'.
+//
+void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, char *name, byte attenuation)
+{
+	S_Sound(mo, channel, name, 1, attenuation);
+}
 
 VERSION_CONTROL (s_sound_cpp, "$Id$")
 
