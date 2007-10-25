@@ -30,7 +30,7 @@
 
 #include "m_random.h"
 #include "p_local.h"
-#include "s_Sound.h"
+#include "s_sound.h"
 
 // State.
 #include "doomstat.h"
