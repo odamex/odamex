@@ -186,7 +186,6 @@
 		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
 		<Unit filename="..\src\d_player.h" />
-		<Unit filename="..\src\doomstat.cpp" />
 		<Unit filename="..\src\doomstat.h" />
 		<Unit filename="..\src\f_finale.cpp" />
 		<Unit filename="..\src\f_finale.h" />
@@ -258,6 +257,7 @@
 		<Unit filename="..\..\common\dobject.h" />
 		<Unit filename="..\..\common\doomdata.h" />
 		<Unit filename="..\..\common\doomdef.h" />
+		<Unit filename="..\..\common\doomstat.cpp" />
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />
 		<Unit filename="..\..\common\dsectoreffect.h" />

@@ -134,10 +134,6 @@ SOURCE=..\src\d_netinfo.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\doomstat.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\f_finale.cpp
 # End Source File
 # Begin Source File
@@ -547,6 +543,10 @@ SOURCE=..\..\common\doomdata.h
 # Begin Source File
 
 SOURCE=..\..\common\doomdef.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\doomstat.cpp
 # End Source File
 # Begin Source File
 
