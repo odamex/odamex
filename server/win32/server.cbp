@@ -125,9 +125,9 @@
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="All (MAC)" targets="Mac Release;Mac Debug" />
-			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug" />
-			<Add alias="All (WIN32)" targets="Win Release;Win Debug" />
+			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
+			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
+			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
@@ -160,6 +160,7 @@
 		<Unit filename="..\..\common\dobject.h" />
 		<Unit filename="..\..\common\doomdata.h" />
 		<Unit filename="..\..\common\doomdef.h" />
+		<Unit filename="..\..\common\doomstat.cpp" />
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />
 		<Unit filename="..\..\common\dsectoreffect.h" />
@@ -209,6 +210,7 @@
 		<Unit filename="..\..\common\p_maputl.cpp" />
 		<Unit filename="..\..\common\p_pillar.cpp" />
 		<Unit filename="..\..\common\p_plats.cpp" />
+		<Unit filename="..\..\common\p_pspr.cpp" />
 		<Unit filename="..\..\common\p_pspr.h" />
 		<Unit filename="..\..\common\p_saveg.cpp" />
 		<Unit filename="..\..\common\p_saveg.h" />
@@ -252,7 +254,6 @@
 		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
 		<Unit filename="..\src\d_player.h" />
-		<Unit filename="..\src\doomstat.cpp" />
 		<Unit filename="..\src\doomstat.h" />
 		<Unit filename="..\src\g_game.cpp" />
 		<Unit filename="..\src\g_game.h" />
@@ -266,7 +267,6 @@
 		<Unit filename="..\src\p_interaction.cpp" />
 		<Unit filename="..\src\p_mobj.cpp" />
 		<Unit filename="..\src\p_mobj.h" />
-		<Unit filename="..\src\p_pspr.cpp" />
 		<Unit filename="..\src\p_user.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_draw.h" />

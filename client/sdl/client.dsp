@@ -134,10 +134,6 @@ SOURCE=..\src\d_netinfo.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\doomstat.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\f_finale.cpp
 # End Source File
 # Begin Source File
@@ -183,10 +179,6 @@ SOURCE=..\src\p_interaction.cpp
 # Begin Source File
 
 SOURCE=..\src\p_mobj.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\p_pspr.cpp
 # End Source File
 # Begin Source File
 
@@ -566,6 +558,10 @@ SOURCE=..\..\common\doomdef.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\doomstat.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\common\doomtype.h
 # End Source File
 # Begin Source File
@@ -755,6 +751,10 @@ SOURCE=..\..\common\p_pillar.cpp
 # Begin Source File
 
 SOURCE=..\..\common\p_plats.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\p_pspr.cpp
 # End Source File
 # Begin Source File
 

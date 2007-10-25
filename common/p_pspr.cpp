@@ -34,10 +34,7 @@
 
 // State.
 #include "doomstat.h"
-
 #include "p_pspr.h"
-
-#include "cl_main.h"
 
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
@@ -104,6 +101,16 @@ P_SetPsprite
 	// an initial state of 0 could cycle through
 }
 
+void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, char *name, byte attenuation);
+
+//
+// A_FireSound
+//
+void A_FireSound (player_t *player, char *sound)
+{
+ 	UV_SoundAvoidPlayer (*player, player->mo, CHAN_WEAPON, sound, ATTN_NORM);
+}
+
 //
 // P_BringUpWeapon
 // Starts bringing the pending weapon up
@@ -118,7 +125,7 @@ void P_BringUpWeapon (player_t *player)
 		player->pendingweapon = player->readyweapon;
 				
 	if (player->pendingweapon == wp_chainsaw)
-		S_Sound (player->mo, CHAN_WEAPON, "weapons/sawup", 1, ATTN_NORM);
+		A_FireSound(player, "weapons/sawup");
 				
 	newstate = weaponinfo[player->pendingweapon].upstate;
 
@@ -269,7 +276,7 @@ A_WeaponReady
 	if (player->readyweapon == wp_chainsaw
 		&& psp->state == &states[S_SAW])
 	{
-		S_Sound (player->mo, CHAN_WEAPON, "weapons/sawidle", 1, ATTN_NORM);
+		A_FireSound(player, "weapons/sawidle");
 	}
 	
 	// check for change
@@ -425,7 +432,6 @@ void A_GunFlash (player_t *player, pspdef_t *psp)
 // WEAPON ATTACKS
 //
 
-
 //
 // A_Punch
 //
@@ -449,7 +455,7 @@ void A_Punch (player_t *player, pspdef_t *psp)
 	// turn to face target
 	if (linetarget)
 	{
-		S_Sound (player->mo, CHAN_WEAPON, "*fist", 1, ATTN_NORM);
+		A_FireSound (player, "*fist");
 		player->mo->angle = R_PointToAngle2 (player->mo->x,
 											 player->mo->y,
 											 linetarget->x,
@@ -476,11 +482,11 @@ void A_Saw (player_t *player, pspdef_t *psp)
 
 	if (!linetarget)
 	{
-		S_Sound (player->mo, CHAN_WEAPON, "weapons/sawfull", 1, ATTN_NORM);
+		A_FireSound (player, "weapons/sawfull");
 		return;
 	}
-	S_Sound (player->mo, CHAN_WEAPON, "weapons/sawhit", 1, ATTN_NORM);
-		
+	A_FireSound (player, "weapons/sawhit");
+	
 	// turn to face target
 	angle = R_PointToAngle2 (player->mo->x, player->mo->y,
 							 linetarget->x, linetarget->y);
@@ -627,7 +633,7 @@ void P_GunShot (AActor *mo, BOOL accurate)
 //
 void A_FirePistol (player_t *player, pspdef_t *psp)
 {
-	S_Sound (player->mo, CHAN_WEAPON, "weapons/pistol", 1, ATTN_NORM);
+	A_FireSound (player, "weapons/pistol");
 
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
@@ -651,7 +657,7 @@ void A_FirePistol (player_t *player, pspdef_t *psp)
 //
 void A_FireShotgun (player_t *player, pspdef_t *psp)
 {
-	S_Sound (player->mo, CHAN_WEAPON,  "weapons/shotgf", 1, ATTN_NORM);
+	A_FireSound (player, "weapons/shotgf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
 	if (!infiniteammo)
@@ -680,7 +686,7 @@ void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 	angle_t 	angle;
 	int 		damage;
 
-	S_Sound (player->mo, CHAN_WEAPON, "weapons/sshotf", 1, ATTN_NORM);
+	A_FireSound (player, "weapons/sshotf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
 	if (!infiniteammo)
@@ -713,7 +719,7 @@ void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 //
 void A_FireCGun (player_t *player, pspdef_t *psp)
 {
-	S_Sound (player->mo, CHAN_WEAPON, "weapons/chngun", 1, ATTN_NORM);
+	A_FireSound (player, "weapons/chngun");
 
 	if (!player->ammo[weaponinfo[player->readyweapon].ammo])
 		return;
@@ -803,7 +809,7 @@ void A_BFGSpray (AActor *mo)
 //
 void A_BFGsound (player_t *player, pspdef_t *psp)
 {
-	S_Sound (player->mo, CHAN_WEAPON, "weapons/bfgf", 1, ATTN_NORM);
+	A_FireSound(player, "weapons/bfgf");
 }
 
 
@@ -862,19 +868,19 @@ void P_MovePsprites (player_t* player)
 
 void A_OpenShotgun2 (player_t *player, pspdef_t *psp)
 {
-	S_Sound (player->mo, CHAN_WEAPON, "weapons/sshoto", 1, ATTN_NORM);
+	A_FireSound(player, "weapons/sshoto");
 }
 
 void A_LoadShotgun2 (player_t *player, pspdef_t *psp)
 {
-	S_Sound (player->mo, CHAN_WEAPON, "weapons/sshotl", 1, ATTN_NORM);
+	A_FireSound(player, "weapons/sshotl");
 }
 
 void A_ReFire (player_t *player, pspdef_t *psp);
 
 void A_CloseShotgun2 (player_t *player, pspdef_t *psp)
 {
-	S_Sound (player->mo, CHAN_WEAPON, "weapons/sshotc", 1, ATTN_NORM);
+	A_FireSound(player, "weapons/sshotc");
 	A_ReFire(player,psp);
 }
 

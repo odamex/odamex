@@ -16,9 +16,9 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Player related stuff.
-//	Bobbing POV/weapon, movement.
-//	Pending weapon.
+//		Player related stuff.
+//		Bobbing POV/weapon, movement.
+//		Pending weapon.
 //
 //-----------------------------------------------------------------------------
 
@@ -28,7 +28,6 @@
 #include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
-#include "sv_main.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -195,10 +194,41 @@ void P_MovePlayer (player_t *player)
 	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
 
-//	mo->angle += cmd->ucmd.yaw << 16;
+	// Move around.
+	// Reactiontime is used to prevent movement
+	//	for a bit after a teleport.
+	if (player->mo->reactiontime)
+	{
+		player->mo->reactiontime--;
+		return;
+	}
+
+	// [RH] check for swim/jump
+	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
+	{
+		if (player->mo->waterlevel >= 2)
+		{
+			player->mo->momz = 4*FRACUNIT;
+		}
+	}
+	
+	if (cmd->ucmd.upmove &&
+		(player->mo->waterlevel >= 2))
+	{
+		player->mo->momz = cmd->ucmd.upmove << 8;
+	}
+	
+	// Look left/right
+	if(clientside)
+	{
+		mo->angle += cmd->ucmd.yaw << 16;
+
+		// Look up/down stuff
+		P_PlayerLookUpDown(player);
+	}
 
 	mo->onground = (mo->z <= mo->floorz);
-
+	
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
 		return;
@@ -227,13 +257,16 @@ void P_MovePlayer (player_t *player)
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
 
-		if (forwardmove && mo->onground)
+		if (mo->onground)
 		{
-			P_ForwardThrust (player, mo->angle, forwardmove);
-		}
-		if (sidemove && mo->onground)
-		{
-			P_SideThrust (player, mo->angle, sidemove);
+			if (forwardmove)
+			{
+				P_ForwardThrust (player, mo->angle, forwardmove);
+			}
+			if (sidemove)
+			{
+				P_SideThrust (player, mo->angle, sidemove);
+			}
 		}
 
 		if (mo->state == &states[S_PLAY])
@@ -247,7 +280,7 @@ void P_MovePlayer (player_t *player)
 		player->cheats &= ~CF_REVERTPLEASE;
 		player->camera = player->mo;
 	}
-}		
+}
 
 //
 // P_DeathThink
@@ -273,7 +306,7 @@ void P_DeathThink (player_t *player)
 
 	player->deltaviewheight = 0;
 	P_CalcHeight (player);
-		
+	
 	if(!serverside)
 	{
 		if (player->damagecount)
@@ -284,8 +317,6 @@ void P_DeathThink (player_t *player)
 
 	if (player->attacker && player->attacker != player->mo)
 	{
-		angle_t old_angle = player->mo->angle;
-		
 		angle = R_PointToAngle2 (player->mo->x,
 								 player->mo->y,
 								 player->attacker->x,
@@ -298,7 +329,7 @@ void P_DeathThink (player_t *player)
 			// Looking at killer,
 			//	so fade damage flash down.
 			player->mo->angle = angle;
-
+			
 			if (player->damagecount)
 				player->damagecount--;
 		}
@@ -306,27 +337,6 @@ void P_DeathThink (player_t *player)
 			player->mo->angle += ANG5;
 		else
 			player->mo->angle -= ANG5;
-		
-		if(player->mo->angle != old_angle)
-		{
-			client_t *cl = &player->client;
-			
-			MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
-			MSG_WriteByte(&cl->netbuf, player->id);     // player number
-			MSG_WriteLong(&cl->netbuf, player->mo->x);
-			MSG_WriteLong(&cl->netbuf, player->mo->y);
-			MSG_WriteLong(&cl->netbuf, player->mo->z);
-			MSG_WriteLong(&cl->netbuf, player->mo->angle);
-			if (player->mo->frame == 32773)
-				MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
-			else
-				MSG_WriteByte(&cl->netbuf, player->mo->frame);
-
-				// write velocity
-			MSG_WriteLong(&cl->netbuf, player->mo->momx);
-			MSG_WriteLong(&cl->netbuf, player->mo->momy);
-			MSG_WriteLong(&cl->netbuf, player->mo->momz);
-		}
 	}
 	else if (player->damagecount)
 		player->damagecount--;
@@ -376,51 +386,20 @@ void P_PlayerThink (player_t *player)
 			P_DeathThink (player);
 			return;
 		}
-
-		// Look up/down stuff
-		P_PlayerLookUpDown(player);
-
-		// Move around.
-		// Reactiontime is used to prevent movement
-		//	for a bit after a teleport.
-		if (player->mo->reactiontime)
-			player->mo->reactiontime--;
-		else
-		{
-			// [RH] check for swim/jump
-			if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
-			{
-				if (player->mo->waterlevel >= 2)
-				{
-					player->mo->momz = 4*FRACUNIT;
-				}
-				else if (allowjump && player->mo->onground && !player->mo->momz)
-				{
-					player->mo->momz += 7*FRACUNIT;
-					S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
-				}
-			}
-
-			if (cmd->ucmd.upmove &&
-				(player->mo->waterlevel >= 2))
-			{
-				player->mo->momz = cmd->ucmd.upmove << 8;
-			}
-
-			P_MovePlayer (player);
-		}
+		
+		P_MovePlayer (player);
 
 		P_CalcHeight (player);
 	}
 
 	if (player->mo->subsector->sector->special || player->mo->subsector->sector->damage)
 		P_PlayerInSpecialSector (player);
-
+	
 	// Check for weapon change.
 
 	// A special event has no other buttons.
 	if (cmd->ucmd.buttons & BT_SPECIAL)
-		cmd->ucmd.buttons = 0;						
+		cmd->ucmd.buttons = 0;
 	
 	if ((cmd->ucmd.buttons & BT_CHANGE) || cmd->ucmd.impulse >= 50)
 	{
@@ -441,7 +420,8 @@ void P_PlayerThink (player_t *player)
 				newweapon = wp_chainsaw;
 			}
 			
-			if (newweapon == wp_shotgun 
+			if (gamemode == commercial
+				&& newweapon == wp_shotgun 
 				&& player->weaponowned[wp_supershotgun]
 				&& player->readyweapon != wp_supershotgun)
 			{
@@ -453,7 +433,12 @@ void P_PlayerThink (player_t *player)
 			&& player->weaponowned[newweapon]
 			&& newweapon != player->readyweapon)
 		{
-			player->pendingweapon = newweapon;
+			// NEVER go to plasma or BFG in shareware,
+			if ((newweapon != wp_plasma && newweapon != wp_bfg)
+			|| (gamemode != shareware) )
+			{
+				player->pendingweapon = newweapon;
+			}
 		}
 	}
 

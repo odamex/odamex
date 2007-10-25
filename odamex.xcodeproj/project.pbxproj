@@ -117,7 +117,6 @@
 		92D2D9DE0B6442EA00FD5B07 /* d_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE10B4D211D000AA4A2 /* d_main.cpp */; };
 		92D2D9DF0B6442EA00FD5B07 /* d_net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE30B4D211D000AA4A2 /* d_net.cpp */; };
 		92D2D9E00B6442EA00FD5B07 /* d_netinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE40B4D211D000AA4A2 /* d_netinfo.cpp */; };
-		92D2D9E10B6442EA00FD5B07 /* doomstat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE60B4D211D000AA4A2 /* doomstat.cpp */; };
 		92D2D9E20B6442EA00FD5B07 /* g_game.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE80B4D211D000AA4A2 /* g_game.cpp */; };
 		92D2D9E30B6442EA00FD5B07 /* g_level.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AEA0B4D211D000AA4A2 /* g_level.cpp */; };
 		92D2D9E40B6442EA00FD5B07 /* i_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AEC0B4D211D000AA4A2 /* i_main.cpp */; };
@@ -125,7 +124,6 @@
 		92D2D9E60B6442EA00FD5B07 /* m_misc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AEF0B4D211D000AA4A2 /* m_misc.cpp */; };
 		92D2D9E70B6442EA00FD5B07 /* p_interaction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AF10B4D211D000AA4A2 /* p_interaction.cpp */; };
 		92D2D9E80B6442EA00FD5B07 /* p_mobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AF20B4D211D000AA4A2 /* p_mobj.cpp */; };
-		92D2D9E90B6442EA00FD5B07 /* p_pspr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AF40B4D211D000AA4A2 /* p_pspr.cpp */; };
 		92D2D9EB0B6442EA00FD5B07 /* p_user.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AF70B4D211D000AA4A2 /* p_user.cpp */; };
 		92D2D9EC0B6442EA00FD5B07 /* r_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AF80B4D211D000AA4A2 /* r_draw.cpp */; };
 		92D2D9ED0B6442EA00FD5B07 /* r_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AFA0B4D211D000AA4A2 /* r_main.cpp */; };
@@ -296,7 +294,6 @@
 		92D2DB810B644F3F00FD5B07 /* d_net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6D00B62B89B00FD5B07 /* d_net.cpp */; };
 		92D2DB820B644F3F00FD5B07 /* d_netinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6D10B62B89B00FD5B07 /* d_netinfo.cpp */; };
 		92D2DB830B644F3F00FD5B07 /* d_player.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6D20B62B89B00FD5B07 /* d_player.h */; };
-		92D2DB840B644F3F00FD5B07 /* doomstat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6D30B62B89B00FD5B07 /* doomstat.cpp */; };
 		92D2DB850B644F3F00FD5B07 /* doomstat.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6D40B62B89B00FD5B07 /* doomstat.h */; };
 		92D2DB860B644F3F00FD5B07 /* f_finale.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6D50B62B89B00FD5B07 /* f_finale.cpp */; };
 		92D2DB870B644F3F00FD5B07 /* f_finale.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6D60B62B89B00FD5B07 /* f_finale.h */; };
@@ -320,7 +317,6 @@
 		92D2DB990B644F3F00FD5B07 /* p_interaction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6E80B62B89B00FD5B07 /* p_interaction.cpp */; };
 		92D2DB9A0B644F3F00FD5B07 /* p_interaction.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E90B62B89B00FD5B07 /* p_interaction.h */; };
 		92D2DB9B0B644F3F00FD5B07 /* p_mobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */; };
-		92D2DB9C0B644F3F00FD5B07 /* p_pspr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6EB0B62B89B00FD5B07 /* p_pspr.cpp */; };
 		92D2DB9F0B644F3F00FD5B07 /* p_user.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6EE0B62B89B00FD5B07 /* p_user.cpp */; };
 		92D2DBA00B644F3F00FD5B07 /* r_bsp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6EF0B62B89B00FD5B07 /* r_bsp.cpp */; };
 		92D2DBA10B644F3F00FD5B07 /* r_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6F00B62B89B00FD5B07 /* r_draw.cpp */; };
@@ -457,11 +453,10 @@
 		92D2DC250B64505100FD5B07 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D53A100AB96D8E00CF2FB2 /* SDL.framework */; };
 		92D2DC260B64505100FD5B07 /* SDL_mixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D53A0A0AB96D8700CF2FB2 /* SDL_mixer.framework */; };
 		92D2DC290B6450A400FD5B07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D2DC280B6450A400FD5B07 /* Carbon.framework */; };
-		92EC0A0F0CBD3B5400A804A6 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92EC0A0E0CBD3B5400A804A6 /* OpenGL.framework */; };
-		92EC0A1C0CBD42D700A804A6 /* i_glrender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0A180CBD42D700A804A6 /* i_glrender.cpp */; };
-		92EC0A1D0CBD42D700A804A6 /* i_glshader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0A190CBD42D700A804A6 /* i_glshader.cpp */; };
-		92EC0A1E0CBD42D700A804A6 /* i_glvideo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0A1A0CBD42D700A804A6 /* i_glvideo.cpp */; };
-		92EC0A1F0CBD42D700A804A6 /* i_glvideo.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92EC0A1B0CBD42D700A804A6 /* i_glvideo.h */; };
+		92EC0AF20CCFF14600A804A6 /* p_pspr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0AF10CCFF14600A804A6 /* p_pspr.cpp */; };
+		92EC0AF30CCFF14700A804A6 /* p_pspr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0AF10CCFF14600A804A6 /* p_pspr.cpp */; };
+		92EC0B0D0CCFF82300A804A6 /* doomstat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0B0C0CCFF82300A804A6 /* doomstat.cpp */; };
+		92EC0B0E0CCFF82300A804A6 /* doomstat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0B0C0CCFF82300A804A6 /* doomstat.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -660,7 +655,6 @@
 				92D2DC210B644F4900FD5B07 /* w_wad.h in CopyFiles */,
 				92D2DC230B644F4900FD5B07 /* z_zone.h in CopyFiles */,
 				92A745490CA52B1E007321ED /* p_tick.h in CopyFiles */,
-				92EC0A1F0CBD42D700A804A6 /* i_glvideo.h in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
@@ -765,7 +759,6 @@
 		920D7AE30B4D211D000AA4A2 /* d_net.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = d_net.cpp; sourceTree = "<group>"; };
 		920D7AE40B4D211D000AA4A2 /* d_netinfo.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = d_netinfo.cpp; sourceTree = "<group>"; };
 		920D7AE50B4D211D000AA4A2 /* d_player.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = d_player.h; sourceTree = "<group>"; };
-		920D7AE60B4D211D000AA4A2 /* doomstat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = doomstat.cpp; sourceTree = "<group>"; };
 		920D7AE70B4D211D000AA4A2 /* doomstat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = doomstat.h; sourceTree = "<group>"; };
 		920D7AE80B4D211D000AA4A2 /* g_game.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = g_game.cpp; sourceTree = "<group>"; };
 		920D7AE90B4D211D000AA4A2 /* g_game.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = g_game.h; sourceTree = "<group>"; };
@@ -779,7 +772,6 @@
 		920D7AF10B4D211D000AA4A2 /* p_interaction.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_interaction.cpp; sourceTree = "<group>"; };
 		920D7AF20B4D211D000AA4A2 /* p_mobj.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_mobj.cpp; sourceTree = "<group>"; };
 		920D7AF30B4D211D000AA4A2 /* p_mobj.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = p_mobj.h; sourceTree = "<group>"; };
-		920D7AF40B4D211D000AA4A2 /* p_pspr.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_pspr.cpp; sourceTree = "<group>"; };
 		920D7AF70B4D211D000AA4A2 /* p_user.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_user.cpp; sourceTree = "<group>"; };
 		920D7AF80B4D211D000AA4A2 /* r_draw.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = r_draw.cpp; sourceTree = "<group>"; };
 		920D7AF90B4D211D000AA4A2 /* r_draw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = r_draw.h; sourceTree = "<group>"; };
@@ -951,7 +943,6 @@
 		92D2D6D00B62B89B00FD5B07 /* d_net.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = d_net.cpp; sourceTree = "<group>"; };
 		92D2D6D10B62B89B00FD5B07 /* d_netinfo.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = d_netinfo.cpp; sourceTree = "<group>"; };
 		92D2D6D20B62B89B00FD5B07 /* d_player.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = d_player.h; sourceTree = "<group>"; };
-		92D2D6D30B62B89B00FD5B07 /* doomstat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = doomstat.cpp; sourceTree = "<group>"; };
 		92D2D6D40B62B89B00FD5B07 /* doomstat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = doomstat.h; sourceTree = "<group>"; };
 		92D2D6D50B62B89B00FD5B07 /* f_finale.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = f_finale.cpp; sourceTree = "<group>"; };
 		92D2D6D60B62B89B00FD5B07 /* f_finale.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = f_finale.h; sourceTree = "<group>"; };
@@ -975,7 +966,6 @@
 		92D2D6E80B62B89B00FD5B07 /* p_interaction.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_interaction.cpp; sourceTree = "<group>"; };
 		92D2D6E90B62B89B00FD5B07 /* p_interaction.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = p_interaction.h; sourceTree = "<group>"; };
 		92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_mobj.cpp; sourceTree = "<group>"; };
-		92D2D6EB0B62B89B00FD5B07 /* p_pspr.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_pspr.cpp; sourceTree = "<group>"; };
 		92D2D6EE0B62B89B00FD5B07 /* p_user.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_user.cpp; sourceTree = "<group>"; };
 		92D2D6EF0B62B89B00FD5B07 /* r_bsp.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = r_bsp.cpp; sourceTree = "<group>"; };
 		92D2D6F00B62B89B00FD5B07 /* r_draw.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = r_draw.cpp; sourceTree = "<group>"; };
@@ -1043,11 +1033,8 @@
 		92D2DC280B6450A400FD5B07 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 		92D53A0A0AB96D8700CF2FB2 /* SDL_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_mixer.framework; path = /Library/Frameworks/SDL_mixer.framework; sourceTree = "<absolute>"; };
 		92D53A100AB96D8E00CF2FB2 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
-		92EC0A0E0CBD3B5400A804A6 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
-		92EC0A180CBD42D700A804A6 /* i_glrender.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_glrender.cpp; sourceTree = "<group>"; };
-		92EC0A190CBD42D700A804A6 /* i_glshader.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_glshader.cpp; sourceTree = "<group>"; };
-		92EC0A1A0CBD42D700A804A6 /* i_glvideo.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_glvideo.cpp; sourceTree = "<group>"; };
-		92EC0A1B0CBD42D700A804A6 /* i_glvideo.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_glvideo.h; sourceTree = "<group>"; };
+		92EC0AF10CCFF14600A804A6 /* p_pspr.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_pspr.cpp; sourceTree = "<group>"; };
+		92EC0B0C0CCFF82300A804A6 /* doomstat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = doomstat.cpp; sourceTree = "<group>"; };
 		C6859E8B029090EE04C91782 /* odamex.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = odamex.1; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1062,7 +1049,6 @@
 				92CE7ECD0B645CD500DCACF0 /* Cocoa.framework in Frameworks */,
 				92325F2E0C89B6C0006D7EEF /* AudioToolbox.framework in Frameworks */,
 				9232603E0C89D378006D7EEF /* AudioUnit.framework in Frameworks */,
-				92EC0A0F0CBD3B5400A804A6 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1122,7 +1108,6 @@
 				920D7AE30B4D211D000AA4A2 /* d_net.cpp */,
 				920D7AE40B4D211D000AA4A2 /* d_netinfo.cpp */,
 				920D7AE50B4D211D000AA4A2 /* d_player.h */,
-				920D7AE60B4D211D000AA4A2 /* doomstat.cpp */,
 				920D7AE70B4D211D000AA4A2 /* doomstat.h */,
 				920D7AE80B4D211D000AA4A2 /* g_game.cpp */,
 				920D7AE90B4D211D000AA4A2 /* g_game.h */,
@@ -1136,7 +1121,6 @@
 				920D7AF10B4D211D000AA4A2 /* p_interaction.cpp */,
 				920D7AF20B4D211D000AA4A2 /* p_mobj.cpp */,
 				920D7AF30B4D211D000AA4A2 /* p_mobj.h */,
-				920D7AF40B4D211D000AA4A2 /* p_pspr.cpp */,
 				920D7AF70B4D211D000AA4A2 /* p_user.cpp */,
 				920D7AF80B4D211D000AA4A2 /* r_draw.cpp */,
 				920D7AF90B4D211D000AA4A2 /* r_draw.h */,
@@ -1188,6 +1172,7 @@
 				920D7B6E0B4D2127000AA4A2 /* doomdata.h */,
 				920D7B6F0B4D2127000AA4A2 /* doomdef.h */,
 				920D7B700B4D2127000AA4A2 /* doomtype.h */,
+				92EC0B0C0CCFF82300A804A6 /* doomstat.cpp */,
 				920D7B710B4D2127000AA4A2 /* dsectoreffect.cpp */,
 				920D7B720B4D2127000AA4A2 /* dsectoreffect.h */,
 				920D7B730B4D2127000AA4A2 /* dstrings.cpp */,
@@ -1238,6 +1223,7 @@
 				920D7BA30B4D212A000AA4A2 /* p_pillar.cpp */,
 				920D7BA40B4D212A000AA4A2 /* p_plats.cpp */,
 				920D7BA50B4D212A000AA4A2 /* p_pspr.h */,
+				92EC0AF10CCFF14600A804A6 /* p_pspr.cpp */,
 				920D7BA60B4D212A000AA4A2 /* p_saveg.cpp */,
 				920D7BA70B4D212A000AA4A2 /* p_saveg.h */,
 				920D7BA80B4D212A000AA4A2 /* p_setup.cpp */,
@@ -1301,10 +1287,6 @@
 		92D2D6AC0B62B89B00FD5B07 /* sdl */ = {
 			isa = PBXGroup;
 			children = (
-				92EC0A180CBD42D700A804A6 /* i_glrender.cpp */,
-				92EC0A190CBD42D700A804A6 /* i_glshader.cpp */,
-				92EC0A1A0CBD42D700A804A6 /* i_glvideo.cpp */,
-				92EC0A1B0CBD42D700A804A6 /* i_glvideo.h */,
 				92D2D6B10B62B89B00FD5B07 /* hardware.cpp */,
 				92D2D6B20B62B89B00FD5B07 /* hardware.h */,
 				92D2D6B30B62B89B00FD5B07 /* i_input.cpp */,
@@ -1345,7 +1327,6 @@
 				92D2D6D00B62B89B00FD5B07 /* d_net.cpp */,
 				92D2D6D10B62B89B00FD5B07 /* d_netinfo.cpp */,
 				92D2D6D20B62B89B00FD5B07 /* d_player.h */,
-				92D2D6D30B62B89B00FD5B07 /* doomstat.cpp */,
 				92D2D6D40B62B89B00FD5B07 /* doomstat.h */,
 				92D2D6D50B62B89B00FD5B07 /* f_finale.cpp */,
 				92D2D6D60B62B89B00FD5B07 /* f_finale.h */,
@@ -1369,7 +1350,6 @@
 				92D2D6E80B62B89B00FD5B07 /* p_interaction.cpp */,
 				92D2D6E90B62B89B00FD5B07 /* p_interaction.h */,
 				92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */,
-				92D2D6EB0B62B89B00FD5B07 /* p_pspr.cpp */,
 				92D2D6EE0B62B89B00FD5B07 /* p_user.cpp */,
 				92D2D6EF0B62B89B00FD5B07 /* r_bsp.cpp */,
 				92D2D6F00B62B89B00FD5B07 /* r_draw.cpp */,
@@ -1404,7 +1384,6 @@
 		92D2D80E0B62BB0B00FD5B07 /* libraries */ = {
 			isa = PBXGroup;
 			children = (
-				92EC0A0E0CBD3B5400A804A6 /* OpenGL.framework */,
 				9232603D0C89D378006D7EEF /* AudioUnit.framework */,
 				92325F2D0C89B6C0006D7EEF /* AudioToolbox.framework */,
 				92CE7ECC0B645CD500DCACF0 /* Cocoa.framework */,
@@ -1606,7 +1585,6 @@
 				92D2DB7F0B644F3F00FD5B07 /* d_main.cpp in Sources */,
 				92D2DB810B644F3F00FD5B07 /* d_net.cpp in Sources */,
 				92D2DB820B644F3F00FD5B07 /* d_netinfo.cpp in Sources */,
-				92D2DB840B644F3F00FD5B07 /* doomstat.cpp in Sources */,
 				92D2DB860B644F3F00FD5B07 /* f_finale.cpp in Sources */,
 				92D2DB880B644F3F00FD5B07 /* f_wipe.cpp in Sources */,
 				92D2DB8A0B644F3F00FD5B07 /* g_game.cpp in Sources */,
@@ -1619,7 +1597,6 @@
 				92D2DB970B644F3F00FD5B07 /* mus2midi.cpp in Sources */,
 				92D2DB990B644F3F00FD5B07 /* p_interaction.cpp in Sources */,
 				92D2DB9B0B644F3F00FD5B07 /* p_mobj.cpp in Sources */,
-				92D2DB9C0B644F3F00FD5B07 /* p_pspr.cpp in Sources */,
 				92D2DB9F0B644F3F00FD5B07 /* p_user.cpp in Sources */,
 				92D2DBA00B644F3F00FD5B07 /* r_bsp.cpp in Sources */,
 				92D2DBA10B644F3F00FD5B07 /* r_draw.cpp in Sources */,
@@ -1687,9 +1664,8 @@
 				92D2DC220B644F4900FD5B07 /* z_zone.cpp in Sources */,
 				92CE7EBA0B645C7800DCACF0 /* SDLMain.m in Sources */,
 				92A745480CA52B1E007321ED /* p_tick.cpp in Sources */,
-				92EC0A1C0CBD42D700A804A6 /* i_glrender.cpp in Sources */,
-				92EC0A1D0CBD42D700A804A6 /* i_glshader.cpp in Sources */,
-				92EC0A1E0CBD42D700A804A6 /* i_glvideo.cpp in Sources */,
+				92EC0AF20CCFF14600A804A6 /* p_pspr.cpp in Sources */,
+				92EC0B0D0CCFF82300A804A6 /* doomstat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1712,7 +1688,6 @@
 				92D2D9DE0B6442EA00FD5B07 /* d_main.cpp in Sources */,
 				92D2D9DF0B6442EA00FD5B07 /* d_net.cpp in Sources */,
 				92D2D9E00B6442EA00FD5B07 /* d_netinfo.cpp in Sources */,
-				92D2D9E10B6442EA00FD5B07 /* doomstat.cpp in Sources */,
 				92D2D9E20B6442EA00FD5B07 /* g_game.cpp in Sources */,
 				92D2D9E30B6442EA00FD5B07 /* g_level.cpp in Sources */,
 				92D2D9E40B6442EA00FD5B07 /* i_main.cpp in Sources */,
@@ -1720,7 +1695,6 @@
 				92D2D9E60B6442EA00FD5B07 /* m_misc.cpp in Sources */,
 				92D2D9E70B6442EA00FD5B07 /* p_interaction.cpp in Sources */,
 				92D2D9E80B6442EA00FD5B07 /* p_mobj.cpp in Sources */,
-				92D2D9E90B6442EA00FD5B07 /* p_pspr.cpp in Sources */,
 				92D2D9EB0B6442EA00FD5B07 /* p_user.cpp in Sources */,
 				92D2D9EC0B6442EA00FD5B07 /* r_draw.cpp in Sources */,
 				92D2D9ED0B6442EA00FD5B07 /* r_main.cpp in Sources */,
@@ -1781,6 +1755,8 @@
 				92D2DA240B6442EA00FD5B07 /* z_zone.cpp in Sources */,
 				92D2DA250B6442EA00FD5B07 /* version.cpp in Sources */,
 				92A7454A0CA52B1E007321ED /* p_tick.cpp in Sources */,
+				92EC0AF30CCFF14700A804A6 /* p_pspr.cpp in Sources */,
+				92EC0B0E0CCFF82300A804A6 /* doomstat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

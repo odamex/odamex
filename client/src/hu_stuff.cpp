@@ -61,6 +61,7 @@ EXTERN_CVAR (con_scaletext)
 EXTERN_CVAR (fraglimit)
 EXTERN_CVAR (timelimit)
 EXTERN_CVAR (scorelimit)
+EXTERN_CVAR (teamplay)
 
 // Chat
 void HU_Init (void);
@@ -362,7 +363,7 @@ CVAR (usehighresboard, "1",	CVAR_ARCHIVE)
 //
 void HU_DrawScores (player_t *player)
 {
-	if (ctfmode || teamplaymode)
+	if (ctfmode || teamplay)
 	{
 		if (usehighresboard)
 		{
@@ -1443,7 +1444,7 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
         }
-    } else if (teamplaymode) {
+    } else if (teamplay) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
         Printf_Bold("\n--------------------------------------\n");

@@ -220,10 +220,13 @@ void P_MovePlayer (player_t *player)
 	}
 
 	// Look left/right
-	mo->angle += cmd->ucmd.yaw << 16;
+	if(clientside)
+	{
+		mo->angle += cmd->ucmd.yaw << 16;
 
-	// Look up/down stuff
-	P_PlayerLookUpDown(player);
+		// Look up/down stuff
+		P_PlayerLookUpDown(player);
+	}
 
 	mo->onground = (mo->z <= mo->floorz);
 	
@@ -269,7 +272,7 @@ void P_MovePlayer (player_t *player)
 
 		if (mo->state == &states[S_PLAY])
 		{
-			P_SetMobjState (player->mo, S_PLAY_RUN1);
+			P_SetMobjState (player->mo, S_PLAY_RUN1); // denis - fixme - this function might destoy player->mo without setting it to 0
 		}		
 	}
 
@@ -339,10 +342,11 @@ void P_DeathThink (player_t *player)
 	else if (player->damagecount)
 		player->damagecount--;
 		
-	if(serverside)
+	if(serverside && !clientside)
 	{
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE))
+		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
+								 || level.time >= player->respawn_time)) // forced respawn
 			player->playerstate = PST_REBORN;
 	}
 }
@@ -384,35 +388,7 @@ void P_PlayerThink (player_t *player)
 			return;
 		}
 		
-		// Move around.
-		// Reactiontime is used to prevent movement
-		//	for a bit after a teleport.
-		if (player->mo->reactiontime)
-			player->mo->reactiontime--;
-		else
-		{
-			// [RH] check for swim/jump
-			if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
-			{
-				if (player->mo->waterlevel >= 2)
-				{
-					player->mo->momz = 4*FRACUNIT;
-				}
-				else if (allowjump && player->mo->onground && !player->mo->momz)
-				{
-					player->mo->momz += 7*FRACUNIT;
-					S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
-				}
-			}
-			
-			if (cmd->ucmd.upmove &&
-				(player->mo->waterlevel >= 2))
-			{
-				player->mo->momz = cmd->ucmd.upmove << 8;
-			}
-			
-			P_MovePlayer (player);
-		}
+		P_MovePlayer (player);
 
 		P_CalcHeight (player);
 	}

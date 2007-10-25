@@ -1036,7 +1036,7 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw skin setting
 	{
-		if (!ctfmode && !teamplaymode) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
+		if (!ctfmode) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
 		{
 			int x = V_StringWidth ("Skin") + 8 + PSetupDef.x;
 			screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Skin");
@@ -1422,7 +1422,7 @@ bool M_Responder (event_t* ev)
 			else
 			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if ((ctfmode || teamplaymode) && currentMenu == &PSetupDef && itemOn == 5)
+				if ((ctfmode) && currentMenu == &PSetupDef && itemOn == 5)
 					itemOn = itemOn + 2;
 				else	itemOn++;
 			}
@@ -1438,7 +1438,7 @@ bool M_Responder (event_t* ev)
 			else
 			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if ((ctfmode || teamplaymode) && currentMenu == &PSetupDef && itemOn == 7)
+				if ((ctfmode) && currentMenu == &PSetupDef && itemOn == 7)
 					itemOn = itemOn - 2;
 				else itemOn--;
 			}
@@ -1685,7 +1685,7 @@ void M_Ticker (void)
 	if (currentMenu == &PSetupDef)
 	{
 		// [Toke - CTF] skip skins selection
-		if (ctfmode || teamplaymode)
+		if (ctfmode)
 			if (itemOn == 6)
 				itemOn = 5;
 
