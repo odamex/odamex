@@ -1877,6 +1877,7 @@ BOOL G_CheckDemoStatus (void)
 	{
 		extern int starttime;
 		int endtime = 0;
+		extern bool demotest;
 
 		if (timingdemo)
 			endtime = I_GetTimePolled () - starttime;
@@ -1890,6 +1891,16 @@ BOOL G_CheckDemoStatus (void)
 		netgame = false;
 		multiplayer = false;
 		serverside = false;
+		
+		if (demotest) {
+			AActor *mo = idplayer(1).mo;
+
+			if(mo)
+				printf("%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
+			else
+				printf("demotest: no player\n");
+		}
+			
 
 		if (singledemo || timingdemo) {
 			if (timingdemo)

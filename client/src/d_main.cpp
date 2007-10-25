@@ -127,6 +127,7 @@ int eventhead;
 int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 DCanvas *page;
+BOOL demotest;
 
 static int demosequence;
 static int pagetic;
@@ -1391,6 +1392,7 @@ void D_DoomMain (void)
 		extern std::string defdemoname;
 		void	G_DoPlayDemo (void);
 		void	G_Ticker (void);
+		demotest = 1;
 		defdemoname = Args.GetArg (p+1);
 		G_DoPlayDemo();
 
@@ -1401,16 +1403,12 @@ void D_DoomMain (void)
 			DObject::EndFrame ();
 			gametic++;
 		}
-
-		AActor *mo = consoleplayer().mo;
-
-		if(mo)
-			printf("%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
-		else
-			printf("demotest: no player\n");
 	}
 	else
+	{
+		demotest = 0;
 		D_DoomLoop ();		// never returns
+	}
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
