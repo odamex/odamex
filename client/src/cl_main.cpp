@@ -100,6 +100,7 @@ CVAR (scorelimit,		"0", CVAR_SERVERINFO)
 CVAR (monstersrespawn,	"0", CVAR_SERVERINFO)
 CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
 CVAR (sv_cheats,		"0", CVAR_SERVERINFO)
+CVAR (teamplay,			"0", CVAR_SERVERINFO)
 
 CVAR (cl_freelook,		"0", CVAR_ARCHIVE | CVAR_SERVERINFO)
 
@@ -331,7 +332,7 @@ BEGIN_COMMAND (gamemode)
 						Printf (PRINT_HIGH,	" Deathmatch - %d \n", deathmatch.value());
     if (ctfmode)        Printf (PRINT_HIGH, " CTF	     - ON \n");
     else                Printf (PRINT_HIGH, " CTF        - OFF \n");
-    if (teamplaymode)   Printf (PRINT_HIGH, " TeamPlay   - ON \n");
+    if (teamplay)       Printf (PRINT_HIGH, " TeamPlay   - ON \n");
     else                Printf (PRINT_HIGH, " TeamPlay   - OFF \n");
 						Printf (PRINT_HIGH,	"--------------------------------------- \n");
 }
@@ -342,7 +343,7 @@ BEGIN_COMMAND (serverinfo)
 {
 	Printf (PRINT_HIGH,	"----------------------[Server Info]---- \n"				);
 	Printf (PRINT_HIGH, "         ctfmode - %d \n",	(int)ctfmode			);
-	Printf (PRINT_HIGH, "    teamplaymode - %d \n",	(int)teamplaymode	);
+	Printf (PRINT_HIGH, "        teamplay - %d \n",	(int)teamplay	);
 	Printf (PRINT_HIGH, "                      \n"									);
 	Printf (PRINT_HIGH, "        hostname -    \n"									);
 	Printf (PRINT_HIGH, "           email -    \n"									);
@@ -1693,7 +1694,7 @@ void CL_GetServerSettings(void)
 	// Teamplay/CTF
 	scorelimit.Set((int)MSG_ReadShort());
 	friendlyfire.Set((BOOL)MSG_ReadByte());
-	teamplaymode		   = (BOOL)MSG_ReadByte();
+	teamplay.Set(MSG_ReadByte());
 
 	cvar_t::UnlatchCVars ();
 }

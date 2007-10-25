@@ -160,6 +160,7 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 }
 
 EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (teamplay)
 
 //
 // P_GiveWeapon
