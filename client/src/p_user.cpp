@@ -342,7 +342,7 @@ void P_DeathThink (player_t *player)
 	else if (player->damagecount)
 		player->damagecount--;
 		
-	if(serverside)
+	if(serverside && !clientside)
 	{
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
 		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
