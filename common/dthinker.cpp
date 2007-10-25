@@ -191,7 +191,14 @@ void DThinker::RunThinkers ()
 	currentthinker = FirstThinker;
 	while (currentthinker)
 	{
-		currentthinker->RunThink ();
+		if ( currentthinker->IsKindOf (RUNTIME_CLASS (AActor))
+				   && static_cast<AActor *>(currentthinker)->player
+				   && static_cast<AActor *>(currentthinker)->player->playerstate != PST_DEAD
+				   && !sv_speedhackfix && !demoplayback && (serverside && !clientside))
+			;
+		else
+			currentthinker->RunThink ();
+
 		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);

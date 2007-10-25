@@ -772,12 +772,6 @@ void AActor::RunThink ()
 	if(!subsector)
 		return;
 
-	// denis - moved out of dthinker
-	if ( player
-	   && player->playerstate != PST_DEAD
-	   && !demoplayback && (serverside && !clientside))
-	   return;
-
 	// [RH] Fade a stealth monster in and out of visibility
 	if (visdir > 0)
 	{

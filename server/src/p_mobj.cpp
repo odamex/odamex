@@ -778,17 +778,11 @@ EXTERN_CVAR(sv_speedhackfix)
 //
 void AActor::RunThink ()
 {
-	// denis - moved out of dthinker
-	if ( player
-	   && player->playerstate != PST_DEAD
-	   && !sv_speedhackfix && !demoplayback && (serverside && !clientside))
-	   return;
+	if (type == MT_PLAYER && health <= 0)
+		deadtic++;
 
 	// remove dead players but don't tell clients about it
-	if(type == MT_PLAYER
-		&& health <= 0
-		&& !player
-		&& ++deadtic >= REMOVECOPRSESTIC)
+	if (type == MT_PLAYER && !player && deadtic >= REMOVECOPRSESTIC)
 	{
 		this->Destroy();
 		return;
