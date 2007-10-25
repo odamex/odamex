@@ -125,9 +125,9 @@
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="All (MAC)" targets="Mac Release;Mac Debug" />
-			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug" />
-			<Add alias="All (WIN32)" targets="Win Release;Win Debug" />
+			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
+			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
+			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
@@ -209,6 +209,7 @@
 		<Unit filename="..\..\common\p_maputl.cpp" />
 		<Unit filename="..\..\common\p_pillar.cpp" />
 		<Unit filename="..\..\common\p_plats.cpp" />
+		<Unit filename="..\..\common\p_pspr.cpp" />
 		<Unit filename="..\..\common\p_pspr.h" />
 		<Unit filename="..\..\common\p_saveg.cpp" />
 		<Unit filename="..\..\common\p_saveg.h" />
@@ -266,7 +267,6 @@
 		<Unit filename="..\src\p_interaction.cpp" />
 		<Unit filename="..\src\p_mobj.cpp" />
 		<Unit filename="..\src\p_mobj.h" />
-		<Unit filename="..\src\p_pspr.cpp" />
 		<Unit filename="..\src\p_user.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_draw.h" />

@@ -117,10 +117,6 @@ SOURCE=..\src\p_mobj.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\p_pspr.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\p_user.cpp
 # End Source File
 # Begin Source File
@@ -554,6 +550,10 @@ SOURCE=..\..\common\p_pillar.cpp
 # Begin Source File
 
 SOURCE=..\..\common\p_plats.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\p_pspr.cpp
 # End Source File
 # Begin Source File
 
