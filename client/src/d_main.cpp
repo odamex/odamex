@@ -456,64 +456,73 @@ void D_DoAdvanceDemo (void)
 	paused = false;
 	gameaction = ga_nothing;
 
-	switch (demosequence)
-	{
-		case 3:
-			if (gameinfo.advisoryTime)
-			{
-				if (page)
-				{
-					//page->Lock ();
-					//page->DrawPatch (W_CachePatch ("ADVISOR");
-					//page->Unlock ();
-				}
-				demosequence = 1;
-				pagetic = (int)(gameinfo.advisoryTime * TICRATE);
-				break;
-			}
-			// fall through to case 1 if no advisory notice
+    // [Russell] - Old demo sequence used in original games, zdoom's
+    // dynamic one was too dynamic for its own good
+    if (gamemode == retail)
+        demosequence = (demosequence+1)%7;
+    else
+        demosequence = (demosequence+1)%6;
+    
+    switch (demosequence)
+    {
+        case 0:
+            if (gamemode == commercial)
+                pagetic = TICRATE * 11;
+            else
+                pagetic = 170;
+	
+            gamestate = GS_DEMOSCREEN;
+            pagename = "TITLEPIC";
+	
+            S_StartMusic(gameinfo.titleMusic);
+            
+            break;
+        case 1:
+            G_DeferedPlayDemo("DEMO1");
+            
+            break;
+        case 2:
+            pagetic = 200;
+            gamestate = GS_DEMOSCREEN;
+            pagename = "CREDIT";
+            
+            break;
+        case 3:
+            G_DeferedPlayDemo("DEMO2");
+            
+            break;
+        case 4:
+            gamestate = GS_DEMOSCREEN;
+            
+            if (gamemode == commercial)
+            {
+                pagetic = TICRATE * 11;
+                pagename = "TITLEPIC";
+                S_StartMusic(gameinfo.titleMusic);
+            }
+            else
+            {
+                pagetic = 200;
 
-		case 1:
-			if (!M_DemoNoPlay)
-			{
-				sprintf (demoname + 4, "%d", democount++);
-				if (W_CheckNumForName (demoname) < 0)
-				{
-					demosequence = 0;
-					democount = 1;
-					// falls through to case 0 below
-				}
-				else
-				{
-					G_DeferedPlayDemo (demoname);
-					demosequence = 2;
-					break;
-				}
-			}
+                if (gamemode == retail)
+                    pagename = "CREDIT";
+                else
+                    pagename = "HELP2";
+            }
+            
+            break;
+        case 5:
+            G_DeferedPlayDemo("DEMO3");
+	
+            break;
+        // THE DEFINITIVE DOOM Special Edition demo
+        case 6:
+            G_DeferedPlayDemo("DEMO4");
+        
+            break;
+    }
 
-		default:
-		case 0:
-			gamestate = GS_DEMOSCREEN;
-			pagename = gameinfo.titlePage;
-			pagetic = (int)(gameinfo.titleTime * TICRATE);
-			S_StartMusic (gameinfo.titleMusic);
-			demosequence = 3;
-			pagecount = 0;
-//			C_HideConsole ();
-			break;
-
-		case 2:
-			pagetic = (int)(gameinfo.pageTime * TICRATE);
-			gamestate = GS_DEMOSCREEN;
-			if (pagecount == 0)
-				pagename = gameinfo.creditPage1;
-			else
-				pagename = gameinfo.creditPage2;
-			pagecount ^= 1;
-			demosequence = 1;
-			break;
-	}
-
+    // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
 		int width, height;
