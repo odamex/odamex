@@ -458,8 +458,9 @@ void D_DoAdvanceDemo (void)
 
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
-    if (gamemode == retail)
-        demosequence = (demosequence+1)%7;
+    // [Nes] - Newer demo sequence with better flow.
+    if (W_CheckNumForName("DEMO4") >= 0)
+        demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;
     
@@ -494,20 +495,19 @@ void D_DoAdvanceDemo (void)
         case 4:
             gamestate = GS_DEMOSCREEN;
             
-            if (gamemode == commercial)
+            if (gamemode == commercial || gamemode == retail)
             {
-                pagetic = TICRATE * 11;
+				if (gamemode == commercial)
+					pagetic = TICRATE * 11;
+				else
+					pagetic = 170;
                 pagename = "TITLEPIC";
                 S_StartMusic(gameinfo.titleMusic);
             }
             else
             {
                 pagetic = 200;
-
-                if (gamemode == retail)
-                    pagename = "CREDIT";
-                else
-                    pagename = "HELP2";
+				pagename = "HELP2";
             }
             
             break;
@@ -515,8 +515,13 @@ void D_DoAdvanceDemo (void)
             G_DeferedPlayDemo("DEMO3");
 	
             break;
-        // THE DEFINITIVE DOOM Special Edition demo
         case 6:
+            pagetic = 200;
+            gamestate = GS_DEMOSCREEN;
+            pagename = "CREDIT";
+            
+            break;        
+        case 7:
             G_DeferedPlayDemo("DEMO4");
         
             break;
