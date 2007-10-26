@@ -127,7 +127,7 @@ int eventhead;
 int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 DCanvas *page;
-BOOL demotest;
+bool demotest;
 
 static int demosequence;
 static int pagetic;
