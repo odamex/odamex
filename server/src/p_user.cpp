@@ -345,7 +345,7 @@ void P_DeathThink (player_t *player)
 	{
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
 		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
-								 || level.time >= player->respawn_time)) // forced respawn
+								 || (!clientside && level.time >= player->respawn_time))) // forced respawn
 			player->playerstate = PST_REBORN;
 	}
 }
