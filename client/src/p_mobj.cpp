@@ -1191,7 +1191,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (!(mthing->flags & MTF_COOPERATIVE))
 			return;
 	}
-	else
+	
+	if (!multiplayer)
 	{
 		if (!(mthing->flags & MTF_SINGLE))
 			return;
