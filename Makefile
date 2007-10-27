@@ -259,7 +259,7 @@ $(WADFILE_TARGET) :
 
 # Checker
 check: test
-test: server
+test: server client
 	tests/all.sh
 
 # Installer
