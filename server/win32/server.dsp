@@ -113,10 +113,6 @@ SOURCE=..\src\p_mobj.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\p_user.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\r_draw.cpp
 # End Source File
 # Begin Source File
@@ -602,6 +598,10 @@ SOURCE=..\..\common\p_tick.cpp
 # Begin Source File
 
 SOURCE=..\..\common\p_tick.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\p_user.cpp
 # End Source File
 # Begin Source File
 
