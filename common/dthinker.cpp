@@ -106,7 +106,7 @@ void DThinker::Destroy ()
 	// denis - allow this function to be safely called multiple times
 	if(destroyed)
 		return;
-		
+
 	if (FirstThinker == this)
 		FirstThinker = m_Next;
 	if (LastThinker == this)
@@ -116,6 +116,9 @@ void DThinker::Destroy ()
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
 	
+	destroyed = true;
+	m_Prev = m_Next = NULL;
+		
 	if(refCount)
 	{
 		LingerDestroy.push_back(this); // something is still finding this pointer useful
