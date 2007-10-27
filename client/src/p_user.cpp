@@ -28,7 +28,6 @@
 #include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
-#include "cl_main.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -42,6 +41,8 @@
 
 EXTERN_CVAR (allowjump)
 EXTERN_CVAR (freelook)
+
+extern bool predicting;
 
 //
 // P_Thrust

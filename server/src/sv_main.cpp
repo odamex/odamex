@@ -61,6 +61,7 @@ extern level_locals_t level;
 
 // denis - game manipulation, but no fancy gfx
 bool clientside = false, serverside = true;
+bool predicting = false;
 
 // General server settings
 CVAR (hostname,			"Unnamed",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// A servers name that will apear in the launcher.

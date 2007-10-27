@@ -42,6 +42,8 @@
 EXTERN_CVAR (allowjump)
 EXTERN_CVAR (freelook)
 
+extern bool predicting;
+
 //
 // P_Thrust
 // Moves the given origin along a given angle.
@@ -91,7 +93,7 @@ void P_CalcHeight (player_t *player)
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
 
-	if(serverside)
+	if(serverside || !predicting)
 	{
 		player->bob = FixedMul (player->mo->momx, player->mo->momx)
 					+ FixedMul (player->mo->momy, player->mo->momy);
