@@ -510,57 +510,24 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 }
 
 //
-// denis - BaseFileSearch
-// Check all paths of interest for a given file with a possible extension
+// denis - AddSearchDir
+// Split a new directory string using the separator and append results to the output
 //
-std::string BaseFileSearch (std::string file, std::string ext, std::string hashd)
+void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
 {
-	#ifdef WIN32
-		const char separator = ';';
+	if(!dir)
+		return;
 
-		// absolute path?
-		if(file.find(':') != std::string::npos)
-			return file;
-	#else
-		const char separator = ':';
+	// search through dwd
+	std::stringstream ss(dir);
+	std::string segment;
 
-		// absolute path?
-		if(file[0] == '/' || file[0] == '~')
-			return file;
-	#endif
-
-	std::transform(file.begin(), file.end(), file.begin(), toupper);
-	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
-	std::vector<std::string> dirs;
-
-	const char *awd = Args.CheckValue("-waddir");
-	if(awd)
+	while(!ss.eof())
 	{
-		// search through dwd
-		std::stringstream ss(awd);
-		std::string segment;
+		std::getline(ss, segment, separator);
 
-		while(!ss.eof())
-		{
-			std::getline(ss, segment, separator);
-
-			if(!segment.length())
-				continue;
-
-			FixPathSeparator(segment);
-			I_ExpandHomeDir(segment);
-
-			if(segment[segment.length() - 1] != '/')
-				segment += "/";
-
-			dirs.push_back(segment);
-		}
-	}
-
-	const char *dwd = getenv("DOOMWADDIR");
-	if(dwd)
-	{
-		std::string segment(dwd);
+		if(!segment.length())
+			continue;
 
 		FixPathSeparator(segment);
 		I_ExpandHomeDir(segment);
@@ -570,30 +537,35 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 
 		dirs.push_back(segment);
 	}
+}
 
-	const char *dwp = getenv("DOOMWADPATH");
-	if(dwp)
-	{
-		// search through dwd
-		std::stringstream ss(dwp);
-		std::string segment;
+//
+// denis - BaseFileSearch
+// Check all paths of interest for a given file with a possible extension
+//
+std::string BaseFileSearch (std::string file, std::string ext, std::string hashd)
+{
+	#ifdef WIN32
+		// absolute path?
+		if(file.find(':') != std::string::npos)
+			return file;
+		
+		const char separator = ';';
+	#else
+		// absolute path?
+		if(file[0] == '/' || file[0] == '~')
+			return file;
+		
+		const char separator = ':';
+	#endif
 
-		while(!ss.eof())
-		{
-			std::getline(ss, segment, separator);
+	std::transform(file.begin(), file.end(), file.begin(), toupper);
+	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
+	std::vector<std::string> dirs;
 
-			if(!segment.length())
-				continue;
-
-			FixPathSeparator(segment);
-			I_ExpandHomeDir(segment);
-
-			if(segment[segment.length() - 1] != '/')
-				segment += "/";
-
-			dirs.push_back(segment);
-		}
-	}
+	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
+	AddSearchDir(dirs, getenv("-DOOMWADDIR"), separator);
+	AddSearchDir(dirs, getenv("-DOOMWADPATH"), separator);
 
 	dirs.push_back(startdir);
 	dirs.push_back(progdir);

@@ -673,6 +673,36 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 }
 
 //
+// denis - AddSearchDir
+// Split a new directory string using the separator and append results to the output
+//
+void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
+{
+	if(!dir)
+		return;
+
+	// search through dwd
+	std::stringstream ss(dir);
+	std::string segment;
+
+	while(!ss.eof())
+	{
+		std::getline(ss, segment, separator);
+
+		if(!segment.length())
+			continue;
+
+		FixPathSeparator(segment);
+		I_ExpandHomeDir(segment);
+
+		if(segment[segment.length() - 1] != '/')
+			segment += "/";
+
+		dirs.push_back(segment);
+	}
+}
+
+//
 // denis - BaseFileSearch
 // Check all paths of interest for a given file with a possible extension
 //
@@ -696,67 +726,9 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
 	std::vector<std::string> dirs;
 
-	const char *awd = Args.CheckValue("-waddir");
-	if(awd)
-	{
-		// search through dwd
-		std::stringstream ss(awd);
-		std::string segment;
-
-		while(!ss.eof())
-		{
-			std::getline(ss, segment, separator);
-
-			if(!segment.length())
-				continue;
-
-			FixPathSeparator(segment);
-			I_ExpandHomeDir(segment);
-
-			if(segment[segment.length() - 1] != '/')
-				segment += "/";
-
-			dirs.push_back(segment);
-		}
-	}
-
-	const char *dwd = getenv("DOOMWADDIR");
-	if(dwd)
-	{
-		std::string segment(dwd);
-
-		FixPathSeparator(segment);
-		I_ExpandHomeDir(segment);
-
-		if(segment[segment.length() - 1] != '/')
-			segment += "/";
-
-		dirs.push_back(segment);
-	}
-
-	const char *dwp = getenv("DOOMWADPATH");
-	if(dwp)
-	{
-		// search through dwd
-		std::stringstream ss(dwp);
-		std::string segment;
-
-		while(!ss.eof())
-		{
-			std::getline(ss, segment, separator);
-
-			if(!segment.length())
-				continue;
-
-			FixPathSeparator(segment);
-			I_ExpandHomeDir(segment);
-
-			if(segment[segment.length() - 1] != '/')
-				segment += "/";
-
-			dirs.push_back(segment);
-		}
-	}
+	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
+	AddSearchDir(dirs, getenv("-DOOMWADDIR"), separator);
+	AddSearchDir(dirs, getenv("-DOOMWADPATH"), separator);
 
 	dirs.push_back(startdir);
 	dirs.push_back(progdir);
