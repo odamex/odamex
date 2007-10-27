@@ -117,7 +117,6 @@ void DThinker::Destroy ()
 		m_Prev->m_Next = m_Next;
 	
 	destroyed = true;
-	m_Prev = m_Next = NULL;
 		
 	if(refCount)
 	{
