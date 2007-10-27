@@ -223,6 +223,7 @@
 		<Unit filename="..\..\common\p_teleport.cpp" />
 		<Unit filename="..\..\common\p_tick.cpp" />
 		<Unit filename="..\..\common\p_tick.h" />
+		<Unit filename="..\..\common\p_user.cpp" />
 		<Unit filename="..\..\common\p_xlat.cpp" />
 		<Unit filename="..\..\common\r_data.cpp" />
 		<Unit filename="..\..\common\r_data.h" />
@@ -267,7 +268,6 @@
 		<Unit filename="..\src\p_interaction.cpp" />
 		<Unit filename="..\src\p_mobj.cpp" />
 		<Unit filename="..\src\p_mobj.h" />
-		<Unit filename="..\src\p_user.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_draw.h" />
 		<Unit filename="..\src\r_main.cpp" />
