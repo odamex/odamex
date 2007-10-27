@@ -124,7 +124,6 @@
 		92D2D9E60B6442EA00FD5B07 /* m_misc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AEF0B4D211D000AA4A2 /* m_misc.cpp */; };
 		92D2D9E70B6442EA00FD5B07 /* p_interaction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AF10B4D211D000AA4A2 /* p_interaction.cpp */; };
 		92D2D9E80B6442EA00FD5B07 /* p_mobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AF20B4D211D000AA4A2 /* p_mobj.cpp */; };
-		92D2D9EB0B6442EA00FD5B07 /* p_user.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AF70B4D211D000AA4A2 /* p_user.cpp */; };
 		92D2D9EC0B6442EA00FD5B07 /* r_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AF80B4D211D000AA4A2 /* r_draw.cpp */; };
 		92D2D9ED0B6442EA00FD5B07 /* r_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AFA0B4D211D000AA4A2 /* r_main.cpp */; };
 		92D2D9EE0B6442EA00FD5B07 /* r_plane.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AFC0B4D211D000AA4A2 /* r_plane.cpp */; };
@@ -317,7 +316,6 @@
 		92D2DB990B644F3F00FD5B07 /* p_interaction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6E80B62B89B00FD5B07 /* p_interaction.cpp */; };
 		92D2DB9A0B644F3F00FD5B07 /* p_interaction.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E90B62B89B00FD5B07 /* p_interaction.h */; };
 		92D2DB9B0B644F3F00FD5B07 /* p_mobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */; };
-		92D2DB9F0B644F3F00FD5B07 /* p_user.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6EE0B62B89B00FD5B07 /* p_user.cpp */; };
 		92D2DBA00B644F3F00FD5B07 /* r_bsp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6EF0B62B89B00FD5B07 /* r_bsp.cpp */; };
 		92D2DBA10B644F3F00FD5B07 /* r_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6F00B62B89B00FD5B07 /* r_draw.cpp */; };
 		92D2DBA20B644F3F00FD5B07 /* r_draw.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6F10B62B89B00FD5B07 /* r_draw.h */; };
@@ -457,6 +455,8 @@
 		92EC0AF30CCFF14700A804A6 /* p_pspr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0AF10CCFF14600A804A6 /* p_pspr.cpp */; };
 		92EC0B0D0CCFF82300A804A6 /* doomstat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0B0C0CCFF82300A804A6 /* doomstat.cpp */; };
 		92EC0B0E0CCFF82300A804A6 /* doomstat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0B0C0CCFF82300A804A6 /* doomstat.cpp */; };
+		92EC0B4A0CD315AD00A804A6 /* p_user.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0B490CD315AD00A804A6 /* p_user.cpp */; };
+		92EC0B4B0CD315AD00A804A6 /* p_user.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0B490CD315AD00A804A6 /* p_user.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -772,7 +772,6 @@
 		920D7AF10B4D211D000AA4A2 /* p_interaction.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_interaction.cpp; sourceTree = "<group>"; };
 		920D7AF20B4D211D000AA4A2 /* p_mobj.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_mobj.cpp; sourceTree = "<group>"; };
 		920D7AF30B4D211D000AA4A2 /* p_mobj.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = p_mobj.h; sourceTree = "<group>"; };
-		920D7AF70B4D211D000AA4A2 /* p_user.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_user.cpp; sourceTree = "<group>"; };
 		920D7AF80B4D211D000AA4A2 /* r_draw.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = r_draw.cpp; sourceTree = "<group>"; };
 		920D7AF90B4D211D000AA4A2 /* r_draw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = r_draw.h; sourceTree = "<group>"; };
 		920D7AFA0B4D211D000AA4A2 /* r_main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = r_main.cpp; sourceTree = "<group>"; };
@@ -966,7 +965,6 @@
 		92D2D6E80B62B89B00FD5B07 /* p_interaction.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_interaction.cpp; sourceTree = "<group>"; };
 		92D2D6E90B62B89B00FD5B07 /* p_interaction.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = p_interaction.h; sourceTree = "<group>"; };
 		92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_mobj.cpp; sourceTree = "<group>"; };
-		92D2D6EE0B62B89B00FD5B07 /* p_user.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_user.cpp; sourceTree = "<group>"; };
 		92D2D6EF0B62B89B00FD5B07 /* r_bsp.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = r_bsp.cpp; sourceTree = "<group>"; };
 		92D2D6F00B62B89B00FD5B07 /* r_draw.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = r_draw.cpp; sourceTree = "<group>"; };
 		92D2D6F10B62B89B00FD5B07 /* r_draw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = r_draw.h; sourceTree = "<group>"; };
@@ -1035,6 +1033,7 @@
 		92D53A100AB96D8E00CF2FB2 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
 		92EC0AF10CCFF14600A804A6 /* p_pspr.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_pspr.cpp; sourceTree = "<group>"; };
 		92EC0B0C0CCFF82300A804A6 /* doomstat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = doomstat.cpp; sourceTree = "<group>"; };
+		92EC0B490CD315AD00A804A6 /* p_user.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_user.cpp; sourceTree = "<group>"; };
 		C6859E8B029090EE04C91782 /* odamex.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = odamex.1; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1121,7 +1120,6 @@
 				920D7AF10B4D211D000AA4A2 /* p_interaction.cpp */,
 				920D7AF20B4D211D000AA4A2 /* p_mobj.cpp */,
 				920D7AF30B4D211D000AA4A2 /* p_mobj.h */,
-				920D7AF70B4D211D000AA4A2 /* p_user.cpp */,
 				920D7AF80B4D211D000AA4A2 /* r_draw.cpp */,
 				920D7AF90B4D211D000AA4A2 /* r_draw.h */,
 				920D7AFA0B4D211D000AA4A2 /* r_main.cpp */,
@@ -1235,6 +1233,7 @@
 				920D7BAE0B4D212A000AA4A2 /* p_teleport.cpp */,
 				92A745460CA52B1E007321ED /* p_tick.cpp */,
 				92A745470CA52B1E007321ED /* p_tick.h */,
+				92EC0B490CD315AD00A804A6 /* p_user.cpp */,
 				920D7BAF0B4D212A000AA4A2 /* p_xlat.cpp */,
 				920D7BB00B4D212A000AA4A2 /* r_bsp.h */,
 				920D7BB10B4D212A000AA4A2 /* r_data.cpp */,
@@ -1350,7 +1349,6 @@
 				92D2D6E80B62B89B00FD5B07 /* p_interaction.cpp */,
 				92D2D6E90B62B89B00FD5B07 /* p_interaction.h */,
 				92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */,
-				92D2D6EE0B62B89B00FD5B07 /* p_user.cpp */,
 				92D2D6EF0B62B89B00FD5B07 /* r_bsp.cpp */,
 				92D2D6F00B62B89B00FD5B07 /* r_draw.cpp */,
 				92D2D6F10B62B89B00FD5B07 /* r_draw.h */,
@@ -1597,7 +1595,6 @@
 				92D2DB970B644F3F00FD5B07 /* mus2midi.cpp in Sources */,
 				92D2DB990B644F3F00FD5B07 /* p_interaction.cpp in Sources */,
 				92D2DB9B0B644F3F00FD5B07 /* p_mobj.cpp in Sources */,
-				92D2DB9F0B644F3F00FD5B07 /* p_user.cpp in Sources */,
 				92D2DBA00B644F3F00FD5B07 /* r_bsp.cpp in Sources */,
 				92D2DBA10B644F3F00FD5B07 /* r_draw.cpp in Sources */,
 				92D2DBA30B644F3F00FD5B07 /* r_drawt.cpp in Sources */,
@@ -1666,6 +1663,7 @@
 				92A745480CA52B1E007321ED /* p_tick.cpp in Sources */,
 				92EC0AF20CCFF14600A804A6 /* p_pspr.cpp in Sources */,
 				92EC0B0D0CCFF82300A804A6 /* doomstat.cpp in Sources */,
+				92EC0B4A0CD315AD00A804A6 /* p_user.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1695,7 +1693,6 @@
 				92D2D9E60B6442EA00FD5B07 /* m_misc.cpp in Sources */,
 				92D2D9E70B6442EA00FD5B07 /* p_interaction.cpp in Sources */,
 				92D2D9E80B6442EA00FD5B07 /* p_mobj.cpp in Sources */,
-				92D2D9EB0B6442EA00FD5B07 /* p_user.cpp in Sources */,
 				92D2D9EC0B6442EA00FD5B07 /* r_draw.cpp in Sources */,
 				92D2D9ED0B6442EA00FD5B07 /* r_main.cpp in Sources */,
 				92D2D9EE0B6442EA00FD5B07 /* r_plane.cpp in Sources */,
@@ -1757,6 +1754,7 @@
 				92A7454A0CA52B1E007321ED /* p_tick.cpp in Sources */,
 				92EC0AF30CCFF14700A804A6 /* p_pspr.cpp in Sources */,
 				92EC0B0E0CCFF82300A804A6 /* doomstat.cpp in Sources */,
+				92EC0B4B0CD315AD00A804A6 /* p_user.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
