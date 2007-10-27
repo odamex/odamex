@@ -678,15 +678,23 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 //
 std::string BaseFileSearch (std::string file, std::string ext = "", std::string hash = "")
 {
+	#ifdef WIN32
+		// absolute path?
+		if(file.find(':') != std::string::npos)
+			return file;
+		
+		const char separator = ';';
+	#else
+		// absolute path?
+		if(file[0] == '/' || file[0] == '~')
+			return file;
+		
+		const char separator = ':';
+	#endif
+
 	std::transform(file.begin(), file.end(), file.begin(), toupper);
 	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
 	std::vector<std::string> dirs;
-
-	#ifdef WIN32
-		const char separator = ';';
-	#else
-		const char separator = ':';
-	#endif
 
 	const char *awd = Args.CheckValue("-waddir");
 	if(awd)
