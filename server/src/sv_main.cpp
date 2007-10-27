@@ -1871,6 +1871,10 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteLong (&cl->netbuf, mo->momx);
 			MSG_WriteLong (&cl->netbuf, mo->momy);
 			MSG_WriteLong (&cl->netbuf, mo->momz);
+			
+			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
+			MSG_WriteShort (&cl->netbuf, mo->netid);
+			MSG_WriteShort (&cl->netbuf, states-mo->state);
 		}
     }
 }
