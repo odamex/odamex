@@ -227,6 +227,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	std::vector<std::string> wads, hashes;
 
 	size_t i = 1;
+	
+	C_HideConsole();
 
 	while(i < argc)
 		wads.push_back(argv[i++]);
@@ -234,13 +236,11 @@ BEGIN_COMMAND (wad) // denis - changes wads
     hashes.resize(wads.size());
 
 	D_DoomWadReboot(wads, hashes);
-
-	// get skill / episode / map from parms
-	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
-
-    S_StopMusic();
-
-	G_DeferedInitNew (startmap);
+	
+	D_StartTitle ();
+	CL_QuitNetGame();
+	S_StopMusic();
+	S_StartMusic(gameinfo.titleMusic);
 }
 END_COMMAND (wad)
 
