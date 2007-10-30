@@ -113,7 +113,6 @@
 		92D2D95E0B64342400FD5B07 /* z_zone.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 920D7BC70B4D212C000AA4A2 /* z_zone.h */; };
 		92D2D9DB0B6442EA00FD5B07 /* c_cmds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7ADD0B4D211D000AA4A2 /* c_cmds.cpp */; };
 		92D2D9DC0B6442EA00FD5B07 /* c_console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7ADE0B4D211D000AA4A2 /* c_console.cpp */; };
-		92D2D9DD0B6442EA00FD5B07 /* c_varinit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE00B4D211D000AA4A2 /* c_varinit.cpp */; };
 		92D2D9DE0B6442EA00FD5B07 /* d_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE10B4D211D000AA4A2 /* d_main.cpp */; };
 		92D2D9DF0B6442EA00FD5B07 /* d_net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE30B4D211D000AA4A2 /* d_net.cpp */; };
 		92D2D9E00B6442EA00FD5B07 /* d_netinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE40B4D211D000AA4A2 /* d_netinfo.cpp */; };
@@ -753,7 +752,6 @@
 		920D7ADD0B4D211D000AA4A2 /* c_cmds.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = c_cmds.cpp; sourceTree = "<group>"; };
 		920D7ADE0B4D211D000AA4A2 /* c_console.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = c_console.cpp; sourceTree = "<group>"; };
 		920D7ADF0B4D211D000AA4A2 /* c_console.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = c_console.h; sourceTree = "<group>"; };
-		920D7AE00B4D211D000AA4A2 /* c_varinit.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = c_varinit.cpp; sourceTree = "<group>"; };
 		920D7AE10B4D211D000AA4A2 /* d_main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = d_main.cpp; sourceTree = "<group>"; };
 		920D7AE20B4D211D000AA4A2 /* d_main.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = d_main.h; sourceTree = "<group>"; };
 		920D7AE30B4D211D000AA4A2 /* d_net.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = d_net.cpp; sourceTree = "<group>"; };
@@ -1101,7 +1099,6 @@
 				920D7ADD0B4D211D000AA4A2 /* c_cmds.cpp */,
 				920D7ADE0B4D211D000AA4A2 /* c_console.cpp */,
 				920D7ADF0B4D211D000AA4A2 /* c_console.h */,
-				920D7AE00B4D211D000AA4A2 /* c_varinit.cpp */,
 				920D7AE10B4D211D000AA4A2 /* d_main.cpp */,
 				920D7AE20B4D211D000AA4A2 /* d_main.h */,
 				920D7AE30B4D211D000AA4A2 /* d_net.cpp */,
@@ -1682,7 +1679,6 @@
 			files = (
 				92D2D9DB0B6442EA00FD5B07 /* c_cmds.cpp in Sources */,
 				92D2D9DC0B6442EA00FD5B07 /* c_console.cpp in Sources */,
-				92D2D9DD0B6442EA00FD5B07 /* c_varinit.cpp in Sources */,
 				92D2D9DE0B6442EA00FD5B07 /* d_main.cpp in Sources */,
 				92D2D9DF0B6442EA00FD5B07 /* d_net.cpp in Sources */,
 				92D2D9E00B6442EA00FD5B07 /* d_netinfo.cpp in Sources */,
