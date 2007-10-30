@@ -69,10 +69,6 @@ SOURCE=..\src\c_console.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\c_varinit.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\d_main.cpp
 # End Source File
 # Begin Source File
