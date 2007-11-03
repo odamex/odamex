@@ -104,8 +104,6 @@ extern BOOL gameisdead;
 extern BOOL demorecording;
 extern DThinker ThinkerCap;
 
-CVAR (def_patch, "", CVAR_NULL) // removeme ??
-
 
 std::vector<std::string> wadfiles;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
@@ -718,13 +716,7 @@ void D_DoDefDehackedPatch ()
 
 		// try default patches
 		if (!noDef)
-		{
-			if (FileExists (def_patch.cstring()))
-				// Use patch specified by def_patch.
-				DoDehPatch (def_patch.cstring(), true);
-			else
-				DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
-		}
+			DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
 	}
 }
 

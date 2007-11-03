@@ -45,8 +45,7 @@ int 				iquetail;
 
 CVAR	(weaponstay,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial weapons wont be removed after picked up when true. - does not work yet
 
-EXTERN_CVAR (chasedemo) // removeme
-EXTERN_CVAR (freelook)
+EXTERN_CVAR (allowfreelook)
 EXTERN_CVAR (nomonsters)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
@@ -771,7 +770,7 @@ AActor *AActor::FindGoal (const AActor *actor, int tid, int kind)
 
 // <------- [RH] End new functions
 
-EXTERN_CVAR(sv_speedhackfix)
+EXTERN_CVAR(speedhackfix)
 
 //
 // P_MobjThinker
@@ -1124,8 +1123,8 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->attacker = AActor::AActorPtr();
 
 	// [RH] Allow chasecam for demo watching
-	if ((demoplayback || demonew) && chasedemo)
-		p->cheats = CF_CHASECAM;
+	//if ((demoplayback || demonew) && chasedemo)
+	//	p->cheats = CF_CHASECAM;
 
 	// setup gun psprite
 	P_SetupPsprites (p);
@@ -1629,7 +1628,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	if (source->player &&
 		source->player->userinfo.aimdist == 0 &&
-		freelook)
+		allowfreelook)
 	{
 		slope = pitchslope;
 	}
@@ -1652,7 +1651,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			{
 				an = source->angle;
 
-				if(freelook)
+				if(allowfreelook)
 					slope = pitchslope;
 				else
 					slope = 0;
@@ -1661,7 +1660,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 		if (linetarget && source->player)
 		{
-			if (freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
+			if (allowfreelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
 			{
 				an = source->angle;
 				slope = pitchslope;

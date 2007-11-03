@@ -53,7 +53,7 @@ BEGIN_COMMAND (toggleconsole)
 }
 END_COMMAND (toggleconsole)
 
-EXTERN_CVAR (sv_cheats)
+EXTERN_CVAR (allowcheats)
 
 // Checks whether cheats are enabled or not, returns true if they're NOT enabled
 // and false if they ARE enabled (stupid huh? not my work [Russell])
@@ -64,9 +64,9 @@ bool CheckCheatmode (void)
 	if (skill == sk_nightmare && !multiplayer)
         return true;
 	
-	if ((multiplayer || deathmatch) && !sv_cheats)
+	if ((multiplayer || deathmatch) && !allowcheats)
 	{
-		Printf (PRINT_HIGH, "You must run the server with '+set sv_cheats 1' to enable this command.\n");
+		Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 		return true;
 	}
 	else
@@ -316,10 +316,10 @@ BEGIN_COMMAND (fov)
 
 	if (argc != 2)
 		Printf (PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
-	else if (sv_cheats)
+	else if (allowcheats)
 		m_Instigator->player->fov = atof (argv[1]);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_cheats 1' to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (fov)
 

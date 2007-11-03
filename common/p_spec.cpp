@@ -1951,9 +1951,6 @@ void DPusher::RunThink ()
 	int radius;
 	int ht = 0;
 
-	if (!var_pushers)
-		return;
-
 	sec = sectors + m_Affectee;
 
 	// Be sure the special sector type is still turned on. If so, proceed.

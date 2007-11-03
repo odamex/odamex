@@ -1492,7 +1492,7 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     return th;
 }
 
-EXTERN_CVAR(freelook)
+EXTERN_CVAR(allowfreelook)
 
 //
 // P_SpawnPlayerMissile
@@ -1512,7 +1512,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	if (source->player &&
 		source->player->userinfo.aimdist == 0 &&
-		freelook)
+		allowfreelook)
 	{
 		slope = pitchslope;
 	}
@@ -1535,7 +1535,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			{
 				an = source->angle;
 
-				if(freelook)
+				if(allowfreelook)
 					slope = pitchslope;
 				else
 					slope = 0;
@@ -1544,7 +1544,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 		if (linetarget && source->player)
 		{
-			if (freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
+			if (allowfreelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
 			{
 				an = source->angle;
 				slope = pitchslope;

@@ -183,7 +183,7 @@ void DThinker::DestroyMostThinkers ()
 	DObject::EndFrame ();
 }
 
-CVAR (sv_speedhackfix, "0", CVAR_SERVERINFO)
+CVAR (speedhackfix, "0", CVAR_SERVERINFO)
 
 void DThinker::RunThinkers ()
 {
@@ -196,7 +196,7 @@ void DThinker::RunThinkers ()
 		if ( currentthinker->IsKindOf (RUNTIME_CLASS (AActor))
 				   && static_cast<AActor *>(currentthinker)->player
 				   && static_cast<AActor *>(currentthinker)->player->playerstate != PST_DEAD
-				   && !sv_speedhackfix && !demoplayback && (serverside && !clientside))
+				   && !speedhackfix && !demoplayback && (serverside && !clientside))
 			;
 		else
 			currentthinker->RunThink ();

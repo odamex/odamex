@@ -95,14 +95,14 @@ CVAR (fastmonsters,		"0", CVAR_SERVERINFO)
 CVAR (allowexit,		"0", CVAR_SERVERINFO)
 CVAR (fragexitswitch,   "0", CVAR_SERVERINFO)       //  [ML] 03/4/06: Activate to allow exit switch at maxfrags, must click to exit
 CVAR (allowjump,		"0", CVAR_SERVERINFO)
-CVAR (freelook,			"0", CVAR_SERVERINFO)
+CVAR (allowfreelook,	"0", CVAR_SERVERINFO)
 CVAR (scorelimit,		"0", CVAR_SERVERINFO)
 CVAR (monstersrespawn,	"0", CVAR_SERVERINFO)
 CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
-CVAR (sv_cheats,		"0", CVAR_SERVERINFO)
+CVAR (allowcheats,		"0", CVAR_SERVERINFO)
 CVAR (teamplay,			"0", CVAR_SERVERINFO)
 
-CVAR (cl_freelook,		"0", CVAR_ARCHIVE | CVAR_SERVERINFO)
+CVAR (cl_freelook,		"0", CVAR_ARCHIVE)
 
 CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
 
@@ -318,10 +318,10 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_cheats)
+    if (allowcheats)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_cheats 1' to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -347,7 +347,7 @@ BEGIN_COMMAND (serverinfo)
 	Printf (PRINT_HIGH, "                      \n"									);
 	Printf (PRINT_HIGH, "        hostname -    \n"									);
 	Printf (PRINT_HIGH, "           email -    \n"									);
-	Printf (PRINT_HIGH, "       sv_cheats - %d \n",	(BOOL)sv_cheats		);
+	Printf (PRINT_HIGH, "       allowcheats - %d \n",	(BOOL)allowcheats		);
 	Printf (PRINT_HIGH, "      deathmatch - %d \n",	(BOOL)deathmatch		);
 	Printf (PRINT_HIGH, "       fraglimit - %d \n",	(int)fraglimit		);
 	Printf (PRINT_HIGH, "       timelimit - %d \n",	(int)timelimit		);
@@ -362,7 +362,7 @@ BEGIN_COMMAND (serverinfo)
 	Printf (PRINT_HIGH, "       allowexit - %d \n",	(BOOL)allowexit		);
     Printf (PRINT_HIGH, "  fragexitswitch - %d \n",	(BOOL)fragexitswitch);
 	Printf (PRINT_HIGH, "       allowjump - %d \n",	(BOOL)allowjump		);
-	Printf (PRINT_HIGH, "        freelook - %d \n",	(BOOL)freelook	);
+	Printf (PRINT_HIGH, "   allowfreelook - %d \n",	(BOOL)allowfreelook	);
 	Printf (PRINT_HIGH, "    infiniteammo - %d \n",	(BOOL)infiniteammo	);
 	Printf (PRINT_HIGH, "                      \n"									);
 	Printf (PRINT_HIGH, "      scorelimit - %d \n",	(int)scorelimit		);
@@ -1668,7 +1668,7 @@ void CL_GetServerSettings(void)
 	maxplayers.Set((int)MSG_ReadShort());
 
 	// Game settings
-	sv_cheats.Set((BOOL)MSG_ReadByte());
+	allowcheats.Set((BOOL)MSG_ReadByte());
 	deathmatch.Set((BOOL)MSG_ReadByte());
 	fraglimit.Set((int)MSG_ReadShort());
 	timelimit.Set((int)MSG_ReadShort());
@@ -1685,9 +1685,9 @@ void CL_GetServerSettings(void)
 	allowexit.Set((BOOL)MSG_ReadByte());
 	fragexitswitch.Set((BOOL)MSG_ReadByte());
 	allowjump.Set((BOOL)MSG_ReadByte());
-	freelook.Set((BOOL)MSG_ReadByte());
+	allowfreelook.Set((BOOL)MSG_ReadByte());
 	if(!cl_freelook)
-		freelook = "0";
+		allowfreelook = "0";
 	infiniteammo.Set((BOOL)MSG_ReadByte());
 	MSG_ReadByte(); // denis - todo - use this for something
 

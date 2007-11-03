@@ -84,7 +84,7 @@ EXTERN_CVAR (nomonsters)
 EXTERN_CVAR (monstersrespawn)
 EXTERN_CVAR (fastmonsters)
 EXTERN_CVAR (allowjump)
-EXTERN_CVAR (freelook)
+EXTERN_CVAR (allowfreelook)
 EXTERN_CVAR (waddownload)
 EXTERN_CVAR (emptyreset)
 EXTERN_CVAR (cleanmaps)
@@ -410,7 +410,7 @@ void SV_SendServerInfo()
 	MSG_WriteByte(&ml_message,(BOOL)monstersrespawn);
 	MSG_WriteByte(&ml_message,(BOOL)fastmonsters);
 	MSG_WriteByte(&ml_message,(BOOL)allowjump);
-	MSG_WriteByte(&ml_message,(BOOL)freelook);
+	MSG_WriteByte(&ml_message,(BOOL)allowfreelook);
 	MSG_WriteByte(&ml_message,(BOOL)waddownload);
 	MSG_WriteByte(&ml_message,(BOOL)emptyreset);
 	MSG_WriteByte(&ml_message,(BOOL)cleanmaps);

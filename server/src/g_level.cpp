@@ -65,7 +65,6 @@ CVAR (startmapscript, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	// script to run 
 CVAR (curmap, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)			// tracks last played map
 CVAR (nextmap, "", CVAR_NULL | CVAR_NOENABLEDISABLE)			// tracks next map to be played
 CVAR (loopepisode, "0", CVAR_ARCHIVE)	// Nes - Determines whether Doom 1 episodes should carry over.
-CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
 
 
 EXTERN_CVAR(updatemins)
@@ -613,7 +612,7 @@ void G_ExitLevel (int position, int drawscores)
 {
 	SV_ExitLevel();
 
-	if (drawscores && interscoredraw)
+	if (drawscores)
         SV_DrawScores();
 
 	gamestate = GS_INTERMISSION;
@@ -631,7 +630,7 @@ void G_SecretExitLevel (int position, int drawscores)
 {
 	SV_ExitLevel();
 
-    if (drawscores && interscoredraw)
+    if (drawscores)
         SV_DrawScores();
 
 	gamestate = GS_INTERMISSION;

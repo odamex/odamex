@@ -46,7 +46,6 @@
 #define WEAPONTOP				(32*FRACUNIT+0x6000)
 
 EXTERN_CVAR(infiniteammo)
-EXTERN_CVAR(freelook)
 EXTERN_CVAR(allowfreelook)
 
 //
@@ -592,14 +591,14 @@ void P_BulletSlope (AActor *mo)
 			bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
 			// [RH] If we never found a target, use actor's pitch to
 			// determine bulletslope
-			if (freelook && !linetarget)
+			if (allowfreelook && !linetarget)
 			{
 				an = mo->angle;
 				bulletslope = pitchslope;
 			}
 		}
 	}
-	if (freelook && linetarget && mo->player)
+	if (allowfreelook && linetarget && mo->player)
 	{
 		if (abs(bulletslope - pitchslope) > mo->player->userinfo.aimdist)
 		{

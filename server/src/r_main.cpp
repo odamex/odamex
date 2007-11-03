@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -44,8 +44,6 @@ void R_SpanInitData ();
 
 extern int *walllights;
 extern dyncolormap_t NormalLight;
-
-CVAR (r_viewsize, "0", CVAR_NOSET) // removeme
 
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
@@ -315,5 +313,5 @@ subsector_t *R_PointInSubsector (fixed_t x, fixed_t y)
 }
 
 
-VERSION_CONTROL (r_main_cpp, "$Id:$")
+VERSION_CONTROL (r_main_cpp, "$Id$")
 

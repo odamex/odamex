@@ -113,8 +113,6 @@ extern DThinker ThinkerCap;
 extern int NoWipe;		// [RH] Don't wipe when travelling in hubs
 
 
-CVAR (def_patch, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
 char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
@@ -1083,13 +1081,7 @@ void D_DoDefDehackedPatch ()
 
 		// try default patches
 		if (!noDef)
-		{
-			if (FileExists (def_patch.cstring()))
-				// Use patch specified by def_patch.
-				DoDehPatch (def_patch.cstring(), true);
-			else
-				DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
-		}
+			DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
 	}
 }
 

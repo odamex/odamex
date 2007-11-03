@@ -101,7 +101,7 @@ END_CUSTOM_CVAR (maxplayers)
 
 
 // Game settings
-CVAR (sv_cheats,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Players are allowed to use cheatcodes when try. - does not work yet
+CVAR (allowcheats,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Players are allowed to use cheatcodes when try. - does not work yet
 CVAR (deathmatch,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Deathmatch mode when true, this includes teamDM and CTF.
 CVAR (fraglimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the winning frag total for deathmatch and teamDM.
 CVAR (timelimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the max time in minutes for each game.
@@ -123,15 +123,14 @@ EXTERN_CVAR(weaponstay)
 CVAR (itemsrespawn,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial items will respawn after being picked up when true.
 CVAR (monstersrespawn,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Monsters will respawn after killed when true. - does not work yet
 CVAR (fastmonsters,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Monsters move and shoot at double speed when true. - does not work yet
-CVAR (cleanmaps,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Server will reset maps after all players leave when true. - does not work yet
 CVAR (nomonsters,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// No monsters will be spawned when true
-
+CVAR (cleanmaps,		"",		CVAR_NULL)										// Deprecated
 
 // Action rules
 CVAR (allowexit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Exit switch functions when true.
 CVAR (fragexitswitch,   "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)                 // [ML] 03/4/06: When activated, game must be completed by hitting exit switch once fraglimit has been reached
 CVAR (allowjump,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Jump command functions when true.
-CVAR (freelook,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Freelook works when true.
+CVAR (allowfreelook,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Freelook works when true.
 CVAR (infiniteammo,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players have infinite ammo when true.
 
 // Teamplay/CTF
@@ -179,8 +178,10 @@ BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)				
 END_CUSTOM_CVAR(rcon_password)
 
 CVAR (antiwallhack,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)		// Enable/disable anti wallhack check, temporary
+EXTERN_CVAR (speedhackfix)
 
 client_c clients;
+
 
 #define CLIENT_TIMEOUT 65 // 65 seconds
 
@@ -204,8 +205,6 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor);
 bool P_CheckSightEdges (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
 
 void SV_WinCheck (void);
-
-EXTERN_CVAR (sv_speedhackfix)
 
 // denis - kick player
 BEGIN_COMMAND (kick)
@@ -1210,7 +1209,7 @@ void SV_SendServerSettings (client_t *cl)
 	MSG_WriteShort  (&cl->reliablebuf, (int)maxplayers);
 
 	// Game settings
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)sv_cheats);
+	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowcheats);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)deathmatch);
 	MSG_WriteShort  (&cl->reliablebuf, (int)fraglimit);
 	MSG_WriteShort  (&cl->reliablebuf, (int)timelimit);
@@ -1227,7 +1226,7 @@ void SV_SendServerSettings (client_t *cl)
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowexit);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)fragexitswitch);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowjump);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)freelook);
+	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowfreelook);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)infiniteammo);
 	MSG_WriteByte   (&cl->reliablebuf, 0); // denis - todo - use this for something
 
@@ -2166,7 +2165,7 @@ void SV_GetPlayerCmd(player_t &player)
 		{
 			player.mo->angle = MSG_ReadShort() << 16;
 
-			if (!freelook)
+			if (!allowfreelook)
 			{
 				player.mo->pitch = 0;
 				MSG_ReadShort();
@@ -2189,7 +2188,7 @@ void SV_GetPlayerCmd(player_t &player)
 
 		cmd->ucmd.impulse = MSG_ReadByte();
 
-		if(!sv_speedhackfix && gamestate == GS_LEVEL)
+		if(!speedhackfix && gamestate == GS_LEVEL)
 		{
 			P_PlayerThink(&player);
 			player.mo->RunThink();
@@ -2209,7 +2208,7 @@ void SV_GetPlayerCmd(player_t &player)
 	{
 		player.mo->angle = MSG_ReadShort() << 16;
 
-		if (!freelook)
+		if (!allowfreelook)
 		{
 			player.mo->pitch = 0;
 			MSG_ReadShort();
@@ -2232,7 +2231,7 @@ void SV_GetPlayerCmd(player_t &player)
 
 	cmd->ucmd.impulse = MSG_ReadByte();
 
-	if(!sv_speedhackfix && gamestate == GS_LEVEL)
+	if(!speedhackfix && gamestate == GS_LEVEL)
 	{
 		P_PlayerThink(&player);
 		player.mo->RunThink();
@@ -2382,7 +2381,7 @@ void SV_Cheat(player_t &player)
 {
 	byte cheats = MSG_ReadByte();
 
-	if(!sv_cheats)
+	if(!allowcheats)
 		return;
 
 	player.cheats = cheats;

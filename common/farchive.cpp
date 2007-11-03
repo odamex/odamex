@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -244,7 +244,7 @@ FFile &FLZOFile::Seek (int pos, ESeekPos ofs)
 	return *this;
 }
 
-CVAR (nofilecompression, "0", CVAR_ARCHIVE)
+CVAR (filecompression, "1", CVAR_ARCHIVE)
 
 void FLZOFile::Implode ()
 {
@@ -255,7 +255,7 @@ void FLZOFile::Implode ()
 	byte *oldbuf = m_Buffer;
 	int r;
 
-	if (!nofilecompression && !m_NoCompress)
+	if (filecompression && !m_NoCompress)
 	{
 		compressed = new lzo_byte[OUT_LEN(len)];
 		wrkmem = new lzo_byte[LZO1X_1_MEM_COMPRESS];
@@ -969,5 +969,5 @@ FArchive &operator>> (FArchive &arc, player_s *&p)
 	return arc;
 }
 
-VERSION_CONTROL (farchive_cpp, "$Id:$")
+VERSION_CONTROL (farchive_cpp, "$Id$")
 

@@ -212,7 +212,7 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 		friction = mo->subsector->sector->friction;
 		movefactor = mo->subsector->sector->movefactor >> 1;
 	}
-	else if (var_friction && !(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)))
+	else if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)))
 	{	// When the object is straddling sectors with the same
 		// floorheight that have different frictions, use the lowest
 		// friction value (muddy has precedence over icy).
@@ -798,8 +798,7 @@ void P_HitSlideLine (line_t* ld)
 	// killough 10/98: only bounce if hit hard (prevents wobbling)
 	icyfloor =
 		(P_AproxDistance(tmxmove, tmymove) > 4*FRACUNIT) &&
-		var_friction &&  // killough 8/28/98: calc friction on demand
-		slidemo->z <= slidemo->floorz &&
+		slidemo->z <= slidemo->floorz &&		  // killough 8/28/98: calc friction on demand
 		P_GetFriction (slidemo, NULL) > ORIG_FRICTION;
 
 	if (ld->slopetype == ST_HORIZONTAL)
@@ -1306,7 +1305,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	return false;
 }
 
-EXTERN_CVAR(freelook)
+EXTERN_CVAR(allowfreelook)
 
 //
 // P_AimLineAttack
@@ -1324,7 +1323,7 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
 
 	// can't shoot outside view angles
-	if(freelook)
+	if(allowfreelook)
 	{
 		// [RH] Technically, this is now correct for an engine with true 6 DOF
 		// instead of one which implements y-shearing, like we currently do.
