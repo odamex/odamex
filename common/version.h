@@ -30,12 +30,12 @@
 #endif
 
 // Lots of different representations for the version number
-enum { VERSION = 20 };
-#define VERSIONSTR "20"
-#define CONFIGVERSIONSTR "20"
-#define GAMEVER (0*256+20)
+enum { VERSION = 30 };
+#define VERSIONSTR "30"
+#define CONFIGVERSIONSTR "30"
+#define GAMEVER (0*256+30)
 
-#define DOTVERSIONSTR "0.2"
+#define DOTVERSIONSTR "0.3"
 
 // denis - per-file svn version stamps
 class file_version
