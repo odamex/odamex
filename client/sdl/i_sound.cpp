@@ -386,7 +386,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	if(!sound_initialized)
 		return;
 
-        int tag = handle >> 8;
+	int tag = handle >> 8;
 
 	handle &= 0xff;
 
@@ -412,6 +412,9 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 
 void I_LoadSound (struct sfxinfo_struct *sfx)
 {
+	if (!sound_initialized)
+		return;
+	
 	if (!sfx->data)
 	{
 		DPrintf ("loading sound \"%s\" (%d)\n", sfx->name, sfx->lumpnum);
