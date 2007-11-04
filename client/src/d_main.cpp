@@ -629,7 +629,8 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		Printf (PRINT_HIGH, "FindFirstFile failed. GetLastError: %d\n", dwError);
+		Printf (PRINT_HIGH, "FindFirstFile failed for %s\n", all_ext.c_str());
+		Printf (PRINT_HIGH, "GetLastError: %d\n", dwError);
 		return "";
 	}
 
