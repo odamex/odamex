@@ -139,6 +139,11 @@ void DThinker::Destroy ()
 	}
 }
 
+bool DThinker::WasDestroyed ()
+{
+	return destroyed;
+}
+
 // Destroy every thinker
 void DThinker::DestroyAllThinkers ()
 {

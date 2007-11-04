@@ -74,6 +74,8 @@ public:
 	static void DestroyMostThinkers ();
 	static void SerializeAll (FArchive &arc, bool keepPlayers);
 
+	bool WasDestroyed();
+
 	size_t refCount;
 	
 private:

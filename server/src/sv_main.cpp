@@ -1005,7 +1005,7 @@ void SV_UpdateHiddenMobj (void)
 
 			pl.to_spawn.pop();
 
-			if(mo)
+			if(mo && !mo->WasDestroyed())
 				updated += SV_AwarenessUpdate(pl, mo);
 
 			if(updated > 16)
