@@ -122,15 +122,12 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
             switch(s.info.playerinfo[i].team)
 			{
                 case 0:
-                    teamstr = _T("NONE");
-					break;
-                case 1:
 					teamstr = _T("BLUE");
 					break;
-				case 2:
+				case 1:
                     teamstr = _T("RED");
 					break;
-				case 3:
+				case 2:
                     teamstr = _T("GOLD");
 					break;
 				default:
@@ -197,6 +194,10 @@ void LaunchGame(wxString Address, wxString waddirs)
     wxString binname = _T("odamex");
     #else
     wxString binname = _T("./odamex");
+    #endif
+    
+    #ifdef __WXDEBUG__
+    binname += _T("-dbg");
     #endif
     
     wxString cmdline = _T("");
