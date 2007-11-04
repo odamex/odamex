@@ -1546,13 +1546,13 @@ void M_StartControlPanel (void)
 void M_Drawer (void)
 {
 	int i, x, y, max;
+	
+	st_firsttime = true;
+	//screen->Dim (); // denis - removed, see bug 388
 
 	// Horiz. & Vertically center string and print it.
 	if (messageToPrint)
 	{
-		screen->Dim ();
-		st_firsttime = true;
-
 		brokenlines_t *lines = V_BreakLines (320, messageString);
 		y = 100;
 
@@ -1569,9 +1569,6 @@ void M_Drawer (void)
 	}
 	else if (menuactive)
 	{
-		screen->Dim ();
-		st_firsttime = true;
-
 		if (OptionsActive)
 		{
 			M_OptDrawer ();
