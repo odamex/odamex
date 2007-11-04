@@ -303,6 +303,9 @@ static void ShoveChatStr (std::string str, byte who)
 
 BEGIN_COMMAND (messagemode)
 {
+	if(!connected)
+		return;
+
 	headsupactive = 1;
 	C_HideConsole ();
 	input_text = "";
@@ -321,6 +324,9 @@ END_COMMAND (say)
 
 BEGIN_COMMAND (messagemode2)
 {
+	if(!connected)
+		return;
+
 	headsupactive = 2;
 	C_HideConsole ();
 	input_text = "";
