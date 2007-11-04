@@ -284,10 +284,7 @@ brain/spawn			dsfirxpl
 //---------------------------------------------------------------------------
 
 world/barrelx			dsbarexp
-world/quake			dsquake
-world/spark1			spark1
-world/spark2			spark2
-world/spark3			spark3
+
 
 //
 //
@@ -335,18 +332,10 @@ misc/teleport			dstelept
 
 ctf/f-flaggrab		dsffg
 ctf/f-flagreturn	dsffr
-ctf/f-flagscore	dsffs
+ctf/f-flagscore		dsffs
 ctf/f-flagdrop		dsffd
 
 ctf/e-flaggrab		dsefg
 ctf/e-flagreturn	dsefr
 ctf/e-flagscore	dsefs
 ctf/e-flagdrop		dsefd
-
-ctf/blink			dsblink
-
-
-
-
-
-
