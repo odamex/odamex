@@ -74,17 +74,6 @@ typedef enum
 	
 } st_stateenum_t;
 
-
-// States for the chat code.
-typedef enum
-{
-	StartChatState,
-	WaitDestState,
-	GetChatState
-	
-} st_chatstateenum_t;
-
-
 bool ST_Responder(event_t* ev);
 
 // [RH] Base blending values (for e.g. underwater)

@@ -228,7 +228,7 @@ void HU_Drawer (void)
 			y = (!viewactive ? -30 : -10);
 		}
 
-		y += (screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
+		y += ST_Y; //(screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
 
 		promptwidth = V_StringWidth (prompt) * scalex;
 		x = hu_font['_' - HU_FONTSTART]->width() * scalex * 2 + promptwidth;

@@ -123,9 +123,6 @@ float BaseBlendA;
 //	that the normal face state will change
 #define ST_FACEPROBABILITY		96
 
-// For Responder
-#define ST_TOGGLECHAT			KEY_ENTER
-
 // Location of status bar face
 #define ST_FX					(143)
 #define ST_FY					(0)
@@ -290,26 +287,6 @@ float BaseBlendA;
 #define ST_DETHX				(109)
 #define ST_DETHY				(23)
 
-//Incoming messages window location
-//UNUSED
-// #define ST_MSGTEXTX	   (viewwindowx)
-// #define ST_MSGTEXTY	   (viewwindowy+realviewheight-18)
-#define ST_MSGTEXTX 			0
-#define ST_MSGTEXTY 			0
-// Dimensions given in characters.
-#define ST_MSGWIDTH 			52
-// Or shall I say, in lines?
-#define ST_MSGHEIGHT			1
-
-#define ST_OUTTEXTX 			0
-#define ST_OUTTEXTY 			6
-
-// Width, in characters again.
-#define ST_OUTWIDTH 			52
- // Height, in lines.
-#define ST_OUTHEIGHT			1
-
-
 // [RH] Turned these into variables
 // Size of statusbar.
 // Now ([RH] truly) sensitive for scaling.
@@ -320,9 +297,6 @@ int						ST_Y;
 
 // used for making messages go away
 static int				st_msgcounter=0;
-
-// used when in chat
-static st_chatstateenum_t		st_chatstate;
 
 // whether in automap or first-person
 static st_stateenum_t	st_gamestate;
@@ -338,9 +312,6 @@ static bool			st_oldchat;
 
 // whether chat window has the cursor on
 static bool			st_cursoron;
-
-// !deathmatch
-//static bool			st_notdeathmatch;
 
 // !deathmatch && st_statusbaron
 static bool			st_armson;
@@ -1437,13 +1408,9 @@ void ST_unloadData(void)
 void ST_initData(void)
 {
 	int i;
-//    if (players[consoleplayer].camera && players[consoleplayer].camera->player)
-//        plyr = players[consoleplayer].camera->player;    // [RH] use camera
-//    else
 
 	st_firsttime = true;
 
-	st_chatstate = StartChatState;
 	st_gamestate = FirstPersonState;
 
 	st_statusbaron = true;
