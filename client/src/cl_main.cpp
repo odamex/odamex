@@ -220,8 +220,7 @@ void CL_DisconnectClient(void)
 
 BEGIN_COMMAND (connect)
 {
-	if (connected)
-		CL_QuitNetGame();
+	CL_QuitNetGame();
 
 	if (argc > 1)
 	{

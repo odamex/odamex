@@ -1255,7 +1255,6 @@ void M_DrawSelCell (oldmenu_t *menu, int item)
 
 void M_StartMessage (char *string, void (*routine)(int), bool input)
 {
-	C_HideConsole ();
 	messageLastMenuActive = menuactive;
 	messageToPrint = 1;
 	messageString = string;
@@ -1534,7 +1533,6 @@ void M_StartControlPanel (void)
 	menuactive = 1;
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
-	C_HideConsole ();				// [RH] Make sure console goes bye bye.
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
 	I_PauseMouse ();				// [RH] Give the mouse back in windowed modes.
 }
@@ -1621,7 +1619,6 @@ void M_ClearMenus (void)
 	menuactive = false;
 	drawSkull = true;
 	M_DemoNoPlay = false;
-	C_HideConsole ();		// [RH] Hide the console if we can.
 	if (gamestate != GS_FULLCONSOLE)
 		I_ResumeMouse ();	// [RH] Recapture the mouse in windowed modes.
 
