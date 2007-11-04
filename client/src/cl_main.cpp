@@ -154,6 +154,7 @@ void CL_QuitNetGame(void)
 	connected = false;
 	ctfmode = false;
 	gameaction = ga_fullconsole;
+	noservermsgs = false;
 
 	serverside = clientside = true;
 
