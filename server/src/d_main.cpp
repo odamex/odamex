@@ -562,8 +562,8 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 	std::vector<std::string> dirs;
 
 	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-	AddSearchDir(dirs, getenv("-DOOMWADDIR"), separator);
-	AddSearchDir(dirs, getenv("-DOOMWADPATH"), separator);
+	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
+	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
 
 	dirs.push_back(startdir);
 	dirs.push_back(progdir);
