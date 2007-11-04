@@ -293,7 +293,7 @@ static int			cnt_pause;
 //
 
 // Scoreboard Border - Dan
-static patch_t* 		sbborder;
+//static patch_t* 		sbborder;
 
 // You Are Here graphic
 static patch_t* 		yah[2];

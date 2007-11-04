@@ -1577,7 +1577,7 @@ void CL_UpdateMovingSector(void)
 		return;
 
 	plat_pred_t pred = {s, state, count, fh};
-	sector_t *sec = &sectors[s];
+//	sector_t *sec = &sectors[s];
 
 //	if(!sec->floordata)
 //		sec->floordata = new DMovingFloor(sec);

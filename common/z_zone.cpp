@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -360,12 +360,12 @@ void Z_FileDumpHeap (FILE* f)
 {
     memblock_t*	block;
 	
-    fprintf (f,"zone size: %i  location: %p\n", (int)mainzone->size, mainzone);
+    fprintf (f,"zone size: %i  location: %p\n", (int)mainzone->size, (void *)mainzone);
 	
     for (block = mainzone->blocklist.next ; ; block = block->next)
     {
 	fprintf (f,"block:%p    size:%7i    user:%p    tag:%3i\n",
-		 block, (int)block->size, block->user, block->tag);
+		 (void *)block, (int)block->size, (void *)block->user, block->tag);
 		
 	if (block->next == &mainzone->blocklist)
 	{
@@ -509,5 +509,5 @@ BEGIN_COMMAND (mem)
 }
 END_COMMAND (mem)
 
-VERSION_CONTROL (z_zone_cpp, "$Id:$")
+VERSION_CONTROL (z_zone_cpp, "$Id$")
 

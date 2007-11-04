@@ -443,9 +443,6 @@ void D_AdvanceDemo (void)
 //
 void D_DoAdvanceDemo (void)
 {
-	static char demoname[32] = "DEMO1";
-	static int democount = 1;
-	static int pagecount;
 	char *pagename = NULL;
 
 	consoleplayer().playerstate = PST_LIVE;	// not reborn
