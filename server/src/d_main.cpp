@@ -448,8 +448,20 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 
 			if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 			{
-				if(!hash.length() || hash == W_MD5((dir + d_name).c_str()))
+				std::string local_file = (dir + d_name).c_str();
+				std::string local_hash = W_MD5(local_file.c_str());
+
+				if(!hash.length() || hash == local_hash)
+				{
 					found = d_name;
+					break;
+				}
+				else if(hash.length())
+				{
+					Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
+					Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
+					Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
+				}
 			}
 		}
 	}
@@ -494,10 +506,19 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 
 		if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 		{
-			if(!hash.length() || hash == W_MD5((dir + FindFileData.cFileName).c_str()))
+			std::string local_file = (dir + FindFileData.cFileName).c_str();
+			std::string local_hash = W_MD5(local_file.c_str());
+
+			if(!hash.length() || hash == local_hash)
 			{
 				found = FindFileData.cFileName;
 				break;
+			}
+			else if(hash.length())
+			{
+				Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
+				Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
+				Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
 			}
 		}
 	}
