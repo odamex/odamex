@@ -41,129 +41,88 @@
 
 #define NUM_CHANNELS 16
 
+static int mixer_freq;
+static Uint16 mixer_format;
+static int mixer_channels;
+
 static bool sound_initialized = false;
 static int sounds_in_use[256];
 static int nextchannel = 0;
 
 CVAR (snd_crossover, "0", CVAR_ARCHIVE)
 
-// Old code
-/*
-static Uint8 *expand_sound_data(Uint8 *data, int samplerate, int length)
+// [Russell] - Chocolate Doom's sound converter code, how awesome!
+static bool ConvertibleRatio(int freq1, int freq2)
 {
-   Uint8 *expanded = NULL;
-   int expanded_length;
-   int expand_ratio;
-   int i;
+    int ratio;
 
-   if (samplerate == 11025)
-   {
-      // Most of Doom's sound effects are 11025Hz
-      // need to expand to 2 channels, 11025->22050
-
-      expanded = (Uint8 *)Z_Malloc(length * 4, PU_STATIC, NULL);
-
-      for (i = 0; i < length; ++i)
-      {
-         expanded[(i*4) + 0] = expanded[(i*4) + 2] = data[i]; // chan L sample +0,+1
-         expanded[(i*4) + 1] = expanded[(i*4) + 3] = data[i]; // chan R sample +0,+1
-      }
-   }
-   else if (samplerate == 22050)
-   {
-      expanded = (Uint8 *)Z_Malloc(length * 2, PU_STATIC, NULL);
-
-      for (i = 0; i < length; ++i)
-      {
-          expanded[i*2 + 0] = data[i]; // chan L
-          expanded[i*2 + 1] = data[i]; // chan R
-      }
-   }
-   else
-   {
-      // Generic expansion function for all other sample rates
-
-      // number of samples in the converted sound
-
-      expanded_length = (length * 22050) / samplerate;
-      expand_ratio = (length << 8) / expanded_length;
-
-      expanded = (Uint8 *)Z_Malloc(expanded_length * 2, PU_STATIC, NULL);
-
-      for (i=0; i<expanded_length; ++i)
-      {
-         int src = (i * expand_ratio) >> 8;
-
-         expanded[i*2 + 0] = data[src]; // chan L
-         expanded[i*2 + 1] = data[src]; // chan R
-      }
-   }
-
-	return expanded;
-}
-*/
-
-// Expands the 11025Hz, 8bit, mono sound effects in Doom to
-// 22050Hz, 16bit stereo
-
-static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length, Uint32 &expanded_length)
-{
-    Uint8 *expanded = NULL;
-    Uint32 expand_ratio;
-    Uint32 i;
-
-    if (samplerate == 11025)
+    if (freq1 > freq2)
     {
-        // Most of Doom's sound effects are 11025Hz
-
-        // need to expand to 2 channels, 11025->22050 and 8->16 bit
-		expanded_length = length * 8;
-        expanded = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, NULL);
-
-        for (i=0; i<length; ++i)
-        {
-            Uint16 sample;
-
-            sample = data[i] | (data[i] << 8);
-            sample -= 32768;
-
-            expanded[i * 8] = expanded[i * 8 + 2]
-                = expanded[i * 8 + 4] = expanded[i * 8 + 6] = sample & 0xff;
-            expanded[i * 8 + 1] = expanded[i * 8 + 3]
-                = expanded[i * 8 + 5] = expanded[i * 8 + 7] = (sample >> 8) & 0xff;
-        }
+        return ConvertibleRatio(freq2, freq1);
     }
-    else if (samplerate == 22050)
+    else if ((freq2 % freq1) != 0)
     {
+        // Not in a direct ratio
 
-		expanded_length = length * 4;
-        expanded = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, NULL);
-
-        for (i=0; i<length; ++i)
-        {
-            Uint16 sample;
-
-            sample = data[i] | (data[i] << 8);
-            sample -= 32768;
-
-            expanded[i * 4] = expanded[i * 4 + 2] = sample & 0xff;
-            expanded[i * 4 + 1] = expanded[i * 4 + 3] = (sample >> 8) & 0xff;
-        }
+        return false;
     }
     else
     {
-        // Generic expansion function for all other sample rates
+        // Check the ratio is a power of 2
+
+        ratio = freq2 / freq1;
+
+        while ((ratio & 1) == 0)
+        {
+            ratio = ratio >> 1;
+        }
+
+        return ratio == 1;
+    }
+}
+
+// Generic sound expansion function for any sample rate
+
+static void ExpandSoundData(byte *data,
+                            int samplerate,
+                            int length,
+                            Mix_Chunk *destination)
+{
+    SDL_AudioCVT convertor;
+    
+    if (samplerate <= mixer_freq
+     && ConvertibleRatio(samplerate, mixer_freq)
+     && SDL_BuildAudioCVT(&convertor,
+                          AUDIO_U8, 1, samplerate,
+                          mixer_format, mixer_channels, mixer_freq))
+    {
+        convertor.buf = destination->abuf;
+        convertor.len = length;
+        memcpy(convertor.buf, data, length);
+
+        SDL_ConvertAudio(&convertor);
+    }
+    else
+    {
+        Sint16 *expanded = (Sint16 *) destination->abuf;
+        int expanded_length;
+        int expand_ratio;
+        int i;
+
+        // Generic expansion if conversion does not work:
+        //
+        // SDL's audio conversion only works for rate conversions that are
+        // powers of 2; if the two formats are not in a direct power of 2
+        // ratio, do this naive conversion instead.
 
         // number of samples in the converted sound
-        expanded_length = (length * 22050) / samplerate;
+
+        expanded_length = ((uint64_t) length * mixer_freq) / samplerate;
         expand_ratio = (length << 8) / expanded_length;
-
-        expanded = (Uint8 *)Z_Malloc(expanded_length * 4, PU_STATIC, NULL);
-
 
         for (i=0; i<expanded_length; ++i)
         {
-            Uint16 sample;
+            Sint16 sample;
             int src;
 
             src = (i * expand_ratio) >> 8;
@@ -173,14 +132,9 @@ static Uint8 *ExpandSoundData(Uint8 *data, Uint32 samplerate, Uint32 length, Uin
 
             // expand 8->16 bits, mono->stereo
 
-            expanded[i * 4] = expanded[i * 4 + 2] = sample & 0xff;
-            expanded[i * 4 + 1] = expanded[i * 4 + 3] = (sample >> 8) & 0xff;
+            expanded[i * 2] = expanded[i * 2 + 1] = sample;
         }
-		
-		expanded_length *= 4;
     }
-
-    return expanded;
 }
 
 static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
@@ -262,6 +216,8 @@ static void getsfx (struct sfxinfo_struct *sfx)
 
         sfx->data = chunk;
 
+        Z_ChangeTag(data, PU_CACHE);
+
         return;
     }
 
@@ -271,13 +227,28 @@ static void getsfx (struct sfxinfo_struct *sfx)
     // [Russell] - Ignore doom's sound format length info
     // if the lump is longer than the value, fixes exec.wad's ssg
     length = (sfx->length - 8 > length) ? sfx->length - 8 : length;
-    
+
+    expanded_length = (uint32_t) ((((uint64_t) length) * mixer_freq) / samplerate);
+
+    // Double up twice: 8 -> 16 bit and mono -> stereo
+
+    expanded_length *= 4;
+	
 	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
-	chunk->allocated = 1;
-    chunk->abuf = (Uint8 *)ExpandSoundData(data + 8, samplerate, length, expanded_length);
-	chunk->alen = expanded_length;
-	chunk->volume = MIX_MAX_VOLUME;
-	sfx->data = chunk;
+    chunk->allocated = 1;
+    chunk->alen = expanded_length;
+    chunk->abuf 
+        = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, &chunk->abuf);
+    chunk->volume = MIX_MAX_VOLUME;
+
+    ExpandSoundData(data + 8, 
+                    samplerate, 
+                    length, 
+                    chunk);
+                    
+    sfx->data = chunk;
+    
+    Z_ChangeTag(data, PU_CACHE);
 }
 
 //
@@ -448,12 +419,14 @@ void I_InitSound (void)
 	}
 
 
-        if (Mix_OpenAudio(22050, AUDIO_S16LSB, 2, 1024) < 0)
+    if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 1024) < 0)
 	{
 		Printf(PRINT_HIGH, "Error initializing SDL_mixer: %s\n", SDL_GetError());
 		return;
 	}
 
+    Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels);
+	
 	Mix_AllocateChannels(NUM_CHANNELS);
 
 	atterm(I_ShutdownSound);
@@ -468,8 +441,7 @@ void I_InitSound (void)
 
         // Half of fix for stopping wrong sound, these need to be -1
         // to be regarded as empty (they'd be initialised to something weird)
-        for(int i = 0; i < 256; i++)
-            sounds_in_use[i] = -1;
+    memset(sounds_in_use, -1, 256);
 }
 
 void STACK_ARGS I_ShutdownSound (void)
