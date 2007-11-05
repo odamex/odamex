@@ -498,10 +498,6 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	}
 	else
 	{
-		fixed_t source[2] = {x, y};
-
-		rc = S_AdjustSoundParams(consoleplayer().mo, source, &volume, &sep, &pitch);
-
 		sep = NORM_SEP;
   	}
 
