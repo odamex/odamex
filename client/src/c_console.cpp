@@ -925,7 +925,7 @@ void C_ToggleConsole (void)
 
 void C_HideConsole (void)
 {
-	if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP)
+//	if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP)
 	{
 		ConsoleState = c_up;
 		ConBottom = 0;
@@ -1215,7 +1215,13 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			// fullscreen console mode, there's nothing to fall back on
 			// if it's closed.
 			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING || gamestate == GS_DOWNLOAD)
+			{
+				C_HideConsole();
+				gamestate = GS_DEMOSCREEN;
+				if (ev->data2 == '`')
+					return true;
 				return false;
+			}
 			buffer[0] = buffer[1] = buffer[len+4] = 0;
 			HistPos = NULL;
 			C_ToggleConsole ();

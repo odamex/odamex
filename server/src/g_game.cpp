@@ -315,12 +315,6 @@ void G_Ticker (void)
 		C_AdjustBottom ();
 	}
 
-	if (oldgamestate == GS_DEMOSCREEN && oldgamestate != gamestate && page)
-	{
-		delete page;
-		page = NULL;
-	}
-
 	// do main actions
 	switch (gamestate)
 	{
