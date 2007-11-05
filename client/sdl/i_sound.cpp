@@ -241,7 +241,7 @@ static void getsfx (struct sfxinfo_struct *sfx)
         = (Uint8 *)Z_Malloc(expanded_length, PU_STATIC, &chunk->abuf);
     chunk->volume = MIX_MAX_VOLUME;
 
-    ExpandSoundData(data + 8, 
+    ExpandSoundData((unsigned char *)data + 8, 
                     samplerate, 
                     length, 
                     chunk);
