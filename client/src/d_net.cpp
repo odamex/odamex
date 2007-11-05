@@ -127,8 +127,8 @@ void TryRunTics (void)
 	// run the realtics tics
 	while (realtics--)
 	{
-		if(canceltics && canceltics--)
-			continue;
+		//if(canceltics && canceltics--) // denis - todo - when implemented, this desyncs player input from game tics
+		//	continue;
 
 		if (advancedemo)
 			D_DoAdvanceDemo ();
