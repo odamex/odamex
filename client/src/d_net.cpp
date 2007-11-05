@@ -108,6 +108,8 @@ void D_CheckNetGame (void)
 // TryRunTics
 //
 extern	BOOL	 advancedemo;
+int canceltics = 0;
+
 
 void TryRunTics (void)
 {
@@ -125,6 +127,9 @@ void TryRunTics (void)
 	// run the realtics tics
 	while (realtics--)
 	{
+		if(canceltics && canceltics--)
+			continue;
+
 		if (advancedemo)
 			D_DoAdvanceDemo ();
 		

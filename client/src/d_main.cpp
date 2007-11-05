@@ -338,28 +338,34 @@ void D_Display (void)
 	else
 	{
 		// wipe update
-		int wipestart, nowtime, tics;
+		int wipestart, wipecont, nowtime, tics;
 		BOOL done;
 
 		C_DrawConsole ();
 		wipe_EndScreen ();
 		I_FinishUpdateNoBlit ();
 
-		wipestart = I_GetTime () - 1;
+		extern int canceltics;
+
+		wipestart = I_GetTime ();
+		wipecont = wipestart - 1;
 
 		do
 		{
 			do
 			{
 				nowtime = I_GetTime ();
-				tics = nowtime - wipestart;
+				tics = nowtime - wipecont;
 			} while (!tics);
-			wipestart = nowtime;
+			wipecont = nowtime;
 			I_BeginUpdate ();
 			done = wipe_ScreenWipe (tics);
 			M_Drawer ();			// menu is drawn even on top of wipes
 			I_FinishUpdate ();		// page flip or blit buffer
 		} while (!done);
+
+		if(!connected)
+			canceltics += I_GetTime () - wipestart;
 	}
 
 	END_STAT(D_Display);
