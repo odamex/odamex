@@ -54,7 +54,6 @@ void CL_RememberSkin(void);
 //
 // a gametic cannot be run until nettics[] > gametic for all players
 //
-int 			maketic;
 int 			lastnettic;
 int 			skiptics;
 int 			ticdup; 		
@@ -70,24 +69,9 @@ void D_DoAdvanceDemo (void);
 //
 void NetUpdate (void)
 {
-    // check time
-	static QWORD gametime;
-
-    QWORD nowtime = I_GetTime ();
-    QWORD newtics = nowtime - gametime;
-    gametime = nowtime;
-
-    if (newtics <= 0)       // nothing new to update
-       return;
-	   
-    for (QWORD i = 0; i < newtics; i++) // denis - todo - this cycles needlessly at startup? but a trivial fix creates input delay? potential endless loops?
-    {
-        I_StartTic ();
-        D_ProcessEvents ();
-		G_BuildTiccmd (&consoleplayer().netcmds[maketic%BACKUPTICS]);
-		
-        maketic++;
-    }
+	I_StartTic ();
+	D_ProcessEvents ();
+	G_BuildTiccmd (&consoleplayer().netcmds[gametic%BACKUPTICS]);
 }
 
 //
@@ -110,11 +94,10 @@ void D_CheckNetGame (void)
 extern	BOOL	 advancedemo;
 int canceltics = 0;
 
-
 void TryRunTics (void)
 {
 	// get real tics
-	static QWORD oldentertics;
+	static QWORD oldentertics = 0;
 
 	QWORD entertic = I_WaitForTic (oldentertics);
 	QWORD realtics = entertic - oldentertics;
@@ -122,13 +105,13 @@ void TryRunTics (void)
 	
 	DObject::BeginFrame ();
 	
-	NetUpdate ();  // check for new console commands
-
 	// run the realtics tics
 	while (realtics--)
 	{
-		//if(canceltics && canceltics--) // denis - todo - when implemented, this desyncs player input from game tics
-		//	continue;
+		if(canceltics && canceltics--)
+			continue;
+
+		NetUpdate ();
 
 		if (advancedemo)
 			D_DoAdvanceDemo ();
