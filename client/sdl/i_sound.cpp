@@ -409,8 +409,7 @@ void I_InitSound (void)
 	const SDL_version *ver = Mix_Linked_Version();
 
 	if(ver->major != MIX_MAJOR_VERSION
-		|| ver->minor != MIX_MINOR_VERSION
-		|| ver->patch != MIX_PATCHLEVEL)
+		|| ver->minor != MIX_MINOR_VERSION)
 	{
 		Printf(PRINT_HIGH, "I_InitSound: SDL_mixer version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
 			MIX_MAJOR_VERSION, MIX_MINOR_VERSION, MIX_PATCHLEVEL,
@@ -418,6 +417,12 @@ void I_InitSound (void)
 		return;
 	}
 
+	if(ver->patch != MIX_PATCHLEVEL)
+	{
+		Printf(PRINT_HIGH, "I_InitSound: SDL_mixer version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+			MIX_MAJOR_VERSION, MIX_MINOR_VERSION, MIX_PATCHLEVEL,
+			ver->major, ver->minor, ver->patch);
+	}
 
     if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 1024) < 0)
 	{
