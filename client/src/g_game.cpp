@@ -713,28 +713,28 @@ BOOL G_Responder (event_t *ev)
 		{
 			if (dynres_state == 0)
 			{
-				mousex = (unsigned int)(ev->data2 * (mouse_sensitivity + 5) / 10); // [Toke - Mouse] Marriage of origonal and zdoom mouse code, functions like doom2.exe code
-				mousey = (unsigned int)(ev->data3 * (mouse_sensitivity + 5) / 10);
+				mousex = ev->data2 * (mouse_sensitivity + 5) / 10; // [Toke - Mouse] Marriage of origonal and zdoom mouse code, functions like doom2.exe code
+				mousey = ev->data3 * (mouse_sensitivity + 5) / 10;
 			}
 			else if (dynres_state == 1)
 			{
 				mousexleft = ev->data2;
 				mousexleft = -mousexleft;
-				mousex = (unsigned int)pow((ev->data2 * (mouse_sensitivity + 5) / 10), dynresval);
+				mousex = pow((ev->data2 * (mouse_sensitivity + 5) / 10), dynresval);
 
 				if (ev->data2 < 0)
 				{
-					mousexleft = (unsigned int)pow((mousexleft * (mouse_sensitivity + 5) / 10), dynresval);
+					mousexleft = pow((mousexleft * (mouse_sensitivity + 5) / 10), dynresval);
 					mousex = -mousexleft;
 				}
 
 				mouseydown = ev->data3;
 				mouseydown = -mouseydown;
-				mousey = (unsigned int)pow((ev->data3 * (mouse_sensitivity + 5) / 10), dynresval);
+				mousey = pow((ev->data3 * (mouse_sensitivity + 5) / 10), dynresval);
 
 				if (ev->data3 < 0)
 				{
-					mouseydown = (unsigned int)pow((mouseydown * (mouse_sensitivity + 5) / 10), dynresval);
+					mouseydown = pow((mouseydown * (mouse_sensitivity + 5) / 10), dynresval);
 					mousey = -mouseydown;
 				}
 			}
@@ -743,35 +743,35 @@ BOOL G_Responder (event_t *ev)
 		{
 			if (dynres_state == 0)
 			{
-				mousex = (unsigned int)(ev->data2 * (zdoomsens)); // [Toke - Mouse] Zdoom mouse code
-				mousey = (unsigned int)(ev->data3 * (zdoomsens));
+				mousex = ev->data2 * (zdoomsens); // [Toke - Mouse] Zdoom mouse code
+				mousey = ev->data3 * (zdoomsens);
 			}
 			else if (dynres_state == 1)
 			{
 				mousexleft = ev->data2;
 				mousexleft = -mousexleft;
-				mousex = (unsigned int)pow((ev->data2 * (zdoomsens)), dynresval);
+				mousex = pow((ev->data2 * (zdoomsens)), dynresval);
 
 				if (ev->data2 < 0)
 				{
-					mousexleft = (unsigned int)pow((mousexleft * (zdoomsens)), dynresval);
+					mousexleft = pow((mousexleft * (zdoomsens)), dynresval);
 					mousex = -mousexleft;
 				}
 
 				mouseydown = ev->data3;
 				mouseydown = -mouseydown;
-				mousey = (unsigned int)pow((ev->data3 * (zdoomsens)), dynresval);
+				mousey = pow((ev->data3 * (zdoomsens)), dynresval);
 
 				if (ev->data3 < 0)
 				{
-					mouseydown = (unsigned int)pow((mouseydown * (zdoomsens)), dynresval);
+					mouseydown = pow((mouseydown * (zdoomsens)), dynresval);
 					mousey = -mouseydown;
 				}
 			}
 		}
 
 		if (displaymouse == 1)
-			Printf(PRINT_MEDIUM, "%d ", mousex);
+			Printf(PRINT_MEDIUM, "(%d %d) ", mousex, mousey);
 
 		break;
 
