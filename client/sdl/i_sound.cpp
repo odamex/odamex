@@ -441,7 +441,7 @@ void I_InitSound (void)
 
         // Half of fix for stopping wrong sound, these need to be -1
         // to be regarded as empty (they'd be initialised to something weird)
-    memset(sounds_in_use, -1, 256);
+    memset(sounds_in_use, -1, 256 * sizeof(int));
 }
 
 void STACK_ARGS I_ShutdownSound (void)
