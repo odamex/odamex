@@ -43,6 +43,7 @@ static wxInt32 ID_BTNADD = XRCID("ID_BTNADD");
 static wxInt32 ID_BTNREPLACE = XRCID("ID_BTNREPLACE");
 static wxInt32 ID_BTNDELETE = XRCID("ID_BTNDELETE");
 static wxInt32 ID_BTNCHOOSEDIR = XRCID("ID_BTNCHOOSEDIR");
+static wxInt32 ID_BTNCHOOSEODXPATH = XRCID("ID_BTNCHOOSEODXPATH");
 static wxInt32 ID_BTNUP = XRCID("ID_BTNUP");
 static wxInt32 ID_BTNDOWN = XRCID("ID_BTNDOWN");
 
@@ -54,11 +55,13 @@ static wxInt32 ID_BTNOK = XRCID("ID_BTNOK");
 static wxInt32 ID_LSTWADDIR = XRCID("ID_LSTWADDIR");
 
 static wxInt32 ID_TXTWADDIR = XRCID("ID_TXTWADDIR");
+static wxInt32 ID_TXTODXPATH = XRCID("ID_TXTODXPATH");
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	// Button events
+	EVT_BUTTON(ID_BTNCHOOSEODXPATH, dlgConfig::OnChooseOdamexPath)
 	EVT_BUTTON(ID_BTNCHOOSEDIR, dlgConfig::OnChooseDir)
 	EVT_BUTTON(ID_BTNADD, dlgConfig::OnAddDir)
 	EVT_BUTTON(ID_BTNREPLACE, dlgConfig::OnReplaceDir)
@@ -81,12 +84,13 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
 
-    MASTER_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKLISTONSTART), wxCheckBox);
-    BLOCKED_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKSHOWBLOCKEDSERVERS), wxCheckBox);
+    MASTER_CHECKBOX = wxStaticCast(FindWindow(ID_CHKLISTONSTART), wxCheckBox);
+    BLOCKED_CHECKBOX = wxStaticCast(FindWindow(ID_CHKSHOWBLOCKEDSERVERS), wxCheckBox);
 
-    WAD_LIST = wxStaticCast((*this).FindWindow(ID_LSTWADDIR),wxListBox);
+    WAD_LIST = wxStaticCast(FindWindow(ID_LSTWADDIR),wxListBox);
 
-    DIR_BOX = wxStaticCast((*this).FindWindow(ID_TXTWADDIR),wxTextCtrl);
+    DIR_BOX = wxStaticCast(FindWindow(ID_TXTWADDIR),wxTextCtrl);
+    TXT_ODXPATH = wxStaticCast(FindWindow(ID_TXTODXPATH),wxTextCtrl);
 
     // Load current configuration from global configuration structure
     cfg_file = cfg;
@@ -125,6 +129,8 @@ void dlgConfig::Show()
         WAD_LIST->AppendString(path);
     }
 
+    TXT_ODXPATH->SetLabel(cfg_file->odamex_directory);
+
     ShowModal();
 }
 
@@ -154,6 +160,8 @@ void dlgConfig::OnOK(wxCommandEvent &event)
         if (WAD_LIST->GetCount() > 0)
             for (wxUint32 i = 0; i < WAD_LIST->GetCount(); i++)
                 cfg_file->wad_paths.Append(WAD_LIST->GetString(i) + _T(';'));
+
+        cfg_file->odamex_directory = TXT_ODXPATH->GetLabel();
 
         // Save settings to configuration file
         SaveSettings();
@@ -249,9 +257,31 @@ void dlgConfig::OnChooseDir(wxCommandEvent &event)
 {
     wxDirDialog dirchoose(this, _T("Choose a WAD directory"));
 
+    dirchoose.SetPath(DIR_BOX->GetLabel());
+
     // User pressed ok?
     if (dirchoose.ShowModal() == wxID_OK)
+    {
         DIR_BOX->SetLabel(dirchoose.GetPath());
+        
+        UserChangedSetting = 1;        
+    }
+}
+
+// Choose Odamex binary path
+void dlgConfig::OnChooseOdamexPath(wxCommandEvent &event)
+{
+    wxDirDialog dirchoose(this, _T("Locate your Odamex directory"));
+    
+    dirchoose.SetPath(TXT_ODXPATH->GetLabel());
+    
+    // User pressed ok?
+    if (dirchoose.ShowModal() == wxID_OK)
+    {
+        TXT_ODXPATH->SetLabel(dirchoose.GetPath());
+    
+        UserChangedSetting = 1;    
+    }
 }
 
 // Move directory in list up 1 item
@@ -344,6 +374,7 @@ void dlgConfig::LoadSettings()
     ConfigInfo.Read(_T(GETLISTONSTART), &cfg_file->get_list_on_start, 1);
     ConfigInfo.Read(_T(SHOWBLOCKEDSERVERS), &cfg_file->show_blocked_servers, cfg_file->show_blocked_servers);
 	cfg_file->wad_paths = ConfigInfo.Read(_T(DELIMWADPATHS), cfg_file->wad_paths);
+	cfg_file->odamex_directory = ConfigInfo.Read(_T(ODAMEX_DIRECTORY), cfg_file->odamex_directory);
 }
 
 // Save settings to configuration file
@@ -352,6 +383,7 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(_T(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
 	ConfigInfo.Write(_T(DELIMWADPATHS), cfg_file->wad_paths);
+    ConfigInfo.Write(_T(ODAMEX_DIRECTORY), cfg_file->odamex_directory);
 
 	ConfigInfo.Flush();
 }

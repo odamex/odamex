@@ -31,6 +31,7 @@ struct launchercfg_t
     wxInt32     get_list_on_start;
     wxInt32     show_blocked_servers;
     wxString    wad_paths;
+    wxString    odamex_directory;
 };
 
 #include <wx/dialog.h>
@@ -49,6 +50,7 @@ struct launchercfg_t
 #define GETLISTONSTART      "GET_LIST_ON_START"
 #define SHOWBLOCKEDSERVERS  "SHOW_BLOCKED_SERVERS"
 #define DELIMWADPATHS       "DELIMITED_WAD_PATHS"
+#define ODAMEX_DIRECTORY    "ODAMEX_DIRECTORY"
 
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
@@ -82,13 +84,17 @@ class dlgConfig: public wxDialog
         void OnGetEnvClick(wxCommandEvent &event);
         
         void OnCheckedBox(wxCommandEvent &event);
-               
+        
+        void OnChooseOdamexPath(wxCommandEvent &event);
+        
         wxCheckBox *MASTER_CHECKBOX;
         wxCheckBox *BLOCKED_CHECKBOX;
 
         wxListBox *WAD_LIST;
 
         wxTextCtrl *DIR_BOX;
+
+        wxTextCtrl *TXT_ODXPATH;
 
         wxFileConfig ConfigInfo;
 

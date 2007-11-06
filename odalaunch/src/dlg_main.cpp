@@ -98,7 +98,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 1;
-    launchercfg_s.wad_paths = _T("");
+    launchercfg_s.wad_paths = wxGetCwd();
+    launchercfg_s.odamex_directory = wxGetCwd();
 
 	wxXmlResource::Get()->LoadFrame(this, parent, _T("dlgMain")); 
   
@@ -191,7 +192,9 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     ted_result = ted.GetValue();
     
     if (!ted_result.IsEmpty() && ted_result != _T("0.0.0.0:0"))
-        LaunchGame(ted_result, launchercfg_s.wad_paths);
+        LaunchGame(ted_result, 
+                    launchercfg_s.odamex_directory, 
+                    launchercfg_s.wad_paths);
 }
 
 // display extra information for a server
@@ -331,7 +334,9 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
        
     if (i > -1)
     {
-        LaunchGame(QServer[i].GetAddress(), launchercfg_s.wad_paths);
+        LaunchGame(QServer[i].GetAddress(), 
+                    launchercfg_s.odamex_directory, 
+                    launchercfg_s.wad_paths);
     }
 }
 

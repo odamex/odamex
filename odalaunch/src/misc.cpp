@@ -188,12 +188,19 @@ wxString *CheckPWADS(wxString pwads, wxString waddirs)
     }
 }
 
-void LaunchGame(wxString Address, wxString waddirs)
+void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs)
 {
+    if (ODX_Path.IsEmpty())
+    {
+        wxMessageBox(_T("Your Odamex path is empty!"));
+        
+        return;
+    }
+    
     #ifdef __WXMSW__
-    wxString binname = _T("odamex");
+    wxString binname = ODX_Path + _T('\\') + _T("odamex");
     #else
-    wxString binname = _T("./odamex");
+    wxString binname = _T("./") + ODX_Path + _T("/odamex");
     #endif
     
     #ifdef __WXDEBUG__
