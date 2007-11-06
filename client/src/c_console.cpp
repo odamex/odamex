@@ -676,9 +676,19 @@ void C_Ticker (void)
 			if (ConBottom >= screen->height / 2)
 			{
 				ConBottom = screen->height / 2;
-				ConsoleState = c_half;
+				ConsoleState = c_down;
 			}
-		} else if (ConsoleState == c_rising)
+		}
+		else if (ConsoleState == c_fallfull)
+		{
+			ConBottom += (gametic - lasttic) * (screen->height*2/15);
+			if (ConBottom >= screen->height)
+			{
+				ConBottom = screen->height;
+				ConsoleState = c_down;
+			}			
+		}
+		else if (ConsoleState == c_rising)
 		{
 			ConBottom -= (gametic - lasttic) * (screen->height*2/25);
 			if (ConBottom <= 0)
@@ -687,6 +697,15 @@ void C_Ticker (void)
 				ConBottom = 0;
 			}
 		}
+		else if (ConsoleState == c_risefull)
+		{
+			ConBottom -= (gametic - lasttic) * (screen->height*2/15);
+			if (ConBottom <= 0)
+			{
+				ConsoleState = c_up;
+				ConBottom = 0;
+			}
+		}		
 
 		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > ConRows)
 		{
@@ -903,13 +922,12 @@ void C_FullConsole (void)
 
 void C_ToggleConsole (void)
 {
-	if (gamestate == GS_DEMOSCREEN)
+	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull))
 	{
-		gameaction = ga_fullconsole;
-	}
-	else if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising))
-	{
-		ConsoleState = c_falling;
+		if (gamestate == GS_DEMOSCREEN || demoplayback)
+			ConsoleState = c_fallfull;
+		else
+			ConsoleState = c_falling;
 		HistPos = NULL;
 		TabbedLast = false;
 		I_PauseMouse ();
@@ -917,7 +935,10 @@ void C_ToggleConsole (void)
 	else if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP
             && gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
 	{
-		ConsoleState = c_rising;
+		if (ConBottom == screen->height)
+			ConsoleState = c_risefull;
+		else
+			ConsoleState = c_rising;
 		C_FlushDisplay ();
 		I_ResumeMouse ();
 	}
@@ -1302,7 +1323,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 
 BOOL C_Responder (event_t *ev)
 {
-	if (ConsoleState == c_up || ConsoleState == c_rising || menuactive)
+	if (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull || menuactive)
 	{
 		return false;
 	}
