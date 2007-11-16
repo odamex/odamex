@@ -39,16 +39,29 @@ static BOOL mousepaused = true; // SoM: This should start off true
 static BOOL havefocus = false;
 static BOOL noidle = false;
 
-// SoM: if true, the mouse events in the queue should be ignored until at least once event cycle 
-// is complete.
-static BOOL flushmouse = false;
-
 // Used by the console for making keys repeat
 int KeyRepeatDelay;
 int KeyRepeatRate;
 
+// denis - from chocolate doom
+//
+// Mouse acceleration
+//
+// This emulates some of the behavior of DOS mouse drivers by increasing
+// the speed when the mouse is moved fast.
+//
+// The mouse input values are input directly to the game, but when
+// the values exceed the value of mouse_threshold, they are multiplied
+// by mouse_acceleration to increase the speed.
+float mouse_acceleration = 2.0;
+int mouse_threshold = 10;
+
 // joek - sort mouse grab issue
 BOOL mousegrabbed = false;
+
+// SoM: if true, the mouse events in the queue should be ignored until at least once event cycle 
+// is complete.
+static BOOL flushmouse = false;
 
 extern constate_e ConsoleState;
 
@@ -117,6 +130,25 @@ void STACK_ARGS I_ShutdownInput (void)
 static void SetCursorState (int visible)
 {
    SDL_ShowCursor(visible ? SDL_ENABLE : SDL_DISABLE);
+}
+
+// denis - from chocolate doom
+//
+// AccelerateMouse
+//
+static int AccelerateMouse(int val)
+{
+    if (val < 0)
+        return -AccelerateMouse(-val);
+
+    if (val > mouse_threshold)
+    {
+        return (val - mouse_threshold) * mouse_acceleration + mouse_threshold;
+    }
+    else
+    {
+        return val;
+    }
 }
 
 //
@@ -236,8 +268,8 @@ void I_GetEvent (void)
                flushmouse = false;
                break;
             }
-            mouseevent.data2 += ev.motion.xrel << 2;
-            mouseevent.data3 -= ev.motion.yrel;
+            mouseevent.data2 += AccelerateMouse(ev.motion.xrel);
+            mouseevent.data3 -= AccelerateMouse(ev.motion.yrel);
             sendmouseevent = 1;
             break;
          case SDL_MOUSEBUTTONDOWN:
