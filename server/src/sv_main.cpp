@@ -1433,6 +1433,7 @@ void SV_DisconnectClient(player_t &who)
 			CTF_CheckFlags (who);
 
 		who.mo->Destroy();
+		who.mo = AActor::AActorPtr();
 	}
 
 	if (gametic - who.client.last_received == CLIENT_TIMEOUT*35) {
