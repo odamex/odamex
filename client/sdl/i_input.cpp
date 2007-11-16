@@ -53,8 +53,8 @@ int KeyRepeatRate;
 // The mouse input values are input directly to the game, but when
 // the values exceed the value of mouse_threshold, they are multiplied
 // by mouse_acceleration to increase the speed.
-float mouse_acceleration = 2.0;
-int mouse_threshold = 10;
+CVAR (mouse_acceleration, "2", CVAR_ARCHIVE)
+CVAR (mouse_threshold, "10", CVAR_ARCHIVE)
 
 // joek - sort mouse grab issue
 BOOL mousegrabbed = false;
@@ -143,7 +143,7 @@ static int AccelerateMouse(int val)
 
     if (val > mouse_threshold)
     {
-        return (val - mouse_threshold) * mouse_acceleration + mouse_threshold;
+        return (int)((val - mouse_threshold) * mouse_acceleration + mouse_threshold);
     }
     else
     {
