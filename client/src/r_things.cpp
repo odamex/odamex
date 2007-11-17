@@ -1160,8 +1160,15 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 	// store information in a vissprite
 	vis = &avis;
 	vis->mobjflags = flags;
+
+// [RH] +0x6000 helps it meet the screen bottom
+//		at higher resolutions while still being in
+//		the right spot at 320x200.
+// denis - bump to 0x8000
+#define WEAPONTWEAK				(0x8000)
+
 	vis->texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-
-		(psp->sy-sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
+		(psp->sy+WEAPONTWEAK-sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis->xscale = pspritexscale;

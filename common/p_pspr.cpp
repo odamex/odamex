@@ -40,10 +40,7 @@
 #define RAISESPEED				FRACUNIT*6
 
 #define WEAPONBOTTOM				128*FRACUNIT
-// [RH] +0x6000 helps it meet the screen bottom
-//		at higher resolutions while still being in
-//		the right spot at 320x200.
-#define WEAPONTOP				(32*FRACUNIT+0x6000)
+#define WEAPONTOP					32*FRACUNIT
 
 EXTERN_CVAR(infiniteammo)
 EXTERN_CVAR(allowfreelook)
