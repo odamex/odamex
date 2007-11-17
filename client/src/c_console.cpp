@@ -1031,22 +1031,39 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		makestartposgood ();
 		break;
 	case KEY_LEFTARROW:
-		// Move cursor left one character
-
-		if (buffer[1])
+		if(KeysCtrl)
 		{
-			buffer[1]--;
-			makestartposgood ();
+			// Move cursor to beginning of word
+			if(buffer[1])
+				buffer[1]--;
+			while(buffer[1] && buffer[1+buffer[1]] != ' ')
+				buffer[1]--;
 		}
+		else
+		{
+			// Move cursor left one character
+			if (buffer[1])
+			{
+				buffer[1]--;
+			}
+		}
+		makestartposgood ();
 		break;
 	case KEY_RIGHTARROW:
-		// Move cursor right one character
-
-		if (buffer[1] < buffer[0])
+		if(KeysCtrl)
 		{
-			buffer[1]++;
-			makestartposgood ();
+			while(buffer[1] < buffer[0]+1 && buffer[2+buffer[1]] != ' ')
+				buffer[1]++;
+		}	
+		else
+		{
+			// Move cursor right one character
+			if (buffer[1] < buffer[0])
+			{
+				buffer[1]++;
+			}
 		}
+		makestartposgood ();
 		break;
 	case KEY_BACKSPACE:
 		// Erase character to left of cursor
@@ -1249,6 +1266,18 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		}
 		else if (ev->data3 < 32 || ev->data3 > 126)
 		{
+			// Go to beginning of line
+ 			if(KeysCtrl && (ev->data1 == 'a' || ev->data1 == 'A'))
+			{
+				buffer[1] = 0;
+			}
+
+			// Go to end of line
+ 			if(KeysCtrl && (ev->data1 == 'e' || ev->data1 == 'E'))
+			{
+				buffer[1] = buffer[0];
+			}
+
 			// Paste from clipboard
  			if(KeysCtrl && (ev->data1 == 'v' || ev->data1 == 'V'))
 			{
