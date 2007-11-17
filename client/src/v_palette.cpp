@@ -167,7 +167,7 @@ BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 			newgamma[i] = gammatable[lastgamma - 1][i];
 		}
 		GammaAdjustPalettes ();
-		if (screen && screen->is8bit)
+		if (screen && screen->is8bit())
 		{
 			DoBlending (DefPal.colors, IndexedPalette, DefPal.numcolors,
 						newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
@@ -388,7 +388,7 @@ void RefreshPalette (palette_t *pal)
 	DWORD l,c,r,g,b;
 	DWORD colors[256];
 
-	if (screen->is8bit) {
+	if (screen->is8bit()) {
 		if (pal->flags & PALETTEF_SHADE) {
 			byte *shade;
 
@@ -530,7 +530,7 @@ void V_ForceBlend (int blendr, int blendg, int blendb, int blenda)
 	BlendB = blendb;
 	BlendA = blenda;
 
-	if (screen->is8bit) {
+	if (screen->is8bit()) {
 		DoBlending (DefPal.colors, IndexedPalette, DefPal.numcolors,
 					newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
 		I_SetPalette (IndexedPalette);
@@ -678,7 +678,7 @@ void BuildColoredLights (byte *maps, int lr, int lg, int lb, int r, int g, int b
 	byte *shade;
 
 	// The default palette is assumed to contain the maps for white light.
-	if (!screen->is8bit || !maps)
+	if (!screen->is8bit() || !maps)
 		return;
 
 	// build normal (but colored) light mappings

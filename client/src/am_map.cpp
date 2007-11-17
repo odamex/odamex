@@ -580,7 +580,7 @@ void AM_initColors (BOOL overlayed)
 			if (b < 0)
 				b += 32;
 
-			if (screen->is8bit)
+			if (screen->is8bit())
 				AlmostBackground = BestColor (DefaultPalette->basecolors, r, g , b, DefaultPalette->numcolors);
 			else
 				AlmostBackground = MAKERGB(r,g,b);
@@ -943,7 +943,7 @@ void AM_clearFB (int color)
 {
 	int y;
 
-	if (screen->is8bit) {
+	if (screen->is8bit()) {
 		if (f_w == f_p)
 			memset (fb, color, f_w*f_h);
 		else

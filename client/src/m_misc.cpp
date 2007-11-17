@@ -259,7 +259,7 @@ void M_ScreenShot (const char *filename)
 	if (!filename || !strlen(filename))
 	{
 		lbmname = autoname;
-		if (!FindFreeName (lbmname, "bmp\0bmp" + (screen->is8bit << 2)))
+		if (!FindFreeName (lbmname, "bmp\0bmp" + (screen->is8bit() << 2)))
 		{
 			Printf (PRINT_HIGH, "M_ScreenShot: Delete some screenshots\n");
 			return;
@@ -267,7 +267,7 @@ void M_ScreenShot (const char *filename)
 		filename = autoname;
 	}
 
-	if (screen->is8bit)
+	if (screen->is8bit())
 	{
 		// munge planar buffer to linear
 		linear = new byte[screen->width * screen->height];

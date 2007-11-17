@@ -1111,7 +1111,7 @@ R_InitBuffer
 
 	// [RH] Adjust column offset according to bytes per pixel
 	//		and detail mode
-	xshift = (screen->is8bit) ? 0 : 2;
+	xshift = (screen->is8bit()) ? 0 : 2;
 	xshift += detailxshift;
 
 	// Column offset. For windows

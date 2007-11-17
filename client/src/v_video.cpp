@@ -126,7 +126,7 @@ void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *sr
 	width = right - left;
 	right = width >> 6;
 
-	if (is8bit)
+	if (is8bit())
 	{
 		byte *dest;
 
@@ -199,7 +199,7 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 {
 	int x, y;
 
-	if (is8bit)
+	if (is8bit())
 	{
 		byte *dest;
 
@@ -240,7 +240,7 @@ void DCanvas::Dim () const
 	if (dimamount == 0)
 		return;
 
-	if (is8bit)
+	if (is8bit())
 	{
 		unsigned int *bg2rgb;
 		unsigned int fg;
@@ -431,9 +431,9 @@ void DCanvas::Lock ()
 #endif
 			}
 
-			if ((is8bit ? 1 : 4) << detailxshift != ds_colsize)
+			if ((is8bit() ? 1 : 4) << detailxshift != ds_colsize)
 			{
-				ds_colsize = (is8bit ? 1 : 4) << detailxshift;
+				ds_colsize = (is8bit() ? 1 : 4) << detailxshift;
 #ifdef USEASM
 				ASM_PatchColSize ();
 #endif
@@ -486,7 +486,7 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	if (bits == 8)
 		RefreshPalettes ();
 
-	R_InitColumnDrawers (screen->is8bit);
+	R_InitColumnDrawers (screen->is8bit());
 	R_MultiresInit ();
 
 //	M_RefreshModesList (); // [Toke - crap]
@@ -533,15 +533,12 @@ BEGIN_COMMAND (vid_setmode)
 		width = atoi (argv[1]);
 		if (argc > 2) {
 			height = atoi (argv[2]);
-         // SoM: enforce 8-bit modes for now
-         bits = 8;
-			/*if (argc > 3) {
-				bits = atoi (argv[3]);
-			}*/
+			if (argc > 3) {
+				bits = 8;
+				//bits = atoi (argv[3]);
+			}
 		}
 	}
-
-
 
 	if (width) {
 		if (I_CheckResolution (width, height, bits))

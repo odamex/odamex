@@ -473,7 +473,7 @@ void HU_DMScores1 (player_t *player)
 
 		if (sortedplayers[i]->ingame())
 		{
-			if (screen->is8bit)		// Finds the best solid color based on a players color
+			if (screen->is8bit())		// Finds the best solid color based on a players color
 				color = BestColor (DefaultPalette->basecolors, RPART(color), GPART(color), BPART(color), DefaultPalette->numcolors);
 
 			// Display Color

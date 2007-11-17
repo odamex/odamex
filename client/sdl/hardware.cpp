@@ -323,13 +323,13 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 		fracystep = (srcheight << FRACBITS) / destheight;
 		fracxstep = (srcwidth << FRACBITS) / destwidth;
 
-		if (src->is8bit == dest->is8bit)
+		if (src->is8bit() == dest->is8bit())
 		{
 			// INDEX8 -> INDEX8 or ARGB8888 -> ARGB8888
 
 			byte *destline, *srcline;
 
-			if (!dest->is8bit)
+			if (!dest->is8bit())
 			{
 				destwidth <<= 2;
 				srcwidth <<= 2;
@@ -359,7 +359,7 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 				}
 			}
 		}
-		else if (!src->is8bit && dest->is8bit)
+		else if (!src->is8bit() && dest->is8bit())
 		{
 			// ARGB8888 -> INDEX8
 			I_FatalError ("Can't I_Blit() an ARGB8888 source to\nan INDEX8 destination");
@@ -430,7 +430,6 @@ DCanvas *IVideo::AllocateSurface (int width, int height, int bits, bool primary)
 
 	scrn->width = width;
 	scrn->height = height;
-	scrn->is8bit = bits == 8 ? true : false;
 	scrn->bits = bits;
 	scrn->m_LockCount = 0;
 	scrn->m_Palette = NULL;

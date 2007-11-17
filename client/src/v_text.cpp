@@ -163,7 +163,7 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 	    }
 
 		charimg = (DWORD *)&ConChars[(*str) * 128];
-		if (is8bit)
+		if (is8bit())
 		{
 #ifdef USEASM
 			PrintChar1P (charimg, temp + x, pitch);
