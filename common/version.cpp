@@ -36,8 +36,8 @@ typedef std::map<string, string> source_files_t;
 
 source_files_t &get_source_files()
 {
-	static source_files_t source_files;
-	return source_files;
+	static source_files_t *source_files = new source_files_t;
+	return *source_files;
 }
 
 unsigned int last_revision = 0;

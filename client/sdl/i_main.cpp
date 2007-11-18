@@ -102,6 +102,8 @@ int main(int argc, char *argv[])
 {
 	try
 	{
+		openlog();
+
 #ifdef UNIX
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
@@ -127,8 +129,6 @@ int main(int argc, char *argv[])
         	putenv("SDL_VIDEODRIVER=windib");
 #endif
 		
-		openlog();
-
 		atterm(closelog);
 		
 		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
