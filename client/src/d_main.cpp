@@ -1149,6 +1149,8 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
+		
+	S_Stop();
 
 	DThinker::DestroyAllThinkers();
 

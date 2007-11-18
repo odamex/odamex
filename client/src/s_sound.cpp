@@ -263,6 +263,27 @@ void S_Init (float sfxVolume, float musicVolume)
 		S_sfx[j].usefulness = -1;
 }
 
+//
+// Kills playing sounds
+//
+void S_Stop (void)
+{
+	unsigned int cnum;
+
+	// kill all playing sounds at start of level
+	//	(trust me - a good idea)
+	for (cnum = 0; cnum < numChannels; cnum++)
+		if (Channel[cnum].sfxinfo)
+			S_StopChannel (cnum);
+
+	// start new music for the level
+	mus_paused = 0;
+
+	// [RH] This is a lot simpler now.
+	S_ChangeMusic (std::string(level.music, 8), true);
+
+	nextcleanup = 15;
+}
 
 
 //
@@ -272,13 +293,7 @@ void S_Init (float sfxVolume, float musicVolume)
 //
 void S_Start (void)
 {
-	unsigned int cnum;
-
-	// kill all playing sounds at start of level
-	//	(trust me - a good idea)
-	for (cnum = 0; cnum < numChannels; cnum++)
-		if (Channel[cnum].sfxinfo)
-			S_StopChannel (cnum);
+	S_Stop();
 
 	// start new music for the level
 	mus_paused = 0;

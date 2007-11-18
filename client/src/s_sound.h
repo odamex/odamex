@@ -76,6 +76,7 @@ void S_Init (float sfxVolume, float musicVolume);
 // Kills playing sounds at start of level,
 //	determines music if any, changes music.
 //
+void S_Stop(void);
 void S_Start(void);
 
 // Start sound for thing at <ent>

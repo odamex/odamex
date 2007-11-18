@@ -46,7 +46,7 @@ static Uint16 mixer_format;
 static int mixer_channels;
 
 static bool sound_initialized = false;
-static int sounds_in_use[256];
+static char channel_in_use[NUM_CHANNELS];
 static int nextchannel = 0;
 
 CVAR (snd_crossover, "0", CVAR_ARCHIVE)
@@ -265,8 +265,6 @@ void I_SetSfxVolume (float volume)
 	basevolume = volume;
 }
 
-static int soundtag = 0;
-
 //
 // Starting a sound means adding it
 //	to the current list of active sounds
@@ -286,7 +284,7 @@ int I_StartSound (int id, int vol, int sep, int pitch, bool loop)
 
 	Mix_Chunk *chunk = (Mix_Chunk *)S_sfx[id].data;
 	int channel;
-
+	
 	// find a free channel, starting from the first after
 	// the last channel we used
 
@@ -301,7 +299,7 @@ int I_StartSound (int id, int vol, int sep, int pitch, bool loop)
 			fprintf(stderr, "No free sound channels left.\n");
 			return -1;
 		}
-        } while (sounds_in_use[channel] != -1);
+        } while (channel_in_use[channel] != -1);
 
 	nextchannel = channel;
 
@@ -309,12 +307,9 @@ int I_StartSound (int id, int vol, int sep, int pitch, bool loop)
 
 	Mix_PlayChannelTimed(channel, chunk, loop ? -1 : 0, -1);
 
-	sounds_in_use[channel] = soundtag;
-        channel |= (soundtag << 8);
-        soundtag++;
+	channel_in_use[channel] = 1;
 
 	// set seperation, etc.
-
 	I_UpdateSoundParams(channel, vol, sep, pitch);
 
 	return channel;
@@ -326,16 +321,7 @@ void I_StopSound (int handle)
 	if(!sound_initialized)
 		return;
 
-        int tag = handle >> 8;
-
-	handle &= 0xff;
-
-        // Stopping wrong sound sounds_in_use[handle] != tag (handle)
-
-	if (sounds_in_use[handle] != tag)
-            fprintf(stderr, "stopping wrong sound: %i != %i (%i)\n", sounds_in_use[handle], tag, handle);
-
-	sounds_in_use[handle] = -1;
+	channel_in_use[handle] = -1;
 
 	Mix_HaltChannel(handle);
 }
@@ -356,13 +342,6 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 {
 	if(!sound_initialized)
 		return;
-
-	int tag = handle >> 8;
-
-	handle &= 0xff;
-
-	if (sounds_in_use[handle] != tag)
-            fprintf(stderr, "tag is wrong playing sound: tag:%i, handle:%i\n", tag, handle);
 
 	if(sep > 255)
 		sep = 255;
@@ -446,7 +425,7 @@ void I_InitSound (void)
 
         // Half of fix for stopping wrong sound, these need to be -1
         // to be regarded as empty (they'd be initialised to something weird)
-    memset(sounds_in_use, -1, 256 * sizeof(int));
+    memset(channel_in_use, -1, sizeof(channel_in_use));
 }
 
 void STACK_ARGS I_ShutdownSound (void)
