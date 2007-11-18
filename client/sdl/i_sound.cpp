@@ -333,7 +333,6 @@ int I_SoundIsPlaying (int handle)
 	if(!sound_initialized)
 		return 0;
 
-	handle &= 0xff;
 	return Mix_Playing(handle);
 }
 
