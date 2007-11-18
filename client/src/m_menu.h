@@ -65,6 +65,8 @@ void M_OptDrawer (void);
 // [RH] Initialize options menu
 void M_OptInit (void);
 
+void M_PlayerSetup (int choice);
+
 struct menu_s;
 void M_SwitchMenu (struct menu_s *menu);
 
@@ -190,5 +192,6 @@ extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
 #endif
+
 
 

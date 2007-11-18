@@ -136,6 +136,7 @@ static itemtype OldType;
  *
  *=======================================*/
 
+static void PlayerSetup (void);
 static void CustomizeControls (void);
 static void VideoOptions (void);
 static void GoToConsole (void);
@@ -149,6 +150,7 @@ static void SetVidMode (void);
 static menuitem_t OptionItems[] =
 {
 	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
+	{ more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
 	{ more,		"Mouse Setup" ,			{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
 	{ more,		"Go to console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
 	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
@@ -168,7 +170,7 @@ static menuitem_t OptionItems[] =
 menu_t OptionMenu = {
 	{ 'M','_','O','P','T','T','T','L' },
 	0,
-	15,
+	16,
 	177,
 	OptionItems,
 };
@@ -1309,6 +1311,15 @@ static void CustomizeControls (void)
 	M_SwitchMenu (&ControlsMenu);
 }
 
+// [Russell] - Hack for getting to the player setup menu, doesn't
+// record the last menu though, unfortunately
+static void PlayerSetup (void)
+{
+    M_ClearMenus ();
+    M_StartControlPanel ();
+	M_PlayerSetup(0);
+}
+
 BEGIN_COMMAND (menu_keys)
 {
 	M_StartControlPanel ();
@@ -1487,5 +1498,6 @@ END_COMMAND (menu_video)
 
 
 VERSION_CONTROL (m_options_cpp, "$Id$")
+
 
 

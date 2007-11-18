@@ -151,7 +151,6 @@ void M_StopMessage(void);
 void M_ClearMenus (void);
 
 // [RH] For player setup menu.
-static void M_PlayerSetup (int choice);
 static void M_PlayerSetupTicker (void);
 static void M_PlayerSetupDrawer (void);
 static void M_EditPlayerName (int choice);
@@ -171,33 +170,56 @@ static DCanvas *FireScreen;
 //
 // DOOM MENU
 //
-enum main_t
+enum d1_main_t
 {
-	newgame = 0,
-	options,					// [RH] Moved
-	loadgame,
-	savegame,
-	readthis,
-	playersetup,					// [RH] Player setup
-	quitdoom,
-	main_end
-}main_e;
+	d1_newgame = 0,
+	d1_options,					// [RH] Moved
+	d1_loadgame,
+	d1_savegame,
+	d1_readthis,
+	d1_quitdoom,
+	d1_main_end
+}d1_main_e;
 
-oldmenuitem_t MainMenu[]=
+oldmenuitem_t DoomMainMenu[]=
 {
 	{1,"M_NGAME",M_NewGame,'N'},
 	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
     {1,"M_LOADG",M_LoadGame,'L'},
     {1,"M_SAVEG",M_SaveGame,'S'},
     {1,"M_RDTHIS",M_ReadThis,'R'},
-	{1,"M_PSETUP",M_PlayerSetup,'P'},	// [RH] Player setup
 	{1,"M_QUITG",M_QuitDOOM,'Q'}
 };
 
+//
+// DOOM 2 MENU
+//
+
+enum d2_main_t
+{
+	d2_newgame = 0,
+	d2_options,					// [RH] Moved
+	d2_loadgame,
+	d2_savegame,
+	d2_quitdoom,
+	d2_main_end
+}d2_main_e;
+
+oldmenuitem_t Doom2MainMenu[]=
+{
+	{1,"M_NGAME",M_NewGame,'N'},
+	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
+    {1,"M_LOADG",M_LoadGame,'L'},
+    {1,"M_SAVEG",M_SaveGame,'S'},
+	{1,"M_QUITG",M_QuitDOOM,'Q'}
+};
+
+
+// Default used is the Doom Menu
 oldmenu_t MainDef =
 {
-	main_end,
-	MainMenu,
+	d1_main_end,
+	DoomMainMenu,
 	M_DrawMainMenu,
 	97,64,
 	0
@@ -1697,6 +1719,17 @@ void M_Init (void)
 {
 	int i;
 
+    // [Russell] - Set this beforehand, because when you switch wads
+    // (ie from doom to doom2 back to doom), you will have less menu items
+    {
+        MainDef.numitems = d1_main_end;
+        MainDef.menuitems = DoomMainMenu;
+        MainDef.routine = M_DrawMainMenu,
+        MainDef.lastOn = 0;
+        MainDef.x = 97;
+        MainDef.y = 64;
+    }
+
 	currentMenu = &MainDef;
 	OptionsActive = false;
 	menuactive = 0;
@@ -1709,6 +1742,15 @@ void M_Init (void)
 	messageString = NULL;
 	messageLastMenuActive = menuactive;
 
+    if (gamemode == commercial)
+    {
+        // Commercial has no "read this" entry.
+        MainDef.numitems = d2_main_end;
+        MainDef.menuitems = Doom2MainMenu;
+
+        MainDef.y += 8;
+    }
+
 	M_OptInit ();
 
 	// [RH] Build a palette translation table for the fire
@@ -1717,4 +1759,5 @@ void M_Init (void)
 }
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
+
 

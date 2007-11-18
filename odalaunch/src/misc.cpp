@@ -200,13 +200,9 @@ void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs)
     #ifdef __WXMSW__
     wxString binname = ODX_Path + _T('\\') + _T("odamex");
     #else
-    wxString binname = _T("./") + ODX_Path + _T("/odamex");
+    wxString binname = ODX_Path + _T("/odamex");
     #endif
-    
-    #ifdef __WXDEBUG__
-    binname += _T("-dbg");
-    #endif
-    
+
     wxString cmdline = _T("");
 
     // when adding waddir string, return 1 less, to get rid of extra delimiter

@@ -1210,7 +1210,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 	G_SetLevelStrings ();
 	S_ParseSndInfo();
 
-	//M_Init();
+	M_Init();
 	R_Init();
 	P_Init();
 
@@ -1431,5 +1431,6 @@ void D_DoomMain (void)
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
+
 
 
