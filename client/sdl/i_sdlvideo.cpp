@@ -57,7 +57,7 @@ SDLVideo::SDLVideo(int parm)
    fmt.BitsPerPixel = 8;
    fmt.BytesPerPixel = 1;
 
-   SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_HWSURFACE);
+   SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
 
    vidModeList = NULL;
    vidModeCount = 0;
