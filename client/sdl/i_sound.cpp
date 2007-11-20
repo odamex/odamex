@@ -408,7 +408,11 @@ void I_InitSound (void)
 		return;
 	}
 
-    Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels);
+    if(!Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels))
+	{
+		Printf(PRINT_HIGH, "Error initializing SDL_mixer: %s\n", SDL_GetError());
+		return;
+	}
 	
 	Mix_AllocateChannels(NUM_CHANNELS);
 
