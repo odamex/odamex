@@ -173,8 +173,14 @@ static void UngrabMouse (void)
 //
 // I_PauseMouse
 //
+
+EXTERN_CVAR (fullscreen)
+
 void I_PauseMouse (void)
 {
+   if (fullscreen)
+    return;
+   
    UngrabMouse();
    SetCursorState(true);
    mousepaused = true;
@@ -184,7 +190,7 @@ void I_PauseMouse (void)
 // I_ResumeMouse
 //
 void I_ResumeMouse (void)
-{
+{   
    if(havefocus)
    {
       GrabMouse();

@@ -188,12 +188,17 @@ void I_SetMode (int &width, int &height, int &bits)
 	{
 	case DISPLAY_WindowOnly:
 		fs = false;
+		I_PauseMouse();
 		break;
 	case DISPLAY_FullscreenOnly:
 		fs = true;
+		I_ResumeMouse();
 		break;
 	case DISPLAY_Both:
 		fs = fullscreen ? true : false;
+		
+		fs ? I_ResumeMouse() : I_PauseMouse();
+		
 		break;
 	}
 	bool res = Video->SetMode (width, height, bits, fs);
