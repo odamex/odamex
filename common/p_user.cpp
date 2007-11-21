@@ -212,6 +212,13 @@ void P_MovePlayer (player_t *player)
 		{
 			player->mo->momz = 4*FRACUNIT;
 		}
+		else if (allowjump && player->mo->onground && !player->mo->momz)
+		{
+			player->mo->momz += 7*FRACUNIT;
+			
+			if(clientside)
+				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
+		}
 	}
 
 	if (cmd->ucmd.upmove &&
