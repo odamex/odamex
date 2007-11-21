@@ -124,8 +124,13 @@ void I_FinishUpdate ()
 		QWORD howlong = ms - lastms;
 		if (howlong > 0)
 		{
+			#ifdef WIN32
 			chars = sprintf (fpsbuff, "%I64d ms (%d fps)",
 				howlong, lastcount);
+			#else
+			chars = sprintf (fpsbuff, "%lld ms (%d fps)",
+				howlong, lastcount);
+            #endif
 			screen->Clear (0, screen->height - 8, chars * 8, screen->height, 0);
 			screen->PrintStr (0, screen->height - 8, (char *)&fpsbuff[0], chars);
 			if (lastsec < ms / 1000)
