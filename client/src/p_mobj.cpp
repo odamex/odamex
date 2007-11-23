@@ -502,14 +502,17 @@ void P_ZMovement (AActor *mo)
         // So we need to check that this is either retail or commercial
         // (but not doom2)
 
-      /*int correct_lost_soul_bounce = gameversion >= exe_ultimate;
+      int correct_lost_soul_bounce = (gamemode == retail) || 
+                                     ((gamemode == commercial 
+                                     && (gamemission == pack_tnt || 
+                                         gamemission == pack_plut)));
 
       if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
       {
 	    // the skull slammed into something
-      mo->momz = -mo->momz;
-   }
-      */
+        mo->momz = -mo->momz;
+      }
+      
 
       if (mo->momz < 0)
       {
@@ -534,8 +537,8 @@ void P_ZMovement (AActor *mo)
 	// hit by a raising floor this incorrectly reverses its Y momentum.
       //
 
-      //if (!correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
-      //   mo->momz = -mo->momz;
+      if (!correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
+         mo->momz = -mo->momz;
 
       if ( (mo->flags & MF_MISSILE)
             && !(mo->flags & MF_NOCLIP) )
@@ -1569,4 +1572,5 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 }
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")
+
 
