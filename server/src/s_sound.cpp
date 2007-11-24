@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -135,6 +135,12 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sound_id, float volume, int 
 static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel, 
 							   char *name, float volume, float attenuation, BOOL looping)
 {
+}
+
+// [Russell] - Hack to stop multiple plat stop sounds
+void S_PlatSound (fixed_t *pt, int channel, char *name, float volume, int attenuation)
+{
+	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_Sound (int channel, char *name, float volume, int attenuation)
@@ -507,5 +513,5 @@ void A_Ambient (AActor *actor)
 }
 
 
-VERSION_CONTROL (s_sound_cpp, "$Id:$")
+VERSION_CONTROL (s_sound_cpp, "$Id$")
 

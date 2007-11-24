@@ -84,7 +84,8 @@ void S_Sound (int channel, char *name, float volume, int attenuation);
 void S_Sound (AActor *ent, int channel, char *name, float volume, int attenuation);
 void S_Sound (fixed_t *pt, int channel, char *name, float volume, int attenuation);
 void S_Sound (fixed_t x, fixed_t y, int channel, char *name, float volume, int attenuation);
-void S_LoopedSound (AActor *ent, int channel, char *name, float volume, int attenuation);
+void S_PlatSound (fixed_t *pt, int channel, char *name, float volume, int attenuation); // [Russell] - Hack to stop multiple plat stop sounds
+void S_LoopedSound (AActor *ent, int channel, char *name, float volume, int attenuation); 
 void S_LoopedSound (fixed_t *pt, int channel, char *name, float volume, int attenuation);
 void S_SoundID (int channel, int sfxid, float volume, int attenuation);
 void S_SoundID (fixed_t x, fixed_t y, int channel, int sound_id, float volume, int attenuation);

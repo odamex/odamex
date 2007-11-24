@@ -524,7 +524,9 @@ void P_ZMovement (AActor *mo)
 		// after hitting the ground (hard),
 		// and utter appropriate sound.
             mo->player->deltaviewheight = mo->momz>>3;
-            S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+            
+            if (!predicting)
+                S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
          }
          mo->momz = 0;
       }

@@ -23,6 +23,8 @@
 
 #include <algorithm>
 
+#include "cl_main.h"
+
 #include "m_alloc.h"
 #include "i_system.h"
 #include "i_sound.h"
@@ -678,6 +680,13 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 		S_StartSound (pt, x, y, channel, sfx_id, volume, attenuation, looping);
 	else
 		S_StartSound ((fixed_t *)ent, x, y, channel, sfx_id, volume, attenuation, looping);
+}
+
+// [Russell] - Hack to stop multiple plat stop sounds
+void S_PlatSound (fixed_t *pt, int channel, char *name, float volume, int attenuation)
+{
+    if (!predicting)
+        S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, attenuation, false);
 }
 
 void S_Sound (int channel, char *name, float volume, int attenuation)
