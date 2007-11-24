@@ -195,13 +195,14 @@ BEGIN_COMMAND (map)
 			char mapname[32];
 
 			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
+            // [Russell] - gamemode is always the better option compared to above
 			if ( argc == 2 )
 			{
-				sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
-			}
-			else if ( argc == 3 )
-			{
-				sprintf( mapname, "E%iM%i", atoi( argv[1] ), atoi( argv[2] ) );
+				if (gamemode == commercial)
+                    sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
+                else
+                    sprintf( mapname, "E%cM%c", argv[1][0], argv[1][1]);
+                    
 			}
 
 			if (W_CheckNumForName (mapname) == -1)
