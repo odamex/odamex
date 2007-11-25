@@ -276,7 +276,7 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
 	tw = NULL;
 
 	if (!text.empty())
-		tw = new wxTipWindow(SERVER_LIST, text, 100, &tw);
+		tw = new wxTipWindow(SERVER_LIST, text, 120, &tw);
 }
 
 
