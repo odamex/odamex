@@ -59,7 +59,9 @@ bool Application::OnInit()
     
     if (MAIN_DIALOG) 
         MAIN_DIALOG->Show();
-    
+        
+    SetTopWindow(MAIN_DIALOG);
+        
     return true;
 }
 
