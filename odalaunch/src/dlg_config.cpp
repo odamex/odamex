@@ -49,9 +49,6 @@ static wxInt32 ID_BTNDOWN = XRCID("ID_BTNDOWN");
 
 static wxInt32 ID_BTNGETENV = XRCID("ID_BTNGETENV");
 
-static wxInt32 ID_BTNCLOSE = XRCID("ID_BTNCLOSE");
-static wxInt32 ID_BTNOK = XRCID("ID_BTNOK");
-
 static wxInt32 ID_LSTWADDIR = XRCID("ID_LSTWADDIR");
 
 static wxInt32 ID_TXTWADDIR = XRCID("ID_TXTWADDIR");
@@ -71,8 +68,8 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
     EVT_BUTTON(ID_BTNGETENV, dlgConfig::OnGetEnvClick)
 
-	EVT_BUTTON(ID_BTNOK, dlgConfig::OnOK)
-	EVT_BUTTON(ID_BTNCLOSE, dlgConfig::OnClose)
+	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
+
 	// Misc events
 	EVT_CHECKBOX(ID_CHKLISTONSTART, dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(ID_CHKSHOWBLOCKEDSERVERS, dlgConfig::OnCheckedBox)
@@ -170,11 +167,6 @@ void dlgConfig::OnOK(wxCommandEvent &event)
         UserChangedSetting = 0;
 
     // Close window
-    Close();
-}
-
-void dlgConfig::OnClose(wxCommandEvent &event)
-{
     Close();
 }
 

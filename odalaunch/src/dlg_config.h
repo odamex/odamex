@@ -71,7 +71,6 @@ class dlgConfig: public wxDialog
 
 	protected:
         void OnOK(wxCommandEvent &event);
-        void OnClose(wxCommandEvent &event);
         
         void OnChooseDir(wxCommandEvent &event);
         void OnAddDir(wxCommandEvent &event);
