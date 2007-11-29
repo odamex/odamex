@@ -1339,13 +1339,15 @@ void CL_DamagePlayer(void)
 	if (damage < 0)  // can't be!
 		return;
 
-	p->damagecount += damage;
+	if (damage > 0) {
+		p->damagecount += damage;
 
-	if (p->damagecount > 100)
-		p->damagecount = 100;
+		if (p->damagecount > 100)
+			p->damagecount = 100;
 
-	if(p->mo->info->painstate)
-		P_SetMobjState(p->mo, p->mo->info->painstate);
+		if(p->mo->info->painstate)
+			P_SetMobjState(p->mo, p->mo->info->painstate);
+	}
 }
 
 extern int MeansOfDeath;

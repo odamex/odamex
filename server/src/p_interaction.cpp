@@ -1271,7 +1271,8 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 	{
 		if ( pain < target->info->painchance
-			 && !(target->flags&MF_SKULLFLY) )
+			 && !(target->flags&MF_SKULLFLY) 
+			 && !(player && !damage))
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
 
