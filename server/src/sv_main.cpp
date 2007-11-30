@@ -1796,7 +1796,7 @@ void SV_Say(player_t &player)
 	if(!team)
 		SV_BroadcastPrintf (PRINT_CHAT, "%s: %s\n", player.userinfo.netname, s);
 	else
-		SV_TeamPrintf (PRINT_TEAMCHAT, player.id, "%s> %s\n", player.userinfo.netname, s);
+		SV_TeamPrintf (PRINT_TEAMCHAT, player.id, "(TEAM) %s>> %s\n", player.userinfo.netname, s);
 }
 
 //

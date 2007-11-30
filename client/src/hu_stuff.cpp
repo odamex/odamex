@@ -214,7 +214,7 @@ void HU_Drawer (void)
 {
 	if (headsupactive)
 	{
-		static const char *prompt = "Say: ";
+		static const char *prompt;
 		int i, x, c, scalex, y, promptwidth;
 
 		if (con_scaletext)
@@ -229,6 +229,11 @@ void HU_Drawer (void)
 		}
 
 		y += ST_Y; //(screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
+		
+		if (headsupactive == 2)
+			prompt = "Say (TEAM): ";
+		else if (headsupactive == 1)
+			prompt = "Say: ";
 
 		promptwidth = V_StringWidth (prompt) * scalex;
 		x = hu_font['_' - HU_FONTSTART]->width() * scalex * 2 + promptwidth;
