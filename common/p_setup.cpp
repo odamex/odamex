@@ -1306,6 +1306,8 @@ void P_SetupLevel (char *lumpname, int position)
 	// find map num
 	lumpnum = W_GetNumForName (lumpname);
 
+    level.time = 0;
+
 	// note: most of this ordering is important
 	P_LoadVertexes (lumpnum+ML_VERTEXES);
 	P_LoadSectors (lumpnum+ML_SECTORS);
