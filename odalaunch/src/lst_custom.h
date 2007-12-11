@@ -68,17 +68,18 @@ class wxAdvancedListCtrl : public wxListCtrl
         }
 
         ~wxAdvancedListCtrl() { }
-      
-        void ColourList();
-        void ColourListItem(wxInt32 item, wxInt32 grey);
-        
+                  
         wxInt32 GetIndex(wxString str);
-        
-        void OnHeaderColumnButtonClick(wxListEvent &event);
-        
+               
         wxEvent *Clone(void);
 
     private:
+        void ColourList();
+        void ColourListItem(wxInt32 item, wxInt32 grey);
+
+        void OnItemInsert(wxListEvent &event);
+        void OnHeaderColumnButtonClick(wxListEvent &event);
+        
         wxInt32 SortOrder;
         wxInt32 SortCol;
 

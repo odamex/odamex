@@ -138,8 +138,6 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
         }
             
     }
-
-    list->ColourList();
     
 }
 

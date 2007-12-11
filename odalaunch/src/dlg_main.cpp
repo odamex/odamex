@@ -405,8 +405,6 @@ void dlgMain::OnGetList(wxCommandEvent &event)
             
         wxSafeYield(this, true);
     }
-
-    SERVER_LIST->ColourList();
         
     GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
@@ -475,8 +473,6 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
                      
         wxSafeYield(this, true);
     }
-
-    SERVER_LIST->ColourList();
 
     GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);

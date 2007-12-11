@@ -28,6 +28,7 @@ IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListCtrl)
 
 BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListCtrl)
      EVT_LIST_COL_CLICK(-1, wxAdvancedListCtrl::OnHeaderColumnButtonClick)
+     EVT_LIST_INSERT_ITEM(-1, wxAdvancedListCtrl::OnItemInsert)
 END_EVENT_TABLE()
 
 struct sortinfo_t
@@ -145,10 +146,21 @@ void wxAdvancedListCtrl::ColourListItem(wxInt32 item, wxInt32 grey)
     this->SetItemBackgroundColour(item, col); 
 }
 
+// colour the previous item on insertion, it won't colour THIS item..?
+void wxAdvancedListCtrl::OnItemInsert(wxListEvent &event)
+{
+    static wxInt32 colswitch = 0;
+    
+    ColourListItem(event.GetIndex() - 1, colswitch);
+    
+    colswitch = !colswitch;
+}
+
+// recolour the entire list
 void wxAdvancedListCtrl::ColourList()
 {  
     // iterate through, changing background colour for each row
-    wxInt32 colswitch = 0;
+    wxInt32 colswitch = 1;
     
     for (wxInt32 i = 0; i < this->GetItemCount(); i++)
     {     
