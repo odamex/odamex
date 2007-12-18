@@ -948,8 +948,8 @@ P_CrossSpecialLine
 		}
 	}
 
-	if(LineSpecials[line->special] (line, thing))
-		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	LineSpecials[line->special] (line, thing);
+	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
 
 	OnActivatedLine(line, thing, side, 0);
 }
@@ -975,16 +975,15 @@ P_ShootSpecialLine
 			return;
 	}
 
-	if(LineSpecials[line->special] (line, thing))
-	{
-		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
-		OnActivatedLine(line, thing, 0, 2);
+	LineSpecials[line->special] (line, thing);
 
-		if(serverside)
-		{
-			P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-			OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-		}
+	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	OnActivatedLine(line, thing, 0, 2);
+
+	if(serverside)
+	{
+		P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+		OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
 	}
 }
 
