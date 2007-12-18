@@ -228,7 +228,7 @@ void HU_Drawer (void)
 			y = (!viewactive ? -30 : -10);
 		}
 
-		y += ST_Y; //(screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
+		y += (screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
 		
 		if (headsupactive == 2)
 			prompt = "Say (TEAM): ";
