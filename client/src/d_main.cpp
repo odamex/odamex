@@ -631,7 +631,6 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 				if(!hash.length() || hash == local_hash)
 				{
 					found = d_name;
-					break;
 				}
 				else if(hash.length())
 				{
