@@ -666,12 +666,16 @@ void SV_SetupUserInfo (player_t &player)
 {
 	int		old_team;
 	char   *skin;
+	char	old_netname[MAXPLAYERNAME+1], gendermessage[3];
 
 	player_t* p;
 	p = &player;
 
 	// store players team number
 	old_team = p->userinfo.team;
+	
+	// Store player's old name for comparison.
+	strncpy (old_netname, p->userinfo.netname, sizeof(old_netname));
 
 	// Read user info
 	strncpy (p->userinfo.netname, MSG_ReadString(), sizeof(p->userinfo.netname));
@@ -695,6 +699,16 @@ void SV_SetupUserInfo (player_t &player)
 	// Make sure the gender is valid
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
+		
+	// Compare names and broadcast if different.
+	if (strncmp(old_netname, "", sizeof(old_netname)) && strncmp(p->userinfo.netname, old_netname, sizeof(old_netname))) {
+		switch (p->userinfo.gender) {
+			case 0: strcpy(gendermessage, "his");  break;
+			case 1: strcpy(gendermessage, "her");  break;
+			default: strcpy(gendermessage, "its");  break;
+		}
+		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", old_netname, gendermessage, p->userinfo.netname);
+	}
 
 	if (teamplay || ctfmode)
 		SV_CheckTeam (player);
