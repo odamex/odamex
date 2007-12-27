@@ -666,7 +666,8 @@ void SV_SetupUserInfo (player_t &player)
 {
 	int		old_team;
 	char   *skin;
-	char	old_netname[MAXPLAYERNAME+1], gendermessage[3];
+	char	old_netname[MAXPLAYERNAME+1];
+	std::string		gendermessage;
 
 	player_t* p;
 	p = &player;
@@ -703,11 +704,11 @@ void SV_SetupUserInfo (player_t &player)
 	// Compare names and broadcast if different.
 	if (strncmp(old_netname, "", sizeof(old_netname)) && strncmp(p->userinfo.netname, old_netname, sizeof(old_netname))) {
 		switch (p->userinfo.gender) {
-			case 0: strcpy(gendermessage, "his");  break;
-			case 1: strcpy(gendermessage, "her");  break;
-			default: strcpy(gendermessage, "its");  break;
+			case 0: gendermessage = "his";  break;
+			case 1: gendermessage = "her";  break;
+			default: gendermessage = "its";  break;
 		}
-		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", old_netname, gendermessage, p->userinfo.netname);
+		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", old_netname, gendermessage.c_str(), p->userinfo.netname);
 	}
 
 	if (teamplay || ctfmode)
