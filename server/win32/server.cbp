@@ -20,6 +20,7 @@
 					<Add option="-O2" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
+					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -63,6 +64,7 @@
 					<Add option="-O2" />
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -100,6 +102,7 @@
 					<Add option="-O2" />
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -301,6 +304,7 @@
 			<code_completion />
 			<envvars />
 			<debugger />
+			<lib_finder />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

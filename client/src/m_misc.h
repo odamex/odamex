@@ -28,8 +28,11 @@
 
 #include "doomtype.h"
 
-bool M_WriteFile (char const *name, void *source, int length);
-int M_ReadFile (char const *name, byte **buffer);
+BOOL M_WriteFile(char const *name, void *source, QWORD length);
+QWORD M_ReadFile(char const *name, BYTE **buffer);
+
+// [Russell] Simple function to check whether the given string is an iwad name
+BOOL M_IsIWAD(std::string filename);
 
 // [RH] M_ScreenShot now accepts a filename parameter.
 //		Pass a NULL to get the original behavior.
@@ -42,5 +45,6 @@ void STACK_ARGS M_SaveDefaults (void);
 std::string GetConfigPath (void);
 
 #endif
+
 
 

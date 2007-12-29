@@ -38,7 +38,8 @@
 void D_DoomMain (void);
 
 std::string BaseFileSearch (std::string, std::string ext = "", std::string hash = "");
-std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames);
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames, 
+                                     const std::vector<std::string> patch_files = std::vector<std::string>());
 
 // Called by IO functions when input is detected.
 void D_PostEvent (const event_t* ev);
@@ -58,5 +59,6 @@ void D_StartTitle (void);
 extern char *D_DrawIcon;
 
 #endif
+
 
 

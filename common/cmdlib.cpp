@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
@@ -230,6 +230,31 @@ void ExtractFilePath (const char *path, char *dest)
 	dest[src-path] = 0;
 }
 
+// [Russell] - Does exactly what it says, extracts the file extension of
+// a give filename 
+BOOL ExtractFileExtension (std::string filename, std::string &dest)
+{
+    QWORD last_dot = 0;
+    
+    if (&dest == NULL || !filename.length())
+        return false;
+    
+    // find the last dot, iterating backwards
+    last_dot = filename.find_last_of('.', filename.length());
+    
+    if (last_dot == std::string::npos)
+        return false;
+    
+    // extract extension without leading dot
+    dest = filename.substr(last_dot + 1, filename.length());
+    
+    // convert to uppercase
+    std::transform(dest.begin(), dest.end(), dest.begin(), toupper);
+    
+    // fun in the sun
+    return true;
+}
+
 //
 // ExtractFileBase
 //
@@ -312,5 +337,7 @@ BOOL IsNum (char *str)
 }
 
 
-VERSION_CONTROL (cmdlib_cpp, "$Id:$")
+VERSION_CONTROL (cmdlib_cpp, "$Id$")
+
+
 

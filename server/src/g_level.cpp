@@ -47,6 +47,7 @@
 #include "v_text.h"
 #include "d_main.h"
 #include "p_mobj.h"
+#include "m_misc.h"
 
 #include "gi.h"
 #include "minilzo.h"
@@ -241,13 +242,40 @@ END_COMMAND (map)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
-	std::vector<std::string> wads;
-	size_t i = 1;
+	std::vector<std::string> wads, patch_files, hashes;
+	
+	// [Russell] print out some useful info
+	if (argc == 1)
+	{
+	    Printf(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
+	    Printf(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
+	    Printf(PRINT_HIGH, "\n");
+	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
+	    Printf(PRINT_HIGH, "eg: wad doom\n");
+	    
+	    return;
+	}
+    
+    // add our iwad if it is one
+    if (M_IsIWAD(argv[1]))
+        wads.push_back(argv[1]);
 
-	while(i < argc)
-		wads.push_back(argv[i++]);
-
-	D_DoomWadReboot(wads);
+    // check whether they are wads or patch files
+	for (QWORD i = 1; i < argc; i++)
+	{
+		std::string ext;
+		
+		if (ExtractFileExtension(argv[i], ext))
+		{
+		    // don't allow subsequent iwads to be loaded
+		    if ((ext == "WAD") && !M_IsIWAD(argv[i]))
+                wads.push_back(argv[i]);
+            else if (ext == "DEH" || ext == "BEX")
+                patch_files.push_back(argv[i]);
+		}
+	}
+	
+	D_DoomWadReboot(wads, patch_files);
 
 	unnatural_level_progression = true;
 	G_DeferedInitNew (startmap);
@@ -2256,4 +2284,5 @@ cluster_info_t ClusterInfos[] = {
 };
 
 VERSION_CONTROL (g_level_cpp, "$Id$")
+
 

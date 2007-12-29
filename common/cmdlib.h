@@ -58,6 +58,7 @@ void	FixPathSeparator (std::string &path);
 
 void	DefaultExtension (std::string &path, const char *extension);
 void	ExtractFilePath (const char *path, char *dest);
+BOOL    ExtractFileExtension (std::string filename, std::string &dest); // [Russell]
 void 	ExtractFileBase (std::string path, std::string &dest);
 
 int		ParseHex (char *str);
@@ -77,5 +78,6 @@ unsigned short CRC_Value(unsigned short crcvalue);
 
 
 #endif
+
 
 

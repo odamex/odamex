@@ -1581,7 +1581,7 @@ BEGIN_COMMAND(playdemo)
 	if(argc > 1)
 		G_DeferedPlayDemo(argv[1]);
 	else
-		Printf(PRINT_HIGH, "usage: playdemo [lump or filename]");
+		Printf(PRINT_HIGH, "Usage: playdemo lumpname or file\n");
 }
 END_COMMAND(playdemo)
 
@@ -1969,4 +1969,6 @@ BOOL CheckIfExitIsGood (AActor *self)
 
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
+
+
 

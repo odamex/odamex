@@ -803,6 +803,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		"doom.wad",
 		"doom1.wad",
 		"freedoom.wad",
+		"freedm.wad",
 		NULL
 	};
 
@@ -1075,46 +1076,75 @@ void D_AddDefWads (std::string iwad)
 //
 // D_DoDefDehackedPatch
 //
-void D_DoDefDehackedPatch ()
+// [Russell] - Change the meaning, this will load multiple patch files if 
+//             specified
+void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vector<std::string>())
 {
-	// [RH] Apply any DeHackEd patch
-	{
-		bool noDef = false;
-		unsigned i;
+    DArgs files; 
+    BOOL noDef = false;
+    QWORD i;
 
-		// try .deh files on command line
-		DArgs files = Args.GatherFiles ("-deh", ".deh", false);
-		if (files.NumArgs() > 0)
-		{
-			for (i = 0; i < files.NumArgs(); i++)
-			{
-				std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
-				if (f.length())
-					DoDehPatch (f.c_str(), false);
-			}
-			noDef = true;
-		}
+    if (!patch_files.empty())
+    {
+        std::string f;
+        std::string ext;
+        
+        // we want the extension of the file
+        for (i = 0; i < patch_files.size(); i++)
+        {
+            if (ExtractFileExtension(patch_files[i], ext))
+            {
+                f = BaseFileSearch (patch_files[i], ext);
+            
+                if (f.length())
+                {
+                    DoDehPatch (f.c_str(), false);
+                
+                    noDef = true;
+                }
+            }
+        }
+    }
+    else // [Russell] - Only load if patch_files is empty
+    {
+        // try .deh files on command line
+   
+        files = Args.GatherFiles ("-deh", ".deh", false);
+    
+        if (files.NumArgs())
+        {
+            for (i = 0; i < files.NumArgs(); i++)
+            {
+                std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
 
-		// try .bex files on command line
-		{
-			DArgs files = Args.GatherFiles ("-bex", ".bex", false);
-			if (files.NumArgs() > 0)
-			{
-				for (i = 0; i < files.NumArgs(); i++)
-				{
-					printf (":%s\n", files.GetArg (i));
-					std::string f = BaseFileSearch (files.GetArg (i), ".BEX");
-					if (f.length())
-						printf ("%s\n", f.c_str()), DoDehPatch (f.c_str(), false);
-				}
-				noDef = true;
-			}
-		}
+                if (f.length())
+                    DoDehPatch (f.c_str(), false);
+            }
+            noDef = true;
+        }
 
-		// try default patches
-		if (!noDef)
-			DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
-	}
+        // remove the old arguments
+        files.FlushArgs();
+
+        // try .bex files on command line
+        files = Args.GatherFiles ("-bex", ".bex", false);
+    
+        if (files.NumArgs())
+        {
+            for (i = 0; i < files.NumArgs(); i++)
+            {
+                std::string f = BaseFileSearch (files.GetArg (i), ".BEX");
+
+                if (f.length())
+                    DoDehPatch (f.c_str(), false);
+            }
+            noDef = true;
+        }
+    }
+
+    // try default patches
+    if (!noDef)
+        DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
 }
 
 //
@@ -1125,13 +1155,14 @@ void D_DoDefDehackedPatch ()
 //
 void V_InitPalette (void);
 
-std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vector<std::string> needhashes)
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames, 
+                                     std::vector<std::string> needhashes, 
+                                     const std::vector<std::string> patch_files)
 {
-	using namespace std;
-	vector<size_t> fails;
+	std::vector<size_t> fails;
 	size_t i;
 
-	static vector<std::string> last_wadnames, last_hashes;
+	static std::vector<std::string> last_wadnames, last_hashes;
 	static bool last_success = false;
 
 	// already loaded these?
@@ -1159,7 +1190,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 
 	wadfiles.clear();
 
-	string custwad;
+	std::string custwad;
 	if(!wadnames.empty())
 		custwad = wadnames[0];
 
@@ -1167,7 +1198,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 
 	for(i = 0; i < wadnames.size(); i++)
 	{
-		string tmp = wadnames[i];
+		std::string tmp = wadnames[i];
 
 		// strip absolute paths, as they present a security risk
 		FixPathSeparator(tmp);
@@ -1179,7 +1210,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
         if (needhashes[i].empty())
             needhashes[i] = W_MD5(tmp);
 
-		string file = BaseFileSearch(tmp, ".wad", needhashes[i]);
+		std::string file = BaseFileSearch(tmp, ".wad", needhashes[i]);
 
 		if(file.length())
 			wadfiles.push_back(file);
@@ -1206,7 +1237,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 
 	D_InitStrings ();
 
-	D_DoDefDehackedPatch();
+	D_DoDefDehackedPatch(patch_files);
 
 	G_SetLevelStrings ();
 	S_ParseSndInfo();
@@ -1432,6 +1463,8 @@ void D_DoomMain (void)
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
+
+
 
 
 

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -22,12 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include <SDL.h>
 
@@ -39,8 +41,6 @@
 #else
 #include <unistd.h>
 #endif
-
-#include <ctype.h>
 
 #include "m_alloc.h"
 
@@ -87,59 +87,118 @@
 // put into newer configfiles.
 static CVAR (configver, CONFIGVERSIONSTR, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-bool M_WriteFile (char const *name, void *source, int length)
+//
+// M_WriteFile
+//
+BOOL M_WriteFile(char const *name, void *source, QWORD length)
 {
-	int handle;
-	int count;
+    FILE *handle;
+    int	count;
+	
+    handle = fopen(name, "wb");
 
-	handle = open ( name, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
-
-	if (handle == -1)
+    if (handle == NULL)
 	{
 		Printf(PRINT_HIGH, "Could not open file %s for writing\n", name);
 		return false;
 	}
 
-	count = write (handle, source, length);
-	close (handle);
-
+    count = fwrite(source, 1, length, handle);
+    fclose(handle);
+	
 	if (count < length)
 	{
 		Printf(PRINT_HIGH, "Failed while writing to file %s\n", name);
 		return false;
 	}
-
-	return true;
+		
+    return true;
 }
 
 
 //
 // M_ReadFile
 //
-int
-M_ReadFile
-( char const*	name,
-  byte**	buffer )
+QWORD M_ReadFile(char const *name, BYTE **buffer)
 {
-	int handle, count, length;
-	struct stat fileinfo;
-	byte *buf;
+    FILE *handle;
+    QWORD count, length;
+    BYTE *buf;
+	
+    handle = fopen(name, "rb");
+    
+	if (handle == NULL)
+	{
+		Printf(PRINT_HIGH, "Could not open file %s for reading\n", name);
+		return false;
+	}
 
-	handle = open (name, O_RDONLY | O_BINARY, 0666);
-	if (handle == -1)
-		I_Error ("Couldn't read file %s", name);
-	if (fstat (handle,&fileinfo) == -1)
-		I_Error ("Couldn't read file %s", name);
-	length = fileinfo.st_size;
-	buf = (byte *)Z_Malloc (length, PU_STATIC, NULL);
-	count = read (handle, buf, length);
-	close (handle);
+    // find the size of the file by seeking to the end and
+    // reading the current position
 
-	if (count < length)
-		I_Error ("Couldn't read file %s", name);
+    fseek(handle, 0, SEEK_END);
+    length = ftell(handle);
+    fseek(handle, 0, SEEK_SET);
+    
+    buf = (BYTE *)Z_Malloc (length, PU_STATIC, NULL);
+    count = fread(buf, 1, length, handle);
+    fclose (handle);
+	
+    if (count < length)
+	{
+		Printf(PRINT_HIGH, "Failed while reading from file %s\n", name);
+		return false;
+	}
+		
+    *buffer = buf;
+    return length;
+}
 
-	*buffer = buf;
-	return length;
+
+// [Russell] Simple function to check whether the given string is an iwad name
+//           it also removes the extension for short-hand comparison
+BOOL M_IsIWAD(std::string filename)
+{
+    // Valid IWAD file names
+    static const char *doomwadnames[] =
+    {
+        "doom2f.wad",
+        "doom2.wad",
+        "plutonia.wad",
+        "tnt.wad",
+        "doomu.wad", // Hack from original Linux version. Not necessary, but I threw it in anyway.
+        "doom.wad",
+        "doom1.wad",
+        "freedoom.wad",
+        "freedm.wad"
+    };
+    
+    std::vector<std::string> iwad_names(doomwadnames, 
+                                        doomwadnames + sizeof(doomwadnames)/sizeof(*doomwadnames));
+    
+    if (!filename.length())
+        return false;
+        
+    // lowercase our comparison string
+    std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
+    
+    // find our match if there is one
+    for (QWORD i = 0; i < iwad_names.size(); i++)
+    {
+        std::string no_ext;
+        
+        // create an extensionless version, for short-hand comparison
+        QWORD first_dot = iwad_names[i].find_last_of('.', 
+                                                     iwad_names[i].length());
+        
+        if (first_dot != std::string::npos)
+            no_ext = iwad_names[i].substr(0, first_dot);    
+        
+        if ((iwad_names[i] == filename) || (no_ext == filename))
+            return true;
+    }
+    
+    return false;
 }
 
 // [RH] Get configfile path.
@@ -150,7 +209,7 @@ std::string GetConfigPath (void)
 {
 	const char *p = Args.CheckValue ("-config");
 
-	if (p)
+	if(p)
 		return p;
 
 	return I_GetUserFileName ("odamex.cfg");
@@ -342,5 +401,6 @@ BEGIN_COMMAND (screenshot)
 END_COMMAND (screenshot)
 
 VERSION_CONTROL (m_misc_cpp, "$Id$")
+
 
 
