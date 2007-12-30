@@ -18,7 +18,6 @@
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
-					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -57,7 +56,6 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Os" />
-					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -89,7 +87,6 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Os" />
-					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
