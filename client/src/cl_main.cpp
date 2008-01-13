@@ -104,7 +104,7 @@ CVAR (teamplay,			"0", CVAR_SERVERINFO)
 
 // If freelook changes serverside or clientside,
 // work out what allowfreelook needs to be
-EXTERN_CVAR(sv_freelook);
+EXTERN_CVAR(sv_freelook)
 
 BEGIN_CUSTOM_CVAR (cl_freelook,		"0", CVAR_ARCHIVE)
 {
