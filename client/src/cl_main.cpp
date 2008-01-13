@@ -102,7 +102,23 @@ CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
 CVAR (allowcheats,		"0", CVAR_SERVERINFO)
 CVAR (teamplay,			"0", CVAR_SERVERINFO)
 
-CVAR (cl_freelook,		"0", CVAR_ARCHIVE)
+// If freelook changes serverside or clientside,
+// work out what allowfreelook needs to be
+EXTERN_CVAR(sv_freelook);
+
+BEGIN_CUSTOM_CVAR (cl_freelook,		"0", CVAR_ARCHIVE)
+{
+	allowfreelook.Set((BOOL)(cl_freelook) &&
+						((BOOL)(sv_freelook) || serverside));
+}
+END_CUSTOM_CVAR (cl_freelook)
+
+BEGIN_CUSTOM_CVAR (sv_freelook,		"0", CVAR_SERVERINFO)
+{
+	allowfreelook.Set((BOOL)(cl_freelook) &&
+						((BOOL)(sv_freelook) || serverside));
+}
+END_CUSTOM_CVAR (sv_freelook)
 
 CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
 
@@ -157,6 +173,8 @@ void CL_QuitNetGame(void)
 	noservermsgs = false;
 
 	serverside = clientside = true;
+	
+	sv_freelook = 1;
 
 	actor_by_netid.clear();
 	players.clear();
@@ -362,7 +380,7 @@ BEGIN_COMMAND (serverinfo)
 	Printf (PRINT_HIGH, "       allowexit - %d \n",	(BOOL)allowexit		);
     Printf (PRINT_HIGH, "  fragexitswitch - %d \n",	(BOOL)fragexitswitch);
 	Printf (PRINT_HIGH, "       allowjump - %d \n",	(BOOL)allowjump		);
-	Printf (PRINT_HIGH, "   allowfreelook - %d \n",	(BOOL)allowfreelook	);
+	Printf (PRINT_HIGH, "   allowfreelook - %d \n",	(BOOL)sv_freelook	);
 	Printf (PRINT_HIGH, "    infiniteammo - %d \n",	(BOOL)infiniteammo	);
 	Printf (PRINT_HIGH, "                      \n"									);
 	Printf (PRINT_HIGH, "      scorelimit - %d \n",	(int)scorelimit		);
@@ -1687,9 +1705,7 @@ void CL_GetServerSettings(void)
 	allowexit.Set((BOOL)MSG_ReadByte());
 	fragexitswitch.Set((BOOL)MSG_ReadByte());
 	allowjump.Set((BOOL)MSG_ReadByte());
-	allowfreelook.Set((BOOL)MSG_ReadByte());
-	if(!cl_freelook)
-		allowfreelook = "0";
+	sv_freelook.Set((BOOL)MSG_ReadByte());
 	infiniteammo.Set((BOOL)MSG_ReadByte());
 	MSG_ReadByte(); // denis - todo - use this for something
 
