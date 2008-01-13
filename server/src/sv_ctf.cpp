@@ -139,6 +139,9 @@ void CTF_Connect(player_t &player)
 		MSG_WriteByte (&cl->reliablebuf, CTFdata[i].state);
 		MSG_WriteByte (&cl->reliablebuf, CTFdata[i].flagger);
 	}
+
+	// send team scores to the client
+	SV_CTFEvent ((flag_t)0, SCORE_KILL, player);
 }
 
 //
@@ -452,7 +455,11 @@ static char *flag_sound[NUM_CTF_SCORE][2] =
 void CTF_Sound (flag_t f, flag_score_t event)
 {
 	for(size_t i = 0; i < NUMTEAMS; i++)
-		SV_SoundTeam (CHAN_VOICE, flag_sound[event][f == (flag_t)i], ATTN_NONE, i);
+	{
+		char *snd = flag_sound[event][f == (flag_t)i];
+		if(snd && *snd)
+			SV_SoundTeam (CHAN_VOICE, snd, ATTN_NONE, i);
+	}
 }
 
 
