@@ -343,7 +343,6 @@ void I_GetEvent (void)
    
    if(mousegrabbed)
    {
-      SDL_Event eventx;
       SDL_WarpMouse(screen->width/ 2, screen->height / 2);
    }
 
