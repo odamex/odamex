@@ -78,6 +78,7 @@ extern constate_e ConsoleState;
 #ifdef WIN32
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
+// denis - in fullscreen, prevent exit on accidental windows key press
 HHOOK g_hKeyboardHook;
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
@@ -103,9 +104,12 @@ bool I_InitInput (void)
 	noidle = Args.CheckParm ("-noidle");
 
 	SDL_EnableUNICODE(true);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+	
+	// denis - disable key repeats as they mess with the mouse in XP
+	SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
 
 #ifdef WIN32
+	// denis - in fullscreen, prevent exit on accidental windows key press
 	g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
 #endif
 
@@ -120,6 +124,7 @@ void STACK_ARGS I_ShutdownInput (void)
 	I_PauseMouse();
 
 #ifdef WIN32
+	// denis - in fullscreen, prevent exit on accidental windows key press
 	UnhookWindowsHookEx(g_hKeyboardHook);
 #endif
 }
@@ -178,11 +183,15 @@ EXTERN_CVAR (fullscreen)
 
 void I_PauseMouse (void)
 {
+   // denis - disable key repeats as they mess with the mouse in XP
+   SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+
    if (fullscreen)
     return;
    
    UngrabMouse();
    SetCursorState(true);
+   
    mousepaused = true;
 }
 
@@ -195,6 +204,9 @@ void I_ResumeMouse (void)
    {
       GrabMouse();
       SetCursorState(false);
+
+      // denis - disable key repeats as they mess with the mouse in XP
+      SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
    }
    mousepaused = false;
 }
