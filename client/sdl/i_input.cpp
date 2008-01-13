@@ -274,6 +274,12 @@ void I_GetEvent (void)
                flushmouse = false;
                break;
             }
+			// denis - ignore artificially inserted events (see SDL_WarpMouse below)
+			if(ev.motion.x == screen->width/2 &&
+			   ev.motion.y == screen->height/2)
+			{
+				break;
+			}
             mouseevent.data2 += AccelerateMouse(ev.motion.xrel);
             mouseevent.data3 -= AccelerateMouse(ev.motion.yrel);
             sendmouseevent = 1;
@@ -339,7 +345,6 @@ void I_GetEvent (void)
    {
       SDL_Event eventx;
       SDL_WarpMouse(screen->width/ 2, screen->height / 2);
-      SDL_PollEvent(&eventx);
    }
 
 }
