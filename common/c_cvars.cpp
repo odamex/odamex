@@ -484,7 +484,10 @@ BEGIN_COMMAND (set)
 		if (var->flags() & CVAR_NOSET)
 			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);
 		else if (!serverside && (var->flags() & CVAR_SERVERINFO))
-			Printf (PRINT_HIGH, "%s is under server control.\n", argv[1]);
+		{
+			Printf (PRINT_HIGH, "%s is under server control and hasn't been changed.\n", argv[1]);
+			return;
+		}
 		else if (var->flags() & CVAR_LATCH)
 		{
 			if(strcmp(var->cstring(), argv[2])) // if different from current value
