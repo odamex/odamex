@@ -30,6 +30,7 @@
 #include <wx/msgdlg.h>
 #include <wx/utils.h>
 #include <wx/tipwin.h>
+#include <wx/recguard.h>
 
 #include "main.h"
 #include "misc.h"
@@ -103,10 +104,10 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	wxXmlResource::Get()->LoadFrame(this, parent, _T("dlgMain")); 
   
-    SERVER_LIST = wxStaticCast((*this).FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
-    PLAYER_LIST = wxStaticCast((*this).FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
+    SERVER_LIST = wxStaticCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
+    PLAYER_LIST = wxStaticCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
 
-    SPLITTER_WINDOW = wxStaticCast((*this).FindWindow(spWINMAIN),wxSplitterWindow);
+    SPLITTER_WINDOW = wxStaticCast(FindWindow(spWINMAIN),wxSplitterWindow);
 
     SPLITTER_WINDOW->SetSashGravity(1.0);
 
@@ -352,6 +353,13 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     wxString Address = _T("");
     wxInt16 Port = 0;
 	
+    // prevent reentrancy
+    static wxRecursionGuardFlag s_rgf;
+    wxRecursionGuard recursion_guard(s_rgf);
+    
+    if (recursion_guard.IsInside())
+        return;	
+	
 	MServer->SetAddress(masters[index], 15000);
 
     if (!MServer->Query(500))
@@ -413,7 +421,13 @@ void dlgMain::OnGetList(wxCommandEvent &event)
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
 {   
-   
+    // prevent reentrancy
+    static wxRecursionGuardFlag s_rgf;
+    wxRecursionGuard recursion_guard(s_rgf);
+    
+    if (recursion_guard.IsInside())
+        return;	
+    
     if (!SERVER_LIST->GetItemCount() || !SERVER_LIST->GetSelectedItemCount())
         return;
         
@@ -449,6 +463,13 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
 
 void dlgMain::OnRefreshAll(wxCommandEvent &event)
 {
+    // prevent reentrancy
+    static wxRecursionGuardFlag s_rgf;
+    wxRecursionGuard recursion_guard(s_rgf);
+    
+    if (recursion_guard.IsInside())
+        return;	
+
     if (!MServer->GetServerCount())
         return;
         
