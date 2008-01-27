@@ -18,6 +18,11 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+// 02111-1307, USA.
+//
 // DESCRIPTION:
 //	mus2mid.cpp - Ben Ryves 2006 - http://benryves.com - benryves@benryves.com
 //	Use to convert a MUS file into a single track, type 0 MIDI file.
@@ -32,6 +37,7 @@
 
 #include "memio.h"
 #include "mus2midi.h"
+#include "doomdef.h"
 #include "m_swap.h"
 
 // MUS event codes
@@ -61,17 +67,16 @@ typedef enum
 // Structure to hold MUS file header
 typedef struct 
 {
-  unsigned char  id[4];
+  BYTE id[4];
   unsigned short scorelength;
   unsigned short scorestart;
   unsigned short primarychannels;
   unsigned short secondarychannels;
   unsigned short instrumentcount;
-} musheader;
-
+} PACKEDATTR musheader;
 
 // Standard MIDI type 0 header + track header
-static unsigned char midiheader[] = 
+static BYTE midiheader[] = 
 {
 	'M', 'T', 'h', 'd',     // Main header
 	0x00, 0x00, 0x00, 0x06, // Header size
@@ -83,7 +88,7 @@ static unsigned char midiheader[] =
 };
 
 // Cached channel velocities
-static unsigned char channelvelocities[] = 
+static BYTE channelvelocities[] = 
 { 
 	127, 127, 127, 127, 127, 127, 127, 127, 
 	127, 127, 127, 127, 127, 127, 127, 127 
@@ -95,9 +100,9 @@ static unsigned int queuedtime = 0;
 
 // Counter for the length of the track
 
-static unsigned int tracksize; 
+static unsigned int tracksize;
 
-static unsigned char mus2midi_translation[] = 
+static BYTE mus2midi_translation[] = 
 { 
 	0x00, 0x20, 0x01, 0x07, 0x0A, 0x0B, 0x5B, 0x5D,
 	0x40, 0x43, 0x78, 0x7B, 0x7E, 0x7F, 0x79 
@@ -105,10 +110,10 @@ static unsigned char mus2midi_translation[] =
 
 // Write timestamp to a MIDI file.
 
-static int midi_writetime(unsigned int time, MEMFILE *midioutput) 
+static BOOL midi_writetime(unsigned int time, MEMFILE *midioutput) 
 {
 	unsigned int buffer = time & 0x7F;
-	unsigned char writeval;
+	BYTE writeval;
 
 	while ((time >>= 7) != 0) 
 	{
@@ -118,11 +123,11 @@ static int midi_writetime(unsigned int time, MEMFILE *midioutput)
 
 	for (;;) 
 	{
-		writeval = (unsigned char)(buffer & 0xFF);
+		writeval = (BYTE)(buffer & 0xFF);
 
 		if (mem_fwrite(&writeval, 1, 1, midioutput) != 1) 
 		{
-			return 1;
+			return true;
 		}
 
 		++tracksize;
@@ -134,188 +139,188 @@ static int midi_writetime(unsigned int time, MEMFILE *midioutput)
 		else 
 		{
 			queuedtime = 0;
-			return 0;
+			return false;
 		}
 	}
 }
 
 
 // Write the end of track marker
-static int midi_writeendtrack(MEMFILE *midioutput) 
+static BOOL midi_writeendtrack(MEMFILE *midioutput) 
 {
-	unsigned char endtrack[] = {0xFF, 0x2F, 0x00};
+	BYTE endtrack[] = {0xFF, 0x2F, 0x00};
 
 	if (midi_writetime(queuedtime, midioutput)) 
 	{
-		return 1;
+		return true;
 	}
 
 	if (mem_fwrite(endtrack, 1, 3, midioutput) != 3) 
 	{
-		return 1;
+		return true;
 	}
 
 	tracksize += 3;
-	return 0;
+	return false;
 }
 
 // Write a key press event
-static int midi_writepresskey(unsigned char channel, unsigned char key, 
-                              unsigned char velocity, MEMFILE *midioutput) 
+static BOOL midi_writepresskey(BYTE channel, BYTE key, 
+                              BYTE velocity, MEMFILE *midioutput) 
 {
-	unsigned char working = midi_presskey | channel;
+	BYTE working = midi_presskey | channel;
 
 	if (midi_writetime(queuedtime, midioutput)) 
 	{
-		return 1;
+		return true;
 	}
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	working = key & 0x7F;
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 	
 	working = velocity & 0x7F;
 	
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	tracksize += 3;
 
-	return 0;
+	return false;
 }
 
 // Write a key release event
-static int midi_writereleasekey(unsigned char channel, unsigned char key, 
+static BOOL midi_writereleasekey(BYTE channel, BYTE key, 
                                 MEMFILE *midioutput) 
 {
-	unsigned char working = midi_releasekey | channel;
+	BYTE working = midi_releasekey | channel;
 
 	if (midi_writetime(queuedtime, midioutput)) 
 	{
-		return 1;
+		return true;
 	}
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	working = key & 0x7F;
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	working = 0;
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	tracksize += 3;
 
-	return 0;
+	return false;
 }
 
 // Write a pitch wheel/bend event
-static int midi_writepitchwheel(unsigned char channel, short wheel, 
+static BOOL midi_writepitchwheel(BYTE channel, short wheel, 
                                 MEMFILE *midioutput) 
 {
-	unsigned char working = midi_pitchwheel | channel;
+	BYTE working = midi_pitchwheel | channel;
 
 	if (midi_writetime(queuedtime, midioutput)) 
 	{
-		return 1;
+		return true;
 	}
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	working = wheel & 0x7F;
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	working = (wheel >> 7) & 0x7F;
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	tracksize += 3;
-	return 0;
+	return false;
 }
 
 // Write a patch change event
-static int midi_writechangepatch(unsigned char channel, unsigned char patch,
+static BOOL midi_writechangepatch(BYTE channel, BYTE patch,
                                  MEMFILE *midioutput) 
 {
-	unsigned char working = midi_changepatch | channel;
+	BYTE working = midi_changepatch | channel;
 	
 	if (midi_writetime(queuedtime, midioutput)) 
 	{
-		return 1;
+		return true;
 	}
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	working = patch & 0x7F;
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	tracksize += 2;
 
-	return 0;
+	return false;
 }
 
 
 
 // Write a valued controller change event
-static int midi_writechangecontroller_valued(unsigned char channel, 
-                                             unsigned char control, 
-                                             unsigned char value, 
+static BOOL midi_writechangecontroller_valued(BYTE channel, 
+                                             BYTE control, 
+                                             BYTE value, 
                                              MEMFILE *midioutput) 
 {
-	unsigned char working = midi_changecontroller | channel;
+	BYTE working = midi_changecontroller | channel;
 
 	if (midi_writetime(queuedtime, midioutput)) 
 	{
-		return 1;
+		return true;
 	}
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	working = control & 0x7F;
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 	// Quirk in vanilla DOOM? MUS controller values should be 
 	// 7-bit, not 8-bit.
@@ -332,62 +337,84 @@ static int midi_writechangecontroller_valued(unsigned char channel,
 
 	if (mem_fwrite(&working, 1, 1, midioutput) != 1) 
 	{
-		return 1;
+		return true;
 	}
 
 	tracksize += 3;
 
-	return 0;
+	return false;
 }
 
 // Write a valueless controller change event
-static int midi_writechangecontroller_valueless(unsigned char channel, 
-                                                unsigned char control, 
+static BYTE midi_writechangecontroller_valueless(BYTE channel, 
+                                                BYTE control, 
                                                 MEMFILE *midioutput) 
 {
 	return midi_writechangecontroller_valued(channel, control, 0, 
 			 			 midioutput);
 }
 
+static BOOL read_musheader(MEMFILE *file, musheader *header)
+{
+	BOOL result;
+
+	result = (mem_fread(&header->id, sizeof(BYTE), 4, file) == 4)
+              && (mem_fread(&header->scorelength, sizeof(short), 1, file) == 1)
+              && (mem_fread(&header->scorestart, sizeof(short), 1, file) == 1)
+              && (mem_fread(&header->primarychannels, sizeof(short), 1, file) == 1)
+              && (mem_fread(&header->secondarychannels, sizeof(short), 1, file) == 1)
+              && (mem_fread(&header->instrumentcount, sizeof(short), 1, file) == 1);
+
+	if (result)
+	{
+		header->scorelength = SHORT(header->scorelength);
+		header->scorestart = SHORT(header->scorestart);
+		header->primarychannels = SHORT(header->primarychannels);
+		header->secondarychannels = SHORT(header->secondarychannels);
+		header->instrumentcount = SHORT(header->instrumentcount);
+	}
+
+	return result;
+}
+
+
 // Read a MUS file from a stream (musinput) and output a MIDI file to 
 // a stream (midioutput).
 //
 // Returns 0 on success or 1 on failure.
 
-int mus2mid(MEMFILE *musinput, MEMFILE *midioutput) 
+QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput) 
 {
-	
 	// Header for the MUS file
 	musheader musfileheader;         
 
 	// Descriptor for the current MUS event
-	unsigned char eventdescriptor;   
+	BYTE eventdescriptor;   
 	int channel; // Channel number
 	musevent event; 
 	
 
 	// Bunch of vars read from MUS lump
-	unsigned char key;
-	unsigned char controllernumber;
-	unsigned char controllervalue;
+	BYTE key;
+	BYTE controllernumber;
+	BYTE controllervalue;
 
 	// Buffer used for MIDI track size record
-	unsigned char tracksizebuffer[4]; 
+	BYTE tracksizebuffer[4]; 
 
 	// Flag for when the score end marker is hit.
 	int hitscoreend = 0; 
 
 	// Temp working byte
-	unsigned char working; 
+	BYTE working; 
 	// Used in building up time delays
 	unsigned int timedelay; 
 
-	int i;
-
 	// Grab the header
-	if (mem_fread(&musfileheader, sizeof(musheader), 1, musinput) != 1) 
+
+	if (!read_musheader(musinput, &musfileheader))
 	{
-		return 1;
+		return true;
 	}
 
 	// Check MUS header
@@ -402,7 +429,7 @@ int mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 	}
 
 	// Seek to where the data is held
-	if (mem_fseek(musinput, SHORT(musfileheader.scorestart), MEM_SEEK_SET) != 0) 
+	if (mem_fseek(musinput, (long)musfileheader.scorestart, MEM_SEEK_SET) != 0) 
 	{
 		return 1;
 	}
@@ -410,9 +437,9 @@ int mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 	// So, we can assume the MUS file is faintly legit. Let's start 
 	// writing MIDI data...
 
-	mem_fwrite(midiheader, 1, 22, midioutput);
-    tracksize = 0;
-    
+	mem_fwrite(midiheader, 1, sizeof(midiheader), midioutput);
+	tracksize = 0;
+
 	// Now, process the MUS file:
 	while (!hitscoreend) 
 	{
@@ -420,8 +447,8 @@ int mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 
 		while (!hitscoreend) 
 		{
-
 			// Fetch channel number and event code:
+
 			if (mem_fread(&eventdescriptor, 1, 1, musinput) != 1) 
 			{
 				return 1;
@@ -445,7 +472,6 @@ int mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 			
 			switch (event) 
 			{
-
 				case mus_releasekey:
 					if (mem_fread(&key, 1, 1, musinput) != 1) 
 					{
@@ -591,11 +617,10 @@ int mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 		return 1;
 	}
 
-	for (i = 0; i < 4; ++i) 
-	{
-		tracksizebuffer[i] = (unsigned char)(tracksize >> 24);
-		tracksize <<= 8;
-	}
+    tracksizebuffer[0] = (tracksize >> 24) & 0xff;
+    tracksizebuffer[1] = (tracksize >> 16) & 0xff;
+    tracksizebuffer[2] = (tracksize >> 8) & 0xff;
+    tracksizebuffer[3] = tracksize & 0xff;
 
 	if (mem_fwrite(tracksizebuffer, 1, 4, midioutput) != 4) 
 	{
@@ -607,4 +632,5 @@ int mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 
 
 VERSION_CONTROL (mus2midi_cpp, "$Id$")
+
 

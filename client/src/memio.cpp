@@ -17,6 +17,11 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+// 02111-1307, USA.
+//
 // DESCRIPTION:
 //
 //	Emulates the IO functions in C stdio.h reading and writing to 
@@ -73,7 +78,7 @@ size_t mem_fread(void *buf, size_t size, size_t nmemb, MEMFILE *stream)
 	if (stream->mode != MODE_READ)
 	{
 		Printf(PRINT_HIGH, "mem_fread: not a read stream\n");
-		return 0;
+		return -1;
 	}
 
 	// Trying to read more bytes than we have left?
@@ -121,7 +126,7 @@ size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, MEMFILE *stream)
 
 	if (stream->mode != MODE_WRITE)
 	{
-		return 0;
+		return -1;
 	}
 	
 	// More bytes than can fit in the buffer?
@@ -216,4 +221,5 @@ char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
 }
 
 VERSION_CONTROL (memio_cpp, "$Id$")
+
 

@@ -28,6 +28,22 @@
 #include <stdio.h>
 #include <string.h>
 
+//
+// The packed attribute forces structures to be packed into the minimum 
+// space necessary.  If this is not done, the compiler may align structure
+// fields differently to optimise memory access, inflating the overall
+// structure size.  It is important to use the packed attribute on certain
+// structures where alignment is important, particularly data read/written
+// to disk.
+//
+
+#ifdef __GNUC__
+#define PACKEDATTR __attribute__((packed))
+#else
+#define PACKEDATTR
+#endif
+
+
 #include "farchive.h"
 
 //
@@ -370,5 +386,6 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 #define ORIG_FRICTION_FACTOR	2048	// original value
 
 #endif	// __DOOMDEF_H__
+
 
 

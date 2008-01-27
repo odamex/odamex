@@ -18,8 +18,13 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+// 02111-1307, USA.
+//
 // DESCRIPTION:
-//	mus2mid.cpp - http://benryves.com - benryves@benryves.com
+//	mus2mid.h - http://benryves.com - benryves@benryves.com
 //	Use to convert a MUS file into a single track, type 0 MIDI file.
 // 
 //	[Russell] - Minor modifications to make it compile
@@ -30,9 +35,11 @@
 #ifndef MUS2MID_H
 #define MUS2MID_H
 
+#include "doomtype.h"
 #include "memio.h"
 
-int mus2mid(MEMFILE *musinput, MEMFILE *midioutput);
+QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput);
 
 #endif /* #ifndef MUS2MID_H */
+
 
