@@ -127,6 +127,18 @@ int main(int argc, char *argv[])
         	putenv("SDL_VIDEODRIVER=directx");     
     	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-gdi") > 0)
         	putenv("SDL_VIDEODRIVER=windib");
+        	
+
+        // Set the process affinity mask to 1 on Windows, so that all threads
+        // run on the same processor.  This is a workaround for a bug in 
+        // SDL_mixer that causes occasional crashes.
+
+        if (!SetProcessAffinityMask(GetCurrentProcess(), 1))
+        {
+            fprintf(errout, 
+                    "Failed to set process affinity mask (%d)\n",
+                    GetLastError());
+        }
 #endif
 		
 		atterm(closelog);
