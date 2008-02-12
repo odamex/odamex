@@ -45,6 +45,7 @@ struct launchercfg_t
 #include <wx/listbox.h>
 #include <wx/sizer.h>
 #include <wx/textctrl.h>
+#include <wx/filepicker.h>
 
 // config file value names
 #define GETLISTONSTART      "GET_LIST_ON_START"
@@ -72,7 +73,7 @@ class dlgConfig: public wxDialog
 	protected:
         void OnOK(wxCommandEvent &event);
         
-        void OnChooseDir(wxCommandEvent &event);
+        void OnChooseDir(wxFileDirPickerEvent &event);
         void OnAddDir(wxCommandEvent &event);
         void OnReplaceDir(wxCommandEvent &event);
         void OnDeleteDir(wxCommandEvent &event);
@@ -84,16 +85,16 @@ class dlgConfig: public wxDialog
         
         void OnCheckedBox(wxCommandEvent &event);
         
-        void OnChooseOdamexPath(wxCommandEvent &event);
+        void OnChooseOdamexPath(wxFileDirPickerEvent &event);
         
         wxCheckBox *MASTER_CHECKBOX;
         wxCheckBox *BLOCKED_CHECKBOX;
 
         wxListBox *WAD_LIST;
 
-        wxTextCtrl *DIR_BOX;
+        wxDirPickerCtrl *DIR_BOX;
 
-        wxTextCtrl *TXT_ODXPATH;
+        wxFilePickerCtrl *TXT_ODXPATH;
 
         wxFileConfig ConfigInfo;
 

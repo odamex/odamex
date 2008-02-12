@@ -148,15 +148,8 @@
 			<Add directory=".\res" />
 		</Linker>
 		<ExtraCommands>
-			<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\dlgmain.xrc res\dlgservers.xrc res\dlgconfig.xrc" />
+			<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc" />
 		</ExtraCommands>
-		<Unit filename="res\dlgconfig.xrc">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="res\dlgmain.xrc">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="res\dlgservers.xrc" />
 		<Unit filename="res\odalaunch.rc">
 			<Option compilerVar="WINDRES" />
 			<Option target="Win Release" />
@@ -167,6 +160,7 @@
 			<Option target="Win Debug" />
 		</Unit>
 		<Unit filename="res\xrc_resource.h" />
+		<Unit filename="res\xrc_resource.xrc" />
 		<Unit filename="src\dlg_config.cpp">
 			<Option virtualFolder="dialogs\" />
 		</Unit>
@@ -213,7 +207,6 @@
 			<code_completion />
 			<envvars />
 			<debugger />
-			<lib_finder />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

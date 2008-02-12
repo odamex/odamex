@@ -32,14 +32,12 @@
 #include <wx/tipwin.h>
 #include <wx/recguard.h>
 
-#include "main.h"
 #include "misc.h"
 
 // Control ID assignments for events
 // application icon
 
 // lists
-static wxInt32 spWINMAIN = XRCID("spWINMAIN");
 static wxInt32 ID_LSTSERVERS = XRCID("ID_LSTSERVERS");
 static wxInt32 ID_LSTPLAYERS = XRCID("ID_LSTPLAYERS");
 
@@ -60,6 +58,9 @@ static wxInt32 ID_MNUFORUM = XRCID("ID_MNUFORUM");
 static wxInt32 ID_MNUWIKI = XRCID("ID_MNUWIKI");
 static wxInt32 ID_MNUCHANGELOG = XRCID("ID_MNUCHANGELOG");
 static wxInt32 ID_MNUREPORTBUG = XRCID("ID_MNUREPORTBUG");
+
+// custom events
+DEFINE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL)
 
 // Event handlers
 BEGIN_EVENT_TABLE(dlgMain,wxFrame)
@@ -85,7 +86,11 @@ BEGIN_EVENT_TABLE(dlgMain,wxFrame)
 	EVT_MENU(ID_MNUWIKI, dlgMain::OnOpenWiki)
     EVT_MENU(ID_MNUCHANGELOG, dlgMain::OnOpenChangeLog)
     EVT_MENU(ID_MNUREPORTBUG, dlgMain::OnOpenReportBug)
-        
+
+#if ODL_ENABLE_THREADS        
+    // thread events
+    EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)    
+#endif
     // misc events
     EVT_LIST_ITEM_SELECTED(ID_LSTSERVERS, dlgMain::OnServerListClick)
     EVT_LIST_ITEM_ACTIVATED(ID_LSTSERVERS, dlgMain::OnServerListDoubleClick)
@@ -106,22 +111,11 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
   
     SERVER_LIST = wxStaticCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
     PLAYER_LIST = wxStaticCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
-
-    SPLITTER_WINDOW = wxStaticCast(FindWindow(spWINMAIN),wxSplitterWindow);
-
-    SPLITTER_WINDOW->SetSashGravity(1.0);
-
+    
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, NULL);
     server_dlg = new dlgServers(NULL);
 
-	status_bar = new wxStatusBar(this, -1);
-	SetStatusBar(status_bar);
-	
-	GetStatusBar()->SetFieldsCount(4);
-
-    SetToolBar(wxXmlResource::Get()->LoadToolBar(this, _T("ID_TOOLBAR")));
-	
 	// set up the list controls
     SERVER_LIST->InsertColumn(0,_T("Server name"),wxLIST_FORMAT_LEFT,150);
 	SERVER_LIST->InsertColumn(1,_T("Ping"),wxLIST_FORMAT_LEFT,50);
@@ -141,6 +135,20 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	MServer = new MasterServer;
     
     QServer = NULL;
+
+#if ODL_ENABLE_THREADS
+    // Create monitor thread and run it
+    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
+    {
+        wxMessageBox(_T("Could not create monitor thread!"), 
+                     _T("Error"), 
+                     wxOK | wxICON_ERROR);
+                     
+        wxExit();
+    }
+    
+    GetThread()->Run();
+#endif
     
     // get master list on application start
     if (launchercfg_s.get_list_on_start)
@@ -149,13 +157,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     
         wxPostEvent(this, event);
     }
-
-    // set window size
-    this->SetSize(wxSize(780, 500));
-    // set minimum window size
-    this->SetSizeHints(wxSize(780, 500));
-    
-    this->CentreOnScreen();
 }
 
 // Window Destructor
@@ -197,6 +198,88 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
                     launchercfg_s.odamex_directory, 
                     launchercfg_s.wad_paths);
 }
+
+#if ODL_ENABLE_THREADS
+// [Russell] - Monitor thread entry point
+void *dlgMain::Entry()
+{
+    bool Running = true;
+           
+    while (Running)
+    {
+        // Can I order a master server request with a list of server addresses
+        // to go with that kthx?
+        if (mtcs_Request.Signal == mtcs_getmaster)
+        {
+            static const wxString masters[2] = 
+            {
+                _T("odamex.net"),
+                _T("odamex.org")
+            };
+            
+            static int index = 0;
+            
+            MServer->SetAddress(masters[index], 15000);
+
+            // TODO: Clean this up
+            if (!MServer->Query(500))
+            {
+                index = !index;
+        
+                MServer->SetAddress(masters[index], 15000);
+            
+                if (!MServer->Query(500))
+                {
+                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_master_timeout);
+                    
+                    wxPostEvent(this, event);
+                }
+                else
+                {
+                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_master_success);
+                    
+                    wxPostEvent(this, event);                    
+                }
+            }
+            else
+            {
+                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_master_success);
+                    
+                wxPostEvent(this, event);                    
+            
+            }
+
+            // You MUST clear the signal after you've received it! otherwise
+            // it will continue to generate
+            mtcs_Request.Signal = mtcs_none;
+        }
+    
+        // Give everything else some cpu time, please be considerate!
+        GetThread()->Sleep(1);
+               
+        // Something requested the thread to exit
+        if (GetThread()->TestDestroy())
+            Running = false;
+    }
+    
+    return NULL;
+}
+
+void dlgMain::OnMonitorSignal(wxCommandEvent& event)
+{
+    switch (event.GetId())
+    {
+        case mtrs_master_success:
+            GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
+            GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
+            break;
+        case mtrs_master_timeout:
+            wxMessageBox(_T("Could not query any of the master servers"), _T("Error"), wxOK | wxICON_ERROR);
+        default:
+            break;
+    }
+}
+#endif
 
 // display extra information for a server
 void dlgMain::OnServerListRightClick(wxListEvent& event)
@@ -360,6 +443,11 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     if (recursion_guard.IsInside())
         return;	
 	
+	#if ODL_ENABLE_THREADS
+	// Request a list of servers
+	mtcs_Request.Signal = mtcs_getmaster;
+	#else
+	
 	MServer->SetAddress(masters[index], 15000);
 
     if (!MServer->Query(500))
@@ -417,6 +505,7 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
+    #endif
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
