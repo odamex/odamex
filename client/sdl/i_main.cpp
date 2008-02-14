@@ -132,7 +132,8 @@ int main(int argc, char *argv[])
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in 
         // SDL_mixer that causes occasional crashes.
-
+        // Thanks to entryway and fraggle for this.
+        
         if (!SetProcessAffinityMask(GetCurrentProcess(), 1))
         {
             fprintf(errout, 
