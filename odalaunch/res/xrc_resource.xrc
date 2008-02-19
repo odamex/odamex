@@ -91,46 +91,46 @@
 				<label>tool</label>
 				<tooltip></tooltip>
 				<longhelp></longhelp>
-				<bitmap>D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/odalaunch-sysmenu.ico</bitmap>
+				<bitmap>./odalaunch-sysmenu.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="ID_MNUREFRESHSERVER">
 				<label>tool</label>
 				<tooltip></tooltip>
 				<longhelp></longhelp>
-				<bitmap>D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnrefresh.ico</bitmap>
+				<bitmap>./btnrefresh.ico</bitmap>
 			</object>
 			<object class="tool" name="ID_MNUREFRESHALL">
 				<label>tool</label>
 				<tooltip></tooltip>
 				<longhelp></longhelp>
-				<bitmap>D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnrefreshall.ico</bitmap>
+				<bitmap>./btnrefreshall.ico</bitmap>
 			</object>
 			<object class="tool" name="ID_MNUGETLIST">
 				<label>tool</label>
 				<tooltip></tooltip>
 				<longhelp></longhelp>
-				<bitmap>D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnlist.ico</bitmap>
+				<bitmap>./btnlist.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="ID_MNUSETTINGS">
 				<label>tool</label>
 				<tooltip></tooltip>
 				<longhelp></longhelp>
-				<bitmap>D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnsettings.ico</bitmap>
+				<bitmap>./btnsettings.ico</bitmap>
 			</object>
 			<object class="tool" name="ID_MNUABOUT">
 				<label>tool</label>
 				<tooltip></tooltip>
 				<longhelp></longhelp>
-				<bitmap>D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnhelp.ico</bitmap>
+				<bitmap>./btnhelp.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="ID_MNUEXIT">
 				<label>tool</label>
 				<tooltip></tooltip>
 				<longhelp></longhelp>
-				<bitmap>D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnexit.ico</bitmap>
+				<bitmap>./btnexit.ico</bitmap>
 			</object>
 		</object>
 		<object class="wxBoxSizer">

@@ -19,7 +19,7 @@
         <property name="relative_path">1</property>
         <property name="use_enum">0</property>
         <property name="use_microsoft_bom">0</property>
-        <object class="Frame" expanded="0">
+        <object class="Frame" expanded="1">
             <property name="bg">wxSYS_COLOUR_BTNFACE</property>
             <property name="center">wxBOTH</property>
             <property name="context_help"></property>
@@ -358,7 +358,7 @@
                     </object>
                 </object>
             </object>
-            <object class="wxToolBar" expanded="0">
+            <object class="wxToolBar" expanded="1">
                 <property name="bg"></property>
                 <property name="bitmapsize">38,38</property>
                 <property name="context_help"></property>
@@ -406,7 +406,7 @@
                 <event name="OnSize"></event>
                 <event name="OnUpdateUI"></event>
                 <object class="tool" expanded="1">
-                    <property name="bitmap">D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/odalaunch-sysmenu.ico; Load From File</property>
+                    <property name="bitmap">./odalaunch-sysmenu.ico; Load From File</property>
                     <property name="id">ID_MNULAUNCH</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
@@ -421,7 +421,7 @@
                 </object>
                 <object class="toolSeparator" expanded="1" />
                 <object class="tool" expanded="1">
-                    <property name="bitmap">D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnrefresh.ico; Load From File</property>
+                    <property name="bitmap">./btnrefresh.ico; Load From File</property>
                     <property name="id">ID_MNUREFRESHSERVER</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
@@ -435,7 +435,7 @@
                     <event name="OnUpdateUI"></event>
                 </object>
                 <object class="tool" expanded="1">
-                    <property name="bitmap">D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnrefreshall.ico; Load From File</property>
+                    <property name="bitmap">./btnrefreshall.ico; Load From File</property>
                     <property name="id">ID_MNUREFRESHALL</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
@@ -449,7 +449,7 @@
                     <event name="OnUpdateUI"></event>
                 </object>
                 <object class="tool" expanded="1">
-                    <property name="bitmap">D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnlist.ico; Load From File</property>
+                    <property name="bitmap">./btnlist.ico; Load From File</property>
                     <property name="id">ID_MNUGETLIST</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
@@ -464,7 +464,7 @@
                 </object>
                 <object class="toolSeparator" expanded="1" />
                 <object class="tool" expanded="1">
-                    <property name="bitmap">D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnsettings.ico; Load From File</property>
+                    <property name="bitmap">./btnsettings.ico; Load From File</property>
                     <property name="id">ID_MNUSETTINGS</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
@@ -478,7 +478,7 @@
                     <event name="OnUpdateUI"></event>
                 </object>
                 <object class="tool" expanded="1">
-                    <property name="bitmap">D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnhelp.ico; Load From File</property>
+                    <property name="bitmap">./btnhelp.ico; Load From File</property>
                     <property name="id">ID_MNUABOUT</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
@@ -493,7 +493,7 @@
                 </object>
                 <object class="toolSeparator" expanded="1" />
                 <object class="tool" expanded="1">
-                    <property name="bitmap">D:/Russell/Projects/multi/odamex2/trunk/odalaunch/res/btnexit.ico; Load From File</property>
+                    <property name="bitmap">./btnexit.ico; Load From File</property>
                     <property name="id">ID_MNUEXIT</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
@@ -857,7 +857,7 @@
                 <event name="OnUpdateUI"></event>
             </object>
         </object>
-        <object class="Dialog" expanded="1">
+        <object class="Dialog" expanded="0">
             <property name="bg"></property>
             <property name="center">wxBOTH</property>
             <property name="context_help"></property>
