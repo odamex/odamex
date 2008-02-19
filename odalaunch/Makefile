@@ -17,7 +17,7 @@ WXRC = wxrc
 CFLAGS = $(shell $(WXCONFIG) --cflags) -g
 LFLAGS = $(shell $(WXCONFIG) --libs) -g
 
-RESOURCES = res/dlgconfig.xrc res/dlgmain.xrc
+RESOURCES = res/xrc_resource.xrc
 
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
 
