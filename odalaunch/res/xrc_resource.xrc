@@ -29,7 +29,7 @@
 				<object class="wxMenuItem" name="ID_MNUQLAUNCH">
 					<label>Quick Launch</label>
 					<help>Run Odamex locally</help>
-				</object>				
+				</object>
 				<object class="separator" />
 				<object class="wxMenuItem" name="ID_MNUGETLIST">
 					<label>Get Master List</label>
@@ -92,97 +92,89 @@
 			<packing>1</packing>
 			<separation>5</separation>
 			<object class="tool" name="ID_MNULAUNCH">
-				<label>tool</label>
-				<tooltip></tooltip>
-				<longhelp></longhelp>
+				<label>Launch</label>
+				<tooltip>Connect to the selected server</tooltip>
+				<longhelp>Connect to the selected server</longhelp>
 				<bitmap>./odalaunch-sysmenu.ico</bitmap>
 			</object>
 			<object class="tool" name="ID_MNUQLAUNCH">
-				<label>tool</label>
-				<tooltip></tooltip>
-				<longhelp></longhelp>
+				<label>Quick Launch</label>
+				<tooltip>Run Odamex locally</tooltip>
+				<longhelp>Run Odamex locally</longhelp>
 				<bitmap>./odaqlaunch.ico</bitmap>
-			</object>			
+			</object>
 			<object class="separator" />
 			<object class="tool" name="ID_MNUREFRESHSERVER">
 				<label>tool</label>
-				<tooltip></tooltip>
-				<longhelp></longhelp>
+				<tooltip>Refresh the selected server</tooltip>
+				<longhelp>Refresh the selected server</longhelp>
 				<bitmap>./btnrefresh.ico</bitmap>
 			</object>
 			<object class="tool" name="ID_MNUREFRESHALL">
 				<label>tool</label>
-				<tooltip></tooltip>
-				<longhelp></longhelp>
+				<tooltip>Refresh all servers currently displayed</tooltip>
+				<longhelp>Refresh all servers currently displayed</longhelp>
 				<bitmap>./btnrefreshall.ico</bitmap>
 			</object>
 			<object class="tool" name="ID_MNUGETLIST">
 				<label>tool</label>
-				<tooltip></tooltip>
-				<longhelp></longhelp>
+				<tooltip>Get a new list of servers</tooltip>
+				<longhelp>Get a new list of servers</longhelp>
 				<bitmap>./btnlist.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="ID_MNUSETTINGS">
 				<label>tool</label>
-				<tooltip></tooltip>
-				<longhelp></longhelp>
+				<tooltip>Configure the launcher</tooltip>
+				<longhelp>Configure the launcher</longhelp>
 				<bitmap>./btnsettings.ico</bitmap>
 			</object>
 			<object class="tool" name="ID_MNUABOUT">
 				<label>tool</label>
-				<tooltip></tooltip>
-				<longhelp></longhelp>
+				<tooltip>About the Odamex Launcher</tooltip>
+				<longhelp>About the Odamex Launcher</longhelp>
 				<bitmap>./btnhelp.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="ID_MNUEXIT">
 				<label>tool</label>
-				<tooltip></tooltip>
-				<longhelp></longhelp>
+				<tooltip>Exit the launcher</tooltip>
+				<longhelp>Exit the launcher</longhelp>
 				<bitmap>./btnexit.ico</bitmap>
 			</object>
 		</object>
-		<object class="wxBoxSizer">
-			<orient>wxVERTICAL</orient>
-			<object class="sizeritem">
-				<option>1</option>
-				<flag>wxEXPAND</flag>
-				<border>5</border>
-				<object class="wxSplitterWindow" name="spWINMAIN">
-					<style>wxSP_3D</style>
-					<bg>#d4d0c8</bg>
-					<sashpos>0</sashpos>
-					<gravity>1</gravity>
-					<minsize>140</minsize>
-					<orientation>horizontal</orientation>
-					<object class="wxPanel" name="m_panel3">
-						<style>wxTAB_TRAVERSAL</style>
-						<object class="wxBoxSizer">
-							<orient>wxVERTICAL</orient>
-							<object class="sizeritem">
-								<option>1</option>
-								<flag>wxALL|wxEXPAND</flag>
-								<border>0</border>
-								<object class="wxListCtrl" name="ID_LSTSERVERS" subclass="wxAdvancedListCtrl">
-									<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
-									<size>780,150</size>
-								</object>
-							</object>
+		<object class="wxSplitterWindow" name="spWINMAIN">
+			<style>wxSP_3D</style>
+			<bg>#d4d0c8</bg>
+			<sashpos>0</sashpos>
+			<gravity>1</gravity>
+			<minsize>140</minsize>
+			<orientation>horizontal</orientation>
+			<object class="wxPanel" name="m_panel3">
+				<style>wxTAB_TRAVERSAL</style>
+				<object class="wxBoxSizer">
+					<orient>wxVERTICAL</orient>
+					<object class="sizeritem">
+						<option>1</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>0</border>
+						<object class="wxListCtrl" name="ID_LSTSERVERS" subclass="wxAdvancedListCtrl">
+							<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+							<size>780,150</size>
 						</object>
 					</object>
-					<object class="wxPanel" name="m_panel4">
-						<style>wxTAB_TRAVERSAL</style>
-						<object class="wxBoxSizer">
-							<orient>wxVERTICAL</orient>
-							<object class="sizeritem">
-								<option>1</option>
-								<flag>wxALL|wxEXPAND</flag>
-								<border>0</border>
-								<object class="wxListCtrl" name="ID_LSTPLAYERS" subclass="wxAdvancedListCtrl">
-									<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
-								</object>
-							</object>
+				</object>
+			</object>
+			<object class="wxPanel" name="m_panel4">
+				<style>wxTAB_TRAVERSAL</style>
+				<object class="wxBoxSizer">
+					<orient>wxVERTICAL</orient>
+					<object class="sizeritem">
+						<option>1</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>0</border>
+						<object class="wxListCtrl" name="ID_LSTPLAYERS" subclass="wxAdvancedListCtrl">
+							<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
 						</object>
 					</object>
 				</object>
@@ -243,11 +235,10 @@
 						<option>0</option>
 						<flag>wxALL|wxEXPAND</flag>
 						<border>5</border>
-						<object class="wxFilePickerCtrl" name="ID_FPCHOOSEODAMEXPATH">
+						<object class="wxDirPickerCtrl" name="ID_FPCHOOSEODAMEXPATH">
 							<value></value>
-							<message>Select Odamex Client</message>
-							<wildcard>*.*</wildcard>
-							<style>wxFLP_DEFAULT_STYLE</style>
+							<message>Select your Odamex folder</message>
+							<style>wxDIRP_DEFAULT_STYLE</style>
 						</object>
 					</object>
 				</object>

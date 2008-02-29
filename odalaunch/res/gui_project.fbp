@@ -19,7 +19,7 @@
         <property name="relative_path">1</property>
         <property name="use_enum">0</property>
         <property name="use_microsoft_bom">0</property>
-        <object class="Frame" expanded="1">
+        <object class="Frame" expanded="0">
             <property name="bg">wxSYS_COLOUR_BTNFACE</property>
             <property name="center">wxBOTH</property>
             <property name="context_help"></property>
@@ -41,7 +41,7 @@
             <property name="window_extra_style"></property>
             <property name="window_name"></property>
             <property name="window_style">wxTAB_TRAVERSAL</property>
-            <property name="xrc_skip_sizer">0</property>
+            <property name="xrc_skip_sizer">1</property>
             <event name="OnActivate"></event>
             <event name="OnActivateApp"></event>
             <event name="OnChar"></event>
@@ -71,7 +71,7 @@
             <event name="OnSetFocus"></event>
             <event name="OnSize"></event>
             <event name="OnUpdateUI"></event>
-            <object class="wxMenuBar" expanded="0">
+            <object class="wxMenuBar" expanded="1">
                 <property name="bg"></property>
                 <property name="context_help"></property>
                 <property name="enabled">1</property>
@@ -166,6 +166,21 @@
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Launch</property>
                         <property name="name">ID_MNULAUNCH</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut"></property>
+                        <property name="unchecked_bitmap"></property>
+                        <event name="OnMenuSelection"></event>
+                        <event name="OnUpdateUI"></event>
+                    </object>
+                    <object class="wxMenuItem" expanded="1">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help">Run Odamex locally</property>
+                        <property name="id">wxID_ANY</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">Quick Launch</property>
+                        <property name="name">ID_MNUQLAUNCH</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -409,10 +424,24 @@
                     <property name="bitmap">./odalaunch-sysmenu.ico; Load From File</property>
                     <property name="id">ID_MNULAUNCH</property>
                     <property name="kind">wxITEM_NORMAL</property>
-                    <property name="label">tool</property>
+                    <property name="label">Launch</property>
                     <property name="name">ID_MNULAUNCH</property>
-                    <property name="statusbar"></property>
-                    <property name="tooltip"></property>
+                    <property name="statusbar">Connect to the selected server</property>
+                    <property name="tooltip">Connect to the selected server</property>
+                    <event name="OnMenuSelection"></event>
+                    <event name="OnToolClicked"></event>
+                    <event name="OnToolEnter"></event>
+                    <event name="OnToolRClicked"></event>
+                    <event name="OnUpdateUI"></event>
+                </object>
+                <object class="tool" expanded="1">
+                    <property name="bitmap">./odaqlaunch.ico; Load From File</property>
+                    <property name="id">wxID_ANY</property>
+                    <property name="kind">wxITEM_NORMAL</property>
+                    <property name="label">Quick Launch</property>
+                    <property name="name">ID_MNUQLAUNCH</property>
+                    <property name="statusbar">Run Odamex locally</property>
+                    <property name="tooltip">Run Odamex locally</property>
                     <event name="OnMenuSelection"></event>
                     <event name="OnToolClicked"></event>
                     <event name="OnToolEnter"></event>
@@ -426,8 +455,8 @@
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
                     <property name="name">ID_MNUREFRESHSERVER</property>
-                    <property name="statusbar"></property>
-                    <property name="tooltip"></property>
+                    <property name="statusbar">Refresh the selected server</property>
+                    <property name="tooltip">Refresh the selected server</property>
                     <event name="OnMenuSelection"></event>
                     <event name="OnToolClicked"></event>
                     <event name="OnToolEnter"></event>
@@ -440,8 +469,8 @@
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
                     <property name="name">ID_MNUREFRESHALL</property>
-                    <property name="statusbar"></property>
-                    <property name="tooltip"></property>
+                    <property name="statusbar">Refresh all servers currently displayed</property>
+                    <property name="tooltip">Refresh all servers currently displayed</property>
                     <event name="OnMenuSelection"></event>
                     <event name="OnToolClicked"></event>
                     <event name="OnToolEnter"></event>
@@ -454,8 +483,8 @@
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
                     <property name="name">ID_MNUGETLIST</property>
-                    <property name="statusbar"></property>
-                    <property name="tooltip"></property>
+                    <property name="statusbar">Get a new list of servers</property>
+                    <property name="tooltip">Get a new list of servers</property>
                     <event name="OnMenuSelection"></event>
                     <event name="OnToolClicked"></event>
                     <event name="OnToolEnter"></event>
@@ -469,8 +498,8 @@
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
                     <property name="name">ID_MNUSETTINGS</property>
-                    <property name="statusbar"></property>
-                    <property name="tooltip"></property>
+                    <property name="statusbar">Configure the launcher</property>
+                    <property name="tooltip">Configure the launcher</property>
                     <event name="OnMenuSelection"></event>
                     <event name="OnToolClicked"></event>
                     <event name="OnToolEnter"></event>
@@ -483,8 +512,8 @@
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
                     <property name="name">ID_MNUABOUT</property>
-                    <property name="statusbar"></property>
-                    <property name="tooltip"></property>
+                    <property name="statusbar">About the Odamex Launcher</property>
+                    <property name="tooltip">About the Odamex Launcher</property>
                     <event name="OnMenuSelection"></event>
                     <event name="OnToolClicked"></event>
                     <event name="OnToolEnter"></event>
@@ -498,8 +527,8 @@
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
                     <property name="name">ID_MNUEXIT</property>
-                    <property name="statusbar"></property>
-                    <property name="tooltip"></property>
+                    <property name="statusbar">Exit the launcher</property>
+                    <property name="tooltip">Exit the launcher</property>
                     <event name="OnMenuSelection"></event>
                     <event name="OnToolClicked"></event>
                     <event name="OnToolEnter"></event>
@@ -857,7 +886,7 @@
                 <event name="OnUpdateUI"></event>
             </object>
         </object>
-        <object class="Dialog" expanded="0">
+        <object class="Dialog" expanded="1">
             <property name="bg"></property>
             <property name="center">wxBOTH</property>
             <property name="context_help"></property>
@@ -1052,33 +1081,32 @@
                             <property name="border">5</property>
                             <property name="flag">wxALL|wxEXPAND</property>
                             <property name="proportion">0</property>
-                            <object class="wxFilePickerCtrl" expanded="1">
+                            <object class="wxDirPickerCtrl" expanded="1">
                                 <property name="bg"></property>
                                 <property name="context_help"></property>
                                 <property name="enabled">1</property>
                                 <property name="fg"></property>
                                 <property name="font"></property>
                                 <property name="hidden">0</property>
-                                <property name="id">ID_FPCHOOSEODAMEXPATH</property>
+                                <property name="id">wxID_ANY</property>
                                 <property name="maximum_size"></property>
-                                <property name="message">Select Odamex Client</property>
+                                <property name="message">Select your Odamex folder</property>
                                 <property name="minimum_size"></property>
                                 <property name="name">ID_FPCHOOSEODAMEXPATH</property>
                                 <property name="permission">protected</property>
                                 <property name="pos"></property>
                                 <property name="size"></property>
-                                <property name="style">wxFLP_DEFAULT_STYLE</property>
+                                <property name="style">wxDIRP_DEFAULT_STYLE</property>
                                 <property name="subclass"></property>
                                 <property name="tooltip"></property>
                                 <property name="value"></property>
-                                <property name="wildcard">*.*</property>
                                 <property name="window_extra_style"></property>
                                 <property name="window_name"></property>
                                 <property name="window_style"></property>
                                 <event name="OnChar"></event>
+                                <event name="OnDirChanged"></event>
                                 <event name="OnEnterWindow"></event>
                                 <event name="OnEraseBackground"></event>
-                                <event name="OnFileChanged"></event>
                                 <event name="OnKeyDown"></event>
                                 <event name="OnKeyUp"></event>
                                 <event name="OnKillFocus"></event>
