@@ -206,9 +206,11 @@ void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs)
     // when adding waddir string, return 1 less, to get rid of extra delimiter
     wxString dirs = waddirs.Mid(0, waddirs.Length() - 1);
     
-    cmdline += wxString::Format(_T("%s -connect %s"), 
-                                binname.c_str(), 
-                                Address.c_str());
+    cmdline += wxString::Format(_T("%s"), binname.c_str());
+    
+    if (!Address.IsEmpty())
+		cmdline += wxString::Format(_T(" -connect %s"),
+									Address.c_str());
 	
 	// this is so the client won't mess up parsing
 	if (!dirs.IsEmpty())

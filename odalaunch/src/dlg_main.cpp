@@ -46,6 +46,7 @@ static wxInt32 ID_MNUCONMAN = XRCID("ID_MNUCONMAN");
 static wxInt32 ID_MNUSERVERS = XRCID("ID_MNUSERVERS");
 
 static wxInt32 ID_MNULAUNCH = XRCID("ID_MNULAUNCH");
+static wxInt32 ID_MNUQLAUNCH = XRCID("ID_MNUQLAUNCH");
 static wxInt32 ID_MNUGETLIST = XRCID("ID_MNUGETLIST");
 static wxInt32 ID_MNUREFRESHSERVER = XRCID("ID_MNUREFRESHSERVER");
 static wxInt32 ID_MNUREFRESHALL = XRCID("ID_MNUREFRESHALL");
@@ -72,6 +73,7 @@ BEGIN_EVENT_TABLE(dlgMain,wxFrame)
     EVT_MENU(ID_MNUCONMAN, dlgMain::OnManualConnect)
 
 	EVT_MENU(ID_MNULAUNCH, dlgMain::OnLaunch)
+	EVT_MENU(ID_MNUQLAUNCH, dlgMain::OnQuickLaunch)
 
 	EVT_MENU(ID_MNUGETLIST, dlgMain::OnGetList)
 	EVT_MENU(ID_MNUREFRESHSERVER, dlgMain::OnRefreshServer)
@@ -397,6 +399,14 @@ void dlgMain::OnAbout(wxCommandEvent& event)
                             "Copyright 2007 The Odamex Team");
     
     wxMessageBox(strAbout, strAbout);
+}
+
+// Quick-Launch button click
+void dlgMain::OnQuickLaunch(wxCommandEvent &event)
+{
+	LaunchGame("", 
+				launchercfg_s.odamex_directory, 
+				launchercfg_s.wad_paths);
 }
 
 // Launch button click

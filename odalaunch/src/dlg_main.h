@@ -77,6 +77,7 @@ class dlgMain : public wxFrame
 		void OnAbout(wxCommandEvent& event);
         void OnQuit(wxCloseEvent& event);
 		
+		void OnQuickLaunch(wxCommandEvent &event);
 		void OnLaunch(wxCommandEvent &event);
 		void OnRefreshAll(wxCommandEvent &event);
 		void OnGetList(wxCommandEvent &event);

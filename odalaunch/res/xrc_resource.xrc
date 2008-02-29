@@ -26,6 +26,10 @@
 					<label>Launch</label>
 					<help>Connect to the selected server</help>
 				</object>
+				<object class="wxMenuItem" name="ID_MNUQLAUNCH">
+					<label>Quick Launch</label>
+					<help>Run Odamex locally</help>
+				</object>				
 				<object class="separator" />
 				<object class="wxMenuItem" name="ID_MNUGETLIST">
 					<label>Get Master List</label>
@@ -93,6 +97,12 @@
 				<longhelp></longhelp>
 				<bitmap>./odalaunch-sysmenu.ico</bitmap>
 			</object>
+			<object class="tool" name="ID_MNUQLAUNCH">
+				<label>tool</label>
+				<tooltip></tooltip>
+				<longhelp></longhelp>
+				<bitmap>./odaqlaunch.ico</bitmap>
+			</object>			
 			<object class="separator" />
 			<object class="tool" name="ID_MNUREFRESHSERVER">
 				<label>tool</label>
