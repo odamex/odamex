@@ -191,6 +191,8 @@
 		<Unit filename="..\..\common\m_bbox.h" />
 		<Unit filename="..\..\common\m_cheat.cpp" />
 		<Unit filename="..\..\common\m_cheat.h" />
+		<Unit filename="..\..\common\m_fileio.cpp" />
+		<Unit filename="..\..\common\m_fileio.h" />
 		<Unit filename="..\..\common\m_fixed.cpp" />
 		<Unit filename="..\..\common\m_fixed.h" />
 		<Unit filename="..\..\common\m_random.cpp" />
@@ -304,7 +306,6 @@
 			<code_completion />
 			<envvars />
 			<debugger />
-			<lib_finder />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

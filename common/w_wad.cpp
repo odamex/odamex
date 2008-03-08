@@ -43,6 +43,7 @@
 
 #include "doomtype.h"
 #include "m_swap.h"
+#include "m_fileio.h"
 #include "i_system.h"
 #include "z_zone.h"
 #include "cmdlib.h"
@@ -196,7 +197,7 @@ std::string W_AddFile (std::string filename)
     
 	FixPathSeparator (filename);
 	std::string name = filename;
-	DefaultExtension (name, ".wad");
+	M_DefaultExtension (name, ".wad");
 
     // open the file
 	if ( (handle = open (filename.c_str(), O_RDONLY | O_BINARY)) == -1)
@@ -218,7 +219,7 @@ std::string W_AddFile (std::string filename)
 		fileinfo = &singleinfo;
 		singleinfo.filepos = 0;
 		singleinfo.size = W_Length(handle);
-		ExtractFileBase (filename, name);
+		M_ExtractFileBase (filename, name);
 		numlumps++;
 		Printf (PRINT_HIGH, " (single lump)\n", header.numlumps);
 	}

@@ -43,7 +43,7 @@
 #include "m_random.h"
 #include "w_wad.h"
 #include "md5.h"
-#include "m_misc.h"
+#include "m_fileio.h"
 
 #include <string>
 #include <vector>
@@ -2013,7 +2013,7 @@ void CL_Download()
 		filename += download.filename;
 
 		// check for existing file
-		if(FileExists(filename.c_str()))
+		if(M_FileExists(filename.c_str()))
 		{
 			// there is an existing file, so use a new file whose name includes the checksum
 			filename += ".";

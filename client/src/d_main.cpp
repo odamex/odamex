@@ -59,6 +59,7 @@
 #include "f_finale.h"
 #include "f_wipe.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "m_misc.h"
 #include "m_menu.h"
 #include "c_console.h"
@@ -847,7 +848,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			iwad = found;
 		else
 		{
-			if(FileExists(suggestion.c_str()))
+			if(M_FileExists(suggestion.c_str()))
 				iwad = suggestion;
 		}
 
@@ -1121,7 +1122,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
         // we want the extension of the file
         for (i = 0; i < patch_files.size(); i++)
         {
-            if (ExtractFileExtension(patch_files[i], ext))
+            if (M_ExtractFileExtension(patch_files[i], ext))
             {
                 f = BaseFileSearch (patch_files[i], ext);
             

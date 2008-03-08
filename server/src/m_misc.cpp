@@ -47,6 +47,8 @@
 
 #include "m_swap.h"
 #include "m_argv.h"
+#include "m_fileio.h"
+#include "m_misc.h"
 
 #include "w_wad.h"
 
@@ -62,93 +64,16 @@
 // Data.
 #include "dstrings.h"
 
-#include "m_misc.h"
-
 #include "cmdlib.h"
 
 #include "g_game.h"
 #include "sv_master.h"
 
 
-//
-// M_WriteFile
-//
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
 // put into newer configfiles.
 static CVAR (configver, CONFIGVERSIONSTR, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-//
-// M_WriteFile
-//
-BOOL M_WriteFile(char const *name, void *source, QWORD length)
-{
-    FILE *handle;
-    int	count;
-	
-    handle = fopen(name, "wb");
-
-    if (handle == NULL)
-	{
-		Printf(PRINT_HIGH, "Could not open file %s for writing\n", name);
-		return false;
-	}
-
-    count = fwrite(source, 1, length, handle);
-    fclose(handle);
-	
-	if (count != length)
-	{
-		Printf(PRINT_HIGH, "Failed while writing to file %s\n", name);
-		return false;
-	}
-		
-    return true;
-}
-
-
-//
-// M_ReadFile
-//
-QWORD M_ReadFile(char const *name, BYTE **buffer)
-{
-    FILE *handle;
-    QWORD count, length;
-    BYTE *buf;
-	
-    handle = fopen(name, "rb");
-    
-	if (handle == NULL)
-	{
-		Printf(PRINT_HIGH, "Could not open file %s for reading\n", name);
-		return false;
-	}
-
-    // find the size of the file by seeking to the end and
-    // reading the current position
-
-    fseek(handle, 0, SEEK_END);
-    length = ftell(handle);
-    fseek(handle, 0, SEEK_SET);
-    
-    buf = (BYTE *)Z_Malloc (length, PU_STATIC, NULL);
-    count = fread(buf, 1, length, handle);
-    fclose (handle);
-	
-    if (count != length)
-	{
-		Printf(PRINT_HIGH, "Failed while reading from file %s\n", name);
-		return false;
-	}
-		
-    *buffer = buf;
-    return length;
-}
-
 
 // [Russell] Simple function to check whether the given string is an iwad name
 //           it also removes the extension for short-hand comparison

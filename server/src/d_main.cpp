@@ -56,6 +56,7 @@
 #include "s_sound.h"
 #include "v_video.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "m_misc.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -255,7 +256,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			iwad = found;
 		else
 		{
-			if(FileExists(suggestion.c_str()))
+			if(M_FileExists(suggestion.c_str()))
 				iwad = suggestion;
 		}
 
@@ -715,7 +716,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
         // we want the extension of the file
         for (i = 0; i < patch_files.size(); i++)
         {
-            if (ExtractFileExtension(patch_files[i], ext))
+            if (M_ExtractFileExtension(patch_files[i], ext))
             {
                 f = BaseFileSearch (patch_files[i], ext);
             
@@ -778,7 +779,7 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 	{
 		FixPathSeparator (filenames[i]);
 		std::string name = filenames[i];
-		DefaultExtension (filenames[i], ".wad");
+		M_DefaultExtension (filenames[i], ".wad");
 
 		size_t slash = name.find_last_of('/');
 
@@ -983,7 +984,7 @@ void D_DoomMain (void)
 	{
 		custwad = iwadparm;
 		FixPathSeparator (custwad);
-		DefaultExtension (custwad, ".wad");
+		M_DefaultExtension (custwad, ".wad");
 		start_wads.push_back(custwad);
 	}
 

@@ -31,6 +31,7 @@
 #include "z_zone.h"
 #include "f_finale.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "m_misc.h"
 #include "m_menu.h"
 #include "m_random.h"
@@ -1695,7 +1696,7 @@ void G_DoPlayDemo (void)
 		bytelen = W_LumpLength(demolump);
 	} else {
 		FixPathSeparator (defdemoname);
-		DefaultExtension (defdemoname, ".lmp");
+		M_DefaultExtension (defdemoname, ".lmp");
 		bytelen = M_ReadFile (defdemoname.c_str(), &demobuffer);
 		demo_p = demobuffer;
 	}

@@ -41,6 +41,7 @@
 #include "v_video.h"
 #include "v_text.h"
 #include "vectors.h"
+#include "m_fileio.h"
 
 #define NORM_PITCH				128
 #define NORM_PRIORITY				64
@@ -1005,7 +1006,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 	else
 	{
 		lumpnum = -1;
-		len = Q_filelength (f);
+		len = M_FileLength (f);
 		data = Malloc (len);
 		fread (data, len, 1, f);
 		fclose (f);

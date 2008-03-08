@@ -8,10 +8,10 @@
 		<Build>
 			<Target title="Win Release">
 				<Option platforms="Windows;" />
-				<Option output="../../bin/odamex.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../../bin" />
-				<Option object_output="../../obj/client/release" />
-				<Option deps_output="../../deps" />
+				<Option output="..\..\bin\odamex.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\bin" />
+				<Option object_output="..\..\obj\client\release" />
+				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
@@ -31,10 +31,10 @@
 			</Target>
 			<Target title="Win Debug">
 				<Option platforms="Windows;" />
-				<Option output="../../bin/odamex-dbg.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../../bin" />
-				<Option object_output="../../obj/client/debug" />
-				<Option deps_output="../../deps" />
+				<Option output="..\..\bin\odamex-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\bin" />
+				<Option object_output="..\..\obj\client\debug" />
+				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
@@ -54,10 +54,10 @@
 			</Target>
 			<Target title="Unix Release">
 				<Option platforms="Unix;" />
-				<Option output="../../odamex" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../../bin" />
-				<Option object_output="../../obj/client/release" />
-				<Option deps_output="../../deps" />
+				<Option output="..\..\odamex" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\bin" />
+				<Option object_output="..\..\obj\client\release" />
+				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectResourceIncludeDirsRelation="0" />
@@ -66,7 +66,7 @@
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
 					<Add option="-DNDEBUG" />
-					<Add directory="/usr/include/SDL" />
+					<Add directory="\usr\include\SDL" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -75,10 +75,10 @@
 			</Target>
 			<Target title="Unix Debug">
 				<Option platforms="Unix;" />
-				<Option output="../../odamex-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../../bin" />
-				<Option object_output="../../obj/client/debug" />
-				<Option deps_output="../../deps" />
+				<Option output="..\..\odamex-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\bin" />
+				<Option object_output="..\..\obj\client\debug" />
+				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectResourceIncludeDirsRelation="0" />
@@ -88,7 +88,7 @@
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
 					<Add option="-D_DEBUG" />
-					<Add directory="/usr/include/SDL" />
+					<Add directory="\usr\include\SDL" />
 				</Compiler>
 				<Linker>
 					<Add library="X11" />
@@ -96,10 +96,10 @@
 			</Target>
 			<Target title="Mac Release">
 				<Option platforms="Mac;" />
-				<Option output="../../odamex" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../../bin" />
-				<Option object_output="../../obj/client/release" />
-				<Option deps_output="../../deps" />
+				<Option output="..\..\odamex" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\bin" />
+				<Option object_output="..\..\obj\client\release" />
+				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectResourceIncludeDirsRelation="0" />
@@ -108,7 +108,7 @@
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
 					<Add option="-DNDEBUG" />
-					<Add directory="/usr/include/SDL" />
+					<Add directory="\usr\include\SDL" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -116,10 +116,10 @@
 			</Target>
 			<Target title="Mac Debug">
 				<Option platforms="Mac;" />
-				<Option output="../../odamex-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../../bin" />
-				<Option object_output="../../obj/client/debug" />
-				<Option deps_output="../../deps" />
+				<Option output="..\..\odamex-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\bin" />
+				<Option object_output="..\..\obj\client\debug" />
+				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectResourceIncludeDirsRelation="0" />
@@ -129,7 +129,7 @@
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
 					<Add option="-D_DEBUG" />
-					<Add directory="/usr/include/SDL" />
+					<Add directory="\usr\include\SDL" />
 				</Compiler>
 			</Target>
 		</Build>
@@ -145,8 +145,8 @@
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DNOASM" />
 			<Add directory="." />
-			<Add directory="../src" />
-			<Add directory="../../common" />
+			<Add directory="..\src" />
+			<Add directory="..\..\common" />
 		</Compiler>
 		<Linker>
 			<Add library="SDLmain" />
@@ -176,184 +176,185 @@
 			<Option target="Win Release" />
 			<Option target="Win Debug" />
 		</Unit>
-		<Unit filename="../src/am_map.cpp" />
-		<Unit filename="../src/am_map.h" />
-		<Unit filename="../src/c_bind.cpp" />
-		<Unit filename="../src/c_bind.h" />
-		<Unit filename="../src/c_cmds.cpp" />
-		<Unit filename="../src/c_console.cpp" />
-		<Unit filename="../src/c_console.h" />
-		<Unit filename="../src/cl_ctf.cpp" />
-		<Unit filename="../src/cl_ctf.h" />
-		<Unit filename="../src/cl_main.cpp" />
-		<Unit filename="../src/cl_main.h" />
-		<Unit filename="../src/cl_pred.cpp" />
-		<Unit filename="../src/d_main.cpp" />
-		<Unit filename="../src/d_main.h" />
-		<Unit filename="../src/d_net.cpp" />
-		<Unit filename="../src/d_netinfo.cpp" />
-		<Unit filename="../src/d_player.h" />
-		<Unit filename="../src/doomstat.h" />
-		<Unit filename="../src/f_finale.cpp" />
-		<Unit filename="../src/f_finale.h" />
-		<Unit filename="../src/f_wipe.cpp" />
-		<Unit filename="../src/f_wipe.h" />
-		<Unit filename="../src/g_game.cpp" />
-		<Unit filename="../src/g_game.h" />
-		<Unit filename="../src/g_level.cpp" />
-		<Unit filename="../src/g_level.h" />
-		<Unit filename="../src/hu_stuff.cpp" />
-		<Unit filename="../src/hu_stuff.h" />
-		<Unit filename="../src/m_menu.cpp" />
-		<Unit filename="../src/m_menu.h" />
-		<Unit filename="../src/m_misc.cpp" />
-		<Unit filename="../src/m_misc.h" />
-		<Unit filename="../src/m_options.cpp" />
-		<Unit filename="../src/memio.cpp" />
-		<Unit filename="../src/memio.h" />
-		<Unit filename="../src/mus2midi.cpp" />
-		<Unit filename="../src/mus2midi.h" />
-		<Unit filename="../src/p_interaction.cpp" />
-		<Unit filename="../src/p_interaction.h" />
-		<Unit filename="../src/p_mobj.cpp" />
-		<Unit filename="../src/r_bsp.cpp" />
-		<Unit filename="../src/r_draw.cpp" />
-		<Unit filename="../src/r_draw.h" />
-		<Unit filename="../src/r_drawt.cpp" />
-		<Unit filename="../src/r_main.cpp" />
-		<Unit filename="../src/r_main.h" />
-		<Unit filename="../src/r_plane.cpp" />
-		<Unit filename="../src/r_plane.h" />
-		<Unit filename="../src/r_segs.cpp" />
-		<Unit filename="../src/r_sky.cpp" />
-		<Unit filename="../src/r_sky.h" />
-		<Unit filename="../src/r_things.cpp" />
-		<Unit filename="../src/s_sound.cpp" />
-		<Unit filename="../src/s_sound.h" />
-		<Unit filename="../src/st_lib.cpp" />
-		<Unit filename="../src/st_lib.h" />
-		<Unit filename="../src/st_new.cpp" />
-		<Unit filename="../src/st_stuff.cpp" />
-		<Unit filename="../src/v_draw.cpp" />
-		<Unit filename="../src/v_palette.cpp" />
-		<Unit filename="../src/v_palette.h" />
-		<Unit filename="../src/v_text.cpp" />
-		<Unit filename="../src/v_text.h" />
-		<Unit filename="../src/v_video.cpp" />
-		<Unit filename="../src/wi_stuff.cpp" />
-		<Unit filename="../src/wi_stuff.h" />
-		<Unit filename="../../common/actor.h" />
-		<Unit filename="../../common/c_cvars.cpp" />
-		<Unit filename="../../common/c_cvars.h" />
-		<Unit filename="../../common/c_dispatch.cpp" />
-		<Unit filename="../../common/c_dispatch.h" />
-		<Unit filename="../../common/cmdlib.cpp" />
-		<Unit filename="../../common/cmdlib.h" />
-		<Unit filename="../../common/d_dehacked.cpp" />
-		<Unit filename="../../common/d_dehacked.h" />
-		<Unit filename="../../common/d_event.h" />
-		<Unit filename="../../common/d_items.cpp" />
-		<Unit filename="../../common/d_items.h" />
-		<Unit filename="../../common/d_net.h" />
-		<Unit filename="../../common/d_netinf.h" />
-		<Unit filename="../../common/d_protocol.cpp" />
-		<Unit filename="../../common/d_protocol.h" />
-		<Unit filename="../../common/d_ticcmd.h" />
-		<Unit filename="../../common/dobject.cpp" />
-		<Unit filename="../../common/dobject.h" />
-		<Unit filename="../../common/doomdata.h" />
-		<Unit filename="../../common/doomdef.h" />
-		<Unit filename="../../common/doomstat.cpp" />
-		<Unit filename="../../common/doomtype.h" />
-		<Unit filename="../../common/dsectoreffect.cpp" />
-		<Unit filename="../../common/dsectoreffect.h" />
-		<Unit filename="../../common/dstrings.cpp" />
-		<Unit filename="../../common/dstrings.h" />
-		<Unit filename="../../common/dthinker.cpp" />
-		<Unit filename="../../common/dthinker.h" />
-		<Unit filename="../../common/errors.h" />
-		<Unit filename="../../common/farchive.cpp" />
-		<Unit filename="../../common/farchive.h" />
-		<Unit filename="../../common/gi.cpp" />
-		<Unit filename="../../common/gi.h" />
-		<Unit filename="../../common/huffman.cpp" />
-		<Unit filename="../../common/huffman.h" />
-		<Unit filename="../../common/i_net.cpp" />
-		<Unit filename="../../common/i_net.h" />
-		<Unit filename="../../common/info.cpp" />
-		<Unit filename="../../common/info.h" />
-		<Unit filename="../../common/lzoconf.h" />
-		<Unit filename="../../common/m_alloc.cpp" />
-		<Unit filename="../../common/m_alloc.h" />
-		<Unit filename="../../common/m_argv.cpp" />
-		<Unit filename="../../common/m_argv.h" />
-		<Unit filename="../../common/m_bbox.cpp" />
-		<Unit filename="../../common/m_bbox.h" />
-		<Unit filename="../../common/m_cheat.cpp" />
-		<Unit filename="../../common/m_cheat.h" />
-		<Unit filename="../../common/m_fixed.cpp" />
-		<Unit filename="../../common/m_fixed.h" />
-		<Unit filename="../../common/m_random.cpp" />
-		<Unit filename="../../common/m_random.h" />
-		<Unit filename="../../common/m_swap.h" />
-		<Unit filename="../../common/md5.cpp" />
-		<Unit filename="../../common/md5.h" />
-		<Unit filename="../../common/minilzo.cpp" />
-		<Unit filename="../../common/minilzo.h" />
-		<Unit filename="../../common/p_ceiling.cpp" />
-		<Unit filename="../../common/p_doors.cpp" />
-		<Unit filename="../../common/p_enemy.cpp" />
-		<Unit filename="../../common/p_floor.cpp" />
-		<Unit filename="../../common/p_inter.h" />
-		<Unit filename="../../common/p_lights.cpp" />
-		<Unit filename="../../common/p_lnspec.cpp" />
-		<Unit filename="../../common/p_lnspec.h" />
-		<Unit filename="../../common/p_local.h" />
-		<Unit filename="../../common/p_map.cpp" />
-		<Unit filename="../../common/p_maputl.cpp" />
-		<Unit filename="../../common/p_pillar.cpp" />
-		<Unit filename="../../common/p_plats.cpp" />
-		<Unit filename="../../common/p_pspr.cpp" />
-		<Unit filename="../../common/p_pspr.h" />
-		<Unit filename="../../common/p_saveg.cpp" />
-		<Unit filename="../../common/p_saveg.h" />
-		<Unit filename="../../common/p_setup.cpp" />
-		<Unit filename="../../common/p_setup.h" />
-		<Unit filename="../../common/p_sight.cpp" />
-		<Unit filename="../../common/p_spec.cpp" />
-		<Unit filename="../../common/p_spec.h" />
-		<Unit filename="../../common/p_switch.cpp" />
-		<Unit filename="../../common/p_teleport.cpp" />
-		<Unit filename="../../common/p_tick.cpp" />
-		<Unit filename="../../common/p_tick.h" />
-		<Unit filename="../../common/p_user.cpp" />
-		<Unit filename="../../common/p_xlat.cpp" />
-		<Unit filename="../../common/r_data.cpp" />
-		<Unit filename="../../common/r_data.h" />
-		<Unit filename="../../common/r_defs.h" />
-		<Unit filename="../../common/r_local.h" />
-		<Unit filename="../../common/r_state.h" />
-		<Unit filename="../../common/st_stuff.h" />
-		<Unit filename="../../common/stats.cpp" />
-		<Unit filename="../../common/stats.h" />
-		<Unit filename="../../common/szp.h" />
-		<Unit filename="../../common/tables.cpp" />
-		<Unit filename="../../common/tables.h" />
-		<Unit filename="../../common/tarray.h" />
-		<Unit filename="../../common/v_video.h" />
-		<Unit filename="../../common/vectors.cpp" />
-		<Unit filename="../../common/vectors.h" />
-		<Unit filename="../../common/version.cpp" />
-		<Unit filename="../../common/version.h" />
-		<Unit filename="../../common/w_wad.cpp" />
-		<Unit filename="../../common/w_wad.h" />
-		<Unit filename="../../common/z_zone.cpp" />
-		<Unit filename="../../common/z_zone.h" />
+		<Unit filename="..\src\am_map.cpp" />
+		<Unit filename="..\src\am_map.h" />
+		<Unit filename="..\src\c_bind.cpp" />
+		<Unit filename="..\src\c_bind.h" />
+		<Unit filename="..\src\c_cmds.cpp" />
+		<Unit filename="..\src\c_console.cpp" />
+		<Unit filename="..\src\c_console.h" />
+		<Unit filename="..\src\cl_ctf.cpp" />
+		<Unit filename="..\src\cl_ctf.h" />
+		<Unit filename="..\src\cl_main.cpp" />
+		<Unit filename="..\src\cl_main.h" />
+		<Unit filename="..\src\cl_pred.cpp" />
+		<Unit filename="..\src\d_main.cpp" />
+		<Unit filename="..\src\d_main.h" />
+		<Unit filename="..\src\d_net.cpp" />
+		<Unit filename="..\src\d_netinfo.cpp" />
+		<Unit filename="..\src\d_player.h" />
+		<Unit filename="..\src\doomstat.h" />
+		<Unit filename="..\src\f_finale.cpp" />
+		<Unit filename="..\src\f_finale.h" />
+		<Unit filename="..\src\f_wipe.cpp" />
+		<Unit filename="..\src\f_wipe.h" />
+		<Unit filename="..\src\g_game.cpp" />
+		<Unit filename="..\src\g_game.h" />
+		<Unit filename="..\src\g_level.cpp" />
+		<Unit filename="..\src\g_level.h" />
+		<Unit filename="..\src\hu_stuff.cpp" />
+		<Unit filename="..\src\hu_stuff.h" />
+		<Unit filename="..\src\m_menu.cpp" />
+		<Unit filename="..\src\m_menu.h" />
+		<Unit filename="..\src\m_misc.cpp" />
+		<Unit filename="..\src\m_misc.h" />
+		<Unit filename="..\src\m_options.cpp" />
+		<Unit filename="..\src\memio.cpp" />
+		<Unit filename="..\src\memio.h" />
+		<Unit filename="..\src\mus2midi.cpp" />
+		<Unit filename="..\src\mus2midi.h" />
+		<Unit filename="..\src\p_interaction.cpp" />
+		<Unit filename="..\src\p_interaction.h" />
+		<Unit filename="..\src\p_mobj.cpp" />
+		<Unit filename="..\src\r_bsp.cpp" />
+		<Unit filename="..\src\r_draw.cpp" />
+		<Unit filename="..\src\r_draw.h" />
+		<Unit filename="..\src\r_drawt.cpp" />
+		<Unit filename="..\src\r_main.cpp" />
+		<Unit filename="..\src\r_main.h" />
+		<Unit filename="..\src\r_plane.cpp" />
+		<Unit filename="..\src\r_plane.h" />
+		<Unit filename="..\src\r_segs.cpp" />
+		<Unit filename="..\src\r_sky.cpp" />
+		<Unit filename="..\src\r_sky.h" />
+		<Unit filename="..\src\r_things.cpp" />
+		<Unit filename="..\src\s_sound.cpp" />
+		<Unit filename="..\src\s_sound.h" />
+		<Unit filename="..\src\st_lib.cpp" />
+		<Unit filename="..\src\st_lib.h" />
+		<Unit filename="..\src\st_new.cpp" />
+		<Unit filename="..\src\st_stuff.cpp" />
+		<Unit filename="..\src\v_draw.cpp" />
+		<Unit filename="..\src\v_palette.cpp" />
+		<Unit filename="..\src\v_palette.h" />
+		<Unit filename="..\src\v_text.cpp" />
+		<Unit filename="..\src\v_text.h" />
+		<Unit filename="..\src\v_video.cpp" />
+		<Unit filename="..\src\wi_stuff.cpp" />
+		<Unit filename="..\src\wi_stuff.h" />
+		<Unit filename="..\..\common\actor.h" />
+		<Unit filename="..\..\common\c_cvars.cpp" />
+		<Unit filename="..\..\common\c_cvars.h" />
+		<Unit filename="..\..\common\c_dispatch.cpp" />
+		<Unit filename="..\..\common\c_dispatch.h" />
+		<Unit filename="..\..\common\cmdlib.cpp" />
+		<Unit filename="..\..\common\cmdlib.h" />
+		<Unit filename="..\..\common\d_dehacked.cpp" />
+		<Unit filename="..\..\common\d_dehacked.h" />
+		<Unit filename="..\..\common\d_event.h" />
+		<Unit filename="..\..\common\d_items.cpp" />
+		<Unit filename="..\..\common\d_items.h" />
+		<Unit filename="..\..\common\d_net.h" />
+		<Unit filename="..\..\common\d_netinf.h" />
+		<Unit filename="..\..\common\d_protocol.cpp" />
+		<Unit filename="..\..\common\d_protocol.h" />
+		<Unit filename="..\..\common\d_ticcmd.h" />
+		<Unit filename="..\..\common\dobject.cpp" />
+		<Unit filename="..\..\common\dobject.h" />
+		<Unit filename="..\..\common\doomdata.h" />
+		<Unit filename="..\..\common\doomdef.h" />
+		<Unit filename="..\..\common\doomstat.cpp" />
+		<Unit filename="..\..\common\doomtype.h" />
+		<Unit filename="..\..\common\dsectoreffect.cpp" />
+		<Unit filename="..\..\common\dsectoreffect.h" />
+		<Unit filename="..\..\common\dstrings.cpp" />
+		<Unit filename="..\..\common\dstrings.h" />
+		<Unit filename="..\..\common\dthinker.cpp" />
+		<Unit filename="..\..\common\dthinker.h" />
+		<Unit filename="..\..\common\errors.h" />
+		<Unit filename="..\..\common\farchive.cpp" />
+		<Unit filename="..\..\common\farchive.h" />
+		<Unit filename="..\..\common\gi.cpp" />
+		<Unit filename="..\..\common\gi.h" />
+		<Unit filename="..\..\common\huffman.cpp" />
+		<Unit filename="..\..\common\huffman.h" />
+		<Unit filename="..\..\common\i_net.cpp" />
+		<Unit filename="..\..\common\i_net.h" />
+		<Unit filename="..\..\common\info.cpp" />
+		<Unit filename="..\..\common\info.h" />
+		<Unit filename="..\..\common\lzoconf.h" />
+		<Unit filename="..\..\common\m_alloc.cpp" />
+		<Unit filename="..\..\common\m_alloc.h" />
+		<Unit filename="..\..\common\m_argv.cpp" />
+		<Unit filename="..\..\common\m_argv.h" />
+		<Unit filename="..\..\common\m_bbox.cpp" />
+		<Unit filename="..\..\common\m_bbox.h" />
+		<Unit filename="..\..\common\m_cheat.cpp" />
+		<Unit filename="..\..\common\m_cheat.h" />
+		<Unit filename="..\..\common\m_fileio.cpp" />
+		<Unit filename="..\..\common\m_fileio.h" />
+		<Unit filename="..\..\common\m_fixed.cpp" />
+		<Unit filename="..\..\common\m_fixed.h" />
+		<Unit filename="..\..\common\m_random.cpp" />
+		<Unit filename="..\..\common\m_random.h" />
+		<Unit filename="..\..\common\m_swap.h" />
+		<Unit filename="..\..\common\md5.cpp" />
+		<Unit filename="..\..\common\md5.h" />
+		<Unit filename="..\..\common\minilzo.cpp" />
+		<Unit filename="..\..\common\minilzo.h" />
+		<Unit filename="..\..\common\p_ceiling.cpp" />
+		<Unit filename="..\..\common\p_doors.cpp" />
+		<Unit filename="..\..\common\p_enemy.cpp" />
+		<Unit filename="..\..\common\p_floor.cpp" />
+		<Unit filename="..\..\common\p_inter.h" />
+		<Unit filename="..\..\common\p_lights.cpp" />
+		<Unit filename="..\..\common\p_lnspec.cpp" />
+		<Unit filename="..\..\common\p_lnspec.h" />
+		<Unit filename="..\..\common\p_local.h" />
+		<Unit filename="..\..\common\p_map.cpp" />
+		<Unit filename="..\..\common\p_maputl.cpp" />
+		<Unit filename="..\..\common\p_pillar.cpp" />
+		<Unit filename="..\..\common\p_plats.cpp" />
+		<Unit filename="..\..\common\p_pspr.cpp" />
+		<Unit filename="..\..\common\p_pspr.h" />
+		<Unit filename="..\..\common\p_saveg.cpp" />
+		<Unit filename="..\..\common\p_saveg.h" />
+		<Unit filename="..\..\common\p_setup.cpp" />
+		<Unit filename="..\..\common\p_setup.h" />
+		<Unit filename="..\..\common\p_sight.cpp" />
+		<Unit filename="..\..\common\p_spec.cpp" />
+		<Unit filename="..\..\common\p_spec.h" />
+		<Unit filename="..\..\common\p_switch.cpp" />
+		<Unit filename="..\..\common\p_teleport.cpp" />
+		<Unit filename="..\..\common\p_tick.cpp" />
+		<Unit filename="..\..\common\p_tick.h" />
+		<Unit filename="..\..\common\p_user.cpp" />
+		<Unit filename="..\..\common\p_xlat.cpp" />
+		<Unit filename="..\..\common\r_data.cpp" />
+		<Unit filename="..\..\common\r_data.h" />
+		<Unit filename="..\..\common\r_defs.h" />
+		<Unit filename="..\..\common\r_local.h" />
+		<Unit filename="..\..\common\r_state.h" />
+		<Unit filename="..\..\common\st_stuff.h" />
+		<Unit filename="..\..\common\stats.cpp" />
+		<Unit filename="..\..\common\stats.h" />
+		<Unit filename="..\..\common\szp.h" />
+		<Unit filename="..\..\common\tables.cpp" />
+		<Unit filename="..\..\common\tables.h" />
+		<Unit filename="..\..\common\tarray.h" />
+		<Unit filename="..\..\common\v_video.h" />
+		<Unit filename="..\..\common\vectors.cpp" />
+		<Unit filename="..\..\common\vectors.h" />
+		<Unit filename="..\..\common\version.cpp" />
+		<Unit filename="..\..\common\version.h" />
+		<Unit filename="..\..\common\w_wad.cpp" />
+		<Unit filename="..\..\common\w_wad.h" />
+		<Unit filename="..\..\common\z_zone.cpp" />
+		<Unit filename="..\..\common\z_zone.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
 			<debugger />
-			<lib_finder />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

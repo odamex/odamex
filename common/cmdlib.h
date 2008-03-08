@@ -48,18 +48,9 @@
 // the dec offsetof macro doesnt work very well...
 #define myoffsetof(type,identifier) ((size_t)&((type *)0)->identifier)
 
-
-int		Q_filelength (FILE *f);
-BOOL FileExists (const char *filename);
-
 extern std::string progdir, startdir;
 
 void	FixPathSeparator (std::string &path);
-
-void	DefaultExtension (std::string &path, const char *extension);
-void	ExtractFilePath (const char *path, char *dest);
-BOOL    ExtractFileExtension (std::string filename, std::string &dest); // [Russell]
-void 	ExtractFileBase (std::string path, std::string &dest);
 
 int		ParseHex (char *str);
 int 	ParseNum (char *str);

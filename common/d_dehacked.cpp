@@ -41,6 +41,7 @@
 #include "m_misc.h"
 #include "w_wad.h"
 #include "d_player.h"
+#include "m_fileio.h"
 
 // Miscellaneous info that used to be constant
 struct DehInfo deh = {
@@ -1612,17 +1613,17 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 
 		file = patchfile;
 		FixPathSeparator (file);
-		DefaultExtension (file, ".deh");
+		M_DefaultExtension (file, ".deh");
 
 		if ( !(deh = fopen (file.c_str(), "rb")) ) {
 			file = patchfile;
 			FixPathSeparator (file);
-			DefaultExtension (file, ".bex");
+			M_DefaultExtension (file, ".bex");
 			deh = fopen (file.c_str(), "rb");
 		}
 
 		if (deh) {
-			filelen = Q_filelength (deh);
+			filelen = M_FileLength (deh);
 			if ( (PatchFile = new char[filelen + 1]) ) {
 				fread (PatchFile, 1, filelen, deh);
 				fclose (deh);
@@ -1633,7 +1634,7 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 			// Couldn't find it on disk, try reading it from a lump
 			file = patchfile;
 			FixPathSeparator (file);
-			ExtractFileBase (file, file);
+			M_ExtractFileBase (file, file);
 			file[8] = 0;
 			lump = W_CheckNumForName (file.c_str());
 			if (lump >= 0) {

@@ -16,32 +16,29 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	M_MISC
-//    
+//	File Input/Output Operations
+//
 //-----------------------------------------------------------------------------
 
-
-#ifndef __M_MISC__
-#define __M_MISC__
+#ifndef __M_FILEIO__
+#define __M_FILEIO__
 
 #include <string>
+#include <vector>
+
+#include <stdio.h>
 
 #include "doomtype.h"
 
-// [Russell] Simple function to check whether the given string is an iwad name
-BOOL M_IsIWAD(std::string filename);
+int  M_FileLength (FILE *f);
+BOOL M_FileExists (const char *filename);
 
-// [RH] M_ScreenShot now accepts a filename parameter.
-//		Pass a NULL to get the original behavior.
-void M_ScreenShot (const char *filename);
+BOOL M_WriteFile(char const *name, void *source, QWORD length);
+QWORD M_ReadFile(char const *name, BYTE **buffer);
 
-void M_LoadDefaults (void);
-
-void STACK_ARGS M_SaveDefaults (void);
-
-std::string GetConfigPath (void);
+void M_DefaultExtension (std::string &path, const char *extension);
+void M_ExtractFilePath (const char *path, char *dest);
+BOOL M_ExtractFileExtension (std::string filename, std::string &dest);
+void M_ExtractFileBase (std::string path, std::string &dest);
 
 #endif
-
-
-

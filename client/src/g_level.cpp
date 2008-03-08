@@ -49,6 +49,7 @@
 #include "d_protocol.h"
 #include "v_text.h"
 #include "cl_main.h"
+#include "m_fileio.h"
 #include "m_misc.h"
 
 #include "gi.h"
@@ -251,7 +252,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	{
 		std::string ext;
 		
-		if (ExtractFileExtension(argv[i], ext))
+		if (M_ExtractFileExtension(argv[i], ext))
 		{
 		    // don't allow subsequent iwads to be loaded
 		    if ((ext == "WAD") && !M_IsIWAD(argv[i]))
