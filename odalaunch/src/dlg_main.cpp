@@ -65,9 +65,8 @@ DEFINE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL)
 
 // Event handlers
 BEGIN_EVENT_TABLE(dlgMain,wxFrame)
-	// normal events
-	EVT_CLOSE(dlgMain::OnQuit)
-
+	EVT_MENU(wxID_EXIT, dlgMain::OnExit)
+	
 	// menu item events
     EVT_MENU(ID_MNUSERVERS, dlgMain::OnMenuServers)
     EVT_MENU(ID_MNUCONMAN, dlgMain::OnManualConnect)
@@ -81,7 +80,6 @@ BEGIN_EVENT_TABLE(dlgMain,wxFrame)
 
 	EVT_MENU(ID_MNUABOUT, dlgMain::OnAbout)
 	EVT_MENU(ID_MNUSETTINGS, dlgMain::OnOpenSettingsDialog)
-	EVT_MENU(ID_MNUEXIT, dlgMain::OnExitClick)
 
 	EVT_MENU(ID_MNUWEBSITE, dlgMain::OnOpenWebsite)
 	EVT_MENU(ID_MNUFORUM, dlgMain::OnOpenForum)
@@ -89,16 +87,13 @@ BEGIN_EVENT_TABLE(dlgMain,wxFrame)
     EVT_MENU(ID_MNUCHANGELOG, dlgMain::OnOpenChangeLog)
     EVT_MENU(ID_MNUREPORTBUG, dlgMain::OnOpenReportBug)
 
-#if ODL_ENABLE_THREADS        
     // thread events
     EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)    
-#endif
+
     // misc events
     EVT_LIST_ITEM_SELECTED(ID_LSTSERVERS, dlgMain::OnServerListClick)
     EVT_LIST_ITEM_ACTIVATED(ID_LSTSERVERS, dlgMain::OnServerListDoubleClick)
     EVT_LIST_ITEM_RIGHT_CLICK(ID_LSTSERVERS, dlgMain::OnServerListRightClick)
-//    EVT_LIST_COL_CLICK(ID_LSTSERVERS, dlgMain::OnListColClick)
-//    EVT_LIST_COL_CLICK(ID_LSTPLAYERS, dlgMain::OnListColClick)
 END_EVENT_TABLE()
 
 // Main window creation
@@ -113,10 +108,13 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
   
     SERVER_LIST = wxStaticCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
     PLAYER_LIST = wxStaticCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
+
+	// set up the master server information
+	MServer = new MasterServer;
     
     /* Init sub dialogs and load settings */
-    config_dlg = new dlgConfig(&launchercfg_s, NULL);
-    server_dlg = new dlgServers(NULL);
+    config_dlg = new dlgConfig(&launchercfg_s, this);
+    server_dlg = new dlgServers(MServer, this);
 
 	// set up the list controls
     SERVER_LIST->InsertColumn(0,_T("Server name"),wxLIST_FORMAT_LEFT,150);
@@ -132,13 +130,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	PLAYER_LIST->InsertColumn(1,_T("Frags"),wxLIST_FORMAT_LEFT,70);
 	PLAYER_LIST->InsertColumn(2,_T("Ping"),wxLIST_FORMAT_LEFT,50);
 	PLAYER_LIST->InsertColumn(3,_T("Team"),wxLIST_FORMAT_LEFT,50);
-
-	// set up the master server information
-	MServer = new MasterServer;
-    
+   
     QServer = NULL;
 
-#if ODL_ENABLE_THREADS
     // Create monitor thread and run it
     if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
     {
@@ -150,7 +144,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     }
     
     GetThread()->Run();
-#endif
     
     // get master list on application start
     if (launchercfg_s.get_list_on_start)
@@ -164,6 +157,10 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 // Window Destructor
 dlgMain::~dlgMain()
 {
+    // Close our monitor thread
+    mtcs_Request.Signal = mtcs_exit;
+    GetThread()->Wait();
+
     if (MServer != NULL)
         delete MServer;
         
@@ -175,10 +172,10 @@ dlgMain::~dlgMain()
 
     if (server_dlg != NULL)
         server_dlg->Destroy();
-		
-	if (status_bar != NULL)
-		delete status_bar;
-	
+}
+
+void dlgMain::OnExit(wxCommandEvent& event)
+{
     this->Destroy();
 }
 
@@ -201,7 +198,6 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
                     launchercfg_s.wad_paths);
 }
 
-#if ODL_ENABLE_THREADS
 // [Russell] - Monitor thread entry point
 void *dlgMain::Entry()
 {
@@ -221,36 +217,169 @@ void *dlgMain::Entry()
             
             static int index = 0;
             
+            mtcs_Request.Signal = mtcs_none;
+            
             MServer->SetAddress(masters[index], 15000);
 
             // TODO: Clean this up
-            if (!MServer->Query(500))
+            if (!MServer->Query(9999))
             {
                 index = !index;
         
                 MServer->SetAddress(masters[index], 15000);
             
-                if (!MServer->Query(500))
+                if (!MServer->Query(9999))
                 {
-                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_master_timeout);
-                    
-                    wxPostEvent(this, event);
+                    mtrs_struct_t *Result = new mtrs_struct_t;
+
+                    Result->Signal = mtrs_master_timeout;                
+                    Result->Index = -1;
+                    Result->ServerListIndex = -1;
+                
+                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+                    event.SetClientData(Result);
+                  
+                    wxPostEvent(this, event); 
                 }
                 else
-                {
-                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_master_success);
+                {      
+                    if (QServer != NULL)
+                    {
+                        delete[] QServer;
+            
+                        QServer = new Server [MServer->GetServerCount()];
+                    }
+                    else
+                        QServer = new Server [MServer->GetServerCount()];
+
+                    mtrs_struct_t *Result = new mtrs_struct_t;
+
+                    Result->Signal = mtrs_master_success;                
+                    Result->Index = -1;
+                    Result->ServerListIndex = -1;
+                
+                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+                    event.SetClientData(Result);
+                  
+                    wxPostEvent(this, event);                     
                     
-                    wxPostEvent(this, event);                    
+                    mtcs_Request.Signal = mtcs_getservers;
                 }
             }
             else
-            {
-                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_master_success);
-                    
-                wxPostEvent(this, event);                    
+            {                 
+                if (QServer != NULL)
+                {
+                    delete[] QServer;
             
+                    QServer = new Server [MServer->GetServerCount()];
+                }
+                else
+                    QServer = new Server [MServer->GetServerCount()];
+
+                mtrs_struct_t *Result = new mtrs_struct_t;
+
+                Result->Signal = mtrs_master_success;                
+                Result->Index = -1;
+                Result->ServerListIndex = -1;
+                
+                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+                event.SetClientData(Result);
+                  
+                wxPostEvent(this, event);               
+                
+                mtcs_Request.Signal = mtcs_getservers;
             }
 
+        }
+    
+        // get a new list of servers
+        if (mtcs_Request.Signal == mtcs_getservers)
+        {
+            wxString Address = _T("");
+            wxUint16 Port = 0;
+
+            if (MServer->GetServerCount())
+            for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
+            {    
+                MServer->GetServerAddress(i, Address, Port);
+
+                QServer[i].SetAddress(Address, Port);
+                
+                if (QServer[i].Query(500))
+                {
+                    mtrs_struct_t *Result = new mtrs_struct_t;
+
+                    Result->Signal = mtrs_server_success;                
+                    Result->Index = i;
+                    Result->ServerListIndex = -1;
+                
+                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+                    event.SetClientData(Result);
+                  
+                    wxPostEvent(this, event);      
+                }
+                else
+                {
+                    mtrs_struct_t *Result = new mtrs_struct_t;
+
+                    Result->Signal = mtrs_server_timeout;                
+                    Result->Index = i;
+                    Result->ServerListIndex = -1;
+                
+                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+                    event.SetClientData(Result);
+                  
+                    wxPostEvent(this, event);    
+                }
+                     
+                // Give everything else some cpu time, please be considerate!
+                GetThread()->Sleep(1);
+               
+                // Something requested the thread to exit
+                if (mtcs_Request.Signal == mtcs_exit)
+                {
+                    Running = false;
+                    break;
+                }
+            }
+
+            // You MUST clear the signal after you've received it! otherwise
+            // it will continue to generate            
+            mtcs_Request.Signal = mtcs_none;
+        }
+
+        // User requested single server to be refreshed
+        if (mtcs_Request.Signal == mtcs_getsingleserver)
+        {            
+            if (MServer->GetServerCount())
+            if (QServer[mtcs_Request.Index].Query(300))
+            {
+                mtrs_struct_t *Result = new mtrs_struct_t;
+
+                Result->Signal = mtrs_server_singlesuccess;                
+                Result->Index = mtcs_Request.Index;
+                Result->ServerListIndex = mtcs_Request.ServerListIndex;
+                
+                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+                event.SetClientData(Result);
+                    
+                wxPostEvent(this, event);      
+            }
+            else
+            {
+                mtrs_struct_t *Result = new mtrs_struct_t;
+
+                Result->Signal = mtrs_server_singletimeout;                
+                Result->Index = mtcs_Request.Index;
+                Result->ServerListIndex = mtcs_Request.ServerListIndex;
+                
+                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_server_singletimeout);
+                event.SetClientData(Result);
+                    
+                wxPostEvent(this, event);    
+            }
+                     
             // You MUST clear the signal after you've received it! otherwise
             // it will continue to generate
             mtcs_Request.Signal = mtcs_none;
@@ -260,8 +389,8 @@ void *dlgMain::Entry()
         GetThread()->Sleep(1);
                
         // Something requested the thread to exit
-        if (GetThread()->TestDestroy())
-            Running = false;
+        if (mtcs_Request.Signal == mtcs_exit || Running == false)
+            break;
     }
     
     return NULL;
@@ -269,26 +398,58 @@ void *dlgMain::Entry()
 
 void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 {
-    switch (event.GetId())
+    mtrs_struct_t *Result = (mtrs_struct_t *)event.GetClientData();
+    
+    switch (Result->Signal)
     {
         case mtrs_master_success:
+            SERVER_LIST->DeleteAllItems();
+            PLAYER_LIST->DeleteAllItems();
+        
+            totalPlayers = 0;
+
             GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
             GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
+            GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
             break;
         case mtrs_master_timeout:
             wxMessageBox(_T("Could not query any of the master servers"), _T("Error"), wxOK | wxICON_ERROR);
+            break;
+        case mtrs_server_success:
+            AddServerToList(SERVER_LIST, QServer[Result->Index], Result->Index);
+            
+            totalPlayers += QServer[Result->Index].info.numplayers;
+            
+            GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
+            break;
+        case mtrs_server_timeout:
+            if (launchercfg_s.show_blocked_servers)
+                AddServerToList(SERVER_LIST, QServer[Result->Index], Result->Index);
+            break;
+        case mtrs_server_singletimeout:
+            // fall-through
+        case mtrs_server_singlesuccess:
+            PLAYER_LIST->DeleteAllItems();
+            
+            AddServerToList(SERVER_LIST, QServer[Result->Index], Result->ServerListIndex, 0);
+            
+            AddPlayersToList(PLAYER_LIST, QServer[Result->Index]);
+            
+            totalPlayers += QServer[Result->Index].info.numplayers;
+            
+            GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
+            GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
+            break;
         default:
             break;
     }
+    
+    delete Result;
 }
-#endif
 
 // display extra information for a server
 void dlgMain::OnServerListRightClick(wxListEvent& event)
 {
-    //if (SERVER_LIST != event.GetEventObject())
-    //    return;
-    
     if (!SERVER_LIST->GetItemCount() || !SERVER_LIST->GetSelectedItemCount())
         return;
   
@@ -380,18 +541,6 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
         config_dlg->Show();
 }
 
-// Exit button click
-void dlgMain::OnExitClick(wxCommandEvent& WXUNUSED(event))
-{ 
-    this->Destroy();
-}
-
-// User clicks window X button
-void dlgMain::OnQuit(wxCloseEvent& event)
-{               
-    this->Destroy();
-}
-
 // About information
 void dlgMain::OnAbout(wxCommandEvent& event)
 {
@@ -437,15 +586,6 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
 // Get Master List button click
 void dlgMain::OnGetList(wxCommandEvent &event)
 {
-    static const wxString masters[2] = {
-        _T("odamex.net"),
-        _T("odamex.org")
-    };
-    static int index = 0;
-    
-    wxString Address = _T("");
-    wxInt16 Port = 0;
-	
     // prevent reentrancy
     static wxRecursionGuardFlag s_rgf;
     wxRecursionGuard recursion_guard(s_rgf);
@@ -453,69 +593,7 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     if (recursion_guard.IsInside())
         return;	
 	
-	#if ODL_ENABLE_THREADS
-	// Request a list of servers
 	mtcs_Request.Signal = mtcs_getmaster;
-	#else
-	
-	MServer->SetAddress(masters[index], 15000);
-
-    if (!MServer->Query(500))
-    {
-        index = !index;
-        
-        MServer->SetAddress(masters[index], 15000);
-            
-        if (!MServer->Query(500))
-        {
-            wxMessageBox(_T("Could not query any of the master servers"), _T("Error"), wxOK | wxICON_ERROR);
-            
-            return;
-        }
-    }
-    
-    if (!MServer->GetServerCount())
-        return;
-        
-    if (QServer != NULL)
-    {
-        delete[] QServer;
-            
-        QServer = new Server [MServer->GetServerCount()];
-    }
-    else
-        QServer = new Server [MServer->GetServerCount()];
-        
-    PLAYER_LIST->DeleteAllItems();
-    SERVER_LIST->DeleteAllItems();
-        
-    totalPlayers = 0;
-               
-    for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
-    {    
-        MServer->GetServerAddress(i, Address, Port);
-
-        QServer[i].SetAddress(Address, Port);
-            
-        if (QServer[i].Query(500))
-        {
-            AddServerToList(SERVER_LIST, QServer[i], i);
-            
-            totalPlayers += QServer[i].info.numplayers;
-        }
-        else
-        {
-            if (launchercfg_s.show_blocked_servers)
-                AddServerToList(SERVER_LIST, QServer[i], i);
-        }
-            
-        wxSafeYield(this, true);
-    }
-        
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
-    #endif
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
@@ -547,17 +625,10 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
         return;
                 
     totalPlayers -= QServer[arrayindex].info.numplayers;
-        
-    QServer[arrayindex].Query(500);
-        
-    AddServerToList(SERVER_LIST, QServer[arrayindex], listindex, 0);
-        
-    AddPlayersToList(PLAYER_LIST, QServer[arrayindex]);
-        
-    totalPlayers += QServer[arrayindex].info.numplayers;
-        
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
+    
+    mtcs_Request.Signal = mtcs_getsingleserver;
+    mtcs_Request.ServerListIndex = listindex;
+    mtcs_Request.Index = arrayindex; 
 }
 
 void dlgMain::OnRefreshAll(wxCommandEvent &event)
@@ -576,27 +647,10 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
     PLAYER_LIST->DeleteAllItems();
         
     totalPlayers = 0;
-        
-    for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
-    {    
-        if (QServer[i].Query(500))
-        {
-            AddServerToList(SERVER_LIST, QServer[i], i);
-            
-            totalPlayers += QServer[i].info.numplayers;
-        }
-        else
-        {
-            if (launchercfg_s.show_blocked_servers)
-                AddServerToList(SERVER_LIST, QServer[i], i);
-        }
-                     
-        wxSafeYield(this, true);
-    }
-
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);    
+    
+    mtcs_Request.Signal = mtcs_getservers;
+    mtcs_Request.ServerListIndex = -1;
+    mtcs_Request.Index = -1; 
 }
 
 // when the user clicks on the server list

@@ -28,6 +28,8 @@
 #include <wx/mstream.h>
 #include <wx/datstrm.h>
 
+#include <vector>
+
 #include "net_io.h"
 
 #define MASTER_CHALLENGE    777123
@@ -63,7 +65,7 @@ struct serverinfo_t     // Server information structure
     wxString        iwad;           // The main game file
     wxString        iwad_hash;      // IWAD hash
     wxString        *pwads;         // Array of PWAD file names
-    wxUint8         gametype;       // Gametype (0 = Coop, 1 = DM)
+    wxInt8          gametype;       // Gametype (0 = Coop, 1 = DM)
     wxUint8         gameskill;      // Gameskill
     wxUint8         teamplay;       // Teamplay enabled?
     player_t        *playerinfo;    // Player information array, use numplayers
@@ -138,57 +140,78 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
 {
     private:
         // Address format structure
-        struct addr_t
+        typedef struct
         {
-            wxUint8     ip[4];
+            wxString    ip;
             wxUint16    port;
-        };
+            bool        custom;
+        } addr_t;
 
-        wxUint16    server_count;   // Number of servers
-        addr_t     *addresses;      // Server array
-        
+        std::vector<addr_t> addresses;
     public:
         MasterServer() 
         { 
             challenge = MASTER_CHALLENGE;
             response = MASTER_CHALLENGE;
-                        
-            server_count = 0;
-            
-            addresses = NULL; 
         }
         
         virtual ~MasterServer() 
         { 
-            if (addresses != NULL) 
-            {
-                free(addresses); 
-                addresses = NULL;
-            }
+
         }
         
-		wxInt32 GetServerCount() { return server_count; }
-               
-        addr_t GetServerAddress(wxInt32 index) 
-        {  
-            if ((addresses != NULL) && (server_count > 0))
-            if ((index >= 0) && (index < server_count))
-            {
-                return addresses[index];
-            }
-        }
-        
-        void GetServerAddress(wxInt32 index, wxString &Address, wxInt16 &Port)
+		wxInt32 GetServerCount() { return addresses.size(); }
+                      
+        bool GetServerAddress(wxInt32  Index, 
+                              wxString &Address, 
+                              wxUint16 &Port)
         {
-            if ((addresses != NULL) && (server_count > 0))
-            if ((index >= 0) && (index < server_count))
+            if ((Index >= 0) && (Index < addresses.size()))
             {
-                Address.Printf(_T("%d.%d.%d.%d"),addresses[index].ip[0],
-                                                         addresses[index].ip[1],
-                                                         addresses[index].ip[2],
-                                                         addresses[index].ip[3]);
-                                                         
-                Port = addresses[index].port;
+                Address = addresses[Index].ip;
+                Port = addresses[Index].port;
+                
+                return addresses[Index].custom;
+            }
+            
+            return false;
+        }
+        
+        void AddCustomServer(wxString Address, wxUint16 Port)
+        {
+            addr_t cs;
+                    
+            cs.ip = Address;
+            cs.port = Port;
+            cs.custom = true;
+            
+            addresses.push_back(cs);
+        }
+               
+        bool DeleteCustomServer(wxUint32 Index)
+        {
+            if ((Index >= 0) && (Index < addresses.size()))
+            {
+                if (addresses[Index].custom)
+                {
+                    std::vector<addr_t>::iterator addr_iterator = addresses.begin();
+                                        
+                    addr_iterator += Index;
+                    
+                    addresses.erase(addr_iterator);
+                }
+                else
+                    return false;
+            }
+            
+            return false;
+        }
+
+        void DeleteAllCustomServers()
+        {
+            for (wxUint32 i = 0; i < addresses.size(); i++)
+            {
+                DeleteCustomServer(i);
             }
         }
         

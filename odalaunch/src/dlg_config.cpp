@@ -63,6 +63,8 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
 
+    EVT_DIRPICKER_CHANGED(ID_FPCHOOSEODAMEXPATH, dlgConfig::OnChooseOdamexPath)
+
 	// Misc events
 	EVT_CHECKBOX(ID_CHKLISTONSTART, dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(ID_CHKSHOWBLOCKEDSERVERS, dlgConfig::OnCheckedBox)
@@ -125,6 +127,11 @@ void dlgConfig::Show()
 }
 
 void dlgConfig::OnCheckedBox(wxCommandEvent &event)
+{
+    UserChangedSetting = 1;
+}
+
+void dlgConfig::OnChooseOdamexPath(wxFileDirPickerEvent &event)
 {
     UserChangedSetting = 1;
 }

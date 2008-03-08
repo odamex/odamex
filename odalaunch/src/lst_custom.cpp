@@ -148,26 +148,15 @@ void wxAdvancedListCtrl::ColourListItem(wxInt32 item, wxInt32 grey)
 
 // colour the previous item on insertion, it won't colour THIS item..?
 void wxAdvancedListCtrl::OnItemInsert(wxListEvent &event)
-{
-    static wxInt32 colswitch = 0;
-    
-    ColourListItem(event.GetIndex() - 1, colswitch);
-    
-    colswitch = !colswitch;
+{   
+    ColourListItem(event.GetIndex() - 1, ((event.GetIndex() - 1) % 2));   
 }
 
 // recolour the entire list
 void wxAdvancedListCtrl::ColourList()
-{  
-    // iterate through, changing background colour for each row
-    wxInt32 colswitch = 1;
-    
+{      
     for (wxInt32 i = 0; i < this->GetItemCount(); i++)
-    {     
-        ColourListItem(i, colswitch);
-        
-        colswitch = !colswitch;
-    }
+        ColourListItem(i, (i % 2));
 }
 
 // get an index location of the text field in the list

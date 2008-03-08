@@ -58,11 +58,7 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
     
     list->SetItem(idx, 7, s.GetAddress());
     
-    // just add the address if the server is blocked
-    if (!ping)
-        return;
-        
-    list->SetItem(idx, 1, wxString::Format(_T("%d"),ping));
+    list->SetItem(idx, 1, wxString::Format(_T("%d"),ping));   
     list->SetItem(idx, 2, wxString::Format(_T("%d/%d"),s.info.numplayers,s.info.maxplayers));       
     
     // build a list of pwads
@@ -84,11 +80,11 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
     list->SetItem(idx, 4, s.info.map.Upper());
     
     // what game type do we like to play
-    wxString gmode = _T("ERROR");
+    wxString gmode = _T("");
 
-    if(!s.info.gametype)
+    if (s.info.gametype == 0)
         gmode = _T("COOP");
-    else
+    else if (s.info.gametype == 1)
         gmode = _T("DM");
     if(s.info.gametype && s.info.teamplay)
         gmode = _T("TEAM DM");

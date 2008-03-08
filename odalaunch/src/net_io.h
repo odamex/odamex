@@ -75,7 +75,7 @@ class BufferedSocket
         wxInt32 GetData(wxInt32 Timeout);
         
         // a method for a round-trip time in milliseconds
-        inline wxInt32 GetPing() { return (RecvPing - SendPing); }
+        wxInt32 GetPing() { return (RecvPing - SendPing); }
         
         // Read/Write values to the internal buffer
         wxChar      *ReadString();

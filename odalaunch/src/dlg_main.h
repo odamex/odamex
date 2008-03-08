@@ -40,20 +40,12 @@
 
 #include "net_packet.h"
 
-#if ODL_ENABLE_THREADS
 // custom event declarations
 BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)
 END_DECLARE_EVENT_TYPES()
 
-// Defines a new wxArray
-WX_DEFINE_ARRAY_PTR(wxThread *, wxArrayThread);
-#endif
-
-class dlgMain : public wxFrame
-#if ODL_ENABLE_THREADS
-, wxThreadHelper
-#endif
+class dlgMain : public wxFrame, wxThreadHelper
 {
 	public:
 
@@ -75,13 +67,11 @@ class dlgMain : public wxFrame
         void OnOpenChangeLog(wxCommandEvent& event);
         void OnOpenReportBug(wxCommandEvent &event);
 		void OnAbout(wxCommandEvent& event);
-        void OnQuit(wxCloseEvent& event);
 		
 		void OnQuickLaunch(wxCommandEvent &event);
 		void OnLaunch(wxCommandEvent &event);
 		void OnRefreshAll(wxCommandEvent &event);
 		void OnGetList(wxCommandEvent &event);
-		void OnExitClick(wxCommandEvent& event);
 		void OnRefreshServer(wxCommandEvent& event);
 		
 		void OnServerListClick(wxListEvent& event);
@@ -90,17 +80,18 @@ class dlgMain : public wxFrame
 		
 		void OnComboSelectMaster(wxCommandEvent& event);
 		
+		void OnExit(wxCommandEvent& event);
+		
 		wxInt32 FindServer(wxString Address);
 		
 		wxAdvancedListCtrl *SERVER_LIST;
 		wxAdvancedListCtrl *PLAYER_LIST;
-		wxStatusBar *status_bar;
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
         
 		wxInt32 totalPlayers;
-#if ODL_ENABLE_THREADS
+
         /*
             Our threading system
 
@@ -128,8 +119,9 @@ class dlgMain : public wxFrame
         {
              mtcs_none
             ,mtcs_getmaster
-            ,mtcs_getserver 
+            ,mtcs_getsingleserver
             ,mtcs_getservers
+            ,mtcs_exit       // Shutdown now!
                         
             ,mtcs_max
         } mtcs_t;
@@ -137,9 +129,8 @@ class dlgMain : public wxFrame
         typedef struct
         {
             mtcs_t Signal;
-            
-            wxString Address;
-            wxInt16  Port;
+            wxInt32 Index;
+            wxInt32 ServerListIndex;
         } mtcs_struct_t;
 
         // Only set these below if you got a response!
@@ -157,40 +148,30 @@ class dlgMain : public wxFrame
             
             ,mtrs_master_timeout   // Dead
             ,mtrs_server_timeout
+            
+            ,mtrs_server_singlesuccess // represents a single selected server
+            ,mtrs_server_singletimeout
                         
             ,mtrs_max
         } mtrs_t;
+
+        typedef struct
+        {
+            mtrs_t Signal;
+            wxInt32 Index;
+            wxInt32 ServerListIndex;
+        } mtrs_struct_t;
+        
+        volatile mtrs_struct_t mtrs_Result;
         
         void OnMonitorSignal(wxCommandEvent&);
-        
-        // Worker Thread Return Signals
-        // Essentially the same as above.
-        typedef enum
-        {
-            wtrs_gotserver // (Server)
-            
-            ,wtrs_timeout   // Dead
-                        
-            ,wtrs_max
-        } wtrs_t;
-                       
+                              
         // Our monitoring thread entry point, from wxThreadHelper
         void *Entry();
 
-        // Our worker threads
-        wxArrayThread m_workerthreads;
-#endif
-        // Misc thread-related crap
 	private:
 
 		DECLARE_EVENT_TABLE()
 };
-
-#define EVT_THREAD_MONITOR_SIGNAL(id, fn) \
-    DECLARE_EVENT_TABLE_ENTRY( \
-        wxEVT_THREAD_MONITOR_SIGNAL, id, wxID_ANY, \
-        (wxObjectEventFunction)(wxEventFunction) wxStaticCastEvent( wxCommandEventFunction, &fn ), \
-        (wxObject *) NULL \
-    ),
 
 #endif

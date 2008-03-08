@@ -79,33 +79,45 @@ wxInt32 MasterServer::Parse()
     if (temp_response != response)
         return 0;
         
-    // only free the array if the response is valid
-    // the coder may still want the addresses for refreshing
-    if (addresses != NULL)
-    {
-        free(addresses);
-        addresses = NULL;
-    }
-    
-    server_count = Socket.Read16();
+    wxInt16 server_count = Socket.Read16();
     
     if (!server_count)
         return 0;
     
-    // allocate an array with the amount of addresses
-    addresses = (addr_t *)calloc(server_count, sizeof(addr_t));
-        
-    if (addresses == NULL)
-        return 0;
+    // don't delete our custom servers!
+    std::vector<addr_t>::iterator addr_iter = addresses.begin();    
     
-    for (wxInt32 i = 0; i < server_count; i++)
+    while(addr_iter != addresses.end()) 
     {
-        addresses[i].ip[0] = Socket.Read8();
-        addresses[i].ip[1] = Socket.Read8();
-        addresses[i].ip[2] = Socket.Read8();
-        addresses[i].ip[3] = Socket.Read8();
+        addr_t address = *addr_iter;
+        
+        if (address.custom == false)
+        {
+            addresses.erase(addr_iter);
+            continue;
+        }
+        
+        addr_iter++;
+    }
+    
+    // Add on to any servers already in the list
+    for (wxInt16 i = 0; i < server_count; i++)
+    {
+        addr_t address;
+        wxUint8 ip1, ip2, ip3, ip4;
+        
+        ip1 = Socket.Read8();
+        ip2 = Socket.Read8();
+        ip3 = Socket.Read8();
+        ip4 = Socket.Read8();   
+        
+        address.ip = wxString::Format(_T("%d.%d.%d.%d"), ip1, ip2, ip3, ip4);
             
-        addresses[i].port = Socket.Read16();
+        address.port = Socket.Read16();
+        
+        address.custom = false;
+        
+        addresses.push_back(address);
     }
     
     Socket.ClearRecvBuffer();
@@ -129,7 +141,7 @@ Server::Server()
     info.iwad = _T("");
     info.pwads = NULL;
 
-	info.gametype = 0;
+	info.gametype = -1;
 	info.gameskill = 0;
 	info.teamplay = false;
 

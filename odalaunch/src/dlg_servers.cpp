@@ -33,57 +33,85 @@
 #include <wx/dirdlg.h>
 
 // Widget ID's
-static wxInt32 ID_SRVCHKLST = XRCID("ID_SRVCHKLST");
+static wxInt32 ID_SERVERLIST = XRCID("ID_SERVERLIST");
 
-static wxInt32 ID_BTNSRVADD = XRCID("ID_BTNSRVADD");
-static wxInt32 ID_BTNSRVDEL = XRCID("ID_BTNSRVDEL");
+static wxInt32 ID_BTNADDSERVER = XRCID("ID_BTNADDSERVER");
+static wxInt32 ID_BTNREPLACESERVER = XRCID("ID_BTNREPLACESERVER");
+static wxInt32 ID_BTNDELETESERVER = XRCID("ID_BTNDELETESERVER");
 
-static wxInt32 ID_BTNSRVUP = XRCID("ID_BTNSRVUP");
-static wxInt32 ID_BTNSRVDWN = XRCID("ID_BTNSRVDWN");
+static wxInt32 ID_BTNMOVEUP = XRCID("ID_BTNMOVEUP");
+static wxInt32 ID_BTNMOVEDOWN = XRCID("ID_BTNMOVEDOWN");
 
-static wxInt32 ID_SRVIPPORT = XRCID("ID_SRVIPPORT");
-static wxInt32 ID_CHKSUBST = XRCID("ID_CHKSUBST");
-static wxInt32 ID_CHKSUBIPPORT = XRCID("ID_SRVSUBIPPORT");
-
-static wxInt32 ID_BTNSRVOK = XRCID("ID_BTNSRVOK");
-static wxInt32 ID_BTNSRVCLOSE = XRCID("ID_BTNSRVCLOSE");
+static wxInt32 ID_CHKSUBSTITUTE = XRCID("ID_CHKSUBSTITUTE");
+static wxInt32 ID_TXTSUBIPPORT = XRCID("ID_TXTSUBIPPORT");
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgServers,wxDialog)
-	// Window events
-    EVT_BUTTON(ID_BTNSRVOK, dlgServers::OnButtonOK)
-    EVT_BUTTON(ID_BTNSRVCLOSE, dlgServers::OnButtonClose)
-
 	// Button events
-    EVT_BUTTON(ID_BTNSRVADD, dlgServers::OnButtonAddServer)
-    EVT_BUTTON(ID_BTNSRVDEL, dlgServers::OnButtonDelServer)
-    EVT_BUTTON(ID_BTNSRVUP, dlgServers::OnButtonMoveServerUp)
-    EVT_BUTTON(ID_BTNSRVDWN, dlgServers::OnButtonMoveServerDown) 
+    EVT_BUTTON(ID_BTNADDSERVER, dlgServers::OnButtonAddServer)
+    EVT_BUTTON(ID_BTNREPLACESERVER, dlgServers::OnButtonReplaceServer)
+    EVT_BUTTON(ID_BTNDELETESERVER, dlgServers::OnButtonDeleteServer)
+
+    EVT_BUTTON(ID_BTNMOVEUP, dlgServers::OnButtonMoveServerUp)
+    EVT_BUTTON(ID_BTNMOVEDOWN, dlgServers::OnButtonMoveServerDown) 
+
+    EVT_BUTTON(wxID_OK, dlgServers::OnButtonOK)
 
 	// Misc events
-    EVT_LISTBOX(ID_SRVCHKLST, dlgServers::OnCheckServerListClick) 
-//	EVT_CHECKBOX(ID_CHKSUBST, dlgConfig::OnSubstChecked)
+	EVT_CHECKBOX(ID_CHKSUBSTITUTE, dlgServers::OnSubstChecked)
+	
+	EVT_LISTBOX(ID_SERVERLIST, dlgServers::OnServerList)
 END_EVENT_TABLE()
 
 // Window constructor
-dlgServers::dlgServers(wxWindow *parent, wxWindowID id)
+dlgServers::dlgServers(MasterServer *ms, wxWindow *parent, wxWindowID id)
 {
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgServers"));
 
-    SERVER_LIST = wxStaticCast(FindWindow(ID_SRVCHKLST),wxCheckListBox);
-    SERVER_IPPORT_BOX = wxStaticCast(FindWindow(ID_SRVIPPORT),wxTextCtrl); 
+    SERVER_LIST = wxStaticCast(FindWindow(ID_SERVERLIST), wxListBox);
+    CHECK_SUBSTITUTE = wxStaticCast(FindWindow(ID_CHKSUBSTITUTE), wxCheckBox); 
+    TEXT_SUBSTITUTE = wxStaticCast(FindWindow(ID_TXTSUBIPPORT), wxTextCtrl);
+    
+    MServer = ms;
+    
+    LoadSettings();
+    
+    LoadServersIn();
 }
 
 // Window destructor
 dlgServers::~dlgServers()
 {
-
+    // clean up client data.
+    if (SERVER_LIST->GetCount())
+    for (wxInt32 i = 0; i < SERVER_LIST->GetCount(); i++)
+    {
+        CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
+        
+        delete cs;
+    }
 }
 
 // OK button
 void dlgServers::OnButtonOK(wxCommandEvent &event)
 {
+    wxMessageDialog msgdlg(this, _T("Save settings?"), _T("Save settings?"),
+                           wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
+
+    if (UserChangedSetting == 1)
+    if (msgdlg.ShowModal() == wxID_YES)
+    {
+        // reset 'dirty' flag
+        UserChangedSetting = 0;
+        
+        LoadServersIn();
+
+        SaveSettings();
+    }
+    else
+        UserChangedSetting = 0;
+
     Close();
 }
 
@@ -93,40 +121,129 @@ void dlgServers::OnButtonClose(wxCommandEvent &event)
     Close();
 }
 
-// Server Check List Clicked
-void dlgServers::OnCheckServerListClick(wxCommandEvent &event)
+void dlgServers::OnServerList(wxCommandEvent &event)
 {
-    SERVER_IPPORT_BOX->SetLabel(SERVER_LIST->GetStringSelection());
+    wxInt32 i = SERVER_LIST->GetSelection();
+
+    if (i == wxNOT_FOUND)
+         return;
+
+    CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
+    
+    //CHECK_SUBSTITUTE->SetValue(cs->Subst.Enabled);
+    //TEXT_SUBSTITUTE->SetLabel(cs->Subst.Address);
+    
+    
+}
+
+void dlgServers::OnSubstChecked(wxCommandEvent &event)
+{
+    TEXT_SUBSTITUTE->Enable(CHECK_SUBSTITUTE->IsChecked());
 }
 
 // Add Server button
 void dlgServers::OnButtonAddServer(wxCommandEvent &event)
 {
-    wxString ted_result = _T("");
-    wxTextEntryDialog ted(this, 
-                            _T("Please enter IP Address and Port"), 
-                            _T("Please enter IP Address and Port"),
-                            _T("0.0.0.0:0"));
-    // Show it
-    ted.ShowModal();
-    ted_result = ted.GetValue();
+    wxString tedaddr_res;
+    wxUint16 tedport_res;
     
-    if (!ted_result.IsEmpty() && 
-        ted_result != _T("0.0.0.0:0") &&
-        SERVER_LIST->FindString(ted_result) == wxNOT_FOUND)
+    wxTextEntryDialog tedAddress(this, 
+                            _T("Please enter an IP Address"), 
+                            _T("Please enter an IP Address"),
+                            _T("127.0.0.1"));
+                            
+    wxTextEntryDialog tedPort(this, 
+                            _T("Please enter a Port number"), 
+                            _T("Please enter a Port number"),
+                            _T("10666"));
+                            
+    // Show it
+    tedAddress.ShowModal();
+    tedaddr_res = tedAddress.GetValue();
+
+    tedPort.ShowModal();
+    tedport_res = wxAtoi(tedPort.GetValue().c_str());
+    
+    // Make a 0.0.0.0:0 address string
+    wxString addr_portfmt = wxString::Format(_T("%s:%d"), 
+                                             tedaddr_res.c_str(), 
+                                             tedport_res);
+    
+    if (!tedaddr_res.IsEmpty() && 
+        tedport_res != 0 &&
+        SERVER_LIST->FindString(addr_portfmt) == wxNOT_FOUND)
     {
-        SERVER_LIST->Append(ted_result);
-//        UserChangedSetting = 1;
+        CustomServer_t *cs = new CustomServer_t;
+        
+        cs->Address = tedaddr_res;
+        cs->Port = tedport_res;
+        
+        SERVER_LIST->Append(addr_portfmt, (void *)(cs));      
+
+        UserChangedSetting = 1;
+    }
+}
+
+void dlgServers::OnButtonReplaceServer(wxCommandEvent &event)
+{
+    wxString tedaddr_res;
+    wxUint16 tedport_res;                          
+
+    wxInt32 i = SERVER_LIST->GetSelection();
+
+    if (i == wxNOT_FOUND)
+    {
+         wxMessageBox(_T("Select an item to replace!"));
+         return;
+    }
+
+    CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
+    
+    wxTextEntryDialog tedAddress(this, 
+                            _T("Please enter an IP Address"), 
+                            _T("Please enter an IP Address"),
+                            cs->Address);
+                            
+    wxTextEntryDialog tedPort(this, 
+                            _T("Please enter a Port number"), 
+                            _T("Please enter a Port number"),
+                            wxString::Format(_T("%d"), cs->Port));
+
+    // Show it
+    tedAddress.ShowModal();
+    tedaddr_res = tedAddress.GetValue();
+
+    tedPort.ShowModal();
+    tedport_res = wxAtoi(tedPort.GetValue().c_str());
+    
+    // Make a 0.0.0.0:0 address string
+    wxString addr_portfmt = wxString::Format(_T("%s:%d"), 
+                                             tedaddr_res.c_str(), 
+                                             tedport_res);
+
+    if (!tedaddr_res.IsEmpty() && tedport_res != 0)
+    {       
+        SERVER_LIST->SetString(i, addr_portfmt);
+        SERVER_LIST->SetClientData(i, (void *)(cs));
+
+        UserChangedSetting = 1;
     }
 }
 
 // Delete Server button
-void dlgServers::OnButtonDelServer(wxCommandEvent &event)
+void dlgServers::OnButtonDeleteServer(wxCommandEvent &event)
 {
-    if (SERVER_LIST->GetSelection() != wxNOT_FOUND)
+    wxInt32 i = SERVER_LIST->GetSelection();
+    
+    if (i != wxNOT_FOUND)
     {
-        SERVER_LIST->Delete(SERVER_LIST->GetSelection());
-//        UserChangedSetting = 1;
+        CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
+        
+        delete cs;
+        
+        SERVER_LIST->Delete(i);
+
+        UserChangedSetting = 1;
     }
 }
 
@@ -134,7 +251,7 @@ void dlgServers::OnButtonDelServer(wxCommandEvent &event)
 void dlgServers::OnButtonMoveServerUp(wxCommandEvent &event)
 {
     // Get the selected item
-    wxInt32 i = SERVER_LIST->GetSelection();
+/*    wxInt32 i = SERVER_LIST->GetSelection();
 
     if ((i != wxNOT_FOUND) && (i > 0))
     {
@@ -146,15 +263,15 @@ void dlgServers::OnButtonMoveServerUp(wxCommandEvent &event)
 
         SERVER_LIST->SetSelection(i - 1);
 
-//        UserChangedSetting = 1;
-    }
+        UserChangedSetting = 1;
+    }*/
 }
 
 // Move Server Down button
 void dlgServers::OnButtonMoveServerDown(wxCommandEvent &event)
 {
     // Get the selected item
-    wxUint32 i = SERVER_LIST->GetSelection();
+/*    wxInt32 i = SERVER_LIST->GetSelection();
 
     if ((i != wxNOT_FOUND) && (i + 1 < SERVER_LIST->GetCount()))
     {
@@ -166,6 +283,87 @@ void dlgServers::OnButtonMoveServerDown(wxCommandEvent &event)
 
         SERVER_LIST->SetSelection(i + 1);
 
-//        UserChangedSetting = 1;
+        UserChangedSetting = 1;
+    }*/
+}
+
+void dlgServers::SaveSettings()
+{
+    wxFileConfig fc;
+        
+    fc.SetPath(_T("/CustomServers"));
+    fc.Write(_T("NumberOfServers"), (wxInt32)SERVER_LIST->GetCount());
+    
+    for (wxInt32 i = 0; i < SERVER_LIST->GetCount(); i++)
+    {
+        // Jump to/create path for current server to be written
+        fc.SetPath(wxString::Format(_T("%d"), i));
+        
+        CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
+        
+        fc.Write(_T("Address"), cs->Address);            
+        fc.Write(_T("Port"), cs->Port);
+        
+        fc.SetPath(_T("Substitute"));
+        
+        fc.Write(_T("Enabled"), cs->Subst.Enabled);
+        fc.Write(_T("Address"), cs->Subst.Address);
+        fc.Write(_T("Port"), cs->Subst.Port);
+        
+        fc.SetPath(_T("../"));
+        
+        // Traverse back down to "/CustomServers"
+        fc.SetPath(_T("../"));
+    }
+
+    // Save settings to configuration file
+    fc.Flush();
+}
+
+void dlgServers::LoadSettings()
+{
+    wxFileConfig fc;
+    
+    fc.SetPath(_T("/CustomServers"));
+    
+    wxInt32 NumberOfServers = fc.Read(_T("NumberOfServers"), 0L);
+    
+    for (wxInt32 i = 0; i < NumberOfServers; i++)
+    {
+        // Jump to/create path for current server to be written
+        fc.SetPath(wxString::Format(_T("%d"), i));
+        
+        CustomServer_t *cs = new CustomServer_t;
+        
+        cs->Address = fc.Read(_T("Address"), _T(""));            
+        cs->Port = fc.Read(_T("Port"), 0L);
+        
+        fc.SetPath(_T("Substitute"));
+        
+        fc.Read(_T("Enabled"), cs->Subst.Enabled);
+        cs->Subst.Address = fc.Read(_T("Address"), _T(""));
+        cs->Subst.Port = fc.Read(_T("Port"), 0L);
+        
+        SERVER_LIST->Append(wxString::Format(_T("%s:%d"), 
+                                             cs->Address.c_str(),
+                                             cs->Port), (void *)(cs));
+        
+        fc.SetPath(_T("../"));
+        
+        // Traverse back down to "/CustomServers"
+        fc.SetPath(_T("../"));
+    }
+}
+
+void dlgServers::LoadServersIn()
+{
+    MServer->DeleteAllCustomServers();
+    
+    if (SERVER_LIST->GetCount());
+    for (wxUint32 i = 0; i < SERVER_LIST->GetCount(); i++)
+    {
+        CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
+        
+        MServer->AddCustomServer(cs->Address, cs->Port);
     }
 }

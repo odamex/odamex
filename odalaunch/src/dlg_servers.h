@@ -39,36 +39,54 @@
 #include <wx/checklst.h>
 #include <wx/textdlg.h>
 
+#include "net_packet.h"
+
+#include <vector>
+
+typedef struct
+{
+    bool     Enabled;
+    wxString Address;
+    wxUint16 Port;
+} CS_Subst_t;
+
+typedef struct
+{
+    wxString Address;
+    wxUint16 Port;
+    
+    CS_Subst_t Subst;
+} CustomServer_t;
+
 class dlgServers: public wxDialog
 {
 	public:
 
-		dlgServers(wxWindow* parent, wxWindowID id = -1);
+		dlgServers(MasterServer *ms, wxWindow* parent, wxWindowID id = -1);
 		virtual ~dlgServers();
+
+        CustomServer_t GetCustomServer(wxUint32);
 
 	protected:
 
-        void OnCheckServerListClick(wxCommandEvent &event);
+        void OnServerList(wxCommandEvent &event);
+        void OnSubstChecked(wxCommandEvent &event);
 
         void OnButtonOK(wxCommandEvent &event);
         void OnButtonClose(wxCommandEvent &event);
         
         void OnButtonAddServer(wxCommandEvent &event);
-        void OnButtonDelServer(wxCommandEvent &event);
+        void OnButtonReplaceServer(wxCommandEvent &event);
+        void OnButtonDeleteServer(wxCommandEvent &event);
         
         void OnButtonMoveServerUp(wxCommandEvent &event);
         void OnButtonMoveServerDown(wxCommandEvent &event);
 
-/*        
-        void OnGetEnvClick(wxCommandEvent &event);
-        
-        void OnCheckedBox(wxCommandEvent &event);
-*/               
         wxFileConfig ConfigInfo;
 
-        wxCheckListBox *SERVER_LIST;
-        
-        wxTextCtrl *SERVER_IPPORT_BOX;
+        wxListBox *SERVER_LIST;
+        wxTextCtrl *TEXT_SUBSTITUTE;
+        wxCheckBox *CHECK_SUBSTITUTE;
                 
 		wxButton *ADD_SERVER_BUTTON;
 		wxButton *DEL_SERVER_BUTTON;
@@ -78,7 +96,14 @@ class dlgServers: public wxDialog
 		wxButton *CLOSE_BUTTON;
 		wxButton *OK_BUTTON;
 
+        void SaveSettings();   
+        void LoadSettings();
+        
+        void LoadServersIn();
+
         wxInt32 UserChangedSetting;
+
+        MasterServer *MServer;
 
 	private:
 
