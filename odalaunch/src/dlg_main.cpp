@@ -31,6 +31,7 @@
 #include <wx/utils.h>
 #include <wx/tipwin.h>
 #include <wx/recguard.h>
+#include <wx/app.h>
 
 #include "misc.h"
 
