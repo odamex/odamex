@@ -442,8 +442,7 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 		lumpinfo = 0;	
 	}
 	
-	using namespace std;
-	vector<string> hashes(filenames);
+	std::vector<std::string> hashes(filenames);
 	
 	// no dupes
 	filenames.erase(unique(filenames.begin(), filenames.end()), filenames.end());

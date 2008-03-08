@@ -318,13 +318,11 @@ static bool if_command_result;
 
 BEGIN_COMMAND (exec)
 {
-	using namespace std;
-
 	if (argc < 2)
 		return;
 
-	static vector<string> exec_stack;
-	static vector<bool>	tag_stack;
+	static std::vector<std::string> exec_stack;
+	static std::vector<bool>	tag_stack;
 
 	if(find(exec_stack.begin(), exec_stack.end(), argv[1]) != exec_stack.end())
 	{
@@ -338,7 +336,7 @@ BEGIN_COMMAND (exec)
 		return;
 	}
 
-	ifstream ifs(argv[1]);
+	std::ifstream ifs(argv[1]);
 
 	if(ifs.fail())
 	{
@@ -350,7 +348,7 @@ BEGIN_COMMAND (exec)
 
 	while(ifs)
 	{
-		string line;
+		std::string line;
 		getline(ifs, line);
 
 		if(!line.length())
@@ -406,7 +404,6 @@ END_COMMAND (exec)
 // if cvar eq blah "command";
 BEGIN_COMMAND (if)
 {
-	using namespace std;
 	if_command_result = false;
 
 	if (argc < 4)
@@ -421,7 +418,7 @@ BEGIN_COMMAND (if)
 		return;
 	}
 
-	string op = argv[2];
+	std::string op = argv[2];
 
 	if(op == "eq")
 	{

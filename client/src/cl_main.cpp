@@ -43,6 +43,7 @@
 #include "m_random.h"
 #include "w_wad.h"
 #include "md5.h"
+#include "m_misc.h"
 
 #include <string>
 #include <vector>
@@ -702,25 +703,23 @@ void CL_RequestConnectInfo(void)
 std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
-	using namespace std;
-
 	size_t i;
 	DWORD server_token = MSG_ReadLong();
-	string server_host = MSG_ReadString();
+	std::string server_host = MSG_ReadString();
 
 	byte recv_teamplay_stats = 0;
 
 	byte playercount = MSG_ReadByte(); // players
 	MSG_ReadByte(); // max_players
 
-	string server_map = MSG_ReadString();
+	std::string server_map = MSG_ReadString();
 	byte server_wads = MSG_ReadByte();
 
 	Printf(PRINT_HIGH, "\n");
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
-	vector<string> wadnames(server_wads);
+	std::vector<std::string> wadnames(server_wads);
 	for(i = 0; i < server_wads; i++)
 		wadnames[i] = MSG_ReadString();
 
@@ -737,7 +736,7 @@ bool CL_PrepareConnect(void)
 		MSG_ReadByte();
 	}
 
-	vector<string> wadhashes(server_wads);
+	std::vector<std::string> wadhashes(server_wads);
 	for(i = 0; i < server_wads; i++)
 	{
 		wadhashes[i] = MSG_ReadString();
@@ -2014,37 +2013,18 @@ void CL_Download()
 		filename += download.filename;
 
 		// check for existing file
-		FILE *fp = fopen(filename.c_str(), "rb");
-
-		if(fp)
+		if(FileExists(filename.c_str()))
 		{
-			fclose(fp);
-
 			// there is an existing file, so use a new file whose name includes the checksum
 			filename += ".";
 			filename += actual_md5;
 		}
 
-		// open for writing
-		fp = fopen(filename.c_str(), "wb");
-
-		if(!fp)
-		{
-			Printf(PRINT_HIGH, "Failed to open file \"%s\" for writing\n", filename.c_str());
+        if (!M_WriteFile(filename.c_str(), download.buf.ptr(), download.buf.maxsize()))
+        {
 			CL_QuitNetGame();
-			return;
-		}
-
-		// write to file
-		size_t wrote = fwrite(download.buf.ptr(), 1, download.buf.maxsize(), fp);
-		fclose(fp);
-
-		if(wrote != download.buf.maxsize())
-		{
-			Printf(PRINT_HIGH, "Failed to write to file \"%s\"\n", filename.c_str());
-			CL_QuitNetGame();
-			return;
-		}
+			return;            
+        }
 
 		Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
 

@@ -106,7 +106,7 @@ BOOL M_WriteFile(char const *name, void *source, QWORD length)
     count = fwrite(source, 1, length, handle);
     fclose(handle);
 	
-	if (count < length)
+	if (count != length)
 	{
 		Printf(PRINT_HIGH, "Failed while writing to file %s\n", name);
 		return false;
@@ -144,7 +144,7 @@ QWORD M_ReadFile(char const *name, BYTE **buffer)
     count = fread(buf, 1, length, handle);
     fclose (handle);
 	
-    if (count < length)
+    if (count != length)
 	{
 		Printf(PRINT_HIGH, "Failed while reading from file %s\n", name);
 		return false;

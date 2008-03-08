@@ -66,7 +66,6 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 
 BEGIN_COMMAND (version)
 {
-	using namespace std;
 
 	if (argc == 1)
 	{
@@ -76,7 +75,7 @@ BEGIN_COMMAND (version)
 	else
 	{
 		// specific file version
-		std::map<string, string>::iterator i = get_source_files().find(argv[1]);
+		std::map<std::string, std::string>::iterator i = get_source_files().find(argv[1]);
 
 		if(i == get_source_files().end())
 		{
