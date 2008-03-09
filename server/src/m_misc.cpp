@@ -16,57 +16,21 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Main loop menu stuff.
-//	Default Config File.
+//		Default Config File.
 //
 //-----------------------------------------------------------------------------
 
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <ctype.h>
-
-#include "doomtype.h"
-#include "version.h"
-
-#if defined(_WIN32)
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
-
-#include "m_alloc.h"
-
-#include "doomdef.h"
-
-#include "z_zone.h"
-
-#include "m_swap.h"
-#include "m_argv.h"
-#include "m_fileio.h"
-#include "m_misc.h"
-
-#include "w_wad.h"
 
 #include "c_cvars.h"
 #include "c_dispatch.h"
-
+#include "doomdef.h"
+#include "doomtype.h"
+#include "m_argv.h"
 #include "i_system.h"
-#include "v_video.h"
-
-// State.
-#include "doomstat.h"
-
-// Data.
-#include "dstrings.h"
-
-#include "cmdlib.h"
-
-#include "g_game.h"
+#include "version.h"
 #include "sv_master.h"
 
 

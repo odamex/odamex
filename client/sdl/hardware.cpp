@@ -38,6 +38,8 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "i_sdlvideo.h"
+#include "m_fileio.h"
+#include "g_game.h"
 
 extern constate_e ConsoleState;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
@@ -172,6 +174,120 @@ void I_SetPalette (DWORD *pal)
 {
 	Video->SetPalette (pal);
 }
+
+// Find a free filename that isn't taken
+static BOOL FindFreeName (char *lbmname, const char *extension)
+{
+	int i;
+
+	for (i=0 ; i<=9999 ; i++)
+	{
+		sprintf (lbmname, "DOOM%04d.%s", i, extension);
+		if (!M_FileExists (lbmname))
+			break;		// file doesn't exist
+	}
+	if (i==10000)
+		return false;
+	else
+		return true;
+}
+
+extern DWORD IndexedPalette[256];
+
+/*
+    Dump a screenshot as a bitmap (BMP) file
+*/
+void I_ScreenShot (const char *filename)
+{
+	byte *linear;
+	char  autoname[32];
+	char *lbmname;
+
+	// find a file name to save it to
+	if (!filename || !strlen(filename))
+	{
+		lbmname = autoname;
+		if (!FindFreeName (lbmname, "bmp\0bmp" + (screen->is8bit() << 2)))
+		{
+			Printf (PRINT_HIGH, "M_ScreenShot: Delete some screenshots\n");
+			return;
+		}
+		filename = autoname;
+	}
+
+	if (screen->is8bit())
+	{
+		// munge planar buffer to linear
+		linear = new byte[screen->width * screen->height];
+		I_ReadScreen (linear);
+
+        // [Russell] - Spit out a bitmap file
+
+        // check endianess
+        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+            Uint32 rmask = 0xff000000;
+            Uint32 gmask = 0x00ff0000;
+            Uint32 bmask = 0x0000ff00;
+            Uint32 amask = 0x000000ff;
+        #else
+            Uint32 rmask = 0x000000ff;
+            Uint32 gmask = 0x0000ff00;
+            Uint32 bmask = 0x00ff0000;
+            Uint32 amask = 0xff000000;
+        #endif
+
+		SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(linear, screen->width, screen->height, 8, screen->width * 1, rmask,gmask,bmask,amask);
+
+		SDL_Colour colors[256];
+
+		// stolen from the WritePCXfile function, write palette data into SDL_Colour
+		DWORD *pal;
+
+		pal = IndexedPalette;
+
+		for (int i = 0; i < 256; i+=1, pal++)
+            {
+                colors[i].r = RPART(*pal);
+                colors[i].g = GPART(*pal);
+                colors[i].b = BPART(*pal);
+                colors[i].unused = 0;
+            }
+
+        // set the palette
+        SDL_SetColors(surface, colors, 0, 256);
+
+		// save the bmp file
+		if (SDL_SaveBMP(surface, filename) == -1)
+        {
+            Printf (PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
+
+            SDL_FreeSurface(surface);
+            delete[] linear;
+            return;
+        }
+/*		WritePCXfile (filename, linear,
+					  screen->width, screen->height,
+					  IndexedPalette);*/
+
+        SDL_FreeSurface(surface);
+		delete[] linear;
+	}
+	else
+	{
+		// save the tga file
+		//I_WriteTGAfile (filename, &screen);
+	}
+	Printf (PRINT_HIGH, "screen shot taken: %s\n", filename);
+}
+
+BEGIN_COMMAND (screenshot)
+{
+	if (argc == 1)
+		G_ScreenShot (NULL);
+	else
+		G_ScreenShot (argv[1]);
+}
+END_COMMAND (screenshot)
 
 //
 // I_SetOldPalette - Just for the red screen for now I guess

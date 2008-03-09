@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	M_MISC
+//		Default Config File.
 //    
 //-----------------------------------------------------------------------------
 
@@ -30,10 +30,6 @@
 
 // [Russell] Simple function to check whether the given string is an iwad name
 BOOL M_IsIWAD(std::string filename);
-
-// [RH] M_ScreenShot now accepts a filename parameter.
-//		Pass a NULL to get the original behavior.
-void M_ScreenShot (const char *filename);
 
 void M_LoadDefaults (void);
 

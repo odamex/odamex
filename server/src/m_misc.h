@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	M_MISC
+//		Default Config File.
 //    
 //-----------------------------------------------------------------------------
 

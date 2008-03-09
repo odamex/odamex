@@ -36,6 +36,7 @@
 #include "m_menu.h"
 #include "m_random.h"
 #include "i_system.h"
+#include "hardware.h"
 #include "p_setup.h"
 #include "p_saveg.h"
 #include "p_tick.h"
@@ -862,7 +863,7 @@ void G_Ticker (void)
 			G_DoWorldDone ();
 			break;
 		case ga_screenshot:
-			M_ScreenShot(shotfile.c_str());
+			I_ScreenShot(shotfile.c_str());
 			gameaction = ga_nothing;
 			break;
 		case ga_fullconsole:
