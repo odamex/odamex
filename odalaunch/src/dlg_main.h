@@ -82,7 +82,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnExit(wxCommandEvent& event);
 		
-		wxInt32 FindServer(wxString Address);
+		wxInt32 FindServer(wxString);
+		wxInt32 FindServerInList(wxString);
 		
 		wxAdvancedListCtrl *SERVER_LIST;
 		wxAdvancedListCtrl *PLAYER_LIST;

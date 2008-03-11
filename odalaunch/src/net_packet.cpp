@@ -128,6 +128,42 @@ wxInt32 MasterServer::Parse()
 // Server constructor
 Server::Server()
 {   
+    info.pwads = NULL;
+    info.playerinfo = NULL;
+    info.wad_hashes = NULL;
+                
+    ResetData();
+}
+
+Server::~Server()
+{
+    ResetData();
+}
+
+void Server::ResetData()
+{
+    // please keep this clean
+    if (info.pwads != NULL)
+    {
+        delete[] info.pwads;
+        
+        info.pwads = NULL;
+    }
+        
+    if (info.playerinfo != NULL)
+    {
+        delete[] info.playerinfo;
+    
+        info.playerinfo = NULL;
+    }
+    
+    if (info.wad_hashes != NULL)
+    {
+        delete[] info.wad_hashes;
+        
+        info.wad_hashes = NULL;
+    }
+
     // please keep this clean
     challenge = SERVER_CHALLENGE;
     response = SERVER_RESPONSE;
@@ -158,31 +194,6 @@ Server::Server()
 	info.teamplayinfo.redscore = 0;
 	info.teamplayinfo.bluescore = 0;
 	info.teamplayinfo.goldscore = 0;
-}
-
-Server::~Server()
-{
-    // please keep this clean
-    if (info.pwads != NULL)
-    {
-        delete[] info.pwads;
-        
-        info.pwads = NULL;
-    }
-        
-    if (info.playerinfo != NULL)
-    {
-        delete[] info.playerinfo;
-    
-        info.playerinfo = NULL;
-    }
-    
-    if (info.wad_hashes != NULL)
-    {
-        delete[] info.wad_hashes;
-        
-        info.wad_hashes = NULL;
-    }
 }
 
 wxInt32 Server::Parse()

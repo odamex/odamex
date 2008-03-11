@@ -227,6 +227,8 @@ class Server : public ServerBase  // [Russell] - A single server
         
         Server();
         
+        void ResetData();
+        
         virtual  ~Server();
         
         wxInt32 Parse();
