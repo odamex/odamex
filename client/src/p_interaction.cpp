@@ -994,6 +994,13 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 
 	if (serverside && target->flags & MF_COUNTKILL)
 		level.killed_monsters++;
+		
+	if (demoplayback && source && source->player && target->player) {
+		if (target->player == source->player) // Nes - Local demo
+			source->player->fragcount--;
+		else
+			source->player->fragcount++;
+	}
 
 	if (target->player)
 	{
