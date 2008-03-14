@@ -160,8 +160,12 @@ static int AccelerateMouse(int val)
 // GrabMouse
 //
 static void GrabMouse (void)
-{   
-   SDL_WarpMouse(screen->width/ 2, screen->height / 2);
+{
+   if(screen)
+   {
+      SDL_WarpMouse(screen->width/ 2, screen->height / 2);
+   }
+
    SDL_WM_GrabInput(SDL_GRAB_ON);
    mousegrabbed = true;
    flushmouse = true;
@@ -354,7 +358,7 @@ void I_GetEvent (void)
       D_PostEvent(&mouseevent);
    }
    
-   if(mousegrabbed)
+   if(mousegrabbed && screen)
    {
       SDL_WarpMouse(screen->width/ 2, screen->height / 2);
    }
