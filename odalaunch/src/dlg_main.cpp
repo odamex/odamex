@@ -218,8 +218,8 @@ void *dlgMain::Entry()
             
             static int index = 0;
             
-            mtcs_Request.Signal = mtcs_none;
-            
+            mtcs_Request.Signal = mtcs_getservers;
+          
             MServer->SetAddress(masters[index], 15000);
 
             // TODO: Clean this up
@@ -228,7 +228,7 @@ void *dlgMain::Entry()
                 index = !index;
         
                 MServer->SetAddress(masters[index], 15000);
-            
+           
                 if (!MServer->Query(9999))
                 {
                     mtrs_struct_t *Result = new mtrs_struct_t;
@@ -236,7 +236,7 @@ void *dlgMain::Entry()
                     Result->Signal = mtrs_master_timeout;                
                     Result->Index = -1;
                     Result->ServerListIndex = -1;
-                
+                    
                     wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
                     event.SetClientData(Result);
                   
@@ -244,15 +244,6 @@ void *dlgMain::Entry()
                 }
                 else
                 {      
-                    if (QServer != NULL)
-                    {
-                        delete[] QServer;
-            
-                        QServer = new Server [MServer->GetServerCount()];
-                    }
-                    else
-                        QServer = new Server [MServer->GetServerCount()];
-
                     mtrs_struct_t *Result = new mtrs_struct_t;
 
                     Result->Signal = mtrs_master_success;                
@@ -263,21 +254,10 @@ void *dlgMain::Entry()
                     event.SetClientData(Result);
                   
                     wxPostEvent(this, event);                     
-                    
-                    mtcs_Request.Signal = mtcs_getservers;
                 }
             }
             else
             {                 
-                if (QServer != NULL)
-                {
-                    delete[] QServer;
-            
-                    QServer = new Server [MServer->GetServerCount()];
-                }
-                else
-                    QServer = new Server [MServer->GetServerCount()];
-
                 mtrs_struct_t *Result = new mtrs_struct_t;
 
                 Result->Signal = mtrs_master_success;                
@@ -288,9 +268,16 @@ void *dlgMain::Entry()
                 event.SetClientData(Result);
                   
                 wxPostEvent(this, event);               
-                
-                mtcs_Request.Signal = mtcs_getservers;
             }
+
+            if (QServer != NULL && MServer->GetServerCount())
+            {
+                delete[] QServer;
+            
+                QServer = new Server [MServer->GetServerCount()];
+            }
+            else
+                QServer = new Server [MServer->GetServerCount()];
 
         }
     
@@ -301,6 +288,21 @@ void *dlgMain::Entry()
             wxUint16 Port = 0;
    
             mtcs_Request.Signal = mtcs_none;
+
+            // [Russell] - This includes custom servers.
+            if (!MServer->GetServerCount())
+            {
+                mtrs_struct_t *Result = new mtrs_struct_t;
+
+                Result->Signal = mtrs_server_noservers;                
+                Result->Index = -1;
+                Result->ServerListIndex = -1;
+                
+                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+                event.SetClientData(Result);
+                  
+                wxPostEvent(this, event);                  
+            }
 
             if (MServer->GetServerCount())
             for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
@@ -400,14 +402,17 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
     
     switch (Result->Signal)
     {
+        case mtrs_master_timeout:
+            if (!MServer->GetServerCount())           
+                break;
         case mtrs_master_success:
             SERVER_LIST->DeleteAllItems();
             PLAYER_LIST->DeleteAllItems();
         
             totalPlayers = 0;
             break;
-        case mtrs_master_timeout:
-            wxMessageBox(_T("Could not query any of the master servers"), _T("Error"), wxOK | wxICON_ERROR);
+        case mtrs_server_noservers:
+            wxMessageBox(_T("There are no servers to query"), _T("Error"), wxOK | wxICON_ERROR);
             break;
         case mtrs_server_success:
             AddServerToList(SERVER_LIST, QServer[Result->Index], Result->Index);

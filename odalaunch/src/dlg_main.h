@@ -152,7 +152,9 @@ class dlgMain : public wxFrame, wxThreadHelper
             
             ,mtrs_server_singlesuccess // represents a single selected server
             ,mtrs_server_singletimeout
-                        
+            
+            ,mtrs_server_noservers // There are no servers to query!
+            
             ,mtrs_max
         } mtrs_t;
 

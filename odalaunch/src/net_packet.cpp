@@ -101,6 +101,7 @@ wxInt32 MasterServer::Parse()
     }
     
     // Add on to any servers already in the list
+    if (server_count)
     for (wxInt16 i = 0; i < server_count; i++)
     {
         addr_t address;
