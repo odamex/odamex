@@ -1706,9 +1706,11 @@ void G_DoPlayDemo (void)
 
 	if(bytelen < 4)
 	{
-		Z_Free(demobuffer);
-		Printf (PRINT_HIGH, "Demo file too short\n");
-		gameaction = ga_nothing;
+		if(bytelen)
+			Z_Free(demobuffer);
+		else
+			Printf (PRINT_HIGH, "Demo file too short\n");
+		gameaction = ga_fullconsole;
 		return;
 	}
 
@@ -1730,7 +1732,7 @@ void G_DoPlayDemo (void)
 		{
 			Z_Free(demobuffer);
 			Printf (PRINT_HIGH, "DOOM 1.9 Demo: file too short\n");
-			gameaction = ga_nothing;
+			gameaction = ga_fullconsole;
 			return;
 		}
 
@@ -1765,7 +1767,7 @@ void G_DoPlayDemo (void)
 		{
 			Z_Free(demobuffer);
 			Printf (PRINT_HIGH, "DOOM 1.9 Demo: invalid console player %d of %d\n", (int)who+1, players.size());
-			gameaction = ga_nothing;
+			gameaction = ga_fullconsole;
 			return;
 		}
 
