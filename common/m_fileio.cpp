@@ -67,7 +67,7 @@ BOOL M_FileExists (const char *filename)
 BOOL M_WriteFile(char const *name, void *source, QWORD length)
 {
     FILE *handle;
-    int	count;
+    QWORD count;
 	
     handle = fopen(name, "wb");
 
@@ -218,7 +218,7 @@ void M_ExtractFileBase (std::string path, std::string &dest)
 	if(e == std::string::npos)
 		e = path.length();
 
-	if(++l < path.length())
+	if(l < path.length())
 		dest = path.substr(l, e - l);
 }
 
