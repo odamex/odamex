@@ -60,6 +60,8 @@ DArgs Args;
 extern UINT TimerPeriod;
 #endif
 
+extern size_t got_heapsize;
+
 // functions to be called at shutdown are stored in this stack
 typedef void (STACK_ARGS *term_func_t)(void);
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;
@@ -107,6 +109,9 @@ int __cdecl main(int argc, char *argv[])
 		startdir = I_GetCWD();
 
 		C_InitConsole (80*8, 25*8, false);
+		
+        Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
+		
 		D_DoomMain ();
     }
     catch (CDoomError &error)
@@ -203,6 +208,9 @@ int main (int argc, char **argv)
 		progdir = I_GetBinaryDir();
 
 		C_InitConsole (80*8, 25*8, false);
+		
+        Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
+		
 		D_DoomMain ();
     }
     catch (CDoomError &error)

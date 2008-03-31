@@ -73,32 +73,77 @@
 UINT TimerPeriod;
 #endif
 
-float mb_used = 32.0;
-
 QWORD (*I_GetTime) (void);
 QWORD (*I_WaitForTic) (QWORD);
 
 ticcmd_t emptycmd;
 ticcmd_t *I_BaseTiccmd(void)
 {
-    return &emptycmd;
+	return &emptycmd;
 }
 
-int I_GetHeapSize (void)
+/* [Russell] - Modified to accomodate a minimal allowable heap size */
+// These values are in megabytes
+size_t def_heapsize = 32;
+size_t min_heapsize = 8;
+
+// The size we got back from I_ZoneBase in megabytes
+size_t got_heapsize = 0;
+
+//
+// I_MegabytesToBytes
+//
+// Returns the megabyte value of size in bytes
+size_t I_MegabytesToBytes (size_t size)
 {
-    return (int)(mb_used*1024*1024);
+	return (size*1024*1024);
 }
 
-byte *I_ZoneBase (size_t *size)
+//
+// I_BytesToMegabytes
+//
+// Returns the byte value of size in megabytes
+size_t I_BytesToMegabytes (size_t size)
 {
-    const char *p = Args.CheckValue ("-heapsize");
-    
-    if (p)
-        mb_used = (float)atof (p);
-    
-    *size = (int)I_GetHeapSize();
-    
-    return (byte *) Malloc (*size);
+	return (size/1024/1024);
+}
+
+//
+// I_ZoneBase
+//
+// Allocates a portion of system memory for the Zone Memory Allocator, returns
+// the 'size' of what it could allocate in its parameter
+void *I_ZoneBase (size_t *size)
+{
+	void *zone;
+
+    // User wanted a different default size
+	const char *p = Args.CheckValue ("-heapsize");
+
+	if (p)
+		def_heapsize = atoi(p);
+
+    if (def_heapsize < min_heapsize)
+        def_heapsize = min_heapsize;
+        
+    // Set the size
+	*size = I_MegabytesToBytes(def_heapsize);
+
+    // Allocate the def_heapsize, otherwise try to allocate a smaller amount
+	while (NULL == (zone = Malloc (*size)) && *size >= min_heapsize*1024*1024)
+		*size -= 1024*1024;
+
+    // Our heap size we received
+    got_heapsize = I_BytesToMegabytes(*size);
+
+    // Die if the system has insufficient memory
+    if (got_heapsize < min_heapsize)
+        I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
+                     "is %u MB but Malloc() returned %u MB",
+                     I_BytesToMegabytes(min_heapsize),
+                     I_BytesToMegabytes(got_heapsize));
+
+	return zone;
 }
 
 void I_BeginRead(void)
@@ -109,17 +154,6 @@ void I_EndRead(void)
 {
 }
 
-byte *I_AllocLow(int length)
-{
-    byte *mem;
-
-    mem = (byte *)Malloc (length);
-    
-    if (mem)
-        memset (mem, 0, length);
-        
-    return mem;
-}
 
 #ifdef WIN32
 // denis - use this unless you want your program

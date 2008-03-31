@@ -56,7 +56,7 @@
 
 DArgs Args;
 
-extern float mb_used;
+extern size_t got_heapsize;
 
 // functions to be called at shutdown are stored in this stack
 typedef void (STACK_ARGS *term_func_t)(void);
@@ -175,7 +175,9 @@ int main(int argc, char *argv[])
 		
 		// init console
 		C_InitConsole (80 * 8, 25 * 8, false);
-		//Printf (PRINT_HIGH, "Heapsize: %g megabytes\n", mb_used);
+		
+		Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
+		
 		D_DoomMain ();
 	}
 	catch (CDoomError &error)
