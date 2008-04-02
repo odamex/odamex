@@ -277,6 +277,21 @@ BEGIN_COMMAND (ctf)
 END_COMMAND (ctf)
 
 
+BEGIN_COMMAND (rquit)
+{
+	SV_SendReconnectSignal();
+	exit (0);
+}
+END_COMMAND (rquit)
+
+
+BEGIN_COMMAND (quit)
+{
+	exit (0);
+}
+END_COMMAND (quit)
+
+
 //
 // SV_InitNetwork
 //

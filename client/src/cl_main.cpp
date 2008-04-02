@@ -458,6 +458,28 @@ BEGIN_COMMAND (playerteam)
 }
 END_COMMAND (playerteam)
 
+
+BEGIN_COMMAND (spectate)
+{
+	MSG_WriteMarker(&net_buffer, clc_spectate);
+	MSG_WriteByte(&net_buffer, true);
+}
+END_COMMAND (spectate)
+
+
+BEGIN_COMMAND (joingame)
+{
+	MSG_WriteMarker(&net_buffer, clc_spectate);
+	MSG_WriteByte(&net_buffer, false);
+}
+END_COMMAND (joingame)
+
+BEGIN_COMMAND (quit)
+{
+	exit (0);
+}
+END_COMMAND (quit)
+
 //
 // CL_MoveThing
 //

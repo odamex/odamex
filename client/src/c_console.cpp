@@ -1455,6 +1455,13 @@ BEGIN_COMMAND (echo)
 }
 END_COMMAND (echo)
 
+
+BEGIN_COMMAND (toggleconsole)
+{
+	C_ToggleConsole();
+}
+END_COMMAND (toggleconsole)
+
 /* Printing in the middle of the screen */
 
 static brokenlines_t *MidMsg = NULL;

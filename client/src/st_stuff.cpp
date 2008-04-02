@@ -45,6 +45,8 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "version.h"
+#include "cl_main.h"
+#include "gi.h"
 
 #include "cl_ctf.h"
 
@@ -515,7 +517,27 @@ void ST_refreshBackground(void)
 }
 
 
-bool CheckCheatmode (void);
+EXTERN_CVAR (allowcheats)
+
+// Checks whether cheats are enabled or not, returns true if they're NOT enabled
+// and false if they ARE enabled (stupid huh? not my work [Russell])
+BOOL CheckCheatmode (void)
+{
+	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats 
+	// are disabled
+	if (skill == sk_nightmare && !multiplayer)
+        return true;
+	
+	if ((multiplayer || deathmatch) && !allowcheats)
+	{
+		Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
@@ -719,6 +741,180 @@ bool ST_Responder (event_t *ev)
     return eatkey;
 }
 
+// Console cheats
+BEGIN_COMMAND (god)
+{
+	if (CheckCheatmode ())
+		return;
+
+	consoleplayer().cheats ^= CF_GODMODE;
+
+    if (consoleplayer().cheats & CF_GODMODE)
+        Printf(PRINT_HIGH, "Degreelessness mode on\n");
+    else
+        Printf(PRINT_HIGH, "Degreelessness mode off\n");
+
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+}
+END_COMMAND (god)
+
+BEGIN_COMMAND (notarget)
+{
+	if (CheckCheatmode ())
+		return;
+
+	consoleplayer().cheats ^= CF_NOTARGET;
+
+    if (consoleplayer().cheats & CF_NOTARGET)
+        Printf(PRINT_HIGH, "Notarget on\n");
+    else
+        Printf(PRINT_HIGH, "Notarget off\n");
+
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+}
+END_COMMAND (notarget)
+
+BEGIN_COMMAND (fly)
+{
+	if (CheckCheatmode ())
+		return;
+
+	consoleplayer().cheats ^= CF_FLY;
+
+    if (consoleplayer().cheats & CF_FLY)
+        Printf(PRINT_HIGH, "Fly mode on\n");
+    else
+        Printf(PRINT_HIGH, "Fly mode off\n");
+
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+}
+END_COMMAND (fly)
+
+BEGIN_COMMAND (noclip)
+{
+	if (CheckCheatmode ())
+		return;
+
+	consoleplayer().cheats ^= CF_NOCLIP;
+
+    if (consoleplayer().cheats & CF_NOCLIP)
+        Printf(PRINT_HIGH, "No clipping mode on\n");
+    else
+        Printf(PRINT_HIGH, "No clipping mode off\n");
+
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+}
+END_COMMAND (noclip)
+
+EXTERN_CVAR (chasedemo)
+
+BEGIN_COMMAND (chase)
+{
+	if (demoplayback)
+	{
+		size_t i;
+
+		if (chasedemo)
+		{
+			chasedemo.Set (0.0f);
+			for (i = 0; i < players.size(); i++)
+				players[i].cheats &= ~CF_CHASECAM;
+		}
+		else
+		{
+			chasedemo.Set (1.0f);
+			for (i = 0; i < players.size(); i++)
+				players[i].cheats |= CF_CHASECAM;
+		}
+	}
+	else
+	{
+		if (CheckCheatmode ())
+			return;
+
+		consoleplayer().cheats ^= CF_CHASECAM;
+
+		MSG_WriteMarker(&net_buffer, clc_cheat);
+		MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	}
+}
+END_COMMAND (chase)
+
+BEGIN_COMMAND (idmus)
+{
+	level_info_t *info;
+	char *map;
+	int l;
+
+	if (argc > 1)
+	{
+		if (gameinfo.flags & GI_MAPxx)
+		{
+			l = atoi (argv[1]);
+			if (l <= 99)
+				map = CalcMapName (0, l);
+			else
+			{
+				Printf (PRINT_HIGH, "%s\n", STSTR_NOMUS);
+				return;
+			}
+		}
+		else
+		{
+			map = CalcMapName (argv[1][0] - '0', argv[1][1] - '0');
+		}
+
+		if ( (info = FindLevelInfo (map)) )
+		{
+			if (info->music[0])
+			{
+				S_ChangeMusic (std::string(info->music, 8), 1);
+				Printf (PRINT_HIGH, "%s\n", STSTR_MUS);
+			}
+		} else
+			Printf (PRINT_HIGH, "%s\n", STSTR_NOMUS);
+	}
+}
+END_COMMAND (idmus)
+
+BEGIN_COMMAND (give)
+{
+	if (CheckCheatmode ())
+		return;
+
+	if (argc < 2)
+		return;
+
+	std::string name = BuildString (argc - 1, (const char **)(argv + 1));
+	if (name.length())
+	{
+		//Net_WriteByte (DEM_GIVECHEAT);
+		//Net_WriteString (name.c_str());
+		// todo
+	}
+}
+END_COMMAND (give)
+
+BEGIN_COMMAND (fov)
+{
+	if(!connected || !m_Instigator || !m_Instigator->player)
+	{
+		Printf (PRINT_HIGH, "cannot change fov: not in game\n");
+		return;
+	}
+
+	if (argc != 2)
+		Printf (PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
+	else if (allowcheats)
+		m_Instigator->player->fov = atof (argv[1]);
+    else
+        Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
+}
+END_COMMAND (fov)
 
 
 int ST_calcPainOffset(void)

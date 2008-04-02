@@ -21,7 +21,10 @@
 //-----------------------------------------------------------------------------
 
 #include "m_fileio.h"
+#include "c_dispatch.h"
 #include "z_zone.h"
+
+extern FILE *Logfile;
 
 //
 // M_FileLength
@@ -221,5 +224,42 @@ void M_ExtractFileBase (std::string path, std::string &dest)
 	if(l < path.length())
 		dest = path.substr(l, e - l);
 }
+
+/* Console commands*/
+
+//
+// logfile
+// 
+// Enables/disables the logfile
+BEGIN_COMMAND (logfile)
+{
+	time_t clock;
+	char *timestr;
+
+	time (&clock);
+	timestr = asctime (localtime (&clock));
+
+	if (Logfile)
+	{
+		Printf (PRINT_HIGH, "Log stopped: %s\n", timestr);
+		fclose (Logfile);
+		Logfile = NULL;
+	}
+
+	if (argc >= 2)
+	{
+		if ( (Logfile = fopen (argv[1], "w")) )
+		{
+			Printf (PRINT_HIGH, "Log started: %s", timestr);
+			AddCommandString("version");
+			Printf (PRINT_HIGH, "\n");
+		}
+		else
+		{
+			Printf (PRINT_HIGH, "Could not start log\n");
+		}
+	}
+}
+END_COMMAND (logfile)
 
 VERSION_CONTROL (m_fileio_cpp, "$Id: m_fileio.cpp 5 2007-01-16 19:13:59Z russellrice $")

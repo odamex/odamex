@@ -180,7 +180,6 @@
 		<Unit filename="..\src\am_map.h" />
 		<Unit filename="..\src\c_bind.cpp" />
 		<Unit filename="..\src\c_bind.h" />
-		<Unit filename="..\src\c_cmds.cpp" />
 		<Unit filename="..\src\c_console.cpp" />
 		<Unit filename="..\src\c_console.h" />
 		<Unit filename="..\src\cl_ctf.cpp" />

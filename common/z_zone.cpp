@@ -486,6 +486,21 @@ size_t Z_FreeMemory (void)
 	return pfree + efree;
 }
 
+BEGIN_COMMAND (dumpheap)
+{
+	int lo = PU_STATIC, hi = PU_CACHE;
+
+	if (argc >= 2) {
+		lo = atoi (argv[1]);
+		if (argc >= 3) {
+			hi = atoi (argv[2]);
+		}
+	}
+
+	Z_DumpHeap (lo, hi);
+}
+END_COMMAND (dumpheap)
+
 BEGIN_COMMAND (mem)
 {
 	Z_FreeMemory ();
