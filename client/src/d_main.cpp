@@ -1016,9 +1016,6 @@ void D_AddDefWads (std::string iwad)
 			wadfiles.push_back(wad);
 		else
 			I_FatalError ("Cannot find odamex.wad");
-
-		if (wad.length())
-			wadfiles.push_back(wad);
 	}
 
 	I_SetTitleString(IdentifyVersion(iwad).c_str());
