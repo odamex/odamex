@@ -46,6 +46,8 @@
 
 #include "cl_ctf.h"
 
+extern int predicting;
+
 
 static void PickupMessage (AActor *toucher, const char *message)
 {
@@ -327,6 +329,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 	player_t*	player;
 	int 		i;
 	int 		sound;
+
+    if(predicting)
+        return;
 
     // Dead thing touching.
     // Can happen with a sliding player corpse.

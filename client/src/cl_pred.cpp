@@ -202,6 +202,10 @@ void CL_PredictMove (void)
 	if (noservermsgs)
 		return;
 
+	// turn off special pickup during prediction
+	// disable bobbing, sounds
+	predicting = true;
+
 	// reset simulation to last received tic
 	CL_ResetSectors();
 	CL_ResetPlayers(tic);
@@ -211,7 +215,6 @@ void CL_PredictMove (void)
 		// predict forward until tic <= gametic
 		while (tic < gametic)
 		{
-			predicting = true; // disable bobbing, sounds
 			p->mo->RunThink();
 			CL_PredictSectors(); // denis - todo - replace the other calls here with CL_PredictPlayers/CL_PredictSectors
 			tic++;
