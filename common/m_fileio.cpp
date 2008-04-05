@@ -206,7 +206,14 @@ BOOL M_ExtractFileExtension (std::string filename, std::string &dest)
 //
 // M_ExtractFileBase
 //
-// TODO: document
+// Extract the base file name from a path string
+//
+// e.g. /asdf/qwerty.zxc -> qwerty
+// 	iuyt.wad -> iuyt
+//      hgfd -> hgfd
+//
+// Assumes that back slashes have already been converted to forward slashes
+//
 void M_ExtractFileBase (std::string path, std::string &dest)
 {
 	//
@@ -216,6 +223,8 @@ void M_ExtractFileBase (std::string path, std::string &dest)
 	size_t l = path.find_last_of('/');
 	if(l == std::string::npos)
 		l = 0;
+	else
+		l++;
 
 	size_t e = path.find_first_of('.');
 	if(e == std::string::npos)
