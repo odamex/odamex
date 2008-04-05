@@ -38,6 +38,7 @@
 static BOOL mousepaused = true; // SoM: This should start off true
 static BOOL havefocus = false;
 static BOOL noidle = false;
+static BOOL nomouse = false;
 
 // Used by the console for making keys repeat
 int KeyRepeatDelay;
@@ -57,7 +58,7 @@ CVAR (mouse_acceleration, "2", CVAR_ARCHIVE)
 CVAR (mouse_threshold, "10", CVAR_ARCHIVE)
 
 // joek - sort mouse grab issue
-BOOL mousegrabbed = false;
+static BOOL mousegrabbed = false;
 
 // SoM: if true, the mouse events in the queue should be ignored until at least once event cycle 
 // is complete.
@@ -99,6 +100,11 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 //
 bool I_InitInput (void)
 {
+	if(Args.CheckParm("-nomouse"))
+	{
+		nomouse = true;
+	}
+
 	atterm (I_ShutdownInput);
 
 	noidle = Args.CheckParm ("-noidle");
@@ -134,6 +140,9 @@ void STACK_ARGS I_ShutdownInput (void)
 //
 static void SetCursorState (int visible)
 {
+   if(nomouse)
+      return;
+
    SDL_ShowCursor(visible ? SDL_ENABLE : SDL_DISABLE);
 }
 
@@ -161,6 +170,9 @@ static int AccelerateMouse(int val)
 //
 static void GrabMouse (void)
 {
+   if(nomouse)
+      return;
+
    if(screen)
    {
       SDL_WarpMouse(screen->width/ 2, screen->height / 2);
@@ -176,6 +188,9 @@ static void GrabMouse (void)
 //
 static void UngrabMouse (void)
 {
+   if(nomouse)
+      return;
+
    SDL_WM_GrabInput(SDL_GRAB_OFF);
    mousegrabbed = false;
 }
@@ -204,7 +219,7 @@ void I_PauseMouse (void)
 // I_ResumeMouse
 //
 void I_ResumeMouse (void)
-{   
+{
    if(havefocus)
    {
       GrabMouse();
@@ -241,9 +256,6 @@ void I_GetEvent (void)
          I_ResumeMouse();
    }
 
-   if(!SDL_PollEvent(NULL))
-      return;
-   
    while(SDL_PollEvent(&ev))
    {
       event.data1 = event.data2 = event.data3 = 0;
@@ -302,6 +314,8 @@ void I_GetEvent (void)
             sendmouseevent = 1;
             break;
          case SDL_MOUSEBUTTONDOWN:
+            if(nomouse)
+		break;
             event.type = ev_keydown;
             if(ev.button.button == SDL_BUTTON_LEFT)
             {
@@ -326,6 +340,8 @@ void I_GetEvent (void)
 			D_PostEvent(&event);
             break; 
          case SDL_MOUSEBUTTONUP:
+            if(nomouse)
+		break;
             event.type = ev_keyup;
             if(ev.button.button == SDL_BUTTON_LEFT)
             {
@@ -352,17 +368,19 @@ void I_GetEvent (void)
       };
    }
 
-   if(sendmouseevent)
+   if(!nomouse)
    {
-      mouseevent.data1 = mbuttons;
-      D_PostEvent(&mouseevent);
+       if(sendmouseevent)
+       {
+          mouseevent.data1 = mbuttons;
+          D_PostEvent(&mouseevent);
+       }
+       
+       if(mousegrabbed && screen)
+       {
+          SDL_WarpMouse(screen->width/ 2, screen->height / 2);
+       }
    }
-   
-   if(mousegrabbed && screen)
-   {
-      SDL_WarpMouse(screen->width/ 2, screen->height / 2);
-   }
-
 }
 
 //
