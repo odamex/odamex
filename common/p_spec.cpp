@@ -999,6 +999,23 @@ P_UseSpecialLine
   line_t*	line,
   int		side )
 {
+	// Err...
+	// Use the back sides of VERY SPECIAL lines...
+	if (side)
+	{
+		switch(line->special)
+		{
+		case Exit_Secret:
+			// Sliding door open&close
+			// UNUSED?
+			break;
+
+		default:
+			return false;
+			break;
+		}
+	}
+
 	if(thing)
 	{
 		if (!(line->flags & ML_SPECIAL_USE))
