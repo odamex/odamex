@@ -1219,8 +1219,8 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		}
 
 		// only armordamage with friendlyfire
-		if (!friendlyfire && (teamplay || ctfmode || !deathmatch) && source && source->player && target != source &&
-			target->player->userinfo.team == source->player->userinfo.team && (mod != MOD_TELEFRAG))
+		if (!friendlyfire && source && source->player && target != source && mod != MOD_TELEFRAG &&
+			(((teamplay || ctfmode) && target->player->userinfo.team == source->player->userinfo.team) || !deathmatch))
 			damage = 0;
 
 		player->health -= damage;		// mirror mobj health here for Dave
