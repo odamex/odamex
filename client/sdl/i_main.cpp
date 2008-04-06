@@ -73,36 +73,12 @@ static void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-FILE *errout;
-
-static void openlog(void)
-{
-#ifdef WIN32
-   if(!(errout = fopen("odamex.out", "wb")))
-   {
-		fprintf (stderr, "Could not open log file for output.");
-      exit(-1);
-   }
-#else
-   errout = stderr;
-#endif
-}
-
-
-void STACK_ARGS closelog(void)
-{
-#ifdef WIN32
-   if(errout)
-      fclose(errout);
-#endif
-}
-
-
 int main(int argc, char *argv[])
 {
 	try
 	{
-		openlog();
+        if (!LOG.is_open())
+            I_FatalError("Unable to create logfile: %s\n", LOG_FILE);
 
 #ifdef UNIX
 		if(!getuid() || !geteuid())
@@ -135,20 +111,13 @@ int main(int argc, char *argv[])
         // Thanks to entryway and fraggle for this.
         
         if (!SetProcessAffinityMask(GetCurrentProcess(), 1))
-        {
-            fprintf(errout, 
-                    "Failed to set process affinity mask (%d)\n",
-                    GetLastError());
-        }
+            LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
+
 #endif
 		
-		atterm(closelog);
-		
 		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
-		{
-			fprintf (errout, "Could not initialize SDL:\n%s\n", SDL_GetError());
-			exit(-1);
-		}
+			I_FatalError("Could not initialize SDL:\n%s\n", SDL_GetError());
+
 		atterm (SDL_Quit);
 		
 		/*
@@ -182,7 +151,16 @@ int main(int argc, char *argv[])
 	}
 	catch (CDoomError &error)
 	{
-		fprintf (errout, "%s\n", error.GetMessage().c_str());
+		if (LOG.is_open())
+        {
+            LOG << error.GetMessage() << std::endl;
+        }
+        else
+        {
+            #ifndef WIN32
+            fprintf(stderr, "%s\n", error.GetMessage());
+            #endif
+        }
 #ifdef WIN32
 		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
 #endif

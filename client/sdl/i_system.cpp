@@ -414,7 +414,6 @@ void STACK_ARGS I_Quit (void)
 //
 // I_Error
 //
-extern FILE *Logfile;
 BOOL gameisdead;
 
 #define MAX_ERRORTEXT	1024
@@ -433,10 +432,6 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 		index = vsprintf (errortext, error, argptr);
 		sprintf (errortext + index, "\nSDL_GetError = %s", SDL_GetError());
 		va_end (argptr);
-
-		// Record error to log (if logging)
-		if (Logfile)
-			fprintf (Logfile, "\n**** DIED WITH FATAL ERROR:\n%s\n", errortext);
 
 		throw CFatalError (errortext);
 	}

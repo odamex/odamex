@@ -29,6 +29,7 @@
 #include <stdio.h>
 
 #include "doomtype.h"
+#include "d_main.h"
 
 int  M_FileLength (FILE *f);
 BOOL M_FileExists (const char *filename);

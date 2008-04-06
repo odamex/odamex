@@ -24,7 +24,11 @@
 #include "c_dispatch.h"
 #include "z_zone.h"
 
-extern FILE *Logfile;
+// unfortunately, we still need you
+#include "cmdlib.h"
+
+// Simple logging
+std::ofstream LOG(LOG_FILE, std::ios::out);
 
 //
 // M_FileLength
@@ -206,19 +210,17 @@ BOOL M_ExtractFileExtension (std::string filename, std::string &dest)
 //
 // M_ExtractFileBase
 //
-// Extract the base file name from a path string
+// Extract the base file name from a path string (basefile = filename with no extension)
 //
 // e.g. /asdf/qwerty.zxc -> qwerty
 // 	iuyt.wad -> iuyt
 //      hgfd -> hgfd
 //
-// Assumes that back slashes have already been converted to forward slashes
-//
+// Note: On windows, text after the last . is considered the extension, so any preceding
+// .'s won't be removed
 void M_ExtractFileBase (std::string path, std::string &dest)
 {
-	//
-	// back up until a / or the start
-	//	
+    FixPathSeparator(path);
 
 	size_t l = path.find_last_of('/');
 	if(l == std::string::npos)
@@ -226,49 +228,12 @@ void M_ExtractFileBase (std::string path, std::string &dest)
 	else
 		l++;
 
-	size_t e = path.find_first_of('.');
+	size_t e = path.find_last_of('.');
 	if(e == std::string::npos)
 		e = path.length();
 
 	if(l < path.length())
 		dest = path.substr(l, e - l);
 }
-
-/* Console commands*/
-
-//
-// logfile
-// 
-// Enables/disables the logfile
-BEGIN_COMMAND (logfile)
-{
-	time_t clock;
-	char *timestr;
-
-	time (&clock);
-	timestr = asctime (localtime (&clock));
-
-	if (Logfile)
-	{
-		Printf (PRINT_HIGH, "Log stopped: %s\n", timestr);
-		fclose (Logfile);
-		Logfile = NULL;
-	}
-
-	if (argc >= 2)
-	{
-		if ( (Logfile = fopen (argv[1], "w")) )
-		{
-			Printf (PRINT_HIGH, "Log started: %s", timestr);
-			AddCommandString("version");
-			Printf (PRINT_HIGH, "\n");
-		}
-		else
-		{
-			Printf (PRINT_HIGH, "Could not start log\n");
-		}
-	}
-}
-END_COMMAND (logfile)
 
 VERSION_CONTROL (m_fileio_cpp, "$Id: m_fileio.cpp 5 2007-01-16 19:13:59Z russellrice $")

@@ -127,8 +127,6 @@ int PrintColors[PRINTLEVELS+1] = { CR_RED, CR_GOLD, CR_GRAY, CR_GREEN, CR_GREEN,
 
 static void setmsgcolor (int index, const char *color);
 
-FILE *Logfile = NULL;
-
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
 
@@ -314,10 +312,8 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	{
 		char string[256];
 		gamestate_t oldstate = gamestate;	// Don't print during reformatting
-		FILE *templog = Logfile;		// Don't log our reformatting pass
 
 		gamestate = GS_FORCEWIPE;
-		Logfile = NULL;
 
 		for (row = 0, zap = old; row < rows - 1; row++, zap += cols + 2)
 		{
@@ -336,7 +332,6 @@ void C_InitConsole (int width, int height, BOOL ingame)
 		free (old);
 		C_FlushDisplay ();
 
-		Logfile = templog;
 		gamestate = oldstate;
 	}
 
@@ -554,19 +549,15 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		if(outline[i] == 0x07)
 			outline[i] = '.';
 
-	if (Logfile)
-	{
-	    strcpy(outlinelog, outline);
+	strcpy(outlinelog, outline);
 
-        // [Nes] - Horizontal line won't show up as-is in the logfile.
-        for(i = 0; i < len; i++)
-            if(outlinelog[i] == '\35' || outlinelog[i] == '\36' ||
-               outlinelog[i] == '\37')
-                outlinelog[i] = '=';
+    // [Nes] - Horizontal line won't show up as-is in the logfile.
+    for(i = 0; i < len; i++)
+    	if(outlinelog[i] == '\35' || outlinelog[i] == '\36' ||
+           outlinelog[i] == '\37')
+            outlinelog[i] = '=';
 
-		fputs (outlinelog, Logfile);
-		fflush (Logfile);
-	}
+    LOG << outlinelog;
 
 	return PrintString (printlevel, outline);
 }

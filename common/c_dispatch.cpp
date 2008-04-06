@@ -127,7 +127,6 @@ int GetActionBit (unsigned int key)
 	return -1;
 }
 
-extern FILE *Logfile; // denis - todo - move, standardize
 bool safemode = false;
 
 void C_DoCommand (const char *cmd)

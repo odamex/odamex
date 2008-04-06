@@ -106,9 +106,6 @@ static struct NotifyText
 
 #define PRINTLEVELS 5
 
-FILE *Logfile = NULL;
-
-
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
 
 
@@ -145,10 +142,8 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	{
 		char string[256];
 		gamestate_t oldstate = gamestate;	// Don't print during reformatting
-		FILE *templog = Logfile;		// Don't log our reformatting pass
 
 		gamestate = GS_FORCEWIPE;
-		Logfile = NULL;
 
 		for (row = 0, zap = old; row < rows; row++, zap += cols + 2)
 		{
@@ -167,7 +162,6 @@ void C_InitConsole (int width, int height, BOOL ingame)
 		free (old);
 		C_FlushDisplay ();
 
-		Logfile = templog;
 		gamestate = oldstate;
 	}
 }
@@ -231,11 +225,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		MSG_WriteString (&cl->reliablebuf, (char *)str.c_str());
 	}
 
-	if (Logfile)
-	{
-		fputs (str.c_str(), Logfile);
-		fflush (Logfile);
-	}
+    LOG << str.c_str() << std::endl;
 
 	return PrintString (printlevel, str.c_str());
 }

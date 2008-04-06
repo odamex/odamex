@@ -29,6 +29,8 @@
 #include <vector>
 #include <string>
 
+#define LOG_FILE "odamex.log"
+
 //
 // D_DoomMain()
 // Not a globally visible function, just included for source reference,

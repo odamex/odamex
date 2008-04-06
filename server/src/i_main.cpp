@@ -87,6 +87,9 @@ int __cdecl main(int argc, char *argv[])
 {
     try
     {
+        if (!LOG.is_open())
+            I_FatalError("Unable to create logfile: %s\n", LOG_FILE);
+
 		Args.SetArgs (argc, argv);
 
 		// Set the timer to be as accurate as possible
@@ -116,7 +119,15 @@ int __cdecl main(int argc, char *argv[])
     }
     catch (CDoomError &error)
     {
-		fprintf (stderr, "%s\n", error.GetMessage().c_str());
+		if (LOG.is_open())
+        {
+            LOG << error.GetMessage() << std::endl;
+        }
+        else
+        {
+            MessageBox(NULL, error.GetMessage().c_str(), "Odasrv Error", MB_OK);
+        }
+        
 		exit (-1);
     }
     catch (...)
@@ -168,6 +179,9 @@ int main (int argc, char **argv)
 {
     try
     {
+        if (!LOG.is_open())
+            I_FatalError("Unable to create logfile: %s\n", LOG_FILE);
+
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 
@@ -215,7 +229,15 @@ int main (int argc, char **argv)
     }
     catch (CDoomError &error)
     {
-		fprintf (stderr, "%s\n", error.GetMessage().c_str());
+		if (LOG.is_open())
+        {
+            LOG << error.GetMessage() << std::endl;
+        }
+        else
+        {
+            fprintf (stderr, "%s\n", error.GetMessage().c_str());
+        }
+        
 		exit (-1);
     }
     catch (...)
