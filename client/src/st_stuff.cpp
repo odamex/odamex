@@ -708,12 +708,13 @@ bool ST_Responder (event_t *ev)
             if (CheckCheatmode ())
                 return false;
 
-            char cmd[16];
+            char buf[16];
 
-            strcpy (cmd, "idclev ");
-            cht_GetParam(&cheat_clev, &cmd[7]);
-            cmd[9] = 0;
-            AddCommandString (cmd);
+            cht_GetParam(&cheat_clev, buf);
+            buf[2] = 0;
+
+            sprintf (buf + 3, "map %s\n", buf);
+            AddCommandString (buf + 3);
             eatkey = true;
         }
 
