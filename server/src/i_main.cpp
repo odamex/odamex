@@ -79,7 +79,9 @@ static void STACK_ARGS call_terms (void)
 
 int PrintString (int printlevel, char const *outline)
 {
-	return printf("%s", outline);
+	int ret = printf("%s", outline);
+	fflush(stdout);
+	return ret;
 }
 
 #ifdef WIN32
@@ -229,16 +231,14 @@ int main (int argc, char **argv)
     }
     catch (CDoomError &error)
     {
-		if (LOG.is_open())
+	fprintf (stderr, "%s\n", error.GetMessage().c_str());
+
+	if (LOG.is_open())
         {
             LOG << error.GetMessage() << std::endl;
         }
-        else
-        {
-            fprintf (stderr, "%s\n", error.GetMessage().c_str());
-        }
         
-		exit (-1);
+	exit (-1);
     }
     catch (...)
     {

@@ -155,13 +155,9 @@ int main(int argc, char *argv[])
         {
             LOG << error.GetMessage() << std::endl;
         }
-        else
-        {
-            #ifndef WIN32
-            fprintf(stderr, "%s\n", error.GetMessage());
-            #endif
-        }
-#ifdef WIN32
+#ifndef WIN32
+            fprintf(stderr, "%s\n", error.GetMessage().c_str());
+#else
 		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
 #endif
 		exit (-1);
