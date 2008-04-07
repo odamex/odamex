@@ -870,7 +870,7 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 	MSG_WriteShort(&cl->reliablebuf, mo->type);
 	MSG_WriteShort(&cl->reliablebuf, mo->netid);
 	MSG_WriteByte(&cl->reliablebuf, mo->rndindex);
-	MSG_WriteShort(&cl->reliablebuf, mo->state - states); // denis - sending state fixes monster ghosts appearing under doors
+	MSG_WriteShort(&cl->reliablebuf, INFO_LookupStateIndex(mo->state)); // denis - sending state fixes monster ghosts appearing under doors
 
 	if(mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE) // denis - check type as that is what the client will be spawning
 	{
@@ -1847,8 +1847,13 @@ void SV_UpdateMissiles(player_t &pl)
 			continue;
 
 		// update missile position every 30 tics
-		if ((gametic+mo->netid) % 30)
+		if (((gametic+mo->netid) % 30) && mo->type != MT_TRACER)
 			continue;
+        // this is a hack for revenant tracers, so they get updated frequently
+        // in coop, this will need to be changed later for a more "smoother"
+        // tracer
+        else if (((gametic+mo->netid) % 10) && mo->type == MT_TRACER)
+            continue;
 
 		if(SV_IsPlayerAllowedToSee(pl, mo))
 		{
@@ -1860,6 +1865,23 @@ void SV_UpdateMissiles(player_t &pl)
 			MSG_WriteLong (&cl->netbuf, mo->x);
 			MSG_WriteLong (&cl->netbuf, mo->y);
 			MSG_WriteLong (&cl->netbuf, mo->z);
+
+			MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
+			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteLong (&cl->netbuf, mo->angle);
+			MSG_WriteLong (&cl->netbuf, mo->momx);
+			MSG_WriteLong (&cl->netbuf, mo->momy);
+			MSG_WriteLong (&cl->netbuf, mo->momz);
+			
+			MSG_WriteMarker (&cl->netbuf, svc_actor_movedir);
+			MSG_WriteShort(&cl->netbuf, mo->netid);
+			MSG_WriteByte (&cl->netbuf, mo->movedir);
+			MSG_WriteLong (&cl->netbuf, mo->movecount);
+			
+			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
+			MSG_WriteShort (&cl->netbuf, mo->netid);
+			MSG_WriteShort (&cl->netbuf, INFO_LookupStateIndex(mo->state));
+
 		}
     }
 }
@@ -1902,9 +1924,14 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteLong (&cl->netbuf, mo->momy);
 			MSG_WriteLong (&cl->netbuf, mo->momz);
 			
+			MSG_WriteMarker (&cl->netbuf, svc_actor_movedir);
+			MSG_WriteShort (&cl->netbuf, mo->netid);
+			MSG_WriteByte (&cl->netbuf, mo->movedir);
+			MSG_WriteLong (&cl->netbuf, mo->movecount);
+			
 			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
-			MSG_WriteShort (&cl->netbuf, states-mo->state);
+			MSG_WriteShort (&cl->netbuf, INFO_LookupStateIndex(mo->state));
 		}
     }
 }
@@ -2933,4 +2960,5 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")
+
 

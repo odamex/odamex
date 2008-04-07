@@ -1744,13 +1744,12 @@ void CL_GetServerSettings(void)
 void CL_SetMobjState()
 {
 	AActor *mo = CL_FindThingById (MSG_ReadShort() );
-	unsigned short s = MSG_ReadShort();
+	SWORD s = MSG_ReadShort();
 
 	if (!mo || s >= NUMSTATES)
 		return;
 
-	//P_SetMobjState (mo, (statenum_t)s);
-	mo->state = states + s;
+	P_SetMobjState (mo, (statenum_t)s);
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -1772,12 +1771,14 @@ void CL_ForceSetTeam (void)
 void CL_Actor_Movedir()
 {
 	AActor *actor = CL_FindThingById (MSG_ReadShort());
-	byte movedir = MSG_ReadByte();
-
+	BYTE movedir = MSG_ReadByte();
+    SDWORD movecount = MSG_ReadLong();
+    
 	if (!actor || movedir >= 8)
 		return;
 
 	actor->movedir = movedir;
+	actor->movecount = movecount;
 }
 
 //
@@ -2266,6 +2267,7 @@ void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
+
 
 
 

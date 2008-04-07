@@ -29,6 +29,7 @@
 // Needed for action function pointer handling.
 #include "dthinker.h"
 #include "farchive.h"
+#include "doomdef.h"
 
 typedef enum
 {
@@ -1253,6 +1254,9 @@ typedef struct
 */
 } state_t;
 
+// Looks for a state in the state table
+SWORD INFO_LookupStateIndex(state_t *st);
+
 extern state_t states[NUMSTATES];
 extern char *sprnames[NUMSPRITES+1];
 
@@ -1511,5 +1515,6 @@ inline FArchive &operator>> (FArchive &arc, mobjinfo_t *&info)
 }
 
 #endif	// __INFO_H__
+
 
 
