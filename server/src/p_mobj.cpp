@@ -1490,13 +1490,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 //
 void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 {
-	// denis - not clientside
-	if(!serverside)
-		return;
+    AActor *th;
 
-        AActor *th;
-
-	z += (P_Random () - P_Random ()) << 10;
+	z += ((P_Random () - P_Random ()) << 10);
 
         th = new AActor (x, y, z, MT_PUFF);
         th->momz = FRACUNIT;

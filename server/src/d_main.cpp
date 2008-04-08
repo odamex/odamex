@@ -583,12 +583,12 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
 	std::vector<std::string> dirs;
 
+	dirs.push_back(progdir);
+	dirs.push_back(startdir);
+
 	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-
-	dirs.push_back(startdir);
-	dirs.push_back(progdir);
 
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 

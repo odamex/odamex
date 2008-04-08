@@ -31,7 +31,7 @@
 #include "doomtype.h"
 #include "d_main.h"
 
-int  M_FileLength (FILE *f);
+QWORD M_FileLength (FILE *f);
 BOOL M_FileExists (const char *filename);
 
 BOOL M_WriteFile(char const *name, void *source, QWORD length);
@@ -41,5 +41,6 @@ void M_DefaultExtension (std::string &path, const char *extension);
 void M_ExtractFilePath (const char *path, char *dest);
 BOOL M_ExtractFileExtension (std::string filename, std::string &dest);
 void M_ExtractFileBase (std::string path, std::string &dest);
+void M_ExtractFileName (std::string path, std::string &dest);
 
 #endif

@@ -71,10 +71,80 @@ size_t			numlumps;
 
 void**			lumpcache;
 
+
+#define MAX_HASHES 10
+
+typedef struct
+{
+    std::string name;
+    std::string hash[MAX_HASHES];
+} gamewadinfo_t;
+
+// Valid IWAD file names
+static gamewadinfo_t doomwadnames[] =
+{
+    { "doom.wad", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3" } },
+    { "doom1.wad", "F0CEFCA49926D00903CF57551D901ABE" },
+    { "doom2.wad", "25E1459CA71D321525F84628F45CA8CD" },
+    { "doom2f.wad", "" },
+    { "doomu.wad", "C4FE9FD920207691A9F493668E0A2083" }, 
+    { "plutonia.wad", "75C8CF89566741FA9D22447604053BD7" },
+    { "tnt.wad", "4E158D9953C79CCF97BD0663244CC6B6" },
+    { "freedoom.wad", "" },
+    { "freedm.wad", "" },
+    { "", "" }
+};
+
+//
+// W_IsIWAD
+//
+// Checks to see whether a given filename is an IWAD (Internal WAD), it can take
+// shortened (base name) versions of standard file names (eg doom2, plutonia), 
+// it can also do an optional hash comparison against a correct hash list
+// for more "accurate" detection.
+BOOL W_IsIWAD(std::string filename, std::string hash)
+{   
+    std::string name;
+
+    if (!filename.length())
+        return false;
+        
+    // lowercase our comparison string
+    std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
+    
+    // Just get the file name
+    M_ExtractFileName(filename, name);  
+    
+    // find our match if there is one
+    for (DWORD i = 0; !doomwadnames[i].name.empty(); i++)
+    {
+        std::string basename;
+        
+        // We want a base name comparison aswell
+        M_ExtractFileBase(doomwadnames[i].name, basename);
+       
+        // hash comparison
+        if (!hash.empty())
+        for (DWORD j = 0; !doomwadnames[i].hash[j].empty(); j++)
+        {
+            // the hash is always right! even if the name is wrong..
+            if (doomwadnames[i].hash[j] == hash)
+                return true;
+        }
+        
+        if ((filename == doomwadnames[i].name) || (filename == basename))
+            return true;
+    }
+    
+    return false;
+}
+
+
 //
 // W_IsCommercial
 // denis - commercial wads will need download restrictions
 //
+// TODO: Remove and use W_IsIWAD instead
 bool W_IsCommercial(std::string &name, std::string &hash)
 {
 	if(
@@ -86,53 +156,6 @@ bool W_IsCommercial(std::string &name, std::string &hash)
 		return true;
 	else
 		return false;
-}
-
-//
-// W_Length
-// denis - used to be filelength
-//
-static int W_Length (int handle)
-{
-	struct stat fileinfo;
-	
-	if (fstat (handle, &fileinfo) == -1)
-	{
-		close (handle);
-		I_Error ("Error fstating");
-	}
-	return fileinfo.st_size;
-}
-
-
-void
-ExtractFileBase
-( const char*		path,
- char*			dest )
-{
-	int		length;
-	
-	const char *src = path + strlen(path) - 1;
-    
-    // back up until a \ or the start
-	while (src != path
-		      && *(src-1) != '\\'
-			  && *(src-1) != '/')
-	{
-		src--;
-	}
-    
-    // copy up to eight characters
-	memset (dest,0,8);
-	length = 0;
-    
-	while (*src && *src != '.')
-	{
-		if (++length == 9)
-			I_Error ("Filename base of %s >8 chars",path);
-		
-		*dest++ = toupper((int)*src++);
-	}
 }
 
 // denis - Standard MD5SUM
@@ -189,7 +212,7 @@ std::string W_AddFile (std::string filename)
 	wadinfo_t		header;
 	lumpinfo_t*		lump_p;
 	size_t			i;
-	int				handle;
+	FILE			*handle;
 	size_t			length;
 	size_t			startlump;
 	filelump_t*		fileinfo;
@@ -200,7 +223,7 @@ std::string W_AddFile (std::string filename)
 	M_DefaultExtension (name, ".wad");
 
     // open the file
-	if ( (handle = open (filename.c_str(), O_RDONLY | O_BINARY)) == -1)
+	if ( (handle = fopen (filename.c_str(), "rb")) == NULL)
 	{
 		Printf (PRINT_HIGH, " couldn't open %s\n", filename.c_str());
 		return "";
@@ -210,7 +233,7 @@ std::string W_AddFile (std::string filename)
 
 	startlump = numlumps;
 
-	read (handle, &header, sizeof(header));
+	fread (&header, sizeof(header), 1, handle);
 	header.identification = LONG(header.identification);
 	
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
@@ -218,7 +241,7 @@ std::string W_AddFile (std::string filename)
 		// raw lump file
 		fileinfo = &singleinfo;
 		singleinfo.filepos = 0;
-		singleinfo.size = W_Length(handle);
+		singleinfo.size = M_FileLength(handle);
 		M_ExtractFileBase (filename, name);
 		numlumps++;
 		Printf (PRINT_HIGH, " (single lump)\n", header.numlumps);
@@ -230,16 +253,16 @@ std::string W_AddFile (std::string filename)
 		header.infotableofs = LONG(header.infotableofs);
 		length = header.numlumps*sizeof(filelump_t);
 		
-		if(length > (size_t)W_Length(handle))
+		if(length > M_FileLength(handle))
 		{
 			Printf (PRINT_HIGH, " bad number of lumps for %s\n", filename.c_str());
-			close(handle);
+			fclose(handle);
 			return "";
 		}
 		
 		fileinfo = (filelump_t *)Z_Malloc (length, PU_STATIC, 0);
-		lseek (handle, header.infotableofs, SEEK_SET);
-		read (handle, fileinfo, length);
+		fseek (handle, header.infotableofs, SEEK_SET);
+		fread (fileinfo, length, 1, handle);
 		numlumps += header.numlumps;
 		Printf (PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}
@@ -338,7 +361,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 				{
 					newlumps++;
 					strncpy (newlumpinfos[0].name, ustart, 8);
-					newlumpinfos[0].handle = -1;
+					newlumpinfos[0].handle = NULL;
 					newlumpinfos[0].position =
 						newlumpinfos[0].size = 0;
 					newlumpinfos[0].namespc = ns_global;
@@ -406,7 +429,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 		numlumps = oldlumps + newlumps;
 
 		strncpy (lumpinfo[numlumps].name, uend, 8);
-		lumpinfo[numlumps].handle = -1;
+		lumpinfo[numlumps].handle = NULL;
 		lumpinfo[numlumps].position =
 			lumpinfo[numlumps].size = 0;
 		lumpinfo[numlumps].namespc = ns_global;
@@ -480,37 +503,6 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 	
 	return hashes;
 }
-
-
-
-
-//
-// W_InitFile
-// Just initialize from a single file.
-//
-void W_InitFile (char* filename)
-{
-	char*	names[2];
-	
-	names[0] = filename;
-	names[1] = NULL;
-	
-	std::vector<std::string> v;
-	v.push_back(filename);
-	W_InitMultipleFiles (v);
-}
-
-
-
-//
-// W_NumLumps
-//
-int W_NumLumps (void)
-{
-	return numlumps;
-}
-
-
 
 //
 // W_CheckNumForName
@@ -604,17 +596,18 @@ W_ReadLump
 {
 	int		c;
 	lumpinfo_t*	l;
+    char errormsg[255];
 
 	if (lump >= numlumps)
 		I_Error ("W_ReadLump: %i >= numlumps",lump);
 	
 	l = lumpinfo + lump;
 	
-	lseek (l->handle, l->position, SEEK_SET);
-	c = read (l->handle, dest, l->size);
+	fseek (l->handle, l->position, SEEK_SET);
+	c = fread (dest, l->size, 1, l->handle);
 	
-	if (c < l->size)
-		I_Error ("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);	
+	if (feof(l->handle))
+		I_Error ("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);
 }
 
 //
@@ -754,7 +747,6 @@ int W_FindLump (const char *name, int *lastlump)
 	*lastlump = numlumps;
 	return -1;
 }
-
 
 VERSION_CONTROL (w_wad_cpp, "$Id$")
 

@@ -786,14 +786,14 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
 	std::vector<std::string> dirs ;
 
+	dirs.push_back(progdir);
+	dirs.push_back(startdir);
+
 	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
 
-	dirs.push_back(startdir);
-	dirs.push_back(progdir);
-
-	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
+    dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
 	for(size_t i = 0; i < dirs.size(); i++)
 	{

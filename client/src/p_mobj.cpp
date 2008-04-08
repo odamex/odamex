@@ -1361,7 +1361,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 
 	AActor *puff;
 
-	z += (P_Random () - P_Random ()) << 10;
+	z += (P_Random () - P_Random () << 10);
 
 	puff = new AActor (x, y, z, MT_PUFF);
 	puff->momz = FRACUNIT;

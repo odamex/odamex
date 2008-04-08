@@ -244,7 +244,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	C_HideConsole();
 
     // add our iwad if it is one
-    if (M_IsIWAD(argv[1]))
+    if (W_IsIWAD(argv[1]))
         wads.push_back(argv[1]);
 
     // check whether they are wads or patch files
@@ -255,7 +255,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 		if (M_ExtractFileExtension(argv[i], ext))
 		{
 		    // don't allow subsequent iwads to be loaded
-		    if ((ext == "WAD") && !M_IsIWAD(argv[i]))
+		    if ((ext == "WAD") && !W_IsIWAD(argv[i]))
                 wads.push_back(argv[i]);
             else if (ext == "DEH" || ext == "BEX")
                 patch_files.push_back(argv[i]);

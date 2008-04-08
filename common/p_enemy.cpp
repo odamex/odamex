@@ -1062,11 +1062,12 @@ void A_Tracer (AActor *actor)
 	//
 	// [RH] level.time is always 0-based, so nothing special to do here.
 
-	if (level.time & 3)
+    // [Russell] - Go back to gametic
+	if (gametic & 3)
 		return;
 
 	// spawn a puff of smoke behind the rocket
-	if(clientside)
+	if(serverside)
 	{
 		P_SpawnPuff (actor->x, actor->y, actor->z, 0, 3);
 

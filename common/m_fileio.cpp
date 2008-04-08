@@ -34,7 +34,7 @@ std::ofstream LOG(LOG_FILE, std::ios::out);
 // M_FileLength
 //
 // Returns the length of a file using an open descriptor
-int M_FileLength (FILE *f)
+QWORD M_FileLength (FILE *f)
 {
 	int		pos;
 	int		end;
@@ -233,7 +233,25 @@ void M_ExtractFileBase (std::string path, std::string &dest)
 		e = path.length();
 
 	if(l < path.length())
-		dest = path.substr(l, e - l);
+		dest = path.substr(l, e);
+}
+
+//
+// M_ExtractFileName
+//
+// Extract the name of a file from a path (name = filename with extension)
+void M_ExtractFileName (std::string path, std::string &dest)
+{
+    FixPathSeparator(path);
+    
+	size_t l = path.find_last_of('/');
+	if(l == std::string::npos)
+		l = 0;
+	else
+		l++;
+		
+    if(l < path.length())
+        dest = path.substr(l, path.length());
 }
 
 VERSION_CONTROL (m_fileio_cpp, "$Id: m_fileio.cpp 5 2007-01-16 19:13:59Z russellrice $")

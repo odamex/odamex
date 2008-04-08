@@ -65,7 +65,7 @@ typedef struct
 typedef struct lumpinfo_s
 {
 	char		name[8]; // denis - todo - string
-	int			handle;
+	FILE		*handle;
 	int			position;
 	int			size;
 
@@ -122,6 +122,9 @@ int W_GetLumpFile (unsigned lump);
 
 // denis - identify commercial files with distribution restrictions
 bool W_IsCommercial(std::string &name, std::string &hash);
+
+// [Russell] Simple function to check whether the given string is an iwad name
+BOOL W_IsIWAD(std::string filename, std::string hash = "");
 
 // [RH] Put a lump in a certain namespace
 //void W_SetLumpNamespace (unsigned lump, int nmspace);

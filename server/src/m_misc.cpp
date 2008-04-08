@@ -39,52 +39,6 @@
 // put into newer configfiles.
 static CVAR (configver, CONFIGVERSIONSTR, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-// [Russell] Simple function to check whether the given string is an iwad name
-//           it also removes the extension for short-hand comparison
-BOOL M_IsIWAD(std::string filename)
-{
-    // Valid IWAD file names
-    static const char *doomwadnames[] =
-    {
-        "doom2f.wad",
-        "doom2.wad",
-        "plutonia.wad",
-        "tnt.wad",
-        "doomu.wad", // Hack from original Linux version. Not necessary, but I threw it in anyway.
-        "doom.wad",
-        "doom1.wad",
-        "freedoom.wad",
-        "freedm.wad"
-    };
-    
-    std::vector<std::string> iwad_names(doomwadnames, 
-                                        doomwadnames + sizeof(doomwadnames)/sizeof(*doomwadnames));
-    
-    if (!filename.length())
-        return false;
-        
-    // lowercase our comparison string
-    std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
-    
-    // find our match if there is one
-    for (QWORD i = 0; i < iwad_names.size(); i++)
-    {
-        std::string no_ext;
-        
-        // create an extensionless version, for short-hand comparison
-        QWORD first_dot = iwad_names[i].find_last_of('.', 
-                                                     iwad_names[i].length());
-        
-        if (first_dot != std::string::npos)
-            no_ext = iwad_names[i].substr(0, first_dot);    
-        
-        if ((iwad_names[i] == filename) || (no_ext == filename))
-            return true;
-    }
-    
-    return false;
-}
-
 // [RH] Get configfile path.
 // This file contains commands to set all
 // archived cvars, bind commands to keys,
