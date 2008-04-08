@@ -197,7 +197,9 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 {
     state_t*	st;
 
-    if (state == mobj->statenum)
+    // prevents updating the same state more than once
+    // !only for multiplayer!
+    if (state == mobj->statenum && multiplayer)
         return true;
 
 	// denis - prevent harmful state cycles
