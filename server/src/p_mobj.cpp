@@ -195,6 +195,9 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 {
     state_t*	st;
 
+    if (state == mobj->statenum)
+        return true;
+
 	// denis - prevent harmful state cycles
 	static unsigned int callstack;
 	if(callstack++ > 16)
@@ -215,6 +218,7 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 		}
 
 		st = &states[state];
+		mobj->statenum = state;
 		mobj->state = st;
 		mobj->tics = st->tics;
 		mobj->sprite = st->sprite;

@@ -83,15 +83,15 @@ void AActor::Serialize (FArchive &arc)
 			<< movedir
 			<< visdir
 			<< movecount
-			<< target
-			<< lastenemy
+			<< target->netid
+			<< lastenemy->netid
 			<< reactiontime
 			<< threshold
 			<< player
 			<< lastlook
-			<< tracer
+			<< tracer->netid
 			<< tid
-			<< goal
+			<< goal->netid
 			<< (unsigned)0
 			<< translucency
 			<< waterlevel;
@@ -197,6 +197,9 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 {
     state_t*	st;
 
+    if (state == mobj->statenum)
+        return true;
+
 	// denis - prevent harmful state cycles
 	static unsigned int callstack;
 	if(callstack++ > 16)
@@ -217,6 +220,7 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 		}
 
 		st = &states[state];
+		mobj->statenum = state;
 		mobj->state = st;
 		mobj->tics = st->tics;
 		mobj->sprite = st->sprite;

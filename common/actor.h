@@ -318,6 +318,7 @@ public:
 	mobjtype_t		type;
     mobjinfo_t*		info;	// &mobjinfo[mobj->type]
     int				tics;	// state tic counter
+	statenum_t      statenum;
 	state_t			*state;
 	int				flags;
 	int 			health;
