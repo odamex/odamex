@@ -1254,6 +1254,9 @@ typedef struct
 */
 } state_t;
 
+// Looks for a state in the state table
+SWORD INFO_LookupStateIndex(state_t *st);
+
 extern state_t states[NUMSTATES];
 extern char *sprnames[NUMSPRITES+1];
 
