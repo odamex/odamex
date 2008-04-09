@@ -2483,7 +2483,7 @@ void SV_WantWad(player_t &player)
 	}
 
 	// denis - do not download commercial wads
-	if(W_IsCommercial(wadnames[i], wadhashes[i]))
+	if(W_IsIWAD(wadnames[i], wadhashes[i]))
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);

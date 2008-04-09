@@ -32,13 +32,13 @@
 #include "d_main.h"
 
 QWORD M_FileLength (FILE *f);
-BOOL M_FileExists (const char *filename);
+BOOL M_FileExists (std::string filename);
 
-BOOL M_WriteFile(char const *name, void *source, QWORD length);
-QWORD M_ReadFile(char const *name, BYTE **buffer);
+BOOL M_WriteFile(std::string filename, void *source, QWORD length);
+QWORD M_ReadFile(std::string filename, BYTE **buffer);
 
-void M_DefaultExtension (std::string &path, const char *extension);
-void M_ExtractFilePath (const char *path, char *dest);
+BOOL M_AppendExtension (std::string &path, std::string extension);
+void M_ExtractFilePath (std::string path, std::string &dest);
 BOOL M_ExtractFileExtension (std::string filename, std::string &dest);
 void M_ExtractFileBase (std::string path, std::string &dest);
 void M_ExtractFileName (std::string path, std::string &dest);

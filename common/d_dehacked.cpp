@@ -1613,12 +1613,12 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 
 		file = patchfile;
 		FixPathSeparator (file);
-		M_DefaultExtension (file, ".deh");
+		M_AppendExtension (file, ".deh");
 
 		if ( !(deh = fopen (file.c_str(), "rb")) ) {
 			file = patchfile;
 			FixPathSeparator (file);
-			M_DefaultExtension (file, ".bex");
+			M_AppendExtension (file, ".bex");
 			deh = fopen (file.c_str(), "rb");
 		}
 

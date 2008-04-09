@@ -776,7 +776,7 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 	{
 		FixPathSeparator (filenames[i]);
 		std::string name = filenames[i];
-		M_DefaultExtension (filenames[i], ".wad");
+		M_AppendExtension (filenames[i], ".wad");
 
 		size_t slash = name.find_last_of('/');
 
@@ -981,7 +981,7 @@ void D_DoomMain (void)
 	{
 		custwad = iwadparm;
 		FixPathSeparator (custwad);
-		M_DefaultExtension (custwad, ".wad");
+		M_AppendExtension (custwad, ".wad");
 		start_wads.push_back(custwad);
 	}
 

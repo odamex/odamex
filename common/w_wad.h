@@ -120,9 +120,6 @@ void W_GetLumpName (char *to, unsigned lump);
 // [RH] Returns file handle for specified lump
 int W_GetLumpFile (unsigned lump);
 
-// denis - identify commercial files with distribution restrictions
-bool W_IsCommercial(std::string &name, std::string &hash);
-
 // [Russell] Simple function to check whether the given string is an iwad name
 BOOL W_IsIWAD(std::string filename, std::string hash = "");
 

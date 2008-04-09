@@ -837,7 +837,7 @@ bool CL_Connect(void)
 	if(gamestate == GS_DOWNLOAD && missing_file.length())
 	{
 		// denis - do not download commercial wads
-		if(W_IsCommercial(missing_file, missing_hash))
+		if(W_IsIWAD(missing_file, missing_hash))
 		{
 			Printf(PRINT_HIGH, "This is a commercial wad and will not be downloaded.\n");
 			CL_QuitNetGame();
@@ -2043,7 +2043,7 @@ void CL_Download()
 			filename += actual_md5;
 		}
 
-        if (!M_WriteFile(filename.c_str(), download.buf.ptr(), download.buf.maxsize()))
+        if (!M_WriteFile(filename, download.buf.ptr(), download.buf.maxsize()))
         {
 			CL_QuitNetGame();
 			return;            

@@ -255,9 +255,9 @@ BEGIN_COMMAND (wad) // denis - changes wads
 		if (M_ExtractFileExtension(argv[i], ext))
 		{
 		    // don't allow subsequent iwads to be loaded
-		    if ((ext == "WAD") && !W_IsIWAD(argv[i]))
+		    if ((ext == "wad") && !W_IsIWAD(argv[i]))
                 wads.push_back(argv[i]);
-            else if (ext == "DEH" || ext == "BEX")
+            else if (ext == "deh" || ext == "bex")
                 patch_files.push_back(argv[i]);
 		}
 	}

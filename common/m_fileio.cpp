@@ -51,15 +51,11 @@ QWORD M_FileLength (FILE *f)
 // M_FileExists
 //
 // Checks to see whether a file exists or not
-BOOL M_FileExists (const char *filename)
+BOOL M_FileExists (std::string filename)
 {
 	FILE *f;
 
-	// [RH] Empty filenames are never there
-	if (*filename == 0)
-		return false;
-
-	f = fopen (filename, "r");
+	f = fopen (filename.c_str(), "r");
 	if (!f)
 		return false;
 	fclose (f);
@@ -71,16 +67,16 @@ BOOL M_FileExists (const char *filename)
 //
 // Writes a buffer to a new file, if it already exists, the file will be
 // erased and recreated with the new contents
-BOOL M_WriteFile(char const *name, void *source, QWORD length)
+BOOL M_WriteFile(std::string filename, void *source, QWORD length)
 {
     FILE *handle;
     QWORD count;
 	
-    handle = fopen(name, "wb");
+    handle = fopen(filename.c_str(), "wb");
 
     if (handle == NULL)
 	{
-		Printf(PRINT_HIGH, "Could not open file %s for writing\n", name);
+		Printf(PRINT_HIGH, "Could not open file %s for writing\n", filename.c_str());
 		return false;
 	}
 
@@ -89,7 +85,7 @@ BOOL M_WriteFile(char const *name, void *source, QWORD length)
 	
 	if (count != length)
 	{
-		Printf(PRINT_HIGH, "Failed while writing to file %s\n", name);
+		Printf(PRINT_HIGH, "Failed while writing to file %s\n", filename.c_str());
 		return false;
 	}
 		
@@ -102,17 +98,17 @@ BOOL M_WriteFile(char const *name, void *source, QWORD length)
 //
 // Reads a file, it will allocate storage via Z_Malloc for it and return
 // the buffer and the size.
-QWORD M_ReadFile(char const *name, BYTE **buffer)
+QWORD M_ReadFile(std::string filename, BYTE **buffer)
 {
     FILE *handle;
     QWORD count, length;
     BYTE *buf;
 	
-    handle = fopen(name, "rb");
+    handle = fopen(filename.c_str(), "rb");
     
 	if (handle == NULL)
 	{
-		Printf(PRINT_HIGH, "Could not open file %s for reading\n", name);
+		Printf(PRINT_HIGH, "Could not open file %s for reading\n", filename.c_str());
 		return false;
 	}
 
@@ -124,7 +120,7 @@ QWORD M_ReadFile(char const *name, BYTE **buffer)
 	
     if (count != length)
 	{
-		Printf(PRINT_HIGH, "Failed while reading from file %s\n", name);
+		Printf(PRINT_HIGH, "Failed while reading from file %s\n", filename.c_str());
 		return false;
 	}
 		
@@ -133,49 +129,41 @@ QWORD M_ReadFile(char const *name, BYTE **buffer)
 }
 
 //
-// M_DefaultExtension
+// M_AppendExtension
 //
-// TODO: document
-void M_DefaultExtension (std::string &path, const char *extension)
+// Add an extension onto the end of a filename, returns false if it failed.
+// The extension must contain a . at the beginning
+BOOL M_AppendExtension (std::string &path, std::string extension)
 {
-	size_t src = path.length() - 1;
-//
-// if path doesn't have a .EXT, append extension
-// (extension should include the .)
-//
+    FixPathSeparator(path);
+    
+    size_t l = path.find_last_of('/');
+	if(l == path.length())
+		return false;
 
-	while (path[src] != '/' && src)
-	{
-		if (path[src] == '.')
-			return; // assume it has an extension
-		src--;
-	}
+    size_t dot = extension.find_first_of('.');
+    if (dot == std::string::npos)
+        return false;
 
-	path += extension;
+    path.append(extension);
+
+    return true;
 }
 
 //
 // M_ExtractFilePath
 //
-// TODO: document
-// FIXME: should include the slash, otherwise ... should use strings only
-// backing to an empty path will be wrong when appending a slash
-void M_ExtractFilePath (const char *path, char *dest)
+// Extract the path from a filename that includes one
+void M_ExtractFilePath (std::string path, std::string &dest)
 {
-	const char *src;
+    FixPathSeparator(path);
 
-	src = path + strlen(path) - 1;
-
-    // back up until a \ or the start
-    while (src != path
-		   && *(src-1) != '\\'
-		   && *(src-1) != '/')
-    {
-		src--;
-    }
-
-	memcpy (dest, path, src-path);
-	dest[src-path] = 0;
+	size_t l = path.find_last_of('/');
+	if(l == std::string::npos)
+		l = path.length();
+		
+    if(l < path.length())
+        dest = path.substr(0, l);
 }
 
 //
@@ -199,9 +187,6 @@ BOOL M_ExtractFileExtension (std::string filename, std::string &dest)
     
     // extract extension without leading dot
     dest = filename.substr(last_dot + 1, filename.length());
-    
-    // convert to uppercase
-    std::transform(dest.begin(), dest.end(), dest.begin(), toupper);
     
     // fun in the sun
     return true;

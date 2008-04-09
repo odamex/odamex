@@ -81,17 +81,17 @@ typedef struct
 } gamewadinfo_t;
 
 // Valid IWAD file names
-static gamewadinfo_t doomwadnames[] =
+static const gamewadinfo_t doomwadnames[] =
 {
-    { "doom.wad", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3" } },
-    { "doom1.wad", "F0CEFCA49926D00903CF57551D901ABE" },
-    { "doom2.wad", "25E1459CA71D321525F84628F45CA8CD" },
-    { "doom2f.wad", "" },
-    { "doomu.wad", "C4FE9FD920207691A9F493668E0A2083" }, 
-    { "plutonia.wad", "75C8CF89566741FA9D22447604053BD7" },
-    { "tnt.wad", "4E158D9953C79CCF97BD0663244CC6B6" },
-    { "freedoom.wad", "" },
-    { "freedm.wad", "" },
+    { "DOOM.WAD", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3" } },
+    { "DOOM1.WAD", "F0CEFCA49926D00903CF57551D901ABE" },
+    { "DOOM2.WAD", "25E1459CA71D321525F84628F45CA8CD" },
+    { "DOOM2F.WAD", "" },
+    { "DOOMU.WAD", "C4FE9FD920207691A9F493668E0A2083" }, 
+    { "PLUTONIA.WAD", "75C8CF89566741FA9D22447604053BD7" },
+    { "TNT.WAD", "4E158D9953C79CCF97BD0663244CC6B6" },
+    { "FREEDOOM.WAD", "" },
+    { "FREEDM.WAD", "" },
     { "", "" }
 };
 
@@ -109,8 +109,11 @@ BOOL W_IsIWAD(std::string filename, std::string hash)
     if (!filename.length())
         return false;
         
-    // lowercase our comparison string
-    std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
+    // uppercase our comparison strings
+    std::transform(filename.begin(), filename.end(), filename.begin(), toupper);
+    
+    if (!hash.empty())
+        std::transform(hash.begin(), hash.end(), hash.begin(), toupper);
     
     // Just get the file name
     M_ExtractFileName(filename, name);  
@@ -137,25 +140,6 @@ BOOL W_IsIWAD(std::string filename, std::string hash)
     }
     
     return false;
-}
-
-
-//
-// W_IsCommercial
-// denis - commercial wads will need download restrictions
-//
-// TODO: Remove and use W_IsIWAD instead
-bool W_IsCommercial(std::string &name, std::string &hash)
-{
-	if(
-	   name == "DOOM.WAD"	|| hash == "C4FE9FD920207691A9F493668E0A2083" ||
-	   name == "DOOM2.WAD"	|| hash == "25E1459CA71D321525F84628F45CA8CD" ||
-	   name == "TNT.WAD"	|| hash == "4E158D9953C79CCF97BD0663244CC6B6" ||
-	   name == "PLUTONIA.WAD"	|| hash == "75C8CF89566741FA9D22447604053BD7"
-	   )
-		return true;
-	else
-		return false;
 }
 
 // denis - Standard MD5SUM
@@ -220,7 +204,7 @@ std::string W_AddFile (std::string filename)
     
 	FixPathSeparator (filename);
 	std::string name = filename;
-	M_DefaultExtension (name, ".wad");
+	M_AppendExtension (name, ".wad");
 
     // open the file
 	if ( (handle = fopen (filename.c_str(), "rb")) == NULL)
