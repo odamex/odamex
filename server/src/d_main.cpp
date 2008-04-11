@@ -981,7 +981,6 @@ void D_DoomMain (void)
 	{
 		custwad = iwadparm;
 		FixPathSeparator (custwad);
-		M_AppendExtension (custwad, ".wad");
 		start_wads.push_back(custwad);
 	}
 
