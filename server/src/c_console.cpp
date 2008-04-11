@@ -225,7 +225,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		MSG_WriteString (&cl->reliablebuf, (char *)str.c_str());
 	}
 
-    LOG << str.c_str() << std::endl;
+    LOG << str;
 
 	return PrintString (printlevel, str.c_str());
 }
