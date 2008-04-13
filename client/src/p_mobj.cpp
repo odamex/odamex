@@ -516,8 +516,7 @@ void P_ZMovement (AActor *mo)
 
       if (mo->momz < 0)
       {
-         if (mo->player
-             && mo->momz < -GRAVITY*8)
+         if (mo->player && mo->momz < -GRAVITY*8 && !(mo->player->spectator))
          {
 		// Squat down.
 		// Decrease viewheight for a moment
@@ -1068,6 +1067,8 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	if(!p->ingame())
 		return;
 
+	bool spectator = p->spectator;
+
 	if (p->playerstate == PST_REBORN)
 		G_PlayerReborn (*p);
 
@@ -1081,6 +1082,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->pitch = mobj->roll = 0;
 	mobj->player = p;
 	mobj->health = p->health;
+
+	if (spectator)
+		mobj->translucency = 0;
 
 	// [RH] Set player sprite based on skin
 	if(p->userinfo.skin >= numskins)
@@ -1099,6 +1103,8 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->viewheight = VIEWHEIGHT;
 	p->attacker = AActor::AActorPtr();
 
+	p->spectator = spectator;
+
 	consoleplayer().camera = displayplayer().mo;
 
 	// [RH] Allow chasecam for demo watching
@@ -1107,6 +1113,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	// setup gun psprite
 	P_SetupPsprites (p);
+
+	if (p->spectator)
+		p->mo->flags |= MF_INVISIBLE;
 
 	// give all cards in death match mode
 	if (deathmatch)
@@ -1574,5 +1583,6 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 }
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")
+
 
 

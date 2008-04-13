@@ -86,8 +86,13 @@ BEGIN_CUSTOM_CVAR (st_scale, "1", CVAR_ARCHIVE)		// Stretch status bar to full s
 		ST_HEIGHT = 32;
 	}
 
-	ST_X = (screen->width-ST_WIDTH)/2;
-	ST_Y = screen->height - ST_HEIGHT;
+	if (!(&consoleplayer())->spectator) {
+		ST_X = (screen->width-ST_WIDTH)/2;
+		ST_Y = screen->height - ST_HEIGHT;
+	} else {
+		ST_X = 0;
+		ST_Y = screen->height;		
+	}
 
 	setsizeneeded = true;
 	st_firsttime = true;
@@ -104,12 +109,14 @@ DCanvas *stbarscreen;
 DCanvas *stnumscreen;
 
 BOOL DrawNewHUD;		// [RH] Draw the new HUD?
+BOOL DrawNewSpecHUD;	// [Nes] Draw the new spectator HUD?
 
 
 // functions in st_new.c
 void ST_initNew (void);
 void ST_unloadNew (void);
 void ST_newDraw (void);
+void ST_newDrawCTF (void);
 
 // [RH] Base blending values (for e.g. underwater)
 int BaseBlendR, BaseBlendG, BaseBlendB;
@@ -1372,10 +1379,12 @@ void ST_Drawer (void)
 	if (noisedebug)
 		S_NoiseDebug ();
 
-	if (realviewheight == screen->height && viewactive)
+	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
 	{
 		if (DrawNewHUD)
 			ST_newDraw ();
+		else if (DrawNewSpecHUD && ctfmode) // [Nes] - Only specator new HUD is in ctf.
+			ST_newDrawCTF();
 		st_firsttime = true;
 	}
 	else

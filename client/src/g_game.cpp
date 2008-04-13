@@ -445,7 +445,14 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		speed ^= 1;
 
 	forward = side = look = fly = 0;
-
+	
+	// GhostlyDeath -- USE takes us out of spectator mode
+	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
+	{
+		MSG_WriteMarker(&net_buffer, clc_spectate);
+		MSG_WriteByte(&net_buffer, false);
+	}
+ 
 	// [RH] only use two stage accelerative turning on the keyboard
 	//		and not the joystick, since we treat the joystick as
 	//		the analog device it is.
@@ -1175,12 +1182,15 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		return false;
 
 	// spawn a teleport fog
-	an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
+	{
+		an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
 
-	mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
+		mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
 
-	if (level.time)
-		S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);	// don't start sound on first frame
+		if (level.time)
+			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);	// don't start sound on first frame
+	}
 
 	return true;
 }

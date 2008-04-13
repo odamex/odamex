@@ -929,6 +929,23 @@ P_CrossSpecialLine
 			// Likewise, player should not trigger monster lines
 			if(line->flags & ML_SPECIAL_MONSTER_ONLY)
 				return;
+			
+			// And spectators should only trigger teleporters
+			if (thing->player->spectator)
+			{
+				switch (line->special)
+				{
+					case Teleport:
+					case Teleport_NoFog:
+					case Teleport_NewMap:
+					case Teleport_EndGame:
+					case Teleport_Line:
+						break;
+					default:
+						return;
+						break;
+				}
+			}
 		}
 
 		// Do not teleport on the wrong side

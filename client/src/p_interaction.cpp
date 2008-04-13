@@ -338,6 +338,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
     if (toucher->health <= 0)
 		return;
 
+	// GhostlyDeath -- Spectators can't pick up things
+	if (toucher->player && toucher->player->spectator)
+		return;		
+
 	fixed_t delta = special->z - toucher->z;
 
 	if (delta > toucher->height || delta < -8*FRACUNIT)
@@ -982,7 +986,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 //
 // P_KillMobj
 //
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
+void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill)
 {
 	AActor *mo;
 
@@ -1030,27 +1034,30 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 		}
 
 		// play die sound
-		if (target->player != &consoleplayer())
+		if (target->player != &consoleplayer() && !joinkill)
 			A_PlayerScream(target);
 	}
 
 	if(target->health > 0) // denis - when this function is used standalone
 		target->health = 0;
 
-	if (target->health < -target->info->spawnhealth
-		&& target->info->xdeathstate)
-	{
-		P_SetMobjState (target, target->info->xdeathstate);
-	}
-	else
-		P_SetMobjState (target, target->info->deathstate);
+	//if (!joinkill) {
+		if (target->health < -target->info->spawnhealth
+			&& target->info->xdeathstate)
+		{
+			P_SetMobjState (target, target->info->xdeathstate);
+		}
+		else
+			P_SetMobjState (target, target->info->deathstate);
+	//}
+	
 	target->tics -= P_Random (target) & 3;
 
 	if (target->tics < 1)
 		target->tics = 1;
 
 	// [RH] Death messages
-	if (target->player && level.time && multiplayer && !(demoplayback && democlassic))
+	if (target->player && level.time && multiplayer && !(demoplayback && democlassic) && !joinkill)
 		ClientObituary (target, inflictor, source);
 
 	// Drop stuff.
@@ -1115,6 +1122,10 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 	if ( !(target->flags & MF_SHOOTABLE) )
 		return; // shouldn't happen...
+
+	// GhostlyDeath -- spectators can't get hurt
+	if (target->player && target->player->spectator)
+		return;
 
 	if (target->health <= 0)
 		return;
@@ -1220,7 +1231,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		target->health -= damage;
 		if (target->health <= 0)
 		{
-			P_KillMobj (source, target, inflictor);
+			P_KillMobj (source, target, inflictor, false);
 			return;
 		}
 	}

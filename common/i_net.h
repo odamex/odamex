@@ -96,6 +96,7 @@ enum svc_t
 	svc_updatedeaths,		// [byte] [short]
 	svc_ctfevent,			// [Toke - CTF] - [int]
 	svc_serversettings,		// 55 [Toke] - informs clients of server settings
+	svc_spectate,			// [Nes] - [byte:state], [short:playernum]
 
 	// for co-op
 	svc_mobjstate = 70,

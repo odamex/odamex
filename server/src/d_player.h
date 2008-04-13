@@ -210,6 +210,8 @@ public:
 	time_t	JoinTime;					// [Dash|RD] Time this client joined.
     int         ping;                   // [Fly] guess what :)
 
+    bool		spectator;			// [GhostlyDeath] spectating?
+
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
 	

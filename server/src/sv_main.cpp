@@ -71,6 +71,8 @@ CVAR (waddownload,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Send wad files 
 CVAR (emptyreset,       "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)                 // Reset current map when last player leaves.
 CVAR (clientcount,		"0",        CVAR_NOSET | CVAR_NOENABLEDISABLE)										// tracks number of connected players for scripting
 
+CVAR (globalspectatorchat,       "1",        CVAR_ARCHIVE | CVAR_SERVERINFO)
+
 BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
 	if(var > MAXPLAYERS)
@@ -98,6 +100,42 @@ BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 	//R_InitTranslationTables();
 }
 END_CUSTOM_CVAR (maxplayers)
+
+BEGIN_CUSTOM_CVAR (maxactiveplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+{
+	// [Nes] - Force extras to become spectators.
+	int normalcount = 0;
+	
+	if (var < 1)
+		var.Set(1);
+	
+	if (var > MAXPLAYERS)
+		var.Set(MAXPLAYERS);
+	
+	for (int i = 0; i < players.size(); i++)
+	{
+		if (!players[i].spectator)
+		{
+			normalcount++;
+			
+			if (normalcount > var)
+			{
+				for (size_t j = 0; j < players.size(); j++) {
+					MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+					MSG_WriteByte (&(players[j].client.reliablebuf), i);
+					MSG_WriteByte (&(players[j].client.reliablebuf), true);
+				}
+				SV_BroadcastPrintf (PRINT_HIGH, "%s became a spectator.\n", players[i].userinfo.netname);
+				MSG_WriteMarker (&players[i].client.reliablebuf, svc_print);
+				MSG_WriteByte (&players[i].client.reliablebuf, PRINT_CHAT);
+				MSG_WriteString (&players[i].client.reliablebuf, "Active player limit reduced. You are now a spectator!\n");
+				players[i].spectator = true;
+				players[i].playerstate = PST_LIVE;
+			}
+		}
+	}
+}
+END_CUSTOM_CVAR (maxactiveplayers)
 
 
 // Game settings
@@ -201,7 +239,7 @@ void SV_SendServerSettings (client_t *cl);
 void SV_ServerSettingChange (void);
 
 // some doom functions
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor);
+void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 bool P_CheckSightEdges (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
 
 void SV_WinCheck (void);
@@ -935,6 +973,8 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 	else if(!mo->player)
 		ok = true;
+	else if(player.mo && mo->player && mo->player->spectator)
+		ok = false;
 	else if(player.mo && mo->player && SV_IsTeammate(player, *mo->player))
 		ok = true;
 	else if(player.mo && mo->player && !antiwallhack)
@@ -1167,7 +1207,7 @@ void SV_ClientFullUpdate (player_t &pl)
 				return;
 	}
 
-	// update frags/points
+	// update frags/points/spectate
 	for (i = 0; i < players.size(); i++)
 	{
 		if (!players[i].ingame())
@@ -1181,6 +1221,10 @@ void SV_ClientFullUpdate (player_t &pl)
 			MSG_WriteShort(&cl->reliablebuf, players[i].killcount);
 		MSG_WriteShort(&cl->reliablebuf, players[i].deathcount);
 		MSG_WriteShort(&cl->reliablebuf, players[i].points);
+		
+		MSG_WriteMarker (&cl->reliablebuf, svc_spectate);
+		MSG_WriteByte (&cl->reliablebuf, players[i].id);
+		MSG_WriteByte (&cl->reliablebuf, players[i].spectator);
 	}
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
@@ -1408,6 +1452,7 @@ void SV_ConnectClient (void)
 	players[n].fragcount	= 0;
 	players[n].killcount	= 0;
 	players[n].points		= 0;
+	players[n].spectator	= true;
 
 	// send a map name
 	MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);
@@ -1416,16 +1461,9 @@ void SV_ConnectClient (void)
 	SV_ClientFullUpdate (players[n]);
 	SV_UpdateFrags (players[n]);
 	SV_SendPacket (players[n]);
-
-	if (!teamplay && !ctfmode)
-		SV_BroadcastPrintf (PRINT_HIGH, "%s entered the game\n", players[n].userinfo.netname);
-	else
-	{
-		if(players[n].userinfo.team == TEAM_NONE)
-			SV_BroadcastPrintf (PRINT_HIGH, "%s entered the game but has not joined a team yet.\n", players[n].userinfo.netname);
-		else
-			SV_BroadcastPrintf (PRINT_HIGH, "%s entered the game on the %s team.\n", players[n].userinfo.netname, team_names[players[n].userinfo.team]);
-	}
+	
+	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
+	players[n].spectator = true;
 }
 
 
@@ -1434,6 +1472,8 @@ void SV_ConnectClient (void)
 //
 void SV_DisconnectClient(player_t &who)
 {
+	char str[125], str1[50], str2[25], str3[15], str4[15], str5[15];
+	
 	// already gone though this procedure?
 	if(who.playerstate == PST_DISCONNECT)
 		return;
@@ -1466,33 +1506,38 @@ void SV_DisconnectClient(player_t &who)
 		who.mo = AActor::AActorPtr();
 	}
 
-	if (gametic - who.client.last_received == CLIENT_TIMEOUT*35) {
-        if (ctfmode)
-            SV_BroadcastPrintf (PRINT_HIGH, "%s timed out. (%s TEAM, %d POINTS, %d FRAGS)\n",
-                who.userinfo.netname, team_names[who.userinfo.team], who.points, who.fragcount);
-        else if (teamplay)
-            SV_BroadcastPrintf (PRINT_HIGH, "%s timed out. (%s TEAM, %d FRAGS, %d DEATHS)\n",
-                who.userinfo.netname, team_names[who.userinfo.team], who.fragcount, who.deathcount);
-        else if (deathmatch)
-            SV_BroadcastPrintf (PRINT_HIGH, "%s timed out. (%d FRAGS, %d DEATHS)\n",
-                who.userinfo.netname, who.fragcount, who.deathcount);
-        else
-            SV_BroadcastPrintf (PRINT_HIGH, "%s timed out. (%d KILLS, %d DEATHS)\n",
-                who.userinfo.netname, who.killcount, who.deathcount);
-	} else {
-        if (ctfmode)
-            SV_BroadcastPrintf (PRINT_HIGH, "%s disconnected. (%s TEAM, %d POINTS, %d FRAGS)\n",
-                who.userinfo.netname, team_names[who.userinfo.team], who.points, who.fragcount);
-        else if (teamplay)
-            SV_BroadcastPrintf (PRINT_HIGH, "%s disconnected. (%s TEAM, %d FRAGS, %d DEATHS)\n",
-                who.userinfo.netname, team_names[who.userinfo.team], who.fragcount, who.deathcount);
-        else if (deathmatch)
-            SV_BroadcastPrintf (PRINT_HIGH, "%s disconnected. (%d FRAGS, %d DEATHS)\n",
-                who.userinfo.netname, who.fragcount, who.deathcount);
-        else
-            SV_BroadcastPrintf (PRINT_HIGH, "%s disconnected. (%d KILLS, %d DEATHS)\n",
-                who.userinfo.netname, who.killcount, who.deathcount);
-    }
+	// Name and reason for disconnect.
+    if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
+		sprintf(str1, "%s timed out. (", who.userinfo.netname);
+    else
+		sprintf(str1, "%s disconnected. (", who.userinfo.netname);
+	
+	// Spectator status or team name (TDM/CTF).
+	if (who.spectator)
+		sprintf(str2, "SPECTATOR, ");
+	else if (ctfmode || teamplay)
+		sprintf(str2, "%s TEAM, ", team_names[who.userinfo.team]);
+	else
+		sprintf(str2, "");
+	
+	// Points (CTF).
+	if (ctfmode)
+		sprintf(str3, "%d POINTS, ", who.points);
+	else
+		sprintf(str3, "");
+	
+	// Frags (DM/TDM/CTF) or Kills (Coop).
+	if (deathmatch)
+		sprintf(str4, "%d FRAGS, ", who.fragcount);
+	else
+		sprintf(str4, "%d KILLS, ", who.killcount);
+	
+	// Deaths.
+	sprintf(str5, "%d DEATHS)", who.deathcount);
+	
+	// Combine and print.
+	sprintf(str, "%s%s%s%s%s", str1, str2, str3, str4, str5);
+	SV_BroadcastPrintf(PRINT_HIGH, "%s\n", str);
 
 	who.playerstate = PST_DISCONNECT;
 
@@ -1630,7 +1675,7 @@ void SV_DrawScores()
             Printf_Bold("--------------------------------------");
 
             for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->userinfo.team == j) {
+                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
                     Printf(PRINT_HIGH, "%-15s %-6d N/A  %-5d  N/A",
                         sortedplayers[i]->userinfo.netname,
                         sortedplayers[i]->points,
@@ -1640,6 +1685,13 @@ void SV_DrawScores()
                 }
             }
         }
+		
+		Printf (PRINT_HIGH, "\n");
+        Printf_Bold("----------------------------SPECTATORS");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+            }
     } else if (teamplay) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
@@ -1671,7 +1723,7 @@ void SV_DrawScores()
             Printf_Bold("--------------------------------------");
 
             for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->userinfo.team == j) {
+                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
                     if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
                         sprintf (str, "0.0");
                     else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
@@ -1688,6 +1740,13 @@ void SV_DrawScores()
                 }
             }
         }
+                        
+		Printf (PRINT_HIGH, "\n");
+        Printf_Bold("----------------------------SPECTATORS");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+            }
     } else if (deathmatch) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
@@ -1711,20 +1770,29 @@ void SV_DrawScores()
         Printf_Bold("--------------------------------------");
 
         for (i = 0; i < sortedplayers.size(); i++) {
-            if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
-                sprintf (str, "0.0");
-            else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
-                sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
-            else
-                sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
+        	if (!sortedplayers[i]->spectator) {
+				if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
+					sprintf (str, "0.0");
+				else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
+					sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
+				else
+					sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
 
-            Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A",
-                sortedplayers[i]->userinfo.netname,
-                sortedplayers[i]->fragcount,
-                sortedplayers[i]->deathcount,
-                str);
-                //sortedplayers[i]->GameTime / 60);
+				Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A",
+					sortedplayers[i]->userinfo.netname,
+					sortedplayers[i]->fragcount,
+					sortedplayers[i]->deathcount,
+					str);
+					//sortedplayers[i]->GameTime / 60);
+			}
         }
+                        
+		Printf (PRINT_HIGH, "\n");
+        Printf_Bold("----------------------------SPECTATORS");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+            }
     } else if (multiplayer) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
 
@@ -1735,20 +1803,29 @@ void SV_DrawScores()
         Printf_Bold("--------------------------------------");
 
         for (i = 0; i < sortedplayers.size(); i++) {
-            if (sortedplayers[i]->killcount <= 0) // Copied from HU_DMScores1.
-                sprintf (str, "0.0");
-            else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0)
-                sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount);
-            else
-                sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
+        	if (!sortedplayers[i]->spectator) {
+				if (sortedplayers[i]->killcount <= 0) // Copied from HU_DMScores1.
+					sprintf (str, "0.0");
+				else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0)
+					sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount);
+				else
+					sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
 
-            Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A",
-                sortedplayers[i]->userinfo.netname,
-                sortedplayers[i]->killcount,
-                sortedplayers[i]->deathcount,
-                str);
-                //sortedplayers[i]->GameTime / 60);
+				Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A",
+					sortedplayers[i]->userinfo.netname,
+					sortedplayers[i]->killcount,
+					sortedplayers[i]->deathcount,
+					str);
+					//sortedplayers[i]->GameTime / 60);
+        	}
         }
+        
+		Printf (PRINT_HIGH, "\n");
+        Printf_Bold("----------------------------SPECTATORS");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+            }
     }
 
     Printf (PRINT_HIGH, "\n");
@@ -1786,6 +1863,32 @@ void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...)
     }
 }
 
+// GhostlyDeath -- same as above but ONLY for spectators
+void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...)
+{
+    va_list       argptr;
+    char          string[2048];
+    client_t     *cl;
+
+    va_start (argptr,fmt);
+    vsprintf (string, fmt,argptr);
+    va_end (argptr);
+
+    Printf (level, "%s", string);  // print to the console
+
+    for (size_t i=0; i < players.size(); i++)
+    {
+		cl = &clients[i];
+		
+		if (players[i].spectator)
+		{
+			MSG_WriteMarker (&cl->reliablebuf, svc_print);
+			MSG_WriteByte (&cl->reliablebuf, level);
+			MSG_WriteString (&cl->reliablebuf, string);
+		}
+    }
+}
+
 void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
 {
     va_list       argptr;
@@ -1801,6 +1904,9 @@ void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		if(!teamplay || players[i].userinfo.team != idplayer(who).userinfo.team)
+			continue;
+
+		if (players[i].spectator)
 			continue;
 
 		cl = &clients[i];
@@ -1823,10 +1929,12 @@ void SV_Say(player_t &player)
 	if(!strlen(s) || strlen(s) > 128)
 		return;
 
-	if(!team)
+	if (!globalspectatorchat && player.spectator)
+		SV_SpectatorPrintf (PRINT_CHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
+	else if(!team)
 		SV_BroadcastPrintf (PRINT_CHAT, "%s: %s\n", player.userinfo.netname, s);
 	else
-		SV_TeamPrintf (PRINT_TEAMCHAT, player.id, "(TEAM) %s>> %s\n", player.userinfo.netname, s);
+		SV_TeamPrintf (PRINT_TEAMCHAT, player.id, "<%s to TEAM> %s\n", player.userinfo.netname, s);
 }
 
 //
@@ -2379,20 +2487,53 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 //
 void SV_Spectate (player_t &player)
 {
-	bool want_to_spectate = MSG_ReadByte() ? true : false;
-
-	if(want_to_spectate)
-	{
-		if(player.ingame())
-			SV_Suicide(player);
-
-		player.playerstate = PST_SPECTATE;
-		player.respawn_time = level.time;
-	}
-	else
-	{
-		if(player.playerstate == PST_SPECTATE && level.time > player.respawn_time + TICRATE*2)
-			player.playerstate = PST_REBORN;
+	if (!(BOOL)MSG_ReadByte()) {
+		if (player.spectator){
+			int NumPlayers = 0;
+			// Check to see if there are enough "activeplayers"
+			for (int i = 0; i < players.size(); i++)
+			{
+				if (!players[i].spectator)
+					NumPlayers++;
+			}
+			
+			if (NumPlayers < maxactiveplayers)
+			{
+				player.spectator = false;
+				for (size_t j = 0; j < players.size(); j++) {
+					MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+					MSG_WriteByte (&(players[j].client.reliablebuf), player.id);
+					MSG_WriteByte (&(players[j].client.reliablebuf), false);
+				}
+				P_KillMobj(NULL, player.mo, NULL, true);
+				player.playerstate = PST_REBORN;
+				if (!teamplay && !ctfmode)
+					SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname);
+				else
+					SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game on the %s team.\n", 
+						player.userinfo.netname, team_names[player.userinfo.team]);
+			}
+			else
+			{
+				MSG_WriteMarker (&player.client.reliablebuf, svc_print);
+				MSG_WriteByte (&player.client.reliablebuf, PRINT_CHAT);
+				MSG_WriteString (&player.client.reliablebuf, "Server is currently full!\n");
+			}
+		}
+	} else {
+		if (!player.spectator)
+		{
+			for (size_t j = 0; j < players.size(); j++) {
+				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+				MSG_WriteByte (&(players[j].client.reliablebuf), player.id);
+				MSG_WriteByte (&(players[j].client.reliablebuf), true);
+			}
+			player.spectator = true;
+			player.playerstate = PST_LIVE;
+			if (ctfmode)
+				CTF_CheckFlags (player);
+			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
+		}
 	}
 }
 

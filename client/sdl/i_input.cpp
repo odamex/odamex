@@ -54,8 +54,8 @@ int KeyRepeatRate;
 // The mouse input values are input directly to the game, but when
 // the values exceed the value of mouse_threshold, they are multiplied
 // by mouse_acceleration to increase the speed.
-CVAR (mouse_acceleration, "2", CVAR_ARCHIVE)
-CVAR (mouse_threshold, "10", CVAR_ARCHIVE)
+CVAR (mouse_acceleration, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (mouse_threshold, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // joek - sort mouse grab issue
 static BOOL mousegrabbed = false;

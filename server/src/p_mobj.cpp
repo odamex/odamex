@@ -523,8 +523,7 @@ void P_ZMovement (AActor *mo)
 
       if (mo->momz < 0)
       {
-         if (mo->player
-             && mo->momz < -GRAVITY*8)
+         if (mo->player && mo->momz < -GRAVITY*8 && !(mo->player->spectator))
          {
 		// Squat down.
 		// Decrease viewheight for a moment
@@ -1095,6 +1094,8 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	player_t *p = &player;
 
+	bool spectator = p->spectator;
+
 	if (p->playerstate == PST_REBORN)
 		G_PlayerReborn (*p);
 
@@ -1107,6 +1108,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->pitch = mobj->roll = 0;
 	mobj->player = p;
 	mobj->health = p->health;
+
+	if (spectator)
+		mobj->translucency = 0;
 
 	// [RH] Set player sprite based on skin
 	if(p->userinfo.skin >= numskins)
@@ -1124,6 +1128,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->fixedcolormap = 0;
 	p->viewheight = VIEWHEIGHT;
 	p->attacker = AActor::AActorPtr();
+	p->spectator = spectator;
 
 	// [RH] Allow chasecam for demo watching
 	//if ((demoplayback || demonew) && chasedemo)
@@ -1138,6 +1143,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 	}
+
+	if (p->spectator)
+		p->mo->flags |= MF_INVISIBLE;
 
 	if(serverside)
 	{
@@ -1334,7 +1342,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (deathmatch)
+	/*if (deathmatch)
 	{
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
@@ -1349,7 +1357,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		if (!(mthing->flags & MTF_SINGLE))
 			return;
-	}
+	}*/
 
 	// check for apropriate skill level
 	if (skill == sk_baby)
@@ -1687,5 +1695,6 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")
+
 
 

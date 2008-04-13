@@ -450,15 +450,18 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		return false;
 
 	// spawn a teleport fog
-	an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
+	{
+		an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
 
-	mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
+		mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
 
-	// send new object
-	SV_SpawnMobj(mo);
+		// send new object
+		SV_SpawnMobj(mo);
 	
-	if (level.time)
-		SV_Sound (mo->x, mo->y, CHAN_VOICE, "misc/teleport", ATTN_NORM);
+		if (level.time)
+			SV_Sound (mo->x, mo->y, CHAN_VOICE, "misc/teleport", ATTN_NORM);
+	}
 
 	return true;
 }

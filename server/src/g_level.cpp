@@ -474,6 +474,19 @@ void G_ChangeMap (void)
 	// run script at the end of each map
 	if(strlen(endmapscript.cstring()))
 		AddCommandString(endmapscript.cstring(), true);
+
+	if (deathmatch) {
+		// make everyone a spectator again
+		for (int i = 0; i < players.size(); i++)
+		{
+			players[i].spectator = true;
+			for (size_t j = 0; j < players.size(); j++) {
+				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+				MSG_WriteByte (&(players[j].client.reliablebuf), i);
+				MSG_WriteByte (&(players[j].client.reliablebuf), true);
+			}
+		}
+	}
 }
 
 void SV_ClientFullUpdate(player_t &pl);

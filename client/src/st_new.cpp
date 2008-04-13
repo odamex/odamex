@@ -266,69 +266,7 @@ void ST_newDraw (void)
 	// Draw top-right info. (Keys/Frags/Score)
     if (ctfmode)
     {
-
-    	const patch_t *flagbluepatch = flagiconbhome;
-    	const patch_t *flagredpatch = flagiconrhome;
-
-		switch(CTFdata[it_blueflag].state)
-		{
-			case flag_carried:
-				flagbluepatch = flagiconbtakenbyr;
-				break;
-			case flag_dropped:
-				flagbluepatch = flagiconbdropped;
-				break;
-			default:
-				break;
-		}
-
-		switch(CTFdata[it_redflag].state)
-		{
-			case flag_carried:
-				flagredpatch = flagiconrtakenbyb;
-				break;
-			case flag_dropped:
-				flagredpatch = flagiconrdropped;
-				break;
-			default:
-				break;
-		}
-
-    	// Draw score (in CTF)
-		if (hud_scale) {
-
-			if (plyr->userinfo.team == TEAM_BLUE)
-				screen->DrawPatchCleanNoMove (flagiconbcur,
-											  screen->width - 19 * CleanXfac,
-											  1 * CleanYfac);
-			else if (plyr->userinfo.team == TEAM_RED)
-				screen->DrawPatchCleanNoMove (flagiconrcur,
-											  screen->width - 19 * CleanXfac,
-											  19 * CleanYfac);
-
-			screen->DrawPatchCleanNoMove (flagbluepatch,
-										  screen->width - 18 * CleanXfac,
-										  2 * CleanYfac);
-			screen->DrawPatchCleanNoMove (flagredpatch,
-										  screen->width - 18 * CleanXfac,
-										  20 * CleanYfac);
-		} else {
-
-			if (plyr->userinfo.team == TEAM_BLUE)
-				screen->DrawPatch (flagiconbcur, screen->width - 19,
-								   1);
-			else if (plyr->userinfo.team == TEAM_RED)
-				screen->DrawPatch (flagiconrcur, screen->width - 19,
-								   19);
-
-			screen->DrawPatch (flagbluepatch, screen->width - 18,
-							   2);
-			screen->DrawPatch (flagredpatch, screen->width - 18,
-							   20);
-		}
-
-		ST_DrawNumRight (screen->width - 20 * xscale, 2 * yscale, screen, TEAMpoints[TEAM_BLUE]);
-		ST_DrawNumRight (screen->width - 20 * xscale, 20 * yscale, screen, TEAMpoints[TEAM_RED]);
+		ST_newDrawCTF();
     }
 	else if (deathmatch)
 	{
@@ -351,6 +289,75 @@ void ST_newDraw (void)
 			}
 		}
 	}
+}
+
+void ST_newDrawCTF (void)
+{
+	player_t *plyr = &consoleplayer();
+	int xscale = hud_scale ? CleanXfac : 1;
+	int yscale = hud_scale ? CleanYfac : 1;
+	const patch_t *flagbluepatch = flagiconbhome;
+	const patch_t *flagredpatch = flagiconrhome;
+
+	switch(CTFdata[it_blueflag].state)
+	{
+		case flag_carried:
+			flagbluepatch = flagiconbtakenbyr;
+			break;
+		case flag_dropped:
+			flagbluepatch = flagiconbdropped;
+			break;
+		default:
+			break;
+	}
+
+	switch(CTFdata[it_redflag].state)
+	{
+		case flag_carried:
+			flagredpatch = flagiconrtakenbyb;
+			break;
+		case flag_dropped:
+			flagredpatch = flagiconrdropped;
+			break;
+		default:
+			break;
+	}
+
+	// Draw score (in CTF)
+	if (hud_scale) {
+
+		if (plyr->userinfo.team == TEAM_BLUE)
+			screen->DrawPatchCleanNoMove (flagiconbcur,
+										  screen->width - 19 * CleanXfac,
+										  1 * CleanYfac);
+		else if (plyr->userinfo.team == TEAM_RED)
+			screen->DrawPatchCleanNoMove (flagiconrcur,
+										  screen->width - 19 * CleanXfac,
+										  19 * CleanYfac);
+
+		screen->DrawPatchCleanNoMove (flagbluepatch,
+									  screen->width - 18 * CleanXfac,
+									  2 * CleanYfac);
+		screen->DrawPatchCleanNoMove (flagredpatch,
+									  screen->width - 18 * CleanXfac,
+									  20 * CleanYfac);
+	} else {
+
+		if (plyr->userinfo.team == TEAM_BLUE)
+			screen->DrawPatch (flagiconbcur, screen->width - 19,
+							   1);
+		else if (plyr->userinfo.team == TEAM_RED)
+			screen->DrawPatch (flagiconrcur, screen->width - 19,
+							   19);
+
+		screen->DrawPatch (flagbluepatch, screen->width - 18,
+						   2);
+		screen->DrawPatch (flagredpatch, screen->width - 18,
+						   20);
+	}
+
+	ST_DrawNumRight (screen->width - 20 * xscale, 2 * yscale, screen, TEAMpoints[TEAM_BLUE]);
+	ST_DrawNumRight (screen->width - 20 * xscale, 20 * yscale, screen, TEAMpoints[TEAM_RED]);
 }
 
 void ST_nameDraw (int y)

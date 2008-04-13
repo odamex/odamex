@@ -136,7 +136,7 @@ void CalcTeamFrags (void);
 // some doom functions (not csDoom)
 void G_PlayerReborn (player_t &player);
 void CL_SpawnPlayer ();
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor);
+void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
@@ -323,13 +323,14 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname - %s \n",		  player->userinfo.netname);
-	Printf (PRINT_HIGH, " userinfo.team    - %d \n",		  player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.aimdist - %d \n",		  player->userinfo.aimdist);
-	Printf (PRINT_HIGH, " userinfo.color   - %d \n",		  player->userinfo.color);
-	Printf (PRINT_HIGH, " userinfo.skin    - %s \n",		  skins[player->userinfo.skin].name);
-	Printf (PRINT_HIGH, " userinfo.gender  - %d \n",		  player->userinfo.gender);
-	Printf (PRINT_HIGH, " time             - %d \n",		  player->GameTime);
+	Printf (PRINT_HIGH, " userinfo.netname   - %s \n",		  player->userinfo.netname);
+	Printf (PRINT_HIGH, " userinfo.team      - %d \n",		  player->userinfo.team);
+	Printf (PRINT_HIGH, " userinfo.aimdist   - %d \n",		  player->userinfo.aimdist);
+	Printf (PRINT_HIGH, " userinfo.color     - %d \n",		  player->userinfo.color);
+	Printf (PRINT_HIGH, " userinfo.skin      - %s \n",		  skins[player->userinfo.skin].name);
+	Printf (PRINT_HIGH, " userinfo.gender    - %d \n",		  player->userinfo.gender);
+	Printf (PRINT_HIGH, " spectator          - %d \n",		  player->spectator);
+	Printf (PRINT_HIGH, " time               - %d \n",		  player->GameTime);
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
@@ -467,12 +468,12 @@ BEGIN_COMMAND (spectate)
 END_COMMAND (spectate)
 
 
-BEGIN_COMMAND (joingame)
+BEGIN_COMMAND (join)
 {
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, false);
 }
-END_COMMAND (joingame)
+END_COMMAND (join)
 
 BEGIN_COMMAND (quit)
 {
@@ -1402,13 +1403,15 @@ void CL_KillMobj(void)
 	int health = MSG_ReadShort();
 
 	MeansOfDeath = MSG_ReadLong();
+	
+	bool joinkill = MSG_ReadByte();
 
 	if (!target)
 		return;
 
 	target->health = health;
 
-	P_KillMobj (source, target, inflictor);
+	P_KillMobj (source, target, inflictor, joinkill);
 }
 
 
@@ -2067,6 +2070,24 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
+EXTERN_CVAR (st_scale)
+
+void CL_Spectate()
+{
+	player_t &player = CL_FindPlayer(MSG_ReadByte());
+	
+	player.spectator = MSG_ReadByte();
+	
+	if (&player == &consoleplayer()) {
+		st_scale.Callback (); // refresh status bar size
+		if (player.spectator) {
+			for (int i=0 ; i<NUMPSPRITES ; i++) // remove all weapon sprites
+				(&player)->psprites[i].state = NULL;
+			player.playerstate = PST_LIVE; // resurrect dead spectators
+		}
+	}
+}
+
 // client source (once)
 typedef void (*client_callback)();
 typedef std::map<svc_t, client_callback> cmdmap;
@@ -2134,6 +2155,8 @@ void CL_InitCommands(void)
 
 	cmds[svc_challenge]			= &CL_Clear;
 	cmds[svc_launcher_challenge]= &CL_Clear;
+	
+	cmds[svc_spectate]   		= &CL_Spectate;
 }
 
 //

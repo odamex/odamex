@@ -48,6 +48,7 @@ extern int *walllights;
 
 // [RH] Defined in d_main.cpp
 extern BOOL DrawNewHUD;
+extern BOOL DrawNewSpecHUD;
 extern dyncolormap_t NormalLight;
 
 CVAR (r_viewsize, "0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
@@ -599,10 +600,16 @@ void R_ExecuteSetViewSize (void)
 		freelookviewheight = ((setblocks*screen->height)/10)&~7;
 	}
 
-	if (setblocks == 11)
-		DrawNewHUD = true;
-	else
+	if ((&consoleplayer())->spectator && setblocks != 12) {
 		DrawNewHUD = false;
+		DrawNewSpecHUD = true;
+	} else if (setblocks == 11) {
+		DrawNewHUD = true;
+		DrawNewSpecHUD = false;
+	} else {
+		DrawNewHUD = false;
+		DrawNewSpecHUD = false;
+	}
 
 	viewwidth = realviewwidth >> detailxshift;
 	viewheight = realviewheight >> detailyshift;

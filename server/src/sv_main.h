@@ -64,6 +64,7 @@ bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 byte SV_PlayerHearingLoss(player_t &cl, fixed_t &x, fixed_t &y);
 
 void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...);
+void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void SV_CheckTimeouts (void);
 void SV_SayLocal(char *s);
 void SV_ConnectClient(void);
@@ -94,6 +95,8 @@ void SV_SoundAvoidCl (player_t &player, AActor *mo, byte channel, char *name, by
 int SV_CountTeamPlayers(int team);
 
 extern std::vector<std::string> wadnames;
+
+EXTERN_CVAR(playeringamelimit)
 
 #endif
 

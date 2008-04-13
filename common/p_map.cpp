@@ -172,16 +172,19 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 
 	StompAlwaysFrags = tmthing->player || (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
-	// stomp on any things contacted
-	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	if (tmthing->player && !(tmthing->player->spectator))
+	{
+		// stomp on any things contacted
+		xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+		xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+		yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+		yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-	for (bx=xl ; bx<=xh ; bx++)
-		for (by=yl ; by<=yh ; by++)
-			if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
-				return false;
+		for (bx=xl ; bx<=xh ; bx++)
+			for (by=yl ; by<=yh ; by++)
+				if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
+					return false;
+	}
 
 	// the move is ok,
 	// so link the thing into its new position
@@ -396,8 +399,22 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (thing == tmthing)
 		return true;
 
+	if (thing->flags & MF_INVISIBLE)
+		return true;
+
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)) )
 		return true;	// can't hit thing
+
+		
+	// GhostlyDeath -- Spectators go through everything!
+	if (thing->player && thing->player->spectator)
+		return true;
+	// and vice versa
+	if (tmthing->player && tmthing->player->spectator)
+		return true;
+		
+	/*if (!(thing->player && thing->player->spectator))
+		return true;*/
 
 	blockdist = thing->radius + tmthing->radius;
 
@@ -656,7 +673,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
     if (!P_CheckPosition (thing, x, y))
 		return false;		// solid wall or thing
 
-	if (!(thing->flags & MF_NOCLIP))
+	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
 	{
 		if (tmceilingz - tmfloorz < thing->height)
 			return false;		// doesn't fit
@@ -678,6 +695,15 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 		if (!(thing->flags&(MF_DROPOFF|MF_FLOAT))
 			&& tmfloorz - tmdropoffz > 24*FRACUNIT)
 			return false;	// don't stand over a dropoff
+
+		/*if ((tmthing->player && !tmthing->player->spectator) &&
+			(thing->player && !thing->player->spectator))
+			return false;*/
+			
+		/*if (!(tmthing->player && tmthing->player->spectator) && (thing != tmthing))
+			return false;
+		if (!(thing->player && thing->player->spectator) && (thing != tmthing))
+			return false;*/
 	}
 
 	// the move is ok,
@@ -1117,6 +1143,10 @@ BOOL PTR_AimTraverse (intercept_t* in)
 	if (!(th->flags&MF_SHOOTABLE))
 		return true;					// corpse or something
 
+	// GhostlyDeath -- dont autoaim on spectators
+	if ((th->player && th->player->spectator))
+		return true;
+
 	// check angles to see if the thing can be aimed at
 	dist = FixedMul (attackrange, in->frac);
 	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
@@ -1240,6 +1270,10 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	if (!(th->flags & MF_SHOOTABLE))
 		return true;			// corpse or something
+
+	// GhostlyDeath -- Don't shoot spectators!
+	if ((th->player && th->player->spectator))
+		return true;
 
 	// check angles to see if the thing can be aimed at
 	dist = FixedMul (attackrange, in->frac);
@@ -1594,6 +1628,10 @@ void P_UseLines (player_t *player)
 	fixed_t 	y1;
 	fixed_t 	x2;
 	fixed_t 	y2;
+
+	// GhostlyDeath -- Spectators can't use special lines
+	if (player->spectator)
+		return;
 
 	usething = player->mo;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -82,7 +82,7 @@ BOOL EV_Teleport (int tid, AActor *thing)
 		player->viewz = thing->z + thing->player->viewheight;
 
 	// spawn teleport fog at source and destination
-	if(serverside)
+	if(serverside && !(player && player->spectator))
 	{
 		S_Sound (new AActor (oldx, oldy, oldz, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 		an = m->angle >> ANGLETOFINESHIFT;
@@ -91,7 +91,7 @@ BOOL EV_Teleport (int tid, AActor *thing)
 	}
 
 	// don't move for a bit
-	if (player)
+	if (player && !player->spectator)
 		thing->reactiontime = 18;
 
 	thing->momx = thing->momy = thing->momz = 0;
@@ -303,5 +303,5 @@ BOOL EV_SilentLineTeleport (line_t *line, AActor *thing, int id,
 	return false;
 }
 
-VERSION_CONTROL (p_teleport_cpp, "$Id:$")
+VERSION_CONTROL (p_teleport_cpp, "$Id$")
 

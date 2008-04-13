@@ -36,6 +36,7 @@
 #include "m_cheat.h"
 #include "i_system.h"
 #include "c_dispatch.h"
+#include "cl_ctf.h"
 
 // Needs access to LFB.
 #include "v_video.h"
@@ -1419,6 +1420,8 @@ AM_drawLineCharacter
 	}
 }
 
+EXTERN_CVAR(teamplay)
+
 void AM_drawPlayers(void)
 {
 	angle_t angle;
@@ -1452,7 +1455,9 @@ void AM_drawPlayers(void)
 		mpoint_t pt;
 
 		if (!players[i].ingame() || !p->mo ||
-			(deathmatch && !demoplayback) && p != &conplayer)
+			(((deathmatch && !(teamplay || ctfmode) && p != &conplayer) ||
+			((teamplay || ctfmode) && p->userinfo.team != conplayer.userinfo.team))
+			&& !demoplayback && !(conplayer.spectator)) || p->spectator)
 		{
 			continue;
 		}

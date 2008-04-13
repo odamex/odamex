@@ -330,6 +330,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 	if (!toucher || !special) // [Toke - fix99]
 		return;
 
+	// GhostlyDeath -- Spectators can't pick up things
+	if (toucher->player && toucher->player->spectator)
+		return;
+
     // Dead thing touching.
     // Can happen with a sliding player corpse.
     if (toucher->health <= 0)
@@ -917,7 +921,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 //
 EXTERN_CVAR (fraglimit)
 
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
+void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill)
 {
 	for (size_t i = 0; i < players.size(); i++)
 	{
@@ -944,6 +948,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 		MSG_WriteShort (&cl->reliablebuf, inflictor ? inflictor->netid : 0);
 		MSG_WriteShort (&cl->reliablebuf, target->health);
 		MSG_WriteLong (&cl->reliablebuf, MeansOfDeath);
+		MSG_WriteByte (&cl->reliablebuf, joinkill);
 	}
 
 	AActor *mo;
@@ -973,28 +978,31 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 		// fair to count them toward a player's score.
 		if (target->player && level.time)
 		{
-			if (target->player == source->player)	// [RH] Cumulative frag count
+			if (!joinkill)
 			{
-				splayer->fragcount--;
-				// [Toke] Minus a team frag for suicide
-				if (teamplay && !ctfmode)
-					TEAMpoints[splayer->userinfo.team]--;
-			}
-			// [Toke] Minus a team frag for killing team mate
-			else if ((teamplay || ctfmode) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
-			{
-				splayer->fragcount--;
+				if (target->player == source->player)	// [RH] Cumulative frag count
+				{
+					splayer->fragcount--;
+					// [Toke] Minus a team frag for suicide
+					if (teamplay && !ctfmode)
+						TEAMpoints[splayer->userinfo.team]--;
+				}
+				// [Toke] Minus a team frag for killing team mate
+				else if ((teamplay || ctfmode) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
+				{
+					splayer->fragcount--;
 
-				if (teamplay && !ctfmode)
-					TEAMpoints[splayer->userinfo.team]--;
-			}
-			else
-			{
-				splayer->fragcount++;
+					if (teamplay && !ctfmode)
+						TEAMpoints[splayer->userinfo.team]--;
+				}
+				else
+				{
+					splayer->fragcount++;
 
-				// [Toke] Add a team frag
-				if (teamplay && !ctfmode)
-					TEAMpoints[splayer->userinfo.team]++;
+					// [Toke] Add a team frag
+					if (teamplay && !ctfmode)
+						TEAMpoints[splayer->userinfo.team]++;
+				}
 			}
 
 			SV_UpdateFrags (*splayer);
@@ -1031,10 +1039,11 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 
 	if (target->player)
 	{
-		tplayer->deathcount++;
+		if (!joinkill)
+			tplayer->deathcount++;
 
 		// count environment kills against you
-		if (!source)
+		if (!source && !joinkill)
 		{
 			tplayer->fragcount--;	// [RH] Cumulative frag count
 
@@ -1054,13 +1063,15 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 	if(target->health > 0) // denis - when this function is used standalone
 		target->health = 0;
 
-	if (target->health < -target->info->spawnhealth
-		&& target->info->xdeathstate)
-	{
-		P_SetMobjState (target, target->info->xdeathstate);
-	}
-	else
-		P_SetMobjState (target, target->info->deathstate);
+	//if (!joinkill) {
+		if (target->health < -target->info->spawnhealth
+			&& target->info->xdeathstate)
+		{
+			P_SetMobjState (target, target->info->xdeathstate);
+		}
+		else
+			P_SetMobjState (target, target->info->deathstate);
+	//}
 
 	target->tics -= P_Random (target) & 3;
 
@@ -1068,7 +1079,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 		target->tics = 1;
 
 	// [RH] Death messages
-	if (target->player && level.time)
+	if (target->player && level.time && !joinkill)
 		ClientObituary (target, inflictor, source);
 
 	// Drop stuff.
@@ -1133,6 +1144,10 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 	if ( !(target->flags & MF_SHOOTABLE) )
 		return; // shouldn't happen...
+
+	// GhostlyDeath -- Spectators can't get hurt!
+	if (target->player && target->player->spectator)
+		return;
 
 	if (target->health <= 0)
 		return;
@@ -1264,7 +1279,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		target->health -= damage;
 		if (target->health <= 0)
 		{
-			P_KillMobj (source, target, inflictor);
+			P_KillMobj (source, target, inflictor, false);
 			return;
 		}
 	}
