@@ -314,8 +314,9 @@ bool SV_IsValidToken(DWORD token)
 
 //
 // SV_SendServerInfo
+// 
 // Sends server info to a launcher
-//
+// TODO: Clean up and reinvent.
 void SV_SendServerInfo()
 {
 	size_t i;
@@ -428,7 +429,16 @@ void SV_SendServerInfo()
 			MSG_WriteShort(&ml_message, timeingame);
 		}
 	}
+	
 //bond===========================
+
+    for (i = 0; i < players.size(); ++i)
+    {
+        if (players[i].ingame())
+        {
+            MSG_WriteByte(&ml_message, (players[i].spectator ? true : false));
+        }
+    }
 
 	NET_SendPacket(ml_message, net_from);
 }
