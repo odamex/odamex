@@ -683,7 +683,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	// [RH] Tutti-Frutti fix (also allows sprites up to 256 pixels tall)
 	dc_mask = 0xff;
 
-	if (vis->mobjflags & MF_INVISIBLE)
+	if (vis->mobjflags & MF_SPECTATOR)
 		return;
 
 	if (vis->patch == -1)

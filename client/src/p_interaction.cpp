@@ -992,6 +992,10 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 
 	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
 
+	// GhostlyDeath -- Joinkill is only set on players, so we should be safe!
+	if (joinkill)
+		target->flags |= MF_SPECTATOR;
+
 	if (target->type != MT_SKULL)
 		target->flags &= ~MF_NOGRAVITY;
 
@@ -1041,7 +1045,6 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 	if(target->health > 0) // denis - when this function is used standalone
 		target->health = 0;
 
-	//if (!joinkill) {
 		if (target->health < -target->info->spawnhealth
 			&& target->info->xdeathstate)
 		{
@@ -1049,7 +1052,6 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		}
 		else
 			P_SetMobjState (target, target->info->deathstate);
-	//}
 	
 	target->tics -= P_Random (target) & 3;
 

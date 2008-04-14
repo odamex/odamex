@@ -776,6 +776,10 @@ void AActor::RunThink ()
 	if(!subsector)
 		return;
 
+	// GhostlyDeath -- Was a spectator but now it's nothing!
+	if ((this->flags & MF_SPECTATOR ) && !player)
+		P_SetMobjState(this, S_NULL);
+
 	// [RH] Fade a stealth monster in and out of visibility
 	if (visdir > 0)
 	{
@@ -1115,7 +1119,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	P_SetupPsprites (p);
 
 	if (p->spectator)
-		p->mo->flags |= MF_INVISIBLE;
+		p->mo->flags |= MF_SPECTATOR;
 
 	// give all cards in death match mode
 	if (deathmatch)

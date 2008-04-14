@@ -782,6 +782,10 @@ void AActor::RunThink ()
 	if (type == MT_PLAYER && health <= 0)
 		deadtic++;
 
+	// GhostlyDeath -- Was a spectator but now it's nothing!
+	if ((this->flags & MF_SPECTATOR ) && !player)
+		P_SetMobjState(this, S_NULL);
+
 	// remove dead players but don't tell clients about it
 	if (type == MT_PLAYER && !player && deadtic >= REMOVECOPRSESTIC)
 	{
@@ -1145,7 +1149,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	}
 
 	if (p->spectator)
-		p->mo->flags |= MF_INVISIBLE;
+		p->mo->flags |= MF_SPECTATOR;
 
 	if(serverside)
 	{

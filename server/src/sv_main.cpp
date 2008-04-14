@@ -973,6 +973,8 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 	else if(!mo->player)
 		ok = true;
+	else if (mo->flags & MF_SPECTATOR)      // GhostlyDeath -- Spectating things
+		ok = false;
 	else if(player.mo && mo->player && mo->player->spectator)
 		ok = false;
 	else if(player.mo && mo->player && SV_IsTeammate(player, *mo->player))
@@ -1045,7 +1047,10 @@ void SV_SpawnMobj(AActor *mo)
 //
 bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
 {
-	return std::find(mo->players_aware.begin(), mo->players_aware.end(), p.id) != mo->players_aware.end();
+	if (mo->flags & MF_SPECTATOR)
+		return false; // GhostlyDeath -- always false, as usual!
+	else
+		return std::find(mo->players_aware.begin(), mo->players_aware.end(), p.id) != mo->players_aware.end();
 }
 
 #define HARDWARE_CAPABILITY 1000

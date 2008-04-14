@@ -399,7 +399,7 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (thing == tmthing)
 		return true;
 
-	if (thing->flags & MF_INVISIBLE)
+	if (thing->flags & MF_SPECTATOR)
 		return true;
 
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)) )
