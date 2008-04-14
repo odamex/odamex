@@ -1770,6 +1770,10 @@ BOOL PIT_ChangeSector (AActor *thing)
 		// keep checking
 		return true;
 	}
+	
+	// GhostlyDeath -- if it's a spectator, keep checking
+	if (thing->player && thing->player->spectator)
+		return true;
 
 	// crunch bodies to giblets
 	if (thing->health <= 0)
