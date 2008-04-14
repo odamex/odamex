@@ -563,7 +563,7 @@ void dlgMain::OnAbout(wxCommandEvent& event)
 // Quick-Launch button click
 void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 {
-	LaunchGame("", 
+	LaunchGame(_T(""), 
 				launchercfg_s.odamex_directory, 
 				launchercfg_s.wad_paths);
 }
