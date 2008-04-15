@@ -1067,7 +1067,7 @@ void CL_SpawnMobj()
 	unsigned short type = MSG_ReadShort();
 	unsigned short netid = MSG_ReadShort();
 	byte rndindex = MSG_ReadByte();
-	unsigned short state = MSG_ReadShort();
+	SWORD state = MSG_ReadShort();
 
 	if(type >= NUMMOBJTYPES)
 		return;
