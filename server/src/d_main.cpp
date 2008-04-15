@@ -579,22 +579,29 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 		const char separator = ':';
 	#endif
 
+    // [Russell] - Bit of a hack. (since BaseFileSearchDir should handle this)
+    // return file if it contains a path already
+    if (M_FileExists(file))
+        return file;
+
 	std::transform(file.begin(), file.end(), file.begin(), toupper);
 	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
 	std::vector<std::string> dirs;
 
-	dirs.push_back(progdir);
 	dirs.push_back(startdir);
+	dirs.push_back(progdir);
 
 	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
+    AddSearchDir(dirs, getenv("HOME"), separator);
 
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
 	for(size_t i = 0; i < dirs.size(); i++)
 	{
 		std::string found = BaseFileSearchDir(dirs[i], file, ext);
+		
 		if(found.length())
 		{
 			std::string &dir = dirs[i];
@@ -605,11 +612,6 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 			return dir + found;
 		}
 	}
-
-    // [Russell] - Bit of a hack. (since BaseFileSearchDir should handle this)
-    // return file if it contains a path already
-    if (M_FileExists(file))
-        return file;
 
 	// Not found
 	return "";
