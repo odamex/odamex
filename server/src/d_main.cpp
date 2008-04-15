@@ -606,6 +606,11 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 		}
 	}
 
+    // [Russell] - Bit of a hack. (since BaseFileSearchDir should handle this)
+    // return file if it contains a path already
+    if (M_FileExists(file))
+        return file;
+
 	// Not found
 	return "";
 }
