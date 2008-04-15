@@ -2526,7 +2526,7 @@ void SV_Spectate (player_t &player)
 			}
 		}
 	} else {
-		if (!player.spectator)
+		if (!player.spectator && level.time > player.respawn_time + TICRATE*10)
 		{
 			for (size_t j = 0; j < players.size(); j++) {
 				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
@@ -2710,12 +2710,18 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_spectate:
-			SV_Spectate (player);
+            {
+                SV_Spectate (player);
+            }
 			break;
 
 		case clc_kill:
-			if(player.mo && level.time > player.respawn_time + TICRATE*10)
+			if(player.mo && 
+               level.time > player.respawn_time + TICRATE*10 &&
+               allowcheats)
+            {
 				SV_Suicide (player);
+            }
 			break;
 
 		case clc_launcher_challenge:
