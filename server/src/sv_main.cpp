@@ -1953,7 +1953,7 @@ void SV_UpdateMissiles(player_t &pl)
     TThinkerIterator<AActor> iterator;
     while ( (mo = iterator.Next() ) )
     {
-        if (!(mo->flags & MF_MISSILE) )
+        if (!(mo->flags & MF_MISSILE || mo->flags & MF_SKULLFLY))
 			continue;
 
 		if (mo->type == MT_PLASMA)
