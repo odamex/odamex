@@ -64,12 +64,6 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 		last_revision = rev;
 }
 
-BEGIN_COMMAND (gameversion)
-{
-	Printf (PRINT_HIGH, "%d.%d : " __DATE__ "\n", VERSION / 100, VERSION % 100);
-}
-END_COMMAND (gameversion)
-
 BEGIN_COMMAND (version)
 {
 

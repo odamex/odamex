@@ -30,7 +30,6 @@
 #endif
 
 // Lots of different representations for the version number
-enum { VERSION = 30 };
 #define VERSIONSTR "30"
 #define CONFIGVERSIONSTR "30"
 #define GAMEVER (0*256+30)
