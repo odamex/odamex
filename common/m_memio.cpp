@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id$
+// $Id: memio.cpp 524 2008-01-27 02:54:48Z russellrice $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memio.h"
+#include "m_memio.h"
 
 #include "doomtype.h"
 #include "z_zone.h"
@@ -220,6 +220,6 @@ char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
     return (char *)stream->buf;
 }
 
-VERSION_CONTROL (memio_cpp, "$Id$")
+VERSION_CONTROL (memio_cpp, "$Id: memio.cpp 524 2008-01-27 02:54:48Z russellrice $")
 
 

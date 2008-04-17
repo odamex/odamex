@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id$
+// $Id: mus2midi.cpp 524 2008-01-27 02:54:48Z russellrice $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
@@ -35,7 +35,7 @@
 
 #include <stdio.h>
 
-#include "memio.h"
+#include "m_memio.h"
 #include "mus2midi.h"
 #include "doomdef.h"
 #include "m_swap.h"
@@ -631,6 +631,6 @@ QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 }
 
 
-VERSION_CONTROL (mus2midi_cpp, "$Id$")
+VERSION_CONTROL (mus2midi_cpp, "$Id: mus2midi.cpp 524 2008-01-27 02:54:48Z russellrice $")
 
 
