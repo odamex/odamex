@@ -2084,6 +2084,8 @@ void CL_Spectate()
 			for (int i=0 ; i<NUMPSPRITES ; i++) // remove all weapon sprites
 				(&player)->psprites[i].state = NULL;
 			player.playerstate = PST_LIVE; // resurrect dead spectators
+		} else {
+			displayplayer_id = consoleplayer_id; // get out of spynext
 		}
 	}
 }

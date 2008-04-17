@@ -406,7 +406,9 @@ BEGIN_COMMAND (spynext)
 			st_firsttime = true;
 			break;
 		}
-		else if(!deathmatch || ((teamplaymode || ctfmode) && players[curr].userinfo.team == consoleplayer().userinfo.team))
+		else if (consoleplayer().spectator ||
+				(!deathmatch || ((teamplaymode || ctfmode)
+				&& players[curr].userinfo.team == consoleplayer().userinfo.team)))
 		{
 			displayplayer_id = players[curr].id;
 			break;
