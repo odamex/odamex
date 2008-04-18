@@ -8,8 +8,8 @@
 		<Build>
 			<Target title="Win Release">
 				<Option platforms="Windows;" />
-				<Option output="..\..\bin\odamex.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option output="..\..\odamex.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\client\release" />
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
@@ -31,8 +31,8 @@
 			</Target>
 			<Target title="Win Debug">
 				<Option platforms="Windows;" />
-				<Option output="..\..\bin\odamex-dbg.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option output="..\..\odamex-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\client\debug" />
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
@@ -55,7 +55,7 @@
 			<Target title="Unix Release">
 				<Option platforms="Unix;" />
 				<Option output="..\..\odamex" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\client\release" />
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
@@ -76,7 +76,7 @@
 			<Target title="Unix Debug">
 				<Option platforms="Unix;" />
 				<Option output="..\..\odamex-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\client\debug" />
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
@@ -97,7 +97,7 @@
 			<Target title="Mac Release">
 				<Option platforms="Mac;" />
 				<Option output="..\..\odamex" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\client\release" />
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
@@ -117,7 +117,7 @@
 			<Target title="Mac Debug">
 				<Option platforms="Mac;" />
 				<Option output="..\..\odamex-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\client\debug" />
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />

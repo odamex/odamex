@@ -8,8 +8,8 @@
 		<Option virtualFolders="dialogs\;network\;" />
 		<Build>
 			<Target title="Win Release">
-				<Option output="..\bin\odalaunch.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -28,8 +28,8 @@
 				</Environment>
 			</Target>
 			<Target title="Win Debug">
-				<Option output="..\bin\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -49,8 +49,8 @@
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
-				<Option output="..\bin\odalaunch" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -65,8 +65,8 @@
 				</Environment>
 			</Target>
 			<Target title="Unix Debug">
-				<Option output="..\bin\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -80,8 +80,8 @@
 				</Environment>
 			</Target>
 			<Target title="Mac Release">
-				<Option output="..\bin\odalaunch" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -96,8 +96,8 @@
 				</Environment>
 			</Target>
 			<Target title="Mac Debug">
-				<Option output="..\bin\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
 				<Option type="0" />
 				<Option compiler="gcc" />
