@@ -422,14 +422,6 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         case mtrs_server_noservers:
             wxMessageBox(_T("There are no servers to query"), _T("Error"), wxOK | wxICON_ERROR);
             break;
-        case mtrs_server_success:
-            AddServerToList(SERVER_LIST, QServer[Result->Index], Result->Index);
-            
-            totalPlayers += QServer[Result->Index].info.numplayers;
-            
-            break;
-        case mtrs_server_timeout:
-            // fall-through
         case mtrs_server_singletimeout:
             i = FindServerInList(QServer[Result->Index].GetAddress());
 
@@ -496,6 +488,8 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
             break;      
         }
     }
+    
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
 }
 
 // display extra information for a server

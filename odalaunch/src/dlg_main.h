@@ -145,11 +145,8 @@ class dlgMain : public wxFrame, wxThreadHelper
         // below
         typedef enum
         {
-             mtrs_master_success
-            ,mtrs_server_success // (Server)
-            
+             mtrs_master_success          
             ,mtrs_master_timeout   // Dead
-            ,mtrs_server_timeout
             
             ,mtrs_server_singlesuccess // represents a single selected server
             ,mtrs_server_singletimeout
