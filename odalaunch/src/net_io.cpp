@@ -63,46 +63,17 @@ void BufferedSocket::CheckError()
             case wxSOCKET_MEMERR:
                 wxMessageBox(_T("Error: Memory exhausted."));    
                 break;
-        }
-*/    
+        }*/
 }
 
 //  Constructor
 BufferedSocket::BufferedSocket()
 	: Socket(NULL)
-{
-    local_addr.AnyAddress();
-    
-    /* Find a port to bind to */
-    wxUint16 Port = 10665;
-    
-    do
-    {
-		local_addr.Service(Port);
-		
-		Socket = new wxDatagramSocket(local_addr, wxSOCKET_WAITALL);
-        
-		if(!Socket)
-		{
-			delete Socket;
-			Socket = NULL;
-			Port++;
-		}
-		
-    }while(!Socket);
-                
-    //Socket->SetTimeout(1000);
-    
-    // get rid of any data in the receieve queue    
-    Socket->Discard();
-    
+{   
     // set pings
     SendPing = 0;
     RecvPing = 0;
-    
-    // no event handler for us
-    Socket->Notify(false); 
-    
+       
     // create the memory streams
     send_buf = new wxMemoryOutputStream();
     recv_buf = new wxMemoryInputStream(NULL, 0);
@@ -116,24 +87,53 @@ BufferedSocket::~BufferedSocket()
         delete send_buf;
         
     if (recv_buf)
-        delete recv_buf;
+        delete recv_buf;       
+}
+
+void BufferedSocket::CreateSocket(void)
+{
+    local_addr.AnyAddress();   
+	local_addr.Service(0);
+		
+    Socket = new wxDatagramSocket(local_addr, wxSOCKET_NONE);
         
-    if (Socket)
-        delete Socket;
+    if(!Socket->IsOk())
+    {
+        Socket->Destroy();
+        Socket = NULL;
+        
+        CheckError();
+    }
+		
+    // get rid of any data in the receive queue    
+    Socket->Discard();
+    
+    // no event handler for us
+    Socket->Notify(false); 
+}
+
+void BufferedSocket::DestroySocket(void)
+{
+    if (Socket->IsOk())
+    {
+        Socket->Destroy();
+        Socket = NULL;
+    }
 }
 
 //  Write a socket
 wxInt32 BufferedSocket::SendData(wxInt32 Timeout)
 {   
+    CreateSocket();
+
     // create a transfer buffer, from memory stream to socket
-    wxChar data[MAX_PAYLOAD];
     wxStopWatch sw;
-    
+
     // clear it
-    memset(data, 0, sizeof(data));
+    memset(sData, 0, sizeof(sData));
     
     // copy data
-    wxInt32 actual_size = send_buf->CopyTo(data, MAX_PAYLOAD);
+    wxInt32 actual_size = send_buf->CopyTo(sData, MAX_PAYLOAD);
     
     // set the start ping
     // (Horrible, needs to be improved)
@@ -147,10 +147,12 @@ wxInt32 BufferedSocket::SendData(wxInt32 Timeout)
         SendPing = 0;
         RecvPing = 0;
         
+        DestroySocket();
+        
         return 0;
     }
     else
-        Socket->SendTo(to_addr, data, actual_size);
+        Socket->SendTo(to_addr, sData, actual_size);
     
     CheckError();    
         
@@ -163,14 +165,11 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
 {   
     // temporary address, for comparison
     wxIPV4address        in_addr;
-       
-    // create an array of stuff
-    wxChar data[MAX_PAYLOAD];
     
     wxStopWatch sw;
 
     // clear it
-    memset(data, 0, sizeof(data));
+    memset(rData, 0, sizeof(rData));
     
     if (!Socket->WaitForRead(0, Timeout))
     {
@@ -179,10 +178,12 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
         SendPing = 0;
         RecvPing = 0;
         
+        DestroySocket();
+        
         return 0;
     }
     else
-        Socket->RecvFrom(in_addr, data, MAX_PAYLOAD);
+        Socket->RecvFrom(in_addr, rData, MAX_PAYLOAD);
 
     CheckError();
 
@@ -206,11 +207,13 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
         {
             delete recv_buf;
             
-            recv_buf = new wxMemoryInputStream(data, num_recv);
+            recv_buf = new wxMemoryInputStream(rData, num_recv);
         
         }
         else
-           recv_buf = new wxMemoryInputStream(data, num_recv); 
+           recv_buf = new wxMemoryInputStream(rData, num_recv); 
+
+        DestroySocket();
 
         // return bytes received   
         return num_recv;
@@ -218,6 +221,8 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
       
     SendPing = 0;
     RecvPing = 0;
+    
+    DestroySocket();
     
     return 0;
 }

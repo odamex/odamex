@@ -40,6 +40,9 @@ class BufferedSocket
         wxMemoryInputStream  *recv_buf;
         wxMemoryOutputStream *send_buf;
         
+        wxChar sData[MAX_PAYLOAD];
+        wxChar rData[MAX_PAYLOAD];
+        
         // Endianess switch for buffers
         static const wxByte BigEndian;
         
@@ -60,11 +63,13 @@ class BufferedSocket
         // we need to do something with this, one day
         void CheckError();
         
+        void CreateSocket(void);
+        void DestroySocket(void);
     public:
         BufferedSocket(); // Create a blank instance with stuff initialized
 
         virtual ~BufferedSocket(); // "Choose! Choose the form of the destructor!"
-        
+                
         // Set the outgoing address
         virtual void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
         //virtual wxInt32 SetAddress(wxString AddressAndPort);

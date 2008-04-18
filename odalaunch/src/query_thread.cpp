@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -16,41 +16,20 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Main application sequence
-//	AUTHOR:	Russell Rice, John D Corrado
+//	Multi-Threaded Server Queries
+//	AUTHOR:	Mike Wood (Hyper_Eye)
 //
 //-----------------------------------------------------------------------------
 
+#include "query_thread.h"
 
-// main dialog resource
-#include "res/xrc_resource.h"
-
-#include "main.h"
-
-#include <wx/xrc/xmlres.h>
-#include <wx/image.h>
-#include <wx/socket.h>
-
-IMPLEMENT_APP(Application)
-
-bool Application::OnInit()
+void *QueryThread::Entry()
 {   
-	wxSocketBase::Initialize();
-	
-	::wxInitAllImageHandlers();
-
-	wxXmlResource::Get()->InitAllHandlers();
-
-    // load resources
-    InitXmlResource();
-
-    // create main window and show it
-    MAIN_DIALOG = new dlgMain(0L);
+    wxCommandEvent newEvent(wxEVT_THREAD_WORKER_SIGNAL, wxID_ANY );
     
-    if (MAIN_DIALOG) 
-        MAIN_DIALOG->Show();
-        
-    SetTopWindow(MAIN_DIALOG);
-        
-    return true;
+    newEvent.SetId(m_QueryServer->Query(9999));
+    newEvent.SetInt(m_ServerIndex);
+    wxPostEvent(m_EventHandler, newEvent);
+
+    return NULL;
 }

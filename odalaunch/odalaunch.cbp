@@ -199,6 +199,8 @@
 		<Unit filename="src\net_packet.h">
 			<Option virtualFolder="network\" />
 		</Unit>
+		<Unit filename="src\query_thread.cpp" />
+		<Unit filename="src\query_thread.h" />
 		<Unit filename="src\wx_pch.h">
 			<Option compile="1" />
 			<Option weight="0" />

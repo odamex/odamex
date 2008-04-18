@@ -23,6 +23,7 @@
 
 
 #include "dlg_main.h"
+#include "query_thread.h"
 
 #include <wx/settings.h>
 #include <wx/menu.h>
@@ -63,6 +64,7 @@ static wxInt32 ID_MNUREPORTBUG = XRCID("ID_MNUREPORTBUG");
 
 // custom events
 DEFINE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL)
+DEFINE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL)
 
 // Event handlers
 BEGIN_EVENT_TABLE(dlgMain,wxFrame)
@@ -90,6 +92,7 @@ BEGIN_EVENT_TABLE(dlgMain,wxFrame)
 
     // thread events
     EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)    
+    EVT_COMMAND(-1, wxEVT_THREAD_WORKER_SIGNAL, dlgMain::OnWorkerSignal)  
 
     // misc events
     EVT_LIST_ITEM_SELECTED(ID_LSTSERVERS, dlgMain::OnServerListClick)
@@ -284,6 +287,9 @@ void *dlgMain::Entry()
         // get a new list of servers
         if (mtcs_Request.Signal == mtcs_getservers)
         {
+            wxInt32 count = 0;
+            wxInt32 serverNum = 0;
+            std::vector<QueryThread*> threadVector;
             wxString Address = _T("");
             wxUint16 Port = 0;
    
@@ -304,52 +310,54 @@ void *dlgMain::Entry()
                 wxPostEvent(this, event);                  
             }
 
-            if (MServer->GetServerCount())
-            for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
-            {    
-                MServer->GetServerAddress(i, Address, Port);
-
-                QServer[i].SetAddress(Address, Port);
-                
-                if (QServer[i].Query(500))
+            /* 
+                Thread pool manager:
+                Executes a number of threads that contain the same amount of
+                servers, when a thread finishes, it gets deleted and another
+                gets executed with a different server, eventually all the way
+                down to 0 servers.
+            */
+            while(count < MServer->GetServerCount())
+            {
+                for(wxInt32 i = 0; i < NUM_THREADS; i++)
                 {
-                    mtrs_struct_t *Result = new mtrs_struct_t;
+                    if((threadVector.size() != 0) && ((threadVector.size() - 1) >= i))
+                    {
+                        // monitor our thread vector, delete ONLY if the thread is
+                        // finished
+                        if(threadVector[i]->IsRunning())
+                            continue;
+                        else
+                        {
+                            threadVector[i]->Wait();
+                            delete threadVector[i];
+                            threadVector.erase(threadVector.begin() + i);
+                            count++;
+                        }
+                    }
+                    if(serverNum < MServer->GetServerCount())
+                    {
+                        MServer->GetServerAddress(serverNum, Address, Port);
+                        QServer[serverNum].SetAddress(Address, Port);
 
-                    Result->Signal = mtrs_server_success;                
-                    Result->Index = i;
-                    Result->ServerListIndex = -1;
-                
-                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                    event.SetClientData(Result);
-                  
-                    wxPostEvent(this, event);      
-                }
-                else
-                {
-                    mtrs_struct_t *Result = new mtrs_struct_t;
+                        // add the thread to the vector
+                        threadVector.push_back(new QueryThread(this, &QServer[serverNum], serverNum));
 
-                    Result->Signal = mtrs_server_timeout;                
-                    Result->Index = i;
-                    Result->ServerListIndex = -1;
-                
-                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                    event.SetClientData(Result);
-                  
-                    wxPostEvent(this, event);    
+                        // create and run the thread
+                        if(threadVector[threadVector.size() - 1]->Create() == wxTHREAD_NO_ERROR)
+                            threadVector[threadVector.size() - 1]->Run();
+
+                        // DUMB: our next server will be this incremented value
+                        serverNum++;
+                    }
+
+                    GetThread()->Sleep(1);            
                 }
-                     
                 // Give everything else some cpu time, please be considerate!
-                GetThread()->Sleep(1);
-               
-                // Something requested the thread to exit
-                if (mtcs_Request.Signal == mtcs_exit)
-                {
-                    Running = false;
-                    break;
-                }
+                GetThread()->Sleep(1);              
             }
         }
-
+        
         // User requested single server to be refreshed
         if (mtcs_Request.Signal == mtcs_getsingleserver)
         {            
@@ -455,6 +463,39 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
 
     delete Result;
+}
+
+// worker threads post to this callback
+void dlgMain::OnWorkerSignal(wxCommandEvent& event)
+{
+    wxInt32 i;
+    switch (event.GetId())
+    {
+        case 0: // server query timed out
+        {
+            i = FindServerInList(QServer[event.GetInt()].GetAddress());
+
+            PLAYER_LIST->DeleteAllItems();
+            
+            QServer[event.GetInt()].ResetData();
+            
+            if (launchercfg_s.show_blocked_servers)
+            if (i == -1)
+                AddServerToList(SERVER_LIST, QServer[event.GetInt()], event.GetInt());
+            else
+                AddServerToList(SERVER_LIST, QServer[event.GetInt()], i, 0);
+            
+            break;                 
+        }
+        case 1: // server queried successfully
+        {
+            AddServerToList(SERVER_LIST, QServer[event.GetInt()], event.GetInt());
+            
+            totalPlayers += QServer[event.GetInt()].info.numplayers;
+            
+            break;      
+        }
+    }
 }
 
 // display extra information for a server

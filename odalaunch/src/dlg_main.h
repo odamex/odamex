@@ -43,6 +43,7 @@
 // custom event declarations
 BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)
+DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
 END_DECLARE_EVENT_TYPES()
 
 class dlgMain : public wxFrame, wxThreadHelper
@@ -167,8 +168,25 @@ class dlgMain : public wxFrame, wxThreadHelper
         
         volatile mtrs_struct_t mtrs_Result;
         
+        typedef enum
+        {
+             wtrs_server_success
+            ,wtrs_server_timeout
+            
+            ,wtrs_max
+        } wtrs_t;
+        
+        typedef struct
+        {
+            wtrs_t Signal;
+            wxInt32 Index;
+            wxInt32 ServerListIndex;
+        } wtrs_struct_t;
+        
+        volatile wtrs_struct_t wtrs_Result;
+        
         void OnMonitorSignal(wxCommandEvent&);
-                              
+        void OnWorkerSignal(wxCommandEvent&);
         // Our monitoring thread entry point, from wxThreadHelper
         void *Entry();
 

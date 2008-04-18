@@ -100,7 +100,7 @@ struct serverinfo_t     // Server information structure
 class ServerBase  // [Russell] - Defines an abstract class for all packets
 {
     protected:      
-        static BufferedSocket Socket;
+        BufferedSocket Socket;
         
         // Magic numbers
         wxInt32 challenge;
@@ -130,7 +130,6 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         wxInt32 Query(wxInt32 Timeout);
         
 		void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
-//        void SetAddress(wxString AddressAndPort) { Socket.SetAddress(AddressAndPort); }
         
 		wxString GetAddress() { return to_addr.IPAddress() << _T(':') << to_addr.Service(); }
 		wxInt32 GetPing() { return Ping; }
