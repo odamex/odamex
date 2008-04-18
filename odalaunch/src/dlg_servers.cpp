@@ -39,8 +39,8 @@ static wxInt32 ID_BTNADDSERVER = XRCID("ID_BTNADDSERVER");
 static wxInt32 ID_BTNREPLACESERVER = XRCID("ID_BTNREPLACESERVER");
 static wxInt32 ID_BTNDELETESERVER = XRCID("ID_BTNDELETESERVER");
 
-static wxInt32 ID_BTNMOVEUP = XRCID("ID_BTNMOVEUP");
-static wxInt32 ID_BTNMOVEDOWN = XRCID("ID_BTNMOVEDOWN");
+static wxInt32 ID_BTNMOVEUP = XRCID("ID_MOVEUP");
+static wxInt32 ID_BTNMOVEDOWN = XRCID("ID_MOVEDOWN");
 
 static wxInt32 ID_CHKSUBSTITUTE = XRCID("ID_CHKSUBSTITUTE");
 static wxInt32 ID_TXTSUBIPPORT = XRCID("ID_TXTSUBIPPORT");
@@ -251,40 +251,42 @@ void dlgServers::OnButtonDeleteServer(wxCommandEvent &event)
 void dlgServers::OnButtonMoveServerUp(wxCommandEvent &event)
 {
     // Get the selected item
-/*    wxInt32 i = SERVER_LIST->GetSelection();
+    wxInt32 i = SERVER_LIST->GetSelection();
 
     if ((i != wxNOT_FOUND) && (i > 0))
     {
+        void *cd = SERVER_LIST->GetClientData(i);
         wxString str = SERVER_LIST->GetString(i);
 
         SERVER_LIST->Delete(i);
 
-        SERVER_LIST->Insert(str, i - 1);
+        SERVER_LIST->Insert(str, i - 1, cd);
 
         SERVER_LIST->SetSelection(i - 1);
 
         UserChangedSetting = 1;
-    }*/
+    }
 }
 
 // Move Server Down button
 void dlgServers::OnButtonMoveServerDown(wxCommandEvent &event)
 {
     // Get the selected item
-/*    wxInt32 i = SERVER_LIST->GetSelection();
+    wxInt32 i = SERVER_LIST->GetSelection();
 
     if ((i != wxNOT_FOUND) && (i + 1 < SERVER_LIST->GetCount()))
     {
+        void *cd = SERVER_LIST->GetClientData(i);
         wxString str = SERVER_LIST->GetString(i);
 
         SERVER_LIST->Delete(i);
 
-        SERVER_LIST->Insert(str, i + 1);
+        SERVER_LIST->Insert(str, i + 1, cd);
 
         SERVER_LIST->SetSelection(i + 1);
 
         UserChangedSetting = 1;
-    }*/
+    }
 }
 
 void dlgServers::SaveSettings()

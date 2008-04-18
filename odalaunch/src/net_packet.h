@@ -184,6 +184,17 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             cs.port = Port;
             cs.custom = true;
             
+            // Don't add the same address more than once.
+            for (wxUint32 i = 0; i < addresses.size(); ++i)
+            {
+                if (addresses[i].ip == cs.ip && 
+                    addresses[i].port == cs.port &&
+                    addresses[i].custom == cs.custom)
+                {
+                    return;
+                }
+            }
+            
             addresses.push_back(cs);
         }
                
