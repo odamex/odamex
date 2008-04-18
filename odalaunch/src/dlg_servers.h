@@ -82,6 +82,8 @@ class dlgServers: public wxDialog
         void OnButtonMoveServerUp(wxCommandEvent &event);
         void OnButtonMoveServerDown(wxCommandEvent &event);
 
+        void ChkSetValueEx(wxInt32 XrcId, wxCheckBox *CheckBox, bool checked);
+
         wxFileConfig ConfigInfo;
 
         wxListBox *SERVER_LIST;

@@ -93,6 +93,16 @@ dlgServers::~dlgServers()
     }
 }
 
+// Triggers a wxEVT_COMMAND_CHECKBOX_CLICKED event when used. wxWidgets doesn't
+// do this by default (stupid)
+void dlgServers::ChkSetValueEx(wxInt32 XrcId, wxCheckBox *CheckBox, bool checked)
+{
+    CheckBox->SetValue(checked);
+    
+    wxCommandEvent Event(wxEVT_COMMAND_CHECKBOX_CLICKED, XrcId );   
+    wxPostEvent(this, Event);
+}
+
 // OK button
 void dlgServers::OnButtonOK(wxCommandEvent &event)
 {
@@ -121,6 +131,7 @@ void dlgServers::OnButtonClose(wxCommandEvent &event)
     Close();
 }
 
+// User clicks on a server address in the list
 void dlgServers::OnServerList(wxCommandEvent &event)
 {
     wxInt32 i = SERVER_LIST->GetSelection();
@@ -128,12 +139,11 @@ void dlgServers::OnServerList(wxCommandEvent &event)
     if (i == wxNOT_FOUND)
          return;
 
+    // get values from stored data
     CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
     
-    //CHECK_SUBSTITUTE->SetValue(cs->Subst.Enabled);
-    //TEXT_SUBSTITUTE->SetLabel(cs->Subst.Address);
-    
-    
+    ChkSetValueEx(ID_CHKSUBSTITUTE, CHECK_SUBSTITUTE, cs->Subst.Enabled);
+    TEXT_SUBSTITUTE->SetLabel(cs->Subst.Address);
 }
 
 void dlgServers::OnSubstChecked(wxCommandEvent &event)
