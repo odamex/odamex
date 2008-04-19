@@ -167,6 +167,8 @@ void Server::ResetData()
     challenge = SERVER_CHALLENGE;
     response = SERVER_RESPONSE;
     
+    info.response = 0;
+    
     info.name = _T("");
     info.numplayers = 0;
 	info.maxplayers = 0;
@@ -197,9 +199,9 @@ void Server::ResetData()
 
 wxInt32 Server::Parse()
 {   
-    wxInt32 temp_response = Socket.Read32();
+    info.response = Socket.Read32();
     
-    if (temp_response != response)
+    if (info.response != response)
         return 0;
         
     int i = 0;

@@ -57,6 +57,7 @@ struct teamplay_t       // Teamplay score structure
 
 struct serverinfo_t     // Server information structure
 {
+    wxUint32        response;
     wxString        name;           // Server name
     wxUint8         numplayers;     // Number of players playing
     wxUint8         maxplayers;     // Maximum number of possible players
@@ -103,8 +104,8 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         BufferedSocket Socket;
         
         // Magic numbers
-        wxInt32 challenge;
-        wxInt32 response;
+        wxUint32 challenge;
+        wxUint32 response;
            
         // The time in milliseconds a packet was received
         wxUint32 Ping;
