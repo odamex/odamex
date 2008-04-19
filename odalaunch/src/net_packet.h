@@ -107,7 +107,7 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         wxInt32 response;
            
         // The time in milliseconds a packet was received
-        wxInt32 Ping;
+        wxUint32 Ping;
        
         wxIPV4address to_addr;
        
@@ -132,7 +132,7 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
 		void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
         
 		wxString GetAddress() { return to_addr.IPAddress() << _T(':') << to_addr.Service(); }
-		wxInt32 GetPing() { return Ping; }
+		wxUint32 GetPing() { return Ping; }
 };
 
 class MasterServer : public ServerBase  // [Russell] - A master server packet

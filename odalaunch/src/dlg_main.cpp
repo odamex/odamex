@@ -450,7 +450,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             break;
     }
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %d"), MServer->GetPing()), 1);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %u"), MServer->GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
 

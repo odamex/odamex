@@ -55,10 +55,10 @@ class BufferedSocket
         // outgoing address (server)
         wxIPV4address       to_addr;
                
-        wxInt32 SendPing, RecvPing;
+        wxUint32 SendPing, RecvPing;
         
-        void SetSendPing(wxInt32 i) { SendPing = i; }
-        void SetRecvPing(wxInt32 i) { RecvPing = i; }
+        void SetSendPing(wxUint32 i) { SendPing = i; }
+        void SetRecvPing(wxUint32 i) { RecvPing = i; }
         
         // we need to do something with this, one day
         void CheckError();
@@ -80,7 +80,7 @@ class BufferedSocket
         wxInt32 GetData(wxInt32 Timeout);
         
         // a method for a round-trip time in milliseconds
-        wxInt32 GetPing() { return (RecvPing - SendPing); }
+        wxUint32 GetPing() { return (RecvPing - SendPing); }
         
         // Read/Write values to the internal buffer
         wxChar      *ReadString();

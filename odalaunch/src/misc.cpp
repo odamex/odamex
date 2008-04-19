@@ -54,11 +54,11 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
         list->SetItem(idx, 0, s.info.name, -1);
     }
     
-    wxInt32 ping = s.GetPing();
+    wxUint32 ping = s.GetPing();
     
     list->SetItem(idx, 7, s.GetAddress());
     
-    list->SetItem(idx, 1, wxString::Format(_T("%d"),ping));   
+    list->SetItem(idx, 1, wxString::Format(_T("%u"),ping));   
     list->SetItem(idx, 2, wxString::Format(_T("%d/%d"),s.info.numplayers,s.info.maxplayers));       
     
     // build a list of pwads
