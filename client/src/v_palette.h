@@ -100,6 +100,12 @@ palette_t *InitPalettes (char *name);
 //	Returns the palette created through InitPalettes()
 palette_t *GetDefaultPalette (void);
 
+//
+// V_RestoreScreenPalette
+//
+// Restore original screen palette from current gamma level
+void V_RestoreScreenPalette(void);
+
 // MakePalette()
 //	input: colors: ptr to 256 3-byte RGB values
 //		   name:   the palette's name (not checked for duplicates)

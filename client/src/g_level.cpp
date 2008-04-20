@@ -446,6 +446,8 @@ void G_DoCompleted (void)
 
 	gameaction = ga_nothing;
 
+    V_RestoreScreenPalette();
+
 	for(i = 0; i < players.size(); i++)
 		if(players[i].ingame())
 			G_PlayerFinishLevel(players[i]);

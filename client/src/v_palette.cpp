@@ -177,6 +177,18 @@ BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 }
 END_CUSTOM_CVAR (gammalevel)
 
+// [Russell] - Restore original screen palette from current gamma level
+void V_RestoreScreenPalette(void)
+{
+    if (screen && screen->is8bit())
+    {
+        DoBlending (DefPal.colors, IndexedPalette, DefPal.numcolors,
+                    newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
+    
+        I_SetPalette (IndexedPalette);
+    }
+}
+
 /****************************/
 /* Palette management stuff */
 /****************************/
@@ -226,7 +238,6 @@ BOOL InternalCreatePalette (palette_t *palette, char *name, byte *colors,
 
 	return true;
 }
-
 
 palette_t *InitPalettes (char *name)
 {
