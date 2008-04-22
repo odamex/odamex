@@ -91,6 +91,8 @@ EXTERN_CVAR (cleanmaps)
 EXTERN_CVAR (fragexitswitch)
 //bond===========================
 
+EXTERN_CVAR (maxactiveplayers)
+
 // if set, advetise user-defined natport value to the master
 CVAR(natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -432,6 +434,9 @@ void SV_SendServerInfo()
 	
 //bond===========================
 
+    MSG_WriteLong(&ml_message, (DWORD)0x01020304);
+    MSG_WriteShort(&ml_message, (WORD)maxactiveplayers);
+    
     for (i = 0; i < players.size(); ++i)
     {
         if (players[i].ingame())
