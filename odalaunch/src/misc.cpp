@@ -28,6 +28,7 @@
 #include <wx/menu.h>
 #include <wx/statusbr.h>
 #include <wx/msgdlg.h>
+#include <wx/colour.h>
 
 #include "net_packet.h"
 #include "misc.h"
@@ -118,29 +119,42 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
             idx = list->InsertItem(i, 
                                    s.info.playerinfo[i].name);            
         }
-        
-        wxString teamstr = _T("");
-        
+               
         list->SetItem(idx, 1, wxString::Format(_T("%d"),s.info.playerinfo[i].frags));
         list->SetItem(idx, 2, wxString::Format(_T("%d"),s.info.playerinfo[i].ping));
         
         if (s.info.teamplay)
 		{
+            wxListItem item;
+            wxString teamstr = _T("UNKNOWN");
+            
+            item.SetBackgroundColour(*wxWHITE);
+            item.SetTextColour(*wxBLACK);
+            item.SetId(idx);
+            
             switch(s.info.playerinfo[i].team)
 			{
                 case 0:
-					teamstr = _T("BLUE");
-					break;
+                    item.SetBackgroundColour(*wxBLUE);
+                    item.SetTextColour(*wxWHITE);      
+                    teamstr = _T("BLUE");
+                    break;
 				case 1:
+                    item.SetBackgroundColour(*wxRED);
+                    item.SetTextColour(*wxWHITE);
                     teamstr = _T("RED");
 					break;
 				case 2:
+                    // no gold in 'dem mountains boy.
+                    item.SetBackgroundColour(wxColor(255,200,40));
+                    item.SetTextColour(*wxBLACK);
                     teamstr = _T("GOLD");
 					break;
 				default:
-                    teamstr = _T("UNKNOWN!");
 					break;
 			}
+            
+            list->SetItem(item);
             list->SetItem(idx, 3, teamstr);
         }
             
