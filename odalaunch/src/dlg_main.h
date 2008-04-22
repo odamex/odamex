@@ -92,8 +92,8 @@ class dlgMain : public wxFrame, wxThreadHelper
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
         
-		wxInt32 totalPlayers;
-
+		wxInt32 TotalPlayers;
+        wxInt32 QueriedServers;
         /*
             Our threading system
 

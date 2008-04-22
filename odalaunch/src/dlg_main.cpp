@@ -414,10 +414,6 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             if (!MServer->GetServerCount())           
                 break;
         case mtrs_master_success:
-            SERVER_LIST->DeleteAllItems();
-            PLAYER_LIST->DeleteAllItems();
-        
-            totalPlayers = 0;
             break;
         case mtrs_server_noservers:
             wxMessageBox(_T("There are no servers to query"), _T("Error"), wxOK | wxICON_ERROR);
@@ -443,7 +439,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             
             AddPlayersToList(PLAYER_LIST, QServer[Result->Index]);
             
-            totalPlayers += QServer[Result->Index].info.numplayers;
+            TotalPlayers += QServer[Result->Index].info.numplayers;
            
             break;
         default:
@@ -451,8 +447,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
     }
 
     GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %u"), MServer->GetPing()), 1);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Servers: %d"), MServer->GetServerCount()), 2);
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), TotalPlayers), 3);
 
     delete Result;
 }
@@ -483,13 +478,22 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
         {
             AddServerToList(SERVER_LIST, QServer[event.GetInt()], event.GetInt());
             
-            totalPlayers += QServer[event.GetInt()].info.numplayers;
+            TotalPlayers += QServer[event.GetInt()].info.numplayers;
             
             break;      
         }
     }
+
+    ++QueriedServers;
     
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), totalPlayers), 3);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Queried Server %d of %d"), 
+                                                   QueriedServers, 
+                                                   MServer->GetServerCount()), 
+                                                   2);
+                                                   
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), 
+                                                   TotalPlayers), 
+                                                   3);   
 }
 
 // display extra information for a server
@@ -638,6 +642,12 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     if (recursion_guard.IsInside())
         return;	
 	
+    SERVER_LIST->DeleteAllItems();
+    PLAYER_LIST->DeleteAllItems();
+        
+    QueriedServers = 0;
+    TotalPlayers = 0;
+	
 	mtcs_Request.Signal = mtcs_getmaster;
 }
 
@@ -669,7 +679,7 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
     if (arrayindex == -1)
         return;
                 
-    totalPlayers -= QServer[arrayindex].info.numplayers;
+    TotalPlayers -= QServer[arrayindex].info.numplayers;
     
     mtcs_Request.Signal = mtcs_getsingleserver;
     mtcs_Request.ServerListIndex = listindex;
@@ -690,8 +700,9 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
         
     SERVER_LIST->DeleteAllItems();
     PLAYER_LIST->DeleteAllItems();
-        
-    totalPlayers = 0;
+    
+    QueriedServers = 0;
+    TotalPlayers = 0;
     
     mtcs_Request.Signal = mtcs_getservers;
     mtcs_Request.ServerListIndex = -1;
