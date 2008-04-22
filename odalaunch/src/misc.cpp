@@ -106,7 +106,18 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
         
     for (wxInt32 i = 0; i < s.info.numplayers; i++)
     {
-        wxInt32 idx = list->InsertItem(i,s.info.playerinfo[i].name);
+        wxInt32 idx;
+        if (s.info.spectating)
+        {
+            idx = list->InsertItem(i, 
+                                   s.info.playerinfo[i].name,
+                                   s.info.playerinfo[i].spectator);
+        }
+        else
+        {
+            idx = list->InsertItem(i, 
+                                   s.info.playerinfo[i].name);            
+        }
         
         wxString teamstr = _T("");
         

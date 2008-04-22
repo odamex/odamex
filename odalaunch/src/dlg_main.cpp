@@ -113,6 +113,11 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     SERVER_LIST = wxStaticCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
     PLAYER_LIST = wxStaticCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
 
+    // spectator states.
+    PLAYER_LIST->AssignImageList(new wxImageList(16, 15), wxIMAGE_LIST_SMALL);
+    PLAYER_LIST->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_FORWARD));
+    PLAYER_LIST->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_FIND));   
+
 	// set up the master server information
 	MServer = new MasterServer;
     
