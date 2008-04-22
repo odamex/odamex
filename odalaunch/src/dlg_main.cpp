@@ -537,7 +537,8 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               "WAD downloading: %s\n"
                               "Empty reset: %s\n"
                               "Clean maps: %s\n"
-                              "Frag on exit: %s"),
+                              "Frag on exit: %s\n"
+                              "Spectating: %s\n"),
                               QServer[i].info.version,
                               
                               QServer[i].info.emailaddr.c_str(),
@@ -559,7 +560,8 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               BOOLSTR(QServer[i].info.waddownload),
                               BOOLSTR(QServer[i].info.emptyreset),
                               BOOLSTR(QServer[i].info.cleanmaps),
-                              BOOLSTR(QServer[i].info.fragonexit));
+                              BOOLSTR(QServer[i].info.fragonexit),
+                              BOOLSTR(QServer[i].info.spectating));
     
     static wxTipWindow *tw = NULL;
                               

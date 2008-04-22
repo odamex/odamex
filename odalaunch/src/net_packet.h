@@ -45,7 +45,8 @@ struct player_t         // Player info structure
     wxInt8      team;
     wxInt16     killcount;
     wxInt16     deathcount;
-    wxUint16    timeingame;    
+    wxUint16    timeingame;
+    wxUint8     spectator;
 };
 
 struct teamplay_t       // Teamplay score structure 
@@ -96,6 +97,8 @@ struct serverinfo_t     // Server information structure
     wxUint8         cleanmaps;
     wxUint8         fragonexit;
     
+    wxUint32        spectating;
+    wxUint16        maxactiveplayers;
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets

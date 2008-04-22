@@ -227,9 +227,15 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
     return 0;
 }
 
+// TODO: Implement these better, because they WILL cause problems down the road
+// The returning value of -1 could very well be a valid read!
+
 //  Read a 32bit value from a packet
 wxInt32 BufferedSocket::Read32()
 {
+    if (!recv_buf->CanRead())
+        return -1;
+    
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
 
@@ -239,6 +245,9 @@ wxInt32 BufferedSocket::Read32()
 //  Read a 16bit value from a packet
 wxInt16 BufferedSocket::Read16()
 {
+    if (!recv_buf->CanRead())
+        return -1;
+        
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
 
@@ -248,6 +257,9 @@ wxInt16 BufferedSocket::Read16()
 //  Read an 8bit value from a packet
 wxInt8 BufferedSocket::Read8()
 {
+    if (!recv_buf->CanRead())
+        return -1;
+        
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
 

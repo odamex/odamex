@@ -330,6 +330,23 @@ wxInt32 Server::Parse()
         }
     }
 
+    info.spectating = Socket.Read32();
+
+    if (info.spectating == 0x01020304)
+    {
+        info.maxactiveplayers = Socket.Read16();
+        
+        if ((info.numplayers) && (info.playerinfo != NULL))
+        {
+            for (i = 0; i < info.numplayers; ++i)
+            {
+                info.playerinfo[i].spectator = Socket.Read8();
+            }
+        }
+    }
+    else
+        info.spectating = false;
+
     Socket.ClearRecvBuffer();
     
     return 1;
