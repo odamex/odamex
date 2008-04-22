@@ -149,7 +149,7 @@ void wxAdvancedListCtrl::ColourListItem(wxInt32 item, wxInt32 grey)
 // colour the previous item on insertion, it won't colour THIS item..?
 void wxAdvancedListCtrl::OnItemInsert(wxListEvent &event)
 {   
-    ColourListItem(event.GetIndex() - 1, ((event.GetIndex() - 1) % 2));   
+    ColourList();   
 }
 
 // recolour the entire list
