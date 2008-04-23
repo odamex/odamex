@@ -44,10 +44,22 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
     
     if (s.GetAddress() == _T("0.0.0.0:0"))
         return;
-        
+    
+    wxListItem li;
+
+    li.SetTextColour(*wxBLACK);
+    li.SetBackgroundColour(*wxWHITE);
+    
+    li.SetMask(wxLIST_MASK_TEXT);
+    
     // are we adding a new item?
     if (insert)    
-        idx = list->InsertItem(index, s.info.name);
+    {
+        li.SetColumn(0);
+        li.SetText(s.info.name);
+        
+        idx = list->InsertItem(li);
+    }
     else
     {
         idx = index;
@@ -107,55 +119,74 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
         
     for (wxInt32 i = 0; i < s.info.numplayers; i++)
     {
-        wxInt32 idx;
+        wxListItem li;
+        
+        li.SetColumn(0);
+        
+        li.SetTextColour(*wxBLACK);
+        li.SetBackgroundColour(*wxWHITE);
+        
+        li.SetMask(wxLIST_MASK_TEXT);
+        
         if (s.info.spectating)
         {
-            idx = list->InsertItem(i, 
-                                   s.info.playerinfo[i].name,
-                                   s.info.playerinfo[i].spectator);
+            li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
+            
+            li.SetText(s.info.playerinfo[i].name);
+            li.SetImage(s.info.playerinfo[i].spectator);
         }
         else
         {
-            idx = list->InsertItem(i, 
-                                   s.info.playerinfo[i].name);            
+            li.SetText(s.info.playerinfo[i].name);            
         }
-               
-        list->SetItem(idx, 1, wxString::Format(_T("%d"),s.info.playerinfo[i].frags));
-        list->SetItem(idx, 2, wxString::Format(_T("%d"),s.info.playerinfo[i].ping));
+        
+        li.SetId(list->InsertItem(li));
+        
+        li.SetColumn(1);
+        li.SetMask(wxLIST_MASK_TEXT);
+        li.SetText(wxString::Format(_T("%d"),s.info.playerinfo[i].frags));
+        
+        list->SetItem(li);
+        
+        li.SetColumn(2);        
+        li.SetText(wxString::Format(_T("%d"),s.info.playerinfo[i].ping));
+        
+        list->SetItem(li);
         
         if (s.info.teamplay)
 		{
-            wxListItem item;
             wxString teamstr = _T("UNKNOWN");
             
-            item.SetBackgroundColour(*wxWHITE);
-            item.SetTextColour(*wxBLACK);
-            item.SetId(idx);
+            li.SetColumn(3); 
+            
+            li.SetBackgroundColour(*wxWHITE);
+            li.SetTextColour(*wxBLACK);
             
             switch(s.info.playerinfo[i].team)
 			{
                 case 0:
-                    item.SetBackgroundColour(*wxBLUE);
-                    item.SetTextColour(*wxWHITE);      
+                    li.SetBackgroundColour(*wxBLUE);
+                    li.SetTextColour(*wxWHITE);      
                     teamstr = _T("BLUE");
                     break;
 				case 1:
-                    item.SetBackgroundColour(*wxRED);
-                    item.SetTextColour(*wxWHITE);
+                    li.SetBackgroundColour(*wxRED);
+                    li.SetTextColour(*wxWHITE);
                     teamstr = _T("RED");
 					break;
 				case 2:
                     // no gold in 'dem mountains boy.
-                    item.SetBackgroundColour(wxColor(255,200,40));
-                    item.SetTextColour(*wxBLACK);
+                    li.SetBackgroundColour(wxColor(255,200,40));
+                    li.SetTextColour(*wxBLACK);
                     teamstr = _T("GOLD");
 					break;
 				default:
 					break;
 			}
+
+            li.SetText(teamstr);
             
-            list->SetItem(item);
-            list->SetItem(idx, 3, teamstr);
+            list->SetItem(li);
         }
             
     }

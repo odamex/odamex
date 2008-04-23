@@ -133,9 +133,14 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
 
 void wxAdvancedListCtrl::ColourListItem(wxInt32 item, wxInt32 grey)
 {
-    // reset colours back
-    wxColour col;
-     
+    wxColour col = GetItemBackgroundColour(item);
+    
+    if ((col != wxColour(colRed, colGreen, colBlue)) &&
+       (col != *wxWHITE))
+    {
+        return;
+    }
+    
     // light grey coolness
     if (grey)
         col.Set(colRed, colGreen, colBlue);
