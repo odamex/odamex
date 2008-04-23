@@ -270,7 +270,7 @@ wxInt8 BufferedSocket::Read8()
 wxString BufferedSocket::ReadString()
 {
     if (!recv_buf->CanRead())
-        return "";
+        return wxString();
 
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
@@ -290,7 +290,7 @@ wxString BufferedSocket::ReadString()
     }
     
     if (!recv_buf->CanRead())
-        return "";
+        return wxString();
     
     return in_str;
 }
