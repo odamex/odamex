@@ -223,21 +223,21 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
             switch(s.info.playerinfo[i].team)
 			{
                 case 0:
-                    li.SetBackgroundColour(*wxBLUE);
-                    li.SetTextColour(*wxWHITE);      
+                    li.SetBackgroundColour(*wxWHITE);
+                    li.SetTextColour(*wxBLUE);      
                     teamstr = _T("BLUE");
                     teamscore = s.info.teamplayinfo.bluescore;
                     break;
 				case 1:
-                    li.SetBackgroundColour(*wxRED);
-                    li.SetTextColour(*wxWHITE);
+                    li.SetBackgroundColour(*wxWHITE);
+                    li.SetTextColour(*wxRED);
                     teamstr = _T("RED");
 					teamscore = s.info.teamplayinfo.redscore;
 					break;
 				case 2:
                     // no gold in 'dem mountains boy.
-                    li.SetBackgroundColour(wxColor(255,200,40));
-                    li.SetTextColour(*wxBLACK);
+                    li.SetBackgroundColour(*wxWHITE);
+                    li.SetTextColour(wxColor(255,200,40));
                     teamscore = s.info.teamplayinfo.goldscore;
                     teamstr = _T("GOLD");
 					break;
