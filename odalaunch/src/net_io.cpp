@@ -267,32 +267,32 @@ wxInt8 BufferedSocket::Read8()
 }
 
 //  Read a string from a packet
-wxChar *BufferedSocket::ReadString()
+wxString BufferedSocket::ReadString()
 {
+    if (!recv_buf->CanRead())
+        return "";
+
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
 
-    static wxChar str[2048];
-    
-    memset(str, 0, sizeof(str));
+    wxString in_str;
     
     // ooh, a priming read!
     wxChar ch = (wxChar)dis.Read8();
 
     wxUint16 i = 0;
     
-    while (((ch != '\0') && (i < sizeof(str)-1)))
-    {
-        str[i] = ch;
-        
+    while (ch != '\0' && recv_buf->CanRead())
+    {      
+        in_str << ch;
+         
         ch = (wxChar)dis.Read8();
-    
-        i++;
     }
     
-    str[i] = '\0';
+    if (!recv_buf->CanRead())
+        return "";
     
-    return str;
+    return in_str;
 }
 
 //  Write a 32bit value to a packet

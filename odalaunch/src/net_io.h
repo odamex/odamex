@@ -83,7 +83,7 @@ class BufferedSocket
         wxUint32 GetPing() { return (RecvPing - SendPing); }
         
         // Read/Write values to the internal buffer
-        wxChar      *ReadString();
+        wxString    ReadString();
         wxInt32     Read32();
         wxInt16     Read16();
         wxInt8      Read8();
