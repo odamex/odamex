@@ -134,12 +134,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	SERVER_LIST->InsertColumn(5,_T("Type"),wxLIST_FORMAT_LEFT,80);
 	SERVER_LIST->InsertColumn(6,_T("Game IWAD"),wxLIST_FORMAT_LEFT,80);
 	SERVER_LIST->InsertColumn(7,_T("Address : Port"),wxLIST_FORMAT_LEFT,130);
-	
-	PLAYER_LIST->InsertColumn(0,_T("Player name"),wxLIST_FORMAT_LEFT,150);
-	PLAYER_LIST->InsertColumn(1,_T("Frags"),wxLIST_FORMAT_LEFT,70);
-	PLAYER_LIST->InsertColumn(2,_T("Ping"),wxLIST_FORMAT_LEFT,50);
-	PLAYER_LIST->InsertColumn(3,_T("Team"),wxLIST_FORMAT_LEFT,50);
-   
+    
     QServer = NULL;
 
     // Create monitor thread and run it

@@ -112,8 +112,44 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
     list->SetItem(idx, 6, iwad);
 }
 
+typedef enum
+{
+    playerlist_field_name
+    ,playerlist_field_ping
+    ,playerlist_field_timeingame
+    ,playerlist_field_frags
+    ,playerlist_field_killcount
+    ,playerlist_field_deathcount
+    ,playerlist_field_team
+    ,playerlist_field_teamscore
+    
+    ,max_playerlist_fields
+} playerlist_fields_t;
+
 void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
 {   
+	list->DeleteAllColumns();
+	
+	list->InsertColumn(playerlist_field_name,_T("Player name"),wxLIST_FORMAT_LEFT,150);
+	list->InsertColumn(playerlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(playerlist_field_frags,_T("Frags"),wxLIST_FORMAT_LEFT,70);
+    list->InsertColumn(playerlist_field_killcount,_T("Kill count"),wxLIST_FORMAT_LEFT,60);
+    list->InsertColumn(playerlist_field_deathcount,_T("Death count"),wxLIST_FORMAT_LEFT,80);
+    list->InsertColumn(playerlist_field_timeingame,_T("Time"),wxLIST_FORMAT_LEFT,50);
+
+    if (s.info.teamplay)
+    {
+        list->InsertColumn(playerlist_field_team,
+                           _T("Team"),
+                           wxLIST_FORMAT_LEFT,
+                           50);
+        
+        list->InsertColumn(playerlist_field_teamscore,
+                           _T("Team score"),
+                           wxLIST_FORMAT_LEFT,
+                           80);
+    }
+    
     if (!s.info.numplayers)
         return;
         
@@ -121,7 +157,7 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
     {
         wxListItem li;
         
-        li.SetColumn(0);
+        li.SetColumn(playerlist_field_name);
         
         li.SetTextColour(*wxBLACK);
         li.SetBackgroundColour(*wxWHITE);
@@ -137,27 +173,49 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
         }
         else
         {
-            li.SetText(s.info.playerinfo[i].name);            
+            li.SetText(s.info.playerinfo[i].name);
         }
         
         li.SetId(list->InsertItem(li));
         
-        li.SetColumn(1);
+        li.SetColumn(playerlist_field_ping);
         li.SetMask(wxLIST_MASK_TEXT);
-        li.SetText(wxString::Format(_T("%d"),s.info.playerinfo[i].frags));
+
+        li.SetText(wxString::Format(_T("%d"),
+                                    s.info.playerinfo[i].ping));
         
         list->SetItem(li);
         
-        li.SetColumn(2);        
-        li.SetText(wxString::Format(_T("%d"),s.info.playerinfo[i].ping));
+        li.SetColumn(playerlist_field_frags);        
+        li.SetText(wxString::Format(_T("%d"),
+                                    s.info.playerinfo[i].frags));
+        
+        list->SetItem(li);
+
+        li.SetColumn(playerlist_field_killcount);        
+        li.SetText(wxString::Format(_T("%d"),
+                                    s.info.playerinfo[i].killcount));
+        
+        list->SetItem(li);
+
+        li.SetColumn(playerlist_field_deathcount);        
+        li.SetText(wxString::Format(_T("%d"),
+                                    s.info.playerinfo[i].deathcount));
+        
+        list->SetItem(li);
+
+        li.SetColumn(playerlist_field_timeingame);        
+        li.SetText(wxString::Format(_T("%d"),
+                                    s.info.playerinfo[i].timeingame));
         
         list->SetItem(li);
         
         if (s.info.teamplay)
 		{
             wxString teamstr = _T("UNKNOWN");
+            wxInt32 teamscore = 0;
             
-            li.SetColumn(3); 
+            li.SetColumn(playerlist_field_team); 
             
             li.SetBackgroundColour(*wxWHITE);
             li.SetTextColour(*wxBLACK);
@@ -168,16 +226,19 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
                     li.SetBackgroundColour(*wxBLUE);
                     li.SetTextColour(*wxWHITE);      
                     teamstr = _T("BLUE");
+                    teamscore = s.info.teamplayinfo.bluescore;
                     break;
 				case 1:
                     li.SetBackgroundColour(*wxRED);
                     li.SetTextColour(*wxWHITE);
                     teamstr = _T("RED");
+					teamscore = s.info.teamplayinfo.redscore;
 					break;
 				case 2:
                     // no gold in 'dem mountains boy.
                     li.SetBackgroundColour(wxColor(255,200,40));
                     li.SetTextColour(*wxBLACK);
+                    teamscore = s.info.teamplayinfo.goldscore;
                     teamstr = _T("GOLD");
 					break;
 				default:
@@ -185,6 +246,14 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
 			}
 
             li.SetText(teamstr);
+
+            list->SetItem(li);
+            
+            li.SetColumn(playerlist_field_teamscore);
+            
+            li.SetText(wxString::Format(_T("%d/%d"), 
+                                        teamscore, 
+                                        s.info.teamplayinfo.scorelimit));
             
             list->SetItem(li);
         }
