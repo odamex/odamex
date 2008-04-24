@@ -349,6 +349,12 @@ void *dlgMain::Entry()
                 // Give everything else some cpu time, please be considerate!
                 GetThread()->Sleep(1);              
             }
+            
+            // Wait until the last X number of threads have finished.
+            while (threadVector.size() != 0)
+            {
+                GetThread()->Sleep(1);
+            }
         }
         
         // User requested single server to be refreshed

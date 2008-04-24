@@ -68,7 +68,7 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
 {
     wxInt32 i = 0;
     
-    if (s.info.response != SERVER_RESPONSE)
+    if (s.GetAddress() == _T("0.0.0.0:0"))
         return;
     
     wxListItem li;
