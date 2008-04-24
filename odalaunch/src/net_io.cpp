@@ -25,6 +25,7 @@
 #include "net_io.h"
 
 #include <wx/msgdlg.h>
+#include <wx/log.h>
 
 // Endianess switch
 const wxByte BufferedSocket::BigEndian = false;
