@@ -46,13 +46,13 @@ struct player_t         // Player info structure
     wxInt16     killcount;
     wxInt16     deathcount;
     wxUint16    timeingame;
-    wxUint8     spectator;
+    bool        spectator;
 };
 
 struct teamplay_t       // Teamplay score structure 
 {
     wxInt32     scorelimit;
-    wxInt8      blue, red, gold;
+    bool        blue, red, gold;
     wxInt32     bluescore, redscore, goldscore;
 };
 
@@ -69,10 +69,10 @@ struct serverinfo_t     // Server information structure
     wxString        *pwads;         // Array of PWAD file names
     wxInt8          gametype;       // Gametype (0 = Coop, 1 = DM)
     wxUint8         gameskill;      // Gameskill
-    wxUint8         teamplay;       // Teamplay enabled?
+    bool            teamplay;       // Teamplay enabled?
     player_t        *playerinfo;    // Player information array, use numplayers
     wxString        *wad_hashes;    // IWAD and PWAD hashes
-    wxUint8         ctf;            // CTF enabled?
+    bool            ctf;            // CTF enabled?
     wxString        webaddr;        // Website address of server
     teamplay_t      teamplayinfo;   // Teamplay information if enabled
     wxUint16        version;
@@ -82,20 +82,20 @@ struct serverinfo_t     // Server information structure
     wxUint16        timeleft;
     wxUint16        fraglimit;
     
-    wxUint8         itemrespawn;
-    wxUint8         weaponstay;
-    wxUint8         friendlyfire;
-    wxUint8         allowexit;
-    wxUint8         infiniteammo;
-    wxUint8         nomonsters;
-    wxUint8         monstersrespawn;
-    wxUint8         fastmonsters;
-    wxUint8         allowjump;
-    wxUint8         allowfreelook;
-    wxUint8         waddownload;
-    wxUint8         emptyreset;
-    wxUint8         cleanmaps;
-    wxUint8         fragonexit;
+    bool         itemrespawn;
+    bool         weaponstay;
+    bool         friendlyfire;
+    bool         allowexit;
+    bool         infiniteammo;
+    bool         nomonsters;
+    bool         monstersrespawn;
+    bool         fastmonsters;
+    bool         allowjump;
+    bool         allowfreelook;
+    bool         waddownload;
+    bool         emptyreset;
+    bool         cleanmaps;
+    bool         fragonexit;
     
     wxUint32        spectating;
     wxUint16        maxactiveplayers;

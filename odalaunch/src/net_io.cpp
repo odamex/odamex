@@ -226,51 +226,133 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
     
     return 0;
 }
-
-// TODO: Implement these better, because they WILL cause problems down the road
-// The returning value of -1 could very well be a valid read!
-
 //  Read a 32bit value from a packet
-wxInt32 BufferedSocket::Read32()
+wxInt32 BufferedSocket::Read32(wxInt32 &Int32)
 {
     if (!recv_buf->CanRead())
-        return -1;
+    {
+        wxLogDebug(_T("Read32: End of buffer reached!"));
+        return 0;
+    }
     
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
 
-    return dis.Read32();
+    Int32 = dis.Read32();
+    
+    return 1;
+}
+
+//  Read a 32bit value from a packet
+wxInt32 BufferedSocket::Read32(wxUint32 &Uint32)
+{
+    if (!recv_buf->CanRead())
+    {
+        wxLogDebug(_T("Read32: End of buffer reached!"));
+        return 0;
+    }
+    
+    wxDataInputStream dis(*recv_buf);
+    dis.BigEndianOrdered(BigEndian);
+
+    Uint32 = dis.Read32();
+    
+    return 1;
 }
 
 //  Read a 16bit value from a packet
-wxInt16 BufferedSocket::Read16()
+wxInt32 BufferedSocket::Read16(wxInt16 &Int16)
 {
     if (!recv_buf->CanRead())
-        return -1;
+    {
+        wxLogDebug(_T("Read16: End of buffer reached!"));
+        return 0;
+    }
         
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
 
-    return dis.Read16();
+    Int16 = dis.Read16();
+    
+    return 1;
+}
+
+//  Read a 16bit value from a packet
+wxInt32 BufferedSocket::Read16(wxUint16 &Uint16)
+{
+    if (!recv_buf->CanRead())
+    {
+        wxLogDebug(_T("Read16: End of buffer reached!"));
+        return 0;
+    }
+        
+    wxDataInputStream dis(*recv_buf);
+    dis.BigEndianOrdered(BigEndian);
+
+    Uint16 = dis.Read16();
+    
+    return 1;
 }
 
 //  Read an 8bit value from a packet
-wxInt8 BufferedSocket::Read8()
+wxInt32 BufferedSocket::Read8(wxInt8 &Int8)
 {
     if (!recv_buf->CanRead())
-        return -1;
+    {
+        wxLogDebug(_T("Read8: End of buffer reached!"));
+        return 0;
+    }
         
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
 
-    return dis.Read8();
+    Int8 = dis.Read8();
+    
+    return 1;
+}
+
+//  Read an 8bit value from a packet
+wxInt32 BufferedSocket::Read8(wxUint8 &Uint8)
+{
+    if (!recv_buf->CanRead())
+    {
+        wxLogDebug(_T("Read8: End of buffer reached!"));
+        return 0;
+    }
+        
+    wxDataInputStream dis(*recv_buf);
+    dis.BigEndianOrdered(BigEndian);
+
+    Uint8 = dis.Read8();
+    
+    return 1;
+}
+
+//  Read a bool (8bit) value from a packet
+wxInt32 BufferedSocket::ReadBool(bool &boolval)
+{
+    if (!recv_buf->CanRead())
+    {
+        wxLogDebug(_T("ReadBool: End of buffer reached!"));
+        return 0;
+    }
+        
+    wxDataInputStream dis(*recv_buf);
+    dis.BigEndianOrdered(BigEndian);
+
+    boolval = dis.Read8() ? true : false;
+    
+    return 1;
 }
 
 //  Read a string from a packet
-wxString BufferedSocket::ReadString()
+wxInt32 BufferedSocket::ReadString(wxString &str)
 {
     if (!recv_buf->CanRead())
-        return wxString();
+    {
+        wxLogDebug(_T("ReadString: End of buffer reached!"));
+        return 0;
+    }
 
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
@@ -290,9 +372,14 @@ wxString BufferedSocket::ReadString()
     }
     
     if (!recv_buf->CanRead())
-        return wxString();
+    {
+        wxLogDebug(_T("ReadString: End of buffer reached!"));
+        return 0;
+    }
     
-    return in_str;
+    str = in_str;
+    
+    return 1;
 }
 
 //  Write a 32bit value to a packet
