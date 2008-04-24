@@ -372,12 +372,6 @@ wxInt32 BufferedSocket::ReadString(wxString &str)
         ch = (wxChar)dis.Read8();
     }
     
-    if (!recv_buf->CanRead())
-    {
-        wxLogDebug(_T("ReadString: End of buffer reached!"));
-        return 0;
-    }
-    
     str = in_str;
     
     return 1;
