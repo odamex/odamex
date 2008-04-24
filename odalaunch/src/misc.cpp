@@ -21,9 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include "lst_custom.h"
-
 #include <wx/settings.h>
 #include <wx/menu.h>
 #include <wx/statusbr.h>
@@ -177,8 +174,9 @@ typedef enum
     ,max_playerlist_fields
 } playerlist_fields_t;
 
-void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
+void AddPlayersToList(wxListCtrl *list, Server &s)
 {   
+    list->DeleteAllItems();
 	list->DeleteAllColumns();
 	
 	list->InsertColumn(playerlist_field_name,_T("Player name"),wxLIST_FORMAT_LEFT,150);
