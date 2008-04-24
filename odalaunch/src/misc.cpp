@@ -33,6 +33,35 @@
 #include "net_packet.h"
 #include "misc.h"
 
+typedef enum
+{
+    serverlist_field_name
+    ,serverlist_field_ping
+    ,serverlist_field_players
+    ,serverlist_field_wads
+    ,serverlist_field_map
+    ,serverlist_field_type
+    ,serverlist_field_iwad
+    ,serverlist_field_address
+    
+    ,max_serverlist_fields
+} serverlist_fields_t;
+
+void SetupServerListColumns(wxListCtrl *list)
+{
+	list->DeleteAllColumns();
+	
+	// set up the list columns
+    list->InsertColumn(serverlist_field_name,_T("Server name"),wxLIST_FORMAT_LEFT,150);
+	list->InsertColumn(serverlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(serverlist_field_players,_T("Players"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(serverlist_field_wads,_T("WADs"),wxLIST_FORMAT_LEFT,150);
+	list->InsertColumn(serverlist_field_map,_T("Map"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(serverlist_field_type,_T("Type"),wxLIST_FORMAT_LEFT,80);
+	list->InsertColumn(serverlist_field_iwad,_T("Game IWAD"),wxLIST_FORMAT_LEFT,80);
+	list->InsertColumn(serverlist_field_address,_T("Address : Port"),wxLIST_FORMAT_LEFT,130);
+}
+
 /*
     Takes a server structure and adds it to the list control
     if insert is 1, then add an item to the list, otherwise it will
@@ -40,39 +69,49 @@
 */
 void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
 {
-    wxInt32 i = 0, idx = 0;
+    wxInt32 i = 0;
     
-    if (s.GetAddress() == _T("0.0.0.0:0"))
+    if (s.info.response != SERVER_RESPONSE)
         return;
     
     wxListItem li;
-
-    li.SetTextColour(*wxBLACK);
-    li.SetBackgroundColour(*wxWHITE);
     
     li.SetMask(wxLIST_MASK_TEXT);
     
     // are we adding a new item?
     if (insert)    
     {
-        li.SetColumn(0);
+        li.SetTextColour(*wxBLACK);
+        li.SetBackgroundColour(*wxWHITE);
+
+        li.SetColumn(serverlist_field_name);
         li.SetText(s.info.name);
         
-        idx = list->InsertItem(li);
+        li.SetId(list->InsertItem(li));
     }
     else
     {
-        idx = index;
-        // update server name if we have a blank one
-        list->SetItem(idx, 0, s.info.name, -1);
+        li.SetId(index);
+        li.SetColumn(serverlist_field_name);
+        li.SetText(s.info.name);
+        
+        list->SetItem(li);
     }
+
+    li.SetColumn(serverlist_field_address);
+    li.SetText(s.GetAddress());
     
-    wxUint32 ping = s.GetPing();
+    list->SetItem(li);
+
+    li.SetColumn(serverlist_field_ping);
+    li.SetText(wxString::Format(_T("%u"),s.GetPing()));
     
-    list->SetItem(idx, 7, s.GetAddress());
+    list->SetItem(li);
+
+    li.SetColumn(serverlist_field_players);
+    li.SetText(wxString::Format(_T("%d/%d"),s.info.numplayers,s.info.maxplayers));
     
-    list->SetItem(idx, 1, wxString::Format(_T("%u"),ping));   
-    list->SetItem(idx, 2, wxString::Format(_T("%d/%d"),s.info.numplayers,s.info.maxplayers));       
+    list->SetItem(li); 
     
     // build a list of pwads
     if (s.info.numpwads)
@@ -87,10 +126,16 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
             wadlist += wxString::Format(_T("%s "), pwad.c_str());
         }
             
-        list->SetItem(idx, 3, wadlist);
+        li.SetColumn(serverlist_field_wads);
+        li.SetText(wadlist);
+    
+        list->SetItem(li);
     }
-            
-    list->SetItem(idx, 4, s.info.map.Upper());
+
+    li.SetColumn(serverlist_field_map);
+    li.SetText(s.info.map.Upper());
+    
+    list->SetItem(li);
     
     // what game type do we like to play
     wxString gmode = _T("");
@@ -103,13 +148,19 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
         gmode = _T("TEAM DM");
     if(s.info.ctf)
         gmode = _T("CTF");
-              
-    list->SetItem(idx, 5, gmode);
+
+    li.SetColumn(serverlist_field_type);
+    li.SetText(gmode);
+    
+    list->SetItem(li);
 
     // trim off the .wad
     wxString iwad = s.info.iwad.Mid(0, s.info.iwad.Find('.'));
         
-    list->SetItem(idx, 6, iwad);
+    li.SetColumn(serverlist_field_iwad);
+    li.SetText(iwad);
+    
+    list->SetItem(li);
 }
 
 typedef enum

@@ -126,15 +126,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     config_dlg = new dlgConfig(&launchercfg_s, this);
     server_dlg = new dlgServers(MServer, this);
 
-	// set up the list controls
-    SERVER_LIST->InsertColumn(0,_T("Server name"),wxLIST_FORMAT_LEFT,150);
-	SERVER_LIST->InsertColumn(1,_T("Ping"),wxLIST_FORMAT_LEFT,50);
-	SERVER_LIST->InsertColumn(2,_T("Players"),wxLIST_FORMAT_LEFT,50);
-	SERVER_LIST->InsertColumn(3,_T("WADs"),wxLIST_FORMAT_LEFT,150);
-	SERVER_LIST->InsertColumn(4,_T("Map"),wxLIST_FORMAT_LEFT,50);
-	SERVER_LIST->InsertColumn(5,_T("Type"),wxLIST_FORMAT_LEFT,80);
-	SERVER_LIST->InsertColumn(6,_T("Game IWAD"),wxLIST_FORMAT_LEFT,80);
-	SERVER_LIST->InsertColumn(7,_T("Address : Port"),wxLIST_FORMAT_LEFT,130);
+    SetupServerListColumns(SERVER_LIST);
     
     QServer = NULL;
 
@@ -365,7 +357,7 @@ void *dlgMain::Entry()
             mtcs_Request.Signal = mtcs_none;
 
             if (MServer->GetServerCount())
-            if (QServer[mtcs_Request.Index].Query(300))
+            if (QServer[mtcs_Request.Index].Query(9999))
             {
                 mtrs_struct_t *Result = new mtrs_struct_t;
 
