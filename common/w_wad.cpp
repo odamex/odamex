@@ -627,7 +627,8 @@ void W_GetLumpName (char *to, unsigned  lump)
 		*to = 0;
 	else
 	{
-		strncpy (to, lumpinfo[lump].name, 9); // denis - todo -string limit?
+		memcpy (to, lumpinfo[lump].name, 8); // denis - todo -string limit?
+		to[8] = '\0';
 		std::transform(to, to + strlen(to), to, toupper);
 	}
 }
