@@ -1161,8 +1161,13 @@ void ST_updateWidgets(void)
 	}
 	for(i = 0; i < 6; i++)
 	{
-		st_weaponowned[i] = plyr->weaponowned[i+1] == true ? 1 : 0;
+		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
+		if(plyr->weaponowned[i+1])
+			st_weaponowned[i] = 1;
+		else
+			st_weaponowned[i] = 0;
 	}
+
 	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
 	// if (*w_ready.on)
 	//	STlib_updateNum(&w_ready, true);
