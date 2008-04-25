@@ -12,7 +12,7 @@ sleep 10
 kill -9 %1 %2
 
 cat tmp \
-| grep "entered the game" \
+| grep "has connected" \
 | wc -l \
 | awk '{if($1 == "1") print "PASS"; else print "FAIL"}'
 
