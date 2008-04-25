@@ -106,6 +106,7 @@ void I_PrintStr (int x, const char *str, int count, BOOL scroll);
 // Set the title string of the startup window
 void I_SetTitleString (const char *title);
 
+std::string I_ConsoleInput (void);
 
 // In i_input.c. Used to release control of the
 // mouse to the user when the game is paused in

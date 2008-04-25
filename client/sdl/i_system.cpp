@@ -678,5 +678,109 @@ int I_FindClose (long handle) {return 0;}
 
 #endif
 
+//
+// I_ConsoleInput
+//
+#ifdef WIN32
+std::string I_ConsoleInput (void)
+{
+	// denis - todo - implement this properly!!!
+	/* denis - this probably won't work for a gui sdl app. if it does work, please uncomment!
+    static char     text[1024] = {0};
+    static char     buffer[1024] = {0};
+    unsigned int    len = strlen(buffer);
+
+	while(kbhit() && len < sizeof(text))
+	{
+		char ch = (char)getch();
+
+		// input the character
+		if(ch == '\b' && len)
+		{
+			buffer[--len] = 0;
+			// john - backspace hack
+			fwrite(&ch, 1, 1, stdout);
+			ch = ' ';
+			fwrite(&ch, 1, 1, stdout);
+			ch = '\b';
+		}
+		else
+			buffer[len++] = ch;
+		buffer[len] = 0;
+
+		// recalculate length
+		len = strlen(buffer);
+
+		// echo character back to user
+		fwrite(&ch, 1, 1, stdout);
+		fflush(stdout);
+	}
+
+	if(len && buffer[len - 1] == '\n' || buffer[len - 1] == '\r')
+	{
+		// echo newline back to user
+		char ch = '\n';
+		fwrite(&ch, 1, 1, stdout);
+		fflush(stdout);
+
+		strcpy(text, buffer);
+		text[len-1] = 0; // rip off the /n and terminate
+		buffer[0] = 0;
+		len = 0;
+
+		return text;
+	}
+*/
+	return "";
+}
+
+#else
+
+std::string I_ConsoleInput (void)
+{
+	std::string ret;
+    static char     text[1024] = {0};
+    int             len;
+	
+    fd_set fdr;
+    FD_ZERO(&fdr);
+    FD_SET(0, &fdr);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+
+    if (!select(1, &fdr, NULL, NULL, &tv))
+        return "";
+	
+    len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
+
+    if (len < 1)
+        return "";
+
+	len = strlen(text);
+
+	if (strlen(text) >= sizeof(text))
+	{
+		if(text[len-1] == '\n' || text[len-1] == '\r')
+			text[len-1] = 0; // rip off the /n and terminate
+		
+		ret = text;
+		memset(text, 0, sizeof(text));
+		return ret;
+	}
+
+	if(text[len-1] == '\n' || text[len-1] == '\r')
+	{
+		text[len-1] = 0;
+
+		ret = text;
+		memset(text, 0, sizeof(text));
+		return ret;
+	}
+
+    return "";
+}
+#endif
+
 VERSION_CONTROL (i_system_cpp, "$Id$")
 

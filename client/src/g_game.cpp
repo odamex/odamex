@@ -76,7 +76,7 @@ void	G_DoReborn (player_t &playernum);
 
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
-void	G_DoPlayDemo (void);
+void	G_DoPlayDemo (bool justStreamInput = false);
 void	G_DoCompleted (void);
 void	G_DoVictory (void);
 void	G_DoWorldDone (void);
@@ -1599,6 +1599,18 @@ BEGIN_COMMAND(playdemo)
 }
 END_COMMAND(playdemo)
 
+BEGIN_COMMAND(streamdemo)
+{
+	if(argc > 1)
+	{
+		G_DeferedPlayDemo(argv[1]);
+		G_DoPlayDemo(true);
+	}
+	else
+		Printf(PRINT_HIGH, "Usage: playdemo lumpname or file\n");
+}
+END_COMMAND(streamdemo)
+
 // [RH] Process all the information in a FORM ZDEM
 //		until a BODY chunk is entered.
 BOOL G_ProcessIFFDemo (char *mapname)
@@ -1693,11 +1705,12 @@ BOOL G_ProcessIFFDemo (char *mapname)
 	return false;
 }
 
-void G_DoPlayDemo (void)
+void G_DoPlayDemo (bool justStreamInput)
 {
 	char mapname[9];
 
-	CL_QuitNetGame();
+	if(!justStreamInput)
+		CL_QuitNetGame();
 
 	gameaction = ga_nothing;
 	int bytelen;
@@ -1719,9 +1732,10 @@ void G_DoPlayDemo (void)
 	if(bytelen < 4)
 	{
 		if(bytelen)
+		{
 			Z_Free(demobuffer);
-		else
 			Printf (PRINT_HIGH, "Demo file too short\n");
+		}
 		gameaction = ga_fullconsole;
 		return;
 	}
@@ -1761,11 +1775,12 @@ void G_DoPlayDemo (void)
 		nomonsters = *demo_p++;
 		byte who = *demo_p++;
 
-		players.clear();
+		if(!justStreamInput)
+			players.clear();
 
 		for (size_t i=0 ; i < MAXPLAYERS_VANILLA; i++)
 		{
-			if(*demo_p++)
+			if(*demo_p++ && !justStreamInput)
 			{
 				players.push_back(player_t());
 				players.back().playerstate = PST_REBORN;
@@ -1773,59 +1788,62 @@ void G_DoPlayDemo (void)
 			}
 		}
 
-		player_t &con = idplayer(who + 1);
-
-		if(!validplayer(con))
+		if(!justStreamInput)
 		{
-			Z_Free(demobuffer);
-			Printf (PRINT_HIGH, "DOOM 1.9 Demo: invalid console player %d of %d\n", (int)who+1, players.size());
-			gameaction = ga_fullconsole;
-			return;
+    		player_t &con = idplayer(who + 1);
+    
+    		if(!validplayer(con))
+    		{
+    			Z_Free(demobuffer);
+    			Printf (PRINT_HIGH, "DOOM 1.9 Demo: invalid console player %d of %d\n", (int)who+1, players.size());
+    			gameaction = ga_fullconsole;
+    			return;
+    		}
+    
+    		consoleplayer_id = displayplayer_id = con.id;
+    
+    		//int pcol[4] = {(0x0000FF00), (0x006060B0), (0x00B0B030), (0x00C00000)};
+    		//char pnam[4][MAXPLAYERNAME] = {"GREEN", "INDIGO", "BROWN", "RED"};
+    		
+    		if(players.size() > 1)
+    		{
+    			netgame = true;
+    			netdemo = true;
+    			multiplayer = true;
+    			
+    			for (size_t i = 0; i < 4; i++) {
+    				if (players[i].ingame()) {
+    					//strcpy(players[i].userinfo.netname, pnam[i]);
+    					//players[i].userinfo.team = TEAM_NONE;
+    					//players[i].userinfo.gender = GENDER_NEUTER;
+    					//players[i].userinfo.color = pcol[i];
+    					//players[i].userinfo.skin = 0;
+    					//players[i].GameTime = 0;
+    					//R_BuildPlayerTranslation (players[i].id, players[i].userinfo.color);
+    					R_BuildClassicPlayerTranslation (players[i].id, i);
+    				}
+    			}
+    		}
+    		else
+    		{
+    			netgame = false;
+    			netdemo = false;
+    			multiplayer = false;
+    		}
+    
+    		char mapname[32];
+    
+    		if(gameinfo.flags & GI_MAPxx)
+    			sprintf(mapname, "MAP%02d", (int)map);
+    		else
+    			sprintf(mapname, "E%dM%d", (int)episode, (int)map);
+    
+    		serverside = true;
+    
+    		G_InitNew (mapname);
+    
+    		usergame = false;
 		}
-
-		consoleplayer_id = displayplayer_id = con.id;
-
-		//int pcol[4] = {(0x0000FF00), (0x006060B0), (0x00B0B030), (0x00C00000)};
-		//char pnam[4][MAXPLAYERNAME] = {"GREEN", "INDIGO", "BROWN", "RED"};
-		
-		if(players.size() > 1)
-		{
-			netgame = true;
-			netdemo = true;
-			multiplayer = true;
-			
-			for (size_t i = 0; i < 4; i++) {
-				if (players[i].ingame()) {
-					//strcpy(players[i].userinfo.netname, pnam[i]);
-					//players[i].userinfo.team = TEAM_NONE;
-					//players[i].userinfo.gender = GENDER_NEUTER;
-					//players[i].userinfo.color = pcol[i];
-					//players[i].userinfo.skin = 0;
-					//players[i].GameTime = 0;
-					//R_BuildPlayerTranslation (players[i].id, players[i].userinfo.color);
-					R_BuildClassicPlayerTranslation (players[i].id, i);
-				}
-			}
-		}
-		else
-		{
-			netgame = false;
-			netdemo = false;
-			multiplayer = false;
-		}
-
-		char mapname[32];
-
-		if(gameinfo.flags & GI_MAPxx)
-			sprintf(mapname, "MAP%02d", (int)map);
-		else
-			sprintf(mapname, "E%dM%d", (int)episode, (int)map);
-
-		serverside = true;
-
-		G_InitNew (mapname);
-
-		usergame = false;
 		demoplayback = true;
 
 		// comatibility

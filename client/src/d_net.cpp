@@ -40,6 +40,7 @@
 #include "c_dispatch.h"
 #include "gi.h"
 #include "cl_main.h"
+#include "m_argv.h"
 
 extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
 
@@ -57,6 +58,8 @@ void CL_RememberSkin(void);
 int 			lastnettic;
 int 			skiptics;
 int 			ticdup; 		
+
+bool stepmode = false;
 
 void D_ProcessEvents (void); 
 void G_BuildTiccmd (ticcmd_t *cmd); 
@@ -85,6 +88,8 @@ void D_CheckNetGame (void)
     D_SetupUserInfo();
 
     ticdup = 1;
+
+    stepmode = Args.CheckParm ("-stepmode");
 }
 
 
@@ -94,19 +99,12 @@ void D_CheckNetGame (void)
 extern	BOOL	 advancedemo;
 int canceltics = 0;
 
-void TryRunTics (void)
+void TryStepTics(QWORD tics)
 {
-	// get real tics
-	static QWORD oldentertics = 0;
-
-	QWORD entertic = I_WaitForTic (oldentertics);
-	QWORD realtics = entertic - oldentertics;
-	oldentertics = entertic;
-	
 	DObject::BeginFrame ();
 	
 	// run the realtics tics
-	while (realtics--)
+	while (tics--)
 	{
 		if(canceltics && canceltics--)
 			continue;
@@ -123,7 +121,52 @@ void TryRunTics (void)
 	}
 	
 	DObject::EndFrame ();
+
 }
+
+QWORD nextstep = 0;
+
+void TryRunTics (void)
+{
+	// get real tics
+	static QWORD oldentertics = 0;
+
+	QWORD entertic = I_WaitForTic (oldentertics);
+	QWORD realtics = entertic - oldentertics;
+	oldentertics = entertic;
+
+	std::string cmd = I_ConsoleInput();
+	if (cmd.length())
+	{
+		AddCommandString (cmd.c_str());
+	}
+	
+	// run the realtics tics
+	if(!stepmode)
+		TryStepTics(realtics);
+	else
+	{
+		NetUpdate();
+
+		if(nextstep)
+		{
+			canceltics = 0;
+
+			TryStepTics(nextstep);
+
+			extern unsigned char rndindex, prndindex;
+			Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+
+			nextstep = 0;
+		}
+	}
+}
+
+BEGIN_COMMAND(step)
+{
+        nextstep = argc > 1 ? atoi(argv[1]) : 1;
+}
+END_COMMAND(step)
 
 
 VERSION_CONTROL (d_net_cpp, "$Id$")

@@ -1474,7 +1474,7 @@ void D_DoomMain (void)
 	if (p && p < Args.NumArgs()-1)
 	{
 		extern std::string defdemoname;
-		void	G_DoPlayDemo (void);
+		void	G_DoPlayDemo (bool justStreamInput = false);
 		void	G_Ticker (void);
 		demotest = 1;
 		defdemoname = Args.GetArg (p+1);
@@ -1483,6 +1483,8 @@ void D_DoomMain (void)
 		while(demoplayback)
 		{
 			DObject::BeginFrame ();
+extern unsigned char rndindex, prndindex;
+printf( "G_Ticker gametic %d, prndindex %d\n", gametic, prndindex);
 			G_Ticker();
 			DObject::EndFrame ();
 			gametic++;

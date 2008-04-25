@@ -63,6 +63,8 @@ extern level_locals_t level;
 bool clientside = false, serverside = true;
 bool predicting = false;
 
+bool stepmode = false;
+
 // General server settings
 CVAR (hostname,			"Unnamed",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// A servers name that will apear in the launcher.
 CVAR (email,			"",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Server admin's e-mail address. - does not work yet
@@ -359,6 +361,8 @@ void SV_InitNetwork (void)
 	{
 		maxplayers.Set(w); // denis - todo
 	}
+
+	stepmode = Args.CheckParm ("-stepmode");
 
 	gametime = I_GetTime ();
 }
@@ -1457,7 +1461,9 @@ void SV_ConnectClient (void)
 	players[n].fragcount	= 0;
 	players[n].killcount	= 0;
 	players[n].points		= 0;
-	players[n].spectator	= true;
+
+	if(!stepmode)
+		players[n].spectator	= true;
 
 	// send a map name
 	MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);
@@ -1468,7 +1474,6 @@ void SV_ConnectClient (void)
 	SV_SendPacket (players[n]);
 	
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
-	players[n].spectator = true;
 }
 
 
@@ -2930,6 +2935,34 @@ void SV_SetMoveableSectors()
 }
 
 //
+// SV_StepTics
+//
+void SV_StepTics (QWORD tics)
+{
+	DObject::BeginFrame ();
+
+	// run the newtime tics
+	while (tics--)
+	{
+		SV_SetMoveableSectors();
+		C_Ticker ();
+
+		SV_GameTics ();
+
+		G_Ticker ();
+		
+		SV_WriteCommands();
+		SV_SendPackets();
+		SV_ClearClientsBPS();
+		SV_CheckTimeouts();
+
+		gametic++;
+	}
+		
+	DObject::EndFrame ();
+}
+
+//
 // SV_RunTics
 //
 void SV_RunTics (void)
@@ -2939,36 +2972,15 @@ void SV_RunTics (void)
 
 	SV_GetPackets();
 
-	if(newtics > 0)
+	std::string cmd = I_ConsoleInput();
+	if (cmd.length())
 	{
-		std::string cmd = I_ConsoleInput();
-		if (cmd.length())
-		{
-			AddCommandString (cmd.c_str());
-		}
-		
-		DObject::BeginFrame ();
+		AddCommandString (cmd.c_str());
+	}
 
-		// run the newtime tics
-		while (newtics--)
-		{
-			SV_SetMoveableSectors();
-			C_Ticker ();
-
-			SV_GameTics ();
-
-			G_Ticker ();
-			
-			SV_WriteCommands();
-			SV_SendPackets();
-			SV_ClearClientsBPS();
-			SV_CheckTimeouts();
-
-			gametic++;
-		}
-		
-		DObject::EndFrame ();
-
+	if(newtics > 0 && !stepmode)
+	{
+		SV_StepTics(newtics);
 		gametime = nowtime;
 	}
 
@@ -2976,6 +2988,18 @@ void SV_RunTics (void)
 	if(nowtime == I_GetTime())
 		NetWaitOrTimeout((I_MSTime()%TICRATE)+1);
 }
+
+BEGIN_COMMAND(step)
+{
+        QWORD newtics = argc > 1 ? atoi(argv[1]) : 1;
+
+	extern unsigned char rndindex, prndindex;
+
+	SV_StepTics(newtics);
+
+	Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+}
+END_COMMAND(step)
 
 
 //	For Debugging
