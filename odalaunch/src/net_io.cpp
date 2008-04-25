@@ -227,6 +227,7 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
     
     return 0;
 }
+
 //  Read a 32bit value from a packet
 wxInt32 BufferedSocket::Read32(wxInt32 &Int32)
 {
@@ -380,6 +381,12 @@ wxInt32 BufferedSocket::ReadString(wxString &str)
 //  Write a 32bit value to a packet
 void BufferedSocket::Write32(wxInt32 val)
 {
+    if (!send_buf->IsOk())
+    {
+        wxLogDebug(_T("Write32: End of buffer reached!"));
+        return;
+    }
+    
     wxDataOutputStream dos(*send_buf);
     dos.BigEndianOrdered(BigEndian);
     
@@ -391,6 +398,12 @@ void BufferedSocket::Write32(wxInt32 val)
 //  Write a 16bit value to a packet
 void BufferedSocket::Write16(wxInt16 val)
 {
+    if (!send_buf->IsOk())
+    {
+        wxLogDebug(_T("Write16: End of buffer reached!"));
+        return;
+    }
+    
     wxDataOutputStream dos(*send_buf);
     dos.BigEndianOrdered(BigEndian);
     
@@ -402,6 +415,12 @@ void BufferedSocket::Write16(wxInt16 val)
 //  Write an 8bit value to a packet
 void BufferedSocket::Write8(wxInt8 val)
 {
+    if (!send_buf->IsOk())
+    {
+        wxLogDebug(_T("Write8: End of buffer reached!"));
+        return;
+    }
+
     wxDataOutputStream dos(*send_buf);
     dos.BigEndianOrdered(BigEndian);
     
@@ -409,28 +428,7 @@ void BufferedSocket::Write8(wxInt8 val)
         
     return;
 }
-/*
-wxInt32 BufferedSocket::SetAddress(wxString AddressAndPort)
-{
-    wxStringTokenizer tokstr(AddressAndPort, _T(':'));
-	wxString inAddr, inPort;
 
-    if (tokstr.HasMoreTokens())
-        inAddr = tokstr.GetNextToken();
-    else
-        return -1;
-        
-    if (tokstr.HasMoreTokens())
-        inPort = tokstr.GetNextToken();
-    else
-        return -1;
-        
-    to_addr.Hostname(inAddr);
-    to_addr.Service(inPort);
-    
-    return 0;
-}
-*/
 wxString BufferedSocket::GetAddress() 
 {
     wxString retstr;
