@@ -1,5 +1,23 @@
 #!/bin/bash
+#
+# Odamex Client-Server demo regression test
+#
+# Copyright (C) 2006-2007 by The Odamex Team.
 # Author: Denis Lukianov
+#
+# This script connects a client to a server
+# in such a way that the client streams demo input
+# to the server. What happens on the server can
+# then be compared to what happens on a second client
+# that is playing the same demo on its own. The
+# ensemble of two clients and a server is stepped
+# frame by frame, with delays and checks in-between.
+#
+# An optional parameter allows a pause to occur
+# after a given number of frames so that a debugger
+# can be attached. The idea is to have a reproducible
+# and visual model for debugging network events.
+#
 
 svr=server.control
 cln=client.control
@@ -7,8 +25,13 @@ cln2=offline.control
 svro=server.out
 clno=client.out
 clno2=offline.out
-sleep="sleep 0.05"
+sleep="sleep 0.01"
 ctrl_c=0
+
+# these are not the only demo parameters
+# (see commands sent to server)
+demoname=demo1
+map=map11
 
 # graceful exit on ctrl+c
 trap 'ctrl_c=1' INT
@@ -49,7 +72,7 @@ echo "step" >> $cln2;
 sleep 2
 echo "set print_stdout 1" >> $cln2;
 sleep 1
-echo "playdemo demo1" >> $cln2;
+echo "playdemo $demoname" >> $cln2;
 sleep 1
 echo "step" >> $cln2;
 sleep 1
@@ -64,14 +87,14 @@ for i in 1 2 3 4 5; do
 done;
 
 echo "starting demo"
-echo map map11 >> $svr
+echo map $map >> $svr
 $sleep
 echo step >> $svr;
 $sleep
 echo step >> $cln;
 $sleep
 
-echo streamdemo demo1 >> $cln
+echo streamdemo $demoname >> $cln
 $sleep
 
 # start log mixer
@@ -79,6 +102,18 @@ echo "starting log mixer"
 tail -f -s 0.001 -n 1 $clno2 $svro $clno > mixed.out &
 
 for i in `seq 1 1000`; do
+ # compare last line of output
+ l3=`tail -n 1 $clno2`
+ l2=`tail -n 1 $clno`
+ l1=`tail -n 1 $svro | sed "s/\[.*\] //"`
+ if echo $l1 | grep -v "$l3" > tmp.out;
+ then
+  echo "desync detected at step $i"
+  echo "$svro: $l1"
+  echo "$clno2: $l2"
+  ctrl_c=1;
+ fi;
+ # next step
  echo step $i
  # step each process
  echo step >> $cln2;
@@ -103,11 +138,6 @@ for i in `seq 1 1000`; do
  jobs -p > jobs.out
  if cat jobs.out | wc -l | grep -v 4 >> jobs.out; then break; fi;
  if echo $ctrl_c | grep 1 >> jobs.out; then break; fi;
- # compare last line of output
- l3=`tail -n 1 $clno2`
- l2=`tail -n 1 $clno`
- l1=`tail -n 1 $svro | sed "s/\[.*\] //"`
- if echo $l1 | grep -v "$l3" > tmp.out; then echo "desync detected ($l1|$l2)"; ctrl_c=1; fi;
 done
 
 echo "exiting"
