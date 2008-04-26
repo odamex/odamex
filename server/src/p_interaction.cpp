@@ -1153,7 +1153,6 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	int 		saved;
 	player_t*	player;
 	fixed_t 	thrust;
-	int 		pain;
 
 	if ( !(target->flags & MF_SHOOTABLE) )
 		return; // shouldn't happen...
@@ -1166,8 +1165,6 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		return;
 
 	MeansOfDeath = mod;
-
-	pain = (P_Random (target));
 
 	if ( target->flags & MF_SKULLFLY )
 	{
@@ -1271,21 +1268,6 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
             MSG_WriteShort (&cl->reliablebuf, target->health - damage);
         }
 	}
-	else
-	{
-		if(target->health - damage > 0)
-		{
-			for (size_t i = 0; i < players.size(); i++)
-			{
-				client_t *cl = &clients[i];
-
-				MSG_WriteMarker (&cl->reliablebuf, svc_damagemobj);
-				MSG_WriteShort (&cl->reliablebuf, target->netid);
-				MSG_WriteShort (&cl->reliablebuf, target->health - damage);
-				MSG_WriteByte (&cl->reliablebuf, pain);
-			}
-		}
-	}
 
 	// do the damage
 	{
@@ -1298,6 +1280,23 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	}
 
 	{
+		int pain = P_Random();
+		if(!player)
+		{
+			if(target->health - damage > 0)
+			{
+				for (size_t i = 0; i < players.size(); i++)
+				{
+					client_t *cl = &clients[i];
+
+					MSG_WriteMarker (&cl->reliablebuf, svc_damagemobj);
+					MSG_WriteShort (&cl->reliablebuf, target->netid);
+					MSG_WriteShort (&cl->reliablebuf, target->health - damage);
+					MSG_WriteByte (&cl->reliablebuf, pain);
+				}
+			}
+		}
+
 		if ( pain < target->info->painchance
 			 && !(target->flags&MF_SKULLFLY) 
 			 && !(player && !damage))
