@@ -326,6 +326,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 	player_t*	player;
 	size_t		i;
 	int			sound;
+	bool		firstgrab = false;
 
 	if (!toucher || !special) // [Toke - fix99]
 		return;
@@ -599,9 +600,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 
 		// Core CTF Logic - everything else stems from this	[Toke - CTF]
 		case SPR_BFLG:	// Player touches the BLUE flag at its base
+		firstgrab = true;
 		case SPR_BDWN:	// Player touches the BLUE flag after its been dropped
 
-			if(!SV_FlagTouch(*player, it_blueflag))
+			if(!SV_FlagTouch(*player, it_blueflag, firstgrab))
 				return;
 			sound = 3;
 
@@ -610,9 +612,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 			SV_SocketTouch(*player, it_blueflag);
 			return;
 		case SPR_RFLG:	// Player touches the RED flag at its base
+		firstgrab = true;
 		case SPR_RDWN:	// Player touches the RED flag after its been dropped
 
-			if(!SV_FlagTouch(*player, it_redflag))
+			if(!SV_FlagTouch(*player, it_redflag, firstgrab))
 				return;
 			sound = 3;
 
@@ -621,9 +624,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 			SV_SocketTouch(*player, it_redflag);
 			return;
 		case SPR_GFLG:	// Player touches the GOLD flag at its base
+		firstgrab = true;
 		case SPR_GDWN:	// Player touches the GOLD flag after its been dropped
 
-			if(!SV_FlagTouch(*player, it_goldflag))
+			if(!SV_FlagTouch(*player, it_goldflag, firstgrab))
 				return;
 			sound = 3;
 
@@ -694,10 +698,8 @@ void SexMessage (const char *from, char *to, int gender)
 //
 void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 {
-	int	 mod;
 	char *message;
 	char gendermessage[1024];
-	BOOL friendly;
 	int  gender;
 
 	if (!self->player)
@@ -709,14 +711,9 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	if (inflictor && inflictor->player == self->player)
 		MeansOfDeath = MOD_UNKNOWN;
 
-	if (multiplayer && !deathmatch)
-		MeansOfDeath |= MOD_FRIENDLY_FIRE;
-
-	friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
-	mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
 	message = NULL;
 
-	switch (mod) {
+	switch (MeansOfDeath) {
 		case MOD_SUICIDE:
 			message = OB_SUICIDE;
 			break;
@@ -748,7 +745,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 	if (attacker && !message) {
 		if (attacker == self) {
-			switch (mod) {
+			switch (MeansOfDeath) {
 				case MOD_R_SPLASH:
 					message = OB_R_SPLASH;
 					break;
@@ -760,7 +757,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 					break;
 			}
 		} else if (!attacker->player) {
-					if (mod == MOD_HIT) {
+					if (MeansOfDeath == MOD_HIT) {
 						switch (attacker->type) {
 							case MT_UNDEAD:
 								message = OB_UNDEADHIT;
@@ -842,16 +839,14 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 	if (message) {
 		SexMessage (message, gendermessage, gender);
-		Printf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+		SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
 		return;
 	}
 
 	if (attacker && attacker->player) {
-		if (friendly) {
+		if (((teamplay || ctfmode) && self->player->userinfo.team == attacker->player->userinfo.team) || !deathmatch) {
 			int rnum = P_Random ();
 
-			attacker->player->fragcount -= 2;
-//			attacker->player->frags[attacker->player - players]++;
 			self = attacker;
 			gender = self->player->userinfo.gender;
 
@@ -864,7 +859,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 			else
 				message = OB_FRIENDLY4;
 		} else {
-			switch (mod) {
+			switch (MeansOfDeath) {
 				case MOD_FIST:
 					message = OB_MPFIST;
 					break;
@@ -912,13 +907,13 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		work += gendermessage;
 		work += ".\n";
 
-		Printf (PRINT_MEDIUM, work.c_str(), self->player->userinfo.netname,
-				attacker->player->userinfo.netname);
+		SV_BroadcastPrintf (PRINT_MEDIUM, work.c_str(), self->player->userinfo.netname,
+							attacker->player->userinfo.netname);
 		return;
 	}
 
 	SexMessage (OB_DEFAULT, gendermessage, gender);
-	Printf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+	SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
 }
 
 
@@ -974,10 +969,6 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 	// [RH] Also set the thing's tid to 0. [why?]
 	target->tid = 0;
 
-	// [Toke - CTF]
-	if (ctfmode && target->player)
-		CTF_CheckFlags ( *target->player );
-
 	player_t *splayer = source ? source->player : 0;
 	player_t *tplayer = target->player;
 
@@ -1004,6 +995,9 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 
 					if (teamplay && !ctfmode)
 						TEAMpoints[splayer->userinfo.team]--;
+
+					if (ctfmode)
+						SV_CTFEvent ((flag_t)0, SCORE_BETRAYAL, *splayer);
 				}
 				else
 				{
@@ -1012,6 +1006,13 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 					// [Toke] Add a team frag
 					if (teamplay && !ctfmode)
 						TEAMpoints[splayer->userinfo.team]++;
+
+					if (ctfmode) {
+						if (tplayer->flags[(flag_t)splayer->userinfo.team])
+							SV_CTFEvent ((flag_t)0, SCORE_CARRIERKILL, *splayer);
+						else
+							SV_CTFEvent ((flag_t)0, SCORE_KILL, *splayer);
+					}
 				}
 			}
 
@@ -1046,6 +1047,10 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		}
 
 	}
+
+	// [Toke - CTF]
+	if (ctfmode && target->player)
+		CTF_CheckFlags ( *target->player );
 
 	if (target->player)
 	{

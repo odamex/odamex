@@ -57,7 +57,16 @@ char *team_names[NUMTEAMS] =
 
 static int ctf_points[NUM_CTF_SCORE] =
 {
-	0, 1, 3, 5, 25, 0
+	0, // NONE
+	0, // REFRESH
+	1, // KILL
+	-1, // BETRAYAL
+	1, // GRAB
+	3, // FIRSTGRAB
+	3, // CARRIERKILL
+	2, // RETURN
+	10, // CAPTURE
+	0 // DROP
 };
 
 //
@@ -142,26 +151,32 @@ void CTF_Connect(player_t &player)
 	}
 
 	// send team scores to the client
-	SV_CTFEvent ((flag_t)0, SCORE_KILL, player);
+	SV_CTFEvent ((flag_t)0, SCORE_REFRESH, player);
 }
 
 //
 //	[Toke - CTF] SV_FlagGrab
 //	Event of a player picking up a flag
 //
-void SV_FlagGrab (player_t &player, flag_t f)
+void SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
 {
 	player.flags[f] = true;
 	CTFdata[f].flagger = player.id;
 	CTFdata[f].state = flag_carried;
 	CTFdata[f].pickup_time = I_MSTime();
 
-	SV_CTFEvent (f, SCORE_GRAB, player);
-
-	if (player.userinfo.team != (team_t)f)
-		SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname, team_names[f]);
-	else
+	if (player.userinfo.team != (team_t)f) {
+		if (firstgrab) {
+			SV_BroadcastPrintf (PRINT_HIGH, "%s has taken the %s flag\n", player.userinfo.netname, team_names[f]);
+			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
+		} else {
+			SV_BroadcastPrintf (PRINT_HIGH, "%s picked up the %s flag\n", player.userinfo.netname, team_names[f]);
+			SV_CTFEvent (f, SCORE_GRAB, player);
+		}
+	} else {
 		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname, team_names[f]);
+		SV_CTFEvent (f, SCORE_GRAB, player);
+	}
 }
 
 //
@@ -230,7 +245,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 // SV_FlagTouch
 // Event of a player touching a flag, called from P_TouchSpecial
 //
-bool SV_FlagTouch (player_t &player, flag_t f)
+bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
 {
 	if(player.userinfo.team == (team_t)f)
 	{
@@ -246,14 +261,14 @@ bool SV_FlagTouch (player_t &player, flag_t f)
 		else
 		{
 			if (ctf_manualreturn)
-				SV_FlagGrab(player, f);
+				SV_FlagGrab(player, f, firstgrab);
 			else
 				SV_FlagReturn(player, f);
 		}
 	}
 	else
 	{
-		SV_FlagGrab(player, f);
+		SV_FlagGrab(player, f, firstgrab);
 	}
 
 	// returning true should make P_TouchSpecial destroy the touched flag
@@ -331,7 +346,7 @@ void CTF_RunTics (void)
 
 		SV_CTFEvent ((flag_t)i, SCORE_RETURN, idplayer(0));
 
-		SV_BroadcastPrintf (PRINT_HIGH, "%s flag timed out\n", team_names[i]);
+		SV_BroadcastPrintf (PRINT_HIGH, "%s flag returned.\n", team_names[i]);
 
 		CTF_SpawnFlag((flag_t)i);
 	}
@@ -453,8 +468,12 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
 static char *flag_sound[NUM_CTF_SCORE][2] =
 {
 	{"", ""}, // NONE
+	{"", ""}, // REFRESH
 	{"", ""}, // KILL
+	{"", ""}, // BETRAYAL
 	{"ctf/f-flaggrab", "ctf/e-flaggrab"}, // GRAB
+	{"ctf/f-flaggrab", "ctf/e-flaggrab"}, // FIRSTGRAB
+	{"", ""}, // CARRIERKILL
 	{"ctf/f-flagreturn", "ctf/e-flagreturn"}, // RETURN
 	{"ctf/f-flagscore", "ctf/e-flagscore"}, // CAPTURE
 	{"ctf/f-flagdrop", "ctf/e-flagdrop"}, // DROP

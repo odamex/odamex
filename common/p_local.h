@@ -284,7 +284,6 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 #define MOD_EXIT			20
 #define MOD_SPLASH			21
 #define MOD_HIT				22
-#define MOD_FRIENDLY_FIRE	0x80000000
 
 extern	int MeansOfDeath;
 

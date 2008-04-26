@@ -112,14 +112,16 @@ void CL_CTFEvent (void)
 
 	switch(event)
 	{
-		case SCORE_NONE:
 		default:
-			break;
-
+		case SCORE_NONE:
+		case SCORE_REFRESH:
 		case SCORE_KILL:
+		case SCORE_BETRAYAL:
+		case SCORE_CARRIERKILL:
 			break;
 
 		case SCORE_GRAB:
+		case SCORE_FIRSTGRAB:
 			if(validplayer(player))
 				CTF_CarryFlag(player, flag);
 			break;
