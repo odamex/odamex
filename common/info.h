@@ -1490,6 +1490,7 @@ typedef struct
 	int flags;
 	statenum_t raisestate;
 	int translucency;
+	const char *name;
 
 } mobjinfo_t;
 
