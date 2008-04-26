@@ -315,7 +315,7 @@ void CTF_RunTics (void)
 {
 
     // NES - Glowing effect on screen tint.
-    if (tintglow < 45)
+    if (tintglow < 90)
         tintglow++;
     else
         tintglow = 0;
@@ -331,6 +331,7 @@ void CTF_RunTics (void)
 void CTF_DrawHud (void)
 {
     int tintglowtype;
+    bool hasflag = false, hasflags[NUMFLAGS];
 
 	if(!ctfmode)
 		return;
@@ -338,26 +339,43 @@ void CTF_DrawHud (void)
 	player_t &co = consoleplayer();
 	for(size_t i = 0; i < NUMFLAGS; i++)
 	{
+		hasflags[i] = false;
 		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == co.id)
 		{
-		    if (tintglow < 15)
-		        tintglowtype = tintglow;
-            else if (tintglow < 30)
-                tintglowtype = 30 - tintglow;
-            else
-                tintglowtype = 0;
-
-			// Tint the screen as we have the flag!
-			if(i == it_blueflag)
-				TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
-                                      (int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));
-			else if(i == it_redflag)
-				TintScreen(BestColor (DefaultPalette->basecolors, 255,
-                                      (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
-			else if(i == it_goldflag)
-				TintScreen(BestColor (DefaultPalette->basecolors, 255,
-                                      255, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
+			hasflag = true;			
+			hasflags[i] = true;
 		}
+	}
+	
+	if (hasflag) {
+		if (tintglow < 15)
+			tintglowtype = tintglow;
+		else if (tintglow < 30)
+			tintglowtype = 30 - tintglow;
+		else if (tintglow > 45 && tintglow < 60)
+			tintglowtype = tintglow - 45;
+		else if (tintglow >= 60 && tintglow < 75)
+			tintglowtype = 75 - tintglow;
+		else
+			tintglowtype = 0;
+			
+		if (hasflags[0] && hasflags[1]) {
+			if (tintglow < 15 || tintglow > 60)
+				TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
+					(int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));
+			else
+				TintScreen(BestColor (DefaultPalette->basecolors, 255,
+					(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
+		}
+		else if (hasflags[0])
+			TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
+				(int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));		
+		else if (hasflags[1])
+			TintScreen(BestColor (DefaultPalette->basecolors, 255,
+				(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
+		else if (hasflags[2])
+			TintScreen(BestColor (DefaultPalette->basecolors, 255,
+				255, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
 	}
 }
 

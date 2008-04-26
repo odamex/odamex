@@ -606,7 +606,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 			sound = 3;
 
 			break;
-
+		case SPR_BSOK:
+			SV_SocketTouch(*player, it_blueflag);
+			return;
 		case SPR_RFLG:	// Player touches the RED flag at its base
 		case SPR_RDWN:	// Player touches the RED flag after its been dropped
 
@@ -615,7 +617,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 			sound = 3;
 
 			break;
-
+		case SPR_RSOK:
+			SV_SocketTouch(*player, it_redflag);
+			return;
 		case SPR_GFLG:	// Player touches the GOLD flag at its base
 		case SPR_GDWN:	// Player touches the GOLD flag after its been dropped
 
@@ -624,7 +628,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 			sound = 3;
 
 			break;
-
+		case SPR_GSOK:
+			SV_SocketTouch(*player, it_goldflag);
+			return;
 	  default:
 		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
 	}

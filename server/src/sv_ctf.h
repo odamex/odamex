@@ -77,6 +77,7 @@ enum flag_score_t
 //	Network Events
 void			SV_CTFEvent				(flag_t f, flag_score_t event, player_t &who);
 bool			SV_FlagTouch			(player_t &player, flag_t f);
+void			SV_SocketTouch			(player_t &player, flag_t f);
 void			SV_FlagSetup			(void);
 void			CTF_Connect				(player_t &player);
 

@@ -653,6 +653,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 	  case SPR_BDWN:
 	  case SPR_RDWN:
 	  case SPR_GDWN:
+	  case SPR_BSOK:
+	  case SPR_RSOK:
+	  case SPR_GSOK:
 		return;
 
 	  default:
