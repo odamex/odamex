@@ -25,7 +25,7 @@ cln2=offline.control
 svro=server.out
 clno=client.out
 clno2=offline.out
-sleep="sleep 0.01"
+sleep="sleep 0.05"
 ctrl_c=0
 
 # these are not the only demo parameters
@@ -110,7 +110,7 @@ for i in `seq 1 1000`; do
  then
   echo "desync detected at step $i"
   echo "$svro: $l1"
-  echo "$clno2: $l2"
+  echo "$clno2: $l3"
   ctrl_c=1;
  fi;
  # next step

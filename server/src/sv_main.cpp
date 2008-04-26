@@ -2993,11 +2993,15 @@ BEGIN_COMMAND(step)
 {
         QWORD newtics = argc > 1 ? atoi(argv[1]) : 1;
 
-	extern unsigned char rndindex, prndindex;
+	extern unsigned char prndindex;
 
 	SV_StepTics(newtics);
 
-	Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+	// debugging output
+	if(players.size() && players[0].mo)
+		Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n", level.time, prndindex, players[0].mo->x, players[0].mo->y, players[0].mo->z);
+	else 
+		Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
 }
 END_COMMAND(step)
 

@@ -151,13 +151,15 @@ void TryRunTics (void)
 		if(nextstep)
 		{
 			canceltics = 0;
-
 			TryStepTics(nextstep);
-
-			extern unsigned char rndindex, prndindex;
-			Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
-
 			nextstep = 0;
+
+			// debugging output
+			extern unsigned char prndindex;
+			if(players.size() && players[0].mo)
+				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n", level.time, prndindex, players[0].mo->x, players[0].mo->y, players[0].mo->z);
+			else
+ 				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
 		}
 	}
 }
