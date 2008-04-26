@@ -42,7 +42,7 @@
 EXTERN_CVAR (allowjump)
 EXTERN_CVAR (allowfreelook)
 
-extern bool predicting;
+extern bool predicting, stepmode;
 
 //
 // P_Thrust
@@ -228,7 +228,7 @@ void P_MovePlayer (player_t *player)
 	}
 
 	// Look left/right
-	if(clientside)
+	if(clientside || stepmode)
 	{
 		mo->angle += cmd->ucmd.yaw << 16;
 

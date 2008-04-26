@@ -25,6 +25,9 @@ cln2=offline.control
 svro=server.out
 clno=client.out
 clno2=offline.out
+svre=server.err
+clne=client.err
+clne2=offline.err
 sleep="sleep 0.05"
 ctrl_c=0
 
@@ -47,7 +50,7 @@ sleep 1
 
 # launch server
 echo "starting server"
-tail -f -s 0.001 $svr | ./odasrv -stepmode > $svro &
+tail -f -s 0.001 $svr | ./odasrv -stepmode > $svro 2> $svre &
 sleep 2
 
 echo deathmatch 0   >> $svr
@@ -63,13 +66,13 @@ sleep 0.1
 
 # launch client
 echo "starting client"
-tail -f -s 0.001 $cln | ./odamex -nomouse -nosound -stepmode -connect localhost > $clno &
+tail -f -s 0.001 $cln | ./odamex -nomouse -nosound -stepmode -connect localhost > $clno 2> $clne &
 sleep 2
 echo "set print_stdout 1" >> $cln;
 
 # launch offline client
 echo "starting offline client"
-tail -f -s 0.001 $cln2 | ./odamex -nomouse -nosound -stepmode > $clno2 &
+tail -f -s 0.001 $cln2 | ./odamex -nomouse -nosound -stepmode > $clno2 2> $clne2 &
 echo "step" >> $cln2;
 sleep 2
 echo "set print_stdout 1" >> $cln2;
@@ -98,16 +101,19 @@ $sleep
 
 echo streamdemo $demoname >> $cln
 $sleep
+echo step >> $cln;
+$sleep
 
 # start log mixer
 echo "starting log mixer"
-tail -f -s 0.001 -n 1 $clno2 $svro $clno > mixed.out &
+tail -f -s 0.001 -n 1 $clno2 $clne2 $svro $svre $clne > mixed.out &
 
 for i in `seq 1 1000`; do
  # compare last line of output
  l3=`tail -n 1 $clno2`
  l2=`tail -n 1 $clno`
  l1=`tail -n 1 $svro | sed "s/\[.*\] //"`
+# if echo $l1 | grep -v "$l2" > tmp.out; then echo "desync detected ($l1|$l3)"; ctrl_c=1; fi;
  if echo $l1 | grep -v "$l3" > tmp.out;
  then
   echo "desync detected at step $i"
@@ -135,7 +141,6 @@ for i in `seq 1 1000`; do
     read x
   fi
  fi
-# if echo $l1 | grep -v "$l2" > tmp.out; then echo "desync detected ($l1|$l3)"; ctrl_c=1; fi;
  # terminate if any process failed
  jobs -p > jobs.out
  if cat jobs.out | wc -l | grep -v 4 >> jobs.out; then break; fi;

@@ -2381,7 +2381,8 @@ void SV_GetPlayerCmd(player_t &player)
 	cmd->ucmd.buttons = MSG_ReadByte();
 	if (gamestate != GS_INTERMISSION && player.playerstate != PST_DEAD)
 	{
-		player.mo->angle = MSG_ReadShort() << 16;
+		if(stepmode)cmd->ucmd.yaw = MSG_ReadShort();
+		else player.mo->angle = MSG_ReadShort() << 16;
 
 		if (!allowfreelook)
 		{

@@ -52,6 +52,8 @@
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 
+extern bool stepmode;
+
 // denis - client version (VERSION or other supported)
 short version;
 
@@ -2254,7 +2256,8 @@ void CL_SendCmd(void)
     cmd = &consoleplayer().cmd;
 
 	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
+	if(stepmode) MSG_WriteShort(&net_buffer, cmd->ucmd.yaw);
+	else MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, (p->mo->pitch + (cmd->ucmd.pitch << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
