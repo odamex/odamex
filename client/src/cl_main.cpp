@@ -2100,6 +2100,7 @@ cmdmap cmds;
 //
 void CL_InitCommands(void)
 {
+	cmds[svc_abort]			= &CL_EndGame;
 	cmds[svc_loadmap]			= &CL_LoadMap;
 	cmds[svc_playerinfo]		= &CL_PlayerInfo;
 	cmds[svc_consoleplayer]		= &CL_ConsolePlayer;
@@ -2175,8 +2176,8 @@ void CL_ParseCommands(void)
 
 	while(connected)
 	{
-		history.push_back(cmd);
 		cmd = (svc_t)MSG_ReadByte();
+		history.push_back(cmd);
 
 		if(cmd == 255 || cmd == -1)
 			break;
@@ -2184,13 +2185,12 @@ void CL_ParseCommands(void)
 		cmdmap::iterator i = cmds.find(cmd);
 		if(i == cmds.end())
 		{
-			Printf(PRINT_HIGH, "CL_ParseCommands: Unknown server message %d: ", (int)cmd);
+			CL_QuitNetGame();
+			Printf(PRINT_HIGH, "CL_ParseCommands: Unknown server message %d following: \n", (int)cmd);
 
 			for(size_t j = 0; j < history.size(); j++)
-				Printf(PRINT_HIGH, "%d ", history[j]);
+				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
 			Printf(PRINT_HIGH, "\n");
-
-			CL_QuitNetGame();
 			break;
 		}
 
@@ -2199,7 +2199,14 @@ void CL_ParseCommands(void)
 		if (msg_badread)
 		{
 			CL_QuitNetGame();
-			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message (%d, %d)\n", (int)cmd, (int)history.back());
+			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message\n");
+			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed",
+					   (int)cmd,
+					   svc_info[cmd].getName());
+			Printf(PRINT_HIGH, "CL_ParseCommands: It was command number %d in the packet\n",
+                                           (int)history.back());
+			for(size_t j = 0; j < history.size(); j++)
+				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
 		}
 	}
 

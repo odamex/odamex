@@ -41,6 +41,16 @@
 extern int   localport;
 extern int   msg_badread;
 
+// network message info
+struct msg_info_t
+{
+	int id;
+	const char *msgName;
+	const char *msgFormat; // 'b'=byte, 'n'=short, 'N'=long, 's'=string
+
+	const char *getName() { return msgName ? msgName : ""; }
+};
+
 // network messages
 enum svc_t
 {
@@ -144,6 +154,9 @@ enum clc_t
 	clc_challenge = 163,
 	clc_max = 255
 };
+
+extern msg_info_t clc_info[clc_max];
+extern msg_info_t svc_info[svc_max];
 
 enum svc_compressed_masks
 {

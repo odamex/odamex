@@ -58,6 +58,8 @@ echo skill      4   >> $svr
 sleep 0.1
 echo maxplayers 1   >> $svr
 sleep 0.1
+echo speedhackfix 1 >> $svr
+sleep 0.1
 
 # launch client
 echo "starting client"

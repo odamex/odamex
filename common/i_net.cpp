@@ -89,6 +89,9 @@ lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
 
 CVAR(port,		"0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
+msg_info_t clc_info[clc_max];
+msg_info_t svc_info[svc_max];
+
 //
 // UDPsocket
 //
@@ -668,6 +671,112 @@ char *MSG_ReadString (void)
     return string;
 }
 
+//
+// InitNetMessageFormats
+//
+void InitNetMessageFormats()
+{
+#define MSG(name, format) {name, #name, format}
+   msg_info_t clc_messages[] = {
+      MSG(clc_abort,              "x"),
+      MSG(clc_reserved1,          "x"),
+      MSG(clc_disconnect,         "x"),
+      MSG(clc_say,                "bs"),
+      MSG(clc_move,               "x"),
+      MSG(clc_userinfo,           "x"),
+      MSG(clc_svgametic,          "N"),
+      MSG(clc_rate,               "N"),
+      MSG(clc_ack,                "x"),
+      MSG(clc_rcon,               "s"),
+      MSG(clc_rcon_password,      "x"),
+      MSG(clc_changeteam,         "b"),
+      MSG(clc_ctfcommand,         "x"),
+      MSG(clc_spectate,           "b"),
+      MSG(clc_wantwad,            "ssN"),
+      MSG(clc_kill,               "x"),
+      MSG(clc_cheat,              "x"),
+      MSG(clc_launcher_challenge, "x"),
+      MSG(clc_challenge,          "x")
+   };
+
+   msg_info_t svc_messages[] = {
+	MSG(svc_abort,              "x"),
+	MSG(svc_full,               "x"),
+	MSG(svc_disconnect,         "x"),
+	MSG(svc_reserved3,          "x"),
+	MSG(svc_playerinfo,         "x"),
+	MSG(svc_moveplayer,         "x"),
+	MSG(svc_updatelocalplayer,  "x"),
+	MSG(svc_svgametic,          "x"),
+	MSG(svc_updateping,         "x"),
+	MSG(svc_spawnmobj,          "x"),
+	MSG(svc_disconnectclient,   "x"),
+	MSG(svc_loadmap,            "x"),
+	MSG(svc_consoleplayer,      "x"),
+	MSG(svc_mobjspeedangle,     "x"),
+	MSG(svc_explodemissile,     "x"),
+	MSG(svc_removemobj,         "x"),
+	MSG(svc_userinfo,           "x"),
+	MSG(svc_movemobj,           "x"),
+	MSG(svc_spawnplayer,        "x"),
+	MSG(svc_damageplayer,       "x"),
+	MSG(svc_killmobj,           "x"),
+	MSG(svc_firepistol,         "x"),
+	MSG(svc_fireshotgun,        "x"),
+	MSG(svc_firessg,            "x"),
+	MSG(svc_firechaingun,       "x"),
+	MSG(svc_fireweapon,         "x"),
+	MSG(svc_sector,             "x"),
+	MSG(svc_print,              "x"),
+	MSG(svc_mobjinfo,           "x"),
+	MSG(svc_updatefrags,        "x"),
+	MSG(svc_teampoints,         "x"),
+	MSG(svc_activateline,       "x"),
+	MSG(svc_movingsector,       "x"),
+	MSG(svc_startsound,         "x"),
+	MSG(svc_reconnect,          "x"),
+	MSG(svc_exitlevel,          "x"),
+	MSG(svc_touchspecial,       "x"),
+	MSG(svc_changeweapon,       "x"),
+	MSG(svc_reserved42,         "x"),
+	MSG(svc_corpse,             "x"),
+	MSG(svc_missedpacket,       "x"),
+	MSG(svc_soundorigin,        "x"),
+	MSG(svc_reserved46,         "x"),
+	MSG(svc_reserved47,         "x"),
+	MSG(svc_forceteam,          "x"),
+	MSG(svc_switch,             "x"),
+	MSG(svc_reserved50,         "x"),
+	MSG(svc_reserved51,         "x"),
+	MSG(svc_spawnhiddenplayer,  "x"),
+	MSG(svc_updatedeaths,       "x"),
+	MSG(svc_ctfevent,           "x"),
+	MSG(svc_serversettings,     "x"),
+	MSG(svc_spectate,           "x"),
+	MSG(svc_mobjstate,          "x"),
+	MSG(svc_actor_movedir,      "x"),
+	MSG(svc_actor_target,       "x"),
+	MSG(svc_actor_tracer,       "x"),
+	MSG(svc_damagemobj,         "x"),
+	MSG(svc_wadinfo,            "x"),
+	MSG(svc_wadchunk,           "x"),
+	MSG(svc_compressed,         "x"),
+	MSG(svc_launcher_challenge, "x"),
+	MSG(svc_challenge,          "x")
+   };
+
+   size_t i;
+
+   for(i = 0; i < sizeof(clc_messages)/sizeof(*clc_messages); i++)
+   {
+      clc_info[clc_messages[i].id] = clc_messages[i];
+   }
+
+   for(i = 0; i < sizeof(svc_messages)/sizeof(*svc_messages); i++)
+   {
+      svc_info[svc_messages[i].id] = svc_messages[i];
+   }
+}
 
 //
 // InitNetCommon
@@ -685,6 +794,9 @@ void InitNetCommon(void)
    BindToLocalPort (net_socket, localport);
    if (ioctlsocket (net_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+
+   // enter message information into message info structs
+   InitNetMessageFormats();
 
    SZ_Clear(&net_message);
 }

@@ -2759,7 +2759,9 @@ void SV_ParseCommands(player_t &player)
 
 		if (msg_badread)
 		{
-			Printf (PRINT_HIGH, "SV_ReadClientMessage: badread (%d)\n", (int)cmd);
+			Printf (PRINT_HIGH, "SV_ReadClientMessage: badread %d(%s)\n",
+					    (int)cmd,
+					    clc_info[cmd].getName());
 			SV_DropClient(player);
 			return;
 		}
