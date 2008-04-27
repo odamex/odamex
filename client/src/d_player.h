@@ -196,7 +196,7 @@ public:
 
 	struct ticcmd_t netcmds[BACKUPTICS];
 
-	player_s() : playerstate(PST_LIVE), fragcount(0), deathcount(0), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0)
+	player_s() : playerstate(PST_LIVE), fragcount(0), deathcount(0), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0), spectator(false)
 	{
 	}
 

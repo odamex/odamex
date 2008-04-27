@@ -288,7 +288,7 @@ public:
 		}
 	}client;
 
-	player_s() : playerstate(PST_CONTACT), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0)
+	player_s() : playerstate(PST_CONTACT), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0), spectator(false)
 	{
 	}
 

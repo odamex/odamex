@@ -33,8 +33,12 @@ ctrl_c=0
 
 # these are not the only demo parameters
 # (see commands sent to server)
-demoname=demo1
+demoname=demo1 # up to 
 map=map11
+demoname=demo2 # up to 625
+map=map05
+#demoname=demo3
+#map=map26
 
 # graceful exit on ctrl+c
 trap 'ctrl_c=1' INT
