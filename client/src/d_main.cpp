@@ -1483,8 +1483,6 @@ void D_DoomMain (void)
 		while(demoplayback)
 		{
 			DObject::BeginFrame ();
-extern unsigned char rndindex, prndindex;
-printf( "G_Ticker gametic %d, prndindex %d\n", gametic, prndindex);
 			G_Ticker();
 			DObject::EndFrame ();
 			gametic++;
