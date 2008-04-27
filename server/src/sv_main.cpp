@@ -912,7 +912,7 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 	MSG_WriteShort(&cl->reliablebuf, mo->type);
 	MSG_WriteShort(&cl->reliablebuf, mo->netid);
 	MSG_WriteByte(&cl->reliablebuf, mo->rndindex);
-	MSG_WriteShort(&cl->reliablebuf, INFO_LookupStateIndex(mo->state)); // denis - sending state fixes monster ghosts appearing under doors
+	MSG_WriteShort(&cl->reliablebuf, (mo->state - states)); // denis - sending state fixes monster ghosts appearing under doors
 
 	if(mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE) // denis - check type as that is what the client will be spawning
 	{
@@ -1998,7 +1998,7 @@ void SV_UpdateMissiles(player_t &pl)
 			
 			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
-			MSG_WriteShort (&cl->netbuf, INFO_LookupStateIndex(mo->state));
+			MSG_WriteShort (&cl->netbuf, (mo->state - states));
 		}
     }
 }
@@ -2048,7 +2048,7 @@ void SV_UpdateMonsters(player_t &pl)
 			
 			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
-			MSG_WriteShort (&cl->netbuf, INFO_LookupStateIndex(mo->state));
+			MSG_WriteShort (&cl->netbuf, (mo->state - states));
 		}
     }
 }

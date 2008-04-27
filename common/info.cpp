@@ -1151,38 +1151,6 @@ state_t	states[NUMSTATES] = {
 	{SPR_GCAR,0,-1,{NULL},S_NULL,0,0},	// Gold Dropped Flag
 };
 
-SWORD INFO_LookupStateIndex(state_t *st)
-{
-    for (SWORD i = 0; i < NUMSTATES; i++)
-    {
-        if (states[i].sprite != st->sprite)
-            continue;
-        
-        if (states[i].frame != st->frame)
-            continue;
-
-        if (states[i].tics != st->tics)
-            continue;
-        
-        if (memcmp(&states[i].action, &st->action, sizeof(states[i].action)) != 0) 
-            continue;
-
-        if (states[i].nextstate != st->nextstate)
-            continue;
-
-        if (states[i].misc1 != st->misc1)
-            continue;
-            
-        if (states[i].misc2 != st->misc2)
-            continue;
-
-        return i;
-    }
-    
-    return -1;
-}
-
-
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
 	{		// MT_PLAYER
