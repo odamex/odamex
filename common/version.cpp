@@ -89,6 +89,19 @@ BEGIN_COMMAND (version)
 }
 END_COMMAND (version)
 
+BEGIN_COMMAND (listsourcefiles)
+{
+    std::map<std::string, std::string>::iterator i; 
+    
+    for (i = get_source_files().begin(); i != get_source_files().end(); ++i)
+    {
+        Printf(PRINT_HIGH, "%s\n", i->first.c_str());
+    }
+    
+    Printf(PRINT_HIGH, "End of list\n");
+}
+END_COMMAND(listsourcefiles)
+
 VERSION_CONTROL(version_cpp, "$Id$")
 
 
