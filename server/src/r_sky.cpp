@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,11 +27,14 @@
 #include <stdio.h>
 
 #include "r_data.h"
+
 // [ML] 5/11/06 - Remove sky2
 int 		skyflatnum;
 int 		skytexture;
 
 fixed_t		skypos=0,		skyspeed=0;
 
-VERSION_CONTROL (r_sky_cpp, "$Id:$")
+char SKYFLATNAME[8] = "F_SKY1";
+
+VERSION_CONTROL (r_sky_cpp, "$Id$")
 

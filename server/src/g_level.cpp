@@ -733,6 +733,12 @@ void G_DoLoadLevel (int position)
 //	if (demoplayback || oldgs == GS_STARTUP)
 //		C_HideConsole ();
 
+	// Set the sky map.
+	// First thing, we have a dummy sky texture name,
+	//	a flat. The data is in the WAD only because
+	//	we look for an actual index, instead of simply
+	//	setting one.
+	skyflatnum = R_FlatNumForName ( SKYFLATNAME );
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
