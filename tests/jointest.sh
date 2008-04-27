@@ -3,9 +3,11 @@
 # Runs a server and a client, checks for a successful game join
 #
 
-./odasrv | awk '{}' &
+set port=10660
 
-./odamex -novideo -nosound -connect localhost +set print_stdout 1 > tmp &
+./odasrv -port $port | awk '{}' &
+
+./odamex -novideo -nosound -connect localhost:$port +set print_stdout 1 > tmp &
 
 sleep 10
 
