@@ -1579,8 +1579,35 @@ BOOL P_CheckMissileSpawn (AActor* th)
 //
 AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 {
-	if(!dest)
-		return 0;
+    angle_t	an;
+    int		dist;
+    fixed_t     dest_x, dest_y, dest_z, dest_flags;
+
+	// denis: missile spawn code from chocolate doom
+	//
+    // fraggle: This prevents against *crashes* when dest == NULL.
+    // For example, when loading a game saved when a mancubus was
+    // in the middle of firing, mancubus->target == NULL.  SpawnMissile
+    // then gets called with dest == NULL.
+    //
+    // However, this is not the *correct* behavior.  At the moment,
+    // the missile is aimed at 0,0,0.  In reality, monsters seem to aim
+    // somewhere else.
+
+    if (dest)
+    {
+        dest_x = dest->x;
+        dest_y = dest->y;
+        dest_z = dest->z;
+        dest_flags = dest->flags;
+    }
+    else
+    {
+        dest_x = 0;
+        dest_y = 0;
+        dest_z = 0;
+        dest_flags = 0;
+    }
 
 	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
 
@@ -1588,31 +1615,24 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
 	th->target = source->ptr();			// where it came from
+	an = R_PointToAngle2 (source->x, source->y, dest_x, dest_y);
 
-	vec3_t velocity;
-	float speed = FIXED2FLOAT (th->info->speed);
+	// fuzzy player
+	if (dest_flags & MF_SHADOW)
+		an += (P_Random()-P_Random())<<20;
 
-	velocity[0] = FIXED2FLOAT(dest->x - source->x);
-	velocity[1] = FIXED2FLOAT(dest->y - source->y);
-	velocity[2] = FIXED2FLOAT(dest->z - source->z);
-	VectorNormalize (velocity);
-	th->momx = FLOAT2FIXED(velocity[0] * speed);
-	th->momy = FLOAT2FIXED(velocity[1] * speed);
-	th->momz = FLOAT2FIXED(velocity[2] * speed);
+	th->angle = an;
+	an >>= ANGLETOFINESHIFT;
+	th->momx = FixedMul (th->info->speed, finecosine[an]);
+	th->momy = FixedMul (th->info->speed, finesine[an]);
 
-	// fuzzy player: rotate velocity vector in 2D
-	if (dest->flags & MF_SHADOW)
-	{
-		angle_t an = (P_Random () - P_Random ()) << 20;
-		an >>= ANGLETOFINESHIFT;
+	dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
+	dist = dist / th->info->speed;
 
-		fixed_t newx = FixedMul (th->momx, finecosine[an]) - FixedMul (th->momy, finesine[an]);
-		fixed_t newy = FixedMul (th->momx, finesine[an]) + FixedMul (th->momy, finecosine[an]);
-		th->momx = newx;
-		th->momy = newy;
-	}
+	if (dist < 1)
+		dist = 1;
 
-	th->angle = R_PointToAngle2 (0, 0, th->momx, th->momy);
+	th->momz = (dest_z - source->z) / dist;
 
 	P_CheckMissileSpawn (th);
 
