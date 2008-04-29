@@ -34,17 +34,20 @@ std::ofstream LOG(LOG_FILE, std::ios::out);
 // M_FileLength
 //
 // Returns the length of a file using an open descriptor
-QWORD M_FileLength (FILE *f)
+SDWORD M_FileLength (FILE *f)
 {
-	int		pos;
-	int		end;
+	SDWORD CurrentPosition = -1;
+	SDWORD FileSize = -1;
 
-	pos = ftell (f);
-	fseek (f, 0, SEEK_END);
-	end = ftell (f);
-	fseek (f, pos, SEEK_SET);
-
-	return end;
+    if (f != NULL)
+    {
+        CurrentPosition = ftell (f);
+        fseek (f, 0, SEEK_END);
+        FileSize = ftell (f);
+        fseek (f, CurrentPosition, SEEK_SET);
+    }
+    
+	return FileSize;
 }
 
 //

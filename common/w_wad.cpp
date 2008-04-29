@@ -606,8 +606,7 @@ unsigned W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest,
 
 	if(fp)
 	{
-		fseek(fp, 0, SEEK_END);
-		filelen = ftell(fp);
+		filelen = M_FileLength(fp);
 
 		fseek(fp, offs, SEEK_SET);
 		read = fread(dest, 1, len, fp);

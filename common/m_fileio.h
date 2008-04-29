@@ -31,7 +31,7 @@
 #include "doomtype.h"
 #include "d_main.h"
 
-QWORD M_FileLength (FILE *f);
+SDWORD M_FileLength (FILE *f);
 BOOL M_FileExists (std::string filename);
 
 BOOL M_WriteFile(std::string filename, void *source, QWORD length);
