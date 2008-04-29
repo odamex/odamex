@@ -29,7 +29,46 @@ IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListCtrl)
 BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListCtrl)
      EVT_LIST_COL_CLICK(-1, wxAdvancedListCtrl::OnHeaderColumnButtonClick)
      EVT_LIST_INSERT_ITEM(-1, wxAdvancedListCtrl::OnItemInsert)
+     EVT_WINDOW_CREATE(wxAdvancedListCtrl::OnCreateControl)
 END_EVENT_TABLE()
+
+// this is so we can jump over the sort arrow images
+enum
+{
+    LIST_SORT_ARROW_UP = 0
+    ,LIST_SORT_ARROW_DOWN
+    ,FIRST_IMAGE
+};
+
+void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
+{
+    SortOrder = 0; 
+    SortCol = 0; 
+
+    colRed = 245;
+    colGreen = 245;
+    colBlue = 245;
+
+    // sort buttons
+    AssignImageList(new wxImageList(16, 15, true, FIRST_IMAGE), wxIMAGE_LIST_SMALL);
+    GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_UP));
+    GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_DOWN)); 
+}
+
+// Add any additional bitmaps/icons to the internal image list
+void wxAdvancedListCtrl::AddImage(wxBitmap Bitmap)
+{
+    GetImageList(wxIMAGE_LIST_SMALL)->Add(Bitmap);
+}
+
+// Adjusts the index, so it jumps over the sort arrow images.
+void wxAdvancedListCtrl::SetColumnImage(wxListItem &li, wxInt32 ImageIndex)
+{
+    if (ImageIndex < -1)
+        ImageIndex = -1;
+
+    li.SetImage(((ImageIndex == -1) ? ImageIndex : FIRST_IMAGE + ImageIndex));
+}
 
 struct sortinfo_t
 {

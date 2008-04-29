@@ -111,8 +111,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	wxXmlResource::Get()->LoadFrame(this, parent, _T("dlgMain")); 
   
-    SERVER_LIST = wxStaticCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
-    PLAYER_LIST = wxStaticCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
+    SERVER_LIST = wxDynamicCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
+    PLAYER_LIST = wxDynamicCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
 
 	// set up the master server information
 	MServer = new MasterServer;

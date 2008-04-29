@@ -45,13 +45,9 @@ typedef enum
     ,max_serverlist_fields
 } serverlist_fields_t;
 
-void SetupServerListColumns(wxListCtrl *list)
+void SetupServerListColumns(wxAdvancedListCtrl *list)
 {
 	list->DeleteAllColumns();
-
-    list->AssignImageList(new wxImageList(16, 15), wxIMAGE_LIST_SMALL);
-    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_UP));
-    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_DOWN));  
 
 	// set up the list columns
     list->InsertColumn(serverlist_field_name,_T("Server name"),wxLIST_FORMAT_LEFT,150);
@@ -69,7 +65,7 @@ void SetupServerListColumns(wxListCtrl *list)
     if insert is 1, then add an item to the list, otherwise it will
     update the current item with new data
 */
-void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
+void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
 {
     wxInt32 i = 0;
     
@@ -81,7 +77,7 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
     li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
     
     // We don't want the sort arrow
-    li.SetImage(-1);
+    list->SetColumnImage(li, -1);
     
     // are we adding a new item?
     if (insert)    
@@ -182,16 +178,13 @@ typedef enum
     ,max_playerlist_fields
 } playerlist_fields_t;
 
-void SetupPlayerListHeader(wxListCtrl *list)
+void SetupPlayerListHeader(wxAdvancedListCtrl *list)
 {
-    // spectator states.
-    list->AssignImageList(new wxImageList(16, 15), wxIMAGE_LIST_SMALL);
-    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_UP));
-    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_DOWN));
-    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_FIND));   
+    // spectator state.
+    list->AddImage(wxArtProvider::GetBitmap(wxART_FIND));   
 }
 
-void AddPlayersToList(wxListCtrl *list, Server &s)
+void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
 {   
     list->DeleteAllItems();
 	list->DeleteAllColumns();
@@ -231,14 +224,14 @@ void AddPlayersToList(wxListCtrl *list, Server &s)
         li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
 
         // We don't want the sort arrow.
-        li.SetImage(-1);
+        list->SetColumnImage(li, -1);
         
         if (s.info.spectating)
         {
             li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
             
             li.SetText(s.info.playerinfo[i].name);
-            li.SetImage(s.info.playerinfo[i].spectator ? 2 : -1);
+            list->SetColumnImage(li, s.info.playerinfo[i].spectator ? 0 : -1);
         }
         else
         {
