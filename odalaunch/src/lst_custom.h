@@ -67,6 +67,9 @@ class wxAdvancedListCtrl : public wxListCtrl
             return true;   
         }
 
+        void ResetSortArrows(void);
+        void SetSortArrow(wxInt32 Column, wxInt32 ArrowState);
+
         ~wxAdvancedListCtrl() { }
                   
         wxInt32 GetIndex(wxString str);

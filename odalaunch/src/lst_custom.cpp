@@ -38,25 +38,71 @@ struct sortinfo_t
     wxAdvancedListCtrl *ctrl;
 };
 
-wxInt32 GetFirstNumber(wxString str)
+// Is this string an ip?
+bool IsIPAddressAndPort(wxString Address)
 {
-    //const wxChar num_arr[10] = { '0', '1', '2', '3', '4', 
-    //                            '5', '6', '7', '8', '9' };
+    // Our addresses are atmost 21 chars (eg 255.255.255.255:65535)
+    if (Address.Len() > 21)
+        return false;
+        
+    wxUint32 IP1, IP2, IP3, IP4, Port;
     
-    wxString ascii_num = _T("");
+    wxSscanf(Address.c_str(), _T("%u.%u.%u.%u:%u"), &IP1, &IP2, &IP3, &IP4, &Port);
+             
+    // we compare chars, must be digits
+    if ((IP1 > 255) || (IP2 > 255) || (IP3 > 255) || (IP4 > 255) || (Port > 65535))
+        return false;
     
-    if (str == _T(""))
-        return 0;
-    
-    for (wxInt32 i = 0; i < str.length(); i++)
-    {
-        if (wxIsdigit(str[i]))
-            ascii_num += str[i];
-        else
-            break;
-    }
-    
-    return wxAtoi(ascii_num.c_str());
+    return true;
+}
+
+wxInt32 CompareIPAddressAndPort(wxString Address1, wxString Address2)
+{
+    wxUint32 Addr1IP1, Addr1IP2, Addr1IP3, Addr1IP4, Addr1Port;
+    wxUint32 Addr2IP1, Addr2IP2, Addr2IP3, Addr2IP4, Addr2Port;
+
+    wxSscanf(Address1.c_str(), 
+             _T("%u.%u.%u.%u:%u"), 
+             &Addr1IP1, 
+             &Addr1IP2, 
+             &Addr1IP3, 
+             &Addr1IP4,
+             &Addr1Port);
+
+    wxSscanf(Address2.c_str(), 
+             _T("%u.%u.%u.%u:%u"), 
+             &Addr2IP1, 
+             &Addr2IP2, 
+             &Addr2IP3, 
+             &Addr2IP4,
+             &Addr2Port);
+             
+    if (Addr1IP1 > Addr2IP1)
+        return 1;
+    else if (Addr1IP1 < Addr2IP1)
+        return -1;
+
+    if (Addr1IP2 > Addr2IP2)
+        return 1;
+    else if (Addr1IP2 < Addr2IP2)
+        return -1;
+
+    if (Addr1IP3 > Addr2IP3)
+        return 1;
+    else if (Addr1IP3 < Addr2IP3)
+        return -1;
+
+    if (Addr1IP4 > Addr2IP4)
+        return 1;
+    else if (Addr1IP4 < Addr2IP4)
+        return -1;
+        
+    if (Addr1Port > Addr2Port)
+        return 1;
+    else if (Addr1Port < Addr2Port)
+        return -1;
+        
+    return 0;
 }
 
 int wxCALLBACK SortRoutine(long item1, long item2, long sortData) 
@@ -77,16 +123,14 @@ int wxCALLBACK SortRoutine(long item1, long item2, long sortData)
     
     wxString item1str = lstitem1.GetText();
     wxString item2str = lstitem2.GetText();
-    
-    if (wxIsdigit(item1str[0]) && wxIsdigit(item2str[0]))
+
+    // IP address detection and comparison
+    if (IsIPAddressAndPort(item1str) && IsIPAddressAndPort(item2str))
     {
-        wxInt32 item1val = GetFirstNumber(item1str);
-        wxInt32 item2val = GetFirstNumber(item2str);
+        if (sortinfo->SortOrder == 1) 
+            return CompareIPAddressAndPort(item1str, item2str);
         
-        if (sortinfo->SortOrder)
-            return (item1val > item2val);
-        else
-            return (item1val < item2val);
+        return CompareIPAddressAndPort(item2str, item1str);
     }
     
     if (sortinfo->SortOrder == 1) 
@@ -106,7 +150,9 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
     // column that needs to be sorted, so the rest of the list
     // can be sorted by it
     SortCol = event.GetColumn();
-    
+
+    SetSortArrow(SortCol, SortOrder);
+
     // prime 'er up
     long item = this->GetNextItem(-1);
       
@@ -129,6 +175,30 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
 
     // recolour the list
     ColourList();
+}
+
+void wxAdvancedListCtrl::ResetSortArrows(void)
+{
+    wxListItem li;
+    li.SetMask(wxLIST_MASK_IMAGE);    
+    li.SetImage(-1);
+
+    for (wxInt32 i = 0; i < GetColumnCount(); ++i)
+    {
+        SetColumn(i, li);        
+    }
+}
+
+void wxAdvancedListCtrl::SetSortArrow(wxInt32 Column, wxInt32 ArrowState)
+{
+    // nuke any previously set sort arrows
+    ResetSortArrows();
+
+    wxListItem li;
+    li.SetMask(wxLIST_MASK_IMAGE);
+    li.SetImage(ArrowState);
+
+    SetColumn(SortCol, li);
 }
 
 void wxAdvancedListCtrl::ColourListItem(wxInt32 item, wxInt32 grey)
@@ -154,6 +224,7 @@ void wxAdvancedListCtrl::ColourListItem(wxInt32 item, wxInt32 grey)
 // colour the previous item on insertion, it won't colour THIS item..?
 void wxAdvancedListCtrl::OnItemInsert(wxListEvent &event)
 {   
+    // FIXME: Remove these from here, for performance reasons.
     ColourList();   
 }
 

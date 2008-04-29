@@ -26,6 +26,7 @@
 #include <wx/statusbr.h>
 #include <wx/msgdlg.h>
 #include <wx/colour.h>
+#include <wx/artprov.h>
 
 #include "net_packet.h"
 #include "misc.h"
@@ -47,7 +48,11 @@ typedef enum
 void SetupServerListColumns(wxListCtrl *list)
 {
 	list->DeleteAllColumns();
-	
+
+    list->AssignImageList(new wxImageList(16, 15), wxIMAGE_LIST_SMALL);
+    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_UP));
+    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_DOWN));  
+
 	// set up the list columns
     list->InsertColumn(serverlist_field_name,_T("Server name"),wxLIST_FORMAT_LEFT,150);
 	list->InsertColumn(serverlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,50);
@@ -73,7 +78,10 @@ void AddServerToList(wxListCtrl *list, Server &s, wxInt32 index, wxInt8 insert)
     
     wxListItem li;
     
-    li.SetMask(wxLIST_MASK_TEXT);
+    li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
+    
+    // We don't want the sort arrow
+    li.SetImage(-1);
     
     // are we adding a new item?
     if (insert)    
@@ -174,6 +182,15 @@ typedef enum
     ,max_playerlist_fields
 } playerlist_fields_t;
 
+void SetupPlayerListHeader(wxListCtrl *list)
+{
+    // spectator states.
+    list->AssignImageList(new wxImageList(16, 15), wxIMAGE_LIST_SMALL);
+    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_UP));
+    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_DOWN));
+    list->GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_FIND));   
+}
+
 void AddPlayersToList(wxListCtrl *list, Server &s)
 {   
     list->DeleteAllItems();
@@ -211,14 +228,17 @@ void AddPlayersToList(wxListCtrl *list, Server &s)
         li.SetTextColour(*wxBLACK);
         li.SetBackgroundColour(*wxWHITE);
         
-        li.SetMask(wxLIST_MASK_TEXT);
+        li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
+
+        // We don't want the sort arrow.
+        li.SetImage(-1);
         
         if (s.info.spectating)
         {
             li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
             
             li.SetText(s.info.playerinfo[i].name);
-            li.SetImage(s.info.playerinfo[i].spectator);
+            li.SetImage(s.info.playerinfo[i].spectator ? 2 : -1);
         }
         else
         {
