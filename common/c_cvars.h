@@ -121,6 +121,8 @@ public:
 	cvar_t &operator = (float other) { ForceSet(other); return *this; }
 	cvar_t &operator = (const char *other) { ForceSet(other); return *this; }
 
+	cvar_t *GetNext() { return m_Next; }
+
 private:
 
 	cvar_t (const cvar_t &var) {}

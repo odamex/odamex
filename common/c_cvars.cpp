@@ -42,7 +42,22 @@
 bool cvar_t::m_DoNoSet = false;
 bool cvar_t::m_UseCallback = false;
 
-cvar_t *CVars = NULL;
+// denis - all this class does is delete the cvars during its static destruction
+class ad_t {
+public:
+	cvar_t *CVars;
+	ad_t() : CVars(NULL) {}
+	~ad_t()
+	{
+		cvar_t *cvar = CVars;
+		while (cvar)
+		{
+			cvar_t *next = cvar->GetNext();
+			delete cvar;
+			cvar = next;
+		}
+	}
+}ad;
 
 int cvar_defflags;
 
@@ -77,8 +92,8 @@ void cvar_t::InitSelf (const char *var_name, const char *def, DWORD var_flags, v
 	{
 		C_AddTabCommand (var_name);
 		m_Name = var_name;
-		m_Next = CVars;
-		CVars = this;
+		m_Next = ad.CVars;
+		ad.CVars = this;
 	}
 	else
 		m_Name = "";
@@ -110,7 +125,7 @@ cvar_t::~cvar_t ()
 			if (dummy)
 				dummy->m_Next = m_Next;
 			else
-				CVars = m_Next;
+				ad.CVars = m_Next;
 		}
 	}
 }
@@ -207,7 +222,7 @@ void cvar_t::EnableNoSet ()
 void cvar_t::EnableCallbacks ()
 {
 	m_UseCallback = true;
-	cvar_t *cvar = CVars;
+	cvar_t *cvar = ad.CVars;
 
 	while (cvar)
 	{
@@ -223,7 +238,7 @@ static int STACK_ARGS sortcvars (const void *a, const void *b)
 
 void cvar_t::FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter)
 {
-	cvar_t *cvar = CVars;
+	cvar_t *cvar = ad.CVars;
 	while (cvar)
 	{
 		if (cvar->m_Flags & filter)
@@ -238,7 +253,7 @@ void cvar_t::FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter)
 
 void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, bool compact)
 {
-	cvar_t *cvar = CVars;
+	cvar_t *cvar = ad.CVars;
 	byte *ptr = *demo_p;
 
 	if (compact)
@@ -253,7 +268,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, bool compact)
 	}
 	else
 	{
-		cvar = CVars;
+		cvar = ad.CVars;
 		while (cvar)
 		{
 			if (cvar->m_Flags & filter)
@@ -344,7 +359,7 @@ static int numbackedup = 0;
 void cvar_t::C_BackupCVars (void)
 {
 	struct backup_s *backup = CVarBackups;
-	cvar_t *cvar = CVars;
+	cvar_t *cvar = ad.CVars;
 
 	while (cvar)
 	{
@@ -381,7 +396,7 @@ cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)
 	if (var_name == NULL)
 		return NULL;
 
-	var = CVars;
+	var = ad.CVars;
 	*prev = NULL;
 	while (var)
 	{
@@ -397,7 +412,7 @@ void cvar_t::UnlatchCVars (void)
 {
 	cvar_t *var;
 
-	var = CVars;
+	var = ad.CVars;
 	while (var)
 	{
 		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH))
@@ -417,7 +432,7 @@ void cvar_t::UnlatchCVars (void)
 
 void cvar_t::C_SetCVarsToDefaults (void)
 {
-	cvar_t *cvar = CVars;
+	cvar_t *cvar = ad.CVars;
 
 	while (cvar)
 	{
@@ -431,7 +446,7 @@ void cvar_t::C_SetCVarsToDefaults (void)
 
 void cvar_t::C_ArchiveCVars (void *f)
 {
-	cvar_t *cvar = CVars;
+	cvar_t *cvar = ad.CVars;
 
 	while (cvar)
 	{
@@ -445,7 +460,7 @@ void cvar_t::C_ArchiveCVars (void *f)
 
 void cvar_t::cvarlist()
 {
-	cvar_t *var = CVars;
+	cvar_t *var = ad.CVars;
 	int count = 0;
 
 	while (var)
