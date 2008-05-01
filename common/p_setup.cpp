@@ -347,12 +347,12 @@ void P_LoadSectors (int lump)
 	
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	if(sectors)
-		while(numsectors--)sectors[numsectors].~sector_t();
+		delete[] sectors;
 
 	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
-	sectors = new ((sector_t *)Z_Malloc (numsectors*sizeof(sector_t),PU_LEVEL,0)) sector_t[numsectors];
+	sectors = new sector_t[numsectors];
 	memset(sectors, 0, sizeof(sector_t)*numsectors);
 	
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
