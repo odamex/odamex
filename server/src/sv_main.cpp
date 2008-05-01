@@ -55,6 +55,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <vector>
 
 extern void G_DeferedInitNew (char *mapname);
 extern level_locals_t level;
@@ -64,6 +65,19 @@ bool clientside = false, serverside = true;
 bool predicting = false;
 
 bool stepmode = false;
+
+#define IPADDRSIZE 4	// GhostlyDeath -- Someone might want to do IPv6 junk
+
+typedef struct
+{
+	short ip[IPADDRSIZE];
+	std::string Reason;
+} BanEntry_t;
+
+const short RANGEBAN = -1;	// ban everyone! =)
+
+std::vector<BanEntry_t> BanList;		// People who are banned
+std::vector<BanEntry_t> WhiteList;		// people who are [accidently] banned but can get inside
 
 // General server settings
 CVAR (hostname,			"Unnamed",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// A servers name that will apear in the launcher.
@@ -266,18 +280,408 @@ BEGIN_COMMAND (kick)
 		return;
 	}
 
-	SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked\n", player.userinfo.netname);
 	if (argc > 2)
 	{
 		client_t  *cl = &player.client;
 		std::string reason = BuildString(argc - 2, (const char **)(argv + 2));
-		MSG_WriteMarker (&cl->reliablebuf, svc_print);
-		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString (&cl->reliablebuf, reason.c_str());
+		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked (Reason: %s)\n", player.userinfo.netname, reason.c_str());
 	}
+	else
+		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked\n", player.userinfo.netname);
+
 	SV_DropClient(player);
 }
 END_COMMAND (kick)
+
+void SV_BanStringify(std::string *ToStr = NULL, short *ip = NULL)
+{
+	if (!ToStr || !ip)
+		return;
+		
+	for (int i = 0; i < IPADDRSIZE; i++)
+	{
+		if (ip[i] == RANGEBAN)
+			*ToStr += '*';
+		else
+		{
+			char bleh[5];
+			sprintf(bleh, "%i", ip[i]);
+			*ToStr += bleh;
+		}
+		
+		if (i < (IPADDRSIZE - 1))
+			*ToStr += '.';
+	}
+}
+
+// GhostlyDeath -- new command, addban because we hate people
+BEGIN_COMMAND(addban)
+{
+	BanEntry_t tBan;	// GhostlyDeath -- Temporary Ban Holder
+	
+	if (argc < 2)
+		return;
+		
+	// Figure out a ban to add
+	std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
+	std::string Oct1;//, Oct2, Oct3, Oct4;
+	
+	// There is garbage in IPtoBan
+	IPtoBan = IPtoBan.substr(0, IPtoBan.find(' '));
+	
+	for (int i = 0; i < IPADDRSIZE; i++)
+	{
+		int loc = 0;
+		char *seek;
+		
+		Oct1 = IPtoBan.substr(0, Oct1.find("."));
+		IPtoBan = IPtoBan.substr(IPtoBan.find(".") + 1);
+		
+		seek = const_cast<char*>(Oct1.c_str());
+		
+		while (*seek)
+		{
+			if (*seek == '.')
+				break;
+			loc++;
+			seek++;
+		}
+		
+		Oct1 = Oct1.substr(0, loc);
+		
+		if ((*(Oct1.c_str()) == '*') || (*(Oct1.c_str()) == 0))
+			tBan.ip[i] = RANGEBAN;
+		else
+			tBan.ip[i] = atoi(Oct1.c_str());
+	}
+	
+	for (size_t i = 0; i < BanList.size(); i++)
+	{
+		bool match = false;
+		
+		for (int j = 0; j < IPADDRSIZE; j++)
+			if ((tBan.ip[j] == BanList[i].ip[j]) || (BanList[i].ip[j] == RANGEBAN) &&
+				((j > 0 && match) || (j == 0 && !match)))
+				match = true;
+			else
+			{
+				match = false;
+				break;
+			}
+				
+		if (match)
+		{
+			std::string IP;
+			SV_BanStringify(&IP, tBan.ip);
+			Printf(PRINT_HIGH, "Ban on %s already exists!\n", IP.c_str());
+			return;
+		}
+	}
+		
+	if (argc >= 3)
+		tBan.Reason = BuildString(argc - 2, (const char **)(argv + 2));
+	else
+		tBan.Reason = "none given";
+	
+	BanList.push_back(tBan);
+	Printf(PRINT_HIGH, "Ban added. (Ban list now has %i entries)\n", BanList.size());
+}
+END_COMMAND(addban)
+
+BEGIN_COMMAND(delban)
+{
+	if (!BanList.size())
+		Printf(PRINT_HIGH, "Ban list is empty.\n");
+	else {
+		BanEntry_t tBan;	// GhostlyDeath -- Temporary Ban Holder
+		int BanRemovalCount = 0;
+		
+		if (argc < 2)
+			return;
+			
+		// Figure out a ban to remove
+		std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
+		std::string Oct1;//, Oct2, Oct3, Oct4;
+		
+		// There is garbage in IPtoBan
+		IPtoBan = IPtoBan.substr(0, IPtoBan.find(' '));
+		
+		for (int i = 0; i < IPADDRSIZE; i++)
+		{
+			int loc = 0;
+			char *seek;
+			
+			Oct1 = IPtoBan.substr(0, Oct1.find("."));
+			IPtoBan = IPtoBan.substr(IPtoBan.find(".") + 1);
+			
+			seek = const_cast<char*>(Oct1.c_str());
+			
+			while (*seek)
+			{
+				if (*seek == '.')
+					break;
+				loc++;
+				seek++;
+			}
+			
+			Oct1 = Oct1.substr(0, loc);
+			
+			if ((*(Oct1.c_str()) == '*') || (*(Oct1.c_str()) == 0))
+				tBan.ip[i] = RANGEBAN;
+			else
+				tBan.ip[i] = atoi(Oct1.c_str());
+		}
+		
+		for (size_t i = 0; i < BanList.size(); i++)
+		{
+			bool match = false;
+			
+			for (int j = 0; j < IPADDRSIZE; j++)
+				if (tBan.ip[j] == BanList[i].ip[j])
+					match = true;
+				else
+				{
+					match = false;
+					break;
+				}
+					
+			if (match)
+			{
+				BanList[i].ip[0] = 32000;
+				BanRemovalCount++;
+			}
+		}
+		
+		int i = 0;
+		
+		while (i < BanList.size())
+		{
+			if (BanList[i].ip[0] == 32000)
+				BanList.erase(BanList.begin() + i);
+			else
+				i++;
+		}
+		
+		if (BanRemovalCount == 0)
+			Printf(PRINT_HIGH, "Ban entry not found.\n", BanList.size());
+		else
+			Printf(PRINT_HIGH, "%i bans removed. (Ban list now has %i entries)\n", BanRemovalCount, BanList.size());
+	}
+}
+END_COMMAND(delban)
+
+BEGIN_COMMAND(banlist)
+{
+	if (!BanList.size())
+		Printf(PRINT_HIGH, "Ban list is empty.\n");
+	else {
+		for (size_t i = 0; i < BanList.size(); i++)
+		{
+			std::string IP;
+			SV_BanStringify(&IP, BanList[i].ip);
+			Printf(PRINT_HIGH, "Ban #%i: %s (Reason: %s)\n", i + 1, IP.c_str(), BanList[i].Reason.c_str());
+		}
+		
+		Printf(PRINT_HIGH, "Ban list has %i entries.\n", BanList.size());
+	}
+}
+END_COMMAND(banlist)
+
+BEGIN_COMMAND(clearbans)
+{
+	if (!BanList.size())
+		Printf(PRINT_HIGH, "Ban list is already empty!\n");
+	else {
+		Printf(PRINT_HIGH, "All %i bans removed.\n", BanList.size());
+		BanList.clear();
+	}
+}
+END_COMMAND(clearbans)
+
+/* GhostlyDeath -- OK NOW EVERYTHING BELOW IS FOR THE WHITE LIST! */
+// WhiteList
+BEGIN_COMMAND(addexception)
+{
+	BanEntry_t tBan;	// GhostlyDeath -- Temporary Ban Holder
+	
+	if (argc < 2)
+		return;
+		
+	// Figure out an exception to add
+	std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
+	std::string Oct1;//, Oct2, Oct3, Oct4;
+	
+	// There is garbage in IPtoBan
+	IPtoBan = IPtoBan.substr(0, IPtoBan.find(' '));
+	
+	for (int i = 0; i < IPADDRSIZE; i++)
+	{
+		int loc = 0;
+		char *seek;
+		
+		Oct1 = IPtoBan.substr(0, Oct1.find("."));
+		IPtoBan = IPtoBan.substr(IPtoBan.find(".") + 1);
+		
+		seek = const_cast<char*>(Oct1.c_str());
+		
+		while (*seek)
+		{
+			if (*seek == '.')
+				break;
+			loc++;
+			seek++;
+		}
+		
+		Oct1 = Oct1.substr(0, loc);
+		
+		if ((*(Oct1.c_str()) == '*') || (*(Oct1.c_str()) == 0))
+			tBan.ip[i] = RANGEBAN;
+		else
+			tBan.ip[i] = atoi(Oct1.c_str());
+	}
+	
+	for (size_t i = 0; i < WhiteList.size(); i++)
+	{
+		bool match = false;
+		
+		for (int j = 0; j < IPADDRSIZE; j++)
+			if ((tBan.ip[j] == WhiteList[i].ip[j]) || (WhiteList[i].ip[j] == RANGEBAN) &&
+				((j > 0 && match) || (j == 0 && !match)))
+				match = true;
+			else
+			{
+				match = false;
+				break;
+			}
+				
+		if (match)
+		{
+			std::string IP;
+			SV_BanStringify(&IP, tBan.ip);
+			Printf(PRINT_HIGH, "Exception on %s already exists!\n", IP.c_str());
+			return;
+		}
+	}
+		
+	if (argc >= 3)
+		tBan.Reason = BuildString(argc - 2, (const char **)(argv + 2));
+	else
+		tBan.Reason = "none given";
+	
+	WhiteList.push_back(tBan);
+	Printf(PRINT_HIGH, "Exception added. (Exception list now has %i entries)\n", WhiteList.size());
+}
+END_COMMAND(addexception)
+
+BEGIN_COMMAND(delexception)
+{
+	if (!WhiteList.size())
+		Printf(PRINT_HIGH, "Exception list is empty.\n");
+	else {
+		BanEntry_t tBan;	// GhostlyDeath -- Temporary Ban Holder
+		int ExceptionRemovalCount = 0;
+		
+		if (argc < 2)
+			return;
+			
+		// Figure out an exception to remove
+		std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
+		std::string Oct1;//, Oct2, Oct3, Oct4;
+		
+		// There is garbage in IPtoBan
+		IPtoBan = IPtoBan.substr(0, IPtoBan.find(' '));
+		
+		for (int i = 0; i < IPADDRSIZE; i++)
+		{
+			int loc = 0;
+			char *seek;
+			
+			Oct1 = IPtoBan.substr(0, Oct1.find("."));
+			IPtoBan = IPtoBan.substr(IPtoBan.find(".") + 1);
+			
+			seek = const_cast<char*>(Oct1.c_str());
+			
+			while (*seek)
+			{
+				if (*seek == '.')
+					break;
+				loc++;
+				seek++;
+			}
+			
+			Oct1 = Oct1.substr(0, loc);
+			
+			if ((*(Oct1.c_str()) == '*') || (*(Oct1.c_str()) == 0))
+				tBan.ip[i] = RANGEBAN;
+			else
+				tBan.ip[i] = atoi(Oct1.c_str());
+		}
+		
+		for (size_t i = 0; i < WhiteList.size(); i++)
+		{
+			bool match = false;
+			
+			for (int j = 0; j < IPADDRSIZE; j++)
+				if (tBan.ip[j] == WhiteList[i].ip[j])
+					match = true;
+				else
+				{
+					match = false;
+					break;
+				}
+					
+			if (match)
+			{
+				WhiteList[i].ip[0] = 32000;
+				ExceptionRemovalCount++;
+			}
+		}
+		
+		int i = 0;
+		
+		while (i < WhiteList.size())
+		{
+			if (WhiteList[i].ip[0] == 32000)
+				WhiteList.erase(WhiteList.begin() + i);
+			else
+				i++;
+		}
+		
+		if (ExceptionRemovalCount == 0)
+			Printf(PRINT_HIGH, "Exception entry not found.\n", WhiteList.size());
+		else
+			Printf(PRINT_HIGH, "%i exceptions removed. (Exception list now has %i entries)\n", ExceptionRemovalCount, WhiteList.size());
+	}
+}
+END_COMMAND(delexception)
+
+BEGIN_COMMAND(exceptionlist)
+{
+	if (!WhiteList.size())
+		Printf(PRINT_HIGH, "Exception list is empty.\n");
+	else {
+		for (size_t i = 0; i < WhiteList.size(); i++)
+		{
+			std::string IP;
+			SV_BanStringify(&IP, WhiteList[i].ip);
+			Printf(PRINT_HIGH, "Exception #%i: %s (Reason: %s)\n", i + 1, IP.c_str(), WhiteList[i].Reason.c_str());
+		}
+		
+		Printf(PRINT_HIGH, "Exception list has %i entries.\n", BanList.size());
+	}
+}
+END_COMMAND(exceptionlist)
+
+BEGIN_COMMAND(clearexceptions)
+{
+	if (!WhiteList.size())
+		Printf(PRINT_HIGH, "Exception list is already empty!\n");
+	else {
+		Printf(PRINT_HIGH, "All %i exceptions removed.\n", WhiteList.size());
+		WhiteList.clear();
+	}
+}
+END_COMMAND(clearexceptions)
 
 // denis - list connected clients
 BEGIN_COMMAND (who)
@@ -1336,6 +1740,116 @@ void SV_ServerSettingChange (void)
 }
 
 //
+//  SV_BanCheck
+//
+//  Checks a connecting player against a banlist
+//
+bool SV_BanCheck (client_t *cl, int n)
+{
+	for (size_t i = 0; i < BanList.size(); i++)
+	{
+		bool match = false;
+		bool exception = false;
+	
+		for (int j = 0; j < IPADDRSIZE; j++)
+		{
+			if ((cl->address.ip[j] == BanList[i].ip[j]) || (BanList[i].ip[j] == RANGEBAN) &&
+				((j > 0 && match) || (j == 0 && !match)))
+				match = true;
+			else
+			{
+				match = false;
+				break;
+			}
+		}
+				
+		// Now see if there is an exception on our ban...
+		if (WhiteList.size() > 0)
+		{
+			for (size_t k = 0; k < WhiteList.size(); k++)
+			{
+				exception = false;
+				
+				for (int j = 0; j < IPADDRSIZE; j++)
+				{
+					if ((cl->address.ip[j] == WhiteList[k].ip[j]) || (WhiteList[k].ip[j] == RANGEBAN) &&
+						((j > 0 && exception) || (j == 0 && !exception)))
+						exception = true;
+					else
+					{
+						exception = false;
+						break;
+					}
+				}
+						
+				if (exception)
+					break;	// we already know they are allowed in
+			}
+		}
+			
+		if (match && !exception)
+		{	
+			std::string BanStr;
+			BanStr += "\nYou are banned! (reason: ";
+			//if (*(BanList[i].Reason.c_str()))
+				BanStr += BanList[i].Reason;
+			//else
+			//	BanStr += "none given";
+			BanStr += ")\n";
+			
+			MSG_WriteMarker   (&cl->reliablebuf, svc_print);
+			MSG_WriteByte   (&cl->reliablebuf, PRINT_HIGH);
+			MSG_WriteString (&cl->reliablebuf, BanStr.c_str());
+		
+			// GhostlyDeath -- Do we include the e-mail or no?
+			if (*(email.cstring()) == 0)
+			{
+				MSG_WriteMarker(&cl->reliablebuf, svc_print);
+				MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
+				MSG_WriteString(&cl->reliablebuf, "If you feel there has been an error, contact the server host. (No e-mail given)\n");
+			}
+			else
+			{
+				std::string ErrorStr;
+				ErrorStr += "If you feel there has been an error, contact the server host at ";
+				ErrorStr += email.cstring();
+				ErrorStr += "\n\n";
+				MSG_WriteMarker(&cl->reliablebuf, svc_print);
+				MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
+				MSG_WriteString(&cl->reliablebuf, ErrorStr.c_str());
+			}
+			
+			Printf(PRINT_HIGH, "%s is banned and unable to join! (reason: %s)\n", NET_AdrToString (net_from), BanList[i].Reason.c_str());
+
+			MSG_WriteMarker (&cl->reliablebuf, svc_disconnect);
+			
+			cl->displaydisconnect = false;
+
+			SV_SendPacket (players[n]);
+			return true;
+		}
+		else if (exception)	// don't bother because they'll be allowed multiple times
+		{
+			std::string BanStr;
+			BanStr += "\nBan Exception (reason: ";
+			//if (*(WhiteList[i].Reason.c_str()))
+				BanStr += WhiteList[i].Reason;
+			//else
+			//	BanStr += "none given";
+			//BanStr += ")\n\n";
+			
+			MSG_WriteMarker(&cl->reliablebuf, svc_print);
+			MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
+			MSG_WriteString(&cl->reliablebuf, BanStr.c_str());
+			
+			return false;
+		}
+	}
+	
+	return false;
+}
+
+//
 //	SV_ConnectClient
 //
 //	Called when a client connects
@@ -1376,7 +1890,7 @@ void SV_ConnectClient (void)
 		return;
 	}
 
-	Printf (PRINT_HIGH, "%s : connect\n", NET_AdrToString (net_from));
+	Printf (PRINT_HIGH, "%s is trying to connect...\n", NET_AdrToString (net_from));
 
 	cl = &clients[n];
 
@@ -1428,6 +1942,9 @@ void SV_ConnectClient (void)
 
 		return;
 	}
+	
+	if (SV_BanCheck(cl, n))
+		return;
 
 	// send consoleplayer number
 	MSG_WriteMarker (&cl->reliablebuf, svc_consoleplayer);
@@ -1516,38 +2033,40 @@ void SV_DisconnectClient(player_t &who)
 		who.mo = AActor::AActorPtr();
 	}
 
-	// Name and reason for disconnect.
-    if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
-		sprintf(str1, "%s timed out. (", who.userinfo.netname);
-    else
-		sprintf(str1, "%s disconnected. (", who.userinfo.netname);
-	
-	// Spectator status or team name (TDM/CTF).
-	if (who.spectator)
-		sprintf(str2, "SPECTATOR, ");
-	else if (ctfmode || teamplay)
-		sprintf(str2, "%s TEAM, ", team_names[who.userinfo.team]);
-	else
-		sprintf(str2, "");
-	
-	// Points (CTF).
-	if (ctfmode)
-		sprintf(str3, "%d POINTS, ", who.points);
-	else
-		sprintf(str3, "");
-	
-	// Frags (DM/TDM/CTF) or Kills (Coop).
-	if (deathmatch)
-		sprintf(str4, "%d FRAGS, ", who.fragcount);
-	else
-		sprintf(str4, "%d KILLS, ", who.killcount);
-	
-	// Deaths.
-	sprintf(str5, "%d DEATHS)", who.deathcount);
-	
-	// Combine and print.
-	sprintf(str, "%s%s%s%s%s", str1, str2, str3, str4, str5);
-	SV_BroadcastPrintf(PRINT_HIGH, "%s\n", str);
+	if (who.client.displaydisconnect) {
+		// Name and reason for disconnect.
+		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
+			sprintf(str1, "%s timed out. (", who.userinfo.netname);
+		else
+			sprintf(str1, "%s disconnected. (", who.userinfo.netname);
+		
+		// Spectator status or team name (TDM/CTF).
+		if (who.spectator)
+			sprintf(str2, "SPECTATOR, ");
+		else if (ctfmode || teamplay)
+			sprintf(str2, "%s TEAM, ", team_names[who.userinfo.team]);
+		else
+			sprintf(str2, "");
+		
+		// Points (CTF).
+		if (ctfmode)
+			sprintf(str3, "%d POINTS, ", who.points);
+		else
+			sprintf(str3, "");
+		
+		// Frags (DM/TDM/CTF) or Kills (Coop).
+		if (deathmatch)
+			sprintf(str4, "%d FRAGS, ", who.fragcount);
+		else
+			sprintf(str4, "%d KILLS, ", who.killcount);
+		
+		// Deaths.
+		sprintf(str5, "%d DEATHS)", who.deathcount);
+		
+		// Combine and print.
+		sprintf(str, "%s%s%s%s%s", str1, str2, str3, str4, str5);
+		SV_BroadcastPrintf(PRINT_HIGH, "%s\n", str);
+	}
 
 	who.playerstate = PST_DISCONNECT;
 

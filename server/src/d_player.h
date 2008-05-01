@@ -245,6 +245,7 @@ public:
 		
 		std::string	digest;			// randomly generated string that the client must use for any hashes it sends back
 		bool        allow_rcon;     // allow remote admin
+		bool		displaydisconnect; // display disconnect message when disconnecting
 
 		huffman_server	compressor;	// denis - adaptive huffman compression
 
@@ -259,7 +260,8 @@ public:
 		}download;
 		
 		client_t()
-			: netbuf(MAX_UDP_PACKET), reliablebuf(MAX_UDP_PACKET), relpackets(MAX_UDP_PACKET*50), digest(""), allow_rcon(false)
+			: netbuf(MAX_UDP_PACKET), reliablebuf(MAX_UDP_PACKET), relpackets(MAX_UDP_PACKET*50), digest(""), allow_rcon(false),
+			  displaydisconnect(true)
 		{
 		}
 		client_t(const client_t &other)
@@ -279,6 +281,7 @@ public:
 			lastclientcmdtic(other.lastclientcmdtic),
 			digest(other.digest),
 			allow_rcon(false),
+			displaydisconnect(true),
 			compressor(other.compressor),
 			download(other.download)
 		{
