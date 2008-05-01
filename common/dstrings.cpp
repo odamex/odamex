@@ -671,7 +671,7 @@ public:
 	void erase(char *p)
 	{
 		iterator i = rs.find(p);
-		if(i == rs.end())
+		if(i != rs.end())
 		{
 			delete[] i->first;
 			rs.erase(i);
