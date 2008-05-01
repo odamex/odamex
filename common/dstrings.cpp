@@ -660,15 +660,47 @@ void D_InitStrings (void)
 	endmsg[0] = QUITMSG;
 }
 
+class ReplacedStringTracker
+{
+	typedef std::map<char *, bool> replacedStrings_t;
+	typedef replacedStrings_t:: iterator iterator;
+	replacedStrings_t rs;
+
+public:
+
+	void erase(char *p)
+	{
+		iterator i = rs.find(p);
+		if(i == rs.end())
+		{
+			delete[] i->first;
+			rs.erase(i);
+		}
+	}
+	void add(char *p)
+	{
+		rs[p] = 1;
+	}
+
+	ReplacedStringTracker() : rs() {}
+	~ReplacedStringTracker()
+	{
+		for(iterator i = rs.begin(); i != rs.end(); i++)
+			delete[] i->first;
+	}
+}rst;
+
+
 void ReplaceString (char **ptr, char *str)
 {
 	if (*ptr)
 	{
 		if (*ptr == str)
 			return;
-		//delete[] *ptr; // denis - fixme - this deletes static strings, EWW, THIS ENTIRE FUNCTION MUST DIE
+		rst.erase(*ptr);
 	}
 	*ptr = copystring (str);
+	rst.add(*ptr);
 }
 
 VERSION_CONTROL (dstrings_cpp, "$Id$")
