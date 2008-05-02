@@ -46,14 +46,15 @@ bool cvar_t::m_UseCallback = false;
 class ad_t {
 public:
 	cvar_t *CVars;
-	ad_t() : CVars(NULL) {}
+	ad_t() {}
 	~ad_t()
 	{
 		cvar_t *cvar = CVars;
 		while (cvar)
 		{
 			cvar_t *next = cvar->GetNext();
-			delete cvar;
+			if(cvar->m_Flags & CVAR_AUTO)
+				delete cvar;
 			cvar = next;
 		}
 	}
