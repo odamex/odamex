@@ -284,11 +284,12 @@ BEGIN_COMMAND (kick)
 	{
 		client_t  *cl = &player.client;
 		std::string reason = BuildString(argc - 2, (const char **)(argv + 2));
-		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked (Reason: %s)\n", player.userinfo.netname, reason.c_str());
+		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
 	}
 	else
-		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked\n", player.userinfo.netname);
-
+		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server!\n", player.userinfo.netname);
+	
+	player.client.displaydisconnect = false;
 	SV_DropClient(player);
 }
 END_COMMAND (kick)
@@ -325,6 +326,7 @@ BEGIN_COMMAND(addban)
 	// Figure out a ban to add
 	std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
 	std::string Oct1;//, Oct2, Oct3, Oct4;
+	std::string IP;
 	
 	// There is garbage in IPtoBan
 	IPtoBan = IPtoBan.substr(0, IPtoBan.find(' '));
@@ -371,7 +373,6 @@ BEGIN_COMMAND(addban)
 				
 		if (match)
 		{
-			std::string IP;
 			SV_BanStringify(&IP, tBan.ip);
 			Printf(PRINT_HIGH, "Ban on %s already exists!\n", IP.c_str());
 			return;
@@ -384,7 +385,8 @@ BEGIN_COMMAND(addban)
 		tBan.Reason = "none given";
 	
 	BanList.push_back(tBan);
-	Printf(PRINT_HIGH, "Ban added. (Ban list now has %i entries)\n", BanList.size());
+	SV_BanStringify(&IP, tBan.ip);
+	Printf(PRINT_HIGH, "Ban on %s added.\n", IP.c_str());
 }
 END_COMMAND(addban)
 
@@ -463,9 +465,9 @@ BEGIN_COMMAND(delban)
 		}
 		
 		if (BanRemovalCount == 0)
-			Printf(PRINT_HIGH, "Ban entry not found.\n", BanList.size());
+			Printf(PRINT_HIGH, "Ban entry not found.\n");
 		else
-			Printf(PRINT_HIGH, "%i bans removed. (Ban list now has %i entries)\n", BanRemovalCount, BanList.size());
+			Printf(PRINT_HIGH, "%i bans removed.\n", BanRemovalCount);
 	}
 }
 END_COMMAND(delban)
@@ -510,6 +512,7 @@ BEGIN_COMMAND(addexception)
 	// Figure out an exception to add
 	std::string IPtoBan = BuildString(argc - 1, (const char **)(argv + 1));
 	std::string Oct1;//, Oct2, Oct3, Oct4;
+	std::string IP;
 	
 	// There is garbage in IPtoBan
 	IPtoBan = IPtoBan.substr(0, IPtoBan.find(' '));
@@ -556,7 +559,6 @@ BEGIN_COMMAND(addexception)
 				
 		if (match)
 		{
-			std::string IP;
 			SV_BanStringify(&IP, tBan.ip);
 			Printf(PRINT_HIGH, "Exception on %s already exists!\n", IP.c_str());
 			return;
@@ -569,7 +571,8 @@ BEGIN_COMMAND(addexception)
 		tBan.Reason = "none given";
 	
 	WhiteList.push_back(tBan);
-	Printf(PRINT_HIGH, "Exception added. (Exception list now has %i entries)\n", WhiteList.size());
+	SV_BanStringify(&IP, tBan.ip);
+	Printf(PRINT_HIGH, "Exception on %s added.\n", IP.c_str());
 }
 END_COMMAND(addexception)
 
@@ -648,9 +651,9 @@ BEGIN_COMMAND(delexception)
 		}
 		
 		if (ExceptionRemovalCount == 0)
-			Printf(PRINT_HIGH, "Exception entry not found.\n", WhiteList.size());
+			Printf(PRINT_HIGH, "Exception entry not found.\n");
 		else
-			Printf(PRINT_HIGH, "%i exceptions removed. (Exception list now has %i entries)\n", ExceptionRemovalCount, WhiteList.size());
+			Printf(PRINT_HIGH, "%i exceptions removed.\n", ExceptionRemovalCount);
 	}
 }
 END_COMMAND(delexception)
@@ -682,6 +685,59 @@ BEGIN_COMMAND(clearexceptions)
 	}
 }
 END_COMMAND(clearexceptions)
+
+// Nes - Same as kick, only add ban.
+BEGIN_COMMAND(kickban)
+{
+	if (argc < 2)
+		return;
+
+	player_t &player = idplayer(atoi(argv[1]));
+	std::string command, tempipstring;
+	short tempip[IPADDRSIZE];
+
+	// Check for validity...
+	if(!validplayer(player))
+	{
+		Printf(PRINT_HIGH, "bad client number: %d\n", player.id);
+		return;
+	}
+
+	if(!player.ingame())
+	{
+		Printf(PRINT_HIGH, "client %d not in game\n", player.id);
+		return;
+	}
+	
+	// Generate IP for the ban...
+	for (int i = 0; i < IPADDRSIZE; i++)
+		tempip[i] = (short)player.client.address.ip[i];
+	
+	SV_BanStringify(&tempipstring, tempip);
+	
+	// The kick...
+	if (argc > 2)
+	{
+		client_t  *cl = &player.client;
+		std::string reason = BuildString(argc - 2, (const char **)(argv + 2));
+		SV_BroadcastPrintf(PRINT_HIGH, "%s was kickbanned from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
+	}
+	else
+		SV_BroadcastPrintf(PRINT_HIGH, "%s was kickbanned from the server!\n", player.userinfo.netname);
+	
+	player.client.displaydisconnect = false;
+	SV_DropClient(player);
+	
+	// ... and the ban!
+	command = "addban ";
+	command += tempipstring;
+	if (argc > 2) {
+		command += " ";
+		command += BuildString(argc - 2, (const char **)(argv + 2));
+	}
+	AddCommandString(command);
+}
+END_COMMAND(kickban)
 
 // denis - list connected clients
 BEGIN_COMMAND (who)
@@ -1999,7 +2055,8 @@ void SV_ConnectClient (void)
 //
 void SV_DisconnectClient(player_t &who)
 {
-	char str[125], str1[50], str2[25], str3[15], str4[15], str5[15];
+	char str[100];
+	std::string disconnectmessage;
 	
 	// already gone though this procedure?
 	if(who.playerstate == PST_DISCONNECT)
@@ -2036,36 +2093,42 @@ void SV_DisconnectClient(player_t &who)
 	if (who.client.displaydisconnect) {
 		// Name and reason for disconnect.
 		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
-			sprintf(str1, "%s timed out. (", who.userinfo.netname);
+			sprintf(str, "%s timed out. (", who.userinfo.netname);
 		else
-			sprintf(str1, "%s disconnected. (", who.userinfo.netname);
+			sprintf(str, "%s disconnected. (", who.userinfo.netname);
+			
+		disconnectmessage = str;
 		
 		// Spectator status or team name (TDM/CTF).
 		if (who.spectator)
-			sprintf(str2, "SPECTATOR, ");
+			sprintf(str, "SPECTATOR, ");
 		else if (ctfmode || teamplay)
-			sprintf(str2, "%s TEAM, ", team_names[who.userinfo.team]);
+			sprintf(str, "%s TEAM, ", team_names[who.userinfo.team]);
 		else
-			sprintf(str2, "");
+			sprintf(str, "");
+		
+		disconnectmessage += str;
 		
 		// Points (CTF).
-		if (ctfmode)
-			sprintf(str3, "%d POINTS, ", who.points);
-		else
-			sprintf(str3, "");
+		if (ctfmode) {
+			sprintf(str, "%d POINTS, ", who.points);
+			disconnectmessage += str;
+		}
 		
 		// Frags (DM/TDM/CTF) or Kills (Coop).
 		if (deathmatch)
-			sprintf(str4, "%d FRAGS, ", who.fragcount);
+			sprintf(str, "%d FRAGS, ", who.fragcount);
 		else
-			sprintf(str4, "%d KILLS, ", who.killcount);
+			sprintf(str, "%d KILLS, ", who.killcount);
+		
+		disconnectmessage += str;
 		
 		// Deaths.
-		sprintf(str5, "%d DEATHS)", who.deathcount);
+		sprintf(str, "%d DEATHS)", who.deathcount);
 		
-		// Combine and print.
-		sprintf(str, "%s%s%s%s%s", str1, str2, str3, str4, str5);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s\n", str);
+		disconnectmessage += str;
+
+		SV_BroadcastPrintf(PRINT_HIGH, "%s\n", disconnectmessage.c_str());
 	}
 
 	who.playerstate = PST_DISCONNECT;
