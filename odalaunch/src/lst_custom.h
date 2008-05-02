@@ -28,6 +28,7 @@
 #include <wx/listctrl.h>
 #include <wx/sizer.h>
 #include <wx/artprov.h>
+#include <wx/imaglist.h>
 
 class wxAdvancedListCtrl : public wxListCtrl
 {      
