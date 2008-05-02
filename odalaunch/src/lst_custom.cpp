@@ -70,79 +70,155 @@ void wxAdvancedListCtrl::SetColumnImage(wxListItem &li, wxInt32 ImageIndex)
     li.SetImage(((ImageIndex == -1) ? ImageIndex : FIRST_IMAGE + ImageIndex));
 }
 
+// [Russell] - These are 2 heavily modified routines of the javascript natural 
+// compare by Kristof Coomans (it was easier to follow than the original C 
+// version by Martin Pool), their versions were under the ZLIB license (which 
+// is compatible with the GPL).
+//
+// Original Javascript version by Kristof Coomans
+//      http://sourcefrog.net/projects/natsort/natcompare.js
+//
+// Do not contact the mentioned authors about my version.
+wxInt32 NaturalCompareWorker(const wxString &String1, const wxString &String2)
+{
+    wxInt32 Direction = 0;
+
+    wxChar String1Char, String2Char;
+
+    for (wxUint32 String1Counter = 0, String2Counter = 0;
+         String1.Len() > 0 && String2.Len() > 0; 
+         ++String1Counter, ++String2Counter) 
+    {
+        String1Char = String1[String1Counter];
+        String2Char = String2[String2Counter];
+
+        if (!wxIsdigit(String1Char) && !wxIsdigit(String2Char)) 
+        {
+            return Direction;
+        } 
+        
+        if (!wxIsdigit(String1Char)) 
+        {
+            return -1;
+        } 
+        
+        if (!wxIsdigit(String2Char)) 
+        {
+            return 1;
+        } 
+        
+        if (String1Char < String2Char) 
+        {
+            if (Direction == 0) 
+            {
+                Direction = -1;
+            }
+        } 
+        
+        if (String1Char > String2Char) 
+        {
+            if (Direction == 0)
+            {
+                Direction = 1;
+            }
+        } 
+        
+        if (String1Char == 0 && String2Char == 0) 
+        {
+            return Direction;
+        }
+    }
+    
+    return 0;
+}
+
+wxInt32 NaturalCompare(wxString String1, wxString String2, bool CaseSensitive = false) 
+{
+    wxInt32 StringCounter1 = 0, StringCounter2 = 0;
+	wxInt32 String1Zeroes = 0, String2Zeroes = 0;
+	wxChar String1Char, String2Char;
+	wxInt32 Result;
+
+    if (!CaseSensitive)
+    {
+        String1.MakeLower();
+        String2.MakeLower();
+    }
+
+    while (true)
+    {
+        String1Zeroes = 0;
+        String2Zeroes = 0;
+
+        String1Char = String1[StringCounter1];
+        String2Char = String2[StringCounter2];
+
+        // skip past whitespace or zeroes in first string
+        while (wxIsspace(String1Char) || String1Char == '0' ) 
+        {
+            if (String1Char == '0') 
+            {
+                String1Zeroes++;
+            } 
+            else 
+            {
+                String1Zeroes = 0;
+            }
+
+            String1Char = String1[++StringCounter1];
+        }
+        
+        // skip past whitespace or zeroes in second string
+        while (wxIsspace(String2Char) || String2Char == '0') 
+        {
+            if (String2Char == '0') 
+            {
+                String2Zeroes++;
+            } 
+            else 
+            {
+                String2Zeroes = 0;
+            }
+
+            String2Char = String2[++StringCounter2];
+        }
+
+        // We encountered some digits, compare these.
+        if (wxIsdigit(String1Char) && wxIsdigit(String2Char)) 
+        {
+            if ((Result = NaturalCompareWorker(
+                String1.Mid(StringCounter1), 
+                String2.Mid(StringCounter2))) != 0) 
+            {
+                return Result;
+            }
+        }
+
+        if ((String1Char == 0) && (String2Char == 0)) 
+        {
+            return (String1Zeroes - String2Zeroes);
+        }
+
+        if (String1Char < String2Char) 
+        {
+            return -1;
+        } 
+        else if (String1Char > String2Char) 
+        {
+            return 1;
+        }
+
+        ++StringCounter1; 
+        ++StringCounter2;
+    }
+}
+
 struct sortinfo_t
 {
     wxInt32 SortOrder;
     wxInt32 SortCol;
     wxAdvancedListCtrl *ctrl;
 };
-
-// Is this string an ip?
-bool IsIPAddressAndPort(wxString Address)
-{
-    // Our addresses are atmost 21 chars (eg 255.255.255.255:65535)
-    if (Address.Len() > 21)
-        return false;
-        
-    wxUint32 IP1, IP2, IP3, IP4, Port;
-    
-    wxSscanf(Address.c_str(), _T("%u.%u.%u.%u:%u"), &IP1, &IP2, &IP3, &IP4, &Port);
-             
-    // we compare chars, must be digits
-    if ((IP1 > 255) || (IP2 > 255) || (IP3 > 255) || (IP4 > 255) || (Port > 65535))
-        return false;
-    
-    return true;
-}
-
-wxInt32 CompareIPAddressAndPort(wxString Address1, wxString Address2)
-{
-    wxUint32 Addr1IP1, Addr1IP2, Addr1IP3, Addr1IP4, Addr1Port;
-    wxUint32 Addr2IP1, Addr2IP2, Addr2IP3, Addr2IP4, Addr2Port;
-
-    wxSscanf(Address1.c_str(), 
-             _T("%u.%u.%u.%u:%u"), 
-             &Addr1IP1, 
-             &Addr1IP2, 
-             &Addr1IP3, 
-             &Addr1IP4,
-             &Addr1Port);
-
-    wxSscanf(Address2.c_str(), 
-             _T("%u.%u.%u.%u:%u"), 
-             &Addr2IP1, 
-             &Addr2IP2, 
-             &Addr2IP3, 
-             &Addr2IP4,
-             &Addr2Port);
-             
-    if (Addr1IP1 > Addr2IP1)
-        return 1;
-    else if (Addr1IP1 < Addr2IP1)
-        return -1;
-
-    if (Addr1IP2 > Addr2IP2)
-        return 1;
-    else if (Addr1IP2 < Addr2IP2)
-        return -1;
-
-    if (Addr1IP3 > Addr2IP3)
-        return 1;
-    else if (Addr1IP3 < Addr2IP3)
-        return -1;
-
-    if (Addr1IP4 > Addr2IP4)
-        return 1;
-    else if (Addr1IP4 < Addr2IP4)
-        return -1;
-        
-    if (Addr1Port > Addr2Port)
-        return 1;
-    else if (Addr1Port < Addr2Port)
-        return -1;
-        
-    return 0;
-}
 
 int wxCALLBACK SortRoutine(long item1, long item2, long sortData) 
 {    
@@ -160,22 +236,10 @@ int wxCALLBACK SortRoutine(long item1, long item2, long sortData)
     lstitem2.SetMask(wxLIST_MASK_TEXT);
     sortinfo->ctrl->GetItem(lstitem2);
     
-    wxString item1str = lstitem1.GetText();
-    wxString item2str = lstitem2.GetText();
-
-    // IP address detection and comparison
-    if (IsIPAddressAndPort(item1str) && IsIPAddressAndPort(item2str))
-    {
-        if (sortinfo->SortOrder == 1) 
-            return CompareIPAddressAndPort(item1str, item2str);
-        
-        return CompareIPAddressAndPort(item2str, item1str);
-    }
-    
     if (sortinfo->SortOrder == 1) 
-        return item1str.CmpNoCase(item2str);
-    
-    return item2str.CmpNoCase(item1str);
+        return NaturalCompare(lstitem1.GetText(), lstitem2.GetText());
+
+    return NaturalCompare(lstitem2.GetText(), lstitem1.GetText());
 }
 
 void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
