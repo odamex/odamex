@@ -195,7 +195,7 @@ void P_MovePlayer (player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
-
+player->damagecount = 1000;
 	// Move around.
 	// Reactiontime is used to prevent movement
 	//	for a bit after a teleport.

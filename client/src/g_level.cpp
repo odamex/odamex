@@ -446,11 +446,11 @@ void G_DoCompleted (void)
 
 	gameaction = ga_nothing;
 
-    V_RestoreScreenPalette();
-
 	for(i = 0; i < players.size(); i++)
 		if(players[i].ingame())
 			G_PlayerFinishLevel(players[i]);
+
+	V_RestoreScreenPalette();
 
 	// [RH] Mark this level as having been visited
 	if (!(level.flags & LEVEL_CHANGEMAPCHEAT))
@@ -458,8 +458,6 @@ void G_DoCompleted (void)
 
 	if (automapactive)
 		AM_Stop ();
-
-	consoleplayer().damagecount = 0;
 
 	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
 	strncpy (wminfo.lname0, level.info->pname, 8);
