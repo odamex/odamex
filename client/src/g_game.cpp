@@ -1722,6 +1722,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		bytelen = W_LumpLength(demolump);
 	} else {
 		FixPathSeparator (defdemoname);
+		M_AppendExtension (defdemoname, ".lmp");
 		bytelen = M_ReadFile (defdemoname, &demobuffer);
 		demo_p = demobuffer;
 	}
