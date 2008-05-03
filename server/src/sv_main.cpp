@@ -3628,19 +3628,6 @@ BEGIN_COMMAND (playerinfo)
 }
 END_COMMAND (playerinfo)
 
-BEGIN_COMMAND (monsterinfo)
-{
-	AActor *mo;
-	TThinkerIterator<AActor> iterator;
-
-	while ( (mo = iterator.Next ()) )
-	{
-		Printf (PRINT_HIGH, "%d ", mo->type);
-	}
-}
-END_COMMAND (monsterinfo)
-
-
 //
 //	SV_MapEnd
 //

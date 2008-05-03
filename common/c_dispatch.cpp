@@ -775,7 +775,17 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile)
 	if (onlylogfile && !didlogfile) AddCommandString("version");
 }
 
-
+BEGIN_COMMAND (dumpactors)
+{
+	AActor *mo;
+	TThinkerIterator<AActor> iterator;
+	Printf (PRINT_HIGH, "Actors at level.time == %d:\n", level.time);
+	while ( (mo = iterator.Next ()) )
+	{
+		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %d tics: %d\n", mobjinfo[mo->type].name, mo->x, mo->y, mo->z, mo->angle, mo->state - states, mo->tics);
+	}
+}
+END_COMMAND (dumpactors)
 
 VERSION_CONTROL (c_dispatch_cpp, "$Id$")
 
