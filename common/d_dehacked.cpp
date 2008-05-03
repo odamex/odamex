@@ -544,7 +544,7 @@ static const struct {
 };
 
 static int HandleMode (const char *mode, int num);
-static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value);
+static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value, const int structsize = 0);
 static void BackupData (void);
 static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval);
 static BOOL ReadChars (char **stuff, int size);
@@ -571,10 +571,17 @@ static int HandleMode (const char *mode, int num)
 	return i;
 }
 
-static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value)
+static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value, const int structsize)
 {
 	while (keys->name && stricmp (keys->name, key))
 		keys++;
+
+	if(structsize && keys->offset + sizeof(int) > structsize)
+	{
+		// Handle unknown or unimplemented data
+		Printf (PRINT_HIGH, "DeHackEd: Cannot apply key %s, offset would overrun.\n", keys->name);
+		return false;
+	}
 
 	if (keys->name) {
 		*((int *)(((byte *)structure) + keys->offset)) = value;
@@ -1077,7 +1084,7 @@ static int PatchFrame (int frameNum)
 	}
 
 	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2)))
+		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
 			Printf (PRINT_HIGH, unknown_str, Line1, "Frame", frameNum);
 
 	return result;
@@ -1165,7 +1172,7 @@ static int PatchWeapon (int weapNum)
 	}
 
 	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2)))
+		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
 			Printf (PRINT_HIGH, unknown_str, Line1, "Weapon", weapNum);
 
 	return result;
