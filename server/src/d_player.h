@@ -211,6 +211,7 @@ public:
     int         ping;                   // [Fly] guess what :)
 
     bool		spectator;			// [GhostlyDeath] spectating?
+    int			joinafterspectatortime; // Nes - Join after spectator time.
 
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
@@ -291,7 +292,8 @@ public:
 		}
 	}client;
 
-	player_s() : playerstate(PST_CONTACT), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0), spectator(false)
+	player_s() : playerstate(PST_CONTACT), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0), spectator(false),
+				 joinafterspectatortime(level.time - TICRATE*5)
 	{
 	}
 
@@ -369,6 +371,9 @@ public:
 		
 		JoinTime = other.JoinTime;
 		ping = other.ping;
+		
+		spectator = other.spectator;
+		joinafterspectatortime = other.joinafterspectatortime;
 		
 		client = other.client;
 
