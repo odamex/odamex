@@ -28,7 +28,6 @@ IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListCtrl)
 
 BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListCtrl)
      EVT_LIST_COL_CLICK(-1, wxAdvancedListCtrl::OnHeaderColumnButtonClick)
-     EVT_LIST_INSERT_ITEM(-1, wxAdvancedListCtrl::OnItemInsert)
      EVT_WINDOW_CREATE(wxAdvancedListCtrl::OnCreateControl)
 END_EVENT_TABLE()
 
@@ -40,6 +39,55 @@ enum
     ,FIRST_IMAGE
 };
 
+// Sorting arrow XPM images
+static char *SortArrowAscending[] =
+{
+    "16 15 3 1",
+    "  c None",
+    "0 c #808080",
+    "1 c #FFFFFF",
+    
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+    "       01       ",
+    "      0011      ",
+    "      0  1      ",
+    "     00  11     ",
+    "     0    1     ",
+    "    00    11    ",
+    "    01111111    ",
+    "                ",
+    "                ",
+    "                ",
+    "                "
+};
+
+static char *SortArrowDescending[] =
+{
+    "16 15 3 1",
+    "  c None",
+    "0 c #808080",
+    "1 c #FFFFFF",
+    
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+    "    00000000    ",
+    "    00    11    ",
+    "     0    1     ",
+    "     00  11     ",
+    "      0  1      ",
+    "      0011      ",
+    "       01       ",
+    "                ",
+    "                ",
+    "                ",
+    "                "
+};
+
 void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
 {
     SortOrder = 0; 
@@ -49,16 +97,28 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
     colGreen = 245;
     colBlue = 245;
 
-    // sort buttons
-    AssignImageList(new wxImageList(16, 15, true, FIRST_IMAGE), wxIMAGE_LIST_SMALL);
-    GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_UP));
-    GetImageList(wxIMAGE_LIST_SMALL)->Add(wxArtProvider::GetBitmap(wxART_GO_DOWN)); 
+    // Set up the image list.
+    AddImageSmall(NULL);
 }
 
 // Add any additional bitmaps/icons to the internal image list
-void wxAdvancedListCtrl::AddImage(wxBitmap Bitmap)
+void wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 {
-    GetImageList(wxIMAGE_LIST_SMALL)->Add(Bitmap);
+    if (GetImageList(wxIMAGE_LIST_SMALL) == NULL)
+    {
+        // Art provider images are 16x15, WTF?! Kept for compatibility :'(
+        wxImageList *ImageList = new wxImageList(16, 15, true, FIRST_IMAGE);
+        AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
+        
+        // Add our sort icons by default.
+        GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
+        GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowDescending));
+    }
+    
+    if (Image.IsOk())
+    {
+        GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
+    }
 }
 
 // Adjusts the index, so it jumps over the sort arrow images.
@@ -304,38 +364,53 @@ void wxAdvancedListCtrl::SetSortArrow(wxInt32 Column, wxInt32 ArrowState)
     SetColumn(SortCol, li);
 }
 
-void wxAdvancedListCtrl::ColourListItem(wxInt32 item, wxInt32 grey)
+void wxAdvancedListCtrl::ColourListItem(wxListItem &info)
 {
-    wxColour col = GetItemBackgroundColour(item);
+    static bool SwapColour = false;
     
-    if ((col != wxColour(colRed, colGreen, colBlue)) &&
-       (col != *wxWHITE))
+    wxColour col;
+    wxListItemAttr *ListItemAttr = info.GetAttributes();
+    
+    // Don't change a background colour we didn't set.
+    if (ListItemAttr && ListItemAttr->HasBackgroundColour())
     {
         return;
     }
     
     // light grey coolness
-    if (grey)
+    if (SwapColour)
         col.Set(colRed, colGreen, colBlue);
     else
         col.Set(255, 255, 255);
 
-    // apply to index.
-    this->SetItemBackgroundColour(item, col); 
+    SwapColour = !SwapColour;
+
+    info.SetBackgroundColour(col);
 }
 
-// colour the previous item on insertion, it won't colour THIS item..?
-void wxAdvancedListCtrl::OnItemInsert(wxListEvent &event)
-{   
-    // FIXME: Remove these from here, for performance reasons.
-    ColourList();   
+void wxAdvancedListCtrl::ColourListItem(long item)
+{
+    wxListItem ListItem;
+    ListItem.SetId(item);
+    
+    ColourListItem(ListItem);
+    
+    SetItem(ListItem);
 }
 
 // recolour the entire list
 void wxAdvancedListCtrl::ColourList()
 {      
-    for (wxInt32 i = 0; i < this->GetItemCount(); i++)
-        ColourListItem(i, (i % 2));
+    for (long i = 0; i < GetItemCount(); ++i)
+        ColourListItem(i);
+}
+
+// Our variation of InsertItem, so we can do magical things!
+long wxAdvancedListCtrl::ALCInsertItem(wxListItem &info)
+{
+    ColourListItem(info);
+    
+    return InsertItem(info);
 }
 
 // get an index location of the text field in the list

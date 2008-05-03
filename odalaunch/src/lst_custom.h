@@ -37,17 +37,19 @@ class wxAdvancedListCtrl : public wxListCtrl
         ~wxAdvancedListCtrl() { };
                 
         wxInt32 GetIndex(wxString str);
-        void AddImage(wxBitmap Bitmap);
+        void AddImageSmall(wxImage Image);
         void SetColumnImage(wxListItem &li, wxInt32 ImageIndex);
-               
+        long ALCInsertItem(wxListItem &info);
+        
         wxEvent *Clone(void);
 
     private:
-        void ColourList();
-        void ColourListItem(wxInt32 item, wxInt32 grey);
         void OnCreateControl(wxWindowCreateEvent &event);
-        void OnItemInsert(wxListEvent &event);
         void OnHeaderColumnButtonClick(wxListEvent &event);
+
+        void ColourList();
+        void ColourListItem(wxListItem &info);
+        void ColourListItem(long item);
 
         void ResetSortArrows(void);
         void SetSortArrow(wxInt32 Column, wxInt32 ArrowState);

@@ -82,13 +82,10 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     // are we adding a new item?
     if (insert)    
     {
-        li.SetTextColour(*wxBLACK);
-        li.SetBackgroundColour(*wxWHITE);
-
         li.SetColumn(serverlist_field_name);
         li.SetText(s.info.name);
         
-        li.SetId(list->InsertItem(li));
+        li.SetId(list->ALCInsertItem(li));
     }
     else
     {
@@ -181,7 +178,8 @@ typedef enum
 void SetupPlayerListHeader(wxAdvancedListCtrl *list)
 {
     // spectator state.
-    list->AddImage(wxArtProvider::GetBitmap(wxART_FIND));   
+    
+    list->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());   
 }
 
 void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
@@ -218,9 +216,6 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
         
         li.SetColumn(playerlist_field_name);
         
-        li.SetTextColour(*wxBLACK);
-        li.SetBackgroundColour(*wxWHITE);
-        
         li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
 
         // We don't want the sort arrow.
@@ -238,7 +233,7 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
             li.SetText(s.info.playerinfo[i].name);
         }
         
-        li.SetId(list->InsertItem(li));
+        li.SetId(list->ALCInsertItem(li));
         
         li.SetColumn(playerlist_field_ping);
         li.SetMask(wxLIST_MASK_TEXT);
