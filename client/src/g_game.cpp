@@ -131,6 +131,9 @@ enum demoversion_t
 #define DOOM_1_9p_DEMO		0x6E
 #define DOOM_1_9_1_DEMO		0x6F
 
+#define DOOM_BOOM_DEMO_START	0xC8
+#define DOOM_BOOM_DEMO_END	0xD6
+
 EXTERN_CVAR(nomonsters)
 EXTERN_CVAR(fastmonsters)
 EXTERN_CVAR(allowfreelook)
@@ -1852,6 +1855,15 @@ void G_DoPlayDemo (bool justStreamInput)
 		return;
 	} else {
 		democlassic = false;
+	}
+
+	if(demo_p[0] >= DOOM_BOOM_DEMO_START ||
+	   demo_p[0] <= DOOM_BOOM_DEMO_END)
+	{
+		demo_p += 6; // xBOOM\0
+		Printf (PRINT_HIGH, "BOOM demos are not supported in this version.\n");
+		gameaction = ga_nothing;
+		return;
 	}
 
 	if (ReadLong (&demo_p) != FORM_ID) {
