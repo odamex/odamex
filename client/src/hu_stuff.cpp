@@ -337,7 +337,7 @@ END_COMMAND (say)
 
 BEGIN_COMMAND (messagemode2)
 {
-	if(!connected)
+	if(!connected || (!teamplay && !consoleplayer().spectator))
 		return;
 
 	headsupactive = 2;
