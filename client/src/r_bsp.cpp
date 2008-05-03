@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -107,6 +107,24 @@ R_ClipSolidWallSegment
   int			last )
 {
 	cliprange_t *next, *start;
+
+	if(newend + 1 >= lastsolidseg)
+	{
+		// denis - out of solidsegs, this would crash vanilla
+		Printf(PRINT_HIGH, "warning: exceeded %d solidsegs\n", MaxSegs);
+		if(MaxSegs >= 1024*1024)
+		{
+			// not that crazy, though
+			I_FatalError("R_ClipSolidWallSegment: refusing to extend solidsegs over %d", MaxSegs);
+		}
+		cliprange_t *old = solidsegs;
+		solidsegs = (cliprange_t *)Malloc (2 * MaxSegs * sizeof(cliprange_t));
+		memcpy(solidsegs, old,  (sizeof(cliprange_t)*MaxSegs));
+		free(old);
+		MaxSegs *= 2;
+		lastsolidseg = &solidsegs[MaxSegs];
+		newend = newend - old + solidsegs;
+	}
 
 	// Find the first range that touches the range
 	//	(adjacent pixels are touching).
@@ -895,5 +913,5 @@ void R_RenderBSPNode (int bspnum)
 	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 
-VERSION_CONTROL (r_bsp_cpp, "$Id:$")
+VERSION_CONTROL (r_bsp_cpp, "$Id$")
 
