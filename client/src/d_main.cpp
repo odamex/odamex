@@ -1195,11 +1195,14 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 	std::vector<size_t> fails;
 	size_t i;
 
-	static std::vector<std::string> last_wadnames, last_hashes;
+	static std::vector<std::string> last_wadnames, last_hashes, last_patches;
 	static bool last_success = false;
 
 	// already loaded these?
-	if(last_success && wadnames == last_wadnames && (needhashes.empty() || needhashes == last_hashes))
+	if (last_success && 
+        (wadnames == last_wadnames) && 
+        (patch_files == last_patches) &&
+        (needhashes.empty() || needhashes == last_hashes))
 	{
 		// fast track if files have not been changed // denis - todo - actually check the file timestamps
 		return std::vector<size_t>();
