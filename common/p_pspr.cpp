@@ -86,7 +86,8 @@ P_SetPsprite
 		// Modified handling.
 		if (state->action.acp2)
 		{
-			state->action.acp2(player, psp);
+			if(!player->spectator)
+				state->action.acp2(player, psp);
 			if (!psp->state)
 				break;
 		}
@@ -104,9 +105,6 @@ void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, char *name, by
 //
 void A_FireSound (player_t *player, char *sound)
 {
-	if (player->spectator)
-		return;
-
  	UV_SoundAvoidPlayer (*player, player->mo, CHAN_WEAPON, sound, ATTN_NORM);
 }
 
@@ -119,10 +117,7 @@ void A_FireSound (player_t *player, char *sound)
 void P_BringUpWeapon (player_t *player)
 {
 	statenum_t	newstate;
-
-	if (player->spectator)
-		return;
-
+		
 	if (player->pendingweapon == wp_nochange)
 		player->pendingweapon = player->readyweapon;
 				
@@ -146,9 +141,6 @@ BOOL P_CheckAmmo (player_t *player)
 {
 	ammotype_t			ammo;
 	int 				count;
-
-	if (player->spectator)
-		return false;
 
 	ammo = weaponinfo[player->readyweapon].ammo;
 
@@ -230,9 +222,6 @@ BOOL P_CheckAmmo (player_t *player)
 //
 void P_FireWeapon (player_t *player)
 {
-	if (player->spectator)
-		return;
-
 	statenum_t	newstate;
 
 	if (!P_CheckAmmo (player))
@@ -252,8 +241,6 @@ void P_FireWeapon (player_t *player)
 //
 void P_DropWeapon (player_t *player)
 {
-	if (player->spectator)
-		return;
 	P_SetPsprite (player,
 				  ps_weapon,
 				  weaponinfo[player->readyweapon].downstate);
@@ -275,10 +262,7 @@ A_WeaponReady
 {		
 	statenum_t	newstate;
 	int 		angle;
-
-	if (player->spectator)
-		return;
-
+	
 	// get out of attack state
 	if (player->mo->state == &states[S_PLAY_ATK1]
 		|| player->mo->state == &states[S_PLAY_ATK2] )
@@ -335,9 +319,7 @@ void A_ReFire
 ( player_t*	player,
   pspdef_t*	psp )
 {
-	if (player->spectator)
-		return;
-
+    
 	// check for fire
 	//	(if a weaponchange is pending, let it go through instead)
 	if ( (player->cmd.ucmd.buttons & BT_ATTACK) 
@@ -360,9 +342,6 @@ A_CheckReload
 ( player_t*	player,
   pspdef_t*	psp )
 {
-	if (player->spectator)
-		return;
-
 	P_CheckAmmo (player);
 #if 0
 	if (player->ammo[am_shell]<2)
@@ -379,10 +358,7 @@ void
 A_Lower
 ( player_t*	player,
   pspdef_t*	psp )
-{
-	if (player->spectator)
-		return;
-
+{		
 	psp->sy += LOWERSPEED;
 
 	// Is already down.
@@ -420,9 +396,6 @@ A_Raise
 ( player_t*	player,
   pspdef_t*	psp )
 {
-	if (player->spectator)
-		return;
-
 	statenum_t	newstate;
 		
 	psp->sy -= RAISESPEED;
@@ -446,9 +419,6 @@ A_Raise
 //
 void A_GunFlash (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 	P_SetPsprite (player, ps_flash, weaponinfo[player->readyweapon].flashstate);
 }
@@ -467,10 +437,7 @@ void A_Punch (player_t *player, pspdef_t *psp)
 	angle_t 	angle;
 	int 		damage;
 	int 		slope;
-
-	if (player->spectator)
-		return;
-
+		
 	damage = (P_Random (player->mo)%10+1)<<1;
 
 	if (player->powers[pw_strength])	
@@ -502,9 +469,6 @@ void A_Saw (player_t *player, pspdef_t *psp)
 {
 	angle_t 	angle;
 	int 		damage;
-
-	if (player->spectator)
-		return;
 
 	damage = 2 * (P_Random (player->mo)%10+1);
 	angle = player->mo->angle;
@@ -548,9 +512,6 @@ void A_Saw (player_t *player, pspdef_t *psp)
 //
 void A_FireMissile (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	if (!infiniteammo)
 		player->ammo[weaponinfo[player->readyweapon].ammo]--;
 
@@ -565,9 +526,6 @@ void A_FireMissile (player_t *player, pspdef_t *psp)
 
 void A_FireBFG (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	// [RH] bfg can be forced to not use freeaim
 	angle_t storedpitch = player->mo->pitch;
 	int storedaimdist = player->userinfo.aimdist;
@@ -592,9 +550,6 @@ void A_FireBFG (player_t *player, pspdef_t *psp)
 //
 void A_FirePlasma (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	if (!infiniteammo)
 		player->ammo[weaponinfo[player->readyweapon].ammo]--;
 
@@ -676,9 +631,6 @@ void P_GunShot (AActor *mo, BOOL accurate)
 //
 void A_FirePistol (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	A_FireSound (player, "weapons/pistol");
 
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
@@ -703,9 +655,6 @@ void A_FirePistol (player_t *player, pspdef_t *psp)
 //
 void A_FireShotgun (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	A_FireSound (player, "weapons/shotgf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
@@ -734,9 +683,6 @@ void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 {		
 	angle_t 	angle;
 	int 		damage;
-
-	if (player->spectator)
-		return;
 
 	A_FireSound (player, "weapons/sshotf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
@@ -771,9 +717,6 @@ void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 //
 void A_FireCGun (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	A_FireSound (player, "weapons/chngun");
 
 	if (!player->ammo[weaponinfo[player->readyweapon].ammo])
@@ -801,25 +744,16 @@ void A_FireCGun (player_t *player, pspdef_t *psp)
 
 void A_Light0 (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	player->extralight = 0;
 }
 
 void A_Light1 (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	player->extralight = 1;
 }
 
 void A_Light2 (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	player->extralight = 2;
 }
 
@@ -932,17 +866,11 @@ void P_MovePsprites (player_t* player)
 
 void A_OpenShotgun2 (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	A_FireSound(player, "weapons/sshoto");
 }
 
 void A_LoadShotgun2 (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	A_FireSound(player, "weapons/sshotl");
 }
 
@@ -950,9 +878,6 @@ void A_ReFire (player_t *player, pspdef_t *psp);
 
 void A_CloseShotgun2 (player_t *player, pspdef_t *psp)
 {
-	if (player->spectator)
-		return;
-
 	A_FireSound(player, "weapons/sshotc");
 	A_ReFire(player,psp);
 }
@@ -968,5 +893,4 @@ FArchive &operator>> (FArchive &arc, pspdef_t &def)
 }
 
 VERSION_CONTROL (p_pspr_cpp, "$Id$")
-
 

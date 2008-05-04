@@ -142,7 +142,6 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
-void P_FireWeapon (player_t *player);
 void P_CalcHeight (player_t *player);
 BOOL P_CheckMissileSpawn (AActor* th);
 void CL_SetMobjSpeedAndAngle(void);
