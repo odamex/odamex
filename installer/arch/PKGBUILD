@@ -1,21 +1,21 @@
 # Contributor: Curtis Smith <kman922002@gmail.com>
 pkgname=odamex-svn
-pkgver=312
-pkgrel=4
+pkgver=477
+pkgrel=5
 pkgdesc="A free client/server multiplayer game engine for the classic FPS Doom"
 arch=(i686 x86_64)
 url="http://odamex.net/"
 license="GPL"
+conflicts=('odamex')
+provides=('odamex')
 depends=('wxgtk' 'sdl' 'sdl_mixer>=1.2.6')
-makedepends=('wxgtk' 'subversion')
+makedepends=('subversion')
 source=(odamex.desktop \
 	odasrv.desktop \
-        odalaunch.desktop \
-	Makefile )
+        odalaunch.desktop )
 md5sums=('b353a68ffb46a61c27272367e625ce50'
          '937a0effa783659dd2c38f3c3ae109f7'
-         '4c69ddb52ad0e9a4dcf4f0be796f95ad'
-         '00eeb77c946cc204a7ca55018a48183a')
+         '0e1555286931a74c172582714756298f')
 
 _svntrunk=http://odamex.net/svn/root/trunk/
 _svnmod=odamex
@@ -30,9 +30,7 @@ cd $startdir/src
   cp -r $_svnmod $_svnmod-build
   cd $_svnmod-build
 # fix cflags
-sed -i 's|-g ||g' Makefile
-#Copy patched makefile into the build directory
-cp $startdir/src/Makefile $startdir/src/$_svnmod-build
+sed -i 's/-O2/-O0/g' $startdir/src/$_svnmod-build/Makefile
 # change iwad directory
 sed -i 's|getenv("DOOMWADDIR")|"/usr/share/doom"|g' {client,server}/src/d_main.cpp
 
