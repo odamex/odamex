@@ -256,7 +256,7 @@ void ageServers(void)
 	}
 }
 
-void dumpServersToFile(char *file = "./latest")
+void dumpServersToFile(const char *file = "./latest")
 {
 	static bool file_error = false;
 	FILE *fp = fopen(file, "w");
