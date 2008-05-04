@@ -99,18 +99,21 @@ size_t got_heapsize = 0;
 // I_MegabytesToBytes
 //
 // Returns the megabyte value of size in bytes
-size_t I_MegabytesToBytes (size_t size)
+size_t I_MegabytesToBytes (size_t Megabytes)
 {
-	return (size*1024*1024);
+	return (Megabytes*1024*1024);
 }
 
 //
 // I_BytesToMegabytes
 //
 // Returns the byte value of size in megabytes
-size_t I_BytesToMegabytes (size_t size)
+size_t I_BytesToMegabytes (size_t Bytes)
 {
-	return (size/1024/1024);
+	if (!Bytes)
+        return 0;
+        
+    return (Bytes/1024/1024);
 }
 
 //
@@ -135,8 +138,8 @@ void *I_ZoneBase (size_t *size)
 	*size = I_MegabytesToBytes(def_heapsize);
 
     // Allocate the def_heapsize, otherwise try to allocate a smaller amount
-	while (NULL == (zone = Malloc (*size)) && *size >= min_heapsize*1024*1024)
-		*size -= 1024*1024;
+	while (NULL == (zone = Malloc (*size)) && *size >= I_MegabytesToBytes(min_heapsize))
+		*size -= I_MegabytesToBytes(1);
 
     // Our heap size we received
     got_heapsize = I_BytesToMegabytes(*size);
