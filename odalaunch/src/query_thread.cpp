@@ -1,9 +1,8 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2007 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -17,19 +16,20 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Intialize command variables (?)
+//	Multi-Threaded Server Queries
+//	AUTHOR:	Mike Wood (Hyper_Eye)
 //
 //-----------------------------------------------------------------------------
 
+#include "query_thread.h"
 
-#include <stdio.h>
+void *QueryThread::Entry()
+{   
+    wxCommandEvent newEvent(wxEVT_THREAD_WORKER_SIGNAL, wxID_ANY );
+    
+    newEvent.SetId(m_QueryServer->Query(9999));
+    newEvent.SetInt(m_ServerIndex);
+    wxPostEvent(m_EventHandler, newEvent);
 
-#include "cmdlib.h"
-#include "c_cvars.h"
-#include "dstrings.h"
-
-extern cvar_t *CVars;
-
-
-VERSION_CONTROL (c_varinit_cpp, "$Id:$")
-
+    return NULL;
+}

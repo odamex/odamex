@@ -28,7 +28,6 @@
 #include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
-#include "cl_main.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -41,7 +40,9 @@
 #define MAXBOB			0x100000
 
 EXTERN_CVAR (allowjump)
-EXTERN_CVAR (freelook)
+EXTERN_CVAR (allowfreelook)
+
+extern bool predicting, stepmode;
 
 //
 // P_Thrust
@@ -153,7 +154,7 @@ void P_PlayerLookUpDown (player_t *p)
 	ticcmd_t *cmd = &p->cmd;
 	
 	// [RH] Look up/down stuff
-	if (!freelook)
+	if (!allowfreelook)
 	{
 		p->mo->pitch = 0;
 	}
@@ -211,6 +212,13 @@ void P_MovePlayer (player_t *player)
 		{
 			player->mo->momz = 4*FRACUNIT;
 		}
+		else if (allowjump && player->mo->onground && !player->mo->momz)
+		{
+			player->mo->momz += 7*FRACUNIT;
+			
+			if(clientside)
+				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
+		}
 	}
 
 	if (cmd->ucmd.upmove &&
@@ -220,7 +228,7 @@ void P_MovePlayer (player_t *player)
 	}
 
 	// Look left/right
-	if(clientside)
+	if(clientside || stepmode)
 	{
 		mo->angle += cmd->ucmd.yaw << 16;
 
@@ -342,11 +350,11 @@ void P_DeathThink (player_t *player)
 	else if (player->damagecount)
 		player->damagecount--;
 		
-	if(serverside && !clientside)
+	if(serverside)
 	{
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
 		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
-								 || level.time >= player->respawn_time)) // forced respawn
+								 || (!clientside && level.time >= player->respawn_time))) // forced respawn
 			player->playerstate = PST_REBORN;
 	}
 }

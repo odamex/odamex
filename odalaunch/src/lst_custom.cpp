@@ -28,7 +28,250 @@ IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListCtrl)
 
 BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListCtrl)
      EVT_LIST_COL_CLICK(-1, wxAdvancedListCtrl::OnHeaderColumnButtonClick)
+     EVT_WINDOW_CREATE(wxAdvancedListCtrl::OnCreateControl)
 END_EVENT_TABLE()
+
+// this is so we can jump over the sort arrow images
+enum
+{
+    LIST_SORT_ARROW_UP = 0
+    ,LIST_SORT_ARROW_DOWN
+    ,FIRST_IMAGE
+};
+
+// Sorting arrow XPM images
+static char *SortArrowAscending[] =
+{
+    "16 15 3 1",
+    "  c None",
+    "0 c #808080",
+    "1 c #FFFFFF",
+    
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+    "       01       ",
+    "      0011      ",
+    "      0  1      ",
+    "     00  11     ",
+    "     0    1     ",
+    "    00    11    ",
+    "    01111111    ",
+    "                ",
+    "                ",
+    "                ",
+    "                "
+};
+
+static char *SortArrowDescending[] =
+{
+    "16 15 3 1",
+    "  c None",
+    "0 c #808080",
+    "1 c #FFFFFF",
+    
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+    "    00000000    ",
+    "    00    11    ",
+    "     0    1     ",
+    "     00  11     ",
+    "      0  1      ",
+    "      0011      ",
+    "       01       ",
+    "                ",
+    "                ",
+    "                ",
+    "                "
+};
+
+void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
+{
+    SortOrder = 0; 
+    SortCol = 0; 
+
+    colRed = 245;
+    colGreen = 245;
+    colBlue = 245;
+
+    // Set up the image list.
+    AddImageSmall(NULL);
+}
+
+// Add any additional bitmaps/icons to the internal image list
+void wxAdvancedListCtrl::AddImageSmall(wxImage Image)
+{
+    if (GetImageList(wxIMAGE_LIST_SMALL) == NULL)
+    {
+        // Art provider images are 16x15, WTF?! Kept for compatibility :'(
+        wxImageList *ImageList = new wxImageList(16, 15, true, FIRST_IMAGE);
+        AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
+        
+        // Add our sort icons by default.
+        GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
+        GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowDescending));
+    }
+    
+    if (Image.IsOk())
+    {
+        GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
+    }
+}
+
+// Adjusts the index, so it jumps over the sort arrow images.
+void wxAdvancedListCtrl::SetColumnImage(wxListItem &li, wxInt32 ImageIndex)
+{
+    if (ImageIndex < -1)
+        ImageIndex = -1;
+
+    li.SetImage(((ImageIndex == -1) ? ImageIndex : FIRST_IMAGE + ImageIndex));
+}
+
+// [Russell] - These are 2 heavily modified routines of the javascript natural 
+// compare by Kristof Coomans (it was easier to follow than the original C 
+// version by Martin Pool), their versions were under the ZLIB license (which 
+// is compatible with the GPL).
+//
+// Original Javascript version by Kristof Coomans
+//      http://sourcefrog.net/projects/natsort/natcompare.js
+//
+// Do not contact the mentioned authors about my version.
+wxInt32 NaturalCompareWorker(const wxString &String1, const wxString &String2)
+{
+    wxInt32 Direction = 0;
+
+    wxChar String1Char, String2Char;
+
+    for (wxUint32 String1Counter = 0, String2Counter = 0;
+         String1.Len() > 0 && String2.Len() > 0; 
+         ++String1Counter, ++String2Counter) 
+    {
+        String1Char = String1[String1Counter];
+        String2Char = String2[String2Counter];
+
+        if (!wxIsdigit(String1Char) && !wxIsdigit(String2Char)) 
+        {
+            return Direction;
+        } 
+        
+        if (!wxIsdigit(String1Char)) 
+        {
+            return -1;
+        } 
+        
+        if (!wxIsdigit(String2Char)) 
+        {
+            return 1;
+        } 
+        
+        if (String1Char < String2Char) 
+        {
+            if (Direction == 0) 
+            {
+                Direction = -1;
+            }
+        } 
+        
+        if (String1Char > String2Char) 
+        {
+            if (Direction == 0)
+            {
+                Direction = 1;
+            }
+        } 
+        
+        if (String1Char == 0 && String2Char == 0) 
+        {
+            return Direction;
+        }
+    }
+    
+    return 0;
+}
+
+wxInt32 NaturalCompare(wxString String1, wxString String2, bool CaseSensitive = false) 
+{
+    wxInt32 StringCounter1 = 0, StringCounter2 = 0;
+	wxInt32 String1Zeroes = 0, String2Zeroes = 0;
+	wxChar String1Char, String2Char;
+	wxInt32 Result;
+
+    if (!CaseSensitive)
+    {
+        String1.MakeLower();
+        String2.MakeLower();
+    }
+
+    while (true)
+    {
+        String1Zeroes = 0;
+        String2Zeroes = 0;
+
+        String1Char = String1[StringCounter1];
+        String2Char = String2[StringCounter2];
+
+        // skip past whitespace or zeroes in first string
+        while (wxIsspace(String1Char) || String1Char == '0' ) 
+        {
+            if (String1Char == '0') 
+            {
+                String1Zeroes++;
+            } 
+            else 
+            {
+                String1Zeroes = 0;
+            }
+
+            String1Char = String1[++StringCounter1];
+        }
+        
+        // skip past whitespace or zeroes in second string
+        while (wxIsspace(String2Char) || String2Char == '0') 
+        {
+            if (String2Char == '0') 
+            {
+                String2Zeroes++;
+            } 
+            else 
+            {
+                String2Zeroes = 0;
+            }
+
+            String2Char = String2[++StringCounter2];
+        }
+
+        // We encountered some digits, compare these.
+        if (wxIsdigit(String1Char) && wxIsdigit(String2Char)) 
+        {
+            if ((Result = NaturalCompareWorker(
+                String1.Mid(StringCounter1), 
+                String2.Mid(StringCounter2))) != 0) 
+            {
+                return Result;
+            }
+        }
+
+        if ((String1Char == 0) && (String2Char == 0)) 
+        {
+            return (String1Zeroes - String2Zeroes);
+        }
+
+        if (String1Char < String2Char) 
+        {
+            return -1;
+        } 
+        else if (String1Char > String2Char) 
+        {
+            return 1;
+        }
+
+        ++StringCounter1; 
+        ++StringCounter2;
+    }
+}
 
 struct sortinfo_t
 {
@@ -36,27 +279,6 @@ struct sortinfo_t
     wxInt32 SortCol;
     wxAdvancedListCtrl *ctrl;
 };
-
-wxInt32 GetFirstNumber(wxString str)
-{
-    //const wxChar num_arr[10] = { '0', '1', '2', '3', '4', 
-    //                            '5', '6', '7', '8', '9' };
-    
-    wxString ascii_num = _T("");
-    
-    if (str == _T(""))
-        return 0;
-    
-    for (wxInt32 i = 0; i < str.length(); i++)
-    {
-        if (wxIsdigit(str[i]))
-            ascii_num += str[i];
-        else
-            break;
-    }
-    
-    return wxAtoi(ascii_num.c_str());
-}
 
 int wxCALLBACK SortRoutine(long item1, long item2, long sortData) 
 {    
@@ -74,24 +296,10 @@ int wxCALLBACK SortRoutine(long item1, long item2, long sortData)
     lstitem2.SetMask(wxLIST_MASK_TEXT);
     sortinfo->ctrl->GetItem(lstitem2);
     
-    wxString item1str = lstitem1.GetText();
-    wxString item2str = lstitem2.GetText();
-    
-    if (wxIsdigit(item1str[0]) && wxIsdigit(item2str[0]))
-    {
-        wxInt32 item1val = GetFirstNumber(item1str);
-        wxInt32 item2val = GetFirstNumber(item2str);
-        
-        if (sortinfo->SortOrder)
-            return (item1val > item2val);
-        else
-            return (item1val < item2val);
-    }
-    
     if (sortinfo->SortOrder == 1) 
-        return item1str.CmpNoCase(item2str);
-    
-    return item2str.CmpNoCase(item1str);
+        return NaturalCompare(lstitem1.GetText(), lstitem2.GetText());
+
+    return NaturalCompare(lstitem2.GetText(), lstitem1.GetText());
 }
 
 void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
@@ -105,7 +313,9 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
     // column that needs to be sorted, so the rest of the list
     // can be sorted by it
     SortCol = event.GetColumn();
-    
+
+    SetSortArrow(SortCol, SortOrder);
+
     // prime 'er up
     long item = this->GetNextItem(-1);
       
@@ -130,32 +340,77 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
     ColourList();
 }
 
-void wxAdvancedListCtrl::ColourListItem(wxInt32 item, wxInt32 grey)
+void wxAdvancedListCtrl::ResetSortArrows(void)
 {
-    // reset colours back
+    wxListItem li;
+    li.SetMask(wxLIST_MASK_IMAGE);    
+    li.SetImage(-1);
+
+    for (wxInt32 i = 0; i < GetColumnCount(); ++i)
+    {
+        SetColumn(i, li);        
+    }
+}
+
+void wxAdvancedListCtrl::SetSortArrow(wxInt32 Column, wxInt32 ArrowState)
+{
+    // nuke any previously set sort arrows
+    ResetSortArrows();
+
+    wxListItem li;
+    li.SetMask(wxLIST_MASK_IMAGE);
+    li.SetImage(ArrowState);
+
+    SetColumn(SortCol, li);
+}
+
+void wxAdvancedListCtrl::ColourListItem(wxListItem &info)
+{
+    static bool SwapColour = false;
+    
     wxColour col;
-     
+    wxListItemAttr *ListItemAttr = info.GetAttributes();
+    
+    // Don't change a background colour we didn't set.
+    if (ListItemAttr && ListItemAttr->HasBackgroundColour())
+    {
+        return;
+    }
+    
     // light grey coolness
-    if (grey)
+    if (SwapColour)
         col.Set(colRed, colGreen, colBlue);
     else
         col.Set(255, 255, 255);
 
-    // apply to index.
-    this->SetItemBackgroundColour(item, col); 
+    SwapColour = !SwapColour;
+
+    info.SetBackgroundColour(col);
 }
 
-void wxAdvancedListCtrl::ColourList()
-{  
-    // iterate through, changing background colour for each row
-    wxInt32 colswitch = 0;
+void wxAdvancedListCtrl::ColourListItem(long item)
+{
+    wxListItem ListItem;
+    ListItem.SetId(item);
     
-    for (wxInt32 i = 0; i < this->GetItemCount(); i++)
-    {     
-        ColourListItem(i, colswitch);
-        
-        colswitch = !colswitch;
-    }
+    ColourListItem(ListItem);
+    
+    SetItem(ListItem);
+}
+
+// recolour the entire list
+void wxAdvancedListCtrl::ColourList()
+{      
+    for (long i = 0; i < GetItemCount(); ++i)
+        ColourListItem(i);
+}
+
+// Our variation of InsertItem, so we can do magical things!
+long wxAdvancedListCtrl::ALCInsertItem(wxListItem &info)
+{
+    ColourListItem(info);
+    
+    return InsertItem(info);
 }
 
 // get an index location of the text field in the list

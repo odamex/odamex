@@ -45,6 +45,8 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "version.h"
+#include "cl_main.h"
+#include "gi.h"
 
 #include "cl_ctf.h"
 
@@ -84,8 +86,13 @@ BEGIN_CUSTOM_CVAR (st_scale, "1", CVAR_ARCHIVE)		// Stretch status bar to full s
 		ST_HEIGHT = 32;
 	}
 
-	ST_X = (screen->width-ST_WIDTH)/2;
-	ST_Y = screen->height - ST_HEIGHT;
+	if (!(&consoleplayer())->spectator) {
+		ST_X = (screen->width-ST_WIDTH)/2;
+		ST_Y = screen->height - ST_HEIGHT;
+	} else {
+		ST_X = 0;
+		ST_Y = screen->height;		
+	}
 
 	setsizeneeded = true;
 	st_firsttime = true;
@@ -102,12 +109,14 @@ DCanvas *stbarscreen;
 DCanvas *stnumscreen;
 
 BOOL DrawNewHUD;		// [RH] Draw the new HUD?
+BOOL DrawNewSpecHUD;	// [Nes] Draw the new spectator HUD?
 
 
 // functions in st_new.c
 void ST_initNew (void);
 void ST_unloadNew (void);
 void ST_newDraw (void);
+void ST_newDrawCTF (void);
 
 // [RH] Base blending values (for e.g. underwater)
 int BaseBlendR, BaseBlendG, BaseBlendB;
@@ -122,9 +131,6 @@ float BaseBlendA;
 // N/256*100% probability
 //	that the normal face state will change
 #define ST_FACEPROBABILITY		96
-
-// For Responder
-#define ST_TOGGLECHAT			KEY_ENTER
 
 // Location of status bar face
 #define ST_FX					(143)
@@ -290,26 +296,6 @@ float BaseBlendA;
 #define ST_DETHX				(109)
 #define ST_DETHY				(23)
 
-//Incoming messages window location
-//UNUSED
-// #define ST_MSGTEXTX	   (viewwindowx)
-// #define ST_MSGTEXTY	   (viewwindowy+realviewheight-18)
-#define ST_MSGTEXTX 			0
-#define ST_MSGTEXTY 			0
-// Dimensions given in characters.
-#define ST_MSGWIDTH 			52
-// Or shall I say, in lines?
-#define ST_MSGHEIGHT			1
-
-#define ST_OUTTEXTX 			0
-#define ST_OUTTEXTY 			6
-
-// Width, in characters again.
-#define ST_OUTWIDTH 			52
- // Height, in lines.
-#define ST_OUTHEIGHT			1
-
-
 // [RH] Turned these into variables
 // Size of statusbar.
 // Now ([RH] truly) sensitive for scaling.
@@ -320,9 +306,6 @@ int						ST_Y;
 
 // used for making messages go away
 static int				st_msgcounter=0;
-
-// used when in chat
-static st_chatstateenum_t		st_chatstate;
 
 // whether in automap or first-person
 static st_stateenum_t	st_gamestate;
@@ -338,9 +321,6 @@ static bool			st_oldchat;
 
 // whether chat window has the cursor on
 static bool			st_cursoron;
-
-// !deathmatch
-//static bool			st_notdeathmatch;
 
 // !deathmatch && st_statusbaron
 static bool			st_armson;
@@ -544,7 +524,27 @@ void ST_refreshBackground(void)
 }
 
 
-bool CheckCheatmode (void);
+EXTERN_CVAR (allowcheats)
+
+// Checks whether cheats are enabled or not, returns true if they're NOT enabled
+// and false if they ARE enabled (stupid huh? not my work [Russell])
+BOOL CheckCheatmode (void)
+{
+	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats 
+	// are disabled
+	if (skill == sk_nightmare && !multiplayer)
+        return true;
+	
+	if ((multiplayer || deathmatch) && !allowcheats)
+	{
+		Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
@@ -715,12 +715,13 @@ bool ST_Responder (event_t *ev)
             if (CheckCheatmode ())
                 return false;
 
-            char cmd[16];
+            char buf[16];
 
-            strcpy (cmd, "idclev ");
-            cht_GetParam(&cheat_clev, &cmd[7]);
-            cmd[9] = 0;
-            AddCommandString (cmd);
+            cht_GetParam(&cheat_clev, buf);
+            buf[2] = 0;
+
+            sprintf (buf + 3, "map %s\n", buf);
+            AddCommandString (buf + 3);
             eatkey = true;
         }
 
@@ -748,6 +749,180 @@ bool ST_Responder (event_t *ev)
     return eatkey;
 }
 
+// Console cheats
+BEGIN_COMMAND (god)
+{
+	if (CheckCheatmode ())
+		return;
+
+	consoleplayer().cheats ^= CF_GODMODE;
+
+    if (consoleplayer().cheats & CF_GODMODE)
+        Printf(PRINT_HIGH, "Degreelessness mode on\n");
+    else
+        Printf(PRINT_HIGH, "Degreelessness mode off\n");
+
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+}
+END_COMMAND (god)
+
+BEGIN_COMMAND (notarget)
+{
+	if (CheckCheatmode ())
+		return;
+
+	consoleplayer().cheats ^= CF_NOTARGET;
+
+    if (consoleplayer().cheats & CF_NOTARGET)
+        Printf(PRINT_HIGH, "Notarget on\n");
+    else
+        Printf(PRINT_HIGH, "Notarget off\n");
+
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+}
+END_COMMAND (notarget)
+
+BEGIN_COMMAND (fly)
+{
+	if (CheckCheatmode ())
+		return;
+
+	consoleplayer().cheats ^= CF_FLY;
+
+    if (consoleplayer().cheats & CF_FLY)
+        Printf(PRINT_HIGH, "Fly mode on\n");
+    else
+        Printf(PRINT_HIGH, "Fly mode off\n");
+
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+}
+END_COMMAND (fly)
+
+BEGIN_COMMAND (noclip)
+{
+	if (CheckCheatmode ())
+		return;
+
+	consoleplayer().cheats ^= CF_NOCLIP;
+
+    if (consoleplayer().cheats & CF_NOCLIP)
+        Printf(PRINT_HIGH, "No clipping mode on\n");
+    else
+        Printf(PRINT_HIGH, "No clipping mode off\n");
+
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+}
+END_COMMAND (noclip)
+
+EXTERN_CVAR (chasedemo)
+
+BEGIN_COMMAND (chase)
+{
+	if (demoplayback)
+	{
+		size_t i;
+
+		if (chasedemo)
+		{
+			chasedemo.Set (0.0f);
+			for (i = 0; i < players.size(); i++)
+				players[i].cheats &= ~CF_CHASECAM;
+		}
+		else
+		{
+			chasedemo.Set (1.0f);
+			for (i = 0; i < players.size(); i++)
+				players[i].cheats |= CF_CHASECAM;
+		}
+	}
+	else
+	{
+		if (CheckCheatmode ())
+			return;
+
+		consoleplayer().cheats ^= CF_CHASECAM;
+
+		MSG_WriteMarker(&net_buffer, clc_cheat);
+		MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	}
+}
+END_COMMAND (chase)
+
+BEGIN_COMMAND (idmus)
+{
+	level_info_t *info;
+	char *map;
+	int l;
+
+	if (argc > 1)
+	{
+		if (gameinfo.flags & GI_MAPxx)
+		{
+			l = atoi (argv[1]);
+			if (l <= 99)
+				map = CalcMapName (0, l);
+			else
+			{
+				Printf (PRINT_HIGH, "%s\n", STSTR_NOMUS);
+				return;
+			}
+		}
+		else
+		{
+			map = CalcMapName (argv[1][0] - '0', argv[1][1] - '0');
+		}
+
+		if ( (info = FindLevelInfo (map)) )
+		{
+			if (info->music[0])
+			{
+				S_ChangeMusic (std::string(info->music, 8), 1);
+				Printf (PRINT_HIGH, "%s\n", STSTR_MUS);
+			}
+		} else
+			Printf (PRINT_HIGH, "%s\n", STSTR_NOMUS);
+	}
+}
+END_COMMAND (idmus)
+
+BEGIN_COMMAND (give)
+{
+	if (CheckCheatmode ())
+		return;
+
+	if (argc < 2)
+		return;
+
+	std::string name = BuildString (argc - 1, (const char **)(argv + 1));
+	if (name.length())
+	{
+		//Net_WriteByte (DEM_GIVECHEAT);
+		//Net_WriteString (name.c_str());
+		// todo
+	}
+}
+END_COMMAND (give)
+
+BEGIN_COMMAND (fov)
+{
+	if(!connected || !m_Instigator || !m_Instigator->player)
+	{
+		Printf (PRINT_HIGH, "cannot change fov: not in game\n");
+		return;
+	}
+
+	if (argc != 2)
+		Printf (PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
+	else if (allowcheats)
+		m_Instigator->player->fov = atof (argv[1]);
+    else
+        Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
+}
+END_COMMAND (fov)
 
 
 int ST_calcPainOffset(void)
@@ -986,8 +1161,13 @@ void ST_updateWidgets(void)
 	}
 	for(i = 0; i < 6; i++)
 	{
-		st_weaponowned[i] = plyr->weaponowned[i+1] == true ? 1 : 0;
+		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
+		if(plyr->weaponowned[i+1])
+			st_weaponowned[i] = 1;
+		else
+			st_weaponowned[i] = 0;
 	}
+
 	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
 	// if (*w_ready.on)
 	//	STlib_updateNum(&w_ready, true);
@@ -1204,10 +1384,12 @@ void ST_Drawer (void)
 	if (noisedebug)
 		S_NoiseDebug ();
 
-	if (realviewheight == screen->height && viewactive)
+	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
 	{
 		if (DrawNewHUD)
 			ST_newDraw ();
+		else if (DrawNewSpecHUD && ctfmode) // [Nes] - Only specator new HUD is in ctf.
+			ST_newDrawCTF();
 		st_firsttime = true;
 	}
 	else
@@ -1437,13 +1619,9 @@ void ST_unloadData(void)
 void ST_initData(void)
 {
 	int i;
-//    if (players[consoleplayer].camera && players[consoleplayer].camera->player)
-//        plyr = players[consoleplayer].camera->player;    // [RH] use camera
-//    else
 
 	st_firsttime = true;
 
-	st_chatstate = StartChatState;
 	st_gamestate = FirstPersonState;
 
 	st_statusbaron = true;

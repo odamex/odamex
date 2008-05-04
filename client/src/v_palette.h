@@ -102,12 +102,18 @@ typedef struct dyncolormap_s dyncolormap_t;
 //				  (normally GAMEPAL)
 //
 // Returns a pointer to the default palette.
-palette_t *InitPalettes (char *name);
+palette_t *InitPalettes (const char *name);
 
 // GetDefaultPalette()
 //
 //	Returns the palette created through InitPalettes()
 palette_t *GetDefaultPalette (void);
+
+//
+// V_RestoreScreenPalette
+//
+// Restore original screen palette from current gamma level
+void V_RestoreScreenPalette(void);
 
 // MakePalette()
 //	input: colors: ptr to 256 3-byte RGB values

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -106,7 +106,7 @@ extern void A_PainDie(AActor *);
 
 void cht_DoCheat (player_t *player, int cheat)
 {
-	char *msg = "";
+	const char *msg = "";
 	char msgbuild[32];
 
 	switch (cheat) {
@@ -366,5 +366,5 @@ void cht_Suicide (player_t *plyr)
 	plyr->mo->flags &= ~MF_SHOOTABLE;
 }
 
-VERSION_CONTROL (m_cheat_cpp, "$Id:$")
+VERSION_CONTROL (m_cheat_cpp, "$Id$")
 

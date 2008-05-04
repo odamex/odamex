@@ -36,7 +36,7 @@
 #include "cmdlib.h"
 #include "g_level.h"
 
-char* endmsg[NUM_QUITMESSAGES+1]=
+const char* endmsg[NUM_QUITMESSAGES+1]=
 {
   // DOOM1
   /*QUITMSG*/NULL,
@@ -651,24 +651,56 @@ void D_InitStrings (void)
 
 	while(Strings[i].name)
 	{
-		if (Strings[i].type == str_notchanged)
-			ReplaceString (&Strings[i].string, Strings[i].builtin);
-		
+		ReplaceString (&Strings[i].string, Strings[i].builtin);
+		Strings[i].type = str_notchanged;
+
 		i++;
 	}
 
 	endmsg[0] = QUITMSG;
 }
 
-void ReplaceString (char **ptr, char *str)
+class ReplacedStringTracker
+{
+	typedef std::map<const char *, bool> replacedStrings_t;
+	typedef replacedStrings_t:: iterator iterator;
+	replacedStrings_t rs;
+
+public:
+
+	void erase(const char *p)
+	{
+		iterator i = rs.find(p);
+		if(i != rs.end())
+		{
+			delete[] i->first;
+			rs.erase(i);
+		}
+	}
+	void add(const char *p)
+	{
+		rs[p] = 1;
+	}
+
+	ReplacedStringTracker() : rs() {}
+	~ReplacedStringTracker()
+	{
+		for(iterator i = rs.begin(); i != rs.end(); i++)
+			delete[] i->first;
+	}
+}rst;
+
+
+void ReplaceString (const char **ptr, const char *str)
 {
 	if (*ptr)
 	{
 		if (*ptr == str)
 			return;
-		//delete[] *ptr; // denis - fixme - this deletes static strings, EWW, THIS ENTIRE FUNCTION MUST DIE
+		rst.erase(*ptr);
 	}
 	*ptr = copystring (str);
+	rst.add(*ptr);
 }
 
 VERSION_CONTROL (dstrings_cpp, "$Id$")

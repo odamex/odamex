@@ -76,7 +76,7 @@ public:
 	int width;
 	int height;
 	int pitch;
-	bool is8bit;
+	inline bool is8bit() const { return bits == 8; };
 
 	int m_LockCount;
 	palette_t *m_Palette;

@@ -326,8 +326,13 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 	player_t*	player;
 	size_t		i;
 	int			sound;
+	bool		firstgrab = false;
 
 	if (!toucher || !special) // [Toke - fix99]
+		return;
+
+	// GhostlyDeath -- Spectators can't pick up things
+	if (toucher->player && toucher->player->spectator)
 		return;
 
     // Dead thing touching.
@@ -595,32 +600,41 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 
 		// Core CTF Logic - everything else stems from this	[Toke - CTF]
 		case SPR_BFLG:	// Player touches the BLUE flag at its base
+		firstgrab = true;
 		case SPR_BDWN:	// Player touches the BLUE flag after its been dropped
 
-			if(!SV_FlagTouch(*player, it_blueflag))
+			if(!SV_FlagTouch(*player, it_blueflag, firstgrab))
 				return;
 			sound = 3;
 
 			break;
-
+		case SPR_BSOK:
+			SV_SocketTouch(*player, it_blueflag);
+			return;
 		case SPR_RFLG:	// Player touches the RED flag at its base
+		firstgrab = true;
 		case SPR_RDWN:	// Player touches the RED flag after its been dropped
 
-			if(!SV_FlagTouch(*player, it_redflag))
+			if(!SV_FlagTouch(*player, it_redflag, firstgrab))
 				return;
 			sound = 3;
 
 			break;
-
+		case SPR_RSOK:
+			SV_SocketTouch(*player, it_redflag);
+			return;
 		case SPR_GFLG:	// Player touches the GOLD flag at its base
+		firstgrab = true;
 		case SPR_GDWN:	// Player touches the GOLD flag after its been dropped
 
-			if(!SV_FlagTouch(*player, it_goldflag))
+			if(!SV_FlagTouch(*player, it_goldflag, firstgrab))
 				return;
 			sound = 3;
 
 			break;
-
+		case SPR_GSOK:
+			SV_SocketTouch(*player, it_goldflag);
+			return;
 	  default:
 		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
 	}
@@ -684,10 +698,8 @@ void SexMessage (const char *from, char *to, int gender)
 //
 void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 {
-	int	 mod;
-	char *message;
+	const char *message;
 	char gendermessage[1024];
-	BOOL friendly;
 	int  gender;
 
 	if (!self->player)
@@ -699,14 +711,9 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	if (inflictor && inflictor->player == self->player)
 		MeansOfDeath = MOD_UNKNOWN;
 
-	if (multiplayer && !deathmatch)
-		MeansOfDeath |= MOD_FRIENDLY_FIRE;
-
-	friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
-	mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
 	message = NULL;
 
-	switch (mod) {
+	switch (MeansOfDeath) {
 		case MOD_SUICIDE:
 			message = OB_SUICIDE;
 			break;
@@ -738,7 +745,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 	if (attacker && !message) {
 		if (attacker == self) {
-			switch (mod) {
+			switch (MeansOfDeath) {
 				case MOD_R_SPLASH:
 					message = OB_R_SPLASH;
 					break;
@@ -750,7 +757,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 					break;
 			}
 		} else if (!attacker->player) {
-					if (mod == MOD_HIT) {
+					if (MeansOfDeath == MOD_HIT) {
 						switch (attacker->type) {
 							case MT_UNDEAD:
 								message = OB_UNDEADHIT;
@@ -832,16 +839,14 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 	if (message) {
 		SexMessage (message, gendermessage, gender);
-		Printf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+		SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
 		return;
 	}
 
 	if (attacker && attacker->player) {
-		if (friendly) {
+		if (((teamplay || ctfmode) && self->player->userinfo.team == attacker->player->userinfo.team) || !deathmatch) {
 			int rnum = P_Random ();
 
-			attacker->player->fragcount -= 2;
-//			attacker->player->frags[attacker->player - players]++;
 			self = attacker;
 			gender = self->player->userinfo.gender;
 
@@ -854,7 +859,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 			else
 				message = OB_FRIENDLY4;
 		} else {
-			switch (mod) {
+			switch (MeansOfDeath) {
 				case MOD_FIST:
 					message = OB_MPFIST;
 					break;
@@ -902,13 +907,13 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		work += gendermessage;
 		work += ".\n";
 
-		Printf (PRINT_MEDIUM, work.c_str(), self->player->userinfo.netname,
-				attacker->player->userinfo.netname);
+		SV_BroadcastPrintf (PRINT_MEDIUM, work.c_str(), self->player->userinfo.netname,
+							attacker->player->userinfo.netname);
 		return;
 	}
 
 	SexMessage (OB_DEFAULT, gendermessage, gender);
-	Printf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+	SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
 }
 
 
@@ -917,7 +922,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 //
 EXTERN_CVAR (fraglimit)
 
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
+void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill)
 {
 	for (size_t i = 0; i < players.size(); i++)
 	{
@@ -944,11 +949,16 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 		MSG_WriteShort (&cl->reliablebuf, inflictor ? inflictor->netid : 0);
 		MSG_WriteShort (&cl->reliablebuf, target->health);
 		MSG_WriteLong (&cl->reliablebuf, MeansOfDeath);
+		MSG_WriteByte (&cl->reliablebuf, joinkill);
 	}
 
 	AActor *mo;
 
 	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
+
+	// GhostlyDeath -- Joinkill is only set on players, so we should be safe!
+	if (joinkill)
+		target->flags |= MF_SPECTATOR;
 
 	if (target->type != MT_SKULL)
 		target->flags &= ~MF_NOGRAVITY;
@@ -958,10 +968,6 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 
 	// [RH] Also set the thing's tid to 0. [why?]
 	target->tid = 0;
-
-	// [Toke - CTF]
-	if (ctfmode && target->player)
-		CTF_CheckFlags ( *target->player );
 
 	player_t *splayer = source ? source->player : 0;
 	player_t *tplayer = target->player;
@@ -973,28 +979,41 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 		// fair to count them toward a player's score.
 		if (target->player && level.time)
 		{
-			if (target->player == source->player)	// [RH] Cumulative frag count
+			if (!joinkill)
 			{
-				splayer->fragcount--;
-				// [Toke] Minus a team frag for suicide
-				if (teamplay && !ctfmode)
-					TEAMpoints[splayer->userinfo.team]--;
-			}
-			// [Toke] Minus a team frag for killing team mate
-			else if ((teamplay || ctfmode) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
-			{
-				splayer->fragcount--;
+				if (target->player == source->player)	// [RH] Cumulative frag count
+				{
+					splayer->fragcount--;
+					// [Toke] Minus a team frag for suicide
+					if (teamplay && !ctfmode)
+						TEAMpoints[splayer->userinfo.team]--;
+				}
+				// [Toke] Minus a team frag for killing team mate
+				else if ((teamplay || ctfmode) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
+				{
+					splayer->fragcount--;
 
-				if (teamplay && !ctfmode)
-					TEAMpoints[splayer->userinfo.team]--;
-			}
-			else
-			{
-				splayer->fragcount++;
+					if (teamplay && !ctfmode)
+						TEAMpoints[splayer->userinfo.team]--;
 
-				// [Toke] Add a team frag
-				if (teamplay && !ctfmode)
-					TEAMpoints[splayer->userinfo.team]++;
+					if (ctfmode)
+						SV_CTFEvent ((flag_t)0, SCORE_BETRAYAL, *splayer);
+				}
+				else
+				{
+					splayer->fragcount++;
+
+					// [Toke] Add a team frag
+					if (teamplay && !ctfmode)
+						TEAMpoints[splayer->userinfo.team]++;
+
+					if (ctfmode) {
+						if (tplayer->flags[(flag_t)splayer->userinfo.team])
+							SV_CTFEvent ((flag_t)0, SCORE_CARRIERKILL, *splayer);
+						else
+							SV_CTFEvent ((flag_t)0, SCORE_KILL, *splayer);
+					}
+				}
 			}
 
 			SV_UpdateFrags (*splayer);
@@ -1029,12 +1048,17 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 
 	}
 
+	// [Toke - CTF]
+	if (ctfmode && target->player)
+		CTF_CheckFlags ( *target->player );
+
 	if (target->player)
 	{
-		tplayer->deathcount++;
+		if (!joinkill)
+			tplayer->deathcount++;
 
 		// count environment kills against you
-		if (!source)
+		if (!source && !joinkill)
 		{
 			tplayer->fragcount--;	// [RH] Cumulative frag count
 
@@ -1054,13 +1078,13 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 	if(target->health > 0) // denis - when this function is used standalone
 		target->health = 0;
 
-	if (target->health < -target->info->spawnhealth
-		&& target->info->xdeathstate)
-	{
-		P_SetMobjState (target, target->info->xdeathstate);
-	}
-	else
-		P_SetMobjState (target, target->info->deathstate);
+		if (target->health < -target->info->spawnhealth
+			&& target->info->xdeathstate)
+		{
+			P_SetMobjState (target, target->info->xdeathstate);
+		}
+		else
+			P_SetMobjState (target, target->info->deathstate);
 
 	target->tics -= P_Random (target) & 3;
 
@@ -1068,7 +1092,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 		target->tics = 1;
 
 	// [RH] Death messages
-	if (target->player && level.time)
+	if (target->player && level.time && !joinkill)
 		ClientObituary (target, inflictor, source);
 
 	// Drop stuff.
@@ -1129,17 +1153,18 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	int 		saved;
 	player_t*	player;
 	fixed_t 	thrust;
-	int 		pain;
 
 	if ( !(target->flags & MF_SHOOTABLE) )
 		return; // shouldn't happen...
+
+	// GhostlyDeath -- Spectators can't get hurt!
+	if (target->player && target->player->spectator)
+		return;
 
 	if (target->health <= 0)
 		return;
 
 	MeansOfDeath = mod;
-
-	pain = (P_Random (target));
 
 	if ( target->flags & MF_SKULLFLY )
 	{
@@ -1219,8 +1244,8 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		}
 
 		// only armordamage with friendlyfire
-		if (!friendlyfire && (teamplay || ctfmode || !deathmatch) && source && source->player && target != source &&
-			target->player->userinfo.team == source->player->userinfo.team && (mod != MOD_TELEFRAG))
+		if (!friendlyfire && source && source->player && target != source && mod != MOD_TELEFRAG &&
+			(((teamplay || ctfmode) && target->player->userinfo.team == source->player->userinfo.team) || !deathmatch))
 			damage = 0;
 
 		player->health -= damage;		// mirror mobj health here for Dave
@@ -1243,35 +1268,38 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
             MSG_WriteShort (&cl->reliablebuf, target->health - damage);
         }
 	}
-	else
-	{
-		if(target->health - damage > 0)
-		{
-			for (size_t i = 0; i < players.size(); i++)
-			{
-				client_t *cl = &clients[i];
-
-				MSG_WriteMarker (&cl->reliablebuf, svc_damagemobj);
-				MSG_WriteShort (&cl->reliablebuf, target->netid);
-				MSG_WriteShort (&cl->reliablebuf, target->health - damage);
-				MSG_WriteByte (&cl->reliablebuf, pain);
-			}
-		}
-	}
 
 	// do the damage
 	{
 		target->health -= damage;
 		if (target->health <= 0)
 		{
-			P_KillMobj (source, target, inflictor);
+			P_KillMobj (source, target, inflictor, false);
 			return;
 		}
 	}
 
 	{
+		int pain = P_Random();
+		if(!player)
+		{
+			if(target->health - damage > 0)
+			{
+				for (size_t i = 0; i < players.size(); i++)
+				{
+					client_t *cl = &clients[i];
+
+					MSG_WriteMarker (&cl->reliablebuf, svc_damagemobj);
+					MSG_WriteShort (&cl->reliablebuf, target->netid);
+					MSG_WriteShort (&cl->reliablebuf, target->health - damage);
+					MSG_WriteByte (&cl->reliablebuf, pain);
+				}
+			}
+		}
+
 		if ( pain < target->info->painchance
-			 && !(target->flags&MF_SKULLFLY) )
+			 && !(target->flags&MF_SKULLFLY) 
+			 && !(player && !damage))
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
 

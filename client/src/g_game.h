@@ -34,7 +34,7 @@
 //
 void G_DeathMatchSpawnPlayer (player_t &player);
 
-void G_DeferedPlayDemo (char* demo);
+void G_DeferedPlayDemo (const char* demo);
 
 // Can be called by the startup code or M_Responder,
 // calls P_SetupLevel or W_EnterWorld.
@@ -47,7 +47,7 @@ void G_BuildSaveName (char *name, int slot);
 void G_SaveGame (int slot, char* description);
 
 // Only called by startup code.
-void G_RecordDemo (char* name);
+bool G_RecordDemo (char* name);
 
 void G_BeginRecording (void);
 

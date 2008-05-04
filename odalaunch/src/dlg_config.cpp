@@ -31,8 +31,6 @@
 #include <wx/msgdlg.h>
 #include <wx/wfstream.h>
 #include <wx/tokenzr.h>
-#include <wx/dirdlg.h>
-//#include <wx/generic/dirdlgg.h>
 
 #include "main.h"
 
@@ -42,24 +40,19 @@ static wxInt32 ID_CHKSHOWBLOCKEDSERVERS = XRCID("ID_CHKSHOWBLOCKEDSERVERS");
 static wxInt32 ID_BTNADD = XRCID("ID_BTNADD");
 static wxInt32 ID_BTNREPLACE = XRCID("ID_BTNREPLACE");
 static wxInt32 ID_BTNDELETE = XRCID("ID_BTNDELETE");
-static wxInt32 ID_BTNCHOOSEDIR = XRCID("ID_BTNCHOOSEDIR");
+static wxInt32 ID_DPCHOOSEWADDIR = XRCID("ID_DPCHOOSEWADDIR");
+static wxInt32 ID_FPCHOOSEODAMEXPATH = XRCID("ID_FPCHOOSEODAMEXPATH");
 static wxInt32 ID_BTNUP = XRCID("ID_BTNUP");
 static wxInt32 ID_BTNDOWN = XRCID("ID_BTNDOWN");
 
 static wxInt32 ID_BTNGETENV = XRCID("ID_BTNGETENV");
 
-static wxInt32 ID_BTNCLOSE = XRCID("ID_BTNCLOSE");
-static wxInt32 ID_BTNOK = XRCID("ID_BTNOK");
-
 static wxInt32 ID_LSTWADDIR = XRCID("ID_LSTWADDIR");
-
-static wxInt32 ID_TXTWADDIR = XRCID("ID_TXTWADDIR");
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	// Button events
-	EVT_BUTTON(ID_BTNCHOOSEDIR, dlgConfig::OnChooseDir)
 	EVT_BUTTON(ID_BTNADD, dlgConfig::OnAddDir)
 	EVT_BUTTON(ID_BTNREPLACE, dlgConfig::OnReplaceDir)
 	EVT_BUTTON(ID_BTNDELETE, dlgConfig::OnDeleteDir)
@@ -68,8 +61,10 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
     EVT_BUTTON(ID_BTNGETENV, dlgConfig::OnGetEnvClick)
 
-	EVT_BUTTON(ID_BTNOK, dlgConfig::OnOK)
-	EVT_BUTTON(ID_BTNCLOSE, dlgConfig::OnClose)
+	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
+
+    EVT_DIRPICKER_CHANGED(ID_FPCHOOSEODAMEXPATH, dlgConfig::OnChooseOdamexPath)
+
 	// Misc events
 	EVT_CHECKBOX(ID_CHKLISTONSTART, dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(ID_CHKSHOWBLOCKEDSERVERS, dlgConfig::OnCheckedBox)
@@ -81,12 +76,13 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
 
-    MASTER_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKLISTONSTART), wxCheckBox);
-    BLOCKED_CHECKBOX = wxStaticCast((*this).FindWindow(ID_CHKSHOWBLOCKEDSERVERS), wxCheckBox);
+    MASTER_CHECKBOX = wxStaticCast(FindWindow(ID_CHKLISTONSTART), wxCheckBox);
+    BLOCKED_CHECKBOX = wxStaticCast(FindWindow(ID_CHKSHOWBLOCKEDSERVERS), wxCheckBox);
 
-    WAD_LIST = wxStaticCast((*this).FindWindow(ID_LSTWADDIR),wxListBox);
+    WAD_LIST = wxStaticCast(FindWindow(ID_LSTWADDIR), wxListBox);
 
-    DIR_BOX = wxStaticCast((*this).FindWindow(ID_TXTWADDIR),wxTextCtrl);
+    DIR_BOX = wxStaticCast(FindWindow(ID_DPCHOOSEWADDIR), wxDirPickerCtrl);
+    TXT_ODXPATH = wxStaticCast(FindWindow(ID_FPCHOOSEODAMEXPATH), wxFilePickerCtrl);
 
     // Load current configuration from global configuration structure
     cfg_file = cfg;
@@ -125,10 +121,17 @@ void dlgConfig::Show()
         WAD_LIST->AppendString(path);
     }
 
+    TXT_ODXPATH->SetPath(cfg_file->odamex_directory);
+
     ShowModal();
 }
 
 void dlgConfig::OnCheckedBox(wxCommandEvent &event)
+{
+    UserChangedSetting = 1;
+}
+
+void dlgConfig::OnChooseOdamexPath(wxFileDirPickerEvent &event)
 {
     UserChangedSetting = 1;
 }
@@ -155,6 +158,8 @@ void dlgConfig::OnOK(wxCommandEvent &event)
             for (wxUint32 i = 0; i < WAD_LIST->GetCount(); i++)
                 cfg_file->wad_paths.Append(WAD_LIST->GetString(i) + _T(';'));
 
+        cfg_file->odamex_directory = TXT_ODXPATH->GetPath();
+
         // Save settings to configuration file
         SaveSettings();
     }
@@ -165,50 +170,33 @@ void dlgConfig::OnOK(wxCommandEvent &event)
     Close();
 }
 
-void dlgConfig::OnClose(wxCommandEvent &event)
-{
-    Close();
-}
-
 /*
     WAD Directory stuff
 */
 
 // Add a directory to the listbox
 void dlgConfig::OnAddDir(wxCommandEvent &event)
-{
-    // Check if our path box has a path in it
-    if (DIR_BOX->GetLabel().IsEmpty())
-    {
-        wxDirDialog dirchoose(this, _T("Choose a WAD directory"));
-
-        // User pressed OK?
-        if (dirchoose.ShowModal() == wxID_OK)
-            DIR_BOX->SetLabel(dirchoose.GetPath());
-        else
-            return;
-    }
-
+{    
     // Check to see if the path exists on the system
-    if (wxDirExists(DIR_BOX->GetLabel()))
+    if (wxDirExists(DIR_BOX->GetPath()))
     {
         // Check if path already exists in box
-        if (WAD_LIST->FindString(DIR_BOX->GetLabel()) == wxNOT_FOUND)
+        if (WAD_LIST->FindString(DIR_BOX->GetPath()) == wxNOT_FOUND)
         {
-            WAD_LIST->Append(DIR_BOX->GetLabel());
+            WAD_LIST->Append(DIR_BOX->GetPath());
 
             UserChangedSetting = 1;
         }
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), DIR_BOX->GetLabel().c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found!"), DIR_BOX->GetPath().c_str()));
 }
 
 // Replace a directory in the listbox
 void dlgConfig::OnReplaceDir(wxCommandEvent &event)
 {
     // Check to see if the path exists on the system
-    if (wxDirExists(DIR_BOX->GetLabel()))
+    if (wxDirExists(DIR_BOX->GetPath()))
     {
         // Get the selected item and replace it, if
         // it is selected.
@@ -216,7 +204,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent &event)
 
         if (i != wxNOT_FOUND)
         {
-            WAD_LIST->SetString(i,DIR_BOX->GetLabel());
+            WAD_LIST->SetString(i, DIR_BOX->GetPath());
 
             UserChangedSetting = 1;
         }
@@ -224,7 +212,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent &event)
             wxMessageBox(_T("Select item to replace!"));
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), DIR_BOX->GetLabel().c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found!"), DIR_BOX->GetPath().c_str()));
 }
 
 // Delete a directory from the listbox
@@ -242,16 +230,6 @@ void dlgConfig::OnDeleteDir(wxCommandEvent &event)
     }
     else
         wxMessageBox(_T("Select an item to delete."));
-}
-
-// Choose directory (ellipsis button)
-void dlgConfig::OnChooseDir(wxCommandEvent &event)
-{
-    wxDirDialog dirchoose(this, _T("Choose a WAD directory"));
-
-    // User pressed ok?
-    if (dirchoose.ShowModal() == wxID_OK)
-        DIR_BOX->SetLabel(dirchoose.GetPath());
 }
 
 // Move directory in list up 1 item
@@ -344,6 +322,7 @@ void dlgConfig::LoadSettings()
     ConfigInfo.Read(_T(GETLISTONSTART), &cfg_file->get_list_on_start, 1);
     ConfigInfo.Read(_T(SHOWBLOCKEDSERVERS), &cfg_file->show_blocked_servers, cfg_file->show_blocked_servers);
 	cfg_file->wad_paths = ConfigInfo.Read(_T(DELIMWADPATHS), cfg_file->wad_paths);
+	cfg_file->odamex_directory = ConfigInfo.Read(_T(ODAMEX_DIRECTORY), cfg_file->odamex_directory);
 }
 
 // Save settings to configuration file
@@ -352,6 +331,7 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(_T(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
 	ConfigInfo.Write(_T(DELIMWADPATHS), cfg_file->wad_paths);
+    ConfigInfo.Write(_T(ODAMEX_DIRECTORY), cfg_file->odamex_directory);
 
 	ConfigInfo.Flush();
 }

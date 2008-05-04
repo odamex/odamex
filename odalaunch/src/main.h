@@ -22,11 +22,10 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef __MAIN_H__
+#define __MAIN_H__
 
 #include <wx/wxprec.h>
-#include <wx/snglinst.h>
 
 #include "dlg_main.h"
 
@@ -41,11 +40,9 @@
 class Application : public wxApp
 {
 	public:
-		virtual bool OnInit();
-        virtual wxInt32 OnExit();
+		bool OnInit();
         
-        wxSingleInstanceChecker *m_checker;
 		dlgMain* MAIN_DIALOG;
 };
 
-#endif // APP_H
+#endif

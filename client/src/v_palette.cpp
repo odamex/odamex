@@ -167,7 +167,7 @@ BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 			newgamma[i] = gammatable[lastgamma - 1][i];
 		}
 		GammaAdjustPalettes ();
-		if (screen && screen->is8bit)
+		if (screen && screen->is8bit())
 		{
 			DoBlending (DefPal.colors, IndexedPalette, DefPal.numcolors,
 						newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
@@ -177,11 +177,23 @@ BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 }
 END_CUSTOM_CVAR (gammalevel)
 
+// [Russell] - Restore original screen palette from current gamma level
+void V_RestoreScreenPalette(void)
+{
+    if (screen && screen->is8bit())
+    {
+        DoBlending (DefPal.colors, IndexedPalette, DefPal.numcolors,
+                    newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
+    
+        I_SetPalette (IndexedPalette);
+    }
+}
+
 /****************************/
 /* Palette management stuff */
 /****************************/
 
-BOOL InternalCreatePalette (palette_t *palette, char *name, byte *colors,
+bool InternalCreatePalette (palette_t *palette, const char *name, byte *colors,
 							unsigned numcolors, unsigned flags)
 {
 	unsigned i;
@@ -227,8 +239,7 @@ BOOL InternalCreatePalette (palette_t *palette, char *name, byte *colors,
 	return true;
 }
 
-
-palette_t *InitPalettes (char *name)
+palette_t *InitPalettes (const char *name)
 {
 	byte *colors;
 
@@ -388,7 +399,7 @@ void RefreshPalette (palette_t *pal)
 	DWORD l,c,r,g,b;
 	DWORD colors[256];
 
-	if (screen->is8bit) {
+	if (screen->is8bit()) {
 		if (pal->flags & PALETTEF_SHADE) {
 			byte *shade;
 
@@ -530,7 +541,7 @@ void V_ForceBlend (int blendr, int blendg, int blendb, int blenda)
 	BlendB = blendb;
 	BlendA = blenda;
 
-	if (screen->is8bit) {
+	if (screen->is8bit()) {
 		DoBlending (DefPal.colors, IndexedPalette, DefPal.numcolors,
 					newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
 		I_SetPalette (IndexedPalette);
@@ -678,7 +689,7 @@ void BuildColoredLights (byte *maps, int lr, int lg, int lb, int r, int g, int b
 	byte *shade;
 
 	// The default palette is assumed to contain the maps for white light.
-	if (!screen->is8bit || !maps)
+	if (!screen->is8bit() || !maps)
 		return;
 
 	// build normal (but colored) light mappings

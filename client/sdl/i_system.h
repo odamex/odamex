@@ -44,7 +44,7 @@ void I_ExpandHomeDir (std::string &path);
 // Called by startup code
 // to get the ammount of memory to malloc
 // for the zone management.
-byte *I_ZoneBase (size_t *size);
+void *I_ZoneBase (size_t *size);
 
 
 // Called by D_DoomLoop,
@@ -91,10 +91,6 @@ ticcmd_t *I_BaseTiccmd (void);
 void STACK_ARGS I_Quit (void);
 
 
-// Allocates from low memory under dos,
-// just mallocs under unix
-byte* I_AllocLow (int length);
-
 void STACK_ARGS I_Error (const char *error, ...);
 void STACK_ARGS I_FatalError (const char *error, ...);
 
@@ -110,6 +106,7 @@ void I_PrintStr (int x, const char *str, int count, BOOL scroll);
 // Set the title string of the startup window
 void I_SetTitleString (const char *title);
 
+std::string I_ConsoleInput (void);
 
 // In i_input.c. Used to release control of the
 // mouse to the user when the game is paused in

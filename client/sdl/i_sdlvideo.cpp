@@ -57,7 +57,7 @@ SDLVideo::SDLVideo(int parm)
    fmt.BitsPerPixel = 8;
    fmt.BytesPerPixel = 1;
 
-   SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_HWSURFACE);
+   SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
 
    vidModeList = NULL;
    vidModeCount = 0;
@@ -264,7 +264,6 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 	
 	scrn->width = width;
 	scrn->height = height;
-	scrn->is8bit = bits == 8 ? true : false;
 	scrn->bits = screenbits;
 	scrn->m_LockCount = 0;
 	scrn->m_Palette = NULL;

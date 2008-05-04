@@ -45,8 +45,7 @@ int 				iquetail;
 
 CVAR	(weaponstay,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial weapons wont be removed after picked up when true. - does not work yet
 
-EXTERN_CVAR (chasedemo) // removeme
-EXTERN_CVAR (freelook)
+EXTERN_CVAR (allowfreelook)
 EXTERN_CVAR (nomonsters)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
@@ -196,7 +195,7 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 {
     state_t*	st;
 
-	// denis - prevent harmful state cycles
+    // denis - prevent harmful state cycles
 	static unsigned int callstack;
 	if(callstack++ > 16)
 	{
@@ -510,19 +509,21 @@ void P_ZMovement (AActor *mo)
         // So we need to check that this is either retail or commercial
         // (but not doom2)
 
-      /*int correct_lost_soul_bounce = gameversion >= exe_ultimate;
+      int correct_lost_soul_bounce = (gamemode == retail) || 
+                                     ((gamemode == commercial 
+                                     && (gamemission == pack_tnt || 
+                                         gamemission == pack_plut)));
 
       if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
       {
 	    // the skull slammed into something
          mo->momz = -mo->momz;
       }
-      */
+      
 
       if (mo->momz < 0)
       {
-         if (mo->player
-             && mo->momz < -GRAVITY*8)
+         if (mo->player && mo->momz < -GRAVITY*8 && !(mo->player->spectator))
          {
 		// Squat down.
 		// Decrease viewheight for a moment
@@ -542,8 +543,8 @@ void P_ZMovement (AActor *mo)
 	// hit by a raising floor this incorrectly reverses its Y momentum.
       //
 
-      //if (!correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
-      //   mo->momz = -mo->momz;
+      if (!correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
+         mo->momz = -mo->momz;
 
       if ( (mo->flags & MF_MISSILE)
             && !(mo->flags & MF_NOCLIP) )
@@ -771,7 +772,7 @@ AActor *AActor::FindGoal (const AActor *actor, int tid, int kind)
 
 // <------- [RH] End new functions
 
-EXTERN_CVAR(sv_speedhackfix)
+EXTERN_CVAR(speedhackfix)
 
 //
 // P_MobjThinker
@@ -780,6 +781,10 @@ void AActor::RunThink ()
 {
 	if (type == MT_PLAYER && health <= 0)
 		deadtic++;
+
+	// GhostlyDeath -- Was a spectator but now it's nothing!
+	if ((this->flags & MF_SPECTATOR ) && !player)
+		P_SetMobjState(this, S_NULL);
 
 	// remove dead players but don't tell clients about it
 	if (type == MT_PLAYER && !player && deadtic >= REMOVECOPRSESTIC)
@@ -1093,6 +1098,8 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	player_t *p = &player;
 
+	bool spectator = p->spectator;
+
 	if (p->playerstate == PST_REBORN)
 		G_PlayerReborn (*p);
 
@@ -1105,6 +1112,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->pitch = mobj->roll = 0;
 	mobj->player = p;
 	mobj->health = p->health;
+
+	if (spectator)
+		mobj->translucency = 0;
 
 	// [RH] Set player sprite based on skin
 	if(p->userinfo.skin >= numskins)
@@ -1122,10 +1132,11 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->fixedcolormap = 0;
 	p->viewheight = VIEWHEIGHT;
 	p->attacker = AActor::AActorPtr();
+	p->spectator = spectator;
 
 	// [RH] Allow chasecam for demo watching
-	if ((demoplayback || demonew) && chasedemo)
-		p->cheats = CF_CHASECAM;
+	//if ((demoplayback || demonew) && chasedemo)
+	//	p->cheats = CF_CHASECAM;
 
 	// setup gun psprite
 	P_SetupPsprites (p);
@@ -1136,6 +1147,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 	}
+
+	if (p->spectator)
+		p->mo->flags |= MF_SPECTATOR;
 
 	if(serverside)
 	{
@@ -1332,7 +1346,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (deathmatch)
+	/*if (deathmatch)
 	{
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
@@ -1341,8 +1355,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		if (!(mthing->flags & MTF_COOPERATIVE))
 			return;
-	}
-	else
+	}*/
+	
+	if (!multiplayer)
 	{
 		if (!(mthing->flags & MTF_SINGLE))
 			return;
@@ -1487,13 +1502,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 //
 void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 {
-	// denis - not clientside
-	if(!serverside)
-		return;
+    AActor *th;
 
-        AActor *th;
-
-	z += (P_Random () - P_Random ()) << 10;
+	z += ((P_Random () - P_Random ()) << 10);
 
         th = new AActor (x, y, z, MT_PUFF);
         th->momz = FRACUNIT;
@@ -1568,8 +1579,35 @@ BOOL P_CheckMissileSpawn (AActor* th)
 //
 AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 {
-	if(!dest)
-		return 0;
+    angle_t	an;
+    int		dist;
+    fixed_t     dest_x, dest_y, dest_z, dest_flags;
+
+	// denis: missile spawn code from chocolate doom
+	//
+    // fraggle: This prevents against *crashes* when dest == NULL.
+    // For example, when loading a game saved when a mancubus was
+    // in the middle of firing, mancubus->target == NULL.  SpawnMissile
+    // then gets called with dest == NULL.
+    //
+    // However, this is not the *correct* behavior.  At the moment,
+    // the missile is aimed at 0,0,0.  In reality, monsters seem to aim
+    // somewhere else.
+
+    if (dest)
+    {
+        dest_x = dest->x;
+        dest_y = dest->y;
+        dest_z = dest->z;
+        dest_flags = dest->flags;
+    }
+    else
+    {
+        dest_x = 0;
+        dest_y = 0;
+        dest_z = 0;
+        dest_flags = 0;
+    }
 
 	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
 
@@ -1577,31 +1615,24 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
 	th->target = source->ptr();			// where it came from
+	an = R_PointToAngle2 (source->x, source->y, dest_x, dest_y);
 
-	vec3_t velocity;
-	float speed = FIXED2FLOAT (th->info->speed);
+	// fuzzy player
+	if (dest_flags & MF_SHADOW)
+		an += (P_Random()-P_Random())<<20;
 
-	velocity[0] = FIXED2FLOAT(dest->x - source->x);
-	velocity[1] = FIXED2FLOAT(dest->y - source->y);
-	velocity[2] = FIXED2FLOAT(dest->z - source->z);
-	VectorNormalize (velocity);
-	th->momx = FLOAT2FIXED(velocity[0] * speed);
-	th->momy = FLOAT2FIXED(velocity[1] * speed);
-	th->momz = FLOAT2FIXED(velocity[2] * speed);
+	th->angle = an;
+	an >>= ANGLETOFINESHIFT;
+	th->momx = FixedMul (th->info->speed, finecosine[an]);
+	th->momy = FixedMul (th->info->speed, finesine[an]);
 
-	// fuzzy player: rotate velocity vector in 2D
-	if (dest->flags & MF_SHADOW)
-	{
-		angle_t an = (P_Random () - P_Random ()) << 20;
-		an >>= ANGLETOFINESHIFT;
+	dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
+	dist = dist / th->info->speed;
 
-		fixed_t newx = FixedMul (th->momx, finecosine[an]) - FixedMul (th->momy, finesine[an]);
-		fixed_t newy = FixedMul (th->momx, finesine[an]) + FixedMul (th->momy, finecosine[an]);
-		th->momx = newx;
-		th->momy = newy;
-	}
+	if (dist < 1)
+		dist = 1;
 
-	th->angle = R_PointToAngle2 (0, 0, th->momx, th->momy);
+	th->momz = (dest_z - source->z) / dist;
 
 	P_CheckMissileSpawn (th);
 
@@ -1628,7 +1659,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	if (source->player &&
 		source->player->userinfo.aimdist == 0 &&
-		freelook)
+		allowfreelook)
 	{
 		slope = pitchslope;
 	}
@@ -1651,7 +1682,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			{
 				an = source->angle;
 
-				if(freelook)
+				if(allowfreelook)
 					slope = pitchslope;
 				else
 					slope = 0;
@@ -1660,7 +1691,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 		if (linetarget && source->player)
 		{
-			if (freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
+			if (allowfreelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
 			{
 				an = source->angle;
 				slope = pitchslope;
@@ -1688,4 +1719,6 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")
+
+
 

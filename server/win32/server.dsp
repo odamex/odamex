@@ -69,10 +69,6 @@ SOURCE=..\src\c_console.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\c_varinit.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\d_main.cpp
 # End Source File
 # Begin Source File
@@ -110,10 +106,6 @@ SOURCE=..\src\p_interaction.cpp
 # Begin Source File
 
 SOURCE=..\src\p_mobj.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\p_user.cpp
 # End Source File
 # Begin Source File
 
@@ -602,6 +594,10 @@ SOURCE=..\..\common\p_tick.cpp
 # Begin Source File
 
 SOURCE=..\..\common\p_tick.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\p_user.cpp
 # End Source File
 # Begin Source File
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -193,7 +193,7 @@ P_ChangeSwitchTexture
 	int texMid;
 	int texBot;
 	int i;
-	char *sound;
+	const char *sound;
 	
 	if (!useAgain)
 		line->special = 0;
@@ -311,5 +311,5 @@ void DActiveButton::RunThink ()
 	}
 }
 
-VERSION_CONTROL (p_switch_cpp, "$Id:$")
+VERSION_CONTROL (p_switch_cpp, "$Id$")
 

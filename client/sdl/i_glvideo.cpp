@@ -597,7 +597,7 @@ DCanvas *GLVideo::AllocateSurface (int width, int height, int bits, bool primary
 
 	scrn->width = width;
 	scrn->height = height;
-	scrn->is8bit = bits == 8 ? true : false;
+	//scrn->is8bit = (bits == 8 ? true : false);
 	scrn->bits = screenbits;
 	scrn->m_LockCount = 0;
 	scrn->m_Palette = NULL;
@@ -622,7 +622,7 @@ void GLVideo::ReleaseSurface (DCanvas *scrn)
 	{
 		delete[] scrn->buffer;
 		scrn->buffer = NULL;
-		delete scrn;
+		delete scrn; // Denis - TODO!!!
 	}
 }
 

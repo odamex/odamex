@@ -21,6 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <limits>
 
 #include <SDL.h>
 #include <stdlib.h>
@@ -41,6 +42,7 @@
 // for getuid and geteuid
 #include <unistd.h>
 #include <sys/types.h>
+#include <limits.h>
 #endif
 
 #ifdef HAVE_PWD_H
@@ -76,8 +78,6 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 
-float mb_used = 32.0;
-
 QWORD (*I_GetTime) (void);
 QWORD (*I_WaitForTic) (QWORD);
 
@@ -87,25 +87,72 @@ ticcmd_t *I_BaseTiccmd(void)
 	return &emptycmd;
 }
 
-int I_GetHeapSize (void)
+/* [Russell] - Modified to accomodate a minimal allowable heap size */
+// These values are in megabytes
+size_t def_heapsize = 32;
+const size_t min_heapsize = 8;
+
+// The size we got back from I_ZoneBase in megabytes
+size_t got_heapsize = 0;
+
+//
+// I_MegabytesToBytes
+//
+// Returns the megabyte value of size in bytes
+size_t I_MegabytesToBytes (size_t Megabytes)
 {
-	return (int)(mb_used*1024*1024);
+	return (Megabytes*1024*1024);
 }
 
-byte *I_ZoneBase (size_t *size)
+//
+// I_BytesToMegabytes
+//
+// Returns the byte value of size in megabytes
+size_t I_BytesToMegabytes (size_t Bytes)
+{
+	if (!Bytes)
+        return 0;
+        
+    return (Bytes/1024/1024);
+}
+
+//
+// I_ZoneBase
+//
+// Allocates a portion of system memory for the Zone Memory Allocator, returns
+// the 'size' of what it could allocate in its parameter
+void *I_ZoneBase (size_t *size)
 {
 	void *zone;
 
+    // User wanted a different default size
 	const char *p = Args.CheckValue ("-heapsize");
+
 	if (p)
-		mb_used = (float)atof (p);
-	*size = (size_t)(mb_used*1024*1024);
+		def_heapsize = atoi(p);
 
-	while (NULL == (zone = Malloc (*size)) && *size >= 2*1024*1024)
-		*size -= 1024*1024;
+    if (def_heapsize < min_heapsize)
+        def_heapsize = min_heapsize;
+        
+    // Set the size
+	*size = I_MegabytesToBytes(def_heapsize);
 
-	return (byte *)zone;
-}	
+    // Allocate the def_heapsize, otherwise try to allocate a smaller amount
+	while (NULL == (zone = Malloc (*size)) && *size >= I_MegabytesToBytes(min_heapsize))
+		*size -= I_MegabytesToBytes(1);
+
+    // Our heap size we received
+    got_heapsize = I_BytesToMegabytes(*size);
+
+    // Die if the system has insufficient memory
+    if (got_heapsize < min_heapsize)
+        I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
+                     "is %u MB but Malloc() returned %u MB",
+                     min_heapsize,
+                     got_heapsize);
+
+	return zone;
+}
 
 void I_BeginRead(void)
 {
@@ -115,26 +162,16 @@ void I_EndRead(void)
 {
 }
 
-byte *I_AllocLow(int length)
-{
-	byte *mem;
-
-	mem = (byte *)Malloc (length);
-	if (mem) {
-		memset (mem,0,length);
-	}
-	return mem;
-}
-
 // denis - use this unless you want your program
 // to get confused every 49 days due to DWORD limit
 QWORD I_UnwrapTime(DWORD now32)
 {
 	static QWORD last = 0;
 	QWORD now = now32;
+	QWORD max = std::numeric_limits<DWORD>::max();
 
-	if(now < last%UINT_MAX)
-		last += (UINT_MAX-(last%UINT_MAX)) + now;
+	if(now < last%max)
+		last += (max-(last%max)) + now;
 	else
 		last = now;
 
@@ -383,7 +420,6 @@ void STACK_ARGS I_Quit (void)
 //
 // I_Error
 //
-extern FILE *Logfile;
 BOOL gameisdead;
 
 #define MAX_ERRORTEXT	1024
@@ -402,10 +438,6 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 		index = vsprintf (errortext, error, argptr);
 		sprintf (errortext + index, "\nSDL_GetError = %s", SDL_GetError());
 		va_end (argptr);
-
-		// Record error to log (if logging)
-		if (Logfile)
-			fprintf (Logfile, "\n**** DIED WITH FATAL ERROR:\n%s\n", errortext);
 
 		throw CFatalError (errortext);
 	}
@@ -650,6 +682,110 @@ long I_FindFirst (char *filespec, findstate_t *fileinfo) {return 0;}
 int I_FindNext (long handle, findstate_t *fileinfo) {return 0;}
 int I_FindClose (long handle) {return 0;}
 
+#endif
+
+//
+// I_ConsoleInput
+//
+#ifdef WIN32
+std::string I_ConsoleInput (void)
+{
+	// denis - todo - implement this properly!!!
+	/* denis - this probably won't work for a gui sdl app. if it does work, please uncomment!
+    static char     text[1024] = {0};
+    static char     buffer[1024] = {0};
+    unsigned int    len = strlen(buffer);
+
+	while(kbhit() && len < sizeof(text))
+	{
+		char ch = (char)getch();
+
+		// input the character
+		if(ch == '\b' && len)
+		{
+			buffer[--len] = 0;
+			// john - backspace hack
+			fwrite(&ch, 1, 1, stdout);
+			ch = ' ';
+			fwrite(&ch, 1, 1, stdout);
+			ch = '\b';
+		}
+		else
+			buffer[len++] = ch;
+		buffer[len] = 0;
+
+		// recalculate length
+		len = strlen(buffer);
+
+		// echo character back to user
+		fwrite(&ch, 1, 1, stdout);
+		fflush(stdout);
+	}
+
+	if(len && buffer[len - 1] == '\n' || buffer[len - 1] == '\r')
+	{
+		// echo newline back to user
+		char ch = '\n';
+		fwrite(&ch, 1, 1, stdout);
+		fflush(stdout);
+
+		strcpy(text, buffer);
+		text[len-1] = 0; // rip off the /n and terminate
+		buffer[0] = 0;
+		len = 0;
+
+		return text;
+	}
+*/
+	return "";
+}
+
+#else
+
+std::string I_ConsoleInput (void)
+{
+	std::string ret;
+    static char     text[1024] = {0};
+    int             len;
+	
+    fd_set fdr;
+    FD_ZERO(&fdr);
+    FD_SET(0, &fdr);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+
+    if (!select(1, &fdr, NULL, NULL, &tv))
+        return "";
+	
+    len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
+
+    if (len < 1)
+        return "";
+
+	len = strlen(text);
+
+	if (strlen(text) >= sizeof(text))
+	{
+		if(text[len-1] == '\n' || text[len-1] == '\r')
+			text[len-1] = 0; // rip off the /n and terminate
+		
+		ret = text;
+		memset(text, 0, sizeof(text));
+		return ret;
+	}
+
+	if(text[len-1] == '\n' || text[len-1] == '\r')
+	{
+		text[len-1] = 0;
+
+		ret = text;
+		memset(text, 0, sizeof(text));
+		return ret;
+	}
+
+    return "";
+}
 #endif
 
 VERSION_CONTROL (i_system_cpp, "$Id$")

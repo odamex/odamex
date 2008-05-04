@@ -24,6 +24,18 @@
 #ifndef __M_SWAP_H__
 #define __M_SWAP_H__
 
+#ifdef TARGET_CPU_X86
+#ifdef __BIG_ENDIAN__
+#undef __BIG_ENDIAN__
+#endif
+#endif
+
+#ifdef TARGET_CPU_PPC
+#ifndef __BIG_ENDIAN__
+#define __BIG_ENDIAN__
+#endif
+#endif
+
 // Endianess handling.
 // WAD files are stored little endian.
 #ifdef __BIG_ENDIAN__

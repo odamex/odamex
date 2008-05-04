@@ -25,7 +25,9 @@
 #include "c_console.h"
 #include "doomstat.h"
 
-EXTERN_CVAR (sv_speedhackfix)
+EXTERN_CVAR (speedhackfix)
+
+//CVAR (speedhackfix, "0", CVAR_SERVERINFO)
 
 //
 // P_Ticker
@@ -38,7 +40,7 @@ void P_Ticker (void)
 	if (!multiplayer && !demoplayback && menuactive && players[0].viewz != 1)
 		return;
 
-	if((serverside && sv_speedhackfix) || (clientside && serverside))
+	if((serverside && speedhackfix) || (clientside && serverside))
 	{
 		for(size_t i = 0; i < players.size(); i++)
 			if(players[i].ingame())

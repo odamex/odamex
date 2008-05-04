@@ -40,13 +40,9 @@
 #define RAISESPEED				FRACUNIT*6
 
 #define WEAPONBOTTOM				128*FRACUNIT
-// [RH] +0x6000 helps it meet the screen bottom
-//		at higher resolutions while still being in
-//		the right spot at 320x200.
-#define WEAPONTOP				(32*FRACUNIT+0x6000)
+#define WEAPONTOP					32*FRACUNIT
 
 EXTERN_CVAR(infiniteammo)
-EXTERN_CVAR(freelook)
 EXTERN_CVAR(allowfreelook)
 
 //
@@ -90,7 +86,8 @@ P_SetPsprite
 		// Modified handling.
 		if (state->action.acp2)
 		{
-			state->action.acp2(player, psp);
+			if(!player->spectator)
+				state->action.acp2(player, psp);
 			if (!psp->state)
 				break;
 		}
@@ -101,12 +98,12 @@ P_SetPsprite
 	// an initial state of 0 could cycle through
 }
 
-void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, char *name, byte attenuation);
+void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation);
 
 //
 // A_FireSound
 //
-void A_FireSound (player_t *player, char *sound)
+void A_FireSound (player_t *player, const char *sound)
 {
  	UV_SoundAvoidPlayer (*player, player->mo, CHAN_WEAPON, sound, ATTN_NORM);
 }
@@ -455,7 +452,8 @@ void A_Punch (player_t *player, pspdef_t *psp)
 	// turn to face target
 	if (linetarget)
 	{
-		A_FireSound (player, "*fist");
+		//A_FireSound (player, "*fist");
+		S_Sound (player->mo, CHAN_VOICE, "*fist", 1, ATTN_NORM);
 		player->mo->angle = R_PointToAngle2 (player->mo->x,
 											 player->mo->y,
 											 linetarget->x,
@@ -592,14 +590,14 @@ void P_BulletSlope (AActor *mo)
 			bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
 			// [RH] If we never found a target, use actor's pitch to
 			// determine bulletslope
-			if (freelook && !linetarget)
+			if (allowfreelook && !linetarget)
 			{
 				an = mo->angle;
 				bulletslope = pitchslope;
 			}
 		}
 	}
-	if (freelook && linetarget && mo->player)
+	if (allowfreelook && linetarget && mo->player)
 	{
 		if (abs(bulletslope - pitchslope) > mo->player->userinfo.aimdist)
 		{

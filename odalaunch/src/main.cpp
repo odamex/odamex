@@ -29,24 +29,14 @@
 
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
+#include <wx/socket.h>
 
 IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
-{
-    // multiple instance checking
-    wxString InstanceName = wxString::Format(_T("Odamex Launcher - %s"), wxGetUserId().c_str());
-    
-    m_checker = new wxSingleInstanceChecker(InstanceName);
-    
-    if (m_checker->IsAnotherRunning())
-    {
-        wxLogError(_T("Odamex Launcher is already running, aborting."));
-
-        return false;
-    }
-    
-    // now run application
+{   
+	wxSocketBase::Initialize();
+	
 	::wxInitAllImageHandlers();
 
 	wxXmlResource::Get()->InitAllHandlers();
@@ -59,17 +49,8 @@ bool Application::OnInit()
     
     if (MAIN_DIALOG) 
         MAIN_DIALOG->Show();
-    
+        
+    SetTopWindow(MAIN_DIALOG);
+        
     return true;
-}
-
-wxInt32 Application::OnExit()
-{
-	if(m_checker)
-		delete m_checker;
-		
-	//if(MAIN_DIALOG)
-	//	delete MAIN_DIALOG;
-
-    return 0;
 }

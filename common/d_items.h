@@ -58,14 +58,14 @@ extern	weaponinfo_t	weaponinfo[NUMWEAPONS];
 
 struct gitem_s
 {
-		char			*classname;
+		const char		*classname;
 		BOOL	 		(*pickup)(player_s *ent, class AActor *other);
 		void			(*use)(player_s *ent, struct gitem_s *item);
 		byte			flags;
 		byte			offset; 				// For Weapon, Ammo, Armor, Key: Offset in appropriate table
 		byte			quantity;				// For Ammo: How much to pickup
 
-		char			*pickup_name;
+		const char		*pickup_name;
 };
 typedef struct gitem_s gitem_t;
 

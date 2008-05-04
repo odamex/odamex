@@ -108,6 +108,24 @@ R_ClipSolidWallSegment
 {
 	cliprange_t *next, *start;
 
+	if(newend + 1 >= lastsolidseg)
+	{
+		// denis - out of solidsegs, this would crash vanilla
+		Printf(PRINT_HIGH, "warning: exceeded %d solidsegs\n", MaxSegs);
+		if(MaxSegs >= 1024*1024)
+		{
+			// not that crazy, though
+			I_FatalError("R_ClipSolidWallSegment: refusing to extend solidsegs over %d", MaxSegs);
+		}
+		cliprange_t *old = solidsegs;
+		solidsegs = (cliprange_t *)Malloc (2 * MaxSegs * sizeof(cliprange_t));
+		memcpy(solidsegs, old,  (sizeof(cliprange_t)*MaxSegs));
+		free(old);
+		MaxSegs *= 2;
+		lastsolidseg = &solidsegs[MaxSegs];
+		newend = newend - old + solidsegs;
+	}
+
 	// Find the first range that touches the range
 	//	(adjacent pixels are touching).
 	start = solidsegs;

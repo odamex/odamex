@@ -41,6 +41,16 @@
 extern int   localport;
 extern int   msg_badread;
 
+// network message info
+struct msg_info_t
+{
+	int id;
+	const char *msgName;
+	const char *msgFormat; // 'b'=byte, 'n'=short, 'N'=long, 's'=string
+
+	const char *getName() { return msgName ? msgName : ""; }
+};
+
 // network messages
 enum svc_t
 {
@@ -96,6 +106,7 @@ enum svc_t
 	svc_updatedeaths,		// [byte] [short]
 	svc_ctfevent,			// [Toke - CTF] - [int]
 	svc_serversettings,		// 55 [Toke] - informs clients of server settings
+	svc_spectate,			// [Nes] - [byte:state], [short:playernum]
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -143,6 +154,9 @@ enum clc_t
 	clc_challenge = 163,
 	clc_max = 255
 };
+
+extern msg_info_t clc_info[clc_max];
+extern msg_info_t svc_info[svc_max];
 
 enum svc_compressed_masks
 {

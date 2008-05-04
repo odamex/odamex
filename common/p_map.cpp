@@ -172,16 +172,19 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 
 	StompAlwaysFrags = tmthing->player || (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
-	// stomp on any things contacted
-	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	if (!(tmthing->player && tmthing->player->spectator))
+	{
+		// stomp on any things contacted
+		xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+		xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+		yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+		yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-	for (bx=xl ; bx<=xh ; bx++)
-		for (by=yl ; by<=yh ; by++)
-			if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
-				return false;
+		for (bx=xl ; bx<=xh ; bx++)
+			for (by=yl ; by<=yh ; by++)
+				if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
+					return false;
+	}
 
 	// the move is ok,
 	// so link the thing into its new position
@@ -207,12 +210,12 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 	const sector_t *sec;
 
 	if (!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1 ||
-		(mo->waterlevel == 1 && mo->z > mo->floorz + 6*FRACUNIT))
+		(mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
 	{
 		friction = mo->subsector->sector->friction;
 		movefactor = mo->subsector->sector->movefactor >> 1;
 	}
-	else if (var_friction && !(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)))
+	else if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)))
 	{	// When the object is straddling sectors with the same
 		// floorheight that have different frictions, use the lowest
 		// friction value (muddy has precedence over icy).
@@ -396,8 +399,22 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (thing == tmthing)
 		return true;
 
+	if (thing->flags & MF_SPECTATOR)
+		return true;
+
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)) )
 		return true;	// can't hit thing
+
+		
+	// GhostlyDeath -- Spectators go through everything!
+	if (thing->player && thing->player->spectator)
+		return true;
+	// and vice versa
+	if (tmthing->player && tmthing->player->spectator)
+		return true;
+		
+	/*if (!(thing->player && thing->player->spectator))
+		return true;*/
 
 	blockdist = thing->radius + tmthing->radius;
 
@@ -656,7 +673,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
     if (!P_CheckPosition (thing, x, y))
 		return false;		// solid wall or thing
 
-	if (!(thing->flags & MF_NOCLIP))
+	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
 	{
 		if (tmceilingz - tmfloorz < thing->height)
 			return false;		// doesn't fit
@@ -678,6 +695,15 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 		if (!(thing->flags&(MF_DROPOFF|MF_FLOAT))
 			&& tmfloorz - tmdropoffz > 24*FRACUNIT)
 			return false;	// don't stand over a dropoff
+
+		/*if ((tmthing->player && !tmthing->player->spectator) &&
+			(thing->player && !thing->player->spectator))
+			return false;*/
+			
+		/*if (!(tmthing->player && tmthing->player->spectator) && (thing != tmthing))
+			return false;
+		if (!(thing->player && thing->player->spectator) && (thing != tmthing))
+			return false;*/
 	}
 
 	// the move is ok,
@@ -798,8 +824,7 @@ void P_HitSlideLine (line_t* ld)
 	// killough 10/98: only bounce if hit hard (prevents wobbling)
 	icyfloor =
 		(P_AproxDistance(tmxmove, tmymove) > 4*FRACUNIT) &&
-		var_friction &&  // killough 8/28/98: calc friction on demand
-		slidemo->z <= slidemo->floorz &&
+		slidemo->z <= slidemo->floorz &&		  // killough 8/28/98: calc friction on demand
 		P_GetFriction (slidemo, NULL) > ORIG_FRICTION;
 
 	if (ld->slopetype == ST_HORIZONTAL)
@@ -1118,6 +1143,10 @@ BOOL PTR_AimTraverse (intercept_t* in)
 	if (!(th->flags&MF_SHOOTABLE))
 		return true;					// corpse or something
 
+	// GhostlyDeath -- dont autoaim on spectators
+	if ((th->player && th->player->spectator))
+		return true;
+
 	// check angles to see if the thing can be aimed at
 	dist = FixedMul (attackrange, in->frac);
 	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
@@ -1242,6 +1271,10 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	if (!(th->flags & MF_SHOOTABLE))
 		return true;			// corpse or something
 
+	// GhostlyDeath -- Don't shoot spectators!
+	if ((th->player && th->player->spectator))
+		return true;
+
 	// check angles to see if the thing can be aimed at
 	dist = FixedMul (attackrange, in->frac);
 	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
@@ -1306,7 +1339,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	return false;
 }
 
-EXTERN_CVAR(freelook)
+EXTERN_CVAR(allowfreelook)
 
 //
 // P_AimLineAttack
@@ -1324,7 +1357,7 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
 
 	// can't shoot outside view angles
-	if(freelook)
+	if(allowfreelook)
 	{
 		// [RH] Technically, this is now correct for an engine with true 6 DOF
 		// instead of one which implements y-shearing, like we currently do.
@@ -1596,6 +1629,10 @@ void P_UseLines (player_t *player)
 	fixed_t 	x2;
 	fixed_t 	y2;
 
+	// GhostlyDeath -- Spectators can't use special lines
+	if (player->spectator)
+		return;
+
 	usething = player->mo;
 
 	//Added by MC: Check if bot and use special activating (spin round) if it is.
@@ -1733,6 +1770,10 @@ BOOL PIT_ChangeSector (AActor *thing)
 		// keep checking
 		return true;
 	}
+	
+	// GhostlyDeath -- if it's a spectator, keep checking
+	if (thing->player && thing->player->spectator)
+		return true;
 
 	// crunch bodies to giblets
 	if (thing->health <= 0)
@@ -1740,7 +1781,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 		P_SetMobjState (thing, S_GIBS);
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
-		if (demoplayback && democlassic) {
+		if ((demoplayback || demorecording) && democlassic) {
 			thing->height = 0;
 			thing->radius = 0;
 		}

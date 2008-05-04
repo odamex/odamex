@@ -100,4 +100,8 @@ class IJoystick : public IInputDevice
 void I_InitHardware ();
 void STACK_ARGS I_ShutdownHardware ();
 
+// [RH] M_ScreenShot now accepts a filename parameter.
+//		Pass a NULL to get the original behavior.
+void I_ScreenShot (const char *filename);
+
 #endif	// __HARDWARE_H__

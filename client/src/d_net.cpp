@@ -40,6 +40,7 @@
 #include "c_dispatch.h"
 #include "gi.h"
 #include "cl_main.h"
+#include "m_argv.h"
 
 extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
 
@@ -54,10 +55,11 @@ void CL_RememberSkin(void);
 //
 // a gametic cannot be run until nettics[] > gametic for all players
 //
-int 			maketic;
 int 			lastnettic;
 int 			skiptics;
 int 			ticdup; 		
+
+bool stepmode = false;
 
 void D_ProcessEvents (void); 
 void G_BuildTiccmd (ticcmd_t *cmd); 
@@ -70,24 +72,9 @@ void D_DoAdvanceDemo (void);
 //
 void NetUpdate (void)
 {
-    // check time
-	static QWORD gametime;
-
-    QWORD nowtime = I_GetTime ();
-    QWORD newtics = nowtime - gametime;
-    gametime = nowtime;
-
-    if (newtics <= 0)       // nothing new to update
-       return;
-	   
-    for (QWORD i = 0; i < newtics; i++) // denis - todo - this cycles needlessly at startup? but a trivial fix creates input delay? potential endless loops?
-    {
-        I_StartTic ();
-        D_ProcessEvents ();
-		G_BuildTiccmd (&consoleplayer().netcmds[maketic%BACKUPTICS]);
-		
-        maketic++;
-    }
+	I_StartTic ();
+	D_ProcessEvents ();
+	G_BuildTiccmd (&consoleplayer().netcmds[gametic%BACKUPTICS]);
 }
 
 //
@@ -101,6 +88,8 @@ void D_CheckNetGame (void)
     D_SetupUserInfo();
 
     ticdup = 1;
+
+    stepmode = Args.CheckParm ("-stepmode");
 }
 
 
@@ -108,23 +97,20 @@ void D_CheckNetGame (void)
 // TryRunTics
 //
 extern	BOOL	 advancedemo;
+int canceltics = 0;
 
-void TryRunTics (void)
+void TryStepTics(QWORD tics)
 {
-	// get real tics
-	static QWORD oldentertics;
-
-	QWORD entertic = I_WaitForTic (oldentertics);
-	QWORD realtics = entertic - oldentertics;
-	oldentertics = entertic;
-	
 	DObject::BeginFrame ();
 	
-	NetUpdate ();  // check for new console commands
-
 	// run the realtics tics
-	while (realtics--)
+	while (tics--)
 	{
+		if(canceltics && canceltics--)
+			continue;
+
+		NetUpdate ();
+
 		if (advancedemo)
 			D_DoAdvanceDemo ();
 		
@@ -135,7 +121,54 @@ void TryRunTics (void)
 	}
 	
 	DObject::EndFrame ();
+
 }
+
+QWORD nextstep = 0;
+
+void TryRunTics (void)
+{
+	// get real tics
+	static QWORD oldentertics = 0;
+
+	QWORD entertic = I_WaitForTic (oldentertics);
+	QWORD realtics = entertic - oldentertics;
+	oldentertics = entertic;
+
+	std::string cmd = I_ConsoleInput();
+	if (cmd.length())
+	{
+		AddCommandString (cmd.c_str());
+	}
+	
+	// run the realtics tics
+	if(!stepmode)
+		TryStepTics(realtics);
+	else
+	{
+		NetUpdate();
+
+		if(nextstep)
+		{
+			canceltics = 0;
+			TryStepTics(nextstep);
+			nextstep = 0;
+
+			// debugging output
+			extern unsigned char prndindex;
+			if(players.size() && players[0].mo)
+				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n", level.time, prndindex, players[0].mo->x, players[0].mo->y, players[0].mo->z);
+			else
+ 				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+		}
+	}
+}
+
+BEGIN_COMMAND(step)
+{
+        nextstep = argc > 1 ? atoi(argv[1]) : 1;
+}
+END_COMMAND(step)
 
 
 VERSION_CONTROL (d_net_cpp, "$Id$")

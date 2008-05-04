@@ -49,6 +49,8 @@
 #include "d_protocol.h"
 #include "v_text.h"
 #include "cl_main.h"
+#include "m_fileio.h"
+#include "m_misc.h"
 
 #include "gi.h"
 #include "minilzo.h"
@@ -195,13 +197,14 @@ BEGIN_COMMAND (map)
 			char mapname[32];
 
 			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
+            // [Russell] - gamemode is always the better option compared to above
 			if ( argc == 2 )
 			{
-				sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
-			}
-			else if ( argc == 3 )
-			{
-				sprintf( mapname, "E%iM%i", atoi( argv[1] ), atoi( argv[2] ) );
+				if (gamemode == commercial)
+                    sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
+                else
+                    sprintf( mapname, "E%cM%c", argv[1][0], argv[1][1]);
+                    
 			}
 
 			if (W_CheckNumForName (mapname) == -1)
@@ -224,23 +227,49 @@ END_COMMAND (map)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
-	std::vector<std::string> wads, hashes;
+	std::vector<std::string> wads, patch_files, hashes;
+	
+	// [Russell] print out some useful info
+	if (argc == 1)
+	{
+	    Printf(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
+	    Printf(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
+	    Printf(PRINT_HIGH, "\n");
+	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
+	    Printf(PRINT_HIGH, "eg: wad doom\n");
+	    
+	    return;
+	}
+	
+	C_HideConsole();
 
-	size_t i = 1;
+    // add our iwad if it is one
+    if (W_IsIWAD(argv[1]))
+        wads.push_back(argv[1]);
 
-	while(i < argc)
-		wads.push_back(argv[i++]);
-
+    // check whether they are wads or patch files
+	for (QWORD i = 1; i < argc; i++)
+	{
+		std::string ext;
+		
+		if (M_ExtractFileExtension(argv[i], ext))
+		{
+		    // don't allow subsequent iwads to be loaded
+		    if ((ext == "wad") && !W_IsIWAD(argv[i]))
+                wads.push_back(argv[i]);
+            else if (ext == "deh" || ext == "bex")
+                patch_files.push_back(argv[i]);
+		}
+	}
+	
     hashes.resize(wads.size());
 
-	D_DoomWadReboot(wads, hashes);
-
-	// get skill / episode / map from parms
-	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
-
-    S_StopMusic();
-
-	G_DeferedInitNew (startmap);
+	D_DoomWadReboot(wads, hashes, patch_files);
+	
+	D_StartTitle ();
+	CL_QuitNetGame();
+	S_StopMusic();
+	S_StartMusic(gameinfo.titleMusic);
 }
 END_COMMAND (wad)
 
@@ -421,14 +450,14 @@ void G_DoCompleted (void)
 		if(players[i].ingame())
 			G_PlayerFinishLevel(players[i]);
 
+	V_RestoreScreenPalette();
+
 	// [RH] Mark this level as having been visited
 	if (!(level.flags & LEVEL_CHANGEMAPCHEAT))
 		FindLevelInfo (level.mapname)->flags |= LEVEL_VISITED;
 
 	if (automapactive)
 		AM_Stop ();
-
-	consoleplayer().damagecount = 0;
 
 	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
 	strncpy (wminfo.lname0, level.info->pname, 8);
@@ -787,7 +816,7 @@ cluster_info_t *FindClusterInfo (int cluster)
 void G_SetLevelStrings (void)
 {
 	char temp[8];
-	char *namepart;
+	const char *namepart;
 	int i, start;
 
 	temp[0] = '0';
@@ -2073,6 +2102,8 @@ cluster_info_t ClusterInfos[] = {
 };
 
 VERSION_CONTROL (g_level_cpp, "$Id$")
+
+
 
 
 

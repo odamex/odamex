@@ -24,8 +24,6 @@
 
 #include "net_packet.h"
 
-BufferedSocket ServerBase::Socket;
-
 /*
     Create a packet to send, which in turn will
     receive data from the server
@@ -74,38 +72,55 @@ wxInt32 MasterServer::Parse()
 
     // begin reading
     
-    wxInt32 temp_response = Socket.Read32();
+    wxInt32 temp_response;
+    
+    Socket.Read32(temp_response);
     
     if (temp_response != response)
         return 0;
         
-    // only free the array if the response is valid
-    // the coder may still want the addresses for refreshing
-    if (addresses != NULL)
-    {
-        free(addresses);
-        addresses = NULL;
-    }
+    wxInt16 server_count;
     
-    server_count = Socket.Read16();
+    Socket.Read16(server_count);
     
     if (!server_count)
         return 0;
     
-    // allocate an array with the amount of addresses
-    addresses = (addr_t *)calloc(server_count, sizeof(addr_t));
-        
-    if (addresses == NULL)
-        return 0;
+    // don't delete our custom servers!
+    std::vector<addr_t>::iterator addr_iter = addresses.begin();    
     
-    for (wxInt32 i = 0; i < server_count; i++)
+    while(addr_iter != addresses.end()) 
     {
-        addresses[i].ip[0] = Socket.Read8();
-        addresses[i].ip[1] = Socket.Read8();
-        addresses[i].ip[2] = Socket.Read8();
-        addresses[i].ip[3] = Socket.Read8();
+        addr_t address = *addr_iter;
+        
+        if (address.custom == false)
+        {
+            addresses.erase(addr_iter);
+            continue;
+        }
+        
+        addr_iter++;
+    }
+    
+    // Add on to any servers already in the list
+    if (server_count)
+    for (wxInt16 i = 0; i < server_count; i++)
+    {
+        addr_t address;
+        wxUint8 ip1, ip2, ip3, ip4;
+        
+        Socket.Read8(ip1);
+        Socket.Read8(ip2);
+        Socket.Read8(ip3);
+        Socket.Read8(ip4);   
+        
+        address.ip = wxString::Format(_T("%d.%d.%d.%d"), ip1, ip2, ip3, ip4);
             
-        addresses[i].port = Socket.Read16();
+        Socket.Read16(address.port);
+        
+        address.custom = false;
+        
+        addresses.push_back(address);
     }
     
     Socket.ClearRecvBuffer();
@@ -116,39 +131,19 @@ wxInt32 MasterServer::Parse()
 // Server constructor
 Server::Server()
 {   
-    // please keep this clean
-    challenge = SERVER_CHALLENGE;
-    response = SERVER_RESPONSE;
-    
-    info.name = _T("");
-    info.numplayers = 0;
-	info.maxplayers = 0;
-	info.map = _T("");
-	info.numpwads = 0;
-    
-    info.iwad = _T("");
     info.pwads = NULL;
-
-	info.gametype = 0;
-	info.gameskill = 0;
-	info.teamplay = false;
-
-	info.playerinfo = NULL;
+    info.playerinfo = NULL;
     info.wad_hashes = NULL;
-    
-	info.ctf = false;
-	info.webaddr = _T("");
-	
-	info.teamplayinfo.scorelimit = 0;
-	info.teamplayinfo.red = false;
-	info.teamplayinfo.blue = false;
-	info.teamplayinfo.gold = false;
-	info.teamplayinfo.redscore = 0;
-	info.teamplayinfo.bluescore = 0;
-	info.teamplayinfo.goldscore = 0;
+                
+    ResetData();
 }
 
 Server::~Server()
+{
+    ResetData();
+}
+
+void Server::ResetData()
 {
     // please keep this clean
     if (info.pwads != NULL)
@@ -171,26 +166,60 @@ Server::~Server()
         
         info.wad_hashes = NULL;
     }
+
+    // please keep this clean
+    challenge = SERVER_CHALLENGE;
+    response = SERVER_RESPONSE;
+    
+    info.response = 0;
+    
+    info.name = _T("");
+    info.numplayers = 0;
+	info.maxplayers = 0;
+	info.map = _T("");
+	info.numpwads = 0;
+    
+    info.iwad = _T("");
+    info.pwads = NULL;
+
+	info.gametype = -1;
+	info.gameskill = 0;
+	info.teamplay = false;
+
+	info.playerinfo = NULL;
+    info.wad_hashes = NULL;
+    
+	info.ctf = false;
+	info.webaddr = _T("");
+	
+	info.teamplayinfo.scorelimit = 0;
+	info.teamplayinfo.red = false;
+	info.teamplayinfo.blue = false;
+	info.teamplayinfo.gold = false;
+	info.teamplayinfo.redscore = 0;
+	info.teamplayinfo.bluescore = 0;
+	info.teamplayinfo.goldscore = 0;
 }
 
 wxInt32 Server::Parse()
 {   
-    wxInt32 temp_response = Socket.Read32();
+    Socket.Read32(info.response);
     
-    if (temp_response != response)
+    if (info.response != response)
         return 0;
         
     int i = 0;
-        
+    wxInt32 dummyint;
+    
     // token
-    Socket.Read32();
+    Socket.Read32(dummyint);
         
-    info.name = Socket.ReadString();
-    info.numplayers = Socket.Read8();
-    info.maxplayers = Socket.Read8();
-    info.map = Socket.ReadString();
-    info.numpwads = Socket.Read8() - 1; // needs protocol fix, thanks anark
-    info.iwad = Socket.ReadString();
+    Socket.ReadString(info.name);
+    Socket.Read8(info.numplayers);
+    Socket.Read8(info.maxplayers);
+    Socket.ReadString(info.map);
+    Socket.Read8(info.numpwads);
+    Socket.ReadString(info.iwad);
         
     // needs to be fixed
         
@@ -206,14 +235,14 @@ wxInt32 Server::Parse()
             info.pwads = new wxString [info.numpwads];
             
         if (info.pwads != NULL)
-            for (i = 0; i < info.numpwads; i++)
-                info.pwads[i] = Socket.ReadString();
+            for (i = 0; i < info.numpwads - 1; i++)
+                Socket.ReadString(info.pwads[i]);
     }
         
-    info.gametype = Socket.Read8();
-    info.gameskill = Socket.Read8();
-    info.teamplay = Socket.Read8() ? true : false;
-    info.ctf = Socket.Read8() ? true : false;
+    Socket.Read8(info.gametype);
+    Socket.Read8(info.gameskill);
+    Socket.ReadBool(info.teamplay); 
+    Socket.ReadBool(info.ctf);
         
     if (info.numplayers > 0)
     {          
@@ -229,14 +258,14 @@ wxInt32 Server::Parse()
         if (info.playerinfo != NULL)
             for (i = 0; i < info.numplayers; i++)
             {
-                info.playerinfo[i].name = Socket.ReadString();
-                info.playerinfo[i].frags = Socket.Read16();
-                    info.playerinfo[i].ping = Socket.Read32();
-                    info.playerinfo[i].team = Socket.Read8();
+                Socket.ReadString(info.playerinfo[i].name);
+                Socket.Read16(info.playerinfo[i].frags);
+                Socket.Read32(info.playerinfo[i].ping);
+                Socket.Read8(info.playerinfo[i].team);
             }
     }
     
-    info.iwad_hash = Socket.ReadString();
+    Socket.ReadString(info.iwad_hash);
     
     if (info.numpwads > 0)
     {          
@@ -250,61 +279,78 @@ wxInt32 Server::Parse()
             info.wad_hashes = new wxString [info.numpwads];
             
         if (info.wad_hashes != NULL)
-            for (i = 0; i < info.numpwads; i++) // dummy to maintain compatibility for now
-                info.wad_hashes[i] = Socket.ReadString();
+            for (i = 0; i < info.numpwads - 1; i++) // dummy to maintain compatibility for now
+                Socket.ReadString(info.wad_hashes[i]);
     }
         
-    info.webaddr = Socket.ReadString();
+    Socket.ReadString(info.webaddr);
         
     if ((info.teamplay) || (info.ctf && info.teamplay))
     {
-        info.teamplayinfo.scorelimit = Socket.Read32();
+        Socket.Read32(info.teamplayinfo.scorelimit);
             
-        info.teamplayinfo.blue = Socket.Read8() ? true : false;
+        Socket.ReadBool(info.teamplayinfo.blue);
         if (info.teamplayinfo.blue)
-            info.teamplayinfo.bluescore = Socket.Read32();
+            Socket.Read32(info.teamplayinfo.bluescore);
             
-        info.teamplayinfo.red = Socket.Read8() ? true : false;
+        Socket.ReadBool(info.teamplayinfo.red);
         if (info.teamplayinfo.red)
-            info.teamplayinfo.redscore = Socket.Read32();
+            Socket.Read32(info.teamplayinfo.redscore);
             
-        info.teamplayinfo.gold = Socket.Read8() ? true : false;
+        Socket.ReadBool(info.teamplayinfo.gold);
         if (info.teamplayinfo.gold)
-            info.teamplayinfo.goldscore = Socket.Read32();
+             Socket.Read32(info.teamplayinfo.goldscore);
     }
     
     // version
-    info.version = Socket.Read16();
+    Socket.Read16(info.version);
     
-    info.emailaddr = Socket.ReadString();
-    info.timelimit = Socket.Read16();
-    info.timeleft = Socket.Read16();
-    info.fraglimit = Socket.Read16();
+    Socket.ReadString(info.emailaddr);
+    Socket.Read16(info.timelimit);
+    Socket.Read16(info.timeleft);
+    Socket.Read16(info.fraglimit);
 
-    info.itemrespawn = Socket.Read8();
-    info.weaponstay = Socket.Read8();
-    info.friendlyfire = Socket.Read8();
-    info.allowexit = Socket.Read8();
-    info.infiniteammo = Socket.Read8();
-    info.nomonsters = Socket.Read8();
-    info.monstersrespawn = Socket.Read8();
-    info.fastmonsters = Socket.Read8();
-    info.allowjump = Socket.Read8();
-    info.allowfreelook = Socket.Read8();
-    info.waddownload = Socket.Read8();
-    info.emptyreset = Socket.Read8();
-    info.cleanmaps = Socket.Read8();
-    info.fragonexit = Socket.Read8();
+    Socket.ReadBool(info.itemrespawn);
+    Socket.ReadBool(info.weaponstay);
+    Socket.ReadBool(info.friendlyfire);
+    Socket.ReadBool(info.allowexit);
+    Socket.ReadBool(info.infiniteammo);
+    Socket.ReadBool(info.nomonsters);
+    Socket.ReadBool(info.monstersrespawn);
+    Socket.ReadBool(info.fastmonsters);
+    Socket.ReadBool(info.allowjump);
+    Socket.ReadBool(info.allowfreelook);
+    Socket.ReadBool(info.waddownload);
+    Socket.ReadBool(info.emptyreset);
+    Socket.ReadBool(info.cleanmaps);
+    Socket.ReadBool(info.fragonexit);
 
     if ((info.numplayers) && (info.playerinfo != NULL))
     {
         for (i = 0; i < info.numplayers; i++)
         {
-            info.playerinfo[i].killcount = Socket.Read16();
-            info.playerinfo[i].deathcount = Socket.Read16();
-            info.playerinfo[i].timeingame = Socket.Read16();
+            Socket.Read16(info.playerinfo[i].killcount);
+            Socket.Read16(info.playerinfo[i].deathcount);
+            Socket.Read16(info.playerinfo[i].timeingame);
         }
     }
+
+    Socket.Read32(info.spectating);
+
+    if (info.spectating == 0x01020304)
+    {
+        Socket.Read16(info.maxactiveplayers);
+        
+        if ((info.numplayers) && (info.playerinfo != NULL))
+        {
+            for (i = 0; i < info.numplayers; ++i)
+            {
+                Socket.ReadBool(info.playerinfo[i].spectator);
+            }
+        }
+    }
+    else
+        info.spectating = false;
 
     Socket.ClearRecvBuffer();
     

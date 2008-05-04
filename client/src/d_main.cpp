@@ -59,6 +59,7 @@
 #include "f_finale.h"
 #include "f_wipe.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "m_misc.h"
 #include "m_menu.h"
 #include "c_console.h"
@@ -113,8 +114,6 @@ extern DThinker ThinkerCap;
 extern int NoWipe;		// [RH] Don't wipe when travelling in hubs
 
 
-CVAR (def_patch, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
 char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
@@ -127,6 +126,7 @@ int eventhead;
 int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 DCanvas *page;
+bool demotest;
 
 static int demosequence;
 static int pagetic;
@@ -279,8 +279,8 @@ void D_Display (void)
 				AM_Drawer ();
 			C_DrawMid ();
 			CTF_DrawHud ();
-			HU_Drawer ();
 			ST_Drawer ();
+			HU_Drawer ();
 			break;
 
 		case GS_INTERMISSION:
@@ -328,39 +328,74 @@ void D_Display (void)
 		}
 		NoWipe = 10;
 	}
+	
+	static bool live_wiping = false;
 
 	if (!wipe)
 	{
-		// normal update
-		C_DrawConsole ();	// draw console
-		M_Drawer ();		// menu is drawn even on top of everything
-		I_FinishUpdate ();	// page flip or blit buffer
+		if(live_wiping)
+		{
+			// wipe update online (multiple calls, not just looping here)
+			C_DrawConsole ();
+			wipe_EndScreen();
+			live_wiping = !wipe_ScreenWipe (1);
+			M_Drawer ();			// menu is drawn even on top of wipes
+			I_FinishUpdate ();		// page flip or blit buffer
+		}
+		else
+		{
+			// normal update
+			C_DrawConsole ();	// draw console
+			M_Drawer ();		// menu is drawn even on top of everything
+			I_FinishUpdate ();	// page flip or blit buffer
+		}
 	}
 	else
 	{
-		// wipe update
-		int wipestart, nowtime, tics;
-		BOOL done;
-
-		C_DrawConsole ();
-		wipe_EndScreen ();
-		I_FinishUpdateNoBlit ();
-
-		wipestart = I_GetTime () - 1;
-
-		do
+		if(!connected)
 		{
+			// wipe update offline
+			int wipestart, wipecont, nowtime, tics;
+			BOOL done;
+
+			C_DrawConsole ();
+			wipe_EndScreen ();
+			I_FinishUpdateNoBlit ();
+
+			extern int canceltics;
+
+			wipestart = I_GetTime ();
+			wipecont = wipestart - 1;
+
 			do
 			{
-				nowtime = I_GetTime ();
-				tics = nowtime - wipestart;
-			} while (!tics);
-			wipestart = nowtime;
-			I_BeginUpdate ();
-			done = wipe_ScreenWipe (tics);
+				do
+				{
+					nowtime = I_GetTime ();
+					tics = nowtime - wipecont;
+				} while (!tics);
+				wipecont = nowtime;
+				I_BeginUpdate ();
+				done = wipe_ScreenWipe (tics);
+				M_Drawer ();			// menu is drawn even on top of wipes
+				I_FinishUpdate ();		// page flip or blit buffer
+			} while (!done);
+
+			if(!connected)
+				canceltics += I_GetTime () - wipestart;
+		}
+		else
+		{
+			// wipe update online
+			live_wiping = true;
+
+			// wipe update online (multiple calls, not just looping here)
+			C_DrawConsole ();
+			wipe_EndScreen();
+			live_wiping = !wipe_ScreenWipe (1);
 			M_Drawer ();			// menu is drawn even on top of wipes
 			I_FinishUpdate ();		// page flip or blit buffer
-		} while (!done);
+		}
 	}
 
 	END_STAT(D_Display);
@@ -444,10 +479,7 @@ void D_AdvanceDemo (void)
 //
 void D_DoAdvanceDemo (void)
 {
-	static char demoname[32] = "DEMO1";
-	static int democount = 1;
-	static int pagecount;
-	char *pagename = NULL;
+	const char *pagename = NULL;
 
 	consoleplayer().playerstate = PST_LIVE;	// not reborn
 	advancedemo = false;
@@ -455,64 +487,78 @@ void D_DoAdvanceDemo (void)
 	paused = false;
 	gameaction = ga_nothing;
 
-	switch (demosequence)
-	{
-		case 3:
-			if (gameinfo.advisoryTime)
-			{
-				if (page)
-				{
-					//page->Lock ();
-					//page->DrawPatch (W_CachePatch ("ADVISOR");
-					//page->Unlock ();
-				}
-				demosequence = 1;
-				pagetic = (int)(gameinfo.advisoryTime * TICRATE);
-				break;
-			}
-			// fall through to case 1 if no advisory notice
-
-		case 1:
-			if (!M_DemoNoPlay)
-			{
-				sprintf (demoname + 4, "%d", democount++);
-				if (W_CheckNumForName (demoname) < 0)
-				{
-					demosequence = 0;
-					democount = 1;
-					// falls through to case 0 below
-				}
+    // [Russell] - Old demo sequence used in original games, zdoom's
+    // dynamic one was too dynamic for its own good
+    // [Nes] - Newer demo sequence with better flow.
+    if (W_CheckNumForName("DEMO4") >= 0)
+        demosequence = (demosequence+1)%8;
+    else
+        demosequence = (demosequence+1)%6;
+    
+    switch (demosequence)
+    {
+        case 0:
+            if (gamemode == commercial)
+                pagetic = TICRATE * 11;
+            else
+                pagetic = 170;
+	
+            gamestate = GS_DEMOSCREEN;
+            pagename = "TITLEPIC";
+	
+            S_StartMusic(gameinfo.titleMusic);
+            
+            break;
+        case 1:
+            G_DeferedPlayDemo("DEMO1");
+            
+            break;
+        case 2:
+            pagetic = 200;
+            gamestate = GS_DEMOSCREEN;
+            pagename = "CREDIT";
+            
+            break;
+        case 3:
+            G_DeferedPlayDemo("DEMO2");
+            
+            break;
+        case 4:
+            gamestate = GS_DEMOSCREEN;
+            
+            if (gamemode == commercial || gamemode == retail)
+            {
+				if (gamemode == commercial)
+					pagetic = TICRATE * 11;
 				else
-				{
-					G_DeferedPlayDemo (demoname);
-					demosequence = 2;
-					break;
-				}
-			}
+					pagetic = 170;
+                pagename = "TITLEPIC";
+                S_StartMusic(gameinfo.titleMusic);
+            }
+            else
+            {
+                pagetic = 200;
+				pagename = "HELP2";
+            }
+            
+            break;
+        case 5:
+            G_DeferedPlayDemo("DEMO3");
+	
+            break;
+        case 6:
+            pagetic = 200;
+            gamestate = GS_DEMOSCREEN;
+            pagename = "CREDIT";
+            
+            break;        
+        case 7:
+            G_DeferedPlayDemo("DEMO4");
+        
+            break;
+    }
 
-		default:
-		case 0:
-			gamestate = GS_DEMOSCREEN;
-			pagename = gameinfo.titlePage;
-			pagetic = (int)(gameinfo.titleTime * TICRATE);
-			S_StartMusic (gameinfo.titleMusic);
-			demosequence = 3;
-			pagecount = 0;
-//			C_HideConsole ();
-			break;
-
-		case 2:
-			pagetic = (int)(gameinfo.pageTime * TICRATE);
-			gamestate = GS_DEMOSCREEN;
-			if (pagecount == 0)
-				pagename = gameinfo.creditPage1;
-			else
-				pagename = gameinfo.creditPage2;
-			pagecount ^= 1;
-			demosequence = 1;
-			break;
-	}
-
+    // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
 		int width, height;
@@ -560,6 +606,14 @@ void D_StartTitle (void)
 	D_AdvanceDemo ();
 }
 
+bool HashOk(std::string &required, std::string &available)
+{
+	if(!required.length())
+		return false;
+
+	return required == available;
+}
+
 //
 // denis - BaseFileSearchDir
 // Check single paths for a given file with a possible extension
@@ -601,8 +655,19 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 
 			if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 			{
-				if(!hash.length() || hash == W_MD5(dir + d_name))
+				std::string local_file = (dir + d_name).c_str();
+				std::string local_hash = W_MD5(local_file.c_str());
+
+				if(!hash.length() || hash == local_hash)
+				{
 					found = d_name;
+				}
+				else if(hash.length())
+				{
+					Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
+					Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
+					Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
+				}
 			}
 		}
 	}
@@ -619,7 +684,8 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		Printf (PRINT_HIGH, "FindFirstFile failed. GetLastError: %d\n", dwError);
+		Printf (PRINT_HIGH, "FindFirstFile failed for %s\n", all_ext.c_str());
+		Printf (PRINT_HIGH, "GetLastError: %d\n", dwError);
 		return "";
 	}
 
@@ -643,10 +709,19 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 
 		if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 		{
-			if(!hash.length() || hash == W_MD5((dir + FindFileData.cFileName).c_str()))
+			std::string local_file = (dir + FindFileData.cFileName).c_str();
+			std::string local_hash = W_MD5(local_file.c_str());
+
+			if(!hash.length() || hash == local_hash)
 			{
 				found = FindFileData.cFileName;
 				break;
+			}
+			else if(hash.length())
+			{
+				Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
+				Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
+				Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
 			}
 		}
 	}
@@ -658,49 +733,24 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 }
 
 //
-// denis - BaseFileSearch
-// Check all paths of interest for a given file with a possible extension
+// denis - AddSearchDir
+// Split a new directory string using the separator and append results to the output
 //
-std::string BaseFileSearch (std::string file, std::string ext = "", std::string hash = "")
+void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
 {
-	std::transform(file.begin(), file.end(), file.begin(), toupper);
-	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
-	std::vector<std::string> dirs;
+	if(!dir)
+		return;
 
-	#ifdef WIN32
-		const char separator = ';';
-	#else
-		const char separator = ':';
-	#endif
+	// search through dwd
+	std::stringstream ss(dir);
+	std::string segment;
 
-	const char *awd = Args.CheckValue("-waddir");
-	if(awd)
+	while(!ss.eof())
 	{
-		// search through dwd
-		std::stringstream ss(awd);
-		std::string segment;
+		std::getline(ss, segment, separator);
 
-		while(!ss.eof())
-		{
-			std::getline(ss, segment, separator);
-
-			if(!segment.length())
-				continue;
-
-			FixPathSeparator(segment);
-			I_ExpandHomeDir(segment);
-
-			if(segment[segment.length() - 1] != '/')
-				segment += "/";
-
-			dirs.push_back(segment);
-		}
-	}
-
-	const char *dwd = getenv("DOOMWADDIR");
-	if(dwd)
-	{
-		std::string segment(dwd);
+		if(!segment.length())
+			continue;
 
 		FixPathSeparator(segment);
 		I_ExpandHomeDir(segment);
@@ -710,35 +760,46 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 
 		dirs.push_back(segment);
 	}
+}
 
-	const char *dwp = getenv("DOOMWADPATH");
-	if(dwp)
-	{
-		// search through dwd
-		std::stringstream ss(dwp);
-		std::string segment;
+//
+// denis - BaseFileSearch
+// Check all paths of interest for a given file with a possible extension
+//
+std::string BaseFileSearch (std::string file, std::string ext = "", std::string hash = "")
+{
+	#ifdef WIN32
+		// absolute path?
+		if(file.find(':') != std::string::npos)
+			return file;
+		
+		const char separator = ';';
+	#else
+		// absolute path?
+		if(file[0] == '/' || file[0] == '~')
+			return file;
+		
+		const char separator = ':';
+	#endif
 
-		while(!ss.eof())
-		{
-			std::getline(ss, segment, separator);
+    // [Russell] - Bit of a hack. (since BaseFileSearchDir should handle this)
+    // return file if it contains a path already
+    if (M_FileExists(file))
+        return file;
 
-			if(!segment.length())
-				continue;
-
-			FixPathSeparator(segment);
-			I_ExpandHomeDir(segment);
-
-			if(segment[segment.length() - 1] != '/')
-				segment += "/";
-
-			dirs.push_back(segment);
-		}
-	}
+	std::transform(file.begin(), file.end(), file.begin(), toupper);
+	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
+	std::vector<std::string> dirs;
 
 	dirs.push_back(startdir);
 	dirs.push_back(progdir);
 
-	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
+	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
+	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
+	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
+    AddSearchDir(dirs, getenv("HOME"), separator);
+
+    dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
 	for(size_t i = 0; i < dirs.size(); i++)
 	{
@@ -778,6 +839,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		"doom.wad",
 		"doom1.wad",
 		"freedoom.wad",
+		"freedm.wad",
 		NULL
 	};
 
@@ -792,7 +854,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			iwad = found;
 		else
 		{
-			if(FileExists(suggestion.c_str()))
+			if(M_FileExists(suggestion.c_str()))
 				iwad = suggestion;
 		}
 
@@ -960,9 +1022,6 @@ void D_AddDefWads (std::string iwad)
 			wadfiles.push_back(wad);
 		else
 			I_FatalError ("Cannot find odamex.wad");
-
-		if (wad.length())
-			wadfiles.push_back(wad);
 	}
 
 	I_SetTitleString(IdentifyVersion(iwad).c_str());
@@ -1050,52 +1109,77 @@ void D_AddDefWads (std::string iwad)
 //
 // D_DoDefDehackedPatch
 //
-void D_DoDefDehackedPatch ()
+// [Russell] - Change the meaning, this will load multiple patch files if 
+//             specified
+void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vector<std::string>())
 {
-	// [RH] Apply any DeHackEd patch
-	{
-		bool noDef = false;
-		unsigned i;
+    DArgs files; 
+    BOOL noDef = false;
+    QWORD i;
 
-		// try .deh files on command line
-		DArgs files = Args.GatherFiles ("-deh", ".deh", false);
-		if (files.NumArgs() > 0)
-		{
-			for (i = 0; i < files.NumArgs(); i++)
-			{
-				std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
-				if (f.length())
-					DoDehPatch (f.c_str(), false);
-			}
-			noDef = true;
-		}
+    UndoDehPatch();
 
-		// try .bex files on command line
-		{
-			DArgs files = Args.GatherFiles ("-bex", ".bex", false);
-			if (files.NumArgs() > 0)
-			{
-				for (i = 0; i < files.NumArgs(); i++)
-				{
-					printf (":%s\n", files.GetArg (i));
-					std::string f = BaseFileSearch (files.GetArg (i), ".BEX");
-					if (f.length())
-						printf ("%s\n", f.c_str()), DoDehPatch (f.c_str(), false);
-				}
-				noDef = true;
-			}
-		}
+    if (!patch_files.empty())
+    {
+        std::string f;
+        std::string ext;
+        
+        // we want the extension of the file
+        for (i = 0; i < patch_files.size(); i++)
+        {
+            if (M_ExtractFileExtension(patch_files[i], ext))
+            {
+                f = BaseFileSearch (patch_files[i], ext);
+            
+                if (f.length())
+                {
+                    DoDehPatch (f.c_str(), false);
+                
+                    noDef = true;
+                }
+            }
+        }
+    }
+    else // [Russell] - Only load if patch_files is empty
+    {
+        // try .deh files on command line
+   
+        files = Args.GatherFiles ("-deh", ".deh", false);
+    
+        if (files.NumArgs())
+        {
+            for (i = 0; i < files.NumArgs(); i++)
+            {
+                std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
 
-		// try default patches
-		if (!noDef)
-		{
-			if (FileExists (def_patch.cstring()))
-				// Use patch specified by def_patch.
-				DoDehPatch (def_patch.cstring(), true);
-			else
-				DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
-		}
-	}
+                if (f.length())
+                    DoDehPatch (f.c_str(), false);
+            }
+            noDef = true;
+        }
+
+        // remove the old arguments
+        files.FlushArgs();
+
+        // try .bex files on command line
+        files = Args.GatherFiles ("-bex", ".bex", false);
+    
+        if (files.NumArgs())
+        {
+            for (i = 0; i < files.NumArgs(); i++)
+            {
+                std::string f = BaseFileSearch (files.GetArg (i), ".BEX");
+
+                if (f.length())
+                    DoDehPatch (f.c_str(), false);
+            }
+            noDef = true;
+        }
+    }
+
+    // try default patches
+    if (!noDef)
+        DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
 }
 
 //
@@ -1106,17 +1190,21 @@ void D_DoDefDehackedPatch ()
 //
 void V_InitPalette (void);
 
-std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vector<std::string> needhashes)
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames, 
+                                     std::vector<std::string> needhashes, 
+                                     const std::vector<std::string> patch_files)
 {
-	using namespace std;
-	vector<size_t> fails;
+	std::vector<size_t> fails;
 	size_t i;
 
-	static vector<std::string> last_wadnames, last_hashes;
+	static std::vector<std::string> last_wadnames, last_hashes, last_patches;
 	static bool last_success = false;
 
 	// already loaded these?
-	if(last_success && wadnames == last_wadnames && (needhashes.empty() || needhashes == last_hashes))
+	if (last_success && 
+        (wadnames == last_wadnames) && 
+        (patch_files == last_patches) &&
+        (needhashes.empty() || needhashes == last_hashes))
 	{
 		// fast track if files have not been changed // denis - todo - actually check the file timestamps
 		return std::vector<size_t>();
@@ -1129,6 +1217,8 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
+		
+	S_Stop();
 
 	DThinker::DestroyAllThinkers();
 
@@ -1138,7 +1228,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 
 	wadfiles.clear();
 
-	string custwad;
+	std::string custwad;
 	if(!wadnames.empty())
 		custwad = wadnames[0];
 
@@ -1146,7 +1236,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 
 	for(i = 0; i < wadnames.size(); i++)
 	{
-		string tmp = wadnames[i];
+		std::string tmp = wadnames[i];
 
 		// strip absolute paths, as they present a security risk
 		FixPathSeparator(tmp);
@@ -1158,7 +1248,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
         if (needhashes[i].empty())
             needhashes[i] = W_MD5(tmp);
 
-		string file = BaseFileSearch(tmp, ".wad", needhashes[i]);
+		std::string file = BaseFileSearch(tmp, ".wad", needhashes[i]);
 
 		if(file.length())
 			wadfiles.push_back(file);
@@ -1174,6 +1264,9 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
 
+	D_InitStrings ();
+	D_DoDefDehackedPatch(patch_files);
+
 	//gotconback = false;
 	//C_InitConsole(DisplayWidth, DisplayHeight, true);
 
@@ -1183,14 +1276,10 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, std::vec
 		I_Error("Could not reinitialize palette");
 	V_InitPalette();
 
-	D_InitStrings ();
-
-	D_DoDefDehackedPatch();
-
 	G_SetLevelStrings ();
 	S_ParseSndInfo();
 
-	//M_Init();
+	M_Init();
 	R_Init();
 	P_Init();
 
@@ -1233,6 +1322,8 @@ void D_DoomMain (void)
 
 	W_InitMultipleFiles (wadfiles);
 
+	// [RH] Initialize configurable strings.
+	D_InitStrings ();
 	D_DoDefDehackedPatch ();
 
 	// [RH] Moved these up here so that we can do most of our
@@ -1244,9 +1335,6 @@ void D_DoomMain (void)
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks ();
-
-	// [RH] Initialize configurable strings.
-	D_InitStrings ();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
 	if (STARTUP1[0])	Printf (PRINT_HIGH, "%s\n", STARTUP1);
@@ -1389,8 +1477,9 @@ void D_DoomMain (void)
 	if (p && p < Args.NumArgs()-1)
 	{
 		extern std::string defdemoname;
-		void	G_DoPlayDemo (void);
+		void	G_DoPlayDemo (bool justStreamInput = false);
 		void	G_Ticker (void);
+		demotest = 1;
 		defdemoname = Args.GetArg (p+1);
 		G_DoPlayDemo();
 
@@ -1401,18 +1490,17 @@ void D_DoomMain (void)
 			DObject::EndFrame ();
 			gametic++;
 		}
-
-		AActor *mo = consoleplayer().mo;
-
-		if(mo)
-			printf("%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
-		else
-			printf("demotest: no player\n");
 	}
 	else
+	{
+		demotest = 0;
 		D_DoomLoop ();		// never returns
+	}
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
+
+
+
 
 

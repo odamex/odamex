@@ -16,121 +16,28 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Main loop menu stuff.
-//	Default Config File.
-//	PCX Screenshots.
+//		Default Config File.
 //
 //-----------------------------------------------------------------------------
 
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <ctype.h>
-
-#include "doomtype.h"
-#include "version.h"
-
-#if defined(_WIN32)
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
-
-#include "m_alloc.h"
-
-#include "doomdef.h"
-
-#include "z_zone.h"
-
-#include "m_swap.h"
-#include "m_argv.h"
-
-#include "w_wad.h"
 
 #include "c_cvars.h"
 #include "c_dispatch.h"
-
+#include "doomdef.h"
+#include "doomtype.h"
+#include "m_argv.h"
 #include "i_system.h"
-#include "v_video.h"
-
-// State.
-#include "doomstat.h"
-
-// Data.
-#include "dstrings.h"
-
-#include "m_misc.h"
-
-#include "cmdlib.h"
-
-#include "g_game.h"
+#include "version.h"
 #include "sv_master.h"
 
-
-//
-// M_WriteFile
-//
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
 // put into newer configfiles.
 static CVAR (configver, CONFIGVERSIONSTR, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-bool M_WriteFile (char const *name, void *source, int length)
-{
-	int handle;
-	int count;
-
-	handle = open ( name, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
-
-	if (handle == -1)
-		return false;
-
-	count = write (handle, source, length);
-	close (handle);
-
-	if (count < length)
-		return false;
-
-	return true;
-}
-
-
-//
-// M_ReadFile
-//
-int
-M_ReadFile
-( char const*	name,
-  byte**	buffer )
-{
-	int handle, count, length;
-	struct stat fileinfo;
-	byte *buf;
-
-	handle = open (name, O_RDONLY | O_BINARY, 0666);
-	if (handle == -1)
-		I_Error ("Couldn't read file %s", name);
-	if (fstat (handle,&fileinfo) == -1)
-		I_Error ("Couldn't read file %s", name);
-	length = fileinfo.st_size;
-	buf = (byte *)Z_Malloc (length, PU_STATIC, NULL);
-	count = read (handle, buf, length);
-	close (handle);
-
-	if (count < length)
-		I_Error ("Couldn't read file %s", name);
-
-	*buffer = buf;
-	return length;
-}
 
 // [RH] Get configfile path.
 // This file contains commands to set all
@@ -216,38 +123,6 @@ void M_LoadDefaults (void)
 	atterm (M_SaveDefaults);
 }
 
-
-//
-// SCREEN SHOTS
-//
-
-
-typedef struct
-{
-	char				manufacturer;
-	char				version;
-	char				encoding;
-	char				bits_per_pixel;
-
-	unsigned short		xmin;
-	unsigned short		ymin;
-	unsigned short		xmax;
-	unsigned short		ymax;
-	
-	unsigned short		hres;
-	unsigned short		vres;
-
-	unsigned char		palette[48];
-	
-	char				reserved;
-	char				color_planes;
-	unsigned short		bytes_per_line;
-	unsigned short		palette_type;
-	
-	char				filler[58];
-	unsigned char		data;			// unbounded
-} pcx_t;
-
-
 VERSION_CONTROL (m_misc_cpp, "$Id$")
+
 

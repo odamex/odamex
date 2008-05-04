@@ -127,8 +127,6 @@ int PrintColors[PRINTLEVELS+1] = { CR_RED, CR_GOLD, CR_GRAY, CR_GREEN, CR_GREEN,
 
 static void setmsgcolor (int index, const char *color);
 
-FILE *Logfile = NULL;
-
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
 
@@ -314,10 +312,8 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	{
 		char string[256];
 		gamestate_t oldstate = gamestate;	// Don't print during reformatting
-		FILE *templog = Logfile;		// Don't log our reformatting pass
 
 		gamestate = GS_FORCEWIPE;
-		Logfile = NULL;
 
 		for (row = 0, zap = old; row < rows - 1; row++, zap += cols + 2)
 		{
@@ -336,7 +332,6 @@ void C_InitConsole (int width, int height, BOOL ingame)
 		free (old);
 		C_FlushDisplay ();
 
-		Logfile = templog;
 		gamestate = oldstate;
 	}
 
@@ -554,19 +549,15 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		if(outline[i] == 0x07)
 			outline[i] = '.';
 
-	if (Logfile)
-	{
-	    strcpy(outlinelog, outline);
+	strcpy(outlinelog, outline);
 
-        // [Nes] - Horizontal line won't show up as-is in the logfile.
-        for(i = 0; i < len; i++)
-            if(outlinelog[i] == '\35' || outlinelog[i] == '\36' ||
-               outlinelog[i] == '\37')
-                outlinelog[i] = '=';
+    // [Nes] - Horizontal line won't show up as-is in the logfile.
+    for(i = 0; i < len; i++)
+    	if(outlinelog[i] == '\35' || outlinelog[i] == '\36' ||
+           outlinelog[i] == '\37')
+            outlinelog[i] = '=';
 
-		fputs (outlinelog, Logfile);
-		fflush (Logfile);
-	}
+    LOG << outlinelog;
 
 	return PrintString (printlevel, outline);
 }
@@ -676,9 +667,19 @@ void C_Ticker (void)
 			if (ConBottom >= screen->height / 2)
 			{
 				ConBottom = screen->height / 2;
-				ConsoleState = c_half;
+				ConsoleState = c_down;
 			}
-		} else if (ConsoleState == c_rising)
+		}
+		else if (ConsoleState == c_fallfull)
+		{
+			ConBottom += (gametic - lasttic) * (screen->height*2/15);
+			if (ConBottom >= screen->height)
+			{
+				ConBottom = screen->height;
+				ConsoleState = c_down;
+			}			
+		}
+		else if (ConsoleState == c_rising)
 		{
 			ConBottom -= (gametic - lasttic) * (screen->height*2/25);
 			if (ConBottom <= 0)
@@ -687,6 +688,15 @@ void C_Ticker (void)
 				ConBottom = 0;
 			}
 		}
+		else if (ConsoleState == c_risefull)
+		{
+			ConBottom -= (gametic - lasttic) * (screen->height*2/15);
+			if (ConBottom <= 0)
+			{
+				ConsoleState = c_up;
+				ConBottom = 0;
+			}
+		}		
 
 		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > ConRows)
 		{
@@ -903,14 +913,12 @@ void C_FullConsole (void)
 
 void C_ToggleConsole (void)
 {
-//	if (gamestate == GS_DEMOSCREEN || demoplayback)
-//	{
-//		gameaction = ga_fullconsole;
-//	}
-//	else
-	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising))
+	if (!headsupactive && (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull))
 	{
-		ConsoleState = c_falling;
+		if (gamestate == GS_DEMOSCREEN || demoplayback)
+			ConsoleState = c_fallfull;
+		else
+			ConsoleState = c_falling;
 		HistPos = NULL;
 		TabbedLast = false;
 		I_PauseMouse ();
@@ -918,7 +926,10 @@ void C_ToggleConsole (void)
 	else if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP
             && gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
 	{
-		ConsoleState = c_rising;
+		if (ConBottom == screen->height)
+			ConsoleState = c_risefull;
+		else
+			ConsoleState = c_rising;
 		C_FlushDisplay ();
 		I_ResumeMouse ();
 	}
@@ -926,7 +937,7 @@ void C_ToggleConsole (void)
 
 void C_HideConsole (void)
 {
-	if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP)
+//	if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP)
 	{
 		ConsoleState = c_up;
 		ConBottom = 0;
@@ -1011,22 +1022,39 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		makestartposgood ();
 		break;
 	case KEY_LEFTARROW:
-		// Move cursor left one character
-
-		if (buffer[1])
+		if(KeysCtrl)
 		{
-			buffer[1]--;
-			makestartposgood ();
+			// Move cursor to beginning of word
+			if(buffer[1])
+				buffer[1]--;
+			while(buffer[1] && buffer[1+buffer[1]] != ' ')
+				buffer[1]--;
 		}
+		else
+		{
+			// Move cursor left one character
+			if (buffer[1])
+			{
+				buffer[1]--;
+			}
+		}
+		makestartposgood ();
 		break;
 	case KEY_RIGHTARROW:
-		// Move cursor right one character
-
-		if (buffer[1] < buffer[0])
+		if(KeysCtrl)
 		{
-			buffer[1]++;
-			makestartposgood ();
+			while(buffer[1] < buffer[0]+1 && buffer[2+buffer[1]] != ' ')
+				buffer[1]++;
+		}	
+		else
+		{
+			// Move cursor right one character
+			if (buffer[1] < buffer[0])
+			{
+				buffer[1]++;
+			}
 		}
+		makestartposgood ();
 		break;
 	case KEY_BACKSPACE:
 		// Erase character to left of cursor
@@ -1215,14 +1243,32 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
 			// if it's closed.
-			if (gamestate == GS_FULLCONSOLE)
+			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING || gamestate == GS_DOWNLOAD)
+			{
+				C_HideConsole();
+				gamestate = GS_DEMOSCREEN;
+				if (ev->data2 == '`')
+					return true;
 				return false;
+			}
 			buffer[0] = buffer[1] = buffer[len+4] = 0;
 			HistPos = NULL;
 			C_ToggleConsole ();
 		}
 		else if (ev->data3 < 32 || ev->data3 > 126)
 		{
+			// Go to beginning of line
+ 			if(KeysCtrl && (ev->data1 == 'a' || ev->data1 == 'A'))
+			{
+				buffer[1] = 0;
+			}
+
+			// Go to end of line
+ 			if(KeysCtrl && (ev->data1 == 'e' || ev->data1 == 'E'))
+			{
+				buffer[1] = buffer[0];
+			}
+
 			// Paste from clipboard
  			if(KeysCtrl && (ev->data1 == 'v' || ev->data1 == 'V'))
 			{
@@ -1297,7 +1343,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 
 BOOL C_Responder (event_t *ev)
 {
-	if (ConsoleState == c_up || ConsoleState == c_rising || menuactive)
+	if (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull || menuactive)
 	{
 		return false;
 	}
@@ -1399,6 +1445,13 @@ BEGIN_COMMAND (echo)
 	}
 }
 END_COMMAND (echo)
+
+
+BEGIN_COMMAND (toggleconsole)
+{
+	C_ToggleConsole();
+}
+END_COMMAND (toggleconsole)
 
 /* Printing in the middle of the screen */
 

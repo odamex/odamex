@@ -59,6 +59,9 @@ void ST_Init (void);
 // Draw the HUD (only if old status bar is not drawn)
 void ST_newDraw (void);
 
+// Draw the CTF HUD (separated for spectator)
+void ST_newDrawCTF (void);
+
 // Draws name of player currently in control of the status bar
 void ST_nameDraw (int y);
 
@@ -73,17 +76,6 @@ typedef enum
 	FirstPersonState
 	
 } st_stateenum_t;
-
-
-// States for the chat code.
-typedef enum
-{
-	StartChatState,
-	WaitDestState,
-	GetChatState
-	
-} st_chatstateenum_t;
-
 
 bool ST_Responder(event_t* ev);
 

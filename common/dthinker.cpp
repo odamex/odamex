@@ -106,7 +106,7 @@ void DThinker::Destroy ()
 	// denis - allow this function to be safely called multiple times
 	if(destroyed)
 		return;
-		
+
 	if (FirstThinker == this)
 		FirstThinker = m_Next;
 	if (LastThinker == this)
@@ -116,6 +116,8 @@ void DThinker::Destroy ()
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
 	
+	destroyed = true;
+		
 	if(refCount)
 	{
 		LingerDestroy.push_back(this); // something is still finding this pointer useful
@@ -135,6 +137,11 @@ void DThinker::Destroy ()
 			delete obj;
 		}
 	}
+}
+
+bool DThinker::WasDestroyed ()
+{
+	return destroyed;
 }
 
 // Destroy every thinker
@@ -181,7 +188,7 @@ void DThinker::DestroyMostThinkers ()
 	DObject::EndFrame ();
 }
 
-CVAR (sv_speedhackfix, "0", CVAR_SERVERINFO)
+CVAR (speedhackfix, "0", CVAR_SERVERINFO)
 
 void DThinker::RunThinkers ()
 {
@@ -194,7 +201,7 @@ void DThinker::RunThinkers ()
 		if ( currentthinker->IsKindOf (RUNTIME_CLASS (AActor))
 				   && static_cast<AActor *>(currentthinker)->player
 				   && static_cast<AActor *>(currentthinker)->player->playerstate != PST_DEAD
-				   && !sv_speedhackfix && !demoplayback && (serverside && !clientside))
+				   && !speedhackfix && !demoplayback && (serverside && !clientside))
 			;
 		else
 			currentthinker->RunThink ();

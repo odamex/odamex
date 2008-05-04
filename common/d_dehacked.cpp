@@ -41,6 +41,8 @@
 #include "m_misc.h"
 #include "w_wad.h"
 #include "d_player.h"
+#include "m_fileio.h"
+#include "p_local.h"
 
 // Miscellaneous info that used to be constant
 struct DehInfo deh = {
@@ -148,14 +150,14 @@ static short codepconv[448] = {  1,    2,   3,   4,    6,   9,  10,   11,  12,  
 							 784, 785, 786, 787,	788, 789, 790,	791, 792, 793,
 							 794, 795, 796, 797,	798, 801, 809,	811};
 
-BOOL BackedUpData = false;
+static bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
-char *OrgSprNames[NUMSPRITES];
-actionf_t OrgActionPtrs[NUMSTATES];
+static const char *OrgSprNames[NUMSPRITES];
+static actionf_t OrgActionPtrs[NUMSTATES];
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.
-char *SoundMap[] = {
+static const char *SoundMap[] = {
 	NULL,
 	"weapons/pistol",
 	"weapons/shotgf",
@@ -347,7 +349,7 @@ void A_Detonate(AActor*);
 void A_Mushroom(AActor*);
 
 struct CodePtr {
-	char *name;
+	const char *name;
 	actionf_t func;
 };
 
@@ -434,7 +436,7 @@ static const struct CodePtr CodePtrs[] = {
 };
 
 struct Key {
-	char *name;
+	const char *name;
 	ptrdiff_t offset;
 };
 
@@ -520,7 +522,7 @@ static int PatchCodePtrs (int);
 static int DoInclude (int);
 
 static const struct {
-	char *name;
+	const char *name;
 	int (*func)(int);
 } Modes[] = {
 	// These appear in .deh and .bex files
@@ -543,7 +545,7 @@ static const struct {
 };
 
 static int HandleMode (const char *mode, int num);
-static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value);
+static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value, const int structsize = 0);
 static void BackupData (void);
 static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval);
 static BOOL ReadChars (char **stuff, int size);
@@ -570,10 +572,17 @@ static int HandleMode (const char *mode, int num)
 	return i;
 }
 
-static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value)
+static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value, const int structsize)
 {
 	while (keys->name && stricmp (keys->name, key))
 		keys++;
+
+	if(structsize && keys->offset + (int)sizeof(int) > structsize)
+	{
+		// Handle unknown or unimplemented data
+		Printf (PRINT_HIGH, "DeHackEd: Cannot apply key %s, offset would overrun.\n", keys->name);
+		return false;
+	}
 
 	if (keys->name) {
 		*((int *)(((byte *)structure) + keys->offset)) = value;
@@ -582,6 +591,14 @@ static BOOL HandleKey (const struct Key *keys, void *structure, const char *key,
 
 	return true;
 }
+
+static state_t		backupStates[NUMSTATES];
+static mobjinfo_t	backupMobjInfo[NUMMOBJTYPES];
+static mobjinfo_t	backupWeaponInfo[NUMWEAPONS];
+static char		*backupSprnames[NUMSPRITES+1];
+static int		backupMaxAmmo[NUMAMMO];
+static int		backupClipAmmo[NUMAMMO];
+static DehInfo		backupDeh;
 
 static void BackupData (void)
 {
@@ -598,6 +615,41 @@ static void BackupData (void)
 
 	for (i = 0; i < NUMSTATES; i++)
 		OrgActionPtrs[i] = states[i].action;
+
+	memcpy(backupStates, states, sizeof(states));
+	memcpy(backupMobjInfo, mobjinfo, sizeof(mobjinfo));
+	memcpy(backupWeaponInfo, weaponinfo, sizeof(weaponinfo));
+	memcpy(backupSprnames, sprnames, sizeof(sprnames));
+	memcpy(backupClipAmmo, clipammo, sizeof(clipammo));
+	memcpy(backupMaxAmmo, maxammo, sizeof(maxammo));
+	backupDeh = deh;
+
+	BackedUpData = true;
+}
+
+void UndoDehPatch ()
+{
+	int i;
+
+	if (!BackedUpData)
+		return;
+
+//	for (i = 0; i < NUMSFX; i++)
+//		OrgSfxNames[i] = S_sfx[i].name;
+
+	for (i = 0; i < NUMSPRITES; i++)
+		OrgSprNames[i] = sprnames[i];
+
+	for (i = 0; i < NUMSTATES; i++)
+		OrgActionPtrs[i] = states[i].action;
+
+	memcpy(states, backupStates, sizeof(states));
+	memcpy(mobjinfo, backupMobjInfo, sizeof(mobjinfo));
+	memcpy(weaponinfo, backupWeaponInfo, sizeof(weaponinfo));
+	memcpy(sprnames, backupSprnames, sizeof(sprnames));
+	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
+	memcpy(maxammo, backupMaxAmmo, sizeof(maxammo));
+	deh = backupDeh;
 }
 
 static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval)
@@ -1076,7 +1128,7 @@ static int PatchFrame (int frameNum)
 	}
 
 	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2)))
+		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
 			Printf (PRINT_HIGH, unknown_str, Line1, "Frame", frameNum);
 
 	return result;
@@ -1164,7 +1216,7 @@ static int PatchWeapon (int weapNum)
 	}
 
 	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2)))
+		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
 			Printf (PRINT_HIGH, unknown_str, Line1, "Weapon", weapNum);
 
 	return result;
@@ -1192,7 +1244,7 @@ static int PatchPointer (int ptrNum)
 static int PatchCheats (int dummy)
 {
 	static const struct {
-		char *name;
+		const char *name;
 		byte *cheatseq;
 		BOOL needsval;
 	} keys[] = {
@@ -1612,17 +1664,17 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 
 		file = patchfile;
 		FixPathSeparator (file);
-		DefaultExtension (file, ".deh");
+		M_AppendExtension (file, ".deh");
 
 		if ( !(deh = fopen (file.c_str(), "rb")) ) {
 			file = patchfile;
 			FixPathSeparator (file);
-			DefaultExtension (file, ".bex");
+			M_AppendExtension (file, ".bex");
 			deh = fopen (file.c_str(), "rb");
 		}
 
 		if (deh) {
-			filelen = Q_filelength (deh);
+			filelen = M_FileLength (deh);
 			if ( (PatchFile = new char[filelen + 1]) ) {
 				fread (PatchFile, 1, filelen, deh);
 				fclose (deh);
@@ -1633,7 +1685,7 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 			// Couldn't find it on disk, try reading it from a lump
 			file = patchfile;
 			FixPathSeparator (file);
-			ExtractFileBase (file, file);
+			M_ExtractFileBase (file, file);
 			file[8] = 0;
 			lump = W_CheckNumForName (file.c_str());
 			if (lump >= 0) {

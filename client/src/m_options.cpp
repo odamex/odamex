@@ -127,7 +127,7 @@ value_t OnOff[2] = {
 menu_t  *CurrentMenu;
 int		CurrentItem;
 static BOOL	WaitingForKey;
-static char	   *OldMessage;
+static const char	   *OldMessage;
 static itemtype OldType;
 
 /*=======================================
@@ -136,6 +136,7 @@ static itemtype OldType;
  *
  *=======================================*/
 
+static void PlayerSetup (void);
 static void CustomizeControls (void);
 static void VideoOptions (void);
 static void GoToConsole (void);
@@ -149,6 +150,7 @@ static void SetVidMode (void);
 static menuitem_t OptionItems[] =
 {
 	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
+	{ more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
 	{ more,		"Mouse Setup" ,			{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
 	{ more,		"Go to console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
 	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
@@ -168,7 +170,7 @@ static menuitem_t OptionItems[] =
 menu_t OptionMenu = {
 	{ 'M','_','O','P','T','T','T','L' },
 	0,
-	15,
+	16,
 	177,
 	OptionItems,
 };
@@ -571,23 +573,6 @@ static void M_SlideUIBlue (int val)
 	M_SendUINewColor (RPART(color), GPART(color), blue);
 }
 
-void M_FreeValues (value_t **values, int num)
-{
-	int i;
-
-	if (*values)
-	{
-		for (i = 0; i < num; i++)
-		{
-			if ((*values)[i].name)
-				free ((*values)[i].name);
-		}
-
-		free (*values);
-		*values = NULL;
-	}
-}
-
 //
 //		Set some stuff up for the video modes menu
 //
@@ -854,7 +839,7 @@ void M_OptDrawer (void)
 			case bitflag:
 			{
 				value_t *value;
-				char *str;
+				const char *str;
 
 				if (item->b.min)
 					value = NoYes;
@@ -881,7 +866,7 @@ void M_OptDrawer (void)
 		}
 		else
 		{
-			char *str = NULL;
+			const char *str = NULL;
 
 			for (x = 0; x < 3; x++)
 			{
@@ -1309,6 +1294,15 @@ static void CustomizeControls (void)
 	M_SwitchMenu (&ControlsMenu);
 }
 
+// [Russell] - Hack for getting to the player setup menu, doesn't
+// record the last menu though, unfortunately
+static void PlayerSetup (void)
+{
+    M_ClearMenus ();
+    M_StartControlPanel ();
+	M_PlayerSetup(0);
+}
+
 BEGIN_COMMAND (menu_keys)
 {
 	M_StartControlPanel ();
@@ -1334,7 +1328,8 @@ END_COMMAND (menu_display)
 
 static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 {
-	char strtemp[32], **str;
+	char strtemp[32];
+        const char **str;
 	int	 i, c;
 	int	 width, height, showbits;
 
@@ -1369,11 +1364,11 @@ static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 			}
 			else
 			{
-				if (*str)
+				/*if (*str) // denis - ReplaceString is no longer leaky...
 				{
 					free (*str);
-					*str = NULL;
-				}
+				}*/
+				*str = NULL;
 			}
 		}
 	}
@@ -1427,8 +1422,8 @@ static void SetModesMenu (int w, int h, int bits)
 
 	if (!testingmode)
 	{
-		if (ModesItems[VM_ENTERLINE].label != VMEnterText)
-			free (ModesItems[VM_ENTERLINE].label);
+		/*if (ModesItems[VM_ENTERLINE].label != VMEnterText) // denis - ReplaceString no longer leaky
+			free (ModesItems[VM_ENTERLINE].label);*/
 		ModesItems[VM_ENTERLINE].label = VMEnterText;
 		ModesItems[VM_TESTLINE].label = VMTestText;
 
@@ -1487,5 +1482,6 @@ END_COMMAND (menu_video)
 
 
 VERSION_CONTROL (m_options_cpp, "$Id$")
+
 
 

@@ -100,7 +100,7 @@ int				numsprites;
 
 spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
 int 			maxframe;
-char*			spritename;
+static const char*		spritename;
 
 // [RH] skin globals
 playerskin_t	*skins;
@@ -240,7 +240,7 @@ static void R_InstallSprite (const char *name, int num)
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-void R_InitSpriteDefs (char **namelist)
+void R_InitSpriteDefs (const char **namelist)
 {
 	int i;
 	int l;
@@ -269,7 +269,7 @@ void R_InitSpriteDefs (char **namelist)
 	// Just compare 4 characters as ints
 	for (i = 0; i < realsprites; i++)
 	{
-		spritename = namelist[i];
+		spritename = (const char *)namelist[i];
 		memset (sprtemp, -1, sizeof(sprtemp));
 
 		maxframe = -1;
@@ -541,7 +541,7 @@ int 			newvissprite;
 // R_InitSprites
 // Called at program start.
 //
-void R_InitSprites (char **namelist)
+void R_InitSprites (const char **namelist)
 {
 	unsigned i;
 
@@ -682,6 +682,9 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	// [RH] Tutti-Frutti fix (also allows sprites up to 256 pixels tall)
 	dc_mask = 0xff;
+
+	if (vis->mobjflags & MF_SPECTATOR)
+		return;
 
 	if (vis->patch == -1)
 	{ // [RH] It's a particle
@@ -1160,8 +1163,15 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 	// store information in a vissprite
 	vis = &avis;
 	vis->mobjflags = flags;
+
+// [RH] +0x6000 helps it meet the screen bottom
+//		at higher resolutions while still being in
+//		the right spot at 320x200.
+// denis - bump to 0x9000
+#define WEAPONTWEAK				(0x9000)
+
 	vis->texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-
-		(psp->sy-sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
+		(psp->sy+WEAPONTWEAK-sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis->xscale = pspritexscale;
@@ -1491,6 +1501,10 @@ static void R_DrawCrosshair (void)
     // Don't draw the crosshair in overlay mode
     if (automapactive && viewactive)
         return;
+        
+	// Don't draw the crosshair in spectator mode
+	if (camera->player && camera->player->spectator)
+		return;
 
 	if(crosshair && crosshair_lump)
 	{

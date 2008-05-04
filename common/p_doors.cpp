@@ -183,7 +183,7 @@ void DDoor::RunThink ()
 // [RH] DoorSound: Plays door sound depending on direction and speed
 void DDoor::DoorSound (bool raise) const
 {
-	char *snd;
+	const char *snd;
 
 	if (raise)
 	{

@@ -38,17 +38,31 @@
 static BOOL mousepaused = true; // SoM: This should start off true
 static BOOL havefocus = false;
 static BOOL noidle = false;
-
-// SoM: if true, the mouse events in the queue should be ignored until at least once event cycle 
-// is complete.
-static BOOL flushmouse = false;
+static BOOL nomouse = false;
 
 // Used by the console for making keys repeat
 int KeyRepeatDelay;
 int KeyRepeatRate;
 
+// denis - from chocolate doom
+//
+// Mouse acceleration
+//
+// This emulates some of the behavior of DOS mouse drivers by increasing
+// the speed when the mouse is moved fast.
+//
+// The mouse input values are input directly to the game, but when
+// the values exceed the value of mouse_threshold, they are multiplied
+// by mouse_acceleration to increase the speed.
+CVAR (mouse_acceleration, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (mouse_threshold, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 // joek - sort mouse grab issue
-BOOL mousegrabbed = false;
+static BOOL mousegrabbed = false;
+
+// SoM: if true, the mouse events in the queue should be ignored until at least once event cycle 
+// is complete.
+static BOOL flushmouse = false;
 
 extern constate_e ConsoleState;
 
@@ -65,6 +79,7 @@ extern constate_e ConsoleState;
 #ifdef WIN32
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
+// denis - in fullscreen, prevent exit on accidental windows key press
 HHOOK g_hKeyboardHook;
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
@@ -85,14 +100,22 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 //
 bool I_InitInput (void)
 {
+	if(Args.CheckParm("-nomouse"))
+	{
+		nomouse = true;
+	}
+
 	atterm (I_ShutdownInput);
 
 	noidle = Args.CheckParm ("-noidle");
 
 	SDL_EnableUNICODE(true);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+	
+	// denis - disable key repeats as they mess with the mouse in XP
+	SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
 
 #ifdef WIN32
+	// denis - in fullscreen, prevent exit on accidental windows key press
 	g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
 #endif
 
@@ -107,6 +130,7 @@ void STACK_ARGS I_ShutdownInput (void)
 	I_PauseMouse();
 
 #ifdef WIN32
+	// denis - in fullscreen, prevent exit on accidental windows key press
 	UnhookWindowsHookEx(g_hKeyboardHook);
 #endif
 }
@@ -116,7 +140,29 @@ void STACK_ARGS I_ShutdownInput (void)
 //
 static void SetCursorState (int visible)
 {
+   if(nomouse)
+      return;
+
    SDL_ShowCursor(visible ? SDL_ENABLE : SDL_DISABLE);
+}
+
+// denis - from chocolate doom
+//
+// AccelerateMouse
+//
+static int AccelerateMouse(int val)
+{
+    if (val < 0)
+        return -AccelerateMouse(-val);
+
+    if (val > mouse_threshold)
+    {
+        return (int)((val - mouse_threshold) * mouse_acceleration + mouse_threshold);
+    }
+    else
+    {
+        return val;
+    }
 }
 
 //
@@ -124,6 +170,14 @@ static void SetCursorState (int visible)
 //
 static void GrabMouse (void)
 {
+   if(nomouse)
+      return;
+
+   if(screen)
+   {
+      SDL_WarpMouse(screen->width/ 2, screen->height / 2);
+   }
+
    SDL_WM_GrabInput(SDL_GRAB_ON);
    mousegrabbed = true;
    flushmouse = true;
@@ -134,6 +188,9 @@ static void GrabMouse (void)
 //
 static void UngrabMouse (void)
 {
+   if(nomouse)
+      return;
+
    SDL_WM_GrabInput(SDL_GRAB_OFF);
    mousegrabbed = false;
 }
@@ -141,10 +198,20 @@ static void UngrabMouse (void)
 //
 // I_PauseMouse
 //
+
+EXTERN_CVAR (fullscreen)
+
 void I_PauseMouse (void)
 {
+   // denis - disable key repeats as they mess with the mouse in XP
+   SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+
+   if (fullscreen)
+    return;
+   
    UngrabMouse();
    SetCursorState(true);
+   
    mousepaused = true;
 }
 
@@ -157,6 +224,9 @@ void I_ResumeMouse (void)
    {
       GrabMouse();
       SetCursorState(false);
+
+      // denis - disable key repeats as they mess with the mouse in XP
+      SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
    }
    mousepaused = false;
 }
@@ -186,9 +256,6 @@ void I_GetEvent (void)
          I_ResumeMouse();
    }
 
-   if(!SDL_PollEvent(NULL))
-      return;
-   
    while(SDL_PollEvent(&ev))
    {
       event.data1 = event.data2 = event.data3 = 0;
@@ -236,11 +303,19 @@ void I_GetEvent (void)
                flushmouse = false;
                break;
             }
-            mouseevent.data2 += ev.motion.xrel << 2;
-            mouseevent.data3 -= ev.motion.yrel;
+			// denis - ignore artificially inserted events (see SDL_WarpMouse below)
+			if(ev.motion.x == screen->width/2 &&
+			   ev.motion.y == screen->height/2)
+			{
+				break;
+			}
+            mouseevent.data2 += AccelerateMouse(ev.motion.xrel);
+            mouseevent.data3 -= AccelerateMouse(ev.motion.yrel);
             sendmouseevent = 1;
             break;
          case SDL_MOUSEBUTTONDOWN:
+            if(nomouse)
+		break;
             event.type = ev_keydown;
             if(ev.button.button == SDL_BUTTON_LEFT)
             {
@@ -265,6 +340,8 @@ void I_GetEvent (void)
 			D_PostEvent(&event);
             break; 
          case SDL_MOUSEBUTTONUP:
+            if(nomouse)
+		break;
             event.type = ev_keyup;
             if(ev.button.button == SDL_BUTTON_LEFT)
             {
@@ -291,19 +368,19 @@ void I_GetEvent (void)
       };
    }
 
-   if(sendmouseevent)
+   if(!nomouse)
    {
-      mouseevent.data1 = mbuttons;
-      D_PostEvent(&mouseevent);
+       if(sendmouseevent)
+       {
+          mouseevent.data1 = mbuttons;
+          D_PostEvent(&mouseevent);
+       }
+       
+       if(mousegrabbed && screen)
+       {
+          SDL_WarpMouse(screen->width/ 2, screen->height / 2);
+       }
    }
-   
-   if(mousegrabbed)
-   {
-      SDL_Event eventx;
-      SDL_WarpMouse(screen->width/ 2, screen->height / 2);
-      SDL_PollEvent(&eventx);
-   }
-
 }
 
 //

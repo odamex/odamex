@@ -790,7 +790,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	if (!p)
 		return false;
 
-	char *msg;
+	const char *msg;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
 
@@ -929,6 +929,23 @@ P_CrossSpecialLine
 			// Likewise, player should not trigger monster lines
 			if(line->flags & ML_SPECIAL_MONSTER_ONLY)
 				return;
+			
+			// And spectators should only trigger teleporters
+			if (thing->player->spectator)
+			{
+				switch (line->special)
+				{
+					case Teleport:
+					case Teleport_NoFog:
+					case Teleport_NewMap:
+					case Teleport_EndGame:
+					case Teleport_Line:
+						break;
+					default:
+						return;
+						break;
+				}
+			}
 		}
 
 		// Do not teleport on the wrong side
@@ -948,8 +965,8 @@ P_CrossSpecialLine
 		}
 	}
 
-	if(LineSpecials[line->special] (line, thing))
-		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	LineSpecials[line->special] (line, thing);
+	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
 
 	OnActivatedLine(line, thing, side, 0);
 }
@@ -975,16 +992,15 @@ P_ShootSpecialLine
 			return;
 	}
 
-	if(LineSpecials[line->special] (line, thing))
-	{
-		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
-		OnActivatedLine(line, thing, 0, 2);
+	LineSpecials[line->special] (line, thing);
 
-		if(serverside)
-		{
-			P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-			OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-		}
+	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	OnActivatedLine(line, thing, 0, 2);
+
+	if(serverside)
+	{
+		P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+		OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
 	}
 }
 
@@ -1000,6 +1016,23 @@ P_UseSpecialLine
   line_t*	line,
   int		side )
 {
+	// Err...
+	// Use the back sides of VERY SPECIAL lines...
+	if (side)
+	{
+		switch(line->special)
+		{
+		case Exit_Secret:
+			// Sliding door open&close
+			// UNUSED?
+			break;
+
+		default:
+			return false;
+			break;
+		}
+	}
+
 	if(thing)
 	{
 		if (!(line->flags & ML_SPECIAL_USE))
@@ -1950,9 +1983,6 @@ void DPusher::RunThink ()
 	int xl,xh,yl,yh,bx,by;
 	int radius;
 	int ht = 0;
-
-	if (!var_pushers)
-		return;
 
 	sec = sectors + m_Affectee;
 

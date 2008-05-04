@@ -260,8 +260,6 @@ extern "C" void EndMMX (void);
 
 #endif
 */
-EXTERN_CVAR (var_friction) // removeme
-EXTERN_CVAR (var_pushers) // removeme
 
 
 // [RH] Miscellaneous info for DeHackEd support

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -734,41 +734,41 @@ spaghetti2:
 // hx and sx should be word-aligned.
 void rt_draw2cols (int hx, int sx)
 {
-loop:
-	if (horizspan[hx] >= dc_ctspan[hx]) {
-		// no first column, do the second (if any)
-		rt_draw1col (hx+1, sx+1);
-		return;
-	}
-	if (horizspan[hx+1] >= dc_ctspan[hx+1]) {
-		// no second column, do the first
-		rt_draw1col (hx, sx);
-		return;
-	}
+    while(1) // keep going until all columns have no more spans
+    {
+        if (horizspan[hx] >= dc_ctspan[hx]) {
+            // no first column, do the second (if any)
+            rt_draw1col (hx+1, sx+1);
+            break;
+        }
+        if (horizspan[hx+1] >= dc_ctspan[hx+1]) {
+            // no second column, do the first
+            rt_draw1col (hx, sx);
+            break;
+        }
 
-	// both columns have spans, align their tops
-	if (rt_nudgecols (hx, sx))
-		return;
+        // both columns have spans, align their tops
+        if (rt_nudgecols (hx, sx))
+            break;
 
-	// now draw as much as possible as a series of words
-	if (horizspan[hx][1] < horizspan[hx+1][1]) {
-		// first column ends first, so draw down to its bottom
-		hcolfunc_post2 (hx, sx, horizspan[hx][0], horizspan[hx][1]);
-		horizspan[hx+1][0] = horizspan[hx][1] + 1;
-		horizspan[hx] += 2;
-	} else {
-		// second column ends first, or they end at the same spot
-		hcolfunc_post2 (hx, sx, horizspan[hx+1][0], horizspan[hx+1][1]);
-		if (horizspan[hx][1] == horizspan[hx+1][1]) {
-			horizspan[hx] += 2;
-			horizspan[hx+1] += 2;
-		} else {
-			horizspan[hx][0] = horizspan[hx+1][1] + 1;
-			horizspan[hx+1] += 2;
-		}
-	}
-
-	goto loop;	// keep going until all columns have no more spans
+        // now draw as much as possible as a series of words
+        if (horizspan[hx][1] < horizspan[hx+1][1]) {
+            // first column ends first, so draw down to its bottom
+            hcolfunc_post2 (hx, sx, horizspan[hx][0], horizspan[hx][1]);
+            horizspan[hx+1][0] = horizspan[hx][1] + 1;
+            horizspan[hx] += 2;
+        } else {
+            // second column ends first, or they end at the same spot
+            hcolfunc_post2 (hx, sx, horizspan[hx+1][0], horizspan[hx+1][1]);
+            if (horizspan[hx][1] == horizspan[hx+1][1]) {
+                horizspan[hx] += 2;
+                horizspan[hx+1] += 2;
+            } else {
+                horizspan[hx][0] = horizspan[hx+1][1] + 1;
+                horizspan[hx+1] += 2;
+            }
+        }
+    }
 }
 
 // Copies all spans in all four columns to the screen starting at sx.
@@ -1035,5 +1035,5 @@ void R_DrawMaskedColumnHoriz (column_t *column)
 	}
 }
 
-VERSION_CONTROL (r_drawt_cpp, "$Id:$")
+VERSION_CONTROL (r_drawt_cpp, "$Id$")
 

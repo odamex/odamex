@@ -46,12 +46,19 @@ static const patch_t	*armors[2];
 static const patch_t	*ammos[4];
 static const patch_t	*flagiconbcur;
 static const patch_t	*flagiconrcur;
+static const patch_t	*flagicongcur; // [Nes] TODO: Gold team HUD.
 static const patch_t	*flagiconbhome;
 static const patch_t	*flagiconrhome;
-static const patch_t	*flagiconbtaken;
-static const patch_t	*flagiconrtaken;
+static const patch_t	*flagiconghome;
+static const patch_t	*flagiconbtakenbyr;
+static const patch_t	*flagiconbtakenbyg;
+static const patch_t	*flagiconrtakenbyb;
+static const patch_t	*flagiconrtakenbyg;
+static const patch_t	*flagicongtakenbyb;
+static const patch_t	*flagicongtakenbyr;
 static const patch_t	*flagiconbdropped;
 static const patch_t	*flagiconrdropped;
+static const patch_t	*flagicongdropped;
 static const char		ammopatches[4][8] = { "CLIPA0", "SHELA0", "CELLA0", "ROCKA0" };
 static int		NameUp = -1;
 
@@ -73,12 +80,19 @@ void ST_unloadNew (void)
 
 	Z_ChangeTag (flagiconbcur, PU_CACHE);
 	Z_ChangeTag (flagiconrcur, PU_CACHE);
+	Z_ChangeTag (flagicongcur, PU_CACHE);
 	Z_ChangeTag (flagiconbhome, PU_CACHE);
 	Z_ChangeTag (flagiconrhome, PU_CACHE);
-	Z_ChangeTag (flagiconbtaken, PU_CACHE);
-	Z_ChangeTag (flagiconrtaken, PU_CACHE);
+	Z_ChangeTag (flagiconghome, PU_CACHE);
+	Z_ChangeTag (flagiconbtakenbyr, PU_CACHE);
+	Z_ChangeTag (flagiconbtakenbyg, PU_CACHE);
+	Z_ChangeTag (flagiconrtakenbyb, PU_CACHE);
+	Z_ChangeTag (flagiconrtakenbyg, PU_CACHE);
+	Z_ChangeTag (flagicongtakenbyb, PU_CACHE);
+	Z_ChangeTag (flagicongtakenbyr, PU_CACHE);	
 	Z_ChangeTag (flagiconbdropped, PU_CACHE);
 	Z_ChangeTag (flagiconrdropped, PU_CACHE);
+	Z_ChangeTag (flagicongdropped, PU_CACHE);
 
 	for (i = 0; i < 2; i++)
 		Z_ChangeTag (armors[i], PU_CACHE);
@@ -120,12 +134,19 @@ void ST_initNew (void)
 
 	flagiconbcur = W_CachePatch ("FLAGICOB", PU_STATIC);
 	flagiconrcur = W_CachePatch ("FLAGICOR", PU_STATIC);
+	flagicongcur = W_CachePatch ("FLAGICOG", PU_STATIC);
 	flagiconbhome = W_CachePatch ("FLAGIC2B", PU_STATIC);
 	flagiconrhome = W_CachePatch ("FLAGIC2R", PU_STATIC);
-	flagiconbtaken = W_CachePatch ("FLAGIC3B", PU_STATIC);
-	flagiconrtaken = W_CachePatch ("FLAGIC3R", PU_STATIC);
+	flagiconghome = W_CachePatch ("FLAGIC2G", PU_STATIC);
+	flagiconbtakenbyr = W_CachePatch ("FLAGI3BR", PU_STATIC);
+	flagiconbtakenbyg = W_CachePatch ("FLAGI3BG", PU_STATIC);
+	flagiconrtakenbyb = W_CachePatch ("FLAGI3RB", PU_STATIC);
+	flagiconrtakenbyg = W_CachePatch ("FLAGI3RG", PU_STATIC);
+	flagicongtakenbyb = W_CachePatch ("FLAGI3GB", PU_STATIC);
+	flagicongtakenbyr = W_CachePatch ("FLAGI3GR", PU_STATIC);	
 	flagiconbdropped = W_CachePatch ("FLAGIC4B", PU_STATIC);
 	flagiconrdropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
+	flagicongdropped = W_CachePatch ("FLAGIC4G", PU_STATIC);
 
 	widestnum = widest;
 	numheight = tallnum[0]->height();
@@ -245,69 +266,7 @@ void ST_newDraw (void)
 	// Draw top-right info. (Keys/Frags/Score)
     if (ctfmode)
     {
-
-    	const patch_t *flagbluepatch = flagiconbhome;
-    	const patch_t *flagredpatch = flagiconrhome;
-
-		switch(CTFdata[it_blueflag].state)
-		{
-			case flag_carried:
-				flagbluepatch = flagiconbtaken;
-				break;
-			case flag_dropped:
-				flagbluepatch = flagiconbdropped;
-				break;
-			default:
-				break;
-		}
-
-		switch(CTFdata[it_redflag].state)
-		{
-			case flag_carried:
-				flagredpatch = flagiconrtaken;
-				break;
-			case flag_dropped:
-				flagredpatch = flagiconrdropped;
-				break;
-			default:
-				break;
-		}
-
-    	// Draw score (in CTF)
-		if (hud_scale) {
-
-			if (plyr->userinfo.team == TEAM_BLUE)
-				screen->DrawPatchCleanNoMove (flagiconbcur,
-											  screen->width - 19 * CleanXfac,
-											  1 * CleanYfac);
-			else if (plyr->userinfo.team == TEAM_RED)
-				screen->DrawPatchCleanNoMove (flagiconrcur,
-											  screen->width - 19 * CleanXfac,
-											  19 * CleanYfac);
-
-			screen->DrawPatchCleanNoMove (flagbluepatch,
-										  screen->width - 18 * CleanXfac,
-										  2 * CleanYfac);
-			screen->DrawPatchCleanNoMove (flagredpatch,
-										  screen->width - 18 * CleanXfac,
-										  20 * CleanYfac);
-		} else {
-
-			if (plyr->userinfo.team == TEAM_BLUE)
-				screen->DrawPatch (flagiconbcur, screen->width - 19,
-								   1);
-			else if (plyr->userinfo.team == TEAM_RED)
-				screen->DrawPatch (flagiconrcur, screen->width - 19,
-								   19);
-
-			screen->DrawPatch (flagbluepatch, screen->width - 18,
-							   2);
-			screen->DrawPatch (flagredpatch, screen->width - 18,
-							   20);
-		}
-
-		ST_DrawNumRight (screen->width - 20 * xscale, 2 * yscale, screen, TEAMpoints[TEAM_BLUE]);
-		ST_DrawNumRight (screen->width - 20 * xscale, 20 * yscale, screen, TEAMpoints[TEAM_RED]);
+		ST_newDrawCTF();
     }
 	else if (deathmatch)
 	{
@@ -332,6 +291,75 @@ void ST_newDraw (void)
 	}
 }
 
+void ST_newDrawCTF (void)
+{
+	player_t *plyr = &consoleplayer();
+	int xscale = hud_scale ? CleanXfac : 1;
+	int yscale = hud_scale ? CleanYfac : 1;
+	const patch_t *flagbluepatch = flagiconbhome;
+	const patch_t *flagredpatch = flagiconrhome;
+
+	switch(CTFdata[it_blueflag].state)
+	{
+		case flag_carried:
+			flagbluepatch = flagiconbtakenbyr;
+			break;
+		case flag_dropped:
+			flagbluepatch = flagiconbdropped;
+			break;
+		default:
+			break;
+	}
+
+	switch(CTFdata[it_redflag].state)
+	{
+		case flag_carried:
+			flagredpatch = flagiconrtakenbyb;
+			break;
+		case flag_dropped:
+			flagredpatch = flagiconrdropped;
+			break;
+		default:
+			break;
+	}
+
+	// Draw score (in CTF)
+	if (hud_scale) {
+
+		if (plyr->userinfo.team == TEAM_BLUE)
+			screen->DrawPatchCleanNoMove (flagiconbcur,
+										  screen->width - 19 * CleanXfac,
+										  1 * CleanYfac);
+		else if (plyr->userinfo.team == TEAM_RED)
+			screen->DrawPatchCleanNoMove (flagiconrcur,
+										  screen->width - 19 * CleanXfac,
+										  19 * CleanYfac);
+
+		screen->DrawPatchCleanNoMove (flagbluepatch,
+									  screen->width - 18 * CleanXfac,
+									  2 * CleanYfac);
+		screen->DrawPatchCleanNoMove (flagredpatch,
+									  screen->width - 18 * CleanXfac,
+									  20 * CleanYfac);
+	} else {
+
+		if (plyr->userinfo.team == TEAM_BLUE)
+			screen->DrawPatch (flagiconbcur, screen->width - 19,
+							   1);
+		else if (plyr->userinfo.team == TEAM_RED)
+			screen->DrawPatch (flagiconrcur, screen->width - 19,
+							   19);
+
+		screen->DrawPatch (flagbluepatch, screen->width - 18,
+						   2);
+		screen->DrawPatch (flagredpatch, screen->width - 18,
+						   20);
+	}
+
+	ST_DrawNumRight (screen->width - 20 * xscale, 2 * yscale, screen, TEAMpoints[TEAM_BLUE]);
+	ST_DrawNumRight (screen->width - 20 * xscale, 20 * yscale, screen, TEAMpoints[TEAM_RED]);
+}
+
 void ST_nameDraw (int y)
 {
 	player_t *plyr = &displayplayer();
@@ -349,5 +377,3 @@ void ST_nameDraw (int y)
 }
 
 VERSION_CONTROL (st_new_cpp, "$Id$")
-
-

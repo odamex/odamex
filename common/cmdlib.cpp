@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
@@ -146,112 +146,6 @@ skipwhite:
 	return data;
 }
 
-
-//
-// Misc
-//
-
-//
-// Q_filelength
-//
-int Q_filelength (FILE *f)
-{
-	int		pos;
-	int		end;
-
-	pos = ftell (f);
-	fseek (f, 0, SEEK_END);
-	end = ftell (f);
-	fseek (f, pos, SEEK_SET);
-
-	return end;
-}
-
-
-//
-// FileExists
-//
-BOOL FileExists (const char *filename)
-{
-	FILE *f;
-
-	// [RH] Empty filenames are never there
-	if (*filename == 0)
-		return false;
-
-	f = fopen (filename, "r");
-	if (!f)
-		return false;
-	fclose (f);
-	return true;
-}
-
-//
-// DefaultExtension
-//
-void DefaultExtension (std::string &path, const char *extension)
-{
-	size_t src = path.length() - 1;
-//
-// if path doesn't have a .EXT, append extension
-// (extension should include the .)
-//
-
-	while (path[src] != '/' && src)
-	{
-		if (path[src] == '.')
-			return; // assume it has an extension
-		src--;
-	}
-
-	path += extension;
-}
-
-//
-// Extract file parts
-//
-// FIXME: should include the slash, otherwise ... should use strings only
-// backing to an empty path will be wrong when appending a slash
-void ExtractFilePath (const char *path, char *dest)
-{
-	const char *src;
-
-	src = path + strlen(path) - 1;
-
-    // back up until a \ or the start
-    while (src != path
-		   && *(src-1) != '\\'
-		   && *(src-1) != '/')
-    {
-		src--;
-    }
-
-	memcpy (dest, path, src-path);
-	dest[src-path] = 0;
-}
-
-//
-// ExtractFileBase
-//
-void ExtractFileBase (std::string path, std::string &dest)
-{
-	//
-	// back up until a / or the start
-	//	
-
-	size_t l = path.find_last_of('/');
-	if(l == std::string::npos)
-		l = 0;
-
-	size_t e = path.find_first_of('.');
-	if(e == std::string::npos)
-		e = path.length();
-
-	if(++l < path.length())
-		dest = path.substr(l, e - l);
-}
-
-
 //
 // ParseNum / ParseHex
 //
@@ -312,5 +206,7 @@ BOOL IsNum (char *str)
 }
 
 
-VERSION_CONTROL (cmdlib_cpp, "$Id:$")
+VERSION_CONTROL (cmdlib_cpp, "$Id$")
+
+
 

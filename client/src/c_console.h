@@ -36,7 +36,7 @@
 #define C_BLINKRATE			(TICRATE/2)
 
 typedef enum cstate_t {
-	c_up=0, c_half, c_down, c_falling, c_rising
+	c_up=0, c_down, c_falling, c_rising, c_fallfull, c_risefull
 } constate_e;
 
 extern constate_e	ConsoleState;

@@ -47,6 +47,8 @@
 #include "v_text.h"
 #include "d_main.h"
 #include "p_mobj.h"
+#include "m_fileio.h"
+#include "m_misc.h"
 
 #include "gi.h"
 #include "minilzo.h"
@@ -65,7 +67,6 @@ CVAR (startmapscript, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	// script to run 
 CVAR (curmap, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)			// tracks last played map
 CVAR (nextmap, "", CVAR_NULL | CVAR_NOENABLEDISABLE)			// tracks next map to be played
 CVAR (loopepisode, "0", CVAR_ARCHIVE)	// Nes - Determines whether Doom 1 episodes should carry over.
-CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
 
 
 EXTERN_CVAR(updatemins)
@@ -242,13 +243,40 @@ END_COMMAND (map)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
-	std::vector<std::string> wads;
-	size_t i = 1;
+	std::vector<std::string> wads, patch_files, hashes;
+	
+	// [Russell] print out some useful info
+	if (argc == 1)
+	{
+	    Printf(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
+	    Printf(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
+	    Printf(PRINT_HIGH, "\n");
+	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
+	    Printf(PRINT_HIGH, "eg: wad doom\n");
+	    
+	    return;
+	}
+    
+    // add our iwad if it is one
+    if (W_IsIWAD(argv[1]))
+        wads.push_back(argv[1]);
 
-	while(i < argc)
-		wads.push_back(argv[i++]);
-
-	D_DoomWadReboot(wads);
+    // check whether they are wads or patch files
+	for (QWORD i = 1; i < argc; i++)
+	{
+		std::string ext;
+		
+		if (M_ExtractFileExtension(argv[i], ext))
+		{
+		    // don't allow subsequent iwads to be loaded
+		    if ((ext == "wad") && !W_IsIWAD(argv[i]))
+                wads.push_back(argv[i]);
+            else if (ext == "deh" || ext == "bex")
+                patch_files.push_back(argv[i]);
+		}
+	}
+	
+	D_DoomWadReboot(wads, patch_files);
 
 	unnatural_level_progression = true;
 	G_DeferedInitNew (startmap);
@@ -446,6 +474,20 @@ void G_ChangeMap (void)
 	// run script at the end of each map
 	if(strlen(endmapscript.cstring()))
 		AddCommandString(endmapscript.cstring(), true);
+
+	if (deathmatch) {
+		// make everyone a spectator again
+		for (int i = 0; i < players.size(); i++)
+		{
+			players[i].spectator = true;
+			players[i].joinafterspectatortime = -(TICRATE*5);
+			for (size_t j = 0; j < players.size(); j++) {
+				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+				MSG_WriteByte (&(players[j].client.reliablebuf), i);
+				MSG_WriteByte (&(players[j].client.reliablebuf), true);
+			}
+		}
+	}
 }
 
 void SV_ClientFullUpdate(player_t &pl);
@@ -613,7 +655,7 @@ void G_ExitLevel (int position, int drawscores)
 {
 	SV_ExitLevel();
 
-	if (drawscores && interscoredraw)
+	if (drawscores)
         SV_DrawScores();
 
 	gamestate = GS_INTERMISSION;
@@ -631,7 +673,7 @@ void G_SecretExitLevel (int position, int drawscores)
 {
 	SV_ExitLevel();
 
-    if (drawscores && interscoredraw)
+    if (drawscores)
         SV_DrawScores();
 
 	gamestate = GS_INTERMISSION;
@@ -692,6 +734,12 @@ void G_DoLoadLevel (int position)
 //	if (demoplayback || oldgs == GS_STARTUP)
 //		C_HideConsole ();
 
+	// Set the sky map.
+	// First thing, we have a dummy sky texture name,
+	//	a flat. The data is in the WAD only because
+	//	we look for an actual index, instead of simply
+	//	setting one.
+	skyflatnum = R_FlatNumForName ( SKYFLATNAME );
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
@@ -963,7 +1011,7 @@ cluster_info_t *FindClusterInfo (int cluster)
 void G_SetLevelStrings (void)
 {
 	char temp[8];
-	char *namepart;
+	const char *namepart;
 	int i, start;
 
 	temp[0] = '0';
@@ -983,11 +1031,11 @@ void G_SetLevelStrings (void)
 			namepart = Strings[i].string;
 		}
 
-		ReplaceString (&LevelInfos[i-65].level_name, namepart);
+		ReplaceString ((const char **)&LevelInfos[i-65].level_name, namepart);
 	}
 
 	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[i].exittext, Strings[221+i].string);
+		ReplaceString ((const char **)&ClusterInfos[i].exittext, Strings[221+i].string);
 
 	if (gamemission == pack_plut)
 		start = 133;		// PHUSTR_1
@@ -1005,7 +1053,7 @@ void G_SetLevelStrings (void)
 		} else {
 			namepart = Strings[i+start].string;
 		}
-		ReplaceString (&LevelInfos[36+i].level_name, namepart);
+		ReplaceString ((const char **)&LevelInfos[36+i].level_name, namepart);
 	}
 
 	if (gamemission == pack_plut)
@@ -1016,9 +1064,9 @@ void G_SetLevelStrings (void)
 		start = 225;		// C1TEXT
 
 	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[4 + i].exittext, Strings[start+i].string);
+		ReplaceString ((const char **)&ClusterInfos[4 + i].exittext, Strings[start+i].string);
 	for (; i < 6; i++)
-		ReplaceString (&ClusterInfos[4 + i].entertext, Strings[start+i].string);
+		ReplaceString ((const char **)&ClusterInfos[4 + i].entertext, Strings[start+i].string);
 
 	if (level.info)
 		strncpy (level.level_name, level.info->level_name, 63);
@@ -2257,4 +2305,5 @@ cluster_info_t ClusterInfos[] = {
 };
 
 VERSION_CONTROL (g_level_cpp, "$Id$")
+
 

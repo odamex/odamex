@@ -191,10 +191,12 @@ public:
 	fixed_t     real_origin[3];       // coordinates and velocity which
 	fixed_t     real_velocity[3];     // a client got from the server
 	int         tic;                  // and that was on tic "tic"
-	
+
+	bool		spectator;			// [GhostlyDeath] spectating?
+
 	struct ticcmd_t netcmds[BACKUPTICS];
 
-	player_s() : playerstate(PST_LIVE), fragcount(0), deathcount(0), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0)
+	player_s() : playerstate(PST_LIVE), fragcount(0), deathcount(0), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0), spectator(false)
 	{
 	}
 
@@ -345,5 +347,6 @@ typedef struct wbstartstruct_s
 
 
 #endif // __D_PLAYER_H__
+
 
 

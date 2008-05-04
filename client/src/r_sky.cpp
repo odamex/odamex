@@ -34,7 +34,7 @@
 #include "g_level.h"
 #include "r_sky.h"
 
-EXTERN_CVAR(freelook)
+EXTERN_CVAR(allowfreelook)
 
 extern int *texturewidthmask;
 
@@ -76,7 +76,7 @@ void R_InitSkyMap ()
 	if (textureheight[skytexture] <= (128 << FRACBITS))
 	{
                 skytexturemid = 100*FRACUNIT;
-                skystretch = (r_stretchsky && freelook);
+                skystretch = (r_stretchsky && allowfreelook);
 	}
 	else
 	{

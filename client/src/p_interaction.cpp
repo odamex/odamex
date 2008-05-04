@@ -46,6 +46,8 @@
 
 #include "cl_ctf.h"
 
+extern int predicting;
+
 
 static void PickupMessage (AActor *toucher, const char *message)
 {
@@ -328,10 +330,17 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 	int 		i;
 	int 		sound;
 
+    if(predicting)
+        return;
+
     // Dead thing touching.
     // Can happen with a sliding player corpse.
     if (toucher->health <= 0)
 		return;
+
+	// GhostlyDeath -- Spectators can't pick up things
+	if (toucher->player && toucher->player->spectator)
+		return;		
 
 	fixed_t delta = special->z - toucher->z;
 
@@ -644,6 +653,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 	  case SPR_BDWN:
 	  case SPR_RDWN:
 	  case SPR_GDWN:
+	  case SPR_BSOK:
+	  case SPR_RSOK:
+	  case SPR_GSOK:
 		return;
 
 	  default:
@@ -723,265 +735,19 @@ void SexMessage (const char *from, char *to, int gender)
 	} while (*from++);
 }
 
-// [RH]
-// ClientObituary: Show a message when a player dies
-//
-void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
-{
-    int	 mod;
-    char *message;
-    char gendermessage[1024];
-    BOOL friendly;
-    int  gender;
-
-    if (!self->player)
-        return;
-
-    gender = self->player->userinfo.gender;
-
-    // Treat voodoo dolls as unknown deaths
-    if (inflictor && inflictor->player == self->player)
-        MeansOfDeath = MOD_UNKNOWN;
-
-    if (multiplayer && !deathmatch)
-        MeansOfDeath |= MOD_FRIENDLY_FIRE;
-
-    friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
-    mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
-    message = NULL;
-
-    switch (mod)
-    {
-        case MOD_SUICIDE:
-            message = OB_SUICIDE;
-            break;
-        case MOD_FALLING:
-            message = OB_FALLING;
-            break;
-        case MOD_CRUSH:
-            message = OB_CRUSH;
-            break;
-        case MOD_EXIT:
-            message = OB_EXIT;
-            break;
-        case MOD_WATER:
-            message = OB_WATER;
-            break;
-        case MOD_SLIME:
-            message = OB_SLIME;
-            break;
-        case MOD_LAVA:
-            message = OB_LAVA;
-            break;
-        case MOD_BARREL:
-            message = OB_BARREL;
-            break;
-        case MOD_SPLASH:
-            message = OB_SPLASH;
-            break;
-    }
-
-    if (attacker && !message)
-    {
-        if (attacker == self)
-        {
-            switch (mod)
-            {
-                case MOD_R_SPLASH:
-                    message = OB_R_SPLASH;
-                    break;
-                case MOD_ROCKET:
-                    message = OB_ROCKET;
-                    break;
-                default:
-                    message = OB_KILLEDSELF;
-                    break;
-            }
-        }
-        else if (!attacker->player)
-        {
-            if (mod == MOD_HIT)
-            {
-                switch (attacker->type)
-                {
-                    case MT_UNDEAD:
-                        message = OB_UNDEADHIT;
-                        break;
-                    case MT_TROOP:
-                        message = OB_IMPHIT;
-                        break;
-                    case MT_HEAD:
-                        message = OB_CACOHIT;
-                        break;
-                    case MT_SERGEANT:
-                        message = OB_DEMONHIT;
-                        break;
-                    case MT_SHADOWS:
-                        message = OB_SPECTREHIT;
-                        break;
-                    case MT_BRUISER:
-                        message = OB_BARONHIT;
-                        break;
-                    case MT_KNIGHT:
-                        message = OB_KNIGHTHIT;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else
-            {
-                switch (attacker->type)
-                {
-                    case MT_POSSESSED:
-                        message = OB_ZOMBIE;
-                        break;
-                    case MT_SHOTGUY:
-                        message = OB_SHOTGUY;
-                        break;
-                    case MT_VILE:
-                        message = OB_VILE;
-                        break;
-                    case MT_UNDEAD:
-                        message = OB_UNDEAD;
-                        break;
-                    case MT_FATSO:
-                        message = OB_FATSO;
-                        break;
-                    case MT_CHAINGUY:
-                        message = OB_CHAINGUY;
-                        break;
-                    case MT_SKULL:
-                        message = OB_SKULL;
-                        break;
-                    case MT_TROOP:
-                        message = OB_IMP;
-                        break;
-                    case MT_HEAD:
-                        message = OB_CACO;
-                        break;
-                    case MT_BRUISER:
-                        message = OB_BARON;
-                        break;
-                    case MT_KNIGHT:
-                        message = OB_KNIGHT;
-                        break;
-                    case MT_SPIDER:
-                        message = OB_SPIDER;
-                        break;
-                    case MT_BABY:
-                        message = OB_BABY;
-                        break;
-                    case MT_CYBORG:
-                        message = OB_CYBORG;
-                        break;
-                    case MT_WOLFSS:
-                        message = OB_WOLFSS;
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-    }
-
-    if (message)
-    {
-        SexMessage (message, gendermessage, gender);
-        Printf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
-        return;
-    }
-
-    if (attacker && attacker->player)
-    {
-        if (friendly)
-        {
-            int rnum = M_Random ();
-
-            attacker->player->fragcount -= 2;
-//          attacker->player->frags[attacker->player - players]++;
-            self = attacker;
-            gender = self->player->userinfo.gender;
-
-            if (rnum < 64)
-                message = OB_FRIENDLY1;
-            else if (rnum < 128)
-                message = OB_FRIENDLY2;
-            else if (rnum < 192)
-                message = OB_FRIENDLY3;
-            else
-                message = OB_FRIENDLY4;
-        }
-        else
-        {
-            switch (mod)
-            {
-                case MOD_FIST:
-                    message = OB_MPFIST;
-                    break;
-                case MOD_CHAINSAW:
-                    message = OB_MPCHAINSAW;
-                    break;
-                case MOD_PISTOL:
-                    message = OB_MPPISTOL;
-                    break;
-                case MOD_SHOTGUN:
-                    message = OB_MPSHOTGUN;
-                    break;
-                case MOD_SSHOTGUN:
-                    message = OB_MPSSHOTGUN;
-                    break;
-                case MOD_CHAINGUN:
-                    message = OB_MPCHAINGUN;
-                    break;
-                case MOD_ROCKET:
-                    message = OB_MPROCKET;
-                    break;
-                case MOD_R_SPLASH:
-                    message = OB_MPR_SPLASH;
-                    break;
-                case MOD_PLASMARIFLE:
-                    message = OB_MPPLASMARIFLE;
-                    break;
-                case MOD_BFG_BOOM:
-                    message = OB_MPBFG_BOOM;
-                    break;
-                case MOD_BFG_SPLASH:
-                    message = OB_MPBFG_SPLASH;
-                    break;
-                case MOD_TELEFRAG:
-                    message = OB_MPTELEFRAG;
-                    break;
-            }
-        }
-    }
-
-    if (message)
-    {
-        SexMessage (message, gendermessage, gender);
-
-		std::string work = "%s ";
-		work += gendermessage;
-		work += ".\n";
-
-		Printf (PRINT_MEDIUM, work.c_str(), self->player->userinfo.netname,
-            attacker->player->userinfo.netname);
-        return;
-    }
-
-    SexMessage (OB_DEFAULT, gendermessage, gender);
-    Printf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
-}
-
 
 //
 // P_KillMobj
 //
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
+void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill)
 {
 	AActor *mo;
 
 	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
+
+	// GhostlyDeath -- Joinkill is only set on players, so we should be safe!
+	if (joinkill)
+		target->flags |= MF_SPECTATOR;
 
 	if (target->type != MT_SKULL)
 		target->flags &= ~MF_NOGRAVITY;
@@ -994,6 +760,13 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 
 	if (serverside && target->flags & MF_COUNTKILL)
 		level.killed_monsters++;
+		
+	if (demoplayback && source && source->player && target->player) {
+		if (target->player == source->player) // Nes - Local demo
+			source->player->fragcount--;
+		else
+			source->player->fragcount++;
+	}
 
 	if (target->player)
 	{
@@ -1018,28 +791,30 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor)
 		}
 
 		// play die sound
-		if (target->player != &consoleplayer())
+		if (target->player != &consoleplayer() && !joinkill)
 			A_PlayerScream(target);
 	}
 
 	if(target->health > 0) // denis - when this function is used standalone
 		target->health = 0;
 
-	if (target->health < -target->info->spawnhealth
-		&& target->info->xdeathstate)
-	{
-		P_SetMobjState (target, target->info->xdeathstate);
-	}
-	else
-		P_SetMobjState (target, target->info->deathstate);
+		if (target->health < -target->info->spawnhealth
+			&& target->info->xdeathstate)
+		{
+			P_SetMobjState (target, target->info->xdeathstate);
+		}
+		else
+			P_SetMobjState (target, target->info->deathstate);
+	
 	target->tics -= P_Random (target) & 3;
 
 	if (target->tics < 1)
 		target->tics = 1;
 
 	// [RH] Death messages
-	if (target->player && level.time && multiplayer && !(demoplayback && democlassic))
-		ClientObituary (target, inflictor, source);
+	// Nes - Server now broadcasts obituaries.
+	//if (target->player && level.time && multiplayer && !(demoplayback && democlassic) && !joinkill)
+	//	ClientObituary (target, inflictor, source);
 
 	// Drop stuff.
 	// This determines the kind of object spawned
@@ -1103,6 +878,10 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 	if ( !(target->flags & MF_SHOOTABLE) )
 		return; // shouldn't happen...
+
+	// GhostlyDeath -- spectators can't get hurt
+	if (target->player && target->player->spectator)
+		return;
 
 	if (target->health <= 0)
 		return;
@@ -1208,7 +987,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		target->health -= damage;
 		if (target->health <= 0)
 		{
-			P_KillMobj (source, target, inflictor);
+			P_KillMobj (source, target, inflictor, false);
 			return;
 		}
 	}

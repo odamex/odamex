@@ -245,8 +245,6 @@ extern "C" void EndMMX (void);
 EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
 EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
-EXTERN_CVAR (var_friction)
-EXTERN_CVAR (var_pushers)
 
 
 // [RH] Miscellaneous info for DeHackEd support

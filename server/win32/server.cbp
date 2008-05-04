@@ -8,8 +8,8 @@
 		<Build>
 			<Target title="Win Release">
 				<Option platforms="Windows;" />
-				<Option output="..\..\bin\odasrv.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option output="..\..\odasrv.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\server\release\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
@@ -20,6 +20,7 @@
 					<Add option="-O2" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
+					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -29,8 +30,8 @@
 			</Target>
 			<Target title="Win Debug">
 				<Option platforms="Windows;" />
-				<Option output="..\..\bin\odasrv-dbg.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option output="..\..\odasrv-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\server\debug\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
@@ -52,7 +53,7 @@
 			<Target title="Unix Release">
 				<Option platforms="Unix;" />
 				<Option output="..\..\odasrv" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\server\release\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
@@ -63,6 +64,7 @@
 					<Add option="-O2" />
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -71,7 +73,7 @@
 			<Target title="Unix Debug">
 				<Option platforms="Unix;" />
 				<Option output="..\..\odasrv-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\server\debug\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
@@ -89,7 +91,7 @@
 			<Target title="Mac Release">
 				<Option platforms="Mac;" />
 				<Option output="..\..\odasrv" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\server\release\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
@@ -100,6 +102,7 @@
 					<Add option="-O2" />
 					<Add option="-DUNIX" />
 					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -108,7 +111,7 @@
 			<Target title="Mac Debug">
 				<Option platforms="Mac;" />
 				<Option output="..\..\odasrv-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\..\bin" />
+				<Option working_dir="..\..\" />
 				<Option object_output="..\..\obj\server\debug\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
@@ -188,8 +191,12 @@
 		<Unit filename="..\..\common\m_bbox.h" />
 		<Unit filename="..\..\common\m_cheat.cpp" />
 		<Unit filename="..\..\common\m_cheat.h" />
+		<Unit filename="..\..\common\m_fileio.cpp" />
+		<Unit filename="..\..\common\m_fileio.h" />
 		<Unit filename="..\..\common\m_fixed.cpp" />
 		<Unit filename="..\..\common\m_fixed.h" />
+		<Unit filename="..\..\common\m_memio.cpp" />
+		<Unit filename="..\..\common\m_memio.h" />
 		<Unit filename="..\..\common\m_random.cpp" />
 		<Unit filename="..\..\common\m_random.h" />
 		<Unit filename="..\..\common\m_swap.h" />
@@ -223,6 +230,7 @@
 		<Unit filename="..\..\common\p_teleport.cpp" />
 		<Unit filename="..\..\common\p_tick.cpp" />
 		<Unit filename="..\..\common\p_tick.h" />
+		<Unit filename="..\..\common\p_user.cpp" />
 		<Unit filename="..\..\common\p_xlat.cpp" />
 		<Unit filename="..\..\common\r_data.cpp" />
 		<Unit filename="..\..\common\r_data.h" />
@@ -246,7 +254,6 @@
 		<Unit filename="..\..\common\w_wad.h" />
 		<Unit filename="..\..\common\z_zone.cpp" />
 		<Unit filename="..\..\common\z_zone.h" />
-		<Unit filename="..\src\c_cmds.cpp" />
 		<Unit filename="..\src\c_console.cpp" />
 		<Unit filename="..\src\c_console.h" />
 		<Unit filename="..\src\d_main.cpp" />
@@ -267,7 +274,6 @@
 		<Unit filename="..\src\p_interaction.cpp" />
 		<Unit filename="..\src\p_mobj.cpp" />
 		<Unit filename="..\src\p_mobj.h" />
-		<Unit filename="..\src\p_user.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_draw.h" />
 		<Unit filename="..\src\r_main.cpp" />

@@ -5,7 +5,8 @@ SOURCES = src/dlg_config.cpp \
  src/dlg_main.cpp \
  src/dlg_servers.cpp \
  src/main.cpp \
- src/net_io.cpp
+ src/net_io.cpp \
+ src/query_thread.cpp
 
 HEADERS = src/*.h
 
@@ -17,7 +18,7 @@ WXRC = wxrc
 CFLAGS = $(shell $(WXCONFIG) --cflags) -g
 LFLAGS = $(shell $(WXCONFIG) --libs) -g
 
-RESOURCES = res/dlgconfig.xrc res/dlgmain.xrc
+RESOURCES = res/xrc_resource.xrc
 
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
 

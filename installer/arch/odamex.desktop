@@ -1,0 +1,8 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Odamex
+Exec=odamex
+Icon=odamex
+Type=Application
+Comment=A Doom multiplayer game engine
+Categories=Game;ActionGame;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -79,7 +79,9 @@ static const unsigned char rndtable[256] = {
     120, 163, 236, 249
 };
 
-static unsigned char rndindex, prndindex;
+unsigned char rndindex, prndindex;
+
+extern bool stepmode;
 
 //
 // denis - Every actor has a random number generator so they can be sync'ed
@@ -87,7 +89,7 @@ static unsigned char rndindex, prndindex;
 //
 int P_Random (AActor *actor)
 {
-	if(!actor || demoplayback)
+	if(!actor || demoplayback || demorecording || stepmode)
 		return P_Random ();
 
 	return (rndtable[++actor->rndindex]);
@@ -116,5 +118,5 @@ void M_ClearRandom (void)
 }
 
 
-VERSION_CONTROL (m_random_cpp, "$Id:$")
+VERSION_CONTROL (m_random_cpp, "$Id$")
 

@@ -40,6 +40,9 @@ class BufferedSocket
         wxMemoryInputStream  *recv_buf;
         wxMemoryOutputStream *send_buf;
         
+        wxChar sData[MAX_PAYLOAD];
+        wxChar rData[MAX_PAYLOAD];
+        
         // Endianess switch for buffers
         static const wxByte BigEndian;
         
@@ -52,19 +55,21 @@ class BufferedSocket
         // outgoing address (server)
         wxIPV4address       to_addr;
                
-        wxInt32 SendPing, RecvPing;
+        wxUint32 SendPing, RecvPing;
         
-        void SetSendPing(wxInt32 i) { SendPing = i; }
-        void SetRecvPing(wxInt32 i) { RecvPing = i; }
+        void SetSendPing(wxUint32 i) { SendPing = i; }
+        void SetRecvPing(wxUint32 i) { RecvPing = i; }
         
         // we need to do something with this, one day
         void CheckError();
         
+        void CreateSocket(void);
+        void DestroySocket(void);
     public:
         BufferedSocket(); // Create a blank instance with stuff initialized
 
         virtual ~BufferedSocket(); // "Choose! Choose the form of the destructor!"
-        
+                
         // Set the outgoing address
         virtual void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
         //virtual wxInt32 SetAddress(wxString AddressAndPort);
@@ -75,13 +80,19 @@ class BufferedSocket
         wxInt32 GetData(wxInt32 Timeout);
         
         // a method for a round-trip time in milliseconds
-        inline wxInt32 GetPing() { return (RecvPing - SendPing); }
+        wxUint32 GetPing() { return (RecvPing - SendPing); }
         
         // Read/Write values to the internal buffer
-        wxChar      *ReadString();
-        wxInt32     Read32();
-        wxInt16     Read16();
-        wxInt8      Read8();
+        wxInt32     ReadString(wxString &);
+        wxInt32     ReadBool(bool &boolval);
+        // signed reads
+        wxInt32     Read32(wxInt32 &);
+        wxInt32     Read16(wxInt16 &);
+        wxInt32     Read8(wxInt8 &);
+        // unsigned reads
+        wxInt32     Read32(wxUint32 &);
+        wxInt32     Read16(wxUint16 &);
+        wxInt32     Read8(wxUint8 &);
         
         void    WriteString(wxString);
         void    Write32(wxInt32);

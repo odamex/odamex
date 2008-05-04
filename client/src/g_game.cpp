@@ -31,10 +31,12 @@
 #include "z_zone.h"
 #include "f_finale.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "m_misc.h"
 #include "m_menu.h"
 #include "m_random.h"
 #include "i_system.h"
+#include "hardware.h"
 #include "p_setup.h"
 #include "p_saveg.h"
 #include "p_tick.h"
@@ -68,13 +70,13 @@
 
 BOOL	G_CheckDemoStatus (void);
 void	G_ReadDemoTiccmd ();
-void	G_WriteDemoTiccmd (ticcmd_t* cmd, int player, int buf);
+void	G_WriteDemoTiccmd ();
 void	G_PlayerReborn (player_t &player);
 void	G_DoReborn (player_t &playernum);
 
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
-void	G_DoPlayDemo (void);
+void	G_DoPlayDemo (bool justStreamInput = false);
 void	G_DoCompleted (void);
 void	G_DoVictory (void);
 void	G_DoWorldDone (void);
@@ -129,9 +131,12 @@ enum demoversion_t
 #define DOOM_1_9p_DEMO		0x6E
 #define DOOM_1_9_1_DEMO		0x6F
 
+#define DOOM_BOOM_DEMO_START	0xC8
+#define DOOM_BOOM_DEMO_END	0xD6
+
 EXTERN_CVAR(nomonsters)
 EXTERN_CVAR(fastmonsters)
-EXTERN_CVAR(freelook)
+EXTERN_CVAR(allowfreelook)
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
@@ -143,6 +148,9 @@ BOOL 			demoplayback;
 BOOL			democlassic;
 BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
+FILE *recorddemo_fp;
+
+
 int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
@@ -404,7 +412,9 @@ BEGIN_COMMAND (spynext)
 			st_firsttime = true;
 			break;
 		}
-		else if(!deathmatch || ((teamplaymode || ctfmode) && players[curr].userinfo.team == consoleplayer().userinfo.team))
+		else if (consoleplayer().spectator ||
+				(!deathmatch || ((teamplaymode || ctfmode)
+				&& players[curr].userinfo.team == consoleplayer().userinfo.team)))
 		{
 			displayplayer_id = players[curr].id;
 			break;
@@ -443,7 +453,14 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		speed ^= 1;
 
 	forward = side = look = fly = 0;
-
+	
+	// GhostlyDeath -- USE takes us out of spectator mode
+	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
+	{
+		MSG_WriteMarker(&net_buffer, clc_spectate);
+		MSG_WriteByte(&net_buffer, false);
+	}
+ 
 	// [RH] only use two stage accelerative turning on the keyboard
 	//		and not the joystick, since we treat the joystick as
 	//		the analog device it is.
@@ -545,7 +562,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		forward += (MAXPLMOVE * joyymove) / 256;
 	}
 
-	if ((Actions[ACTION_MLOOK]) || freelook)
+	if ((Actions[ACTION_MLOOK]) || allowfreelook)
 	{
 		int val;
 
@@ -713,28 +730,28 @@ BOOL G_Responder (event_t *ev)
 		{
 			if (dynres_state == 0)
 			{
-				mousex = (unsigned int)(ev->data2 * (mouse_sensitivity + 5) / 10); // [Toke - Mouse] Marriage of origonal and zdoom mouse code, functions like doom2.exe code
-				mousey = (unsigned int)(ev->data3 * (mouse_sensitivity + 5) / 10);
+				mousex = ev->data2 * (mouse_sensitivity + 5) / 10; // [Toke - Mouse] Marriage of origonal and zdoom mouse code, functions like doom2.exe code
+				mousey = ev->data3 * (mouse_sensitivity + 5) / 10;
 			}
 			else if (dynres_state == 1)
 			{
 				mousexleft = ev->data2;
 				mousexleft = -mousexleft;
-				mousex = (unsigned int)pow((ev->data2 * (mouse_sensitivity + 5) / 10), dynresval);
+				mousex = pow((ev->data2 * (mouse_sensitivity + 5) / 10), dynresval);
 
 				if (ev->data2 < 0)
 				{
-					mousexleft = (unsigned int)pow((mousexleft * (mouse_sensitivity + 5) / 10), dynresval);
+					mousexleft = pow((mousexleft * (mouse_sensitivity + 5) / 10), dynresval);
 					mousex = -mousexleft;
 				}
 
 				mouseydown = ev->data3;
 				mouseydown = -mouseydown;
-				mousey = (unsigned int)pow((ev->data3 * (mouse_sensitivity + 5) / 10), dynresval);
+				mousey = pow((ev->data3 * (mouse_sensitivity + 5) / 10), dynresval);
 
 				if (ev->data3 < 0)
 				{
-					mouseydown = (unsigned int)pow((mouseydown * (mouse_sensitivity + 5) / 10), dynresval);
+					mouseydown = pow((mouseydown * (mouse_sensitivity + 5) / 10), dynresval);
 					mousey = -mouseydown;
 				}
 			}
@@ -743,35 +760,35 @@ BOOL G_Responder (event_t *ev)
 		{
 			if (dynres_state == 0)
 			{
-				mousex = (unsigned int)(ev->data2 * (zdoomsens)); // [Toke - Mouse] Zdoom mouse code
-				mousey = (unsigned int)(ev->data3 * (zdoomsens));
+				mousex = ev->data2 * (zdoomsens); // [Toke - Mouse] Zdoom mouse code
+				mousey = ev->data3 * (zdoomsens);
 			}
 			else if (dynres_state == 1)
 			{
 				mousexleft = ev->data2;
 				mousexleft = -mousexleft;
-				mousex = (unsigned int)pow((ev->data2 * (zdoomsens)), dynresval);
+				mousex = pow((ev->data2 * (zdoomsens)), dynresval);
 
 				if (ev->data2 < 0)
 				{
-					mousexleft = (unsigned int)pow((mousexleft * (zdoomsens)), dynresval);
+					mousexleft = pow((mousexleft * (zdoomsens)), dynresval);
 					mousex = -mousexleft;
 				}
 
 				mouseydown = ev->data3;
 				mouseydown = -mouseydown;
-				mousey = (unsigned int)pow((ev->data3 * (zdoomsens)), dynresval);
+				mousey = pow((ev->data3 * (zdoomsens)), dynresval);
 
 				if (ev->data3 < 0)
 				{
-					mouseydown = (unsigned int)pow((mouseydown * (zdoomsens)), dynresval);
+					mouseydown = pow((mouseydown * (zdoomsens)), dynresval);
 					mousey = -mouseydown;
 				}
 			}
 		}
 
 		if (displaymouse == 1)
-			Printf(PRINT_MEDIUM, "%d ", mousex);
+			Printf(PRINT_MEDIUM, "(%d %d) ", mousex, mousey);
 
 		break;
 
@@ -861,7 +878,7 @@ void G_Ticker (void)
 			G_DoWorldDone ();
 			break;
 		case ga_screenshot:
-			M_ScreenShot(shotfile.c_str());
+			I_ScreenShot(shotfile.c_str());
 			gameaction = ga_nothing;
 			break;
 		case ga_fullconsole:
@@ -874,12 +891,6 @@ void G_Ticker (void)
 		C_AdjustBottom ();
 	}
 
-	if (oldgamestate == GS_DEMOSCREEN && oldgamestate != gamestate && page)
-	{
-		delete page;
-		page = NULL;
-	}
-
     // get commands
     buf = gametic%BACKUPTICS;
 	memcpy (&consoleplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
@@ -889,6 +900,8 @@ void G_Ticker (void)
 
 	if (demoplayback)
 		G_ReadDemoTiccmd(); // play all player commands
+	if (demorecording)
+		G_WriteDemoTiccmd(); // read in all player commands
 
     if (connected)
     {
@@ -1179,12 +1192,15 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		return false;
 
 	// spawn a teleport fog
-	an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
+	{
+		an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
 
-	mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
+		mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
 
-	if (level.time)
-		S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);	// don't start sound on first frame
+		if (level.time)
+			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);	// don't start sound on first frame
+	}
 
 	return true;
 }
@@ -1542,33 +1558,120 @@ void G_ReadDemoTiccmd ()
 	}
 }
 
-BOOL stoprecording;
-
-
-extern byte *lenspot;
-
-void G_WriteDemoTiccmd (ticcmd_t *cmd, int player, int buf)
+//
+// G_WriteDemoTiccmd
+//
+void G_WriteDemoTiccmd ()
 {
+    byte demo_tmp[8];
+
+    int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
+
+    for(size_t i = 0; i < players.size(); i++)
+    {
+        byte *demo_p = demo_tmp;
+        usercmd_t *cmd = &players[i].cmd.ucmd;
+
+        *demo_p++ = cmd->forwardmove >> 8;
+        *demo_p++ = cmd->sidemove >> 8;
+
+        // If this is a longtics demo, record in higher resolution
+
+        if (LMP_DOOM_1_9_1 == demoversion)
+        {
+            *demo_p++ = (cmd->yaw & 0xff);
+            *demo_p++ = (cmd->yaw >> 8) & 0xff;
+        }
+        else
+        {
+            *demo_p++ = cmd->yaw >> 8;
+            cmd->yaw = ((unsigned char)*(demo_p-1))<<8;
+        }
+
+        *demo_p++ = cmd->buttons;
+
+        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
+    }
 }
-
-
 
 //
 // G_RecordDemo
 //
-void G_RecordDemo (char* name)
-{
+bool G_RecordDemo (char* name)
+{ 
+    strcpy (demoname, name);
+    strcat (demoname, ".lmp");
+
+    if(recorddemo_fp)
+    {
+        fclose(recorddemo_fp);
+        recorddemo_fp = NULL;
+    }
+
+    recorddemo_fp = fopen(demoname, "w");
+
+    if(!recorddemo_fp)
+    {
+        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname);
+        return false;
+    }
+
+    usergame = false;
+    demorecording = true;
+
+    return true;
 }
 
-
-// [RH] Demos are now saved as IFF FORMs. I've also removed support
-//		for earlier ZDEMs since I didn't want to bother supporting
-//		something that probably wasn't used much (if at all).
-
+//
+// G_BeginRecording
+//
 void G_BeginRecording (void)
 {
-}
+    byte demo_tmp[32];
+    demo_p = demo_tmp;
 
+    // Save the right version code for this demo
+
+    if (demoversion = LMP_DOOM_1_9_1) // denis - TODO!!!
+    {
+        *demo_p++ = DOOM_1_9_1_DEMO;
+    }
+    else
+    {
+        *demo_p++ = DOOM_1_9_DEMO;
+    }
+
+    democlassic = true;
+
+    int episode;
+    int mapid;
+    if(gameinfo.flags & GI_MAPxx)
+    {
+        episode = 1;
+        mapid = atoi(level.mapname + 3);
+    }
+    else
+    {
+        episode = level.mapname[1] - '0';
+        mapid = level.mapname[3] - '0';
+    }
+
+    *demo_p++ = skill-1;
+    *demo_p++ = episode;
+    *demo_p++ = mapid;
+    *demo_p++ = deathmatch;
+    *demo_p++ = monstersrespawn;
+    *demo_p++ = fastmonsters;
+    *demo_p++ = nomonsters;
+    *demo_p++ = 0;
+
+    *demo_p++ = 1;
+    *demo_p++ = 0;
+    *demo_p++ = 0;
+    *demo_p++ = 0;
+
+    fwrite(demo_tmp, 13, 1, recorddemo_fp);
+}
 
 //
 // G_PlayDemo
@@ -1576,20 +1679,79 @@ void G_BeginRecording (void)
 
 std::string defdemoname;
 
-void G_DeferedPlayDemo (char *name)
+void G_DeferedPlayDemo (const char *name)
 {
 	defdemoname = name;
 	gameaction = ga_playdemo;
 }
+
+void RecordCommand(int argc, char **argv)
+{
+	if(argc > 2)
+	{
+
+		if(G_RecordDemo(argv[2]))
+		{
+			players.clear();
+			players.push_back(player_t());
+			players.back().playerstate = PST_REBORN;
+			players.back().id = 1;
+
+			player_t &con = idplayer(1);
+			consoleplayer_id = displayplayer_id = con.id;
+
+			serverside = true;
+
+			G_InitNew(argv[1]);
+			G_BeginRecording();
+		}
+	}
+	else
+		Printf(PRINT_HIGH, "Usage: recordvanilla map file\n");
+}
+
+BEGIN_COMMAND(recordvanilla)
+{
+	//G_CheckDemoStatus();
+	demoversion = LMP_DOOM_1_9;
+	RecordCommand(argc, argv);
+}
+END_COMMAND(recordvanilla)
+
+BEGIN_COMMAND(recordlongtics)
+{
+	//G_CheckDemoStatus();
+	demoversion = LMP_DOOM_1_9_1;
+	RecordCommand(argc, argv);
+}
+END_COMMAND(recordlongtics)
+
+BEGIN_COMMAND(stopdemo)
+{
+	G_CheckDemoStatus (); 
+}
+END_COMMAND(stopdemo)
 
 BEGIN_COMMAND(playdemo)
 {
 	if(argc > 1)
 		G_DeferedPlayDemo(argv[1]);
 	else
-		Printf(PRINT_HIGH, "usage: playdemo [lump or filename]");
+		Printf(PRINT_HIGH, "Usage: playdemo lumpname or file\n");
 }
 END_COMMAND(playdemo)
+
+BEGIN_COMMAND(streamdemo)
+{
+	if(argc > 1)
+	{
+		G_DeferedPlayDemo(argv[1]);
+		G_DoPlayDemo(true);
+	}
+	else
+		Printf(PRINT_HIGH, "Usage: playdemo lumpname or file\n");
+}
+END_COMMAND(streamdemo)
 
 // [RH] Process all the information in a FORM ZDEM
 //		until a BODY chunk is entered.
@@ -1685,11 +1847,12 @@ BOOL G_ProcessIFFDemo (char *mapname)
 	return false;
 }
 
-void G_DoPlayDemo (void)
+void G_DoPlayDemo (bool justStreamInput)
 {
 	char mapname[9];
 
-	CL_QuitNetGame();
+	if(!justStreamInput)
+		CL_QuitNetGame();
 
 	gameaction = ga_nothing;
 	int bytelen;
@@ -1701,8 +1864,8 @@ void G_DoPlayDemo (void)
 		bytelen = W_LumpLength(demolump);
 	} else {
 		FixPathSeparator (defdemoname);
-		DefaultExtension (defdemoname, ".lmp");
-		bytelen = M_ReadFile (defdemoname.c_str(), &demobuffer);
+		M_AppendExtension (defdemoname, ".lmp");
+		bytelen = M_ReadFile (defdemoname, &demobuffer);
 		demo_p = demobuffer;
 	}
 
@@ -1710,9 +1873,12 @@ void G_DoPlayDemo (void)
 
 	if(bytelen < 4)
 	{
-		Z_Free(demobuffer);
-		Printf (PRINT_HIGH, "Demo file too short\n");
-		gameaction = ga_nothing;
+		if(bytelen)
+		{
+			Z_Free(demobuffer);
+			Printf (PRINT_HIGH, "Demo file too short\n");
+		}
+		gameaction = ga_fullconsole;
 		return;
 	}
 
@@ -1734,7 +1900,7 @@ void G_DoPlayDemo (void)
 		{
 			Z_Free(demobuffer);
 			Printf (PRINT_HIGH, "DOOM 1.9 Demo: file too short\n");
-			gameaction = ga_nothing;
+			gameaction = ga_fullconsole;
 			return;
 		}
 
@@ -1751,11 +1917,12 @@ void G_DoPlayDemo (void)
 		nomonsters = *demo_p++;
 		byte who = *demo_p++;
 
-		players.clear();
+		if(!justStreamInput)
+			players.clear();
 
 		for (size_t i=0 ; i < MAXPLAYERS_VANILLA; i++)
 		{
-			if(*demo_p++)
+			if(*demo_p++ && !justStreamInput)
 			{
 				players.push_back(player_t());
 				players.back().playerstate = PST_REBORN;
@@ -1763,67 +1930,79 @@ void G_DoPlayDemo (void)
 			}
 		}
 
-		player_t &con = idplayer(who + 1);
-
-		if(!validplayer(con))
+		if(!justStreamInput)
 		{
-			Z_Free(demobuffer);
-			Printf (PRINT_HIGH, "DOOM 1.9 Demo: invalid console player %d of %d\n", (int)who+1, players.size());
-			gameaction = ga_nothing;
-			return;
+    		player_t &con = idplayer(who + 1);
+    
+    		if(!validplayer(con))
+    		{
+    			Z_Free(demobuffer);
+    			Printf (PRINT_HIGH, "DOOM 1.9 Demo: invalid console player %d of %d\n", (int)who+1, players.size());
+    			gameaction = ga_fullconsole;
+    			return;
+    		}
+    
+    		consoleplayer_id = displayplayer_id = con.id;
+    
+    		//int pcol[4] = {(0x0000FF00), (0x006060B0), (0x00B0B030), (0x00C00000)};
+    		//char pnam[4][MAXPLAYERNAME] = {"GREEN", "INDIGO", "BROWN", "RED"};
+    		
+    		if(players.size() > 1)
+    		{
+    			netgame = true;
+    			netdemo = true;
+    			multiplayer = true;
+    			
+    			for (size_t i = 0; i < 4; i++) {
+    				if (players[i].ingame()) {
+    					//strcpy(players[i].userinfo.netname, pnam[i]);
+    					//players[i].userinfo.team = TEAM_NONE;
+    					//players[i].userinfo.gender = GENDER_NEUTER;
+    					//players[i].userinfo.color = pcol[i];
+    					//players[i].userinfo.skin = 0;
+    					//players[i].GameTime = 0;
+    					//R_BuildPlayerTranslation (players[i].id, players[i].userinfo.color);
+    					R_BuildClassicPlayerTranslation (players[i].id, i);
+    				}
+    			}
+    		}
+    		else
+    		{
+    			netgame = false;
+    			netdemo = false;
+    			multiplayer = false;
+    		}
+    
+    		char mapname[32];
+    
+    		if(gameinfo.flags & GI_MAPxx)
+    			sprintf(mapname, "MAP%02d", (int)map);
+    		else
+    			sprintf(mapname, "E%dM%d", (int)episode, (int)map);
+    
+    		serverside = true;
+    
+    		G_InitNew (mapname);
+    
+    		usergame = false;
 		}
-
-		consoleplayer_id = displayplayer_id = con.id;
-
-		//int pcol[4] = {(0x0000FF00), (0x006060B0), (0x00B0B030), (0x00C00000)};
-		//char pnam[4][MAXPLAYERNAME] = {"GREEN", "INDIGO", "BROWN", "RED"};
-		
-		if(players.size() > 1)
-		{
-			netgame = true;
-			netdemo = true;
-			multiplayer = true;
-			
-			for (size_t i = 0; i < 4; i++) {
-				if (players[i].ingame()) {
-					//strcpy(players[i].userinfo.netname, pnam[i]);
-					//players[i].userinfo.team = TEAM_NONE;
-					//players[i].userinfo.gender = GENDER_NEUTER;
-					//players[i].userinfo.color = pcol[i];
-					//players[i].userinfo.skin = 0;
-					//players[i].GameTime = 0;
-					//R_BuildPlayerTranslation (players[i].id, players[i].userinfo.color);
-					R_BuildClassicPlayerTranslation (players[i].id, i);
-				}
-			}
-		}
-		else
-		{
-			netgame = false;
-			netdemo = false;
-			multiplayer = false;
-		}
-
-		char mapname[32];
-
-		if(gameinfo.flags & GI_MAPxx)
-			sprintf(mapname, "MAP%02d", (int)map);
-		else
-			sprintf(mapname, "E%dM%d", (int)episode, (int)map);
-
-		serverside = true;
-
-		G_InitNew (mapname);
-
-		usergame = false;
 		demoplayback = true;
 
 		// comatibility
-		freelook = "0";
+		allowfreelook = "0";
 
 		return;
 	} else {
 		democlassic = false;
+	}
+
+	if(demo_p[0] >= DOOM_BOOM_DEMO_START ||
+	   demo_p[0] <= DOOM_BOOM_DEMO_END)
+	{
+		demo_p += 6; // xBOOM\0
+		Printf (PRINT_HIGH, "BOOM demos are not supported in this version.\n");
+		gameaction = ga_nothing;
+		return;
 	}
 
 	if (ReadLong (&demo_p) != FORM_ID) {
@@ -1877,6 +2056,7 @@ BOOL G_CheckDemoStatus (void)
 	{
 		extern int starttime;
 		int endtime = 0;
+		extern bool demotest;
 
 		if (timingdemo)
 			endtime = I_GetTimePolled () - starttime;
@@ -1890,6 +2070,16 @@ BOOL G_CheckDemoStatus (void)
 		netgame = false;
 		multiplayer = false;
 		serverside = false;
+		
+		if (demotest) {
+			AActor *mo = idplayer(1).mo;
+
+			if(mo)
+				printf("%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
+			else
+				printf("demotest: no player\n");
+		}
+			
 
 		if (singledemo || timingdemo) {
 			if (timingdemo)
@@ -1912,17 +2102,14 @@ BOOL G_CheckDemoStatus (void)
 
 	if (demorecording)
 	{
-		byte *formlen;
+		if(recorddemo_fp)
+		{
+			fputc(DEM_STOP, recorddemo_fp);
+			fclose(recorddemo_fp);
+			recorddemo_fp = NULL;
+		}
 
-		WriteByte (DEM_STOP, &demo_p);
-		//FinishChunk (&demo_p);
-		formlen = demobuffer + 4;
-		WriteLong (demo_p - demobuffer - 8, &formlen);
-
-		M_WriteFile (demoname, demobuffer, demo_p - demobuffer);
-		free (demobuffer);
 		demorecording = false;
-		stoprecording = false;
 		Printf (PRINT_HIGH, "Demo %s recorded\n", demoname);
 	}
 
@@ -1964,4 +2151,6 @@ BOOL CheckIfExitIsGood (AActor *self)
 
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
+
+
 

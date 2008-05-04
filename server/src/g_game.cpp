@@ -75,8 +75,6 @@ void	G_DoSaveGame (void);
 
 EXTERN_CVAR (timelimit)
 
-CVAR (chasedemo, "0", 0) // removeme
-
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 BOOL 			respawnmonsters;
@@ -275,7 +273,6 @@ void G_Ticker (void)
 				G_DoReborn (players[i]);
 
 	// do things to change the game state
-	gamestate_t oldgamestate = gamestate;
 	while (gameaction != ga_nothing)
 	{
 		switch (gameaction)
@@ -315,12 +312,6 @@ void G_Ticker (void)
 			break;
 		}
 		C_AdjustBottom ();
-	}
-
-	if (oldgamestate == GS_DEMOSCREEN && oldgamestate != gamestate && page)
-	{
-		delete page;
-		page = NULL;
 	}
 
 	// do main actions
@@ -458,15 +449,18 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		return false;
 
 	// spawn a teleport fog
-	an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
+	{
+		an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
 
-	mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
+		mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
 
-	// send new object
-	SV_SpawnMobj(mo);
+		// send new object
+		SV_SpawnMobj(mo);
 	
-	if (level.time)
-		SV_Sound (mo->x, mo->y, CHAN_VOICE, "misc/teleport", ATTN_NORM);
+		if (level.time)
+			SV_Sound (mo->x, mo->y, CHAN_VOICE, "misc/teleport", ATTN_NORM);
+	}
 
 	return true;
 }

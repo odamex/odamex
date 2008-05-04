@@ -50,8 +50,8 @@ int	finalecount;
 #define TEXTSPEED		2
 #define TEXTWAIT		250
 
-char*	finaletext;
-char*	finaleflat;
+static const char*	finaletext;
+static const char*	finaleflat;
 
 void	F_StartCast (void);
 void	F_CastTicker (void);
@@ -61,7 +61,7 @@ void	F_CastDrawer (void);
 //
 // F_StartFinale
 //
-void F_StartFinale (char *music, char *flat, char *text)
+void F_StartFinale (char *music, char *flat, const char *text)
 {
 	gameaction = ga_nothing;
 	gamestate = GS_FINALE;
@@ -177,7 +177,7 @@ void F_TextWrite (void)
 {
 	int 		w;
 	int 		count;
-	char*		ch;
+	const char*		ch;
 	int 		c;
 	int 		cx;
 	int 		cy;
@@ -241,7 +241,7 @@ void F_TextWrite (void)
 //
 typedef struct
 {
-	char		*name;
+	const char		*name;
 	mobjtype_t	type;
 } castinfo_t;
 
@@ -352,7 +352,7 @@ void F_CastTicker (void)
 	}
 	else
 	{
-		char *sfx;
+		const char *sfx;
 
 		// just advance to next state in animation
 		if (caststate == &states[S_PLAY_ATK1])

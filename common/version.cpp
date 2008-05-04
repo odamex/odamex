@@ -27,6 +27,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <memory>
 
 #include "c_dispatch.h"
 
@@ -36,8 +37,8 @@ typedef std::map<string, string> source_files_t;
 
 source_files_t &get_source_files()
 {
-	static source_files_t source_files;
-	return source_files;
+	static std::auto_ptr<source_files_t> source_files(new source_files_t);
+	return *source_files.get();
 }
 
 unsigned int last_revision = 0;
@@ -66,17 +67,16 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 
 BEGIN_COMMAND (version)
 {
-	using namespace std;
 
 	if (argc == 1)
 	{
 		// distribution
-		Printf(PRINT_HIGH, "Odamex v%s r%d - Copyright(C) 2007 The Odamex Team\n", DOTVERSIONSTR, last_revision);
+		Printf(PRINT_HIGH, "Odamex v%s r%d - Copyright(C) 2007-2008 The Odamex Team\n", DOTVERSIONSTR, last_revision);
 	}
 	else
 	{
 		// specific file version
-		std::map<string, string>::iterator i = get_source_files().find(argv[1]);
+		std::map<std::string, std::string>::iterator i = get_source_files().find(argv[1]);
 
 		if(i == get_source_files().end())
 		{
@@ -89,6 +89,19 @@ BEGIN_COMMAND (version)
 	}
 }
 END_COMMAND (version)
+
+BEGIN_COMMAND (listsourcefiles)
+{
+    std::map<std::string, std::string>::iterator i; 
+    
+    for (i = get_source_files().begin(); i != get_source_files().end(); ++i)
+    {
+        Printf(PRINT_HIGH, "%s\n", i->first.c_str());
+    }
+    
+    Printf(PRINT_HIGH, "End of list\n");
+}
+END_COMMAND(listsourcefiles)
 
 VERSION_CONTROL(version_cpp, "$Id$")
 

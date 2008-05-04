@@ -345,12 +345,13 @@ void P_LoadSectors (int lump)
 	sector_t*			ss;
 	int					defSeqType;
 	
-	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
-
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
-	// as a result, can't use the Z_Malloc system directly
 	if(sectors)
 		delete[] sectors;
+
+	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
+
+	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 	memset(sectors, 0, sizeof(sector_t)*numsectors);
 	
@@ -1305,6 +1306,8 @@ void P_SetupLevel (char *lumpname, int position)
 
 	// find map num
 	lumpnum = W_GetNumForName (lumpname);
+
+    level.time = 0;
 
 	// note: most of this ordering is important
 	P_LoadVertexes (lumpnum+ML_VERTEXES);

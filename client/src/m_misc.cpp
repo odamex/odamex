@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -16,131 +16,27 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Main loop menu stuff.
 //		Default Config File.
-//		PCX Screenshots.
 //
 //-----------------------------------------------------------------------------
 
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <errno.h>
 
-#include <SDL.h>
-
-#include "doomtype.h"
-#include "version.h"
-
-#if defined(_WIN32)
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
-
-#include <ctype.h>
-
-#include "m_alloc.h"
-
-#include "doomdef.h"
-
-#include "z_zone.h"
-
-#include "m_swap.h"
-#include "m_argv.h"
-
-#include "w_wad.h"
-
+#include "c_bind.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "c_bind.h"
-
+#include "doomdef.h"
+#include "doomtype.h"
+#include "m_argv.h"
 #include "i_system.h"
-#include "i_video.h"
-#include "v_video.h"
-
-#include "hu_stuff.h"
-
-// State.
-#include "doomstat.h"
-
-// Data.
-#include "dstrings.h"
-
-#include "m_misc.h"
-
-#include "cmdlib.h"
-
-#include "g_game.h"
-
-//
-// M_WriteFile
-//
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
+#include "version.h"
 
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
 // put into newer configfiles.
 static CVAR (configver, CONFIGVERSIONSTR, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-bool M_WriteFile (char const *name, void *source, int length)
-{
-	int handle;
-	int count;
-
-	handle = open ( name, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
-
-	if (handle == -1)
-	{
-		Printf(PRINT_HIGH, "Could not open file %s for writing\n", name);
-		return false;
-	}
-
-	count = write (handle, source, length);
-	close (handle);
-
-	if (count < length)
-	{
-		Printf(PRINT_HIGH, "Failed while writing to file %s\n", name);
-		return false;
-	}
-
-	return true;
-}
-
-
-//
-// M_ReadFile
-//
-int
-M_ReadFile
-( char const*	name,
-  byte**	buffer )
-{
-	int handle, count, length;
-	struct stat fileinfo;
-	byte *buf;
-
-	handle = open (name, O_RDONLY | O_BINARY, 0666);
-	if (handle == -1)
-		I_Error ("Couldn't read file %s", name);
-	if (fstat (handle,&fileinfo) == -1)
-		I_Error ("Couldn't read file %s", name);
-	length = fileinfo.st_size;
-	buf = (byte *)Z_Malloc (length, PU_STATIC, NULL);
-	count = read (handle, buf, length);
-	close (handle);
-
-	if (count < length)
-		I_Error ("Couldn't read file %s", name);
-
-	*buffer = buf;
-	return length;
-}
 
 // [RH] Get configfile path.
 // This file contains commands to set all
@@ -150,7 +46,7 @@ std::string GetConfigPath (void)
 {
 	const char *p = Args.CheckValue ("-config");
 
-	if (p)
+	if(p)
 		return p;
 
 	return I_GetUserFileName ("odamex.cfg");
@@ -214,133 +110,10 @@ void M_LoadDefaults (void)
 	AddCommandString (cmd.c_str());
 	cvar_defflags = 0;
 
-	if (configver < 118.0f)
-	{
-		AddCommandString ("alias idclip noclip");
-		AddCommandString ("alias idspispopd noclip");
-		AddCommandString ("alias iddqd god");
-		AddCommandString ("alias idclev map");
-		AddCommandString ("alias changemap map");
-		AddCommandString ("alias changemus idmus");
-	}
-
 	DefaultsLoaded = true;
 }
 
-// Find a free filename that isn't taken
-static BOOL FindFreeName (char *lbmname, const char *extension)
-{
-	int i;
-
-	for (i=0 ; i<=9999 ; i++)
-	{
-		sprintf (lbmname, "DOOM%04d.%s", i, extension);
-		if (!FileExists (lbmname))
-			break;		// file doesn't exist
-	}
-	if (i==10000)
-		return false;
-	else
-		return true;
-}
-
-extern DWORD IndexedPalette[256];
-
-/*
-    Dump a screenshot as a bitmap (BMP) file
-*/
-void M_ScreenShot (const char *filename)
-{
-	byte *linear;
-	char  autoname[32];
-	char *lbmname;
-
-	// find a file name to save it to
-	if (!filename || !strlen(filename))
-	{
-		lbmname = autoname;
-		if (!FindFreeName (lbmname, "bmp\0bmp" + (screen->is8bit << 2)))
-		{
-			Printf (PRINT_HIGH, "M_ScreenShot: Delete some screenshots\n");
-			return;
-		}
-		filename = autoname;
-	}
-
-	if (screen->is8bit)
-	{
-		// munge planar buffer to linear
-		linear = new byte[screen->width * screen->height];
-		I_ReadScreen (linear);
-
-        // [Russell] - Spit out a bitmap file
-
-        // check endianess
-        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-            Uint32 rmask = 0xff000000;
-            Uint32 gmask = 0x00ff0000;
-            Uint32 bmask = 0x0000ff00;
-            Uint32 amask = 0x000000ff;
-        #else
-            Uint32 rmask = 0x000000ff;
-            Uint32 gmask = 0x0000ff00;
-            Uint32 bmask = 0x00ff0000;
-            Uint32 amask = 0xff000000;
-        #endif
-
-		SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(linear, screen->width, screen->height, 8, screen->width * 1, rmask,gmask,bmask,amask);
-
-		SDL_Colour colors[256];
-
-		// stolen from the WritePCXfile function, write palette data into SDL_Colour
-		DWORD *pal;
-
-		pal = IndexedPalette;
-
-		for (int i = 0; i < 256; i+=1, pal++)
-            {
-                colors[i].r = RPART(*pal);
-                colors[i].g = GPART(*pal);
-                colors[i].b = BPART(*pal);
-                colors[i].unused = 0;
-            }
-
-        // set the palette
-        SDL_SetColors(surface, colors, 0, 256);
-
-		// save the bmp file
-		if (SDL_SaveBMP(surface, filename) == -1)
-        {
-            Printf (PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
-
-            SDL_FreeSurface(surface);
-            delete[] linear;
-            return;
-        }
-/*		WritePCXfile (filename, linear,
-					  screen->width, screen->height,
-					  IndexedPalette);*/
-
-        SDL_FreeSurface(surface);
-		delete[] linear;
-	}
-	else
-	{
-		// save the tga file
-		//I_WriteTGAfile (filename, &screen);
-	}
-	Printf (PRINT_HIGH, "screen shot taken: %s\n", filename);
-}
-
-BEGIN_COMMAND (screenshot)
-{
-	if (argc == 1)
-		G_ScreenShot (NULL);
-	else
-		G_ScreenShot (argv[1]);
-}
-END_COMMAND (screenshot)
-
 VERSION_CONTROL (m_misc_cpp, "$Id$")
+
 
 

@@ -126,6 +126,16 @@ int wipe_doMelt (int ticks)
 			if (y[i]<0)
 			{
 				y[i]++; done = false;
+
+				s = &wipe_scr_start[i*screen->height];
+				d = &((short *)screen->buffer)[i];
+				idx = 0;
+				
+				for (j=screen->height;j;j--)
+				{
+					d[idx] = *(s++);
+					idx += screen->pitch/2;
+				}
 			}
 			else if (y[i] < screen->height)
 			{
@@ -382,7 +392,7 @@ int wipe_StartScreen (void)
 
 	if (CurrentWipeType)
 	{
-		if (screen->is8bit)
+		if (screen->is8bit())
 			wipe_scr_start = new short[screen->width * screen->height / 2];
 		else
 			wipe_scr_start = new short[screen->width * screen->height * 2];
@@ -397,13 +407,12 @@ int wipe_EndScreen (void)
 {
 	if (CurrentWipeType)
 	{
-		if (screen->is8bit)
+		if (screen->is8bit())
 			wipe_scr_end = new short[screen->width * screen->height / 2];
 		else
 			wipe_scr_end = new short[screen->width * screen->height * 2];
 
 		screen->GetBlock (0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
-		screen->DrawBlock (0, 0, screen->width, screen->height, (byte *)wipe_scr_start); // restore start scr.
 	}
 
 	return 0;

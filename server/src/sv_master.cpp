@@ -67,7 +67,7 @@ public:
 
 EXTERN_CVAR (usemasters)
 EXTERN_CVAR (hostname)
-EXTERN_CVAR (maxplayers)
+EXTERN_CVAR (maxclients)
 
 EXTERN_CVAR (port)
 
@@ -84,12 +84,14 @@ EXTERN_CVAR (nomonsters)
 EXTERN_CVAR (monstersrespawn)
 EXTERN_CVAR (fastmonsters)
 EXTERN_CVAR (allowjump)
-EXTERN_CVAR (freelook)
+EXTERN_CVAR (allowfreelook)
 EXTERN_CVAR (waddownload)
 EXTERN_CVAR (emptyreset)
 EXTERN_CVAR (cleanmaps)
 EXTERN_CVAR (fragexitswitch)
 //bond===========================
+
+EXTERN_CVAR (maxplayers)
 
 // if set, advetise user-defined natport value to the master
 CVAR(natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -314,8 +316,9 @@ bool SV_IsValidToken(DWORD token)
 
 //
 // SV_SendServerInfo
+// 
 // Sends server info to a launcher
-//
+// TODO: Clean up and reinvent.
 void SV_SendServerInfo()
 {
 	size_t i;
@@ -339,7 +342,7 @@ void SV_SendServerInfo()
 	}
 
 	MSG_WriteByte(&ml_message, playersingame);
-	MSG_WriteByte(&ml_message, maxplayers);
+	MSG_WriteByte(&ml_message, maxclients);
 
 	MSG_WriteString(&ml_message, level.mapname);
 
@@ -410,7 +413,7 @@ void SV_SendServerInfo()
 	MSG_WriteByte(&ml_message,(BOOL)monstersrespawn);
 	MSG_WriteByte(&ml_message,(BOOL)fastmonsters);
 	MSG_WriteByte(&ml_message,(BOOL)allowjump);
-	MSG_WriteByte(&ml_message,(BOOL)freelook);
+	MSG_WriteByte(&ml_message,(BOOL)allowfreelook);
 	MSG_WriteByte(&ml_message,(BOOL)waddownload);
 	MSG_WriteByte(&ml_message,(BOOL)emptyreset);
 	MSG_WriteByte(&ml_message,(BOOL)cleanmaps);
@@ -428,7 +431,19 @@ void SV_SendServerInfo()
 			MSG_WriteShort(&ml_message, timeingame);
 		}
 	}
+	
 //bond===========================
+
+    MSG_WriteLong(&ml_message, (DWORD)0x01020304);
+    MSG_WriteShort(&ml_message, (WORD)maxplayers);
+    
+    for (i = 0; i < players.size(); ++i)
+    {
+        if (players[i].ingame())
+        {
+            MSG_WriteByte(&ml_message, (players[i].spectator ? true : false));
+        }
+    }
 
 	NET_SendPacket(ml_message, net_from);
 }

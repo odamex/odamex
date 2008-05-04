@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -548,5 +548,5 @@ void InitItems (void)
 }
 
 
-VERSION_CONTROL (d_items_cpp, "$Id:$")
+VERSION_CONTROL (d_items_cpp, "$Id$")
 

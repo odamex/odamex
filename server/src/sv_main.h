@@ -64,8 +64,8 @@ bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 byte SV_PlayerHearingLoss(player_t &cl, fixed_t &x, fixed_t &y);
 
 void STACK_ARGS SV_BroadcastPrintf (int level, const char *fmt, ...);
+void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void SV_CheckTimeouts (void);
-void SV_SayLocal(char *s);
 void SV_ConnectClient(void);
 void SV_WriteCommands(void);
 void SV_ClearClientsBPS(void);
@@ -83,17 +83,19 @@ void SV_ActorTracer(AActor *actor);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
 
-void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, char *name, byte attenuation);
+void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation);
 
-void SV_Sound (AActor *mo, byte channel, char *name, byte attenuation);
-void SV_Sound (client_t *cl, AActor *mo, byte channel, char *name, byte attenuation);
-void SV_Sound (fixed_t x, fixed_t y, byte channel, char *name, byte attenuation);
-void SV_SoundTeam (byte channel, char* name, byte attenuation, int t);
+void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation);
+void SV_Sound (client_t *cl, AActor *mo, byte channel, const char *name, byte attenuation);
+void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation);
+void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 void SV_SoundAvoidCl (player_t &player, AActor *mo, byte channel, char *name, byte attenuation);
 
 int SV_CountTeamPlayers(int team);
 
 extern std::vector<std::string> wadnames;
+
+EXTERN_CVAR(playeringamelimit)
 
 #endif
 

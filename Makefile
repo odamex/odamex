@@ -77,7 +77,9 @@ LFLAGS_PLATFORM =
 ifeq ($(strip $(osx)), true)
 # osx does not use X11 for copy&paste, it uses Carbon
 CFLAGS_PLATFORM = -DUNIX -DOSX
-LFLAGS_PLATFORM = -framework Carbon -framework AudioToolbox -framework AudioUnit -framework OpenGL
+LFLAGS_PLATFORM =
+OSX_FRAMEWORKS = -framework Carbon -framework AudioToolbox -framework AudioUnit
+SDL_LFLAGS := $(SDL_LFLAGS) $(OSX_FRAMEWORKS)
 X11_LFLAGS = 
 endif
 
@@ -146,7 +148,7 @@ CLIENT_SOURCES = $(wildcard $(CLIENT_DIR)/*.cpp)
 CLIENT_OBJS = $(patsubst $(CLIENT_DIR)/%.cpp,$(OBJDIR)/$(CLIENT_DIR)/%.o,$(CLIENT_SOURCES))
 CLIENT_TARGET = $(BINDIR)/odamex
 CLIENT_CFLAGS = -I../client/src -Iclient/src
-CLIENT_LFLAGS = 
+CLIENT_LFLAGS =
 
 # Master
 MASTER_DIR = master
@@ -171,8 +173,8 @@ endif
 TARGETS = $(SERVER_TARGET) $(CLIENT_TARGET) $(MASTER_TARGET) $(WADFILE_TARGET)
 
 # denis - fixme - cflags are quite messy, but removing these is a very delicate act, also use -Wall -Werror
-CFLAGS = $(CFLAGS_PLATFORM) -DNOASM -Icommon -g -Wall -O2
-LFLAGS = $(LFLAGS_PLATFORM)
+CFLAGS = $(CFLAGS_PLATFORM) -DNOASM -Icommon -g -Wall
+LFLAGS = $(LFLAGS_PLATFORM) -lGL -lGLU
 
 CFLAGS_RELEASE = $(CFLAGS_PLATFORM) -DNOASM -Icommon -O3
 LFLAGS_RELEASE = $(LFLAGS_PLATFORM)
@@ -202,7 +204,7 @@ CLIENT_OBJS = $(patsubst $(CLIENT_DIR)/%.cpp,$(OBJDIR)/$(CLIENT_DIR)/%.o,$(CLIEN
 CLIENT_SOURCES = $(CLIENT_SOURCES_2) $(CLIENT_SOURCES_WIN32)
 CLIENT_HEADERS = $(CLIENT_HEADERS_2) $(CLIENT_HEADERS_WIN32)
 CLIENT_CFLAGS = -I../client/sdl -Iclient/sdl -I../client/src -Iclient/src $(SDL_CFLAGS)
-CLIENT_LFLAGS =  $(SDL_LFLAGS) -lSDL_mixer -lGL -lGLU
+CLIENT_LFLAGS =  $(SDL_LFLAGS) -lSDL_mixer
 #-ldmalloc
 # denis - end fixme
 
@@ -257,7 +259,7 @@ $(WADFILE_TARGET) :
 
 # Checker
 check: test
-test: server
+test: server client
 	tests/all.sh
 
 # Installer
@@ -294,4 +296,3 @@ help:
 	@echo Binaries will be built in: $(BINDIR)
 	@echo Object files will be located in: $(OBJDIR) 
 	@echo Binaries will be installed on the system in: $(INSTALLDIR)
-

@@ -8,8 +8,8 @@
 		<Option virtualFolders="dialogs\;network\;" />
 		<Build>
 			<Target title="Win Release">
-				<Option output="..\bin\odalaunch.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -28,8 +28,8 @@
 				</Environment>
 			</Target>
 			<Target title="Win Debug">
-				<Option output="..\bin\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -39,19 +39,18 @@
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
-					<Add option="-D__WXDEBUG__" />
 				</Compiler>
 				<Linker>
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
 				</Linker>
 				<Environment>
 					<Variable name="WX_PLAT" value="msw" />
-					<Variable name="WX_CFG" value="d" />
+					<Variable name="WX_CFG" value="" />
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
-				<Option output="..\bin\odalaunch" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -66,24 +65,23 @@
 				</Environment>
 			</Target>
 			<Target title="Unix Debug">
-				<Option output="..\bin\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-D__WXDEBUG__" />
 				</Compiler>
 				<Environment>
 					<Variable name="WX_PLAT" value="unix" />
-					<Variable name="WX_CFG" value="d" />
+					<Variable name="WX_CFG" value="" />
 				</Environment>
 			</Target>
 			<Target title="Mac Release">
-				<Option output="..\bin\odalaunch" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -98,19 +96,18 @@
 				</Environment>
 			</Target>
 			<Target title="Mac Debug">
-				<Option output="..\bin\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="..\bin" />
+				<Option output="..\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-D__WXDEBUG__" />
 				</Compiler>
 				<Environment>
 					<Variable name="WX_PLAT" value="unix" />
-					<Variable name="WX_CFG" value="d" />
+					<Variable name="WX_CFG" value="" />
 				</Environment>
 			</Target>
 			<Environment>
@@ -151,15 +148,8 @@
 			<Add directory=".\res" />
 		</Linker>
 		<ExtraCommands>
-			<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\dlgmain.xrc res\dlgservers.xrc res\dlgconfig.xrc" />
+			<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc" />
 		</ExtraCommands>
-		<Unit filename="res\dlgconfig.xrc">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="res\dlgmain.xrc">
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="res\dlgservers.xrc" />
 		<Unit filename="res\odalaunch.rc">
 			<Option compilerVar="WINDRES" />
 			<Option target="Win Release" />
@@ -170,6 +160,7 @@
 			<Option target="Win Debug" />
 		</Unit>
 		<Unit filename="res\xrc_resource.h" />
+		<Unit filename="res\xrc_resource.xrc" />
 		<Unit filename="src\dlg_config.cpp">
 			<Option virtualFolder="dialogs\" />
 		</Unit>
@@ -208,6 +199,8 @@
 		<Unit filename="src\net_packet.h">
 			<Option virtualFolder="network\" />
 		</Unit>
+		<Unit filename="src\query_thread.cpp" />
+		<Unit filename="src\query_thread.h" />
 		<Unit filename="src\wx_pch.h">
 			<Option compile="1" />
 			<Option weight="0" />
@@ -215,6 +208,7 @@
 		<Extensions>
 			<code_completion />
 			<envvars />
+			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

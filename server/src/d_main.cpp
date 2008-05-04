@@ -56,6 +56,7 @@
 #include "s_sound.h"
 #include "v_video.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "m_misc.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -103,8 +104,6 @@ EXTERN_CVAR (st_scale) // removeme
 extern BOOL gameisdead;
 extern BOOL demorecording;
 extern DThinker ThinkerCap;
-
-CVAR (def_patch, "", CVAR_NULL) // removeme ??
 
 
 std::vector<std::string> wadfiles;		// [RH] remove limit on # of loaded wads
@@ -257,7 +256,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			iwad = found;
 		else
 		{
-			if(FileExists(suggestion.c_str()))
+			if(M_FileExists(suggestion.c_str()))
 				iwad = suggestion;
 		}
 
@@ -450,8 +449,19 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 
 			if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 			{
-				if(!hash.length() || hash == W_MD5((dir + d_name).c_str()))
+				std::string local_file = (dir + d_name).c_str();
+				std::string local_hash = W_MD5(local_file.c_str());
+
+				if(!hash.length() || hash == local_hash)
+				{
 					found = d_name;
+				}
+				else if(hash.length())
+				{
+					Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
+					Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
+					Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
+				}
 			}
 		}
 	}
@@ -471,7 +481,8 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		Printf (PRINT_HIGH, "FindFirstFile failed. GetLastError: %d\n", dwError);
+		Printf (PRINT_HIGH, "FindFirstFile failed for %s\n", all_ext.c_str());
+		Printf (PRINT_HIGH, "GetLastError: %d\n", dwError);
 		return "";
 	}
 
@@ -495,10 +506,19 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 
 		if(file == tmp || (file + ext) == tmp || (file + dothash) == tmp || (file + ext + dothash) == tmp)
 		{
-			if(!hash.length() || hash == W_MD5((dir + FindFileData.cFileName).c_str()))
+			std::string local_file = (dir + FindFileData.cFileName).c_str();
+			std::string local_hash = W_MD5(local_file.c_str());
+
+			if(!hash.length() || hash == local_hash)
 			{
 				found = FindFileData.cFileName;
 				break;
+			}
+			else if(hash.length())
+			{
+				Printf (PRINT_HIGH, "WAD at %s does not match required copy\n", local_file.c_str());
+				Printf (PRINT_HIGH, "Local MD5: %s\n", local_hash.c_str());
+				Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
 			}
 		}
 	}
@@ -510,49 +530,24 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 }
 
 //
-// denis - BaseFileSearch
-// Check all paths of interest for a given file with a possible extension
+// denis - AddSearchDir
+// Split a new directory string using the separator and append results to the output
 //
-std::string BaseFileSearch (std::string file, std::string ext, std::string hashd)
+void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
 {
-	std::transform(file.begin(), file.end(), file.begin(), toupper);
-	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
-	std::vector<std::string> dirs;
+	if(!dir)
+		return;
 
-	#ifdef WIN32
-		const char separator = ';';
-	#else
-		const char separator = ':';
-	#endif
+	// search through dwd
+	std::stringstream ss(dir);
+	std::string segment;
 
-	const char *awd = Args.CheckValue("-waddir");
-	if(awd)
+	while(!ss.eof())
 	{
-		// search through dwd
-		std::stringstream ss(awd);
-		std::string segment;
+		std::getline(ss, segment, separator);
 
-		while(!ss.eof())
-		{
-			std::getline(ss, segment, separator);
-
-			if(!segment.length())
-				continue;
-
-			FixPathSeparator(segment);
-			I_ExpandHomeDir(segment);
-
-			if(segment[segment.length() - 1] != '/')
-				segment += "/";
-
-			dirs.push_back(segment);
-		}
-	}
-
-	const char *dwd = getenv("DOOMWADDIR");
-	if(dwd)
-	{
-		std::string segment(dwd);
+		if(!segment.length())
+			continue;
 
 		FixPathSeparator(segment);
 		I_ExpandHomeDir(segment);
@@ -562,39 +557,51 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 
 		dirs.push_back(segment);
 	}
+}
 
-	const char *dwp = getenv("DOOMWADPATH");
-	if(dwp)
-	{
-		// search through dwd
-		std::stringstream ss(dwp);
-		std::string segment;
+//
+// denis - BaseFileSearch
+// Check all paths of interest for a given file with a possible extension
+//
+std::string BaseFileSearch (std::string file, std::string ext, std::string hashd)
+{
+	#ifdef WIN32
+		// absolute path?
+		if(file.find(':') != std::string::npos)
+			return file;
+		
+		const char separator = ';';
+	#else
+		// absolute path?
+		if(file[0] == '/' || file[0] == '~')
+			return file;
+		
+		const char separator = ':';
+	#endif
 
-		while(!ss.eof())
-		{
-			std::getline(ss, segment, separator);
+    // [Russell] - Bit of a hack. (since BaseFileSearchDir should handle this)
+    // return file if it contains a path already
+    if (M_FileExists(file))
+        return file;
 
-			if(!segment.length())
-				continue;
-
-			FixPathSeparator(segment);
-			I_ExpandHomeDir(segment);
-
-			if(segment[segment.length() - 1] != '/')
-				segment += "/";
-
-			dirs.push_back(segment);
-		}
-	}
+	std::transform(file.begin(), file.end(), file.begin(), toupper);
+	std::transform(ext.begin(), ext.end(), ext.begin(), toupper);
+	std::vector<std::string> dirs;
 
 	dirs.push_back(startdir);
 	dirs.push_back(progdir);
+
+	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
+	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
+	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
+    AddSearchDir(dirs, getenv("HOME"), separator);
 
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
 	for(size_t i = 0; i < dirs.size(); i++)
 	{
 		std::string found = BaseFileSearchDir(dirs[i], file, ext);
+		
 		if(found.length())
 		{
 			std::string &dir = dirs[i];
@@ -623,9 +630,6 @@ void D_AddDefWads (std::string iwad)
 			wadfiles.push_back(wad);
 		else
 			I_FatalError ("Cannot find odamex.wad");
-
-		if (wad.length())
-			wadfiles.push_back(wad);
 	}
 
 	I_SetTitleString (IdentifyVersion(iwad).c_str());
@@ -700,52 +704,75 @@ void D_AddDefWads (std::string iwad)
 //
 // D_DoDefDehackedPatch
 //
-void D_DoDefDehackedPatch ()
+// [Russell] - Change the meaning, this will load multiple patch files if 
+//             specified
+void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
 {
-	// [RH] Apply any DeHackEd patch
-	{
-		bool noDef = false;
-		unsigned i;
+    DArgs files; 
+    BOOL noDef = false;
+    QWORD i;
 
-		// try .deh files on command line
-		DArgs files = Args.GatherFiles ("-deh", ".deh", false);
-		if (files.NumArgs() > 0)
-		{
-			for (i = 0; i < files.NumArgs(); i++)
-			{
-				std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
-				if (f.length())
-					DoDehPatch (f.c_str(), false);
-			}
-			noDef = true;
-		}
+    if (!patch_files.empty())
+    {
+        std::string f;
+        std::string ext;
+        
+        // we want the extension of the file
+        for (i = 0; i < patch_files.size(); i++)
+        {
+            if (M_ExtractFileExtension(patch_files[i], ext))
+            {
+                f = BaseFileSearch (patch_files[i], ext);
+            
+                if (f.length())
+                {
+                    DoDehPatch (f.c_str(), false);
+                
+                    noDef = true;
+                }
+            }
+        }
+    }
+    else // [Russell] - Only load if patch_files is empty
+    {
+        // try .deh files on command line
+   
+        files = Args.GatherFiles ("-deh", ".deh", false);
+    
+        if (files.NumArgs())
+        {
+            for (i = 0; i < files.NumArgs(); i++)
+            {
+                std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
 
-		// try .bex files on command line
-		{
-			DArgs files = Args.GatherFiles ("-bex", ".bex", false);
-			if (files.NumArgs() > 0)
-			{
-				for (i = 0; i < files.NumArgs(); i++)
-				{
-					printf (":%s\n", files.GetArg (i));
-					std::string f = BaseFileSearch (files.GetArg (i), ".BEX");
-					if (f.length())
-						printf ("%s\n", f.c_str()), DoDehPatch (f.c_str(), false);
-				}
-				noDef = true;
-			}
-		}
+                if (f.length())
+                    DoDehPatch (f.c_str(), false);
+            }
+            noDef = true;
+        }
 
-		// try default patches
-		if (!noDef)
-		{
-			if (FileExists (def_patch.cstring()))
-				// Use patch specified by def_patch.
-				DoDehPatch (def_patch.cstring(), true);
-			else
-				DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
-		}
-	}
+        // remove the old arguments
+        files.FlushArgs();
+
+        // try .bex files on command line
+        files = Args.GatherFiles ("-bex", ".bex", false);
+    
+        if (files.NumArgs())
+        {
+            for (i = 0; i < files.NumArgs(); i++)
+            {
+                std::string f = BaseFileSearch (files.GetArg (i), ".BEX");
+
+                if (f.length())
+                    DoDehPatch (f.c_str(), false);
+            }
+            noDef = true;
+        }
+    }
+
+    // try default patches
+    if (!noDef)
+        DoDehPatch (NULL, true);	// See if there's a patch in a PWAD
 }
 
 void SV_InitMultipleFiles (std::vector<std::string> filenames)
@@ -756,7 +783,7 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 	{
 		FixPathSeparator (filenames[i]);
 		std::string name = filenames[i];
-		DefaultExtension (filenames[i], ".wad");
+		M_AppendExtension (filenames[i], ".wad");
 
 		size_t slash = name.find_last_of('/');
 
@@ -774,10 +801,10 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 // change wads at runtime
 // on 404, returns a vector of bad files
 //
-std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames)
+std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, 
+                                     std::vector<std::string> patch_files)
 {
-	using namespace std;
-	vector<size_t> fails;
+	std::vector<size_t> fails;
 
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_FatalError ("\nYou cannot switch WAD with the shareware version. Register!");
@@ -793,7 +820,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames)
 
 	wadfiles.clear();
 
-	string custwad;
+	std::string custwad;
 	if(wadnames.size())
 		custwad = wadnames[0];
 
@@ -801,7 +828,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames)
 
 	for(size_t i = 0; i < wadnames.size(); i++)
 	{
-		string file = BaseFileSearch(wadnames[i], ".WAD");
+		std::string file = BaseFileSearch(wadnames[i], ".WAD");
 
 		if(file.length())
 			wadfiles.push_back(file);
@@ -822,8 +849,7 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames)
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
 	D_InitStrings ();
-
-	D_DoDefDehackedPatch();
+	D_DoDefDehackedPatch(patch_files);
 
 	G_SetLevelStrings ();
 	S_ParseSndInfo();
@@ -961,7 +987,6 @@ void D_DoomMain (void)
 	{
 		custwad = iwadparm;
 		FixPathSeparator (custwad);
-		DefaultExtension (custwad, ".wad");
 		start_wads.push_back(custwad);
 	}
 
@@ -989,4 +1014,5 @@ void D_DoomMain (void)
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
+
 

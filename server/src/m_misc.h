@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	M_MISC
+//		Default Config File.
 //    
 //-----------------------------------------------------------------------------
 
@@ -25,10 +25,8 @@
 #define __M_MISC__
 
 #include <string>
-#include "doomtype.h"
 
-bool M_WriteFile (char const *name, void *source, int length);
-int M_ReadFile (char const *name, byte **buffer);
+#include "doomtype.h"
 
 void M_LoadDefaults (void);
 
@@ -37,5 +35,6 @@ void STACK_ARGS M_SaveDefaults (void);
 std::string GetConfigPath (void);
 
 #endif
+
 
 

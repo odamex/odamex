@@ -561,6 +561,10 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 		if (player->cheats & CF_NOTARGET)
 			continue;			// no target
 
+		// GhostlyDeath -- don't look for a spectator
+		if (player->spectator)
+			continue;
+
 		if (player->health <= 0)
 			continue;			// dead
 
@@ -655,6 +659,10 @@ void A_Look (AActor *actor)
 	if (targ && targ->player && (targ->player->cheats & CF_NOTARGET))
 		return;
 
+	// GhostlyDeath -- can't hear spectators
+	if (targ && targ->player && targ->player->spectator)
+		return;
+
 	if (targ && (targ->flags & MF_SHOOTABLE))
 	{
 		actor->target = targ->ptr();
@@ -674,6 +682,11 @@ void A_Look (AActor *actor)
 
 	// go into chase state
   seeyou:
+
+  	// GhostlyDeath -- Can't see spectators
+  	if (actor->target->player && actor->target->player->spectator)
+  		return;
+
 	// [RH] Don't start chasing after a goal if it isn't time yet.
 	if (actor->target == actor->goal)
 	{
@@ -709,6 +722,10 @@ void A_Look (AActor *actor)
 void A_Chase (AActor *actor)
 {
 	int delta;
+
+	// GhostlyDeath -- Don't chase spectators at all
+	if (actor->target && actor->target->player && actor->target->player->spectator)
+		return;
 
 	if (actor->reactiontime)
 		actor->reactiontime--;
@@ -1062,11 +1079,12 @@ void A_Tracer (AActor *actor)
 	//
 	// [RH] level.time is always 0-based, so nothing special to do here.
 
-	if (level.time & 3)
+    // [Russell] - Go back to gametic
+	if (gametic & 3)
 		return;
 
 	// spawn a puff of smoke behind the rocket
-	if(clientside)
+	if(serverside)
 	{
 		P_SpawnPuff (actor->x, actor->y, actor->z, 0, 3);
 
@@ -1264,7 +1282,7 @@ void A_VileChase (AActor *actor)
 					P_SetMobjState (corpsehit,info->raisestate);
 
 					// [Nes] - Classic demo compatability: Ghost monster bug.
-					if (demoplayback && democlassic) {
+					if ((demoplayback || demorecording) && democlassic) {
 						corpsehit->height <<= 2;
 					} else {
 						corpsehit->height = info->height;	// [RH] Use real mobj height
@@ -2052,7 +2070,7 @@ void A_SpawnFly (AActor *mo)
 void A_PlayerScream (AActor *mo)
 {
 	char nametemp[128];
-	char *sound;
+	const char *sound;
 
 	// [Fly] added for csDoom
 	if (mo->health < -mo->info->spawnhealth)

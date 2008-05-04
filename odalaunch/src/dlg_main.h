@@ -36,11 +36,17 @@
 #include <wx/stattext.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/splitter.h>
-//#include <wx/listctrl.h>
+#include "wx/dynarray.h"
 
 #include "net_packet.h"
 
-class dlgMain : public wxFrame
+// custom event declarations
+BEGIN_DECLARE_EVENT_TYPES()
+DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)
+DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
+END_DECLARE_EVENT_TYPES()
+
+class dlgMain : public wxFrame, wxThreadHelper
 {
 	public:
 
@@ -62,12 +68,11 @@ class dlgMain : public wxFrame
         void OnOpenChangeLog(wxCommandEvent& event);
         void OnOpenReportBug(wxCommandEvent &event);
 		void OnAbout(wxCommandEvent& event);
-        void OnQuit(wxCloseEvent& event);
 		
+		void OnQuickLaunch(wxCommandEvent &event);
 		void OnLaunch(wxCommandEvent &event);
 		void OnRefreshAll(wxCommandEvent &event);
 		void OnGetList(wxCommandEvent &event);
-		void OnExitClick(wxCommandEvent& event);
 		void OnRefreshServer(wxCommandEvent& event);
 		
 		void OnServerListClick(wxListEvent& event);
@@ -76,17 +81,111 @@ class dlgMain : public wxFrame
 		
 		void OnComboSelectMaster(wxCommandEvent& event);
 		
-		wxInt32 FindServer(wxString Address);
+		void OnExit(wxCommandEvent& event);
 		
-		wxSplitterWindow *SPLITTER_WINDOW;
+		wxInt32 FindServer(wxString);
+		wxInt32 FindServerInList(wxString);
+		
 		wxAdvancedListCtrl *SERVER_LIST;
 		wxAdvancedListCtrl *PLAYER_LIST;
-		wxStatusBar *status_bar;
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
         
-		wxInt32 totalPlayers;
+		wxInt32 TotalPlayers;
+        wxInt32 QueriedServers;
+        /*
+            Our threading system
+
+            Monitor Thread:
+            ---------------
+            Stays in an infinite loop, continually monitoring the RequestSignal
+            variable, if it encounters a signal change it will run the command
+            and then call the OnMonitorSignal callback function with the 
+            appropriate parameters or nothing if it timed out.
+            When I say "infinite loop", its more of a pseudo one obviously,
+            have to terminate it when the user exits ;)
+            
+            Worker Threads:
+            ---------------
+            These get activated by the monitor thread and are controlled by it.
+            They are an array of threads which send signals to the monitor 
+            thread to tell it what the status is.         
+            
+        */
+        
+        // Monitor Thread Command Signals
+        // Sends a signal to the monitoring thread to instruct it to carry out
+        // a command of some sort (get a list of servers for example)
+        typedef enum
+        {
+             mtcs_none
+            ,mtcs_getmaster
+            ,mtcs_getsingleserver
+            ,mtcs_getservers
+            ,mtcs_exit       // Shutdown now!
+                        
+            ,mtcs_max
+        } mtcs_t;
+
+        typedef struct
+        {
+            mtcs_t Signal;
+            wxInt32 Index;
+            wxInt32 ServerListIndex;
+        } mtcs_struct_t;
+
+        // Only set these below if you got a response!
+        // [Russell] - iirc, volatile on a struct doesn't work as well as it
+        // should
+        volatile mtcs_struct_t mtcs_Request;        
+
+        // Monitor Thread Return Signals
+        // The result of the signal sent above, sent to the callback function
+        // below
+        typedef enum
+        {
+             mtrs_master_success          
+            ,mtrs_master_timeout   // Dead
+            
+            ,mtrs_server_singlesuccess // represents a single selected server
+            ,mtrs_server_singletimeout
+            
+            ,mtrs_server_noservers // There are no servers to query!
+            
+            ,mtrs_max
+        } mtrs_t;
+
+        typedef struct
+        {
+            mtrs_t Signal;
+            wxInt32 Index;
+            wxInt32 ServerListIndex;
+        } mtrs_struct_t;
+        
+        volatile mtrs_struct_t mtrs_Result;
+        
+        typedef enum
+        {
+             wtrs_server_success
+            ,wtrs_server_timeout
+            
+            ,wtrs_max
+        } wtrs_t;
+        
+        typedef struct
+        {
+            wtrs_t Signal;
+            wxInt32 Index;
+            wxInt32 ServerListIndex;
+        } wtrs_struct_t;
+        
+        volatile wtrs_struct_t wtrs_Result;
+        
+        void OnMonitorSignal(wxCommandEvent&);
+        void OnWorkerSignal(wxCommandEvent&);
+        // Our monitoring thread entry point, from wxThreadHelper
+        void *Entry();
 
 	private:
 

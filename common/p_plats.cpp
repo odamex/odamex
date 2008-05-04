@@ -96,8 +96,7 @@ void DPlat::RunThink ()
 		}
 		else if (res == pastdest)
 		{
-			S_StopSound (m_Sector->soundorg);
-			S_Sound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
+			S_PlatSound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
 			if (m_Type != platToggle)
 			{
 				m_Count = m_Wait;
@@ -130,8 +129,7 @@ void DPlat::RunThink ()
 
 		if (res == pastdest)
 		{
-			S_StopSound (m_Sector->soundorg);
-			S_Sound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
+			S_PlatSound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
 			// if not an instant toggle, start waiting
 			if (m_Type != platToggle)		//jff 3/14/98 toggle up down
 			{								// is silent, instant, no waiting

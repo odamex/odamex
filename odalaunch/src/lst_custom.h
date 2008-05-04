@@ -27,58 +27,34 @@
 
 #include <wx/listctrl.h>
 #include <wx/sizer.h>
+#include <wx/artprov.h>
+#include <wx/image.h>
+#include <wx/imaglist.h>
 
 class wxAdvancedListCtrl : public wxListCtrl
 {      
     public:
-
-        wxAdvancedListCtrl()
-        {
-            SortOrder = 0; 
-            SortCol = 0; 
-
-            colRed = 245;
-            colGreen = 245;
-            colBlue = 245;
-
-        }
-        
-        wxAdvancedListCtrl( wxWindow *parent,
-                wxWindowID winid = wxID_ANY,
-                const wxPoint& pos = wxDefaultPosition,
-                const wxSize& size = wxDefaultSize,
-                long style = wxLC_REPORT,
-                const wxValidator& validator = wxDefaultValidator,
-                const wxString &name = wxListCtrlNameStr)
-        {
-            Create(parent, winid, pos, size, style, validator, name);
-        }
-
-        bool Create(wxWindow* parent, wxWindowID id, 
-                    const wxPoint& pos = wxDefaultPosition, 
-                    const wxSize& size = wxDefaultSize, 
-                    long style = wxLC_ICON, 
-                    const wxValidator& validator = wxDefaultValidator, 
-                    const wxString& name = wxListCtrlNameStr)
-        {
-            SetParent(parent);
-            GetSizer()->Fit(this);
-   
-            return true;   
-        }
-
-        ~wxAdvancedListCtrl() { }
-      
-        void ColourList();
-        void ColourListItem(wxInt32 item, wxInt32 grey);
-        
+        wxAdvancedListCtrl() { };
+        ~wxAdvancedListCtrl() { };
+                
         wxInt32 GetIndex(wxString str);
-        
-        void OnHeaderColumnButtonClick(wxListEvent &event);
+        void AddImageSmall(wxImage Image);
+        void SetColumnImage(wxListItem &li, wxInt32 ImageIndex);
+        long ALCInsertItem(wxListItem &info);
         
         wxEvent *Clone(void);
 
     private:
+        void OnCreateControl(wxWindowCreateEvent &event);
+        void OnHeaderColumnButtonClick(wxListEvent &event);
+
+        void ColourList();
+        void ColourListItem(wxListItem &info);
+        void ColourListItem(long item);
+
+        void ResetSortArrows(void);
+        void SetSortArrow(wxInt32 Column, wxInt32 ArrowState);
+        
         wxInt32 SortOrder;
         wxInt32 SortCol;
 

@@ -212,9 +212,18 @@ BOOL HU_Responder (event_t *ev)
 //
 void HU_Drawer (void)
 {
+	
+	// Draw "Press USE to join" as the bottom layer.
+	if ((&consoleplayer())->spectator && (level.time / TICRATE)%2 && gamestate != GS_INTERMISSION)
+	{
+		setsizeneeded = true;
+		screen->DrawTextClean (CR_GREY, (screen->width / 2) - (59 * CleanXfac), 
+			screen->height - ((hu_font[0]->height() + 4) * CleanYfac), "Press USE to join");
+	}
+	
 	if (headsupactive)
 	{
-		static const char *prompt = "Say: ";
+		static const char *prompt;
 		int i, x, c, scalex, y, promptwidth;
 
 		if (con_scaletext)
@@ -229,6 +238,11 @@ void HU_Drawer (void)
 		}
 
 		y += (screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
+		
+		if (headsupactive == 2)
+			prompt = "Say (TEAM): ";
+		else if (headsupactive == 1)
+			prompt = "Say: ";
 
 		promptwidth = V_StringWidth (prompt) * scalex;
 		x = hu_font['_' - HU_FONTSTART]->width() * scalex * 2 + promptwidth;
@@ -270,7 +284,7 @@ void HU_Drawer (void)
 
 	if(multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
 	if (((Actions[ACTION_SHOWSCORES]) ||
-		 consoleplayer().camera->health <= 0) && gamestate != GS_INTERMISSION)
+		 consoleplayer().camera->health <= 0 && !(&consoleplayer())->spectator) && gamestate != GS_INTERMISSION)
 	{
 		HU_DrawScores (&consoleplayer());
 	}
@@ -303,6 +317,9 @@ static void ShoveChatStr (std::string str, byte who)
 
 BEGIN_COMMAND (messagemode)
 {
+	if(!connected)
+		return;
+
 	headsupactive = 1;
 	C_HideConsole ();
 	input_text = "";
@@ -321,6 +338,9 @@ END_COMMAND (say)
 
 BEGIN_COMMAND (messagemode2)
 {
+	if(!connected || (!teamplay && !consoleplayer().spectator))
+		return;
+
 	headsupactive = 2;
 	C_HideConsole ();
 	input_text = "";
@@ -467,11 +487,12 @@ void HU_DMScores1 (player_t *player)
 
 		if (sortedplayers[i]->ingame())
 		{
-			if (screen->is8bit)		// Finds the best solid color based on a players color
+			if (screen->is8bit())		// Finds the best solid color based on a players color
 				color = BestColor (DefaultPalette->basecolors, RPART(color), GPART(color), BPART(color), DefaultPalette->numcolors);
 
 			// Display Color
-			screen->Clear ((5 * CleanXfac), y, (13 * CleanXfac), y + hu_font[0]->height() * CleanYfac, color);
+			if (!sortedplayers[i]->spectator)
+				screen->Clear ((5 * CleanXfac), y, (13 * CleanXfac), y + hu_font[0]->height() * CleanYfac, color);
 
 			// Display Frags or Kills if coop
 			if(deathmatch)
@@ -662,12 +683,12 @@ void HU_DMScores2 (player_t *player)
 						  BPART(blob),
 						  DefaultPalette->numcolors);
 
-
-		screen->Clear (locx,
-					   locy + y,
-					   locx + 7,
-					   locy + y + 7,
-					   blob);
+		if (!sortedplayers[i]->spectator)
+			screen->Clear (locx,
+						   locy + y,
+						   locx + 7,
+						   locy + y + 7,
+						   blob);
 
 
 		// NAME
@@ -879,7 +900,8 @@ void HU_TeamScores1 (player_t *player)
 								  BPART(blob),
 								  DefaultPalette->numcolors);
 
-				screen->Clear (1, bluey, (7 * CleanXfac), bluey + (7 * CleanYfac), blob);
+				if (!sortedplayers[i]->spectator)
+					screen->Clear (1, bluey, (7 * CleanXfac), bluey + (7 * CleanYfac), blob);
 
 				screen->DrawTextClean (colorblue	,	10	* CleanXfac,			bluey			,			str				);
 				if (ctfmode) {
@@ -919,7 +941,8 @@ void HU_TeamScores1 (player_t *player)
 								  BPART(blob),
 								  DefaultPalette->numcolors);
 
-				screen->Clear (1, redy, (7 * CleanXfac), redy + (7 * CleanYfac), blob);
+				if (!sortedplayers[i]->spectator)
+					screen->Clear (1, redy, (7 * CleanXfac), redy + (7 * CleanYfac), blob);
 
 				screen->DrawTextClean (colorred 	,	10	* CleanXfac,			redy			,			str				);
 				if (ctfmode) {
@@ -1200,11 +1223,12 @@ void HU_TeamScores2 (player_t *player)
 								  BPART(blob),
 								  DefaultPalette->numcolors);
 
-				screen->Clear (blocx,
-							   blocy + bluey,
-							   blocx + 7,
-							   blocy + bluey + 7,
-							   blob);
+				if (!sortedplayers[i]->spectator)
+					screen->Clear (blocx,
+								   blocy + bluey,
+								   blocx + 7,
+								   blocy + bluey + 7,
+								   blob);
 
 				//	Draw BLUE team player info
 
@@ -1262,11 +1286,12 @@ void HU_TeamScores2 (player_t *player)
 								  BPART(blob),
 								  DefaultPalette->numcolors);
 
-				screen->Clear (rlocx,
-							   rlocy + redy,
-							   rlocx + 7,
-							   rlocy + redy + 7,
-							   blob);
+				if (!sortedplayers[i]->spectator)
+					screen->Clear (rlocx,
+								   rlocy + redy,
+								   rlocx + 7,
+								   rlocy + redy + 7,
+								   blob);
 
 				//	Draw RED team player info
 
@@ -1425,7 +1450,7 @@ void HU_ConsoleScores (player_t *player)
             Printf_Bold("--------------------------------------\n");
 
             for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->userinfo.team == j) {
+                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
                     if (sortedplayers[i] != player)
                         Printf(PRINT_HIGH, "%-15s %-6d N/A  %-5d %4d\n",
                             sortedplayers[i]->userinfo.netname,
@@ -1444,6 +1469,16 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
         }
+        
+        Printf_Bold("\n----------------------------SPECTATORS\n");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator) {
+                    if (sortedplayers[i] != player)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+                    else
+                        Printf_Bold("%-15s\n", player->userinfo.netname);
+                }
+            }
     } else if (teamplay) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
@@ -1473,7 +1508,7 @@ void HU_ConsoleScores (player_t *player)
             Printf_Bold("--------------------------------------\n");
 
             for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->userinfo.team == j) {
+                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
                     if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
                         sprintf (str, "0.0");
                     else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
@@ -1499,6 +1534,16 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
         }
+                
+        Printf_Bold("\n----------------------------SPECTATORS\n");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator) {
+                    if (sortedplayers[i] != player)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+                    else
+                        Printf_Bold("%-15s\n", player->userinfo.netname);
+                }
+            }
     } else if (deathmatch) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
@@ -1523,29 +1568,41 @@ void HU_ConsoleScores (player_t *player)
         Printf_Bold("--------------------------------------\n");
 
         for (i = 0; i < sortedplayers.size(); i++) {
-            if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
-                sprintf (str, "0.0");
-            else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
-                sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
-            else
-                sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
+        	if (!sortedplayers[i]->spectator) {
+				if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
+					sprintf (str, "0.0");
+				else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
+					sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
+				else
+					sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
 
-			if (sortedplayers[i] != player)
-				Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
-                    sortedplayers[i]->userinfo.netname,
-                    sortedplayers[i]->fragcount,
-                    sortedplayers[i]->deathcount,
-                    str,
-                    sortedplayers[i]->GameTime / 60);
+				if (sortedplayers[i] != player)
+					Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
+						sortedplayers[i]->userinfo.netname,
+						sortedplayers[i]->fragcount,
+						sortedplayers[i]->deathcount,
+						str,
+						sortedplayers[i]->GameTime / 60);
 
-			else
-				Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
-                    player->userinfo.netname,
-                    player->fragcount,
-                    player->deathcount,
-                    str,
-                    player->GameTime / 60);
+				else
+					Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
+						player->userinfo.netname,
+						player->fragcount,
+						player->deathcount,
+						str,
+						player->GameTime / 60);
+        	}
         }
+                
+        Printf_Bold("\n----------------------------SPECTATORS\n");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator) {
+                    if (sortedplayers[i] != player)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+                    else
+                        Printf_Bold("%-15s\n", player->userinfo.netname);
+                }
+            }
     } else if (multiplayer) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
 
@@ -1555,29 +1612,41 @@ void HU_ConsoleScores (player_t *player)
         Printf_Bold("--------------------------------------\n");
 
         for (i = 0; i < sortedplayers.size(); i++) {
-            if (sortedplayers[i]->killcount <= 0) // Copied from HU_DMScores1.
-                sprintf (str, "0.0");
-            else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0)
-                sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount);
-            else
-                sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
+        	if (!sortedplayers[i]->spectator) {
+				if (sortedplayers[i]->killcount <= 0) // Copied from HU_DMScores1.
+					sprintf (str, "0.0");
+				else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0)
+					sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount);
+				else
+					sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
 
-			if (sortedplayers[i] != player)
-				Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
-                    sortedplayers[i]->userinfo.netname,
-                    sortedplayers[i]->killcount,
-                    sortedplayers[i]->deathcount,
-                    str,
-                    sortedplayers[i]->GameTime / 60);
+				if (sortedplayers[i] != player)
+					Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s %4d\n",
+						sortedplayers[i]->userinfo.netname,
+						sortedplayers[i]->killcount,
+						sortedplayers[i]->deathcount,
+						str,
+						sortedplayers[i]->GameTime / 60);
 
-			else
-				Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
-                    player->userinfo.netname,
-                    player->killcount,
-                    player->deathcount,
-                    str,
-                    player->GameTime / 60);
+				else
+					Printf_Bold("%-15s %-5d %-6d %4s %4d\n",
+						player->userinfo.netname,
+						player->killcount,
+						player->deathcount,
+						str,
+						player->GameTime / 60);
+			}
         }
+                
+        Printf_Bold("\n----------------------------SPECTATORS\n");
+            for (i = 0; i < sortedplayers.size(); i++) {
+                if (sortedplayers[i]->spectator) {
+                    if (sortedplayers[i] != player)
+                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
+                    else
+                        Printf_Bold("%-15s\n", player->userinfo.netname);
+                }
+            }
     } else {
         Printf (PRINT_HIGH, "This command is only used for multiplayer games.");
     }
@@ -1594,4 +1663,5 @@ BEGIN_COMMAND (displayscores)
 END_COMMAND (displayscores)
 
 VERSION_CONTROL (hu_stuff_cpp, "$Id$")
+
 

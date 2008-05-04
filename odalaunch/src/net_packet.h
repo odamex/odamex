@@ -28,6 +28,8 @@
 #include <wx/mstream.h>
 #include <wx/datstrm.h>
 
+#include <vector>
+
 #include "net_io.h"
 
 #define MASTER_CHALLENGE    777123
@@ -43,18 +45,20 @@ struct player_t         // Player info structure
     wxInt8      team;
     wxInt16     killcount;
     wxInt16     deathcount;
-    wxUint16    timeingame;    
+    wxUint16    timeingame;
+    bool        spectator;
 };
 
 struct teamplay_t       // Teamplay score structure 
 {
     wxInt32     scorelimit;
-    wxInt8      blue, red, gold;
+    bool        blue, red, gold;
     wxInt32     bluescore, redscore, goldscore;
 };
 
 struct serverinfo_t     // Server information structure
 {
+    wxUint32        response;
     wxString        name;           // Server name
     wxUint8         numplayers;     // Number of players playing
     wxUint8         maxplayers;     // Maximum number of possible players
@@ -63,12 +67,12 @@ struct serverinfo_t     // Server information structure
     wxString        iwad;           // The main game file
     wxString        iwad_hash;      // IWAD hash
     wxString        *pwads;         // Array of PWAD file names
-    wxUint8         gametype;       // Gametype (0 = Coop, 1 = DM)
+    wxInt8          gametype;       // Gametype (0 = Coop, 1 = DM)
     wxUint8         gameskill;      // Gameskill
-    wxUint8         teamplay;       // Teamplay enabled?
+    bool            teamplay;       // Teamplay enabled?
     player_t        *playerinfo;    // Player information array, use numplayers
     wxString        *wad_hashes;    // IWAD and PWAD hashes
-    wxUint8         ctf;            // CTF enabled?
+    bool            ctf;            // CTF enabled?
     wxString        webaddr;        // Website address of server
     teamplay_t      teamplayinfo;   // Teamplay information if enabled
     wxUint16        version;
@@ -78,34 +82,36 @@ struct serverinfo_t     // Server information structure
     wxUint16        timeleft;
     wxUint16        fraglimit;
     
-    wxUint8         itemrespawn;
-    wxUint8         weaponstay;
-    wxUint8         friendlyfire;
-    wxUint8         allowexit;
-    wxUint8         infiniteammo;
-    wxUint8         nomonsters;
-    wxUint8         monstersrespawn;
-    wxUint8         fastmonsters;
-    wxUint8         allowjump;
-    wxUint8         allowfreelook;
-    wxUint8         waddownload;
-    wxUint8         emptyreset;
-    wxUint8         cleanmaps;
-    wxUint8         fragonexit;
+    bool         itemrespawn;
+    bool         weaponstay;
+    bool         friendlyfire;
+    bool         allowexit;
+    bool         infiniteammo;
+    bool         nomonsters;
+    bool         monstersrespawn;
+    bool         fastmonsters;
+    bool         allowjump;
+    bool         allowfreelook;
+    bool         waddownload;
+    bool         emptyreset;
+    bool         cleanmaps;
+    bool         fragonexit;
     
+    wxUint32        spectating;
+    wxUint16        maxactiveplayers;
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets
 {
     protected:      
-        static BufferedSocket Socket;
+        BufferedSocket Socket;
         
         // Magic numbers
-        wxInt32 challenge;
-        wxInt32 response;
+        wxUint32 challenge;
+        wxUint32 response;
            
         // The time in milliseconds a packet was received
-        wxInt32 Ping;
+        wxUint32 Ping;
        
         wxIPV4address to_addr;
        
@@ -128,67 +134,98 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         wxInt32 Query(wxInt32 Timeout);
         
 		void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
-//        void SetAddress(wxString AddressAndPort) { Socket.SetAddress(AddressAndPort); }
         
 		wxString GetAddress() { return to_addr.IPAddress() << _T(':') << to_addr.Service(); }
-		wxInt32 GetPing() { return Ping; }
+		wxUint32 GetPing() { return Ping; }
 };
 
 class MasterServer : public ServerBase  // [Russell] - A master server packet
 {
     private:
         // Address format structure
-        struct addr_t
+        typedef struct
         {
-            wxUint8     ip[4];
+            wxString    ip;
             wxUint16    port;
-        };
+            bool        custom;
+        } addr_t;
 
-        wxUint16    server_count;   // Number of servers
-        addr_t     *addresses;      // Server array
-        
+        std::vector<addr_t> addresses;
     public:
         MasterServer() 
         { 
             challenge = MASTER_CHALLENGE;
             response = MASTER_CHALLENGE;
-                        
-            server_count = 0;
-            
-            addresses = NULL; 
         }
         
         virtual ~MasterServer() 
         { 
-            if (addresses != NULL) 
-            {
-                free(addresses); 
-                addresses = NULL;
-            }
+
         }
         
-		wxInt32 GetServerCount() { return server_count; }
-               
-        addr_t GetServerAddress(wxInt32 index) 
-        {  
-            if ((addresses != NULL) && (server_count > 0))
-            if ((index >= 0) && (index < server_count))
-            {
-                return addresses[index];
-            }
-        }
-        
-        void GetServerAddress(wxInt32 index, wxString &Address, wxInt16 &Port)
+		wxInt32 GetServerCount() { return addresses.size(); }
+                      
+        bool GetServerAddress(wxInt32  Index, 
+                              wxString &Address, 
+                              wxUint16 &Port)
         {
-            if ((addresses != NULL) && (server_count > 0))
-            if ((index >= 0) && (index < server_count))
+            if ((Index >= 0) && (Index < addresses.size()))
             {
-                Address.Printf(_T("%d.%d.%d.%d"),addresses[index].ip[0],
-                                                         addresses[index].ip[1],
-                                                         addresses[index].ip[2],
-                                                         addresses[index].ip[3]);
-                                                         
-                Port = addresses[index].port;
+                Address = addresses[Index].ip;
+                Port = addresses[Index].port;
+                
+                return addresses[Index].custom;
+            }
+            
+            return false;
+        }
+        
+        void AddCustomServer(wxString Address, wxUint16 Port)
+        {
+            addr_t cs;
+                    
+            cs.ip = Address;
+            cs.port = Port;
+            cs.custom = true;
+            
+            // Don't add the same address more than once.
+            for (wxUint32 i = 0; i < addresses.size(); ++i)
+            {
+                if (addresses[i].ip == cs.ip && 
+                    addresses[i].port == cs.port &&
+                    addresses[i].custom == cs.custom)
+                {
+                    return;
+                }
+            }
+            
+            addresses.push_back(cs);
+        }
+               
+        bool DeleteCustomServer(wxUint32 Index)
+        {
+            if ((Index >= 0) && (Index < addresses.size()))
+            {
+                if (addresses[Index].custom)
+                {
+                    std::vector<addr_t>::iterator addr_iterator = addresses.begin();
+                                        
+                    addr_iterator += Index;
+                    
+                    addresses.erase(addr_iterator);
+                }
+                else
+                    return false;
+            }
+            
+            return false;
+        }
+
+        void DeleteAllCustomServers()
+        {
+            for (wxUint32 i = 0; i < addresses.size(); i++)
+            {
+                DeleteCustomServer(i);
             }
         }
         
@@ -203,6 +240,8 @@ class Server : public ServerBase  // [Russell] - A single server
         serverinfo_t info; // this could be better, but who cares
         
         Server();
+        
+        void ResetData();
         
         virtual  ~Server();
         

@@ -4,9 +4,6 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2005 by Simon Howard
-// Copyright (C) 2006 by Ben Ryves 2006
-// Copyright (C) 2006-2007 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -19,20 +16,31 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	mus2mid.cpp - http://benryves.com - benryves@benryves.com
-//	Use to convert a MUS file into a single track, type 0 MIDI file.
-// 
-//	[Russell] - Minor modifications to make it compile
+//	File Input/Output Operations
 //
 //-----------------------------------------------------------------------------
 
+#ifndef __M_FILEIO__
+#define __M_FILEIO__
 
-#ifndef MUS2MID_H
-#define MUS2MID_H
+#include <string>
+#include <vector>
 
-#include "memio.h"
+#include <stdio.h>
 
-int mus2mid(MEMFILE *musinput, MEMFILE *midioutput);
+#include "doomtype.h"
+#include "d_main.h"
 
-#endif /* #ifndef MUS2MID_H */
+SDWORD M_FileLength (FILE *f);
+BOOL M_FileExists (std::string filename);
 
+BOOL M_WriteFile(std::string filename, void *source, QWORD length);
+QWORD M_ReadFile(std::string filename, BYTE **buffer);
+
+BOOL M_AppendExtension (std::string &path, std::string extension, bool if_needed = true);
+void M_ExtractFilePath (std::string path, std::string &dest);
+BOOL M_ExtractFileExtension (std::string filename, std::string &dest);
+void M_ExtractFileBase (std::string path, std::string &dest);
+void M_ExtractFileName (std::string path, std::string &dest);
+
+#endif

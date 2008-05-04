@@ -141,6 +141,11 @@ int STACK_ARGS Printf (int printlevel, const char *, ...);
 // [RH] Same here:
 int STACK_ARGS DPrintf (const char *, ...);
 
+// Simple log file
+#include <fstream>
+
+extern std::ofstream LOG;
+
 // game print flags
 #define	PRINT_LOW			0		// pickup messages
 #define	PRINT_MEDIUM		1		// death messages

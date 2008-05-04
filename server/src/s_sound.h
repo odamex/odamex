@@ -79,12 +79,13 @@ void S_Init (float sfxVolume, float musicVolume);
 void S_Start(void);
 
 // Start sound for thing at <ent>
-void S_Sound (int channel, char *name, float volume, int attenuation);
-void S_Sound (AActor *ent, int channel, char *name, float volume, int attenuation);
-void S_Sound (fixed_t *pt, int channel, char *name, float volume, int attenuation);
-void S_Sound (fixed_t x, fixed_t y, int channel, char *name, float volume, int attenuation);
-void S_LoopedSound (AActor *ent, int channel, char *name, float volume, int attenuation);
-void S_LoopedSound (fixed_t *pt, int channel, char *name, float volume, int attenuation);
+void S_Sound (int channel, const char *name, float volume, int attenuation);
+void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation);
+void S_Sound (fixed_t *pt, int channel, const char *name, float volume, int attenuation);
+void S_Sound (fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation);
+void S_PlatSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation); // [Russell] - Hack to stop multiple plat stop sounds
+void S_LoopedSound (AActor *ent, int channel, const char *name, float volume, int attenuation);
+void S_LoopedSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation);
 void S_SoundID (int channel, int sfxid, float volume, int attenuation);
 void S_SoundID (AActor *ent, int channel, int sfxid, float volume, int attenuation);
 void S_SoundID (fixed_t *pt, int channel, int sfxid, float volume, int attenuation);
@@ -132,7 +133,7 @@ bool S_GetSoundPlayingInfo (fixed_t *pt, int sound_id);
 void S_RelinkSound (AActor *from, AActor *to);
 
 // Start music using <music_name>
-void S_StartMusic (char *music_name);
+void S_StartMusic (const char *music_name);
 
 // Start music using <music_name>, and set whether looping
 void S_ChangeMusic (std::string music_name, int looping);

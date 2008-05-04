@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -470,7 +470,7 @@ void DCanvas::DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int
 	}
 #endif
 
-	if (is8bit)
+	if (is8bit())
 	{
 		drawfunc = Pfuncs[drawer];
 		colstep = 1;
@@ -560,7 +560,7 @@ void DCanvas::DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x0, i
 	}
 #endif
 
-	if (is8bit) {
+	if (is8bit()) {
 		drawfunc = Psfuncs[drawer];
 		colstep = 1;
 	} else {
@@ -710,7 +710,7 @@ void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
 	}
 #endif
 
-	if (is8bit) {
+	if (is8bit()) {
 		drawfunc = Psfuncs[EWrapper_Normal];
 		colstep = 1;
 	} else {
@@ -764,8 +764,8 @@ void DCanvas::DrawBlock (int x, int y, int _width, int _height, const byte *src)
 
 	V_MarkRect (x, y, _width, _height);
 
-	x <<= (is8bit) ? 0 : 2;
-	_width <<= (is8bit) ? 0 : 2;
+	x <<= (is8bit()) ? 0 : 2;
+	_width <<= (is8bit()) ? 0 : 2;
 
 	dest = buffer + y*pitch + x;
 
@@ -797,8 +797,8 @@ void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
 	}
 #endif
 
-	x <<= (is8bit) ? 0 : 2;
-	_width <<= (is8bit) ? 0 : 2;
+	x <<= (is8bit()) ? 0 : 2;
+	_width <<= (is8bit()) ? 0 : 2;
 
 	src = buffer + y*pitch + x;
 
@@ -883,5 +883,5 @@ int V_GetColorFromString (const DWORD *palette, const char *cstr)
 			   ((c[2] >> 8));
 }
 
-VERSION_CONTROL (v_draw_cpp, "$Id:$")
+VERSION_CONTROL (v_draw_cpp, "$Id$")
 

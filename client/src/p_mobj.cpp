@@ -83,15 +83,15 @@ void AActor::Serialize (FArchive &arc)
 			<< movedir
 			<< visdir
 			<< movecount
-			<< target
-			<< lastenemy
+			<< target->netid
+			<< lastenemy->netid
 			<< reactiontime
 			<< threshold
 			<< player
 			<< lastlook
-			<< tracer
+			<< tracer->netid
 			<< tid
-			<< goal
+			<< goal->netid
 			<< (unsigned)0
 			<< translucency
 			<< waterlevel;
@@ -502,26 +502,30 @@ void P_ZMovement (AActor *mo)
         // So we need to check that this is either retail or commercial
         // (but not doom2)
 
-      /*int correct_lost_soul_bounce = gameversion >= exe_ultimate;
+      int correct_lost_soul_bounce = (gamemode == retail) || 
+                                     ((gamemode == commercial 
+                                     && (gamemission == pack_tnt || 
+                                         gamemission == pack_plut)));
 
       if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
       {
 	    // the skull slammed into something
-      mo->momz = -mo->momz;
-   }
-      */
+        mo->momz = -mo->momz;
+      }
+      
 
       if (mo->momz < 0)
       {
-         if (mo->player
-             && mo->momz < -GRAVITY*8)
+         if (mo->player && mo->momz < -GRAVITY*8 && !(mo->player->spectator))
          {
 		// Squat down.
 		// Decrease viewheight for a moment
 		// after hitting the ground (hard),
 		// and utter appropriate sound.
             mo->player->deltaviewheight = mo->momz>>3;
-            S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+            
+            if (!predicting)
+                S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
          }
          mo->momz = 0;
       }
@@ -534,8 +538,8 @@ void P_ZMovement (AActor *mo)
 	// hit by a raising floor this incorrectly reverses its Y momentum.
       //
 
-      //if (!correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
-      //   mo->momz = -mo->momz;
+      if (!correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
+         mo->momz = -mo->momz;
 
       if ( (mo->flags & MF_MISSILE)
             && !(mo->flags & MF_NOCLIP) )
@@ -771,6 +775,10 @@ void AActor::RunThink ()
 {
 	if(!subsector)
 		return;
+
+	// GhostlyDeath -- Was a spectator but now it's nothing!
+	if ((this->flags & MF_SPECTATOR ) && !player)
+		P_SetMobjState(this, S_NULL);
 
 	// [RH] Fade a stealth monster in and out of visibility
 	if (visdir > 0)
@@ -1063,6 +1071,8 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	if(!p->ingame())
 		return;
 
+	bool spectator = p->spectator;
+
 	if (p->playerstate == PST_REBORN)
 		G_PlayerReborn (*p);
 
@@ -1076,6 +1086,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->pitch = mobj->roll = 0;
 	mobj->player = p;
 	mobj->health = p->health;
+
+	if (spectator)
+		mobj->translucency = 0;
 
 	// [RH] Set player sprite based on skin
 	if(p->userinfo.skin >= numskins)
@@ -1094,6 +1107,8 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->viewheight = VIEWHEIGHT;
 	p->attacker = AActor::AActorPtr();
 
+	p->spectator = spectator;
+
 	consoleplayer().camera = displayplayer().mo;
 
 	// [RH] Allow chasecam for demo watching
@@ -1102,6 +1117,9 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	// setup gun psprite
 	P_SetupPsprites (p);
+
+	if (p->spectator)
+		p->mo->flags |= MF_SPECTATOR;
 
 	// give all cards in death match mode
 	if (deathmatch)
@@ -1191,7 +1209,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (!(mthing->flags & MTF_COOPERATIVE))
 			return;
 	}
-	else
+	
+	if (!multiplayer)
 	{
 		if (!(mthing->flags & MTF_SINGLE))
 			return;
@@ -1355,7 +1374,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 
 	AActor *puff;
 
-	z += (P_Random () - P_Random ()) << 10;
+	z += ((P_Random () - P_Random ()) << 10);
 
 	puff = new AActor (x, y, z, MT_PUFF);
 	puff->momz = FRACUNIT;
@@ -1491,7 +1510,7 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     return th;
 }
 
-EXTERN_CVAR(freelook)
+EXTERN_CVAR(allowfreelook)
 
 //
 // P_SpawnPlayerMissile
@@ -1511,7 +1530,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	if (source->player &&
 		source->player->userinfo.aimdist == 0 &&
-		freelook)
+		allowfreelook)
 	{
 		slope = pitchslope;
 	}
@@ -1534,7 +1553,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			{
 				an = source->angle;
 
-				if(freelook)
+				if(allowfreelook)
 					slope = pitchslope;
 				else
 					slope = 0;
@@ -1543,7 +1562,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 		if (linetarget && source->player)
 		{
-			if (freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
+			if (allowfreelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
 			{
 				an = source->angle;
 				slope = pitchslope;
@@ -1568,4 +1587,6 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 }
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")
+
+
 

@@ -60,6 +60,8 @@ DArgs Args;
 extern UINT TimerPeriod;
 #endif
 
+extern size_t got_heapsize;
+
 // functions to be called at shutdown are stored in this stack
 typedef void (STACK_ARGS *term_func_t)(void);
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;
@@ -77,7 +79,9 @@ static void STACK_ARGS call_terms (void)
 
 int PrintString (int printlevel, char const *outline)
 {
-	return printf("%s", outline);
+	int ret = printf("%s", outline);
+	fflush(stdout);
+	return ret;
 }
 
 #ifdef WIN32
@@ -85,6 +89,9 @@ int __cdecl main(int argc, char *argv[])
 {
     try
     {
+        if (!LOG.is_open())
+            I_FatalError("Unable to create logfile: %s\n", LOG_FILE);
+
 		Args.SetArgs (argc, argv);
 
 		// Set the timer to be as accurate as possible
@@ -107,11 +114,22 @@ int __cdecl main(int argc, char *argv[])
 		startdir = I_GetCWD();
 
 		C_InitConsole (80*8, 25*8, false);
+		
+        Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
+		
 		D_DoomMain ();
     }
     catch (CDoomError &error)
     {
-		fprintf (stderr, "%s\n", error.GetMessage().c_str());
+		if (LOG.is_open())
+        {
+            LOG << error.GetMessage() << std::endl;
+        }
+        else
+        {
+            MessageBox(NULL, error.GetMessage().c_str(), "Odasrv Error", MB_OK);
+        }
+        
 		exit (-1);
     }
     catch (...)
@@ -163,6 +181,9 @@ int main (int argc, char **argv)
 {
     try
     {
+        if (!LOG.is_open())
+            I_FatalError("Unable to create logfile: %s\n", LOG_FILE);
+
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 
@@ -203,12 +224,21 @@ int main (int argc, char **argv)
 		progdir = I_GetBinaryDir();
 
 		C_InitConsole (80*8, 25*8, false);
+		
+        Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
+		
 		D_DoomMain ();
     }
     catch (CDoomError &error)
     {
-		fprintf (stderr, "%s\n", error.GetMessage().c_str());
-		exit (-1);
+	fprintf (stderr, "%s\n", error.GetMessage().c_str());
+
+	if (LOG.is_open())
+        {
+            LOG << error.GetMessage() << std::endl;
+        }
+        
+	exit (-1);
     }
     catch (...)
     {

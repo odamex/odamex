@@ -1111,7 +1111,7 @@ R_InitBuffer
 
 	// [RH] Adjust column offset according to bytes per pixel
 	//		and detail mode
-	xshift = (screen->is8bit) ? 0 : 2;
+	xshift = (screen->is8bit()) ? 0 : 2;
 	xshift += detailxshift;
 
 	// Column offset. For windows
@@ -1216,7 +1216,7 @@ void R_DetailDouble (void)
 	{
 		case 1:		// y-double
 		{
-			int rowsize = realviewwidth << ((screen->is8bit) ? 0 : 2);
+			int rowsize = realviewwidth << ((screen->is8bit()) ? 0 : 2);
 			int pitch = screen->pitch;
 			int y;
 			byte *line;

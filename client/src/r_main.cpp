@@ -48,6 +48,7 @@ extern int *walllights;
 
 // [RH] Defined in d_main.cpp
 extern BOOL DrawNewHUD;
+extern BOOL DrawNewSpecHUD;
 extern dyncolormap_t NormalLight;
 
 CVAR (r_viewsize, "0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
@@ -478,7 +479,7 @@ void R_InitLightTables (void)
 	int level;
 	int startmap;
 	int scale;
-	int lightmapsize = 8 + (screen->is8bit ? 0 : 2);
+	int lightmapsize = 8 + (screen->is8bit() ? 0 : 2);
 
 	// Calculate the light levels to use
 	//	for each level / distance combination.
@@ -561,7 +562,7 @@ void R_ExecuteSetViewSize (void)
 	int level;
 	int startmap;
 	int virtheight, virtwidth;
-	int lightmapsize = 8 + (screen->is8bit ? 0 : 2);
+	int lightmapsize = 8 + (screen->is8bit() ? 0 : 2);
 
 	setsizeneeded = false;
 
@@ -594,15 +595,21 @@ void R_ExecuteSetViewSize (void)
 	}
 	else
 	{
-		realviewwidth = ((setblocks*screen->width)/10) & (~(15>>(screen->is8bit ? 0 : 2)));
+		realviewwidth = ((setblocks*screen->width)/10) & (~(15>>(screen->is8bit() ? 0 : 2)));
 		realviewheight = ((setblocks*ST_Y)/10)&~7;
 		freelookviewheight = ((setblocks*screen->height)/10)&~7;
 	}
 
-	if (setblocks == 11)
-		DrawNewHUD = true;
-	else
+	if ((&consoleplayer())->spectator && setblocks != 12) {
 		DrawNewHUD = false;
+		DrawNewSpecHUD = true;
+	} else if (setblocks == 11) {
+		DrawNewHUD = true;
+		DrawNewSpecHUD = false;
+	} else {
+		DrawNewHUD = false;
+		DrawNewSpecHUD = false;
+	}
 
 	viewwidth = realviewwidth >> detailxshift;
 	viewheight = realviewheight >> detailyshift;
@@ -817,7 +824,7 @@ void R_SetupFrame (player_t *player)
 		const sector_t *s = camera->subsector->sector->heightsec;
 		newblend = viewz < s->floorheight ? s->bottommap : viewz > s->ceilingheight ?
 				   s->topmap : s->midmap;
-		if (!screen->is8bit)
+		if (!screen->is8bit())
 			newblend = R_BlendForColormap (newblend);
 		else if (APART(newblend) == 0 && newblend >= numfakecmaps)
 			newblend = 0;
@@ -861,7 +868,7 @@ void R_SetupFrame (player_t *player)
 		}
 		else
 		{
-			if (screen->is8bit)
+			if (screen->is8bit())
 				fixedcolormap =
 					DefaultPalette->maps.colormaps
 					+ player->fixedcolormap*256;

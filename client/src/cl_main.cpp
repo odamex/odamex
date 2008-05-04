@@ -43,6 +43,7 @@
 #include "m_random.h"
 #include "w_wad.h"
 #include "md5.h"
+#include "m_fileio.h"
 
 #include <string>
 #include <vector>
@@ -50,6 +51,8 @@
 
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
+
+extern bool stepmode;
 
 // denis - client version (VERSION or other supported)
 short version;
@@ -95,14 +98,30 @@ CVAR (fastmonsters,		"0", CVAR_SERVERINFO)
 CVAR (allowexit,		"0", CVAR_SERVERINFO)
 CVAR (fragexitswitch,   "0", CVAR_SERVERINFO)       //  [ML] 03/4/06: Activate to allow exit switch at maxfrags, must click to exit
 CVAR (allowjump,		"0", CVAR_SERVERINFO)
-CVAR (freelook,			"0", CVAR_SERVERINFO)
+CVAR (allowfreelook,	"0", CVAR_SERVERINFO)
 CVAR (scorelimit,		"0", CVAR_SERVERINFO)
 CVAR (monstersrespawn,	"0", CVAR_SERVERINFO)
 CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
-CVAR (sv_cheats,		"0", CVAR_SERVERINFO)
+CVAR (allowcheats,		"0", CVAR_SERVERINFO)
 CVAR (teamplay,			"0", CVAR_SERVERINFO)
 
-CVAR (cl_freelook,		"0", CVAR_ARCHIVE | CVAR_SERVERINFO)
+// If freelook changes serverside or clientside,
+// work out what allowfreelook needs to be
+EXTERN_CVAR(sv_freelook)
+
+BEGIN_CUSTOM_CVAR (cl_freelook,		"0", CVAR_ARCHIVE)
+{
+	allowfreelook.Set((BOOL)(cl_freelook) &&
+						((BOOL)(sv_freelook) || serverside));
+}
+END_CUSTOM_CVAR (cl_freelook)
+
+BEGIN_CUSTOM_CVAR (sv_freelook,		"0", CVAR_SERVERINFO)
+{
+	allowfreelook.Set((BOOL)(cl_freelook) &&
+						((BOOL)(sv_freelook) || serverside));
+}
+END_CUSTOM_CVAR (sv_freelook)
 
 CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
 
@@ -119,11 +138,10 @@ void CalcTeamFrags (void);
 // some doom functions (not csDoom)
 void G_PlayerReborn (player_t &player);
 void CL_SpawnPlayer ();
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor);
+void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
-void P_FireWeapon (player_t *player);
 void P_CalcHeight (player_t *player);
 BOOL P_CheckMissileSpawn (AActor* th);
 void CL_SetMobjSpeedAndAngle(void);
@@ -133,7 +151,7 @@ team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 
-void Host_EndGame(char *msg)
+void Host_EndGame(const char *msg)
 {
     Printf(PRINT_HIGH, "%s", msg);
 	CL_QuitNetGame();
@@ -154,8 +172,11 @@ void CL_QuitNetGame(void)
 	connected = false;
 	ctfmode = false;
 	gameaction = ga_fullconsole;
+	noservermsgs = false;
 
 	serverside = clientside = true;
+	
+	sv_freelook = 1;
 
 	actor_by_netid.clear();
 	players.clear();
@@ -220,8 +241,7 @@ void CL_DisconnectClient(void)
 
 BEGIN_COMMAND (connect)
 {
-	if (connected)
-		CL_QuitNetGame();
+	CL_QuitNetGame();
 
 	if (argc > 1)
 	{
@@ -304,13 +324,14 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname - %s \n",		  player->userinfo.netname);
-	Printf (PRINT_HIGH, " userinfo.team    - %d \n",		  player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.aimdist - %d \n",		  player->userinfo.aimdist);
-	Printf (PRINT_HIGH, " userinfo.color   - %d \n",		  player->userinfo.color);
-	Printf (PRINT_HIGH, " userinfo.skin    - %s \n",		  skins[player->userinfo.skin].name);
-	Printf (PRINT_HIGH, " userinfo.gender  - %d \n",		  player->userinfo.gender);
-	Printf (PRINT_HIGH, " time             - %d \n",		  player->GameTime);
+	Printf (PRINT_HIGH, " userinfo.netname   - %s \n",		  player->userinfo.netname);
+	Printf (PRINT_HIGH, " userinfo.team      - %d \n",		  player->userinfo.team);
+	Printf (PRINT_HIGH, " userinfo.aimdist   - %d \n",		  player->userinfo.aimdist);
+	Printf (PRINT_HIGH, " userinfo.color     - %d \n",		  player->userinfo.color);
+	Printf (PRINT_HIGH, " userinfo.skin      - %s \n",		  skins[player->userinfo.skin].name);
+	Printf (PRINT_HIGH, " userinfo.gender    - %d \n",		  player->userinfo.gender);
+	Printf (PRINT_HIGH, " spectator          - %d \n",		  player->spectator);
+	Printf (PRINT_HIGH, " time               - %d \n",		  player->GameTime);
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
@@ -318,10 +339,10 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_cheats)
+    if (allowcheats)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_cheats 1' to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -347,7 +368,7 @@ BEGIN_COMMAND (serverinfo)
 	Printf (PRINT_HIGH, "                      \n"									);
 	Printf (PRINT_HIGH, "        hostname -    \n"									);
 	Printf (PRINT_HIGH, "           email -    \n"									);
-	Printf (PRINT_HIGH, "       sv_cheats - %d \n",	(BOOL)sv_cheats		);
+	Printf (PRINT_HIGH, "       allowcheats - %d \n",	(BOOL)allowcheats		);
 	Printf (PRINT_HIGH, "      deathmatch - %d \n",	(BOOL)deathmatch		);
 	Printf (PRINT_HIGH, "       fraglimit - %d \n",	(int)fraglimit		);
 	Printf (PRINT_HIGH, "       timelimit - %d \n",	(int)timelimit		);
@@ -362,7 +383,7 @@ BEGIN_COMMAND (serverinfo)
 	Printf (PRINT_HIGH, "       allowexit - %d \n",	(BOOL)allowexit		);
     Printf (PRINT_HIGH, "  fragexitswitch - %d \n",	(BOOL)fragexitswitch);
 	Printf (PRINT_HIGH, "       allowjump - %d \n",	(BOOL)allowjump		);
-	Printf (PRINT_HIGH, "        freelook - %d \n",	(BOOL)freelook	);
+	Printf (PRINT_HIGH, "   allowfreelook - %d \n",	(BOOL)sv_freelook	);
 	Printf (PRINT_HIGH, "    infiniteammo - %d \n",	(BOOL)infiniteammo	);
 	Printf (PRINT_HIGH, "                      \n"									);
 	Printf (PRINT_HIGH, "      scorelimit - %d \n",	(int)scorelimit		);
@@ -438,6 +459,28 @@ BEGIN_COMMAND (playerteam)
 	Printf (PRINT_MEDIUM, "Your Team is %d \n", consoleplayer().userinfo.team);
 }
 END_COMMAND (playerteam)
+
+
+BEGIN_COMMAND (spectate)
+{
+	MSG_WriteMarker(&net_buffer, clc_spectate);
+	MSG_WriteByte(&net_buffer, true);
+}
+END_COMMAND (spectate)
+
+
+BEGIN_COMMAND (join)
+{
+	MSG_WriteMarker(&net_buffer, clc_spectate);
+	MSG_WriteByte(&net_buffer, false);
+}
+END_COMMAND (join)
+
+BEGIN_COMMAND (quit)
+{
+	exit (0);
+}
+END_COMMAND (quit)
 
 //
 // CL_MoveThing
@@ -684,25 +727,23 @@ void CL_RequestConnectInfo(void)
 std::string missing_file, missing_hash;
 bool CL_PrepareConnect(void)
 {
-	using namespace std;
-
 	size_t i;
 	DWORD server_token = MSG_ReadLong();
-	string server_host = MSG_ReadString();
+	std::string server_host = MSG_ReadString();
 
 	byte recv_teamplay_stats = 0;
 
 	byte playercount = MSG_ReadByte(); // players
 	MSG_ReadByte(); // max_players
 
-	string server_map = MSG_ReadString();
+	std::string server_map = MSG_ReadString();
 	byte server_wads = MSG_ReadByte();
 
 	Printf(PRINT_HIGH, "\n");
 	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
 	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
 
-	vector<string> wadnames(server_wads);
+	std::vector<std::string> wadnames(server_wads);
 	for(i = 0; i < server_wads; i++)
 		wadnames[i] = MSG_ReadString();
 
@@ -719,7 +760,7 @@ bool CL_PrepareConnect(void)
 		MSG_ReadByte();
 	}
 
-	vector<string> wadhashes(server_wads);
+	std::vector<std::string> wadhashes(server_wads);
 	for(i = 0; i < server_wads; i++)
 	{
 		wadhashes[i] = MSG_ReadString();
@@ -798,7 +839,7 @@ bool CL_Connect(void)
 	if(gamestate == GS_DOWNLOAD && missing_file.length())
 	{
 		// denis - do not download commercial wads
-		if(W_IsCommercial(missing_file, missing_hash))
+		if(W_IsIWAD(missing_file, missing_hash))
 		{
 			Printf(PRINT_HIGH, "This is a commercial wad and will not be downloaded.\n");
 			CL_QuitNetGame();
@@ -1027,7 +1068,7 @@ void CL_SpawnMobj()
 	unsigned short type = MSG_ReadShort();
 	unsigned short netid = MSG_ReadShort();
 	byte rndindex = MSG_ReadByte();
-	unsigned short state = MSG_ReadShort();
+	SWORD state = MSG_ReadShort();
 
 	if(type >= NUMMOBJTYPES)
 		return;
@@ -1339,13 +1380,15 @@ void CL_DamagePlayer(void)
 	if (damage < 0)  // can't be!
 		return;
 
-	p->damagecount += damage;
+	if (damage > 0) {
+		p->damagecount += damage;
 
-	if (p->damagecount > 100)
-		p->damagecount = 100;
+		if (p->damagecount > 100)
+			p->damagecount = 100;
 
-	if(p->mo->info->painstate)
-		P_SetMobjState(p->mo, p->mo->info->painstate);
+		if(p->mo->info->painstate)
+			P_SetMobjState(p->mo, p->mo->info->painstate);
+	}
 }
 
 extern int MeansOfDeath;
@@ -1361,13 +1404,15 @@ void CL_KillMobj(void)
 	int health = MSG_ReadShort();
 
 	MeansOfDeath = MSG_ReadLong();
+	
+	bool joinkill = MSG_ReadByte();
 
 	if (!target)
 		return;
 
 	target->health = health;
 
-	P_KillMobj (source, target, inflictor);
+	P_KillMobj (source, target, inflictor, joinkill);
 }
 
 
@@ -1577,7 +1622,7 @@ void CL_UpdateMovingSector(void)
 		return;
 
 	plat_pred_t pred = {s, state, count, fh};
-	sector_t *sec = &sectors[s];
+//	sector_t *sec = &sectors[s];
 
 //	if(!sec->floordata)
 //		sec->floordata = new DMovingFloor(sec);
@@ -1668,7 +1713,7 @@ void CL_GetServerSettings(void)
 	maxplayers.Set((int)MSG_ReadShort());
 
 	// Game settings
-	sv_cheats.Set((BOOL)MSG_ReadByte());
+	allowcheats.Set((BOOL)MSG_ReadByte());
 	deathmatch.Set((BOOL)MSG_ReadByte());
 	fraglimit.Set((int)MSG_ReadShort());
 	timelimit.Set((int)MSG_ReadShort());
@@ -1685,9 +1730,7 @@ void CL_GetServerSettings(void)
 	allowexit.Set((BOOL)MSG_ReadByte());
 	fragexitswitch.Set((BOOL)MSG_ReadByte());
 	allowjump.Set((BOOL)MSG_ReadByte());
-	freelook.Set((BOOL)MSG_ReadByte());
-	if(!cl_freelook)
-		freelook = "0";
+	sv_freelook.Set((BOOL)MSG_ReadByte());
 	infiniteammo.Set((BOOL)MSG_ReadByte());
 	MSG_ReadByte(); // denis - todo - use this for something
 
@@ -1705,13 +1748,12 @@ void CL_GetServerSettings(void)
 void CL_SetMobjState()
 {
 	AActor *mo = CL_FindThingById (MSG_ReadShort() );
-	unsigned short s = MSG_ReadShort();
+	SWORD s = MSG_ReadShort();
 
 	if (!mo || s >= NUMSTATES)
 		return;
 
-	//P_SetMobjState (mo, (statenum_t)s);
-	mo->state = states + s;
+	P_SetMobjState (mo, (statenum_t)s);
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -1733,12 +1775,14 @@ void CL_ForceSetTeam (void)
 void CL_Actor_Movedir()
 {
 	AActor *actor = CL_FindThingById (MSG_ReadShort());
-	byte movedir = MSG_ReadByte();
-
+	BYTE movedir = MSG_ReadByte();
+    SDWORD movecount = MSG_ReadLong();
+    
 	if (!actor || movedir >= 8)
 		return;
 
 	actor->movedir = movedir;
+	actor->movecount = movecount;
 }
 
 //
@@ -1996,37 +2040,18 @@ void CL_Download()
 		filename += download.filename;
 
 		// check for existing file
-		FILE *fp = fopen(filename.c_str(), "rb");
-
-		if(fp)
+		if(M_FileExists(filename.c_str()))
 		{
-			fclose(fp);
-
 			// there is an existing file, so use a new file whose name includes the checksum
 			filename += ".";
 			filename += actual_md5;
 		}
 
-		// open for writing
-		fp = fopen(filename.c_str(), "wb");
-
-		if(!fp)
-		{
-			Printf(PRINT_HIGH, "Failed to open file \"%s\" for writing\n", filename.c_str());
+        if (!M_WriteFile(filename, download.buf.ptr(), download.buf.maxsize()))
+        {
 			CL_QuitNetGame();
-			return;
-		}
-
-		// write to file
-		size_t wrote = fwrite(download.buf.ptr(), 1, download.buf.maxsize(), fp);
-		fclose(fp);
-
-		if(wrote != download.buf.maxsize())
-		{
-			Printf(PRINT_HIGH, "Failed to write to file \"%s\"\n", filename.c_str());
-			CL_QuitNetGame();
-			return;
-		}
+			return;            
+        }
 
 		Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
 
@@ -2046,6 +2071,26 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
+EXTERN_CVAR (st_scale)
+
+void CL_Spectate()
+{
+	player_t &player = CL_FindPlayer(MSG_ReadByte());
+	
+	player.spectator = MSG_ReadByte();
+	
+	if (&player == &consoleplayer()) {
+		st_scale.Callback (); // refresh status bar size
+		if (player.spectator) {
+			for (int i=0 ; i<NUMPSPRITES ; i++) // remove all weapon sprites
+				(&player)->psprites[i].state = NULL;
+			player.playerstate = PST_LIVE; // resurrect dead spectators
+		} else {
+			displayplayer_id = consoleplayer_id; // get out of spynext
+		}
+	}
+}
+
 // client source (once)
 typedef void (*client_callback)();
 typedef std::map<svc_t, client_callback> cmdmap;
@@ -2056,6 +2101,7 @@ cmdmap cmds;
 //
 void CL_InitCommands(void)
 {
+	cmds[svc_abort]			= &CL_EndGame;
 	cmds[svc_loadmap]			= &CL_LoadMap;
 	cmds[svc_playerinfo]		= &CL_PlayerInfo;
 	cmds[svc_consoleplayer]		= &CL_ConsolePlayer;
@@ -2113,6 +2159,8 @@ void CL_InitCommands(void)
 
 	cmds[svc_challenge]			= &CL_Clear;
 	cmds[svc_launcher_challenge]= &CL_Clear;
+	
+	cmds[svc_spectate]   		= &CL_Spectate;
 }
 
 //
@@ -2129,8 +2177,8 @@ void CL_ParseCommands(void)
 
 	while(connected)
 	{
-		history.push_back(cmd);
 		cmd = (svc_t)MSG_ReadByte();
+		history.push_back(cmd);
 
 		if(cmd == 255 || cmd == -1)
 			break;
@@ -2138,13 +2186,12 @@ void CL_ParseCommands(void)
 		cmdmap::iterator i = cmds.find(cmd);
 		if(i == cmds.end())
 		{
-			Printf(PRINT_HIGH, "CL_ParseCommands: Unknown server message %d: ", (int)cmd);
+			CL_QuitNetGame();
+			Printf(PRINT_HIGH, "CL_ParseCommands: Unknown server message %d following: \n", (int)cmd);
 
 			for(size_t j = 0; j < history.size(); j++)
-				Printf(PRINT_HIGH, "%d ", history[j]);
+				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
 			Printf(PRINT_HIGH, "\n");
-
-			CL_QuitNetGame();
 			break;
 		}
 
@@ -2153,7 +2200,14 @@ void CL_ParseCommands(void)
 		if (msg_badread)
 		{
 			CL_QuitNetGame();
-			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message (%d, %d)\n", (int)cmd, (int)history.back());
+			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message\n");
+			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed",
+					   (int)cmd,
+					   svc_info[cmd].getName());
+			Printf(PRINT_HIGH, "CL_ParseCommands: It was command number %d in the packet\n",
+                                           (int)history.back());
+			for(size_t j = 0; j < history.size(); j++)
+				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
 		}
 	}
 
@@ -2201,7 +2255,8 @@ void CL_SendCmd(void)
     cmd = &consoleplayer().cmd;
 
 	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
+	if(stepmode) MSG_WriteShort(&net_buffer, cmd->ucmd.yaw);
+	else MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, (p->mo->pitch + (cmd->ucmd.pitch << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
@@ -2246,6 +2301,7 @@ void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
+
 
 
 

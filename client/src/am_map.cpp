@@ -36,6 +36,7 @@
 #include "m_cheat.h"
 #include "i_system.h"
 #include "c_dispatch.h"
+#include "cl_ctf.h"
 
 // Needs access to LFB.
 #include "v_video.h"
@@ -580,7 +581,7 @@ void AM_initColors (BOOL overlayed)
 			if (b < 0)
 				b += 32;
 
-			if (screen->is8bit)
+			if (screen->is8bit())
 				AlmostBackground = BestColor (DefaultPalette->basecolors, r, g , b, DefaultPalette->numcolors);
 			else
 				AlmostBackground = MAKERGB(r,g,b);
@@ -943,7 +944,7 @@ void AM_clearFB (int color)
 {
 	int y;
 
-	if (screen->is8bit) {
+	if (screen->is8bit()) {
 		if (f_w == f_p)
 			memset (fb, color, f_w*f_h);
 		else
@@ -1419,11 +1420,15 @@ AM_drawLineCharacter
 	}
 }
 
+EXTERN_CVAR(teamplay)
+
 void AM_drawPlayers(void)
 {
 	angle_t angle;
 	size_t i;
 	player_t &conplayer = consoleplayer();
+	DWORD *palette;
+	palette = DefaultPalette->colors;
 
 	if (!multiplayer)
 	{
@@ -1450,14 +1455,24 @@ void AM_drawPlayers(void)
 		mpoint_t pt;
 
 		if (!players[i].ingame() || !p->mo ||
-			(deathmatch && !demoplayback) && p != &conplayer)
+			(((deathmatch && !(teamplay || ctfmode) && p != &conplayer) ||
+			((teamplay || ctfmode) && p->userinfo.team != conplayer.userinfo.team))
+			&& !demoplayback && !(conplayer.spectator)) || p->spectator)
 		{
 			continue;
 		}
 
 		if (p->powers[pw_invisibility])
 			color = AlmostBackground;
-		else
+		else if (demoplayback && democlassic) {
+			switch (i) {
+				case 0: color = V_GetColorFromString (palette, "00 FF 00"); break;
+				case 1: color = V_GetColorFromString (palette, "60 60 B0"); break;
+				case 2: color = V_GetColorFromString (palette, "B0 B0 30"); break;
+				case 3: color = V_GetColorFromString (palette, "C0 00 00"); break;
+				default: break;
+			}
+		} else
 			color = BestColor (DefaultPalette->basecolors,
 							   RPART(p->userinfo.color),
 							   GPART(p->userinfo.color),
@@ -1590,7 +1605,6 @@ void AM_Drawer (void)
 		int OV_Y, i, time = level.time / TICRATE, height, epsub;
 
 		height = (hu_font[0]->height() + 1) * CleanYfac;
-		player_t *plyr = &consoleplayer();
 		OV_Y = screen->height - ((32 * screen->height) / 200);
 
 		if (!deathmatch)
