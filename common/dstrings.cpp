@@ -651,9 +651,9 @@ void D_InitStrings (void)
 
 	while(Strings[i].name)
 	{
-		if (Strings[i].type == str_notchanged)
-			ReplaceString (&Strings[i].string, Strings[i].builtin);
-		
+		ReplaceString (&Strings[i].string, Strings[i].builtin);
+		Strings[i].type = str_notchanged;
+
 		i++;
 	}
 

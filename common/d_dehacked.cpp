@@ -591,6 +591,12 @@ static BOOL HandleKey (const struct Key *keys, void *structure, const char *key,
 	return true;
 }
 
+static state_t		backupStates[NUMSTATES];
+static mobjinfo_t	backupMobjInfo[NUMMOBJTYPES];
+static mobjinfo_t	backupWeaponInfo[NUMWEAPONS];
+static char		*backupSprnames[NUMSPRITES+1];
+static DehInfo		backupDeh;
+
 static void BackupData (void)
 {
 	int i;
@@ -606,6 +612,35 @@ static void BackupData (void)
 
 	for (i = 0; i < NUMSTATES; i++)
 		OrgActionPtrs[i] = states[i].action;
+
+	memcpy(backupStates, states, sizeof(states));
+	memcpy(backupMobjInfo, mobjinfo, sizeof(mobjinfo));
+	memcpy(backupWeaponInfo, weaponinfo, sizeof(weaponinfo));
+	memcpy(backupSprnames, sprnames, sizeof(sprnames));
+	backupDeh = deh;
+}
+
+void UndoDehPatch ()
+{
+	int i;
+
+	if (!BackedUpData)
+		return;
+
+//	for (i = 0; i < NUMSFX; i++)
+//		OrgSfxNames[i] = S_sfx[i].name;
+
+	for (i = 0; i < NUMSPRITES; i++)
+		OrgSprNames[i] = sprnames[i];
+
+	for (i = 0; i < NUMSTATES; i++)
+		OrgActionPtrs[i] = states[i].action;
+
+	memcpy(states, backupStates, sizeof(states));
+	memcpy(mobjinfo, backupMobjInfo, sizeof(mobjinfo));
+	memcpy(weaponinfo, backupWeaponInfo, sizeof(weaponinfo));
+	memcpy(sprnames, backupSprnames, sizeof(sprnames));
+	deh = backupDeh;
 }
 
 static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval)

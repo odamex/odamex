@@ -1117,6 +1117,8 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
     BOOL noDef = false;
     QWORD i;
 
+    UndoDehPatch();
+
     if (!patch_files.empty())
     {
         std::string f;
