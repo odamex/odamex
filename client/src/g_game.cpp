@@ -70,7 +70,7 @@
 
 BOOL	G_CheckDemoStatus (void);
 void	G_ReadDemoTiccmd ();
-void	G_WriteDemoTiccmd (ticcmd_t* cmd, int player, int buf);
+void	G_WriteDemoTiccmd ();
 void	G_PlayerReborn (player_t &player);
 void	G_DoReborn (player_t &playernum);
 
@@ -148,6 +148,9 @@ BOOL 			demoplayback;
 BOOL			democlassic;
 BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
+FILE *recorddemo_fp;
+
+
 int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
@@ -897,6 +900,8 @@ void G_Ticker (void)
 
 	if (demoplayback)
 		G_ReadDemoTiccmd(); // play all player commands
+	if (demorecording)
+		G_WriteDemoTiccmd(); // read in all player commands
 
     if (connected)
     {
@@ -1553,33 +1558,120 @@ void G_ReadDemoTiccmd ()
 	}
 }
 
-BOOL stoprecording;
-
-
-extern byte *lenspot;
-
-void G_WriteDemoTiccmd (ticcmd_t *cmd, int player, int buf)
+//
+// G_WriteDemoTiccmd
+//
+void G_WriteDemoTiccmd ()
 {
+    byte demo_tmp[8];
+
+    int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
+
+    for(size_t i = 0; i < players.size(); i++)
+    {
+        byte *demo_p = demo_tmp;
+        usercmd_t *cmd = &players[i].cmd.ucmd;
+
+        *demo_p++ = cmd->forwardmove >> 8;
+        *demo_p++ = cmd->sidemove >> 8;
+
+        // If this is a longtics demo, record in higher resolution
+
+        if (LMP_DOOM_1_9_1 == demoversion)
+        {
+            *demo_p++ = (cmd->yaw & 0xff);
+            *demo_p++ = (cmd->yaw >> 8) & 0xff;
+        }
+        else
+        {
+            *demo_p++ = cmd->yaw >> 8;
+        }
+
+        *demo_p++ = cmd->buttons;
+
+        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
+    }
 }
-
-
 
 //
 // G_RecordDemo
 //
-void G_RecordDemo (char* name)
-{
+bool G_RecordDemo (char* name)
+{ 
+    strcpy (demoname, name);
+    strcat (demoname, ".lmp");
+
+    if(recorddemo_fp)
+        fclose(recorddemo_fp);
+
+    recorddemo_fp = fopen(demoname, "w");
+
+    if(!recorddemo_fp)
+    {
+        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname);
+        return false;
+    }
+
+    usergame = false;
+    demorecording = true;
+
+    return true;
 }
 
-
-// [RH] Demos are now saved as IFF FORMs. I've also removed support
-//		for earlier ZDEMs since I didn't want to bother supporting
-//		something that probably wasn't used much (if at all).
-
+//
+// G_BeginRecording
+//
 void G_BeginRecording (void)
 {
-}
+    int             i;
 
+    byte demo_tmp[32];
+    demo_p = demo_tmp;
+
+    // Save the right version code for this demo
+
+    if (1) // denis - TODO!!!
+    {
+        demoversion = LMP_DOOM_1_9_1;
+        *demo_p++ = DOOM_1_9_1_DEMO;
+    }
+    else
+    {
+        demoversion = LMP_DOOM_1_9;
+        *demo_p++ = DOOM_1_9_DEMO;
+    }
+
+    democlassic = true;
+
+    int episode;
+    int mapid;
+    if(gameinfo.flags & GI_MAPxx)
+    {
+        episode = 1;
+        mapid = atoi(level.mapname + 3);
+    }
+    else
+    {
+        episode = level.mapname[1] - '0';
+        mapid = level.mapname[3] - '0';
+    }
+
+    *demo_p++ = skill;
+    *demo_p++ = episode;
+    *demo_p++ = mapid;
+    *demo_p++ = deathmatch;
+    *demo_p++ = monstersrespawn;
+    *demo_p++ = fastmonsters;
+    *demo_p++ = nomonsters;
+    *demo_p++ = 0;
+
+    *demo_p++ = 1;
+    *demo_p++ = 0;
+    *demo_p++ = 0;
+    *demo_p++ = 0;
+
+    fwrite(demo_tmp, 13, 1, recorddemo_fp);
+}
 
 //
 // G_PlayDemo
@@ -1592,6 +1684,39 @@ void G_DeferedPlayDemo (char *name)
 	defdemoname = name;
 	gameaction = ga_playdemo;
 }
+
+BEGIN_COMMAND(recordvanilla)
+{
+	if(argc > 2)
+	{
+		//G_CheckDemoStatus();
+
+		if(G_RecordDemo(argv[2]))
+		{
+			players.clear();
+			players.push_back(player_t());
+			players.back().playerstate = PST_REBORN;
+			players.back().id = 1;
+
+			player_t &con = idplayer(1);
+			consoleplayer_id = displayplayer_id = con.id;
+
+			serverside = true;
+
+			G_InitNew(argv[1]);
+			G_BeginRecording();
+		}
+	}
+	else
+		Printf(PRINT_HIGH, "Usage: recordvanilla map file\n");
+}
+END_COMMAND(recordvanilla)
+
+BEGIN_COMMAND(stopdemo)
+{
+	G_CheckDemoStatus (); 
+}
+END_COMMAND(stopdemo)
 
 BEGIN_COMMAND(playdemo)
 {
@@ -1963,17 +2088,13 @@ BOOL G_CheckDemoStatus (void)
 
 	if (demorecording)
 	{
-		byte *formlen;
+		if(recorddemo_fp)
+		{
+			fputc(DEM_STOP, recorddemo_fp);
+			fclose(recorddemo_fp);
+		}
 
-		WriteByte (DEM_STOP, &demo_p);
-		//FinishChunk (&demo_p);
-		formlen = demobuffer + 4;
-		WriteLong (demo_p - demobuffer - 8, &formlen);
-
-		M_WriteFile (demoname, demobuffer, demo_p - demobuffer);
-		free (demobuffer);
 		demorecording = false;
-		stoprecording = false;
 		Printf (PRINT_HIGH, "Demo %s recorded\n", demoname);
 	}
 
