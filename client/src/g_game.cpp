@@ -1627,8 +1627,6 @@ bool G_RecordDemo (char* name)
 //
 void G_BeginRecording (void)
 {
-    int             i;
-
     byte demo_tmp[32];
     demo_p = demo_tmp;
 
@@ -1658,7 +1656,7 @@ void G_BeginRecording (void)
         mapid = level.mapname[3] - '0';
     }
 
-    *demo_p++ = skill;
+    *demo_p++ = skill-1;
     *demo_p++ = episode;
     *demo_p++ = mapid;
     *demo_p++ = deathmatch;
