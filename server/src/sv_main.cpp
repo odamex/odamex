@@ -147,6 +147,7 @@ BEGIN_CUSTOM_CVAR (maxactiveplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CV
 				MSG_WriteString (&players[i].client.reliablebuf, "Active player limit reduced. You are now a spectator!\n");
 				players[i].spectator = true;
 				players[i].playerstate = PST_LIVE;
+				players[i].joinafterspectatortime = level.time;
 			}
 		}
 	}
@@ -2975,17 +2976,19 @@ void SV_Spectate (player_t &player)
 			}
 		}
 	} else {
-		for (size_t j = 0; j < players.size(); j++) {
-			MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
-			MSG_WriteByte (&(players[j].client.reliablebuf), player.id);
-			MSG_WriteByte (&(players[j].client.reliablebuf), true);
+		if (!player.spectator) {
+			for (size_t j = 0; j < players.size(); j++) {
+				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+				MSG_WriteByte (&(players[j].client.reliablebuf), player.id);
+				MSG_WriteByte (&(players[j].client.reliablebuf), true);
+			}
+			player.spectator = true;
+			player.playerstate = PST_LIVE;
+			player.joinafterspectatortime = level.time - TICRATE*5;
+			if (ctfmode)
+				CTF_CheckFlags (player);
+			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
 		}
-		player.spectator = true;
-		player.playerstate = PST_LIVE;
-		player.joinafterspectatortime = level.time;
-		if (ctfmode)
-			CTF_CheckFlags (player);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
 	}
 }
 

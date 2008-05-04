@@ -480,6 +480,7 @@ void G_ChangeMap (void)
 		for (int i = 0; i < players.size(); i++)
 		{
 			players[i].spectator = true;
+			players[i].joinafterspectatortime = -(TICRATE*5);
 			for (size_t j = 0; j < players.size(); j++) {
 				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
 				MSG_WriteByte (&(players[j].client.reliablebuf), i);
