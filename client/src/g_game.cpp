@@ -1585,6 +1585,7 @@ void G_WriteDemoTiccmd ()
         else
         {
             *demo_p++ = cmd->yaw >> 8;
+            cmd->yaw = ((unsigned char)*(demo_p-1))<<8;
         }
 
         *demo_p++ = cmd->buttons;
@@ -1602,7 +1603,10 @@ bool G_RecordDemo (char* name)
     strcat (demoname, ".lmp");
 
     if(recorddemo_fp)
+    {
         fclose(recorddemo_fp);
+        recorddemo_fp = NULL;
+    }
 
     recorddemo_fp = fopen(demoname, "w");
 
@@ -1630,14 +1634,12 @@ void G_BeginRecording (void)
 
     // Save the right version code for this demo
 
-    if (1) // denis - TODO!!!
+    if (demoversion = LMP_DOOM_1_9_1) // denis - TODO!!!
     {
-        demoversion = LMP_DOOM_1_9_1;
         *demo_p++ = DOOM_1_9_1_DEMO;
     }
     else
     {
-        demoversion = LMP_DOOM_1_9;
         *demo_p++ = DOOM_1_9_DEMO;
     }
 
@@ -1685,11 +1687,10 @@ void G_DeferedPlayDemo (char *name)
 	gameaction = ga_playdemo;
 }
 
-BEGIN_COMMAND(recordvanilla)
+void RecordCommand(int argc, char **argv)
 {
 	if(argc > 2)
 	{
-		//G_CheckDemoStatus();
 
 		if(G_RecordDemo(argv[2]))
 		{
@@ -1710,7 +1711,22 @@ BEGIN_COMMAND(recordvanilla)
 	else
 		Printf(PRINT_HIGH, "Usage: recordvanilla map file\n");
 }
+
+BEGIN_COMMAND(recordvanilla)
+{
+	//G_CheckDemoStatus();
+	demoversion = LMP_DOOM_1_9;
+	RecordCommand(argc, argv);
+}
 END_COMMAND(recordvanilla)
+
+BEGIN_COMMAND(recordlongtics)
+{
+	//G_CheckDemoStatus();
+	demoversion = LMP_DOOM_1_9_1;
+	RecordCommand(argc, argv);
+}
+END_COMMAND(recordlongtics)
 
 BEGIN_COMMAND(stopdemo)
 {
@@ -2092,6 +2108,7 @@ BOOL G_CheckDemoStatus (void)
 		{
 			fputc(DEM_STOP, recorddemo_fp);
 			fclose(recorddemo_fp);
+			recorddemo_fp = NULL;
 		}
 
 		demorecording = false;
