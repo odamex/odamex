@@ -1681,7 +1681,7 @@ void G_BeginRecording (void)
 
 std::string defdemoname;
 
-void G_DeferedPlayDemo (char *name)
+void G_DeferedPlayDemo (const char *name)
 {
 	defdemoname = name;
 	gameaction = ga_playdemo;

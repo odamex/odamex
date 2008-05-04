@@ -98,7 +98,7 @@ typedef void (*intfunc)(int);
 
 typedef struct menuitem_s {
 	itemtype		  type;
-	char			 *label;
+	const char			 *label;
 	union {
 		cvar_t			 *cvar;
 		int				  selmode;
@@ -107,20 +107,20 @@ typedef struct menuitem_s {
 	union {
 		float			  min;		/* aka numvalues aka invflag */
 		int				  key1;
-		char			 *res1;
+		const char			 *res1;
 	} b;
 	union {
 		float			  max;
 		int				  key2;
-		char			 *res2;
+		const char			 *res2;
 	} c;
 	union {
 		float			  step;
-		char			 *res3;
+		const char			 *res3;
 	} d;
 	union {
 		struct value_s	 *values;
-		char			 *command;
+		const char			 *command;
         cvarfunc          cfunc;
         voidfunc          mfunc;
         intfunc           lfunc;
@@ -139,7 +139,7 @@ typedef struct menu_s {
 
 typedef struct value_s {
 	float		value;
-	char		*name;
+	const char	*name;
 } value_t;
 
 typedef struct

@@ -133,42 +133,42 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sound_id, float volume, int 
 }
 
 static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel, 
-							   char *name, float volume, float attenuation, BOOL looping)
+							   const char *name, float volume, float attenuation, BOOL looping)
 {
 }
 
 // [Russell] - Hack to stop multiple plat stop sounds
-void S_PlatSound (fixed_t *pt, int channel, char *name, float volume, int attenuation)
+void S_PlatSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
-void S_Sound (int channel, char *name, float volume, int attenuation)
+void S_Sound (int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound ((AActor *)NULL, NULL, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
-void S_Sound (AActor *ent, int channel, char *name, float volume, int attenuation)
+void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
-void S_Sound (fixed_t *pt, int channel, char *name, float volume, int attenuation)
+void S_Sound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
-void S_LoopedSound (AActor *ent, int channel, char *name, float volume, int attenuation)
+void S_LoopedSound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), true);
 }
 
-void S_LoopedSound (fixed_t *pt, int channel, char *name, float volume, int attenuation)
+void S_LoopedSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), true);
 }
 
-void S_Sound (fixed_t x, fixed_t y, int channel, char *name, float volume, int attenuation)
+void S_Sound (fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation)
 {
 	//S_StartNamedSound ((AActor *)(~0), NULL, x, y, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
@@ -240,7 +240,7 @@ void S_SetSfxVolume (float volume)
 //
 // Starts some music with the music id found in sounds.h.
 //
-void S_StartMusic (char *m_id)
+void S_StartMusic (const char *m_id)
 {
 }
 

@@ -335,7 +335,7 @@ static patch_t*			lnames[2];
 
 // [RH] Info to dynamically generate the level name graphics
 static int				lnamewidths[2];
-static char				*lnametexts[2];
+static const char			*lnametexts[2];
 
 static DCanvas			*background;
 
@@ -353,7 +353,7 @@ void WI_slamBackground (void)
 		FB, 0, 0, FB->width, FB->height);
 }
 
-static int WI_DrawName (char *str, int x, int y)
+static int WI_DrawName (const char *str, int x, int y)
 {
 	int lump;
 	patch_t *p = NULL;
@@ -1011,7 +1011,7 @@ void WI_Ticker (void)
 	}
 }
 
-static int WI_CalcWidth (char *str)
+static int WI_CalcWidth (const char *str)
 {
 	int w = 0;
 	int lump;

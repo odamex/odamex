@@ -150,14 +150,14 @@ static short codepconv[448] = {  1,    2,   3,   4,    6,   9,  10,   11,  12,  
 							 784, 785, 786, 787,	788, 789, 790,	791, 792, 793,
 							 794, 795, 796, 797,	798, 801, 809,	811};
 
-BOOL BackedUpData = false;
+static bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
-char *OrgSprNames[NUMSPRITES];
-actionf_t OrgActionPtrs[NUMSTATES];
+static const char *OrgSprNames[NUMSPRITES];
+static actionf_t OrgActionPtrs[NUMSTATES];
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.
-char *SoundMap[] = {
+static const char *SoundMap[] = {
 	NULL,
 	"weapons/pistol",
 	"weapons/shotgf",
@@ -349,7 +349,7 @@ void A_Detonate(AActor*);
 void A_Mushroom(AActor*);
 
 struct CodePtr {
-	char *name;
+	const char *name;
 	actionf_t func;
 };
 
@@ -436,7 +436,7 @@ static const struct CodePtr CodePtrs[] = {
 };
 
 struct Key {
-	char *name;
+	const char *name;
 	ptrdiff_t offset;
 };
 
@@ -522,7 +522,7 @@ static int PatchCodePtrs (int);
 static int DoInclude (int);
 
 static const struct {
-	char *name;
+	const char *name;
 	int (*func)(int);
 } Modes[] = {
 	// These appear in .deh and .bex files
@@ -577,7 +577,7 @@ static BOOL HandleKey (const struct Key *keys, void *structure, const char *key,
 	while (keys->name && stricmp (keys->name, key))
 		keys++;
 
-	if(structsize && keys->offset + sizeof(int) > structsize)
+	if(structsize && keys->offset + (int)sizeof(int) > structsize)
 	{
 		// Handle unknown or unimplemented data
 		Printf (PRINT_HIGH, "DeHackEd: Cannot apply key %s, offset would overrun.\n", keys->name);
@@ -1244,7 +1244,7 @@ static int PatchPointer (int ptrNum)
 static int PatchCheats (int dummy)
 {
 	static const struct {
-		char *name;
+		const char *name;
 		byte *cheatseq;
 		BOOL needsval;
 	} keys[] = {

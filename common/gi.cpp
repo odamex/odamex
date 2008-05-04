@@ -29,7 +29,7 @@
 
 gameinfo_t gameinfo;
 
-static char *quitsounds[8] =
+static const char *quitsounds[8] =
 {
 	"player/male/death1",
 	"demon/pain",
@@ -41,7 +41,7 @@ static char *quitsounds[8] =
 	"demon/melee"
 };
 
-static char *quitsounds2[8] =
+static const char *quitsounds2[8] =
 {
 	"vile/active",
 	"misc/p_pkup",

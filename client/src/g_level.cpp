@@ -816,7 +816,7 @@ cluster_info_t *FindClusterInfo (int cluster)
 void G_SetLevelStrings (void)
 {
 	char temp[8];
-	char *namepart;
+	const char *namepart;
 	int i, start;
 
 	temp[0] = '0';

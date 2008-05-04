@@ -93,7 +93,7 @@ typedef struct dyncolormap_s dyncolormap_t;
 //				  (normally GAMEPAL)
 //
 // Returns a pointer to the default palette.
-palette_t *InitPalettes (char *name);
+palette_t *InitPalettes (const char *name);
 
 // GetDefaultPalette()
 //

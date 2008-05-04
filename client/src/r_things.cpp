@@ -100,7 +100,7 @@ int				numsprites;
 
 spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
 int 			maxframe;
-char*			spritename;
+static const char*		spritename;
 
 // [RH] skin globals
 playerskin_t	*skins;
@@ -240,7 +240,7 @@ static void R_InstallSprite (const char *name, int num)
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-void R_InitSpriteDefs (char **namelist)
+void R_InitSpriteDefs (const char **namelist)
 {
 	int i;
 	int l;
@@ -269,7 +269,7 @@ void R_InitSpriteDefs (char **namelist)
 	// Just compare 4 characters as ints
 	for (i = 0; i < realsprites; i++)
 	{
-		spritename = namelist[i];
+		spritename = (const char *)namelist[i];
 		memset (sprtemp, -1, sizeof(sprtemp));
 
 		maxframe = -1;
@@ -541,7 +541,7 @@ int 			newvissprite;
 // R_InitSprites
 // Called at program start.
 //
-void R_InitSprites (char **namelist)
+void R_InitSprites (const char **namelist)
 {
 	unsigned i;
 

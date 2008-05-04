@@ -1011,7 +1011,7 @@ cluster_info_t *FindClusterInfo (int cluster)
 void G_SetLevelStrings (void)
 {
 	char temp[8];
-	char *namepart;
+	const char *namepart;
 	int i, start;
 
 	temp[0] = '0';
@@ -1031,11 +1031,11 @@ void G_SetLevelStrings (void)
 			namepart = Strings[i].string;
 		}
 
-		ReplaceString (&LevelInfos[i-65].level_name, namepart);
+		ReplaceString ((const char **)&LevelInfos[i-65].level_name, namepart);
 	}
 
 	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[i].exittext, Strings[221+i].string);
+		ReplaceString ((const char **)&ClusterInfos[i].exittext, Strings[221+i].string);
 
 	if (gamemission == pack_plut)
 		start = 133;		// PHUSTR_1
@@ -1053,7 +1053,7 @@ void G_SetLevelStrings (void)
 		} else {
 			namepart = Strings[i+start].string;
 		}
-		ReplaceString (&LevelInfos[36+i].level_name, namepart);
+		ReplaceString ((const char **)&LevelInfos[36+i].level_name, namepart);
 	}
 
 	if (gamemission == pack_plut)
@@ -1064,9 +1064,9 @@ void G_SetLevelStrings (void)
 		start = 225;		// C1TEXT
 
 	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[4 + i].exittext, Strings[start+i].string);
+		ReplaceString ((const char **)&ClusterInfos[4 + i].exittext, Strings[start+i].string);
 	for (; i < 6; i++)
-		ReplaceString (&ClusterInfos[4 + i].entertext, Strings[start+i].string);
+		ReplaceString ((const char **)&ClusterInfos[4 + i].entertext, Strings[start+i].string);
 
 	if (level.info)
 		strncpy (level.level_name, level.info->level_name, 63);

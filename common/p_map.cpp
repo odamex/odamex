@@ -210,7 +210,7 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 	const sector_t *sec;
 
 	if (!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1 ||
-		(mo->waterlevel == 1 && mo->z > mo->floorz + 6*FRACUNIT))
+		(mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
 	{
 		friction = mo->subsector->sector->friction;
 		movefactor = mo->subsector->sector->movefactor >> 1;

@@ -479,7 +479,7 @@ void D_AdvanceDemo (void)
 //
 void D_DoAdvanceDemo (void)
 {
-	char *pagename = NULL;
+	const char *pagename = NULL;
 
 	consoleplayer().playerstate = PST_LIVE;	// not reborn
 	advancedemo = false;

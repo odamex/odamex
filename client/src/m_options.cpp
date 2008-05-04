@@ -127,7 +127,7 @@ value_t OnOff[2] = {
 menu_t  *CurrentMenu;
 int		CurrentItem;
 static BOOL	WaitingForKey;
-static char	   *OldMessage;
+static const char	   *OldMessage;
 static itemtype OldType;
 
 /*=======================================
@@ -573,23 +573,6 @@ static void M_SlideUIBlue (int val)
 	M_SendUINewColor (RPART(color), GPART(color), blue);
 }
 
-void M_FreeValues (value_t **values, int num)
-{
-	int i;
-
-	if (*values)
-	{
-		for (i = 0; i < num; i++)
-		{
-			if ((*values)[i].name)
-				free ((*values)[i].name);
-		}
-
-		free (*values);
-		*values = NULL;
-	}
-}
-
 //
 //		Set some stuff up for the video modes menu
 //
@@ -856,7 +839,7 @@ void M_OptDrawer (void)
 			case bitflag:
 			{
 				value_t *value;
-				char *str;
+				const char *str;
 
 				if (item->b.min)
 					value = NoYes;
@@ -883,7 +866,7 @@ void M_OptDrawer (void)
 		}
 		else
 		{
-			char *str = NULL;
+			const char *str = NULL;
 
 			for (x = 0; x < 3; x++)
 			{
@@ -1345,7 +1328,8 @@ END_COMMAND (menu_display)
 
 static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 {
-	char strtemp[32], **str;
+	char strtemp[32];
+        const char **str;
 	int	 i, c;
 	int	 width, height, showbits;
 
@@ -1380,11 +1364,11 @@ static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 			}
 			else
 			{
-				if (*str)
+				/*if (*str) // denis - ReplaceString is no longer leaky...
 				{
 					free (*str);
-					*str = NULL;
-				}
+				}*/
+				*str = NULL;
 			}
 		}
 	}
@@ -1438,8 +1422,8 @@ static void SetModesMenu (int w, int h, int bits)
 
 	if (!testingmode)
 	{
-		if (ModesItems[VM_ENTERLINE].label != VMEnterText)
-			free (ModesItems[VM_ENTERLINE].label);
+		/*if (ModesItems[VM_ENTERLINE].label != VMEnterText) // denis - ReplaceString no longer leaky
+			free (ModesItems[VM_ENTERLINE].label);*/
 		ModesItems[VM_ENTERLINE].label = VMEnterText;
 		ModesItems[VM_TESTLINE].label = VMTestText;
 

@@ -794,7 +794,7 @@ void SV_GetPackets (void)
 //
 // SV_Sound
 //
-void SV_Sound (AActor *mo, byte channel, char *name, byte attenuation)
+void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	int        sfx_id;
 	client_t  *cl;
@@ -838,7 +838,7 @@ void SV_Sound (AActor *mo, byte channel, char *name, byte attenuation)
 }
 
 
-void SV_Sound (player_t &pl, AActor *mo, byte channel, char *name, byte attenuation)
+void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	int sfx_id;
 
@@ -880,7 +880,7 @@ void SV_Sound (player_t &pl, AActor *mo, byte channel, char *name, byte attenuat
 // UV_SoundAvoidPlayer
 // Sends a sound to clients, but doesn't send it to client 'player'.
 //
-void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, char *name, byte attenuation)
+void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	int        sfx_id;
 	client_t  *cl;
@@ -926,7 +926,7 @@ void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, char *name, by
 //	SV_SoundTeam
 //	Sends a sound to players on the specified teams
 //
-void SV_SoundTeam (byte channel, char* name, byte attenuation, int team)
+void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 {
 	int sfx_id;
 
@@ -962,7 +962,7 @@ void SV_SoundTeam (byte channel, char* name, byte attenuation, int team)
 	}
 }
 
-void SV_Sound (fixed_t x, fixed_t y, byte channel, char *name, byte attenuation)
+void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation)
 {
 	int        sfx_id;
 	client_t  *cl;

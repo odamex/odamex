@@ -698,7 +698,7 @@ void SexMessage (const char *from, char *to, int gender)
 //
 void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 {
-	char *message;
+	const char *message;
 	char gendermessage[1024];
 	int  gender;
 

@@ -643,7 +643,7 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sound_id, float volume, int 
 }
 
 static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel,
-                               char *name, float volume, float attenuation, bool looping)
+                               const char *name, float volume, float attenuation, bool looping)
 {
 	int sfx_id = -1;
 
@@ -684,18 +684,18 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 }
 
 // [Russell] - Hack to stop multiple plat stop sounds
-void S_PlatSound (fixed_t *pt, int channel, char *name, float volume, int attenuation)
+void S_PlatSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
     if (!predicting)
         S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, attenuation, false);
 }
 
-void S_Sound (int channel, char *name, float volume, int attenuation)
+void S_Sound (int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound ((AActor *)NULL, NULL, 0, 0, channel, name, volume, attenuation, false);
 }
 
-void S_Sound (AActor *ent, int channel, char *name, float volume, int attenuation)
+void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
 	if(channel == CHAN_ITEM && ent != consoleplayer().camera)
 		return;
@@ -703,22 +703,22 @@ void S_Sound (AActor *ent, int channel, char *name, float volume, int attenuatio
 	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, attenuation, false);
 }
 
-void S_Sound (fixed_t *pt, int channel, char *name, float volume, int attenuation)
+void S_Sound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, attenuation, false);
 }
 
-void S_LoopedSound (AActor *ent, int channel, char *name, float volume, int attenuation)
+void S_LoopedSound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, attenuation, true);
 }
 
-void S_LoopedSound (fixed_t *pt, int channel, char *name, float volume, int attenuation)
+void S_LoopedSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, attenuation, true);
 }
 
-void S_Sound (fixed_t x, fixed_t y, int channel, char *name, float volume, int attenuation)
+void S_Sound (fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound ((AActor *)(~0), NULL, x, y, channel, name, volume, attenuation, false);
 }
@@ -966,7 +966,7 @@ void S_SetSfxVolume (float volume)
 //
 // Starts some music with the music id found in sounds.h.
 //
-void S_StartMusic (char *m_id)
+void S_StartMusic (const char *m_id)
 {
 	S_ChangeMusic (m_id, false);
 }
@@ -1368,7 +1368,7 @@ void A_Ambient (AActor *actor)
 // UV_SoundAvoidCl
 // Sends a sound to clients, but doesn't send it to client 'player'.
 //
-void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, char *name, byte attenuation)
+void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	S_Sound(mo, channel, name, 1, attenuation);
 }

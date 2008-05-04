@@ -1255,7 +1255,7 @@ typedef struct
 } state_t;
 
 extern state_t states[NUMSTATES];
-extern char *sprnames[NUMSPRITES+1];
+extern const char *sprnames[NUMSPRITES+1];
 
 inline FArchive &operator<< (FArchive &arc, state_t *state)
 {
@@ -1467,23 +1467,23 @@ typedef struct
 	statenum_t spawnstate;
 	int spawnhealth;
 	statenum_t seestate;
-	char *seesound;		// [RH] not int
+	const char *seesound;		// [RH] not int
 	int reactiontime;
-	char *attacksound;	// [RH] not int
+	const char *attacksound;	// [RH] not int
 	statenum_t painstate;
 	int painchance;
-	char *painsound;	// [RH] not int
+	const char *painsound;	// [RH] not int
 	statenum_t meleestate;
 	statenum_t missilestate;
 	statenum_t deathstate;
 	statenum_t xdeathstate;
-	char *deathsound;	// [RH] not int
+	const char *deathsound;	// [RH] not int
 	int speed;
 	int radius;
 	int height;
 	int mass;
 	int damage;
-	char *activesound;	// [RH] not int
+	const char *activesound;	// [RH] not int
 	int flags;
 	statenum_t raisestate;
 	int translucency;

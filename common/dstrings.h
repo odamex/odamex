@@ -26,13 +26,13 @@
 
 void D_InitStrings (void);
 
-void ReplaceString (char **ptr, char *str);
+void ReplaceString (const char **ptr, const char *str);
 
 
 // QuitDOOM messages
 #define NUM_QUITMESSAGES   14
 
-extern char* endmsg[];
+extern const char* endmsg[];
 
 // [RH] String handling has changed significantly and is no longer static per build.
 typedef enum {
@@ -42,10 +42,10 @@ typedef enum {
 } strtype_t;
 
 typedef struct gamestring_s {
-	strtype_t	 type;
-	char		*name;
-	char		*builtin;
-	char		*string;
+	strtype_t	type;
+	const char	*name;
+	const char	*builtin;
+	const char	*string;
 } gamestring_t;
 
 // Replacement string defines for the ones that used to reside in d_englsh.h and d_french.h

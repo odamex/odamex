@@ -36,7 +36,7 @@
 #include "cmdlib.h"
 #include "g_level.h"
 
-char* endmsg[NUM_QUITMESSAGES+1]=
+const char* endmsg[NUM_QUITMESSAGES+1]=
 {
   // DOOM1
   /*QUITMSG*/NULL,
@@ -662,13 +662,13 @@ void D_InitStrings (void)
 
 class ReplacedStringTracker
 {
-	typedef std::map<char *, bool> replacedStrings_t;
+	typedef std::map<const char *, bool> replacedStrings_t;
 	typedef replacedStrings_t:: iterator iterator;
 	replacedStrings_t rs;
 
 public:
 
-	void erase(char *p)
+	void erase(const char *p)
 	{
 		iterator i = rs.find(p);
 		if(i != rs.end())
@@ -677,7 +677,7 @@ public:
 			rs.erase(i);
 		}
 	}
-	void add(char *p)
+	void add(const char *p)
 	{
 		rs[p] = 1;
 	}
@@ -691,7 +691,7 @@ public:
 }rst;
 
 
-void ReplaceString (char **ptr, char *str)
+void ReplaceString (const char **ptr, const char *str)
 {
 	if (*ptr)
 	{

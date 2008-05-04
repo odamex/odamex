@@ -41,7 +41,7 @@ void F_Ticker (void);
 void F_Drawer (void);
 
 
-void F_StartFinale (char *music, char *flat, char *text);
+void F_StartFinale (char *music, char *flat, const char *text);
 
 
 

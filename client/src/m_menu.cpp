@@ -56,7 +56,7 @@ int 				screenSize;
  // 1 = message to be printed
 int 				messageToPrint;
 // ...and here is the message string!
-char*				messageString;
+const char*				messageString;
 
 // message x & y
 int 				messx;
@@ -146,7 +146,7 @@ void M_DrawEmptyCell(oldmenu_t *menu,int item);
 void M_DrawSelCell(oldmenu_t *menu,int item);
 int  M_StringHeight(char *string);
 void M_StartControlPanel(void);
-void M_StartMessage(char *string,void (*routine)(int),bool input);
+void M_StartMessage(const char *string,void (*routine)(int),bool input);
 void M_StopMessage(void);
 void M_ClearMenus (void);
 
@@ -1275,7 +1275,7 @@ void M_DrawSelCell (oldmenu_t *menu, int item)
 }
 
 
-void M_StartMessage (char *string, void (*routine)(int), bool input)
+void M_StartMessage (const char *string, void (*routine)(int), bool input)
 {
 	messageLastMenuActive = menuactive;
 	messageToPrint = 1;

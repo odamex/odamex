@@ -2070,7 +2070,7 @@ void A_SpawnFly (AActor *mo)
 void A_PlayerScream (AActor *mo)
 {
 	char nametemp[128];
-	char *sound;
+	const char *sound;
 
 	// [Fly] added for csDoom
 	if (mo->health < -mo->info->spawnhealth)

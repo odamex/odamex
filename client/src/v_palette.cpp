@@ -193,7 +193,7 @@ void V_RestoreScreenPalette(void)
 /* Palette management stuff */
 /****************************/
 
-BOOL InternalCreatePalette (palette_t *palette, char *name, byte *colors,
+bool InternalCreatePalette (palette_t *palette, const char *name, byte *colors,
 							unsigned numcolors, unsigned flags)
 {
 	unsigned i;
@@ -239,7 +239,7 @@ BOOL InternalCreatePalette (palette_t *palette, char *name, byte *colors,
 	return true;
 }
 
-palette_t *InitPalettes (char *name)
+palette_t *InitPalettes (const char *name)
 {
 	byte *colors;
 

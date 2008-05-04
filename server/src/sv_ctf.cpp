@@ -465,7 +465,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
 }
 
 // sounds played differ depending on your team, [0] for event on own team, [1] for others
-static char *flag_sound[NUM_CTF_SCORE][2] =
+static const char *flag_sound[NUM_CTF_SCORE][2] =
 {
 	{"", ""}, // NONE
 	{"", ""}, // REFRESH
@@ -487,7 +487,7 @@ void CTF_Sound (flag_t f, flag_score_t event)
 {
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		char *snd = flag_sound[event][f == (flag_t)i];
+		const char *snd = flag_sound[event][f == (flag_t)i];
 		if(snd && *snd)
 			SV_SoundTeam (CHAN_VOICE, snd, ATTN_NONE, i);
 	}

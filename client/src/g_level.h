@@ -61,7 +61,7 @@
 struct level_info_s {
 	char		mapname[9];
 	int			levelnum;
-	char		*level_name;
+	const char	*level_name;
 	char		pname[9];
 	char		nextmap[9];
 	char		secretmap[9];
@@ -79,7 +79,7 @@ struct level_pwad_info_s
 	// level_info_s
 	char		mapname[8];
 	int			levelnum;
-	char		*level_name;
+	const char		*level_name;
 	char		pname[8];
 	char		nextmap[8];
 	char		secretmap[8];
@@ -135,8 +135,8 @@ struct cluster_info_s {
 	char		messagemusic[9];
 	// [Russell] - Naturally, this should have an extra byte for the null terminator
 	char		finaleflat[9];
-	char		*exittext;
-	char		*entertext;
+	const char		*exittext;
+	const char		*entertext;
 	int			flags;
 };
 typedef struct cluster_info_s cluster_info_t;

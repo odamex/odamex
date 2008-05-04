@@ -151,7 +151,7 @@ team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 
-void Host_EndGame(char *msg)
+void Host_EndGame(const char *msg)
 {
     Printf(PRINT_HIGH, "%s", msg);
 	CL_QuitNetGame();
