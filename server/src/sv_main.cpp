@@ -2941,6 +2941,9 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 void SV_Spectate (player_t &player)
 {
 	if (!(BOOL)MSG_ReadByte()) {
+		if (gamestate == GS_INTERMISSION)
+			return;
+		
 		if (player.spectator){
 			int NumPlayers = 0;
 			// Check to see if there are enough "activeplayers"
@@ -2975,7 +2978,7 @@ void SV_Spectate (player_t &player)
 				MSG_WriteString (&player.client.reliablebuf, "Game is currently full!\n");
 			}
 		}
-	} else {
+	} else if (gamestate != GS_INTERMISSION) {
 		if (!player.spectator) {
 			for (size_t j = 0; j < players.size(); j++) {
 				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);

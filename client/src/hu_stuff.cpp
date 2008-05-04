@@ -212,6 +212,15 @@ BOOL HU_Responder (event_t *ev)
 //
 void HU_Drawer (void)
 {
+	
+	// Draw "Press USE to join" as the bottom layer.
+	if ((&consoleplayer())->spectator && (level.time / TICRATE)%2 && gamestate != GS_INTERMISSION)
+	{
+		setsizeneeded = true;
+		screen->DrawTextClean (CR_GREY, (screen->width / 2) - (59 * CleanXfac), 
+			screen->height - ((hu_font[0]->height() + 4) * CleanYfac), "Press USE to join");
+	}
+	
 	if (headsupactive)
 	{
 		static const char *prompt;
@@ -289,14 +298,6 @@ void HU_Drawer (void)
 
 		// SoM: Not here.
 		//screen->Dim ();
-	}
-	
-	// Draw "Press USE to join"
-	if ((&consoleplayer())->spectator && (level.time / TICRATE)%2)
-	{
-		setsizeneeded = true;
-		screen->DrawTextClean (CR_GREY, (screen->width / 2) - (59 * CleanXfac), 
-			screen->height - ((hu_font[0]->height() + 4) * CleanYfac), "Press USE to join");
 	}
 }
 
