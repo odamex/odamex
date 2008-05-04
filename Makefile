@@ -69,7 +69,7 @@ SDL_LFLAGS_COMMAND = sdl-config --libs
 
 SDL_DETECT = sdl-config --version
 SDL_CFLAGS = $(shell $(SDL_CFLAGS_COMMAND))
-SDL_LFLAGS = $(shell $(SDL_LFLAGS_COMMAND)) $(X11_LFLAGS)
+SDL_LFLAGS = $(shell $(SDL_LFLAGS_COMMAND)) $(X11_LFLAGS) -lGL -lGLU
 
 CFLAGS_PLATFORM = -DUNIX
 LFLAGS_PLATFORM =
@@ -78,7 +78,7 @@ ifeq ($(strip $(osx)), true)
 # osx does not use X11 for copy&paste, it uses Carbon
 CFLAGS_PLATFORM = -DUNIX -DOSX
 LFLAGS_PLATFORM =
-OSX_FRAMEWORKS = -framework Carbon -framework AudioToolbox -framework AudioUnit
+OSX_FRAMEWORKS = -framework OpenGL -framework Carbon -framework AudioToolbox -framework AudioUnit
 SDL_LFLAGS := $(SDL_LFLAGS) $(OSX_FRAMEWORKS)
 X11_LFLAGS = 
 endif
@@ -174,7 +174,7 @@ TARGETS = $(SERVER_TARGET) $(CLIENT_TARGET) $(MASTER_TARGET) $(WADFILE_TARGET)
 
 # denis - fixme - cflags are quite messy, but removing these is a very delicate act, also use -Wall -Werror
 CFLAGS = $(CFLAGS_PLATFORM) -DNOASM -Icommon -g -Wall
-LFLAGS = $(LFLAGS_PLATFORM) -lGL -lGLU
+LFLAGS = $(LFLAGS_PLATFORM) 
 
 CFLAGS_RELEASE = $(CFLAGS_PLATFORM) -DNOASM -Icommon -O3
 LFLAGS_RELEASE = $(LFLAGS_PLATFORM)
