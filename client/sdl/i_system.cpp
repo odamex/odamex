@@ -21,6 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <limits>
 
 #include <SDL.h>
 #include <stdlib.h>
@@ -41,6 +42,7 @@
 // for getuid and geteuid
 #include <unistd.h>
 #include <sys/types.h>
+#include <limits.h>
 #endif
 
 #ifdef HAVE_PWD_H
@@ -163,9 +165,10 @@ QWORD I_UnwrapTime(DWORD now32)
 {
 	static QWORD last = 0;
 	QWORD now = now32;
+	QWORD max = std::numeric_limits<DWORD>::max();
 
-	if(now < last%UINT_MAX)
-		last += (UINT_MAX-(last%UINT_MAX)) + now;
+	if(now < last%max)
+		last += (max-(last%max)) + now;
 	else
 		last = now;
 

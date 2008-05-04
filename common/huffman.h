@@ -35,6 +35,7 @@
 #define __C_HUFFMAN_H__
 
 #include <iostream>
+#include <cstring>
 
 class huffman
 {

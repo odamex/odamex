@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 //  Copyright (C) 1999, 2000, 2002 Aladdin Enterprises.  All rights reserved.
 //
@@ -57,6 +57,8 @@
 
 #include "version.h"
 #include "md5.h"
+
+#include <cstring>
 
 #undef BYTE_ORDER	/* 1 = big-endian, -1 = little-endian, 0 = unknown */
 #ifdef ARCH_IS_BIG_ENDIAN
@@ -415,5 +417,5 @@ std::string MD5SUM(std::string in)
 	return MD5SUM(in.c_str(), in.length());
 }
 
-VERSION_CONTROL (md5_cpp, "$Id:$")
+VERSION_CONTROL (md5_cpp, "$Id$")
 
