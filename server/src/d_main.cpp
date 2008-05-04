@@ -849,7 +849,6 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames,
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
 	D_InitStrings ();
-
 	D_DoDefDehackedPatch(patch_files);
 
 	G_SetLevelStrings ();

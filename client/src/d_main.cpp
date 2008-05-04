@@ -1264,6 +1264,9 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
 
+	D_InitStrings ();
+	D_DoDefDehackedPatch(patch_files);
+
 	//gotconback = false;
 	//C_InitConsole(DisplayWidth, DisplayHeight, true);
 
@@ -1272,10 +1275,6 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 	if(!(DefaultPalette = InitPalettes("PLAYPAL")))
 		I_Error("Could not reinitialize palette");
 	V_InitPalette();
-
-	D_InitStrings ();
-
-	D_DoDefDehackedPatch(patch_files);
 
 	G_SetLevelStrings ();
 	S_ParseSndInfo();
@@ -1323,6 +1322,8 @@ void D_DoomMain (void)
 
 	W_InitMultipleFiles (wadfiles);
 
+	// [RH] Initialize configurable strings.
+	D_InitStrings ();
 	D_DoDefDehackedPatch ();
 
 	// [RH] Moved these up here so that we can do most of our
@@ -1334,9 +1335,6 @@ void D_DoomMain (void)
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks ();
-
-	// [RH] Initialize configurable strings.
-	D_InitStrings ();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
 	if (STARTUP1[0])	Printf (PRINT_HIGH, "%s\n", STARTUP1);
