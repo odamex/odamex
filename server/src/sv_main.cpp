@@ -89,7 +89,7 @@ CVAR (clientcount,		"0",        CVAR_NOSET | CVAR_NOENABLEDISABLE)										// t
 
 CVAR (globalspectatorchat,       "1",        CVAR_ARCHIVE | CVAR_SERVERINFO)
 
-BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Describes the max number of clients that are allowed to connect. - does not work yet
+BEGIN_CUSTOM_CVAR (maxclients,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
 	if(var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
@@ -97,7 +97,7 @@ BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 	if(var < 0)
 		var.Set((float)0);
 
-	while(players.size() > maxplayers)
+	while(players.size() > maxclients)
 	{
 		int last = players.size() - 1;
 		SV_DropClient(players[last]);
@@ -115,9 +115,9 @@ BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 	clientcount.ForceSet(players.size());
 	//R_InitTranslationTables();
 }
-END_CUSTOM_CVAR (maxplayers)
+END_CUSTOM_CVAR (maxclients)
 
-BEGIN_CUSTOM_CVAR (maxactiveplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 {
 	// [Nes] - Force extras to become spectators.
 	int normalcount = 0;
@@ -152,7 +152,7 @@ BEGIN_CUSTOM_CVAR (maxactiveplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CV
 		}
 	}
 }
-END_CUSTOM_CVAR (maxactiveplayers)
+END_CUSTOM_CVAR (maxplayers)
 
 
 // Game settings
@@ -679,7 +679,7 @@ void SV_InitNetwork (void)
 	const char *w = Args.CheckValue ("-maxclients");
 	if (w)
 	{
-		maxplayers.Set(w); // denis - todo
+		maxclients.Set(w); // denis - todo
 	}
 
 	stepmode = Args.CheckParm ("-stepmode");
@@ -690,7 +690,7 @@ void SV_InitNetwork (void)
 
 int SV_GetFreeClient(void)
 {
-	if(players.size() >= maxplayers)
+	if(players.size() >= maxclients)
 		return -1;
 
 	players.push_back(player_t());
@@ -1609,7 +1609,7 @@ void SV_SendServerSettings (client_t *cl)
 	// General server settings
 //	MSG_WriteString (&cl->reliablebuf, hostname.cstring());		// denis - fixme - what happened to .string?
 //	MSG_WriteString (&cl->reliablebuf, email.cstring());			// denis - fixme - what happened to .string?
-	MSG_WriteShort  (&cl->reliablebuf, (int)maxplayers);
+	MSG_WriteShort  (&cl->reliablebuf, (int)maxclients);
 
 	// Game settings
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowcheats);
@@ -2953,7 +2953,7 @@ void SV_Spectate (player_t &player)
 					NumPlayers++;
 			}
 			
-			if (NumPlayers < maxactiveplayers)
+			if (NumPlayers < maxplayers)
 			{
 				if (level.time > player.joinafterspectatortime + TICRATE*5) {
 					player.spectator = false;

@@ -67,7 +67,7 @@ public:
 
 EXTERN_CVAR (usemasters)
 EXTERN_CVAR (hostname)
-EXTERN_CVAR (maxplayers)
+EXTERN_CVAR (maxclients)
 
 EXTERN_CVAR (port)
 
@@ -91,7 +91,7 @@ EXTERN_CVAR (cleanmaps)
 EXTERN_CVAR (fragexitswitch)
 //bond===========================
 
-EXTERN_CVAR (maxactiveplayers)
+EXTERN_CVAR (maxplayers)
 
 // if set, advetise user-defined natport value to the master
 CVAR(natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -342,7 +342,7 @@ void SV_SendServerInfo()
 	}
 
 	MSG_WriteByte(&ml_message, playersingame);
-	MSG_WriteByte(&ml_message, maxplayers);
+	MSG_WriteByte(&ml_message, maxclients);
 
 	MSG_WriteString(&ml_message, level.mapname);
 
@@ -435,7 +435,7 @@ void SV_SendServerInfo()
 //bond===========================
 
     MSG_WriteLong(&ml_message, (DWORD)0x01020304);
-    MSG_WriteShort(&ml_message, (WORD)maxactiveplayers);
+    MSG_WriteShort(&ml_message, (WORD)maxplayers);
     
     for (i = 0; i < players.size(); ++i)
     {
