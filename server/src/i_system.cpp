@@ -85,7 +85,7 @@ ticcmd_t *I_BaseTiccmd(void)
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
 size_t def_heapsize = 32;
-size_t min_heapsize = 8;
+const size_t min_heapsize = 8;
 
 // The size we got back from I_ZoneBase in megabytes
 size_t got_heapsize = 0;
@@ -94,18 +94,21 @@ size_t got_heapsize = 0;
 // I_MegabytesToBytes
 //
 // Returns the megabyte value of size in bytes
-size_t I_MegabytesToBytes (size_t size)
+size_t I_MegabytesToBytes (size_t Megabytes)
 {
-	return (size*1024*1024);
+	return (Megabytes*1024*1024);
 }
 
 //
 // I_BytesToMegabytes
 //
 // Returns the byte value of size in megabytes
-size_t I_BytesToMegabytes (size_t size)
+size_t I_BytesToMegabytes (size_t Bytes)
 {
-	return (size/1024/1024);
+	if (!Bytes)
+        return 0;
+        
+    return (Bytes/1024/1024);
 }
 
 //
@@ -130,8 +133,8 @@ void *I_ZoneBase (size_t *size)
 	*size = I_MegabytesToBytes(def_heapsize);
 
     // Allocate the def_heapsize, otherwise try to allocate a smaller amount
-	while (NULL == (zone = Malloc (*size)) && *size >= min_heapsize*1024*1024)
-		*size -= 1024*1024;
+	while (NULL == (zone = Malloc (*size)) && *size >= I_MegabytesToBytes(min_heapsize))
+		*size -= I_MegabytesToBytes(1);
 
     // Our heap size we received
     got_heapsize = I_BytesToMegabytes(*size);
@@ -140,8 +143,8 @@ void *I_ZoneBase (size_t *size)
     if (got_heapsize < min_heapsize)
         I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
                      "is %u MB but Malloc() returned %u MB",
-                     I_BytesToMegabytes(min_heapsize),
-                     I_BytesToMegabytes(got_heapsize));
+                     min_heapsize,
+                     got_heapsize);
 
 	return zone;
 }
