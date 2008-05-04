@@ -3,8 +3,8 @@ SHELL = /bin/sh
 OBJDIR = obj
 # denis - fixme - remove mkdir -p
 MKDIR = mkdir -p
-CC = g++-4.1
-LD = g++-4.1
+CC = g++
+LD = g++
 INSTALL = cp
 DEUTEX = deutex
 
