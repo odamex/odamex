@@ -42,6 +42,7 @@
 #include "w_wad.h"
 #include "d_player.h"
 #include "m_fileio.h"
+#include "p_local.h"
 
 // Miscellaneous info that used to be constant
 struct DehInfo deh = {
@@ -595,6 +596,8 @@ static state_t		backupStates[NUMSTATES];
 static mobjinfo_t	backupMobjInfo[NUMMOBJTYPES];
 static mobjinfo_t	backupWeaponInfo[NUMWEAPONS];
 static char		*backupSprnames[NUMSPRITES+1];
+static int		backupMaxAmmo[NUMAMMO];
+static int		backupClipAmmo[NUMAMMO];
 static DehInfo		backupDeh;
 
 static void BackupData (void)
@@ -617,7 +620,11 @@ static void BackupData (void)
 	memcpy(backupMobjInfo, mobjinfo, sizeof(mobjinfo));
 	memcpy(backupWeaponInfo, weaponinfo, sizeof(weaponinfo));
 	memcpy(backupSprnames, sprnames, sizeof(sprnames));
+	memcpy(backupClipAmmo, clipammo, sizeof(clipammo));
+	memcpy(backupMaxAmmo, maxammo, sizeof(maxammo));
 	backupDeh = deh;
+
+	BackedUpData = true;
 }
 
 void UndoDehPatch ()
@@ -640,6 +647,8 @@ void UndoDehPatch ()
 	memcpy(mobjinfo, backupMobjInfo, sizeof(mobjinfo));
 	memcpy(weaponinfo, backupWeaponInfo, sizeof(weaponinfo));
 	memcpy(sprnames, backupSprnames, sizeof(sprnames));
+	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
+	memcpy(maxammo, backupMaxAmmo, sizeof(maxammo));
 	deh = backupDeh;
 }
 
