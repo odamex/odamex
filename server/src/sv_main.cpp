@@ -1965,7 +1965,7 @@ void SV_DisconnectClient(player_t &who)
 		else if (ctfmode || teamplay)
 			sprintf(str, "%s TEAM, ", team_names[who.userinfo.team]);
 		else
-			sprintf(str, "");
+			*str = '\0';
 		
 		disconnectmessage += str;
 		

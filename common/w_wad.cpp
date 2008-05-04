@@ -580,7 +580,6 @@ W_ReadLump
 {
 	int		c;
 	lumpinfo_t*	l;
-    char errormsg[255];
 
 	if (lump >= numlumps)
 		I_Error ("W_ReadLump: %i >= numlumps",lump);

@@ -273,7 +273,6 @@ void G_Ticker (void)
 				G_DoReborn (players[i]);
 
 	// do things to change the game state
-	gamestate_t oldgamestate = gamestate;
 	while (gameaction != ga_nothing)
 	{
 		switch (gameaction)
