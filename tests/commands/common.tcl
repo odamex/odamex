@@ -19,10 +19,10 @@ proc start {} {
  set client [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo > odamex.log" w]
  set clientout [open odamex.log r]
 
+ wait 5
+
  client "print_stdout 1"
  client "cl_name Player"
-
- wait 5
 }
 
 proc end {} {
