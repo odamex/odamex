@@ -20,7 +20,7 @@ lappend demos "DOOM2.WAD DEMO3 {dca00040 fd6a4b9c ff7bee0a ff000000}"
 
 foreach demo $demos {
 	set stdout [exec ./odamex -nosound -novideo   \
-			-iwad [lindex $demo 1]        \
+			-iwad [lindex $demo 0]        \
 			+demotest [lindex $demo 1]]
 
 	set result [lindex [split $stdout "\n"] end]
