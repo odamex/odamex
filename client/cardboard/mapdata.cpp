@@ -64,18 +64,18 @@ void hackMapData()
       vertexlist[i].frameid = 0;
    
    for(i = 0; i < sidecount; i++)
-      sidelist[i].sector = sectorlist + ((int)sidelist[i].sector - 1);
+      sidelist[i].sector = sectorlist + ((size_t)sidelist[i].sector - 1);
 
    for(i = 0; i < linecount; i++)
    {
       linelist[i].sector1 = 
          linelist[i].sector1 != NULL 
-         ? sectorlist + ((int)linelist[i].sector1 - 1)
+         ? sectorlist + ((size_t)linelist[i].sector1 - 1)
          : NULL;
 
       linelist[i].sector2 = 
          linelist[i].sector2 != NULL
-         ? sectorlist + ((int)linelist[i].sector2 - 1)
+         ? sectorlist + ((size_t)linelist[i].sector2 - 1)
          : NULL;
    }
 

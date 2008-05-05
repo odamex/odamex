@@ -57,13 +57,13 @@ class vector2f
       return vector2f(x / lastlen, y / lastlen);
    }
 
-   vector2f operator- (vector2f &other)
+   vector2f operator- (vector2f other)
    {
       return vector2f(x - other.x, y - other.y);
    }
 
 
-   vector2f operator+ (vector2f &other)
+   vector2f operator+ (vector2f other)
    {
       return vector2f(x + other.x, y + other.y);
    }
