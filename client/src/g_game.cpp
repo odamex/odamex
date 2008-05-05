@@ -1632,7 +1632,7 @@ void G_BeginRecording (void)
 
     // Save the right version code for this demo
 
-    if (demoversion = LMP_DOOM_1_9_1) // denis - TODO!!!
+    if (demoversion == LMP_DOOM_1_9_1) // denis - TODO!!!
     {
         *demo_p++ = DOOM_1_9_1_DEMO;
     }
