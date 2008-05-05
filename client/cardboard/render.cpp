@@ -139,7 +139,7 @@ void flyCamera(float delta)
 rendercolumn_t column;
 
 
-struct wall
+struct wall_t
 {
    int   x1, x2;
 
@@ -161,7 +161,7 @@ struct wall
 
    bool markfloor, markceiling;
    visplane_t *floorp, *ceilingp;
-};
+}wall;
 
 
 
