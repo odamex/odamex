@@ -13,11 +13,13 @@ proc start {} {
 
  server "maxclients 2"
  server "maxplayers 2"
+ server "timelimit 0"
  server "map 1"
 
  set client [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo > odamex.log" w]
  set clientout [open odamex.log r]
 
+ client "print_stdout 1"
  client "cl_name Player"
 
  wait 5
