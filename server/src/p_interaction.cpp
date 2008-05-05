@@ -51,7 +51,6 @@ EXTERN_CVAR (allowexit)
 EXTERN_CVAR (fragexitswitch)              // [ML] 04/4/06: Added comprimise for older exit method
 
 int shotclock = 0;
-player_t *WinPlayer;
 
 // a weapon is found with two clip loads,
 // a big item has five clip loads
@@ -979,7 +978,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		// fair to count them toward a player's score.
 		if (target->player && level.time)
 		{
-			if (!joinkill)
+			if (!joinkill && !shotclock)
 			{
 				if (target->player == source->player)	// [RH] Cumulative frag count
 				{
@@ -1017,26 +1016,6 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 			}
 
 			SV_UpdateFrags (*splayer);
-
-			// [Toke] Better fraglimit
-			if (deathmatch && fraglimit && (int)fraglimit == splayer->fragcount && !ctfmode && !teamplay && !fragexitswitch) // [ML] 04/4/06: Added !fragexitswitch
-			{
-					WinPlayer = splayer;
-					shotclock = TICRATE*1;
-			}
-
-			// [Toke] TeamDM fraglimit
-			if (teamplay && fraglimit && !ctfmode)
-			{
-				for(size_t i = 0; i < NUMFLAGS; i++)
-				{
-					if ((int)fraglimit == TEAMpoints[i])
-					{
-						shotclock = TICRATE*1;
-						break;
-					}
-				}
-			}
 		}
 
 		// [deathz0r] Stats for co-op scoreboard
@@ -1054,11 +1033,11 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 
 	if (target->player)
 	{
-		if (!joinkill)
+		if (!joinkill && !shotclock)
 			tplayer->deathcount++;
 
 		// count environment kills against you
-		if (!source && !joinkill)
+		if (!source && !joinkill && !shotclock)
 		{
 			tplayer->fragcount--;	// [RH] Cumulative frag count
 
@@ -1092,8 +1071,33 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		target->tics = 1;
 
 	// [RH] Death messages
-	if (target->player && level.time && !joinkill)
+	if (target->player && level.time && !joinkill && !shotclock)
 		ClientObituary (target, inflictor, source);
+
+	// Check fraglimit.
+	if (source && source->player && target->player && level.time)
+	{
+		// [Toke] Better fraglimit
+		if (deathmatch && fraglimit && splayer->fragcount >= (int)fraglimit && !ctfmode && !teamplay && !fragexitswitch) // [ML] 04/4/06: Added !fragexitswitch
+		{
+				SV_BroadcastPrintf (PRINT_HIGH, "Frag limit hit. Game won by %s!\n", splayer->userinfo.netname);
+				shotclock = TICRATE*2;
+		}
+
+		// [Toke] TeamDM fraglimit
+		if (teamplay && fraglimit && !ctfmode)
+		{
+			for(size_t i = 0; i < NUMFLAGS; i++)
+			{
+				if (TEAMpoints[i] >= (int)fraglimit)
+				{
+					SV_BroadcastPrintf (PRINT_HIGH, "Frag limit hit. %s team wins!\n", team_names[i]);
+					shotclock = TICRATE*2;
+					break;
+				}
+			}
+		}
+	}
 
 	// Drop stuff.
 	// This determines the kind of object spawned

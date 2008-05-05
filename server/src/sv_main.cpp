@@ -3222,30 +3222,11 @@ void SV_ParseCommands(player_t &player)
 void SV_WinCheck (void)
 {
 	if (shotclock)
-	{
+	{	
 		shotclock--;
 
-		if (teamplay)
-		{
-			for(size_t i = 0; i < NUMTEAMS; i++)
-			{
-				if(TEAMpoints[i] >= fraglimit)
-				{
-					SV_BroadcastPrintf (PRINT_HIGH, "Fraglimit hit. %s team wins!\n", team_names[i]);
-					G_ExitLevel (0, 1);
-				}
-			}
-		}
-
-		else
-		{
-			if (shotclock == 0 && !fragexitswitch)  // [ML] 04/4/06: added !fragexitswitch
-			{
-				SV_BroadcastPrintf (PRINT_HIGH, "Fraglimit hit.  Game won by %s!\n", WinPlayer->userinfo.netname);
-
-				G_ExitLevel (0, 1);
-			}
-		}
+		if (!shotclock)
+			G_ExitLevel (0, 1);
 	}
 }
 
@@ -3306,17 +3287,21 @@ void SV_WadDownloads (void)
 //
 team_t SV_WinningTeam (void)
 {
-	int max = 0;
-	team_t team = TEAM_NONE;
+	team_t team = (team_t)0;
+	bool isdraw = false;
 
-	for(size_t i = 0; i < NUMTEAMS; i++)
+	for(size_t i = 1; i < NUMTEAMS; i++)
 	{
-		if(TEAMpoints[i] > max)
-		{
-			max = TEAMpoints[i];
+		if(TEAMpoints[i] > TEAMpoints[(int)team]) {
 			team = (team_t)i;
+			isdraw = false;
+		} else if(TEAMpoints[i] == TEAMpoints[(int)team]) {
+			isdraw = true;
 		}
 	}
+	
+	if (isdraw)
+		team = TEAM_NONE;
 
 	return team;
 }
@@ -3326,24 +3311,40 @@ team_t SV_WinningTeam (void)
 //
 void SV_TimelimitCheck()
 {
-	if(!timelimit || level.time < (int)(timelimit * TICRATE * 60))
+	if(!timelimit || level.time < (int)(timelimit * TICRATE * 60) || shotclock || gamestate == GS_INTERMISSION)
 		return;
 	
 	// LEVEL TIMER
-	if (deathmatch && !teamplay && !ctfmode)
-		SV_BroadcastPrintf (PRINT_HIGH, "Timelimit hit.\n");
+	if (players.size()) {
+		if (deathmatch && !teamplay && !ctfmode) {
+			player_t *winplayer = &players[0];
+			bool drawgame = false;
+			
+			if (players.size() > 1) {
+				for (int i = 1; i < players.size(); i++) {
+					if (players[i].fragcount > winplayer[i].fragcount) {
+						drawgame = false;
+						winplayer = &players[i];
+					} else if (players[i].fragcount == winplayer[i].fragcount)
+						drawgame = true;
+				}
+			}
+			
+			if (drawgame)
+				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+			else
+				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game won by %s!\n", winplayer->userinfo.netname);
+		} else if (teamplay || ctfmode) {
+			team_t winteam = SV_WinningTeam ();
 
-	if (teamplay && !ctfmode)
-	{
-		team_t winteam = SV_WinningTeam ();
-
-		if(winteam == TEAM_NONE)
-			SV_BroadcastPrintf(PRINT_HIGH, "No team won this game!\n");
-		else
-			SV_BroadcastPrintf(PRINT_HIGH, "%s team wins with a total of %d %s!\n", team_names[winteam], TEAMpoints[winteam], ctfmode ? "captures" : "frags");
+			if(winteam == TEAM_NONE)
+				SV_BroadcastPrintf(PRINT_HIGH, "Time limit hit. Game is a draw!\n");
+			else
+				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. %s team wins!\n", team_names[winteam]);
+		}
 	}
 
-	G_ExitLevel(0, 1);
+	shotclock = TICRATE*2;
 }
 
 //

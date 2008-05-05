@@ -31,6 +31,7 @@
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
 EXTERN_CVAR (usectf)
+extern int shotclock;
 
 CVAR(ctf_manualreturn, "0", CVAR_ARCHIVE)
 CVAR(ctf_flagathometoscore, "1", CVAR_ARCHIVE)
@@ -236,8 +237,8 @@ void SV_FlagScore (player_t &player, flag_t f)
 	// checks to see if a team won a game
 	if(TEAMpoints[player.userinfo.team] >= scorelimit)
 	{
-		SV_BroadcastPrintf (PRINT_HIGH, "%s team wins!\n", team_names[player.userinfo.team]);
-		G_ExitLevel (0, 1);
+		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", team_names[player.userinfo.team]);
+		shotclock = TICRATE*2;
 	}
 }
 
@@ -247,6 +248,9 @@ void SV_FlagScore (player_t &player, flag_t f)
 //
 bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
 {
+	if (shotclock)
+		return false;
+
 	if(player.userinfo.team == (team_t)f)
 	{
 		if(CTFdata[f].state == flag_home)
@@ -281,6 +285,9 @@ bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
 //
 void SV_SocketTouch (player_t &player, flag_t f)
 {
+	if (shotclock)
+		return;
+
 	if (player.userinfo.team == (team_t)f && player.flags[f]) {
 		player.flags[f] = false; // take ex-carrier's flag
 		CTFdata[f].flagger = 0;
@@ -299,6 +306,9 @@ void SV_SocketTouch (player_t &player, flag_t f)
 //
 void SV_FlagDrop (player_t &player, flag_t f)
 {
+	if (shotclock)
+		return;
+
 	SV_CTFEvent (f, SCORE_DROP, player);
 
 	int time_held = I_MSTime() - CTFdata[f].pickup_time;
@@ -331,6 +341,9 @@ void SV_FlagSetup (void)
 //
 void CTF_RunTics (void)
 {
+	if (shotclock)
+		return;
+
 	for(size_t i = 0; i < NUMFLAGS; i++)
 	{
 		flagdata *data = &CTFdata[i];

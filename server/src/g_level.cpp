@@ -638,6 +638,7 @@ void G_InitNew (char *mapname)
 	paused = false;
 	demoplayback = false;
 	viewactive = true;
+	shotclock = 0;
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);

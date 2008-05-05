@@ -39,7 +39,6 @@
 #define GAME_CTF		3
 
 extern int shotclock;
-extern player_t *WinPlayer;
 
 extern bool	unnatural_level_progression;
 
