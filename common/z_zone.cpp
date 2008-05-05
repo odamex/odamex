@@ -104,9 +104,9 @@ void Z_Init (void)
 
 
 //
-// Z_Free
+// Z_Free2
 //
-void Z_Free (void* ptr)
+void Z_Free2(void *ptr, char *file, int line)
 {
     memblock_t*		block;
     memblock_t*		other;
@@ -118,7 +118,7 @@ void Z_Free (void* ptr)
 	block = (memblock_t *) ( (byte *)ptr - sizeof(memblock_t));
 
 	if (block->id != ZONEID)
-		I_FatalError ("Z_Free: freed a pointer without ZONEID");
+		I_FatalError ("Z_Free: freed a pointer without ZONEID at %s:%i", file, line);
 
 	if (block->user > (void **)0x100)
 	{
@@ -169,11 +169,7 @@ void Z_Free (void* ptr)
 #define MINFRAGMENT	64
 #define ALIGN		8
 
-void*
-Z_Malloc
-( size_t	size,
-  int		tag,
-  void*		user )
+void* Z_Malloc2(size_t size, int tag, void *user, char *file, int line)
 {
 	int 		extra;
 	memblock_t	*start;
@@ -209,7 +205,7 @@ Z_Malloc
 		if (rover == start)
 		{
 			// scanned all the way around the list
-			I_FatalError ("Z_Malloc: failed on allocation of %i bytes", size);
+			I_FatalError ("Z_Malloc: failed on allocation of %i bytes at %s:%i", size, file, line);
 		}
 		
 		if (rover->user)
@@ -264,7 +260,7 @@ Z_Malloc
 	else
 	{
 		if (tag >= PU_PURGELEVEL)
-			I_FatalError ("Z_Malloc: an owner is required for purgable blocks");
+			I_FatalError ("Z_Malloc: an owner is required for purgable blocks at %s:%i", file, line);
 
 		// mark as in use, but unowned
 		base->user = (void **)2;

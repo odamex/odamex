@@ -45,15 +45,16 @@
 
 
 void	Z_Init (void);
-void*	Z_Malloc (size_t size, int tag, void *ptr);
-void	Z_Free (void *ptr);
 void	Z_FreeTags (int lowtag, int hightag);
 void	Z_DumpHeap (int lowtag, int hightag);
 void	Z_FileDumpHeap (FILE *f);
 void	Z_CheckHeap (void);
-void	Z_ChangeTag2 (void *ptr, int tag);
 size_t 	Z_FreeMemory (void);
 
+// Don't use these, use the macros instead!
+void*   Z_Malloc2 (size_t size, int tag, void *user, char *file, int line);
+void    Z_Free2 (void *ptr, char *file, int line);
+void	Z_ChangeTag2 (void *ptr, int tag);
 
 typedef struct memblock_s
 {
@@ -76,7 +77,7 @@ inline void Z_ChangeTag2 (const void *ptr, int tag)
 #define Z_ChangeTag(p,t) \
 { \
       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
-	  I_Error("Z_CT at "__FILE__":%i",__LINE__); \
+	  I_Error("Z_ChangeTag at "__FILE__":%i",__LINE__); \
 	  Z_ChangeTag2(p,t); \
 };
 
@@ -85,5 +86,8 @@ inline void Z_ChangeTag2 (const void *ptr, int tag)
       if (( (memblock_t *)( (char *)(p) - sizeof(memblock_t)))->tag > t) \
       Z_ChangeTag (p,t); \
 }
+
+#define Z_Malloc(s,t,p) Z_Malloc2(s,t,p,__FILE__,__LINE__)
+#define Z_Free(p) Z_Free2(p,__FILE__,__LINE__)
 
 #endif // __Z_ZONE_H__
