@@ -123,7 +123,7 @@ BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 	int normalcount = 0;
 	
 	if (var < 0)
-		var.Set(0);
+		var.Set((float)0);
 	
 	if (var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
