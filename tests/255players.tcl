@@ -3,7 +3,7 @@
 exec tclsh "$0" "$@"
 
 set port        10599
-set numplayers  255
+set numplayers  25; # 255
 
 proc start {} {
  global server client serverout clientout port numplayers
@@ -18,12 +18,16 @@ proc start {} {
 
  array set client ""
  for {set i 0} {$i < $numplayers} {incr i} {
-  set client($i) [open "|./odamex -port [expr 10401+$i] -connect localhost:$port -nosound -novideo > odamex.log" w]
+  set client($i) [open "|./odamex -port [expr 10401+$i] -connect localhost:$port -nosound -novideo > odamex$i.log" w]
   if { $client($i) == "" } {
    puts "FAIL: could not start client $i"
+  } else {
+   puts -nonewline .
+   flush stdout
   }
   wait
  }
+ puts ""
 
  wait 10
 }
@@ -61,6 +65,15 @@ proc wait { {n 1} } {
  exec sleep $n
 }
 
-start
-end
+proc main{} {
+ start
+ end
+}
+
+
+set error [catch { main }]
+
+if { $error } {
+ puts "FAIL Test crashed!"
+}
 
