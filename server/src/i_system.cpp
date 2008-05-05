@@ -37,7 +37,7 @@
 
 #include <windows.h>
 #include <mmsystem.h>
-#include <DIRECT.H> // SoM: I don't know HOW this has been overlooked until now...
+#include <direct.h> // SoM: I don't know HOW this has been overlooked until now...
 #endif
 
 #ifdef UNIX
