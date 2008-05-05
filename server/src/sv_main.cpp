@@ -122,8 +122,8 @@ BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 	// [Nes] - Force extras to become spectators.
 	int normalcount = 0;
 	
-	if (var < 1)
-		var.Set(1);
+	if (var < 0)
+		var.Set(0);
 	
 	if (var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
