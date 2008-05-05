@@ -9,6 +9,7 @@ set port 10599
 proc start {} {
  global server client serverout clientout port
  set server [open "|./odasrv -port $port > odasrv.log" w]
+ wait
  set serverout [open odasrv.log r]
 
  server "maxclients 2"
