@@ -52,8 +52,8 @@ void	Z_CheckHeap (void);
 size_t 	Z_FreeMemory (void);
 
 // Don't use these, use the macros instead!
-void*   Z_Malloc2 (size_t size, int tag, void *user, char *file, int line);
-void    Z_Free2 (void *ptr, char *file, int line);
+void*   Z_Malloc2 (size_t size, int tag, void *user, const char *file, int line);
+void    Z_Free2 (void *ptr, const char *file, int line);
 void	Z_ChangeTag2 (void *ptr, int tag);
 
 typedef struct memblock_s

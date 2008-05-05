@@ -106,7 +106,7 @@ void Z_Init (void)
 //
 // Z_Free2
 //
-void Z_Free2(void *ptr, char *file, int line)
+void Z_Free2(void *ptr, const char *file, int line)
 {
     memblock_t*		block;
     memblock_t*		other;
@@ -169,7 +169,7 @@ void Z_Free2(void *ptr, char *file, int line)
 #define MINFRAGMENT	64
 #define ALIGN		8
 
-void* Z_Malloc2(size_t size, int tag, void *user, char *file, int line)
+void* Z_Malloc2(size_t size, int tag, void *user, const char *file, int line)
 {
 	int 		extra;
 	memblock_t	*start;
