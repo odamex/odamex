@@ -35,10 +35,10 @@ proc main {} {
  # change map on server
  clear
  server "map map03"
- expect $serverout {--- MAP03: the gantlet ---}
+ expect $serverout {--- map03: the gantlet ---}
  expect $clientout {}
  expect $clientout {}
- expect $clientout {MAP03: the gantlet} 0
+ expect $clientout {map03: the gantlet} 0
 
  # change map on server
  clear
@@ -61,7 +61,7 @@ proc main {} {
  client "map MAP06"
  expect $clientout {}
  expect $clientout {}
- expect $clientout {MAP05: the waste tunnels} 0
+ expect $clientout {MAP06: the crusher} 0
 }
 
 start

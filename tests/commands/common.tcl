@@ -4,13 +4,21 @@ exec tclsh "$0" "$@"
 
 package provide common 1.0
 
+set port 10599
+
 proc start {} {
- global server client serverout clientout
- set server [open "|./odasrv -port 10599 > odasrv.log" w]
+ global server client serverout clientout port
+ set server [open "|./odasrv -port $port > odasrv.log" w]
  set serverout [open odasrv.log r]
 
- set client [open "|./odamex -port 10501 -connect localhost:10599 -nosound -novideo > odamex.log" w]
+ server "maxclients 2"
+ server "maxplayers 2"
+ server "map 1"
+
+ set client [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo > odamex.log" w]
  set clientout [open odamex.log r]
+
+ client "cl_name Player"
 
  wait 5
 }

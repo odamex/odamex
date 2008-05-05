@@ -18,8 +18,8 @@ proc main {} {
 
  # reset maxclients and maxplayers
  clear
- server "maxclients 1"
- server "maxplayers 1"
+ server "maxclients 2"
+ server "maxplayers 2"
  server "map 1"
  client "connect localhost:$port"
  wait 5
@@ -43,7 +43,7 @@ proc main {} {
 
  # change maxplayers (non-latched)
  clear
- server "maxplayers 1"
+ server "maxplayers 2"
  expect $serverout {maxplayers will be changed for next game.}
  server "map 1"
 
@@ -57,7 +57,7 @@ proc main {} {
 
  # change maxplayers and maxclients
  clear
- server "maxclients 1"
+ server "maxclients 2"
  expect $serverout {maxclients will be changed for next game.}
  server "maxplayers 0"
  expect $serverout {maxplayers will be changed for next game.}
@@ -80,7 +80,7 @@ proc main {} {
 
  # change maxplayers
  clear
- server "maxplayers 1"
+ server "maxplayers 2"
  expect $serverout {maxplayers will be changed for next game.}
  server "map 1"
 
