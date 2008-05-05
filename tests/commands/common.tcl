@@ -34,8 +34,6 @@ proc server { cmd } {
  flush $server
 
  wait
-
- while { ![eof $serverout] } { gets $serverout }
 }
 
 proc client { cmd } {
@@ -44,8 +42,6 @@ proc client { cmd } {
  flush $client
 
  wait
-
- while { ![eof $clientout] } { gets $clientout }
 }
 
 proc clear {} {

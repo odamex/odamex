@@ -12,7 +12,7 @@ proc main {} {
  server "teamplay 0"
  server "map 1"
  client "print_stdout 1"
- client "name Player"
+ client "cl_name Player"
 
  wait
 
