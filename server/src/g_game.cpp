@@ -51,8 +51,8 @@
 #include "g_game.h"
 #include "g_level.h"
 #include "sv_main.h"
-
 #include "sv_ctf.h"
+#include "gi.h"
 
 #define SAVESTRINGSIZE	24
 
@@ -100,6 +100,32 @@ player_t					nullplayer;				// null player
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
+
+enum demoversion_t
+{
+	LMP_DOOM_1_9,
+	LMP_DOOM_1_9_1, // longtics hack
+	ZDOOM_FORM
+}demoversion;
+
+#define DOOM_1_4_DEMO		0x68
+#define DOOM_1_5_DEMO		0x69
+#define DOOM_1_6_DEMO		0x6A
+#define DOOM_1_7_DEMO		0x6B
+#define DOOM_1_8_DEMO		0x6C
+#define DOOM_1_9_DEMO		0x6D
+#define DOOM_1_9p_DEMO		0x6E
+#define DOOM_1_9_1_DEMO		0x6F
+
+#define DOOM_BOOM_DEMO_START	0xC8
+#define DOOM_BOOM_DEMO_END	0xD6
+
+FILE *recorddemo_fp;
+
+EXTERN_CVAR(nomonsters)
+EXTERN_CVAR(fastmonsters)
+EXTERN_CVAR(allowfreelook)
+EXTERN_CVAR(monstersrespawn)
 
 char			demoname[256];
 BOOL 			demorecording;
@@ -237,6 +263,168 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 {
 }
 
+//
+// G_WriteDemoTiccmd
+//
+void G_WriteDemoTiccmd ()
+{
+    byte demo_tmp[8];
+
+    int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
+
+    for(size_t i = 0; i < players.size(); i++)
+    {
+        byte *demo_p = demo_tmp;
+        usercmd_t *cmd = &players[i].cmd.ucmd;
+
+        *demo_p++ = cmd->forwardmove >> 8;
+        *demo_p++ = cmd->sidemove >> 8;
+
+        // If this is a longtics demo, record in higher resolution
+
+        if (LMP_DOOM_1_9_1 == demoversion)
+        {
+            *demo_p++ = (cmd->yaw & 0xff);
+            *demo_p++ = (cmd->yaw >> 8) & 0xff;
+        }
+        else
+        {
+            *demo_p++ = cmd->yaw >> 8;
+            cmd->yaw = ((unsigned char)*(demo_p-1))<<8;
+        }
+
+        *demo_p++ = cmd->buttons;
+
+        fwrite(demo_tmp, demostep, 1, recorddemo_fp);
+    }
+}
+
+//
+// G_RecordDemo
+//
+bool G_RecordDemo (char* name)
+{ 
+    strcpy (demoname, name);
+    strcat (demoname, ".lmp");
+
+    if(recorddemo_fp)
+    {
+        fclose(recorddemo_fp);
+        recorddemo_fp = NULL;
+    }
+
+    recorddemo_fp = fopen(demoname, "w");
+
+    if(!recorddemo_fp)
+    {
+        Printf(PRINT_HIGH, "Could not open file %s for writing\n", demoname);
+        return false;
+    }
+
+    usergame = false;
+    demorecording = true;
+
+    return true;
+}
+//
+// G_BeginRecording
+//
+void G_BeginRecording (void)
+{
+    byte demo_tmp[32];
+    demo_p = demo_tmp;
+
+    // Save the right version code for this demo
+
+    if (demoversion == LMP_DOOM_1_9_1) // denis - TODO!!!
+    {
+        *demo_p++ = DOOM_1_9_1_DEMO;
+    }
+    else
+    {
+        *demo_p++ = DOOM_1_9_DEMO;
+    }
+
+    democlassic = true;
+
+    int episode;
+    int mapid;
+    if(gameinfo.flags & GI_MAPxx)
+    {
+        episode = 1;
+        mapid = atoi(level.mapname + 3);
+    }
+    else
+    {
+        episode = level.mapname[1] - '0';
+        mapid = level.mapname[3] - '0';
+    }
+
+    *demo_p++ = skill-1;
+    *demo_p++ = episode;
+    *demo_p++ = mapid;
+    *demo_p++ = deathmatch;
+    *demo_p++ = monstersrespawn;
+    *demo_p++ = fastmonsters;
+    *demo_p++ = nomonsters;
+    *demo_p++ = 0;
+
+    *demo_p++ = 1;
+    *demo_p++ = 0;
+    *demo_p++ = 0;
+    *demo_p++ = 0;
+
+    fwrite(demo_tmp, 13, 1, recorddemo_fp);
+}
+
+void RecordCommand(int argc, char **argv)
+{
+	if(argc > 2)
+	{
+
+		if(G_RecordDemo(argv[2]))
+		{
+			players.clear();
+			players.push_back(player_t());
+			players.back().playerstate = PST_REBORN;
+			players.back().id = 1;
+
+			player_t &con = idplayer(1);
+			consoleplayer_id = displayplayer_id = con.id;
+
+			serverside = true;
+
+			G_InitNew(argv[1]);
+			G_BeginRecording();
+		}
+	}
+	else
+		Printf(PRINT_HIGH, "Usage: recordvanilla map file\n");
+}
+
+/*
+BEGIN_COMMAND(recordvanilla)
+{
+	//G_CheckDemoStatus();
+	demoversion = LMP_DOOM_1_9;
+	RecordCommand(argc, argv);
+}
+END_COMMAND(recordvanilla)
+
+BEGIN_COMMAND(recordlongtics)
+{
+	//G_CheckDemoStatus();
+	demoversion = LMP_DOOM_1_9_1;
+	RecordCommand(argc, argv);
+}
+END_COMMAND(recordlongtics)
+
+BEGIN_COMMAND(stopdemo)
+{
+	G_CheckDemoStatus (); 
+}
+END_COMMAND(stopdemo)
+*/
 
 // [RH] Spy mode has been separated into two console commands.
 //		One goes forward; the other goes backward.
@@ -704,24 +892,6 @@ void G_BuildSaveName (char *name, int slot)
 void G_DoSaveGame (void)
 {
 }
-
-
-//
-// G_RecordDemo
-//
-void G_RecordDemo (char* name)
-{
-}
-
-
-// [RH] Demos are now saved as IFF FORMs. I've also removed support
-//		for earlier ZDEMs since I didn't want to bother supporting
-//		something that probably wasn't used much (if at all).
-
-void G_BeginRecording (void)
-{
-}
-
 
 //
 // G_PlayDemo

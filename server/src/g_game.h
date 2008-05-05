@@ -46,7 +46,7 @@ void G_BuildSaveName (char *name, int slot);
 void G_SaveGame (int slot, char* description);
 
 // Only called by startup code.
-void G_RecordDemo (char* name);
+bool G_RecordDemo (char* name);
 
 void G_BeginRecording (void);
 

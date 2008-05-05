@@ -69,8 +69,6 @@ CVAR (nextmap, "", CVAR_NULL | CVAR_NOENABLEDISABLE)			// tracks next map to be 
 CVAR (loopepisode, "0", CVAR_ARCHIVE)	// Nes - Determines whether Doom 1 episodes should carry over.
 
 
-EXTERN_CVAR(updatemins)
-
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
 

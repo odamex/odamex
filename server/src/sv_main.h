@@ -94,7 +94,5 @@ int SV_CountTeamPlayers(int team);
 
 extern std::vector<std::string> wadnames;
 
-EXTERN_CVAR(playeringamelimit)
-
 #endif
 
