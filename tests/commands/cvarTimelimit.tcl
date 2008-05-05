@@ -8,6 +8,7 @@ proc deathmatch {} {
  global server client serverout clientout port
 
  server "deathmatch 1"
+ server "teamplay 0"
 
  # 7 second timelimit
  clear
@@ -31,6 +32,7 @@ proc coop {} {
  global server client serverout clientout port
 
  server "deathmatch 0"
+ server "teamplay 0"
 
  # 7 second timelimit
  clear
@@ -52,10 +54,35 @@ proc coop {} {
  expect $clientout "--------------------------------------" 0
 }
 
+proc teamplay {} {
+ global server client serverout clientout port
+
+ server "deathmatch 1"
+ server "teamplay 1"
+
+ # 7 second timelimit
+ clear
+ server "map 1"
+ server "timelimit 0.125"
+ server "map 2"
+ clear
+
+ # not yet
+ wait 5
+ expect $serverout ""
+ expect $serverout ""
+
+ # wait our time
+ wait 5
+ expect $serverout "Time limit hit. Game is a draw!"
+ expect $clientout "Time limit hit. Game is a draw!" 0
+}
+
 
 proc main {} {
  deathmatch
  coop
+ teamplay
 }
 
 start
