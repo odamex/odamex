@@ -13,8 +13,9 @@ proc simple {} {
  expect $serverout "Ban on 127.0.0.1 added."
 
  # try to reconnect
+ client "disconnect"
  client "reconnect"
- wait 5
+ wait 2
  for {set i 0} {$i < 11} {incr i} { gets $clientout }
  expect $clientout {You are banned! (reason: none given)} 0
  expect $clientout {If you feel there has been an error, contact the server host. (No e-mail given)} 0
@@ -29,8 +30,9 @@ proc simple {} {
 
  # reconnect should have worked now
  clear
+ client "disconnect"
  client "reconnect"
- wait 5
+ wait 2
  expect $serverout {127.0.0.1:10501 is trying to connect...}
  expect $serverout {Player has connected.}
 }
@@ -44,8 +46,9 @@ proc wildcard {} {
  expect $serverout "Ban on 127.0.0.* added."
 
  # try to reconnect
+ client "disconnect"
  client "reconnect"
- wait 5
+ wait 2
  for {set i 0} {$i < 11} {incr i} { gets $clientout }
  expect $clientout {You are banned! (reason: none given)} 0
  expect $clientout {If you feel there has been an error, contact the server host. (No e-mail given)} 0
@@ -60,8 +63,9 @@ proc wildcard {} {
 
  # reconnect should have worked now
  clear
+ client "disconnect"
  client "reconnect"
- wait 5
+ wait 2
  expect $serverout {127.0.0.1:10501 is trying to connect...}
  expect $serverout {Player has connected.}
 }
@@ -76,8 +80,9 @@ proc notme {} {
 
  # reconnect should have worked now
  clear
+ client "disconnect"
  client "reconnect"
- wait 5
+ wait 2
  expect $serverout {Player disconnected. (SPECTATOR, 0 FRAGS, 0 DEATHS)}
  expect $serverout {127.0.0.1:10501 is trying to connect...}
  expect $serverout {Player has connected.}
