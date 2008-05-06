@@ -3,7 +3,7 @@
 exec tclsh "$0" "$@"
 
 set port        10599
-set numplayers  25; # 255
+set numplayers  3; # 255
 
 proc start {} {
  global server client serverout clientout port numplayers
@@ -16,6 +16,9 @@ proc start {} {
  server "timelimit 0"
  server "map 1"
 
+ # clear server only
+ while { ![eof $serverout] } { gets $serverout }
+
  array set client ""
  for {set i 0} {$i < $numplayers} {incr i} {
   set client($i) [open "|./odamex -port [expr 10401+$i] -connect localhost:$port -nosound -novideo > odamex$i.log" w]
@@ -25,11 +28,28 @@ proc start {} {
    puts -nonewline .
    flush stdout
   }
-  wait
+  wait 2
  }
  puts ""
 
- wait 10
+ wait 5
+}
+
+proc check {} {
+ global server client serverout clientout port numplayers
+ set ok 0
+ for {set i 0} {$i < $numplayers} {incr i} {
+  gets $serverout
+  if { [lrange [gets $serverout] 1 end] == "Player has connected." } { incr ok }
+ }
+ for {set i 0} {$i < $numplayers} {incr i} {
+  if { [lrange [gets $serverout] 1 end] == {Player disconnected. (SPECTATOR, 0 FRAGS, 0 DEATHS)} } { incr ok }
+ }
+ if { [expr $numplayers*2] == $ok } {
+  puts "PASS ($numplayers players)"
+ } else {
+  puts "FAIL ([expr $ok/2]/$numplayers)"
+ }
 }
 
 proc end {} {
@@ -45,7 +65,7 @@ proc end {} {
   close $client($i)
  }
 
- wait 5
+ check
 
  server quit
 
@@ -65,15 +85,26 @@ proc wait { {n 1} } {
  exec sleep $n
 }
 
-proc main {} {
- start
- end
+proc expect { stream expected {excludeTimestamp 1} } {
+ # strip the timestamp
+ set out [lrange [gets $stream] $excludeTimestamp end]
+ set out [join $out " "]
+ if { $expected == $out } {
+  puts "PASS $expected"
+ } else {
+  puts "FAIL ($expected|$out)"
+ }
 }
 
+proc main {} {
+ start
+}
 
 set error [catch { main }]
 
 if { $error } {
  puts "FAIL Test crashed!"
 }
+
+end
 
