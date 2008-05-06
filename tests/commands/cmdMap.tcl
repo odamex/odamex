@@ -51,7 +51,7 @@ proc main {} {
  # change map on client
  clear
  client "map MAP05"
- expect $serverout {Player disconnected. (SPECTATOR, 0 KILLS, 0 DEATHS)}
+ expect $serverout {Player disconnected. (SPECTATOR, 0 FRAGS, 0 DEATHS)}
  expect $clientout {}
  expect $clientout {}
  expect $clientout {MAP05: the waste tunnels} 0

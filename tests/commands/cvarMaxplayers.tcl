@@ -31,7 +31,7 @@ proc main {} {
  server "maxplayers 0"
  expect $serverout {maxplayers will be changed for next game.}
  server "map 1"
- expect $serverout {Player disconnected. (SPECTATOR, 0 KILLS, 0 DEATHS)}
+ expect $serverout {Player disconnected. (SPECTATOR, 0 FRAGS, 0 DEATHS)}
 
  # try to connect
  clear

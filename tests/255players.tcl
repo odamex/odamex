@@ -65,7 +65,7 @@ proc wait { {n 1} } {
  exec sleep $n
 }
 
-proc main{} {
+proc main {} {
  start
  end
 }
