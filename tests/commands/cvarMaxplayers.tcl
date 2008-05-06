@@ -21,8 +21,9 @@ proc main {} {
  server "maxclients 2"
  server "maxplayers 2"
  server "map 1"
- client "connect localhost:$port"
- wait 5
+ client "disconnect"
+ client "reconnect"
+ wait 3
 
  # kick client off the server
  clear
@@ -35,9 +36,10 @@ proc main {} {
 
  # try to connect
  clear
- client "connect localhost:$port"
+ client "disconnect"
+ client "reconnect"
  expect $clientout "connecting to 127.0.0.1:$port" 0
- wait 5
+ wait 3
  for {set i 0} {$i < 8} {incr i} { gets $clientout }
  expect $clientout {Server is full} 0
 
@@ -49,9 +51,10 @@ proc main {} {
 
  # try to connect
  clear
- client "connect localhost:$port"
+ client "disconnect"
+ client "reconnect"
  expect $clientout "connecting to 127.0.0.1:$port" 0
- wait 5
+ wait 3
  for {set i 0} {$i < 8} {incr i} { gets $clientout }
  expect $clientout {Server is full} 0
 
@@ -66,15 +69,17 @@ proc main {} {
 
  # try to connect
  clear
- client "connect localhost:$port"
+ client "disconnect"
+ client "reconnect"
  expect $clientout "connecting to 127.0.0.1:$port" 0
- wait 5
+ wait 3
  for {set i 0} {$i < 8} {incr i} { gets $clientout }
  expect $clientout {Odamex Deathmatch Server} 0
 
  # try to join with maxplayers 0
  clear
  client "+use"
+ wait
  client "-use"
  expect $serverout {}
 
@@ -87,6 +92,7 @@ proc main {} {
  # try to join
  clear
  client "+use"
+ wait
  client "-use"
  expect $serverout {Player joined the game.}
 
