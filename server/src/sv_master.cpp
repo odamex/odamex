@@ -265,9 +265,8 @@ struct token_t
 	netadr_t from;
 };
 
-#define MAX_TOKEN_AGE	(10 * TICRATE)
-#define MAX_TOKENS		64
-static token_t connect_tokens[MAX_TOKENS];
+#define MAX_TOKEN_AGE	(20 * TICRATE) // 20s should be enough for any client to load its wads
+static std::vector<token_t> connect_tokens;
 
 //
 // SV_NewToken
@@ -282,14 +281,16 @@ DWORD SV_NewToken()
 	token.from = net_from;
 	
 	// find an old token to replace
-	for(size_t i = 0; i < MAX_TOKENS; i++)
+	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
 		if(now - connect_tokens[i].issued >= MAX_TOKEN_AGE)
 		{
 			connect_tokens[i] = token;
-			break;
+			return token.id;
 		}
-	}			
+	}
+
+	connect_tokens.push_back(token);
 
 	return token.id;
 }
@@ -301,7 +302,7 @@ bool SV_IsValidToken(DWORD token)
 {
 	QWORD now = I_GetTime();
 
-	for(size_t i = 0; i < MAX_TOKENS; i++)
+	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
 		if(connect_tokens[i].id == token
 		&& NET_CompareAdr(connect_tokens[i].from, net_from)
