@@ -11,9 +11,9 @@ CLIENT_TARGET = client
 MASTER_TARGET = master
 
 # Russell - binary output
-SERVER_BIN = odasrv
-CLIENT_BIN = odamex
-MASTER_BIN = odamast
+SERVER_BIN = odasrv.exe
+CLIENT_BIN = odamex.exe
+MASTER_BIN = odamast.exe
 
 # Russell - global compiler/linker flags 
 # to add debug symbols, remove -Os and add -ggdb
