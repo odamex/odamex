@@ -1224,8 +1224,6 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 
 	Z_Init();
 
-	gamestate = GS_STARTUP;
-
 	wadfiles.clear();
 
 	std::string custwad;
