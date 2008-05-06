@@ -46,8 +46,7 @@
 
 #include "cl_ctf.h"
 
-extern int predicting;
-
+extern bool predicting;
 
 static void PickupMessage (AActor *toucher, const char *message)
 {

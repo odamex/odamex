@@ -24,6 +24,10 @@
 #ifndef __M_SWAP_H__
 #define __M_SWAP_H__
 
+#if defined(_WIN32) || defined(WIN32)
+#include <windows.h>
+#endif
+
 #ifdef TARGET_CPU_X86
 #ifdef __BIG_ENDIAN__
 #undef __BIG_ENDIAN__
