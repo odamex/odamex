@@ -134,7 +134,7 @@ void CL_ResetPlayers (size_t oldtic)
 			p->mo->momz = p->real_velocity[2];
 
 			// predict up to oldtic
-			int reverse_tics = (int)p->last_received - (int)gametic;
+			int reverse_tics = (int)p->last_received - (int)oldtic;
 			while(reverse_tics > 0)
 			{
 				predicting = true; // disable bobbing, sounds
