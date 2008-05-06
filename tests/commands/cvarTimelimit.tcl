@@ -83,6 +83,8 @@ proc main {} {
  deathmatch
  coop
  teamplay
+ # reset
+ server "timelimit 0"
 }
 
 start
