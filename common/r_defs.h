@@ -322,9 +322,9 @@ typedef struct seg_s seg_t;
 //
 typedef struct subsector_s
 {
-	sector_t	*sector;
-	short		numlines;
-	short		firstline;
+	sector_t		*sector;
+	unsigned short	numlines;
+	unsigned short	firstline;
 } subsector_t;
 
 //

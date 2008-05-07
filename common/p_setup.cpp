@@ -1167,7 +1167,11 @@ void P_GroupLines (void)
 
 	// look up sector number for each subsector
 	for (i = 0; i < numsubsectors; i++)
+	{
+		if(subsectors[i].firstline >= numsegs)
+			I_Error("subsector[%d].firstline exceeds numsegs (%d)", i, numlines);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
+	}
 
 	// count number of lines in each sector
 	li = lines;
