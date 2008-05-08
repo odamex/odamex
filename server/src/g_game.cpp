@@ -721,7 +721,11 @@ void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this
 	if (selections < 1)
 	{
 		selections = deathmatch_p - deathmatchstarts;
-		spot = SelectRandomDeathmatchSpot (player, selections);
+
+		if(selections)
+		{
+			spot = SelectRandomDeathmatchSpot (player, selections);
+		}
 	}
 	else
 	{
