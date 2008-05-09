@@ -255,8 +255,8 @@ void R_GenerateComposite (int texnum)
 				col = (column_t *)((byte *) col + col->length + 4); // next post
 			}
 		}
-	free(source); 				// free temporary column
-	free(marks);				// free transparency marks
+	M_Free(source); 				// free temporary column
+	M_Free(marks);				// free transparency marks
 
 	// Now that the texture has been built in column cache,
 	// it is purgable from zone memory.
@@ -368,7 +368,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 		}
 		texturecompositesize[texnum] = csize;
 	}
-	free(count);								// killough 4/9/98
+	M_Free(count);								// killough 4/9/98
 }
 
 //

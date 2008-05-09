@@ -201,8 +201,7 @@ void P_InitPicAnims (void)
 	// denis - allow reinitialisation
 	if(anims)
 	{
-		free(anims);
-		anims = 0;
+		M_Free(anims);
 		lastanim = 0;
 		maxanims = 0;
 	}

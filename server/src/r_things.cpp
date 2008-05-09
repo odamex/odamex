@@ -495,8 +495,9 @@ void R_InitSprites (const char **namelist)
 	numskins = 0; // [Toke - skins] Reset skin count
 
 	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
-	if(vissprites)
-		free(vissprites);
+
+    M_Free(vissprites);
+
 	vissprites = (vissprite_t *)Malloc (MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 

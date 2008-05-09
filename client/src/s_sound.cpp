@@ -1164,11 +1164,7 @@ int S_AddSoundLump (char *logicalname, int lump)
 
 void S_ClearSoundLumps()
 {
-	if(S_sfx)
-	{
-		free(S_sfx);
-		S_sfx = 0;
-	}
+	M_Free(S_sfx);
 
 	numsfx = 0;
 	maxsfx = 0;

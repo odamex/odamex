@@ -275,8 +275,8 @@ void DArgs::SetArgs(const char *cmdline)
 
 	CopyArgs(outputargc, outputargv);
 
-	free(outputargv);
-	free(outputline);
+	M_Free(outputargv);
+	M_Free(outputline);
 
 	return;
 }
@@ -337,7 +337,7 @@ void M_FindResponseFile (void)
 				DArgs newargs (i, argv);
 				Args = newargs;
 				
-				free(argv);
+				M_Free(argv);
 			}
 
 			delete[] file;

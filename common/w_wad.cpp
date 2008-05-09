@@ -444,11 +444,7 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
     // will be realloced as lumps are added
 	numlumps = 0;
 	
-	if(lumpinfo)
-	{
-		free(lumpinfo);
-		lumpinfo = 0;	
-	}
+	M_Free(lumpinfo);
 	
 	std::vector<std::string> hashes(filenames);
 	
@@ -474,8 +470,7 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 	W_MergeLumps ("C_START", "C_END", ns_colormaps);
 
     // set up caching
-	if(lumpcache)
-		free(lumpcache);
+	M_Free(lumpcache);
 
 	size = numlumps * sizeof(*lumpcache);
 	lumpcache = (void **)Malloc (size);

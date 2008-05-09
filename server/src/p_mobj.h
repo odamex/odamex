@@ -70,8 +70,7 @@ class NetIDHandler
 
 	~NetIDHandler()
 	{
-		if(allocation)
-			free(allocation);
+		M_Free(allocation);
 	}
 
 	int ObtainNetID()

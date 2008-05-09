@@ -47,8 +47,7 @@ public:
 	}
 	~TArray ()
 	{
-		if (Array)
-			free (Array);
+		M_Free (Array);
 	}
 	T &operator[] (size_t index) const
 	{

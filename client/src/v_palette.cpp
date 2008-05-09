@@ -207,7 +207,9 @@ bool InternalCreatePalette (palette_t *palette, const char *name, byte *colors,
 	palette->flags = flags;
 	palette->usecount = 1;
 	palette->maps.colormaps = NULL;
-	if(palette->basecolors)free(palette->basecolors);
+	
+	M_Free(palette->basecolors);
+	
 	palette->basecolors = (DWORD *)Malloc (numcolors * 2 * sizeof(DWORD));
 	palette->colors = palette->basecolors + numcolors;
 	palette->numcolors = numcolors;

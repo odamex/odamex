@@ -643,7 +643,7 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 	{
 		std::string d_name = namelist[i]->d_name;
 
-		free(namelist[i]);
+		M_Free(namelist[i]);
 
 		if(!found.length())
 		{
@@ -672,8 +672,7 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 		}
 	}
 
-	if(namelist)
-		free(namelist);
+	M_Free(namelist);
 #else
 	std::string all_ext = dir + "*";
 	//all_ext += ext;
