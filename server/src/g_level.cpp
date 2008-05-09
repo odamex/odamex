@@ -475,7 +475,7 @@ void G_ChangeMap (void)
 
 	if (deathmatch) {
 		// make everyone a spectator again
-		for (int i = 0; i < players.size(); i++)
+		for (size_t i = 0; i < players.size(); i++)
 		{
 			players[i].spectator = true;
 			players[i].joinafterspectatortime = -(TICRATE*5);
