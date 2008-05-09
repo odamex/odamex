@@ -401,7 +401,7 @@ int I_RegisterSong (char *data, size_t musicLen)
 			return 0;
 		}
 
-		registered_tracks[0] = (Mix_Music*)1;
+		registered_tracks[0].Track = (Mix_Music*)1;
 
 #else
 
