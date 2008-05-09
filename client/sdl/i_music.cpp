@@ -57,7 +57,13 @@ static CFDataRef cfd;
     #define TEMP_MIDI "temp_music"
 #endif
 
-Mix_Music *registered_tracks[MUSIC_TRACKS];
+typedef struct 
+{
+    Mix_Music *Track;
+    SDL_RWops *Data;
+} MusicHandler_t;
+
+MusicHandler_t registered_tracks[MUSIC_TRACKS];
 int current_track;
 static bool music_initialized = false;
 
@@ -188,7 +194,7 @@ void I_PlaySong (int handle, int _looping)
 	if(--handle < 0 || handle >= MUSIC_TRACKS)
 		return;
 
-	if(!registered_tracks[handle])
+	if(!registered_tracks[handle].Track)
 		return;
 
 #ifdef OSX
@@ -267,9 +273,7 @@ void I_PlaySong (int handle, int _looping)
 
 #else
 
-	_looping = _looping ? -1 : 1;
-
-	if(Mix_PlayMusic(registered_tracks[handle], _looping) == -1)
+	if(Mix_PlayMusic(registered_tracks[handle].Track, _looping ? -1 : 1) == -1)
 	{
 		Printf(PRINT_HIGH, "Mix_PlayMusic: %s\n", Mix_GetError());
 		current_track = 0;
@@ -332,7 +336,7 @@ void I_UnRegisterSong (int handle)
 	if(handle < 0 || handle >= MUSIC_TRACKS)
 		return;
 
-	if(!registered_tracks[handle])
+	if(!registered_tracks[handle].Track)
 		return;
 
 	if(handle == current_track)
@@ -344,11 +348,16 @@ void I_UnRegisterSong (int handle)
 
 #else
 
-	Mix_FreeMusic(registered_tracks[handle]);
+	Mix_FreeMusic(registered_tracks[handle].Track);
+    
+    if (registered_tracks[handle].Data)
+        SDL_FreeRW(registered_tracks[handle].Data);
 
 #endif
 
-	registered_tracks[handle] = 0;
+	registered_tracks[handle].Track = NULL;
+	registered_tracks[handle].Data = NULL;
+
 }
 
 int I_RegisterSong (char *data, size_t musicLen)
@@ -401,25 +410,28 @@ int I_RegisterSong (char *data, size_t musicLen)
 		// older versions of sdl-mixer require a physical midi file to be read, 1.2.7+ can read from memory
 #ifndef TEMP_MIDI // SDL >= 1.2.7
 
-            SDL_RWops *rw = SDL_RWFromMem(mem_fgetbuf(midi), mem_fsize(midi));
+            if (registered_tracks[0].Data)
+                SDL_FreeRW(registered_tracks[0].Data);
 
-            if (!rw)
+            registered_tracks[0].Data = SDL_RWFromMem(mem_fgetbuf(midi), mem_fsize(midi));
+
+            if (!registered_tracks[0].Data)
             {
                 Printf(PRINT_HIGH, "SDL_RWFromMem: %s\n", Mix_GetError());
                 break;
             }
 
-            music = Mix_LoadMUS_RW(rw);
+            music = Mix_LoadMUS_RW(registered_tracks[0].Data);
 
 			if(!music)
             {
                 Printf(PRINT_HIGH, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
-                SDL_FreeRW(rw);
-
+                
+                SDL_FreeRW(registered_tracks[0].Data);
+                registered_tracks[0].Data = NULL;
+                
                 break;
             }
-
-			SDL_FreeRW(rw);
 
 #else // SDL <= 1.2.6 - Create a file so it can load the midi
 
@@ -447,7 +459,7 @@ int I_RegisterSong (char *data, size_t musicLen)
 
 #endif
 
-		registered_tracks[0] = music;
+		registered_tracks[0].Track = music;
 
 #endif // OSX
             break;
