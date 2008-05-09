@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	M_ALLOC
+//	Wrappers around the standard memory allocation routines.
 //
 //-----------------------------------------------------------------------------
 
@@ -26,6 +26,7 @@
 #define __M_ALLOC_H__
 
 #include <stdlib.h>
+#include <stdint.h>
 
 // These are the same as the same stdlib functions,
 // except they bomb out with an error requester
@@ -34,6 +35,11 @@
 void *Malloc (size_t size);
 void *Calloc (size_t num, size_t size);
 void *Realloc (void *memblock, size_t size);
+
+// don't use these, use the macros instead!
+void M_Free2 (uintptr_t &memblock);
+
+#define M_Free(p) do { M_Free2((uintptr_t &)p); } while(0)
 
 #endif //__M_ALLOC_H__
 
