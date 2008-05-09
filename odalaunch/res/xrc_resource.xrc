@@ -150,7 +150,7 @@
 			</object>
 		</object>
 		<object class="wxSplitterWindow" name="spWINMAIN">
-			<style>wxSP_3D</style>
+			<style>wxSP_NOBORDER</style>
 			<bg>#d4d0c8</bg>
 			<sashpos>0</sashpos>
 			<gravity>1</gravity>
