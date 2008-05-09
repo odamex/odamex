@@ -645,10 +645,10 @@ void V_Init (void)
 	else
         AddCommandString("checkres");
 
-	V_InitConChars (0xf7);
-	C_InitConsole (screen->width, screen->height, true);
-
 	V_InitPalette ();
+C_InitConsole (screen->width, screen->height, true);
+
+	V_InitConChars (0xf7);
 }
 
 void DCanvas::AttachPalette (palette_t *pal)

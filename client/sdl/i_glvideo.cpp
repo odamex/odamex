@@ -166,7 +166,7 @@ bool GLVideo::SetMode (int width, int height, int bits, bool fs)
 	if(opengl)
 	{
 		flags |= SDL_OPENGL;
-		bits = 32;
+		bits = 8;
 
 		SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 1 );
 	}
