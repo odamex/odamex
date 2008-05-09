@@ -204,7 +204,7 @@ void *dlgMain::Entry()
         {
             static const wxString masters[2] = 
             {
-                _T("odamex.net"),
+                _T("master1.odamex.net"),
                 _T("odamex.org")
             };
             
