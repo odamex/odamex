@@ -412,8 +412,16 @@ int I_RegisterSong (char *data, size_t musicLen)
 
             if (registered_tracks[0].Data)
                 SDL_FreeRW(registered_tracks[0].Data);
-
-            registered_tracks[0].Data = SDL_RWFromMem(mem_fgetbuf(midi), mem_fsize(midi));
+            
+            if (result == 0) // it is a midi
+            {
+                registered_tracks[0].Data = SDL_RWFromMem(mem_fgetbuf(midi), mem_fsize(midi));
+            }
+            else // it is another format
+            {
+                registered_tracks[0].Data = SDL_RWFromMem(data, musicLen);
+            }
+            
 
             if (!registered_tracks[0].Data)
             {
