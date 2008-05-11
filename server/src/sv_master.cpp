@@ -92,6 +92,7 @@ EXTERN_CVAR (fragexitswitch)
 //bond===========================
 
 EXTERN_CVAR (maxplayers)
+EXTERN_CVAR (password)
 
 // if set, advetise user-defined natport value to the master
 CVAR(natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -447,6 +448,9 @@ void SV_SendServerInfo()
             MSG_WriteByte(&ml_message, (players[i].spectator ? true : false));
         }
     }
+
+    MSG_WriteLong(&ml_message, (DWORD)0x01020305);
+    MSG_WriteShort(&ml_message, strlen(password.cstring()) ? 1 : 0);
 
 	NET_SendPacket(ml_message, net_from);
 }
