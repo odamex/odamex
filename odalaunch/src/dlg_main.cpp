@@ -34,6 +34,7 @@
 #include <wx/recguard.h>
 #include <wx/app.h>
 #include <wx/imaglist.h>
+#include <wx/artprov.h>
 
 #include "misc.h"
 
@@ -114,16 +115,42 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     SERVER_LIST = wxDynamicCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
     PLAYER_LIST = wxDynamicCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
 
+    SetupServerListColumns(SERVER_LIST);
+    SetupPlayerListHeader(PLAYER_LIST);
+
+    // spectator state.
+    PLAYER_LIST->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
+
+    // Load configuration
+    wxFileConfig ConfigInfo;
+    wxInt32 ServerListSortOrder, ServerListSortColumn;
+    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
+
+    ConfigInfo.Read(_T("ServerListSortOrder"), &ServerListSortOrder, 1);
+    ConfigInfo.Read(_T("ServerListSortColumn"), &ServerListSortColumn, 0);
+
+    SERVER_LIST->SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+
+    ConfigInfo.Read(_T("PlayerListSortOrder"), &PlayerListSortOrder, 1);
+    ConfigInfo.Read(_T("PlayerListSortColumn"), &PlayerListSortColumn, 0);
+
+    PLAYER_LIST->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+
+    wxInt32 WindowWidth, WindowHeight;
+
+    ConfigInfo.Read(_T("MainWindowWidth"), &WindowWidth, 0);
+    ConfigInfo.Read(_T("MainWindowHeight"), &WindowHeight, 0);
+    
+    if (WindowWidth && WindowHeight)
+        SetSize(WindowWidth, WindowHeight);
+
 	// set up the master server information
 	MServer = new MasterServer;
     
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
     server_dlg = new dlgServers(MServer, this);
-
-    SetupServerListColumns(SERVER_LIST);
-    SetupPlayerListHeader(PLAYER_LIST);
-    
+   
     QServer = NULL;
 
     // Create monitor thread and run it
@@ -154,6 +181,28 @@ dlgMain::~dlgMain()
     mtcs_Request.Signal = mtcs_exit;
     GetThread()->Wait();
 
+    // Save GUI layout
+    wxFileConfig ConfigInfo;
+    wxInt32 ServerListSortOrder, ServerListSortColumn;
+    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
+
+    SERVER_LIST->GetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+    PLAYER_LIST->GetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+
+    ConfigInfo.Write(_T("ServerListSortOrder"), ServerListSortOrder);
+    ConfigInfo.Write(_T("ServerListSortColumn"), ServerListSortColumn);
+
+    ConfigInfo.Write(_T("PlayerListSortOrder"), PlayerListSortOrder);
+    ConfigInfo.Write(_T("PlayerListSortColumn"), PlayerListSortColumn);
+
+    wxInt32 WindowWidth, WindowHeight;
+    
+    GetSize(&WindowWidth, &WindowHeight);
+
+    ConfigInfo.Write(_T("MainWindowWidth"), WindowWidth);
+    ConfigInfo.Write(_T("MainWindowHeight"), WindowHeight);
+
+    // Cleanup
     if (MServer != NULL)
         delete MServer;
         
@@ -533,7 +582,8 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               "Empty reset: %s\n"
                               "Clean maps: %s\n"
                               "Frag on exit: %s\n"
-                              "Spectating: %s\n"),
+                              "Spectating: %s\n"
+                              "Passworded: %s\n"),
                               QServer[i].info.version,
                               
                               QServer[i].info.emailaddr.c_str(),
@@ -556,7 +606,8 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               BOOLSTR(QServer[i].info.emptyreset),
                               BOOLSTR(QServer[i].info.cleanmaps),
                               BOOLSTR(QServer[i].info.fragonexit),
-                              BOOLSTR(QServer[i].info.spectating));
+                              BOOLSTR(QServer[i].info.spectating),
+                              BOOLSTR(QServer[i].info.passworded));
     
     static wxTipWindow *tw = NULL;
                               

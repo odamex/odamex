@@ -26,10 +26,35 @@
 #include <wx/statusbr.h>
 #include <wx/msgdlg.h>
 #include <wx/colour.h>
-#include <wx/artprov.h>
 
 #include "net_packet.h"
 #include "misc.h"
+
+/* Key image */
+static const char *key_xpm[] = 
+{
+    "16 15 3 1",
+    ". c #C0C000",
+    "  c None",
+    "X c #808000",
+
+    "      .XX       ",
+    "    .....XX     ",
+    "    ..   .X     ",
+    "   ..     .X    ",
+    "   ..     .X    ",
+    "   ..     .X    ",
+    "    ..   ..     ",
+    "    .....XX     ",
+    "      ..X       ",
+    "      .X        ",
+    "      ..X       ",
+    "      .X        ",
+    "      ..X       ",
+    "      .X.       ",
+    "                ",
+};
+
 
 typedef enum
 {
@@ -58,6 +83,9 @@ void SetupServerListColumns(wxAdvancedListCtrl *list)
 	list->InsertColumn(serverlist_field_type,_T("Type"),wxLIST_FORMAT_LEFT,80);
 	list->InsertColumn(serverlist_field_iwad,_T("Game IWAD"),wxLIST_FORMAT_LEFT,80);
 	list->InsertColumn(serverlist_field_address,_T("Address : Port"),wxLIST_FORMAT_LEFT,130);
+	
+	// Passworded server icon
+    list->AddImageSmall(key_xpm);
 }
 
 /*
@@ -83,6 +111,7 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     if (insert)    
     {
         li.SetColumn(serverlist_field_name);
+        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
         li.SetText(s.info.name);
         
         li.SetId(list->ALCInsertItem(li));
@@ -91,11 +120,14 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     {
         li.SetId(index);
         li.SetColumn(serverlist_field_name);
+        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
         li.SetText(s.info.name);
         
         list->SetItem(li);
     }
-
+    
+    li.SetMask(wxLIST_MASK_TEXT); 
+    
     li.SetColumn(serverlist_field_address);
     li.SetText(s.GetAddress());
     
@@ -176,14 +208,7 @@ typedef enum
 } playerlist_fields_t;
 
 void SetupPlayerListHeader(wxAdvancedListCtrl *list)
-{
-    // spectator state.
-    
-    list->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());   
-}
-
-void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
-{   
+{ 
     list->DeleteAllItems();
 	list->DeleteAllColumns();
 	
@@ -193,7 +218,12 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
     list->InsertColumn(playerlist_field_killcount,_T("Kill count"),wxLIST_FORMAT_LEFT,60);
     list->InsertColumn(playerlist_field_deathcount,_T("Death count"),wxLIST_FORMAT_LEFT,80);
     list->InsertColumn(playerlist_field_timeingame,_T("Time"),wxLIST_FORMAT_LEFT,50);
+}
 
+void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
+{   
+    SetupPlayerListHeader(list);
+    
     if (s.info.teamplay)
     {
         list->InsertColumn(playerlist_field_team,
