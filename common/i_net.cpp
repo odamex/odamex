@@ -421,7 +421,10 @@ void MSG_WriteLong (buf_t *b, int c)
     buf[3] = c>>24;
 }
 
-
+//
+// MSG_WriteString
+//
+// Write a string to a buffer and null terminate it
 void MSG_WriteString (buf_t *b, const char *s)
 {
     if (!s)
@@ -431,6 +434,25 @@ void MSG_WriteString (buf_t *b, const char *s)
         SZ_Write (b, s, strlen(s));
         MSG_WriteByte(b, 0);
 	}
+}
+
+//
+// MSG_WriteString
+//
+// Write a string to a buffer with a byte count (maxed at 65536)
+void MSG_WriteString (buf_t *b, std::string &String)
+{
+    if (!String.size())
+    {
+        MSG_WriteShort(b, 0);
+        MSG_WriteByte(b, 0);
+    }
+    else
+    {
+        MSG_WriteShort(b, String.size());
+        SZ_Write(b, String.c_str(), String.size());
+        MSG_WriteByte(b, 0);
+    }
 }
 
 int MSG_BytesLeft(void)
@@ -649,26 +671,79 @@ int MSG_ReadLong (void)
     return c;
 }
 
+//
+// MSG_ReadString
+// 
+// Read a null terminated string
 char *MSG_ReadString (void)
 {
-    static char     string[2048];
-    signed char     c;
-    unsigned int    l;
+    static std::string String;
 
-    l = 0;
-	if(MSG_BytesLeft())
-    do
+    if (!MSG_BytesLeft())
     {
-       c = (signed char)MSG_ReadByte();
-       if (c == 0)
-           break;
-       string[l] = c;
-       l++;
-	} while (l < sizeof(string)-1 && MSG_BytesLeft());
+        msg_badread = true;
+        return "";
+    }
 
-    string[l] = 0;
+    String.clear();
 
-    return string;
+    SBYTE Ch = (SBYTE)MSG_ReadByte();
+
+    while (Ch != '\0' && MSG_BytesLeft())
+    {
+       String += Ch;
+
+       Ch = (SBYTE)MSG_ReadByte();
+	}
+
+    return (char *)String.c_str();
+}
+
+//
+// MSG_ReadString
+//
+// Read a string from a buffer with a byte count (maxed at 65536)
+SDWORD MSG_ReadString(std::string &String)
+{
+    if (!MSG_BytesLeft())
+    {
+        msg_badread = true;
+        
+        String = "";
+        
+        return -1;
+    }
+    
+    WORD Size = MSG_ReadShort();
+    
+    if (msg_readcount + Size + 1 > net_message.cursize)
+    {
+        msg_badread = true;
+        
+        String = "";
+        
+        return -1;
+    }
+    
+    WORD i;
+    
+    for (i = 0; i < Size; ++i)
+    {
+        String += (SBYTE)MSG_ReadByte();
+    }
+
+    // Don't return an empty string if there is no null terminator.
+    if (!MSG_BytesLeft())
+    {
+        msg_badread = true;
+        
+        return -1;
+    }
+
+    // Read the null terminator.
+    MSG_ReadByte();
+
+    return i;
 }
 
 //
