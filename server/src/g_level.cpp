@@ -409,7 +409,19 @@ BEGIN_COMMAND (clearmaplist)
 }
 END_COMMAND (clearmaplist)
 
-BEGIN_COMMAND (maplist_next)
+BEGIN_COMMAND (nextmap)
+{
+	if (!MapListPointer)
+	{
+		Printf( PRINT_HIGH, "Map list is empty.\n" );
+		return;
+	}
+
+	G_ExitLevel (0, 1);
+}
+END_COMMAND (nextmap)
+
+BEGIN_COMMAND (forcenextmap)
 {
 	if (!MapListPointer)
 	{
@@ -419,7 +431,7 @@ BEGIN_COMMAND (maplist_next)
 
 	G_ChangeMap ();
 }
-END_COMMAND (maplist_next)
+END_COMMAND (forcenextmap)
 
 BOOL 			secretexit;
 static int		startpos;	// [RH] Support for multiple starts per level
@@ -623,6 +635,8 @@ void G_InitNew (char *mapname)
 				G_PlayerReborn(players[i]);
 
 			players[i].playerstate = PST_REBORN;
+			
+			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
 	}
 
