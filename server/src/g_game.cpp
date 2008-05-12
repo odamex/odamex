@@ -377,23 +377,29 @@ void G_BeginRecording (void)
     fwrite(demo_tmp, 13, 1, recorddemo_fp);
 }
 
+EXTERN_CVAR(maxplayers)
+
 void RecordCommand(int argc, char **argv)
 {
 	if(argc > 2)
 	{
+		int ingame = 0;
+		for(size_t i = 0; i < players.size(); i++)
+		{
+			if(players[i].ingame())
+				ingame++;
+		}
 
+		if(!ingame)
+		{
+			Printf(PRINT_HIGH, "cannot record with no players");
+			return;
+		}
+		
+		maxplayers = 4;
+		
 		if(G_RecordDemo(argv[2]))
 		{
-			players.clear();
-			players.push_back(player_t());
-			players.back().playerstate = PST_REBORN;
-			players.back().id = 1;
-
-			player_t &con = idplayer(1);
-			consoleplayer_id = displayplayer_id = con.id;
-
-			serverside = true;
-
 			G_InitNew(argv[1]);
 			G_BeginRecording();
 		}
@@ -401,7 +407,6 @@ void RecordCommand(int argc, char **argv)
 	else
 		Printf(PRINT_HIGH, "Usage: recordvanilla map file\n");
 }
-
 /*
 BEGIN_COMMAND(recordvanilla)
 {
@@ -501,6 +506,9 @@ void G_Ticker (void)
 		}
 		C_AdjustBottom ();
 	}
+	
+	if(demorecording)
+		G_WriteDemoTiccmd();
 
 	// do main actions
 	switch (gamestate)
