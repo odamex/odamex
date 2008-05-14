@@ -244,7 +244,10 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
 void *dlgMain::Entry()
 {
     bool Running = true;
-           
+    
+    wxFileConfig ConfigInfo;
+    wxInt32 MasterTimeout, ServerTimeout;
+    
     while (Running)
     {
         // Can I order a master server request with a list of server addresses
@@ -260,17 +263,19 @@ void *dlgMain::Entry()
             static int index = 0;
             
             mtcs_Request.Signal = mtcs_getservers;
-          
+            
+            ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, 500);
+            
             MServer->SetAddress(masters[index], 15000);
 
             // TODO: Clean this up
-            if (!MServer->Query(9999))
+            if (!MServer->Query(MasterTimeout))
             {
                 index = !index;
         
                 MServer->SetAddress(masters[index], 15000);
            
-                if (!MServer->Query(9999))
+                if (!MServer->Query(MasterTimeout))
                 {
                     mtrs_struct_t *Result = new mtrs_struct_t;
 
@@ -348,6 +353,8 @@ void *dlgMain::Entry()
                 wxPostEvent(this, event);                  
             }
 
+            ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, 500);
+    
             /* 
                 Thread pool manager:
                 Executes a number of threads that contain the same amount of
@@ -379,7 +386,7 @@ void *dlgMain::Entry()
                         QServer[serverNum].SetAddress(Address, Port);
 
                         // add the thread to the vector
-                        threadVector.push_back(new QueryThread(this, &QServer[serverNum], serverNum));
+                        threadVector.push_back(new QueryThread(this, &QServer[serverNum], serverNum, ServerTimeout));
 
                         // create and run the thread
                         if(threadVector[threadVector.size() - 1]->Create() == wxTHREAD_NO_ERROR)

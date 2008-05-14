@@ -49,6 +49,9 @@ static wxInt32 ID_BTNGETENV = XRCID("ID_BTNGETENV");
 
 static wxInt32 ID_LSTWADDIR = XRCID("ID_LSTWADDIR");
 
+static wxInt32 ID_MASTERTIMEOUT = XRCID("ID_MASTERTIMEOUT");
+static wxInt32 ID_SERVERTIMEOUT = XRCID("ID_SERVERTIMEOUT");
+
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
@@ -68,6 +71,9 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	// Misc events
 	EVT_CHECKBOX(ID_CHKLISTONSTART, dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(ID_CHKSHOWBLOCKEDSERVERS, dlgConfig::OnCheckedBox)
+	
+	EVT_TEXT(ID_MASTERTIMEOUT, dlgConfig::OnTextChange)
+	EVT_TEXT(ID_SERVERTIMEOUT, dlgConfig::OnTextChange)
 END_EVENT_TABLE()
 
 // Window constructor
@@ -83,6 +89,9 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
 
     DIR_BOX = wxStaticCast(FindWindow(ID_DPCHOOSEWADDIR), wxDirPickerCtrl);
     TXT_ODXPATH = wxStaticCast(FindWindow(ID_FPCHOOSEODAMEXPATH), wxFilePickerCtrl);
+
+    m_MasterTimeout = wxStaticCast(FindWindow(ID_MASTERTIMEOUT), wxTextCtrl);
+    m_ServerTimeout = wxStaticCast(FindWindow(ID_SERVERTIMEOUT), wxTextCtrl);
 
     // Load current configuration from global configuration structure
     cfg_file = cfg;
@@ -122,6 +131,14 @@ void dlgConfig::Show()
     }
 
     TXT_ODXPATH->SetPath(cfg_file->odamex_directory);
+
+    wxString MasterTimeout, ServerTimeout;
+
+    ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, _T("500"));
+    ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, _T("500"));
+
+    m_MasterTimeout->SetValue(MasterTimeout);
+    m_ServerTimeout->SetValue(ServerTimeout);
 
     ShowModal();
 }
@@ -168,6 +185,11 @@ void dlgConfig::OnOK(wxCommandEvent &event)
 
     // Close window
     Close();
+}
+
+void dlgConfig::OnTextChange(wxCommandEvent &event)
+{
+    UserChangedSetting = 1;
 }
 
 /*
@@ -328,6 +350,8 @@ void dlgConfig::LoadSettings()
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
+    ConfigInfo.Write(_T("MasterTimeout"), m_MasterTimeout->GetValue());
+    ConfigInfo.Write(_T("ServerTimeout"), m_ServerTimeout->GetValue());
     ConfigInfo.Write(_T(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
 	ConfigInfo.Write(_T(DELIMWADPATHS), cfg_file->wad_paths);

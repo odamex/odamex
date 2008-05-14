@@ -87,6 +87,8 @@ class dlgConfig: public wxDialog
         
         void OnChooseOdamexPath(wxFileDirPickerEvent &event);
         
+        void OnTextChange(wxCommandEvent &event);
+        
         wxCheckBox *MASTER_CHECKBOX;
         wxCheckBox *BLOCKED_CHECKBOX;
 
@@ -95,6 +97,8 @@ class dlgConfig: public wxDialog
         wxDirPickerCtrl *DIR_BOX;
 
         wxFilePickerCtrl *TXT_ODXPATH;
+
+        wxTextCtrl *m_MasterTimeout, *m_ServerTimeout;
 
         wxFileConfig ConfigInfo;
 

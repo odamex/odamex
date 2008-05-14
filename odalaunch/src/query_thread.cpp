@@ -27,7 +27,7 @@ void *QueryThread::Entry()
 {   
     wxCommandEvent newEvent(wxEVT_THREAD_WORKER_SIGNAL, wxID_ANY );
     
-    newEvent.SetId(m_QueryServer->Query(9999));
+    newEvent.SetId(m_QueryServer->Query(m_ServerTimeout));
     newEvent.SetInt(m_ServerIndex);
     wxPostEvent(m_EventHandler, newEvent);
 

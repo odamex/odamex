@@ -203,29 +203,88 @@
 			<growablecols></growablecols>
 			<growablerows></growablerows>
 			<object class="sizeritem">
-				<option>0</option>
-				<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+				<option>1</option>
+				<flag>wxEXPAND</flag>
 				<border>5</border>
-				<object class="wxBoxSizer">
+				<object class="wxStaticBoxSizer">
 					<orient>wxVERTICAL</orient>
+					<label>Masters and Servers</label>
 					<object class="sizeritem">
 						<option>0</option>
-						<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+						<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
 						<border>5</border>
-						<object class="wxCheckBox" name="ID_CHKLISTONSTART">
-							<pos>0,76</pos>
-							<label>Get Master List on application start</label>
-							<checked>0</checked>
+						<object class="wxBoxSizer">
+							<orient>wxVERTICAL</orient>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+								<border>5</border>
+								<object class="wxCheckBox" name="ID_CHKLISTONSTART">
+									<pos>0,76</pos>
+									<label>Get Master List on application start</label>
+									<checked>0</checked>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+								<border>5</border>
+								<object class="wxCheckBox" name="ID_CHKSHOWBLOCKEDSERVERS">
+									<pos>0,114</pos>
+									<label>Show blocked servers</label>
+									<checked>0</checked>
+								</object>
+							</object>
 						</object>
 					</object>
 					<object class="sizeritem">
-						<option>0</option>
-						<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+						<option>1</option>
+						<flag>wxEXPAND</flag>
 						<border>5</border>
-						<object class="wxCheckBox" name="ID_CHKSHOWBLOCKEDSERVERS">
-							<pos>0,114</pos>
-							<label>Show blocked servers</label>
-							<checked>0</checked>
+						<object class="wxBoxSizer">
+							<orient>wxHORIZONTAL</orient>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALIGN_CENTER|wxALL</flag>
+								<border>5</border>
+								<object class="wxStaticText" name="m_staticText2">
+									<label>Master Timeout:</label>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL</flag>
+								<border>5</border>
+								<object class="wxTextCtrl" name="ID_MASTERTIMEOUT">
+									<value>500</value>
+									<maxlength>0</maxlength>
+								</object>
+							</object>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>1</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxBoxSizer">
+							<orient>wxHORIZONTAL</orient>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALIGN_CENTER|wxALL</flag>
+								<border>5</border>
+								<object class="wxStaticText" name="m_staticText21">
+									<label>Server Timeout:</label>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL</flag>
+								<border>5</border>
+								<object class="wxTextCtrl" name="ID_SERVERTIMEOUT">
+									<value>500</value>
+									<maxlength>0</maxlength>
+								</object>
+							</object>
 						</object>
 					</object>
 				</object>
