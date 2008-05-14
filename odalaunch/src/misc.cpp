@@ -31,7 +31,7 @@
 #include "misc.h"
 
 /* XPM */
-static char *padlock_xpm[] = 
+static const char *padlock_xpm[] = 
 {
 "16 16 157 2 0 0",
 "   c #000000",

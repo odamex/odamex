@@ -40,7 +40,7 @@ enum
 };
 
 // Sorting arrow XPM images
-static char *SortArrowAscending[] =
+static const char *SortArrowAscending[] =
 {
     "16 15 3 1",
     "  c None",
@@ -64,7 +64,7 @@ static char *SortArrowAscending[] =
     "                "
 };
 
-static char *SortArrowDescending[] =
+static const char *SortArrowDescending[] =
 {
     "16 15 3 1",
     "  c None",
