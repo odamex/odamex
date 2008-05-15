@@ -167,6 +167,11 @@ void CL_PredictPlayers (int predtic)
 				int buf = predtic%MAXSAVETICS;
 				ticcmd_t *cmd = &consoleplayer().cmd;
 				memcpy(cmd, &localcmds[buf], sizeof(ticcmd_t));
+
+				p->mo->angle = cl_angle[predtic%MAXSAVETICS];
+				p->viewheight = cl_viewheight[predtic%MAXSAVETICS];
+				p->deltaviewheight = cl_deltaviewheight[predtic%MAXSAVETICS];
+				p->mo->reactiontime = reactiontime[predtic%MAXSAVETICS];
 			}
 	
 			CL_PredictPlayer(p);
