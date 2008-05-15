@@ -149,7 +149,7 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     if (!mem_op)
     {
         Printf(PRINT_HIGH,
-                "perform_sdlmix_conv - SDL_RWFromConstMem: %s\n", SDL_GetError());
+                "perform_sdlmix_conv - SDL_RWFromMem: %s\n", SDL_GetError());
 
         return NULL;
     }
