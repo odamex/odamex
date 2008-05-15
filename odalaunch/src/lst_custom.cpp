@@ -372,7 +372,7 @@ void wxAdvancedListCtrl::Sort(wxInt32 Column, wxInt32 Order, wxInt32 Lowest, wxI
         Item1Check.SetId(LowSection);
         GetItem(Item1Check);
         
-        while ((LowSection < HighSection) && 
+        while ((LowSection <= HighSection) && 
                (SortRoutine(Order, Item1Check, MiddleItem) < 0)) 
         {
             ++LowSection;
@@ -383,7 +383,7 @@ void wxAdvancedListCtrl::Sort(wxInt32 Column, wxInt32 Order, wxInt32 Lowest, wxI
         Item2Check.SetId(HighSection);
         GetItem(Item2Check);
 
-        while ((LowSection < HighSection) && 
+        while ((LowSection <= HighSection) && 
                (SortRoutine(Order, Item2Check, MiddleItem) > 0))
         { 
             --HighSection;
