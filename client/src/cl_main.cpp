@@ -957,7 +957,7 @@ EXTERN_CVAR (show_messages)
 void CL_Print (void)
 {
 	byte level = MSG_ReadByte();
-	char *str  = MSG_ReadString();
+	const char *str = MSG_ReadString();
 
 	Printf (level, "%s", str);
 
@@ -1880,7 +1880,7 @@ void CL_ConsolePlayer(void)
 
 void CL_LoadMap(void)
 {
-	char *mapname = MSG_ReadString ();
+	const char *mapname = MSG_ReadString ();
 
 	if(gamestate == GS_DOWNLOAD)
 		return;

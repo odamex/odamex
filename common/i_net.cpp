@@ -680,7 +680,7 @@ int MSG_ReadLong (void)
 // MSG_ReadString
 // 
 // Read a null terminated string
-char *MSG_ReadString (void)
+const char *MSG_ReadString (void)
 {
     static std::string String;
 

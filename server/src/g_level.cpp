@@ -555,7 +555,7 @@ EXTERN_CVAR (maxplayers)
 void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
 
-void G_InitNew (char *mapname)
+void G_InitNew (const char *mapname)
 {
 	size_t i;
 

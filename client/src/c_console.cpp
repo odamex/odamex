@@ -351,6 +351,12 @@ static void setmsgcolor (int index, const char *color)
 
 extern int DisplayWidth;
 
+//
+// C_AddNotifyString
+//
+// Prioritise messages on top of screen
+// Break up the lines so that they wrap around the screen boundary
+//
 void C_AddNotifyString (int printlevel, const char *source)
 {
 	static enum

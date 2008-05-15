@@ -307,7 +307,7 @@ void G_DoNewGame (void)
 	gameaction = ga_nothing;
 }
 
-void G_InitNew (char *mapname)
+void G_InitNew (const char *mapname)
 {
 	size_t i = 0, j = 0;
 

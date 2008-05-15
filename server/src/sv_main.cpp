@@ -1045,7 +1045,7 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 void SV_SetupUserInfo (player_t &player)
 {
 	int		old_team;
-	char   *skin;
+	const char   *skin;
 	char	old_netname[MAXPLAYERNAME+1];
 	std::string		gendermessage;
 

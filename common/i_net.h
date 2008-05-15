@@ -315,7 +315,7 @@ int MSG_ReadShort (void);
 int MSG_ReadLong (void);
 bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);
-char *MSG_ReadString (void);
+const char *MSG_ReadString (void);
 
 bool MSG_DecompressMinilzo ();
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);

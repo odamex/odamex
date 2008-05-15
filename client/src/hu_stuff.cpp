@@ -295,8 +295,8 @@ void HU_Drawer (void)
 				
 				/* Now we need to figure out if they are infront of us */
 				// Taken from r_things.cpp and I have no clue what it does
-				fixed_t tr_x, tr_y, gxt, gyt, gzt, tx, tz, xscale;
-				extern fixed_t FocalLengthX, FocalLengthY;
+				fixed_t tr_x, tr_y, gxt, gyt, tx, tz, xscale;
+				extern fixed_t FocalLengthX;
 				
 				// transform the origin point
 				tr_x = players[i].mo->x - viewx;

@@ -147,7 +147,7 @@ extern cluster_info_t ClusterInfos[];
 
 extern BOOL savegamerestore;
 
-void G_InitNew (char *mapname);
+void G_InitNew (const char *mapname);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
