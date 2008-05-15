@@ -212,6 +212,9 @@ void	P_SlideMove (AActor* mo);
 bool	P_CheckSight (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
 void	P_UseLines (player_t* player);
 
+// GhostlyDeath -- I put this here
+bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
+
 bool	P_ChangeSector (sector_t* sector, bool crunch);
 
 extern	AActor*	linetarget; 	// who got hit (or NULL)

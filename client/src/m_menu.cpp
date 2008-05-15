@@ -167,6 +167,8 @@ bool M_DemoNoPlay;
 
 static DCanvas *FireScreen;
 
+EXTERN_CVAR (hud_targetnames)
+
 //
 // DOOM MENU
 //

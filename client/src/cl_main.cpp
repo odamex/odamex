@@ -105,6 +105,8 @@ CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
 CVAR (allowcheats,		"0", CVAR_SERVERINFO)
 CVAR (teamplay,			"0", CVAR_SERVERINFO)
 
+CVAR (allowtargetnames, "0", CVAR_SERVERINFO)
+
 // If freelook changes serverside or clientside,
 // work out what allowfreelook needs to be
 EXTERN_CVAR(sv_freelook)
@@ -388,6 +390,8 @@ BEGIN_COMMAND (serverinfo)
 	Printf (PRINT_HIGH, "                      \n"									);
 	Printf (PRINT_HIGH, "      scorelimit - %d \n",	(int)scorelimit		);
 	Printf (PRINT_HIGH, "    friendlyfire - %d \n",	(BOOL)friendlyfire	);
+	Printf (PRINT_HIGH, "                      \n"									);
+	Printf (PRINT_HIGH, "allowtargetnames - %d \n", (BOOL)allowtargetnames);
 	Printf (PRINT_HIGH,	"--------------------------------------- \n"				);
 }
 END_COMMAND (serverinfo)
@@ -1742,6 +1746,8 @@ void CL_GetServerSettings(void)
 	scorelimit.Set((int)MSG_ReadShort());
 	friendlyfire.Set((BOOL)MSG_ReadByte());
 	teamplay.Set(MSG_ReadByte());
+	
+	allowtargetnames.Set((BOOL)MSG_ReadByte());
 
 	cvar_t::UnlatchCVars ();
 }

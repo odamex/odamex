@@ -89,6 +89,9 @@ CVAR (clientcount,		"0",        CVAR_NOSET | CVAR_NOENABLEDISABLE)										// t
 
 CVAR (globalspectatorchat,       "1",        CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+
+CVAR (allowtargetnames, "1", CVAR_ARCHIVE | CVAR_SERVERINFO) // GhostlyDeath -- Target Names?
+
 BEGIN_CUSTOM_CVAR (maxclients,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
 	if(var > MAXPLAYERS)
@@ -1641,6 +1644,8 @@ void SV_SendServerSettings (client_t *cl)
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)friendlyfire);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)teamplay);
 
+	// GhostlyDeath
+	MSG_WriteByte	(&cl->reliablebuf, (BOOL)allowtargetnames);
 }
 
 //
