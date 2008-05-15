@@ -1487,6 +1487,7 @@ void SV_UpdateMovingSectors(client_t* cl)
 			if(sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat)))
 			{
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
+				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
 				MSG_WriteLong (&cl->netbuf, sec->floorheight);
 				MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
@@ -1501,6 +1502,7 @@ void SV_UpdateMovingSectors(client_t* cl)
 			else if(sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor)))
 			{
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
+				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
 				MSG_WriteLong (&cl->netbuf, sec->floorheight);
 				MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
@@ -2717,6 +2719,7 @@ void SV_WriteCommands(void)
 
 				MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
 				MSG_WriteByte(&cl->netbuf, players[j].id);     // player number
+				MSG_WriteLong(&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->x);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->y);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->z);

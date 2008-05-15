@@ -48,6 +48,7 @@ struct plat_pred_t
 
 	byte state;
 	int count;
+	int tic;
 
 	unsigned long floorheight;
 };

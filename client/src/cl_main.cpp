@@ -971,10 +971,12 @@ void CL_UpdatePlayer()
 
 	if(!validplayer(*p) || !p->mo)
 	{
-		for (int i=0; i<29; i++)
+		for (int i=0; i<33; i++)
 			MSG_ReadByte();
 		return;
 	}
+
+	int sv_gametic = MSG_ReadLong();
 
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
@@ -1005,6 +1007,7 @@ void CL_UpdatePlayer()
 		return;
 
 	p->last_received = gametic;
+	p->tic = sv_gametic;
 }
 
 ticcmd_t localcmds[MAXSAVETICS];
@@ -1612,6 +1615,7 @@ void CL_UpdateSector(void)
 //
 void CL_UpdateMovingSector(void)
 {
+	int tic = MSG_ReadLong();
 	unsigned short s = (unsigned short)MSG_ReadShort();
 	unsigned long fh = MSG_ReadLong(); // floor height
 	MSG_ReadLong(); // ceiling height
@@ -1621,7 +1625,7 @@ void CL_UpdateMovingSector(void)
 	if(!sectors || s >= numsectors)
 		return;
 
-	plat_pred_t pred = {s, state, count, fh};
+	plat_pred_t pred = {s, state, count, tic, fh};
 //	sector_t *sec = &sectors[s];
 
 //	if(!sec->floordata)
@@ -2201,7 +2205,7 @@ void CL_ParseCommands(void)
 		{
 			CL_QuitNetGame();
 			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message\n");
-			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed",
+			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed\n",
 					   (int)cmd,
 					   svc_info[cmd].getName());
 			Printf(PRINT_HIGH, "CL_ParseCommands: It was command number %d in the packet\n",
