@@ -590,7 +590,8 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               "Clean maps: %s\n"
                               "Frag on exit: %s\n"
                               "Spectating: %s\n"
-                              "Passworded: %s\n"),
+                              // TODO: Uncomment when the server has a full password implementation
+                              /*"Passworded: %s\n"*/),
                               QServer[i].info.version,
                               
                               QServer[i].info.emailaddr.c_str(),
@@ -613,8 +614,9 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               BOOLSTR(QServer[i].info.emptyreset),
                               BOOLSTR(QServer[i].info.cleanmaps),
                               BOOLSTR(QServer[i].info.fragonexit),
-                              BOOLSTR(QServer[i].info.spectating),
-                              BOOLSTR(QServer[i].info.passworded));
+                              BOOLSTR(QServer[i].info.spectating)//,
+                              // TODO: Uncomment when the server has a full password implementation
+                              /*BOOLSTR(QServer[i].info.passworded)*/);
     
     static wxTipWindow *tw = NULL;
                               

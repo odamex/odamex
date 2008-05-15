@@ -265,7 +265,8 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     if (insert)    
     {
         li.SetColumn(serverlist_field_name);
-        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
+        // TODO: Uncomment when the server has a full password implementation
+        //list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
         li.SetText(s.info.name);
         
         li.SetId(list->ALCInsertItem(li));
@@ -274,7 +275,8 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     {
         li.SetId(index);
         li.SetColumn(serverlist_field_name);
-        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
+        // TODO: Uncomment when the server has a full password implementation
+        //list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
         li.SetText(s.info.name);
         
         list->SetItem(li);
