@@ -770,6 +770,13 @@ void G_DoLoadLevel (int position)
 		players[i].points = 0;
 	}
 
+	// [deathz0r] It's a smart idea to reset the team points
+	if (teamplay || usectf)
+	{
+		for (size_t i = 0; i < NUMTEAMS; i++)
+			TEAMpoints[i] = 0;
+	}
+
 	// initialize the msecnode_t freelist.					phares 3/25/98
 	// any nodes in the freelist are gone by now, cleared
 	// by Z_FreeTags() when the previous level ended or player
