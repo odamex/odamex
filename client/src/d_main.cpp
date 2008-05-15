@@ -1223,6 +1223,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 
 	Z_Init();
 
+	gamestate_t oldgamestate = gamestate;
 	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
 
 	wadfiles.clear();
@@ -1292,7 +1293,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 	last_wadnames = wadnames;
 	last_hashes = needhashes;
 
-	gamestate = GS_FULLCONSOLE; // GS_STARTUP would prevent netcode connecting properly
+	gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
 
 	return fails;
 }
