@@ -31,6 +31,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <sstream>
+
 /* [Petteri] Use Winsock for Win32: */
 #ifdef _WIN32
 #	define WIN32_LEAN_AND_MEAN
@@ -422,6 +424,28 @@ void MSG_WriteLong (buf_t *b, int c)
 }
 
 //
+// MSG_WriteBool
+//
+// Write an boolean value to a buffer
+void MSG_WriteBool(buf_t *b, bool Boolean)
+{   
+    MSG_WriteByte(b, Boolean ? 1 : 0);
+}
+
+//
+// MSG_WriteFloat
+//
+// Write a floating point number to a buffer
+void MSG_WriteFloat(buf_t *b, float Float)
+{
+    std::stringstream StringStream;
+
+    StringStream << Float;
+    
+    MSG_WriteString(b, (char *)StringStream.str().c_str());
+}
+
+//
 // MSG_WriteString
 //
 // Write a string to a buffer and null terminate it
@@ -434,25 +458,6 @@ void MSG_WriteString (buf_t *b, const char *s)
         SZ_Write (b, s, strlen(s));
         MSG_WriteByte(b, 0);
 	}
-}
-
-//
-// MSG_WriteString
-//
-// Write a string to a buffer with a byte count (maxed at 65536)
-void MSG_WriteString (buf_t *b, std::string &String)
-{
-    if (!String.size())
-    {
-        MSG_WriteShort(b, 0);
-        MSG_WriteByte(b, 0);
-    }
-    else
-    {
-        MSG_WriteShort(b, String.size());
-        SZ_Write(b, String.c_str(), String.size());
-        MSG_WriteByte(b, 0);
-    }
 }
 
 int MSG_BytesLeft(void)
@@ -700,50 +705,39 @@ char *MSG_ReadString (void)
 }
 
 //
-// MSG_ReadString
+// MSG_ReadBool
 //
-// Read a string from a buffer with a byte count (maxed at 65536)
-SDWORD MSG_ReadString(std::string &String)
+// Read a boolean value
+bool MSG_ReadBool(void)
 {
-    if (!MSG_BytesLeft())
+    bool Boolean;
+    
+    if (msg_readcount + 1 > net_message.cursize)
     {
         msg_badread = true;
-        
-        String = "";
-        
         return -1;
     }
     
-    WORD Size = MSG_ReadShort();
+    Boolean = ((unsigned char)net_message.data[msg_readcount] ? true : false);
+    ++msg_readcount;
     
-    if (msg_readcount + Size + 1 > net_message.cursize)
-    {
-        msg_badread = true;
+    return Boolean;
+}
+
+//
+// MSG_ReadFloat
+//
+// Read a floating point number
+float MSG_ReadFloat(void)
+{  
+    std::stringstream StringStream;
+    float Float;
         
-        String = "";
-        
-        return -1;
-    }
+    StringStream << MSG_ReadString();
     
-    WORD i;
+    StringStream >> Float;
     
-    for (i = 0; i < Size; ++i)
-    {
-        String += (SBYTE)MSG_ReadByte();
-    }
-
-    // Don't return an empty string if there is no null terminator.
-    if (!MSG_BytesLeft())
-    {
-        msg_badread = true;
-        
-        return -1;
-    }
-
-    // Read the null terminator.
-    MSG_ReadByte();
-
-    return i;
+    return Float;
 }
 
 //
@@ -913,4 +907,5 @@ void I_SetPort(netadr_t &addr, int port)
 }
 
 VERSION_CONTROL (i_net_cpp, "$Id$")
+
 
