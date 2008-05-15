@@ -149,7 +149,7 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     if (!mem_op)
     {
         Printf(PRINT_HIGH,
-                "perform_sdlmix_conv - SDL_RWFromConstMem: %s\n", Mix_GetError());
+                "perform_sdlmix_conv - SDL_RWFromConstMem: %s\n", SDL_GetError());
 
         return NULL;
     }
@@ -376,11 +376,14 @@ void I_InitSound (void)
 	if(Args.CheckParm("-nosound"))
 		return;
 
-	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
+	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem\n");
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
-		Printf(PRINT_HIGH, "Unable to set up sound.\n");
+		Printf(PRINT_HIGH, 
+               "I_InitSound: Unable to set up sound: %s\n", 
+               SDL_GetError());
+               
 		return;
 	}
 
@@ -402,19 +405,27 @@ void I_InitSound (void)
 			ver->major, ver->minor, ver->patch);
 	}
 
+	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
+
     if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 1024) < 0)
 	{
-		Printf(PRINT_HIGH, "Error initializing SDL_mixer: %s\n", SDL_GetError());
+		Printf(PRINT_HIGH, 
+               "I_InitSound: Error initializing SDL_mixer: %s\n", 
+               Mix_GetError());
 		return;
 	}
 
     if(!Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels))
 	{
-		Printf(PRINT_HIGH, "Error initializing SDL_mixer: %s\n", SDL_GetError());
+		Printf(PRINT_HIGH, 
+               "I_InitSound: Error initializing SDL_mixer: %s\n", 
+               Mix_GetError());
 		return;
 	}
 	
-	Mix_AllocateChannels(NUM_CHANNELS);
+	Printf(PRINT_HIGH, 
+           "I_InitSound: Using %d channels\n", 
+           Mix_AllocateChannels(NUM_CHANNELS));
 
 	atterm(I_ShutdownSound);
 
