@@ -247,6 +247,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\common\m_swap.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\mus2midi.cpp"
 				>
 			</File>

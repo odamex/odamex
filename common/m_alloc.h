@@ -26,7 +26,13 @@
 #define __M_ALLOC_H__
 
 #include <stdlib.h>
+
+// Visual C++ doesn't have stdint.h
+#if defined(_MSC_VER)
+#include <vadefs.h>
+#else
 #include <stdint.h>
+#endif
 
 // These are the same as the same stdlib functions,
 // except they bomb out with an error requester
@@ -39,6 +45,9 @@ void *Realloc (void *memblock, size_t size);
 // don't use these, use the macros instead!
 void M_Free2 (uintptr_t &memblock);
 
+#define M_Malloc(s) Malloc((size_t)s)
+#define M_Calloc(n,s) Calloc((size_t)n, (size_t)s)
+#define M_Realloc(p,s) Realloc((void *)p, (size_t)s)
 #define M_Free(p) do { M_Free2((uintptr_t &)p); } while(0)
 
 #endif //__M_ALLOC_H__

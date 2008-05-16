@@ -296,6 +296,7 @@
 		<Unit filename="..\..\common\m_memio.h" />
 		<Unit filename="..\..\common\m_random.cpp" />
 		<Unit filename="..\..\common\m_random.h" />
+		<Unit filename="..\..\common\m_swap.cpp" />
 		<Unit filename="..\..\common\m_swap.h" />
 		<Unit filename="..\..\common\md5.cpp" />
 		<Unit filename="..\..\common\md5.h" />
