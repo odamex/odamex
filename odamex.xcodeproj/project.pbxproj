@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		92325F2E0C89B6C0006D7EEF /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92325F2D0C89B6C0006D7EEF /* AudioToolbox.framework */; };
 		9232603E0C89D378006D7EEF /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9232603D0C89D378006D7EEF /* AudioUnit.framework */; };
+		92500AC50DDF2CD90021E69D /* m_swap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92500AC40DDF2CD90021E69D /* m_swap.cpp */; };
+		92500AC60DDF2CD90021E69D /* m_swap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92500AC40DDF2CD90021E69D /* m_swap.cpp */; };
 		92A68F870B646045004AA40D /* i_net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A68F6F0B645EE9004AA40D /* i_net.cpp */; };
 		92A68F880B646045004AA40D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A68F710B645EE9004AA40D /* main.cpp */; };
 		92A745480CA52B1E007321ED /* p_tick.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A745460CA52B1E007321ED /* p_tick.cpp */; };
@@ -889,6 +891,7 @@
 		920D7BC70B4D212C000AA4A2 /* z_zone.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = z_zone.h; sourceTree = "<group>"; };
 		92325F2D0C89B6C0006D7EEF /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = /System/Library/Frameworks/AudioToolbox.framework; sourceTree = "<absolute>"; };
 		9232603D0C89D378006D7EEF /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
+		92500AC40DDF2CD90021E69D /* m_swap.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = m_swap.cpp; sourceTree = "<group>"; };
 		92A68F6F0B645EE9004AA40D /* i_net.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_net.cpp; sourceTree = "<group>"; };
 		92A68F700B645EE9004AA40D /* i_net.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_net.h; sourceTree = "<group>"; };
 		92A68F710B645EE9004AA40D /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
@@ -1136,6 +1139,7 @@
 		920D7B5A0B4D2126000AA4A2 /* common */ = {
 			isa = PBXGroup;
 			children = (
+				92500AC40DDF2CD90021E69D /* m_swap.cpp */,
 				920D7B5B0B4D2126000AA4A2 /* actor.h */,
 				920D7B5C0B4D2126000AA4A2 /* c_cvars.cpp */,
 				920D7B5D0B4D2126000AA4A2 /* c_cvars.h */,
@@ -1538,7 +1542,6 @@
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "odamex" */;
-			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 08FB7794FE84155DC02AAC07 /* odamex */;
 			productRefGroup = 92D2DA850B6444B300FD5B07 /* Products */;
@@ -1655,6 +1658,7 @@
 				D3BC55220DDBE70300934701 /* m_fileio.cpp in Sources */,
 				D3BC55230DDBE70300934701 /* m_memio.cpp in Sources */,
 				D3BC55270DDBE75600934701 /* mus2midi.cpp in Sources */,
+				92500AC50DDF2CD90021E69D /* m_swap.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1745,6 +1749,7 @@
 				92EC0AF30CCFF14700A804A6 /* p_pspr.cpp in Sources */,
 				92EC0B0E0CCFF82300A804A6 /* doomstat.cpp in Sources */,
 				92EC0B4B0CD315AD00A804A6 /* p_user.cpp in Sources */,
+				92500AC60DDF2CD90021E69D /* m_swap.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
