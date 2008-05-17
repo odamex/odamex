@@ -2099,6 +2099,10 @@ void CL_Spectate()
 			displayplayer_id = consoleplayer_id; // get out of spynext
 		}
 	}
+	
+	// GhostlyDeath -- If the player matches our display player...
+	if (&player == &displayplayer())
+		displayplayer_id = consoleplayer_id;
 }
 
 // client source (once)

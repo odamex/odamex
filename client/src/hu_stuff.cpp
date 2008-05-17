@@ -247,8 +247,15 @@ void HU_Drawer (void)
 	if ((&consoleplayer())->spectator && (level.time / TICRATE)%2 && gamestate != GS_INTERMISSION)
 	{
 		setsizeneeded = true;
-		screen->DrawTextClean (CR_GREY, (screen->width / 2) - (59 * CleanXfac), 
-			screen->height - ((hu_font[0]->height() + 4) * CleanYfac), "Press USE to join");
+		int YPos = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
+		
+		if (&consoleplayer() != &displayplayer())
+			YPos -= ((hu_font[0]->height() + 4) * CleanYfac);
+		
+		// GhostlyDeath -- X Pos from the F12 coop spy thingy
+		screen->DrawTextClean (CR_GREY, 
+			(screen->width - V_StringWidth ("Press USE to join")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac), 
+			YPos, "Press USE to join");
 	}
 	
 	/* GhostlyDeath -- Cheap Target Names */
@@ -347,15 +354,9 @@ void HU_Drawer (void)
 			
 				// So "You" (or not) is centered
 				if (&(players[i]) == &(consoleplayer()))
-				{
-					TargetX = (screen->width / 2) -
-						((hu_font[0]->width() * CleanYfac) * 3);
-				}
+					TargetX = (screen->width - V_StringWidth ("You")*CleanXfac) >> 1;
 				else
-				{
-					TargetX = (screen->width / 2) -
-						((hu_font[0]->width() * CleanYfac) * strlen(players[i].userinfo.netname));
-				}
+					TargetX = (screen->width - V_StringWidth (players[i].userinfo.netname)*CleanXfac) >> 1;
 			
 				// Draw the Player's name or You! (Personally, I like the You part - GhostlyDeath)
 				if (players[i].mo->health > 0)
