@@ -347,6 +347,8 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     li.SetText(iwad);
     
     list->SetItem(li);
+    
+    list->Sort();
 }
 
 typedef enum
@@ -494,7 +496,8 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
             
             list->SetItem(li);
         }
-            
+        
+        list->Sort();
     }
     
 }
