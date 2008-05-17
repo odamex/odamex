@@ -100,6 +100,7 @@ player_t					nullplayer;				// null player
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
+BOOL			singleplayerjustdied = false;	// Nes - When it's okay for single-player servers to reload.
 
 enum demoversion_t
 {
@@ -804,9 +805,20 @@ void G_DoReborn (player_t &player)
 
 	if (!multiplayer)
 	{
-		// reload the level from scratch
-		gameaction = ga_loadlevel;
-		return;
+		bool canreload = false;
+		
+		for (int i = 0; i < players.size(); i++) {
+			if (!players[i].spectator && singleplayerjustdied) {
+				canreload = true;
+				singleplayerjustdied = false;
+			}
+		}
+		
+		if (canreload) {
+			// reload the level from scratch
+			gameaction = ga_loadlevel;
+			return;
+		}
 	}
 
 	// respawn at the start

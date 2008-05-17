@@ -1917,6 +1917,7 @@ void SV_ConnectClient (void)
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
 }
 
+extern BOOL singleplayerjustdied;
 
 //
 // SV_DisconnectClient
@@ -2000,6 +2001,12 @@ void SV_DisconnectClient(player_t &who)
 	}
 
 	who.playerstate = PST_DISCONNECT;
+	
+	if (!multiplayer && !who.spectator) {
+		// reload the level from scratch
+		gameaction = ga_loadlevel;
+		singleplayerjustdied = false;
+	}
 
 	if (emptyreset && players.size() == 0)
         G_DeferedInitNew(level.mapname);

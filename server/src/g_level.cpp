@@ -79,6 +79,8 @@ extern int mapchange;
 // Start time for timing demos
 int starttime;
 
+BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
+
 extern BOOL netdemo;
 BOOL savegamerestore;
 
@@ -729,6 +731,9 @@ void G_DoLoadLevel (int position)
 {
 	static int lastposition = 0;
 	size_t i;
+	
+	if (position != -1)
+		firstmapinit = true;
 
 	if (position == -1)
 		position = lastposition;
@@ -737,7 +742,10 @@ void G_DoLoadLevel (int position)
 
 	G_InitLevelLocals ();
 
-	Printf (PRINT_HIGH, "--- %s: \"%s\" ---\n", level.mapname, level.level_name);
+	if (firstmapinit) {
+		Printf (PRINT_HIGH, "--- %s: \"%s\" ---\n", level.mapname, level.level_name);
+		firstmapinit = false;
+	}
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
