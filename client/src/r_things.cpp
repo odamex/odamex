@@ -904,6 +904,10 @@ void R_ProjectSprite (AActor *thing)
 	if (thing->translucency == 0)
 		return;
 
+        // GhostlyDeath -- Don't draw yourself if you are spectating
+        if (thing->player && (thing->player == &consoleplayer()) && consoleplayer().spectator)
+                return;
+
 	// transform the origin point
 	tr_x = thing->x - viewx;
 	tr_y = thing->y - viewy;
