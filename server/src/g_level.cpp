@@ -394,11 +394,10 @@ BEGIN_COMMAND (clearmaplist)
 	// Crawl through the linked list zapping entries.
 	while ( 1 )
 	{
-		free ( MapListPointer->MapName );
-		if ( MapListPointer->WadName )
-			free ( MapListPointer->WadName );
+		M_Free( MapListPointer->MapName );
+		M_Free( MapListPointer->WadName );
 
-		free ( MapListPointer );
+		M_Free( MapListPointer );
 
 		if ( NextPointer == NULL )
 			break; // The linked list is dead.

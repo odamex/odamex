@@ -59,8 +59,7 @@ static size_t zonesize;
 
 static void STACK_ARGS Z_Close (void)
 {
-	free (mainzone);
-	mainzone = NULL;
+	M_Free(mainzone);
 }
 
 //

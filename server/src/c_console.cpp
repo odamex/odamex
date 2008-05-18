@@ -159,7 +159,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			}
 			Printf (PRINT_HIGH, "%s", string);
 		}
-		free (old);
+		M_Free (old);
 		C_FlushDisplay ();
 
 		gamestate = oldstate;
