@@ -564,8 +564,7 @@ void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs)
 
     wxString cmdline = _T("");
 
-    // when adding waddir string, return 1 less, to get rid of extra delimiter
-    wxString dirs = waddirs.Mid(0, waddirs.Length() - 1);
+    wxString dirs = waddirs.Mid(0, waddirs.Length());
     
     cmdline += wxString::Format(_T("%s"), binname.c_str());
     
