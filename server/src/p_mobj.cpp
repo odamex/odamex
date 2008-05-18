@@ -784,7 +784,10 @@ void AActor::RunThink ()
 
 	// GhostlyDeath -- Was a spectator but now it's nothing!
 	if ((this->flags & MF_SPECTATOR ) && !player)
-		P_SetMobjState(this, S_NULL);
+	{
+		this->Destroy();
+		return;
+	}
 
 	// remove dead players but don't tell clients about it
 	if (type == MT_PLAYER && !player && deadtic >= REMOVECOPRSESTIC)
