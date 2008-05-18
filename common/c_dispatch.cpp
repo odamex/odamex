@@ -707,7 +707,6 @@ BEGIN_COMMAND (alias)
 		{
 			// Build the new alias
 			std::string param = BuildString (argc - 2, (const char **)&argv[2]);
-Printf(PRINT_HIGH, ":%s:\n", param.c_str());
 			new DConsoleAlias (argv[1], param.c_str());
 		}
 	}
