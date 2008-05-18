@@ -138,11 +138,10 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     wxInt32 WindowWidth, WindowHeight;
 
-    ConfigInfo.Read(_T("MainWindowWidth"), &WindowWidth, 0);
-    ConfigInfo.Read(_T("MainWindowHeight"), &WindowHeight, 0);
-    
-    if (WindowWidth && WindowHeight)
-        SetSize(WindowWidth, WindowHeight);
+    ConfigInfo.Read(_T("MainWindowWidth"), &WindowWidth, GetSize().GetWidth());
+    ConfigInfo.Read(_T("MainWindowHeight"), &WindowHeight, GetSize().GetHeight());
+       
+    SetSize(WindowWidth, WindowHeight);
 
 	// set up the master server information
 	MServer = new MasterServer;
@@ -195,12 +194,8 @@ dlgMain::~dlgMain()
     ConfigInfo.Write(_T("PlayerListSortOrder"), PlayerListSortOrder);
     ConfigInfo.Write(_T("PlayerListSortColumn"), PlayerListSortColumn);
 
-    wxInt32 WindowWidth, WindowHeight;
-    
-    GetSize(&WindowWidth, &WindowHeight);
-
-    ConfigInfo.Write(_T("MainWindowWidth"), WindowWidth);
-    ConfigInfo.Write(_T("MainWindowHeight"), WindowHeight);
+    ConfigInfo.Write(_T("MainWindowWidth"), GetSize().GetWidth());
+    ConfigInfo.Write(_T("MainWindowHeight"), GetSize().GetHeight());
 
     // Cleanup
     if (MServer != NULL)
@@ -650,8 +645,8 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 // About information
 void dlgMain::OnAbout(wxCommandEvent& event)
 {
-    wxString strAbout = _T("Odamex Launcher 1.0 - "
-                            "Copyright 2007 The Odamex Team");
+    wxString strAbout = _T("Odamex Launcher 0.4 - "
+                            "Copyright 2008 The Odamex Team");
     
     wxMessageBox(strAbout, strAbout);
 }
