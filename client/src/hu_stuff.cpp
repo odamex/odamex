@@ -235,6 +235,8 @@ int MobjToMobjDistance(AActor *a, AActor *b)
 			pow(z2 - z1, 2)
 			);
 	}
+	
+	return 0;
 }
 
 //
