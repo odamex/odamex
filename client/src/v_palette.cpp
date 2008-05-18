@@ -276,7 +276,7 @@ palette_t *MakePalette (byte *colors, char *name, unsigned flags)
 
 		return pal;
 	} else {
-		free (pal);
+		M_Free(pal);
 		return NULL;
 	}
 }
@@ -325,13 +325,11 @@ void FreePalette (palette_t *palette)
 			else
 				palette->prev->next = palette->next;
 
-			if (palette->basecolors)
-				free (palette->basecolors);
+			M_Free(palette->basecolors);
 
-			if (palette->colormapsbase)
-				free (palette->colormapsbase);
+			M_Free(palette->colormapsbase);
 
-			free (palette);
+			M_Free(palette);
 		}
 	}
 }
@@ -407,7 +405,7 @@ void RefreshPalette (palette_t *pal)
 			g = GPART (level.fadeto);
 			b = BPART (level.fadeto);
 			if (pal->maps.colormaps && pal->maps.colormaps - pal->colormapsbase >= 256)
-				free (pal->maps.colormaps);
+				M_Free(pal->maps.colormaps);
 			pal->colormapsbase = (byte *)Realloc (pal->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
 			pal->maps.colormaps = (byte *)(((ptrdiff_t)(pal->colormapsbase) + 255) & ~0xff);
 
@@ -444,10 +442,9 @@ void RefreshPalette (palette_t *pal)
 			r = newgamma[RPART (level.fadeto)];
 			g = newgamma[GPART (level.fadeto)];
 			b = newgamma[BPART (level.fadeto)];
-			if (pal->colormapsbase) {
-				free (pal->colormapsbase);
-				pal->colormapsbase = NULL;
-			}
+           
+            M_Free(pal->colormapsbase);
+			
 			pal->maps.shades = (DWORD *)Realloc (pal->colormapsbase, (NUMCOLORMAPS + 1)*256*sizeof(DWORD) + 255);
 
 			// build normal light mappings

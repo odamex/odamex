@@ -27,6 +27,8 @@
 #include "doomtype.h"
 #include "huffman.h"
 
+#include <string>
+
 #define	MAX_UDP_PACKET	8192
 
 #define SERVERPORT  10666
@@ -299,6 +301,8 @@ void MSG_WriteMarker (buf_t *b, svc_t c);
 void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, int c);
 void MSG_WriteLong (buf_t *b, int c);
+void MSG_WriteBool(buf_t *b, bool);
+void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 
@@ -309,7 +313,9 @@ int MSG_ReadByte (void);
 void *MSG_ReadChunk (size_t &size);
 int MSG_ReadShort (void);
 int MSG_ReadLong (void);
-char *MSG_ReadString (void);
+bool MSG_ReadBool(void);
+float MSG_ReadFloat(void);
+const char *MSG_ReadString (void);
 
 bool MSG_DecompressMinilzo ();
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);
@@ -318,5 +324,6 @@ bool MSG_DecompressAdaptive (huffman &huff);
 bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_t write_gap);
 
 #endif
+
 
 

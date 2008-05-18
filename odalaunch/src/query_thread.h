@@ -38,8 +38,8 @@ class QueryThread : public wxThread
     public:
 
         QueryThread();
-        QueryThread(wxEvtHandler *EventHandler, Server *QueryServer, wxInt32 ServerIndex) : wxThread(wxTHREAD_JOINABLE),
-            m_EventHandler(EventHandler), m_QueryServer(QueryServer), m_ServerIndex(ServerIndex) {}
+        QueryThread(wxEvtHandler *EventHandler, Server *QueryServer, wxInt32 ServerIndex, wxUint32 ServerTimeout) : wxThread(wxTHREAD_JOINABLE),
+            m_EventHandler(EventHandler), m_QueryServer(QueryServer), m_ServerIndex(ServerIndex), m_ServerTimeout(ServerTimeout) {}
 
         virtual void *Entry();
 
@@ -47,6 +47,7 @@ class QueryThread : public wxThread
         wxEvtHandler  *m_EventHandler;
         Server        *m_QueryServer;
         wxInt32       m_ServerIndex;
+        wxUint32      m_ServerTimeout;
 
 };
 

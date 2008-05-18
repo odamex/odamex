@@ -207,6 +207,38 @@ BOOL HU_Responder (event_t *ev)
 	return false;
 }
 
+EXTERN_CVAR (screenblocks)
+
+CVAR(hud_targetnames, "1", CVAR_ARCHIVE)
+EXTERN_CVAR (allowtargetnames)
+
+// GhostlyDeath -- From Strawberry-Doom
+#include <math.h>
+int MobjToMobjDistance(AActor *a, AActor *b)
+{
+	double x1, x2;
+	double y1, y2;
+	double z1, z2;
+	
+	if (a && b)
+	{
+		x1 = a->x >> FRACBITS;
+		x2 = b->x >> FRACBITS;
+		y1 = a->y >> FRACBITS;
+		y2 = b->y >> FRACBITS;
+		z1 = a->z >> FRACBITS;
+		z2 = b->z >> FRACBITS;
+		
+		return (int)sqrt(
+			pow(x2 - x1, 2) +
+			pow(y2 - y1, 2) +
+			pow(z2 - z1, 2)
+			);
+	}
+	
+	return 0;
+}
+
 //
 // HU_Drawer
 //
@@ -217,8 +249,132 @@ void HU_Drawer (void)
 	if ((&consoleplayer())->spectator && (level.time / TICRATE)%2 && gamestate != GS_INTERMISSION)
 	{
 		setsizeneeded = true;
-		screen->DrawTextClean (CR_GREY, (screen->width / 2) - (59 * CleanXfac), 
-			screen->height - ((hu_font[0]->height() + 4) * CleanYfac), "Press USE to join");
+		int YPos = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
+		
+		if (&consoleplayer() != &displayplayer())
+			YPos -= ((hu_font[0]->height() + 4) * CleanYfac);
+		
+		// GhostlyDeath -- X Pos from the F12 coop spy thingy
+		screen->DrawTextClean (CR_GREY, 
+			(screen->width - V_StringWidth ("Press USE to join")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac), 
+			YPos, "Press USE to join");
+	}
+	
+	/* GhostlyDeath -- Cheap Target Names */
+	if ((gamestate == GS_LEVEL)						// Must be Playing, allow specs to target always
+		&& ((!consoleplayer().spectator && allowtargetnames && hud_targetnames) ||
+		 (consoleplayer().spectator && hud_targetnames))
+		 )
+	{
+		int ProposedColor = CR_GREY;
+		int TargetX = 0;
+		int TargetY = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
+	
+		// TargetY is a special case because we don't want to go crazy over the status bar
+		if (screenblocks <= 10 && !consoleplayer().spectator)
+			TargetY -= ST_HEIGHT;
+		else if (consoleplayer().spectator)
+			TargetY -= ((hu_font[0]->height() + 4) * CleanYfac);	// Don't get in the Join messages way!
+		
+		// Sometimes the "Other person's name" will get blocked
+		if (&(consoleplayer()) != &(displayplayer()))
+			TargetY -= ((hu_font[0]->height() + 4) * CleanYfac);
+	
+		for (int i = 0; i < players.size(); i++)
+		{
+			/* Check Various things */
+			// Spectator?
+			if (players[i].spectator)
+				continue;
+			
+			// Don't get the display player!
+			if (&(players[i]) == &(displayplayer()))
+				continue;
+		
+			/* Now if they are visible... */
+			if (players[i].mo)
+			{
+				// If they are beyond MISSILERANGE, ignore
+				if (MobjToMobjDistance(displayplayer().mo, players[i].mo) > (MISSILERANGE >> FRACBITS))
+					continue;
+				
+				// Check to see if the other player is visible
+				if (!P_CheckSightEdges(displayplayer().mo, players[i].mo, 0.0))
+					continue;
+				
+				/* Now we need to figure out if they are infront of us */
+				// Taken from r_things.cpp and I have no clue what it does
+				fixed_t tr_x, tr_y, gxt, gyt, tx, tz, xscale;
+				extern fixed_t FocalLengthX;
+				
+				// transform the origin point
+				tr_x = players[i].mo->x - viewx;
+				tr_y = players[i].mo->y - viewy;
+
+				gxt = FixedMul (tr_x,viewcos);
+				gyt = -FixedMul (tr_y,viewsin);
+
+				tz = gxt-gyt;
+
+				// thing is behind view plane?
+				if (tz < (FRACUNIT*4))
+					continue;
+
+				xscale = FixedDiv (FocalLengthX, tz);
+
+				gxt = -FixedMul (tr_x, viewsin);
+				gyt = FixedMul (tr_y, viewcos);
+				tx = -(gyt+gxt);
+
+				// too far off the side?
+				if (abs(tx)>(tz>>1))
+					continue;
+				
+				// Are we a friend or foe or are we a spectator ourself?
+				if (teamplay)
+				{
+					switch (players[i].userinfo.team)
+					{
+						case TEAM_BLUE: ProposedColor = CR_BLUE; break;
+						case TEAM_RED: ProposedColor = CR_RED; break;
+						case TEAM_GOLD: ProposedColor = CR_GOLD; break;
+						default: ProposedColor = CR_GREY; break;
+					}
+				}
+				else
+				{
+					if (consoleplayer().spectator)
+						ProposedColor = CR_GREY;	// Gray as noone is a friend nor foe
+					else
+					{
+						if (deathmatch)
+							ProposedColor = CR_RED;
+						else
+							ProposedColor = CR_GREEN;
+					}
+				}
+			
+				// So "You" (or not) is centered
+				if (&(players[i]) == &(consoleplayer()))
+					TargetX = (screen->width - V_StringWidth ("You")*CleanXfac) >> 1;
+				else
+					TargetX = (screen->width - V_StringWidth (players[i].userinfo.netname)*CleanXfac) >> 1;
+			
+				// Draw the Player's name or You! (Personally, I like the You part - GhostlyDeath)
+				if (players[i].mo->health > 0)
+					screen->DrawTextClean(ProposedColor,
+						TargetX,
+						TargetY,
+						(&(players[i]) == &(consoleplayer()) ? "You" : players[i].userinfo.netname));
+				else
+					screen->DrawTextCleanLuc(ProposedColor,
+						TargetX,
+						TargetY,
+						(&(players[i]) == &(consoleplayer()) ? "You" : players[i].userinfo.netname));
+				
+				TargetY -= ((hu_font[0]->height() + 1) * CleanYfac);
+			}
+		}
 	}
 	
 	if (headsupactive)

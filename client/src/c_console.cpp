@@ -329,7 +329,8 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			}
 			Printf (PRINT_HIGH, "%s", string);
 		}
-		free (old);
+		
+		M_Free(old);
 		C_FlushDisplay ();
 
 		gamestate = oldstate;
@@ -351,6 +352,12 @@ static void setmsgcolor (int index, const char *color)
 
 extern int DisplayWidth;
 
+//
+// C_AddNotifyString
+//
+// Prioritise messages on top of screen
+// Break up the lines so that they wrap around the screen boundary
+//
 void C_AddNotifyString (int printlevel, const char *source)
 {
 	static enum
@@ -1224,8 +1231,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 				if (HistSize == MAXHISTSIZE)
 				{
 					HistTail = HistTail->Newer;
-					free (HistTail->Older);
-					HistTail->Older = NULL;
+					M_Free(HistTail->Older);
 				}
 				else
 				{

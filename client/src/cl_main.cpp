@@ -105,6 +105,8 @@ CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
 CVAR (allowcheats,		"0", CVAR_SERVERINFO)
 CVAR (teamplay,			"0", CVAR_SERVERINFO)
 
+CVAR (allowtargetnames, "0", CVAR_SERVERINFO)
+
 // If freelook changes serverside or clientside,
 // work out what allowfreelook needs to be
 EXTERN_CVAR(sv_freelook)
@@ -388,6 +390,8 @@ BEGIN_COMMAND (serverinfo)
 	Printf (PRINT_HIGH, "                      \n"									);
 	Printf (PRINT_HIGH, "      scorelimit - %d \n",	(int)scorelimit		);
 	Printf (PRINT_HIGH, "    friendlyfire - %d \n",	(BOOL)friendlyfire	);
+	Printf (PRINT_HIGH, "                      \n"									);
+	Printf (PRINT_HIGH, "allowtargetnames - %d \n", (BOOL)allowtargetnames);
 	Printf (PRINT_HIGH,	"--------------------------------------- \n"				);
 }
 END_COMMAND (serverinfo)
@@ -953,7 +957,7 @@ EXTERN_CVAR (show_messages)
 void CL_Print (void)
 {
 	byte level = MSG_ReadByte();
-	char *str  = MSG_ReadString();
+	const char *str = MSG_ReadString();
 
 	Printf (level, "%s", str);
 
@@ -971,10 +975,12 @@ void CL_UpdatePlayer()
 
 	if(!validplayer(*p) || !p->mo)
 	{
-		for (int i=0; i<29; i++)
+		for (int i=0; i<33; i++)
 			MSG_ReadByte();
 		return;
 	}
+
+	int sv_gametic = MSG_ReadLong();
 
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
@@ -1005,6 +1011,7 @@ void CL_UpdatePlayer()
 		return;
 
 	p->last_received = gametic;
+	p->tic = sv_gametic;
 }
 
 ticcmd_t localcmds[MAXSAVETICS];
@@ -1612,6 +1619,7 @@ void CL_UpdateSector(void)
 //
 void CL_UpdateMovingSector(void)
 {
+	int tic = MSG_ReadLong();
 	unsigned short s = (unsigned short)MSG_ReadShort();
 	unsigned long fh = MSG_ReadLong(); // floor height
 	MSG_ReadLong(); // ceiling height
@@ -1621,7 +1629,7 @@ void CL_UpdateMovingSector(void)
 	if(!sectors || s >= numsectors)
 		return;
 
-	plat_pred_t pred = {s, state, count, fh};
+	plat_pred_t pred = {s, state, count, tic, fh};
 //	sector_t *sec = &sectors[s];
 
 //	if(!sec->floordata)
@@ -1738,6 +1746,8 @@ void CL_GetServerSettings(void)
 	scorelimit.Set((int)MSG_ReadShort());
 	friendlyfire.Set((BOOL)MSG_ReadByte());
 	teamplay.Set(MSG_ReadByte());
+	
+	allowtargetnames.Set((BOOL)MSG_ReadByte());
 
 	cvar_t::UnlatchCVars ();
 }
@@ -1870,7 +1880,7 @@ void CL_ConsolePlayer(void)
 
 void CL_LoadMap(void)
 {
-	char *mapname = MSG_ReadString ();
+	const char *mapname = MSG_ReadString ();
 
 	if(gamestate == GS_DOWNLOAD)
 		return;
@@ -2089,6 +2099,10 @@ void CL_Spectate()
 			displayplayer_id = consoleplayer_id; // get out of spynext
 		}
 	}
+	
+	// GhostlyDeath -- If the player matches our display player...
+	if (&player == &displayplayer())
+		displayplayer_id = consoleplayer_id;
 }
 
 // client source (once)
@@ -2201,7 +2215,7 @@ void CL_ParseCommands(void)
 		{
 			CL_QuitNetGame();
 			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message\n");
-			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed",
+			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed\n",
 					   (int)cmd,
 					   svc_info[cmd].getName());
 			Printf(PRINT_HIGH, "CL_ParseCommands: It was command number %d in the packet\n",

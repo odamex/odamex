@@ -815,6 +815,10 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath="..\..\common\m_swap.cpp"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

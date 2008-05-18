@@ -40,7 +40,7 @@ enum
 };
 
 // Sorting arrow XPM images
-static char *SortArrowAscending[] =
+static const char *SortArrowAscending[] =
 {
     "16 15 3 1",
     "  c None",
@@ -64,7 +64,7 @@ static char *SortArrowAscending[] =
     "                "
 };
 
-static char *SortArrowDescending[] =
+static const char *SortArrowDescending[] =
 {
     "16 15 3 1",
     "  c None",
@@ -273,33 +273,165 @@ wxInt32 NaturalCompare(wxString String1, wxString String2, bool CaseSensitive = 
     }
 }
 
-struct sortinfo_t
+wxInt32 SortRoutine(wxInt32 Order, wxListItem &Item1, wxListItem &Item2) 
+{   
+    if (Order == 1) 
+        return NaturalCompare(Item1.GetText(), Item2.GetText());
+
+    return NaturalCompare(Item2.GetText(), Item1.GetText());
+}
+
+// Makes a row exchange places
+void wxAdvancedListCtrl::FlipRow(long Row, long NextRow) 
+{ 
+    if(Row == NextRow) 
+        return; 
+
+    // Retrieve data for the next item
+    wxListItem Item1, Item2;
+    wxListItem Item1Flipped, Item2Flipped; 
+    
+    Item1.SetId(Row);
+    Item1.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
+    
+    Item2.SetId(NextRow);
+    Item2.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE); 
+
+    Item1Flipped.SetId(NextRow);
+    Item1Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
+
+    Item2Flipped.SetId(Row);
+    Item2Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
+
+    // Flip the data for columns too.
+    for (wxInt32 ColumnCounter = 0; 
+         ColumnCounter < GetColumnCount(); 
+         ++ColumnCounter) 
+    {
+        Item1.SetColumn(ColumnCounter);
+        GetItem(Item1); 
+
+        Item2.SetColumn(ColumnCounter); 
+        GetItem(Item2);
+
+        // Do the flip
+        // Set data for the first item
+        Item2Flipped.SetImage(Item2.GetImage()); 
+        Item2Flipped.SetData(Item2.GetData()); 
+        Item2Flipped.SetTextColour(Item2.GetTextColour()); 
+        Item2Flipped.SetText(Item2.GetText());
+
+        // Now the second
+        Item1Flipped.SetImage(Item1.GetImage()); 
+        Item1Flipped.SetData(Item1.GetData()); 
+        Item1Flipped.SetTextColour(Item1.GetTextColour()); 
+        Item1Flipped.SetText(Item1.GetText());
+
+        // Set them
+        Item1Flipped.SetColumn(ColumnCounter);
+        SetItem(Item1Flipped);
+        
+        Item2Flipped.SetColumn(ColumnCounter);
+        SetItem(Item2Flipped);
+    }
+
+}
+
+// A custom sort routine, we do our own sorting.
+void wxAdvancedListCtrl::Sort(wxInt32 Column, wxInt32 Order, wxInt32 Lowest, wxInt32 Highest) 
+{ 
+    if (Highest == -1) 
+        Highest = GetItemCount() - 1; 
+
+    wxInt32 LowSection = Lowest; 
+    wxInt32 HighSection = Highest; 
+
+    if (HighSection <= LowSection) 
+        return;
+
+    // First item.
+    wxListItem Item1Check;
+    Item1Check.SetColumn(Column); 
+    Item1Check.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
+
+    // Second item
+    wxListItem Item2Check;
+    Item2Check.SetColumn(Column); 
+    Item2Check.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
+
+    // Middle Item
+    wxListItem MiddleItem;        
+    MiddleItem.SetId((LowSection + HighSection) / 2); 
+    MiddleItem.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE); 
+    MiddleItem.SetColumn(Column); 
+    GetItem(MiddleItem);
+
+    // Loop through the list until indices cross 
+    while (LowSection <= HighSection) 
+    {
+        Item1Check.SetId(LowSection);
+        GetItem(Item1Check);
+        
+        while ((LowSection <= HighSection) && 
+               (SortRoutine(Order, Item1Check, MiddleItem) < 0)) 
+        {
+            ++LowSection;
+            Item1Check.SetId(LowSection);
+            GetItem(Item1Check);
+        }
+
+        Item2Check.SetId(HighSection);
+        GetItem(Item2Check);
+
+        while ((LowSection <= HighSection) && 
+               (SortRoutine(Order, Item2Check, MiddleItem) > 0))
+        { 
+            --HighSection;
+            Item2Check.SetId(HighSection);
+            GetItem(Item2Check);
+        }
+
+        // If the indexes have not crossed
+        if (LowSection <= HighSection)
+        { 
+            // Swap only if the items are not equal 
+            if (SortRoutine(Order, Item1Check, Item2Check) != 0)
+            {
+                FlipRow(LowSection, HighSection);
+            }           
+
+            ++LowSection;
+            --HighSection;
+        } 
+    }
+
+    // Recursion magic!
+
+    // Sort the lowest section of the array
+    if (Lowest < HighSection) 
+        Sort(Column, Order, Lowest, HighSection); 
+
+    // Sort the highest section of the array
+    if (Highest > LowSection) 
+        Sort(Column, Order, LowSection, Highest);
+}
+
+void wxAdvancedListCtrl::Sort()
 {
-    wxInt32 SortOrder;
-    wxInt32 SortCol;
-    wxAdvancedListCtrl *ctrl;
-};
+    SetSortArrow(SortCol, SortOrder);
 
-int wxCALLBACK SortRoutine(long item1, long item2, long sortData) 
-{    
-    sortinfo_t *sortinfo = (sortinfo_t *)sortData;
-    
-    wxListItem lstitem1, lstitem2;
+    // prime 'er up
+    long item = GetNextItem(-1);
+      
+    while(item != -1) 
+    {                    
+        SetItemData(item, item); 
+ 
+        item = GetNextItem(item);
+    }
 
-    lstitem1.SetId(item1);
-    lstitem1.SetColumn(sortinfo->SortCol);
-    lstitem1.SetMask(wxLIST_MASK_TEXT);
-    sortinfo->ctrl->GetItem(lstitem1);
-
-    lstitem2.SetId(item2);
-    lstitem2.SetColumn(sortinfo->SortCol);
-    lstitem2.SetMask(wxLIST_MASK_TEXT);
-    sortinfo->ctrl->GetItem(lstitem2);
-    
-    if (sortinfo->SortOrder == 1) 
-        return NaturalCompare(lstitem1.GetText(), lstitem2.GetText());
-
-    return NaturalCompare(lstitem2.GetText(), lstitem1.GetText());
+    // sort the list by column
+    Sort(SortCol, SortOrder);
 }
 
 void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
@@ -314,30 +446,7 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
     // can be sorted by it
     SortCol = event.GetColumn();
 
-    SetSortArrow(SortCol, SortOrder);
-
-    // prime 'er up
-    long item = this->GetNextItem(-1);
-      
-    while(item != -1) 
-    {                    
-        this->SetItemData(item, item); 
- 
-        item = this->GetNextItem(item);
-    }
-
-    // information for sorting routine callback
-    sortinfo_t sortinfo;
-    
-    sortinfo.ctrl = (wxAdvancedListCtrl *)event.GetEventObject();
-    sortinfo.SortCol = SortCol;
-    sortinfo.SortOrder = SortOrder;
-    
-    // sort the list by column
-    this->SortItems(SortRoutine, (long)&sortinfo);
-
-    // recolour the list
-    ColourList();
+    Sort();
 }
 
 void wxAdvancedListCtrl::ResetSortArrows(void)
@@ -408,34 +517,16 @@ void wxAdvancedListCtrl::ColourList()
 // Our variation of InsertItem, so we can do magical things!
 long wxAdvancedListCtrl::ALCInsertItem(wxListItem &info)
 {
+    //Sort();
+
+    // TODO: We need to remember this item id, because the last item on the list
+    // does not get sorted, we can't move sort either, because then the return 
+    // index would be stale.
+    info.SetId(InsertItem(info));
+   
     ColourListItem(info);
-    
-    return InsertItem(info);
-}
 
-// get an index location of the text field in the list
-wxInt32 wxAdvancedListCtrl::GetIndex(wxString str)
-{
-	wxInt32 i = 0, list_index = -1;
-	wxString addr = _T("");
+    SetItem(info);
 
-    wxListItem listitem;
-
-    if (!(str.IsEmpty()) && (this->GetItemCount() > 0))
-	for (i = 0; i < this->GetItemCount(); i++)
-	{
-        listitem.SetId(i);
-        listitem.SetColumn(7);
-        listitem.SetMask(wxLIST_MASK_TEXT);
-
-        this->GetItem(listitem);
-        
-        if (listitem.GetText().IsSameAs(str))
-        {
-            list_index = i;
-            break;
-        }
-    }
-	
-	return list_index;
+    return info.GetId();
 }

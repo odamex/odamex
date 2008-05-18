@@ -31,6 +31,7 @@
 #include <algorithm>
 
 #ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
 #include <sys/stat.h>
@@ -643,7 +644,7 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 	{
 		std::string d_name = namelist[i]->d_name;
 
-		free(namelist[i]);
+		M_Free(namelist[i]);
 
 		if(!found.length())
 		{
@@ -672,8 +673,7 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 		}
 	}
 
-	if(namelist)
-		free(namelist);
+	M_Free(namelist);
 #else
 	std::string all_ext = dir + "*";
 	//all_ext += ext;
@@ -1224,7 +1224,8 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 
 	Z_Init();
 
-	gamestate = GS_STARTUP;
+	gamestate_t oldgamestate = gamestate;
+	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
 
 	wadfiles.clear();
 
@@ -1292,6 +1293,8 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 	last_success = fails.empty();
 	last_wadnames = wadnames;
 	last_hashes = needhashes;
+
+	gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
 
 	return fails;
 }

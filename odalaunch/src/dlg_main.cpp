@@ -34,6 +34,7 @@
 #include <wx/recguard.h>
 #include <wx/app.h>
 #include <wx/imaglist.h>
+#include <wx/artprov.h>
 
 #include "misc.h"
 
@@ -114,16 +115,41 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     SERVER_LIST = wxDynamicCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
     PLAYER_LIST = wxDynamicCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
 
+    SetupServerListColumns(SERVER_LIST);
+    SetupPlayerListHeader(PLAYER_LIST);
+
+    // spectator state.
+    PLAYER_LIST->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
+
+    // Load configuration
+    wxFileConfig ConfigInfo;
+    wxInt32 ServerListSortOrder, ServerListSortColumn;
+    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
+
+    ConfigInfo.Read(_T("ServerListSortOrder"), &ServerListSortOrder, 1);
+    ConfigInfo.Read(_T("ServerListSortColumn"), &ServerListSortColumn, 0);
+
+    SERVER_LIST->SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+
+    ConfigInfo.Read(_T("PlayerListSortOrder"), &PlayerListSortOrder, 1);
+    ConfigInfo.Read(_T("PlayerListSortColumn"), &PlayerListSortColumn, 0);
+
+    PLAYER_LIST->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+
+    wxInt32 WindowWidth, WindowHeight;
+
+    ConfigInfo.Read(_T("MainWindowWidth"), &WindowWidth, GetSize().GetWidth());
+    ConfigInfo.Read(_T("MainWindowHeight"), &WindowHeight, GetSize().GetHeight());
+       
+    SetSize(WindowWidth, WindowHeight);
+
 	// set up the master server information
 	MServer = new MasterServer;
     
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
     server_dlg = new dlgServers(MServer, this);
-
-    SetupServerListColumns(SERVER_LIST);
-    SetupPlayerListHeader(PLAYER_LIST);
-    
+   
     QServer = NULL;
 
     // Create monitor thread and run it
@@ -154,6 +180,24 @@ dlgMain::~dlgMain()
     mtcs_Request.Signal = mtcs_exit;
     GetThread()->Wait();
 
+    // Save GUI layout
+    wxFileConfig ConfigInfo;
+    wxInt32 ServerListSortOrder, ServerListSortColumn;
+    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
+
+    SERVER_LIST->GetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+    PLAYER_LIST->GetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+
+    ConfigInfo.Write(_T("ServerListSortOrder"), ServerListSortOrder);
+    ConfigInfo.Write(_T("ServerListSortColumn"), ServerListSortColumn);
+
+    ConfigInfo.Write(_T("PlayerListSortOrder"), PlayerListSortOrder);
+    ConfigInfo.Write(_T("PlayerListSortColumn"), PlayerListSortColumn);
+
+    ConfigInfo.Write(_T("MainWindowWidth"), GetSize().GetWidth());
+    ConfigInfo.Write(_T("MainWindowHeight"), GetSize().GetHeight());
+
+    // Cleanup
     if (MServer != NULL)
         delete MServer;
         
@@ -195,7 +239,10 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
 void *dlgMain::Entry()
 {
     bool Running = true;
-           
+    
+    wxFileConfig ConfigInfo;
+    wxInt32 MasterTimeout, ServerTimeout;
+    
     while (Running)
     {
         // Can I order a master server request with a list of server addresses
@@ -204,24 +251,26 @@ void *dlgMain::Entry()
         {
             static const wxString masters[2] = 
             {
-                _T("odamex.net"),
+                _T("master1.odamex.net"),
                 _T("odamex.org")
             };
             
             static int index = 0;
             
             mtcs_Request.Signal = mtcs_getservers;
-          
+            
+            ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, 500);
+            
             MServer->SetAddress(masters[index], 15000);
 
             // TODO: Clean this up
-            if (!MServer->Query(9999))
+            if (!MServer->Query(MasterTimeout))
             {
                 index = !index;
         
                 MServer->SetAddress(masters[index], 15000);
            
-                if (!MServer->Query(9999))
+                if (!MServer->Query(MasterTimeout))
                 {
                     mtrs_struct_t *Result = new mtrs_struct_t;
 
@@ -299,6 +348,8 @@ void *dlgMain::Entry()
                 wxPostEvent(this, event);                  
             }
 
+            ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, 500);
+    
             /* 
                 Thread pool manager:
                 Executes a number of threads that contain the same amount of
@@ -330,7 +381,7 @@ void *dlgMain::Entry()
                         QServer[serverNum].SetAddress(Address, Port);
 
                         // add the thread to the vector
-                        threadVector.push_back(new QueryThread(this, &QServer[serverNum], serverNum));
+                        threadVector.push_back(new QueryThread(this, &QServer[serverNum], serverNum, ServerTimeout));
 
                         // create and run the thread
                         if(threadVector[threadVector.size() - 1]->Create() == wxTHREAD_NO_ERROR)
@@ -533,7 +584,9 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               "Empty reset: %s\n"
                               "Clean maps: %s\n"
                               "Frag on exit: %s\n"
-                              "Spectating: %s\n"),
+                              "Spectating: %s\n"
+                              // TODO: Uncomment when the server has a full password implementation
+                              /*"Passworded: %s\n"*/),
                               QServer[i].info.version,
                               
                               QServer[i].info.emailaddr.c_str(),
@@ -556,7 +609,9 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               BOOLSTR(QServer[i].info.emptyreset),
                               BOOLSTR(QServer[i].info.cleanmaps),
                               BOOLSTR(QServer[i].info.fragonexit),
-                              BOOLSTR(QServer[i].info.spectating));
+                              BOOLSTR(QServer[i].info.spectating)//,
+                              // TODO: Uncomment when the server has a full password implementation
+                              /*BOOLSTR(QServer[i].info.passworded)*/);
     
     static wxTipWindow *tw = NULL;
                               
@@ -590,8 +645,8 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 // About information
 void dlgMain::OnAbout(wxCommandEvent& event)
 {
-    wxString strAbout = _T("Odamex Launcher 1.0 - "
-                            "Copyright 2007 The Odamex Team");
+    wxString strAbout = _T("Odamex Launcher 0.4 - "
+                            "Copyright 2008 The Odamex Team");
     
     wxMessageBox(strAbout, strAbout);
 }

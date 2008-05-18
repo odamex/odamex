@@ -593,11 +593,15 @@ std::string BuildString (size_t argc, const char **argv)
 		{
 			out += "\"";
 			out += argv[i];
-			out += "\" ";
+			out += "\"";
 		}
 		else
 		{
 			out += argv[i];
+		}
+
+		if(i + 1 < argc)
+		{
 			out += " ";
 		}
 	}
@@ -615,11 +619,15 @@ std::string BuildString (size_t argc, std::vector<std::string> args)
 		{
 			out += "\"";
 			out += args[i];
-			out += "\" ";
+			out += "\"";
 		}
 		else
 		{
 			out += args[i];
+		}
+
+		if(i + 1 < argc)
+		{
 			out += " ";
 		}
 	}

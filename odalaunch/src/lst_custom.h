@@ -36,8 +36,23 @@ class wxAdvancedListCtrl : public wxListCtrl
     public:
         wxAdvancedListCtrl() { };
         ~wxAdvancedListCtrl() { };
+        
+        void SetSortColumnAndOrder(wxInt32 &Column, wxInt32 &Order)
+        {
+            SortCol = Column;
+            SortOrder = Order;
+            
+            SetSortArrow(SortCol, SortOrder);
+        }
+
+        void GetSortColumnAndOrder(wxInt32 &Column, wxInt32 &Order)
+        {
+            Column = SortCol;
+            Order = SortOrder;
+        }
+
+        void Sort();
                 
-        wxInt32 GetIndex(wxString str);
         void AddImageSmall(wxImage Image);
         void SetColumnImage(wxListItem &li, wxInt32 ImageIndex);
         long ALCInsertItem(wxListItem &info);
@@ -54,6 +69,9 @@ class wxAdvancedListCtrl : public wxListCtrl
 
         void ResetSortArrows(void);
         void SetSortArrow(wxInt32 Column, wxInt32 ArrowState);
+
+        void FlipRow(long Row, long NextRow);
+        void Sort(wxInt32 Column, wxInt32 Order = 0, wxInt32 Lowest = 0, wxInt32 Highest = -1);
         
         wxInt32 SortOrder;
         wxInt32 SortCol;

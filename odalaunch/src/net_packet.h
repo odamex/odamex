@@ -99,6 +99,9 @@ struct serverinfo_t     // Server information structure
     
     wxUint32        spectating;
     wxUint16        maxactiveplayers;
+    
+    wxUint32        extrainfo;
+    bool            passworded;
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets

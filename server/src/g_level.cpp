@@ -81,6 +81,8 @@ extern int mapchange;
 // Start time for timing demos
 int starttime;
 
+BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
+
 extern BOOL netdemo;
 BOOL savegamerestore;
 
@@ -394,11 +396,10 @@ BEGIN_COMMAND (clearmaplist)
 	// Crawl through the linked list zapping entries.
 	while ( 1 )
 	{
-		free ( MapListPointer->MapName );
-		if ( MapListPointer->WadName )
-			free ( MapListPointer->WadName );
+		M_Free( MapListPointer->MapName );
+		M_Free( MapListPointer->WadName );
 
-		free ( MapListPointer );
+		M_Free( MapListPointer );
 
 		if ( NextPointer == NULL )
 			break; // The linked list is dead.
@@ -411,7 +412,19 @@ BEGIN_COMMAND (clearmaplist)
 }
 END_COMMAND (clearmaplist)
 
-BEGIN_COMMAND (maplist_next)
+BEGIN_COMMAND (nextmap)
+{
+	if (!MapListPointer)
+	{
+		Printf( PRINT_HIGH, "Map list is empty.\n" );
+		return;
+	}
+
+	G_ExitLevel (0, 1);
+}
+END_COMMAND (nextmap)
+
+BEGIN_COMMAND (forcenextmap)
 {
 	if (!MapListPointer)
 	{
@@ -421,7 +434,7 @@ BEGIN_COMMAND (maplist_next)
 
 	G_ChangeMap ();
 }
-END_COMMAND (maplist_next)
+END_COMMAND (forcenextmap)
 
 BOOL 			secretexit;
 static int		startpos;	// [RH] Support for multiple starts per level
@@ -545,7 +558,7 @@ EXTERN_CVAR (maxplayers)
 void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
 
-void G_InitNew (char *mapname)
+void G_InitNew (const char *mapname)
 {
 	size_t i;
 
@@ -625,6 +638,8 @@ void G_InitNew (char *mapname)
 				G_PlayerReborn(players[i]);
 
 			players[i].playerstate = PST_REBORN;
+			
+			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
 	}
 
@@ -716,6 +731,9 @@ void G_DoLoadLevel (int position)
 {
 	static int lastposition = 0;
 	size_t i;
+	
+	if (position != -1)
+		firstmapinit = true;
 
 	if (position == -1)
 		position = lastposition;
@@ -724,7 +742,10 @@ void G_DoLoadLevel (int position)
 
 	G_InitLevelLocals ();
 
-	Printf (PRINT_HIGH, "--- %s: \"%s\" ---\n", level.mapname, level.level_name);
+	if (firstmapinit) {
+		Printf (PRINT_HIGH, "--- %s: \"%s\" ---\n", level.mapname, level.level_name);
+		firstmapinit = false;
+	}
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
@@ -755,6 +776,13 @@ void G_DoLoadLevel (int position)
 		players[i].deathcount = 0; // [Toke - Scores - deaths]
 		players[i].killcount = 0; // [deathz0r] Coop kills
 		players[i].points = 0;
+	}
+
+	// [deathz0r] It's a smart idea to reset the team points
+	if (teamplay)
+	{
+		for (size_t i = 0; i < NUMTEAMS; i++)
+			TEAMpoints[i] = 0;
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98

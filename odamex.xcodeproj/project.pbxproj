@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		92325F2E0C89B6C0006D7EEF /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92325F2D0C89B6C0006D7EEF /* AudioToolbox.framework */; };
 		9232603E0C89D378006D7EEF /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9232603D0C89D378006D7EEF /* AudioUnit.framework */; };
+		92500AC50DDF2CD90021E69D /* m_swap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92500AC40DDF2CD90021E69D /* m_swap.cpp */; };
+		92500AC60DDF2CD90021E69D /* m_swap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92500AC40DDF2CD90021E69D /* m_swap.cpp */; };
 		92A68F870B646045004AA40D /* i_net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A68F6F0B645EE9004AA40D /* i_net.cpp */; };
 		92A68F880B646045004AA40D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A68F710B645EE9004AA40D /* main.cpp */; };
 		92A745480CA52B1E007321ED /* p_tick.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92A745460CA52B1E007321ED /* p_tick.cpp */; };
@@ -40,8 +42,6 @@
 		92D2D7DF0B62BA8800FD5B07 /* hu_stuff.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6DE0B62B89B00FD5B07 /* hu_stuff.h */; };
 		92D2D7E10B62BA8800FD5B07 /* m_menu.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E00B62B89B00FD5B07 /* m_menu.h */; };
 		92D2D7E30B62BA8800FD5B07 /* m_misc.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E20B62B89B00FD5B07 /* m_misc.h */; };
-		92D2D7E60B62BA8800FD5B07 /* memio.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E50B62B89B00FD5B07 /* memio.h */; };
-		92D2D7E80B62BA8800FD5B07 /* mus2midi.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E70B62B89B00FD5B07 /* mus2midi.h */; };
 		92D2D7EA0B62BA8800FD5B07 /* p_interaction.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E90B62B89B00FD5B07 /* p_interaction.h */; };
 		92D2D7F20B62BA8800FD5B07 /* r_draw.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6F10B62B89B00FD5B07 /* r_draw.h */; };
 		92D2D7F50B62BA8800FD5B07 /* r_main.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6F40B62B89B00FD5B07 /* r_main.h */; };
@@ -111,7 +111,6 @@
 		92D2D9590B64342400FD5B07 /* version.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 920D7BC30B4D212B000AA4A2 /* version.h */; };
 		92D2D95C0B64342400FD5B07 /* w_wad.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 920D7BC50B4D212B000AA4A2 /* w_wad.h */; };
 		92D2D95E0B64342400FD5B07 /* z_zone.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 920D7BC70B4D212C000AA4A2 /* z_zone.h */; };
-		92D2D9DB0B6442EA00FD5B07 /* c_cmds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7ADD0B4D211D000AA4A2 /* c_cmds.cpp */; };
 		92D2D9DC0B6442EA00FD5B07 /* c_console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7ADE0B4D211D000AA4A2 /* c_console.cpp */; };
 		92D2D9DE0B6442EA00FD5B07 /* d_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE10B4D211D000AA4A2 /* d_main.cpp */; };
 		92D2D9DF0B6442EA00FD5B07 /* d_net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 920D7AE30B4D211D000AA4A2 /* d_net.cpp */; };
@@ -279,7 +278,6 @@
 		92D2DB740B644F3F00FD5B07 /* am_map.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6C30B62B89B00FD5B07 /* am_map.h */; };
 		92D2DB750B644F3F00FD5B07 /* c_bind.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6C40B62B89B00FD5B07 /* c_bind.cpp */; };
 		92D2DB760B644F3F00FD5B07 /* c_bind.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6C50B62B89B00FD5B07 /* c_bind.h */; };
-		92D2DB770B644F3F00FD5B07 /* c_cmds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6C60B62B89B00FD5B07 /* c_cmds.cpp */; };
 		92D2DB780B644F3F00FD5B07 /* c_console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6C70B62B89B00FD5B07 /* c_console.cpp */; };
 		92D2DB790B644F3F00FD5B07 /* c_console.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6C80B62B89B00FD5B07 /* c_console.h */; };
 		92D2DB7A0B644F3F00FD5B07 /* cl_ctf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6C90B62B89B00FD5B07 /* cl_ctf.cpp */; };
@@ -308,10 +306,6 @@
 		92D2DB920B644F3F00FD5B07 /* m_misc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6E10B62B89B00FD5B07 /* m_misc.cpp */; };
 		92D2DB930B644F3F00FD5B07 /* m_misc.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E20B62B89B00FD5B07 /* m_misc.h */; };
 		92D2DB940B644F3F00FD5B07 /* m_options.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6E30B62B89B00FD5B07 /* m_options.cpp */; };
-		92D2DB950B644F3F00FD5B07 /* memio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6E40B62B89B00FD5B07 /* memio.cpp */; };
-		92D2DB960B644F3F00FD5B07 /* memio.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E50B62B89B00FD5B07 /* memio.h */; };
-		92D2DB970B644F3F00FD5B07 /* mus2midi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6E60B62B89B00FD5B07 /* mus2midi.cpp */; };
-		92D2DB980B644F3F00FD5B07 /* mus2midi.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E70B62B89B00FD5B07 /* mus2midi.h */; };
 		92D2DB990B644F3F00FD5B07 /* p_interaction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6E80B62B89B00FD5B07 /* p_interaction.cpp */; };
 		92D2DB9A0B644F3F00FD5B07 /* p_interaction.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 92D2D6E90B62B89B00FD5B07 /* p_interaction.h */; };
 		92D2DB9B0B644F3F00FD5B07 /* p_mobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */; };
@@ -456,6 +450,10 @@
 		92EC0B0E0CCFF82300A804A6 /* doomstat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0B0C0CCFF82300A804A6 /* doomstat.cpp */; };
 		92EC0B4A0CD315AD00A804A6 /* p_user.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0B490CD315AD00A804A6 /* p_user.cpp */; };
 		92EC0B4B0CD315AD00A804A6 /* p_user.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92EC0B490CD315AD00A804A6 /* p_user.cpp */; };
+		D3BC55220DDBE70300934701 /* m_fileio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3BC551E0DDBE70200934701 /* m_fileio.cpp */; };
+		D3BC55230DDBE70300934701 /* m_memio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3BC55200DDBE70300934701 /* m_memio.cpp */; };
+		D3BC55270DDBE75600934701 /* mus2midi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3BC55250DDBE75600934701 /* mus2midi.cpp */; };
+		D3BC552B0DDBE9E500934701 /* m_fileio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3BC551E0DDBE70200934701 /* m_fileio.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -488,8 +486,6 @@
 				92D2D7DF0B62BA8800FD5B07 /* hu_stuff.h in CopyFiles */,
 				92D2D7E10B62BA8800FD5B07 /* m_menu.h in CopyFiles */,
 				92D2D7E30B62BA8800FD5B07 /* m_misc.h in CopyFiles */,
-				92D2D7E60B62BA8800FD5B07 /* memio.h in CopyFiles */,
-				92D2D7E80B62BA8800FD5B07 /* mus2midi.h in CopyFiles */,
 				92D2D7EA0B62BA8800FD5B07 /* p_interaction.h in CopyFiles */,
 				92D2D7F20B62BA8800FD5B07 /* r_draw.h in CopyFiles */,
 				92D2D7F50B62BA8800FD5B07 /* r_main.h in CopyFiles */,
@@ -582,8 +578,6 @@
 				92D2DB8F0B644F3F00FD5B07 /* hu_stuff.h in CopyFiles */,
 				92D2DB910B644F3F00FD5B07 /* m_menu.h in CopyFiles */,
 				92D2DB930B644F3F00FD5B07 /* m_misc.h in CopyFiles */,
-				92D2DB960B644F3F00FD5B07 /* memio.h in CopyFiles */,
-				92D2DB980B644F3F00FD5B07 /* mus2midi.h in CopyFiles */,
 				92D2DB9A0B644F3F00FD5B07 /* p_interaction.h in CopyFiles */,
 				92D2DBA20B644F3F00FD5B07 /* r_draw.h in CopyFiles */,
 				92D2DBA50B644F3F00FD5B07 /* r_main.h in CopyFiles */,
@@ -749,7 +743,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		920D7ADD0B4D211D000AA4A2 /* c_cmds.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = c_cmds.cpp; sourceTree = "<group>"; };
 		920D7ADE0B4D211D000AA4A2 /* c_console.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = c_console.cpp; sourceTree = "<group>"; };
 		920D7ADF0B4D211D000AA4A2 /* c_console.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = c_console.h; sourceTree = "<group>"; };
 		920D7AE10B4D211D000AA4A2 /* d_main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = d_main.cpp; sourceTree = "<group>"; };
@@ -898,6 +891,7 @@
 		920D7BC70B4D212C000AA4A2 /* z_zone.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = z_zone.h; sourceTree = "<group>"; };
 		92325F2D0C89B6C0006D7EEF /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = /System/Library/Frameworks/AudioToolbox.framework; sourceTree = "<absolute>"; };
 		9232603D0C89D378006D7EEF /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
+		92500AC40DDF2CD90021E69D /* m_swap.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = m_swap.cpp; sourceTree = "<group>"; };
 		92A68F6F0B645EE9004AA40D /* i_net.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = i_net.cpp; sourceTree = "<group>"; };
 		92A68F700B645EE9004AA40D /* i_net.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = i_net.h; sourceTree = "<group>"; };
 		92A68F710B645EE9004AA40D /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
@@ -927,7 +921,6 @@
 		92D2D6C30B62B89B00FD5B07 /* am_map.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = am_map.h; sourceTree = "<group>"; };
 		92D2D6C40B62B89B00FD5B07 /* c_bind.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = c_bind.cpp; sourceTree = "<group>"; };
 		92D2D6C50B62B89B00FD5B07 /* c_bind.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = c_bind.h; sourceTree = "<group>"; };
-		92D2D6C60B62B89B00FD5B07 /* c_cmds.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = c_cmds.cpp; sourceTree = "<group>"; };
 		92D2D6C70B62B89B00FD5B07 /* c_console.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = c_console.cpp; sourceTree = "<group>"; };
 		92D2D6C80B62B89B00FD5B07 /* c_console.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = c_console.h; sourceTree = "<group>"; };
 		92D2D6C90B62B89B00FD5B07 /* cl_ctf.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = cl_ctf.cpp; sourceTree = "<group>"; };
@@ -956,10 +949,6 @@
 		92D2D6E10B62B89B00FD5B07 /* m_misc.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = m_misc.cpp; sourceTree = "<group>"; };
 		92D2D6E20B62B89B00FD5B07 /* m_misc.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = m_misc.h; sourceTree = "<group>"; };
 		92D2D6E30B62B89B00FD5B07 /* m_options.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = m_options.cpp; sourceTree = "<group>"; };
-		92D2D6E40B62B89B00FD5B07 /* memio.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = memio.cpp; sourceTree = "<group>"; };
-		92D2D6E50B62B89B00FD5B07 /* memio.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = memio.h; sourceTree = "<group>"; };
-		92D2D6E60B62B89B00FD5B07 /* mus2midi.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mus2midi.cpp; sourceTree = "<group>"; };
-		92D2D6E70B62B89B00FD5B07 /* mus2midi.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = mus2midi.h; sourceTree = "<group>"; };
 		92D2D6E80B62B89B00FD5B07 /* p_interaction.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_interaction.cpp; sourceTree = "<group>"; };
 		92D2D6E90B62B89B00FD5B07 /* p_interaction.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = p_interaction.h; sourceTree = "<group>"; };
 		92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_mobj.cpp; sourceTree = "<group>"; };
@@ -1033,6 +1022,12 @@
 		92EC0B0C0CCFF82300A804A6 /* doomstat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = doomstat.cpp; sourceTree = "<group>"; };
 		92EC0B490CD315AD00A804A6 /* p_user.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = p_user.cpp; sourceTree = "<group>"; };
 		C6859E8B029090EE04C91782 /* odamex.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = odamex.1; sourceTree = "<group>"; };
+		D3BC551E0DDBE70200934701 /* m_fileio.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = m_fileio.cpp; sourceTree = "<group>"; };
+		D3BC551F0DDBE70200934701 /* m_fileio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = m_fileio.h; sourceTree = "<group>"; };
+		D3BC55200DDBE70300934701 /* m_memio.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = m_memio.cpp; sourceTree = "<group>"; };
+		D3BC55210DDBE70300934701 /* m_memio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = m_memio.h; sourceTree = "<group>"; };
+		D3BC55250DDBE75600934701 /* mus2midi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mus2midi.cpp; sourceTree = "<group>"; };
+		D3BC55260DDBE75600934701 /* mus2midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mus2midi.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1096,7 +1091,6 @@
 		920D7ADC0B4D211D000AA4A2 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				920D7ADD0B4D211D000AA4A2 /* c_cmds.cpp */,
 				920D7ADE0B4D211D000AA4A2 /* c_console.cpp */,
 				920D7ADF0B4D211D000AA4A2 /* c_console.h */,
 				920D7AE10B4D211D000AA4A2 /* d_main.cpp */,
@@ -1145,6 +1139,7 @@
 		920D7B5A0B4D2126000AA4A2 /* common */ = {
 			isa = PBXGroup;
 			children = (
+				92500AC40DDF2CD90021E69D /* m_swap.cpp */,
 				920D7B5B0B4D2126000AA4A2 /* actor.h */,
 				920D7B5C0B4D2126000AA4A2 /* c_cvars.cpp */,
 				920D7B5D0B4D2126000AA4A2 /* c_cvars.h */,
@@ -1195,8 +1190,12 @@
 				920D7B8A0B4D2128000AA4A2 /* m_bbox.h */,
 				920D7B8B0B4D2128000AA4A2 /* m_cheat.cpp */,
 				920D7B8C0B4D2128000AA4A2 /* m_cheat.h */,
+				D3BC551E0DDBE70200934701 /* m_fileio.cpp */,
+				D3BC551F0DDBE70200934701 /* m_fileio.h */,
 				920D7B8D0B4D2128000AA4A2 /* m_fixed.cpp */,
 				920D7B8E0B4D2128000AA4A2 /* m_fixed.h */,
+				D3BC55200DDBE70300934701 /* m_memio.cpp */,
+				D3BC55210DDBE70300934701 /* m_memio.h */,
 				920D7B8F0B4D2128000AA4A2 /* m_random.cpp */,
 				920D7B900B4D2129000AA4A2 /* m_random.h */,
 				920D7B910B4D2129000AA4A2 /* m_swap.h */,
@@ -1283,6 +1282,8 @@
 		92D2D6AC0B62B89B00FD5B07 /* sdl */ = {
 			isa = PBXGroup;
 			children = (
+				D3BC55250DDBE75600934701 /* mus2midi.cpp */,
+				D3BC55260DDBE75600934701 /* mus2midi.h */,
 				92D2D6B10B62B89B00FD5B07 /* hardware.cpp */,
 				92D2D6B20B62B89B00FD5B07 /* hardware.h */,
 				92D2D6B30B62B89B00FD5B07 /* i_input.cpp */,
@@ -1310,7 +1311,6 @@
 				92D2D6C30B62B89B00FD5B07 /* am_map.h */,
 				92D2D6C40B62B89B00FD5B07 /* c_bind.cpp */,
 				92D2D6C50B62B89B00FD5B07 /* c_bind.h */,
-				92D2D6C60B62B89B00FD5B07 /* c_cmds.cpp */,
 				92D2D6C70B62B89B00FD5B07 /* c_console.cpp */,
 				92D2D6C80B62B89B00FD5B07 /* c_console.h */,
 				92D2D6C90B62B89B00FD5B07 /* cl_ctf.cpp */,
@@ -1339,10 +1339,6 @@
 				92D2D6E10B62B89B00FD5B07 /* m_misc.cpp */,
 				92D2D6E20B62B89B00FD5B07 /* m_misc.h */,
 				92D2D6E30B62B89B00FD5B07 /* m_options.cpp */,
-				92D2D6E40B62B89B00FD5B07 /* memio.cpp */,
-				92D2D6E50B62B89B00FD5B07 /* memio.h */,
-				92D2D6E60B62B89B00FD5B07 /* mus2midi.cpp */,
-				92D2D6E70B62B89B00FD5B07 /* mus2midi.h */,
 				92D2D6E80B62B89B00FD5B07 /* p_interaction.cpp */,
 				92D2D6E90B62B89B00FD5B07 /* p_interaction.h */,
 				92D2D6EA0B62B89B00FD5B07 /* p_mobj.cpp */,
@@ -1550,6 +1546,7 @@
 			mainGroup = 08FB7794FE84155DC02AAC07 /* odamex */;
 			productRefGroup = 92D2DA850B6444B300FD5B07 /* Products */;
 			projectDirPath = "";
+			projectRoot = "";
 			targets = (
 				920D7C380B4D21E2000AA4A2 /* odamex */,
 				92D2D9D90B6442EA00FD5B07 /* odasrv */,
@@ -1572,7 +1569,6 @@
 				92D2DB6F0B644F3F00FD5B07 /* i_system.cpp in Sources */,
 				92D2DB730B644F3F00FD5B07 /* am_map.cpp in Sources */,
 				92D2DB750B644F3F00FD5B07 /* c_bind.cpp in Sources */,
-				92D2DB770B644F3F00FD5B07 /* c_cmds.cpp in Sources */,
 				92D2DB780B644F3F00FD5B07 /* c_console.cpp in Sources */,
 				92D2DB7A0B644F3F00FD5B07 /* cl_ctf.cpp in Sources */,
 				92D2DB7C0B644F3F00FD5B07 /* cl_main.cpp in Sources */,
@@ -1588,8 +1584,6 @@
 				92D2DB900B644F3F00FD5B07 /* m_menu.cpp in Sources */,
 				92D2DB920B644F3F00FD5B07 /* m_misc.cpp in Sources */,
 				92D2DB940B644F3F00FD5B07 /* m_options.cpp in Sources */,
-				92D2DB950B644F3F00FD5B07 /* memio.cpp in Sources */,
-				92D2DB970B644F3F00FD5B07 /* mus2midi.cpp in Sources */,
 				92D2DB990B644F3F00FD5B07 /* p_interaction.cpp in Sources */,
 				92D2DB9B0B644F3F00FD5B07 /* p_mobj.cpp in Sources */,
 				92D2DBA00B644F3F00FD5B07 /* r_bsp.cpp in Sources */,
@@ -1661,6 +1655,10 @@
 				92EC0AF20CCFF14600A804A6 /* p_pspr.cpp in Sources */,
 				92EC0B0D0CCFF82300A804A6 /* doomstat.cpp in Sources */,
 				92EC0B4A0CD315AD00A804A6 /* p_user.cpp in Sources */,
+				D3BC55220DDBE70300934701 /* m_fileio.cpp in Sources */,
+				D3BC55230DDBE70300934701 /* m_memio.cpp in Sources */,
+				D3BC55270DDBE75600934701 /* mus2midi.cpp in Sources */,
+				92500AC50DDF2CD90021E69D /* m_swap.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1677,7 +1675,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				92D2D9DB0B6442EA00FD5B07 /* c_cmds.cpp in Sources */,
 				92D2D9DC0B6442EA00FD5B07 /* c_console.cpp in Sources */,
 				92D2D9DE0B6442EA00FD5B07 /* d_main.cpp in Sources */,
 				92D2D9DF0B6442EA00FD5B07 /* d_net.cpp in Sources */,
@@ -1686,6 +1683,7 @@
 				92D2D9E30B6442EA00FD5B07 /* g_level.cpp in Sources */,
 				92D2D9E40B6442EA00FD5B07 /* i_main.cpp in Sources */,
 				92D2D9E50B6442EA00FD5B07 /* i_system.cpp in Sources */,
+				D3BC552B0DDBE9E500934701 /* m_fileio.cpp in Sources */,
 				92D2D9E60B6442EA00FD5B07 /* m_misc.cpp in Sources */,
 				92D2D9E70B6442EA00FD5B07 /* p_interaction.cpp in Sources */,
 				92D2D9E80B6442EA00FD5B07 /* p_mobj.cpp in Sources */,
@@ -1751,6 +1749,7 @@
 				92EC0AF30CCFF14700A804A6 /* p_pspr.cpp in Sources */,
 				92EC0B0E0CCFF82300A804A6 /* doomstat.cpp in Sources */,
 				92EC0B4B0CD315AD00A804A6 /* p_user.cpp in Sources */,
+				92500AC60DDF2CD90021E69D /* m_swap.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2007 by The Odamex Team.
@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	M_ALLOC
+//	Wrappers around the standard memory allocation routines.
 //
 //-----------------------------------------------------------------------------
 
@@ -30,6 +30,10 @@
 
 void *Malloc (size_t size)
 {
+	// We don't want implementation-defined behaviour!
+	if (!size)
+        return NULL;
+	
 	void *zone = malloc (size);
 
 	if (!zone)
@@ -40,6 +44,10 @@ void *Malloc (size_t size)
 
 void *Calloc (size_t num, size_t size)
 {
+	// We don't want implementation-defined behaviour!
+	if (!num || !size)
+        return NULL;
+	
 	void *zone = calloc (num, size);
 
 	if (!zone)
@@ -50,6 +58,11 @@ void *Calloc (size_t num, size_t size)
 
 void *Realloc (void *memblock, size_t size)
 {
+	// We don't want implementation-defined behaviour! Especially for this
+	// as realloc() behaves like malloc() (which doesn't use our Malloc())
+	if (!size)
+        return NULL;
+
 	void *zone = realloc (memblock, size);
 
 	if (!zone)
@@ -58,5 +71,20 @@ void *Realloc (void *memblock, size_t size)
 	return zone;
 }
 
-VERSION_CONTROL (m_alloc_cpp, "$Id:$")
+//
+// M_Free
+//
+// Wraps around the standard free() memory function. This variation is slightly 
+// more safer, as it only frees a block if its not NULL and will NULL it on
+// exiting.
+void M_Free2 (uintptr_t &memblock)
+{
+    if (memblock != (uintptr_t)NULL)
+    {               
+        free((void *)memblock);
+        memblock = (uintptr_t)NULL;
+    }
+}
+
+VERSION_CONTROL (m_alloc_cpp, "$Id$")
 

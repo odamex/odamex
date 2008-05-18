@@ -23,6 +23,7 @@
 
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock.h>
 #include <time.h>
@@ -88,6 +89,9 @@ CVAR (emptyreset,       "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)             
 CVAR (clientcount,		"0",        CVAR_NOSET | CVAR_NOENABLEDISABLE)										// tracks number of connected players for scripting
 
 CVAR (globalspectatorchat,       "1",        CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+
+CVAR (allowtargetnames, "1", CVAR_ARCHIVE | CVAR_SERVERINFO) // GhostlyDeath -- Target Names?
 
 BEGIN_CUSTOM_CVAR (maxclients,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
@@ -1042,7 +1046,7 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 void SV_SetupUserInfo (player_t &player)
 {
 	int		old_team;
-	char   *skin;
+	const char   *skin;
 	char	old_netname[MAXPLAYERNAME+1];
 	std::string		gendermessage;
 
@@ -1487,6 +1491,7 @@ void SV_UpdateMovingSectors(client_t* cl)
 			if(sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat)))
 			{
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
+				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
 				MSG_WriteLong (&cl->netbuf, sec->floorheight);
 				MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
@@ -1501,6 +1506,7 @@ void SV_UpdateMovingSectors(client_t* cl)
 			else if(sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor)))
 			{
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
+				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
 				MSG_WriteLong (&cl->netbuf, sec->floorheight);
 				MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
@@ -1639,6 +1645,8 @@ void SV_SendServerSettings (client_t *cl)
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)friendlyfire);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)teamplay);
 
+	// GhostlyDeath
+	MSG_WriteByte	(&cl->reliablebuf, (BOOL)allowtargetnames);
 }
 
 //
@@ -1909,6 +1917,7 @@ void SV_ConnectClient (void)
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
 }
 
+extern BOOL singleplayerjustdied;
 
 //
 // SV_DisconnectClient
@@ -1992,6 +2001,12 @@ void SV_DisconnectClient(player_t &who)
 	}
 
 	who.playerstate = PST_DISCONNECT;
+	
+	if (!multiplayer && !who.spectator) {
+		// reload the level from scratch
+		gameaction = ga_loadlevel;
+		singleplayerjustdied = false;
+	}
 
 	if (emptyreset && players.size() == 0)
         G_DeferedInitNew(level.mapname);
@@ -2717,6 +2732,7 @@ void SV_WriteCommands(void)
 
 				MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
 				MSG_WriteByte(&cl->netbuf, players[j].id);     // player number
+				MSG_WriteLong(&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->x);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->y);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->z);

@@ -24,6 +24,7 @@
 
 // denis - todo - remove
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #undef GetMessage
 #endif
@@ -85,9 +86,28 @@ int main(int argc, char *argv[])
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
 
-// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
+		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		Args.SetArgs (argc, argv);
-   
+
+		// denis - if argv[0] starts with "odamex://"
+		if(argc == 1 && argv && *argv)
+		{
+			const char *protocol = "odamex://";
+			const char *uri = *argv;
+
+			if(strncmp(uri, protocol, strlen(protocol)) == 0)
+			{
+				std::string location = uri + strlen(protocol);
+				size_t term = location.find_first_of('/');
+
+				if(term != std::string::npos)
+				{
+					Args.AppendArg("-connect");
+					Args.AppendArg(location.substr(0, term).c_str());
+				}
+			}
+		}
+
 #ifdef WIN32
     	// From the SDL 1.2.10 release notes: 
     	//

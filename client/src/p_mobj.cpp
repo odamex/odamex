@@ -778,7 +778,10 @@ void AActor::RunThink ()
 
 	// GhostlyDeath -- Was a spectator but now it's nothing!
 	if ((this->flags & MF_SPECTATOR ) && !player)
-		P_SetMobjState(this, S_NULL);
+	{
+		this->Destroy();
+		return;
+	}
 
 	// [RH] Fade a stealth monster in and out of visibility
 	if (visdir > 0)

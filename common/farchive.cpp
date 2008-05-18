@@ -154,8 +154,9 @@ void FLZOFile::Close ()
 		fclose (m_File);
 		m_File = NULL;
 	}
-	if (m_Buffer)
-		free (m_Buffer);
+
+	M_Free(m_Buffer);
+
 	BeEmpty ();
 }
 
@@ -292,7 +293,8 @@ void FLZOFile::Implode ()
 		memcpy (m_Buffer + 8, compressed, outlen);
 	if (compressed)
 		delete[] compressed;
-	free (oldbuf);
+	
+	M_Free(oldbuf);
 }
 
 void FLZOFile::Explode ()
@@ -315,7 +317,7 @@ void FLZOFile::Explode ()
 			r = lzo1x_decompress_safe (m_Buffer + 8, cprlen, expand, &newlen, NULL);
 			if (r != LZO_E_OK || newlen != expandsize)
 			{
-				free (expand);
+				M_Free(expand);
 				I_Error ("Could not decompress LZO file");
 			}
 		}
@@ -324,7 +326,7 @@ void FLZOFile::Explode ()
 			memcpy (expand, m_Buffer + 8, expandsize);
 		}
 		if (FreeOnExplode ())
-			free (m_Buffer);
+			M_Free(m_Buffer);
 		m_Buffer = expand;
 		m_BufferSize = expandsize;
 	}
@@ -512,7 +514,7 @@ FArchive::~FArchive ()
 	if (m_TypeMap)
 		delete[] m_TypeMap;
 	if (m_ObjectMap)
-		free (m_ObjectMap);
+		M_Free(m_ObjectMap);
 }
 
 void FArchive::Write (const void *mem, unsigned int len)

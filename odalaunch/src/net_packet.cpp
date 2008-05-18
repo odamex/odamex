@@ -199,6 +199,12 @@ void Server::ResetData()
 	info.teamplayinfo.redscore = 0;
 	info.teamplayinfo.bluescore = 0;
 	info.teamplayinfo.goldscore = 0;
+	
+    info.spectating = 0;
+    info.maxactiveplayers = 0;
+    
+    info.extrainfo = 0;
+    info.passworded = false;
 }
 
 wxInt32 Server::Parse()
@@ -351,6 +357,13 @@ wxInt32 Server::Parse()
     }
     else
         info.spectating = false;
+
+    Socket.Read32(info.extrainfo);
+    
+    if (info.extrainfo == 0x01020305)
+    {
+        Socket.ReadBool(info.passworded);
+    }
 
     Socket.ClearRecvBuffer();
     

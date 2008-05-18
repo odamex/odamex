@@ -167,6 +167,8 @@ bool M_DemoNoPlay;
 
 static DCanvas *FireScreen;
 
+EXTERN_CVAR (hud_targetnames)
+
 //
 // DOOM MENU
 //
@@ -784,7 +786,7 @@ void M_QuitDOOM (int choice)
 
 void M_DrawSlider (int x, int y, float min, float max, float cur);
 
-static char *genders[3] = { "male", "female", "cyborg" };
+static const char *genders[3] = { "male", "female", "cyborg" };
 static state_t *PlayerState;
 static int PlayerTics;
 

@@ -142,13 +142,13 @@ void dlgServers::OnServerList(wxCommandEvent &event)
     // get values from stored data
     CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
     
-    ChkSetValueEx(ID_CHKSUBSTITUTE, CHECK_SUBSTITUTE, cs->Subst.Enabled);
-    TEXT_SUBSTITUTE->SetLabel(cs->Subst.Address);
+//    ChkSetValueEx(ID_CHKSUBSTITUTE, CHECK_SUBSTITUTE, cs->Subst.Enabled);
+//    TEXT_SUBSTITUTE->SetLabel(cs->Subst.Address);
 }
 
 void dlgServers::OnSubstChecked(wxCommandEvent &event)
 {
-    TEXT_SUBSTITUTE->Enable(CHECK_SUBSTITUTE->IsChecked());
+//    TEXT_SUBSTITUTE->Enable(CHECK_SUBSTITUTE->IsChecked());
 }
 
 // Add Server button

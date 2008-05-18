@@ -405,7 +405,7 @@ int I_RegisterSong (char *data, size_t musicLen)
 
             if (!rw)
             {
-                Printf(PRINT_HIGH, "SDL_RWFromMem: %s\n", Mix_GetError());
+                Printf(PRINT_HIGH, "SDL_RWFromMem: %s\n", SDL_GetError());
                 break;
             }
 

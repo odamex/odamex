@@ -916,6 +916,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
 }
 
+extern BOOL singleplayerjustdied;
 
 //
 // KillMobj
@@ -1071,6 +1072,8 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 
 		target->flags &= ~MF_SOLID;
 		tplayer->playerstate = PST_DEAD;
+		if (!multiplayer)
+			singleplayerjustdied = true;
 		tplayer->respawn_time = level.time + 60*TICRATE; // 1 minute forced respawn
 		P_DropWeapon (tplayer);
 	}

@@ -83,17 +83,20 @@ void CL_ResetSectors (void)
 //
 // CL_PredictSectors
 //
-void CL_PredictSectors (void)
+void CL_PredictSectors (int predtic)
 {
 	for(size_t i = 0; i < real_plats.size(); i++)
 	{
 		plat_pred_t *pred = &real_plats[i];
 		sector_t *sec = &sectors[pred->secnum];
 
-		if(sec->floordata && (sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat))
-			|| sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor))))
+		if(pred->tic < predtic)
 		{
-			sec->floordata->RunThink();
+			if(sec->floordata && (sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat))
+				|| sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor))))
+			{
+				sec->floordata->RunThink();
+			}
 		}
 	}
 }
@@ -101,78 +104,77 @@ void CL_PredictSectors (void)
 //
 // CL_ResetPlayers
 //
-void CL_ResetPlayers (size_t oldtic)
+void CL_ResetPlayers ()
 {
-	for(size_t i = 0; i < players.size(); i++)
-	{
-		if(!players[i].ingame())
-			continue;
+	size_t n = players.size();
 
+	// Reset all player positions to their last known server tic
+	for(size_t i = 0; i < n; i++)
+	{
 		player_t *p = &players[i];
 
 		if(!p->mo)
 			continue;
 
-		if(p == &consoleplayer())
-		{
-			// set the position
-			CL_MoveThing (p->mo, p->real_origin[0], p->real_origin[1], p->real_origin[2]);
+		// set the position
+		CL_MoveThing (p->mo, p->real_origin[0], p->real_origin[1], p->real_origin[2]);
 		
-			// set the velocity
-			p->mo->momx = p->real_velocity[0];
-			p->mo->momy = p->real_velocity[1];
-			p->mo->momz = p->real_velocity[2];
-		}
-		else
-		{
-			// set the position
-			CL_MoveThing (p->mo, p->real_origin[0], p->real_origin[1], p->real_origin[2]);
-		
-			// set the velocity
-			p->mo->momx = p->real_velocity[0];
-			p->mo->momy = p->real_velocity[1];
-			p->mo->momz = p->real_velocity[2];
-
-			// predict up to oldtic
-			int reverse_tics = ((int)gametic - (int)p->last_received) + ((int)p->last_received - (int)oldtic);
-			while(reverse_tics > 0)
-			{
-				predicting = true; // disable bobbing, sounds
-				P_MovePlayer(p);
-				P_CalcHeight(p);
-				reverse_tics--;
-				predicting = false;
-			}
-		}
+		// set the velocity
+		p->mo->momx = p->real_velocity[0];
+		p->mo->momy = p->real_velocity[1];
+		p->mo->momz = p->real_velocity[2];
 	}
 }
 
 //
 // CL_PredictPlayers
 //
-void CL_PredictPlayers (void)
+void CL_PredictPlayer (player_t *p)
 {
-	for(size_t i = 0; i < players.size(); i++)
+	if (p->playerstate == PST_DEAD)
 	{
-		if(!players[i].ingame())
-			continue;
+		P_DeathThink (p);
+		p->mo->RunThink();
+		P_CalcHeight(p);
+	}
+	else
+	{
+		P_MovePlayer(p);
+		P_CalcHeight(p);
+		p->mo->RunThink();
+	}
+}
 
+//
+// CL_PredictPlayers
+//
+void CL_PredictPlayers (int predtic)
+{
+	size_t n = players.size();
+
+	for(size_t i = 0; i < n; i++)
+	{
 		player_t *p = &players[i];
-
-		if(!p->mo)
+	
+		if (!p->ingame() || !p->mo)
 			continue;
 
-		if (p->playerstate == PST_DEAD)
+		// Update this player if their last known status is before this tic
+		if(p->tic < predtic)
 		{
-			P_DeathThink (p);
-			p->mo->RunThink();
-			P_CalcHeight(p);
-		}
-		else
-		{
-			P_MovePlayer(p);
-			P_CalcHeight(p);
-			p->mo->RunThink();
+			if(p == &consoleplayer())
+			{
+				int buf = predtic%MAXSAVETICS;
+				ticcmd_t *cmd = &consoleplayer().cmd;
+				memcpy(cmd, &localcmds[buf], sizeof(ticcmd_t));
+
+				p->mo->angle = cl_angle[predtic%MAXSAVETICS];
+				p->viewheight = cl_viewheight[predtic%MAXSAVETICS];
+				p->deltaviewheight = cl_deltaviewheight[predtic%MAXSAVETICS];
+				p->mo->reactiontime = reactiontime[predtic%MAXSAVETICS];
+			}
+	
+			CL_PredictPlayer(p);
 		}
 	}
 }
@@ -182,13 +184,12 @@ void CL_PredictPlayers (void)
 //
 void CL_PredictMove (void)
 {
+	if (noservermsgs)
+		return;
+
 	player_t *p = &consoleplayer();
-	int       tic;
-	fixed_t   pitch;
 
-	tic = p->tic + 1;
-
-	if (!p->tic || !p->mo || tic > gametic)
+	if (!p->tic || !p->mo)
 		return;
 
 	// Save player angle, viewheight and deltaviewheight
@@ -197,69 +198,34 @@ void CL_PredictMove (void)
 	cl_viewheight[gametic%MAXSAVETICS] = p->viewheight;
 	cl_deltaviewheight[gametic%MAXSAVETICS] = p->deltaviewheight;
 	reactiontime[gametic%MAXSAVETICS] = p->mo->reactiontime;
-	pitch = p->mo->pitch;
 
-	if (noservermsgs)
-		return;
+	// Set predictable items to their last received positions
+	CL_ResetPlayers();
+	CL_ResetSectors();
 
-	// turn off special pickup during prediction
-	// disable bobbing, sounds
+	int predtic = gametic - MAXSAVETICS;
+
+	if(predtic < 0)
+		predtic = 0;
+
+	// Disable sounds, etc, during prediction
 	predicting = true;
 
-	// reset simulation to last received tic
-	CL_ResetSectors();
-	CL_ResetPlayers(tic);
-	
-	if (p->playerstate == PST_DEAD)
+	// Predict each tic
+	while(++predtic < gametic)
 	{
-		// predict forward until tic <= gametic
-		while (tic < gametic)
-		{
-			p->mo->RunThink();
-			CL_PredictSectors(); // denis - todo - replace the other calls here with CL_PredictPlayers/CL_PredictSectors
-			tic++;
-		}
-
-		predicting = false;
-		P_DeathThink (p);
-		p->mo->RunThink();
-		P_CalcHeight(p);
-		return;
+		CL_PredictPlayers(predtic);
+		CL_PredictSectors(predtic);
 	}
 
-	p->mo->angle = cl_angle[tic%MAXSAVETICS];
-	p->viewheight = cl_viewheight[tic%MAXSAVETICS];
-	p->deltaviewheight = cl_deltaviewheight[tic%MAXSAVETICS];
-	p->mo->reactiontime = reactiontime[tic%MAXSAVETICS];
-	
-	// predict forward until tic <= gametic
-	while (tic <= gametic)
-	{
-		int buf = tic%MAXSAVETICS;
-		ticcmd_t *cmd = &consoleplayer().cmd;
-		memcpy (cmd, &localcmds[buf], sizeof(ticcmd_t));
-		
-		if (tic < gametic)
-		{
-			predicting = true; // disable bobbing, sounds
-			CL_PredictPlayers();
-			CL_PredictSectors();
-		}
+	predicting = false;
 
-		tic++;
-	}
-	
-
-	if (!p->mo->reactiontime)
-		p->mo->angle = cl_angle[gametic%MAXSAVETICS];
-	p->mo->pitch = pitch;
-	predicting = false; // allow bobbing, sounds
+	CL_PredictPlayers(predtic);
+	CL_PredictSectors(predtic);
 
 	P_PlayerThink (p);
-	CL_PredictPlayers();
-	CL_PredictSectors();
+	P_CalcHeight(p);
 }
-
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
 

@@ -530,7 +530,7 @@ static bool MasterReply[] = {false, false}, MasterFirstReply;
 				MSG_ReadLong(); // token we don't really need here
 				MSG_ReadLong(); // launcher key to prevent spoofing
 				
-				char *title = MSG_ReadString();
+				const char *title = MSG_ReadString();
 				
 				[row setObject:[NSString stringWithCString:title] forKey: @"serverName"];
 
@@ -542,7 +542,7 @@ static bool MasterReply[] = {false, false}, MasterFirstReply;
 
 				[row setObject:[NSString stringWithCString:ss.str().c_str()] forKey: @"players"];
 
-				char *map = MSG_ReadString();
+				const char *map = MSG_ReadString();
 
 				[row setObject:[NSString stringWithCString:map] forKey: @"map"];
 
