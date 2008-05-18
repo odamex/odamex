@@ -79,10 +79,10 @@ void *Realloc (void *memblock, size_t size)
 // exiting.
 void M_Free2 (uintptr_t &memblock)
 {
-    if (memblock != NULL)
+    if (memblock != (uintptr_t)NULL)
     {               
         free((void *)memblock);
-        memblock = NULL;
+        memblock = (uintptr_t)NULL;
     }
 }
 
