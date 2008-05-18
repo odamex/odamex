@@ -733,7 +733,7 @@ BOOL R_PlaneInitData (void)
 	while (pl)
 	{
 		visplane_t *next = pl->next;
-		free (pl);
+		M_Free(pl);
 		pl = next;
 	}
 	freetail = NULL;
@@ -746,7 +746,7 @@ BOOL R_PlaneInitData (void)
 		while (pl)
 		{
 			visplane_t *next = pl->next;
-			free (pl);
+			M_Free(pl);
 			pl = next;
 		}
 	}

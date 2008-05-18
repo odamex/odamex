@@ -1013,7 +1013,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 
 		mus_playing.handle = I_RegisterSong((char *)data, len);
 
-		free (data);
+		M_Free(data);
 	}
 
 	// load & register it

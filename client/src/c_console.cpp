@@ -329,7 +329,8 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			}
 			Printf (PRINT_HIGH, "%s", string);
 		}
-		free (old);
+		
+		M_Free(old);
 		C_FlushDisplay ();
 
 		gamestate = oldstate;
@@ -1230,8 +1231,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 				if (HistSize == MAXHISTSIZE)
 				{
 					HistTail = HistTail->Newer;
-					free (HistTail->Older);
-					HistTail->Older = NULL;
+					M_Free(HistTail->Older);
 				}
 				else
 				{
