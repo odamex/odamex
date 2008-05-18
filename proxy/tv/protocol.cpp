@@ -50,6 +50,7 @@ void OnNewClientTV()
 	{
 		// send back to the non-first client a fake challenge
 		NET_SendPacket(challenge_message.cursize, challenge_message.data, net_from);
+		NET_SendPacket(first_message.cursize, first_message.data, net_from);
 		std::cout << "shadow client connect from " << NET_AdrToString(net_from) << std::endl;
 	}
 }
