@@ -1,2 +1,2 @@
 all:
-	g++ -DUNIX *.cpp ../master/i_net.cpp -o proxy
+	g++ -DUNIX *.cpp tv/*.cpp ../master/i_net.cpp -o proxy
