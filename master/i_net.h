@@ -77,6 +77,24 @@ typedef struct buf_s
 	   if(data)
 		delete[] data;
    }
+
+	buf_s &operator =(const buf_s &other)
+	{
+		if(data)
+			delete[] data;
+		
+		data = new byte[other.maxsize];
+		maxsize = other.maxsize;
+		cursize = other.cursize;
+		overflowed = other.overflowed;
+
+		if(!overflowed)
+			for(size_t i = 0; i < cursize; i++)
+				data[i] = other.data[i];
+
+		return *this;
+	}
+
 } buf_t;
 
 extern buf_t net_message;
