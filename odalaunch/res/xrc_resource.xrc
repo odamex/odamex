@@ -248,7 +248,7 @@
 								<flag>wxALIGN_CENTER|wxALL</flag>
 								<border>5</border>
 								<object class="wxStaticText" name="m_staticText2">
-									<label>Master Timeout:</label>
+									<label>Master Timeout (ms):</label>
 								</object>
 							</object>
 							<object class="sizeritem">
@@ -273,7 +273,7 @@
 								<flag>wxALIGN_CENTER|wxALL</flag>
 								<border>5</border>
 								<object class="wxStaticText" name="m_staticText21">
-									<label>Server Timeout:</label>
+									<label>Server Timeout (ms):</label>
 								</object>
 							</object>
 							<object class="sizeritem">
@@ -565,6 +565,7 @@
 								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
 								<object class="wxCheckBox" name="ID_CHKSUBSTITUTE">
+									<enabled>0</enabled>
 									<tooltip>Allows you to substitute a server from the master list for a custom server</tooltip>
 									<label>Custom server replaces this address:</label>
 									<checked>0</checked>
