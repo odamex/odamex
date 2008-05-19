@@ -83,7 +83,6 @@ std::vector<BanEntry_t> WhiteList;		// people who are [accidently] banned but ca
 // General server settings
 CVAR (hostname,			"Unnamed",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// A servers name that will apear in the launcher.
 CVAR (email,			"",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Server admin's e-mail address. - does not work yet
-CVAR (usemasters,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Server apears in the server list when true.
 CVAR (waddownload,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Send wad files to clients who request them.
 CVAR (emptyreset,       "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)                 // Reset current map when last player leaves.
 CVAR (clientcount,		"0",        CVAR_NOSET | CVAR_NOENABLEDISABLE)										// tracks number of connected players for scripting

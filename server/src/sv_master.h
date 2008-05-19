@@ -34,7 +34,7 @@
 #include "c_console.h"
 
 bool SV_AddMaster (const char *masterip);
-void SV_InitMaster ();
+void SV_InitMasters();
 bool SV_AddMaster(const char *masterip);
 void SV_ListMasters ();
 bool SV_RemoveMaster (const char *masterip);

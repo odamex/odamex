@@ -878,11 +878,11 @@ void D_DoomMain (void)
 
 	I_Init ();
 
+	D_CheckNetGame ();
+
 	M_LoadDefaults ();			// load before initing other systems
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
-
-	D_CheckNetGame ();
 
 	//D_AddDefWads();
 	//SV_InitMultipleFiles (wadfiles);

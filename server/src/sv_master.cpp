@@ -40,7 +40,7 @@
 #define MASTERPORT			15000
 
 // [Russell] - default master list
-const char *def_masterlist[] = { "odamex.net", "voxelsoft.com", NULL };
+const char *def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
 
 class masterserver
 {
@@ -107,10 +107,10 @@ static std::vector<masterserver> masters;
 //
 // SV_InitMaster
 //
-void SV_InitMaster(void)
+void SV_InitMasters(void)
 {
 	if (!usemasters)
-		Printf(PRINT_MEDIUM, "Masters will not be contacted because usemasters is 0");
+		Printf(PRINT_HIGH, "Masters will not be contacted because usemasters is 0\n");
     else
     {
         // [Russell] - Add some default masters
@@ -454,6 +454,13 @@ void SV_SendServerInfo()
 
 	NET_SendPacket(ml_message, net_from);
 }
+
+// Server appears in the server list when true.
+BEGIN_CUSTOM_CVAR (usemasters, "1", CVAR_ARCHIVE)
+{
+    SV_InitMasters();
+}
+END_CUSTOM_CVAR (usemasters)
 
 BEGIN_COMMAND (addmaster)
 {
