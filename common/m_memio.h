@@ -26,6 +26,9 @@
 #ifndef MEMIO_H
 #define MEMIO_H
 
+// returns the length of an "c array" on the stack.
+#define STACKARRAY_LENGTH(a) ((sizeof(a) / sizeof(a[0])))
+
 typedef struct _MEMFILE MEMFILE;
 
 typedef enum 
