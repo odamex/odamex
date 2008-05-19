@@ -20,15 +20,15 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
-#include "m_swap.h"
-
 // ONLY for msvc! these make gcc debug builds GARGANTUAN
 // eg: 30mb compared to 13mb!
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+
+#include "version.h"
+#include "m_swap.h"
 
 // Endianess handling.
 // WAD files are stored little endian.
