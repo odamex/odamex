@@ -772,7 +772,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 			}
 #endif
 
-			R_DrawMaskedColumn ((column_t *)((byte *)patch + LONG(patch->columnofs[texturecolumn])));
+			R_DrawMaskedColumn ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[texturecolumn])));
 		}
 	} else {
 		// [RH] Cache-friendly drawer
@@ -799,7 +799,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 			dc_x = x1;
 
 			if (dc_x & 1) {
-				R_DrawMaskedColumn ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumn ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
 			}
@@ -807,15 +807,15 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 			if (dc_x & 2) {
 				if (dc_x < x2 - 1) {
 					rt_initcols();
-					R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+					R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 					dc_x++;
 					frac += xiscale;
-					R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+					R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 					rt_draw2cols ((dc_x - 1) & 3, dc_x - 1);
 					dc_x++;
 					frac += xiscale;
 				} else if (dc_x == x2 - 1) {
-					R_DrawMaskedColumn ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+					R_DrawMaskedColumn ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 					dc_x++;
 					frac += xiscale;
 				}
@@ -823,34 +823,34 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 			while (dc_x < stop) {
 				rt_initcols();
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 				rt_draw4cols (dc_x - 3);
 				dc_x++;
 				frac += xiscale;
 			}
 
 			if (x2 - dc_x == 1) {
-				R_DrawMaskedColumn ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumn ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 			} else if (x2 - dc_x >= 2) {
 				rt_initcols();
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 				dc_x++;
 				frac += xiscale;
-				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+				R_DrawMaskedColumnHoriz ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 				rt_draw2cols ((dc_x - 1) & 3, dc_x - 1);
 				dc_x++;
 				frac += xiscale;
 				if (++dc_x < x2) {
-					R_DrawMaskedColumn ((column_t *)((byte *)patch + LONG(patch->columnofs[frac>>FRACBITS])));
+					R_DrawMaskedColumn ((column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[frac>>FRACBITS])));
 				}
 			}
 		}

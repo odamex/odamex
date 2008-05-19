@@ -269,7 +269,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				wadinfo_t header;
 				fread (&header, sizeof(header), 1, f);
-				header.identification = LONG(header.identification);
+				header.identification = SWAP_DWORD(header.identification);
 				if (header.identification != IWAD_ID)
 					iwad = "";
 				fclose(f);
@@ -310,12 +310,12 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		if ( (f = fopen (iwad.c_str(), "rb")) )
 		{
 			fread (&header, sizeof(header), 1, f);
-			header.identification = LONG(header.identification);
+			header.identification = SWAP_DWORD(header.identification);
 			if (header.identification == IWAD_ID ||
 				header.identification == PWAD_ID)
 			{
-				header.numlumps = LONG(header.numlumps);
-				if (0 == fseek (f, LONG(header.infotableofs), SEEK_SET))
+				header.numlumps = SWAP_DWORD(header.numlumps);
+				if (0 == fseek (f, SWAP_DWORD(header.infotableofs), SEEK_SET))
 				{
 					for (i = 0; i < header.numlumps; i++)
 					{

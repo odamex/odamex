@@ -39,29 +39,48 @@
 // Endianess handling.
 // WAD files are stored little endian.
 #ifdef __BIG_ENDIAN__
+#define SWAP_WORD(x)   ((x>>8) | (x<<8))
+#define SWAP_DWORD(x)  ((x>>24) | ((x>>8) & 0xff00) | ((x<<8) & 0xff0000) | (x<<24))
 
-// Swap 16bit, that is, MSB and LSB byte.
-// No masking with 0xFF should be necessary. 
-short SHORT (short x);
-unsigned short SHORT (unsigned short x);
-
-// Swapping 32bit.
-unsigned int LONG (unsigned int x);
-int LONG (int x);
-
-#define BESHORT(x)		(x)
-#define BELONG(x)		(x)
-
+#if 0
+// TODO: Why is this if 0'd ?
+#define SWAP_QWORD(x)   do \
+                        { \
+                            x = (((x)>>56) | (((x)>>40)&(0xff<<8)) | \
+                            (((x)>>24)&(0xff<<16)) | (((x)>>8)&(0xff<<24)) | \
+                            (((x)<<8)&(QWORD)0xff00000000) | \
+                            (((x)<<24)&(QWORD)0xff0000000000) | \
+                            (((x)<<40)&(QWORD)0xff000000000000) | ((x)<<56))); \
+                        } while(0)
 #else
-
-#define SHORT(x)		(x)
-#define LONG(x) 		(x)
-
-short BESHORT (short x);
-unsigned short BESHORT (unsigned short x);
-
-unsigned int BELONG (unsigned int x);
-int BELONG (int x);
+#define SWAP_QWORD(x)   do \
+                        { \
+                            DWORD *y = (DWORD *)&x; \
+                            DWORD t=y[0]; \
+                            y[0]=y[1]; \
+                            y[1]=t; \
+                            y = SWAP_DWORD(y[0]); \
+                            y = SWAP_DWORD(y[1]); \
+                        } while(0)
+#endif
+#define SWAP_FLOAT(x)   do \
+                        { \
+                            DWORD dw = *(DWORD *)&x; \
+                            dw = SWAP_DWORD(dw); \
+                            x = *(float *)&dw; \
+                        } while(0)
+#define SWAP_DOUBLE(x)  do \
+                        { \
+                            QWORD qw = *(QWORD *)&x; \
+                            SWAP_QWORD(qw); \
+                            x = *(double *)&qw; \
+                        } while(0)
+#else  // __LITTLE_ENDIAN__
+#define SWAP_WORD(x) (x)
+#define SWAP_DWORD(x) (x)
+#define SWAP_QWORD(x) (x)
+#define SWAP_FLOAT(x) (x)
+#define SWAP_DOUBLE(x) (x)
 
 #endif // __BIG_ENDIAN__
 

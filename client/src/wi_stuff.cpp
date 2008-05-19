@@ -704,7 +704,7 @@ void WI_drawNetgameStats (void)
 int WI_drawNum (int n, int x, int y, int digits)
 {
 
-    int		fontwidth = SHORT(num[0]->width());
+    int		fontwidth = SWAP_WORD(num[0]->width());
     int		neg;
     int		temp;
 
@@ -778,7 +778,7 @@ void WI_drawTime (int t, int x, int y)
 	do
 	{
 	    n = (t / div) % 60;
-	    x = WI_drawNum(n, x, y, 2) - SHORT(colon->width());
+	    x = WI_drawNum(n, x, y, 2) - SWAP_WORD(colon->width());
 	    div *= 60;
 
 	    // draw
@@ -790,7 +790,7 @@ void WI_drawTime (int t, int x, int y)
     else
     {
 	// "sucks"
-	screen->DrawPatchClean(sucks, x - SHORT(sucks->width()), y);
+	screen->DrawPatchClean(sucks, x - SWAP_WORD(sucks->width()), y);
     }
 }
 
@@ -917,7 +917,7 @@ void WI_updateStats(void)
 void WI_drawStats (void)
 {
     // line height
-    int lh = (3*SHORT(num[0]->height()))/2;
+    int lh = (3*SWAP_WORD(num[0]->height()))/2;
 
     // draw animated background
     WI_drawAnimatedBack();

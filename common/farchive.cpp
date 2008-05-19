@@ -39,25 +39,6 @@
 #include "d_player.h"
 #include "dobject.h"
 
-#ifdef __BIG_ENDIAN__
-#define SWAP_WORD(x)
-#define SWAP_DWORD(x)
-#define SWAP_QWORD(x)
-#define SWAP_FLOAT(x)
-#define SWAP_DOUBLE(x)
-#else
-#define SWAP_WORD(x)		{ x = (((x)<<8) | ((x)>>8)); }
-#define SWAP_DWORD(x)		{ x = (((x)>>24) | (((x)>>8)&0xff00) | ((x)<<8)&0xff0000 | ((x)<<24)); }
-#if 0
-#define SWAP_QWORD(x)		{ x = (((x)>>56) | (((x)>>40)&(0xff<<8)) | (((x)>>24)&(0xff<<16)) | (((x)>>8)&(0xff<<24)) |\
-								   (((x)<<8)&(QWORD)0xff00000000) | (((x)<<24)&(QWORD)0xff0000000000) | (((x)<<40)&(QWORD)0xff000000000000) | ((x)<<56))); }
-#else
-#define SWAP_QWORD(x)		{ DWORD *y = (DWORD *)&x; DWORD t=y[0]; y[0]=y[1]; y[1]=t; SWAP_DWORD(y[0]); SWAP_DWORD(y[1]); }
-#endif
-#define SWAP_FLOAT(x)		{ DWORD dw = *(DWORD *)&x; SWAP_DWORD(dw); x = *(float *)&dw; }
-#define SWAP_DOUBLE(x)		{ QWORD qw = *(QWORD *)&x; SWAP_QWORD(qw); x = *(double *)&qw; }
-#endif
-
 #define MAX(a,b)	((a)<(b)?(a):(b))
 
 // Output buffer size for LZO compression, extra space in case uncompressable
@@ -127,13 +108,13 @@ void FLZOFile::PostOpen ()
 		{
 			DWORD sizes[2];
 			fread (sizes, sizeof(DWORD), 2, m_File);
-			SWAP_DWORD (sizes[0]);
-			SWAP_DWORD (sizes[1]);
+			sizes[0] = SWAP_DWORD (sizes[0]);
+			sizes[1] = SWAP_DWORD (sizes[1]);
 			unsigned int len = sizes[0] == 0 ? sizes[1] : sizes[0];
 			m_Buffer = (byte *)Malloc (len+8);
 			fread (m_Buffer+8, len, 1, m_File);
-			SWAP_DWORD (sizes[0]);
-			SWAP_DWORD (sizes[1]);
+			sizes[0] = SWAP_DWORD (sizes[0]);
+			sizes[1] = SWAP_DWORD (sizes[1]);
 			((DWORD *)m_Buffer)[0] = sizes[0];
 			((DWORD *)m_Buffer)[1] = sizes[1];
 			Explode ();
@@ -284,8 +265,8 @@ void FLZOFile::Implode ()
 	m_Pos = 0;
 
 	DWORD *lens = (DWORD *)(m_Buffer);
-	lens[0] = BELONG((unsigned int)outlen);
-	lens[1] = BELONG(len);
+	lens[0] = SWAP_DWORD((unsigned int)outlen);
+	lens[1] = SWAP_DWORD(len);
 
 	if (outlen == 0)
 		memcpy (m_Buffer + 8, oldbuf, len);
@@ -305,8 +286,8 @@ void FLZOFile::Explode ()
 	if (m_Buffer)
 	{
 		unsigned int *ints = (unsigned int *)(m_Buffer);
-		cprlen = BELONG(ints[0]);
-		expandsize = BELONG(ints[1]);
+		cprlen = SWAP_DWORD(ints[0]);
+		expandsize = SWAP_DWORD(ints[1]);
 		
 		expand = (unsigned char *)Malloc (expandsize);
 		if (cprlen)
@@ -434,8 +415,8 @@ void FLZOMemFile::Serialize (FArchive &arc)
 		DWORD sizes[2];
 		sizes[0] = ((DWORD *)m_ImplodedBuffer)[0];
 		sizes[1] = ((DWORD *)m_ImplodedBuffer)[1];
-		SWAP_DWORD (sizes[0]);
-		SWAP_DWORD (sizes[1]);
+		sizes[0] = SWAP_DWORD (sizes[0]);
+		sizes[1] = SWAP_DWORD (sizes[1]);
 		arc.Write (m_ImplodedBuffer, (sizes[0] ? sizes[0] : sizes[1])+8);
 	}
 	else
@@ -455,8 +436,8 @@ void FLZOMemFile::Serialize (FArchive &arc)
 		DWORD len = sizes[0] == 0 ? sizes[1] : sizes[0];
 
 		m_Buffer = (BYTE *)Malloc (len+8);
-		SWAP_DWORD (sizes[0]);
-		SWAP_DWORD (sizes[1]);
+		sizes[0] = SWAP_DWORD (sizes[0]);
+		sizes[1] = SWAP_DWORD (sizes[1]);
 		((DWORD *)m_Buffer)[0] = sizes[0];
 		((DWORD *)m_Buffer)[1] = sizes[1];
 		arc.Read (m_Buffer+8, len);
@@ -613,7 +594,7 @@ FArchive &FArchive::operator>> (BYTE &c)
 
 FArchive &FArchive::operator<< (WORD w)
 {
-	SWAP_WORD(w);
+	w = SWAP_WORD(w);
 	Write (&w, sizeof(WORD));
 	return *this;
 }
@@ -621,13 +602,13 @@ FArchive &FArchive::operator<< (WORD w)
 FArchive &FArchive::operator>> (WORD &w)
 {
 	Read (&w, sizeof(WORD));
-	SWAP_WORD(w);
+	w = SWAP_WORD(w);
 	return *this;
 }
 
 FArchive &FArchive::operator<< (DWORD w)
 {
-	SWAP_DWORD(w);
+	w = SWAP_DWORD(w);
 	Write (&w, sizeof(DWORD));
 	return *this;
 }
@@ -635,13 +616,13 @@ FArchive &FArchive::operator<< (DWORD w)
 FArchive &FArchive::operator>> (DWORD &w)
 {
 	Read (&w, sizeof(DWORD));
-	SWAP_DWORD(w);
+	w = SWAP_DWORD(w);
 	return *this;
 }
 
 FArchive &FArchive::operator<< (QWORD w)
 {
-	SWAP_QWORD(w);
+	w = SWAP_QWORD(w);
 	Write (&w, sizeof(QWORD));
 	return *this;
 }
@@ -649,13 +630,13 @@ FArchive &FArchive::operator<< (QWORD w)
 FArchive &FArchive::operator>> (QWORD &w)
 {
 	Read (&w, sizeof(QWORD));
-	SWAP_QWORD(w);
+	w = SWAP_QWORD(w);
 	return *this;
 }
 
 FArchive &FArchive::operator<< (float w)
 {
-	SWAP_FLOAT(w);
+	w = SWAP_FLOAT(w);
 	Write (&w, sizeof(float));
 	return *this;
 }
@@ -663,13 +644,13 @@ FArchive &FArchive::operator<< (float w)
 FArchive &FArchive::operator>> (float &w)
 {
 	Read (&w, sizeof(float));
-	SWAP_FLOAT(w);
+	w = SWAP_FLOAT(w);
 	return *this;
 }
 
 FArchive &FArchive::operator<< (double w)
 {
-	SWAP_DOUBLE(w);
+	w = SWAP_DOUBLE(w);
 	Write (&w, sizeof(double));
 	return *this;
 }
@@ -677,7 +658,7 @@ FArchive &FArchive::operator<< (double w)
 FArchive &FArchive::operator>> (double &w)
 {
 	Read (&w, sizeof(double));
-	SWAP_DOUBLE(w);
+	w = SWAP_DOUBLE(w);
 	return *this;
 }
 

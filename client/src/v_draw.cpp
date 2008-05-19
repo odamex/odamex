@@ -491,7 +491,7 @@ void DCanvas::DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int
 
 	for ( ; col<w ; x++, col++, desttop += colstep)
 	{
-		column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
+		column = (column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[col]));
 
 		// step through the posts in a column
 		while (column->topdelta != 0xff )
@@ -578,7 +578,7 @@ void DCanvas::DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x0, i
 
 	for ( ; col<w ; col += xinc, desttop += colstep)
 	{
-		column = (column_t *)((byte *)patch + LONG(patch->columnofs[col >> 16]));
+		column = (column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[col >> 16]));
 
 		// step through the posts in a column
 		while (column->topdelta != 0xff )
@@ -727,7 +727,7 @@ void DCanvas::DrawPatchFlipped (const patch_t *patch, int x0, int y0) const
 
 	for ( ; col >= 0 ; col -= xinc, desttop += colstep)
 	{
-		column = (column_t *)((byte *)patch + LONG(patch->columnofs[col >> 16]));
+		column = (column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[col >> 16]));
 
 		// step through the posts in a column
 		while (column->topdelta != 0xff )

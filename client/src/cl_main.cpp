@@ -44,6 +44,7 @@
 #include "w_wad.h"
 #include "md5.h"
 #include "m_fileio.h"
+#include "m_memio.h"
 
 #include <string>
 #include <vector>
@@ -834,7 +835,7 @@ bool CL_Connect(void)
 {
 	players.clear();
 
-	memset(packetseq, -1, sizeof(packetseq) );
+	memset(packetseq, -1, STACKARRAY_LENGTH(packetseq));
 	packetnum = 0;
 
 	MSG_WriteMarker(&net_buffer, clc_ack);
@@ -1662,7 +1663,7 @@ void CL_CheckMissedPacket(void)
 	sequence = MSG_ReadLong();
 	size = MSG_ReadShort();
 
-	for (int n=0; n<256; n++)
+	for (int n=0; n < STACKARRAY_LENGTH(packetseq); ++n)
 	{
 		// skip a duplicated packet
 		if (packetseq[n] == sequence)
@@ -1709,8 +1710,8 @@ void CL_ReadPacketHeader(void)
 
 	CL_Decompress(sequence);
 
-	packetseq[packetnum] = sequence;
-	packetnum++;
+    packetseq[packetnum] = sequence;
+    ++packetnum;
 }
 
 void CL_GetServerSettings(void)
