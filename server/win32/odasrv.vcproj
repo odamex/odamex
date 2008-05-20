@@ -825,10 +825,6 @@
 			RelativePath="..\..\common\m_memio.h"
 			>
 		</File>
-		<File
-			RelativePath="..\..\common\m_swap.cpp"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>
