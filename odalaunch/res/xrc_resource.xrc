@@ -2,7 +2,7 @@
 <resource xmlns="http://www.wxwindows.org/wxxrc" version="2.3.0.1">
 	<object class="wxFrame" name="dlgMain">
 		<style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
-		<size>640,400</size>
+		<size>845,400</size>
 		<bg>#d4d0c8</bg>
 		<title>Odamex Launcher</title>
 		<centered>1</centered>

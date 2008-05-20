@@ -230,12 +230,12 @@ void SetupServerListColumns(wxAdvancedListCtrl *list)
 
 	// set up the list columns
     list->InsertColumn(serverlist_field_name,_T("Server name"),wxLIST_FORMAT_LEFT,150);
-	list->InsertColumn(serverlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,50);
-	list->InsertColumn(serverlist_field_players,_T("Players"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(serverlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,60);
+	list->InsertColumn(serverlist_field_players,_T("Players"),wxLIST_FORMAT_LEFT,80);
 	list->InsertColumn(serverlist_field_wads,_T("WADs"),wxLIST_FORMAT_LEFT,150);
-	list->InsertColumn(serverlist_field_map,_T("Map"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(serverlist_field_map,_T("Map"),wxLIST_FORMAT_LEFT,60);
 	list->InsertColumn(serverlist_field_type,_T("Type"),wxLIST_FORMAT_LEFT,80);
-	list->InsertColumn(serverlist_field_iwad,_T("Game IWAD"),wxLIST_FORMAT_LEFT,80);
+	list->InsertColumn(serverlist_field_iwad,_T("Game IWAD"),wxLIST_FORMAT_LEFT,100);
 	list->InsertColumn(serverlist_field_address,_T("Address : Port"),wxLIST_FORMAT_LEFT,130);
 	
 	// Passworded server icon
@@ -371,11 +371,11 @@ void SetupPlayerListHeader(wxAdvancedListCtrl *list)
 	list->DeleteAllColumns();
 	
 	list->InsertColumn(playerlist_field_name,_T("Player name"),wxLIST_FORMAT_LEFT,150);
-	list->InsertColumn(playerlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(playerlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,60);
 	list->InsertColumn(playerlist_field_frags,_T("Frags"),wxLIST_FORMAT_LEFT,70);
-    list->InsertColumn(playerlist_field_killcount,_T("Kill count"),wxLIST_FORMAT_LEFT,60);
-    list->InsertColumn(playerlist_field_deathcount,_T("Death count"),wxLIST_FORMAT_LEFT,80);
-    list->InsertColumn(playerlist_field_timeingame,_T("Time"),wxLIST_FORMAT_LEFT,50);
+    list->InsertColumn(playerlist_field_killcount,_T("Kill count"),wxLIST_FORMAT_LEFT,85);
+    list->InsertColumn(playerlist_field_deathcount,_T("Death count"),wxLIST_FORMAT_LEFT,100);
+    list->InsertColumn(playerlist_field_timeingame,_T("Time"),wxLIST_FORMAT_LEFT,65);
 }
 
 void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
