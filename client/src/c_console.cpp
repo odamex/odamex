@@ -432,7 +432,7 @@ int PrintString (int printlevel, const char *outline)
 	int mask;
 	BOOL scroll;
 
-	if(print_stdout)
+	if(print_stdout && gamestate != GS_FORCEWIPE)
 	{
 		printf("%s", outline);
 		fflush(stdout);
