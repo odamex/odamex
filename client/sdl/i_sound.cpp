@@ -424,8 +424,9 @@ void I_InitSound (void)
 	}
 	
 	Printf(PRINT_HIGH, 
-           "I_InitSound: Using %d channels\n", 
-           Mix_AllocateChannels(NUM_CHANNELS));
+           "I_InitSound: Using %d channels (freq:%d, fmt:%d, chan:%d)\n",
+           Mix_AllocateChannels(NUM_CHANNELS),
+		   mixer_freq, mixer_format, mixer_channels);
 
 	atterm(I_ShutdownSound);
 
