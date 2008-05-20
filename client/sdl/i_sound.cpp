@@ -376,7 +376,12 @@ void I_InitSound (void)
 	if(Args.CheckParm("-nosound"))
 		return;
 
-	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem\n");
+	const char *driver = getenv("SDL_AUDIODRIVER");
+
+	if(!driver)
+		driver = "default";
+
+	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem (%s)\n", driver);
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
