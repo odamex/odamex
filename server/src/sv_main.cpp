@@ -2451,6 +2451,11 @@ void SV_UpdateMissiles(player_t &pl)
 			MSG_WriteShort(&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
 			MSG_WriteLong (&cl->netbuf, mo->movecount);			
+			
+			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
+			MSG_WriteShort (&cl->netbuf, mo->netid);
+			MSG_WriteShort (&cl->netbuf, (mo->state - states));
+
 		}
     }
 }
@@ -2497,6 +2502,10 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteShort (&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
 			MSG_WriteLong (&cl->netbuf, mo->movecount);			
+			
+			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
+			MSG_WriteShort (&cl->netbuf, mo->netid);
+			MSG_WriteShort (&cl->netbuf, (mo->state - states));
 		}
     }
 }
