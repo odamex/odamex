@@ -1436,15 +1436,15 @@ void SV_UpdateSectors(client_t* cl)
 
 		if (sec->moveable)
 		{
-			MSG_WriteMarker (&cl->netbuf, svc_sector);
-			MSG_WriteShort (&cl->netbuf, s);
-			MSG_WriteShort (&cl->netbuf, sec->floorheight>>FRACBITS);
-			MSG_WriteShort (&cl->netbuf, sec->ceilingheight>>FRACBITS);
+			MSG_WriteMarker (&cl->reliablebuf, svc_sector);
+			MSG_WriteShort (&cl->reliablebuf, s);
+			MSG_WriteShort (&cl->reliablebuf, sec->floorheight>>FRACBITS);
+			MSG_WriteShort (&cl->reliablebuf, sec->ceilingheight>>FRACBITS);
 
 			if(cl->version >= 63) // denis - removeme - remove the 'if' condition on this block of code - legacy protocol did not have these lines
 			{
-				MSG_WriteShort (&cl->netbuf, sec->floorpic);
-				MSG_WriteShort (&cl->netbuf, sec->ceilingpic);
+				MSG_WriteShort (&cl->reliablebuf, sec->floorpic);
+				MSG_WriteShort (&cl->reliablebuf, sec->ceilingpic);
 			}
 
 			/*if(sec->floordata->IsKindOf(RUNTIME_CLASS(DMover)))
