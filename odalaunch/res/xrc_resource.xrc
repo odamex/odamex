@@ -166,7 +166,6 @@
 						<border>0</border>
 						<object class="wxListCtrl" name="ID_LSTSERVERS" subclass="wxAdvancedListCtrl">
 							<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
-							<size>780,150</size>
 						</object>
 					</object>
 				</object>

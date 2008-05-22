@@ -661,7 +661,7 @@
                                             <property name="name">ID_LSTSERVERS</property>
                                             <property name="permission">protected</property>
                                             <property name="pos"></property>
-                                            <property name="size">780,150</property>
+                                            <property name="size">-1,-1</property>
                                             <property name="style">wxLC_REPORT|wxLC_SINGLE_SEL</property>
                                             <property name="subclass">wxAdvancedListCtrl; </property>
                                             <property name="tooltip"></property>
