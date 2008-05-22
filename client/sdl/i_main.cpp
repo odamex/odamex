@@ -90,21 +90,21 @@ int main(int argc, char *argv[])
 		Args.SetArgs (argc, argv);
 
 		// denis - if argv[0] starts with "odamex://"
-		if(argc == 1 && argv && *argv)
+		if(argc == 2 && argv && argv[1])
 		{
 			const char *protocol = "odamex://";
-			const char *uri = *argv;
+			const char *uri = argv[1];
 
 			if(strncmp(uri, protocol, strlen(protocol)) == 0)
 			{
 				std::string location = uri + strlen(protocol);
 				size_t term = location.find_first_of('/');
 
-				if(term != std::string::npos)
-				{
-					Args.AppendArg("-connect");
-					Args.AppendArg(location.substr(0, term).c_str());
-				}
+				if(term == std::string::npos)
+					term = location.length();
+
+				Args.AppendArg("-connect");
+				Args.AppendArg(location.substr(0, term).c_str());
 			}
 		}
 
