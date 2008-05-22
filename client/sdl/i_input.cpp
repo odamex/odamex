@@ -24,6 +24,12 @@
 // SoM 12-24-05: yeah... I'm programming on christmas eve. 
 // Removed all the DirectX crap.
 
+#ifdef WIN32
+#define _WIN32_WINNT 0x0400
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <SDL.h>
 
 #include "m_argv.h"
@@ -77,9 +83,6 @@ extern constate_e ConsoleState;
 //CVAR (joy_ythreshold, "0.15", CVAR_ARCHIVE)
 
 #ifdef WIN32
-#define _WIN32_WINNT 0x0400
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 // denis - in fullscreen, prevent exit on accidental windows key press
 HHOOK g_hKeyboardHook;
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
