@@ -641,7 +641,7 @@ FArchive &FArchive::operator>> (DWORD &w)
 
 FArchive &FArchive::operator<< (QWORD w)
 {
-	SWAP_QWORD(w);
+	w = SWAP_QWORD(w);
 	Write (&w, sizeof(QWORD));
 	return *this;
 }
@@ -649,13 +649,13 @@ FArchive &FArchive::operator<< (QWORD w)
 FArchive &FArchive::operator>> (QWORD &w)
 {
 	Read (&w, sizeof(QWORD));
-	SWAP_QWORD(w);
+	w = SWAP_QWORD(w);
 	return *this;
 }
 
 FArchive &FArchive::operator<< (float w)
 {
-	SWAP_FLOAT(w);
+	w = SWAP_FLOAT(w);
 	Write (&w, sizeof(float));
 	return *this;
 }
@@ -663,13 +663,13 @@ FArchive &FArchive::operator<< (float w)
 FArchive &FArchive::operator>> (float &w)
 {
 	Read (&w, sizeof(float));
-	SWAP_FLOAT(w);
+	w = SWAP_FLOAT(w);
 	return *this;
 }
 
 FArchive &FArchive::operator<< (double w)
 {
-	SWAP_DOUBLE(w);
+	w = SWAP_DOUBLE(w);
 	Write (&w, sizeof(double));
 	return *this;
 }
@@ -677,7 +677,7 @@ FArchive &FArchive::operator<< (double w)
 FArchive &FArchive::operator>> (double &w)
 {
 	Read (&w, sizeof(double));
-	SWAP_DOUBLE(w);
+	w = SWAP_DOUBLE(w);
 	return *this;
 }
 
