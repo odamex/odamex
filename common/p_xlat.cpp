@@ -400,9 +400,9 @@ static const xlat_t SpecialTranslation[] = {
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 {
-	short special = SWAP_WORD(mld->special);
-	short tag = SWAP_WORD(mld->tag);
-	short flags = SWAP_WORD(mld->flags);
+	short special = SHORT(mld->special);
+	short tag = SHORT(mld->tag);
+	short flags = SHORT(mld->flags);
 	BOOL passthrough;
 	int i;
 

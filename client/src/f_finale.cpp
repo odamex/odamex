@@ -555,7 +555,7 @@ void F_DrawPatchCol (int x, const patch_t *patch, int col, const DCanvas *scrn)
 	step = (200<<16) / scrn->height;
 	invstep = (scrn->height<<16) / 200;
 
-	column = (column_t *)((byte *)patch + SWAP_DWORD(patch->columnofs[col]));
+	column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
 	desttop = scrn->buffer + x;
 	pitch = scrn->pitch;
 

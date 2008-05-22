@@ -151,8 +151,8 @@ void P_LoadVertexes (int lump)
 	// internal representation as fixed.
 	for (i = 0; i < numvertexes; i++)
 	{
-		vertexes[i].x = SWAP_WORD(((mapvertex_t *)data)[i].x)<<FRACBITS;
-		vertexes[i].y = SWAP_WORD(((mapvertex_t *)data)[i].y)<<FRACBITS;
+		vertexes[i].x = SHORT(((mapvertex_t *)data)[i].x)<<FRACBITS;
+		vertexes[i].y = SHORT(((mapvertex_t *)data)[i].y)<<FRACBITS;
 	}
 
 	// Free buffer memory.
@@ -204,21 +204,21 @@ void P_LoadSegs (int lump)
 		int side, linedef;
 		line_t *ldef;
 
-		short v = SWAP_WORD(ml->v1);
+		short v = SHORT(ml->v1);
 
 		if(v < 0 || v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v1 = &vertexes[v];
 
-		v = SWAP_WORD(ml->v2);
+		v = SHORT(ml->v2);
 
 		if(v < 0 || v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex %d", v);
 		else
 			li->v2 = &vertexes[v];
 
-		li->angle = (SWAP_WORD(ml->angle))<<16;
+		li->angle = (SHORT(ml->angle))<<16;
 
 // phares 10/4/98: In the case of a lineseg that was created by splitting
 // another line, it appears that the line angle is inherited from the
@@ -277,8 +277,8 @@ void P_LoadSegs (int lump)
 			}
 		}
 
-		li->offset = (SWAP_WORD(ml->offset))<<16;
-		linedef = SWAP_WORD(ml->linedef);
+		li->offset = (SHORT(ml->offset))<<16;
+		linedef = SHORT(ml->linedef);
 
 		if(linedef < 0 || linedef >= numlines)
 			I_Error("P_LoadSegs: invalid linedef %d", linedef);
@@ -286,7 +286,7 @@ void P_LoadSegs (int lump)
 		ldef = &lines[linedef];
 		li->linedef = ldef;
 
-		side = SWAP_WORD(ml->side);
+		side = SHORT(ml->side);
 
 		if(side < 0 || side >= numsides)
 			I_Error("P_LoadSegs: invalid side %d", side);
@@ -325,8 +325,8 @@ void P_LoadSubsectors (int lump)
 
 	for (i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = SWAP_WORD(((mapsubsector_t *)data)[i].numsegs);
-		subsectors[i].firstline = SWAP_WORD(((mapsubsector_t *)data)[i].firstseg);
+		subsectors[i].numlines = SHORT(((mapsubsector_t *)data)[i].numsegs);
+		subsectors[i].firstline = SHORT(((mapsubsector_t *)data)[i].firstseg);
 	}
 
 	Z_Free (data);
@@ -366,13 +366,13 @@ void P_LoadSectors (int lump)
 	ss = sectors;
 	for (i = 0; i < numsectors; i++, ss++, ms++)
 	{
-		ss->floorheight = SWAP_WORD(ms->floorheight)<<FRACBITS;
-		ss->ceilingheight = SWAP_WORD(ms->ceilingheight)<<FRACBITS;
+		ss->floorheight = SHORT(ms->floorheight)<<FRACBITS;
+		ss->ceilingheight = SHORT(ms->ceilingheight)<<FRACBITS;
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
-		ss->lightlevel = SWAP_WORD(ms->lightlevel);
-		ss->special = P_TranslateSectorSpecial (SWAP_WORD(ms->special));
-		ss->tag = SWAP_WORD(ms->tag);
+		ss->lightlevel = SHORT(ms->lightlevel);
+		ss->special = P_TranslateSectorSpecial (SHORT(ms->special));
+		ss->tag = SHORT(ms->tag);
 		ss->thinglist = NULL;
 		ss->touching_thinglist = NULL;		// phares 3/14/98
 		ss->nextsec = -1;	//jff 2/26/98 add fields to support locking out
@@ -445,15 +445,15 @@ void P_LoadNodes (int lump)
 
 	for (i = 0; i < numnodes; i++, no++, mn++)
 	{
-		no->x = SWAP_WORD(mn->x)<<FRACBITS;
-		no->y = SWAP_WORD(mn->y)<<FRACBITS;
-		no->dx = SWAP_WORD(mn->dx)<<FRACBITS;
-		no->dy = SWAP_WORD(mn->dy)<<FRACBITS;
+		no->x = SHORT(mn->x)<<FRACBITS;
+		no->y = SHORT(mn->y)<<FRACBITS;
+		no->dx = SHORT(mn->dx)<<FRACBITS;
+		no->dy = SHORT(mn->dy)<<FRACBITS;
 		for (j = 0; j < 2; j++)
 		{
-			no->children[j] = SWAP_WORD(mn->children[j]);
+			no->children[j] = SHORT(mn->children[j]);
 			for (k = 0; k < 4; k++)
-				no->bbox[j][k] = SWAP_WORD(mn->bbox[j][k])<<FRACBITS;
+				no->bbox[j][k] = SHORT(mn->bbox[j][k])<<FRACBITS;
 		}
 	}
 
@@ -485,16 +485,16 @@ void P_LoadThings (int lump)
 		//		everything and let it decide what to do with them.
 
 		// [RH] Need to translate the spawn flags to Hexen format.
-		short flags = SWAP_WORD(mt->options);
+		short flags = SHORT(mt->options);
 		mt2.flags = (short)((flags & 0xf) | 0x7e0);
 		if (flags & BTF_NOTSINGLE)			mt2.flags &= ~MTF_SINGLE;
 		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
 		if (flags & BTF_NOTCOOPERATIVE)		mt2.flags &= ~MTF_COOPERATIVE;
 
-		mt2.x = SWAP_WORD(mt->x);
-		mt2.y = SWAP_WORD(mt->y);
-		mt2.angle = SWAP_WORD(mt->angle);
-		mt2.type = SWAP_WORD(mt->type);
+		mt2.x = SHORT(mt->x);
+		mt2.y = SHORT(mt->y);
+		mt2.angle = SHORT(mt->angle);
+		mt2.type = SHORT(mt->type);
 
 		P_SpawnMapThing (&mt2, 0);
 	}
@@ -635,22 +635,22 @@ void P_LoadLineDefs (int lump)
 		//		compatible with the new format.
 		P_TranslateLineDef (ld, mld);
 
-		short v = SWAP_WORD(mld->v1);
+		short v = SHORT(mld->v1);
 
 		if(v < 0 || v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
-		v = SWAP_WORD(mld->v2);
+		v = SHORT(mld->v2);
 
 		if(v < 0 || v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
 
-		ld->sidenum[0] = SWAP_WORD(mld->sidenum[0]);
-		ld->sidenum[1] = SWAP_WORD(mld->sidenum[1]);
+		ld->sidenum[0] = SHORT(mld->sidenum[0]);
+		ld->sidenum[1] = SHORT(mld->sidenum[1]);
 
 		if(ld->sidenum[0] >= numsides || ld->sidenum[0] < 0)
 			ld->sidenum[0] = -1;
@@ -720,15 +720,15 @@ void P_LoadSideDefs2 (int lump)
 		register side_t *sd = sides + i;
 		register sector_t *sec;
 
-		sd->textureoffset = SWAP_WORD(msd->textureoffset)<<FRACBITS;
-		sd->rowoffset = SWAP_WORD(msd->rowoffset)<<FRACBITS;
+		sd->textureoffset = SHORT(msd->textureoffset)<<FRACBITS;
+		sd->rowoffset = SHORT(msd->rowoffset)<<FRACBITS;
 		sd->linenum = -1;
 
 		// killough 4/4/98: allow sidedef texture names to be overloaded
 		// killough 4/11/98: refined to allow colormaps to work as wall
 		// textures if invalid as colormaps but valid as textures.
 
-		sd->sector = sec = &sectors[SWAP_WORD(msd->sector)];
+		sd->sector = sec = &sectors[SHORT(msd->sector)];
 		switch (sd->special)
 		{
 		  case Transfer_Heights:	// variable colormap via 242 linedef
@@ -1121,14 +1121,14 @@ void P_LoadBlockMap (int lump)
 		// them. This potentially doubles the size of blockmaps allowed,
 		// because Doom originally considered the offsets as always signed.
 
-		blockmaplump[0] = SWAP_WORD(wadblockmaplump[0]);
-		blockmaplump[1] = SWAP_WORD(wadblockmaplump[1]);
-		blockmaplump[2] = (DWORD)(SWAP_WORD(wadblockmaplump[2])) & 0xffff;
-		blockmaplump[3] = (DWORD)(SWAP_WORD(wadblockmaplump[3])) & 0xffff;
+		blockmaplump[0] = SHORT(wadblockmaplump[0]);
+		blockmaplump[1] = SHORT(wadblockmaplump[1]);
+		blockmaplump[2] = (DWORD)(SHORT(wadblockmaplump[2])) & 0xffff;
+		blockmaplump[3] = (DWORD)(SHORT(wadblockmaplump[3])) & 0xffff;
 
 		for (i=4 ; i<count ; i++)
 		{
-			short t = SWAP_WORD(wadblockmaplump[i]);          // killough 3/1/98
+			short t = SHORT(wadblockmaplump[i]);          // killough 3/1/98
 			blockmaplump[i] = t == -1 ? (DWORD)0xffffffff : (DWORD) t & 0xffff;
 		}
 

@@ -218,7 +218,7 @@ std::string W_AddFile (std::string filename)
 	startlump = numlumps;
 
 	fread (&header, sizeof(header), 1, handle);
-	header.identification = SWAP_DWORD(header.identification);
+	header.identification = LONG(header.identification);
 	
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
 	{
@@ -233,8 +233,8 @@ std::string W_AddFile (std::string filename)
 	else 
 	{
 		// WAD file
-		header.numlumps = SWAP_DWORD(header.numlumps);
-		header.infotableofs = SWAP_DWORD(header.infotableofs);
+		header.numlumps = LONG(header.numlumps);
+		header.infotableofs = LONG(header.infotableofs);
 		length = header.numlumps*sizeof(filelump_t);
 		
 		if(length > M_FileLength(handle))
@@ -262,8 +262,8 @@ std::string W_AddFile (std::string filename)
 	for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
 	{
 		lump_p->handle = handle;
-		lump_p->position = SWAP_DWORD(fileinfo->filepos);
-		lump_p->size = SWAP_DWORD(fileinfo->size);
+		lump_p->position = LONG(fileinfo->filepos);
+		lump_p->size = LONG(fileinfo->size);
 		strncpy (lump_p->name, fileinfo->name, 8);
 	}
 	
