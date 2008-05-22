@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;..\src;..\..\common"
+				AdditionalIncludeDirectories=".,..\src,..\..\common"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;NOASM;NOMINMAX"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -63,7 +63,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="SDLMain.lib SDL.lib SDL_mixer.lib Ws2_32.lib Winmm.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -245,6 +244,10 @@
 			</File>
 			<File
 				RelativePath="..\src\m_options.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\common\m_swap.cpp"
 				>
 			</File>
 			<File
