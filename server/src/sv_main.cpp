@@ -1262,8 +1262,7 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 		MSG_WriteMarker (&cl->reliablebuf, svc_corpse);
 		MSG_WriteShort (&cl->reliablebuf, mo->netid);
 		MSG_WriteByte (&cl->reliablebuf, mo->frame);
-		if(cl->version >= 64)
-			MSG_WriteByte (&cl->reliablebuf, mo->tics);
+		MSG_WriteByte (&cl->reliablebuf, mo->tics);
 	}
 }
 
@@ -1440,12 +1439,8 @@ void SV_UpdateSectors(client_t* cl)
 			MSG_WriteShort (&cl->reliablebuf, s);
 			MSG_WriteShort (&cl->reliablebuf, sec->floorheight>>FRACBITS);
 			MSG_WriteShort (&cl->reliablebuf, sec->ceilingheight>>FRACBITS);
-
-			if(cl->version >= 63) // denis - removeme - remove the 'if' condition on this block of code - legacy protocol did not have these lines
-			{
-				MSG_WriteShort (&cl->reliablebuf, sec->floorpic);
-				MSG_WriteShort (&cl->reliablebuf, sec->ceilingpic);
-			}
+			MSG_WriteShort (&cl->reliablebuf, sec->floorpic);
+			MSG_WriteShort (&cl->reliablebuf, sec->ceilingpic);
 
 			/*if(sec->floordata->IsKindOf(RUNTIME_CLASS(DMover)))
 			{
@@ -1855,9 +1850,7 @@ void SV_ConnectClient (void)
 	byte connection_type = MSG_ReadByte();
 
 	// wrong version
-	if (cl->version != VERSION
-		&& cl->version != 62 && cl->version != 63) // denis - removeme - allow legacy protocol support
-	{
+	if (cl->version != VERSION)	{
 		MSG_WriteString (&cl->reliablebuf, "Incompatible protocol version");
 		MSG_WriteMarker (&cl->reliablebuf, svc_disconnect);
 
