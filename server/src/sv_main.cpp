@@ -2001,11 +2001,11 @@ void SV_DisconnectClient(player_t &who)
 
 	who.playerstate = PST_DISCONNECT;
 	
-	if (!multiplayer && !who.spectator) {
-		// reload the level from scratch
-		gameaction = ga_loadlevel;
-		singleplayerjustdied = false;
-	}
+	//if (!multiplayer && !who.spectator) {
+	//	// reload the level from scratch
+	//	gameaction = ga_loadlevel;
+	//	singleplayerjustdied = false;
+	//}
 
 	if (emptyreset && players.size() == 0)
         G_DeferedInitNew(level.mapname);
@@ -2971,7 +2971,8 @@ void SV_Spectate (player_t &player)
 			
 			if (NumPlayers < maxplayers)
 			{
-				if (level.time > player.joinafterspectatortime + TICRATE*5) {
+				if ((multiplayer && level.time > player.joinafterspectatortime + TICRATE*3) ||
+					level.time > player.joinafterspectatortime + TICRATE*5) {
 					player.spectator = false;
 					for (size_t j = 0; j < players.size(); j++) {
 						MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
@@ -3003,9 +3004,17 @@ void SV_Spectate (player_t &player)
 			}
 			player.spectator = true;
 			player.playerstate = PST_LIVE;
-			player.joinafterspectatortime = level.time - TICRATE*5;
+			player.joinafterspectatortime = level.time;
+
 			if (ctfmode)
 				CTF_CheckFlags (player);
+
+			//if (!multiplayer) {
+			//	// reload the level from scratch
+			//	gameaction = ga_loadlevel;
+			//	singleplayerjustdied = false;
+			//}
+
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
 		}
 	}

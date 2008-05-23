@@ -807,6 +807,10 @@ void G_DoLoadLevel (int position)
 			actor->netid = 0;
 		}
 	}
+	
+	// For single-player servers.
+	for (size_t i = 0; i < players.size(); i++)
+		players[i].joinafterspectatortime -= level.time;
 
 	P_SetupLevel (level.mapname, position);
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
