@@ -79,10 +79,13 @@ void CTF_Connect()
 		CTFdata[i].state = (flag_state_t)MSG_ReadByte();
 		byte flagger = MSG_ReadByte();
 
-		player_t &player = idplayer(flagger);
+		if(CTFdata[i].state == flag_carried)
+		{
+			player_t &player = idplayer(flagger);
 
-		if(validplayer(player))
-			CTF_CarryFlag(player, (flag_t)i);
+			if(validplayer(player))
+				CTF_CarryFlag(player, (flag_t)i);
+		}
 	}
 }
 
