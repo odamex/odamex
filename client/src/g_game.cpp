@@ -824,6 +824,9 @@ BEGIN_COMMAND(netstat)
 }
 END_COMMAND(netstat)
 
+void P_MovePlayer (player_t *player);
+void P_CalcHeight (player_t *player);
+void P_DeathThink (player_t *player);
 
 //
 // G_Ticker
@@ -1002,7 +1005,22 @@ void G_Ticker (void)
 	{
 	case GS_LEVEL:
 		if(clientside && !serverside)
-			CL_PredictMove ();
+		{
+			// GhostlyDeath -- If we are a spectator, we do things ourselves
+			if (consoleplayer().spectator)
+			{
+				if (displayplayer().health <= 0)
+					P_DeathThink(&displayplayer());
+				else
+					P_PlayerThink(&consoleplayer());
+				
+				P_MovePlayer(&consoleplayer());
+				P_CalcHeight(&consoleplayer());
+				P_CalcHeight(&displayplayer());
+			}
+			
+			CL_PredictMove();
+		}
 		P_Ticker ();
 		ST_Ticker ();
 		AM_Ticker ();

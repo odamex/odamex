@@ -115,6 +115,10 @@ void CL_ResetPlayers ()
 
 		if(!p->mo)
 			continue;
+			
+		// GhostlyDeath -- Ignore Spectators
+		if (p->spectator)
+			continue;
 
 		// set the position
 		CL_MoveThing (p->mo, p->real_origin[0], p->real_origin[1], p->real_origin[2]);
@@ -157,6 +161,10 @@ void CL_PredictPlayers (int predtic)
 		player_t *p = &players[i];
 	
 		if (!p->ingame() || !p->mo)
+			continue;
+			
+		// GhostlyDeath -- Ignore Spectators
+		if (p->spectator)
 			continue;
 
 		// Update this player if their last known status is before this tic

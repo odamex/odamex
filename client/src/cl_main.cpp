@@ -2238,6 +2238,17 @@ void CL_SendCmd(void)
 	//static int last_sent_tic = 0;
 	//if(last_sent_tic == gametic)
 	//	return;
+	
+	// GhostlyDeath -- If we are spectating, tell the server of our new position
+	if (p->spectator)
+	{
+		MSG_WriteMarker(&net_buffer, clc_spectate);
+		MSG_WriteByte(&net_buffer, 5);
+		MSG_WriteLong(&net_buffer, displayplayer().mo->x);
+		MSG_WriteLong(&net_buffer, displayplayer().mo->y);
+		MSG_WriteLong(&net_buffer, displayplayer().mo->z);
+	}
+	// GhostlyDeath -- We just throw it all away down here since we need those buttons!
 
 	MSG_WriteMarker(&net_buffer, clc_move);
 

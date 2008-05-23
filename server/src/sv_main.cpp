@@ -1307,6 +1307,13 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 	else if(player.mo && mo->player && !antiwallhack)
 		ok = true;
+	else if (	player.mo && mo->player && antiwallhack &&
+				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
+		ok = true;
+	else if (	player.mo && mo->player && antiwallhack &&
+				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
+		ok = true;
+
 	else if(player.mo && mo->player && antiwallhack && P_CheckSightEdges(player.mo, mo, 5)/*player.awaresector[sectors - mo->subsector->sector]*/)
 		ok = true;
 
@@ -2443,12 +2450,11 @@ void SV_UpdateMissiles(player_t &pl)
 			MSG_WriteMarker (&cl->netbuf, svc_actor_movedir);
 			MSG_WriteShort(&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
-			MSG_WriteLong (&cl->netbuf, mo->movecount);			
+			MSG_WriteLong (&cl->netbuf, mo->movecount);
 			
 			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
 			MSG_WriteShort (&cl->netbuf, (mo->state - states));
-
 		}
     }
 }
@@ -2494,7 +2500,7 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteMarker (&cl->netbuf, svc_actor_movedir);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
-			MSG_WriteLong (&cl->netbuf, mo->movecount);			
+			MSG_WriteLong (&cl->netbuf, mo->movecount);
 			
 			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
@@ -2719,6 +2725,10 @@ void SV_WriteCommands(void)
 
 				if (j == i)
 					continue;
+					
+				// GhostlyDeath -- Screw spectators
+				if (players[j].spectator)
+					continue;
 
 				if(!SV_IsPlayerAllowedToSee(players[i], players[j].mo))
 					continue;
@@ -2871,6 +2881,10 @@ void SV_GetPlayerCmd(player_t &player)
 
 void SV_UpdateConsolePlayer(player_t &player)
 {
+	// GhostlyDeath -- Spectators are on their own really
+	if (player.spectator)
+		return;
+	
 	// It's not a good idea to send 33 bytes every tic.
 	if (gametic % 3)
 		return;
@@ -2949,7 +2963,27 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 //
 void SV_Spectate (player_t &player)
 {
-	if (!(BOOL)MSG_ReadByte()) {
+	byte Code = MSG_ReadByte();
+	
+	if (Code == 5)
+	{
+		// GhostlyDeath -- Prevent Cheaters
+		if (!player.spectator)
+		{
+			for (int i = 0; i < 3; i++)
+				MSG_ReadLong();
+			return;
+		}
+		
+		// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
+		if (player.mo)
+		{
+			player.mo->x = MSG_ReadLong();
+			player.mo->y = MSG_ReadLong();
+			player.mo->z = MSG_ReadLong();
+		}
+	}
+	else if (!(BOOL)Code) {
 		if (gamestate == GS_INTERMISSION)
 			return;
 		
