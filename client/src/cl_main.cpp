@@ -1127,14 +1127,10 @@ void CL_Corpse(void)
 {
 	AActor *mo = CL_FindThingById(MSG_ReadShort());
 	int frame = MSG_ReadByte();
-	int tics = -1;
-	if(version >= 64)
-	{
-		tics = MSG_ReadByte();
-
-		if(tics == 0xFF)
-			tics = -1;
-	}
+	int tics = MSG_ReadByte();
+	
+	if(tics == 0xFF)
+		tics = -1;
 
 	// already spawned as gibs?
 	if (!mo || mo->state - states == S_GIBS)
@@ -1583,12 +1579,8 @@ void CL_UpdateSector(void)
 	unsigned short fh = MSG_ReadShort();
 	unsigned short ch = MSG_ReadShort();
 
-	unsigned short fp = 0, cp = 0;
-	if(version > 62)
-	{
-		fp = MSG_ReadShort();
-		cp = MSG_ReadShort();
-	}
+	unsigned short fp = MSG_ReadShort();
+	unsigned short cp = MSG_ReadShort();
 
 	if(!sectors || s >= numsectors)
 		return;
@@ -1597,18 +1589,15 @@ void CL_UpdateSector(void)
 	sec->floorheight = fh << FRACBITS;
 	sec->ceilingheight = ch << FRACBITS;
 
-	if(version > 62)
-	{
-		if(fp >= numflats)
-			fp = numflats;
+	if(fp >= numflats)
+		fp = numflats;
 
-		sec->floorpic = fp;
+	sec->floorpic = fp;
 
-		if(cp >= numflats)
-			cp = numflats;
+	if(cp >= numflats)
+		cp = numflats;
 
-		sec->ceilingpic = cp;
-	}
+	sec->ceilingpic = cp;
 
 	P_ChangeSector (sec, false);
 }
