@@ -1681,6 +1681,11 @@ void CL_Decompress(int sequence)
 
 	if(method & adaptive_mask)
 		MSG_DecompressAdaptive(compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0));
+	else
+	{
+		// otherwise compressed packets can still contain codec updates
+		compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0);
+	}
 
 	if(method & adaptive_record_mask)
 		compressor.ack_sent(net_message.ptr(), MSG_BytesLeft());
