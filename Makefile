@@ -281,6 +281,7 @@ uninstall:
 	rm $(INSTALLDIR)/$(SERVER_TARGET)
 	rm $(INSTALLDIR)/$(MASTER_TARGET)
 	rm $(INSTALLDIR)/odalaunch
+	rm /usr/share/doom/odamex.wad
 
 install-res: 
 	$(MKDIR) $(ICONDIR)
