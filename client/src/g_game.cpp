@@ -1009,7 +1009,7 @@ void G_Ticker (void)
 			// GhostlyDeath -- If we are a spectator, we do things ourselves
 			if (consoleplayer().spectator)
 			{
-				if (displayplayer().health <= 0)
+				if (displayplayer().health <= 0 && (&displayplayer() != &consoleplayer())
 					P_DeathThink(&displayplayer());
 				else
 					P_PlayerThink(&consoleplayer());
