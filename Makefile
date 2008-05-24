@@ -260,7 +260,7 @@ $(WADFILE_TARGET) :
 	(cd wad; $(DEUTEX) $(DEUTEX_FLAGS) -doom2 bootstrap -build wadinfo.txt ../$@)
 
 odalaunch/odalaunch:
-	make odalaunch/Makefile
+	cd odalaunch && make && cd ..
 
 # Checker
 check: test
