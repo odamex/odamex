@@ -452,8 +452,8 @@ void A_Punch (player_t *player, pspdef_t *psp)
 	// turn to face target
 	if (linetarget)
 	{
-		//A_FireSound (player, "*fist");
-		S_Sound (player->mo, CHAN_VOICE, "*fist", 1, ATTN_NORM);
+		A_FireSound (player, "player/male/fist");
+		//S_Sound (player->mo, CHAN_VOICE, "*fist", 1, ATTN_NORM);
 		player->mo->angle = R_PointToAngle2 (player->mo->x,
 											 player->mo->y,
 											 linetarget->x,
