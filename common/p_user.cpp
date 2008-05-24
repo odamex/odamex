@@ -322,7 +322,7 @@ void P_DeathThink (player_t *player)
 	
 	if(!serverside)
 	{
-		if (player->damagecount)
+		if (player->damagecount && !predicting)
 			player->damagecount--;
 		
 		return;
