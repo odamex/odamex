@@ -123,6 +123,8 @@ endif
 # Directories
 BINDIR = .
 INSTALLDIR = /usr/local/bin
+ICONDIR = /usr/share/icons
+DFDIR = /usr/share/applications
 
 # Common
 COMMON_DIR = common
@@ -173,7 +175,7 @@ endif
 TARGETS = $(SERVER_TARGET) $(CLIENT_TARGET) $(MASTER_TARGET) $(WADFILE_TARGET)
 
 # denis - fixme - cflags are quite messy, but removing these is a very delicate act, also use -Wall -Werror
-CFLAGS = $(CFLAGS_PLATFORM) -DNOASM -Icommon -g -Wall
+CFLAGS = $(CFLAGS_PLATFORM) -DNOASM -Icommon -g -Wall -O2
 LFLAGS = $(LFLAGS_PLATFORM)
 
 CFLAGS_RELEASE = $(CFLAGS_PLATFORM) -DNOASM -Icommon -O3
@@ -273,6 +275,21 @@ uninstall:
 	rm $(INSTALLDIR)/$(SERVER_TARGET)
 	rm $(INSTALLDIR)/$(MASTER_TARGET)
 
+install-res: 
+	$(MKDIR) $(ICONDIR)
+	$(INSTALL) $(BINDIR)/media/icon_odamex_96.png $(ICONDIR)/odamex.png
+	$(INSTALL) $(BINDIR)/media/icon_odasrv_96.png $(ICONDIR)/odasrv.png
+	$(INSTALL) $(BINDIR)/media/icon_odalaunch_96.png $(ICONDIR)/odalaunch.png
+	$(INSTALL) $(BINDIR)/installer/arch/odamex.desktop $(DFDIR)
+	$(INSTALL) $(BINDIR)/installer/arch/odalaunch.desktop $(DFDIR)
+
+uninstall-res:
+	rm $(ICONDIR)/odalaunch.png
+	rm $(ICONDIR)/odamex.png
+	rm $(ICONDIR)/odasrv.png
+	rm $(DFDIR)/odamex.desktop
+	rm $(DFDIR)/odasrv.desktop
+
 # Clean
 clean:
 	@rm -rf $(COMMON_OBJS_CLIENT) $(COMMON_OBJS_SERVER) $(SERVER_OBJS) $(CLIENT_OBJS) $(MASTER_OBJS)
@@ -291,9 +308,13 @@ help:
 	@echo To build $(MASTER_TARGET): make master
 	@echo To remove built files: make clean
 	@echo To install built binaries: make install
+	@echo To install resources: make install-res
+	@echo To uninstall resources: make uninstall-res
 	@echo To uninstall binaries: make uninstall
+	@echo To uninstall everything: make uninstall-all
 	@echo	----------------------------
 	@echo Binaries will be built in: $(BINDIR)
 	@echo Object files will be located in: $(OBJDIR) 
 	@echo Binaries will be installed on the system in: $(INSTALLDIR)
+	@echo Resources will be installed in: $(ICONDIR) $(DFDIR)
 
