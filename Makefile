@@ -259,16 +259,20 @@ $(OBJDIR)/$(MASTER_DIR)/%.o: $(MASTER_DIR)/%.cpp
 $(WADFILE_TARGET) :
 	(cd wad; $(DEUTEX) $(DEUTEX_FLAGS) -doom2 bootstrap -build wadinfo.txt ../$@)
 
+odalaunch/odalaunch:
+	make odalaunch/Makefile
+
 # Checker
 check: test
 test: server client
 	tests/all.sh
 
 # Installer
-install: $(CLIENT_TARGET) $(SERVER_TARGET)
+install: $(CLIENT_TARGET) $(SERVER_TARGET) odalaunch/odalaunch
 	$(MKDIR) $(INSTALLDIR)
 	$(INSTALL) $(SERVER_TARGET) $(INSTALLDIR)
 	$(INSTALL) $(CLIENT_TARGET) $(INSTALLDIR)
+	$(INSTALL) odalaunch/odalaunch $(INSTALLDIR)
 
 uninstall:
 	rm $(INSTALLDIR)/$(CLIENT_TARGET)
@@ -288,7 +292,7 @@ uninstall-res:
 	rm $(ICONDIR)/odamex.png
 	rm $(ICONDIR)/odasrv.png
 	rm $(DFDIR)/odamex.desktop
-	rm $(DFDIR)/odasrv.desktop
+	rm $(DFDIR)/odalaunch.desktop
 
 # Clean
 clean:
