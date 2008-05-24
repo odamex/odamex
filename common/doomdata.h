@@ -80,14 +80,26 @@ typedef struct
 // A LineDef, as used for editing, and as input to the BSP builder.
 typedef struct
 {
-	short	v1;
-	short	v2;
+	unsigned short	v1;
+	unsigned short	v2;
 	short	flags;
 	short	special;
 	short	tag;
 	// sidenum[1] will be -1 if one sided
 	short		sidenum[2];		
 } maplinedef_t;
+
+// A ZDoom style LineDef, from the Doom Wiki.
+typedef struct
+{
+	unsigned short	v1;
+	unsigned short	v2;
+	short	flags;
+	byte	special;
+	byte	args[5];
+	// sidenum[1] will be -1 if one sided
+	short		sidenum[2];		
+} maplinedef2_t;
 
 //
 // LineDef attributes.

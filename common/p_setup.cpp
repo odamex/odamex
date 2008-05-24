@@ -615,13 +615,68 @@ void P_FinishLoadingLineDefs (void)
 	}
 }
 
+void P_LoadLineDefs2 (int lump)
+{
+	byte *data;
+	int i;
+	line_t *ld;
+	int lumplen = W_LumpLength (lump);
+	numlines = lumplen / sizeof(maplinedef2_t);
+	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
+	memset (lines, 0, numlines*sizeof(line_t));
+	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+
+	ld = lines;
+	for (i=0 ; i<numlines ; i++, ld++)
+	{
+		maplinedef2_t *mld = ((maplinedef2_t *)data) + i;
+
+		// [RH] Translate old linedef special and flags to be
+		//		compatible with the new format.
+		//P_TranslateLineDef (ld, mld);
+
+		unsigned short v = SHORT(mld->v1);
+
+		if(v < 0 || v >= numvertexes)
+			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+		else
+			ld->v1 = &vertexes[v];
+
+		v = SHORT(mld->v2);
+
+		if(v < 0 || v >= numvertexes)
+			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+		else
+			ld->v2 = &vertexes[v];
+
+		ld->sidenum[0] = SHORT(mld->sidenum[0]);
+		ld->sidenum[1] = SHORT(mld->sidenum[1]);
+
+		if(ld->sidenum[0] >= numsides || ld->sidenum[0] < 0)
+			ld->sidenum[0] = -1;
+		if(ld->sidenum[1] >= numsides || ld->sidenum[1] < 0)
+			ld->sidenum[1] = -1;
+
+		P_AdjustLine (ld);
+	}
+
+	Z_Free (data);
+}
+
 void P_LoadLineDefs (int lump)
 {
 	byte *data;
 	int i;
 	line_t *ld;
+	int lumplen = W_LumpLength (lump);
 
-	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
+	if(lumplen % sizeof(maplinedef_t) != 0
+		&& lumplen % sizeof(maplinedef2_t) == 0)
+	{
+		return P_LoadLineDefs2(lump);
+	}
+
+	numlines = lumplen / sizeof(maplinedef_t);
 	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
 	memset (lines, 0, numlines*sizeof(line_t));
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
@@ -635,7 +690,7 @@ void P_LoadLineDefs (int lump)
 		//		compatible with the new format.
 		P_TranslateLineDef (ld, mld);
 
-		short v = SHORT(mld->v1);
+		unsigned short v = SHORT(mld->v1);
 
 		if(v < 0 || v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
