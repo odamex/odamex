@@ -41,7 +41,6 @@ char *team_names[NUMTEAMS] =
 };
 
 bool		ctfmode		 = false;
-bool		teamplaymode = false;
 
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =

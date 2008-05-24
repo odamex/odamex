@@ -90,7 +90,7 @@ CVAR (deathmatch, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // [Toke - todo] sh
 EXTERN_CVAR (novert)
 
 EXTERN_CVAR (monstersrespawn)
-
+EXTERN_CVAR (teamplay)
 
 CVAR (chasedemo, "0", 0)
 
@@ -390,7 +390,7 @@ END_COMMAND (weapprev)
 
 BEGIN_COMMAND (spynext)
 {
-	extern bool ctfmode, teamplaymode, st_firsttime;
+	extern bool ctfmode, st_firsttime;
 
 	size_t curr;
 	size_t s = players.size();
@@ -413,7 +413,7 @@ BEGIN_COMMAND (spynext)
 			break;
 		}
 		else if (consoleplayer().spectator ||
-				(!deathmatch || ((teamplaymode || ctfmode)
+				(!deathmatch || ((teamplay || ctfmode)
 				&& players[curr].userinfo.team == consoleplayer().userinfo.team)))
 		{
 			displayplayer_id = players[curr].id;
