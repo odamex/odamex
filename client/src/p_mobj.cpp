@@ -1328,6 +1328,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else
 		z = ONFLOORZ;
 
+	// only servers control spawning of special items
+	if (!serverside && mobjinfo[i].flags & MF_SPECIAL)
+		return;
+
 	mobj = new AActor (x, y, z, (mobjtype_t)i);
 
 	if (z == ONFLOORZ)
