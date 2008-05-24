@@ -273,11 +273,14 @@ install: $(CLIENT_TARGET) $(SERVER_TARGET) odalaunch/odalaunch
 	$(INSTALL) $(SERVER_TARGET) $(INSTALLDIR)
 	$(INSTALL) $(CLIENT_TARGET) $(INSTALLDIR)
 	$(INSTALL) odalaunch/odalaunch $(INSTALLDIR)
+	$(MKDIR) /usr/share/doom
+	cp odamex.wad /usr/share/doom
 
 uninstall:
 	rm $(INSTALLDIR)/$(CLIENT_TARGET)
 	rm $(INSTALLDIR)/$(SERVER_TARGET)
 	rm $(INSTALLDIR)/$(MASTER_TARGET)
+	rm $(INSTALLDIR)/odalaunch
 
 install-res: 
 	$(MKDIR) $(ICONDIR)
