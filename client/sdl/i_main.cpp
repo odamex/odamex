@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 	try
 	{
         if (!LOG.is_open())
-            I_FatalError("Unable to create logfile: %s\n", LOG_FILE);
+            std::cerr << "Unable to create logfile: %s\n" << std::endl;
 
 #ifdef UNIX
 		if(!getuid() || !geteuid())
