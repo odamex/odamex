@@ -1065,7 +1065,8 @@ void SV_SetupUserInfo (player_t &player)
 	strncpy (p->userinfo.netname, MSG_ReadString(), sizeof(p->userinfo.netname));
 	p->userinfo.team	= (team_t)MSG_ReadByte();	// [Toke - Teams]
 	p->userinfo.gender	= (gender_t)MSG_ReadLong();
-	p->userinfo.color	= MSG_ReadLong();
+	p->prefcolor		= MSG_ReadLong();
+	p->userinfo.color	= p->prefcolor;
 
 	skin = MSG_ReadString();	// [Toke - Skins] Player skin
 

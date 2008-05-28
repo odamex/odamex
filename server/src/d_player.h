@@ -212,6 +212,8 @@ public:
 
     bool		spectator;			// [GhostlyDeath] spectating?
     int			joinafterspectatortime; // Nes - Join after spectator time.
+    
+    int			prefcolor;			// Nes - Preferred color. Server only.
 
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
@@ -293,7 +295,7 @@ public:
 	}client;
 
 	player_s() : playerstate(PST_CONTACT), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0), spectator(false),
-				 joinafterspectatortime(level.time - TICRATE*5)
+				 joinafterspectatortime(level.time - TICRATE*5), prefcolor(0)
 	{
 	}
 
@@ -374,6 +376,8 @@ public:
 		
 		spectator = other.spectator;
 		joinafterspectatortime = other.joinafterspectatortime;
+		
+		prefcolor = other.prefcolor;
 		
 		client = other.client;
 

@@ -502,6 +502,7 @@ void G_ChangeMap (void)
 }
 
 void SV_ClientFullUpdate(player_t &pl);
+void SV_CheckTeam(player_t &pl);
 void G_DoReborn(player_t &playernum);
 void SV_SendServerSettings(client_t *cl);
 
@@ -544,6 +545,11 @@ void G_DoNewGame (void)
 		if(!players[i].ingame())
 			continue;
 
+		if (teamplay || ctfmode)
+			SV_CheckTeam(players[i]);
+		else
+			players[i].userinfo.color = players[i].prefcolor;
+		
 		SV_ClientFullUpdate (players[i]);
 	}
 }
