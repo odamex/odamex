@@ -266,6 +266,9 @@ void HU_DrawTargetNames(void)
 	int TargetY = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
 	std::vector<TargetInfo_t> Targets;
 
+	if(!displayplayer().mo)
+		return;
+
 	// TargetY is a special case because we don't want to go crazy over the status bar
 	if (screenblocks <= 10 && !consoleplayer().spectator)
 		TargetY -= ST_HEIGHT;
