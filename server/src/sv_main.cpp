@@ -767,8 +767,11 @@ void SV_GetPackets (void)
 		}
 		else
 		{
-			player.client.last_received = gametic;
-			SV_ParseCommands(player);
+			if(player.playerstate != PST_DISCONNECT)
+			{
+				player.client.last_received = gametic;
+				SV_ParseCommands(player);
+			}
 		}
 	}
 
@@ -2968,7 +2971,7 @@ void SV_Spectate (player_t &player)
 	if (Code == 5)
 	{
 		// GhostlyDeath -- Prevent Cheaters
-		if (!player.spectator)
+		if (!player.spectator || !player.mo)
 		{
 			for (int i = 0; i < 3; i++)
 				MSG_ReadLong();
@@ -2976,12 +2979,9 @@ void SV_Spectate (player_t &player)
 		}
 		
 		// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
-		if (player.mo)
-		{
-			player.mo->x = MSG_ReadLong();
-			player.mo->y = MSG_ReadLong();
-			player.mo->z = MSG_ReadLong();
-		}
+		player.mo->x = MSG_ReadLong();
+		player.mo->y = MSG_ReadLong();
+		player.mo->z = MSG_ReadLong();
 	}
 	else if (!(BOOL)Code) {
 		if (gamestate == GS_INTERMISSION)
@@ -3013,6 +3013,8 @@ void SV_Spectate (player_t &player)
 					else
 						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game on the %s team.\n", 
 							player.userinfo.netname, team_names[player.userinfo.team]);
+					// GhostlyDeath -- Reset Frags, Deaths and Kills
+					SV_UpdateFrags(player);
 				}
 			}
 			else
@@ -3161,7 +3163,7 @@ void SV_ParseCommands(player_t &player)
 	 {
 		clc_t cmd = (clc_t)MSG_ReadByte();
 
-		if(cmd == -1)
+		if(cmd == (clc_t)-1)
 			break;
 
 		switch(cmd)
@@ -3250,6 +3252,11 @@ void SV_ParseCommands(player_t &player)
 		case clc_cheat:
 			SV_Cheat(player);
 			break;
+
+		case clc_abort:
+			Printf(PRINT_HIGH, "Client abort.\n");
+			SV_DropClient(player);
+			return;
 
 		default:
 			Printf(PRINT_HIGH, "SV_ParseCommands: Unknown client message %d.\n", (int)cmd);

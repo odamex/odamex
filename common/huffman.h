@@ -97,6 +97,9 @@ public:
 
 	// Decompress a chunk of data using only previously generated stats
 	bool decompress( unsigned char *in_data, size_t in_len, unsigned char *out_data, size_t &out_len);
+
+	// For debugging, this count can be used to see if two codecs have had the same length input
+	int get_count() { return total_count; }
 	
 	// Constructor
 	huffman();

@@ -2190,7 +2190,7 @@ void CL_ParseCommands(void)
 		cmd = (svc_t)MSG_ReadByte();
 		history.push_back(cmd);
 
-		if(cmd == 255 || cmd == -1)
+		if(cmd == (svc_t)-1)
 			break;
 
 		cmdmap::iterator i = cmds.find(cmd);
