@@ -123,8 +123,7 @@ endif
 # Directories
 BINDIR = .
 INSTALLDIR = /usr/local/bin
-ICONDIR = /usr/share/icons
-DFDIR = /usr/share/applications
+RESDIR = /usr/local/share
 
 # Common
 COMMON_DIR = common
@@ -273,30 +272,30 @@ install: $(CLIENT_TARGET) $(SERVER_TARGET) odalaunch/odalaunch
 	$(INSTALL) $(SERVER_TARGET) $(INSTALLDIR)
 	$(INSTALL) $(CLIENT_TARGET) $(INSTALLDIR)
 	$(INSTALL) odalaunch/odalaunch $(INSTALLDIR)
-	$(MKDIR) /usr/share/doom
-	cp odamex.wad /usr/share/doom
+	$(MKDIR) $(RESDIR)/doom
+	cp odamex.wad $(RESDIR)/doom
 
 uninstall:
 	rm $(INSTALLDIR)/$(CLIENT_TARGET)
 	rm $(INSTALLDIR)/$(SERVER_TARGET)
 	rm $(INSTALLDIR)/$(MASTER_TARGET)
 	rm $(INSTALLDIR)/odalaunch
-	rm /usr/share/doom/odamex.wad
+	rm $(RESDIR)/doom/odamex.wad
 
 install-res: 
-	$(MKDIR) $(ICONDIR)
-	$(INSTALL) $(BINDIR)/media/icon_odamex_96.png $(ICONDIR)/odamex.png
-	$(INSTALL) $(BINDIR)/media/icon_odasrv_96.png $(ICONDIR)/odasrv.png
-	$(INSTALL) $(BINDIR)/media/icon_odalaunch_96.png $(ICONDIR)/odalaunch.png
-	$(INSTALL) $(BINDIR)/installer/arch/odamex.desktop $(DFDIR)
-	$(INSTALL) $(BINDIR)/installer/arch/odalaunch.desktop $(DFDIR)
+	$(MKDIR) $(RESDIR)
+	$(INSTALL) $(BINDIR)/media/icon_odamex_96.png $(RESDIR)/pixmaps/odamex.png
+	$(INSTALL) $(BINDIR)/media/icon_odasrv_96.png $(RESDIR)/pixmaps/odasrv.png
+	$(INSTALL) $(BINDIR)/media/icon_odalaunch_96.png $(RESDIR)/pixmaps/odalaunch.png
+	$(INSTALL) $(BINDIR)/installer/arch/odamex.desktop $(RESDIR)/applications
+	$(INSTALL) $(BINDIR)/installer/arch/odalaunch.desktop $(RESDIR)/applications
 
 uninstall-res:
-	rm $(ICONDIR)/odalaunch.png
-	rm $(ICONDIR)/odamex.png
-	rm $(ICONDIR)/odasrv.png
-	rm $(DFDIR)/odamex.desktop
-	rm $(DFDIR)/odalaunch.desktop
+	rm $(RESDIR)/pixmaps/odalaunch.png
+	rm $(RESDIR)/pixmaps/odamex.png
+	rm $(RESDIR)/pixmaps/odasrv.png
+	rm $(RESDIR)/applications/odamex.desktop
+	rm $(RESDIR)/applications/odalaunch.desktop
 
 # Clean
 clean:
@@ -319,10 +318,9 @@ help:
 	@echo To install resources: make install-res
 	@echo To uninstall resources: make uninstall-res
 	@echo To uninstall binaries: make uninstall
-	@echo To uninstall everything: make uninstall-all
 	@echo	----------------------------
 	@echo Binaries will be built in: $(BINDIR)
 	@echo Object files will be located in: $(OBJDIR) 
 	@echo Binaries will be installed on the system in: $(INSTALLDIR)
-	@echo Resources will be installed in: $(ICONDIR) $(DFDIR)
+	@echo Resources will be installed in: $(RESDIR)
 
