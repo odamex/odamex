@@ -228,6 +228,8 @@ public:
 		
 		// protocol version supported by the client
 		short		version;
+		short		majorversion;	// GhostlyDeath -- Major
+		short		minorversion;	// GhostlyDeath -- Minor
 
 		// for reliable protocol
 		buf_t       relpackets; // save reliable packets here

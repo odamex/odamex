@@ -1778,6 +1778,109 @@ bool SV_BanCheck (client_t *cl, int n)
 	return false;
 }
 
+// SV_CheckClientVersion
+bool SV_CheckClientVersion(client_t *cl, int n)
+{
+	int GameVer = 0;
+	char VersionStr[10];
+	memset(VersionStr, 0, sizeof(VersionStr));
+	bool AllowConnect = true;
+	
+	switch (cl->version)
+	{
+		case 65:
+			GameVer = MSG_ReadLong();
+			cl->majorversion = GameVer / 256;
+			cl->minorversion = GameVer % 256;
+			sprintf(VersionStr, "%i.%i", cl->majorversion, cl->minorversion / 10);
+			AllowConnect = true;
+			break;
+		case 64:
+			sprintf(VersionStr, "2.0a or 3.0");
+			break;
+		case 63:
+			sprintf(VersionStr, "Pre-0.2");
+			break;
+		case 62:
+			sprintf(VersionStr, "0.1a");
+			break;
+		default:
+			sprintf(VersionStr, "Unknown");
+			break;
+			
+	}
+	
+	// GhostlyDeath -- removes the constant AllowConnects above
+	if (cl->version < 65)
+		AllowConnect = false;
+	
+	// If we are still allowed to connect based on version, refine the check more
+	if (AllowConnect)
+	{
+		if (cl->majorversion != (GAMEVER / 256))
+			AllowConnect = false;
+		else if (cl->minorversion != (GAMEVER % 256))
+			AllowConnect = false;
+	}
+	
+	// GhostlyDeath -- boot em
+	if (!AllowConnect)
+	{
+		char FinalStr[400];
+		memset(&FinalStr, 0, sizeof(FinalStr));
+		bool older = false;
+		
+		// GhostlyDeath -- Version Mismatch message
+		sprintf(FinalStr, "\nYour version of Odamex (%s) does not match the server (%i.%i).\n",
+			VersionStr, GAMEVER / 256, (GAMEVER % 256) / 10);
+		
+		// GhostlyDeath -- Check to see if it's older or not
+		if (cl->majorversion < (GAMEVER / 256))
+			older = true;
+		else
+		{
+			if (cl->majorversion > (GAMEVER / 256))
+				older = false;
+			else
+			{
+				if (cl->minorversion < (GAMEVER % 256))
+					older = true;
+				else if (cl->minorversion > (GAMEVER % 256))
+					older = false;
+			}
+		}
+		
+		// GhostlyDeath -- Print message depending on older or newer
+		if (older)
+			sprintf(FinalStr, "%sFor updates, visit http://odamex.net/ .\n", FinalStr);
+		else
+			sprintf(FinalStr, "%sIf a new version just came out, give server administrators time to update their servers.\n",
+				FinalStr);
+		
+		// GhostlyDeath -- email address set?	
+		if (*(email.cstring()))
+			sprintf(FinalStr, "%sIf problems persist, contact the server administrator at %s .\n",
+				FinalStr, email.cstring());
+				
+		// GhostlyDeath -- Now we tell them our built up message and boot em
+		cl->displaydisconnect = false;	// Don't spam the players
+		
+		MSG_WriteMarker(&cl->reliablebuf, svc_print);
+		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
+		MSG_WriteString(&cl->reliablebuf, FinalStr);
+		
+		MSG_WriteMarker(&cl->reliablebuf, svc_disconnect);
+		
+		SV_SendPacket (players[n]);
+		
+		// GhostlyDeath -- And we tell the server
+		Printf(PRINT_HIGH, "%s -- Version mismatch (%s != %i.%i)\n", NET_AdrToString(net_from),
+			VersionStr, GAMEVER / 256, (GAMEVER % 256) / 10);
+	}
+	
+	return AllowConnect;
+}
+
 //
 //	SV_ConnectClient
 //
@@ -1859,19 +1962,18 @@ void SV_ConnectClient (void)
 
 	cl->version = MSG_ReadShort();
 	byte connection_type = MSG_ReadByte();
-
-	// wrong version
-	if (cl->version != VERSION)	{
-		MSG_WriteString (&cl->reliablebuf, "Incompatible protocol version");
-		MSG_WriteMarker (&cl->reliablebuf, svc_disconnect);
-
-		SV_SendPacket (players[n]);
-
+	
+	if (!SV_CheckClientVersion(cl, n))
+	{
+		SV_DropClient(players[n]);
 		return;
 	}
 	
 	if (SV_BanCheck(cl, n))
+	{
+		SV_DropClient(players[n]);
 		return;
+	}
 
 	// send consoleplayer number
 	MSG_WriteMarker (&cl->reliablebuf, svc_consoleplayer);
