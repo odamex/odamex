@@ -981,6 +981,10 @@ void CL_UpdatePlayer()
 	}
 
 	int sv_gametic = MSG_ReadLong();
+	
+	// GhostlyDeath -- Servers will never send updates on spectators
+	if (p->spectator && (p != &consoleplayer()))
+		p->spectator = 0;
 
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
@@ -1195,6 +1199,15 @@ void CL_SpawnPlayer()
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
 	z = MSG_ReadLong();
+		
+	// GhostlyDeath -- reset prediction
+	p->real_origin[0] = x;
+	p->real_origin[1] = y;
+	p->real_origin[2] = z;
+
+	p->real_velocity[0] = 0;
+	p->real_velocity[1] = 0;
+	p->real_velocity[2] = 0;
 
 	CL_ClearID(netid);
 
