@@ -106,7 +106,7 @@ extern bool ctfmode;
 extern flagdata CTFdata[NUMFLAGS];
 extern int TEAMpoints[NUMFLAGS];
 extern bool TEAMenabled[NUMFLAGS];
-extern char *team_names[NUMTEAMS];
+extern char *team_names[NUMTEAMS+2];
 
 #endif
 

@@ -35,9 +35,10 @@ int TEAMpoints[NUMFLAGS];
 
 static int tintglow = 0;
 
-char *team_names[NUMTEAMS] =
+char *team_names[NUMTEAMS + 2] =
 {
-	"BLUE", "RED", "GOLD"
+	"BLUE", "RED", "GOLD",
+	"", ""
 };
 
 bool		ctfmode		 = false;

@@ -51,9 +51,10 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 	{MT_GFLG, MT_GDWN, MT_GCAR}
 };
 
-char *team_names[NUMTEAMS] =
+char *team_names[NUMTEAMS + 2] =
 {
-	"BLUE", "RED", "GOLD"
+	"BLUE", "RED", "GOLD",
+	"", ""
 };
 
 static int ctf_points[NUM_CTF_SCORE] =

@@ -92,7 +92,7 @@ void	CTF_RunTics		(void);
 // Client-side CTF Game Data
 extern flagdata CTFdata[NUMFLAGS];
 extern int TEAMpoints[NUMFLAGS];
-extern char *team_names[NUMTEAMS];
+extern char *team_names[NUMTEAMS+2];
 
 //	Colors
 #define	BLUECOLOR		200
