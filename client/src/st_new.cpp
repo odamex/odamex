@@ -50,12 +50,15 @@ static const patch_t	*flagicongcur; // [Nes] TODO: Gold team HUD.
 static const patch_t	*flagiconbhome;
 static const patch_t	*flagiconrhome;
 static const patch_t	*flagiconghome;
+static const patch_t	*flagiconbtakenbyb;
 static const patch_t	*flagiconbtakenbyr;
 static const patch_t	*flagiconbtakenbyg;
 static const patch_t	*flagiconrtakenbyb;
+static const patch_t	*flagiconrtakenbyr;
 static const patch_t	*flagiconrtakenbyg;
 static const patch_t	*flagicongtakenbyb;
 static const patch_t	*flagicongtakenbyr;
+static const patch_t	*flagicongtakenbyg;
 static const patch_t	*flagiconbdropped;
 static const patch_t	*flagiconrdropped;
 static const patch_t	*flagicongdropped;
@@ -84,12 +87,15 @@ void ST_unloadNew (void)
 	Z_ChangeTag (flagiconbhome, PU_CACHE);
 	Z_ChangeTag (flagiconrhome, PU_CACHE);
 	Z_ChangeTag (flagiconghome, PU_CACHE);
+	Z_ChangeTag (flagiconbtakenbyb, PU_CACHE);
 	Z_ChangeTag (flagiconbtakenbyr, PU_CACHE);
 	Z_ChangeTag (flagiconbtakenbyg, PU_CACHE);
 	Z_ChangeTag (flagiconrtakenbyb, PU_CACHE);
+	Z_ChangeTag (flagiconrtakenbyr, PU_CACHE);
 	Z_ChangeTag (flagiconrtakenbyg, PU_CACHE);
 	Z_ChangeTag (flagicongtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagicongtakenbyr, PU_CACHE);	
+	Z_ChangeTag (flagicongtakenbyr, PU_CACHE);
+	Z_ChangeTag (flagicongtakenbyg, PU_CACHE);
 	Z_ChangeTag (flagiconbdropped, PU_CACHE);
 	Z_ChangeTag (flagiconrdropped, PU_CACHE);
 	Z_ChangeTag (flagicongdropped, PU_CACHE);
@@ -138,12 +144,15 @@ void ST_initNew (void)
 	flagiconbhome = W_CachePatch ("FLAGIC2B", PU_STATIC);
 	flagiconrhome = W_CachePatch ("FLAGIC2R", PU_STATIC);
 	flagiconghome = W_CachePatch ("FLAGIC2G", PU_STATIC);
+	flagiconbtakenbyb = W_CachePatch ("FLAGI3BB", PU_STATIC);
 	flagiconbtakenbyr = W_CachePatch ("FLAGI3BR", PU_STATIC);
 	flagiconbtakenbyg = W_CachePatch ("FLAGI3BG", PU_STATIC);
 	flagiconrtakenbyb = W_CachePatch ("FLAGI3RB", PU_STATIC);
+	flagiconrtakenbyr = W_CachePatch ("FLAGI3RR", PU_STATIC);
 	flagiconrtakenbyg = W_CachePatch ("FLAGI3RG", PU_STATIC);
 	flagicongtakenbyb = W_CachePatch ("FLAGI3GB", PU_STATIC);
-	flagicongtakenbyr = W_CachePatch ("FLAGI3GR", PU_STATIC);	
+	flagicongtakenbyr = W_CachePatch ("FLAGI3GR", PU_STATIC);
+	flagicongtakenbyg = W_CachePatch ("FLAGI3GG", PU_STATIC);
 	flagiconbdropped = W_CachePatch ("FLAGIC4B", PU_STATIC);
 	flagiconrdropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
 	flagicongdropped = W_CachePatch ("FLAGIC4G", PU_STATIC);
@@ -302,7 +311,15 @@ void ST_newDrawCTF (void)
 	switch(CTFdata[it_blueflag].state)
 	{
 		case flag_carried:
-			flagbluepatch = flagiconbtakenbyr;
+			if (CTFdata[it_blueflag].flagger) {
+				player_t &player = idplayer(CTFdata[it_blueflag].flagger);
+				if (player.userinfo.team == TEAM_BLUE)
+					flagbluepatch = flagiconbtakenbyb;
+				else if (player.userinfo.team == TEAM_RED)
+					flagbluepatch = flagiconbtakenbyr;
+				else if (player.userinfo.team == TEAM_GOLD)
+					flagbluepatch = flagiconbtakenbyg;
+			}
 			break;
 		case flag_dropped:
 			flagbluepatch = flagiconbdropped;
@@ -314,7 +331,15 @@ void ST_newDrawCTF (void)
 	switch(CTFdata[it_redflag].state)
 	{
 		case flag_carried:
-			flagredpatch = flagiconrtakenbyb;
+			if (CTFdata[it_redflag].flagger) {
+				player_t &player = idplayer(CTFdata[it_redflag].flagger);
+				if (player.userinfo.team == TEAM_BLUE)
+					flagredpatch = flagiconrtakenbyb;
+				else if (player.userinfo.team == TEAM_RED)
+					flagredpatch = flagiconrtakenbyr;
+				else if (player.userinfo.team == TEAM_GOLD)
+					flagredpatch = flagiconrtakenbyg;
+			}
 			break;
 		case flag_dropped:
 			flagredpatch = flagiconrdropped;
