@@ -3014,6 +3014,9 @@ void SV_Spectate (player_t &player)
 						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game on the %s team.\n", 
 							player.userinfo.netname, team_names[player.userinfo.team]);
 					// GhostlyDeath -- Reset Frags, Deaths and Kills
+					player.fragcount = 0;
+					player.deathcount = 0;
+					player.killcount = 0;
 					SV_UpdateFrags(player);
 				}
 			}
