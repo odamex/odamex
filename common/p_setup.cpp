@@ -637,14 +637,14 @@ void P_LoadLineDefs2 (int lump)
 
 		unsigned short v = SHORT(mld->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = SHORT(mld->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
@@ -692,14 +692,14 @@ void P_LoadLineDefs (int lump)
 
 		unsigned short v = SHORT(mld->v1);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = SHORT(mld->v2);
 
-		if(v < 0 || v >= numvertexes)
+		if(v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
