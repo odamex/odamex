@@ -243,6 +243,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		"doom.wad",
 		"doom1.wad",
 		"freedoom.wad",
+		"freedm.wad",
 		NULL
 	};
 
