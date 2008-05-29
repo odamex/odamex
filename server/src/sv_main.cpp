@@ -1796,7 +1796,7 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 			AllowConnect = true;
 			break;
 		case 64:
-			sprintf(VersionStr, "2.0a or 3.0");
+			sprintf(VersionStr, "0.2a or 0.3");
 			break;
 		case 63:
 			sprintf(VersionStr, "Pre-0.2");
