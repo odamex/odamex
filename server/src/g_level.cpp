@@ -237,6 +237,20 @@ BEGIN_COMMAND (map)
 			G_DeferedInitNew (argv[1]);
 		}
 	}
+	
+	if (deathmatch)
+	{
+		for (size_t i = 0; i < players.size(); i++)
+		{
+			players[i].spectator = 1;
+			for (size_t j = 0; j < players.size(); j++)
+			{
+				MSG_WriteMarker (&(players[i].client.reliablebuf), svc_spectate);
+				MSG_WriteByte (&(players[i].client.reliablebuf), players[j].id);
+				MSG_WriteByte (&(players[i].client.reliablebuf), false);
+			}
+		}
+	}
 }
 END_COMMAND (map)
 
@@ -492,11 +506,6 @@ void G_ChangeMap (void)
 		{
 			players[i].spectator = true;
 			players[i].joinafterspectatortime = -(TICRATE*5);
-			for (size_t j = 0; j < players.size(); j++) {
-				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
-				MSG_WriteByte (&(players[j].client.reliablebuf), i);
-				MSG_WriteByte (&(players[j].client.reliablebuf), true);
-			}
 		}
 	}
 }
