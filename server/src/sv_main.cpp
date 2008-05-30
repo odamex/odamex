@@ -141,7 +141,7 @@ BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 			{
 				for (size_t j = 0; j < players.size(); j++) {
 					MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
-					MSG_WriteByte (&(players[j].client.reliablebuf), i);
+					MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
 					MSG_WriteByte (&(players[j].client.reliablebuf), true);
 				}
 				SV_BroadcastPrintf (PRINT_HIGH, "%s became a spectator.\n", players[i].userinfo.netname);
