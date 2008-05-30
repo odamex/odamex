@@ -274,6 +274,8 @@ public:
 			netbuf(other.netbuf),
 			reliablebuf(other.reliablebuf),
 			version(other.version),
+			majorversion(other.majorversion),
+			minorversion(other.minorversion),
 			relpackets(other.relpackets),
 			sequence(other.sequence),
 			last_sequence(other.last_sequence),
