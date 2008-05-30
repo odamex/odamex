@@ -1164,6 +1164,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	}
 }
 
+EXTERN_CVAR(maxplayers);
 
 //
 // P_SpawnMapThing
@@ -1358,13 +1359,21 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		if (!(mthing->flags & MTF_COOPERATIVE))
 			return;
-	}*/
+	}
 	
 	if (!multiplayer)
 	{
 		if (!(mthing->flags & MTF_SINGLE))
 			return;
-	}
+	}*/
+	
+	// GhostlyDeath -- Correctly spawn things
+	if (deathmatch && !(mthing->flags & MTF_DEATHMATCH))
+		return;
+	if (!deathmatch && maxplayers == 1 && !(mthing->flags & MTF_SINGLE))
+		return;
+	if (!deathmatch && maxplayers != 1 && !(mthing->flags & MTF_COOPERATIVE))
+		return;
 
 	// check for apropriate skill level
 	if (skill == sk_baby)
