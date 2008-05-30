@@ -196,8 +196,75 @@ public:
 
 	struct ticcmd_t netcmds[BACKUPTICS];
 
-	player_s() : playerstate(PST_LIVE), fragcount(0), deathcount(0), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0), spectator(false)
+	player_s()
 	{
+		// GhostlyDeath -- Initialize EVERYTHING
+		mo = AActor::AActorPtr();
+		id = 0;
+		playerstate = PST_LIVE;
+		memset(&cmd, 0, sizeof(ticcmd_t));
+		memset(&userinfo, 0, sizeof(userinfo_t));
+		fov = 0.0;
+		viewz = 0 << FRACBITS;
+		viewheight = 0 << FRACBITS;
+		deltaviewheight = 0 << FRACBITS;
+		bob = 0 << FRACBITS;
+		health = 0;
+		armorpoints = 0;
+		armortype = 0;
+		for (size_t i = 0; i < NUMPOWERS; i++)
+			powers[i] = 0;
+		for (size_t i = 0; i < NUMCARDS; i++)
+			cards[i] = false;
+		backpack = false;
+		points = 0;
+		for (size_t i = 0; i < NUMFLAGS; i++)
+			flags[i] = false;
+		fragcount = 0;
+		deathcount = 0;
+		killcount = 0;
+		pendingweapon = wp_nochange;
+		readyweapon = wp_nochange;
+		for (size_t i = 0; i < NUMWEAPONS; i++)
+			weaponowned[i] = false;
+		for (size_t i = 0; i < NUMAMMO; i++)
+		{
+			ammo[i] = 0;
+			maxammo[i] = 0;
+		}
+		attackdown = 0;
+		usedown = 0;
+		cheats = 0;
+		refire = 0;
+		damagecount = 0;
+		bonuscount = 0;
+		attacker = AActor::AActorPtr();
+		extralight = 0;
+		fixedcolormap = 0;
+		memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
+		respawn_time = 0;
+		for (size_t i = 0; i < 3; i++)
+		{
+			oldvelocity[i] = 0 << FRACBITS;
+			real_origin[i] = 0 << FRACBITS;
+			real_velocity[i] = 0 << FRACBITS;
+		}
+		camera = AActor::AActorPtr();
+		air_finished = 0;
+		GameTime = 0;
+		ping = 0;
+		last_received = 0;
+		tic = 0;
+		spectator = 0;
+		
+		// GhostlyDeath -- Do what was above incase
+		playerstate = PST_LIVE;
+		fragcount = 0;
+		deathcount = 0;
+		pendingweapon = wp_pistol;
+		readyweapon = wp_pistol;
+		cheats = 0;
+		spectator = false;
 	}
 
 	player_s &operator =(const player_s &other)
