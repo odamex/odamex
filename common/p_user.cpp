@@ -220,7 +220,7 @@ void P_MovePlayer (player_t *player)
 		{
 			player->mo->momz += 7*FRACUNIT;
 			
-			if(clientside)
+			if(!player->spectator)
 				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
 		}
 	}
