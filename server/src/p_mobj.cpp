@@ -1164,7 +1164,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	}
 }
 
-EXTERN_CVAR(maxplayers);
+EXTERN_CVAR(maxplayers)
 
 //
 // P_SpawnMapThing
