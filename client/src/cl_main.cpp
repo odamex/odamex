@@ -615,7 +615,7 @@ void CL_TeamPoints (void)
 //
 // denis - fast netid lookup
 //
-AActor* CL_FindThingById(unsigned int id)
+AActor* CL_FindThingById(size_t id)
 {
 	netid_map_t::iterator i = actor_by_netid.find(id);
 
