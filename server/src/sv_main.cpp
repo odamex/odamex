@@ -1783,9 +1783,16 @@ bool SV_BanCheck (client_t *cl, int n)
 bool SV_CheckClientVersion(client_t *cl, int n)
 {
 	int GameVer = 0;
-	char VersionStr[10];
+	char VersionStr[20];
+	char OurVersionStr[20];
 	memset(VersionStr, 0, sizeof(VersionStr));
+	memset(OurVersionStr, 0, sizeof(VersionStr));
 	bool AllowConnect = true;
+	
+	if ((GAMEVER % 256) % 10)
+		sprintf(OurVersionStr, "%i.%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10, (GAMEVER % 256) % 10);
+	else
+		sprintf(OurVersionStr, "%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10);
 	
 	switch (cl->version)
 	{
@@ -1793,8 +1800,15 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 			GameVer = MSG_ReadLong();
 			cl->majorversion = GameVer / 256;
 			cl->minorversion = GameVer % 256;
-			sprintf(VersionStr, "%i.%i", cl->majorversion, cl->minorversion / 10);
-			AllowConnect = true;
+			if ((GameVer % 256) % 10)
+				sprintf(VersionStr, "%i.%i.%i", cl->majorversion, cl->minorversion / 10, cl->minorversion % 10);
+			else
+				sprintf(VersionStr, "%i.%i", cl->majorversion, cl->minorversion / 10);
+				
+			if (GameVer != GAMEVER)
+				AllowConnect = false;
+			else
+				AllowConnect = true;
 			break;
 		case 64:
 			sprintf(VersionStr, "0.2a or 0.3");
@@ -1812,17 +1826,8 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 	}
 	
 	// GhostlyDeath -- removes the constant AllowConnects above
-	if (cl->version < 65)
+	if (cl->version != 65)
 		AllowConnect = false;
-	
-	// If we are still allowed to connect based on version, refine the check more
-	if (AllowConnect)
-	{
-		if (cl->majorversion != (GAMEVER / 256))
-			AllowConnect = false;
-		else if (cl->minorversion != (GAMEVER % 256))
-			AllowConnect = false;
-	}
 	
 	// GhostlyDeath -- boot em
 	if (!AllowConnect)
@@ -1832,8 +1837,8 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 		bool older = false;
 		
 		// GhostlyDeath -- Version Mismatch message
-		sprintf(FinalStr, "\nYour version of Odamex (%s) does not match the server (%i.%i).\n",
-			VersionStr, GAMEVER / 256, (GAMEVER % 256) / 10);
+		sprintf(FinalStr, "\nYour version of Odamex (%s) does not match the server (%s).\n",
+			VersionStr, OurVersionStr);
 		
 		// GhostlyDeath -- Check to see if it's older or not
 		if (cl->majorversion < (GAMEVER / 256))
@@ -1860,8 +1865,18 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 		
 		// GhostlyDeath -- email address set?	
 		if (*(email.cstring()))
+		{
+			char emailbuf[100];
+			memset(emailbuf, 0, sizeof(emailbuf));
+			const char* in = email.cstring();
+			char* out = emailbuf;
+			
+			for (int i = 0; i < 100 && *in; i++, in++, out++)
+				*out = *in;
+			
 			sprintf(FinalStr, "%sIf problems persist, contact the server administrator at %s .\n",
-				FinalStr, email.cstring());
+				FinalStr, emailbuf);
+		}
 				
 		// GhostlyDeath -- Now we tell them our built up message and boot em
 		cl->displaydisconnect = false;	// Don't spam the players
@@ -1875,8 +1890,8 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 		SV_SendPacket (players[n]);
 		
 		// GhostlyDeath -- And we tell the server
-		Printf(PRINT_HIGH, "%s -- Version mismatch (%s != %i.%i)\n", NET_AdrToString(net_from),
-			VersionStr, GAMEVER / 256, (GAMEVER % 256) / 10);
+		Printf(PRINT_HIGH, "%s -- Version mismatch (%s != %s)\n", NET_AdrToString(net_from),
+			VersionStr, OurVersionStr);
 	}
 	
 	return AllowConnect;

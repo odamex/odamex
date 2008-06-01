@@ -939,7 +939,7 @@ void CL_TryToConnect(DWORD server_token)
 			MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
 			
 		// GhostlyDeath -- Send more version info
-		MSG_WriteLong(&net_buffer, 40);
+		MSG_WriteLong(&net_buffer, GAMEVER);
 
 		CL_SendUserInfo(); // send userinfo
 
