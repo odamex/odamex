@@ -30,6 +30,12 @@ foreach test $tests {
 	
 	# run test file
 	set result [exec $test]
+
+	# filter html tags
+	if { $argv == "-html" } {
+		set result [regsub -all < $result {\&lt;}]
+		set result [regsub -all > $result {\&gt;}]
+	}
 	
 	# html output
 	htmlputs "<h2>$test</h2>"
