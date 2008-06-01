@@ -21,19 +21,19 @@ while { ![eof $file] } {
 	set demo [gets $file]
 	
 	set iwad [lindex $demo 0]
-	set pwads [lindex $demo 1]
-	set demo [lindex $demo 2]
+	set pwad [lindex $demo 1]
+	set lump [lindex $demo 2]
 	
 	set args "-nosound -novideo"
-	lappend args "-iwad $iwad"
-	if { $pwads != "" && $pwads != "."} {
-		lappend args "-file $pwads"
+	append args " -iwad $iwad"
+	if { $pwad != "" && $pwad != "."} {
+		append args "-file $pwad"
 	}
-	lappend args "+demotest $demo"
-	
-	set stdout ""
+	append args " +demotest $lump"
+
+	set stdout "CRASHED"
 	catch {
-		set stdout [exec ./odamex $args]
+		set stdout [eval exec ./odamex [split $args]]
 	}
 	
 	set result [lindex [split $stdout "\n"] end]
