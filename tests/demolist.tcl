@@ -17,8 +17,13 @@ exec tclsh "$0" "$@"
 set file [open tests/DEMOLIST r]
 
 while { ![eof $file] } {
-	
+
 	set demo [gets $file]
+
+	if { [llength $demo] == 0 } {
+		#ignore blank lines
+		continue;
+	}
 	
 	set iwad [lindex $demo 0]
 	set pwad [lindex $demo 1]
@@ -27,7 +32,14 @@ while { ![eof $file] } {
 	set args "-nosound -novideo"
 	append args " -iwad $iwad"
 	if { $pwad != "" && $pwad != "."} {
-		append args " -file $pwad"
+		foreach item $pwad {
+			set parts [split $item .]
+			if { [lindex $parts 1] == "deh" || [lindex $parts 1] == "DEH" } {
+				append args " -deh $item"
+			} else {
+				append args " -file $item"
+			}			
+		}
 	}
 	append args " +demotest $lump"
 
