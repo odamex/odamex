@@ -36,6 +36,7 @@ proc main {} {
  # test teamplay
  server "teamplay 1; map 1"
  clear
+ test "join" "Player joined the game on the BLUE team."
  test "say hello" "Player: hello"
  test "say_team hello" "<Player to TEAM> hello"
 
