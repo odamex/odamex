@@ -9,7 +9,14 @@ exec tclsh "$0" "$@"
 append tests "[glob tests/*.tcl]"
 append tests " [glob tests/commands/*.tcl]"
 
-puts "<html><h1>Odamex regression test results</h1>"
+proc htmlputs { txt } {
+	global argv
+	if { $argv == "-html" } {
+		puts $txt
+	}
+}
+
+htmlputs "<html><h1>Odamex regression test results</h1>"
 
 set pass 0
 set fail 0
@@ -25,22 +32,22 @@ foreach test $tests {
 	set result [exec $test]
 	
 	# html output
-	puts "<h2>$test</h2>"
+	htmlputs "<h2>$test</h2>"
 	foreach line [split $result \n] {
 		if { [regexp .*FAIL.* $line] } {
-			puts "<font color=red>"
+			htmlputs "<font color=red>"
 			incr fail
 		} elseif { [regexp .*PASS.* $line] } {
-			puts "<font color=green>"
+			htmlputs "<font color=green>"
 			incr pass
 		} else {
-			puts "<font color=black>"
+			htmlputs "<font color=black>"
 		}
 		puts $line
-		puts "</font><br />"
+		htmlputs "</font><br />"
 	}
 }
 
-puts "$pass passed, $fail failed"
+puts "*** $pass passed, $fail failed ***"
 
-puts "</html>"
+htmlputs "</html>"
