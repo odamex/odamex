@@ -264,7 +264,7 @@ odalaunch/odalaunch:
 # Checker
 check: test
 test: server client
-	tests/all.sh
+	tests/all.tcl
 
 # Installer
 install: $(CLIENT_TARGET) $(SERVER_TARGET) odalaunch/odalaunch
