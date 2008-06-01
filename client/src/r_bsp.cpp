@@ -120,10 +120,10 @@ R_ClipSolidWallSegment
 		cliprange_t *old = solidsegs;
 		solidsegs = (cliprange_t *)Malloc (2 * MaxSegs * sizeof(cliprange_t));
 		memcpy(solidsegs, old,  (sizeof(cliprange_t)*MaxSegs));
-		M_Free(old);
 		MaxSegs *= 2;
 		lastsolidseg = &solidsegs[MaxSegs];
 		newend = newend - old + solidsegs;
+		M_Free(old);
 	}
 
 	// Find the first range that touches the range
