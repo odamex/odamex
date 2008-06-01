@@ -27,7 +27,7 @@ while { ![eof $file] } {
 	set args "-nosound -novideo"
 	append args " -iwad $iwad"
 	if { $pwad != "" && $pwad != "."} {
-		append args "-file $pwad"
+		append args " -file $pwad"
 	}
 	append args " +demotest $lump"
 
