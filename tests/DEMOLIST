@@ -10,9 +10,9 @@ doom2.wad hr.wad hf21tysn.lmp {c0000000 ffbaf650 e0600161 200000}
 doom.wad . demo1 {66c0d41f ffe08aa5 532acd 0}
 doom.wad . demo2 {1bc6ae60 438895e 7f1dbc9 0}
 doom.wad . demo3 {de1b56e0 3ba6b1a 1424f03 0}
-doom1.wad . demo1 {95e3c340 5356507 5074b72 580000}
-doom1.wad . demo2 {a03d799f ff712553 faefd800 300000}
-doom1.wad . demo3 {9a9c45c0 fa8d15e4 f62ff7e4 700000}
+doom1.wad {} demo1 {95e3c340 5356507 5074b72 580000}
+doom1.wad {} demo2 {a03d799f ff712553 faefd800 300000}
+doom1.wad {} demo3 {9a9c45c0 fa8d15e4 f62ff7e4 700000}
 tnt.wad . demo1 {1de36980 fec6f0bd 553e03d ffb80000}
 tnt.wad . demo2 {5f185e20 3e3ebc feabc980 0}
 tnt.wad . demo3 {7a76c22f 997ba56 b59ec2a 800000}

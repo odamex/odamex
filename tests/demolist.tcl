@@ -20,11 +20,22 @@ while { ![eof $file] } {
 	
 	set demo [gets $file]
 	
-	set stdout [exec ./odamex -nosound -novideo   \
-			-iwad [lindex $demo 0]        \
-			-file [lindex $demo 1]        \
-			+demotest [lindex $demo 2]]
-
+	set iwad [lindex $demo 0]
+	set pwads [lindex $demo 1]
+	set demo [lindex $demo 2]
+	
+	set args "-nosound -novideo"
+	lappend args "-iwad $iwad"
+	if { $pwads != "" && $pwads != "."} {
+		lappend args "-file $pwads"
+	}
+	lappend args "+demotest $demo"
+	
+	set stdout ""
+	catch {
+		set stdout [exec ./odamex $args]
+	}
+	
 	set result [lindex [split $stdout "\n"] end]
 	set expected [lindex $demo 3]
 
