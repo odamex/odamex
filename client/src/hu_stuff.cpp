@@ -265,6 +265,7 @@ void HU_DrawTargetNames(void)
 	int TargetX = 0;
 	int TargetY = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
 	std::vector<TargetInfo_t> Targets;
+	int i;
 
 	if(!displayplayer().mo)
 		return;
@@ -279,7 +280,7 @@ void HU_DrawTargetNames(void)
 	if (&(consoleplayer()) != &(displayplayer()))
 		TargetY -= ((hu_font[0]->height() + 4) * CleanYfac);
 
-	for (int i = 0; i < players.size(); i++)
+	for (i = 0; i < players.size(); i++)
 	{
 		/* Check Various things */
 		// Spectator?
@@ -378,7 +379,7 @@ void HU_DrawTargetNames(void)
 	}
 	
 	// GhostlyDeath -- Now Sort (hopefully I got my selection sort working!)
-	for (int i = 0; i < Targets.size(); i++)
+	for (i = 0; i < Targets.size(); i++)
 	{
 		for (int j = i + 1; j < Targets.size(); j++)
 		{
@@ -398,7 +399,7 @@ void HU_DrawTargetNames(void)
 	}
 	
 	// GhostlyDeath -- Now Draw
-	for (int i = 0; (i < Targets.size()) && (i < hud_targetcount); i++)
+	for (i = 0; (i < Targets.size()) && (i < hud_targetcount); i++)
 	{
 		// So "You" (or not) is centered
 		if (Targets[i].PlayPtr == &(consoleplayer()))

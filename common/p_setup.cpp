@@ -673,7 +673,8 @@ void P_LoadLineDefs (int lump)
 	if(lumplen % sizeof(maplinedef_t) != 0
 		&& lumplen % sizeof(maplinedef2_t) == 0)
 	{
-		return P_LoadLineDefs2(lump);
+		P_LoadLineDefs2(lump);
+		return;
 	}
 
 	numlines = lumplen / sizeof(maplinedef_t);

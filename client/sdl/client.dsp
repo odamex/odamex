@@ -8,12 +8,12 @@ CFG=client - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "client.mak".
+!MESSAGE NMAKE /f "client.MAK".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "client.mak" CFG="client - Win32 Debug"
+!MESSAGE NMAKE /f "client.MAK" CFG="client - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -43,7 +43,8 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /O2 /I "." /I "..\src" /I "..\..\common" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "NOASM" /FAs /FR /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GX /I "." /I "..\src" /I "..\..\common" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "NOASM" /D "NOMINMAX" /FAs /FR /YX /FD /c
+# SUBTRACT CPP /O<none>
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -70,7 +71,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MDd /W3 /GX /ZI /Od /I "." /I "..\src" /I "..\..\common" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "NOASM" /FR /YX /FD /c
+# ADD CPP /nologo /MDd /W3 /GX /ZI /Od /I "." /I "..\src" /I "..\..\common" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "NOASM" /D "NOMINMAX" /FR /YX /FD /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -99,10 +100,6 @@ SOURCE=..\src\am_map.cpp
 # Begin Source File
 
 SOURCE=..\src\c_bind.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\c_cmds.cpp
 # End Source File
 # Begin Source File
 
@@ -163,14 +160,6 @@ SOURCE=..\src\m_misc.cpp
 # Begin Source File
 
 SOURCE=..\src\m_options.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\memio.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\mus2midi.cpp
 # End Source File
 # Begin Source File
 
@@ -450,6 +439,14 @@ SOURCE=.\i_video.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\mus2midi.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\mus2midi.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\resource.h
 # End Source File
 # End Group
@@ -654,6 +651,14 @@ SOURCE=..\..\common\m_cheat.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\m_fileio.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\m_fileio.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\common\m_fixed.cpp
 # End Source File
 # Begin Source File
@@ -662,11 +667,23 @@ SOURCE=..\..\common\m_fixed.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\m_memio.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\m_memio.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\common\m_random.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\common\m_random.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\m_swap.cpp
 # End Source File
 # Begin Source File
 
@@ -719,6 +736,10 @@ SOURCE=..\..\common\p_lnspec.cpp
 # Begin Source File
 
 SOURCE=..\..\common\p_lnspec.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\p_local.h
 # End Source File
 # Begin Source File
 

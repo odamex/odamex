@@ -8,12 +8,12 @@ CFG=server - Win32 DebugConsole
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "server.mak".
+!MESSAGE NMAKE /f "server.MAK".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "server.mak" CFG="server - Win32 DebugConsole"
+!MESSAGE NMAKE /f "server.MAK" CFG="server - Win32 DebugConsole"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -40,7 +40,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /G5 /Gr /MTd /W3 /GX /ZI /Od /I "." /I "..\src" /I "..\..\common" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "NOASM" /FR /Fp"Debug/client.pch" /YX /FD /c
-# ADD CPP /nologo /G5 /Gr /MTd /W3 /GX /ZI /Od /I "." /I "..\src" /I "..\..\common" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "NOASM" /D "_CONSOLE" /FR /Fp"Debug/client.pch" /YX /FD /c
+# ADD CPP /nologo /G5 /Gr /MTd /W3 /GX /ZI /Od /I "." /I "..\src" /I "..\..\common" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "NOASM" /D "_CONSOLE" /D "NOMINMAX" /FR /Fp"Debug/client.pch" /YX /FD /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -59,10 +59,6 @@ LINK32=link.exe
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
-# Begin Source File
-
-SOURCE=..\src\c_cmds.cpp
-# End Source File
 # Begin Source File
 
 SOURCE=..\src\c_console.cpp
@@ -461,6 +457,14 @@ SOURCE=..\..\common\m_cheat.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\m_fileio.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\m_fileio.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\common\m_fixed.cpp
 # End Source File
 # Begin Source File
@@ -469,11 +473,23 @@ SOURCE=..\..\common\m_fixed.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\m_memio.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\m_memio.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\common\m_random.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\common\m_random.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\m_swap.cpp
 # End Source File
 # Begin Source File
 
@@ -526,6 +542,10 @@ SOURCE=..\..\common\p_lnspec.cpp
 # Begin Source File
 
 SOURCE=..\..\common\p_lnspec.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\p_local.h
 # End Source File
 # Begin Source File
 

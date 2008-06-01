@@ -328,7 +328,9 @@ public:
 
 	player_s()
 	{
-				// GhostlyDeath -- Initialize EVERYTHING
+		size_t i;
+
+		// GhostlyDeath -- Initialize EVERYTHING
 		mo = AActor::AActorPtr();
 		id = 0;
 		memset(&cmd, 0, sizeof(ticcmd_t));
@@ -341,20 +343,20 @@ public:
 		health = 0;
 		armorpoints = 0;
 		armortype = 0;
-		for (size_t i = 0; i < NUMPOWERS; i++)
+		for (i = 0; i < NUMPOWERS; i++)
 			powers[i] = 0;
-		for (size_t i = 0; i < NUMCARDS; i++)
+		for (i = 0; i < NUMCARDS; i++)
 			cards[i] = false;
 		backpack = false;
 		points = 0;
-		for (size_t i = 0; i < NUMFLAGS; i++)
+		for (i = 0; i < NUMFLAGS; i++)
 			flags[i] = false;
 		fragcount = 0;
 		deathcount = 0;
 		killcount = 0;
-		for (size_t i = 0; i < NUMWEAPONS; i++)
+		for (i = 0; i < NUMWEAPONS; i++)
 			weaponowned[i] = false;
-		for (size_t i = 0; i < NUMAMMO; i++)
+		for (i = 0; i < NUMAMMO; i++)
 		{
 			ammo[i] = 0;
 			maxammo[i] = 0;
@@ -369,7 +371,7 @@ public:
 		fixedcolormap = 0;
 		memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
 		respawn_time = 0;
-		for (size_t i = 0; i < 3; i++)
+		for (i = 0; i < 3; i++)
 			oldvelocity[i] = 0 << FRACBITS;
 		camera = AActor::AActorPtr();
 		air_finished = 0;

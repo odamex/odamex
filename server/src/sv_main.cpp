@@ -403,10 +403,11 @@ void SV_IPListDelete (std::vector<BanEntry_t> *list, std::string listname, std::
 		BanEntry_t tBan;	// GhostlyDeath -- Temporary Ban Holder
 		std::string IP;
 		int RemovalCount = 0;
+		size_t i;
 		
 		SV_IPListMakeIP(&tBan, IPtoBan);
 		
-		for (size_t i = 0; i < (*list).size(); i++)
+		for (i = 0; i < (*list).size(); i++)
 		{
 			bool match = false;
 			
@@ -426,7 +427,7 @@ void SV_IPListDelete (std::vector<BanEntry_t> *list, std::string listname, std::
 			}
 		}
 		
-		int i = 0;
+		i = 0;
 		
 		while (i < (*list).size())
 		{

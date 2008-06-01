@@ -71,7 +71,6 @@ size_t			numlumps;
 
 void**			lumpcache;
 
-
 #define MAX_HASHES 10
 
 typedef struct
@@ -80,6 +79,45 @@ typedef struct
     std::string hash[MAX_HASHES];
 } gamewadinfo_t;
 
+#if _MSC_VER <= 1200	// GhostlyDeath -- Work on VC6
+static gamewadinfo_t doomwadnames[7];
+bool WasVC6Inited = false;
+
+void W_VC6Init(void)
+{
+	if (!WasVC6Inited)
+	{
+		// DOOM
+		doomwadnames[0].name = "DOOM.WAD";
+		doomwadnames[0].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
+		doomwadnames[0].hash[1] = "1CD63C5DDFF1BF8CE844237F580E9CF3";
+
+		// DOOM2
+		doomwadnames[1].name = "DOOM2.WAD";
+		doomwadnames[1].hash[0] = "25E1459CA71D321525F84628F45CA8CD";
+
+		// DOOM2F
+		doomwadnames[2].name = "DOOM2F.WAD";
+
+		// DOOMU
+		doomwadnames[3].name = "DOOMU.WAD";
+		doomwadnames[3].hash[0] = "C4FE9FD920207691A9F493668E0A2083";
+
+		// PLUTONIA
+		doomwadnames[4].name = "PLUTONIA.WAD";
+		doomwadnames[4].hash[0] = "75C8CF89566741FA9D22447604053BD7";
+
+		// TNT
+		doomwadnames[5].name = "TNT.WAD";
+		doomwadnames[5].hash[0] = "4E158D9953C79CCF97BD0663244CC6B6";
+
+		WasVC6Inited = true;
+	}
+}
+
+#define MSVC6_SETUPWADS if (!WasVC6Inited) W_VC6Init();
+
+#else
 // Valid IWAD file names
 static const gamewadinfo_t doomwadnames[] =
 {
@@ -91,6 +129,8 @@ static const gamewadinfo_t doomwadnames[] =
     { "TNT.WAD", { "4E158D9953C79CCF97BD0663244CC6B6" } },
     { "", { "" } }
 };
+#define MSVC6_SETUPWADS
+#endif
 
 //
 // W_IsIWAD
@@ -101,6 +141,8 @@ static const gamewadinfo_t doomwadnames[] =
 // for more "accurate" detection.
 BOOL W_IsIWAD(std::string filename, std::string hash)
 {   
+	MSVC6_SETUPWADS
+
     std::string name;
 
     if (!filename.length())
@@ -446,7 +488,7 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 	std::vector<std::string> hashes(filenames);
 	
 	// no dupes
-	filenames.erase(unique(filenames.begin(), filenames.end()), filenames.end());
+	filenames.erase(std::unique(filenames.begin(), filenames.end()), filenames.end());
 	
 	// open all the files, load headers, and count lumps
 	for(i = 0; i < filenames.size(); i++)
