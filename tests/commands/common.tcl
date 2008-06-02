@@ -18,7 +18,7 @@ proc start {} {
  server "timelimit 0"
  server "map 1"
 
- set client [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo > odamex.log" w]
+ set client [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo +logfile odamex.log > tmp" w]
  set clientout [open odamex.log r]
 
  wait 5
@@ -64,8 +64,11 @@ proc clear {} {
  while { ![eof $clientout] } { gets $clientout }
 }
 
-proc wait { {n 1} } {
- sleep $n
+proc wait { {seconds 1} } {
+ set milliseconds [expr int($seconds*1000)]
+ global endwait
+ after $milliseconds set endwait 1
+ vwait endwait
 }
 
 proc expect { stream expected {excludeTimestamp 1} } {
