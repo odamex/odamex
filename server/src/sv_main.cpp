@@ -243,10 +243,6 @@ client_c clients;
 
 #define CLIENT_TIMEOUT 65 // 65 seconds
 
-// [NightFang] - Different welcome strings
-char welcomestring[] = "Odamex Deathmatch Server\n";
-char welcomestring_teamplay[] = "Odamex Team Deathmatch Server\n";
-
 QWORD gametime;
 
 void SV_UpdateConsolePlayer(player_t &player);
@@ -1970,11 +1966,6 @@ void SV_ConnectClient (void)
 	cl->sequence      =  0;
 	cl->last_sequence = -1;
 	cl->packetnum     =  0;
-
-	// send welcome message
-	MSG_WriteMarker   (&cl->reliablebuf, svc_print);
-	MSG_WriteByte   (&cl->reliablebuf, PRINT_HIGH);
-	MSG_WriteString (&cl->reliablebuf, welcomestring);
 
 	cl->version = MSG_ReadShort();
 	byte connection_type = MSG_ReadByte();
