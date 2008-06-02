@@ -72,9 +72,9 @@ doom2.wad gothicdm demo2 {cc000000 f7e73f0d 7ba7453 1000000}
 doom2.wad gothicdm demo3 {9f000000 feb6b278 52f6fa 30000}
 doom2.wad gothicdm demo4 {4000000 fc8143d8 d91e92 500000}
 doom2.wad . 30nm4048 {956aa5c0 a0fc3b2 45883a1 ff800000}
-doom2.wad . nm30cop1.lmp {unspecified desync}
-doom2.wad . nm30cop2.lmp {unspecified desync}
-doom2.wad . coopuv30.lmp {unspecified desync}
+doom2.wad . nm30cop1.lmp {42000000 b322497 3570d3a 1a00000}
+doom2.wad . nm30cop2.lmp {42000000 b322497 3570d3a 1a00000}
+doom2.wad . coopuv30.lmp {79000000 9e3efe3 17f50c8 ff800000}
 doom2.wad {hacx.wad hacx.deh} demo1 {c6825a68 126a2e 8ca90c6 80000}
 doom2.wad {hacx.wad hacx.deh} demo2 {4c494740 ee782ad7 fe069da1 2400000}
 doom2.wad {hacx.wad hacx.deh} demo3 {4243ffa8 1f97fbb fd400c3a 0}
