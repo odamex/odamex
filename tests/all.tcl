@@ -29,7 +29,7 @@ foreach test $tests {
 	}
 	
 	# run test file
-	set result [exec $test]
+	set result [exec [info nameofexecutable] $test]
 
 	# filter html tags
 	if { $argv == "-html" } {
