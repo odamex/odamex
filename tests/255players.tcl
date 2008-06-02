@@ -83,7 +83,7 @@ proc server { cmd } {
 }
 
 proc wait { {n 1} } {
- exec sleep $n
+ sleep $n
 }
 
 proc expect { stream expected {excludeTimestamp 1} } {
