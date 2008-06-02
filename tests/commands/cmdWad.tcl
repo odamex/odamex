@@ -22,7 +22,11 @@ proc main {} {
  expect $serverout {--- MAP01: entryway ---}
  expect $serverout {127.0.0.1:10501 is trying to connect...}
  expect $clientout {connecting to 127.0.0.1:10599} 0
- expect $clientout {} 0
+ set nextline [gets $clientout]
+ if { $nextline == "connecting to 127.0.0.1:10599"} {
+  # takes two connection attempts on slow machines
+  gets $clientout
+ }
  expect $clientout {> Server: Unnamed} 0
  expect $clientout {> Map: MAP01} 0
  expect $clientout {> DOOM2.WAD} 0
