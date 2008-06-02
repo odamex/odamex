@@ -82,8 +82,11 @@ proc server { cmd } {
  wait
 }
 
-proc wait { {n 1} } {
- sleep $n
+proc wait { {seconds 1} } {
+ set milliseconds [expr int($seconds*1000)]
+ global endwait
+ after $milliseconds set endwait 1
+ vwait endwait
 }
 
 proc expect { stream expected {excludeTimestamp 1} } {
