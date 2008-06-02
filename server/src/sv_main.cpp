@@ -270,13 +270,13 @@ BEGIN_COMMAND (kick)
 
 	if(!validplayer(player))
 	{
-		Printf(PRINT_HIGH, "bad client number: %d\n", player.id);
+		Printf(PRINT_HIGH, "bad client number: %d\n", atoi(argv[1]));
 		return;
 	}
 
 	if(!player.ingame())
 	{
-		Printf(PRINT_HIGH, "client %d not in game\n", player.id);
+		Printf(PRINT_HIGH, "client %d not in game\n", atoi(argv[1]));
 		return;
 	}
 

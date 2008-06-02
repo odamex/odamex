@@ -12,7 +12,13 @@ proc main {} {
  # kick wrong player
  clear
  server "kick 99"
- expect $serverout {bad client number: 0}
+ expect $serverout {bad client number: 99}
+ expect $clientout {} 0
+
+ # kick wrong player with reason
+ clear
+ server "kick 99 be gone"
+ expect $serverout {bad client number: 99}
  expect $clientout {} 0
 
  # kick the player
@@ -25,6 +31,21 @@ proc main {} {
  expect $clientout {} 0
  expect $clientout {Server disconnected} 0
  expect $clientout {} 0
+
+ # reconnect
+ client "reconnect"
+
+ # kick the player with reason
+ clear
+ server "kick 1 be gone"
+
+ expect $serverout {Player was kicked from the server! (Reason: be gone)}
+ expect $serverout {}
+ expect $clientout {Player was kicked from the server! (Reason: be gone)} 0
+ expect $clientout {} 0
+ expect $clientout {Server disconnected} 0
+ expect $clientout {} 0
+
 }
 
 start
