@@ -12,6 +12,8 @@ proc main {} {
  # wad reboot while a client is connected
  clear
  server "wad doom2.wad"
+ wait 5
+
  expect $serverout {DOOM 2: Hell on Earth}
  expect $serverout {adding odamex.wad}
  gets $serverout

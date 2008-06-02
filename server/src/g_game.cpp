@@ -408,7 +408,7 @@ void RecordCommand(int argc, char **argv)
 	else
 		Printf(PRINT_HIGH, "Usage: recordvanilla map file\n");
 }
-/*
+
 BEGIN_COMMAND(recordvanilla)
 {
 	//G_CheckDemoStatus();
@@ -430,7 +430,6 @@ BEGIN_COMMAND(stopdemo)
 	G_CheckDemoStatus (); 
 }
 END_COMMAND(stopdemo)
-*/
 
 // [RH] Spy mode has been separated into two console commands.
 //		One goes forward; the other goes backward.
