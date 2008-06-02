@@ -74,7 +74,9 @@ proc main {} {
  expect $clientout "connecting to 127.0.0.1:$port" 0
  wait 3
  for {set i 0} {$i < 8} {incr i} { gets $clientout }
- expect $clientout {Odamex Deathmatch Server} 0
+ expect $clientout {} 0
+ expect $clientout {=================================} 0
+ expect $clientout {MAP01: entryway} 0
 
  # try to join with maxplayers 0
  clear

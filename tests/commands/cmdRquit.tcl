@@ -29,7 +29,10 @@ proc main {} {
  wait 5
  for {set i 0} {$i < 8} {incr i} { gets $clientout }
  expect $clientout {challenging 127.0.0.1:10599} 0
- expect $clientout {Odamex Deathmatch Server} 0
+ expect $clientout {} 0
+ expect $clientout {=================================} 0
+ expect $clientout {MAP01: entryway} 0
+
 }
 
 start
