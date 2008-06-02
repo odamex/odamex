@@ -78,9 +78,6 @@ int main(int argc, char *argv[])
 {
 	try
 	{
-        if (!LOG.is_open())
-            std::cerr << "Unable to create logfile: %s\n" << std::endl;
-
 #ifdef UNIX
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
@@ -89,7 +86,14 @@ int main(int argc, char *argv[])
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		Args.SetArgs (argc, argv);
 
-		// denis - if argv[0] starts with "odamex://"
+		LOG_FILE = Args.CheckValue("-logfile");
+		if(!LOG_FILE)LOG_FILE = "odamex.log";
+		LOG.open(LOG_FILE, std::ios::out);
+
+        if (!LOG.is_open())
+            std::cerr << "Unable to create logfile: %s\n" << std::endl;
+
+		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])
 		{
 			const char *protocol = "odamex://";

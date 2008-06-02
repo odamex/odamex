@@ -123,6 +123,8 @@ DCanvas *page;
 static int demosequence;
 static int pagetic;
 
+const char *LOG_FILE;
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain

@@ -135,6 +135,8 @@ static int pagetic;
 EXTERN_CVAR (allowexit)
 EXTERN_CVAR (nomonsters)
 
+const char *LOG_FILE;
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain

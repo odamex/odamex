@@ -565,6 +565,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
             outlinelog[i] = '=';
 
     LOG << outlinelog;
+	LOG.flush();
 
 	return PrintString (printlevel, outline);
 }

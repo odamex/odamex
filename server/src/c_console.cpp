@@ -226,6 +226,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 	}
 
     LOG << str;
+	LOG.flush();
 
 	return PrintString (printlevel, str.c_str());
 }

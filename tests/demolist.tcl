@@ -42,10 +42,19 @@ while { ![eof $file] } {
 		}
 	}
 	append args " +demotest $lump"
+	append args " -logfile odamex.log"
 
 	set stdout "CRASHED"
 	catch {
-		set stdout [eval exec ./odamex [split $args]]
+		eval exec ./odamex [split $args] > tmp
+		set log [open odamex.log r]
+		while { ![eof $log] } {
+			set line [gets $log]
+			if { $line != "" } {
+				set stdout $line
+			}
+		}
+		close $log
 	}
 	
 	set result [lindex [split $stdout "\n"] end]

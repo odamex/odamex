@@ -28,7 +28,7 @@
 #include "cmdlib.h"
 
 // Simple logging
-std::ofstream LOG(LOG_FILE, std::ios::out);
+std::ofstream LOG;
 
 //
 // M_FileLength

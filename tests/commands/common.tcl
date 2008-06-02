@@ -8,7 +8,7 @@ set port 10599
 
 proc start {} {
  global server client serverout clientout port
- set server [open "|./odasrv -port $port > odasrv.log" w]
+ set server [open "|./odasrv -port $port -logfile odasrv.log > tmp" w]
  wait
  set serverout [open odasrv.log r]
 
@@ -18,7 +18,7 @@ proc start {} {
  server "timelimit 0"
  server "map 1"
 
- set client [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo +logfile odamex.log > tmp" w]
+ set client [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo -logfile odamex.log > tmp" w]
  set clientout [open odamex.log r]
 
  wait 5

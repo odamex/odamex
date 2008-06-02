@@ -89,10 +89,14 @@ int __cdecl main(int argc, char *argv[])
 {
     try
     {
-        if (!LOG.is_open())
-            I_FatalError("Unable to create logfile: %s\n", LOG_FILE);
-
 		Args.SetArgs (argc, argv);
+
+		LOG_FILE = Args.CheckValue("-logfile");
+		if(!LOG_FILE)LOG_FILE = "odamex.log";
+		LOG.open(LOG_FILE, std::ios::out);
+
+        if (!LOG.is_open())
+			cerr << "Unable to create logfile: %s" << endl;
 
 		// Set the timer to be as accurate as possible
 		TIMECAPS tc;
@@ -181,15 +185,19 @@ int main (int argc, char **argv)
 {
     try
     {
-        if (!LOG.is_open())
-            I_FatalError("Unable to create logfile: %s\n", LOG_FILE);
-
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 
 	    seteuid (getuid ());
 
 		Args.SetArgs (argc, argv);
+
+		LOG_FILE = Args.CheckValue("-logfile");
+		if(!LOG_FILE)LOG_FILE = "odamex.log";
+		LOG.open(LOG_FILE, std::ios::out);
+
+        if (!LOG.is_open())
+            cerr << "Unable to create logfile: %s" << endl;
 
 		/*
 		  killough 1/98:

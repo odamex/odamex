@@ -21,7 +21,17 @@ lappend demos "DOOM2.WAD DEMO3 {dca00040 fd6a4b9c ff7bee0a ff000000}"
 foreach demo $demos {
 	set stdout [exec ./odamex -nosound -novideo   \
 			-iwad [lindex $demo 0]        \
-			+demotest [lindex $demo 1]]
+			+demotest [lindex $demo 1]    \
+			-logfile odamex.log]
+
+	set log [open odamex.log r]
+	while { ![eof $log] } {
+		set line [gets $log]
+		if { $line != "" } {
+			set stdout $line
+		}
+	}
+	close $log
 
 	set result [lindex [split $stdout "\n"] end]
 	set expected [lindex $demo 2]
