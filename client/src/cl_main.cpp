@@ -152,13 +152,13 @@ void P_PlayerLookUpDown (player_t *p);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
+void AM_Stop();
 
 void Host_EndGame(const char *msg)
 {
     Printf(PRINT_HIGH, "%s", msg);
 	CL_QuitNetGame();
 }
-
 
 void CL_QuitNetGame(void)
 {
@@ -175,6 +175,7 @@ void CL_QuitNetGame(void)
 	ctfmode = false;
 	gameaction = ga_fullconsole;
 	noservermsgs = false;
+	AM_Stop();
 
 	serverside = clientside = true;
 	
