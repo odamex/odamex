@@ -459,6 +459,7 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
 		{
             wxString teamstr = _T("UNKNOWN");
             wxInt32 teamscore = 0;
+            wxInt32 scorelimit = s.info.teamplayinfo.scorelimit;
             
             li.SetColumn(playerlist_field_team); 
             
@@ -481,6 +482,10 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
                     teamstr = _T("GOLD");
 					break;
 				default:
+                    li.SetTextColour(*wxBLACK);
+                    teamstr = _T("UNKNOWN");
+                    teamscore = 0;
+                    scorelimit = 0;
 					break;
 			}
 
@@ -492,7 +497,7 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
             
             li.SetText(wxString::Format(_T("%d/%d"), 
                                         teamscore, 
-                                        s.info.teamplayinfo.scorelimit));
+                                        scorelimit));
             
             list->SetItem(li);
         }
