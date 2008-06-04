@@ -375,8 +375,8 @@ void P_XYMovement (AActor *mo)
 		return; 	// no friction for missiles ever
 	}
 
-	if (mo->z > mo->floorz && !mo->waterlevel)
-		return;		// no friction when airborne
+	if (mo->z > mo->floorz && !mo->waterlevel && !(mo->player && mo->player->spectator))
+		return;		// no friction when airborne (GhostlyDeath 06/04/2008 -- but not when spectating)
 
 	if (mo->flags & MF_CORPSE)
 	{
@@ -452,10 +452,11 @@ void P_ZMovement (AActor *mo)
    }
 
     // adjust height
+    // GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
    mo->z += mo->momz;
 
    if ( mo->flags & MF_FLOAT
-        && mo->target)
+        && mo->target && !(mo->target->player && mo->target->player->spectator))
    {
 	// float down towards target if too close
       if ( !(mo->flags & MF_SKULLFLY)

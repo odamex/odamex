@@ -240,7 +240,8 @@ void P_MovePlayer (player_t *player)
 		P_PlayerLookUpDown(player);
 	}
 
-	mo->onground = (mo->z <= mo->floorz);
+	// GhostlyDeath <Jun, 4 2008> -- Treat spectators as on the ground
+	mo->onground = ((mo->z <= mo->floorz) || (mo->player && mo->player->spectator));
 	
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
