@@ -43,6 +43,8 @@
 #include "vectors.h"
 #include "m_fileio.h"
 
+#define S_WHICHEARS (consoleplayer().spectator ? displayplayer() : consoleplayer())
+
 #define NORM_PITCH				128
 #define NORM_PRIORITY				64
 #define NORM_SEP				128
@@ -179,10 +181,10 @@ void S_NoiseDebug (void)
 			char temp[16];
 			fixed_t *origin = Channel[i].pt;
 
-			if (Channel[i].attenuation <= 0 && consoleplayer().camera)
+			if (Channel[i].attenuation <= 0 && S_WHICHEARS.camera)
 			{
-				ox = consoleplayer().camera->x;
-				oy = consoleplayer().camera->y;
+				ox = S_WHICHEARS.camera->x;
+				oy = S_WHICHEARS.camera->y;
 			}
 			else if (origin)
 			{
@@ -206,7 +208,7 @@ void S_NoiseDebug (void)
 			screen->DrawText (color, 170, y, temp);
 			sprintf (temp, "%d", Channel[i].priority);
 			screen->DrawText (color, 200, y, temp);
-			sprintf (temp, "%d", P_AproxDistance2 (consoleplayer().camera, ox, oy) / FRACUNIT);
+			sprintf (temp, "%d", P_AproxDistance2 (S_WHICHEARS.camera, ox, oy) / FRACUNIT);
 			screen->DrawText (color, 240, y, temp);
 			sprintf (temp, "%d", Channel[i].entchannel);
 			screen->DrawText (color, 280, y, temp);
@@ -503,10 +505,10 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	if (pt)
 	{
 
-		rc = S_AdjustSoundParams(consoleplayer().mo, pt, &volume, &sep, &pitch);
+		rc = S_AdjustSoundParams(S_WHICHEARS.mo, pt, &volume, &sep, &pitch);
 
-		if (consoleplayer().mo && x == consoleplayer().mo->x
-				  && y == consoleplayer().mo->y)
+		if (consoleplayer().mo && x == S_WHICHEARS.mo->x
+				  && y == S_WHICHEARS.mo->y)
 		{
 			sep = NORM_SEP;
 		}
@@ -697,7 +699,7 @@ void S_Sound (int channel, const char *name, float volume, int attenuation)
 
 void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	if(channel == CHAN_ITEM && ent != consoleplayer().camera)
+	if(channel == CHAN_ITEM && ent != S_WHICHEARS.camera)
 		return;
 
 	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, attenuation, false);

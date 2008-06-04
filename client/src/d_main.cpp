@@ -419,7 +419,7 @@ void D_DoomLoop (void)
 				CL_RequestConnectInfo();
 
 			// [RH] Use the consoleplayer's camera to update sounds
-			S_UpdateSounds (consoleplayer().mo);	// move positional sounds
+			S_UpdateSounds ((consoleplayer().spectator ? displayplayer().mo : consoleplayer().mo));	// move positional sounds
 
 			// Update display, next frame, with current state.
 			D_Display ();
