@@ -772,14 +772,19 @@ void SV_GetPackets (void)
 		}
 	}
 
-	size_t i;
+	int i;
 
 	// remove disconnected players
 	for(i = 0; i < players.size(); i++)
 	{
 		if(players[i].playerstate == PST_DISCONNECT)
 		{
-			i = players.erase(players.begin() + i) - players.begin();
+			// GhostlyDeath -- Commented code line causes DEP Errors when compiled with VC9
+			// GCC: i = 0x3000 - 0x3000 = 0
+			// VC9: i = 0x3000 - 0x0000 = crash!
+			//i = players.erase(players.begin() + i) - players.begin();
+			players.erase(players.begin() + i);
+			i--;
 
 			// update tracking cvar
 			clientcount.ForceSet(players.size());
