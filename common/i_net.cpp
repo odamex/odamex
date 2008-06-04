@@ -511,6 +511,7 @@ void *MSG_ReadChunk (size_t &size)
     if (msg_readcount+size > net_message.cursize)
     {
         msg_badread = true;
+        return NULL;
     }
 
     void *c = net_message.data + msg_readcount;
