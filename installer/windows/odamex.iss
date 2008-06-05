@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Odamex
-AppVerName=Odamex 0.4 (r$Revision$)
+AppVerName=Odamex 0.4
 AppPublisher=Odamex Dev Team
 AppPublisherURL=http://odamex.net
 AppSupportURL=http://odamex.net
@@ -13,7 +13,7 @@ DefaultGroupName=Odamex
 AllowNoIcons=yes
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-0.4r$Revision$-win32
+OutputBaseFilename=odamex-0.4-win32
 Compression=zip
 SolidCompression=no
 
