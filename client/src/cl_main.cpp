@@ -2016,7 +2016,7 @@ void IntDownloadComplete(void)
 void CL_RequestDownload(std::string filename, std::string filehash)
 {
     // [Russell] - Allow resumeable downloads
-	if ((download.filename != filename) && 
+	if ((download.filename != filename) ||
         (download.md5 != filehash))
     {
         download.filename = filename;
@@ -2078,6 +2078,8 @@ void CL_DownloadStart()
         }
         
         download.buf = new buf_t ((size_t)file_len);
+        
+        memset(download.buf->ptr(), 0, file_len);
     }
     
 	Printf(PRINT_HIGH, "Downloading %d bytes...\n", file_len);

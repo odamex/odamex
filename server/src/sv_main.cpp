@@ -3439,18 +3439,24 @@ void SV_WadDownloads (void)
 
 		read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, sizeof(buff), buff, filelen);
 
+        // [Russell] - We take into account the maximum packet limit so we don't
+        // go over it and end up with a mangled package, the numeric values here 
+        // represent the size of each written data type that follows
+        if ((cl->netbuf.cursize + 1 + 4 + 1 + 4 + 2 + read) >= 8192)
+            SV_SendPacket(players[i]);
+
 		if(read)
 		{
 			if(!cl->download.next_offset)
 			{
-				MSG_WriteMarker (&cl->reliablebuf, svc_wadinfo);
-				MSG_WriteLong (&cl->reliablebuf, filelen);
+				MSG_WriteMarker (&cl->netbuf, svc_wadinfo);
+				MSG_WriteLong (&cl->netbuf, filelen);
 			}
-
-			MSG_WriteMarker (&cl->reliablebuf, svc_wadchunk);
-			MSG_WriteLong (&cl->reliablebuf, cl->download.next_offset);
-			MSG_WriteShort (&cl->reliablebuf, read);
-			MSG_WriteChunk (&cl->reliablebuf, buff, read);
+           
+			MSG_WriteMarker (&cl->netbuf, svc_wadchunk);
+			MSG_WriteLong (&cl->netbuf, cl->download.next_offset);
+			MSG_WriteShort (&cl->netbuf, read);
+			MSG_WriteChunk (&cl->netbuf, buff, read);
 
 			cl->download.next_offset += read;
 		}
