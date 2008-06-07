@@ -120,7 +120,8 @@ bool I_InitInput (void)
 
 #ifdef WIN32
 	// denis - in fullscreen, prevent exit on accidental windows key press
-	g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
+	// [Russell] - Disabled because it screws with the mouse
+	//g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
 #endif
 
 	return true;
@@ -135,7 +136,8 @@ void STACK_ARGS I_ShutdownInput (void)
 
 #ifdef WIN32
 	// denis - in fullscreen, prevent exit on accidental windows key press
-	UnhookWindowsHookEx(g_hKeyboardHook);
+	// [Russell] - Disabled because it screws with the mouse
+	//UnhookWindowsHookEx(g_hKeyboardHook);
 #endif
 }
 
