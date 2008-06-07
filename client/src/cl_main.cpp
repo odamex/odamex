@@ -90,6 +90,7 @@ EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 
 CVAR (maxplayers,		"0", CVAR_SERVERINFO)
+CVAR (maxclients,       "0", CVAR_SERVERINFO)
 CVAR (infiniteammo,		"0", CVAR_SERVERINFO)
 CVAR (fraglimit,		"0", CVAR_SERVERINFO)
 CVAR (timelimit,		"0", CVAR_SERVERINFO)
@@ -1738,7 +1739,7 @@ void CL_GetServerSettings(void)
 	ctfmode = MSG_ReadByte() ? true : false;
 
 	// General server settings
-	maxplayers.Set((int)MSG_ReadShort());
+	maxclients.Set((int)MSG_ReadShort());
 
 	// Game settings
 	allowcheats.Set((BOOL)MSG_ReadByte());
@@ -1760,7 +1761,7 @@ void CL_GetServerSettings(void)
 	allowjump.Set((BOOL)MSG_ReadByte());
 	sv_freelook.Set((BOOL)MSG_ReadByte());
 	infiniteammo.Set((BOOL)MSG_ReadByte());
-	MSG_ReadByte(); // denis - todo - use this for something
+    maxplayers.Set((int)MSG_ReadByte());
 
 	// Teamplay/CTF
 	scorelimit.Set((int)MSG_ReadShort());

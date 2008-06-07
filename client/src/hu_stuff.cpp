@@ -423,6 +423,8 @@ void HU_DrawTargetNames(void)
 	}
 }
 
+EXTERN_CVAR (maxplayers)
+
 //
 // HU_Drawer
 //
@@ -438,10 +440,27 @@ void HU_Drawer (void)
 		if (&consoleplayer() != &displayplayer())
 			YPos -= ((hu_font[0]->height() + 4) * CleanYfac);
 		
+		size_t num_players = 0;
+		
+        for (int i = 0; i < players.size(); ++i)
+		{
+            if (!players[i].spectator)
+                ++num_players;
+        }
+		
 		// GhostlyDeath -- X Pos from the F12 coop spy thingy
-		screen->DrawTextClean (CR_GREY, 
-			(screen->width - V_StringWidth ("Press USE to join")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac), 
-			YPos, "Press USE to join");
+		if (num_players == maxplayers)
+		{
+            screen->DrawTextClean (CR_GREY, 
+                (screen->width - V_StringWidth ("Game is full")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac), 
+                YPos, "Game is full");
+		}
+		else
+		{
+            screen->DrawTextClean (CR_GREY, 
+                (screen->width - V_StringWidth ("Press USE to join")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac), 
+                YPos, "Press USE to join");
+		}
 	}
 	
 	/* GhostlyDeath -- Cheap Target Names */

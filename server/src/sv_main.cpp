@@ -1644,7 +1644,7 @@ void SV_SendServerSettings (client_t *cl)
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowjump);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowfreelook);
 	MSG_WriteByte   (&cl->reliablebuf, (BOOL)infiniteammo);
-	MSG_WriteByte   (&cl->reliablebuf, 0); // denis - todo - use this for something
+	MSG_WriteByte   (&cl->reliablebuf, (int)maxplayers);
 
 	// Teamplay/CTF
 //	MSG_WriteByte   (&cl->reliablebuf, (BOOL)usectf);
@@ -3134,12 +3134,6 @@ void SV_Spectate (player_t &player)
 					player.killcount = 0;
 					SV_UpdateFrags(player);
 				}
-			}
-			else
-			{
-				MSG_WriteMarker (&player.client.reliablebuf, svc_print);
-				MSG_WriteByte (&player.client.reliablebuf, PRINT_CHAT);
-				MSG_WriteString (&player.client.reliablebuf, "Game is currently full!\n");
 			}
 		}
 	} else if (gamestate != GS_INTERMISSION) {
