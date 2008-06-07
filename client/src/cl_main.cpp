@@ -1117,6 +1117,9 @@ void CL_SpawnMobj()
 		P_CheckMissileSpawn(mo);
 	}
 
+    if (mo->flags & MF_COUNTKILL)
+		level.total_monsters++;
+
 	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
 		S_Sound (mo, CHAN_VOICE, mo->info->seesound, 1, ATTN_NORM);
 
@@ -1158,6 +1161,9 @@ void CL_Corpse(void)
 
 	if (mo->player)
 		mo->player->playerstate = PST_DEAD;
+		
+    if (mo->flags & MF_COUNTKILL)
+		level.killed_monsters++;
 }
 
 //
@@ -1432,7 +1438,10 @@ void CL_KillMobj(void)
 
 	target->health = health;
 
-	P_KillMobj (source, target, inflictor, joinkill);
+    if (!serverside && target->flags & MF_COUNTKILL)
+		level.killed_monsters++;
+
+	P_KillMobj (source, target, inflictor, joinkill);	
 }
 
 
