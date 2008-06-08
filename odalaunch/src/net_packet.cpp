@@ -205,6 +205,8 @@ void Server::ResetData()
     
     info.extrainfo = 0;
     info.passworded = false;
+    
+    Ping = 0;
 }
 
 wxInt32 Server::Parse()
