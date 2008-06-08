@@ -1992,12 +1992,30 @@ void SV_ConnectClient (void)
 	MSG_WriteByte (&cl->reliablebuf, players[n].id);
 	MSG_WriteString (&cl->reliablebuf, cl->digest.c_str());
 
+    SV_SendPacket(players[n]);
+
 	// get client userinfo
 	MSG_ReadByte ();  // clc_userinfo
 	SV_SetupUserInfo (players[n]); // send it to other players
 
 	// get rate value
 	cl->rate				= MSG_ReadLong();
+
+    std::string passhash = MSG_ReadString();
+
+    if (strlen(password.cstring()) && MD5SUM(password.cstring()) != passhash)
+    {
+        MSG_WriteMarker(&cl->reliablebuf, svc_print);
+        MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
+        MSG_WriteString (&cl->reliablebuf, 
+                         "Server is passworded, no password specified or bad password\n");
+        
+        SV_SendPacket(players[n]);
+        
+        SV_DropClient(players[n]);
+        
+        return;
+    }
 
 	// [Toke] send server settings
 	SV_SendServerSettings (cl);

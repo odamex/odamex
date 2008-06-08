@@ -62,6 +62,8 @@ buf_t     net_buffer(MAX_UDP_PACKET);
 bool      noservermsgs;
 int       last_received;
 
+std::string connectpasshash = "";
+
 BOOL      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
@@ -251,12 +253,15 @@ BEGIN_COMMAND (connect)
 	{
 		std::string target = argv[1];
 
-		// denis - what if user typed "localhost 10666" instead of "localhost:10666"
-		if(argc > 2)
-		{
-			target += ":";
-			target += argv[2];
-		}
+        // [Russell] - Passworded servers
+        if(argc > 2)
+        {
+            connectpasshash = MD5SUM(argv[2]);
+        }
+        else
+        {
+            connectpasshash = "";
+        }
 
 		if(NET_StringToAdr (target.c_str(), &serveraddr))
 		{
@@ -946,6 +951,8 @@ void CL_TryToConnect(DWORD server_token)
 		CL_SendUserInfo(); // send userinfo
 
 		MSG_WriteLong(&net_buffer, (int)rate);
+
+        MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
 
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
