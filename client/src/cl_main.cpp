@@ -906,11 +906,19 @@ void CL_InitNetwork (void)
 
     SZ_Clear(&net_buffer);
 
-    const char *ipaddress = Args.CheckValue ("-connect");
+    size_t ParamIndex = Args.CheckParm ("-connect");
+    const char *ipaddress = Args.GetArg(ParamIndex + 1);
 
-    if (ipaddress)
+    if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
     {
 		NET_StringToAdr (ipaddress, &serveraddr);
+
+        const char *passhash = Args.GetArg(ParamIndex + 2);
+
+        if (passhash && passhash[0] != '-' && passhash[0] != '+')
+        {
+            connectpasshash = MD5SUM(passhash);            
+        }
 
 		if (!serveraddr.port)
 			I_SetPort(serveraddr, SERVERPORT);

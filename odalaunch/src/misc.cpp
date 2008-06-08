@@ -574,7 +574,7 @@ void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs, wxString 
     cmdline += wxString::Format(_T("%s"), binname.c_str());
     
     if (!Address.IsEmpty())
-		cmdline += wxString::Format(_T(" +connect %s"),
+		cmdline += wxString::Format(_T(" -connect %s"),
 									Address.c_str());
 	
 	if (!Password.IsEmpty())
