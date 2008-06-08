@@ -265,8 +265,8 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     if (insert)    
     {
         li.SetColumn(serverlist_field_name);
-        // TODO: Uncomment when the server has a full password implementation
-        //list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
+
+        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
         li.SetText(s.info.name);
         
         li.SetId(list->ALCInsertItem(li));
@@ -275,8 +275,8 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     {
         li.SetId(index);
         li.SetColumn(serverlist_field_name);
-        // TODO: Uncomment when the server has a full password implementation
-        //list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
+
+        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
         li.SetText(s.info.name);
         
         list->SetItem(li);
@@ -552,7 +552,7 @@ wxString *CheckPWADS(wxString pwads, wxString waddirs)
     }
 }
 
-void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs)
+void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs, wxString Password)
 {
     if (ODX_Path.IsEmpty())
     {
@@ -574,8 +574,12 @@ void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs)
     cmdline += wxString::Format(_T("%s"), binname.c_str());
     
     if (!Address.IsEmpty())
-		cmdline += wxString::Format(_T(" -connect %s"),
+		cmdline += wxString::Format(_T(" +connect %s"),
 									Address.c_str());
+	
+	if (!Password.IsEmpty())
+        cmdline += wxString::Format(_T(" %s"),
+									Password.c_str());
 	
 	// this is so the client won't mess up parsing
 	if (!dirs.IsEmpty())

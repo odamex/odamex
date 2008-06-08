@@ -229,10 +229,19 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     ted.ShowModal();
     ted_result = ted.GetValue();
     
+    wxString ped_result = _T("");
+    wxPasswordEntryDialog ped(this, 
+                            _T("Enter an optional password"), 
+                            _T("Enter an optional password"),
+                            _T(""));
+                            
+    ped.ShowModal();
+    
     if (!ted_result.IsEmpty() && ted_result != _T("0.0.0.0:0"))
         LaunchGame(ted_result, 
                     launchercfg_s.odamex_directory, 
-                    launchercfg_s.wad_paths);
+                    launchercfg_s.wad_paths,
+                    ped.GetValue());
 }
 
 // [Russell] - Monitor thread entry point
@@ -585,8 +594,7 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               "Clean maps: %s\n"
                               "Frag on exit: %s\n"
                               "Spectating: %s\n"
-                              // TODO: Uncomment when the server has a full password implementation
-                              /*"Passworded: %s\n"*/),
+                              "Passworded: %s\n"),
                               QServer[i].info.version,
                               
                               QServer[i].info.emailaddr.c_str(),
@@ -609,9 +617,8 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               BOOLSTR(QServer[i].info.emptyreset),
                               BOOLSTR(QServer[i].info.cleanmaps),
                               BOOLSTR(QServer[i].info.fragonexit),
-                              BOOLSTR(QServer[i].info.spectating)//,
-                              // TODO: Uncomment when the server has a full password implementation
-                              /*BOOLSTR(QServer[i].info.passworded)*/);
+                              BOOLSTR(QServer[i].info.spectating),
+                              BOOLSTR(QServer[i].info.passworded));
     
     static wxTipWindow *tw = NULL;
                               
@@ -675,12 +682,26 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
     SERVER_LIST->GetItem(item);
         
     i = FindServer(item.GetText()); 
-       
+
+    wxPasswordEntryDialog ped(this, 
+                            _T("Please enter a password"), 
+                            _T("Server is passworded"),
+                            _T(""));
+
+    if (QServer[i].info.passworded)
+    {                           
+        ped.ShowModal();
+        
+        if (ped.GetValue().IsEmpty())
+            return;
+    }
+    
     if (i > -1)
     {
         LaunchGame(QServer[i].GetAddress(), 
                     launchercfg_s.odamex_directory, 
-                    launchercfg_s.wad_paths);
+                    launchercfg_s.wad_paths,
+                    ped.GetValue());
     }
 }
 
