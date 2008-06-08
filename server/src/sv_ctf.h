@@ -30,7 +30,7 @@
 //	Map ID for flags
 #define	ID_BLUE_FLAG	5130
 #define	ID_RED_FLAG		5131
-#define	ID_GOLD_FLAG	5132
+#define	ID_GOLD_FLAG	5133
 
 // flags can only be in one of these states
 enum flag_state_t
