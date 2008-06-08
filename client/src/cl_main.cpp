@@ -247,6 +247,18 @@ void CL_DisconnectClient(void)
 
 BEGIN_COMMAND (connect)
 {
+	if (argc == 1)
+	{
+	    Printf(PRINT_HIGH, "Usage: connect ip[:port] [password]\n");
+	    Printf(PRINT_HIGH, "\n");
+	    Printf(PRINT_HIGH, "Connect to a server, with optional port number");
+	    Printf(PRINT_HIGH, " and/or password\n");
+	    Printf(PRINT_HIGH, "eg: connect 127.0.0.1\n");
+	    Printf(PRINT_HIGH, "eg: connect 192.168.0.1:12345 secretpass\n");
+	    
+	    return;
+	}
+	
 	CL_QuitNetGame();
 
 	if (argc > 1)
