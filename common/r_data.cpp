@@ -601,8 +601,8 @@ void R_InitTextures (void)
 	for (i = 0; i < numtextures; i++)
 		R_GenerateLookup (i, &errors);
 
-	if (errors)
-		I_FatalError ("%d errors encountered during texture generation.", errors);
+//	if (errors)
+//		I_FatalError ("%d errors encountered during texture generation.", errors);
 	
 	// Create translation table for global animation.
 
