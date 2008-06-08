@@ -457,7 +457,7 @@ void HU_Drawer (void)
 		}
 		else
 		{
-            screen->DrawTextClean (CR_GREY, 
+            screen->DrawTextClean (CR_GREEN, 
                 (screen->width - V_StringWidth ("Press USE to join")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac), 
                 YPos, "Press USE to join");
 		}
