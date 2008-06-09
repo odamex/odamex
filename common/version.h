@@ -30,11 +30,10 @@
 #endif
 
 // Lots of different representations for the version number
-#define VERSIONSTR "40"
 #define CONFIGVERSIONSTR "40"
 #define GAMEVER (0*256+40)
 
-#define DOTVERSIONSTR "0.4"
+#define DOTVERSIONSTR "0.4.1"
 
 // denis - per-file svn version stamps
 class file_version
