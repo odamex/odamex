@@ -99,6 +99,8 @@ EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
 EXTERN_CVAR (displaymouse)
+EXTERN_CVAR (mouse_acceleration)
+EXTERN_CVAR (mouse_threshold)
 
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
@@ -217,7 +219,9 @@ static value_t MousePresets[] =
 static menuitem_t MouseItems[] =
 {
 
-	{ slider	,	"Mouse Speed"							, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
+	{ slider	,	"Sensitivity" 							, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
+	{ slider    ,   "Acceleration"                          , {&mouse_acceleration},{0.0},      {10.0},     {0.5},      {NULL}                      },
+	{ slider    ,   "Threshold"                             , {&mouse_threshold},   {0.0},      {20.0},     {1.0},      {NULL}                      },
 	{ slider	,	"Dynamic Resolution"					, {&dynresval},			{1.001},	{1.232},	{0.003},	{NULL}						},
 	{ slider	,	"Freelook speed"						, {&m_pitch},			{0.0},		{1.85},		{0.025},	{NULL}						},
 	{ slider	,	"Strafe speed"							, {&m_side},			{0.0},		{18.5},		{0.25},		{NULL}						},
@@ -243,7 +247,7 @@ static menuitem_t MouseItems[] =
 menu_t MouseMenu =		{
 							{ 'M','_','M','O','U','S','E','T' },
 							0,
-							14,
+							16,
 							177,
 							MouseItems,
 						};
@@ -903,11 +907,13 @@ void M_OptDrawer (void)
 
 	if (CurrentMenu == &MouseMenu) // [Toke] print mouse values to the screen
 	{
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 0, mouse_sensitivity.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 8,		   dynresval.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 16,			 m_pitch.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 24,			  m_side.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 32,		   m_forward.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 0,  mouse_sensitivity.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 8,  mouse_acceleration.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 16, mouse_threshold.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 24, dynresval.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 32, m_pitch.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 40, m_side.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 48, m_forward.cstring());
 	}
 }
 
