@@ -186,8 +186,8 @@ menu_t OptionMenu = {
 static value_t MouseBases[] =
 {
 
-	{ 1.0, "Standard"						},
-	{ 0.0, "ZDoom"							},
+	{ 0.0, "Standard"						},
+	{ 1.0, "ZDoom"							},
 
 };
 
