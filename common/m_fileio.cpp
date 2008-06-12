@@ -138,12 +138,12 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 // if_needed detects if an extension is not present in path, if it isn't, it is
 // added.
 // The extension must contain a . at the beginning
-BOOL M_AppendExtension (std::string &path, std::string extension, bool if_needed)
+BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_needed)
 {
-    FixPathSeparator(path);
+    FixPathSeparator(filename);
     
-    size_t l = path.find_last_of('/');
-	if(l == path.length())
+    size_t l = filename.find_last_of('/');
+	if(l == filename.length())
 		return false;
 
     size_t dot = extension.find_first_of('.');
@@ -152,15 +152,15 @@ BOOL M_AppendExtension (std::string &path, std::string extension, bool if_needed
 
     if (if_needed)
     {
-        size_t pathdot = path.find_last_of('.');
+        size_t dot = filename.find_last_of('.');
         
-        if (pathdot == std::string::npos)
-            path.append(extension);
+        if (dot == std::string::npos)
+            filename.append(extension);
             
         return true;
     }
 
-    path.append(extension);
+    filename.append(extension);
 
     return true;
 }
@@ -169,16 +169,16 @@ BOOL M_AppendExtension (std::string &path, std::string extension, bool if_needed
 // M_ExtractFilePath
 //
 // Extract the path from a filename that includes one
-void M_ExtractFilePath (std::string path, std::string &dest)
+void M_ExtractFilePath (std::string filename, std::string &dest)
 {
-    FixPathSeparator(path);
+    FixPathSeparator(filename);
 
-	size_t l = path.find_last_of('/');
+	size_t l = filename.find_last_of('/');
 	if(l == std::string::npos)
-		l = path.length();
+		l = filename.length();
 		
-    if(l < path.length())
-        dest = path.substr(0, l);
+    if(l < filename.length())
+        dest = filename.substr(0, l);
 }
 
 //
@@ -218,40 +218,40 @@ BOOL M_ExtractFileExtension (std::string filename, std::string &dest)
 //
 // Note: On windows, text after the last . is considered the extension, so any preceding
 // .'s won't be removed
-void M_ExtractFileBase (std::string path, std::string &dest)
+void M_ExtractFileBase (std::string filename, std::string &dest)
 {
-    FixPathSeparator(path);
+    FixPathSeparator(filename);
 
-	size_t l = path.find_last_of('/');
+	size_t l = filename.find_last_of('/');
 	if(l == std::string::npos)
 		l = 0;
 	else
 		l++;
 
-	size_t e = path.find_last_of('.');
+	size_t e = filename.find_last_of('.');
 	if(e == std::string::npos)
-		e = path.length();
+		e = filename.length();
 
-	if(l < path.length())
-		dest = path.substr(l, e);
+	if(l < filename.length())
+		dest = filename.substr(l, e);
 }
 
 //
 // M_ExtractFileName
 //
 // Extract the name of a file from a path (name = filename with extension)
-void M_ExtractFileName (std::string path, std::string &dest)
+void M_ExtractFileName (std::string filename, std::string &dest)
 {
-    FixPathSeparator(path);
+    FixPathSeparator(filename);
     
-	size_t l = path.find_last_of('/');
+	size_t l = filename.find_last_of('/');
 	if(l == std::string::npos)
 		l = 0;
 	else
 		l++;
 		
-    if(l < path.length())
-        dest = path.substr(l, path.length());
+    if(l < filename.length())
+        dest = filename.substr(l, filename.length());
 }
 
 VERSION_CONTROL (m_fileio_cpp, "$Id: m_fileio.cpp 5 2007-01-16 19:13:59Z russellrice $")
