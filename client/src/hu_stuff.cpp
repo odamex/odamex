@@ -778,7 +778,10 @@ void HU_DMScores1 (player_t *player)
 			screen->DrawTextClean (sortedplayers[i] == player ? CR_GREEN : CR_BRICK, (244 - V_StringWidth (str)) * CleanXfac, y, str);
 
 			// Display Ping
-			sprintf (str, "%d", sortedplayers[i]->ping);
+			if (sortedplayers[i]->ping < 0 || sortedplayers[i]->ping > 999)
+				sprintf(str, "###");
+			else
+				sprintf (str, "%d", sortedplayers[i]->ping);
 			screen->DrawTextClean (sortedplayers[i] == player ? CR_GREEN : CR_BRICK, (279 - V_StringWidth (str)) * CleanXfac, y, str);
 
 			// Display Time
@@ -979,7 +982,10 @@ void HU_DMScores2 (player_t *player)
 		screen->DrawText	  (color	,locx + (281 - V_StringWidth (str))	,locy + y	,	str	);
 
 		// PING
-		sprintf (str, "%d", sortedplayers[i]->ping);
+		if (sortedplayers[i]->ping < 0 || sortedplayers[i]->ping > 999)
+			sprintf(str, "###");
+		else
+			sprintf (str, "%d", sortedplayers[i]->ping);
 		screen->DrawText	  (color	,locx + (326 - V_StringWidth (str))	,locy + y	,	str	);
 
 		// TIME
@@ -1126,7 +1132,10 @@ void HU_TeamScores1 (player_t *player)
 			else
 			sprintf (deaths, "%d", sortedplayers[i]->deathcount);
 
-            sprintf (ping, "%d", (sortedplayers[i]->ping));
+			if (sortedplayers[i]->ping < 0 || sortedplayers[i]->ping > 999)
+				sprintf(ping, "###");
+			else
+           		sprintf (ping, "%d", (sortedplayers[i]->ping));
 
 			strcpy (str, sortedplayers[i]->userinfo.netname);
 
@@ -1244,7 +1253,10 @@ void HU_TeamScores1 (player_t *player)
 		if(ctfmode)
 		{
 			// Average blue ping
-			sprintf (str, "%d", bpavg);
+			if (bpavg < 0 || bpavg > 999)
+				sprintf(str, "###");
+			else
+				sprintf (str, "%d", bpavg);
 			screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	74	* CleanYfac	,	str	);
 		}
 		else
@@ -1254,7 +1266,10 @@ void HU_TeamScores1 (player_t *player)
 			screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	42	* CleanYfac	,	str	);
 
 			// Average blue ping
-			sprintf (str, "%d", bpavg);
+			if (bpavg < 0 || bpavg > 999)
+				sprintf(str, "###");
+			else
+				sprintf (str, "%d", bpavg);
 			screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	50	* CleanYfac	,	str	);
 		}
 
@@ -1269,7 +1284,10 @@ void HU_TeamScores1 (player_t *player)
 		if(ctfmode)
 		{
 			// Average red ping
-			sprintf (str, "%d", rpavg);
+			if (rpavg < 0 || rpavg > 999)
+				sprintf(str, "###");
+			else
+				sprintf (str, "%d", rpavg);
 			screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	146	* CleanYfac	,	str	);
 		}
 
@@ -1280,7 +1298,10 @@ void HU_TeamScores1 (player_t *player)
 			screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	114	* CleanYfac	,	str	);
 
 			// Average red ping
-			sprintf (str, "%d", rpavg);
+			if (rpavg < 0 || rpavg > 999)
+				sprintf(str, "###");
+			else
+				sprintf (str, "%d", rpavg);
 			screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	122	* CleanYfac	,	str	);
 		}
 	}
@@ -1596,7 +1617,10 @@ void HU_TeamScores2 (player_t *player)
 		bfavg = (int)(bfrags / bcount);
 		bpavg = (int)(bpings / bcount);
 
-		sprintf (str, "%d", bpavg);
+		if (bpavg < 0 || bpavg > 999)
+			sprintf(str, "###");
+		else
+			sprintf (str, "%d", bpavg);
 		screen->DrawText	  (CR_BLUE	,blocx + 203		,blocy + 8	,	str			);
 
 		if(!ctfmode)
@@ -1611,7 +1635,10 @@ void HU_TeamScores2 (player_t *player)
 		rfavg = (int)(rfrags / rcount);
 		rpavg = (int)(rpings / rcount);
 
-		sprintf (str, "%d", rpavg);
+		if (rpavg < 0 || rpavg > 999)
+			sprintf(str, "###");
+		else
+			sprintf (str, "%d", rpavg);
 		screen->DrawText	  (CR_RED	,rlocx + 203		,rlocy + 8	,	str			);
 
 		if(!ctfmode)
