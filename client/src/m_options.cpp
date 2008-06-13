@@ -193,13 +193,6 @@ static value_t MouseBases[] =
 
 };
 
-static value_t Auto_Aim[] =
-{
-
-	{ 0.0, "Off"							},
-	{ 5000.0, "On"							},
-
-};
 /*
 static value_t MousePresets[] =
 {
@@ -233,7 +226,6 @@ static menuitem_t MouseItems[] =
 	{ discrete	,	"Always FreeLook"						, {&cl_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
-	{ discrete	,	"Autoaim"								, {&cl_autoaim},		{2.0},		{0.0},		{0.0},		{Auto_Aim}					},
 	{ discrete	,	"NoVert"								, {&novert},			{2.0},		{0.0},		{0.0},		{OnOff}						},
 
 //	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
@@ -247,7 +239,7 @@ static menuitem_t MouseItems[] =
 menu_t MouseMenu =		{
 							{ 'M','_','M','O','U','S','E','T' },
 							0,
-							16,
+							15,
 							177,
 							MouseItems,
 						};
