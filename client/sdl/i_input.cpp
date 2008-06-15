@@ -158,6 +158,9 @@ static void SetCursorState (int visible)
 //
 static int AccelerateMouse(int val)
 {
+    if (!mouse_acceleration) 
+        return val;
+        
     if (val < 0)
         return -AccelerateMouse(-val);
 
