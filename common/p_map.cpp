@@ -96,6 +96,12 @@ BOOL PIT_StompThing (AActor *thing)
 
 	if (!(thing->flags & MF_SHOOTABLE))
 		return true;
+		
+	if (thing->player && thing->player->spectator)
+		return true;
+		
+	if (tmthing->player && tmthing->player->spectator)
+		return true;
 
 	// don't clip against self
 	if (thing == tmthing)
