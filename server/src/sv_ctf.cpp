@@ -31,6 +31,10 @@
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
 EXTERN_CVAR (usectf)
+EXTERN_CVAR (blueteam)
+EXTERN_CVAR (redteam)
+EXTERN_CVAR (goldteam)
+
 extern int shotclock;
 
 CVAR(ctf_manualreturn, "0", CVAR_ARCHIVE)
@@ -445,37 +449,73 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 //
 mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
 {
-	int i, j;
-
-	for (j = 0; j < MaxBlueTeamStarts; j++)
-	{
-		i = M_Random () % selections;
-		if (player.userinfo.team == TEAM_BLUE)
-		{
-			if (G_CheckSpot (player, &blueteamstarts[i]) )
-			{
-				return &blueteamstarts[i];
-			}
+    switch (player.userinfo.team)
+    {
+        case TEAM_BLUE:
+        {
+            if (!blueteam)
+                break;
+            
+            for (int j = 0; j < MaxBlueTeamStarts; ++j)
+            {
+                size_t i = M_Random () % selections;
+                if (G_CheckSpot (player, &blueteamstarts[i]) )
+                {
+                    return &blueteamstarts[i];
+                }
+            }
+        }
+        break;
+        
+        case TEAM_RED:
+        {
+            if (!redteam)
+                break;
+                
+            for (size_t j = 0; j < MaxRedTeamStarts; ++j)
+            {
+                size_t i = M_Random () % selections;
+                if (G_CheckSpot (player, &redteamstarts[i]) )
+                {
+                    return &redteamstarts[i];
+                }
+            }
 		}
+		break;
+		
+        case TEAM_GOLD:
+        {
+            if (!goldteam)
+                break;
+            
+            for (size_t j = 0; j < MaxGoldTeamStarts; ++j)
+            {
+                size_t i = M_Random () % selections;
+                if (G_CheckSpot (player, &goldteamstarts[i]) )
+                {
+                    return &goldteamstarts[i];
+                }
+            }
+        }
+        break;
+        
+        default:
+        {
+            
+        }
+        break;
+    }
 
-		if (player.userinfo.team == TEAM_RED)
-		{
-			if (G_CheckSpot (player, &redteamstarts[i]) )
-			{
-				return &redteamstarts[i];
-			}
-		}
+    if (blueteam && MaxBlueTeamStarts)
+        return &blueteamstarts[0];
+    else 
+    if (redteam && MaxRedTeamStarts)
+        return &redteamstarts[0];
+    else
+    if (goldteam && MaxGoldTeamStarts)
+        return &goldteamstarts[0];
 
-		if (player.userinfo.team == TEAM_GOLD)
-		{
-			if (G_CheckSpot (player, &goldteamstarts[i]) )
-			{
-				return &goldteamstarts[i];
-			}
-		}
-	}
-
-	return &blueteamstarts[0];
+	return NULL;
 }
 
 // sounds played differ depending on your team, [0] for event on own team, [1] for others
