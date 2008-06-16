@@ -302,7 +302,7 @@ END_COMMAND (wad)
 struct maplist_s
 {
 	char *MapName;
-	char *WadName;
+	char *WadCmds;
 
 	struct maplist_s *Next;
 };
@@ -315,52 +315,55 @@ BEGIN_COMMAND (addmap)
 {
 	if (argc > 1)
 	{
-		if (W_CheckNumForName (argv[1]) == -1)
-			Printf (PRINT_HIGH, "No map %s\n", argv[1]);
-		else
-		{
-			struct maplist_s *NewMap;
+        struct maplist_s *NewMap;
 
-			// Initalize the structure
-			NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
-			NewMap->WadName = NULL;
+		// Initalize the structure
+        NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
+        NewMap->WadCmds = NULL;
 
-			// Add it to our linked list
-			if ( MapListBegin == NULL )
-			{ // This is the first entry
-				MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
-			}
-			else
-			{ // Tag it on to the end.
-				MapListEnd->Next = NewMap;
-				MapListEnd = NewMap;
-				NewMap->Next = MapListBegin;
-			}
+        // Add it to our linked list
+        if ( MapListBegin == NULL )
+        { // This is the first entry
+            MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
+        }
+        else
+        { // Tag it on to the end.
+            MapListEnd->Next = NewMap;
+            MapListEnd = NewMap;
+            NewMap->Next = MapListBegin;
+        }
 
-			// Fill in MapName
-			NewMap->MapName = (char *) Malloc(strlen(argv[1])+1);
-			NewMap->MapName[strlen(argv[1])] = '\0';
-			strcpy(NewMap->MapName, argv[1]);
+        // Fill in MapName
+        NewMap->MapName = (char *) Malloc(strlen(argv[1])+1);
+        NewMap->MapName[strlen(argv[1])] = '\0';
+        strcpy(NewMap->MapName, argv[1]);
 
-			// Was a wad specified?
-			if ( argc > 2 )
-			{
-				NewMap->WadName = (char *) Malloc(strlen(argv[2])+1);
-				NewMap->WadName[strlen(argv[2])] = '\0';
-				strcpy(NewMap->WadName, argv[2]);
-			}
-			else if ( NewMap == MapListBegin )
-			{
-				// If we don't force a wad reset here then whatever
-				// wadfile they last switched to will take on the
-				// first levels in the maplist before any wad change
-				// That will cause an undesirable result.
+        // Any more arguments are passed to the wad ccmd
+        if ( argc > 2 )
+        {
+            std::string arglist = "wad ";
+            
+            for (size_t i = 2; i < argc; ++i)
+            {
+                arglist += argv[i];
+                arglist += ' ';
+            }
+				
+            NewMap->WadCmds = (char *) Malloc(strlen(arglist.c_str())+1);
+            NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
+            strcpy(NewMap->WadCmds, arglist.c_str());
+        }
+        else if ( NewMap == MapListBegin )
+        {
+            // If we don't force a wad reset here then whatever
+            // wadfile they last switched to will take on the
+            // first levels in the maplist before any wad change
+            // That will cause an undesirable result.
 
-				NewMap->WadName = (char *) Malloc(2);
-				NewMap->WadName[0] = '-';
-				NewMap->WadName[1] = '\0';
-			}
-		}
+            NewMap->WadCmds = (char *) Malloc(2);
+            NewMap->WadCmds[0] = '-';
+            NewMap->WadCmds[1] = '\0';
+        }
 	}
 }
 END_COMMAND (addmap)
@@ -377,8 +380,8 @@ BEGIN_COMMAND (maplist)
 
 	while ( 1 )
 	{
-		if ( Iterator->WadName )
-			Printf( PRINT_HIGH, "-> Wad: %s\n", Iterator->WadName);
+		if ( Iterator->WadCmds )
+			Printf( PRINT_HIGH, "-> Wad: %s\n", Iterator->WadCmds);
 		Printf( PRINT_HIGH, " ^ Map: %s\n", Iterator->MapName);
 
 		Iterator = Iterator->Next;
@@ -409,7 +412,7 @@ BEGIN_COMMAND (clearmaplist)
 	while ( 1 )
 	{
 		M_Free( MapListPointer->MapName );
-		M_Free( MapListPointer->WadName );
+		M_Free( MapListPointer->WadCmds );
 
 		M_Free( MapListPointer );
 
@@ -482,15 +485,10 @@ void G_ChangeMap (void)
 	}
 	else
 	{
-		if ( MapListPointer->WadName )
+		if ( MapListPointer->WadCmds )
 		{
-			std::vector<std::string> wadnames;
-
-			if ( strcmp( MapListPointer->WadName, "-" ) != 0 )
-				wadnames.push_back(MapListPointer->WadName);
-
-			if(wadnames.size())
-				D_DoomWadReboot(wadnames);
+			if ( strcmp( MapListPointer->WadCmds, "-" ) != 0 )
+				AddCommandString(MapListPointer->WadCmds);
 		}
 		G_DeferedInitNew(MapListPointer->MapName);
 		MapListPointer = MapListPointer->Next;
