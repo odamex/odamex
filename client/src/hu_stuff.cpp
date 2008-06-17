@@ -160,7 +160,7 @@ BOOL HU_Responder (event_t *ev)
 	{
 		if (headsupactive)
         {
-            ev->data1 = ev->data2 = ev->data3 = 0;
+            return true;
         }
 		
 		return false;
