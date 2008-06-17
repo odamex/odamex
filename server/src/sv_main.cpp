@@ -1904,6 +1904,7 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 //	Called when a client connects
 //
 void G_DoReborn (player_t &playernum);
+extern unsigned int last_revision;
 
 void SV_ConnectClient (void)
 {
@@ -2040,6 +2041,14 @@ void SV_ConnectClient (void)
 
 	if(!stepmode)
 		players[n].spectator	= true;
+
+    // [Russell] - Send server version string.
+    MSG_WriteMarker(&cl->reliablebuf, svc_print);
+    MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
+    MSG_WriteFString(&cl->reliablebuf, 
+                     "Server version v%s r%u\n", 
+                     DOTVERSIONSTR,
+                     last_revision);
 
 	// send a map name
 	MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);

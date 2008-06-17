@@ -466,6 +466,25 @@ void MSG_WriteString (buf_t *b, const char *s)
 	}
 }
 
+//
+// MSG_WriteFString
+//
+// Write a formatted string (printf-style) to a buffer
+int MSG_WriteFString(buf_t *b, const char *fmt, ...)
+{
+    char outline[8192];
+    va_list argptr;
+    int count;
+    
+    va_start(argptr, fmt);
+    count = vsprintf(outline, fmt, argptr);
+    va_end(argptr);
+    
+    MSG_WriteString(b, outline);
+    
+    return count;
+}
+
 int MSG_BytesLeft(void)
 {
 	if(net_message.cursize < msg_readcount)
