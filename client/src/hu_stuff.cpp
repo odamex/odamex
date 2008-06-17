@@ -39,6 +39,7 @@
 #include "cl_main.h"
 #include "cl_ctf.h"
 #include "i_video.h"
+#include "i_input.h"
 
 #define QUEUESIZE		128
 #define MESSAGESIZE		256
@@ -157,6 +158,11 @@ BOOL HU_Responder (event_t *ev)
 	else if (  (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION)
 		     || ev->type != ev_keydown)
 	{
+		if (headsupactive)
+        {
+            ev->data1 = ev->data2 = ev->data3 = 0;
+        }
+		
 		return false;
 	}
 
@@ -171,6 +177,8 @@ BOOL HU_Responder (event_t *ev)
 		if (ev->data2 >= '0' && ev->data2 <= '9')
 		{
 			ShoveChatStr (chat_macros[ev->data2 - '0']->cstring(), headsupactive - 1);
+            
+            I_ResumeMouse();
 			headsupactive = 0;
 			return true;
 		}
@@ -178,11 +186,13 @@ BOOL HU_Responder (event_t *ev)
 	if (ev->data3 == KEY_ENTER)
 	{
 		ShoveChatStr (input_text, headsupactive - 1);
+        I_ResumeMouse();
 		headsupactive = 0;
 		return true;
 	}
 	else if (ev->data1 == KEY_ESCAPE)
 	{
+        I_ResumeMouse();
 		headsupactive = 0;
 		return true;
 	}
@@ -573,6 +583,7 @@ BEGIN_COMMAND (messagemode)
 
 	headsupactive = 1;
 	C_HideConsole ();
+    I_PauseMouse();
 	input_text = "";
 }
 END_COMMAND (messagemode)
@@ -594,6 +605,7 @@ BEGIN_COMMAND (messagemode2)
 
 	headsupactive = 2;
 	C_HideConsole ();
+	I_PauseMouse();
 	input_text = "";
 }
 END_COMMAND (messagemode2)

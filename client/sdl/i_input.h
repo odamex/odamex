@@ -31,6 +31,8 @@ extern int KeyRepeatDelay;
 
 bool I_InitInput (void);
 void STACK_ARGS I_ShutdownInput (void);
+void I_PauseMouse();
+void I_ResumeMouse();
 
 void I_GetEvent (void);
 
