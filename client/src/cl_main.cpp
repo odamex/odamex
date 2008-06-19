@@ -384,36 +384,46 @@ END_COMMAND (gamemode)
 
 
 BEGIN_COMMAND (serverinfo)
-{
-	Printf (PRINT_HIGH,	"----------------------[Server Info]---- \n"				);
-	Printf (PRINT_HIGH, "         ctfmode - %d \n",	(int)ctfmode			);
-	Printf (PRINT_HIGH, "        teamplay - %d \n",	(int)teamplay	);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "        hostname -    \n"									);
-	Printf (PRINT_HIGH, "           email -    \n"									);
-	Printf (PRINT_HIGH, "       allowcheats - %d \n",	(BOOL)allowcheats		);
-	Printf (PRINT_HIGH, "      deathmatch - %d \n",	(BOOL)deathmatch		);
-	Printf (PRINT_HIGH, "       fraglimit - %d \n",	(int)fraglimit		);
-	Printf (PRINT_HIGH, "       timelimit - %d \n",	(int)timelimit		);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "       skill - %d \n",	(int)skill	);
-	Printf (PRINT_HIGH, "      weaponstay - %d \n",	(BOOL)weaponstay		);
-	Printf (PRINT_HIGH, "      nomonsters - %d \n",	(BOOL)nomonsters		);
-	Printf (PRINT_HIGH, " monstersrespawn - %d \n",	(BOOL)monstersrespawn);
-	Printf (PRINT_HIGH, "    itemsrespawn - %d \n",	(BOOL)itemsrespawn	);
-	Printf (PRINT_HIGH, "    fastmonsters - %d \n",	(BOOL)fastmonsters	);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "       allowexit - %d \n",	(BOOL)allowexit		);
-    Printf (PRINT_HIGH, "  fragexitswitch - %d \n",	(BOOL)fragexitswitch);
-	Printf (PRINT_HIGH, "       allowjump - %d \n",	(BOOL)allowjump		);
-	Printf (PRINT_HIGH, "   allowfreelook - %d \n",	(BOOL)sv_freelook	);
-	Printf (PRINT_HIGH, "    infiniteammo - %d \n",	(BOOL)infiniteammo	);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "      scorelimit - %d \n",	(int)scorelimit		);
-	Printf (PRINT_HIGH, "    friendlyfire - %d \n",	(BOOL)friendlyfire	);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "allowtargetnames - %d \n", (BOOL)allowtargetnames);
-	Printf (PRINT_HIGH,	"--------------------------------------- \n"				);
+{   
+    cvar_t *Cvar = GetFirstCvar();
+    size_t MaxFieldLength = 0;
+    
+    // [Russell] - Find the largest cvar name, used for formatting
+    while (Cvar)
+	{			
+        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        {
+            size_t FieldLength = strlen(Cvar->name());
+            
+            if (FieldLength > MaxFieldLength)
+                MaxFieldLength = FieldLength;                
+        }
+        
+        Cvar = Cvar->GetNext();
+    }
+
+    // [Russell] - Formatted output
+    Cvar = GetFirstCvar();
+
+    // Heading
+    Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
+    
+    // Data
+    while (Cvar)
+	{			
+        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        {
+            Printf(PRINT_HIGH, 
+                   "%*s - %s\n", 
+                   MaxFieldLength,
+                   Cvar->name(), 
+                   Cvar->cstring());          
+        }
+        
+        Cvar = Cvar->GetNext();
+    }
+    
+    Printf (PRINT_HIGH,	"\n");
 }
 END_COMMAND (serverinfo)
 
