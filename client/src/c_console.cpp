@@ -113,7 +113,7 @@ static int HistSize;
 #define NUMNOTIFIES 4
 
 CVAR (con_notifytime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (con_scaletext, "0", CVAR_ARCHIVE)		// Scale notify text at high resolutions?
+CVAR (con_scaletext, "1", CVAR_ARCHIVE)		// Scale notify text at high resolutions?
 
 static struct NotifyText
 {
