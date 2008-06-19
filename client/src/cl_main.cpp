@@ -1006,9 +1006,9 @@ void CL_TryToConnect(DWORD server_token)
 		MSG_WriteLong(&net_buffer, (int)rate);
         
         // Only 0.4.1 servers support passwords
-        if (((gameversion / 256) >= 0) &&
-            (((gameversion % 256) / 10) >= 4) &&
-            (((gameversion % 256) % 10) >= 1))
+        if ((SERVERMAJ >= 0) &&
+        	(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
+        	(SERVERMIN > 4)))
         {
             MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());            
         }
@@ -1803,41 +1803,62 @@ void CL_ReadPacketHeader(void)
 
 void CL_GetServerSettings(void)
 {
-	ctfmode = MSG_ReadByte() ? true : false;
-
-	// General server settings
-	maxclients.Set((int)MSG_ReadShort());
-
-	// Game settings
-	allowcheats.Set((BOOL)MSG_ReadByte());
-	deathmatch.Set((BOOL)MSG_ReadByte());
-	fraglimit.Set((int)MSG_ReadShort());
-	timelimit.Set((int)MSG_ReadShort());
-
-	// Map behavior
-	skill.Set((int)MSG_ReadShort());
-	weaponstay.Set((BOOL)MSG_ReadByte());
-	nomonsters.Set((BOOL)MSG_ReadByte());
-	monstersrespawn.Set((BOOL)MSG_ReadByte());
-	itemsrespawn.Set((BOOL)MSG_ReadByte());
-	fastmonsters.Set((BOOL)MSG_ReadByte());
-
-	// Action rules
-	allowexit.Set((BOOL)MSG_ReadByte());
-	fragexitswitch.Set((BOOL)MSG_ReadByte());
-	allowjump.Set((BOOL)MSG_ReadByte());
-	sv_freelook.Set((BOOL)MSG_ReadByte());
-	infiniteammo.Set((BOOL)MSG_ReadByte());
-    maxplayers.Set((int)MSG_ReadByte());
-
-	// Teamplay/CTF
-	scorelimit.Set((int)MSG_ReadShort());
-	friendlyfire.Set((BOOL)MSG_ReadByte());
-	teamplay.Set(MSG_ReadByte());
+	cvar_t *var = NULL, *prev = NULL;
 	
-	allowtargetnames.Set((BOOL)MSG_ReadByte());
+	// GhostlyDeath <June 19, 2008> -- If 0.4.1+ use string list instead
+	if ((SERVERMAJ >= 0) &&
+		(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
+		(SERVERMIN > 4)))
+	{
+		while (MSG_ReadByte() != 2)
+		{
+			var = cvar_t::FindCVar (MSG_ReadString(), &prev);
+			
+			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
+			if (var && var->flags() & CVAR_SERVERINFO)
+				var->Set(MSG_ReadString());
+			else
+				MSG_ReadString();
+		}
+	}
+	else
+	{
+		ctfmode = MSG_ReadByte() ? true : false;
 
-	cvar_t::UnlatchCVars ();
+		// General server settings
+		maxclients.Set((int)MSG_ReadShort());
+
+		// Game settings
+		allowcheats.Set((BOOL)MSG_ReadByte());
+		deathmatch.Set((BOOL)MSG_ReadByte());
+		fraglimit.Set((int)MSG_ReadShort());
+		timelimit.Set((int)MSG_ReadShort());
+
+		// Map behavior
+		skill.Set((int)MSG_ReadShort());
+		weaponstay.Set((BOOL)MSG_ReadByte());
+		nomonsters.Set((BOOL)MSG_ReadByte());
+		monstersrespawn.Set((BOOL)MSG_ReadByte());
+		itemsrespawn.Set((BOOL)MSG_ReadByte());
+		fastmonsters.Set((BOOL)MSG_ReadByte());
+
+		// Action rules
+		allowexit.Set((BOOL)MSG_ReadByte());
+		fragexitswitch.Set((BOOL)MSG_ReadByte());
+		allowjump.Set((BOOL)MSG_ReadByte());
+		sv_freelook.Set((BOOL)MSG_ReadByte());
+		infiniteammo.Set((BOOL)MSG_ReadByte());
+		maxplayers.Set((int)MSG_ReadByte());
+
+		// Teamplay/CTF
+		scorelimit.Set((int)MSG_ReadShort());
+		friendlyfire.Set((BOOL)MSG_ReadByte());
+		teamplay.Set(MSG_ReadByte());
+	
+		allowtargetnames.Set((BOOL)MSG_ReadByte());
+
+		cvar_t::UnlatchCVars ();
+	}
 }
 
 //

@@ -35,6 +35,13 @@
 
 #define DOTVERSIONSTR "0.4.1"
 
+#define SERVERMAJ (gameversion / 256)
+#define SERVERMIN ((gameversion % 256) / 10)
+#define SERVERREL ((gameversion % 256) % 10)
+#define CLIENTMAJ (GAMEVER / 256)
+#define CLIENTMIN ((GAMEVER % 256) / 10)
+#define CLIENTREL ((GAMEVER % 256) % 10)
+
 // denis - per-file svn version stamps
 class file_version
 {

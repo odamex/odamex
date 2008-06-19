@@ -1614,46 +1614,24 @@ void SV_ClientFullUpdate (player_t &pl)
 
 void SV_SendServerSettings (client_t *cl)
 {
-	// denis - todo - loop through all (changed?) CVAR_SERVERINFO cvars instead of rewriting this every time
-	MSG_WriteMarker (&cl->reliablebuf, svc_serversettings);
-
-	MSG_WriteByte (&cl->reliablebuf, ctfmode);
-
-	// General server settings
-//	MSG_WriteString (&cl->reliablebuf, hostname.cstring());		// denis - fixme - what happened to .string?
-//	MSG_WriteString (&cl->reliablebuf, email.cstring());			// denis - fixme - what happened to .string?
-	MSG_WriteShort  (&cl->reliablebuf, (int)maxclients);
-
-	// Game settings
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowcheats);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)deathmatch);
-	MSG_WriteShort  (&cl->reliablebuf, (int)fraglimit);
-	MSG_WriteShort  (&cl->reliablebuf, (int)timelimit);
-
-	// Map behavior
-	MSG_WriteShort  (&cl->reliablebuf, (int)skill);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)weaponstay);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)nomonsters);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)monstersrespawn);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)itemsrespawn);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)fastmonsters);
-
-	// Action rules
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowexit);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)fragexitswitch);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowjump);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowfreelook);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)infiniteammo);
-	MSG_WriteByte   (&cl->reliablebuf, (int)maxplayers);
-
-	// Teamplay/CTF
-//	MSG_WriteByte   (&cl->reliablebuf, (BOOL)usectf);
-	MSG_WriteShort  (&cl->reliablebuf, (int)scorelimit);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)friendlyfire);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)teamplay);
-
-	// GhostlyDeath
-	MSG_WriteByte	(&cl->reliablebuf, (BOOL)allowtargetnames);
+	// GhostlyDeath <June 19, 2008> -- Loop through all CVARs and send the CVAR_SERVERINFO stuff only
+	cvar_t *var = GetFirstCvar();
+	
+	MSG_WriteMarker(&cl->reliablebuf, svc_serversettings);
+	
+	while (var)
+	{
+		if (var->flags() & CVAR_SERVERINFO)
+		{
+			MSG_WriteByte(&cl->reliablebuf, 1);
+			MSG_WriteString(&cl->reliablebuf, var->name());
+			MSG_WriteString(&cl->reliablebuf, var->cstring());
+		}
+		
+		var = var->GetNext();
+	}
+	
+	MSG_WriteByte(&cl->reliablebuf, 2);
 }
 
 //

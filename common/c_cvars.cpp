@@ -60,6 +60,11 @@ public:
 	}
 }ad;
 
+cvar_t* GetFirstCvar(void)
+{
+	return ad.GetCVars();
+}
+
 int cvar_defflags;
 
 cvar_t::cvar_t (const char *var_name, const char *def, DWORD flags)

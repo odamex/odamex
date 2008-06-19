@@ -144,6 +144,8 @@ private:
 	cvar_t () : m_Flags(0), m_Name(0), m_String(0), m_Value(0.f) {}
 };
 
+cvar_t* GetFirstCvar(void);
+
 // Maximum number of cvars that can be saved across a demo. If you need
 // to save more, bump this up.
 #define MAX_DEMOCVARS 32
