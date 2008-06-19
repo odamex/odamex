@@ -517,14 +517,21 @@ BEGIN_COMMAND (bumpgamma)
 }
 END_COMMAND (bumpgamma)
 
-void M_LoadGame (int choice)
+void M_LoadSaveResponse(int choice)
 {
     // dummy
 }
 
+void M_LoadGame (int choice)
+{
+    M_StartMessage("Loading/saving is not supported\n\n(Press any key to " 
+                   "continue)\n", M_LoadSaveResponse, false);
+}
+
 void M_SaveGame (int choice)
 {
-    // dummy
+    M_StartMessage("Loading/saving is not supported\n\n(Press any key to " 
+                   "continue)\n", M_LoadSaveResponse, false);
 }
 
 //
