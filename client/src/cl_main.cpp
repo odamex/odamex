@@ -93,22 +93,22 @@ EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 
-CVAR (maxplayers,		"0", CVAR_SERVERINFO)
-CVAR (maxclients,       "0", CVAR_SERVERINFO)
+CVAR (maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 CVAR (infiniteammo,		"0", CVAR_SERVERINFO)
-CVAR (fraglimit,		"0", CVAR_SERVERINFO)
-CVAR (timelimit,		"0", CVAR_SERVERINFO)
-CVAR (nomonsters,		"0", CVAR_SERVERINFO)
+CVAR (fraglimit,		"0", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+CVAR (timelimit,		"0", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+CVAR (nomonsters,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 CVAR (fastmonsters,		"0", CVAR_SERVERINFO)
 CVAR (allowexit,		"0", CVAR_SERVERINFO)
 CVAR (fragexitswitch,   "0", CVAR_SERVERINFO)       //  [ML] 03/4/06: Activate to allow exit switch at maxfrags, must click to exit
 CVAR (allowjump,		"0", CVAR_SERVERINFO)
 CVAR (allowfreelook,	"0", CVAR_SERVERINFO)
-CVAR (scorelimit,		"0", CVAR_SERVERINFO)
+CVAR (scorelimit,		"0", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 CVAR (monstersrespawn,	"0", CVAR_SERVERINFO)
-CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
-CVAR (allowcheats,		"0", CVAR_SERVERINFO)
-CVAR (teamplay,			"0", CVAR_SERVERINFO)
+CVAR (itemsrespawn,		"0", CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (allowcheats,		"0", CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (teamplay,			"0", CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR (allowtargetnames, "0", CVAR_SERVERINFO)
 
@@ -1822,13 +1822,27 @@ void CL_GetServerSettings(void)
 	{
 		while (MSG_ReadByte() != 2)
 		{
-			var = cvar_t::FindCVar (MSG_ReadString(), &prev);
+			std::string CvarName = MSG_ReadString();
+			std::string CvarValue = MSG_ReadString();
 			
-			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
-			if (var && var->flags() & CVAR_SERVERINFO)
-				var->Set(MSG_ReadString());
+			var = cvar_t::FindCVar (CvarName.c_str(), &prev);
+			
+			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
+			if (var)
+			{
+				if (var->flags() & CVAR_SERVERINFO)
+                    var->Set(CvarValue.c_str());
+			}
 			else
-				MSG_ReadString();
+			{
+				// [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
+				// for cleanup on program termination
+				var = new cvar_t (CvarName.c_str(), 
+                                  NULL, 
+                                  CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
+                                  
+                var->Set(CvarValue.c_str());
+			}
 		}
 	}
 	else
