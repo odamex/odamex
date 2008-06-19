@@ -2243,7 +2243,7 @@ void CL_Download()
 	// check for missing packet, re-request
 	if(offset < download.got_bytes || offset > download.got_bytes)
 	{
-		Printf(PRINT_HIGH, "Missed a packet after %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
+		Printf(PRINT_HIGH, "Missed a packet after/before %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
 		MSG_WriteMarker(&net_buffer, clc_wantwad);
 		MSG_WriteString(&net_buffer, download.filename.c_str());
 		MSG_WriteString(&net_buffer, download.md5.c_str());
