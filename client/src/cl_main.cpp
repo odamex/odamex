@@ -1708,6 +1708,7 @@ void CL_UpdateMovingSector(void)
 	byte state = MSG_ReadByte();
 	int count = MSG_ReadLong();
 
+/*
 	if(!sectors || s >= numsectors)
 		return;
 
@@ -1729,7 +1730,7 @@ void CL_UpdateMovingSector(void)
 	}
 
 	if(i == real_plats.size())
-		real_plats.push_back(pred);
+		real_plats.push_back(pred);*/
 }
 
 
