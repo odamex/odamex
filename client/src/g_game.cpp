@@ -84,8 +84,8 @@ void	G_DoSaveGame (void);
 
 void	CL_RunTics (void);
 
-CVAR (skill, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE) // [Toke - todo] should not be cvar on client
-CVAR (deathmatch, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // [Toke - todo] should not be cvar on client
+CVAR (skill, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE | CVAR_LATCH) // [Toke - todo] should not be cvar on client
+CVAR (deathmatch, "1", CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)  // [Toke - todo] should not be cvar on client
 
 EXTERN_CVAR (novert)
 
