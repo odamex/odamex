@@ -792,17 +792,6 @@ bool CL_PrepareConnect(void)
 
 	MSG_ReadString();
 
-	if (ctfmode)
-	{
-		MSG_ReadLong();
-		if (MSG_ReadByte())
-			MSG_ReadLong();
-		if (MSG_ReadByte())
-			MSG_ReadLong();
-		if (MSG_ReadByte())
-			MSG_ReadLong();
-	}
-
 	// Receive conditional teamplay information
 	if (recv_teamplay_stats)
 	{
