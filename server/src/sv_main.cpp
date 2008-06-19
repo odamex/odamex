@@ -1789,6 +1789,12 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 	memset(VersionStr, 0, sizeof(VersionStr));
 	memset(OurVersionStr, 0, sizeof(VersionStr));
 	bool AllowConnect = true;
+	int majorver = 0;
+	int minorver = 0;
+	int releasever = 0;
+	int MAJORVER = GAMEVER / 256;
+	int MINORVER = (GAMEVER % 256) / 10;
+	int RELEASEVER = (GAMEVER % 256) % 10;
 	
 	if ((GAMEVER % 256) % 10)
 		sprintf(OurVersionStr, "%i.%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10, (GAMEVER % 256) % 10);
@@ -1806,10 +1812,16 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 			else
 				sprintf(VersionStr, "%i.%i", cl->majorversion, cl->minorversion / 10);
 				
-			if (GameVer != GAMEVER)
-				AllowConnect = false;
-			else
+			majorver = GameVer / 256;
+			minorver = (GameVer % 256) / 10;
+			releasever = (GameVer % 256) % 10;
+			
+			if ((majorver == MAJORVER) &&
+				(minorver == MINORVER) &&
+				(releasever >= RELEASEVER))
 				AllowConnect = true;
+			else
+				AllowConnect = false;
 			break;
 		case 64:
 			sprintf(VersionStr, "0.2a or 0.3");
@@ -1904,7 +1916,6 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 //	Called when a client connects
 //
 void G_DoReborn (player_t &playernum);
-extern unsigned int last_revision;
 
 void SV_ConnectClient (void)
 {
@@ -2041,14 +2052,6 @@ void SV_ConnectClient (void)
 
 	if(!stepmode)
 		players[n].spectator	= true;
-
-    // [Russell] - Send server version string.
-    MSG_WriteMarker(&cl->reliablebuf, svc_print);
-    MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
-    MSG_WriteFString(&cl->reliablebuf, 
-                     "Server version v%s r%u\n", 
-                     DOTVERSIONSTR,
-                     last_revision);
 
 	// send a map name
 	MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);

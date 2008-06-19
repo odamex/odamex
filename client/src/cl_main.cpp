@@ -55,7 +55,9 @@ bool clientside = true, serverside = false;
 extern bool stepmode;
 
 // denis - client version (VERSION or other supported)
-short version;
+short version = 0;
+int gameversion = 0;				// GhostlyDeath -- Bigger Game Version
+int gameversiontosend = 0;		// If the server is 0.4, let's fake our client info
 
 buf_t     net_buffer(MAX_UDP_PACKET);
 
@@ -755,6 +757,7 @@ bool CL_PrepareConnect(void)
 	std::string server_host = MSG_ReadString();
 
 	byte recv_teamplay_stats = 0;
+	gameversiontosend = 0;
 
 	byte playercount = MSG_ReadByte(); // players
 	MSG_ReadByte(); // max_players
@@ -814,6 +817,44 @@ bool CL_PrepareConnect(void)
 		version = VERSION;
 	if(version < 62)
 		version = 62;
+		
+	/* GhostlyDeath -- Need the actual version info */
+	if (version == 65)
+	{
+		size_t l;
+		MSG_ReadString();
+		
+		for (l = 0; l < 3; l++)
+			MSG_ReadShort();
+		for (l = 0; l < 14; l++)
+			MSG_ReadByte();
+		for (l = 0; l < playercount; l++)
+		{
+			MSG_ReadShort();
+			MSG_ReadShort();
+			MSG_ReadShort();
+		}
+		
+		MSG_ReadLong();
+		MSG_ReadShort();
+		
+		for (l = 0; l < playercount; l++)
+			MSG_ReadByte();
+		
+		MSG_ReadLong();
+		MSG_ReadShort();
+
+		gameversion = MSG_ReadLong();
+		
+		// GhostlyDeath -- Assume 40 for compatibility and fake it 
+		if (((gameversion % 256) % 10) == -1)
+		{
+			gameversion = 40;
+			gameversiontosend = 40;
+		}
+
+		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
+	}
 
 	Printf(PRINT_HIGH, "\n");
 
@@ -955,14 +996,23 @@ void CL_TryToConnect(DWORD server_token)
 			MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
 			
 		// GhostlyDeath -- Send more version info
-		MSG_WriteLong(&net_buffer, GAMEVER);
+		if (gameversiontosend)
+			MSG_WriteLong(&net_buffer, gameversiontosend);
+		else
+			MSG_WriteLong(&net_buffer, GAMEVER);
 
 		CL_SendUserInfo(); // send userinfo
 
 		MSG_WriteLong(&net_buffer, (int)rate);
-
-        MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
-
+        
+        // Only 0.4.1 servers support passwords
+        if (((gameversion / 256) >= 0) &&
+            (((gameversion % 256) / 10) >= 4) &&
+            (((gameversion % 256) % 10) >= 1))
+        {
+            MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());            
+        }
+        
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
 	}

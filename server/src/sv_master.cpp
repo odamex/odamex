@@ -451,6 +451,9 @@ void SV_SendServerInfo()
 
     MSG_WriteLong(&ml_message, (DWORD)0x01020305);
     MSG_WriteShort(&ml_message, strlen(password.cstring()) ? 1 : 0);
+    
+    // GhostlyDeath -- Send Game Version info
+    MSG_WriteLong(&ml_message, GAMEVER);
 
 	NET_SendPacket(ml_message, net_from);
 }

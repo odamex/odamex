@@ -31,7 +31,7 @@
 
 // Lots of different representations for the version number
 #define CONFIGVERSIONSTR "40"
-#define GAMEVER (0*256+40)
+#define GAMEVER (0*256+41)
 
 #define DOTVERSIONSTR "0.4.1"
 
