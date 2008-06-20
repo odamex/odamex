@@ -1701,7 +1701,8 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			}
 		}
 
-		if (linetarget && source->player)
+		// GhostlyDeath <June 19, 2006> -- fix flawed logic here (!linetarget not linetarget)
+		if (!linetarget && source->player)
 		{
 			if (allowfreelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
 			{
