@@ -1065,11 +1065,6 @@ void R_MultiresInit (void)
 	// Moved from R_InitSprites()
 	negonearray = (short *)Realloc (negonearray, sizeof(short) * screen->width);
 
-	for (i=0 ; i<screen->width ; i++)
-	{
-		negonearray[i] = -1;
-	}
-
 	// These get set in R_ExecuteSetViewSize()
 	screenheightarray = (short *)Realloc (screenheightarray, sizeof(short) * screen->width);
 	xtoviewangle = (angle_t *)Realloc (xtoviewangle, sizeof(angle_t) * (screen->width + 1));
