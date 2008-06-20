@@ -1061,12 +1061,6 @@ void R_MultiresInit (void)
 	columnofs = (int *)Realloc (columnofs, screen->width * sizeof(int));
 	r_dscliptop = (short *)Realloc (r_dscliptop, screen->width * sizeof(short));
 	r_dsclipbot = (short *)Realloc (r_dsclipbot, screen->width * sizeof(short));
-	
-	// GhostlyDeath -- Clean up the buffers
-	memset(ylookup, 0, screen->height * sizeof(byte*));
-	memset(columnofs, 0, screen->width * sizeof(int));
-	memset(r_dscliptop, 0, screen->width * sizeof(short));
-	memset(r_dsclipbot, 0, screen->width * sizeof(short));
 
 	// Moved from R_InitSprites()
 	negonearray = (short *)Realloc (negonearray, sizeof(short) * screen->width);
