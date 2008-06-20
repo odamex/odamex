@@ -2203,6 +2203,8 @@ void CL_DownloadStart()
         
         memset(download.buf->ptr(), 0, file_len);
     }
+    else
+        Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
     
 	Printf(PRINT_HIGH, "Downloading %d bytes...\n", file_len);
 }
@@ -2243,7 +2245,7 @@ void CL_Download()
 	// check for missing packet, re-request
 	if(offset < download.got_bytes || offset > download.got_bytes)
 	{
-		Printf(PRINT_HIGH, "Missed a packet after/before %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
+		DPrintf("Missed a packet after/before %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
 		MSG_WriteMarker(&net_buffer, clc_wantwad);
 		MSG_WriteString(&net_buffer, download.filename.c_str());
 		MSG_WriteString(&net_buffer, download.md5.c_str());
