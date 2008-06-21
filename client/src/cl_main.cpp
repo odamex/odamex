@@ -1830,7 +1830,8 @@ void CL_GetServerSettings(void)
 			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
 			if (var)
 			{
-                var->Set(CvarValue.c_str());
+				if (var->flags() & CVAR_SERVERINFO)
+                    var->Set(CvarValue.c_str());
 			}
 			else
 			{
