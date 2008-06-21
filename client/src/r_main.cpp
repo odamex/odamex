@@ -1057,17 +1057,35 @@ void R_MultiresInit (void)
 	extern byte **ylookup;
 	extern int *columnofs;
 
-	ylookup = (byte **)Realloc (ylookup, screen->height * sizeof(byte *));
-	columnofs = (int *)Realloc (columnofs, screen->width * sizeof(int));
-	r_dscliptop = (short *)Realloc (r_dscliptop, screen->width * sizeof(short));
-	r_dsclipbot = (short *)Realloc (r_dsclipbot, screen->width * sizeof(short));
-
+	// [Russell] - Possible bug, ylookup is 2 star.
+    M_Free(ylookup);
+    M_Free(columnofs);
+    M_Free(r_dscliptop);
+    M_Free(r_dsclipbot);
+    M_Free(negonearray);
+    M_Free(screenheightarray);
+    M_Free(xtoviewangle);
+    
+	ylookup = (byte **)M_Malloc (screen->height * sizeof(byte *));
+	columnofs = (int *)M_Malloc (screen->width * sizeof(int));
+	r_dscliptop = (short *)M_Malloc (screen->width * sizeof(short));
+	r_dsclipbot = (short *)M_Malloc (screen->width * sizeof(short));
+	
 	// Moved from R_InitSprites()
-	negonearray = (short *)Realloc (negonearray, sizeof(short) * screen->width);
+	negonearray = (short *)M_Malloc (sizeof(short) * screen->width);
 
 	// These get set in R_ExecuteSetViewSize()
-	screenheightarray = (short *)Realloc (screenheightarray, sizeof(short) * screen->width);
-	xtoviewangle = (angle_t *)Realloc (xtoviewangle, sizeof(angle_t) * (screen->width + 1));
+	screenheightarray = (short *)M_Malloc (sizeof(short) * screen->width);
+	xtoviewangle = (angle_t *)M_Malloc (sizeof(angle_t) * (screen->width + 1));
+	
+	// GhostlyDeath -- Clean up the buffers
+	memset(ylookup, -1, screen->height * sizeof(byte*));
+	memset(columnofs, -1, screen->width * sizeof(int));
+	memset(r_dscliptop, -1, screen->width * sizeof(short));
+	memset(r_dsclipbot, -1, screen->width * sizeof(short));
+    memset(negonearray, -1, screen->width * sizeof(short));
+    memset(screenheightarray, -1, screen->width * sizeof(short));
+    memset(xtoviewangle, -1, screen->width * sizeof(angle_t) + 1);
 
 	R_InitFuzzTable ();
 	R_PlaneInitData ();
