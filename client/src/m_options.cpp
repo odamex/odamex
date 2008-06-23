@@ -170,7 +170,7 @@ static menuitem_t OptionItems[] =
 };
 
 menu_t OptionMenu = {
-	{ 'M','_','O','P','T','T','T','L' },
+	"M_OPTTTL",
 	0,
 	16,
 	177,
@@ -237,7 +237,7 @@ static menuitem_t MouseItems[] =
 };
 
 menu_t MouseMenu =		{
-							{ 'M','_','M','O','U','S','E','T' },
+							"M_MOUSET",
 							0,
 							15,
 							177,
@@ -280,7 +280,7 @@ static menuitem_t ControlsItems[] = {
 };
 
 menu_t ControlsMenu = {
-	{ 'M','_','C','O','N','T','R','O' },
+	"M_CONTRO",
 	1,
 	22,
 	0,
@@ -521,7 +521,7 @@ static menuitem_t ModesItems[] = {
 #define VM_CURDEFLINE	19
 
 menu_t ModesMenu = {
-	{ 'M','_','V','I','D','M','O','D' },
+	"M_VIDMOD",
 #ifndef DJGPP
 	2,
 #else

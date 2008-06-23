@@ -130,7 +130,7 @@ typedef struct menuitem_s {
 } menuitem_t;
 
 typedef struct menu_s {
-	char			title[8];
+	char			title[9];
 	int				lastOn;
 	int				numitems;
 	int				indent;
