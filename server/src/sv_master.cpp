@@ -360,7 +360,7 @@ void SV_SendServerInfo()
 
 	MSG_WriteByte(&ml_message, (int)deathmatch);
 	MSG_WriteByte(&ml_message, (int)skill);
-	MSG_WriteByte(&ml_message, (int)teamplay);
+    MSG_WriteByte(&ml_message, (int)ctfmode ? 1 : teamplay);
 	MSG_WriteByte(&ml_message, (int)ctfmode);
 
 	for (i = 0; i < players.size(); ++i)
