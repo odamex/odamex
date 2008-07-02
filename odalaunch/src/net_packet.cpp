@@ -251,7 +251,10 @@ wxInt32 Server::Parse()
     Socket.Read8(info.gameskill);
     Socket.ReadBool(info.teamplay); 
     Socket.ReadBool(info.ctf);
-        
+    
+    // hack to enable teamplay if disabled and ctf is enabled
+    info.teamplay |= info.ctf;
+    
     if (info.numplayers > 0)
     {          
         if (info.playerinfo != NULL)
