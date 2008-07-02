@@ -28,6 +28,14 @@
 #include "i_sdlvideo.h"
 #include "i_system.h"
 
+// [Russell] - Just for windows, display the icon in the system menu and
+// alt-tab display
+#if WIN32
+#include "SDL_syswm.h"
+#include <windows.h>
+#include "resource.h"
+#endif
+
 SDLVideo::SDLVideo(int parm)
 {
 	if (SDL_InitSubSystem (SDL_INIT_VIDEO) == -1)
@@ -35,6 +43,25 @@ SDLVideo::SDLVideo(int parm)
 		I_FatalError("Could not initialize SDL video.\n");
 		return;
 	}
+
+    // [Russell] - Just for windows, display the icon in the system menu and
+    // alt-tab display
+    #if WIN32
+    HICON Icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+
+    if (Icon != 0)
+    {
+        HWND WindowHandle;
+        
+        SDL_SysWMinfo wminfo;
+        SDL_VERSION(&wminfo.version)
+        SDL_GetWMInfo(&wminfo);
+        
+        WindowHandle = wminfo.window;
+
+        SetClassLong(WindowHandle, GCL_HICON, (LONG) Icon);
+    }
+    #endif
 
 	// [Russell] - A basic version string that will eventually get replaced
 	//             better than "Odamex SDL Alpha Build 001" or something :P
