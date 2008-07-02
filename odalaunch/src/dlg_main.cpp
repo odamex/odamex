@@ -35,6 +35,7 @@
 #include <wx/app.h>
 #include <wx/imaglist.h>
 #include <wx/artprov.h>
+#include <wx/iconbndl.h>
 
 #include "misc.h"
 
@@ -112,6 +113,18 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	wxXmlResource::Get()->LoadFrame(this, parent, _T("dlgMain")); 
   
+    // Set up icons, this is a hack because wxwidgets does not have an xml
+    // handler for wxIconBundle :(
+    wxIconBundle IconBundle;
+    
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon16x16x32")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon32x32x32")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon48x48x32")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon16x16x8")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon32x32x8")));
+    
+    SetIcons(IconBundle);
+    
     SERVER_LIST = wxDynamicCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
     PLAYER_LIST = wxDynamicCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
 

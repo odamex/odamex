@@ -148,8 +148,9 @@
 			<Add directory=".\res" />
 		</Linker>
 		<ExtraCommands>
-			<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc" />
+			<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 		</ExtraCommands>
+		<Unit filename="res\icons.xrc" />
 		<Unit filename="res\odalaunch.rc">
 			<Option compilerVar="WINDRES" />
 			<Option target="Win Release" />

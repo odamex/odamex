@@ -420,7 +420,7 @@
                 <event name="OnSize"></event>
                 <event name="OnUpdateUI"></event>
                 <object class="tool" expanded="1">
-                    <property name="bitmap">./odalaunch-sysmenu.ico; Load From File</property>
+                    <property name="bitmap">./icon32x32x8.ico; Load From File</property>
                     <property name="id">ID_MNULAUNCH</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">Connect</property>
