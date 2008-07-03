@@ -93,11 +93,10 @@ EXTERN_CVAR (fragexitswitch)
 
 EXTERN_CVAR (maxplayers)
 EXTERN_CVAR (password)
+EXTERN_CVAR (website)
 
 // if set, advetise user-defined natport value to the master
 CVAR(natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR (website, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 buf_t     ml_message(MAX_UDP_PACKET);
 
