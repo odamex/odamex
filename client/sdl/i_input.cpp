@@ -208,14 +208,14 @@ static void UngrabMouse (void)
 // I_PauseMouse
 //
 
-EXTERN_CVAR (fullscreen)
+EXTERN_CVAR (vid_fullscreen)
 
 void I_PauseMouse (void)
 {
    // denis - disable key repeats as they mess with the mouse in XP
    SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
-   if (fullscreen)
+   if (vid_fullscreen)
     return;
    
    UngrabMouse();

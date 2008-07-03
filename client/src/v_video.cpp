@@ -92,7 +92,7 @@ BOOL	setmodeneeded = false;
 // [RH] Resolution to change to when setmodeneeded is true
 int		NewWidth, NewHeight, NewBits;
 
-EXTERN_CVAR (fullscreen)
+EXTERN_CVAR (vid_fullscreen)
 
 //
 // V_MarkRect
@@ -566,7 +566,7 @@ END_COMMAND (vid_setmode)
 BEGIN_COMMAND (checkres)
 {
     Printf (PRINT_HIGH, "Resolution: %d x %d x %d (%s)\n", screen->width, screen->height, screen->bits,
-        (fullscreen ? "FULLSCREEN" : "WINDOWED")); // NES - Simple resolution checker.
+        (vid_fullscreen ? "FULLSCREEN" : "WINDOWED")); // NES - Simple resolution checker.
 }
 END_COMMAND (checkres)
 
@@ -641,7 +641,7 @@ void V_Init (void)
 
 	if (!V_SetResolution (width, height, bits))
 		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,
-            (fullscreen ? "FULLSCREEN" : "WINDOWED"));
+            (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
 	else
         AddCommandString("checkres");
 

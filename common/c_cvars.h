@@ -53,6 +53,8 @@ CVARS (console variables)
 #define CVAR_ISDEFAULT	256	// is cvar unchanged since creation?
 #define CVAR_AUTO		512	// allocated, needs to be freed when destroyed
 #define CVAR_NOENABLEDISABLE 1024 // [Nes] No substitution (0=disable, 1=enable)
+#define CVAR_CLIENTINFO 2048 // [Russell] client version of CVAR_SERVERINFO
+
 
 class cvar_t
 {
@@ -162,5 +164,12 @@ cvar_t* GetFirstCvar(void);
 
 #define EXTERN_CVAR(name) extern cvar_t name;
 
+#define CVAR_FUNC_DECL(name,def,flags) \
+    extern void cvarfunc_##name(cvar_t &); \
+    cvar_t name (#name, def, flags, cvarfunc_##name);
+
+#define CVAR_FUNC_IMPL(name) \
+    EXTERN_CVAR(name) \
+    void cvarfunc_##name(cvar_t &var)
 
 #endif //__C_CVARS_H__

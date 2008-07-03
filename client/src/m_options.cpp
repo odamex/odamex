@@ -483,7 +483,7 @@ EXTERN_CVAR (vid_defbits)
 
 static cvar_t DummyDepthCvar (NULL, NULL, 0);
 
-EXTERN_CVAR (fullscreen)
+EXTERN_CVAR (vid_fullscreen)
 
 static value_t Depths[22];
 
@@ -493,7 +493,7 @@ static char VMTestText[] = "T to test mode for 5 seconds";
 static menuitem_t ModesItems[] = {
 	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Fullscreen",			{&fullscreen},			{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ discrete, "Fullscreen",			{&vid_fullscreen},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
