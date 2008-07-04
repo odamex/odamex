@@ -116,19 +116,17 @@ CVAR (allowtargetnames, "0", CVAR_SERVERINFO)
 // work out what allowfreelook needs to be
 EXTERN_CVAR(sv_freelook)
 
-BEGIN_CUSTOM_CVAR (cl_freelook,		"0", CVAR_ARCHIVE)
+CVAR_FUNC_IMPL (cl_freelook)
 {
 	allowfreelook.Set((BOOL)(cl_freelook) &&
 						((BOOL)(sv_freelook) || serverside));
 }
-END_CUSTOM_CVAR (cl_freelook)
 
-BEGIN_CUSTOM_CVAR (sv_freelook,		"0", CVAR_SERVERINFO)
+CVAR_FUNC_IMPL (sv_freelook)
 {
 	allowfreelook.Set((BOOL)(cl_freelook) &&
 						((BOOL)(sv_freelook) || serverside));
 }
-END_CUSTOM_CVAR (sv_freelook)
 
 CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
 

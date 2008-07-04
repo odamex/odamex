@@ -51,7 +51,8 @@ extern BOOL DrawNewHUD;
 extern BOOL DrawNewSpecHUD;
 extern dyncolormap_t NormalLight;
 
-CVAR (r_viewsize, "0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (r_viewsize)
+
 
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
@@ -527,7 +528,7 @@ void R_SetViewSize (int blocks)
 //
 //
 
-BEGIN_CUSTOM_CVAR (r_detail, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (r_detail)
 {
 	static BOOL badrecovery = false;
 
@@ -548,7 +549,6 @@ BEGIN_CUSTOM_CVAR (r_detail, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 	setdetail = (int)var;
 	setsizeneeded = true;
 }
-END_CUSTOM_CVAR (r_detail)
 
 //
 //
@@ -729,8 +729,7 @@ END_CUSTOM_CVAR (screenblocks)
     */
 //}
 //END_CUSTOM_CVAR (r_columnmethod)
-CVAR (r_columnmethod, "1", CVAR_ARCHIVE)
-
+EXTERN_CVAR (r_columnmethod)
 //
 //
 // R_Init

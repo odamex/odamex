@@ -23,19 +23,40 @@
 
 #include "c_cvars.h"
 
-// Video
-// -----
-
-// Frames per second counter
-CVAR (vid_fps, "0", CVAR_CLIENTINFO)
-// Older (Doom-style) FPS counter
-CVAR (vid_ticker, "0", CVAR_CLIENTINFO)
-// Fullscreen mode
-CVAR (vid_fullscreen, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
-
-// Function CVARs
+// Gameplay/Other
 // --------------
 
-CVAR_FUNC_DECL(vid_winscale, "1.0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// TODO: document
+CVAR_FUNC_DECL (cl_freelook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR_FUNC_DECL (sv_freelook, "0", CVAR_SERVERINFO)
+
+// Video and Renderer
+// ------------------
+
+// Column optimization method
+CVAR (r_columnmethod, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+// Detail level?
+CVAR_FUNC_DECL (r_detail, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Disables all texturing of walls
+CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
+// Draw player sprites
+CVAR (r_drawplayersprites, "1", CVAR_CLIENTINFO)
+// Stretch sky textures
+CVAR (r_stretchsky, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+// TODO: document
+CVAR (r_viewsize, "0", CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
+// Default video dimensions and bitdepth
+CVAR (vid_defwidth, "320", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (vid_defheight, "200", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (vid_defbits, "8", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Frames per second counter
+CVAR (vid_fps, "0", CVAR_CLIENTINFO)
+// Fullscreen mode
+CVAR (vid_fullscreen, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+// Older (Doom-style) FPS counter
+CVAR (vid_ticker, "0", CVAR_CLIENTINFO)
+// Resizes the window by a scale factor
+CVAR_FUNC_DECL (vid_winscale, "1.0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id: cl_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $")

@@ -83,8 +83,7 @@ short			*screenheightarray;
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
 
-
-CVAR (r_drawplayersprites, "1", 0)	// [RH] Draw player sprites?
+EXTERN_CVAR (r_drawplayersprites)
 
 CVAR (crosshairdim, "0", CVAR_ARCHIVE)   // [Nes] Crosshair transparency.
 CVAR (crosshairscale, "0", CVAR_ARCHIVE) // [Nes] Crosshair scaling.

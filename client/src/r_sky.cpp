@@ -52,8 +52,8 @@ fixed_t		skyiscale;
 int			skyshift;					//		[ML] 5/11/06 - remove sky2 remenants
 fixed_t		skypos=0,		skyspeed=0;
 
-// [RH] Stretch sky texture if not taller than 128 pixels?
-CVAR (r_stretchsky, "1", CVAR_ARCHIVE)
+
+EXTERN_CVAR (r_stretchsky)
 
 char SKYFLATNAME[8] = "F_SKY1";
 

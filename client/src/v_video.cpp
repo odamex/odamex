@@ -76,9 +76,9 @@ DCanvas *screen;
 
 DBoundingBox dirtybox;
 
-CVAR (vid_defwidth, "320", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (vid_defheight, "200", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (vid_defbits, "8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (vid_defwidth)
+EXTERN_CVAR (vid_defheight)
+EXTERN_CVAR (vid_defbits)
 
 CVAR (dimamount, "0.7", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (dimcolor, "00 00 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
