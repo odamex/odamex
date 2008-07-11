@@ -40,7 +40,7 @@
 #define MASTERPORT			15000
 
 // [Russell] - default master list
-const char *def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
+const char *def_masterlist[] = { "master1.odamex.net", "master2.odamex.net", NULL };
 
 class masterserver
 {
