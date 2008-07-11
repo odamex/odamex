@@ -462,6 +462,12 @@ void G_ChangeMap (void)
 	{
 		char *next = level.nextmap;
 
+        // for latched "deathmatch 0" cvar
+        if (gamestate == GS_STARTUP)
+        {
+            next = level.mapname;
+        }
+
 		// if deathmatch, stay on same level
 		if(deathmatch)
 			next = level.mapname;

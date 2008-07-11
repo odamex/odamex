@@ -83,7 +83,7 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
-CVAR (friendlyfire,		"1", CVAR_SERVERINFO)
+EXTERN_CVAR (friendlyfire)
 EXTERN_CVAR (weaponstay)
 
 EXTERN_CVAR (cl_name)
@@ -93,24 +93,23 @@ EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 
-CVAR (maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
-CVAR (maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
-CVAR (infiniteammo,		"0", CVAR_SERVERINFO)
-CVAR (fraglimit,		"0", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-CVAR (timelimit,		"0", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-CVAR (nomonsters,		"0", CVAR_SERVERINFO | CVAR_LATCH)
-CVAR (fastmonsters,		"0", CVAR_SERVERINFO)
-CVAR (allowexit,		"0", CVAR_SERVERINFO)
-CVAR (fragexitswitch,   "0", CVAR_SERVERINFO)       //  [ML] 03/4/06: Activate to allow exit switch at maxfrags, must click to exit
-CVAR (allowjump,		"0", CVAR_SERVERINFO)
-CVAR (allowfreelook,	"0", CVAR_SERVERINFO)
-CVAR (scorelimit,		"0", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-CVAR (monstersrespawn,	"0", CVAR_SERVERINFO)
-CVAR (itemsrespawn,		"0", CVAR_SERVERINFO | CVAR_LATCH)
-CVAR (allowcheats,		"0", CVAR_SERVERINFO | CVAR_LATCH)
-CVAR (teamplay,			"0", CVAR_SERVERINFO | CVAR_LATCH)
-
-CVAR (allowtargetnames, "0", CVAR_SERVERINFO)
+EXTERN_CVAR (maxplayers)
+EXTERN_CVAR (maxclients)
+EXTERN_CVAR (infiniteammo)
+EXTERN_CVAR (fraglimit)
+EXTERN_CVAR (timelimit)
+EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (fastmonsters)
+EXTERN_CVAR (allowexit)
+EXTERN_CVAR (fragexitswitch)
+EXTERN_CVAR (allowjump)
+EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (scorelimit)
+EXTERN_CVAR (monstersrespawn)
+EXTERN_CVAR (itemsrespawn)
+EXTERN_CVAR (allowcheats)
+EXTERN_CVAR (teamplay)
+EXTERN_CVAR (allowtargetnames)
 
 // If freelook changes serverside or clientside,
 // work out what allowfreelook needs to be
@@ -2541,6 +2540,8 @@ void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
+
+
 
 
 

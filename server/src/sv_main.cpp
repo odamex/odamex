@@ -81,19 +81,16 @@ std::vector<BanEntry_t> BanList;		// People who are banned
 std::vector<BanEntry_t> WhiteList;		// people who are [accidently] banned but can get inside
 
 // General server settings
-CVAR (hostname,			"Unnamed",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// A servers name that will apear in the launcher.
-CVAR (email,			"",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Server admin's e-mail address. - does not work yet
-CVAR (website,          "",         CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-CVAR (waddownload,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Send wad files to clients who request them.
-CVAR (emptyreset,       "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)                 // Reset current map when last player leaves.
-CVAR (clientcount,		"0",        CVAR_NOSET | CVAR_NOENABLEDISABLE)										// tracks number of connected players for scripting
+EXTERN_CVAR(hostname)
+EXTERN_CVAR(email)
+EXTERN_CVAR(website)
+EXTERN_CVAR(waddownload)
+EXTERN_CVAR(emptyreset)
+EXTERN_CVAR(clientcount)
+EXTERN_CVAR(globalspectatorchat)
+EXTERN_CVAR(allowtargetnames)
 
-CVAR (globalspectatorchat,       "1",        CVAR_ARCHIVE | CVAR_SERVERINFO)
-
-
-CVAR (allowtargetnames, "1", CVAR_ARCHIVE | CVAR_SERVERINFO) // GhostlyDeath -- Target Names?
-
-BEGIN_CUSTOM_CVAR (maxclients,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Describes the max number of clients that are allowed to connect. - does not work yet
+CVAR_FUNC_IMPL (maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
 	if(var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
@@ -119,9 +116,8 @@ BEGIN_CUSTOM_CVAR (maxclients,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 	clientcount.ForceSet(players.size());
 	//R_InitTranslationTables();
 }
-END_CUSTOM_CVAR (maxclients)
 
-BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (maxplayers)
 {
 	// [Nes] - Force extras to become spectators.
 	int normalcount = 0;
@@ -156,70 +152,49 @@ BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 		}
 	}
 }
-END_CUSTOM_CVAR (maxplayers)
 
+EXTERN_CVAR (allowcheats)
+EXTERN_CVAR (deathmatch)
+EXTERN_CVAR (fraglimit)
+EXTERN_CVAR (timelimit)
+EXTERN_CVAR (maxcorpses)
 
-// Game settings
-CVAR (allowcheats,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Players are allowed to use cheatcodes when try. - does not work yet
-CVAR (deathmatch,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Deathmatch mode when true, this includes teamDM and CTF.
-CVAR (fraglimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the winning frag total for deathmatch and teamDM.
-CVAR (timelimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the max time in minutes for each game.
-
-CVAR (maxcorpses, 		"200", 		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-		// joek - max number of corpses. < 0 is infinite
-
-// Map behavior
-BEGIN_CUSTOM_CVAR (skill,		"5",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Game skill setting.
-{
-	if(var < sk_baby)
-		var.Set(sk_baby);
-	if(var > sk_nightmare)
-		var.Set(sk_nightmare);
-}
-END_CUSTOM_CVAR(skill)
-
-EXTERN_CVAR(weaponstay)
-CVAR (itemsrespawn,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial items will respawn after being picked up when true.
-CVAR (monstersrespawn,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Monsters will respawn after killed when true. - does not work yet
-CVAR (fastmonsters,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Monsters move and shoot at double speed when true. - does not work yet
-CVAR (nomonsters,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// No monsters will be spawned when true
-CVAR (cleanmaps,		"",		CVAR_NULL)										// Deprecated
+EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (itemsrespawn)
+EXTERN_CVAR (monstersrespawn)
+EXTERN_CVAR (fastmonsters)
+EXTERN_CVAR (nomonsters)
 
 // Action rules
-CVAR (allowexit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Exit switch functions when true.
-CVAR (fragexitswitch,   "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)                 // [ML] 03/4/06: When activated, game must be completed by hitting exit switch once fraglimit has been reached
-CVAR (allowjump,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Jump command functions when true.
-CVAR (allowfreelook,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Freelook works when true.
-CVAR (infiniteammo,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players have infinite ammo when true.
+EXTERN_CVAR (allowexit)
+EXTERN_CVAR (fragexitswitch)
+EXTERN_CVAR (allowjump)
+EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (infiniteammo)
 
 // Teamplay/CTF
-CVAR (usectf,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// CTF will automaticly be enabled on maps that contain flags when true.
-CVAR (scorelimit,		"10",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the winning flag capture total for CTF games.
-CVAR (friendlyfire,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players on the same team cannot cause eachother damage in team games when true.
-CVAR (teamplay,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// TeamDM is enabled when true - requires deathmatch being true.
-CVAR (blueteam,			"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team BLUE when true - TeamDM only.
-CVAR (redteam,			"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team RED  when true - TeamDM only.
-CVAR (goldteam,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team GOLD when true - TeamDM only.
+EXTERN_CVAR (usectf)
+EXTERN_CVAR (scorelimit)
+EXTERN_CVAR (friendlyfire)
+EXTERN_CVAR (teamplay)
+EXTERN_CVAR (blueteam)
+EXTERN_CVAR (redteam)
+EXTERN_CVAR (goldteam)
 
-//									Private server settings
-
-BEGIN_CUSTOM_CVAR (password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)									// Remote console password.
+// Private server settings
+CVAR_FUNC_IMPL (password)
 {
-	// denis - todo implement use of this
 	if(strlen(var.cstring()))
 		Printf(PRINT_HIGH, "join password set");
 }
-END_CUSTOM_CVAR(password)
 
-BEGIN_CUSTOM_CVAR (spectate_password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)									// Remote console password.
+CVAR_FUNC_IMPL (spectate_password)
 {
-	// denis - todo implement use of this
 	if(strlen(var.cstring()))
 		Printf(PRINT_HIGH, "spectate password set");
 }
-END_CUSTOM_CVAR(spectate_password)
 
-BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)									// Remote console password.
+CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 {
 	if(strlen(var.cstring()) < 5)
 	{
@@ -234,9 +209,8 @@ BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)				
 	else
 		Printf(PRINT_HIGH, "rcon password set");
 }
-END_CUSTOM_CVAR(rcon_password)
 
-CVAR (antiwallhack,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)		// Enable/disable anti wallhack check, temporary
+EXTERN_CVAR (antiwallhack)
 EXTERN_CVAR (speedhackfix)
 
 client_c clients;
@@ -3763,5 +3737,6 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")
+
 
 

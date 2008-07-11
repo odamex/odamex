@@ -1009,6 +1009,8 @@ void D_DoomMain (void)
 
 	strncpy(level.mapname, startmap, sizeof(level.mapname));
 
+    gamestate = GS_STARTUP;
+
 	G_ChangeMap ();
 
 	D_DoomLoop (); // never returns

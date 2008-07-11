@@ -30,6 +30,11 @@
 CVAR_FUNC_DECL (cl_freelook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 CVAR_FUNC_DECL (sv_freelook, "0", CVAR_SERVERINFO)
 
+// Maximum number of clients who can connect to the server
+CVAR (maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
+// Maximum amount of players who can join the game, others are spectators
+CVAR (maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
+
 // Video and Renderer
 // ------------------
 
