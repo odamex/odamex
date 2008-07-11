@@ -62,6 +62,7 @@ static BOOL DefaultsLoaded;
 
 void STACK_ARGS M_SaveDefaults (void)
 {
+/*
 	FILE *f;
 
 	if (!DefaultsLoaded)
@@ -89,7 +90,7 @@ void STACK_ARGS M_SaveDefaults (void)
 		SV_ArchiveMasters (f);
 
 		fclose (f);
-	}
+	}*/
 }
 
 
