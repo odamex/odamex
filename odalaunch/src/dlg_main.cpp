@@ -159,6 +159,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	// set up the master server information
 	MServer = new MasterServer;
     
+    MServer->AddMaster(_T("master1.odamex.net"), 15000);
+    MServer->AddMaster(_T("odamex.org"), 15000);
+    
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
     server_dlg = new dlgServers(MServer, this);
@@ -270,54 +273,26 @@ void *dlgMain::Entry()
         // Can I order a master server request with a list of server addresses
         // to go with that kthx?
         if (mtcs_Request.Signal == mtcs_getmaster)
-        {
-            static const wxString masters[2] = 
-            {
-                _T("master1.odamex.net"),
-                _T("odamex.org")
-            };
-            
-            static int index = 0;
-            
+        {           
             mtcs_Request.Signal = mtcs_getservers;
             
             ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, 500);
             
-            MServer->SetAddress(masters[index], 15000);
-
+            MServer->QueryMasters(MasterTimeout);
+            
             // TODO: Clean this up
-            if (!MServer->Query(MasterTimeout))
+            if (!MServer->GetServerCount())
             {
-                index = !index;
-        
-                MServer->SetAddress(masters[index], 15000);
-           
-                if (!MServer->Query(MasterTimeout))
-                {
-                    mtrs_struct_t *Result = new mtrs_struct_t;
+                mtrs_struct_t *Result = new mtrs_struct_t;
 
-                    Result->Signal = mtrs_master_timeout;                
-                    Result->Index = -1;
-                    Result->ServerListIndex = -1;
+                Result->Signal = mtrs_master_timeout;                
+                Result->Index = -1;
+                Result->ServerListIndex = -1;
                     
-                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                    event.SetClientData(Result);
+                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+                event.SetClientData(Result);
                   
-                    wxPostEvent(this, event); 
-                }
-                else
-                {      
-                    mtrs_struct_t *Result = new mtrs_struct_t;
-
-                    Result->Signal = mtrs_master_success;                
-                    Result->Index = -1;
-                    Result->ServerListIndex = -1;
-                
-                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                    event.SetClientData(Result);
-                  
-                    wxPostEvent(this, event);                     
-                }
+                wxPostEvent(this, event); 
             }
             else
             {                 

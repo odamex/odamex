@@ -154,6 +154,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
         } addr_t;
 
         std::vector<addr_t> addresses;
+        std::vector<addr_t> masteraddresses;
     public:
         MasterServer() 
         { 
@@ -181,6 +182,47 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             }
             
             return false;
+        }
+        
+        void AddMaster(wxString Address, wxUint16 Port)
+        {
+            addr_t Master = { Address, Port, true };
+            
+            if ((Master.ip != _T("")) && (Master.port != 0))
+                masteraddresses.push_back(Master);
+        }
+        
+        void QueryMasters(wxUint32 Timeout)
+        {           
+            DeleteAllNormalServers();
+            
+            for (size_t i = 0; i < masteraddresses.size(); ++i)
+            {
+                SetAddress(masteraddresses[i].ip, masteraddresses[i].port);
+                
+                Query(Timeout);
+            }
+        }
+        
+        size_t GetMasterCount() { return masteraddresses.size(); }
+        
+        void DeleteAllNormalServers()
+        {
+            // don't delete our custom servers!
+            std::vector<addr_t>::iterator addr_iter = addresses.begin();    
+    
+            while(addr_iter != addresses.end()) 
+            {
+                addr_t address = *addr_iter;
+        
+                if (address.custom == false)
+                {
+                    addresses.erase(addr_iter);
+                    continue;
+                }
+        
+                addr_iter++;
+            }            
         }
         
         void AddCustomServer(wxString Address, wxUint16 Port)
