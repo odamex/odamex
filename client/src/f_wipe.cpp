@@ -42,7 +42,7 @@ enum
 	wipe_NUMWIPES
 };
 
-CVAR (wipetype, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (wipetype)
 static int CurrentWipeType;
 
 static short *wipe_scr_start;

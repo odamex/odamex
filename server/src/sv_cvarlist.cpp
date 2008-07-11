@@ -69,5 +69,7 @@ CVAR (nextmap, "", CVAR_NULL | CVAR_NOENABLEDISABLE)
 CVAR (loopepisode, "0", CVAR_ARCHIVE)	
 // Network compression (experimental)
 CVAR (networkcompression, "0", CVAR_ARCHIVE)
+// NAT firewall workaround port number
+CVAR (natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id: sv_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $")

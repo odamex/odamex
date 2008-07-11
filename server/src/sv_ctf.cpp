@@ -37,9 +37,9 @@ EXTERN_CVAR (goldteam)
 
 extern int shotclock;
 
-CVAR(ctf_manualreturn, "0", CVAR_ARCHIVE)
-CVAR(ctf_flagathometoscore, "1", CVAR_ARCHIVE)
-CVAR(ctf_flagtimeout, "600", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE) // Flag timeout in gametics
+EXTERN_CVAR (ctf_manualreturn)
+EXTERN_CVAR (ctf_flagathometoscore)
+EXTERN_CVAR (ctf_flagtimeout)
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];

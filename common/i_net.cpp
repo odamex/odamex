@@ -96,7 +96,7 @@ int         msg_badread;
 buf_t compressed, decompressed;
 lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
 
-CVAR(port,		"0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR(port)
 
 msg_info_t clc_info[clc_max];
 msg_info_t svc_info[svc_max];

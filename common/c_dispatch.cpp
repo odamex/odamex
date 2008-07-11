@@ -43,7 +43,7 @@
 IMPLEMENT_CLASS (DConsoleCommand, DObject)
 IMPLEMENT_CLASS (DConsoleAlias, DConsoleCommand)
 
-CVAR (lookspring, "1", CVAR_ARCHIVE)	// Generate centerview when -mlook encountered?
+EXTERN_CVAR (lookspring)
 
 typedef std::map<std::string, DConsoleCommand *> command_map_t;
 command_map_t &Commands()

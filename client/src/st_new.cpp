@@ -73,7 +73,7 @@ extern patch_t	*keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
 extern flagdata CTFdata[NUMFLAGS];
 
-CVAR (hud_scale, "0", CVAR_ARCHIVE)
+EXTERN_CVAR (hud_scale)
 
 void ST_unloadNew (void)
 {

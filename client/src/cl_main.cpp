@@ -127,7 +127,7 @@ CVAR_FUNC_IMPL (sv_freelook)
 						((BOOL)(sv_freelook) || serverside));
 }
 
-CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
+EXTERN_CVAR (interscoredraw)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);

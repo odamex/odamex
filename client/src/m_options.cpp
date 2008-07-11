@@ -67,18 +67,18 @@
 //
 //CVAR (mouse_sensitivity, "1.0", CVAR_ARCHIVE)
 //CVAR (cont_preset,			"0",	CVAR_ARCHIVE)
-CVAR (dynres_state,			"0",	CVAR_ARCHIVE)
-CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (dynres_state)
+EXTERN_CVAR (dynresval)
 //CVAR (mouse_preset,			"0",	CVAR_ARCHIVE)
-CVAR (mouse_sensitivity,	"25.0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_type,			"0",	CVAR_ARCHIVE)
-CVAR (novert,				"0",	CVAR_ARCHIVE)
+EXTERN_CVAR (mouse_sensitivity)
+EXTERN_CVAR (mouse_type)
+EXTERN_CVAR (novert)
 
 // [ML] 09/4/06: Show secret revealed message, 0 = off, 1 = on
-CVAR (revealsecrets,        "0", CVAR_ARCHIVE)
+EXTERN_CVAR (revealsecrets)
 
 // Show messages has default, 0 = off, 1 = on
-CVAR (show_messages, "1", CVAR_ARCHIVE)
+EXTERN_CVAR (show_messages)
 
 extern bool				OptionsActive;
 

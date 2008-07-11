@@ -123,8 +123,7 @@ static struct mus_playing_t
 	int   handle;
 } mus_playing;
 
-// number of channels available
-CVAR (snd_channels, "8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (snd_channels)
 size_t			numChannels;
 
 static int		nextcleanup;

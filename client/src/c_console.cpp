@@ -86,7 +86,7 @@ static bool midprinting;
 #define SCROLLNO 0
 
 EXTERN_CVAR (show_messages)
-CVAR (print_stdout, "0", CVAR_ARCHIVE)
+EXTERN_CVAR (print_stdout)
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -112,8 +112,8 @@ static int HistSize;
 
 #define NUMNOTIFIES 4
 
-CVAR (con_notifytime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (con_scaletext, "1", CVAR_ARCHIVE)		// Scale notify text at high resolutions?
+EXTERN_CVAR (con_notifytime)
+EXTERN_CVAR (con_scaletext)
 
 static struct NotifyText
 {
@@ -176,7 +176,7 @@ END_CUSTOM_CVAR (msgmidcolor)
 // conscrlock 0 = All new lines bring scroll to the bottom.
 // conscrlock 1 = Only input commands bring scroll to the bottom.
 // conscrlock 2 = Nothing brings scroll to the bottom.
-CVAR (conscrlock, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (conscrlock)
 
 static void maybedrawnow (void)
 {
@@ -1464,7 +1464,7 @@ END_COMMAND (toggleconsole)
 
 static brokenlines_t *MidMsg = NULL;
 static int MidTicker = 0, MidLines;
-CVAR (con_midtime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (con_midtime)
 
 void C_MidPrint (const char *msg)
 {

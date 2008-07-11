@@ -90,16 +90,16 @@ static std::string input_text;
 int headsupactive;
 BOOL altdown;
 
-CVAR (chatmacro0, HUSTR_CHATMACRO0, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro1, HUSTR_CHATMACRO1, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro2, HUSTR_CHATMACRO2, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro3, HUSTR_CHATMACRO3, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro4, HUSTR_CHATMACRO4, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro5, HUSTR_CHATMACRO5, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro6, HUSTR_CHATMACRO6, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro7, HUSTR_CHATMACRO7, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro8, HUSTR_CHATMACRO8, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro9, HUSTR_CHATMACRO9, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (chatmacro0)
+EXTERN_CVAR (chatmacro1)
+EXTERN_CVAR (chatmacro2)
+EXTERN_CVAR (chatmacro3)
+EXTERN_CVAR (chatmacro4)
+EXTERN_CVAR (chatmacro5)
+EXTERN_CVAR (chatmacro6)
+EXTERN_CVAR (chatmacro7)
+EXTERN_CVAR (chatmacro8)
+EXTERN_CVAR (chatmacro9)
 
 cvar_t *chat_macros[10] =
 {
@@ -219,7 +219,7 @@ BOOL HU_Responder (event_t *ev)
 
 EXTERN_CVAR (screenblocks)
 
-CVAR(hud_targetnames, "1", CVAR_ARCHIVE)
+EXTERN_CVAR (hud_targetnames)
 
 BEGIN_CUSTOM_CVAR(hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
@@ -635,7 +635,7 @@ static bool STACK_ARGS compare_player_points (const player_t *arg1, const player
 	return arg2->points < arg1->points;
 }
 
-CVAR (usehighresboard, "1",	CVAR_ARCHIVE)
+EXTERN_CVAR (usehighresboard)
 
 #define CTFBOARDWIDTH	236
 #define CTFBOARDHEIGHT	103

@@ -28,6 +28,8 @@
 
 // debugging mode
 CVAR (developer, "0", CVAR_NULL)
+// Port (???)
+CVAR (port, "0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
 // Game modes and settings
 // -----------------------
@@ -46,6 +48,10 @@ CVAR (scorelimit,		"10", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 CVAR (blueteam,			"1",  CVAR_SERVERINFO | CVAR_ARCHIVE)
 CVAR (redteam,			"1",  CVAR_SERVERINFO | CVAR_ARCHIVE)
 CVAR (goldteam,			"0",  CVAR_SERVERINFO | CVAR_ARCHIVE)
+// (CTF) Flag settings
+CVAR (ctf_manualreturn, "0", CVAR_ARCHIVE)
+CVAR (ctf_flagathometoscore, "1", CVAR_ARCHIVE)
+CVAR (ctf_flagtimeout, "600", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Cheat code usage is allowed
 CVAR (allowcheats,		"0", CVAR_SERVERINFO | CVAR_LATCH)
@@ -79,8 +85,11 @@ CVAR (timelimit,		"0", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 CVAR (speedhackfix, "0", CVAR_SERVERINFO)
 // File compression (???)
 CVAR (filecompression, "1", CVAR_ARCHIVE)
+// Weapons stay
+CVAR (weaponstay,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Chase camera settings
 CVAR (chase_height, "-8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chase_dist, "90", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
+// Generate centerview when -mlook encountered?
+CVAR (lookspring, "1", CVAR_ARCHIVE)
 VERSION_CONTROL (c_cvarlist_cpp, "$Id: c_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $")

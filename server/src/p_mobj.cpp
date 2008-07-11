@@ -43,8 +43,7 @@ int 				itemrespawntime[ITEMQUESIZE];
 int 				iquehead;
 int 				iquetail;
 
-CVAR	(weaponstay,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial weapons wont be removed after picked up when true. - does not work yet
-
+EXTERN_CVAR	(weaponstay)
 EXTERN_CVAR (allowfreelook)
 EXTERN_CVAR (nomonsters)
 

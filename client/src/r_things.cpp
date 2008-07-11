@@ -85,8 +85,8 @@ short			*screenheightarray;
 
 EXTERN_CVAR (r_drawplayersprites)
 
-CVAR (crosshairdim, "0", CVAR_ARCHIVE)   // [Nes] Crosshair transparency.
-CVAR (crosshairscale, "0", CVAR_ARCHIVE) // [Nes] Crosshair scaling.
+EXTERN_CVAR (crosshairdim)
+EXTERN_CVAR (crosshairscale) 
 
 //
 // INITIALIZATION FUNCTIONS

@@ -90,7 +90,7 @@ EXTERN_CVAR (novert)
 EXTERN_CVAR (monstersrespawn)
 EXTERN_CVAR (teamplay)
 
-CVAR (chasedemo, "0", 0)
+EXTERN_CVAR (chasedemo)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -178,14 +178,14 @@ int				lookspeed[2] = {450, 512};
 
 #define SLOWTURNTICS	6
 
-CVAR (cl_run,		"1",	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
-CVAR (invertmouse,	"0",	CVAR_ARCHIVE)		// Invert mouse look down/up?
-CVAR (lookstrafe,	"0",	CVAR_ARCHIVE)		// Always strafe with mouse?
-CVAR (m_pitch,		"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)		// Mouse speeds
-CVAR (m_yaw,		"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_forward,	"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_side,		"2.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (displaymouse,	"0",	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
+EXTERN_CVAR (cl_run)
+EXTERN_CVAR (invertmouse)
+EXTERN_CVAR (lookstrafe)
+EXTERN_CVAR (m_pitch)
+EXTERN_CVAR (m_yaw)
+EXTERN_CVAR (m_forward)
+EXTERN_CVAR (m_side)
+EXTERN_CVAR (displaymouse)
 
 int 			turnheld;								// for accelerative turning
 

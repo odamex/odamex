@@ -39,9 +39,9 @@
 
 void G_PlayerReborn (player_t &player);
 
-CVAR (weaponstay,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial weapons wont be removed after picked up when true. - does not work yet
-EXTERN_CVAR(itemsrespawn)
-EXTERN_CVAR(nomonsters)
+EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (itemsrespawn)
+EXTERN_CVAR (nomonsters)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 

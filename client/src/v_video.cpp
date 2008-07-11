@@ -80,8 +80,8 @@ EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
 
-CVAR (dimamount, "0.7", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (dimcolor, "00 00 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (dimamount)
+EXTERN_CVAR (dimcolor)
 
 extern "C" {
 palette_t *DefaultPalette;

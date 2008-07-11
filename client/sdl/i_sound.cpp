@@ -49,7 +49,7 @@ static bool sound_initialized = false;
 static char channel_in_use[NUM_CHANNELS];
 static int nextchannel = 0;
 
-CVAR (snd_crossover, "0", CVAR_ARCHIVE)
+EXTERN_CVAR (snd_crossover)
 
 // [Russell] - Chocolate Doom's sound converter code, how awesome!
 static bool ConvertibleRatio(int freq1, int freq2)

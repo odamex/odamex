@@ -60,8 +60,8 @@ int KeyRepeatRate;
 // The mouse input values are input directly to the game, but when
 // the values exceed the value of mouse_threshold, they are multiplied
 // by mouse_acceleration to increase the speed.
-CVAR (mouse_acceleration, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_threshold, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (mouse_acceleration)
+EXTERN_CVAR (mouse_threshold)
 
 // joek - sort mouse grab issue
 static BOOL mousegrabbed = false;
@@ -71,16 +71,6 @@ static BOOL mousegrabbed = false;
 static BOOL flushmouse = false;
 
 extern constate_e ConsoleState;
-
-// NES - Currently unused. Make some use of these if possible.
-//CVAR (i_remapkeypad, "1", CVAR_ARCHIVE)
-//CVAR (use_mouse, "1", CVAR_ARCHIVE)
-//CVAR (use_joystick, "0", CVAR_ARCHIVE)
-//CVAR (joy_speedmultiplier, "1", CVAR_ARCHIVE)
-//CVAR (joy_xsensitivity, "1", CVAR_ARCHIVE)
-//CVAR (joy_ysensitivity, "-1", CVAR_ARCHIVE)
-//CVAR (joy_xthreshold, "0.15", CVAR_ARCHIVE)
-//CVAR (joy_ythreshold, "0.15", CVAR_ARCHIVE)
 
 #ifdef WIN32
 // denis - in fullscreen, prevent exit on accidental windows key press
