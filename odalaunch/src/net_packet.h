@@ -136,10 +136,14 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         // Query the server
         wxInt32 Query(wxInt32 Timeout);
         
-		void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
+		void SetAddress(const wxString &Address, const wxInt16 &Port) 
+		{ 
+		    to_addr.Hostname(Address); 
+		    to_addr.Service(Port); 
+        }
         
-		wxString GetAddress() { return to_addr.IPAddress() << _T(':') << to_addr.Service(); }
-		wxUint32 GetPing() { return Ping; }
+		wxString GetAddress() const { return to_addr.IPAddress() << _T(':') << to_addr.Service(); }
+		wxUint32 GetPing() const { return Ping; }
 };
 
 class MasterServer : public ServerBase  // [Russell] - A master server packet
@@ -169,7 +173,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
         
 		wxInt32 GetServerCount() { return addresses.size(); }
                       
-        bool GetServerAddress(wxInt32  Index, 
+        bool GetServerAddress(const wxInt32 &Index, 
                               wxString &Address, 
                               wxUint16 &Port)
         {
@@ -184,7 +188,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             return false;
         }
         
-        void AddMaster(wxString Address, wxUint16 Port)
+        void AddMaster(const wxString &Address, const wxUint16 &Port)
         {
             addr_t Master = { Address, Port, true };
             
@@ -192,7 +196,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
                 masteraddresses.push_back(Master);
         }
         
-        void QueryMasters(wxUint32 Timeout)
+        void QueryMasters(const wxUint32 &Timeout)
         {           
             DeleteAllNormalServers();
             
@@ -225,7 +229,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             }            
         }
         
-        void AddCustomServer(wxString Address, wxUint16 Port)
+        void AddCustomServer(const wxString &Address, const wxUint16 &Port)
         {
             addr_t cs;
                     
@@ -247,7 +251,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             addresses.push_back(cs);
         }
                
-        bool DeleteCustomServer(wxUint32 Index)
+        bool DeleteCustomServer(const wxUint32 &Index)
         {
             if ((Index >= 0) && (Index < addresses.size()))
             {

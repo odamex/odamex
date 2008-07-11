@@ -433,10 +433,30 @@ wxString BufferedSocket::GetAddress()
 {
     wxString retstr;
     
-    retstr << to_addr.IPAddress() << _T(":") << wxString::Format(_T("%d"),to_addr.Service());
+    retstr << to_addr.IPAddress() << _T(":") << wxString::Format(_T("%u"),to_addr.Service());
     
     return retstr;
 
+}
+
+//
+// bool BufferedSocket::SetAddress(const wxString &Address)
+//
+// Sets the outgoing address in "address:port" format, fails if no colon is 
+// present
+bool BufferedSocket::SetAddress(const wxString &Address)
+{
+    wxInt32 Colon = Address.Find(wxT(':'), true);
+    
+    if (Colon == wxNOT_FOUND)
+        return false;
+    
+    wxUint16 Port = wxAtoi(Address.Mid(Colon));
+    wxString HostIP = Address.Mid(0, Colon);
+    
+    SetAddress(HostIP, Port);
+    
+    return true;
 }
 
 void BufferedSocket::ClearRecvBuffer() 
