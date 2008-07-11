@@ -71,12 +71,12 @@ class BufferedSocket
         virtual ~BufferedSocket(); // "Choose! Choose the form of the destructor!"
                 
         // Set the outgoing address
-        virtual void SetAddress(const wxString &Address, const wxInt16 &Port) 
+        void SetAddress(const wxString &Address, const wxInt16 &Port) 
         { 
             to_addr.Hostname(Address); to_addr.Service(Port); 
         }
         // Sets the outgoing address in "address:port" format
-        virtual bool SetAddress(const wxString &Address);
+        bool SetAddress(const wxString &Address);
 
         wxString    GetAddress(); // Get the outgoing address
 

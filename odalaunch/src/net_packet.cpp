@@ -34,8 +34,6 @@
 */
 wxInt32 ServerBase::Query(wxInt32 Timeout)
 {
-    Socket.SetAddress(to_addr.IPAddress(), to_addr.Service());
-    
     wxString Address = Socket.GetAddress();   
     
     if (Address != _T(""))
