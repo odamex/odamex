@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: cl_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $
+// $Id: cl_cvarlist.cpp 984 2008-07-11 08:54:56Z russellrice $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2008 by The Odamex Team.

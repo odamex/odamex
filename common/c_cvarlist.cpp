@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: c_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $
+// $Id: c_cvarlist.cpp 984 2008-07-11 08:54:56Z russellrice $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2008 by The Odamex Team.
@@ -92,4 +92,5 @@ CVAR (chase_height, "-8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chase_dist, "90", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Generate centerview when -mlook encountered?
 CVAR (lookspring, "1", CVAR_ARCHIVE)
-VERSION_CONTROL (c_cvarlist_cpp, "$Id: c_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $")
+
+VERSION_CONTROL (c_cvarlist_cpp, "$Id: c_cvarlist.cpp 984 2008-07-11 08:54:56Z russellrice $")

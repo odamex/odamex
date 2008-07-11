@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: sv_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $
+// $Id: sv_cvarlist.cpp 984 2008-07-11 08:54:56Z russellrice $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2008 by The Odamex Team.
@@ -72,4 +72,4 @@ CVAR (networkcompression, "0", CVAR_ARCHIVE)
 // NAT firewall workaround port number
 CVAR (natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-VERSION_CONTROL (sv_cvarlist_cpp, "$Id: sv_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $")
+VERSION_CONTROL (sv_cvarlist_cpp, "$Id: sv_cvarlist.cpp 984 2008-07-11 08:54:56Z russellrice $")
