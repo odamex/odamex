@@ -280,7 +280,6 @@ void *dlgMain::Entry()
             
             MServer->QueryMasters(MasterTimeout);
             
-            // TODO: Clean this up
             if (!MServer->GetServerCount())
             {
                 mtrs_struct_t *Result = new mtrs_struct_t;
