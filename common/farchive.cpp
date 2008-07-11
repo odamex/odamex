@@ -241,7 +241,7 @@ FFile &FLZOFile::Seek (int pos, ESeekPos ofs)
 	return *this;
 }
 
-CVAR (filecompression, "1", CVAR_ARCHIVE)
+EXTERN_CVAR (filecompression)
 
 void FLZOFile::Implode ()
 {

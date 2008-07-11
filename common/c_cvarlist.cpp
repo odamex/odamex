@@ -23,6 +23,12 @@
 
 #include "c_cvars.h"
 
+// Misc stuff
+// ----------
+
+// debugging mode
+CVAR (developer, "0", CVAR_NULL)
+
 // Game modes and settings
 // -----------------------
 
@@ -69,6 +75,12 @@ CVAR (nomonsters,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 CVAR (skill,            "3", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Game ends on time limit being reached
 CVAR (timelimit,		"0", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-
+// Speedhack code (server related)
+CVAR (speedhackfix, "0", CVAR_SERVERINFO)
+// File compression (???)
+CVAR (filecompression, "1", CVAR_ARCHIVE)
+// Chase camera settings
+CVAR (chase_height, "-8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chase_dist, "90", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id: c_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $")

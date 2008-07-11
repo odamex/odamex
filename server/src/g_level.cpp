@@ -62,11 +62,11 @@
 extern int nextupdate;
 extern int shotclock;
 
-CVAR (endmapscript, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	// script to run at end of each map (e.g. to choose next map)
-CVAR (startmapscript, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	// script to run at start of each map (e.g. to override cvars)
-CVAR (curmap, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)			// tracks last played map
-CVAR (nextmap, "", CVAR_NULL | CVAR_NOENABLEDISABLE)			// tracks next map to be played
-CVAR (loopepisode, "0", CVAR_ARCHIVE)	// Nes - Determines whether Doom 1 episodes should carry over.
+EXTERN_CVAR (endmapscript)
+EXTERN_CVAR (startmapscript)
+EXTERN_CVAR (curmap)
+EXTERN_CVAR (nextmap)
+EXTERN_CVAR (loopepisode)
 
 
 static level_info_t *FindDefLevelInfo (char *mapname);

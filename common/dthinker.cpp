@@ -188,7 +188,7 @@ void DThinker::DestroyMostThinkers ()
 	DObject::EndFrame ();
 }
 
-CVAR (speedhackfix, "0", CVAR_SERVERINFO)
+EXTERN_CVAR (speedhackfix)
 
 void DThinker::RunThinkers ()
 {

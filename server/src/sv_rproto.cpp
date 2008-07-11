@@ -32,7 +32,7 @@
 #include "huffman.h"
 #include "i_net.h"
 
-CVAR (networkcompression, "0", CVAR_ARCHIVE)
+EXTERN_CVAR (networkcompression)
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);

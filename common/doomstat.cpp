@@ -39,7 +39,7 @@ Language_t		language = english;
 BOOL			modifiedgame;
 
 // Show developer messages if true.
-CVAR (developer, "0", 0)
+EXTERN_CVAR (developer)
 
 
 VERSION_CONTROL (doomstat_cpp, "$Id$")

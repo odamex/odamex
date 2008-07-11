@@ -27,8 +27,6 @@
 
 EXTERN_CVAR (speedhackfix)
 
-//CVAR (speedhackfix, "0", CVAR_SERVERINFO)
-
 //
 // P_Ticker
 //

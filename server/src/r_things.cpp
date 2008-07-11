@@ -56,9 +56,6 @@ extern fixed_t FocalLengthX, FocalLengthY;
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
 
-
-CVAR (r_drawplayersprites, "1", 0)	// [RH] Draw player sprites?
-
 //
 // INITIALIZATION FUNCTIONS
 //

@@ -57,5 +57,17 @@ CVAR_FUNC_DECL (password, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (spectate_password, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Remote console password
 CVAR_FUNC_DECL (rcon_password, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// script to run at end of each map (e.g. to choose next map)
+CVAR (endmapscript, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	
+// script to run at start of each map (e.g. to override cvars)
+CVAR (startmapscript, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	
+// tracks last played map
+CVAR (curmap, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)
+// tracks next map to be played			
+CVAR (nextmap, "", CVAR_NULL | CVAR_NOENABLEDISABLE)	
+// Determines whether Doom 1 episodes should carry over.		
+CVAR (loopepisode, "0", CVAR_ARCHIVE)	
+// Network compression (experimental)
+CVAR (networkcompression, "0", CVAR_ARCHIVE)
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id: sv_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $")
