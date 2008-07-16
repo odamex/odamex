@@ -76,9 +76,7 @@ class wxAdvancedListCtrl : public wxListCtrl
         wxInt32 SortOrder;
         wxInt32 SortCol;
 
-        wxInt32 colRed;
-        wxInt32 colGreen;
-        wxInt32 colBlue;
+        wxColour ItemShade;
 
     protected:               
         DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
