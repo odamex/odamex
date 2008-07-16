@@ -55,6 +55,7 @@ static wxInt32 ID_MNUQLAUNCH = XRCID("ID_MNUQLAUNCH");
 static wxInt32 ID_MNUGETLIST = XRCID("ID_MNUGETLIST");
 static wxInt32 ID_MNUREFRESHSERVER = XRCID("ID_MNUREFRESHSERVER");
 static wxInt32 ID_MNUREFRESHALL = XRCID("ID_MNUREFRESHALL");
+static wxInt32 ID_MNUODAGET = XRCID("ID_MNUODAGET");
 static wxInt32 ID_MNUABOUT = XRCID("ID_MNUABOUT");
 static wxInt32 ID_MNUSETTINGS = XRCID("ID_MNUSETTINGS");
 static wxInt32 ID_MNUEXIT = XRCID("ID_MNUEXIT");
@@ -83,6 +84,8 @@ BEGIN_EVENT_TABLE(dlgMain,wxFrame)
 	EVT_MENU(ID_MNUGETLIST, dlgMain::OnGetList)
 	EVT_MENU(ID_MNUREFRESHSERVER, dlgMain::OnRefreshServer)
 	EVT_MENU(ID_MNUREFRESHALL, dlgMain::OnRefreshAll)
+
+    EVT_MENU(ID_MNUODAGET, dlgMain::OnOpenOdaGet)
 
 	EVT_MENU(ID_MNUABOUT, dlgMain::OnAbout)
 	EVT_MENU(ID_MNUSETTINGS, dlgMain::OnOpenSettingsDialog)
@@ -165,7 +168,13 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
     server_dlg = new dlgServers(MServer, this);
-   
+    
+    /* Get the first directory for wad downloading */
+    wxInt32 Pos = launchercfg_s.wad_paths.Find(wxT(';'), false);
+    wxString FirstDirectory = launchercfg_s.wad_paths.Mid(0, Pos);
+    
+    OdaGet = new frmOdaGet(this, -1, FirstDirectory);
+    
     QServer = NULL;
 
     // Create monitor thread and run it
@@ -225,6 +234,9 @@ dlgMain::~dlgMain()
 
     if (server_dlg != NULL)
         server_dlg->Destroy();
+
+    if (OdaGet != NULL)
+        OdaGet->Destroy();
 }
 
 void dlgMain::OnExit(wxCommandEvent& event)
@@ -634,6 +646,12 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 {
     if (config_dlg)
         config_dlg->Show();
+}
+
+void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
+{
+    if (OdaGet)
+        OdaGet->Show();
 }
 
 // About information

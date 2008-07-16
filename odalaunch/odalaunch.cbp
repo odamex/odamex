@@ -180,6 +180,12 @@
 		<Unit filename="src\dlg_servers.h">
 			<Option virtualFolder="dialogs\" />
 		</Unit>
+		<Unit filename="src\frm_odaget.cpp">
+			<Option virtualFolder="dialogs\" />
+		</Unit>
+		<Unit filename="src\frm_odaget.h">
+			<Option virtualFolder="dialogs\" />
+		</Unit>
 		<Unit filename="src\lst_custom.cpp" />
 		<Unit filename="src\lst_custom.h" />
 		<Unit filename="src\main.cpp" />

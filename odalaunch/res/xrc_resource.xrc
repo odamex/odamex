@@ -44,6 +44,21 @@
 					<help>Refresh the selected server</help>
 				</object>
 			</object>
+			<object class="wxMenu" name="m_menu5">
+				<label>Tools</label>
+				<object class="wxMenu" name="m_menu11">
+					<label>OdaGet</label>
+					<object class="wxMenuItem" name="ID_MNUODAGET">
+						<label>Download WAD</label>
+						<help></help>
+					</object>
+					<object class="wxMenuItem" name="ID_MNUSETUPODAGET">
+						<label>Setup</label>
+						<help></help>
+						<enabled>0</enabled>
+					</object>
+				</object>
+			</object>
 			<object class="wxMenu" name="m_menu3">
 				<label>Advanced</label>
 				<object class="wxMenuItem" name="ID_MNUCONMAN">
@@ -631,6 +646,95 @@
 					</object>
 				</object>
 			</object>
+		</object>
+	</object>
+	<object class="wxFrame" name="frmOdaGet">
+		<style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
+		<size>400,300</size>
+		<title>OdaGet</title>
+		<object class="wxPanel">
+			<style>wxTAB_TRAVERSAL</style>
+			<object class="wxBoxSizer">
+				<orient>wxVERTICAL</orient>
+				<object class="sizeritem">
+					<option>1</option>
+					<flag>wxEXPAND</flag>
+					<border>5</border>
+					<object class="wxFlexGridSizer">
+						<rows>1</rows>
+						<cols>1</cols>
+						<vgap>0</vgap>
+						<hgap>0</hgap>
+						<growablecols>0</growablecols>
+						<growablerows>1</growablerows>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxHORIZONTAL</orient>
+								<label>URL</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="m_DownloadURL">
+										<value></value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="m_Download">
+										<label>Download</label>
+										<default>0</default>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxTextCtrl" name="m_LocationDisplay">
+								<style>wxTE_AUTO_URL|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2|wxSIMPLE_BORDER</style>
+								<value></value>
+								<maxlength>0</maxlength>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxGauge" name="m_DownloadGauge">
+								<style>wxGA_HORIZONTAL</style>
+								<range>100</range>
+								<value>0</value>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStdDialogButtonSizer">
+								<object class="button">
+									<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="wxID_CANCEL">
+										<label>&amp;Cancel</label>
+									</object>
+								</object>
+							</object>
+						</object>
+					</object>
+				</object>
+			</object>
+		</object>
+		<object class="wxStatusBar" name="m_statusBar2">
+			<style>wxST_SIZEGRIP</style>
+			<fields>1</fields>
 		</object>
 	</object>
 </resource>

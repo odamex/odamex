@@ -28,6 +28,7 @@
 
 #include "dlg_config.h"
 #include "dlg_servers.h"
+#include "frm_odaget.h"
 
 #include <wx/frame.h>
 #include <wx/intl.h>
@@ -62,6 +63,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         void OnManualConnect(wxCommandEvent& event);
         
         void OnOpenSettingsDialog(wxCommandEvent& event);
+        void OnOpenOdaGet(wxCommandEvent &event);
         void OnOpenWebsite(wxCommandEvent &event);
         void OnOpenForum(wxCommandEvent &event);
         void OnOpenWiki(wxCommandEvent &event);
@@ -91,6 +93,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
+        frmOdaGet *OdaGet;
         
 		wxInt32 TotalPlayers;
         wxInt32 QueriedServers;
