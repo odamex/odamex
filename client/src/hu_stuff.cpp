@@ -304,8 +304,8 @@ void HU_DrawTargetNames(void)
 		/* Now if they are visible... */
 		if (players[i].mo)
 		{
-			// If they are beyond MISSILERANGE, ignore
-			if (MobjToMobjDistance(displayplayer().mo, players[i].mo) > (MISSILERANGE >> FRACBITS))
+			// If they are beyond 512 units, ignore
+			if (MobjToMobjDistance(displayplayer().mo, players[i].mo) > 512)
 				continue;
 			
 			// Check to see if the other player is visible
