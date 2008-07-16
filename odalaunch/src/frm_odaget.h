@@ -153,7 +153,7 @@ class HTTPThread : public wxThread
 class frmOdaGet : public wxFrame
 {
     public:
-        frmOdaGet(wxTopLevelWindow* parent, wxWindowID id = -1, wxString SaveLocation = "");
+        frmOdaGet(wxTopLevelWindow* parent, wxWindowID id = -1, wxString SaveLocation = wxT(""));
 		virtual ~frmOdaGet();
     private:
         void OnClose(wxCloseEvent &event);
