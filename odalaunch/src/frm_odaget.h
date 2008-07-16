@@ -42,7 +42,12 @@ enum URIResult
 class URIHandler
 {
     public:
-        URIHandler(const wxString &File) : m_File(File) { }
+        URIHandler(const wxString &File) : 
+            m_User(wxT("")), m_Password(wxT("")), m_Server(wxT("")), m_Port(0), 
+            m_Path(wxT("")), m_Directory(wxT("")),  m_File(File) 
+        { 
+            
+        }
         ~URIHandler() { }
            
         URIResult ParseURL(const wxString &URL);     
@@ -52,6 +57,7 @@ class URIHandler
         const wxString &GetServer() const { return m_Server; }
         const wxUint16 &GetPort() const { return m_Port; }
         const wxString &GetPath() const { return m_Path; }
+        const wxString &GetDirectory() const { return m_Directory; }
         const wxString &GetFile() const { return m_File; }
               
     protected:
@@ -60,6 +66,7 @@ class URIHandler
         wxString m_Server;
         wxUint16 m_Port;
         wxString m_Path;
+        wxString m_Directory;
         wxString m_File;
 };
 
@@ -89,8 +96,6 @@ class FTPThread : public wxThread
          wxThread(wxTHREAD_JOINABLE), m_EventHandler(EventHandler), m_URL(URL), m_SaveLocation(SaveLocation)
         { 
             m_File = File;
-            
-            m_FTP.SetBinary();
         }
         
         ~FTPThread() { }
@@ -163,6 +168,7 @@ class frmOdaGet : public wxFrame
         void OnHttpThreadMessage(wxCommandEvent &event);
         void OnFtpThreadMessage(wxCommandEvent &event);
         
+        FTPThread *m_FTPThread;
         HTTPThread *m_HTTPThread;
         
         wxTextCtrl *m_DownloadURL;
