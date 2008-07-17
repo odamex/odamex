@@ -1705,11 +1705,9 @@ bool SV_BanCheck (client_t *cl, int n)
 			
 			Printf(PRINT_HIGH, "%s is banned and unable to join! (reason: %s)\n", NET_AdrToString (net_from), BanList[i].Reason.c_str());
 
-			MSG_WriteMarker (&cl->reliablebuf, svc_disconnect);
-			
-			cl->displaydisconnect = false;
-
 			SV_SendPacket (players[n]);
+			cl->displaydisconnect = false;
+			SV_DropClient(players[n]);
 			return true;
 		}
 		else if (exception)	// don't bother because they'll be allowed multiple times
