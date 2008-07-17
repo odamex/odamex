@@ -3016,7 +3016,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 //	MSG_WriteShort (&cl->netbuf, mo->momz >> FRACBITS);
 
 	// GhostlyDeath <July 16, 2008> -- Update player weapons and stuff after a bit
-	if ((gametic % 18) == 0)	// send this less often
+	if ((gametic % 70) == 0)	// send this less often
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
 
@@ -3032,7 +3032,13 @@ void SV_UpdateConsolePlayer(player_t &player)
 		MSG_WriteByte (&cl->reliablebuf, player.health);
 		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
 		MSG_WriteByte (&cl->reliablebuf, player.armortype);
-		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+		
+		// GhostlyDeath <July 17, 2008> -- What weapon do we send to the client?
+		if (player.pendingweapon == wp_nochange)
+			MSG_WriteByte (&cl->reliablebuf, player.readyweapon | 64);
+		else
+			MSG_WriteByte(&cl->reliablebuf, player.pendingweapon);
+		
 		MSG_WriteByte (&cl->reliablebuf, player.backpack);
 	}
 }

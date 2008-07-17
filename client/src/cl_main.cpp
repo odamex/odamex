@@ -1362,7 +1362,8 @@ void CL_SpawnPlayer()
 void CL_PlayerInfo(void)
 {
 	size_t j;
-	weapontype_t newweapon;
+	int newweapon;
+	bool newpending = false;
 
 	player_t *p = &consoleplayer();
 
@@ -1380,15 +1381,34 @@ void CL_PlayerInfo(void)
 	p->health = MSG_ReadByte ();
 	p->armorpoints = MSG_ReadByte ();
 	p->armortype = MSG_ReadByte ();
-	newweapon = (weapontype_t)MSG_ReadByte ();
+	newweapon = MSG_ReadByte ();
 	
-	if (p->readyweapon != newweapon)
+	// GhostlyDeath <July 17, 2008> -- what weapon do we change to?
+	if (newweapon & 64)		// Server sent our readyweapon (gun we have up)
 	{
-		p->pendingweapon = newweapon;
-		
-		if(p->pendingweapon > NUMWEAPONS)
-			p->pendingweapon = wp_pistol;
+		// Does it not match our gun and are we already switching to the gun or not?
+		if ((p->readyweapon != (weapontype_t)(newweapon & ~64)) &&
+			(p->pendingweapon != (weapontype_t)(newweapon & ~64)))
+		{
+			p->pendingweapon = (weapontype_t)(newweapon & ~64);
+			newpending = true;
+		}
 	}
+	else	// Server sent our pendingweapon (gun we are changing to)
+	{
+		// Is the server switching our gun when i'm not or
+		// I am switching to a gun but it isn't what the server said?
+		if ((p->pendingweapon == wp_nochange) || (p->pendingweapon != newweapon))
+		{
+			p->pendingweapon = (weapontype_t)(newweapon);
+			newpending = true;
+		}
+	}
+	
+	// If we are changing our guns, let's be sure it's valid
+	if (newpending)
+		if (p->pendingweapon > NUMWEAPONS)
+			p->pendingweapon = wp_pistol;
 	
 	p->backpack = MSG_ReadByte () ? true : false;
 }
