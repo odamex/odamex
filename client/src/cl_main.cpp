@@ -1362,6 +1362,7 @@ void CL_SpawnPlayer()
 void CL_PlayerInfo(void)
 {
 	size_t j;
+	weapontype_t newweapon;
 
 	player_t *p = &consoleplayer();
 
@@ -1379,11 +1380,17 @@ void CL_PlayerInfo(void)
 	p->health = MSG_ReadByte ();
 	p->armorpoints = MSG_ReadByte ();
 	p->armortype = MSG_ReadByte ();
-	p->pendingweapon = (weapontype_t)MSG_ReadByte ();
+	newweapon = (weapontype_t)MSG_ReadByte ();
+	
+	if (p->readyweapon != newweapon)
+	{
+		p->pendingweapon = newweapon;
+		
+		if(p->pendingweapon > NUMWEAPONS)
+			p->pendingweapon = wp_pistol;
+	}
+	
 	p->backpack = MSG_ReadByte () ? true : false;
-
-	if(p->pendingweapon > NUMWEAPONS)
-		p->pendingweapon = wp_pistol;
 }
 
 //

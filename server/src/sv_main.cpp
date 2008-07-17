@@ -2980,6 +2980,8 @@ void SV_GetPlayerCmd(player_t &player)
 
 void SV_UpdateConsolePlayer(player_t &player)
 {
+	size_t j;
+	
 	// GhostlyDeath -- Spectators are on their own really
 	if (player.spectator)
 		return;
@@ -3012,6 +3014,27 @@ void SV_UpdateConsolePlayer(player_t &player)
 //	MSG_WriteShort (&cl->netbuf, mo->momx >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momy >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momz >> FRACBITS);
+
+	// GhostlyDeath <July 16, 2008> -- Update player weapons and stuff after a bit
+	if ((gametic % 18) == 0)	// send this less often
+	{
+		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
+
+		for(j = 0; j < NUMWEAPONS; j++)
+			MSG_WriteByte (&cl->reliablebuf, player.weaponowned[j]);
+
+		for(j = 0; j < NUMAMMO; j++)
+		{
+			MSG_WriteShort (&cl->reliablebuf, player.maxammo[j]);
+			MSG_WriteShort (&cl->reliablebuf, player.ammo[j]);
+		}
+
+		MSG_WriteByte (&cl->reliablebuf, player.health);
+		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
+		MSG_WriteByte (&cl->reliablebuf, player.armortype);
+		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+		MSG_WriteByte (&cl->reliablebuf, player.backpack);
+	}
 }
 
 //
