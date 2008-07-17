@@ -199,6 +199,12 @@ void dlgConfig::OnTextChange(wxCommandEvent &event)
 // Add a directory to the listbox
 void dlgConfig::OnAddDir(wxCommandEvent &event)
 {    
+    if (DIR_BOX->GetPath() == wxT(""))
+    {
+        wxMessageBox(wxT("Please browse or type in a path in the box below"));
+        return;        
+    }
+    
     // Check to see if the path exists on the system
     if (wxDirExists(DIR_BOX->GetPath()))
     {
@@ -217,6 +223,12 @@ void dlgConfig::OnAddDir(wxCommandEvent &event)
 // Replace a directory in the listbox
 void dlgConfig::OnReplaceDir(wxCommandEvent &event)
 {
+    if (DIR_BOX->GetPath() == wxT(""))
+    {
+        wxMessageBox(wxT("Please browse or type in a path in the box below"));
+        return;        
+    }
+    
     // Check to see if the path exists on the system
     if (wxDirExists(DIR_BOX->GetPath()))
     {
