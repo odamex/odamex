@@ -40,7 +40,8 @@
 #define MASTERPORT			15000
 
 // [Russell] - default master list
-const char *def_masterlist[] = { "master1.odamex.net", "master2.odamex.net", NULL };
+// This is here for complete master redundancy, including domain name failure
+const char *def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
 
 class masterserver
 {

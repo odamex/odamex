@@ -163,7 +163,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	MServer = new MasterServer;
     
     MServer->AddMaster(_T("master1.odamex.net"), 15000);
-    MServer->AddMaster(_T("master2.odamex.net"), 15000);
+    MServer->AddMaster(_T("voxelsoft.com"), 15000);
     
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
