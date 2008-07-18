@@ -1078,13 +1078,17 @@ void R_MultiresInit (void)
 	xtoviewangle = (angle_t *)M_Malloc (sizeof(angle_t) * (screen->width + 1));
 	
 	// GhostlyDeath -- Clean up the buffers
-	memset(ylookup, -1, screen->height * sizeof(byte*));
-	memset(columnofs, -1, screen->width * sizeof(int));
-	memset(r_dscliptop, -1, screen->width * sizeof(short));
-	memset(r_dsclipbot, -1, screen->width * sizeof(short));
-    memset(negonearray, -1, screen->width * sizeof(short));
-    memset(screenheightarray, -1, screen->width * sizeof(short));
-    memset(xtoviewangle, -1, screen->width * sizeof(angle_t) + 1);
+	memset(ylookup, 0, screen->height * sizeof(byte*));
+	memset(columnofs, 0, screen->width * sizeof(int));
+	memset(r_dscliptop, 0, screen->width * sizeof(short));
+	memset(r_dsclipbot, 0, screen->width * sizeof(short));
+
+	for(i = 0; i < screen->width; i++)
+	{
+		negonearray[i] = -1;
+	}
+    memset(screenheightarray, 0, screen->width * sizeof(short));
+    memset(xtoviewangle, 0, screen->width * sizeof(angle_t) + 1);
 
 	R_InitFuzzTable ();
 	R_PlaneInitData ();
