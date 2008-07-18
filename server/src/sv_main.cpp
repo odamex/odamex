@@ -2499,8 +2499,9 @@ void SV_Say(player_t &player)
     if (player.LastMessage.Time)
     {
         QWORD Difference = (I_GetTime() - player.LastMessage.Time);
-
-        if (Difference <= flooddelay)
+        float Delay = (float)(flooddelay * TICRATE);
+        
+        if (Difference <= Delay)
             return;
 
         player.LastMessage.Time = 0;
