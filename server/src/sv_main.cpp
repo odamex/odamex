@@ -2500,7 +2500,7 @@ void SV_Say(player_t &player)
     {
         QWORD Difference = (I_GetTime() - player.LastMessage.Time);
 
-        if (Difference <= flooddelay && player.LastMessage.Message == s)
+        if (Difference <= flooddelay)
             return;
 
         player.LastMessage.Time = 0;
