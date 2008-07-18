@@ -214,6 +214,13 @@ public:
     int			joinafterspectatortime; // Nes - Join after spectator time.
     
     int			prefcolor;			// Nes - Preferred color. Server only.
+    
+    // For flood protection
+    struct
+    {
+        QWORD Time;
+        std::string Message;
+    } LastMessage;
 
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
@@ -385,6 +392,9 @@ public:
 		spectator = false;
 		joinafterspectatortime = level.time - TICRATE*5;
 		prefcolor = 0;
+		
+		LastMessage.Time = 0;
+		LastMessage.Message = "";
 	}
 
 	player_s &operator =(const player_s &other)
@@ -466,6 +476,9 @@ public:
 		joinafterspectatortime = other.joinafterspectatortime;
 		
 		prefcolor = other.prefcolor;
+		
+        LastMessage.Time = other.LastMessage.Time;
+		LastMessage.Message = other.LastMessage.Message;
 		
 		client = other.client;
 

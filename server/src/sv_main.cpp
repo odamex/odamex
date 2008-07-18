@@ -89,6 +89,7 @@ EXTERN_CVAR(emptyreset)
 EXTERN_CVAR(clientcount)
 EXTERN_CVAR(globalspectatorchat)
 EXTERN_CVAR(allowtargetnames)
+EXTERN_CVAR(flooddelay)
 
 CVAR_FUNC_IMPL (maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
@@ -2493,6 +2494,23 @@ void SV_Say(player_t &player)
 
 	if(!strlen(s) || strlen(s) > 128)
 		return;
+    
+    // Flood protection
+    if (player.LastMessage.Time)
+    {
+        QWORD Difference = (I_GetTime() - player.LastMessage.Time);
+
+        if (Difference <= flooddelay && player.LastMessage.Message == s)
+            return;
+
+        player.LastMessage.Time = 0;
+    }
+       
+    if (!player.LastMessage.Time)
+    {
+        player.LastMessage.Time = I_GetTime();
+        player.LastMessage.Message = s;
+    }
 
 	if (player.spectator && (!globalspectatorchat || team))
 		SV_SpectatorPrintf (PRINT_CHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
