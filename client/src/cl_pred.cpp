@@ -41,6 +41,7 @@ void P_DeathThink (player_t *player);
 
 
 angle_t cl_angle[MAXSAVETICS];
+angle_t cl_pitch[MAXSAVETICS];
 fixed_t cl_viewheight[MAXSAVETICS];
 fixed_t cl_deltaviewheight[MAXSAVETICS];
 int     reactiontime[MAXSAVETICS];
@@ -177,6 +178,7 @@ void CL_PredictPlayers (int predtic)
 				memcpy(cmd, &localcmds[buf], sizeof(ticcmd_t));
 
 				p->mo->angle = cl_angle[predtic%MAXSAVETICS];
+				p->mo->pitch = cl_pitch[predtic%MAXSAVETICS];
 				p->viewheight = cl_viewheight[predtic%MAXSAVETICS];
 				p->deltaviewheight = cl_deltaviewheight[predtic%MAXSAVETICS];
 				p->mo->reactiontime = reactiontime[predtic%MAXSAVETICS];
@@ -203,6 +205,7 @@ void CL_PredictMove (void)
 	// Save player angle, viewheight and deltaviewheight
 	// Will use it later to predict movements
 	cl_angle[gametic%MAXSAVETICS] = p->mo->angle;
+	cl_pitch[gametic%MAXSAVETICS] = p->mo->pitch;
 	cl_viewheight[gametic%MAXSAVETICS] = p->viewheight;
 	cl_deltaviewheight[gametic%MAXSAVETICS] = p->deltaviewheight;
 	reactiontime[gametic%MAXSAVETICS] = p->mo->reactiontime;
