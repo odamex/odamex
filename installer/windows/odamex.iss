@@ -45,6 +45,7 @@ Source: ..\..\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: serv
 Source: ..\..\odasrv.cfg; DestDir: {app}; Flags: ignoreversion; Components: server
 Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher
 Source: ..\..\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
+Source: ..\..\mingwm10.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\SDL.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\SDL_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\ogg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
