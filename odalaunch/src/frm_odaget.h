@@ -23,6 +23,8 @@
 #define __FRM_ODAGET__
 
 #include <wx/frame.h>
+#include <wx/gauge.h>
+
 #include <wx/protocol/http.h>
 #include <wx/protocol/ftp.h>
 #include <wx/thread.h>

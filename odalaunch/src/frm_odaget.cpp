@@ -24,7 +24,6 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/uri.h>
 #include <wx/wfstream.h>
-#include <wx/gauge.h>
 
 DEFINE_EVENT_TYPE(EVENT_HTTP_THREAD)
 DEFINE_EVENT_TYPE(EVENT_FTP_THREAD)
