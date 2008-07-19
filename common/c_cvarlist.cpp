@@ -43,7 +43,7 @@ CVAR (usectf,			"0", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_LATCH)
 // (Teamplay/CTF): Players can injure others on the same team
 CVAR (friendlyfire,		"1", CVAR_SERVERINFO)
 // (Teamplay/CTF): Game ends when team score is reached
-CVAR (scorelimit,		"10", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+CVAR (scorelimit,		"5", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // (Teamplay/CTF): Teams that are enabled
 CVAR (blueteam,			"1",  CVAR_SERVERINFO | CVAR_ARCHIVE)
 CVAR (redteam,			"1",  CVAR_SERVERINFO | CVAR_ARCHIVE)
@@ -56,7 +56,7 @@ CVAR (ctf_flagtimeout, "600", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Cheat code usage is allowed
 CVAR (allowcheats,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 // Exit switch/teleports are usable
-CVAR (allowexit,		"0", CVAR_SERVERINFO)
+CVAR (allowexit,		"1", CVAR_SERVERINFO)
 // Players can jump
 CVAR (allowjump,		"0", CVAR_SERVERINFO)
 // Look up/down is allowed

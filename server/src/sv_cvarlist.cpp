@@ -30,11 +30,11 @@
 // Server name that appears to masters, clients and launchers
 CVAR (hostname,		"Untitled Odamex Server",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Administrator email address
-CVAR (email,		"",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+CVAR (email,		"email@domain.com",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Website of this server/other
-CVAR (website,      "",         CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+CVAR (website,      "http:\\odamex.net/",         CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Enables WAD file downloading
-CVAR (waddownload,	"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)
+CVAR (waddownload,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Reset the current map when the last player leaves
 CVAR (emptyreset,   "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Allow spectators talk to show to ingame players
@@ -48,15 +48,17 @@ CVAR (cleanmaps, "", CVAR_NULL)
 // Antiwallhack code
 CVAR (antiwallhack,	"0", CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Maximum number of clients that can connect to the server
-CVAR_FUNC_DECL (maxclients, "16", CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (maxclients, "4", CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Maximum number of players that can join the game, the rest are spectators
-CVAR_FUNC_DECL (maxplayers,	"16", CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (maxplayers,	"4", CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Clients can only join if they specify a password
 CVAR_FUNC_DECL (password, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Todo: document
 CVAR_FUNC_DECL (spectate_password, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Remote console password
 CVAR_FUNC_DECL (rcon_password, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Advertise on the master servers
+CVAR_FUNC_DECL (usemasters, "1", CVAR_ARCHIVE)
 // script to run at end of each map (e.g. to choose next map)
 CVAR (endmapscript, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	
 // script to run at start of each map (e.g. to override cvars)

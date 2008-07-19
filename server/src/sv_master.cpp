@@ -458,11 +458,10 @@ void SV_SendServerInfo()
 }
 
 // Server appears in the server list when true.
-BEGIN_CUSTOM_CVAR (usemasters, "1", CVAR_ARCHIVE)
+CVAR_FUNC_IMPL (usemasters)
 {
     SV_InitMasters();
 }
-END_CUSTOM_CVAR (usemasters)
 
 BEGIN_COMMAND (addmaster)
 {
