@@ -96,6 +96,12 @@ BOOL PIT_StompThing (AActor *thing)
 
 	if (!(thing->flags & MF_SHOOTABLE))
 		return true;
+		
+	if (thing->player && thing->player->spectator)
+		return true;
+		
+	if (tmthing->player && tmthing->player->spectator)
+		return true;
 
 	// don't clip against self
 	if (thing == tmthing)
@@ -1521,8 +1527,8 @@ BOOL PTR_CameraTraverse (intercept_t* in)
 //
 // [RH] P_AimCamera
 //
-CVAR (chase_height, "-8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chase_dist, "90", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (chase_height)
+EXTERN_CVAR (chase_dist)
 
 void P_AimCamera (AActor *t1)
 {

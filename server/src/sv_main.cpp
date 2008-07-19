@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -81,19 +81,17 @@ std::vector<BanEntry_t> BanList;		// People who are banned
 std::vector<BanEntry_t> WhiteList;		// people who are [accidently] banned but can get inside
 
 // General server settings
-CVAR (hostname,			"Unnamed",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// A servers name that will apear in the launcher.
-CVAR (email,			"",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Server admin's e-mail address. - does not work yet
-CVAR (usemasters,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Server apears in the server list when true.
-CVAR (waddownload,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Send wad files to clients who request them.
-CVAR (emptyreset,       "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)                 // Reset current map when last player leaves.
-CVAR (clientcount,		"0",        CVAR_NOSET | CVAR_NOENABLEDISABLE)										// tracks number of connected players for scripting
+EXTERN_CVAR(hostname)
+EXTERN_CVAR(email)
+EXTERN_CVAR(website)
+EXTERN_CVAR(waddownload)
+EXTERN_CVAR(emptyreset)
+EXTERN_CVAR(clientcount)
+EXTERN_CVAR(globalspectatorchat)
+EXTERN_CVAR(allowtargetnames)
+EXTERN_CVAR(flooddelay)
 
-CVAR (globalspectatorchat,       "1",        CVAR_ARCHIVE | CVAR_SERVERINFO)
-
-
-CVAR (allowtargetnames, "1", CVAR_ARCHIVE | CVAR_SERVERINFO) // GhostlyDeath -- Target Names?
-
-BEGIN_CUSTOM_CVAR (maxclients,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Describes the max number of clients that are allowed to connect. - does not work yet
+CVAR_FUNC_IMPL (maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
 	if(var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
@@ -119,9 +117,8 @@ BEGIN_CUSTOM_CVAR (maxclients,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 	clientcount.ForceSet(players.size());
 	//R_InitTranslationTables();
 }
-END_CUSTOM_CVAR (maxclients)
 
-BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (maxplayers)
 {
 	// [Nes] - Force extras to become spectators.
 	int normalcount = 0;
@@ -142,7 +139,7 @@ BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 			{
 				for (size_t j = 0; j < players.size(); j++) {
 					MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
-					MSG_WriteByte (&(players[j].client.reliablebuf), i);
+					MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
 					MSG_WriteByte (&(players[j].client.reliablebuf), true);
 				}
 				SV_BroadcastPrintf (PRINT_HIGH, "%s became a spectator.\n", players[i].userinfo.netname);
@@ -156,70 +153,49 @@ BEGIN_CUSTOM_CVAR (maxplayers,		"16",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LAT
 		}
 	}
 }
-END_CUSTOM_CVAR (maxplayers)
 
+EXTERN_CVAR (allowcheats)
+EXTERN_CVAR (deathmatch)
+EXTERN_CVAR (fraglimit)
+EXTERN_CVAR (timelimit)
+EXTERN_CVAR (maxcorpses)
 
-// Game settings
-CVAR (allowcheats,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Players are allowed to use cheatcodes when try. - does not work yet
-CVAR (deathmatch,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Deathmatch mode when true, this includes teamDM and CTF.
-CVAR (fraglimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the winning frag total for deathmatch and teamDM.
-CVAR (timelimit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the max time in minutes for each game.
-
-CVAR (maxcorpses, 		"200", 		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-		// joek - max number of corpses. < 0 is infinite
-
-// Map behavior
-BEGIN_CUSTOM_CVAR (skill,		"5",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)	// Game skill setting.
-{
-	if(var < sk_baby)
-		var.Set(sk_baby);
-	if(var > sk_nightmare)
-		var.Set(sk_nightmare);
-}
-END_CUSTOM_CVAR(skill)
-
-EXTERN_CVAR(weaponstay)
-CVAR (itemsrespawn,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial items will respawn after being picked up when true.
-CVAR (monstersrespawn,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Monsters will respawn after killed when true. - does not work yet
-CVAR (fastmonsters,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Monsters move and shoot at double speed when true. - does not work yet
-CVAR (nomonsters,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// No monsters will be spawned when true
-CVAR (cleanmaps,		"",		CVAR_NULL)										// Deprecated
+EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (itemsrespawn)
+EXTERN_CVAR (monstersrespawn)
+EXTERN_CVAR (fastmonsters)
+EXTERN_CVAR (nomonsters)
 
 // Action rules
-CVAR (allowexit,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Exit switch functions when true.
-CVAR (fragexitswitch,   "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)                 // [ML] 03/4/06: When activated, game must be completed by hitting exit switch once fraglimit has been reached
-CVAR (allowjump,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Jump command functions when true.
-CVAR (allowfreelook,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Freelook works when true.
-CVAR (infiniteammo,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players have infinite ammo when true.
+EXTERN_CVAR (allowexit)
+EXTERN_CVAR (fragexitswitch)
+EXTERN_CVAR (allowjump)
+EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (infiniteammo)
 
 // Teamplay/CTF
-CVAR (usectf,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// CTF will automaticly be enabled on maps that contain flags when true.
-CVAR (scorelimit,		"10",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)					// Sets the winning flag capture total for CTF games.
-CVAR (friendlyfire,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players on the same team cannot cause eachother damage in team games when true.
-CVAR (teamplay,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// TeamDM is enabled when true - requires deathmatch being true.
-CVAR (blueteam,			"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team BLUE when true - TeamDM only.
-CVAR (redteam,			"1",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team RED  when true - TeamDM only.
-CVAR (goldteam,			"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)					// Players are allowed to select team GOLD when true - TeamDM only.
+EXTERN_CVAR (usectf)
+EXTERN_CVAR (scorelimit)
+EXTERN_CVAR (friendlyfire)
+EXTERN_CVAR (teamplay)
+EXTERN_CVAR (blueteam)
+EXTERN_CVAR (redteam)
+EXTERN_CVAR (goldteam)
 
-//									Private server settings
-
-BEGIN_CUSTOM_CVAR (password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)									// Remote console password.
+// Private server settings
+CVAR_FUNC_IMPL (password)
 {
-	// denis - todo implement use of this
 	if(strlen(var.cstring()))
 		Printf(PRINT_HIGH, "join password set");
 }
-END_CUSTOM_CVAR(password)
 
-BEGIN_CUSTOM_CVAR (spectate_password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)									// Remote console password.
+CVAR_FUNC_IMPL (spectate_password)
 {
-	// denis - todo implement use of this
 	if(strlen(var.cstring()))
 		Printf(PRINT_HIGH, "spectate password set");
 }
-END_CUSTOM_CVAR(spectate_password)
 
-BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)									// Remote console password.
+CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 {
 	if(strlen(var.cstring()) < 5)
 	{
@@ -234,19 +210,14 @@ BEGIN_CUSTOM_CVAR (rcon_password,	"",			CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)				
 	else
 		Printf(PRINT_HIGH, "rcon password set");
 }
-END_CUSTOM_CVAR(rcon_password)
 
-CVAR (antiwallhack,		"0",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)		// Enable/disable anti wallhack check, temporary
+EXTERN_CVAR (antiwallhack)
 EXTERN_CVAR (speedhackfix)
 
 client_c clients;
 
 
 #define CLIENT_TIMEOUT 65 // 65 seconds
-
-// [NightFang] - Different welcome strings
-char welcomestring[] = "Odamex Deathmatch Server\n";
-char welcomestring_teamplay[] = "Odamex Team Deathmatch Server\n";
 
 QWORD gametime;
 
@@ -275,13 +246,13 @@ BEGIN_COMMAND (kick)
 
 	if(!validplayer(player))
 	{
-		Printf(PRINT_HIGH, "bad client number: %d\n", player.id);
+		Printf(PRINT_HIGH, "bad client number: %d\n", atoi(argv[1]));
 		return;
 	}
 
 	if(!player.ingame())
 	{
-		Printf(PRINT_HIGH, "client %d not in game\n", player.id);
+		Printf(PRINT_HIGH, "client %d not in game\n", atoi(argv[1]));
 		return;
 	}
 
@@ -404,10 +375,11 @@ void SV_IPListDelete (std::vector<BanEntry_t> *list, std::string listname, std::
 		BanEntry_t tBan;	// GhostlyDeath -- Temporary Ban Holder
 		std::string IP;
 		int RemovalCount = 0;
+		size_t i;
 		
 		SV_IPListMakeIP(&tBan, IPtoBan);
 		
-		for (size_t i = 0; i < (*list).size(); i++)
+		for (i = 0; i < (*list).size(); i++)
 		{
 			bool match = false;
 			
@@ -427,7 +399,7 @@ void SV_IPListDelete (std::vector<BanEntry_t> *list, std::string listname, std::
 			}
 		}
 		
-		int i = 0;
+		i = 0;
 		
 		while (i < (*list).size())
 		{
@@ -563,13 +535,13 @@ BEGIN_COMMAND(kickban)
 	// Check for validity...
 	if(!validplayer(player))
 	{
-		Printf(PRINT_HIGH, "bad client number: %d\n", player.id);
+		Printf(PRINT_HIGH, "bad client number: %d\n", atoi(argv[1]));
 		return;
 	}
 
 	if(!player.ingame())
 	{
-		Printf(PRINT_HIGH, "client %d not in game\n", player.id);
+		Printf(PRINT_HIGH, "client %d not in game\n", atoi(argv[1]));
 		return;
 	}
 	
@@ -768,19 +740,27 @@ void SV_GetPackets (void)
 		}
 		else
 		{
-			player.client.last_received = gametic;
-			SV_ParseCommands(player);
+			if(player.playerstate != PST_DISCONNECT)
+			{
+				player.client.last_received = gametic;
+				SV_ParseCommands(player);
+			}
 		}
 	}
 
-	size_t i;
+	int i;
 
 	// remove disconnected players
 	for(i = 0; i < players.size(); i++)
 	{
 		if(players[i].playerstate == PST_DISCONNECT)
 		{
-			i = players.erase(players.begin() + i) - players.begin();
+			// GhostlyDeath -- Commented code line causes DEP Errors when compiled with VC9
+			// GCC: i = 0x3000 - 0x3000 = 0
+			// VC9: i = 0x3000 - 0x0000 = crash!
+			//i = players.erase(players.begin() + i) - players.begin();
+			players.erase(players.begin() + i);
+			i--;
 
 			// update tracking cvar
 			clientcount.ForceSet(players.size());
@@ -1063,7 +1043,8 @@ void SV_SetupUserInfo (player_t &player)
 	strncpy (p->userinfo.netname, MSG_ReadString(), sizeof(p->userinfo.netname));
 	p->userinfo.team	= (team_t)MSG_ReadByte();	// [Toke - Teams]
 	p->userinfo.gender	= (gender_t)MSG_ReadLong();
-	p->userinfo.color	= MSG_ReadLong();
+	p->prefcolor		= MSG_ReadLong();
+	p->userinfo.color	= p->prefcolor;
 
 	skin = MSG_ReadString();	// [Toke - Skins] Player skin
 
@@ -1263,8 +1244,7 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 		MSG_WriteMarker (&cl->reliablebuf, svc_corpse);
 		MSG_WriteShort (&cl->reliablebuf, mo->netid);
 		MSG_WriteByte (&cl->reliablebuf, mo->frame);
-		if(cl->version >= 64)
-			MSG_WriteByte (&cl->reliablebuf, mo->tics);
+		MSG_WriteByte (&cl->reliablebuf, mo->tics);
 	}
 }
 
@@ -1309,6 +1289,13 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 	else if(player.mo && mo->player && !antiwallhack)
 		ok = true;
+	else if (	player.mo && mo->player && antiwallhack &&
+				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
+		ok = true;
+	else if (	player.mo && mo->player && antiwallhack &&
+				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
+		ok = true;
+
 	else if(player.mo && mo->player && antiwallhack && P_CheckSightEdges(player.mo, mo, 5)/*player.awaresector[sectors - mo->subsector->sector]*/)
 		ok = true;
 
@@ -1437,16 +1424,12 @@ void SV_UpdateSectors(client_t* cl)
 
 		if (sec->moveable)
 		{
-			MSG_WriteMarker (&cl->netbuf, svc_sector);
-			MSG_WriteShort (&cl->netbuf, s);
-			MSG_WriteShort (&cl->netbuf, sec->floorheight>>FRACBITS);
-			MSG_WriteShort (&cl->netbuf, sec->ceilingheight>>FRACBITS);
-
-			if(cl->version >= 63) // denis - removeme - remove the 'if' condition on this block of code - legacy protocol did not have these lines
-			{
-				MSG_WriteShort (&cl->netbuf, sec->floorpic);
-				MSG_WriteShort (&cl->netbuf, sec->ceilingpic);
-			}
+			MSG_WriteMarker (&cl->reliablebuf, svc_sector);
+			MSG_WriteShort (&cl->reliablebuf, s);
+			MSG_WriteShort (&cl->reliablebuf, sec->floorheight>>FRACBITS);
+			MSG_WriteShort (&cl->reliablebuf, sec->ceilingheight>>FRACBITS);
+			MSG_WriteShort (&cl->reliablebuf, sec->floorpic);
+			MSG_WriteShort (&cl->reliablebuf, sec->ceilingpic);
 
 			/*if(sec->floordata->IsKindOf(RUNTIME_CLASS(DMover)))
 			{
@@ -1607,46 +1590,24 @@ void SV_ClientFullUpdate (player_t &pl)
 
 void SV_SendServerSettings (client_t *cl)
 {
-	// denis - todo - loop through all (changed?) CVAR_SERVERINFO cvars instead of rewriting this every time
-	MSG_WriteMarker (&cl->reliablebuf, svc_serversettings);
-
-	MSG_WriteByte (&cl->reliablebuf, ctfmode);
-
-	// General server settings
-//	MSG_WriteString (&cl->reliablebuf, hostname.cstring());		// denis - fixme - what happened to .string?
-//	MSG_WriteString (&cl->reliablebuf, email.cstring());			// denis - fixme - what happened to .string?
-	MSG_WriteShort  (&cl->reliablebuf, (int)maxclients);
-
-	// Game settings
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowcheats);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)deathmatch);
-	MSG_WriteShort  (&cl->reliablebuf, (int)fraglimit);
-	MSG_WriteShort  (&cl->reliablebuf, (int)timelimit);
-
-	// Map behavior
-	MSG_WriteShort  (&cl->reliablebuf, (int)skill);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)weaponstay);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)nomonsters);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)monstersrespawn);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)itemsrespawn);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)fastmonsters);
-
-	// Action rules
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowexit);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)fragexitswitch);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowjump);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)allowfreelook);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)infiniteammo);
-	MSG_WriteByte   (&cl->reliablebuf, 0); // denis - todo - use this for something
-
-	// Teamplay/CTF
-//	MSG_WriteByte   (&cl->reliablebuf, (BOOL)usectf);
-	MSG_WriteShort  (&cl->reliablebuf, (int)scorelimit);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)friendlyfire);
-	MSG_WriteByte   (&cl->reliablebuf, (BOOL)teamplay);
-
-	// GhostlyDeath
-	MSG_WriteByte	(&cl->reliablebuf, (BOOL)allowtargetnames);
+	// GhostlyDeath <June 19, 2008> -- Loop through all CVARs and send the CVAR_SERVERINFO stuff only
+	cvar_t *var = GetFirstCvar();
+	
+	MSG_WriteMarker(&cl->reliablebuf, svc_serversettings);
+	
+	while (var)
+	{
+		if (var->flags() & CVAR_SERVERINFO)
+		{
+			MSG_WriteByte(&cl->reliablebuf, 1);
+			MSG_WriteString(&cl->reliablebuf, var->name());
+			MSG_WriteString(&cl->reliablebuf, var->cstring());
+		}
+		
+		var = var->GetNext();
+	}
+	
+	MSG_WriteByte(&cl->reliablebuf, 2);
 }
 
 //
@@ -1745,11 +1706,9 @@ bool SV_BanCheck (client_t *cl, int n)
 			
 			Printf(PRINT_HIGH, "%s is banned and unable to join! (reason: %s)\n", NET_AdrToString (net_from), BanList[i].Reason.c_str());
 
-			MSG_WriteMarker (&cl->reliablebuf, svc_disconnect);
-			
-			cl->displaydisconnect = false;
-
 			SV_SendPacket (players[n]);
+			cl->displaydisconnect = false;
+			SV_DropClient(players[n]);
 			return true;
 		}
 		else if (exception)	// don't bother because they'll be allowed multiple times
@@ -1771,6 +1730,136 @@ bool SV_BanCheck (client_t *cl, int n)
 	}
 	
 	return false;
+}
+
+// SV_CheckClientVersion
+bool SV_CheckClientVersion(client_t *cl, int n)
+{
+	int GameVer = 0;
+	char VersionStr[20];
+	char OurVersionStr[20];
+	memset(VersionStr, 0, sizeof(VersionStr));
+	memset(OurVersionStr, 0, sizeof(VersionStr));
+	bool AllowConnect = true;
+	int majorver = 0;
+	int minorver = 0;
+	int releasever = 0;
+	int MAJORVER = GAMEVER / 256;
+	int MINORVER = (GAMEVER % 256) / 10;
+	int RELEASEVER = (GAMEVER % 256) % 10;
+	
+	if ((GAMEVER % 256) % 10)
+		sprintf(OurVersionStr, "%i.%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10, (GAMEVER % 256) % 10);
+	else
+		sprintf(OurVersionStr, "%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10);
+	
+	switch (cl->version)
+	{
+		case 65:
+			GameVer = MSG_ReadLong();
+			cl->majorversion = GameVer / 256;
+			cl->minorversion = GameVer % 256;
+			if ((GameVer % 256) % 10)
+				sprintf(VersionStr, "%i.%i.%i", cl->majorversion, cl->minorversion / 10, cl->minorversion % 10);
+			else
+				sprintf(VersionStr, "%i.%i", cl->majorversion, cl->minorversion / 10);
+				
+			majorver = GameVer / 256;
+			minorver = (GameVer % 256) / 10;
+			releasever = (GameVer % 256) % 10;
+			
+			if ((majorver == MAJORVER) &&
+				(minorver == MINORVER) &&
+				(releasever >= RELEASEVER))
+				AllowConnect = true;
+			else
+				AllowConnect = false;
+			break;
+		case 64:
+			sprintf(VersionStr, "0.2a or 0.3");
+			break;
+		case 63:
+			sprintf(VersionStr, "Pre-0.2");
+			break;
+		case 62:
+			sprintf(VersionStr, "0.1a");
+			break;
+		default:
+			sprintf(VersionStr, "Unknown");
+			break;
+			
+	}
+	
+	// GhostlyDeath -- removes the constant AllowConnects above
+	if (cl->version != 65)
+		AllowConnect = false;
+	
+	// GhostlyDeath -- boot em
+	if (!AllowConnect)
+	{
+		char FinalStr[400];
+		memset(&FinalStr, 0, sizeof(FinalStr));
+		bool older = false;
+		
+		// GhostlyDeath -- Version Mismatch message
+		sprintf(FinalStr, "\nYour version of Odamex (%s) does not match the server (%s).\n",
+			VersionStr, OurVersionStr);
+		
+		// GhostlyDeath -- Check to see if it's older or not
+		if (cl->majorversion < (GAMEVER / 256))
+			older = true;
+		else
+		{
+			if (cl->majorversion > (GAMEVER / 256))
+				older = false;
+			else
+			{
+				if (cl->minorversion < (GAMEVER % 256))
+					older = true;
+				else if (cl->minorversion > (GAMEVER % 256))
+					older = false;
+			}
+		}
+		
+		// GhostlyDeath -- Print message depending on older or newer
+		if (older)
+			sprintf(FinalStr, "%sFor updates, visit http://odamex.net/ .\n", FinalStr);
+		else
+			sprintf(FinalStr, "%sIf a new version just came out, give server administrators time to update their servers.\n",
+				FinalStr);
+		
+		// GhostlyDeath -- email address set?	
+		if (*(email.cstring()))
+		{
+			char emailbuf[100];
+			memset(emailbuf, 0, sizeof(emailbuf));
+			const char* in = email.cstring();
+			char* out = emailbuf;
+			
+			for (int i = 0; i < 100 && *in; i++, in++, out++)
+				*out = *in;
+			
+			sprintf(FinalStr, "%sIf problems persist, contact the server administrator at %s .\n",
+				FinalStr, emailbuf);
+		}
+				
+		// GhostlyDeath -- Now we tell them our built up message and boot em
+		cl->displaydisconnect = false;	// Don't spam the players
+		
+		MSG_WriteMarker(&cl->reliablebuf, svc_print);
+		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
+		MSG_WriteString(&cl->reliablebuf, FinalStr);
+		
+		MSG_WriteMarker(&cl->reliablebuf, svc_disconnect);
+		
+		SV_SendPacket (players[n]);
+		
+		// GhostlyDeath -- And we tell the server
+		Printf(PRINT_HIGH, "%s -- Version mismatch (%s != %s)\n", NET_AdrToString(net_from),
+			VersionStr, OurVersionStr);
+	}
+	
+	return AllowConnect;
 }
 
 //
@@ -1847,33 +1936,27 @@ void SV_ConnectClient (void)
 	cl->last_sequence = -1;
 	cl->packetnum     =  0;
 
-	// send welcome message
-	MSG_WriteMarker   (&cl->reliablebuf, svc_print);
-	MSG_WriteByte   (&cl->reliablebuf, PRINT_HIGH);
-	MSG_WriteString (&cl->reliablebuf, welcomestring);
-
 	cl->version = MSG_ReadShort();
 	byte connection_type = MSG_ReadByte();
-
-	// wrong version
-	if (cl->version != VERSION
-		&& cl->version != 62 && cl->version != 63) // denis - removeme - allow legacy protocol support
+	
+	if (!SV_CheckClientVersion(cl, n))
 	{
-		MSG_WriteString (&cl->reliablebuf, "Incompatible protocol version");
-		MSG_WriteMarker (&cl->reliablebuf, svc_disconnect);
-
-		SV_SendPacket (players[n]);
-
+		SV_DropClient(players[n]);
 		return;
 	}
 	
 	if (SV_BanCheck(cl, n))
+	{
+		SV_DropClient(players[n]);
 		return;
+	}
 
 	// send consoleplayer number
 	MSG_WriteMarker (&cl->reliablebuf, svc_consoleplayer);
 	MSG_WriteByte (&cl->reliablebuf, players[n].id);
 	MSG_WriteString (&cl->reliablebuf, cl->digest.c_str());
+
+    SV_SendPacket(players[n]);
 
 	// get client userinfo
 	MSG_ReadByte ();  // clc_userinfo
@@ -1881,6 +1964,22 @@ void SV_ConnectClient (void)
 
 	// get rate value
 	cl->rate				= MSG_ReadLong();
+
+    std::string passhash = MSG_ReadString();
+
+    if (strlen(password.cstring()) && MD5SUM(password.cstring()) != passhash)
+    {
+        MSG_WriteMarker(&cl->reliablebuf, svc_print);
+        MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
+        MSG_WriteString (&cl->reliablebuf, 
+                         "Server is passworded, no password specified or bad password\n");
+        
+        SV_SendPacket(players[n]);
+        
+        SV_DropClient(players[n]);
+        
+        return;
+    }
 
 	// [Toke] send server settings
 	SV_SendServerSettings (cl);
@@ -2002,11 +2101,11 @@ void SV_DisconnectClient(player_t &who)
 
 	who.playerstate = PST_DISCONNECT;
 	
-	if (!multiplayer && !who.spectator) {
-		// reload the level from scratch
-		gameaction = ga_loadlevel;
-		singleplayerjustdied = false;
-	}
+	//if (!multiplayer && !who.spectator) {
+	//	// reload the level from scratch
+	//	gameaction = ga_loadlevel;
+	//	singleplayerjustdied = false;
+	//}
 
 	if (emptyreset && players.size() == 0)
         G_DeferedInitNew(level.mapname);
@@ -2395,6 +2494,24 @@ void SV_Say(player_t &player)
 
 	if(!strlen(s) || strlen(s) > 128)
 		return;
+    
+    // Flood protection
+    if (player.LastMessage.Time)
+    {
+        QWORD Difference = (I_GetTime() - player.LastMessage.Time);
+        float Delay = (float)(flooddelay * TICRATE);
+        
+        if (Difference <= Delay)
+            return;
+
+        player.LastMessage.Time = 0;
+    }
+       
+    if (!player.LastMessage.Time)
+    {
+        player.LastMessage.Time = I_GetTime();
+        player.LastMessage.Message = s;
+    }
 
 	if (player.spectator && (!globalspectatorchat || team))
 		SV_SpectatorPrintf (PRINT_CHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
@@ -2726,6 +2843,10 @@ void SV_WriteCommands(void)
 
 				if (j == i)
 					continue;
+					
+				// GhostlyDeath -- Screw spectators
+				if (players[j].spectator)
+					continue;
 
 				if(!SV_IsPlayerAllowedToSee(players[i], players[j].mo))
 					continue;
@@ -2878,6 +2999,12 @@ void SV_GetPlayerCmd(player_t &player)
 
 void SV_UpdateConsolePlayer(player_t &player)
 {
+	size_t j;
+	
+	// GhostlyDeath -- Spectators are on their own really
+	if (player.spectator)
+		return;
+	
 	// It's not a good idea to send 33 bytes every tic.
 	if (gametic % 3)
 		return;
@@ -2906,6 +3033,33 @@ void SV_UpdateConsolePlayer(player_t &player)
 //	MSG_WriteShort (&cl->netbuf, mo->momx >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momy >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momz >> FRACBITS);
+
+	// GhostlyDeath <July 16, 2008> -- Update player weapons and stuff after a bit
+	if ((gametic % 70) == 0)	// send this less often
+	{
+		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
+
+		for(j = 0; j < NUMWEAPONS; j++)
+			MSG_WriteByte (&cl->reliablebuf, player.weaponowned[j]);
+
+		for(j = 0; j < NUMAMMO; j++)
+		{
+			MSG_WriteShort (&cl->reliablebuf, player.maxammo[j]);
+			MSG_WriteShort (&cl->reliablebuf, player.ammo[j]);
+		}
+
+		MSG_WriteByte (&cl->reliablebuf, player.health);
+		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
+		MSG_WriteByte (&cl->reliablebuf, player.armortype);
+		
+		// GhostlyDeath <July 17, 2008> -- What weapon do we send to the client?
+		if (player.pendingweapon == wp_nochange)
+			MSG_WriteByte (&cl->reliablebuf, player.readyweapon | 64);
+		else
+			MSG_WriteByte(&cl->reliablebuf, player.pendingweapon);
+		
+		MSG_WriteByte (&cl->reliablebuf, player.backpack);
+	}
 }
 
 //
@@ -2956,7 +3110,24 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 //
 void SV_Spectate (player_t &player)
 {
-	if (!(BOOL)MSG_ReadByte()) {
+	byte Code = MSG_ReadByte();
+	
+	if (Code == 5)
+	{
+		// GhostlyDeath -- Prevent Cheaters
+		if (!player.spectator || !player.mo)
+		{
+			for (int i = 0; i < 3; i++)
+				MSG_ReadLong();
+			return;
+		}
+		
+		// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
+		player.mo->x = MSG_ReadLong();
+		player.mo->y = MSG_ReadLong();
+		player.mo->z = MSG_ReadLong();
+	}
+	else if (!(BOOL)Code) {
 		if (gamestate == GS_INTERMISSION)
 			return;
 		
@@ -2971,7 +3142,8 @@ void SV_Spectate (player_t &player)
 			
 			if (NumPlayers < maxplayers)
 			{
-				if (level.time > player.joinafterspectatortime + TICRATE*5) {
+				if ((multiplayer && level.time > player.joinafterspectatortime + TICRATE*3) ||
+					level.time > player.joinafterspectatortime + TICRATE*5) {
 					player.spectator = false;
 					for (size_t j = 0; j < players.size(); j++) {
 						MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
@@ -2985,13 +3157,12 @@ void SV_Spectate (player_t &player)
 					else
 						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game on the %s team.\n", 
 							player.userinfo.netname, team_names[player.userinfo.team]);
+					// GhostlyDeath -- Reset Frags, Deaths and Kills
+					player.fragcount = 0;
+					player.deathcount = 0;
+					player.killcount = 0;
+					SV_UpdateFrags(player);
 				}
-			}
-			else
-			{
-				MSG_WriteMarker (&player.client.reliablebuf, svc_print);
-				MSG_WriteByte (&player.client.reliablebuf, PRINT_CHAT);
-				MSG_WriteString (&player.client.reliablebuf, "Game is currently full!\n");
 			}
 		}
 	} else if (gamestate != GS_INTERMISSION) {
@@ -3003,9 +3174,17 @@ void SV_Spectate (player_t &player)
 			}
 			player.spectator = true;
 			player.playerstate = PST_LIVE;
-			player.joinafterspectatortime = level.time - TICRATE*5;
+			player.joinafterspectatortime = level.time;
+
 			if (ctfmode)
 				CTF_CheckFlags (player);
+
+			//if (!multiplayer) {
+			//	// reload the level from scratch
+			//	gameaction = ga_loadlevel;
+			//	singleplayerjustdied = false;
+			//}
+
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
 		}
 	}
@@ -3125,7 +3304,7 @@ void SV_ParseCommands(player_t &player)
 	 {
 		clc_t cmd = (clc_t)MSG_ReadByte();
 
-		if(cmd == -1)
+		if(cmd == (clc_t)-1)
 			break;
 
 		switch(cmd)
@@ -3215,6 +3394,11 @@ void SV_ParseCommands(player_t &player)
 			SV_Cheat(player);
 			break;
 
+		case clc_abort:
+			Printf(PRINT_HIGH, "Client abort.\n");
+			SV_DropClient(player);
+			return;
+
 		default:
 			Printf(PRINT_HIGH, "SV_ParseCommands: Unknown client message %d.\n", (int)cmd);
 			SV_DropClient(player);
@@ -3297,18 +3481,24 @@ void SV_WadDownloads (void)
 
 		read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, sizeof(buff), buff, filelen);
 
+        // [Russell] - We take into account the maximum packet limit so we don't
+        // go over it and end up with a mangled package, the numeric values here 
+        // represent the size of each written data type that follows
+        if ((cl->netbuf.cursize + 1 + 4 + 1 + 4 + 2 + read) >= 8192)
+            SV_SendPacket(players[i]);
+
 		if(read)
 		{
 			if(!cl->download.next_offset)
 			{
-				MSG_WriteMarker (&cl->reliablebuf, svc_wadinfo);
-				MSG_WriteLong (&cl->reliablebuf, filelen);
+				MSG_WriteMarker (&cl->netbuf, svc_wadinfo);
+				MSG_WriteLong (&cl->netbuf, filelen);
 			}
-
-			MSG_WriteMarker (&cl->reliablebuf, svc_wadchunk);
-			MSG_WriteLong (&cl->reliablebuf, cl->download.next_offset);
-			MSG_WriteShort (&cl->reliablebuf, read);
-			MSG_WriteChunk (&cl->reliablebuf, buff, read);
+           
+			MSG_WriteMarker (&cl->netbuf, svc_wadchunk);
+			MSG_WriteLong (&cl->netbuf, cl->download.next_offset);
+			MSG_WriteShort (&cl->netbuf, read);
+			MSG_WriteChunk (&cl->netbuf, buff, read);
 
 			cl->download.next_offset += read;
 		}
@@ -3592,5 +3782,6 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")
+
 
 

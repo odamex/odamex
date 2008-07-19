@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -225,5 +225,5 @@ FArchive &operator>> (FArchive &arc, usercmd_t &cmd)
 }
 
 
-VERSION_CONTROL (d_protocol_cpp, "$Id:$")
+VERSION_CONTROL (d_protocol_cpp, "$Id$")
 

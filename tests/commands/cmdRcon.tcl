@@ -11,7 +11,7 @@ proc main {} {
  expr srand([clock clicks])
  set pass [expr int(rand()*1000000)]
  client "print_stdout 1"
- client "name Player"
+ client "cl_name Player"
 
  wait
 

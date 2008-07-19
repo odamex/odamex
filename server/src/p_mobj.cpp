@@ -43,8 +43,7 @@ int 				itemrespawntime[ITEMQUESIZE];
 int 				iquehead;
 int 				iquetail;
 
-CVAR	(weaponstay,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial weapons wont be removed after picked up when true. - does not work yet
-
+EXTERN_CVAR	(weaponstay)
 EXTERN_CVAR (allowfreelook)
 EXTERN_CVAR (nomonsters)
 
@@ -1164,6 +1163,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	}
 }
 
+EXTERN_CVAR(maxplayers)
 
 //
 // P_SpawnMapThing
@@ -1358,13 +1358,21 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		if (!(mthing->flags & MTF_COOPERATIVE))
 			return;
-	}*/
+	}
 	
 	if (!multiplayer)
 	{
 		if (!(mthing->flags & MTF_SINGLE))
 			return;
-	}
+	}*/
+	
+	// GhostlyDeath -- Correctly spawn things
+	if (deathmatch && !(mthing->flags & MTF_DEATHMATCH))
+		return;
+	if (!deathmatch && maxplayers == 1 && !(mthing->flags & MTF_SINGLE))
+		return;
+	if (!deathmatch && maxplayers != 1 && !(mthing->flags & MTF_COOPERATIVE))
+		return;
 
 	// check for apropriate skill level
 	if (skill == sk_baby)
@@ -1692,7 +1700,8 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			}
 		}
 
-		if (linetarget && source->player)
+		// GhostlyDeath <June 19, 2006> -- fix flawed logic here (!linetarget not linetarget)
+		if (!linetarget && source->player)
 		{
 			if (allowfreelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
 			{

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,8 +43,6 @@
 #define SWAP_WORD(x)
 #define SWAP_DWORD(x)
 #define SWAP_QWORD(x)
-#define SWAP_FLOAT(x)
-#define SWAP_DOUBLE(x)
 #else
 #define SWAP_WORD(x)		{ x = (((x)<<8) | ((x)>>8)); }
 #define SWAP_DWORD(x)		{ x = (((x)>>24) | (((x)>>8)&0xff00) | ((x)<<8)&0xff0000 | ((x)<<24)); }
@@ -54,8 +52,6 @@
 #else
 #define SWAP_QWORD(x)		{ DWORD *y = (DWORD *)&x; DWORD t=y[0]; y[0]=y[1]; y[1]=t; SWAP_DWORD(y[0]); SWAP_DWORD(y[1]); }
 #endif
-#define SWAP_FLOAT(x)		{ DWORD dw = *(DWORD *)&x; SWAP_DWORD(dw); x = *(float *)&dw; }
-#define SWAP_DOUBLE(x)		{ QWORD qw = *(QWORD *)&x; SWAP_QWORD(qw); x = *(double *)&qw; }
 #endif
 
 #define MAX(a,b)	((a)<(b)?(a):(b))
@@ -245,7 +241,7 @@ FFile &FLZOFile::Seek (int pos, ESeekPos ofs)
 	return *this;
 }
 
-CVAR (filecompression, "1", CVAR_ARCHIVE)
+EXTERN_CVAR (filecompression)
 
 void FLZOFile::Implode ()
 {
@@ -655,7 +651,6 @@ FArchive &FArchive::operator>> (QWORD &w)
 
 FArchive &FArchive::operator<< (float w)
 {
-	SWAP_FLOAT(w);
 	Write (&w, sizeof(float));
 	return *this;
 }
@@ -663,13 +658,11 @@ FArchive &FArchive::operator<< (float w)
 FArchive &FArchive::operator>> (float &w)
 {
 	Read (&w, sizeof(float));
-	SWAP_FLOAT(w);
 	return *this;
 }
 
 FArchive &FArchive::operator<< (double w)
 {
-	SWAP_DOUBLE(w);
 	Write (&w, sizeof(double));
 	return *this;
 }
@@ -677,7 +670,6 @@ FArchive &FArchive::operator<< (double w)
 FArchive &FArchive::operator>> (double &w)
 {
 	Read (&w, sizeof(double));
-	SWAP_DOUBLE(w);
 	return *this;
 }
 

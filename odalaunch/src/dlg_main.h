@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 
 #include "dlg_config.h"
 #include "dlg_servers.h"
+#include "frm_odaget.h"
 
 #include <wx/frame.h>
 #include <wx/intl.h>
@@ -62,6 +63,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         void OnManualConnect(wxCommandEvent& event);
         
         void OnOpenSettingsDialog(wxCommandEvent& event);
+        void OnOpenOdaGet(wxCommandEvent &event);
         void OnOpenWebsite(wxCommandEvent &event);
         void OnOpenForum(wxCommandEvent &event);
         void OnOpenWiki(wxCommandEvent &event);
@@ -86,11 +88,12 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 FindServer(wxString);
 		wxInt32 FindServerInList(wxString);
 		
-		wxAdvancedListCtrl *SERVER_LIST;
-		wxAdvancedListCtrl *PLAYER_LIST;
+		wxAdvancedListCtrl *m_ServerList;
+		wxAdvancedListCtrl *m_PlayerList;
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
+        frmOdaGet *OdaGet;
         
 		wxInt32 TotalPlayers;
         wxInt32 QueriedServers;

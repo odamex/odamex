@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
 #include "huffman.h"
 #include "i_net.h"
 
-CVAR (networkcompression, "0", CVAR_ARCHIVE)
+EXTERN_CVAR (networkcompression)
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);

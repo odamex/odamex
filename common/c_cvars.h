@@ -4,7 +4,7 @@
 // $Id:$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -53,6 +53,8 @@ CVARS (console variables)
 #define CVAR_ISDEFAULT	256	// is cvar unchanged since creation?
 #define CVAR_AUTO		512	// allocated, needs to be freed when destroyed
 #define CVAR_NOENABLEDISABLE 1024 // [Nes] No substitution (0=disable, 1=enable)
+#define CVAR_CLIENTINFO 2048 // [Russell] client version of CVAR_SERVERINFO
+
 
 class cvar_t
 {
@@ -144,6 +146,8 @@ private:
 	cvar_t () : m_Flags(0), m_Name(0), m_String(0), m_Value(0.f) {}
 };
 
+cvar_t* GetFirstCvar(void);
+
 // Maximum number of cvars that can be saved across a demo. If you need
 // to save more, bump this up.
 #define MAX_DEMOCVARS 32
@@ -160,5 +164,12 @@ private:
 
 #define EXTERN_CVAR(name) extern cvar_t name;
 
+#define CVAR_FUNC_DECL(name,def,flags) \
+    extern void cvarfunc_##name(cvar_t &); \
+    cvar_t name (#name, def, flags, cvarfunc_##name);
+
+#define CVAR_FUNC_IMPL(name) \
+    EXTERN_CVAR(name) \
+    void cvarfunc_##name(cvar_t &var)
 
 #endif //__C_CVARS_H__

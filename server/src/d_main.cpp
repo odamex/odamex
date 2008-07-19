@@ -123,6 +123,8 @@ DCanvas *page;
 static int demosequence;
 static int pagetic;
 
+const char *LOG_FILE;
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -243,6 +245,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		"doom.wad",
 		"doom1.wad",
 		"freedoom.wad",
+		"freedm.wad",
 		NULL
 	};
 
@@ -881,11 +884,11 @@ void D_DoomMain (void)
 
 	I_Init ();
 
+	D_CheckNetGame ();
+
 	M_LoadDefaults ();			// load before initing other systems
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
-
-	D_CheckNetGame ();
 
 	//D_AddDefWads();
 	//SV_InitMultipleFiles (wadfiles);
@@ -1008,6 +1011,8 @@ void D_DoomMain (void)
 	C_ExecCmdLineParams (false, false);
 
 	strncpy(level.mapname, startmap, sizeof(level.mapname));
+
+    gamestate = GS_STARTUP;
 
 	G_ChangeMap ();
 

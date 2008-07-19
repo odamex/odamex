@@ -123,6 +123,7 @@ endif
 # Directories
 BINDIR = .
 INSTALLDIR = /usr/local/bin
+RESDIR = /usr/local/share
 
 # Common
 COMMON_DIR = common
@@ -173,7 +174,7 @@ endif
 TARGETS = $(SERVER_TARGET) $(CLIENT_TARGET) $(MASTER_TARGET) $(WADFILE_TARGET)
 
 # denis - fixme - cflags are quite messy, but removing these is a very delicate act, also use -Wall -Werror
-CFLAGS = $(CFLAGS_PLATFORM) -DNOASM -Icommon -g -Wall
+CFLAGS = $(CFLAGS_PLATFORM) -DNOASM -Icommon -g -Wall -O2
 LFLAGS = $(LFLAGS_PLATFORM) 
 
 CFLAGS_RELEASE = $(CFLAGS_PLATFORM) -DNOASM -Icommon -O3
@@ -257,21 +258,44 @@ $(OBJDIR)/$(MASTER_DIR)/%.o: $(MASTER_DIR)/%.cpp
 $(WADFILE_TARGET) :
 	(cd wad; $(DEUTEX) $(DEUTEX_FLAGS) -doom2 bootstrap -build wadinfo.txt ../$@)
 
+odalaunch/odalaunch:
+	cd odalaunch && make && cd ..
+
 # Checker
 check: test
 test: server client
-	tests/all.sh
+	tests/all.tcl
 
 # Installer
-install: $(CLIENT_TARGET) $(SERVER_TARGET)
+install: $(CLIENT_TARGET) $(SERVER_TARGET) odalaunch/odalaunch
 	$(MKDIR) $(INSTALLDIR)
 	$(INSTALL) $(SERVER_TARGET) $(INSTALLDIR)
 	$(INSTALL) $(CLIENT_TARGET) $(INSTALLDIR)
+	$(INSTALL) odalaunch/odalaunch $(INSTALLDIR)
+	$(MKDIR) $(RESDIR)/doom
+	cp odamex.wad $(RESDIR)/doom
 
 uninstall:
 	rm $(INSTALLDIR)/$(CLIENT_TARGET)
 	rm $(INSTALLDIR)/$(SERVER_TARGET)
 	rm $(INSTALLDIR)/$(MASTER_TARGET)
+	rm $(INSTALLDIR)/odalaunch
+	rm $(RESDIR)/doom/odamex.wad
+
+install-res: 
+	$(MKDIR) $(RESDIR)
+	$(INSTALL) $(BINDIR)/media/icon_odamex_96.png $(RESDIR)/pixmaps/odamex.png
+	$(INSTALL) $(BINDIR)/media/icon_odasrv_96.png $(RESDIR)/pixmaps/odasrv.png
+	$(INSTALL) $(BINDIR)/media/icon_odalaunch_96.png $(RESDIR)/pixmaps/odalaunch.png
+	$(INSTALL) $(BINDIR)/installer/arch/odamex.desktop $(RESDIR)/applications
+	$(INSTALL) $(BINDIR)/installer/arch/odalaunch.desktop $(RESDIR)/applications
+
+uninstall-res:
+	rm $(RESDIR)/pixmaps/odalaunch.png
+	rm $(RESDIR)/pixmaps/odamex.png
+	rm $(RESDIR)/pixmaps/odasrv.png
+	rm $(RESDIR)/applications/odamex.desktop
+	rm $(RESDIR)/applications/odalaunch.desktop
 
 # Clean
 clean:
@@ -291,6 +315,8 @@ help:
 	@echo To build $(MASTER_TARGET): make master
 	@echo To remove built files: make clean
 	@echo To install built binaries: make install
+	@echo To install resources: make install-res
+	@echo To uninstall resources: make uninstall-res
 	@echo To uninstall binaries: make uninstall
 	@echo	----------------------------
 	@echo Binaries will be built in: $(BINDIR)

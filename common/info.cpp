@@ -5636,10 +5636,12 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0x10000,
 	"MT_BSOK"
 	},
+	
+	// Nes - Reserve 5132 for Neutral Socket
 
 		// [Toke - CTF] Gold Socket
 	{		// MT_BSOK
-	5132,		// doomednum
+	5133,		// doomednum
 	S_GSOK,		// spawnstate
 	1000,		// spawnhealth
 	S_NULL,		// seestate

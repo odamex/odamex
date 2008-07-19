@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2006 by Denis Lukianov 
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -620,5 +620,5 @@ void huffman_client::reset()
 }
 
 
-VERSION_CONTROL (huffman_cpp, "$Id:$")
+VERSION_CONTROL (huffman_cpp, "$Id$")
 

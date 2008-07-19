@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -84,15 +84,13 @@ void	G_DoSaveGame (void);
 
 void	CL_RunTics (void);
 
-CVAR (skill, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE) // [Toke - todo] should not be cvar on client
-CVAR (deathmatch, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // [Toke - todo] should not be cvar on client
-
+EXTERN_CVAR (skill)
+EXTERN_CVAR (deathmatch)
 EXTERN_CVAR (novert)
-
 EXTERN_CVAR (monstersrespawn)
+EXTERN_CVAR (teamplay)
 
-
-CVAR (chasedemo, "0", 0)
+EXTERN_CVAR (chasedemo)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -180,14 +178,14 @@ int				lookspeed[2] = {450, 512};
 
 #define SLOWTURNTICS	6
 
-CVAR (cl_run,		"1",	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
-CVAR (invertmouse,	"0",	CVAR_ARCHIVE)		// Invert mouse look down/up?
-CVAR (lookstrafe,	"0",	CVAR_ARCHIVE)		// Always strafe with mouse?
-CVAR (m_pitch,		"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)		// Mouse speeds
-CVAR (m_yaw,		"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_forward,	"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_side,		"2.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (displaymouse,	"0",	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
+EXTERN_CVAR (cl_run)
+EXTERN_CVAR (invertmouse)
+EXTERN_CVAR (lookstrafe)
+EXTERN_CVAR (m_pitch)
+EXTERN_CVAR (m_yaw)
+EXTERN_CVAR (m_forward)
+EXTERN_CVAR (m_side)
+EXTERN_CVAR (displaymouse)
 
 int 			turnheld;								// for accelerative turning
 
@@ -390,7 +388,7 @@ END_COMMAND (weapprev)
 
 BEGIN_COMMAND (spynext)
 {
-	extern bool ctfmode, teamplaymode, st_firsttime;
+	extern bool ctfmode, st_firsttime;
 
 	size_t curr;
 	size_t s = players.size();
@@ -413,7 +411,7 @@ BEGIN_COMMAND (spynext)
 			break;
 		}
 		else if (consoleplayer().spectator ||
-				(!deathmatch || ((teamplaymode || ctfmode)
+				(!deathmatch || ((teamplay || ctfmode)
 				&& players[curr].userinfo.team == consoleplayer().userinfo.team)))
 		{
 			displayplayer_id = players[curr].id;
@@ -521,7 +519,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		side -= sidemove[speed];
 
 	// buttons
-	if (Actions[ACTION_ATTACK] && ConsoleState == c_up) // john - only add attack when console up
+	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && !headsupactive) // john - only add attack when console up
 		cmd->ucmd.buttons |= BT_ATTACK;
 
 	if (Actions[ACTION_USE])
@@ -824,6 +822,9 @@ BEGIN_COMMAND(netstat)
 }
 END_COMMAND(netstat)
 
+void P_MovePlayer (player_t *player);
+void P_CalcHeight (player_t *player);
+void P_DeathThink (player_t *player);
 
 //
 // G_Ticker
@@ -1002,7 +1003,22 @@ void G_Ticker (void)
 	{
 	case GS_LEVEL:
 		if(clientside && !serverside)
-			CL_PredictMove ();
+		{
+			// GhostlyDeath -- If we are a spectator, we do things ourselves
+			if (consoleplayer().spectator)
+			{
+				if (displayplayer().health <= 0 && (&displayplayer() != &consoleplayer()))
+					P_DeathThink(&displayplayer());
+				else
+					P_PlayerThink(&consoleplayer());
+				
+				P_MovePlayer(&consoleplayer());
+				P_CalcHeight(&consoleplayer());
+				P_CalcHeight(&displayplayer());
+			}
+			
+			CL_PredictMove();
+		}
 		P_Ticker ();
 		ST_Ticker ();
 		AM_Ticker ();
@@ -2075,9 +2091,9 @@ BOOL G_CheckDemoStatus (void)
 			AActor *mo = idplayer(1).mo;
 
 			if(mo)
-				printf("%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
+				Printf(PRINT_HIGH, "%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
 			else
-				printf("demotest: no player\n");
+				Printf(PRINT_HIGH, "demotest: no player\n");
 		}
 			
 
@@ -2151,6 +2167,7 @@ BOOL CheckIfExitIsGood (AActor *self)
 
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
+
 
 
 

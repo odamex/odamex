@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,11 +54,11 @@ static IVideo *Video;
 //static IMouse *Mouse;
 //static IJoystick *Joystick;
 
-CVAR (vid_fps, "0", 0)
-CVAR (ticker, "0", 0)
-CVAR (fullscreen, "0", CVAR_ARCHIVE)
+EXTERN_CVAR (vid_fps)
+EXTERN_CVAR (vid_ticker)
+EXTERN_CVAR (vid_fullscreen)
 
-BEGIN_CUSTOM_CVAR (vid_winscale, "1.0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (vid_winscale)
 {
 	if (var < 1.f)
 	{
@@ -73,7 +73,6 @@ BEGIN_CUSTOM_CVAR (vid_winscale, "1.0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 		setmodeneeded = true;
 	}
 }
-END_CUSTOM_CVAR (vid_winscale)
 
 void STACK_ARGS I_ShutdownHardware ()
 {
@@ -86,7 +85,7 @@ void I_InitHardware ()
 	char num[4];
 	num[0] = '1' - !Args.CheckParm ("-devparm");
 	num[1] = 0;
-	ticker.SetDefault (num);
+	vid_ticker.SetDefault (num);
 
 	if(Args.CheckParm ("-novideo"))
 		Video = new IVideo();
@@ -155,7 +154,7 @@ void I_FinishUpdate ()
 	}
 
     // draws little dots on the bottom of the screen
-    if (ticker)
+    if (vid_ticker)
     {
 		static QWORD lasttic = 0;
 		QWORD i = I_GetTime();
@@ -324,7 +323,7 @@ void I_SetMode (int &width, int &height, int &bits)
 		I_ResumeMouse();
 		break;
 	case DISPLAY_Both:
-		fs = fullscreen ? true : false;
+		fs = vid_fullscreen ? true : false;
 		
 		fs ? I_ResumeMouse() : I_PauseMouse();
 		
@@ -345,7 +344,7 @@ bool I_CheckResolution (int width, int height, int bits)
 {
 	int twidth, theight;
 
-	Video->FullscreenChanged (fullscreen ? true : false);
+	Video->FullscreenChanged (vid_fullscreen ? true : false);
 	Video->StartModeIterator (bits);
 	while (Video->NextMode (&twidth, &theight))
 	{
@@ -362,7 +361,7 @@ void I_ClosestResolution (int *width, int *height, int bits)
 	int iteration;
 	DWORD closest = 4294967295u;
 
-	Video->FullscreenChanged (fullscreen ? true : false);
+	Video->FullscreenChanged (vid_fullscreen ? true : false);
 	for (iteration = 0; iteration < 2; iteration++)
 	{
 		Video->StartModeIterator (bits);

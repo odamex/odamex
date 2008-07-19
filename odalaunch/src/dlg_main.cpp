@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,6 +35,7 @@
 #include <wx/app.h>
 #include <wx/imaglist.h>
 #include <wx/artprov.h>
+#include <wx/iconbndl.h>
 
 #include "misc.h"
 
@@ -54,6 +55,7 @@ static wxInt32 ID_MNUQLAUNCH = XRCID("ID_MNUQLAUNCH");
 static wxInt32 ID_MNUGETLIST = XRCID("ID_MNUGETLIST");
 static wxInt32 ID_MNUREFRESHSERVER = XRCID("ID_MNUREFRESHSERVER");
 static wxInt32 ID_MNUREFRESHALL = XRCID("ID_MNUREFRESHALL");
+static wxInt32 ID_MNUODAGET = XRCID("ID_MNUODAGET");
 static wxInt32 ID_MNUABOUT = XRCID("ID_MNUABOUT");
 static wxInt32 ID_MNUSETTINGS = XRCID("ID_MNUSETTINGS");
 static wxInt32 ID_MNUEXIT = XRCID("ID_MNUEXIT");
@@ -82,6 +84,8 @@ BEGIN_EVENT_TABLE(dlgMain,wxFrame)
 	EVT_MENU(ID_MNUGETLIST, dlgMain::OnGetList)
 	EVT_MENU(ID_MNUREFRESHSERVER, dlgMain::OnRefreshServer)
 	EVT_MENU(ID_MNUREFRESHALL, dlgMain::OnRefreshAll)
+
+    EVT_MENU(ID_MNUODAGET, dlgMain::OnOpenOdaGet)
 
 	EVT_MENU(ID_MNUABOUT, dlgMain::OnAbout)
 	EVT_MENU(ID_MNUSETTINGS, dlgMain::OnOpenSettingsDialog)
@@ -112,14 +116,26 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	wxXmlResource::Get()->LoadFrame(this, parent, _T("dlgMain")); 
   
-    SERVER_LIST = wxDynamicCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
-    PLAYER_LIST = wxDynamicCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
+    // Set up icons, this is a hack because wxwidgets does not have an xml
+    // handler for wxIconBundle :(
+    wxIconBundle IconBundle;
+    
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon16x16x32")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon32x32x32")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon48x48x32")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon16x16x8")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon32x32x8")));
+    
+    SetIcons(IconBundle);
+    
+    m_ServerList = wxDynamicCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
+    m_PlayerList = wxDynamicCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
 
-    SetupServerListColumns(SERVER_LIST);
-    SetupPlayerListHeader(PLAYER_LIST);
+    SetupServerListColumns(m_ServerList);
+    SetupPlayerListHeader(m_PlayerList);
 
     // spectator state.
-    PLAYER_LIST->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
+    m_PlayerList->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
 
     // Load configuration
     wxFileConfig ConfigInfo;
@@ -129,12 +145,12 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     ConfigInfo.Read(_T("ServerListSortOrder"), &ServerListSortOrder, 1);
     ConfigInfo.Read(_T("ServerListSortColumn"), &ServerListSortColumn, 0);
 
-    SERVER_LIST->SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+    m_ServerList->SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
 
     ConfigInfo.Read(_T("PlayerListSortOrder"), &PlayerListSortOrder, 1);
     ConfigInfo.Read(_T("PlayerListSortColumn"), &PlayerListSortColumn, 0);
 
-    PLAYER_LIST->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+    m_PlayerList->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
 
     wxInt32 WindowWidth, WindowHeight;
 
@@ -146,10 +162,19 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	// set up the master server information
 	MServer = new MasterServer;
     
+    MServer->AddMaster(_T("master1.odamex.net"), 15000);
+    MServer->AddMaster(_T("voxelsoft.com"), 15000);
+    
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
     server_dlg = new dlgServers(MServer, this);
-   
+    
+    /* Get the first directory for wad downloading */
+    wxInt32 Pos = launchercfg_s.wad_paths.Find(wxT(';'), false);
+    wxString FirstDirectory = launchercfg_s.wad_paths.Mid(0, Pos);
+    
+    OdaGet = new frmOdaGet(this, -1, FirstDirectory);
+    
     QServer = NULL;
 
     // Create monitor thread and run it
@@ -185,8 +210,8 @@ dlgMain::~dlgMain()
     wxInt32 ServerListSortOrder, ServerListSortColumn;
     wxInt32 PlayerListSortOrder, PlayerListSortColumn;
 
-    SERVER_LIST->GetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
-    PLAYER_LIST->GetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+    m_ServerList->GetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+    m_PlayerList->GetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
 
     ConfigInfo.Write(_T("ServerListSortOrder"), ServerListSortOrder);
     ConfigInfo.Write(_T("ServerListSortColumn"), ServerListSortColumn);
@@ -209,6 +234,9 @@ dlgMain::~dlgMain()
 
     if (server_dlg != NULL)
         server_dlg->Destroy();
+
+    if (OdaGet != NULL)
+        OdaGet->Destroy();
 }
 
 void dlgMain::OnExit(wxCommandEvent& event)
@@ -229,10 +257,19 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     ted.ShowModal();
     ted_result = ted.GetValue();
     
+    wxString ped_result = _T("");
+    wxPasswordEntryDialog ped(this, 
+                            _T("Enter an optional password"), 
+                            _T("Enter an optional password"),
+                            _T(""));
+                            
+    ped.ShowModal();
+    
     if (!ted_result.IsEmpty() && ted_result != _T("0.0.0.0:0"))
         LaunchGame(ted_result, 
                     launchercfg_s.odamex_directory, 
-                    launchercfg_s.wad_paths);
+                    launchercfg_s.wad_paths,
+                    ped.GetValue());
 }
 
 // [Russell] - Monitor thread entry point
@@ -248,54 +285,25 @@ void *dlgMain::Entry()
         // Can I order a master server request with a list of server addresses
         // to go with that kthx?
         if (mtcs_Request.Signal == mtcs_getmaster)
-        {
-            static const wxString masters[2] = 
-            {
-                _T("master1.odamex.net"),
-                _T("odamex.org")
-            };
-            
-            static int index = 0;
-            
+        {           
             mtcs_Request.Signal = mtcs_getservers;
             
             ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, 500);
             
-            MServer->SetAddress(masters[index], 15000);
-
-            // TODO: Clean this up
-            if (!MServer->Query(MasterTimeout))
+            MServer->QueryMasters(MasterTimeout);
+            
+            if (!MServer->GetServerCount())
             {
-                index = !index;
-        
-                MServer->SetAddress(masters[index], 15000);
-           
-                if (!MServer->Query(MasterTimeout))
-                {
-                    mtrs_struct_t *Result = new mtrs_struct_t;
+                mtrs_struct_t *Result = new mtrs_struct_t;
 
-                    Result->Signal = mtrs_master_timeout;                
-                    Result->Index = -1;
-                    Result->ServerListIndex = -1;
+                Result->Signal = mtrs_master_timeout;                
+                Result->Index = -1;
+                Result->ServerListIndex = -1;
                     
-                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                    event.SetClientData(Result);
+                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+                event.SetClientData(Result);
                   
-                    wxPostEvent(this, event); 
-                }
-                else
-                {      
-                    mtrs_struct_t *Result = new mtrs_struct_t;
-
-                    Result->Signal = mtrs_master_success;                
-                    Result->Index = -1;
-                    Result->ServerListIndex = -1;
-                
-                    wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                    event.SetClientData(Result);
-                  
-                    wxPostEvent(this, event);                     
-                }
+                wxPostEvent(this, event); 
             }
             else
             {                 
@@ -467,23 +475,23 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         case mtrs_server_singletimeout:
             i = FindServerInList(QServer[Result->Index].GetAddress());
 
-            PLAYER_LIST->DeleteAllItems();
+            m_PlayerList->DeleteAllItems();
             
             QServer[Result->Index].ResetData();
             
             if (launchercfg_s.show_blocked_servers)
             if (i == -1)
-                AddServerToList(SERVER_LIST, QServer[Result->Index], Result->Index);
+                AddServerToList(m_ServerList, QServer[Result->Index], Result->Index);
             else
-                AddServerToList(SERVER_LIST, QServer[Result->Index], i, 0);
+                AddServerToList(m_ServerList, QServer[Result->Index], i, 0);
             
             break;
         case mtrs_server_singlesuccess:
-            PLAYER_LIST->DeleteAllItems();
+            m_PlayerList->DeleteAllItems();
             
-            AddServerToList(SERVER_LIST, QServer[Result->Index], Result->ServerListIndex, 0);
+            AddServerToList(m_ServerList, QServer[Result->Index], Result->ServerListIndex, 0);
             
-            AddPlayersToList(PLAYER_LIST, QServer[Result->Index]);
+            AddPlayersToList(m_PlayerList, QServer[Result->Index]);
             
             TotalPlayers += QServer[Result->Index].info.numplayers;
            
@@ -508,21 +516,21 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
         {
             i = FindServerInList(QServer[event.GetInt()].GetAddress());
 
-            PLAYER_LIST->DeleteAllItems();
+            m_PlayerList->DeleteAllItems();
             
             QServer[event.GetInt()].ResetData();
             
             if (launchercfg_s.show_blocked_servers)
             if (i == -1)
-                AddServerToList(SERVER_LIST, QServer[event.GetInt()], event.GetInt());
+                AddServerToList(m_ServerList, QServer[event.GetInt()], event.GetInt());
             else
-                AddServerToList(SERVER_LIST, QServer[event.GetInt()], i, 0);
+                AddServerToList(m_ServerList, QServer[event.GetInt()], i, 0);
             
             break;                 
         }
         case 1: // server queried successfully
         {
-            AddServerToList(SERVER_LIST, QServer[event.GetInt()], event.GetInt());
+            AddServerToList(m_ServerList, QServer[event.GetInt()], event.GetInt());
             
             TotalPlayers += QServer[event.GetInt()].info.numplayers;
             
@@ -545,10 +553,10 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 // display extra information for a server
 void dlgMain::OnServerListRightClick(wxListEvent& event)
 {
-    if (!SERVER_LIST->GetItemCount() || !SERVER_LIST->GetSelectedItemCount())
+    if (!m_ServerList->GetItemCount() || !m_ServerList->GetSelectedItemCount())
         return;
   
-    wxInt32 i = SERVER_LIST->GetNextItem(-1, 
+    wxInt32 i = m_ServerList->GetNextItem(-1, 
                                         wxLIST_NEXT_ALL, 
                                         wxLIST_STATE_SELECTED);
         
@@ -557,7 +565,7 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
     item.SetColumn(7);
     item.SetMask(wxLIST_MASK_TEXT);
         
-    SERVER_LIST->GetItem(item);
+    m_ServerList->GetItem(item);
         
     i = FindServer(item.GetText());
 
@@ -585,8 +593,7 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               "Clean maps: %s\n"
                               "Frag on exit: %s\n"
                               "Spectating: %s\n"
-                              // TODO: Uncomment when the server has a full password implementation
-                              /*"Passworded: %s\n"*/),
+                              "Passworded: %s\n"),
                               QServer[i].info.version,
                               
                               QServer[i].info.emailaddr.c_str(),
@@ -609,9 +616,8 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               BOOLSTR(QServer[i].info.emptyreset),
                               BOOLSTR(QServer[i].info.cleanmaps),
                               BOOLSTR(QServer[i].info.fragonexit),
-                              BOOLSTR(QServer[i].info.spectating)//,
-                              // TODO: Uncomment when the server has a full password implementation
-                              /*BOOLSTR(QServer[i].info.passworded)*/);
+                              BOOLSTR(QServer[i].info.spectating),
+                              BOOLSTR(QServer[i].info.passworded));
     
     static wxTipWindow *tw = NULL;
                               
@@ -624,7 +630,7 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
 	tw = NULL;
 
 	if (!text.empty())
-		tw = new wxTipWindow(SERVER_LIST, text, 120, &tw);
+		tw = new wxTipWindow(m_ServerList, text, 120, &tw);
 }
 
 
@@ -640,6 +646,12 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent &event)
 {
     if (config_dlg)
         config_dlg->Show();
+}
+
+void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
+{
+    if (OdaGet)
+        OdaGet->Show();
 }
 
 // About information
@@ -662,25 +674,39 @@ void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 // Launch button click
 void dlgMain::OnLaunch(wxCommandEvent &event)
 {
-    if (!SERVER_LIST->GetItemCount() || !SERVER_LIST->GetSelectedItemCount())
+    if (!m_ServerList->GetItemCount() || !m_ServerList->GetSelectedItemCount())
         return;
         
-    wxInt32 i = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    wxInt32 i = m_ServerList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
     wxListItem item;
     item.SetId(i);
     item.SetColumn(7);
     item.SetMask(wxLIST_MASK_TEXT);
         
-    SERVER_LIST->GetItem(item);
+    m_ServerList->GetItem(item);
         
     i = FindServer(item.GetText()); 
-       
+
+    wxPasswordEntryDialog ped(this, 
+                            _T("Please enter a password"), 
+                            _T("Server is passworded"),
+                            _T(""));
+
+    if (QServer[i].info.passworded)
+    {                           
+        ped.ShowModal();
+        
+        if (ped.GetValue().IsEmpty())
+            return;
+    }
+    
     if (i > -1)
     {
         LaunchGame(QServer[i].GetAddress(), 
                     launchercfg_s.odamex_directory, 
-                    launchercfg_s.wad_paths);
+                    launchercfg_s.wad_paths,
+                    ped.GetValue());
     }
 }
 
@@ -694,8 +720,8 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     if (recursion_guard.IsInside())
         return;	
 	
-    SERVER_LIST->DeleteAllItems();
-    PLAYER_LIST->DeleteAllItems();
+    m_ServerList->DeleteAllItems();
+    m_PlayerList->DeleteAllItems();
         
     QueriedServers = 0;
     TotalPlayers = 0;
@@ -712,19 +738,19 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
     if (recursion_guard.IsInside())
         return;	
     
-    if (!SERVER_LIST->GetItemCount() || !SERVER_LIST->GetSelectedItemCount())
+    if (!m_ServerList->GetItemCount() || !m_ServerList->GetSelectedItemCount())
         return;
         
-    PLAYER_LIST->DeleteAllItems();
+    m_PlayerList->DeleteAllItems();
         
-    wxInt32 listindex = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    wxInt32 listindex = m_ServerList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
     wxListItem item;
     item.SetId(listindex);
     item.SetColumn(7);
     item.SetMask(wxLIST_MASK_TEXT);
         
-    SERVER_LIST->GetItem(item);
+    m_ServerList->GetItem(item);
         
     wxInt32 arrayindex = FindServer(item.GetText()); 
         
@@ -750,8 +776,8 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
     if (!MServer->GetServerCount())
         return;
         
-    SERVER_LIST->DeleteAllItems();
-    PLAYER_LIST->DeleteAllItems();
+    m_ServerList->DeleteAllItems();
+    m_PlayerList->DeleteAllItems();
     
     QueriedServers = 0;
     TotalPlayers = 0;
@@ -765,32 +791,32 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
 void dlgMain::OnServerListClick(wxListEvent& event)
 {
     // clear any tooltips remaining
-    SERVER_LIST->SetToolTip(_T(""));
+    m_ServerList->SetToolTip(_T(""));
     
-    if ((SERVER_LIST->GetItemCount() > 0) && (SERVER_LIST->GetSelectedItemCount() == 1))
+    if ((m_ServerList->GetItemCount() > 0) && (m_ServerList->GetSelectedItemCount() == 1))
     {
-        PLAYER_LIST->DeleteAllItems();
+        m_PlayerList->DeleteAllItems();
         
-        wxInt32 i = SERVER_LIST->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+        wxInt32 i = m_ServerList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
         wxListItem item;
         item.SetId(i);
         item.SetColumn(7);
         item.SetMask(wxLIST_MASK_TEXT);
         
-        SERVER_LIST->GetItem(item);
+        m_ServerList->GetItem(item);
         
         i = FindServer(item.GetText()); 
         
         if (i > -1)
-            AddPlayersToList(PLAYER_LIST, QServer[i]);
+            AddPlayersToList(m_PlayerList, QServer[i]);
     }
 }
 
 // when the user double clicks on the server list
 void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 {
-    if ((SERVER_LIST->GetItemCount() > 0) && (SERVER_LIST->GetSelectedItemCount() == 1))
+    if ((m_ServerList->GetItemCount() > 0) && (m_ServerList->GetSelectedItemCount() == 1))
     {
         wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, ID_MNULAUNCH);
     
@@ -811,17 +837,17 @@ wxInt32 dlgMain::FindServer(wxString Address)
 // Finds an index in the server list, via Address
 wxInt32 dlgMain::FindServerInList(wxString Address)
 {
-    if (!SERVER_LIST->GetItemCount())
+    if (!m_ServerList->GetItemCount())
         return -1;
     
-    for (wxInt32 i = 0; i < SERVER_LIST->GetItemCount(); i++)
+    for (wxInt32 i = 0; i < m_ServerList->GetItemCount(); i++)
     {
         wxListItem item;
         item.SetId(i);
         item.SetColumn(7);
         item.SetMask(wxLIST_MASK_TEXT);
         
-        SERVER_LIST->GetItem(item);
+        m_ServerList->GetItem(item);
         
         if (item.GetText().IsSameAs(Address))
             return i;

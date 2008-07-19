@@ -4,7 +4,7 @@
 // $Id:$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62)
-// Copyright (C) 2006-2007 by The Odamex Team
+// Copyright (C) 2006-2008 by The Odamex Team
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -77,6 +77,24 @@ typedef struct buf_s
 	   if(data)
 		delete[] data;
    }
+
+	buf_s &operator =(const buf_s &other)
+	{
+		if(data)
+			delete[] data;
+		
+		data = new byte[other.maxsize];
+		maxsize = other.maxsize;
+		cursize = other.cursize;
+		overflowed = other.overflowed;
+
+		if(!overflowed)
+			for(size_t i = 0; i < cursize; i++)
+				data[i] = other.data[i];
+
+		return *this;
+	}
+
 } buf_t;
 
 extern buf_t net_message;

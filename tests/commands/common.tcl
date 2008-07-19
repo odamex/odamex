@@ -4,15 +4,28 @@ exec tclsh "$0" "$@"
 
 package provide common 1.0
 
+set port 10599
+
 proc start {} {
- global server client serverout clientout
- set server [open "|./odasrv -port 10599 > odasrv.log" w]
+ global server client serverout clientout port
+ set server [open "|./odasrv -port $port -logfile odasrv.log > tmp" w]
+ wait
  set serverout [open odasrv.log r]
 
- set client [open "|./odamex -port 10501 -connect localhost:10599 -nosound -novideo > odamex.log" w]
+ server "deathmatch 1"
+ server "hostname Unnamed"
+ server "maxclients 2"
+ server "maxplayers 2"
+ server "timelimit 0"
+ server "map 1"
+
+ set client [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo -logfile odamex.log > tmp" w]
  set clientout [open odamex.log r]
 
  wait 5
+
+ client "print_stdout 1"
+ client "cl_name Player"
 }
 
 proc end {} {
@@ -34,8 +47,6 @@ proc server { cmd } {
  flush $server
 
  wait
-
- while { ![eof $serverout] } { gets $serverout }
 }
 
 proc client { cmd } {
@@ -44,8 +55,6 @@ proc client { cmd } {
  flush $client
 
  wait
-
- while { ![eof $clientout] } { gets $clientout }
 }
 
 proc clear {} {
@@ -56,8 +65,11 @@ proc clear {} {
  while { ![eof $clientout] } { gets $clientout }
 }
 
-proc wait { {n 1} } {
- exec sleep $n
+proc wait { {seconds 1} } {
+ set milliseconds [expr int($seconds*1000)]
+ global endwait
+ after $milliseconds set endwait 1
+ vwait endwait
 }
 
 proc expect { stream expected {excludeTimestamp 1} } {

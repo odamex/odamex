@@ -452,8 +452,8 @@ void A_Punch (player_t *player, pspdef_t *psp)
 	// turn to face target
 	if (linetarget)
 	{
-		//A_FireSound (player, "*fist");
-		S_Sound (player->mo, CHAN_VOICE, "*fist", 1, ATTN_NORM);
+		A_FireSound (player, "player/male/fist");
+		//S_Sound (player->mo, CHAN_VOICE, "*fist", 1, ATTN_NORM);
 		player->mo->angle = R_PointToAngle2 (player->mo->x,
 											 player->mo->y,
 											 linetarget->x,
@@ -580,11 +580,12 @@ void P_BulletSlope (AActor *mo)
 	an = mo->angle;
 	bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
 
-	if (!linetarget)
+	// GhostlyDeath <June 19, 2008> -- Autoaim bug here!
+	if (!linetarget)	// Autoaim missed something
 	{
 		an += 1<<26;
 		bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
-		if (!linetarget)
+		if (!linetarget)	// Still missing something
 		{
 			an -= 2<<26;
 			bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
@@ -597,7 +598,11 @@ void P_BulletSlope (AActor *mo)
 			}
 		}
 	}
-	if (allowfreelook && linetarget && mo->player)
+
+	// GhostlyDeath -- If allowfreelook was on and a line target was found
+	// and the shooting object is a player, we use the looking, so shouldn't
+	// linetarget become !linetarget and moved up!?
+	if (allowfreelook && !linetarget && mo->player)
 	{
 		if (abs(bulletslope - pitchslope) > mo->player->userinfo.aimdist)
 		{

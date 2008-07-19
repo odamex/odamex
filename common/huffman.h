@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -97,6 +97,9 @@ public:
 
 	// Decompress a chunk of data using only previously generated stats
 	bool decompress( unsigned char *in_data, size_t in_len, unsigned char *out_data, size_t &out_len);
+
+	// For debugging, this count can be used to see if two codecs have had the same length input
+	int get_count() { return total_count; }
 	
 	// Constructor
 	huffman();

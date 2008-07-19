@@ -48,7 +48,7 @@ int				MaxDrawSegs;
 drawseg_t		*drawsegs;
 drawseg_t*		ds_p;
 
-CVAR (r_drawflat, "0", 0)		// [RH] Don't texture segs?
+EXTERN_CVAR (r_drawflat)
 
 
       void
@@ -120,10 +120,10 @@ R_ClipSolidWallSegment
 		cliprange_t *old = solidsegs;
 		solidsegs = (cliprange_t *)Malloc (2 * MaxSegs * sizeof(cliprange_t));
 		memcpy(solidsegs, old,  (sizeof(cliprange_t)*MaxSegs));
-		free(old);
 		MaxSegs *= 2;
 		lastsolidseg = &solidsegs[MaxSegs];
 		newend = newend - old + solidsegs;
+		M_Free(old);
 	}
 
 	// Find the first range that touches the range

@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -230,12 +230,12 @@ void SetupServerListColumns(wxAdvancedListCtrl *list)
 
 	// set up the list columns
     list->InsertColumn(serverlist_field_name,_T("Server name"),wxLIST_FORMAT_LEFT,150);
-	list->InsertColumn(serverlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,50);
-	list->InsertColumn(serverlist_field_players,_T("Players"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(serverlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,60);
+	list->InsertColumn(serverlist_field_players,_T("Players"),wxLIST_FORMAT_LEFT,80);
 	list->InsertColumn(serverlist_field_wads,_T("WADs"),wxLIST_FORMAT_LEFT,150);
-	list->InsertColumn(serverlist_field_map,_T("Map"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(serverlist_field_map,_T("Map"),wxLIST_FORMAT_LEFT,60);
 	list->InsertColumn(serverlist_field_type,_T("Type"),wxLIST_FORMAT_LEFT,80);
-	list->InsertColumn(serverlist_field_iwad,_T("Game IWAD"),wxLIST_FORMAT_LEFT,80);
+	list->InsertColumn(serverlist_field_iwad,_T("Game IWAD"),wxLIST_FORMAT_LEFT,100);
 	list->InsertColumn(serverlist_field_address,_T("Address : Port"),wxLIST_FORMAT_LEFT,130);
 	
 	// Passworded server icon
@@ -265,8 +265,8 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     if (insert)    
     {
         li.SetColumn(serverlist_field_name);
-        // TODO: Uncomment when the server has a full password implementation
-        //list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
+
+        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
         li.SetText(s.info.name);
         
         li.SetId(list->ALCInsertItem(li));
@@ -275,8 +275,8 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     {
         li.SetId(index);
         li.SetColumn(serverlist_field_name);
-        // TODO: Uncomment when the server has a full password implementation
-        //list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
+
+        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
         li.SetText(s.info.name);
         
         list->SetItem(li);
@@ -371,11 +371,11 @@ void SetupPlayerListHeader(wxAdvancedListCtrl *list)
 	list->DeleteAllColumns();
 	
 	list->InsertColumn(playerlist_field_name,_T("Player name"),wxLIST_FORMAT_LEFT,150);
-	list->InsertColumn(playerlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,50);
+	list->InsertColumn(playerlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,60);
 	list->InsertColumn(playerlist_field_frags,_T("Frags"),wxLIST_FORMAT_LEFT,70);
-    list->InsertColumn(playerlist_field_killcount,_T("Kill count"),wxLIST_FORMAT_LEFT,60);
-    list->InsertColumn(playerlist_field_deathcount,_T("Death count"),wxLIST_FORMAT_LEFT,80);
-    list->InsertColumn(playerlist_field_timeingame,_T("Time"),wxLIST_FORMAT_LEFT,50);
+    list->InsertColumn(playerlist_field_killcount,_T("Kill count"),wxLIST_FORMAT_LEFT,85);
+    list->InsertColumn(playerlist_field_deathcount,_T("Death count"),wxLIST_FORMAT_LEFT,100);
+    list->InsertColumn(playerlist_field_timeingame,_T("Time"),wxLIST_FORMAT_LEFT,65);
 }
 
 void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
@@ -459,6 +459,7 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
 		{
             wxString teamstr = _T("UNKNOWN");
             wxInt32 teamscore = 0;
+            wxInt32 scorelimit = s.info.teamplayinfo.scorelimit;
             
             li.SetColumn(playerlist_field_team); 
             
@@ -481,6 +482,10 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
                     teamstr = _T("GOLD");
 					break;
 				default:
+                    li.SetTextColour(*wxBLACK);
+                    teamstr = _T("UNKNOWN");
+                    teamscore = 0;
+                    scorelimit = 0;
 					break;
 			}
 
@@ -492,7 +497,7 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
             
             li.SetText(wxString::Format(_T("%d/%d"), 
                                         teamscore, 
-                                        s.info.teamplayinfo.scorelimit));
+                                        scorelimit));
             
             list->SetItem(li);
         }
@@ -547,7 +552,7 @@ wxString *CheckPWADS(wxString pwads, wxString waddirs)
     }
 }
 
-void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs)
+void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs, wxString Password)
 {
     if (ODX_Path.IsEmpty())
     {
@@ -571,6 +576,10 @@ void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs)
     if (!Address.IsEmpty())
 		cmdline += wxString::Format(_T(" -connect %s"),
 									Address.c_str());
+	
+	if (!Password.IsEmpty())
+        cmdline += wxString::Format(_T(" %s"),
+									Password.c_str());
 	
 	// this is so the client won't mess up parsing
 	if (!dirs.IsEmpty())

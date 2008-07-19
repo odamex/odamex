@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -55,12 +55,16 @@ bool clientside = true, serverside = false;
 extern bool stepmode;
 
 // denis - client version (VERSION or other supported)
-short version;
+short version = 0;
+int gameversion = 0;				// GhostlyDeath -- Bigger Game Version
+int gameversiontosend = 0;		// If the server is 0.4, let's fake our client info
 
 buf_t     net_buffer(MAX_UDP_PACKET);
 
 bool      noservermsgs;
 int       last_received;
+
+std::string connectpasshash = "";
 
 BOOL      connected;
 netadr_t  serveraddr; // address of a server
@@ -79,7 +83,7 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
-CVAR (friendlyfire,		"1", CVAR_SERVERINFO)
+EXTERN_CVAR (friendlyfire)
 EXTERN_CVAR (weaponstay)
 
 EXTERN_CVAR (cl_name)
@@ -89,43 +93,41 @@ EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 
-CVAR (maxplayers,		"0", CVAR_SERVERINFO)
-CVAR (infiniteammo,		"0", CVAR_SERVERINFO)
-CVAR (fraglimit,		"0", CVAR_SERVERINFO)
-CVAR (timelimit,		"0", CVAR_SERVERINFO)
-CVAR (nomonsters,		"0", CVAR_SERVERINFO)
-CVAR (fastmonsters,		"0", CVAR_SERVERINFO)
-CVAR (allowexit,		"0", CVAR_SERVERINFO)
-CVAR (fragexitswitch,   "0", CVAR_SERVERINFO)       //  [ML] 03/4/06: Activate to allow exit switch at maxfrags, must click to exit
-CVAR (allowjump,		"0", CVAR_SERVERINFO)
-CVAR (allowfreelook,	"0", CVAR_SERVERINFO)
-CVAR (scorelimit,		"0", CVAR_SERVERINFO)
-CVAR (monstersrespawn,	"0", CVAR_SERVERINFO)
-CVAR (itemsrespawn,		"0", CVAR_SERVERINFO)
-CVAR (allowcheats,		"0", CVAR_SERVERINFO)
-CVAR (teamplay,			"0", CVAR_SERVERINFO)
-
-CVAR (allowtargetnames, "0", CVAR_SERVERINFO)
+EXTERN_CVAR (maxplayers)
+EXTERN_CVAR (maxclients)
+EXTERN_CVAR (infiniteammo)
+EXTERN_CVAR (fraglimit)
+EXTERN_CVAR (timelimit)
+EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (fastmonsters)
+EXTERN_CVAR (allowexit)
+EXTERN_CVAR (fragexitswitch)
+EXTERN_CVAR (allowjump)
+EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (scorelimit)
+EXTERN_CVAR (monstersrespawn)
+EXTERN_CVAR (itemsrespawn)
+EXTERN_CVAR (allowcheats)
+EXTERN_CVAR (teamplay)
+EXTERN_CVAR (allowtargetnames)
 
 // If freelook changes serverside or clientside,
 // work out what allowfreelook needs to be
 EXTERN_CVAR(sv_freelook)
 
-BEGIN_CUSTOM_CVAR (cl_freelook,		"0", CVAR_ARCHIVE)
+CVAR_FUNC_IMPL (cl_freelook)
 {
 	allowfreelook.Set((BOOL)(cl_freelook) &&
 						((BOOL)(sv_freelook) || serverside));
 }
-END_CUSTOM_CVAR (cl_freelook)
 
-BEGIN_CUSTOM_CVAR (sv_freelook,		"0", CVAR_SERVERINFO)
+CVAR_FUNC_IMPL (sv_freelook)
 {
 	allowfreelook.Set((BOOL)(cl_freelook) &&
 						((BOOL)(sv_freelook) || serverside));
 }
-END_CUSTOM_CVAR (sv_freelook)
 
-CVAR (interscoredraw, "1", CVAR_ARCHIVE)	// Nes - Determines whether to draw the scores on intermission.
+EXTERN_CVAR (interscoredraw)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -152,13 +154,13 @@ void P_PlayerLookUpDown (player_t *p);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
+void AM_Stop();
 
 void Host_EndGame(const char *msg)
 {
     Printf(PRINT_HIGH, "%s", msg);
 	CL_QuitNetGame();
 }
-
 
 void CL_QuitNetGame(void)
 {
@@ -175,6 +177,7 @@ void CL_QuitNetGame(void)
 	ctfmode = false;
 	gameaction = ga_fullconsole;
 	noservermsgs = false;
+	AM_Stop();
 
 	serverside = clientside = true;
 	
@@ -243,18 +246,33 @@ void CL_DisconnectClient(void)
 
 BEGIN_COMMAND (connect)
 {
+	if (argc == 1)
+	{
+	    Printf(PRINT_HIGH, "Usage: connect ip[:port] [password]\n");
+	    Printf(PRINT_HIGH, "\n");
+	    Printf(PRINT_HIGH, "Connect to a server, with optional port number");
+	    Printf(PRINT_HIGH, " and/or password\n");
+	    Printf(PRINT_HIGH, "eg: connect 127.0.0.1\n");
+	    Printf(PRINT_HIGH, "eg: connect 192.168.0.1:12345 secretpass\n");
+	    
+	    return;
+	}
+	
 	CL_QuitNetGame();
 
 	if (argc > 1)
 	{
 		std::string target = argv[1];
 
-		// denis - what if user typed "localhost 10666" instead of "localhost:10666"
-		if(argc > 2)
-		{
-			target += ":";
-			target += argv[2];
-		}
+        // [Russell] - Passworded servers
+        if(argc > 2)
+        {
+            connectpasshash = MD5SUM(argv[2]);
+        }
+        else
+        {
+            connectpasshash = "";
+        }
 
 		if(NET_StringToAdr (target.c_str(), &serveraddr))
 		{
@@ -363,50 +381,50 @@ END_COMMAND (gamemode)
 
 
 BEGIN_COMMAND (serverinfo)
-{
-	Printf (PRINT_HIGH,	"----------------------[Server Info]---- \n"				);
-	Printf (PRINT_HIGH, "         ctfmode - %d \n",	(int)ctfmode			);
-	Printf (PRINT_HIGH, "        teamplay - %d \n",	(int)teamplay	);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "        hostname -    \n"									);
-	Printf (PRINT_HIGH, "           email -    \n"									);
-	Printf (PRINT_HIGH, "       allowcheats - %d \n",	(BOOL)allowcheats		);
-	Printf (PRINT_HIGH, "      deathmatch - %d \n",	(BOOL)deathmatch		);
-	Printf (PRINT_HIGH, "       fraglimit - %d \n",	(int)fraglimit		);
-	Printf (PRINT_HIGH, "       timelimit - %d \n",	(int)timelimit		);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "       skill - %d \n",	(int)skill	);
-	Printf (PRINT_HIGH, "      weaponstay - %d \n",	(BOOL)weaponstay		);
-	Printf (PRINT_HIGH, "      nomonsters - %d \n",	(BOOL)nomonsters		);
-	Printf (PRINT_HIGH, " monstersrespawn - %d \n",	(BOOL)monstersrespawn);
-	Printf (PRINT_HIGH, "    itemsrespawn - %d \n",	(BOOL)itemsrespawn	);
-	Printf (PRINT_HIGH, "    fastmonsters - %d \n",	(BOOL)fastmonsters	);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "       allowexit - %d \n",	(BOOL)allowexit		);
-    Printf (PRINT_HIGH, "  fragexitswitch - %d \n",	(BOOL)fragexitswitch);
-	Printf (PRINT_HIGH, "       allowjump - %d \n",	(BOOL)allowjump		);
-	Printf (PRINT_HIGH, "   allowfreelook - %d \n",	(BOOL)sv_freelook	);
-	Printf (PRINT_HIGH, "    infiniteammo - %d \n",	(BOOL)infiniteammo	);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "      scorelimit - %d \n",	(int)scorelimit		);
-	Printf (PRINT_HIGH, "    friendlyfire - %d \n",	(BOOL)friendlyfire	);
-	Printf (PRINT_HIGH, "                      \n"									);
-	Printf (PRINT_HIGH, "allowtargetnames - %d \n", (BOOL)allowtargetnames);
-	Printf (PRINT_HIGH,	"--------------------------------------- \n"				);
+{   
+    cvar_t *Cvar = GetFirstCvar();
+    size_t MaxFieldLength = 0;
+    
+    // [Russell] - Find the largest cvar name, used for formatting
+    while (Cvar)
+	{			
+        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        {
+            size_t FieldLength = strlen(Cvar->name());
+            
+            if (FieldLength > MaxFieldLength)
+                MaxFieldLength = FieldLength;                
+        }
+        
+        Cvar = Cvar->GetNext();
+    }
+
+    // [Russell] - Formatted output
+    Cvar = GetFirstCvar();
+
+    // Heading
+    Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
+    
+    // Data
+    while (Cvar)
+	{			
+        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        {
+            Printf(PRINT_HIGH, 
+                   "%*s - %s\n", 
+                   MaxFieldLength,
+                   Cvar->name(), 
+                   Cvar->cstring());          
+        }
+        
+        Cvar = Cvar->GetNext();
+    }
+    
+    Printf (PRINT_HIGH,	"\n");
 }
 END_COMMAND (serverinfo)
 
-BEGIN_CUSTOM_CVAR (cl_predict_players, "1", CVAR_ARCHIVE)
-{
-	if (var > 1)
-	{
-		var.Set (1);
-	}
-}
-END_CUSTOM_CVAR (cl_predict_players)
-
-
-BEGIN_CUSTOM_CVAR (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (rate)
 {
 	if (var < 100)
 	{
@@ -422,7 +440,6 @@ BEGIN_CUSTOM_CVAR (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 		MSG_WriteLong(&net_buffer, (int)var);
 	}
 }
-END_CUSTOM_CVAR (rate)
 
 
 BEGIN_COMMAND (rcon)
@@ -615,7 +632,7 @@ void CL_TeamPoints (void)
 //
 // denis - fast netid lookup
 //
-AActor* CL_FindThingById(unsigned int id)
+AActor* CL_FindThingById(size_t id)
 {
 	netid_map_t::iterator i = actor_by_netid.find(id);
 
@@ -736,6 +753,7 @@ bool CL_PrepareConnect(void)
 	std::string server_host = MSG_ReadString();
 
 	byte recv_teamplay_stats = 0;
+	gameversiontosend = 0;
 
 	byte playercount = MSG_ReadByte(); // players
 	MSG_ReadByte(); // max_players
@@ -773,17 +791,6 @@ bool CL_PrepareConnect(void)
 
 	MSG_ReadString();
 
-	if (ctfmode)
-	{
-		MSG_ReadLong();
-		if (MSG_ReadByte())
-			MSG_ReadLong();
-		if (MSG_ReadByte())
-			MSG_ReadLong();
-		if (MSG_ReadByte())
-			MSG_ReadLong();
-	}
-
 	// Receive conditional teamplay information
 	if (recv_teamplay_stats)
 	{
@@ -806,6 +813,44 @@ bool CL_PrepareConnect(void)
 		version = VERSION;
 	if(version < 62)
 		version = 62;
+		
+	/* GhostlyDeath -- Need the actual version info */
+	if (version == 65)
+	{
+		size_t l;
+		MSG_ReadString();
+		
+		for (l = 0; l < 3; l++)
+			MSG_ReadShort();
+		for (l = 0; l < 14; l++)
+			MSG_ReadByte();
+		for (l = 0; l < playercount; l++)
+		{
+			MSG_ReadShort();
+			MSG_ReadShort();
+			MSG_ReadShort();
+		}
+		
+		MSG_ReadLong();
+		MSG_ReadShort();
+		
+		for (l = 0; l < playercount; l++)
+			MSG_ReadByte();
+		
+		MSG_ReadLong();
+		MSG_ReadShort();
+
+		gameversion = MSG_ReadLong();
+		
+		// GhostlyDeath -- Assume 40 for compatibility and fake it 
+		if (((gameversion % 256) % 10) == -1)
+		{
+			gameversion = 40;
+			gameversiontosend = 40;
+		}
+
+		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
+	}
 
 	Printf(PRINT_HIGH, "\n");
 
@@ -899,11 +944,19 @@ void CL_InitNetwork (void)
 
     SZ_Clear(&net_buffer);
 
-    const char *ipaddress = Args.CheckValue ("-connect");
+    size_t ParamIndex = Args.CheckParm ("-connect");
+    const char *ipaddress = Args.GetArg(ParamIndex + 1);
 
-    if (ipaddress)
+    if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
     {
 		NET_StringToAdr (ipaddress, &serveraddr);
+
+        const char *passhash = Args.GetArg(ParamIndex + 2);
+
+        if (passhash && passhash[0] != '-' && passhash[0] != '+')
+        {
+            connectpasshash = MD5SUM(passhash);            
+        }
 
 		if (!serveraddr.port)
 			I_SetPort(serveraddr, SERVERPORT);
@@ -937,11 +990,25 @@ void CL_TryToConnect(DWORD server_token)
 			MSG_WriteByte(&net_buffer, 1); // send type of connection (play/spectate/rcon/download)
 		else
 			MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
+			
+		// GhostlyDeath -- Send more version info
+		if (gameversiontosend)
+			MSG_WriteLong(&net_buffer, gameversiontosend);
+		else
+			MSG_WriteLong(&net_buffer, GAMEVER);
 
 		CL_SendUserInfo(); // send userinfo
 
 		MSG_WriteLong(&net_buffer, (int)rate);
-
+        
+        // Only 0.4.1 servers support passwords
+        if ((SERVERMAJ >= 0) &&
+        	(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
+        	(SERVERMIN > 4)))
+        {
+            MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());            
+        }
+        
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
 	}
@@ -981,6 +1048,10 @@ void CL_UpdatePlayer()
 	}
 
 	int sv_gametic = MSG_ReadLong();
+	
+	// GhostlyDeath -- Servers will never send updates on spectators
+	if (p->spectator && (p != &consoleplayer()))
+		p->spectator = 0;
 
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
@@ -1109,6 +1180,9 @@ void CL_SpawnMobj()
 		P_CheckMissileSpawn(mo);
 	}
 
+    if (mo->flags & MF_COUNTKILL)
+		level.total_monsters++;
+
 	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
 		S_Sound (mo, CHAN_VOICE, mo->info->seesound, 1, ATTN_NORM);
 
@@ -1127,14 +1201,10 @@ void CL_Corpse(void)
 {
 	AActor *mo = CL_FindThingById(MSG_ReadShort());
 	int frame = MSG_ReadByte();
-	int tics = -1;
-	if(version >= 64)
-	{
-		tics = MSG_ReadByte();
-
-		if(tics == 0xFF)
-			tics = -1;
-	}
+	int tics = MSG_ReadByte();
+	
+	if(tics == 0xFF)
+		tics = -1;
 
 	// already spawned as gibs?
 	if (!mo || mo->state - states == S_GIBS)
@@ -1154,6 +1224,9 @@ void CL_Corpse(void)
 
 	if (mo->player)
 		mo->player->playerstate = PST_DEAD;
+		
+    if (mo->flags & MF_COUNTKILL)
+		level.killed_monsters++;
 }
 
 //
@@ -1199,6 +1272,15 @@ void CL_SpawnPlayer()
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
 	z = MSG_ReadLong();
+		
+	// GhostlyDeath -- reset prediction
+	p->real_origin[0] = x;
+	p->real_origin[1] = y;
+	p->real_origin[2] = z;
+
+	p->real_velocity[0] = 0;
+	p->real_velocity[1] = 0;
+	p->real_velocity[2] = 0;
 
 	CL_ClearID(netid);
 
@@ -1269,6 +1351,8 @@ void CL_SpawnPlayer()
 void CL_PlayerInfo(void)
 {
 	size_t j;
+	int newweapon;
+	bool newpending = false;
 
 	player_t *p = &consoleplayer();
 
@@ -1286,11 +1370,36 @@ void CL_PlayerInfo(void)
 	p->health = MSG_ReadByte ();
 	p->armorpoints = MSG_ReadByte ();
 	p->armortype = MSG_ReadByte ();
-	p->pendingweapon = (weapontype_t)MSG_ReadByte ();
+	newweapon = MSG_ReadByte ();
+	
+	// GhostlyDeath <July 17, 2008> -- what weapon do we change to?
+	if (newweapon & 64)		// Server sent our readyweapon (gun we have up)
+	{
+		// Does it not match our gun and are we already switching to the gun or not?
+		if ((p->readyweapon != (weapontype_t)(newweapon & ~64)) &&
+			(p->pendingweapon != (weapontype_t)(newweapon & ~64)))
+		{
+			p->pendingweapon = (weapontype_t)(newweapon & ~64);
+			newpending = true;
+		}
+	}
+	else	// Server sent our pendingweapon (gun we are changing to)
+	{
+		// Is the server switching our gun when i'm not or
+		// I am switching to a gun but it isn't what the server said?
+		if ((p->pendingweapon == wp_nochange) || (p->pendingweapon != newweapon))
+		{
+			p->pendingweapon = (weapontype_t)(newweapon);
+			newpending = true;
+		}
+	}
+	
+	// If we are changing our guns, let's be sure it's valid
+	if (newpending)
+		if (p->pendingweapon > NUMWEAPONS)
+			p->pendingweapon = wp_pistol;
+	
 	p->backpack = MSG_ReadByte () ? true : false;
-
-	if(p->pendingweapon > NUMWEAPONS)
-		p->pendingweapon = wp_pistol;
 }
 
 //
@@ -1419,7 +1528,10 @@ void CL_KillMobj(void)
 
 	target->health = health;
 
-	P_KillMobj (source, target, inflictor, joinkill);
+    if (!serverside && target->flags & MF_COUNTKILL)
+		level.killed_monsters++;
+
+	P_KillMobj (source, target, inflictor, joinkill);	
 }
 
 
@@ -1583,12 +1695,8 @@ void CL_UpdateSector(void)
 	unsigned short fh = MSG_ReadShort();
 	unsigned short ch = MSG_ReadShort();
 
-	unsigned short fp = 0, cp = 0;
-	if(version > 62)
-	{
-		fp = MSG_ReadShort();
-		cp = MSG_ReadShort();
-	}
+	unsigned short fp = MSG_ReadShort();
+	unsigned short cp = MSG_ReadShort();
 
 	if(!sectors || s >= numsectors)
 		return;
@@ -1597,18 +1705,15 @@ void CL_UpdateSector(void)
 	sec->floorheight = fh << FRACBITS;
 	sec->ceilingheight = ch << FRACBITS;
 
-	if(version > 62)
-	{
-		if(fp >= numflats)
-			fp = numflats;
+	if(fp >= numflats)
+		fp = numflats;
 
-		sec->floorpic = fp;
+	sec->floorpic = fp;
 
-		if(cp >= numflats)
-			cp = numflats;
+	if(cp >= numflats)
+		cp = numflats;
 
-		sec->ceilingpic = cp;
-	}
+	sec->ceilingpic = cp;
 
 	P_ChangeSector (sec, false);
 }
@@ -1626,6 +1731,7 @@ void CL_UpdateMovingSector(void)
 	byte state = MSG_ReadByte();
 	int count = MSG_ReadLong();
 
+/*
 	if(!sectors || s >= numsectors)
 		return;
 
@@ -1647,7 +1753,7 @@ void CL_UpdateMovingSector(void)
 	}
 
 	if(i == real_plats.size())
-		real_plats.push_back(pred);
+		real_plats.push_back(pred);*/
 }
 
 
@@ -1692,6 +1798,11 @@ void CL_Decompress(int sequence)
 
 	if(method & adaptive_mask)
 		MSG_DecompressAdaptive(compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0));
+	else
+	{
+		// otherwise compressed packets can still contain codec updates
+		compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0);
+	}
 
 	if(method & adaptive_record_mask)
 		compressor.ack_sent(net_message.ptr(), MSG_BytesLeft());
@@ -1715,41 +1826,76 @@ void CL_ReadPacketHeader(void)
 
 void CL_GetServerSettings(void)
 {
-	ctfmode = MSG_ReadByte() ? true : false;
-
-	// General server settings
-	maxplayers.Set((int)MSG_ReadShort());
-
-	// Game settings
-	allowcheats.Set((BOOL)MSG_ReadByte());
-	deathmatch.Set((BOOL)MSG_ReadByte());
-	fraglimit.Set((int)MSG_ReadShort());
-	timelimit.Set((int)MSG_ReadShort());
-
-	// Map behavior
-	skill.Set((int)MSG_ReadShort());
-	weaponstay.Set((BOOL)MSG_ReadByte());
-	nomonsters.Set((BOOL)MSG_ReadByte());
-	monstersrespawn.Set((BOOL)MSG_ReadByte());
-	itemsrespawn.Set((BOOL)MSG_ReadByte());
-	fastmonsters.Set((BOOL)MSG_ReadByte());
-
-	// Action rules
-	allowexit.Set((BOOL)MSG_ReadByte());
-	fragexitswitch.Set((BOOL)MSG_ReadByte());
-	allowjump.Set((BOOL)MSG_ReadByte());
-	sv_freelook.Set((BOOL)MSG_ReadByte());
-	infiniteammo.Set((BOOL)MSG_ReadByte());
-	MSG_ReadByte(); // denis - todo - use this for something
-
-	// Teamplay/CTF
-	scorelimit.Set((int)MSG_ReadShort());
-	friendlyfire.Set((BOOL)MSG_ReadByte());
-	teamplay.Set(MSG_ReadByte());
+	cvar_t *var = NULL, *prev = NULL;
 	
-	allowtargetnames.Set((BOOL)MSG_ReadByte());
+	// GhostlyDeath <June 19, 2008> -- If 0.4.1+ use string list instead
+	if ((SERVERMAJ >= 0) &&
+		(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
+		(SERVERMIN > 4)))
+	{
+		while (MSG_ReadByte() != 2)
+		{
+			std::string CvarName = MSG_ReadString();
+			std::string CvarValue = MSG_ReadString();
+			
+			var = cvar_t::FindCVar (CvarName.c_str(), &prev);
+			
+			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
+			if (var)
+			{
+				if (var->flags() & CVAR_SERVERINFO)
+                    var->Set(CvarValue.c_str());
+			}
+			else
+			{
+				// [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
+				// for cleanup on program termination
+				var = new cvar_t (CvarName.c_str(), 
+                                  NULL, 
+                                  CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
+                                  
+                var->Set(CvarValue.c_str());
+			}
+		}
+	}
+	else
+	{
+		ctfmode = MSG_ReadByte() ? true : false;
 
-	cvar_t::UnlatchCVars ();
+		// General server settings
+		maxclients.Set((int)MSG_ReadShort());
+
+		// Game settings
+		allowcheats.Set((BOOL)MSG_ReadByte());
+		deathmatch.Set((BOOL)MSG_ReadByte());
+		fraglimit.Set((int)MSG_ReadShort());
+		timelimit.Set((int)MSG_ReadShort());
+
+		// Map behavior
+		skill.Set((int)MSG_ReadShort());
+		weaponstay.Set((BOOL)MSG_ReadByte());
+		nomonsters.Set((BOOL)MSG_ReadByte());
+		monstersrespawn.Set((BOOL)MSG_ReadByte());
+		itemsrespawn.Set((BOOL)MSG_ReadByte());
+		fastmonsters.Set((BOOL)MSG_ReadByte());
+
+		// Action rules
+		allowexit.Set((BOOL)MSG_ReadByte());
+		fragexitswitch.Set((BOOL)MSG_ReadByte());
+		allowjump.Set((BOOL)MSG_ReadByte());
+		sv_freelook.Set((BOOL)MSG_ReadByte());
+		infiniteammo.Set((BOOL)MSG_ReadByte());
+		maxplayers.Set((int)MSG_ReadByte());
+
+		// Teamplay/CTF
+		scorelimit.Set((int)MSG_ReadShort());
+		friendlyfire.Set((BOOL)MSG_ReadByte());
+		teamplay.Set(MSG_ReadByte());
+	
+		allowtargetnames.Set((BOOL)MSG_ReadByte());
+
+		cvar_t::UnlatchCVars ();
+	}
 }
 
 //
@@ -1919,9 +2065,84 @@ void CL_ExitLevel()
 struct download_t
 {
 	std::string filename, md5;
-	buf_t buf;
+	buf_t *buf;
 	unsigned int got_bytes;
-}download;
+} download = { "", "", NULL, 0 };
+
+
+void IntDownloadComplete(void)
+{
+    std::string actual_md5 = MD5SUM(download.buf->ptr(), download.buf->maxsize());
+
+	Printf(PRINT_HIGH, "\nDownload complete, got %u bytes\n", download.buf->maxsize());
+	Printf(PRINT_HIGH, "%s\n %s\n", download.filename.c_str(), actual_md5.c_str());
+
+	if(download.md5 == "")
+	{
+		Printf(PRINT_HIGH, "Server gave no checksum, assuming valid\n", (int)download.buf->maxsize());
+	}
+	else if(actual_md5 != download.md5)
+	{
+		Printf(PRINT_HIGH, " %s on server\n", download.md5.c_str());
+		Printf(PRINT_HIGH, "Download failed: bad checksum\n");
+
+        download.filename = "";
+        download.md5 = "";
+        download.got_bytes = 0;
+		
+        if (download.buf != NULL)
+        {
+            delete download.buf;
+            download.buf = NULL;
+        }   
+			
+        CL_QuitNetGame();
+        return;
+    }
+
+    // got the wad! save it!
+    std::string filename = "./"; // denis - todo try first of waddir/DOOMWADDIR/startdir/progdir in that order
+    filename += download.filename;
+
+    // check for existing file
+    if(M_FileExists(filename.c_str()))
+    {
+        // there is an existing file, so use a new file whose name includes the checksum
+        filename += ".";
+        filename += actual_md5;
+    }
+
+    if (!M_WriteFile(filename, download.buf->ptr(), download.buf->maxsize()))
+    {
+        download.filename = "";
+        download.md5 = "";
+        download.got_bytes = 0;
+		
+        if (download.buf != NULL)
+        {
+            delete download.buf;
+            download.buf = NULL;
+        }   
+            
+        CL_QuitNetGame();
+        return;            
+    }
+
+    Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
+
+    download.filename = "";
+    download.md5 = "";
+    download.got_bytes = 0;
+
+    if (download.buf != NULL)
+    {
+        delete download.buf;
+        download.buf = NULL;
+    }
+
+    CL_QuitNetGame();
+    CL_Reconnect();
+}
 
 //
 // CL_RequestDownload
@@ -1929,18 +2150,35 @@ struct download_t
 //
 void CL_RequestDownload(std::string filename, std::string filehash)
 {
+    // [Russell] - Allow resumeable downloads
+	if ((download.filename != filename) ||
+        (download.md5 != filehash))
+    {
+        download.filename = filename;
+        download.md5 = filehash;
+        download.got_bytes = 0;
+    }
+	
 	// denis todo clear previous downloads
 	MSG_WriteMarker(&net_buffer, clc_wantwad);
 	MSG_WriteString(&net_buffer, filename.c_str());
 	MSG_WriteString(&net_buffer, filehash.c_str());
-	MSG_WriteLong(&net_buffer, 0);
-
-	download.filename = filename;
-	download.md5 = filehash;
+	MSG_WriteLong(&net_buffer, download.got_bytes);
 
 	NET_SendPacket(net_buffer, serveraddr);
 
 	Printf(PRINT_HIGH, "Requesting download...\n");
+	
+	// check for completion
+	// [Russell] - We go over the boundary, because sometimes the download will
+	// pause at 100% if the server disconnected you previously, you can 
+	// reconnect a couple of times and this will let the checksum system do its
+	// work
+	if ((download.buf != NULL) && 
+        (download.got_bytes >= download.buf->maxsize()))
+	{
+        IntDownloadComplete();
+	}
 }
 
 //
@@ -1964,10 +2202,23 @@ void CL_DownloadStart()
 		CL_QuitNetGame();
 		return;
 	}
-
-	download.got_bytes = 0;
-	download.buf.resize(file_len);
-
+	
+    // [Russell] - Allow resumeable downloads
+	if (download.got_bytes == 0)
+    {
+        if (download.buf != NULL)
+        {
+            delete download.buf;
+            download.buf = NULL;
+        }
+        
+        download.buf = new buf_t ((size_t)file_len);
+        
+        memset(download.buf->ptr(), 0, file_len);
+    }
+    else
+        Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
+    
 	Printf(PRINT_HIGH, "Downloading %d bytes...\n", file_len);
 }
 
@@ -1986,17 +2237,28 @@ void CL_Download()
 		return;
 
 	// check ranges
-	if(offset + len > download.buf.maxsize() || len > left)
+	if(offset + len > download.buf->maxsize() || len > left || p == NULL)
 	{
-		Printf(PRINT_HIGH, "Bad download packet (%d, %d) encountered (%d), aborting\n", (int)offset, (int)left, (int)download.buf.size());
+		Printf(PRINT_HIGH, "Bad download packet (%d, %d) encountered (%d), aborting\n", (int)offset, (int)left, (int)download.buf->size());
+        
+        download.filename = "";
+        download.md5 = "";
+        download.got_bytes = 0;
+        
+        if (download.buf != NULL)
+        {
+            delete download.buf;
+            download.buf = NULL;
+        }
+        
 		CL_QuitNetGame();
 		return;
 	}
 
 	// check for missing packet, re-request
-	if(offset > download.got_bytes)
+	if(offset < download.got_bytes || offset > download.got_bytes)
 	{
-		Printf(PRINT_HIGH, "Missed a packet after %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
+		DPrintf("Missed a packet after/before %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
 		MSG_WriteMarker(&net_buffer, clc_wantwad);
 		MSG_WriteString(&net_buffer, download.filename.c_str());
 		MSG_WriteString(&net_buffer, download.md5.c_str());
@@ -2009,64 +2271,30 @@ void CL_Download()
 	NET_SendPacket(net_buffer, serveraddr);
 
 	// copy into downloaded buffer
-	memcpy(download.buf.ptr() + offset, p, len);
+	memcpy(download.buf->ptr() + offset, p, len);
 	download.got_bytes += len;
 
 	// calculate percentage for the user
 	static int old_percent = 0;
-	int percent = (download.got_bytes*100)/download.buf.maxsize();
+	int percent = (download.got_bytes*100)/download.buf->maxsize();
 	if(percent != old_percent)
 	{
-		Printf(PRINT_HIGH, ".");
-
 		if(!(percent % 10))
 			Printf(PRINT_HIGH, "%d%%", percent);
+		else
+            Printf(PRINT_HIGH, ".");
 
 		old_percent = percent;
 	}
 
 	// check for completion
-	if(download.got_bytes == download.buf.maxsize())
+	// [Russell] - We go over the boundary, because sometimes the download will
+	// pause at 100% if the server disconnected you previously, you can 
+	// reconnect a couple of times and this will let the checksum system do its
+	// work
+	if(download.got_bytes >= download.buf->maxsize())
 	{
-		std::string actual_md5 = MD5SUM(download.buf.ptr(), download.buf.maxsize());
-
-		Printf(PRINT_HIGH, "\nDownload complete, got %d bytes\n", (int)download.buf.maxsize());
-		Printf(PRINT_HIGH, "%s\n %s\n", download.filename.c_str(), actual_md5.c_str());
-
-		if(download.md5 == "")
-		{
-			Printf(PRINT_HIGH, "Server gave no checksum, assuming valid\n", (int)download.buf.maxsize());
-		}
-		else if(actual_md5 != download.md5)
-		{
-			Printf(PRINT_HIGH, " %s on server\n", download.md5.c_str());
-			Printf(PRINT_HIGH, "Download failed: bad checksum\n");
-			CL_QuitNetGame();
-			return;
-		}
-
-		// got the wad! save it!
-		std::string filename = "./"; // denis - todo try first of waddir/DOOMWADDIR/startdir/progdir in that order
-		filename += download.filename;
-
-		// check for existing file
-		if(M_FileExists(filename.c_str()))
-		{
-			// there is an existing file, so use a new file whose name includes the checksum
-			filename += ".";
-			filename += actual_md5;
-		}
-
-        if (!M_WriteFile(filename, download.buf.ptr(), download.buf.maxsize()))
-        {
-			CL_QuitNetGame();
-			return;            
-        }
-
-		Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
-
-		CL_QuitNetGame();
-		CL_Reconnect();
+        IntDownloadComplete();
 	}
 }
 
@@ -2095,6 +2323,8 @@ void CL_Spectate()
 			for (int i=0 ; i<NUMPSPRITES ; i++) // remove all weapon sprites
 				(&player)->psprites[i].state = NULL;
 			player.playerstate = PST_LIVE; // resurrect dead spectators
+			// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
+			player.deltaviewheight = 1000 << FRACBITS;
 		} else {
 			displayplayer_id = consoleplayer_id; // get out of spynext
 		}
@@ -2194,7 +2424,7 @@ void CL_ParseCommands(void)
 		cmd = (svc_t)MSG_ReadByte();
 		history.push_back(cmd);
 
-		if(cmd == 255 || cmd == -1)
+		if(cmd == (svc_t)-1)
 			break;
 
 		cmdmap::iterator i = cmds.find(cmd);
@@ -2249,6 +2479,17 @@ void CL_SendCmd(void)
 	//static int last_sent_tic = 0;
 	//if(last_sent_tic == gametic)
 	//	return;
+	
+	// GhostlyDeath -- If we are spectating, tell the server of our new position
+	if (p->spectator)
+	{
+		MSG_WriteMarker(&net_buffer, clc_spectate);
+		MSG_WriteByte(&net_buffer, 5);
+		MSG_WriteLong(&net_buffer, displayplayer().mo->x);
+		MSG_WriteLong(&net_buffer, displayplayer().mo->y);
+		MSG_WriteLong(&net_buffer, displayplayer().mo->z);
+	}
+	// GhostlyDeath -- We just throw it all away down here since we need those buttons!
 
 	MSG_WriteMarker(&net_buffer, clc_move);
 
@@ -2315,6 +2556,8 @@ void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
+
+
 
 
 

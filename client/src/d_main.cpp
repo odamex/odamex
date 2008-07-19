@@ -135,6 +135,8 @@ static int pagetic;
 EXTERN_CVAR (allowexit)
 EXTERN_CVAR (nomonsters)
 
+const char *LOG_FILE;
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -417,7 +419,7 @@ void D_DoomLoop (void)
 				CL_RequestConnectInfo();
 
 			// [RH] Use the consoleplayer's camera to update sounds
-			S_UpdateSounds (consoleplayer().mo);	// move positional sounds
+			S_UpdateSounds ((consoleplayer().spectator ? displayplayer().mo : consoleplayer().mo));	// move positional sounds
 
 			// Update display, next frame, with current state.
 			D_Display ();
@@ -1437,7 +1439,7 @@ void D_DoomMain (void)
 
 	Printf_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
 	if(gamestate != GS_CONNECTING)
-		Printf(PRINT_HIGH, "Type connect <internet address> or use Odamex Launcher to connect to a game.\n");
+		Printf(PRINT_HIGH, "Type connect <internet address> or use the Odamex Launcher to connect to a game.\n");
     Printf(PRINT_HIGH, "\n");
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!

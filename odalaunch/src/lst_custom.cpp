@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -93,9 +93,7 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
     SortOrder = 0; 
     SortCol = 0; 
 
-    colRed = 245;
-    colGreen = 245;
-    colBlue = 245;
+    ItemShade.Set(wxUint8(245), wxUint8(245), wxUint8(245));
 
     // Set up the image list.
     AddImageSmall(NULL);
@@ -488,9 +486,9 @@ void wxAdvancedListCtrl::ColourListItem(wxListItem &info)
     
     // light grey coolness
     if (SwapColour)
-        col.Set(colRed, colGreen, colBlue);
+        col = ItemShade;
     else
-        col.Set(255, 255, 255);
+        col = *wxWHITE;
 
     SwapColour = !SwapColour;
 

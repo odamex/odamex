@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,7 +40,8 @@
 #define MASTERPORT			15000
 
 // [Russell] - default master list
-const char *def_masterlist[] = { "odamex.net", "voxelsoft.com", NULL };
+// This is here for complete master redundancy, including domain name failure
+const char *def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
 
 class masterserver
 {
@@ -93,11 +94,9 @@ EXTERN_CVAR (fragexitswitch)
 
 EXTERN_CVAR (maxplayers)
 EXTERN_CVAR (password)
+EXTERN_CVAR (website)
 
-// if set, advetise user-defined natport value to the master
-CVAR(natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR (website, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (natport)
 
 buf_t     ml_message(MAX_UDP_PACKET);
 
@@ -107,10 +106,10 @@ static std::vector<masterserver> masters;
 //
 // SV_InitMaster
 //
-void SV_InitMaster(void)
+void SV_InitMasters(void)
 {
 	if (!usemasters)
-		Printf(PRINT_MEDIUM, "Masters will not be contacted because usemasters is 0");
+		Printf(PRINT_HIGH, "Masters will not be contacted because usemasters is 0\n");
     else
     {
         // [Russell] - Add some default masters
@@ -357,7 +356,7 @@ void SV_SendServerInfo()
 
 	MSG_WriteByte(&ml_message, (int)deathmatch);
 	MSG_WriteByte(&ml_message, (int)skill);
-	MSG_WriteByte(&ml_message, (int)teamplay);
+    MSG_WriteByte(&ml_message, (int)ctfmode ? 1 : teamplay);
 	MSG_WriteByte(&ml_message, (int)ctfmode);
 
 	for (i = 0; i < players.size(); ++i)
@@ -448,8 +447,17 @@ void SV_SendServerInfo()
 
     MSG_WriteLong(&ml_message, (DWORD)0x01020305);
     MSG_WriteShort(&ml_message, strlen(password.cstring()) ? 1 : 0);
+    
+    // GhostlyDeath -- Send Game Version info
+    MSG_WriteLong(&ml_message, GAMEVER);
 
 	NET_SendPacket(ml_message, net_from);
+}
+
+// Server appears in the server list when true.
+CVAR_FUNC_IMPL (usemasters)
+{
+    SV_InitMasters();
 }
 
 BEGIN_COMMAND (addmaster)

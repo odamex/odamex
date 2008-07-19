@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -67,18 +67,18 @@
 //
 //CVAR (mouse_sensitivity, "1.0", CVAR_ARCHIVE)
 //CVAR (cont_preset,			"0",	CVAR_ARCHIVE)
-CVAR (dynres_state,			"0",	CVAR_ARCHIVE)
-CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (dynres_state)
+EXTERN_CVAR (dynresval)
 //CVAR (mouse_preset,			"0",	CVAR_ARCHIVE)
-CVAR (mouse_sensitivity,	"25.0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_type,			"0",	CVAR_ARCHIVE)
-CVAR (novert,				"0",	CVAR_ARCHIVE)
+EXTERN_CVAR (mouse_sensitivity)
+EXTERN_CVAR (mouse_type)
+EXTERN_CVAR (novert)
 
 // [ML] 09/4/06: Show secret revealed message, 0 = off, 1 = on
-CVAR (revealsecrets,        "0", CVAR_ARCHIVE)
+EXTERN_CVAR (revealsecrets)
 
 // Show messages has default, 0 = off, 1 = on
-CVAR (show_messages, "1", CVAR_ARCHIVE)
+EXTERN_CVAR (show_messages)
 
 extern bool				OptionsActive;
 
@@ -99,6 +99,8 @@ EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
 EXTERN_CVAR (displaymouse)
+EXTERN_CVAR (mouse_acceleration)
+EXTERN_CVAR (mouse_threshold)
 
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
@@ -168,7 +170,7 @@ static menuitem_t OptionItems[] =
 };
 
 menu_t OptionMenu = {
-	{ 'M','_','O','P','T','T','T','L' },
+	"M_OPTTTL",
 	0,
 	16,
 	177,
@@ -186,18 +188,11 @@ menu_t OptionMenu = {
 static value_t MouseBases[] =
 {
 
-	{ 1.0, "Standard"						},
-	{ 0.0, "ZDoom"							},
+	{ 0.0, "Standard"						},
+	{ 1.0, "ZDoom"							},
 
 };
 
-static value_t Auto_Aim[] =
-{
-
-	{ 0.0, "Off"							},
-	{ 5000.0, "On"							},
-
-};
 /*
 static value_t MousePresets[] =
 {
@@ -217,7 +212,9 @@ static value_t MousePresets[] =
 static menuitem_t MouseItems[] =
 {
 
-	{ slider	,	"Mouse Speed"							, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
+	{ slider	,	"Sensitivity" 							, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
+	{ slider    ,   "Acceleration"                          , {&mouse_acceleration},{0.0},      {10.0},     {0.5},      {NULL}                      },
+	{ slider    ,   "Threshold"                             , {&mouse_threshold},   {0.0},      {20.0},     {1.0},      {NULL}                      },
 	{ slider	,	"Dynamic Resolution"					, {&dynresval},			{1.001},	{1.232},	{0.003},	{NULL}						},
 	{ slider	,	"Freelook speed"						, {&m_pitch},			{0.0},		{1.85},		{0.025},	{NULL}						},
 	{ slider	,	"Strafe speed"							, {&m_side},			{0.0},		{18.5},		{0.25},		{NULL}						},
@@ -229,7 +226,6 @@ static menuitem_t MouseItems[] =
 	{ discrete	,	"Always FreeLook"						, {&cl_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
-	{ discrete	,	"Autoaim"								, {&cl_autoaim},		{2.0},		{0.0},		{0.0},		{Auto_Aim}					},
 	{ discrete	,	"NoVert"								, {&novert},			{2.0},		{0.0},		{0.0},		{OnOff}						},
 
 //	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
@@ -241,9 +237,9 @@ static menuitem_t MouseItems[] =
 };
 
 menu_t MouseMenu =		{
-							{ 'M','_','M','O','U','S','E','T' },
+							"M_MOUSET",
 							0,
-							14,
+							15,
 							177,
 							MouseItems,
 						};
@@ -284,7 +280,7 @@ static menuitem_t ControlsItems[] = {
 };
 
 menu_t ControlsMenu = {
-	{ 'M','_','C','O','N','T','R','O' },
+	"M_CONTRO",
 	1,
 	22,
 	0,
@@ -342,7 +338,7 @@ static void M_SlideUIBlue (int);
 
 int dummy = 0;
 
-BEGIN_CUSTOM_CVAR(ui_transred, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (ui_transred)
 {
     if (var > 255)
         var.Set(255);
@@ -352,9 +348,8 @@ BEGIN_CUSTOM_CVAR(ui_transred, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
     M_SlideUIRed((int)var);
 }
-END_CUSTOM_CVAR(ui_transred)
 
-BEGIN_CUSTOM_CVAR(ui_transgreen, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (ui_transgreen)
 {
     if (var > 255)
         var.Set(255);
@@ -364,9 +359,8 @@ BEGIN_CUSTOM_CVAR(ui_transgreen, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
     M_SlideUIGreen((int)var);
 }
-END_CUSTOM_CVAR(ui_transgreen)
 
-BEGIN_CUSTOM_CVAR(ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (ui_transblue)
 {
     if (var > 255)
         var.Set(255);
@@ -376,7 +370,6 @@ BEGIN_CUSTOM_CVAR(ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
     M_SlideUIBlue((int)var);
 }
-END_CUSTOM_CVAR(ui_transblue)
 
 static menuitem_t VideoItems[] = {
 	{ more,		"Messages",				{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)StartMessagesMenu} },
@@ -487,7 +480,7 @@ EXTERN_CVAR (vid_defbits)
 
 static cvar_t DummyDepthCvar (NULL, NULL, 0);
 
-EXTERN_CVAR (fullscreen)
+EXTERN_CVAR (vid_fullscreen)
 
 static value_t Depths[22];
 
@@ -497,7 +490,7 @@ static char VMTestText[] = "T to test mode for 5 seconds";
 static menuitem_t ModesItems[] = {
 	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Fullscreen",			{&fullscreen},			{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ discrete, "Fullscreen",			{&vid_fullscreen},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -525,7 +518,7 @@ static menuitem_t ModesItems[] = {
 #define VM_CURDEFLINE	19
 
 menu_t ModesMenu = {
-	{ 'M','_','V','I','D','M','O','D' },
+	"M_VIDMOD",
 #ifndef DJGPP
 	2,
 #else
@@ -903,11 +896,13 @@ void M_OptDrawer (void)
 
 	if (CurrentMenu == &MouseMenu) // [Toke] print mouse values to the screen
 	{
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 0, mouse_sensitivity.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 8,		   dynresval.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 16,			 m_pitch.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 24,			  m_side.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 32,		   m_forward.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 0,  mouse_sensitivity.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 8,  mouse_acceleration.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 16, mouse_threshold.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 24, dynresval.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 32, m_pitch.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 40, m_side.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 48, m_forward.cstring());
 	}
 }
 

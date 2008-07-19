@@ -4,7 +4,7 @@
 // $Id:$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@
 #include "c_console.h"
 
 bool SV_AddMaster (const char *masterip);
-void SV_InitMaster ();
+void SV_InitMasters();
 bool SV_AddMaster(const char *masterip);
 void SV_ListMasters ();
 bool SV_RemoveMaster (const char *masterip);

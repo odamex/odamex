@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,12 +44,12 @@
 #include "cl_ctf.h"
 
 
-CVAR (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_name,		"Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_color,		"40 cf 00",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_gender,	"male",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_skin,		"base",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_team,		"blue",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (cl_autoaim)
+EXTERN_CVAR (cl_name)
+EXTERN_CVAR (cl_color)
+EXTERN_CVAR (cl_gender)
+EXTERN_CVAR (cl_skin)
+EXTERN_CVAR (cl_team)
 
 enum
 {

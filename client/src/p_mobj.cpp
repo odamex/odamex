@@ -39,9 +39,9 @@
 
 void G_PlayerReborn (player_t &player);
 
-CVAR (weaponstay,		"1",		CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)	// Initial weapons wont be removed after picked up when true. - does not work yet
-EXTERN_CVAR(itemsrespawn)
-EXTERN_CVAR(nomonsters)
+EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (itemsrespawn)
+EXTERN_CVAR (nomonsters)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 
@@ -375,8 +375,8 @@ void P_XYMovement (AActor *mo)
 		return; 	// no friction for missiles ever
 	}
 
-	if (mo->z > mo->floorz && !mo->waterlevel)
-		return;		// no friction when airborne
+	if (mo->z > mo->floorz && !mo->waterlevel && !(mo->player && mo->player->spectator))
+		return;		// no friction when airborne (GhostlyDeath 06/04/2008 -- but not when spectating)
 
 	if (mo->flags & MF_CORPSE)
 	{
@@ -452,10 +452,11 @@ void P_ZMovement (AActor *mo)
    }
 
     // adjust height
+    // GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
    mo->z += mo->momz;
 
    if ( mo->flags & MF_FLOAT
-        && mo->target)
+        && mo->target && !(mo->target->player && mo->target->player->spectator))
    {
 	// float down towards target if too close
       if ( !(mo->flags & MF_SKULLFLY)
@@ -1328,6 +1329,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else
 		z = ONFLOORZ;
 
+	// only servers control spawning of special items
+	if (!serverside && mobjinfo[i].flags & MF_SPECIAL)
+		return;
+
 	mobj = new AActor (x, y, z, (mobjtype_t)i);
 
 	if (z == ONFLOORZ)
@@ -1563,7 +1568,8 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			}
 		}
 
-		if (linetarget && source->player)
+		// GhostlyDeath <June 19, 2006> -- fix flawed logic here (!linetarget not linetarget)
+		if (!linetarget && source->player)
 		{
 			if (allowfreelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
 			{

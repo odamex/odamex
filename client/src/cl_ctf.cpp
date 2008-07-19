@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,13 +35,13 @@ int TEAMpoints[NUMFLAGS];
 
 static int tintglow = 0;
 
-char *team_names[NUMTEAMS] =
+char *team_names[NUMTEAMS + 2] =
 {
-	"BLUE", "RED", "GOLD"
+	"BLUE", "RED", "GOLD",
+	"", ""
 };
 
 bool		ctfmode		 = false;
-bool		teamplaymode = false;
 
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
@@ -79,10 +79,13 @@ void CTF_Connect()
 		CTFdata[i].state = (flag_state_t)MSG_ReadByte();
 		byte flagger = MSG_ReadByte();
 
-		player_t &player = idplayer(flagger);
+		if(CTFdata[i].state == flag_carried)
+		{
+			player_t &player = idplayer(flagger);
 
-		if(validplayer(player))
-			CTF_CarryFlag(player, (flag_t)i);
+			if(validplayer(player))
+				CTF_CarryFlag(player, (flag_t)i);
+		}
 	}
 }
 

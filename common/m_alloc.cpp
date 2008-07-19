@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -58,9 +58,12 @@ void *Calloc (size_t num, size_t size)
 
 void *Realloc (void *memblock, size_t size)
 {
+	if (!size && memblock != NULL)
+        M_Free(memblock);
+	
 	// We don't want implementation-defined behaviour! Especially for this
 	// as realloc() behaves like malloc() (which doesn't use our Malloc())
-	if (!size)
+	if (!size && memblock == NULL)
         return NULL;
 
 	void *zone = realloc (memblock, size);

@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -115,9 +115,6 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
            
         // The time in milliseconds a packet was received
         wxUint32 Ping;
-       
-        wxIPV4address to_addr;
-       
     public:
         // Constructor
         ServerBase() 
@@ -136,10 +133,13 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         // Query the server
         wxInt32 Query(wxInt32 Timeout);
         
-		void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
+		void SetAddress(const wxString &Address, const wxInt16 &Port) 
+		{ 
+		    Socket.SetAddress(Address, Port);
+        }
         
-		wxString GetAddress() { return to_addr.IPAddress() << _T(':') << to_addr.Service(); }
-		wxUint32 GetPing() { return Ping; }
+		wxString GetAddress() { return Socket.GetAddress(); }
+		wxUint32 GetPing() const { return Ping; }
 };
 
 class MasterServer : public ServerBase  // [Russell] - A master server packet
@@ -154,6 +154,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
         } addr_t;
 
         std::vector<addr_t> addresses;
+        std::vector<addr_t> masteraddresses;
     public:
         MasterServer() 
         { 
@@ -168,7 +169,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
         
 		wxInt32 GetServerCount() { return addresses.size(); }
                       
-        bool GetServerAddress(wxInt32  Index, 
+        bool GetServerAddress(const wxInt32 &Index, 
                               wxString &Address, 
                               wxUint16 &Port)
         {
@@ -183,7 +184,48 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             return false;
         }
         
-        void AddCustomServer(wxString Address, wxUint16 Port)
+        void AddMaster(const wxString &Address, const wxUint16 &Port)
+        {
+            addr_t Master = { Address, Port, true };
+            
+            if ((Master.ip != _T("")) && (Master.port != 0))
+                masteraddresses.push_back(Master);
+        }
+        
+        void QueryMasters(const wxUint32 &Timeout)
+        {           
+            DeleteAllNormalServers();
+            
+            for (size_t i = 0; i < masteraddresses.size(); ++i)
+            {
+                Socket.SetAddress(masteraddresses[i].ip, masteraddresses[i].port);
+                
+                Query(Timeout);
+            }
+        }
+        
+        size_t GetMasterCount() { return masteraddresses.size(); }
+        
+        void DeleteAllNormalServers()
+        {
+            // don't delete our custom servers!
+            std::vector<addr_t>::iterator addr_iter = addresses.begin();    
+    
+            while(addr_iter != addresses.end()) 
+            {
+                addr_t address = *addr_iter;
+        
+                if (address.custom == false)
+                {
+                    addresses.erase(addr_iter);
+                    continue;
+                }
+        
+                addr_iter++;
+            }            
+        }
+        
+        void AddCustomServer(const wxString &Address, const wxUint16 &Port)
         {
             addr_t cs;
                     
@@ -205,7 +247,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             addresses.push_back(cs);
         }
                
-        bool DeleteCustomServer(wxUint32 Index)
+        bool DeleteCustomServer(const wxUint32 &Index)
         {
             if ((Index >= 0) && (Index < addresses.size()))
             {

@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -77,7 +77,6 @@ extern	int			ST_WIDTH;
 extern	int			ST_HEIGHT;
 
 extern	bool		ctfmode;
-extern	bool		teamplaymode;
 
 //	Local Function Prototypes
 void	CL_CTFEvent		(void);
@@ -93,7 +92,7 @@ void	CTF_RunTics		(void);
 // Client-side CTF Game Data
 extern flagdata CTFdata[NUMFLAGS];
 extern int TEAMpoints[NUMFLAGS];
-extern char *team_names[NUMTEAMS];
+extern char *team_names[NUMTEAMS+2];
 
 //	Colors
 #define	BLUECOLOR		200

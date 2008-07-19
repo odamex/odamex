@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,6 +23,12 @@
 
 // SoM 12-24-05: yeah... I'm programming on christmas eve. 
 // Removed all the DirectX crap.
+
+#ifdef WIN32
+#define _WIN32_WINNT 0x0400
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 
 #include <SDL.h>
 
@@ -54,8 +60,8 @@ int KeyRepeatRate;
 // The mouse input values are input directly to the game, but when
 // the values exceed the value of mouse_threshold, they are multiplied
 // by mouse_acceleration to increase the speed.
-CVAR (mouse_acceleration, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_threshold, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (mouse_acceleration)
+EXTERN_CVAR (mouse_threshold)
 
 // joek - sort mouse grab issue
 static BOOL mousegrabbed = false;
@@ -66,20 +72,7 @@ static BOOL flushmouse = false;
 
 extern constate_e ConsoleState;
 
-// NES - Currently unused. Make some use of these if possible.
-//CVAR (i_remapkeypad, "1", CVAR_ARCHIVE)
-//CVAR (use_mouse, "1", CVAR_ARCHIVE)
-//CVAR (use_joystick, "0", CVAR_ARCHIVE)
-//CVAR (joy_speedmultiplier, "1", CVAR_ARCHIVE)
-//CVAR (joy_xsensitivity, "1", CVAR_ARCHIVE)
-//CVAR (joy_ysensitivity, "-1", CVAR_ARCHIVE)
-//CVAR (joy_xthreshold, "0.15", CVAR_ARCHIVE)
-//CVAR (joy_ythreshold, "0.15", CVAR_ARCHIVE)
-
 #ifdef WIN32
-#define _WIN32_WINNT 0x0400
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 // denis - in fullscreen, prevent exit on accidental windows key press
 HHOOK g_hKeyboardHook;
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
@@ -117,7 +110,8 @@ bool I_InitInput (void)
 
 #ifdef WIN32
 	// denis - in fullscreen, prevent exit on accidental windows key press
-	g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
+	// [Russell] - Disabled because it screws with the mouse
+	//g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
 #endif
 
 	return true;
@@ -132,7 +126,8 @@ void STACK_ARGS I_ShutdownInput (void)
 
 #ifdef WIN32
 	// denis - in fullscreen, prevent exit on accidental windows key press
-	UnhookWindowsHookEx(g_hKeyboardHook);
+	// [Russell] - Disabled because it screws with the mouse
+	//UnhookWindowsHookEx(g_hKeyboardHook);
 #endif
 }
 
@@ -153,6 +148,9 @@ static void SetCursorState (int visible)
 //
 static int AccelerateMouse(int val)
 {
+    if (!mouse_acceleration) 
+        return val;
+        
     if (val < 0)
         return -AccelerateMouse(-val);
 
@@ -200,14 +198,14 @@ static void UngrabMouse (void)
 // I_PauseMouse
 //
 
-EXTERN_CVAR (fullscreen)
+EXTERN_CVAR (vid_fullscreen)
 
 void I_PauseMouse (void)
 {
    // denis - disable key repeats as they mess with the mouse in XP
    SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
-   if (fullscreen)
+   if (vid_fullscreen)
     return;
    
    UngrabMouse();

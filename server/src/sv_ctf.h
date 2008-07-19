@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
 //	Map ID for flags
 #define	ID_BLUE_FLAG	5130
 #define	ID_RED_FLAG		5131
-#define	ID_GOLD_FLAG	5132
+#define	ID_GOLD_FLAG	5133
 
 // flags can only be in one of these states
 enum flag_state_t
@@ -106,7 +106,7 @@ extern bool ctfmode;
 extern flagdata CTFdata[NUMFLAGS];
 extern int TEAMpoints[NUMFLAGS];
 extern bool TEAMenabled[NUMFLAGS];
-extern char *team_names[NUMTEAMS];
+extern char *team_names[NUMTEAMS+2];
 
 #endif
 

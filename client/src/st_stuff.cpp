@@ -68,8 +68,8 @@ bool		st_firsttime;
 static int		lu_palette;
 
 
-CVAR (idmypos, "0", 0)
-BEGIN_CUSTOM_CVAR (st_scale, "1", CVAR_ARCHIVE)		// Stretch status bar to full screen width?
+EXTERN_CVAR (idmypos)
+CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
 {
 	if (var)
 	{
@@ -97,7 +97,6 @@ BEGIN_CUSTOM_CVAR (st_scale, "1", CVAR_ARCHIVE)		// Stretch status bar to full s
 	setsizeneeded = true;
 	st_firsttime = true;
 }
-END_CUSTOM_CVAR (st_scale)
 
 // [RH] Needed when status bar scale changes
 extern BOOL setsizeneeded;

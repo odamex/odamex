@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@
 IMPLEMENT_CLASS (DConsoleCommand, DObject)
 IMPLEMENT_CLASS (DConsoleAlias, DConsoleCommand)
 
-CVAR (lookspring, "1", CVAR_ARCHIVE)	// Generate centerview when -mlook encountered?
+EXTERN_CVAR (lookspring)
 
 typedef std::map<std::string, DConsoleCommand *> command_map_t;
 command_map_t &Commands()
@@ -323,7 +323,7 @@ BEGIN_COMMAND (exec)
 	static std::vector<std::string> exec_stack;
 	static std::vector<bool>	tag_stack;
 
-	if(find(exec_stack.begin(), exec_stack.end(), argv[1]) != exec_stack.end())
+	if(std::find(exec_stack.begin(), exec_stack.end(), argv[1]) != exec_stack.end())
 	{
 		Printf (PRINT_HIGH, "Ignoring recursive exec \"%s\"\n", argv[1]);
 		return;
@@ -348,7 +348,7 @@ BEGIN_COMMAND (exec)
 	while(ifs)
 	{
 		std::string line;
-		getline(ifs, line);
+		std::getline(ifs, line);
 
 		if(!line.length())
 			continue;

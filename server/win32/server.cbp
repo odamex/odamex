@@ -143,6 +143,7 @@
 			<Add directory="..\..\common" />
 		</Compiler>
 		<Unit filename="..\..\common\actor.h" />
+		<Unit filename="..\..\common\c_cvarlist.cpp" />
 		<Unit filename="..\..\common\c_cvars.cpp" />
 		<Unit filename="..\..\common\c_cvars.h" />
 		<Unit filename="..\..\common\c_dispatch.cpp" />
@@ -287,6 +288,7 @@
 		<Unit filename="..\src\s_sound.h" />
 		<Unit filename="..\src\sv_ctf.cpp" />
 		<Unit filename="..\src\sv_ctf.h" />
+		<Unit filename="..\src\sv_cvarlist.cpp" />
 		<Unit filename="..\src\sv_main.cpp" />
 		<Unit filename="..\src\sv_main.h" />
 		<Unit filename="..\src\sv_master.cpp" />

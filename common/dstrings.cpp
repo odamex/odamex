@@ -673,7 +673,7 @@ public:
 		iterator i = rs.find(p);
 		if(i != rs.end())
 		{
-			delete[] i->first;
+			delete [] const_cast<char*>(i->first);
 			rs.erase(i);
 		}
 	}
@@ -686,7 +686,7 @@ public:
 	~ReplacedStringTracker()
 	{
 		for(iterator i = rs.begin(); i != rs.end(); i++)
-			delete[] i->first;
+			delete[] const_cast<char*>(i->first);
 	}
 }rst;
 

@@ -212,6 +212,15 @@ public:
 
     bool		spectator;			// [GhostlyDeath] spectating?
     int			joinafterspectatortime; // Nes - Join after spectator time.
+    
+    int			prefcolor;			// Nes - Preferred color. Server only.
+    
+    // For flood protection
+    struct
+    {
+        QWORD Time;
+        std::string Message;
+    } LastMessage;
 
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
@@ -226,6 +235,8 @@ public:
 		
 		// protocol version supported by the client
 		short		version;
+		short		majorversion;	// GhostlyDeath -- Major
+		short		minorversion;	// GhostlyDeath -- Minor
 
 		// for reliable protocol
 		buf_t       relpackets; // save reliable packets here
@@ -261,15 +272,45 @@ public:
 		}download;
 		
 		client_t()
-			: netbuf(MAX_UDP_PACKET), reliablebuf(MAX_UDP_PACKET), relpackets(MAX_UDP_PACKET*50), digest(""), allow_rcon(false),
-			  displaydisconnect(true)
 		{
+			// GhostlyDeath -- Initialize to Zero
+			memset(&address, 0, sizeof(netadr_t));
+			version = 0;
+			majorversion = 0;
+			minorversion = 0;
+			for (size_t i = 0; i < 256; i++)
+			{
+				packetbegin[i] = 0;
+				packetsize[i] = 0;
+				packetseq[i] = 0;
+			}
+			sequence = 0;
+			last_sequence = 0;
+			packetnum = 0;
+			rate = 0;
+			reliable_bps = 0;
+			unreliable_bps = 0;
+			last_received = 0;
+			lastcmdtic = 0;
+			lastclientcmdtic = 0;
+			
+			// GhostlyDeath -- done with the {}
+			netbuf = MAX_UDP_PACKET;
+			reliablebuf = MAX_UDP_PACKET;
+			relpackets = MAX_UDP_PACKET*50;
+			digest = "";
+			allow_rcon = false;
+			displaydisconnect = true;
+		/*
+		huffman_server	compressor;	// denis - adaptive huffman compression*/
 		}
 		client_t(const client_t &other)
 			: address(other.address),
 			netbuf(other.netbuf),
 			reliablebuf(other.reliablebuf),
 			version(other.version),
+			majorversion(other.majorversion),
+			minorversion(other.minorversion),
 			relpackets(other.relpackets),
 			sequence(other.sequence),
 			last_sequence(other.last_sequence),
@@ -292,9 +333,68 @@ public:
 		}
 	}client;
 
-	player_s() : playerstate(PST_CONTACT), pendingweapon(wp_pistol), readyweapon(wp_pistol), cheats(0), spectator(false),
-				 joinafterspectatortime(level.time - TICRATE*5)
+	player_s()
 	{
+		size_t i;
+
+		// GhostlyDeath -- Initialize EVERYTHING
+		mo = AActor::AActorPtr();
+		id = 0;
+		memset(&cmd, 0, sizeof(ticcmd_t));
+		memset(&userinfo, 0, sizeof(userinfo_t));
+		fov = 0.0;
+		viewz = 0 << FRACBITS;
+		viewheight = 0 << FRACBITS;
+		deltaviewheight = 0 << FRACBITS;
+		bob = 0 << FRACBITS;
+		health = 0;
+		armorpoints = 0;
+		armortype = 0;
+		for (i = 0; i < NUMPOWERS; i++)
+			powers[i] = 0;
+		for (i = 0; i < NUMCARDS; i++)
+			cards[i] = false;
+		backpack = false;
+		points = 0;
+		for (i = 0; i < NUMFLAGS; i++)
+			flags[i] = false;
+		fragcount = 0;
+		deathcount = 0;
+		killcount = 0;
+		for (i = 0; i < NUMWEAPONS; i++)
+			weaponowned[i] = false;
+		for (i = 0; i < NUMAMMO; i++)
+		{
+			ammo[i] = 0;
+			maxammo[i] = 0;
+		}
+		attackdown = 0;
+		usedown = 0;
+		refire = 0;
+		damagecount = 0;
+		bonuscount = 0;
+		attacker = AActor::AActorPtr();
+		extralight = 0;
+		fixedcolormap = 0;
+		memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
+		respawn_time = 0;
+		for (i = 0; i < 3; i++)
+			oldvelocity[i] = 0 << FRACBITS;
+		camera = AActor::AActorPtr();
+		air_finished = 0;
+		ping = 0;
+		
+		// GhostlyDeath -- Do what was above incase
+		playerstate = PST_CONTACT;
+		pendingweapon = wp_pistol;
+		readyweapon = wp_pistol;
+		cheats = 0;
+		spectator = false;
+		joinafterspectatortime = level.time - TICRATE*5;
+		prefcolor = 0;
+		
+		LastMessage.Time = 0;
+		LastMessage.Message = "";
 	}
 
 	player_s &operator =(const player_s &other)
@@ -374,6 +474,11 @@ public:
 		
 		spectator = other.spectator;
 		joinafterspectatortime = other.joinafterspectatortime;
+		
+		prefcolor = other.prefcolor;
+		
+        LastMessage.Time = other.LastMessage.Time;
+		LastMessage.Message = other.LastMessage.Message;
 		
 		client = other.client;
 

@@ -2,8 +2,7 @@
 <resource xmlns="http://www.wxwindows.org/wxxrc" version="2.3.0.1">
 	<object class="wxFrame" name="dlgMain">
 		<style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
-		<size>640,400</size>
-		<bg>#d4d0c8</bg>
+		<size>845,400</size>
 		<title>Odamex Launcher</title>
 		<centered>1</centered>
 		<object class="wxMenuBar" name="m_menubar1">
@@ -42,6 +41,21 @@
 				<object class="wxMenuItem" name="ID_MNUREFRESHSERVER">
 					<label>Refresh Selected</label>
 					<help>Refresh the selected server</help>
+				</object>
+			</object>
+			<object class="wxMenu" name="m_menu5">
+				<label>Tools</label>
+				<object class="wxMenu" name="m_menu11">
+					<label>OdaGet</label>
+					<object class="wxMenuItem" name="ID_MNUODAGET">
+						<label>Download WAD</label>
+						<help></help>
+					</object>
+					<object class="wxMenuItem" name="ID_MNUSETUPODAGET">
+						<label>Setup</label>
+						<help></help>
+						<enabled>0</enabled>
+					</object>
 				</object>
 			</object>
 			<object class="wxMenu" name="m_menu3">
@@ -101,7 +115,7 @@
 				<label>Connect</label>
 				<tooltip>Connect to the selected server</tooltip>
 				<longhelp>Connect to the selected server</longhelp>
-				<bitmap>./odalaunch-sysmenu.ico</bitmap>
+				<bitmap>./icon32x32x8.ico</bitmap>
 			</object>
 			<object class="tool" name="ID_MNUQLAUNCH">
 				<label></label>
@@ -149,38 +163,47 @@
 				<bitmap>./btnexit.ico</bitmap>
 			</object>
 		</object>
-		<object class="wxSplitterWindow" name="spWINMAIN">
-			<style>wxSP_3D</style>
-			<bg>#d4d0c8</bg>
-			<sashpos>0</sashpos>
-			<gravity>1</gravity>
-			<minsize>140</minsize>
-			<orientation>horizontal</orientation>
-			<object class="wxPanel" name="m_panel3">
-				<style>wxTAB_TRAVERSAL</style>
-				<object class="wxBoxSizer">
-					<orient>wxVERTICAL</orient>
-					<object class="sizeritem">
-						<option>1</option>
-						<flag>wxALL|wxEXPAND</flag>
-						<border>0</border>
-						<object class="wxListCtrl" name="ID_LSTSERVERS" subclass="wxAdvancedListCtrl">
-							<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
-							<size>780,150</size>
+		<object class="wxPanel">
+			<style>wxTAB_TRAVERSAL</style>
+			<object class="wxBoxSizer">
+				<orient>wxVERTICAL</orient>
+				<object class="sizeritem">
+					<option>1</option>
+					<flag>wxEXPAND</flag>
+					<border>5</border>
+					<object class="wxSplitterWindow">
+						<style>wxSP_NOBORDER</style>
+						<sashpos>0</sashpos>
+						<gravity>1</gravity>
+						<minsize>140</minsize>
+						<orientation>horizontal</orientation>
+						<object class="wxPanel">
+							<style>wxTAB_TRAVERSAL</style>
+							<object class="wxBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>0</border>
+									<object class="wxListCtrl" name="ID_LSTSERVERS" subclass="wxAdvancedListCtrl">
+										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+									</object>
+								</object>
+							</object>
 						</object>
-					</object>
-				</object>
-			</object>
-			<object class="wxPanel" name="m_panel4">
-				<style>wxTAB_TRAVERSAL</style>
-				<object class="wxBoxSizer">
-					<orient>wxVERTICAL</orient>
-					<object class="sizeritem">
-						<option>1</option>
-						<flag>wxALL|wxEXPAND</flag>
-						<border>0</border>
-						<object class="wxListCtrl" name="ID_LSTPLAYERS" subclass="wxAdvancedListCtrl">
-							<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+						<object class="wxPanel">
+							<style>wxTAB_TRAVERSAL</style>
+							<object class="wxBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>0</border>
+									<object class="wxListCtrl" name="ID_LSTPLAYERS" subclass="wxAdvancedListCtrl">
+										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+									</object>
+								</object>
+							</object>
 						</object>
 					</object>
 				</object>
@@ -329,29 +352,19 @@
 									<orient>wxHORIZONTAL</orient>
 									<object class="sizeritem">
 										<option>1</option>
-										<flag>wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
+										<flag>wxALIGN_LEFT|wxALIGN_TOP|wxEXPAND</flag>
 										<border>5</border>
 										<object class="wxBoxSizer">
 											<orient>wxVERTICAL</orient>
 											<object class="sizeritem">
-												<option>0</option>
-												<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
+												<option>1</option>
+												<flag>wxALL</flag>
 												<border>5</border>
 												<object class="wxListBox" name="ID_LSTWADDIR">
 													<style>wxLB_SINGLE</style>
 													<pos>0,190</pos>
 													<size>500,200</size>
 													<content />
-												</object>
-											</object>
-											<object class="sizeritem">
-												<option>0</option>
-												<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
-												<border>5</border>
-												<object class="wxButton" name="ID_BTNGETENV">
-													<tooltip>Loads the list with DOOMWADDIR and DOOMWADPATH environment variable data</tooltip>
-													<label>Get Environment</label>
-													<default>0</default>
 												</object>
 											</object>
 										</object>
@@ -364,7 +377,7 @@
 											<orient>wxVERTICAL</orient>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALL</flag>
+												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
 												<object class="wxButton" name="ID_BTNADD">
 													<label>Add</label>
@@ -373,7 +386,7 @@
 											</object>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALL</flag>
+												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
 												<object class="wxButton" name="ID_BTNREPLACE">
 													<label>Replace</label>
@@ -382,7 +395,7 @@
 											</object>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALL</flag>
+												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
 												<object class="wxButton" name="ID_BTNDELETE">
 													<label>Delete</label>
@@ -399,7 +412,7 @@
 											</object>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALL</flag>
+												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
 												<object class="wxButton" name="ID_BTNUP">
 													<label>Move Up</label>
@@ -408,10 +421,28 @@
 											</object>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALL</flag>
+												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
 												<object class="wxButton" name="ID_BTNDOWN">
 													<label>Move Down</label>
+													<default>0</default>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxEXPAND | wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticLine" name="m_staticline3">
+													<style>wxLI_HORIZONTAL</style>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+												<border>5</border>
+												<object class="wxButton" name="ID_BTNGETENV">
+													<tooltip>Loads the list with DOOMWADDIR and DOOMWADPATH environment variable data</tooltip>
+													<label>Get Environment</label>
 													<default>0</default>
 												</object>
 											</object>
@@ -632,6 +663,95 @@
 					</object>
 				</object>
 			</object>
+		</object>
+	</object>
+	<object class="wxFrame" name="frmOdaGet">
+		<style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
+		<size>400,300</size>
+		<title>OdaGet</title>
+		<object class="wxPanel">
+			<style>wxTAB_TRAVERSAL</style>
+			<object class="wxBoxSizer">
+				<orient>wxVERTICAL</orient>
+				<object class="sizeritem">
+					<option>1</option>
+					<flag>wxEXPAND</flag>
+					<border>5</border>
+					<object class="wxFlexGridSizer">
+						<rows>1</rows>
+						<cols>1</cols>
+						<vgap>0</vgap>
+						<hgap>0</hgap>
+						<growablecols>0</growablecols>
+						<growablerows>1</growablerows>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxHORIZONTAL</orient>
+								<label>URL</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="m_DownloadURL">
+										<value></value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="m_Download">
+										<label>Download</label>
+										<default>0</default>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxTextCtrl" name="m_LocationDisplay">
+								<style>wxTE_AUTO_URL|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2|wxSIMPLE_BORDER</style>
+								<value></value>
+								<maxlength>0</maxlength>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxGauge" name="m_DownloadGauge">
+								<style>wxGA_HORIZONTAL</style>
+								<range>100</range>
+								<value>0</value>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStdDialogButtonSizer">
+								<object class="button">
+									<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="wxID_CANCEL">
+										<label>&amp;Cancel</label>
+									</object>
+								</object>
+							</object>
+						</object>
+					</object>
+				</object>
+			</object>
+		</object>
+		<object class="wxStatusBar" name="m_statusBar2">
+			<style>wxST_SIZEGRIP</style>
+			<fields>1</fields>
 		</object>
 	</object>
 </resource>

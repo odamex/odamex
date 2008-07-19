@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,10 +31,14 @@
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
 EXTERN_CVAR (usectf)
+EXTERN_CVAR (blueteam)
+EXTERN_CVAR (redteam)
+EXTERN_CVAR (goldteam)
 
-CVAR(ctf_manualreturn, "0", CVAR_ARCHIVE)
-CVAR(ctf_flagathometoscore, "1", CVAR_ARCHIVE)
-CVAR(ctf_flagtimeout, "600", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE) // Flag timeout in gametics
+
+EXTERN_CVAR (ctf_manualreturn)
+EXTERN_CVAR (ctf_flagathometoscore)
+EXTERN_CVAR (ctf_flagtimeout)
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];
@@ -50,9 +54,10 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 	{MT_GFLG, MT_GDWN, MT_GCAR}
 };
 
-char *team_names[NUMTEAMS] =
+char *team_names[NUMTEAMS + 2] =
 {
-	"BLUE", "RED", "GOLD"
+	"BLUE", "RED", "GOLD",
+	"", ""
 };
 
 static int ctf_points[NUM_CTF_SCORE] =
@@ -431,37 +436,73 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 //
 mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
 {
-	int i, j;
-
-	for (j = 0; j < MaxBlueTeamStarts; j++)
-	{
-		i = M_Random () % selections;
-		if (player.userinfo.team == TEAM_BLUE)
-		{
-			if (G_CheckSpot (player, &blueteamstarts[i]) )
-			{
-				return &blueteamstarts[i];
-			}
+    switch (player.userinfo.team)
+    {
+        case TEAM_BLUE:
+        {
+            if (!blueteam)
+                break;
+            
+            for (int j = 0; j < MaxBlueTeamStarts; ++j)
+            {
+                size_t i = M_Random () % selections;
+                if (G_CheckSpot (player, &blueteamstarts[i]) )
+                {
+                    return &blueteamstarts[i];
+                }
+            }
+        }
+        break;
+        
+        case TEAM_RED:
+        {
+            if (!redteam)
+                break;
+                
+            for (size_t j = 0; j < MaxRedTeamStarts; ++j)
+            {
+                size_t i = M_Random () % selections;
+                if (G_CheckSpot (player, &redteamstarts[i]) )
+                {
+                    return &redteamstarts[i];
+                }
+            }
 		}
+		break;
+		
+        case TEAM_GOLD:
+        {
+            if (!goldteam)
+                break;
+            
+            for (size_t j = 0; j < MaxGoldTeamStarts; ++j)
+            {
+                size_t i = M_Random () % selections;
+                if (G_CheckSpot (player, &goldteamstarts[i]) )
+                {
+                    return &goldteamstarts[i];
+                }
+            }
+        }
+        break;
+        
+        default:
+        {
+            
+        }
+        break;
+    }
 
-		if (player.userinfo.team == TEAM_RED)
-		{
-			if (G_CheckSpot (player, &redteamstarts[i]) )
-			{
-				return &redteamstarts[i];
-			}
-		}
+    if (blueteam && MaxBlueTeamStarts)
+        return &blueteamstarts[0];
+    else 
+    if (redteam && MaxRedTeamStarts)
+        return &redteamstarts[0];
+    else
+    if (goldteam && MaxGoldTeamStarts)
+        return &goldteamstarts[0];
 
-		if (player.userinfo.team == TEAM_GOLD)
-		{
-			if (G_CheckSpot (player, &goldteamstarts[i]) )
-			{
-				return &goldteamstarts[i];
-			}
-		}
-	}
-
-	return &blueteamstarts[0];
+	return NULL;
 }
 
 // sounds played differ depending on your team, [0] for event on own team, [1] for others

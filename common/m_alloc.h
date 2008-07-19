@@ -4,7 +4,7 @@
 // $Id:$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,11 +27,23 @@
 
 #include <stdlib.h>
 
+
 // Visual C++ doesn't have stdint.h
 #if defined(_MSC_VER)
-#include <vadefs.h>
+	#if _MSC_VER > 1200
+		#include <vadefs.h>
+	#else	// Visual C++ 6.0 has problems
+		#ifndef _UINTPTR_T_DEFINED
+			#ifdef _WIN64
+				typedef unsigned __int64 uintptr_t;
+			#else
+				typedef unsigned int uintptr_t;
+			#endif
+			#define _UINTPTR_T_DEFINED
+		#endif
+	#endif
 #else
-#include <stdint.h>
+	#include <stdint.h>
 #endif
 
 // These are the same as the same stdlib functions,

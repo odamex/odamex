@@ -38,7 +38,7 @@
 
 #define CHALLENGE 5560020  // challenge
 #define LAUNCHER_CHALLENGE 777123  // csdl challenge
-#define VERSION 64
+#define VERSION 65	// GhostlyDeath -- this should remain static from now on
 
 extern int   localport;
 extern int   msg_badread;
@@ -304,6 +304,7 @@ void MSG_WriteLong (buf_t *b, int c);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
+int MSG_WriteFString(buf_t *, const char *, ...);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 
 int MSG_BytesLeft(void);

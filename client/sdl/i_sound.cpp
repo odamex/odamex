@@ -49,7 +49,7 @@ static bool sound_initialized = false;
 static char channel_in_use[NUM_CHANNELS];
 static int nextchannel = 0;
 
-CVAR (snd_crossover, "0", CVAR_ARCHIVE)
+EXTERN_CVAR (snd_crossover)
 
 // [Russell] - Chocolate Doom's sound converter code, how awesome!
 static bool ConvertibleRatio(int freq1, int freq2)
@@ -376,7 +376,12 @@ void I_InitSound (void)
 	if(Args.CheckParm("-nosound"))
 		return;
 
-	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem\n");
+	const char *driver = getenv("SDL_AUDIODRIVER");
+
+	if(!driver)
+		driver = "default";
+
+	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem (%s)\n", driver);
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
@@ -424,8 +429,9 @@ void I_InitSound (void)
 	}
 	
 	Printf(PRINT_HIGH, 
-           "I_InitSound: Using %d channels\n", 
-           Mix_AllocateChannels(NUM_CHANNELS));
+           "I_InitSound: Using %d channels (freq:%d, fmt:%d, chan:%d)\n",
+           Mix_AllocateChannels(NUM_CHANNELS),
+		   mixer_freq, mixer_format, mixer_channels);
 
 	atterm(I_ShutdownSound);
 

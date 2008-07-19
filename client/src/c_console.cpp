@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -86,7 +86,7 @@ static bool midprinting;
 #define SCROLLNO 0
 
 EXTERN_CVAR (show_messages)
-CVAR (print_stdout, "0", CVAR_ARCHIVE)
+EXTERN_CVAR (print_stdout)
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -112,8 +112,8 @@ static int HistSize;
 
 #define NUMNOTIFIES 4
 
-CVAR (con_notifytime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (con_scaletext, "0", CVAR_ARCHIVE)		// Scale notify text at high resolutions?
+EXTERN_CVAR (con_notifytime)
+EXTERN_CVAR (con_scaletext)
 
 static struct NotifyText
 {
@@ -133,41 +133,35 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
 
 cvar_t msglevel ("msg", "0", CVAR_ARCHIVE);
 
-BEGIN_CUSTOM_CVAR (msg0color, "6", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg0color)
 {
 	setmsgcolor (0, var.cstring());
 }
-END_CUSTOM_CVAR (msg0color)
 
-BEGIN_CUSTOM_CVAR (msg1color, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg1color)
 {
 	setmsgcolor (1, var.cstring());
 }
-END_CUSTOM_CVAR (msg1color)
 
-BEGIN_CUSTOM_CVAR (msg2color, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg2color)
 {
 	setmsgcolor (2, var.cstring());
 }
-END_CUSTOM_CVAR (msg2color)
 
-BEGIN_CUSTOM_CVAR (msg3color, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg3color)
 {
 	setmsgcolor (3, var.cstring());
 }
-END_CUSTOM_CVAR (msg3color)
 
-BEGIN_CUSTOM_CVAR (msg4color, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg4color)
 {
 	setmsgcolor (4, var.cstring());
 }
-END_CUSTOM_CVAR (msg4color)
 
-BEGIN_CUSTOM_CVAR (msgmidcolor, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msgmidcolor)
 {
 	setmsgcolor (PRINTLEVELS, var.cstring());
 }
-END_CUSTOM_CVAR (msgmidcolor)
 
 // NES - Activating this locks the scroll position in place when
 //       scrolling up. Otherwise, any new messages will
@@ -176,7 +170,7 @@ END_CUSTOM_CVAR (msgmidcolor)
 // conscrlock 0 = All new lines bring scroll to the bottom.
 // conscrlock 1 = Only input commands bring scroll to the bottom.
 // conscrlock 2 = Nothing brings scroll to the bottom.
-CVAR (conscrlock, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (conscrlock)
 
 static void maybedrawnow (void)
 {
@@ -432,7 +426,7 @@ int PrintString (int printlevel, const char *outline)
 	int mask;
 	BOOL scroll;
 
-	if(print_stdout)
+	if(print_stdout && gamestate != GS_FORCEWIPE)
 	{
 		printf("%s", outline);
 		fflush(stdout);
@@ -565,6 +559,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
             outlinelog[i] = '=';
 
     LOG << outlinelog;
+	LOG.flush();
 
 	return PrintString (printlevel, outline);
 }
@@ -1463,7 +1458,7 @@ END_COMMAND (toggleconsole)
 
 static brokenlines_t *MidMsg = NULL;
 static int MidTicker = 0, MidLines;
-CVAR (con_midtime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR (con_midtime)
 
 void C_MidPrint (const char *msg)
 {

@@ -93,15 +93,16 @@ void P_CalcHeight (player_t *player)
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
 
-	if (serverside || !predicting)
-	{
-		player->bob = FixedMul (player->mo->momx, player->mo->momx)
-					+ FixedMul (player->mo->momy, player->mo->momy);
-		player->bob >>= 2;
+	if (!player->spectator)
+		if (serverside || !predicting)
+		{
+			player->bob = FixedMul (player->mo->momx, player->mo->momx)
+						+ FixedMul (player->mo->momy, player->mo->momy);
+			player->bob >>= 2;
 
-		if (player->bob > MAXBOB)
-			player->bob = MAXBOB;
-	}
+			if (player->bob > MAXBOB)
+				player->bob = MAXBOB;
+		}
 
     if ((player->cheats & CF_NOMOMENTUM) || !player->mo->onground)
 	{
@@ -114,7 +115,10 @@ void P_CalcHeight (player_t *player)
 	}
 	
 	angle = (FINEANGLES/20*level.time) & FINEMASK;
-	bob = FixedMul (player->bob>>(player->mo->waterlevel > 1 ? 2 : 1), finesine[angle]);
+	if (!player->spectator)
+		bob = FixedMul (player->bob>>(player->mo->waterlevel > 1 ? 2 : 1), finesine[angle]);
+	else
+		bob = 0;
 
 	// move viewheight
 	if (player->playerstate == PST_LIVE)
@@ -216,7 +220,7 @@ void P_MovePlayer (player_t *player)
 		{
 			player->mo->momz += 7*FRACUNIT;
 			
-			if(clientside)
+			if(!player->spectator)
 				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
 		}
 	}
@@ -236,7 +240,8 @@ void P_MovePlayer (player_t *player)
 		P_PlayerLookUpDown(player);
 	}
 
-	mo->onground = (mo->z <= mo->floorz);
+	// GhostlyDeath <Jun, 4 2008> -- Treat spectators as on the ground
+	mo->onground = ((mo->z <= mo->floorz) || (mo->player && mo->player->spectator));
 	
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
@@ -318,7 +323,7 @@ void P_DeathThink (player_t *player)
 	
 	if(!serverside)
 	{
-		if (player->damagecount)
+		if (player->damagecount && !predicting)
 			player->damagecount--;
 		
 		return;

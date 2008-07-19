@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -76,9 +76,7 @@ class wxAdvancedListCtrl : public wxListCtrl
         wxInt32 SortOrder;
         wxInt32 SortCol;
 
-        wxInt32 colRed;
-        wxInt32 colGreen;
-        wxInt32 colBlue;
+        wxColour ItemShade;
 
     protected:               
         DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)

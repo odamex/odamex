@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,6 +31,8 @@ extern int KeyRepeatDelay;
 
 bool I_InitInput (void);
 void STACK_ARGS I_ShutdownInput (void);
+void I_PauseMouse();
+void I_ResumeMouse();
 
 void I_GetEvent (void);
 

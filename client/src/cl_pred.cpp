@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,6 +41,7 @@ void P_DeathThink (player_t *player);
 
 
 angle_t cl_angle[MAXSAVETICS];
+angle_t cl_pitch[MAXSAVETICS];
 fixed_t cl_viewheight[MAXSAVETICS];
 fixed_t cl_deltaviewheight[MAXSAVETICS];
 int     reactiontime[MAXSAVETICS];
@@ -115,6 +116,10 @@ void CL_ResetPlayers ()
 
 		if(!p->mo)
 			continue;
+			
+		// GhostlyDeath -- Ignore Spectators
+		if (p->spectator)
+			continue;
 
 		// set the position
 		CL_MoveThing (p->mo, p->real_origin[0], p->real_origin[1], p->real_origin[2]);
@@ -158,6 +163,10 @@ void CL_PredictPlayers (int predtic)
 	
 		if (!p->ingame() || !p->mo)
 			continue;
+			
+		// GhostlyDeath -- Ignore Spectators
+		if (p->spectator)
+			continue;
 
 		// Update this player if their last known status is before this tic
 		if(p->tic < predtic)
@@ -169,6 +178,7 @@ void CL_PredictPlayers (int predtic)
 				memcpy(cmd, &localcmds[buf], sizeof(ticcmd_t));
 
 				p->mo->angle = cl_angle[predtic%MAXSAVETICS];
+				p->mo->pitch = cl_pitch[predtic%MAXSAVETICS];
 				p->viewheight = cl_viewheight[predtic%MAXSAVETICS];
 				p->deltaviewheight = cl_deltaviewheight[predtic%MAXSAVETICS];
 				p->mo->reactiontime = reactiontime[predtic%MAXSAVETICS];
@@ -195,6 +205,7 @@ void CL_PredictMove (void)
 	// Save player angle, viewheight and deltaviewheight
 	// Will use it later to predict movements
 	cl_angle[gametic%MAXSAVETICS] = p->mo->angle;
+	cl_pitch[gametic%MAXSAVETICS] = p->mo->pitch;
 	cl_viewheight[gametic%MAXSAVETICS] = p->viewheight;
 	cl_deltaviewheight[gametic%MAXSAVETICS] = p->deltaviewheight;
 	reactiontime[gametic%MAXSAVETICS] = p->mo->reactiontime;

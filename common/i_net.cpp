@@ -30,8 +30,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <sstream>
+
+// GhostlyDeath -- VC6 requires Map and sstream doesn't seem to have anything either
+#if _MSC_VER <= 1200
+#include <string>
+#include <map>
+#endif
 
 /* [Petteri] Use Winsock for Win32: */
 #ifdef _WIN32
@@ -89,7 +96,7 @@ int         msg_badread;
 buf_t compressed, decompressed;
 lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
 
-CVAR(port,		"0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
+EXTERN_CVAR(port)
 
 msg_info_t clc_info[clc_max];
 msg_info_t svc_info[svc_max];
@@ -460,6 +467,25 @@ void MSG_WriteString (buf_t *b, const char *s)
 	}
 }
 
+//
+// MSG_WriteFString
+//
+// Write a formatted string (printf-style) to a buffer
+int MSG_WriteFString(buf_t *b, const char *fmt, ...)
+{
+    char outline[8192];
+    va_list argptr;
+    int count;
+    
+    va_start(argptr, fmt);
+    count = vsprintf(outline, fmt, argptr);
+    va_end(argptr);
+    
+    MSG_WriteString(b, outline);
+    
+    return count;
+}
+
 int MSG_BytesLeft(void)
 {
 	if(net_message.cursize < msg_readcount)
@@ -505,6 +531,7 @@ void *MSG_ReadChunk (size_t &size)
     if (msg_readcount+size > net_message.cursize)
     {
         msg_badread = true;
+        return NULL;
     }
 
     void *c = net_message.data + msg_readcount;
@@ -690,7 +717,12 @@ const char *MSG_ReadString (void)
         return "";
     }
 
+	// GhostlyDeath -- VC 6.0 doesn't have clear!
+#if _MSC_VER <= 1200
+	String.erase(String.begin(), String.end());
+#else
     String.clear();
+#endif
 
     SBYTE Ch = (SBYTE)MSG_ReadByte();
 

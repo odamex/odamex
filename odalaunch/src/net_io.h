@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -71,8 +71,13 @@ class BufferedSocket
         virtual ~BufferedSocket(); // "Choose! Choose the form of the destructor!"
                 
         // Set the outgoing address
-        virtual void SetAddress(wxString Address, wxInt16 Port) { to_addr.Hostname(Address); to_addr.Service(Port); }
-        //virtual wxInt32 SetAddress(wxString AddressAndPort);
+        void SetAddress(const wxString &Address, const wxInt16 &Port) 
+        { 
+            to_addr.Hostname(Address); to_addr.Service(Port); 
+        }
+        // Sets the outgoing address in "address:port" format
+        bool SetAddress(const wxString &Address);
+
         wxString    GetAddress(); // Get the outgoing address
 
         // Send/receive data using the outgoing address 
@@ -82,22 +87,29 @@ class BufferedSocket
         // a method for a round-trip time in milliseconds
         wxUint32 GetPing() { return (RecvPing - SendPing); }
         
-        // Read/Write values to the internal buffer
+        // Read values
         wxInt32     ReadString(wxString &);
         wxInt32     ReadBool(bool &boolval);
-        // signed reads
+        // Signed reads
         wxInt32     Read32(wxInt32 &);
         wxInt32     Read16(wxInt16 &);
         wxInt32     Read8(wxInt8 &);
-        // unsigned reads
+        // Unsigned reads
         wxInt32     Read32(wxUint32 &);
         wxInt32     Read16(wxUint16 &);
         wxInt32     Read8(wxUint8 &);
         
-        void    WriteString(wxString);
-        void    Write32(wxInt32);
-        void    Write16(wxInt16);
-        void    Write8(wxInt8);
+        // Write values
+        void    WriteString(const wxString &);
+        void    WriteBool(const bool &val);
+        // Signed writes
+        void    Write32(const wxInt32 &);
+        void    Write16(const wxInt16 &);
+        void    Write8(const wxInt8 &);
+        // Unsigned writes
+        void    Write32(const wxUint32 &);
+        void    Write16(const wxUint16 &);
+        void    Write8(const wxUint8 &);
         
         // Reset buffer positions to 0
         void    ResetRecvBuffer() { recv_buf->SeekI(0, wxFromStart); } ;

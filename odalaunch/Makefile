@@ -18,7 +18,7 @@ WXRC = wxrc
 CFLAGS = $(shell $(WXCONFIG) --cflags) -g
 LFLAGS = $(shell $(WXCONFIG) --libs) -g
 
-RESOURCES = res/xrc_resource.xrc
+RESOURCES = res/xrc_resource.xrc res/icons.xrc
 
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
 

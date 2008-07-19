@@ -56,11 +56,10 @@ static int crosshair_lump;
 
 static void R_InitCrosshair();
 
-BEGIN_CUSTOM_CVAR (crosshair, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (crosshair)
 {
 	R_InitCrosshair();
 }
-END_CUSTOM_CVAR (crosshair)
 
 //
 // Sprite rotation 0 is facing the viewer,
@@ -83,11 +82,10 @@ short			*screenheightarray;
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
 
+EXTERN_CVAR (r_drawplayersprites)
 
-CVAR (r_drawplayersprites, "1", 0)	// [RH] Draw player sprites?
-
-CVAR (crosshairdim, "0", CVAR_ARCHIVE)   // [Nes] Crosshair transparency.
-CVAR (crosshairscale, "0", CVAR_ARCHIVE) // [Nes] Crosshair scaling.
+EXTERN_CVAR (crosshairdim)
+EXTERN_CVAR (crosshairscale) 
 
 //
 // INITIALIZATION FUNCTIONS

@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,11 +30,17 @@
 #endif
 
 // Lots of different representations for the version number
-#define VERSIONSTR "30"
-#define CONFIGVERSIONSTR "30"
-#define GAMEVER (0*256+30)
+#define CONFIGVERSIONSTR "40"
+#define GAMEVER (0*256+41)
 
-#define DOTVERSIONSTR "0.3"
+#define DOTVERSIONSTR "0.4.1"
+
+#define SERVERMAJ (gameversion / 256)
+#define SERVERMIN ((gameversion % 256) / 10)
+#define SERVERREL ((gameversion % 256) % 10)
+#define CLIENTMAJ (GAMEVER / 256)
+#define CLIENTMIN ((GAMEVER % 256) / 10)
+#define CLIENTREL ((GAMEVER % 256) % 10)
 
 // denis - per-file svn version stamps
 class file_version

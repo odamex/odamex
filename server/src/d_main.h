@@ -29,7 +29,7 @@
 #include <vector>
 #include <string>
 
-#define LOG_FILE "odasrv.log"
+extern const char *LOG_FILE;
 
 //
 // D_DoomMain()

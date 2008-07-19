@@ -1,0 +1,11 @@
+For a condensed, easy to read changelog of stable releases, please see 
+http://odamex.net/wiki/Releases
+
+If you would like to see a more detailed list of changes, we highly recommend
+checking out the subversion repository either on the web or using a subversion
+client.  We recommend the standard svn tools or tortoisesvn (windows).
+
+Via SVN Client: http://odamex.net/svn/root
+
+Via the web: http://odamex.net/svn
+

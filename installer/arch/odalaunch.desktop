@@ -5,5 +5,5 @@ Exec=odalaunch
 Icon=odalaunch
 Type=Application
 Comment=Server Browser for Odamex
-Categories=Network;
+Categories=Game;ActionGame;
 

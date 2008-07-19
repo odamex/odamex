@@ -3,7 +3,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 2006-2007 by The Odamex Team.
+// Copyright (C) 2006-2008 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,8 +34,6 @@
 */
 wxInt32 ServerBase::Query(wxInt32 Timeout)
 {
-    Socket.SetAddress(to_addr.IPAddress(), to_addr.Service());
-    
     wxString Address = Socket.GetAddress();   
     
     if (Address != _T(""))
@@ -77,31 +75,23 @@ wxInt32 MasterServer::Parse()
     Socket.Read32(temp_response);
     
     if (temp_response != response)
-        return 0;
+    {
+        Socket.ClearRecvBuffer();
         
+        return 0;
+    }
+    
     wxInt16 server_count;
     
     Socket.Read16(server_count);
     
     if (!server_count)
-        return 0;
-    
-    // don't delete our custom servers!
-    std::vector<addr_t>::iterator addr_iter = addresses.begin();    
-    
-    while(addr_iter != addresses.end()) 
     {
-        addr_t address = *addr_iter;
+        Socket.ClearRecvBuffer();
         
-        if (address.custom == false)
-        {
-            addresses.erase(addr_iter);
-            continue;
-        }
-        
-        addr_iter++;
+        return 0;
     }
-    
+       
     // Add on to any servers already in the list
     if (server_count)
     for (wxInt16 i = 0; i < server_count; i++)
@@ -120,7 +110,21 @@ wxInt32 MasterServer::Parse()
         
         address.custom = false;
         
-        addresses.push_back(address);
+        size_t j = 0;
+        
+        // Don't add the same address more than once.
+        for (j = 0; j < addresses.size(); ++j)
+        {
+            if (addresses[j].ip == address.ip && 
+                addresses[j].port == address.port)
+            {
+                break;
+            }
+        }
+        
+        // didn't find it, so add it
+        if (j == addresses.size())
+            addresses.push_back(address);
     }
     
     Socket.ClearRecvBuffer();
@@ -205,6 +209,8 @@ void Server::ResetData()
     
     info.extrainfo = 0;
     info.passworded = false;
+    
+    Ping = 0;
 }
 
 wxInt32 Server::Parse()
@@ -249,7 +255,10 @@ wxInt32 Server::Parse()
     Socket.Read8(info.gameskill);
     Socket.ReadBool(info.teamplay); 
     Socket.ReadBool(info.ctf);
-        
+    
+    // hack to enable teamplay if disabled and ctf is enabled
+    info.teamplay |= info.ctf;
+    
     if (info.numplayers > 0)
     {          
         if (info.playerinfo != NULL)
