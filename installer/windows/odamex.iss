@@ -13,7 +13,7 @@ DefaultGroupName=Odamex
 AllowNoIcons=yes
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-0.4-win32
+OutputBaseFilename=odamex-win32-0.4
 Compression=zip
 SolidCompression=no
 
