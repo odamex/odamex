@@ -424,17 +424,7 @@ BEGIN_COMMAND (serverinfo)
 }
 END_COMMAND (serverinfo)
 
-BEGIN_CUSTOM_CVAR (cl_predict_players, "1", CVAR_ARCHIVE)
-{
-	if (var > 1)
-	{
-		var.Set (1);
-	}
-}
-END_CUSTOM_CVAR (cl_predict_players)
-
-
-BEGIN_CUSTOM_CVAR (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (rate)
 {
 	if (var < 100)
 	{
@@ -450,7 +440,6 @@ BEGIN_CUSTOM_CVAR (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 		MSG_WriteLong(&net_buffer, (int)var);
 	}
 }
-END_CUSTOM_CVAR (rate)
 
 
 BEGIN_COMMAND (rcon)

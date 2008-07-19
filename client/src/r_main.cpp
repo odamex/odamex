@@ -697,7 +697,7 @@ void R_ExecuteSetViewSize (void)
 //
 //
 
-BEGIN_CUSTOM_CVAR (screenblocks, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (screenblocks)
 {
 	if (var > 12.0)
 		var.Set (12.0);
@@ -706,7 +706,6 @@ BEGIN_CUSTOM_CVAR (screenblocks, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 	else
 		R_SetViewSize ((int)var);
 }
-END_CUSTOM_CVAR (screenblocks)
 
 //
 //

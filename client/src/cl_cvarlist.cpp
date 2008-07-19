@@ -75,11 +75,25 @@ CVAR (con_midtime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (dimamount, "0.7", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (dimcolor, "00 00 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR_FUNC_DECL (msg0color, "6", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (msg1color, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (msg2color, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (msg3color, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (msg4color, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (msgmidcolor, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 // Intermission
 // ------------
 
 // Determines whether to draw the scores on intermission.
 CVAR (interscoredraw, "1", CVAR_ARCHIVE)
+
+// Menus
+// -----
+
+CVAR_FUNC_DECL (ui_transred, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (ui_transgreen, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Gameplay/Other
 // --------------
@@ -109,6 +123,8 @@ CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (revealsecrets,        "0", CVAR_ARCHIVE)
 CVAR (show_messages, "1", CVAR_ARCHIVE)
 
+// Rate of client updates 
+CVAR_FUNC_DECL (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Maximum number of clients who can connect to the server
 CVAR (maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 // Maximum amount of players who can join the game, others are spectators
@@ -159,16 +175,30 @@ CVAR (chatmacro7, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro8, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro9, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-// Sound
-// -----
+CVAR_FUNC_DECL (hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+// Sound and music
+// ---------------
 
 CVAR (snd_crossover, "0", CVAR_ARCHIVE)
 // number of channels available
 CVAR (snd_channels, "8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Sound volume
+CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Music volume
+CVAR_FUNC_DECL (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+// Status bar
+// ----------
+CVAR_FUNC_DECL (st_scale, "1", CVAR_ARCHIVE)
 
 // Video and Renderer
 // ------------------
 
+// Gamma correction level, 1 - 4
+CVAR_FUNC_DECL (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Type of crosshair, 0 means none
+CVAR_FUNC_DECL (crosshair, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method
 CVAR (r_columnmethod, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 // Detail level?
@@ -189,6 +219,8 @@ CVAR (vid_defbits, "8", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (vid_fps, "0", CVAR_CLIENTINFO)
 // Fullscreen mode
 CVAR (vid_fullscreen, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+// TODO: document
+CVAR_FUNC_DECL (screenblocks, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Older (Doom-style) FPS counter
 CVAR (vid_ticker, "0", CVAR_CLIENTINFO)
 // Resizes the window by a scale factor

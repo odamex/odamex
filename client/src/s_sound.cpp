@@ -100,18 +100,16 @@ static channel_t *Channel;
 
 // Maximum volume of a sound effect.
 // Internal default is max out of 0-15.
-BEGIN_CUSTOM_CVAR (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (snd_sfxvolume)
 {
 	S_SetSfxVolume (var);
 }
-END_CUSTOM_CVAR (snd_sfxvolume)
 
 // Maximum volume of Music.
-BEGIN_CUSTOM_CVAR (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (snd_musicvolume)
 {
 	I_SetMusicVolume (var);
 }
-END_CUSTOM_CVAR (snd_musicvolume)
 
 // whether songs are mus_paused
 static BOOL		mus_paused;

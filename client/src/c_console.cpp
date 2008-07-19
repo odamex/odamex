@@ -133,41 +133,35 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
 
 cvar_t msglevel ("msg", "0", CVAR_ARCHIVE);
 
-BEGIN_CUSTOM_CVAR (msg0color, "6", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg0color)
 {
 	setmsgcolor (0, var.cstring());
 }
-END_CUSTOM_CVAR (msg0color)
 
-BEGIN_CUSTOM_CVAR (msg1color, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg1color)
 {
 	setmsgcolor (1, var.cstring());
 }
-END_CUSTOM_CVAR (msg1color)
 
-BEGIN_CUSTOM_CVAR (msg2color, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg2color)
 {
 	setmsgcolor (2, var.cstring());
 }
-END_CUSTOM_CVAR (msg2color)
 
-BEGIN_CUSTOM_CVAR (msg3color, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg3color)
 {
 	setmsgcolor (3, var.cstring());
 }
-END_CUSTOM_CVAR (msg3color)
 
-BEGIN_CUSTOM_CVAR (msg4color, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msg4color)
 {
 	setmsgcolor (4, var.cstring());
 }
-END_CUSTOM_CVAR (msg4color)
 
-BEGIN_CUSTOM_CVAR (msgmidcolor, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (msgmidcolor)
 {
 	setmsgcolor (PRINTLEVELS, var.cstring());
 }
-END_CUSTOM_CVAR (msgmidcolor)
 
 // NES - Activating this locks the scroll position in place when
 //       scrolling up. Otherwise, any new messages will

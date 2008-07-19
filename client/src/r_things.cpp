@@ -56,11 +56,10 @@ static int crosshair_lump;
 
 static void R_InitCrosshair();
 
-BEGIN_CUSTOM_CVAR (crosshair, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (crosshair)
 {
 	R_InitCrosshair();
 }
-END_CUSTOM_CVAR (crosshair)
 
 //
 // Sprite rotation 0 is facing the viewer,

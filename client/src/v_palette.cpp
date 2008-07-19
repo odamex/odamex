@@ -140,7 +140,7 @@ int		BlendR, BlendG, BlendB, BlendA;
 /**************************/
 
 byte newgamma[256];
-BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (gammalevel)
 {
 	static int lastgamma = 0;
 	int i;
@@ -175,7 +175,6 @@ BEGIN_CUSTOM_CVAR (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 		}
 	}
 }
-END_CUSTOM_CVAR (gammalevel)
 
 // [Russell] - Restore original screen palette from current gamma level
 void V_RestoreScreenPalette(void)

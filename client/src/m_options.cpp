@@ -338,7 +338,7 @@ static void M_SlideUIBlue (int);
 
 int dummy = 0;
 
-BEGIN_CUSTOM_CVAR(ui_transred, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (ui_transred)
 {
     if (var > 255)
         var.Set(255);
@@ -348,9 +348,8 @@ BEGIN_CUSTOM_CVAR(ui_transred, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
     M_SlideUIRed((int)var);
 }
-END_CUSTOM_CVAR(ui_transred)
 
-BEGIN_CUSTOM_CVAR(ui_transgreen, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (ui_transgreen)
 {
     if (var > 255)
         var.Set(255);
@@ -360,9 +359,8 @@ BEGIN_CUSTOM_CVAR(ui_transgreen, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
     M_SlideUIGreen((int)var);
 }
-END_CUSTOM_CVAR(ui_transgreen)
 
-BEGIN_CUSTOM_CVAR(ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL (ui_transblue)
 {
     if (var > 255)
         var.Set(255);
@@ -372,7 +370,6 @@ BEGIN_CUSTOM_CVAR(ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
     M_SlideUIBlue((int)var);
 }
-END_CUSTOM_CVAR(ui_transblue)
 
 static menuitem_t VideoItems[] = {
 	{ more,		"Messages",				{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)StartMessagesMenu} },

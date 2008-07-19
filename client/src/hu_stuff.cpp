@@ -221,7 +221,7 @@ EXTERN_CVAR (screenblocks)
 
 EXTERN_CVAR (hud_targetnames)
 
-BEGIN_CUSTOM_CVAR(hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_IMPL(hud_targetcount)
 {
 	if (var < 0)
 		var.Set((float)0);
@@ -229,7 +229,6 @@ BEGIN_CUSTOM_CVAR(hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 	if (var > 64)
 		var.Set((float)64);
 }
-END_CUSTOM_CVAR(hud_targetcount)
 
 EXTERN_CVAR (allowtargetnames)
 
