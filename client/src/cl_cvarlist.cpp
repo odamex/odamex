@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: cl_cvarlist.cpp 984 2008-07-11 08:54:56Z russellrice $
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2008 by The Odamex Team.
@@ -227,4 +227,4 @@ CVAR (vid_ticker, "0", CVAR_CLIENTINFO)
 CVAR_FUNC_DECL (vid_winscale, "1.0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 
-VERSION_CONTROL (c_cvarlist_cpp, "$Id: cl_cvarlist.cpp 971 2008-07-03 00:56:27Z russellrice $")
+VERSION_CONTROL (c_cvarlist_cpp, "$Id$")
