@@ -125,7 +125,7 @@ FILE *recorddemo_fp;
 
 EXTERN_CVAR(nomonsters)
 EXTERN_CVAR(fastmonsters)
-EXTERN_CVAR(allowfreelook)
+EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(monstersrespawn)
 
 char			demoname[256];

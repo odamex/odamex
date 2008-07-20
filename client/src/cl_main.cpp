@@ -103,30 +103,14 @@ EXTERN_CVAR (fastmonsters)
 EXTERN_CVAR (allowexit)
 EXTERN_CVAR (fragexitswitch)
 EXTERN_CVAR (allowjump)
-EXTERN_CVAR (allowfreelook)
 EXTERN_CVAR (scorelimit)
 EXTERN_CVAR (monstersrespawn)
 EXTERN_CVAR (itemsrespawn)
 EXTERN_CVAR (allowcheats)
 EXTERN_CVAR (teamplay)
 EXTERN_CVAR (allowtargetnames)
-
-// If freelook changes serverside or clientside,
-// work out what allowfreelook needs to be
+EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
-
-CVAR_FUNC_IMPL (cl_freelook)
-{
-	allowfreelook.Set((BOOL)(cl_freelook) &&
-						((BOOL)(sv_freelook) || serverside));
-}
-
-CVAR_FUNC_IMPL (sv_freelook)
-{
-	allowfreelook.Set((BOOL)(cl_freelook) &&
-						((BOOL)(sv_freelook) || serverside));
-}
-
 EXTERN_CVAR (interscoredraw)
 
 void CL_RunTics (void);

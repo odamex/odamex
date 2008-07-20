@@ -40,7 +40,8 @@
 #define MAXBOB			0x100000
 
 EXTERN_CVAR (allowjump)
-EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (cl_mouselook)
+EXTERN_CVAR (sv_freelook)
 
 extern bool predicting, stepmode;
 
@@ -158,7 +159,7 @@ void P_PlayerLookUpDown (player_t *p)
 	ticcmd_t *cmd = &p->cmd;
 	
 	// [RH] Look up/down stuff
-	if (!allowfreelook)
+	if (!sv_freelook)
 	{
 		p->mo->pitch = 0;
 	}

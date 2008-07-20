@@ -60,7 +60,7 @@ CVAR (allowexit,		"1", CVAR_SERVERINFO)
 // Players can jump
 CVAR (allowjump,		"0", CVAR_SERVERINFO)
 // Look up/down is allowed
-CVAR (allowfreelook,	"0", CVAR_SERVERINFO)
+CVAR (sv_freelook, "0", CVAR_SERVERINFO)
 // Names of players appear in the FOV
 CVAR (allowtargetnames, "0", CVAR_SERVERINFO)
 // Game ends on frag limit being reached

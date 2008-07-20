@@ -91,7 +91,7 @@ struct serverinfo_t     // Server information structure
     bool         monstersrespawn;
     bool         fastmonsters;
     bool         allowjump;
-    bool         allowfreelook;
+    bool         sv_freelook;
     bool         waddownload;
     bool         emptyreset;
     bool         cleanmaps;

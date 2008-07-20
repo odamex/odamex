@@ -611,7 +611,7 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
                               BOOLSTR(QServer[i].info.monstersrespawn),
                               BOOLSTR(QServer[i].info.fastmonsters),
                               BOOLSTR(QServer[i].info.allowjump),
-                              BOOLSTR(QServer[i].info.allowfreelook),
+                              BOOLSTR(QServer[i].info.sv_freelook),
                               BOOLSTR(QServer[i].info.waddownload),
                               BOOLSTR(QServer[i].info.emptyreset),
                               BOOLSTR(QServer[i].info.cleanmaps),

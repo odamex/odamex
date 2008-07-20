@@ -43,7 +43,7 @@
 #define WEAPONTOP					32*FRACUNIT
 
 EXTERN_CVAR(infiniteammo)
-EXTERN_CVAR(allowfreelook)
+EXTERN_CVAR(sv_freelook)
 
 //
 // P_SetPsprite
@@ -591,7 +591,7 @@ void P_BulletSlope (AActor *mo)
 			bulletslope = P_AimLineAttack (mo, an, 16*64*FRACUNIT);
 			// [RH] If we never found a target, use actor's pitch to
 			// determine bulletslope
-			if (allowfreelook && !linetarget)
+			if (sv_freelook && !linetarget)
 			{
 				an = mo->angle;
 				bulletslope = pitchslope;
@@ -599,10 +599,10 @@ void P_BulletSlope (AActor *mo)
 		}
 	}
 
-	// GhostlyDeath -- If allowfreelook was on and a line target was found
+	// GhostlyDeath -- If sv_freelook was on and a line target was found
 	// and the shooting object is a player, we use the looking, so shouldn't
 	// linetarget become !linetarget and moved up!?
-	if (allowfreelook && !linetarget && mo->player)
+	if (sv_freelook && !linetarget && mo->player)
 	{
 		if (abs(bulletslope - pitchslope) > mo->player->userinfo.aimdist)
 		{

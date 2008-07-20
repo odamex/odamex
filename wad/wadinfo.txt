@@ -31,6 +31,8 @@ DSFFS
 DSJUMP
 DSEMPTY
 DSSECRET
+DSPLJOIN
+DSPLPART
 
 # List of Pictures (with insertion point)
 

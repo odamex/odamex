@@ -90,7 +90,7 @@ EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookspring)
 EXTERN_CVAR (lookstrafe)
 EXTERN_CVAR (crosshair)
-EXTERN_CVAR (cl_freelook)
+EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (cl_autoaim)
 
 // [Toke - Menu] New Menu Stuff.
@@ -223,7 +223,7 @@ static menuitem_t MouseItems[] =
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ discrete	,	"Use Dynamic Resolution"				, {&dynres_state},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Show Mouse Values"						, {&displaymouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Always FreeLook"						, {&cl_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete	,	"Always FreeLook"						, {&cl_mouselook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
 	{ discrete	,	"NoVert"								, {&novert},			{2.0},		{0.0},		{0.0},		{OnOff}						},

@@ -98,9 +98,7 @@ CVAR_FUNC_DECL (ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Gameplay/Other
 // --------------
 
-// TODO: document
-CVAR_FUNC_DECL (cl_freelook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
-CVAR_FUNC_DECL (sv_freelook, "0", CVAR_SERVERINFO)
+CVAR (cl_mouselook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 
 CVAR (mouse_acceleration, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_threshold, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

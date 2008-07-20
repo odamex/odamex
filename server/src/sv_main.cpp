@@ -170,7 +170,7 @@ EXTERN_CVAR (nomonsters)
 EXTERN_CVAR (allowexit)
 EXTERN_CVAR (fragexitswitch)
 EXTERN_CVAR (allowjump)
-EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (infiniteammo)
 
 // Teamplay/CTF
@@ -2954,7 +2954,7 @@ void SV_GetPlayerCmd(player_t &player)
 		{
 			player.mo->angle = MSG_ReadShort() << 16;
 
-			if (!allowfreelook)
+			if (!sv_freelook)
 			{
 				player.mo->pitch = 0;
 				MSG_ReadShort();
@@ -2998,7 +2998,7 @@ void SV_GetPlayerCmd(player_t &player)
 		if(stepmode)cmd->ucmd.yaw = MSG_ReadShort();
 		else player.mo->angle = MSG_ReadShort() << 16;
 
-		if (!allowfreelook)
+		if (!sv_freelook)
 		{
 			player.mo->pitch = 0;
 			MSG_ReadShort();

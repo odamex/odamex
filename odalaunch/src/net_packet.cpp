@@ -334,7 +334,7 @@ wxInt32 Server::Parse()
     Socket.ReadBool(info.monstersrespawn);
     Socket.ReadBool(info.fastmonsters);
     Socket.ReadBool(info.allowjump);
-    Socket.ReadBool(info.allowfreelook);
+    Socket.ReadBool(info.sv_freelook);
     Socket.ReadBool(info.waddownload);
     Socket.ReadBool(info.emptyreset);
     Socket.ReadBool(info.cleanmaps);

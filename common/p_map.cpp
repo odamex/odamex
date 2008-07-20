@@ -1345,7 +1345,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	return false;
 }
 
-EXTERN_CVAR(allowfreelook)
+EXTERN_CVAR(sv_freelook)
 
 //
 // P_AimLineAttack
@@ -1363,7 +1363,7 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
 
 	// can't shoot outside view angles
-	if(allowfreelook)
+	if(sv_freelook)
 	{
 		// [RH] Technically, this is now correct for an engine with true 6 DOF
 		// instead of one which implements y-shearing, like we currently do.

@@ -134,7 +134,8 @@ enum demoversion_t
 
 EXTERN_CVAR(nomonsters)
 EXTERN_CVAR(fastmonsters)
-EXTERN_CVAR(allowfreelook)
+EXTERN_CVAR(cl_mouselook)
+EXTERN_CVAR(sv_freelook)
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
@@ -560,7 +561,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		forward += (MAXPLMOVE * joyymove) / 256;
 	}
 
-	if ((Actions[ACTION_MLOOK]) || allowfreelook)
+	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook))
 	{
 		int val;
 
@@ -2005,7 +2006,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		demoplayback = true;
 
 		// comatibility
-		allowfreelook = "0";
+		sv_freelook = "0";
 
 		return;
 	} else {

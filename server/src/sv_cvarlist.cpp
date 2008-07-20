@@ -78,3 +78,4 @@ CVAR (natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (flooddelay, "1.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
+

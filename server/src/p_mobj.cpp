@@ -44,7 +44,7 @@ int 				iquehead;
 int 				iquetail;
 
 EXTERN_CVAR	(weaponstay)
-EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (nomonsters)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
@@ -1670,7 +1670,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	if (source->player &&
 		source->player->userinfo.aimdist == 0 &&
-		allowfreelook)
+		sv_freelook)
 	{
 		slope = pitchslope;
 	}
@@ -1693,7 +1693,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 			{
 				an = source->angle;
 
-				if(allowfreelook)
+				if(sv_freelook)
 					slope = pitchslope;
 				else
 					slope = 0;
@@ -1703,7 +1703,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		// GhostlyDeath <June 19, 2006> -- fix flawed logic here (!linetarget not linetarget)
 		if (!linetarget && source->player)
 		{
-			if (allowfreelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
+			if (sv_freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
 			{
 				an = source->angle;
 				slope = pitchslope;
