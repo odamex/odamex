@@ -748,7 +748,8 @@ void SV_GetPackets (void)
 		}
 	}
 
-	int i;
+	size_t i;
+    BOOL resetlevel = false;
 
 	// remove disconnected players
 	for(i = 0; i < players.size(); i++)
@@ -764,6 +765,9 @@ void SV_GetPackets (void)
 
 			// update tracking cvar
 			clientcount.ForceSet(players.size());
+			
+			if (emptyreset && players.size() == 0)
+                resetlevel = true;
 		}
 	}
 
@@ -773,6 +777,13 @@ void SV_GetPackets (void)
 		if(players[i].mo)
 			players[i].mo->player = &players[i];
 	}
+	
+	if (resetlevel)
+    {
+        resetlevel = false;
+        
+        G_DeferedInitNew(level.mapname);
+    }
 }
 
 //
@@ -2106,9 +2117,6 @@ void SV_DisconnectClient(player_t &who)
 	//	gameaction = ga_loadlevel;
 	//	singleplayerjustdied = false;
 	//}
-
-	if (emptyreset && players.size() == 0)
-        G_DeferedInitNew(level.mapname);
 }
 
 
