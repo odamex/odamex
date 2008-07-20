@@ -2569,10 +2569,24 @@ void SV_UpdateMissiles(player_t &pl)
 			MSG_WriteShort(&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
 			MSG_WriteLong (&cl->netbuf, mo->movecount);
-			
-			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
-			MSG_WriteShort (&cl->netbuf, mo->netid);
-			MSG_WriteShort (&cl->netbuf, (mo->state - states));
+
+			if ((mobjinfo[mo->type].spawnstate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].seestate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].painstate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].meleestate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].missilestate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].deathstate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].xdeathstate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].raisestate == (statenum_t)(mo->state - states)))
+            {
+                MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
+                MSG_WriteShort (&cl->netbuf, mo->netid);
+                MSG_WriteShort (&cl->netbuf, (mo->state - states));
+            }
+            
+            if (cl->netbuf.cursize >= 1024)
+                if(!SV_SendPacket(pl))
+                    return;
 		}
     }
 }
@@ -2620,9 +2634,23 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
 			MSG_WriteLong (&cl->netbuf, mo->movecount);
 			
-			MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
-			MSG_WriteShort (&cl->netbuf, mo->netid);
-			MSG_WriteShort (&cl->netbuf, (mo->state - states));
+			if ((mobjinfo[mo->type].spawnstate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].seestate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].painstate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].meleestate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].missilestate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].deathstate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].xdeathstate == (statenum_t)(mo->state - states)) ||
+                (mobjinfo[mo->type].raisestate == (statenum_t)(mo->state - states)))
+            {
+                MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
+                MSG_WriteShort (&cl->netbuf, mo->netid);
+                MSG_WriteShort (&cl->netbuf, (mo->state - states));
+            }
+            
+            if (cl->netbuf.cursize >= 1024)
+                if(!SV_SendPacket(pl))
+                    return;
 		}
     }
 }
