@@ -748,31 +748,30 @@ void SV_GetPackets (void)
 		}
 	}
 
-	size_t i;
+	size_t i = 0;
     BOOL resetlevel = false;
 
 	// remove disconnected players
-	for(i = 0; i < players.size(); i++)
+	while (i < players.size())
 	{
-		if(players[i].playerstate == PST_DISCONNECT)
+        if(players[i].playerstate == PST_DISCONNECT)
 		{
-			// GhostlyDeath -- Commented code line causes DEP Errors when compiled with VC9
-			// GCC: i = 0x3000 - 0x3000 = 0
-			// VC9: i = 0x3000 - 0x0000 = crash!
-			//i = players.erase(players.begin() + i) - players.begin();
-			players.erase(players.begin() + i);
-			i--;
-
+            players.erase(players.begin() + i);
+            
 			// update tracking cvar
 			clientcount.ForceSet(players.size());
-			
-			if (emptyreset && players.size() == 0)
+        
+            if (emptyreset && players.size() == 0)
                 resetlevel = true;
-		}
+        }
+		else
+        {
+            ++i;
+        }
 	}
 
 	// repair mo after player pointers are reset
-	for(i = 0; i < players.size(); i++)
+	for(i = 0; i < players.size(); ++i)
 	{
 		if(players[i].mo)
 			players[i].mo->player = &players[i];
