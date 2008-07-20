@@ -6,7 +6,8 @@ SOURCES = src/dlg_config.cpp \
  src/dlg_servers.cpp \
  src/main.cpp \
  src/net_io.cpp \
- src/query_thread.cpp
+ src/query_thread.cpp \
+ src/frm_odaget.cpp
 
 HEADERS = src/*.h
 

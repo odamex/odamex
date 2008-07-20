@@ -24,6 +24,7 @@
 
 #include <wx/frame.h>
 #include <wx/gauge.h>
+#include <wx/textctrl.h>
 
 #include <wx/protocol/http.h>
 #include <wx/protocol/ftp.h>
