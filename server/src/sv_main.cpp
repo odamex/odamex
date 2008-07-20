@@ -1882,6 +1882,8 @@ void G_DoReborn (player_t &playernum);
 void SV_ConnectClient (void)
 {
 	int n;
+	int sfx_id;
+	size_t i;
 	int challenge = MSG_ReadLong();
 	client_t  *cl;
 
@@ -2024,6 +2026,23 @@ void SV_ConnectClient (void)
 	SV_SendPacket (players[n]);
 	
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
+	
+	// GhostlyDeath <July 20, 2008> -- Send a sound to everyone but the joiner
+	sfx_id = S_FindSound("misc/pljoin");
+	for (i = 0; i < players.size(); i++)
+	{
+		if (i == n)
+			continue;
+		
+		MSG_WriteMarker(&cl->netbuf, svc_startsound);
+		MSG_WriteShort(&cl->netbuf, players[i].mo->netid);
+		MSG_WriteLong(&cl->netbuf, 0);
+		MSG_WriteLong(&cl->netbuf, 0);
+		MSG_WriteByte(&cl->netbuf, CHAN_VOICE);
+		MSG_WriteByte(&cl->netbuf, sfx_id);
+	    MSG_WriteByte(&cl->netbuf, ATTN_NONE);
+	    MSG_WriteByte(&cl->netbuf, 255);
+	}
 }
 
 extern BOOL singleplayerjustdied;
@@ -2033,6 +2052,8 @@ extern BOOL singleplayerjustdied;
 //
 void SV_DisconnectClient(player_t &who)
 {
+	size_t i;
+	int sfx_id;
 	char str[100];
 	std::string disconnectmessage;
 	
@@ -2107,6 +2128,23 @@ void SV_DisconnectClient(player_t &who)
 		disconnectmessage += str;
 
 		SV_BroadcastPrintf(PRINT_HIGH, "%s\n", disconnectmessage.c_str());
+		
+		// GhostlyDeath <July 20, 2008> -- Send a sound to everyone but the parter
+		sfx_id = S_FindSound("misc/plpart");
+		for (i = 0; i < players.size(); i++)
+		{
+			if (&who == &players[i])
+				continue;
+	
+			MSG_WriteMarker(&players[i].client.netbuf, svc_startsound);
+			MSG_WriteShort(&players[i].client.netbuf, players[i].mo->netid);
+			MSG_WriteLong(&players[i].client.netbuf, 0);
+			MSG_WriteLong(&players[i].client.netbuf, 0);
+			MSG_WriteByte(&players[i].client.netbuf, CHAN_VOICE);
+			MSG_WriteByte(&players[i].client.netbuf, sfx_id);
+			MSG_WriteByte(&players[i].client.netbuf, ATTN_NONE);
+			MSG_WriteByte(&players[i].client.netbuf, 255);
+		}
 	}
 
 	who.playerstate = PST_DISCONNECT;

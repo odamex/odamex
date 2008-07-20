@@ -320,7 +320,7 @@ misc/spawn			dsitmbk
 misc/chat			dsradio		// Doom 2 chat sound
 misc/chat2			dstink		// Chat sound for everything else
 misc/pljoin			dspljoin
-misc/pjpart			dsplpart
+misc/plpart			dsplpart
 
 switches/normbutn		dsswtchn
 switches/exitbutn		dsswtchx
