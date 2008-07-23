@@ -709,31 +709,16 @@ int MSG_ReadLong (void)
 // Read a null terminated string
 const char *MSG_ReadString (void)
 {
-    static std::string String;
+	byte *begin = net_message.data + msg_readcount;
 
-    if (!MSG_BytesLeft())
-    {
-        msg_badread = true;
-        return "";
-    }
+	while(MSG_ReadByte() > 0);
 
-	// GhostlyDeath -- VC 6.0 doesn't have clear!
-#if _MSC_VER <= 1200
-	String.erase(String.begin(), String.end());
-#else
-    String.clear();
-#endif
-
-    SBYTE Ch = (SBYTE)MSG_ReadByte();
-
-    while (Ch != '\0' && MSG_BytesLeft())
-    {
-       String += Ch;
-
-       Ch = (SBYTE)MSG_ReadByte();
+	if(msg_readcount >= net_message.cursize)
+	{
+		return "";
 	}
 
-    return (char *)String.c_str();
+	return (const char *)begin;
 }
 
 //
