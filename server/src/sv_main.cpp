@@ -3478,7 +3478,7 @@ void SV_ParseCommands(player_t &player)
 			return;
 		}
 
-		if (msg_badread)
+		if (net_message.overflowed)
 		{
 			Printf (PRINT_HIGH, "SV_ReadClientMessage: badread %d(%s)\n",
 					    (int)cmd,

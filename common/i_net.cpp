@@ -87,8 +87,6 @@ int         localport;
 netadr_t    net_from;   // address of who sent the packet
 
 buf_t       net_message(MAX_UDP_PACKET);
-size_t      msg_readcount;
-int         msg_badread;
 
 // buffer for compression/decompression
 // can't be static to a function because some
@@ -245,6 +243,7 @@ int NET_GetPacket (void)
     socklen_t            fromlen;
 
     fromlen = sizeof(from);
+	net_message.clear();
     ret = recvfrom (net_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
 
     if (ret == -1)
@@ -279,9 +278,6 @@ int NET_GetPacket (void)
     }
     net_message.setcursize(ret);
     SockadrToNetadr (&from, &net_from);
-
-    msg_readcount = 0;
-    msg_badread = false;
 
     return ret;
 }
@@ -346,21 +342,14 @@ void SZ_Clear (buf_t *buf)
 	buf->clear();
 }
 
-
-byte *SZ_GetSpace(buf_t *b, int length)
-{
-	return b->SZ_GetSpace(length);
-}
-
 void SZ_Write (buf_t *b, const void *data, int length)
 {
-    memcpy (SZ_GetSpace(b, length), data, length);
+	b->WriteChunk((const char *)data, length);
 }
 
 void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 {
-	data += startpos;
-    memcpy (SZ_GetSpace(b, length), data, length);
+	b->WriteChunk((const char *)data, length, startpos);
 }
 
 //
@@ -371,10 +360,7 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 //
 void MSG_WriteMarker (buf_t *b, svc_t c)
 {
-    byte    *buf;
-
-    buf = SZ_GetSpace (b, 1);
-    buf[0] = c;
+	b->WriteByte((byte)c);
 }
 
 //
@@ -385,49 +371,30 @@ void MSG_WriteMarker (buf_t *b, svc_t c)
 //
 void MSG_WriteMarker (buf_t *b, clc_t c)
 {
-    byte    *buf;
-
-    buf = SZ_GetSpace (b, 1);
-    buf[0] = c;
+	b->WriteByte((byte)c);
 }
 
-void MSG_WriteByte (buf_t *b, int c)
+void MSG_WriteByte (buf_t *b, byte c)
 {
-    byte    *buf;
-
-    buf = SZ_GetSpace (b, 1);
-    buf[0] = c;
+    b->WriteByte((byte)c);
 }
 
 
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 {
-    byte    *buf;
-
-    buf = SZ_GetSpace (b, l);
-    memcpy(buf, p, l);
+    b->WriteChunk((const char *)p, l);
 }
 
 
-void MSG_WriteShort (buf_t *b, int c)
+void MSG_WriteShort (buf_t *b, short c)
 {
-    byte    *buf;
-
-    buf = SZ_GetSpace (b, 2);
-    buf[0] = c&0xff;
-    buf[1] = c>>8;
+    b->WriteShort(c);
 }
 
 
 void MSG_WriteLong (buf_t *b, int c)
 {
-    byte    *buf;
-
-    buf = SZ_GetSpace(b, 4);
-    buf[0] = c&0xff;
-    buf[1] = (c>>8)&0xff;
-    buf[2] = (c>>16)&0xff;
-    buf[3] = c>>24;
+    b->WriteLong(c);
 }
 
 //
@@ -435,7 +402,7 @@ void MSG_WriteLong (buf_t *b, int c)
 //
 // Write an boolean value to a buffer
 void MSG_WriteBool(buf_t *b, bool Boolean)
-{   
+{
     MSG_WriteByte(b, Boolean ? 1 : 0);
 }
 
@@ -458,86 +425,27 @@ void MSG_WriteFloat(buf_t *b, float Float)
 // Write a string to a buffer and null terminate it
 void MSG_WriteString (buf_t *b, const char *s)
 {
-    if (!s)
-        MSG_WriteByte(b, 0);
-    else
-	{
-        SZ_Write (b, s, strlen(s));
-        MSG_WriteByte(b, 0);
-	}
-}
-
-//
-// MSG_WriteFString
-//
-// Write a formatted string (printf-style) to a buffer
-int MSG_WriteFString(buf_t *b, const char *fmt, ...)
-{
-    char outline[8192];
-    va_list argptr;
-    int count;
-    
-    va_start(argptr, fmt);
-    count = vsprintf(outline, fmt, argptr);
-    va_end(argptr);
-    
-    MSG_WriteString(b, outline);
-    
-    return count;
+	b->WriteString(s);
 }
 
 int MSG_BytesLeft(void)
 {
-	if(net_message.cursize < msg_readcount)
-		return 0;
-
-	return net_message.cursize - msg_readcount;
+	return net_message.BytesLeftToRead();
 }
 
 int MSG_ReadByte (void)
 {
-    int     c;
-
-    if (msg_readcount+1 > net_message.cursize)
-    {
-        msg_badread = true;
-        return -1;
-    }
-
-    c = (unsigned char)net_message.data[msg_readcount];
-    msg_readcount++;
-
-    return c;
+    return net_message.ReadByte();
 }
-
 
 int MSG_NextByte (void)
 {
-    int     c;
-
-    if (msg_readcount+1 > net_message.cursize)
-    {
-        msg_badread = true;
-        return -1;
-    }
-
-    c = (unsigned char)net_message.data[msg_readcount];
-
-    return c;
+	return net_message.NextByte();
 }
 
 void *MSG_ReadChunk (size_t &size)
 {
-    if (msg_readcount+size > net_message.cursize)
-    {
-        msg_badread = true;
-        return NULL;
-    }
-
-    void *c = net_message.data + msg_readcount;
-    msg_readcount += size;
-
-    return c;
+	return net_message.ReadChunk(size);
 }
 
 // Output buffer size for LZO compression, extra space in case uncompressable
@@ -559,20 +467,17 @@ bool MSG_DecompressMinilzo ()
 
 	lzo_uint newlen = net_message.maxsize();
 
-	unsigned int r = lzo1x_decompress_safe (net_message.ptr() + msg_readcount, left, decompressed.data, &newlen, NULL);
+	unsigned int r = lzo1x_decompress_safe (net_message.ptr() + net_message.BytesRead(), left, decompressed.ptr(), &newlen, NULL);
 
 	if(r != LZO_E_OK)
 	{
-		msg_badread = false;
-		msg_readcount = net_message.cursize;
 		Printf(PRINT_HIGH, "Error: minilzo packet decompression failed with error %X\n", r);
 		return false;
 	}
 
-	memcpy(net_message.ptr(), decompressed.data, newlen);
+	net_message.clear();
+	memcpy(net_message.ptr(), decompressed.ptr(), newlen);
 
-	msg_badread = false;
-	msg_readcount = 0;
 	net_message.cursize = newlen;
 
 	return true;
@@ -623,15 +528,14 @@ bool MSG_DecompressAdaptive (huffman &huff)
 
 	size_t newlen = net_message.maxsize();
 
-	bool r = huff.decompress (net_message.ptr() + msg_readcount, left, decompressed.ptr(), newlen);
+	bool r = huff.decompress (net_message.ptr() + net_message.BytesRead(), left, decompressed.ptr(), newlen);
 
 	if(!r)
 		return false;
 
+	net_message.clear();
 	memcpy(net_message.ptr(), decompressed.ptr(), newlen);
 
-	msg_badread = false;
-	msg_readcount = 0;
 	net_message.cursize = newlen;
 
 	return true;
@@ -667,40 +571,12 @@ bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_
 
 int MSG_ReadShort (void)
 {
-    int     c;
-
-    if (msg_readcount+2 > net_message.cursize)
-    {
-        msg_badread = true;
-        return -1;
-    }
-
-    c = (short)(net_message.data[msg_readcount]
-    + (net_message.data[msg_readcount+1]<<8));
-
-    msg_readcount += 2;
-
-    return c;
+    return net_message.ReadShort();
 }
 
 int MSG_ReadLong (void)
 {
-    int c;
-
-	if (msg_readcount+4 > net_message.cursize)
-    {
-        msg_badread = true;
-        return -1;
-    }
-
-    c = net_message.data[msg_readcount]
-     + (net_message.data[msg_readcount+1]<<8)
-     + (net_message.data[msg_readcount+2]<<16)
-     + (net_message.data[msg_readcount+3]<<24);
-
-    msg_readcount += 4;
-
-    return c;
+	return net_message.ReadLong();
 }
 
 //
@@ -709,38 +585,9 @@ int MSG_ReadLong (void)
 // Read a null terminated string
 const char *MSG_ReadString (void)
 {
-	byte *begin = net_message.data + msg_readcount;
-
-	while(MSG_ReadByte() > 0);
-
-	if(msg_badread)
-	{
-		return "";
-	}
-
-	return (const char *)begin;
+	return net_message.ReadString();
 }
-
-//
-// MSG_ReadBool
-//
-// Read a boolean value
-bool MSG_ReadBool(void)
-{
-    bool Boolean;
-    
-    if (msg_readcount + 1 > net_message.cursize)
-    {
-        msg_badread = true;
-        return -1;
-    }
-    
-    Boolean = ((unsigned char)net_message.data[msg_readcount] ? true : false);
-    ++msg_readcount;
-    
-    return Boolean;
-}
-
+// 
 //
 // MSG_ReadFloat
 //
@@ -881,8 +728,8 @@ void InitNetCommon(void)
    if (ioctlsocket (net_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
-   // enter message information into message info structs
-   InitNetMessageFormats();
+	// enter message information into message info structs
+	InitNetMessageFormats();
 
    SZ_Clear(&net_message);
 }

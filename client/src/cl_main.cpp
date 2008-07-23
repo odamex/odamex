@@ -2425,7 +2425,7 @@ void CL_ParseCommands(void)
 
 		i->second();
 
-		if (msg_badread)
+		if (net_message.overflowed)
 		{
 			CL_QuitNetGame();
 			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message\n");
