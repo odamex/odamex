@@ -713,7 +713,7 @@ const char *MSG_ReadString (void)
 
 	while(MSG_ReadByte() > 0);
 
-	if(msg_readcount >= net_message.cursize)
+	if(msg_badread)
 	{
 		return "";
 	}
