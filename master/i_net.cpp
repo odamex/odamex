@@ -59,9 +59,6 @@ int localport;
 netadr_t net_from;   // address of who sent the packet
 
 buf_t net_message(MAX_UDP_PACKET);
-size_t msg_readcount;
-int msg_badread;
-
 
 //
 // UDPsocket
@@ -185,6 +182,7 @@ int NET_GetPacket(void)
 {
     struct sockaddr_in from;
     socklen_t fromlen = sizeof(from);
+	net_message.clear();
 
     int ret = recvfrom(net_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
 
@@ -218,9 +216,6 @@ int NET_GetPacket(void)
     }
     net_message.cursize = ret;
     SockadrToNetadr(&from, &net_from);
-
-    msg_readcount = 0;
-    msg_badread = false;
 
     return ret;
 }
