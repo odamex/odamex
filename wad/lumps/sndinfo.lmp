@@ -319,8 +319,6 @@ misc/i_pkup			dsitemup
 misc/spawn			dsitmbk
 misc/chat			dsradio		// Doom 2 chat sound
 misc/chat2			dstink		// Chat sound for everything else
-misc/pljoin			dspljoin
-misc/plpart			dsplpart
 
 switches/normbutn		dsswtchn
 switches/exitbutn		dsswtchx
@@ -341,3 +339,8 @@ ctf/e-flaggrab		dsefg
 ctf/e-flagreturn	dsefr
 ctf/e-flagscore	dsefs
 ctf/e-flagdrop		dsefd
+
+// Any new sounds have to be last (for clients to use older servers)
+misc/pljoin			dspljoin
+misc/plpart			dsplpart
+

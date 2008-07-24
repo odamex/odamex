@@ -198,6 +198,7 @@ extern BOOL				floatok;
 extern fixed_t			tmfloorz;
 extern fixed_t			tmceilingz;
 extern msecnode_t		*sector_list;		// phares 3/16/98
+extern bool				bligrabthings;
 
 //Added by MC: tmsectortype
 extern fixed_t			tmdropoffz; //Needed in b_move.c
@@ -205,7 +206,7 @@ extern sector_t			*tmsector;
 
 extern	line_t* 		ceilingline;
 
-bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
+bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool enablepickup = true);
 BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y);
 BOOL	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
