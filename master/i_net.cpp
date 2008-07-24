@@ -181,14 +181,12 @@ bool NET_CompareAdr(netadr_t a, netadr_t b)
 	return false;
 }
 
-
-
 int NET_GetPacket(void)
 {
     struct sockaddr_in from;
     socklen_t fromlen = sizeof(from);
 
-    int ret = recvfrom(net_socket, (char *)net_message.data, net_message.maxsize, 0, (struct sockaddr *)&from, &fromlen);
+    int ret = recvfrom(net_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
 
     if (ret == -1)
     {
@@ -227,7 +225,6 @@ int NET_GetPacket(void)
     return ret;
 }
 
-
 void NET_SendPacket(int length, byte *data, netadr_t to)
 {
     int ret;
@@ -254,159 +251,6 @@ void NET_SendPacket(int length, byte *data, netadr_t to)
     }
 }
 
-
-void SZ_Clear(buf_t *buf)
-{
-    buf->clear();
-}
-
-
-byte *SZ_GetSpace(buf_t *b, int length)
-{
-	byte *data;
-
-	if (b->cursize + length >= b->maxsize)
-	{
-       SZ_Clear(b);
-	   b->overflowed = true;
-       printf("SZ_GetSpace: overflow\n");
-	}
-
-	data = b->data + b->cursize;
-	b->cursize += length;
-
-	return data;
-}
-
-void SZ_Write(buf_t *b, void *data, int length)
-{
-    memcpy(SZ_GetSpace(b, length), data, length);
-}
-
-
-void MSG_WriteByte(buf_t *b, int c)
-{
-    byte *buf;
-
-    buf = SZ_GetSpace(b, 1);
-    buf[0] = c;
-}
-
-void MSG_WriteShort(buf_t *b, int c)
-{
-    byte *buf;
-
-    buf = SZ_GetSpace(b, 2);
-    buf[0] = c & 0xff;
-    buf[1] = c >> 8;
-}
-
-
-void MSG_WriteLong(buf_t *b, int c)
-{
-    byte *buf;
-
-    buf = SZ_GetSpace(b, 4);
-    buf[0] = c & 0xff;
-    buf[1] = (c >> 8) & 0xff;
-    buf[2] = (c >> 16) & 0xff;
-    buf[3] = c >> 24;
-}
-
-
-void MSG_WriteString(buf_t *b, char *s)
-{
-    if (!s)
-        MSG_WriteByte(b, 0);
-    else
-	{
-        SZ_Write(b, s, strlen(s));
-        MSG_WriteByte(b, 0);
-	}
-}
-
-
-
-int MSG_ReadByte(void)
-{
-    int c;
-
-    if (msg_readcount + 1 > net_message.cursize)
-    {
-        msg_badread = true;
-        return -1;
-    }
-
-    c = (unsigned char)net_message.data[msg_readcount];
-    msg_readcount++;
-
-    return c;
-}
-
-int MSG_ReadShort(void)
-{
-    int c;
-
-    if (msg_readcount + 2 > net_message.cursize)
-    {
-        msg_badread = true;
-        return -1;
-    }
-
-    c = (short)(net_message.data[msg_readcount] + (net_message.data[msg_readcount + 1] << 8));
-    msg_readcount += 2;
-
-    return c;
-}
-
-int MSG_BytesLeft(void)
-{
-	if(net_message.cursize < msg_readcount)
-		return 0;
-
-    return net_message.cursize - msg_readcount;
-}
-
-int MSG_ReadLong(void)
-{
-    int c;
-
-	if (msg_readcount + 4 > net_message.cursize)
-    {
-        msg_badread = true;
-        return -1;
-    }
-
-    c = net_message.data[msg_readcount] + (net_message.data[msg_readcount + 1] << 8) + (net_message.data[msg_readcount + 2] << 16) + (net_message.data[msg_readcount + 3] << 24);
-    msg_readcount += 4;
-
-    return c;
-}
-
-char *MSG_ReadString(void)
-{
-    static char string[2048];
-    signed char c;
-    unsigned int l;
-
-    l = 0;
-
-	if(MSG_BytesLeft())
-    do
-    {
-       c = (signed char)MSG_ReadByte();
-       if (c == 0)
-           break;
-       string[l] = c;
-       l++;
-	} while (l < sizeof(string) - 1);
-
-    string[l] = 0;
-
-    return string;
-}
-
-
 //
 // InitNetCommon
 //
@@ -424,7 +268,7 @@ void InitNetCommon(void)
    if (ioctlsocket(net_socket, FIONBIO, &_true) == -1)
        printf("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
-   SZ_Clear(&net_message);
+   net_message.clear();
 }
 
 

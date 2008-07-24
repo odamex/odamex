@@ -47,46 +47,221 @@ typedef struct
 
 extern netadr_t net_from;  // address of who sent the packet
 
-
-typedef struct buf_s
+class buf_t
 {
-   byte		*data;
-   size_t	maxsize;
-   size_t	cursize;
-   bool		overflowed;  // set to true if the buffer size failed
+public:
+	byte	*data;
+	size_t	allocsize, cursize, readpos;
+	bool	overflowed;  // set to true if the buffer size failed
 
-   void clear()
-   {
-	   cursize = 0;
-	   overflowed = false;
-   }
+public:
 
-   buf_s(const buf_s &other) : data(0), maxsize(other.maxsize), cursize(other.cursize), overflowed(other.overflowed)
-   {
-	   data = new byte[maxsize];
-	   memcpy(data, other.data, maxsize);
-   }
-   buf_s(size_t n)
-   {
-	   data = new byte[n];
-	   maxsize = n;
-	   clear();
-   }
-   ~buf_s()
-   {
-	   if(data)
-		delete[] data;
-   }
+	void WriteByte(byte b)
+	{
+		byte *buf = SZ_GetSpace(sizeof(b));
+		
+		if(!overflowed)
+		{
+			*buf = b;
+		}
+	}
 
-	buf_s &operator =(const buf_s &other)
+	void WriteShort(short s)
+	{
+		byte *buf = SZ_GetSpace(sizeof(s));
+		
+		if(!overflowed)
+		{
+			buf[0] = s&0xff;
+			buf[1] = s>>8;
+		}
+	}
+
+	void WriteLong(int l)
+	{
+		byte *buf = SZ_GetSpace(sizeof(l));
+		
+		if(!overflowed)
+		{
+			buf[0] = l&0xff;
+			buf[1] = (l>>8)&0xff;
+			buf[2] = (l>>16)&0xff;
+			buf[3] = l>>24;
+		}
+	}
+
+	void WriteString(const char *c)
+	{
+		if(c && *c)
+		{
+			size_t l = strlen(c);
+			byte *buf = SZ_GetSpace(l + 1);
+
+			if(!overflowed)
+			{
+				memcpy(buf, c, l + 1);
+			}
+		}
+		else
+			WriteByte(0);
+	}
+
+	void WriteChunk(const char *c, unsigned l, int startpos = 0)
+	{
+		byte *buf = SZ_GetSpace(l);
+
+		if(!overflowed)
+		{
+			memcpy(buf, c + startpos, l);
+		}
+	}
+
+	int ReadByte()
+	{
+		if(readpos+1 > cursize)
+		{
+			overflowed = true;
+			return -1;
+		}
+		return (unsigned char)data[readpos++];
+	}
+
+	int NextByte()
+	{
+		if(readpos+1 > cursize)
+		{
+			overflowed = true;
+			return -1;
+		}
+		return (unsigned char)data[readpos];
+	}
+
+	byte *ReadChunk(size_t size)
+	{
+		if(readpos+size > cursize)
+		{
+			overflowed = true;
+			return NULL;
+		}
+		size_t oldpos = readpos;
+		readpos += size;
+		return data+oldpos;
+	}
+
+	int ReadShort()
+	{
+		if(readpos+2 > cursize)
+		{
+			overflowed = true;
+			return -1;
+		}
+		size_t oldpos = readpos;
+		readpos += 2;
+		return (short)(data[oldpos] + (data[oldpos+1]<<8));
+	}
+
+	int ReadLong()
+	{
+		if(readpos+4 > cursize)
+		{
+			overflowed = true;
+			return -1;
+		}
+		size_t oldpos = readpos;
+		readpos += 4;
+		return data[oldpos] +
+				(data[oldpos+1]<<8) +
+				(data[oldpos+2]<<16)+
+				(data[oldpos+3]<<24);
+	}
+
+	const char *ReadString()
+	{
+		byte *begin = data + readpos;
+
+		while(ReadByte() > 0);
+
+		if(overflowed)
+		{
+			return "";
+		}
+
+		return (const char *)begin;
+	}
+
+	size_t BytesLeftToRead()
+	{
+		return cursize > readpos ? 0 : cursize - readpos;
+	}
+
+	size_t BytesRead()
+	{
+		return readpos;
+	}
+
+	byte *ptr()
+	{
+		return data;
+	}
+
+	size_t size()
+	{
+		return cursize;
+	}
+	
+	size_t maxsize()
+	{
+		return allocsize;
+	}
+
+	void setcursize(size_t len)
+	{
+		cursize = len > allocsize ? allocsize : len;
+	}
+
+	void clear()
+	{
+		cursize = 0;
+		readpos = 0;
+		overflowed = false;
+	}
+
+	void resize(size_t len)
 	{
 		if(data)
 			delete[] data;
 		
-		data = new byte[other.maxsize];
-		maxsize = other.maxsize;
+		data = new byte[len];
+		allocsize = len;
+		cursize = 0;
+		readpos = 0;
+		overflowed = false;
+	}
+
+	byte *SZ_GetSpace(size_t length)
+	{
+		if (cursize + length >= allocsize)
+		{
+			clear();
+			overflowed = true;
+		}
+
+		byte *ret = data + cursize;
+		cursize += length;
+
+		return ret;
+	}
+
+	buf_t &operator =(const buf_t &other)
+	{
+		if(data)
+			delete[] data;
+		
+		data = new byte[other.allocsize];
+		allocsize = other.allocsize;
 		cursize = other.cursize;
 		overflowed = other.overflowed;
+		readpos = other.readpos;
 
 		if(!overflowed)
 			for(size_t i = 0; i < cursize; i++)
@@ -94,8 +269,29 @@ typedef struct buf_s
 
 		return *this;
 	}
-
-} buf_t;
+	
+	buf_t()
+		: data(0), allocsize(0), cursize(0), readpos(0), overflowed(false)
+	{
+	}
+	buf_t(size_t len)
+		: data(new byte[len]), allocsize(len), cursize(0), readpos(0), overflowed(false)
+	{
+	}
+	buf_t(const buf_t &other)
+		: data(new byte[other.allocsize]), allocsize(other.allocsize), cursize(other.cursize), readpos(other.readpos), overflowed(other.overflowed)
+		
+	{
+		if(!overflowed)
+			for(size_t i = 0; i < cursize; i++)
+				data[i] = other.data[i];
+	}
+	~buf_t()
+	{
+		if(data)
+			delete[] data;
+	}
+};
 
 extern buf_t net_message;
 
@@ -109,20 +305,5 @@ bool NET_StringToAdr(char *s, netadr_t *a);
 bool NET_CompareAdr(netadr_t a, netadr_t b);
 int  NET_GetPacket(void);
 void NET_SendPacket(int length, byte *data, netadr_t to);
-
-void SZ_Clear(buf_t *buf);
-void SZ_Write(buf_t *b, void *data, int length);
-
-void MSG_WriteByte(buf_t *b, int c);
-void MSG_WriteShort(buf_t *b, int c);
-void MSG_WriteLong(buf_t *b, int c);
-void MSG_WriteString(buf_t *b, char *s);
-
-int MSG_ReadByte(void);
-int MSG_ReadShort(void);
-int MSG_ReadLong(void);
-char *MSG_ReadString(void);
-
-int MSG_BytesLeft (void);
 
 #endif

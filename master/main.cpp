@@ -162,10 +162,10 @@ void addServerInfo(netadr_t addr)
 		if(!s.key_sent)
 			continue;
 			
-		MSG_ReadLong();
+		net_message.ReadLong();
 
 		// check key against one we issued
-		if((unsigned)MSG_ReadLong() != s.key_sent)
+		if((unsigned)net_message.ReadLong() != s.key_sent)
 			continue;
 
 		// do not allow too many servers
@@ -177,26 +177,26 @@ void addServerInfo(netadr_t addr)
 		s.verified = true;
 		s.age = 0;
 
-		s.hostname = MSG_ReadString();
-		s.players = MSG_ReadByte();
-		s.maxplayers = MSG_ReadByte();
-		s.map = MSG_ReadString();
+		s.hostname = net_message.ReadString();
+		s.players = net_message.ReadByte();
+		s.maxplayers = net_message.ReadByte();
+		s.map = net_message.ReadString();
 
-		int pwadcount = MSG_ReadByte();
+		int pwadcount = net_message.ReadByte();
 		if(pwadcount < 0)
 			pwadcount = 0;
 
 		s.pwads.resize(pwadcount);
 
 		for(i = 0; i < s.pwads.size(); i++)
-			s.pwads[i] = MSG_ReadString();
+			s.pwads[i] = net_message.ReadString();
 
-		s.gametype = MSG_ReadByte();
-		s.skill = MSG_ReadByte();
-		s.teamplay = MSG_ReadByte();
-		s.ctfmode = MSG_ReadByte();
+		s.gametype = net_message.ReadByte();
+		s.skill = net_message.ReadByte();
+		s.teamplay = net_message.ReadByte();
+		s.ctfmode = net_message.ReadByte();
 
-		byte playercount = MSG_ReadByte();
+		byte playercount = net_message.ReadByte();
 
 		s.playernames.resize(playercount);
 		s.playerfrags.resize(playercount);
@@ -205,10 +205,10 @@ void addServerInfo(netadr_t addr)
 
 		for(i = 0; i < playercount; i++)
 		{
-			s.playernames[i] = MSG_ReadString();
-			s.playerfrags[i] = MSG_ReadShort();
-			s.playerpings[i] = MSG_ReadLong();
-			s.playerteams[i] = MSG_ReadByte();
+			s.playernames[i] = net_message.ReadString();
+			s.playerfrags[i] = net_message.ReadShort();
+			s.playerpings[i] = net_message.ReadLong();
+			s.playerteams[i] = net_message.ReadByte();
 		}
 
 		break;
@@ -326,7 +326,7 @@ void writeServerData(void)
 		if((*itr).verified)
 			num_verified++;
 	
-	MSG_WriteShort(&message, num_verified);
+	message.WriteShort(num_verified);
 
 	for (itr = servers.begin(); itr != servers.end(); ++itr)
 	{
@@ -334,8 +334,8 @@ void writeServerData(void)
 			continue;
 
 		for (int i = 0; i < 4; ++i)
-			MSG_WriteByte(&message, (*itr).addr.ip[i]);
-		MSG_WriteShort(&message, htons((*itr).addr.port));
+			message.WriteByte((*itr).addr.ip[i]);
+		message.WriteShort(htons((*itr).addr.port));
 	}
 }
 
@@ -371,9 +371,9 @@ void pingServer(SServer &s)
 	s.key_sent = rand() * getpid() * time(0);
 #endif
 	
-	SZ_Clear(&message);
-	MSG_WriteLong(&message, LAUNCHER_CHALLENGE);
-	MSG_WriteLong(&message, s.key_sent);
+	message.clear();
+	message.WriteLong(LAUNCHER_CHALLENGE);
+	message.WriteLong(s.key_sent);
 	
 	NET_SendPacket(message.cursize, message.data, s.addr);
 	
@@ -394,13 +394,13 @@ int main()
 	{
 		while (NET_GetPacket())
 		{
-			challenge = MSG_ReadLong();
+			challenge = net_message.ReadLong();
 
 			switch (challenge)
 			{
 			case 0:
 			case SERVER_CHALLENGE:
-				if(MSG_BytesLeft() > 2)
+				if(net_message.BytesLeftToRead() > 2)
 				{
 					// full reply with deathmatch, wad, etc
 					addServerInfo(net_from);
@@ -408,9 +408,9 @@ int main()
 				else
 				{
 					// plain contact
-					if(MSG_BytesLeft() == 2)
+					if(net_message.BytesLeftToRead() == 2)
 					{
-						unsigned short use_port = MSG_ReadShort();
+						unsigned short use_port = net_message.ReadShort();
 						net_from.port = htons(use_port);
 					}
 
@@ -418,15 +418,15 @@ int main()
 				}
 			    break;
 			case LAUNCHER_CHALLENGE:
-				if(MSG_BytesLeft() > 0)
+				if(net_message.BytesLeftToRead() > 0)
 				{
 					printf("Master syncing server list (ignored), IP = %s\n", NET_AdrToString(net_from));
 				}
 				else
 				{
 					printf("Client request IP = %s\n", NET_AdrToString(net_from));
-					SZ_Clear(&message);
-					MSG_WriteLong(&message, LAUNCHER_CHALLENGE);
+					message.clear();
+					message.WriteLong(LAUNCHER_CHALLENGE);
 					writeServerData();
 					NET_SendPacket(message.cursize, message.data, net_from);
 				}
