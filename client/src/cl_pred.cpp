@@ -210,6 +210,9 @@ void CL_PredictMove (void)
 	cl_deltaviewheight[gametic%MAXSAVETICS] = p->deltaviewheight;
 	reactiontime[gametic%MAXSAVETICS] = p->mo->reactiontime;
 
+	// Disable sounds, etc, during prediction
+	predicting = true;
+
 	// Set predictable items to their last received positions
 	CL_ResetPlayers();
 	CL_ResetSectors();
@@ -218,9 +221,6 @@ void CL_PredictMove (void)
 
 	if(predtic < 0)
 		predtic = 0;
-
-	// Disable sounds, etc, during prediction
-	predicting = true;
 
 	// Predict each tic
 	while(++predtic < gametic)
