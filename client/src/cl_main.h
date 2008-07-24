@@ -41,7 +41,6 @@ extern buf_t     net_buffer;
 extern ticcmd_t localcmds[MAXSAVETICS];
 
 extern bool predicting;
-extern bool pred_playerreset;
 
 struct plat_pred_t
 {

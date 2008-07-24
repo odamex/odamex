@@ -504,17 +504,16 @@ BOOL PIT_CheckThing (AActor *thing)
 	}
 
 	// check for special pickup
-	if (bligrabthings)
-		if (thing->flags & MF_SPECIAL)
+	if (thing->flags & MF_SPECIAL)
+	{
+		solid = thing->flags & MF_SOLID;
+		if (tmthing->flags&MF_PICKUP)
 		{
-			solid = thing->flags & MF_SOLID;
-			if (tmthing->flags&MF_PICKUP)
-			{
-				// can remove thing
-				P_TouchSpecialThing (thing, tmthing);
-			}
-			return !solid;
+			// can remove thing
+			P_TouchSpecialThing (thing, tmthing);
 		}
+		return !solid;
+	}
 
 		// killough 3/16/98: Allow non-solid moving objects to move through solid
 	// ones, by allowing the moving thing (tmthing) to move if it's non-solid,
@@ -577,8 +576,6 @@ BOOL Check_Sides(AActor* actor, int x, int y)
 // MOVEMENT CLIPPING
 //
 
-bool bligrabthings = true;
-
 //
 // P_CheckPosition
 // This is purely informative, nothing is modified
@@ -600,7 +597,7 @@ bool bligrabthings = true;
 //	tmdropoffz = the lowest point contacted (monsters won't move to a dropoff)
 //	speciallines[]
 //	numspeciallines
-bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool enablepickup)
+bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 {
 	int xl, xh;
 	int yl, yh;
@@ -608,7 +605,6 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool enablepickup)
 	subsector_t *newsubsec;
 
 	tmthing = thing;
-	bligrabthings = enablepickup;
 
 	tmx = x;
 	tmy = y;

@@ -38,7 +38,6 @@ void P_Ticker (void)
 	if (!multiplayer && !demoplayback && menuactive && players[0].viewz != 1)
 		return;
 
-	// FIXME: GhostlyDeath <July 24, 2008> -- What?? clientside and serverside? they aren't set at the same time I believe
 	if((serverside && speedhackfix) || (clientside && serverside))
 	{
 		for(size_t i = 0; i < players.size(); i++)

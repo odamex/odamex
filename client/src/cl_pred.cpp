@@ -102,16 +102,12 @@ void CL_PredictSectors (int predtic)
 	}
 }
 
-bool pred_playerreset = false;
-
 //
 // CL_ResetPlayers
 //
 void CL_ResetPlayers ()
 {
 	size_t n = players.size();
-	
-	pred_playerreset = true;
 
 	// Reset all player positions to their last known server tic
 	for(size_t i = 0; i < n; i++)
@@ -125,24 +121,14 @@ void CL_ResetPlayers ()
 		if (p->spectator)
 			continue;
 
-		// set the position (GhostlyDeath <July 24, 2008> -- Items are picked up when they shouldn't be)
-		//CL_MoveThing (p->mo, p->real_origin[0], p->real_origin[1], p->real_origin[2]);
-		P_CheckPosition (p->mo, p->real_origin[0], p->real_origin[1], false);
-		p->mo->UnlinkFromWorld ();
-		p->mo->x = p->real_origin[0];
-		p->mo->y = p->real_origin[1];
-		p->mo->z = p->real_origin[2];
-		p->mo->floorz = tmfloorz;
-		p->mo->ceilingz = tmceilingz;
-		p->mo->LinkToWorld ();
+		// set the position
+		CL_MoveThing (p->mo, p->real_origin[0], p->real_origin[1], p->real_origin[2]);
 		
 		// set the velocity
 		p->mo->momx = p->real_velocity[0];
 		p->mo->momy = p->real_velocity[1];
 		p->mo->momz = p->real_velocity[2];
 	}
-	
-	pred_playerreset = false;
 }
 
 //
