@@ -322,7 +322,7 @@ public:
 
 	size_t BytesLeftToRead()
 	{
-		return cursize < readpos ? 0 : cursize - readpos;
+		return overflowed || cursize < readpos ? 0 : cursize - readpos;
 	}
 
 	size_t BytesRead()
