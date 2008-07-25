@@ -303,6 +303,7 @@ EXTERN_CVAR (r_stretchsky)
 EXTERN_CVAR (wipetype)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (dimamount)
+EXTERN_CVAR (usehighresboard)
 
 static value_t Crosshairs[] =
 {
@@ -386,6 +387,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Screen wipe style",	{&wipetype},			{4.0}, {0.0},	{0.0}, {Wipes} },
+	{ discrete, "Use high-res scoreboard",	{&usehighresboard},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0}, {Overlays} },
@@ -396,7 +398,7 @@ static menuitem_t VideoItems[] = {
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	19,
+	20,
 	0,
 	VideoItems,
 };
