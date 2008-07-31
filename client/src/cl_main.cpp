@@ -1841,6 +1841,8 @@ void CL_GetServerSettings(void)
                 var->Set(CvarValue.c_str());
 			}
 		}
+		
+		ctfmode = MSG_ReadByte() ? true : false; // [Nes] - STUPID HACK ATTACK. Weakness: "gamemode" cvar.
 	}
 	else
 	{

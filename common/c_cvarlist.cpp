@@ -49,10 +49,9 @@ CVAR (blueteam,			"1",  CVAR_SERVERINFO | CVAR_ARCHIVE)
 CVAR (redteam,			"1",  CVAR_SERVERINFO | CVAR_ARCHIVE)
 CVAR (goldteam,			"0",  CVAR_SERVERINFO | CVAR_ARCHIVE)
 // (CTF) Flag settings
-CVAR (ctf_manualreturn, "0", CVAR_ARCHIVE)
-CVAR (ctf_flagathometoscore, "1", CVAR_ARCHIVE)
-CVAR (ctf_flagtimeout, "600", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
+CVAR (ctf_manualreturn, "0", CVAR_SERVERINFO | CVAR_ARCHIVE)
+CVAR (ctf_flagathometoscore, "1", CVAR_SERVERINFO | CVAR_ARCHIVE)
+CVAR (ctf_flagtimeout, "600", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Cheat code usage is allowed
 CVAR (allowcheats,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 // Exit switch/teleports are usable
