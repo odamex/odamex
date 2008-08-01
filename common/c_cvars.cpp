@@ -171,7 +171,7 @@ void cvar_t::ForceSet (float val)
 	char string[32];
 
 	sprintf (string, "%g", val);
-	Set (string);
+	ForceSet (string);
 }
 
 void cvar_t::Set (const char *val)
