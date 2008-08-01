@@ -113,7 +113,7 @@ EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR (interscoredraw)
 EXTERN_CVAR (usectf)
-EXTERN_CVAR(cl_joinpartsound)
+EXTERN_CVAR(cl_connectalert)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -201,7 +201,7 @@ void CL_ConnectClient(void)
 {
 	player_t &player = idplayer(MSG_ReadByte());
 	
-	if (!cl_joinpartsound)
+	if (!cl_connectalert)
 		return;
 	
 	// GhostlyDeath <August 1, 2008> -- Play connect sound
@@ -228,7 +228,7 @@ void CL_DisconnectClient(void)
 	size_t i;
 	
 	// GhostlyDeath <August 1, 2008> -- Play disconnect sound
-	if (cl_joinpartsound && &player != &consoleplayer())
+	if (cl_connectalert && &player != &consoleplayer())
 		S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
 
 	for(i = 0; i < players.size(); i++)
