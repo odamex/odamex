@@ -1827,7 +1827,7 @@ void CL_GetServerSettings(void)
 			
 			// CTF Hack, please fix :'(
 			if (var == &usectf)
-                ctfmode = (strtod(CvarValue.c_str(), NULL) == 1.0f) ? true : false;
+                ctfmode = (CvarValue.c_str()[0] == '1') ? true : false;
 			
 			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
 			if (var)
