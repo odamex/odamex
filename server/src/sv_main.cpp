@@ -1618,8 +1618,6 @@ void SV_SendServerSettings (client_t *cl)
 	}
 	
 	MSG_WriteByte(&cl->reliablebuf, 2);
-	
-	MSG_WriteByte(&cl->reliablebuf, ctfmode); // [Nes] - STUPID HACK ATTACK. Weakness: "gamemode" cvar.
 }
 
 //

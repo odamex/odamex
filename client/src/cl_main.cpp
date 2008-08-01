@@ -112,6 +112,7 @@ EXTERN_CVAR (allowtargetnames)
 EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR (interscoredraw)
+EXTERN_CVAR (usectf)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -1824,6 +1825,10 @@ void CL_GetServerSettings(void)
 			
 			var = cvar_t::FindCVar (CvarName.c_str(), &prev);
 			
+			// CTF Hack, please fix :'(
+			if (var == &usectf)
+                ctfmode = (strtod(CvarValue.c_str(), NULL) == 1.0f) ? true : false;
+			
 			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
 			if (var)
 			{
@@ -1841,8 +1846,6 @@ void CL_GetServerSettings(void)
                 var->Set(CvarValue.c_str());
 			}
 		}
-		
-		ctfmode = MSG_ReadByte() ? true : false; // [Nes] - STUPID HACK ATTACK. Weakness: "gamemode" cvar.
 	}
 	else
 	{
