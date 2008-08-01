@@ -906,7 +906,10 @@ void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *na
 		}
 
 		MSG_WriteMarker (&cl->netbuf, svc_startsound);
-		MSG_WriteShort (&cl->netbuf, mo->netid);
+        if (mo == NULL)
+            MSG_WriteShort (&cl->netbuf, 0);
+        else
+            MSG_WriteShort (&cl->netbuf, mo->netid);
 		MSG_WriteLong (&cl->netbuf, x);
 		MSG_WriteLong (&cl->netbuf, y);
 		MSG_WriteByte (&cl->netbuf, channel);
@@ -944,7 +947,10 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 				cl = &clients[i];
 
 				MSG_WriteMarker  (&cl->netbuf, svc_startsound );
-				MSG_WriteShort (&cl->netbuf, players[i].mo->netid );
+                if (players[i].mo == NULL)
+                    MSG_WriteShort (&cl->netbuf, 0);
+                else
+                    MSG_WriteShort (&cl->netbuf, players[i].mo->netid);
 				MSG_WriteLong (&cl->netbuf, 0);
 				MSG_WriteLong (&cl->netbuf, 0);
 				MSG_WriteByte  (&cl->netbuf, channel );
@@ -2034,14 +2040,17 @@ void SV_ConnectClient (void)
 		if (i == n)
 			continue;
 		
-		MSG_WriteMarker(&cl->netbuf, svc_startsound);
-		MSG_WriteShort(&cl->netbuf, players[i].mo->netid);
-		MSG_WriteLong(&cl->netbuf, 0);
-		MSG_WriteLong(&cl->netbuf, 0);
-		MSG_WriteByte(&cl->netbuf, CHAN_VOICE);
-		MSG_WriteByte(&cl->netbuf, sfx_id);
-	    MSG_WriteByte(&cl->netbuf, ATTN_NONE);
-	    MSG_WriteByte(&cl->netbuf, 255);
+		MSG_WriteMarker(&cl->reliablebuf, svc_startsound);
+        if (players[i].mo == NULL)
+            MSG_WriteShort (&cl->reliablebuf, 0);
+        else
+            MSG_WriteShort (&cl->reliablebuf, players[i].mo->netid);
+		MSG_WriteLong(&cl->reliablebuf, 0);
+		MSG_WriteLong(&cl->reliablebuf, 0);
+		MSG_WriteByte(&cl->reliablebuf, CHAN_VOICE);
+		MSG_WriteByte(&cl->reliablebuf, sfx_id);
+	    MSG_WriteByte(&cl->reliablebuf, ATTN_NONE);
+	    MSG_WriteByte(&cl->reliablebuf, 255);
 	}
 }
 
@@ -2136,14 +2145,17 @@ void SV_DisconnectClient(player_t &who)
 			if (&who == &players[i])
 				continue;
 	
-			MSG_WriteMarker(&players[i].client.netbuf, svc_startsound);
-			MSG_WriteShort(&players[i].client.netbuf, players[i].mo->netid);
-			MSG_WriteLong(&players[i].client.netbuf, 0);
-			MSG_WriteLong(&players[i].client.netbuf, 0);
-			MSG_WriteByte(&players[i].client.netbuf, CHAN_VOICE);
-			MSG_WriteByte(&players[i].client.netbuf, sfx_id);
-			MSG_WriteByte(&players[i].client.netbuf, ATTN_NONE);
-			MSG_WriteByte(&players[i].client.netbuf, 255);
+			MSG_WriteMarker(&players[i].client.reliablebuf, svc_startsound);
+            if (mo == NULL)
+                MSG_WriteShort (&players[i].client.reliablebuf, 0);
+            else
+                MSG_WriteShort (&players[i].client.reliablebuf, players[i].mo->netid);
+			MSG_WriteLong(&players[i].client.reliablebuf, 0);
+			MSG_WriteLong(&players[i].client.reliablebuf, 0);
+			MSG_WriteByte(&players[i].client.reliablebuf, CHAN_VOICE);
+			MSG_WriteByte(&players[i].client.reliablebuf, sfx_id);
+			MSG_WriteByte(&players[i].client.reliablebuf, ATTN_NONE);
+			MSG_WriteByte(&players[i].client.reliablebuf, 255);
 		}
 	}
 
