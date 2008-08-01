@@ -50,6 +50,7 @@
 					<object class="wxMenuItem" name="ID_MNUODAGET">
 						<label>Download WAD</label>
 						<help></help>
+						<enabled>0</enabled>
 					</object>
 					<object class="wxMenuItem" name="ID_MNUSETUPODAGET">
 						<label>Setup</label>
