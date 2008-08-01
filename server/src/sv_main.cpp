@@ -2033,24 +2033,13 @@ void SV_ConnectClient (void)
 	
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
 	
-	// GhostlyDeath <July 20, 2008> -- Send a sound to everyone but the joiner
-	sfx_id = S_FindSound("misc/pljoin");
-	for (i = 0; i < players.size(); i++)
-	{
-		if (i == n)
-			continue;
-		
-		MSG_WriteMarker(&cl->reliablebuf, svc_startsound);
-        if (players[i].mo == NULL)
-            MSG_WriteShort (&cl->reliablebuf, 0);
-        else
-            MSG_WriteShort (&cl->reliablebuf, players[i].mo->netid);
-		MSG_WriteLong(&cl->reliablebuf, 0);
-		MSG_WriteLong(&cl->reliablebuf, 0);
-		MSG_WriteByte(&cl->reliablebuf, CHAN_VOICE);
-		MSG_WriteByte(&cl->reliablebuf, sfx_id);
-	    MSG_WriteByte(&cl->reliablebuf, ATTN_NONE);
-	    MSG_WriteByte(&cl->reliablebuf, 255);
+	// tell others clients about it
+	for (size_t i = 0; i < players.size(); i++)
+	{	
+		client_t &cl = clients[i];
+
+		MSG_WriteMarker(&cl.reliablebuf, svc_connectclient);
+		MSG_WriteByte(&cl.reliablebuf, players[n].id);
 	}
 }
 
@@ -2137,26 +2126,6 @@ void SV_DisconnectClient(player_t &who)
 		disconnectmessage += str;
 
 		SV_BroadcastPrintf(PRINT_HIGH, "%s\n", disconnectmessage.c_str());
-		
-		// GhostlyDeath <July 20, 2008> -- Send a sound to everyone but the parter
-		sfx_id = S_FindSound("misc/plpart");
-		for (i = 0; i < players.size(); i++)
-		{
-			if (&who == &players[i])
-				continue;
-	
-			MSG_WriteMarker(&players[i].client.reliablebuf, svc_startsound);
-            if (mo == NULL)
-                MSG_WriteShort (&players[i].client.reliablebuf, 0);
-            else
-                MSG_WriteShort (&players[i].client.reliablebuf, players[i].mo->netid);
-			MSG_WriteLong(&players[i].client.reliablebuf, 0);
-			MSG_WriteLong(&players[i].client.reliablebuf, 0);
-			MSG_WriteByte(&players[i].client.reliablebuf, CHAN_VOICE);
-			MSG_WriteByte(&players[i].client.reliablebuf, sfx_id);
-			MSG_WriteByte(&players[i].client.reliablebuf, ATTN_NONE);
-			MSG_WriteByte(&players[i].client.reliablebuf, 255);
-		}
 	}
 
 	who.playerstate = PST_DISCONNECT;
