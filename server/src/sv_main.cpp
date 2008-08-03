@@ -906,7 +906,10 @@ void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *na
 		}
 
 		MSG_WriteMarker (&cl->netbuf, svc_startsound);
-		MSG_WriteShort (&cl->netbuf, mo->netid);
+        if (mo == NULL)
+            MSG_WriteShort (&cl->netbuf, 0);
+        else
+            MSG_WriteShort (&cl->netbuf, mo->netid);
 		MSG_WriteLong (&cl->netbuf, x);
 		MSG_WriteLong (&cl->netbuf, y);
 		MSG_WriteByte (&cl->netbuf, channel);
@@ -944,7 +947,10 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 				cl = &clients[i];
 
 				MSG_WriteMarker  (&cl->netbuf, svc_startsound );
-				MSG_WriteShort (&cl->netbuf, players[i].mo->netid );
+                if (players[i].mo == NULL)
+                    MSG_WriteShort (&cl->netbuf, 0);
+                else
+                    MSG_WriteShort (&cl->netbuf, players[i].mo->netid);
 				MSG_WriteLong (&cl->netbuf, 0);
 				MSG_WriteLong (&cl->netbuf, 0);
 				MSG_WriteByte  (&cl->netbuf, channel );
@@ -2027,21 +2033,13 @@ void SV_ConnectClient (void)
 	
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
 	
-	// GhostlyDeath <July 20, 2008> -- Send a sound to everyone but the joiner
-	sfx_id = S_FindSound("misc/pljoin");
-	for (i = 0; i < players.size(); i++)
-	{
-		if (i == n)
-			continue;
-		
-		MSG_WriteMarker(&cl->netbuf, svc_startsound);
-		MSG_WriteShort(&cl->netbuf, players[i].mo->netid);
-		MSG_WriteLong(&cl->netbuf, 0);
-		MSG_WriteLong(&cl->netbuf, 0);
-		MSG_WriteByte(&cl->netbuf, CHAN_VOICE);
-		MSG_WriteByte(&cl->netbuf, sfx_id);
-	    MSG_WriteByte(&cl->netbuf, ATTN_NONE);
-	    MSG_WriteByte(&cl->netbuf, 255);
+	// tell others clients about it
+	for (size_t i = 0; i < players.size(); i++)
+	{	
+		client_t &cl = clients[i];
+
+		MSG_WriteMarker(&cl.reliablebuf, svc_connectclient);
+		MSG_WriteByte(&cl.reliablebuf, players[n].id);
 	}
 }
 
@@ -2128,23 +2126,6 @@ void SV_DisconnectClient(player_t &who)
 		disconnectmessage += str;
 
 		SV_BroadcastPrintf(PRINT_HIGH, "%s\n", disconnectmessage.c_str());
-		
-		// GhostlyDeath <July 20, 2008> -- Send a sound to everyone but the parter
-		sfx_id = S_FindSound("misc/plpart");
-		for (i = 0; i < players.size(); i++)
-		{
-			if (&who == &players[i])
-				continue;
-	
-			MSG_WriteMarker(&players[i].client.netbuf, svc_startsound);
-			MSG_WriteShort(&players[i].client.netbuf, players[i].mo->netid);
-			MSG_WriteLong(&players[i].client.netbuf, 0);
-			MSG_WriteLong(&players[i].client.netbuf, 0);
-			MSG_WriteByte(&players[i].client.netbuf, CHAN_VOICE);
-			MSG_WriteByte(&players[i].client.netbuf, sfx_id);
-			MSG_WriteByte(&players[i].client.netbuf, ATTN_NONE);
-			MSG_WriteByte(&players[i].client.netbuf, 255);
-		}
 	}
 
 	who.playerstate = PST_DISCONNECT;

@@ -113,6 +113,7 @@ EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR (interscoredraw)
 EXTERN_CVAR (usectf)
+EXTERN_CVAR(cl_connectalert)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -193,6 +194,22 @@ void CL_Reconnect(void)
 	connecttimeout = 0;
 }
 
+//
+// CL_ConnectClient
+//
+void CL_ConnectClient(void)
+{
+	player_t &player = idplayer(MSG_ReadByte());
+	
+	if (!cl_connectalert)
+		return;
+	
+	// GhostlyDeath <August 1, 2008> -- Play connect sound
+	if (&player == &consoleplayer())
+		return;
+		
+	S_Sound (CHAN_VOICE, "misc/pljoin", 1, ATTN_NONE);
+}
 
 //
 // CL_DisconnectClient
@@ -209,6 +226,10 @@ void CL_DisconnectClient(void)
 		player.mo->Destroy();
 
 	size_t i;
+	
+	// GhostlyDeath <August 1, 2008> -- Play disconnect sound
+	if (cl_connectalert && &player != &consoleplayer())
+		S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
 
 	for(i = 0; i < players.size(); i++)
 	{
@@ -2364,6 +2385,7 @@ void CL_InitCommands(void)
 	cmds[svc_fireshotgun]		= &CL_FireShotgun;
 	cmds[svc_firessg]			= &CL_FireSSG;
 	cmds[svc_firechaingun]		= &CL_FireChainGun;
+	cmds[svc_connectclient]		= &CL_ConnectClient;
 	cmds[svc_disconnectclient]	= &CL_DisconnectClient;
 	cmds[svc_activateline]		= &CL_ActivateLine;
 	cmds[svc_sector]			= &CL_UpdateSector;

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+	// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -97,6 +97,9 @@ CVAR_FUNC_DECL (ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Gameplay/Other
 // --------------
+
+// GhostlyDeath <August 1, 2008> -- Join/Part Sound
+CVAR (cl_connectalert, "1", CVAR_ARCHIVE)
 
 CVAR (cl_mouselook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 

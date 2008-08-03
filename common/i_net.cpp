@@ -695,7 +695,8 @@ void InitNetMessageFormats()
 	MSG(svc_wadchunk,           "x"),
 	MSG(svc_compressed,         "x"),
 	MSG(svc_launcher_challenge, "x"),
-	MSG(svc_challenge,          "x")
+	MSG(svc_challenge,          "x"),
+	MSG(svc_connectclient,		"x")
    };
 
    size_t i;

@@ -1536,46 +1536,37 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	// see which target is to be aimed at
 	an = source->angle;
 
-	if (source->player &&
-		source->player->userinfo.aimdist == 0 &&
-		sv_freelook)
+	slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+
+	if (!linetarget)
 	{
-		slope = pitchslope;
-	}
-	else
-	{
+		an += 1<<26;
 		slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
 
 		if (!linetarget)
 		{
-			an += 1<<26;
+			an -= 2<<26;
 			slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-
-			if (!linetarget)
-			{
-				an -= 2<<26;
-				slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-			}
-
-			if (!linetarget)
-			{
-				an = source->angle;
-
-				if(sv_freelook)
-					slope = pitchslope;
-				else
-					slope = 0;
-			}
 		}
 
-		// GhostlyDeath <June 19, 2006> -- fix flawed logic here (!linetarget not linetarget)
-		if (!linetarget && source->player)
+		if (!linetarget)
 		{
-			if (sv_freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
-			{
-				an = source->angle;
+			an = source->angle;
+
+			if(sv_freelook)
 				slope = pitchslope;
-			}
+			else
+				slope = 0;
+		}
+	}
+
+	// GhostlyDeath <June 19, 2006> -- fix flawed logic here (!linetarget not linetarget)
+	if (!linetarget && source->player)
+	{
+		if (sv_freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
+		{
+			an = source->angle;
+			slope = pitchslope;
 		}
 	}
 

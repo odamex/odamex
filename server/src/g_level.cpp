@@ -223,6 +223,7 @@ BEGIN_COMMAND (map)
 			if (W_CheckNumForName (mapname) == -1)
 			{ // Still no luck, oh well.
 				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
+				return;
 			}
 			else
 			{ // Success
