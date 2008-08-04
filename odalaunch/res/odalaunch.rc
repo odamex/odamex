@@ -73,15 +73,15 @@ BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", " \0"
             VALUE "FileDescription", "Odamex Launcher\0"
-            VALUE "FileVersion", "0.3\0"
+            VALUE "FileVersion", "\0"
             VALUE "InternalName", "Odamex Launcher\0"
             VALUE "LegalCopyright", "Copyright © 2007-2008 The Odamex Team\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "odalaunch.exe\0"
-            VALUE "PrivateBuild", "\0"
+            VALUE "PrivateBuild", "$Id$\0"
             VALUE "ProductName", "Odamex Launcher\0"
             VALUE "ProductVersion", "0.3\0"
-            VALUE "SpecialBuild", "\0"
+            VALUE "SpecialBuild", "$Id$\0"
         END
     END
     BLOCK "VarFileInfo"
