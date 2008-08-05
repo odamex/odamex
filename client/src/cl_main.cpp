@@ -2496,9 +2496,9 @@ void CL_SendCmd(void)
 	{
 		MSG_WriteMarker(&net_buffer, clc_spectate);
 		MSG_WriteByte(&net_buffer, 5);
-		MSG_WriteLong(&net_buffer, displayplayer().mo->x);
-		MSG_WriteLong(&net_buffer, displayplayer().mo->y);
-		MSG_WriteLong(&net_buffer, displayplayer().mo->z);
+		MSG_WriteLong(&net_buffer, p->mo->x);
+		MSG_WriteLong(&net_buffer, p->mo->y);
+		MSG_WriteLong(&net_buffer, p->mo->z);
 	}
 	// GhostlyDeath -- We just throw it all away down here since we need those buttons!
 
