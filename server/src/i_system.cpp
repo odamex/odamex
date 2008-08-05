@@ -133,7 +133,7 @@ void *I_ZoneBase (size_t *size)
 	*size = I_MegabytesToBytes(def_heapsize);
 
     // Allocate the def_heapsize, otherwise try to allocate a smaller amount
-	while (NULL == (zone = Malloc (*size)) && *size >= I_MegabytesToBytes(min_heapsize))
+	while (NULL == (zone = malloc (*size)) && *size >= I_MegabytesToBytes(min_heapsize))
 		*size -= I_MegabytesToBytes(1);
 
     // Our heap size we received
@@ -142,7 +142,7 @@ void *I_ZoneBase (size_t *size)
     // Die if the system has insufficient memory
     if (got_heapsize < min_heapsize)
         I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
-                     "is %u MB but Malloc() returned %u MB",
+                     "is %lu MB but got %lu MB instead",
                      min_heapsize,
                      got_heapsize);
 
