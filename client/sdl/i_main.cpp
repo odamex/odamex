@@ -79,6 +79,8 @@ int main(int argc, char *argv[])
 	try
 	{
 #ifdef UNIX
+		if(!getuid() || !geteuid())
+			I_FatalError("root user detected, quitting odamex immediately");
 #endif
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
