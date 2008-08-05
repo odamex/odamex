@@ -33,7 +33,6 @@ proc main {} {
  expect $clientout {25E1459CA71D321525F84628F45CA8CD} 0
  expect $clientout {> Server Version 0.4.1} 0 
 gets $clientout
- expect $clientout {} 0
  expect $clientout {challenging 127.0.0.1:10599} 0
  expect $clientout {} 0
  expect $clientout {=================================} 0

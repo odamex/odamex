@@ -40,7 +40,7 @@ proc main {} {
  client "reconnect"
  expect $clientout "connecting to 127.0.0.1:$port" 0
  wait 3
- for {set i 0} {$i < 8} {incr i} { gets $clientout }
+ for {set i 0} {$i < 9} {incr i} { gets $clientout }
  expect $clientout {Server is full} 0
 
  # change maxplayers (non-latched)
@@ -55,7 +55,7 @@ proc main {} {
  client "reconnect"
  expect $clientout "connecting to 127.0.0.1:$port" 0
  wait 3
- for {set i 0} {$i < 8} {incr i} { gets $clientout }
+ for {set i 0} {$i < 9} {incr i} { gets $clientout }
  expect $clientout {Server is full} 0
 
  # change maxplayers and maxclients
@@ -73,7 +73,7 @@ proc main {} {
  client "reconnect"
  expect $clientout "connecting to 127.0.0.1:$port" 0
  wait 3
- for {set i 0} {$i < 8} {incr i} { gets $clientout }
+ for {set i 0} {$i < 9} {incr i} { gets $clientout }
  expect $clientout {} 0
  expect $clientout {=================================} 0
  expect $clientout {MAP01: entryway} 0

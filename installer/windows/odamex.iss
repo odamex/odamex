@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=Odamex
-AppVerName=Odamex 0.4
+AppVerName=Odamex 0.4.1
 AppPublisher=Odamex Dev Team
 AppPublisherURL=http://odamex.net
 AppSupportURL=http://odamex.net
@@ -13,7 +13,7 @@ DefaultGroupName=Odamex
 AllowNoIcons=yes
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
-OutputBaseFilename=odamex-0.4-win32
+OutputBaseFilename=odamex-win32-0.4.1
 Compression=zip
 SolidCompression=no
 
@@ -45,12 +45,13 @@ Source: ..\..\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: serv
 Source: ..\..\odasrv.cfg; DestDir: {app}; Flags: ignoreversion; Components: server
 Source: ..\..\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher
 Source: ..\..\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
+Source: ..\..\mingwm10.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher libs
 Source: ..\..\SDL.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\SDL_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
-Source: ..\..\ogg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
+Source: ..\..\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\smpeg.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
-Source: ..\..\vorbis.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
-Source: ..\..\vorbisfile.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
+Source: ..\..\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
+Source: ..\..\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 Source: ..\..\CHANGELOG; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: base
