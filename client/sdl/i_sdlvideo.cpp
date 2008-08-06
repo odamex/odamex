@@ -59,7 +59,7 @@ SDLVideo::SDLVideo(int parm)
         
         WindowHandle = wminfo.window;
 
-        SetClassLong(WindowHandle, GCL_HICON, (LONG) Icon);
+        SetClassLongPtr(WindowHandle, GCL_HICON, (LONG_PTR) Icon);
     }
     #endif
 
