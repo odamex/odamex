@@ -226,15 +226,15 @@ void CL_DisconnectClient(void)
 		player.mo->Destroy();
 
 	size_t i;
-	
-	// GhostlyDeath <August 1, 2008> -- Play disconnect sound
-	if (cl_connectalert && &player != &consoleplayer())
-		S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
 
 	for(i = 0; i < players.size(); i++)
 	{
 		if(&players[i] == &player)
 		{
+			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
+			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
+			if (cl_connectalert && &player != &consoleplayer())
+				S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
 			players.erase(players.begin() + i);
 			break;
 		}
