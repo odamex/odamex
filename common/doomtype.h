@@ -145,6 +145,7 @@ int STACK_ARGS DPrintf (const char *, ...);
 #include <fstream>
 
 extern std::ofstream LOG;
+extern std::ifstream CON;
 
 // game print flags
 #define	PRINT_LOW			0		// pickup messages

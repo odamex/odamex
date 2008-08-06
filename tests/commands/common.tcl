@@ -7,8 +7,10 @@ package provide common 1.0
 set port 10599
 
 proc start {} {
- global server client serverout clientout port
- set server [open "|./odasrv -port $port -logfile odasrv.log > tmp" w]
+ global server client serverout clientout port servercon clientcon
+
+ set server [open odasrv.con w]
+ set servercon [open "|./odasrv -port $port -logfile odasrv.log -confile odasrv.con > tmp" w]
  wait
  set serverout [open odasrv.log r]
 
@@ -19,7 +21,8 @@ proc start {} {
  server "timelimit 0"
  server "map 1"
 
- set client [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo -logfile odamex.log > tmp" w]
+ set client [open odamex.con w]
+ set clientcon [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo -logfile odamex.log -confile odamex.con > tmp" w]
  set clientout [open odamex.log r]
 
  wait 5
@@ -29,16 +32,18 @@ proc start {} {
 }
 
 proc end {} {
- global server client serverout clientout
+ global server client serverout clientout servercon clientcon
 
  client quit
  server quit
 
- close $server
  close $serverout
+ close $servercon
+ close $server
 
- close $client
  close $clientout
+ close $clientcon
+ close $client
 }
 
 proc server { cmd } {

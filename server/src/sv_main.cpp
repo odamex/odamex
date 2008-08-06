@@ -3689,6 +3689,16 @@ void SV_RunTics (void)
 		AddCommandString (cmd.c_str());
 	}
 
+	if(CON.is_open())
+	{
+		CON.clear();
+		if(!CON.eof())
+		{
+			std::getline(CON, cmd);
+			AddCommandString (cmd.c_str());
+		}
+	}
+
 	if(newtics > 0 && !stepmode)
 	{
 		SV_StepTics(newtics);

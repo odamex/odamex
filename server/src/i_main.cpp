@@ -98,6 +98,9 @@ int __cdecl main(int argc, char *argv[])
         if (!LOG.is_open())
 			cerr << "Unable to create logfile: %s" << endl;
 
+		const char *CON_FILE = Args.CheckValue("-confile");
+		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+
 		// Set the timer to be as accurate as possible
 		TIMECAPS tc;
 		if (timeGetDevCaps (&tc, sizeof(tc) != TIMERR_NOERROR))
@@ -198,6 +201,9 @@ int main (int argc, char **argv)
 
         if (!LOG.is_open())
             cerr << "Unable to create logfile: %s" << endl;
+
+		const char *CON_FILE = Args.CheckValue("-confile");
+		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
 
 		/*
 		  killough 1/98:

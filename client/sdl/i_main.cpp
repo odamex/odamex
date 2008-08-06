@@ -93,6 +93,9 @@ int main(int argc, char *argv[])
         if (!LOG.is_open())
             std::cerr << "Unable to create logfile: %s\n" << std::endl;
 
+		const char *CON_FILE = Args.CheckValue("-confile");
+		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+
 		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])
 		{

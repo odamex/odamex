@@ -30,6 +30,9 @@
 // Simple logging
 std::ofstream LOG;
 
+// Simple file based console input
+std::ifstream CON;
+
 //
 // M_FileLength
 //
