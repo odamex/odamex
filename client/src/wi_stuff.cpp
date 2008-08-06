@@ -1253,11 +1253,8 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 {
 	WI_initVariables (wbstartstruct);
 	WI_loadData ();
+	WI_initStats();
 
-	if (netgame)
-		WI_initAnimatedBack();
-	else
-		WI_initStats();
 	V_SetBlend (0,0,0,0);
 	S_StopAllChannels ();
 // 	SN_StopAllSequences ();
