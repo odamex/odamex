@@ -348,7 +348,8 @@ void I_UnRegisterSong (int handle)
 
 #else
 
-	Mix_FreeMusic(registered_tracks[handle].Track);
+    if (registered_tracks[handle].Track)
+        Mix_FreeMusic(registered_tracks[handle].Track);
     
     if (registered_tracks[handle].Data)
         SDL_FreeRW(registered_tracks[handle].Data);
@@ -409,9 +410,6 @@ int I_RegisterSong (char *data, size_t musicLen)
 
 		// older versions of sdl-mixer require a physical midi file to be read, 1.2.7+ can read from memory
 #ifndef TEMP_MIDI // SDL >= 1.2.7
-
-            if (registered_tracks[0].Data)
-                SDL_FreeRW(registered_tracks[0].Data);
             
             if (result == 0) // it is a midi
             {
