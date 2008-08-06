@@ -995,7 +995,7 @@ void WI_Ticker (void)
 	switch (state)
 	{
 		case StatCount:
-			if (multiplayer)
+			if (deathmatch)
 				WI_updateNoState();
 			else
 				WI_updateStats();
