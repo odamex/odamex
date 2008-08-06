@@ -351,8 +351,8 @@ void I_UnRegisterSong (int handle)
     if (registered_tracks[handle].Track)
         Mix_FreeMusic(registered_tracks[handle].Track);
     
-    if (registered_tracks[handle].Data)
-        SDL_FreeRW(registered_tracks[handle].Data);
+    //if (registered_tracks[handle].Data)
+        //SDL_FreeRW(registered_tracks[handle].Data);
 
 #endif
 
