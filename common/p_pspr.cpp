@@ -216,6 +216,33 @@ BOOL P_CheckAmmo (player_t *player)
 	return false;		
 }
 
+// denis - from Chocolate Doom
+// Doom does not check the bounds of the ammo array.  As a result,
+// it is possible to use an ammo type > 4 that overflows into the
+// maxammo array and affects that instead.  Through dehacked, for
+// example, it is possible to make a weapon that decreases the max
+// number of ammo for another weapon.  Emulate this.
+
+static void DecreaseAmmo(player_t *player, int amount)
+{
+	if (!infiniteammo)
+	{
+		ammotype_t ammonum = weaponinfo[player->readyweapon].ammo;
+
+		if (ammonum < NUMAMMO)
+		{
+			player->ammo[ammonum] -= amount;
+		}
+		else
+		{
+			// denis - within reason!
+			if (ammonum - NUMAMMO < NUMAMMO)
+			{
+				player->maxammo[ammonum - NUMAMMO] -= amount;
+			}
+		}
+	}
+}
 
 //
 // P_FireWeapon.
@@ -512,8 +539,7 @@ void A_Saw (player_t *player, pspdef_t *psp)
 //
 void A_FireMissile (player_t *player, pspdef_t *psp)
 {
-	if (!infiniteammo)
-		player->ammo[weaponinfo[player->readyweapon].ammo]--;
+	DecreaseAmmo(player, 1);
 
 	if(serverside)
 		P_SpawnPlayerMissile (player->mo, MT_ROCKET);
@@ -530,8 +556,7 @@ void A_FireBFG (player_t *player, pspdef_t *psp)
 	angle_t storedpitch = player->mo->pitch;
 	int storedaimdist = player->userinfo.aimdist;
 
-	if (!infiniteammo)
-		player->ammo[weaponinfo[player->readyweapon].ammo] -= deh.BFGCells;
+	DecreaseAmmo(player, deh.BFGCells);
 
 	player->mo->pitch = 0;
 	player->userinfo.aimdist = 81920000;
@@ -550,8 +575,7 @@ void A_FireBFG (player_t *player, pspdef_t *psp)
 //
 void A_FirePlasma (player_t *player, pspdef_t *psp)
 {
-	if (!infiniteammo)
-		player->ammo[weaponinfo[player->readyweapon].ammo]--;
+	DecreaseAmmo(player, 1);
 
 	P_SetPsprite (player,
 				  ps_flash,
@@ -640,8 +664,7 @@ void A_FirePistol (player_t *player, pspdef_t *psp)
 
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
-	if (!infiniteammo)
-		player->ammo[weaponinfo[player->readyweapon].ammo]--;
+	DecreaseAmmo(player, 1);
 
 	P_SetPsprite (player,
 				  ps_flash,
@@ -663,8 +686,7 @@ void A_FireShotgun (player_t *player, pspdef_t *psp)
 	A_FireSound (player, "weapons/shotgf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
-	if (!infiniteammo)
-		player->ammo[weaponinfo[player->readyweapon].ammo]--;
+	DecreaseAmmo(player, 1);
 
 	P_SetPsprite (player,
 				  ps_flash,
@@ -692,8 +714,7 @@ void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 	A_FireSound (player, "weapons/sshotf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
-	if (!infiniteammo)
-		player->ammo[weaponinfo[player->readyweapon].ammo]-=2;
+	DecreaseAmmo(player, 2);
 
 	P_SetPsprite (player,
 				  ps_flash,
@@ -724,13 +745,13 @@ void A_FireCGun (player_t *player, pspdef_t *psp)
 {
 	A_FireSound (player, "weapons/chngun");
 
-	if (!player->ammo[weaponinfo[player->readyweapon].ammo])
+	if (weaponinfo[player->readyweapon].ammo != am_noammo
+		&& !player->ammo[weaponinfo[player->readyweapon].ammo])
 		return;
-				
+
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
-	
-	if (!infiniteammo)
-		player->ammo[weaponinfo[player->readyweapon].ammo]--;
+
+	DecreaseAmmo(player, 1);
 
 	P_SetPsprite (player,
 				  ps_flash,
