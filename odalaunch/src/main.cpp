@@ -23,7 +23,7 @@
 
 
 // main dialog resource
-#include "res/xrc_resource.h"
+#include "xrc_resource.h"
 
 #include "main.h"
 

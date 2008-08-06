@@ -6,11 +6,11 @@
 		<Option pch_mode="0" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Win Release">
+			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
 				<Option output="..\..\odasrv.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\..\" />
-				<Option object_output="..\..\obj\server\release\" />
+				<Option object_output="..\..\obj\server\gcc\release\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -28,11 +28,11 @@
 					<Add library="wsock32" />
 				</Linker>
 			</Target>
-			<Target title="Win Debug">
+			<Target title="Win Debug (GCC)">
 				<Option platforms="Windows;" />
 				<Option output="..\..\odasrv-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\..\" />
-				<Option object_output="..\..\obj\server\debug\" />
+				<Option object_output="..\..\obj\server\gcc\debug\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -126,11 +126,108 @@
 					<Add option="-DDEBUG" />
 				</Compiler>
 			</Target>
+			<Target title="Win Release (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\..\odasrv.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
+				<Option object_output="..\..\obj\server\vc\release\" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/wd4430" />
+					<Add option="/DWIN32" />
+					<Add option="/DNDEBUG" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</Compiler>
+				<Linker>
+					<Add option="Ws2_32.lib" />
+					<Add option="Winmm.lib" />
+					<Add option="kernel32.lib" />
+					<Add option="user32.lib" />
+					<Add option="gdi32.lib" />
+					<Add option="winspool.lib" />
+					<Add option="comdlg32.lib" />
+					<Add option="advapi32.lib" />
+					<Add option="shell32.lib" />
+					<Add option="ole32.lib" />
+					<Add option="oleaut32.lib" />
+					<Add option="uuid.lib" />
+				</Linker>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\..\odasrv-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
+				<Option object_output="..\..\obj\server\vc\debug\" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MDd" />
+					<Add option="/TP" />
+					<Add option="/Gm" />
+					<Add option="/fp:precise" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/Zi /D_DEBUG" />
+					<Add option="/wd4430" />
+					<Add option="/DWIN32" />
+					<Add option="/D_DEBUG" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</Compiler>
+				<Linker>
+					<Add option="/DEBUG" />
+					<Add option="Ws2_32.lib" />
+					<Add option="Winmm.lib" />
+					<Add option="kernel32.lib" />
+					<Add option="user32.lib" />
+					<Add option="gdi32.lib" />
+					<Add option="winspool.lib" />
+					<Add option="comdlg32.lib" />
+					<Add option="advapi32.lib" />
+					<Add option="shell32.lib" />
+					<Add option="ole32.lib" />
+					<Add option="oleaut32.lib" />
+					<Add option="uuid.lib" />
+					<Add option="odbc32.lib" />
+					<Add option="odbccp32.lib" />
+				</Linker>
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
 			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
-			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
@@ -298,13 +395,17 @@
 		<Unit filename="..\src\v_palette.h" />
 		<Unit filename="..\src\v_text.h" />
 		<Unit filename="resource.h">
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
 		</Unit>
 		<Unit filename="server.rc">
 			<Option compilerVar="WINDRES" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
 		</Unit>
 		<Extensions>
 			<code_completion />

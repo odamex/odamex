@@ -6,11 +6,11 @@
 		<Option pch_mode="0" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Win Release">
+			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
 				<Option output="..\odamaster" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\release" />
+				<Option object_output="..\obj\master\gcc\release" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -29,11 +29,11 @@
 					<Add library="wsock32" />
 				</Linker>
 			</Target>
-			<Target title="Win Debug">
+			<Target title="Win Debug (GCC)">
 				<Option platforms="Windows;" />
 				<Option output="..\odamaster-dbg" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="..\" />
-				<Option object_output="..\obj\master\debug" />
+				<Option object_output="..\obj\master\gcc\debug" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -132,11 +132,76 @@
 					<Add option="-DDEBUG" />
 				</Compiler>
 			</Target>
+			<Target title="Win Release (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\odamaster" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="..\" />
+				<Option object_output="..\obj\master\vc\release" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MT" />
+					<Add option="/TP" />
+					<Add option="/GA" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/DWIN32" />
+					<Add option="/DNDEBUG" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+				</Compiler>
+				<Linker>
+					<Add library="wsock32" />
+				</Linker>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\odamaster-dbg" prefix_auto="0" extension_auto="1" />
+				<Option working_dir="..\" />
+				<Option object_output="..\obj\master\vc\debug" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MTd" />
+					<Add option="/TP" />
+					<Add option="/GA" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/Zi /D_DEBUG" />
+					<Add option="/DWIN32" />
+					<Add option="/D_DEBUG" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+				</Compiler>
+				<Linker>
+					<Add option="/DEBUG" />
+					<Add library="wsock32" />
+				</Linker>
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
 			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
-			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
