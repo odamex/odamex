@@ -126,12 +126,12 @@ void F_Ticker (void)
 
 		if (i != players.size())
 		{
-			if (finalecount < (signed)(strlen (finaletext)*TEXTSPEED))
+			/*if (finalecount < (signed)(strlen (finaletext)*TEXTSPEED))
 			{
 				finalecount = strlen (finaletext)*TEXTSPEED;
 			}
 			else
-			{
+			{*/
 				if (!strncmp (level.nextmap, "EndGame", 7))
 				{
 					if (level.nextmap[7] == 'C')
@@ -151,7 +151,7 @@ void F_Ticker (void)
 				{
 					gameaction = ga_worlddone;
 				}
-			}
+			//}
 		}
 	}
 	
