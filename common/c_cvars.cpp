@@ -443,7 +443,8 @@ void cvar_t::C_SetCVarsToDefaults (void)
 	while (cvar)
 	{
 		// Only default save-able cvars
-		if (cvar->m_Flags & CVAR_ARCHIVE)
+		if ((cvar->m_Flags & CVAR_ARCHIVE) || (!serverside && cvar->m_Flags & CVAR_CLIENTARCHIVE)
+			|| (!clientside && cvar->m_Flags & CVAR_SERVERARCHIVE))
 			if(cvar->m_Default.length())
 			cvar->Set (cvar->m_Default.c_str());
 		cvar = cvar->m_Next;
@@ -456,7 +457,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 
 	while (cvar)
 	{
-		if (cvar->m_Flags & CVAR_ARCHIVE)
+		if ((cvar->m_Flags & CVAR_ARCHIVE) || (!serverside && cvar->m_Flags & CVAR_CLIENTARCHIVE)
+			|| (!clientside && cvar->m_Flags & CVAR_SERVERARCHIVE))
 		{
 			fprintf ((FILE *)f, "set %s \"%s\"\n", cvar->name(), cvar->cstring());
 		}
@@ -475,9 +477,12 @@ void cvar_t::cvarlist()
 
 		count++;
 		Printf (PRINT_HIGH, "%c%c%c%c %s \"%s\"\n",
-				flags & CVAR_ARCHIVE ? 'A' : ' ',
+				flags & CVAR_ARCHIVE ? 'A' : 
+					flags & CVAR_CLIENTARCHIVE ? 'C' :
+					flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
 				flags & CVAR_USERINFO ? 'U' : ' ',
-				flags & CVAR_SERVERINFO ? 'S' : ' ',
+				flags & CVAR_SERVERINFO ? 'S' : 
+					flags & CVAR_CLIENTINFO ? 'C' : ' ',
 				flags & CVAR_NOSET ? '-' :
 					flags & CVAR_LATCH ? 'L' :
 					flags & CVAR_UNSETTABLE ? '*' : ' ',
@@ -509,6 +514,11 @@ BEGIN_COMMAND (set)
 			Printf (PRINT_HIGH, "%s is under server control and hasn't been changed.\n", argv[1]);
 			return;
 		}
+		else if (!clientside && (var->flags() & CVAR_CLIENTINFO))
+		{
+			Printf (PRINT_HIGH, "%s is under client control and hasn't been changed.\n", argv[1]);
+			return;
+		}		
 		else if (var->flags() & CVAR_LATCH)
 		{
 			if(strcmp(var->cstring(), argv[2])) // if different from current value
@@ -542,25 +552,25 @@ BEGIN_COMMAND (get)
 
 	if (argc >= 2)
 	{
-		if ( (var = cvar_t::FindCVar (argv[1], &prev)) )
+		if (var = cvar_t::FindCVar (argv[1], &prev))
 		{
 			// [Russell] - Don't make the user feel inadequate, tell
 			// them its either enabled, disabled or its other value
-			if (var->cstring()[0] == '1')
-                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-            else if (var->cstring()[0] == '0')
+			if (var->flags() & CVAR_NOENABLEDISABLE)
+				Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+			else if (var->cstring()[0] == '0')
                 Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
             else
-                Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
 		}
 		else
 		{
-			Printf (PRINT_HIGH, "\"%s\" is unset\n", argv[1]);
+			Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
 		}
 	}
 	else
 	{
-		Printf (PRINT_HIGH, "get: need variable name\n");
+		Printf (PRINT_HIGH, "usage: get <variable>\n");
 	}
 }
 END_COMMAND (get)
@@ -569,21 +579,35 @@ BEGIN_COMMAND (toggle)
 {
 	cvar_t *var, *prev;
 
-	if (argc > 1)
+	if (argc >= 2)
 	{
-		if ( (var = cvar_t::FindCVar (argv[1], &prev)) )
+		if (var = cvar_t::FindCVar (argv[1], &prev))
 		{
-			var->Set ((float)(!var->value()));
+			if (var->flags() & CVAR_NOENABLEDISABLE) {
+				Printf (PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
+			}
+			else
+			{
+				var->Set ((float)(!var->value()));
 
-			// [Russell] - Don't make the user feel inadequate, tell
-			// them its either enabled, disabled or its other value
-			if (var->cstring()[0] == '1')
-                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-            else if (var->cstring()[0] == '0')
-                Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-            else
-                Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+				// [Russell] - Don't make the user feel inadequate, tell
+				// them its either enabled, disabled or its other value
+				if (var->cstring()[0] == '1')
+					Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
+				else if (var->cstring()[0] == '0')
+					Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
+				else
+					Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+			}
 		}
+		else
+		{
+			Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+		}
+	}
+	else
+	{
+		Printf (PRINT_HIGH, "usage: toggle <variable>\n");
 	}
 }
 END_COMMAND (toggle)
