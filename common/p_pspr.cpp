@@ -98,14 +98,12 @@ P_SetPsprite
 	// an initial state of 0 could cycle through
 }
 
-void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation);
-
 //
 // A_FireSound
 //
 void A_FireSound (player_t *player, const char *sound)
 {
- 	UV_SoundAvoidPlayer (*player, player->mo, CHAN_WEAPON, sound, ATTN_NORM);
+ 	UV_SoundAvoidPlayer (player->mo, CHAN_WEAPON, sound, ATTN_NORM);
 }
 
 //

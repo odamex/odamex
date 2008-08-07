@@ -1581,7 +1581,7 @@ BOOL PTR_UseTraverse (intercept_t *in)
 		P_LineOpening (in->d.line);
 		if (openrange <= 0)
 		{
-			S_Sound (usething, CHAN_VOICE, "*grunt1", 1, ATTN_IDLE);
+			UV_SoundAvoidPlayer (usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 
 			// can't use through a wall
 			return false;
@@ -1657,7 +1657,7 @@ void P_UseLines (player_t *player)
 
 	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse))
 		if (!P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse))
-			S_Sound (usething, CHAN_VOICE, "*grunt1", 1, ATTN_IDLE);
+			UV_SoundAvoidPlayer (usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 }
 
 //

@@ -874,10 +874,15 @@ void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte at
 // UV_SoundAvoidPlayer
 // Sends a sound to clients, but doesn't send it to client 'player'.
 //
-void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
+void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	int        sfx_id;
 	client_t  *cl;
+
+	if(!mo->player)
+		return;
+
+	player_t &pl = *mo->player;
 
 	sfx_id = S_FindSound (name);
 

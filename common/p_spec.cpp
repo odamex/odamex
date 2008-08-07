@@ -867,9 +867,9 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	{
 		int keytrysound = S_FindSound ("misc/keytry");
 		if (keytrysound > -1)
-			S_Sound (p->mo, CHAN_VOICE, "misc/keytry", 1, ATTN_NORM);
+			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
 		else
-			S_Sound (p->mo, CHAN_VOICE, "*grunt1", 1, ATTN_NORM);
+			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 		C_MidPrint (msg);
 	}
 	return false;

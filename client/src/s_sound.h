@@ -163,6 +163,8 @@ int S_AddSound (char *logicalname, char *lumpname);	// Add sound by lumpname
 int S_AddSoundLump (char *logicalname, int lump);	// Add sound by lump index
 void S_ClearSoundLumps();
 
+void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation);
+
 // [RH] Prints sound debug info to the screen.
 //		Modelled after Hexen's noise cheat. // denis - this reference to hexen is ok gpl-wise
 void S_NoiseDebug (void);
