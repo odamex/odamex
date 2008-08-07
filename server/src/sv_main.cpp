@@ -64,6 +64,7 @@ extern level_locals_t level;
 // denis - game manipulation, but no fancy gfx
 bool clientside = false, serverside = true;
 bool predicting = false;
+baseapp_t baseapp = server;
 
 bool stepmode = false;
 

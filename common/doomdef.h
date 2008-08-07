@@ -64,6 +64,15 @@
 //
 extern bool clientside, serverside;
 
+// [Nes] - Determines which program the user is running.
+enum baseapp_t
+{
+	client,		// Odamex.exe
+	server		// Odasrv.exe
+};
+
+extern baseapp_t baseapp;
+
 //
 // Global parameters/defines.
 //

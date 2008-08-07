@@ -443,8 +443,8 @@ void cvar_t::C_SetCVarsToDefaults (void)
 	while (cvar)
 	{
 		// Only default save-able cvars
-		if ((cvar->m_Flags & CVAR_ARCHIVE) || (!serverside && cvar->m_Flags & CVAR_CLIENTARCHIVE)
-			|| (!clientside && cvar->m_Flags & CVAR_SERVERARCHIVE))
+		if ((cvar->m_Flags & CVAR_ARCHIVE) || (baseapp == client && cvar->m_Flags & CVAR_CLIENTARCHIVE)
+			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
 			if(cvar->m_Default.length())
 			cvar->Set (cvar->m_Default.c_str());
 		cvar = cvar->m_Next;
@@ -457,8 +457,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 
 	while (cvar)
 	{
-		if ((cvar->m_Flags & CVAR_ARCHIVE) || (!serverside && cvar->m_Flags & CVAR_CLIENTARCHIVE)
-			|| (!clientside && cvar->m_Flags & CVAR_SERVERARCHIVE))
+		if ((cvar->m_Flags & CVAR_ARCHIVE) || (baseapp == client && cvar->m_Flags & CVAR_CLIENTARCHIVE)
+			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
 		{
 			fprintf ((FILE *)f, "set %s \"%s\"\n", cvar->name(), cvar->cstring());
 		}
@@ -509,12 +509,12 @@ BEGIN_COMMAND (set)
 
 		if (var->flags() & CVAR_NOSET)
 			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);
-		else if (!serverside && (var->flags() & CVAR_SERVERINFO))
+		else if (baseapp == client && (var->flags() & CVAR_SERVERINFO))
 		{
 			Printf (PRINT_HIGH, "%s is under server control and hasn't been changed.\n", argv[1]);
 			return;
 		}
-		else if (!clientside && (var->flags() & CVAR_CLIENTINFO))
+		else if (baseapp == server && (var->flags() & CVAR_CLIENTINFO))
 		{
 			Printf (PRINT_HIGH, "%s is under client control and hasn't been changed.\n", argv[1]);
 			return;

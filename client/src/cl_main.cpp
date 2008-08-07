@@ -51,6 +51,7 @@
 
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
+baseapp_t baseapp = client;
 
 extern bool stepmode;
 
