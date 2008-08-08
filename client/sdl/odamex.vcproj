@@ -49,6 +49,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="1"
+				DisableSpecificWarnings="4430"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -189,7 +190,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\common\c_cvarlist.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\cl_ctf.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\cl_cvarlist.cpp"
 				>
 			</File>
 			<File

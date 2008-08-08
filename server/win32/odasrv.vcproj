@@ -49,6 +49,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="1"
+				DisableSpecificWarnings="4430"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -820,6 +821,10 @@
 			</File>
 		</Filter>
 		<File
+			RelativePath="..\..\common\c_cvarlist.cpp"
+			>
+		</File>
+		<File
 			RelativePath="..\..\common\m_memio.cpp"
 			>
 		</File>
@@ -829,6 +834,10 @@
 		</File>
 		<File
 			RelativePath="..\..\common\m_swap.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\sv_cvarlist.cpp"
 			>
 		</File>
 	</Files>
