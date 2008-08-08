@@ -2034,7 +2034,6 @@ void SV_ConnectClient (void)
 	MSG_WriteString (&cl->reliablebuf, level.mapname);
 	G_DoReborn (players[n]);
 	SV_ClientFullUpdate (players[n]);
-	SV_UpdateFrags (players[n]);
 	SV_SendPacket (players[n]);
 	
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
