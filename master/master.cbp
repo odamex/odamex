@@ -147,11 +147,15 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
-					<Add option="/MT" />
+					<Add option="/MD" />
 					<Add option="/TP" />
 					<Add option="/GA" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
 					<Add option="/EHa" />
 					<Add option="/GR" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
 					<Add option="/DWIN32" />
 					<Add option="/DNDEBUG" />
 					<Add option="/D_WINDOWS" />
@@ -178,11 +182,17 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
-					<Add option="/MTd" />
+					<Add option="/MDd" />
 					<Add option="/TP" />
-					<Add option="/GA" />
+					<Add option="/RTCu" />
+					<Add option="/RTCs" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
 					<Add option="/EHa" />
 					<Add option="/GR" />
+					<Add option="/Od" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
 					<Add option="/Zi /D_DEBUG" />
 					<Add option="/DWIN32" />
 					<Add option="/D_DEBUG" />

@@ -143,11 +143,15 @@
 				<Compiler>
 					<Add option="/MD" />
 					<Add option="/TP" />
+					<Add option="/GA" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
 					<Add option="/EHa" />
 					<Add option="/GR" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
 					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
-					<Add option="/DNDEBUG" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
@@ -188,14 +192,18 @@
 				<Compiler>
 					<Add option="/MDd" />
 					<Add option="/TP" />
-					<Add option="/Gm" />
+					<Add option="/RTCu" />
+					<Add option="/RTCs" />
 					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
 					<Add option="/EHa" />
 					<Add option="/GR" />
+					<Add option="/Od" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
 					<Add option="/Zi /D_DEBUG" />
 					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
-					<Add option="/D_DEBUG" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
