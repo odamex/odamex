@@ -96,7 +96,7 @@ class dlgConfig: public wxDialog
 
         wxDirPickerCtrl *DIR_BOX;
 
-        wxFilePickerCtrl *TXT_ODXPATH;
+        wxDirPickerCtrl *TXT_ODXPATH;
 
         wxTextCtrl *m_MasterTimeout, *m_ServerTimeout;
 

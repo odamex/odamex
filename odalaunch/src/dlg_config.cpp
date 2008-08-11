@@ -88,7 +88,7 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     WAD_LIST = wxStaticCast(FindWindow(ID_LSTWADDIR), wxListBox);
 
     DIR_BOX = wxStaticCast(FindWindow(ID_DPCHOOSEWADDIR), wxDirPickerCtrl);
-    TXT_ODXPATH = wxStaticCast(FindWindow(ID_FPCHOOSEODAMEXPATH), wxFilePickerCtrl);
+    TXT_ODXPATH = wxStaticCast(FindWindow(ID_FPCHOOSEODAMEXPATH), wxDirPickerCtrl);
 
     m_MasterTimeout = wxStaticCast(FindWindow(ID_MASTERTIMEOUT), wxTextCtrl);
     m_ServerTimeout = wxStaticCast(FindWindow(ID_SERVERTIMEOUT), wxTextCtrl);

@@ -96,7 +96,7 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
     ItemShade.Set(wxUint8(245), wxUint8(245), wxUint8(245));
 
     // Set up the image list.
-    AddImageSmall(NULL);
+    AddImageSmall(wxNullImage);
 }
 
 // Add any additional bitmaps/icons to the internal image list
