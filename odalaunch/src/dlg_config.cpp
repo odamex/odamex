@@ -108,8 +108,6 @@ void dlgConfig::Show()
 
     wxStringTokenizer wadlist(cfg_file->wad_paths, _T(';'));
 
-    UserChangedSetting = 0;
-
     while (wadlist.HasMoreTokens())
     {
         wxString path = wadlist.GetNextToken();
@@ -132,6 +130,8 @@ void dlgConfig::Show()
 
     m_TxtCtrlMasterTimeout->SetValue(MasterTimeout);
     m_TxtCtrlServerTimeout->SetValue(ServerTimeout);
+
+    UserChangedSetting = 0;
 
     ShowModal();
 }
