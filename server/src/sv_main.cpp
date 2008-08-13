@@ -2134,12 +2134,6 @@ void SV_DisconnectClient(player_t &who)
 	}
 
 	who.playerstate = PST_DISCONNECT;
-	
-	//if (!multiplayer && !who.spectator) {
-	//	// reload the level from scratch
-	//	gameaction = ga_loadlevel;
-	//	singleplayerjustdied = false;
-	//}
 }
 
 
@@ -3249,12 +3243,6 @@ void SV_Spectate (player_t &player)
 
 			if (ctfmode)
 				CTF_CheckFlags (player);
-
-			//if (!multiplayer) {
-			//	// reload the level from scratch
-			//	gameaction = ga_loadlevel;
-			//	singleplayerjustdied = false;
-			//}
 
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
 		}

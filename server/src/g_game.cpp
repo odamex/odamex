@@ -816,7 +816,7 @@ void G_DoReborn (player_t &player)
 		
 		if (canreload) {
 			// reload the level from scratch
-			gameaction = ga_loadlevel;
+			gameaction = ga_newgame;
 			return;
 		}
 	}
