@@ -5,11 +5,11 @@
 		<size>845,400</size>
 		<title>Odamex Launcher</title>
 		<centered>1</centered>
-		<object class="wxMenuBar" name="m_menubar1">
+		<object class="wxMenuBar">
 			<label></label>
-			<object class="wxMenu" name="m_menu1">
+			<object class="wxMenu">
 				<label>File</label>
-				<object class="wxMenuItem" name="ID_MNUSETTINGS">
+				<object class="wxMenuItem" name="Id_MnuItmSettings">
 					<label>Settings</label>
 					<help>Configure the launcher</help>
 				</object>
@@ -19,88 +19,88 @@
 					<help>Exit the launcher</help>
 				</object>
 			</object>
-			<object class="wxMenu" name="m_menu2">
+			<object class="wxMenu">
 				<label>Action</label>
-				<object class="wxMenuItem" name="ID_MNULAUNCH">
+				<object class="wxMenuItem" name="Id_MnuItmLaunch">
 					<label>Launch</label>
 					<help>Connect to the selected server</help>
 				</object>
-				<object class="wxMenuItem" name="ID_MNUQLAUNCH">
-					<label>Quick Launch</label>
-					<help>Run Odamex locally</help>
+				<object class="wxMenuItem" name="Id_MnuItmRunOffline">
+					<label>Run Offline</label>
+					<help>Runs the Odamex Client without connecting to a server</help>
 				</object>
 				<object class="separator" />
-				<object class="wxMenuItem" name="ID_MNUGETLIST">
-					<label>Get Master List</label>
-					<help>Get a new list of servers</help>
-				</object>
-				<object class="wxMenuItem" name="ID_MNUREFRESHALL">
-					<label>Refresh All</label>
-					<help>Refresh all servers currently displayed</help>
-				</object>
-				<object class="wxMenuItem" name="ID_MNUREFRESHSERVER">
+				<object class="wxMenuItem" name="Id_MnuItmRefreshServer">
 					<label>Refresh Selected</label>
 					<help>Refresh the selected server</help>
 				</object>
+				<object class="wxMenuItem" name="Id_MnuItmRefreshAll">
+					<label>Refresh All</label>
+					<help>Refresh all servers currently displayed</help>
+				</object>
+				<object class="wxMenuItem" name="Id_MnuItmGetList">
+					<label>Get Master List</label>
+					<help>Get a new list of servers</help>
+				</object>
 			</object>
-			<object class="wxMenu" name="m_menu5">
+			<object class="wxMenu">
 				<label>Tools</label>
-				<object class="wxMenu" name="m_menu11">
+				<object class="wxMenu">
 					<label>OdaGet</label>
-					<object class="wxMenuItem" name="ID_MNUODAGET">
+					<object class="wxMenuItem" name="Id_MnuItmDownloadWad">
 						<label>Download WAD</label>
-						<help></help>
+						<help>Download a WAD file</help>
 						<enabled>0</enabled>
 					</object>
-					<object class="wxMenuItem" name="ID_MNUSETUPODAGET">
+					<object class="wxMenuItem" name="Id_MnuItmSetupOdaget">
 						<label>Setup</label>
-						<help></help>
+						<help>Setup Odaget</help>
 						<enabled>0</enabled>
 					</object>
 				</object>
 			</object>
-			<object class="wxMenu" name="m_menu3">
+			<object class="wxMenu">
 				<label>Advanced</label>
-				<object class="wxMenuItem" name="ID_MNUCONMAN">
+				<object class="wxMenuItem" name="Id_MnuItmManualConnect">
 					<label>Manual Connect</label>
 					<help>Manually connect to a server by specifying Address:Port</help>
 				</object>
-				<object class="wxMenuItem" name="ID_MNUSERVERS">
+				<object class="wxMenuItem" name="Id_MnuItmCustomServers">
 					<label>Custom Servers</label>
 					<help>Set-up Custom Servers</help>
 				</object>
 			</object>
-			<object class="wxMenu" name="m_menu4">
+			<object class="wxMenu">
 				<label>Help</label>
-				<object class="wxMenuItem" name="ID_MNUWEBSITE">
+				<object class="wxMenuItem" name="Id_MnuItmVisitWebsite">
 					<label>Website</label>
 					<help>Go to the Odamex website</help>
 				</object>
-				<object class="wxMenuItem" name="ID_MNUFORUM">
+				<object class="wxMenuItem" name="Id_MnuItmVisitForum">
 					<label>Forum</label>
 					<help>Visit the Odamex forum</help>
 				</object>
-				<object class="wxMenuItem" name="ID_MNUWIKI">
+				<object class="wxMenuItem" name="Id_MnuItmVisitWiki">
 					<label>Wiki</label>
 					<help>Visit the Odamex Wiki</help>
 				</object>
 				<object class="separator" />
-				<object class="wxMenuItem" name="ID_MNUCHANGELOG">
+				<object class="wxMenuItem" name="Id_MnuItmViewChangelog">
 					<label>Changelog</label>
 					<help>Open the Changelog</help>
 				</object>
-				<object class="wxMenuItem" name="ID_MNUREPORTBUG">
+				<object class="wxMenuItem" name="Id_MnuItmSubmitBugReport">
 					<label>Report Bug</label>
 					<help>Report a bug</help>
 				</object>
 				<object class="separator" />
-				<object class="wxMenuItem" name="ID_MNUABOUT">
+				<object class="wxMenuItem" name="Id_MnuItmAboutOdamex">
 					<label>About</label>
 					<help>About the Odamex Launcher</help>
 				</object>
 			</object>
 		</object>
-		<object class="wxToolBar" name="ID_TOOLBAR">
+		<object class="wxToolBar">
 			<style>wxTB_DOCKABLE|wxTB_FLAT</style>
 			<font>
 				<family>default</family>
@@ -112,45 +112,45 @@
 			<margins>-1,-1</margins>
 			<packing>0</packing>
 			<separation>0</separation>
-			<object class="tool" name="ID_MNULAUNCH">
+			<object class="tool" name="Id_MnuItmLaunch">
 				<label>Connect</label>
 				<tooltip>Connect to the selected server</tooltip>
 				<longhelp>Connect to the selected server</longhelp>
 				<bitmap>./icon32x32x8.ico</bitmap>
 			</object>
-			<object class="tool" name="ID_MNUQLAUNCH">
+			<object class="tool" name="Id_MnuItmRunOffline">
 				<label></label>
-				<tooltip>Run Odamex locally</tooltip>
-				<longhelp>Run Odamex locally</longhelp>
+				<tooltip>Runs the Odamex Client without connecting to a server</tooltip>
+				<longhelp>Runs the Odamex Client without connecting to a server</longhelp>
 				<bitmap>./odaqlaunch.ico</bitmap>
 			</object>
 			<object class="separator" />
-			<object class="tool" name="ID_MNUREFRESHSERVER">
+			<object class="tool" name="Id_MnuItmRefreshServer">
 				<label>Refresh Server</label>
 				<tooltip>Refresh the selected server</tooltip>
 				<longhelp>Refresh the selected server</longhelp>
 				<bitmap>./btnrefresh.ico</bitmap>
 			</object>
-			<object class="tool" name="ID_MNUREFRESHALL">
+			<object class="tool" name="Id_MnuItmRefreshAll">
 				<label>Refresh All Servers</label>
 				<tooltip>Refresh all servers currently displayed</tooltip>
 				<longhelp>Refresh all servers currently displayed</longhelp>
 				<bitmap>./btnrefreshall.ico</bitmap>
 			</object>
-			<object class="tool" name="ID_MNUGETLIST">
+			<object class="tool" name="Id_MnuItmGetList">
 				<label>Get Master List</label>
 				<tooltip>Get a new list of servers</tooltip>
 				<longhelp>Get a new list of servers</longhelp>
 				<bitmap>./btnlist.ico</bitmap>
 			</object>
 			<object class="separator" />
-			<object class="tool" name="ID_MNUSETTINGS">
+			<object class="tool" name="Id_MnuItmSettings">
 				<label>tool</label>
 				<tooltip>Configure the launcher</tooltip>
 				<longhelp>Configure the launcher</longhelp>
 				<bitmap>./btnsettings.ico</bitmap>
 			</object>
-			<object class="tool" name="ID_MNUABOUT">
+			<object class="tool" name="Id_MnuItmAboutOdamex">
 				<label>tool</label>
 				<tooltip>About the Odamex Launcher</tooltip>
 				<longhelp>About the Odamex Launcher</longhelp>
@@ -186,7 +186,7 @@
 									<option>1</option>
 									<flag>wxALL|wxEXPAND</flag>
 									<border>0</border>
-									<object class="wxListCtrl" name="ID_LSTSERVERS" subclass="wxAdvancedListCtrl">
+									<object class="wxListCtrl" name="Id_LstCtrlServers" subclass="wxAdvancedListCtrl">
 										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
 									</object>
 								</object>
@@ -200,7 +200,7 @@
 									<option>1</option>
 									<flag>wxALL|wxEXPAND</flag>
 									<border>0</border>
-									<object class="wxListCtrl" name="ID_LSTPLAYERS" subclass="wxAdvancedListCtrl">
+									<object class="wxListCtrl" name="Id_LstCtrlPlayers" subclass="wxAdvancedListCtrl">
 										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
 									</object>
 								</object>
@@ -210,7 +210,7 @@
 				</object>
 			</object>
 		</object>
-		<object class="wxStatusBar" name="m_statusBar1">
+		<object class="wxStatusBar">
 			<style>wxST_SIZEGRIP</style>
 			<fields>4</fields>
 		</object>

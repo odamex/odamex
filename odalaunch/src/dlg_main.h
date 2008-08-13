@@ -88,8 +88,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 FindServer(wxString);
 		wxInt32 FindServerInList(wxString);
 		
-		wxAdvancedListCtrl *m_ServerList;
-		wxAdvancedListCtrl *m_PlayerList;
+		wxAdvancedListCtrl *m_LstCtrlServers;
+		wxAdvancedListCtrl *m_LstCtrlPlayers;
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;

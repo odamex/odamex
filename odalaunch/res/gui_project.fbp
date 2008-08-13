@@ -18,7 +18,7 @@
         <property name="relative_path">1</property>
         <property name="use_enum">0</property>
         <property name="use_microsoft_bom">0</property>
-        <object class="Frame" expanded="0">
+        <object class="Frame" expanded="1">
             <property name="bg"></property>
             <property name="center">wxBOTH</property>
             <property name="context_help"></property>
@@ -81,7 +81,7 @@
                 <property name="label"></property>
                 <property name="maximum_size"></property>
                 <property name="minimum_size"></property>
-                <property name="name">m_menubar1</property>
+                <property name="name"></property>
                 <property name="permission">protected</property>
                 <property name="pos"></property>
                 <property name="size"></property>
@@ -116,7 +116,7 @@
                 <event name="OnUpdateUI"></event>
                 <object class="wxMenu" expanded="1">
                     <property name="label">File</property>
-                    <property name="name">m_menu1</property>
+                    <property name="name"></property>
                     <property name="permission">protected</property>
                     <object class="wxMenuItem" expanded="1">
                         <property name="bitmap"></property>
@@ -126,7 +126,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Settings</property>
-                        <property name="name">ID_MNUSETTINGS</property>
+                        <property name="name">Id_MnuItmSettings</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -154,7 +154,7 @@
                 </object>
                 <object class="wxMenu" expanded="1">
                     <property name="label">Action</property>
-                    <property name="name">m_menu2</property>
+                    <property name="name"></property>
                     <property name="permission">protected</property>
                     <object class="wxMenuItem" expanded="1">
                         <property name="bitmap"></property>
@@ -164,7 +164,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Launch</property>
-                        <property name="name">ID_MNULAUNCH</property>
+                        <property name="name">Id_MnuItmLaunch</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -175,11 +175,11 @@
                         <property name="bitmap"></property>
                         <property name="checked">0</property>
                         <property name="enabled">1</property>
-                        <property name="help">Run Odamex locally</property>
+                        <property name="help">Runs the Odamex Client without connecting to a server</property>
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
-                        <property name="label">Quick Launch</property>
-                        <property name="name">ID_MNUQLAUNCH</property>
+                        <property name="label">Run Offline</property>
+                        <property name="name">Id_MnuItmRunOffline</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -193,11 +193,11 @@
                         <property name="bitmap"></property>
                         <property name="checked">0</property>
                         <property name="enabled">1</property>
-                        <property name="help">Get a new list of servers</property>
+                        <property name="help">Refresh the selected server</property>
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
-                        <property name="label">Get Master List</property>
-                        <property name="name">ID_MNUGETLIST</property>
+                        <property name="label">Refresh Selected</property>
+                        <property name="name">Id_MnuItmRefreshServer</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -212,7 +212,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Refresh All</property>
-                        <property name="name">ID_MNUREFRESHALL</property>
+                        <property name="name">Id_MnuItmRefreshAll</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -223,11 +223,11 @@
                         <property name="bitmap"></property>
                         <property name="checked">0</property>
                         <property name="enabled">1</property>
-                        <property name="help">Refresh the selected server</property>
+                        <property name="help">Get a new list of servers</property>
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
-                        <property name="label">Refresh Selected</property>
-                        <property name="name">ID_MNUREFRESHSERVER</property>
+                        <property name="label">Get Master List</property>
+                        <property name="name">Id_MnuItmGetList</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -237,21 +237,21 @@
                 </object>
                 <object class="wxMenu" expanded="1">
                     <property name="label">Tools</property>
-                    <property name="name">m_menu5</property>
+                    <property name="name"></property>
                     <property name="permission">protected</property>
                     <object class="submenu" expanded="1">
                         <property name="label">OdaGet</property>
-                        <property name="name">m_menu11</property>
+                        <property name="name"></property>
                         <property name="permission">protected</property>
                         <object class="wxMenuItem" expanded="1">
                             <property name="bitmap"></property>
                             <property name="checked">0</property>
                             <property name="enabled">0</property>
-                            <property name="help"></property>
+                            <property name="help">Download a WAD file</property>
                             <property name="id">wxID_ANY</property>
                             <property name="kind">wxITEM_NORMAL</property>
                             <property name="label">Download WAD</property>
-                            <property name="name">ID_MNUODAGET</property>
+                            <property name="name">Id_MnuItmDownloadWad</property>
                             <property name="permission">none</property>
                             <property name="shortcut"></property>
                             <property name="unchecked_bitmap"></property>
@@ -262,11 +262,11 @@
                             <property name="bitmap"></property>
                             <property name="checked">0</property>
                             <property name="enabled">0</property>
-                            <property name="help"></property>
+                            <property name="help">Setup Odaget</property>
                             <property name="id">wxID_ANY</property>
                             <property name="kind">wxITEM_NORMAL</property>
                             <property name="label">Setup</property>
-                            <property name="name">ID_MNUSETUPODAGET</property>
+                            <property name="name">Id_MnuItmSetupOdaget</property>
                             <property name="permission">none</property>
                             <property name="shortcut"></property>
                             <property name="unchecked_bitmap"></property>
@@ -277,7 +277,7 @@
                 </object>
                 <object class="wxMenu" expanded="1">
                     <property name="label">Advanced</property>
-                    <property name="name">m_menu3</property>
+                    <property name="name"></property>
                     <property name="permission">protected</property>
                     <object class="wxMenuItem" expanded="1">
                         <property name="bitmap"></property>
@@ -287,7 +287,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Manual Connect</property>
-                        <property name="name">ID_MNUCONMAN</property>
+                        <property name="name">Id_MnuItmManualConnect</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -302,7 +302,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Custom Servers</property>
-                        <property name="name">ID_MNUSERVERS</property>
+                        <property name="name">Id_MnuItmCustomServers</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -312,7 +312,7 @@
                 </object>
                 <object class="wxMenu" expanded="1">
                     <property name="label">Help</property>
-                    <property name="name">m_menu4</property>
+                    <property name="name"></property>
                     <property name="permission">protected</property>
                     <object class="wxMenuItem" expanded="1">
                         <property name="bitmap"></property>
@@ -322,7 +322,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Website</property>
-                        <property name="name">ID_MNUWEBSITE</property>
+                        <property name="name">Id_MnuItmVisitWebsite</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -337,7 +337,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Forum</property>
-                        <property name="name">ID_MNUFORUM</property>
+                        <property name="name">Id_MnuItmVisitForum</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -352,7 +352,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Wiki</property>
-                        <property name="name">ID_MNUWIKI</property>
+                        <property name="name">Id_MnuItmVisitWiki</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -370,7 +370,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Changelog</property>
-                        <property name="name">ID_MNUCHANGELOG</property>
+                        <property name="name">Id_MnuItmViewChangelog</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -385,7 +385,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">Report Bug</property>
-                        <property name="name">ID_MNUREPORTBUG</property>
+                        <property name="name">Id_MnuItmSubmitBugReport</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -403,7 +403,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">About</property>
-                        <property name="name">ID_MNUABOUT</property>
+                        <property name="name">Id_MnuItmAboutOdamex</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>
@@ -424,7 +424,7 @@
                 <property name="margins">-1,-1</property>
                 <property name="maximum_size"></property>
                 <property name="minimum_size"></property>
-                <property name="name">ID_TOOLBAR</property>
+                <property name="name"></property>
                 <property name="packing">0</property>
                 <property name="permission">protected</property>
                 <property name="pos"></property>
@@ -464,7 +464,7 @@
                     <property name="id">ID_MNULAUNCH</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">Connect</property>
-                    <property name="name">ID_MNULAUNCH</property>
+                    <property name="name">Id_MnuItmLaunch</property>
                     <property name="statusbar">Connect to the selected server</property>
                     <property name="tooltip">Connect to the selected server</property>
                     <event name="OnMenuSelection"></event>
@@ -478,9 +478,9 @@
                     <property name="id">wxID_ANY</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label"></property>
-                    <property name="name">ID_MNUQLAUNCH</property>
-                    <property name="statusbar">Run Odamex locally</property>
-                    <property name="tooltip">Run Odamex locally</property>
+                    <property name="name">Id_MnuItmRunOffline</property>
+                    <property name="statusbar">Runs the Odamex Client without connecting to a server</property>
+                    <property name="tooltip">Runs the Odamex Client without connecting to a server</property>
                     <event name="OnMenuSelection"></event>
                     <event name="OnToolClicked"></event>
                     <event name="OnToolEnter"></event>
@@ -493,7 +493,7 @@
                     <property name="id">ID_MNUREFRESHSERVER</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">Refresh Server</property>
-                    <property name="name">ID_MNUREFRESHSERVER</property>
+                    <property name="name">Id_MnuItmRefreshServer</property>
                     <property name="statusbar">Refresh the selected server</property>
                     <property name="tooltip">Refresh the selected server</property>
                     <event name="OnMenuSelection"></event>
@@ -507,7 +507,7 @@
                     <property name="id">ID_MNUREFRESHALL</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">Refresh All Servers</property>
-                    <property name="name">ID_MNUREFRESHALL</property>
+                    <property name="name">Id_MnuItmRefreshAll</property>
                     <property name="statusbar">Refresh all servers currently displayed</property>
                     <property name="tooltip">Refresh all servers currently displayed</property>
                     <event name="OnMenuSelection"></event>
@@ -521,7 +521,7 @@
                     <property name="id">ID_MNUGETLIST</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">Get Master List</property>
-                    <property name="name">ID_MNUGETLIST</property>
+                    <property name="name">Id_MnuItmGetList</property>
                     <property name="statusbar">Get a new list of servers</property>
                     <property name="tooltip">Get a new list of servers</property>
                     <event name="OnMenuSelection"></event>
@@ -536,7 +536,7 @@
                     <property name="id">ID_MNUSETTINGS</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
-                    <property name="name">ID_MNUSETTINGS</property>
+                    <property name="name">Id_MnuItmSettings</property>
                     <property name="statusbar">Configure the launcher</property>
                     <property name="tooltip">Configure the launcher</property>
                     <event name="OnMenuSelection"></event>
@@ -550,7 +550,7 @@
                     <property name="id">ID_MNUABOUT</property>
                     <property name="kind">wxITEM_NORMAL</property>
                     <property name="label">tool</property>
-                    <property name="name">ID_MNUABOUT</property>
+                    <property name="name">Id_MnuItmAboutOdamex</property>
                     <property name="statusbar">About the Odamex Launcher</property>
                     <property name="tooltip">About the Odamex Launcher</property>
                     <event name="OnMenuSelection"></event>
@@ -575,7 +575,7 @@
                     <event name="OnUpdateUI"></event>
                 </object>
             </object>
-            <object class="wxBoxSizer" expanded="0">
+            <object class="wxBoxSizer" expanded="1">
                 <property name="minimum_size"></property>
                 <property name="name"></property>
                 <property name="orient">wxVERTICAL</property>
@@ -584,7 +584,7 @@
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
                     <property name="proportion">1</property>
-                    <object class="wxPanel" expanded="0">
+                    <object class="wxPanel" expanded="1">
                         <property name="bg"></property>
                         <property name="context_help"></property>
                         <property name="enabled">1</property>
@@ -626,7 +626,7 @@
                         <event name="OnSetFocus"></event>
                         <event name="OnSize"></event>
                         <event name="OnUpdateUI"></event>
-                        <object class="wxBoxSizer" expanded="0">
+                        <object class="wxBoxSizer" expanded="1">
                             <property name="minimum_size"></property>
                             <property name="name"></property>
                             <property name="orient">wxVERTICAL</property>
@@ -635,7 +635,7 @@
                                 <property name="border">5</property>
                                 <property name="flag">wxEXPAND</property>
                                 <property name="proportion">1</property>
-                                <object class="wxSplitterWindow" expanded="0">
+                                <object class="wxSplitterWindow" expanded="1">
                                     <property name="bg"></property>
                                     <property name="context_help"></property>
                                     <property name="enabled">1</property>
@@ -749,7 +749,7 @@
                                                         <property name="id">ID_LSTSERVERS</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size">-1,-1</property>
-                                                        <property name="name">ID_LSTSERVERS</property>
+                                                        <property name="name">Id_LstCtrlServers</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size">-1,-1</property>
@@ -869,7 +869,7 @@
                                                         <property name="id">ID_LSTPLAYERS</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">ID_LSTPLAYERS</property>
+                                                        <property name="name">Id_LstCtrlPlayers</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size">-1,-1</property>
@@ -944,7 +944,7 @@
                 <property name="id">wxID_ANY</property>
                 <property name="maximum_size"></property>
                 <property name="minimum_size"></property>
-                <property name="name">m_statusBar1</property>
+                <property name="name"></property>
                 <property name="permission">protected</property>
                 <property name="pos"></property>
                 <property name="size"></property>
@@ -979,7 +979,7 @@
                 <event name="OnUpdateUI"></event>
             </object>
         </object>
-        <object class="Dialog" expanded="1">
+        <object class="Dialog" expanded="0">
             <property name="bg"></property>
             <property name="center">wxBOTH</property>
             <property name="context_help"></property>

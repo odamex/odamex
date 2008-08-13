@@ -43,67 +43,51 @@
 // application icon
 
 // lists
-static wxInt32 ID_LSTSERVERS = XRCID("ID_LSTSERVERS");
-static wxInt32 ID_LSTPLAYERS = XRCID("ID_LSTPLAYERS");
+static wxInt32 Id_LstCtrlServers = XRCID("Id_LstCtrlServers");
+static wxInt32 Id_LstCtrlPlayers = XRCID("Id_LstCtrlPlayers");
 
-// menus
-static wxInt32 ID_MNUCONMAN = XRCID("ID_MNUCONMAN");
-static wxInt32 ID_MNUSERVERS = XRCID("ID_MNUSERVERS");
+static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
 
-static wxInt32 ID_MNULAUNCH = XRCID("ID_MNULAUNCH");
-static wxInt32 ID_MNUQLAUNCH = XRCID("ID_MNUQLAUNCH");
-static wxInt32 ID_MNUGETLIST = XRCID("ID_MNUGETLIST");
-static wxInt32 ID_MNUREFRESHSERVER = XRCID("ID_MNUREFRESHSERVER");
-static wxInt32 ID_MNUREFRESHALL = XRCID("ID_MNUREFRESHALL");
-static wxInt32 ID_MNUODAGET = XRCID("ID_MNUODAGET");
-static wxInt32 ID_MNUABOUT = XRCID("ID_MNUABOUT");
-static wxInt32 ID_MNUSETTINGS = XRCID("ID_MNUSETTINGS");
-static wxInt32 ID_MNUEXIT = XRCID("ID_MNUEXIT");
-
-static wxInt32 ID_MNUWEBSITE = XRCID("ID_MNUWEBSITE");
-static wxInt32 ID_MNUFORUM = XRCID("ID_MNUFORUM");
-static wxInt32 ID_MNUWIKI = XRCID("ID_MNUWIKI");
-static wxInt32 ID_MNUCHANGELOG = XRCID("ID_MNUCHANGELOG");
-static wxInt32 ID_MNUREPORTBUG = XRCID("ID_MNUREPORTBUG");
+static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
 
 // custom events
 DEFINE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL)
 DEFINE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL)
 
 // Event handlers
-BEGIN_EVENT_TABLE(dlgMain,wxFrame)
+BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 	EVT_MENU(wxID_EXIT, dlgMain::OnExit)
 	
 	// menu item events
-    EVT_MENU(ID_MNUSERVERS, dlgMain::OnMenuServers)
-    EVT_MENU(ID_MNUCONMAN, dlgMain::OnManualConnect)
+    EVT_MENU(XRCID("Id_MnuItmCustomServers"), dlgMain::OnMenuServers)
+    EVT_MENU(XRCID("Id_MnuItmManualConnect"), dlgMain::OnManualConnect)
 
-	EVT_MENU(ID_MNULAUNCH, dlgMain::OnLaunch)
-	EVT_MENU(ID_MNUQLAUNCH, dlgMain::OnQuickLaunch)
+	EVT_MENU(Id_MnuItmLaunch, dlgMain::OnLaunch)
+	EVT_MENU(XRCID("Id_MnuItmRunOffline"), dlgMain::OnQuickLaunch)
 
-	EVT_MENU(ID_MNUGETLIST, dlgMain::OnGetList)
-	EVT_MENU(ID_MNUREFRESHSERVER, dlgMain::OnRefreshServer)
-	EVT_MENU(ID_MNUREFRESHALL, dlgMain::OnRefreshAll)
+	EVT_MENU(Id_MnuItmGetList, dlgMain::OnGetList)
+	EVT_MENU(XRCID("Id_MnuItmRefreshServer"), dlgMain::OnRefreshServer)
+	EVT_MENU(XRCID("Id_MnuItmRefreshAll"), dlgMain::OnRefreshAll)
 
-    EVT_MENU(ID_MNUODAGET, dlgMain::OnOpenOdaGet)
+    EVT_MENU(XRCID("Id_MnuItmDownloadWad"), dlgMain::OnOpenOdaGet)
 
-	EVT_MENU(ID_MNUABOUT, dlgMain::OnAbout)
-	EVT_MENU(ID_MNUSETTINGS, dlgMain::OnOpenSettingsDialog)
+	EVT_MENU(XRCID("Id_MnuItmSettings"), dlgMain::OnOpenSettingsDialog)
 
-	EVT_MENU(ID_MNUWEBSITE, dlgMain::OnOpenWebsite)
-	EVT_MENU(ID_MNUFORUM, dlgMain::OnOpenForum)
-	EVT_MENU(ID_MNUWIKI, dlgMain::OnOpenWiki)
-    EVT_MENU(ID_MNUCHANGELOG, dlgMain::OnOpenChangeLog)
-    EVT_MENU(ID_MNUREPORTBUG, dlgMain::OnOpenReportBug)
-
+	EVT_MENU(XRCID("Id_MnuItmVisitWebsite"), dlgMain::OnOpenWebsite)
+	EVT_MENU(XRCID("Id_MnuItmVisitForum"), dlgMain::OnOpenForum)
+	EVT_MENU(XRCID("Id_MnuItmVisitWiki"), dlgMain::OnOpenWiki)
+    EVT_MENU(XRCID("Id_MnuItmViewChangelog"), dlgMain::OnOpenChangeLog)
+    EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
+	EVT_MENU(XRCID("Id_MnuItmAboutOdamex"), dlgMain::OnAbout)
+	
     // thread events
     EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)    
     EVT_COMMAND(-1, wxEVT_THREAD_WORKER_SIGNAL, dlgMain::OnWorkerSignal)  
 
     // misc events
-    EVT_LIST_ITEM_SELECTED(ID_LSTSERVERS, dlgMain::OnServerListClick)
-    EVT_LIST_ITEM_ACTIVATED(ID_LSTSERVERS, dlgMain::OnServerListDoubleClick)
-    EVT_LIST_ITEM_RIGHT_CLICK(ID_LSTSERVERS, dlgMain::OnServerListRightClick)
+    EVT_LIST_ITEM_SELECTED(Id_LstCtrlServers, dlgMain::OnServerListClick)
+    EVT_LIST_ITEM_ACTIVATED(Id_LstCtrlServers, dlgMain::OnServerListDoubleClick)
+    EVT_LIST_ITEM_RIGHT_CLICK(Id_LstCtrlServers, dlgMain::OnServerListRightClick)
 END_EVENT_TABLE()
 
 // Main window creation
@@ -128,14 +112,14 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     
     SetIcons(IconBundle);
     
-    m_ServerList = wxDynamicCast(FindWindow(ID_LSTSERVERS), wxAdvancedListCtrl);
-    m_PlayerList = wxDynamicCast(FindWindow(ID_LSTPLAYERS), wxAdvancedListCtrl);
+    m_LstCtrlServers = wxDynamicCast(FindWindow(Id_LstCtrlServers), wxAdvancedListCtrl);
+    m_LstCtrlPlayers = wxDynamicCast(FindWindow(Id_LstCtrlPlayers), wxAdvancedListCtrl);
 
-    SetupServerListColumns(m_ServerList);
-    SetupPlayerListHeader(m_PlayerList);
+    SetupServerListColumns(m_LstCtrlServers);
+    SetupPlayerListHeader(m_LstCtrlPlayers);
 
     // spectator state.
-    m_PlayerList->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
+    m_LstCtrlPlayers->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
 
     // Load configuration
     wxFileConfig ConfigInfo;
@@ -145,12 +129,12 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     ConfigInfo.Read(_T("ServerListSortOrder"), &ServerListSortOrder, 1);
     ConfigInfo.Read(_T("ServerListSortColumn"), &ServerListSortColumn, 0);
 
-    m_ServerList->SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+    m_LstCtrlServers->SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
 
     ConfigInfo.Read(_T("PlayerListSortOrder"), &PlayerListSortOrder, 1);
     ConfigInfo.Read(_T("PlayerListSortColumn"), &PlayerListSortColumn, 0);
 
-    m_PlayerList->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+    m_LstCtrlPlayers->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
 
     wxInt32 WindowWidth, WindowHeight;
 
@@ -192,7 +176,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     // get master list on application start
     if (launchercfg_s.get_list_on_start)
     {
-        wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, ID_MNUGETLIST);
+        wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
     
         wxPostEvent(this, event);
     }
@@ -210,8 +194,8 @@ dlgMain::~dlgMain()
     wxInt32 ServerListSortOrder, ServerListSortColumn;
     wxInt32 PlayerListSortOrder, PlayerListSortColumn;
 
-    m_ServerList->GetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
-    m_PlayerList->GetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+    m_LstCtrlServers->GetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+    m_LstCtrlPlayers->GetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
 
     ConfigInfo.Write(_T("ServerListSortOrder"), ServerListSortOrder);
     ConfigInfo.Write(_T("ServerListSortColumn"), ServerListSortColumn);
@@ -475,23 +459,23 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         case mtrs_server_singletimeout:
             i = FindServerInList(QServer[Result->Index].GetAddress());
 
-            m_PlayerList->DeleteAllItems();
+            m_LstCtrlPlayers->DeleteAllItems();
             
             QServer[Result->Index].ResetData();
             
             if (launchercfg_s.show_blocked_servers)
             if (i == -1)
-                AddServerToList(m_ServerList, QServer[Result->Index], Result->Index);
+                AddServerToList(m_LstCtrlServers, QServer[Result->Index], Result->Index);
             else
-                AddServerToList(m_ServerList, QServer[Result->Index], i, 0);
+                AddServerToList(m_LstCtrlServers, QServer[Result->Index], i, 0);
             
             break;
         case mtrs_server_singlesuccess:
-            m_PlayerList->DeleteAllItems();
+            m_LstCtrlPlayers->DeleteAllItems();
             
-            AddServerToList(m_ServerList, QServer[Result->Index], Result->ServerListIndex, 0);
+            AddServerToList(m_LstCtrlServers, QServer[Result->Index], Result->ServerListIndex, 0);
             
-            AddPlayersToList(m_PlayerList, QServer[Result->Index]);
+            AddPlayersToList(m_LstCtrlPlayers, QServer[Result->Index]);
             
             TotalPlayers += QServer[Result->Index].info.numplayers;
            
@@ -516,21 +500,21 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
         {
             i = FindServerInList(QServer[event.GetInt()].GetAddress());
 
-            m_PlayerList->DeleteAllItems();
+            m_LstCtrlPlayers->DeleteAllItems();
             
             QServer[event.GetInt()].ResetData();
             
             if (launchercfg_s.show_blocked_servers)
             if (i == -1)
-                AddServerToList(m_ServerList, QServer[event.GetInt()], event.GetInt());
+                AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], event.GetInt());
             else
-                AddServerToList(m_ServerList, QServer[event.GetInt()], i, 0);
+                AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], i, 0);
             
             break;                 
         }
         case 1: // server queried successfully
         {
-            AddServerToList(m_ServerList, QServer[event.GetInt()], event.GetInt());
+            AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], event.GetInt());
             
             TotalPlayers += QServer[event.GetInt()].info.numplayers;
             
@@ -553,10 +537,10 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 // display extra information for a server
 void dlgMain::OnServerListRightClick(wxListEvent& event)
 {
-    if (!m_ServerList->GetItemCount() || !m_ServerList->GetSelectedItemCount())
+    if (!m_LstCtrlServers->GetItemCount() || !m_LstCtrlServers->GetSelectedItemCount())
         return;
   
-    wxInt32 i = m_ServerList->GetNextItem(-1, 
+    wxInt32 i = m_LstCtrlServers->GetNextItem(-1, 
                                         wxLIST_NEXT_ALL, 
                                         wxLIST_STATE_SELECTED);
         
@@ -565,7 +549,7 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
     item.SetColumn(7);
     item.SetMask(wxLIST_MASK_TEXT);
         
-    m_ServerList->GetItem(item);
+    m_LstCtrlServers->GetItem(item);
         
     i = FindServer(item.GetText());
 
@@ -630,7 +614,7 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
 	tw = NULL;
 
 	if (!text.empty())
-		tw = new wxTipWindow(m_ServerList, text, 120, &tw);
+		tw = new wxTipWindow(m_LstCtrlServers, text, 120, &tw);
 }
 
 
@@ -674,17 +658,17 @@ void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 // Launch button click
 void dlgMain::OnLaunch(wxCommandEvent &event)
 {
-    if (!m_ServerList->GetItemCount() || !m_ServerList->GetSelectedItemCount())
+    if (!m_LstCtrlServers->GetItemCount() || !m_LstCtrlServers->GetSelectedItemCount())
         return;
         
-    wxInt32 i = m_ServerList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    wxInt32 i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
     wxListItem item;
     item.SetId(i);
     item.SetColumn(7);
     item.SetMask(wxLIST_MASK_TEXT);
         
-    m_ServerList->GetItem(item);
+    m_LstCtrlServers->GetItem(item);
         
     i = FindServer(item.GetText()); 
 
@@ -720,8 +704,8 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     if (recursion_guard.IsInside())
         return;	
 	
-    m_ServerList->DeleteAllItems();
-    m_PlayerList->DeleteAllItems();
+    m_LstCtrlServers->DeleteAllItems();
+    m_LstCtrlPlayers->DeleteAllItems();
         
     QueriedServers = 0;
     TotalPlayers = 0;
@@ -738,19 +722,19 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
     if (recursion_guard.IsInside())
         return;	
     
-    if (!m_ServerList->GetItemCount() || !m_ServerList->GetSelectedItemCount())
+    if (!m_LstCtrlServers->GetItemCount() || !m_LstCtrlServers->GetSelectedItemCount())
         return;
         
-    m_PlayerList->DeleteAllItems();
+    m_LstCtrlPlayers->DeleteAllItems();
         
-    wxInt32 listindex = m_ServerList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    wxInt32 listindex = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
     wxListItem item;
     item.SetId(listindex);
     item.SetColumn(7);
     item.SetMask(wxLIST_MASK_TEXT);
         
-    m_ServerList->GetItem(item);
+    m_LstCtrlServers->GetItem(item);
         
     wxInt32 arrayindex = FindServer(item.GetText()); 
         
@@ -776,8 +760,8 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
     if (!MServer->GetServerCount())
         return;
         
-    m_ServerList->DeleteAllItems();
-    m_PlayerList->DeleteAllItems();
+    m_LstCtrlServers->DeleteAllItems();
+    m_LstCtrlPlayers->DeleteAllItems();
     
     QueriedServers = 0;
     TotalPlayers = 0;
@@ -791,34 +775,34 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
 void dlgMain::OnServerListClick(wxListEvent& event)
 {
     // clear any tooltips remaining
-    m_ServerList->SetToolTip(_T(""));
+    m_LstCtrlServers->SetToolTip(_T(""));
     
-    if ((m_ServerList->GetItemCount() > 0) && (m_ServerList->GetSelectedItemCount() == 1))
+    if ((m_LstCtrlServers->GetItemCount() > 0) && (m_LstCtrlServers->GetSelectedItemCount() == 1))
     {
-        m_PlayerList->DeleteAllItems();
+        m_LstCtrlPlayers->DeleteAllItems();
         
-        wxInt32 i = m_ServerList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+        wxInt32 i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         
         wxListItem item;
         item.SetId(i);
         item.SetColumn(7);
         item.SetMask(wxLIST_MASK_TEXT);
         
-        m_ServerList->GetItem(item);
+        m_LstCtrlServers->GetItem(item);
         
         i = FindServer(item.GetText()); 
         
         if (i > -1)
-            AddPlayersToList(m_PlayerList, QServer[i]);
+            AddPlayersToList(m_LstCtrlPlayers, QServer[i]);
     }
 }
 
 // when the user double clicks on the server list
 void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 {
-    if ((m_ServerList->GetItemCount() > 0) && (m_ServerList->GetSelectedItemCount() == 1))
+    if ((m_LstCtrlServers->GetItemCount() > 0) && (m_LstCtrlServers->GetSelectedItemCount() == 1))
     {
-        wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, ID_MNULAUNCH);
+        wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmLaunch);
     
         wxPostEvent(this, event);
     }
@@ -837,17 +821,17 @@ wxInt32 dlgMain::FindServer(wxString Address)
 // Finds an index in the server list, via Address
 wxInt32 dlgMain::FindServerInList(wxString Address)
 {
-    if (!m_ServerList->GetItemCount())
+    if (!m_LstCtrlServers->GetItemCount())
         return -1;
     
-    for (wxInt32 i = 0; i < m_ServerList->GetItemCount(); i++)
+    for (wxInt32 i = 0; i < m_LstCtrlServers->GetItemCount(); i++)
     {
         wxListItem item;
         item.SetId(i);
         item.SetColumn(7);
         item.SetMask(wxLIST_MASK_TEXT);
         
-        m_ServerList->GetItem(item);
+        m_LstCtrlServers->GetItem(item);
         
         if (item.GetText().IsSameAs(Address))
             return i;
