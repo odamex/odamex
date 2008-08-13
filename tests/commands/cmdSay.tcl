@@ -22,6 +22,14 @@ proc main {} {
  expect $clientout {Player: hello} 0
  wait 1
  test "say_team hello" "<Player to SPECTATORS> hello"
+ 
+ # test me 
+ wait 1
+ clear
+ test "say /me action" "* Player action"
+ wait 1
+ test "say_team /me action" "<SPECTATORS> * Player action"
+ wait 1
 
  # disable global chat
  server "globalspectatorchat 0"
@@ -51,6 +59,12 @@ proc main {} {
  expect $clientout {Player: hello} 0
  wait 1
  test "say_team hello" "<Player to TEAM> hello"
+ 
+ # test /me
+ wait 1
+ clear
+ test "say_team /me action" "<TEAM> * Player action"
+ wait 1
 
  wait 1
  # test flood protection

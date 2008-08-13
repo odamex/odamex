@@ -2544,12 +2544,24 @@ void SV_Say(player_t &player)
         player.LastMessage.Message = s;
     }
 
-	if (player.spectator && (!globalspectatorchat || team))
-		SV_SpectatorPrintf (PRINT_CHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
-	else if(!team)
-		SV_BroadcastPrintf (PRINT_CHAT, "%s: %s\n", player.userinfo.netname, s);
-	else if(teamplay)
-		SV_TeamPrintf (PRINT_TEAMCHAT, player.id, "<%s to TEAM> %s\n", player.userinfo.netname, s);
+	if (strncasecmp(s, "/me ", 4) == 0)
+	{
+		if (player.spectator && (!globalspectatorchat || team))
+			SV_SpectatorPrintf(PRINT_CHAT, "<SPECTATORS> * %s %s\n", player.userinfo.netname, &s[4]);
+		else if(!team)
+			SV_BroadcastPrintf (PRINT_CHAT, "* %s %s\n", player.userinfo.netname, &s[4]);
+		else if(teamplay)
+			SV_TeamPrintf(PRINT_CHAT, player.id, "<TEAM> * %s %s\n", player.userinfo.netname, &s[4]);
+	}
+	else
+	{
+		if (player.spectator && (!globalspectatorchat || team))
+			SV_SpectatorPrintf (PRINT_CHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
+		else if(!team)
+			SV_BroadcastPrintf (PRINT_CHAT, "%s: %s\n", player.userinfo.netname, s);
+		else if(teamplay)
+			SV_TeamPrintf (PRINT_TEAMCHAT, player.id, "<%s to TEAM> %s\n", player.userinfo.netname, s);
+	}
 }
 
 //
