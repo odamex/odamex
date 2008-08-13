@@ -458,7 +458,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		case WalkMany:
 			flags |= ML_SPECIAL_REPEAT;
 		case WalkOnce:
-			flags |= ML_SPECIAL_USE;
+			flags |= ML_SPECIAL_CROSS;
 			break;
 
 		case SwitchMany:
