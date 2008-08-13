@@ -18,7 +18,7 @@
         <property name="relative_path">1</property>
         <property name="use_enum">0</property>
         <property name="use_microsoft_bom">0</property>
-        <object class="Frame" expanded="1">
+        <object class="Frame" expanded="0">
             <property name="bg"></property>
             <property name="center">wxBOTH</property>
             <property name="context_help"></property>
@@ -979,7 +979,7 @@
                 <event name="OnUpdateUI"></event>
             </object>
         </object>
-        <object class="Dialog" expanded="0">
+        <object class="Dialog" expanded="1">
             <property name="bg"></property>
             <property name="center">wxBOTH</property>
             <property name="context_help"></property>
@@ -1038,7 +1038,7 @@
                 <property name="growablerows"></property>
                 <property name="hgap">0</property>
                 <property name="minimum_size"></property>
-                <property name="name">fgSizer2</property>
+                <property name="name"></property>
                 <property name="non_flexible_grow_mode">wxFLEX_GROWMODE_SPECIFIED</property>
                 <property name="permission">none</property>
                 <property name="rows">0</property>
@@ -1051,7 +1051,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="label">Masters and Servers</property>
                         <property name="minimum_size"></property>
-                        <property name="name">sbSizer41</property>
+                        <property name="name"></property>
                         <property name="orient">wxVERTICAL</property>
                         <property name="permission">none</property>
                         <event name="OnUpdateUI"></event>
@@ -1059,9 +1059,9 @@
                             <property name="border">5</property>
                             <property name="flag">wxALL|wxALIGN_LEFT|wxALIGN_TOP</property>
                             <property name="proportion">0</property>
-                            <object class="wxBoxSizer" expanded="0">
+                            <object class="wxBoxSizer" expanded="1">
                                 <property name="minimum_size"></property>
-                                <property name="name">bSizer10</property>
+                                <property name="name"></property>
                                 <property name="orient">wxVERTICAL</property>
                                 <property name="permission">none</property>
                                 <object class="sizeritem" expanded="1">
@@ -1080,7 +1080,7 @@
                                         <property name="label">Get Master List on application start</property>
                                         <property name="maximum_size"></property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">ID_CHKLISTONSTART</property>
+                                        <property name="name">Id_ChkCtrlGetListOnStart</property>
                                         <property name="permission">protected</property>
                                         <property name="pos">0,76</property>
                                         <property name="size"></property>
@@ -1132,7 +1132,7 @@
                                         <property name="label">Show blocked servers</property>
                                         <property name="maximum_size"></property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">ID_CHKSHOWBLOCKEDSERVERS</property>
+                                        <property name="name">Id_ChkCtrlShowBlockedServers</property>
                                         <property name="permission">protected</property>
                                         <property name="pos">0,114</property>
                                         <property name="size"></property>
@@ -1174,9 +1174,9 @@
                             <property name="border">5</property>
                             <property name="flag">wxEXPAND</property>
                             <property name="proportion">1</property>
-                            <object class="wxBoxSizer" expanded="0">
+                            <object class="wxBoxSizer" expanded="1">
                                 <property name="minimum_size"></property>
-                                <property name="name">bSizer16</property>
+                                <property name="name"></property>
                                 <property name="orient">wxHORIZONTAL</property>
                                 <property name="permission">none</property>
                                 <object class="sizeritem" expanded="1">
@@ -1194,7 +1194,7 @@
                                         <property name="label">Master Timeout (ms):</property>
                                         <property name="maximum_size"></property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">m_staticText2</property>
+                                        <property name="name"></property>
                                         <property name="permission">protected</property>
                                         <property name="pos"></property>
                                         <property name="size"></property>
@@ -1245,7 +1245,7 @@
                                         <property name="maximum_size"></property>
                                         <property name="maxlength">0</property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">ID_MASTERTIMEOUT</property>
+                                        <property name="name">Id_TxtCtrlMasterTimeout</property>
                                         <property name="permission">protected</property>
                                         <property name="pos"></property>
                                         <property name="size"></property>
@@ -1291,9 +1291,9 @@
                             <property name="border">5</property>
                             <property name="flag">wxEXPAND</property>
                             <property name="proportion">1</property>
-                            <object class="wxBoxSizer" expanded="0">
+                            <object class="wxBoxSizer" expanded="1">
                                 <property name="minimum_size"></property>
-                                <property name="name">bSizer161</property>
+                                <property name="name"></property>
                                 <property name="orient">wxHORIZONTAL</property>
                                 <property name="permission">none</property>
                                 <object class="sizeritem" expanded="1">
@@ -1311,7 +1311,7 @@
                                         <property name="label">Server Timeout (ms):</property>
                                         <property name="maximum_size"></property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">m_staticText21</property>
+                                        <property name="name"></property>
                                         <property name="permission">protected</property>
                                         <property name="pos"></property>
                                         <property name="size"></property>
@@ -1362,7 +1362,7 @@
                                         <property name="maximum_size"></property>
                                         <property name="maxlength">0</property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">ID_SERVERTIMEOUT</property>
+                                        <property name="name">Id_TxtCtrlServerTimeout</property>
                                         <property name="permission">protected</property>
                                         <property name="pos"></property>
                                         <property name="size"></property>
@@ -1414,7 +1414,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="label">Odamex Path</property>
                         <property name="minimum_size"></property>
-                        <property name="name">sbSizer3</property>
+                        <property name="name"></property>
                         <property name="orient">wxVERTICAL</property>
                         <property name="permission">none</property>
                         <event name="OnUpdateUI"></event>
@@ -1433,7 +1433,7 @@
                                 <property name="maximum_size"></property>
                                 <property name="message">Select your Odamex folder</property>
                                 <property name="minimum_size"></property>
-                                <property name="name">ID_FPCHOOSEODAMEXPATH</property>
+                                <property name="name">Id_DirCtrlChooseOdamexPath</property>
                                 <property name="permission">protected</property>
                                 <property name="pos"></property>
                                 <property name="size"></property>
@@ -1480,7 +1480,7 @@
                         <property name="id">wxID_ANY</property>
                         <property name="label">WAD Directories</property>
                         <property name="minimum_size"></property>
-                        <property name="name">sbSizer4</property>
+                        <property name="name"></property>
                         <property name="orient">wxVERTICAL</property>
                         <property name="permission">none</property>
                         <event name="OnUpdateUI"></event>
@@ -1490,16 +1490,16 @@
                             <property name="proportion">1</property>
                             <object class="wxBoxSizer" expanded="1">
                                 <property name="minimum_size"></property>
-                                <property name="name">bSizer11</property>
+                                <property name="name"></property>
                                 <property name="orient">wxVERTICAL</property>
                                 <property name="permission">none</property>
                                 <object class="sizeritem" expanded="1">
                                     <property name="border">0</property>
                                     <property name="flag">wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</property>
                                     <property name="proportion">1</property>
-                                    <object class="wxBoxSizer" expanded="0">
+                                    <object class="wxBoxSizer" expanded="1">
                                         <property name="minimum_size"></property>
-                                        <property name="name">bSizer12</property>
+                                        <property name="name"></property>
                                         <property name="orient">wxHORIZONTAL</property>
                                         <property name="permission">none</property>
                                         <object class="sizeritem" expanded="1">
@@ -1508,7 +1508,7 @@
                                             <property name="proportion">1</property>
                                             <object class="wxBoxSizer" expanded="1">
                                                 <property name="minimum_size"></property>
-                                                <property name="name">bSizer13</property>
+                                                <property name="name"></property>
                                                 <property name="orient">wxVERTICAL</property>
                                                 <property name="permission">none</property>
                                                 <object class="sizeritem" expanded="1">
@@ -1526,7 +1526,7 @@
                                                         <property name="id">wxID_ANY</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">ID_LSTWADDIR</property>
+                                                        <property name="name">Id_LstCtrlWadDirectories</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos">0,190</property>
                                                         <property name="size">500,200</property>
@@ -1571,7 +1571,7 @@
                                             <property name="proportion">0</property>
                                             <object class="wxBoxSizer" expanded="1">
                                                 <property name="minimum_size"></property>
-                                                <property name="name">bSizer14</property>
+                                                <property name="name"></property>
                                                 <property name="orient">wxVERTICAL</property>
                                                 <property name="permission">none</property>
                                                 <object class="sizeritem" expanded="1">
@@ -1590,7 +1590,7 @@
                                                         <property name="label">Add</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">ID_BTNADD</property>
+                                                        <property name="name">Id_BtnCtrlAddDir</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -1642,7 +1642,7 @@
                                                         <property name="label">Replace</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">ID_BTNREPLACE</property>
+                                                        <property name="name">Id_BtnCtrlReplaceDir</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -1694,7 +1694,7 @@
                                                         <property name="label">Delete</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">ID_BTNDELETE</property>
+                                                        <property name="name">Id_BtnCtrlDeleteDir</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -1744,7 +1744,7 @@
                                                         <property name="id">wxID_ANY</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">ID_STATICLINE1</property>
+                                                        <property name="name"></property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -1795,7 +1795,7 @@
                                                         <property name="label">Move Up</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">ID_BTNUP</property>
+                                                        <property name="name">Id_BtnCtrlMoveDirUp</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -1847,7 +1847,7 @@
                                                         <property name="label">Move Down</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">ID_BTNDOWN</property>
+                                                        <property name="name">Id_BtnCtrlMoveDirDown</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -1897,7 +1897,7 @@
                                                         <property name="id">wxID_ANY</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">m_staticline3</property>
+                                                        <property name="name"></property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -1948,7 +1948,7 @@
                                                         <property name="label">Get Environment</property>
                                                         <property name="maximum_size"></property>
                                                         <property name="minimum_size"></property>
-                                                        <property name="name">ID_BTNGETENV</property>
+                                                        <property name="name">Id_BtnCtrlGetEnvironment</property>
                                                         <property name="permission">protected</property>
                                                         <property name="pos"></property>
                                                         <property name="size"></property>
@@ -1996,7 +1996,7 @@
                             <property name="proportion">0</property>
                             <object class="wxBoxSizer" expanded="1">
                                 <property name="minimum_size"></property>
-                                <property name="name">bSizer15</property>
+                                <property name="name"></property>
                                 <property name="orient">wxVERTICAL</property>
                                 <property name="permission">none</property>
                                 <object class="sizeritem" expanded="1">
@@ -2014,7 +2014,7 @@
                                         <property name="maximum_size"></property>
                                         <property name="message">Select a folder containing WAD files</property>
                                         <property name="minimum_size"></property>
-                                        <property name="name">ID_DPCHOOSEWADDIR</property>
+                                        <property name="name">Id_DirCtrlChooseWadDir</property>
                                         <property name="permission">protected</property>
                                         <property name="pos"></property>
                                         <property name="size"></property>
@@ -2069,7 +2069,7 @@
                         <property name="Save">0</property>
                         <property name="Yes">0</property>
                         <property name="minimum_size"></property>
-                        <property name="name">m_sdbSizer2</property>
+                        <property name="name"></property>
                         <property name="permission">protected</property>
                         <event name="OnApplyButtonClick"></event>
                         <event name="OnCancelButtonClick"></event>
@@ -2808,7 +2808,7 @@
             <event name="OnSetFocus"></event>
             <event name="OnSize"></event>
             <event name="OnUpdateUI"></event>
-            <object class="wxBoxSizer" expanded="0">
+            <object class="wxBoxSizer" expanded="1">
                 <property name="minimum_size"></property>
                 <property name="name"></property>
                 <property name="orient">wxVERTICAL</property>

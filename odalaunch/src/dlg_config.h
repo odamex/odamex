@@ -89,16 +89,16 @@ class dlgConfig: public wxDialog
         
         void OnTextChange(wxCommandEvent &event);
         
-        wxCheckBox *MASTER_CHECKBOX;
-        wxCheckBox *BLOCKED_CHECKBOX;
+        wxCheckBox *m_ChkCtrlGetListOnStart;
+        wxCheckBox *m_ChkCtrlShowBlockedServers;
 
-        wxListBox *WAD_LIST;
+        wxListBox *m_LstCtrlWadDirectories;
 
-        wxDirPickerCtrl *DIR_BOX;
+        wxDirPickerCtrl *m_DirCtrlChooseWadDir;
 
-        wxDirPickerCtrl *TXT_ODXPATH;
+        wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
 
-        wxTextCtrl *m_MasterTimeout, *m_ServerTimeout;
+        wxTextCtrl *m_TxtCtrlMasterTimeout, *m_TxtCtrlServerTimeout;
 
         wxFileConfig ConfigInfo;
 

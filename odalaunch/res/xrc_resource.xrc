@@ -243,7 +243,7 @@
 								<option>0</option>
 								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<object class="wxCheckBox" name="ID_CHKLISTONSTART">
+								<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
 									<pos>0,76</pos>
 									<label>Get Master List on application start</label>
 									<checked>0</checked>
@@ -253,7 +253,7 @@
 								<option>0</option>
 								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<object class="wxCheckBox" name="ID_CHKSHOWBLOCKEDSERVERS">
+								<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
 									<pos>0,114</pos>
 									<label>Show blocked servers</label>
 									<checked>0</checked>
@@ -271,7 +271,7 @@
 								<option>0</option>
 								<flag>wxALIGN_CENTER|wxALL</flag>
 								<border>5</border>
-								<object class="wxStaticText" name="m_staticText2">
+								<object class="wxStaticText">
 									<label>Master Timeout (ms):</label>
 								</object>
 							</object>
@@ -279,7 +279,7 @@
 								<option>0</option>
 								<flag>wxALL</flag>
 								<border>5</border>
-								<object class="wxTextCtrl" name="ID_MASTERTIMEOUT">
+								<object class="wxTextCtrl" name="Id_TxtCtrlMasterTimeout">
 									<value>500</value>
 									<maxlength>0</maxlength>
 								</object>
@@ -296,7 +296,7 @@
 								<option>0</option>
 								<flag>wxALIGN_CENTER|wxALL</flag>
 								<border>5</border>
-								<object class="wxStaticText" name="m_staticText21">
+								<object class="wxStaticText">
 									<label>Server Timeout (ms):</label>
 								</object>
 							</object>
@@ -304,7 +304,7 @@
 								<option>0</option>
 								<flag>wxALL</flag>
 								<border>5</border>
-								<object class="wxTextCtrl" name="ID_SERVERTIMEOUT">
+								<object class="wxTextCtrl" name="Id_TxtCtrlServerTimeout">
 									<value>500</value>
 									<maxlength>0</maxlength>
 								</object>
@@ -324,7 +324,7 @@
 						<option>0</option>
 						<flag>wxALL|wxEXPAND</flag>
 						<border>5</border>
-						<object class="wxDirPickerCtrl" name="ID_FPCHOOSEODAMEXPATH">
+						<object class="wxDirPickerCtrl" name="Id_DirCtrlChooseOdamexPath">
 							<value></value>
 							<message>Select your Odamex folder</message>
 							<style>wxDIRP_DEFAULT_STYLE</style>
@@ -361,7 +361,7 @@
 												<option>1</option>
 												<flag>wxALL</flag>
 												<border>5</border>
-												<object class="wxListBox" name="ID_LSTWADDIR">
+												<object class="wxListBox" name="Id_LstCtrlWadDirectories">
 													<style>wxLB_SINGLE</style>
 													<pos>0,190</pos>
 													<size>500,200</size>
@@ -380,7 +380,7 @@
 												<option>0</option>
 												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
-												<object class="wxButton" name="ID_BTNADD">
+												<object class="wxButton" name="Id_BtnCtrlAddDir">
 													<label>Add</label>
 													<default>0</default>
 												</object>
@@ -389,7 +389,7 @@
 												<option>0</option>
 												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
-												<object class="wxButton" name="ID_BTNREPLACE">
+												<object class="wxButton" name="Id_BtnCtrlReplaceDir">
 													<label>Replace</label>
 													<default>0</default>
 												</object>
@@ -398,7 +398,7 @@
 												<option>0</option>
 												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
-												<object class="wxButton" name="ID_BTNDELETE">
+												<object class="wxButton" name="Id_BtnCtrlDeleteDir">
 													<label>Delete</label>
 													<default>0</default>
 												</object>
@@ -407,7 +407,7 @@
 												<option>0</option>
 												<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
 												<border>5</border>
-												<object class="wxStaticLine" name="ID_STATICLINE1">
+												<object class="wxStaticLine">
 													<style>wxLI_HORIZONTAL</style>
 												</object>
 											</object>
@@ -415,7 +415,7 @@
 												<option>0</option>
 												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
-												<object class="wxButton" name="ID_BTNUP">
+												<object class="wxButton" name="Id_BtnCtrlMoveDirUp">
 													<label>Move Up</label>
 													<default>0</default>
 												</object>
@@ -424,7 +424,7 @@
 												<option>0</option>
 												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
-												<object class="wxButton" name="ID_BTNDOWN">
+												<object class="wxButton" name="Id_BtnCtrlMoveDirDown">
 													<label>Move Down</label>
 													<default>0</default>
 												</object>
@@ -433,7 +433,7 @@
 												<option>0</option>
 												<flag>wxEXPAND | wxALL</flag>
 												<border>5</border>
-												<object class="wxStaticLine" name="m_staticline3">
+												<object class="wxStaticLine">
 													<style>wxLI_HORIZONTAL</style>
 												</object>
 											</object>
@@ -441,7 +441,7 @@
 												<option>0</option>
 												<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
 												<border>5</border>
-												<object class="wxButton" name="ID_BTNGETENV">
+												<object class="wxButton" name="Id_BtnCtrlGetEnvironment">
 													<tooltip>Loads the list with DOOMWADDIR and DOOMWADPATH environment variable data</tooltip>
 													<label>Get Environment</label>
 													<default>0</default>
@@ -463,7 +463,7 @@
 								<option>0</option>
 								<flag>wxALL|wxEXPAND</flag>
 								<border>5</border>
-								<object class="wxDirPickerCtrl" name="ID_DPCHOOSEWADDIR">
+								<object class="wxDirPickerCtrl" name="Id_DirCtrlChooseWadDir">
 									<value></value>
 									<message>Select a folder containing WAD files</message>
 									<style>wxDIRP_DEFAULT_STYLE</style>
