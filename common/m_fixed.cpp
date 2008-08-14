@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,5 +64,5 @@ fixed_t FixedDiv_C (fixed_t a, fixed_t b)
 
 #endif
 
-VERSION_CONTROL (m_fixed_cpp, "$Id:$")
+VERSION_CONTROL (m_fixed_cpp, "$Id$")
 

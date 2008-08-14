@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -231,5 +231,5 @@ void P_SerializeSounds (FArchive &arc)
 }
 
 
-VERSION_CONTROL (p_saveg_cpp, "$Id:$")
+VERSION_CONTROL (p_saveg_cpp, "$Id$")
 

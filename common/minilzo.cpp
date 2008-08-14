@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // minilzo.h -- mini subset of the LZO real-time data compression library
 //
@@ -3834,5 +3834,5 @@ lookbehind_overrun:
 /***** End of minilzo.c *****/
 
 
-VERSION_CONTROL (minilzo_cpp, "$Id:$")
+VERSION_CONTROL (minilzo_cpp, "$Id$")
 

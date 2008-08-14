@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
