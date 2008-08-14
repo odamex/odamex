@@ -36,7 +36,7 @@ odalaunch: $(OBJECTS)
 	$(LD) $(OBJECTS) -o odalaunch $(LFLAGS)
 
 %.o: %.cpp res/xrc_resource.h $(HEADERS)
-	$(CC) -c $< -o $@ $(CFLAGS) -I.
+	$(CC) -c $< -o $@ $(CFLAGS) -I. -I./res
 
 res/xrc_resource.h: $(RESOURCES)
 	$(WXRC) -c -o $@ res/*.xrc
