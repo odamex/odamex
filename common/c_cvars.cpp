@@ -138,7 +138,9 @@ cvar_t::~cvar_t ()
 
 void cvar_t::ForceSet (const char *val)
 {
-	if (m_Flags & CVAR_LATCH)
+	if (m_Flags & CVAR_LATCH &&
+		 !(m_Flags & CVAR_SERVERINFO && baseapp != server) &&
+		 !(m_Flags & CVAR_CLIENTINFO && baseapp != client))
 	{
 		m_Flags |= CVAR_MODIFIED;
 		if(val)
@@ -421,7 +423,9 @@ void cvar_t::UnlatchCVars (void)
 	var = ad.GetCVars();
 	while (var)
 	{
-		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH))
+		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH) &&
+		 !(var->m_Flags & CVAR_SERVERINFO && baseapp != server) &&
+		 !(var->m_Flags & CVAR_CLIENTINFO && baseapp != client))
 		{
 			unsigned oldflags = var->m_Flags & ~CVAR_MODIFIED;
 			var->m_Flags &= ~(CVAR_LATCH);
