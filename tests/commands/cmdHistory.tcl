@@ -24,10 +24,8 @@ proc testAlias { module } {
  expect $out {Unknown command a} $offset
  expect $out {hi} $offset
  expect $out {Unknown command c} $offset
- expect $out {   a} $offset
- expect $out {   echo hi} $offset
- expect $out {   c} $offset
- expect $out {   history} $offset
+ expect $out {} $offset
+
 }
 
 proc main {} {
