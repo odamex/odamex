@@ -2538,7 +2538,7 @@ void SV_Say(player_t &player)
         player.LastMessage.Message = s;
     }
 
-	if (strncasecmp(s, "/me ", 4) == 0)
+	if (strnicmp(s, "/me ", 4) == 0)
 	{
 		if (player.spectator && (!globalspectatorchat || team))
 			SV_SpectatorPrintf(PRINT_CHAT, "<SPECTATORS> * %s %s\n", player.userinfo.netname, &s[4]);
