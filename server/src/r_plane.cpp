@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,5 +63,5 @@ BOOL R_AlignFlat (int linenum, int side, int fc)
 }
 
 
-VERSION_CONTROL (r_plane_cpp, "$Id:$")
+VERSION_CONTROL (r_plane_cpp, "$Id$")
 
