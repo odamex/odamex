@@ -76,6 +76,8 @@ CVAR (natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // The time difference in which a player message to all players can be repeated
 // in seconds
 CVAR (flooddelay, "1.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// GhostlyDeath <August 14, 2008> -- Randomize the map list
+CVAR_FUNC_DECL (shufflemaplist,	"0", CVAR_ARCHIVE)
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 

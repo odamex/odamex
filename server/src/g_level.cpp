@@ -68,7 +68,6 @@ EXTERN_CVAR (curmap)
 EXTERN_CVAR (nextmap)
 EXTERN_CVAR (loopepisode)
 
-
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
 
@@ -256,9 +255,22 @@ BEGIN_COMMAND (map)
 END_COMMAND (map)
 
 
+const char* GetBase(const char* in)
+{
+	const char* out = &in[strlen(in) - 1];
+	
+	while (out > in && *(out-1) != '/' && *(out-1) != '\\')
+		out--;
+	
+	return out;
+}
+
 BEGIN_COMMAND (wad) // denis - changes wads
 {
 	std::vector<std::string> wads, patch_files, hashes;
+	bool AddedIWAD = false;
+	bool Reboot = false;
+	QWORD i, j;
 	
 	// [Russell] print out some useful info
 	if (argc == 1)
@@ -273,11 +285,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
     
     // add our iwad if it is one
-    if (W_IsIWAD(argv[1]))
-        wads.push_back(argv[1]);
+	if (W_IsIWAD(argv[1]))
+	{
+		wads.push_back(argv[1]);
+		AddedIWAD = true;
+	}
 
     // check whether they are wads or patch files
-	for (QWORD i = 1; i < argc; i++)
+	for (i = 1; i < argc; i++)
 	{
 		std::string ext;
 		
@@ -291,10 +306,42 @@ BEGIN_COMMAND (wad) // denis - changes wads
 		}
 	}
 	
-	D_DoomWadReboot(wads, patch_files);
+	// GhostlyDeath <August 14, 2008> -- Check our environment, if the same WADs are used, ignore this command
+	if (AddedIWAD)
+	{
+		if (strcasecmp(GetBase(wads[0].c_str()), GetBase(wadfiles[1].c_str())) != 0)
+			Reboot = true;
+	}
+	
+	// IWAD, odamex.wad, ...
+	if (!Reboot)
+	{
+		Reboot = true;
+		
+		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < wads.size(); i++, j++)
+		{
+			if (strcasecmp(GetBase(wads[j].c_str()), GetBase(wadfiles[i].c_str())) == 0)
+				Reboot = false;
+			else if (Reboot)
+			{
+				Reboot = true;
+				break;
+			}
+		}
+		
+		// May be more wads...
+		if ((j == wads.size() && i < wadfiles.size()) ||
+			(j < wads.size() && i == wadfiles.size()))
+			Reboot = true;
+	}
+	
+	if (Reboot)
+	{
+		D_DoomWadReboot(wads, patch_files);
 
-	unnatural_level_progression = true;
-	G_DeferedInitNew (startmap);
+		unnatural_level_progression = true;
+		G_DeferedInitNew (startmap);
+	}
 }
 END_COMMAND (wad)
 
@@ -312,11 +359,94 @@ struct maplist_s *MapListBegin = NULL;
 struct maplist_s *MapListEnd = NULL;
 struct maplist_s *MapListPointer = NULL;
 
+// GhostlyDeath <August 14, 2008> -- Random Map List
+std::vector<maplist_s*> RandomMaps;
+size_t RandomMapPos = 0;
+
+void G_ClearRandomMaps(void)
+{
+	RandomMaps.clear();
+	RandomMapPos = 0;
+}
+
+void G_GenerateRandomMaps(void)
+{
+	bool* Used = NULL;
+	size_t Count = 0;
+	maplist_s* Rover = NULL;
+	size_t i, j;
+	std::vector<maplist_s*> Ptrs;
+	
+	// Clear old map list
+	G_ClearRandomMaps();
+	
+	if (!MapListBegin)
+		return;
+	
+	// First count the number of entries in the map list
+	Rover = MapListBegin;
+	
+	while (Rover)
+	{
+		Count++;
+		Ptrs.push_back(Rover);
+		Rover = Rover->Next;
+		
+		if (Rover == MapListBegin)
+			break;
+	}
+	
+	if (Count <= 0)
+		return;
+	
+	// Allocate our bool array
+	Used = new bool[Count];
+	
+	for (i = 0; i < Count; i++)
+		Used[i] = 0;
+	
+	// Now populate the list
+	for (i = 0; i < Count; i++)
+	{
+		j = (M_Random() + M_Random()) % Count;
+		
+		// Move forward if j is used
+		while (Used[j])
+		{
+			j++;
+			
+			if (j == Count)
+				j = 0;
+		}
+		
+		// Add it...
+		RandomMaps.push_back(Ptrs[j]);
+		
+		// Marked used
+		Used[j] = true;
+	}
+	
+	delete [] Used;
+	
+	RandomMapPos = 0;
+}
+
+CVAR_FUNC_IMPL (shufflemaplist)
+{
+	// Create random list
+	if (var)
+		G_GenerateRandomMaps();
+	// Erase random list...
+	else
+		G_ClearRandomMaps();
+}
+
 BEGIN_COMMAND (addmap)
 {
 	if (argc > 1)
 	{
         struct maplist_s *NewMap;
+        struct maplist_s *OldMap = NULL;
 
 		// Initalize the structure
         NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
@@ -326,9 +456,11 @@ BEGIN_COMMAND (addmap)
         if ( MapListBegin == NULL )
         { // This is the first entry
             MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
+            OldMap = NULL;
         }
         else
         { // Tag it on to the end.
+        	OldMap = MapListEnd;
             MapListEnd->Next = NewMap;
             MapListEnd = NewMap;
             NewMap->Next = MapListBegin;
@@ -354,17 +486,26 @@ BEGIN_COMMAND (addmap)
             NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
             strcpy(NewMap->WadCmds, arglist.c_str());
         }
-        else if ( NewMap == MapListBegin )
+        else// if ( NewMap == MapListBegin )
         {
-            // If we don't force a wad reset here then whatever
-            // wadfile they last switched to will take on the
-            // first levels in the maplist before any wad change
-            // That will cause an undesirable result.
-
-            NewMap->WadCmds = (char *) Malloc(2);
-            NewMap->WadCmds[0] = '-';
-            NewMap->WadCmds[1] = '\0';
+			// GhostlyDeath <August 14, 2008> -- Changed logic, remember WAD
+			if (OldMap)
+			{
+				NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds));
+		        NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
+		        strcpy(NewMap->WadCmds, OldMap->WadCmds);
+			}
+			else
+			{
+				NewMap->WadCmds = (char *) Malloc(2);
+				NewMap->WadCmds[0] = '-';
+				NewMap->WadCmds[1] = '\0';
+			}
         }
+        
+        // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
+        if (shufflemaplist)
+	        G_GenerateRandomMaps();
 	}
 }
 END_COMMAND (addmap)
@@ -425,6 +566,8 @@ BEGIN_COMMAND (clearmaplist)
 	}
 
 	MapListPointer = NULL; // make sure
+	
+	G_ClearRandomMaps();
 }
 END_COMMAND (clearmaplist)
 
@@ -492,13 +635,33 @@ void G_ChangeMap (void)
 	}
 	else
 	{
-		if ( MapListPointer->WadCmds )
+		if (shufflemaplist && RandomMaps.size())
 		{
-			if ( strcmp( MapListPointer->WadCmds, "-" ) != 0 )
-				AddCommandString(MapListPointer->WadCmds);
+			// Change the map
+			if (RandomMaps[RandomMapPos]->WadCmds)
+			{
+				if (strcmp(RandomMaps[RandomMapPos]->WadCmds, "-" ) != 0)
+					AddCommandString(RandomMaps[RandomMapPos]->WadCmds);
+			}
+			G_DeferedInitNew(RandomMaps[RandomMapPos]->MapName);
+			
+			// Increment position
+			RandomMapPos++;
+			
+			// If our counter has reached it's end, regenerate the map
+			if (RandomMapPos >= RandomMaps.size())
+				G_GenerateRandomMaps();
 		}
-		G_DeferedInitNew(MapListPointer->MapName);
-		MapListPointer = MapListPointer->Next;
+		else
+		{
+			if ( MapListPointer->WadCmds )
+			{
+				if ( strcmp( MapListPointer->WadCmds, "-" ) != 0 )
+					AddCommandString(MapListPointer->WadCmds);
+			}
+			G_DeferedInitNew(MapListPointer->MapName);
+			MapListPointer = MapListPointer->Next;
+		}
 	}
 
 	// run script at the end of each map
