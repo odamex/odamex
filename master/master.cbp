@@ -190,6 +190,7 @@
 					<Add option="/fp:except" />
 					<Add option="/EHa" />
 					<Add option="/GR" />
+					<Add option="/GS" />
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
