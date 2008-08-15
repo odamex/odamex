@@ -309,7 +309,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	// GhostlyDeath <August 14, 2008> -- Check our environment, if the same WADs are used, ignore this command
 	if (AddedIWAD)
 	{
-		if (strcasecmp(GetBase(wads[0].c_str()), GetBase(wadfiles[1].c_str())) != 0)
+		if (stricmp(GetBase(wads[0].c_str()), GetBase(wadfiles[1].c_str())) != 0)
 			Reboot = true;
 	}
 	
@@ -320,7 +320,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 		
 		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < wads.size(); i++, j++)
 		{
-			if (strcasecmp(GetBase(wads[j].c_str()), GetBase(wadfiles[i].c_str())) == 0)
+			if (stricmp(GetBase(wads[j].c_str()), GetBase(wadfiles[i].c_str())) == 0)
 				Reboot = false;
 			else if (Reboot)
 			{
