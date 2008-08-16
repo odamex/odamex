@@ -357,10 +357,10 @@ void SV_SendServerInfo()
 	for (i = 1; i < numwads; ++i)
 		MSG_WriteString(&ml_message, wadnames[i].c_str());
 
-	MSG_WriteByte(&ml_message, (int)deathmatch);
-	MSG_WriteByte(&ml_message, (int)skill);
-    MSG_WriteByte(&ml_message, (int)ctfmode ? 1 : teamplay);
-	MSG_WriteByte(&ml_message, (int)ctfmode);
+	MSG_WriteBool(&ml_message, (deathmatch ? true : false));
+	MSG_WriteByte(&ml_message, (BYTE)skill);
+    MSG_WriteBool(&ml_message, (teamplay ? true : false));
+	MSG_WriteBool(&ml_message, (ctfmode ? true : false));
 
 	for (i = 0; i < players.size(); ++i)
 	{
@@ -388,7 +388,7 @@ void SV_SendServerInfo()
 		
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
-			MSG_WriteByte(&ml_message, TEAMenabled[i]);
+			MSG_WriteBool(&ml_message, (TEAMenabled[i] ? true : false));
 
 			if (TEAMenabled[i])
 				MSG_WriteLong(&ml_message, TEAMpoints[i]);
@@ -407,20 +407,20 @@ void SV_SendServerInfo()
 	MSG_WriteShort(&ml_message,timeleft);
 	MSG_WriteShort(&ml_message,(int)fraglimit);
 
-	MSG_WriteByte(&ml_message,(BOOL)itemsrespawn);
-	MSG_WriteByte(&ml_message,(BOOL)weaponstay);
-	MSG_WriteByte(&ml_message,(BOOL)friendlyfire);
-	MSG_WriteByte(&ml_message,(BOOL)allowexit);
-	MSG_WriteByte(&ml_message,(BOOL)infiniteammo);
-	MSG_WriteByte(&ml_message,(BOOL)nomonsters);
-	MSG_WriteByte(&ml_message,(BOOL)monstersrespawn);
-	MSG_WriteByte(&ml_message,(BOOL)fastmonsters);
-	MSG_WriteByte(&ml_message,(BOOL)allowjump);
-	MSG_WriteByte(&ml_message,(BOOL)sv_freelook);
-	MSG_WriteByte(&ml_message,(BOOL)waddownload);
-	MSG_WriteByte(&ml_message,(BOOL)emptyreset);
-	MSG_WriteByte(&ml_message,(BOOL)cleanmaps);
-	MSG_WriteByte(&ml_message,(BOOL)fragexitswitch);
+	MSG_WriteBool(&ml_message, (itemsrespawn ? true : false));
+	MSG_WriteBool(&ml_message, (weaponstay ? true : false));
+	MSG_WriteBool(&ml_message, (friendlyfire ? true : false));
+	MSG_WriteBool(&ml_message, (allowexit ? true : false));
+	MSG_WriteBool(&ml_message, (infiniteammo ? true : false));
+	MSG_WriteBool(&ml_message, (nomonsters ? true : false));
+	MSG_WriteBool(&ml_message, (monstersrespawn ? true : false));
+	MSG_WriteBool(&ml_message, (fastmonsters ? true : false));
+	MSG_WriteBool(&ml_message, (allowjump ? true : false));
+	MSG_WriteBool(&ml_message, (sv_freelook ? true : false));
+	MSG_WriteBool(&ml_message, (waddownload ? true : false));
+	MSG_WriteBool(&ml_message, (emptyreset ? true : false));
+	MSG_WriteBool(&ml_message, (cleanmaps ? true : false));
+	MSG_WriteBool(&ml_message, (fragexitswitch ? true : false));
 
 	for (i = 0; i < players.size(); ++i)
 	{
@@ -444,7 +444,7 @@ void SV_SendServerInfo()
     {
         if (players[i].ingame())
         {
-            MSG_WriteByte(&ml_message, (players[i].spectator ? true : false));
+            MSG_WriteBool(&ml_message, (players[i].spectator ? true : false));
         }
     }
 

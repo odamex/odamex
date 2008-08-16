@@ -759,7 +759,7 @@ bool CL_PrepareConnect(void)
 	DWORD server_token = MSG_ReadLong();
 	std::string server_host = MSG_ReadString();
 
-	byte recv_teamplay_stats = 0;
+	bool recv_teamplay_stats = 0;
 	gameversiontosend = 0;
 
 	byte playercount = MSG_ReadByte(); // players
@@ -776,10 +776,10 @@ bool CL_PrepareConnect(void)
 	for(i = 0; i < server_wads; i++)
 		wadnames[i] = MSG_ReadString();
 
-	MSG_ReadByte();							// gametype
+	MSG_ReadBool();							// gametype
 	MSG_ReadByte();							// skill
-	recv_teamplay_stats |= MSG_ReadByte();	// teamplay
-	recv_teamplay_stats |= MSG_ReadByte();	// ctf
+	recv_teamplay_stats |= MSG_ReadBool();	// teamplay
+	recv_teamplay_stats |= MSG_ReadBool();	// ctf
 
 	for(i = 0; i < playercount; i++)
 	{
@@ -805,7 +805,7 @@ bool CL_PrepareConnect(void)
 
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
-			byte enabled = MSG_ReadByte();
+			bool enabled = MSG_ReadBool();
 
 			if (enabled)
 				MSG_ReadLong();
@@ -830,7 +830,7 @@ bool CL_PrepareConnect(void)
 		for (l = 0; l < 3; l++)
 			MSG_ReadShort();
 		for (l = 0; l < 14; l++)
-			MSG_ReadByte();
+			MSG_ReadBool();
 		for (l = 0; l < playercount; l++)
 		{
 			MSG_ReadShort();
@@ -842,7 +842,7 @@ bool CL_PrepareConnect(void)
 		MSG_ReadShort();
 		
 		for (l = 0; l < playercount; l++)
-			MSG_ReadByte();
+			MSG_ReadBool();
 		
 		MSG_ReadLong();
 		MSG_ReadShort();

@@ -461,6 +461,7 @@ int MSG_ReadByte (void);
 void *MSG_ReadChunk (size_t &size);
 int MSG_ReadShort (void);
 int MSG_ReadLong (void);
+bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);
 const char *MSG_ReadString (void);
 

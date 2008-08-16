@@ -398,7 +398,22 @@ wxInt32 BufferedSocket::ReadBool(bool &val)
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
 
-    val = dis.Read8() ? true : false;
+    wxUint8 Value = 0;
+
+    Value = dis.Read8();
+    
+    if (Value < 0 || Value > 1)
+    {
+        wxLogDebug(_T("ReadBool: Value is not 0 or 1, possibly corrupted packet"));
+        
+        val = false;
+        
+        m_BadRead = true;
+        
+        return 0;
+    }
+    
+    val = Value ? true : false;
     
     return 1;
 }

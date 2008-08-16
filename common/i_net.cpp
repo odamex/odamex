@@ -580,6 +580,24 @@ int MSG_ReadLong (void)
 }
 
 //
+// MSG_ReadBool
+//
+// Read a boolean value
+bool MSG_ReadBool(void)
+{
+    int Value = net_message.ReadByte();
+    
+    if (Value < 0 || Value > 1)
+    {
+        DPrintf("MSG_ReadBool: Value is not 0 or 1, possibly corrupted packet");
+                
+        return (Value ? true : false);
+    }
+    
+    return (Value ? true : false);
+}
+
+//
 // MSG_ReadString
 // 
 // Read a null terminated string
@@ -587,7 +605,7 @@ const char *MSG_ReadString (void)
 {
 	return net_message.ReadString();
 }
-// 
+
 //
 // MSG_ReadFloat
 //
