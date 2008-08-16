@@ -69,16 +69,15 @@ void BufferedSocket::CheckError()
 
 //  Constructor
 BufferedSocket::BufferedSocket()
-	: Socket(NULL)
+	: recv_buf(NULL), send_buf(NULL), Socket(NULL)
 {   
     // set pings
     SendPing = 0;
     RecvPing = 0;
        
     // create the memory streams
-    send_buf = new wxMemoryOutputStream();
-    recv_buf = new wxMemoryInputStream(NULL, 0);
-  
+    ClearSendBuffer();
+    ClearRecvBuffer();
 }
 
 //  Destructor
@@ -202,7 +201,8 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
     if (num_recv > 0)
     if ((in_addr.IPAddress() == to_addr.IPAddress()) && (in_addr.Service() == to_addr.Service()))
     {
-    
+        m_BadRead = false;
+        
         // write data to memory stream, if one doesn't already exist
         if (recv_buf != NULL)
         {
@@ -234,9 +234,14 @@ wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
 // Read a 32bit value
 wxInt32 BufferedSocket::Read32(wxInt32 &Int32)
 {
-    if (!recv_buf->CanRead())
+    if (!CanRead(4))
     {
         wxLogDebug(_T("Read32: End of buffer reached!"));
+        
+        Int32 = 0;
+        
+        m_BadRead = true;
+        
         return 0;
     }
     
@@ -254,9 +259,14 @@ wxInt32 BufferedSocket::Read32(wxInt32 &Int32)
 // Read a 32bit value
 wxInt32 BufferedSocket::Read32(wxUint32 &Uint32)
 {
-    if (!recv_buf->CanRead())
+    if (!CanRead(4))
     {
         wxLogDebug(_T("Read32: End of buffer reached!"));
+        
+        Uint32 = 0;
+        
+        m_BadRead = true;
+        
         return 0;
     }
     
@@ -274,9 +284,14 @@ wxInt32 BufferedSocket::Read32(wxUint32 &Uint32)
 // Read a 16bit value
 wxInt32 BufferedSocket::Read16(wxInt16 &Int16)
 {
-    if (!recv_buf->CanRead())
+    if (!CanRead(2))
     {
         wxLogDebug(_T("Read16: End of buffer reached!"));
+        
+        Int16 = 0;
+        
+        m_BadRead = true;
+        
         return 0;
     }
         
@@ -294,9 +309,14 @@ wxInt32 BufferedSocket::Read16(wxInt16 &Int16)
 // Read an 16bit value
 wxInt32 BufferedSocket::Read16(wxUint16 &Uint16)
 {
-    if (!recv_buf->CanRead())
+    if (!CanRead(2))
     {
         wxLogDebug(_T("Read16: End of buffer reached!"));
+        
+        Uint16 = 0;
+        
+        m_BadRead = true;
+        
         return 0;
     }
         
@@ -314,9 +334,14 @@ wxInt32 BufferedSocket::Read16(wxUint16 &Uint16)
 // Read an 8bit value
 wxInt32 BufferedSocket::Read8(wxInt8 &Int8)
 {
-    if (!recv_buf->CanRead())
+    if (!CanRead(1))
     {
         wxLogDebug(_T("Read8: End of buffer reached!"));
+        
+        Int8 = 0;
+        
+        m_BadRead = true;
+        
         return 0;
     }
         
@@ -334,9 +359,14 @@ wxInt32 BufferedSocket::Read8(wxInt8 &Int8)
 // Read an 8bit value
 wxInt32 BufferedSocket::Read8(wxUint8 &Uint8)
 {
-    if (!recv_buf->CanRead())
+    if (!CanRead(1))
     {
         wxLogDebug(_T("Read8: End of buffer reached!"));
+        
+        Uint8 = 0;
+        
+        m_BadRead = true;
+        
         return 0;
     }
         
@@ -354,9 +384,14 @@ wxInt32 BufferedSocket::Read8(wxUint8 &Uint8)
 // Read a bool value
 wxInt32 BufferedSocket::ReadBool(bool &val)
 {
-    if (!recv_buf->CanRead())
+    if (!CanRead(1))
     {
         wxLogDebug(_T("ReadBool: End of buffer reached!"));
+        
+        val = false;
+        
+        m_BadRead = true;
+        
         return 0;
     }
         
@@ -374,9 +409,14 @@ wxInt32 BufferedSocket::ReadBool(bool &val)
 // Read a null terminated string
 wxInt32 BufferedSocket::ReadString(wxString &str)
 {
-    if (!recv_buf->CanRead())
+    if (!CanRead(1))
     {
         wxLogDebug(_T("ReadString: End of buffer reached!"));
+        
+        str = wxT("");
+        
+        m_BadRead = true;
+        
         return 0;
     }
 
@@ -388,13 +428,26 @@ wxInt32 BufferedSocket::ReadString(wxString &str)
     // ooh, a priming read!
     wxChar ch = (wxChar)dis.Read8();
 
-    wxUint16 i = 0;
+    bool IsRead = CanRead(1);
     
-    while (ch != '\0' && recv_buf->CanRead())
+    while (ch != '\0' && IsRead)
     {      
         in_str << ch;
-         
+        
         ch = (wxChar)dis.Read8();
+        
+        IsRead = CanRead(1);
+    }
+    
+    if (!IsRead)
+    {
+        wxLogDebug(_T("ReadString: End of buffer reached!"));
+        
+        str = wxT("");
+        
+        m_BadRead = true;
+        
+        return 0;
     }
     
     str = in_str;
@@ -408,9 +461,12 @@ wxInt32 BufferedSocket::ReadString(wxString &str)
 // Write a 32bit value
 void BufferedSocket::Write32(const wxInt32 &val)
 {
-    if (!send_buf->IsOk())
+    if (!CanWrite(4))
     {
         wxLogDebug(_T("Write32: End of buffer reached!"));
+        
+        m_BadWrite = true;
+        
         return;
     }
     
@@ -426,9 +482,12 @@ void BufferedSocket::Write32(const wxInt32 &val)
 // Write a 32bit value
 void BufferedSocket::Write32(const wxUint32 &val)
 {
-    if (!send_buf->IsOk())
+    if (!CanWrite(4))
     {
         wxLogDebug(_T("Write32: End of buffer reached!"));
+        
+        m_BadWrite = true;
+        
         return;
     }
     
@@ -444,9 +503,12 @@ void BufferedSocket::Write32(const wxUint32 &val)
 // Write a 16bit value
 void BufferedSocket::Write16(const wxInt16 &val)
 {
-    if (!send_buf->IsOk())
+    if (!CanWrite(2))
     {
         wxLogDebug(_T("Write16: End of buffer reached!"));
+        
+        m_BadWrite = true;
+        
         return;
     }
     
@@ -462,9 +524,12 @@ void BufferedSocket::Write16(const wxInt16 &val)
 // Write a 16bit value
 void BufferedSocket::Write16(const wxUint16 &val)
 {
-    if (!send_buf->IsOk())
+    if (!CanWrite(2))
     {
         wxLogDebug(_T("Write16: End of buffer reached!"));
+        
+        m_BadWrite = true;
+        
         return;
     }
     
@@ -480,9 +545,12 @@ void BufferedSocket::Write16(const wxUint16 &val)
 // Write an 8bit value
 void BufferedSocket::Write8(const wxInt8 &val)
 {
-    if (!send_buf->IsOk())
+    if (!CanWrite(1))
     {
         wxLogDebug(_T("Write8: End of buffer reached!"));
+        
+        m_BadWrite = true;
+        
         return;
     }
 
@@ -498,9 +566,12 @@ void BufferedSocket::Write8(const wxInt8 &val)
 // Write an 8bit value
 void BufferedSocket::Write8(const wxUint8 &val)
 {
-    if (!send_buf->IsOk())
+    if (!CanWrite(1))
     {
         wxLogDebug(_T("Write8: End of buffer reached!"));
+        
+        m_BadWrite = true;
+        
         return;
     }
 
@@ -516,9 +587,12 @@ void BufferedSocket::Write8(const wxUint8 &val)
 // Write a boolean value
 void BufferedSocket::WriteBool(const bool &val)
 {
-    if (!send_buf->IsOk())
+    if (!CanWrite(1))
     {
         wxLogDebug(_T("WriteBool: End of buffer reached!"));
+        
+        m_BadWrite = true;
+        
         return;
     }
         
@@ -534,9 +608,12 @@ void BufferedSocket::WriteBool(const bool &val)
 // Write a null terminated string
 void BufferedSocket::WriteString(const wxString &str)
 {
-    if (!send_buf->IsOk())
+    if (!CanWrite((size_t)str.Length()))
     {
         wxLogDebug(_T("WriteString: End of buffer reached!"));
+        
+        m_BadWrite = true;
+        
         return;
     }
         
@@ -579,21 +656,53 @@ bool BufferedSocket::SetAddress(const wxString &Address)
 void BufferedSocket::ClearRecvBuffer() 
 {       
     if (recv_buf != NULL)
-    {
         delete recv_buf;
-            
-        recv_buf = new wxMemoryInputStream(NULL, 0);
-        
-    }
+    
+    m_BadRead = false;
+    
+    recv_buf = new wxMemoryInputStream(NULL, 0);
 }
 
 void BufferedSocket::ClearSendBuffer() 
 { 
     if (send_buf != NULL)
-    {
-        delete send_buf;
-            
-        send_buf = new wxMemoryOutputStream();
+        delete send_buf;           
+    
+    m_BadWrite = false;
+    
+    send_buf = new wxMemoryOutputStream();
+}
 
+//
+// bool BufferedSocket::CanRead(const size_t &Bytes)
+//
+// Tells us if we can read X amount of bytes from the receive buffer
+bool BufferedSocket::CanRead(const size_t &Bytes)
+{
+    if (recv_buf == NULL)
+    {
+        wxLogDebug(_T("CanRead: recv_buf is NULL!"));
+        
+        return false;
     }
+    
+    return ((recv_buf->TellI() + Bytes) <= recv_buf->GetSize());
+}
+
+//
+// bool BufferedSocket::CanWrite(const size_t &Bytes)
+//
+// Tells us if we can write X amount of bytes to the send buffer
+bool BufferedSocket::CanWrite(const size_t &Bytes)
+{
+    if (send_buf == NULL)
+    {
+        wxLogDebug(_T("CanWrite: send_buf is NULL!"));
+        
+        return false;
+    }
+    
+    // [Russell] - hack, you cant set the internal maximum size of a 
+    // wxMemoryOutputStream... what?
+    return ((send_buf->TellO() + Bytes) <= MAX_PAYLOAD);
 }

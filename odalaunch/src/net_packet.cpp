@@ -127,6 +127,13 @@ wxInt32 MasterServer::Parse()
             addresses.push_back(address);
     }
     
+    if (Socket.BadRead())
+    {
+        Socket.ClearRecvBuffer();
+        
+        return 0;
+    }
+    
     Socket.ClearRecvBuffer();
     
     return 1;
@@ -372,6 +379,13 @@ wxInt32 Server::Parse()
     if (info.extrainfo == 0x01020305)
     {
         Socket.ReadBool(info.passworded);
+    }
+
+    if (Socket.BadRead())
+    {
+        Socket.ClearRecvBuffer();
+        
+        return 0;
     }
 
     Socket.ClearRecvBuffer();

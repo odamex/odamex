@@ -40,6 +40,9 @@ class BufferedSocket
         wxMemoryInputStream  *recv_buf;
         wxMemoryOutputStream *send_buf;
         
+        bool m_BadRead;
+        bool m_BadWrite;
+        
         wxChar sData[MAX_PAYLOAD];
         wxChar rData[MAX_PAYLOAD];
         
@@ -99,6 +102,8 @@ class BufferedSocket
         wxInt32     Read16(wxUint16 &);
         wxInt32     Read8(wxUint8 &);
         
+        bool BadRead() { return m_BadRead; }
+        
         // Write values
         void    WriteString(const wxString &);
         void    WriteBool(const bool &val);
@@ -111,10 +116,16 @@ class BufferedSocket
         void    Write16(const wxUint16 &);
         void    Write8(const wxUint8 &);
         
+        bool BadWrite() { return m_BadWrite; }
+        
         // Reset buffer positions to 0
         void    ResetRecvBuffer() { recv_buf->SeekI(0, wxFromStart); } ;
         void    ResetSendBuffer() { send_buf->SeekO(0, wxFromStart); };
         void    ResetBuffers() { ResetRecvBuffer(); ResetSendBuffer(); };
+        
+        // Can read or write X bytes to a buffer
+        bool    CanRead(const size_t &);
+        bool    CanWrite(const size_t &);
         
         // Clear buffers
         void        ClearRecvBuffer();
