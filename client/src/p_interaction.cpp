@@ -470,13 +470,13 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		break;
 
 	  case SPR_MEDI:
-		if (!P_GiveBody (player, 25))
-			return;
-
 		if (player->health < 25)
 			PickupMessage (toucher, GOTMEDINEED);
 		else
 			PickupMessage (toucher, GOTMEDIKIT);
+
+		if (!P_GiveBody (player, 25))
+			return;
 		break;
 
 
