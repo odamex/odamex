@@ -429,7 +429,8 @@ int wipe_ScreenWipe (int ticks)
 	};
 	int rc;
 
-	if (CurrentWipeType == wipe_None)
+    // TODO: Fix screen wipes eating memory in multiplayer mode
+	if (CurrentWipeType == wipe_None || multiplayer)
 		return true;
 
 	// initial stuff
