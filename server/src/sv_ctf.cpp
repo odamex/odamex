@@ -240,7 +240,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 	CTF_SpawnFlag(f);
 
 	// checks to see if a team won a game
-	if(TEAMpoints[player.userinfo.team] >= scorelimit)
+	if(TEAMpoints[player.userinfo.team] >= scorelimit && scorelimit != 0)
 	{
 		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", team_names[player.userinfo.team]);
 		shotclock = TICRATE*2;
