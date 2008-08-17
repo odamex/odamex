@@ -472,7 +472,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 	  case SPR_MEDI:
 		if (player->health < 25)
 			PickupMessage (toucher, GOTMEDINEED);
-		else
+		else if (player->health < 100)
 			PickupMessage (toucher, GOTMEDIKIT);
 
 		if (!P_GiveBody (player, 25))
