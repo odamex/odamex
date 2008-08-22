@@ -398,7 +398,7 @@ wxInt32 BufferedSocket::ReadBool(bool &val)
     wxDataInputStream dis(*recv_buf);
     dis.BigEndianOrdered(BigEndian);
 
-    wxUint8 Value = 0;
+    wxInt8 Value = 0;
 
     Value = dis.Read8();
     
