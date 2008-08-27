@@ -182,7 +182,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
-					<Add option="/MDd" />
+					<Add option="/MD" />
 					<Add option="/TP" />
 					<Add option="/RTCu" />
 					<Add option="/RTCs" />
@@ -194,16 +194,15 @@
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
-					<Add option="/Zi /D_DEBUG" />
+					<Add option="/Zi" />
 					<Add option="/DWIN32" />
-					<Add option="/D_DEBUG" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 				</Compiler>
 				<Linker>
-					<Add option="/DEBUG" />
+					<Add option="/debug" />
 					<Add library="wsock32" />
 				</Linker>
 			</Target>

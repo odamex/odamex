@@ -171,23 +171,23 @@
 					<Add directory="..\..\common" />
 				</ResourceCompiler>
 				<Linker>
-					<Add option="Ws2_32.lib" />
-					<Add option="Winmm.lib" />
-					<Add option="kernel32.lib" />
-					<Add option="user32.lib" />
-					<Add option="gdi32.lib" />
-					<Add option="winspool.lib" />
-					<Add option="comdlg32.lib" />
-					<Add option="advapi32.lib" />
-					<Add option="shell32.lib" />
-					<Add option="ole32.lib" />
-					<Add option="oleaut32.lib" />
-					<Add option="uuid.lib" />
-					<Add option="odbc32.lib" />
-					<Add option="odbccp32.lib" />
-					<Add option="SDLmain.lib" />
-					<Add option="SDL.lib" />
-					<Add option="SDL_mixer.lib" />
+					<Add library="SDLmain.lib" />
+					<Add library="SDL.lib" />
+					<Add library="SDL_mixer.lib" />
+					<Add library="Ws2_32.lib" />
+					<Add library="Winmm.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="winspool.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="uuid.lib" />
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
@@ -206,7 +206,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
-					<Add option="/MDd" />
+					<Add option="/MD" />
 					<Add option="/TP" />
 					<Add option="/RTCu" />
 					<Add option="/RTCs" />
@@ -218,10 +218,9 @@
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
-					<Add option="/Zi /D_DEBUG" />
 					<Add option="/wd4430" />
+					<Add option="/Zi" />
 					<Add option="/DWIN32" />
-					<Add option="/D_DEBUG" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
@@ -236,7 +235,7 @@
 					<Add directory="..\..\common" />
 				</ResourceCompiler>
 				<Linker>
-					<Add option="/DEBUG" />
+					<Add option="/debug" />
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />

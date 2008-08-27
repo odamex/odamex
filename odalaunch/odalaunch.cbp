@@ -165,17 +165,6 @@
 					<Add directory=".\res" />
 				</ResourceCompiler>
 				<Linker>
-					<Add option="kernel32.lib" />
-					<Add option="user32.lib" />
-					<Add option="gdi32.lib" />
-					<Add option="comdlg32.lib" />
-					<Add option="comctl32.lib" />
-					<Add option="advapi32.lib" />
-					<Add option="shell32.lib" />
-					<Add option="ole32.lib" />
-					<Add option="oleaut32.lib" />
-					<Add option="rpcrt4.lib" />
-					<Add option="ws2_32.lib" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_xrc" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_adv" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_html" />
@@ -189,6 +178,17 @@
 					<Add library="wxzlib" />
 					<Add library="wxregex$(WX_CFG)" />
 					<Add library="wxexpat" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="comctl32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="rpcrt4.lib" />
+					<Add library="ws2_32.lib" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 					<Add directory=".\res" />
@@ -246,17 +246,6 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
-					<Add option="kernel32.lib" />
-					<Add option="user32.lib" />
-					<Add option="gdi32.lib" />
-					<Add option="comdlg32.lib" />
-					<Add option="comctl32.lib" />
-					<Add option="advapi32.lib" />
-					<Add option="shell32.lib" />
-					<Add option="ole32.lib" />
-					<Add option="oleaut32.lib" />
-					<Add option="rpcrt4.lib" />
-					<Add option="ws2_32.lib" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_xrc" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_adv" />
 					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_html" />
@@ -270,6 +259,17 @@
 					<Add library="wxzlib" />
 					<Add library="wxregex$(WX_CFG)" />
 					<Add library="wxexpat" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="comctl32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="rpcrt4.lib" />
+					<Add library="ws2_32.lib" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 					<Add directory=".\res" />
