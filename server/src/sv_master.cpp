@@ -34,7 +34,7 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "i_system.h"
-
+#include "md5.h"
 #include "sv_ctf.h"
 
 #define MASTERPORT			15000
@@ -456,6 +456,216 @@ void SV_SendServerInfo()
 
 	NET_SendPacket(ml_message, net_from);
 }
+
+#define TAG_ID 0xAD0
+#define PROTOCOL_VERSION 1
+
+//
+// void IntQryBuildInformation(const DWORD &ProtocolVersion)
+//
+// The place for the actual protocol builder
+void IntQryBuildInformation(const DWORD &EqProtocolVersion)
+{
+    cvar_t *var = GetFirstCvar();
+    
+    // Cvar block   
+    while (var)
+	{
+		if (var->flags() & CVAR_SERVERINFO)
+		{
+		    MSG_WriteBool(&ml_message, true);
+			MSG_WriteString(&ml_message, var->name());
+			MSG_WriteString(&ml_message, var->cstring());
+		}
+		
+		var = var->GetNext();
+	}
+	
+	MSG_WriteBool(&ml_message, false);
+	
+	MSG_WriteString(&ml_message, MD5SUM(password.cstring()).c_str());
+	MSG_WriteString(&ml_message, level.mapname);
+	
+    int timeleft = (int)(timelimit - level.time/(TICRATE*60));
+	if (timeleft < 0) 
+        timeleft = 0;
+        
+    MSG_WriteShort(&ml_message, timeleft);
+    
+    MSG_WriteShort(&ml_message, TEAMpoints[it_blueflag]);
+	MSG_WriteShort(&ml_message, TEAMpoints[it_redflag]);
+	MSG_WriteShort(&ml_message, TEAMpoints[it_goldflag]);
+	
+	MSG_WriteByte(&ml_message, wadnames.size());
+	
+	for (size_t i = 0; i < wadnames.size(); ++i)
+    {
+        MSG_WriteString(&ml_message, wadnames[i].c_str());
+        MSG_WriteString(&ml_message, wadhashes[i].c_str());
+    }
+    
+    MSG_WriteByte(&ml_message, players.size());
+    
+    for (size_t i = 0; i < players.size(); ++i)
+    {
+        if (players[i].ingame())
+        {
+			MSG_WriteString(&ml_message, players[i].userinfo.netname);
+			MSG_WriteShort(&ml_message, players[i].fragcount);
+			MSG_WriteShort(&ml_message, players[i].ping);
+
+			if (teamplay || ctfmode)
+				MSG_WriteByte(&ml_message, players[i].userinfo.team);
+			else
+				MSG_WriteByte(&ml_message, TEAM_NONE);
+
+			MSG_WriteShort(&ml_message, players[i].killcount);
+			MSG_WriteShort(&ml_message, players[i].deathcount);
+			
+			int timeingame = (time(NULL) - players[i].JoinTime)/60;
+			if (timeingame < 0) 
+                timeingame = 0;
+			
+			MSG_WriteShort(&ml_message, timeingame);
+            MSG_WriteBool(&ml_message, players[i].spectator);
+        }
+    }
+}
+
+//
+// void IntQrySendResponse()
+//
+// 
+DWORD IntQrySendResponse(const WORD &TagId, 
+                        const BYTE &TagApplication,
+                        const BYTE &TagQRId,
+                        const WORD &TagPacketType)
+{
+    // It isn't a query, throw it away
+    if (TagQRId == 2)
+    {
+        I_FatalError("Query/Response Id is Response");
+    }
+
+    // Decipher the program that sent the query
+    switch (TagApplication)
+    {
+        case 1:
+        {
+            Printf(PRINT_HIGH, "Application is Enquirer");
+        }
+        break;
+        
+        case 2:
+        {
+            Printf(PRINT_HIGH, "Application is Client");
+        }
+        break;
+
+        case 3:
+        {
+            Printf(PRINT_HIGH, "Application is Server");
+        }
+        break;
+
+        case 4:
+        {
+            Printf(PRINT_HIGH, "Application is Master Server");
+        }
+        break;
+        
+        default:
+        {
+            I_FatalError("Application is Unknown");
+        }
+        break;
+    }
+       
+    DWORD ReTag = 0;
+    WORD ReId = TAG_ID;
+    BYTE ReApplication = 3;
+    BYTE ReQRId = 2;
+    WORD RePacketType = 0;    
+    
+    switch (TagPacketType)
+    {
+        // Request version
+        case 1:
+        {
+            RePacketType = 1;
+        }
+        break;
+
+        // Information request
+        case 2:
+        {
+            RePacketType = 3;
+        }
+        break;
+    }
+
+    // Begin enquirer version translation
+    DWORD EqVersion = MSG_ReadLong();
+    DWORD EqProtocolVersion = MSG_ReadLong();
+
+    // Override other packet types for older enquirer version response
+    if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) || 
+        (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
+    {
+        RePacketType = 2;
+    }
+    
+    // Encode our tag
+    ReTag = (((ReId << 20) & 0xFFF00000) | 
+             ((ReApplication << 16) & 0x000F0000) | 
+             ((ReQRId << 12) & 0x0000F000) | (RePacketType & 0x00000FFF));   
+           
+    // Clear our message buffer for a response
+    SZ_Clear(&ml_message);
+
+    MSG_WriteLong(&ml_message, ReTag);
+    MSG_WriteLong(&ml_message, GAMEVER);
+    MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
+    
+    // Enquirer is an old version
+    if (RePacketType == 2)
+    {       
+        NET_SendPacket(ml_message, net_from);
+        
+        return 0;
+    }
+    
+    IntQryBuildInformation(EqProtocolVersion);
+    
+    NET_SendPacket(ml_message, net_from);
+    
+    return 0;
+}
+
+//
+// void SV_QryParseEnquiry()
+//
+// This decodes the Tag field
+DWORD SV_QryParseEnquiry(DWORD &Tag)
+{
+    Tag = MSG_ReadLong();
+    
+    // Decode the tag into its fields
+    // TODO: this may not be 100% correct
+    WORD TagId = ((Tag >> 20) & 0x0FFF);
+    BYTE TagApplication = ((Tag >> 16) & 0x0F);
+    BYTE TagQRId = ((Tag >> 12) & 0x0F);
+    WORD TagPacketType = (Tag & 0xFFFF0FFF);
+    
+    // It is not ours 
+    if (TagId != TAG_ID)
+    {
+        return 1;
+    }
+    
+    return IntQrySendResponse(TagId, TagApplication, TagQRId, TagPacketType);
+}
+
 
 // Server appears in the server list when true.
 CVAR_FUNC_IMPL (usemasters)
