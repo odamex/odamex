@@ -353,10 +353,17 @@ BEGIN_COMMAND (exec)
 		if(!line.length())
 			continue;
 
-		// commented line
-		if(line.length() > 1 && line[0] == '/' && line[1] == '/')
-			continue;
+        size_t QuoteIndex = line.find_first_of('"');
+        size_t CommentIndex = line.find_first_of("////");
 
+		// commented line
+		if(line.length() > 1 && 
+           ((line[0] == '/' && line[1] == '/') ||
+           (QuoteIndex > CommentIndex)))
+        {
+            continue;
+        }
+        
 		// start tag
 		if(line.substr(0, 3) == "#if")
 		{
