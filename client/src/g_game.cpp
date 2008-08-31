@@ -134,8 +134,12 @@ enum demoversion_t
 
 EXTERN_CVAR(nomonsters)
 EXTERN_CVAR(fastmonsters)
-EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
+
+CVAR_FUNC_IMPL(cl_mouselook)
+{
+	AddCommandString("centerview");
+}
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed

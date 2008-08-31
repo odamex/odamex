@@ -101,7 +101,7 @@ CVAR_FUNC_DECL (ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // GhostlyDeath <August 1, 2008> -- Join/Part Sound
 CVAR (cl_connectalert, "1", CVAR_ARCHIVE)
 
-CVAR (cl_mouselook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR_FUNC_DECL (cl_mouselook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 
 CVAR (mouse_acceleration, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_threshold, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
