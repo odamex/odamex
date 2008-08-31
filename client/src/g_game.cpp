@@ -138,7 +138,11 @@ EXTERN_CVAR(sv_freelook)
 
 CVAR_FUNC_IMPL(cl_mouselook)
 {
+	// Nes - center the view
 	AddCommandString("centerview");
+	
+	// Nes - update skies
+	R_InitSkyMap ();
 }
 
 byte			consoleplayer_id;			// player taking events and displaying
