@@ -757,7 +757,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 	// [RH] Also set the thing's tid to 0. [why?]
 	target->tid = 0;
 
-	if (serverside && (mo->type == MT_SKULL || target->flags & MF_COUNTKILL))
+	if (serverside && target->flags & MF_COUNTKILL)
 		level.killed_monsters++;
 		
 	if (demoplayback && source && source->player && target->player) {
