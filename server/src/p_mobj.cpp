@@ -1500,7 +1500,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);
-	if (mobj->flags & MF_COUNTKILL)
+	if (mobj->type == MT_SKULL || mobj->flags & MF_COUNTKILL)
 		level.total_monsters++;
 	if (mobj->flags & MF_COUNTITEM)
 		level.total_items++;
