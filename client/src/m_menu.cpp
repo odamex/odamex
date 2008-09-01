@@ -1650,9 +1650,6 @@ void M_ClearMenus (void)
 	M_DemoNoPlay = false;
 	if (gamestate != GS_FULLCONSOLE)
 		I_ResumeMouse ();	// [RH] Recapture the mouse in windowed modes.
-
-	// joek - update skies (otherwise won't update if stretched or not.)
-	R_InitSkyMap ();
 }
 
 

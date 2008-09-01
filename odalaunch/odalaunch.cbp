@@ -195,6 +195,7 @@
 				</Linker>
 				<ExtraCommands>
 					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
 				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_VER" value="28" />
@@ -276,6 +277,7 @@
 				</Linker>
 				<ExtraCommands>
 					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
 				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_VER" value="28" />

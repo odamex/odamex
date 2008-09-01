@@ -2026,8 +2026,15 @@ void SV_ConnectClient (void)
 	players[n].killcount	= 0;
 	players[n].points		= 0;
 
-	if(!stepmode)
+	if(!stepmode) {
 		players[n].spectator	= true;
+		for (size_t j = 0; j < players.size(); j++)
+		{
+			MSG_WriteMarker (&(players[i].client.reliablebuf), svc_spectate);
+			MSG_WriteByte (&(players[i].client.reliablebuf), players[n].id);
+			MSG_WriteByte (&(players[i].client.reliablebuf), true);
+		}
+	}
 
 	// send a map name
 	MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);

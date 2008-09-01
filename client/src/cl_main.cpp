@@ -44,6 +44,7 @@
 #include "w_wad.h"
 #include "md5.h"
 #include "m_fileio.h"
+#include "r_sky.h"
 
 #include <string>
 #include <vector>
@@ -169,6 +170,7 @@ void CL_QuitNetGame(void)
 	serverside = clientside = true;
 	
 	sv_freelook = 1;
+	allowjump = 1;
 
 	actor_by_netid.clear();
 	players.clear();
@@ -1907,6 +1909,9 @@ void CL_GetServerSettings(void)
 
 		cvar_t::UnlatchCVars ();
 	}
+	
+	// Nes - update the skies in case sv_freelook is changed.
+	R_InitSkyMap ();
 }
 
 //

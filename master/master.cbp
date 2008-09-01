@@ -166,6 +166,9 @@
 				<Linker>
 					<Add library="wsock32" />
 				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
 			</Target>
 			<Target title="Win Debug (VC)">
 				<Option platforms="Windows;" />
@@ -205,6 +208,9 @@
 					<Add option="/debug" />
 					<Add library="wsock32" />
 				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
 			</Target>
 		</Build>
 		<VirtualTargets>

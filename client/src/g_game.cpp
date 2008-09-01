@@ -134,8 +134,17 @@ enum demoversion_t
 
 EXTERN_CVAR(nomonsters)
 EXTERN_CVAR(fastmonsters)
-EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR(allowjump)
+
+CVAR_FUNC_IMPL(cl_mouselook)
+{
+	// Nes - center the view
+	AddCommandString("centerview");
+	
+	// Nes - update skies
+	R_InitSkyMap ();
+}
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
@@ -2007,6 +2016,7 @@ void G_DoPlayDemo (bool justStreamInput)
 
 		// comatibility
 		sv_freelook = "0";
+		allowjump = "0";
 
 		return;
 	} else {

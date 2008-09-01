@@ -179,7 +179,10 @@ enum card_t
 
 	NUMCARDS,
 
-        NoKey,
+		// GhostlyDeath <August 31, 2008> -- Before this was not = 0 and when
+		// the map is loaded the value is just bitshifted so that the values
+		// that were here were incorrect, keyed generalized doors work now
+        NoKey = 0,
         RCard,
         BCard,
         YCard,
