@@ -135,6 +135,7 @@ enum demoversion_t
 EXTERN_CVAR(nomonsters)
 EXTERN_CVAR(fastmonsters)
 EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR(allowjump)
 
 CVAR_FUNC_IMPL(cl_mouselook)
 {
@@ -2015,6 +2016,7 @@ void G_DoPlayDemo (bool justStreamInput)
 
 		// comatibility
 		sv_freelook = "0";
+		allowjump = "0";
 
 		return;
 	} else {

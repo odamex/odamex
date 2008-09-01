@@ -170,6 +170,7 @@ void CL_QuitNetGame(void)
 	serverside = clientside = true;
 	
 	sv_freelook = 1;
+	allowjump = 1;
 
 	actor_by_netid.clear();
 	players.clear();
