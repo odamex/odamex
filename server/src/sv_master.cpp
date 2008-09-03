@@ -460,28 +460,44 @@ void SV_SendServerInfo()
 #define TAG_ID 0xAD0
 #define PROTOCOL_VERSION 1
 
+struct CvarField_t 
+{ 
+    std::string Name;
+    std::string Value;
+} CvarField;
+
 //
 // void IntQryBuildInformation(const DWORD &ProtocolVersion)
 //
 // The place for the actual protocol builder
 void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 {
+    std::vector<CvarField_t> Cvars;
+
     cvar_t *var = GetFirstCvar();
     
-    // Cvar block   
+    // Count our cvars and add them
     while (var)
+    {
+        if (var->flags() & CVAR_SERVERINFO)
+        {
+            CvarField.Name = var->name();
+            CvarField.Value = var->cstring();
+            
+            Cvars.push_back(CvarField);
+        }
+        
+        var = var->GetNext();
+    }
+    
+    MSG_WriteByte(&ml_message, (BYTE)Cvars.size());
+    
+    // Write cvars
+    for (size_t i = 0; i < Cvars.size(); ++i)
 	{
-		if (var->flags() & CVAR_SERVERINFO)
-		{
-		    MSG_WriteBool(&ml_message, true);
-			MSG_WriteString(&ml_message, var->name());
-			MSG_WriteString(&ml_message, var->cstring());
-		}
-		
-		var = var->GetNext();
+        MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
+		MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
 	}
-	
-	MSG_WriteBool(&ml_message, false);
 	
 	MSG_WriteString(&ml_message, MD5SUM(password.cstring()).c_str());
 	MSG_WriteString(&ml_message, level.mapname);
