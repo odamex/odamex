@@ -31,40 +31,85 @@
 const wxByte BufferedSocket::BigEndian = false;
 
 // we need to do something with this, one day
-void BufferedSocket::CheckError()
+wxUint32 BufferedSocket::CheckError()
 {   
-/*
     if (Socket->Error())
+    {
         switch(Socket->LastError())
         {
+            case wxSOCKET_DUMMY:
+            case wxSOCKET_NOERROR:
+            {
+                return 0;
+            }
+            break;
+            
             case wxSOCKET_INVOP:
-                wxMessageBox(_T("Error: Invalid Operation"));
-                break;
+            {
+                wxLogDebug(_T("Error: Invalid Operation"));
+                return 1;
+            }
+            break;
+            
             case wxSOCKET_IOERR:
-                wxMessageBox(_T("Error: I/O Error"));
-                break;
+            {
+                wxLogDebug(_T("Error: I/O Error"));
+                return 2;
+            }
+            break;
+            
             case wxSOCKET_INVADDR:
-                wxMessageBox(_T("Error: Invalid address passed to Socket"));
-                break;
+            {
+                wxLogDebug(_T("Error: Invalid address passed to Socket"));
+                return 3;
+            }
+            break;
+            
             case wxSOCKET_INVSOCK:
-                wxMessageBox(_T("Error: Invalid socket (uninitialized)."));
-                break;                
+            {
+                wxLogDebug(_T("Error: Invalid socket (uninitialized)."));
+                return 4;
+            }
+            break;                
+            
             case wxSOCKET_NOHOST:
-                wxMessageBox(_T("Error: No corresponding host."));
-                break;
+            {
+                wxLogDebug(_T("Error: No corresponding host."));
+                return 5;
+            }
+            break;
+            
             case wxSOCKET_INVPORT:
-                wxMessageBox(_T("Error: Invalid port."));
-                break;
+            {
+                wxLogDebug(_T("Error: Invalid port."));
+                return 6;
+            }
+            break;
+            
             case wxSOCKET_WOULDBLOCK:
-                wxMessageBox(_T("Error: The socket is non-blocking and the operation would block."));
-                break;
+            {
+                wxLogDebug(_T("Error: The socket is non-blocking and the operation would block."));
+                return 0;
+            }
+            break;
+            
             case wxSOCKET_TIMEDOUT:
-                wxMessageBox(_T("Error: The timeout for this operation expired."));
-                break;
+            {
+                wxLogDebug(_T("Error: The timeout for this operation expired."));
+                return 7;
+            }
+            break;
+            
             case wxSOCKET_MEMERR:
-                wxMessageBox(_T("Error: Memory exhausted."));    
-                break;
-        }*/
+            {
+                wxLogDebug(_T("Error: Memory exhausted."));
+                return 8;
+            }
+            break;
+        }
+    }
+    
+    return 0;
 }
 
 //  Constructor
@@ -87,10 +132,12 @@ BufferedSocket::~BufferedSocket()
         delete send_buf;
         
     if (recv_buf)
-        delete recv_buf;       
+        delete recv_buf;
+        
+    DestroySocket();
 }
 
-void BufferedSocket::CreateSocket(void)
+bool BufferedSocket::CreateSocket()
 {
     local_addr.AnyAddress();   
 	local_addr.Service(0);
@@ -99,22 +146,25 @@ void BufferedSocket::CreateSocket(void)
         
     if(!Socket->IsOk())
     {
-        Socket->Destroy();
-        Socket = NULL;
+        DestroySocket();
         
         CheckError();
+        
+        return false;
     }
 		
     // get rid of any data in the receive queue    
     Socket->Discard();
     
     // no event handler for us
-    Socket->Notify(false); 
+    Socket->Notify(false);
+    
+    return true;
 }
 
-void BufferedSocket::DestroySocket(void)
+void BufferedSocket::DestroySocket()
 {
-    if (Socket->IsOk())
+    if (Socket)
     {
         Socket->Destroy();
         Socket = NULL;
@@ -124,7 +174,8 @@ void BufferedSocket::DestroySocket(void)
 //  Write a socket
 wxInt32 BufferedSocket::SendData(wxInt32 Timeout)
 {   
-    CreateSocket();
+    if (!CreateSocket())
+        return 0;
 
     // create a transfer buffer, from memory stream to socket
     wxStopWatch sw;

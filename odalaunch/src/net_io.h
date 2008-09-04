@@ -64,10 +64,10 @@ class BufferedSocket
         void SetRecvPing(wxUint32 i) { RecvPing = i; }
         
         // we need to do something with this, one day
-        void CheckError();
+        wxUint32 CheckError();
         
-        void CreateSocket(void);
-        void DestroySocket(void);
+        bool CreateSocket();
+        void DestroySocket();
     public:
         BufferedSocket(); // Create a blank instance with stuff initialized
 
