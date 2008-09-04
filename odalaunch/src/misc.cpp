@@ -266,8 +266,8 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     {
         li.SetColumn(serverlist_field_name);
 
-        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
-        li.SetText(s.info.name);
+        list->SetColumnImage(li, (s.Info.PasswordHash.Length() ? 0 : -1));
+        li.SetText(s.Info.Name);
         
         li.SetId(list->ALCInsertItem(li));
     }
@@ -276,8 +276,8 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
         li.SetId(index);
         li.SetColumn(serverlist_field_name);
 
-        list->SetColumnImage(li, (s.info.passworded ? 0 : -1));
-        li.SetText(s.info.name);
+        list->SetColumnImage(li, (s.Info.PasswordHash.Length() ? 0 : -1));
+        li.SetText(s.Info.Name);
         
         list->SetItem(li);
     }
@@ -295,20 +295,22 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     list->SetItem(li);
 
     li.SetColumn(serverlist_field_players);
-    li.SetText(wxString::Format(_T("%d/%d"),s.info.numplayers,s.info.maxplayers));
+    li.SetText(wxString::Format(_T("%d/%d"),s.Info.Players.size(),s.Info.MaxPlayers));
     
     list->SetItem(li); 
     
+    wxUint8 WadCount = (wxUint8)s.Info.Wads.size();
+    
     // build a list of pwads
-    if (s.info.numpwads)
+    if (WadCount)
     {
         // pwad list
         wxString wadlist = _T("");
         wxString pwad = _T("");
             
-        for (i = 0; i < s.info.numpwads; i++)
+        for (i = 2; i < WadCount; ++i)
         {
-            pwad = s.info.pwads[i].Mid(0, s.info.pwads[i].Find('.'));
+            pwad = s.Info.Wads[i].Name.Mid(0, s.Info.Wads[i].Name.Find('.'));
             wadlist += wxString::Format(_T("%s "), pwad.c_str());
         }
             
@@ -319,32 +321,56 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     }
 
     li.SetColumn(serverlist_field_map);
-    li.SetText(s.info.map.Upper());
+    li.SetText(s.Info.CurrentMap.Upper());
     
     list->SetItem(li);
     
     // what game type do we like to play
-    wxString gmode = _T("");
+    wxString GameType = _T("");
 
-    if (s.info.gametype == 0)
-        gmode = _T("COOP");
-    else if (s.info.gametype == 1)
-        gmode = _T("DM");
-    if(s.info.gametype && s.info.teamplay)
-        gmode = _T("TEAM DM");
-    if(s.info.ctf)
-        gmode = _T("CTF");
-
+    switch (s.Info.GameType)
+    {
+        case GT_Cooperative:
+        {
+            GameType = wxT("Cooperative");
+        }
+        break;
+        
+        case GT_Deathmatch:
+        {
+            GameType = wxT("Deathmatch");
+        }
+        break;
+        
+        case GT_TeamDeathmatch:
+        {
+            GameType = wxT("Team Deathmatch");
+        }
+        break;
+        
+        case GT_CaptureTheFlag:
+        {
+            GameType = wxT("Capture The Flag");
+        }
+        break;
+        
+        default:
+        {
+            GameType = wxT("Unknown");
+        }
+        break;
+    }
+    
     li.SetColumn(serverlist_field_type);
-    li.SetText(gmode);
+    li.SetText(GameType);
     
     list->SetItem(li);
 
     // trim off the .wad
-    wxString iwad = s.info.iwad.Mid(0, s.info.iwad.Find('.'));
+    wxString Iwad = s.Info.Wads[0].Name.Mid(0, s.Info.Wads[0].Name.Find('.'));
         
     li.SetColumn(serverlist_field_iwad);
-    li.SetText(iwad);
+    li.SetText(Iwad);
     
     list->SetItem(li);
     
@@ -382,7 +408,8 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
 {   
     SetupPlayerListHeader(list);
     
-    if (s.info.teamplay)
+    if (s.Info.GameType == GT_TeamDeathmatch || 
+        s.Info.GameType == GT_CaptureTheFlag)
     {
         list->InsertColumn(playerlist_field_team,
                            _T("Team"),
@@ -395,10 +422,12 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
                            80);
     }
     
-    if (!s.info.numplayers)
+    wxUint8 PlayerCount = s.Info.Players.size();
+    
+    if (!PlayerCount)
         return;
         
-    for (wxInt32 i = 0; i < s.info.numplayers; i++)
+    for (wxUint8 i = 0; i < PlayerCount; ++i)
     {
         wxListItem li;
         
@@ -409,16 +438,16 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
         // We don't want the sort arrow.
         list->SetColumnImage(li, -1);
         
-        if (s.info.spectating)
+        if (s.Info.Players[i].Spectator)
         {
             li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
             
-            li.SetText(s.info.playerinfo[i].name);
-            list->SetColumnImage(li, s.info.playerinfo[i].spectator ? 0 : -1);
+            li.SetText(s.Info.Players[i].Name);
+            list->SetColumnImage(li, s.Info.Players[i].Spectator ? 0 : -1);
         }
         else
         {
-            li.SetText(s.info.playerinfo[i].name);
+            li.SetText(s.Info.Players[i].Name);
         }
         
         li.SetId(list->ALCInsertItem(li));
@@ -427,63 +456,64 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
         li.SetMask(wxLIST_MASK_TEXT);
 
         li.SetText(wxString::Format(_T("%d"),
-                                    s.info.playerinfo[i].ping));
+                                    s.Info.Players[i].Ping));
         
         list->SetItem(li);
         
         li.SetColumn(playerlist_field_frags);        
         li.SetText(wxString::Format(_T("%d"),
-                                    s.info.playerinfo[i].frags));
+                                    s.Info.Players[i].Frags));
         
         list->SetItem(li);
 
         li.SetColumn(playerlist_field_killcount);        
         li.SetText(wxString::Format(_T("%d"),
-                                    s.info.playerinfo[i].killcount));
+                                    s.Info.Players[i].Kills));
         
         list->SetItem(li);
 
         li.SetColumn(playerlist_field_deathcount);        
         li.SetText(wxString::Format(_T("%d"),
-                                    s.info.playerinfo[i].deathcount));
+                                    s.Info.Players[i].Deaths));
         
         list->SetItem(li);
 
         li.SetColumn(playerlist_field_timeingame);        
         li.SetText(wxString::Format(_T("%d"),
-                                    s.info.playerinfo[i].timeingame));
+                                    s.Info.Players[i].Time));
         
         list->SetItem(li);
         
-        if (s.info.teamplay)
+        if (s.Info.GameType == GT_TeamDeathmatch || 
+            s.Info.GameType == GT_CaptureTheFlag)
 		{
-            wxString teamstr = _T("UNKNOWN");
+            wxString teamstr = _T("Unknown");
             wxInt32 teamscore = 0;
-            wxInt32 scorelimit = s.info.teamplayinfo.scorelimit;
+            wxUint16 scorelimit = s.Info.ScoreLimit;
             
             li.SetColumn(playerlist_field_team); 
             
-            switch(s.info.playerinfo[i].team)
+            switch(s.Info.Players[i].Team)
 			{
                 case 0:
                     li.SetTextColour(*wxBLUE);      
-                    teamstr = _T("BLUE");
-                    teamscore = s.info.teamplayinfo.bluescore;
+                    teamstr = _T("Blue");
+                    teamscore = s.Info.BlueScore;
                     break;
 				case 1:
                     li.SetTextColour(*wxRED);
-                    teamstr = _T("RED");
-					teamscore = s.info.teamplayinfo.redscore;
+                    teamstr = _T("Red");
+					teamscore = s.Info.RedScore;
 					break;
 				case 2:
                     // no gold in 'dem mountains boy.
                     li.SetTextColour(wxColor(255,200,40));
-                    teamscore = s.info.teamplayinfo.goldscore;
-                    teamstr = _T("GOLD");
+                    teamscore = s.Info.GoldScore;
+                    teamstr = _T("Gold");
 					break;
 				default:
                     li.SetTextColour(*wxBLACK);
-                    teamstr = _T("UNKNOWN");
+                    teamstr = _T("Unknown");
                     teamscore = 0;
                     scorelimit = 0;
 					break;

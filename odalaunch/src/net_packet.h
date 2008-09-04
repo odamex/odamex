@@ -27,6 +27,7 @@
 
 #include <wx/mstream.h>
 #include <wx/datstrm.h>
+#include <wx/log.h>
 
 #include <vector>
 
@@ -34,74 +35,74 @@
 
 #define MASTER_CHALLENGE    777123
 #define MASTER_RESPONSE     777123
-#define SERVER_CHALLENGE    777123
-#define SERVER_RESPONSE     5560020
+#define SERVER_CHALLENGE    0xAD011002
 
-struct player_t         // Player info structure
+#define ASSEMBLEVERSION(MAJOR,MINOR,PATCH) ((MAJOR) * 256 + (MINOR)(PATCH))
+#define DISECTVERSION(VERSION,MAJOR,MINOR,PATCH) \
+        { \
+            MAJOR = (VERSION / 256); \
+            MINOR = ((VERSION % 256) / 10); \
+            PATCH = ((VERSION % 256) % 10); \
+        }
+
+#define VERSIONMAJOR(VERSION) (VERSION / 256)
+#define VERSIONMINOR(VERSION) ((VERSION % 256) / 10)
+#define VERSIONPATCH(VERSION) ((VERSION % 256) % 10)
+
+#define VERSION (0*256+41)
+#define PROTOCOL_VERSION 0
+
+#define TAG_ID 0xAD0
+
+struct Cvar_t
 {
-    wxString    name;
-    wxInt16     frags;
-    wxInt32     ping;
-    wxInt8      team;
-    wxInt16     killcount;
-    wxInt16     deathcount;
-    wxUint16    timeingame;
-    bool        spectator;
+    wxString Name;
+    wxString Value;
 };
 
-struct teamplay_t       // Teamplay score structure 
+struct Wad_t
 {
-    wxInt32     scorelimit;
-    bool        blue, red, gold;
-    wxInt32     bluescore, redscore, goldscore;
+    wxString Name;
+    wxString Hash;
 };
 
-struct serverinfo_t     // Server information structure
+struct Player_t
 {
-    wxUint32        response;
-    wxString        name;           // Server name
-    wxUint8         numplayers;     // Number of players playing
-    wxUint8         maxplayers;     // Maximum number of possible players
-    wxString        map;            // Current map
-    wxUint8         numpwads;       // Number of PWAD files
-    wxString        iwad;           // The main game file
-    wxString        iwad_hash;      // IWAD hash
-    wxString        *pwads;         // Array of PWAD file names
-    wxInt8          gametype;       // Gametype (0 = Coop, 1 = DM)
-    wxUint8         gameskill;      // Gameskill
-    bool            teamplay;       // Teamplay enabled?
-    player_t        *playerinfo;    // Player information array, use numplayers
-    wxString        *wad_hashes;    // IWAD and PWAD hashes
-    bool            ctf;            // CTF enabled?
-    wxString        webaddr;        // Website address of server
-    teamplay_t      teamplayinfo;   // Teamplay information if enabled
-    wxUint16        version;
-    // added on settings for bond
-    wxString        emailaddr;
-    wxUint16        timelimit;
-    wxUint16        timeleft;
-    wxUint16        fraglimit;
-    
-    bool         itemrespawn;
-    bool         weaponstay;
-    bool         friendlyfire;
-    bool         allowexit;
-    bool         infiniteammo;
-    bool         nomonsters;
-    bool         monstersrespawn;
-    bool         fastmonsters;
-    bool         allowjump;
-    bool         sv_freelook;
-    bool         waddownload;
-    bool         emptyreset;
-    bool         cleanmaps;
-    bool         fragonexit;
-    
-    wxUint32        spectating;
-    wxUint16        maxactiveplayers;
-    
-    wxUint32        extrainfo;
-    bool            passworded;
+    wxString Name;
+    wxInt16 Frags;
+    wxUint16 Ping;
+    wxUint8 Team;
+    wxUint16 Kills;
+    wxUint16 Deaths;
+    wxUint16 Time;
+    bool Spectator;
+};
+
+enum GameType_t
+{
+     GT_Cooperative = 0
+    ,GT_Deathmatch
+    ,GT_TeamDeathmatch
+    ,GT_CaptureTheFlag
+    ,GT_Max
+};
+
+struct ServerInfo_t
+{
+    wxUint32 Response; // Launcher specific: Server response
+    wxString Name; // Launcher specific: Server name
+    wxUint8 MaxPlayers; // Launcher specific: Maximum players
+    GameType_t GameType; // Launcher specific: Game type
+    wxUint16 ScoreLimit; // Launcher specific: Score limit
+    std::vector<Cvar_t> Cvars;
+    wxString PasswordHash;
+    wxString CurrentMap;
+    wxUint16 TimeLeft;
+    wxInt16 BlueScore;
+    wxInt16 RedScore;
+    wxInt16 GoldScore;
+    std::vector<Wad_t> Wads;
+    std::vector<Player_t> Players;
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets
@@ -282,8 +283,7 @@ class Server : public ServerBase  // [Russell] - A single server
 {           
    
     public:
-       
-        serverinfo_t info; // this could be better, but who cares
+        ServerInfo_t Info;
         
         Server();
         
@@ -291,6 +291,15 @@ class Server : public ServerBase  // [Russell] - A single server
         
         virtual  ~Server();
         
+        wxInt32 Query(wxInt32 Timeout);
+        
+        void ReadInformation(const wxUint32 &ProtocolVersion);
+        
+        wxInt32 TranslateResponse(const wxUint16 &TagId, 
+                                  const wxUint8 &TagApplication,
+                                  const wxUint8 &TagQRId,
+                                  const wxUint16 &TagPacketType);
+
         wxInt32 Parse();
 };
 

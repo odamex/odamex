@@ -477,7 +477,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             
             AddPlayersToList(m_LstCtrlPlayers, QServer[Result->Index]);
             
-            TotalPlayers += QServer[Result->Index].info.numplayers;
+            TotalPlayers += QServer[Result->Index].Info.Players.size();
            
             break;
         default:
@@ -504,11 +504,11 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
             
             QServer[event.GetInt()].ResetData();
             
-            if (launchercfg_s.show_blocked_servers)
-            if (i == -1)
-                AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], event.GetInt());
-            else
-                AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], i, 0);
+            //if (launchercfg_s.show_blocked_servers)
+            //if (i == -1)
+                //AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], event.GetInt());
+            //else
+                //AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], i, 0);
             
             break;                 
         }
@@ -516,7 +516,7 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
         {
             AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], event.GetInt());
             
-            TotalPlayers += QServer[event.GetInt()].info.numplayers;
+            TotalPlayers += QServer[event.GetInt()].Info.Players.size();
             
             break;      
         }
@@ -555,53 +555,28 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
 
     static wxString text = _T("");
     
-    text = wxString::Format(_T("Extra information:\n\n"
-                              "Protocol version: %d\n"
-                              "Email: %s\n"
-                              "Website: %s\n\n"
-                              "Timeleft: %d\n"
-                              "Timelimit: %d\n"
-                              "Fraglimit: %d\n\n"
-                              "Item respawn: %s\n"
-                              "Weapons stay: %s\n"
-                              "Friendly fire: %s\n"
-                              "Allow exiting: %s\n"
-                              "Infinite ammo: %s\n"
-                              "No monsters: %s\n"
-                              "Monsters respawn: %s\n"
-                              "Fast monsters: %s\n"
-                              "Allow jumping: %s\n"
-                              "Allow freelook: %s\n"
-                              "WAD downloading: %s\n"
-                              "Empty reset: %s\n"
-                              "Clean maps: %s\n"
-                              "Frag on exit: %s\n"
-                              "Spectating: %s\n"
-                              "Passworded: %s\n"),
-                              QServer[i].info.version,
-                              
-                              QServer[i].info.emailaddr.c_str(),
-                              QServer[i].info.webaddr.c_str(),
-                              QServer[i].info.timeleft,
-                              QServer[i].info.timelimit,
-                              QServer[i].info.fraglimit,
-                              
-                              BOOLSTR(QServer[i].info.itemrespawn),
-                              BOOLSTR(QServer[i].info.weaponstay),
-                              BOOLSTR(QServer[i].info.friendlyfire),
-                              BOOLSTR(QServer[i].info.allowexit),
-                              BOOLSTR(QServer[i].info.infiniteammo),
-                              BOOLSTR(QServer[i].info.nomonsters),
-                              BOOLSTR(QServer[i].info.monstersrespawn),
-                              BOOLSTR(QServer[i].info.fastmonsters),
-                              BOOLSTR(QServer[i].info.allowjump),
-                              BOOLSTR(QServer[i].info.sv_freelook),
-                              BOOLSTR(QServer[i].info.waddownload),
-                              BOOLSTR(QServer[i].info.emptyreset),
-                              BOOLSTR(QServer[i].info.cleanmaps),
-                              BOOLSTR(QServer[i].info.fragonexit),
-                              BOOLSTR(QServer[i].info.spectating),
-                              BOOLSTR(QServer[i].info.passworded));
+    text = wxString::Format(wxT("Timeleft: %d\n"), QServer[i].Info.TimeLeft);
+    
+    size_t MaxFieldLength = 0;
+    
+    // Find the largest cvar name, used for formatting
+    for (size_t j = 0; j < QServer[i].Info.Cvars.size(); ++j)
+    {
+        size_t FieldLength = QServer[i].Info.Cvars[j].Name.Length();
+        
+        if (FieldLength > MaxFieldLength)
+            MaxFieldLength = FieldLength;   
+    }
+    
+    text += wxString::Format(wxT("\nCvars %*s - Value\n"), MaxFieldLength, wxT("Name"));
+    
+    for (size_t j = 0; j < QServer[i].Info.Cvars.size(); ++j)
+    {
+        text += wxString::Format(wxT("     %*s - %s\n"), 
+                                 MaxFieldLength, 
+                                 QServer[i].Info.Cvars[j].Name.c_str(), 
+                                 QServer[i].Info.Cvars[j].Value.c_str());  
+    }
     
     static wxTipWindow *tw = NULL;
                               
@@ -676,14 +651,14 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
                             _T("Please enter a password"), 
                             _T("Server is passworded"),
                             _T(""));
-
-    if (QServer[i].info.passworded)
+/*
+    if (QServer[i].Info.passworded)
     {                           
         ped.ShowModal();
         
         if (ped.GetValue().IsEmpty())
             return;
-    }
+    }*/
     
     if (i > -1)
     {
@@ -741,7 +716,7 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
     if (arrayindex == -1)
         return;
                 
-    TotalPlayers -= QServer[arrayindex].info.numplayers;
+    TotalPlayers -= QServer[arrayindex].Info.Players.size();
     
     mtcs_Request.Signal = mtcs_getsingleserver;
     mtcs_Request.ServerListIndex = listindex;

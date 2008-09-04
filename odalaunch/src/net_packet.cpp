@@ -141,11 +141,9 @@ wxInt32 MasterServer::Parse()
 
 // Server constructor
 Server::Server()
-{   
-    info.pwads = NULL;
-    info.playerinfo = NULL;
-    info.wad_hashes = NULL;
-                
+{                  
+    challenge = SERVER_CHALLENGE;
+    
     ResetData();
 }
 
@@ -155,240 +153,246 @@ Server::~Server()
 }
 
 void Server::ResetData()
-{
-    // please keep this clean
-    if (info.pwads != NULL)
-    {
-        delete[] info.pwads;
-        
-        info.pwads = NULL;
-    }
-        
-    if (info.playerinfo != NULL)
-    {
-        delete[] info.playerinfo;
+{   
+    Info.Cvars.clear();
+    Info.Wads.clear();
+    Info.Players.clear();
     
-        info.playerinfo = NULL;
-    }
-    
-    if (info.wad_hashes != NULL)
-    {
-        delete[] info.wad_hashes;
-        
-        info.wad_hashes = NULL;
-    }
-
-    // please keep this clean
-    challenge = SERVER_CHALLENGE;
-    response = SERVER_RESPONSE;
-    
-    info.response = 0;
-    
-    info.name = _T("");
-    info.numplayers = 0;
-	info.maxplayers = 0;
-	info.map = _T("");
-	info.numpwads = 0;
-    
-    info.iwad = _T("");
-    info.pwads = NULL;
-
-	info.gametype = -1;
-	info.gameskill = 0;
-	info.teamplay = false;
-
-	info.playerinfo = NULL;
-    info.wad_hashes = NULL;
-    
-	info.ctf = false;
-	info.webaddr = _T("");
-	
-	info.teamplayinfo.scorelimit = 0;
-	info.teamplayinfo.red = false;
-	info.teamplayinfo.blue = false;
-	info.teamplayinfo.gold = false;
-	info.teamplayinfo.redscore = 0;
-	info.teamplayinfo.bluescore = 0;
-	info.teamplayinfo.goldscore = 0;
-	
-    info.spectating = 0;
-    info.maxactiveplayers = 0;
-    
-    info.extrainfo = 0;
-    info.passworded = false;
+    Info.Response = 0;    
+    Info.Name = wxT("");
+    Info.MaxPlayers = 0;
+    Info.GameType = GT_Cooperative;
+    Info.PasswordHash = wxT("");
+    Info.CurrentMap = wxT("");
+    Info.TimeLeft = 0;
+    Info.BlueScore = 0;
+    Info.RedScore = 0;
+    Info.GoldScore = 0;
     
     Ping = 0;
 }
 
-wxInt32 Server::Parse()
-{   
-    Socket.Read32(info.response);
+void Server::ReadInformation(const wxUint32 &ProtocolVersion)
+{
+    wxUint8 CvarCount;
     
-    if (info.response != response)
+    Socket.Read8(CvarCount);
+    
+    for (size_t i = 0; i < CvarCount; ++i)
+    {
+        Cvar_t Cvar;
+        
+        Socket.ReadString(Cvar.Name);
+        Socket.ReadString(Cvar.Value);
+        
+        // These fields need to be filtered out for the sake of launcher
+        // functionality
+        if (Cvar.Name == wxT("hostname"))
+        {
+            Info.Name = Cvar.Value;
+            
+            continue;
+        }
+        else if (Cvar.Name == wxT("maxplayers"))
+        {
+            Info.MaxPlayers = (wxUint8)wxAtoi(Cvar.Value);
+            
+            continue;
+        }
+        else if (Cvar.Name == wxT("gametype"))
+        {
+            Info.GameType = (GameType_t)wxAtoi(Cvar.Value);
+            
+            continue;
+        }
+        else if (Cvar.Name == wxT("scorelimit"))
+        {
+            Info.ScoreLimit = (GameType_t)wxAtoi(Cvar.Value);
+            
+            continue;
+        }
+        
+        Info.Cvars.push_back(Cvar);
+    }
+    
+    Socket.ReadString(Info.PasswordHash);
+    Socket.ReadString(Info.CurrentMap);
+    Socket.Read16(Info.TimeLeft);
+    Socket.Read16(Info.BlueScore);
+    Socket.Read16(Info.RedScore);
+    Socket.Read16(Info.GoldScore);
+    
+    wxUint8 WadCount;
+    
+    Socket.Read8(WadCount);
+    
+    for (size_t i = 0; i < WadCount; ++i)
+    {
+        Wad_t Wad;
+        
+        Socket.ReadString(Wad.Name);
+        Socket.ReadString(Wad.Hash);
+        
+        Info.Wads.push_back(Wad);
+    }
+    
+    wxUint8 PlayerCount;
+    
+    Socket.Read8(PlayerCount);
+    
+    for (size_t i = 0; i < PlayerCount; ++i)
+    {
+        Player_t Player;
+        
+        Socket.ReadString(Player.Name);
+        Socket.Read16(Player.Frags);
+        Socket.Read16(Player.Ping);
+        Socket.Read8(Player.Team);
+        Socket.Read16(Player.Kills);
+        Socket.Read16(Player.Deaths);
+        Socket.Read16(Player.Time);
+        Socket.ReadBool(Player.Spectator);
+        
+        Info.Players.push_back(Player);
+    }
+}
+
+wxInt32 Server::TranslateResponse(const wxUint16 &TagId, 
+                                  const wxUint8 &TagApplication,
+                                  const wxUint8 &TagQRId,
+                                  const wxUint16 &TagPacketType)
+{
+    // It isn't a response
+    if (TagQRId == 2)
+    {
+        wxLogDebug("Query/Response Id is Query");
+        
         return 0;
-        
-    int i = 0;
-    wxInt32 dummyint;
-    
-    // token
-    Socket.Read32(dummyint);
-        
-    Socket.ReadString(info.name);
-    Socket.Read8(info.numplayers);
-    Socket.Read8(info.maxplayers);
-    Socket.ReadString(info.map);
-    Socket.Read8(info.numpwads);
-    Socket.ReadString(info.iwad);
-        
-    // needs to be fixed
-        
-    if (info.numpwads > 0)
-    {          
-        if (info.pwads != NULL)
-        {
-            delete[] info.pwads;
-                
-            info.pwads = new wxString [info.numpwads];
-        }
-        else
-            info.pwads = new wxString [info.numpwads];
-            
-        if (info.pwads != NULL)
-            for (i = 0; i < info.numpwads - 1; i++)
-                Socket.ReadString(info.pwads[i]);
     }
-        
-    Socket.Read8(info.gametype);
-    Socket.Read8(info.gameskill);
-    Socket.ReadBool(info.teamplay); 
-    Socket.ReadBool(info.ctf);
-    
-    // hack to enable teamplay if disabled and ctf is enabled
-    info.teamplay |= info.ctf;
-    
-    if (info.numplayers > 0)
-    {          
-        if (info.playerinfo != NULL)
-        {
-            delete[] info.playerinfo;
-                
-            info.playerinfo = new player_t [info.numplayers];
-        }
-        else
-            info.playerinfo = new player_t [info.numplayers];
-            
-        if (info.playerinfo != NULL)
-            for (i = 0; i < info.numplayers; i++)
-            {
-                Socket.ReadString(info.playerinfo[i].name);
-                Socket.Read16(info.playerinfo[i].frags);
-                Socket.Read32(info.playerinfo[i].ping);
-                Socket.Read8(info.playerinfo[i].team);
-            }
-    }
-    
-    Socket.ReadString(info.iwad_hash);
-    
-    if (info.numpwads > 0)
-    {          
-        if (info.wad_hashes != NULL)
-        {
-            delete[] info.wad_hashes;
-                
-            info.wad_hashes = new wxString [info.numpwads];
-        }
-        else
-            info.wad_hashes = new wxString [info.numpwads];
-            
-        if (info.wad_hashes != NULL)
-            for (i = 0; i < info.numpwads - 1; i++) // dummy to maintain compatibility for now
-                Socket.ReadString(info.wad_hashes[i]);
-    }
-        
-    Socket.ReadString(info.webaddr);
-        
-    if ((info.teamplay) || (info.ctf && info.teamplay))
+
+    switch (TagApplication)
     {
-        Socket.Read32(info.teamplayinfo.scorelimit);
-            
-        Socket.ReadBool(info.teamplayinfo.blue);
-        if (info.teamplayinfo.blue)
-            Socket.Read32(info.teamplayinfo.bluescore);
-            
-        Socket.ReadBool(info.teamplayinfo.red);
-        if (info.teamplayinfo.red)
-            Socket.Read32(info.teamplayinfo.redscore);
-            
-        Socket.ReadBool(info.teamplayinfo.gold);
-        if (info.teamplayinfo.gold)
-             Socket.Read32(info.teamplayinfo.goldscore);
-    }
-    
-    // version
-    Socket.Read16(info.version);
-    
-    Socket.ReadString(info.emailaddr);
-    Socket.Read16(info.timelimit);
-    Socket.Read16(info.timeleft);
-    Socket.Read16(info.fraglimit);
-
-    Socket.ReadBool(info.itemrespawn);
-    Socket.ReadBool(info.weaponstay);
-    Socket.ReadBool(info.friendlyfire);
-    Socket.ReadBool(info.allowexit);
-    Socket.ReadBool(info.infiniteammo);
-    Socket.ReadBool(info.nomonsters);
-    Socket.ReadBool(info.monstersrespawn);
-    Socket.ReadBool(info.fastmonsters);
-    Socket.ReadBool(info.allowjump);
-    Socket.ReadBool(info.sv_freelook);
-    Socket.ReadBool(info.waddownload);
-    Socket.ReadBool(info.emptyreset);
-    Socket.ReadBool(info.cleanmaps);
-    Socket.ReadBool(info.fragonexit);
-
-    if ((info.numplayers) && (info.playerinfo != NULL))
-    {
-        for (i = 0; i < info.numplayers; i++)
+        case 1:
         {
-            Socket.Read16(info.playerinfo[i].killcount);
-            Socket.Read16(info.playerinfo[i].deathcount);
-            Socket.Read16(info.playerinfo[i].timeingame);
+            wxLogDebug("Application is Enquirer");
+            
+            return 0;
         }
-    }
-
-    Socket.Read32(info.spectating);
-
-    if (info.spectating == 0x01020304)
-    {
-        Socket.Read16(info.maxactiveplayers);
+        break;
         
-        if ((info.numplayers) && (info.playerinfo != NULL))
+        case 2:
         {
-            for (i = 0; i < info.numplayers; ++i)
-            {
-                Socket.ReadBool(info.playerinfo[i].spectator);
-            }
+            wxLogDebug("Application is Client");
+            
+            return 0;
         }
-    }
-    else
-        info.spectating = false;
+        break;
 
-    Socket.Read32(info.extrainfo);
-    
-    if (info.extrainfo == 0x01020305)
-    {
-        Socket.ReadBool(info.passworded);
+        case 3:
+        {
+            wxLogDebug("Application is Server");
+        }
+        break;
+
+        case 4:
+        {
+            wxLogDebug("Application is Master Server");
+            
+            return 0;
+        }
+        break;
+        
+        default:
+        {
+            wxLogDebug("Application is Unknown");
+            
+            return 0;
+        }
+        break;
     }
+
+    if (TagPacketType == 2)
+    {
+        // Launcher is an old version
+        return 0;
+    }
+
+    wxUint32 SvVersion;
+    wxUint32 SvProtocolVersion;
+    
+    Socket.Read32(SvVersion);
+    Socket.Read32(SvProtocolVersion);
+
+    if ((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) || 
+        (VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
+    {
+        // Server is an older version
+        return 0;
+    }
+
+    ReadInformation(SvProtocolVersion);
 
     if (Socket.BadRead())
-    {
-        Socket.ClearRecvBuffer();
-        
+    {       
         return 0;
     }
-
-    Socket.ClearRecvBuffer();
     
     return 1;
+}
+
+wxInt32 Server::Parse()
+{   
+    Socket.Read32(Info.Response);
+    
+    // Decode the tag into its fields
+    // TODO: this may not be 100% correct
+    wxUint16 TagId = ((Info.Response >> 20) & 0x0FFF);
+    wxUint8 TagApplication = ((Info.Response >> 16) & 0x0F);
+    wxUint8 TagQRId = ((Info.Response >> 12) & 0x0F);
+    wxUint16 TagPacketType = (Info.Response & 0xFFFF0FFF);
+    
+    if (TagId == TAG_ID)
+    {
+        wxInt32 Result = TranslateResponse(TagId, 
+                                           TagApplication, 
+                                           TagQRId, 
+                                           TagPacketType);
+                                           
+        Socket.ClearRecvBuffer();
+        
+        return Result;
+    }
+    
+    Socket.ClearRecvBuffer();
+    
+    return 0;
+}
+
+wxInt32 Server::Query(wxInt32 Timeout)
+{
+    wxString Address = Socket.GetAddress();   
+    
+    if (Address != _T(""))
+    {
+        Socket.ClearSendBuffer();
+        
+        Socket.Write32(challenge);
+        Socket.Write32(VERSION);
+        Socket.Write32(PROTOCOL_VERSION);
+        
+        if(!Socket.SendData(Timeout))
+            return 0;
+
+        if (!Socket.GetData(Timeout))
+            return 0;
+        
+        Ping = Socket.GetPing();
+        
+        if (!Parse())
+            return 0;
+        
+        return 1;
+    }
+    
+    return 0;
 }
