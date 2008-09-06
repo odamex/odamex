@@ -52,6 +52,7 @@
 
 #include "m_argv.h"
 #include "m_swap.h"
+#include "m_memio.h"
 
 #include "s_sound.h"
 
@@ -172,7 +173,7 @@ static menuitem_t OptionItems[] =
 menu_t OptionMenu = {
 	"M_OPTTTL",
 	0,
-	16,
+	STACKARRAY_LENGTH(OptionItems),
 	177,
 	OptionItems,
 };
@@ -239,7 +240,7 @@ static menuitem_t MouseItems[] =
 menu_t MouseMenu =		{
 							"M_MOUSET",
 							0,
-							15,
+							STACKARRAY_LENGTH(MouseItems),
 							177,
 							MouseItems,
 						};
@@ -282,7 +283,7 @@ static menuitem_t ControlsItems[] = {
 menu_t ControlsMenu = {
 	"M_CONTRO",
 	1,
-	22,
+	STACKARRAY_LENGTH(ControlsItems),
 	0,
 	ControlsItems,
 };
@@ -398,7 +399,7 @@ static menuitem_t VideoItems[] = {
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	20,
+	STACKARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
 };
@@ -453,7 +454,7 @@ static menuitem_t MessagesItems[] = {
 menu_t MessagesMenu = {
 	"M_MESS",
 	0,
-	12,
+	STACKARRAY_LENGTH(MessagesItems),
 	0,
 	MessagesItems,
 };
@@ -526,7 +527,7 @@ menu_t ModesMenu = {
 #else
 	4,
 #endif
-	20,
+	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
 };
