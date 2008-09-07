@@ -263,6 +263,7 @@ void *dlgMain::Entry()
     
     wxFileConfig ConfigInfo;
     wxInt32 MasterTimeout, ServerTimeout;
+    static std::vector<QueryThread*> threadVector;
     
     while (Running)
     {
@@ -319,7 +320,6 @@ void *dlgMain::Entry()
         {
             wxInt32 count = 0;
             wxInt32 serverNum = 0;
-            std::vector<QueryThread*> threadVector;
             wxString Address = _T("");
             wxUint16 Port = 0;
    
@@ -385,8 +385,6 @@ void *dlgMain::Entry()
 
                     GetThread()->Sleep(1);            
                 }
-                // Give everything else some cpu time, please be considerate!
-                GetThread()->Sleep(1);              
             }
             
             // Wait until the last X number of threads have finished.
