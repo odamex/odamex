@@ -2030,9 +2030,9 @@ void SV_ConnectClient (void)
 		players[n].spectator	= true;
 		for (size_t j = 0; j < players.size(); j++)
 		{
-			MSG_WriteMarker (&(players[i].client.reliablebuf), svc_spectate);
-			MSG_WriteByte (&(players[i].client.reliablebuf), players[n].id);
-			MSG_WriteByte (&(players[i].client.reliablebuf), true);
+			MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+			MSG_WriteByte (&(players[j].client.reliablebuf), players[n].id);
+			MSG_WriteByte (&(players[j].client.reliablebuf), true);
 		}
 	}
 
