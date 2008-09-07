@@ -586,11 +586,11 @@ BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 	int					persteptime;
 	BOOL 				rtn = false;
 
-	sector_t*			sec;
-	sector_t*			tsec;
+	sector_t*			sec = NULL;
+	sector_t*			tsec = NULL;
 	sector_t*			prev = NULL;
 
-	DFloor*				floor;
+	DFloor*				floor = NULL;
 	BOOL				manual = false;
 
 	if (speed == 0)

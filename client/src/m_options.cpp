@@ -1327,7 +1327,7 @@ END_COMMAND (menu_display)
 static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 {
 	char strtemp[32];
-        const char **str;
+    const char **str = NULL;
 	int	 i, c;
 	int	 width, height, showbits;
 

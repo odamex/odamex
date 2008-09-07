@@ -806,7 +806,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	{
 		cl = &clients[i];
 
-		int x, y;
+		int x = 0, y = 0;
 		byte vol = 0;
 
 		if(mo)
@@ -845,7 +845,7 @@ void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte at
 		return;
 	}
 
-	int x, y;
+	int x = 0, y = 0;
 	byte vol = 0;
 
 	if(mo)
@@ -900,7 +900,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
         cl = &clients[i];
 
-		int x, y;
+		int x = 0, y = 0;
 		byte vol = 0;
 
 		if(mo)

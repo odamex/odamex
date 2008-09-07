@@ -214,7 +214,7 @@ P_ChangeSwitchTexture
 	for (i = 0; i < numswitches*2; i++)
 	{
 		short *texture = NULL;
-		DActiveButton::EWhere where;
+		DActiveButton::EWhere where = (DActiveButton::EWhere)0;
 
 		if (switchlist[i] == texTop)
 		{

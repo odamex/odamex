@@ -695,7 +695,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
 {
-	int i, j;
+	int i = 0, j;
 
 	for (j = 0; j < 20; j++)
 	{
@@ -713,7 +713,7 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this function to accept teamplay starts
 {
 	int selections;
-	mapthing2_t *spot;
+	mapthing2_t *spot = NULL;
 
 	selections = 0;
 
