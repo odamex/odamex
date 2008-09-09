@@ -85,7 +85,7 @@ dlgServers::~dlgServers()
 {
     // clean up client data.
     if (SERVER_LIST->GetCount())
-    for (wxInt32 i = 0; i < SERVER_LIST->GetCount(); i++)
+    for (size_t i = 0; i < SERVER_LIST->GetCount(); i++)
     {
         CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
         
@@ -371,8 +371,8 @@ void dlgServers::LoadServersIn()
 {
     MServer->DeleteAllCustomServers();
     
-    if (SERVER_LIST->GetCount());
-    for (wxUint32 i = 0; i < SERVER_LIST->GetCount(); i++)
+    if (SERVER_LIST->GetCount())
+    for (size_t i = 0; i < SERVER_LIST->GetCount(); i++)
     {
         CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
         
