@@ -186,7 +186,7 @@ void Server::ReadInformation(const wxUint32 &ProtocolVersion)
         Socket.ReadString(Cvar.Value);
         
         // These fields need to be filtered out for the sake of launcher
-        // functionality
+        // functionality, I am unsure what to do here next
         if (Cvar.Name == wxT("hostname"))
         {
             Info.Name = Cvar.Value;
@@ -220,7 +220,6 @@ void Server::ReadInformation(const wxUint32 &ProtocolVersion)
     Socket.Read16(Info.TimeLeft);
     Socket.Read16(Info.BlueScore);
     Socket.Read16(Info.RedScore);
-    Socket.Read16(Info.GoldScore);
     
     wxUint8 WadCount;
     
@@ -263,9 +262,9 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
                                   const wxUint16 &TagPacketType)
 {
     // It isn't a response
-    if (TagQRId == 2)
+    if (TagQRId == 1)
     {
-        wxLogDebug("Query/Response Id is Query");
+        wxLogDebug(wxT("Query/Response Id is Query"));
         
         return 0;
     }
@@ -274,7 +273,7 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
     {
         case 1:
         {
-            wxLogDebug("Application is Enquirer");
+            wxLogDebug(wxT("Application is Enquirer"));
             
             return 0;
         }
@@ -282,7 +281,7 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
         
         case 2:
         {
-            wxLogDebug("Application is Client");
+            wxLogDebug(wxT("Application is Client"));
             
             return 0;
         }
@@ -290,13 +289,13 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
 
         case 3:
         {
-            wxLogDebug("Application is Server");
+            wxLogDebug(wxT("Application is Server"));
         }
         break;
 
         case 4:
         {
-            wxLogDebug("Application is Master Server");
+            wxLogDebug(wxT("Application is Master Server"));
             
             return 0;
         }
@@ -304,7 +303,7 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
         
         default:
         {
-            wxLogDebug("Application is Unknown");
+            wxLogDebug(wxT("Application is Unknown"));
             
             return 0;
         }
@@ -333,10 +332,12 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
     ReadInformation(SvProtocolVersion);
 
     if (Socket.BadRead())
-    {       
+    {        
+        // Bad packet data encountered
         return 0;
     }
     
+    // Success
     return 1;
 }
 
@@ -363,6 +364,8 @@ wxInt32 Server::Parse()
         return Result;
     }
     
+    Info.Response = 0;
+    
     Socket.ClearRecvBuffer();
     
     return 0;
@@ -375,6 +378,8 @@ wxInt32 Server::Query(wxInt32 Timeout)
     if (Address != _T(""))
     {
         Socket.ClearSendBuffer();
+        
+        ResetData();
         
         Socket.Write32(challenge);
         Socket.Write32(VERSION);

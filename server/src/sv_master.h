@@ -43,6 +43,7 @@ void SV_UpdateMaster(void);
 void SV_ArchiveMasters(FILE *fp);
 
 void SV_SendServerInfo ();
+DWORD SV_QryParseEnquiry(const DWORD &Tag);
 bool SV_IsValidToken(DWORD token);
 
 #endif

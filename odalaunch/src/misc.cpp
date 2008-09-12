@@ -367,10 +367,13 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
     list->SetItem(li);
 
     // trim off the .wad
-    wxString Iwad = s.Info.Wads[0].Name.Mid(0, s.Info.Wads[0].Name.Find('.'));
+    if (WadCount)
+    {
+        wxString Iwad = s.Info.Wads[1].Name.Mid(0, s.Info.Wads[1].Name.Find('.'));
         
-    li.SetColumn(serverlist_field_iwad);
-    li.SetText(Iwad);
+        li.SetColumn(serverlist_field_iwad);
+        li.SetText(Iwad);
+    }
     
     list->SetItem(li);
     

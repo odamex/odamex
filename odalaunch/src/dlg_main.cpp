@@ -504,11 +504,11 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
             
             QServer[event.GetInt()].ResetData();
             
-            //if (launchercfg_s.show_blocked_servers)
-            //if (i == -1)
-                //AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], event.GetInt());
-            //else
-                //AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], i, 0);
+            if (launchercfg_s.show_blocked_servers)
+            if (i == -1)
+                AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], event.GetInt());
+            else
+                AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], i, 0);
             
             break;                 
         }
@@ -537,6 +537,8 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 // display extra information for a server
 void dlgMain::OnServerListRightClick(wxListEvent& event)
 {
+    static wxTipWindow *tw = NULL;
+
     if (!m_LstCtrlServers->GetItemCount() || !m_LstCtrlServers->GetSelectedItemCount())
         return;
   
@@ -553,42 +555,36 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
         
     i = FindServer(item.GetText());
 
+    if (i == -1)
+    {        
+        return;
+    }
+
+    if (QServer[i].Info.Response == 0)
+        return;
+    
     static wxString text = _T("");
     
-    text = wxString::Format(wxT("Timeleft: %d\n"), QServer[i].Info.TimeLeft);
-    
-    size_t MaxFieldLength = 0;
-    
-    // Find the largest cvar name, used for formatting
-    for (size_t j = 0; j < QServer[i].Info.Cvars.size(); ++j)
-    {
-        size_t FieldLength = QServer[i].Info.Cvars[j].Name.Length();
-        
-        if (FieldLength > MaxFieldLength)
-            MaxFieldLength = FieldLength;   
-    }
-    
-    text += wxString::Format(wxT("\nCvars %*s - Value\n"), MaxFieldLength, wxT("Name"));
+    text = wxString::Format(wxT("Timeleft: %u\n"), QServer[i].Info.TimeLeft);    
+       
+    text += wxT("\nName - Value\n");
     
     for (size_t j = 0; j < QServer[i].Info.Cvars.size(); ++j)
     {
-        text += wxString::Format(wxT("     %*s - %s\n"), 
-                                 MaxFieldLength, 
-                                 QServer[i].Info.Cvars[j].Name.c_str(), 
-                                 QServer[i].Info.Cvars[j].Value.c_str());  
+        text += QServer[i].Info.Cvars[j].Name;
+        text += wxT(" - ");
+        text += QServer[i].Info.Cvars[j].Value;
+        text += wxT('\n');  
     }
-    
-    static wxTipWindow *tw = NULL;
-                              
+                                 
     if (tw)
 	{
 		tw->SetTipWindowPtr(NULL);
 		tw->Close();
+		tw = NULL;
 	}
-	
-	tw = NULL;
 
-	if (!text.empty())
+	if (!tw && !text.empty())
 		tw = new wxTipWindow(m_LstCtrlServers, text, 120, &tw);
 }
 

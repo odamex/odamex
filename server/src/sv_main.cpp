@@ -1899,6 +1899,10 @@ void SV_ConnectClient (void)
 	int challenge = MSG_ReadLong();
 	client_t  *cl;
 
+    // New querying system
+    if (SV_QryParseEnquiry(challenge) == 0)
+        return;
+    
 	if (challenge == LAUNCHER_CHALLENGE)  // for Launcher
 	{
 		SV_SendServerInfo ();

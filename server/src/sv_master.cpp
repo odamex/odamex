@@ -499,7 +499,7 @@ void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 		MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
 	}
 	
-	MSG_WriteString(&ml_message, MD5SUM(password.cstring()).c_str());
+	MSG_WriteString(&ml_message, (strlen(password.cstring()) ? MD5SUM(password.cstring()).c_str() : ""));
 	MSG_WriteString(&ml_message, level.mapname);
 	
     int timeleft = (int)(timelimit - level.time/(TICRATE*60));
@@ -510,7 +510,6 @@ void IntQryBuildInformation(const DWORD &EqProtocolVersion)
     
     MSG_WriteShort(&ml_message, TEAMpoints[it_blueflag]);
 	MSG_WriteShort(&ml_message, TEAMpoints[it_redflag]);
-	MSG_WriteShort(&ml_message, TEAMpoints[it_goldflag]);
 	
 	MSG_WriteByte(&ml_message, wadnames.size());
 	
@@ -560,7 +559,9 @@ DWORD IntQrySendResponse(const WORD &TagId,
     // It isn't a query, throw it away
     if (TagQRId == 2)
     {
-        I_FatalError("Query/Response Id is Response");
+        //Printf("Query/Response Id is Response");
+        
+        return 0;
     }
 
     // Decipher the program that sent the query
@@ -568,31 +569,31 @@ DWORD IntQrySendResponse(const WORD &TagId,
     {
         case 1:
         {
-            Printf(PRINT_HIGH, "Application is Enquirer");
+            //Printf(PRINT_HIGH, "Application is Enquirer");
         }
         break;
         
         case 2:
         {
-            Printf(PRINT_HIGH, "Application is Client");
+            //Printf(PRINT_HIGH, "Application is Client");
         }
         break;
 
         case 3:
         {
-            Printf(PRINT_HIGH, "Application is Server");
+            //Printf(PRINT_HIGH, "Application is Server");
         }
         break;
 
         case 4:
         {
-            Printf(PRINT_HIGH, "Application is Master Server");
+            //Printf(PRINT_HIGH, "Application is Master Server");
         }
         break;
         
         default:
         {
-            I_FatalError("Application is Unknown");
+            //Printf("Application is Unknown");
         }
         break;
     }
@@ -648,13 +649,17 @@ DWORD IntQrySendResponse(const WORD &TagId,
     {       
         NET_SendPacket(ml_message, net_from);
         
+        //Printf(PRINT_HIGH, "Application is old version\n");
+        
         return 0;
     }
     
     IntQryBuildInformation(EqProtocolVersion);
     
     NET_SendPacket(ml_message, net_from);
-    
+
+    //Printf(PRINT_HIGH, "Success, data sent\n");
+
     return 0;
 }
 
@@ -662,10 +667,8 @@ DWORD IntQrySendResponse(const WORD &TagId,
 // void SV_QryParseEnquiry()
 //
 // This decodes the Tag field
-DWORD SV_QryParseEnquiry(DWORD &Tag)
-{
-    Tag = MSG_ReadLong();
-    
+DWORD SV_QryParseEnquiry(const DWORD &Tag)
+{   
     // Decode the tag into its fields
     // TODO: this may not be 100% correct
     WORD TagId = ((Tag >> 20) & 0x0FFF);
