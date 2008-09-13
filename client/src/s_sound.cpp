@@ -108,7 +108,7 @@ CVAR_FUNC_IMPL (snd_sfxvolume)
 // Maximum volume of Music.
 CVAR_FUNC_IMPL (snd_musicvolume)
 {
-	I_SetMusicVolume (var);
+	S_SetMusicVolume (var);
 }
 
 // whether songs are mus_paused
@@ -946,12 +946,9 @@ void S_UpdateSounds (void *listener_p)
 void S_SetMusicVolume (float volume)
 {
 	if (volume < 0.0 || volume > 1.0)
-	{
-		Printf (PRINT_HIGH, "Attempt to set music volume at %d\n", volume);
-	}
+		Printf (PRINT_HIGH, "Attempt to set music volume at %f\n", volume);
 	else
-	{
-	}
+		I_SetMusicVolume (volume);
 }
 
 void S_SetSfxVolume (float volume)
