@@ -222,7 +222,6 @@ BEGIN_COMMAND (map)
 			if (W_CheckNumForName (mapname) == -1)
 			{ // Still no luck, oh well.
 				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
-				return;
 			}
 			else
 			{ // Success
@@ -236,20 +235,25 @@ BEGIN_COMMAND (map)
 			unnatural_level_progression = true;
 			G_DeferedInitNew (argv[1]);
 		}
-	}
 	
-	if (deathmatch)
-	{
-		for (size_t i = 0; i < players.size(); i++)
+		if (deathmatch)
 		{
-			players[i].spectator = 1;
-			for (size_t j = 0; j < players.size(); j++)
+			for (size_t i = 0; i < players.size(); i++)
 			{
-				MSG_WriteMarker (&(players[i].client.reliablebuf), svc_spectate);
-				MSG_WriteByte (&(players[i].client.reliablebuf), players[j].id);
-				MSG_WriteByte (&(players[i].client.reliablebuf), false);
+				players[i].spectator = 1;
+				for (size_t j = 0; j < players.size(); j++)
+				{
+					MSG_WriteMarker (&(players[i].client.reliablebuf), svc_spectate);
+					MSG_WriteByte (&(players[i].client.reliablebuf), players[j].id);
+					MSG_WriteByte (&(players[i].client.reliablebuf), false);
+				}
 			}
 		}
+	}
+	else
+	{
+		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname, level.level_name);
+
 	}
 }
 END_COMMAND (map)
