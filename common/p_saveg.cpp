@@ -50,7 +50,7 @@ void P_SerializePlayers (FArchive &arc)
 	}
 	else
 	{
-		int playerstate;
+		int playerstate = (playerstate_t)0;
 		for (i = 0; i < players.size(); i++)
 			arc >> playerstate;
 		players[i].playerstate = (playerstate_t)playerstate;

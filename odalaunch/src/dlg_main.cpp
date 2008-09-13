@@ -263,6 +263,7 @@ void *dlgMain::Entry()
     
     wxFileConfig ConfigInfo;
     wxInt32 MasterTimeout, ServerTimeout;
+    static std::vector<QueryThread*> threadVector;
     
     while (Running)
     {
@@ -317,9 +318,8 @@ void *dlgMain::Entry()
         // get a new list of servers
         if (mtcs_Request.Signal == mtcs_getservers)
         {
-            wxInt32 count = 0;
-            wxInt32 serverNum = 0;
-            std::vector<QueryThread*> threadVector;
+            size_t count = 0;
+            size_t serverNum = 0;
             wxString Address = _T("");
             wxUint16 Port = 0;
    
@@ -351,7 +351,7 @@ void *dlgMain::Entry()
             */
             while(count < MServer->GetServerCount())
             {
-                for(wxInt32 i = 0; i < NUM_THREADS; i++)
+                for(size_t i = 0; i < NUM_THREADS; i++)
                 {
                     if((threadVector.size() != 0) && ((threadVector.size() - 1) >= i))
                     {
@@ -385,8 +385,6 @@ void *dlgMain::Entry()
 
                     GetThread()->Sleep(1);            
                 }
-                // Give everything else some cpu time, please be considerate!
-                GetThread()->Sleep(1);              
             }
             
             // Wait until the last X number of threads have finished.
@@ -782,7 +780,7 @@ void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 // returns a index of the server address as the internal array index
 wxInt32 dlgMain::FindServer(wxString Address)
 {
-    for (wxInt32 i = 0; i < MServer->GetServerCount(); i++)
+    for (size_t i = 0; i < MServer->GetServerCount(); i++)
         if (QServer[i].GetAddress().IsSameAs(Address))
             return i;
     

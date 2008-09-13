@@ -34,7 +34,7 @@
 */
 wxInt32 ServerBase::Query(wxInt32 Timeout)
 {
-    wxString Address = Socket.GetAddress();   
+    wxString Address = Socket.GetRemoteAddress();   
     
     if (Address != _T(""))
     {
@@ -373,7 +373,7 @@ wxInt32 Server::Parse()
 
 wxInt32 Server::Query(wxInt32 Timeout)
 {
-    wxString Address = Socket.GetAddress();   
+    wxString Address = Socket.GetRemoteAddress();   
     
     if (Address != _T(""))
     {

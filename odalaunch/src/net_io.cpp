@@ -31,49 +31,94 @@
 const wxByte BufferedSocket::BigEndian = false;
 
 // we need to do something with this, one day
-void BufferedSocket::CheckError()
+wxUint32 BufferedSocket::CheckError()
 {   
-/*
     if (Socket->Error())
+    {
         switch(Socket->LastError())
         {
+            case wxSOCKET_DUMMY:
+            case wxSOCKET_NOERROR:
+            {
+                return 0;
+            }
+            break;
+            
             case wxSOCKET_INVOP:
-                wxMessageBox(_T("Error: Invalid Operation"));
-                break;
+            {
+                wxLogDebug(_T("Error: Invalid Operation"));
+                return 1;
+            }
+            break;
+            
             case wxSOCKET_IOERR:
-                wxMessageBox(_T("Error: I/O Error"));
-                break;
+            {
+                wxLogDebug(_T("Error: I/O Error"));
+                return 2;
+            }
+            break;
+            
             case wxSOCKET_INVADDR:
-                wxMessageBox(_T("Error: Invalid address passed to Socket"));
-                break;
+            {
+                wxLogDebug(_T("Error: Invalid address passed to Socket"));
+                return 3;
+            }
+            break;
+            
             case wxSOCKET_INVSOCK:
-                wxMessageBox(_T("Error: Invalid socket (uninitialized)."));
-                break;                
+            {
+                wxLogDebug(_T("Error: Invalid socket (uninitialized)."));
+                return 4;
+            }
+            break;                
+            
             case wxSOCKET_NOHOST:
-                wxMessageBox(_T("Error: No corresponding host."));
-                break;
+            {
+                wxLogDebug(_T("Error: No corresponding host."));
+                return 5;
+            }
+            break;
+            
             case wxSOCKET_INVPORT:
-                wxMessageBox(_T("Error: Invalid port."));
-                break;
+            {
+                wxLogDebug(_T("Error: Invalid port."));
+                return 6;
+            }
+            break;
+            
             case wxSOCKET_WOULDBLOCK:
-                wxMessageBox(_T("Error: The socket is non-blocking and the operation would block."));
-                break;
+            {
+                wxLogDebug(_T("Error: The socket is non-blocking and the operation would block."));
+                return 0;
+            }
+            break;
+            
             case wxSOCKET_TIMEDOUT:
-                wxMessageBox(_T("Error: The timeout for this operation expired."));
-                break;
+            {
+                wxLogDebug(_T("Error: The timeout for this operation expired."));
+                return 7;
+            }
+            break;
+            
             case wxSOCKET_MEMERR:
-                wxMessageBox(_T("Error: Memory exhausted."));    
-                break;
-        }*/
+            {
+                wxLogDebug(_T("Error: Memory exhausted."));
+                return 8;
+            }
+            break;
+        }
+    }
+    
+    return 0;
 }
 
 //  Constructor
 BufferedSocket::BufferedSocket()
-	: recv_buf(NULL), send_buf(NULL), Socket(NULL)
+	: m_ReceiveBufferHandler(NULL), m_SendBufferHandler(NULL), Socket(NULL)
 {   
     // set pings
-    SendPing = 0;
-    RecvPing = 0;
+    m_SendPing = 0;
+    m_ReceivePing = 0;
        
     // create the memory streams
     ClearSendBuffer();
@@ -83,38 +128,49 @@ BufferedSocket::BufferedSocket()
 //  Destructor
 BufferedSocket::~BufferedSocket()
 {
-    if (send_buf)
-        delete send_buf;
+    if (m_SendBufferHandler)
+    {
+        delete m_SendBufferHandler;
+        m_SendBufferHandler = NULL;
+    }
+    
+    if (m_ReceiveBufferHandler)
+    {
+        delete m_ReceiveBufferHandler;
+        m_ReceiveBufferHandler = NULL;
+    }
         
-    if (recv_buf)
-        delete recv_buf;       
+    DestroySocket();
 }
 
-void BufferedSocket::CreateSocket(void)
+bool BufferedSocket::CreateSocket()
 {
-    local_addr.AnyAddress();   
-	local_addr.Service(0);
+    m_LocalAddress.AnyAddress();   
+	m_LocalAddress.Service(0);
 		
-    Socket = new wxDatagramSocket(local_addr, wxSOCKET_NONE);
-        
+    Socket = new wxDatagramSocket(m_LocalAddress, wxSOCKET_NONE);
+    
     if(!Socket->IsOk())
     {
-        Socket->Destroy();
-        Socket = NULL;
-        
         CheckError();
+        
+        DestroySocket();
+        
+        return false;
     }
 		
     // get rid of any data in the receive queue    
     Socket->Discard();
     
     // no event handler for us
-    Socket->Notify(false); 
+    Socket->Notify(false);
+    
+    return true;
 }
 
-void BufferedSocket::DestroySocket(void)
+void BufferedSocket::DestroySocket()
 {
-    if (Socket->IsOk())
+    if (Socket)
     {
         Socket->Destroy();
         Socket = NULL;
@@ -124,35 +180,36 @@ void BufferedSocket::DestroySocket(void)
 //  Write a socket
 wxInt32 BufferedSocket::SendData(wxInt32 Timeout)
 {   
-    CreateSocket();
+    if (!CreateSocket())
+        return 0;
 
     // create a transfer buffer, from memory stream to socket
     wxStopWatch sw;
 
     // clear it
-    memset(sData, 0, sizeof(sData));
+    memset(m_SendBuffer, 0, sizeof(m_SendBuffer));
     
     // copy data
-    wxInt32 actual_size = send_buf->CopyTo(sData, MAX_PAYLOAD);
+    size_t WrittenSize = m_SendBufferHandler->CopyTo(m_SendBuffer, MAX_PAYLOAD);
     
     // set the start ping
     // (Horrible, needs to be improved)
-    SendPing = sw.Time();
+    m_SendPing = sw.Time();
                 
     // send the data
-    if (!Socket->WaitForWrite(0,Timeout))
+    if (!Socket->WaitForWrite(0, Timeout))
     {
         CheckError();
         
-        SendPing = 0;
-        RecvPing = 0;
+        m_SendPing = 0;
+        m_ReceivePing = 0;
         
         DestroySocket();
         
         return 0;
     }
     else
-        Socket->SendTo(to_addr, sData, actual_size);
+        Socket->SendTo(m_RemoteAddress, m_SendBuffer, WrittenSize);
     
     CheckError();    
         
@@ -164,64 +221,64 @@ wxInt32 BufferedSocket::SendData(wxInt32 Timeout)
 wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
 {   
     // temporary address, for comparison
-    wxIPV4address        in_addr;
+    wxIPV4address ReceivedAddress;
     
     wxStopWatch sw;
 
     // clear it
-    memset(rData, 0, sizeof(rData));
+    memset(m_ReceiveBuffer, 0, sizeof(m_ReceiveBuffer));
     
     if (!Socket->WaitForRead(0, Timeout))
     {
         CheckError();
         
-        SendPing = 0;
-        RecvPing = 0;
+        m_SendPing = 0;
+        m_ReceivePing = 0;
         
         DestroySocket();
         
         return 0;
     }
     else
-        Socket->RecvFrom(in_addr, rData, MAX_PAYLOAD);
+        Socket->RecvFrom(ReceivedAddress, m_ReceiveBuffer, MAX_PAYLOAD);
 
     CheckError();
 
     // apply the receive ping
     // (Horrible, needs to be improved)
-    RecvPing = sw.Time();
+    m_ReceivePing = sw.Time();
 
     // get number of bytes received
-    wxInt32 num_recv = Socket->LastCount();
+    wxUint32 ReceivedSize = Socket->LastCount();
 
     // clear the socket queue
     Socket->Discard();
 
     // ensure received address is the same as our remote address
-    if (num_recv > 0)
-    if ((in_addr.IPAddress() == to_addr.IPAddress()) && (in_addr.Service() == to_addr.Service()))
+    if (ReceivedSize > 0)
+    if ((ReceivedAddress.IPAddress() == m_RemoteAddress.IPAddress()) && 
+        (ReceivedAddress.Service() == m_RemoteAddress.Service()))
     {
         m_BadRead = false;
         
         // write data to memory stream, if one doesn't already exist
-        if (recv_buf != NULL)
+        if (m_ReceiveBufferHandler != NULL)
         {
-            delete recv_buf;
+            delete m_ReceiveBufferHandler;
             
-            recv_buf = new wxMemoryInputStream(rData, num_recv);
-        
+            m_ReceiveBufferHandler = new wxMemoryInputStream(m_ReceiveBuffer, ReceivedSize);
         }
         else
-           recv_buf = new wxMemoryInputStream(rData, num_recv); 
+           m_ReceiveBufferHandler = new wxMemoryInputStream(m_ReceiveBuffer, ReceivedSize); 
 
         DestroySocket();
 
         // return bytes received   
-        return num_recv;
+        return ReceivedSize;
     }
       
-    SendPing = 0;
-    RecvPing = 0;
+    m_SendPing = 0;
+    m_ReceivePing = 0;
     
     DestroySocket();
     
@@ -245,7 +302,7 @@ wxInt32 BufferedSocket::Read32(wxInt32 &Int32)
         return 0;
     }
     
-    wxDataInputStream dis(*recv_buf);
+    wxDataInputStream dis(*m_ReceiveBufferHandler);
     dis.BigEndianOrdered(BigEndian);
 
     Int32 = dis.Read32();
@@ -270,7 +327,7 @@ wxInt32 BufferedSocket::Read32(wxUint32 &Uint32)
         return 0;
     }
     
-    wxDataInputStream dis(*recv_buf);
+    wxDataInputStream dis(*m_ReceiveBufferHandler);
     dis.BigEndianOrdered(BigEndian);
 
     Uint32 = dis.Read32();
@@ -295,7 +352,7 @@ wxInt32 BufferedSocket::Read16(wxInt16 &Int16)
         return 0;
     }
         
-    wxDataInputStream dis(*recv_buf);
+    wxDataInputStream dis(*m_ReceiveBufferHandler);
     dis.BigEndianOrdered(BigEndian);
 
     Int16 = dis.Read16();
@@ -320,7 +377,7 @@ wxInt32 BufferedSocket::Read16(wxUint16 &Uint16)
         return 0;
     }
         
-    wxDataInputStream dis(*recv_buf);
+    wxDataInputStream dis(*m_ReceiveBufferHandler);
     dis.BigEndianOrdered(BigEndian);
 
     Uint16 = dis.Read16();
@@ -345,7 +402,7 @@ wxInt32 BufferedSocket::Read8(wxInt8 &Int8)
         return 0;
     }
         
-    wxDataInputStream dis(*recv_buf);
+    wxDataInputStream dis(*m_ReceiveBufferHandler);
     dis.BigEndianOrdered(BigEndian);
 
     Int8 = dis.Read8();
@@ -370,7 +427,7 @@ wxInt32 BufferedSocket::Read8(wxUint8 &Uint8)
         return 0;
     }
         
-    wxDataInputStream dis(*recv_buf);
+    wxDataInputStream dis(*m_ReceiveBufferHandler);
     dis.BigEndianOrdered(BigEndian);
 
     Uint8 = dis.Read8();
@@ -395,7 +452,7 @@ wxInt32 BufferedSocket::ReadBool(bool &val)
         return 0;
     }
         
-    wxDataInputStream dis(*recv_buf);
+    wxDataInputStream dis(*m_ReceiveBufferHandler);
     dis.BigEndianOrdered(BigEndian);
 
     wxInt8 Value = 0;
@@ -435,7 +492,7 @@ wxInt32 BufferedSocket::ReadString(wxString &str)
         return 0;
     }
 
-    wxDataInputStream dis(*recv_buf);
+    wxDataInputStream dis(*m_ReceiveBufferHandler);
     dis.BigEndianOrdered(BigEndian);
 
     wxString in_str;
@@ -485,7 +542,7 @@ void BufferedSocket::Write32(const wxInt32 &val)
         return;
     }
     
-    wxDataOutputStream dos(*send_buf);
+    wxDataOutputStream dos(*m_SendBufferHandler);
     dos.BigEndianOrdered(BigEndian);
     
     dos.Write32(val);
@@ -506,7 +563,7 @@ void BufferedSocket::Write32(const wxUint32 &val)
         return;
     }
     
-    wxDataOutputStream dos(*send_buf);
+    wxDataOutputStream dos(*m_SendBufferHandler);
     dos.BigEndianOrdered(BigEndian);
     
     dos.Write32(val);
@@ -527,7 +584,7 @@ void BufferedSocket::Write16(const wxInt16 &val)
         return;
     }
     
-    wxDataOutputStream dos(*send_buf);
+    wxDataOutputStream dos(*m_SendBufferHandler);
     dos.BigEndianOrdered(BigEndian);
     
     dos.Write16(val);
@@ -548,7 +605,7 @@ void BufferedSocket::Write16(const wxUint16 &val)
         return;
     }
     
-    wxDataOutputStream dos(*send_buf);
+    wxDataOutputStream dos(*m_SendBufferHandler);
     dos.BigEndianOrdered(BigEndian);
     
     dos.Write16(val);
@@ -569,7 +626,7 @@ void BufferedSocket::Write8(const wxInt8 &val)
         return;
     }
 
-    wxDataOutputStream dos(*send_buf);
+    wxDataOutputStream dos(*m_SendBufferHandler);
     dos.BigEndianOrdered(BigEndian);
     
     dos.Write8(val);
@@ -590,7 +647,7 @@ void BufferedSocket::Write8(const wxUint8 &val)
         return;
     }
 
-    wxDataOutputStream dos(*send_buf);
+    wxDataOutputStream dos(*m_SendBufferHandler);
     dos.BigEndianOrdered(BigEndian);
     
     dos.Write8(val);
@@ -611,7 +668,7 @@ void BufferedSocket::WriteBool(const bool &val)
         return;
     }
         
-    wxDataOutputStream dos(*send_buf);
+    wxDataOutputStream dos(*m_SendBufferHandler);
     dos.BigEndianOrdered(BigEndian);
     
     dos.Write8((val ? 1 : 0));
@@ -632,28 +689,27 @@ void BufferedSocket::WriteString(const wxString &str)
         return;
     }
         
-    wxDataOutputStream dos(*send_buf);
+    wxDataOutputStream dos(*m_SendBufferHandler);
     dos.BigEndianOrdered(BigEndian);
     
     dos << str.c_str();
 }
 
-wxString BufferedSocket::GetAddress() 
+//
+// wxString BufferedSocket::GetRemoteAddress()
+//
+// Gets the outgoing address in "address:port" format
+wxString BufferedSocket::GetRemoteAddress()
 {
-    wxString retstr;
-    
-    retstr << to_addr.IPAddress() << _T(":") << wxString::Format(_T("%u"),to_addr.Service());
-    
-    return retstr;
-
+    return m_RemoteAddress.IPAddress() << _T(":") << wxString::Format(_T("%u"),m_RemoteAddress.Service());
 }
 
 //
-// bool BufferedSocket::SetAddress(const wxString &Address)
+// bool BufferedSocket::SetRemoteAddress(const wxString &Address)
 //
 // Sets the outgoing address in "address:port" format, fails if no colon is 
 // present
-bool BufferedSocket::SetAddress(const wxString &Address)
+bool BufferedSocket::SetRemoteAddress(const wxString &Address)
 {
     wxInt32 Colon = Address.Find(wxT(':'), true);
     
@@ -670,22 +726,28 @@ bool BufferedSocket::SetAddress(const wxString &Address)
 
 void BufferedSocket::ClearRecvBuffer() 
 {       
-    if (recv_buf != NULL)
-        delete recv_buf;
+    if (m_ReceiveBufferHandler != NULL)
+    {
+        delete m_ReceiveBufferHandler;
+        m_ReceiveBufferHandler = NULL;
+    }
     
     m_BadRead = false;
     
-    recv_buf = new wxMemoryInputStream(NULL, 0);
+    m_ReceiveBufferHandler = new wxMemoryInputStream(NULL, 0);
 }
 
 void BufferedSocket::ClearSendBuffer() 
 { 
-    if (send_buf != NULL)
-        delete send_buf;           
+    if (m_SendBufferHandler != NULL)
+    {
+        delete m_SendBufferHandler;
+        m_SendBufferHandler = NULL;
+    }
     
     m_BadWrite = false;
     
-    send_buf = new wxMemoryOutputStream();
+    m_SendBufferHandler = new wxMemoryOutputStream();
 }
 
 //
@@ -694,14 +756,14 @@ void BufferedSocket::ClearSendBuffer()
 // Tells us if we can read X amount of bytes from the receive buffer
 bool BufferedSocket::CanRead(const size_t &Bytes)
 {
-    if (recv_buf == NULL)
+    if (m_ReceiveBufferHandler == NULL)
     {
-        wxLogDebug(_T("CanRead: recv_buf is NULL!"));
+        wxLogDebug(_T("CanRead: m_ReceiveBufferHandler is NULL!"));
         
         return false;
     }
     
-    return ((recv_buf->TellI() + Bytes) <= recv_buf->GetSize());
+    return ((m_ReceiveBufferHandler->TellI() + Bytes) <= m_ReceiveBufferHandler->GetSize());
 }
 
 //
@@ -710,14 +772,14 @@ bool BufferedSocket::CanRead(const size_t &Bytes)
 // Tells us if we can write X amount of bytes to the send buffer
 bool BufferedSocket::CanWrite(const size_t &Bytes)
 {
-    if (send_buf == NULL)
+    if (m_SendBufferHandler == NULL)
     {
-        wxLogDebug(_T("CanWrite: send_buf is NULL!"));
+        wxLogDebug(_T("CanWrite: m_SendBufferHandler is NULL!"));
         
         return false;
     }
     
     // [Russell] - hack, you cant set the internal maximum size of a 
     // wxMemoryOutputStream... what?
-    return ((send_buf->TellO() + Bytes) <= MAX_PAYLOAD);
+    return ((m_SendBufferHandler->TellO() + Bytes) <= MAX_PAYLOAD);
 }

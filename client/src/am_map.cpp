@@ -1451,7 +1451,7 @@ void AM_drawPlayers(void)
 	for (i = 0; i < players.size(); i++)
 	{
 		player_t *p = &players[i];
-		int color;
+		int color = 0;
 		mpoint_t pt;
 
 		if (!players[i].ingame() || !p->mo ||

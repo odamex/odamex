@@ -31,43 +31,42 @@
 #include <wx/timer.h>
 #include <wx/tokenzr.h>
 
-#define MAX_PAYLOAD 8192 // don't make it 8192
+#define MAX_PAYLOAD 8192
 
 class BufferedSocket
 {
     private:        
         // the internal buffers, 2 for a reason
-        wxMemoryInputStream  *recv_buf;
-        wxMemoryOutputStream *send_buf;
-        
+        wxChar m_ReceiveBuffer[MAX_PAYLOAD];
+        wxMemoryInputStream *m_ReceiveBufferHandler;
+        wxChar m_SendBuffer[MAX_PAYLOAD];
+        wxMemoryOutputStream *m_SendBufferHandler;
+
         bool m_BadRead;
         bool m_BadWrite;
-        
-        wxChar sData[MAX_PAYLOAD];
-        wxChar rData[MAX_PAYLOAD];
         
         // Endianess switch for buffers
         static const wxByte BigEndian;
         
         // the socket
-        wxDatagramSocket     *Socket;
+        wxDatagramSocket *Socket;
         
         // local address
-        wxIPV4address local_addr;
+        wxIPV4address m_LocalAddress;
         
         // outgoing address (server)
-        wxIPV4address       to_addr;
+        wxIPV4address m_RemoteAddress;
                
-        wxUint32 SendPing, RecvPing;
+        wxUint32 m_SendPing, m_ReceivePing;
         
-        void SetSendPing(wxUint32 i) { SendPing = i; }
-        void SetRecvPing(wxUint32 i) { RecvPing = i; }
+        void SetSendPing(wxUint32 i) { m_SendPing = i; }
+        void SetRecvPing(wxUint32 i) { m_ReceivePing = i; }
         
         // we need to do something with this, one day
-        void CheckError();
+        wxUint32 CheckError();
         
-        void CreateSocket(void);
-        void DestroySocket(void);
+        bool CreateSocket();
+        void DestroySocket();
     public:
         BufferedSocket(); // Create a blank instance with stuff initialized
 
@@ -76,63 +75,62 @@ class BufferedSocket
         // Set the outgoing address
         void SetAddress(const wxString &Address, const wxInt16 &Port) 
         { 
-            to_addr.Hostname(Address); to_addr.Service(Port); 
+            m_RemoteAddress.Hostname(Address); 
+            m_RemoteAddress.Service(Port); 
         }
-        // Sets the outgoing address in "address:port" format
-        bool SetAddress(const wxString &Address);
+        
+        // Set/get the outgoing address in "address:port" format
+        bool SetRemoteAddress(const wxString &Address);
+        wxString GetRemoteAddress();
 
-        wxString    GetAddress(); // Get the outgoing address
-
-        // Send/receive data using the outgoing address 
+        // Send/receive data
         wxInt32 SendData(wxInt32 Timeout);
         wxInt32 GetData(wxInt32 Timeout);
         
         // a method for a round-trip time in milliseconds
-        wxUint32 GetPing() { return (RecvPing - SendPing); }
+        wxUint32 GetPing() { return (m_ReceivePing - m_SendPing); }
         
         // Read values
-        wxInt32     ReadString(wxString &);
-        wxInt32     ReadBool(bool &boolval);
+        wxInt32 ReadString(wxString &);
+        wxInt32 ReadBool(bool &boolval);
         // Signed reads
-        wxInt32     Read32(wxInt32 &);
-        wxInt32     Read16(wxInt16 &);
-        wxInt32     Read8(wxInt8 &);
+        wxInt32 Read32(wxInt32 &);
+        wxInt32 Read16(wxInt16 &);
+        wxInt32 Read8(wxInt8 &);
         // Unsigned reads
-        wxInt32     Read32(wxUint32 &);
-        wxInt32     Read16(wxUint16 &);
-        wxInt32     Read8(wxUint8 &);
+        wxInt32 Read32(wxUint32 &);
+        wxInt32 Read16(wxUint16 &);
+        wxInt32 Read8(wxUint8 &);
         
         bool BadRead() { return m_BadRead; }
         
         // Write values
-        void    WriteString(const wxString &);
-        void    WriteBool(const bool &val);
+        void WriteString(const wxString &);
+        void WriteBool(const bool &val);
         // Signed writes
-        void    Write32(const wxInt32 &);
-        void    Write16(const wxInt16 &);
-        void    Write8(const wxInt8 &);
+        void Write32(const wxInt32 &);
+        void Write16(const wxInt16 &);
+        void Write8(const wxInt8 &);
         // Unsigned writes
-        void    Write32(const wxUint32 &);
-        void    Write16(const wxUint16 &);
-        void    Write8(const wxUint8 &);
+        void Write32(const wxUint32 &);
+        void Write16(const wxUint16 &);
+        void Write8(const wxUint8 &);
         
         bool BadWrite() { return m_BadWrite; }
         
         // Reset buffer positions to 0
-        void    ResetRecvBuffer() { recv_buf->SeekI(0, wxFromStart); } ;
-        void    ResetSendBuffer() { send_buf->SeekO(0, wxFromStart); };
-        void    ResetBuffers() { ResetRecvBuffer(); ResetSendBuffer(); };
+        void ResetRecvBuffer() { m_ReceiveBufferHandler->SeekI(0, wxFromStart); } ;
+        void ResetSendBuffer() { m_SendBufferHandler->SeekO(0, wxFromStart); };
+        void ResetBuffers() { ResetRecvBuffer(); ResetSendBuffer(); };
         
         // Can read or write X bytes to a buffer
-        bool    CanRead(const size_t &);
-        bool    CanWrite(const size_t &);
+        bool CanRead(const size_t &);
+        bool CanWrite(const size_t &);
         
         // Clear buffers
-        void        ClearRecvBuffer();
-        void        ClearSendBuffer();
+        void ClearRecvBuffer();
+        void ClearSendBuffer();
         void ClearBuffers() { ClearRecvBuffer(); ClearSendBuffer(); };
-        
-               
 };
 
 #endif

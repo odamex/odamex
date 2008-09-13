@@ -1286,7 +1286,7 @@ static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
 {
-	int i, j;
+	int i = 0, j;
 
 	for (j = 0; j < 20; j++)
 	{

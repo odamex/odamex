@@ -28,8 +28,8 @@
 // configuration file structure
 struct launchercfg_t
 {
-    wxInt32     get_list_on_start;
-    wxInt32     show_blocked_servers;
+    bool     get_list_on_start;
+    bool     show_blocked_servers;
     wxString    wad_paths;
     wxString    odamex_directory;
 };
