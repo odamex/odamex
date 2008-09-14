@@ -41,8 +41,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
-					<Add option="-fexceptions" />
+					<Add option="-gdwarf-2" />
 					<Add option="-DWIN32" />
 					<Add option="-D_DEBUG" />
 					<Add option="-D_CONSOLE" />
@@ -125,12 +124,16 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
-					<Add option="-fexceptions" />
-					<Add option="-DUNIX" />
-					<Add option="-DLINUX" />
-					<Add option="-DDEBUG" />
+					<Add option="-gdwarf-2" />
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_MBCS" />
 				</Compiler>
+				<Linker>
+					<Add library="wsock32" />
+					<Add library="wsock32" />
+				</Linker>
 			</Target>
 			<Target title="Win Release (VC)">
 				<Option platforms="Windows;" />
