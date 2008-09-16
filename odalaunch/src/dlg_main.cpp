@@ -563,7 +563,15 @@ void dlgMain::OnServerListRightClick(wxListEvent& event)
     
     static wxString text = _T("");
     
-    text = wxString::Format(wxT("Timeleft: %u\n"), QServer[i].Info.TimeLeft);    
+    text = wxString::Format(wxT("Version: %u.%u.%u\n"), 
+                            QServer[i].Info.VersionMajor,
+                            QServer[i].Info.VersionMinor,
+                            QServer[i].Info.VersionPatch);
+    
+    text += wxString::Format(wxT("Protocol Version: %u\n\n"), 
+                             QServer[i].Info.VersionProtocol);
+    
+    text += wxString::Format(wxT("Timeleft: %u\n"), QServer[i].Info.TimeLeft);    
        
     text += wxT("\nName - Value\n");
     

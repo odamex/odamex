@@ -158,9 +158,15 @@ void Server::ResetData()
     Info.Wads.clear();
     Info.Players.clear();
     
-    Info.Response = 0;    
+    Info.Response = 0;
+    Info.VersionMajor = 0;
+    Info.VersionMinor = 0;
+    Info.VersionPatch = 0;
+    Info.VersionProtocol = 0;
     Info.Name = wxT("");
+    Info.MaxClients = 0;
     Info.MaxPlayers = 0;
+    Info.ScoreLimit = 0;
     Info.GameType = GT_Cooperative;
     Info.PasswordHash = wxT("");
     Info.CurrentMap = wxT("");
@@ -172,8 +178,48 @@ void Server::ResetData()
     Ping = 0;
 }
 
-void Server::ReadInformation(const wxUint32 &ProtocolVersion)
+/* 
+    Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
+    with every new major/minor version
+*/
+   
+// Specifies when data was added to the protocol, the parameter is the
+// introduced revision
+// NOTE: this one is different from the servers version for a reason
+#define QRYNEWINFO(INTRODUCED) \
+    if (ProtocolVersion >= INTRODUCED)
+
+// Specifies when data was removed from the protocol, first parameter is the
+// introduced revision and the last one is the removed revision
+#define QRYRANGEINFO(INTRODUCED,REMOVED) \
+    if (ProtocolVersion >= INTRODUCED && ProtocolVersion < REMOVED)
+
+//
+// void Server::ReadInformation(const wxUint8 &VersionMajor, 
+//                              const wxUint8 &VersionMinor,
+//                              const wxUint8 &VersionPatch,
+//                              const wxUint32 &ProtocolVersion)
+//
+// Read information built for us by the server
+void Server::ReadInformation(const wxUint8 &VersionMajor, 
+                             const wxUint8 &VersionMinor,
+                             const wxUint8 &VersionPatch,
+                             const wxUint32 &ProtocolVersion)
 {
+    wxString DummyString;
+    bool DummyBool;
+    wxInt32 DummyInt32;
+    wxInt16 DummyInt16;
+    wxInt8 DummyInt8;
+    wxUint32 DummyUint32;
+    wxUint16 DummyUint16;
+    wxUint8 DummyUint8;
+    
+    Info.VersionMajor = VersionMajor;
+    Info.VersionMinor = VersionMinor;
+    Info.VersionPatch = VersionPatch;
+    Info.VersionProtocol = ProtocolVersion;
+    
     wxUint8 CvarCount;
     
     Socket.Read8(CvarCount);
@@ -185,31 +231,35 @@ void Server::ReadInformation(const wxUint32 &ProtocolVersion)
         Socket.ReadString(Cvar.Name);
         Socket.ReadString(Cvar.Value);
         
-        // These fields need to be filtered out for the sake of launcher
-        // functionality, I am unsure what to do here next
-        if (Cvar.Name == wxT("hostname"))
+        // We used to filter out cvars into static fields used by the launcher
+        // This is now dependant on the protocol version of the server, so we
+        // can still use old revision 1 server data
+        QRYRANGEINFO(1,2)
         {
-            Info.Name = Cvar.Value;
+            if (Cvar.Name == wxT("hostname"))
+            {
+                Info.Name = Cvar.Value;
             
-            continue;
-        }
-        else if (Cvar.Name == wxT("maxplayers"))
-        {
-            Info.MaxPlayers = (wxUint8)wxAtoi(Cvar.Value);
+                continue;
+            }
+            else if (Cvar.Name == wxT("maxplayers"))
+            {
+                Info.MaxPlayers = (wxUint8)wxAtoi(Cvar.Value);
             
-            continue;
-        }
-        else if (Cvar.Name == wxT("gametype"))
-        {
-            Info.GameType = (GameType_t)wxAtoi(Cvar.Value);
+                continue;
+            }
+            else if (Cvar.Name == wxT("gametype"))
+            {
+                Info.GameType = (GameType_t)wxAtoi(Cvar.Value);
             
-            continue;
-        }
-        else if (Cvar.Name == wxT("scorelimit"))
-        {
-            Info.ScoreLimit = (GameType_t)wxAtoi(Cvar.Value);
+                continue;
+            }
+            else if (Cvar.Name == wxT("scorelimit"))
+            {
+                Info.ScoreLimit = wxAtoi(Cvar.Value);
             
-            continue;
+                continue;
+            }
         }
         
         Info.Cvars.push_back(Cvar);
@@ -218,6 +268,25 @@ void Server::ReadInformation(const wxUint32 &ProtocolVersion)
     Socket.ReadString(Info.PasswordHash);
     Socket.ReadString(Info.CurrentMap);
     Socket.Read16(Info.TimeLeft);
+
+    // Test: exists only in versions starting at 3 to 5
+    QRYRANGEINFO(3,5)
+    {
+        Socket.ReadString(DummyString);
+        
+        wxLogDebug(DummyString);
+    }
+
+    // This is directly related to the guard used in the cvar filtering block 
+    // above, this information was brought in at revision 2
+    QRYNEWINFO(2)
+    {
+         Socket.ReadString(Info.Name);
+         Socket.Read8(Info.MaxClients);
+         Socket.Read8(Info.MaxPlayers);
+         Socket.Read16(Info.ScoreLimit);
+    }    
+    
     Socket.Read16(Info.BlueScore);
     Socket.Read16(Info.RedScore);
     
@@ -329,7 +398,10 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
         return 0;
     }
 
-    ReadInformation(SvProtocolVersion);
+    ReadInformation(VERSIONMAJOR(SvVersion), 
+                    VERSIONMINOR(SvVersion), 
+                    VERSIONPATCH(SvVersion),
+                    SvProtocolVersion);
 
     if (Socket.BadRead())
     {        

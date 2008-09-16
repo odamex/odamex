@@ -38,19 +38,19 @@
 #define SERVER_CHALLENGE    0xAD011002
 
 #define ASSEMBLEVERSION(MAJOR,MINOR,PATCH) ((MAJOR) * 256 + (MINOR)(PATCH))
-#define DISECTVERSION(VERSION,MAJOR,MINOR,PATCH) \
+#define DISECTVERSION(V,MAJOR,MINOR,PATCH) \
         { \
-            MAJOR = (VERSION / 256); \
-            MINOR = ((VERSION % 256) / 10); \
-            PATCH = ((VERSION % 256) % 10); \
+            MAJOR = (V / 256); \
+            MINOR = ((V % 256) / 10); \
+            PATCH = ((V % 256) % 10); \
         }
 
-#define VERSIONMAJOR(VERSION) (VERSION / 256)
-#define VERSIONMINOR(VERSION) ((VERSION % 256) / 10)
-#define VERSIONPATCH(VERSION) ((VERSION % 256) % 10)
+#define VERSIONMAJOR(V) (V / 256)
+#define VERSIONMINOR(V) ((V % 256) / 10)
+#define VERSIONPATCH(V) ((V % 256) % 10)
 
 #define VERSION (0*256+41)
-#define PROTOCOL_VERSION 0
+#define PROTOCOL_VERSION 9
 
 #define TAG_ID 0xAD0
 
@@ -90,7 +90,12 @@ enum GameType_t
 struct ServerInfo_t
 {
     wxUint32 Response; // Launcher specific: Server response
+    wxUint8 VersionMajor; // Launcher specific: Version fields
+    wxUint8 VersionMinor;
+    wxUint8 VersionPatch;
+    wxUint32 VersionProtocol;
     wxString Name; // Launcher specific: Server name
+    wxUint8 MaxClients; // Launcher specific: Maximum clients
     wxUint8 MaxPlayers; // Launcher specific: Maximum players
     GameType_t GameType; // Launcher specific: Game type
     wxUint16 ScoreLimit; // Launcher specific: Score limit
@@ -293,7 +298,10 @@ class Server : public ServerBase  // [Russell] - A single server
         
         wxInt32 Query(wxInt32 Timeout);
         
-        void ReadInformation(const wxUint32 &ProtocolVersion);
+        void ReadInformation(const wxUint8 &VersionMajor, 
+                             const wxUint8 &VersionMinor,
+                             const wxUint8 &VersionPatch,
+                             const wxUint32 &ProtocolVersion);
         
         wxInt32 TranslateResponse(const wxUint16 &TagId, 
                                   const wxUint8 &TagApplication,

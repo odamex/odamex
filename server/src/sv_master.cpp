@@ -458,7 +458,23 @@ void SV_SendServerInfo()
 }
 
 #define TAG_ID 0xAD0
-#define PROTOCOL_VERSION 1
+#define PROTOCOL_VERSION 5
+
+/* 
+    Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
+    with every new major/minor version
+*/
+   
+// Specifies when data was added to the protocol, the parameter is the
+// introduced revision
+// NOTE: this one is different from the launchers version for a reason
+#define QRYNEWINFO(INTRODUCED) \
+    if (EqProtocolVersion >= INTRODUCED || EqProtocolVersion >= PROTOCOL_VERSION)
+
+// Specifies when data was removed from the protocol, first parameter is the
+// introduced revision and the last one is the removed revision
+#define QRYRANGEINFO(INTRODUCED,REMOVED) \
+    if (EqProtocolVersion >= INTRODUCED && EqProtocolVersion < REMOVED)
 
 struct CvarField_t 
 { 
@@ -467,9 +483,9 @@ struct CvarField_t
 } CvarField;
 
 //
-// void IntQryBuildInformation(const DWORD &ProtocolVersion)
+// void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 //
-// The place for the actual protocol builder
+// Protocol building routine, the passed parameter is the enquirer version
 void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 {
     std::vector<CvarField_t> Cvars;
@@ -507,6 +523,21 @@ void IntQryBuildInformation(const DWORD &EqProtocolVersion)
         timeleft = 0;
         
     MSG_WriteShort(&ml_message, timeleft);
+    
+    // Test: exists only in versions starting at 3 to 5
+    QRYRANGEINFO(3,5)
+    {
+        MSG_WriteString(&ml_message, "LOLZ HALLO");
+    }
+    
+    // Test: exists only in versions starting at 2
+    QRYNEWINFO(2)
+    {
+        MSG_WriteString(&ml_message, (char *)hostname.cstring());
+        MSG_WriteByte(&ml_message, (BYTE)maxclients);
+        MSG_WriteByte(&ml_message, (BYTE)maxplayers);
+        MSG_WriteShort(&ml_message, (WORD)scorelimit);
+    }
     
     MSG_WriteShort(&ml_message, TEAMpoints[it_blueflag]);
 	MSG_WriteShort(&ml_message, TEAMpoints[it_redflag]);
@@ -548,7 +579,10 @@ void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 }
 
 //
-// void IntQrySendResponse()
+// DWORD IntQrySendResponse(const WORD &TagId, 
+//                        const BYTE &TagApplication,
+//                        const BYTE &TagQRId,
+//                        const WORD &TagPacketType)
 //
 // 
 DWORD IntQrySendResponse(const WORD &TagId, 
@@ -642,17 +676,29 @@ DWORD IntQrySendResponse(const WORD &TagId,
 
     MSG_WriteLong(&ml_message, ReTag);
     MSG_WriteLong(&ml_message, GAMEVER);
-    MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
     
     // Enquirer is an old version
     if (RePacketType == 2)
     {       
+        MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
+
         NET_SendPacket(ml_message, net_from);
         
         //Printf(PRINT_HIGH, "Application is old version\n");
         
         return 0;
     }
+    
+    // If the enquirer protocol is newer, send the latest information the
+    // server supports, otherwise send information built to the their version
+    if (EqProtocolVersion > PROTOCOL_VERSION)
+    {
+        EqProtocolVersion = PROTOCOL_VERSION;
+        
+        MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
+    }
+    else
+        MSG_WriteLong(&ml_message, EqProtocolVersion);
     
     IntQryBuildInformation(EqProtocolVersion);
     
@@ -664,7 +710,7 @@ DWORD IntQrySendResponse(const WORD &TagId,
 }
 
 //
-// void SV_QryParseEnquiry()
+// DWORD SV_QryParseEnquiry(const DWORD &Tag)
 //
 // This decodes the Tag field
 DWORD SV_QryParseEnquiry(const DWORD &Tag)
