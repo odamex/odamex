@@ -147,7 +147,9 @@ bool BufferedSocket::CreateSocket()
 {
     m_LocalAddress.AnyAddress();   
 	m_LocalAddress.Service(0);
-		
+
+    DestroySocket();
+
     Socket = new wxDatagramSocket(m_LocalAddress, wxSOCKET_NONE);
     
     if(!Socket->IsOk())
@@ -178,7 +180,7 @@ void BufferedSocket::DestroySocket()
 }
 
 //  Write a socket
-wxInt32 BufferedSocket::SendData(wxInt32 Timeout)
+wxInt32 BufferedSocket::SendData(const wxInt32 &Timeout)
 {   
     if (!CreateSocket())
         return 0;
@@ -218,7 +220,7 @@ wxInt32 BufferedSocket::SendData(wxInt32 Timeout)
 }
 
 //  Read a socket
-wxInt32 BufferedSocket::GetData(wxInt32 Timeout)
+wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
 {   
     // temporary address, for comparison
     wxIPV4address ReceivedAddress;
