@@ -135,7 +135,7 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         
 		void SetAddress(const wxString &Address, const wxInt16 &Port) 
 		{ 
-		    Socket.SetAddress(Address, Port);
+		    Socket.SetRemoteAddress(Address, Port);
         }
         
 		wxString GetAddress() { return Socket.GetRemoteAddress(); }
@@ -198,7 +198,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             
             for (size_t i = 0; i < masteraddresses.size(); ++i)
             {
-                Socket.SetAddress(masteraddresses[i].ip, masteraddresses[i].port);
+                Socket.SetRemoteAddress(masteraddresses[i].ip, masteraddresses[i].port);
                 
                 Query(Timeout);
             }

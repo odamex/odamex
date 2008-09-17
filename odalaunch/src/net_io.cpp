@@ -698,12 +698,13 @@ void BufferedSocket::WriteString(const wxString &str)
 }
 
 //
-// wxString BufferedSocket::GetRemoteAddress()
+// bool BufferedSocket::SetRemoteAddress(const wxString &Address)
 //
-// Gets the outgoing address in "address:port" format
-wxString BufferedSocket::GetRemoteAddress()
+// Sets the outgoing address
+void BufferedSocket::SetRemoteAddress(const wxString &Address, const wxInt16 &Port)
 {
-    return m_RemoteAddress.IPAddress() << _T(":") << wxString::Format(_T("%u"),m_RemoteAddress.Service());
+    m_RemoteAddress.Hostname(Address); 
+    m_RemoteAddress.Service(Port); 
 }
 
 //
@@ -721,9 +722,28 @@ bool BufferedSocket::SetRemoteAddress(const wxString &Address)
     wxUint16 Port = wxAtoi(Address.Mid(Colon));
     wxString HostIP = Address.Mid(0, Colon);
     
-    SetAddress(HostIP, Port);
+    SetRemoteAddress(HostIP, Port);
     
     return true;
+}
+
+//
+// void BufferedSocket::GetRemoteAddress(wxString &Address, wxUint16 &Port)
+//
+// Gets the outgoing address
+void BufferedSocket::GetRemoteAddress(wxString &Address, wxUint16 &Port)
+{
+    Address = m_RemoteAddress.IPAddress();
+    Port = m_RemoteAddress.Service();
+}
+
+//
+// wxString BufferedSocket::GetRemoteAddress()
+//
+// Gets the outgoing address in "address:port" format
+wxString BufferedSocket::GetRemoteAddress()
+{
+    return m_RemoteAddress.IPAddress() << _T(":") << wxString::Format(_T("%u"),m_RemoteAddress.Service());
 }
 
 void BufferedSocket::ClearRecvBuffer() 
