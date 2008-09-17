@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -31,6 +31,7 @@
 // State.
 #include "dobject.h"
 #include "doomstat.h"
+#include "d_player.h"
 #include "r_state.h"
 #include "m_random.h"
 #include "p_saveg.h"
@@ -52,13 +53,17 @@ void P_SerializePlayers (FArchive &arc)
 	{
 		int playerstate = (playerstate_t)0;
 		for (i = 0; i < players.size(); i++)
-			arc >> playerstate;
-		players[i].playerstate = (playerstate_t)playerstate;
+		{
+		    arc >> playerstate;
+            players[i].playerstate = (playerstate_t)playerstate;
+		}
 	}
 
 	for (i = 0; i < players.size(); i++)
+    {
 		if (players[i].ingame())
 			players[i].Serialize (arc);
+    }
 }
 
 //
@@ -84,7 +89,7 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->special
 				<< sec->tag
 				<< sec->soundtraversed
-				<< sec->soundtarget
+				/*<< sec->soundtarget*/
 				<< sec->friction
 				<< sec->movefactor
 				<< sec->floordata
@@ -143,6 +148,7 @@ void P_SerializeWorld (FArchive &arc)
 		// do sectors
 		for (i = 0, sec = sectors; i < numsectors; i++, sec++)
 		{
+
 			unsigned int color=0, fade=0;
 
 			arc >> sec->floorheight
@@ -153,7 +159,7 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->special
 				>> sec->tag
 				>> sec->soundtraversed
-				>> sec->soundtarget->netid
+				/*>> sec->soundtarget->netid*/
 				>> sec->friction
 				>> sec->movefactor
 				>> sec->floordata
@@ -175,7 +181,7 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->gravity
 				>> sec->damage
 				>> sec->mod
-				>> color
+                >> color
 				>> fade;
 			sec->floorcolormap = GetSpecialLights (
 				RPART(color), GPART(color), BPART(color),

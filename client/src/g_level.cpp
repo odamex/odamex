@@ -204,7 +204,7 @@ BEGIN_COMMAND (map)
                     sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
                 else
                     sprintf( mapname, "E%cM%c", argv[1][0], argv[1][1]);
-                    
+
 			}
 
 			if (W_CheckNumForName (mapname) == -1)
@@ -228,7 +228,7 @@ END_COMMAND (map)
 BEGIN_COMMAND (wad) // denis - changes wads
 {
 	std::vector<std::string> wads, patch_files, hashes;
-	
+
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
@@ -237,10 +237,10 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    Printf(PRINT_HIGH, "\n");
 	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
 	    Printf(PRINT_HIGH, "eg: wad doom\n");
-	    
+
 	    return;
 	}
-	
+
 	C_HideConsole();
 
     // add our iwad if it is one
@@ -251,7 +251,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	for (QWORD i = 1; i < argc; i++)
 	{
 		std::string ext;
-		
+
 		if (M_ExtractFileExtension(argv[i], ext))
 		{
 		    // don't allow subsequent iwads to be loaded
@@ -261,11 +261,11 @@ BEGIN_COMMAND (wad) // denis - changes wads
                 patch_files.push_back(argv[i]);
 		}
 	}
-	
+
     hashes.resize(wads.size());
 
 	D_DoomWadReboot(wads, hashes, patch_files);
-	
+
 	D_StartTitle ();
 	CL_QuitNetGame();
 	S_StopMusic();
@@ -535,7 +535,7 @@ void G_DoLoadLevel (int position)
 		wipegamestate = GS_FORCEWIPE;
 
 	gamestate = GS_LEVEL;
-	
+
 	if(ConsoleState == c_down)
 		C_HideConsole();
 
@@ -882,25 +882,33 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 {
 	if (arc.IsStoring ())
 	{
+		unsigned int playernum = players.size();
 		arc << level.flags
 			<< level.fadeto
 			<< level.found_secrets
 			<< level.found_items
-			<< level.killed_monsters;
+			<< level.killed_monsters
+			<< playernum;
 	}
 	else
 	{
+		unsigned int playernum;
 		arc >> level.flags
 			>> level.fadeto
 			>> level.found_secrets
 			>> level.found_items
-			>> level.killed_monsters;
+			>> level.killed_monsters
+			>> playernum;
+
+		players.resize(playernum);
+	}
+	if (!hubLoad)
+	{
+		P_SerializePlayers (arc);
 	}
 	P_SerializeThinkers (arc, hubLoad);
-	P_SerializeWorld (arc);
-	P_SerializeSounds (arc);
-	if (!hubLoad)
-		P_SerializePlayers (arc);
+    P_SerializeWorld (arc);
+    P_SerializeSounds (arc);
 }
 
 // Archives the current level

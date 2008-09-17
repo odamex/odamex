@@ -42,6 +42,11 @@
 #define CLIENTMIN ((GAMEVER % 256) / 10)
 #define CLIENTREL ((GAMEVER % 256) % 10)
 
+// SAVESIG is the save game signature. It should be the minimum version
+// whose savegames this version is compatible with, which could be
+// earlier than this version.
+#define SAVESIG "ODAMEXSAVE042   "	// Needs to be exactly 16 chars long
+
 // denis - per-file svn version stamps
 class file_version
 {

@@ -141,7 +141,7 @@ CVAR_FUNC_IMPL(cl_mouselook)
 {
 	// Nes - center the view
 	AddCommandString("centerview");
-	
+
 	// Nes - update skies
 	R_InitSkyMap ();
 }
@@ -461,14 +461,14 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		speed ^= 1;
 
 	forward = side = look = fly = 0;
-	
+
 	// GhostlyDeath -- USE takes us out of spectator mode
 	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_spectate);
 		MSG_WriteByte(&net_buffer, false);
 	}
- 
+
 	// [RH] only use two stage accelerative turning on the keyboard
 	//		and not the joystick, since we treat the joystick as
 	//		the analog device it is.
@@ -871,10 +871,10 @@ void G_Ticker (void)
 			G_DoNewGame ();
 			break;
 		case ga_loadgame:
-			gameaction = ga_nothing;
+			G_DoLoadGame ();
 			break;
 		case ga_savegame:
-			gameaction = ga_nothing;
+			G_DoSaveGame ();
 			break;
 		case ga_playdemo:
 			G_DoPlayDemo ();
@@ -1021,12 +1021,12 @@ void G_Ticker (void)
 					P_DeathThink(&displayplayer());
 				else
 					P_PlayerThink(&consoleplayer());
-				
+
 				P_MovePlayer(&consoleplayer());
 				P_CalcHeight(&consoleplayer());
 				P_CalcHeight(&displayplayer());
 			}
-			
+
 			CL_PredictMove();
 		}
 		P_Ticker ();
@@ -1459,11 +1459,77 @@ char savename[256];
 
 void G_LoadGame (char* name)
 {
+	strcpy (savename, name);
+	gameaction = ga_loadgame;
 }
 
 
 void G_DoLoadGame (void)
 {
+	int i;
+	char text[16];
+
+	gameaction = ga_nothing;
+
+	FILE *stdfile = fopen (savename, "rb");
+	if (stdfile == NULL)
+	{
+		Printf (PRINT_HIGH, "Could not read savegame '%s'\n", savename);
+		return;
+	}
+
+	fseek (stdfile, SAVESTRINGSIZE, SEEK_SET);	// skip the description field
+	fread (text, 16, 1, stdfile);
+	if (strncmp (text, SAVESIG, 16))
+	{
+		Printf (PRINT_HIGH, "Savegame is from a different version\n");
+		return;
+	}
+	fread (text, 8, 1, stdfile);
+	text[8] = 0;
+
+	/*bglobal.RemoveAllBots (true);*/
+
+	FLZOFile savefile (stdfile, FFile::EReading);
+
+	if (!savefile.IsOpen ())
+		I_Error ("Savegame '%s' is corrupt\n", savename);
+
+	FArchive arc (savefile);
+
+	{
+		byte vars[4096], *vars_p;
+		unsigned int len;
+		vars_p = vars;
+		len = arc.ReadCount ();
+		arc.Read (vars, len);
+		cvar_t::C_ReadCVars (&vars_p);
+	}
+
+	// dearchive all the modifications
+	G_SerializeSnapshots (arc);
+	P_SerializeRNGState (arc);
+	/*P_SerializeACSDefereds (arc);*/
+
+	// load a base level
+	savegamerestore = true;		// Use the player actors in the savegame
+	serverside = true;
+	G_InitNew (text);
+	displayplayer_id = consoleplayer_id = 1;
+	savegamerestore = false;
+
+	arc >> level.time;
+
+/*
+	for (i = 0; i < NUM_WORLDVARS; i++)
+		arc >> WorldVars[i];
+*/
+	arc >> text[9];
+
+	arc.Close ();
+
+	if (text[9] != 0x1d)
+		I_Error ("Bad savegame");
 }
 
 
@@ -1474,14 +1540,75 @@ void G_DoLoadGame (void)
 //
 void G_SaveGame (int slot, char *description)
 {
+	savegameslot = slot;
+	strcpy (savedescription, description);
+	sendsave = true;
 }
 
 void G_BuildSaveName (char *name, int slot)
 {
+	sprintf (name, "%s%d.ods", SAVEGAMENAME, slot); // DL - todo - this is unsafe! return std::string from this function instead
+	std::string path = I_GetUserFileName (name);
+	strcpy (name, path.c_str());
 }
 
 void G_DoSaveGame (void)
 {
+	char name[100];
+	char *description;
+	int i;
+
+	G_SnapshotLevel ();
+
+	G_BuildSaveName (name, savegameslot);
+	description = savedescription;
+
+	FILE *stdfile = fopen (name, "wb");
+
+	if (stdfile == NULL)
+	{
+        return;
+	}
+
+	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
+	fwrite (SAVESIG, 16, 1, stdfile);
+	fwrite (level.mapname, 8, 1, stdfile);
+
+	FLZOFile savefile (stdfile, FFile::EWriting, true);
+	FArchive arc (savefile);
+
+	{
+		byte vars[4096], *vars_p;
+		vars_p = vars;
+
+		cvar_t::C_WriteCVars (&vars_p, CVAR_SERVERINFO);
+		arc.WriteCount (vars_p - vars);
+		arc.Write (vars, vars_p - vars);
+	}
+
+	G_SerializeSnapshots (arc);
+	P_SerializeRNGState (arc);
+	/*P_SerializeACSDefereds (arc);*/
+
+	arc << level.time;
+/*
+	for (i = 0; i < NUM_WORLDVARS; i++)
+		arc << WorldVars[i];
+*/
+
+	arc << (BYTE)0x1d;			// consistancy marker
+
+	gameaction = ga_nothing;
+	savedescription[0] = 0;
+
+	Printf (PRINT_HIGH, "%s\n", GGSAVED);
+	arc.Close ();
+
+    if (level.info->snapshot != NULL)
+    {
+        delete level.info->snapshot;
+        level.info->snapshot = NULL;
+    }
 }
 
 
@@ -1624,7 +1751,7 @@ void G_WriteDemoTiccmd ()
 // G_RecordDemo
 //
 bool G_RecordDemo (char* name)
-{ 
+{
     strcpy (demoname, name);
     strcat (demoname, ".lmp");
 
@@ -1754,7 +1881,7 @@ END_COMMAND(recordlongtics)
 
 BEGIN_COMMAND(stopdemo)
 {
-	G_CheckDemoStatus (); 
+	G_CheckDemoStatus ();
 }
 END_COMMAND(stopdemo)
 
@@ -1959,7 +2086,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		if(!justStreamInput)
 		{
     		player_t &con = idplayer(who + 1);
-    
+
     		if(!validplayer(con))
     		{
     			Z_Free(demobuffer);
@@ -1967,18 +2094,18 @@ void G_DoPlayDemo (bool justStreamInput)
     			gameaction = ga_fullconsole;
     			return;
     		}
-    
+
     		consoleplayer_id = displayplayer_id = con.id;
-    
+
     		//int pcol[4] = {(0x0000FF00), (0x006060B0), (0x00B0B030), (0x00C00000)};
     		//char pnam[4][MAXPLAYERNAME] = {"GREEN", "INDIGO", "BROWN", "RED"};
-    		
+
     		if(players.size() > 1)
     		{
     			netgame = true;
     			netdemo = true;
     			multiplayer = true;
-    			
+
     			for (size_t i = 0; i < 4; i++) {
     				if (players[i].ingame()) {
     					//strcpy(players[i].userinfo.netname, pnam[i]);
@@ -1998,18 +2125,18 @@ void G_DoPlayDemo (bool justStreamInput)
     			netdemo = false;
     			multiplayer = false;
     		}
-    
+
     		char mapname[32];
-    
+
     		if(gameinfo.flags & GI_MAPxx)
     			sprintf(mapname, "MAP%02d", (int)map);
     		else
     			sprintf(mapname, "E%dM%d", (int)episode, (int)map);
-    
+
     		serverside = true;
-    
+
     		G_InitNew (mapname);
-    
+
     		usergame = false;
 		}
 		demoplayback = true;
@@ -2097,7 +2224,7 @@ BOOL G_CheckDemoStatus (void)
 		netgame = false;
 		multiplayer = false;
 		serverside = false;
-		
+
 		if (demotest) {
 			AActor *mo = idplayer(1).mo;
 
@@ -2106,7 +2233,7 @@ BOOL G_CheckDemoStatus (void)
 			else
 				Printf(PRINT_HIGH, "demotest: no player\n");
 		}
-			
+
 
 		if (singledemo || timingdemo) {
 			if (timingdemo)

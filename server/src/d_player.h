@@ -342,7 +342,7 @@ public:
 		id = 0;
 		memset(&cmd, 0, sizeof(ticcmd_t));
 		memset(&userinfo, 0, sizeof(userinfo_t));
-		fov = 0.0;
+		fov = 90.0;
 		viewz = 0 << FRACBITS;
 		viewheight = 0 << FRACBITS;
 		deltaviewheight = 0 << FRACBITS;
