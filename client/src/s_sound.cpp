@@ -233,7 +233,7 @@ void S_Init (float sfxVolume, float musicVolume)
 {
 	unsigned int i;
 
-	Printf (PRINT_HIGH, "S_Init: default sfx volume %f\n", sfxVolume);
+	//Printf (PRINT_HIGH, "S_Init: default sfx volume %f\n", sfxVolume);
 
 	// [RH] Read in sound sequences
 	//NumSequences = 0;

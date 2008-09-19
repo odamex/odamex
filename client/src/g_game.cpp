@@ -1482,7 +1482,7 @@ void G_DoLoadGame (void)
 	fread (text, 16, 1, stdfile);
 	if (strncmp (text, SAVESIG, 16))
 	{
-		Printf (PRINT_HIGH, "Savegame is from a different version\n");
+		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
 		return;
 	}
 	fread (text, 8, 1, stdfile);
@@ -1494,6 +1494,8 @@ void G_DoLoadGame (void)
 
 	if (!savefile.IsOpen ())
 		I_Error ("Savegame '%s' is corrupt\n", savename);
+	
+	Printf (PRINT_HIGH, "Loading savegame '%s'...\n", savename);
 
 	FArchive arc (savefile);
 
@@ -1510,6 +1512,12 @@ void G_DoLoadGame (void)
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
 	/*P_SerializeACSDefereds (arc);*/
+
+	CL_QuitNetGame();
+
+	netdemo = false;
+	netgame = false;
+	multiplayer = false;
 
 	// load a base level
 	savegamerestore = true;		// Use the player actors in the savegame
@@ -1569,6 +1577,8 @@ void G_DoSaveGame (void)
 	{
         return;
 	}
+	
+	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name);
 
 	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
 	fwrite (SAVESIG, 16, 1, stdfile);

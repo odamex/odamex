@@ -501,18 +501,20 @@ END_COMMAND (menu_help)
 BEGIN_COMMAND (menu_save)
 {
     // F2
-	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
-	Printf (PRINT_HIGH, "Saving is not available at this time.\n");
-    // dummy
+	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	M_StartControlPanel ();
+	M_SaveGame (0);
+	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
 }
 END_COMMAND (menu_save)
 
 BEGIN_COMMAND (menu_load)
 {
     // F3
-	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
-	Printf (PRINT_HIGH, "Loading is not available at this time.\n");
-    // dummy
+	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	M_StartControlPanel ();
+	M_LoadGame (0);
+	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
 }
 END_COMMAND (menu_load)
 
@@ -528,9 +530,10 @@ END_COMMAND (menu_options)
 BEGIN_COMMAND (quicksave)
 {
     // F6
-	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
-	Printf (PRINT_HIGH, "Saving is not available at this time.\n");
-    // dummy
+	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	M_StartControlPanel ();
+	M_QuickSave ();
+	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
 }
 END_COMMAND (quicksave)
 
@@ -545,9 +548,10 @@ END_COMMAND (menu_endgame)
 BEGIN_COMMAND (quickload)
 {
     // F9
-	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
-	Printf (PRINT_HIGH, "Loading is not available at this time.\n");
-    // dummy
+	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	M_StartControlPanel ();
+	M_QuickLoad ();
+	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
 }
 END_COMMAND (quickload)
 
@@ -672,11 +676,11 @@ void M_LoadSelect (int choice)
 //
 void M_LoadGame (int choice)
 {
-	if (netgame)
+	/*if (netgame)
 	{
 		M_StartMessage (LOADNET,NULL,false);
 		return;
-	}
+	}*/
 
 	M_SetupNextMenu (&LoadDef);
 	M_ReadSaveStrings ();
@@ -713,7 +717,6 @@ void M_DrawSave(void)
 //
 void M_DoSave (int slot)
 {
-    Printf(PRINT_HIGH, "Saving...\n");
 	G_SaveGame (slot,savegamestrings[slot]);
 	M_ClearMenus ();
 		// PICK QUICKSAVE SLOT YET?
@@ -755,9 +758,18 @@ void M_SaveGame (int choice)
 //
 void M_SaveGame (int choice)
 {
+	if (multiplayer && !demoplayback)
+	{
+		M_StartMessage("you can't save while in a net game!\n\npress a key.",
+			NULL,false);
+		M_ClearMenus ();
+		return;
+	}
+
 	if (!usergame)
 	{
 		M_StartMessage(SAVEDEAD,NULL,false);
+		M_ClearMenus ();
 		return;
 	}
 
@@ -787,9 +799,17 @@ void M_QuickSaveResponse(int ch)
 
 void M_QuickSave(void)
 {
+	if (multiplayer)
+	{
+		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		M_ClearMenus ();
+		return;
+	}
+
 	if (!usergame)
 	{
 		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		M_ClearMenus ();
 		return;
 	}
 
@@ -827,11 +847,11 @@ void M_QuickLoadResponse(int ch)
 
 void M_QuickLoad(void)
 {
-	if (netgame)
+	/*if (netgame)
 	{
 		M_StartMessage(QLOADNET,NULL,false);
 		return;
-	}
+	}*/
 
 	if (quickSaveSlot < 0)
 	{
