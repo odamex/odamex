@@ -159,6 +159,12 @@ void CL_QuitNetGame(void)
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
 	}
+	
+	if (paused)
+	{
+		paused = false;
+		S_ResumeSound ();
+	}
 
 	memset (&serveraddr, 0, sizeof(serveraddr));
 	connected = false;

@@ -240,6 +240,12 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	    return;
 	}
+	
+	if (paused)
+	{
+		paused = false;
+		S_ResumeSound ();
+	}
 
 	C_HideConsole();
 
