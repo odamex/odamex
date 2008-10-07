@@ -66,6 +66,7 @@ enum flag_score_t
 	SCORE_RETURN,
 	SCORE_CAPTURE,
 	SCORE_DROP,
+	SCORE_MANUALRETURN,
 	NUM_CTF_SCORE
 };
 
@@ -75,8 +76,6 @@ extern	DCanvas	   *screen;
 
 extern	int			ST_WIDTH;
 extern	int			ST_HEIGHT;
-
-extern	bool		ctfmode;
 
 //	Local Function Prototypes
 void	CL_CTFEvent		(void);

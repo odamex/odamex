@@ -41,8 +41,6 @@ char *team_names[NUMTEAMS + 2] =
 	"", ""
 };
 
-bool		ctfmode		 = false;
-
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 {
@@ -53,13 +51,6 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 
 EXTERN_CVAR		(screenblocks)
 EXTERN_CVAR		(st_scale)
-
-BEGIN_COMMAND	(ctf)
-{
-	if (ctfmode)	Printf (PRINT_HIGH, "CTF is enabled.\n");
-	else			Printf (PRINT_HIGH, "CTF is disabled.\n");
-}
-END_COMMAND		(ctf)
 
 //
 // CTF_Connect
@@ -125,14 +116,12 @@ void CL_CTFEvent (void)
 
 		case SCORE_GRAB:
 		case SCORE_FIRSTGRAB:
+		case SCORE_MANUALRETURN:
 			if(validplayer(player))
 				CTF_CarryFlag(player, flag);
 			break;
 
 		case SCORE_RETURN:
-			CTFdata[flag].state = flag_home;
-			break;
-
 		case SCORE_CAPTURE:
 			if(validplayer(player))
 				CTF_CheckFlags(player);
@@ -338,7 +327,7 @@ void CTF_DrawHud (void)
     int tintglowtype;
     bool hasflag = false, hasflags[NUMFLAGS];
 
-	if(!ctfmode)
+	if(gametype != GM_CTF)
 		return;
 
 	player_t &co = consoleplayer();

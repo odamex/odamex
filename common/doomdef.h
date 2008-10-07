@@ -203,7 +203,7 @@ enum flag_t
 {
 	it_blueflag,
 	it_redflag,
-	it_goldflag,
+	it_goldflag, // Remove me in 0.5
 
 	NUMFLAGS
 };

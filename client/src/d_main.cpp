@@ -1458,7 +1458,7 @@ void D_DoomMain (void)
 				serverside = true;
 				allowexit = "1";
 				nomonsters = "0";
-				deathmatch = "0";
+				gametype = GM_COOP;
 
 				players.clear();
 				players.push_back(player_t());

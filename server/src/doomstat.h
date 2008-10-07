@@ -80,11 +80,14 @@ extern	BOOL			netgame;
 // Bot game? Like netgame, but doesn't involve network communication.
 extern	BOOL			multiplayer;
 
-// Flag: true only if started as net deathmatch.
-EXTERN_CVAR (deathmatch)
+// Game mode
+EXTERN_CVAR (gametype)
 
-// [RH] Teamplay mode
-EXTERN_CVAR (teamplay)
+#define GM_COOP		0
+#define GM_DM		1
+#define GM_TEAMDM	2
+#define GM_CTF		3
+
 
 // -------------------------
 // Internal parameters for sound rendering.

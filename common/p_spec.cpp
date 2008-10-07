@@ -1118,7 +1118,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 20, MOD_UNKNOWN);
 
-			if(!deathmatch || allowexit)
+			if(gametype == GM_COOP || allowexit)
 			{
 				if (gamestate == GS_LEVEL && player->health <= 10)
 					G_ExitLevel(0, 1);

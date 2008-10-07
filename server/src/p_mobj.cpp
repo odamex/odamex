@@ -1162,7 +1162,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if (deathmatch)
+	if (gametype != GM_COOP)
 	{
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
@@ -1182,6 +1182,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 }
 
 EXTERN_CVAR(maxplayers)
+EXTERN_CVAR(sv_teamspawns)
 
 //
 // P_SpawnMapThing
@@ -1201,7 +1202,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// count deathmatch start positions
-	if (mthing->type == 11)
+	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082))
+		&& !sv_teamspawns)
 	{
 		if (deathmatch_p == &deathmatchstarts[MaxDeathmatchStarts])
 		{
@@ -1217,7 +1219,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [Toke - CTF - starts] CTF starts - count Blue team start positions
-	if (mthing->type == 5080)
+	if (mthing->type == 5080 && sv_teamspawns)
 	{
 		if (blueteam_p == &blueteamstarts[MaxBlueTeamStarts])
 		{
@@ -1232,7 +1234,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [Toke - CTF - starts] CTF starts - count Red team start positions
-	if (mthing->type == 5081)
+	if (mthing->type == 5081 && sv_teamspawns)
 	{
 		if (redteam_p == &redteamstarts[MaxRedTeamStarts])
 		{
@@ -1247,7 +1249,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [Toke - CTF - starts] CTF starts - count Gold team start positions
-	if (mthing->type == 5082)
+	if (mthing->type == 5082 && sv_teamspawns)
 	{
 		if (goldteam_p == &goldteamstarts[MaxGoldTeamStarts])
 		{
@@ -1274,8 +1276,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (!deathmatch && !ctfmode &&
-			(validplayer(p) && p.ingame()))
+		if (gametype == GM_COOP && validplayer(p) && p.ingame())
 		{
 			if(!unnatural_level_progression)
 				p.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
@@ -1307,40 +1308,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		}
 
 		return;
-	}
-
-	// [Toke - CTF] Setup flag sockets
-	if (mthing->type >= ID_BLUE_FLAG && mthing->type <= ID_GOLD_FLAG) // Check for items with flag socks ID's
-	{
-		if (mthing->type == ID_BLUE_FLAG)
-		{
-			Printf (PRINT_HIGH, "Map contains BLUE FLAG, enabling TEAM BLUE \n");
-
-			CTF_Load ();
-			TEAMenabled[it_blueflag] = true;
-
-			CTF_RememberFlagPos (mthing);
-		}
-
-		if (mthing->type == ID_RED_FLAG)
-		{
-			Printf (PRINT_HIGH, "Map contains RED FLAG, enabling TEAM RED \n");
-
-			CTF_Load ();
-			TEAMenabled[it_redflag] = true;
-
-			CTF_RememberFlagPos (mthing);
-		}
-
-		if (mthing->type == ID_GOLD_FLAG)
-		{
-			Printf (PRINT_HIGH, "Map contains GOLD FLAG, enabling TEAM GOLD \n");
-
-			CTF_Load ();
-			TEAMenabled[it_goldflag] = true;
-
-			CTF_RememberFlagPos (mthing);
-		}
 	}
 
 	// [RH] sound sequence overrides
@@ -1385,11 +1352,11 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}*/
 	
 	// GhostlyDeath -- Correctly spawn things
-	if (deathmatch && !(mthing->flags & MTF_DEATHMATCH))
+	if (gametype != GM_COOP && !(mthing->flags & MTF_DEATHMATCH))
 		return;
-	if (!deathmatch && maxplayers == 1 && !(mthing->flags & MTF_SINGLE))
+	if (gametype == GM_COOP && maxplayers == 1 && !(mthing->flags & MTF_SINGLE))
 		return;
-	if (!deathmatch && maxplayers != 1 && !(mthing->flags & MTF_COOPERATIVE))
+	if (gametype == GM_COOP && maxplayers != 1 && !(mthing->flags & MTF_COOPERATIVE))
 		return;
 
 	// check for apropriate skill level
@@ -1443,7 +1410,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
@@ -1516,6 +1483,29 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	mobj->AddToHash ();
 
 	SV_SpawnMobj(mobj);
+
+	if (gametype == GM_CTF) {
+		// [Toke - CTF] Setup flag sockets
+		if (mthing->type == ID_BLUE_FLAG)
+		{
+			flagdata *data = &CTFdata[it_blueflag];
+			if (data->flaglocated)
+				return;
+
+			CTF_RememberFlagPos (mthing);
+			CTF_SpawnFlag(it_blueflag);
+		}
+
+		if (mthing->type == ID_RED_FLAG)
+		{
+			flagdata *data = &CTFdata[it_redflag];
+			if (data->flaglocated)
+				return;
+
+			CTF_RememberFlagPos (mthing);
+			CTF_SpawnFlag(it_redflag);
+		}
+	}
 
 	// [RH] Go dormant as needed
 //	if (mthing->flags & MTF_DORMANT)

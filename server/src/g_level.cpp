@@ -235,25 +235,10 @@ BEGIN_COMMAND (map)
 			unnatural_level_progression = true;
 			G_DeferedInitNew (argv[1]);
 		}
-	
-		if (deathmatch)
-		{
-			for (size_t i = 0; i < players.size(); i++)
-			{
-				players[i].spectator = 1;
-				for (size_t j = 0; j < players.size(); j++)
-				{
-					MSG_WriteMarker (&(players[i].client.reliablebuf), svc_spectate);
-					MSG_WriteByte (&(players[i].client.reliablebuf), players[j].id);
-					MSG_WriteByte (&(players[i].client.reliablebuf), false);
-				}
-			}
-		}
 	}
 	else
 	{
 		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname, level.level_name);
-
 	}
 }
 END_COMMAND (map)
@@ -617,7 +602,7 @@ void G_ChangeMap (void)
         }
 
 		// if deathmatch, stay on same level
-		if(deathmatch)
+		if(gametype != GM_COOP)
 			next = level.mapname;
 		else
 			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
@@ -671,15 +656,6 @@ void G_ChangeMap (void)
 	// run script at the end of each map
 	if(strlen(endmapscript.cstring()))
 		AddCommandString(endmapscript.cstring(), true);
-
-	if (deathmatch) {
-		// make everyone a spectator again
-		for (size_t i = 0; i < players.size(); i++)
-		{
-			players[i].spectator = true;
-			players[i].joinafterspectatortime = -(TICRATE*5);
-		}
-	}
 }
 
 void SV_ClientFullUpdate(player_t &pl);
@@ -695,8 +671,6 @@ void SV_SendServerSettings(client_t *cl);
 void G_DoNewGame (void)
 {
 	size_t i;
-
-	SV_MapEnd ();
 
 	for(i = 0; i < players.size(); i++)
 	{
@@ -719,14 +693,12 @@ void G_DoNewGame (void)
 	if(strlen(startmapscript.cstring()))
 		AddCommandString(startmapscript.cstring(), true);
 
-	SV_MapStart ();
-
 	for(i = 0; i < players.size(); i++)
 	{
 		if(!players[i].ingame())
 			continue;
 
-		if (teamplay || ctfmode)
+		if (gametype == GM_TEAMDM || gametype == GM_CTF)
 			SV_CheckTeam(players[i]);
 		else
 			players[i].userinfo.color = players[i].prefcolor;
@@ -760,13 +732,25 @@ void G_InitNew (const char *mapname)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
-	bool old_deathmatch = deathmatch ? true : false;
-	bool old_ctfmode = ctfmode ? true : false;
+	int old_gametype = gametype;
 
 	cvar_t::UnlatchCVars ();
 
-	if(old_deathmatch != (deathmatch ? true : false))
+	if(old_gametype != gametype || gametype != GM_COOP) {
 		unnatural_level_progression = true;
+		
+		// Nes - Force all players to be spectators when the gametype is not now or previously co-op.
+		for (i = 0; i < players.size(); i++) {
+			for (size_t j = 0; j < players.size(); j++) {
+				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
+				MSG_WriteByte (&(players[j].client.reliablebuf), true);
+			}			
+			players[i].spectator = true;
+			players[i].playerstate = PST_LIVE;
+			players[i].joinafterspectatortime = -(TICRATE*5);
+		}
+	}
 
 	SV_ServerSettingChange();
 
@@ -844,8 +828,8 @@ void G_InitNew (const char *mapname)
 	G_DoLoadLevel (0);
 
 	// denis - hack to fix ctfmode, as it is only known after the map is processed!
-	if(old_ctfmode != ctfmode)
-		SV_ServerSettingChange();
+	//if(old_ctfmode != ctfmode)
+	//	SV_ServerSettingChange();
 }
 
 //
@@ -909,10 +893,6 @@ void G_DoCompleted (void)
 extern gamestate_t 	wipegamestate;
 extern float BaseBlendA;
 
-EXTERN_CVAR (blueteam)
-EXTERN_CVAR (redteam)
-EXTERN_CVAR (goldteam)
-
 void G_DoLoadLevel (int position)
 {
 	static int lastposition = 0;
@@ -965,7 +945,7 @@ void G_DoLoadLevel (int position)
 	}
 
 	// [deathz0r] It's a smart idea to reset the team points
-	if (teamplay)
+	if (gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 			TEAMpoints[i] = 0;
@@ -999,7 +979,30 @@ void G_DoLoadLevel (int position)
 	for (i = 0; i < players.size(); i++)
 		players[i].joinafterspectatortime -= level.time;
 
+	flagdata *tempflag;
+
+	// Nes - CTF Pre flag setup
+	if (gametype == GM_CTF) {
+		tempflag = &CTFdata[it_blueflag];
+		tempflag->flaglocated = false;
+		
+		tempflag = &CTFdata[it_redflag];
+		tempflag->flaglocated = false;
+	}
+
 	P_SetupLevel (level.mapname, position);
+	
+	// Nes - CTF Post flag setup
+	if (gametype == GM_CTF) {
+		tempflag = &CTFdata[it_blueflag];
+		if (!tempflag->flaglocated)
+			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Blue flag pedestal not found! No blue flags in game.\n");
+		
+		tempflag = &CTFdata[it_redflag];
+		if (!tempflag->flaglocated)
+			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Red flag pedestal not found! No red flags in game.\n");
+	}
+
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
 
 	gameaction = ga_nothing;
@@ -1053,7 +1056,7 @@ void G_WorldDone (void)
 		else
 			nextcluster = FindClusterInfo (FindLevelInfo (level.secretmap)->cluster);
 
-		if (nextcluster->cluster != level.cluster && !deathmatch) {
+		if (nextcluster->cluster != level.cluster && gametype == GM_COOP) {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
 			if (nextcluster->entertext) {

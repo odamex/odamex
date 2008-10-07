@@ -109,12 +109,10 @@ EXTERN_CVAR (scorelimit)
 EXTERN_CVAR (monstersrespawn)
 EXTERN_CVAR (itemsrespawn)
 EXTERN_CVAR (allowcheats)
-EXTERN_CVAR (teamplay)
 EXTERN_CVAR (allowtargetnames)
 EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR (interscoredraw)
-EXTERN_CVAR (usectf)
 EXTERN_CVAR(cl_connectalert)
 
 void CL_RunTics (void);
@@ -168,7 +166,6 @@ void CL_QuitNetGame(void)
 
 	memset (&serveraddr, 0, sizeof(serveraddr));
 	connected = false;
-	ctfmode = false;
 	gameaction = ga_fullconsole;
 	noservermsgs = false;
 	AM_Stop();
@@ -380,19 +377,6 @@ BEGIN_COMMAND (kill)
         Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
-
-
-BEGIN_COMMAND (gamemode)
-{
-						Printf (PRINT_HIGH,	"----------------------[Game Modes]----- \n");
-						Printf (PRINT_HIGH,	" Deathmatch - %d \n", deathmatch.value());
-    if (ctfmode)        Printf (PRINT_HIGH, " CTF	     - ON \n");
-    else                Printf (PRINT_HIGH, " CTF        - OFF \n");
-    if (teamplay)       Printf (PRINT_HIGH, " TeamPlay   - ON \n");
-    else                Printf (PRINT_HIGH, " TeamPlay   - OFF \n");
-						Printf (PRINT_HIGH,	"--------------------------------------- \n");
-}
-END_COMMAND (gamemode)
 
 
 BEGIN_COMMAND (serverinfo)
@@ -627,7 +611,7 @@ void CL_UpdateFrags(void)
 {
 	player_t &p = CL_FindPlayer(MSG_ReadByte());
 
-	if(deathmatch)
+	if(gametype != GM_COOP)
 		p.fragcount = MSG_ReadShort();
 	else
 		p.killcount = MSG_ReadShort();
@@ -784,7 +768,7 @@ bool CL_PrepareConnect(void)
 	for(i = 0; i < server_wads; i++)
 		wadnames[i] = MSG_ReadString();
 
-	MSG_ReadBool();							// gametype
+	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
 	recv_teamplay_stats |= MSG_ReadBool();	// teamplay
 	recv_teamplay_stats |= MSG_ReadBool();	// ctf
@@ -1354,7 +1338,7 @@ void CL_SpawnPlayer()
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if(deathmatch)
+	if(gametype != GM_COOP)
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 }
@@ -1843,6 +1827,9 @@ void CL_GetServerSettings(void)
 {
 	cvar_t *var = NULL, *prev = NULL;
 	
+	// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
+	unsigned int deathmatchcvar = 0, teamplaycvar = 0, usectfcvar = 0;
+	
 	// GhostlyDeath <June 19, 2008> -- If 0.4.1+ use string list instead
 	if ((SERVERMAJ >= 0) &&
 		(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
@@ -1854,10 +1841,6 @@ void CL_GetServerSettings(void)
 			std::string CvarValue = MSG_ReadString();
 			
 			var = cvar_t::FindCVar (CvarName.c_str(), &prev);
-			
-			// CTF Hack, please fix :'(
-			if (var == &usectf)
-                ctfmode = (CvarValue.c_str()[0] == '1') ? true : false;
 			
 			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
 			if (var)
@@ -1875,18 +1858,39 @@ void CL_GetServerSettings(void)
                                   
                 var->Set(CvarValue.c_str());
 			}
+			
+			// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
+			if (SERVERMIN == 4 && SERVERREL < 2) {
+				if (strcmp(CvarValue.c_str(), "0") != 0) {
+					if (strcmp(CvarName.c_str(), "deathmatch") == 0) {
+						deathmatchcvar = 1;
+					} else if (strcmp(CvarName.c_str(), "teamplay") == 0) {
+						teamplaycvar = 1;
+					} else if (strcmp(CvarName.c_str(), "usectf") == 0) {
+						usectfcvar = 1;
+					}
+				}
+			}
+		}
+					
+		// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
+		if (SERVERMIN == 4 && SERVERREL < 2) {
+			if (usectfcvar) gametype = GM_CTF;
+			else if (teamplaycvar) gametype = GM_TEAMDM;
+			else if (deathmatchcvar) gametype = GM_DM;
+			else gametype = GM_COOP;
 		}
 	}
 	else
 	{
-		ctfmode = MSG_ReadByte() ? true : false;
+		usectfcvar = MSG_ReadByte() ? 1 : 0;
 
 		// General server settings
 		maxclients.Set((int)MSG_ReadShort());
 
 		// Game settings
 		allowcheats.Set((BOOL)MSG_ReadByte());
-		deathmatch.Set((BOOL)MSG_ReadByte());
+		deathmatchcvar = MSG_ReadByte() ? 1 : 0;
 		fraglimit.Set((int)MSG_ReadShort());
 		timelimit.Set((int)MSG_ReadShort());
 
@@ -1909,11 +1913,16 @@ void CL_GetServerSettings(void)
 		// Teamplay/CTF
 		scorelimit.Set((int)MSG_ReadShort());
 		friendlyfire.Set((BOOL)MSG_ReadByte());
-		teamplay.Set(MSG_ReadByte());
+		teamplaycvar = MSG_ReadByte() ? 1 : 0;
 	
 		allowtargetnames.Set((BOOL)MSG_ReadByte());
 
 		cvar_t::UnlatchCVars ();
+		
+		if (usectfcvar) gametype = GM_CTF;
+		else if (teamplaycvar) gametype = GM_TEAMDM;
+		else if (deathmatchcvar) gametype = GM_DM;
+		else gametype = GM_COOP;
 	}
 	
 	// Nes - update the skies in case sv_freelook is changed.
@@ -2571,7 +2580,7 @@ void CL_RunTics (void)
 		TicCount = 0;
 	}
 
-	if (ctfmode)
+	if (gametype == GM_CTF)
 		CTF_RunTics ();
 }
 

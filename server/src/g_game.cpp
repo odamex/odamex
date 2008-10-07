@@ -364,7 +364,7 @@ void G_BeginRecording (void)
     *demo_p++ = skill-1;
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = deathmatch;
+    *demo_p++ = gametype;
     *demo_p++ = monstersrespawn;
     *demo_p++ = fastmonsters;
     *demo_p++ = nomonsters;
@@ -762,10 +762,10 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 
-	if(!deathmatch)
+	if(gametype == GM_COOP)
 		return;
 
-	if(teamplay || ctfmode)
+	if(gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		G_TeamSpawnPlayer (player);
 		return;
@@ -830,14 +830,14 @@ void G_DoReborn (player_t &player)
 		return;
 
 	// spawn at random team spot if in team game
-	if(teamplay || ctfmode)
+	if(gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		G_TeamSpawnPlayer (player);
 		return;
 	}
 
 	// spawn at random spot if in death match
-	if(deathmatch)
+	if(gametype != GM_COOP)
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
@@ -975,7 +975,7 @@ BOOL CheckIfExitIsGood (AActor *self)
         if(players[i].fragcount == fraglimit)
             break;
 
-    if (deathmatch && self)
+    if (gametype != GM_COOP && self)
     {
         if (!allowexit && fragexitswitch && i == players.size())
             return false;

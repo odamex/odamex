@@ -518,15 +518,15 @@ gitem_t itemlist[] = {
 	},
 
 
-	{
-		"gold_flag",
-		NULL,
-		NULL,
-		IT_FLAG,
-		it_goldflag,
-		0,
-		"Gold Flag"
-	},
+	{ // Remove me in 0.5
+		"gold_flag", // Remove me in 0.5
+		NULL, // Remove me in 0.5
+		NULL, // Remove me in 0.5
+		IT_FLAG, // Remove me in 0.5
+		it_goldflag, // Remove me in 0.5
+		0, // Remove me in 0.5
+		"Gold Flag" // Remove me in 0.5
+	}, // Remove me in 0.5
 	// ---------------------------------------------------------------------------------------------------------
 
 

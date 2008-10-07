@@ -183,7 +183,7 @@ CVAR_FUNC_DECL (hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (snd_crossover, "0", CVAR_ARCHIVE)
 // number of channels available
-CVAR (snd_channels, "8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Sound volume
 CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Music volume

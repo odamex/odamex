@@ -9,7 +9,6 @@ proc main {} {
 
  # set defaults
  server "globalspectatorchat 1"
- server "teamplay 0"
  server "map 1"
  client "print_stdout 1"
  client "cl_name Player"

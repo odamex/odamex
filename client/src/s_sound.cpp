@@ -92,6 +92,9 @@ int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
 // joek - hack for silent bfg
 int sfx_noway, sfx_oof;
 
+// Nes - pre-v0.4.2 compat with no CHAN_ANNOUNCER
+extern int gameversion;
+
 // [RH] Print sound debugging info?
 cvar_t noisedebug ("noise", "0", 0);
 
@@ -524,6 +527,12 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	{
 		basepriority = -1000;
 	}
+	else if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
+			(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
+			&& gametype == GM_CTF)
+	{
+		basepriority = 300;
+	}
 	else if (attenuation <= 0)
 	{
 		basepriority = 200;
@@ -578,7 +587,12 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	S_StopSound (pt, channel);
 
   // try to find a channel
-	cnum = S_getChannel(pt, sfx, priority);
+	if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
+		(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
+		&& gametype == GM_CTF)
+		cnum = channel;
+	else
+		cnum = S_getChannel(pt, sfx, priority);
 
   // no channel found
 	if (cnum < 0)
@@ -727,6 +741,10 @@ void S_StopSound (fixed_t *pt)
 	for (unsigned int i = 0; i < numChannels; i++)
 		if (Channel[i].sfxinfo && (Channel[i].pt == pt))
 		{
+			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
+				(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
+				&& gametype == GM_CTF)
+				return;
 			S_StopChannel (i);
 		}
 }
