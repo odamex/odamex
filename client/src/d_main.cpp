@@ -1416,6 +1416,8 @@ void D_DoomMain (void)
 	P_Init ();
 
 	Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");
+	Printf (PRINT_HIGH, "S_Init: default sfx volume is %g\n", (float)snd_sfxvolume);
+	Printf (PRINT_HIGH, "S_Init: default music volume is %g\n", (float)snd_musicvolume);
 	S_Init (snd_sfxvolume, snd_musicvolume);
 
 	I_FinishClockCalibration ();
@@ -1456,7 +1458,7 @@ void D_DoomMain (void)
 				serverside = true;
 				allowexit = "1";
 				nomonsters = "0";
-				deathmatch = "0";
+				gametype = GM_COOP;
 
 				players.clear();
 				players.push_back(player_t());

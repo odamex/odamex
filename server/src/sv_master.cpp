@@ -92,6 +92,8 @@ EXTERN_CVAR (cleanmaps)
 EXTERN_CVAR (fragexitswitch)
 //bond===========================
 
+EXTERN_CVAR (teamsinplay)
+
 EXTERN_CVAR (maxplayers)
 EXTERN_CVAR (password)
 EXTERN_CVAR (website)
@@ -357,10 +359,10 @@ void SV_SendServerInfo()
 	for (i = 1; i < numwads; ++i)
 		MSG_WriteString(&ml_message, wadnames[i].c_str());
 
-	MSG_WriteBool(&ml_message, (deathmatch ? true : false));
+	MSG_WriteBool(&ml_message, (gametype == GM_DM));
 	MSG_WriteByte(&ml_message, (BYTE)skill);
-    MSG_WriteBool(&ml_message, (teamplay ? true : false));
-	MSG_WriteBool(&ml_message, (ctfmode ? true : false));
+	MSG_WriteBool(&ml_message, (gametype == GM_TEAMDM));
+	MSG_WriteBool(&ml_message, (gametype == GM_CTF));
 
 	for (i = 0; i < players.size(); ++i)
 	{
@@ -370,7 +372,7 @@ void SV_SendServerInfo()
 			MSG_WriteShort(&ml_message, players[i].fragcount);
 			MSG_WriteLong(&ml_message, players[i].ping);
 
-			if (teamplay || ctfmode)
+			if (gametype == GM_TEAMDM || gametype == GM_CTF)
 				MSG_WriteByte(&ml_message, players[i].userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);
@@ -382,16 +384,18 @@ void SV_SendServerInfo()
 
 	MSG_WriteString(&ml_message, website.cstring());
 
-	if (ctfmode || teamplay)
+	if (gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		MSG_WriteLong(&ml_message, scorelimit);
 		
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
-			MSG_WriteBool(&ml_message, (TEAMenabled[i] ? true : false));
-
-			if (TEAMenabled[i])
+			if ((gametype == GM_CTF && i < 2) || (gametype != GM_CTF && i < teamsinplay)) {
+				MSG_WriteByte(&ml_message, 1);
 				MSG_WriteLong(&ml_message, TEAMpoints[i]);
+			} else {
+				MSG_WriteByte(&ml_message, 0);
+			}
 		}
 	}
 	
@@ -560,7 +564,7 @@ void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 			MSG_WriteShort(&ml_message, players[i].fragcount);
 			MSG_WriteShort(&ml_message, players[i].ping);
 
-			if (teamplay || ctfmode)
+			if (gametype == GM_TEAMDM || gametype == GM_CTF)
 				MSG_WriteByte(&ml_message, players[i].userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -115,6 +115,18 @@ int M_Random()
 void M_ClearRandom (void)
 {
 	rndindex = prndindex = 0;
+}
+
+void P_SerializeRNGState (FArchive &arc)
+{
+	if (arc.IsStoring ())
+	{
+		arc << prndindex;
+	}
+	else
+	{
+		arc >> prndindex;
+	}
 }
 
 

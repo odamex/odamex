@@ -160,7 +160,7 @@ void ST_initNew (void)
 	widestnum = widest;
 	numheight = tallnum[0]->height();
 
-	if (multiplayer && (!deathmatch || demoplayback || !netgame) && level.time)
+	if (multiplayer && (gametype == GM_COOP || demoplayback || !netgame) && level.time)
 		NameUp = level.time + 2*TICRATE;
 }
 
@@ -273,11 +273,11 @@ void ST_newDraw (void)
 	}
 
 	// Draw top-right info. (Keys/Frags/Score)
-    if (ctfmode)
+    if (gametype == GM_CTF)
     {
 		ST_newDrawCTF();
     }
-	else if (deathmatch)
+	else if (gametype != GM_COOP)
 	{
 		// Draw frags (in DM)
 		ST_DrawNumRight (screen->width - 2, 1, screen, plyr->fragcount);

@@ -1832,7 +1832,7 @@ void A_BossDeath (AActor *actor)
 	}
 
 	// [RH] If noexit, then don't end the level.
-	if (deathmatch && !allowexit)
+	if (gametype != GM_COOP && !allowexit)
 		return;
 
 	G_ExitLevel (0, 1);
@@ -1956,7 +1956,7 @@ void A_BrainExplode (AActor *mo)
 void A_BrainDie (AActor *mo)
 {
 	// [RH] If noexit, then don't end the level.
-	if (deathmatch && !allowexit)
+	if (gametype != GM_COOP && !allowexit)
 		return;
 
 	G_ExitLevel (0, 1);

@@ -8,6 +8,7 @@
 		<Option virtualFolders="dialogs\;network\;" />
 		<Build>
 			<Target title="Win Release (GCC)">
+				<Option platforms="Windows;" />
 				<Option output="..\odalaunch.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\gcc\release" />
@@ -31,6 +32,7 @@
 				</Environment>
 			</Target>
 			<Target title="Win Debug (GCC)">
+				<Option platforms="Windows;" />
 				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\gcc\debug" />
@@ -38,7 +40,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
+					<Add option="-gdwarf-2" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -55,6 +57,7 @@
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
+				<Option platforms="Unix;" />
 				<Option output="..\odalaunch" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
@@ -74,6 +77,7 @@
 				</Environment>
 			</Target>
 			<Target title="Unix Debug">
+				<Option platforms="Unix;" />
 				<Option output="..\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
@@ -81,7 +85,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
+					<Add option="-gdwarf-2" />
 				</Compiler>
 				<ExtraCommands>
 					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
@@ -92,6 +96,7 @@
 				</Environment>
 			</Target>
 			<Target title="Mac Release">
+				<Option platforms="Mac;" />
 				<Option output="..\odalaunch" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
@@ -111,6 +116,7 @@
 				</Environment>
 			</Target>
 			<Target title="Mac Debug">
+				<Option platforms="Mac;" />
 				<Option output="..\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
@@ -118,7 +124,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
+					<Add option="-gdwarf-2" />
 				</Compiler>
 				<ExtraCommands>
 					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
@@ -129,6 +135,7 @@
 				</Environment>
 			</Target>
 			<Target title="Win Release (VC)">
+				<Option platforms="Windows;" />
 				<Option output="..\odalaunch.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\vc\release" />
@@ -205,6 +212,7 @@
 				</Environment>
 			</Target>
 			<Target title="Win Debug (VC)">
+				<Option platforms="Windows;" />
 				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\vc\debug" />

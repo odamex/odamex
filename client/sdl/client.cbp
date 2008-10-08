@@ -41,7 +41,7 @@
 				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
+					<Add option="-gdwarf-2" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -122,15 +122,23 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="2" />
 				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
-					<Add option="-DUNIX" />
-					<Add option="-DLINUX" />
+					<Add option="-gdwarf-2" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
-					<Add directory="\usr\include\SDL" />
 				</Compiler>
+				<Linker>
+					<Add library="mingw32" />
+					<Add library="winmm" />
+					<Add library="wsock32" />
+					<Add library="mingw32" />
+					<Add library="winmm" />
+					<Add library="wsock32" />
+				</Linker>
 			</Target>
 			<Target title="Win Release (VC)">
 				<Option platforms="Windows;" />

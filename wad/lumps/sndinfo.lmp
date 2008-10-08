@@ -334,11 +334,13 @@ ctf/f-flaggrab		dsffg
 ctf/f-flagreturn	dsffr
 ctf/f-flagscore		dsffs
 ctf/f-flagdrop		dsffd
+ctf/f-flagmanualreturn	dsffm
 
 ctf/e-flaggrab		dsefg
 ctf/e-flagreturn	dsefr
-ctf/e-flagscore	dsefs
+ctf/e-flagscore		dsefs
 ctf/e-flagdrop		dsefd
+ctf/e-flagmanualreturn	dsefm
 
 // Any new sounds have to be last (for clients to use older servers)
 misc/pljoin			dspljoin

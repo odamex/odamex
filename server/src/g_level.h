@@ -176,6 +176,3 @@ void G_UnSnapshotLevel (bool keepPlayers);
 void G_SerializeSnapshots (FArchive &arc);
 
 #endif //__G_LEVEL_H__
-
-void SV_MapStart (void);
-void SV_MapEnd (void);

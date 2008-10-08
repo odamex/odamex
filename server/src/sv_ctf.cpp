@@ -30,12 +30,9 @@
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
-EXTERN_CVAR (usectf)
-EXTERN_CVAR (blueteam)
-EXTERN_CVAR (redteam)
-EXTERN_CVAR (goldteam)
-
 extern int shotclock;
+
+EXTERN_CVAR (teamsinplay)
 
 EXTERN_CVAR (ctf_manualreturn)
 EXTERN_CVAR (ctf_flagathometoscore)
@@ -43,9 +40,6 @@ EXTERN_CVAR (ctf_flagtimeout)
 
 flagdata CTFdata[NUMFLAGS];
 int TEAMpoints[NUMFLAGS];
-bool TEAMenabled[NUMFLAGS];
-
-bool ctfmode = false;
 
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
@@ -72,31 +66,9 @@ static int ctf_points[NUM_CTF_SCORE] =
 	3, // CARRIERKILL
 	2, // RETURN
 	10, // CAPTURE
-	0 // DROP
+	0, // DROP
+	1 // MANUALRETURN
 };
-
-//
-//	[Toke - CTF] CTF_Load
-//	Loads CTF mode
-//
-void CTF_Load (void)
-{
-	if (!usectf) return;
-
-	for(size_t i = 0; i < NUMFLAGS; i++)
-		TEAMpoints[i] = 0;
-
-	ctfmode = true;
-}
-
-//
-//	[Toke - CTF] CTF_Unload
-//	Unloads CTF mode
-//
-void CTF_Unload (void)
-{
-	ctfmode = false;
-}
 
 //
 //	[Toke - CTF] SV_CTFEvent
@@ -181,7 +153,7 @@ void SV_FlagGrab (player_t &player, flag_t f, bool firstgrab)
 		}
 	} else {
 		SV_BroadcastPrintf (PRINT_HIGH, "%s is recovering the %s flag\n", player.userinfo.netname, team_names[f]);
-		SV_CTFEvent (f, SCORE_GRAB, player);
+		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
 	}
 }
 
@@ -258,16 +230,16 @@ bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
 
 	if(player.userinfo.team == (team_t)f)
 	{
-		if(CTFdata[f].state == flag_home)
+		if(CTFdata[f].state == flag_home) // Do nothing.
 		{
 			// score?
-			for(size_t i = 0; i < NUMFLAGS; i++)
-				if(player.userinfo.team != (team_t)i && player.flags[i] && ctf_flagathometoscore)
-					SV_FlagScore(player, (flag_t)i);
+			//for(size_t i = 0; i < NUMFLAGS; i++)
+			//	if(player.userinfo.team != (team_t)i && player.flags[i] && ctf_flagathometoscore)
+			//		SV_FlagScore(player, (flag_t)i);
 
 			return false;
 		}
-		else
+		else // Returning team flag.
 		{
 			if (ctf_manualreturn)
 				SV_FlagGrab(player, f, firstgrab);
@@ -275,7 +247,7 @@ bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab)
 				SV_FlagReturn(player, f);
 		}
 	}
-	else
+	else // Grabbing enemy flag.
 	{
 		SV_FlagGrab(player, f, firstgrab);
 	}
@@ -293,15 +265,17 @@ void SV_SocketTouch (player_t &player, flag_t f)
 	if (shotclock)
 		return;
 
+	// Returning team's flag manually.
 	if (player.userinfo.team == (team_t)f && player.flags[f]) {
-		player.flags[f] = false; // take ex-carrier's flag
+		player.flags[f] = false;
 		CTFdata[f].flagger = 0;
 		SV_FlagReturn(player, f);
 	}
 	
+	// Scoring with enemy flag.
 	for(size_t i = 0; i < NUMFLAGS; i++)
 		if(player.userinfo.team == (team_t)f && player.userinfo.team != (team_t)i &&
-			player.flags[i] && !ctf_flagathometoscore)
+			player.flags[i] && (!ctf_flagathometoscore || CTFdata[f].state == flag_home))
 			SV_FlagScore(player, (flag_t)i);
 }
 
@@ -330,17 +304,6 @@ void SV_FlagDrop (player_t &player, flag_t f)
 }
 
 //
-//	[Toke - CTF] SV_FlagSetup
-//	Sets up flags at the start of each map
-//
-void SV_FlagSetup (void)
-{
-	for(size_t i = 0; i < NUMFLAGS; i++)
-		if(TEAMenabled[i])
-			CTF_SpawnFlag((flag_t)i);
-}
-
-//
 //	[Toke - CTF] CTF_RunTics
 //	Runs once per gametic when ctf is enabled
 //
@@ -354,6 +317,9 @@ void CTF_RunTics (void)
 		flagdata *data = &CTFdata[i];
 
 		if(data->state != flag_dropped)
+			continue;
+		
+		if (!ctf_flagtimeout)
 			continue;
 
 		if(data->timeout--)
@@ -422,16 +388,12 @@ void CTF_CheckFlags (player_t &player)
 //
 void CTF_RememberFlagPos (mapthing2_t *mthing)
 {
-	if (!ctfmode)
-		return;
-
 	flag_t f;
 
 	switch(mthing->type)
 	{
 		case ID_BLUE_FLAG: f = it_blueflag; break;
 		case ID_RED_FLAG: f = it_redflag; break;
-		case ID_GOLD_FLAG: f = it_goldflag; break;
 		default:
 			return;
 	}
@@ -441,6 +403,8 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 	data->x = mthing->x << FRACBITS;
 	data->y = mthing->y << FRACBITS;
 	data->z = mthing->z << FRACBITS;
+	
+	data->flaglocated = true;
 }
 
 //
@@ -453,7 +417,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
     {
         case TEAM_BLUE:
         {
-            if (!blueteam)
+            if (gametype != GM_CTF && teamsinplay < 1)
                 break;
             
             for (int j = 0; j < MaxBlueTeamStarts; ++j)
@@ -469,7 +433,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
         
         case TEAM_RED:
         {
-            if (!redteam)
+            if (gametype != GM_CTF && teamsinplay < 2)
                 break;
                 
             for (size_t j = 0; j < MaxRedTeamStarts; ++j)
@@ -485,7 +449,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
 		
         case TEAM_GOLD:
         {
-            if (!goldteam)
+            if (gametype != GM_CTF && teamsinplay < 3)
                 break;
             
             for (size_t j = 0; j < MaxGoldTeamStarts; ++j)
@@ -506,14 +470,19 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
         break;
     }
 
-    if (blueteam && MaxBlueTeamStarts)
-        return &blueteamstarts[0];
-    else 
-    if (redteam && MaxRedTeamStarts)
-        return &redteamstarts[0];
-    else
-    if (goldteam && MaxGoldTeamStarts)
-        return &goldteamstarts[0];
+	if (gametype == GM_CTF) {
+		if (MaxBlueTeamStarts) return &blueteamstarts[0];
+		else if (MaxRedTeamStarts) return &redteamstarts[0];
+	} else {
+		if (teamsinplay >= 1 && MaxBlueTeamStarts)
+			return &blueteamstarts[0];
+		else 
+		if (teamsinplay >= 2 && MaxRedTeamStarts)
+			return &redteamstarts[0];
+		else
+		if (teamsinplay >= 3 && MaxGoldTeamStarts)
+			return &goldteamstarts[0];
+	}
 
 	return NULL;
 }
@@ -531,6 +500,7 @@ static const char *flag_sound[NUM_CTF_SCORE][2] =
 	{"ctf/f-flagreturn", "ctf/e-flagreturn"}, // RETURN
 	{"ctf/f-flagscore", "ctf/e-flagscore"}, // CAPTURE
 	{"ctf/f-flagdrop", "ctf/e-flagdrop"}, // DROP
+	{"ctf/f-flagmanualreturn", "ctf/e-flagmanualreturn"}, // MANUALRETURN
 };
 
 //
@@ -543,7 +513,7 @@ void CTF_Sound (flag_t f, flag_score_t event)
 	{
 		const char *snd = flag_sound[event][f == (flag_t)i];
 		if(snd && *snd)
-			SV_SoundTeam (CHAN_VOICE, snd, ATTN_NONE, i);
+			SV_SoundTeam ((f == (flag_t)i) ? CHAN_ANNOUNCERF : CHAN_ANNOUNCERE, snd, ATTN_NONE, i);
 	}
 }
 

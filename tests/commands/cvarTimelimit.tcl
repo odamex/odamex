@@ -7,8 +7,7 @@ source tests/commands/common.tcl
 proc deathmatch {} {
  global server client serverout clientout port
 
- server "deathmatch 1"
- server "teamplay 0"
+ server "gametype 1"
 
  # 7 second timelimit
  clear
@@ -31,8 +30,7 @@ proc deathmatch {} {
 proc coop {} {
  global server client serverout clientout port
 
- server "deathmatch 0"
- server "teamplay 0"
+ server "gametype 0"
 
  # 7 second timelimit
  clear
@@ -57,8 +55,7 @@ proc coop {} {
 proc teamplay {} {
  global server client serverout clientout port
 
- server "deathmatch 1"
- server "teamplay 1"
+ server "gametype 2"
 
  # 7 second timelimit
  clear

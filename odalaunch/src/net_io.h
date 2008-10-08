@@ -59,8 +59,8 @@ class BufferedSocket
                
         wxUint32 m_SendPing, m_ReceivePing;
         
-        void SetSendPing(wxUint32 i) { m_SendPing = i; }
-        void SetRecvPing(wxUint32 i) { m_ReceivePing = i; }
+        void SetSendPing(const wxUint32 &i) { m_SendPing = i; }
+        void SetRecvPing(const wxUint32 &i) { m_ReceivePing = i; }
         
         // we need to do something with this, one day
         wxUint32 CheckError();
@@ -73,26 +73,24 @@ class BufferedSocket
         virtual ~BufferedSocket(); // "Choose! Choose the form of the destructor!"
                 
         // Set the outgoing address
-        void SetAddress(const wxString &Address, const wxInt16 &Port) 
-        { 
-            m_RemoteAddress.Hostname(Address); 
-            m_RemoteAddress.Service(Port); 
-        }
-        
-        // Set/get the outgoing address in "address:port" format
+        void SetRemoteAddress(const wxString &Address, const wxInt16 &Port);
+        // Set the outgoing address in "address:port" format
         bool SetRemoteAddress(const wxString &Address);
+        // Gets the outgoing address
+        void GetRemoteAddress(wxString &Address, wxUint16 &Port);
+        // Gets the outgoing address in "address:port" format
         wxString GetRemoteAddress();
 
         // Send/receive data
-        wxInt32 SendData(wxInt32 Timeout);
-        wxInt32 GetData(wxInt32 Timeout);
+        wxInt32 SendData(const wxInt32 &Timeout);
+        wxInt32 GetData(const wxInt32 &Timeout);
         
         // a method for a round-trip time in milliseconds
         wxUint32 GetPing() { return (m_ReceivePing - m_SendPing); }
         
         // Read values
         wxInt32 ReadString(wxString &);
-        wxInt32 ReadBool(bool &boolval);
+        wxInt32 ReadBool(bool &);
         // Signed reads
         wxInt32 Read32(wxInt32 &);
         wxInt32 Read16(wxInt16 &);
@@ -106,7 +104,7 @@ class BufferedSocket
         
         // Write values
         void WriteString(const wxString &);
-        void WriteBool(const bool &val);
+        void WriteBool(const bool &);
         // Signed writes
         void Write32(const wxInt32 &);
         void Write16(const wxInt16 &);

@@ -496,10 +496,10 @@ void ST_refreshBackground(void)
 
 		BG->DrawPatch (sbar, 0, 0);
 
-		if (ctfmode) {
+		if (gametype == GM_CTF) {
 			BG->DrawPatch (flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
 			BG->DrawPatch (flagbox, ST_FLGBOXX, ST_FLGBOXY);
-		} else if (!deathmatch)
+		} else if (gametype == GM_COOP)
 			BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
 
 		if (multiplayer)
@@ -534,7 +534,7 @@ BOOL CheckCheatmode (void)
 	if (skill == sk_nightmare && !multiplayer)
         return true;
 	
-	if ((multiplayer || deathmatch) && !allowcheats)
+	if ((multiplayer || gametype != GM_COOP) && !allowcheats)
 	{
 		Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 		return true;
@@ -1187,18 +1187,18 @@ void ST_updateWidgets(void)
 	ST_updateFaceWidget();
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && !((int)deathmatch);
+	st_armson = st_statusbaron && gametype == GM_COOP;
 
 	// used by w_frags widget
-	st_fragson = (int)deathmatch && st_statusbaron;
+	st_fragson = gametype != GM_COOP && st_statusbaron;
 
 	//	[Toke - CTF]
-	if (ctfmode)
+	if (gametype == GM_CTF)
 		st_fragscount = TEAMpoints[plyr->userinfo.team]; // denis - todo - scoring for ctf
 	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
 
-	if (ctfmode) {
+	if (gametype == GM_CTF) {
 		switch(CTFdata[it_blueflag].state)
 		{
 			case flag_home:
@@ -1323,10 +1323,10 @@ void ST_drawWidgets(bool refresh)
 	int i;
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && !((int)deathmatch);
+	st_armson = st_statusbaron && gametype == GM_COOP;
 
 	// used by w_frags widget
-	st_fragson = (int)deathmatch && st_statusbaron;
+	st_fragson = gametype != GM_COOP && st_statusbaron;
 
 	STlib_updateNum (&w_ready, refresh);
 
@@ -1344,13 +1344,13 @@ void ST_drawWidgets(bool refresh)
 
 	STlib_updateMultIcon (&w_faces, refresh);
 
-	if (!ctfmode) // [Toke - CTF] Dont display keys in ctf mode
+	if (gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
 		for (i = 0; i < 3; i++)
 			STlib_updateMultIcon (&w_keyboxes[i], refresh);
 
 	STlib_updateNum (&w_frags, refresh);
 
-	if (ctfmode) {
+	if (gametype == GM_CTF) {
 		STlib_updateBinIcon (&w_flagboxblu, refresh);
 		STlib_updateBinIcon (&w_flagboxred, refresh);
 	}
@@ -1387,7 +1387,7 @@ void ST_Drawer (void)
 	{
 		if (DrawNewHUD)
 			ST_newDraw ();
-		else if (DrawNewSpecHUD && ctfmode) // [Nes] - Only specator new HUD is in ctf.
+		else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
 			ST_newDrawCTF();
 		st_firsttime = true;
 	}

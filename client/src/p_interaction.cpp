@@ -48,6 +48,8 @@
 
 extern bool predicting;
 
+EXTERN_CVAR (doubleammo)
+
 static void PickupMessage (AActor *toucher, const char *message)
 {
 	// Some maps have multiple items stacked on top of each other.
@@ -94,7 +96,7 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 		num = clipammo[ammo]/2;
 
 	if (skill == sk_baby
-		|| skill == sk_nightmare)
+		|| skill == sk_nightmare || doubleammo)
 	{
 		// give double ammo in trainer mode,
 		// you'll need in nightmare
@@ -161,7 +163,6 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 }
 
 EXTERN_CVAR (weaponstay)
-EXTERN_CVAR (teamplay)
 
 //
 // P_GiveWeapon
@@ -185,7 +186,7 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
-		if (deathmatch || teamplay || ctfmode)
+		if (gametype != GM_COOP)
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 5);
 		else
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 2);
@@ -648,13 +649,13 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 
 	  case SPR_BFLG: // [Toke - CTF] Blue flag
 	  case SPR_RFLG: // [Toke - CTF] Red flag
-	  case SPR_GFLG: // [Toke - CTF] Gold flag
+	  case SPR_GFLG: // [Toke - CTF] Gold flag // Remove me in 0.5
 	  case SPR_BDWN:
 	  case SPR_RDWN:
-	  case SPR_GDWN:
+	  case SPR_GDWN: // Remove me in 0.5
 	  case SPR_BSOK:
 	  case SPR_RSOK:
-	  case SPR_GSOK:
+	  case SPR_GSOK: // Remove me in 0.5
 		return;
 
 	  default:
@@ -931,7 +932,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	if (player)
 	{
 		// end of game hell hack
-		if(!deathmatch /*|| allowexit*/)
+		if(gametype == GM_COOP /*|| allowexit*/)
 		if ((target->subsector->sector->special & 255) == dDamage_End
 			&& damage >= target->health)
 		{

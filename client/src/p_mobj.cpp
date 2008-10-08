@@ -59,6 +59,7 @@ void AActor::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
+		int playerid = player ? player->id : 0;
 		arc << x
 			<< y
 			<< z
@@ -83,15 +84,15 @@ void AActor::Serialize (FArchive &arc)
 			<< movedir
 			<< visdir
 			<< movecount
-			<< target->netid
-			<< lastenemy->netid
+			/*<< target ? target->netid : 0*/
+			/*<< lastenemy ? lastenemy->netid : 0*/
 			<< reactiontime
 			<< threshold
-			<< player
+			<< playerid
 			<< lastlook
-			<< tracer->netid
+			/*<< tracer ? tracer->netid : 0*/
 			<< tid
-			<< goal->netid
+			/*<< goal ? goal->netid : 0*/
 			<< (unsigned)0
 			<< translucency
 			<< waterlevel;
@@ -105,6 +106,7 @@ void AActor::Serialize (FArchive &arc)
 	else
 	{
 		unsigned dummy;
+		unsigned playerid;
 		arc >> x
 			>> y
 			>> z
@@ -129,15 +131,15 @@ void AActor::Serialize (FArchive &arc)
 			>> movedir
 			>> visdir
 			>> movecount
-			>> target->netid
-			>> lastenemy->netid
+			/*>> target->netid*/
+			/*>> lastenemy->netid*/
 			>> reactiontime
 			>> threshold
-			>> player
+			>> playerid
 			>> lastlook
-			>> tracer->netid
+			/*>> tracer->netid*/
 			>> tid
-			>> goal->netid
+			/*>> goal->netid*/
 			>> dummy
 			>> translucency
 			>> waterlevel;
@@ -153,6 +155,12 @@ void AActor::Serialize (FArchive &arc)
 		touching_sectorlist = NULL;
 		LinkToWorld ();
 		AddToHash ();
+		if(playerid && validplayer(idplayer(playerid)))
+		{
+			player = &idplayer(playerid);
+			player->mo = ptr();
+			player->camera = player->mo;
+		}
 	}
 }
 
@@ -168,11 +176,11 @@ void MapThing::Serialize (FArchive &arc)
 	}
 }
 
-AActor::AActor () :   
+AActor::AActor () :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
     floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), 
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0),
     health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
     player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
     translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
@@ -183,7 +191,7 @@ AActor::AActor () :
 
 AActor::AActor (const AActor &other)
 {
-    // TODO: this may be bad, memcpy shouldn't be used to overwrite the data, it should 
+    // TODO: this may be bad, memcpy shouldn't be used to overwrite the data, it should
 	// do a normal deep copy
 	memcpy (&x, &other.x, (byte *)&this[1] - (byte *)&x);
 	self.init(this);
@@ -191,7 +199,7 @@ AActor::AActor (const AActor &other)
 
 AActor &AActor::operator= (const AActor &other)
 {
-	// TODO: this may be bad, memcpy shouldn't be used to overwrite the data, it should 
+	// TODO: this may be bad, memcpy shouldn't be used to overwrite the data, it should
 	// do a normal deep copy
 	memcpy (&x, &other.x, (byte *)&this[1] - (byte *)&x);
 	return *this;
@@ -514,9 +522,9 @@ void P_ZMovement (AActor *mo)
         // So we need to check that this is either retail or commercial
         // (but not doom2)
 
-      int correct_lost_soul_bounce = (gamemode == retail) || 
-                                     ((gamemode == commercial 
-                                     && (gamemission == pack_tnt || 
+      int correct_lost_soul_bounce = (gamemode == retail) ||
+                                     ((gamemode == commercial
+                                     && (gamemission == pack_tnt ||
                                          gamemission == pack_plut)));
 
       if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
@@ -524,7 +532,7 @@ void P_ZMovement (AActor *mo)
 	    // the skull slammed into something
         mo->momz = -mo->momz;
       }
-      
+
 
       if (mo->momz < 0)
       {
@@ -535,7 +543,7 @@ void P_ZMovement (AActor *mo)
 		// after hitting the ground (hard),
 		// and utter appropriate sound.
             mo->player->deltaviewheight = mo->momz>>3;
-            
+
             if (!predicting)
                 S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
          }
@@ -864,7 +872,7 @@ void AActor::RunThink ()
 
 	if(predicting)
 		return;
-	
+
     // cycle through states,
     // calling action functions at transitions
 	if (tics != -1)
@@ -903,11 +911,11 @@ void AActor::RunThink ()
 //
 //
 
-AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :   
+AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
     floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), 
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0),
     health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
     player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
     translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
@@ -1020,7 +1028,7 @@ void P_RespawnSpecials (void)
 		return;
 
 	// only respawn items in deathmatch
-	if (!deathmatch || !itemsrespawn)
+	if (gametype == GM_COOP || !itemsrespawn)
 		return;
 
 	// nothing left to respawn?
@@ -1144,7 +1152,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		p->mo->flags |= MF_SPECTATOR;
 
 	// give all cards in death match mode
-	if (deathmatch)
+	if (gametype != GM_COOP)
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 
@@ -1204,7 +1212,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (!deathmatch &&
+		if (gametype == GM_COOP &&
 			(validplayer(p) && p.ingame()))
 		{
 			P_SpawnPlayer (p, mthing);
@@ -1221,7 +1229,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (mthing->type >= 5080 && mthing->type <= 5082)
 		return;
 
-	if (deathmatch)
+	if (gametype != GM_COOP)
 	{
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
@@ -1231,7 +1239,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (!(mthing->flags & MTF_COOPERATIVE))
 			return;
 	}
-	
+
 	if (!multiplayer)
 	{
 		if (!(mthing->flags & MTF_SINGLE))
@@ -1289,7 +1297,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode

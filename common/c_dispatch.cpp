@@ -354,7 +354,7 @@ BEGIN_COMMAND (exec)
 			continue;
 
         size_t QuoteIndex = line.find_first_of('"');
-        size_t CommentIndex = line.find_first_of("////");
+        size_t CommentIndex = line.find_first_of("//");
 
 		// commented line
 		if(line.length() > 1 && 

@@ -156,7 +156,6 @@ CVAR_FUNC_IMPL (maxplayers)
 }
 
 EXTERN_CVAR (allowcheats)
-EXTERN_CVAR (deathmatch)
 EXTERN_CVAR (fraglimit)
 EXTERN_CVAR (timelimit)
 EXTERN_CVAR (maxcorpses)
@@ -175,13 +174,8 @@ EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (infiniteammo)
 
 // Teamplay/CTF
-EXTERN_CVAR (usectf)
 EXTERN_CVAR (scorelimit)
 EXTERN_CVAR (friendlyfire)
-EXTERN_CVAR (teamplay)
-EXTERN_CVAR (blueteam)
-EXTERN_CVAR (redteam)
-EXTERN_CVAR (goldteam)
 
 // Private server settings
 CVAR_FUNC_IMPL (password)
@@ -606,13 +600,6 @@ BEGIN_COMMAND (say)
 }
 END_COMMAND (say)
 
-BEGIN_COMMAND (ctf)
-{
-	if (ctfmode)	Printf (PRINT_HIGH, "Yes.\n");
-	else			Printf (PRINT_HIGH, "No.\n");
-}
-END_COMMAND (ctf)
-
 
 BEGIN_COMMAND (rquit)
 {
@@ -1014,7 +1001,7 @@ void SV_UpdateFrags (player_t &player)
 
         MSG_WriteMarker (&cl->reliablebuf, svc_updatefrags);
         MSG_WriteByte (&cl->reliablebuf, player.id);
-        if(deathmatch)
+        if(gametype != GM_COOP)
             MSG_WriteShort (&cl->reliablebuf, player.fragcount);
         else
             MSG_WriteShort (&cl->reliablebuf, player.killcount);
@@ -1095,11 +1082,11 @@ void SV_SetupUserInfo (player_t &player)
 		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", old_netname, gendermessage.c_str(), p->userinfo.netname);
 	}
 
-	if (teamplay || ctfmode)
+	if (gametype == GM_TEAMDM || gametype == GM_CTF)
 		SV_CheckTeam (player);
 
 	// kill player if team is changed
-	if (ctfmode || teamplay)
+	if (gametype == GM_TEAMDM || gametype == GM_CTF)
 		if (p->mo && p->userinfo.team != old_team)
 			P_DamageMobj (p->mo, 0, 0, 1000, 0);
 
@@ -1127,6 +1114,8 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 	MSG_WriteShort (&cl->reliablebuf, team);
 }
 
+EXTERN_CVAR (teamsinplay)
+
 //
 //	SV_CheckTeam
 //
@@ -1140,7 +1129,10 @@ void SV_CheckTeam (player_t &player)
 		case TEAM_RED:
 		case TEAM_GOLD:
 
-		if(TEAMenabled[player.userinfo.team])
+		if(gametype == GM_CTF && player.userinfo.team < 2)
+			break;
+
+		if(gametype != GM_CTF && player.userinfo.team < teamsinplay)
 			break;
 
 		default:
@@ -1158,7 +1150,7 @@ void SV_CheckTeam (player_t &player)
 			player.userinfo.color = (0x00FF0000);
 			break;
 		case TEAM_GOLD:
-			player.userinfo.color = (0x0000204E);
+			player.userinfo.color = (0x00FFFF00);
 			break;
 		default:
 			break;
@@ -1173,7 +1165,7 @@ void SV_CheckTeam (player_t &player)
 team_t SV_GoodTeam (void)
 {
 	for(size_t i = 0; i < NUMTEAMS; i++)
-		if(TEAMenabled[i])
+		if((gametype == GM_CTF && i < 2) || (gametype != GM_CTF && i < teamsinplay))
 			return (team_t)i;
 
 	I_Error ("Teamplay is set and no teams are enabled!\n");
@@ -1279,14 +1271,14 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 	if(&a == &b)
 		return false;
 
-	if (teamplay || ctfmode)
+	if (gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		if (a.userinfo.team == b.userinfo.team)
 			return true;
 		else
 			return false;
 	}
-	else if (!deathmatch)
+	else if (gametype == GM_COOP)
 		return true;
 
 	else return false;
@@ -1555,7 +1547,7 @@ void SV_ClientFullUpdate (player_t &pl)
 
 		MSG_WriteMarker(&cl->reliablebuf, svc_updatefrags);
 		MSG_WriteByte(&cl->reliablebuf, players[i].id);
-		if(deathmatch)
+		if(gametype != GM_COOP)
 			MSG_WriteShort(&cl->reliablebuf, players[i].fragcount);
 		else
 			MSG_WriteShort(&cl->reliablebuf, players[i].killcount);
@@ -1568,7 +1560,7 @@ void SV_ClientFullUpdate (player_t &pl)
 	}
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
-	if(teamplay)
+	if(gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		MSG_WriteMarker (&cl->reliablebuf, svc_teampoints);
 		for (i = 0; i < NUMTEAMS; i++)
@@ -1578,7 +1570,7 @@ void SV_ClientFullUpdate (player_t &pl)
 	SV_UpdateHiddenMobj();
 
 	// update flags
-	if(ctfmode)
+	if(gametype == GM_CTF)
 		CTF_Connect(pl);
 
 	// update sectors
@@ -2096,7 +2088,7 @@ void SV_DisconnectClient(player_t &who)
 
 	if(who.mo)
 	{
-		if(ctfmode) // [Toke - CTF]
+		if(gametype == GM_CTF) // [Toke - CTF]
 			CTF_CheckFlags (who);
 
 		who.mo->Destroy();
@@ -2115,7 +2107,7 @@ void SV_DisconnectClient(player_t &who)
 		// Spectator status or team name (TDM/CTF).
 		if (who.spectator)
 			sprintf(str, "SPECTATOR, ");
-		else if (ctfmode || teamplay)
+		else if (gametype == GM_TEAMDM || gametype == GM_CTF)
 			sprintf(str, "%s TEAM, ", team_names[who.userinfo.team]);
 		else
 			*str = '\0';
@@ -2123,13 +2115,13 @@ void SV_DisconnectClient(player_t &who)
 		disconnectmessage += str;
 		
 		// Points (CTF).
-		if (ctfmode) {
+		if (gametype == GM_CTF) {
 			sprintf(str, "%d POINTS, ", who.points);
 			disconnectmessage += str;
 		}
 		
 		// Frags (DM/TDM/CTF) or Kills (Coop).
-		if (deathmatch)
+		if (gametype != GM_COOP)
 			sprintf(str, "%d FRAGS, ", who.fragcount);
 		else
 			sprintf(str, "%d KILLS, ", who.killcount);
@@ -2246,7 +2238,7 @@ void SV_DrawScores()
 	for (i = 0; i < sortedplayers.size(); i++)
 		sortedplayers[i] = &players[i];
 
-    if (ctfmode) {
+    if (gametype == GM_CTF) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
 
         Printf (PRINT_HIGH, "\n");
@@ -2294,7 +2286,7 @@ void SV_DrawScores()
                 if (sortedplayers[i]->spectator)
                         Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
             }
-    } else if (teamplay) {
+    } else if (gametype == GM_TEAMDM) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
         Printf (PRINT_HIGH, "\n");
@@ -2349,7 +2341,7 @@ void SV_DrawScores()
                 if (sortedplayers[i]->spectator)
                         Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
             }
-    } else if (deathmatch) {
+    } else if (gametype != GM_COOP) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
         Printf (PRINT_HIGH, "\n");
@@ -2395,7 +2387,7 @@ void SV_DrawScores()
                 if (sortedplayers[i]->spectator)
                         Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
             }
-    } else if (multiplayer) {
+    } else {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
 
         Printf (PRINT_HIGH, "\n");
@@ -2505,7 +2497,7 @@ void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
 
     for (size_t i=0; i < players.size(); i++)
     {
-		if(!teamplay || players[i].userinfo.team != idplayer(who).userinfo.team)
+		if(!(gametype == GM_TEAMDM || gametype == GM_CTF) || players[i].userinfo.team != idplayer(who).userinfo.team)
 			continue;
 
 		if (players[i].spectator)
@@ -2555,7 +2547,7 @@ void SV_Say(player_t &player)
 			SV_SpectatorPrintf(PRINT_CHAT, "<SPECTATORS> * %s %s\n", player.userinfo.netname, &s[4]);
 		else if(!team)
 			SV_BroadcastPrintf (PRINT_CHAT, "* %s %s\n", player.userinfo.netname, &s[4]);
-		else if(teamplay)
+		else if(gametype == GM_TEAMDM || gametype == GM_CTF)
 			SV_TeamPrintf(PRINT_CHAT, player.id, "<TEAM> * %s %s\n", player.userinfo.netname, &s[4]);
 	}
 	else
@@ -2564,7 +2556,7 @@ void SV_Say(player_t &player)
 			SV_SpectatorPrintf (PRINT_CHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
 		else if(!team)
 			SV_BroadcastPrintf (PRINT_CHAT, "%s: %s\n", player.userinfo.netname, s);
-		else if(teamplay)
+		else if(gametype == GM_TEAMDM || gametype == GM_CTF)
 			SV_TeamPrintf (PRINT_TEAMCHAT, player.id, "<%s to TEAM> %s\n", player.userinfo.netname, s);
 	}
 }
@@ -3150,7 +3142,10 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	if(team >= NUMTEAMS)
 		return;
 
-	if(!TEAMenabled[team])
+	if(gametype == GM_CTF && team >= 2)
+		return;
+
+	if(gametype != GM_CTF && team >= teamsinplay)
 		return;
 
 	team_t old_team = player.userinfo.team;
@@ -3169,14 +3164,14 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 			break;
 
 		case TEAM_GOLD:
-			player.userinfo.skin = R_FindSkin ("GoldTeam"); // denis - todo - test this
+			player.userinfo.skin = R_FindSkin ("GoldTeam");
 			break;
 
 		default:
 			break;
 	}
 
-	if (ctfmode || teamplay)
+	if (gametype == GM_TEAMDM || gametype == GM_CTF)
 		if (player.mo && player.userinfo.team != old_team)
 			P_DamageMobj (player.mo, 0, 0, 1000, 0);
 }
@@ -3228,7 +3223,7 @@ void SV_Spectate (player_t &player)
 					}
 					P_KillMobj(NULL, player.mo, NULL, true);
 					player.playerstate = PST_REBORN;
-					if (!teamplay && !ctfmode)
+					if (gametype != GM_TEAMDM && gametype != GM_CTF)
 						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname);
 					else
 						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game on the %s team.\n", 
@@ -3252,7 +3247,7 @@ void SV_Spectate (player_t &player)
 			player.playerstate = PST_LIVE;
 			player.joinafterspectatortime = level.time;
 
-			if (ctfmode)
+			if (gametype == GM_CTF)
 				CTF_CheckFlags (player);
 
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
@@ -3592,7 +3587,7 @@ void SV_TimelimitCheck()
 	
 	// LEVEL TIMER
 	if (players.size()) {
-		if (deathmatch && !teamplay && !ctfmode) {
+		if (gametype == GM_DM) {
 			player_t *winplayer = &players[0];
 			bool drawgame = false;
 			
@@ -3610,7 +3605,7 @@ void SV_TimelimitCheck()
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game is a draw!\n");
 			else
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game won by %s!\n", winplayer->userinfo.netname);
-		} else if (teamplay || ctfmode) {
+		} else if (gametype == GM_TEAMDM || gametype == GM_CTF) {
 			team_t winteam = SV_WinningTeam ();
 
 			if(winteam == TEAM_NONE)
@@ -3630,7 +3625,7 @@ void SV_TimelimitCheck()
 //
 void SV_GameTics (void)
 {
-	if (ctfmode)
+	if (gametype == GM_CTF)
 		CTF_RunTics();
 
 	if(gamestate == GS_LEVEL)
@@ -3779,36 +3774,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
-
-//
-//	SV_MapEnd
-//
-//	Runs once at the END of each map BEFORE the map has been loaded,
-//
-void SV_MapEnd (void)
-{
-	if (ctfmode)
-		CTF_Unload (); // [Toke - CTF - Setup] Turns off CTF mode at the end of each map
-}
-
-//
-//	SV_MapStart
-//
-//	Runs once at the START of each map AFTER the map has been loaded,
-//
-void SV_MapStart (void)
-{
-	if (ctfmode)
-		SV_FlagSetup (); // [Toke - CTF - Setup] Sets up the flags at the start of each CTF map
-
-	// Setup teamplay teams
-	if (teamplay && !ctfmode)
-	{
-		TEAMenabled[TEAM_BLUE] = blueteam ? true : false;
-		TEAMenabled[TEAM_RED] = redteam ? true : false;
-		TEAMenabled[TEAM_GOLD] = goldteam ? true : false;
-	}
-}
 
 void OnChangedSwitchTexture (line_t *line, int useAgain)
 {
