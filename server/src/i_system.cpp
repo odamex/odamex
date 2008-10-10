@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include <sstream>
+#include <limits>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -166,8 +167,10 @@ QWORD I_UnwrapTime(DWORD now32)
 	static QWORD last = 0;
 	QWORD now = now32;
 
-	if(now < last%UINT_MAX)
-		last += (UINT_MAX-(last%UINT_MAX)) + now;
+	static DWORD max = numeric_limits<now32>::max;
+
+	if(now < last%max)
+		last += (max-(last%max)) + now;
 	else
 		last = now;
 
