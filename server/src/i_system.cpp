@@ -166,8 +166,7 @@ QWORD I_UnwrapTime(DWORD now32)
 {
 	static QWORD last = 0;
 	QWORD now = now32;
-
-	static DWORD max = numeric_limits<now32>::max;
+	static QWORD max = std::numeric_limits<DWORD>::max();
 
 	if(now < last%max)
 		last += (max-(last%max)) + now;
