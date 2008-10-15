@@ -359,7 +359,7 @@ void SV_SendServerInfo()
 	for (i = 1; i < numwads; ++i)
 		MSG_WriteString(&ml_message, wadnames[i].c_str());
 
-	MSG_WriteBool(&ml_message, (gametype == GM_DM));
+	MSG_WriteBool(&ml_message, (gametype == GM_DM || gametype == GM_TEAMDM));
 	MSG_WriteByte(&ml_message, (BYTE)skill);
 	MSG_WriteBool(&ml_message, (gametype == GM_TEAMDM));
 	MSG_WriteBool(&ml_message, (gametype == GM_CTF));
