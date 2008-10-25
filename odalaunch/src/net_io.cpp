@@ -150,7 +150,7 @@ bool BufferedSocket::CreateSocket()
 
     DestroySocket();
 
-    Socket = new wxDatagramSocket(m_LocalAddress, wxSOCKET_NONE);
+    Socket = new wxDatagramSocket(m_LocalAddress, wxSOCKET_NOWAIT);
     
     if(!Socket->IsOk())
     {
@@ -199,19 +199,7 @@ wxInt32 BufferedSocket::SendData(const wxInt32 &Timeout)
     m_SendPing = sw.Time();
                 
     // send the data
-    if (!Socket->WaitForWrite(0, Timeout))
-    {
-        CheckError();
-        
-        m_SendPing = 0;
-        m_ReceivePing = 0;
-        
-        DestroySocket();
-        
-        return 0;
-    }
-    else
-        Socket->SendTo(m_RemoteAddress, m_SendBuffer, WrittenSize);
+    Socket->SendTo(m_RemoteAddress, m_SendBuffer, WrittenSize);
     
     CheckError();    
         
@@ -229,8 +217,38 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
 
     // clear it
     memset(m_ReceiveBuffer, 0, sizeof(m_ReceiveBuffer));
-    
-    if (!Socket->WaitForRead(0, Timeout))
+
+    wxUint32 ReceivedSize = 0;
+    wxInt32 TimeLeft = 0;
+
+    wxThread *wxTThis = wxThread::This();
+    bool IsMainThread = wxThread::IsMain();
+    bool DestroyMe = false;
+
+    while (ReceivedSize == 0 && DestroyMe == false)
+    {
+        Socket->RecvFrom(ReceivedAddress, m_ReceiveBuffer, MAX_PAYLOAD);
+
+        ReceivedSize = Socket->LastCount();
+        
+        ++TimeLeft;
+        
+        if (TimeLeft >= Timeout)
+            break;
+        
+        // We are inside a worker thread
+        if (IsMainThread == false && wxTThis != NULL)
+        {            
+            if (wxTThis->TestDestroy())
+                DestroyMe = true;
+                
+            wxThread::Sleep(1);
+        }
+        else
+            wxYieldIfNeeded();
+    }
+
+    if (ReceivedSize == 0 || TimeLeft >= Timeout || DestroyMe == true)
     {
         CheckError();
         
@@ -241,17 +259,12 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
         
         return 0;
     }
-    else
-        Socket->RecvFrom(ReceivedAddress, m_ReceiveBuffer, MAX_PAYLOAD);
 
     CheckError();
 
     // apply the receive ping
     // (Horrible, needs to be improved)
     m_ReceivePing = sw.Time();
-
-    // get number of bytes received
-    wxUint32 ReceivedSize = Socket->LastCount();
 
     // clear the socket queue
     Socket->Discard();
