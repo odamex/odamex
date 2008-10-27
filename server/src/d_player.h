@@ -216,7 +216,7 @@ public:
     int			prefcolor;			// Nes - Preferred color. Server only.
     
     // For flood protection
-    struct
+    struct LastMessage_s
     {
         QWORD Time;
         std::string Message;

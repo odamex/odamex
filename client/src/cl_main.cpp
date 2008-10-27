@@ -2093,12 +2093,41 @@ void CL_ExitLevel()
 	}
 }
 
-struct download_t
+// GhostlyDeath <October 26, 2008> -- VC6 Compiler Error
+// C2552: 'identifier' : non-aggregates cannot be initialized with initializer list
+// What does this mean? VC6 considers std::string non-static (that it changes every time?)
+// So it complains because std::string has a constructor!
+
+/*struct download_s
 {
-	std::string filename, md5;
-	buf_t *buf;
-	unsigned int got_bytes;
-} download = { "", "", NULL, 0 };
+	public:
+		std::string filename;
+		std::string md5;
+		buf_t *buf;
+		unsigned int got_bytes;
+} download = { "", "", NULL, 0 };*/
+
+// this works though!
+struct download_s
+{
+	public:
+		std::string filename;
+		std::string md5;
+		buf_t *buf;
+		unsigned int got_bytes;
+
+		download_s()
+		{
+			filename = "";
+			md5 = "";
+			buf = NULL;
+			got_bytes = 0;
+		}
+
+		~download_s()
+		{
+		}
+} download;
 
 
 void IntDownloadComplete(void)
