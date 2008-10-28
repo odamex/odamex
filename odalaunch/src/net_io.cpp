@@ -231,9 +231,8 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
 
         ReceivedSize = Socket->LastCount();
         
-        ++TimeLeft;
-        
-        if (TimeLeft >= Timeout)
+        // No need to yield after this, break out and finish
+        if (ReceivedSize)
             break;
         
         // We are inside a worker thread
@@ -242,10 +241,15 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
             if (wxTThis->TestDestroy())
                 DestroyMe = true;
                 
-            wxThread::Sleep(1);
+            wxTThis->Sleep(1);
         }
         else
-            wxYieldIfNeeded();
+            wxMilliSleep(1);
+
+        ++TimeLeft;
+
+        if (TimeLeft >= Timeout)
+            break;
     }
 
     if (ReceivedSize == 0 || TimeLeft >= Timeout || DestroyMe == true)
