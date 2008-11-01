@@ -1280,19 +1280,17 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 	{
 		int pain = P_Random();
+		
 		if(!player)
 		{
-			if(target->health - damage > 0)
+			for (size_t i = 0; i < players.size(); i++)
 			{
-				for (size_t i = 0; i < players.size(); i++)
-				{
-					client_t *cl = &clients[i];
+				client_t *cl = &clients[i];
 
-					MSG_WriteMarker (&cl->reliablebuf, svc_damagemobj);
-					MSG_WriteShort (&cl->reliablebuf, target->netid);
-					MSG_WriteShort (&cl->reliablebuf, target->health - damage);
-					MSG_WriteByte (&cl->reliablebuf, pain);
-				}
+				MSG_WriteMarker (&cl->reliablebuf, svc_damagemobj);
+				MSG_WriteShort (&cl->reliablebuf, target->netid);
+				MSG_WriteShort (&cl->reliablebuf, target->health);
+				MSG_WriteByte (&cl->reliablebuf, pain);
 			}
 		}
 
