@@ -39,6 +39,9 @@
 #include <wx/splitter.h>
 #include "wx/dynarray.h"
 
+#include <vector>
+
+#include "query_thread.h"
 #include "net_packet.h"
 
 // custom event declarations
@@ -141,7 +144,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         // Only set these below if you got a response!
         // [Russell] - iirc, volatile on a struct doesn't work as well as it
         // should
-        volatile mtcs_struct_t mtcs_Request;        
+        mtcs_struct_t mtcs_Request;        
 
         // Monitor Thread Return Signals
         // The result of the signal sent above, sent to the callback function
@@ -166,7 +169,7 @@ class dlgMain : public wxFrame, wxThreadHelper
             wxInt32 ServerListIndex;
         } mtrs_struct_t;
         
-        volatile mtrs_struct_t mtrs_Result;
+        mtrs_struct_t mtrs_Result;
         
         typedef enum
         {
@@ -183,12 +186,14 @@ class dlgMain : public wxFrame, wxThreadHelper
             wxInt32 ServerListIndex;
         } wtrs_struct_t;
         
-        volatile wtrs_struct_t wtrs_Result;
+        wtrs_struct_t wtrs_Result;
         
         void OnMonitorSignal(wxCommandEvent&);
         void OnWorkerSignal(wxCommandEvent&);
         // Our monitoring thread entry point, from wxThreadHelper
         void *Entry();
+
+        std::vector<QueryThread*> threadVector;
 
 	private:
 

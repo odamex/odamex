@@ -150,7 +150,7 @@ bool BufferedSocket::CreateSocket()
 
     DestroySocket();
 
-    Socket = new wxDatagramSocket(m_LocalAddress, wxSOCKET_NOWAIT);
+    Socket = new wxDatagramSocket(m_LocalAddress, wxSOCKET_NONE);
     
     if(!Socket->IsOk())
     {
@@ -221,38 +221,18 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
     wxUint32 ReceivedSize = 0;
     wxInt32 TimeLeft = 0;
 
-    wxThread *wxTThis = wxThread::This();
-    bool IsMainThread = wxThread::IsMain();
     bool DestroyMe = false;
-
-    while (ReceivedSize == 0 && DestroyMe == false)
+    
+    if (Socket->WaitForRead(0, Timeout) == true)
     {
         Socket->RecvFrom(ReceivedAddress, m_ReceiveBuffer, MAX_PAYLOAD);
 
         ReceivedSize = Socket->LastCount();
-        
-        // No need to yield after this, break out and finish
-        if (ReceivedSize)
-            break;
-        
-        // We are inside a worker thread
-        if (IsMainThread == false && wxTThis != NULL)
-        {            
-            if (wxTThis->TestDestroy())
-                DestroyMe = true;
-                
-            wxTThis->Sleep(1);
-        }
-        else
-            wxMilliSleep(1);
-
-        ++TimeLeft;
-
-        if (TimeLeft >= Timeout)
-            break;
     }
-
-    if (ReceivedSize == 0 || TimeLeft >= Timeout || DestroyMe == true)
+    else
+        DestroyMe = true;
+    
+    if (ReceivedSize == 0 || DestroyMe == true)
     {
         CheckError();
         
