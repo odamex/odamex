@@ -2042,7 +2042,7 @@ void SV_ConnectClient (void)
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
 	
 	// tell others clients about it
-	for (size_t i = 0; i < players.size(); i++)
+	for (i = 0; i < players.size(); i++)
 	{	
 		client_t &cl = clients[i];
 
@@ -2068,7 +2068,7 @@ void SV_DisconnectClient(player_t &who)
 		return;
 
 	// tell others clients about it
-	for (size_t i = 0; i < players.size(); i++)
+	for (i = 0; i < players.size(); i++)
 	{
 	   client_t &cl = clients[i];
 
@@ -2526,7 +2526,12 @@ void SV_Say(player_t &player)
     // Flood protection
     if (player.LastMessage.Time)
     {
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+		// GhostlyDeath <October 28, 2008> -- VC6 can't cast unsigned __int64 to a double!
+		signed __int64 Difference = (I_GetTime() - player.LastMessage.Time);
+#else
         QWORD Difference = (I_GetTime() - player.LastMessage.Time);
+#endif
         float Delay = (float)(flooddelay * TICRATE);
         
         if (Difference <= Delay)

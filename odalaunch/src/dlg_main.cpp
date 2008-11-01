@@ -161,18 +161,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     
     QServer = NULL;
 
-    // Create monitor thread and run it
-    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
-    {
-        wxMessageBox(_T("Could not create monitor thread!"), 
-                     _T("Error"), 
-                     wxOK | wxICON_ERROR);
-                     
-        wxExit();
-    }
-    
-    GetThread()->Run();
-    
     // get master list on application start
     if (launchercfg_s.get_list_on_start)
     {
@@ -185,9 +173,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 // Window Destructor
 dlgMain::~dlgMain()
 {
-    // Close our monitor thread
-    mtcs_Request.Signal = mtcs_exit;
-    GetThread()->Wait();
+    if (GetThread() && GetThread()->IsRunning())
+        GetThread()->Wait();
 
     // Save GUI layout
     wxFileConfig ConfigInfo;
@@ -259,181 +246,176 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
 // [Russell] - Monitor thread entry point
 void *dlgMain::Entry()
 {
-    bool Running = true;
-    
     wxFileConfig ConfigInfo;
     wxInt32 MasterTimeout, ServerTimeout;
-    static std::vector<QueryThread*> threadVector;
     
-    while (Running)
-    {
-        // Can I order a master server request with a list of server addresses
-        // to go with that kthx?
-        if (mtcs_Request.Signal == mtcs_getmaster)
-        {           
-            mtcs_Request.Signal = mtcs_getservers;
+    // Can I order a master server request with a list of server addresses
+    // to go with that kthx?
+    if (mtcs_Request.Signal == mtcs_getmaster)
+    {           
+        mtcs_Request.Signal = mtcs_getservers;
             
-            ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, 500);
+        ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, 500);
             
-            MServer->QueryMasters(MasterTimeout);
+        MServer->QueryMasters(MasterTimeout);
             
-            if (!MServer->GetServerCount())
-            {
-                mtrs_struct_t *Result = new mtrs_struct_t;
-
-                Result->Signal = mtrs_master_timeout;                
-                Result->Index = -1;
-                Result->ServerListIndex = -1;
-                    
-                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                event.SetClientData(Result);
-                  
-                wxPostEvent(this, event); 
-            }
-            else
-            {                 
-                mtrs_struct_t *Result = new mtrs_struct_t;
-
-                Result->Signal = mtrs_master_success;                
-                Result->Index = -1;
-                Result->ServerListIndex = -1;
-                
-                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                event.SetClientData(Result);
-                  
-                wxPostEvent(this, event);               
-            }
-
-            if (QServer != NULL && MServer->GetServerCount())
-            {
-                delete[] QServer;
-            
-                QServer = new Server [MServer->GetServerCount()];
-            }
-            else
-                QServer = new Server [MServer->GetServerCount()];
-
-        }
-    
-        // get a new list of servers
-        if (mtcs_Request.Signal == mtcs_getservers)
+        if (!MServer->GetServerCount())
         {
-            size_t count = 0;
-            size_t serverNum = 0;
-            wxString Address = _T("");
-            wxUint16 Port = 0;
-   
-            mtcs_Request.Signal = mtcs_none;
+            mtrs_struct_t *Result = new mtrs_struct_t;
 
-            // [Russell] - This includes custom servers.
-            if (!MServer->GetServerCount())
-            {
-                mtrs_struct_t *Result = new mtrs_struct_t;
-
-                Result->Signal = mtrs_server_noservers;                
-                Result->Index = -1;
-                Result->ServerListIndex = -1;
-                
-                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                event.SetClientData(Result);
+            Result->Signal = mtrs_master_timeout;                
+            Result->Index = -1;
+            Result->ServerListIndex = -1;
+                    
+            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+            event.SetClientData(Result);
                   
-                wxPostEvent(this, event);                  
-            }
+            wxPostEvent(this, event); 
+        }
+        else
+        {                 
+            mtrs_struct_t *Result = new mtrs_struct_t;
 
-            ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, 500);
-    
-            /* 
-                Thread pool manager:
-                Executes a number of threads that contain the same amount of
-                servers, when a thread finishes, it gets deleted and another
-                gets executed with a different server, eventually all the way
-                down to 0 servers.
-            */
-            while(count < MServer->GetServerCount())
-            {
-                for(size_t i = 0; i < NUM_THREADS; i++)
-                {
-                    if((threadVector.size() != 0) && ((threadVector.size() - 1) >= i))
-                    {
-                        // monitor our thread vector, delete ONLY if the thread is
-                        // finished
-                        if(threadVector[i]->IsRunning())
-                            continue;
-                        else
-                        {
-                            threadVector[i]->Wait();
-                            delete threadVector[i];
-                            threadVector.erase(threadVector.begin() + i);
-                            count++;
-                        }
-                    }
-                    if(serverNum < MServer->GetServerCount())
-                    {
-                        MServer->GetServerAddress(serverNum, Address, Port);
-                        QServer[serverNum].SetAddress(Address, Port);
+            Result->Signal = mtrs_master_success;                
+            Result->Index = -1;
+            Result->ServerListIndex = -1;
+                
+            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+            event.SetClientData(Result);
+                  
+            wxPostEvent(this, event);               
+        }
 
-                        // add the thread to the vector
-                        threadVector.push_back(new QueryThread(this, &QServer[serverNum], serverNum, ServerTimeout));
-
-                        // create and run the thread
-                        if(threadVector[threadVector.size() - 1]->Create() == wxTHREAD_NO_ERROR)
-                            threadVector[threadVector.size() - 1]->Run();
-
-                        // DUMB: our next server will be this incremented value
-                        serverNum++;
-                    }
-
-                    GetThread()->Sleep(1);            
-                }
-            }
+        if (QServer != NULL && MServer->GetServerCount())
+        {
+            delete[] QServer;
             
-            // Wait until the last X number of threads have finished.
-            while (threadVector.size() != 0)
+            QServer = new Server [MServer->GetServerCount()];
+        }
+        else
+            QServer = new Server [MServer->GetServerCount()];
+
+    }
+    
+    // get a new list of servers
+    if (mtcs_Request.Signal == mtcs_getservers)
+    {
+        size_t count = 0;
+        size_t serverNum = 0;
+        wxString Address = _T("");
+        wxUint16 Port = 0;
+   
+        mtcs_Request.Signal = mtcs_none;
+
+        // [Russell] - This includes custom servers.
+        if (!MServer->GetServerCount())
+        {
+            mtrs_struct_t *Result = new mtrs_struct_t;
+
+            Result->Signal = mtrs_server_noservers;                
+            Result->Index = -1;
+            Result->ServerListIndex = -1;
+                
+            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+            event.SetClientData(Result);
+                  
+            wxPostEvent(this, event);                  
+        }
+
+        ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, 500);
+    
+        /* 
+            Thread pool manager:
+            Executes a number of threads that contain the same amount of
+            servers, when a thread finishes, it gets deleted and another
+            gets executed with a different server, eventually all the way
+            down to 0 servers.
+        */
+        while(count < MServer->GetServerCount())
+        {
+            for(size_t i = 0; i < NUM_THREADS; i++)
             {
-                GetThread()->Sleep(1);
+                if((threadVector.size() != 0) && ((threadVector.size() - 1) >= i))
+                {
+                    // monitor our thread vector, delete ONLY if the thread is
+                    // finished
+                    if(threadVector[i]->IsRunning())
+                        continue;
+                    else
+                    {
+                        threadVector[i]->Wait();
+                        delete threadVector[i];
+                        threadVector.erase(threadVector.begin() + i);
+                        count++;
+                    }
+                }
+                if(serverNum < MServer->GetServerCount())
+                {
+                    MServer->GetServerAddress(serverNum, Address, Port);
+                    QServer[serverNum].SetAddress(Address, Port);
+
+                    // add the thread to the vector
+                    threadVector.push_back(new QueryThread(this, &QServer[serverNum], serverNum, ServerTimeout));
+
+                    // create and run the thread
+                    if(threadVector[threadVector.size() - 1]->Create() == wxTHREAD_NO_ERROR)
+                        threadVector[threadVector.size() - 1]->Run();
+
+                    // DUMB: our next server will be this incremented value
+                    serverNum++;
+                }          
             }
         }
         
-        // User requested single server to be refreshed
-        if (mtcs_Request.Signal == mtcs_getsingleserver)
-        {            
-            mtcs_Request.Signal = mtcs_none;
+        // Clean up any remaining threads
+        /*size_t i = threadVector.size() - 1;
+            
+        while (threadVector.size() != 0)
+        {
+            if (threadVector[i]->IsRunning() == true)
+                threadVector[i]->Wait();
 
-            if (MServer->GetServerCount())
-            if (QServer[mtcs_Request.Index].Query(9999))
-            {
-                mtrs_struct_t *Result = new mtrs_struct_t;
-
-                Result->Signal = mtrs_server_singlesuccess;                
-                Result->Index = mtcs_Request.Index;
-                Result->ServerListIndex = mtcs_Request.ServerListIndex;
+            delete threadVector[i];
+            threadVector.erase(threadVector.begin() + i);
                 
-                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-                event.SetClientData(Result);
-                    
-                wxPostEvent(this, event);      
-            }
-            else
-            {
-                mtrs_struct_t *Result = new mtrs_struct_t;
+            --i;
+        }*/
+    }
+        
+    // User requested single server to be refreshed
+    if (mtcs_Request.Signal == mtcs_getsingleserver)
+    {            
+        mtcs_Request.Signal = mtcs_none;
 
-                Result->Signal = mtrs_server_singletimeout;                
-                Result->Index = mtcs_Request.Index;
-                Result->ServerListIndex = mtcs_Request.ServerListIndex;
+        ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, 500);
+
+        if (MServer->GetServerCount())
+        if (QServer[mtcs_Request.Index].Query(ServerTimeout))
+        {
+            mtrs_struct_t *Result = new mtrs_struct_t;
+
+            Result->Signal = mtrs_server_singlesuccess;                
+            Result->Index = mtcs_Request.Index;
+            Result->ServerListIndex = mtcs_Request.ServerListIndex;
                 
-                wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_server_singletimeout);
-                event.SetClientData(Result);
+            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+            event.SetClientData(Result);
                     
-                wxPostEvent(this, event);    
-            }                     
+            wxPostEvent(this, event);      
         }
-    
-        // Give everything else some cpu time, please be considerate!
-        GetThread()->Sleep(1);
-               
-        // Something requested the thread to exit
-        if (mtcs_Request.Signal == mtcs_exit || Running == false)
-            break;
+        else
+        {
+            mtrs_struct_t *Result = new mtrs_struct_t;
+
+            Result->Signal = mtrs_server_singletimeout;                
+            Result->Index = mtcs_Request.Index;
+            Result->ServerListIndex = mtcs_Request.ServerListIndex;
+                
+            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_server_singletimeout);
+            event.SetClientData(Result);
+                    
+            wxPostEvent(this, event);    
+        }                     
     }
     
     return NULL;
@@ -680,7 +662,10 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     
     if (recursion_guard.IsInside())
         return;	
-	
+
+    if (GetThread() && GetThread()->IsRunning())
+        return;
+
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
         
@@ -688,6 +673,21 @@ void dlgMain::OnGetList(wxCommandEvent &event)
     TotalPlayers = 0;
 	
 	mtcs_Request.Signal = mtcs_getmaster;
+
+    if (GetThread() && GetThread()->IsRunning())
+        return;
+
+    // Create monitor thread and run it
+    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
+    {
+        wxMessageBox(_T("Could not create monitor thread!"), 
+                     _T("Error"), 
+                     wxOK | wxICON_ERROR);
+                     
+        wxExit();
+    }
+	
+    GetThread()->Run();    
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
@@ -698,7 +698,10 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
     
     if (recursion_guard.IsInside())
         return;	
-    
+
+    if (GetThread() && GetThread()->IsRunning())
+        return;
+
     if (!m_LstCtrlServers->GetItemCount() || !m_LstCtrlServers->GetSelectedItemCount())
         return;
         
@@ -722,7 +725,19 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
     
     mtcs_Request.Signal = mtcs_getsingleserver;
     mtcs_Request.ServerListIndex = listindex;
-    mtcs_Request.Index = arrayindex; 
+    mtcs_Request.Index = arrayindex;
+
+    // Create monitor thread and run it
+    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
+    {
+        wxMessageBox(_T("Could not create monitor thread!"), 
+                     _T("Error"), 
+                     wxOK | wxICON_ERROR);
+                     
+        wxExit();
+    }
+
+    GetThread()->Run();   
 }
 
 void dlgMain::OnRefreshAll(wxCommandEvent &event)
@@ -733,6 +748,9 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
     
     if (recursion_guard.IsInside())
         return;	
+
+    if (GetThread() && GetThread()->IsRunning())
+        return;
 
     if (!MServer->GetServerCount())
         return;
@@ -745,7 +763,19 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
     
     mtcs_Request.Signal = mtcs_getservers;
     mtcs_Request.ServerListIndex = -1;
-    mtcs_Request.Index = -1; 
+    mtcs_Request.Index = -1;
+
+    // Create monitor thread and run it
+    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
+    {
+        wxMessageBox(_T("Could not create monitor thread!"), 
+                     _T("Error"), 
+                     wxOK | wxICON_ERROR);
+                     
+        wxExit();
+    }
+
+    GetThread()->Run();   
 }
 
 // when the user clicks on the server list

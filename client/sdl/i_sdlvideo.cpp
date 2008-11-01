@@ -59,7 +59,12 @@ SDLVideo::SDLVideo(int parm)
         
         WindowHandle = wminfo.window;
 
+		// GhostlyDeath <October 26, 2008> -- VC6 (No Service Packs or new SDKs) has no SetClassLongPtr?
+#if defined(_MSC_VER) && _MSC_VER <= 1200// && !defined(_MSC_FULL_VER)
+		SetClassLong(WindowHandle, GCL_HICON, (LONG) Icon);
+#else
         SetClassLongPtr(WindowHandle, GCL_HICON, (LONG_PTR) Icon);
+#endif
     }
     #endif
 

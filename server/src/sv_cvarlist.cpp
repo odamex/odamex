@@ -32,7 +32,7 @@ CVAR (hostname,		"Untitled Odamex Server",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR
 // Administrator email address
 CVAR (email,		"email@domain.com",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Website of this server/other
-CVAR (website,      "http:\\odamex.net/",         CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+CVAR (website,      "http://odamex.net/",         CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Enables WAD file downloading
 CVAR (waddownload,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Reset the current map when the last player leaves

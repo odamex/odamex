@@ -8,12 +8,12 @@ CFG=client - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "client.MAK".
+!MESSAGE NMAKE /f "client.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "client.MAK" CFG="client - Win32 Debug"
+!MESSAGE NMAKE /f "client.mak" CFG="client - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -44,7 +44,6 @@ RSC=rc.exe
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
 # ADD CPP /nologo /MD /W3 /GX /I "." /I "..\src" /I "..\..\common" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "NOASM" /D "NOMINMAX" /FAs /FR /YX /FD /c
-# SUBTRACT CPP /O<none>
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -107,7 +106,15 @@ SOURCE=..\src\c_console.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\c_cvarlist.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\cl_ctf.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\cl_cvarlist.cpp
 # End Source File
 # Begin Source File
 
