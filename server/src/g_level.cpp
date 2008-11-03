@@ -849,6 +849,8 @@ void G_ExitLevel (int position, int drawscores)
 
     secretexit = false;
 
+    gameaction = ga_completed;
+
 	// denis - this will skip wi_stuff and allow some time for finale text
 	//G_WorldDone();
 }
@@ -871,6 +873,8 @@ void G_SecretExitLevel (int position, int drawscores)
 		secretexit = false;
 	else
 		secretexit = true;
+
+    gameaction = ga_completed;
 
 	// denis - this will skip wi_stuff and allow some time for finale text
 	//G_WorldDone();
