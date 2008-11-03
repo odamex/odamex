@@ -755,7 +755,7 @@
                                                         <property name="size">-1,-1</property>
                                                         <property name="style">wxLC_REPORT|wxLC_SINGLE_SEL</property>
                                                         <property name="subclass">wxAdvancedListCtrl; </property>
-                                                        <property name="tooltip"></property>
+                                                        <property name="tooltip">Right-click a selected server for more information</property>
                                                         <property name="window_extra_style"></property>
                                                         <property name="window_name"></property>
                                                         <property name="window_style"></property>

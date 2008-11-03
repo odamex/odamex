@@ -188,6 +188,7 @@
 									<border>0</border>
 									<object class="wxListCtrl" name="Id_LstCtrlServers" subclass="wxAdvancedListCtrl">
 										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+										<tooltip>Right-click a selected server for more information</tooltip>
 									</object>
 								</object>
 							</object>
