@@ -125,7 +125,7 @@ void I_InitMusic (void)
 
 	if(AUGraphConnectNodeInput(graph, synth, 0, output, 0) != noErr)
 	{
-		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphConnectNodeInput failed\n");
 		return;
 	}
 
@@ -137,13 +137,13 @@ void I_InitMusic (void)
 
 	if(AUGraphInitialize(graph) != noErr)
 	{
-		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphInitialize failed\n");
 		return;
 	}
 
 	if(AUGraphGetNodeInfo(graph, output, NULL, NULL, NULL, &unit) != noErr)
 	{
-		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphGetNodeInfo failed\n");
 		return;
 	}
 
