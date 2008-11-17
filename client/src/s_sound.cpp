@@ -365,7 +365,7 @@ int
 	return cnum;
 }
 
-EXTERN_CVAR (co_level8soundissue)
+EXTERN_CVAR (co_level8soundfeature)
 
 //
 // Changes volume, stereo-separation, and pitch variables
