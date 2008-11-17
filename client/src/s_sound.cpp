@@ -397,7 +397,8 @@ int
     // From _GG1_ p.428. Appox. eucledian distance fast.
 	approx_dist = adx + ady - ((adx < ady ? adx : ady)>>1);
 
-	if (level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
+	// GhostlyDeath <November 16, 2008> -- ExM8 has the full volume effect
+	if ((gamemode != shareware && gamemode != registered) && level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
 		return 0;
 
     // angle of source to listener
@@ -422,7 +423,7 @@ int
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
 	}
-	else if (level.levelnum == 8)
+	else if ((gamemode == shareware || gamemode == registered) && level.levelnum == 8)
 	{
 		if (approx_dist > S_CLIPPING_DIST)
 			approx_dist = S_CLIPPING_DIST;
