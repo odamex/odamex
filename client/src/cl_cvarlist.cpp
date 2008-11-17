@@ -62,6 +62,12 @@ CVAR (am_ovlockedcolor,	    "bb bb bb",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_ovexitcolor,		"ff ff 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_ovteleportcolor,	"ff a3 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+// Compatibility options for vanilla
+// ---------------------------------
+
+// Enable/disable the "level 8 full sound at far distances" feature
+CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE)
+
 // Console
 // -------
 
