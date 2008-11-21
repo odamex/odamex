@@ -280,6 +280,10 @@ void I_PlaySong (int handle, int _looping)
 		return;
 	}
 
+    // [Russell] - Hack for setting the volume on windows vista, since it gets
+    // reset on every music change
+    I_SetMusicVolume(snd_musicvolume);
+
 #endif
 
 	current_track = handle;
