@@ -24,17 +24,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "v_palette.h"
-#include "i_sdlvideo.h"
-#include "i_system.h"
-
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
 #if WIN32
-#include "SDL_syswm.h"
 #include <windows.h>
+#include "SDL_syswm.h"
 #include "resource.h"
 #endif
+
+#include "v_palette.h"
+#include "i_sdlvideo.h"
+#include "i_system.h"
 
 SDLVideo::SDLVideo(int parm)
 {
