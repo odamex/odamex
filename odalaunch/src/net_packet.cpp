@@ -195,10 +195,7 @@ void Server::ResetData()
     if (ProtocolVersion >= INTRODUCED && ProtocolVersion < REMOVED)
 
 //
-// void Server::ReadInformation(const wxUint8 &VersionMajor, 
-//                              const wxUint8 &VersionMinor,
-//                              const wxUint8 &VersionPatch,
-//                              const wxUint32 &ProtocolVersion)
+// Server::ReadInformation()
 //
 // Read information built for us by the server
 void Server::ReadInformation(const wxUint8 &VersionMajor, 
@@ -231,9 +228,9 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
         Socket.ReadString(Cvar.Name);
         Socket.ReadString(Cvar.Value);
         
-        // We used to filter out cvars into static fields used by the launcher
-        // This is now dependant on the protocol version of the server, so we
-        // can still use old revision 1 server data
+        // TODO - Test: We used to filter out cvars into static fields used by 
+        // the launcher. This is now dependant on the protocol version of the 
+        // server, so we can still use old revision 1 server data
         QRYRANGEINFO(1,2)
         {
             if (Cvar.Name == wxT("hostname"))
@@ -269,7 +266,7 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
     Socket.ReadString(Info.CurrentMap);
     Socket.Read16(Info.TimeLeft);
 
-    // Test: exists only in versions starting at 3 to 5
+    // TODO - Test: exists only in versions starting at 3 to 5
     QRYRANGEINFO(3,5)
     {
         Socket.ReadString(DummyString);
@@ -277,8 +274,8 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
         wxLogDebug(DummyString);
     }
 
-    // This is directly related to the guard used in the cvar filtering block 
-    // above, this information was brought in at revision 2
+    // TODO - Test: This is directly related to the guard used in the cvar 
+    // filtering block above, this information was brought in at revision 2
     QRYNEWINFO(2)
     {
          Socket.ReadString(Info.Name);
@@ -325,6 +322,11 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
     }
 }
 
+//
+// Server::TranslateResponse()
+//
+// Figures out the response from the server, deciding whether to use this data
+// or not
 wxInt32 Server::TranslateResponse(const wxUint16 &TagId, 
                                   const wxUint8 &TagApplication,
                                   const wxUint8 &TagQRId,

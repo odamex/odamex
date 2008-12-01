@@ -487,7 +487,7 @@ struct CvarField_t
 } CvarField;
 
 //
-// IntQryBuildInformation
+// IntQryBuildInformation()
 //
 // Protocol building routine, the passed parameter is the enquirer version
 static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
@@ -528,13 +528,13 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
         
     MSG_WriteShort(&ml_message, timeleft);
     
-    // Test: exists only in versions starting at 3 to 5
+    // TODO - Test: exists only in versions starting at 3 to 5
     QRYRANGEINFO(3,5)
     {
         MSG_WriteString(&ml_message, "LOLZ HALLO");
     }
     
-    // Test: exists only in versions starting at 2
+    // TODO - Test: exists only in versions starting at 2
     QRYNEWINFO(2)
     {
         MSG_WriteString(&ml_message, (char *)hostname.cstring());
@@ -583,7 +583,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 }
 
 //
-// IntQrySendResponse
+// IntQrySendResponse()
 // 
 // Sends information regarding the type of information we received (ie: it will
 // send data that is wanted by the enquirer program)
@@ -712,7 +712,7 @@ static DWORD IntQrySendResponse(const WORD &TagId,
 }
 
 //
-// SV_QryParseEnquiry
+// SV_QryParseEnquiry()
 //
 // This decodes the Tag field
 DWORD SV_QryParseEnquiry(const DWORD &Tag)
