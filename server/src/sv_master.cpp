@@ -487,10 +487,10 @@ struct CvarField_t
 } CvarField;
 
 //
-// void IntQryBuildInformation(const DWORD &EqProtocolVersion)
+// IntQryBuildInformation
 //
 // Protocol building routine, the passed parameter is the enquirer version
-void IntQryBuildInformation(const DWORD &EqProtocolVersion)
+static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 {
     std::vector<CvarField_t> Cvars;
 
@@ -583,16 +583,14 @@ void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 }
 
 //
-// DWORD IntQrySendResponse(const WORD &TagId, 
-//                        const BYTE &TagApplication,
-//                        const BYTE &TagQRId,
-//                        const WORD &TagPacketType)
-//
+// IntQrySendResponse
 // 
-DWORD IntQrySendResponse(const WORD &TagId, 
-                        const BYTE &TagApplication,
-                        const BYTE &TagQRId,
-                        const WORD &TagPacketType)
+// Sends information regarding the type of information we received (ie: it will
+// send data that is wanted by the enquirer program)
+static DWORD IntQrySendResponse(const WORD &TagId, 
+                                const BYTE &TagApplication,
+                                const BYTE &TagQRId,
+                                const WORD &TagPacketType)
 {
     // It isn't a query, throw it away
     if (TagQRId == 2)
@@ -714,7 +712,7 @@ DWORD IntQrySendResponse(const WORD &TagId,
 }
 
 //
-// DWORD SV_QryParseEnquiry(const DWORD &Tag)
+// SV_QryParseEnquiry
 //
 // This decodes the Tag field
 DWORD SV_QryParseEnquiry(const DWORD &Tag)
