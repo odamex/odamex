@@ -62,6 +62,12 @@ CVAR (am_ovlockedcolor,	    "bb bb bb",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_ovexitcolor,		"ff ff 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_ovteleportcolor,	"ff a3 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+// Compatibility options for vanilla
+// ---------------------------------
+
+// Enable/disable the "level 8 full sound at far distances" feature
+CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE)
+
 // Console
 // -------
 
@@ -165,16 +171,17 @@ CVAR (hud_scale, "0", CVAR_ARCHIVE)
 CVAR (hud_targetnames, "1", CVAR_ARCHIVE)
 CVAR (usehighresboard, "1",	CVAR_ARCHIVE)
 
-CVAR (chatmacro0, "I'm ready to kick butt!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro1, "I'm OK.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro2, "I'm not looking too good!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro3, "Help!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro4, "You suck!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro5, "Next time, scumbag...", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro6, "Come here!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro7, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro8, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro9, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// GhostlyDeath <November 2, 2008> -- someone had the order wrong (0-9!)
+CVAR (chatmacro1, "I'm ready to kick butt!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro2, "I'm OK.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro3, "I'm not looking too good!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro4, "Help!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro5, "You suck!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro6, "Next time, scumbag...", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro7, "Come here!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro8, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro9, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro0, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 

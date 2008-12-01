@@ -333,46 +333,51 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
     // It isn't a response
     if (TagQRId == 1)
     {
-        wxLogDebug(wxT("Query/Response Id is Query"));
+        //wxLogDebug(wxT("Query/Response Id is Query"));
         
         return 0;
     }
 
     switch (TagApplication)
     {
+        // Enquirer
         case 1:
         {
-            wxLogDebug(wxT("Application is Enquirer"));
+            //wxLogDebug(wxT("Application is Enquirer"));
             
             return 0;
         }
         break;
         
+        // Client
         case 2:
         {
-            wxLogDebug(wxT("Application is Client"));
-            
-            return 0;
-        }
-        break;
-
-        case 3:
-        {
-            wxLogDebug(wxT("Application is Server"));
-        }
-        break;
-
-        case 4:
-        {
-            wxLogDebug(wxT("Application is Master Server"));
+            //wxLogDebug(wxT("Application is Client"));
             
             return 0;
         }
         break;
         
+        // Server
+        case 3:
+        {
+            //wxLogDebug(wxT("Application is Server"));
+        }
+        break;
+
+        // Master Server
+        case 4:
+        {
+            //wxLogDebug(wxT("Application is Master Server"));
+            
+            return 0;
+        }
+        break;
+        
+        // Unknown
         default:
         {
-            wxLogDebug(wxT("Application is Unknown"));
+            //wxLogDebug(wxT("Application is Unknown"));
             
             return 0;
         }

@@ -365,6 +365,7 @@ int
 	return cnum;
 }
 
+EXTERN_CVAR (co_level8soundfeature)
 
 //
 // Changes volume, stereo-separation, and pitch variables
@@ -397,7 +398,10 @@ int
     // From _GG1_ p.428. Appox. eucledian distance fast.
 	approx_dist = adx + ady - ((adx < ady ? adx : ady)>>1);
 
-	if (level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
+	// GhostlyDeath <November 16, 2008> -- ExM8 has the full volume effect
+	// [Russell] - Change this to an option and remove the dependence on
+	// we run doom 1 or not
+	if (!co_level8soundfeature && level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
 		return 0;
 
     // angle of source to listener
@@ -422,7 +426,7 @@ int
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
 	}
-	else if (level.levelnum == 8)
+	else if (co_level8soundfeature && level.levelnum == 8)
 	{
 		if (approx_dist > S_CLIPPING_DIST)
 			approx_dist = S_CLIPPING_DIST;

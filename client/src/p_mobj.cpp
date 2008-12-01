@@ -1186,6 +1186,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// count deathmatch start positions
 	if (mthing->type == 11)
 	{
+		// [Nes] Maximum vanilla demo starts are fixed at 10.
+		if (deathmatch_p >= &deathmatchstarts[10] && (demoplayback || demorecording) && democlassic)
+			return;
+
 		if (deathmatch_p == &deathmatchstarts[MaxDeathmatchStarts])
 		{
 			// [RH] Get more deathmatchstarts

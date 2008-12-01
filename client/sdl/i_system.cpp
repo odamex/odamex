@@ -34,6 +34,7 @@
 #include <io.h>
 #include <direct.h>
 #include <process.h>
+#define NOMINMAX
 #include <windows.h>
 #endif
 
