@@ -170,18 +170,6 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     // allocate some space in the zone heap
     ret_data = (Uint8 *)Z_Malloc(chunk->alen, PU_STATIC, NULL);
 
-    if (!ret_data)
-    {
-        Printf(PRINT_HIGH,
-                "perform_sdlmix_conv - Z_Malloc: could not allocate: %d bytes\n",
-                chunk->alen);
-
-        Mix_FreeChunk(chunk);
-        chunk = NULL;
-
-        return NULL;
-    }
-
     // copy the converted data to the return buffer
     memcpy(ret_data, chunk->abuf, chunk->alen);
 
