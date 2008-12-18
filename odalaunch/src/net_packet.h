@@ -66,6 +66,13 @@ struct Wad_t
     wxString Hash;
 };
 
+struct Team_t
+{
+    wxString Name;
+    wxUint32 Colour;
+    wxInt16 Score;
+};
+
 struct Player_t
 {
     wxString Name;
@@ -103,9 +110,8 @@ struct ServerInfo_t
     wxString PasswordHash;
     wxString CurrentMap;
     wxUint16 TimeLeft;
-    wxInt16 BlueScore;
-    wxInt16 RedScore;
-    wxInt16 GoldScore;
+    std::vector<Team_t> Teams;
+    std::vector<wxString> Patches;
     std::vector<Wad_t> Wads;
     std::vector<Player_t> Players;
 };

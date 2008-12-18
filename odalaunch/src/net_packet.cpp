@@ -157,6 +157,8 @@ void Server::ResetData()
     Info.Cvars.clear();
     Info.Wads.clear();
     Info.Players.clear();
+    Info.Patches.clear();
+    Info.Teams.clear();
     
     Info.Response = 0;
     Info.VersionMajor = 0;
@@ -171,9 +173,6 @@ void Server::ResetData()
     Info.PasswordHash = wxT("");
     Info.CurrentMap = wxT("");
     Info.TimeLeft = 0;
-    Info.BlueScore = 0;
-    Info.RedScore = 0;
-    Info.GoldScore = 0;
     
     Ping = 0;
 }
@@ -228,35 +227,31 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
         Socket.ReadString(Cvar.Name);
         Socket.ReadString(Cvar.Value);
         
-        // TODO - Test: We used to filter out cvars into static fields used by 
-        // the launcher. This is now dependant on the protocol version of the 
-        // server, so we can still use old revision 1 server data
-        QRYRANGEINFO(1,2)
+        // Filter out important information for us to use, it'd be nicer to have
+        // a launcher-side cvar implementation though
+        if (Cvar.Name == wxT("hostname"))
         {
-            if (Cvar.Name == wxT("hostname"))
-            {
-                Info.Name = Cvar.Value;
+            Info.Name = Cvar.Value;
             
-                continue;
-            }
-            else if (Cvar.Name == wxT("maxplayers"))
-            {
-                Info.MaxPlayers = (wxUint8)wxAtoi(Cvar.Value);
+            continue;
+        }
+        else if (Cvar.Name == wxT("maxplayers"))
+        {
+            Info.MaxPlayers = (wxUint8)wxAtoi(Cvar.Value);
             
-                continue;
-            }
-            else if (Cvar.Name == wxT("gametype"))
-            {
-                Info.GameType = (GameType_t)wxAtoi(Cvar.Value);
+            continue;
+        }
+        else if (Cvar.Name == wxT("gametype"))
+        {
+            Info.GameType = (GameType_t)wxAtoi(Cvar.Value);
             
-                continue;
-            }
-            else if (Cvar.Name == wxT("scorelimit"))
-            {
-                Info.ScoreLimit = wxAtoi(Cvar.Value);
+            continue;
+        }
+        else if (Cvar.Name == wxT("scorelimit"))
+        {
+            Info.ScoreLimit = wxAtoi(Cvar.Value);
             
-                continue;
-            }
+            continue;
         }
         
         Info.Cvars.push_back(Cvar);
@@ -266,27 +261,37 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
     Socket.ReadString(Info.CurrentMap);
     Socket.Read16(Info.TimeLeft);
 
-    // TODO - Test: exists only in versions starting at 3 to 5
-    QRYRANGEINFO(3,5)
+    // Teams
+    wxUint8 TeamCount;
+    
+    Socket.Read8(TeamCount);
+    
+    for (size_t i = 0; i < TeamCount; ++i)
     {
-        Socket.ReadString(DummyString);
+        Team_t Team;
         
-        wxLogDebug(DummyString);
+        Socket.ReadString(Team.Name);
+        Socket.Read32(Team.Colour);
+        Socket.Read16(Team.Score);
+        
+        Info.Teams.push_back(Team);
     }
-
-    // TODO - Test: This is directly related to the guard used in the cvar 
-    // filtering block above, this information was brought in at revision 2
-    QRYNEWINFO(2)
+    
+    // Dehacked/Bex files
+    wxUint8 PatchCount;
+    
+    Socket.Read8(PatchCount);
+    
+    for (size_t i = 0; i < PatchCount; ++i)
     {
-         Socket.ReadString(Info.Name);
-         Socket.Read8(Info.MaxClients);
-         Socket.Read8(Info.MaxPlayers);
-         Socket.Read16(Info.ScoreLimit);
-    }    
+        wxString Patch;
+        
+        Socket.ReadString(Patch);
+        
+        Info.Patches.push_back(Patch);
+    }
     
-    Socket.Read16(Info.BlueScore);
-    Socket.Read16(Info.RedScore);
-    
+    // Wad files
     wxUint8 WadCount;
     
     Socket.Read8(WadCount);
@@ -301,6 +306,7 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
         Info.Wads.push_back(Wad);
     }
     
+    // Player information
     wxUint8 PlayerCount;
     
     Socket.Read8(PlayerCount);
@@ -310,13 +316,13 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
         Player_t Player;
         
         Socket.ReadString(Player.Name);
-        Socket.Read16(Player.Frags);
-        Socket.Read16(Player.Ping);
         Socket.Read8(Player.Team);
-        Socket.Read16(Player.Kills);
-        Socket.Read16(Player.Deaths);
+        Socket.Read16(Player.Ping);
         Socket.Read16(Player.Time);
         Socket.ReadBool(Player.Spectator);
+        Socket.Read16(Player.Frags);
+        Socket.Read16(Player.Kills);
+        Socket.Read16(Player.Deaths);
         
         Info.Players.push_back(Player);
     }

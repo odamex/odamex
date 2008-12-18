@@ -510,6 +510,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
         var = var->GetNext();
     }
     
+    // Cvar count
     MSG_WriteByte(&ml_message, (BYTE)Cvars.size());
     
     // Write cvars
@@ -528,24 +529,22 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
         
     MSG_WriteShort(&ml_message, timeleft);
     
-    // TODO - Test: exists only in versions starting at 3 to 5
-    QRYRANGEINFO(3,5)
-    {
-        MSG_WriteString(&ml_message, "LOLZ HALLO");
-    }
+    // Team data
+    byte TeamCount = (byte)teamsinplay;
+    MSG_WriteByte(&ml_message, TeamCount);
     
-    // TODO - Test: exists only in versions starting at 2
-    QRYNEWINFO(2)
+    for (byte i = 0; i < TeamCount; ++i)
     {
-        MSG_WriteString(&ml_message, (char *)hostname.cstring());
-        MSG_WriteByte(&ml_message, (BYTE)maxclients);
-        MSG_WriteByte(&ml_message, (BYTE)maxplayers);
-        MSG_WriteShort(&ml_message, (WORD)scorelimit);
+        // TODO - Figure out where the info resides
+        MSG_WriteString(&ml_message, "");
+        MSG_WriteLong(&ml_message, 0);
+        MSG_WriteShort(&ml_message, TEAMpoints[i]);        
     }
-    
-    MSG_WriteShort(&ml_message, TEAMpoints[it_blueflag]);
-	MSG_WriteShort(&ml_message, TEAMpoints[it_redflag]);
 	
+	// TODO - Enumerate patch files
+	MSG_WriteByte(&ml_message, 0);
+	
+	// Wad files
 	MSG_WriteByte(&ml_message, wadnames.size());
 	
 	for (size_t i = 0; i < wadnames.size(); ++i)
@@ -561,23 +560,18 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
         if (players[i].ingame())
         {
 			MSG_WriteString(&ml_message, players[i].userinfo.netname);
-			MSG_WriteShort(&ml_message, players[i].fragcount);
+            MSG_WriteByte(&ml_message, players[i].userinfo.team);
 			MSG_WriteShort(&ml_message, players[i].ping);
 
-			if (gametype == GM_TEAMDM || gametype == GM_CTF)
-				MSG_WriteByte(&ml_message, players[i].userinfo.team);
-			else
-				MSG_WriteByte(&ml_message, TEAM_NONE);
-
-			MSG_WriteShort(&ml_message, players[i].killcount);
-			MSG_WriteShort(&ml_message, players[i].deathcount);
-			
 			int timeingame = (time(NULL) - players[i].JoinTime)/60;
 			if (timeingame < 0) 
                 timeingame = 0;
-			
 			MSG_WriteShort(&ml_message, timeingame);
+
             MSG_WriteBool(&ml_message, players[i].spectator);
+            MSG_WriteShort(&ml_message, players[i].fragcount);
+			MSG_WriteShort(&ml_message, players[i].killcount);
+			MSG_WriteShort(&ml_message, players[i].deathcount);		
         }
     }
 }

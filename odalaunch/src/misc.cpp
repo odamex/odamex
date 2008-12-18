@@ -501,17 +501,17 @@ void AddPlayersToList(wxAdvancedListCtrl *list, Server &s)
                 case 0:
                     li.SetTextColour(*wxBLUE);      
                     teamstr = _T("Blue");
-                    teamscore = s.Info.BlueScore;
+//                    teamscore = s.Info.BlueScore;
                     break;
 				case 1:
                     li.SetTextColour(*wxRED);
                     teamstr = _T("Red");
-					teamscore = s.Info.RedScore;
+//					teamscore = s.Info.RedScore;
 					break;
 				case 2:
                     // no gold in 'dem mountains boy.
                     li.SetTextColour(wxColor(255,200,40));
-                    teamscore = s.Info.GoldScore;
+//                    teamscore = s.Info.GoldScore;
                     teamstr = _T("Gold");
 					break;
 				default:
