@@ -50,6 +50,7 @@ static char channel_in_use[NUM_CHANNELS];
 static int nextchannel = 0;
 
 EXTERN_CVAR (snd_crossover)
+EXTERN_CVAR (snd_samplerate)
 
 // [Russell] - Chocolate Doom's sound converter code, how awesome!
 static bool ConvertibleRatio(int freq1, int freq2)
@@ -400,7 +401,7 @@ void I_InitSound (void)
 
 	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
 
-    if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 1024) < 0)
+    if (Mix_OpenAudio((int)snd_samplerate, AUDIO_S16SYS, 2, 1024) < 0)
 	{
 		Printf(PRINT_HIGH, 
                "I_InitSound: Error initializing SDL_mixer: %s\n", 
