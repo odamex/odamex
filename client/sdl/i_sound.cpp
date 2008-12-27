@@ -50,6 +50,7 @@ static char channel_in_use[NUM_CHANNELS];
 static int nextchannel = 0;
 
 EXTERN_CVAR (snd_crossover)
+EXTERN_CVAR (snd_samplerate)
 
 // [Russell] - Chocolate Doom's sound converter code, how awesome!
 static bool ConvertibleRatio(int freq1, int freq2)
@@ -169,18 +170,6 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 
     // allocate some space in the zone heap
     ret_data = (Uint8 *)Z_Malloc(chunk->alen, PU_STATIC, NULL);
-
-    if (!ret_data)
-    {
-        Printf(PRINT_HIGH,
-                "perform_sdlmix_conv - Z_Malloc: could not allocate: %d bytes\n",
-                chunk->alen);
-
-        Mix_FreeChunk(chunk);
-        chunk = NULL;
-
-        return NULL;
-    }
 
     // copy the converted data to the return buffer
     memcpy(ret_data, chunk->abuf, chunk->alen);
@@ -412,7 +401,7 @@ void I_InitSound (void)
 
 	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
 
-    if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 1024) < 0)
+    if (Mix_OpenAudio((int)snd_samplerate, AUDIO_S16SYS, 2, 1024) < 0)
 	{
 		Printf(PRINT_HIGH, 
                "I_InitSound: Error initializing SDL_mixer: %s\n", 

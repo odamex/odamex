@@ -63,7 +63,7 @@ CVAR (monstersrespawn,	"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Monsters are not present
 CVAR (nomonsters,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Skill level
-CVAR (skill,            "3", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+CVAR (skill,            "3", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Game ends on time limit being reached
 CVAR (timelimit,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Speedhack code (server related)
