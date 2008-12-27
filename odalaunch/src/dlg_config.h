@@ -53,6 +53,12 @@ struct launchercfg_t
 #define DELIMWADPATHS       "DELIMITED_WAD_PATHS"
 #define ODAMEX_DIRECTORY    "ODAMEX_DIRECTORY"
 
+#ifdef __WXMSW__
+#define PATH_DELIMITER ';'
+#else
+#define PATH_DELIMITER ':'
+#endif
+
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
 #define NUM_ENVVARS 2

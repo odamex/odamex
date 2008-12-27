@@ -106,7 +106,7 @@ void dlgConfig::Show()
     // Load wad path list
     m_LstCtrlWadDirectories->Clear();
 
-    wxStringTokenizer wadlist(cfg_file->wad_paths, _T(';'));
+    wxStringTokenizer wadlist(cfg_file->wad_paths, _T(PATH_DELIMITER));
 
     while (wadlist.HasMoreTokens())
     {
@@ -166,7 +166,7 @@ void dlgConfig::OnOK(wxCommandEvent &event)
 
         if (m_LstCtrlWadDirectories->GetCount() > 0)
             for (wxUint32 i = 0; i < m_LstCtrlWadDirectories->GetCount(); i++)
-                cfg_file->wad_paths.Append(m_LstCtrlWadDirectories->GetString(i) + _T(';'));
+                cfg_file->wad_paths.Append(m_LstCtrlWadDirectories->GetString(i) + _T(PATH_DELIMITER));
 
         cfg_file->odamex_directory = m_DirCtrlChooseOdamexPath->GetPath();
 
@@ -312,12 +312,12 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
         // only add paths if the variable exists and path isn't blank
         if (wxGetEnv(env_vars[i], &env_paths[i]))
             if (!env_paths[i].IsEmpty())
-                doomwaddir += env_paths[i] + _T(';');
+                doomwaddir += env_paths[i] + _T(PATH_DELIMITER);
     }
 
     wxInt32 path_count = 0;
 
-    wxStringTokenizer wadlist(doomwaddir, _T(';'));
+    wxStringTokenizer wadlist(doomwaddir, _T(PATH_DELIMITER));
 
     while (wadlist.HasMoreTokens())
     {

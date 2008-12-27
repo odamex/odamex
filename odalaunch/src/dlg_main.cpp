@@ -154,7 +154,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     server_dlg = new dlgServers(MServer, this);
     
     /* Get the first directory for wad downloading */
-    wxInt32 Pos = launchercfg_s.wad_paths.Find(wxT(';'), false);
+    wxInt32 Pos = launchercfg_s.wad_paths.Find(wxT(PATH_DELIMITER), false);
     wxString FirstDirectory = launchercfg_s.wad_paths.Mid(0, Pos);
     
     OdaGet = new frmOdaGet(this, -1, FirstDirectory);
