@@ -46,6 +46,7 @@ int 				iquetail;
 EXTERN_CVAR	(weaponstay)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (sv_itemrespawntime)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 
@@ -1053,8 +1054,8 @@ void P_RespawnSpecials (void)
 	if (iquehead == iquetail)
 		return;
 
-	// wait at least 30 seconds
-	if (level.time - itemrespawntime[iquetail] < 30*TICRATE)
+	// wait a certain number of seconds
+	if (level.time - itemrespawntime[iquetail] < sv_itemrespawntime*TICRATE)
 		return;
 
 	mthing = &itemrespawnque[iquetail];

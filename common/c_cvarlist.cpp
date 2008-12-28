@@ -58,6 +58,8 @@ CVAR (fragexitswitch,   "0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR (infiniteammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Items will respawn after time
 CVAR (itemsrespawn,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+// If itemrespawn is on, items will respawn after this time. (in seconds)
+CVAR (sv_itemrespawntime,	"30", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Monsters will respawn after time
 CVAR (monstersrespawn,	"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Monsters are not present
