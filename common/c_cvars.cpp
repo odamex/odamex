@@ -513,7 +513,7 @@ BEGIN_COMMAND (set)
 
 		if (var->flags() & CVAR_NOSET)
 			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);
-		else if (baseapp == client && (var->flags() & CVAR_SERVERINFO))
+		else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
 		{
 			Printf (PRINT_HIGH, "%s is under server control and hasn't been changed.\n", argv[1]);
 			return;
