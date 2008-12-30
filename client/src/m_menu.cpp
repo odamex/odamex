@@ -615,13 +615,13 @@ void M_ReadSaveStrings(void)
 	FILE *handle;
 	int count;
 	int i;
-	char name[256];
+	std::string name;
 
 	for (i = 0; i < load_end; i++)
 	{
 		G_BuildSaveName (name, i);
 
-		handle = fopen (name, "rb");
+		handle = fopen (name.c_str(), "rb");
 		if (handle == NULL)
 		{
 			strcpy (&savegamestrings[i][0], EMPTYSTRING);
@@ -657,10 +657,10 @@ void M_DrawLoad (void)
 //
 void M_LoadSelect (int choice)
 {
-	char name[256];
+	std::string name;
 
 	G_BuildSaveName (name, choice);
-	G_LoadGame (name);
+	G_LoadGame ((char *)name.c_str());
 	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	M_ClearMenus ();
 	if (quickSaveSlot == -2)
