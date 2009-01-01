@@ -168,13 +168,15 @@ void SDLVideo::SetWindowedScale (float scale)
 
 bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
 {
-   Uint32 flags = 0;
+   Uint32 flags = SDL_RESIZABLE;
 
    // SoM: I'm not sure if we should request a software or hardware surface yet... So I'm
    // just ganna let SDL decide.
 
    if(fs && vidModeCount)
    {
+      flags = 0;
+       
       flags |= SDL_FULLSCREEN;
 
       if(bits == 8)

@@ -199,6 +199,8 @@ static void UngrabMouse (void)
 //
 
 EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_defwidth)
+EXTERN_CVAR (vid_defheight)
 
 void I_PauseMouse (void)
 {
@@ -263,6 +265,23 @@ void I_GetEvent (void)
          case SDL_QUIT:
             AddCommandString("quit");
             break;
+         // Resizable window mode resolutions
+         case SDL_VIDEORESIZE:
+         {
+             if (!mousegrabbed && !vid_fullscreen)
+             {
+                char Command[64];
+                
+                snprintf(Command, sizeof(Command), "vid_setmode %d %d", ev.resize.w, ev.resize.h);
+               
+                AddCommandString(Command);
+
+                vid_defwidth.Set((float)ev.resize.w);
+				vid_defheight.Set((float)ev.resize.h);
+             }
+         }
+         break;
+         
          case SDL_KEYDOWN:
             event.type = ev_keydown;
             event.data1 = ev.key.keysym.sym;
