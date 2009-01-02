@@ -488,7 +488,7 @@ EXTERN_CVAR (vid_fullscreen)
 static value_t Depths[22];
 
 static char VMEnterText[] = "Press ENTER to set mode";
-static char VMTestText[] = "T to test mode for 5 seconds";
+static char VMTestText[] = "Press T to test mode for 5 seconds";
 
 static menuitem_t ModesItems[] = {
 	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
@@ -508,17 +508,13 @@ static menuitem_t ModesItems[] = {
 	{ redtext,  VMEnterText,			{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,  VMTestText,				{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,  NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,  NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
 };
 
 #define VM_DEPTHITEM	0
 #define VM_RESSTART		4
 #define VM_ENTERLINE	14
 #define VM_TESTLINE		16
-#define VM_MAKEDEFLINE	18
-#define VM_CURDEFLINE	19
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
@@ -1159,6 +1155,9 @@ void M_OptResponder (event_t *ev)
 				NewBits = BitTranslate[(int)DummyDepthCvar];
 				setmodeneeded = true;
 				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				vid_defwidth.Set ((float)NewWidth);
+				vid_defheight.Set ((float)NewHeight);
+				vid_defbits.Set ((float)NewBits);
 				SetModesMenu (NewWidth, NewHeight, NewBits);
 			}
 			else if (item->type == more && item->e.mfunc)
@@ -1230,14 +1229,6 @@ void M_OptResponder (event_t *ev)
 					S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
 					SetModesMenu (NewWidth, NewHeight, NewBits);
 				}
-			}
-			else if (ev->data2 == 'd' && CurrentMenu == &ModesMenu)
-			{
-				// Make current resolution the default
-				vid_defwidth.Set ((float)screen->width);
-				vid_defheight.Set ((float)screen->height);
-				vid_defbits.Set ((float)DisplayBits);
-				SetModesMenu (screen->width, screen->height, DisplayBits);
 			}
 			break;
 	}
@@ -1420,30 +1411,33 @@ static void SetModesMenu (int w, int h, int bits)
 
 	if (!testingmode)
 	{
-		/*if (ModesItems[VM_ENTERLINE].label != VMEnterText) // denis - ReplaceString no longer leaky
-			free (ModesItems[VM_ENTERLINE].label);*/
 		ModesItems[VM_ENTERLINE].label = VMEnterText;
 		ModesItems[VM_TESTLINE].label = VMTestText;
-
-		sprintf (strtemp, "D to make %dx%dx%d the default", w, h, bits);
-		ReplaceString (&ModesItems[VM_MAKEDEFLINE].label, strtemp);
-
-		sprintf (strtemp, "Current default is %dx%dx%d",
-				 (int)vid_defwidth,
-				 (int)vid_defheight,
-				 (int)vid_defbits);
-		ReplaceString (&ModesItems[VM_CURDEFLINE].label, strtemp);
 	}
 	else
 	{
 		sprintf (strtemp, "TESTING %dx%dx%d", w, h, bits);
 		ModesItems[VM_ENTERLINE].label = copystring (strtemp);
 		ModesItems[VM_TESTLINE].label = "Please wait 5 seconds...";
-		ModesItems[VM_MAKEDEFLINE].label = copystring (" ");
-		ModesItems[VM_CURDEFLINE].label = copystring (" ");
 	}
 
 	BuildModesList (w, h, bits);
+}
+
+//
+// void M_ModeFlashTestText (void)
+//
+// Flashes the video mode testing text
+void M_ModeFlashTestText (void)
+{
+    if (ModesItems[VM_TESTLINE].label[0] == ' ')
+    {
+		ModesItems[VM_TESTLINE].label = "Please wait 5 seconds...";
+    }
+    else
+    {
+        ModesItems[VM_TESTLINE].label = " ";
+    }
 }
 
 void M_RestoreMode (void)

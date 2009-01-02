@@ -138,6 +138,7 @@ EXTERN_CVAR (nomonsters)
 const char *LOG_FILE;
 
 void M_RestoreMode (void);
+void M_ModeFlashTestText (void);
 
 //
 // D_ProcessEvents
@@ -154,6 +155,11 @@ void D_ProcessEvents (void)
 		{
 			M_RestoreMode ();
 		}
+        else
+        {
+            M_ModeFlashTestText();
+        }
+        
 		return;
 	}
 
