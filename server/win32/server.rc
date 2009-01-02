@@ -75,7 +75,7 @@ BEGIN
             VALUE "FileDescription", "Odamex Server\0"
             VALUE "FileVersion", "0.1\0"
             VALUE "InternalName", "Odamex Server\0"
-            VALUE "LegalCopyright", "Copyright © 2006 The Odamex Team\0"
+            VALUE "LegalCopyright", "Copyright © 2006-2009 The Odamex Team\0"
             VALUE "LegalTrademarks", "Doom® is a Registered Trademark of id Software, Inc.\0"
             VALUE "OriginalFilename", "odmserv.exe\0"
             VALUE "PrivateBuild", "\0"
