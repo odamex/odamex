@@ -109,7 +109,7 @@ CVAR (cl_connectalert, "1", CVAR_ARCHIVE)
 
 CVAR_FUNC_DECL (cl_mouselook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 
-CVAR (mouse_acceleration, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (mouse_acceleration, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_threshold, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_sensitivity,	"25.0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_type,			"0",	CVAR_ARCHIVE)
