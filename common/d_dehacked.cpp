@@ -1503,6 +1503,7 @@ static int PatchText (int oldSize)
 			while (info->level_name) {
 				if (!strnicmp (info->music, temp, 8)) {
 					good = true;
+					sprintf (temp, "d_%s", newStr);
 					strncpy (info->music, temp, 8);
 				}
 				info++;
