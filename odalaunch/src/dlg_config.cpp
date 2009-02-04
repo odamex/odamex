@@ -192,54 +192,69 @@ void dlgConfig::OnTextChange(wxCommandEvent &event)
 // Add a directory to the listbox
 void dlgConfig::OnAddDir(wxCommandEvent &event)
 {    
-    if (m_DirCtrlChooseWadDir->GetPath() == wxT(""))
+    wxString WadDirectory = m_DirCtrlChooseWadDir->GetPath();
+    
+    if (WadDirectory == wxT(""))
     {
-        wxMessageBox(wxT("Please browse or type in a path in the box below"));
-        return;        
+        wxDirDialog ChooseWadDialog(this, 
+                                    wxT("Select a folder containing WAD files"));
+                                    
+        
+        if (ChooseWadDialog.ShowModal() != wxID_OK)
+            return;
+            
+        WadDirectory = ChooseWadDialog.GetPath();
     }
     
     // Check to see if the path exists on the system
-    if (wxDirExists(m_DirCtrlChooseWadDir->GetPath()))
+    if (wxDirExists(WadDirectory))
     {
         // Check if path already exists in box
-        if (m_LstCtrlWadDirectories->FindString(m_DirCtrlChooseWadDir->GetPath()) == wxNOT_FOUND)
+        if (m_LstCtrlWadDirectories->FindString(WadDirectory) == wxNOT_FOUND)
         {
-            m_LstCtrlWadDirectories->Append(m_DirCtrlChooseWadDir->GetPath());
+            m_LstCtrlWadDirectories->Append(WadDirectory);
 
             UserChangedSetting = 1;
         }
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), m_DirCtrlChooseWadDir->GetPath().c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
 }
 
 // Replace a directory in the listbox
 void dlgConfig::OnReplaceDir(wxCommandEvent &event)
 {
-    if (m_DirCtrlChooseWadDir->GetPath() == wxT(""))
+    wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
+    wxString WadDirectory = m_DirCtrlChooseWadDir->GetPath();
+
+    if (i == wxNOT_FOUND)
     {
-        wxMessageBox(wxT("Please browse or type in a path in the box below"));
-        return;        
+        wxMessageBox(_T("Select an directory from the list to replace!"));
+        
+        return;
+    }
+    
+    if (WadDirectory == wxT(""))
+    {
+        wxDirDialog ChooseWadDialog(this, 
+                                    wxT("Select a folder containing WAD files"));
+                                    
+        if (ChooseWadDialog.ShowModal() != wxID_OK)
+            return;
+            
+        WadDirectory = ChooseWadDialog.GetPath();
     }
     
     // Check to see if the path exists on the system
-    if (wxDirExists(m_DirCtrlChooseWadDir->GetPath()))
+    if (wxDirExists(WadDirectory))
     {
-        // Get the selected item and replace it, if
-        // it is selected.
-        wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
+        // Get the selected item and replace it
+        m_LstCtrlWadDirectories->SetString(i, WadDirectory);
 
-        if (i != wxNOT_FOUND)
-        {
-            m_LstCtrlWadDirectories->SetString(i, m_DirCtrlChooseWadDir->GetPath());
-
-            UserChangedSetting = 1;
-        }
-        else
-            wxMessageBox(_T("Select item to replace!"));
+        UserChangedSetting = 1;
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), m_DirCtrlChooseWadDir->GetPath().c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
 }
 
 // Delete a directory from the listbox
