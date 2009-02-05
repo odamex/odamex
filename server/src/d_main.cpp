@@ -915,34 +915,6 @@ void D_DoomMain (void)
 		skill.Set (val[0]-'0');
 	}
 
-	unsigned p = Args.CheckParm ("-warp");
-	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
-	{
-		int ep, map;
-
-		if (gameinfo.flags & GI_MAPxx)
-		{
-			ep = 1;
-			map = atoi (Args.GetArg(p+1));
-		}
-		else
-		{
-			ep = Args.GetArg(p+1)[0]-'0';
-			map = Args.GetArg(p+2)[0]-'0';
-		}
-
-		strncpy (startmap, CalcMapName (ep, map), 8);
-		autostart = true;
-	}
-
-	// [RH] Hack to handle +map
-	p = Args.CheckParm ("+map");
-	if (p && p < Args.NumArgs()-1)
-	{
-		strncpy (startmap, Args.GetArg (p+1), 8);
-		((char *)Args.GetArg (p))[0] = '-';
-		autostart = true;
-	}
 	if (devparm)
 		Printf (PRINT_HIGH, "%s", Strings[0].builtin);	// D_DEVSTR
 
@@ -1006,6 +978,35 @@ void D_DoomMain (void)
 	// [RH] Now that all game subsystems have been initialized,
 	// do all commands on the command line other than +set
 	C_ExecCmdLineParams (false, false);
+
+	unsigned p = Args.CheckParm ("-warp");
+	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
+	{
+		int ep, map;
+
+		if (gameinfo.flags & GI_MAPxx)
+		{
+			ep = 1;
+			map = atoi (Args.GetArg(p+1));
+		}
+		else
+		{
+			ep = Args.GetArg(p+1)[0]-'0';
+			map = Args.GetArg(p+2)[0]-'0';
+		}
+
+		strncpy (startmap, CalcMapName (ep, map), 8);
+		autostart = true;
+	}
+
+	// [RH] Hack to handle +map
+	p = Args.CheckParm ("+map");
+	if (p && p < Args.NumArgs()-1)
+	{
+		strncpy (startmap, Args.GetArg (p+1), 8);
+		((char *)Args.GetArg (p))[0] = '-';
+		autostart = true;
+	}
 
 	strncpy(level.mapname, startmap, sizeof(level.mapname));
 
