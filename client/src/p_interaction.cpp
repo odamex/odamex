@@ -67,6 +67,59 @@ static void PickupMessage (AActor *toucher, const char *message)
 }
 
 //
+// static void WeaponPickupMessage (weapontype_t &Weapon)
+//
+// This is used for displaying weaponstay messages, it is inevitably a hack
+// because weaponstay is a hack
+static void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
+{
+    switch (Weapon)
+    {
+        case wp_shotgun:
+        {
+            PickupMessage(toucher, GOTSHOTGUN);
+        }
+        break;
+        
+        case wp_chaingun:
+        {
+            PickupMessage(toucher, GOTCHAINGUN);
+        }
+        break;
+        
+        case wp_missile:
+        {
+            PickupMessage(toucher, GOTLAUNCHER);
+        }
+        break;
+        
+        case wp_plasma:
+        {
+            PickupMessage(toucher, GOTPLASMA);
+        }
+        break;
+        
+        case wp_bfg:
+        {
+            PickupMessage(toucher, GOTBFG9000);
+        }
+        break;
+        
+        case wp_chainsaw:
+        {
+            PickupMessage(toucher, GOTCHAINSAW);
+        }
+        break;
+        
+        case wp_supershotgun:
+        {
+            PickupMessage(toucher, GOTSHOTGUN2);
+        }
+        break;
+    }
+}
+
+//
 // GET STUFF
 //
 
@@ -194,6 +247,8 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		player->pendingweapon = weapon;
 
 		S_Sound (player->mo, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NORM);
+
+        WeaponPickupMessage(player->mo, weapon);
 
 		return false;
 	}
