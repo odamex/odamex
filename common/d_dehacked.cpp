@@ -1235,7 +1235,21 @@ static int PatchPointer (int ptrNum)
 
 	while ((result = GetLine ()) == 1) {
 		if ((ptrNum != -1) && (!stricmp (Line1, "Codep Frame")))
-			states[codepconv[ptrNum]].action = OrgActionPtrs[atoi (Line2)];
+		{
+		    int i = atoi (Line2);
+		    
+		    if (i >= NUMSTATES)
+            {
+                Printf (PRINT_HIGH, 
+                        "Pointer %d overruns static array (max: %d wanted: %d)."
+                        "\n", 
+                        ptrNum,
+                        NUMSTATES,
+                        i);
+            }
+		    else
+                states[codepconv[ptrNum]].action = OrgActionPtrs[i];
+		}
 		else Printf (PRINT_HIGH, unknown_str, Line1, "Pointer", ptrNum);
 	}
 	return result;
