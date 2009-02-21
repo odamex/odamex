@@ -371,7 +371,7 @@ static const struct CodePtr CodePtrs[] = {
 	{ "LoadShotgun2",	{(void *)A_LoadShotgun2} },
 	{ "CloseShotgun2",	{(void *)A_CloseShotgun2} },
 	{ "FireCGun",		{(void *)A_FireCGun} },
-	{ "A_GunFlash",		{(void *)A_GunFlash} },
+	{ "GunFlash",		{(void *)A_GunFlash} },
 	{ "FireMissile",	{(void *)A_FireMissile} },
 	{ "Saw",			{(void *)A_Saw} },
 	{ "FirePlasma",		{(void *)A_FirePlasma} },
