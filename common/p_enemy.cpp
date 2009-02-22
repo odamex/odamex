@@ -1682,23 +1682,6 @@ void A_Fall (AActor *actor)
 	// are meant to be obstacles.
 }
 
-
-// killough 11/98: kill an object
-void A_Die (AActor *actor)
-{
-	P_DamageMobj (actor, NULL, NULL, actor->health, MOD_UNKNOWN);
-}
-
-//
-// A_Detonate
-// killough 8/9/98: same as A_Explode, except that the damage is variable
-//
-
-void A_Detonate (AActor *mo)
-{
-	P_RadiusAttack (mo, mo->target, mo->info->damage, MOD_UNKNOWN);
-}
-
 //
 // A_Explode
 //
@@ -1720,39 +1703,6 @@ void A_Explode (AActor *thing)
 	}
 
 	P_RadiusAttack (thing, thing->target, 128, mod);
-}
-
-//
-// killough 9/98: a mushroom explosion effect, sorta :)
-// Original idea: Linguica
-//
-
-void A_Mushroom (AActor *actor)
-{
-	int i, j, n = actor->info->damage;
-
-	A_Explode (actor);	// First make normal explosion
-
-	// Now launch mushroom cloud
-	for (i = -n; i <= n; i += 8)
-	{
-		for (j = -n; j <= n; j += 8)
-		{
-			AActor target = *actor;
-			target.x += i << FRACBITS; // Aim in many directions from source
-			target.y += j << FRACBITS;
-			target.z += P_AproxDistance(i,j) << (FRACBITS+2); // Aim up fairly high
-
-			if(serverside)
-			{
-				AActor *mo = P_SpawnMissile (actor, &target, MT_FATSHOT); // Launch fireball
-				mo->momx >>= 1;
-				mo->momy >>= 1; // Slow it down a bit
-				mo->momz >>= 1;
-				mo->flags &= ~MF_NOGRAVITY; // Make debris fall under gravity
-			}
-		}
-	}
 }
 
 //
