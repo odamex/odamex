@@ -137,6 +137,9 @@ EXTERN_CVAR (nomonsters)
 
 const char *LOG_FILE;
 
+void M_RestoreMode (void);
+void M_ModeFlashTestText (void);
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -145,15 +148,20 @@ void D_ProcessEvents (void)
 {
 	event_t *ev;
 
-/*	// [RH] If testing mode, do not accept input until test is over
+	// [RH] If testing mode, do not accept input until test is over
 	if (testingmode)
 	{
 		if (testingmode <= I_GetTime())
 		{
 			M_RestoreMode ();
 		}
+        else
+        {
+            M_ModeFlashTestText();
+        }
+        
 		return;
-	}*/ // [Toke - Menu]
+	}
 
 	for (; eventtail != eventhead ; eventtail = ++eventtail<MAXEVENTS ? eventtail : 0)
 	{

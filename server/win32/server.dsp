@@ -8,12 +8,12 @@ CFG=server - Win32 DebugConsole
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "server.mak".
+!MESSAGE NMAKE /f "server.MAK".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "server.mak" CFG="server - Win32 DebugConsole"
+!MESSAGE NMAKE /f "server.MAK" CFG="server - Win32 DebugConsole"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -130,6 +130,10 @@ SOURCE=..\src\s_sound.cpp
 # Begin Source File
 
 SOURCE=..\src\sv_ctf.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\sv_cvarlist.cpp
 # End Source File
 # Begin Source File
 
@@ -262,6 +266,10 @@ SOURCE=.\server.rc
 # Begin Source File
 
 SOURCE=..\..\common\actor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\c_cvarlist.cpp
 # End Source File
 # Begin Source File
 

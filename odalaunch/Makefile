@@ -16,8 +16,25 @@ LD = g++
 
 WXCONFIG = wx-config
 WXRC = wxrc
-CFLAGS = $(shell $(WXCONFIG) --cflags) -g
-LFLAGS = $(shell $(WXCONFIG) --libs) -g
+
+# Sometimes wx-config will uee the lowest version available, which is what
+# we do no want! -- GhostlyDeath
+ifeq ($(findstring $(strip $(shell $(WXCONFIG) --version 2>&1)), 2.7),)
+	WXVERSIONADDITION = --version=2.8
+else ifeq ($(findstring $(strip $(shell $(WXCONFIG) --version 2>&1)), 2.6),)
+	WXVERSIONADDITION = --version=2.8
+else ifeq ($(findstring $(strip $(shell $(WXCONFIG) --version 2>&1)), 2.5),)
+	WXVERSIONADDITION = --version=2.8
+else ifeq ($(findstring $(strip $(shell $(WXCONFIG) --version 2>&1)), 2.3),)
+	WXVERSIONADDITION = --version=2.8
+else ifeq ($(findstring $(strip $(shell $(WXCONFIG) --version 2>&1)), 2.2),)
+	WXVERSIONADDITION = --version=2.8
+else
+	WXVERSIONADDITION = 
+endif
+
+CFLAGS = $(shell $(WXCONFIG) $(WXVERSIONADDITION) --cflags) -g
+LFLAGS = $(shell $(WXCONFIG) $(WXVERSIONADDITION) --libs) -g
 
 RESOURCES = res/xrc_resource.xrc res/icons.xrc
 

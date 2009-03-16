@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -58,6 +58,8 @@ CVAR (fragexitswitch,   "0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR (infiniteammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Items will respawn after time
 CVAR (itemsrespawn,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+// If itemrespawn is on, items will respawn after this time. (in seconds)
+CVAR (sv_itemrespawntime,	"30", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Monsters will respawn after time
 CVAR (monstersrespawn,	"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Monsters are not present

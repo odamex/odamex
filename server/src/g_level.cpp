@@ -648,7 +648,16 @@ void G_ChangeMap (void)
 				if ( strcmp( MapListPointer->WadCmds, "-" ) != 0 )
 					AddCommandString(MapListPointer->WadCmds);
 			}
-			G_DeferedInitNew(MapListPointer->MapName);
+            
+            char *next = MapListPointer->MapName;
+            
+            // for latched "deathmatch 0" cvar
+            if (gamestate == GS_STARTUP)
+            {
+                next = level.mapname;
+            }
+                       
+			G_DeferedInitNew(next);
 			MapListPointer = MapListPointer->Next;
 		}
 	}

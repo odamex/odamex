@@ -615,13 +615,13 @@ void M_ReadSaveStrings(void)
 	FILE *handle;
 	int count;
 	int i;
-	char name[256];
+	std::string name;
 
 	for (i = 0; i < load_end; i++)
 	{
 		G_BuildSaveName (name, i);
 
-		handle = fopen (name, "rb");
+		handle = fopen (name.c_str(), "rb");
 		if (handle == NULL)
 		{
 			strcpy (&savegamestrings[i][0], EMPTYSTRING);
@@ -657,10 +657,10 @@ void M_DrawLoad (void)
 //
 void M_LoadSelect (int choice)
 {
-	char name[256];
+	std::string name;
 
 	G_BuildSaveName (name, choice);
-	G_LoadGame (name);
+	G_LoadGame ((char *)name.c_str());
 	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	M_ClearMenus ();
 	if (quickSaveSlot == -2)
@@ -1549,11 +1549,11 @@ static void M_SlidePlayerRed (int choice)
 	int red = RPART(color);
 
 	if (choice == 0) {
-		red -= 16;
+		red -= 1;
 		if (red < 0)
 			red = 0;
 	} else {
-		red += 16;
+		red += 1;
 		if (red > 255)
 			red = 255;
 	}
@@ -1567,11 +1567,11 @@ static void M_SlidePlayerGreen (int choice)
 	int green = GPART(color);
 
 	if (choice == 0) {
-		green -= 16;
+		green -= 1;
 		if (green < 0)
 			green = 0;
 	} else {
-		green += 16;
+		green += 1;
 		if (green > 255)
 			green = 255;
 	}
@@ -1585,11 +1585,11 @@ static void M_SlidePlayerBlue (int choice)
 	int blue = BPART(color);
 
 	if (choice == 0) {
-		blue -= 16;
+		blue -= 1;
 		if (blue < 0)
 			blue = 0;
 	} else {
-		blue += 16;
+		blue += 1;
 		if (blue > 255)
 			blue = 255;
 	}

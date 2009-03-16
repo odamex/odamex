@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -63,6 +63,8 @@
 #include "gi.h"
 
 #include <math.h> // for pow()
+
+#include <sstream>
 
 #define SAVESTRINGSIZE	24
 
@@ -1550,16 +1552,23 @@ void G_SaveGame (int slot, char *description)
 	sendsave = true;
 }
 
-void G_BuildSaveName (char *name, int slot)
+void G_BuildSaveName (std::string &name, int slot)
 {
-	sprintf (name, "%s%d.ods", SAVEGAMENAME, slot); // DL - todo - this is unsafe! return std::string from this function instead
-	std::string path = I_GetUserFileName (name);
-	strcpy (name, path.c_str());
+    std::stringstream ssName;
+
+	std::string path = I_GetUserFileName ((const char *)name.c_str());
+	
+	ssName << path;
+    ssName << SAVEGAMENAME;
+	ssName << slot;
+	ssName << ".ods";
+	
+    name = ssName.str();
 }
 
 void G_DoSaveGame (void)
 {
-	char name[100];
+	std::string name;
 	char *description;
 	int i;
 
@@ -1568,14 +1577,14 @@ void G_DoSaveGame (void)
 	G_BuildSaveName (name, savegameslot);
 	description = savedescription;
 
-	FILE *stdfile = fopen (name, "wb");
+	FILE *stdfile = fopen (name.c_str(), "wb");
 
 	if (stdfile == NULL)
 	{
         return;
 	}
 	
-	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name);
+	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name.c_str());
 
 	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
 	fwrite (SAVESIG, 16, 1, stdfile);

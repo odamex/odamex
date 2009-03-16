@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -513,7 +513,7 @@ BEGIN_COMMAND (set)
 
 		if (var->flags() & CVAR_NOSET)
 			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);
-		else if (baseapp == client && (var->flags() & CVAR_SERVERINFO))
+		else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
 		{
 			Printf (PRINT_HIGH, "%s is under server control and hasn't been changed.\n", argv[1]);
 			return;
