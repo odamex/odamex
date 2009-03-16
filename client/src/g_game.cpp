@@ -200,9 +200,9 @@ EXTERN_CVAR (displaymouse)
 int 			turnheld;								// for accelerative turning
 
 // [Toke - Mouse] new mouse stuff
-unsigned int	mousexleft;
+int	mousexleft;
 int	mousex;
-unsigned int	mouseydown;
+int	mouseydown;
 int	mousey;
 float			zdoomsens;
 
