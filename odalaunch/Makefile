@@ -50,8 +50,10 @@ odalaunch.app: odalaunch
 	rm -rf odalaunch.app 
 	mkdir odalaunch.app
 	mkdir odalaunch.app/Contents
+	mkdir odalaunch.app/Contents/Resources
 	mkdir odalaunch.app/Contents/MacOS
-	mkdir odalaunch.app/Contents/MacOS/Resources
+	cp res/Info.plist odalaunch.app/Contents
+	cp res/odalaunch.icns odalaunch.app/Contents/Resources
 	echo -n "APPL????" > odalaunch.app/Contents/PkgInfo
 	cp odalaunch odalaunch.app/Contents/MacOS
 
