@@ -282,6 +282,9 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
         list->SetItem(li);
     }
     
+    // We don't want the lock on every column
+    list->SetColumnImage(li, -1);
+
     li.SetMask(wxLIST_MASK_TEXT); 
     
     li.SetColumn(serverlist_field_address);
