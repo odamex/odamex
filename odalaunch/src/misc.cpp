@@ -565,9 +565,11 @@ void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs, wxString 
     }
     
     #ifdef __WXMSW__
-    wxString binname = ODX_Path + _T('\\') + _T("odamex");
+      wxString binname = ODX_Path + _T('\\') + _T("odamex");
+    #elif __WXMAC__
+      wxString binname = ODX_Path + _T("/odamex.app/Contents/MacOS/odamex");
     #else
-    wxString binname = ODX_Path + _T("/odamex");
+      wxString binname = ODX_Path + _T("/odamex");
     #endif
 
     wxString cmdline = _T("");
