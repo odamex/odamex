@@ -530,16 +530,28 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
     MSG_WriteShort(&ml_message, timeleft);
     
     // Team data
-    byte TeamCount = (byte)teamsinplay;
-    MSG_WriteByte(&ml_message, TeamCount);
+    MSG_WriteByte(&ml_message, 2);
     
-    for (byte i = 0; i < TeamCount; ++i)
-    {
+    // Blue
+    MSG_WriteString(&ml_message, "Blue");
+    MSG_WriteLong(&ml_message, 0x000000FF);
+    MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
+
+    MSG_WriteString(&ml_message, "Red");
+    MSG_WriteLong(&ml_message, 0xFF000000);
+    MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
+
+    // TODO: When real dynamic teams are implemented
+    //byte TeamCount = (byte)teamsinplay;
+    //MSG_WriteByte(&ml_message, TeamCount);
+    
+    //for (byte i = 0; i < TeamCount; ++i)
+    //{
         // TODO - Figure out where the info resides
-        MSG_WriteString(&ml_message, "");
-        MSG_WriteLong(&ml_message, 0);
-        MSG_WriteShort(&ml_message, TEAMpoints[i]);        
-    }
+        //MSG_WriteString(&ml_message, "");
+        //MSG_WriteLong(&ml_message, 0);
+        //MSG_WriteShort(&ml_message, TEAMpoints[i]);        
+    //}
 	
 	// TODO - Enumerate patch files
 	MSG_WriteByte(&ml_message, 0);
