@@ -38,8 +38,8 @@ LFLAGS = $(shell $(WXCONFIG) $(WXVERSIONADDITION) --libs) -g
 
 # Add the universal build flags if this is wx_mac
 ifneq (,$(findstring wx_mac, $(strip $(shell $(WXCONFIG) --basename 2>&1))))
-	CFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc
-	LFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc 
+	CFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc -isysroot /Developer/SDKs/MacOSX10.4u.sdk
+	LFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc -isysroot /Developer/SDKs/MacOSX10.4u.sdk
 endif
 
 RESOURCES = res/xrc_resource.xrc res/icons.xrc
