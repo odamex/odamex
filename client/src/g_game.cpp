@@ -421,7 +421,9 @@ BEGIN_COMMAND (spynext)
 			break;
 		}
 		else if (consoleplayer().spectator ||
-				(gametype != GM_DM && players[curr].userinfo.team == consoleplayer().userinfo.team))
+			 gametype == GM_COOP ||
+			 (gametype != GM_DM &&
+				players[curr].userinfo.team == consoleplayer().userinfo.team))
 		{
 			displayplayer_id = players[curr].id;
 			break;

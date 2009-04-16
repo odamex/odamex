@@ -17,7 +17,7 @@ LD = g++
 WXCONFIG = wx-config
 WXRC = wxrc
 
-# Sometimes wx-config will uee the lowest version available, which is what
+# Sometimes wx-config will use the lowest version available, which is what
 # we do no want! -- GhostlyDeath
 ifeq ($(findstring $(strip $(shell $(WXCONFIG) --version 2>&1)), 2.7),)
 	WXVERSIONADDITION = --version=2.8
