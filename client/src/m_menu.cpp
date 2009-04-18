@@ -619,6 +619,8 @@ void M_ReadSaveStrings(void)
 
 	for (i = 0; i < load_end; i++)
 	{
+		name.clear();
+
 		G_BuildSaveName (name, i);
 
 		handle = fopen (name.c_str(), "rb");
