@@ -31,6 +31,12 @@ This can be done with item 1 if desired.
 3) Replace wxDatagramSocket with standard socket code, the wx class is not very
 mature and has quite a few issues.
 4) Finish off work on OdaGet.
+5) Remove the old tooltip popup and replace it with a dialog window when a right
+click is issued on a server in the server-list, the dialog should contain more 
+indepth information about the server.
+6) Make the server replacement item in the custom servers dialog, this should
+allow a listed or dead server be replaced by the address specified in the custom
+servers list.
 
 Master Server:
 --------------
