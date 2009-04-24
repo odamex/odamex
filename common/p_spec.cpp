@@ -884,8 +884,6 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType);
 // or shooting special lines, or by timed thinkers.
 //
 
-extern baseapp_t baseapp;
-
 //
 // P_CrossSpecialLine - TRIGGER
 // Called every time a thing origin is about
@@ -895,12 +893,8 @@ void
 P_CrossSpecialLine
 ( int		linenum,
   int		side,
-  AActor*	thing,
-  bool      FromServer)
+  AActor*	thing )
 {
-    if (multiplayer && baseapp == client && FromServer == false)
-        return;
-        
     line_t*	line = &lines[linenum];
 
 	if(thing)
@@ -983,12 +977,8 @@ P_CrossSpecialLine
 void
 P_ShootSpecialLine
 ( AActor*	thing,
-  line_t*	line,
-  bool      FromServer)
+  line_t*	line )
 {
-    if (multiplayer && baseapp == client && FromServer == false)
-        return;
-	
 	if(thing)
 	{
 		if (!(line->flags & ML_SPECIAL_SHOOT))
@@ -1023,12 +1013,8 @@ bool
 P_UseSpecialLine
 ( AActor*	thing,
   line_t*	line,
-  int		side,
-  bool      FromServer)
+  int		side )
 {
-    if (multiplayer && baseapp == client && FromServer == false)
-        return false;
-	
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
