@@ -2032,19 +2032,19 @@ void CL_ActivateLine(void)
 	if (!lines || l >= (unsigned)numlines)
 		return;
 
-	if(mo == consoleplayer().mo && activationType != 2)
-		return;
+	//if(mo == consoleplayer().mo && activationType != 2)
+		//return;
 
 	switch (activationType)
 	{
 	case 0:
-		P_CrossSpecialLine(l, side, mo);
+		P_CrossSpecialLine(l, side, mo, true);
 		break;
 	case 1:
-		P_UseSpecialLine(mo, &lines[l], side);
+		P_UseSpecialLine(mo, &lines[l], side, true);
 		break;
 	case 2:
-		P_ShootSpecialLine(mo, &lines[l]);
+		P_ShootSpecialLine(mo, &lines[l], true);
 		break;
 	}
 }
