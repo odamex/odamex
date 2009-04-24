@@ -472,6 +472,12 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 	CleanXfac = width / 320;
 	CleanYfac = height / 200;
+
+	if(!CleanXfac)
+		CleanXfac = 1;
+	if(!CleanYfac)
+		CleanYfac = 1;
+
 	CleanWidth = width / CleanXfac;
 	CleanHeight = height / CleanYfac;
 
