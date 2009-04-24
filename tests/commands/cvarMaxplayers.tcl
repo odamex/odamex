@@ -102,7 +102,7 @@ proc main {} {
  server "maxplayers 0"
  expect $serverout {maxplayers will be changed for next game.}
  server "map 1"
- # expect $serverout {Player became a spectator.}
+ expect $serverout {Player became a spectator.}
  expect $serverout {--- MAP01: entryway ---}
 }
 
