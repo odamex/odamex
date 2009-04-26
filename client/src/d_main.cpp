@@ -102,7 +102,7 @@ extern gameinfo_t RegisteredGameInfo;
 extern gameinfo_t RetailGameInfo;
 extern gameinfo_t CommercialGameInfo;
 
-extern int testingmode;
+extern QWORD testingmode;
 extern BOOL setsizeneeded;
 extern BOOL setmodeneeded;
 extern BOOL netdemo;
