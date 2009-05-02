@@ -6,8 +6,8 @@ package provide common 1.0
 
 set port 10599
 
-proc start {} {
- global server client serverout clientout port servercon clientcon
+proc startServer {} {
+ global server serverout port servercon
 
  set server [open odasrv.con w]
  set servercon [open "|./odasrv -port $port -logfile odasrv.log -confile odasrv.con > tmp" w]
@@ -20,9 +20,18 @@ proc start {} {
  server "maxplayers 2"
  server "timelimit 0"
  server "map 1"
+}
+
+proc startClient { {serverPort none} } {
+ global client clientout clientcon
 
  set client [open odamex.con w]
- set clientcon [open "|./odamex -port 10501 -connect localhost:$port -nosound -novideo -logfile odamex.log -confile odamex.con > tmp" w]
+
+ if { $serverPort != "none" } {
+  set clientcon [open "|./odamex -port 10501 -connect localhost:$serverPort -nosound -novideo -logfile odamex.log -confile odamex.con > tmp" w]
+ } else {
+  set clientcon [open "|./odamex -port 10501 -nosound -novideo -logfile odamex.log -confile odamex.con > tmp" w]
+ }
  set clientout [open odamex.log r]
 
  wait 5
@@ -31,19 +40,36 @@ proc start {} {
  client "cl_name Player"
 }
 
+proc start {} {
+ global server client serverout clientout port servercon clientcon
+
+ startServer
+ startClient $port
+}
+
 proc end {} {
  global server client serverout clientout servercon clientcon
 
- client quit
- server quit
+ if { [info exists client] } {
+  client quit
+ }
+ if { [info exists server] } {
+  server quit
+ }
 
- close $serverout
- close $servercon
- close $server
+ if { [info exists server] } {
+  close $serverout
+  close $servercon
+  close $server
+  unset server
+ }
 
- close $clientout
- close $clientcon
- close $client
+ if { [info exists client] } {
+  close $clientout
+  close $clientcon
+  close $client
+  unset client
+ }
 }
 
 proc server { cmd } {
@@ -63,11 +89,15 @@ proc client { cmd } {
 }
 
 proc clear {} {
- global serverout clientout
- gets $serverout
- gets $clientout
- while { ![eof $serverout] } { gets $serverout }
- while { ![eof $clientout] } { gets $clientout }
+ global serverout clientout server client
+ if { [info exists server] } {
+  gets $serverout
+  while { ![eof $serverout] } { gets $serverout }
+ }
+ if { [info exists client] } {
+  gets $clientout
+  while { ![eof $clientout] } { gets $clientout }
+ }
 }
 
 proc wait { {seconds 1} } {
