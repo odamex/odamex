@@ -690,7 +690,6 @@ void G_DoNewGame (void)
 
 		MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);
 		MSG_WriteString (&cl->reliablebuf, d_mapname);
-		SV_SendPacket (players[i]);
 	}
 
 	curmap.ForceSet(d_mapname);
