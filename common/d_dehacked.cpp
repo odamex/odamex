@@ -638,7 +638,11 @@ void UndoDehPatch ()
 		OrgActionPtrs[i] = states[i].action;
 
 	memcpy(states, backupStates, sizeof(states));
+
 	memcpy(mobjinfo, backupMobjInfo, sizeof(mobjinfo));
+	extern bool isFast;
+	isFast = false;
+
 	memcpy(weaponinfo, backupWeaponInfo, sizeof(weaponinfo));
 	memcpy(sprnames, backupSprnames, sizeof(sprnames));
 	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
