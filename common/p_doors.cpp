@@ -223,7 +223,7 @@ DDoor::DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay)
 	{
 	case doorClose:
 		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
-		m_TopHeight -= 4*FRACUNIT;
+		//m_TopHeight -= 4*FRACUNIT;
 		m_Direction = -1;
 		DoorSound (false);
 		break;

@@ -141,6 +141,7 @@ size_t			maxdemosize;
 byte*			zdemformend;			// end of FORM ZDEM chunk
 byte*			zdembodyend;			// end of ZDEM BODY chunk
 BOOL 			singledemo; 			// quit after playing a demo from cmdline
+int			demostartgametic;
 
 BOOL 			precache = true;		// if true, load all graphics at start
 
@@ -324,6 +325,7 @@ bool G_RecordDemo (char* name)
 
     usergame = false;
     demorecording = true;
+    demostartgametic = gametic;
 
     return true;
 }

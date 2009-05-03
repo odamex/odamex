@@ -619,7 +619,7 @@ void WI_updateNoState (void)
 	// denis - let the server decide when to load the next map
 	if(serverside)
 	{
-		if (!--cnt || acceleratestage)
+		if (!--cnt)
 		{
 			WI_End();
 			G_WorldDone();

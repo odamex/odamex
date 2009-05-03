@@ -158,7 +158,7 @@ BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 FILE *recorddemo_fp;
 
-
+int			demostartgametic;
 int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
@@ -1789,6 +1789,7 @@ bool G_RecordDemo (char* name)
 
     usergame = false;
     demorecording = true;
+    demostartgametic = gametic;
 
     return true;
 }
@@ -2057,6 +2058,7 @@ void G_DoPlayDemo (bool justStreamInput)
 
 	cvar_t::C_BackupCVars ();		// [RH] Save cvars that might be affected by demo
 	MakeEmptyUserCmd ();
+	demostartgametic = gametic;
 
 	if(demo_p[0] == DOOM_1_4_DEMO
 	|| demo_p[0] == DOOM_1_5_DEMO
