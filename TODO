@@ -51,3 +51,5 @@ communication between these crucial components are more reliable than what we
 have now. This system must sit between the actual socket code and the new 
 launcher protocol which has been implemented in the new_sqp branch on our svn
 repo.
+2) Use a build system to generate Makefiles, something like bakefile may be 
+sufficient enough.
