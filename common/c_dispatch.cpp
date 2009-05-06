@@ -148,14 +148,17 @@ void C_DoCommand (const char *cmd)
 		check = GetActionBit (MakeKey (com_token + 1));
 		//if (Actions[check] < 255)
 		//	Actions[check]++;
-		Actions[check] = 1;
+		if (check != -1)
+			Actions[check] = 1;
 	}
 	else if (*com_token == '-')
 	{
 		check = GetActionBit (MakeKey (com_token + 1));
 		//if (Actions[check])
 		//	Actions[check]--;
-		Actions[check] = 0;
+		if (check != -1)
+			Actions[check] = 0;
+			
 		if (check == ACTION_MLOOK && lookspring)
 		{
 			AddCommandString ("centerview");
