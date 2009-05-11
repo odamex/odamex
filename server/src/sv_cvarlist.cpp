@@ -24,6 +24,13 @@
 #include "c_cvars.h"
 
 
+// Log file settings
+// -----------------
+
+// Extended timestamp info (dd/mm/yyyy hh:mm:ss)
+CVAR (log_fulltimestamps, "0", CVAR_ARCHIVE)
+
+
 // Server administrative settings
 // ------------------------------
 

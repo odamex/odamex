@@ -520,7 +520,7 @@ long wxAdvancedListCtrl::ALCInsertItem(wxListItem &info)
     // TODO: We need to remember this item id, because the last item on the list
     // does not get sorted, we can't move sort either, because then the return 
     // index would be stale.
-    info.SetId(InsertItem(info));
+    info.SetId(InsertItem(GetItemCount(), info.GetText()));
    
     ColourListItem(info);
 

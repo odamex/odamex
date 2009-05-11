@@ -273,7 +273,7 @@ void HU_DrawTargetNames(void)
 	int TargetX = 0;
 	int TargetY = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
 	std::vector<TargetInfo_t> Targets;
-	int i;
+	size_t i;
 
 	if(!displayplayer().mo)
 		return;
@@ -389,7 +389,7 @@ void HU_DrawTargetNames(void)
 	// GhostlyDeath -- Now Sort (hopefully I got my selection sort working!)
 	for (i = 0; i < Targets.size(); i++)
 	{
-		for (int j = i + 1; j < Targets.size(); j++)
+		for (size_t j = i + 1; j < Targets.size(); j++)
 		{
 			if (Targets[j].Distance < Targets[i].Distance)
 			{
@@ -450,7 +450,7 @@ void HU_Drawer (void)
 		
 		size_t num_players = 0;
 		
-        for (int i = 0; i < players.size(); ++i)
+        for (size_t i = 0; i < players.size(); ++i)
 		{
             if (!players[i].spectator)
                 ++num_players;

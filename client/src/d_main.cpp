@@ -102,7 +102,7 @@ extern gameinfo_t RegisteredGameInfo;
 extern gameinfo_t RetailGameInfo;
 extern gameinfo_t CommercialGameInfo;
 
-extern int testingmode;
+extern QWORD testingmode;
 extern BOOL setsizeneeded;
 extern BOOL setmodeneeded;
 extern BOOL netdemo;
@@ -878,7 +878,17 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 				fread (&header, sizeof(header), 1, f);
 				header.identification = LONG(header.identification);
 				if (header.identification != IWAD_ID)
+				{
+					if(header.identification == PWAD_ID)
+					{
+						Printf(PRINT_HIGH, "Suggested file is a PWAD, not an IWAD: %s \n", iwad.c_str());
+					}
+					else
+					{
+						Printf(PRINT_HIGH, "Suggested file is not an IWAD: %s \n", iwad.c_str());
+					}
 					iwad = "";
+				}
 				fclose(f);
 			}
 		}

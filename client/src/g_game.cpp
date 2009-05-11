@@ -158,7 +158,7 @@ BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 FILE *recorddemo_fp;
 
-
+int			demostartgametic;
 int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
@@ -200,9 +200,9 @@ EXTERN_CVAR (displaymouse)
 int 			turnheld;								// for accelerative turning
 
 // [Toke - Mouse] new mouse stuff
-unsigned int	mousexleft;
+int	mousexleft;
 int	mousex;
-unsigned int	mouseydown;
+int	mouseydown;
 int	mousey;
 float			zdoomsens;
 
@@ -421,7 +421,9 @@ BEGIN_COMMAND (spynext)
 			break;
 		}
 		else if (consoleplayer().spectator ||
-				(gametype != GM_DM && players[curr].userinfo.team == consoleplayer().userinfo.team))
+			 gametype == GM_COOP ||
+			 (gametype != GM_DM &&
+				players[curr].userinfo.team == consoleplayer().userinfo.team))
 		{
 			displayplayer_id = players[curr].id;
 			break;
@@ -1787,6 +1789,7 @@ bool G_RecordDemo (char* name)
 
     usergame = false;
     demorecording = true;
+    demostartgametic = gametic;
 
     return true;
 }
@@ -2055,6 +2058,7 @@ void G_DoPlayDemo (bool justStreamInput)
 
 	cvar_t::C_BackupCVars ();		// [RH] Save cvars that might be affected by demo
 	MakeEmptyUserCmd ();
+	demostartgametic = gametic;
 
 	if(demo_p[0] == DOOM_1_4_DEMO
 	|| demo_p[0] == DOOM_1_5_DEMO

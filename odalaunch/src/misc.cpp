@@ -282,6 +282,9 @@ void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 
         list->SetItem(li);
     }
     
+    // We don't want the lock on every column
+    list->SetColumnImage(li, -1);
+
     li.SetMask(wxLIST_MASK_TEXT); 
     
     li.SetColumn(serverlist_field_address);
@@ -595,9 +598,11 @@ void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs, wxString 
     }
     
     #ifdef __WXMSW__
-    wxString binname = ODX_Path + _T('\\') + _T("odamex");
+      wxString binname = ODX_Path + _T('\\') + _T("odamex");
+    #elif __WXMAC__
+      wxString binname = ODX_Path + _T("/odamex.app/Contents/MacOS/odamex");
     #else
-    wxString binname = ODX_Path + _T("/odamex");
+      wxString binname = ODX_Path + _T("/odamex");
     #endif
 
     wxString cmdline = _T("");

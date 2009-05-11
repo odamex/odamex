@@ -171,6 +171,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 			// UP
 			// jff 02/04/98 keep floor from moving thru ceilings
 			destheight = (dest < m_Sector->ceilingheight) ? dest : m_Sector->ceilingheight;
+			destheight = dest; // denis - fix coopuv30.lmp
 			if (m_Sector->floorheight + speed > destheight)
 			{
 				lastpos = m_Sector->floorheight;
@@ -211,6 +212,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 			// DOWN
 			// jff 02/04/98 keep ceiling from moving thru floors
 			destheight = (dest > m_Sector->floorheight) ? dest : m_Sector->floorheight;
+			destheight = dest; // denis - fix coopuv30.lmp
 			if (m_Sector->ceilingheight - speed < destheight)
 			{
 				lastpos = m_Sector->ceilingheight;

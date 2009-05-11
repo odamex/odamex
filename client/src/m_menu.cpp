@@ -615,10 +615,11 @@ void M_ReadSaveStrings(void)
 	FILE *handle;
 	int count;
 	int i;
-	std::string name;
 
 	for (i = 0; i < load_end; i++)
 	{
+		std::string name;
+
 		G_BuildSaveName (name, i);
 
 		handle = fopen (name.c_str(), "rb");

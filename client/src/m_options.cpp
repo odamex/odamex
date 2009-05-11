@@ -470,7 +470,7 @@ extern BOOL setmodeneeded;
 extern int NewWidth, NewHeight, NewBits;
 extern int DisplayBits;
 
-int testingmode;		// Holds time to revert to old mode
+QWORD testingmode;		// Holds time to revert to old mode
 int OldWidth, OldHeight, OldBits;
 
 static void BuildModesList (int hiwidth, int hiheight, int hi_id);

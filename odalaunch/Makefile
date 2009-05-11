@@ -17,7 +17,7 @@ LD = g++
 WXCONFIG = wx-config
 WXRC = wxrc
 
-# Sometimes wx-config will uee the lowest version available, which is what
+# Sometimes wx-config will use the lowest version available, which is what
 # we do no want! -- GhostlyDeath
 ifeq ($(findstring $(strip $(shell $(WXCONFIG) --version 2>&1)), 2.7),)
 	WXVERSIONADDITION = --version=2.8
@@ -36,6 +36,12 @@ endif
 CFLAGS = $(shell $(WXCONFIG) $(WXVERSIONADDITION) --cflags) -g
 LFLAGS = $(shell $(WXCONFIG) $(WXVERSIONADDITION) --libs) -g
 
+# Add the universal build flags if this is wx_mac
+ifneq (,$(findstring wx_mac, $(strip $(shell $(WXCONFIG) --basename 2>&1))))
+	CFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc -isysroot /Developer/SDKs/MacOSX10.4u.sdk
+	LFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc -isysroot /Developer/SDKs/MacOSX10.4u.sdk
+endif
+
 RESOURCES = res/xrc_resource.xrc res/icons.xrc
 
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
@@ -44,8 +50,10 @@ odalaunch.app: odalaunch
 	rm -rf odalaunch.app 
 	mkdir odalaunch.app
 	mkdir odalaunch.app/Contents
+	mkdir odalaunch.app/Contents/Resources
 	mkdir odalaunch.app/Contents/MacOS
-	mkdir odalaunch.app/Contents/MacOS/Resources
+	cp res/Info.plist odalaunch.app/Contents
+	cp res/odalaunch.icns odalaunch.app/Contents/Resources
 	echo -n "APPL????" > odalaunch.app/Contents/PkgInfo
 	cp odalaunch odalaunch.app/Contents/MacOS
 

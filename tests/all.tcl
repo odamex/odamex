@@ -8,6 +8,7 @@ exec tclsh "$0" "$@"
 
 append tests "[glob tests/*.tcl]"
 append tests " [glob tests/commands/*.tcl]"
+append tests " [glob tests/bugs/*.tcl]"
 
 proc htmlputs { txt } {
 	global argv

@@ -32,8 +32,15 @@ proc main {} {
  expect $clientout {> DOOM2.WAD} 0
  expect $clientout {25E1459CA71D321525F84628F45CA8CD} 0
  expect $clientout {> Server protocol version: 65} 0 
- expect $clientout {> Server Version 0.4.2} 0 
-gets $clientout
+
+ set expectedVersionString "> Server Version "
+ set nextline [gets $clientout]
+ if { [string range $nextline 0 16] != $expectedVersionString } {
+  puts "FAIL ($expectedVersionString|[string range $nextline 0 16])"
+ } else {
+  puts "PASS $nextline"
+ }
+ gets $clientout
  expect $clientout {challenging 127.0.0.1:10599} 0
  expect $clientout {} 0
  expect $clientout {=================================} 0

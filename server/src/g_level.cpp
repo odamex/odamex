@@ -93,6 +93,8 @@ static cluster_info_t *wadclusterinfos;
 static size_t numwadlevelinfos = 0;
 static size_t numwadclusterinfos = 0;
 
+bool isFast = false;
+
 enum
 {
 	MITL_MAP,
@@ -690,7 +692,6 @@ void G_DoNewGame (void)
 
 		MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);
 		MSG_WriteString (&cl->reliablebuf, d_mapname);
-		SV_SendPacket (players[i]);
 	}
 
 	curmap.ForceSet(d_mapname);
@@ -777,7 +778,6 @@ void G_InitNew (const char *mapname)
 	else
 		respawnmonsters = false;
 
-	static bool isFast = false;
 	bool wantFast = fastmonsters || (skill == sk_nightmare);
 	if (wantFast != isFast)
 	{

@@ -638,7 +638,11 @@ void UndoDehPatch ()
 		OrgActionPtrs[i] = states[i].action;
 
 	memcpy(states, backupStates, sizeof(states));
+
 	memcpy(mobjinfo, backupMobjInfo, sizeof(mobjinfo));
+	extern bool isFast;
+	isFast = false;
+
 	memcpy(weaponinfo, backupWeaponInfo, sizeof(weaponinfo));
 	memcpy(sprnames, backupSprnames, sizeof(sprnames));
 	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
@@ -1502,21 +1506,25 @@ static int PatchText (int oldSize)
 	// Search through music names.
 	// This is something of an even bigger hack
 	// since I changed the way music is handled.
-	if (oldSize < 7) {		// Music names are never >6 chars
-		if ( (temp = new char[oldSize + 3]) ) {
-			level_info_t *info = LevelInfos;
-			sprintf (temp, "d_%s", oldStr);
+	
+	// Music names are never >6 chars
+	if (oldSize < 7) 
+	{
+        level_info_t *info = LevelInfos;
+		char MusicLumpName[9] = { 0 };
+			
+		sprintf (MusicLumpName, "d_%s", oldStr);
 
-			while (info->level_name) {
-				if (!strnicmp (info->music, temp, 8)) {
-					good = true;
-					sprintf (temp, "d_%s", newStr);
-					strncpy (info->music, temp, 8);
-				}
-				info++;
+		while (info->level_name) 
+		{
+			if (!strnicmp (info->music, MusicLumpName, 8)) 
+			{
+				good = true;
+				sprintf (MusicLumpName, "d_%s", newStr);
+				strncpy (info->music, MusicLumpName, 8);
 			}
-
-			delete[] temp;
+		
+			info++;
 		}
 	}
 

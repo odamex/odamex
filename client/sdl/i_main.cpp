@@ -88,11 +88,13 @@ int main(int argc, char *argv[])
 
 		LOG_FILE = Args.CheckValue("-logfile");
 		if(!LOG_FILE)LOG_FILE = "odamex.log";
-		LOG.open(LOG_FILE, std::ios::out);
+		LOG.open(LOG_FILE, std::ios::app);
 
         if (!LOG.is_open())
             std::cerr << "Unable to create logfile: %s\n" << std::endl;
-
+		else
+            LOG << std::endl;
+            
 		const char *CON_FILE = Args.CheckValue("-confile");
 		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
 
@@ -181,6 +183,7 @@ int main(int argc, char *argv[])
 		if (LOG.is_open())
         {
             LOG << error.GetMessage() << std::endl;
+            LOG << std::endl;
         }
 #ifndef WIN32
             fprintf(stderr, "%s\n", error.GetMessage().c_str());

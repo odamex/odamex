@@ -92,11 +92,14 @@ int __cdecl main(int argc, char *argv[])
 		Args.SetArgs (argc, argv);
 
 		LOG_FILE = Args.CheckValue("-logfile");
-		if(!LOG_FILE)LOG_FILE = "odamex.log";
-		LOG.open(LOG_FILE, std::ios::out);
+		if(!LOG_FILE)LOG_FILE = "odasrv.log";
+		LOG.open(LOG_FILE, std::ios::app);
 
         if (!LOG.is_open())
 			cerr << "Unable to create logfile: %s" << endl;
+		else
+            LOG << std::endl;
+        
 
 		const char *CON_FILE = Args.CheckValue("-confile");
 		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
@@ -131,6 +134,7 @@ int __cdecl main(int argc, char *argv[])
 		if (LOG.is_open())
         {
             LOG << error.GetMessage() << std::endl;
+            LOG << std::endl;
         }
         else
         {
@@ -196,12 +200,14 @@ int main (int argc, char **argv)
 		Args.SetArgs (argc, argv);
 
 		LOG_FILE = Args.CheckValue("-logfile");
-		if(!LOG_FILE)LOG_FILE = "odamex.log";
-		LOG.open(LOG_FILE, std::ios::out);
+		if(!LOG_FILE)LOG_FILE = "odasrv.log";
+		LOG.open(LOG_FILE, std::ios::app);
 
         if (!LOG.is_open())
             cerr << "Unable to create logfile: %s" << endl;
-
+		else
+            LOG << std::endl;
+            
 		const char *CON_FILE = Args.CheckValue("-confile");
 		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
 
@@ -250,6 +256,7 @@ int main (int argc, char **argv)
 	if (LOG.is_open())
         {
             LOG << error.GetMessage() << std::endl;
+            LOG << std::endl;
         }
         
 	exit (-1);

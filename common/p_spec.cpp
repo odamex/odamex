@@ -898,7 +898,7 @@ P_CrossSpecialLine
   AActor*	thing,
   bool      FromServer)
 {
-    if (multiplayer && baseapp == client && FromServer == false)
+    if (!serverside && FromServer)
         return;
         
     line_t*	line = &lines[linenum];
@@ -986,7 +986,7 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
-    if (multiplayer && baseapp == client && FromServer == false)
+    if (!serverside && FromServer)
         return;
 	
 	if(thing)
@@ -1026,7 +1026,7 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
-    if (multiplayer && baseapp == client && FromServer == false)
+    if (!serverside && FromServer)
         return false;
 	
 	// Err...
