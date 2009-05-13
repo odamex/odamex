@@ -37,6 +37,10 @@ indepth information about the server.
 6) Make the server replacement item in the custom servers dialog, this should
 allow a listed or dead server be replaced by the address specified in the custom
 servers list.
+7) Create a dialog with various settings to start a server (server launcher), 
+with possibly some code to utilize UPnP to open ports on routers
+8) Create a dialog for launching the client in offline mode, with various 
+settings such as iwad, skill, map, pwads etc
 
 Master Server:
 --------------
