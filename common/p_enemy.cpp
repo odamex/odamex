@@ -1641,22 +1641,29 @@ void A_PainDie (AActor *actor)
 
 void A_Scream (AActor *actor)
 {
-	if (actor->info->deathsound)
-	{
-		char sound[MAX_SNDNAME];
+    char sound[MAX_SNDNAME];
 
-		strcpy (sound, actor->info->deathsound);
+	if (actor->info->deathsound == NULL)
+        return;
+        
 
-		if (sound[strlen(sound)-1] == '1')
-		{
-			sound[strlen(sound)-1] = P_Random(actor)%3 + '1'; // denis - todo - this sucks and doesn't do what vanilla does
-			if (S_FindSound (sound) == -1)
-				sound[strlen(sound)-1] = '1';
-		}
+	strcpy (sound, actor->info->deathsound);
+    
+    if (stricmp(sound, "grunt/death1") == 0 || 
+        stricmp(sound, "shotguy/death1") == 0 ||
+        stricmp(sound, "chainguy/death1") == 0)
+    {
+        sound[strlen(sound)-1] = P_Random(actor) % 3 + '1';
+    }
 
-		// Check for bosses.
-		S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
-	}
+    if (stricmp(sound, "imp/death1") == 0 || 
+        stricmp(sound, "imp/death2") == 0)
+    {
+        sound[strlen(sound)-1] = P_Random(actor) % 2 + '1';
+    }
+
+    
+    S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
 
 
