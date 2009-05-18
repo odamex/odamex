@@ -2126,7 +2126,7 @@ void G_DoPlayDemo (bool justStreamInput)
     			netdemo = true;
     			multiplayer = true;
 
-    			for (size_t i = 0; i < 4; i++) {
+    			for (size_t i = 0; i < players.size(); i++) {
     				if (players[i].ingame()) {
     					//strcpy(players[i].userinfo.netname, pnam[i]);
     					//players[i].userinfo.team = TEAM_NONE;
