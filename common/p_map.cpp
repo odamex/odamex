@@ -391,7 +391,7 @@ BOOL PIT_CheckLine (line_t *ld)
 	return true;
 }
 
-EXTERN_CVAR(sv_solidplayers)
+EXTERN_CVAR(sv_unblockplayers)
 
 //
 // PIT_CheckThing
@@ -421,7 +421,7 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->player && tmthing->player->spectator)
 		return true;
 		
-    if (tmthing->player && thing->player && !sv_solidplayers)
+    if (tmthing->player && thing->player && sv_unblockplayers)
         return true;
 
 	/*if (!(thing->player && thing->player->spectator))
