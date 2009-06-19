@@ -89,5 +89,7 @@ CVAR (chase_height,		"-8", CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chase_dist,		"90", CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 // Generate centerview when -mlook encountered?
 CVAR (lookspring,		"1", CVAR_CLIENTARCHIVE)
+// Allows players to walk through other players
+CVAR (sv_solidplayers, "1", CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")
