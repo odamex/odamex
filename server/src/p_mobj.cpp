@@ -994,16 +994,16 @@ void AActor::Destroy ()
 
 	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED))
 	{
-		if (type != MT_INV && type != MT_INS)
+		if (type != MT_INV && type != MT_INS && (type < MT_BSOK || type > MT_RDWN))
 		{
 			itemrespawnque[iquehead] = spawnpoint;
 			itemrespawntime[iquehead] = level.time;
 			iquehead = (iquehead+1)&(ITEMQUESIZE-1);
-		}
 
-		// lose one off the end?
-		if (iquehead == iquetail)
-			iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+			// lose one off the end?
+			if (iquehead == iquetail)
+				iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		}
 	}
 
 	// [RH] Unlink from tid chain
