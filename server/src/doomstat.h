@@ -80,6 +80,8 @@ extern	BOOL			netgame;
 // Bot game? Like netgame, but doesn't involve network communication.
 extern	BOOL			multiplayer;
 
+extern BOOL            network_game;
+
 // Game mode
 EXTERN_CVAR (gametype)
 

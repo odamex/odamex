@@ -171,6 +171,7 @@ void CL_QuitNetGame(void)
 	AM_Stop();
 
 	serverside = clientside = true;
+	network_game = false;
 	
 	sv_freelook = 1;
 	allowjump = 1;
@@ -901,6 +902,7 @@ bool CL_Connect(void)
 
 	connected = true;
     multiplayer = true;
+    network_game = true;
 	serverside = false;
 
 	CL_Decompress(0);
