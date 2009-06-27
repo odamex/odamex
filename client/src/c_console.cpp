@@ -1460,7 +1460,7 @@ static brokenlines_t *MidMsg = NULL;
 static int MidTicker = 0, MidLines;
 EXTERN_CVAR (con_midtime)
 
-void C_MidPrint (const char *msg)
+void C_MidPrint (const char *msg, player_t *p)
 {
 	int i;
 

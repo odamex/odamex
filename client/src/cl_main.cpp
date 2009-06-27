@@ -1033,6 +1033,12 @@ void CL_Print (void)
 		S_Sound (CHAN_VOICE, gameinfo.chatSound, 1, ATTN_NONE);
 }
 
+// Print a message in the middle of the screen
+void CL_MidPrint (void)
+{
+    C_MidPrint(MSG_ReadString());
+}
+
 
 void CL_UpdatePlayer()
 {
@@ -2444,6 +2450,7 @@ void CL_InitCommands(void)
 	cmds[svc_movingsector]		= &CL_UpdateMovingSector;
 	cmds[svc_switch]			= &CL_Switch;
 	cmds[svc_print]				= &CL_Print;
+    cmds[svc_midprint]          = &CL_MidPrint;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;

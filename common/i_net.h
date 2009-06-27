@@ -110,6 +110,7 @@ enum svc_t
 	svc_serversettings,		// 55 [Toke] - informs clients of server settings
 	svc_spectate,			// [Nes] - [byte:state], [short:playernum]
 	svc_connectclient,
+    svc_midprint,
 
 	// for co-op
 	svc_mobjstate = 70,
