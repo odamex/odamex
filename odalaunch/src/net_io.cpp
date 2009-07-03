@@ -17,7 +17,10 @@
 //
 // DESCRIPTION:
 //	Low-level socket and buffer class
-//	AUTHOR:	Russell Rice (russell at odamex dot net)
+//
+// AUTHORS: 
+//  Russell Rice (russell at odamex dot net)
+//  Michael Wood (mwoodj at knology dot net)
 //
 //-----------------------------------------------------------------------------
 
@@ -30,85 +33,33 @@
 // Endianess switch
 const wxByte BufferedSocket::BigEndian = false;
 
+// Initialize and shutdown functions for system-specific 
+bool InitializeSocketAPI()
+{
+#ifdef __WXMSW__
+    WSADATA wsaData;
+
+    if(WSAStartup(MAKEWORD(1, 1), &wsaData) != 0)
+    {
+        wxSafeShowMessage(wxT("Error"), wxT("Could not initialize winsock!"));
+    
+        return false;
+    }
+#endif
+
+    return true;
+}
+
+void ShutdownSocketAPI()
+{
+    #ifdef __WXMSW__
+    WSACleanup();
+    #endif
+}
+
 // we need to do something with this, one day
 wxUint32 BufferedSocket::CheckError()
-{   
-    if (Socket->Error())
-    {
-        switch(Socket->LastError())
-        {
-            case wxSOCKET_DUMMY:
-            case wxSOCKET_NOERROR:
-            {
-                return 0;
-            }
-            break;
-            
-            case wxSOCKET_INVOP:
-            {
-                wxLogDebug(_T("Error: Invalid Operation"));
-                return 1;
-            }
-            break;
-            
-            case wxSOCKET_IOERR:
-            {
-                wxLogDebug(_T("Error: I/O Error"));
-                return 2;
-            }
-            break;
-            
-            case wxSOCKET_INVADDR:
-            {
-                wxLogDebug(_T("Error: Invalid address passed to Socket"));
-                return 3;
-            }
-            break;
-            
-            case wxSOCKET_INVSOCK:
-            {
-                wxLogDebug(_T("Error: Invalid socket (uninitialized)."));
-                return 4;
-            }
-            break;                
-            
-            case wxSOCKET_NOHOST:
-            {
-                wxLogDebug(_T("Error: No corresponding host."));
-                return 5;
-            }
-            break;
-            
-            case wxSOCKET_INVPORT:
-            {
-                wxLogDebug(_T("Error: Invalid port."));
-                return 6;
-            }
-            break;
-            
-            case wxSOCKET_WOULDBLOCK:
-            {
-                wxLogDebug(_T("Error: The socket is non-blocking and the operation would block."));
-                return 0;
-            }
-            break;
-            
-            case wxSOCKET_TIMEDOUT:
-            {
-                wxLogDebug(_T("Error: The timeout for this operation expired."));
-                return 7;
-            }
-            break;
-            
-            case wxSOCKET_MEMERR:
-            {
-                wxLogDebug(_T("Error: Memory exhausted."));
-                return 8;
-            }
-            break;
-        }
-    }
-    
+{      
     return 0;
 }
 
@@ -145,44 +96,41 @@ BufferedSocket::~BufferedSocket()
 
 bool BufferedSocket::CreateSocket()
 {
-    m_LocalAddress.AnyAddress();   
-	m_LocalAddress.Service(0);
-
     DestroySocket();
 
-    Socket = new wxDatagramSocket(m_LocalAddress, wxSOCKET_NONE);
+    Socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     
-    if(!Socket->IsOk())
+    if(Socket == 0)
     {
         CheckError();
-        
-        DestroySocket();
-        
         return false;
     }
-		
-    // get rid of any data in the receive queue    
-    Socket->Discard();
-    
-    // no event handler for us
-    Socket->Notify(false);
     
     return true;
 }
 
 void BufferedSocket::DestroySocket()
 {
-    if (Socket)
+    if (Socket != 0)
     {
-        Socket->Destroy();
-        Socket = NULL;
+        // msvc
+        #ifdef __WXMSW__
+        if (closesocket(Socket) != 0)
+        #else
+        if (close(Socket) != 0)
+        #endif
+            wxLogDebug(wxString::Format(wxT("Could not close socket: %d"), Socket));
+            
+        Socket = 0;
     }
 }
 
 //  Write a socket
 wxInt32 BufferedSocket::SendData(const wxInt32 &Timeout)
 {   
-    if (!CreateSocket())
+    wxInt32 BytesSent;
+    
+    if (CreateSocket() == false)
         return 0;
 
     // create a transfer buffer, from memory stream to socket
@@ -199,43 +147,78 @@ wxInt32 BufferedSocket::SendData(const wxInt32 &Timeout)
     m_SendPing = sw.Time();
                 
     // send the data
-    Socket->SendTo(m_RemoteAddress, m_SendBuffer, WrittenSize);
+    BytesSent = sendto(Socket, 
+                       m_SendBuffer, 
+                       WrittenSize, 
+                       0, 
+                       (struct sockaddr*)&m_RemoteAddress, 
+                       sizeof (struct sockaddr_in));
     
     CheckError();    
         
     // return the amount of bytes sent
-    return Socket->LastCount();
+    return BytesSent;
 }
 
 //  Read a socket
 wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
 {   
-    // temporary address, for comparison
-    wxIPV4address ReceivedAddress;
-    
-    wxStopWatch sw;
+    int              fromlen;
+    wxInt32          res;
+    fd_set           readfds;
+    struct timeval   tv;  
+    wxStopWatch      sw;
 
     // clear it
     memset(m_ReceiveBuffer, 0, sizeof(m_ReceiveBuffer));
 
     wxUint32 ReceivedSize = 0;
-    wxInt32 TimeLeft = 0;
 
     bool DestroyMe = false;
     
-    if (Socket->WaitForRead(0, Timeout) == true)
+    // Wait for read with timeout
+    if(Timeout >= 0)
     {
-        Socket->RecvFrom(ReceivedAddress, m_ReceiveBuffer, MAX_PAYLOAD);
+        FD_ZERO(&readfds);
+        FD_SET(Socket, &readfds);
+        tv.tv_sec = 0;
+        tv.tv_usec = Timeout * 1000; // convert milliseconds to microseconds
+        res = select(Socket+1, &readfds, NULL, NULL, &tv);
+        if(res == -1)
+        {
+            CheckError();
 
-        ReceivedSize = Socket->LastCount();
+            DestroyMe = true;
+        }
+        if(res == 0) // Read Timed Out
+            DestroyMe = true;
     }
-    else
-        DestroyMe = true;
     
-    if (ReceivedSize == 0 || DestroyMe == true)
+    if (DestroyMe == true)
     {
+        m_SendPing = 0;
+        m_ReceivePing = 0;
+        
         CheckError();
         
+        DestroySocket();
+        
+        return 0;
+    }
+
+    ReceivedSize = recvfrom(Socket, 
+                            m_ReceiveBuffer, 
+                            MAX_PAYLOAD, 
+                            0, 
+                            (struct sockaddr*)&m_RemoteAddress, 
+                            &fromlen);
+                            
+    if(ReceivedSize <= 0)
+    {
+        // -1 = Error; 0 = Closed Connection
+        if(ReceivedSize == -1)
+            CheckError();
+            
         m_SendPing = 0;
         m_ReceivePing = 0;
         
@@ -247,16 +230,10 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
     CheckError();
 
     // apply the receive ping
-    // (Horrible, needs to be improved)
     m_ReceivePing = sw.Time();
-
-    // clear the socket queue
-    Socket->Discard();
 
     // ensure received address is the same as our remote address
     if (ReceivedSize > 0)
-    if ((ReceivedAddress.IPAddress() == m_RemoteAddress.IPAddress()) && 
-        (ReceivedAddress.Service() == m_RemoteAddress.Service()))
     {
         m_BadRead = false;
         
@@ -700,8 +677,18 @@ void BufferedSocket::WriteString(const wxString &str)
 // Sets the outgoing address
 void BufferedSocket::SetRemoteAddress(const wxString &Address, const wxInt16 &Port)
 {
-    m_RemoteAddress.Hostname(Address); 
-    m_RemoteAddress.Service(Port); 
+    struct hostent *he;
+
+    if((he = gethostbyname((const char *)Address.char_str())) == NULL)
+    {
+        CheckError();
+        return;
+    }
+
+    m_RemoteAddress.sin_family = AF_INET;
+    m_RemoteAddress.sin_port = htons(Port);
+    m_RemoteAddress.sin_addr = *((struct in_addr *)he->h_addr);
+    memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
 }
 
 //
@@ -730,8 +717,8 @@ bool BufferedSocket::SetRemoteAddress(const wxString &Address)
 // Gets the outgoing address
 void BufferedSocket::GetRemoteAddress(wxString &Address, wxUint16 &Port)
 {
-    Address = m_RemoteAddress.IPAddress();
-    Port = m_RemoteAddress.Service();
+    Address = wxString::Format(_T("%s"),inet_ntoa(m_RemoteAddress.sin_addr));
+    Port = ntohs(m_RemoteAddress.sin_port);
 }
 
 //
@@ -740,7 +727,9 @@ void BufferedSocket::GetRemoteAddress(wxString &Address, wxUint16 &Port)
 // Gets the outgoing address in "address:port" format
 wxString BufferedSocket::GetRemoteAddress()
 {
-    return m_RemoteAddress.IPAddress() << _T(":") << wxString::Format(_T("%u"),m_RemoteAddress.Service());
+    return wxString::Format(_T("%s"),inet_ntoa(m_RemoteAddress.sin_addr)) << 
+            _T(":") << 
+            wxString::Format(_T("%d"),ntohs(m_RemoteAddress.sin_port));
 }
 
 void BufferedSocket::ClearRecvBuffer() 
@@ -798,7 +787,7 @@ bool BufferedSocket::CanWrite(const size_t &Bytes)
         return false;
     }
     
-    // [Russell] - hack, you cant set the internal maximum size of a 
+    // [Russell] - hack, you cant get the internal maximum size of a 
     // wxMemoryOutputStream... what?
     return ((m_SendBufferHandler->TellO() + Bytes) <= MAX_PAYLOAD);
 }

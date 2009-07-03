@@ -17,7 +17,11 @@
 //
 // DESCRIPTION:    
 //	Main application sequence
-//	AUTHOR:	Russell Rice, John D Corrado
+//
+// AUTHORS: 
+//  John Corrado
+//  Russell Rice (russell at odamex dot net)
+//  Michael Wood (mwoodj at knology dot net)
 //
 //-----------------------------------------------------------------------------
 
@@ -41,6 +45,7 @@ class Application : public wxApp
 {
 	public:
 		bool OnInit();
+        wxInt32 OnExit();
         
 		dlgMain* MAIN_DIALOG;
 };

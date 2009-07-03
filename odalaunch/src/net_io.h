@@ -17,7 +17,10 @@
 //
 // DESCRIPTION:
 //	Low-level socket and buffer class
-//	AUTHOR: Russell Rice (russell at odamex dot net)  
+//
+// AUTHORS: 
+//  Russell Rice (russell at odamex dot net)
+//  Michael Wood (mwoodj at knology dot net)
 //
 //-----------------------------------------------------------------------------
 
@@ -31,7 +34,23 @@
 #include <wx/timer.h>
 #include <wx/tokenzr.h>
 
+#ifdef __WXMSW__
+    #include <windows.h>
+    #include <winsock.h>
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <sys/wait.h>
+    #include <netdb.h>
+#endif
+
 #define MAX_PAYLOAD 8192
+
+// Used for platforms such as windows (where you must initialize WSA before
+// using the sockets api)
+bool InitializeSocketAPI();
+void ShutdownSocketAPI();
 
 class BufferedSocket
 {
@@ -49,13 +68,13 @@ class BufferedSocket
         static const wxByte BigEndian;
         
         // the socket
-        wxDatagramSocket *Socket;
+        int Socket;
         
         // local address
-        wxIPV4address m_LocalAddress;
-        
+        struct sockaddr_in m_LocalAddress;
+
         // outgoing address (server)
-        wxIPV4address m_RemoteAddress;
+        struct sockaddr_in m_RemoteAddress;
                
         wxUint32 m_SendPing, m_ReceivePing;
         

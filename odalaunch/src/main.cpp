@@ -17,7 +17,11 @@
 //
 // DESCRIPTION:
 //	Main application sequence
-//	AUTHOR:	Russell Rice, John D Corrado
+//
+// AUTHORS: 
+//  John Corrado
+//  Russell Rice (russell at odamex dot net)
+//  Michael Wood (mwoodj at knology dot net)
 //
 //-----------------------------------------------------------------------------
 
@@ -27,17 +31,21 @@
 
 #include "main.h"
 
+#include "net_io.h"
+
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
-#include <wx/socket.h>
+
+
 
 IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {   
-	wxSocketBase::Initialize();
-	
-	::wxInitAllImageHandlers();
+    if (InitializeSocketAPI() == false)
+        return false;
+    
+    ::wxInitAllImageHandlers();
 
 	wxXmlResource::Get()->InitAllHandlers();
 
@@ -53,4 +61,11 @@ bool Application::OnInit()
     SetTopWindow(MAIN_DIALOG);
         
     return true;
+}
+
+wxInt32 Application::OnExit()
+{
+    ShutdownSocketAPI();
+    
+    return 0;
 }
