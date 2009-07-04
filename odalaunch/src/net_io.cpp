@@ -105,7 +105,15 @@ bool BufferedSocket::CreateSocket()
         CheckError();
         return false;
     }
-    
+
+    if (connect(Socket, 
+                (struct sockaddr *)&m_RemoteAddress, 
+                sizeof(m_RemoteAddress)) == -1)
+    {
+        CheckError();
+        return false;
+    }
+
     return true;
 }
 
@@ -140,19 +148,15 @@ wxInt32 BufferedSocket::SendData(const wxInt32 &Timeout)
     memset(m_SendBuffer, 0, sizeof(m_SendBuffer));
     
     // copy data
-    size_t WrittenSize = m_SendBufferHandler->CopyTo(m_SendBuffer, MAX_PAYLOAD);
+    size_t WrittenSize = m_SendBufferHandler->CopyTo(m_SendBuffer, 
+                                                      sizeof(m_SendBuffer));
     
     // set the start ping
     // (Horrible, needs to be improved)
     m_SendPing = sw.Time();
                 
     // send the data
-    BytesSent = sendto(Socket, 
-                       m_SendBuffer, 
-                       WrittenSize, 
-                       0, 
-                       (struct sockaddr*)&m_RemoteAddress, 
-                       sizeof (struct sockaddr_in));
+    BytesSent = send(Socket, m_SendBuffer, WrittenSize, 0);
     
     CheckError();    
         
@@ -172,7 +176,7 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
     // clear it
     memset(m_ReceiveBuffer, 0, sizeof(m_ReceiveBuffer));
 
-    wxUint32 ReceivedSize = 0;
+    wxInt32 ReceivedSize = 0;
 
     bool DestroyMe = false;
     
@@ -206,12 +210,7 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
         return 0;
     }
 
-    ReceivedSize = recvfrom(Socket, 
-                            m_ReceiveBuffer, 
-                            MAX_PAYLOAD, 
-                            0, 
-                            (struct sockaddr*)&m_RemoteAddress, 
-                            &fromlen);
+    ReceivedSize = recv(Socket, m_ReceiveBuffer, sizeof(m_ReceiveBuffer), 0);
                             
     if(ReceivedSize <= 0)
     {
