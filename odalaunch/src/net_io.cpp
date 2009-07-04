@@ -185,8 +185,8 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
     {
         FD_ZERO(&readfds);
         FD_SET(Socket, &readfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = Timeout * 1000; // convert milliseconds to microseconds
+        tv.tv_sec = Timeout / 1000;
+        tv.tv_usec = (Timeout % 1000) * 1000; // convert milliseconds to microseconds
         res = select(Socket+1, &readfds, NULL, NULL, &tv);
         if(res == -1)
         {
