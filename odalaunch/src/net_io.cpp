@@ -726,7 +726,7 @@ void BufferedSocket::GetRemoteAddress(wxString &Address, wxUint16 &Port)
 // Gets the outgoing address in "address:port" format
 wxString BufferedSocket::GetRemoteAddress()
 {
-    return wxString::Format(_T("%s"),inet_ntoa(m_RemoteAddress.sin_addr)) << 
+    return wxString::FromAscii(inet_ntoa(m_RemoteAddress.sin_addr)) << 
             _T(":") << 
             wxString::Format(_T("%d"),ntohs(m_RemoteAddress.sin_port));
 }
