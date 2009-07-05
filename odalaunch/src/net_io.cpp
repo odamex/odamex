@@ -30,6 +30,8 @@
 #include <wx/msgdlg.h>
 #include <wx/log.h>
 
+#include <errno.h>
+
 // Endianess switch
 const wxByte BufferedSocket::BigEndian = false;
 
