@@ -68,7 +68,7 @@ class BufferedSocket
         static const wxByte BigEndian;
         
         // the socket
-        int Socket;
+        int m_Socket;
         
         // local address
         struct sockaddr_in m_LocalAddress;
@@ -81,8 +81,7 @@ class BufferedSocket
         void SetSendPing(const wxUint32 &i) { m_SendPing = i; }
         void SetRecvPing(const wxUint32 &i) { m_ReceivePing = i; }
         
-        // we need to do something with this, one day
-        wxUint32 CheckError();
+        void CheckError();
         
         bool CreateSocket();
         void DestroySocket();
@@ -108,30 +107,30 @@ class BufferedSocket
         wxUint32 GetPing() { return (m_ReceivePing - m_SendPing); }
         
         // Read values
-        wxInt32 ReadString(wxString &);
-        wxInt32 ReadBool(bool &);
+        bool ReadString(wxString &);
+        bool ReadBool(bool &);
         // Signed reads
-        wxInt32 Read32(wxInt32 &);
-        wxInt32 Read16(wxInt16 &);
-        wxInt32 Read8(wxInt8 &);
+        bool Read32(wxInt32 &);
+        bool Read16(wxInt16 &);
+        bool Read8(wxInt8 &);
         // Unsigned reads
-        wxInt32 Read32(wxUint32 &);
-        wxInt32 Read16(wxUint16 &);
-        wxInt32 Read8(wxUint8 &);
+        bool Read32(wxUint32 &);
+        bool Read16(wxUint16 &);
+        bool Read8(wxUint8 &);
         
         bool BadRead() { return m_BadRead; }
         
         // Write values
-        void WriteString(const wxString &);
-        void WriteBool(const bool &);
+        bool WriteString(const wxString &);
+        bool WriteBool(const bool &);
         // Signed writes
-        void Write32(const wxInt32 &);
-        void Write16(const wxInt16 &);
-        void Write8(const wxInt8 &);
+        bool Write32(const wxInt32 &);
+        bool Write16(const wxInt16 &);
+        bool Write8(const wxInt8 &);
         // Unsigned writes
-        void Write32(const wxUint32 &);
-        void Write16(const wxUint16 &);
-        void Write8(const wxUint8 &);
+        bool Write32(const wxUint32 &);
+        bool Write16(const wxUint16 &);
+        bool Write8(const wxUint8 &);
         
         bool BadWrite() { return m_BadWrite; }
         
