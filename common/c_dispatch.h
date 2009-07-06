@@ -84,7 +84,7 @@ class DConsoleAlias : public DConsoleCommand
 	bool state_lock;
 public:
 	DConsoleAlias (const char *name, const char *command);
-	~DConsoleAlias ();
+	virtual ~DConsoleAlias ();
 	void Run ();
 	bool IsAlias () { return true; }
 	void PrintAlias () { Printf (PRINT_HIGH, "%s : %s\n", m_Name.c_str(), m_Command.c_str()); }
