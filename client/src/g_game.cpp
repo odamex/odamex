@@ -1490,6 +1490,9 @@ void G_DoLoadGame (void)
 	if (strncmp (text, SAVESIG, 16))
 	{
 		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
+		
+		fclose(stdfile);
+		
 		return;
 	}
 	fread (text, 8, 1, stdfile);
