@@ -68,6 +68,9 @@ void BufferedSocket::CheckError()
 //  Constructor
 BufferedSocket::BufferedSocket()
 {   
+    m_BadRead = false;
+    m_BadWrite = false;
+    
     m_Socket = 0;
     
     // set pings

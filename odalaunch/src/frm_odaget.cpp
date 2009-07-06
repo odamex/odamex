@@ -58,13 +58,17 @@ frmOdaGet::~frmOdaGet()
 {
     if (m_HTTPThread && m_HTTPThread->IsRunning())
     {
-        m_HTTPThread->Wait();
+        m_HTTPThread->Wait();      
+        delete m_HTTPThread;
+        
         m_HTTPThread = NULL;
     }
     
     if (m_FTPThread && m_FTPThread->IsRunning())
     {
         m_FTPThread->Wait();
+        delete m_FTPThread;
+        
         m_FTPThread = NULL;
     }
 }
