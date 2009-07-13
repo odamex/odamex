@@ -207,6 +207,7 @@ R_InitBuffer
 // Initialize color translation tables,
 //	for player rendering etc.
 void R_InitTranslationTables (void);
+void R_FreeTranslationTables (void);
 
 // [RH] Actually create a player's translation table.
 void R_BuildPlayerTranslation (int player, int color);
