@@ -66,17 +66,9 @@ void BufferedSocket::CheckError()
 }
 
 //  Constructor
-BufferedSocket::BufferedSocket()
+BufferedSocket::BufferedSocket() : m_BadRead(false), m_BadWrite(false),
+                                   m_Socket(0), m_SendPing(0), m_ReceivePing(0)
 {   
-    m_BadRead = false;
-    m_BadWrite = false;
-    
-    m_Socket = 0;
-    
-    // set pings
-    m_SendPing = 0;
-    m_ReceivePing = 0;
-    
     m_SendBufferHandler = new wxMemoryOutputStream();
     m_ReceiveBufferHandler = new wxMemoryInputStream(m_ReceiveBuffer, sizeof(m_ReceiveBuffer));
 }
