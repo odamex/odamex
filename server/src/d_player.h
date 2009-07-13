@@ -340,8 +340,6 @@ public:
 		// GhostlyDeath -- Initialize EVERYTHING
 		mo = AActor::AActorPtr();
 		id = 0;
-		memset(&cmd, 0, sizeof(ticcmd_t));
-		memset(&userinfo, 0, sizeof(userinfo_t));
 		fov = 90.0;
 		viewz = 0 << FRACBITS;
 		viewheight = 0 << FRACBITS;
