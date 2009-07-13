@@ -124,7 +124,7 @@ size_t I_BytesToMegabytes (size_t Bytes)
 // the 'size' of what it could allocate in its parameter
 void *I_ZoneBase (size_t *size)
 {
-	void *zone;
+	void *zone = NULL;
 
     // User wanted a different default size
 	const char *p = Args.CheckValue ("-heapsize");
