@@ -108,10 +108,16 @@ BOOL 			noblit; 				// for comparative timing purposes
 
 bool	 		viewactive;
 
-BOOL 						netgame;				// only true if packets are broadcast
+// Describes if a network game is being played
+BOOL            network_game;
+// Use only for demos, it is a old variable for the old network code
+BOOL 						netgame;
+// Describes if this is a multiplayer game or not
 BOOL						multiplayer;
+// The player vector, contains all player information
 std::vector<player_t>		players;
-player_t					nullplayer;				// the null player
+// The null player
+player_t					nullplayer;
 
 enum demoversion_t
 {
@@ -1484,6 +1490,9 @@ void G_DoLoadGame (void)
 	if (strncmp (text, SAVESIG, 16))
 	{
 		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
+		
+		fclose(stdfile);
+		
 		return;
 	}
 	fread (text, 8, 1, stdfile);
@@ -2126,7 +2135,7 @@ void G_DoPlayDemo (bool justStreamInput)
     			netdemo = true;
     			multiplayer = true;
 
-    			for (size_t i = 0; i < 4; i++) {
+    			for (size_t i = 0; i < players.size(); i++) {
     				if (players[i].ingame()) {
     					//strcpy(players[i].userinfo.netname, pnam[i]);
     					//players[i].userinfo.team = TEAM_NONE;

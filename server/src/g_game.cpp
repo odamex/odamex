@@ -92,10 +92,16 @@ BOOL 			noblit; 				// for comparative timing purposes
 
 BOOL	 		viewactive;
 
-BOOL 						netgame;				// only true if packets are broadcast
+// Describes if a network game is being played
+BOOL            network_game;
+// Use only for demos, it is a old variable for the old network code
+BOOL 						netgame;
+// Describes if this is a multiplayer game or not
 BOOL						multiplayer;
+// The player vector, contains all player information
 std::vector<player_t>		players;
-player_t					nullplayer;				// null player
+// null player
+player_t					nullplayer;
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed

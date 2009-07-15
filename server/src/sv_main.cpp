@@ -622,6 +622,8 @@ END_COMMAND (quit)
 void SV_InitNetwork (void)
 {
 	netgame = false;  // for old network code
+    network_game = true;
+
 
 	const char *v = Args.CheckValue ("-port");
     if (v)
@@ -771,6 +773,15 @@ void SV_GetPackets (void)
         
         G_DeferedInitNew(level.mapname);
     }
+}
+
+// Print a midscreen message to a client
+void SV_MidPrint (const char *msg, player_t *p)
+{
+    client_t *cl = &p->client;
+        
+    MSG_WriteMarker(&cl->reliablebuf, svc_midprint);
+    MSG_WriteString(&cl->reliablebuf, msg);
 }
 
 //
@@ -1811,13 +1822,18 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 	// GhostlyDeath -- boot em
 	if (!AllowConnect)
 	{
-		char FinalStr[400];
-		memset(&FinalStr, 0, sizeof(FinalStr));
+		std::ostringstream FormattedString;
 		bool older = false;
 		
 		// GhostlyDeath -- Version Mismatch message
-		sprintf(FinalStr, "\nYour version of Odamex (%s) does not match the server (%s).\n",
-			VersionStr, OurVersionStr);
+        
+        FormattedString << 
+            std::endl <<
+            "Your version of Odamex " << 
+            VersionStr <<
+            " does not match the server " <<
+            OurVersionStr <<
+            std::endl;
 		
 		// GhostlyDeath -- Check to see if it's older or not
 		if (cl->majorversion < (GAMEVER / 256))
@@ -1837,11 +1853,19 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 		
 		// GhostlyDeath -- Print message depending on older or newer
 		if (older)
-			sprintf(FinalStr, "%sFor updates, visit http://odamex.net/ .\n", FinalStr);
+		{
+			FormattedString << 
+                "For updates, visit http://odamex.net/" << 
+                std::endl;
+		}
 		else
-			sprintf(FinalStr, "%sIf a new version just came out, give server administrators time to update their servers.\n",
-				FinalStr);
-		
+        {
+			FormattedString << 
+                "If a new version just came out, " <<
+                "give server administrators time to update their servers." <<
+                std::endl;
+        }
+        
 		// GhostlyDeath -- email address set?	
 		if (*(email.cstring()))
 		{
@@ -1853,8 +1877,10 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 			for (int i = 0; i < 100 && *in; i++, in++, out++)
 				*out = *in;
 			
-			sprintf(FinalStr, "%sIf problems persist, contact the server administrator at %s .\n",
-				FinalStr, emailbuf);
+			FormattedString << 
+                "If problems persist, contact the server administrator at " << 
+                emailbuf << 
+                std::endl;
 		}
 				
 		// GhostlyDeath -- Now we tell them our built up message and boot em
@@ -1862,15 +1888,19 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 		
 		MSG_WriteMarker(&cl->reliablebuf, svc_print);
 		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString(&cl->reliablebuf, FinalStr);
+		MSG_WriteString(&cl->reliablebuf, 
+                        (const char *)FormattedString.str().c_str());
 		
 		MSG_WriteMarker(&cl->reliablebuf, svc_disconnect);
 		
 		SV_SendPacket (players[n]);
 		
 		// GhostlyDeath -- And we tell the server
-		Printf(PRINT_HIGH, "%s -- Version mismatch (%s != %s)\n", NET_AdrToString(net_from),
-			VersionStr, OurVersionStr);
+		Printf(PRINT_HIGH, 
+                "%s -- Version mismatch (%s != %s)\n", 
+                NET_AdrToString(net_from),
+                VersionStr, 
+                OurVersionStr);
 	}
 	
 	return AllowConnect;

@@ -482,9 +482,9 @@ BEGIN_COMMAND (addmap)
 			// GhostlyDeath <August 14, 2008> -- Changed logic, remember WAD
 			if (OldMap)
 			{
-				NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds));
-		        NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
-		        strcpy(NewMap->WadCmds, OldMap->WadCmds);
+				NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds)+1);
+				NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
+				strcpy(NewMap->WadCmds, OldMap->WadCmds);
 			}
 			else
 			{

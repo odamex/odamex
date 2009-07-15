@@ -408,8 +408,12 @@ BEGIN_COMMAND (echo)
 }
 END_COMMAND (echo)
 
-void C_MidPrint (const char *msg)
+void C_MidPrint (const char *msg, player_t *p)
 {
+    if (p == NULL)
+        return;
+        
+    SV_MidPrint(msg, p);
 }
 
 void C_RevealSecret ()

@@ -171,6 +171,7 @@ void CL_QuitNetGame(void)
 	AM_Stop();
 
 	serverside = clientside = true;
+	network_game = false;
 	
 	sv_freelook = 1;
 	allowjump = 1;
@@ -901,6 +902,7 @@ bool CL_Connect(void)
 
 	connected = true;
     multiplayer = true;
+    network_game = true;
 	serverside = false;
 
 	CL_Decompress(0);
@@ -1029,6 +1031,12 @@ void CL_Print (void)
 
 	if ((level == PRINT_CHAT || level == PRINT_TEAMCHAT) && show_messages)
 		S_Sound (CHAN_VOICE, gameinfo.chatSound, 1, ATTN_NONE);
+}
+
+// Print a message in the middle of the screen
+void CL_MidPrint (void)
+{
+    C_MidPrint(MSG_ReadString());
 }
 
 
@@ -2442,6 +2450,7 @@ void CL_InitCommands(void)
 	cmds[svc_movingsector]		= &CL_UpdateMovingSector;
 	cmds[svc_switch]			= &CL_Switch;
 	cmds[svc_print]				= &CL_Print;
+    cmds[svc_midprint]          = &CL_MidPrint;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;

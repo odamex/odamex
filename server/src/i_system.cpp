@@ -120,7 +120,7 @@ size_t I_BytesToMegabytes (size_t Bytes)
 // the 'size' of what it could allocate in its parameter
 void *I_ZoneBase (size_t *size)
 {
-	void *zone;
+	void *zone = NULL;
 
     // User wanted a different default size
 	const char *p = Args.CheckValue ("-heapsize");
@@ -135,9 +135,16 @@ void *I_ZoneBase (size_t *size)
 	*size = I_MegabytesToBytes(def_heapsize);
 
     // Allocate the def_heapsize, otherwise try to allocate a smaller amount
-	while (NULL == (zone = malloc (*size)) && *size >= I_MegabytesToBytes(min_heapsize))
-		*size -= I_MegabytesToBytes(1);
-
+	while ((zone == NULL) && (*size >= I_MegabytesToBytes(min_heapsize)))
+	{
+	    zone = malloc (*size);
+	    
+	    if (zone != NULL)
+            break;
+            
+        *size -= I_MegabytesToBytes(1);
+	}
+	
     // Our heap size we received
     got_heapsize = I_BytesToMegabytes(*size);
 

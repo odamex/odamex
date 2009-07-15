@@ -750,6 +750,12 @@ void R_Init (void)
 	framecount = 0;
 }
 
+// R_Shutdown
+void R_Shutdown (void)
+{
+    R_FreeTranslationTables();
+}
+
 //
 //
 // R_PointInSubsector

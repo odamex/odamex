@@ -54,6 +54,7 @@
 #include "version.h"
 #include "i_video.h"
 #include "i_sound.h"
+#include "r_main.h"
 
 DArgs Args;
 
@@ -164,6 +165,7 @@ int main(int argc, char *argv[])
 		atexit (call_terms);
 		Z_Init ();					// 1/18/98 killough: start up memory stuff first
 
+        atterm (R_Shutdown);
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 		
