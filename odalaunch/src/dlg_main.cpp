@@ -80,6 +80,9 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
 	EVT_MENU(XRCID("Id_MnuItmAboutOdamex"), dlgMain::OnAbout)
 	
+	EVT_SHOW(dlgMain::OnShow)
+	EVT_CLOSE(dlgMain::OnClose)
+	
     // thread events
     EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)    
     EVT_COMMAND(-1, wxEVT_THREAD_WORKER_SIGNAL, dlgMain::OnWorkerSignal)  
@@ -121,28 +124,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     // spectator state.
     m_LstCtrlPlayers->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
 
-    // Load configuration
-    wxFileConfig ConfigInfo;
-    wxInt32 ServerListSortOrder, ServerListSortColumn;
-    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
-
-    ConfigInfo.Read(_T("ServerListSortOrder"), &ServerListSortOrder, 1);
-    ConfigInfo.Read(_T("ServerListSortColumn"), &ServerListSortColumn, 0);
-
-    m_LstCtrlServers->SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
-
-    ConfigInfo.Read(_T("PlayerListSortOrder"), &PlayerListSortOrder, 1);
-    ConfigInfo.Read(_T("PlayerListSortColumn"), &PlayerListSortColumn, 0);
-
-    m_LstCtrlPlayers->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
-
-    wxInt32 WindowWidth, WindowHeight;
-
-    ConfigInfo.Read(_T("MainWindowWidth"), &WindowWidth, GetSize().GetWidth());
-    ConfigInfo.Read(_T("MainWindowHeight"), &WindowHeight, GetSize().GetHeight());
-       
-    SetSize(WindowWidth, WindowHeight);
-
 	// set up the master server information
 	MServer = new MasterServer;
     
@@ -173,6 +154,32 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 // Window Destructor
 dlgMain::~dlgMain()
 {
+    // Cleanup
+    if (MServer != NULL)
+        delete MServer;
+        
+    if (QServer != NULL)
+        delete[] QServer;
+        
+    if (config_dlg != NULL)
+        config_dlg->Destroy();
+
+    if (server_dlg != NULL)
+        server_dlg->Destroy();
+
+    if (OdaGet != NULL)
+        OdaGet->Destroy();
+}
+
+// Called when the menu exit item or exit button is clicked
+void dlgMain::OnExit(wxCommandEvent& event)
+{
+    Close();
+}
+
+// Called when the window X button or Close(); function is called
+void dlgMain::OnClose(wxCloseEvent &event)
+{
     if (GetThread() && GetThread()->IsRunning())
         GetThread()->Wait();
 
@@ -192,27 +199,34 @@ dlgMain::~dlgMain()
 
     ConfigInfo.Write(_T("MainWindowWidth"), GetSize().GetWidth());
     ConfigInfo.Write(_T("MainWindowHeight"), GetSize().GetHeight());
-
-    // Cleanup
-    if (MServer != NULL)
-        delete MServer;
-        
-    if (QServer != NULL)
-        delete[] QServer;
-        
-    if (config_dlg != NULL)
-        config_dlg->Destroy();
-
-    if (server_dlg != NULL)
-        server_dlg->Destroy();
-
-    if (OdaGet != NULL)
-        OdaGet->Destroy();
+    
+    event.Skip();
 }
 
-void dlgMain::OnExit(wxCommandEvent& event)
+// Called when the window is shown
+void dlgMain::OnShow(wxShowEvent &event)
 {
-    Close();
+    // Load configuration
+    wxFileConfig ConfigInfo;
+    wxInt32 ServerListSortOrder, ServerListSortColumn;
+    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
+
+    ConfigInfo.Read(_T("ServerListSortOrder"), &ServerListSortOrder, 1);
+    ConfigInfo.Read(_T("ServerListSortColumn"), &ServerListSortColumn, 0);
+
+    m_LstCtrlServers->SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+
+    ConfigInfo.Read(_T("PlayerListSortOrder"), &PlayerListSortOrder, 1);
+    ConfigInfo.Read(_T("PlayerListSortColumn"), &PlayerListSortColumn, 0);
+
+    m_LstCtrlPlayers->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+    
+    wxInt32 WindowWidth, WindowHeight;
+
+    ConfigInfo.Read(_T("MainWindowWidth"), &WindowWidth, GetSize().GetWidth());
+    ConfigInfo.Read(_T("MainWindowHeight"), &WindowHeight, GetSize().GetHeight());
+       
+    SetSize(WindowWidth, WindowHeight);
 }
 
 // manually connect to a server
