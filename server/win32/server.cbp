@@ -408,6 +408,10 @@
 		<Unit filename="..\src\sv_master.cpp" />
 		<Unit filename="..\src\sv_master.h" />
 		<Unit filename="..\src\sv_rproto.cpp" />
+		<Unit filename="..\src\sv_sqp.cpp" />
+		<Unit filename="..\src\sv_sqp.h" />
+		<Unit filename="..\src\sv_sqpold.cpp" />
+		<Unit filename="..\src\sv_sqpold.h" />
 		<Unit filename="..\src\v_palette.cpp" />
 		<Unit filename="..\src\v_palette.h" />
 		<Unit filename="..\src\v_text.h" />

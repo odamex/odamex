@@ -43,6 +43,8 @@
 #include "g_game.h"
 #include "p_local.h"
 #include "sv_main.h"
+#include "sv_sqp.h"
+#include "sv_sqpold.h"
 #include "sv_master.h"
 #include "i_system.h"
 #include "c_console.h"
