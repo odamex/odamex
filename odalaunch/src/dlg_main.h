@@ -86,6 +86,9 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnComboSelectMaster(wxCommandEvent& event);
 		
+		void OnShow(wxShowEvent &event);
+		void OnClose(wxCloseEvent &event);
+		
 		void OnExit(wxCommandEvent& event);
 		
 		wxInt32 FindServer(wxString);
