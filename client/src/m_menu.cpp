@@ -1148,6 +1148,9 @@ void M_PlayerSetup (int choice)
 	PlayerTics = PlayerState->tics;
 	if (FireScreen == NULL)
 		FireScreen = I_AllocateScreen (72, 72+5, 8);
+	
+	// [Nes] Intialize the player preview color.
+	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
 }
 
 static void M_PlayerSetupTicker (void)
@@ -1357,7 +1360,11 @@ static void M_PlayerSetupDrawer (void)
 		spriteframe_t *sprframe =
 			&sprites[skins[skin].sprite].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
-		V_ColorMap = translationtables + consoleplayer().id * 256;
+		// [Nes] Color of player preview uses the unused translation table (player 0), instead 
+		// of the table of the current player color. (Which is different in single, demo, and team)
+		V_ColorMap = translationtables; // + 0 * 256
+		//V_ColorMap = translationtables + consoleplayer().id * 256;
+		
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
 			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
 	}
@@ -1542,6 +1549,9 @@ static void SendNewColor (int red, int green, int blue)
 
 	sprintf (command, "cl_color \"%02x %02x %02x\"", red, green, blue);
 	AddCommandString (command);
+	
+	// [Nes] Change the player preview color.
+	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
 }
 
 static void M_SlidePlayerRed (int choice)
