@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2009 by The Odamex Team.
@@ -280,4 +280,4 @@ void SV_SendServerInfo()
 	NET_SendPacket(ml_message, net_from);
 }
 
-VERSION_CONTROL (sv_sqpold_cpp, "$Id:$")
+VERSION_CONTROL (sv_sqpold_cpp, "$Id$")
