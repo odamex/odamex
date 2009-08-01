@@ -647,6 +647,8 @@ std::string I_GetClipboardText (void)
 	{
 		Printf(PRINT_HIGH, "GetScrapFlavorData error: %d", err);
 		delete[] data;
+		
+		return "";
 	}
 	
 	std::string ret(data);
