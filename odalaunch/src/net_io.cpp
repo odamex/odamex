@@ -230,7 +230,7 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
         
         return 0;
     }
-wxChar
+    
     ReceivedSize = recv(m_Socket, 
                         (char *)m_ReceiveBuffer, 
                         MAX_PAYLOAD, 
