@@ -56,9 +56,9 @@ class BufferedSocket
 {
     private:        
         // the internal buffers, 2 for a reason
-        wxChar m_ReceiveBuffer[MAX_PAYLOAD];
+        void *m_ReceiveBuffer;
+       	void *m_SendBuffer;
         wxMemoryInputStream *m_ReceiveBufferHandler;
-        wxChar m_SendBuffer[MAX_PAYLOAD];
         wxMemoryOutputStream *m_SendBufferHandler;
 
         bool m_BadRead;

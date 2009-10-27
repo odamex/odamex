@@ -35,7 +35,7 @@
 // Endianess switch
 const wxByte BufferedSocket::BigEndian = false;
 
-// Initialize and shutdown functions for system-specific 
+// System-specific Initialize and shutdown functions
 bool InitializeSocketAPI()
 {
 #ifdef __WXMSW__
@@ -69,8 +69,22 @@ void BufferedSocket::CheckError()
 BufferedSocket::BufferedSocket() : m_BadRead(false), m_BadWrite(false),
                                    m_Socket(0), m_SendPing(0), m_ReceivePing(0)
 {   
+    m_SendBuffer = malloc(MAX_PAYLOAD);
+    
+    if (m_SendBuffer == NULL)
+    {
+        wxLogDebug(wxT("m_SendBuffer allocation failed"));
+    }
+    
+    m_ReceiveBuffer = malloc(MAX_PAYLOAD);
+    
+    if (m_ReceiveBuffer == NULL)
+    {
+        wxLogDebug(wxT("m_ReceiveBuffer allocation failed"));
+    }
+    
     m_SendBufferHandler = new wxMemoryOutputStream();
-    m_ReceiveBufferHandler = new wxMemoryInputStream(m_ReceiveBuffer, sizeof(m_ReceiveBuffer));
+    m_ReceiveBufferHandler = new wxMemoryInputStream(m_ReceiveBuffer, MAX_PAYLOAD);
 }
 
 //  Destructor
@@ -87,7 +101,19 @@ BufferedSocket::~BufferedSocket()
         delete m_ReceiveBufferHandler;
         m_ReceiveBufferHandler = NULL;
     }
-        
+
+    if (m_SendBuffer != NULL)
+    {
+        free(m_SendBuffer);
+        m_SendBuffer = NULL;
+    }
+    
+    if (m_ReceiveBuffer != NULL)
+    {
+        free(m_ReceiveBuffer);
+        m_ReceiveBuffer = NULL;
+    }
+       
     DestroySocket();
 }
 
@@ -139,17 +165,17 @@ wxInt32 BufferedSocket::SendData(const wxInt32 &Timeout)
         return 0;
 
     // clear it
-    memset(m_SendBuffer, 0, sizeof(m_SendBuffer));
+    memset(m_SendBuffer, 0, MAX_PAYLOAD);
     
     // copy data
     size_t WrittenSize = m_SendBufferHandler->CopyTo(m_SendBuffer, 
-                                                      sizeof(m_SendBuffer));
+                                                      MAX_PAYLOAD);
 
     // Creation of this will start the stop watch
     wxStopWatch sw;
                 
     // send the data
-    BytesSent = send(m_Socket, m_SendBuffer, WrittenSize, 0);
+    BytesSent = send(m_Socket, (const char *)m_SendBuffer, WrittenSize, 0);
 
     // set the start ping
     m_SendPing = sw.Time();
@@ -163,14 +189,13 @@ wxInt32 BufferedSocket::SendData(const wxInt32 &Timeout)
 //  Read a socket
 wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
 {   
-    int              fromlen;
     wxInt32          res;
     fd_set           readfds;
     struct timeval   tv;  
     wxStopWatch      sw;
 
     // clear it
-    memset(m_ReceiveBuffer, 0, sizeof(m_ReceiveBuffer));
+    memset(m_ReceiveBuffer, 0, MAX_PAYLOAD);
 
     wxInt32 ReceivedSize = 0;
 
@@ -205,8 +230,11 @@ wxInt32 BufferedSocket::GetData(const wxInt32 &Timeout)
         
         return 0;
     }
-
-    ReceivedSize = recv(m_Socket, m_ReceiveBuffer, sizeof(m_ReceiveBuffer), 0);
+wxChar
+    ReceivedSize = recv(m_Socket, 
+                        (char *)m_ReceiveBuffer, 
+                        MAX_PAYLOAD, 
+                        0);
                             
     // -1 = Error; 0 = Closed Connection
     if(ReceivedSize <= 0)
