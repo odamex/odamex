@@ -37,7 +37,7 @@
 #include "md5.h"
 #include "sv_ctf.h"
 
-extern std::vector<std::string> wadnames, wadhashes;
+extern std::vector<std::string> patchfiles, wadnames, wadhashes;
 static buf_t ml_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR (usemasters)
@@ -165,9 +165,14 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
         //MSG_WriteLong(&ml_message, 0);
         //MSG_WriteShort(&ml_message, TEAMpoints[i]);        
     //}
+
+	// Patch files	
+	MSG_WriteByte(&ml_message, patchfiles.size());
 	
-	// TODO - Enumerate patch files
-	MSG_WriteByte(&ml_message, 0);
+	for (size_t i = 0; i < patchfiles.size(); ++i)
+	{
+        MSG_WriteString(&ml_message, patchfiles[i].c_str());
+	}
 	
 	// Wad files
 	MSG_WriteByte(&ml_message, wadnames.size());

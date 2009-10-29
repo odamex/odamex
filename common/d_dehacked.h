@@ -26,7 +26,7 @@
 #define __D_DEHACK_H__
 
 void UndoDehPatch ();
-void DoDehPatch (const char *patchfile, BOOL autoloading);
+bool DoDehPatch (const char *patchfile, BOOL autoloading);
 
 #endif //__D_DEHACK_H__
 
