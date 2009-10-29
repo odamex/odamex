@@ -865,6 +865,9 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames,
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
+    UndoDehPatch();
+    patchfiles.clear();
+
 	D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
 
