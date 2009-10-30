@@ -739,8 +739,14 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
                 if (f.length())
                 {
                     if (DoDehPatch (f.c_str(), false))
-                        patchfiles.push_back(f);
-                
+                    {
+                        std::string Filename;
+                        
+                        M_ExtractFileName(f, Filename);
+                        
+                        patchfiles.push_back(Filename);
+                    }
+                    
                     noDef = true;
                 }
             }
@@ -761,7 +767,13 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
                 if (f.length())
                 {
                     if (DoDehPatch (f.c_str(), false))
-                        patchfiles.push_back(f);
+                    {
+                        std::string Filename;
+                        
+                        M_ExtractFileName(f, Filename);
+                        
+                        patchfiles.push_back(Filename);
+                    }
                 }
             }
             noDef = true;
@@ -782,7 +794,13 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
                 if (f.length())
                 {
                     if (DoDehPatch (f.c_str(), false))
-                        patchfiles.push_back(f);
+                    {
+                        std::string Filename;
+                        
+                        M_ExtractFileName(f, Filename);
+                        
+                        patchfiles.push_back(Filename);
+                    }
                 }
             }
             noDef = true;
