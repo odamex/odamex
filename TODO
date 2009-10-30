@@ -23,18 +23,16 @@ Server:
 
 Launcher:
 ---------
-1) Replace our wxListCtrl derived class with wxDataViewCtrl, this will allow us
+* Replace our wxListCtrl derived class with wxDataViewCtrl, this will allow us
 to add features and fixes to the launcher alot easier without trying to hack 
 around the limitations that wxListCtrl has.
-2) Clean up misc.cpp, alot of code pertaining to adding servers exists there.
+* Clean up misc.cpp, alot of code pertaining to adding servers exists there.
 This can be done with item 1 if desired.
-3) Replace wxDatagramSocket with standard socket code, the wx class is not very
-mature and has quite a few issues.
-4) Finish off work on OdaGet.
-5) Remove the old tooltip popup and replace it with a dialog window when a right
+* Finish off work on OdaGet.
+* Remove the old tooltip popup and replace it with a dialog window when a right
 click is issued on a server in the server-list, the dialog should contain more 
 indepth information about the server.
-6) Make the server replacement item in the custom servers dialog, this should
+* Make the server replacement item in the custom servers dialog, this should
 allow a listed or dead server be replaced by the address specified in the custom
 servers list.
 
@@ -44,12 +42,13 @@ Master Server:
 
 Other:
 ------
-1) Implement some form of reliable communication mechanism using our current UDP
+* Implement some form of reliable communication mechanism using our current UDP
 system for the launcher, master and server, it must handle out-of-order,
 duplicate and dropped packets in some fashion, the idea is to make sure one-off
 communication between these crucial components are more reliable than what we
 have now. This system must sit between the actual socket code and the new 
 launcher protocol which has been implemented in the new_sqp branch on our svn
 repo.
-2) Use a build system to generate Makefiles, something like bakefile may be 
+* Use a build system to generate Makefiles, something like bakefile may be 
 sufficient enough.
+* Allow downloading of dehacked files
