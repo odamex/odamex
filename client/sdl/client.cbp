@@ -135,9 +135,6 @@
 					<Add library="mingw32" />
 					<Add library="winmm" />
 					<Add library="wsock32" />
-					<Add library="mingw32" />
-					<Add library="winmm" />
-					<Add library="wsock32" />
 				</Linker>
 			</Target>
 			<Target title="Win Release (VC)">
