@@ -17,7 +17,10 @@
 //
 // DESCRIPTION:
 //	Low-level socket and buffer class
-//	AUTHOR: Russell Rice (russell at odamex dot net)  
+//
+// AUTHORS: 
+//  Russell Rice (russell at odamex dot net)
+//  Michael Wood (mwoodj at knology dot net)
 //
 //-----------------------------------------------------------------------------
 
@@ -31,15 +34,31 @@
 #include <wx/timer.h>
 #include <wx/tokenzr.h>
 
+#ifdef __WXMSW__
+    #include <windows.h>
+    #include <winsock.h>
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <sys/wait.h>
+    #include <netdb.h>
+#endif
+
 #define MAX_PAYLOAD 8192
+
+// Used for platforms such as windows (where you must initialize WSA before
+// using the sockets api)
+bool InitializeSocketAPI();
+void ShutdownSocketAPI();
 
 class BufferedSocket
 {
     private:        
         // the internal buffers, 2 for a reason
-        wxChar m_ReceiveBuffer[MAX_PAYLOAD];
+        void *m_ReceiveBuffer;
+       	void *m_SendBuffer;
         wxMemoryInputStream *m_ReceiveBufferHandler;
-        wxChar m_SendBuffer[MAX_PAYLOAD];
         wxMemoryOutputStream *m_SendBufferHandler;
 
         bool m_BadRead;
@@ -49,21 +68,20 @@ class BufferedSocket
         static const wxByte BigEndian;
         
         // the socket
-        wxDatagramSocket *Socket;
+        int m_Socket;
         
         // local address
-        wxIPV4address m_LocalAddress;
-        
+        struct sockaddr_in m_LocalAddress;
+
         // outgoing address (server)
-        wxIPV4address m_RemoteAddress;
+        struct sockaddr_in m_RemoteAddress;
                
         wxUint32 m_SendPing, m_ReceivePing;
         
         void SetSendPing(const wxUint32 &i) { m_SendPing = i; }
         void SetRecvPing(const wxUint32 &i) { m_ReceivePing = i; }
         
-        // we need to do something with this, one day
-        wxUint32 CheckError();
+        void CheckError();
         
         bool CreateSocket();
         void DestroySocket();
@@ -89,30 +107,30 @@ class BufferedSocket
         wxUint32 GetPing() { return (m_ReceivePing - m_SendPing); }
         
         // Read values
-        wxInt32 ReadString(wxString &);
-        wxInt32 ReadBool(bool &);
+        bool ReadString(wxString &);
+        bool ReadBool(bool &);
         // Signed reads
-        wxInt32 Read32(wxInt32 &);
-        wxInt32 Read16(wxInt16 &);
-        wxInt32 Read8(wxInt8 &);
+        bool Read32(wxInt32 &);
+        bool Read16(wxInt16 &);
+        bool Read8(wxInt8 &);
         // Unsigned reads
-        wxInt32 Read32(wxUint32 &);
-        wxInt32 Read16(wxUint16 &);
-        wxInt32 Read8(wxUint8 &);
+        bool Read32(wxUint32 &);
+        bool Read16(wxUint16 &);
+        bool Read8(wxUint8 &);
         
         bool BadRead() { return m_BadRead; }
         
         // Write values
-        void WriteString(const wxString &);
-        void WriteBool(const bool &);
+        bool WriteString(const wxString &);
+        bool WriteBool(const bool &);
         // Signed writes
-        void Write32(const wxInt32 &);
-        void Write16(const wxInt16 &);
-        void Write8(const wxInt8 &);
+        bool Write32(const wxInt32 &);
+        bool Write16(const wxInt16 &);
+        bool Write8(const wxInt8 &);
         // Unsigned writes
-        void Write32(const wxUint32 &);
-        void Write16(const wxUint16 &);
-        void Write8(const wxUint8 &);
+        bool Write32(const wxUint32 &);
+        bool Write16(const wxUint16 &);
+        bool Write8(const wxUint8 &);
         
         bool BadWrite() { return m_BadWrite; }
         
