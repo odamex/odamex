@@ -852,9 +852,17 @@ bool CL_PrepareConnect(void)
 		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
 	}
 
-	Printf(PRINT_HIGH, "\n");
+    std::vector<std::string> PatchFiles;
 
-	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, wadhashes);
+    size_t PatchCount = MSG_ReadByte();
+    
+    for (i = 0; i < PatchCount; ++i)
+        PatchFiles.push_back(MSG_ReadString());
+
+	Printf(PRINT_HIGH, "\n");
+	
+    // TODO: Allow deh/bex file downloads
+	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, wadhashes, PatchFiles);
 
 	if(missing_files.size())
 	{

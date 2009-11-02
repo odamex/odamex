@@ -1137,8 +1137,6 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
     BOOL noDef = false;
     QWORD i;
 
-    UndoDehPatch();
-
     if (!patch_files.empty())
     {
         std::string f;
@@ -1284,6 +1282,8 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 		modifiedgame = true;
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
+
+    UndoDehPatch();
 
 	D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);

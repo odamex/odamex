@@ -103,6 +103,7 @@ EXTERN_CVAR (natport)
 buf_t     ml_message(MAX_UDP_PACKET);
 
 std::vector<std::string> wadnames, wadhashes;
+extern std::vector<std::string> patchfiles;
 static std::vector<masterserver> masters;
 
 //
@@ -457,6 +458,11 @@ void SV_SendServerInfo()
     
     // GhostlyDeath -- Send Game Version info
     MSG_WriteLong(&ml_message, GAMEVER);
+
+    MSG_WriteByte(&ml_message, patchfiles.size());
+    
+    for (size_t i = 0; i < patchfiles.size(); ++i)
+        MSG_WriteString(&ml_message, patchfiles[i].c_str());
 
 	NET_SendPacket(ml_message, net_from);
 }

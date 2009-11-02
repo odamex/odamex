@@ -106,8 +106,7 @@ extern BOOL gameisdead;
 extern BOOL demorecording;
 extern DThinker ThinkerCap;
 
-
-std::vector<std::string> wadfiles;		// [RH] remove limit on # of loaded wads
+std::vector<std::string> patchfiles, wadfiles;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
 char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
@@ -739,8 +738,15 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
             
                 if (f.length())
                 {
-                    DoDehPatch (f.c_str(), false);
-                
+                    if (DoDehPatch (f.c_str(), false))
+                    {
+                        std::string Filename;
+                        
+                        M_ExtractFileName(f, Filename);
+                        
+                        patchfiles.push_back(Filename);
+                    }
+                    
                     noDef = true;
                 }
             }
@@ -759,7 +765,16 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
                 std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
 
                 if (f.length())
-                    DoDehPatch (f.c_str(), false);
+                {
+                    if (DoDehPatch (f.c_str(), false))
+                    {
+                        std::string Filename;
+                        
+                        M_ExtractFileName(f, Filename);
+                        
+                        patchfiles.push_back(Filename);
+                    }
+                }
             }
             noDef = true;
         }
@@ -777,7 +792,16 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
                 std::string f = BaseFileSearch (files.GetArg (i), ".BEX");
 
                 if (f.length())
-                    DoDehPatch (f.c_str(), false);
+                {
+                    if (DoDehPatch (f.c_str(), false))
+                    {
+                        std::string Filename;
+                        
+                        M_ExtractFileName(f, Filename);
+                        
+                        patchfiles.push_back(Filename);
+                    }
+                }
             }
             noDef = true;
         }
@@ -858,6 +882,9 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames,
 
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+
+    UndoDehPatch();
+    patchfiles.clear();
 
 	D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);

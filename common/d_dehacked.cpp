@@ -1653,7 +1653,7 @@ endinclude:
 	return GetLine();
 }
 
-void DoDehPatch (const char *patchfile, BOOL autoloading)
+bool DoDehPatch (const char *patchfile, BOOL autoloading)
 {
 	int cont;
 	int filelen = 0;	// Be quiet, gcc
@@ -1672,7 +1672,7 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 			W_ReadLump (lump, PatchFile);
 		} else {
 			DPrintf ("Not enough memory to apply patch\n");
-			return;
+			return false;
 		}
 	} else if (patchfile) {
 		// Try to use patchfile as a patch.
@@ -1710,18 +1710,18 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 					W_ReadLump (lump, PatchFile);
 				} else {
 					DPrintf ("Not enough memory to apply patch\n");
-					return;
+					return false;
 				}
 			}
 		}
 
 		if (!PatchFile) {
 			Printf (PRINT_HIGH, "Could not open DeHackEd patch \"%s\"\n", file.c_str());
-			return;
+			return false;
 		}
 	} else {
 		// Nothing to do.
-		return;
+		return false;
 	}
 
 	// End file with a NULL for our parser
@@ -1739,7 +1739,7 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 		if (!cont || dversion == -1 || pversion == -1) {
 			delete[] PatchFile;
 			Printf (PRINT_HIGH, "\"%s\" is not a DeHackEd patch file\n", file.c_str());
-			return;
+			return false;
 		}
 	} else {
 		DPrintf ("Patch does not have DeHackEd signature. Assuming .bex\n");
@@ -1782,6 +1782,8 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 		Printf (PRINT_HIGH, "DeHackEd patch lump installed\n");
 	else
 		Printf (PRINT_HIGH, "DeHackEd patch installed:\n  %s\n", file.c_str());
+		
+    return true;
 }
 
 VERSION_CONTROL (d_dehacked_cpp, "$Id$")
