@@ -1208,9 +1208,9 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
 //
 void V_InitPalette (void);
 
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames, 
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
                                      std::vector<std::string> needhashes, 
-                                     const std::vector<std::string> patch_files)
+                                     const std::vector<std::string> &patch_files)
 {
 	std::vector<size_t> fails;
 	size_t i;

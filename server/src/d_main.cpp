@@ -838,8 +838,8 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 // change wads at runtime
 // on 404, returns a vector of bad files
 //
-std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, 
-                                     std::vector<std::string> patch_files)
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
+                                     const std::vector<std::string> &patch_files)
 {
 	std::vector<size_t> fails;
 

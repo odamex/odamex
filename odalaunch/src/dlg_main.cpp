@@ -155,12 +155,14 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 dlgMain::~dlgMain()
 {
     // Cleanup
-    if (MServer != NULL)
-        delete MServer;
-        
-    if (QServer != NULL)
-        delete[] QServer;
-        
+    delete MServer;
+    
+    MServer = NULL;
+    
+    delete[] QServer;
+    
+    QServer = NULL;
+    
     if (config_dlg != NULL)
         config_dlg->Destroy();
 

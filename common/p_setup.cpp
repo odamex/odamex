@@ -346,8 +346,7 @@ void P_LoadSectors (int lump)
 	int					defSeqType;
 	
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
-	if(sectors)
-		delete[] sectors;
+	delete[] sectors;
 
 	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
 

@@ -1550,10 +1550,8 @@ static int PatchText (int oldSize)
 		DPrintf ("   (Unmatched)\n");
 
 donewithtext:
-	if (newStr)
-		delete[] newStr;
-	if (oldStr)
-		delete[] oldStr;
+    delete[] newStr;
+	delete[] oldStr;
 
 	// Fetch next identifier for main loop
 	while ((result = GetLine ()) == 1)

@@ -361,8 +361,7 @@ public:
 
 	void resize(size_t len)
 	{
-		if(data)
-			delete[] data;
+		delete[] data;
 		
 		data = new byte[len];
 		allocsize = len;
@@ -388,8 +387,7 @@ public:
 
 	buf_t &operator =(const buf_t &other)
 	{
-		if(data)
-			delete[] data;
+		delete[] data;
 		
 		data = new byte[other.allocsize];
 		allocsize = other.allocsize;
@@ -422,8 +420,8 @@ public:
 	}
 	~buf_t()
 	{
-		if(data)
-			delete[] data;
+		delete[] data;
+		data = NULL;
 	}
 };
 

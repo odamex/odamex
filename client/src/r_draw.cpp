@@ -1025,8 +1025,8 @@ void R_InitTranslationTables (void)
 
 void R_FreeTranslationTables (void)
 {
-    if(translationtablesmem != NULL)
-        delete[] translationtablesmem;
+    delete[] translationtablesmem;
+    translationtablesmem = NULL;
 }
 
 // [Nes] Vanilla player translation table.

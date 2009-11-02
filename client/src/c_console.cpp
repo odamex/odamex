@@ -202,8 +202,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	{
       // SoM: Init the console's secondary buffer. This will be used to dim the screen in game
       // and to store the disconnect screenshot
-      if(altconback)
-         delete altconback;
+      delete altconback;
 
       altconback = I_AllocateScreen(width, height, 8);
 

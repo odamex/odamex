@@ -920,8 +920,7 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 // Archives the current level
 void G_SnapshotLevel ()
 {
-	if (level.info->snapshot)
-		delete level.info->snapshot;
+	delete level.info->snapshot;
 
 	level.info->snapshot = new FLZOMemFile;
 	level.info->snapshot->Open ();
