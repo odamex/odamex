@@ -414,7 +414,7 @@ QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 
 	if (!read_musheader(musinput, &musfileheader))
 	{
-		return true;
+		return 1;
 	}
 
 	// Check MUS header
