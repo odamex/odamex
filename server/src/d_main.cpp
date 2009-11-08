@@ -851,6 +851,10 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	G_ExitLevel(0, 0);
 	DThinker::DestroyAllThinkers();
 
+	// Close all open WAD files
+	W_Close();
+
+	// Restart the memory manager
 	Z_Init();
 
 	wadfiles.clear();

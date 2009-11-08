@@ -1240,6 +1240,10 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 	DThinker::DestroyAllThinkers();
 
+	// Close all open WAD files
+	W_Close();
+
+	// Restart the memory manager
 	Z_Init();
 
 	gamestate_t oldgamestate = gamestate;
