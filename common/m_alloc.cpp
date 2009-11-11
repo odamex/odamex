@@ -58,9 +58,6 @@ void *Calloc (size_t num, size_t size)
 
 void *Realloc (void *memblock, size_t size)
 {
-	if (!size && memblock != NULL)
-        M_Free(memblock);
-	
 	// We don't want implementation-defined behaviour! Especially for this
 	// as realloc() behaves like malloc() (which doesn't use our Malloc())
 	if (!size && memblock == NULL)
