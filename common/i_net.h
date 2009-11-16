@@ -457,7 +457,7 @@ int MSG_BytesLeft(void);
 int MSG_NextByte (void);
 
 int MSG_ReadByte (void);
-void *MSG_ReadChunk (size_t &size);
+void *MSG_ReadChunk (const size_t &size);
 int MSG_ReadShort (void);
 int MSG_ReadLong (void);
 bool MSG_ReadBool(void);

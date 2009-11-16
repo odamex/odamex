@@ -1794,8 +1794,7 @@ void CL_CheckMissedPacket(void)
 		// skip a duplicated packet
 		if (packetseq[n] == sequence)
 		{
-			for (int i=0; i<size; i++)
-				MSG_ReadByte();
+            MSG_ReadChunk(size);
 
 			#ifdef _DEBUG
                 Printf (PRINT_LOW, "warning: duplicate packet\n");
