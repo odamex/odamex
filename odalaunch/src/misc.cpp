@@ -28,6 +28,7 @@
 #include <wx/colour.h>
 #include <wx/fileconf.h>
 
+#include "dlg_config.h"
 #include "net_packet.h"
 #include "misc.h"
 
@@ -596,7 +597,7 @@ void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs, wxString 
                                     dirs.c_str());
 
     // Check for any user command line arguments
-    ConfigInfo.Read(wxT("ExtraCommandLineArguments"), &ExtraCmdLineArgs, wxT(""));
+    ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
     
     if (!ExtraCmdLineArgs.IsEmpty())
         cmdline += wxString::Format(_T(" %s"), 

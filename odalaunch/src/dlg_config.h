@@ -52,6 +52,9 @@ struct launchercfg_t
 #define SHOWBLOCKEDSERVERS  "SHOW_BLOCKED_SERVERS"
 #define DELIMWADPATHS       "DELIMITED_WAD_PATHS"
 #define ODAMEX_DIRECTORY    "ODAMEX_DIRECTORY"
+#define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
+#define MASTERTIMEOUT       "MasterTimeout"
+#define SERVERTIMEOUT       "ServerTimeout"
 
 #ifdef __WXMSW__
 #define PATH_DELIMITER ';'

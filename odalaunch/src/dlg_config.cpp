@@ -128,9 +128,9 @@ void dlgConfig::Show()
 
     wxString MasterTimeout, ServerTimeout, ExtraCmdLineArgs;
 
-    ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, _T("500"));
-    ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, _T("500"));
-    ConfigInfo.Read(wxT("ExtraCommandLineArguments"), &ExtraCmdLineArgs, wxT(""));
+    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, wxT("500"));
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("500"));
+    ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
     m_TxtCtrlMasterTimeout->SetValue(MasterTimeout);
     m_TxtCtrlServerTimeout->SetValue(ServerTimeout);
@@ -375,9 +375,9 @@ void dlgConfig::LoadSettings()
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
-    ConfigInfo.Write(_T("MasterTimeout"), m_TxtCtrlMasterTimeout->GetValue());
-    ConfigInfo.Write(_T("ServerTimeout"), m_TxtCtrlServerTimeout->GetValue());
-    ConfigInfo.Write(wxT("ExtraCommandLineArguments"), m_TxtCtrlExtraCmdLineArgs->GetValue());
+    ConfigInfo.Write(wxT(MASTERTIMEOUT), m_TxtCtrlMasterTimeout->GetValue());
+    ConfigInfo.Write(wxT(SERVERTIMEOUT), m_TxtCtrlServerTimeout->GetValue());
+    ConfigInfo.Write(wxT(EXTRACMDLINEARGS), m_TxtCtrlExtraCmdLineArgs->GetValue());
     ConfigInfo.Write(_T(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
 	ConfigInfo.Write(_T(DELIMWADPATHS), cfg_file->wad_paths);

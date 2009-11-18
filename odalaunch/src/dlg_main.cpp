@@ -271,7 +271,7 @@ void *dlgMain::Entry()
     {           
         mtcs_Request.Signal = mtcs_getservers;
             
-        ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, 500);
+        ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
             
         MServer->QueryMasters(MasterTimeout);
             
@@ -338,7 +338,7 @@ void *dlgMain::Entry()
             wxPostEvent(this, event);                  
         }
 
-        ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, 500);
+        ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
     
         /* 
             Thread pool manager:
@@ -403,7 +403,7 @@ void *dlgMain::Entry()
     {            
         mtcs_Request.Signal = mtcs_none;
 
-        ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, 500);
+        ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
 
         if (MServer->GetServerCount())
         if (QServer[mtcs_Request.Index].Query(ServerTimeout))
