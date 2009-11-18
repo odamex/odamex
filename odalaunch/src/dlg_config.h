@@ -104,7 +104,9 @@ class dlgConfig: public wxDialog
 
         wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
 
-        wxTextCtrl *m_TxtCtrlMasterTimeout, *m_TxtCtrlServerTimeout;
+        wxTextCtrl *m_TxtCtrlMasterTimeout;
+        wxTextCtrl *m_TxtCtrlServerTimeout;
+        wxTextCtrl *m_TxtCtrlExtraCmdLineArgs;
 
         wxFileConfig ConfigInfo;
 
