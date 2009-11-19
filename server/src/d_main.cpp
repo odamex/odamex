@@ -718,7 +718,7 @@ void D_AddDefWads (std::string iwad)
 //
 // [Russell] - Change the meaning, this will load multiple patch files if 
 //             specified
-void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
+void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
 {
     DArgs files; 
     BOOL noDef = false;
