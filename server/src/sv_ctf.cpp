@@ -420,7 +420,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
             if (gametype != GM_CTF && teamsinplay < 1)
                 break;
             
-            for (int j = 0; j < MaxBlueTeamStarts; ++j)
+            for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
             {
                 size_t i = M_Random () % selections;
                 if (G_CheckSpot (player, &blueteamstarts[i]) )

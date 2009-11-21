@@ -130,7 +130,7 @@ CVAR_FUNC_IMPL (maxplayers)
 	if (var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
 	
-	for (int i = 0; i < players.size(); i++)
+	for (size_t i = 0; i < players.size(); i++)
 	{
 		if (!players[i].spectator)
 		{
@@ -253,7 +253,6 @@ BEGIN_COMMAND (kick)
 
 	if (argc > 2)
 	{
-		client_t  *cl = &player.client;
 		std::string reason = BuildString(argc - 2, (const char **)(argv + 2));
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
 	}
@@ -549,7 +548,6 @@ BEGIN_COMMAND(kickban)
 	// The kick...
 	if (argc > 2)
 	{
-		client_t  *cl = &player.client;
 		std::string reason = BuildString(argc - 2, (const char **)(argv + 2));
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kickbanned from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
 	}
@@ -3236,7 +3234,7 @@ void SV_Spectate (player_t &player)
 		if (player.spectator){
 			int NumPlayers = 0;
 			// Check to see if there are enough "activeplayers"
-			for (int i = 0; i < players.size(); i++)
+			for (size_t i = 0; i < players.size(); i++)
 			{
 				if (!players[i].spectator)
 					NumPlayers++;
@@ -3623,7 +3621,7 @@ void SV_TimelimitCheck()
 			bool drawgame = false;
 			
 			if (players.size() > 1) {
-				for (int i = 1; i < players.size(); i++) {
+				for (size_t i = 1; i < players.size(); i++) {
 					if (players[i].fragcount > winplayer->fragcount) {
 						drawgame = false;
 						winplayer = &players[i];

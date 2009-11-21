@@ -190,17 +190,17 @@ extern std::vector<mapthing2_t> playerstarts;
 
 		// Blue team starts
 extern	mapthing2_t		*blueteamstarts;
-extern	int				MaxBlueTeamStarts;
+extern	size_t			MaxBlueTeamStarts;
 extern	mapthing2_t*	blueteam_p;
 
 		// Red team starts
 extern	mapthing2_t		*redteamstarts;
-extern	int				MaxRedTeamStarts;
+extern	size_t			MaxRedTeamStarts;
 extern	mapthing2_t*	redteam_p;
 
 		// Gold team starts
 extern	mapthing2_t		*goldteamstarts;
-extern	int				MaxGoldTeamStarts;
+extern	size_t				MaxGoldTeamStarts;
 extern	mapthing2_t*	goldteam_p;
 // ----------------------------------------------
 

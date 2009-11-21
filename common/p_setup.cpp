@@ -117,9 +117,9 @@ mapthing2_t		*deathmatch_p;
 std::vector<mapthing2_t> playerstarts;
 
 //	[Toke - CTF - starts] Teamplay starts
-int				MaxBlueTeamStarts;
-int				MaxRedTeamStarts;
-int				MaxGoldTeamStarts;
+size_t			MaxBlueTeamStarts;
+size_t			MaxRedTeamStarts;
+size_t			MaxGoldTeamStarts;
 
 mapthing2_t		*blueteamstarts;
 mapthing2_t		*redteamstarts;

@@ -815,7 +815,7 @@ void G_DoReborn (player_t &player)
 	{
 		bool canreload = false;
 		
-		for (int i = 0; i < players.size(); i++) {
+		for (size_t i = 0; i < players.size(); i++) {
 			if (!players[i].spectator && singleplayerjustdied) {
 				canreload = true;
 				singleplayerjustdied = false;
