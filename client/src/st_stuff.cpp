@@ -599,8 +599,11 @@ bool ST_Responder (event_t *ev)
 
             plyr->armorpoints = deh.FAArmor;
             plyr->armortype = deh.FAAC;
-            for (i=0; i<NUMWEAPONS; i++)
-                plyr->weaponowned[i] = true;
+
+            weapontype_t pendweap = plyr->pendingweapon;
+            for (i = 0; i<NUMWEAPONS; i++)
+                P_GiveWeapon (plyr, (weapontype_t)i, false);
+            plyr->pendingweapon = pendweap;
 
             for (i=0; i<NUMAMMO; i++)
                 plyr->ammo[i] = plyr->maxammo[i];
@@ -620,8 +623,11 @@ bool ST_Responder (event_t *ev)
 
             plyr->armorpoints = deh.KFAArmor;
             plyr->armortype = deh.KFAAC;
-            for (i=0; i<NUMWEAPONS; i++)
-                plyr->weaponowned[i] = true;
+
+            weapontype_t pendweap = plyr->pendingweapon;
+            for (i = 0; i<NUMWEAPONS; i++)
+                P_GiveWeapon (plyr, (weapontype_t)i, false);
+            plyr->pendingweapon = pendweap;
 
             for (i=0; i<NUMAMMO; i++)
                 plyr->ammo[i] = plyr->maxammo[i];
