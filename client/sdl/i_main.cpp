@@ -140,8 +140,8 @@ int main(int argc, char *argv[])
         // SDL_mixer that causes occasional crashes.
         // Thanks to entryway and fraggle for this.
         
-        //if (!SetProcessAffinityMask(GetCurrentProcess(), 1))
-          //  LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
+        if (!SetProcessAffinityMask(GetCurrentProcess(), 1))
+            LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
 
 #endif
 		
