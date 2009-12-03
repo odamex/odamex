@@ -608,8 +608,9 @@ bool ST_Responder (event_t *ev)
             for (i=0; i<NUMAMMO; i++)
                 plyr->ammo[i] = plyr->maxammo[i];
 
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_IDFA);
+            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+            MSG_WriteByte(&net_buffer, 1);
+
             eatkey = true;
         }
 
@@ -635,8 +636,9 @@ bool ST_Responder (event_t *ev)
             for (i=0; i<NUMCARDS; i++)
                 plyr->cards[i] = true;
 
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_IDKFA);
+            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+            MSG_WriteByte(&net_buffer, 2);
+            
             eatkey = true;
         }
         // [Russell] - Only doom 1/registered can have idspispopd and
@@ -685,8 +687,11 @@ bool ST_Responder (event_t *ev)
                     plyr->powers[i] = 1;
                 else
                     plyr->powers[i] = 0;
-                // Net_WriteByte (DEM_GENERICCHEAT);
-                // Net_WriteByte ((byte)(CHT_BEHOLDV + i));
+
+                MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+                MSG_WriteByte(&net_buffer, 3);
+                MSG_WriteByte(&net_buffer, (byte)i);
+
                 eatkey = true;
             }
         }
@@ -709,8 +714,10 @@ bool ST_Responder (event_t *ev)
 
             Printf(PRINT_HIGH, "... Doesn't suck - GM\n");
             plyr->weaponowned[wp_chainsaw] = true;
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_CHAINSAW);
+
+            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+            MSG_WriteByte(&net_buffer, 4);
+
             eatkey = true;
         }
 
