@@ -39,6 +39,10 @@ servers list.
 with possibly some code to utilize UPnP to open ports on routers.
 8) Create a dialog for launching the client in offline mode, with various 
 settings such as iwad, skill, map, pwads etc.
+9) Use wxPersistenceManager for storing object properties (dimensions, position
+etc) instead of manually storing them in the configuration file. (only available 
+in wx 2.9.0)
+
 
 Master Server:
 --------------
