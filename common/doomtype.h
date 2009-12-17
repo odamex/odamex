@@ -138,6 +138,8 @@ typedef DWORD				BITFIELD;
 
 // [RH] This gets used all over; define it here:
 int STACK_ARGS Printf (int printlevel, const char *, ...);
+// [Russell] Prints a bold green message to the console
+int STACK_ARGS Printf_Bold (const char *format, ...);
 // [RH] Same here:
 int STACK_ARGS DPrintf (const char *, ...);
 

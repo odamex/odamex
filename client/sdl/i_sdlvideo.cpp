@@ -38,10 +38,28 @@
 
 SDLVideo::SDLVideo(int parm)
 {
+	const SDL_version *SDLVersion = SDL_Linked_Version();
+
+	if(SDLVersion->major != SDL_MAJOR_VERSION
+		|| SDLVersion->minor != SDL_MINOR_VERSION)
+	{
+		I_FatalError("SDL version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
+			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
+		return;
+	}
+
 	if (SDL_InitSubSystem (SDL_INIT_VIDEO) == -1)
 	{
 		I_FatalError("Could not initialize SDL video.\n");
 		return;
+	}
+
+	if(SDLVersion->patch != SDL_PATCHLEVEL)
+	{
+		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
 	}
 
     // [Russell] - Just for windows, display the icon in the system menu and

@@ -1113,6 +1113,10 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		item = MT_CHAINGUN;
 		break;
 
+    case MT_PLAYER:
+        item = weaponinfo[tplayer->readyweapon].droptype;
+        break;
+        
 	default:
 		return;
 	}
