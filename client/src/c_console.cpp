@@ -549,16 +549,25 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		if(outline[i] == 0x07)
 			outline[i] = '.';
 
-	strcpy(outlinelog, outline);
+    // Prevents writing a whole lot of new lines to the log file
+    if (gamestate != GS_FORCEWIPE)
+    {
+        strcpy(outlinelog, outline);
 
-    // [Nes] - Horizontal line won't show up as-is in the logfile.
-    for(i = 0; i < len; i++)
-    	if(outlinelog[i] == '\35' || outlinelog[i] == '\36' ||
-           outlinelog[i] == '\37')
-            outlinelog[i] = '=';
+        // [Nes] - Horizontal line won't show up as-is in the logfile.
+        for(i = 0; i < len; i++)
+        {
+            if (outlinelog[i] == '\35' || 
+                outlinelog[i] == '\36' ||
+                outlinelog[i] == '\37')
+            {
+                outlinelog[i] = '=';
+            }
+        }
 
-    LOG << outlinelog;
-	LOG.flush();
+        LOG << outlinelog;
+        LOG.flush();
+    }
 
 	return PrintString (printlevel, outline);
 }
