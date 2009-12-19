@@ -7,10 +7,11 @@
 		<Option compiler="gcc" />
 		<Option virtualFolders="dialogs\;network\;" />
 		<Build>
-			<Target title="Win Release">
+			<Target title="Win Release (GCC)">
+				<Option platforms="Windows;" />
 				<Option output="..\odalaunch.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
-				<Option object_output="..\obj\odalaunch\release" />
+				<Option object_output="..\obj\odalaunch\gcc\release" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -23,19 +24,23 @@
 					<Add option="-s" />
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
 				</Linker>
+				<ExtraCommands>
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_PLAT" value="msw" />
 				</Environment>
 			</Target>
-			<Target title="Win Debug">
+			<Target title="Win Debug (GCC)">
+				<Option platforms="Windows;" />
 				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
-				<Option object_output="..\obj\odalaunch\debug" />
+				<Option object_output="..\obj\odalaunch\gcc\debug" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
+					<Add option="-gdwarf-2" />
 					<Add option="-D__GNUWIN32__" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-DHAVE_W32API_H" />
@@ -43,12 +48,16 @@
 				<Linker>
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
 				</Linker>
+				<ExtraCommands>
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_PLAT" value="msw" />
 					<Variable name="WX_CFG" value="" />
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
+				<Option platforms="Unix;" />
 				<Option output="..\odalaunch" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
@@ -60,11 +69,15 @@
 				<Linker>
 					<Add option="-s" />
 				</Linker>
+				<ExtraCommands>
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_PLAT" value="unix" />
 				</Environment>
 			</Target>
 			<Target title="Unix Debug">
+				<Option platforms="Unix;" />
 				<Option output="..\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
@@ -72,14 +85,18 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
+					<Add option="-gdwarf-2" />
 				</Compiler>
+				<ExtraCommands>
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_PLAT" value="unix" />
 					<Variable name="WX_CFG" value="" />
 				</Environment>
 			</Target>
 			<Target title="Mac Release">
+				<Option platforms="Mac;" />
 				<Option output="..\odalaunch" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\release" />
@@ -91,11 +108,15 @@
 				<Linker>
 					<Add option="-s" />
 				</Linker>
+				<ExtraCommands>
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_PLAT" value="unix" />
 				</Environment>
 			</Target>
 			<Target title="Mac Debug">
+				<Option platforms="Mac;" />
 				<Option output="..\odalaunch-dbg" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\debug" />
@@ -103,11 +124,174 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
+					<Add option="-gdwarf-2" />
 				</Compiler>
+				<ExtraCommands>
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_PLAT" value="unix" />
 					<Variable name="WX_CFG" value="" />
+				</Environment>
+			</Target>
+			<Target title="Win Release (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\odalaunch.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
+				<Option object_output="..\obj\odalaunch\vc\release" />
+				<Option type="0" />
+				<Option compiler="msvc8" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/GA" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/DWINVER=0x0400" />
+					<Add option="/DwxUSE_GUI=1" />
+					<Add option="/D__WIN32__" />
+					<Add option="/D__WXMSW__" />
+					<Add directory="$(#WX.include)" />
+					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
+					<Add directory="$(#WX)\contrib\include" />
+					<Add directory=".\src" />
+					<Add directory=".\res" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="$(#WX.include)" />
+					<Add directory=".\src" />
+					<Add directory=".\res" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_xrc" />
+					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_adv" />
+					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_html" />
+					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_core" />
+					<Add library="wxbase$(WX_VER)$(WX_CFG)" />
+					<Add library="wxbase$(WX_VER)$(WX_CFG)_net" />
+					<Add library="wxbase$(WX_VER)$(WX_CFG)_xml" />
+					<Add library="wxpng" />
+					<Add library="wxtiff" />
+					<Add library="wxjpeg" />
+					<Add library="wxzlib" />
+					<Add library="wxregex$(WX_CFG)" />
+					<Add library="wxexpat" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="comctl32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="rpcrt4.lib" />
+					<Add library="ws2_32.lib" />
+					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
+					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
+					<Add directory=".\res" />
+				</Linker>
+				<ExtraCommands>
+					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
+				<Environment>
+					<Variable name="WX_VER" value="28" />
+					<Variable name="WX_LIB" value="lib" />
+					<Variable name="WX_PLAT" value="msw" />
+					<Variable name="WX_CFG" value="" />
+				</Environment>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\" />
+				<Option object_output="..\obj\odalaunch\vc\debug" />
+				<Option type="0" />
+				<Option compiler="msvc8" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MDd" />
+					<Add option="/TP" />
+					<Add option="/RTCu" />
+					<Add option="/RTCs" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/GS" />
+					<Add option="/Od" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/Zi /D_DEBUG" />
+					<Add option="/DWINVER=0x0400" />
+					<Add option="/DwxUSE_GUI=1" />
+					<Add option="/D__WIN32__" />
+					<Add option="/D__WXMSW__" />
+					<Add option="/D__WXDEBUG__" />
+					<Add directory="$(#WX.include)" />
+					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
+					<Add directory="$(#WX)\contrib\include" />
+					<Add directory=".\src" />
+					<Add directory=".\res" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="$(#WX.include)" />
+					<Add directory=".\src" />
+					<Add directory=".\res" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="/DEBUG" />
+					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_xrc" />
+					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_adv" />
+					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_html" />
+					<Add library="wx$(WX_PLAT)$(WX_VER)$(WX_CFG)_core" />
+					<Add library="wxbase$(WX_VER)$(WX_CFG)" />
+					<Add library="wxbase$(WX_VER)$(WX_CFG)_net" />
+					<Add library="wxbase$(WX_VER)$(WX_CFG)_xml" />
+					<Add library="wxpng" />
+					<Add library="wxtiff" />
+					<Add library="wxjpeg" />
+					<Add library="wxzlib" />
+					<Add library="wxregex$(WX_CFG)" />
+					<Add library="wxexpat" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="comctl32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="rpcrt4.lib" />
+					<Add library="ws2_32.lib" />
+					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
+					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
+					<Add directory=".\res" />
+				</Linker>
+				<ExtraCommands>
+					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
+				<Environment>
+					<Variable name="WX_VER" value="28" />
+					<Variable name="WX_LIB" value="lib" />
+					<Variable name="WX_PLAT" value="msw" />
+					<Variable name="WX_CFG" value="d" />
 				</Environment>
 			</Target>
 			<Environment>
@@ -119,7 +303,8 @@
 		<VirtualTargets>
 			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
 			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
-			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pipe" />
@@ -147,18 +332,19 @@
 			<Add directory="$(#WX.lib)\gcc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 			<Add directory=".\res" />
 		</Linker>
-		<ExtraCommands>
-			<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
-		</ExtraCommands>
 		<Unit filename="res\icons.xrc" />
 		<Unit filename="res\odalaunch.rc">
 			<Option compilerVar="WINDRES" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
 		</Unit>
 		<Unit filename="res\resource.h">
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
 		</Unit>
 		<Unit filename="res\xrc_resource.h" />
 		<Unit filename="res\xrc_resource.xrc" />
@@ -211,6 +397,12 @@
 		<Unit filename="src\wx_pch.h">
 			<Option compile="1" />
 			<Option weight="0" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Unix Release" />
+			<Option target="Unix Debug" />
+			<Option target="Mac Release" />
+			<Option target="Mac Debug" />
 		</Unit>
 		<Extensions>
 			<code_completion />

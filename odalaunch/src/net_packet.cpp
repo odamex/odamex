@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@
 */
 wxInt32 ServerBase::Query(wxInt32 Timeout)
 {
-    wxString Address = Socket.GetAddress();   
+    wxString Address = Socket.GetRemoteAddress();   
     
     if (Address != _T(""))
     {
@@ -125,6 +125,13 @@ wxInt32 MasterServer::Parse()
         // didn't find it, so add it
         if (j == addresses.size())
             addresses.push_back(address);
+    }
+    
+    if (Socket.BadRead())
+    {
+        Socket.ClearRecvBuffer();
+        
+        return 0;
     }
     
     Socket.ClearRecvBuffer();
@@ -372,6 +379,13 @@ wxInt32 Server::Parse()
     if (info.extrainfo == 0x01020305)
     {
         Socket.ReadBool(info.passworded);
+    }
+
+    if (Socket.BadRead())
+    {
+        Socket.ClearRecvBuffer();
+        
+        return 0;
     }
 
     Socket.ClearRecvBuffer();

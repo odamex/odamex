@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -59,5 +59,5 @@ void DBoundingBox::AddToBox (fixed_t x, fixed_t y)
 
 
 
-VERSION_CONTROL (m_bbox_cpp, "$Id:$")
+VERSION_CONTROL (m_bbox_cpp, "$Id$")
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -52,6 +52,7 @@
 
 #include "m_argv.h"
 #include "m_swap.h"
+#include "m_memio.h"
 
 #include "s_sound.h"
 
@@ -90,7 +91,7 @@ EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookspring)
 EXTERN_CVAR (lookstrafe)
 EXTERN_CVAR (crosshair)
-EXTERN_CVAR (cl_freelook)
+EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (cl_autoaim)
 
 // [Toke - Menu] New Menu Stuff.
@@ -172,7 +173,7 @@ static menuitem_t OptionItems[] =
 menu_t OptionMenu = {
 	"M_OPTTTL",
 	0,
-	16,
+	STACKARRAY_LENGTH(OptionItems),
 	177,
 	OptionItems,
 };
@@ -187,28 +188,10 @@ menu_t OptionMenu = {
 
 static value_t MouseBases[] =
 {
-
-	{ 0.0, "Standard"						},
-	{ 1.0, "ZDoom"							},
-
+	{ 0.0, "Standard" },
+	{ 1.0, "ZDoom" },
 };
 
-/*
-static value_t MousePresets[] =
-{
-
-	{ 0.0, "Default"						},
-	{ 1.0, "Ander's settings"				},
-	{ 2.0, "Ocelot's settings"				},
-	{ 3.0, "Vile's settings"				},
-//	{ 4.0, "Bahdko Style"					},
-//	{ 5.0, "Custom 1"						},
-//	{ 6.0, "Custom 2"						},
-//	{ 7.0, "Custom 3"						},
-//	{ 8.0, "Custom 4"						},
-
-};
-*/
 static menuitem_t MouseItems[] =
 {
 
@@ -223,26 +206,19 @@ static menuitem_t MouseItems[] =
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ discrete	,	"Use Dynamic Resolution"				, {&dynres_state},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Show Mouse Values"						, {&displaymouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Always FreeLook"						, {&cl_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete	,	"Always FreeLook"						, {&cl_mouselook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
 	{ discrete	,	"NoVert"								, {&novert},			{2.0},		{0.0},		{0.0},		{OnOff}						},
-
-//	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-//	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-//	{ discrete	,	"Select Preset"							, {&mouse_preset},		{4.0},		{0.0},		{0.0},		{MousePresets}				},
-//	{ more		,	"Load Preset"							, {NULL},				{0.0},		{0.0},		{0.0},		{(value_t *)LoadMouse}		},
-//	{ more		,	"Unload Preset"							, {NULL},				{0.0},		{0.0},		{0.0},		{(value_t *)UnloadMouse}	},
-
 };
 
-menu_t MouseMenu =		{
-							"M_MOUSET",
-							0,
-							15,
-							177,
-							MouseItems,
-						};
+menu_t MouseMenu = {
+    "M_MOUSET",
+    0,
+    STACKARRAY_LENGTH(MouseItems),
+    177,
+    MouseItems,
+};
 
 
 
@@ -282,7 +258,7 @@ static menuitem_t ControlsItems[] = {
 menu_t ControlsMenu = {
 	"M_CONTRO",
 	1,
-	22,
+	STACKARRAY_LENGTH(ControlsItems),
 	0,
 	ControlsItems,
 };
@@ -303,6 +279,7 @@ EXTERN_CVAR (r_stretchsky)
 EXTERN_CVAR (wipetype)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (dimamount)
+EXTERN_CVAR (usehighresboard)
 
 static value_t Crosshairs[] =
 {
@@ -386,6 +363,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Screen wipe style",	{&wipetype},			{4.0}, {0.0},	{0.0}, {Wipes} },
+	{ discrete, "Use high-res scoreboard",	{&usehighresboard},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0}, {Overlays} },
@@ -396,7 +374,7 @@ static menuitem_t VideoItems[] = {
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	19,
+	STACKARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
 };
@@ -451,7 +429,7 @@ static menuitem_t MessagesItems[] = {
 menu_t MessagesMenu = {
 	"M_MESS",
 	0,
-	12,
+	STACKARRAY_LENGTH(MessagesItems),
 	0,
 	MessagesItems,
 };
@@ -467,7 +445,7 @@ extern BOOL setmodeneeded;
 extern int NewWidth, NewHeight, NewBits;
 extern int DisplayBits;
 
-int testingmode;		// Holds time to revert to old mode
+QWORD testingmode;		// Holds time to revert to old mode
 int OldWidth, OldHeight, OldBits;
 
 static void BuildModesList (int hiwidth, int hiheight, int hi_id);
@@ -485,7 +463,7 @@ EXTERN_CVAR (vid_fullscreen)
 static value_t Depths[22];
 
 static char VMEnterText[] = "Press ENTER to set mode";
-static char VMTestText[] = "T to test mode for 5 seconds";
+static char VMTestText[] = "Press T to test mode for 5 seconds";
 
 static menuitem_t ModesItems[] = {
 	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
@@ -505,26 +483,18 @@ static menuitem_t ModesItems[] = {
 	{ redtext,  VMEnterText,			{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,  VMTestText,				{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,  NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,  NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
 };
 
 #define VM_DEPTHITEM	0
 #define VM_RESSTART		4
 #define VM_ENTERLINE	14
 #define VM_TESTLINE		16
-#define VM_MAKEDEFLINE	18
-#define VM_CURDEFLINE	19
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
-#ifndef DJGPP
-	2,
-#else
 	4,
-#endif
-	20,
+	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
 };
@@ -1156,6 +1126,9 @@ void M_OptResponder (event_t *ev)
 				NewBits = BitTranslate[(int)DummyDepthCvar];
 				setmodeneeded = true;
 				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				vid_defwidth.Set ((float)NewWidth);
+				vid_defheight.Set ((float)NewHeight);
+				vid_defbits.Set ((float)NewBits);
 				SetModesMenu (NewWidth, NewHeight, NewBits);
 			}
 			else if (item->type == more && item->e.mfunc)
@@ -1227,14 +1200,6 @@ void M_OptResponder (event_t *ev)
 					S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
 					SetModesMenu (NewWidth, NewHeight, NewBits);
 				}
-			}
-			else if (ev->data2 == 'd' && CurrentMenu == &ModesMenu)
-			{
-				// Make current resolution the default
-				vid_defwidth.Set ((float)screen->width);
-				vid_defheight.Set ((float)screen->height);
-				vid_defbits.Set ((float)DisplayBits);
-				SetModesMenu (screen->width, screen->height, DisplayBits);
 			}
 			break;
 	}
@@ -1324,7 +1289,7 @@ END_COMMAND (menu_display)
 static void BuildModesList (int hiwidth, int hiheight, int hi_bits)
 {
 	char strtemp[32];
-        const char **str;
+    const char **str = NULL;
 	int	 i, c;
 	int	 width, height, showbits;
 
@@ -1417,30 +1382,33 @@ static void SetModesMenu (int w, int h, int bits)
 
 	if (!testingmode)
 	{
-		/*if (ModesItems[VM_ENTERLINE].label != VMEnterText) // denis - ReplaceString no longer leaky
-			free (ModesItems[VM_ENTERLINE].label);*/
 		ModesItems[VM_ENTERLINE].label = VMEnterText;
 		ModesItems[VM_TESTLINE].label = VMTestText;
-
-		sprintf (strtemp, "D to make %dx%dx%d the default", w, h, bits);
-		ReplaceString (&ModesItems[VM_MAKEDEFLINE].label, strtemp);
-
-		sprintf (strtemp, "Current default is %dx%dx%d",
-				 (int)vid_defwidth,
-				 (int)vid_defheight,
-				 (int)vid_defbits);
-		ReplaceString (&ModesItems[VM_CURDEFLINE].label, strtemp);
 	}
 	else
 	{
 		sprintf (strtemp, "TESTING %dx%dx%d", w, h, bits);
 		ModesItems[VM_ENTERLINE].label = copystring (strtemp);
 		ModesItems[VM_TESTLINE].label = "Please wait 5 seconds...";
-		ModesItems[VM_MAKEDEFLINE].label = copystring (" ");
-		ModesItems[VM_CURDEFLINE].label = copystring (" ");
 	}
 
 	BuildModesList (w, h, bits);
+}
+
+//
+// void M_ModeFlashTestText (void)
+//
+// Flashes the video mode testing text
+void M_ModeFlashTestText (void)
+{
+    if (ModesItems[VM_TESTLINE].label[0] == ' ')
+    {
+		ModesItems[VM_TESTLINE].label = "Please wait 5 seconds...";
+    }
+    else
+    {
+        ModesItems[VM_TESTLINE].label = " ";
+    }
 }
 
 void M_RestoreMode (void)

@@ -68,9 +68,6 @@ EXTERN_CVAR (curmap)
 EXTERN_CVAR (nextmap)
 EXTERN_CVAR (loopepisode)
 
-
-EXTERN_CVAR(updatemins)
-
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
 
@@ -95,6 +92,8 @@ static level_pwad_info_t *wadlevelinfos;
 static cluster_info_t *wadclusterinfos;
 static size_t numwadlevelinfos = 0;
 static size_t numwadclusterinfos = 0;
+
+bool isFast = false;
 
 enum
 {
@@ -225,7 +224,6 @@ BEGIN_COMMAND (map)
 			if (W_CheckNumForName (mapname) == -1)
 			{ // Still no luck, oh well.
 				Printf (PRINT_HIGH, "Map %s not found.\n", argv[1]);
-				return;
 			}
 			else
 			{ // Success
@@ -240,27 +238,30 @@ BEGIN_COMMAND (map)
 			G_DeferedInitNew (argv[1]);
 		}
 	}
-	
-	if (deathmatch)
+	else
 	{
-		for (size_t i = 0; i < players.size(); i++)
-		{
-			players[i].spectator = 1;
-			for (size_t j = 0; j < players.size(); j++)
-			{
-				MSG_WriteMarker (&(players[i].client.reliablebuf), svc_spectate);
-				MSG_WriteByte (&(players[i].client.reliablebuf), players[j].id);
-				MSG_WriteByte (&(players[i].client.reliablebuf), false);
-			}
-		}
+		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname, level.level_name);
 	}
 }
 END_COMMAND (map)
 
 
+const char* GetBase(const char* in)
+{
+	const char* out = &in[strlen(in) - 1];
+	
+	while (out > in && *(out-1) != '/' && *(out-1) != '\\')
+		out--;
+	
+	return out;
+}
+
 BEGIN_COMMAND (wad) // denis - changes wads
 {
 	std::vector<std::string> wads, patch_files, hashes;
+	bool AddedIWAD = false;
+	bool Reboot = false;
+	QWORD i, j;
 	
 	// [Russell] print out some useful info
 	if (argc == 1)
@@ -275,11 +276,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
     
     // add our iwad if it is one
-    if (W_IsIWAD(argv[1]))
-        wads.push_back(argv[1]);
+	if (W_IsIWAD(argv[1]))
+	{
+		wads.push_back(argv[1]);
+		AddedIWAD = true;
+	}
 
     // check whether they are wads or patch files
-	for (QWORD i = 1; i < argc; i++)
+	for (i = 1; i < argc; i++)
 	{
 		std::string ext;
 		
@@ -293,10 +297,42 @@ BEGIN_COMMAND (wad) // denis - changes wads
 		}
 	}
 	
-	D_DoomWadReboot(wads, patch_files);
+	// GhostlyDeath <August 14, 2008> -- Check our environment, if the same WADs are used, ignore this command
+	if (AddedIWAD)
+	{
+		if (stricmp(GetBase(wads[0].c_str()), GetBase(wadfiles[1].c_str())) != 0)
+			Reboot = true;
+	}
+	
+	// IWAD, odamex.wad, ...
+	if (!Reboot)
+	{
+		Reboot = true;
+		
+		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < wads.size(); i++, j++)
+		{
+			if (stricmp(GetBase(wads[j].c_str()), GetBase(wadfiles[i].c_str())) == 0)
+				Reboot = false;
+			else if (Reboot)
+			{
+				Reboot = true;
+				break;
+			}
+		}
+		
+		// May be more wads...
+		if ((j == wads.size() && i < wadfiles.size()) ||
+			(j < wads.size() && i == wadfiles.size()))
+			Reboot = true;
+	}
+	
+	if (Reboot)
+	{
+		D_DoomWadReboot(wads, patch_files);
 
-	unnatural_level_progression = true;
-	G_DeferedInitNew (startmap);
+		unnatural_level_progression = true;
+		G_DeferedInitNew (startmap);
+	}
 }
 END_COMMAND (wad)
 
@@ -314,11 +350,94 @@ struct maplist_s *MapListBegin = NULL;
 struct maplist_s *MapListEnd = NULL;
 struct maplist_s *MapListPointer = NULL;
 
+// GhostlyDeath <August 14, 2008> -- Random Map List
+std::vector<maplist_s*> RandomMaps;
+size_t RandomMapPos = 0;
+
+void G_ClearRandomMaps(void)
+{
+	RandomMaps.clear();
+	RandomMapPos = 0;
+}
+
+void G_GenerateRandomMaps(void)
+{
+	bool* Used = NULL;
+	size_t Count = 0;
+	maplist_s* Rover = NULL;
+	size_t i, j;
+	std::vector<maplist_s*> Ptrs;
+	
+	// Clear old map list
+	G_ClearRandomMaps();
+	
+	if (!MapListBegin)
+		return;
+	
+	// First count the number of entries in the map list
+	Rover = MapListBegin;
+	
+	while (Rover)
+	{
+		Count++;
+		Ptrs.push_back(Rover);
+		Rover = Rover->Next;
+		
+		if (Rover == MapListBegin)
+			break;
+	}
+	
+	if (Count <= 0)
+		return;
+	
+	// Allocate our bool array
+	Used = new bool[Count];
+	
+	for (i = 0; i < Count; i++)
+		Used[i] = 0;
+	
+	// Now populate the list
+	for (i = 0; i < Count; i++)
+	{
+		j = (M_Random() + M_Random()) % Count;
+		
+		// Move forward if j is used
+		while (Used[j])
+		{
+			j++;
+			
+			if (j == Count)
+				j = 0;
+		}
+		
+		// Add it...
+		RandomMaps.push_back(Ptrs[j]);
+		
+		// Marked used
+		Used[j] = true;
+	}
+	
+	delete [] Used;
+	
+	RandomMapPos = 0;
+}
+
+CVAR_FUNC_IMPL (shufflemaplist)
+{
+	// Create random list
+	if (var)
+		G_GenerateRandomMaps();
+	// Erase random list...
+	else
+		G_ClearRandomMaps();
+}
+
 BEGIN_COMMAND (addmap)
 {
 	if (argc > 1)
 	{
         struct maplist_s *NewMap;
+        struct maplist_s *OldMap = NULL;
 
 		// Initalize the structure
         NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
@@ -328,9 +447,11 @@ BEGIN_COMMAND (addmap)
         if ( MapListBegin == NULL )
         { // This is the first entry
             MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
+            OldMap = NULL;
         }
         else
         { // Tag it on to the end.
+        	OldMap = MapListEnd;
             MapListEnd->Next = NewMap;
             MapListEnd = NewMap;
             NewMap->Next = MapListBegin;
@@ -356,17 +477,26 @@ BEGIN_COMMAND (addmap)
             NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
             strcpy(NewMap->WadCmds, arglist.c_str());
         }
-        else if ( NewMap == MapListBegin )
+        else// if ( NewMap == MapListBegin )
         {
-            // If we don't force a wad reset here then whatever
-            // wadfile they last switched to will take on the
-            // first levels in the maplist before any wad change
-            // That will cause an undesirable result.
-
-            NewMap->WadCmds = (char *) Malloc(2);
-            NewMap->WadCmds[0] = '-';
-            NewMap->WadCmds[1] = '\0';
+			// GhostlyDeath <August 14, 2008> -- Changed logic, remember WAD
+			if (OldMap)
+			{
+				NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds)+1);
+				NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
+				strcpy(NewMap->WadCmds, OldMap->WadCmds);
+			}
+			else
+			{
+				NewMap->WadCmds = (char *) Malloc(2);
+				NewMap->WadCmds[0] = '-';
+				NewMap->WadCmds[1] = '\0';
+			}
         }
+        
+        // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
+        if (shufflemaplist)
+	        G_GenerateRandomMaps();
 	}
 }
 END_COMMAND (addmap)
@@ -427,6 +557,8 @@ BEGIN_COMMAND (clearmaplist)
 	}
 
 	MapListPointer = NULL; // make sure
+	
+	G_ClearRandomMaps();
 }
 END_COMMAND (clearmaplist)
 
@@ -472,7 +604,7 @@ void G_ChangeMap (void)
         }
 
 		// if deathmatch, stay on same level
-		if(deathmatch)
+		if(gametype != GM_COOP)
 			next = level.mapname;
 		else
 			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
@@ -494,27 +626,47 @@ void G_ChangeMap (void)
 	}
 	else
 	{
-		if ( MapListPointer->WadCmds )
+		if (shufflemaplist && RandomMaps.size())
 		{
-			if ( strcmp( MapListPointer->WadCmds, "-" ) != 0 )
-				AddCommandString(MapListPointer->WadCmds);
+			// Change the map
+			if (RandomMaps[RandomMapPos]->WadCmds)
+			{
+				if (strcmp(RandomMaps[RandomMapPos]->WadCmds, "-" ) != 0)
+					AddCommandString(RandomMaps[RandomMapPos]->WadCmds);
+			}
+			G_DeferedInitNew(RandomMaps[RandomMapPos]->MapName);
+			
+			// Increment position
+			RandomMapPos++;
+			
+			// If our counter has reached it's end, regenerate the map
+			if (RandomMapPos >= RandomMaps.size())
+				G_GenerateRandomMaps();
 		}
-		G_DeferedInitNew(MapListPointer->MapName);
-		MapListPointer = MapListPointer->Next;
+		else
+		{
+			if ( MapListPointer->WadCmds )
+			{
+				if ( strcmp( MapListPointer->WadCmds, "-" ) != 0 )
+					AddCommandString(MapListPointer->WadCmds);
+			}
+            
+            char *next = MapListPointer->MapName;
+            
+            // for latched "deathmatch 0" cvar
+            if (gamestate == GS_STARTUP)
+            {
+                next = level.mapname;
+            }
+                       
+			G_DeferedInitNew(next);
+			MapListPointer = MapListPointer->Next;
+		}
 	}
 
 	// run script at the end of each map
 	if(strlen(endmapscript.cstring()))
 		AddCommandString(endmapscript.cstring(), true);
-
-	if (deathmatch) {
-		// make everyone a spectator again
-		for (int i = 0; i < players.size(); i++)
-		{
-			players[i].spectator = true;
-			players[i].joinafterspectatortime = -(TICRATE*5);
-		}
-	}
 }
 
 void SV_ClientFullUpdate(player_t &pl);
@@ -531,8 +683,6 @@ void G_DoNewGame (void)
 {
 	size_t i;
 
-	SV_MapEnd ();
-
 	for(i = 0; i < players.size(); i++)
 	{
 		if(!players[i].ingame())
@@ -542,7 +692,6 @@ void G_DoNewGame (void)
 
 		MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);
 		MSG_WriteString (&cl->reliablebuf, d_mapname);
-		SV_SendPacket (players[i]);
 	}
 
 	curmap.ForceSet(d_mapname);
@@ -554,14 +703,12 @@ void G_DoNewGame (void)
 	if(strlen(startmapscript.cstring()))
 		AddCommandString(startmapscript.cstring(), true);
 
-	SV_MapStart ();
-
 	for(i = 0; i < players.size(); i++)
 	{
 		if(!players[i].ingame())
 			continue;
 
-		if (teamplay || ctfmode)
+		if (gametype == GM_TEAMDM || gametype == GM_CTF)
 			SV_CheckTeam(players[i]);
 		else
 			players[i].userinfo.color = players[i].prefcolor;
@@ -595,13 +742,25 @@ void G_InitNew (const char *mapname)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
-	bool old_deathmatch = deathmatch ? true : false;
-	bool old_ctfmode = ctfmode ? true : false;
+	int old_gametype = gametype;
 
 	cvar_t::UnlatchCVars ();
 
-	if(old_deathmatch != (deathmatch ? true : false))
+	if(old_gametype != gametype || gametype != GM_COOP) {
 		unnatural_level_progression = true;
+		
+		// Nes - Force all players to be spectators when the gametype is not now or previously co-op.
+		for (i = 0; i < players.size(); i++) {
+			for (size_t j = 0; j < players.size(); j++) {
+				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
+				MSG_WriteByte (&(players[j].client.reliablebuf), true);
+			}			
+			players[i].spectator = true;
+			players[i].playerstate = PST_LIVE;
+			players[i].joinafterspectatortime = -(TICRATE*5);
+		}
+	}
 
 	SV_ServerSettingChange();
 
@@ -619,7 +778,6 @@ void G_InitNew (const char *mapname)
 	else
 		respawnmonsters = false;
 
-	static bool isFast = false;
 	bool wantFast = fastmonsters || (skill == sk_nightmare);
 	if (wantFast != isFast)
 	{
@@ -673,13 +831,14 @@ void G_InitNew (const char *mapname)
 	paused = false;
 	demoplayback = false;
 	viewactive = true;
+	shotclock = 0;
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
 
 	// denis - hack to fix ctfmode, as it is only known after the map is processed!
-	if(old_ctfmode != ctfmode)
-		SV_ServerSettingChange();
+	//if(old_ctfmode != ctfmode)
+	//	SV_ServerSettingChange();
 }
 
 //
@@ -698,6 +857,8 @@ void G_ExitLevel (int position, int drawscores)
 	mapchange = TICRATE*10;  // wait 10 seconds
 
     secretexit = false;
+
+    gameaction = ga_completed;
 
 	// denis - this will skip wi_stuff and allow some time for finale text
 	//G_WorldDone();
@@ -722,6 +883,8 @@ void G_SecretExitLevel (int position, int drawscores)
 	else
 		secretexit = true;
 
+    gameaction = ga_completed;
+
 	// denis - this will skip wi_stuff and allow some time for finale text
 	//G_WorldDone();
 }
@@ -742,10 +905,6 @@ void G_DoCompleted (void)
 //
 extern gamestate_t 	wipegamestate;
 extern float BaseBlendA;
-
-EXTERN_CVAR (blueteam)
-EXTERN_CVAR (redteam)
-EXTERN_CVAR (goldteam)
 
 void G_DoLoadLevel (int position)
 {
@@ -799,7 +958,7 @@ void G_DoLoadLevel (int position)
 	}
 
 	// [deathz0r] It's a smart idea to reset the team points
-	if (teamplay)
+	if (gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 			TEAMpoints[i] = 0;
@@ -833,7 +992,30 @@ void G_DoLoadLevel (int position)
 	for (i = 0; i < players.size(); i++)
 		players[i].joinafterspectatortime -= level.time;
 
+	flagdata *tempflag;
+
+	// Nes - CTF Pre flag setup
+	if (gametype == GM_CTF) {
+		tempflag = &CTFdata[it_blueflag];
+		tempflag->flaglocated = false;
+		
+		tempflag = &CTFdata[it_redflag];
+		tempflag->flaglocated = false;
+	}
+
 	P_SetupLevel (level.mapname, position);
+	
+	// Nes - CTF Post flag setup
+	if (gametype == GM_CTF) {
+		tempflag = &CTFdata[it_blueflag];
+		if (!tempflag->flaglocated)
+			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Blue flag pedestal not found! No blue flags in game.\n");
+		
+		tempflag = &CTFdata[it_redflag];
+		if (!tempflag->flaglocated)
+			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Red flag pedestal not found! No red flags in game.\n");
+	}
+
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
 
 	gameaction = ga_nothing;
@@ -887,7 +1069,7 @@ void G_WorldDone (void)
 		else
 			nextcluster = FindClusterInfo (FindLevelInfo (level.secretmap)->cluster);
 
-		if (nextcluster->cluster != level.cluster && !deathmatch) {
+		if (nextcluster->cluster != level.cluster && gametype == GM_COOP) {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
 			if (nextcluster->entertext) {
@@ -1159,8 +1341,7 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 // Archives the current level
 void G_SnapshotLevel ()
 {
-	if (level.info->snapshot)
-		delete level.info->snapshot;
+	delete level.info->snapshot;
 
 	level.info->snapshot = new FLZOMemFile;
 	level.info->snapshot->Open ();

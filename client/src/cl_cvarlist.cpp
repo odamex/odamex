@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*-
+	// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -62,6 +62,12 @@ CVAR (am_ovlockedcolor,	    "bb bb bb",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_ovexitcolor,		"ff ff 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_ovteleportcolor,	"ff a3 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+// Compatibility options for vanilla
+// ---------------------------------
+
+// Enable/disable the "level 8 full sound at far distances" feature
+CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE)
+
 // Console
 // -------
 
@@ -98,11 +104,12 @@ CVAR_FUNC_DECL (ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Gameplay/Other
 // --------------
 
-// TODO: document
-CVAR_FUNC_DECL (cl_freelook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
-CVAR_FUNC_DECL (sv_freelook, "0", CVAR_SERVERINFO)
+// GhostlyDeath <August 1, 2008> -- Join/Part Sound
+CVAR (cl_connectalert, "1", CVAR_ARCHIVE)
 
-CVAR (mouse_acceleration, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (cl_mouselook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+
+CVAR (mouse_acceleration, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_threshold, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_sensitivity,	"25.0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_type,			"0",	CVAR_ARCHIVE)
@@ -164,16 +171,17 @@ CVAR (hud_scale, "0", CVAR_ARCHIVE)
 CVAR (hud_targetnames, "1", CVAR_ARCHIVE)
 CVAR (usehighresboard, "1",	CVAR_ARCHIVE)
 
-CVAR (chatmacro0, "I'm ready to kick butt!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro1, "I'm OK.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro2, "I'm not looking too good!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro3, "Help!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro4, "You suck!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro5, "Next time, scumbag...", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro6, "Come here!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro7, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro8, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (chatmacro9, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// GhostlyDeath <November 2, 2008> -- someone had the order wrong (0-9!)
+CVAR (chatmacro1, "I'm ready to kick butt!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro2, "I'm OK.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro3, "I'm not looking too good!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro4, "Help!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro5, "You suck!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro6, "Next time, scumbag...", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro7, "Come here!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro8, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro9, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (chatmacro0, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -182,7 +190,9 @@ CVAR_FUNC_DECL (hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (snd_crossover, "0", CVAR_ARCHIVE)
 // number of channels available
-CVAR (snd_channels, "8", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Sample rate
+CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Sound volume
 CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Music volume

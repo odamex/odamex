@@ -92,6 +92,9 @@ int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
 // joek - hack for silent bfg
 int sfx_noway, sfx_oof;
 
+// Nes - pre-v0.4.2 compat with no CHAN_ANNOUNCER
+extern int gameversion;
+
 // [RH] Print sound debugging info?
 cvar_t noisedebug ("noise", "0", 0);
 
@@ -108,7 +111,7 @@ CVAR_FUNC_IMPL (snd_sfxvolume)
 // Maximum volume of Music.
 CVAR_FUNC_IMPL (snd_musicvolume)
 {
-	I_SetMusicVolume (var);
+	S_SetMusicVolume (var);
 }
 
 // whether songs are mus_paused
@@ -233,7 +236,7 @@ void S_Init (float sfxVolume, float musicVolume)
 {
 	unsigned int i;
 
-	Printf (PRINT_HIGH, "S_Init: default sfx volume %f\n", sfxVolume);
+	//Printf (PRINT_HIGH, "S_Init: default sfx volume %f\n", sfxVolume);
 
 	// [RH] Read in sound sequences
 	//NumSequences = 0;
@@ -362,6 +365,7 @@ int
 	return cnum;
 }
 
+EXTERN_CVAR (co_level8soundfeature)
 
 //
 // Changes volume, stereo-separation, and pitch variables
@@ -394,7 +398,10 @@ int
     // From _GG1_ p.428. Appox. eucledian distance fast.
 	approx_dist = adx + ady - ((adx < ady ? adx : ady)>>1);
 
-	if (level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
+	// GhostlyDeath <November 16, 2008> -- ExM8 has the full volume effect
+	// [Russell] - Change this to an option and remove the dependence on
+	// we run doom 1 or not
+	if (!co_level8soundfeature && level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
 		return 0;
 
     // angle of source to listener
@@ -419,7 +426,7 @@ int
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
 	}
-	else if (level.levelnum == 8)
+	else if (co_level8soundfeature && level.levelnum == 8)
 	{
 		if (approx_dist > S_CLIPPING_DIST)
 			approx_dist = S_CLIPPING_DIST;
@@ -524,6 +531,12 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	{
 		basepriority = -1000;
 	}
+	else if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
+			(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
+			&& gametype == GM_CTF)
+	{
+		basepriority = 300;
+	}
 	else if (attenuation <= 0)
 	{
 		basepriority = 200;
@@ -578,7 +591,12 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	S_StopSound (pt, channel);
 
   // try to find a channel
-	cnum = S_getChannel(pt, sfx, priority);
+	if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
+		(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
+		&& gametype == GM_CTF)
+		cnum = channel;
+	else
+		cnum = S_getChannel(pt, sfx, priority);
 
   // no channel found
 	if (cnum < 0)
@@ -727,6 +745,10 @@ void S_StopSound (fixed_t *pt)
 	for (unsigned int i = 0; i < numChannels; i++)
 		if (Channel[i].sfxinfo && (Channel[i].pt == pt))
 		{
+			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
+				(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
+				&& gametype == GM_CTF)
+				return;
 			S_StopChannel (i);
 		}
 }
@@ -946,12 +968,9 @@ void S_UpdateSounds (void *listener_p)
 void S_SetMusicVolume (float volume)
 {
 	if (volume < 0.0 || volume > 1.0)
-	{
-		Printf (PRINT_HIGH, "Attempt to set music volume at %d\n", volume);
-	}
+		Printf (PRINT_HIGH, "Attempt to set music volume at %f\n", volume);
 	else
-	{
-	}
+		I_SetMusicVolume (volume);
 }
 
 void S_SetSfxVolume (float volume)
@@ -1367,7 +1386,7 @@ void A_Ambient (AActor *actor)
 // UV_SoundAvoidCl
 // Sends a sound to clients, but doesn't send it to client 'player'.
 //
-void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
+void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	S_Sound(mo, channel, name, 1, attenuation);
 }

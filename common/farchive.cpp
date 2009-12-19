@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -287,9 +287,10 @@ void FLZOFile::Implode ()
 		memcpy (m_Buffer + 8, oldbuf, len);
 	else
 		memcpy (m_Buffer + 8, compressed, outlen);
-	if (compressed)
-		delete[] compressed;
-	
+
+	delete[] compressed;
+    compressed = NULL;
+    
 	M_Free(oldbuf);
 }
 
@@ -303,7 +304,7 @@ void FLZOFile::Explode ()
 		unsigned int *ints = (unsigned int *)(m_Buffer);
 		cprlen = BELONG(ints[0]);
 		expandsize = BELONG(ints[1]);
-		
+
 		expand = (unsigned char *)Malloc (expandsize);
 		if (cprlen)
 		{
@@ -507,8 +508,10 @@ FArchive::FArchive (FFile &file)
 FArchive::~FArchive ()
 {
 	Close ();
-	if (m_TypeMap)
-		delete[] m_TypeMap;
+	
+	delete[] m_TypeMap;
+    m_TypeMap = NULL;
+    
 	if (m_ObjectMap)
 		M_Free(m_ObjectMap);
 }
@@ -698,7 +701,7 @@ FArchive &FArchive::operator<< (DObject *obj)
 			//		 "This should not happen.\n");
 			operator<< (NULL_OBJ);
 		}
-		else if (m_TypeMap[type->TypeIndex].toArchive == (unsigned long)~0)
+		else if (m_TypeMap[type->TypeIndex].toArchive == (DWORD)~0)
 		{
 			// No instances of this class have been written out yet.
 			// Write out the class, then write out the object. If this
@@ -728,7 +731,7 @@ FArchive &FArchive::operator<< (DObject *obj)
 			// controlled actor, remember that.
 			DWORD index = FindObjectIndex (obj);
 
-			if (index == (unsigned long)~0)
+			if (index == (DWORD)~0)
 			{
 				if (obj->IsKindOf (RUNTIME_CLASS (AActor)) &&
 					(player = static_cast<AActor *>(obj)->player) &&
@@ -785,7 +788,8 @@ FArchive &FArchive::ReadObject (DObject* &obj, TypeInfo *wanttype)
 		{
 			// If travelling inside a hub, use the existing player actor
 			type = ReadClass (wanttype);
-			obj = players[playerNum].mo;
+			idplayer(playerNum).mo.init(new AActor());
+			obj = idplayer(playerNum).mo;
 			MapObject (obj);
 
 			// But also create a new one so that we can get past the one
@@ -808,7 +812,8 @@ FArchive &FArchive::ReadObject (DObject* &obj, TypeInfo *wanttype)
 		if (m_HubTravel)
 		{
 			type = ReadStoredClass (wanttype);
-			obj = players[playerNum].mo;
+			idplayer(playerNum).mo.init(new AActor());
+			obj = idplayer(playerNum).mo;
 			MapObject (obj);
 
 			DObject *tempobj = type->CreateNew ();
@@ -837,7 +842,7 @@ DWORD FArchive::WriteClass (const TypeInfo *info)
 		I_Error ("Too many unique classes have been written.\nOnly %u were registered\n",
 			TypeInfo::m_NumTypes);
 	}
-	if (m_TypeMap[info->TypeIndex].toArchive != (unsigned long)~0)
+	if (m_TypeMap[info->TypeIndex].toArchive != (DWORD)~0)
 	{
 		I_Error ("Attempt to write '%s' twice.\n", info->Name);
 	}
@@ -936,7 +941,9 @@ DWORD FArchive::HashObject (const DObject *obj) const
 
 DWORD FArchive::FindObjectIndex (const DObject *obj) const
 {
-	size_t index = m_ObjectHash[HashObject (obj)];
+	if(!m_ObjectMap)
+		return ~0;
+	DWORD index = m_ObjectHash[HashObject (obj)];
 	while (index != (unsigned)~0 && m_ObjectMap[index].object != obj)
 	{
 		index = m_ObjectMap[index].hashNext;

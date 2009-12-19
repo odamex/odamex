@@ -770,5 +770,31 @@ int W_FindLump (const char *name, int *lastlump)
 	return -1;
 }
 
+//
+// W_Close
+//
+// Close all open files
+//
+ 
+void W_Close ()
+{
+	// store closed handles, so that fclose isn't called multiple times
+	// for the same handle
+	std::vector<FILE *> handles;
+
+	lumpinfo_t * lump_p = lumpinfo;
+	while (lump_p < lumpinfo + numlumps)
+	{
+		// if file not previously closed, close it now
+		if(lump_p->handle &&
+		   std::find(handles.begin(), handles.end(), lump_p->handle) == handles.end())
+		{
+			fclose(lump_p->handle);
+			handles.push_back(lump_p->handle);
+		}
+		lump_p++;
+	}
+}
+
 VERSION_CONTROL (w_wad_cpp, "$Id$")
 

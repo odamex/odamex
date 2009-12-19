@@ -12,3 +12,6 @@ Nes: nestea17k@gmail.com (coder)
 Ralphis: ralphis@odamex.net (project manager)
 Russell: russell@odamex.net (launcher coder, coder) <- patches
 SoM: somtwo@gmail.com (coder)
+
+Portions of the save/load game system code not already present provided by randy from 
+zdoom 1.22 relicensed under the GNU/GPL v2.

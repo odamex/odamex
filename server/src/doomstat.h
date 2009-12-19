@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -80,11 +80,16 @@ extern	BOOL			netgame;
 // Bot game? Like netgame, but doesn't involve network communication.
 extern	BOOL			multiplayer;
 
-// Flag: true only if started as net deathmatch.
-EXTERN_CVAR (deathmatch)
+extern BOOL            network_game;
 
-// [RH] Teamplay mode
-EXTERN_CVAR (teamplay)
+// Game mode
+EXTERN_CVAR (gametype)
+
+#define GM_COOP		0
+#define GM_DM		1
+#define GM_TEAMDM	2
+#define GM_CTF		3
+
 
 // -------------------------
 // Internal parameters for sound rendering.
@@ -185,17 +190,17 @@ extern std::vector<mapthing2_t> playerstarts;
 
 		// Blue team starts
 extern	mapthing2_t		*blueteamstarts;
-extern	int				MaxBlueTeamStarts;
+extern	size_t			MaxBlueTeamStarts;
 extern	mapthing2_t*	blueteam_p;
 
 		// Red team starts
 extern	mapthing2_t		*redteamstarts;
-extern	int				MaxRedTeamStarts;
+extern	size_t			MaxRedTeamStarts;
 extern	mapthing2_t*	redteam_p;
 
 		// Gold team starts
 extern	mapthing2_t		*goldteamstarts;
-extern	int				MaxGoldTeamStarts;
+extern	size_t				MaxGoldTeamStarts;
 extern	mapthing2_t*	goldteam_p;
 // ----------------------------------------------
 

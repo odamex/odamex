@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -132,7 +132,9 @@ public:
 	bool packet_sent(unsigned int id, unsigned char *in_data, size_t len);
 	void packet_acked(unsigned int id);
 	
-	huffman_server() : active_codec(0), missed_acks(0), awaiting_ack(false) {}
+	huffman_server() : active_codec(0), last_packet_id(0), last_ack_id(0),
+        missed_acks(0), awaiting_ack(false)
+	{}
 	huffman_server(const huffman_server &other) :
 		alpha(other.alpha),
 		beta(other.beta),

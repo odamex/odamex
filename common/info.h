@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -187,16 +187,16 @@ typedef enum
 	//	[Toke - CTF]
 	SPR_BSOK,
 	SPR_RSOK,
-	SPR_GSOK,
+	SPR_GSOK, // Remove me in 0.5
 	SPR_BFLG,
 	SPR_RFLG,
-	SPR_GFLG,
+	SPR_GFLG, // Remove me in 0.5
 	SPR_BDWN,
 	SPR_RDWN,
-	SPR_GDWN,
+	SPR_GDWN, // Remove me in 0.5
 	SPR_BCAR,
 	SPR_RCAR,
-	SPR_GCAR,
+	SPR_GCAR, // Remove me in 0.5
 
 	NUMSPRITES
 
@@ -1192,7 +1192,7 @@ typedef enum
 
 	S_BSOK,	// Blue Flag
 	S_RSOK,	// Red Flag
-	S_GSOK,	// Gold Flag
+	S_GSOK,	// Gold Flag // Remove me in 0.5
 
 	// -----[ BLUE Flag Animation ]-------
 	S_BFLG,
@@ -1442,16 +1442,16 @@ typedef enum {
 	//	[Toke - CTF]
 	MT_BSOK,
 	MT_RSOK,
-	MT_GSOK,
+	MT_GSOK, // Remove me in 0.5
 	MT_BFLG,
 	MT_RFLG,
-	MT_GFLG,
+	MT_GFLG, // Remove me in 0.5
 	MT_BDWN,
 	MT_RDWN,
-	MT_GDWN,
+	MT_GDWN, // Remove me in 0.5
 	MT_BCAR,
 	MT_RCAR,
-	MT_GCAR,
+	MT_GCAR, // Remove me in 0.5
 	// -----------------------------------
 
 	NUMMOBJTYPES

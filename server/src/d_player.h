@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -216,7 +216,7 @@ public:
     int			prefcolor;			// Nes - Preferred color. Server only.
     
     // For flood protection
-    struct
+    struct LastMessage_s
     {
         QWORD Time;
         std::string Message;
@@ -340,9 +340,7 @@ public:
 		// GhostlyDeath -- Initialize EVERYTHING
 		mo = AActor::AActorPtr();
 		id = 0;
-		memset(&cmd, 0, sizeof(ticcmd_t));
-		memset(&userinfo, 0, sizeof(userinfo_t));
-		fov = 0.0;
+		fov = 90.0;
 		viewz = 0 << FRACBITS;
 		viewheight = 0 << FRACBITS;
 		deltaviewheight = 0 << FRACBITS;

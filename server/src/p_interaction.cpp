@@ -49,9 +49,9 @@
 EXTERN_CVAR (friendlyfire)
 EXTERN_CVAR (allowexit)
 EXTERN_CVAR (fragexitswitch)              // [ML] 04/4/06: Added comprimise for older exit method
+EXTERN_CVAR (doubleammo)
 
 int shotclock = 0;
-player_t *WinPlayer;
 
 // a weapon is found with two clip loads,
 // a big item has five clip loads
@@ -90,7 +90,7 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 		num = clipammo[ammo]/2;
 
 	if (skill == sk_baby
-		|| skill == sk_nightmare)
+		|| skill == sk_nightmare || doubleammo)
 	{
 		// give double ammo in trainer mode,
 		// you'll need in nightmare
@@ -181,7 +181,7 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
-		if (deathmatch || teamplay || ctfmode)
+		if (gametype != GM_COOP)
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 5);
 		else
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 2);
@@ -623,18 +623,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		case SPR_RSOK:
 			SV_SocketTouch(*player, it_redflag);
 			return;
-		case SPR_GFLG:	// Player touches the GOLD flag at its base
-		firstgrab = true;
-		case SPR_GDWN:	// Player touches the GOLD flag after its been dropped
-
-			if(!SV_FlagTouch(*player, it_goldflag, firstgrab))
-				return;
-			sound = 3;
-
-			break;
-		case SPR_GSOK:
-			SV_SocketTouch(*player, it_goldflag);
-			return;
+		case SPR_GFLG: // Remove me in 0.5
+		case SPR_GDWN: // Remove me in 0.5
+		case SPR_GSOK: // Remove me in 0.5
+			return; // Remove me in 0.5
 	  default:
 		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
 	}
@@ -844,7 +836,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	}
 
 	if (attacker && attacker->player) {
-		if (((teamplay || ctfmode) && self->player->userinfo.team == attacker->player->userinfo.team) || !deathmatch) {
+		if (((gametype == GM_TEAMDM || gametype == GM_CTF) && self->player->userinfo.team == attacker->player->userinfo.team) || gametype == GM_COOP) {
 			int rnum = P_Random ();
 
 			self = attacker;
@@ -980,24 +972,23 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		// fair to count them toward a player's score.
 		if (target->player && level.time)
 		{
-			if (!joinkill)
+			if (!joinkill && !shotclock)
 			{
 				if (target->player == source->player)	// [RH] Cumulative frag count
 				{
 					splayer->fragcount--;
 					// [Toke] Minus a team frag for suicide
-					if (teamplay && !ctfmode)
+					if (gametype == GM_TEAMDM)
 						TEAMpoints[splayer->userinfo.team]--;
 				}
 				// [Toke] Minus a team frag for killing team mate
-				else if ((teamplay || ctfmode) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
+				else if ((gametype == GM_TEAMDM || gametype == GM_CTF) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
 				{
 					splayer->fragcount--;
 
-					if (teamplay && !ctfmode)
+					if (gametype == GM_TEAMDM)
 						TEAMpoints[splayer->userinfo.team]--;
-
-					if (ctfmode)
+					else if (gametype == GM_CTF)
 						SV_CTFEvent ((flag_t)0, SCORE_BETRAYAL, *splayer);
 				}
 				else
@@ -1005,10 +996,9 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 					splayer->fragcount++;
 
 					// [Toke] Add a team frag
-					if (teamplay && !ctfmode)
+					if (gametype == GM_TEAMDM)
 						TEAMpoints[splayer->userinfo.team]++;
-
-					if (ctfmode) {
+					else if (gametype == GM_CTF) {
 						if (tplayer->flags[(flag_t)splayer->userinfo.team])
 							SV_CTFEvent ((flag_t)0, SCORE_CARRIERKILL, *splayer);
 						else
@@ -1018,30 +1008,10 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 			}
 
 			SV_UpdateFrags (*splayer);
-
-			// [Toke] Better fraglimit
-			if (deathmatch && fraglimit && (int)fraglimit == splayer->fragcount && !ctfmode && !teamplay && !fragexitswitch) // [ML] 04/4/06: Added !fragexitswitch
-			{
-					WinPlayer = splayer;
-					shotclock = TICRATE*1;
-			}
-
-			// [Toke] TeamDM fraglimit
-			if (teamplay && fraglimit && !ctfmode)
-			{
-				for(size_t i = 0; i < NUMFLAGS; i++)
-				{
-					if ((int)fraglimit == TEAMpoints[i])
-					{
-						shotclock = TICRATE*1;
-						break;
-					}
-				}
-			}
 		}
 
 		// [deathz0r] Stats for co-op scoreboard
-		if (!deathmatch && (target->flags & MF_COUNTKILL) || (target->type == MT_SKULL))
+		if (gametype == GM_COOP && (target->flags & MF_COUNTKILL) || (target->type == MT_SKULL))
 		{
 			splayer->killcount++;
 			SV_UpdateFrags (*splayer);
@@ -1050,21 +1020,21 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 	}
 
 	// [Toke - CTF]
-	if (ctfmode && target->player)
+	if (gametype == GM_CTF && target->player)
 		CTF_CheckFlags ( *target->player );
 
 	if (target->player)
 	{
-		if (!joinkill)
+		if (!joinkill && !shotclock)
 			tplayer->deathcount++;
 
 		// count environment kills against you
-		if (!source && !joinkill)
+		if (!source && !joinkill && !shotclock)
 		{
 			tplayer->fragcount--;	// [RH] Cumulative frag count
 
 			// [JDC] Minus a team frag
-			if (teamplay && !ctfmode)
+			if (gametype == GM_TEAMDM)
 				TEAMpoints[tplayer->userinfo.team]--;
 		}
 
@@ -1095,8 +1065,33 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		target->tics = 1;
 
 	// [RH] Death messages
-	if (target->player && level.time && !joinkill)
+	if (target->player && level.time && !joinkill && !shotclock)
 		ClientObituary (target, inflictor, source);
+
+	// Check fraglimit.
+	if (source && source->player && target->player && level.time)
+	{
+		// [Toke] Better fraglimit
+		if (gametype == GM_DM && fraglimit && splayer->fragcount >= (int)fraglimit && !fragexitswitch) // [ML] 04/4/06: Added !fragexitswitch
+		{
+				SV_BroadcastPrintf (PRINT_HIGH, "Frag limit hit. Game won by %s!\n", splayer->userinfo.netname);
+				shotclock = TICRATE*2;
+		}
+
+		// [Toke] TeamDM fraglimit
+		if (gametype == GM_TEAMDM && fraglimit)
+		{
+			for(size_t i = 0; i < NUMFLAGS; i++)
+			{
+				if (TEAMpoints[i] >= (int)fraglimit)
+				{
+					SV_BroadcastPrintf (PRINT_HIGH, "Frag limit hit. %s team wins!\n", team_names[i]);
+					shotclock = TICRATE*2;
+					break;
+				}
+			}
+		}
+	}
 
 	// Drop stuff.
 	// This determines the kind of object spawned
@@ -1213,7 +1208,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	if (player)
 	{
 		// end of game hell hack
-		if(!deathmatch || allowexit)
+		if(gametype == GM_COOP || allowexit)
 		if ((target->subsector->sector->special & 255) == dDamage_End
 			&& damage >= target->health)
 		{
@@ -1248,7 +1243,8 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 		// only armordamage with friendlyfire
 		if (!friendlyfire && source && source->player && target != source && mod != MOD_TELEFRAG &&
-			(((teamplay || ctfmode) && target->player->userinfo.team == source->player->userinfo.team) || !deathmatch))
+			(((gametype == GM_TEAMDM || gametype == GM_CTF) && target->player->userinfo.team == source->player->userinfo.team)
+			|| gametype == GM_COOP))
 			damage = 0;
 
 		player->health -= damage;		// mirror mobj health here for Dave
@@ -1284,19 +1280,17 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 	{
 		int pain = P_Random();
+		
 		if(!player)
 		{
-			if(target->health - damage > 0)
+			for (size_t i = 0; i < players.size(); i++)
 			{
-				for (size_t i = 0; i < players.size(); i++)
-				{
-					client_t *cl = &clients[i];
+				client_t *cl = &clients[i];
 
-					MSG_WriteMarker (&cl->reliablebuf, svc_damagemobj);
-					MSG_WriteShort (&cl->reliablebuf, target->netid);
-					MSG_WriteShort (&cl->reliablebuf, target->health - damage);
-					MSG_WriteByte (&cl->reliablebuf, pain);
-				}
+				MSG_WriteMarker (&cl->reliablebuf, svc_damagemobj);
+				MSG_WriteShort (&cl->reliablebuf, target->netid);
+				MSG_WriteShort (&cl->reliablebuf, target->health);
+				MSG_WriteByte (&cl->reliablebuf, pain);
 			}
 		}
 

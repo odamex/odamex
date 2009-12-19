@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,6 +32,7 @@
 #include "doomdef.h"
 #include "d_event.h"
 #include "cmdlib.h"
+#include "d_player.h"
 
 #define C_BLINKRATE			(TICRATE/2)
 
@@ -54,7 +55,7 @@ void C_FlushDisplay (void);
 void C_InitTicker (const char *label, unsigned int max);
 void C_SetTicker (unsigned int at);
 
-void C_MidPrint (const char *message);
+void C_MidPrint (const char *msg, player_t *p = NULL);
 
 BOOL C_Responder (event_t *ev);
 

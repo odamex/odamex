@@ -9,7 +9,6 @@ proc main {} {
 
  # set defaults
  server "globalspectatorchat 1"
- server "teamplay 0"
  server "map 1"
  client "print_stdout 1"
  client "cl_name Player"
@@ -22,6 +21,14 @@ proc main {} {
  expect $clientout {Player: hello} 0
  wait 1
  test "say_team hello" "<Player to SPECTATORS> hello"
+ 
+ # test me 
+ wait 1
+ clear
+ test "say /me action" "* Player action"
+ wait 1
+ test "say_team /me action" "<SPECTATORS> * Player action"
+ wait 1
 
  # disable global chat
  server "globalspectatorchat 0"
@@ -43,7 +50,7 @@ proc main {} {
 
  wait 1
  # test teamplay
- server "teamplay 1; map 1"
+ server "gametype 2; map 1"
  clear
  test "join" "Player joined the game on the BLUE team."
  clear
@@ -51,6 +58,12 @@ proc main {} {
  expect $clientout {Player: hello} 0
  wait 1
  test "say_team hello" "<Player to TEAM> hello"
+ 
+ # test /me
+ wait 1
+ clear
+ test "say_team /me action" "<TEAM> * Player action"
+ wait 1
 
  wait 1
  # test flood protection

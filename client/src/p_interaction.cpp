@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,8 +46,9 @@
 
 #include "cl_ctf.h"
 
-extern int predicting;
+extern bool predicting;
 
+EXTERN_CVAR (doubleammo)
 
 static void PickupMessage (AActor *toucher, const char *message)
 {
@@ -63,6 +64,59 @@ static void PickupMessage (AActor *toucher, const char *message)
 		lastmessage = message;
 		Printf (PRINT_LOW, "%s\n", message);
 	}
+}
+
+//
+// static void WeaponPickupMessage (weapontype_t &Weapon)
+//
+// This is used for displaying weaponstay messages, it is inevitably a hack
+// because weaponstay is a hack
+static void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
+{
+    switch (Weapon)
+    {
+        case wp_shotgun:
+        {
+            PickupMessage(toucher, GOTSHOTGUN);
+        }
+        break;
+        
+        case wp_chaingun:
+        {
+            PickupMessage(toucher, GOTCHAINGUN);
+        }
+        break;
+        
+        case wp_missile:
+        {
+            PickupMessage(toucher, GOTLAUNCHER);
+        }
+        break;
+        
+        case wp_plasma:
+        {
+            PickupMessage(toucher, GOTPLASMA);
+        }
+        break;
+        
+        case wp_bfg:
+        {
+            PickupMessage(toucher, GOTBFG9000);
+        }
+        break;
+        
+        case wp_chainsaw:
+        {
+            PickupMessage(toucher, GOTCHAINSAW);
+        }
+        break;
+        
+        case wp_supershotgun:
+        {
+            PickupMessage(toucher, GOTSHOTGUN2);
+        }
+        break;
+    }
 }
 
 //
@@ -95,7 +149,7 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 		num = clipammo[ammo]/2;
 
 	if (skill == sk_baby
-		|| skill == sk_nightmare)
+		|| skill == sk_nightmare || doubleammo)
 	{
 		// give double ammo in trainer mode,
 		// you'll need in nightmare
@@ -162,7 +216,6 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 }
 
 EXTERN_CVAR (weaponstay)
-EXTERN_CVAR (teamplay)
 
 //
 // P_GiveWeapon
@@ -186,7 +239,7 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
-		if (deathmatch || teamplay || ctfmode)
+		if (gametype != GM_COOP)
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 5);
 		else
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 2);
@@ -194,6 +247,8 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		player->pendingweapon = weapon;
 
 		S_Sound (player->mo, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NORM);
+
+        WeaponPickupMessage(player->mo, weapon);
 
 		return false;
 	}
@@ -471,13 +526,13 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		break;
 
 	  case SPR_MEDI:
-		if (!P_GiveBody (player, 25))
-			return;
-
 		if (player->health < 25)
 			PickupMessage (toucher, GOTMEDINEED);
-		else
+		else if (player->health < 100)
 			PickupMessage (toucher, GOTMEDIKIT);
+
+		if (!P_GiveBody (player, 25))
+			return;
 		break;
 
 
@@ -649,13 +704,13 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 
 	  case SPR_BFLG: // [Toke - CTF] Blue flag
 	  case SPR_RFLG: // [Toke - CTF] Red flag
-	  case SPR_GFLG: // [Toke - CTF] Gold flag
+	  case SPR_GFLG: // [Toke - CTF] Gold flag // Remove me in 0.5
 	  case SPR_BDWN:
 	  case SPR_RDWN:
-	  case SPR_GDWN:
+	  case SPR_GDWN: // Remove me in 0.5
 	  case SPR_BSOK:
 	  case SPR_RSOK:
-	  case SPR_GSOK:
+	  case SPR_GSOK: // Remove me in 0.5
 		return;
 
 	  default:
@@ -932,7 +987,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	if (player)
 	{
 		// end of game hell hack
-		if(!deathmatch /*|| allowexit*/)
+		if(gametype == GM_COOP /*|| allowexit*/)
 		if ((target->subsector->sector->special & 255) == dDamage_End
 			&& damage >= target->health)
 		{

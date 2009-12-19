@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -138,6 +138,8 @@ typedef DWORD				BITFIELD;
 
 // [RH] This gets used all over; define it here:
 int STACK_ARGS Printf (int printlevel, const char *, ...);
+// [Russell] Prints a bold green message to the console
+int STACK_ARGS Printf_Bold (const char *format, ...);
 // [RH] Same here:
 int STACK_ARGS DPrintf (const char *, ...);
 
@@ -145,6 +147,7 @@ int STACK_ARGS DPrintf (const char *, ...);
 #include <fstream>
 
 extern std::ofstream LOG;
+extern std::ifstream CON;
 
 // game print flags
 #define	PRINT_LOW			0		// pickup messages

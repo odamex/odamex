@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -344,9 +344,6 @@ void A_BrainSpit(AActor*);
 void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
-void A_Die(AActor*);
-void A_Detonate(AActor*);
-void A_Mushroom(AActor*);
 
 struct CodePtr {
 	const char *name;
@@ -371,7 +368,7 @@ static const struct CodePtr CodePtrs[] = {
 	{ "LoadShotgun2",	{(void *)A_LoadShotgun2} },
 	{ "CloseShotgun2",	{(void *)A_CloseShotgun2} },
 	{ "FireCGun",		{(void *)A_FireCGun} },
-	{ "A_GunFlash",		{(void *)A_GunFlash} },
+	{ "GunFlash",		{(void *)A_GunFlash} },
 	{ "FireMissile",	{(void *)A_FireMissile} },
 	{ "Saw",			{(void *)A_Saw} },
 	{ "FirePlasma",		{(void *)A_FirePlasma} },
@@ -429,9 +426,6 @@ static const struct CodePtr CodePtrs[] = {
 	{ "SpawnSound",		{(void *)A_SpawnSound} },
 	{ "SpawnFly",		{(void *)A_SpawnFly} },
 	{ "BrainExplode",	{(void *)A_BrainExplode} },
-	{ "Die",			{(void *)A_Die} },
-	{ "Detonate",		{(void *)A_Detonate} },
-	{ "Mushroom",		{(void *)A_Mushroom} },
 	{ NULL, {NULL} }
 };
 
@@ -564,7 +558,7 @@ static int HandleMode (const char *mode, int num)
 		return Modes[i].func (num);
 
 	// Handle unknown or unimplemented data
-	Printf (PRINT_HIGH, "Unknown chunk %s encountered. Skipping.\n", mode);
+	DPrintf ("Unknown chunk %s encountered. Skipping.\n", mode);
 	do
 		i = GetLine ();
 	while (i == 1);
@@ -580,7 +574,7 @@ static BOOL HandleKey (const struct Key *keys, void *structure, const char *key,
 	if(structsize && keys->offset + (int)sizeof(int) > structsize)
 	{
 		// Handle unknown or unimplemented data
-		Printf (PRINT_HIGH, "DeHackEd: Cannot apply key %s, offset would overrun.\n", keys->name);
+		DPrintf ("DeHackEd: Cannot apply key %s, offset would overrun.\n", keys->name);
 		return false;
 	}
 
@@ -644,7 +638,11 @@ void UndoDehPatch ()
 		OrgActionPtrs[i] = states[i].action;
 
 	memcpy(states, backupStates, sizeof(states));
+
 	memcpy(mobjinfo, backupMobjInfo, sizeof(mobjinfo));
+	extern bool isFast;
+	isFast = false;
+
 	memcpy(weaponinfo, backupWeaponInfo, sizeof(weaponinfo));
 	memcpy(sprnames, backupSprnames, sizeof(sprnames));
 	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
@@ -968,7 +966,7 @@ static int PatchThing (int thingy)
 		DPrintf ("Thing %d\n", thingNum);
 	} else {
 		info = &dummy;
-		Printf (PRINT_HIGH, "Thing %d out of range.\n", thingNum + 1);
+		DPrintf ("Thing %d out of range.\n", thingNum + 1);
 	}
 
 	while ((result = GetLine ()) == 1) {
@@ -1041,7 +1039,7 @@ static int PatchThing (int thingy)
 						info->translucency = (info->flags & 0x60000000) >> 15;
 				}
 			}
-			else Printf (PRINT_HIGH, unknown_str, Line1, "Thing", thingNum);
+			else DPrintf (unknown_str, Line1, "Thing", thingNum);
 		} else if (!stricmp (Line1, "Height")) {
 			hadHeight = true;
 		}
@@ -1065,7 +1063,7 @@ static int PatchSound (int soundNum)
 		info = &S_sfx[soundNum];
 	} else {
 		info = &dummy;
-		Printf ("Sound %d out of range.\n");
+		DPrintf ("Sound %d out of range.\n");
 	}
 */
 	while ((result = GetLine ()) == 1) {
@@ -1080,7 +1078,7 @@ static int PatchSound (int soundNum)
 		else CHECKKEY ("Zero 2",			info->data)
 		else CHECKKEY ("Zero 3",			info->usefulness)
 		else CHECKKEY ("Zero 4",			info->lumpnum)
-		else Printf (unknown_str, Line1, "Sound", soundNum);
+		else DPrintf (unknown_str, Line1, "Sound", soundNum);
 		*/
 	}
 /*
@@ -1098,7 +1096,7 @@ static int PatchSound (int soundNum)
 		if (offset >= 0 && offset < NUMSFX) {
 			S_sfx[soundNum].name = OrgSfxNames[offset + 1];
 		} else {
-			Printf ("Sound name %d out of range.\n", offset + 1);
+			DPrintf ("Sound name %d out of range.\n", offset + 1);
 		}
 	}
 */
@@ -1124,12 +1122,12 @@ static int PatchFrame (int frameNum)
 		DPrintf ("Frame %d\n", frameNum);
 	} else {
 		info = &dummy;
-		Printf (PRINT_HIGH, "Frame %d out of range\n", frameNum);
+		DPrintf ("Frame %d out of range\n", frameNum);
 	}
 
 	while ((result = GetLine ()) == 1)
 		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			Printf (PRINT_HIGH, unknown_str, Line1, "Frame", frameNum);
+			DPrintf (unknown_str, Line1, "Frame", frameNum);
 
 	return result;
 }
@@ -1142,14 +1140,14 @@ static int PatchSprite (int sprNum)
 	if (sprNum >= 0 && sprNum < NUMSPRITES) {
 		DPrintf ("Sprite %d\n", sprNum);
 	} else {
-		Printf (PRINT_HIGH, "Sprite %d out of range.\n", sprNum);
+		DPrintf ("Sprite %d out of range.\n", sprNum);
 		sprNum = -1;
 	}
 
 	while ((result = GetLine ()) == 1) {
 		if (!stricmp ("Offset", Line1))
 			offset = atoi (Line2);
-		else Printf (PRINT_HIGH, unknown_str, Line1, "Sprite", sprNum);
+		else DPrintf (unknown_str, Line1, "Sprite", sprNum);
 	}
 
 	if (offset > 0 && sprNum != -1) {
@@ -1159,7 +1157,7 @@ static int PatchSprite (int sprNum)
 		if (offset >= 0 && offset < NUMSPRITES) {
 			sprnames[sprNum] = OrgSprNames[offset];
 		} else {
-			Printf (PRINT_HIGH, "Sprite name %d out of range.\n", offset);
+			DPrintf ("Sprite name %d out of range.\n", offset);
 		}
 	}
 
@@ -1180,14 +1178,14 @@ static int PatchAmmo (int ammoNum)
 		max = &maxammo[ammoNum];
 		per = &clipammo[ammoNum];
 	} else {
-		Printf (PRINT_HIGH, "Ammo %d out of range.\n", ammoNum);
+		DPrintf ("Ammo %d out of range.\n", ammoNum);
 		max = per = &dummy;
 	}
 
 	while ((result = GetLine ()) == 1) {
 			 CHECKKEY ("Max ammo", *max)
 		else CHECKKEY ("Per ammo", *per)
-		else Printf (PRINT_HIGH, unknown_str, Line1, "Ammo", ammoNum);
+		else DPrintf (unknown_str, Line1, "Ammo", ammoNum);
 	}
 
 	return result;
@@ -1212,12 +1210,12 @@ static int PatchWeapon (int weapNum)
 		DPrintf ("Weapon %d\n", weapNum);
 	} else {
 		info = &dummy;
-		Printf (PRINT_HIGH, "Weapon %d out of range.\n", weapNum);
+		DPrintf ("Weapon %d out of range.\n", weapNum);
 	}
 
 	while ((result = GetLine ()) == 1)
 		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			Printf (PRINT_HIGH, unknown_str, Line1, "Weapon", weapNum);
+			DPrintf (unknown_str, Line1, "Weapon", weapNum);
 
 	return result;
 }
@@ -1229,14 +1227,27 @@ static int PatchPointer (int ptrNum)
 	if (ptrNum >= 0 && ptrNum < 448) {
 		DPrintf ("Pointer %d\n", ptrNum);
 	} else {
-		Printf (PRINT_HIGH, "Pointer %d out of range.\n", ptrNum);
+		DPrintf ("Pointer %d out of range.\n", ptrNum);
 		ptrNum = -1;
 	}
 
 	while ((result = GetLine ()) == 1) {
 		if ((ptrNum != -1) && (!stricmp (Line1, "Codep Frame")))
-			states[codepconv[ptrNum]].action = OrgActionPtrs[atoi (Line2)];
-		else Printf (PRINT_HIGH, unknown_str, Line1, "Pointer", ptrNum);
+		{
+		    int i = atoi (Line2);
+		    
+		    if (i >= NUMSTATES)
+            {
+                DPrintf ("Pointer %d overruns static array (max: %d wanted: %d)."
+                         "\n", 
+                         ptrNum,
+                         NUMSTATES,
+                         i);
+            }
+		    else
+                states[codepconv[ptrNum]].action = OrgActionPtrs[i];
+		}
+		else DPrintf (unknown_str, Line1, "Pointer", ptrNum);
 	}
 	return result;
 }
@@ -1277,7 +1288,7 @@ static int PatchCheats (int dummy)
 			i++;
 
 		if (!keys[i].name)
-			Printf (PRINT_HIGH, "Unknown cheat %s.\n", Line2);
+			DPrintf ("Unknown cheat %s.\n", Line2);
 		else
 			ChangeCheat (Line2, keys[i].cheatseq, keys[i].needsval);
 	}
@@ -1312,7 +1323,7 @@ static int PatchMisc (int dummy)
 
 	while ((result = GetLine()) == 1)
 		if (HandleKey (keys, &deh, Line1, atoi (Line2)))
-			Printf (PRINT_HIGH, "Unknown miscellaneous info %s.\n", Line2);
+			DPrintf ("Unknown miscellaneous info %s.\n", Line2);
 
 	if ( (item = FindItem ("Basic Armor")) )
 		item->offset = deh.GreenAC;
@@ -1337,7 +1348,7 @@ static int PatchPars (int dummy)
 	while ( (result = GetLine()) ) {
 		// Argh! .bex doesn't follow the same rules as .deh
 		if (result == 1) {
-			Printf (PRINT_HIGH, "Unknown key in [PARS] section: %s\n", Line1);
+			DPrintf ("Unknown key in [PARS] section: %s\n", Line1);
 			continue;
 		}
 		if (stricmp ("par", Line1))
@@ -1346,7 +1357,7 @@ static int PatchPars (int dummy)
 		space = strchr (Line2, ' ');
 
 		if (!space) {
-			Printf (PRINT_HIGH, "Need data after par.\n");
+			DPrintf ("Need data after par.\n");
 			continue;
 		}
 
@@ -1368,7 +1379,7 @@ static int PatchPars (int dummy)
 		}
 
 		if (!(info = FindLevelInfo (mapname)) ) {
-			Printf (PRINT_HIGH, "No map %s\n", mapname);
+			DPrintf ("No map %s\n", mapname);
 			continue;
 		}
 
@@ -1389,7 +1400,7 @@ static int PatchCodePtrs (int dummy)
 			int frame = atoi (Line1 + 5);
 
 			if (frame < 0 || frame >= NUMSTATES) {
-				Printf (PRINT_HIGH, "Frame %d out of range\n", frame);
+				DPrintf ("Frame %d out of range\n", frame);
 			} else {
 				int i = 0;
 				char *data;
@@ -1429,7 +1440,7 @@ static int PatchText (int oldSize)
 
 	temp = COM_Parse (Line2);		// Skip old size, since we already have it
 	if (!COM_Parse (temp)) {
-		Printf (PRINT_HIGH, "Text chunk is missing size of new string.\n");
+		DPrintf ("Text chunk is missing size of new string.\n");
 		return 2;
 	}
 	newSize = atoi (com_token);
@@ -1438,7 +1449,7 @@ static int PatchText (int oldSize)
 	newStr = new char[newSize + 1];
 
 	if (!oldStr || !newStr) {
-		Printf (PRINT_HIGH, "Out of memory.\n");
+		DPrintf ("Out of memory.\n");
 		goto donewithtext;
 	}
 
@@ -1448,12 +1459,12 @@ static int PatchText (int oldSize)
 	if (!good) {
 		delete[] newStr;
 		delete[] oldStr;
-		Printf (PRINT_HIGH, "Unexpected end-of-file.\n");
+		DPrintf ("Unexpected end-of-file.\n");
 		return 0;
 	}
 
 	if (includenotext) {
-		Printf (PRINT_HIGH, "Skipping text chunk in included patch.\n");
+		DPrintf ("Skipping text chunk in included patch.\n");
 		goto donewithtext;
 	}
 
@@ -1495,20 +1506,25 @@ static int PatchText (int oldSize)
 	// Search through music names.
 	// This is something of an even bigger hack
 	// since I changed the way music is handled.
-	if (oldSize < 7) {		// Music names are never >6 chars
-		if ( (temp = new char[oldSize + 3]) ) {
-			level_info_t *info = LevelInfos;
-			sprintf (temp, "d_%s", oldStr);
+	
+	// Music names are never >6 chars
+	if (oldSize < 7) 
+	{
+        level_info_t *info = LevelInfos;
+		char MusicLumpName[9] = { 0 };
+			
+		sprintf (MusicLumpName, "d_%s", oldStr);
 
-			while (info->level_name) {
-				if (!strnicmp (info->music, temp, 8)) {
-					good = true;
-					strncpy (info->music, temp, 8);
-				}
-				info++;
+		while (info->level_name) 
+		{
+			if (!strnicmp (info->music, MusicLumpName, 8)) 
+			{
+				good = true;
+				sprintf (MusicLumpName, "d_%s", newStr);
+				strncpy (info->music, MusicLumpName, 8);
 			}
-
-			delete[] temp;
+		
+			info++;
 		}
 	}
 
@@ -1534,10 +1550,8 @@ static int PatchText (int oldSize)
 		DPrintf ("   (Unmatched)\n");
 
 donewithtext:
-	if (newStr)
-		delete[] newStr;
-	if (oldStr)
-		delete[] oldStr;
+    delete[] newStr;
+	delete[] oldStr;
 
 	// Fetch next identifier for main loop
 	while ((result = GetLine ()) == 1)
@@ -1581,12 +1595,12 @@ static int PatchStrings (int dummy)
 				break;
 
 		if (!Strings[i].name) {
-			Printf (PRINT_HIGH, "Unknown string: %s\n", Line1);
+			DPrintf ("Unknown string: %s\n", Line1);
 		} else {
 			ReplaceSpecialChars (holdstring);
 			ReplaceString (&Strings[i].string, copystring (holdstring));
 			Strings[i].type = str_patched;
-			Printf (PRINT_HIGH, "%s set to:\n%s\n", Line1, holdstring);
+			DPrintf ("%s set to:\n%s\n", Line1, holdstring);
 		}
 	}
 
@@ -1600,7 +1614,7 @@ static int DoInclude (int dummy)
 	char *savepatchfile, *savepatchpt;
 
 	if (including) {
-		Printf (PRINT_HIGH, "Sorry, can't nest includes\n");
+		DPrintf ("Sorry, can't nest includes\n");
 		goto endinclude;
 	}
 
@@ -1612,7 +1626,7 @@ static int DoInclude (int dummy)
 
 	if (!com_token[0]) {
 		includenotext = false;
-		Printf (PRINT_HIGH, "Include directive is missing filename\n");
+		DPrintf ("Include directive is missing filename\n");
 		goto endinclude;
 	}
 
@@ -1637,7 +1651,7 @@ endinclude:
 	return GetLine();
 }
 
-void DoDehPatch (const char *patchfile, BOOL autoloading)
+bool DoDehPatch (const char *patchfile, BOOL autoloading)
 {
 	int cont;
 	int filelen = 0;	// Be quiet, gcc
@@ -1655,8 +1669,8 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 		if ( (PatchFile = new char[filelen + 1]) ) {
 			W_ReadLump (lump, PatchFile);
 		} else {
-			Printf (PRINT_HIGH, "Not enough memory to apply patch\n");
-			return;
+			DPrintf ("Not enough memory to apply patch\n");
+			return false;
 		}
 	} else if (patchfile) {
 		// Try to use patchfile as a patch.
@@ -1693,19 +1707,19 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 				if ( (PatchFile = new char[filelen + 1]) ) {
 					W_ReadLump (lump, PatchFile);
 				} else {
-					Printf (PRINT_HIGH, "Not enough memory to apply patch\n");
-					return;
+					DPrintf ("Not enough memory to apply patch\n");
+					return false;
 				}
 			}
 		}
 
 		if (!PatchFile) {
 			Printf (PRINT_HIGH, "Could not open DeHackEd patch \"%s\"\n", file.c_str());
-			return;
+			return false;
 		}
 	} else {
 		// Nothing to do.
-		return;
+		return false;
 	}
 
 	// End file with a NULL for our parser
@@ -1723,7 +1737,7 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 		if (!cont || dversion == -1 || pversion == -1) {
 			delete[] PatchFile;
 			Printf (PRINT_HIGH, "\"%s\" is not a DeHackEd patch file\n", file.c_str());
-			return;
+			return false;
 		}
 	} else {
 		DPrintf ("Patch does not have DeHackEd signature. Assuming .bex\n");
@@ -1735,7 +1749,7 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 	}
 
 	if (pversion != 6) {
-		Printf (PRINT_HIGH, "DeHackEd patch version is %d.\nUnexpected results may occur.\n", pversion);
+		DPrintf ("DeHackEd patch version is %d.\nUnexpected results may occur.\n", pversion);
 	}
 
 	if (dversion == 16)
@@ -1749,13 +1763,13 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 	else if (dversion == 21)
 		dversion = 4;
 	else {
-		Printf (PRINT_HIGH, "Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
+		DPrintf ("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
 		dversion = 3;
 	}
 
 	do {
 		if (cont == 1) {
-			Printf (PRINT_HIGH, "Key %s encountered out of context\n", Line1);
+			DPrintf ("Key %s encountered out of context\n", Line1);
 			cont = 0;
 		} else if (cont == 2)
 			cont = HandleMode (Line1, atoi (Line2));
@@ -1766,6 +1780,8 @@ void DoDehPatch (const char *patchfile, BOOL autoloading)
 		Printf (PRINT_HIGH, "DeHackEd patch lump installed\n");
 	else
 		Printf (PRINT_HIGH, "DeHackEd patch installed:\n  %s\n", file.c_str());
+		
+    return true;
 }
 
 VERSION_CONTROL (d_dehacked_cpp, "$Id$")

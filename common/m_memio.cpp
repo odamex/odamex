@@ -1,11 +1,11 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: memio.cpp 524 2008-01-27 02:54:48Z russellrice $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -78,7 +78,7 @@ size_t mem_fread(void *buf, size_t size, size_t nmemb, MEMFILE *stream)
 	if (stream->mode != MODE_READ)
 	{
 		Printf(PRINT_HIGH, "mem_fread: not a read stream\n");
-		return -1;
+		return 0;
 	}
 
 	// Trying to read more bytes than we have left?
@@ -126,7 +126,7 @@ size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, MEMFILE *stream)
 
 	if (stream->mode != MODE_WRITE)
 	{
-		return -1;
+		return 0;
 	}
 	
 	// More bytes than can fit in the buffer?
@@ -220,6 +220,6 @@ char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
     return (char *)stream->buf;
 }
 
-VERSION_CONTROL (memio_cpp, "$Id: memio.cpp 524 2008-01-27 02:54:48Z russellrice $")
+VERSION_CONTROL (memio_cpp, "$Id$")
 
 

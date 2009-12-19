@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -119,7 +119,7 @@ void I_InitMusic (void)
 
 	if(AUGraphConnectNodeInput(graph, synth, 0, output, 0) != noErr)
 	{
-		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphConnectNodeInput failed\n");
 		return;
 	}
 
@@ -131,13 +131,13 @@ void I_InitMusic (void)
 
 	if(AUGraphInitialize(graph) != noErr)
 	{
-		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphInitialize failed\n");
 		return;
 	}
 
 	if(AUGraphGetNodeInfo(graph, output, NULL, NULL, NULL, &unit) != noErr)
 	{
-		Printf (PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		Printf (PRINT_HIGH, "I_InitMusic: AUGraphGetNodeInfo failed\n");
 		return;
 	}
 
@@ -275,6 +275,10 @@ void I_PlaySong (int handle, int _looping)
 		current_track = 0;
 		return;
 	}
+
+    // [Russell] - Hack for setting the volume on windows vista, since it gets
+    // reset on every music change
+    I_SetMusicVolume(snd_musicvolume);
 
 #endif
 

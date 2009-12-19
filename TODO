@@ -1,0 +1,62 @@
+Odamex TODO List.
+-----------------
+
+This file contains a basic list of things Odamex should(not) have, some are 
+things that will get done while others are just ideas or enhancements.
+
+In contrast to the bugtracker, this is not a bug list per-say. 
+For example, a "hack" is not a bug, but more of a workaround that may or may not
+introduce bugs, but it is an attempt to fix a problem.
+
+As the lines between this and the bugtracker are grey, this file exists solely
+for ideas/enhancements/rewrites of code etc AND NOT FOR BUGS!
+
+--------------------------------------------------------------------------------
+
+Client:
+-------
+
+
+Server:
+-------
+
+
+Launcher:
+---------
+* Replace our wxListCtrl derived class with wxDataViewCtrl, this will allow us
+to add features and fixes to the launcher alot easier without trying to hack 
+around the limitations that wxListCtrl has.
+* Clean up misc.cpp, alot of code pertaining to adding servers exists there.
+This can be done with item 1 if desired.
+* Finish off work on OdaGet.
+* Remove the old tooltip popup and replace it with a dialog window when a right
+click is issued on a server in the server-list, the dialog should contain more 
+indepth information about the server.
+* Make the server replacement item in the custom servers dialog, this should
+allow a listed or dead server be replaced by the address specified in the custom
+servers list.
+7) Create a dialog with various settings to start a server (server launcher), 
+with possibly some code to utilize UPnP to open ports on routers.
+8) Create a dialog for launching the client in offline mode, with various 
+settings such as iwad, skill, map, pwads etc.
+9) Use wxPersistenceManager for storing object properties (dimensions, position
+etc) instead of manually storing them in the configuration file. (only available 
+in wx 2.9.0)
+
+
+Master Server:
+--------------
+
+
+Other:
+------
+* Implement some form of reliable communication mechanism using our current UDP
+system for the launcher, master and server, it must handle out-of-order,
+duplicate and dropped packets in some fashion, the idea is to make sure one-off
+communication between these crucial components are more reliable than what we
+have now. This system must sit between the actual socket code and the new 
+launcher protocol which has been implemented in the new_sqp branch on our svn
+repo.
+* Use a build system to generate Makefiles, something like bakefile may be 
+sufficient enough.
+* Allow downloading of dehacked files

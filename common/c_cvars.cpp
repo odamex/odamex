@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -138,7 +138,9 @@ cvar_t::~cvar_t ()
 
 void cvar_t::ForceSet (const char *val)
 {
-	if (m_Flags & CVAR_LATCH)
+	if (m_Flags & CVAR_LATCH &&
+		 !(m_Flags & CVAR_SERVERINFO && baseapp != server) &&
+		 !(m_Flags & CVAR_CLIENTINFO && baseapp != client))
 	{
 		m_Flags |= CVAR_MODIFIED;
 		if(val)
@@ -421,7 +423,9 @@ void cvar_t::UnlatchCVars (void)
 	var = ad.GetCVars();
 	while (var)
 	{
-		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH))
+		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH) &&
+		 !(var->m_Flags & CVAR_SERVERINFO && baseapp != server) &&
+		 !(var->m_Flags & CVAR_CLIENTINFO && baseapp != client))
 		{
 			unsigned oldflags = var->m_Flags & ~CVAR_MODIFIED;
 			var->m_Flags &= ~(CVAR_LATCH);
@@ -443,7 +447,8 @@ void cvar_t::C_SetCVarsToDefaults (void)
 	while (cvar)
 	{
 		// Only default save-able cvars
-		if (cvar->m_Flags & CVAR_ARCHIVE)
+		if ((cvar->m_Flags & CVAR_ARCHIVE) || (baseapp == client && cvar->m_Flags & CVAR_CLIENTARCHIVE)
+			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
 			if(cvar->m_Default.length())
 			cvar->Set (cvar->m_Default.c_str());
 		cvar = cvar->m_Next;
@@ -456,7 +461,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 
 	while (cvar)
 	{
-		if (cvar->m_Flags & CVAR_ARCHIVE)
+		if ((cvar->m_Flags & CVAR_ARCHIVE) || (baseapp == client && cvar->m_Flags & CVAR_CLIENTARCHIVE)
+			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
 		{
 			fprintf ((FILE *)f, "set %s \"%s\"\n", cvar->name(), cvar->cstring());
 		}
@@ -475,9 +481,12 @@ void cvar_t::cvarlist()
 
 		count++;
 		Printf (PRINT_HIGH, "%c%c%c%c %s \"%s\"\n",
-				flags & CVAR_ARCHIVE ? 'A' : ' ',
+				flags & CVAR_ARCHIVE ? 'A' : 
+					flags & CVAR_CLIENTARCHIVE ? 'C' :
+					flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
 				flags & CVAR_USERINFO ? 'U' : ' ',
-				flags & CVAR_SERVERINFO ? 'S' : ' ',
+				flags & CVAR_SERVERINFO ? 'S' : 
+					flags & CVAR_CLIENTINFO ? 'C' : ' ',
 				flags & CVAR_NOSET ? '-' :
 					flags & CVAR_LATCH ? 'L' :
 					flags & CVAR_UNSETTABLE ? '*' : ' ',
@@ -504,11 +513,16 @@ BEGIN_COMMAND (set)
 
 		if (var->flags() & CVAR_NOSET)
 			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);
-		else if (!serverside && (var->flags() & CVAR_SERVERINFO))
+		else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
 		{
 			Printf (PRINT_HIGH, "%s is under server control and hasn't been changed.\n", argv[1]);
 			return;
 		}
+		else if (baseapp == server && (var->flags() & CVAR_CLIENTINFO))
+		{
+			Printf (PRINT_HIGH, "%s is under client control and hasn't been changed.\n", argv[1]);
+			return;
+		}		
 		else if (var->flags() & CVAR_LATCH)
 		{
 			if(strcmp(var->cstring(), argv[2])) // if different from current value
@@ -538,53 +552,71 @@ END_COMMAND (set)
 
 BEGIN_COMMAND (get)
 {
-	cvar_t *var, *prev;
+    cvar_t *prev;
+	cvar_t *var;
 
-	if (argc >= 2)
+    if (argc < 2)
 	{
-		if ( (var = cvar_t::FindCVar (argv[1], &prev)) )
-		{
-			// [Russell] - Don't make the user feel inadequate, tell
-			// them its either enabled, disabled or its other value
-			if (var->cstring()[0] == '1')
-                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-            else if (var->cstring()[0] == '0')
-                Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-            else
-                Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
-		}
-		else
-		{
-			Printf (PRINT_HIGH, "\"%s\" is unset\n", argv[1]);
-		}
+		Printf (PRINT_HIGH, "usage: get <variable>\n");
+        return;
 	}
-	else
-	{
-		Printf (PRINT_HIGH, "get: need variable name\n");
-	}
+	
+    var = cvar_t::FindCVar (argv[1], &prev);
+
+    if (var)
+    {
+        // [Russell] - Don't make the user feel inadequate, tell
+        // them its either enabled, disabled or its other value
+        if (var->flags() & CVAR_NOENABLEDISABLE)
+            Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+        else if (var->cstring()[0] == '0')
+            Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
+        else
+            Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
+    }
+    else
+    {
+        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+    }
 }
 END_COMMAND (get)
 
 BEGIN_COMMAND (toggle)
 {
-	cvar_t *var, *prev;
+    cvar_t *prev;
+	cvar_t *var;
 
-	if (argc > 1)
+    if (argc < 2)
 	{
-		if ( (var = cvar_t::FindCVar (argv[1], &prev)) )
-		{
-			var->Set ((float)(!var->value()));
+		Printf (PRINT_HIGH, "usage: toggle <variable>\n");
+        return;
+	}
 
-			// [Russell] - Don't make the user feel inadequate, tell
-			// them its either enabled, disabled or its other value
-			if (var->cstring()[0] == '1')
+    var = cvar_t::FindCVar (argv[1], &prev);
+	
+    if (var)
+    {
+        if (var->flags() & CVAR_NOENABLEDISABLE) {
+            Printf (PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
+        }
+        else
+        {
+            var->Set ((float)(!var->value()));
+
+            // [Russell] - Don't make the user feel inadequate, tell
+            // them its either enabled, disabled or its other value
+            if (var->cstring()[0] == '1')
                 Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
             else if (var->cstring()[0] == '0')
                 Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
             else
                 Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
-		}
-	}
+        }
+    }
+    else
+    {
+        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+    }
 }
 END_COMMAND (toggle)
 

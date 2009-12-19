@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -202,8 +202,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	{
       // SoM: Init the console's secondary buffer. This will be used to dim the screen in game
       // and to store the disconnect screenshot
-      if(altconback)
-         delete altconback;
+      delete altconback;
 
       altconback = I_AllocateScreen(width, height, 8);
 
@@ -550,16 +549,25 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		if(outline[i] == 0x07)
 			outline[i] = '.';
 
-	strcpy(outlinelog, outline);
+    // Prevents writing a whole lot of new lines to the log file
+    if (gamestate != GS_FORCEWIPE)
+    {
+        strcpy(outlinelog, outline);
 
-    // [Nes] - Horizontal line won't show up as-is in the logfile.
-    for(i = 0; i < len; i++)
-    	if(outlinelog[i] == '\35' || outlinelog[i] == '\36' ||
-           outlinelog[i] == '\37')
-            outlinelog[i] = '=';
+        // [Nes] - Horizontal line won't show up as-is in the logfile.
+        for(i = 0; i < len; i++)
+        {
+            if (outlinelog[i] == '\35' || 
+                outlinelog[i] == '\36' ||
+                outlinelog[i] == '\37')
+            {
+                outlinelog[i] = '=';
+            }
+        }
 
-    LOG << outlinelog;
-	LOG.flush();
+        LOG << outlinelog;
+        LOG.flush();
+    }
 
 	return PrintString (printlevel, outline);
 }
@@ -1460,7 +1468,7 @@ static brokenlines_t *MidMsg = NULL;
 static int MidTicker = 0, MidLines;
 EXTERN_CVAR (con_midtime)
 
-void C_MidPrint (const char *msg)
+void C_MidPrint (const char *msg, player_t *p)
 {
 	int i;
 
@@ -1540,7 +1548,7 @@ void C_DrawMid (void)
 EXTERN_CVAR (revealsecrets)
 void C_RevealSecret()
 {
-	if(!revealsecrets || deathmatch || !show_messages) // [ML] 09/4/06: Check for revealsecrets
+	if(!revealsecrets || gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for revealsecrets
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint ("A secret is revealed!");

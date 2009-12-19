@@ -92,7 +92,8 @@ void DScroller::Serialize (FArchive &arc)
 	}
 }
 
-DPusher::DPusher ()
+DPusher::DPusher () : m_Type(p_push), m_Xmag(0), m_Ymag(0), m_Magnitude(0),
+    m_Radius(0), m_X(0), m_Y(0), m_Affectee(0)
 {
 }
 
@@ -790,7 +791,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	if (!p)
 		return false;
 
-	const char *msg;
+	const char *msg = NULL;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
 
@@ -868,11 +869,17 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	{
 		int keytrysound = S_FindSound ("misc/keytry");
 		if (keytrysound > -1)
-			S_Sound (p->mo, CHAN_VOICE, "misc/keytry", 1, ATTN_NORM);
+			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
 		else
-			S_Sound (p->mo, CHAN_VOICE, "*grunt1", 1, ATTN_NORM);
-		C_MidPrint (msg);
+			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+		C_MidPrint (msg, p);
 	}
+	
+	if (serverside && network_game && msg != NULL)
+	{
+		C_MidPrint (msg, p);
+	}
+	
 	return false;
 }
 
@@ -894,8 +901,12 @@ void
 P_CrossSpecialLine
 ( int		linenum,
   int		side,
-  AActor*	thing )
+  AActor*	thing,
+  bool      FromServer)
 {
+    if (clientside && network_game && !FromServer)
+        return;
+        
     line_t*	line = &lines[linenum];
 
 	if(thing)
@@ -978,8 +989,12 @@ P_CrossSpecialLine
 void
 P_ShootSpecialLine
 ( AActor*	thing,
-  line_t*	line )
+  line_t*	line,
+  bool      FromServer)
 {
+    if (clientside && network_game && !FromServer)
+        return;
+	
 	if(thing)
 	{
 		if (!(line->flags & ML_SPECIAL_SHOOT))
@@ -1014,8 +1029,12 @@ bool
 P_UseSpecialLine
 ( AActor*	thing,
   line_t*	line,
-  int		side )
+  int		side,
+  bool      FromServer)
 {
+    if (clientside && network_game && !FromServer)
+        return false;
+	
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1119,7 +1138,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 20, MOD_UNKNOWN);
 
-			if(!deathmatch || allowexit)
+			if(gametype == GM_COOP || allowexit)
 			{
 				if (gamestate == GS_LEVEL && player->health <= 10)
 					G_ExitLevel(0, 1);

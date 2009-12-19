@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -126,12 +126,12 @@ void F_Ticker (void)
 
 		if (i != players.size())
 		{
-			if (finalecount < (signed)(strlen (finaletext)*TEXTSPEED))
+			/*if (finalecount < (signed)(strlen (finaletext)*TEXTSPEED))
 			{
 				finalecount = strlen (finaletext)*TEXTSPEED;
 			}
 			else
-			{
+			{*/
 				if (!strncmp (level.nextmap, "EndGame", 7))
 				{
 					if (level.nextmap[7] == 'C')
@@ -151,7 +151,7 @@ void F_Ticker (void)
 				{
 					gameaction = ga_worlddone;
 				}
-			}
+			//}
 		}
 	}
 	

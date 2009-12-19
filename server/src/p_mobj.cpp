@@ -44,8 +44,9 @@ int 				iquehead;
 int 				iquetail;
 
 EXTERN_CVAR	(weaponstay)
-EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (sv_itemrespawntime)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 
@@ -165,21 +166,90 @@ void MapThing::Serialize (FArchive &arc)
 	}
 }
 
-AActor::AActor ()
+AActor::AActor () :   
+    x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
+    pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
+    floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), 
+    health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
+    player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
+    translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
+    oldframe(0), rndindex(0), netid(0), tid(0)
 {
-	memset (&x, 0, (byte *)&this[1] - (byte *)&x);
 	self.init(this);
 }
 
-AActor::AActor (const AActor &other)
+AActor::AActor (const AActor &other) :
+    x(other.x), y(other.y), z(other.z), snext(other.snext), sprev(other.sprev), 
+    angle(other.angle), sprite(other.sprite), frame(other.frame), 
+    pitch(other.pitch), roll(other.roll), effects(other.effects), 
+    bnext(other.bnext), bprev(other.bprev), subsector(other.subsector), 
+    floorz(other.floorz), ceilingz(other.ceilingz), radius(other.radius), 
+    height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
+    validcount(other.validcount), type(other.type), info(other.info), 
+    tics(other.tics), state(other.state), flags(other.flags), 
+    health(other.health), movedir(other.movedir), movecount(other.movecount), 
+    visdir(other.visdir), reactiontime(other.reactiontime), 
+    threshold(other.threshold), player(other.player), lastlook(other.lastlook), 
+    inext(other.inext), iprev(other.iprev), translation(other.translation),
+    translucency(other.translucency), waterlevel(other.waterlevel), 
+    onground(other.onground), touching_sectorlist(other.touching_sectorlist), 
+    deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex), 
+    netid(other.netid), tid(other.tid)
 {
-	memcpy (&x, &other.x, (byte *)&this[1] - (byte *)&x);
 	self.init(this);
 }
 
 AActor &AActor::operator= (const AActor &other)
 {
-	memcpy (&x, &other.x, (byte *)&this[1] - (byte *)&x);
+	x = other.x;
+    y = other.y;
+    z = other.z;
+    snext = other.snext;
+    sprev = other.sprev;
+    angle = other.angle; 
+    sprite = other.sprite;
+    frame = other.frame; 
+    pitch = other.pitch; 
+    roll = other.roll;
+    effects = other.effects;
+    bnext = other.bnext;
+    bprev = other.bprev;
+    subsector = other.subsector; 
+    floorz = other.floorz;
+    ceilingz = other.ceilingz;
+    radius = other.radius; 
+    height = other.height;
+    momx = other.momx;
+    momy = other.momy;
+    momz = other.momz;
+    validcount = other.validcount;
+    type = other.type;
+    info = other.info; 
+    tics = other.tics;
+    state = other.state;
+    flags= other.flags; 
+    health = other.health;
+    movedir = other.movedir;
+    movecount = other.movecount; 
+    visdir = other.visdir; 
+    reactiontime = other.reactiontime; 
+    threshold = other.threshold;
+    player = other.player;
+    lastlook = other.lastlook; 
+    inext = other.inext;
+    iprev = other.iprev;
+    translation = other.translation;
+    translucency = other.translucency;
+    waterlevel = other.waterlevel; 
+    onground = other.onground;
+    touching_sectorlist = other.touching_sectorlist; 
+    deadtic = other.deadtic;
+    oldframe = other.oldframe;
+    rndindex = other.rndindex; 
+    netid = other.netid;
+    tid = other.tid;
+    
 	return *this;
 }
 
@@ -894,7 +964,15 @@ void AActor::RunThink ()
 	}
 }
 
-AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
+AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
+    x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
+    pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
+    floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), 
+    health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
+    player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
+    translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
+    oldframe(0), rndindex(0), netid(0), tid(0)
 {
 	state_t *st;
 
@@ -904,7 +982,6 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 		I_Error ("Tried to spawn actor type %d\n", itype);
 	}
 
-	memset (&x, 0, (byte *)&this[1] - (byte *)&x);
 	self.init(this);
 	info = &mobjinfo[itype];
 	type = itype;
@@ -975,16 +1052,16 @@ void AActor::Destroy ()
 
 	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED))
 	{
-		if (type != MT_INV && type != MT_INS)
+		if (type != MT_INV && type != MT_INS && (type < MT_BSOK || type > MT_RDWN))
 		{
 			itemrespawnque[iquehead] = spawnpoint;
 			itemrespawntime[iquehead] = level.time;
 			iquehead = (iquehead+1)&(ITEMQUESIZE-1);
-		}
 
-		// lose one off the end?
-		if (iquehead == iquetail)
-			iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+			// lose one off the end?
+			if (iquehead == iquetail)
+				iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		}
 	}
 
 	// [RH] Unlink from tid chain
@@ -1035,8 +1112,8 @@ void P_RespawnSpecials (void)
 	if (iquehead == iquetail)
 		return;
 
-	// wait at least 30 seconds
-	if (level.time - itemrespawntime[iquetail] < 30*TICRATE)
+	// wait a certain number of seconds
+	if (level.time - itemrespawntime[iquetail] < sv_itemrespawntime*TICRATE)
 		return;
 
 	mthing = &itemrespawnque[iquetail];
@@ -1144,7 +1221,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if (deathmatch)
+	if (gametype != GM_COOP)
 	{
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
@@ -1164,6 +1241,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 }
 
 EXTERN_CVAR(maxplayers)
+EXTERN_CVAR(sv_teamspawns)
 
 //
 // P_SpawnMapThing
@@ -1183,7 +1261,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// count deathmatch start positions
-	if (mthing->type == 11)
+	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082))
+		&& !sv_teamspawns)
 	{
 		if (deathmatch_p == &deathmatchstarts[MaxDeathmatchStarts])
 		{
@@ -1199,7 +1278,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [Toke - CTF - starts] CTF starts - count Blue team start positions
-	if (mthing->type == 5080)
+	if (mthing->type == 5080 && sv_teamspawns)
 	{
 		if (blueteam_p == &blueteamstarts[MaxBlueTeamStarts])
 		{
@@ -1214,7 +1293,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [Toke - CTF - starts] CTF starts - count Red team start positions
-	if (mthing->type == 5081)
+	if (mthing->type == 5081 && sv_teamspawns)
 	{
 		if (redteam_p == &redteamstarts[MaxRedTeamStarts])
 		{
@@ -1229,7 +1308,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [Toke - CTF - starts] CTF starts - count Gold team start positions
-	if (mthing->type == 5082)
+	if (mthing->type == 5082 && sv_teamspawns)
 	{
 		if (goldteam_p == &goldteamstarts[MaxGoldTeamStarts])
 		{
@@ -1256,8 +1335,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (!deathmatch && !ctfmode &&
-			(validplayer(p) && p.ingame()))
+		if (gametype == GM_COOP && validplayer(p) && p.ingame())
 		{
 			if(!unnatural_level_progression)
 				p.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
@@ -1289,40 +1367,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		}
 
 		return;
-	}
-
-	// [Toke - CTF] Setup flag sockets
-	if (mthing->type >= ID_BLUE_FLAG && mthing->type <= ID_GOLD_FLAG) // Check for items with flag socks ID's
-	{
-		if (mthing->type == ID_BLUE_FLAG)
-		{
-			Printf (PRINT_HIGH, "Map contains BLUE FLAG, enabling TEAM BLUE \n");
-
-			CTF_Load ();
-			TEAMenabled[it_blueflag] = true;
-
-			CTF_RememberFlagPos (mthing);
-		}
-
-		if (mthing->type == ID_RED_FLAG)
-		{
-			Printf (PRINT_HIGH, "Map contains RED FLAG, enabling TEAM RED \n");
-
-			CTF_Load ();
-			TEAMenabled[it_redflag] = true;
-
-			CTF_RememberFlagPos (mthing);
-		}
-
-		if (mthing->type == ID_GOLD_FLAG)
-		{
-			Printf (PRINT_HIGH, "Map contains GOLD FLAG, enabling TEAM GOLD \n");
-
-			CTF_Load ();
-			TEAMenabled[it_goldflag] = true;
-
-			CTF_RememberFlagPos (mthing);
-		}
 	}
 
 	// [RH] sound sequence overrides
@@ -1367,11 +1411,11 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}*/
 	
 	// GhostlyDeath -- Correctly spawn things
-	if (deathmatch && !(mthing->flags & MTF_DEATHMATCH))
+	if (gametype != GM_COOP && !(mthing->flags & MTF_DEATHMATCH))
 		return;
-	if (!deathmatch && maxplayers == 1 && !(mthing->flags & MTF_SINGLE))
+	if (gametype == GM_COOP && maxplayers == 1 && !(mthing->flags & MTF_SINGLE))
 		return;
-	if (!deathmatch && maxplayers != 1 && !(mthing->flags & MTF_COOPERATIVE))
+	if (gametype == GM_COOP && maxplayers != 1 && !(mthing->flags & MTF_COOPERATIVE))
 		return;
 
 	// check for apropriate skill level
@@ -1425,7 +1469,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
@@ -1498,6 +1542,29 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	mobj->AddToHash ();
 
 	SV_SpawnMobj(mobj);
+
+	if (gametype == GM_CTF) {
+		// [Toke - CTF] Setup flag sockets
+		if (mthing->type == ID_BLUE_FLAG)
+		{
+			flagdata *data = &CTFdata[it_blueflag];
+			if (data->flaglocated)
+				return;
+
+			CTF_RememberFlagPos (mthing);
+			CTF_SpawnFlag(it_blueflag);
+		}
+
+		if (mthing->type == ID_RED_FLAG)
+		{
+			flagdata *data = &CTFdata[it_redflag];
+			if (data->flaglocated)
+				return;
+
+			CTF_RememberFlagPos (mthing);
+			CTF_SpawnFlag(it_redflag);
+		}
+	}
 
 	// [RH] Go dormant as needed
 //	if (mthing->flags & MTF_DORMANT)
@@ -1668,46 +1735,37 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	// see which target is to be aimed at
 	an = source->angle;
 
-	if (source->player &&
-		source->player->userinfo.aimdist == 0 &&
-		allowfreelook)
+	slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+
+	if (!linetarget)
 	{
-		slope = pitchslope;
-	}
-	else
-	{
+		an += 1<<26;
 		slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
 
 		if (!linetarget)
 		{
-			an += 1<<26;
+			an -= 2<<26;
 			slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-
-			if (!linetarget)
-			{
-				an -= 2<<26;
-				slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-			}
-
-			if (!linetarget)
-			{
-				an = source->angle;
-
-				if(allowfreelook)
-					slope = pitchslope;
-				else
-					slope = 0;
-			}
 		}
 
-		// GhostlyDeath <June 19, 2006> -- fix flawed logic here (!linetarget not linetarget)
-		if (!linetarget && source->player)
+		if (!linetarget)
 		{
-			if (allowfreelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
-			{
-				an = source->angle;
+			an = source->angle;
+
+			if(sv_freelook)
 				slope = pitchslope;
-			}
+			else
+				slope = 0;
+		}
+	}
+
+	// GhostlyDeath <June 19, 2006> -- fix flawed logic here (!linetarget not linetarget)
+	if (!linetarget && source->player)
+	{
+		if (sv_freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
+		{
+			an = source->angle;
+			slope = pitchslope;
 		}
 	}
 

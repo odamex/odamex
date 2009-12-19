@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,24 +24,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// [Russell] - Just for windows, display the icon in the system menu and
+// alt-tab display
+#if WIN32
+#include <windows.h>
+#include "SDL_syswm.h"
+#include "resource.h"
+#endif
+
 #include "v_palette.h"
 #include "i_sdlvideo.h"
 #include "i_system.h"
 
-// [Russell] - Just for windows, display the icon in the system menu and
-// alt-tab display
-#if WIN32
-#include "SDL_syswm.h"
-#include <windows.h>
-#include "resource.h"
-#endif
-
 SDLVideo::SDLVideo(int parm)
 {
+	const SDL_version *SDLVersion = SDL_Linked_Version();
+
+	if(SDLVersion->major != SDL_MAJOR_VERSION
+		|| SDLVersion->minor != SDL_MINOR_VERSION)
+	{
+		I_FatalError("SDL version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
+			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
+		return;
+	}
+
 	if (SDL_InitSubSystem (SDL_INIT_VIDEO) == -1)
 	{
 		I_FatalError("Could not initialize SDL video.\n");
 		return;
+	}
+
+	if(SDLVersion->patch != SDL_PATCHLEVEL)
+	{
+		Printf_Bold("SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
 	}
 
     // [Russell] - Just for windows, display the icon in the system menu and
@@ -59,7 +77,12 @@ SDLVideo::SDLVideo(int parm)
         
         WindowHandle = wminfo.window;
 
-        SetClassLong(WindowHandle, GCL_HICON, (LONG) Icon);
+		// GhostlyDeath <October 26, 2008> -- VC6 (No Service Packs or new SDKs) has no SetClassLongPtr?
+#if defined(_MSC_VER) && _MSC_VER <= 1200// && !defined(_MSC_FULL_VER)
+		SetClassLong(WindowHandle, GCL_HICON, (LONG) Icon);
+#else
+        SetClassLongPtr(WindowHandle, GCL_HICON, (LONG_PTR) Icon);
+#endif
     }
     #endif
 
@@ -163,13 +186,15 @@ void SDLVideo::SetWindowedScale (float scale)
 
 bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
 {
-   Uint32 flags = 0;
+   Uint32 flags = SDL_RESIZABLE;
 
    // SoM: I'm not sure if we should request a software or hardware surface yet... So I'm
    // just ganna let SDL decide.
 
    if(fs && vidModeCount)
    {
+      flags = 0;
+       
       flags |= SDL_FULLSCREEN;
 
       if(bits == 8)

@@ -92,10 +92,16 @@ BOOL 			noblit; 				// for comparative timing purposes
 
 BOOL	 		viewactive;
 
-BOOL 						netgame;				// only true if packets are broadcast
+// Describes if a network game is being played
+BOOL            network_game;
+// Use only for demos, it is a old variable for the old network code
+BOOL 						netgame;
+// Describes if this is a multiplayer game or not
 BOOL						multiplayer;
+// The player vector, contains all player information
 std::vector<player_t>		players;
-player_t					nullplayer;				// null player
+// null player
+player_t					nullplayer;
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
@@ -141,6 +147,7 @@ size_t			maxdemosize;
 byte*			zdemformend;			// end of FORM ZDEM chunk
 byte*			zdembodyend;			// end of ZDEM BODY chunk
 BOOL 			singledemo; 			// quit after playing a demo from cmdline
+int			demostartgametic;
 
 BOOL 			precache = true;		// if true, load all graphics at start
 
@@ -324,6 +331,7 @@ bool G_RecordDemo (char* name)
 
     usergame = false;
     demorecording = true;
+    demostartgametic = gametic;
 
     return true;
 }
@@ -364,7 +372,7 @@ void G_BeginRecording (void)
     *demo_p++ = skill-1;
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = deathmatch;
+    *demo_p++ = gametype;
     *demo_p++ = monstersrespawn;
     *demo_p++ = fastmonsters;
     *demo_p++ = nomonsters;
@@ -695,7 +703,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
 {
-	int i, j;
+	int i = 0, j;
 
 	for (j = 0; j < 20; j++)
 	{
@@ -713,7 +721,7 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this function to accept teamplay starts
 {
 	int selections;
-	mapthing2_t *spot;
+	mapthing2_t *spot = NULL;
 
 	selections = 0;
 
@@ -762,10 +770,10 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 
-	if(!deathmatch)
+	if(gametype == GM_COOP)
 		return;
 
-	if(teamplay || ctfmode)
+	if(gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		G_TeamSpawnPlayer (player);
 		return;
@@ -807,7 +815,7 @@ void G_DoReborn (player_t &player)
 	{
 		bool canreload = false;
 		
-		for (int i = 0; i < players.size(); i++) {
+		for (size_t i = 0; i < players.size(); i++) {
 			if (!players[i].spectator && singleplayerjustdied) {
 				canreload = true;
 				singleplayerjustdied = false;
@@ -816,7 +824,7 @@ void G_DoReborn (player_t &player)
 		
 		if (canreload) {
 			// reload the level from scratch
-			gameaction = ga_loadlevel;
+			gameaction = ga_newgame;
 			return;
 		}
 	}
@@ -830,14 +838,14 @@ void G_DoReborn (player_t &player)
 		return;
 
 	// spawn at random team spot if in team game
-	if(teamplay || ctfmode)
+	if(gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		G_TeamSpawnPlayer (player);
 		return;
 	}
 
 	// spawn at random spot if in death match
-	if(deathmatch)
+	if(gametype != GM_COOP)
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
@@ -975,7 +983,7 @@ BOOL CheckIfExitIsGood (AActor *self)
         if(players[i].fragcount == fraglimit)
             break;
 
-    if (deathmatch && self)
+    if (gametype != GM_COOP && self)
     {
         if (!allowexit && fragexitswitch && i == players.size())
             return false;

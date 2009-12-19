@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,6 +54,8 @@ CVARS (console variables)
 #define CVAR_AUTO		512	// allocated, needs to be freed when destroyed
 #define CVAR_NOENABLEDISABLE 1024 // [Nes] No substitution (0=disable, 1=enable)
 #define CVAR_CLIENTINFO 2048 // [Russell] client version of CVAR_SERVERINFO
+#define CVAR_SERVERARCHIVE 4096 // [Nes] Server version of CVAR_ARCHIVE
+#define CVAR_CLIENTARCHIVE 8192 // [Nes] Client version of CVAR_ARCHIVE
 
 
 class cvar_t

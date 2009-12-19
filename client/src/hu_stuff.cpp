@@ -62,7 +62,6 @@ EXTERN_CVAR (con_scaletext)
 EXTERN_CVAR (fraglimit)
 EXTERN_CVAR (timelimit)
 EXTERN_CVAR (scorelimit)
-EXTERN_CVAR (teamplay)
 
 // Chat
 void HU_Init (void);
@@ -274,7 +273,7 @@ void HU_DrawTargetNames(void)
 	int TargetX = 0;
 	int TargetY = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
 	std::vector<TargetInfo_t> Targets;
-	int i;
+	size_t i;
 
 	if(!displayplayer().mo)
 		return;
@@ -315,7 +314,7 @@ void HU_DrawTargetNames(void)
 			if (!consoleplayer().spectator &&
 				(players[i].mo->health <= 0))
 			{
-				if (teamplay)
+				if (gametype == GM_TEAMDM || gametype == GM_CTF)
 				{
 					if ((players[i].userinfo.team != displayplayer().userinfo.team) ||
 						(displayplayer().userinfo.team == TEAM_NONE) ||
@@ -324,7 +323,7 @@ void HU_DrawTargetNames(void)
 				}
 				else
 				{
-					if (deathmatch)
+					if (gametype != GM_COOP)
 						continue;
 				}
 			}
@@ -358,7 +357,7 @@ void HU_DrawTargetNames(void)
 				continue;
 			
 			// Are we a friend or foe or are we a spectator ourself?
-			if (teamplay)
+			if (gametype == GM_TEAMDM || gametype == GM_CTF)
 			{
 				switch (players[i].userinfo.team)
 				{
@@ -374,7 +373,7 @@ void HU_DrawTargetNames(void)
 					ProposedColor = CR_GREY;	// Gray as noone is a friend nor foe
 				else
 				{
-					if (deathmatch)
+					if (gametype != GM_COOP)
 						ProposedColor = CR_RED;
 					else
 						ProposedColor = CR_GREEN;
@@ -390,7 +389,7 @@ void HU_DrawTargetNames(void)
 	// GhostlyDeath -- Now Sort (hopefully I got my selection sort working!)
 	for (i = 0; i < Targets.size(); i++)
 	{
-		for (int j = i + 1; j < Targets.size(); j++)
+		for (size_t j = i + 1; j < Targets.size(); j++)
 		{
 			if (Targets[j].Distance < Targets[i].Distance)
 			{
@@ -451,7 +450,7 @@ void HU_Drawer (void)
 		
 		size_t num_players = 0;
 		
-        for (int i = 0; i < players.size(); ++i)
+        for (size_t i = 0; i < players.size(); ++i)
 		{
             if (!players[i].spectator)
                 ++num_players;
@@ -599,7 +598,7 @@ END_COMMAND (say)
 
 BEGIN_COMMAND (messagemode2)
 {
-	if(!connected || (!teamplay && !consoleplayer().spectator))
+	if(!connected || (gametype != GM_TEAMDM && gametype != GM_CTF && !consoleplayer().spectator))
 		return;
 
 	headsupactive = 2;
@@ -645,7 +644,7 @@ EXTERN_CVAR (usehighresboard)
 //
 void HU_DrawScores (player_t *player)
 {
-	if (ctfmode || teamplay)
+	if (gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		if (usehighresboard)
 		{
@@ -684,7 +683,7 @@ void HU_DMScores1 (player_t *player)
 	for (k = 0; k < sortedplayers.size(); k++)
 		sortedplayers[k] = &players[k];
 
-	if(deathmatch)
+	if(gametype != GM_COOP)
 		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 	else
 		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
@@ -718,7 +717,7 @@ void HU_DMScores1 (player_t *player)
 
 	// Scoreboard Identify
 	// Dan - Tells which current game mode is being played
-	if (deathmatch)
+	if (gametype != GM_COOP)
 		screen->DrawText (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Deathmatch");
 	else
 		screen->DrawText (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Cooperative");
@@ -726,12 +725,12 @@ void HU_DMScores1 (player_t *player)
 	//	Header display
 	screen->DrawTextClean (CR_GREY,	16	* CleanXfac,	25	* CleanYfac, "NAME");
 
-	if(deathmatch)
+	if(gametype != GM_COOP)
 		screen->DrawTextClean (CR_GREY,	146	* CleanXfac,	25	* CleanYfac, "FRAG");
 	else
 		screen->DrawTextClean (CR_GREY,	146	* CleanXfac,	25	* CleanYfac, "KILL");
 
-	if(deathmatch)
+	if(gametype != GM_COOP)
 		screen->DrawTextClean (CR_GREY,	192	* CleanXfac,	25	* CleanYfac, "F/D");
 	else
         	screen->DrawTextClean (CR_GREY,	192	* CleanXfac,	25	* CleanYfac, "K/D");
@@ -757,14 +756,14 @@ void HU_DMScores1 (player_t *player)
 				screen->Clear ((5 * CleanXfac), y, (13 * CleanXfac), y + hu_font[0]->height() * CleanYfac, color);
 
 			// Display Frags or Kills if coop
-			if(deathmatch)
+			if(gametype != GM_COOP)
 				sprintf (str, "%d", sortedplayers[i]->fragcount);
 			else
 				sprintf (str, "%d", sortedplayers[i]->killcount);
 			screen->DrawTextClean (sortedplayers[i] == player ? CR_GREEN : CR_BRICK, (177 - V_StringWidth (str)) * CleanXfac, y, str);
 
 			// Display Frags/Deaths or Kills/Deaths ratio
-			if(deathmatch)
+			if(gametype != GM_COOP)
 			{
 				if (sortedplayers[i]->fragcount <= 0) // Displays a 0.0 when frags are 0 or negative
 					sprintf (str, "0.0"); // [deathz0r] Buggy? [anarkavre] just explicitly print as string
@@ -832,7 +831,7 @@ void HU_DMScores2 (player_t *player)
 	for (j = 0; j < sortedplayers.size(); j++)
 		sortedplayers[j] = &players[j];
 
-	if(deathmatch)
+	if(gametype != GM_COOP)
 		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 	else
 		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
@@ -882,7 +881,7 @@ void HU_DMScores2 (player_t *player)
 
 	// Scoreboard Identify
     // Dan - Tells which current game mode is being played
-    if (deathmatch)
+    if (gametype != GM_COOP)
         screen->DrawText (CR_GOLD,locx + 135,locy + 0,"Deathmatch");
     else
         screen->DrawText (CR_GOLD,locx + 150,locy + 0,"Cooperative");
@@ -893,7 +892,7 @@ void HU_DMScores2 (player_t *player)
 	screen->DrawText	  (CR_GREEN	,locx + 68		,locy + 0	,	str	);
 
 	// Fraglimit
-	if (deathmatch)
+	if (gametype != GM_COOP)
 	{
 		screen->DrawText	  (CR_GREY	,locx + 266		,locy + 0	,"FRAGLIMIT:"	);
 		sprintf (str, "%d", (int)fraglimit);
@@ -907,7 +906,7 @@ void HU_DMScores2 (player_t *player)
 				   4);
 
 	screen->DrawText	  (CR_GREY	,locx + 8		,locy + 11	,"NAME"			);
-	if(deathmatch)
+	if(gametype != GM_COOP)
 	{
 		screen->DrawText	  (CR_GREY	,locx + 130		,locy + 11	,"FRAGS"		);
 		screen->DrawText	  (CR_GREY	,locx + 179		,locy + 11	,"FRG/DTH"		);
@@ -961,14 +960,14 @@ void HU_DMScores2 (player_t *player)
 		screen->DrawText	  (color	,locx + 8							,locy + y	,	str	);
 
 		// [deathz0r] FRAG for deathmatch, KILLS for coop
-		if(deathmatch)
+		if(gametype != GM_COOP)
 			sprintf (str, "%d", sortedplayers[i]->fragcount);
 		else
 			sprintf (str, "%d", sortedplayers[i]->killcount);
 		screen->DrawText	  (color	,locx + (166 - V_StringWidth (str))	,locy + y	,	str	);
 
 		// [deathz0r] FRAGS/DEATHS (dm) or KILLS/DEATHS (coop) RATIO
-		if(deathmatch)
+		if(gametype != GM_COOP)
 		{
 			if (sortedplayers[i]->fragcount <= 0) // Displays a 0.0 when frags are 0 or negative
 				sprintf (str, "0.0"); // [deathz0r] Buggy? [anarkavre] just explicitly print as string
@@ -1053,7 +1052,7 @@ void HU_TeamScores1 (player_t *player)
 	for (j = 0; j < sortedplayers.size(); j++)
 		sortedplayers[j] = &players[j];
 
-	std::sort(sortedplayers.begin(), sortedplayers.end(), ctfmode ? compare_player_points : compare_player_frags);
+	std::sort(sortedplayers.begin(), sortedplayers.end(), gametype == GM_CTF ? compare_player_points : compare_player_frags);
 
 	maxwidth = 60;
 
@@ -1073,12 +1072,12 @@ void HU_TeamScores1 (player_t *player)
 
 	// Scoreboard Identify
 	// Dan - Tells which current game mode is being played
-	if (ctfmode)
+	if (gametype == GM_CTF)
 		screen->DrawText (CR_GOLD,100 * CleanXfac,0 * CleanYfac,"Capture The Flag");
 
 	// Draw team stats header
 	screen->DrawTextClean	  (CR_GREY	,	243	* CleanXfac	,	26	* CleanYfac	,	"SCORE:"	);
-	if(ctfmode)
+	if(gametype == GM_CTF)
 	{
 		screen->DrawTextClean	  (CR_GREY	,	247	* CleanXfac	,	34	* CleanYfac	,	"TOTAL"		);
 		screen->DrawTextClean	  (CR_GREY	,	250	* CleanXfac	,	42	* CleanYfac	,	"FRAG:"		);
@@ -1093,7 +1092,7 @@ void HU_TeamScores1 (player_t *player)
 		screen->DrawTextClean	  (CR_GREY	,	254	* CleanXfac	,	50	* CleanYfac	,	"PING:"		);
 	}
 	screen->DrawTextClean	  (CR_GREY	,	243	* CleanXfac	,	98	* CleanYfac	,	"SCORE:"	);
-	if(ctfmode)
+	if(gametype == GM_CTF)
 	{
 		screen->DrawTextClean	  (CR_GREY	,	247	* CleanXfac	,	106	* CleanYfac	,	"TOTAL"		);
 		screen->DrawTextClean	  (CR_GREY	,	250	* CleanXfac	,	114	* CleanYfac	,	"FRAG:"		);
@@ -1110,7 +1109,7 @@ void HU_TeamScores1 (player_t *player)
 
 	// Player scores header
 	screen->DrawTextClean	  (CR_GREY	,	10	* CleanXfac	,	18	* CleanYfac	,	"NAME"		);
-	if (ctfmode) {
+	if (gametype == GM_CTF) {
         screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	18	* CleanYfac	,	"POINT"		);
         screen->DrawTextClean	  (CR_GREY	,	171	* CleanXfac	,	18	* CleanYfac	,	"FRAG"		);
 	} else {
@@ -1120,7 +1119,7 @@ void HU_TeamScores1 (player_t *player)
 	screen->DrawTextClean	  (CR_GREY	,	210	* CleanXfac	,	18	* CleanYfac	,	"PING"		);
 
 	screen->DrawTextClean	  (CR_GREY	,	10	* CleanXfac	,	90	* CleanYfac	,	"NAME"		);
-	if (ctfmode) {
+	if (gametype == GM_CTF) {
         screen->DrawTextClean	  (CR_GREY	,	128	* CleanXfac	,	90	* CleanYfac	,	"POINT"		);
         screen->DrawTextClean	  (CR_GREY	,	171	* CleanXfac	,	90	* CleanYfac	,	"FRAG"		);
 	} else {
@@ -1138,7 +1137,7 @@ void HU_TeamScores1 (player_t *player)
 		{
 			sprintf (frags, "%d", sortedplayers[i]->fragcount);
 
-			if (ctfmode)
+			if (gametype == GM_CTF)
 			sprintf (points, "%d", sortedplayers[i]->points);
 			else
 			sprintf (deaths, "%d", sortedplayers[i]->deathcount);
@@ -1175,7 +1174,7 @@ void HU_TeamScores1 (player_t *player)
 					screen->Clear (1, bluey, (7 * CleanXfac), bluey + (7 * CleanYfac), blob);
 
 				screen->DrawTextClean (colorblue	,	10	* CleanXfac,			bluey			,			str				);
-				if (ctfmode) {
+				if (gametype == GM_CTF) {
                     screen->DrawTextClean (colorblue	,	128	* CleanXfac,			bluey			,			points			);
                     screen->DrawTextClean (colorblue	,	171	* CleanXfac,			bluey			,			frags			);
 				} else {
@@ -1189,7 +1188,7 @@ void HU_TeamScores1 (player_t *player)
 				bpoints = bpoints + sortedplayers[i]->points;
 
 				// Total blue frags and points
-				if(ctfmode)
+				if(gametype == GM_CTF)
 				{
 					sprintf (str, "%d", bfrags);
 					screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	42	* CleanYfac	,	str	);
@@ -1216,7 +1215,7 @@ void HU_TeamScores1 (player_t *player)
 					screen->Clear (1, redy, (7 * CleanXfac), redy + (7 * CleanYfac), blob);
 
 				screen->DrawTextClean (colorred 	,	10	* CleanXfac,			redy			,			str				);
-				if (ctfmode) {
+				if (gametype == GM_CTF) {
                     screen->DrawTextClean (colorred 	,	128	* CleanXfac,			redy			,			points			);
                     screen->DrawTextClean (colorred 	,	171	* CleanXfac,			redy			,			frags			);
 				} else {
@@ -1230,7 +1229,7 @@ void HU_TeamScores1 (player_t *player)
 				rpoints = rpoints + sortedplayers[i]->points;
 
 				// Total red frags and points
-				if(ctfmode)
+				if(gametype == GM_CTF)
 				{
 					sprintf (str, "%d", rfrags);
 					screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	114	* CleanYfac	,	str	);
@@ -1261,7 +1260,7 @@ void HU_TeamScores1 (player_t *player)
 		bfavg = (int)(bfrags / bcount);
 		bpavg = (int)(bpings / bcount);
 
-		if(ctfmode)
+		if(gametype == GM_CTF)
 		{
 			// Average blue ping
 			if (bpavg < 0 || bpavg > 999)
@@ -1292,7 +1291,7 @@ void HU_TeamScores1 (player_t *player)
 		rfavg = (int)(rfrags / rcount);
 		rpavg = (int)(rpings / rcount);
 
-		if(ctfmode)
+		if(gametype == GM_CTF)
 		{
 			// Average red ping
 			if (rpavg < 0 || rpavg > 999)
@@ -1354,7 +1353,7 @@ void HU_TeamScores2 (player_t *player)
 	for (j = 0; j < sortedplayers.size(); j++)
 		sortedplayers[j] = &players[j];
 
-	std::sort(sortedplayers.begin(), sortedplayers.end(), ctfmode ? compare_player_points : compare_player_frags);
+	std::sort(sortedplayers.begin(), sortedplayers.end(), gametype == GM_CTF ? compare_player_points : compare_player_frags);
 
 	// Board locations
 	int marginx = (screen->width - (CTFBOARDWIDTH * 2)) / 4;
@@ -1404,21 +1403,21 @@ void HU_TeamScores2 (player_t *player)
 
 	// Scoreboard Identify
 	// Dan - Tells which current game mode is being played
-    if (ctfmode)
+    if (gametype == GM_CTF)
         screen->DrawText (CR_GOLD,blocx + 275,blocy + 0,"Capture The Flag");
 
 	// BLUE
 	screen->DrawText	  (CR_GREY	,blocx + 8	,blocy + 16	,"SCORE:"			);
-	if(ctfmode)
+	if(gametype == GM_CTF)
 		screen->DrawText	  (CR_GREY	,blocx + 115	,blocy + 0	,"TOTAL FRAGS:"		);
 	screen->DrawText	  (CR_GREY	,blocx + 111	,blocy + 8	,"AVERAGE PING:"		);
-	if(!ctfmode)
+	if(gametype != GM_CTF)
 		screen->DrawText	  (CR_GREY	,blocx + 100	,rlocy + 16	,"AVERAGE FRAGS:"	);
 	else
 		screen->DrawText	  (CR_GREY	,blocx + 111	,rlocy + 16	,"TOTAL POINTS:"	);
 
 	screen->DrawText	  (CR_GREY	,blocx + 8	,blocy + 32	,"NAME"				);
-	if(ctfmode) {
+	if(gametype == GM_CTF) {
         screen->DrawText	  (CR_GREY	,blocx + 126	,blocy + 32	,"POINT"			);
         screen->DrawText	  (CR_GREY	,blocx + 169	,blocy + 32	,"FRAG"				);
 	} else {
@@ -1430,16 +1429,16 @@ void HU_TeamScores2 (player_t *player)
 
 	// RED
 	screen->DrawText	  (CR_GREY	,rlocx + 8		,rlocy + 16	,"SCORE:"		);
-	if(ctfmode)
+	if(gametype == GM_CTF)
 		screen->DrawText	  (CR_GREY	,rlocx + 115	,rlocy + 0	,"TOTAL FRAGS:"		);
 	screen->DrawText	  (CR_GREY	,rlocx + 111	,rlocy + 8	,"AVERAGE PING:"		);
-	if(!ctfmode)
+	if(gametype != GM_CTF)
 		screen->DrawText	  (CR_GREY	,rlocx + 100	,rlocy + 16	,"AVERAGE FRAGS:"	);
 	else
 		screen->DrawText	  (CR_GREY	,rlocx + 111	,rlocy + 16	,"TOTAL POINTS:"	);
 
 	screen->DrawText	  (CR_GREY	,rlocx + 8		,rlocy + 32	,"NAME"			);
-	if(ctfmode) {
+	if(gametype == GM_CTF) {
         screen->DrawText	  (CR_GREY	,rlocx + 126	,rlocy + 32	,"POINT"			);
         screen->DrawText	  (CR_GREY	,rlocx + 169	,rlocy + 32	,"FRAG"				);
 	} else {
@@ -1519,7 +1518,7 @@ void HU_TeamScores2 (player_t *player)
 				strcpy (str, sortedplayers[i]->userinfo.netname);
 				screen->DrawText	  (colorgrey	,blocx + 8		,blocy + bluey	,	str	);
 
-				if (ctfmode) {
+				if (gametype == GM_CTF) {
                     // POINTS
                     sprintf (str, "%d", sortedplayers[i]->points);
                     screen->DrawText	  (colorblue	,blocx + 126	,blocy + bluey	,	str	);
@@ -1543,11 +1542,11 @@ void HU_TeamScores2 (player_t *player)
 
 				bfrags = bfrags + sortedplayers[i]->fragcount;
 				bpings = bpings + sortedplayers[i]->ping;
-				if(ctfmode)
+				if(gametype == GM_CTF)
 					bpoints = bpoints + sortedplayers[i]->points;
 
 				// TOTAL FRAGS (ctf only)
-				if(ctfmode)
+				if(gametype == GM_CTF)
 				{
 					sprintf (str, "%d", bfrags);
 					screen->DrawText	  (CR_BLUE	,blocx + 203		,blocy + 0	,	str			);
@@ -1582,7 +1581,7 @@ void HU_TeamScores2 (player_t *player)
 				strcpy (str, sortedplayers[i]->userinfo.netname);
 				screen->DrawText	  (colorgrey	,rlocx + 8		,rlocy + redy	,	str	);
 
-				if (ctfmode) {
+				if (gametype == GM_CTF) {
                     // POINTS
                     sprintf (str, "%d", sortedplayers[i]->points);
                     screen->DrawText	  (colorblue	,rlocx + 126	,rlocy + redy	,	str	);
@@ -1606,11 +1605,11 @@ void HU_TeamScores2 (player_t *player)
 
 				rfrags = rfrags + sortedplayers[i]->fragcount;
 				rpings = rpings + sortedplayers[i]->ping;
-				if(ctfmode)
+				if(gametype == GM_CTF)
 					rpoints = rpoints + sortedplayers[i]->points;
 
 				// TOTAL FRAGS (ctf only)
-				if(ctfmode)
+				if(gametype == GM_CTF)
 				{
 					sprintf (str, "%d", rfrags);
 					screen->DrawText	  (CR_RED	,rlocx + 203		,rlocy + 0	,	str			);
@@ -1634,7 +1633,7 @@ void HU_TeamScores2 (player_t *player)
 			sprintf (str, "%d", bpavg);
 		screen->DrawText	  (CR_BLUE	,blocx + 203		,blocy + 8	,	str			);
 
-		if(!ctfmode)
+		if(gametype != GM_CTF)
 			sprintf (str, "%d", bfavg);
 		else
 			sprintf (str, "%d", bpoints);
@@ -1652,7 +1651,7 @@ void HU_TeamScores2 (player_t *player)
 			sprintf (str, "%d", rpavg);
 		screen->DrawText	  (CR_RED	,rlocx + 203		,rlocy + 8	,	str			);
 
-		if(!ctfmode)
+		if(gametype != GM_CTF)
 			sprintf (str, "%d", rfavg);
 		else
 			sprintf (str, "%d", rpoints);
@@ -1710,7 +1709,7 @@ void HU_ConsoleScores (player_t *player)
 	for (i = 0; i < sortedplayers.size(); i++)
 		sortedplayers[i] = &players[i];
 
-    if (ctfmode) {
+    if (gametype == GM_CTF) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
 
         Printf_Bold("\n--------------------------------------\n");
@@ -1768,7 +1767,7 @@ void HU_ConsoleScores (player_t *player)
                         Printf_Bold("%-15s\n", player->userinfo.netname);
                 }
             }
-    } else if (teamplay) {
+    } else if (gametype == GM_TEAMDM) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
         Printf_Bold("\n--------------------------------------\n");
@@ -1833,7 +1832,7 @@ void HU_ConsoleScores (player_t *player)
                         Printf_Bold("%-15s\n", player->userinfo.netname);
                 }
             }
-    } else if (deathmatch) {
+    } else if (gametype == GM_DM) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
         Printf_Bold("\n--------------------------------------\n");

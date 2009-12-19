@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,6 +44,7 @@
 #include "w_wad.h"
 #include "md5.h"
 #include "m_fileio.h"
+#include "r_sky.h"
 
 #include <string>
 #include <vector>
@@ -51,6 +52,7 @@
 
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
+baseapp_t baseapp = client;
 
 extern bool stepmode;
 
@@ -103,31 +105,15 @@ EXTERN_CVAR (fastmonsters)
 EXTERN_CVAR (allowexit)
 EXTERN_CVAR (fragexitswitch)
 EXTERN_CVAR (allowjump)
-EXTERN_CVAR (allowfreelook)
 EXTERN_CVAR (scorelimit)
 EXTERN_CVAR (monstersrespawn)
 EXTERN_CVAR (itemsrespawn)
 EXTERN_CVAR (allowcheats)
-EXTERN_CVAR (teamplay)
 EXTERN_CVAR (allowtargetnames)
-
-// If freelook changes serverside or clientside,
-// work out what allowfreelook needs to be
+EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
-
-CVAR_FUNC_IMPL (cl_freelook)
-{
-	allowfreelook.Set((BOOL)(cl_freelook) &&
-						((BOOL)(sv_freelook) || serverside));
-}
-
-CVAR_FUNC_IMPL (sv_freelook)
-{
-	allowfreelook.Set((BOOL)(cl_freelook) &&
-						((BOOL)(sv_freelook) || serverside));
-}
-
 EXTERN_CVAR (interscoredraw)
+EXTERN_CVAR(cl_connectalert)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -171,17 +157,24 @@ void CL_QuitNetGame(void)
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
 	}
+	
+	if (paused)
+	{
+		paused = false;
+		S_ResumeSound ();
+	}
 
 	memset (&serveraddr, 0, sizeof(serveraddr));
 	connected = false;
-	ctfmode = false;
 	gameaction = ga_fullconsole;
 	noservermsgs = false;
 	AM_Stop();
 
 	serverside = clientside = true;
+	network_game = false;
 	
 	sv_freelook = 1;
+	allowjump = 1;
 
 	actor_by_netid.clear();
 	players.clear();
@@ -208,6 +201,22 @@ void CL_Reconnect(void)
 	connecttimeout = 0;
 }
 
+//
+// CL_ConnectClient
+//
+void CL_ConnectClient(void)
+{
+	player_t &player = idplayer(MSG_ReadByte());
+	
+	if (!cl_connectalert)
+		return;
+	
+	// GhostlyDeath <August 1, 2008> -- Play connect sound
+	if (&player == &consoleplayer())
+		return;
+		
+	S_Sound (CHAN_VOICE, "misc/pljoin", 1, ATTN_NONE);
+}
 
 //
 // CL_DisconnectClient
@@ -229,6 +238,10 @@ void CL_DisconnectClient(void)
 	{
 		if(&players[i] == &player)
 		{
+			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
+			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
+			if (cl_connectalert && &player != &consoleplayer())
+				S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
 			players.erase(players.begin() + i);
 			break;
 		}
@@ -365,19 +378,6 @@ BEGIN_COMMAND (kill)
         Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
-
-
-BEGIN_COMMAND (gamemode)
-{
-						Printf (PRINT_HIGH,	"----------------------[Game Modes]----- \n");
-						Printf (PRINT_HIGH,	" Deathmatch - %d \n", deathmatch.value());
-    if (ctfmode)        Printf (PRINT_HIGH, " CTF	     - ON \n");
-    else                Printf (PRINT_HIGH, " CTF        - OFF \n");
-    if (teamplay)       Printf (PRINT_HIGH, " TeamPlay   - ON \n");
-    else                Printf (PRINT_HIGH, " TeamPlay   - OFF \n");
-						Printf (PRINT_HIGH,	"--------------------------------------- \n");
-}
-END_COMMAND (gamemode)
 
 
 BEGIN_COMMAND (serverinfo)
@@ -612,7 +612,7 @@ void CL_UpdateFrags(void)
 {
 	player_t &p = CL_FindPlayer(MSG_ReadByte());
 
-	if(deathmatch)
+	if(gametype != GM_COOP)
 		p.fragcount = MSG_ReadShort();
 	else
 		p.killcount = MSG_ReadShort();
@@ -752,7 +752,7 @@ bool CL_PrepareConnect(void)
 	DWORD server_token = MSG_ReadLong();
 	std::string server_host = MSG_ReadString();
 
-	byte recv_teamplay_stats = 0;
+	bool recv_teamplay_stats = 0;
 	gameversiontosend = 0;
 
 	byte playercount = MSG_ReadByte(); // players
@@ -769,10 +769,10 @@ bool CL_PrepareConnect(void)
 	for(i = 0; i < server_wads; i++)
 		wadnames[i] = MSG_ReadString();
 
-	MSG_ReadByte();							// gametype
+	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
-	recv_teamplay_stats |= MSG_ReadByte();	// teamplay
-	recv_teamplay_stats |= MSG_ReadByte();	// ctf
+	recv_teamplay_stats |= MSG_ReadBool();	// teamplay
+	recv_teamplay_stats |= MSG_ReadBool();	// ctf
 
 	for(i = 0; i < playercount; i++)
 	{
@@ -798,7 +798,7 @@ bool CL_PrepareConnect(void)
 
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
-			byte enabled = MSG_ReadByte();
+			bool enabled = MSG_ReadBool();
 
 			if (enabled)
 				MSG_ReadLong();
@@ -823,7 +823,7 @@ bool CL_PrepareConnect(void)
 		for (l = 0; l < 3; l++)
 			MSG_ReadShort();
 		for (l = 0; l < 14; l++)
-			MSG_ReadByte();
+			MSG_ReadBool();
 		for (l = 0; l < playercount; l++)
 		{
 			MSG_ReadShort();
@@ -835,7 +835,7 @@ bool CL_PrepareConnect(void)
 		MSG_ReadShort();
 		
 		for (l = 0; l < playercount; l++)
-			MSG_ReadByte();
+			MSG_ReadBool();
 		
 		MSG_ReadLong();
 		MSG_ReadShort();
@@ -852,9 +852,23 @@ bool CL_PrepareConnect(void)
 		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
 	}
 
-	Printf(PRINT_HIGH, "\n");
+    std::vector<std::string> PatchFiles;
 
-	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, wadhashes);
+    // TODO: Version REMOVEME
+    if (SERVERMAJ >= CLIENTMAJ && 
+        SERVERMIN >= CLIENTMIN && 
+        SERVERREL >= CLIENTREL)
+    {
+        size_t PatchCount = MSG_ReadByte();
+    
+        for (i = 0; i < PatchCount; ++i)
+            PatchFiles.push_back(MSG_ReadString());
+    }
+
+	Printf(PRINT_HIGH, "\n");
+	
+    // TODO: Allow deh/bex file downloads
+	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, wadhashes, PatchFiles);
 
 	if(missing_files.size())
 	{
@@ -902,6 +916,7 @@ bool CL_Connect(void)
 
 	connected = true;
     multiplayer = true;
+    network_game = true;
 	serverside = false;
 
 	CL_Decompress(0);
@@ -1030,6 +1045,12 @@ void CL_Print (void)
 
 	if ((level == PRINT_CHAT || level == PRINT_TEAMCHAT) && show_messages)
 		S_Sound (CHAN_VOICE, gameinfo.chatSound, 1, ATTN_NONE);
+}
+
+// Print a message in the middle of the screen
+void CL_MidPrint (void)
+{
+    C_MidPrint(MSG_ReadString());
 }
 
 
@@ -1339,7 +1360,7 @@ void CL_SpawnPlayer()
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if(deathmatch)
+	if(gametype != GM_COOP)
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 }
@@ -1773,8 +1794,7 @@ void CL_CheckMissedPacket(void)
 		// skip a duplicated packet
 		if (packetseq[n] == sequence)
 		{
-			for (int i=0; i<size; i++)
-				MSG_ReadByte();
+            MSG_ReadChunk(size);
 
 			#ifdef _DEBUG
                 Printf (PRINT_LOW, "warning: duplicate packet\n");
@@ -1828,6 +1848,9 @@ void CL_GetServerSettings(void)
 {
 	cvar_t *var = NULL, *prev = NULL;
 	
+	// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
+	unsigned int deathmatchcvar = 0, teamplaycvar = 0, usectfcvar = 0;
+	
 	// GhostlyDeath <June 19, 2008> -- If 0.4.1+ use string list instead
 	if ((SERVERMAJ >= 0) &&
 		(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
@@ -1856,18 +1879,39 @@ void CL_GetServerSettings(void)
                                   
                 var->Set(CvarValue.c_str());
 			}
+			
+			// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
+			if (SERVERMIN == 4 && SERVERREL < 2) {
+				if (strcmp(CvarValue.c_str(), "0") != 0) {
+					if (strcmp(CvarName.c_str(), "deathmatch") == 0) {
+						deathmatchcvar = 1;
+					} else if (strcmp(CvarName.c_str(), "teamplay") == 0) {
+						teamplaycvar = 1;
+					} else if (strcmp(CvarName.c_str(), "usectf") == 0) {
+						usectfcvar = 1;
+					}
+				}
+			}
+		}
+					
+		// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
+		if (SERVERMIN == 4 && SERVERREL < 2) {
+			if (usectfcvar) gametype = GM_CTF;
+			else if (teamplaycvar) gametype = GM_TEAMDM;
+			else if (deathmatchcvar) gametype = GM_DM;
+			else gametype = GM_COOP;
 		}
 	}
 	else
 	{
-		ctfmode = MSG_ReadByte() ? true : false;
+		usectfcvar = MSG_ReadByte() ? 1 : 0;
 
 		// General server settings
 		maxclients.Set((int)MSG_ReadShort());
 
 		// Game settings
 		allowcheats.Set((BOOL)MSG_ReadByte());
-		deathmatch.Set((BOOL)MSG_ReadByte());
+		deathmatchcvar = MSG_ReadByte() ? 1 : 0;
 		fraglimit.Set((int)MSG_ReadShort());
 		timelimit.Set((int)MSG_ReadShort());
 
@@ -1890,12 +1934,20 @@ void CL_GetServerSettings(void)
 		// Teamplay/CTF
 		scorelimit.Set((int)MSG_ReadShort());
 		friendlyfire.Set((BOOL)MSG_ReadByte());
-		teamplay.Set(MSG_ReadByte());
+		teamplaycvar = MSG_ReadByte() ? 1 : 0;
 	
 		allowtargetnames.Set((BOOL)MSG_ReadByte());
 
 		cvar_t::UnlatchCVars ();
+		
+		if (usectfcvar) gametype = GM_CTF;
+		else if (teamplaycvar) gametype = GM_TEAMDM;
+		else if (deathmatchcvar) gametype = GM_DM;
+		else gametype = GM_COOP;
 	}
+	
+	// Nes - update the skies in case sv_freelook is changed.
+	R_InitSkyMap ();
 }
 
 //
@@ -2001,19 +2053,19 @@ void CL_ActivateLine(void)
 	if (!lines || l >= (unsigned)numlines)
 		return;
 
-	if(mo == consoleplayer().mo && activationType != 2)
-		return;
+	//if(mo == consoleplayer().mo && activationType != 2)
+		//return;
 
 	switch (activationType)
 	{
 	case 0:
-		P_CrossSpecialLine(l, side, mo);
+		P_CrossSpecialLine(l, side, mo, true);
 		break;
 	case 1:
-		P_UseSpecialLine(mo, &lines[l], side);
+		P_UseSpecialLine(mo, &lines[l], side, true);
 		break;
 	case 2:
-		P_ShootSpecialLine(mo, &lines[l]);
+		P_ShootSpecialLine(mo, &lines[l], true);
 		break;
 	}
 }
@@ -2062,12 +2114,41 @@ void CL_ExitLevel()
 	}
 }
 
-struct download_t
+// GhostlyDeath <October 26, 2008> -- VC6 Compiler Error
+// C2552: 'identifier' : non-aggregates cannot be initialized with initializer list
+// What does this mean? VC6 considers std::string non-static (that it changes every time?)
+// So it complains because std::string has a constructor!
+
+/*struct download_s
 {
-	std::string filename, md5;
-	buf_t *buf;
-	unsigned int got_bytes;
-} download = { "", "", NULL, 0 };
+	public:
+		std::string filename;
+		std::string md5;
+		buf_t *buf;
+		unsigned int got_bytes;
+} download = { "", "", NULL, 0 };*/
+
+// this works though!
+struct download_s
+{
+	public:
+		std::string filename;
+		std::string md5;
+		buf_t *buf;
+		unsigned int got_bytes;
+
+		download_s()
+		{
+			filename = "";
+			md5 = "";
+			buf = NULL;
+			got_bytes = 0;
+		}
+
+		~download_s()
+		{
+		}
+} download;
 
 
 void IntDownloadComplete(void)
@@ -2375,12 +2456,14 @@ void CL_InitCommands(void)
 	cmds[svc_fireshotgun]		= &CL_FireShotgun;
 	cmds[svc_firessg]			= &CL_FireSSG;
 	cmds[svc_firechaingun]		= &CL_FireChainGun;
+	cmds[svc_connectclient]		= &CL_ConnectClient;
 	cmds[svc_disconnectclient]	= &CL_DisconnectClient;
 	cmds[svc_activateline]		= &CL_ActivateLine;
 	cmds[svc_sector]			= &CL_UpdateSector;
 	cmds[svc_movingsector]		= &CL_UpdateMovingSector;
 	cmds[svc_switch]			= &CL_Switch;
 	cmds[svc_print]				= &CL_Print;
+    cmds[svc_midprint]          = &CL_MidPrint;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;
@@ -2441,7 +2524,7 @@ void CL_ParseCommands(void)
 
 		i->second();
 
-		if (msg_badread)
+		if (net_message.overflowed)
 		{
 			CL_QuitNetGame();
 			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message\n");
@@ -2548,7 +2631,7 @@ void CL_RunTics (void)
 		TicCount = 0;
 	}
 
-	if (ctfmode)
+	if (gametype == GM_CTF)
 		CTF_RunTics ();
 }
 

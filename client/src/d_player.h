@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -203,9 +203,7 @@ public:
 		mo = AActor::AActorPtr();
 		id = 0;
 		playerstate = PST_LIVE;
-		memset(&cmd, 0, sizeof(ticcmd_t));
-		memset(&userinfo, 0, sizeof(userinfo_t));
-		fov = 0.0;
+		fov = 90.0;
 		viewz = 0 << FRACBITS;
 		viewheight = 0 << FRACBITS;
 		deltaviewheight = 0 << FRACBITS;

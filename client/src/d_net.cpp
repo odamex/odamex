@@ -140,6 +140,16 @@ void TryRunTics (void)
 	{
 		AddCommandString (cmd.c_str());
 	}
+
+	if(CON.is_open())
+	{
+		CON.clear();
+		if(!CON.eof())
+		{
+			std::getline(CON, cmd);
+			AddCommandString (cmd.c_str());
+		}
+	}
 	
 	// run the realtics tics
 	if(!stepmode)

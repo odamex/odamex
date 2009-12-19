@@ -71,7 +71,7 @@ BEGIN_COMMAND (version)
 	if (argc == 1)
 	{
 		// distribution
-		Printf(PRINT_HIGH, "Odamex v%s r%d - Copyright(C) 2007-2008 The Odamex Team\n", DOTVERSIONSTR, last_revision);
+		Printf(PRINT_HIGH, "Odamex v%s r%d - Copyright(C) 2007-2009 The Odamex Team\n", DOTVERSIONSTR, last_revision);
 	}
 	else
 	{

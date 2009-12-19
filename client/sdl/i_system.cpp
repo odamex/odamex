@@ -34,6 +34,7 @@
 #include <io.h>
 #include <direct.h>
 #include <process.h>
+#define NOMINMAX
 #include <windows.h>
 #endif
 
@@ -123,7 +124,7 @@ size_t I_BytesToMegabytes (size_t Bytes)
 // the 'size' of what it could allocate in its parameter
 void *I_ZoneBase (size_t *size)
 {
-	void *zone;
+	void *zone = NULL;
 
     // User wanted a different default size
 	const char *p = Args.CheckValue ("-heapsize");
@@ -138,8 +139,15 @@ void *I_ZoneBase (size_t *size)
 	*size = I_MegabytesToBytes(def_heapsize);
 
     // Allocate the def_heapsize, otherwise try to allocate a smaller amount
-	while (NULL == (zone = malloc (*size)) && *size >= I_MegabytesToBytes(min_heapsize))
-		*size -= I_MegabytesToBytes(1);
+	while ((zone == NULL) && (*size >= I_MegabytesToBytes(min_heapsize)))
+	{
+	    zone = malloc (*size);
+	    
+	    if (zone != NULL)
+            break;
+            
+        *size -= I_MegabytesToBytes(1);
+	}
 
     // Our heap size we received
     got_heapsize = I_BytesToMegabytes(*size);
@@ -168,7 +176,7 @@ QWORD I_UnwrapTime(DWORD now32)
 {
 	static QWORD last = 0;
 	QWORD now = now32;
-	QWORD max = std::numeric_limits<DWORD>::max();
+	static QWORD max = std::numeric_limits<DWORD>::max();
 
 	if(now < last%max)
 		last += (max-(last%max)) + now;
@@ -639,6 +647,8 @@ std::string I_GetClipboardText (void)
 	{
 		Printf(PRINT_HIGH, "GetScrapFlavorData error: %d", err);
 		delete[] data;
+		
+		return "";
 	}
 	
 	std::string ret(data);

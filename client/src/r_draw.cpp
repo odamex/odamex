@@ -970,6 +970,8 @@ void R_DrawSpanD (void)
 //
 byte *Ranges;
 
+static byte *translationtablesmem = NULL;
+
 void R_InitTranslationTables (void)
 {
 	static const char ranges[11][8] = {
@@ -987,10 +989,7 @@ void R_InitTranslationTables (void)
 	};
 	int i;
 	
-	static byte *translationtablesmem = 0;
-	
-	if(translationtablesmem)
-		delete[] translationtablesmem;
+    R_FreeTranslationTables();
 	
 	translationtablesmem = new byte[256*(MAXPLAYERS+3+11)+255]; // denis - fixme - magic numbers?
 
@@ -1022,6 +1021,12 @@ void R_InitTranslationTables (void)
 	for (i = 0; i < 11; i++)
 		W_ReadLump (W_GetNumForName (ranges[i]), Ranges + 256 * i);
 
+}
+
+void R_FreeTranslationTables (void)
+{
+    delete[] translationtablesmem;
+    translationtablesmem = NULL;
 }
 
 // [Nes] Vanilla player translation table.

@@ -6,11 +6,11 @@
 		<Option pch_mode="0" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Win Release">
+			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
 				<Option output="..\..\odamex.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\..\" />
-				<Option object_output="..\..\obj\client\release" />
+				<Option object_output="..\..\obj\client\gcc\release" />
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -29,11 +29,11 @@
 					<Add library="wsock32" />
 				</Linker>
 			</Target>
-			<Target title="Win Debug">
+			<Target title="Win Debug (GCC)">
 				<Option platforms="Windows;" />
 				<Option output="..\..\odamex-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\..\" />
-				<Option object_output="..\..\obj\client\debug" />
+				<Option object_output="..\..\obj\client\gcc\debug" />
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
@@ -41,7 +41,7 @@
 				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
+					<Add option="-gdwarf-2" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -122,21 +122,159 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="2" />
 				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
-					<Add option="-DUNIX" />
-					<Add option="-DLINUX" />
+					<Add option="-gdwarf-2" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
-					<Add directory="\usr\include\SDL" />
 				</Compiler>
+				<Linker>
+					<Add library="mingw32" />
+					<Add library="winmm" />
+					<Add library="wsock32" />
+				</Linker>
+			</Target>
+			<Target title="Win Release (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\..\odamex.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
+				<Option object_output="..\..\obj\client\vc\release" />
+				<Option type="0" />
+				<Option compiler="msvc8" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/GA" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/wd4430" />
+					<Add option="/DWIN32" />
+					<Add option="/DNDEBUG" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="SDLmain.lib" />
+					<Add library="SDL.lib" />
+					<Add library="SDL_mixer.lib" />
+					<Add library="Ws2_32.lib" />
+					<Add library="Winmm.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="winspool.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="uuid.lib" />
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\..\odamex-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
+				<Option object_output="..\..\obj\client\vc\debug" />
+				<Option type="0" />
+				<Option compiler="msvc8" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/RTCu" />
+					<Add option="/RTCs" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/GS" />
+					<Add option="/Od" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/wd4430" />
+					<Add option="/Zi" />
+					<Add option="/DWIN32" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="/debug" />
+					<Add library="SDLmain.lib" />
+					<Add library="SDL.lib" />
+					<Add library="SDL_mixer.lib" />
+					<Add library="Ws2_32.lib" />
+					<Add library="Winmm.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="winspool.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="uuid.lib" />
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
 			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
 			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
-			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
@@ -157,8 +295,10 @@
 		</Linker>
 		<Unit filename="client.rc">
 			<Option compilerVar="WINDRES" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
 		</Unit>
 		<Unit filename="hardware.cpp" />
 		<Unit filename="hardware.h" />
@@ -181,8 +321,10 @@
 		<Unit filename="mus2midi.cpp" />
 		<Unit filename="mus2midi.h" />
 		<Unit filename="resource.h">
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
 		</Unit>
 		<Unit filename="..\src\am_map.cpp" />
 		<Unit filename="..\src\am_map.h" />

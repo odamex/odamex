@@ -391,6 +391,8 @@ BOOL PIT_CheckLine (line_t *ld)
 	return true;
 }
 
+EXTERN_CVAR(sv_unblockplayers)
+
 //
 // PIT_CheckThing
 //
@@ -419,6 +421,9 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->player && tmthing->player->spectator)
 		return true;
 		
+    if (tmthing->player && thing->player && sv_unblockplayers)
+        return true;
+
 	/*if (!(thing->player && thing->player->spectator))
 		return true;*/
 
@@ -1345,7 +1350,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	return false;
 }
 
-EXTERN_CVAR(allowfreelook)
+EXTERN_CVAR(sv_freelook)
 
 //
 // P_AimLineAttack
@@ -1363,7 +1368,7 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
 
 	// can't shoot outside view angles
-	if(allowfreelook)
+	if(sv_freelook)
 	{
 		// [RH] Technically, this is now correct for an engine with true 6 DOF
 		// instead of one which implements y-shearing, like we currently do.
@@ -1581,7 +1586,7 @@ BOOL PTR_UseTraverse (intercept_t *in)
 		P_LineOpening (in->d.line);
 		if (openrange <= 0)
 		{
-			S_Sound (usething, CHAN_VOICE, "*grunt1", 1, ATTN_IDLE);
+			UV_SoundAvoidPlayer (usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 
 			// can't use through a wall
 			return false;
@@ -1657,7 +1662,7 @@ void P_UseLines (player_t *player)
 
 	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse))
 		if (!P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse))
-			S_Sound (usething, CHAN_VOICE, "*grunt1", 1, ATTN_IDLE);
+			UV_SoundAvoidPlayer (usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 }
 
 //

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -145,9 +145,9 @@ static const xlat_t SpecialTranslation[] = {
 /*  23 */ { 0,1,0, 0,0,0, Floor_LowerToLowest,			{ TAG, F_SLOW, 0, 0, 0 } },
 /*  24 */ { 0,0,1, 0,0,0, Floor_RaiseToLowestCeiling,	{ TAG, F_SLOW, 0, 0, 0 } },
 /*  25 */ { 1,0,0, 0,0,0, Ceiling_CrushAndRaiseA,		{ TAG, C_SLOW, C_SLOW, 10, 0 } },
-/*  26 */ { 0,1,0, 0,0,1, Door_LockedRaise,				{ TAG, D_SLOW, VDOORWAIT, BCard | CardIsSkull, 0 } },
-/*  27 */ { 0,1,0, 0,0,1, Door_LockedRaise,				{ TAG, D_SLOW, VDOORWAIT, YCard | CardIsSkull, 0 } },
-/*  28 */ { 0,1,0, 0,0,1, Door_LockedRaise,				{ TAG, D_SLOW, VDOORWAIT, RCard | CardIsSkull, 0 } },
+/*  26 */ { 0,1,0, 0,0,1, Door_LockedRaise,				{ 0, D_SLOW, VDOORWAIT, BCard | CardIsSkull, 0 } },
+/*  27 */ { 0,1,0, 0,0,1, Door_LockedRaise,				{ 0, D_SLOW, VDOORWAIT, YCard | CardIsSkull, 0 } },
+/*  28 */ { 0,1,0, 0,0,1, Door_LockedRaise,				{ 0, D_SLOW, VDOORWAIT, RCard | CardIsSkull, 0 } },
 /*  29 */ { 0,1,0, 0,0,0, Door_Raise,					{ TAG, D_SLOW, VDOORWAIT, 0, 0 } },
 /*  30 */ { 1,0,0, 0,0,0, Floor_RaiseByTexture,			{ TAG, F_SLOW, 0, 0, 0 } },
 /*  31 */ { 0,1,0, 0,0,0, Door_Open,					{ 0, D_SLOW, 0, 0, 0 } },
@@ -458,7 +458,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		case WalkMany:
 			flags |= ML_SPECIAL_REPEAT;
 		case WalkOnce:
-			flags |= ML_SPECIAL_USE;
+			flags |= ML_SPECIAL_CROSS;
 			break;
 
 		case SwitchMany:

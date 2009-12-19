@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,45 +35,40 @@
 #include "main.h"
 
 // Widget ID's
-static wxInt32 ID_CHKLISTONSTART = XRCID("ID_CHKLISTONSTART");
-static wxInt32 ID_CHKSHOWBLOCKEDSERVERS = XRCID("ID_CHKSHOWBLOCKEDSERVERS");
-static wxInt32 ID_BTNADD = XRCID("ID_BTNADD");
-static wxInt32 ID_BTNREPLACE = XRCID("ID_BTNREPLACE");
-static wxInt32 ID_BTNDELETE = XRCID("ID_BTNDELETE");
-static wxInt32 ID_DPCHOOSEWADDIR = XRCID("ID_DPCHOOSEWADDIR");
-static wxInt32 ID_FPCHOOSEODAMEXPATH = XRCID("ID_FPCHOOSEODAMEXPATH");
-static wxInt32 ID_BTNUP = XRCID("ID_BTNUP");
-static wxInt32 ID_BTNDOWN = XRCID("ID_BTNDOWN");
+static wxInt32 Id_ChkCtrlGetListOnStart = XRCID("Id_ChkCtrlGetListOnStart");
+static wxInt32 Id_ChkCtrlShowBlockedServers = XRCID("Id_ChkCtrlShowBlockedServers");
+static wxInt32 Id_DirCtrlChooseWadDir = XRCID("Id_DirCtrlChooseWadDir");
+static wxInt32 Id_DirCtrlChooseOdamexPath = XRCID("Id_DirCtrlChooseOdamexPath");
 
-static wxInt32 ID_BTNGETENV = XRCID("ID_BTNGETENV");
+static wxInt32 Id_LstCtrlWadDirectories = XRCID("Id_LstCtrlWadDirectories");
 
-static wxInt32 ID_LSTWADDIR = XRCID("ID_LSTWADDIR");
-
-static wxInt32 ID_MASTERTIMEOUT = XRCID("ID_MASTERTIMEOUT");
-static wxInt32 ID_SERVERTIMEOUT = XRCID("ID_SERVERTIMEOUT");
+static wxInt32 Id_TxtCtrlMasterTimeout = XRCID("Id_TxtCtrlMasterTimeout");
+static wxInt32 Id_TxtCtrlServerTimeout = XRCID("Id_TxtCtrlServerTimeout");
+static wxInt32 Id_TxtCtrlExtraCmdLineArgs = XRCID("Id_TxtCtrlExtraCmdLineArgs");
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	// Button events
-	EVT_BUTTON(ID_BTNADD, dlgConfig::OnAddDir)
-	EVT_BUTTON(ID_BTNREPLACE, dlgConfig::OnReplaceDir)
-	EVT_BUTTON(ID_BTNDELETE, dlgConfig::OnDeleteDir)
-    EVT_BUTTON(ID_BTNUP, dlgConfig::OnUpClick)
-    EVT_BUTTON(ID_BTNDOWN, dlgConfig::OnDownClick)
+	EVT_BUTTON(XRCID("Id_BtnCtrlAddDir"), dlgConfig::OnAddDir)
+	EVT_BUTTON(XRCID("Id_BtnCtrlReplaceDir"), dlgConfig::OnReplaceDir)
+	EVT_BUTTON(XRCID("Id_BtnCtrlDeleteDir"), dlgConfig::OnDeleteDir)
+    EVT_BUTTON(XRCID("Id_BtnCtrlMoveDirUp"), dlgConfig::OnUpClick)
+    EVT_BUTTON(XRCID("Id_BtnCtrlMoveDirDown"), dlgConfig::OnDownClick)
 
-    EVT_BUTTON(ID_BTNGETENV, dlgConfig::OnGetEnvClick)
+    EVT_BUTTON(XRCID("Id_BtnCtrlGetEnvironment"), dlgConfig::OnGetEnvClick)
 
 	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
 
-    EVT_DIRPICKER_CHANGED(ID_FPCHOOSEODAMEXPATH, dlgConfig::OnChooseOdamexPath)
+    EVT_DIRPICKER_CHANGED(Id_DirCtrlChooseOdamexPath, dlgConfig::OnChooseOdamexPath)
 
 	// Misc events
-	EVT_CHECKBOX(ID_CHKLISTONSTART, dlgConfig::OnCheckedBox)
-	EVT_CHECKBOX(ID_CHKSHOWBLOCKEDSERVERS, dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(Id_ChkCtrlGetListOnStart, dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(Id_ChkCtrlShowBlockedServers, dlgConfig::OnCheckedBox)
 	
-	EVT_TEXT(ID_MASTERTIMEOUT, dlgConfig::OnTextChange)
-	EVT_TEXT(ID_SERVERTIMEOUT, dlgConfig::OnTextChange)
+	EVT_TEXT(Id_TxtCtrlMasterTimeout, dlgConfig::OnTextChange)
+	EVT_TEXT(Id_TxtCtrlServerTimeout, dlgConfig::OnTextChange)
+	EVT_TEXT(Id_TxtCtrlExtraCmdLineArgs, dlgConfig::OnTextChange)
 END_EVENT_TABLE()
 
 // Window constructor
@@ -82,16 +77,17 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
 
-    MASTER_CHECKBOX = wxStaticCast(FindWindow(ID_CHKLISTONSTART), wxCheckBox);
-    BLOCKED_CHECKBOX = wxStaticCast(FindWindow(ID_CHKSHOWBLOCKEDSERVERS), wxCheckBox);
+    m_ChkCtrlGetListOnStart = wxStaticCast(FindWindow(Id_ChkCtrlGetListOnStart), wxCheckBox);
+    m_ChkCtrlShowBlockedServers = wxStaticCast(FindWindow(Id_ChkCtrlShowBlockedServers), wxCheckBox);
 
-    WAD_LIST = wxStaticCast(FindWindow(ID_LSTWADDIR), wxListBox);
+    m_LstCtrlWadDirectories = wxStaticCast(FindWindow(Id_LstCtrlWadDirectories), wxListBox);
 
-    DIR_BOX = wxStaticCast(FindWindow(ID_DPCHOOSEWADDIR), wxDirPickerCtrl);
-    TXT_ODXPATH = wxStaticCast(FindWindow(ID_FPCHOOSEODAMEXPATH), wxFilePickerCtrl);
+    m_DirCtrlChooseWadDir = wxStaticCast(FindWindow(Id_DirCtrlChooseWadDir), wxDirPickerCtrl);
+    m_DirCtrlChooseOdamexPath = wxStaticCast(FindWindow(Id_DirCtrlChooseOdamexPath), wxDirPickerCtrl);
 
-    m_MasterTimeout = wxStaticCast(FindWindow(ID_MASTERTIMEOUT), wxTextCtrl);
-    m_ServerTimeout = wxStaticCast(FindWindow(ID_SERVERTIMEOUT), wxTextCtrl);
+    m_TxtCtrlMasterTimeout = wxStaticCast(FindWindow(Id_TxtCtrlMasterTimeout), wxTextCtrl);
+    m_TxtCtrlServerTimeout = wxStaticCast(FindWindow(Id_TxtCtrlServerTimeout), wxTextCtrl);
+    m_TxtCtrlExtraCmdLineArgs = wxStaticCast(FindWindow(Id_TxtCtrlExtraCmdLineArgs), wxTextCtrl);
 
     // Load current configuration from global configuration structure
     cfg_file = cfg;
@@ -107,15 +103,13 @@ dlgConfig::~dlgConfig()
 
 void dlgConfig::Show()
 {
-    MASTER_CHECKBOX->SetValue(cfg_file->get_list_on_start);
-    BLOCKED_CHECKBOX->SetValue(cfg_file->show_blocked_servers);
+    m_ChkCtrlGetListOnStart->SetValue(cfg_file->get_list_on_start);
+    m_ChkCtrlShowBlockedServers->SetValue(cfg_file->show_blocked_servers);
 
     // Load wad path list
-    WAD_LIST->Clear();
+    m_LstCtrlWadDirectories->Clear();
 
-    wxStringTokenizer wadlist(cfg_file->wad_paths, _T(';'));
-
-    UserChangedSetting = 0;
+    wxStringTokenizer wadlist(cfg_file->wad_paths, _T(PATH_DELIMITER));
 
     while (wadlist.HasMoreTokens())
     {
@@ -127,18 +121,22 @@ void dlgConfig::Show()
         path.Replace(_T("////"),_T("//"), true);
         #endif
 
-        WAD_LIST->AppendString(path);
+        m_LstCtrlWadDirectories->AppendString(path);
     }
 
-    TXT_ODXPATH->SetPath(cfg_file->odamex_directory);
+    m_DirCtrlChooseOdamexPath->SetPath(cfg_file->odamex_directory);
 
-    wxString MasterTimeout, ServerTimeout;
+    wxString MasterTimeout, ServerTimeout, ExtraCmdLineArgs;
 
-    ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, _T("500"));
-    ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, _T("500"));
+    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, wxT("500"));
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("500"));
+    ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
-    m_MasterTimeout->SetValue(MasterTimeout);
-    m_ServerTimeout->SetValue(ServerTimeout);
+    m_TxtCtrlMasterTimeout->SetValue(MasterTimeout);
+    m_TxtCtrlServerTimeout->SetValue(ServerTimeout);
+    m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
+
+    UserChangedSetting = 0;
 
     ShowModal();
 }
@@ -166,16 +164,16 @@ void dlgConfig::OnOK(wxCommandEvent &event)
         UserChangedSetting = 0;
 
         // Store data into global launcher configuration structure
-        cfg_file->get_list_on_start = MASTER_CHECKBOX->GetValue();
-        cfg_file->show_blocked_servers = BLOCKED_CHECKBOX->GetValue();
+        cfg_file->get_list_on_start = m_ChkCtrlGetListOnStart->GetValue();
+        cfg_file->show_blocked_servers = m_ChkCtrlShowBlockedServers->GetValue();
 
         cfg_file->wad_paths = _T("");
 
-        if (WAD_LIST->GetCount() > 0)
-            for (wxUint32 i = 0; i < WAD_LIST->GetCount(); i++)
-                cfg_file->wad_paths.Append(WAD_LIST->GetString(i) + _T(';'));
+        if (m_LstCtrlWadDirectories->GetCount() > 0)
+            for (wxUint32 i = 0; i < m_LstCtrlWadDirectories->GetCount(); i++)
+                cfg_file->wad_paths.Append(m_LstCtrlWadDirectories->GetString(i) + _T(PATH_DELIMITER));
 
-        cfg_file->odamex_directory = TXT_ODXPATH->GetPath();
+        cfg_file->odamex_directory = m_DirCtrlChooseOdamexPath->GetPath();
 
         // Save settings to configuration file
         SaveSettings();
@@ -199,54 +197,69 @@ void dlgConfig::OnTextChange(wxCommandEvent &event)
 // Add a directory to the listbox
 void dlgConfig::OnAddDir(wxCommandEvent &event)
 {    
-    if (DIR_BOX->GetPath() == wxT(""))
+    wxString WadDirectory = m_DirCtrlChooseWadDir->GetPath();
+    
+    if (WadDirectory == wxT(""))
     {
-        wxMessageBox(wxT("Please browse or type in a path in the box below"));
-        return;        
+        wxDirDialog ChooseWadDialog(this, 
+                                    wxT("Select a folder containing WAD files"));
+                                    
+        
+        if (ChooseWadDialog.ShowModal() != wxID_OK)
+            return;
+            
+        WadDirectory = ChooseWadDialog.GetPath();
     }
     
     // Check to see if the path exists on the system
-    if (wxDirExists(DIR_BOX->GetPath()))
+    if (wxDirExists(WadDirectory))
     {
         // Check if path already exists in box
-        if (WAD_LIST->FindString(DIR_BOX->GetPath()) == wxNOT_FOUND)
+        if (m_LstCtrlWadDirectories->FindString(WadDirectory) == wxNOT_FOUND)
         {
-            WAD_LIST->Append(DIR_BOX->GetPath());
+            m_LstCtrlWadDirectories->Append(WadDirectory);
 
             UserChangedSetting = 1;
         }
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), DIR_BOX->GetPath().c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
 }
 
 // Replace a directory in the listbox
 void dlgConfig::OnReplaceDir(wxCommandEvent &event)
 {
-    if (DIR_BOX->GetPath() == wxT(""))
+    wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
+    wxString WadDirectory = m_DirCtrlChooseWadDir->GetPath();
+
+    if (i == wxNOT_FOUND)
     {
-        wxMessageBox(wxT("Please browse or type in a path in the box below"));
-        return;        
+        wxMessageBox(_T("Select an directory from the list to replace!"));
+        
+        return;
+    }
+    
+    if (WadDirectory == wxT(""))
+    {
+        wxDirDialog ChooseWadDialog(this, 
+                                    wxT("Select a folder containing WAD files"));
+                                    
+        if (ChooseWadDialog.ShowModal() != wxID_OK)
+            return;
+            
+        WadDirectory = ChooseWadDialog.GetPath();
     }
     
     // Check to see if the path exists on the system
-    if (wxDirExists(DIR_BOX->GetPath()))
+    if (wxDirExists(WadDirectory))
     {
-        // Get the selected item and replace it, if
-        // it is selected.
-        wxInt32 i = WAD_LIST->GetSelection();
+        // Get the selected item and replace it
+        m_LstCtrlWadDirectories->SetString(i, WadDirectory);
 
-        if (i != wxNOT_FOUND)
-        {
-            WAD_LIST->SetString(i, DIR_BOX->GetPath());
-
-            UserChangedSetting = 1;
-        }
-        else
-            wxMessageBox(_T("Select item to replace!"));
+        UserChangedSetting = 1;
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), DIR_BOX->GetPath().c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
 }
 
 // Delete a directory from the listbox
@@ -254,11 +267,11 @@ void dlgConfig::OnDeleteDir(wxCommandEvent &event)
 {
     // Get the selected item and delete it, if
     // it is selected.
-    wxInt32 i = WAD_LIST->GetSelection();
+    wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
 
     if (i != wxNOT_FOUND)
     {
-        WAD_LIST->Delete(i);
+        m_LstCtrlWadDirectories->Delete(i);
 
         UserChangedSetting = 1;
     }
@@ -270,17 +283,17 @@ void dlgConfig::OnDeleteDir(wxCommandEvent &event)
 void dlgConfig::OnUpClick(wxCommandEvent &event)
 {
     // Get the selected item
-    wxInt32 i = WAD_LIST->GetSelection();
+    wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
 
     if ((i != wxNOT_FOUND) && (i > 0))
     {
-        wxString str = WAD_LIST->GetString(i);
+        wxString str = m_LstCtrlWadDirectories->GetString(i);
 
-        WAD_LIST->Delete(i);
+        m_LstCtrlWadDirectories->Delete(i);
 
-        WAD_LIST->Insert(str, i - 1);
+        m_LstCtrlWadDirectories->Insert(str, i - 1);
 
-        WAD_LIST->SetSelection(i - 1);
+        m_LstCtrlWadDirectories->SetSelection(i - 1);
 
         UserChangedSetting = 1;
     }
@@ -290,17 +303,17 @@ void dlgConfig::OnUpClick(wxCommandEvent &event)
 void dlgConfig::OnDownClick(wxCommandEvent &event)
 {
     // Get the selected item
-    wxUint32 i = WAD_LIST->GetSelection();
+    wxUint32 i = m_LstCtrlWadDirectories->GetSelection();
 
-    if ((i != wxNOT_FOUND) && (i + 1 < WAD_LIST->GetCount()))
+    if ((i != wxNOT_FOUND) && (i + 1 < m_LstCtrlWadDirectories->GetCount()))
     {
-        wxString str = WAD_LIST->GetString(i);
+        wxString str = m_LstCtrlWadDirectories->GetString(i);
 
-        WAD_LIST->Delete(i);
+        m_LstCtrlWadDirectories->Delete(i);
 
-        WAD_LIST->Insert(str, i + 1);
+        m_LstCtrlWadDirectories->Insert(str, i + 1);
 
-        WAD_LIST->SetSelection(i + 1);
+        m_LstCtrlWadDirectories->SetSelection(i + 1);
 
         UserChangedSetting = 1;
     }
@@ -319,21 +332,21 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
         // only add paths if the variable exists and path isn't blank
         if (wxGetEnv(env_vars[i], &env_paths[i]))
             if (!env_paths[i].IsEmpty())
-                doomwaddir += env_paths[i] + _T(';');
+                doomwaddir += env_paths[i] + _T(PATH_DELIMITER);
     }
 
     wxInt32 path_count = 0;
 
-    wxStringTokenizer wadlist(doomwaddir, _T(';'));
+    wxStringTokenizer wadlist(doomwaddir, _T(PATH_DELIMITER));
 
     while (wadlist.HasMoreTokens())
     {
         wxString path = wadlist.GetNextToken();
 
         // make sure the path doesn't already exist in the list box
-        if (WAD_LIST->FindString(path) == wxNOT_FOUND)
+        if (m_LstCtrlWadDirectories->FindString(path) == wxNOT_FOUND)
         {
-                WAD_LIST->Append(path);
+                m_LstCtrlWadDirectories->Append(path);
 
                 path_count++;
         }
@@ -362,8 +375,9 @@ void dlgConfig::LoadSettings()
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
-    ConfigInfo.Write(_T("MasterTimeout"), m_MasterTimeout->GetValue());
-    ConfigInfo.Write(_T("ServerTimeout"), m_ServerTimeout->GetValue());
+    ConfigInfo.Write(wxT(MASTERTIMEOUT), m_TxtCtrlMasterTimeout->GetValue());
+    ConfigInfo.Write(wxT(SERVERTIMEOUT), m_TxtCtrlServerTimeout->GetValue());
+    ConfigInfo.Write(wxT(EXTRACMDLINEARGS), m_TxtCtrlExtraCmdLineArgs->GetValue());
     ConfigInfo.Write(_T(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
 	ConfigInfo.Write(_T(DELIMWADPATHS), cfg_file->wad_paths);

@@ -223,7 +223,7 @@ DDoor::DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay)
 	{
 	case doorClose:
 		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
-		m_TopHeight -= 4*FRACUNIT;
+		//m_TopHeight -= 4*FRACUNIT;
 		m_Direction = -1;
 		DoorSound (false);
 		break;
@@ -265,7 +265,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		// if the wrong side of door is pushed, give oof sound
 		if (line->sidenum[1]==-1)				// killough
 		{
-			S_Sound (thing->x, thing->y, CHAN_VOICE, "*grunt1", 1, ATTN_NORM);
+			UV_SoundAvoidPlayer (thing, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 			return false;
 		}
 

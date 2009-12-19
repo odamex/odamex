@@ -123,7 +123,7 @@ gamestring_t Strings[] = {
 	{ str_notchanged, "PD_BLUEK", "You need a blue key to open this door", NULL },
 	{ str_notchanged, "PD_REDK", "You need a red key to open this door", NULL },
 	{ str_notchanged, "PD_YELLOWK", "You need a yellow key to open this door", NULL },
-	{ str_notchanged, "GGSAVED", "game saved.", NULL },
+	{ str_notchanged, "GGSAVED", "Game saved.", NULL },
 	{ str_notchanged, "HUSTR_MSGU", "[Message unsent]", NULL },
 	{ str_notchanged, "HUSTR_E1M1", "E1M1: Hangar", NULL },
 	{ str_notchanged, "HUSTR_E1M2", "E1M2: Nuclear Plant", NULL },

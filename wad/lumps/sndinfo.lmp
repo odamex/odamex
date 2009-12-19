@@ -334,6 +334,7 @@ ctf/f-flaggrab		dsffg
 ctf/f-flagreturn	dsffr
 ctf/f-flagscore		dsffs
 ctf/f-flagdrop		dsffd
+ctf/f-flagmanualreturn	dsffm
 
 ctf/e-flaggrab		dsefg
 ctf/e-flagreturn	dsefr

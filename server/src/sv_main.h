@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -83,13 +83,13 @@ void SV_ActorTracer(AActor *actor);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
 
-void UV_SoundAvoidPlayer (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation);
-
 void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation);
 void SV_Sound (client_t *cl, AActor *mo, byte channel, const char *name, byte attenuation);
 void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation);
 void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 void SV_SoundAvoidCl (player_t &player, AActor *mo, byte channel, char *name, byte attenuation);
+
+void SV_MidPrint (const char *msg, player_t *p);
 
 int SV_CountTeamPlayers(int team);
 

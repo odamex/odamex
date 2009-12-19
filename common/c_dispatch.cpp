@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -148,14 +148,17 @@ void C_DoCommand (const char *cmd)
 		check = GetActionBit (MakeKey (com_token + 1));
 		//if (Actions[check] < 255)
 		//	Actions[check]++;
-		Actions[check] = 1;
+		if (check != -1)
+			Actions[check] = 1;
 	}
 	else if (*com_token == '-')
 	{
 		check = GetActionBit (MakeKey (com_token + 1));
 		//if (Actions[check])
 		//	Actions[check]--;
-		Actions[check] = 0;
+		if (check != -1)
+			Actions[check] = 0;
+			
 		if (check == ACTION_MLOOK && lookspring)
 		{
 			AddCommandString ("centerview");
@@ -353,10 +356,17 @@ BEGIN_COMMAND (exec)
 		if(!line.length())
 			continue;
 
-		// commented line
-		if(line.length() > 1 && line[0] == '/' && line[1] == '/')
-			continue;
+        size_t QuoteIndex = line.find_first_of('"');
+        size_t CommentIndex = line.find_first_of("//");
 
+		// commented line
+		if(line.length() > 1 && 
+           ((line[0] == '/' && line[1] == '/') ||
+           (QuoteIndex > CommentIndex)))
+        {
+            continue;
+        }
+        
 		// start tag
 		if(line.substr(0, 3) == "#if")
 		{

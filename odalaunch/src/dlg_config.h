@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,8 +28,8 @@
 // configuration file structure
 struct launchercfg_t
 {
-    wxInt32     get_list_on_start;
-    wxInt32     show_blocked_servers;
+    bool     get_list_on_start;
+    bool     show_blocked_servers;
     wxString    wad_paths;
     wxString    odamex_directory;
 };
@@ -52,6 +52,15 @@ struct launchercfg_t
 #define SHOWBLOCKEDSERVERS  "SHOW_BLOCKED_SERVERS"
 #define DELIMWADPATHS       "DELIMITED_WAD_PATHS"
 #define ODAMEX_DIRECTORY    "ODAMEX_DIRECTORY"
+#define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
+#define MASTERTIMEOUT       "MasterTimeout"
+#define SERVERTIMEOUT       "ServerTimeout"
+
+#ifdef __WXMSW__
+#define PATH_DELIMITER ';'
+#else
+#define PATH_DELIMITER ':'
+#endif
 
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
@@ -89,16 +98,18 @@ class dlgConfig: public wxDialog
         
         void OnTextChange(wxCommandEvent &event);
         
-        wxCheckBox *MASTER_CHECKBOX;
-        wxCheckBox *BLOCKED_CHECKBOX;
+        wxCheckBox *m_ChkCtrlGetListOnStart;
+        wxCheckBox *m_ChkCtrlShowBlockedServers;
 
-        wxListBox *WAD_LIST;
+        wxListBox *m_LstCtrlWadDirectories;
 
-        wxDirPickerCtrl *DIR_BOX;
+        wxDirPickerCtrl *m_DirCtrlChooseWadDir;
 
-        wxFilePickerCtrl *TXT_ODXPATH;
+        wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
 
-        wxTextCtrl *m_MasterTimeout, *m_ServerTimeout;
+        wxTextCtrl *m_TxtCtrlMasterTimeout;
+        wxTextCtrl *m_TxtCtrlServerTimeout;
+        wxTextCtrl *m_TxtCtrlExtraCmdLineArgs;
 
         wxFileConfig ConfigInfo;
 

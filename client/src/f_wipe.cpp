@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -45,14 +45,14 @@ enum
 EXTERN_CVAR (wipetype)
 static int CurrentWipeType;
 
-static short *wipe_scr_start;
-static short *wipe_scr_end;
-static int *y;
+static short *wipe_scr_start = NULL;
+static short *wipe_scr_end = NULL;
+static int *y = NULL;
 
 // [RH] Fire Wipe
 #define FIREWIDTH	64
 #define FIREHEIGHT	64
-static byte *burnarray;
+static byte *burnarray = NULL;
 static int density;
 static int burntime;
 
@@ -171,9 +171,24 @@ int wipe_doMelt (int ticks)
 
 int wipe_exitMelt (int ticks)
 {
-	delete[] wipe_scr_start;
-	delete[] wipe_scr_end;
-	delete[] y;
+	if (wipe_scr_start != NULL)
+	{
+        delete[] wipe_scr_start;
+        wipe_scr_start = NULL;
+	}
+	
+	if (wipe_scr_end != NULL)
+	{
+        delete[] wipe_scr_end;
+        wipe_scr_end = NULL;
+	}
+	
+	if (y != NULL)
+	{
+        delete[] y;
+        y = NULL;
+	}
+	
 	return 0;
 }
 
@@ -325,9 +340,24 @@ int wipe_doBurn (int ticks)
 
 int wipe_exitBurn (int ticks)
 {
-	delete[] wipe_scr_start;
-	delete[] wipe_scr_end;
-	delete[] burnarray;
+	if (wipe_scr_start != NULL)
+	{
+        delete[] wipe_scr_start;
+        wipe_scr_start = NULL;
+	}
+	
+	if (wipe_scr_end != NULL)
+	{
+        delete[] wipe_scr_end;
+        wipe_scr_end = NULL;
+	}
+	
+	if (burnarray != NULL)
+	{
+        delete[] burnarray;
+        burnarray = NULL;
+	}
+	
 	return 0;
 }
 
@@ -377,6 +407,18 @@ int wipe_doFade (int ticks)
 
 int wipe_exitFade (int ticks)
 {
+	if (wipe_scr_start != NULL)
+	{
+        delete[] wipe_scr_start;
+        wipe_scr_start = NULL;
+	}
+	
+	if (wipe_scr_end != NULL)
+	{
+        delete[] wipe_scr_end;
+        wipe_scr_end = NULL;
+	}
+	
 	return 0;
 }
 
@@ -392,11 +434,13 @@ int wipe_StartScreen (void)
 
 	if (CurrentWipeType)
 	{
-		if (screen->is8bit())
-			wipe_scr_start = new short[screen->width * screen->height / 2];
-		else
-			wipe_scr_start = new short[screen->width * screen->height * 2];
-
+        delete[] wipe_scr_start;
+        
+        if (screen->is8bit())
+            wipe_scr_start = new short[screen->width * screen->height / 2];
+        else
+            wipe_scr_start = new short[screen->width * screen->height * 2];
+		
 		screen->GetBlock (0, 0, screen->width, screen->height, (byte *)wipe_scr_start);
 	}
 
@@ -407,11 +451,13 @@ int wipe_EndScreen (void)
 {
 	if (CurrentWipeType)
 	{
-		if (screen->is8bit())
-			wipe_scr_end = new short[screen->width * screen->height / 2];
-		else
-			wipe_scr_end = new short[screen->width * screen->height * 2];
-
+        delete[] wipe_scr_end;
+            
+        if (screen->is8bit())
+            wipe_scr_end = new short[screen->width * screen->height / 2];
+        else
+            wipe_scr_end = new short[screen->width * screen->height * 2];
+	    
 		screen->GetBlock (0, 0, screen->width, screen->height, (byte *)wipe_scr_end);
 	}
 

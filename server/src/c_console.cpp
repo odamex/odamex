@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -166,6 +166,8 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	}
 }
 
+EXTERN_CVAR (log_fulltimestamps)
+
 char *TimeStamp()
 {
 	static char stamp[32];
@@ -174,7 +176,27 @@ char *TimeStamp()
 	struct tm *lt = localtime(&ti);
 	
 	if(lt)
-		sprintf (stamp, "[%.2d:%.2d:%.2d]", lt->tm_hour, lt->tm_min, lt->tm_sec);
+	{
+		if (log_fulltimestamps)
+		{
+            sprintf (stamp, 
+                     "[%.2d/%.2d/%.2d %.2d:%.2d:%.2d]", 
+                     lt->tm_mday, 
+                     lt->tm_mon, 
+                     lt->tm_year + 1900,
+                     lt->tm_hour, 
+                     lt->tm_min, 
+                     lt->tm_sec);
+		}
+		else
+		{
+            sprintf (stamp, 
+                     "[%.2d:%.2d:%.2d]",
+                     lt->tm_hour, 
+                     lt->tm_min, 
+                     lt->tm_sec);
+		}
+	}
 	else
 		*stamp = 0;
 	
@@ -386,8 +408,12 @@ BEGIN_COMMAND (echo)
 }
 END_COMMAND (echo)
 
-void C_MidPrint (const char *msg)
+void C_MidPrint (const char *msg, player_t *p)
 {
+    if (p == NULL)
+        return;
+        
+    SV_MidPrint(msg, p);
 }
 
 void C_RevealSecret ()

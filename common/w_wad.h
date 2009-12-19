@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -105,6 +105,8 @@ patch_t* W_CachePatch (unsigned lump, int tag = PU_CACHE);
 patch_t* W_CachePatch (const char *name, int tag = PU_CACHE);
 
 void	W_Profile (const char *fname);
+
+void	W_Close ();
 
 int		W_FindLump (const char *name, int *lastlump);	// [RH]	Find lumps with duplication
 //BOOL	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's name == name // denis - todo - replace with map<>

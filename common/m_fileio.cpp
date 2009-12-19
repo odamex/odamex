@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_fileio.cpp 5 2007-01-16 19:13:59Z russellrice $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -29,6 +29,9 @@
 
 // Simple logging
 std::ofstream LOG;
+
+// Simple file based console input
+std::ifstream CON;
 
 //
 // M_FileLength
@@ -254,4 +257,4 @@ void M_ExtractFileName (std::string filename, std::string &dest)
         dest = filename.substr(l, filename.length());
 }
 
-VERSION_CONTROL (m_fileio_cpp, "$Id: m_fileio.cpp 5 2007-01-16 19:13:59Z russellrice $")
+VERSION_CONTROL (m_fileio_cpp, "$Id$")

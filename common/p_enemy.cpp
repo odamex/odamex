@@ -1079,8 +1079,11 @@ void A_Tracer (AActor *actor)
 	//
 	// [RH] level.time is always 0-based, so nothing special to do here.
 
-    // [Russell] - Go back to gametic
-	if (gametic & 3)
+	// denis - demogametic must be 0-based, but from start of entire demo,
+	// not just this level!
+	extern int demostartgametic;
+	int demogametic = gametic - demostartgametic;
+	if (demogametic & 3)
 		return;
 
 	// spawn a puff of smoke behind the rocket
@@ -1638,22 +1641,29 @@ void A_PainDie (AActor *actor)
 
 void A_Scream (AActor *actor)
 {
-	if (actor->info->deathsound)
-	{
-		char sound[MAX_SNDNAME];
+    char sound[MAX_SNDNAME];
 
-		strcpy (sound, actor->info->deathsound);
+	if (actor->info->deathsound == NULL)
+        return;
+        
 
-		if (sound[strlen(sound)-1] == '1')
-		{
-			sound[strlen(sound)-1] = P_Random(actor)%3 + '1'; // denis - todo - this sucks and doesn't do what vanilla does
-			if (S_FindSound (sound) == -1)
-				sound[strlen(sound)-1] = '1';
-		}
+	strcpy (sound, actor->info->deathsound);
+    
+    if (stricmp(sound, "grunt/death1") == 0 || 
+        stricmp(sound, "shotguy/death1") == 0 ||
+        stricmp(sound, "chainguy/death1") == 0)
+    {
+        sound[strlen(sound)-1] = P_Random(actor) % 3 + '1';
+    }
 
-		// Check for bosses.
-		S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
-	}
+    if (stricmp(sound, "imp/death1") == 0 || 
+        stricmp(sound, "imp/death2") == 0)
+    {
+        sound[strlen(sound)-1] = P_Random(actor) % 2 + '1';
+    }
+
+    
+    S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
 
 
@@ -1682,23 +1692,6 @@ void A_Fall (AActor *actor)
 	// are meant to be obstacles.
 }
 
-
-// killough 11/98: kill an object
-void A_Die (AActor *actor)
-{
-	P_DamageMobj (actor, NULL, NULL, actor->health, MOD_UNKNOWN);
-}
-
-//
-// A_Detonate
-// killough 8/9/98: same as A_Explode, except that the damage is variable
-//
-
-void A_Detonate (AActor *mo)
-{
-	P_RadiusAttack (mo, mo->target, mo->info->damage, MOD_UNKNOWN);
-}
-
 //
 // A_Explode
 //
@@ -1722,38 +1715,7 @@ void A_Explode (AActor *thing)
 	P_RadiusAttack (thing, thing->target, 128, mod);
 }
 
-//
-// killough 9/98: a mushroom explosion effect, sorta :)
-// Original idea: Linguica
-//
-
-void A_Mushroom (AActor *actor)
-{
-	int i, j, n = actor->info->damage;
-
-	A_Explode (actor);	// First make normal explosion
-
-	// Now launch mushroom cloud
-	for (i = -n; i <= n; i += 8)
-	{
-		for (j = -n; j <= n; j += 8)
-		{
-			AActor target = *actor;
-			target.x += i << FRACBITS; // Aim in many directions from source
-			target.y += j << FRACBITS;
-			target.z += P_AproxDistance(i,j) << (FRACBITS+2); // Aim up fairly high
-
-			if(serverside)
-			{
-				AActor *mo = P_SpawnMissile (actor, &target, MT_FATSHOT); // Launch fireball
-				mo->momx >>= 1;
-				mo->momy >>= 1; // Slow it down a bit
-				mo->momz >>= 1;
-				mo->flags &= ~MF_NOGRAVITY; // Make debris fall under gravity
-			}
-		}
-	}
-}
+#define SPEED(a)		((a)*(FRACUNIT/8))
 
 //
 // A_BossDeath
@@ -1826,13 +1788,13 @@ void A_BossDeath (AActor *actor)
 				return;
 
 			case LEVEL_SPECOPENDOOR:
-				EV_DoDoor (DDoor::doorOpen, NULL, NULL, 666, 8*TICRATE, 0, NoKey);
+				EV_DoDoor (DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
 				return;
 		}
 	}
 
 	// [RH] If noexit, then don't end the level.
-	if (deathmatch && !allowexit)
+	if (gametype != GM_COOP && !allowexit)
 		return;
 
 	G_ExitLevel (0, 1);
@@ -1956,7 +1918,7 @@ void A_BrainExplode (AActor *mo)
 void A_BrainDie (AActor *mo)
 {
 	// [RH] If noexit, then don't end the level.
-	if (deathmatch && !allowexit)
+	if (gametype != GM_COOP && !allowexit)
 		return;
 
 	G_ExitLevel (0, 1);

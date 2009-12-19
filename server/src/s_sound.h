@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -100,6 +100,8 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sfxid, float volume, int att
 #define CHAN_VOICE				2
 #define CHAN_ITEM				3
 #define CHAN_BODY				4
+#define CHAN_ANNOUNCERF			5
+#define CHAN_ANNOUNCERE			6
 // modifier flags
 //#define CHAN_NO_PHS_ADD		8	// send to all clients, not just ones in PHS (ATTN 0 will also do this)
 //#define CHAN_RELIABLE			16	// send by reliable message, not datagram
@@ -163,6 +165,8 @@ int S_FindSoundByLump (int lump);
 int S_AddSound (char *logicalname, char *lumpname);	// Add sound by lumpname
 int S_AddSoundLump (char *logicalname, int lump);	// Add sound by lump index
 void S_ClearSoundLumps(void);
+
+void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation);
 
 // [RH] Prints sound debug info to the screen.
 //		Modelled after Hexen's noise cheat.

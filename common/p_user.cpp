@@ -40,7 +40,8 @@
 #define MAXBOB			0x100000
 
 EXTERN_CVAR (allowjump)
-EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (cl_mouselook)
+EXTERN_CVAR (sv_freelook)
 
 extern bool predicting, stepmode;
 
@@ -78,7 +79,7 @@ void P_ForwardThrust (player_t *player, angle_t angle, fixed_t move)
 // P_CalcHeight
 // Calculate the walking / running height adjustment
 //
-void P_CalcHeight (player_t *player) 
+void P_CalcHeight (player_t *player)
 {
 	int 		angle;
 	fixed_t 	bob;
@@ -113,7 +114,7 @@ void P_CalcHeight (player_t *player)
 
 		return;
 	}
-	
+
 	angle = (FINEANGLES/20*level.time) & FINEMASK;
 	if (!player->spectator)
 		bob = FixedMul (player->bob>>(player->mo->waterlevel > 1 ? 2 : 1), finesine[angle]);
@@ -136,8 +137,8 @@ void P_CalcHeight (player_t *player)
 			if (player->deltaviewheight <= 0)
 				player->deltaviewheight = 1;
 		}
-		
-		if (player->deltaviewheight)	
+
+		if (player->deltaviewheight)
 		{
 			player->deltaviewheight += FRACUNIT/4;
 			if (!player->deltaviewheight)
@@ -156,16 +157,16 @@ void P_CalcHeight (player_t *player)
 void P_PlayerLookUpDown (player_t *p)
 {
 	ticcmd_t *cmd = &p->cmd;
-	
+
 	// [RH] Look up/down stuff
-	if (!allowfreelook)
+	if (!sv_freelook)
 	{
 		p->mo->pitch = 0;
 	}
 	else
 	{
 		int look = cmd->ucmd.pitch << 16;
-		
+
 		// The player's view pitch is clamped between -32 and +56 degrees,
 		// which translates to about half a screen height up and (more than)
 		// one full screen height down from straight ahead when view panning
@@ -219,7 +220,7 @@ void P_MovePlayer (player_t *player)
 		else if (allowjump && player->mo->onground && !player->mo->momz)
 		{
 			player->mo->momz += 7*FRACUNIT;
-			
+
 			if(!player->spectator)
 				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
 		}
@@ -242,7 +243,7 @@ void P_MovePlayer (player_t *player)
 
 	// GhostlyDeath <Jun, 4 2008> -- Treat spectators as on the ground
 	mo->onground = ((mo->z <= mo->floorz) || (mo->player && mo->player->spectator));
-	
+
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
 		return;
@@ -286,7 +287,7 @@ void P_MovePlayer (player_t *player)
 		if (mo->state == &states[S_PLAY])
 		{
 			P_SetMobjState (player->mo, S_PLAY_RUN1); // denis - fixme - this function might destoy player->mo without setting it to 0
-		}		
+		}
 	}
 
 	if (player->cheats & CF_REVERTPLEASE)
@@ -310,7 +311,7 @@ void P_DeathThink (player_t *player)
 
 	P_MovePsprites (player);
 	player->mo->onground = (player->mo->z <= player->mo->floorz);
-		
+
 	// fall to the ground
 	if (player->viewheight > 6*FRACUNIT)
 		player->viewheight -= FRACUNIT;
@@ -320,30 +321,30 @@ void P_DeathThink (player_t *player)
 
 	player->deltaviewheight = 0;
 	P_CalcHeight (player);
-	
+
 	if(!serverside)
 	{
 		if (player->damagecount && !predicting)
 			player->damagecount--;
-		
+
 		return;
 	}
-	
+
 	if (player->attacker && player->attacker != player->mo)
 	{
 		angle = R_PointToAngle2 (player->mo->x,
 								 player->mo->y,
 								 player->attacker->x,
 								 player->attacker->y);
-		
+
 		delta = angle - player->mo->angle;
-		
+
 		if (delta < ANG5 || delta > (unsigned)-ANG5)
 		{
 			// Looking at killer,
 			//	so fade damage flash down.
 			player->mo->angle = angle;
-			
+
 			if (player->damagecount)
 				player->damagecount--;
 		}
@@ -354,7 +355,7 @@ void P_DeathThink (player_t *player)
 	}
 	else if (player->damagecount)
 		player->damagecount--;
-		
+
 	if(serverside)
 	{
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
@@ -382,7 +383,7 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags |= MF_NOCLIP;
 	else
 		player->mo->flags &= ~MF_NOCLIP;
-	
+
 	// chain saw run forward
 	cmd = &player->cmd;
 	if (player->mo->flags & MF_JUSTATTACKED)
@@ -392,7 +393,7 @@ void P_PlayerThink (player_t *player)
 		cmd->ucmd.sidemove = 0;
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
-	
+
 	if(serverside)
 	{
 		if (player->playerstate == PST_DEAD)
@@ -400,7 +401,7 @@ void P_PlayerThink (player_t *player)
 			P_DeathThink (player);
 			return;
 		}
-		
+
 		P_MovePlayer (player);
 
 		P_CalcHeight (player);
@@ -408,7 +409,7 @@ void P_PlayerThink (player_t *player)
 
 	if (player->mo->subsector->sector->special || player->mo->subsector->sector->damage)
 		P_PlayerInSpecialSector (player);
-	
+
 	// Check for weapon change.
 
 	// A special event has no other buttons.
@@ -425,7 +426,7 @@ void P_PlayerThink (player_t *player)
 			//	when the weapon psprite can do it
 			//	(read: not in the middle of an attack).
 			newweapon = (weapontype_t)((cmd->ucmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
-			
+
 			if (newweapon == wp_fist
 				&& player->weaponowned[wp_chainsaw]
 				&& !(player->readyweapon == wp_chainsaw
@@ -475,24 +476,24 @@ void P_PlayerThink (player_t *player)
 
 	// Strength counts up to diminish fade.
 	if (player->powers[pw_strength])
-		player->powers[pw_strength]++;	
-				
+		player->powers[pw_strength]++;
+
 	if (player->powers[pw_invulnerability])
 		player->powers[pw_invulnerability]--;
 
 	if (player->powers[pw_invisibility])
 		if (! --player->powers[pw_invisibility] )
 			player->mo->flags &= ~MF_SHADOW;
-						
+
 	if (player->powers[pw_infrared])
 		player->powers[pw_infrared]--;
-				
+
 	if (player->powers[pw_ironfeet])
 		player->powers[pw_ironfeet]--;
-				
+
 	if (player->damagecount)
 		player->damagecount--;
-				
+
 	if (player->bonuscount)
 		player->bonuscount--;
 
@@ -505,7 +506,7 @@ void P_PlayerThink (player_t *player)
 		else
 			player->fixedcolormap = 0;
 	}
-	else if (player->powers[pw_infrared])		
+	else if (player->powers[pw_infrared])
 	{
 		if (player->powers[pw_infrared] > 4*32
 			|| (player->powers[pw_infrared]&8) )
@@ -536,7 +537,7 @@ void player_s::Serialize (FArchive &arc)
 
 	if (arc.IsStoring ())
 	{ // saving to archive
-		arc << mo
+		arc << id
 			<< playerstate
 			<< cmd
 			<< userinfo
@@ -558,7 +559,7 @@ void player_s::Serialize (FArchive &arc)
 			<< killcount
 			<< damagecount
 			<< bonuscount
-			<< attacker->netid
+			/*<< attacker->netid*/
 			<< extralight
 			<< fixedcolormap
 			<< respawn_time
@@ -581,7 +582,6 @@ void player_s::Serialize (FArchive &arc)
 		userinfo_t dummyuserinfo;
 
 		arc >> id
-			>> mo->netid
 			>> playerstate
 			>> cmd
 			>> dummyuserinfo // Q: Would it be better to restore the userinfo from the archive?
@@ -603,7 +603,7 @@ void player_s::Serialize (FArchive &arc)
 			>> killcount
 			>> damagecount
 			>> bonuscount
-			>> attacker->netid
+			/*>> attacker->netid*/
 			>> extralight
 			>> fixedcolormap
 			>> respawn_time

@@ -417,7 +417,7 @@ static int		st_fragscount;
 static int		st_oldhealth = -1;
 
 // used for evil grin
-static int		oldweaponsowned[NUMWEAPONS];
+static bool		oldweaponsowned[NUMWEAPONS];
 
  // count until face changes
 static int		st_facecount = 0;
@@ -496,10 +496,10 @@ void ST_refreshBackground(void)
 
 		BG->DrawPatch (sbar, 0, 0);
 
-		if (ctfmode) {
+		if (gametype == GM_CTF) {
 			BG->DrawPatch (flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
 			BG->DrawPatch (flagbox, ST_FLGBOXX, ST_FLGBOXY);
-		} else if (!deathmatch)
+		} else if (gametype == GM_COOP)
 			BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
 
 		if (multiplayer)
@@ -534,7 +534,7 @@ BOOL CheckCheatmode (void)
 	if (skill == sk_nightmare && !multiplayer)
         return true;
 	
-	if ((multiplayer || deathmatch) && !allowcheats)
+	if ((multiplayer || gametype != GM_COOP) && !allowcheats)
 	{
 		Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 		return true;
@@ -599,14 +599,18 @@ bool ST_Responder (event_t *ev)
 
             plyr->armorpoints = deh.FAArmor;
             plyr->armortype = deh.FAAC;
-            for (i=0; i<NUMWEAPONS; i++)
-                plyr->weaponowned[i] = true;
+
+            weapontype_t pendweap = plyr->pendingweapon;
+            for (i = 0; i<NUMWEAPONS; i++)
+                P_GiveWeapon (plyr, (weapontype_t)i, false);
+            plyr->pendingweapon = pendweap;
 
             for (i=0; i<NUMAMMO; i++)
                 plyr->ammo[i] = plyr->maxammo[i];
 
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_IDFA);
+            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+            MSG_WriteByte(&net_buffer, 1);
+
             eatkey = true;
         }
 
@@ -620,8 +624,11 @@ bool ST_Responder (event_t *ev)
 
             plyr->armorpoints = deh.KFAArmor;
             plyr->armortype = deh.KFAAC;
-            for (i=0; i<NUMWEAPONS; i++)
-                plyr->weaponowned[i] = true;
+
+            weapontype_t pendweap = plyr->pendingweapon;
+            for (i = 0; i<NUMWEAPONS; i++)
+                P_GiveWeapon (plyr, (weapontype_t)i, false);
+            plyr->pendingweapon = pendweap;
 
             for (i=0; i<NUMAMMO; i++)
                 plyr->ammo[i] = plyr->maxammo[i];
@@ -629,8 +636,9 @@ bool ST_Responder (event_t *ev)
             for (i=0; i<NUMCARDS; i++)
                 plyr->cards[i] = true;
 
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_IDKFA);
+            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+            MSG_WriteByte(&net_buffer, 2);
+            
             eatkey = true;
         }
         // [Russell] - Only doom 1/registered can have idspispopd and
@@ -679,8 +687,11 @@ bool ST_Responder (event_t *ev)
                     plyr->powers[i] = 1;
                 else
                     plyr->powers[i] = 0;
-                // Net_WriteByte (DEM_GENERICCHEAT);
-                // Net_WriteByte ((byte)(CHT_BEHOLDV + i));
+
+                MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+                MSG_WriteByte(&net_buffer, 3);
+                MSG_WriteByte(&net_buffer, (byte)i);
+
                 eatkey = true;
             }
         }
@@ -703,8 +714,10 @@ bool ST_Responder (event_t *ev)
 
             Printf(PRINT_HIGH, "... Doesn't suck - GM\n");
             plyr->weaponowned[wp_chainsaw] = true;
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_CHAINSAW);
+
+            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+            MSG_WriteByte(&net_buffer, 4);
+
             eatkey = true;
         }
 
@@ -1010,7 +1023,7 @@ void ST_updateFaceWidget(void)
 			// being attacked
 			priority = 7;
 
-			if (plyr->health - st_oldhealth > ST_MUCHPAIN)
+			if (st_oldhealth - plyr->health > ST_MUCHPAIN)
 			{
 				st_facecount = ST_TURNCOUNT;
 				st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
@@ -1063,7 +1076,7 @@ void ST_updateFaceWidget(void)
 		// getting hurt because of your own damn stupidity
 		if (plyr->damagecount)
 		{
-			if (plyr->health - st_oldhealth > ST_MUCHPAIN)
+			if (st_oldhealth - plyr->health > ST_MUCHPAIN)
 			{
 				priority = 7;
 				st_facecount = ST_TURNCOUNT;
@@ -1187,18 +1200,18 @@ void ST_updateWidgets(void)
 	ST_updateFaceWidget();
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && !((int)deathmatch);
+	st_armson = st_statusbaron && gametype == GM_COOP;
 
 	// used by w_frags widget
-	st_fragson = (int)deathmatch && st_statusbaron;
+	st_fragson = gametype != GM_COOP && st_statusbaron;
 
 	//	[Toke - CTF]
-	if (ctfmode)
+	if (gametype == GM_CTF)
 		st_fragscount = TEAMpoints[plyr->userinfo.team]; // denis - todo - scoring for ctf
 	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
 
-	if (ctfmode) {
+	if (gametype == GM_CTF) {
 		switch(CTFdata[it_blueflag].state)
 		{
 			case flag_home:
@@ -1323,10 +1336,10 @@ void ST_drawWidgets(bool refresh)
 	int i;
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && !((int)deathmatch);
+	st_armson = st_statusbaron && gametype == GM_COOP;
 
 	// used by w_frags widget
-	st_fragson = (int)deathmatch && st_statusbaron;
+	st_fragson = gametype != GM_COOP && st_statusbaron;
 
 	STlib_updateNum (&w_ready, refresh);
 
@@ -1344,13 +1357,13 @@ void ST_drawWidgets(bool refresh)
 
 	STlib_updateMultIcon (&w_faces, refresh);
 
-	if (!ctfmode) // [Toke - CTF] Dont display keys in ctf mode
+	if (gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
 		for (i = 0; i < 3; i++)
 			STlib_updateMultIcon (&w_keyboxes[i], refresh);
 
 	STlib_updateNum (&w_frags, refresh);
 
-	if (ctfmode) {
+	if (gametype == GM_CTF) {
 		STlib_updateBinIcon (&w_flagboxblu, refresh);
 		STlib_updateBinIcon (&w_flagboxred, refresh);
 	}
@@ -1387,7 +1400,7 @@ void ST_Drawer (void)
 	{
 		if (DrawNewHUD)
 			ST_newDraw ();
-		else if (DrawNewSpecHUD && ctfmode) // [Nes] - Only specator new HUD is in ctf.
+		else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
 			ST_newDrawCTF();
 		st_firsttime = true;
 	}

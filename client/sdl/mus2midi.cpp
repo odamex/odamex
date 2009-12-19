@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: mus2midi.cpp 524 2008-01-27 02:54:48Z russellrice $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
@@ -414,7 +414,7 @@ QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 
 	if (!read_musheader(musinput, &musfileheader))
 	{
-		return true;
+		return 1;
 	}
 
 	// Check MUS header
@@ -631,6 +631,6 @@ QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 }
 
 
-VERSION_CONTROL (mus2midi_cpp, "$Id: mus2midi.cpp 524 2008-01-27 02:54:48Z russellrice $")
+VERSION_CONTROL (mus2midi_cpp, "$Id$")
 
 

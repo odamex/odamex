@@ -11,7 +11,7 @@ proc start {} {
  wait
  set serverout [open odasrv.log r]
 
- server "deathmatch 1"
+ server "gametype 1"
  server "maxclients $numplayers"
  server "maxplayers $numplayers"
  server "timelimit 0"

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -447,5 +447,5 @@ P_CheckSightEdges
 	return contact;
 }	
 
-VERSION_CONTROL (p_sight_cpp, "$Id:$")
+VERSION_CONTROL (p_sight_cpp, "$Id$")
 

@@ -106,8 +106,7 @@ extern BOOL gameisdead;
 extern BOOL demorecording;
 extern DThinker ThinkerCap;
 
-
-std::vector<std::string> wadfiles;		// [RH] remove limit on # of loaded wads
+std::vector<std::string> patchfiles, wadfiles;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
 char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
@@ -274,7 +273,17 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 				fread (&header, sizeof(header), 1, f);
 				header.identification = LONG(header.identification);
 				if (header.identification != IWAD_ID)
+				{
+					if(header.identification == PWAD_ID)
+					{
+						Printf(PRINT_HIGH, "Suggested file is a PWAD, not an IWAD: %s \n", iwad.c_str());
+					}
+					else
+					{
+						Printf(PRINT_HIGH, "Suggested file is not an IWAD: %s \n", iwad.c_str());
+					}
 					iwad = "";
+				}
 				fclose(f);
 			}
 		}
@@ -710,7 +719,7 @@ void D_AddDefWads (std::string iwad)
 //
 // [Russell] - Change the meaning, this will load multiple patch files if 
 //             specified
-void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
+void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
 {
     DArgs files; 
     BOOL noDef = false;
@@ -730,8 +739,15 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
             
                 if (f.length())
                 {
-                    DoDehPatch (f.c_str(), false);
-                
+                    if (DoDehPatch (f.c_str(), false))
+                    {
+                        std::string Filename;
+                        
+                        M_ExtractFileName(f, Filename);
+                        
+                        patchfiles.push_back(Filename);
+                    }
+                    
                     noDef = true;
                 }
             }
@@ -750,7 +766,16 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
                 std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
 
                 if (f.length())
-                    DoDehPatch (f.c_str(), false);
+                {
+                    if (DoDehPatch (f.c_str(), false))
+                    {
+                        std::string Filename;
+                        
+                        M_ExtractFileName(f, Filename);
+                        
+                        patchfiles.push_back(Filename);
+                    }
+                }
             }
             noDef = true;
         }
@@ -768,7 +793,16 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
                 std::string f = BaseFileSearch (files.GetArg (i), ".BEX");
 
                 if (f.length())
-                    DoDehPatch (f.c_str(), false);
+                {
+                    if (DoDehPatch (f.c_str(), false))
+                    {
+                        std::string Filename;
+                        
+                        M_ExtractFileName(f, Filename);
+                        
+                        patchfiles.push_back(Filename);
+                    }
+                }
             }
             noDef = true;
         }
@@ -805,8 +839,8 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 // change wads at runtime
 // on 404, returns a vector of bad files
 //
-std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, 
-                                     std::vector<std::string> patch_files)
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
+                                     const std::vector<std::string> &patch_files)
 {
 	std::vector<size_t> fails;
 
@@ -818,6 +852,10 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames,
 	G_ExitLevel(0, 0);
 	DThinker::DestroyAllThinkers();
 
+	// Close all open WAD files
+	W_Close();
+
+	// Restart the memory manager
 	Z_Init();
 
 	gamestate = GS_STARTUP;
@@ -851,6 +889,9 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames,
 
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+
+    UndoDehPatch();
+    patchfiles.clear();
 
 	D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
@@ -918,34 +959,6 @@ void D_DoomMain (void)
 		skill.Set (val[0]-'0');
 	}
 
-	unsigned p = Args.CheckParm ("-warp");
-	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
-	{
-		int ep, map;
-
-		if (gameinfo.flags & GI_MAPxx)
-		{
-			ep = 1;
-			map = atoi (Args.GetArg(p+1));
-		}
-		else
-		{
-			ep = Args.GetArg(p+1)[0]-'0';
-			map = Args.GetArg(p+2)[0]-'0';
-		}
-
-		strncpy (startmap, CalcMapName (ep, map), 8);
-		autostart = true;
-	}
-
-	// [RH] Hack to handle +map
-	p = Args.CheckParm ("+map");
-	if (p && p < Args.NumArgs()-1)
-	{
-		strncpy (startmap, Args.GetArg (p+1), 8);
-		((char *)Args.GetArg (p))[0] = '-';
-		autostart = true;
-	}
 	if (devparm)
 		Printf (PRINT_HIGH, "%s", Strings[0].builtin);	// D_DEVSTR
 
@@ -1009,6 +1022,35 @@ void D_DoomMain (void)
 	// [RH] Now that all game subsystems have been initialized,
 	// do all commands on the command line other than +set
 	C_ExecCmdLineParams (false, false);
+
+	unsigned p = Args.CheckParm ("-warp");
+	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
+	{
+		int ep, map;
+
+		if (gameinfo.flags & GI_MAPxx)
+		{
+			ep = 1;
+			map = atoi (Args.GetArg(p+1));
+		}
+		else
+		{
+			ep = Args.GetArg(p+1)[0]-'0';
+			map = Args.GetArg(p+2)[0]-'0';
+		}
+
+		strncpy (startmap, CalcMapName (ep, map), 8);
+		autostart = true;
+	}
+
+	// [RH] Hack to handle +map
+	p = Args.CheckParm ("+map");
+	if (p && p < Args.NumArgs()-1)
+	{
+		strncpy (startmap, Args.GetArg (p+1), 8);
+		((char *)Args.GetArg (p))[0] = '-';
+		autostart = true;
+	}
 
 	strncpy(level.mapname, startmap, sizeof(level.mapname));
 

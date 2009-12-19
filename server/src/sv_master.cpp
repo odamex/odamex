@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -85,12 +85,14 @@ EXTERN_CVAR (nomonsters)
 EXTERN_CVAR (monstersrespawn)
 EXTERN_CVAR (fastmonsters)
 EXTERN_CVAR (allowjump)
-EXTERN_CVAR (allowfreelook)
+EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (waddownload)
 EXTERN_CVAR (emptyreset)
 EXTERN_CVAR (cleanmaps)
 EXTERN_CVAR (fragexitswitch)
 //bond===========================
+
+EXTERN_CVAR (teamsinplay)
 
 EXTERN_CVAR (maxplayers)
 EXTERN_CVAR (password)
@@ -101,6 +103,7 @@ EXTERN_CVAR (natport)
 buf_t     ml_message(MAX_UDP_PACKET);
 
 std::vector<std::string> wadnames, wadhashes;
+extern std::vector<std::string> patchfiles;
 static std::vector<masterserver> masters;
 
 //
@@ -261,11 +264,12 @@ void SV_UpdateMaster(void)
 struct token_t
 {
 	DWORD id;
-	QWORD age;
+	QWORD issued;
+	netadr_t from;
 };
 
-static TArray<token_t> connect_tokens;
-#define MAX_TOKEN_AGE	(10 * TICRATE)
+#define MAX_TOKEN_AGE	(20 * TICRATE) // 20s should be enough for any client to load its wads
+static std::vector<token_t> connect_tokens;
 
 //
 // SV_NewToken
@@ -276,20 +280,20 @@ DWORD SV_NewToken()
 
 	token_t token;
 	token.id = rand()*time(0);
-	token.age = now;
+	token.issued = now;
+	token.from = net_from;
 	
 	// find an old token to replace
-	for(size_t i = 0; i < connect_tokens.Size(); i++)
+	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
-		if(now - connect_tokens[i].age >= MAX_TOKEN_AGE)
+		if(now - connect_tokens[i].issued >= MAX_TOKEN_AGE)
 		{
 			connect_tokens[i] = token;
-			break;
+			return token.id;
 		}
-	}			
-	
-	// add new token
-	connect_tokens.Push(token);
+	}
+
+	connect_tokens.push_back(token);
 
 	return token.id;
 }
@@ -301,12 +305,14 @@ bool SV_IsValidToken(DWORD token)
 {
 	QWORD now = I_GetTime();
 
-	for(size_t i = 0; i < connect_tokens.Size(); i++)
+	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
 		if(connect_tokens[i].id == token
-		&& now - connect_tokens[i].age < MAX_TOKEN_AGE)
+		&& NET_CompareAdr(connect_tokens[i].from, net_from)
+		&& now - connect_tokens[i].issued < MAX_TOKEN_AGE)
 		{
-			connect_tokens[i].age = now + MAX_TOKEN_AGE + 1;
+			// extend token life and confirm
+			connect_tokens[i].issued = now;
 			return true;
 		}
 	}
@@ -354,10 +360,10 @@ void SV_SendServerInfo()
 	for (i = 1; i < numwads; ++i)
 		MSG_WriteString(&ml_message, wadnames[i].c_str());
 
-	MSG_WriteByte(&ml_message, (int)deathmatch);
-	MSG_WriteByte(&ml_message, (int)skill);
-    MSG_WriteByte(&ml_message, (int)ctfmode ? 1 : teamplay);
-	MSG_WriteByte(&ml_message, (int)ctfmode);
+	MSG_WriteBool(&ml_message, (gametype == GM_DM || gametype == GM_TEAMDM));
+	MSG_WriteByte(&ml_message, (BYTE)skill);
+	MSG_WriteBool(&ml_message, (gametype == GM_TEAMDM));
+	MSG_WriteBool(&ml_message, (gametype == GM_CTF));
 
 	for (i = 0; i < players.size(); ++i)
 	{
@@ -367,7 +373,7 @@ void SV_SendServerInfo()
 			MSG_WriteShort(&ml_message, players[i].fragcount);
 			MSG_WriteLong(&ml_message, players[i].ping);
 
-			if (teamplay || ctfmode)
+			if (gametype == GM_TEAMDM || gametype == GM_CTF)
 				MSG_WriteByte(&ml_message, players[i].userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);
@@ -379,16 +385,18 @@ void SV_SendServerInfo()
 
 	MSG_WriteString(&ml_message, website.cstring());
 
-	if (ctfmode || teamplay)
+	if (gametype == GM_TEAMDM || gametype == GM_CTF)
 	{
 		MSG_WriteLong(&ml_message, scorelimit);
 		
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
-			MSG_WriteByte(&ml_message, TEAMenabled[i]);
-
-			if (TEAMenabled[i])
+			if ((gametype == GM_CTF && i < 2) || (gametype != GM_CTF && i < teamsinplay)) {
+				MSG_WriteByte(&ml_message, 1);
 				MSG_WriteLong(&ml_message, TEAMpoints[i]);
+			} else {
+				MSG_WriteByte(&ml_message, 0);
+			}
 		}
 	}
 	
@@ -404,20 +412,20 @@ void SV_SendServerInfo()
 	MSG_WriteShort(&ml_message,timeleft);
 	MSG_WriteShort(&ml_message,(int)fraglimit);
 
-	MSG_WriteByte(&ml_message,(BOOL)itemsrespawn);
-	MSG_WriteByte(&ml_message,(BOOL)weaponstay);
-	MSG_WriteByte(&ml_message,(BOOL)friendlyfire);
-	MSG_WriteByte(&ml_message,(BOOL)allowexit);
-	MSG_WriteByte(&ml_message,(BOOL)infiniteammo);
-	MSG_WriteByte(&ml_message,(BOOL)nomonsters);
-	MSG_WriteByte(&ml_message,(BOOL)monstersrespawn);
-	MSG_WriteByte(&ml_message,(BOOL)fastmonsters);
-	MSG_WriteByte(&ml_message,(BOOL)allowjump);
-	MSG_WriteByte(&ml_message,(BOOL)allowfreelook);
-	MSG_WriteByte(&ml_message,(BOOL)waddownload);
-	MSG_WriteByte(&ml_message,(BOOL)emptyreset);
-	MSG_WriteByte(&ml_message,(BOOL)cleanmaps);
-	MSG_WriteByte(&ml_message,(BOOL)fragexitswitch);
+	MSG_WriteBool(&ml_message, (itemsrespawn ? true : false));
+	MSG_WriteBool(&ml_message, (weaponstay ? true : false));
+	MSG_WriteBool(&ml_message, (friendlyfire ? true : false));
+	MSG_WriteBool(&ml_message, (allowexit ? true : false));
+	MSG_WriteBool(&ml_message, (infiniteammo ? true : false));
+	MSG_WriteBool(&ml_message, (nomonsters ? true : false));
+	MSG_WriteBool(&ml_message, (monstersrespawn ? true : false));
+	MSG_WriteBool(&ml_message, (fastmonsters ? true : false));
+	MSG_WriteBool(&ml_message, (allowjump ? true : false));
+	MSG_WriteBool(&ml_message, (sv_freelook ? true : false));
+	MSG_WriteBool(&ml_message, (waddownload ? true : false));
+	MSG_WriteBool(&ml_message, (emptyreset ? true : false));
+	MSG_WriteBool(&ml_message, (cleanmaps ? true : false));
+	MSG_WriteBool(&ml_message, (fragexitswitch ? true : false));
 
 	for (i = 0; i < players.size(); ++i)
 	{
@@ -441,7 +449,7 @@ void SV_SendServerInfo()
     {
         if (players[i].ingame())
         {
-            MSG_WriteByte(&ml_message, (players[i].spectator ? true : false));
+            MSG_WriteBool(&ml_message, (players[i].spectator ? true : false));
         }
     }
 
@@ -450,6 +458,11 @@ void SV_SendServerInfo()
     
     // GhostlyDeath -- Send Game Version info
     MSG_WriteLong(&ml_message, GAMEVER);
+
+    MSG_WriteByte(&ml_message, patchfiles.size());
+    
+    for (size_t i = 0; i < patchfiles.size(); ++i)
+        MSG_WriteString(&ml_message, patchfiles[i].c_str());
 
 	NET_SendPacket(ml_message, net_from);
 }

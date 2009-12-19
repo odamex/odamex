@@ -48,7 +48,7 @@ const char *sprnames[NUMSPRITES+1] = {
 
 	//	[Toke - CTF]
 	"BSOK","RSOK","GSOK","BFLG","RFLG","GFLG","BDWN","RDWN","GDWN","BCAR",
-	"RCAR","GCAR",
+	"RCAR","GCAR", // Remove me in 0.5 (gold)
 	0
 };
 
@@ -1118,7 +1118,7 @@ state_t	states[NUMSTATES] = {
 	//	[Toke - CTF]
 	{SPR_BSOK,0,-1,{(void *)NULL},S_NULL,0,0},	// Blue Socket
 	{SPR_RSOK,0,-1,{(void *)NULL},S_NULL,0,0},	// Red Socket
-	{SPR_GSOK,0,-1,{(void *)NULL},S_NULL,0,0},	// Gold Socket
+	{SPR_GSOK,0,-1,{(void *)NULL},S_NULL,0,0},	// Gold Socket // Remove me in 0.5
 	{SPR_BFLG,32768,4,{NULL},S_BFLG2,0,0}, // BLUE Flag Animation
 	{SPR_BFLG,32769,4,{NULL},S_BFLG3,0,0},
 	{SPR_BFLG,32770,4,{NULL},S_BFLG4,0,0},
@@ -1135,20 +1135,20 @@ state_t	states[NUMSTATES] = {
 	{SPR_RFLG,32773,4,{NULL},S_RFLG7,0,0},
 	{SPR_RFLG,32774,4,{NULL},S_RFLG8,0,0},
 	{SPR_RFLG,32775,4,{NULL},S_RFLG,0,0},
-	{SPR_GFLG,32768,4,{NULL},S_GFLG2,0,0}, // GOLD Flag Animation
-	{SPR_GFLG,32769,4,{NULL},S_GFLG3,0,0},
-	{SPR_GFLG,32770,4,{NULL},S_GFLG4,0,0},
-	{SPR_GFLG,32771,4,{NULL},S_GFLG5,0,0},
-	{SPR_GFLG,32772,4,{NULL},S_GFLG6,0,0},
-	{SPR_GFLG,32773,4,{NULL},S_GFLG7,0,0},
-	{SPR_GFLG,32774,4,{NULL},S_GFLG8,0,0},
-	{SPR_GFLG,32775,4,{NULL},S_GFLG,0,0},
+	{SPR_GFLG,32768,4,{NULL},S_GFLG2,0,0}, // GOLD Flag Animation  // Remove me in 0.5
+	{SPR_GFLG,32769,4,{NULL},S_GFLG3,0,0}, // Remove me in 0.5
+	{SPR_GFLG,32770,4,{NULL},S_GFLG4,0,0}, // Remove me in 0.5
+	{SPR_GFLG,32771,4,{NULL},S_GFLG5,0,0}, // Remove me in 0.5
+	{SPR_GFLG,32772,4,{NULL},S_GFLG6,0,0}, // Remove me in 0.5
+	{SPR_GFLG,32773,4,{NULL},S_GFLG7,0,0}, // Remove me in 0.5
+	{SPR_GFLG,32774,4,{NULL},S_GFLG8,0,0}, // Remove me in 0.5
+	{SPR_GFLG,32775,4,{NULL},S_GFLG,0,0}, // Remove me in 0.5
 	{SPR_BDWN,0,-1,{NULL},S_NULL,0,0},	// Blue Dropped Flag
 	{SPR_RDWN,0,-1,{NULL},S_NULL,0,0},	// Red Dropped Flag
-	{SPR_GDWN,0,-1,{NULL},S_NULL,0,0},	// Gold Dropped Flag
+	{SPR_GDWN,0,-1,{NULL},S_NULL,0,0},	// Gold Dropped Flag // Remove me in 0.5
 	{SPR_BCAR,0,-1,{NULL},S_NULL,0,0},	// Blue Dropped Flag
 	{SPR_RCAR,0,-1,{NULL},S_NULL,0,0},	// Red Dropped Flag
-	{SPR_GCAR,0,-1,{NULL},S_NULL,0,0},	// Gold Dropped Flag
+	{SPR_GCAR,0,-1,{NULL},S_NULL,0,0},	// Gold Dropped Flag // Remove me in 0.5
 };
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
@@ -5639,7 +5639,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	
 	// Nes - Reserve 5132 for Neutral Socket
 
-		// [Toke - CTF] Gold Socket
+		// [Toke - CTF] Gold Socket // Remove me in 0.5
 	{		// MT_BSOK
 	5133,		// doomednum
 	S_GSOK,		// spawnstate
@@ -5726,7 +5726,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"MT_RFLG"
 	},
 
-			// [Toke - CTF] Gold Flag
+			// [Toke - CTF] Gold Flag // Remove me in 0.5
 	{		// MT_GFLG
 	-1,		// doomednum
 	S_GFLG,		// spawnstate
@@ -5813,7 +5813,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"MT_RDWN"
 	},
 
-			// [Toke - CTF] Gold Dropped Flag
+			// [Toke - CTF] Gold Dropped Flag // Remove me in 0.5
 	{		// MT_GDWN
 	-1,		// doomednum
 	S_GDWN,		// spawnstate
@@ -5900,7 +5900,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"MT_RCAR"
 	},
 
-			// [Toke - CTF] Gold Carrying Flag
+			// [Toke - CTF] Gold Carrying Flag // Remove me in 0.5
 	{		// MT_GCAR
 	-1,		// doomednum
 	S_GCAR,		// spawnstate

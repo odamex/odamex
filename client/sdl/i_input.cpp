@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,11 @@
 #define _WIN32_WINNT 0x0400
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#ifdef _MSC_VER
+#ifndef snprintf
+#define snprintf _snprintf
+#endif
+#endif
 #endif
 
 #include <SDL.h>
@@ -199,6 +204,8 @@ static void UngrabMouse (void)
 //
 
 EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_defwidth)
+EXTERN_CVAR (vid_defheight)
 
 void I_PauseMouse (void)
 {
@@ -263,6 +270,23 @@ void I_GetEvent (void)
          case SDL_QUIT:
             AddCommandString("quit");
             break;
+         // Resizable window mode resolutions
+         case SDL_VIDEORESIZE:
+         {
+             if (!mousegrabbed && !vid_fullscreen)
+             {
+                char Command[64];
+                
+                snprintf(Command, sizeof(Command), "vid_setmode %d %d", ev.resize.w, ev.resize.h);
+               
+                AddCommandString(Command);
+
+                vid_defwidth.Set((float)ev.resize.w);
+				vid_defheight.Set((float)ev.resize.h);
+             }
+         }
+         break;
+         
          case SDL_KEYDOWN:
             event.type = ev_keydown;
             event.data1 = ev.key.keysym.sym;

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,6 +24,13 @@
 #include "c_cvars.h"
 
 
+// Log file settings
+// -----------------
+
+// Extended timestamp info (dd/mm/yyyy hh:mm:ss)
+CVAR (log_fulltimestamps, "0", CVAR_ARCHIVE)
+
+
 // Server administrative settings
 // ------------------------------
 
@@ -32,7 +39,7 @@ CVAR (hostname,		"Untitled Odamex Server",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR
 // Administrator email address
 CVAR (email,		"email@domain.com",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Website of this server/other
-CVAR (website,      "http:\\odamex.net/",         CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+CVAR (website,      "http://odamex.net/",         CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Enables WAD file downloading
 CVAR (waddownload,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Reset the current map when the last player leaves
@@ -76,5 +83,9 @@ CVAR (natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // The time difference in which a player message to all players can be repeated
 // in seconds
 CVAR (flooddelay, "1.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// GhostlyDeath <August 14, 2008> -- Randomize the map list
+CVAR_FUNC_DECL (shufflemaplist,	"0", CVAR_ARCHIVE)
+// When disabled, treat team spawns like normal deathmatch spawns.
+CVAR (sv_teamspawns, "1", CVAR_ARCHIVE | CVAR_LATCH)
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")

@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -66,6 +66,7 @@ enum flag_score_t
 	SCORE_RETURN,
 	SCORE_CAPTURE,
 	SCORE_DROP,
+	SCORE_MANUALRETURN,
 	NUM_CTF_SCORE
 };
 
@@ -75,8 +76,6 @@ extern	DCanvas	   *screen;
 
 extern	int			ST_WIDTH;
 extern	int			ST_HEIGHT;
-
-extern	bool		ctfmode;
 
 //	Local Function Prototypes
 void	CL_CTFEvent		(void);

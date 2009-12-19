@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -80,14 +80,15 @@ extern	BOOL			netgame;
 // Bot game? Like netgame, but doesn't involve network communication.
 extern	BOOL			multiplayer;
 
-// Flag: true only if started as net deathmatch.
-EXTERN_CVAR (deathmatch)
+extern BOOL            network_game;
 
-// [RH] Teamplay mode
-//EXTERN_CVAR (teamplay)
+// Game mode
+EXTERN_CVAR (gametype)
 
-
-// [Toke - CTF] Capture The Flag mode
+#define GM_COOP		0.0f
+#define GM_DM		1.0f
+#define GM_TEAMDM	2.0f
+#define GM_CTF		3.0f
 
 
 // -------------------------

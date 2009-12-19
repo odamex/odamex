@@ -6,11 +6,11 @@
 		<Option pch_mode="0" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Win Release">
+			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
 				<Option output="..\..\odasrv.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\..\" />
-				<Option object_output="..\..\obj\server\release\" />
+				<Option object_output="..\..\obj\server\gcc\release\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -28,11 +28,11 @@
 					<Add library="wsock32" />
 				</Linker>
 			</Target>
-			<Target title="Win Debug">
+			<Target title="Win Debug (GCC)">
 				<Option platforms="Windows;" />
 				<Option output="..\..\odasrv-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\..\" />
-				<Option object_output="..\..\obj\server\debug\" />
+				<Option object_output="..\..\obj\server\gcc\debug\" />
 				<Option deps_output="..\..\deps" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -40,7 +40,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
+					<Add option="-gdwarf-2" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
@@ -126,11 +126,125 @@
 					<Add option="-DDEBUG" />
 				</Compiler>
 			</Target>
+			<Target title="Win Release (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\..\odasrv.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
+				<Option object_output="..\..\obj\server\vc\release\" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/GA" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/wd4430" />
+					<Add option="/DWIN32" />
+					<Add option="/DNDEBUG" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</Compiler>
+				<Linker>
+					<Add library="Ws2_32.lib" />
+					<Add library="Winmm.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="winspool.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="uuid.lib" />
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option platforms="Windows;" />
+				<Option output="..\..\odasrv-dbg.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="..\..\" />
+				<Option object_output="..\..\obj\server\vc\debug\" />
+				<Option deps_output="..\..\deps" />
+				<Option type="1" />
+				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TP" />
+					<Add option="/RTCu" />
+					<Add option="/RTCs" />
+					<Add option="/fp:precise" />
+					<Add option="/fp:except" />
+					<Add option="/EHa" />
+					<Add option="/GR" />
+					<Add option="/GS" />
+					<Add option="/W2" />
+					<Add option="/Zc:forScope" />
+					<Add option="/wd4430" />
+					<Add option="/Zi" />
+					<Add option="/DWIN32" />
+					<Add option="/D_WINDOWS" />
+					<Add option="/DNOASM" />
+					<Add option="/DNOMINMAX" />
+					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add directory="." />
+					<Add directory="..\src" />
+					<Add directory="..\..\common" />
+				</Compiler>
+				<Linker>
+					<Add option="/debug" />
+					<Add library="Ws2_32.lib" />
+					<Add library="Winmm.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="winspool.lib" />
+					<Add library="comdlg32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="ole32.lib" />
+					<Add library="oleaut32.lib" />
+					<Add library="uuid.lib" />
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
+				</ExtraCommands>
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="All (MAC)" targets="Mac Release;Mac Debug;" />
 			<Add alias="All (UNIX)" targets="Unix Release;Unix Debug;" />
-			<Add alias="All (WIN32)" targets="Win Release;Win Debug;" />
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
@@ -298,13 +412,17 @@
 		<Unit filename="..\src\v_palette.h" />
 		<Unit filename="..\src\v_text.h" />
 		<Unit filename="resource.h">
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
 		</Unit>
 		<Unit filename="server.rc">
 			<Option compilerVar="WINDRES" />
-			<Option target="Win Release" />
-			<Option target="Win Debug" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
 		</Unit>
 		<Extensions>
 			<code_completion />

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +63,15 @@
 // if(serverside) { spawn/destroy things, change maps, etc }
 //
 extern bool clientside, serverside;
+
+// [Nes] - Determines which program the user is running.
+enum baseapp_t
+{
+	client,		// Odamex.exe
+	server		// Odasrv.exe
+};
+
+extern baseapp_t baseapp;
 
 //
 // Global parameters/defines.
@@ -170,7 +179,10 @@ enum card_t
 
 	NUMCARDS,
 
-        NoKey,
+		// GhostlyDeath <August 31, 2008> -- Before this was not = 0 and when
+		// the map is loaded the value is just bitshifted so that the values
+		// that were here were incorrect, keyed generalized doors work now
+        NoKey = 0,
         RCard,
         BCard,
         YCard,
@@ -191,7 +203,7 @@ enum flag_t
 {
 	it_blueflag,
 	it_redflag,
-	it_goldflag,
+	it_goldflag, // Remove me in 0.5
 
 	NUMFLAGS
 };

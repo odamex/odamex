@@ -9,7 +9,6 @@ proc main {} {
 
  # set defaults
  server "globalspectatorchat 1"
- server "teamplay 0"
  server "map 1"
  client "print_stdout 1"
  client "cl_name Player"
@@ -103,7 +102,7 @@ proc main {} {
  server "maxplayers 0"
  expect $serverout {maxplayers will be changed for next game.}
  server "map 1"
- # expect $serverout {Player became a spectator.}
+ expect $serverout {Player became a spectator.}
  expect $serverout {--- MAP01: entryway ---}
 }
 

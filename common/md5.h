@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 //   Copyright (C) 1999, 2002 Aladdin Enterprises.  All rights reserved.
 // 

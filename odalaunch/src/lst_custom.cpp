@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -96,7 +96,7 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
     ItemShade.Set(wxUint8(245), wxUint8(245), wxUint8(245));
 
     // Set up the image list.
-    AddImageSmall(NULL);
+    AddImageSmall(wxNullImage);
 }
 
 // Add any additional bitmaps/icons to the internal image list
@@ -520,7 +520,7 @@ long wxAdvancedListCtrl::ALCInsertItem(wxListItem &info)
     // TODO: We need to remember this item id, because the last item on the list
     // does not get sorted, we can't move sort either, because then the return 
     // index would be stale.
-    info.SetId(InsertItem(info));
+    info.SetId(InsertItem(GetItemCount(), info.GetText()));
    
     ColourListItem(info);
 

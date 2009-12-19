@@ -102,7 +102,7 @@ extern gameinfo_t RegisteredGameInfo;
 extern gameinfo_t RetailGameInfo;
 extern gameinfo_t CommercialGameInfo;
 
-extern int testingmode;
+extern QWORD testingmode;
 extern BOOL setsizeneeded;
 extern BOOL setmodeneeded;
 extern BOOL netdemo;
@@ -137,6 +137,9 @@ EXTERN_CVAR (nomonsters)
 
 const char *LOG_FILE;
 
+void M_RestoreMode (void);
+void M_ModeFlashTestText (void);
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -145,15 +148,20 @@ void D_ProcessEvents (void)
 {
 	event_t *ev;
 
-/*	// [RH] If testing mode, do not accept input until test is over
+	// [RH] If testing mode, do not accept input until test is over
 	if (testingmode)
 	{
 		if (testingmode <= I_GetTime())
 		{
 			M_RestoreMode ();
 		}
+        else
+        {
+            M_ModeFlashTestText();
+        }
+        
 		return;
-	}*/ // [Toke - Menu]
+	}
 
 	for (; eventtail != eventhead ; eventtail = ++eventtail<MAXEVENTS ? eventtail : 0)
 	{
@@ -870,7 +878,17 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 				fread (&header, sizeof(header), 1, f);
 				header.identification = LONG(header.identification);
 				if (header.identification != IWAD_ID)
+				{
+					if(header.identification == PWAD_ID)
+					{
+						Printf(PRINT_HIGH, "Suggested file is a PWAD, not an IWAD: %s \n", iwad.c_str());
+					}
+					else
+					{
+						Printf(PRINT_HIGH, "Suggested file is not an IWAD: %s \n", iwad.c_str());
+					}
 					iwad = "";
+				}
 				fclose(f);
 			}
 		}
@@ -1119,8 +1137,6 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
     BOOL noDef = false;
     QWORD i;
 
-    UndoDehPatch();
-
     if (!patch_files.empty())
     {
         std::string f;
@@ -1192,9 +1208,9 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
 //
 void V_InitPalette (void);
 
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames, 
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
                                      std::vector<std::string> needhashes, 
-                                     const std::vector<std::string> patch_files)
+                                     const std::vector<std::string> &patch_files)
 {
 	std::vector<size_t> fails;
 	size_t i;
@@ -1224,6 +1240,10 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 
 	DThinker::DestroyAllThinkers();
 
+	// Close all open WAD files
+	W_Close();
+
+	// Restart the memory manager
 	Z_Init();
 
 	gamestate_t oldgamestate = gamestate;
@@ -1266,6 +1286,8 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> wadnames,
 		modifiedgame = true;
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
+
+    UndoDehPatch();
 
 	D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
@@ -1416,6 +1438,8 @@ void D_DoomMain (void)
 	P_Init ();
 
 	Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");
+	Printf (PRINT_HIGH, "S_Init: default sfx volume is %g\n", (float)snd_sfxvolume);
+	Printf (PRINT_HIGH, "S_Init: default music volume is %g\n", (float)snd_musicvolume);
 	S_Init (snd_sfxvolume, snd_musicvolume);
 
 	I_FinishClockCalibration ();
@@ -1456,7 +1480,7 @@ void D_DoomMain (void)
 				serverside = true;
 				allowexit = "1";
 				nomonsters = "0";
-				deathmatch = "0";
+				gametype = GM_COOP;
 
 				players.clear();
 				players.push_back(player_t());

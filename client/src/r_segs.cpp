@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -1070,5 +1070,5 @@ R_StoreWallRange
 }
 
 
-VERSION_CONTROL (r_segs_cpp, "$Id:$")
+VERSION_CONTROL (r_segs_cpp, "$Id$")
 

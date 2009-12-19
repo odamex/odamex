@@ -53,6 +53,9 @@ extern patch_t* 	hu_font[HU_FONTSIZE];
 // temp for screenblocks (0-9)
 int 				screenSize;
 
+// -1 = no quicksave slot picked!
+int 				quickSaveSlot;
+
  // 1 = message to be printed
 int 				messageToPrint;
 // ...and here is the message string!
@@ -129,7 +132,11 @@ void M_StartGame(int choice);
 void M_Sound(int choice);
 
 void M_FinishReadThis(int choice);
+void M_LoadSelect(int choice);
+void M_SaveSelect(int choice);
 void M_ReadSaveStrings(void);
+void M_QuickSave(void);
+void M_QuickLoad(void);
 
 void M_DrawMainMenu(void);
 void M_DrawReadThis1(void);
@@ -139,6 +146,8 @@ void M_DrawNewGame(void);
 void M_DrawEpisode(void);
 void M_DrawOptions(void);
 void M_DrawSound(void);
+void M_DrawLoad(void);
+void M_DrawSave(void);
 
 void M_DrawSaveLoadBorder(int x,int y, int len);
 void M_SetupNextMenu(oldmenu_t *menudef);
@@ -408,6 +417,67 @@ oldmenu_t ReadDef3 =
 	0
 };
 
+//
+// LOAD GAME MENU
+//
+enum
+{
+	load1,
+	load2,
+	load3,
+	load4,
+	load5,
+	load6,
+	load7,
+	load8,
+	load_end
+} load_e;
+
+oldmenuitem_t LoadMenu[]=
+{
+	{1,"", M_LoadSelect,'1'},
+	{1,"", M_LoadSelect,'2'},
+	{1,"", M_LoadSelect,'3'},
+	{1,"", M_LoadSelect,'4'},
+	{1,"", M_LoadSelect,'5'},
+	{1,"", M_LoadSelect,'6'},
+	{1,"", M_LoadSelect,'7'},
+	{1,"", M_LoadSelect,'8'},
+};
+
+oldmenu_t LoadDef =
+{
+	load_end,
+	LoadMenu,
+	M_DrawLoad,
+	80,54,
+	0
+};
+
+//
+// SAVE GAME MENU
+//
+oldmenuitem_t SaveMenu[]=
+{
+	{1,"", M_SaveSelect,'1'},
+	{1,"", M_SaveSelect,'2'},
+	{1,"", M_SaveSelect,'3'},
+	{1,"", M_SaveSelect,'4'},
+	{1,"", M_SaveSelect,'5'},
+	{1,"", M_SaveSelect,'6'},
+	{1,"", M_SaveSelect,'7'},
+	{1,"", M_SaveSelect,'8'}
+};
+
+oldmenu_t SaveDef =
+{
+	load_end,
+	SaveMenu,
+	M_DrawSave,
+	80,54,
+	0
+};
+
 // [RH] Most menus can now be accessed directly
 // through console commands.
 BEGIN_COMMAND (menu_main)
@@ -430,18 +500,20 @@ END_COMMAND (menu_help)
 BEGIN_COMMAND (menu_save)
 {
     // F2
-	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
-	Printf (PRINT_HIGH, "Saving is not available at this time.\n");
-    // dummy
+	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	M_StartControlPanel ();
+	M_SaveGame (0);
+	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
 }
 END_COMMAND (menu_save)
 
 BEGIN_COMMAND (menu_load)
 {
     // F3
-	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
-	Printf (PRINT_HIGH, "Loading is not available at this time.\n");
-    // dummy
+	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	M_StartControlPanel ();
+	M_LoadGame (0);
+	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
 }
 END_COMMAND (menu_load)
 
@@ -457,9 +529,10 @@ END_COMMAND (menu_options)
 BEGIN_COMMAND (quicksave)
 {
     // F6
-	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
-	Printf (PRINT_HIGH, "Saving is not available at this time.\n");
-    // dummy
+	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	M_StartControlPanel ();
+	M_QuickSave ();
+	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
 }
 END_COMMAND (quicksave)
 
@@ -474,9 +547,10 @@ END_COMMAND (menu_endgame)
 BEGIN_COMMAND (quickload)
 {
     // F9
-	//S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
-	Printf (PRINT_HIGH, "Loading is not available at this time.\n");
-    // dummy
+	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	M_StartControlPanel ();
+	M_QuickLoad ();
+	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
 }
 END_COMMAND (quickload)
 
@@ -517,22 +591,278 @@ BEGIN_COMMAND (bumpgamma)
 }
 END_COMMAND (bumpgamma)
 
+/*
 void M_LoadSaveResponse(int choice)
 {
     // dummy
 }
 
+
 void M_LoadGame (int choice)
 {
-    M_StartMessage("Loading/saving is not supported\n\n(Press any key to " 
+    M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
                    "continue)\n", M_LoadSaveResponse, false);
+}
+*/
+
+//
+// M_ReadSaveStrings
+//	read the strings from the savegame files
+//
+void M_ReadSaveStrings(void)
+{
+	FILE *handle;
+	int count;
+	int i;
+
+	for (i = 0; i < load_end; i++)
+	{
+		std::string name;
+
+		G_BuildSaveName (name, i);
+
+		handle = fopen (name.c_str(), "rb");
+		if (handle == NULL)
+		{
+			strcpy (&savegamestrings[i][0], EMPTYSTRING);
+			LoadMenu[i].status = 0;
+		}
+		else
+		{
+			count = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			fclose (handle);
+			LoadMenu[i].status = 1;
+		}
+	}
 }
 
+
+//
+// M_LoadGame & Cie.
+//
+void M_DrawLoad (void)
+{
+	int i;
+
+	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_LOADG",PU_CACHE), 72, 28);
+	for (i = 0; i < load_end; i++)
+	{
+		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
+		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+	}
+}
+
+//
+// User wants to load this game
+//
+void M_LoadSelect (int choice)
+{
+	std::string name;
+
+	G_BuildSaveName (name, choice);
+	G_LoadGame ((char *)name.c_str());
+	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
+	M_ClearMenus ();
+	if (quickSaveSlot == -2)
+	{
+		quickSaveSlot = choice;
+	}
+}
+
+//
+// Selected from DOOM menu
+// [ML] 7 Sept 08: Bringing game saving/loading in from
+//                 zdoom 1.22 source, see MAINTAINERS
+//
+void M_LoadGame (int choice)
+{
+	/*if (netgame)
+	{
+		M_StartMessage (LOADNET,NULL,false);
+		return;
+	}*/
+
+	M_SetupNextMenu (&LoadDef);
+	M_ReadSaveStrings ();
+}
+
+//
+//	M_SaveGame & Cie.
+// [ML] 7 Sept 08: Bringing game saving/loading in from
+//                 zdoom 1.22 source, see MAINTAINERS
+//
+void M_DrawSave(void)
+{
+	int i;
+
+	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_SAVEG",PU_CACHE), 72, 28);
+	for (i = 0; i < load_end; i++)
+	{
+		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
+		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+	}
+
+	if (genStringEnter)
+	{
+		i = V_StringWidth(savegamestrings[saveSlot]);
+		screen->DrawTextCleanMove (CR_RED, LoadDef.x + i, LoadDef.y+LINEHEIGHT*saveSlot, "_");
+	}
+}
+
+
+//
+// M_Responder calls this when user is finished
+// [ML] 7 Sept 08: Bringing game saving/loading in from
+//                 zdoom 1.22 source, see MAINTAINERS
+//
+void M_DoSave (int slot)
+{
+	G_SaveGame (slot,savegamestrings[slot]);
+	M_ClearMenus ();
+		// PICK QUICKSAVE SLOT YET?
+	if (quickSaveSlot == -2)
+		quickSaveSlot = slot;
+}
+
+//
+// User wants to save. Start string input for M_Responder
+// [ML] 7 Sept 08: Bringing game saving/loading in from
+//                 zdoom 1.22 source, see MAINTAINERS
+//
+void M_SaveSelect (int choice)
+{
+	// we are going to be intercepting all chars
+	genStringEnter = 1;
+	genStringEnd = M_DoSave;
+	genStringLen = SAVESTRINGSIZE-1;
+
+	saveSlot = choice;
+	strcpy(saveOldString,savegamestrings[choice]);
+	if (!strcmp(savegamestrings[choice],EMPTYSTRING))
+		savegamestrings[choice][0] = 0;
+	saveCharIndex = strlen(savegamestrings[choice]);
+}
+
+/*
 void M_SaveGame (int choice)
 {
-    M_StartMessage("Loading/saving is not supported\n\n(Press any key to " 
+    M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
                    "continue)\n", M_LoadSaveResponse, false);
 }
+*/
+
+//
+// Selected from DOOM menu
+// [ML] 7 Sept 08: Bringing game saving/loading in from
+//                 zdoom 1.22 source, see MAINTAINERS
+//
+void M_SaveGame (int choice)
+{
+	if (multiplayer && !demoplayback)
+	{
+		M_StartMessage("you can't save while in a net game!\n\npress a key.",
+			NULL,false);
+		M_ClearMenus ();
+		return;
+	}
+
+	if (!usergame)
+	{
+		M_StartMessage(SAVEDEAD,NULL,false);
+		M_ClearMenus ();
+		return;
+	}
+
+	if (gamestate != GS_LEVEL)
+		return;
+
+	M_SetupNextMenu(&SaveDef);
+	M_ReadSaveStrings();
+}
+
+
+//
+//		M_QuickSave
+// [ML] 7 Sept 08: Bringing game saving/loading in from
+//                 zdoom 1.22 source, see MAINTAINERS
+//
+char	tempstring[80];
+
+void M_QuickSaveResponse(int ch)
+{
+	if (ch == 'y')
+	{
+		M_DoSave (quickSaveSlot);
+		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+	}
+}
+
+void M_QuickSave(void)
+{
+	if (multiplayer)
+	{
+		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		M_ClearMenus ();
+		return;
+	}
+
+	if (!usergame)
+	{
+		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		M_ClearMenus ();
+		return;
+	}
+
+	if (gamestate != GS_LEVEL)
+		return;
+
+	if (quickSaveSlot < 0)
+	{
+		M_StartControlPanel();
+		M_ReadSaveStrings();
+		M_SetupNextMenu(&SaveDef);
+		quickSaveSlot = -2; 	// means to pick a slot now
+		return;
+	}
+	sprintf (tempstring, QSPROMPT, savegamestrings[quickSaveSlot]);
+	M_StartMessage (tempstring, M_QuickSaveResponse, true);
+}
+
+
+
+//
+// M_QuickLoad
+// [ML] 7 Sept 08: Bringing game saving/loading in from
+//                 zdoom 1.22 source, see MAINTAINERS
+//
+void M_QuickLoadResponse(int ch)
+{
+	if (ch == 'y')
+	{
+		M_LoadSelect(quickSaveSlot);
+		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+	}
+}
+
+
+void M_QuickLoad(void)
+{
+	/*if (netgame)
+	{
+		M_StartMessage(QLOADNET,NULL,false);
+		return;
+	}*/
+
+	if (quickSaveSlot < 0)
+	{
+		M_StartControlPanel();
+		M_LoadGame (0);
+		return;
+	}
+	sprintf(tempstring,QLPROMPT,savegamestrings[quickSaveSlot]);
+	M_StartMessage(tempstring,M_QuickLoadResponse,true);
+}
+
 
 //
 // M_ReadThis
@@ -623,7 +953,7 @@ void M_NewGame(int choice)
 		EpiDef.numitems = ep4;
 		M_SetupNextMenu(&EpiDef);
 	}
-    
+
 }
 
 
@@ -817,6 +1147,9 @@ void M_PlayerSetup (int choice)
 	PlayerTics = PlayerState->tics;
 	if (FireScreen == NULL)
 		FireScreen = I_AllocateScreen (72, 72+5, 8);
+	
+	// [Nes] Intialize the player preview color.
+	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
 }
 
 static void M_PlayerSetupTicker (void)
@@ -1026,7 +1359,11 @@ static void M_PlayerSetupDrawer (void)
 		spriteframe_t *sprframe =
 			&sprites[skins[skin].sprite].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
-		V_ColorMap = translationtables + consoleplayer().id * 256;
+		// [Nes] Color of player preview uses the unused translation table (player 0), instead 
+		// of the table of the current player color. (Which is different in single, demo, and team)
+		V_ColorMap = translationtables; // + 0 * 256
+		//V_ColorMap = translationtables + consoleplayer().id * 256;
+		
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
 			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
 	}
@@ -1067,7 +1404,7 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw skin setting
 	{
-		if (!ctfmode) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
+		if (gametype != GM_CTF) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
 		{
 			int x = V_StringWidth ("Skin") + 8 + PSetupDef.x;
 			screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Skin");
@@ -1211,6 +1548,9 @@ static void SendNewColor (int red, int green, int blue)
 
 	sprintf (command, "cl_color \"%02x %02x %02x\"", red, green, blue);
 	AddCommandString (command);
+	
+	// [Nes] Change the player preview color.
+	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
 }
 
 static void M_SlidePlayerRed (int choice)
@@ -1219,11 +1559,11 @@ static void M_SlidePlayerRed (int choice)
 	int red = RPART(color);
 
 	if (choice == 0) {
-		red -= 16;
+		red -= 1;
 		if (red < 0)
 			red = 0;
 	} else {
-		red += 16;
+		red += 1;
 		if (red > 255)
 			red = 255;
 	}
@@ -1237,11 +1577,11 @@ static void M_SlidePlayerGreen (int choice)
 	int green = GPART(color);
 
 	if (choice == 0) {
-		green -= 16;
+		green -= 1;
 		if (green < 0)
 			green = 0;
 	} else {
-		green += 16;
+		green += 1;
 		if (green > 255)
 			green = 255;
 	}
@@ -1255,11 +1595,11 @@ static void M_SlidePlayerBlue (int choice)
 	int blue = BPART(color);
 
 	if (choice == 0) {
-		blue -= 16;
+		blue -= 1;
 		if (blue < 0)
 			blue = 0;
 	} else {
-		blue += 16;
+		blue += 1;
 		if (blue > 255)
 			blue = 255;
 	}
@@ -1452,7 +1792,7 @@ bool M_Responder (event_t* ev)
 			else
 			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if ((ctfmode) && currentMenu == &PSetupDef && itemOn == 5)
+				if (gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 5)
 					itemOn = itemOn + 2;
 				else	itemOn++;
 			}
@@ -1468,7 +1808,7 @@ bool M_Responder (event_t* ev)
 			else
 			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if ((ctfmode) && currentMenu == &PSetupDef && itemOn == 7)
+				if (gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 7)
 					itemOn = itemOn - 2;
 				else itemOn--;
 			}
@@ -1577,7 +1917,7 @@ void M_StartControlPanel (void)
 void M_Drawer (void)
 {
 	int i, x, y, max;
-	
+
 	st_firsttime = true;
 	//screen->Dim (); // denis - removed, see bug 388
 
@@ -1649,9 +1989,6 @@ void M_ClearMenus (void)
 	M_DemoNoPlay = false;
 	if (gamestate != GS_FULLCONSOLE)
 		I_ResumeMouse ();	// [RH] Recapture the mouse in windowed modes.
-
-	// joek - update skies (otherwise won't update if stretched or not.)
-	R_InitSkyMap ();
 }
 
 
@@ -1710,7 +2047,7 @@ void M_Ticker (void)
 	if (currentMenu == &PSetupDef)
 	{
 		// [Toke - CTF] skip skins selection
-		if (ctfmode)
+		if (gametype == GM_CTF)
 			if (itemOn == 6)
 				itemOn = 5;
 

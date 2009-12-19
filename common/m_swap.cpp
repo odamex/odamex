@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -97,4 +97,4 @@ int BELONG (int x)
 
 #endif // __BIG_ENDIAN__
 
-VERSION_CONTROL (m_swap_cpp, "$Id: m_swap.cpp 726 2008-05-09 03:01:26Z russellrice $")
+VERSION_CONTROL (m_swap_cpp, "$Id$")

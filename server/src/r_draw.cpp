@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,5 +27,5 @@
 // [RH] Tutti-Frutti fix
 unsigned int	dc_mask;
 
-VERSION_CONTROL (r_draw_cpp, "$Id:$")
+VERSION_CONTROL (r_draw_cpp, "$Id$")
 

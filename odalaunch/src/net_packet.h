@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2008 by The Odamex Team.
+// Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -135,10 +135,10 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         
 		void SetAddress(const wxString &Address, const wxInt16 &Port) 
 		{ 
-		    Socket.SetAddress(Address, Port);
+		    Socket.SetRemoteAddress(Address, Port);
         }
         
-		wxString GetAddress() { return Socket.GetAddress(); }
+		wxString GetAddress() { return Socket.GetRemoteAddress(); }
 		wxUint32 GetPing() const { return Ping; }
 };
 
@@ -167,13 +167,13 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
 
         }
         
-		wxInt32 GetServerCount() { return addresses.size(); }
+		size_t GetServerCount() { return addresses.size(); }
                       
-        bool GetServerAddress(const wxInt32 &Index, 
+        bool GetServerAddress(const size_t &Index, 
                               wxString &Address, 
                               wxUint16 &Port)
         {
-            if ((Index >= 0) && (Index < addresses.size()))
+            if (Index < addresses.size())
             {
                 Address = addresses[Index].ip;
                 Port = addresses[Index].port;
@@ -198,7 +198,7 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             
             for (size_t i = 0; i < masteraddresses.size(); ++i)
             {
-                Socket.SetAddress(masteraddresses[i].ip, masteraddresses[i].port);
+                Socket.SetRemoteAddress(masteraddresses[i].ip, masteraddresses[i].port);
                 
                 Query(Timeout);
             }
@@ -208,20 +208,18 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
         
         void DeleteAllNormalServers()
         {
+            size_t i = 0;
+            
             // don't delete our custom servers!
-            std::vector<addr_t>::iterator addr_iter = addresses.begin();    
-    
-            while(addr_iter != addresses.end()) 
-            {
-                addr_t address = *addr_iter;
-        
-                if (address.custom == false)
+            while (i < addresses.size())
+            {       
+                if (addresses[i].custom == false)
                 {
-                    addresses.erase(addr_iter);
+                    addresses.erase(addresses.begin() + i);
                     continue;
                 }
-        
-                addr_iter++;
+                
+                ++i;
             }            
         }
         
@@ -247,17 +245,15 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
             addresses.push_back(cs);
         }
                
-        bool DeleteCustomServer(const wxUint32 &Index)
+        bool DeleteCustomServer(const size_t &Index)
         {
-            if ((Index >= 0) && (Index < addresses.size()))
+            if (Index < addresses.size())
             {
                 if (addresses[Index].custom)
                 {
-                    std::vector<addr_t>::iterator addr_iterator = addresses.begin();
-                                        
-                    addr_iterator += Index;
+                    addresses.erase(addresses.begin() + Index);
                     
-                    addresses.erase(addr_iterator);
+                    return true;
                 }
                 else
                     return false;
@@ -268,10 +264,15 @@ class MasterServer : public ServerBase  // [Russell] - A master server packet
 
         void DeleteAllCustomServers()
         {
-            for (wxUint32 i = 0; i < addresses.size(); i++)
-            {
-                DeleteCustomServer(i);
-            }
+            size_t i = 0;
+            
+            while (i < addresses.size())
+            {       
+                if (DeleteCustomServer(i))
+                    continue;
+                
+                ++i;
+            }       
         }
         
         wxInt32 Parse();
