@@ -275,8 +275,7 @@ void dumpServersToFile(const char *file = "./latest")
 
 	itr = servers.begin();
 
-	fprintf(fp, "Odamex master server with query - Anarkavre (anark@unidoom.org), Russell (russell@mancubus.net), Denis (denis@voxelsoft.com)\n\n");
-	fprintf(fp, "Index: Name | Ping | MAP | Players/Max | WADs | Game type | Address:Port\n\n");
+	fprintf(fp, "\"Name\",\"Map\",\"Players/Max\",\"WADs\",\"Gametype\",\"Address:Port\"\n");
 
 	int i = 0;
 
@@ -307,7 +306,7 @@ void dumpServersToFile(const char *file = "./latest")
 		if(!str_wads.length())
 			str_wads = " ";
 
-		fprintf(fp, "%d: %s | 0 | %s | %d/%d | %s | %s | %s\n", i, (*itr).hostname.c_str(), (*itr).map.c_str(), (*itr).players, (*itr).maxplayers, str_wads.c_str(), detectgametype.c_str(), NET_AdrToString((*itr).addr, true));
+		fprintf(fp, "\"%s\",\"%s\",\"%d/%d\",\"%s\",\"%s\",\"%s\"\n", (*itr).hostname.c_str(), (*itr).map.c_str(), (*itr).players, (*itr).maxplayers, str_wads.c_str(), detectgametype.c_str(), NET_AdrToString((*itr).addr, true));
 
 		i++;
 		itr++;
@@ -352,7 +351,7 @@ void daemon_init(void)
     fpid = fopen("MasterPID", "w");
 	if(fpid)
 	{
-		fprintf(fpid, "PID %d\n", pid);
+		fprintf(fpid, "%d\n", pid);
 		fclose(fpid);
 	}
 #endif
