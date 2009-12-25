@@ -10,12 +10,17 @@ AppSupportURL=http://odamex.net
 AppUpdatesURL=http://odamex.net
 DefaultDirName={pf}\odamex
 DefaultGroupName=Odamex
-AllowNoIcons=yes
+AllowNoIcons=true
 LicenseFile=..\..\LICENSE
 ;InfoBeforeFile=..\..\CHANGES
 OutputBaseFilename=odamex-win32-0.4.4
 Compression=zip
-SolidCompression=no
+SolidCompression=true
+VersionInfoProductName=Odamex Win32 Installer
+VersionInfoProductVersion=0.4.4
+AlwaysShowDirOnReadyPage=true
+ChangesEnvironment=true
+AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -57,6 +62,7 @@ Source: ..\..\LICENSE; DestDir: {app}; Flags: ignoreversion; Components: base
 Source: ..\..\MAINTAINERS; DestDir: {app}; Flags: ignoreversion; Components: base
 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
+Source: ..\..\mikmod.dll; DestDir: {app}; Flags: ignoreversion; Components: libs
 
 [INI]
 Filename: {app}\Odamex Website.url; Section: InternetShortcut; Key: URL; String: http://odamex.net
@@ -69,7 +75,7 @@ Name: {group}\Odamex Server; Filename: {app}\odasrv.exe; WorkingDir: {app}
 Name: {group}\{cm:ProgramOnTheWeb,Odamex}; Filename: {app}\Odamex Website.url
 Name: {group}\Releases Changelog; Filename: {app}\Releases Changelog.url
 Name: {group}\{cm:UninstallProgram,Odamex}; Filename: {uninstallexe}
-Name: {userdesktop}\Odamex Client; Filename: {app}\odamex.exe; Tasks: desktopicon; WorkingDir: {app}
+Name: {userdesktop}\Odamex Launcher; Filename: {app}\odalaunch.exe; Tasks: desktopicon; WorkingDir: {app}; IconIndex: 0; Components: 
 
 [Run]
 Filename: {app}\odalaunch.exe; Description: {cm:LaunchProgram,Odalaunch}; Flags: nowait postinstall skipifsilent
@@ -78,3 +84,8 @@ Filename: {app}\odalaunch.exe; Description: {cm:LaunchProgram,Odalaunch}; Flags:
 Type: files; Name: {app}\Odamex Website.url
 Type: files; Name: {app}\Releases Changelog.url
 Type: files; Name: {app}\odamex.out
+[Registry]
+Root: HKCR; Subkey: odamex; ValueType: string; ValueData: URL:Odamex Protocol; Flags: uninsdeletekey noerror
+Root: HKCR; Subkey: odamex; ValueType: string; ValueName: Url Protocol; Flags: createvalueifdoesntexist uninsdeletekey noerror
+Root: HKCR; Subkey: odamex\DefaultIcon; ValueData: odamex.exe,1; Flags: createvalueifdoesntexist uninsdeletekey noerror
+Root: HKCR; Subkey: odamex\shell\open\command; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: createvalueifdoesntexist uninsdeletekey; ValueType: string
