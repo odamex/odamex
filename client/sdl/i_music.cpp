@@ -24,8 +24,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef OSX
 #ifdef UNIX
 #include <sys/stat.h>
+#endif
 #endif
 
 #include "doomtype.h"
@@ -101,10 +103,12 @@ void I_SetMusicVolume (float volume)
 
 void I_InitMusic (void)
 {
+#ifndef OSX
 #ifdef UNIX
 	struct stat buf;
 	if(stat("/etc/timidity.cfg", &buf) && stat("/etc/timidity/timidity.cfg", &buf))
 		Args.AppendArg("-nomusic");
+#endif
 #endif
 
 	if(Args.CheckParm("-nomusic"))
