@@ -82,7 +82,7 @@ void AActor::Serialize (FArchive &arc)
 			<< momx
 			<< momy
 			<< momz
-			<< type
+			<< (int)type
 			<< tics
 			<< state
 			<< flags
@@ -123,7 +123,7 @@ void AActor::Serialize (FArchive &arc)
 			>> momx
 			>> momy
 			>> momz
-			>> type
+			>> (int&)type
 			>> tics
 			>> state
 			>> flags
@@ -147,6 +147,8 @@ void AActor::Serialize (FArchive &arc)
 		DWORD trans;
 		arc >> trans;
 		spawnpoint.Serialize (arc);
+		if(type >= NUMMOBJTYPES)
+			I_Error("Unknown object type in saved game");
 		info = &mobjinfo[type];
 		touching_sectorlist = NULL;
 		LinkToWorld ();
