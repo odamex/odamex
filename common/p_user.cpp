@@ -550,8 +550,8 @@ void player_s::Serialize (FArchive &arc)
 			<< armortype
 			<< backpack
 			<< fragcount
-			<< readyweapon
-			<< pendingweapon
+			<< (int)readyweapon
+			<< (int)pendingweapon
 			<< attackdown
 			<< usedown
 			<< cheats
@@ -594,8 +594,8 @@ void player_s::Serialize (FArchive &arc)
 			>> armortype
 			>> backpack
 			>> fragcount
-			>> readyweapon
-			>> pendingweapon
+			>> (int&)readyweapon
+			>> (int&)pendingweapon
 			>> attackdown
 			>> usedown
 			>> cheats
