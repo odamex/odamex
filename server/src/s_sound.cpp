@@ -145,7 +145,7 @@ void S_PlatSound (fixed_t *pt, int channel, const char *name, float volume, int 
 
 void S_Sound (int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound ((AActor *)NULL, NULL, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
+	S_StartNamedSound (NULL, NULL, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)

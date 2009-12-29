@@ -35,6 +35,10 @@ indepth information about the server.
 * Make the server replacement item in the custom servers dialog, this should
 allow a listed or dead server be replaced by the address specified in the custom
 servers list.
+9) Use wxPersistenceManager for storing object properties (dimensions, position
+etc) instead of manually storing them in the configuration file. (only available 
+in wx 2.9.0)
+
 
 Master Server:
 --------------

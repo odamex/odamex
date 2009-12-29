@@ -854,10 +854,16 @@ bool CL_PrepareConnect(void)
 
     std::vector<std::string> PatchFiles;
 
-    size_t PatchCount = MSG_ReadByte();
+    // TODO: Version REMOVEME
+    if (SERVERMAJ >= CLIENTMAJ && 
+        SERVERMIN >= CLIENTMIN && 
+        SERVERREL >= CLIENTREL)
+    {
+        size_t PatchCount = MSG_ReadByte();
     
-    for (i = 0; i < PatchCount; ++i)
-        PatchFiles.push_back(MSG_ReadString());
+        for (i = 0; i < PatchCount; ++i)
+            PatchFiles.push_back(MSG_ReadString());
+    }
 
 	Printf(PRINT_HIGH, "\n");
 	
@@ -1788,8 +1794,7 @@ void CL_CheckMissedPacket(void)
 		// skip a duplicated packet
 		if (packetseq[n] == sequence)
 		{
-			for (int i=0; i<size; i++)
-				MSG_ReadByte();
+            MSG_ReadChunk(size);
 
 			#ifdef _DEBUG
                 Printf (PRINT_LOW, "warning: duplicate packet\n");

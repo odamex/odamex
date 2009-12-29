@@ -24,6 +24,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef UNIX
+#include <sys/stat.h>
+#endif
+
 #include "doomtype.h"
 #include "m_argv.h"
 #include "i_music.h"
@@ -57,7 +61,7 @@ static CFDataRef cfd;
     #define TEMP_MIDI "temp_music"
 #endif
 
-typedef struct 
+typedef struct
 {
     Mix_Music *Track;
     SDL_RWops *Data;
@@ -97,6 +101,12 @@ void I_SetMusicVolume (float volume)
 
 void I_InitMusic (void)
 {
+#ifdef UNIX
+	struct stat buf;
+	if(stat("/etc/timidity.cfg", &buf) && stat("/etc/timidity/timidity.cfg", &buf))
+		Args.AppendArg("-nomusic");
+#endif
+
 	if(Args.CheckParm("-nomusic"))
 	{
 		Printf (PRINT_HIGH, "I_InitMusic: Music playback disabled\n");
@@ -354,7 +364,7 @@ void I_UnRegisterSong (int handle)
 
     if (registered_tracks[handle].Track)
         Mix_FreeMusic(registered_tracks[handle].Track);
-    
+
     //if (registered_tracks[handle].Data)
         //SDL_FreeRW(registered_tracks[handle].Data);
 
@@ -414,7 +424,7 @@ int I_RegisterSong (char *data, size_t musicLen)
 
 		// older versions of sdl-mixer require a physical midi file to be read, 1.2.7+ can read from memory
 #ifndef TEMP_MIDI // SDL >= 1.2.7
-            
+
             if (result == 0) // it is a midi
             {
                 registered_tracks[0].Data = SDL_RWFromMem(mem_fgetbuf(midi), mem_fsize(midi));
@@ -423,7 +433,7 @@ int I_RegisterSong (char *data, size_t musicLen)
             {
                 registered_tracks[0].Data = SDL_RWFromMem(data, musicLen);
             }
-            
+
 
             if (!registered_tracks[0].Data)
             {
@@ -436,10 +446,10 @@ int I_RegisterSong (char *data, size_t musicLen)
 			if(!music)
             {
                 Printf(PRINT_HIGH, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
-                
+
                 SDL_FreeRW(registered_tracks[0].Data);
                 registered_tracks[0].Data = NULL;
-                
+
                 break;
             }
 

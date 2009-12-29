@@ -484,19 +484,19 @@ void R_InitTextures (void)
 	// denis - fix memory leaks
 	for (i = 0; i < numtextures; i++)
 	{
-		if(texturecolumnlump[i])delete[] texturecolumnlump[i];
-		if(texturecolumnofs[i])delete[] texturecolumnofs[i];
+		delete[] texturecolumnlump[i];
+		delete[] texturecolumnofs[i];
 	}
 
 	// denis - fix memory leaks
-	if(textures)delete[] textures;
-	if(texturecolumnlump)delete[] texturecolumnlump;
-	if(texturecolumnofs)delete[] texturecolumnofs;
-	if(texturecomposite)delete[] texturecomposite;
-	if(texturecompositesize)delete[] texturecompositesize;
-	if(texturewidthmask)delete[] texturewidthmask;
-	if(textureheightmask)delete[] textureheightmask;
-	if(textureheight)delete[] textureheight;
+	delete[] textures;
+	delete[] texturecolumnlump;
+	delete[] texturecolumnofs;
+	delete[] texturecomposite;
+	delete[] texturecompositesize;
+	delete[] texturewidthmask;
+	delete[] textureheightmask;
+	delete[] textureheight;
 	
 	numtextures = numtextures1 + numtextures2;
 
@@ -606,8 +606,7 @@ void R_InitTextures (void)
 	
 	// Create translation table for global animation.
 
-	if(texturetranslation)
-		delete[] texturetranslation;
+	delete[] texturetranslation;
 
 	texturetranslation = new int[numtextures+1];
 	
@@ -632,8 +631,7 @@ void R_InitFlats (void)
 	
 	numflats = lastflat - firstflat + 1;
 				
-	if(flattranslation) // [Toke - memleak]
-		delete[] flattranslation;
+	delete[] flattranslation;
 
 	// Create translation table for global animation.
 	flattranslation = new int[numflats+1];
@@ -641,20 +639,17 @@ void R_InitFlats (void)
 	for (i = 0; i < numflats; i++)
 		flattranslation[i] = i;
 
-	if(flatwarp) // [Toke - memleak]
-		delete[] flatwarp;
+	delete[] flatwarp;
 
 	flatwarp = new bool[numflats+1];
 	memset (flatwarp, 0, sizeof(bool) * (numflats+1));
 
-	if(warpedflats) // [Toke - memleak]
-		delete[] warpedflats;
+	delete[] warpedflats;
 
 	warpedflats = new byte *[numflats+1];
 	memset (warpedflats, 0, sizeof(byte *) * (numflats+1));
 
-	if(flatwarpedwhen) // [Toke - memleak]
-		delete[] flatwarpedwhen;
+	delete[] flatwarpedwhen;
 
 	flatwarpedwhen = new int[numflats+1];
 	memset (flatwarpedwhen, 0xff, sizeof(int) * (numflats+1));

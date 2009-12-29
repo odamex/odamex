@@ -443,7 +443,7 @@ int MSG_NextByte (void)
 	return net_message.NextByte();
 }
 
-void *MSG_ReadChunk (size_t &size)
+void *MSG_ReadChunk (const size_t &size)
 {
 	return net_message.ReadChunk(size);
 }
@@ -646,6 +646,7 @@ void InitNetMessageFormats()
       MSG(clc_wantwad,            "ssN"),
       MSG(clc_kill,               "x"),
       MSG(clc_cheat,              "x"),
+      MSG(clc_cheatpulse,         "x"),
       MSG(clc_launcher_challenge, "x"),
       MSG(clc_challenge,          "x")
    };

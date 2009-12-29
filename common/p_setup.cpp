@@ -117,9 +117,9 @@ mapthing2_t		*deathmatch_p;
 std::vector<mapthing2_t> playerstarts;
 
 //	[Toke - CTF - starts] Teamplay starts
-int				MaxBlueTeamStarts;
-int				MaxRedTeamStarts;
-int				MaxGoldTeamStarts;
+size_t			MaxBlueTeamStarts;
+size_t			MaxRedTeamStarts;
+size_t			MaxGoldTeamStarts;
 
 mapthing2_t		*blueteamstarts;
 mapthing2_t		*redteamstarts;
@@ -346,8 +346,7 @@ void P_LoadSectors (int lump)
 	int					defSeqType;
 	
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
-	if(sectors)
-		delete[] sectors;
+	delete[] sectors;
 
 	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
 

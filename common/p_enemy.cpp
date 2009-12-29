@@ -1715,6 +1715,8 @@ void A_Explode (AActor *thing)
 	P_RadiusAttack (thing, thing->target, 128, mod);
 }
 
+#define SPEED(a)		((a)*(FRACUNIT/8))
+
 //
 // A_BossDeath
 // Possibly trigger special effects if on a boss level
@@ -1786,7 +1788,7 @@ void A_BossDeath (AActor *actor)
 				return;
 
 			case LEVEL_SPECOPENDOOR:
-				EV_DoDoor (DDoor::doorOpen, NULL, NULL, 666, 8*TICRATE, 0, NoKey);
+				EV_DoDoor (DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
 				return;
 		}
 	}

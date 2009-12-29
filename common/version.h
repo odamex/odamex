@@ -31,9 +31,9 @@
 
 // Lots of different representations for the version number
 #define CONFIGVERSIONSTR "40"
-#define GAMEVER (0*256+43)
+#define GAMEVER (0*256+44)
 
-#define DOTVERSIONSTR "0.4.3"
+#define DOTVERSIONSTR "0.4.4"
 
 #define SERVERMAJ (gameversion / 256)
 #define SERVERMIN ((gameversion % 256) / 10)

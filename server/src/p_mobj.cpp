@@ -179,19 +179,77 @@ AActor::AActor () :
 	self.init(this);
 }
 
-AActor::AActor (const AActor &other)
+AActor::AActor (const AActor &other) :
+    x(other.x), y(other.y), z(other.z), snext(other.snext), sprev(other.sprev), 
+    angle(other.angle), sprite(other.sprite), frame(other.frame), 
+    pitch(other.pitch), roll(other.roll), effects(other.effects), 
+    bnext(other.bnext), bprev(other.bprev), subsector(other.subsector), 
+    floorz(other.floorz), ceilingz(other.ceilingz), radius(other.radius), 
+    height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
+    validcount(other.validcount), type(other.type), info(other.info), 
+    tics(other.tics), state(other.state), flags(other.flags), 
+    health(other.health), movedir(other.movedir), movecount(other.movecount), 
+    visdir(other.visdir), reactiontime(other.reactiontime), 
+    threshold(other.threshold), player(other.player), lastlook(other.lastlook), 
+    inext(other.inext), iprev(other.iprev), translation(other.translation),
+    translucency(other.translucency), waterlevel(other.waterlevel), 
+    onground(other.onground), touching_sectorlist(other.touching_sectorlist), 
+    deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex), 
+    netid(other.netid), tid(other.tid)
 {
-	// TODO: this may be bad, memcpy shouldn't be used to overwrite the data, it should 
-	// do a normal deep copy
-	memcpy (&x, &other.x, (byte *)&this[1] - (byte *)&x);
 	self.init(this);
 }
 
 AActor &AActor::operator= (const AActor &other)
 {
-	// TODO: this may be bad, memcpy shouldn't be used to overwrite the data, it should 
-	// do a normal deep copy
-	memcpy (&x, &other.x, (byte *)&this[1] - (byte *)&x);
+	x = other.x;
+    y = other.y;
+    z = other.z;
+    snext = other.snext;
+    sprev = other.sprev;
+    angle = other.angle; 
+    sprite = other.sprite;
+    frame = other.frame; 
+    pitch = other.pitch; 
+    roll = other.roll;
+    effects = other.effects;
+    bnext = other.bnext;
+    bprev = other.bprev;
+    subsector = other.subsector; 
+    floorz = other.floorz;
+    ceilingz = other.ceilingz;
+    radius = other.radius; 
+    height = other.height;
+    momx = other.momx;
+    momy = other.momy;
+    momz = other.momz;
+    validcount = other.validcount;
+    type = other.type;
+    info = other.info; 
+    tics = other.tics;
+    state = other.state;
+    flags= other.flags; 
+    health = other.health;
+    movedir = other.movedir;
+    movecount = other.movecount; 
+    visdir = other.visdir; 
+    reactiontime = other.reactiontime; 
+    threshold = other.threshold;
+    player = other.player;
+    lastlook = other.lastlook; 
+    inext = other.inext;
+    iprev = other.iprev;
+    translation = other.translation;
+    translucency = other.translucency;
+    waterlevel = other.waterlevel; 
+    onground = other.onground;
+    touching_sectorlist = other.touching_sectorlist; 
+    deadtic = other.deadtic;
+    oldframe = other.oldframe;
+    rndindex = other.rndindex; 
+    netid = other.netid;
+    tid = other.tid;
+    
 	return *this;
 }
 

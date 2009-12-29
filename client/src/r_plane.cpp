@@ -713,11 +713,11 @@ BOOL R_PlaneInitData (void)
 	int i;
 	visplane_t *pl;
 
-	if (floorclip)		delete[] floorclip;
-	if (ceilingclip)	delete[] ceilingclip;
-	if (spanstart)		delete[] spanstart;
-	if (yslope)			delete[] yslope;
-	if (distscale)		delete[] distscale;
+	delete[] floorclip;
+	delete[] ceilingclip;
+	delete[] spanstart;
+	delete[] yslope;
+	delete[] distscale;
 
 	floorclip = new short[screen->width];
 	ceilingclip = new short[screen->width];

@@ -434,8 +434,7 @@ int wipe_StartScreen (void)
 
 	if (CurrentWipeType)
 	{
-	    if (wipe_scr_start != NULL)
-            delete[] wipe_scr_start;
+        delete[] wipe_scr_start;
         
         if (screen->is8bit())
             wipe_scr_start = new short[screen->width * screen->height / 2];
@@ -452,8 +451,7 @@ int wipe_EndScreen (void)
 {
 	if (CurrentWipeType)
 	{
-	    if (wipe_scr_end != NULL)
-            delete[] wipe_scr_end;
+        delete[] wipe_scr_end;
             
         if (screen->is8bit())
             wipe_scr_end = new short[screen->width * screen->height / 2];

@@ -152,6 +152,7 @@ enum clc_t
 	clc_wantwad,			// denis - string:name, string:hash
 	clc_kill,				// denis - suicide
 	clc_cheat,				// denis - god, pumpkins, etc
+    clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,
@@ -361,8 +362,7 @@ public:
 
 	void resize(size_t len)
 	{
-		if(data)
-			delete[] data;
+		delete[] data;
 		
 		data = new byte[len];
 		allocsize = len;
@@ -388,8 +388,7 @@ public:
 
 	buf_t &operator =(const buf_t &other)
 	{
-		if(data)
-			delete[] data;
+		delete[] data;
 		
 		data = new byte[other.allocsize];
 		allocsize = other.allocsize;
@@ -422,8 +421,8 @@ public:
 	}
 	~buf_t()
 	{
-		if(data)
-			delete[] data;
+		delete[] data;
+		data = NULL;
 	}
 };
 
@@ -459,7 +458,7 @@ int MSG_BytesLeft(void);
 int MSG_NextByte (void);
 
 int MSG_ReadByte (void);
-void *MSG_ReadChunk (size_t &size);
+void *MSG_ReadChunk (const size_t &size);
 int MSG_ReadShort (void);
 int MSG_ReadLong (void);
 bool MSG_ReadBool(void);

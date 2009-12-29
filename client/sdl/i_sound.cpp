@@ -394,7 +394,7 @@ void I_InitSound (void)
 
 	if(ver->patch != MIX_PATCHLEVEL)
 	{
-		Printf(PRINT_HIGH, "I_InitSound: SDL_mixer version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+		Printf_Bold("I_InitSound: SDL_mixer version warning (%d.%d.%d vs %d.%d.%d dll)\n",
 			MIX_MAJOR_VERSION, MIX_MINOR_VERSION, MIX_PATCHLEVEL,
 			ver->major, ver->minor, ver->patch);
 	}

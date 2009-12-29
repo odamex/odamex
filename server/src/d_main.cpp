@@ -718,7 +718,7 @@ void D_AddDefWads (std::string iwad)
 //
 // [Russell] - Change the meaning, this will load multiple patch files if 
 //             specified
-void D_DoDefDehackedPatch (const std::vector<std::string> patch_files)
+void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
 {
     DArgs files; 
     BOOL noDef = false;
@@ -838,8 +838,8 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 // change wads at runtime
 // on 404, returns a vector of bad files
 //
-std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames, 
-                                     std::vector<std::string> patch_files)
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
+                                     const std::vector<std::string> &patch_files)
 {
 	std::vector<size_t> fails;
 
@@ -851,6 +851,10 @@ std::vector<size_t> D_DoomWadReboot (std::vector<std::string> wadnames,
 	G_ExitLevel(0, 0);
 	DThinker::DestroyAllThinkers();
 
+	// Close all open WAD files
+	W_Close();
+
+	// Restart the memory manager
 	Z_Init();
 
 	wadfiles.clear();

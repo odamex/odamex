@@ -92,7 +92,8 @@ void DScroller::Serialize (FArchive &arc)
 	}
 }
 
-DPusher::DPusher ()
+DPusher::DPusher () : m_Type(p_push), m_Xmag(0), m_Ymag(0), m_Magnitude(0),
+    m_Radius(0), m_X(0), m_Y(0), m_Affectee(0)
 {
 }
 

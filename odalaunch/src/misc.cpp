@@ -26,7 +26,9 @@
 #include <wx/statusbr.h>
 #include <wx/msgdlg.h>
 #include <wx/colour.h>
+#include <wx/fileconf.h>
 
+#include "dlg_config.h"
 #include "net_packet.h"
 #include "misc.h"
 
@@ -564,9 +566,9 @@ wxString *CheckPWADS(wxString pwads, wxString waddirs)
         while (wads.HasMoreTokens())
         {
             #ifdef __WXMSW__
-            wadfn = wxString::Format(_T("%s\%s"), dirs.GetNextToken().c_str(), wads.GetNextToken().c_str());
+            wadfn = wxString::Format(wxT("%s\\%s"), dirs.GetNextToken().c_str(), wads.GetNextToken().c_str());
             #else
-            wadfn = wxString::Format(_T("%s/%s"), dirs.GetNextToken().c_str(), wads.GetNextToken().c_str());
+            wadfn = wxString::Format(wxT("%s/%s"), dirs.GetNextToken().c_str(), wads.GetNextToken().c_str());
             #endif
             
             if (wxFileExists(wadfn))
@@ -590,42 +592,52 @@ wxString *CheckPWADS(wxString pwads, wxString waddirs)
 
 void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs, wxString Password)
 {
+    wxFileConfig ConfigInfo;
+    wxString ExtraCmdLineArgs;
+    
     if (ODX_Path.IsEmpty())
     {
-        wxMessageBox(_T("Your Odamex path is empty!"));
+        wxMessageBox(wxT("Your Odamex path is empty!"));
         
         return;
     }
     
     #ifdef __WXMSW__
-      wxString binname = ODX_Path + _T('\\') + _T("odamex");
+      wxString binname = ODX_Path + wxT('\\') + _T("odamex");
     #elif __WXMAC__
-      wxString binname = ODX_Path + _T("/odamex.app/Contents/MacOS/odamex");
+      wxString binname = ODX_Path + wxT("/odamex.app/Contents/MacOS/odamex");
     #else
-      wxString binname = ODX_Path + _T("/odamex");
+      wxString binname = ODX_Path + wxT("/odamex");
     #endif
 
-    wxString cmdline = _T("");
+    wxString cmdline = wxT("");
 
     wxString dirs = waddirs.Mid(0, waddirs.Length());
     
-    cmdline += wxString::Format(_T("%s"), binname.c_str());
+    cmdline += wxString::Format(wxT("%s"), binname.c_str());
     
     if (!Address.IsEmpty())
-		cmdline += wxString::Format(_T(" -connect %s"),
+		cmdline += wxString::Format(wxT(" -connect %s"),
 									Address.c_str());
 	
 	if (!Password.IsEmpty())
-        cmdline += wxString::Format(_T(" %s"),
+        cmdline += wxString::Format(wxT(" %s"),
 									Password.c_str());
 	
 	// this is so the client won't mess up parsing
 	if (!dirs.IsEmpty())
-        cmdline += wxString::Format(_T(" -waddir \"%s\""), 
+        cmdline += wxString::Format(wxT(" -waddir \"%s\""), 
                                     dirs.c_str());
 
+    // Check for any user command line arguments
+    ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
+    
+    if (!ExtraCmdLineArgs.IsEmpty())
+        cmdline += wxString::Format(_T(" %s"), 
+                                    ExtraCmdLineArgs.c_str());
+
 	if (wxExecute(cmdline, wxEXEC_ASYNC, NULL) == -1)
-        wxMessageBox(wxString::Format(_T("Could not start %s!"), 
+        wxMessageBox(wxString::Format(wxT("Could not start %s!"), 
                                         binname.c_str()));
 	
 }

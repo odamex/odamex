@@ -44,6 +44,7 @@ static wxInt32 Id_LstCtrlWadDirectories = XRCID("Id_LstCtrlWadDirectories");
 
 static wxInt32 Id_TxtCtrlMasterTimeout = XRCID("Id_TxtCtrlMasterTimeout");
 static wxInt32 Id_TxtCtrlServerTimeout = XRCID("Id_TxtCtrlServerTimeout");
+static wxInt32 Id_TxtCtrlExtraCmdLineArgs = XRCID("Id_TxtCtrlExtraCmdLineArgs");
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
@@ -67,6 +68,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	
 	EVT_TEXT(Id_TxtCtrlMasterTimeout, dlgConfig::OnTextChange)
 	EVT_TEXT(Id_TxtCtrlServerTimeout, dlgConfig::OnTextChange)
+	EVT_TEXT(Id_TxtCtrlExtraCmdLineArgs, dlgConfig::OnTextChange)
 END_EVENT_TABLE()
 
 // Window constructor
@@ -85,6 +87,7 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
 
     m_TxtCtrlMasterTimeout = wxStaticCast(FindWindow(Id_TxtCtrlMasterTimeout), wxTextCtrl);
     m_TxtCtrlServerTimeout = wxStaticCast(FindWindow(Id_TxtCtrlServerTimeout), wxTextCtrl);
+    m_TxtCtrlExtraCmdLineArgs = wxStaticCast(FindWindow(Id_TxtCtrlExtraCmdLineArgs), wxTextCtrl);
 
     // Load current configuration from global configuration structure
     cfg_file = cfg;
@@ -123,13 +126,15 @@ void dlgConfig::Show()
 
     m_DirCtrlChooseOdamexPath->SetPath(cfg_file->odamex_directory);
 
-    wxString MasterTimeout, ServerTimeout;
+    wxString MasterTimeout, ServerTimeout, ExtraCmdLineArgs;
 
-    ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, _T("500"));
-    ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, _T("500"));
+    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, wxT("500"));
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("500"));
+    ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
     m_TxtCtrlMasterTimeout->SetValue(MasterTimeout);
     m_TxtCtrlServerTimeout->SetValue(ServerTimeout);
+    m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
 
     UserChangedSetting = 0;
 
@@ -370,8 +375,9 @@ void dlgConfig::LoadSettings()
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
-    ConfigInfo.Write(_T("MasterTimeout"), m_TxtCtrlMasterTimeout->GetValue());
-    ConfigInfo.Write(_T("ServerTimeout"), m_TxtCtrlServerTimeout->GetValue());
+    ConfigInfo.Write(wxT(MASTERTIMEOUT), m_TxtCtrlMasterTimeout->GetValue());
+    ConfigInfo.Write(wxT(SERVERTIMEOUT), m_TxtCtrlServerTimeout->GetValue());
+    ConfigInfo.Write(wxT(EXTRACMDLINEARGS), m_TxtCtrlExtraCmdLineArgs->GetValue());
     ConfigInfo.Write(_T(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
 	ConfigInfo.Write(_T(DELIMWADPATHS), cfg_file->wad_paths);

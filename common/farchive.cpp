@@ -287,9 +287,10 @@ void FLZOFile::Implode ()
 		memcpy (m_Buffer + 8, oldbuf, len);
 	else
 		memcpy (m_Buffer + 8, compressed, outlen);
-	if (compressed)
-		delete[] compressed;
 
+	delete[] compressed;
+    compressed = NULL;
+    
 	M_Free(oldbuf);
 }
 
@@ -507,8 +508,10 @@ FArchive::FArchive (FFile &file)
 FArchive::~FArchive ()
 {
 	Close ();
-	if (m_TypeMap)
-		delete[] m_TypeMap;
+	
+	delete[] m_TypeMap;
+    m_TypeMap = NULL;
+    
 	if (m_ObjectMap)
 		M_Free(m_ObjectMap);
 }

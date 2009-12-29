@@ -155,12 +155,14 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 dlgMain::~dlgMain()
 {
     // Cleanup
-    if (MServer != NULL)
-        delete MServer;
-        
-    if (QServer != NULL)
-        delete[] QServer;
-        
+    delete MServer;
+    
+    MServer = NULL;
+    
+    delete[] QServer;
+    
+    QServer = NULL;
+    
     if (config_dlg != NULL)
         config_dlg->Destroy();
 
@@ -269,7 +271,7 @@ void *dlgMain::Entry()
     {           
         mtcs_Request.Signal = mtcs_getservers;
             
-        ConfigInfo.Read(_T("MasterTimeout"), &MasterTimeout, 500);
+        ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
             
         MServer->QueryMasters(MasterTimeout);
             
@@ -336,7 +338,7 @@ void *dlgMain::Entry()
             wxPostEvent(this, event);                  
         }
 
-        ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, 500);
+        ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
     
         /* 
             Thread pool manager:
@@ -401,7 +403,7 @@ void *dlgMain::Entry()
     {            
         mtcs_Request.Signal = mtcs_none;
 
-        ConfigInfo.Read(_T("ServerTimeout"), &ServerTimeout, 500);
+        ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
 
         if (MServer->GetServerCount())
         if (QServer[mtcs_Request.Index].Query(ServerTimeout))
@@ -614,7 +616,7 @@ void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
 // About information
 void dlgMain::OnAbout(wxCommandEvent& event)
 {
-    wxString strAbout = _T("Odamex Launcher 0.4.3 - "
+    wxString strAbout = _T("Odamex Launcher 0.4.4 - "
                             "Copyright 2009 The Odamex Team");
     
     wxMessageBox(strAbout, strAbout);

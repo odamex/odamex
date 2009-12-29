@@ -552,67 +552,71 @@ END_COMMAND (set)
 
 BEGIN_COMMAND (get)
 {
-	cvar_t *var, *prev;
+    cvar_t *prev;
+	cvar_t *var;
 
-	if (argc >= 2)
-	{
-		if (var = cvar_t::FindCVar (argv[1], &prev))
-		{
-			// [Russell] - Don't make the user feel inadequate, tell
-			// them its either enabled, disabled or its other value
-			if (var->flags() & CVAR_NOENABLEDISABLE)
-				Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
-			else if (var->cstring()[0] == '0')
-                Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-            else
-                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-		}
-		else
-		{
-			Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
-		}
-	}
-	else
+    if (argc < 2)
 	{
 		Printf (PRINT_HIGH, "usage: get <variable>\n");
+        return;
 	}
+	
+    var = cvar_t::FindCVar (argv[1], &prev);
+
+    if (var)
+    {
+        // [Russell] - Don't make the user feel inadequate, tell
+        // them its either enabled, disabled or its other value
+        if (var->flags() & CVAR_NOENABLEDISABLE)
+            Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+        else if (var->cstring()[0] == '0')
+            Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
+        else
+            Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
+    }
+    else
+    {
+        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+    }
 }
 END_COMMAND (get)
 
 BEGIN_COMMAND (toggle)
 {
-	cvar_t *var, *prev;
+    cvar_t *prev;
+	cvar_t *var;
 
-	if (argc >= 2)
-	{
-		if (var = cvar_t::FindCVar (argv[1], &prev))
-		{
-			if (var->flags() & CVAR_NOENABLEDISABLE) {
-				Printf (PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
-			}
-			else
-			{
-				var->Set ((float)(!var->value()));
-
-				// [Russell] - Don't make the user feel inadequate, tell
-				// them its either enabled, disabled or its other value
-				if (var->cstring()[0] == '1')
-					Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
-				else if (var->cstring()[0] == '0')
-					Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
-				else
-					Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
-			}
-		}
-		else
-		{
-			Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
-		}
-	}
-	else
+    if (argc < 2)
 	{
 		Printf (PRINT_HIGH, "usage: toggle <variable>\n");
+        return;
 	}
+
+    var = cvar_t::FindCVar (argv[1], &prev);
+	
+    if (var)
+    {
+        if (var->flags() & CVAR_NOENABLEDISABLE) {
+            Printf (PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
+        }
+        else
+        {
+            var->Set ((float)(!var->value()));
+
+            // [Russell] - Don't make the user feel inadequate, tell
+            // them its either enabled, disabled or its other value
+            if (var->cstring()[0] == '1')
+                Printf (PRINT_HIGH, "\"%s\" is enabled.\n", var->name());
+            else if (var->cstring()[0] == '0')
+                Printf (PRINT_HIGH, "\"%s\" is disabled.\n", var->name());
+            else
+                Printf (PRINT_HIGH, "\"%s\" is \"%s\"\n", var->name(), var->cstring());
+        }
+    }
+    else
+    {
+        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+    }
 }
 END_COMMAND (toggle)
 

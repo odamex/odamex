@@ -188,28 +188,10 @@ menu_t OptionMenu = {
 
 static value_t MouseBases[] =
 {
-
-	{ 0.0, "Standard"						},
-	{ 1.0, "ZDoom"							},
-
+	{ 0.0, "Standard" },
+	{ 1.0, "ZDoom" },
 };
 
-/*
-static value_t MousePresets[] =
-{
-
-	{ 0.0, "Default"						},
-	{ 1.0, "Ander's settings"				},
-	{ 2.0, "Ocelot's settings"				},
-	{ 3.0, "Vile's settings"				},
-//	{ 4.0, "Bahdko Style"					},
-//	{ 5.0, "Custom 1"						},
-//	{ 6.0, "Custom 2"						},
-//	{ 7.0, "Custom 3"						},
-//	{ 8.0, "Custom 4"						},
-
-};
-*/
 static menuitem_t MouseItems[] =
 {
 
@@ -228,22 +210,15 @@ static menuitem_t MouseItems[] =
 	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
 	{ discrete	,	"NoVert"								, {&novert},			{2.0},		{0.0},		{0.0},		{OnOff}						},
-
-//	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-//	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-//	{ discrete	,	"Select Preset"							, {&mouse_preset},		{4.0},		{0.0},		{0.0},		{MousePresets}				},
-//	{ more		,	"Load Preset"							, {NULL},				{0.0},		{0.0},		{0.0},		{(value_t *)LoadMouse}		},
-//	{ more		,	"Unload Preset"							, {NULL},				{0.0},		{0.0},		{0.0},		{(value_t *)UnloadMouse}	},
-
 };
 
-menu_t MouseMenu =		{
-							"M_MOUSET",
-							0,
-							STACKARRAY_LENGTH(MouseItems),
-							177,
-							MouseItems,
-						};
+menu_t MouseMenu = {
+    "M_MOUSET",
+    0,
+    STACKARRAY_LENGTH(MouseItems),
+    177,
+    MouseItems,
+};
 
 
 
@@ -518,11 +493,7 @@ static menuitem_t ModesItems[] = {
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
-#ifndef DJGPP
-	2,
-#else
 	4,
-#endif
 	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,

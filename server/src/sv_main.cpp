@@ -132,7 +132,7 @@ CVAR_FUNC_IMPL (maxplayers)
 	if (var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
 	
-	for (int i = 0; i < players.size(); i++)
+	for (size_t i = 0; i < players.size(); i++)
 	{
 		if (!players[i].spectator)
 		{
@@ -255,7 +255,6 @@ BEGIN_COMMAND (kick)
 
 	if (argc > 2)
 	{
-		client_t  *cl = &player.client;
 		std::string reason = BuildString(argc - 2, (const char **)(argv + 2));
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
 	}
@@ -551,7 +550,6 @@ BEGIN_COMMAND(kickban)
 	// The kick...
 	if (argc > 2)
 	{
-		client_t  *cl = &player.client;
 		std::string reason = BuildString(argc - 2, (const char **)(argv + 2));
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kickbanned from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
 	}
@@ -3242,7 +3240,7 @@ void SV_Spectate (player_t &player)
 		if (player.spectator){
 			int NumPlayers = 0;
 			// Check to see if there are enough "activeplayers"
-			for (int i = 0; i < players.size(); i++)
+			for (size_t i = 0; i < players.size(); i++)
 			{
 				if (!players[i].spectator)
 					NumPlayers++;
@@ -3338,6 +3336,83 @@ void SV_Cheat(player_t &player)
 		return;
 
 	player.cheats = cheats;
+}
+
+BOOL P_GiveWeapon(player_s*, weapontype_t, BOOL);
+BOOL P_GivePower(player_s*, int);
+
+void SV_CheatPulse(player_t &player)
+{
+    byte cheats = MSG_ReadByte();
+    int i;    
+    
+    if (!allowcheats)
+    {
+        if (cheats == 3)
+            MSG_ReadByte();
+            
+        return;
+    }
+    
+    if (cheats == 1)
+    {
+        player.armorpoints = deh.FAArmor;
+        player.armortype = deh.FAAC;
+
+        weapontype_t pendweap = player.pendingweapon;
+        
+        for (i = 0; i<NUMWEAPONS; i++)
+            P_GiveWeapon (&player, (weapontype_t)i, false);
+        
+        player.pendingweapon = pendweap;
+
+        for (i=0; i<NUMAMMO; i++)
+            player.ammo[i] = player.maxammo[i];
+        
+        return;
+    }
+    
+    if (cheats == 2)
+    {
+        player.armorpoints = deh.KFAArmor;
+        player.armortype = deh.KFAAC;
+
+        weapontype_t pendweap = player.pendingweapon;
+        
+        for (i = 0; i<NUMWEAPONS; i++)
+            P_GiveWeapon (&player, (weapontype_t)i, false);
+        
+        player.pendingweapon = pendweap;
+
+        for (i=0; i<NUMAMMO; i++)
+            player.ammo[i] = player.maxammo[i];
+
+        for (i=0; i<NUMCARDS; i++)
+            player.cards[i] = true;
+            
+        return;
+    }
+    
+    if (cheats == 3)
+    {
+        byte power = MSG_ReadByte();
+        
+        if (!player.powers[power])
+            P_GivePower(&player, power);
+        else if (power != pw_strength)
+            player.powers[power] = 1;
+        else
+            player.powers[power] = 0;
+        
+        return;
+    }
+    
+    if (cheats == 4)
+    {
+        player.weaponowned[wp_chainsaw] = true;
+        
+        return;
+    }
 }
 
 void SV_WantWad(player_t &player)
@@ -3495,7 +3570,11 @@ void SV_ParseCommands(player_t &player)
 		case clc_cheat:
 			SV_Cheat(player);
 			break;
-
+			
+        case clc_cheatpulse:
+            SV_CheatPulse(player);
+            break;
+            
 		case clc_abort:
 			Printf(PRINT_HIGH, "Client abort.\n");
 			SV_DropClient(player);
@@ -3629,7 +3708,7 @@ void SV_TimelimitCheck()
 			bool drawgame = false;
 			
 			if (players.size() > 1) {
-				for (int i = 1; i < players.size(); i++) {
+				for (size_t i = 1; i < players.size(); i++) {
 					if (players[i].fragcount > winplayer->fragcount) {
 						drawgame = false;
 						winplayer = &players[i];
