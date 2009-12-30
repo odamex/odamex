@@ -130,7 +130,7 @@ CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (revealsecrets,        "0", CVAR_ARCHIVE)
 CVAR (show_messages, "1", CVAR_ARCHIVE)
 
-// Rate of client updates 
+// Rate of client updates
 CVAR_FUNC_DECL (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Maximum number of clients who can connect to the server
 CVAR (maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
@@ -160,7 +160,7 @@ CVAR (displaymouse,	"0",	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
 // Crosshair transparency
 CVAR (crosshairdim, "0", CVAR_ARCHIVE)
 // Crosshair scaling
-CVAR (crosshairscale, "0", CVAR_ARCHIVE) 
+CVAR (crosshairscale, "0", CVAR_ARCHIVE)
 
 CVAR (idmypos, "0", CVAR_NULL)
 
@@ -225,6 +225,8 @@ CVAR (r_viewsize, "0", CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
 CVAR (vid_defwidth, "320", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (vid_defheight, "200", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (vid_defbits, "8", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Force video mode
+CVAR (autoadjust_video_settings, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 // Frames per second counter
 CVAR (vid_fps, "0", CVAR_CLIENTINFO)
 // Fullscreen mode
