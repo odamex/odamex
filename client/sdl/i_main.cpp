@@ -117,7 +117,10 @@ int main(int argc, char *argv[])
 				Args.AppendArg(location.substr(0, term).c_str());
 			}
 		}
-
+        
+        // [Russell] - No more double-tapping of capslock to enable autorun
+        putenv("SDL_DISABLE_LOCK_KEYS=1");
+        
 #ifdef WIN32
     	// From the SDL 1.2.10 release notes: 
     	//
