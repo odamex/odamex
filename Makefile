@@ -210,7 +210,7 @@ CLIENT_LFLAGS =  $(SDL_LFLAGS) -lSDL_mixer
 # denis - end fixme
 
 # All
-all: $(SERVER_TARGET) $(CLIENT_TARGET) $(MASTER_TARGET) $(WADFILE_TARGET)
+all: $(SERVER_TARGET) $(CLIENT_TARGET) $(WADFILE_TARGET)
 
 # Common for server
 $(OBJDIR)/$(COMMON_DIR)/server_%.o: $(COMMON_DIR)/%.cpp $(COMMON_HEADERS) $(SERVER_HEADERS)
@@ -271,6 +271,9 @@ install: $(CLIENT_TARGET) $(SERVER_TARGET) odalaunch/odalaunch
 	$(MKDIR) $(INSTALLDIR)
 	$(INSTALL) $(SERVER_TARGET) $(INSTALLDIR)
 	$(INSTALL) $(CLIENT_TARGET) $(INSTALLDIR)
+ifneq ($(wildcard $(MASTER_TARGET)),)
+	$(INSTALL) $(MASTER_TARGET) $(INSTALLDIR)
+endif
 	$(INSTALL) odalaunch/odalaunch $(INSTALLDIR)
 	$(MKDIR) $(RESDIR)/doom
 	cp odamex.wad $(RESDIR)/doom
@@ -278,7 +281,9 @@ install: $(CLIENT_TARGET) $(SERVER_TARGET) odalaunch/odalaunch
 uninstall:
 	rm $(INSTALLDIR)/$(CLIENT_TARGET)
 	rm $(INSTALLDIR)/$(SERVER_TARGET)
+ifneq ($(wildcard $(INSTALLDIR)/$(MASTER_TARGET)),)
 	rm $(INSTALLDIR)/$(MASTER_TARGET)
+endif
 	rm $(INSTALLDIR)/odalaunch
 	rm $(RESDIR)/doom/odamex.wad
 
