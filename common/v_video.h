@@ -135,6 +135,7 @@ public:
 	inline void DrawPatchDirect (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchIndirect (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
+	inline void DrawPatchClean (int lump, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
 
 	inline void DrawLucentPatch (const patch_t *patch, int x, int y) const;

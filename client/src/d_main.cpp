@@ -488,10 +488,9 @@ void D_AdvanceDemo (void)
 //
 // This cycles through the demo sequences.
 //
+char *pagename = NULL;
 void D_DoAdvanceDemo (void)
 {
-	const char *pagename = NULL;
-
 	consoleplayer().playerstate = PST_LIVE;	// not reborn
 	advancedemo = false;
 	usergame = false;				// no save / end game here

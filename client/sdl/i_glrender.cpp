@@ -131,7 +131,7 @@ size_t next_pow2(size_t in)
 	return pow2;
 }
 
-glpatch_t &get_glpatch(size_t patchnum)
+glpatch_t &get_glpatch(size_t patchnum, bool paletteTexture = true)
 {
 	mapi_t::iterator it = loaded.find(patchnum);
 
@@ -168,10 +168,20 @@ glpatch_t &get_glpatch(size_t patchnum)
 				{
 					byte s = *((byte *)(column) + 2 + j);
 					r[j] = LONG(V_Palette[s]);
-					((byte *)(&r[j]))[3] = 0xFF; // make alpha non-transparent
-					((byte *)(&r[j]))[2] = 0; // make alpha non-transparent
-					((byte *)(&r[j]))[1] = 0; // make alpha non-transparent
-					((byte *)(&r[j]))[0] = s; // make alpha non-transparent
+					if(paletteTexture)
+					{
+						((byte *)(&r[j]))[3] = 0xFF; // make alpha non-transparent
+						((byte *)(&r[j]))[2] = 0; // zero out colour channel
+						((byte *)(&r[j]))[1] = 0; // zero out colour channel
+						((byte *)(&r[j]))[0] = s; // single colour for texture-texture lookup
+					}
+					else
+					{
+						byte t = ((byte *)(&r[j]))[2];
+						((byte *)(&r[j]))[2] = ((byte *)(&r[j]))[0];
+						((byte *)(&r[j]))[0] = t;
+					}
+
 				}
 
 				column = (column_t *)(	(byte *)column + column->length + 4);
@@ -1273,17 +1283,23 @@ void DrawScreenSprites()
 
 void DrawConsoleBackground()
 {
-	int num = W_GetNumForName("ODAMEX");
+	extern char *pagename;
+
+	if(pagename == NULL)
+		return;
+
+	int num = W_GetNumForName(pagename);
 
 	if(num == -1)
 		return;
 
-	glpatch_t &glp = get_glpatch(num);
-	glBindTexture(GL_TEXTURE_2D, glp.texture);
-
-	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
+	glEnable(GL_TEXTURE_2D);
+
+	glpatch_t &glp = get_glpatch(num, false);
+	glBindTexture(GL_TEXTURE_2D, glp.texture);
+
 	glColor4f(1, 1, 1, 1);
 
 	DrawTexturedQuad(0, 0, 1, 1, glp.h, glp.w);

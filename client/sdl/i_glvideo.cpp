@@ -21,6 +21,16 @@
 #include "v_palette.h"
 #include "i_glvideo.h"
 #include "i_system.h"
+#include "w_wad.h"
+#include "z_zone.h"
+
+class glpatch_t
+{
+public:
+	GLuint texture;
+	float w, h; // 0.0 to 1.0
+};
+glpatch_t &get_glpatch(size_t patchnum, bool paletteTex = true);
 
 GLVideo::GLVideo(int parm)
 {
@@ -278,8 +288,11 @@ void DimArea(float x, float y, float w, float h, float alpha)
 {
 	// Menu/console/scoreboard backgrounds
 	glDisable(GL_TEXTURE_2D);
-	glEnable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
+
+	// Blending to darken the area
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA);
 
 	glColor4f(0, 0, 0, alpha);
 	DrawQuad(x, y, w, h);
@@ -289,13 +302,64 @@ void DimArea(float x, float y, float w, float h, float alpha)
 	glEnable(GL_TEXTURE_2D);
 }
 
+#include "m_menu.h"
+#define LINEHEIGHT 16
+#define SKULLXOFF  -32
 void DrawMenu()
 {
 	if(!menuactive)
 		return;
 
 	// Darken behind menu
-//	DimArea(0, 0, 1, 1, 0.5);
+	DimArea(0, 0, 1, 1, 0.5);
+
+
+	//extern void M_Drawer();
+	//M_Drawer();
+	// DRAW MENU
+	int x = currentMenu->x;
+	int y = currentMenu->y;
+	int max = currentMenu->numitems;
+
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+
+	for (int i = 0; i < max; i++)
+	{
+		if (currentMenu->menuitems[i].name[0])
+		{
+			//screen->DrawPatchClean (W_GetNumForName(currentMenu->menuitems[i].name), x, y);
+			int lump = W_GetNumForName(currentMenu->menuitems[i].name);
+			patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
+			glpatch_t &glp = get_glpatch(lump);
+
+			glBindTexture(GL_TEXTURE_2D, glp.texture);
+			float xscale = 1.0f/320.0f;
+			float yscale = 1.0f/240.0f;
+			DrawTexturedQuad(x*xscale, y*yscale, patch->width()*xscale, patch->height()*yscale, 1, 1);
+		}
+		y += LINEHEIGHT;
+	}
+
+
+	// DRAW SKULL
+	//if (drawSkull)
+	{
+		extern short whichSkull;
+		extern char skullName[2][9];
+		//screen->DrawPatchClean (W_GetNumForName(skullName[whichSkull]),
+		//		x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+		int lump = W_GetNumForName(skullName[whichSkull]);
+		patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
+		glpatch_t &glp = get_glpatch(lump);
+
+		glBindTexture(GL_TEXTURE_2D, glp.texture);
+		float xscale = 1.0f/320.0f;
+		float yscale = 1.0f/240.0f;
+		x += SKULLXOFF;
+		y = currentMenu->y - 5 + itemOn*LINEHEIGHT;
+		DrawTexturedQuad(x*xscale, y*yscale, patch->width()*xscale, patch->height()*yscale, 1, 1);
+	}
 }
 
 void DrawScreenSprites();
@@ -308,7 +372,9 @@ void DrawConsole(size_t screenw, size_t screenh)
 
 	// Draw notify messages
 
-	if(gamestate == GS_FULLCONSOLE || gamestate == GS_STARTUP)
+	if(gamestate == GS_FULLCONSOLE ||
+	   gamestate == GS_STARTUP ||
+	   gamestate == GS_DEMOSCREEN)
 	{
 		// Draw full console background
 		DrawConsoleBackground();
@@ -316,7 +382,7 @@ void DrawConsole(size_t screenw, size_t screenh)
 		// Draw console text
 		DrawConsoleText(screenw, screenh);
 	}
-	else if(ConsoleState != c_up)
+	if(ConsoleState != c_up)
 	{
 		// Darken behind partial console
 		DimArea(0, 0, 1, ((float)ConBottom/screenh), 0.5);
@@ -469,12 +535,6 @@ void GLVideo::UpdateScreen (DCanvas *canvas)
 	// Draw player redscreen, berserk, pickup
 //	DrawTint();
 
-	// Console
-	DrawConsole(screenw, screenh);
-
-	// Menu
-	DrawMenu();
-
 	// Render the grayscale+colormap result to a texture
 	extern void RenderToTexture(size_t screenw, size_t screenh);
 	RenderToTexture(screenw, screenh);
@@ -482,6 +542,12 @@ void GLVideo::UpdateScreen (DCanvas *canvas)
 	// Shader will convert this into RGB output
 	extern void RenderedTextureToScreen(size_t screenw, size_t screenh);
 	RenderedTextureToScreen(screenw, screenh);
+
+	// Console
+	DrawConsole(screenw, screenh);
+
+	// Menu
+	DrawMenu();
 }
 
 void GLVideo::ReadScreen (byte *block)
@@ -546,16 +612,6 @@ bool GLVideo::NextMode (int *width, int *height)
    }
    return false;
 }
-
-class glpatch_t
-{
-public:
-	GLuint texture;
-	float w, h; // 0.0 to 1.0
-};
-glpatch_t &get_glpatch(size_t patchnum);
-#include "z_zone.h"
-#include "w_wad.h"
 
 class DGLCanvas : public DCanvas
 {
