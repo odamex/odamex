@@ -177,6 +177,7 @@ glpatch_t &get_glpatch(size_t patchnum, bool paletteTexture = true)
 					}
 					else
 					{
+						((byte *)(&r[j]))[3] = 0xFF; // make alpha non-transparent
 						byte t = ((byte *)(&r[j]))[2];
 						((byte *)(&r[j]))[2] = ((byte *)(&r[j]))[0];
 						((byte *)(&r[j]))[0] = t;

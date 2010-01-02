@@ -314,51 +314,69 @@ void DrawMenu()
 	DimArea(0, 0, 1, 1, 0.5);
 
 
-	//extern void M_Drawer();
-	//M_Drawer();
-	// DRAW MENU
-	int x = currentMenu->x;
-	int y = currentMenu->y;
-	int max = currentMenu->numitems;
-
-	glEnable(GL_TEXTURE_2D);
-	glDisable(GL_BLEND);
-
-	for (int i = 0; i < max; i++)
+	extern int messageToPrint;
+	if(messageToPrint)
 	{
-		if (currentMenu->menuitems[i].name[0])
+	}
+	else
+	{
+		//extern void M_Drawer();
+		//M_Drawer();
+		// DRAW MENU
+		int x = currentMenu->x;
+		int y = currentMenu->y;
+		int max = currentMenu->numitems;
+
+		glColor4f(1,1,1,1);
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_ALPHA_TEST);
+		glDisable(GL_BLEND);
+
+		glAlphaFunc(GL_GREATER, 0);
+
+		for (int i = 0; i < max; i++)
 		{
-			//screen->DrawPatchClean (W_GetNumForName(currentMenu->menuitems[i].name), x, y);
-			int lump = W_GetNumForName(currentMenu->menuitems[i].name);
+			if (currentMenu->menuitems[i].name[0])
+			{
+				//screen->DrawPatchClean (W_GetNumForName(currentMenu->menuitems[i].name), x, y);
+				int lump = W_GetNumForName(currentMenu->menuitems[i].name);
+				patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
+				glpatch_t &glp = get_glpatch(lump, false);
+
+				glBindTexture(GL_TEXTURE_2D, glp.texture);
+				DrawTexturedQuad(x/320.0,
+						 y/200.0,
+						 patch->width()/320.0,
+						 patch->height()/200.0,
+						 glp.h, glp.w);
+			}
+			y += LINEHEIGHT;
+		}
+
+
+		// DRAW SKULL
+		//if (drawSkull)
+		{
+			extern short whichSkull;
+			extern char skullName[2][9];
+			//screen->DrawPatchClean (W_GetNumForName(skullName[whichSkull]),
+			//		x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+			int lump = W_GetNumForName(skullName[whichSkull]);
 			patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
-			glpatch_t &glp = get_glpatch(lump);
+			glpatch_t &glp = get_glpatch(lump, false);
 
 			glBindTexture(GL_TEXTURE_2D, glp.texture);
-			float xscale = 1.0f/320.0f;
-			float yscale = 1.0f/240.0f;
-			DrawTexturedQuad(x*xscale, y*yscale, patch->width()*xscale, patch->height()*yscale, 1, 1);
+			double xscale = 1.0/320.0;
+			double yscale = 1.0/240.0;
+			x += SKULLXOFF;
+			y = currentMenu->y - 5 + itemOn*LINEHEIGHT;
+			//DrawTexturedQuad(x*xscale, y*yscale, patch->width()*xscale, patch->height()*yscale, 1, 1);
+			DrawTexturedQuad(x/320.0,
+					 y/200.0,
+					 patch->width()/320.0,
+					 patch->height()/200.0,
+					 glp.h, glp.w);
 		}
-		y += LINEHEIGHT;
-	}
-
-
-	// DRAW SKULL
-	//if (drawSkull)
-	{
-		extern short whichSkull;
-		extern char skullName[2][9];
-		//screen->DrawPatchClean (W_GetNumForName(skullName[whichSkull]),
-		//		x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
-		int lump = W_GetNumForName(skullName[whichSkull]);
-		patch_t *patch = (patch_t *)W_CacheLumpNum (lump, PU_CACHE);
-		glpatch_t &glp = get_glpatch(lump);
-
-		glBindTexture(GL_TEXTURE_2D, glp.texture);
-		float xscale = 1.0f/320.0f;
-		float yscale = 1.0f/240.0f;
-		x += SKULLXOFF;
-		y = currentMenu->y - 5 + itemOn*LINEHEIGHT;
-		DrawTexturedQuad(x*xscale, y*yscale, patch->width()*xscale, patch->height()*yscale, 1, 1);
 	}
 }
 
@@ -629,7 +647,7 @@ class DGLCanvas : public DCanvas
 		glBindTexture(GL_TEXTURE_2D, glp.texture);
 		float xscale = 1.0f/width;
 		float yscale = 1.0f/height;
-		DrawTexturedQuad(x*xscale, y*yscale, (float)patch->width()*xscale, (float)patch->height()*yscale, 1, 1);
+		DrawTexturedQuad(x*xscale, y*yscale, (float)patch->width()*xscale, (float)patch->height()*yscale, glp.h, glp.w);
 	}
 
 	void DrawPatchClean (const patch_t *patch, int x, int y){}
@@ -643,7 +661,7 @@ class DGLCanvas : public DCanvas
 		glBindTexture(GL_TEXTURE_2D, glp.texture);
 		float xscale = 1.0f/320.0f;
 		float yscale = 1.0f/240.0f;
-		DrawTexturedQuad(x*xscale, y*yscale, patch->width()*xscale, patch->height()*yscale, 1, 1);
+		DrawTexturedQuad(x*xscale, y*yscale, patch->width()*xscale, patch->height()*yscale, glp.h, glp.w);
 	}
 };
 
