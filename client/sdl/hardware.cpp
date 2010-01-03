@@ -237,9 +237,9 @@ void I_ScreenShot (const char *filename)
 
 		SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(linear, screen->width, screen->height, 8, screen->width * 1, rmask,gmask,bmask,amask);
 
-		SDL_Colour colors[256];
+		SDL_Color colors[256];
 
-		// stolen from the WritePCXfile function, write palette data into SDL_Colour
+		// stolen from the WritePCXfile function, write palette data into SDL_Color
 		DWORD *pal;
 
 		pal = IndexedPalette;
