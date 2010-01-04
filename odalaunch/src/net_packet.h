@@ -150,7 +150,7 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
 		    Socket.SetRemoteAddress(Address, Port);
         }
         
-        bool GotResponse() { return (response != 0); }
+        bool GotResponse() const { return (response != 0); }
 		wxString GetAddress() { return Socket.GetRemoteAddress(); }
 		wxUint32 GetPing() const { return Ping; }
 };

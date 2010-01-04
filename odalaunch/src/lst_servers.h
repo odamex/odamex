@@ -32,6 +32,9 @@ class LstOdaServerList : public wxAdvancedListCtrl
         LstOdaServerList() { };
         virtual ~LstOdaServerList() { };
 
+        void SetupServerListColumns();
+        void AddServerToList(Server &s, wxInt32 index, wxInt8 insert = 1);
+
     protected:
         
         DECLARE_DYNAMIC_CLASS(LstOdaServerList)

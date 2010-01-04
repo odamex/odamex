@@ -26,13 +26,6 @@
 
 #include <wx/process.h>
 #include <wx/tokenzr.h>
-#include "lst_custom.h"
 
-#define BOOLSTR(b) ((b) ? wxT("Yes") : wxT("No"))
-
-void SetupServerListColumns(wxAdvancedListCtrl *list);
-void SetupPlayerListHeader(wxAdvancedListCtrl *list);
-void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 insert = 1);
-void AddPlayersToList(wxAdvancedListCtrl *list, Server &s);
 void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs, wxString Password = _T(""));
 #endif

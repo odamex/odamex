@@ -32,6 +32,9 @@ class LstOdaPlayerList : public wxAdvancedListCtrl
         LstOdaPlayerList() { };
         virtual ~LstOdaPlayerList() { };
 
+        void AddPlayersToList(const Server &s);
+        void SetupPlayerListHeader();
+
     protected:
         
         DECLARE_DYNAMIC_CLASS(LstOdaPlayerList)

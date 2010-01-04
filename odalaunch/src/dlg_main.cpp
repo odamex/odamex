@@ -119,8 +119,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstCtrlPlayers = wxDynamicCast(FindWindow(Id_LstCtrlPlayers), LstOdaPlayerList);
     m_LstOdaSrvDetails = wxDynamicCast(FindWindow(Id_LstCtrlServerDetails), LstOdaSrvDetails);
 
-    SetupServerListColumns(m_LstCtrlServers);
-    SetupPlayerListHeader(m_LstCtrlPlayers);
+    m_LstCtrlServers->SetupServerListColumns();
+    m_LstCtrlPlayers->SetupPlayerListHeader();
 
     // spectator state.
     m_LstCtrlPlayers->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
@@ -464,17 +464,17 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             
             if (launchercfg_s.show_blocked_servers)
             if (i == -1)
-                AddServerToList(m_LstCtrlServers, QServer[Result->Index], Result->Index);
+                m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->Index);
             else
-                AddServerToList(m_LstCtrlServers, QServer[Result->Index], i, 0);
+                m_LstCtrlServers->AddServerToList(QServer[Result->Index], i, 0);
             
             break;
         case mtrs_server_singlesuccess:
             m_LstCtrlPlayers->DeleteAllItems();
             
-            AddServerToList(m_LstCtrlServers, QServer[Result->Index], Result->ServerListIndex, 0);
+            m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->ServerListIndex, 0);
             
-            AddPlayersToList(m_LstCtrlPlayers, QServer[Result->Index]);
+            m_LstCtrlPlayers->AddPlayersToList(QServer[Result->Index]);
             
             m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[Result->Index]);
             
@@ -507,15 +507,15 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
             
             if (launchercfg_s.show_blocked_servers)
             if (i == -1)
-                AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], event.GetInt());
+                m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], event.GetInt());
             else
-                AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], i, 0);
+                m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], i, 0);
             
             break;                 
         }
         case 1: // server queried successfully
         {
-            AddServerToList(m_LstCtrlServers, QServer[event.GetInt()], event.GetInt());
+            m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], event.GetInt());
             
             TotalPlayers += QServer[event.GetInt()].Info.Players.size();
             
@@ -759,7 +759,7 @@ void dlgMain::OnServerListClick(wxListEvent& event)
         
         if (i > -1)
         {
-            AddPlayersToList(m_LstCtrlPlayers, QServer[i]);
+            m_LstCtrlPlayers->AddPlayersToList(QServer[i]);
             
             if (QServer[i].GotResponse() == false)
                 m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
