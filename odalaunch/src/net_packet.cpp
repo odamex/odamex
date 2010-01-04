@@ -446,8 +446,12 @@ wxInt32 Server::Parse()
                                            
         Socket.ClearRecvBuffer();
         
+        m_ValidResponse = Result ? true : false;
+        
         return Result;
     }
+    
+    m_ValidResponse = false;
     
     Info.Response = 0;
     

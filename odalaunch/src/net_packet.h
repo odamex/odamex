@@ -131,7 +131,9 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
         // Constructor
         ServerBase() 
         {
-            Ping = 0;           
+            Ping = 0;
+            challenge = 0;
+            response = 0;
         }
         
         // Destructor
@@ -150,7 +152,6 @@ class ServerBase  // [Russell] - Defines an abstract class for all packets
 		    Socket.SetRemoteAddress(Address, Port);
         }
         
-        bool GotResponse() const { return (response != 0); }
 		wxString GetAddress() { return Socket.GetRemoteAddress(); }
 		wxUint32 GetPing() const { return Ping; }
 };
@@ -315,7 +316,12 @@ class Server : public ServerBase  // [Russell] - A single server
                                   const wxUint8 &TagQRId,
                                   const wxUint16 &TagPacketType);
 
+        bool GotResponse() const { return m_ValidResponse; }
+
         wxInt32 Parse();
+    
+    protected:
+        bool m_ValidResponse;
 };
 
 #endif // NETPACKET_H
