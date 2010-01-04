@@ -2,7 +2,7 @@
 <resource xmlns="http://www.wxwindows.org/wxxrc" version="2.3.0.1">
 	<object class="wxFrame" name="dlgMain">
 		<style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
-		<size>845,400</size>
+		<size>845,505</size>
 		<title>Odamex Launcher</title>
 		<centered>1</centered>
 		<object class="wxMenuBar">
@@ -172,37 +172,92 @@
 					<option>1</option>
 					<flag>wxEXPAND</flag>
 					<border>5</border>
-					<object class="wxSplitterWindow">
-						<style>wxSP_NOBORDER</style>
+					<object class="wxSplitterWindow" name="1">
+						<style>wxSP_3DSASH|wxSP_NOBORDER</style>
 						<sashpos>0</sashpos>
 						<gravity>1</gravity>
 						<minsize>140</minsize>
 						<orientation>horizontal</orientation>
-						<object class="wxPanel">
+						<object class="wxPanel" name="2">
 							<style>wxTAB_TRAVERSAL</style>
 							<object class="wxBoxSizer">
 								<orient>wxVERTICAL</orient>
 								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER|wxALL</flag>
+									<border>2</border>
+									<object class="wxStaticText" name="m_staticText811">
+										<label>Server List</label>
+									</object>
+								</object>
+								<object class="sizeritem">
 									<option>1</option>
 									<flag>wxALL|wxEXPAND</flag>
-									<border>0</border>
+									<border>2</border>
 									<object class="wxListCtrl" name="Id_LstCtrlServers" subclass="wxAdvancedListCtrl">
 										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
-										<tooltip>Right-click a selected server for more information</tooltip>
 									</object>
 								</object>
 							</object>
 						</object>
-						<object class="wxPanel">
+						<object class="wxPanel" name="4">
 							<style>wxTAB_TRAVERSAL</style>
 							<object class="wxBoxSizer">
-								<orient>wxVERTICAL</orient>
+								<orient>wxHORIZONTAL</orient>
 								<object class="sizeritem">
 									<option>1</option>
-									<flag>wxALL|wxEXPAND</flag>
-									<border>0</border>
-									<object class="wxListCtrl" name="Id_LstCtrlPlayers" subclass="wxAdvancedListCtrl">
-										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+									<flag>wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxSplitterWindow" name="m_splitter3">
+										<style>wxSP_3DSASH|wxSP_NOBORDER</style>
+										<sashpos>0</sashpos>
+										<gravity>1</gravity>
+										<minsize>330</minsize>
+										<orientation>vertical</orientation>
+										<object class="wxPanel" name="m_panel7">
+											<style>wxTAB_TRAVERSAL</style>
+											<object class="wxBoxSizer">
+												<orient>wxVERTICAL</orient>
+												<object class="sizeritem">
+													<option>0</option>
+													<flag>wxALIGN_CENTER|wxALL</flag>
+													<border>2</border>
+													<object class="wxStaticText" name="m_staticText81">
+														<label>Player List</label>
+													</object>
+												</object>
+												<object class="sizeritem">
+													<option>1</option>
+													<flag>wxALL|wxEXPAND</flag>
+													<border>2</border>
+													<object class="wxListCtrl" name="Id_LstCtrlPlayers" subclass="wxAdvancedListCtrl">
+														<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+													</object>
+												</object>
+											</object>
+										</object>
+										<object class="wxPanel" name="m_panel17">
+											<style>wxTAB_TRAVERSAL</style>
+											<object class="wxBoxSizer">
+												<orient>wxVERTICAL</orient>
+												<object class="sizeritem">
+													<option>0</option>
+													<flag>wxALIGN_CENTER|wxALL</flag>
+													<border>2</border>
+													<object class="wxStaticText" name="m_staticText8">
+														<label>Server Details</label>
+													</object>
+												</object>
+												<object class="sizeritem">
+													<option>1</option>
+													<flag>wxALL|wxEXPAND</flag>
+													<border>2</border>
+													<object class="wxListCtrl" name="Id_LstCtrlServerDetails" subclass="LstOdaSrvDetails">
+														<style>wxLC_HRULES|wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL</style>
+													</object>
+												</object>
+											</object>
+										</object>
 									</object>
 								</object>
 							</object>

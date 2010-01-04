@@ -25,6 +25,7 @@
 #define DLG_MAIN_H
 
 #include "lst_custom.h"
+#include "lst_srvdetails.h"
 
 #include "dlg_config.h"
 #include "dlg_servers.h"
@@ -57,6 +58,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		dlgMain(wxWindow* parent,wxWindowID id = -1);
 		virtual ~dlgMain();
 		
+		Server          NullServer;
         Server          *QServer;
         MasterServer    *MServer;
         
@@ -82,9 +84,6 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnServerListClick(wxListEvent& event);
 		void OnServerListDoubleClick(wxListEvent& event);
-		void OnServerListRightClick(wxListEvent& event);
-		
-		void OnComboSelectMaster(wxCommandEvent& event);
 		
 		void OnShow(wxShowEvent &event);
 		void OnClose(wxCloseEvent &event);
@@ -96,6 +95,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		wxAdvancedListCtrl *m_LstCtrlServers;
 		wxAdvancedListCtrl *m_LstCtrlPlayers;
+        LstOdaSrvDetails *m_LstOdaSrvDetails;
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;

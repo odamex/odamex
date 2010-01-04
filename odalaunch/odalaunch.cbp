@@ -91,8 +91,8 @@
 					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_PLAT" value="unix" />
 					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_PLAT" value="unix" />
 				</Environment>
 			</Target>
 			<Target title="Mac Release">
@@ -130,8 +130,8 @@
 					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_PLAT" value="unix" />
 					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_PLAT" value="unix" />
 				</Environment>
 			</Target>
 			<Target title="Win Release (VC)">
@@ -374,6 +374,8 @@
 		</Unit>
 		<Unit filename="src\lst_custom.cpp" />
 		<Unit filename="src\lst_custom.h" />
+		<Unit filename="src\lst_srvdetails.cpp" />
+		<Unit filename="src\lst_srvdetails.h" />
 		<Unit filename="src\main.cpp" />
 		<Unit filename="src\main.h" />
 		<Unit filename="src\misc.cpp">

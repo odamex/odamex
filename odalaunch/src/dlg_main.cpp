@@ -45,6 +45,7 @@
 // lists
 static wxInt32 Id_LstCtrlServers = XRCID("Id_LstCtrlServers");
 static wxInt32 Id_LstCtrlPlayers = XRCID("Id_LstCtrlPlayers");
+static wxInt32 Id_LstCtrlServerDetails = XRCID("Id_LstCtrlServerDetails");
 
 static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
 
@@ -90,7 +91,6 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     // misc events
     EVT_LIST_ITEM_SELECTED(Id_LstCtrlServers, dlgMain::OnServerListClick)
     EVT_LIST_ITEM_ACTIVATED(Id_LstCtrlServers, dlgMain::OnServerListDoubleClick)
-    EVT_LIST_ITEM_RIGHT_CLICK(Id_LstCtrlServers, dlgMain::OnServerListRightClick)
 END_EVENT_TABLE()
 
 // Main window creation
@@ -117,6 +117,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     
     m_LstCtrlServers = wxDynamicCast(FindWindow(Id_LstCtrlServers), wxAdvancedListCtrl);
     m_LstCtrlPlayers = wxDynamicCast(FindWindow(Id_LstCtrlPlayers), wxAdvancedListCtrl);
+    m_LstOdaSrvDetails = wxDynamicCast(FindWindow(Id_LstCtrlServerDetails), LstOdaSrvDetails);
 
     SetupServerListColumns(m_LstCtrlServers);
     SetupPlayerListHeader(m_LstCtrlPlayers);
@@ -456,6 +457,8 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             i = FindServerInList(QServer[Result->Index].GetAddress());
 
             m_LstCtrlPlayers->DeleteAllItems();
+
+            m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
             
             QServer[Result->Index].ResetData();
             
@@ -472,6 +475,8 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             AddServerToList(m_LstCtrlServers, QServer[Result->Index], Result->ServerListIndex, 0);
             
             AddPlayersToList(m_LstCtrlPlayers, QServer[Result->Index]);
+            
+            m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[Result->Index]);
             
             TotalPlayers += QServer[Result->Index].Info.Players.size();
            
@@ -529,69 +534,6 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
                                                    TotalPlayers), 
                                                    3);   
 }
-
-// display extra information for a server
-void dlgMain::OnServerListRightClick(wxListEvent& event)
-{
-    static wxTipWindow *tw = NULL;
-
-    if (!m_LstCtrlServers->GetItemCount() || !m_LstCtrlServers->GetSelectedItemCount())
-        return;
-  
-    wxInt32 i = m_LstCtrlServers->GetNextItem(-1, 
-                                        wxLIST_NEXT_ALL, 
-                                        wxLIST_STATE_SELECTED);
-        
-    wxListItem item;
-    item.SetId(i);
-    item.SetColumn(7);
-    item.SetMask(wxLIST_MASK_TEXT);
-        
-    m_LstCtrlServers->GetItem(item);
-        
-    i = FindServer(item.GetText());
-
-    if (i == -1)
-    {        
-        return;
-    }
-
-    if (QServer[i].Info.Response == 0)
-        return;
-    
-    static wxString text = _T("");
-    
-    text = wxString::Format(wxT("Version: %u.%u.%u\n"), 
-                            QServer[i].Info.VersionMajor,
-                            QServer[i].Info.VersionMinor,
-                            QServer[i].Info.VersionPatch);
-    
-    text += wxString::Format(wxT("Protocol Version: %u\n\n"), 
-                             QServer[i].Info.VersionProtocol);
-    
-    text += wxString::Format(wxT("Timeleft: %u\n"), QServer[i].Info.TimeLeft);    
-       
-    text += wxT("\nName - Value\n");
-    
-    for (size_t j = 0; j < QServer[i].Info.Cvars.size(); ++j)
-    {
-        text += QServer[i].Info.Cvars[j].Name;
-        text += wxT(" - ");
-        text += QServer[i].Info.Cvars[j].Value;
-        text += wxT('\n');  
-    }
-                                 
-    if (tw)
-	{
-		tw->SetTipWindowPtr(NULL);
-		tw->Close();
-		tw = NULL;
-	}
-
-	if (!tw && !text.empty())
-		tw = new wxTipWindow(m_LstCtrlServers, text, 120, &tw);
-}
-
 
 // Custom Servers menu item
 void dlgMain::OnMenuServers(wxCommandEvent &event)
@@ -816,7 +758,14 @@ void dlgMain::OnServerListClick(wxListEvent& event)
         i = FindServer(item.GetText()); 
         
         if (i > -1)
+        {
             AddPlayersToList(m_LstCtrlPlayers, QServer[i]);
+            
+            if (QServer[i].GotResponse() == false)
+                m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
+            else
+                m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[i]);
+        }
     }
 }
 
