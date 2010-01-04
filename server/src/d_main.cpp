@@ -81,6 +81,7 @@ extern size_t got_heapsize;
 
 extern void M_RestoreMode (void);
 extern void R_ExecuteSetViewSize (void);
+void C_DoCommand (const char *cmd);
 
 void D_CheckNetGame (void);
 void D_ProcessEvents (void);

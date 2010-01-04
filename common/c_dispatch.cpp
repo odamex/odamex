@@ -809,7 +809,7 @@ BEGIN_COMMAND (logfile)
 {
 	time_t rawtime;
 	struct tm * timeinfo;
-	const char* DEFAULT_LOG_FILE = "odamex.log";
+	const char* DEFAULT_LOG_FILE = (serverside ? "odasrv.log" : "odamex.log");
 
 	if (LOG.is_open()) {
 		if ((argc == 1 && LOG_FILE == DEFAULT_LOG_FILE) || (argc > 1 && LOG_FILE == argv[1])) {
