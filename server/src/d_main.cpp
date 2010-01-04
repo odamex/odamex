@@ -77,6 +77,8 @@
 
 EXTERN_CVAR (timelimit)
 
+extern size_t got_heapsize;
+
 extern void M_RestoreMode (void);
 extern void R_ExecuteSetViewSize (void);
 
@@ -581,13 +583,13 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 		// absolute path?
 		if(file.find(':') != std::string::npos)
 			return file;
-		
+
 		const char separator = ';';
 	#else
 		// absolute path?
 		if(file[0] == '/' || file[0] == '~')
 			return file;
-		
+
 		const char separator = ':';
 	#endif
 
@@ -613,7 +615,7 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 	for(size_t i = 0; i < dirs.size(); i++)
 	{
 		std::string found = BaseFileSearchDir(dirs[i], file, ext);
-		
+
 		if(found.length())
 		{
 			std::string &dir = dirs[i];
@@ -716,11 +718,11 @@ void D_AddDefWads (std::string iwad)
 //
 // D_DoDefDehackedPatch
 //
-// [Russell] - Change the meaning, this will load multiple patch files if 
+// [Russell] - Change the meaning, this will load multiple patch files if
 //             specified
 void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
 {
-    DArgs files; 
+    DArgs files;
     BOOL noDef = false;
     QWORD i;
 
@@ -728,25 +730,25 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
     {
         std::string f;
         std::string ext;
-        
+
         // we want the extension of the file
         for (i = 0; i < patch_files.size(); i++)
         {
             if (M_ExtractFileExtension(patch_files[i], ext))
             {
                 f = BaseFileSearch (patch_files[i], ext);
-            
+
                 if (f.length())
                 {
                     if (DoDehPatch (f.c_str(), false))
                     {
                         std::string Filename;
-                        
+
                         M_ExtractFileName(f, Filename);
-                        
+
                         patchfiles.push_back(Filename);
                     }
-                    
+
                     noDef = true;
                 }
             }
@@ -755,9 +757,9 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
     else // [Russell] - Only load if patch_files is empty
     {
         // try .deh files on command line
-   
+
         files = Args.GatherFiles ("-deh", ".deh", false);
-    
+
         if (files.NumArgs())
         {
             for (i = 0; i < files.NumArgs(); i++)
@@ -769,9 +771,9 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
                     if (DoDehPatch (f.c_str(), false))
                     {
                         std::string Filename;
-                        
+
                         M_ExtractFileName(f, Filename);
-                        
+
                         patchfiles.push_back(Filename);
                     }
                 }
@@ -784,7 +786,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
 
         // try .bex files on command line
         files = Args.GatherFiles ("-bex", ".bex", false);
-    
+
         if (files.NumArgs())
         {
             for (i = 0; i < files.NumArgs(); i++)
@@ -796,9 +798,9 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
                     if (DoDehPatch (f.c_str(), false))
                     {
                         std::string Filename;
-                        
+
                         M_ExtractFileName(f, Filename);
-                        
+
                         patchfiles.push_back(Filename);
                     }
                 }
@@ -838,7 +840,7 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 // change wads at runtime
 // on 404, returns a vector of bad files
 //
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
                                      const std::vector<std::string> &patch_files)
 {
 	std::vector<size_t> fails;
@@ -919,6 +921,11 @@ void D_DoomMain (void)
 		I_FatalError ("Could not initialize LZO routines");
 
     C_ExecCmdLineParams (false, true);	// [Nes] test for +logfile command
+
+    if (!LOG.is_open())
+    	C_DoCommand("logfile");
+
+	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
 
 	I_Init ();
 

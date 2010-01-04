@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,7 +18,7 @@
 // DESCRIPTION:
 //	Simple basic typedefs, isolated here to make it easier
 //	 separating modules.
-//    
+//
 //-----------------------------------------------------------------------------
 
 
@@ -147,6 +147,8 @@ int STACK_ARGS DPrintf (const char *, ...);
 #include <fstream>
 
 extern std::ofstream LOG;
+extern const char *LOG_FILE; //  Default is "odamex.log"
+
 extern std::ifstream CON;
 
 // game print flags

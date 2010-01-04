@@ -87,6 +87,8 @@
 #include "cl_ctf.h"
 #include "cl_main.h"
 
+extern size_t got_heapsize;
+
 //extern void M_RestoreMode (void); // [Toke - Menu]
 extern void R_ExecuteSetViewSize (void);
 
@@ -155,11 +157,11 @@ void D_ProcessEvents (void)
 		{
 			M_RestoreMode ();
 		}
-        else
-        {
-            M_ModeFlashTestText();
-        }
-        
+		else
+		{
+			M_ModeFlashTestText();
+		}
+
 		return;
 	}
 
@@ -339,7 +341,7 @@ void D_Display (void)
 		}
 		NoWipe = 10;
 	}
-	
+
 	static bool live_wiping = false;
 
 	if (!wipe)
@@ -505,7 +507,7 @@ void D_DoAdvanceDemo (void)
         demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;
-    
+
     switch (demosequence)
     {
         case 0:
@@ -513,30 +515,30 @@ void D_DoAdvanceDemo (void)
                 pagetic = TICRATE * 11;
             else
                 pagetic = 170;
-	
+
             gamestate = GS_DEMOSCREEN;
             pagename = "TITLEPIC";
-	
+
             S_StartMusic(gameinfo.titleMusic);
-            
+
             break;
         case 1:
             G_DeferedPlayDemo("DEMO1");
-            
+
             break;
         case 2:
             pagetic = 200;
             gamestate = GS_DEMOSCREEN;
             pagename = "CREDIT";
-            
+
             break;
         case 3:
             G_DeferedPlayDemo("DEMO2");
-            
+
             break;
         case 4:
             gamestate = GS_DEMOSCREEN;
-            
+
             if (gamemode == commercial || gamemode == retail)
             {
 				if (gamemode == commercial)
@@ -551,21 +553,21 @@ void D_DoAdvanceDemo (void)
                 pagetic = 200;
 				pagename = "HELP2";
             }
-            
+
             break;
         case 5:
             G_DeferedPlayDemo("DEMO3");
-	
+
             break;
         case 6:
             pagetic = 200;
             gamestate = GS_DEMOSCREEN;
             pagename = "CREDIT";
-            
-            break;        
+
+            break;
         case 7:
             G_DeferedPlayDemo("DEMO4");
-        
+
             break;
     }
 
@@ -782,13 +784,13 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 		// absolute path?
 		if(file.find(':') != std::string::npos)
 			return file;
-		
+
 		const char separator = ';';
 	#else
 		// absolute path?
 		if(file[0] == '/' || file[0] == '~')
 			return file;
-		
+
 		const char separator = ':';
 	#endif
 
@@ -1129,11 +1131,11 @@ void D_AddDefWads (std::string iwad)
 //
 // D_DoDefDehackedPatch
 //
-// [Russell] - Change the meaning, this will load multiple patch files if 
+// [Russell] - Change the meaning, this will load multiple patch files if
 //             specified
 void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vector<std::string>())
 {
-    DArgs files; 
+    DArgs files;
     BOOL noDef = false;
     QWORD i;
 
@@ -1141,18 +1143,18 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
     {
         std::string f;
         std::string ext;
-        
+
         // we want the extension of the file
         for (i = 0; i < patch_files.size(); i++)
         {
             if (M_ExtractFileExtension(patch_files[i], ext))
             {
                 f = BaseFileSearch (patch_files[i], ext);
-            
+
                 if (f.length())
                 {
                     DoDehPatch (f.c_str(), false);
-                
+
                     noDef = true;
                 }
             }
@@ -1161,9 +1163,9 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
     else // [Russell] - Only load if patch_files is empty
     {
         // try .deh files on command line
-   
+
         files = Args.GatherFiles ("-deh", ".deh", false);
-    
+
         if (files.NumArgs())
         {
             for (i = 0; i < files.NumArgs(); i++)
@@ -1181,7 +1183,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
 
         // try .bex files on command line
         files = Args.GatherFiles ("-bex", ".bex", false);
-    
+
         if (files.NumArgs())
         {
             for (i = 0; i < files.NumArgs(); i++)
@@ -1208,8 +1210,8 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
 //
 void V_InitPalette (void);
 
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
-                                     std::vector<std::string> needhashes, 
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
+                                     std::vector<std::string> needhashes,
                                      const std::vector<std::string> &patch_files)
 {
 	std::vector<size_t> fails;
@@ -1219,8 +1221,8 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	static bool last_success = false;
 
 	// already loaded these?
-	if (last_success && 
-        (wadnames == last_wadnames) && 
+	if (last_success &&
+        (wadnames == last_wadnames) &&
         (patch_files == last_patches) &&
         (needhashes.empty() || needhashes == last_hashes))
 	{
@@ -1235,7 +1237,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
-		
+
 	S_Stop();
 
 	DThinker::DestroyAllThinkers();
@@ -1336,6 +1338,8 @@ void D_DoomMain (void)
 		I_FatalError ("Could not initialize LZO routines");
 
     C_ExecCmdLineParams (false, true);	// [Nes] test for +logfile command
+
+	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
 
 	M_LoadDefaults ();			// load before initing other systems
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in

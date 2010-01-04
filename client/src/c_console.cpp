@@ -322,7 +322,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			}
 			Printf (PRINT_HIGH, "%s", string);
 		}
-		
+
 		M_Free(old);
 		C_FlushDisplay ();
 
@@ -549,25 +549,23 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		if(outline[i] == 0x07)
 			outline[i] = '.';
 
-    // Prevents writing a whole lot of new lines to the log file
-    if (gamestate != GS_FORCEWIPE)
-    {
-        strcpy(outlinelog, outline);
+	// Prevents writing a whole lot of new lines to the log file
+	if (gamestate != GS_FORCEWIPE)
+	{
+		strcpy(outlinelog, outline);
 
-        // [Nes] - Horizontal line won't show up as-is in the logfile.
-        for(i = 0; i < len; i++)
-        {
-            if (outlinelog[i] == '\35' || 
-                outlinelog[i] == '\36' ||
-                outlinelog[i] == '\37')
-            {
-                outlinelog[i] = '=';
-            }
-        }
+		// [Nes] - Horizontal line won't show up as-is in the logfile.
+		for(i = 0; i < len; i++)
+		{
+			if (outlinelog[i] == '\35' || outlinelog[i] == '\36' || outlinelog[i] == '\37')
+				outlinelog[i] = '=';
+		}
 
-        LOG << outlinelog;
-        LOG.flush();
-    }
+		if (LOG.is_open()) {
+			LOG << outlinelog;
+			LOG.flush();
+		}
+	}
 
 	return PrintString (printlevel, outline);
 }
@@ -687,7 +685,7 @@ void C_Ticker (void)
 			{
 				ConBottom = screen->height;
 				ConsoleState = c_down;
-			}			
+			}
 		}
 		else if (ConsoleState == c_rising)
 		{
@@ -706,7 +704,7 @@ void C_Ticker (void)
 				ConsoleState = c_up;
 				ConBottom = 0;
 			}
-		}		
+		}
 
 		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > ConRows)
 		{
@@ -1055,7 +1053,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		{
 			while(buffer[1] < buffer[0]+1 && buffer[2+buffer[1]] != ' ')
 				buffer[1]++;
-		}	
+		}
 		else
 		{
 			// Move cursor right one character
