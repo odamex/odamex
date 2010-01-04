@@ -24,7 +24,8 @@
 #ifndef DLG_MAIN_H
 #define DLG_MAIN_H
 
-#include "lst_custom.h"
+#include "lst_players.h"
+#include "lst_servers.h"
 #include "lst_srvdetails.h"
 
 #include "dlg_config.h"
@@ -93,8 +94,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 FindServer(wxString);
 		wxInt32 FindServerInList(wxString);
 		
-		wxAdvancedListCtrl *m_LstCtrlServers;
-		wxAdvancedListCtrl *m_LstCtrlPlayers;
+		LstOdaServerList *m_LstCtrlServers;
+		LstOdaPlayerList *m_LstCtrlPlayers;
         LstOdaSrvDetails *m_LstOdaSrvDetails;
         
         dlgConfig *config_dlg;

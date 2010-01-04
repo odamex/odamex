@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -16,35 +16,25 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   List control for handling extra server details 
+//  Server list control class
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __LST_SRVDETAILS_H__
-#define __LST_SRVDETAILS_H__
+#ifndef __LST_SERVERS_H__
+#define __LST_SERVERS_H__
 
 #include "net_packet.h"
+#include "lst_custom.h"
 
-#include <wx/listctrl.h>
-
-class LstOdaSrvDetails : public wxListCtrl
+class LstOdaServerList : public wxAdvancedListCtrl
 {
     public:
-        LstOdaSrvDetails() { };
-        virtual ~LstOdaSrvDetails() { };
-        
-        void LoadDetailsFromServer(const Server &);
-        
-        //wxEvent *Clone(void);
+        LstOdaServerList() { };
+        virtual ~LstOdaServerList() { };
+
     protected:
-        void InsertLine(const wxString &Name, const wxString &Value);
-        void InsertHeader(const wxString &Name, 
-                          const wxColor *NameColor,
-                          const wxColor *NameBGColor);
         
-        wxColour BGItemAlternator;
-        
-        DECLARE_DYNAMIC_CLASS(LstOdaSrvDetails)
+        DECLARE_DYNAMIC_CLASS(LstOdaServerList)
 };
 
-#endif // __LST_SRVDETAILS_H__
+#endif // __LST_SERVERS_H__

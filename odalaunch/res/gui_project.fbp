@@ -849,7 +849,7 @@
                                                         <property name="pos"></property>
                                                         <property name="size">-1,-1</property>
                                                         <property name="style">wxLC_REPORT|wxLC_SINGLE_SEL</property>
-                                                        <property name="subclass">wxAdvancedListCtrl; </property>
+                                                        <property name="subclass">LstOdaServerList; </property>
                                                         <property name="tooltip"></property>
                                                         <property name="validator_data_type"></property>
                                                         <property name="validator_style">wxFILTER_NONE</property>
@@ -1149,7 +1149,7 @@
                                                                             <property name="pos"></property>
                                                                             <property name="size">-1,-1</property>
                                                                             <property name="style">wxLC_REPORT|wxLC_SINGLE_SEL</property>
-                                                                            <property name="subclass">wxAdvancedListCtrl; </property>
+                                                                            <property name="subclass">LstOdaPlayerList; </property>
                                                                             <property name="tooltip"></property>
                                                                             <property name="validator_data_type"></property>
                                                                             <property name="validator_style">wxFILTER_NONE</property>

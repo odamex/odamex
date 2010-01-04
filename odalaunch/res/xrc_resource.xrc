@@ -194,7 +194,7 @@
 									<option>1</option>
 									<flag>wxALL|wxEXPAND</flag>
 									<border>2</border>
-									<object class="wxListCtrl" name="Id_LstCtrlServers" subclass="wxAdvancedListCtrl">
+									<object class="wxListCtrl" name="Id_LstCtrlServers" subclass="LstOdaServerList">
 										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
 									</object>
 								</object>
@@ -230,7 +230,7 @@
 													<option>1</option>
 													<flag>wxALL|wxEXPAND</flag>
 													<border>2</border>
-													<object class="wxListCtrl" name="Id_LstCtrlPlayers" subclass="wxAdvancedListCtrl">
+													<object class="wxListCtrl" name="Id_LstCtrlPlayers" subclass="LstOdaPlayerList">
 														<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
 													</object>
 												</object>

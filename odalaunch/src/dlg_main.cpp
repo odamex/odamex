@@ -115,8 +115,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     
     SetIcons(IconBundle);
     
-    m_LstCtrlServers = wxDynamicCast(FindWindow(Id_LstCtrlServers), wxAdvancedListCtrl);
-    m_LstCtrlPlayers = wxDynamicCast(FindWindow(Id_LstCtrlPlayers), wxAdvancedListCtrl);
+    m_LstCtrlServers = wxDynamicCast(FindWindow(Id_LstCtrlServers), LstOdaServerList);
+    m_LstCtrlPlayers = wxDynamicCast(FindWindow(Id_LstCtrlPlayers), LstOdaPlayerList);
     m_LstOdaSrvDetails = wxDynamicCast(FindWindow(Id_LstCtrlServerDetails), LstOdaSrvDetails);
 
     SetupServerListColumns(m_LstCtrlServers);

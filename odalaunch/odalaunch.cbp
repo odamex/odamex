@@ -374,6 +374,10 @@
 		</Unit>
 		<Unit filename="src\lst_custom.cpp" />
 		<Unit filename="src\lst_custom.h" />
+		<Unit filename="src\lst_players.cpp" />
+		<Unit filename="src\lst_players.h" />
+		<Unit filename="src\lst_servers.cpp" />
+		<Unit filename="src\lst_servers.h" />
 		<Unit filename="src\lst_srvdetails.cpp" />
 		<Unit filename="src\lst_srvdetails.h" />
 		<Unit filename="src\main.cpp" />
