@@ -143,7 +143,6 @@ wxInt32 MasterServer::Parse()
 Server::Server()
 {                  
     challenge = SERVER_CHALLENGE;
-    m_ValidResponse = false;
     
     ResetData();
 }
@@ -155,6 +154,8 @@ Server::~Server()
 
 void Server::ResetData()
 {   
+    m_ValidResponse = false;
+    
     Info.Cvars.clear();
     Info.Wads.clear();
     Info.Players.clear();
