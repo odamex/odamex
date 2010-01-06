@@ -143,6 +143,7 @@ wxInt32 MasterServer::Parse()
 Server::Server()
 {                  
     challenge = SERVER_CHALLENGE;
+    m_ValidResponse = false;
     
     ResetData();
 }

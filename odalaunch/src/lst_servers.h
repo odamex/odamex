@@ -30,7 +30,7 @@ class LstOdaServerList : public wxAdvancedListCtrl
 {
     public:
         LstOdaServerList() { };
-        virtual ~LstOdaServerList() { };
+        virtual ~LstOdaServerList();
 
         void SetupServerListColumns();
         void AddServerToList(const Server &s, wxInt32 index, wxInt8 insert = 1);

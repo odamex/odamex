@@ -22,6 +22,8 @@
 
 #include "lst_servers.h"
 
+#include <wx/fileconf.h>
+
 IMPLEMENT_DYNAMIC_CLASS(LstOdaServerList, wxAdvancedListCtrl)
 
 /* XPM */
@@ -219,20 +221,90 @@ typedef enum
 
 void LstOdaServerList::SetupServerListColumns()
 {
+	wxFileConfig ConfigInfo;
+	wxInt32 WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap, WidthType;
+	wxInt32 WidthIwad, WidthAddress;
+	
 	DeleteAllColumns();
 
+    // Read in the column widths
+    ConfigInfo.Read(wxT("ServerListWidthName"), &WidthName, 150);
+    ConfigInfo.Read(wxT("ServerListWidthPing"), &WidthPing, 60);
+    ConfigInfo.Read(wxT("ServerListWidthPlayers"), &WidthPlayers, 80);
+    ConfigInfo.Read(wxT("ServerListWidthWads"), &WidthWads, 150);
+    ConfigInfo.Read(wxT("ServerListWidthMap"), &WidthMap, 60);
+    ConfigInfo.Read(wxT("ServerListWidthType"), &WidthType, 80);
+    ConfigInfo.Read(wxT("ServerListWidthIwad"), &WidthIwad, 100);
+    ConfigInfo.Read(wxT("ServerListWidthAddress"), &WidthAddress, 130);
+
 	// set up the list columns
-    InsertColumn(serverlist_field_name,_T("Server name"),wxLIST_FORMAT_LEFT,150);
-	InsertColumn(serverlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,60);
-	InsertColumn(serverlist_field_players,_T("Players"),wxLIST_FORMAT_LEFT,80);
-	InsertColumn(serverlist_field_wads,_T("WADs"),wxLIST_FORMAT_LEFT,150);
-	InsertColumn(serverlist_field_map,_T("Map"),wxLIST_FORMAT_LEFT,60);
-	InsertColumn(serverlist_field_type,_T("Type"),wxLIST_FORMAT_LEFT,80);
-	InsertColumn(serverlist_field_iwad,_T("Game IWAD"),wxLIST_FORMAT_LEFT,100);
-	InsertColumn(serverlist_field_address,_T("Address : Port"),wxLIST_FORMAT_LEFT,130);
+    InsertColumn(serverlist_field_name, 
+        wxT("Server name"), 
+        wxLIST_FORMAT_LEFT,
+        WidthName);
+        
+	InsertColumn(serverlist_field_ping,
+        wxT("Ping"),
+        wxLIST_FORMAT_LEFT,
+        WidthPing);
+	
+	InsertColumn(serverlist_field_players,
+        wxT("Players"),
+        wxLIST_FORMAT_LEFT,
+        WidthPlayers);
+        
+	InsertColumn(serverlist_field_wads,
+        wxT("WADs"),
+        wxLIST_FORMAT_LEFT,
+        WidthWads);
+        
+	InsertColumn(serverlist_field_map,
+        wxT("Map"),
+        wxLIST_FORMAT_LEFT,
+        WidthMap);
+        
+	InsertColumn(serverlist_field_type,
+        wxT("Type"),
+        wxLIST_FORMAT_LEFT,
+        WidthType);
+        
+	InsertColumn(serverlist_field_iwad,
+        wxT("Game IWAD"),
+        wxLIST_FORMAT_LEFT,
+        WidthIwad);
+        
+	InsertColumn(serverlist_field_address,
+        wxT("Address : Port"),
+        wxLIST_FORMAT_LEFT,
+        WidthAddress);
 	
 	// Passworded server icon
     AddImageSmall(padlock_xpm);
+}
+
+LstOdaServerList::~LstOdaServerList()
+{
+	wxFileConfig ConfigInfo;
+	wxInt32 WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap, WidthType;
+	wxInt32 WidthIwad, WidthAddress;
+	
+	WidthName = GetColumnWidth(serverlist_field_name);
+	WidthPing = GetColumnWidth(serverlist_field_ping);
+	WidthPlayers = GetColumnWidth(serverlist_field_players);
+	WidthWads = GetColumnWidth(serverlist_field_wads);
+	WidthMap = GetColumnWidth(serverlist_field_map);
+	WidthType = GetColumnWidth(serverlist_field_type);
+	WidthIwad = GetColumnWidth(serverlist_field_iwad);
+	WidthAddress = GetColumnWidth(serverlist_field_address);
+
+    ConfigInfo.Write(wxT("ServerListWidthName"), WidthName);
+    ConfigInfo.Write(wxT("ServerListWidthPing"), WidthPing);
+    ConfigInfo.Write(wxT("ServerListWidthPlayers"), WidthPlayers);
+    ConfigInfo.Write(wxT("ServerListWidthWads"), WidthWads);
+    ConfigInfo.Write(wxT("ServerListWidthMap"), WidthMap);
+    ConfigInfo.Write(wxT("ServerListWidthType"), WidthType);
+    ConfigInfo.Write(wxT("ServerListWidthIwad"), WidthIwad);
+    ConfigInfo.Write(wxT("ServerListWidthAddress"), WidthAddress);
 }
 
 /*
