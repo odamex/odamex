@@ -240,15 +240,11 @@ void LstOdaServerList::SetupServerListColumns()
     if insert is 1, then add an item to the list, otherwise it will
     update the current item with new data
 */
-void LstOdaServerList::AddServerToList(Server &s, 
+void LstOdaServerList::AddServerToList(const Server &s, 
                                         wxInt32 index, 
                                         wxInt8 insert)
 {
     wxInt32 i = 0;
-    
-    if (s.GetAddress() == _T("0.0.0.0:0"))
-        return;
-    
     wxListItem li;
     
     li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
@@ -287,8 +283,27 @@ void LstOdaServerList::AddServerToList(Server &s,
     
     SetItem(li);
 
+    // We break out here, so atleast we have an IP address to go by
+    // TODO: Rearrange the code above so we just add the ip address and return 
+    // earlier
+    if (s.GotResponse() == false)
+        return;
+
+    wxUint32 Ping = s.GetPing();
+
     li.SetColumn(serverlist_field_ping);
-    li.SetText(wxString::Format(_T("%u"),s.GetPing()));
+    li.SetText(wxString::Format(_T("%u"), Ping));
+
+    // TODO: Enable this when sorting of colours gets fixed and add option 
+    // inside launcher settings to change these ping thresholds
+    /*
+    if (Ping < 100)
+        li.SetTextColour(*wxGREEN);
+    else if (Ping < 200)
+        li.SetTextColour(wxColour(255, 128, 0));
+    else
+        li.SetTextColour(*wxRED);
+    */
     
     SetItem(li);
 

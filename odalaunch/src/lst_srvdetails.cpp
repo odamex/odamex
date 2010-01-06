@@ -83,7 +83,10 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server &In)
     DeleteAllItems();
     DeleteAllColumns();
     
-    // Begin adding data to the control
+    if (In.GotResponse() == false)
+        return;
+    
+    // Begin adding data to the control   
     
     // Set the initial background colour
     BGItemAlternator = *wxWHITE;
