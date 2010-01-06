@@ -301,6 +301,9 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
     Item2Flipped.SetId(Row);
     Item2Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
 
+    wxColour Item1Colour = GetItemTextColour(Row);
+    wxColour Item2Colour = GetItemTextColour(NextRow);
+
     // Flip the data for columns too.
     for (wxInt32 ColumnCounter = 0; 
          ColumnCounter < GetColumnCount(); 
@@ -316,13 +319,11 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
         // Set data for the first item
         Item2Flipped.SetImage(Item2.GetImage()); 
         Item2Flipped.SetData(Item2.GetData()); 
-        Item2Flipped.SetTextColour(Item2.GetTextColour()); 
         Item2Flipped.SetText(Item2.GetText());
 
         // Now the second
         Item1Flipped.SetImage(Item1.GetImage()); 
         Item1Flipped.SetData(Item1.GetData()); 
-        Item1Flipped.SetTextColour(Item1.GetTextColour()); 
         Item1Flipped.SetText(Item1.GetText());
 
         // Set them
@@ -333,6 +334,8 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
         SetItem(Item2Flipped);
     }
 
+    SetItemTextColour(NextRow, Item1Colour);
+    SetItemTextColour(Row, Item2Colour);
 }
 
 // A custom sort routine, we do our own sorting.
@@ -525,6 +528,9 @@ long wxAdvancedListCtrl::ALCInsertItem(wxListItem &info)
     ColourListItem(info);
 
     SetItem(info);
+
+    // wxWidgets bug: Required for sorting colours correctly
+    SetItemTextColour(info.GetId(), GetTextColour());
 
     return info.GetId();
 }

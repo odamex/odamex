@@ -294,16 +294,13 @@ void LstOdaServerList::AddServerToList(const Server &s,
     li.SetColumn(serverlist_field_ping);
     li.SetText(wxString::Format(_T("%u"), Ping));
 
-    // TODO: Enable this when sorting of colours gets fixed and add option 
-    // inside launcher settings to change these ping thresholds
-    /*
+    // TODO: Add launcher settings to change these ping thresholds
     if (Ping < 100)
         li.SetTextColour(*wxGREEN);
     else if (Ping < 200)
         li.SetTextColour(wxColour(255, 128, 0));
     else
         li.SetTextColour(*wxRED);
-    */
     
     SetItem(li);
 
