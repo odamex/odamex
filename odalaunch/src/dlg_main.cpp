@@ -223,13 +223,6 @@ void dlgMain::OnShow(wxShowEvent &event)
     ConfigInfo.Read(_T("PlayerListSortColumn"), &PlayerListSortColumn, 0);
 
     m_LstCtrlPlayers->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
-    
-    wxInt32 WindowWidth, WindowHeight;
-
-    ConfigInfo.Read(_T("MainWindowWidth"), &WindowWidth, GetSize().GetWidth());
-    ConfigInfo.Read(_T("MainWindowHeight"), &WindowHeight, GetSize().GetHeight());
-       
-    SetSize(WindowWidth, WindowHeight);
 }
 
 // manually connect to a server
