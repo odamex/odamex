@@ -130,6 +130,8 @@ CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (revealsecrets,        "0", CVAR_ARCHIVE)
 CVAR (show_messages, "1", CVAR_ARCHIVE)
 
+CVAR (show_endoom, "1", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
+
 // Rate of client updates
 CVAR_FUNC_DECL (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Maximum number of clients who can connect to the server

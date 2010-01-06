@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -39,11 +39,11 @@ void I_SetMode (int &width, int &height, int &bits);
 // Takes full 8 bit values.
 void I_SetPalette (DWORD *palette);
 
-/* 
-    12/3/06: Old Timey Palette method, used for red screen only as of 
+/*
+    12/3/06: Old Timey Palette method, used for red screen only as of
              this writing.  It accepts a byte instead of a DWORD.  It
              is restricted only to the red screen because of that.
-*/ 
+*/
 void I_SetOldPalette (byte *doompalette);
 
 void I_BeginUpdate (void);		// [RH] Locks screen[0]

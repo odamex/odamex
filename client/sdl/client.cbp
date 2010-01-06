@@ -15,7 +15,6 @@
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
-				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-DWIN32" />
@@ -24,6 +23,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-ltextscreen" />
 					<Add library="mingw32" />
 					<Add library="winmm" />
 					<Add library="wsock32" />
@@ -37,8 +37,6 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option projectLinkerOptionsRelation="2" />
-				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
@@ -47,6 +45,7 @@
 					<Add option="-D_DEBUG" />
 				</Compiler>
 				<Linker>
+					<Add library="..\..\lib\libtextscreen-dbg.a" />
 					<Add library="mingw32" />
 					<Add library="winmm" />
 					<Add library="wsock32" />
@@ -285,11 +284,13 @@
 			<Add directory="." />
 			<Add directory="..\src" />
 			<Add directory="..\..\common" />
+			<Add directory="..\..\textscreen" />
 		</Compiler>
 		<Linker>
 			<Add library="SDLmain" />
 			<Add library="SDL" />
 			<Add library="SDL_mixer" />
+			<Add directory="..\..\lib" />
 		</Linker>
 		<Unit filename="client.rc">
 			<Option compilerVar="WINDRES" />
@@ -404,6 +405,7 @@
 		<Unit filename="..\..\common\dobject.h" />
 		<Unit filename="..\..\common\doomdata.h" />
 		<Unit filename="..\..\common\doomdef.h" />
+		<Unit filename="..\..\common\doomkeys.h" />
 		<Unit filename="..\..\common\doomstat.cpp" />
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />

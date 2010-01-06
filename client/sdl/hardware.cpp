@@ -174,6 +174,19 @@ void I_SetPalette (DWORD *pal)
 	Video->SetPalette (pal);
 }
 
+
+// Set the window caption
+void I_SetWindowCaption(void)
+{
+
+}
+
+// Set the window icon
+void I_SetWindowIcon(void)
+{
+
+}
+
 // Find a free filename that isn't taken
 static BOOL FindFreeName (char *lbmname, const char *extension)
 {
@@ -316,9 +329,9 @@ void I_SetMode (int &width, int &height, int &bits)
 		break;
 	case DISPLAY_Both:
 		fs = vid_fullscreen ? true : false;
-		
+
 		fs ? I_ResumeMouse() : I_PauseMouse();
-		
+
 		break;
 	}
 	bool res = Video->SetMode (width, height, bits, fs);
