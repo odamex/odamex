@@ -386,7 +386,7 @@ txt_spincontrol_t *TXT_NewSpinControl(int *value, int min, int max)
 
     spincontrol = TXT_BaseSpinControl();
     spincontrol->type = TXT_SPINCONTROL_INT;
-    //spincontrol->value = (void *) value;
+    //spincontrol->value = (void *) value;		// [ML] FIXME: Broken due to C++ shenanigans
     spincontrol->min.i = min;
     spincontrol->max.i = max;
     spincontrol->step.i = 1;
@@ -400,7 +400,7 @@ txt_spincontrol_t *TXT_NewFloatSpinControl(float *value, float min, float max)
 
     spincontrol = TXT_BaseSpinControl();
     spincontrol->type = TXT_SPINCONTROL_FLOAT;
-    //spincontrol->value = (void *) value;
+    //spincontrol->value = (void *) value;		// [ML] FIXME: Broken due to C++ shenanigans
     spincontrol->min.f = min;
     spincontrol->max.f = max;
     spincontrol->step.f = 0.1f;
