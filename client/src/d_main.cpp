@@ -852,6 +852,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		"doom1.wad",
 		"freedoom.wad",
 		"freedm.wad",
+		"chex.wad",
 		NULL
 	};
 
@@ -981,9 +982,19 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				if (lumpsfound[2])
 				{
-					gamemode = retail;
-					gameinfo = RetailGameInfo;
-					titlestring = "The Ultimate DOOM";
+					if (iwad == "chex.wad")			// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
+					{								// iwad.  It's ultimate doom with their stuff replacing most things.
+						gamemission = chex;
+						gamemode = retail_chex;
+						gameinfo = RetailGameInfo;
+						titlestring = "Chex Quest";
+					}
+					else
+					{
+						gamemode = retail;
+						gameinfo = RetailGameInfo;
+						titlestring = "The Ultimate DOOM";
+					}
 				}
 				else
 				{

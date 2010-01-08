@@ -86,6 +86,7 @@ enum GameMode_t
   commercial,	// DOOM 2 retail, E1 M34
   // DOOM 2 german edition not handled
   retail,		// DOOM 1 retail, E4, M36
+  retail_chex,	// Chex Quest
   undetermined	// Well, no IWAD found.
 
 };
@@ -98,6 +99,7 @@ enum GameMission_t
   doom2,		// DOOM 2
   pack_tnt, 	// TNT mission pack
   pack_plut,	// Plutonia pack
+  chex,			// Chex Quest
   none
 };
 
