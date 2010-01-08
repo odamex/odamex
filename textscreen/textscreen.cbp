@@ -39,12 +39,6 @@
 				<Option type="2" />
 				<Option compiler="msvc8" />
 				<Option createDefFile="1" />
-				<Compiler>
-					<Add option="-O2" />
-				</Compiler>
-				<Linker>
-					<Add option="-s" />
-				</Linker>
 			</Target>
 			<Target title="Win Debug (VC)">
 				<Option output="..\lib\libtextscreen-dbg.a" prefix_auto="0" extension_auto="0" />
@@ -54,9 +48,11 @@
 				<Option compiler="msvc8" />
 				<Option createDefFile="1" />
 				<Compiler>
-					<Add option="-W" />
-					<Add option="-gdwarf-2" />
+					<Add option="/Zi" />
 				</Compiler>
+				<Linker>
+					<Add option="/debug" />
+				</Linker>
 			</Target>
 		</Build>
 		<VirtualTargets>
@@ -66,9 +62,6 @@
 		<Compiler>
 			<Add directory="..\common" />
 		</Compiler>
-		<Linker>
-			<Add option="-lmingw32 -lSDLmain -lSDL -mwindows" />
-		</Linker>
 		<Unit filename=".\textscreen.h" />
 		<Unit filename=".\txt_button.cpp" />
 		<Unit filename=".\txt_button.h" />

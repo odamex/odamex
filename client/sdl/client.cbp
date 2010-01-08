@@ -37,6 +37,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
@@ -45,10 +46,11 @@
 					<Add option="-D_DEBUG" />
 				</Compiler>
 				<Linker>
-					<Add library="..\..\lib\libtextscreen-dbg.a" />
+					<Add option="-ltextscreen-dbg" />
 					<Add library="mingw32" />
 					<Add library="winmm" />
 					<Add library="wsock32" />
+					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
 			<Target title="Unix Release">
