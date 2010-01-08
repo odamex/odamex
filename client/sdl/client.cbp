@@ -23,10 +23,11 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add option="-ltextscreen" />
 					<Add library="mingw32" />
 					<Add library="winmm" />
 					<Add library="wsock32" />
+					<Add library="libtextscreen" />
+					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
 			<Target title="Win Debug (GCC)">
@@ -46,10 +47,10 @@
 					<Add option="-D_DEBUG" />
 				</Compiler>
 				<Linker>
-					<Add option="-ltextscreen-dbg" />
 					<Add library="mingw32" />
 					<Add library="winmm" />
 					<Add library="wsock32" />
+					<Add library="libtextscreen-dbg" />
 					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
@@ -170,7 +171,7 @@
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
-					<Add directory="..\..\libtextscreen" />
+					<Add directory="..\..\textscreen" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
@@ -196,10 +197,11 @@
 					<Add library="uuid.lib" />
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
+					<Add library="libtextscreen" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
-					<Add directory="..\..\libtextscreen" />
+					<Add directory="..\..\lib" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
@@ -240,7 +242,7 @@
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
-					<Add directory="..\..\libtextscreen" />
+					<Add directory="..\..\textscreen" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
@@ -267,10 +269,11 @@
 					<Add library="uuid.lib" />
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
+					<Add library="libtextscreen-dbg" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
-					<Add directory="..\..\libtextscreen" />
+					<Add directory="..\..\lib" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />

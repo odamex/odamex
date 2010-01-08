@@ -39,7 +39,7 @@ static void FloatFormatString(float step, char *buf)
 {
     int precision;
 
-    precision = (int) ceil(-log(step) / log(10));
+    precision = (int) ceil(-log(step) / log(10.0f));
 
     if (precision > 0)
     {
@@ -73,7 +73,7 @@ static unsigned int FloatWidth(float val, float step)
 
     // Add a decimal part if the precision specifies it
 
-    precision = (unsigned int) ceil(-log(step) / log(10));
+    precision = (unsigned int) ceil(-log(step) / log(10.0f));
 
     if (precision > 0)
     {

@@ -1,13 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
-	<ActiveTarget name="Debug" />
-	<File name=".\textscreen.h" open="0" top="0" tabpos="0">
-		<Cursor position="993" topLine="10" />
-	</File>
-	<File name=".\txt_main.h" open="0" top="0" tabpos="0">
-		<Cursor position="1165" topLine="12" />
-	</File>
-	<File name=".\txt_sdl.h" open="0" top="0" tabpos="0">
-		<Cursor position="1267" topLine="15" />
-	</File>
+	<ActiveTarget name="Win Debug (GCC)" />
 </CodeBlocks_layout_file>

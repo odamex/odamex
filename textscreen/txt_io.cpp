@@ -170,7 +170,7 @@ void TXT_Puts(const char *s)
             }
             else
             {
-                ending = strchr(p, '>');
+                ending = (char *)strchr(p, '>');
 
                 if (ending == NULL)
                 {
