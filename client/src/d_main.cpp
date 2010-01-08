@@ -852,7 +852,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		"doom1.wad",
 		"freedoom.wad",
 		"freedm.wad",
-		"chex.wad",
+		"chex.wad",		// [ML] 1/7/10: Hello Chex Quest!
 		NULL
 	};
 
