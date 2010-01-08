@@ -168,11 +168,13 @@
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libtextscreen" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libtextscreen" />
 				</ResourceCompiler>
 				<Linker>
 					<Add library="SDLmain.lib" />
@@ -195,6 +197,7 @@
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libtextscreen" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
@@ -235,11 +238,13 @@
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libtextscreen" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libtextscreen" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/debug" />
@@ -263,6 +268,7 @@
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libtextscreen" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />

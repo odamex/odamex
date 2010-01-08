@@ -428,3 +428,195 @@
 	"txt_main.h"
 	"txt_window.h"
 
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_button.cpp
+	<stdlib.h>
+	<string.h>
+	"doomkeys.h"
+	"txt_button.h"
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_window.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\common\doomkeys.h
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_button.h
+	"txt_widget.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_widget.h
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_gui.h
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_io.h
+	"txt_main.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_main.h
+	"txt_sdl.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_sdl.h
+	"SDL.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_window.h
+	"txt_widget.h"
+	"txt_table.h"
+	"txt_window_action.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_table.h
+	"txt_widget.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_window_action.h
+	"txt_widget.h"
+	"txt_window.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_checkbox.cpp
+	<stdlib.h>
+	<string.h>
+	"doomkeys.h"
+	"txt_checkbox.h"
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_window.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_checkbox.h
+	"txt_widget.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_desktop.cpp
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"doomkeys.h"
+	"txt_desktop.h"
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_separator.h"
+	"txt_window.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_desktop.h
+	"txt_window.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_separator.h
+	"txt_widget.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_dropdown.cpp
+	<stdlib.h>
+	<string.h>
+	"doomkeys.h"
+	"txt_button.h"
+	"txt_dropdown.h"
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_window.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_dropdown.h
+	"txt_widget.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_gui.cpp
+	<stdlib.h>
+	<string.h>
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_inputbox.cpp
+	<ctype.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"doomkeys.h"
+	"txt_inputbox.h"
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_window.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_inputbox.h
+	"txt_widget.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_label.cpp
+	<stdlib.h>
+	<string.h>
+	"txt_label.h"
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_window.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_label.h
+	"txt_main.h"
+	"txt_widget.h"
+
+1262914305 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_io.cpp
+	<stdlib.h>
+	<string.h>
+	"txt_io.h"
+	"txt_main.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_radiobutton.cpp
+	<stdlib.h>
+	<string.h>
+	"doomkeys.h"
+	"txt_radiobutton.h"
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_window.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_radiobutton.h
+	"txt_widget.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_scrollpane.cpp
+	<ctype.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<math.h>
+	"txt_scrollpane.h"
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_table.h"
+	"doomkeys.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_scrollpane.h
+	"txt_widget.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_sdl.cpp
+	"SDL.h"
+	<ctype.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"doomkeys.h"
+	"txt_main.h"
+	"txt_sdl.h"
+	"txt_font.h"
+	"txt_smallfont.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_font.h
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_smallfont.h
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_separator.cpp
+	<stdlib.h>
+	<string.h>
+	"txt_separator.h"
+	"txt_gui.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_window.h"
+
+1262775242 source:d:\russell\projects\multi\odamex2\trunk\textscreen\txt_strut.cpp
+	<stdlib.h>
+	<string.h>
+	"doomkeys.h"
+	"txt_strut.h"
+	"txt_io.h"
+	"txt_main.h"
+	"txt_window.h"
+
+1262775242 d:\russell\projects\multi\odamex2\trunk\textscreen\txt_strut.h
+	"txt_widget.h"
+

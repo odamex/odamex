@@ -6,19 +6,7 @@
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Debug">
-				<Option output="..\lib\libtextscreen-dbg.a" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="" />
-				<Option object_output="..\obj\libtextscreen\gcc\debug" />
-				<Option type="2" />
-				<Option compiler="gcc" />
-				<Option createDefFile="1" />
-				<Compiler>
-					<Add option="-W" />
-					<Add option="-gdwarf-2" />
-				</Compiler>
-			</Target>
-			<Target title="Release">
+			<Target title="Win Release (GCC)">
 				<Option output="..\lib\libtextscreen.a" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="" />
 				<Option object_output="..\obj\libtextscreen\gcc\release" />
@@ -32,9 +20,48 @@
 					<Add option="-s" />
 				</Linker>
 			</Target>
+			<Target title="Win Debug (GCC)">
+				<Option output="..\lib\libtextscreen-dbg.a" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="..\obj\libtextscreen\gcc\debug" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-gdwarf-2" />
+				</Compiler>
+			</Target>
+			<Target title="Win Release (VC)">
+				<Option output="..\lib\libtextscreen.a" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="..\obj\libtextscreen\vc\release" />
+				<Option type="2" />
+				<Option compiler="msvc8" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Win Debug (VC)">
+				<Option output="..\lib\libtextscreen-dbg.a" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="..\obj\libtextscreen\vc\debug" />
+				<Option type="2" />
+				<Option compiler="msvc8" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-gdwarf-2" />
+				</Compiler>
+			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="All" targets="Debug;Release;" />
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (GCC);Win Debug (GCC);" />
 		</VirtualTargets>
 		<Compiler>
 			<Add directory="..\common" />
