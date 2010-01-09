@@ -296,15 +296,23 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
     Item2.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE); 
 
     Item1Flipped.SetId(NextRow);
-    Item1Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
+    Item1Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA 
+        | wxLIST_MASK_IMAGE);
 
     Item2Flipped.SetId(Row);
-    Item2Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
+    Item2Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA 
+        | wxLIST_MASK_IMAGE);
 
+    // Due to bugs/limitations with wxWidgets, certain stuff needs to be 
+    // physically taken from the list control as GetItem is finicky
     wxColour Item1Colour = GetItemTextColour(Row);
     wxColour Item2Colour = GetItemTextColour(NextRow);
-
-    // Flip the data for columns too.
+    wxInt32 Item1State = GetItemState(Row, wxLIST_STATE_SELECTED 
+        | wxLIST_STATE_FOCUSED);
+    wxInt32 Item2State = GetItemState(NextRow, wxLIST_STATE_SELECTED 
+        | wxLIST_STATE_FOCUSED);
+    
+    // Flip the data for columns.
     for (wxInt32 ColumnCounter = 0; 
          ColumnCounter < GetColumnCount(); 
          ++ColumnCounter) 
@@ -334,6 +342,12 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
         SetItem(Item2Flipped);
     }
 
+    // Due to bugs/limitations with wxWidgets, certain stuff needs to be 
+    // physically taken from the list control as GetItem is finicky
+    SetItemState(NextRow, Item1State, wxLIST_STATE_SELECTED 
+        | wxLIST_STATE_FOCUSED);
+    SetItemState(Row, Item2State, wxLIST_STATE_SELECTED 
+        | wxLIST_STATE_FOCUSED);
     SetItemTextColour(NextRow, Item1Colour);
     SetItemTextColour(Row, Item2Colour);
 }
