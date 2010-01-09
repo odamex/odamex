@@ -284,7 +284,7 @@
 			<growablerows></growablerows>
 			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxEXPAND</flag>
+				<flag>wxALL|wxEXPAND</flag>
 				<border>5</border>
 				<object class="wxStaticBoxSizer">
 					<orient>wxVERTICAL</orient>
@@ -371,7 +371,7 @@
 			</object>
 			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxALIGN_LEFT|wxALIGN_TOP|wxEXPAND</flag>
+				<flag>wxALL|wxEXPAND</flag>
 				<border>5</border>
 				<object class="wxStaticBoxSizer">
 					<orient>wxVERTICAL</orient>
@@ -390,7 +390,7 @@
 			</object>
 			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxEXPAND|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
+				<flag>wxALL|wxEXPAND</flag>
 				<border>5</border>
 				<object class="wxStaticBoxSizer">
 					<orient>wxVERTICAL</orient>
@@ -531,7 +531,7 @@
 			</object>
 			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxEXPAND</flag>
+				<flag>wxALL|wxEXPAND</flag>
 				<border>5</border>
 				<object class="wxStaticBoxSizer">
 					<orient>wxVERTICAL</orient>
@@ -548,8 +548,8 @@
 				</object>
 			</object>
 			<object class="sizeritem">
-				<option>0</option>
-				<flag>wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
+				<option>1</option>
+				<flag>wxALL|wxEXPAND</flag>
 				<border>5</border>
 				<object class="wxStdDialogButtonSizer">
 					<object class="button">
