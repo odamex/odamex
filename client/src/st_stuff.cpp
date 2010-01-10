@@ -91,7 +91,7 @@ CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
 		ST_Y = screen->height - ST_HEIGHT;
 	} else {
 		ST_X = 0;
-		ST_Y = screen->height;		
+		ST_Y = screen->height;
 	}
 
 	setsizeneeded = true;
@@ -529,11 +529,11 @@ EXTERN_CVAR (allowcheats)
 // and false if they ARE enabled (stupid huh? not my work [Russell])
 BOOL CheckCheatmode (void)
 {
-	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats 
+	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
 	// are disabled
 	if (skill == sk_nightmare && !multiplayer)
         return true;
-	
+
 	if ((multiplayer || gametype != GM_COOP) && !allowcheats)
 	{
 		Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
@@ -638,7 +638,7 @@ bool ST_Responder (event_t *ev)
 
             MSG_WriteMarker(&net_buffer, clc_cheatpulse);
             MSG_WriteByte(&net_buffer, 2);
-            
+
             eatkey = true;
         }
         // [Russell] - Only doom 1/registered can have idspispopd and
@@ -651,7 +651,7 @@ bool ST_Responder (event_t *ev)
             if ((gamemode != shareware) && (gamemode != registered) &&
                 (gamemode != retail))
                 return false;
-                
+
             AddCommandString("noclip");
 
             // Net_WriteByte (DEM_GENERICCHEAT);
@@ -728,9 +728,15 @@ bool ST_Responder (event_t *ev)
                 return false;
 
             char buf[16];
+			//char *bb;
 
             cht_GetParam(&cheat_clev, buf);
             buf[2] = 0;
+
+			// [ML] Chex mode: always set the episode number to 1.
+			// FIXME: This is probably a horrible hack, it sure looks like one at least
+			if (gamemode == retail_chex)
+				sprintf(buf,"1%c",buf[1]);
 
             sprintf (buf + 3, "map %s\n", buf);
             AddCommandString (buf + 3);
@@ -944,7 +950,7 @@ int ST_calcPainOffset(void)
 	static int	oldhealth = -1;
 
 	health = consoleplayer().health;
-	
+
 	if(health < -1)
 		health = -1;
 	else if(health > 100)
@@ -955,7 +961,7 @@ int ST_calcPainOffset(void)
 		lastcalc = ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
 		oldhealth = health;
 	}
-	
+
 	return lastcalc;
 }
 
@@ -1523,7 +1529,7 @@ void ST_loadGraphics(void)
 	// [RH] only one face background used for all players
 	//		different colors are accomplished with translations
 	faceback = W_CachePatch("STFBANY", PU_STATIC);
-	
+
 	// [Nes] Classic vanilla lifebars.
 	for (i = 0; i < 4; i++) {
 		sprintf(namebuf, "STFB%d", i);
