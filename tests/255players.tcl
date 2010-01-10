@@ -7,7 +7,7 @@ set numplayers  3; # 255
 
 proc start {} {
  global server client serverout clientout port numplayers
- set server [open "|./odasrv -port $port -logfile odasrv.log > tmp" w]
+ set server [open "|./odasrv -port $port +logfile odasrv.log > tmp" w]
  wait
  set serverout [open odasrv.log r]
 
