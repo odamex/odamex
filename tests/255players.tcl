@@ -22,7 +22,7 @@ proc start {} {
 
  array set client ""
  for {set i 0} {$i < $numplayers} {incr i} {
-  set client($i) [open "|./odamex -port [expr 10401+$i] -connect localhost:$port -nosound -novideo -logfile odamex$i.log > tmp" w]
+  set client($i) [open "|./odamex -port [expr 10401+$i] -connect localhost:$port -nosound -novideo +logfile odamex$i.log > tmp" w]
   if { $client($i) == "" } {
    puts "FAIL: could not start client $i"
   } else {

@@ -477,8 +477,8 @@ void STACK_ARGS I_Quit (void)
 
 	M_SaveDefaults();
 
-    if (show_endoom)
-        I_Endoom();
+	if (show_endoom && !Args.CheckParm ("-novideo"))
+		I_Endoom();
 }
 
 
