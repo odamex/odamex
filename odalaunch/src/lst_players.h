@@ -30,10 +30,10 @@ class LstOdaPlayerList : public wxAdvancedListCtrl
 {
     public:
         LstOdaPlayerList() { };
-        virtual ~LstOdaPlayerList() { };
+        virtual ~LstOdaPlayerList();
 
         void AddPlayersToList(const Server &s);
-        void SetupPlayerListHeader();
+        void SetupPlayerListColumns();
 
     protected:
         

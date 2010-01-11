@@ -120,10 +120,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstOdaSrvDetails = wxDynamicCast(FindWindow(Id_LstCtrlServerDetails), LstOdaSrvDetails);
 
     m_LstCtrlServers->SetupServerListColumns();
-    m_LstCtrlPlayers->SetupPlayerListHeader();
-
-    // spectator state.
-    m_LstCtrlPlayers->AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
+    m_LstCtrlPlayers->SetupPlayerListColumns();
 
 	// set up the master server information
 	MServer = new MasterServer;
@@ -188,17 +185,6 @@ void dlgMain::OnClose(wxCloseEvent &event)
 
     // Save GUI layout
     wxFileConfig ConfigInfo;
-    wxInt32 ServerListSortOrder, ServerListSortColumn;
-    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
-
-    m_LstCtrlServers->GetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
-    m_LstCtrlPlayers->GetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
-
-    ConfigInfo.Write(_T("ServerListSortOrder"), ServerListSortOrder);
-    ConfigInfo.Write(_T("ServerListSortColumn"), ServerListSortColumn);
-
-    ConfigInfo.Write(_T("PlayerListSortOrder"), PlayerListSortOrder);
-    ConfigInfo.Write(_T("PlayerListSortColumn"), PlayerListSortColumn);
 
     ConfigInfo.Write(_T("MainWindowWidth"), GetSize().GetWidth());
     ConfigInfo.Write(_T("MainWindowHeight"), GetSize().GetHeight());
@@ -209,20 +195,7 @@ void dlgMain::OnClose(wxCloseEvent &event)
 // Called when the window is shown
 void dlgMain::OnShow(wxShowEvent &event)
 {
-    // Load configuration
-    wxFileConfig ConfigInfo;
-    wxInt32 ServerListSortOrder, ServerListSortColumn;
-    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
 
-    ConfigInfo.Read(_T("ServerListSortOrder"), &ServerListSortOrder, 1);
-    ConfigInfo.Read(_T("ServerListSortColumn"), &ServerListSortColumn, 0);
-
-    m_LstCtrlServers->SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
-
-    ConfigInfo.Read(_T("PlayerListSortOrder"), &PlayerListSortOrder, 1);
-    ConfigInfo.Read(_T("PlayerListSortColumn"), &PlayerListSortColumn, 0);
-
-    m_LstCtrlPlayers->SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
 }
 
 // manually connect to a server

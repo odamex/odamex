@@ -368,11 +368,11 @@ void LstOdaServerList::AddServerToList(const Server &s,
 
     // TODO: Add launcher settings to change these ping thresholds
     if (Ping < 100)
-        li.SetTextColour(*wxGREEN);
+        li.SetTextColour(wxColour(0, 192, 0));
     else if (Ping < 200)
-        li.SetTextColour(wxColour(255, 128, 0));
+        li.SetTextColour(wxColour(255, 180, 1));
     else
-        li.SetTextColour(*wxRED);
+        li.SetTextColour(wxColour(192, 0, 0));
     
     SetItem(li);
 

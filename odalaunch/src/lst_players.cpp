@@ -22,6 +22,8 @@
 
 #include "lst_players.h"
 
+#include <wx/fileconf.h>
+
 IMPLEMENT_DYNAMIC_CLASS(LstOdaPlayerList, wxAdvancedListCtrl)
 
 typedef enum
@@ -38,22 +40,50 @@ typedef enum
     ,max_playerlist_fields
 } playerlist_fields_t;
 
-void LstOdaPlayerList::SetupPlayerListHeader()
-{ 
+void LstOdaPlayerList::SetupPlayerListColumns()
+{
     DeleteAllItems();
 	DeleteAllColumns();
-	
+
+	wxFileConfig ConfigInfo;
+    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
+
+    // Read from the global configuration
+    
+    // TODO: Column widths
 	InsertColumn(playerlist_field_name,_T("Player name"),wxLIST_FORMAT_LEFT,150);
 	InsertColumn(playerlist_field_ping,_T("Ping"),wxLIST_FORMAT_LEFT,60);
 	InsertColumn(playerlist_field_frags,_T("Frags"),wxLIST_FORMAT_LEFT,70);
     InsertColumn(playerlist_field_killcount,_T("Kill count"),wxLIST_FORMAT_LEFT,85);
     InsertColumn(playerlist_field_deathcount,_T("Death count"),wxLIST_FORMAT_LEFT,100);
     InsertColumn(playerlist_field_timeingame,_T("Time"),wxLIST_FORMAT_LEFT,65);
+    
+    // Sorting info
+    ConfigInfo.Read(wxT("PlayerListSortOrder"), &PlayerListSortOrder, 1);
+    ConfigInfo.Read(wxT("PlayerListSortColumn"), &PlayerListSortColumn, 0);
+
+    SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+    
+    AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
+}
+
+LstOdaPlayerList::~LstOdaPlayerList() 
+{
+    wxFileConfig ConfigInfo;
+    wxInt32 PlayerListSortOrder, PlayerListSortColumn;
+
+	// Write to the global configuration
+	
+	// Sorting info
+    GetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
+
+    ConfigInfo.Write(wxT("PlayerListSortOrder"), PlayerListSortOrder);
+    ConfigInfo.Write(wxT("PlayerListSortColumn"), PlayerListSortColumn);
 }
 
 void LstOdaPlayerList::AddPlayersToList(const Server &s)
 {   
-    SetupPlayerListHeader();
+    SetupPlayerListColumns();
     
     if (s.Info.GameType == GT_TeamDeathmatch || 
         s.Info.GameType == GT_CaptureTheFlag)
@@ -64,7 +94,7 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
                            50);
         
         InsertColumn(playerlist_field_teamscore,
-                           _T("Team score"),
+                           _T("Team Score"),
                            wxLIST_FORMAT_LEFT,
                            80);
     }
