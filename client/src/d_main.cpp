@@ -1149,6 +1149,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
 {
     DArgs files;
     BOOL noDef = false;
+    BOOL chexLoaded = false;
     QWORD i;
 
     if (!patch_files.empty())
@@ -1184,11 +1185,17 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
             {
                 std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
 
-                if (f.length())
+                if (f.length()) {
                     DoDehPatch (f.c_str(), false);
+                    if (!strncmp(files.GetArg (i),"chex.deh",8))
+						chexLoaded = true;
+                }
             }
             noDef = true;
         }
+
+        if (!multiplayer && !chexLoaded)
+			Printf(PRINT_HIGH,"Warning: chex.deh not loaded, experience may differ from the original!\n");
 
         // remove the old arguments
         files.FlushArgs();
