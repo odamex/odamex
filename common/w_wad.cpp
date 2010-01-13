@@ -113,7 +113,7 @@ void W_VC6Init(void)
 
 		// CHEX
 		doomwadnames[6].name = "CHEX.WAD";
-		doomwadnames[6].hash[0] = "";
+		doomwadnames[6].hash[0] = "25485721882b050afa96a56e5758dd52";
 
 		WasVC6Inited = true;
 	}
@@ -131,7 +131,7 @@ static const gamewadinfo_t doomwadnames[] =
     { "DOOMU.WAD", { "C4FE9FD920207691A9F493668E0A2083" } },
     { "PLUTONIA.WAD", { "75C8CF89566741FA9D22447604053BD7" } },
     { "TNT.WAD", { "4E158D9953C79CCF97BD0663244CC6B6" } },
-    { "CHEX.WAD", { "" } },
+    { "CHEX.WAD", { "25485721882b050afa96a56e5758dd52" } },
     { "", { "" } }
 };
 #define MSVC6_SETUPWADS
