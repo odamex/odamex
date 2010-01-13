@@ -870,7 +870,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			if(M_FileExists(suggestion.c_str()))
 				iwad = suggestion;
 		}
-
+		/*
 		if(iwad.length())
 		{
 			FILE *f;
@@ -895,6 +895,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 				fclose(f);
 			}
 		}
+		*/
 	}
 
 	if(!iwad.length())
