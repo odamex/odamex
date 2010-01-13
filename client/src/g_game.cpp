@@ -1490,9 +1490,9 @@ void G_DoLoadGame (void)
 	if (strncmp (text, SAVESIG, 16))
 	{
 		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
-		
+
 		fclose(stdfile);
-		
+
 		return;
 	}
 	fread (text, 8, 1, stdfile);
@@ -1504,7 +1504,7 @@ void G_DoLoadGame (void)
 
 	if (!savefile.IsOpen ())
 		I_Error ("Savegame '%s' is corrupt\n", savename);
-	
+
 	Printf (PRINT_HIGH, "Loading savegame '%s'...\n", savename);
 
 	FArchive arc (savefile);
@@ -1568,12 +1568,12 @@ void G_BuildSaveName (std::string &name, int slot)
     std::stringstream ssName;
 
 	std::string path = I_GetUserFileName ((const char *)name.c_str());
-	
+
 	ssName << path;
     ssName << SAVEGAMENAME;
 	ssName << slot;
 	ssName << ".ods";
-	
+
     name = ssName.str();
 }
 
@@ -1594,7 +1594,7 @@ void G_DoSaveGame (void)
 	{
         return;
 	}
-	
+
 	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name.c_str());
 
 	fwrite (description, SAVESTRINGSIZE, 1, stdfile);

@@ -465,6 +465,13 @@ void G_DoCompleted (void)
 	if (automapactive)
 		AM_Stop ();
 
+	// [ML] Chex mode: they didn't even show the intermission screen
+	// after the fifth level - I checked.
+	if (gamemode == retail_chex & !strncmp(level.mapname,"E1M5",4)) {
+		G_WorldDone();
+		return;
+	}
+
 	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
 	strncpy (wminfo.lname0, level.info->pname, 8);
 	strncpy (wminfo.current, level.mapname, 8);
@@ -637,7 +644,7 @@ void G_WorldDone (void)
 		return;
 
 	thiscluster = FindClusterInfo (level.cluster);
-	if (!strncmp (level.nextmap, "EndGame", 7)) {
+	if (!strncmp (level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
 		automapactive = false;
 		F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext);
 	} else {
@@ -828,6 +835,7 @@ void G_SetLevelStrings (void)
 	temp[0] = '0';
 	temp[1] = ':';
 	temp[2] = 0;
+
 	for (i = 65; i < 101; i++) {		// HUSTR_E1M1 .. HUSTR_E4M9
 		if (temp[0] < '9')
 			temp[0]++;
