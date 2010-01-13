@@ -504,6 +504,7 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 		}
 	}
 	filenames = loaded;
+	hashes.resize(j);
 
 	if (!numlumps)
 		I_Error ("W_InitFiles: no files found");
