@@ -870,7 +870,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			if(M_FileExists(suggestion.c_str()))
 				iwad = suggestion;
 		}
-		/*
+		/*	[ML] Removed 1/13/10: we can trust the user to provide an iwad
 		if(iwad.length())
 		{
 			FILE *f;
