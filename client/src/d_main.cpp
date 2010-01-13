@@ -1194,7 +1194,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
             noDef = true;
         }
 
-        if (!multiplayer && !chexLoaded)
+        if (gamemode == retail_chex && !multiplayer && !chexLoaded)
 			Printf(PRINT_HIGH,"Warning: chex.deh not loaded, experience may differ from the original!\n");
 
         // remove the old arguments
