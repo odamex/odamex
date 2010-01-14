@@ -1069,6 +1069,12 @@ P_UseSpecialLine
 			if (line->flags & ML_SECRET)
 				return false;
 		}
+		else
+		{
+			// spectators can't use switches
+			if(thing->player->spectator)
+				return false;
+		}
 	}
 
 	if(LineSpecials[line->special] (line, thing))

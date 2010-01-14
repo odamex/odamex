@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_workspace_file>
 	<Workspace title="odamex">
-		<Project filename="client/sdl/client.cbp" active="1" />
-		<Project filename="server/win32/server.cbp" />
-		<Project filename="master/master.cbp" />
-		<Project filename="odalaunch/odalaunch.cbp" />
+		<Project filename="client\sdl\client.cbp" active="1">
+			<Depends filename="textscreen\textscreen.cbp" />
+		</Project>
+		<Project filename="server\win32\server.cbp" />
+		<Project filename="master\master.cbp" />
+		<Project filename="odalaunch\odalaunch.cbp" />
+		<Project filename="textscreen\textscreen.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

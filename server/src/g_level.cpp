@@ -249,10 +249,10 @@ END_COMMAND (map)
 const char* GetBase(const char* in)
 {
 	const char* out = &in[strlen(in) - 1];
-	
+
 	while (out > in && *(out-1) != '/' && *(out-1) != '\\')
 		out--;
-	
+
 	return out;
 }
 
@@ -262,7 +262,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	bool AddedIWAD = false;
 	bool Reboot = false;
 	QWORD i, j;
-	
+
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
@@ -271,10 +271,10 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    Printf(PRINT_HIGH, "\n");
 	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
 	    Printf(PRINT_HIGH, "eg: wad doom\n");
-	    
+
 	    return;
 	}
-    
+
     // add our iwad if it is one
 	if (W_IsIWAD(argv[1]))
 	{
@@ -286,7 +286,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	for (i = 1; i < argc; i++)
 	{
 		std::string ext;
-		
+
 		if (M_ExtractFileExtension(argv[i], ext))
 		{
 		    // don't allow subsequent iwads to be loaded
@@ -296,19 +296,19 @@ BEGIN_COMMAND (wad) // denis - changes wads
                 patch_files.push_back(argv[i]);
 		}
 	}
-	
+
 	// GhostlyDeath <August 14, 2008> -- Check our environment, if the same WADs are used, ignore this command
 	if (AddedIWAD)
 	{
 		if (stricmp(GetBase(wads[0].c_str()), GetBase(wadfiles[1].c_str())) != 0)
 			Reboot = true;
 	}
-	
+
 	// IWAD, odamex.wad, ...
 	if (!Reboot)
 	{
 		Reboot = true;
-		
+
 		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < wads.size(); i++, j++)
 		{
 			if (stricmp(GetBase(wads[j].c_str()), GetBase(wadfiles[i].c_str())) == 0)
@@ -319,13 +319,13 @@ BEGIN_COMMAND (wad) // denis - changes wads
 				break;
 			}
 		}
-		
+
 		// May be more wads...
 		if ((j == wads.size() && i < wadfiles.size()) ||
 			(j < wads.size() && i == wadfiles.size()))
 			Reboot = true;
 	}
-	
+
 	if (Reboot)
 	{
 		D_DoomWadReboot(wads, patch_files);
@@ -367,58 +367,58 @@ void G_GenerateRandomMaps(void)
 	maplist_s* Rover = NULL;
 	size_t i, j;
 	std::vector<maplist_s*> Ptrs;
-	
+
 	// Clear old map list
 	G_ClearRandomMaps();
-	
+
 	if (!MapListBegin)
 		return;
-	
+
 	// First count the number of entries in the map list
 	Rover = MapListBegin;
-	
+
 	while (Rover)
 	{
 		Count++;
 		Ptrs.push_back(Rover);
 		Rover = Rover->Next;
-		
+
 		if (Rover == MapListBegin)
 			break;
 	}
-	
+
 	if (Count <= 0)
 		return;
-	
+
 	// Allocate our bool array
 	Used = new bool[Count];
-	
+
 	for (i = 0; i < Count; i++)
 		Used[i] = 0;
-	
+
 	// Now populate the list
 	for (i = 0; i < Count; i++)
 	{
 		j = (M_Random() + M_Random()) % Count;
-		
+
 		// Move forward if j is used
 		while (Used[j])
 		{
 			j++;
-			
+
 			if (j == Count)
 				j = 0;
 		}
-		
+
 		// Add it...
 		RandomMaps.push_back(Ptrs[j]);
-		
+
 		// Marked used
 		Used[j] = true;
 	}
-	
+
 	delete [] Used;
-	
+
 	RandomMapPos = 0;
 }
 
@@ -466,13 +466,13 @@ BEGIN_COMMAND (addmap)
         if ( argc > 2 )
         {
             std::string arglist = "wad ";
-            
+
             for (size_t i = 2; i < argc; ++i)
             {
                 arglist += argv[i];
                 arglist += ' ';
             }
-				
+
             NewMap->WadCmds = (char *) Malloc(strlen(arglist.c_str())+1);
             NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
             strcpy(NewMap->WadCmds, arglist.c_str());
@@ -493,7 +493,7 @@ BEGIN_COMMAND (addmap)
 				NewMap->WadCmds[1] = '\0';
 			}
         }
-        
+
         // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
         if (shufflemaplist)
 	        G_GenerateRandomMaps();
@@ -557,7 +557,7 @@ BEGIN_COMMAND (clearmaplist)
 	}
 
 	MapListPointer = NULL; // make sure
-	
+
 	G_ClearRandomMaps();
 }
 END_COMMAND (clearmaplist)
@@ -610,7 +610,7 @@ void G_ChangeMap (void)
 			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
 				next = level.secretmap;
 
-		if (!strncmp (next, "EndGame", 7))
+		if (!strncmp (next, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))
 		{
 			// NES - exiting a Doom 1 episode moves to the next episode, rather than always going back to E1M1
 			if (gameinfo.flags & GI_MAPxx || gamemode == shareware || (!loopepisode &&
@@ -635,10 +635,10 @@ void G_ChangeMap (void)
 					AddCommandString(RandomMaps[RandomMapPos]->WadCmds);
 			}
 			G_DeferedInitNew(RandomMaps[RandomMapPos]->MapName);
-			
+
 			// Increment position
 			RandomMapPos++;
-			
+
 			// If our counter has reached it's end, regenerate the map
 			if (RandomMapPos >= RandomMaps.size())
 				G_GenerateRandomMaps();
@@ -650,15 +650,15 @@ void G_ChangeMap (void)
 				if ( strcmp( MapListPointer->WadCmds, "-" ) != 0 )
 					AddCommandString(MapListPointer->WadCmds);
 			}
-            
+
             char *next = MapListPointer->MapName;
-            
+
             // for latched "deathmatch 0" cvar
             if (gamestate == GS_STARTUP)
             {
                 next = level.mapname;
             }
-                       
+
 			G_DeferedInitNew(next);
 			MapListPointer = MapListPointer->Next;
 		}
@@ -712,7 +712,7 @@ void G_DoNewGame (void)
 			SV_CheckTeam(players[i]);
 		else
 			players[i].userinfo.color = players[i].prefcolor;
-		
+
 		SV_ClientFullUpdate (players[i]);
 	}
 }
@@ -748,14 +748,14 @@ void G_InitNew (const char *mapname)
 
 	if(old_gametype != gametype || gametype != GM_COOP) {
 		unnatural_level_progression = true;
-		
+
 		// Nes - Force all players to be spectators when the gametype is not now or previously co-op.
 		for (i = 0; i < players.size(); i++) {
 			for (size_t j = 0; j < players.size(); j++) {
 				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
 				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
 				MSG_WriteByte (&(players[j].client.reliablebuf), true);
-			}			
+			}
 			players[i].spectator = true;
 			players[i].playerstate = PST_LIVE;
 			players[i].joinafterspectatortime = -(TICRATE*5);
@@ -816,7 +816,7 @@ void G_InitNew (const char *mapname)
 				G_PlayerReborn(players[i]);
 
 			players[i].playerstate = PST_REBORN;
-			
+
 			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
 	}
@@ -910,7 +910,7 @@ void G_DoLoadLevel (int position)
 {
 	static int lastposition = 0;
 	size_t i;
-	
+
 	if (position != -1)
 		firstmapinit = true;
 
@@ -987,7 +987,7 @@ void G_DoLoadLevel (int position)
 			actor->netid = 0;
 		}
 	}
-	
+
 	// For single-player servers.
 	for (i = 0; i < players.size(); i++)
 		players[i].joinafterspectatortime -= level.time;
@@ -998,19 +998,19 @@ void G_DoLoadLevel (int position)
 	if (gametype == GM_CTF) {
 		tempflag = &CTFdata[it_blueflag];
 		tempflag->flaglocated = false;
-		
+
 		tempflag = &CTFdata[it_redflag];
 		tempflag->flaglocated = false;
 	}
 
 	P_SetupLevel (level.mapname, position);
-	
+
 	// Nes - CTF Post flag setup
 	if (gametype == GM_CTF) {
 		tempflag = &CTFdata[it_blueflag];
 		if (!tempflag->flaglocated)
 			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Blue flag pedestal not found! No blue flags in game.\n");
-		
+
 		tempflag = &CTFdata[it_redflag];
 		if (!tempflag->flaglocated)
 			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Red flag pedestal not found! No red flags in game.\n");
@@ -1060,7 +1060,7 @@ void G_WorldDone (void)
 
 	const char *finaletext = NULL;
 	thiscluster = FindClusterInfo (level.cluster);
-	if (!strncmp (level.nextmap, "EndGame", 7)) {
+	if (!strncmp (level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
 //		F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext); // denis - fixme - what should happen on the server?
 		finaletext = thiscluster->exittext;
 	} else {

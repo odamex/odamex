@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -63,6 +63,7 @@
 #include <math.h>
 
 #include "doomtype.h"
+#include "w_wad.h"
 #include "version.h"
 #include "doomdef.h"
 #include "cmdlib.h"
@@ -78,6 +79,12 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
+
+#include "txt_main.h"
+#define ENDOOM_W 80
+#define ENDOOM_H 25
+
+EXTERN_CVAR (show_endoom)
 
 QWORD (*I_GetTime) (void);
 QWORD (*I_WaitForTic) (QWORD);
@@ -113,7 +120,7 @@ size_t I_BytesToMegabytes (size_t Bytes)
 {
 	if (!Bytes)
         return 0;
-        
+
     return (Bytes/1024/1024);
 }
 
@@ -134,7 +141,7 @@ void *I_ZoneBase (size_t *size)
 
     if (def_heapsize < min_heapsize)
         def_heapsize = min_heapsize;
-        
+
     // Set the size
 	*size = I_MegabytesToBytes(def_heapsize);
 
@@ -142,10 +149,10 @@ void *I_ZoneBase (size_t *size)
 	while ((zone == NULL) && (*size >= I_MegabytesToBytes(min_heapsize)))
 	{
 	    zone = malloc (*size);
-	    
+
 	    if (zone != NULL)
             break;
-            
+
         *size -= I_MegabytesToBytes(1);
 	}
 
@@ -233,7 +240,7 @@ void I_Init (void)
 {
 	I_GetTime = I_GetTimePolled;
 	I_WaitForTic = I_WaitForTicPolled;
-	
+
 	I_InitSound ();
 	I_InitHardware ();
 	I_InitInput ();
@@ -259,7 +266,7 @@ std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
 	std::string home = envhome ? envhome : "";
-		
+
 	if (!home.length())
 	{
 #ifdef HAVE_PWD_H
@@ -268,14 +275,14 @@ std::string I_GetHomeDir(std::string user = "")
 		if(p && p->pw_dir)
 			home = p->pw_dir;
 #endif
-		
+
 		if (!home.length())
 			I_FatalError ("Please set your HOME variable");
 	}
-	
+
 	if(home[home.length() - 1] != '/')
 		home += "/";
-	
+
 	return home;
 }
 #endif
@@ -316,7 +323,7 @@ std::string I_GetUserFileName (const char *file)
 
 	if(path[path.length() - 1] != '/')
 		path += "/";
-	
+
 	path += file;
 #endif
 
@@ -328,24 +335,24 @@ void I_ExpandHomeDir (std::string &path)
 #ifdef UNIX
 	if(!path.length())
 		return;
-	
+
 	if(path[0] != '~')
 		return;
-	
+
 	std::string user;
-	
+
 	size_t slash_pos = path.find_first_of('/');
 	size_t end_pos = path.length();
-	
+
 	if(slash_pos == std::string::npos)
 		slash_pos = end_pos;
-	
+
 	if(path.length() != 1 && slash_pos != 1)
 		user = path.substr(1, slash_pos - 1);
-	
+
 	if(slash_pos != end_pos)
 		slash_pos++;
-	
+
 	path = I_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
 #endif
 }
@@ -409,6 +416,53 @@ void I_FinishClockCalibration ()
 }
 
 //
+// Displays the text mode ending screen after the game quits
+//
+
+void I_Endoom(void)
+{
+	unsigned char *endoom_data;
+	unsigned char *screendata;
+	int y;
+	int indent;
+
+	endoom_data = (unsigned char *)W_CacheLumpName("ENDOOM", PU_STATIC);
+
+	// Set up text mode screen
+
+	TXT_Init();
+
+	// Write the data to the screen memory
+
+	screendata = TXT_GetScreenData();
+
+	indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
+
+	for (y=0; y<TXT_SCREEN_H; ++y)
+	{
+		memcpy(screendata + (y * TXT_SCREEN_W * 2),
+				endoom_data + (y * ENDOOM_W + indent) * 2,
+				TXT_SCREEN_W * 2);
+	}
+
+	// Wait for a keypress
+
+	while (true)
+	{
+		TXT_UpdateScreen();
+
+		if (TXT_GetChar() >= 0)
+            break;
+
+        TXT_Sleep(0);
+	}
+
+	// Shut down text mode screen
+
+	TXT_Shutdown();
+}
+
+//
 // I_Quit
 //
 static int has_exited;
@@ -418,10 +472,13 @@ void STACK_ARGS I_Quit (void)
 	has_exited = 1;		/* Prevent infinitely recursive exits -- killough */
 
 	G_ClearSnapshots ();
-	
+
 	CL_QuitNetGame();
 
 	M_SaveDefaults();
+
+	if (show_endoom && !Args.CheckParm ("-novideo"))
+		I_Endoom();
 }
 
 
@@ -495,18 +552,18 @@ std::string I_GetClipboardText (void)
 {
 #ifdef X11
 	std::string ret;
-	
+
 	Display *dis = XOpenDisplay(NULL);
 	int screen = DefaultScreen(dis);
-	
+
 	if(!dis)
 	{
 		Printf(PRINT_HIGH, "I_GetClipboardText: XOpenDisplay failed");
 		return "";
 	}
-	
+
 	XLockDisplay(dis);
-	
+
 	Window WindowEvents = XCreateSimpleWindow(dis, RootWindow(dis, screen), 0, 0, 1, 1, 0, BlackPixel(dis, screen), BlackPixel(dis, screen));
 
 	if(XGetSelectionOwner(dis, XA_PRIMARY) != None)
@@ -519,9 +576,9 @@ std::string I_GetClipboardText (void)
 			Printf(PRINT_HIGH, "I_GetClipboardText: XConvertSelection failed");
 			return "";
 		}
-		
+
 		XFlush (dis);
-		
+
 		// Wait for the reply
 		for(;;)
 		{
@@ -531,7 +588,7 @@ std::string I_GetClipboardText (void)
 			if(e.type == SelectionNotify)
 				break;
 		}
-		
+
 		Atom type;
 		int format, result;
 		u_long len, bytes_left, temp;
@@ -546,7 +603,7 @@ std::string I_GetClipboardText (void)
 			Printf(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(1)");
 			return "";
 		}
-		
+
 		if(!bytes_left)
 		{
 			XDestroyWindow(dis, WindowEvents);
@@ -555,7 +612,7 @@ std::string I_GetClipboardText (void)
 			XCloseDisplay(dis);
 			return "";
 		}
-		
+
 		result = XGetWindowProperty(dis, WindowEvents, XA_PRIMARY, 0, bytes_left, False, AnyPropertyType, &type, &format, &len, &temp, &data);
 		if(result != Success)
 		{
@@ -565,7 +622,7 @@ std::string I_GetClipboardText (void)
 			Printf(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(2)");
 			return "";
 		}
-	
+
 		ret = std::string((const char *)data, len);
 		XFree(data);
 	}
@@ -573,7 +630,7 @@ std::string I_GetClipboardText (void)
 	XDestroyWindow(dis, WindowEvents);
 	XUnlockDisplay(dis);
 	XCloseDisplay(dis);
-	
+
 	return ret;
 #endif
 
@@ -585,18 +642,18 @@ std::string I_GetClipboardText (void)
 
 	if(!OpenClipboard(NULL))
 		return "";
-	
+
 	HANDLE hClipboardData = GetClipboardData(CF_TEXT);
-		
+
 	if(!hClipboardData)
 	{
 		CloseClipboard();
 		return "";
 	}
-	
+
 	const char *cData = reinterpret_cast<const char *>(GlobalLock(hClipboardData));
 	u_int uiSize = static_cast<u_int>(GlobalSize(hClipboardData));
-			
+
 	if(cData && uiSize)
 	{
 		for(size_t i = 0; i < uiSize; i++)
@@ -610,54 +667,54 @@ std::string I_GetClipboardText (void)
 
 		ret = std::string(cData, uiSize);
 	}
-	
+
 	GlobalUnlock(hClipboardData);
 
 	CloseClipboard();
-	
+
 	return ret;
 #endif
-	
+
 #ifdef OSX
 	ScrapRef scrap;
 	Size size;
-	
+
 	int err = GetCurrentScrap(&scrap);
-	
+
 	if(err)
 	{
 		Printf(PRINT_HIGH, "GetCurrentScrap error: %d", err);
 		return "";
 	}
-	
+
 	err = GetScrapFlavorSize(scrap, FOUR_CHAR_CODE('TEXT'), &size);
-	
+
 	if(err)
 	{
 		Printf(PRINT_HIGH, "GetScrapFlavorSize error: %d", err);
 		return "";
 	}
-	
+
 	char *data = new char[size+1];
-	
+
 	err = GetScrapFlavorData(scrap, FOUR_CHAR_CODE('TEXT'), &size, data);
 	data[size] = 0;
-	
+
 	if(err)
 	{
 		Printf(PRINT_HIGH, "GetScrapFlavorData error: %d", err);
 		delete[] data;
-		
+
 		return "";
 	}
-	
+
 	std::string ret(data);
-	
+
 	delete[] data;
-	
+
 	return ret;
 #endif
-	
+
 	return "";
 }
 
@@ -757,7 +814,7 @@ std::string I_ConsoleInput (void)
 	std::string ret;
     static char     text[1024] = {0};
     int             len;
-	
+
     fd_set fdr;
     FD_ZERO(&fdr);
     FD_SET(0, &fdr);
@@ -767,7 +824,7 @@ std::string I_ConsoleInput (void)
 
     if (!select(1, &fdr, NULL, NULL, &tv))
         return "";
-	
+
     len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
 
     if (len < 1)
@@ -779,7 +836,7 @@ std::string I_ConsoleInput (void)
 	{
 		if(text[len-1] == '\n' || text[len-1] == '\r')
 			text[len-1] = 0; // rip off the /n and terminate
-		
+
 		ret = text;
 		memset(text, 0, sizeof(text));
 		return ret;

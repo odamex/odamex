@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -66,7 +66,7 @@
 //
 
 // Location of each lump on disk.
-lumpinfo_t*		lumpinfo;		
+lumpinfo_t*		lumpinfo;
 size_t			numlumps;
 
 void**			lumpcache;
@@ -80,7 +80,7 @@ typedef struct
 } gamewadinfo_t;
 
 #if _MSC_VER <= 1200	// GhostlyDeath -- Work on VC6
-static gamewadinfo_t doomwadnames[7];
+static gamewadinfo_t doomwadnames[8];
 bool WasVC6Inited = false;
 
 void W_VC6Init(void)
@@ -111,6 +111,10 @@ void W_VC6Init(void)
 		doomwadnames[5].name = "TNT.WAD";
 		doomwadnames[5].hash[0] = "4E158D9953C79CCF97BD0663244CC6B6";
 
+		// CHEX
+		doomwadnames[6].name = "CHEX.WAD";
+		doomwadnames[6].hash[0] = "25485721882b050afa96a56e5758dd52";
+
 		WasVC6Inited = true;
 	}
 }
@@ -124,9 +128,10 @@ static const gamewadinfo_t doomwadnames[] =
     { "DOOM.WAD", { "C4FE9FD920207691A9F493668E0A2083", "1CD63C5DDFF1BF8CE844237F580E9CF3" } },
     { "DOOM2.WAD", { "25E1459CA71D321525F84628F45CA8CD" } },
     { "DOOM2F.WAD", { "" } },
-    { "DOOMU.WAD", { "C4FE9FD920207691A9F493668E0A2083" } }, 
+    { "DOOMU.WAD", { "C4FE9FD920207691A9F493668E0A2083" } },
     { "PLUTONIA.WAD", { "75C8CF89566741FA9D22447604053BD7" } },
     { "TNT.WAD", { "4E158D9953C79CCF97BD0663244CC6B6" } },
+    { "CHEX.WAD", { "25485721882b050afa96a56e5758dd52" } },
     { "", { "" } }
 };
 #define MSVC6_SETUPWADS
@@ -136,35 +141,35 @@ static const gamewadinfo_t doomwadnames[] =
 // W_IsIWAD
 //
 // Checks to see whether a given filename is an IWAD (Internal WAD), it can take
-// shortened (base name) versions of standard file names (eg doom2, plutonia), 
+// shortened (base name) versions of standard file names (eg doom2, plutonia),
 // it can also do an optional hash comparison against a correct hash list
 // for more "accurate" detection.
 BOOL W_IsIWAD(std::string filename, std::string hash)
-{   
+{
 	MSVC6_SETUPWADS
 
     std::string name;
 
     if (!filename.length())
         return false;
-        
+
     // uppercase our comparison strings
     std::transform(filename.begin(), filename.end(), filename.begin(), toupper);
-    
+
     if (!hash.empty())
         std::transform(hash.begin(), hash.end(), hash.begin(), toupper);
-    
+
     // Just get the file name
-    M_ExtractFileName(filename, name);  
-    
+    M_ExtractFileName(filename, name);
+
     // find our match if there is one
     for (DWORD i = 0; !doomwadnames[i].name.empty(); i++)
     {
         std::string basename;
-        
+
         // We want a base name comparison aswell
         M_ExtractFileBase(doomwadnames[i].name, basename);
-       
+
         // hash comparison
         if (!hash.empty())
         for (DWORD j = 0; !doomwadnames[i].hash[j].empty(); j++)
@@ -173,11 +178,11 @@ BOOL W_IsIWAD(std::string filename, std::string hash)
             if (doomwadnames[i].hash[j] == hash)
                 return true;
         }
-        
+
         if ((filename == doomwadnames[i].name) || (filename == basename))
             return true;
     }
-    
+
     return false;
 }
 
@@ -186,29 +191,29 @@ std::string W_MD5(std::string filename)
 {
 	const int file_chunk_size = 8192;
 	FILE *fp = fopen(filename.c_str(), "rb");
-	
+
 	if(!fp)
 		return "";
-	
+
 	md5_state_t state;
 	md5_init(&state);
-	
+
 	unsigned n = 0;
 	unsigned char buf[file_chunk_size];
-	
+
 	while((n = fread(buf, 1, sizeof(buf), fp)))
 		md5_append(&state, (unsigned char *)buf, n);
-	
+
 	md5_byte_t digest[16];
 	md5_finish(&state, digest);
-	
+
 	fclose(fp);
-	
+
 	std::stringstream hash;
-	
+
 	for(int i = 0; i < 16; i++)
 		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
-	
+
 	return hash.str().c_str();
 }
 
@@ -240,7 +245,7 @@ std::string W_AddFile (std::string filename)
 	size_t			startlump;
 	filelump_t*		fileinfo;
 	filelump_t		singleinfo;
-    
+
 	FixPathSeparator (filename);
 	std::string name = filename;
 	M_AppendExtension (name, ".wad");
@@ -251,14 +256,14 @@ std::string W_AddFile (std::string filename)
 		Printf (PRINT_HIGH, " couldn't open %s\n", filename.c_str());
 		return "";
 	}
-	
+
 	Printf (PRINT_HIGH, "adding %s\n", filename.c_str());
 
 	startlump = numlumps;
 
 	fread (&header, sizeof(header), 1, handle);
 	header.identification = LONG(header.identification);
-	
+
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
 	{
 		// raw lump file
@@ -269,35 +274,35 @@ std::string W_AddFile (std::string filename)
 		numlumps++;
 		Printf (PRINT_HIGH, " (single lump)\n", header.numlumps);
 	}
-	else 
+	else
 	{
 		// WAD file
 		header.numlumps = LONG(header.numlumps);
 		header.infotableofs = LONG(header.infotableofs);
 		length = header.numlumps*sizeof(filelump_t);
-		
+
 		if(length > M_FileLength(handle))
 		{
 			Printf (PRINT_HIGH, " bad number of lumps for %s\n", filename.c_str());
 			fclose(handle);
 			return "";
 		}
-		
+
 		fileinfo = (filelump_t *)Z_Malloc (length, PU_STATIC, 0);
 		fseek (handle, header.infotableofs, SEEK_SET);
 		fread (fileinfo, length, 1, handle);
 		numlumps += header.numlumps;
 		Printf (PRINT_HIGH, " (%d lumps)\n", header.numlumps);
 	}
-    
+
     // Fill in lumpinfo
 	lumpinfo = (lumpinfo_t *)Realloc (lumpinfo, numlumps*sizeof(lumpinfo_t));
-	
+
 	if (!lumpinfo)
 		I_Error ("Couldn't realloc lumpinfo");
-	
+
 	lump_p = &lumpinfo[startlump];
-	
+
 	for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
 	{
 		lump_p->handle = handle;
@@ -305,7 +310,7 @@ std::string W_AddFile (std::string filename)
 		lump_p->size = LONG(fileinfo->size);
 		strncpy (lump_p->name, fileinfo->name, 8);
 	}
-	
+
 	return W_MD5(filename);
 }
 
@@ -476,31 +481,38 @@ void W_MergeLumps (const char *start, const char *end, int space)
 //  does override all earlier ones.
 //
 std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filenames)
-{	
+{
 	size_t		size, i;
-    
+
     // open all the files, load headers, and count lumps
     // will be realloced as lumps are added
 	numlumps = 0;
-	
+
 	M_Free(lumpinfo);
-	
+
 	std::vector<std::string> hashes(filenames);
-	
-	// no dupes
-	filenames.erase(std::unique(filenames.begin(), filenames.end()), filenames.end());
-	
-	// open all the files, load headers, and count lumps
+
+	// open each file once, load headers, and count lumps
+	int j = 0;
+	std::vector<std::string> loaded;
 	for(i = 0; i < filenames.size(); i++)
-		hashes[i] = W_AddFile(filenames[i].c_str());
-	
+	{
+		if(std::find(loaded.begin(), loaded.end(), filenames[i].c_str()) == loaded.end())
+		{
+			hashes[j++] = W_AddFile(filenames[i].c_str());
+			loaded.push_back(filenames[i].c_str());
+		}
+	}
+	filenames = loaded;
+	hashes.resize(j);
+
 	if (!numlumps)
 		I_Error ("W_InitFiles: no files found");
 
 	// [RH] Set namespace markers to global for everything
 	for (i = 0; i < numlumps; i++)
 		lumpinfo[i].namespc = ns_global;
-	
+
 	// [RH] Merge sprite and flat groups.
 	//		(We don't need to bother with patches, since
 	//		Doom doesn't use markers to identify them.)
@@ -513,12 +525,12 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 
 	size = numlumps * sizeof(*lumpcache);
 	lumpcache = (void **)Malloc (size);
-    
+
 	if (!lumpcache)
 		I_Error ("Couldn't allocate lumpcache");
-	
+
 	memset (lumpcache,0, size);
-	
+
 	return hashes;
 }
 
@@ -532,29 +544,29 @@ int W_CheckNumForName (const char* name, int namespc)
 	union {
 		char	s[9];
 		int	x[2];
-		
+
 	} name8;
-    
+
 	int		v1;
 	int		v2;
 	lumpinfo_t*	lump_p;
-	
+
     // make the name into two integers for easy compares
 	strncpy (name8.s,name,9);
-	
+
     // in case the name was a fill 8 chars
 	name8.s[8] = 0;
-	
+
     // case insensitive
 	std::transform(name8.s, name8.s + strlen(name8.s), name8.s, toupper);
-	
+
 	v1 = name8.x[0];
 	v2 = name8.x[1];
-	
-	
+
+
     // scan backwards so patch lump files take precedence
 	lump_p = lumpinfo + numlumps;
-	
+
 	while (lump_p-- != lumpinfo)
 	{
 		if ( *(int *)lump_p->name == v1
@@ -563,7 +575,7 @@ int W_CheckNumForName (const char* name, int namespc)
 			return lump_p - lumpinfo;
 		}
 	}
-	
+
     // TFB. Not found.
 	return -1;
 }
@@ -578,12 +590,12 @@ int W_CheckNumForName (const char* name, int namespc)
 int W_GetNumForName (const char* name)
 {
 	int	i;
-	
+
 	i = W_CheckNumForName (name);
-    
+
 	if (i == -1)
 		I_Error ("W_GetNumForName: %s not found!", name);
-	
+
 	return i;
 }
 
@@ -596,7 +608,7 @@ unsigned W_LumpLength (unsigned lump)
 {
 	if (lump >= numlumps)
 		I_Error ("W_LumpLength: %i >= numlumps",lump);
-	
+
 	return lumpinfo[lump].size;
 }
 
@@ -617,12 +629,12 @@ W_ReadLump
 
 	if (lump >= numlumps)
 		I_Error ("W_ReadLump: %i >= numlumps",lump);
-	
+
 	l = lumpinfo + lump;
-	
+
 	fseek (l->handle, l->position, SEEK_SET);
 	c = fread (dest, l->size, 1, l->handle);
-	
+
 	if (feof(l->handle))
 		I_Error ("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);
 }
@@ -674,14 +686,14 @@ W_CacheLumpNum
  int		tag )
 {
 	byte*	ptr;
-	
+
 	if ((unsigned)lump >= numlumps)
 		I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
-	
+
 	if (!lumpcache[lump])
 	{
 		// read the lump in
-		
+
 		//printf ("cache miss on lump %i\n",lump);
 		ptr = (byte *)Z_Malloc (W_LumpLength (lump) + 1, tag, &lumpcache[lump]);
 		W_ReadLump (lump, lumpcache[lump]);
@@ -692,7 +704,7 @@ W_CacheLumpNum
 		//printf ("cache hit on lump %i\n",lump);
 		Z_ChangeTag (lumpcache[lump],tag);
 	}
-	
+
 	return lumpcache[lump];
 }
 
@@ -715,10 +727,10 @@ patch_t* W_CachePatch
  int		tag )
 {
 	patch_t *patch = (patch_t *)W_CacheLumpNum (lump, tag);
-	
+
 	// denis - todo - would be good to check whether the patch violates W_LumpLength here
 	// denis - todo - would be good to check for width/height == 0 here, and maybe replace those with a valid patch
-	
+
 	return patch;
 }
 
@@ -741,14 +753,14 @@ int W_FindLump (const char *name, int *lastlump)
 	char name8[9];
 	int v1, v2;
 	lumpinfo_t *lump_p;
-	
+
 	// make the name into two integers for easy compares
 	strncpy (name8, name, 8); // denis - todo -string limit?
 	std::transform(name8, name8 + 8, name8, toupper);
-	
+
 	v1 = *(int *)name8;
 	v2 = *(int *)&name8[4];
-	
+
 	lump_p = lumpinfo + *lastlump;
 	while (lump_p < lumpinfo + numlumps)
 	{
@@ -760,7 +772,7 @@ int W_FindLump (const char *name, int *lastlump)
 		}
 		lump_p++;
 	}
-	
+
 	*lastlump = numlumps;
 	return -1;
 }
@@ -770,7 +782,7 @@ int W_FindLump (const char *name, int *lastlump)
 //
 // Close all open files
 //
- 
+
 void W_Close ()
 {
 	// store closed handles, so that fclose isn't called multiple times

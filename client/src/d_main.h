@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -29,8 +29,6 @@
 #include <vector>
 #include <string>
 
-extern const char *LOG_FILE; //  "odamex.log"
-
 //
 // D_DoomMain()
 // Not a globally visible function, just included for source reference,
@@ -38,8 +36,8 @@ extern const char *LOG_FILE; //  "odamex.log"
 // If not overrided by user input, calls N_AdvanceDemo.
 //
 void D_DoomMain (void);
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
-                                     std::vector<std::string> needhashes,  
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
+                                     std::vector<std::string> needhashes,
                                      const std::vector<std::string> &patch_files = std::vector<std::string>());
 
 // Called by IO functions when input is detected.

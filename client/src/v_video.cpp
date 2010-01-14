@@ -79,6 +79,7 @@ DBoundingBox dirtybox;
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
+EXTERN_CVAR (autoadjust_video_settings)
 
 EXTERN_CVAR (dimamount)
 EXTERN_CVAR (dimcolor)
@@ -516,14 +517,16 @@ BOOL V_SetResolution (int width, int height, int bits)
 		oldbits = bits;
 	}
 
-	I_ClosestResolution (&width, &height, bits);
-	if (!I_CheckResolution (width, height, bits)) {				// Try specified resolution
-		if (!I_CheckResolution (oldwidth, oldheight, oldbits)) {// Try previous resolution (if any)
-	   		return false;
-		} else {
-			width = oldwidth;
-			height = oldheight;
-			bits = oldbits;
+	if ((int)(autoadjust_video_settings)) {
+		I_ClosestResolution (&width, &height, bits);
+		if (!I_CheckResolution (width, height, bits)) {				// Try specified resolution
+			if (!I_CheckResolution (oldwidth, oldheight, oldbits)) {// Try previous resolution (if any)
+		   		return false;
+			} else {
+				width = oldwidth;
+				height = oldheight;
+				bits = oldbits;
+			}
 		}
 	}
 	return V_DoModeSetup (width, height, bits);
@@ -643,7 +646,8 @@ void V_Init (void)
       bits = 8;
 	}
 
-	I_ClosestResolution (&width, &height, bits);
+    if ((int)(autoadjust_video_settings))
+        I_ClosestResolution (&width, &height, bits);
 
 	if (!V_SetResolution (width, height, bits))
 		I_FatalError ("Could not set resolution to %d x %d x %d %s\n", width, height, bits,

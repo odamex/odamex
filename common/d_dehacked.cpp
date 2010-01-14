@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -462,7 +462,7 @@ unsigned char	cheat_ammonokey_seq[] =
 	0xb2, 0x26, 0x66, 0xa2, 0xff		// idfa
 };
 
-// Smashing Pumpkins Into Small Piles Of Putrid Debris. 
+// Smashing Pumpkins Into Small Piles Of Putrid Debris.
 unsigned char	cheat_noclip_seq[] =
 {
 	0xb2, 0x26, 0xea, 0x2a, 0xb2,		// idspispopd
@@ -473,7 +473,7 @@ unsigned char	cheat_noclip_seq[] =
 unsigned char	cheat_commercial_noclip_seq[] =
 {
 	0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff	// idclip
-}; 
+};
 
 unsigned char	cheat_powerup_seq[7][10] =
 {
@@ -488,7 +488,7 @@ unsigned char	cheat_powerup_seq[7][10] =
 
 unsigned char cheat_clev_seq[] =
 {
-	0xb2, 0x26,  0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff	// idclev
+	0xb2, 0x26, 0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff	// idclev
 };
 
 
@@ -1235,11 +1235,11 @@ static int PatchPointer (int ptrNum)
 		if ((ptrNum != -1) && (!stricmp (Line1, "Codep Frame")))
 		{
 		    int i = atoi (Line2);
-		    
+
 		    if (i >= NUMSTATES)
             {
                 DPrintf ("Pointer %d overruns static array (max: %d wanted: %d)."
-                         "\n", 
+                         "\n",
                          ptrNum,
                          NUMSTATES,
                          i);
@@ -1506,24 +1506,24 @@ static int PatchText (int oldSize)
 	// Search through music names.
 	// This is something of an even bigger hack
 	// since I changed the way music is handled.
-	
+
 	// Music names are never >6 chars
-	if (oldSize < 7) 
+	if (oldSize < 7)
 	{
         level_info_t *info = LevelInfos;
 		char MusicLumpName[9] = { 0 };
-			
+
 		sprintf (MusicLumpName, "d_%s", oldStr);
 
-		while (info->level_name) 
+		while (info->level_name)
 		{
-			if (!strnicmp (info->music, MusicLumpName, 8)) 
+			if (!strnicmp (info->music, MusicLumpName, 8))
 			{
 				good = true;
 				sprintf (MusicLumpName, "d_%s", newStr);
 				strncpy (info->music, MusicLumpName, 8);
 			}
-		
+
 			info++;
 		}
 	}
@@ -1531,7 +1531,7 @@ static int PatchText (int oldSize)
 	if (good)
 		goto donewithtext;
 
-	
+
 	// Search through most other texts
 	i = 0;
 	while(Strings[i].name)
@@ -1542,7 +1542,7 @@ static int PatchText (int oldSize)
 			good = true;
 			break;
 		}
-		
+
 		i++;
 	}
 
@@ -1780,7 +1780,7 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 		Printf (PRINT_HIGH, "DeHackEd patch lump installed\n");
 	else
 		Printf (PRINT_HIGH, "DeHackEd patch installed:\n  %s\n", file.c_str());
-		
+
     return true;
 }
 

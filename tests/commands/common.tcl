@@ -10,7 +10,7 @@ proc startServer {} {
  global server serverout port servercon
 
  set server [open odasrv.con w]
- set servercon [open "|./odasrv -port $port -logfile odasrv.log -confile odasrv.con > tmp" w]
+ set servercon [open "|./odasrv -port $port +logfile odasrv.log -confile odasrv.con > tmp" w]
  wait
  set serverout [open odasrv.log r]
 
@@ -28,9 +28,9 @@ proc startClient { {serverPort none} } {
  set client [open odamex.con w]
 
  if { $serverPort != "none" } {
-  set clientcon [open "|./odamex -port 10501 -connect localhost:$serverPort -nosound -novideo -logfile odamex.log -confile odamex.con > tmp" w]
+  set clientcon [open "|./odamex -port 10501 -connect localhost:$serverPort -nosound -novideo +logfile odamex.log -confile odamex.con > tmp" w]
  } else {
-  set clientcon [open "|./odamex -port 10501 -nosound -novideo -logfile odamex.log -confile odamex.con > tmp" w]
+  set clientcon [open "|./odamex -port 10501 -nosound -novideo +logfile odamex.log -confile odamex.con > tmp" w]
  }
  set clientout [open odamex.log r]
 

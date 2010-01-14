@@ -498,13 +498,13 @@ void P_PlayerThink (player_t *player)
 		player->bonuscount--;
 
 	// Handling colormaps.
-	if (player->powers[pw_invulnerability])
+	if (displayplayer().powers[pw_invulnerability])
 	{
-		if (player->powers[pw_invulnerability] > 4*32
-			|| (player->powers[pw_invulnerability]&8) )
-			player->fixedcolormap = INVERSECOLORMAP;
+		if (displayplayer().powers[pw_invulnerability] > 4*32
+			|| (displayplayer().powers[pw_invulnerability]&8) )
+			displayplayer().fixedcolormap = INVERSECOLORMAP;
 		else
-			player->fixedcolormap = 0;
+			displayplayer().fixedcolormap = 0;
 	}
 	else if (player->powers[pw_infrared])
 	{
@@ -550,8 +550,8 @@ void player_s::Serialize (FArchive &arc)
 			<< armortype
 			<< backpack
 			<< fragcount
-			<< readyweapon
-			<< pendingweapon
+			<< (int)readyweapon
+			<< (int)pendingweapon
 			<< attackdown
 			<< usedown
 			<< cheats
@@ -594,8 +594,8 @@ void player_s::Serialize (FArchive &arc)
 			>> armortype
 			>> backpack
 			>> fragcount
-			>> readyweapon
-			>> pendingweapon
+			>> (int&)readyweapon
+			>> (int&)pendingweapon
 			>> attackdown
 			>> usedown
 			>> cheats

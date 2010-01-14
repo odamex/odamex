@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -60,8 +60,6 @@ DArgs Args;
 extern UINT TimerPeriod;
 #endif
 
-extern size_t got_heapsize;
-
 // functions to be called at shutdown are stored in this stack
 typedef void (STACK_ARGS *term_func_t)(void);
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;
@@ -89,17 +87,8 @@ int __cdecl main(int argc, char *argv[])
 {
     try
     {
+		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		Args.SetArgs (argc, argv);
-
-		LOG_FILE = Args.CheckValue("-logfile");
-		if(!LOG_FILE)LOG_FILE = "odasrv.log";
-		LOG.open(LOG_FILE, std::ios::app);
-
-        if (!LOG.is_open())
-			cerr << "Unable to create logfile: %s" << endl;
-		else
-            LOG << std::endl;
-        
 
 		const char *CON_FILE = Args.CheckValue("-confile");
 		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
@@ -124,9 +113,7 @@ int __cdecl main(int argc, char *argv[])
 		startdir = I_GetCWD();
 
 		C_InitConsole (80*8, 25*8, false);
-		
-        Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
-		
+
 		D_DoomMain ();
     }
     catch (CDoomError &error)
@@ -140,7 +127,7 @@ int __cdecl main(int argc, char *argv[])
         {
             MessageBox(NULL, error.GetMessage().c_str(), "Odasrv Error", MB_OK);
         }
-        
+
 		exit (-1);
     }
     catch (...)
@@ -199,15 +186,6 @@ int main (int argc, char **argv)
 
 		Args.SetArgs (argc, argv);
 
-		LOG_FILE = Args.CheckValue("-logfile");
-		if(!LOG_FILE)LOG_FILE = "odasrv.log";
-		LOG.open(LOG_FILE, std::ios::app);
-
-        if (!LOG.is_open())
-            cerr << "Unable to create logfile: %s" << endl;
-		else
-            LOG << std::endl;
-            
 		const char *CON_FILE = Args.CheckValue("-confile");
 		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
 
@@ -240,13 +218,10 @@ int main (int argc, char **argv)
 		signal(SIGINT,  handler);	// killough 3/6/98: allow CTRL-BRK during init
 		signal(SIGABRT, handler);
 
-
 		progdir = I_GetBinaryDir();
 
 		C_InitConsole (80*8, 25*8, false);
-		
-        Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
-		
+
 		D_DoomMain ();
     }
     catch (CDoomError &error)
@@ -258,7 +233,7 @@ int main (int argc, char **argv)
             LOG << error.GetMessage() << std::endl;
             LOG << std::endl;
         }
-        
+
 	exit (-1);
     }
     catch (...)
