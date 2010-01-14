@@ -253,6 +253,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	};
 
 	std::string iwad;
+	std::string iwad_file;
 	int i;
 
 	if(suggestion.length())
@@ -322,6 +323,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		int lumpsfound[NUM_CHECKLUMPS];
 		wadinfo_t header;
 		FILE *f;
+		M_ExtractFileName(iwad,iwad_file);
 
 		memset (lumpsfound, 0, sizeof(lumpsfound));
 		if ( (f = fopen (iwad.c_str(), "rb")) )
@@ -379,7 +381,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				if (lumpsfound[2])
 				{
-					if (iwad == "chex.wad")			// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
+					if (iwad_file == "chex.wad")	// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
 					{								// iwad.  It's ultimate doom with their stuff replacing most things.
 						gamemission = chex;
 						gamemode = retail_chex;
