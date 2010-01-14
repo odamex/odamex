@@ -1305,10 +1305,14 @@ void ST_doPaletteStuff(void)
     {
         palette = (cnt+7)>>3;
 
-        if (palette >= NUMREDPALS)
-            palette = NUMREDPALS-1;
+		if (gamemode == retail_chex)
+			palette = RADIATIONPAL;
+		else {
+			if (palette >= NUMREDPALS)
+				palette = NUMREDPALS-1;
 
-        palette += STARTREDPALS;
+			palette += STARTREDPALS;
+		}
     }
 
     else if (plyr->bonuscount)
