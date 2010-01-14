@@ -98,6 +98,8 @@ extern gameinfo_t SharewareGameInfo;
 extern gameinfo_t RegisteredGameInfo;
 extern gameinfo_t RetailGameInfo;
 extern gameinfo_t CommercialGameInfo;
+extern gameinfo_t HereticGameInfo;
+extern gameinfo_t HereticSWGameInfo;
 
 extern int testingmode;
 extern BOOL setsizeneeded;
@@ -246,6 +248,8 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		"doomu.wad", // Hack from original Linux version. Not necessary, but I threw it in anyway.
 		"doom.wad",
 		"doom1.wad",
+		"heretic.wad",	// [ML] 1/13/10: Hello Heretic!
+		"heretic1.wad",
 		"freedoom.wad",
 		"freedm.wad",
 		"chex.wad",		// [ML] 1/7/10: Hello Chex Quest!
@@ -253,6 +257,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	};
 
 	std::string iwad;
+	std::string iwad_file;
 	int i;
 
 	if(suggestion.length())
@@ -322,6 +327,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		int lumpsfound[NUM_CHECKLUMPS];
 		wadinfo_t header;
 		FILE *f;
+		M_ExtractFileName(iwad,iwad_file);
 
 		memset (lumpsfound, 0, sizeof(lumpsfound));
 		if ( (f = fopen (iwad.c_str(), "rb")) )
@@ -379,7 +385,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				if (lumpsfound[2])
 				{
-					if (iwad == "chex.wad")			// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
+					if (iwad_file == "chex.wad")	// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
 					{								// iwad.  It's ultimate doom with their stuff replacing most things.
 						gamemission = chex;
 						gamemode = retail_chex;
@@ -405,6 +411,26 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 				gamemode = shareware;
 				gameinfo = SharewareGameInfo;
 				titlestring = "DOOM Shareware";
+			}
+
+			if (lumpsfound[5])
+			{
+				if (lumpsfound[1])
+				{
+					gameinfo = HereticSWGameInfo;
+					titlestring = "Heretic Shareware";
+				}
+				else
+				{
+					gameinfo = HereticGameInfo;
+					if (lumpsfound[8])
+					{
+						gameinfo.flags |= GI_MENUHACK_EXTENDED;
+						titlestring = "Heretic: Shadow of the Serpent Riders";
+					}
+					else
+						titlestring = "Heretic";
+				}
 			}
 		}
 	}

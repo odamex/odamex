@@ -864,6 +864,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 	};
 
 	std::string iwad;
+	std::string iwad_file;
 	int i;
 
 	if(suggestion.length())
@@ -933,6 +934,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		int lumpsfound[NUM_CHECKLUMPS];
 		wadinfo_t header;
 		FILE *f;
+		M_ExtractFileName(iwad,iwad_file);
 
 		memset (lumpsfound, 0, sizeof(lumpsfound));
 		if ( (f = fopen (iwad.c_str(), "rb")) )
@@ -990,7 +992,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				if (lumpsfound[2])
 				{
-					if (iwad == "chex.wad")			// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
+					if (iwad_file == "chex.wad")	// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
 					{								// iwad.  It's ultimate doom with their stuff replacing most things.
 						gamemission = chex;
 						gamemode = retail_chex;
@@ -1263,16 +1265,16 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	std::vector<size_t> fails;
 	size_t i;
 
-	static std::vector<std::string> last_wadnames, last_hashes, last_patches;
-	static bool last_success = false;
+	static bool last_success = true;
 
 	// already loaded these?
 	if (last_success &&
-        (wadnames == last_wadnames) &&
-        (patch_files == last_patches) &&
-        (needhashes.empty() || needhashes == last_hashes))
+		!wadhashes.empty() &&
+			needhashes ==
+				std::vector<std::string>(wadhashes.begin()+1, wadhashes.end()))
 	{
 		// fast track if files have not been changed // denis - todo - actually check the file timestamps
+		Printf (PRINT_HIGH, "Currently loaded WADs match server checksum\n\n");
 		return std::vector<size_t>();
 	}
 
@@ -1363,8 +1365,6 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 	// preserve state
 	last_success = fails.empty();
-	last_wadnames = wadnames;
-	last_hashes = needhashes;
 
 	gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
 
@@ -1397,7 +1397,7 @@ void D_DoomMain (void)
 
 	D_AddDefWads(iwad);
 
-	W_InitMultipleFiles (wadfiles);
+	wadhashes = W_InitMultipleFiles (wadfiles);
 
 	// [RH] Initialize configurable strings.
 	D_InitStrings ();

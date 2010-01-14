@@ -555,6 +555,7 @@ void M_OptInit (void)
 		{
 			Depths[currval].value = currval;
 			sprintf (name, "%d bit", i);
+			delete[] Depths[currval].name;
 			Depths[currval].name = copystring (name);
 			BitTranslate[currval] = i;
 			currval++;

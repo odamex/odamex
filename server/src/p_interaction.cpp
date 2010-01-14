@@ -1093,6 +1093,9 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		}
 	}
 
+	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
+		return;
+
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
@@ -1280,7 +1283,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 	{
 		int pain = P_Random();
-		
+
 		if(!player)
 		{
 			for (size_t i = 0; i < players.size(); i++)
@@ -1295,7 +1298,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		}
 
 		if ( pain < target->info->painchance
-			 && !(target->flags&MF_SKULLFLY) 
+			 && !(target->flags&MF_SKULLFLY)
 			 && !(player && !damage))
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
