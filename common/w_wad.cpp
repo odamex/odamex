@@ -492,12 +492,19 @@ std::vector<std::string> W_InitMultipleFiles (std::vector<std::string> &filename
 
 	std::vector<std::string> hashes(filenames);
 
-	// no dupes
-	filenames.erase(std::unique(filenames.begin(), filenames.end()), filenames.end());
-
-	// open all the files, load headers, and count lumps
+	// open each file once, load headers, and count lumps
+	int j = 0;
+	std::vector<std::string> loaded;
 	for(i = 0; i < filenames.size(); i++)
-		hashes[i] = W_AddFile(filenames[i].c_str());
+	{
+		if(std::find(loaded.begin(), loaded.end(), filenames[i].c_str()) == loaded.end())
+		{
+			hashes[j++] = W_AddFile(filenames[i].c_str());
+			loaded.push_back(filenames[i].c_str());
+		}
+	}
+	filenames = loaded;
+	hashes.resize(j);
 
 	if (!numlumps)
 		I_Error ("W_InitFiles: no files found");

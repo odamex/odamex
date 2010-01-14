@@ -503,7 +503,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-    if (W_CheckNumForName("DEMO4") >= 0)
+    if (W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
         demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;
@@ -551,7 +551,10 @@ void D_DoAdvanceDemo (void)
             else
             {
                 pagetic = 200;
-				pagename = "HELP2";
+				if (gamemode == retail_chex)	// [ML] Chex mode just cycles this screen
+					pagename = "CREDIT";
+				else
+					pagename = "HELP2";
             }
 
             break;
@@ -1194,7 +1197,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
             noDef = true;
         }
 
-        if (!multiplayer && !chexLoaded)
+        if (gamemode == retail_chex && !multiplayer && !chexLoaded)
 			Printf(PRINT_HIGH,"Warning: chex.deh not loaded, experience may differ from the original!\n");
 
         // remove the old arguments
