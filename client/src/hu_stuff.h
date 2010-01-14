@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -15,7 +15,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// DESCRIPTION:  
+// DESCRIPTION:
 //	Head up display
 //
 //-----------------------------------------------------------------------------
@@ -34,7 +34,7 @@
 #define HU_FONTEND		'_' 	// the last font characters
 
 // Calculate # of glyphs in font.
-#define HU_FONTSIZE 	(HU_FONTEND - HU_FONTSTART + 1) 
+#define HU_FONTSIZE 	(HU_FONTEND - HU_FONTSTART + 1)
 
 // Chat routines
 void HU_Init (void);
@@ -48,12 +48,4 @@ extern int headsupactive;
 class player_s;
 void HU_DrawScores (player_s *me);
 
-// GhostlyDeath -- Target Names Stuff
-/*EXTERN_CVAR(hud_targetnames)
-EXTERN_CVAR(hud_targetdead)
-EXTERN_CVAR(hud_targetenemies)
-EXTERN_CVAR(hud_targetallies)*/
-
 #endif
-
-

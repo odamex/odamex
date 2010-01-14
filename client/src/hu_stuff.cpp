@@ -128,8 +128,14 @@ void HU_Init (void)
 	// load the heads-up font
 	j = HU_FONTSTART;
 
-	tplate = "STCFN%.3d";
-	sub = 0;
+	// [RH] Quick hack to handle the FONTA of Heretic and Hexen
+	if (W_CheckNumForName ("FONTA01") >= 0) {
+		tplate = "FONTA%02u";
+		sub = HU_FONTSTART - 1;
+	} else {
+		tplate = "STCFN%.3d";
+		sub = 0;
+	}
 
 	for (i = 0; i < HU_FONTSIZE; i++)
 	{
@@ -161,7 +167,7 @@ BOOL HU_Responder (event_t *ev)
         {
             return true;
         }
-		
+
 		return false;
 	}
 
@@ -176,7 +182,7 @@ BOOL HU_Responder (event_t *ev)
 		if (ev->data2 >= '0' && ev->data2 <= '9')
 		{
 			ShoveChatStr (chat_macros[ev->data2 - '0']->cstring(), headsupactive - 1);
-            
+
             I_ResumeMouse();
 			headsupactive = 0;
 			return true;
@@ -224,7 +230,7 @@ CVAR_FUNC_IMPL(hud_targetcount)
 {
 	if (var < 0)
 		var.Set((float)0);
-		
+
 	if (var > 64)
 		var.Set((float)64);
 }
@@ -238,7 +244,7 @@ int MobjToMobjDistance(AActor *a, AActor *b)
 	double x1, x2;
 	double y1, y2;
 	double z1, z2;
-	
+
 	if (a && b)
 	{
 		x1 = a->x >> FRACBITS;
@@ -247,14 +253,14 @@ int MobjToMobjDistance(AActor *a, AActor *b)
 		y2 = b->y >> FRACBITS;
 		z1 = a->z >> FRACBITS;
 		z2 = b->z >> FRACBITS;
-		
+
 		return (int)sqrt(
 			pow(x2 - x1, 2) +
 			pow(y2 - y1, 2) +
 			pow(z2 - z1, 2)
 			);
 	}
-	
+
 	return 0;
 }
 
@@ -283,7 +289,7 @@ void HU_DrawTargetNames(void)
 		TargetY -= ST_HEIGHT;
 	else if (consoleplayer().spectator)
 		TargetY -= ((hu_font[0]->height() + 4) * CleanYfac);	// Don't get in the Join messages way!
-	
+
 	// Sometimes the "Other person's name" will get blocked
 	if (&(consoleplayer()) != &(displayplayer()))
 		TargetY -= ((hu_font[0]->height() + 4) * CleanYfac);
@@ -294,22 +300,22 @@ void HU_DrawTargetNames(void)
 		// Spectator?
 		if (players[i].spectator)
 			continue;
-		
+
 		// Don't get the display player!
 		if (&(players[i]) == &(displayplayer()))
 			continue;
-	
+
 		/* Now if they are visible... */
 		if (players[i].mo)
 		{
 			// If they are beyond 512 units, ignore
 			if (MobjToMobjDistance(displayplayer().mo, players[i].mo) > 512)
 				continue;
-			
+
 			// Check to see if the other player is visible
 			if (!P_CheckSightEdges(displayplayer().mo, players[i].mo, 0.0))
 				continue;
-			
+
 			// GhostlyDeath -- Don't draw dead enemies
 			if (!consoleplayer().spectator &&
 				(players[i].mo->health <= 0))
@@ -327,12 +333,12 @@ void HU_DrawTargetNames(void)
 						continue;
 				}
 			}
-			
+
 			/* Now we need to figure out if they are infront of us */
 			// Taken from r_things.cpp and I have no clue what it does
 			fixed_t tr_x, tr_y, gxt, gyt, tx, tz, xscale;
 			extern fixed_t FocalLengthX;
-			
+
 			// transform the origin point
 			tr_x = players[i].mo->x - viewx;
 			tr_y = players[i].mo->y - viewy;
@@ -355,7 +361,7 @@ void HU_DrawTargetNames(void)
 			// too far off the side?
 			if (abs(tx)>(tz>>1))
 				continue;
-			
+
 			// Are we a friend or foe or are we a spectator ourself?
 			if (gametype == GM_TEAMDM || gametype == GM_CTF)
 			{
@@ -379,13 +385,13 @@ void HU_DrawTargetNames(void)
 						ProposedColor = CR_GREEN;
 				}
 			}
-			
+
 			// Ok, make the temporary player info then add it
 			TargetInfo_t Tmp = {&players[i], MobjToMobjDistance(displayplayer().mo, players[i].mo), ProposedColor};
 			Targets.push_back(Tmp);
 		}
 	}
-	
+
 	// GhostlyDeath -- Now Sort (hopefully I got my selection sort working!)
 	for (i = 0; i < Targets.size(); i++)
 	{
@@ -405,7 +411,7 @@ void HU_DrawTargetNames(void)
 			}
 		}
 	}
-	
+
 	// GhostlyDeath -- Now Draw
 	for (i = 0; (i < Targets.size()) && (i < hud_targetcount); i++)
 	{
@@ -426,7 +432,7 @@ void HU_DrawTargetNames(void)
 				TargetX,
 				TargetY,
 				(Targets[i].PlayPtr == &(consoleplayer()) ? "You" : Targets[i].PlayPtr->userinfo.netname));
-	
+
 		TargetY -= ((hu_font[0]->height() + 1) * CleanYfac);
 	}
 }
@@ -438,39 +444,39 @@ EXTERN_CVAR (maxplayers)
 //
 void HU_Drawer (void)
 {
-	
+
 	// Draw "Press USE to join" as the bottom layer.
 	if ((&consoleplayer())->spectator && (level.time / TICRATE)%2 && gamestate != GS_INTERMISSION)
 	{
 		setsizeneeded = true;
 		int YPos = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
-		
+
 		if (&consoleplayer() != &displayplayer())
 			YPos -= ((hu_font[0]->height() + 4) * CleanYfac);
-		
+
 		size_t num_players = 0;
-		
+
         for (size_t i = 0; i < players.size(); ++i)
 		{
             if (!players[i].spectator)
                 ++num_players;
         }
-		
+
 		// GhostlyDeath -- X Pos from the F12 coop spy thingy
 		if (num_players == maxplayers)
 		{
-            screen->DrawTextClean (CR_GREY, 
-                (screen->width - V_StringWidth ("Game is full")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac), 
+            screen->DrawTextClean (CR_GREY,
+                (screen->width - V_StringWidth ("Game is full")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac),
                 YPos, "Game is full");
 		}
 		else
 		{
-            screen->DrawTextClean (CR_GREEN, 
-                (screen->width - V_StringWidth ("Press USE to join")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac), 
+            screen->DrawTextClean (CR_GREEN,
+                (screen->width - V_StringWidth ("Press USE to join")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac),
                 YPos, "Press USE to join");
 		}
 	}
-	
+
 	/* GhostlyDeath -- Cheap Target Names */
 	if ((gamestate == GS_LEVEL)						// Must be Playing, allow specs to target always
 		&& ((!consoleplayer().spectator && allowtargetnames && hud_targetnames) ||
@@ -479,7 +485,7 @@ void HU_Drawer (void)
 	{
 		HU_DrawTargetNames();
 	}
-	
+
 	if (headsupactive)
 	{
 		static const char *prompt;
@@ -497,7 +503,7 @@ void HU_Drawer (void)
 		}
 
 		y += (screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
-		
+
 		if (headsupactive == 2)
 			prompt = "Say (TEAM): ";
 		else if (headsupactive == 1)
@@ -1757,7 +1763,7 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
         }
-        
+
         Printf_Bold("\n----------------------------SPECTATORS\n");
             for (i = 0; i < sortedplayers.size(); i++) {
                 if (sortedplayers[i]->spectator) {
@@ -1822,7 +1828,7 @@ void HU_ConsoleScores (player_t *player)
                 }
             }
         }
-                
+
         Printf_Bold("\n----------------------------SPECTATORS\n");
             for (i = 0; i < sortedplayers.size(); i++) {
                 if (sortedplayers[i]->spectator) {
@@ -1881,7 +1887,7 @@ void HU_ConsoleScores (player_t *player)
 						player->GameTime / 60);
         	}
         }
-                
+
         Printf_Bold("\n----------------------------SPECTATORS\n");
             for (i = 0; i < sortedplayers.size(); i++) {
                 if (sortedplayers[i]->spectator) {
@@ -1925,7 +1931,7 @@ void HU_ConsoleScores (player_t *player)
 						player->GameTime / 60);
 			}
         }
-                
+
         Printf_Bold("\n----------------------------SPECTATORS\n");
             for (i = 0; i < sortedplayers.size(); i++) {
                 if (sortedplayers[i]->spectator) {

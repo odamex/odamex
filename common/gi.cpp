@@ -61,6 +61,60 @@ static gameborder_t DoomBorder =
 	"brdr_bl", "brdr_b", "brdr_br"
 };
 
+static gameborder_t HereticBorder =
+{
+	4, 16,
+	"bordtl", "bordt", "bordtr",
+	"bordl",           "bordr",
+	"bordbl", "bordb", "bordbr"
+};
+
+gameinfo_t HereticGameInfo =
+{
+	GI_PAGESARERAW | GI_INFOINDEXED,
+	"TITLE",
+	"CREDIT",
+	"CREDIT",
+	{ 'M','U','S','_','T','I','T','L' },
+	280/35,
+	210/35,
+	200/35,
+	"misc/chat",
+	{ 'M','U','S','_','C','P','T','D' },
+	"FLOOR25",
+	"CREDIT",
+	"CREDIT",
+	"CREDIT",
+	{ { "TITLE", 4 } },
+	NULL,
+	17,
+	"FLAT513",
+	&HereticBorder
+};
+
+gameinfo_t HereticSWGameInfo =
+{
+	GI_PAGESARERAW | GI_SHAREWARE | GI_INFOINDEXED,
+	"TITLE",
+	"CREDIT",
+	"ORDER",
+	{ 'M','U','S','_','T','I','T','L' },
+	280/35,
+	210/35,
+	200/35,
+	"misc/chat",
+	{ 'M','U','S','_','C','P','T','D' },
+	"FLOOR25",
+	"ORDER",
+	"CREDIT",
+	"CREDIT",
+	{ { "TITLE", 5 } },
+	NULL,
+	17,
+	"FLOOR04",
+	&HereticBorder
+};
+
 gameinfo_t SharewareGameInfo =
 {
 	GI_SHAREWARE | GI_NOCRAZYDEATH,
