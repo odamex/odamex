@@ -86,9 +86,10 @@ enum GameMode_t
   commercial,	// DOOM 2 retail, E1 M34
   // DOOM 2 german edition not handled
   retail,		// DOOM 1 retail, E4, M36
+  shareware_heretic,	// Heretic shareware, E1, M9
+  registered_heretic,	// Heretic Registered, E5, M9
   retail_chex,	// Chex Quest
   undetermined	// Well, no IWAD found.
-
 };
 
 
