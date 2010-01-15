@@ -93,13 +93,10 @@ endif
 endif
 
 ifeq ($(strip $(cygwin)), true)
-SDL_LOCATION = ../SDL-1.2.11
-SDL_MIXER_LOCATION = ../SDL_mixer-1.2.7
-SDL_DETECT = echo "Assumed SDL is in $(SDL_LOCATION) and SDL_mixer is in $(SDL_MIXER_LOCATION)"
-SDL_CFLAGS_COMMAND =
-SDL_LFLAGS_COMMAND =
-SDL_CFLAGS = -I$(SDL_LOCATION)/include -I$(SDL_MIXER_LOCATION)/include
-SDL_LFLAGS = -L$(SDL_LOCATION)/lib -lSDL -L$(SDL_MIXER_LOCATION)/lib
++SDL_CFLAGS = $(shell $(SDL_CFLAGS_COMMAND))
++SDL_LFLAGS = $(shell $(SDL_LFLAGS_COMMAND))
++LFLAGS_PLATFORM = -mno-cygwin -lwsock32 -lwinmm
++CFLAGS_PLATFORM = -mno-cygwin -DWIN32 -D_WIN32
 endif
 
 ifeq ($(strip $(win32)), true)
