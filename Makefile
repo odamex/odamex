@@ -93,10 +93,10 @@ endif
 endif
 
 ifeq ($(strip $(cygwin)), true)
-+SDL_CFLAGS = $(shell $(SDL_CFLAGS_COMMAND))
-+SDL_LFLAGS = $(shell $(SDL_LFLAGS_COMMAND))
-+LFLAGS_PLATFORM = -mno-cygwin -lwsock32 -lwinmm
-+CFLAGS_PLATFORM = -mno-cygwin -DWIN32 -D_WIN32
+SDL_CFLAGS = $(shell $(SDL_CFLAGS_COMMAND))
+SDL_LFLAGS = $(shell $(SDL_LFLAGS_COMMAND))
+LFLAGS_PLATFORM = -mno-cygwin -lwsock32 -lwinmm
+CFLAGS_PLATFORM = -mno-cygwin -DWIN32 -D_WIN32
 endif
 
 ifeq ($(strip $(win32)), true)
