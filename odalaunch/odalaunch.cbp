@@ -382,10 +382,6 @@
 		<Unit filename="src\lst_srvdetails.h" />
 		<Unit filename="src\main.cpp" />
 		<Unit filename="src\main.h" />
-		<Unit filename="src\misc.cpp">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="src\misc.h" />
 		<Unit filename="src\net_io.cpp">
 			<Option virtualFolder="network\" />
 		</Unit>

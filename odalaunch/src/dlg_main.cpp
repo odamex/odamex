@@ -37,8 +37,6 @@
 #include <wx/artprov.h>
 #include <wx/iconbndl.h>
 
-#include "misc.h"
-
 // Control ID assignments for events
 // application icon
 
@@ -422,8 +420,6 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         case mtrs_server_singletimeout:
             i = FindServerInList(QServer[Result->Index].GetAddress());
 
-            m_LstCtrlPlayers->DeleteAllItems();
-
             m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
             
             QServer[Result->Index].ResetData();
@@ -432,13 +428,11 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             if (i == -1)
                 m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->Index);
             else
-                m_LstCtrlServers->AddServerToList(QServer[Result->Index], i, 0);
+                m_LstCtrlServers->AddServerToList(QServer[Result->Index], i, false);
             
             break;
-        case mtrs_server_singlesuccess:
-            m_LstCtrlPlayers->DeleteAllItems();
-            
-            m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->ServerListIndex, 0);
+        case mtrs_server_singlesuccess:           
+            m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->ServerListIndex, false);
             
             m_LstCtrlPlayers->AddPlayersToList(QServer[Result->Index]);
             
@@ -475,7 +469,7 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
             if (i == -1)
                 m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], event.GetInt());
             else
-                m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], i, 0);
+                m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], i, false);
             
             break;                 
         }
@@ -734,6 +728,60 @@ void dlgMain::OnServerListClick(wxListEvent& event)
         }
     }
 }
+
+void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path, 
+    const wxString &waddirs, const wxString &Password)
+{
+    wxFileConfig ConfigInfo;
+    wxString ExtraCmdLineArgs;
+    
+    if (ODX_Path.IsEmpty())
+    {
+        wxMessageBox(wxT("Your Odamex path is empty!"));
+        
+        return;
+    }
+    
+    #ifdef __WXMSW__
+      wxString binname = ODX_Path + wxT('\\') + _T("odamex");
+    #elif __WXMAC__
+      wxString binname = ODX_Path + wxT("/odamex.app/Contents/MacOS/odamex");
+    #else
+      wxString binname = ODX_Path + wxT("/odamex");
+    #endif
+
+    wxString cmdline = wxT("");
+
+    wxString dirs = waddirs.Mid(0, waddirs.Length());
+    
+    cmdline += wxString::Format(wxT("%s"), binname.c_str());
+    
+    if (!Address.IsEmpty())
+		cmdline += wxString::Format(wxT(" -connect %s"),
+									Address.c_str());
+	
+	if (!Password.IsEmpty())
+        cmdline += wxString::Format(wxT(" %s"),
+									Password.c_str());
+	
+	// this is so the client won't mess up parsing
+	if (!dirs.IsEmpty())
+        cmdline += wxString::Format(wxT(" -waddir \"%s\""), 
+                                    dirs.c_str());
+
+    // Check for any user command line arguments
+    ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
+    
+    if (!ExtraCmdLineArgs.IsEmpty())
+        cmdline += wxString::Format(_T(" %s"), 
+                                    ExtraCmdLineArgs.c_str());
+
+	if (wxExecute(cmdline, wxEXEC_ASYNC, NULL) == -1)
+        wxMessageBox(wxString::Format(wxT("Could not start %s!"), 
+                                        binname.c_str()));
+	
+}
+
 
 // when the user double clicks on the server list
 void dlgMain::OnServerListDoubleClick(wxListEvent& event)

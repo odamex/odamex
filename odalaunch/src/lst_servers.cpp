@@ -314,7 +314,7 @@ LstOdaServerList::~LstOdaServerList()
 */
 void LstOdaServerList::AddServerToList(const Server &s, 
                                         wxInt32 index, 
-                                        wxInt8 insert)
+                                        bool insert)
 {
     wxInt32 i = 0;
     wxListItem li;

@@ -204,15 +204,6 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
                              const wxUint8 &VersionPatch,
                              const wxUint32 &ProtocolVersion)
 {
-    wxString DummyString;
-    bool DummyBool;
-    wxInt32 DummyInt32;
-    wxInt16 DummyInt16;
-    wxInt8 DummyInt8;
-    wxUint32 DummyUint32;
-    wxUint16 DummyUint16;
-    wxUint8 DummyUint8;
-    
     Info.VersionMajor = VersionMajor;
     Info.VersionMinor = VersionMinor;
     Info.VersionPatch = VersionPatch;

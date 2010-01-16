@@ -94,6 +94,9 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 FindServer(wxString);
 		wxInt32 FindServerInList(wxString);
 		
+		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
+            const wxString &waddirs, const wxString &Password = wxT(""));
+		
 		LstOdaServerList *m_LstCtrlServers;
 		LstOdaPlayerList *m_LstCtrlPlayers;
         LstOdaSrvDetails *m_LstOdaSrvDetails;
