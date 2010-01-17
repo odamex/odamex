@@ -1024,12 +1024,6 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				if (lumpsfound[1])
 				{
-					gamemode = shareware_heretic;
-					gameinfo = HereticSWGameInfo;
-					titlestring = "Heretic Shareware";
-				}
-				else
-				{
 					gamemode = registered_heretic;
 					gameinfo = HereticGameInfo;
 					if (lumpsfound[8])
@@ -1039,6 +1033,12 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 					}
 					else
 						titlestring = "Heretic";
+				}
+				else
+				{
+					gamemode = shareware_heretic;
+					gameinfo = HereticSWGameInfo;
+					titlestring = "Heretic Shareware";
 				}
 			}
 		}
@@ -1499,10 +1499,8 @@ void D_DoomMain (void)
 	Printf (PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame ();
 
-	if (gamemode != registered_heretic) {
-		Printf (PRINT_HIGH, "ST_Init: Init status bar.\n");
-		ST_Init ();
-	}
+	Printf (PRINT_HIGH, "ST_Init: Init status bar.\n");
+	ST_Init ();
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems ();
