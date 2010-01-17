@@ -425,8 +425,14 @@ void I_Endoom(void)
 	unsigned char *screendata;
 	int y;
 	int indent;
+	char *endlump;
 
-	endoom_data = (unsigned char *)W_CacheLumpName("ENDOOM", PU_STATIC);
+	if (gamemode == registered_heretic)
+		endlump = "ENDTEXT";
+	else
+		endlump = "ENDOOM";
+
+	endoom_data = (unsigned char *)W_CacheLumpName(endlump, PU_STATIC);
 
 	// Set up text mode screen
 
