@@ -1472,6 +1472,8 @@ void ST_loadGraphics(void)
 	int namespc;
 	int facenum;
 	char namebuf[9];
+	char *bignums;
+	char *smallnums;
 
 	player_t *plyr = &consoleplayer();
 
@@ -1484,13 +1486,20 @@ void ST_loadGraphics(void)
 	// Load the numbers, tall and short
 	for (i=0;i<10;i++)
 	{
-		sprintf(namebuf, "STTNUM%d", i);
-		tallnum[i] = W_CachePatch(namebuf, PU_STATIC);
+		if (gamemode == registered_heretic) {
+			bignums = "IN%d";
+			smallnums = "SMALLIN%d";
+		} else {
+			bignums = "STTNUM%d";
+			smallnums = "STYSNUM%d";
+		}
 
-		sprintf(namebuf, "STYSNUM%d", i);
+		sprintf(namebuf, bignums, i);
+		tallnum[i] = W_CachePatch(namebuf, PU_STATIC);
+		sprintf(namebuf, smallnums, i);
 		shortnum[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
-
+if (gamemode != registered_heretic) {
 	// Load percent key.
 	//Note: why not load STMINUS here, too?
 	tallpercent = W_CachePatch("STTPRCNT", PU_STATIC);
@@ -1539,10 +1548,14 @@ void ST_loadGraphics(void)
 		sprintf(namebuf, "STFB%d", i);
 		faceclassic[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
-
+}
 	// status bar background bits
-	sbar = W_CachePatch("STBAR", PU_STATIC);
+	if (gamemode == registered_heretic)
+		sbar = W_CachePatch("STATBAR", PU_STATIC);
+	else
+		sbar = W_CachePatch("STBAR", PU_STATIC);
 
+if (gamemode != registered_heretic) {
 	// face states
 	facenum = 0;
 
@@ -1579,6 +1592,7 @@ void ST_loadGraphics(void)
 	faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
 	strcpy (namebuf+3, "DEAD0");
 	faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+}
 }
 
 void ST_loadData (void)

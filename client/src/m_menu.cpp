@@ -108,6 +108,7 @@ bool				drawSkull;			// [RH] don't always draw skull
 
 // graphic name of skulls
 char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
+char				arrowName[2][9] = {"M_SLCTR1", "M_SLCTR2"};
 
 // current menudef
 oldmenu_t *currentMenu;
@@ -224,6 +225,30 @@ oldmenuitem_t Doom2MainMenu[]=
     {1,"M_LOADG",M_LoadGame,'L'},
     {1,"M_SAVEG",M_SaveGame,'S'},
 	{1,"M_QUITG",M_QuitDOOM,'Q'}
+};
+
+//
+// HERETIC MENU
+//
+enum h_main_t
+{
+	h_newgame = 0,
+	h_options,					// [RH] Moved
+	h_loadgame,
+	h_savegame,
+	h_readthis,
+	h_quitheretic,
+	h_main_end
+}h_main_e;
+
+oldmenuitem_t HereticMainMenu[]=
+{
+	{1,"",M_NewGame,'N'},
+	{1,"",M_Options,'O'},	// [RH] Moved
+    {1,"",M_LoadGame,'L'},
+    {1,"",M_SaveGame,'S'},
+    {1,"",M_ReadThis,'R'},
+	{1,"",M_QuitDOOM,'Q'}
 };
 
 
@@ -925,7 +950,7 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu (void)
 {
-	screen->DrawPatchClean (W_CachePatch("M_DOOM"), 94, 2);
+	screen->DrawPatchClean (W_CachePatch((gamemode == registered_heretic ? "M_HTIC":"M_DOOM")), 94, 2);
 }
 
 void M_DrawNewGame(void)
@@ -1956,20 +1981,25 @@ void M_Drawer (void)
 			x = currentMenu->x;
 			y = currentMenu->y;
 			max = currentMenu->numitems;
-
+		if (gamemode != registered_heretic) {
 			for (i = 0; i < max; i++)
 			{
 				if (currentMenu->menuitems[i].name[0])
 					screen->DrawPatchClean (W_CachePatch(currentMenu->menuitems[i].name), x, y);
 				y += LINEHEIGHT;
 			}
+		}
 
 
 			// DRAW SKULL
 			if (drawSkull)
 			{
-				screen->DrawPatchClean (W_CachePatch(skullName[whichSkull]),
-					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+				if (gamemode == registered_heretic)
+					screen->DrawPatchClean (W_CachePatch(arrowName[whichSkull]),
+						x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+				else
+					screen->DrawPatchClean (W_CachePatch(skullName[whichSkull]),
+						x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
 			}
 		}
 	}
