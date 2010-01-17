@@ -121,6 +121,7 @@ void HU_Init (void)
 {
 	int i, j, sub;
 	char *tplate, buffer[12];
+	bool hu_raven = false;
 
 	headsupactive = 0;
 	input_text = "";
@@ -132,6 +133,7 @@ void HU_Init (void)
 	if (W_CheckNumForName ("FONTA01") >= 0) {
 		tplate = "FONTA%02u";
 		sub = HU_FONTSTART - 1;
+		hu_raven = true;
 	} else {
 		tplate = "STCFN%.3d";
 		sub = 0;
@@ -139,6 +141,15 @@ void HU_Init (void)
 
 	for (i = 0; i < HU_FONTSIZE; i++)
 	{
+		if (hu_raven) {
+			if (i > 58 && i < 62) {
+				j++;
+				continue;
+			} else if (i == HU_FONTSIZE - 1) {
+				sub = sub + 4;
+			}
+		}
+
 		sprintf (buffer, tplate, j++ - sub);
 		hu_font[i] = W_CachePatch(buffer, PU_STATIC);
 	}

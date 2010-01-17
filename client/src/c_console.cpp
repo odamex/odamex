@@ -213,11 +213,11 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			patch_t *bg;
 			int num;
 
-			num = W_CheckNumForName ("ODAMEX");
+			num = W_CheckNumForName (gameinfo.consoleBack);
 			if (num == -1)
 			{
 				stylize = true;
-				num = W_GetNumForName ("ODAMEX");
+				num = W_GetNumForName (gameinfo.consoleBack);
 				isRaw = gameinfo.flags & GI_PAGESARERAW;
 			}
 

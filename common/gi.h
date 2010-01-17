@@ -54,22 +54,24 @@ typedef struct
 
 typedef struct
 {
-	int flags;
-	char titlePage[8];
-	char creditPage1[8];
-	char creditPage2[8];
-	char titleMusic[8];
-	float titleTime;
-	float advisoryTime;
-	float pageTime;
-	char chatSound[16];
-	char finaleMusic[8];
-	char finaleFlat[8];
-	char finalePage1[8];
-	char finalePage2[8];
-	char finalePage3[8];
-	union
-	{
+	int flags;					// Game mode flags
+	char titlePage[8];			// Opening graphic
+	char creditPage1[8];		// First "Credit" page
+	char creditPage2[8];		// Second "Credit" page (for demo rotation)
+	char titleMusic[8];			// Music lump to play for opening
+	float titleTime;			// length of time to show title
+	float advisoryTime;			// for heretic (?) len to show advisory
+	float pageTime;				// length of general demo state pages
+	char chatSound[16];			// Sound lump to play when sending a message
+	char consoleBack[8];		// Default console background
+
+	char finaleMusic[8];		// Victory music
+	char finaleFlat[8];			// Victory splash background
+	char finalePage1[8];		//
+	char finalePage2[8];		//
+	char finalePage3[8];		//
+	union						// Information pages, perhaps the set
+	{							// for demo rotation? Not in use
 		char infoPage[3][8];
 		struct
 		{
@@ -77,9 +79,9 @@ typedef struct
 			int numPages;
 		} indexed;
 	} info;
-	const char **quitSounds;
+	const char **quitSounds;	// Pointer to list of quit sound lumps (?)
 	int maxSwitch;
-	char borderFlat[8];
+	char borderFlat[8];			// Flat to use when changing screen size
 	gameborder_t *border;
 } gameinfo_t;
 

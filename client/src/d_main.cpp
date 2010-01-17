@@ -519,7 +519,7 @@ void D_DoAdvanceDemo (void)
                 pagetic = 170;
 
             gamestate = GS_DEMOSCREEN;
-            pagename = "TITLEPIC";
+            pagename = gameinfo.titlePage;
 
             S_StartMusic(gameinfo.titleMusic);
 
@@ -1499,8 +1499,10 @@ void D_DoomMain (void)
 	Printf (PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame ();
 
-	Printf (PRINT_HIGH, "ST_Init: Init status bar.\n");
-	ST_Init ();
+	if (gamemode != registered_heretic) {
+		Printf (PRINT_HIGH, "ST_Init: Init status bar.\n");
+		ST_Init ();
+	}
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems ();
