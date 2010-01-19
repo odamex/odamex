@@ -121,12 +121,14 @@ void M_Episode(int choice);
 void M_ChooseSkill(int choice);
 void M_LoadGame(int choice);
 void M_SaveGame(int choice);
+void M_HtcGameFiles(int choice);	//[ML] Heretic puts save/load in "game files"
 void M_Options(int choice);
 void M_EndGame(int choice);
 void M_ReadThis(int choice);
 void M_ReadThis2(int choice);
 void M_ReadThis3(int choice);
 void M_QuitDOOM(int choice);
+void M_QuitHERETIC(int choice);
 
 void M_ChangeDetail(int choice);
 void M_StartGame(int choice);
@@ -207,7 +209,6 @@ oldmenuitem_t DoomMainMenu[]=
 //
 // DOOM 2 MENU
 //
-
 enum d2_main_t
 {
 	d2_newgame = 0,
@@ -230,24 +231,22 @@ oldmenuitem_t Doom2MainMenu[]=
 //
 // HERETIC MENU
 //
-enum h_main_t
+enum htc_main_t
 {
-	h_newgame = 0,
-	h_options,					// [RH] Moved
-	h_loadgame,
-	h_savegame,
-	h_readthis,
-	h_quitheretic,
-	h_main_end
-}h_main_e;
+	htc_newgame = 0,
+	htc_options,					// [RH] Moved
+	htc_gamefiles,
+	htc_info,
+	htc_quitheretic,
+	htc_main_end
+}htc_main_e;
 
 oldmenuitem_t HereticMainMenu[]=
 {
 	{1,"",M_NewGame,'N'},
 	{1,"",M_Options,'O'},	// [RH] Moved
-    {1,"",M_LoadGame,'L'},
-    {1,"",M_SaveGame,'S'},
-    {1,"",M_ReadThis,'R'},
+    {1,"",M_HtcGameFiles,'G'},
+    {1,"",M_ReadThis,'I'},
 	{1,"",M_QuitDOOM,'Q'}
 };
 
@@ -617,19 +616,16 @@ BEGIN_COMMAND (bumpgamma)
 }
 END_COMMAND (bumpgamma)
 
-/*
-void M_LoadSaveResponse(int choice)
+void M_HtcGameFilesResponse(int ch)
 {
-    // dummy
+	return;
 }
 
-
-void M_LoadGame (int choice)
+void M_HtcGameFiles(int choice)
 {
-    M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
-                   "continue)\n", M_LoadSaveResponse, false);
+     M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
+                   "continue)\n", M_HtcGameFilesResponse, false);
 }
-*/
 
 //
 // M_ReadSaveStrings
@@ -769,14 +765,6 @@ void M_SaveSelect (int choice)
 	saveCharIndex = strlen(savegamestrings[choice]);
 }
 
-/*
-void M_SaveGame (int choice)
-{
-    M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
-                   "continue)\n", M_LoadSaveResponse, false);
-}
-*/
-
 //
 // Selected from DOOM menu
 // [ML] 7 Sept 08: Bringing game saving/loading in from
@@ -805,7 +793,6 @@ void M_SaveGame (int choice)
 	M_SetupNextMenu(&SaveDef);
 	M_ReadSaveStrings();
 }
-
 
 //
 //		M_QuickSave
@@ -853,7 +840,6 @@ void M_QuickSave(void)
 	sprintf (tempstring, QSPROMPT, savegamestrings[quickSaveSlot]);
 	M_StartMessage (tempstring, M_QuickSaveResponse, true);
 }
-
 
 
 //
@@ -1132,17 +1118,21 @@ void M_QuitResponse(int ch)
 
 void M_QuitDOOM (int choice)
 {
-  // We pick index 0 which is language sensitive,
-  //  or one at random, between 1 and maximum number.
-  if (language != english )
-	sprintf(endstring,"%s\n\n%s", endmsg[0], DOSY );
-  else
-	sprintf(endstring,"%s\n\n%s", endmsg[ (gametic%(NUM_QUITMESSAGES-2))+1 ], DOSY);
+	// We pick index 0 which is language sensitive,
+	//  or one at random, between 1 and maximum number.
+	if (language != english )
+		sprintf(endstring,"%s\n\n%s", endmsg[0], DOSY );
+	else
+		sprintf(endstring,"%s\n\n%s", endmsg[ (gametic%(NUM_QUITMESSAGES-2))+1 ], DOSY);
 
-  M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring,M_QuitResponse,true);
 }
 
-
+void M_QuitHERETIC (int choice)
+{
+	sprintf(endstring,"%s\n\n%s", endmsg[0], DOSY );
+	M_StartMessage(endstring,M_QuitResponse,true);
+}
 
 
 // -----------------------------------------------------
@@ -2094,6 +2084,7 @@ void M_Ticker (void)
 //
 EXTERN_CVAR (screenblocks)
 
+
 void M_Init (void)
 {
 	int i;
@@ -2101,8 +2092,8 @@ void M_Init (void)
     // [Russell] - Set this beforehand, because when you switch wads
     // (ie from doom to doom2 back to doom), you will have less menu items
     {
-        MainDef.numitems = d1_main_end;
-        MainDef.menuitems = DoomMainMenu;
+        MainDef.numitems = (gamemode == registered_heretic ? htc_main_end : d1_main_end);
+        MainDef.menuitems = (gamemode == registered_heretic ? HereticMainMenu : DoomMainMenu);
         MainDef.routine = M_DrawMainMenu,
         MainDef.lastOn = 0;
         MainDef.x = 97;
