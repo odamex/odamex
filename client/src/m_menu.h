@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -17,7 +17,7 @@
 //
 // DESCRIPTION:
 //   Menu widget stuff, episode selection and such.
-//    
+//
 //-----------------------------------------------------------------------------
 
 
@@ -146,16 +146,16 @@ typedef struct
 {
 	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	short		status;
-	
-	char		name[10];
-	
+
+	char		*name;
+
 	// choice = menu item #.
 	// if status = 2,
 	//	 choice=0:leftarrow,1:rightarrow
 	void		(*routine)(int choice);
-	
+
 	// hotkey in menu
-	char		alphaKey;						
+	char		alphaKey;
 } oldmenuitem_t;
 
 typedef struct oldmenu_s

@@ -69,6 +69,7 @@ void HU_Drawer (void);
 BOOL HU_Responder (event_t *ev);
 
 patch_t *hu_font[HU_FONTSIZE];
+patch_t *b_font[HU_FONTSIZE-1];
 
 void HU_DrawScores (player_t *plyr);
 void HU_ConsoleScores (player_t *plyr);
@@ -119,19 +120,20 @@ cvar_t *chat_macros[10] =
 //
 void HU_Init (void)
 {
-	int i, j, sub;
-	char *tplate, buffer[12];
+	int i, j, k, sub;
+	char *tplate, *b_tplate,buffer[12],b_buffer[12];
 	bool hu_raven = false;
 
 	headsupactive = 0;
 	input_text = "";
 
 	// load the heads-up font
-	j = HU_FONTSTART;
+	j = k = HU_FONTSTART;
 
-	// [RH] Quick hack to handle the FONTA of Heretic and Hexen
-	if (W_CheckNumForName ("FONTA01") >= 0) {
+	// Quick hack to handle the FONTA (and FONTB) of Heretic and Hexen
+	if (gamemode == registered_heretic) {
 		tplate = "FONTA%02u";
+		b_tplate = "FONTB%02u";
 		sub = HU_FONTSTART - 1;
 		hu_raven = true;
 	} else {
@@ -147,6 +149,11 @@ void HU_Init (void)
 				continue;
 			} else if (i == HU_FONTSIZE - 1) {
 				sub = sub + 4;
+			}
+
+			if (i < 58) {
+				sprintf (b_buffer, b_tplate, k++ - sub);
+				b_font[i] = W_CachePatch(b_buffer, PU_STATIC);
 			}
 		}
 

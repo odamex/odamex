@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -127,6 +127,13 @@ public:
 	inline void DrawTextCleanLuc (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const;
 
+	// Drawing strings using FONTB
+	inline void DrawTextLarge (int normalcolor, int x, int y, const byte *string) const;
+	inline void DrawTextLarge (int normalcolor, int x, int y, const char *string) const;
+
+	inline void DrawTextLargeClean (int normalcolor, int x, int y, const byte *string) const;
+	inline void DrawTextLargeClean (int normalcolor, int x, int y, const char *string) const;
+
 	// Patch drawing functions
 	void DrawPatchFlipped (const patch_t *patch, int x, int y) const;
 
@@ -175,6 +182,9 @@ public:
 protected:
 	void TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
+
+	void LargeTextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
+	void LargeTextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 
 	void DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
 	void DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, int destwidth, int destheight) const;
@@ -268,6 +278,24 @@ inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const cha
 		(x - 160) * CleanXfac + width / 2,
 		(y - 100) * CleanYfac + height / 2,
 		(const byte *)string);
+}
+
+inline void DCanvas::DrawTextLarge (int normalcolor, int x, int y, const byte *string) const
+{
+	LargeTextWrapper (EWrapper_Translated, normalcolor, x, y, string);
+}
+inline void DCanvas::DrawTextLarge (int normalcolor, int x, int y, const char *string) const
+{
+	LargeTextWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string);
+}
+
+inline void DCanvas::DrawTextLargeClean (int normalcolor, int x, int y, const byte *string) const
+{
+	LargeTextSWrapper (EWrapper_Translated, normalcolor, x, y, string);
+}
+inline void DCanvas::DrawTextLargeClean (int normalcolor, int x, int y, const char *string) const
+{
+	LargeTextSWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string);
 }
 
 inline void DCanvas::DrawPatch (const patch_t *patch, int x, int y) const

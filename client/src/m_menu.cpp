@@ -89,7 +89,10 @@ char				saveOldString[SAVESTRINGSIZE];
 bool 				menuactive;
 
 #define SKULLXOFF	-32
+#define ARROWXOFF	-28
+#define ARROWYOFF	-1
 #define LINEHEIGHT	16
+#define HTCLINEHEIGHT 20
 
 extern bool st_firsttime;
 
@@ -243,11 +246,11 @@ enum htc_main_t
 
 oldmenuitem_t HereticMainMenu[]=
 {
-	{1,"",M_NewGame,'N'},
-	{1,"",M_Options,'O'},	// [RH] Moved
-    {1,"",M_HtcGameFiles,'G'},
-    {1,"",M_ReadThis,'I'},
-	{1,"",M_QuitHERETIC,'Q'}
+	{1,"New Game",M_NewGame,'N'},
+	{1,"Options",M_Options,'O'},	// [RH] Moved
+    {1,"Game Files",M_HtcGameFiles,'G'},
+    {1,"Info",M_ReadThis,'I'},
+	{1,"Quit Game",M_QuitHERETIC,'Q'}
 };
 
 oldmenuitem_t HereticGameFilesMenu[]=
@@ -970,10 +973,10 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu (void)
 {
-	const char *titlePatch;
-
-	titlePatch = (gamemode == registered_heretic ? "M_HTIC":"M_DOOM");
-	screen->DrawPatchClean (W_CachePatch(titlePatch), 94, 2);
+	if (gamemode == registered_heretic)
+		screen->DrawPatchClean (W_CachePatch("M_HTIC"), 88, 0);
+	else
+		screen->DrawPatchClean (W_CachePatch("M_DOOM"), 94, 2);
 }
 
 void M_DrawNewGame(void)
@@ -2016,22 +2019,29 @@ void M_Drawer (void)
 			x = currentMenu->x;
 			y = currentMenu->y;
 			max = currentMenu->numitems;
-		if (gamemode != registered_heretic) {
+
 			for (i = 0; i < max; i++)
 			{
-				if (currentMenu->menuitems[i].name[0])
-					screen->DrawPatchClean (W_CachePatch(currentMenu->menuitems[i].name), x, y);
-				y += LINEHEIGHT;
+				if (currentMenu->menuitems[i].name[0]) {
+					if (gamemode == registered_heretic)
+					{
+						screen->DrawTextLargeClean(0, x, y, currentMenu->menuitems[i].name);
+						y += HTCLINEHEIGHT;
+					}
+					else
+					{
+						screen->DrawPatchClean (W_CachePatch(currentMenu->menuitems[i].name), x, y);
+						y += LINEHEIGHT;
+					}
+				}
 			}
-		}
-
 
 			// DRAW SKULL
 			if (drawSkull)
 			{
 				if (gamemode == registered_heretic)
 					screen->DrawPatchClean (W_CachePatch(arrowName[whichSkull]),
-						x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+						x + ARROWXOFF, (currentMenu->y + itemOn*HTCLINEHEIGHT + ARROWYOFF));
 				else
 					screen->DrawPatchClean (W_CachePatch(skullName[whichSkull]),
 						x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
@@ -2170,7 +2180,8 @@ void M_Init (void)
     	// Heretic changes stuff
 		MainDef.numitems = htc_main_end;
         MainDef.menuitems = HereticMainMenu;
-        MainDef.y += 8;
+        MainDef.x = 110;
+        MainDef.y = 56;
     }
 
 	M_OptInit ();

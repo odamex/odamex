@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -39,6 +39,7 @@
 
 
 extern patch_t *hu_font[HU_FONTSIZE];
+extern patch_t *b_font[HU_FONTSIZE-1];
 
 
 static byte *ConChars;
@@ -405,6 +406,83 @@ void DCanvas::TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, c
 	}
 }
 
+
+void DCanvas::LargeTextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
+{
+	int 		w;
+	const byte *ch;
+	int 		c;
+	int 		cx;
+	int 		cy;
+	int			boldcolor;
+
+	if (normalcolor > NUM_TEXT_COLORS)
+		normalcolor = CR_RED;
+	boldcolor = normalcolor ? normalcolor - 1 : NUM_TEXT_COLORS - 1;
+
+	V_ColorMap = Ranges + normalcolor * 256;
+
+	ch = string;
+	cx = x;
+	cy = y;
+
+	while (1)
+	{
+		c = *ch++;
+		if (!c)
+			break;
+
+		if (c == 0x8a)
+		{
+			int newcolor = toupper(*ch++);
+
+			if (newcolor == 0)
+			{
+				return;
+			}
+			else if (newcolor == '-')
+			{
+				newcolor = normalcolor;
+			}
+			else if (newcolor >= 'A' && newcolor < 'A' + NUM_TEXT_COLORS)
+			{
+				newcolor -= 'A';
+			}
+			else if (newcolor == '+')
+			{
+				newcolor = boldcolor;
+			}
+			else
+			{
+				continue;
+			}
+			V_ColorMap = Ranges + newcolor * 256;
+			continue;
+		}
+
+		if (c == '\n')
+		{
+			cx = x;
+			cy += 18;
+			continue;
+		}
+
+		c = toupper(c) - HU_FONTSTART;
+		if (c < 0 || c>= HU_FONTSIZE)
+		{
+			cx += 4;
+			continue;
+		}
+
+		w = b_font[c]->width();
+		if (cx+w > width)
+			break;
+
+		DrawWrapper (drawer, b_font[c], cx, cy);
+		cx+=w;
+	}
+}
+
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
 {
 	int 		w;
@@ -481,13 +559,90 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 	}
 }
 
+
+void DCanvas::LargeTextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
+{
+	int 		w;
+	const byte *ch;
+	int 		c;
+	int 		cx;
+	int 		cy;
+	int			boldcolor;
+
+	if (normalcolor > NUM_TEXT_COLORS)
+		normalcolor = CR_RED;
+	boldcolor = normalcolor ? normalcolor - 1 : NUM_TEXT_COLORS - 1;
+
+	V_ColorMap = Ranges + normalcolor * 256;
+
+	ch = string;
+	cx = x;
+	cy = y;
+
+	while (1)
+	{
+		c = *ch++;
+		if (!c)
+			break;
+
+		if (c == 0x8a)
+		{
+			int newcolor = toupper(*ch++);
+
+			if (newcolor == 0)
+			{
+				return;
+			}
+			else if (newcolor == '-')
+			{
+				newcolor = normalcolor;
+			}
+			else if (newcolor >= 'A' && newcolor < 'A' + NUM_TEXT_COLORS)
+			{
+				newcolor -= 'A';
+			}
+			else if (newcolor == '+')
+			{
+				newcolor = boldcolor;
+			}
+			else
+			{
+				continue;
+			}
+			V_ColorMap = Ranges + newcolor * 256;
+			continue;
+		}
+
+		if (c == '\n')
+		{
+			cx = x;
+			cy += 18 * CleanYfac;
+			continue;
+		}
+
+		c = toupper(c) - HU_FONTSTART;
+		if (c < 0 || c>= HU_FONTSIZE)
+		{
+			cx += 4 * CleanXfac;
+			continue;
+		}
+
+		w = (b_font[c]->width() - 1) * CleanXfac;
+		if (cx+w > width)
+			break;
+
+		DrawCNMWrapper (drawer, b_font[c], cx, cy);
+		cx+=w;
+	}
+}
+
 //
 // Find string width from hu_font chars
 //
 int V_StringWidth (const byte *string)
 {
 	int w = 0, c;
-	
+
 	if(!string)
 		return 0;
 
@@ -509,6 +664,38 @@ int V_StringWidth (const byte *string)
 			else
 			{
 				w += hu_font[c]->width();
+			}
+		}
+	}
+
+	return w;
+}
+
+int V_LargeStringWidth (const byte *string)
+{
+	int w = 0, c;
+
+	if(!string)
+		return 0;
+
+	while (*string)
+	{
+		if (*string == 0x8a)
+		{
+			if (*(++string))
+				string++;
+			continue;
+		}
+		else
+		{
+			c = toupper((*string++) & 0x7f) - HU_FONTSTART;
+			if (c < 0 || c >= HU_FONTSIZE)
+			{
+				w += 4;
+			}
+			else
+			{
+				w += b_font[c]->width();
 			}
 		}
 	}
