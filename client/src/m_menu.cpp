@@ -247,7 +247,7 @@ oldmenuitem_t HereticMainMenu[]=
 	{1,"",M_Options,'O'},	// [RH] Moved
     {1,"",M_HtcGameFiles,'G'},
     {1,"",M_ReadThis,'I'},
-	{1,"",M_QuitDOOM,'Q'}
+	{1,"",M_QuitHERETIC,'Q'}
 };
 
 
@@ -2092,8 +2092,8 @@ void M_Init (void)
     // [Russell] - Set this beforehand, because when you switch wads
     // (ie from doom to doom2 back to doom), you will have less menu items
     {
-        MainDef.numitems = (gamemode == registered_heretic ? htc_main_end : d1_main_end);
-        MainDef.menuitems = (gamemode == registered_heretic ? HereticMainMenu : DoomMainMenu);
+        MainDef.numitems = d1_main_end;
+        MainDef.menuitems = DoomMainMenu;
         MainDef.routine = M_DrawMainMenu,
         MainDef.lastOn = 0;
         MainDef.x = 97;
@@ -2118,6 +2118,13 @@ void M_Init (void)
         MainDef.numitems = d2_main_end;
         MainDef.menuitems = Doom2MainMenu;
 
+        MainDef.y += 8;
+    }
+    else if (gamemode == registered_heretic)
+    {
+    	// Heretic changes stuff
+		MainDef.numitems = htc_main_end;
+        MainDef.menuitems = HereticMainMenu;
         MainDef.y += 8;
     }
 
