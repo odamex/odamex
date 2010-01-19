@@ -916,8 +916,10 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 			wadfiles.push_back(file);
 		else
 		{
-			Printf (PRINT_HIGH, "could not find WAD: %s\n", wadnames[i].c_str());
-			fails.push_back(i);
+			if (wadnames[i] != "") {
+				Printf (PRINT_HIGH, "could not find WAD: %s\n", wadnames[i].c_str());
+				fails.push_back(i);
+			}
 		}
 	}
 
@@ -975,10 +977,6 @@ void D_DoomMain (void)
 	M_LoadDefaults ();			// load before initing other systems
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
-
-	//D_AddDefWads();
-	//SV_InitMultipleFiles (wadfiles);
-	//wadhashes = W_InitMultipleFiles (wadfiles);
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks ();
@@ -1042,15 +1040,18 @@ void D_DoomMain (void)
 
 	// Use wads mentioned on the commandline to start with
 	std::vector<std::string> start_wads;
-
 	std::string custwad;
-	const char *iwadparm = Args.CheckValue ("-iwad");
-	if (iwadparm)
+
+	const char *iwad = Args.CheckValue("-iwad");
+	if(!iwad)
+		custwad = "";
+	else
 	{
-		custwad = iwadparm;
+		custwad = iwad;
 		FixPathSeparator (custwad);
-		start_wads.push_back(custwad);
 	}
+
+	start_wads.push_back(custwad);
 
 	DArgs files = Args.GatherFiles ("-file", ".wad", true);
 	if (files.NumArgs() > 0)
@@ -1063,6 +1064,7 @@ void D_DoomMain (void)
 	}
 
 	D_DoomWadReboot(start_wads);
+
 
 	// [RH] Now that all game subsystems have been initialized,
 	// do all commands on the command line other than +set

@@ -257,8 +257,8 @@ oldmenuitem_t HereticMainMenu[]=
 
 oldmenuitem_t HereticGameFilesMenu[]=
 {
-	{1,"",M_LoadGame,'l'},
-	{1,"",M_SaveGame,'2'}
+	{1,"Load Game",M_LoadGame,'l'},
+	{1,"Save Game",M_SaveGame,'2'}
 };
 
 // Default used is the Doom Menu
@@ -305,11 +305,11 @@ enum hereticepisodes_t
 
 oldmenuitem_t HereticEpisodeMenu[]=
 {
-	{1,"", M_Episode,'k'},
-	{1,"", M_Episode,'t'},
-	{1,"", M_Episode,'i'},
-	{1,"", M_Episode,'t'},
-	{1,"", M_Episode,'t'}
+	{1,"CITY OF THE DAMNED",	M_Episode,'k'},
+	{1,"HELL'S MAW",			M_Episode,'t'},
+	{1,"THE DOME OF D'SPARIL",	M_Episode,'i'},
+	{1,"THE OSSUARY",			M_Episode,'t'},
+	{1,"THE STAGNANT DEMESNE",	M_Episode,'t'}
 };
 
 oldmenu_t EpiDef =
@@ -345,11 +345,11 @@ oldmenuitem_t DoomNewGameMenu[]=
 
 oldmenuitem_t HereticNewGameMenu[]=
 {
-    {1, "",	M_ChooseSkill, 't'},
-    {1, "",	M_ChooseSkill, 'y'},
-    {1, "",	M_ChooseSkill, 'b'},
-    {1, "",	M_ChooseSkill, 'h'},
-    {1, "",	M_ChooseSkill, 'b'}
+    {1, "THOU NEEDETH A WET-NURSE",	M_ChooseSkill, 't'},
+    {1, "YELLOWBELLIES-R-US",	M_ChooseSkill, 'y'},
+    {1, "BRINGEST THEM ONETH",	M_ChooseSkill, 'b'},
+    {1, "THOU ART A SMITE-MEISTER",	M_ChooseSkill, 'h'},
+    {1, "BLACK PLAGUE POSSESSES THEE",	M_ChooseSkill, 'b'}
 };
 
 oldmenu_t NewDef =
@@ -1009,8 +1009,8 @@ void M_NewGame(int choice)
 			EpiDef.numitems = htc_ep_end;
 			EpiDef.menuitems = HereticEpisodeMenu;
 			EpiDef.routine = NULL;
-			EpiDef.x = 64;
-			EpiDef.y = 48;
+			EpiDef.x = 80;
+			EpiDef.y = 30;
 		}
 		else if (gameinfo.flags & GI_MENUHACK_RETAIL)
 			EpiDef.numitems = d1_ep_end;
@@ -1075,6 +1075,8 @@ void M_Episode (int choice)
 	if (gamemode == registered_heretic) {
 		NewDef.menuitems = HereticNewGameMenu;
 		NewDef.routine = NULL;
+		NewDef.x = 38;
+		NewDef.y = 30;
 	}
 
 	M_SetupNextMenu(&NewDef);
