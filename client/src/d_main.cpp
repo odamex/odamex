@@ -472,6 +472,9 @@ void D_PageDrawer (void)
 	{
 		page->Blit (0, 0, page->width, page->height,
 			screen, 0, 0, screen->width, screen->height);
+
+		if (gamemode == registered_heretic && demosequence == 1)
+			screen->DrawPatchIndirect((patch_t *)W_CacheLumpName("ADVISOR",PU_CACHE),4,160);
 	}
 	else
 	{

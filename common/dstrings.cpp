@@ -64,7 +64,7 @@ gamestring_t Strings[] = {
 	{ str_notchanged, "D_DEVSTR", "Useless mode ON.\n", NULL },
 	{ str_notchanged, "PRESSKEY", "press a key.", NULL },
 	{ str_notchanged, "PRESSYN", "press y or n.", NULL },
-	{ str_notchanged, "QUITMSG", "are you sure you want to\nquit?", NULL },
+	{ str_notchanged, "QUITMSG", "are you sure you want to quit?", NULL },
 	{ str_notchanged, "LOADNET", "you can't do load while in a net game!\n\npress a key.", NULL },
 	{ str_notchanged, "QLOADNET", "you can't quickload during a netgame!\n\npress a key.", NULL },
 	{ str_notchanged, "QSAVESPOT", "you haven't picked a quicksave slot yet!\n\npress a key.", NULL },

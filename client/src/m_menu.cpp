@@ -250,6 +250,11 @@ oldmenuitem_t HereticMainMenu[]=
 	{1,"",M_QuitHERETIC,'Q'}
 };
 
+oldmenuitem_t HereticGameFilesMenu[]=
+{
+	{1,"",M_LoadGame,'l'},
+	{1,"",M_SaveGame,'2'}
+};
 
 // Default used is the Doom Menu
 oldmenu_t MainDef =
@@ -266,16 +271,16 @@ oldmenu_t MainDef =
 //
 // EPISODE SELECT
 //
-enum episodes_t
+enum doomepisodes_t
 {
-	ep1,
-	ep2,
-	ep3,
-	ep4,
-	ep_end
-} episodes_e;
+	d1_ep1,
+	d1_ep2,
+	d1_ep3,
+	d1_ep4,
+	d1_ep_end
+} doomepisodes_e;
 
-oldmenuitem_t EpisodeMenu[]=
+oldmenuitem_t DoomEpisodeMenu[]=
 {
 	{1,"M_EPI1", M_Episode,'k'},
 	{1,"M_EPI2", M_Episode,'t'},
@@ -283,13 +288,32 @@ oldmenuitem_t EpisodeMenu[]=
 	{1,"M_EPI4", M_Episode,'t'}
 };
 
+enum hereticepisodes_t
+{
+	htc_ep1,
+	htc_ep2,
+	htc_ep3,
+	htc_ep4,
+	htc_ep5,
+	htc_ep_end
+} hereticepisodes_e;
+
+oldmenuitem_t HereticEpisodeMenu[]=
+{
+	{1,"", M_Episode,'k'},
+	{1,"", M_Episode,'t'},
+	{1,"", M_Episode,'i'},
+	{1,"", M_Episode,'t'},
+	{1,"", M_Episode,'t'}
+};
+
 oldmenu_t EpiDef =
 {
-	ep4,	 			// # of menu items
-	EpisodeMenu,		// oldmenuitem_t ->
+	d1_ep4,	 			// # of menu items
+	DoomEpisodeMenu,	// oldmenuitem_t ->
 	M_DrawEpisode,		// drawing routine ->
 	48,63,				// x,y
-	ep1 				// lastOn
+	d1_ep1 				// lastOn
 };
 
 //
@@ -305,23 +329,33 @@ enum newgame_t
 	newg_end
 } newgame_e;
 
-oldmenuitem_t NewGameMenu[]=
+oldmenuitem_t DoomNewGameMenu[]=
 {
-	{1,"M_JKILL",		M_ChooseSkill, 'i'},
-	{1,"M_ROUGH",		M_ChooseSkill, 'h'},
-	{1,"M_HURT",		M_ChooseSkill, 'h'},
-	{1,"M_ULTRA",		M_ChooseSkill, 'u'},
-	{1,"M_NMARE",		M_ChooseSkill, 'n'}
+	{1,"M_JKILL",	M_ChooseSkill, 'i'},
+	{1,"M_ROUGH",	M_ChooseSkill, 'h'},
+	{1,"M_HURT",	M_ChooseSkill, 'h'},
+	{1,"M_ULTRA",	M_ChooseSkill, 'u'},
+	{1,"M_NMARE",	M_ChooseSkill, 'n'}
+};
+
+oldmenuitem_t HereticNewGameMenu[]=
+{
+    {1, "",	M_ChooseSkill, 't'},
+    {1, "",	M_ChooseSkill, 'y'},
+    {1, "",	M_ChooseSkill, 'b'},
+    {1, "",	M_ChooseSkill, 'h'},
+    {1, "",	M_ChooseSkill, 'b'}
 };
 
 oldmenu_t NewDef =
 {
 	newg_end,			// # of menu items
-	NewGameMenu,		// oldmenuitem_t ->
+	DoomNewGameMenu,		// oldmenuitem_t ->
 	M_DrawNewGame,		// drawing routine ->
 	48,63,				// x,y
 	hurtme				// lastOn
 };
+
 
 //
 // [RH] Player Setup Menu
@@ -936,7 +970,10 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu (void)
 {
-	screen->DrawPatchClean (W_CachePatch((gamemode == registered_heretic ? "M_HTIC":"M_DOOM")), 94, 2);
+	const char *titlePatch;
+
+	titlePatch = (gamemode == registered_heretic ? "M_HTIC":"M_DOOM");
+	screen->DrawPatchClean (W_CachePatch(titlePatch), 94, 2);
 }
 
 void M_DrawNewGame(void)
@@ -953,21 +990,24 @@ void M_NewGame(int choice)
 		return;
 	}
 */
-	if (gameinfo.flags & GI_MAPxx)
+	if (gameinfo.flags & GI_MAPxx || gamemode == retail_chex)	// [ML] Don't show the episode selection in chex mode
 		M_SetupNextMenu(&NewDef);
-	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
-		M_SetupNextMenu(&NewDef);
-	else if (gameinfo.flags & GI_MENUHACK_RETAIL)
-	{
-	    EpiDef.numitems = ep_end;
-	    M_SetupNextMenu(&EpiDef);
-	}
 	else
 	{
-		EpiDef.numitems = ep4;
+		if (gamemode == registered_heretic) {
+			EpiDef.numitems = htc_ep_end;
+			EpiDef.menuitems = HereticEpisodeMenu;
+			EpiDef.routine = NULL;
+			EpiDef.x = 64;
+			EpiDef.y = 48;
+		}
+		else if (gameinfo.flags & GI_MENUHACK_RETAIL)
+			EpiDef.numitems = d1_ep_end;
+		else
+			EpiDef.numitems = d1_ep4;
+
 		M_SetupNextMenu(&EpiDef);
 	}
-
 }
 
 
@@ -1021,6 +1061,11 @@ void M_Episode (int choice)
 	}
 
 	epi = choice;
+	if (gamemode == registered_heretic) {
+		NewDef.menuitems = HereticNewGameMenu;
+		NewDef.routine = NULL;
+	}
+
 	M_SetupNextMenu(&NewDef);
 }
 
@@ -1130,7 +1175,7 @@ void M_QuitDOOM (int choice)
 
 void M_QuitHERETIC (int choice)
 {
-	sprintf(endstring,"%s\n\n%s", endmsg[0], DOSY );
+	sprintf(endstring,"%s\n\n", endmsg[0] );
 	M_StartMessage(endstring,M_QuitResponse,true);
 }
 
