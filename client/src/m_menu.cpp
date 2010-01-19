@@ -106,6 +106,8 @@ int					MenuStackDepth;
 
 short				itemOn; 			// menu item skull is on
 short				skullAnimCounter;	// skull animation counter
+static int			SkullBaseLump;
+static int			MenuTime;			// Ticker for Heretic skulls
 short				whichSkull; 		// which skull to draw
 bool				drawSkull;			// [RH] don't always draw skull
 
@@ -973,8 +975,14 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu (void)
 {
-	if (gamemode == registered_heretic)
+	int frame;
+
+	if (gamemode == registered_heretic) {
+		frame = (MenuTime / 3) % 18;
 		screen->DrawPatchClean (W_CachePatch("M_HTIC"), 88, 0);
+		screen->DrawPatchClean ((patch_t *)W_CacheLumpNum(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
+		screen->DrawPatchClean ((patch_t *)W_CacheLumpNum(SkullBaseLump + frame, PU_CACHE), 232, 10);
+	}
 	else
 		screen->DrawPatchClean (W_CachePatch("M_DOOM"), 94, 2);
 }
@@ -1968,6 +1976,7 @@ void M_StartControlPanel (void)
 	drawSkull = true;
 	MenuStackDepth = 0;
 	menuactive = 1;
+	MenuTime = 0;
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
@@ -2025,7 +2034,7 @@ void M_Drawer (void)
 				if (currentMenu->menuitems[i].name[0]) {
 					if (gamemode == registered_heretic)
 					{
-						screen->DrawTextLargeClean(0, x, y, currentMenu->menuitems[i].name);
+						screen->DrawTextLargeClean(0, x*2, y*2, currentMenu->menuitems[i].name);
 						y += HTCLINEHEIGHT;
 					}
 					else
@@ -2131,6 +2140,7 @@ void M_Ticker (void)
 
 		M_PlayerSetupTicker ();
 	}
+	MenuTime++;
 }
 
 
@@ -2158,6 +2168,8 @@ void M_Init (void)
 	currentMenu = &MainDef;
 	OptionsActive = false;
 	menuactive = 0;
+	MenuTime = 0;
+	SkullBaseLump = (gamemode == registered_heretic ? W_GetNumForName("M_SKL00") : 0);
 	itemOn = currentMenu->lastOn;
 	whichSkull = 0;
 	skullAnimCounter = 10;

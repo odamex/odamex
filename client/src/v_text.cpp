@@ -616,14 +616,14 @@ void DCanvas::LargeTextSWrapper (EWrapperCode drawer, int normalcolor, int x, in
 		if (c == '\n')
 		{
 			cx = x;
-			cy += 18 * CleanYfac;
+			cy += 20 * CleanYfac;
 			continue;
 		}
 
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c>= HU_FONTSIZE)
 		{
-			cx += 4 * CleanXfac;
+			cx += 8 * CleanXfac;
 			continue;
 		}
 

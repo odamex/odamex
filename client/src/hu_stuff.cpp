@@ -69,7 +69,7 @@ void HU_Drawer (void);
 BOOL HU_Responder (event_t *ev);
 
 patch_t *hu_font[HU_FONTSIZE];
-patch_t *b_font[HU_FONTSIZE-1];
+patch_t *b_font[58];
 
 void HU_DrawScores (player_t *plyr);
 void HU_ConsoleScores (player_t *plyr);
