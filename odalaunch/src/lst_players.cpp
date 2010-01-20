@@ -23,6 +23,7 @@
 #include "lst_players.h"
 
 #include <wx/fileconf.h>
+#include <wx/xrc/xmlres.h>
 
 IMPLEMENT_DYNAMIC_CLASS(LstOdaPlayerList, wxAdvancedListCtrl)
 
@@ -39,6 +40,10 @@ typedef enum
     
     ,max_playerlist_fields
 } playerlist_fields_t;
+
+static int ImageList_Spectator = -1;
+static int ImageList_RedBullet = -1;
+static int ImageList_BlueBullet = -1;
 
 void LstOdaPlayerList::SetupPlayerListColumns()
 {
@@ -64,7 +69,9 @@ void LstOdaPlayerList::SetupPlayerListColumns()
 
     SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
     
-    AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
+    ImageList_Spectator = AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
+    ImageList_RedBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")).ConvertToImage());
+    ImageList_BlueBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_blue")).ConvertToImage());
 }
 
 LstOdaPlayerList::~LstOdaPlayerList() 
@@ -99,36 +106,19 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
                            80);
     }
     
-    wxUint8 PlayerCount = s.Info.Players.size();
+    size_t PlayerCount = s.Info.Players.size();
     
     if (!PlayerCount)
         return;
-        
-    for (wxUint8 i = 0; i < PlayerCount; ++i)
+    
+    for (size_t i = 0; i < PlayerCount; ++i)
     {
         wxListItem li;
         
-        li.SetColumn(playerlist_field_name);
+        li.m_itemId = ALCInsertItem(s.Info.Players[i].Name);
         
-        li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
-
-        // We don't want the sort arrow.
-        SetColumnImage(li, -1);
-        
-        if (s.Info.Players[i].Spectator)
-        {
-            li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
-            
-            li.SetText(s.Info.Players[i].Name);
-            SetColumnImage(li, s.Info.Players[i].Spectator ? 0 : -1);
-        }
-        else
-        {
-            li.SetText(s.Info.Players[i].Name);
-        }
-        
-        li.SetId(ALCInsertItem(li));
-        
+        li.SetMask(wxLIST_MASK_TEXT);
+               
         li.SetColumn(playerlist_field_ping);
         li.SetMask(wxLIST_MASK_TEXT);
 
@@ -173,27 +163,42 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
             switch(s.Info.Players[i].Team)
 			{
                 case 0:
+                {
                     li.SetTextColour(*wxBLUE);      
                     teamstr = _T("Blue");
-//                    teamscore = s.Info.BlueScore;
-                    break;
+                    SetItemColumnImage(li.m_itemId, playerlist_field_team,
+                        ImageList_BlueBullet);
+                    teamscore = s.Info.Teams[0].Score;
+                }
+                break;
+				
 				case 1:
+                {
                     li.SetTextColour(*wxRED);
                     teamstr = _T("Red");
-//					teamscore = s.Info.RedScore;
-					break;
+                    SetItemColumnImage(li.m_itemId, playerlist_field_team,
+                        ImageList_RedBullet);
+					teamscore = s.Info.Teams[1].Score;
+                }
+                break;
+				
 				case 2:
+                {
                     // no gold in 'dem mountains boy.
                     li.SetTextColour(wxColor(255,200,40));
-//                    teamscore = s.Info.GoldScore;
-                    teamstr = _T("Gold");
-					break;
+                    teamstr = wxT("Gold");
+					teamscore = s.Info.Teams[2].Score;
+                }
+                break;
+				
 				default:
+                {
                     li.SetTextColour(*wxBLACK);
-                    teamstr = _T("Unknown");
+                    teamstr = wxT("Unknown");
                     teamscore = 0;
                     scorelimit = 0;
-					break;
+                }
+                break;
 			}
 
             li.SetText(teamstr);
@@ -209,6 +214,13 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
             SetItem(li);
         }
         
-        Sort();
+        // Icons
+        // -----
+        
+        // Magnifying glass icon for spectating players
+        SetItemColumnImage(li.m_itemId, playerlist_field_name, 
+            s.Info.Players[i].Spectator ? ImageList_Spectator : -1);
     }
+        
+    Sort();
 }

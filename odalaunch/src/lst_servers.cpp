@@ -23,6 +23,7 @@
 #include "lst_servers.h"
 
 #include <wx/fileconf.h>
+#include <wx/xrc/xmlres.h>
 
 IMPLEMENT_DYNAMIC_CLASS(LstOdaServerList, wxAdvancedListCtrl)
 
@@ -205,6 +206,11 @@ static const char *padlock_xpm[] =
 "_!X | r q q x w w w w w p } ] _!"
 };
 
+static int ImageList_Padlock = -1;
+static int ImageList_PingGreen = -1;
+static int ImageList_PingOrange = -1;
+static int ImageList_PingRed = -1;
+
 typedef enum
 {
     serverlist_field_name
@@ -279,7 +285,11 @@ void LstOdaServerList::SetupServerListColumns()
         WidthAddress);
 	
 	// Passworded server icon
-    AddImageSmall(padlock_xpm);
+    ImageList_Padlock = AddImageSmall(padlock_xpm);
+    ImageList_PingGreen = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_green")).ConvertToImage());
+    ImageList_PingOrange = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_orange")).ConvertToImage());
+    ImageList_PingRed = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")).ConvertToImage());
+
 }
 
 LstOdaServerList::~LstOdaServerList()
@@ -319,69 +329,53 @@ void LstOdaServerList::AddServerToList(const Server &s,
     wxInt32 i = 0;
     wxListItem li;
     
-    li.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
+    wxUint32 Ping = 0;
+    wxString GameType = wxT("");
+    size_t WadCount = 0;
     
-    // We don't want the sort arrow
-    SetColumnImage(li, -1);
-    
-    // are we adding a new item?
-    if (insert)    
-    {
-        li.SetColumn(serverlist_field_name);
+    li.m_mask = wxLIST_MASK_TEXT;
 
-        SetColumnImage(li, (s.Info.PasswordHash.Length() ? 0 : -1));
-        li.SetText(s.Info.Name);
-        
-        li.SetId(ALCInsertItem(li));
+    if (insert)
+    {
+        li.m_itemId = ALCInsertItem();
     }
     else
     {
-        li.SetId(index);
-        li.SetColumn(serverlist_field_name);
-
-        SetColumnImage(li, (s.Info.PasswordHash.Length() ? 0 : -1));
-        li.SetText(s.Info.Name);
-        
-        SetItem(li);
+        li.m_itemId = index;
     }
-    
-    // We don't want the lock on every column
-    SetColumnImage(li, -1);
+       
+    // Address column
+    li.m_col = serverlist_field_address;    
+    li.m_text = s.GetAddress();
 
-    li.SetMask(wxLIST_MASK_TEXT); 
-    
-    li.SetColumn(serverlist_field_address);
-    li.SetText(s.GetAddress());
-    
     SetItem(li);
 
-    // We break out here, so atleast we have an IP address to go by
-    // TODO: Rearrange the code above so we just add the ip address and return 
-    // earlier
+    // break here so atleast we have an ip address to go by
     if (s.GotResponse() == false)
         return;
 
-    wxUint32 Ping = s.GetPing();
+    // Server name column
+    li.m_col = serverlist_field_name;
+    li.m_text = s.Info.Name;
+       
+    SetItem(li);
+      
+    // Ping column
+    Ping = s.GetPing();
 
-    li.SetColumn(serverlist_field_ping);
-    li.SetText(wxString::Format(_T("%u"), Ping));
+    li.m_col = serverlist_field_ping;
+    li.m_text = wxString::Format(_T("%u"), Ping);
 
-    // TODO: Add launcher settings to change these ping thresholds
-    if (Ping < 100)
-        li.SetTextColour(wxColour(0, 192, 0));
-    else if (Ping < 200)
-        li.SetTextColour(wxColour(255, 180, 1));
-    else
-        li.SetTextColour(wxColour(192, 0, 0));
-    
     SetItem(li);
 
-    li.SetColumn(serverlist_field_players);
-    li.SetText(wxString::Format(_T("%d/%d"),s.Info.Players.size(),s.Info.MaxPlayers));
+    // Number of players, Maximum players column
+    li.m_col = serverlist_field_players;
+    li.m_text = wxString::Format(_T("%d/%d"),s.Info.Players.size(),s.Info.MaxPlayers);
     
     SetItem(li); 
     
-    wxUint8 WadCount = (wxUint8)s.Info.Wads.size();
+    // WAD files column
+    WadCount = s.Info.Wads.size();
     
     // build a list of pwads
     if (WadCount)
@@ -396,25 +390,28 @@ void LstOdaServerList::AddServerToList(const Server &s,
             wadlist += wxString::Format(_T("%s "), pwad.c_str());
         }
             
-        li.SetColumn(serverlist_field_wads);
-        li.SetText(wadlist);
+        li.m_col = serverlist_field_wads;
+        li.m_text = wadlist;
     
         SetItem(li);
     }
 
-    li.SetColumn(serverlist_field_map);
-    li.SetText(s.Info.CurrentMap.Upper());
+    // Map name column
+    li.m_col = serverlist_field_map;
+    li.m_text = s.Info.CurrentMap.Upper();
     
     SetItem(li);
-    
-    // what game type do we like to play
-    wxString GameType = _T("");
-
+       
+    // Game type column
     switch (s.Info.GameType)
     {
         case GT_Cooperative:
         {
-            GameType = wxT("Cooperative");
+            // Detect a single player server
+            if (s.Info.MaxPlayers > 1)
+                GameType = wxT("Cooperative");
+            else
+                GameType = wxT("Single Player");
         }
         break;
         
@@ -443,21 +440,44 @@ void LstOdaServerList::AddServerToList(const Server &s,
         break;
     }
     
-    li.SetColumn(serverlist_field_type);
-    li.SetText(GameType);
+    li.m_col = serverlist_field_type;
+    li.m_text = GameType;
     
     SetItem(li);
 
-    // trim off the .wad
+    // IWAD column
     if (WadCount)
     {
         wxString Iwad = s.Info.Wads[1].Name.Mid(0, s.Info.Wads[1].Name.Find('.'));
         
-        li.SetColumn(serverlist_field_iwad);
-        li.SetText(Iwad);
+        li.m_col = serverlist_field_iwad;
+        li.m_text = Iwad;
     }
     
     SetItem(li);
     
-    Sort();
+    // Icons
+    // -----
+    
+    // Padlock icon for passworded servers
+    SetItemColumnImage(li.m_itemId, serverlist_field_name, 
+        (s.Info.PasswordHash.Length() ? ImageList_Padlock : -1));
+    
+    // Coloured bullets for ping quality
+    // TODO: Add launcher settings to change these ping thresholds
+    if (Ping < 100)
+    {
+        SetItemColumnImage(li.m_itemId, serverlist_field_ping, 
+            ImageList_PingGreen);
+    }
+    else if (Ping < 200)
+    {
+        SetItemColumnImage(li.m_itemId, serverlist_field_ping, 
+            ImageList_PingOrange);
+    }
+    else
+    {
+        SetItemColumnImage(li.m_itemId, serverlist_field_ping, 
+            ImageList_PingRed);
+    }
 }

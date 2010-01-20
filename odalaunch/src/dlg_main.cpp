@@ -348,19 +348,17 @@ void *dlgMain::Entry()
             }
         }
         
-        // Clean up any remaining threads
-        /*size_t i = threadVector.size() - 1;
-            
-        while (threadVector.size() != 0)
-        {
-            if (threadVector[i]->IsRunning() == true)
-                threadVector[i]->Wait();
+        // All servers queried
+        mtrs_struct_t *Result = new mtrs_struct_t;
 
-            delete threadVector[i];
-            threadVector.erase(threadVector.begin() + i);
+        Result->Signal = mtrs_servers_querydone;                
+        Result->Index = -1;
+        Result->ServerListIndex = -1;
                 
-            --i;
-        }*/
+        wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
+        event.SetClientData(Result);
+                    
+        wxPostEvent(this, event);      
     }
         
     // User requested single server to be refreshed
@@ -410,14 +408,29 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
     switch (Result->Signal)
     {
         case mtrs_master_timeout:
-            if (!MServer->GetServerCount())           
+        {
+            // We use multiple masters you see, if one fails and the others are
+            // working, atleast we can get some useful data
+            if (!MServer->GetServerCount())
+            {
+                wxMessageBox(wxT("No master servers could be contacted"), 
+                    wxT("Error"), wxOK | wxICON_ERROR);
+                
                 break;
+            }
+        }
+        
         case mtrs_master_success:
             break;
         case mtrs_server_noservers:
-            wxMessageBox(_T("There are no servers to query"), _T("Error"), wxOK | wxICON_ERROR);
-            break;
+        {
+            wxMessageBox(wxT("There are no servers to query"), 
+                wxT("Error"), wxOK | wxICON_ERROR);
+        }
+        break;
+        
         case mtrs_server_singletimeout:
+        {
             i = FindServerInList(QServer[Result->Index].GetAddress());
 
             m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
@@ -429,9 +442,11 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
                 m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->Index);
             else
                 m_LstCtrlServers->AddServerToList(QServer[Result->Index], i, false);
-            
-            break;
+        }
+        break;
+        
         case mtrs_server_singlesuccess:           
+        {
             m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->ServerListIndex, false);
             
             m_LstCtrlPlayers->AddPlayersToList(QServer[Result->Index]);
@@ -439,8 +454,16 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[Result->Index]);
             
             TotalPlayers += QServer[Result->Index].Info.Players.size();
-           
-            break;
+        }
+        break;
+
+        case mtrs_servers_querydone:
+        {            
+            // Sort server list after everything has been queried
+            m_LstCtrlServers->Sort();
+        }
+        break;
+        
         default:
             break;
     }

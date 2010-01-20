@@ -165,6 +165,8 @@ class dlgMain : public wxFrame, wxThreadHelper
             ,mtrs_server_singletimeout
             
             ,mtrs_server_noservers // There are no servers to query!
+
+            ,mtrs_servers_querydone // Query of all servers complete
             
             ,mtrs_max
         } mtrs_t;

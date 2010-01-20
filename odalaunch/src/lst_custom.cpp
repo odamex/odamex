@@ -31,13 +31,9 @@ BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListCtrl)
      EVT_WINDOW_CREATE(wxAdvancedListCtrl::OnCreateControl)
 END_EVENT_TABLE()
 
-// this is so we can jump over the sort arrow images
-enum
-{
-    LIST_SORT_ARROW_UP = 0
-    ,LIST_SORT_ARROW_DOWN
-    ,FIRST_IMAGE
-};
+// Sort arrow
+static int ImageList_SortArrowUp = -1;
+static int ImageList_SortArrowDown = -1;
 
 // Sorting arrow XPM images
 static const char *SortArrowAscending[] =
@@ -100,32 +96,25 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
 }
 
 // Add any additional bitmaps/icons to the internal image list
-void wxAdvancedListCtrl::AddImageSmall(wxImage Image)
+int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 {
     if (GetImageList(wxIMAGE_LIST_SMALL) == NULL)
     {
         // Art provider images are 16x15, WTF?! Kept for compatibility :'(
-        wxImageList *ImageList = new wxImageList(16, 15, true, FIRST_IMAGE);
+        wxImageList *ImageList = new wxImageList(16, 15, true);
         AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
         
         // Add our sort icons by default.
-        GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
-        GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowDescending));
+        ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
+        ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowDescending));
     }
     
     if (Image.IsOk())
     {
-        GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
+        return GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
     }
-}
-
-// Adjusts the index, so it jumps over the sort arrow images.
-void wxAdvancedListCtrl::SetColumnImage(wxListItem &li, wxInt32 ImageIndex)
-{
-    if (ImageIndex < -1)
-        ImageIndex = -1;
-
-    li.SetImage(((ImageIndex == -1) ? ImageIndex : FIRST_IMAGE + ImageIndex));
+    
+    return -1;
 }
 
 // [Russell] - These are 2 heavily modified routines of the javascript natural 
@@ -530,21 +519,18 @@ void wxAdvancedListCtrl::ColourList()
 }
 
 // Our variation of InsertItem, so we can do magical things!
-long wxAdvancedListCtrl::ALCInsertItem(wxListItem &info)
+long wxAdvancedListCtrl::ALCInsertItem(const wxString &Text)
 {
-    //Sort();
-
-    // TODO: We need to remember this item id, because the last item on the list
-    // does not get sorted, we can't move sort either, because then the return 
-    // index would be stale.
-    info.SetId(InsertItem(GetItemCount(), info.GetText()));
+    wxListItem ListItem;
+    
+    ListItem.m_itemId = InsertItem(GetItemCount(), Text, -1);
    
-    ColourListItem(info);
+    ColourListItem(ListItem.m_itemId);
 
-    SetItem(info);
+    SetItem(ListItem);
 
     // wxWidgets bug: Required for sorting colours correctly
-    SetItemTextColour(info.GetId(), GetTextColour());
+    SetItemTextColour(ListItem.m_itemId, GetTextColour());
 
-    return info.GetId();
+    return ListItem.m_itemId;
 }
