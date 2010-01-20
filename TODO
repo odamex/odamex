@@ -26,8 +26,6 @@ Launcher:
 * Replace our wxListCtrl derived class with wxDataViewCtrl, this will allow us
 to add features and fixes to the launcher alot easier without trying to hack 
 around the limitations that wxListCtrl has.
-* Clean up misc.cpp, alot of code pertaining to adding servers exists there.
-This can be done with item 1 if desired.
 * Finish off work on OdaGet.
 * Make the server replacement item in the custom servers dialog, this should
 allow a listed or dead server be replaced by the address specified in the custom
