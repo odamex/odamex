@@ -398,7 +398,7 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
     Socket.Read32(SvProtocolVersion);
 
     if ((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) || 
-        (VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
+        (VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
     {
         // Server is an older version
         return 0;

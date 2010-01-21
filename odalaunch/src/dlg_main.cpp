@@ -36,6 +36,8 @@
 #include <wx/imaglist.h>
 #include <wx/artprov.h>
 #include <wx/iconbndl.h>
+#include <wx/aboutdlg.h>
+#include <wx/generic/aboutdlgg.h>
 
 // Control ID assignments for events
 // application icon
@@ -94,22 +96,33 @@ END_EVENT_TABLE()
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
+    wxString Version;
+
+    // Loads the frame from the xml resource file
+	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain")); 
+    
+    // Sets the title of the application with a version string to boot
+    Version = wxString::Format(
+        wxT("The Odamex Launcher v%d.%d.%d - PV%d"), 
+        VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION), 
+        PROTOCOL_VERSION);
+    
+    SetLabel(Version);
+    
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 1;
     launchercfg_s.wad_paths = wxGetCwd();
     launchercfg_s.odamex_directory = wxGetCwd();
 
-	wxXmlResource::Get()->LoadFrame(this, parent, _T("dlgMain")); 
-  
     // Set up icons, this is a hack because wxwidgets does not have an xml
     // handler for wxIconBundle :(
     wxIconBundle IconBundle;
     
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon16x16x32")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon32x32x32")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon48x48x32")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon16x16x8")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(_T("icon32x32x8")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon16x16x32")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon32x32x32")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon48x48x32")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon16x16x8")));
+    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon32x32x8")));
     
     SetIcons(IconBundle);
     
@@ -184,8 +197,8 @@ void dlgMain::OnClose(wxCloseEvent &event)
     // Save GUI layout
     wxFileConfig ConfigInfo;
 
-    ConfigInfo.Write(_T("MainWindowWidth"), GetSize().GetWidth());
-    ConfigInfo.Write(_T("MainWindowHeight"), GetSize().GetHeight());
+    ConfigInfo.Write(wxT("MainWindowWidth"), GetSize().GetWidth());
+    ConfigInfo.Write(wxT("MainWindowHeight"), GetSize().GetHeight());
     
     event.Skip();
 }
@@ -538,15 +551,6 @@ void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
         OdaGet->Show();
 }
 
-// About information
-void dlgMain::OnAbout(wxCommandEvent& event)
-{
-    wxString strAbout = _T("Odamex Launcher 0.4.4 - "
-                            "Copyright 2009 The Odamex Team");
-    
-    wxMessageBox(strAbout, strAbout);
-}
-
 // Quick-Launch button click
 void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 {
@@ -847,6 +851,19 @@ wxInt32 dlgMain::FindServerInList(wxString Address)
     }
     
     return -1;
+}
+
+// About information
+void dlgMain::OnAbout(wxCommandEvent& event)
+{
+    wxAboutDialogInfo AboutDialogInfo;
+
+    AboutDialogInfo.SetName(GetLabel());
+    
+    AboutDialogInfo.AddDeveloper(wxT("The Odamex Team"));
+    AboutDialogInfo.SetWebSite(wxT("http://www.odamex.net"));
+        
+    wxAboutBox(AboutDialogInfo);
 }
 
 void dlgMain::OnOpenWebsite(wxCommandEvent &event)

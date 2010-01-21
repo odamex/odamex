@@ -3,7 +3,7 @@
 	<object class="wxFrame" name="dlgMain">
 		<style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
 		<size>845,505</size>
-		<title>Odamex Launcher</title>
+		<title>The Odamex Launcher</title>
 		<centered>1</centered>
 		<object class="wxMenuBar">
 			<label></label>

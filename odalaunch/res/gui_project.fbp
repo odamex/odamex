@@ -40,7 +40,7 @@
             <property name="size">845,505</property>
             <property name="style">wxDEFAULT_FRAME_STYLE</property>
             <property name="subclass"></property>
-            <property name="title">Odamex Launcher</property>
+            <property name="title">The Odamex Launcher</property>
             <property name="tooltip"></property>
             <property name="validator_data_type"></property>
             <property name="validator_style">wxFILTER_NONE</property>

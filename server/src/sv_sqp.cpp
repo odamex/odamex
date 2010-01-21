@@ -75,7 +75,7 @@ EXTERN_CVAR (website)
 EXTERN_CVAR (natport)
 
 #define TAG_ID 0xAD0
-#define PROTOCOL_VERSION 5
+#define PROTOCOL_VERSION 1
 
 /* 
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -287,7 +287,7 @@ static DWORD IntQrySendResponse(const WORD &TagId,
 
     // Override other packet types for older enquirer version response
     if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) || 
-        (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
+        (VERSIONMAJOR(EqVersion) <= VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
     {
         RePacketType = 2;
     }
