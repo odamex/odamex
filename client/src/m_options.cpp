@@ -171,7 +171,7 @@ static menuitem_t OptionItems[] =
 };
 
 menu_t OptionMenu = {
-	"M_OPTTTL",
+	"Options",
 	0,
 	STACKARRAY_LENGTH(OptionItems),
 	177,
@@ -213,7 +213,7 @@ static menuitem_t MouseItems[] =
 };
 
 menu_t MouseMenu = {
-    "M_MOUSET",
+    "Mouse Setup",
     0,
     STACKARRAY_LENGTH(MouseItems),
     177,
@@ -256,7 +256,7 @@ static menuitem_t ControlsItems[] = {
 };
 
 menu_t ControlsMenu = {
-	"M_CONTRO",
+	"Customize Controls",
 	1,
 	STACKARRAY_LENGTH(ControlsItems),
 	0,
@@ -374,7 +374,7 @@ static menuitem_t VideoItems[] = {
 };
 
 menu_t VideoMenu = {
-	"M_VIDEO",
+	"Display Options",
 	0,
 	STACKARRAY_LENGTH(VideoItems),
 	0,
@@ -429,7 +429,7 @@ static menuitem_t MessagesItems[] = {
 };
 
 menu_t MessagesMenu = {
-	"M_MESS",
+	"Messages",
 	0,
 	STACKARRAY_LENGTH(MessagesItems),
 	0,
@@ -494,7 +494,7 @@ static menuitem_t ModesItems[] = {
 #define VM_TESTLINE		16
 
 menu_t ModesMenu = {
-	"M_VIDMOD",
+	"Video Modes",
 	4,
 	STACKARRAY_LENGTH(ModesItems),
 	130,
@@ -722,7 +722,7 @@ void M_OptDrawer (void)
 	if (W_CheckNumForName(CurrentMenu->title) == -1)
 	{
 		// Try drawing it as text, maybe if this fails we just set a number for height and move on
-		screen->DrawTextLargeClean (0, 160-V_LargeStringWidth(CurrentMenu->title)/2, 10, CurrentMenu->title);
+		screen->DrawTextLargeClean (CR_RED, 160-V_LargeStringWidth(CurrentMenu->title)/2, 10, CurrentMenu->title);
 		theight = HTCLINEHEIGHT;
 	}
 	else

@@ -120,7 +120,7 @@ cvar_t *chat_macros[10] =
 //
 void HU_Init (void)
 {
-	int i, j, k, sub;
+	int i, j, k, sub,bsub;
 	char *tplate, *b_tplate,buffer[12],b_buffer[12];
 	bool hu_raven = false;
 
@@ -133,13 +133,15 @@ void HU_Init (void)
 	// Quick hack to handle the FONTA (and FONTB) of Heretic and Hexen
 	if (gamemode == registered_heretic) {
 		tplate = "FONTA%02u";
-		b_tplate = "FONTB%02u";
 		sub = HU_FONTSTART - 1;
 		hu_raven = true;
 	} else {
 		tplate = "STCFN%.3d";
 		sub = 0;
 	}
+
+	b_tplate = "FONTB%02u";
+	bsub = HU_FONTSTART - 1;
 
 	for (i = 0; i < HU_FONTSIZE; i++)
 	{
@@ -150,11 +152,11 @@ void HU_Init (void)
 			} else if (i == HU_FONTSIZE - 1) {
 				sub = sub + 3;
 			}
+		}
 
-			if (i < 58) {
-				sprintf (b_buffer, b_tplate, k++ - sub);
-				b_font[i] = W_CachePatch(b_buffer, PU_STATIC);
-			}
+		if (i < 58) {
+			sprintf (b_buffer, b_tplate, k++ - bsub);
+			b_font[i] = W_CachePatch(b_buffer, PU_STATIC);
 		}
 
 		sprintf (buffer, tplate, j++ - sub);
