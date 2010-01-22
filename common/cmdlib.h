@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -26,6 +26,7 @@
 #define __CMDLIB__
 
 #include <string>
+#include <algorithm>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS
@@ -55,7 +56,7 @@ void	FixPathSeparator (std::string &path);
 int		ParseHex (char *str);
 int 	ParseNum (char *str);
 BOOL	IsNum (char *str);		// [RH] added
-
+int		StdStringCompare(std::string string1, std::string string2, bool CaseInsensitive);
 char	*COM_Parse (char *data);
 
 extern	char	com_token[8192];
