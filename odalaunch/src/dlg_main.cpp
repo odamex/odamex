@@ -96,6 +96,8 @@ END_EVENT_TABLE()
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
+    wxFileConfig ConfigInfo;   
+    wxInt32 WindowWidth, WindowHeight;
     wxString Version;
 
     // Loads the frame from the xml resource file
@@ -108,6 +110,17 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
         PROTOCOL_VERSION);
     
     SetLabel(Version);
+    
+    // Sets the window size
+    ConfigInfo.Read(wxT("MainWindowWidth"), 
+                    &WindowWidth, 
+                    GetClientSize().GetWidth());
+                    
+    ConfigInfo.Read(wxT("MainWindowHeight"), 
+                    &WindowHeight, 
+                    GetClientSize().GetHeight());
+    
+    SetClientSize(WindowWidth, WindowHeight);
     
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 1;
@@ -197,8 +210,8 @@ void dlgMain::OnClose(wxCloseEvent &event)
     // Save GUI layout
     wxFileConfig ConfigInfo;
 
-    ConfigInfo.Write(wxT("MainWindowWidth"), GetSize().GetWidth());
-    ConfigInfo.Write(wxT("MainWindowHeight"), GetSize().GetHeight());
+    ConfigInfo.Write(wxT("MainWindowWidth"), GetClientSize().GetWidth());
+    ConfigInfo.Write(wxT("MainWindowHeight"), GetClientSize().GetHeight());
     
     event.Skip();
 }

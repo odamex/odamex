@@ -36,15 +36,10 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
 
-
-
 IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {   
-    wxFileConfig ConfigInfo;   
-    wxInt32 WindowWidth, WindowHeight;
-    
     if (InitializeSocketAPI() == false)
         return false;
     
@@ -57,17 +52,7 @@ bool Application::OnInit()
 
     // create main window, get size dimensions and show it
     MAIN_DIALOG = new dlgMain(0L);
-
-    ConfigInfo.Read(wxT("MainWindowWidth"), 
-                    &WindowWidth, 
-                    MAIN_DIALOG->GetSize().GetWidth());
-                    
-    ConfigInfo.Read(wxT("MainWindowHeight"), 
-                    &WindowHeight, 
-                    MAIN_DIALOG->GetSize().GetHeight());
-    
-    MAIN_DIALOG->SetSize(WindowWidth, WindowHeight);
-    
+   
     if (MAIN_DIALOG) 
         MAIN_DIALOG->Show();
         
