@@ -722,13 +722,13 @@ void M_OptDrawer (void)
 	if (W_CheckNumForName(CurrentMenu->title) == -1)
 	{
 		// Try drawing it as text, maybe if this fails we just set a number for height and move on
-		screen->DrawTextLargeClean (CR_RED, 160-V_LargeStringWidth(CurrentMenu->title)/2, 10, CurrentMenu->title);
-		theight = HTCLINEHEIGHT;
+		screen->DrawTextLargeClean (CR_RED, 140-V_LargeStringWidth(CurrentMenu->title)/2, 2, CurrentMenu->title);
+		theight = 8;
 	}
 	else
 	{
 		title = W_CachePatch (CurrentMenu->title);
-		screen->DrawPatchClean (title, 160-title->width()/2, 10);
+		screen->DrawPatchClean (title, 160-title->width()/2, 2);
 		theight = title->height();
 	}
 

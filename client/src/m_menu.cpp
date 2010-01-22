@@ -394,7 +394,7 @@ oldmenu_t PSetupDef = {
 	psetup_end,
 	PlayerSetupMenu,
 	M_PlayerSetupDrawer,
-	48,	47,
+	48,	32,
 	playername
 };
 
@@ -1245,18 +1245,21 @@ static void M_PlayerSetupTicker (void)
 
 static void M_PlayerSetupDrawer (void)
 {
+	int lheight = (gamemode == registered_heretic ? HTCLINEHEIGHT-4:LINEHEIGHT);
 	// Draw title
 	{
-		patch_t *patch = W_CachePatch ("M_PSTTL");
-
-		screen->DrawPatchClean (patch,
-			160 - (patch->width() >> 1),
-			PSetupDef.y - (patch->height() * 3));
+		char *title;
+		title = "Player Setup";
+		screen->DrawTextLargeClean (CR_RED, 140-V_LargeStringWidth(title)/2, 2, title);
 	}
 
 	// Draw player name box
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y, "Name");
-	M_DrawSaveLoadBorder (PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME+1);
+	if (gamemode == registered_heretic)
+		screen->DrawPatchClean(W_CachePatch("M_FSLOT"), PSetupDef.x + 48, PSetupDef.y-6);
+	else
+		M_DrawSaveLoadBorder (PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME+1);
+
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
 
 	// Draw player team box
@@ -1266,11 +1269,11 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw cursor for either of the above
 	if (genStringEnter)
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56, PSetupDef.y + ((saveSlot == 0) ? 0 : LINEHEIGHT), "_");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56, PSetupDef.y + ((saveSlot == 0) ? 0 : lheight), "_");
 
 	// Draw player character
 	{
-		int x = 320 - 88 - 32, y = PSetupDef.y + LINEHEIGHT*3 - 14;
+		int x = 320 - 88 - 32, y = PSetupDef.y + lheight*3 - 14;
 
 		x = (x-160)*CleanXfac+(screen->width>>1);
 		y = (y-100)*CleanYfac+(screen->height>>1);
@@ -1442,41 +1445,41 @@ static void M_PlayerSetupDrawer (void)
 		//V_ColorMap = translationtables + consoleplayer().id * 256;
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
-			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
+			320 - 52 - 32, PSetupDef.y + lheight*3 + 46);
 	}
 	screen->DrawPatchClean (W_CachePatch ("M_PBOX"),
-		320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
+		320 - 88 - 32 + 36, PSetupDef.y + lheight*3 + 22);
 
 	// Draw player color sliders
-	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Color");
+	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + lheight, "Color");
 
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Red");
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Green");
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Blue");
+	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + lheight*2, "Red");
+	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + lheight*3, "Green");
+	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + lheight*4, "Blue");
 
 	{
 		int x = V_StringWidth ("Green") + 8 + PSetupDef.x;
 		int color = V_GetColorFromString(NULL, cl_color.cstring());
 
-		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, RPART(color));
-		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, GPART(color));
-		M_DrawSlider (x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, BPART(color));
+		M_DrawSlider (x, PSetupDef.y + lheight*2, 0.0f, 255.0f, RPART(color));
+		M_DrawSlider (x, PSetupDef.y + lheight*3, 0.0f, 255.0f, GPART(color));
+		M_DrawSlider (x, PSetupDef.y + lheight*4, 0.0f, 255.0f, BPART(color));
 	}
 
 	// Draw team setting
 	{
 		team_t team = D_TeamByName(cl_team.cstring());
 		int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : team_names[team]);
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + lheight, "Prefered Team");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + lheight, team == TEAM_NONE ? "NONE" : team_names[team]);
 	}
 
 	// Draw gender setting
 	{
 		gender_t gender = D_GenderByName(cl_gender.cstring());
 		int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[gender]);
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + lheight*5, "Gender");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + lheight*5, genders[gender]);
 	}
 
 	// Draw skin setting
@@ -1484,8 +1487,8 @@ static void M_PlayerSetupDrawer (void)
 		if (gametype != GM_CTF) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
 		{
 			int x = V_StringWidth ("Skin") + 8 + PSetupDef.x;
-			screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Skin");
-			screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6, cl_skin.cstring());
+			screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + lheight*6, "Skin");
+			screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + lheight*6, cl_skin.cstring());
 		}
 	}
 
@@ -1494,8 +1497,8 @@ static void M_PlayerSetupDrawer (void)
 		int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
 		float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*7,
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + lheight*7, "Autoaim");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + lheight*7,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
