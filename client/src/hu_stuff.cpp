@@ -144,11 +144,11 @@ void HU_Init (void)
 	for (i = 0; i < HU_FONTSIZE; i++)
 	{
 		if (hu_raven) {
-			if (i > 58 && i < 62) {
+			if (i > 59 && i < 62) {
 				j++;
 				continue;
 			} else if (i == HU_FONTSIZE - 1) {
-				sub = sub + 4;
+				sub = sub + 3;
 			}
 
 			if (i < 58) {

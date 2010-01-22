@@ -715,22 +715,20 @@ void M_OptDrawer (void)
 	int color;
 	int y, width, i, x;
 	int valx = 0, valy = 0;
-	int theight = 0, twidth = 0;
+	int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
 
 	if (W_CheckNumForName(CurrentMenu->title) == -1)
 	{
 		// Try drawing it as text, maybe if this fails we just set a number for height and move on
-		twidth = V_LargeStringWidth(CurrentMenu->title);
-		screen->DrawTextLargeClean (0, 160-twidth/2, 10, CurrentMenu->title);
+		screen->DrawTextLargeClean (0, 160-V_LargeStringWidth(CurrentMenu->title)/2, 10, CurrentMenu->title);
 		theight = HTCLINEHEIGHT;
 	}
 	else
 	{
 		title = W_CachePatch (CurrentMenu->title);
-		twidth = title->width();
-		screen->DrawPatchClean (title, 160-twidth/2, 10);
+		screen->DrawPatchClean (title, 160-title->width()/2, 10);
 		theight = title->height();
 	}
 
