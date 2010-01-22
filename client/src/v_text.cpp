@@ -470,7 +470,7 @@ void DCanvas::LargeTextWrapper (EWrapperCode drawer, int normalcolor, int x, int
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c>= HU_FONTSIZE)
 		{
-			cx += 4;
+			cx += 8;
 			continue;
 		}
 
@@ -623,15 +623,15 @@ void DCanvas::LargeTextSWrapper (EWrapperCode drawer, int normalcolor, int x, in
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c>= HU_FONTSIZE)
 		{
-			cx += 8 * CleanXfac;
+			cx += 4 * CleanXfac;
 			continue;
 		}
 
-		w = (b_font[c]->width() - 1) * CleanXfac;
+		w = (b_font[c]->width() - 1);
 		if (cx+w > width)
 			break;
 
-		DrawCNMWrapper (drawer, b_font[c], cx, cy);
+		DrawCWrapper (drawer, b_font[c], cx, cy);
 		cx+=w;
 	}
 }

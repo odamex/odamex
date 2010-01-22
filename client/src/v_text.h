@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -61,6 +61,9 @@ typedef struct brokenlines_s brokenlines_t;
 
 int V_StringWidth (const byte *str);
 inline int V_StringWidth (const char *str) { return V_StringWidth ((const byte *)str); }
+
+int V_LargeStringWidth (const byte *str);
+inline int V_LargeStringWidth (const char *str) { return V_StringWidth ((const byte *)str); }
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);

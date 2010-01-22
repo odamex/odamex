@@ -91,8 +91,6 @@ bool 				menuactive;
 #define SKULLXOFF	-32
 #define ARROWXOFF	-28
 #define ARROWYOFF	-1
-#define LINEHEIGHT	16
-#define HTCLINEHEIGHT 20
 
 extern bool st_firsttime;
 
@@ -1114,7 +1112,10 @@ void M_DrawReadThis3 (void)
 //
 void M_DrawOptions(void)
 {
-	screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
+	if (gamemode == registered_heretic)
+		screen->DrawTextLargeClean (0, 108, 15, "OPTIONS");
+	else
+		screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
 }
 
 void M_Options(int choice)
@@ -2036,7 +2037,7 @@ void M_Drawer (void)
 				if (currentMenu->menuitems[i].name[0]) {
 					if (gamemode == registered_heretic)
 					{
-						screen->DrawTextLargeClean(0, x*2, y*2, currentMenu->menuitems[i].name);
+						screen->DrawTextLargeClean(0, x, y, currentMenu->menuitems[i].name);
 						y += HTCLINEHEIGHT;
 					}
 					else

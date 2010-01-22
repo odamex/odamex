@@ -30,6 +30,10 @@
 //
 // MENUS
 //
+// Some defines...
+#define LINEHEIGHT	16
+#define HTCLINEHEIGHT 20
+
 // Called by main loop,
 // saves config file and calls I_Quit when user exits.
 // Even when the menu is not displayed,
@@ -130,7 +134,7 @@ typedef struct menuitem_s {
 } menuitem_t;
 
 typedef struct menu_s {
-	char			title[9];
+	char			*title;
 	int				lastOn;
 	int				numitems;
 	int				indent;
