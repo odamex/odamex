@@ -281,7 +281,7 @@ std::string W_AddFile (std::string filename)
 		header.infotableofs = LONG(header.infotableofs);
 		length = header.numlumps*sizeof(filelump_t);
 
-		if(length > M_FileLength(handle))
+		if(length > (unsigned)M_FileLength(handle))
 		{
 			Printf (PRINT_HIGH, " bad number of lumps for %s\n", filename.c_str());
 			fclose(handle);
