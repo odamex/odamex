@@ -1473,7 +1473,6 @@ void G_LoadGame (char* name)
 
 void G_DoLoadGame (void)
 {
-	int i;
 	char text[16];
 
 	gameaction = ga_nothing;
@@ -1581,7 +1580,6 @@ void G_DoSaveGame (void)
 {
 	std::string name;
 	char *description;
-	int i;
 
 	G_SnapshotLevel ();
 
@@ -1837,7 +1835,7 @@ void G_BeginRecording (void)
         mapid = level.mapname[3] - '0';
     }
 
-    *demo_p++ = skill-1;
+    *demo_p++ = (unsigned char)(skill-1);
     *demo_p++ = episode;
     *demo_p++ = mapid;
     *demo_p++ = gametype;
@@ -1916,7 +1914,18 @@ END_COMMAND(stopdemo)
 BEGIN_COMMAND(playdemo)
 {
 	if(argc > 1)
-		G_DeferedPlayDemo(argv[1]);
+	{
+		extern bool lastWadRebootSuccess;
+		if(lastWadRebootSuccess)
+		{
+			G_DeferedPlayDemo(argv[1]);
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "Cannot play demo because WAD didn't load\n");
+			Printf(PRINT_HIGH, "Use the 'wad' command\n");
+		}
+	}
 	else
 		Printf(PRINT_HIGH, "Usage: playdemo lumpname or file\n");
 }

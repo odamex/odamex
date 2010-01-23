@@ -123,19 +123,19 @@ CVAR_FUNC_IMPL (maxplayers)
 {
 	// [Nes] - Force extras to become spectators.
 	int normalcount = 0;
-	
+
 	if (var < 0)
 		var.Set((float)0);
-	
+
 	if (var > MAXPLAYERS)
 		var.Set(MAXPLAYERS);
-	
+
 	for (size_t i = 0; i < players.size(); i++)
 	{
 		if (!players[i].spectator)
 		{
 			normalcount++;
-			
+
 			if (normalcount > var)
 			{
 				for (size_t j = 0; j < players.size(); j++) {
@@ -258,7 +258,7 @@ BEGIN_COMMAND (kick)
 	}
 	else
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server!\n", player.userinfo.netname);
-	
+
 	player.client.displaydisconnect = false;
 	SV_DropClient(player);
 }
@@ -271,7 +271,7 @@ void SV_BanStringify(std::string *ToStr = NULL, short *ip = NULL)
 {
 	if (!ToStr || !ip)
 		return;
-		
+
 	for (int i = 0; i < IPADDRSIZE; i++)
 	{
 		if (ip[i] == RANGEBAN)
@@ -282,7 +282,7 @@ void SV_BanStringify(std::string *ToStr = NULL, short *ip = NULL)
 			sprintf(bleh, "%i", ip[i]);
 			*ToStr += bleh;
 		}
-		
+
 		if (i < (IPADDRSIZE - 1))
 			*ToStr += '.';
 	}
@@ -292,20 +292,20 @@ void SV_BanStringify(std::string *ToStr = NULL, short *ip = NULL)
 void SV_IPListMakeIP (BanEntry_t *tBan, std::string IPtoBan)
 {
 	std::string Oct;//, Oct2, Oct3, Oct4;
-	
+
 	// There is garbage in IPtoBan
 	IPtoBan = IPtoBan.substr(0, IPtoBan.find(' '));
-	
+
 	for (int i = 0; i < IPADDRSIZE; i++)
 	{
 		int loc = 0;
 		char *seek;
-		
+
 		Oct = IPtoBan.substr(0, Oct.find("."));
 		IPtoBan = IPtoBan.substr(IPtoBan.find(".") + 1);
-		
+
 		seek = const_cast<char*>(Oct.c_str());
-		
+
 		while (*seek)
 		{
 			if (*seek == '.')
@@ -313,9 +313,9 @@ void SV_IPListMakeIP (BanEntry_t *tBan, std::string IPtoBan)
 			loc++;
 			seek++;
 		}
-		
+
 		Oct = Oct.substr(0, loc);
-		
+
 		if ((*(Oct.c_str()) == '*') || (*(Oct.c_str()) == 0))
 			(*tBan).ip[i] = RANGEBAN;
 		else
@@ -328,13 +328,13 @@ void SV_IPListAdd (std::vector<BanEntry_t> *list, std::string listname, std::str
 {
 	BanEntry_t tBan;	// GhostlyDeath -- Temporary Ban Holder
 	std::string IP;
-	
+
 	SV_IPListMakeIP(&tBan, IPtoBan);
-	
+
 	for (size_t i = 0; i < (*list).size(); i++)
 	{
 		bool match = false;
-		
+
 		for (int j = 0; j < IPADDRSIZE; j++)
 			if ((tBan.ip[j] == (*list)[i].ip[j]) || ((*list)[i].ip[j] == RANGEBAN) &&
 				((j > 0 && match) || (j == 0 && !match)))
@@ -344,7 +344,7 @@ void SV_IPListAdd (std::vector<BanEntry_t> *list, std::string listname, std::str
 				match = false;
 				break;
 			}
-				
+
 		if (match)
 		{
 			SV_BanStringify(&IP, tBan.ip);
@@ -352,7 +352,7 @@ void SV_IPListAdd (std::vector<BanEntry_t> *list, std::string listname, std::str
 			return;
 		}
 	}
-	
+
 	tBan.Reason = reason;
 
 	(*list).push_back(tBan);
@@ -370,13 +370,13 @@ void SV_IPListDelete (std::vector<BanEntry_t> *list, std::string listname, std::
 		std::string IP;
 		int RemovalCount = 0;
 		size_t i;
-		
+
 		SV_IPListMakeIP(&tBan, IPtoBan);
-		
+
 		for (i = 0; i < (*list).size(); i++)
 		{
 			bool match = false;
-			
+
 			for (int j = 0; j < IPADDRSIZE; j++)
 				if (tBan.ip[j] == (*list)[i].ip[j])
 					match = true;
@@ -385,16 +385,16 @@ void SV_IPListDelete (std::vector<BanEntry_t> *list, std::string listname, std::
 					match = false;
 					break;
 				}
-					
+
 			if (match)
 			{
 				(*list)[i].ip[0] = 32000;
 				RemovalCount++;
 			}
 		}
-		
+
 		i = 0;
-		
+
 		while (i < (*list).size())
 		{
 			if ((*list)[i].ip[0] == 32000)
@@ -402,7 +402,7 @@ void SV_IPListDelete (std::vector<BanEntry_t> *list, std::string listname, std::
 			else
 				i++;
 		}
-		
+
 		if (RemovalCount == 0)
 			Printf(PRINT_HIGH, "%s entry not found.\n", listname.c_str());
 		else
@@ -422,7 +422,7 @@ void SV_IPListDisplay (std::vector<BanEntry_t> *list, std::string listname)
 			SV_BanStringify(&IP, (*list)[i].ip);
 			Printf(PRINT_HIGH, "%s #%i: %s (Reason: %s)\n", listname.c_str(), i + 1, IP.c_str(), (*list)[i].Reason.c_str());
 		}
-		
+
 		Printf(PRINT_HIGH, "%s list has %i entries.\n", listname.c_str(), (*list).size());
 	}
 }
@@ -441,10 +441,10 @@ void SV_IPListClear (std::vector<BanEntry_t> *list, std::string listname)
 BEGIN_COMMAND(addban)
 {
 	std::string reason;
-	
+
 	if (argc < 2)
 		return;
-	
+
 	if (argc >= 3)
 		reason = BuildString(argc - 2, (const char **)(argv + 2));
 	else
@@ -480,10 +480,10 @@ END_COMMAND(clearbans)
 BEGIN_COMMAND(addexception)
 {
 	std::string reason;
-	
+
 	if (argc < 2)
 		return;
-	
+
 	if (argc >= 3)
 		reason = BuildString(argc - 2, (const char **)(argv + 2));
 	else
@@ -538,13 +538,13 @@ BEGIN_COMMAND(kickban)
 		Printf(PRINT_HIGH, "client %d not in game\n", atoi(argv[1]));
 		return;
 	}
-	
+
 	// Generate IP for the ban...
 	for (int i = 0; i < IPADDRSIZE; i++)
 		tempip[i] = (short)player.client.address.ip[i];
-	
+
 	SV_BanStringify(&tempipstring, tempip);
-	
+
 	// The kick...
 	if (argc > 2)
 	{
@@ -553,10 +553,10 @@ BEGIN_COMMAND(kickban)
 	}
 	else
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kickbanned from the server!\n", player.userinfo.netname);
-	
+
 	player.client.displaydisconnect = false;
 	SV_DropClient(player);
-	
+
 	// ... and the ban!
 	command = "addban ";
 	command += tempipstring;
@@ -745,10 +745,10 @@ void SV_GetPackets (void)
         if(players[i].playerstate == PST_DISCONNECT)
 		{
             players.erase(players.begin() + i);
-            
+
 			// update tracking cvar
 			clientcount.ForceSet(players.size());
-        
+
             if (emptyreset && players.size() == 0)
                 resetlevel = true;
         }
@@ -764,11 +764,11 @@ void SV_GetPackets (void)
 		if(players[i].mo)
 			players[i].mo->player = &players[i];
 	}
-	
+
 	if (resetlevel)
     {
         resetlevel = false;
-        
+
         G_DeferedInitNew(level.mapname);
     }
 }
@@ -777,7 +777,7 @@ void SV_GetPackets (void)
 void SV_MidPrint (const char *msg, player_t *p)
 {
     client_t *cl = &p->client;
-        
+
     MSG_WriteMarker(&cl->reliablebuf, svc_midprint);
     MSG_WriteString(&cl->reliablebuf, msg);
 }
@@ -1053,7 +1053,7 @@ void SV_SetupUserInfo (player_t &player)
 
 	// store players team number
 	old_team = p->userinfo.team;
-	
+
 	// Store player's old name for comparison.
 	strncpy (old_netname, p->userinfo.netname, sizeof(old_netname));
 
@@ -1080,7 +1080,7 @@ void SV_SetupUserInfo (player_t &player)
 	// Make sure the gender is valid
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
-		
+
 	// Compare names and broadcast if different.
 	if (strncmp(old_netname, "", sizeof(old_netname)) && strncmp(p->userinfo.netname, old_netname, sizeof(old_netname))) {
 		switch (p->userinfo.gender) {
@@ -1562,7 +1562,7 @@ void SV_ClientFullUpdate (player_t &pl)
 			MSG_WriteShort(&cl->reliablebuf, players[i].killcount);
 		MSG_WriteShort(&cl->reliablebuf, players[i].deathcount);
 		MSG_WriteShort(&cl->reliablebuf, players[i].points);
-		
+
 		MSG_WriteMarker (&cl->reliablebuf, svc_spectate);
 		MSG_WriteByte (&cl->reliablebuf, players[i].id);
 		MSG_WriteByte (&cl->reliablebuf, players[i].spectator);
@@ -1615,9 +1615,9 @@ void SV_SendServerSettings (client_t *cl)
 {
 	// GhostlyDeath <June 19, 2008> -- Loop through all CVARs and send the CVAR_SERVERINFO stuff only
 	cvar_t *var = GetFirstCvar();
-	
+
 	MSG_WriteMarker(&cl->reliablebuf, svc_serversettings);
-	
+
 	while (var)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
@@ -1626,10 +1626,10 @@ void SV_SendServerSettings (client_t *cl)
 			MSG_WriteString(&cl->reliablebuf, var->name());
 			MSG_WriteString(&cl->reliablebuf, var->cstring());
 		}
-		
+
 		var = var->GetNext();
 	}
-	
+
 	MSG_WriteByte(&cl->reliablebuf, 2);
 }
 
@@ -1658,7 +1658,7 @@ bool SV_BanCheck (client_t *cl, int n)
 	{
 		bool match = false;
 		bool exception = false;
-	
+
 		for (int j = 0; j < IPADDRSIZE; j++)
 		{
 			if ((cl->address.ip[j] == BanList[i].ip[j]) || (BanList[i].ip[j] == RANGEBAN) &&
@@ -1670,14 +1670,14 @@ bool SV_BanCheck (client_t *cl, int n)
 				break;
 			}
 		}
-				
+
 		// Now see if there is an exception on our ban...
 		if (WhiteList.size() > 0)
 		{
 			for (size_t k = 0; k < WhiteList.size(); k++)
 			{
 				exception = false;
-				
+
 				for (int j = 0; j < IPADDRSIZE; j++)
 				{
 					if ((cl->address.ip[j] == WhiteList[k].ip[j]) || (WhiteList[k].ip[j] == RANGEBAN) &&
@@ -1689,14 +1689,14 @@ bool SV_BanCheck (client_t *cl, int n)
 						break;
 					}
 				}
-						
+
 				if (exception)
 					break;	// we already know they are allowed in
 			}
 		}
-			
+
 		if (match && !exception)
-		{	
+		{
 			std::string BanStr;
 			BanStr += "\nYou are banned! (reason: ";
 			//if (*(BanList[i].Reason.c_str()))
@@ -1704,11 +1704,11 @@ bool SV_BanCheck (client_t *cl, int n)
 			//else
 			//	BanStr += "none given";
 			BanStr += ")\n";
-			
+
 			MSG_WriteMarker   (&cl->reliablebuf, svc_print);
 			MSG_WriteByte   (&cl->reliablebuf, PRINT_HIGH);
 			MSG_WriteString (&cl->reliablebuf, BanStr.c_str());
-		
+
 			// GhostlyDeath -- Do we include the e-mail or no?
 			if (*(email.cstring()) == 0)
 			{
@@ -1726,7 +1726,7 @@ bool SV_BanCheck (client_t *cl, int n)
 				MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
 				MSG_WriteString(&cl->reliablebuf, ErrorStr.c_str());
 			}
-			
+
 			Printf(PRINT_HIGH, "%s is banned and unable to join! (reason: %s)\n", NET_AdrToString (net_from), BanList[i].Reason.c_str());
 
 			SV_SendPacket (players[n]);
@@ -1743,15 +1743,15 @@ bool SV_BanCheck (client_t *cl, int n)
 			//else
 			//	BanStr += "none given";
 			//BanStr += ")\n\n";
-			
+
 			MSG_WriteMarker(&cl->reliablebuf, svc_print);
 			MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
 			MSG_WriteString(&cl->reliablebuf, BanStr.c_str());
-			
+
 			return false;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -1770,12 +1770,12 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 	int MAJORVER = GAMEVER / 256;
 	int MINORVER = (GAMEVER % 256) / 10;
 	int RELEASEVER = (GAMEVER % 256) % 10;
-	
+
 	if ((GAMEVER % 256) % 10)
 		sprintf(OurVersionStr, "%i.%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10, (GAMEVER % 256) % 10);
 	else
 		sprintf(OurVersionStr, "%i.%i", GAMEVER / 256, (GAMEVER % 256) / 10);
-	
+
 	switch (cl->version)
 	{
 		case 65:
@@ -1786,11 +1786,11 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 				sprintf(VersionStr, "%i.%i.%i", cl->majorversion, cl->minorversion / 10, cl->minorversion % 10);
 			else
 				sprintf(VersionStr, "%i.%i", cl->majorversion, cl->minorversion / 10);
-				
+
 			majorver = GameVer / 256;
 			minorver = (GameVer % 256) / 10;
 			releasever = (GameVer % 256) % 10;
-			
+
 			if ((majorver == MAJORVER) &&
 				(minorver == MINORVER) &&
 				(releasever >= RELEASEVER))
@@ -1810,29 +1810,29 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 		default:
 			sprintf(VersionStr, "Unknown");
 			break;
-			
+
 	}
-	
+
 	// GhostlyDeath -- removes the constant AllowConnects above
 	if (cl->version != 65)
 		AllowConnect = false;
-	
+
 	// GhostlyDeath -- boot em
 	if (!AllowConnect)
 	{
 		std::ostringstream FormattedString;
 		bool older = false;
-		
+
 		// GhostlyDeath -- Version Mismatch message
-        
-        FormattedString << 
+
+        FormattedString <<
             std::endl <<
-            "Your version of Odamex " << 
+            "Your version of Odamex " <<
             VersionStr <<
             " does not match the server " <<
             OurVersionStr <<
             std::endl;
-		
+
 		// GhostlyDeath -- Check to see if it's older or not
 		if (cl->majorversion < (GAMEVER / 256))
 			older = true;
@@ -1848,59 +1848,59 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 					older = false;
 			}
 		}
-		
+
 		// GhostlyDeath -- Print message depending on older or newer
 		if (older)
 		{
-			FormattedString << 
-                "For updates, visit http://odamex.net/" << 
+			FormattedString <<
+                "For updates, visit http://odamex.net/" <<
                 std::endl;
 		}
 		else
         {
-			FormattedString << 
+			FormattedString <<
                 "If a new version just came out, " <<
                 "give server administrators time to update their servers." <<
                 std::endl;
         }
-        
-		// GhostlyDeath -- email address set?	
+
+		// GhostlyDeath -- email address set?
 		if (*(email.cstring()))
 		{
 			char emailbuf[100];
 			memset(emailbuf, 0, sizeof(emailbuf));
 			const char* in = email.cstring();
 			char* out = emailbuf;
-			
+
 			for (int i = 0; i < 100 && *in; i++, in++, out++)
 				*out = *in;
-			
-			FormattedString << 
-                "If problems persist, contact the server administrator at " << 
-                emailbuf << 
+
+			FormattedString <<
+                "If problems persist, contact the server administrator at " <<
+                emailbuf <<
                 std::endl;
 		}
-				
+
 		// GhostlyDeath -- Now we tell them our built up message and boot em
 		cl->displaydisconnect = false;	// Don't spam the players
-		
+
 		MSG_WriteMarker(&cl->reliablebuf, svc_print);
 		MSG_WriteByte(&cl->reliablebuf, PRINT_HIGH);
-		MSG_WriteString(&cl->reliablebuf, 
+		MSG_WriteString(&cl->reliablebuf,
                         (const char *)FormattedString.str().c_str());
-		
+
 		MSG_WriteMarker(&cl->reliablebuf, svc_disconnect);
-		
+
 		SV_SendPacket (players[n]);
-		
+
 		// GhostlyDeath -- And we tell the server
-		Printf(PRINT_HIGH, 
-                "%s -- Version mismatch (%s != %s)\n", 
+		Printf(PRINT_HIGH,
+                "%s -- Version mismatch (%s != %s)\n",
                 NET_AdrToString(net_from),
-                VersionStr, 
+                VersionStr,
                 OurVersionStr);
 	}
-	
+
 	return AllowConnect;
 }
 
@@ -1914,7 +1914,6 @@ void G_DoReborn (player_t &playernum);
 void SV_ConnectClient (void)
 {
 	int n;
-	int sfx_id;
 	size_t i;
 	int challenge = MSG_ReadLong();
 	client_t  *cl;
@@ -1982,13 +1981,13 @@ void SV_ConnectClient (void)
 
 	cl->version = MSG_ReadShort();
 	byte connection_type = MSG_ReadByte();
-	
+
 	if (!SV_CheckClientVersion(cl, n))
 	{
 		SV_DropClient(players[n]);
 		return;
 	}
-	
+
 	if (SV_BanCheck(cl, n))
 	{
 		SV_DropClient(players[n]);
@@ -2015,13 +2014,13 @@ void SV_ConnectClient (void)
     {
         MSG_WriteMarker(&cl->reliablebuf, svc_print);
         MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
-        MSG_WriteString (&cl->reliablebuf, 
+        MSG_WriteString (&cl->reliablebuf,
                          "Server is passworded, no password specified or bad password\n");
-        
+
         SV_SendPacket(players[n]);
-        
+
         SV_DropClient(players[n]);
-        
+
         return;
     }
 
@@ -2062,12 +2061,12 @@ void SV_ConnectClient (void)
 	G_DoReborn (players[n]);
 	SV_ClientFullUpdate (players[n]);
 	SV_SendPacket (players[n]);
-	
+
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
-	
+
 	// tell others clients about it
 	for (i = 0; i < players.size(); i++)
-	{	
+	{
 		client_t &cl = clients[i];
 
 		MSG_WriteMarker(&cl.reliablebuf, svc_connectclient);
@@ -2083,10 +2082,9 @@ extern BOOL singleplayerjustdied;
 void SV_DisconnectClient(player_t &who)
 {
 	size_t i;
-	int sfx_id;
 	char str[100];
 	std::string disconnectmessage;
-	
+
 	// already gone though this procedure?
 	if(who.playerstate == PST_DISCONNECT)
 		return;
@@ -2125,9 +2123,9 @@ void SV_DisconnectClient(player_t &who)
 			sprintf(str, "%s timed out. (", who.userinfo.netname);
 		else
 			sprintf(str, "%s disconnected. (", who.userinfo.netname);
-			
+
 		disconnectmessage = str;
-		
+
 		// Spectator status or team name (TDM/CTF).
 		if (who.spectator)
 			sprintf(str, "SPECTATOR, ");
@@ -2135,26 +2133,26 @@ void SV_DisconnectClient(player_t &who)
 			sprintf(str, "%s TEAM, ", team_names[who.userinfo.team]);
 		else
 			*str = '\0';
-		
+
 		disconnectmessage += str;
-		
+
 		// Points (CTF).
 		if (gametype == GM_CTF) {
 			sprintf(str, "%d POINTS, ", who.points);
 			disconnectmessage += str;
 		}
-		
+
 		// Frags (DM/TDM/CTF) or Kills (Coop).
 		if (gametype != GM_COOP)
 			sprintf(str, "%d FRAGS, ", who.fragcount);
 		else
 			sprintf(str, "%d KILLS, ", who.killcount);
-		
+
 		disconnectmessage += str;
-		
+
 		// Deaths.
 		sprintf(str, "%d DEATHS)", who.deathcount);
-		
+
 		disconnectmessage += str;
 
 		SV_BroadcastPrintf(PRINT_HIGH, "%s\n", disconnectmessage.c_str());
@@ -2293,7 +2291,7 @@ void SV_DrawScores()
             Printf_Bold("--------------------------------------");
 
             for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
+                if ((unsigned)sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
                     Printf(PRINT_HIGH, "%-15s %-6d N/A  %-5d  N/A",
                         sortedplayers[i]->userinfo.netname,
                         sortedplayers[i]->points,
@@ -2303,7 +2301,7 @@ void SV_DrawScores()
                 }
             }
         }
-		
+
 		Printf (PRINT_HIGH, "\n");
         Printf_Bold("----------------------------SPECTATORS");
             for (i = 0; i < sortedplayers.size(); i++) {
@@ -2341,7 +2339,7 @@ void SV_DrawScores()
             Printf_Bold("--------------------------------------");
 
             for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
+                if ((unsigned)sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
                     if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
                         sprintf (str, "0.0");
                     else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
@@ -2358,7 +2356,7 @@ void SV_DrawScores()
                 }
             }
         }
-                        
+
 		Printf (PRINT_HIGH, "\n");
         Printf_Bold("----------------------------SPECTATORS");
             for (i = 0; i < sortedplayers.size(); i++) {
@@ -2404,7 +2402,7 @@ void SV_DrawScores()
 					//sortedplayers[i]->GameTime / 60);
 			}
         }
-                        
+
 		Printf (PRINT_HIGH, "\n");
         Printf_Bold("----------------------------SPECTATORS");
             for (i = 0; i < sortedplayers.size(); i++) {
@@ -2437,7 +2435,7 @@ void SV_DrawScores()
 					//sortedplayers[i]->GameTime / 60);
         	}
         }
-        
+
 		Printf (PRINT_HIGH, "\n");
         Printf_Bold("----------------------------SPECTATORS");
             for (i = 0; i < sortedplayers.size(); i++) {
@@ -2497,7 +2495,7 @@ void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...)
     for (size_t i=0; i < players.size(); i++)
     {
 		cl = &clients[i];
-		
+
 		if (players[i].spectator)
 		{
 			MSG_WriteMarker (&cl->reliablebuf, svc_print);
@@ -2546,7 +2544,7 @@ void SV_Say(player_t &player)
 
 	if(!strlen(s) || strlen(s) > 128)
 		return;
-    
+
     // Flood protection
     if (player.LastMessage.Time)
     {
@@ -2557,13 +2555,13 @@ void SV_Say(player_t &player)
         QWORD Difference = (I_GetTime() - player.LastMessage.Time);
 #endif
         float Delay = (float)(flooddelay * TICRATE);
-        
+
         if (Difference <= Delay)
             return;
 
         player.LastMessage.Time = 0;
     }
-       
+
     if (!player.LastMessage.Time)
     {
         player.LastMessage.Time = I_GetTime();
@@ -2633,7 +2631,7 @@ void SV_UpdateMissiles(player_t &pl)
 			MSG_WriteLong (&cl->netbuf, mo->momx);
 			MSG_WriteLong (&cl->netbuf, mo->momy);
 			MSG_WriteLong (&cl->netbuf, mo->momz);
-			
+
 			MSG_WriteMarker (&cl->netbuf, svc_actor_movedir);
 			MSG_WriteShort(&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
@@ -2652,7 +2650,7 @@ void SV_UpdateMissiles(player_t &pl)
                 MSG_WriteShort (&cl->netbuf, mo->netid);
                 MSG_WriteShort (&cl->netbuf, (mo->state - states));
             }
-            
+
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
                     return;
@@ -2697,12 +2695,12 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteLong (&cl->netbuf, mo->momx);
 			MSG_WriteLong (&cl->netbuf, mo->momy);
 			MSG_WriteLong (&cl->netbuf, mo->momz);
-			
+
 			MSG_WriteMarker (&cl->netbuf, svc_actor_movedir);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
 			MSG_WriteLong (&cl->netbuf, mo->movecount);
-			
+
 			if ((mobjinfo[mo->type].spawnstate == (statenum_t)(mo->state - states)) ||
                 (mobjinfo[mo->type].seestate == (statenum_t)(mo->state - states)) ||
                 (mobjinfo[mo->type].painstate == (statenum_t)(mo->state - states)) ||
@@ -2716,7 +2714,7 @@ void SV_UpdateMonsters(player_t &pl)
                 MSG_WriteShort (&cl->netbuf, mo->netid);
                 MSG_WriteShort (&cl->netbuf, (mo->state - states));
             }
-            
+
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
                     return;
@@ -2940,7 +2938,7 @@ void SV_WriteCommands(void)
 
 				if (j == i)
 					continue;
-					
+
 				// GhostlyDeath -- Screw spectators
 				if (players[j].spectator)
 					continue;
@@ -3097,11 +3095,11 @@ void SV_GetPlayerCmd(player_t &player)
 void SV_UpdateConsolePlayer(player_t &player)
 {
 	size_t j;
-	
+
 	// GhostlyDeath -- Spectators are on their own really
 	if (player.spectator)
 		return;
-	
+
 	// It's not a good idea to send 33 bytes every tic.
 	if (gametic % 3)
 		return;
@@ -3148,13 +3146,13 @@ void SV_UpdateConsolePlayer(player_t &player)
 		MSG_WriteByte (&cl->reliablebuf, player.health);
 		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
 		MSG_WriteByte (&cl->reliablebuf, player.armortype);
-		
+
 		// GhostlyDeath <July 17, 2008> -- What weapon do we send to the client?
 		if (player.pendingweapon == wp_nochange)
 			MSG_WriteByte (&cl->reliablebuf, player.readyweapon | 64);
 		else
 			MSG_WriteByte(&cl->reliablebuf, player.pendingweapon);
-		
+
 		MSG_WriteByte (&cl->reliablebuf, player.backpack);
 	}
 }
@@ -3211,7 +3209,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 void SV_Spectate (player_t &player)
 {
 	byte Code = MSG_ReadByte();
-	
+
 	if (Code == 5)
 	{
 		// GhostlyDeath -- Prevent Cheaters
@@ -3221,7 +3219,7 @@ void SV_Spectate (player_t &player)
 				MSG_ReadLong();
 			return;
 		}
-		
+
 		// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
 		player.mo->x = MSG_ReadLong();
 		player.mo->y = MSG_ReadLong();
@@ -3230,7 +3228,7 @@ void SV_Spectate (player_t &player)
 	else if (!(BOOL)Code) {
 		if (gamestate == GS_INTERMISSION)
 			return;
-		
+
 		if (player.spectator){
 			int NumPlayers = 0;
 			// Check to see if there are enough "activeplayers"
@@ -3239,7 +3237,7 @@ void SV_Spectate (player_t &player)
 				if (!players[i].spectator)
 					NumPlayers++;
 			}
-			
+
 			if (NumPlayers < maxplayers)
 			{
 				if ((multiplayer && level.time > player.joinafterspectatortime + TICRATE*3) ||
@@ -3256,7 +3254,7 @@ void SV_Spectate (player_t &player)
 					if (gametype != GM_TEAMDM && gametype != GM_CTF)
 						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname);
 					else
-						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game on the %s team.\n", 
+						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game on the %s team.\n",
 							player.userinfo.netname, team_names[player.userinfo.team]);
 					// GhostlyDeath -- Reset Frags, Deaths and Kills
 					player.fragcount = 0;
@@ -3339,44 +3337,44 @@ BOOL P_GivePower(player_s*, int);
 void SV_CheatPulse(player_t &player)
 {
     byte cheats = MSG_ReadByte();
-    int i;    
-    
+    int i;
+
     if (!allowcheats)
     {
         if (cheats == 3)
             MSG_ReadByte();
-            
+
         return;
     }
-    
+
     if (cheats == 1)
     {
         player.armorpoints = deh.FAArmor;
         player.armortype = deh.FAAC;
 
         weapontype_t pendweap = player.pendingweapon;
-        
+
         for (i = 0; i<NUMWEAPONS; i++)
             P_GiveWeapon (&player, (weapontype_t)i, false);
-        
+
         player.pendingweapon = pendweap;
 
         for (i=0; i<NUMAMMO; i++)
             player.ammo[i] = player.maxammo[i];
-        
+
         return;
     }
-    
+
     if (cheats == 2)
     {
         player.armorpoints = deh.KFAArmor;
         player.armortype = deh.KFAAC;
 
         weapontype_t pendweap = player.pendingweapon;
-        
+
         for (i = 0; i<NUMWEAPONS; i++)
             P_GiveWeapon (&player, (weapontype_t)i, false);
-        
+
         player.pendingweapon = pendweap;
 
         for (i=0; i<NUMAMMO; i++)
@@ -3384,28 +3382,28 @@ void SV_CheatPulse(player_t &player)
 
         for (i=0; i<NUMCARDS; i++)
             player.cards[i] = true;
-            
+
         return;
     }
-    
+
     if (cheats == 3)
     {
         byte power = MSG_ReadByte();
-        
+
         if (!player.powers[power])
             P_GivePower(&player, power);
         else if (power != pw_strength)
             player.powers[power] = 1;
         else
             player.powers[power] = 0;
-        
+
         return;
     }
-    
+
     if (cheats == 4)
     {
         player.weaponowned[wp_chainsaw] = true;
-        
+
         return;
     }
 }
@@ -3536,7 +3534,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_kill:
-			if(player.mo && 
+			if(player.mo &&
                level.time > player.respawn_time + TICRATE*10 &&
                allowcheats)
             {
@@ -3565,11 +3563,11 @@ void SV_ParseCommands(player_t &player)
 		case clc_cheat:
 			SV_Cheat(player);
 			break;
-			
+
         case clc_cheatpulse:
             SV_CheatPulse(player);
             break;
-            
+
 		case clc_abort:
 			Printf(PRINT_HIGH, "Client abort.\n");
 			SV_DropClient(player);
@@ -3598,7 +3596,7 @@ void SV_ParseCommands(player_t &player)
 void SV_WinCheck (void)
 {
 	if (shotclock)
-	{	
+	{
 		shotclock--;
 
 		if (!shotclock)
@@ -3639,7 +3637,7 @@ void SV_WadDownloads (void)
 		read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, sizeof(buff), buff, filelen);
 
         // [Russell] - We take into account the maximum packet limit so we don't
-        // go over it and end up with a mangled package, the numeric values here 
+        // go over it and end up with a mangled package, the numeric values here
         // represent the size of each written data type that follows
         if ((cl->netbuf.cursize + 1 + 4 + 1 + 4 + 2 + read) >= 8192)
             SV_SendPacket(players[i]);
@@ -3651,7 +3649,7 @@ void SV_WadDownloads (void)
 				MSG_WriteMarker (&cl->netbuf, svc_wadinfo);
 				MSG_WriteLong (&cl->netbuf, filelen);
 			}
-           
+
 			MSG_WriteMarker (&cl->netbuf, svc_wadchunk);
 			MSG_WriteLong (&cl->netbuf, cl->download.next_offset);
 			MSG_WriteShort (&cl->netbuf, read);
@@ -3681,7 +3679,7 @@ team_t SV_WinningTeam (void)
 			isdraw = true;
 		}
 	}
-	
+
 	if (isdraw)
 		team = TEAM_NONE;
 
@@ -3695,13 +3693,13 @@ void SV_TimelimitCheck()
 {
 	if(!timelimit || level.time < (int)(timelimit * TICRATE * 60) || shotclock || gamestate == GS_INTERMISSION)
 		return;
-	
+
 	// LEVEL TIMER
 	if (players.size()) {
 		if (gametype == GM_DM) {
 			player_t *winplayer = &players[0];
 			bool drawgame = false;
-			
+
 			if (players.size() > 1) {
 				for (size_t i = 1; i < players.size(); i++) {
 					if (players[i].fragcount > winplayer->fragcount) {
@@ -3711,7 +3709,7 @@ void SV_TimelimitCheck()
 						drawgame = true;
 				}
 			}
-			
+
 			if (drawgame)
 				SV_BroadcastPrintf (PRINT_HIGH, "Time limit hit. Game is a draw!\n");
 			else
@@ -3742,7 +3740,7 @@ void SV_GameTics (void)
 	if(gamestate == GS_LEVEL)
 	{
 		SV_RemoveCorpses();
-		SV_WinCheck();	
+		SV_WinCheck();
 		SV_TimelimitCheck();
 	}
 
@@ -3783,7 +3781,7 @@ void SV_StepTics (QWORD tics)
 		SV_GameTics ();
 
 		G_Ticker ();
-		
+
 		SV_WriteCommands();
 		SV_SendPackets();
 		SV_ClearClientsBPS();
@@ -3791,7 +3789,7 @@ void SV_StepTics (QWORD tics)
 
 		gametic++;
 	}
-		
+
 	DObject::EndFrame ();
 }
 
@@ -3843,7 +3841,7 @@ BEGIN_COMMAND(step)
 	// debugging output
 	if(players.size() && players[0].mo)
 		Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n", level.time, prndindex, players[0].mo->x, players[0].mo->y, players[0].mo->z);
-	else 
+	else
 		Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
 }
 END_COMMAND(step)

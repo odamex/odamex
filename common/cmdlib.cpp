@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -77,13 +77,13 @@ char *COM_Parse (char *data) // denis - todo - security com_token overrun needs 
 {
 	int			c;
 	size_t		len;
-	
+
 	len = 0;
 	com_token[0] = 0;
-	
+
 	if (!data)
 		return NULL;
-		
+
 // skip whitespace
 skipwhite:
 	while ( (c = *data) <= ' ')
@@ -95,7 +95,7 @@ skipwhite:
 		}
 		data++;
 	}
-	
+
 // skip // comments
 	if (c=='/' && data[1] == '/')
 	{
@@ -103,7 +103,7 @@ skipwhite:
 			data++;
 		goto skipwhite;
 	}
-	
+
 
 // handle quoted strings specially
 	if (c == '\"')
@@ -141,7 +141,7 @@ skipwhite:
 	if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':' || c=='=')
 			break;
 	} while (c>32 && len < sizeof(com_token) + 2);
-	
+
 	com_token[len] = 0;
 	return data;
 }
@@ -203,6 +203,26 @@ BOOL IsNum (char *str)
 		str++;
 	}
 	return result;
+}
+
+// [Russell] Returns 0 if strings are the same, optional parameter for case sensitivity
+int StdStringCompare(std::string string1, std::string string2, bool CaseInsensitive = false)
+{
+	// Convert to upper case
+	if (CaseInsensitive)
+	{
+		std::transform(string1.begin(), string1.end(), string1.begin(), toupper);
+		std::transform(string2.begin(), string2.end(), string2.begin(), toupper);
+	}
+
+	if (string1 < string2)
+		return -1;
+
+	else if (string1 > string2)
+		return 1;
+
+	// Strings are equal
+	return 0;
 }
 
 
