@@ -294,8 +294,8 @@ void D_Display (void)
 				AM_Drawer ();
 			C_DrawMid ();
 			CTF_DrawHud ();
-			ST_Drawer ();
-			HU_Drawer ();
+			//ST_Drawer ();
+			//HU_Drawer ();
 			break;
 
 		case GS_INTERMISSION:

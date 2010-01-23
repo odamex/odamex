@@ -601,7 +601,7 @@ void G_DoLoadLevel (int position)
 // 	SN_StopAllSequences (); // denis - todo - equivalent?
 	P_SetupLevel (level.mapname, position);
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
-	ST_Start();		// [RH] Make sure status bar knows who we are
+	//ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
 	Z_CheckHeap ();
 
@@ -2011,6 +2011,134 @@ level_info_t LevelInfos[] = {
 //		{ 'D','_','U','L','T','I','M','A' },
 		0,
 		10,
+		0
+	},
+	// Registered/Retail Heretic Episode 1
+	{
+		"E1M1",
+		1,
+		NULL,
+		"WILV00",
+		"E1M2",
+		"E1M9",
+		30,
+		"SKY1",
+		"MUS_E1M1",
+		0,
+		1,
+		0
+	},
+	{
+		"E1M2",
+		2,
+		NULL,
+		"WILV01",
+		"E1M3",
+		"E1M9",
+		75,
+		"SKY1",
+		"MUS_E1M2",
+		0,
+		1,
+		0
+	},
+	{
+		"E1M3",
+		3,
+		NULL,
+		"WILV02",
+		"E1M4",
+		"E1M9",
+		120,
+		"SKY1",
+		"MUS_E1M3",
+		0,
+		1,
+		0
+	},
+	{
+		"E1M4",
+		4,
+		NULL,
+		"WILV03",
+		"E1M5",
+		"E1M9",
+		90,
+		"SKY1",
+		"MUS_E1M4",
+		0,
+		1,
+		0
+	},
+	{
+		"E1M5",
+		5,
+		NULL,
+		"WILV04",
+		"E1M6",
+		"E1M9",
+		165,
+		"SKY1",
+		"MUS_E1M5",
+		0,
+		1,
+		0
+	},
+	{
+		"E1M6",
+		6,
+		NULL,
+		"WILV05",
+		"E1M7",
+		"E1M9",
+		180,
+		"SKY1",
+		"MUS_E1M6",
+		0,
+		1,
+		0
+	},
+	{
+		"E1M7",
+		7,
+		NULL,
+		"WILV06",
+		"E1M8",
+		"E1M9",
+		180,
+		"SKY1",
+		"MUS_E1M7",
+		0,
+		1,
+		0
+	},
+	{
+		"E1M8",
+		8,
+		NULL,
+		"WILV07",
+		"EndGame1",
+//		{ 'E','n','d','G','a','m','e','1' },
+		"E1M9",
+		30,
+		"SKY1",
+		"MUS_E1M8",
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,
+		1,
+		0
+	},
+	{
+		"E1M9",
+		9,
+		NULL,
+		"WILV08",
+		"E1M4",
+		"E1M4",
+		165,
+		"SKY1",
+		"MUS_E1M9",
+		0,
+		1,
 		0
 	},
 	{

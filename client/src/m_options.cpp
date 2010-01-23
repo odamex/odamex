@@ -85,6 +85,7 @@ extern bool				OptionsActive;
 
 extern int				screenSize;
 extern short			skullAnimCounter;
+int						luioffset;
 
 EXTERN_CVAR (cl_run)
 EXTERN_CVAR (invertmouse)
@@ -719,6 +720,8 @@ void M_OptDrawer (void)
 	menuitem_t *item;
 	patch_t *title;
 
+	luioffset = (gamemode == registered_heretic ? 2 : 0);
+
 	if (W_CheckNumForName(CurrentMenu->title) == -1)
 	{
 		// Try drawing it as text, maybe if this fails we just set a number for height and move on
@@ -805,7 +808,7 @@ void M_OptDrawer (void)
 				break;
 
 			case slider:
-				M_DrawSlider (CurrentMenu->indent + 14, y, item->b.min, item->c.max, item->a.cvar->value());
+				M_DrawSlider (CurrentMenu->indent + 14, y+luioffset, item->b.min, item->c.max, item->a.cvar->value());
 				break;
 
 			case control:
@@ -840,7 +843,7 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey))
 			{
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
+				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y+luioffset);
 			}
 		}
 		else

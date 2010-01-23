@@ -51,6 +51,8 @@
 extern patch_t* 	hu_font[HU_FONTSIZE];
 extern patch_t* 	b_font[HU_FONTSIZE];
 DCanvas *readpage;
+int pwidth = 320;	// Default raw patch width  (Can we get these another way?)
+int pheight = 200;	// Default raw patch height (...perhaps more dynamically?)
 
 // temp for screenblocks (0-9)
 int 				screenSize;
@@ -1150,17 +1152,17 @@ void M_DrawReadThis1 (void)
 {
 	if (gameinfo.flags & GI_PAGESARERAW)
 	{
-		if (readpage && (readpage->width != 320 || readpage->height != 200))
+		if (readpage && (readpage->width != pwidth || readpage->height != pheight))
 		{
 			I_FreeScreen(readpage);
 			readpage = NULL;
 		}
 
 		if (readpage == NULL)
-			readpage = I_AllocateScreen(320,200,8);
+			readpage = I_AllocateScreen(pwidth,pheight,8);
 
 		readpage->Lock ();
-		readpage->DrawBlock (0, 0, 320, 200, (byte *)W_CachePatch (gameinfo.info.infoPage[0]));
+		readpage->DrawBlock (0, 0, pwidth, pheight, (byte *)W_CachePatch (gameinfo.info.infoPage[0]));
 		readpage->Unlock ();
 
 		readpage->Blit (0, 0, readpage->width, readpage->height, screen, 0, 0, screen->width, screen->height);
@@ -1179,7 +1181,7 @@ void M_DrawReadThis2 (void)
 	if (gameinfo.flags & GI_PAGESARERAW)
 	{
 		readpage->Lock ();
-		readpage->DrawBlock (0, 0, 320, 200, (byte *)W_CachePatch (gameinfo.info.infoPage[1]));
+		readpage->DrawBlock (0, 0, pwidth, pheight, (byte *)W_CachePatch (gameinfo.info.infoPage[1]));
 		readpage->Unlock ();
 
 		readpage->Blit (0, 0, readpage->width, readpage->height, screen, 0, 0, screen->width, screen->height);
@@ -1196,7 +1198,7 @@ void M_DrawReadThis3 (void)
 	if (gameinfo.flags & GI_PAGESARERAW)
 	{
 		readpage->Lock ();
-		readpage->DrawBlock (0, 0, 320, 200, (byte *)W_CachePatch (gameinfo.info.infoPage[2]));
+		readpage->DrawBlock (0, 0, pwidth, pheight, (byte *)W_CachePatch (gameinfo.info.infoPage[2]));
 		readpage->Unlock ();
 
 		readpage->Blit (0, 0, readpage->width, readpage->height, screen, 0, 0, screen->width, screen->height);

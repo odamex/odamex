@@ -56,7 +56,7 @@ patch_t*				sttminus;
 
 void STlib_init(void)
 {
-	sttminus = W_CachePatch("STTMINUS", PU_STATIC);
+	sttminus = W_CachePatch((gamemode == registered_heretic ? "NEGNUM": "STTMINUS"), PU_STATIC);
 }
 
 
