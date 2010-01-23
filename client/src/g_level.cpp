@@ -2013,7 +2013,8 @@ level_info_t LevelInfos[] = {
 		10,
 		0
 	},
-	// Registered/Retail Heretic Episode 1
+
+// Registered/Retail Heretic Episode 1
 	{
 		"E1M1",
 		1,
