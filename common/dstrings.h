@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -426,7 +426,7 @@ typedef struct gamestring_s {
 #define OB_FRIENDLY2		(Strings[329].string)
 #define OB_FRIENDLY3		(Strings[330].string)
 #define OB_FRIENDLY4		(Strings[331].string)
-#define OB_RAILGUN			(Strings[332].string)	
+#define OB_RAILGUN			(Strings[332].string)
 
 #define SAVEGAMENAME		(Strings[333].string)
 

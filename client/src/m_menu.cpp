@@ -49,6 +49,7 @@
 #include "gi.h"
 
 extern patch_t* 	hu_font[HU_FONTSIZE];
+extern patch_t* 	b_font[HU_FONTSIZE];
 
 // temp for screenblocks (0-9)
 int 				screenSize;
@@ -87,10 +88,6 @@ int 				saveCharIndex;	// which char we're editing
 char				saveOldString[SAVESTRINGSIZE];
 
 bool 				menuactive;
-
-#define SKULLXOFF	-32
-#define ARROWXOFF	-28
-#define ARROWYOFF	-1
 
 extern bool st_firsttime;
 
@@ -154,12 +151,12 @@ void M_DrawOptions(void);
 void M_DrawSound(void);
 void M_DrawLoad(void);
 void M_DrawSave(void);
+void M_DrawGameFiles(void);
 
 void M_DrawSaveLoadBorder(int x,int y, int len);
+void M_DrawSaveLoadSlot(int x,int y);
 void M_SetupNextMenu(oldmenu_t *menudef);
-void M_DrawEmptyCell(oldmenu_t *menu,int item);
-void M_DrawSelCell(oldmenu_t *menu,int item);
-int  M_StringHeight(char *string);
+int  M_StringHeight(char *string, int size);
 void M_StartControlPanel(void);
 void M_StartMessage(const char *string,void (*routine)(int),bool input);
 void M_StopMessage(void);
@@ -258,6 +255,23 @@ oldmenuitem_t HereticGameFilesMenu[]=
 	{1,"Load Game",M_LoadGame,'l'},
 	{1,"Save Game",M_SaveGame,'2'}
 };
+
+enum htc_gamefiles_t
+{
+	htc_loadgame = 0,
+	htc_savegame,
+	htc_gamefiles_end
+}htc_gamefiles_e;
+
+oldmenu_t GameFilesDef =
+{
+	htc_gamefiles_end,
+	HereticGameFilesMenu,
+	M_DrawGameFiles,
+	110,60,
+	0
+};
+
 
 // Default used is the Doom Menu
 oldmenu_t MainDef =
@@ -401,7 +415,7 @@ oldmenu_t PSetupDef = {
 //
 // OPTIONS MENU
 //
-// [RH] This menu is now handled in m_options.c
+// [RH] This menu is now handled in m_options.cpp
 //
 bool OptionsActive;
 
@@ -653,15 +667,20 @@ BEGIN_COMMAND (bumpgamma)
 }
 END_COMMAND (bumpgamma)
 
-void M_HtcGameFilesResponse(int ch)
+//
+//	M_HtcGameFiles & Cie.
+//	[ML] Provides intermediary game files menu option for load/save
+//
+void M_DrawGameFiles(void)
 {
-	return;
+	// dummy
 }
 
 void M_HtcGameFiles(int choice)
 {
-     M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
-                   "continue)\n", M_HtcGameFilesResponse, false);
+     //M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
+     //              "continue)\n", M_HtcGameFilesResponse, false);
+     M_SetupNextMenu(&GameFilesDef);
 }
 
 //
@@ -703,11 +722,27 @@ void M_DrawLoad (void)
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_LOADG",PU_CACHE), 72, 28);
-	for (i = 0; i < load_end; i++)
+	if (gamemode == registered_heretic)
 	{
-		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		LoadDef.y = 30;
+		LoadDef.x = 70;
+		screen->DrawTextLargeClean(0,160 - V_LargeStringWidth("LOAD GAME") / 2, 10,"LOAD GAME");
+
+		for (i = 0; i < load_end; i++)
+		{
+			M_DrawSaveLoadSlot (LoadDef.x, LoadDef.y+HTCLINEHEIGHT*i);
+			screen->DrawTextCleanMove (CR_RED, LoadDef.x+4, LoadDef.y+HTCLINEHEIGHT*i+5, savegamestrings[i]);
+		}
+	}
+	else
+	{
+		screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_LOADG",PU_CACHE), 72, 28);
+
+		for (i = 0; i < load_end; i++)
+		{
+			M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
+			screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		}
 	}
 }
 
@@ -754,11 +789,27 @@ void M_DrawSave(void)
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpName("M_SAVEG",PU_CACHE), 72, 28);
-	for (i = 0; i < load_end; i++)
+	if (gamemode == registered_heretic)
 	{
-		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		LoadDef.y = 30;
+		LoadDef.x = 70;
+		screen->DrawTextLargeClean(0,160 - V_LargeStringWidth("SAVE GAME") / 2, 10,"SAVE GAME");
+
+		for (i = 0; i < load_end; i++)
+		{
+			M_DrawSaveLoadSlot (LoadDef.x, LoadDef.y+HTCLINEHEIGHT*i);
+			screen->DrawTextCleanMove (CR_RED, LoadDef.x+4, LoadDef.y+HTCLINEHEIGHT*i+5, savegamestrings[i]);
+		}
+	}
+	else
+	{
+		screen->DrawPatchClean ((patch_t *)W_CacheLumpName ("M_SAVEG",PU_CACHE), 72, 28);
+
+		for (i = 0; i < load_end; i++)
+		{
+			M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
+			screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		}
 	}
 
 	if (genStringEnter)
@@ -957,15 +1008,25 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 {
 	int i;
 
-	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
-
-	for (i = 0; i < len; i++)
+	if (gamemode == registered_heretic)
+		screen->DrawPatchClean(W_CachePatch("M_FSLOT"), x-8, y+7);
+	else
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
-		x += 8;
-	}
+		screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
 
-	screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
+		for (i = 0; i < len; i++)
+		{
+			screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
+			x += 8;
+		}
+
+		screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
+	}
+}
+
+void M_DrawSaveLoadSlot (int x, int y)
+{
+	screen->DrawPatchClean(W_CachePatch("M_FSLOT"), x, y);
 }
 
 //
@@ -1245,7 +1306,7 @@ static void M_PlayerSetupTicker (void)
 
 static void M_PlayerSetupDrawer (void)
 {
-	int lheight = (gamemode == registered_heretic ? HTCLINEHEIGHT-4:LINEHEIGHT);
+	int lheight = LINEHEIGHT;
 	// Draw title
 	{
 		char *title;
@@ -1256,7 +1317,8 @@ static void M_PlayerSetupDrawer (void)
 	// Draw player name box
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y, "Name");
 	if (gamemode == registered_heretic)
-		screen->DrawPatchClean(W_CachePatch("M_FSLOT"), PSetupDef.x + 48, PSetupDef.y-6);
+		M_DrawSaveLoadSlot (PSetupDef.x + 48, PSetupDef.y-4);
+
 	else
 		M_DrawSaveLoadBorder (PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME+1);
 
@@ -1691,18 +1753,6 @@ static void M_SlidePlayerBlue (int choice)
 //
 //		Menu Functions
 //
-void M_DrawEmptyCell (oldmenu_t *menu, int item)
-{
-	screen->DrawPatchClean (W_CachePatch("M_CELL1"),
-		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
-}
-
-void M_DrawSelCell (oldmenu_t *menu, int item)
-{
-	screen->DrawPatchClean (W_CachePatch("M_CELL2"),
-		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
-}
-
 
 void M_StartMessage (const char *string, void (*routine)(int), bool input)
 {
@@ -1726,11 +1776,12 @@ void M_StopMessage (void)
 
 //
 //		Find string height from hu_font chars
+//		[ML] There's more than one kind of font
 //
-int M_StringHeight(char* string)
+int M_StringHeight(char* string, int size)
 {
 	int h;
-	int height = hu_font[0]->height();
+	int height = (size == 1 ? b_font[0]->height() : hu_font[0]->height());
 
 	h = height;
 	while (*string)
@@ -1739,7 +1790,6 @@ int M_StringHeight(char* string)
 
 	return h;
 }
-
 
 
 //

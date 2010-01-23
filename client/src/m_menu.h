@@ -34,6 +34,10 @@
 #define LINEHEIGHT	16
 #define HTCLINEHEIGHT 20
 
+#define SKULLXOFF	-32
+#define ARROWXOFF	-28
+#define ARROWYOFF	-1
+
 // Called by main loop,
 // saves config file and calls I_Quit when user exits.
 // Even when the menu is not displayed,

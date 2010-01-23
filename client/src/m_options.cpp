@@ -107,7 +107,7 @@ void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
 void M_StartControlPanel(void);
 
-int  M_StringHeight(char *string);
+int  M_StringHeight(char *string, int size);
 void M_ClearMenus (void);
 
 
