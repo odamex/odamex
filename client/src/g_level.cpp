@@ -887,7 +887,7 @@ void G_SetLevelStrings (void)
 	for (; i < 6; i++)
 		ReplaceString (&ClusterInfos[4 + i].entertext, Strings[start+i].string);
 
-	if (level.info)
+	if (level.info && level.info->level_name)
 		strncpy (level.level_name, level.info->level_name, 63);
 }
 
