@@ -1914,7 +1914,18 @@ END_COMMAND(stopdemo)
 BEGIN_COMMAND(playdemo)
 {
 	if(argc > 1)
-		G_DeferedPlayDemo(argv[1]);
+	{
+		extern bool lastWadRebootSuccess;
+		if(lastWadRebootSuccess)
+		{
+			G_DeferedPlayDemo(argv[1]);
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "Cannot play demo because WAD didn't load\n");
+			Printf(PRINT_HIGH, "Use the 'wad' command\n");
+		}
+	}
 	else
 		Printf(PRINT_HIGH, "Usage: playdemo lumpname or file\n");
 }

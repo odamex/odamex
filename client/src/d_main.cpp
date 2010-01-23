@@ -612,11 +612,27 @@ void D_DoAdvanceDemo (void)
 }
 
 //
+// D_Close
+//
+void D_Close (void)
+{
+	if(page)
+	{
+		I_FreeScreen(page);
+		page = NULL;
+	}
+}
+
+//
 // D_StartTitle
 //
 void D_StartTitle (void)
 {
 	// CL_QuitNetGame();
+	bool firstTime = true;
+	if(firstTime)
+		atterm (D_Close);
+
 	gameaction = ga_nothing;
 	demosequence = -1;
 	D_AdvanceDemo ();
@@ -1234,6 +1250,8 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
 //
 void V_InitPalette (void);
 
+bool lastWadRebootSuccess = true;
+
 std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
                                      std::vector<std::string> needhashes,
                                      const std::vector<std::string> &patch_files)
@@ -1241,10 +1259,9 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	std::vector<size_t> fails;
 	size_t i;
 
-	static bool last_success = true;
 
 	// already loaded these?
-	if (last_success &&
+	if (lastWadRebootSuccess &&
 		!wadhashes.empty() &&
 			needhashes ==
 				std::vector<std::string>(wadhashes.begin()+1, wadhashes.end()))
@@ -1254,7 +1271,8 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 		return std::vector<size_t>();
 	}
 
-	last_success = false;
+	// assume failure
+	lastWadRebootSuccess = false;
 
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_FatalError ("\nYou cannot switch WAD with the shareware version. Register!");
@@ -1340,7 +1358,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	//NoWipe = 1;
 
 	// preserve state
-	last_success = fails.empty();
+	lastWadRebootSuccess = fails.empty();
 
 	gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
 
