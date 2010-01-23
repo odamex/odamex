@@ -311,7 +311,7 @@ void G_WriteDemoTiccmd ()
 // G_RecordDemo
 //
 bool G_RecordDemo (char* name)
-{ 
+{
     strcpy (demoname, name);
     strcat (demoname, ".lmp");
 
@@ -369,7 +369,7 @@ void G_BeginRecording (void)
         mapid = level.mapname[3] - '0';
     }
 
-    *demo_p++ = skill-1;
+    *demo_p++ = (unsigned char)(skill-1);
     *demo_p++ = episode;
     *demo_p++ = mapid;
     *demo_p++ = gametype;
@@ -404,9 +404,9 @@ void RecordCommand(int argc, char **argv)
 			Printf(PRINT_HIGH, "cannot record with no players");
 			return;
 		}
-		
+
 		maxplayers = 4;
-		
+
 		if(G_RecordDemo(argv[2]))
 		{
 			G_InitNew(argv[1]);
@@ -435,7 +435,7 @@ END_COMMAND(recordlongtics)
 
 BEGIN_COMMAND(stopdemo)
 {
-	G_CheckDemoStatus (); 
+	G_CheckDemoStatus ();
 }
 END_COMMAND(stopdemo)
 */
@@ -515,7 +515,7 @@ void G_Ticker (void)
 		}
 		C_AdjustBottom ();
 	}
-	
+
 	if(demorecording)
 		G_WriteDemoTiccmd();
 
@@ -558,7 +558,7 @@ void G_PlayerFinishLevel (player_t &player)
 
 	if(p->mo)
 		p->mo->flags &= ~MF_SHADOW;		// cancel invisibility
-		
+
 	p->extralight = 0;					// cancel gun flashes
 	p->fixedcolormap = 0;				// cancel ir goggles
 	p->damagecount = 0; 				// no palette changes
@@ -662,7 +662,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 		// send new object
 		SV_SpawnMobj(mo);
-	
+
 		if (level.time)
 			SV_Sound (mo->x, mo->y, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 	}
@@ -748,7 +748,7 @@ void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this
 	{
 		spot = CTF_SelectTeamPlaySpot (player, selections);  // [Toke - Teams]
 	}
-	
+
 	if (selections < 1)
 		I_Error ("No appropriate team starts");
 
@@ -814,14 +814,14 @@ void G_DoReborn (player_t &player)
 	if (!multiplayer)
 	{
 		bool canreload = false;
-		
+
 		for (size_t i = 0; i < players.size(); i++) {
 			if (!players[i].spectator && singleplayerjustdied) {
 				canreload = true;
 				singleplayerjustdied = false;
 			}
 		}
-		
+
 		if (canreload) {
 			// reload the level from scratch
 			gameaction = ga_newgame;

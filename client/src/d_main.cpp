@@ -87,6 +87,8 @@
 #include "cl_ctf.h"
 #include "cl_main.h"
 
+extern size_t got_heapsize;
+
 //extern void M_RestoreMode (void); // [Toke - Menu]
 extern void R_ExecuteSetViewSize (void);
 
@@ -155,11 +157,11 @@ void D_ProcessEvents (void)
 		{
 			M_RestoreMode ();
 		}
-        else
-        {
-            M_ModeFlashTestText();
-        }
-        
+		else
+		{
+			M_ModeFlashTestText();
+		}
+
 		return;
 	}
 
@@ -339,7 +341,7 @@ void D_Display (void)
 		}
 		NoWipe = 10;
 	}
-	
+
 	static bool live_wiping = false;
 
 	if (!wipe)
@@ -500,11 +502,11 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-    if (W_CheckNumForName("DEMO4") >= 0)
+    if (W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
         demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;
-    
+
     switch (demosequence)
     {
         case 0:
@@ -512,30 +514,30 @@ void D_DoAdvanceDemo (void)
                 pagetic = TICRATE * 11;
             else
                 pagetic = 170;
-	
+
             gamestate = GS_DEMOSCREEN;
             pagename = "TITLEPIC";
-	
+
             S_StartMusic(gameinfo.titleMusic);
-            
+
             break;
         case 1:
             G_DeferedPlayDemo("DEMO1");
-            
+
             break;
         case 2:
             pagetic = 200;
             gamestate = GS_DEMOSCREEN;
             pagename = "CREDIT";
-            
+
             break;
         case 3:
             G_DeferedPlayDemo("DEMO2");
-            
+
             break;
         case 4:
             gamestate = GS_DEMOSCREEN;
-            
+
             if (gamemode == commercial || gamemode == retail)
             {
 				if (gamemode == commercial)
@@ -548,23 +550,26 @@ void D_DoAdvanceDemo (void)
             else
             {
                 pagetic = 200;
-				pagename = "HELP2";
+				if (gamemode == retail_chex)	// [ML] Chex mode just cycles this screen
+					pagename = "CREDIT";
+				else
+					pagename = "HELP2";
             }
-            
+
             break;
         case 5:
             G_DeferedPlayDemo("DEMO3");
-	
+
             break;
         case 6:
             pagetic = 200;
             gamestate = GS_DEMOSCREEN;
             pagename = "CREDIT";
-            
-            break;        
+
+            break;
         case 7:
             G_DeferedPlayDemo("DEMO4");
-        
+
             break;
     }
 
@@ -606,11 +611,27 @@ void D_DoAdvanceDemo (void)
 }
 
 //
+// D_Close
+//
+void D_Close (void)
+{
+	if(page)
+	{
+		I_FreeScreen(page);
+		page = NULL;
+	}
+}
+
+//
 // D_StartTitle
 //
 void D_StartTitle (void)
 {
 	// CL_QuitNetGame();
+	bool firstTime = true;
+	if(firstTime)
+		atterm (D_Close);
+
 	gameaction = ga_nothing;
 	demosequence = -1;
 	D_AdvanceDemo ();
@@ -781,13 +802,13 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 		// absolute path?
 		if(file.find(':') != std::string::npos)
 			return file;
-		
+
 		const char separator = ';';
 	#else
 		// absolute path?
 		if(file[0] == '/' || file[0] == '~')
 			return file;
-		
+
 		const char separator = ':';
 	#endif
 
@@ -849,10 +870,12 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		"doom1.wad",
 		"freedoom.wad",
 		"freedm.wad",
+		"chex.wad",		// [ML] 1/7/10: Hello Chex Quest!
 		NULL
 	};
 
 	std::string iwad;
+	std::string iwad_file;
 	int i;
 
 	if(suggestion.length())
@@ -866,7 +889,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			if(M_FileExists(suggestion.c_str()))
 				iwad = suggestion;
 		}
-
+		/*	[ML] Removed 1/13/10: we can trust the user to provide an iwad
 		if(iwad.length())
 		{
 			FILE *f;
@@ -891,6 +914,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 				fclose(f);
 			}
 		}
+		*/
 	}
 
 	if(!iwad.length())
@@ -921,6 +945,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		int lumpsfound[NUM_CHECKLUMPS];
 		wadinfo_t header;
 		FILE *f;
+		M_ExtractFileName(iwad,iwad_file);
 
 		memset (lumpsfound, 0, sizeof(lumpsfound));
 		if ( (f = fopen (iwad.c_str(), "rb")) )
@@ -978,9 +1003,19 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				if (lumpsfound[2])
 				{
-					gamemode = retail;
-					gameinfo = RetailGameInfo;
-					titlestring = "The Ultimate DOOM";
+					if (!StdStringCompare(iwad_file,"chex.wad",true))	// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
+					{													// iwad.  It's ultimate doom with their stuff replacing most things.
+						gamemission = chex;
+						gamemode = retail_chex;
+						gameinfo = RetailGameInfo;
+						titlestring = "Chex Quest";
+					}
+					else
+					{
+						gamemode = retail;
+						gameinfo = RetailGameInfo;
+						titlestring = "The Ultimate DOOM";
+					}
 				}
 				else
 				{
@@ -1128,30 +1163,31 @@ void D_AddDefWads (std::string iwad)
 //
 // D_DoDefDehackedPatch
 //
-// [Russell] - Change the meaning, this will load multiple patch files if 
+// [Russell] - Change the meaning, this will load multiple patch files if
 //             specified
 void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vector<std::string>())
 {
-    DArgs files; 
+    DArgs files;
     BOOL noDef = false;
+    BOOL chexLoaded = false;
     QWORD i;
 
     if (!patch_files.empty())
     {
         std::string f;
         std::string ext;
-        
+
         // we want the extension of the file
         for (i = 0; i < patch_files.size(); i++)
         {
             if (M_ExtractFileExtension(patch_files[i], ext))
             {
                 f = BaseFileSearch (patch_files[i], ext);
-            
+
                 if (f.length())
                 {
                     DoDehPatch (f.c_str(), false);
-                
+
                     noDef = true;
                 }
             }
@@ -1160,27 +1196,33 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
     else // [Russell] - Only load if patch_files is empty
     {
         // try .deh files on command line
-   
+
         files = Args.GatherFiles ("-deh", ".deh", false);
-    
+
         if (files.NumArgs())
         {
             for (i = 0; i < files.NumArgs(); i++)
             {
                 std::string f = BaseFileSearch (files.GetArg (i), ".DEH");
 
-                if (f.length())
+                if (f.length()) {
                     DoDehPatch (f.c_str(), false);
+                    if (!strncmp(files.GetArg (i),"chex.deh",8))
+						chexLoaded = true;
+                }
             }
             noDef = true;
         }
+
+        if (gamemode == retail_chex && !multiplayer && !chexLoaded)
+			Printf(PRINT_HIGH,"Warning: chex.deh not loaded, experience may differ from the original!\n");
 
         // remove the old arguments
         files.FlushArgs();
 
         // try .bex files on command line
         files = Args.GatherFiles ("-bex", ".bex", false);
-    
+
         if (files.NumArgs())
         {
             for (i = 0; i < files.NumArgs(); i++)
@@ -1207,34 +1249,36 @@ void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vec
 //
 void V_InitPalette (void);
 
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
-                                     std::vector<std::string> needhashes, 
+bool lastWadRebootSuccess = true;
+
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
+                                     std::vector<std::string> needhashes,
                                      const std::vector<std::string> &patch_files)
 {
 	std::vector<size_t> fails;
 	size_t i;
 
-	static std::vector<std::string> last_wadnames, last_hashes, last_patches;
-	static bool last_success = false;
 
 	// already loaded these?
-	if (last_success && 
-        (wadnames == last_wadnames) && 
-        (patch_files == last_patches) &&
-        (needhashes.empty() || needhashes == last_hashes))
+	if (lastWadRebootSuccess &&
+		!wadhashes.empty() &&
+			needhashes ==
+				std::vector<std::string>(wadhashes.begin()+1, wadhashes.end()))
 	{
 		// fast track if files have not been changed // denis - todo - actually check the file timestamps
+		Printf (PRINT_HIGH, "Currently loaded WADs match server checksum\n\n");
 		return std::vector<size_t>();
 	}
 
-	last_success = false;
+	// assume failure
+	lastWadRebootSuccess = false;
 
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_FatalError ("\nYou cannot switch WAD with the shareware version. Register!");
 
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
-		
+
 	S_Stop();
 
 	DThinker::DestroyAllThinkers();
@@ -1313,9 +1357,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	//NoWipe = 1;
 
 	// preserve state
-	last_success = fails.empty();
-	last_wadnames = wadnames;
-	last_hashes = needhashes;
+	lastWadRebootSuccess = fails.empty();
 
 	gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
 
@@ -1336,6 +1378,8 @@ void D_DoomMain (void)
 
     C_ExecCmdLineParams (false, true);	// [Nes] test for +logfile command
 
+	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
+
 	M_LoadDefaults ();			// load before initing other systems
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
@@ -1346,7 +1390,7 @@ void D_DoomMain (void)
 
 	D_AddDefWads(iwad);
 
-	W_InitMultipleFiles (wadfiles);
+	wadhashes = W_InitMultipleFiles (wadfiles);
 
 	// [RH] Initialize configurable strings.
 	D_InitStrings ();

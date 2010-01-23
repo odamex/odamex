@@ -280,6 +280,7 @@ EXTERN_CVAR (wipetype)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (dimamount)
 EXTERN_CVAR (usehighresboard)
+EXTERN_CVAR (show_endoom)
 
 static value_t Crosshairs[] =
 {
@@ -363,6 +364,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Screen wipe style",	{&wipetype},			{4.0}, {0.0},	{0.0}, {Wipes} },
+	{ discrete, "Show DOS Ending Screen",	{&show_endoom},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Use high-res scoreboard",	{&usehighresboard},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0}, {OnOff} },
@@ -553,6 +555,7 @@ void M_OptInit (void)
 		{
 			Depths[currval].value = currval;
 			sprintf (name, "%d bit", i);
+			delete[] Depths[currval].name;
 			Depths[currval].name = copystring (name);
 			BitTranslate[currval] = i;
 			currval++;

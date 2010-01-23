@@ -29,9 +29,6 @@ around the limitations that wxListCtrl has.
 * Clean up misc.cpp, alot of code pertaining to adding servers exists there.
 This can be done with item 1 if desired.
 * Finish off work on OdaGet.
-* Remove the old tooltip popup and replace it with a dialog window when a right
-click is issued on a server in the server-list, the dialog should contain more 
-indepth information about the server.
 * Make the server replacement item in the custom servers dialog, this should
 allow a listed or dead server be replaced by the address specified in the custom
 servers list.

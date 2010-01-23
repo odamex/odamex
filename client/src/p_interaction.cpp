@@ -80,37 +80,37 @@ static void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
             PickupMessage(toucher, GOTSHOTGUN);
         }
         break;
-        
+
         case wp_chaingun:
         {
             PickupMessage(toucher, GOTCHAINGUN);
         }
         break;
-        
+
         case wp_missile:
         {
             PickupMessage(toucher, GOTLAUNCHER);
         }
         break;
-        
+
         case wp_plasma:
         {
             PickupMessage(toucher, GOTPLASMA);
         }
         break;
-        
+
         case wp_bfg:
         {
             PickupMessage(toucher, GOTBFG9000);
         }
         break;
-        
+
         case wp_chainsaw:
         {
             PickupMessage(toucher, GOTCHAINSAW);
         }
         break;
-        
+
         case wp_supershotgun:
         {
             PickupMessage(toucher, GOTSHOTGUN2);
@@ -395,7 +395,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 
 	// GhostlyDeath -- Spectators can't pick up things
 	if (toucher->player && toucher->player->spectator)
-		return;		
+		return;
 
 	fixed_t delta = special->z - toucher->z;
 
@@ -815,7 +815,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 
 	if (serverside && target->flags & MF_COUNTKILL)
 		level.killed_monsters++;
-		
+
 	if (demoplayback && source && source->player && target->player) {
 		if (target->player == source->player) // Nes - Local demo
 			source->player->fragcount--;
@@ -860,7 +860,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		}
 		else
 			P_SetMobjState (target, target->info->deathstate);
-	
+
 	target->tics -= P_Random (target) & 3;
 
 	if (target->tics < 1)
@@ -870,6 +870,9 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 	// Nes - Server now broadcasts obituaries.
 	//if (target->player && level.time && multiplayer && !(demoplayback && democlassic) && !joinkill)
 	//	ClientObituary (target, inflictor, source);
+
+	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
+		return;
 
 	// Drop stuff.
 	// This determines the kind of object spawned

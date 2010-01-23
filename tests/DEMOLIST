@@ -19,6 +19,9 @@ tnt.wad . demo3 {7a76c22f 997ba56 b59ec2a 800000}
 plutonia.wad . demo1 {a3f3145f 14f8e7d fe2fba2e 800000}
 plutonia.wad . demo2 {45fc0d70 fc87bb74 ffd7f638 0}
 plutonia.wad . demo3 {3976fc0 fdd00017 f9900df0 ffe70000}
+chex.wad {chex.deh} demo1 {e5000000 fdaffcf1 fa4ffae8 0}
+chex.wad {chex.deh} demo2 {f20c95a0 c5e5998 4b6c7bb 2580000}
+chex.wad {chex.deh} demo3 {de371980 3849e76 240f9a5 0}
 doom.wad . impfight {44a29b40 c821b6f ef31bc85 ffe80000}
 doom.wad . d1shock {a1000000 fd400341 ff1ff6a2 300000}
 doom.wad . bohfight {4e000000 6ff5f bbd4065 0}
@@ -82,3 +85,4 @@ doom2.wad 32in24-7-024.wad 32in24-7-024_map03.lmp {3e000000 1f5db85 fdbf2140 fff
 doom2.wad av.wad demo1 {75000000 15db991 f7060477 0}
 doom2.wad av.wad demo2 {f68b6b80 fca9568d f7de99be ffba0000}
 doom2.wad av.wad demo3 {5d06f460 faf1f911 f97036ab ffa80000}
+doom.wad . ep1-0500.lmp {32b2c260 26a396a 195c4994 ff780000}

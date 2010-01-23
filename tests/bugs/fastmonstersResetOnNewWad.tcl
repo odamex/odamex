@@ -10,7 +10,7 @@ proc main {} {
  wait
 
  # run av.wad demo1
- client "wad av.wad"
+ client "wad doom2.wad av.wad"
  wait 1
  clear
  client "playdemo demo1"

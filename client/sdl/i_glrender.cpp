@@ -794,15 +794,21 @@ void DrawWalls()
 			float tlw = glp.w*wall_length/texture->width;
 
 			float wall_height = FIXED2FLOAT(topmid-botmid);
-			float toh = glp.h*FIXED2FLOAT(frontside->rowoffset);
+			float toh = glp.h*FIXED2FLOAT(frontside->rowoffset)/texture->height;
 			float tlh = glp.h*wall_height/texture->height;
+
+			if(l->flags & ML_DONTPEGBOTTOM)
+			{
+				toh = 0;//glp.h*FIXED2FLOAT(frontside->rowoffset)/texture->height;
+				tlh = glp.h;
+			}
 
 			glBegin(GL_QUADS);
 
-			glTexCoord2f(toh + tlh, tow);
+			glTexCoord2f(toh + tlh, tow); // bottom left
 			glVertex3f(FIXED2FLOAT(l->v1->y), FIXED2FLOAT(botmid), FIXED2FLOAT(l->v1->x));
 
-			glTexCoord2f(toh + tlh, tlw + tow);
+			glTexCoord2f(toh + tlh, tlw + tow); // bottom right
 			glVertex3f(FIXED2FLOAT(l->v2->y), FIXED2FLOAT(botmid), FIXED2FLOAT(l->v2->x));
 
 			glTexCoord2f(toh, tlw + tow);

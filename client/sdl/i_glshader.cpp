@@ -142,12 +142,20 @@ void EnableShader()
 		selected_shader = -1;
 		return;
 	}
+	else
+	{
+		Printf(PRINT_HIGH, "Using shader: %s\n", shaders[selected_shader][0]);
+	}
 	
 	// detect and enable multitexturing
 	if(strstr(ext, "GL_ARB_multitexture") == 0)
 	{
 		Printf(PRINT_HIGH, "GL_ARB_multitexture not supported\n");
 		return;
+	}
+	else
+	{
+		Printf(PRINT_HIGH, "GL_ARB_multitexture is supported\n");
 	}
 
 	// get opengl function pointers

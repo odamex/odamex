@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -132,8 +132,9 @@ void F_Ticker (void)
 			}
 			else
 			{*/
-				if (!strncmp (level.nextmap, "EndGame", 7))
-				{
+				if (!strncmp (level.nextmap, "EndGame", 7) ||
+				(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))  	// [ML] Chex mode: game is over
+				{																	// after E1M5
 					if (level.nextmap[7] == 'C')
 					{
 						F_StartCast ();
@@ -154,10 +155,10 @@ void F_Ticker (void)
 			//}
 		}
 	}
-	
+
 	// advance animation
 	finalecount++;
-		
+
 	if (finalestage == 2)
 	{
 		F_CastTicker ();
@@ -181,7 +182,7 @@ void F_TextWrite (void)
 	int 		c;
 	int 		cx;
 	int 		cy;
-	
+
 	// erase the entire screen to a tiled background
 	{
 		int lump = W_CheckNumForName (finaleflat, ns_flats);
@@ -196,12 +197,12 @@ void F_TextWrite (void)
 		}
 	}
 	V_MarkRect (0, 0, screen->width, screen->height);
-	
+
 	// draw some of the text onto the screen
 	cx = 10;
 	cy = 10;
 	ch = finaletext;
-		
+
 	if (finalecount < 11)
 		return;
 
@@ -217,21 +218,21 @@ void F_TextWrite (void)
 			cy += 11;
 			continue;
 		}
-				
+
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c> HU_FONTSIZE)
 		{
 			cx += 4;
 			continue;
 		}
-				
+
 		w = hu_font[c]->width();
 		if (cx+w > screen->width)
 			break;
 		screen->DrawPatchClean (hu_font[c], cx, cy);
 		cx+=w;
 	}
-		
+
 }
 
 //
@@ -313,7 +314,7 @@ void F_StartCast (void)
 		castsprite = caststate->sprite;
 	casttics = caststate->tics;
 	castdeath = false;
-	finalestage = 2;	
+	finalestage = 2;
 	castframes = 0;
 	castonmelee = 0;
 	castattacking = false;
@@ -331,7 +332,7 @@ void F_CastTicker (void)
 
 	if (--casttics > 0)
 		return; 				// not time to change state yet
-				
+
 	if (caststate->tics == -1 || caststate->nextstate == S_NULL)
 	{
 		// switch from deathstate to next monster
@@ -360,7 +361,7 @@ void F_CastTicker (void)
 		st = caststate->nextstate;
 		caststate = &states[st];
 		castframes++;
-		
+
 		// sound hacks....
 		switch (st)
 		{
@@ -392,13 +393,13 @@ void F_CastTicker (void)
 		  case S_PAIN_ATK3: 	sfx = "skull/melee"; break;
 		  default: sfx = 0; break;
 		}
-				
+
 		if (sfx) {
 			S_StopAllChannels ();
 			S_Sound (CHAN_WEAPON, sfx, 1, ATTN_NONE);
 		}
 	}
-		
+
 	if (castframes == 12)
 	{
 		// go into attack frame
@@ -418,7 +419,7 @@ void F_CastTicker (void)
 					&states[mobjinfo[castorder[castnum].type].missilestate];
 		}
 	}
-		
+
 	if (castattacking)
 	{
 		if (castframes == 24
@@ -430,7 +431,7 @@ void F_CastTicker (void)
 			caststate = &states[mobjinfo[castorder[castnum].type].seestate];
 		}
 	}
-		
+
 	casttics = caststate->tics;
 	if (casttics == -1)
 		casttics = 15;
@@ -447,10 +448,10 @@ BOOL F_CastResponder (event_t* ev)
 
 	if (ev->type != ev_keydown)
 		return false;
-				
+
 	if (castdeath)
 		return true;					// already in dying frames
-				
+
 	// go into death frame
 	castdeath = true;
 	caststate = &states[mobjinfo[castorder[castnum].type].deathstate];
@@ -485,7 +486,7 @@ BOOL F_CastResponder (event_t* ev)
 		} else
 			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, attn);
 	}
-		
+
 	return true;
 }
 
@@ -499,20 +500,20 @@ void F_CastDrawer (void)
 	int 				lump;
 	BOOL	 			flip;
 	patch_t*			patch;
-	
+
 	// erase the entire screen to a background
 	screen->DrawPatchIndirect (W_CachePatch ("BOSSBACK"), 0, 0);
 
 	screen->DrawTextClean (CR_RED,
 		(screen->width - V_StringWidth (castorder[castnum].name) * CleanXfac)/2,
 		(screen->height * 180) / 200, castorder[castnum].name);
-	
+
 	// draw the current frame in the middle of the screen
 	sprdef = &sprites[castsprite];
 	sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 	lump = sprframe->lump[0];
 	flip = (BOOL)sprframe->flip[0];
-						
+
 	patch = W_CachePatch (lump);
 	if (flip)
 		screen->DrawPatchFlipped (patch, 160, 170);
@@ -637,26 +638,26 @@ void F_BunnyScroll (void)
 	char		name[10];
 	int 		stage;
 	static int	laststage;
-				
+
 	p1 = W_CachePatch ("PFUB2");
 	p2 = W_CachePatch ("PFUB1");
 
 	V_MarkRect (0, 0, screen->width, screen->height);
-		
+
 	scrolled = 320 - (finalecount-230)/2;
 	if (scrolled > 320)
 		scrolled = 320;
 	if (scrolled < 0)
 		scrolled = 0;
-				
+
 	for ( x=0 ; x<320 ; x++)
 	{
 		if (x+scrolled < 320)
 			F_DrawPatchCol (x, p1, x+scrolled, screen);
 		else
-			F_DrawPatchCol (x, p2, x+scrolled - 320, screen);			
+			F_DrawPatchCol (x, p2, x+scrolled - 320, screen);
 	}
-		
+
 	if (finalecount < 1130)
 		return;
 	if (finalecount < 1180)
@@ -666,7 +667,7 @@ void F_BunnyScroll (void)
 		laststage = 0;
 		return;
 	}
-		
+
 	stage = (finalecount-1180) / 5;
 	if (stage > 6)
 		stage = 6;
@@ -675,7 +676,7 @@ void F_BunnyScroll (void)
 		S_Sound (CHAN_WEAPON, "weapons/pistol", 1, ATTN_NONE);
 		laststage = stage;
 	}
-		
+
 	sprintf (name,"END%i",stage);
 	screen->DrawPatchIndirect (W_CachePatch (name),
 		(320-13*8)/2, (200-8*8)/2);

@@ -42,7 +42,7 @@ while { ![eof $file] } {
 		}
 	}
 	append args " +demotest $lump"
-	append args " -logfile odamex.log"
+	append args " +logfile odamex.log"
 
 	set stdout "CRASHED"
 	catch {

@@ -158,7 +158,7 @@ void C_DoCommand (const char *cmd)
 		//	Actions[check]--;
 		if (check != -1)
 			Actions[check] = 0;
-			
+
 		if (check == ACTION_MLOOK && lookspring)
 		{
 			AddCommandString ("centerview");
@@ -360,13 +360,13 @@ BEGIN_COMMAND (exec)
         size_t CommentIndex = line.find_first_of("//");
 
 		// commented line
-		if(line.length() > 1 && 
+		if(line.length() > 1 &&
            ((line[0] == '/' && line[1] == '/') ||
            (QuoteIndex > CommentIndex)))
         {
             continue;
         }
-        
+
 		// start tag
 		if(line.substr(0, 3) == "#if")
 		{
@@ -804,6 +804,53 @@ BEGIN_COMMAND (dumpactors)
 	}
 }
 END_COMMAND (dumpactors)
+
+BEGIN_COMMAND (logfile)
+{
+	time_t rawtime;
+	struct tm * timeinfo;
+	const char* DEFAULT_LOG_FILE = (serverside ? "odasrv.log" : "odamex.log");
+
+	if (LOG.is_open()) {
+		if ((argc == 1 && LOG_FILE == DEFAULT_LOG_FILE) || (argc > 1 && LOG_FILE == argv[1])) {
+			Printf (PRINT_HIGH, "Log file %s already in use\n", LOG_FILE);
+			return;
+		}
+
+    	time (&rawtime);
+    	timeinfo = localtime (&rawtime);
+    	Printf (PRINT_HIGH, "Log file %s closed on %s\n", LOG_FILE, asctime (timeinfo));
+		LOG.close();
+	}
+
+	LOG_FILE = (argc > 1 ? argv[1] : DEFAULT_LOG_FILE);
+	LOG.open (LOG_FILE, std::ios::app);
+
+	if (!LOG.is_open())
+		Printf (PRINT_HIGH, "Unable to create logfile: %s\n", LOG_FILE);
+	else {
+		time (&rawtime);
+    	timeinfo = localtime (&rawtime);
+    	LOG.flush();
+    	LOG << std::endl;
+		Printf (PRINT_HIGH, "Logging in file %s started %s\n", LOG_FILE, asctime (timeinfo));
+    }
+}
+END_COMMAND (logfile)
+
+BEGIN_COMMAND (stoplog)
+{
+	time_t rawtime;
+	struct tm * timeinfo;
+
+	if (LOG.is_open()) {
+		time (&rawtime);
+    	timeinfo = localtime (&rawtime);
+		Printf (PRINT_HIGH, "Logging to file %s stopped %s\n", LOG_FILE, asctime (timeinfo));
+		LOG.close();
+	}
+}
+END_COMMAND (stoplog)
 
 VERSION_CONTROL (c_dispatch_cpp, "$Id$")
 

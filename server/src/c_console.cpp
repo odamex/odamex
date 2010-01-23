@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -171,35 +171,35 @@ EXTERN_CVAR (log_fulltimestamps)
 char *TimeStamp()
 {
 	static char stamp[32];
-	
+
 	time_t ti = time(NULL);
 	struct tm *lt = localtime(&ti);
-	
+
 	if(lt)
 	{
 		if (log_fulltimestamps)
 		{
-            sprintf (stamp, 
-                     "[%.2d/%.2d/%.2d %.2d:%.2d:%.2d]", 
-                     lt->tm_mday, 
-                     lt->tm_mon, 
+            sprintf (stamp,
+                     "[%.2d/%.2d/%.2d %.2d:%.2d:%.2d]",
+                     lt->tm_mday,
+                     lt->tm_mon,
                      lt->tm_year + 1900,
-                     lt->tm_hour, 
-                     lt->tm_min, 
+                     lt->tm_hour,
+                     lt->tm_min,
                      lt->tm_sec);
 		}
 		else
 		{
-            sprintf (stamp, 
+            sprintf (stamp,
                      "[%.2d:%.2d:%.2d]",
-                     lt->tm_hour, 
-                     lt->tm_min, 
+                     lt->tm_hour,
+                     lt->tm_min,
                      lt->tm_sec);
 		}
 	}
 	else
 		*stamp = 0;
-	
+
 	return stamp;
 }
 
@@ -218,7 +218,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		return 0;
 
 	vsprintf (outline, format, parms);
-	
+
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	int len = strlen(outline);
 	size_t i;
@@ -229,7 +229,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 	std::string str(TimeStamp());
 	str.append(" ");
 	str.append(outline);
-	
+
 	if(str[str.length()-1] != '\n')
 		str += '\n';
 
@@ -238,17 +238,19 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 	for (i = 0; i < players.size(); i++)
 	{
 		cl = &clients[i];
-		
+
 		if(!clients[i].allow_rcon)
 			continue;
-		
+
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_MEDIUM);
 		MSG_WriteString (&cl->reliablebuf, (char *)str.c_str());
 	}
 
-    LOG << str;
-	LOG.flush();
+	if (LOG.is_open()) {
+		LOG << str;
+		LOG.flush();
+	}
 
 	return PrintString (printlevel, str.c_str());
 }
@@ -412,7 +414,7 @@ void C_MidPrint (const char *msg, player_t *p)
 {
     if (p == NULL)
         return;
-        
+
     SV_MidPrint(msg, p);
 }
 
@@ -442,7 +444,7 @@ void C_AddTabCommand (const char *name)
 void C_RemoveTabCommand (const char *name)
 {
 	tabcommand_map_t::iterator i = TabCommands().find(name);
-	
+
 	if(i != TabCommands().end())
 		if(!--i->second)
 			TabCommands().erase(i);
@@ -459,15 +461,15 @@ static void C_TabComplete (void)
 		for (TabStart = 2; TabStart < CmdLine[0]; TabStart++)
 			if (CmdLine[TabStart] != ' ')
 				break;
-		
+
 		TabSize = CmdLine[0] - TabStart + 2;
 		TabbedLast = true;
 	}
-	
+
 	// Find next near match
 	std::string TabPos = std::string((char *)(CmdLine + TabStart), CmdLine[0] - TabStart + 2);
 	tabcommand_map_t::iterator i = TabCommands().lower_bound(TabPos);
-	
+
 	// Does this near match fail to actually match what the user typed in?
 	if(i == TabCommands().end() || strnicmp((char *)(CmdLine + TabStart), i->first.c_str(), TabSize) != 0)
 	{
@@ -475,12 +477,12 @@ static void C_TabComplete (void)
 		CmdLine[0] = CmdLine[1] = TabSize + TabStart - 2;
 		return;
 	}
-	
+
 	// Found a valid replacement
 	strcpy ((char *)(CmdLine + TabStart), i->first.c_str());
 	CmdLine[0] = CmdLine[1] = strlen ((char *)(CmdLine + 2)) + 1;
 	CmdLine[CmdLine[0] + 1] = ' ';
-	
+
 	makestartposgood ();
 }
 */

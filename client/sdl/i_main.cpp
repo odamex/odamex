@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -58,8 +58,6 @@
 
 DArgs Args;
 
-extern size_t got_heapsize;
-
 // functions to be called at shutdown are stored in this stack
 typedef void (STACK_ARGS *term_func_t)(void);
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;
@@ -87,15 +85,6 @@ int main(int argc, char *argv[])
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		Args.SetArgs (argc, argv);
 
-		LOG_FILE = Args.CheckValue("-logfile");
-		if(!LOG_FILE)LOG_FILE = "odamex.log";
-		LOG.open(LOG_FILE, std::ios::app);
-
-        if (!LOG.is_open())
-            std::cerr << "Unable to create logfile: %s\n" << std::endl;
-		else
-            LOG << std::endl;
-            
 		const char *CON_FILE = Args.CheckValue("-confile");
 		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
 
@@ -118,66 +107,67 @@ int main(int argc, char *argv[])
 			}
 		}
 
+        // [Russell] - No more double-tapping of capslock to enable autorun
+        putenv("SDL_DISABLE_LOCK_KEYS=1");
+
 #ifdef WIN32
-    	// From the SDL 1.2.10 release notes: 
+    	// From the SDL 1.2.10 release notes:
     	//
-    	// > The "windib" video driver is the default now, to prevent 
-    	// > problems with certain laptops, 64-bit Windows, and Windows 
-    	// > Vista. 
+    	// > The "windib" video driver is the default now, to prevent
+    	// > problems with certain laptops, 64-bit Windows, and Windows
+    	// > Vista.
     	//
     	// The hell with that.
-   
+
    		// SoM: the gdi interface is much faster for windowed modes which are more
    		// commonly used. Thus, GDI is default.
      	if (Args.CheckParm ("-directx"))
-        	putenv("SDL_VIDEODRIVER=directx");     
+        	putenv("SDL_VIDEODRIVER=directx");
     	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-gdi") > 0)
         	putenv("SDL_VIDEODRIVER=windib");
-        	
+
 
         // Set the process affinity mask to 1 on Windows, so that all threads
-        // run on the same processor.  This is a workaround for a bug in 
+        // run on the same processor.  This is a workaround for a bug in
         // SDL_mixer that causes occasional crashes.
         // Thanks to entryway and fraggle for this.
-        
+
         if (!SetProcessAffinityMask(GetCurrentProcess(), 1))
             LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
 
 #endif
-		
+
 		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
 			I_FatalError("Could not initialize SDL:\n%s\n", SDL_GetError());
 
 		atterm (SDL_Quit);
-		
+
 		/*
 		killough 1/98:
-		
+
 		  This fixes some problems with exit handling
 		  during abnormal situations.
-		  
+
 			The old code called I_Quit() to end program,
 			while now I_Quit() is installed as an exit
 			handler and exit() is called to exit, either
 			normally or abnormally.
 		*/
-		
+
 		atexit (call_terms);
 		Z_Init ();					// 1/18/98 killough: start up memory stuff first
 
         atterm (R_Shutdown);
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
-		
+
 		// Figure out what directory the program resides in.
 		progdir = I_GetBinaryDir();
 		startdir = I_GetCWD();
-		
+
 		// init console
 		C_InitConsole (80 * 8, 25 * 8, false);
-		
-		Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
-		
+
 		D_DoomMain ();
 	}
 	catch (CDoomError &error)
@@ -212,4 +202,3 @@ int main(int argc, char *argv[])
 
 
 VERSION_CONTROL (i_main_cpp, "$Id$")
-

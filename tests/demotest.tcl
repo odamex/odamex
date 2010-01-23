@@ -22,7 +22,7 @@ foreach demo $demos {
 	set stdout [exec ./odamex -nosound -novideo   \
 			-iwad [lindex $demo 0]        \
 			+demotest [lindex $demo 1]    \
-			-logfile odamex.log]
+			+logfile odamex.log]
 
 	set log [open odamex.log r]
 	while { ![eof $log] } {

@@ -15,7 +15,6 @@
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
-				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-DWIN32" />
@@ -27,6 +26,8 @@
 					<Add library="mingw32" />
 					<Add library="winmm" />
 					<Add library="wsock32" />
+					<Add library="libtextscreen" />
+					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
 			<Target title="Win Debug (GCC)">
@@ -38,7 +39,6 @@
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
-				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
@@ -50,6 +50,8 @@
 					<Add library="mingw32" />
 					<Add library="winmm" />
 					<Add library="wsock32" />
+					<Add library="libtextscreen-dbg" />
+					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
 			<Target title="Unix Release">
@@ -169,11 +171,13 @@
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\textscreen" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libtextscreen" />
 				</ResourceCompiler>
 				<Linker>
 					<Add library="SDLmain.lib" />
@@ -193,9 +197,11 @@
 					<Add library="uuid.lib" />
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
+					<Add library="libtextscreen" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\lib" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
@@ -236,11 +242,13 @@
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\textscreen" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libtextscreen" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/debug" />
@@ -261,9 +269,11 @@
 					<Add library="uuid.lib" />
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
+					<Add library="libtextscreen-dbg" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\lib" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
@@ -285,6 +295,7 @@
 			<Add directory="." />
 			<Add directory="..\src" />
 			<Add directory="..\..\common" />
+			<Add directory="..\..\textscreen" />
 		</Compiler>
 		<Linker>
 			<Add library="SDLmain" />
@@ -292,6 +303,7 @@
 			<Add library="SDL_mixer" />
 			<Add library="opengl32" />
 			<Add library="glu32" />
+			<Add directory="..\..\lib" />
 		</Linker>
 		<Unit filename="client.rc">
 			<Option compilerVar="WINDRES" />
@@ -410,6 +422,7 @@
 		<Unit filename="..\..\common\dobject.h" />
 		<Unit filename="..\..\common\doomdata.h" />
 		<Unit filename="..\..\common\doomdef.h" />
+		<Unit filename="..\..\common\doomkeys.h" />
 		<Unit filename="..\..\common\doomstat.cpp" />
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />

@@ -77,8 +77,11 @@
 
 EXTERN_CVAR (timelimit)
 
+extern size_t got_heapsize;
+
 extern void M_RestoreMode (void);
 extern void R_ExecuteSetViewSize (void);
+void C_DoCommand (const char *cmd);
 
 void D_CheckNetGame (void);
 void D_ProcessEvents (void);
@@ -245,10 +248,12 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		"doom1.wad",
 		"freedoom.wad",
 		"freedm.wad",
+		"chex.wad",		// [ML] 1/7/10: Hello Chex Quest!
 		NULL
 	};
 
 	std::string iwad;
+	std::string iwad_file;
 	int i;
 
 	if(suggestion.length())
@@ -262,7 +267,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			if(M_FileExists(suggestion.c_str()))
 				iwad = suggestion;
 		}
-
+		/*	[ML] Removed 1/13/10: we can trust the user to provide an iwad
 		if(iwad.length())
 		{
 			FILE *f;
@@ -287,6 +292,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 				fclose(f);
 			}
 		}
+		*/
 	}
 
 	if(!iwad.length())
@@ -317,6 +323,7 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 		int lumpsfound[NUM_CHECKLUMPS];
 		wadinfo_t header;
 		FILE *f;
+		M_ExtractFileName(iwad,iwad_file);
 
 		memset (lumpsfound, 0, sizeof(lumpsfound));
 		if ( (f = fopen (iwad.c_str(), "rb")) )
@@ -374,9 +381,19 @@ static bool CheckIWAD (std::string suggestion, std::string &titlestring)
 			{
 				if (lumpsfound[2])
 				{
-					gamemode = retail;
-					gameinfo = RetailGameInfo;
-					titlestring = "The Ultimate DOOM";
+					if (!StdStringCompare(iwad_file,"chex.wad",true))	// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
+					{								// iwad.  It's ultimate doom with their stuff replacing most things.
+						gamemission = chex;
+						gamemode = retail_chex;
+						gameinfo = RetailGameInfo;
+						titlestring = "Chex Quest";
+					}
+					else
+					{
+						gamemode = retail;
+						gameinfo = RetailGameInfo;
+						titlestring = "The Ultimate DOOM";
+					}
 				}
 				else
 				{
@@ -582,13 +599,13 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 		// absolute path?
 		if(file.find(':') != std::string::npos)
 			return file;
-		
+
 		const char separator = ';';
 	#else
 		// absolute path?
 		if(file[0] == '/' || file[0] == '~')
 			return file;
-		
+
 		const char separator = ':';
 	#endif
 
@@ -614,7 +631,7 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 	for(size_t i = 0; i < dirs.size(); i++)
 	{
 		std::string found = BaseFileSearchDir(dirs[i], file, ext);
-		
+
 		if(found.length())
 		{
 			std::string &dir = dirs[i];
@@ -717,11 +734,11 @@ void D_AddDefWads (std::string iwad)
 //
 // D_DoDefDehackedPatch
 //
-// [Russell] - Change the meaning, this will load multiple patch files if 
+// [Russell] - Change the meaning, this will load multiple patch files if
 //             specified
 void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
 {
-    DArgs files; 
+    DArgs files;
     BOOL noDef = false;
     QWORD i;
 
@@ -729,25 +746,25 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
     {
         std::string f;
         std::string ext;
-        
+
         // we want the extension of the file
         for (i = 0; i < patch_files.size(); i++)
         {
             if (M_ExtractFileExtension(patch_files[i], ext))
             {
                 f = BaseFileSearch (patch_files[i], ext);
-            
+
                 if (f.length())
                 {
                     if (DoDehPatch (f.c_str(), false))
                     {
                         std::string Filename;
-                        
+
                         M_ExtractFileName(f, Filename);
-                        
+
                         patchfiles.push_back(Filename);
                     }
-                    
+
                     noDef = true;
                 }
             }
@@ -756,9 +773,9 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
     else // [Russell] - Only load if patch_files is empty
     {
         // try .deh files on command line
-   
+
         files = Args.GatherFiles ("-deh", ".deh", false);
-    
+
         if (files.NumArgs())
         {
             for (i = 0; i < files.NumArgs(); i++)
@@ -770,9 +787,9 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
                     if (DoDehPatch (f.c_str(), false))
                     {
                         std::string Filename;
-                        
+
                         M_ExtractFileName(f, Filename);
-                        
+
                         patchfiles.push_back(Filename);
                     }
                 }
@@ -785,7 +802,7 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
 
         // try .bex files on command line
         files = Args.GatherFiles ("-bex", ".bex", false);
-    
+
         if (files.NumArgs())
         {
             for (i = 0; i < files.NumArgs(); i++)
@@ -797,9 +814,9 @@ void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
                     if (DoDehPatch (f.c_str(), false))
                     {
                         std::string Filename;
-                        
+
                         M_ExtractFileName(f, Filename);
-                        
+
                         patchfiles.push_back(Filename);
                     }
                 }
@@ -839,7 +856,7 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 // change wads at runtime
 // on 404, returns a vector of bad files
 //
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames, 
+std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
                                      const std::vector<std::string> &patch_files)
 {
 	std::vector<size_t> fails;
@@ -876,8 +893,10 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 			wadfiles.push_back(file);
 		else
 		{
-			Printf (PRINT_HIGH, "could not find WAD: %s\n", wadnames[i].c_str());
-			fails.push_back(i);
+			if (wadnames[i] != "") {
+				Printf (PRINT_HIGH, "could not find WAD: %s\n", wadnames[i].c_str());
+				fails.push_back(i);
+			}
 		}
 	}
 
@@ -923,6 +942,11 @@ void D_DoomMain (void)
 
     C_ExecCmdLineParams (false, true);	// [Nes] test for +logfile command
 
+    if (!LOG.is_open())
+    	C_DoCommand("logfile");
+
+	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
+
 	I_Init ();
 
 	D_CheckNetGame ();
@@ -930,10 +954,6 @@ void D_DoomMain (void)
 	M_LoadDefaults ();			// load before initing other systems
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
-
-	//D_AddDefWads();
-	//SV_InitMultipleFiles (wadfiles);
-	//wadhashes = W_InitMultipleFiles (wadfiles);
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks ();
@@ -997,15 +1017,18 @@ void D_DoomMain (void)
 
 	// Use wads mentioned on the commandline to start with
 	std::vector<std::string> start_wads;
-
 	std::string custwad;
-	const char *iwadparm = Args.CheckValue ("-iwad");
-	if (iwadparm)
+
+	const char *iwad = Args.CheckValue("-iwad");
+	if(!iwad)
+		custwad = "";
+	else
 	{
-		custwad = iwadparm;
+		custwad = iwad;
 		FixPathSeparator (custwad);
-		start_wads.push_back(custwad);
 	}
+
+	start_wads.push_back(custwad);
 
 	DArgs files = Args.GatherFiles ("-file", ".wad", true);
 	if (files.NumArgs() > 0)
@@ -1018,6 +1041,7 @@ void D_DoomMain (void)
 	}
 
 	D_DoomWadReboot(start_wads);
+
 
 	// [RH] Now that all game subsystems have been initialized,
 	// do all commands on the command line other than +set

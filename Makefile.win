@@ -23,15 +23,20 @@ LFLAGS = -lwsock32 -lwinmm
 # Russell - local flags specific to build type
 SERVER_CFLAGS = -I../server/win32 -Iserver/win32 -I../server/src -Iserver/src -D_CONSOLE
 SERVER_LFLAGS = 
-CLIENT_CFLAGS = -I../client/sdl -Iclient/sdl -I../client/src -Iclient/src
+CLIENT_CFLAGS = -Itextscreen -I../client/sdl -Iclient/sdl -I../client/src -Iclient/src
 CLIENT_LFLAGS = $(shell sdl-config --libs) -lSDL_mixer
 MASTER_CFLAGS =
 
 # Russell - directory for each project
+TEXTSCREEN_DIR = textscreen
 COMMON_DIR = common
 SERVER_DIR = server/src
 CLIENT_DIR = client/src
 MASTER_DIR = master
+
+TEXTSCREEN_HEADERS = $(wildcard $(TEXTSCREEN_DIR)/*.h)
+TEXTSCREEN_SOURCES = $(wildcard $(TEXTSCREEN_DIR)/*.cpp)
+TEXTSCREEN_OBJS = $(patsubst $(TEXTSCREEN_DIR)/%.cpp,$(OBJDIR)/$(TEXTSCREEN_DIR)/%.o,$(TEXTSCREEN_SOURCES))
 
 COMMON_HEADERS = $(wildcard $(COMMON_DIR)/*.h)
 COMMON_SOURCES = $(wildcard $(COMMON_DIR)/*.cpp)
@@ -57,6 +62,11 @@ MASTER_OBJS = $(patsubst $(MASTER_DIR)/%.cpp,$(OBJDIR)/$(MASTER_DIR)/%.o,$(MASTE
 
 all: $(SERVER_TARGET) $(CLIENT_TARGET) $(MASTER_TARGET)
 
+# textscreen
+$(OBJDIR)/$(TEXTSCREEN_DIR)/%.o: $(TEXTSCREEN_DIR)/%.cpp $(TEXTSCREEN_HEADERS) $(COMMON_HEADERS)
+	@$(MKDIR) $(dir $@)
+	$(CC) $(CFLAGS) $(CLIENT_CFLAGS) -c $< -o $@
+
 # common for server
 $(OBJDIR)/$(COMMON_DIR)/server_%.o: $(COMMON_DIR)/%.cpp $(COMMON_HEADERS) $(SERVER_HEADERS)
 	@$(MKDIR) $(dir $@)
@@ -68,11 +78,11 @@ $(OBJDIR)/$(COMMON_DIR)/client_%.o: $(COMMON_DIR)/%.cpp $(COMMON_HEADERS) $(CLIE
 	$(CC) $(CFLAGS) $(CLIENT_CFLAGS) -c $< -o $@
 
 # client
-$(CLIENT_TARGET): $(COMMON_OBJS_CLIENT) $(CLIENT_OBJS)
+$(CLIENT_TARGET): $(TEXTSCREEN_OBJS) $(COMMON_OBJS_CLIENT) $(CLIENT_OBJS)
 	@$(MKDIR) $(BINDIR)
-	$(LD) $(CLIENT_OBJS) $(COMMON_OBJS_CLIENT) $(CLIENT_LFLAGS) $(LFLAGS) -o $(BINDIR)/$(CLIENT_BIN)
+	$(LD) $(CLIENT_OBJS) $(TEXTSCREEN_OBJS) $(COMMON_OBJS_CLIENT) $(CLIENT_LFLAGS) $(LFLAGS) -o $(BINDIR)/$(CLIENT_BIN)
 
-$(OBJDIR)/$(CLIENT_DIR)/%.o: $(CLIENT_DIR)/%.cpp $(CLIENT_HEADERS) $(COMMON_HEADERS)
+$(OBJDIR)/$(CLIENT_DIR)/%.o: $(CLIENT_DIR)/%.cpp $(CLIENT_HEADERS) $(COMMON_HEADERS) $(TEXTSCREEN_HEADERS)
 	@$(MKDIR) $(dir $@)
 	$(CC) $(CLIENT_CFLAGS) $(CFLAGS) -c $< -o $@
 

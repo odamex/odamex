@@ -182,6 +182,19 @@ void I_SetPalette (DWORD *pal)
 	Video->SetPalette (pal);
 }
 
+
+// Set the window caption
+void I_SetWindowCaption(void)
+{
+
+}
+
+// Set the window icon
+void I_SetWindowIcon(void)
+{
+
+}
+
 // Find a free filename that isn't taken
 static BOOL FindFreeName (char *lbmname, const char *extension)
 {
@@ -245,9 +258,9 @@ void I_ScreenShot (const char *filename)
 
 		SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(linear, screen->width, screen->height, 8, screen->width * 1, rmask,gmask,bmask,amask);
 
-		SDL_Colour colors[256];
+		SDL_Color colors[256];
 
-		// stolen from the WritePCXfile function, write palette data into SDL_Colour
+		// stolen from the WritePCXfile function, write palette data into SDL_Color
 		DWORD *pal;
 
 		pal = IndexedPalette;
@@ -324,9 +337,9 @@ void I_SetMode (int &width, int &height, int &bits)
 		break;
 	case DISPLAY_Both:
 		fs = vid_fullscreen ? true : false;
-		
+
 		fs ? I_ResumeMouse() : I_PauseMouse();
-		
+
 		break;
 	}
 	bool res = Video->SetMode (width, height, bits, fs);

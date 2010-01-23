@@ -93,13 +93,10 @@ endif
 endif
 
 ifeq ($(strip $(cygwin)), true)
-SDL_LOCATION = ../SDL-1.2.11
-SDL_MIXER_LOCATION = ../SDL_mixer-1.2.7
-SDL_DETECT = echo "Assumed SDL is in $(SDL_LOCATION) and SDL_mixer is in $(SDL_MIXER_LOCATION)"
-SDL_CFLAGS_COMMAND =
-SDL_LFLAGS_COMMAND =
-SDL_CFLAGS = -I$(SDL_LOCATION)/include -I$(SDL_MIXER_LOCATION)/include
-SDL_LFLAGS = -L$(SDL_LOCATION)/lib -lSDL -L$(SDL_MIXER_LOCATION)/lib
+SDL_CFLAGS = $(shell $(SDL_CFLAGS_COMMAND))
+SDL_LFLAGS = $(shell $(SDL_LFLAGS_COMMAND))
+LFLAGS_PLATFORM = -mno-cygwin -lwsock32 -lwinmm
+CFLAGS_PLATFORM = -mno-cygwin -DWIN32 -D_WIN32
 endif
 
 ifeq ($(strip $(win32)), true)
@@ -124,6 +121,12 @@ endif
 BINDIR = .
 INSTALLDIR = /usr/local/bin
 RESDIR = /usr/local/share
+
+# Textscreen
+TEXTSCREEN_DIR = textscreen
+TEXTSCREEN_HEADERS = $(wildcard $(TEXTSCREEN_DIR)/*.h)
+TEXTSCREEN_SOURCES = $(wildcard $(TEXTSCREEN_DIR)/*.cpp)
+TEXTSCREEN_OBJS = $(patsubst $(TEXTSCREEN_DIR)/%.cpp,$(OBJDIR)/$(TEXTSCREEN_DIR)/%.o,$(TEXTSCREEN_SOURCES))
 
 # Common
 COMMON_DIR = common
@@ -204,13 +207,18 @@ CLIENT_SOURCES_WIN32 = $(wildcard $(CLIENT_DIR)/../sdl/*.cpp)
 CLIENT_OBJS = $(patsubst $(CLIENT_DIR)/%.cpp,$(OBJDIR)/$(CLIENT_DIR)/%.o,$(CLIENT_SOURCES_2)) $(patsubst $(CLIENT_DIR)/../sdl/%.cpp,$(OBJDIR)/$(CLIENT_DIR)/../sdl/%.o,$(CLIENT_SOURCES_WIN32))
 CLIENT_SOURCES = $(CLIENT_SOURCES_2) $(CLIENT_SOURCES_WIN32)
 CLIENT_HEADERS = $(CLIENT_HEADERS_2) $(CLIENT_HEADERS_WIN32)
-CLIENT_CFLAGS = -I../client/sdl -Iclient/sdl -I../client/src -Iclient/src $(SDL_CFLAGS)
+CLIENT_CFLAGS = -Itextscreen -I../client/sdl -Iclient/sdl -I../client/src -Iclient/src $(SDL_CFLAGS)
 CLIENT_LFLAGS =  $(SDL_LFLAGS) -lSDL_mixer
 #-ldmalloc
 # denis - end fixme
 
 # All
 all: $(SERVER_TARGET) $(CLIENT_TARGET) $(MASTER_TARGET) $(WADFILE_TARGET)
+
+# Textscreen
+$(OBJDIR)/$(TEXTSCREEN_DIR)/%.o: $(TEXTSCREEN_DIR)/%.cpp $(TEXTSCREEN_HEADERS) $(COMMON_HEADERS)
+	@$(MKDIR) $(dir $@)
+	$(CC) $(CFLAGS) $(CLIENT_CFLAGS) -c $< -o $@
 
 # Common for server
 $(OBJDIR)/$(COMMON_DIR)/server_%.o: $(COMMON_DIR)/%.cpp $(COMMON_HEADERS) $(SERVER_HEADERS)
@@ -226,10 +234,10 @@ $(OBJDIR)/$(COMMON_DIR)/client_%.o: $(COMMON_DIR)/%.cpp $(COMMON_HEADERS) $(CLIE
 client: $(CLIENT_TARGET)
 	@echo Detected SDL: $(shell $(SDL_DETECT))
 
-$(CLIENT_TARGET): $(COMMON_OBJS_CLIENT) $(CLIENT_OBJS)
-	$(LD) $(CLIENT_OBJS) $(COMMON_OBJS_CLIENT) $(CLIENT_LFLAGS) $(LFLAGS) -o $(CLIENT_TARGET)
+$(CLIENT_TARGET): $(TEXTSCREEN_OBJS) $(COMMON_OBJS_CLIENT) $(CLIENT_OBJS)
+	$(LD) $(CLIENT_OBJS) $(TEXTSCREEN_OBJS) $(COMMON_OBJS_CLIENT) $(CLIENT_LFLAGS) $(LFLAGS) -o $(CLIENT_TARGET)
 
-$(OBJDIR)/$(CLIENT_DIR)/%.o: $(CLIENT_DIR)/%.cpp $(CLIENT_HEADERS) $(COMMON_HEADERS)
+$(OBJDIR)/$(CLIENT_DIR)/%.o: $(CLIENT_DIR)/%.cpp $(CLIENT_HEADERS) $(COMMON_HEADERS) $(TEXTSCREEN_HEADERS)
 ifeq ($(SDL_CFLAGS),)
 	@echo Make sure SDL is installed and sdl-config is accessible
 	@exit 2
