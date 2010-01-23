@@ -556,7 +556,9 @@ void D_DoAdvanceDemo (void)
             else
             {
                 pagetic = 200;
-				if (gamemode == retail_chex)	// [ML] Chex mode just cycles this screen
+
+                // [ML] Chex mode and Heretic just cycles this screen
+				if (gamemode == retail_chex || gamemode == registered_heretic)
 					pagename = "CREDIT";
 				else
 					pagename = "HELP2";
@@ -585,15 +587,15 @@ void D_DoAdvanceDemo (void)
 		int width, height;
 		patch_t *data;
 
+		data = W_CachePatch (pagename);
+
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
-			data = W_CachePatch (pagename);
 			width = 320;
 			height = 200;
 		}
 		else
 		{
-			data = W_CachePatch (pagename);
 			width = data->width();
 			height = data->height();
 		}

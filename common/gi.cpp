@@ -29,7 +29,7 @@
 
 gameinfo_t gameinfo;
 
-static const char *quitsounds[8] =
+static const char *doomquitsounds[8] =
 {
 	"player/male/death1",
 	"demon/pain",
@@ -41,7 +41,7 @@ static const char *quitsounds[8] =
 	"demon/melee"
 };
 
-static const char *quitsounds2[8] =
+static const char *doom2quitsounds[8] =
 {
 	"vile/active",
 	"misc/p_pkup",
@@ -86,7 +86,7 @@ gameinfo_t HereticGameInfo =
 	"CREDIT",
 	"CREDIT",
 	"CREDIT",
-	{ { "TITLE", 4 } },
+	{ { "HELP1", "HELP2", "CREDIT" } },
 	NULL,
 	17,
 	"FLAT513",
@@ -135,7 +135,7 @@ gameinfo_t SharewareGameInfo =
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "HELP2", "CREDIT" } },
-	quitsounds,
+	doomquitsounds,
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder
@@ -159,7 +159,7 @@ gameinfo_t RegisteredGameInfo =
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "HELP2", "CREDIT" } },
-	quitsounds,
+	doomquitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder
@@ -183,7 +183,7 @@ gameinfo_t RetailGameInfo =
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "CREDIT", "CREDIT"  } },
-	quitsounds,
+	doomquitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder
@@ -207,7 +207,7 @@ gameinfo_t CommercialGameInfo =
 	"CREDIT",
 	"CREDIT",
 	{ { "HELP", "CREDIT", "CREDIT" } },
-	quitsounds2,
+	doom2quitsounds,
 	3,
 	"GRNROCK",
 	&DoomBorder

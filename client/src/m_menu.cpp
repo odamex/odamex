@@ -50,6 +50,7 @@
 
 extern patch_t* 	hu_font[HU_FONTSIZE];
 extern patch_t* 	b_font[HU_FONTSIZE];
+DCanvas *readpage;
 
 // temp for screenblocks (0-9)
 int 				screenSize;
@@ -983,7 +984,7 @@ void M_ReadThis2(int choice)
 
 void M_ReadThis3(int choice)
 {
-    if (gameinfo.flags & GI_SHAREWARE) {
+    if ((gameinfo.flags & GI_SHAREWARE) || gamemode == registered_heretic) {
         choice = 0;
         drawSkull = false;
         M_SetupNextMenu(&ReadDef3);
@@ -1147,7 +1148,25 @@ void M_Episode (int choice)
 //
 void M_DrawReadThis1 (void)
 {
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[0], PU_CACHE), 0, 0);
+	if (gameinfo.flags & GI_PAGESARERAW)
+	{
+		if (readpage && (readpage->width != 320 || readpage->height != 200))
+		{
+			I_FreeScreen(readpage);
+			readpage = NULL;
+		}
+
+		if (readpage == NULL)
+			readpage = I_AllocateScreen(320,200,8);
+
+		readpage->Lock ();
+		readpage->DrawBlock (0, 0, 320, 200, (byte *)W_CachePatch (gameinfo.info.infoPage[0]));
+		readpage->Unlock ();
+
+		readpage->Blit (0, 0, readpage->width, readpage->height, screen, 0, 0, screen->width, screen->height);
+	}
+	else
+		screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[0], PU_CACHE), 0, 0);
 }
 
 
@@ -1157,7 +1176,16 @@ void M_DrawReadThis1 (void)
 //
 void M_DrawReadThis2 (void)
 {
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[1], PU_CACHE), 0, 0);
+	if (gameinfo.flags & GI_PAGESARERAW)
+	{
+		readpage->Lock ();
+		readpage->DrawBlock (0, 0, 320, 200, (byte *)W_CachePatch (gameinfo.info.infoPage[1]));
+		readpage->Unlock ();
+
+		readpage->Blit (0, 0, readpage->width, readpage->height, screen, 0, 0, screen->width, screen->height);
+	}
+	else
+		screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[1], PU_CACHE), 0, 0);
 }
 
 //
@@ -1165,7 +1193,16 @@ void M_DrawReadThis2 (void)
 //
 void M_DrawReadThis3 (void)
 {
-	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[2], PU_CACHE), 0, 0);
+	if (gameinfo.flags & GI_PAGESARERAW)
+	{
+		readpage->Lock ();
+		readpage->DrawBlock (0, 0, 320, 200, (byte *)W_CachePatch (gameinfo.info.infoPage[2]));
+		readpage->Unlock ();
+
+		readpage->Blit (0, 0, readpage->width, readpage->height, screen, 0, 0, screen->width, screen->height);
+	}
+	else
+		screen->DrawPatchIndirect ((patch_t *)W_CacheLumpName (gameinfo.info.infoPage[2], PU_CACHE), 0, 0);
 }
 
 //
@@ -1324,10 +1361,7 @@ static void M_PlayerSetupDrawer (void)
 
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
 
-	// Draw player team box
-//	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Team");	if (t = 1) // [Toke - Teams]
-//	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y + LINEHEIGHT, savegamestrings[1]);
-
+	// Draw player team box - coming soon
 
 	// Draw cursor for either of the above
 	if (genStringEnter)

@@ -70,8 +70,8 @@ typedef struct
 	char finalePage1[8];		//
 	char finalePage2[8];		//
 	char finalePage3[8];		//
-	union						// Information pages, perhaps the set
-	{							// for demo rotation? Not in use
+	union						// Information pages
+	{							//
 		char infoPage[3][8];
 		struct
 		{
@@ -79,7 +79,7 @@ typedef struct
 			int numPages;
 		} indexed;
 	} info;
-	const char **quitSounds;	// Pointer to list of quit sound lumps (?)
+	const char **quitSounds;	// Pointer to list of quit sound lumps
 	int maxSwitch;
 	char borderFlat[8];			// Flat to use when changing screen size
 	gameborder_t *border;
