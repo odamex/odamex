@@ -41,6 +41,8 @@ proc main {} {
   puts "PASS $nextline"
  }
  gets $clientout
+ expect $clientout {Currently loaded WADs match server checksum} 0
+ expect $clientout {} 0
  expect $clientout {challenging 127.0.0.1:10599} 0
  expect $clientout {} 0
  expect $clientout {=================================} 0
