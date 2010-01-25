@@ -1296,7 +1296,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	wadfiles.clear();
 
 	std::string custwad;
-	if(!wadnames.empty())
+	if(wadnames.size() && W_IsIWAD(wadnames[0]))
 		custwad = wadnames[0];
 
 	D_AddDefWads(custwad);
