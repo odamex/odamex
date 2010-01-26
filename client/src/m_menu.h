@@ -37,6 +37,7 @@
 #define SKULLXOFF	-32
 #define ARROWXOFF	-28
 #define ARROWYOFF	-1
+#define NUM_MENU_ITEMS(m)	(sizeof(m)/sizeof(m[0]))
 
 // Called by main loop,
 // saves config file and calls I_Quit when user exits.
@@ -143,6 +144,8 @@ typedef struct menu_s {
 	int				numitems;
 	int				indent;
 	menuitem_t	   *items;
+	int				scrolltop;
+	int				scrollpos;
 } menu_t;
 
 typedef struct value_s {
@@ -189,6 +192,7 @@ typedef struct
 extern value_t YesNo[2];
 extern value_t NoYes[2];
 extern value_t OnOff[2];
+extern value_t OffOn[2];
 
 extern menustack_t MenuStack[16];
 extern int MenuStackDepth;
@@ -199,7 +203,33 @@ extern int		CurrentItem;
 extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
+//==========================================================================
+//
+// MIN
+//
+// Returns the minimum of a and b.
+//==========================================================================
+
+template<class T>
+inline
+const T MIN (const T a, const T b)
+{
+	return a < b ? a : b;
+}
+
+//==========================================================================
+//
+// MAX
+//
+// Returns the maximum of a and b.
+//==========================================================================
+
+template<class T>
+inline
+const T MAX (const T a, const T b)
+{
+	return a > b ? a : b;
+}
+
+
 #endif
-
-
-

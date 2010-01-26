@@ -157,7 +157,7 @@ static actionf_t OrgActionPtrs[NUMSTATES];
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.
-static const char *SoundMap[] = {
+static const char *DoomSoundMap[] = {
 	NULL,
 	"weapons/pistol",
 	"weapons/shotgf",
@@ -267,6 +267,10 @@ static const char *SoundMap[] = {
 	"skeleton/sight",
 	"skeleton/attack",
 	"misc/chat"
+};
+
+static const char *HereticSoundMap[] = {
+	NULL
 };
 
 // Functions used in a .bex [CODEPTR] chunk
@@ -854,6 +858,7 @@ static int GetLine (void)
 static int PatchThing (int thingy)
 {
     size_t thingNum = (size_t)thingy;
+    const char **SoundMap = (gamemode == registered_heretic ? HereticSoundMap : DoomSoundMap);
 
 	static const struct Key keys[] = {
 		{ "ID #",				myoffsetof(mobjinfo_t,doomednum) },
@@ -923,7 +928,7 @@ static int PatchThing (int thingy)
 		{31, 0, "RESERVED"},
 
 		// Names for flags2
-/*		{ 0, 1, "LOGRAV"},
+		{ 0, 1, "LOGRAV"},
 		{ 1, 1, "WINDTHRUST"},
 		{ 2, 1, "FLOORBOUNCE"},
 		{ 3, 1, "BLASTED"},
@@ -954,7 +959,7 @@ static int PatchThing (int thingy)
 		{28, 1, "DORMANT"},
 		{29, 1, "ICEDAMAGE"},
 		{30, 1, "SEEKERMISSILE"},
-		{31, 1, "REFLECTIVE"}*/
+		{31, 1, "REFLECTIVE"}
 	};
 	int result;
 	mobjinfo_t *info, dummy;

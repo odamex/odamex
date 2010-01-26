@@ -145,6 +145,7 @@ void M_QuickSave(void);
 void M_QuickLoad(void);
 
 void M_DrawMainMenu(void);
+void M_DrawHereticMainMenu(void);
 void M_DrawReadThis1(void);
 void M_DrawReadThis2(void);
 void M_DrawReadThis3(void);
@@ -188,17 +189,6 @@ EXTERN_CVAR(cl_connectalert)
 //
 // DOOM MENU
 //
-enum d1_main_t
-{
-	d1_newgame = 0,
-	d1_options,					// [RH] Moved
-	d1_loadgame,
-	d1_savegame,
-	d1_readthis,
-	d1_quitdoom,
-	d1_main_end
-}d1_main_e;
-
 oldmenuitem_t DoomMainMenu[]=
 {
 	{1,"M_NGAME",M_NewGame,'N'},
@@ -212,16 +202,6 @@ oldmenuitem_t DoomMainMenu[]=
 //
 // DOOM 2 MENU
 //
-enum d2_main_t
-{
-	d2_newgame = 0,
-	d2_options,					// [RH] Moved
-	d2_loadgame,
-	d2_savegame,
-	d2_quitdoom,
-	d2_main_end
-}d2_main_e;
-
 oldmenuitem_t Doom2MainMenu[]=
 {
 	{1,"M_NGAME",M_NewGame,'N'},
@@ -234,16 +214,6 @@ oldmenuitem_t Doom2MainMenu[]=
 //
 // HERETIC MENU
 //
-enum htc_main_t
-{
-	htc_newgame = 0,
-	htc_options,					// [RH] Moved
-	htc_gamefiles,
-	htc_info,
-	htc_quitheretic,
-	htc_main_end
-}htc_main_e;
-
 oldmenuitem_t HereticMainMenu[]=
 {
 	{1,"New Game",M_NewGame,'N'},
@@ -259,16 +229,9 @@ oldmenuitem_t HereticGameFilesMenu[]=
 	{1,"Save Game",M_SaveGame,'2'}
 };
 
-enum htc_gamefiles_t
-{
-	htc_loadgame = 0,
-	htc_savegame,
-	htc_gamefiles_end
-}htc_gamefiles_e;
-
 oldmenu_t GameFilesDef =
 {
-	htc_gamefiles_end,
+	NUM_MENU_ITEMS (HereticGameFilesMenu),
 	HereticGameFilesMenu,
 	M_DrawGameFiles,
 	110,60,
@@ -279,14 +242,22 @@ oldmenu_t GameFilesDef =
 // Default used is the Doom Menu
 oldmenu_t MainDef =
 {
-	d1_main_end,
+	NUM_MENU_ITEMS (DoomMainMenu),
 	DoomMainMenu,
 	M_DrawMainMenu,
 	97,64,
 	0
 };
 
-
+// Heretic Main Menu Definition
+oldmenu_t HereticMainDef =
+{
+	NUM_MENU_ITEMS (HereticMainMenu),
+	HereticMainMenu,
+	M_DrawHereticMainMenu,
+	110,56,
+	0
+};
 
 //
 // EPISODE SELECT
@@ -370,7 +341,7 @@ oldmenuitem_t HereticNewGameMenu[]=
 oldmenu_t NewDef =
 {
 	newg_end,			// # of menu items
-	DoomNewGameMenu,		// oldmenuitem_t ->
+	DoomNewGameMenu,	// oldmenuitem_t ->
 	M_DrawNewGame,		// drawing routine ->
 	48,63,				// x,y
 	hurtme				// lastOn
@@ -1037,16 +1008,17 @@ void M_DrawSaveLoadSlot (int x, int y)
 //
 void M_DrawMainMenu (void)
 {
+	screen->DrawPatchClean (W_CachePatch("M_DOOM"), 94, 2);
+}
+
+void M_DrawHereticMainMenu (void)
+{
 	int frame;
 
-	if (gamemode == registered_heretic) {
-		frame = (MenuTime / 3) % 18;
-		screen->DrawPatchClean (W_CachePatch("M_HTIC"), 88, 0);
-		screen->DrawPatchClean ((patch_t *)W_CacheLumpNum(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
-		screen->DrawPatchClean ((patch_t *)W_CacheLumpNum(SkullBaseLump + frame, PU_CACHE), 232, 10);
-	}
-	else
-		screen->DrawPatchClean (W_CachePatch("M_DOOM"), 94, 2);
+	frame = (MenuTime / 3) % 18;
+	screen->DrawPatchClean (W_CachePatch("M_HTIC"), 88, 0);
+	screen->DrawPatchClean ((patch_t *)W_CacheLumpNum(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
+	screen->DrawPatchClean ((patch_t *)W_CacheLumpNum(SkullBaseLump + frame, PU_CACHE), 232, 10);
 }
 
 void M_DrawNewGame(void)
@@ -2249,7 +2221,7 @@ void M_Init (void)
     // [Russell] - Set this beforehand, because when you switch wads
     // (ie from doom to doom2 back to doom), you will have less menu items
     {
-        MainDef.numitems = d1_main_end;
+        MainDef.numitems = NUM_MENU_ITEMS (DoomMainMenu);
         MainDef.menuitems = DoomMainMenu;
         MainDef.routine = M_DrawMainMenu,
         MainDef.lastOn = 0;
@@ -2261,7 +2233,7 @@ void M_Init (void)
 	OptionsActive = false;
 	menuactive = 0;
 	MenuTime = 0;
-	SkullBaseLump = (gamemode == registered_heretic ? W_GetNumForName("M_SKL00") : 0);
+	SkullBaseLump = W_CheckNumForName ("M_SKL00");
 	itemOn = currentMenu->lastOn;
 	whichSkull = 0;
 	skullAnimCounter = 10;
@@ -2274,7 +2246,7 @@ void M_Init (void)
     if (gamemode == commercial)
     {
         // Commercial has no "read this" entry.
-        MainDef.numitems = d2_main_end;
+        MainDef.numitems = NUM_MENU_ITEMS (Doom2MainMenu);
         MainDef.menuitems = Doom2MainMenu;
 
         MainDef.y += 8;
@@ -2282,8 +2254,9 @@ void M_Init (void)
     else if (gamemode == registered_heretic)
     {
     	// Heretic changes stuff
-		MainDef.numitems = htc_main_end;
+		MainDef.numitems = NUM_MENU_ITEMS (HereticMainMenu);
         MainDef.menuitems = HereticMainMenu;
+        MainDef.routine = M_DrawHereticMainMenu;
         MainDef.x = 110;
         MainDef.y = 56;
     }
