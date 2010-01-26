@@ -127,6 +127,11 @@ value_t OnOff[2] = {
 	{ 1.0, "On" }
 };
 
+value_t OffOn[2] = {
+	{ 0.0, "On" },
+	{ 1.0, "Off" }
+};
+
 menu_t  *CurrentMenu;
 int		CurrentItem;
 static BOOL	WaitingForKey;
@@ -163,7 +168,6 @@ static menuitem_t OptionItems[] =
 	{ slider,	"Sound volume",			{&snd_sfxvolume},		{0.0}, {1.0},	{0.1}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete, "Lookspring",			{&lookspring},			{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Lookstrafe",			{&lookstrafe},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete,	"Always Run",			{&cl_run},				{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
@@ -188,28 +192,30 @@ menu_t OptionMenu = {
 
 static value_t MouseBases[] =
 {
-	{ 0.0, "Standard" },
-	{ 1.0, "ZDoom" },
+	{ 0.0, "Doom" },
+	{ 1.0, "Odamex" },
 };
 
 static menuitem_t MouseItems[] =
 {
-
-	{ slider	,	"Sensitivity" 							, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
-	{ slider    ,   "Acceleration"                          , {&mouse_acceleration},{0.0},      {10.0},     {0.5},      {NULL}                      },
-	{ slider    ,   "Threshold"                             , {&mouse_threshold},   {0.0},      {20.0},     {1.0},      {NULL}                      },
-	{ slider	,	"Dynamic Resolution"					, {&dynresval},			{1.001},	{1.232},	{0.003},	{NULL}						},
-	{ slider	,	"Freelook speed"						, {&m_pitch},			{0.0},		{1.85},		{0.025},	{NULL}						},
-	{ slider	,	"Strafe speed"							, {&m_side},			{0.0},		{18.5},		{0.25},		{NULL}						},
-	{ slider	,	"Y axis"								, {&m_forward},			{0.0},		{18.5},		{0.25},		{NULL}						},
+	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Use Dynamic Resolution"				, {&dynres_state},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Show Mouse Values"						, {&displaymouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Always FreeLook"						, {&cl_mouselook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
-	{ discrete	,	"NoVert"								, {&novert},			{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ slider	,	"Horizontal Sensitivity" 				, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
+	{ slider	,	"Vertical Sensitivity"					, {&m_pitch},			{0.0},		{1.85},		{0.025},	{NULL}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	/*{ discrete,	"Use Dynamic Resolution"				, {&dynres_state},		{2.0},		{0.0},		{0.0},		{OnOff}						},*/
+	/*{ slider	,	"Dynamic Resolution"					, {&dynresval},			{1.001},	{1.232},	{0.003},	{NULL}						},*/
+	{ discrete	,	"Horizontal Movement"					, {&lookstrafe},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete	,	"Vertical Movement"						, {&novert},			{2.0},		{0.0},		{0.0},		{OffOn}						},
+	{ slider	,	"Horizontal Movement Speed"				, {&m_side},			{0.0},		{15},		{0.5},		{NULL}						},
+	{ slider	,	"Vertical Movement Speed"				, {&m_forward},			{0.0},		{15},		{0.5},		{NULL}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ slider    ,   "Mouse Acceleration"					, {&mouse_acceleration},{0.0},      {10.0},     {0.5},      {NULL}                      },
+	{ slider    ,   "Mouse Threshold"						, {&mouse_threshold},   {0.0},      {20.0},     {1.0},      {NULL}                      },
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ discrete	,	"Show Mouse Values"						, {&displaymouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 };
 
 menu_t MouseMenu = {
@@ -792,7 +798,7 @@ void M_OptDrawer (void)
 				break;
 
 			case slider:
-				M_DrawSlider (CurrentMenu->indent + 14, y, item->b.min, item->c.max, item->a.cvar->value());
+				M_DrawSlider (CurrentMenu->indent + 8, y, item->b.min, item->c.max, item->a.cvar->value());
 				break;
 
 			case control:
@@ -863,20 +869,20 @@ void M_OptDrawer (void)
 			{
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
 			}
-
 		}
 	}
-
+/*	[ML] Commented out 1/25/10 - it seems unneccessary and looks messy
 	if (CurrentMenu == &MouseMenu) // [Toke] print mouse values to the screen
 	{
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 0,  mouse_sensitivity.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 8,  mouse_acceleration.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 16, mouse_threshold.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 24, dynresval.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 32, m_pitch.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 40, m_side.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 48, m_forward.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 32,  mouse_sensitivity.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 40, m_pitch.cstring());
+		//screen->DrawTextCleanMove (CR_GREEN, valx + 242, valy + 32, dynresval.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 72, m_side.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 80, m_forward.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 96,  mouse_acceleration.cstring());
+		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 104, mouse_threshold.cstring());
 	}
+*/
 }
 
 void M_OptResponder (event_t *ev)
