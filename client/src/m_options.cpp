@@ -242,6 +242,7 @@ menu_t MouseMenu = {
 
 static menuitem_t ControlsItems[] = {
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ whitetext,"Controls",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
@@ -287,7 +288,7 @@ static menuitem_t ControlsItems[] = {
 
 menu_t ControlsMenu = {
 	"Customize Controls",
-	2,
+	3,
 	STACKARRAY_LENGTH(ControlsItems),
 	0,
 	ControlsItems,
