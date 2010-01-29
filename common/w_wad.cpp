@@ -159,8 +159,8 @@ BOOL W_IsIWAD(std::string filename, std::string hash)
     if (!hash.empty())
         std::transform(hash.begin(), hash.end(), hash.begin(), toupper);
 
-    // Just get the file name
-    M_ExtractFileName(filename, name);
+    // Just get the base name
+    M_ExtractFileBase(filename, name);
 
     // find our match if there is one
     for (DWORD i = 0; !doomwadnames[i].name.empty(); i++)
@@ -179,7 +179,7 @@ BOOL W_IsIWAD(std::string filename, std::string hash)
                 return true;
         }
 
-        if ((filename == doomwadnames[i].name) || (filename == basename))
+        if ((filename == doomwadnames[i].name) || (name == basename))
             return true;
     }
 
