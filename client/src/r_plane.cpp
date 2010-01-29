@@ -420,7 +420,7 @@ static void _skycolumn (void (*drawfunc)(void), int x)
 	{
 		int angle = ((((viewangle + xtoviewangle[x])^skyflip)>>skyshift) + frontpos)>>16;
 
-		dc_texturefrac = dc_texturemid + (dc_yl - centery) * dc_iscale;
+		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
 		dc_source = R_GetColumn (skytex, angle);
 		drawfunc ();
 	}
