@@ -73,17 +73,15 @@ void R_InitSkyMap ()
 {
 	if (textureheight == NULL)
 		return;
+		
+	skytexturemid = 100*FRACUNIT;
+	skystretch = 0;
 
 	if (textureheight[skytexture] <= (128 << FRACBITS))
 	{
-                skytexturemid = 100*FRACUNIT;
-                skystretch = (r_stretchsky && sv_freelook && cl_mouselook);
+		skystretch = (r_stretchsky && sv_freelook && cl_mouselook);
 	}
-	else
-	{
-		skytexturemid = 100*FRACUNIT;
-		skystretch = 0;
-	}
+
 	skyheight = textureheight[skytexture] << skystretch;
 
 	if (viewwidth && viewheight)
@@ -97,7 +95,7 @@ void R_InitSkyMap ()
 
 	// The sky map is 256*128*4 maps.
 	skyshift = 22+skystretch-16;
-	if (texturewidthmask[skytexture] >= 256*2-1)
+	if (texturewidthmask[skytexture] >= 127)
 		skyshift -= skystretch;
 }
 
