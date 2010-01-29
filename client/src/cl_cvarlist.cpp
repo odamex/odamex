@@ -220,7 +220,8 @@ CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
 // Draw player sprites
 CVAR (r_drawplayersprites, "1", CVAR_CLIENTINFO)
 // Stretch sky textures
-CVAR (r_stretchsky, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR_FUNC_DECL (r_stretchsky, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+
 // TODO: document
 CVAR (r_viewsize, "0", CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
 // Default video dimensions and bitdepth

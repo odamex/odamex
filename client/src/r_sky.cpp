@@ -53,8 +53,10 @@ fixed_t		skyiscale;
 int			skyshift;					//		[ML] 5/11/06 - remove sky2 remenants
 fixed_t		skypos=0,		skyspeed=0;
 
-
-EXTERN_CVAR (r_stretchsky)
+CVAR_FUNC_IMPL(r_stretchsky)
+{
+	R_InitSkyMap ();
+}
 
 char SKYFLATNAME[8] = "F_SKY1";
 
