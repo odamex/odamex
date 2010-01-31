@@ -233,8 +233,11 @@ void C_InitConsole (int width, int height, BOOL ingame)
 
 			if (stylize)
 			{
-				byte *fadetable = (byte *)W_CacheLumpName ("COLORMAP", PU_CACHE), f, *v, *i;
 				int x, y;
+				byte f = 0, *v = NULL, *i = NULL;
+				byte *fadetable;
+				
+				fadetable = (byte *)W_CacheLumpName ("COLORMAP", PU_CACHE);
 
 				for (y = 0; y < conback->height; y++)
 				{
@@ -260,6 +263,10 @@ void C_InitConsole (int width, int height, BOOL ingame)
 								v = fadetable + (30 - x) * 256;
 							else if (x > 312)
 								v = fadetable + (x - 289) * 256;
+							
+							if (v == NULL)
+                                I_FatalError("COuld not stylize the console\n");
+							
 							*i = v[*i];
 							i++;
 						}
