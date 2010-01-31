@@ -175,7 +175,7 @@ EXTERN_CVAR (conscrlock)
 
 unsigned int str_count(const std::string &text, const std::string &str)
 {
-	int i,count = 0;
+	unsigned int i,count = 0;
 
 	for(i = text.find(str, 0); i != std::string::npos; i = text.find(str, i))
 	{
@@ -654,7 +654,7 @@ void C_Ticker (void)
 		switch (ScrollState)
 		{
 			case SCROLLUP:
-				if (RowAdjust < ConRows - SkipRows)
+				if (RowAdjust < ConRows - SkipRows - ConBottom/8)
 					RowAdjust++;
 				break;
 
