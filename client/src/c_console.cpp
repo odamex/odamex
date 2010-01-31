@@ -64,11 +64,11 @@ extern int		gametic;
 extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
 
-int			ConRows, ConCols, PhysRows;
+unsigned int	ConRows, ConCols, PhysRows;
 char		*Lines, *Last = NULL;
 BOOL		vidactive = false, gotconback = false;
 BOOL		cursoron = false;
-int			SkipRows, ConBottom, ConScroll, RowAdjust;
+int			SkipRows, ConBottom, RowAdjust;
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
 char		VersionString[8];
@@ -80,6 +80,7 @@ BOOL		KeysCtrl;
 
 static bool midprinting;
 
+#define CONSOLEBUFFER 512
 
 #define SCROLLUP 1
 #define SCROLLDN 2
@@ -129,7 +130,7 @@ static void setmsgcolor (int index, const char *color);
 
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
-
+unsigned int str_count(std::string &text, std::string &str);
 
 cvar_t msglevel ("msg", "0", CVAR_ARCHIVE);
 
@@ -172,23 +173,18 @@ CVAR_FUNC_IMPL (msgmidcolor)
 // conscrlock 2 = Nothing brings scroll to the bottom.
 EXTERN_CVAR (conscrlock)
 
-static void maybedrawnow (void)
+unsigned int str_count(const std::string &text, const std::string &str)
 {
-/*	if (vidactive &&
-		((gameaction != ga_nothing && ConsoleState == c_down)
-		|| gamestate == GS_STARTUP))
-	{
-		static size_t lastprinttime = 0;
-		size_t nowtime = I_GetTime();
+	int i,count = 0;
 
-		if (nowtime - lastprinttime > 1)
-		{
-			I_BeginUpdate ();
-			C_DrawConsole ();
-			I_FinishUpdate ();
-			lastprinttime = nowtime;
-		}
-	}*/
+	for(i = text.find(str, 0); i != std::string::npos; i = text.find(str, i))
+	{
+		count++;
+		i++;	// Move past the last discovered instance to avoid finding same
+				// string
+	}
+
+	return count;
 }
 
 void C_InitConsole (int width, int height, BOOL ingame)
@@ -284,22 +280,21 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	}
 
 	cols = ConCols;
-	rows = ConRows;
+	rows = CONSOLEBUFFER;
 
 	ConCols = width / 8 - 2;
 	PhysRows = height / 8;
-	ConRows = PhysRows * 10;
 
 	old = Lines;
-	Lines = (char *)Malloc (ConRows * (ConCols + 2) + 1);
+	Lines = (char *)Malloc (CONSOLEBUFFER * (ConCols + 2) + 1);
 
-	for (row = 0, zap = Lines; row < ConRows; row++, zap += ConCols + 2)
+	for (row = 0, zap = Lines; row < CONSOLEBUFFER; row++, zap += ConCols + 2)
 	{
 		zap[0] = 0;
 		zap[1] = 0;
 	}
 
-	Last = Lines + (ConRows - 1) * (ConCols + 2);
+	Last = Lines + (CONSOLEBUFFER - 1) * (ConCols + 2);
 
 	if (old)
 	{
@@ -469,7 +464,7 @@ int PrintString (int printlevel, const char *outline)
 				{
 					Last[0] = 1;
 				}
-				memmove (Lines, Lines + (ConCols + 2), (ConCols + 2) * (ConRows - 1));
+				memmove (Lines, Lines + (ConCols + 2), (ConCols + 2) * (CONSOLEBUFFER - 1));
 				Last[0] = 0;
 				Last[1] = 0;
 				newxp = 0;
@@ -526,8 +521,6 @@ int PrintString (int printlevel, const char *outline)
 
 	printxormask = 0;
 
-	maybedrawnow ();
-
 	return strlen (outline);
 }
 
@@ -536,7 +529,7 @@ extern BOOL gameisdead;
 int VPrintf (int printlevel, const char *format, va_list parms)
 {
 	char outline[8192], outlinelog[8192];
-	int len, i;
+	int len, i, nlcount=0;
 
 	if (gameisdead)
 		return 0;
@@ -565,6 +558,18 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 			LOG << outlinelog;
 			LOG.flush();
 		}
+
+		// Up the row buffer for the console.
+		// This is incremented here so that any time we
+		// print something we know about it.  This feels pretty hacky!
+
+		// We need to know if there were any new lines being printed
+		// in our string.
+
+		nlcount = str_count(outline,"\n");
+
+		if (ConRows < CONSOLEBUFFER)
+			ConRows+=(nlcount > 1 ? nlcount+1 : 1);
 	}
 
 	return PrintString (printlevel, outline);
@@ -649,7 +654,8 @@ void C_Ticker (void)
 		switch (ScrollState)
 		{
 			case SCROLLUP:
-				RowAdjust++;
+				if (RowAdjust < ConRows - SkipRows)
+					RowAdjust++;
 				break;
 
 			case SCROLLDN:
@@ -706,9 +712,9 @@ void C_Ticker (void)
 			}
 		}
 
-		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > ConRows)
+		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > CONSOLEBUFFER)
 		{
-			RowAdjust = ConRows - SkipRows - ConBottom;
+			RowAdjust = CONSOLEBUFFER - SkipRows - ConBottom;
 		}
 	}
 
@@ -762,13 +768,11 @@ void C_InitTicker (const char *label, unsigned int max)
 	TickerMax = max;
 	TickerLabel = label;
 	TickerAt = 0;
-	maybedrawnow ();
 }
 
 void C_SetTicker (unsigned int at)
 {
 	TickerAt = at > TickerMax ? TickerMax : at;
-	maybedrawnow ();
 }
 
 void C_DrawConsole (void)
@@ -884,7 +888,7 @@ void C_DrawConsole (void)
 
 				// Indicate that the view has been scrolled up (10)
 				// and if we can scroll no further (12)
-				c = (SkipRows + RowAdjust + ConBottom/8 != ConRows) ? 10 : 12;
+				c = (SkipRows + RowAdjust + ConBottom/8 < ConRows) ? 10 : 12;
 				screen->PrintStr (0, ConBottom - 28, &c, 1);
 			}
 		}
@@ -1438,7 +1442,7 @@ BEGIN_COMMAND (clear)
 
 	RowAdjust = 0;
 	C_FlushDisplay ();
-	for (i = 0; i < ConRows; i++, row += ConCols + 2)
+	for (i = 0; i < CONSOLEBUFFER; i++, row += ConCols + 2)
 		row[1] = 0;
 }
 END_COMMAND (clear)
@@ -1617,11 +1621,4 @@ static void C_TabComplete (void)
 	makestartposgood ();
 }
 
-
-
-
-
 VERSION_CONTROL (c_console_cpp, "$Id$")
-
-
-
