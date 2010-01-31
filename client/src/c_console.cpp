@@ -1007,12 +1007,15 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		C_TabComplete ();
 		break;
 	case KEY_PGUP:
-		if (KeysShifted)
-			// Move to top of console buffer
-			RowAdjust = ConRows - SkipRows - ConBottom/8;
-		else
-			// Start scrolling console buffer up
-			ScrollState = SCROLLUP;
+		if (ConRows > ConBottom/8)
+		{
+			if (KeysShifted)
+				// Move to top of console buffer
+				RowAdjust = ConRows - SkipRows - ConBottom/8;
+			else
+				// Start scrolling console buffer up
+				ScrollState = SCROLLUP;
+		}
 		break;
 	case KEY_PGDN:
 		if (KeysShifted)
