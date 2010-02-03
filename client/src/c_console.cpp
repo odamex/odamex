@@ -49,6 +49,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 static void C_TabComplete (void);
 static BOOL TabbedLast;		// Last key pressed was tab
@@ -131,7 +132,6 @@ static void setmsgcolor (int index, const char *color);
 
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
-unsigned int str_count(std::string &text, std::string &str);
 
 cvar_t msglevel ("msg", "0", CVAR_ARCHIVE);
 
@@ -174,26 +174,36 @@ CVAR_FUNC_IMPL (msgmidcolor)
 // conscrlock 2 = Nothing brings scroll to the bottom.
 EXTERN_CVAR (conscrlock)
 
-unsigned int str_count(const std::string &text, const std::string &str)
+//
+// C_Close
+//
+void C_Close()
 {
-	unsigned int i,count = 0;
-
-	for(i = text.find(str, 0); i != std::string::npos; i = text.find(str, i))
+	if(altconback)
 	{
-		count++;
-		i++;	// Move past the last discovered instance to avoid finding same
-				// string
+		I_FreeScreen(altconback);
+		altconback = NULL;
 	}
-
-	return count;
+	if(conback)
+	{
+		I_FreeScreen(conback);
+		conback = NULL;
+	}
 }
 
+//
+// C_InitConsole
+//
 void C_InitConsole (int width, int height, BOOL ingame)
 {
 	int row;
 	char *zap;
 	char *old;
 	int cols, rows;
+
+	bool firstTime = true;
+	if(firstTime)
+		atterm (C_Close);
 
 	if ( (vidactive = ingame) )
 	{
@@ -220,6 +230,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 
 			bg = W_CachePatch (num);
 
+			delete conback;
 			if (isRaw)
 				conback = I_AllocateScreen (320, 200, 8);
 			else
@@ -536,8 +547,8 @@ extern BOOL gameisdead;
 
 int VPrintf (int printlevel, const char *format, va_list parms)
 {
-	char outline[512], outlinelog[512];
-	int len, i, nlcount=0;
+	char outline[8192], outlinelog[8192];
+	int len, i;
 
 	if (gameisdead)
 		return 0;
@@ -574,10 +585,10 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		// We need to know if there were any new lines being printed
 		// in our string.
 
-		nlcount = str_count(outline,"\n");
+		int newLineCount = std::count(outline, outline + sizeof(outline),'\n');
 
 		if (ConRows < CONSOLEBUFFER)
-			ConRows+=(nlcount > 1 ? nlcount+1 : 1);
+			ConRows+=(newLineCount > 1 ? newLineCount+1 : 1);
 	}
 
 	return PrintString (printlevel, outline);
