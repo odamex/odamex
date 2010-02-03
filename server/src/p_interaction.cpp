@@ -1185,7 +1185,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 			|| !source->player
 			|| source->player->readyweapon != wp_chainsaw))
 	{
-		ang = R_PointToAngle2 ( inflictor->x,
+		ang = P_PointToAngle ( inflictor->x,
 								inflictor->y,
 								target->x,
 								target->y);

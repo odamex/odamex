@@ -188,6 +188,7 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 	return FixedMul (y, ldx >> FRACBITS) >= FixedMul (ldy >> FRACBITS, x);
 }
 
+#define R_P2ATHRESHOLD (INT_MAX / 4)
 //
 // R_PointToAngle
 //
@@ -197,20 +198,88 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 // value which is looked up in the tantoangle[] table.
 //
 
-angle_t R_PointToAngle2 (fixed_t x1, fixed_t y1, fixed_t x, fixed_t y)
+angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 {
-  return (y -= y1, (x -= x1) || y) ?
-    x >= 0 ?
-      y >= 0 ?
-        (x > y) ? tantoangle[SlopeDiv(y,x)] :						// octant 0
-                ANG90-1-tantoangle[SlopeDiv(x,y)] :					// octant 1
-        x > (y = -y) ? (angle_t)-(SDWORD)tantoangle[SlopeDiv(y,x)] :	// octant 8
-                       ANG270+tantoangle[SlopeDiv(x,y)] :			// octant 7
-      y >= 0 ? (x = -x) > y ? ANG180-1-tantoangle[SlopeDiv(y,x)] :	// octant 3
-                            ANG90 + tantoangle[SlopeDiv(x,y)] :		// octant 2
-        (x = -x) > (y = -y) ? ANG180+tantoangle[SlopeDiv(y,x)] :	// octant 4
-                              ANG270-1-tantoangle[SlopeDiv(x,y)] :	// octant 5
-    0;
+	x -= viewx;
+	y -= viewy;
+
+	if((x | y) == 0)
+		return 0;
+
+	if(x < R_P2ATHRESHOLD && x > -R_P2ATHRESHOLD &&
+		y < R_P2ATHRESHOLD && y > -R_P2ATHRESHOLD)
+	{
+		if(x >= 0)
+		{
+			if (y >= 0)
+			{
+				if(x > y)
+				{
+					// octant 0
+					return tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 1
+					return ANG90 - 1 - tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+			else // y < 0
+			{
+				y = -y;
+
+				if(x > y)
+				{
+					// octant 8
+					return 0 - tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 7
+					return ANG270 + tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+		}
+		else // x < 0
+		{
+			x = -x;
+
+			if(y >= 0)
+			{
+				if(x > y)
+				{
+					// octant 3
+					return ANG180 - 1 - tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 2
+					return ANG90 + tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+			else // y < 0
+			{
+				y = -y;
+
+				if(x > y)
+				{
+					// octant 4
+					return ANG180 + tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 5
+					return ANG270 - 1 - tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+		}
+	}
+	else
+	{
+      return (angle_t)(atan2(y, x) * (ANG180 / PI));
+	}
+
+   return 0;
 }
 
 //
