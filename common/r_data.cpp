@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -66,7 +66,7 @@
 // is stored in vertical runs of opaque pixels (posts).
 // A column is composed of zero or more posts,
 // a patch or sprite is composed of zero or more columns.
-// 
+//
 
 // A single patch from a texture definition,
 //	basically a rectangular area within
@@ -76,7 +76,7 @@ typedef struct
 	// Block origin (always UL),
 	// which has already accounted
 	// for the internal origin of the patch.
-	int 		originx;		
+	int 		originx;
 	int 		originy;
 	int 		patch;
 } texpatch_t;
@@ -97,12 +97,12 @@ typedef struct
 	//		(possibly quite considerably for larger levels)
 	int			index;
 	int			next;
-	
+
 	// All the patches[patchcount]
 	//	are drawn back to front into the cached texture.
 	short		patchcount;
 	texpatch_t	patches[1];
-	
+
 } texture_t;
 
 
@@ -318,7 +318,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 					{
 						if(texture->height < 256) // bigger textures are assumed to have a single post anyway
 							Printf(PRINT_HIGH, "R_GenerateLookup warning: post truncated for texture %d\n", texnum);
-						
+
 						count[x].posts--;
 						break;
 					}
@@ -386,7 +386,7 @@ R_GetColumn
 	lump = texturecolumnlump[tex][col];
 	ofs = texturecolumnofs[tex][col];
 	dc_mask = textureheightmask[tex];		// [RH] Tutti-Frutti fix
-	
+
 	if (lump > 0)
 		return (byte *)W_CacheLumpNum(lump,PU_CACHE)+ofs;
 
@@ -417,9 +417,9 @@ void R_InitTextures (void)
 	int*				maptex;
 	int*				maptex2;
 	int*				maptex1;
-	
+
 	int*				patchlookup;
-	
+
 	int 				totalwidth;
 	int					nummappatches;
 	int 				offset;
@@ -432,7 +432,7 @@ void R_InitTextures (void)
 
 	int					errors = 0;
 
-	
+
 	// Load the patch names from pnames.lmp.
 	{
 		char *names = (char *)W_CacheLumpName ("PNAMES", PU_STATIC);
@@ -440,7 +440,7 @@ void R_InitTextures (void)
 
 		nummappatches = LONG ( *((int *)names) );
 		patchlookup = new int[nummappatches];
-	
+
 		for (i = 0; i < nummappatches; i++)
 		{
 			patchlookup[i] = W_CheckNumForName (name_p + i*8);
@@ -459,7 +459,7 @@ void R_InitTextures (void)
 		}
 		Z_Free (names);
 	}
-	
+
 	// Load the map texture definitions from textures.lmp.
 	// The data is contained in one or two lumps,
 	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
@@ -467,7 +467,7 @@ void R_InitTextures (void)
 	numtextures1 = LONG(*maptex);
 	maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
 	directory = maptex+1;
-		
+
 	if (W_CheckNumForName ("TEXTURE2") != -1)
 	{
 		maptex2 = (int *)W_CacheLumpName ("TEXTURE2", PU_STATIC);
@@ -497,7 +497,7 @@ void R_InitTextures (void)
 	delete[] texturewidthmask;
 	delete[] textureheightmask;
 	delete[] textureheight;
-	
+
 	numtextures = numtextures1 + numtextures2;
 
 	textures = new texture_t *[numtextures];
@@ -525,7 +525,7 @@ void R_InitTextures (void)
 
 		if (offset > maxoff)
 			I_FatalError ("R_InitTextures: bad texture directory");
-		
+
 		mtexture = (maptexture_t *) ( (byte *)maptex + offset);
 
 		texture = textures[i] = (texture_t *)
@@ -539,7 +539,7 @@ void R_InitTextures (void)
 
 		strncpy (texture->name, mtexture->name, 9); // denis - todo string limit?
 		std::transform(texture->name, texture->name + strlen(texture->name), texture->name, toupper);
-		
+
 		mpatch = &mtexture->patches[0];
 		patch = &texture->patches[0];
 
@@ -571,7 +571,7 @@ void R_InitTextures (void)
 			j <<= 1;
 
 		textureheightmask[i] = j-1;
-				
+
 		totalwidth += texture->width;
 	}
 	delete[] patchlookup;
@@ -579,7 +579,7 @@ void R_InitTextures (void)
 	Z_Free (maptex1);
 	if (maptex2)
 		Z_Free (maptex2);
-	
+
 	if (errors)
 		I_FatalError ("%d errors in R_InitTextures.", errors);
 
@@ -597,19 +597,19 @@ void R_InitTextures (void)
 		textures[j]->index = i;
 	}
 
-	// Precalculate whatever possible.	
+	// Precalculate whatever possible.
 	for (i = 0; i < numtextures; i++)
 		R_GenerateLookup (i, &errors);
 
 //	if (errors)
 //		I_FatalError ("%d errors encountered during texture generation.", errors);
-	
+
 	// Create translation table for global animation.
 
 	delete[] texturetranslation;
 
 	texturetranslation = new int[numtextures+1];
-	
+
 	for (i = 0; i < numtextures; i++)
 		texturetranslation[i] = i;
 }
@@ -622,20 +622,20 @@ void R_InitTextures (void)
 void R_InitFlats (void)
 {
 	int i;
-		
+
 	firstflat = W_GetNumForName ("F_START") + 1;
 	lastflat = W_GetNumForName ("F_END") - 1;
-	
+
 	if(firstflat >= lastflat)
 		I_Error("no flats");
-	
+
 	numflats = lastflat - firstflat + 1;
-				
+
 	delete[] flattranslation;
 
 	// Create translation table for global animation.
 	flattranslation = new int[numflats+1];
-	
+
 	for (i = 0; i < numflats; i++)
 		flattranslation[i] = i;
 
@@ -721,7 +721,7 @@ void R_InitColormaps (void)
 
 		numfakecmaps = lastfakecmap - firstfakecmap;
 	}
-	
+
 	realcolormaps = (byte *)Z_Malloc (256*(NUMCOLORMAPS+1)*numfakecmaps+255,PU_STATIC,0);
 	realcolormaps = (byte *)(((ptrdiff_t)realcolormaps + 255) & ~255);
 	fakecmaps = (FakeCmap *)Z_Malloc (sizeof(*fakecmaps) * numfakecmaps, PU_STATIC, 0);
@@ -750,7 +750,7 @@ void R_InitColormaps (void)
 					r = RPART(pal->basecolors[*map]);
 					g = GPART(pal->basecolors[*map]);
 					b = BPART(pal->basecolors[*map]);
-	
+
 					W_GetLumpName (fakecmaps[j].name, i);
 					for (k = 1; k < 256; k++) {
 						r = (r + RPART(pal->basecolors[map[k]])) >> 1;
@@ -784,7 +784,7 @@ int R_ColormapNumForName (const char *name)
 
 unsigned int R_BlendForColormap (int map)
 {
-	return APART(map) ? map : 
+	return APART(map) ? map :
 		   (unsigned)map < numfakecmaps ? fakecmaps[map].blend : 0;
 }
 
@@ -800,6 +800,9 @@ void R_InitData (void)
 	R_InitTextures ();
 	R_InitFlats ();
 	R_InitSpriteLumps ();
+
+	// haleyjd 01/28/10: also initialize tantoangle_acc table
+	Table_InitTanToAngle ();
 }
 
 
@@ -841,7 +844,7 @@ int R_CheckTextureNumForName (const char *name)
 	int  i;
 
 	// "NoTexture" marker.
-	if (name[0] == '-') 		
+	if (name[0] == '-')
 		return 0;
 
 	// [RH] Use a hash table instead of linear search
@@ -869,7 +872,7 @@ int R_CheckTextureNumForName (const char *name)
 int R_TextureNumForName (const char *name)
 {
 	int i;
-		
+
 	i = R_CheckTextureNumForName (name);
 
 	if (i==-1) {
@@ -907,17 +910,17 @@ void R_PrecacheLevel (void)
 
 		hitlist = new byte[(numtextures > size) ? numtextures : size];
 	}
-	
+
 	// Precache flats.
 	memset (hitlist, 0, numflats);
 
 	for (i = numsectors - 1; i >= 0; i--)
 		hitlist[sectors[i].floorpic] = hitlist[sectors[i].ceilingpic] = 1;
-		
+
 	for (i = numflats - 1; i >= 0; i--)
 		if (hitlist[i])
 			W_CacheLumpNum (firstflat + i, PU_CACHE);
-	
+
 	// Precache textures.
 	memset (hitlist, 0, numtextures);
 
@@ -954,7 +957,7 @@ void R_PrecacheLevel (void)
 
 	// Precache sprites.
 	memset (hitlist, 0, numsprites);
-		
+
 	{
 		AActor *actor;
 		TThinkerIterator<AActor> iterator;
@@ -971,6 +974,21 @@ void R_PrecacheLevel (void)
 
 	delete[] hitlist;
 }
+
+// Utility function,
+//	called by R_PointToAngle.
+unsigned int SlopeDiv (unsigned int num, unsigned int den)
+{
+	unsigned int ans;
+
+	if (den < 512)
+		return SLOPERANGE;
+
+	ans = (num << 3) / (den >> 8);
+
+	return ans <= SLOPERANGE ? ans : SLOPERANGE;
+}
+
 
 VERSION_CONTROL (r_data_cpp, "$Id$")
 

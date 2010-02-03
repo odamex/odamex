@@ -194,21 +194,21 @@ AActor::AActor () :
 }
 
 AActor::AActor (const AActor &other) :
-    x(other.x), y(other.y), z(other.z), snext(other.snext), sprev(other.sprev), 
-    angle(other.angle), sprite(other.sprite), frame(other.frame), 
-    pitch(other.pitch), roll(other.roll), effects(other.effects), 
-    bnext(other.bnext), bprev(other.bprev), subsector(other.subsector), 
-    floorz(other.floorz), ceilingz(other.ceilingz), radius(other.radius), 
+    x(other.x), y(other.y), z(other.z), snext(other.snext), sprev(other.sprev),
+    angle(other.angle), sprite(other.sprite), frame(other.frame),
+    pitch(other.pitch), roll(other.roll), effects(other.effects),
+    bnext(other.bnext), bprev(other.bprev), subsector(other.subsector),
+    floorz(other.floorz), ceilingz(other.ceilingz), radius(other.radius),
     height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
-    validcount(other.validcount), type(other.type), info(other.info), 
-    tics(other.tics), state(other.state), flags(other.flags), 
-    health(other.health), movedir(other.movedir), movecount(other.movecount), 
-    visdir(other.visdir), reactiontime(other.reactiontime), 
-    threshold(other.threshold), player(other.player), lastlook(other.lastlook), 
+    validcount(other.validcount), type(other.type), info(other.info),
+    tics(other.tics), state(other.state), flags(other.flags),
+    health(other.health), movedir(other.movedir), movecount(other.movecount),
+    visdir(other.visdir), reactiontime(other.reactiontime),
+    threshold(other.threshold), player(other.player), lastlook(other.lastlook),
     inext(other.inext), iprev(other.iprev), translation(other.translation),
-    translucency(other.translucency), waterlevel(other.waterlevel), 
-    onground(other.onground), touching_sectorlist(other.touching_sectorlist), 
-    deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex), 
+    translucency(other.translucency), waterlevel(other.waterlevel),
+    onground(other.onground), touching_sectorlist(other.touching_sectorlist),
+    deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
     netid(other.netid), tid(other.tid)
 {
 	self.init(this);
@@ -221,46 +221,46 @@ AActor &AActor::operator= (const AActor &other)
     z = other.z;
     snext = other.snext;
     sprev = other.sprev;
-    angle = other.angle; 
+    angle = other.angle;
     sprite = other.sprite;
-    frame = other.frame; 
-    pitch = other.pitch; 
+    frame = other.frame;
+    pitch = other.pitch;
     roll = other.roll;
     effects = other.effects;
     bnext = other.bnext;
     bprev = other.bprev;
-    subsector = other.subsector; 
+    subsector = other.subsector;
     floorz = other.floorz;
     ceilingz = other.ceilingz;
-    radius = other.radius; 
+    radius = other.radius;
     height = other.height;
     momx = other.momx;
     momy = other.momy;
     momz = other.momz;
     validcount = other.validcount;
     type = other.type;
-    info = other.info; 
+    info = other.info;
     tics = other.tics;
     state = other.state;
-    flags= other.flags; 
+    flags= other.flags;
     health = other.health;
     movedir = other.movedir;
-    movecount = other.movecount; 
-    visdir = other.visdir; 
-    reactiontime = other.reactiontime; 
+    movecount = other.movecount;
+    visdir = other.visdir;
+    reactiontime = other.reactiontime;
     threshold = other.threshold;
     player = other.player;
-    lastlook = other.lastlook; 
+    lastlook = other.lastlook;
     inext = other.inext;
     iprev = other.iprev;
     translation = other.translation;
     translucency = other.translucency;
-    waterlevel = other.waterlevel; 
+    waterlevel = other.waterlevel;
     onground = other.onground;
-    touching_sectorlist = other.touching_sectorlist; 
+    touching_sectorlist = other.touching_sectorlist;
     deadtic = other.deadtic;
     oldframe = other.oldframe;
-    rndindex = other.rndindex; 
+    rndindex = other.rndindex;
     netid = other.netid;
     tid = other.tid;
 
@@ -1586,7 +1586,7 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
     th->target = source->ptr();	// where it came from
-    an = R_PointToAngle2 (source->x, source->y, dest_x, dest_y);
+    an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
     // fuzzy player
     if (dest_flags & MF_SHADOW)

@@ -581,7 +581,7 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 
 		if (!allaround)
 		{
-			an = R_PointToAngle2 (actor->x,
+			an = P_PointToAngle (actor->x,
 								  actor->y,
 								  player->mo->x,
 								  player->mo->y)
@@ -838,7 +838,7 @@ void A_FaceTarget (AActor *actor)
 
 	actor->flags &= ~MF_AMBUSH;
 
-	actor->angle = R_PointToAngle2 (actor->x,
+	actor->angle = P_PointToAngle (actor->x,
 									actor->y,
 									actor->target->x,
 									actor->target->y);
@@ -1108,7 +1108,7 @@ void A_Tracer (AActor *actor)
 		return;
 
 	// change angle
-	angle_t exact = R_PointToAngle2 (actor->x,
+	angle_t exact = P_PointToAngle (actor->x,
 							 actor->y,
 							 dest->x,
 							 dest->y);
@@ -1645,24 +1645,24 @@ void A_Scream (AActor *actor)
 
 	if (actor->info->deathsound == NULL)
         return;
-        
+
 
 	strcpy (sound, actor->info->deathsound);
-    
-    if (stricmp(sound, "grunt/death1") == 0 || 
+
+    if (stricmp(sound, "grunt/death1") == 0 ||
         stricmp(sound, "shotguy/death1") == 0 ||
         stricmp(sound, "chainguy/death1") == 0)
     {
         sound[strlen(sound)-1] = P_Random(actor) % 3 + '1';
     }
 
-    if (stricmp(sound, "imp/death1") == 0 || 
+    if (stricmp(sound, "imp/death1") == 0 ||
         stricmp(sound, "imp/death2") == 0)
     {
         sound[strlen(sound)-1] = P_Random(actor) % 2 + '1';
     }
 
-    
+
     S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
 

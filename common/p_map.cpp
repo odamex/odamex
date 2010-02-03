@@ -96,10 +96,10 @@ BOOL PIT_StompThing (AActor *thing)
 
 	if (!(thing->flags & MF_SHOOTABLE))
 		return true;
-		
+
 	if (thing->player && thing->player->spectator)
 		return true;
-		
+
 	if (tmthing->player && tmthing->player->spectator)
 		return true;
 
@@ -413,14 +413,14 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)) )
 		return true;	// can't hit thing
 
-		
+
 	// GhostlyDeath -- Spectators go through everything!
 	if (thing->player && thing->player->spectator)
 		return true;
 	// and vice versa
 	if (tmthing->player && tmthing->player->spectator)
 		return true;
-		
+
     if (tmthing->player && thing->player && sv_unblockplayers)
         return true;
 
@@ -710,7 +710,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 		/*if ((tmthing->player && !tmthing->player->spectator) &&
 			(thing->player && !thing->player->spectator))
 			return false;*/
-			
+
 		/*if (!(tmthing->player && tmthing->player->spectator) && (thing != tmthing))
 			return false;
 		if (!(thing->player && thing->player->spectator) && (thing != tmthing))
@@ -869,12 +869,12 @@ void P_HitSlideLine (line_t* ld)
 
 	side = P_PointOnLineSide (slidemo->x, slidemo->y, ld);
 
-	lineangle = R_PointToAngle2 (0,0, ld->dx, ld->dy);
+	lineangle = P_PointToAngle (0,0, ld->dx, ld->dy);
 
 	if (side == 1)
 		lineangle += ANG180;
 
-	moveangle = R_PointToAngle2 (0,0, tmxmove, tmymove);
+	moveangle = P_PointToAngle (0,0, tmxmove, tmymove);
 	deltaangle = moveangle-lineangle;
 
 	if (icyfloor && (deltaangle > ANG45) && (deltaangle < ANG90+ANG45))
@@ -1310,9 +1310,9 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	// Spawn bullet puffs or blod spots,
 	// depending on target type.
 	if ((in->d.thing->flags & MF_NOBLOOD))
-		P_SpawnPuff (x,y,z, R_PointToAngle2 (0, 0, trace.dx, trace.dy) - ANG180, 2);
+		P_SpawnPuff (x,y,z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, 2);
 	else
-		P_SpawnBlood (x,y,z, R_PointToAngle2 (0, 0, trace.dx, trace.dy) - ANG180, la_damage);
+		P_SpawnBlood (x,y,z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, la_damage);
 
 	if (la_damage) {
 		// [RH] try and figure out means of death;
@@ -1461,7 +1461,7 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 			// hit nothing
 			return;
 		}
-		P_SpawnPuff (x2, y2, z, R_PointToAngle2 (0, 0, trace.dx, trace.dy) - ANG180, updown);*/
+		P_SpawnPuff (x2, y2, z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, updown);*/
 	}
 }
 
@@ -1781,7 +1781,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 		// keep checking
 		return true;
 	}
-	
+
 	// GhostlyDeath -- if it's a spectator, keep checking
 	if (thing->player && thing->player->spectator)
 		return true;
@@ -1848,7 +1848,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 bool P_ChangeSector (sector_t *sector, bool crunch)
 {
 	int x, y;
-	
+
 	nofit = false;
 	crushchange = crunch;
 

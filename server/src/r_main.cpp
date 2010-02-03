@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -106,7 +106,7 @@ int				lightscalexmul;	// [RH] used to keep hires modes dark enough
 int				lightscaleymul;
 
 // bumped light from gun blasts
-int			extralight;			
+int			extralight;
 
 // [RH] ignore extralight and fullbright
 BOOL		foggy;
@@ -178,10 +178,10 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 
 	if (!ldy)
 		return y <= ly ? ldx < 0 : ldx > 0;
-  
+
 	x -= lx;
 	y -= ly;
-      
+
 	// Try to quickly decide by looking at sign bits.
 	if ((ldy ^ ldx ^ x ^ y) < 0)
 		return (ldy ^ x) < 0;          // (left is negative)
@@ -198,11 +198,11 @@ int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
 //
 
 angle_t R_PointToAngle2 (fixed_t x1, fixed_t y1, fixed_t x, fixed_t y)
-{		
+{
   return (y -= y1, (x -= x1) || y) ?
     x >= 0 ?
-      y >= 0 ? 
-        (x > y) ? tantoangle[SlopeDiv(y,x)] :						// octant 0 
+      y >= 0 ?
+        (x > y) ? tantoangle[SlopeDiv(y,x)] :						// octant 0
                 ANG90-1-tantoangle[SlopeDiv(x,y)] :					// octant 1
         x > (y = -y) ? (angle_t)-(SDWORD)tantoangle[SlopeDiv(y,x)] :	// octant 8
                        ANG270+tantoangle[SlopeDiv(x,y)] :			// octant 7
@@ -220,13 +220,14 @@ angle_t
 R_PointToAngle
 ( fixed_t	x,
   fixed_t	y )
-{	
+{
     return R_PointToAngle2 (viewx, viewy, x, y);
 }
 
 //
 // R_InitPointToAngle
 //
+/*
 void R_InitPointToAngle (void)
 {
 	int i;
@@ -240,6 +241,7 @@ void R_InitPointToAngle (void)
 		tantoangle[i] = (angle_t)(0xffffffff*f);
 	}
 }
+*/
 
 //
 //
@@ -278,7 +280,7 @@ void R_InitTables (void)
 void R_Init (void)
 {
 	R_InitData ();
-	R_InitPointToAngle ();
+	//R_InitPointToAngle ();
 	R_InitTables ();
 
 	framecount = 0;

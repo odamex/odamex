@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -29,7 +29,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "p_local.h"
-
+#include "r_data.h"
 
 // State.
 #include "r_state.h"
@@ -278,7 +278,7 @@ void AActor::UnlinkFromWorld ()
 
 	if(!subsector)
 		return;
-		
+
 	if (!(flags & MF_NOSECTOR))
 	{
 		// invisible things don't need to be in sector list
@@ -439,15 +439,15 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 	for (; *list != -1; list++)
 	{
 		line_t *ld = &lines[*list];
-		
+
 		if (ld->validcount != validcount) {
 			ld->validcount = validcount;
-			
+
 			if ( !func(ld) )
 				return false;
 		}
 	}
-	
+
 	return true;		// everything was checked
 }
 
@@ -542,7 +542,7 @@ BOOL PIT_AddLineIntercepts (line_t *ld)
 	intercept.isaline = true;
 	intercept.d.line = ld;
 	intercepts.Push(intercept);
-	
+
 	return true;		// continue
 }
 
@@ -698,7 +698,7 @@ BOOL P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 	earlyout = flags & PT_EARLYOUT;
 
 	validcount++;
-	
+
 	intercepts.Clear();
 
 	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
@@ -804,6 +804,99 @@ BOOL P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 	// go through the sorted list
 	return P_TraverseIntercepts ( trav, FRACUNIT );
 }
+
+//
+// P_PointToAngle
+//
+// To get a global angle from cartesian coordinates,
+//  the coordinates are flipped until they are in
+//  the first octant of the coordinate system, then
+//  the y (<=x) is scaled and divided by x to get a
+//  tangent (slope) value which is looked up in the
+//  tantoangle[] table. The +1 size of tantoangle[]
+//  is to handle the case when x==y without additional
+//  checking.
+//
+// killough 5/2/98: reformatted, cleaned up
+// haleyjd 01/28/10: restored to Vanilla and made some modifications;
+//                   added P_ version for use by gamecode.
+//
+angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y)
+{
+	x -= xo;
+	y -= yo;
+
+	if((x | y) == 0)
+		return 0;
+
+	if(x >= 0)
+	{
+		if (y >= 0)
+		{
+			if(x > y)
+			{
+				// octant 0
+				return p_tantoangle[SlopeDiv(y, x)];
+			}
+			else
+			{
+				// octant 1
+				return ANG90 - 1 - p_tantoangle[SlopeDiv(x, y)];
+			}
+		}
+		else
+		{
+			y = -y;
+
+			if(x > y)
+			{
+				// octant 8
+				return 0 - p_tantoangle[SlopeDiv(y, x)];
+			}
+			else
+			{
+				// octant 7
+				return ANG270 + p_tantoangle[SlopeDiv(x, y)];
+			}
+		}
+	}
+	else
+	{
+		x = -x;
+
+		if(y >= 0)
+		{
+			if(x > y)
+			{
+				// octant 3
+				return ANG180 - 1 - p_tantoangle[SlopeDiv(y, x)];
+			}
+			else
+			{
+				// octant 2
+				return ANG90 + p_tantoangle[SlopeDiv(x, y)];
+			}
+		}
+		else
+		{
+			y = -y;
+
+			if(x > y)
+			{
+				// octant 4
+				return ANG180 + p_tantoangle[SlopeDiv(y, x)];
+			}
+			else
+			{
+				// octant 5
+				return ANG270 - 1 - p_tantoangle[SlopeDiv(x, y)];
+			}
+		}
+	}
+
+	return 0;
+}
+
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")
 

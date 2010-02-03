@@ -40,6 +40,12 @@ typedef int BOOL;
 typedef unsigned char byte;
 #endif
 
+#ifdef __cplusplus
+typedef bool dboolean;
+#else
+typedef enum {false, true} dboolean;
+#endif
+
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 #define STACK_ARGS __cdecl
 #else

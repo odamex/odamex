@@ -873,12 +873,12 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 		C_MidPrint (msg, p);
 	}
-	
+
 	if (serverside && network_game && msg != NULL)
 	{
 		C_MidPrint (msg, p);
 	}
-	
+
 	return false;
 }
 
@@ -905,7 +905,7 @@ P_CrossSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return;
-        
+
     line_t*	line = &lines[linenum];
 
 	if(thing)
@@ -939,7 +939,7 @@ P_CrossSpecialLine
 			// Likewise, player should not trigger monster lines
 			if(line->flags & ML_SPECIAL_MONSTER_ONLY)
 				return;
-			
+
 			// And spectators should only trigger teleporters
 			if (thing->player->spectator)
 			{
@@ -993,7 +993,7 @@ P_ShootSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return;
-	
+
 	if(thing)
 	{
 		if (!(line->flags & ML_SPECIAL_SHOOT))
@@ -1033,7 +1033,7 @@ P_UseSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return false;
-	
+
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1980,7 +1980,7 @@ BOOL PIT_PushThing (AActor *thing)
 
 		if ((speed > 0) && (P_CheckSight (thing, tmpusher->m_Source, true)))
 		{
-			angle_t pushangle = R_PointToAngle2 (thing->x, thing->y, sx, sy);
+			angle_t pushangle = P_PointToAngle (thing->x, thing->y, sx, sy);
 			if (tmpusher->m_Source->type == MT_PUSH)
 				pushangle += ANG180;    // away
 			pushangle >>= ANGLETOFINESHIFT;

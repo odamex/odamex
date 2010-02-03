@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -62,6 +62,8 @@ extern byte *realcolormaps;						// [RH] make the colormaps externally visible
 extern size_t numfakecmaps;
 
 int R_FindSkin (const char *name);	// [RH] Find a skin
+
+unsigned int SlopeDiv(unsigned int num, unsigned int den);
 
 #endif
 
