@@ -68,7 +68,8 @@ unsigned int	ConRows, ConCols, PhysRows;
 char		*Lines, *Last = NULL;
 BOOL		vidactive = false, gotconback = false;
 BOOL		cursoron = false;
-int			SkipRows, ConBottom, RowAdjust;
+int			SkipRows, ConBottom;
+unsigned int	RowAdjust;
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
 char		VersionString[8];
@@ -422,8 +423,8 @@ void C_AddNotifyString (int printlevel, const char *source)
 int PrintString (int printlevel, const char *outline)
 {
 	const char *cp, *newcp;
-	static int xp = 0;
-	int newxp;
+	static unsigned int xp = 0;
+	unsigned int newxp;
 	int mask;
 	BOOL scroll;
 
@@ -535,7 +536,7 @@ extern BOOL gameisdead;
 
 int VPrintf (int printlevel, const char *format, va_list parms)
 {
-	char outline[8192], outlinelog[8192];
+	char outline[512], outlinelog[512];
 	int len, i, nlcount=0;
 
 	if (gameisdead)

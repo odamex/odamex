@@ -25,6 +25,7 @@
 #include "m_alloc.h"
 #include <stdlib.h>
 #include <math.h>
+#include <limits.h>
 #include "doomdef.h"
 #include "d_net.h"
 #include "doomstat.h"
