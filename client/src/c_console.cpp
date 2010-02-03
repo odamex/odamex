@@ -585,7 +585,7 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 		// We need to know if there were any new lines being printed
 		// in our string.
 
-		int newLineCount = std::count(outline, outline + sizeof(outline),'\n');
+		int newLineCount = std::count(outline, outline + strlen(outline),'\n');
 
 		if (ConRows < CONSOLEBUFFER)
 			ConRows+=(newLineCount > 1 ? newLineCount+1 : 1);
