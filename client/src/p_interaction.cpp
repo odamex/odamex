@@ -116,6 +116,9 @@ static void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
             PickupMessage(toucher, GOTSHOTGUN2);
         }
         break;
+        
+        default:
+        break;
     }
 }
 

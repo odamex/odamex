@@ -81,7 +81,8 @@ void R_InitSkyMap ()
 
 	if (textureheight[skytexture] <= (128 << FRACBITS))
 	{
-		skystretch = (r_stretchsky && sv_freelook && cl_mouselook);
+		//skystretch = (r_stretchsky && sv_freelook && cl_mouselook);
+		skystretch = r_stretchsky;
 	}
 
 	skyheight = textureheight[skytexture] << skystretch;
