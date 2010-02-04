@@ -593,14 +593,14 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
                             _T("Please enter a password"), 
                             _T("Server is passworded"),
                             _T(""));
-/*
-    if (QServer[i].Info.passworded)
+
+    if (QServer[i].Info.PasswordHash.IsEmpty() == false)
     {                           
         ped.ShowModal();
         
         if (ped.GetValue().IsEmpty())
             return;
-    }*/
+    }
     
     if (i > -1)
     {
