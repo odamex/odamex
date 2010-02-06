@@ -927,18 +927,13 @@ END_COMMAND (give)
 
 BEGIN_COMMAND (fov)
 {
-	if(!connected || !m_Instigator || !m_Instigator->player)
-	{
-		Printf (PRINT_HIGH, "cannot change fov: not in game\n");
+	if (CheckCheatmode () || !m_Instigator)
 		return;
-	}
 
 	if (argc != 2)
 		Printf (PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
-	else if (allowcheats)
+	else
 		m_Instigator->player->fov = atof (argv[1]);
-    else
-        Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (fov)
 
