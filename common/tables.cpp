@@ -318,7 +318,7 @@ void Table_InitTanToAngle(void)
 
    for(i = 0; i <= SLOPERANGE; ++i)
    {
-      double angle = atan2(i, SLOPERANGE) / 6.28318530718;
+      double angle = atan2((double)i, (double)SLOPERANGE) / 6.28318530718;
 
       tantoangle_acc[i] = (angle_t)(angle * ANG360);
    }

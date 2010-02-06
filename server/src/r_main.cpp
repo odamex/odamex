@@ -277,7 +277,7 @@ angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 	}
 	else
 	{
-      return (angle_t)(atan2(y, x) * (ANG180 / PI));
+      return (angle_t)(atan2((double)y, (double)x) * (ANG180 / PI));
 	}
 
    return 0;
