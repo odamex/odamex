@@ -1485,6 +1485,7 @@ typedef struct
 	int damage;
 	const char *activesound;	// [RH] not int
 	int flags;
+	//int flags2;	
 	statenum_t raisestate;
 	int translucency;
 	const char *name;

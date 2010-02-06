@@ -1161,6 +1161,20 @@ void G_InitLevelLocals ()
 //		RefreshPalettes ();
 }
 
+void G_AirControlChanged ()
+{
+	if (level.aircontrol <= 256)
+	{
+		level.airfriction = FRACUNIT;
+	}
+	else
+	{
+		// Friction is inversely proportional to the amount of control
+		float fric = ((float)level.aircontrol/65536.f) * -0.0941f + 1.0004f;
+		level.airfriction = (fixed_t)(fric * 65536.f);
+	}
+}
+
 char *CalcMapName (int episode, int level)
 {
 	static char lumpname[9];

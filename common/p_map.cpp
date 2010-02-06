@@ -215,7 +215,11 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 	const msecnode_t *m;
 	const sector_t *sec;
 
-	if (!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1 ||
+	if (mo->flags2 & MF2_FLY)
+	{
+		friction = FRICTION_FLY;
+	}
+	else if (!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1 ||
 		(mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
 	{
 		friction = mo->subsector->sector->friction;
@@ -696,11 +700,18 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 		{
 			return false;		// mobj must lower itself to fit
 		}
-		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT)
+		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT 
+			&& !(thing->flags2 & MF2_FLY))
 		{
 			// too big a step up
 			return false;
 		}
+		
+		if (thing->flags2 & MF2_FLY)
+		{
+			if (thing->z+thing->height > tmceilingz)
+				return false;
+		}		
 
 		// killough 3/15/98: Allow certain objects to drop off
 		if (!(thing->flags&(MF_DROPOFF|MF_FLOAT))

@@ -455,7 +455,7 @@ void P_XYMovement (AActor *mo)
 	if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
 		return; 	// no friction for missiles ever
 
-	if (mo->z > mo->floorz && !mo->waterlevel)
+	if (mo->z > mo->floorz && !mo->waterlevel && !(mo->flags2 & MF2_FLY) )
 		return;		// no friction when airborne
 
 	if (mo->flags & MF_CORPSE)
@@ -553,7 +553,12 @@ void P_ZMovement (AActor *mo)
       }
 
    }
-
+	if (mo->player && (mo->flags2 & MF2_FLY) && (mo->z > mo->floorz))
+	{
+		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
+		mo->momz = FixedMul (mo->momz, FRICTION_FLY);
+	}
+	
     // clip movement
    if (mo->z <= mo->floorz)
    {

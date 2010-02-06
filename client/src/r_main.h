@@ -162,6 +162,7 @@ R_AddPointToBox
 
 fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy);
 void R_SetFOV (float fov);
+float R_GetFOV (void);
 
 //
 // REFRESH - the actual rendering functions.

@@ -161,6 +161,11 @@ cvar_t* GetFirstCvar(void);
 
 #define END_CUSTOM_CVAR(name)
 
+#define CUSTOM_CVAR(type,name,def,flags) \
+	static void cvarfunc_##name(F##type##CVar &); \
+	F##type##CVar name (#name, def, flags, cvarfunc_##name); \
+	static void cvarfunc_##name(F##type##CVar &self)
+
 #define CVAR(name,def,flags) \
 	cvar_t name (#name, def, flags);
 

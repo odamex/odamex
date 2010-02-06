@@ -923,7 +923,7 @@ static int PatchThing (int thingy)
 		{31, 0, "RESERVED"},
 
 		// Names for flags2
-/*		{ 0, 1, "LOGRAV"},
+		{ 0, 1, "LOGRAV"},
 		{ 1, 1, "WINDTHRUST"},
 		{ 2, 1, "FLOORBOUNCE"},
 		{ 3, 1, "BLASTED"},
@@ -954,7 +954,7 @@ static int PatchThing (int thingy)
 		{28, 1, "DORMANT"},
 		{29, 1, "ICEDAMAGE"},
 		{30, 1, "SEEKERMISSILE"},
-		{31, 1, "REFLECTIVE"}*/
+		{31, 1, "REFLECTIVE"}
 	};
 	int result;
 	mobjinfo_t *info, dummy;
@@ -1038,6 +1038,8 @@ static int PatchThing (int thingy)
 					if (info->flags & 0x60000000)
 						info->translucency = (info->flags & 0x60000000) >> 15;
 				}
+				//if (v2changed)
+				//	info->flags2 = value2;
 			}
 			else DPrintf (unknown_str, Line1, "Thing", thingNum);
 		} else if (!stricmp (Line1, "Height")) {

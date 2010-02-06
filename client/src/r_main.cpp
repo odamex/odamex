@@ -54,7 +54,7 @@ extern dyncolormap_t NormalLight;
 
 EXTERN_CVAR (r_viewsize)
 
-
+static float	LastFOV;
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
 int 			viewangleoffset;
@@ -517,19 +517,32 @@ void R_InitTextureMapping (void)
 
 void R_SetFOV (float fov)
 {
-	static float lastfov = 90.0f;
-	if (fov != lastfov)
+	LastFOV = 90.0f;
+	if (fov != LastFOV)
 	{
 		if (fov < 1)
 			fov = 1;
 		else if (fov > 179)
 			fov = 179;
-		if (fov == lastfov)
+		if (fov == LastFOV)
 			return;
-		lastfov = fov;
+		LastFOV = fov;
 		FieldOfView = (int)(fov * (float)FINEANGLES / 360.0f);
 		setsizeneeded = true;
 	}
+}
+
+//
+//
+// R_GetFOV
+//
+// Returns the current field of view in degrees
+//
+//
+
+float R_GetFOV (void)
+{
+	return LastFOV;
 }
 
 //

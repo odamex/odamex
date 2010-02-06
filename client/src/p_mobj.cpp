@@ -456,7 +456,7 @@ void P_XYMovement (AActor *mo)
 		return; 	// no friction for missiles ever
 	}
 
-	if (mo->z > mo->floorz && !mo->waterlevel && !(mo->player && mo->player->spectator))
+	if (mo->z > mo->floorz && !(mo->flags2 & MF2_FLY) && !mo->waterlevel && !(mo->player && mo->player->spectator))
 		return;		// no friction when airborne (GhostlyDeath 06/04/2008 -- but not when spectating)
 
 	if (mo->flags & MF_CORPSE)
@@ -527,9 +527,7 @@ void P_ZMovement (AActor *mo)
    if (mo->player && mo->z < mo->floorz)
    {
       mo->player->viewheight -= mo->floorz-mo->z;
-
-      mo->player->deltaviewheight
-            = (VIEWHEIGHT - mo->player->viewheight)>>3;
+      mo->player->deltaviewheight = (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
 
     // adjust height
@@ -555,6 +553,11 @@ void P_ZMovement (AActor *mo)
       }
 
    }
+	if (mo->player && (mo->flags2 & MF2_FLY) && (mo->z > mo->floorz))
+	{
+		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
+		mo->momz = FixedMul (mo->momz, FRICTION_FLY);
+	}
 
     // clip movement
    if (mo->z <= mo->floorz)
