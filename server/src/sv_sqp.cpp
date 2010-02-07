@@ -74,7 +74,17 @@ EXTERN_CVAR (website)
 
 EXTERN_CVAR (natport)
 
+struct CvarField_t 
+{ 
+    std::string Name;
+    std::string Value;
+} CvarField;
+
+// The TAG identifier, changing this to a new value WILL break any application 
+// trying to contact this one that does not have the exact same value
 #define TAG_ID 0xAD0
+
+// When a change to the protocol is made, this value must be incremented
 #define PROTOCOL_VERSION 1
 
 /* 
@@ -92,12 +102,6 @@ EXTERN_CVAR (natport)
 // introduced revision and the last one is the removed revision
 #define QRYRANGEINFO(INTRODUCED,REMOVED) \
     if (EqProtocolVersion >= INTRODUCED && EqProtocolVersion < REMOVED)
-
-struct CvarField_t 
-{ 
-    std::string Name;
-    std::string Value;
-} CvarField;
 
 //
 // IntQryBuildInformation()
