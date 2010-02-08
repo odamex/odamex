@@ -191,17 +191,17 @@ CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE)
 // Sound and music
 // ---------------
 
-// Sample rate
-CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Sound volume
 CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Music volume
 CVAR_FUNC_DECL (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (snd_crossover, "0", CVAR_ARCHIVE)
-// number of channels available
-//CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+// Sample rate
+CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+// number of channels available
 BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 {
 	S_Stop();
