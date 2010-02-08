@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 
 #include "c_cvars.h"
+#include "s_sound.h"
 
 // Automap
 // -------
@@ -61,12 +62,6 @@ CVAR (am_ovnotseencolor,	"00 22 6e",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_ovlockedcolor,	    "bb bb bb",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_ovexitcolor,		"ff ff 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (am_ovteleportcolor,	"ff a3 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-// Compatibility options for vanilla
-// ---------------------------------
-
-// Enable/disable the "level 8 full sound at far distances" feature
-CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE)
 
 // Console
 // -------
@@ -187,18 +182,32 @@ CVAR (chatmacro0, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+// Compatibility options for vanilla
+// ---------------------------------
+
+// Enable/disable the "level 8 full sound at far distances" feature
+CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE)
+
 // Sound and music
 // ---------------
 
-CVAR (snd_crossover, "0", CVAR_ARCHIVE)
-// number of channels available
-CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Sample rate
 CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Sound volume
 CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Music volume
 CVAR_FUNC_DECL (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR (snd_crossover, "0", CVAR_ARCHIVE)
+// number of channels available
+//CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+{
+	S_Stop();
+	S_Init (snd_sfxvolume, snd_musicvolume);
+}
+END_CUSTOM_CVAR (snd_channels)
 
 // Status bar
 // ----------

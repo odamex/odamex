@@ -75,6 +75,13 @@ CVAR (weaponstay,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Give double ammo regardless of difficulty
 CVAR (doubleammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+// Compatibility options for vanilla
+// ---------------------------------
+
+// Enable/disable inifnitely tall actors
+CVAR (co_infinitetall, "1", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+
 // Misc stuff
 // ----------
 
