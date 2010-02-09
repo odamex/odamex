@@ -3746,7 +3746,6 @@ void SV_TouchSpecial(AActor *special, player_t *player)
         return;
         
     MSG_WriteMarker(&cl->reliablebuf, svc_touchspecial);
-    MSG_WriteByte(&cl->reliablebuf, player->id);
     MSG_WriteShort(&cl->reliablebuf, special->netid);
 }
 

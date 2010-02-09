@@ -1255,17 +1255,12 @@ void CL_Corpse(void)
 //
 void CL_TouchSpecialThing (void)
 {
-	byte who = MSG_ReadByte();
 	AActor *mo = CL_FindThingById(MSG_ReadShort());
-	player_t &p = idplayer(who);
 
-	if(!validplayer(p) || !mo)
+	if(!consoleplayer || !consoleplayer().mo || !mo)
 		return;
 
-	if (!p.mo)
-		return;
-
-	P_TouchSpecialThing (mo, p.mo, true);
+	P_TouchSpecialThing (mo, consoleplayer().mo, true);
 }
 
 
