@@ -3128,33 +3128,6 @@ void SV_UpdateConsolePlayer(player_t &player)
 //	MSG_WriteShort (&cl->netbuf, mo->momx >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momy >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momz >> FRACBITS);
-
-	// GhostlyDeath <July 16, 2008> -- Update player weapons and stuff after a bit
-	if ((gametic % 70) == 0)	// send this less often
-	{
-		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
-
-		for(j = 0; j < NUMWEAPONS; j++)
-			MSG_WriteByte (&cl->reliablebuf, player.weaponowned[j]);
-
-		for(j = 0; j < NUMAMMO; j++)
-		{
-			MSG_WriteShort (&cl->reliablebuf, player.maxammo[j]);
-			MSG_WriteShort (&cl->reliablebuf, player.ammo[j]);
-		}
-
-		MSG_WriteByte (&cl->reliablebuf, player.health);
-		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
-		MSG_WriteByte (&cl->reliablebuf, player.armortype);
-
-		// GhostlyDeath <July 17, 2008> -- What weapon do we send to the client?
-		if (player.pendingweapon == wp_nochange)
-			MSG_WriteByte (&cl->reliablebuf, player.readyweapon | 64);
-		else
-			MSG_WriteByte(&cl->reliablebuf, player.pendingweapon);
-
-		MSG_WriteByte (&cl->reliablebuf, player.backpack);
-	}
 }
 
 //
@@ -3763,6 +3736,18 @@ void SV_SetMoveableSectors()
 		|| (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DMover))))
 			sec->moveable = true;
 	}
+}
+
+void SV_TouchSpecial(AActor *special, player_t *player)
+{
+    client_t *cl = &player->client;
+    
+    if (cl == NULL || special == NULL)
+        return;
+        
+    MSG_WriteMarker(&cl->reliablebuf, svc_touchspecial);
+    MSG_WriteByte(&cl->reliablebuf, player->id);
+    MSG_WriteShort(&cl->reliablebuf, special->netid);
 }
 
 //

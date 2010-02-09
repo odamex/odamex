@@ -382,11 +382,14 @@ BOOL P_GivePower (player_t *player, int /*powertype_t*/ power)
 //
 // P_TouchSpecialThing
 //
-void P_TouchSpecialThing (AActor *special, AActor *toucher)
+void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 {
 	player_t*	player;
 	int 		i;
 	int 		sound;
+
+    if (clientside && network_game && !FromServer)
+        return;
 
     if(predicting)
         return;

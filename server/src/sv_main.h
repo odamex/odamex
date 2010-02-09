@@ -81,6 +81,7 @@ void SV_ActorTarget(AActor *actor);
 void SV_ActorTracer(AActor *actor);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
+void SV_TouchSpecial(AActor *special, player_t *player);
 
 void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation);
 void SV_Sound (client_t *cl, AActor *mo, byte channel, const char *name, byte attenuation);

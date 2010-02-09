@@ -1265,7 +1265,7 @@ void CL_TouchSpecialThing (void)
 	if (!p.mo)
 		return;
 
-	//P_TouchSpecialThing (mo, p.mo);
+	P_TouchSpecialThing (mo, p.mo, true);
 }
 
 
@@ -2488,6 +2488,8 @@ void CL_InitCommands(void)
 	cmds[svc_launcher_challenge]= &CL_Clear;
 	
 	cmds[svc_spectate]   		= &CL_Spectate;
+	
+	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
 }
 
 //

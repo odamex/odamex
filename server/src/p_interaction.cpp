@@ -321,7 +321,7 @@ BOOL P_GivePower (player_t *player, int /*powertype_t*/ power)
 //
 // P_TouchSpecialThing
 //
-void P_TouchSpecialThing (AActor *special, AActor *toucher)
+void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 {
 	player_t*	player;
 	size_t		i;
@@ -362,11 +362,17 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 	  case SPR_ARM1:
 		if (!P_GiveArmor (player, deh.GreenAC))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_ARM2:
 		if (!P_GiveArmor (player, deh.BlueAC))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 		// bonus items
@@ -375,6 +381,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		if (player->health > deh.MaxSoulsphere)
 			player->health = deh.MaxSoulsphere;
 		player->mo->health = player->health;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_BON2:
@@ -383,6 +392,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 			player->armorpoints = deh.MaxArmor;
 		if (!player->armortype)
 			player->armortype = deh.GreenAC;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_SOUL:
@@ -391,6 +403,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 			player->health = deh.MaxSoulsphere;
 		player->mo->health = player->health;
 		sound = 1;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_MEGA:
@@ -398,6 +413,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		player->mo->health = player->health;
 		P_GiveArmor (player,deh.BlueAC);
 		sound = 1;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 		// cards
@@ -407,6 +425,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		sound = 3;
 		if (!multiplayer)
 			break;
+
+        SV_TouchSpecial(special, player);
+
 		return;
 
 	  case SPR_YKEY:
@@ -414,6 +435,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		sound = 3;
 		if (!multiplayer)
 			break;
+
+        SV_TouchSpecial(special, player);
+
 		return;
 
 	  case SPR_RKEY:
@@ -421,6 +445,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		sound = 3;
 		if (!multiplayer)
 			break;
+
+        SV_TouchSpecial(special, player);
+
 		return;
 
 	  case SPR_BSKU:
@@ -428,6 +455,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		sound = 3;
 		if (!multiplayer)
 			break;
+
+        SV_TouchSpecial(special, player);
+
 		return;
 
 	  case SPR_YSKU:
@@ -435,6 +465,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		sound = 3;
 		if (!multiplayer)
 			break;
+
+        SV_TouchSpecial(special, player);
+
 		return;
 
 	  case SPR_RSKU:
@@ -442,17 +475,26 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		sound = 3;
 		if (!multiplayer)
 			break;
+
+        SV_TouchSpecial(special, player);
+
 		return;
 
 		// medikits, heals
 	  case SPR_STIM:
 		if (!P_GiveBody (player, 10))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_MEDI:
 		if (!P_GiveBody (player, 25))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 
@@ -461,6 +503,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		if (!P_GivePower (player, pw_invulnerability))
 			return;
 		sound = 1;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_PSTR:
@@ -469,30 +514,45 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		if (player->readyweapon != wp_fist)
 			player->pendingweapon = wp_fist;
 		sound = 1;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_PINS:
 		if (!P_GivePower (player, pw_invisibility))
 			return;
 		sound = 1;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_SUIT:
 		if (!P_GivePower (player, pw_ironfeet))
 			return;
 		sound = 1;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_PMAP:
 		if (!P_GivePower (player, pw_allmap))
 			return;
 		sound = 1;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_PVIS:
 		if (!P_GivePower (player, pw_infrared))
 			return;
 		sound = 1;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 		// ammo
@@ -507,41 +567,65 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 			if (!P_GiveAmmo (player,am_clip,1))
 				return;
 		}
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_AMMO:
 		if (!P_GiveAmmo (player, am_clip,5))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_ROCK:
 		if (!P_GiveAmmo (player, am_misl,1))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_BROK:
 		if (!P_GiveAmmo (player, am_misl,5))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_CELL:
 		if (!P_GiveAmmo (player, am_cell,1))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_CELP:
 		if (!P_GiveAmmo (player, am_cell,5))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_SHEL:
 		if (!P_GiveAmmo (player, am_shell,1))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_SBOX:
 		if (!P_GiveAmmo (player, am_shell,5))
 			return;
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 	  case SPR_BPAK:
@@ -553,46 +637,63 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher)
 		}
 		for (i=0 ; i<NUMAMMO ; i++)
 			P_GiveAmmo (player, (ammotype_t)i, 1);
+
+        SV_TouchSpecial(special, player);
+
 		break;
 
 		// weapons
 	  case SPR_BFUG:
+        SV_TouchSpecial(special, player);
+
 		if (!P_GiveWeapon (player, wp_bfg, special->flags & MF_DROPPED))
 			return;
 		sound = 2;
 		break;
 
 	  case SPR_MGUN:
+        SV_TouchSpecial(special, player);
+
 		if (!P_GiveWeapon (player, wp_chaingun, special->flags & MF_DROPPED))
 			return;
 		sound = 2;
 		break;
 
 	  case SPR_CSAW:
+        SV_TouchSpecial(special, player);
+
 		if (!P_GiveWeapon (player, wp_chainsaw, special->flags & MF_DROPPED))
 			return;
 		sound = 2;
 		break;
 
 	  case SPR_LAUN:
+        SV_TouchSpecial(special, player);
+
 		if (!P_GiveWeapon (player, wp_missile, special->flags & MF_DROPPED))
 			return;
 		sound = 2;
 		break;
 
 	  case SPR_PLAS:
+        SV_TouchSpecial(special, player);
+
 		if (!P_GiveWeapon (player, wp_plasma, special->flags & MF_DROPPED))
 			return;
 		sound = 2;
 		break;
 
 	  case SPR_SHOT:
+        SV_TouchSpecial(special, player);
+
 		if (!P_GiveWeapon (player, wp_shotgun, special->flags & MF_DROPPED))
 			return;
 		sound = 2;
 		break;
 
 	  case SPR_SGN2:
+        SV_TouchSpecial(special, player);
+
 		if (!P_GiveWeapon (player, wp_supershotgun, special->flags & MF_DROPPED))
 			return;
 		sound = 2;

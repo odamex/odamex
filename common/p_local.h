@@ -259,7 +259,7 @@ extern AActor** 		blocklinks; 	// for thing chains
 extern int				maxammo[NUMAMMO];
 extern int				clipammo[NUMAMMO];
 
-void P_TouchSpecialThing (AActor *special, AActor *toucher);
+void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer = false);
 
 void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
 
