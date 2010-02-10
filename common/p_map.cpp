@@ -696,12 +696,11 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 		floatok = true;
 
 		if (!(thing->flags & MF_TELEPORT)
-			&& tmceilingz - thing->z < thing->height)
+			&& tmceilingz - thing->z < thing->height && !(thing->flags2 & MF2_FLY))
 		{
 			return false;		// mobj must lower itself to fit
 		}
-		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT 
-			&& !(thing->flags2 & MF2_FLY))
+		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT)
 		{
 			// too big a step up
 			return false;
@@ -709,23 +708,24 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 		
 		if (thing->flags2 & MF2_FLY)
 		{
+			// When flying, slide up or down blocking lines until the actor
+			// is not blocked.
 			if (thing->z+thing->height > tmceilingz)
+			{
+				thing->momz = -8*FRACUNIT;
 				return false;
+			}
+			else if (thing->z < tmfloorz && tmfloorz-tmdropoffz > 24*FRACUNIT)
+			{
+				thing->momz = 8*FRACUNIT;
+				return false;
+			}
 		}		
 
 		// killough 3/15/98: Allow certain objects to drop off
 		if (!(thing->flags&(MF_DROPOFF|MF_FLOAT))
 			&& tmfloorz - tmdropoffz > 24*FRACUNIT)
 			return false;	// don't stand over a dropoff
-
-		/*if ((tmthing->player && !tmthing->player->spectator) &&
-			(thing->player && !thing->player->spectator))
-			return false;*/
-
-		/*if (!(tmthing->player && tmthing->player->spectator) && (thing != tmthing))
-			return false;
-		if (!(thing->player && thing->player->spectator) && (thing != tmthing))
-			return false;*/
 	}
 
 	// the move is ok,
