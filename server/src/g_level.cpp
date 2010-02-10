@@ -68,6 +68,8 @@ EXTERN_CVAR (curmap)
 EXTERN_CVAR (nextmap)
 EXTERN_CVAR (loopepisode)
 
+EXTERN_CVAR (sv_aircontrol)
+
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
 
@@ -1112,6 +1114,8 @@ void G_InitLevelLocals ()
 	int i;
 
 	NormalLight.maps = realcolormaps;
+	
+	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
 
 	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;

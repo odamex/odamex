@@ -128,7 +128,6 @@ struct level_locals_s {
 	int			total_monsters;
 	int			killed_monsters;
 
-	float		gravity;
 	fixed_t		aircontrol;
 	fixed_t		airfriction;	
 };
