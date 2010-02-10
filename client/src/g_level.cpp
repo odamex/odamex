@@ -65,7 +65,6 @@ extern int timingdemo;
 
 EXTERN_CVAR(fastmonsters)
 EXTERN_CVAR(monstersrespawn)
-EXTERN_CVAR (sv_aircontrol)
 
 // Start time for timing demos
 int starttime;
@@ -695,8 +694,6 @@ void G_InitLevelLocals ()
 
 	BaseBlendA = 0.0f;		// Remove underwater blend effect, if any
 	NormalLight.maps = realcolormaps;
-	
-	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
 
 	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
@@ -892,20 +889,6 @@ void G_SetLevelStrings (void)
 
 	if (level.info && level.info->level_name)
 		strncpy (level.level_name, level.info->level_name, 63);
-}
-
-void G_AirControlChanged ()
-{
-	if (level.aircontrol <= 256)
-	{
-		level.airfriction = FRACUNIT;
-	}
-	else
-	{
-		// Friction is inversely proportional to the amount of control
-		float fric = ((float)level.aircontrol/65536.f) * -0.0941f + 1.0004f;
-		level.airfriction = (fixed_t)(fric * 65536.f);
-	}
 }
 
 void G_SerializeLevel (FArchive &arc, bool hubLoad)
