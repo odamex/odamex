@@ -1115,11 +1115,6 @@ state_t	states[NUMSTATES] = {
 	{SPR_GIB7,0,-1,{(void *)NULL},S_NULL,0,0},	// S_GIB7
 	{SPR_TROO,0,1,{(void *)A_Ambient},S_AMBIENTSOUND,0,0},	// S_AMBIENTSOUND
 	{SPR_UNKN,0,-1,{(void *)NULL},S_NULL,0,0},	// S_UNKNOWNTHING
-	{SPR_TLGL,32768,4,{(void *)NULL},S_BRIDGE2,0,0},	// S_BRIDGE1
-	{SPR_TLGL,32769,4,{(void *)NULL},S_BRIDGE3,0,0},	// S_BRIDGE2
-	{SPR_TLGL,32770,4,{(void *)NULL},S_BRIDGE4,0,0},	// S_BRIDGE3
-	{SPR_TLGL,32771,4,{(void *)NULL},S_BRIDGE5,0,0},	// S_BRIDGE4
-	{SPR_TLGL,32772,4,{(void *)NULL},S_BRIDGE1,0,0},	// S_BRIDGE5
 		
 	//	[Toke - CTF]
 	{SPR_BSOK,0,-1,{(void *)NULL},S_NULL,0,0},	// Blue Socket
@@ -5392,34 +5387,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0x10000,
 	"MT_UNKNOWNTHING"
 	},
-	
-	{		// MT_BRIDGE
-	118,		// doomednum
-	S_BRIDGE1,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	36*FRACUNIT,		// radius
-	4*FRACUNIT,		// height
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000
-	},	
+
 
 	// For use with wind and current effects
 	{		// MT_PUSH				// phares
@@ -5448,7 +5416,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF2_DONTDRAW,		// flags2
 	S_NULL,		// raisestate
 	0x10000,
-	"MT_PUSH				// phares"
+	"MT_PUSH"				// phares
 	},
 
 	// For use with wind and current effects
@@ -6102,7 +6070,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL,		// raisestate
 	0x10000,
 	"MT_GCAR"
-	},
+	}
 };
 
 VERSION_CONTROL (info_cpp, "$Id$")
