@@ -183,6 +183,7 @@ typedef enum
 	SPR_GIB7,
 	// [RH] Dummy for unknown mapthing
 	SPR_UNKN,
+	SPR_TLGL,
 	
 	//	[Toke - CTF]
 	SPR_BSOK,
@@ -1186,7 +1187,12 @@ typedef enum
 	S_GIB7,
 	S_AMBIENTSOUND,
 	S_UNKNOWNTHING,
-
+	S_BRIDGE1,
+	S_BRIDGE2,
+	S_BRIDGE3,
+	S_BRIDGE4,
+	S_BRIDGE5,
+	
 	// -----------------------------------
 	//	[Toke - CTF]
 
@@ -1485,7 +1491,7 @@ typedef struct
 	int damage;
 	const char *activesound;	// [RH] not int
 	int flags;
-	//int flags2;	
+	int flags2;	
 	statenum_t raisestate;
 	int translucency;
 	const char *name;

@@ -79,7 +79,7 @@ CVAR (doubleammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // ---------------------------------
 
 // Enable/disable inifnitely tall actors
-CVAR (co_infinitetall, "1", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+CVAR (co_realactorheight, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 
 // Misc stuff

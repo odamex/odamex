@@ -1038,8 +1038,8 @@ static int PatchThing (int thingy)
 					if (info->flags & 0x60000000)
 						info->translucency = (info->flags & 0x60000000) >> 15;
 				}
-				//if (v2changed)
-				//	info->flags2 = value2;
+				if (v2changed)
+					info->flags2 = value2;
 			}
 			else DPrintf (unknown_str, Line1, "Thing", thingNum);
 		} else if (!stricmp (Line1, "Height")) {

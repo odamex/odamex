@@ -190,6 +190,7 @@ typedef enum
 	MF2_NODMGTHRUST		= 0x00020000,	// does not thrust target when damaging
 	MF2_TELESTOMP		= 0x00040000,	// mobj can stomp another
 	MF2_FLOATBOB		= 0x00080000,	// use float bobbing z movement
+	MF2_DONTDRAW		= 0x00100000,	// don't generate a vissprite
 	MF2_IMPACT			= 0x00200000, 	// an MF_MISSILE mobj can activate SPAC_IMPACT
 	MF2_PUSHWALL		= 0x00400000, 	// mobj can push walls
 	MF2_MCROSS			= 0x00800000,	// can activate monster cross lines
