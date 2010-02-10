@@ -68,6 +68,8 @@ EXTERN_CVAR (curmap)
 EXTERN_CVAR (nextmap)
 EXTERN_CVAR (loopepisode)
 
+EXTERN_CVAR (sv_aircontrol)
+
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
 
@@ -1112,6 +1114,8 @@ void G_InitLevelLocals ()
 	int i;
 
 	NormalLight.maps = realcolormaps;
+	
+	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
 
 	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
@@ -1159,6 +1163,20 @@ void G_InitLevelLocals ()
 //  [deathz0r] Doesn't appear to affect client
 //	if (oldfade != level.fadeto)
 //		RefreshPalettes ();
+}
+
+void G_AirControlChanged ()
+{
+	if (level.aircontrol <= 256)
+	{
+		level.airfriction = FRACUNIT;
+	}
+	else
+	{
+		// Friction is inversely proportional to the amount of control
+		float fric = ((float)level.aircontrol/65536.f) * -0.0941f + 1.0004f;
+		level.airfriction = (fixed_t)(fric * 65536.f);
+	}
 }
 
 char *CalcMapName (int episode, int level)

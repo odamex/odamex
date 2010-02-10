@@ -93,11 +93,11 @@ void P_CalcHeight (player_t *player)
 	// Note: don't reduce bobbing here if on ice: if you reduce bobbing here,
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
-
+	
 	if ((player->mo->flags2 & MF2_FLY) && !player->mo->onground)
 	{
 		player->bob = FRACUNIT / 2;
-	}
+	}	
 
 	if (!player->spectator)
 		if (serverside || !predicting)
@@ -198,6 +198,13 @@ void P_PlayerLookUpDown (player_t *p)
 	}
 }
 
+BEGIN_CUSTOM_CVAR (sv_aircontrol, 0, CVAR_SERVERINFO)
+{
+	level.aircontrol = (fixed_t)(1 * 65536);
+	G_AirControlChanged ();
+}
+END_CUSTOM_CVAR (sv_aircontrol)
+
 //
 // P_MovePlayer
 //
@@ -225,7 +232,7 @@ void P_MovePlayer (player_t *player)
 		else if (player->mo->flags2 & MF2_FLY)
 		{
 			player->mo->momz = 3*FRACUNIT;
-		}
+		}		
 		else if (allowjump && player->mo->onground && !player->mo->momz)
 		{
 			player->mo->momz += 7*FRACUNIT;
@@ -304,12 +311,12 @@ void P_MovePlayer (player_t *player)
 		if (!mo->onground && !(player->mo->flags2 & MF2_FLY) && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
-			movefactor >>= 8;
-			bobfactor >>= 8;
+			movefactor = FixedMul (movefactor, level.aircontrol);
+			bobfactor = FixedMul (bobfactor, level.aircontrol);
 		}
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
-
+		
 		if (forwardmove)
 			P_ForwardThrust (player, mo->angle, forwardmove);
 
@@ -427,7 +434,7 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags |= MF_NOCLIP;
 	else
 		player->mo->flags &= ~MF_NOCLIP;
-
+		
 	if (player->cheats & CF_FLY)
 		player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
 	else
