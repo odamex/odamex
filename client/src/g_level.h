@@ -127,9 +127,6 @@ struct level_locals_s {
 
 	int			total_monsters;
 	int			killed_monsters;
-
-	fixed_t		aircontrol;
-	fixed_t		airfriction;	
 };
 typedef struct level_locals_s level_locals_t;
 
@@ -163,8 +160,6 @@ void G_SecretExitLevel (int position, int drawscores);
 void G_DoLoadLevel (int position);
 
 void G_InitLevelLocals (void);
-
-void G_AirControlChanged ();
 
 void G_SetLevelStrings (void);
 

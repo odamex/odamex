@@ -198,13 +198,6 @@ void P_PlayerLookUpDown (player_t *p)
 	}
 }
 
-BEGIN_CUSTOM_CVAR (sv_aircontrol, 0, CVAR_SERVERINFO)
-{
-	level.aircontrol = (fixed_t)(1 * 65536);
-	G_AirControlChanged ();
-}
-END_CUSTOM_CVAR (sv_aircontrol)
-
 //
 // P_MovePlayer
 //
@@ -242,41 +235,35 @@ void P_MovePlayer (player_t *player)
 		}
 	}
 
-/*
-	if (cmd->ucmd.upmove &&
-		(player->mo->waterlevel >= 2))
-	{
-		player->mo->momz = cmd->ucmd.upmove << 8;
-	}
-*/
-		if (cmd->ucmd.upmove == -32768)
-		{ // Only land if in the air
-			if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
-			{
-				player->mo->flags2 &= ~MF2_FLY;
-				player->mo->flags &= ~MF_NOGRAVITY;
-			}
-		}
-		else if (cmd->ucmd.upmove != 0)
+	if (cmd->ucmd.upmove == -32768)
+	{ // Only land if in the air
+		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
 		{
-			if (player->mo->waterlevel >= 2)
+			player->mo->flags2 &= ~MF2_FLY;
+			player->mo->flags &= ~MF_NOGRAVITY;
+		}
+	}
+	else if (cmd->ucmd.upmove != 0)
+	{
+		if (player->mo->waterlevel >= 2)
+		{
+			player->mo->momz = cmd->ucmd.upmove << 9;
+			if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
 			{
-				player->mo->momz = cmd->ucmd.upmove << 9;
-				if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
-				{
-					player->mo->flags2 |= MF2_FLY;
-					player->mo->flags |= MF_NOGRAVITY;
-					if (player->mo->momz <= -39*FRACUNIT)
-					{ // Stop falling scream
-						S_StopSound (player->mo, CHAN_VOICE);
-					}
+				player->mo->flags2 |= MF2_FLY;
+				player->mo->flags |= MF_NOGRAVITY;
+				if (player->mo->momz <= -39*FRACUNIT)
+				{ // Stop falling scream
+					S_StopSound (player->mo, CHAN_VOICE);
 				}
 			}
-			else if (cmd->ucmd.upmove > 0)
-			{
-				//P_PlayerUseArtifact (player, arti_fly);
-			}
 		}
+		else if (cmd->ucmd.upmove > 0)
+		{
+			//P_PlayerUseArtifact (player, arti_fly);
+		}
+	}
+	
 	// Look left/right
 	if(clientside || stepmode)
 	{
@@ -308,22 +295,16 @@ void P_MovePlayer (player_t *player)
 
 		movefactor = P_GetMoveFactor (mo, &friction);
 		bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
-		if (!mo->onground && !(player->mo->flags2 & MF2_FLY) && !mo->waterlevel)
+		if (!mo->onground && !(mo->flags2 & MF2_FLY) && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
-			movefactor = FixedMul (movefactor, level.aircontrol);
-			bobfactor = FixedMul (bobfactor, level.aircontrol);
+			movefactor >>= 8;
+			bobfactor >>= 8;
 		}
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
-		
-		if (forwardmove)
-			P_ForwardThrust (player, mo->angle, forwardmove);
 
-		if (sidemove)
-			P_SideThrust (player, mo->angle, sidemove);
-/*
-		if(mo->onground)
+		if(mo->onground || (mo->flags2 & MF2_FLY))
 		{
 			if (forwardmove)
 			{
@@ -334,7 +315,7 @@ void P_MovePlayer (player_t *player)
 				P_SideThrust (player, mo->angle, sidemove);
 			}
 		}
-*/
+
 		if (mo->state == &states[S_PLAY])
 		{
 			P_SetMobjState (player->mo, S_PLAY_RUN1); // denis - fixme - this function might destoy player->mo without setting it to 0
