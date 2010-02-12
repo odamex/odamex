@@ -171,6 +171,7 @@ bool I_InitInput (void)
 	// [Russell] - Disabled because it screws with the mouse
 	//g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
 #endif
+	UpdateFocus();
 
 	return true;
 }
@@ -227,12 +228,11 @@ static int AccelerateMouse(int val)
 //
 static void UpdateGrab(void)
 {
-    static bool currently_grabbed = false;
     bool grab;
 
     grab = MouseShouldBeGrabbed();
 
-    if (grab && !currently_grabbed)
+    if (grab && !mousegrabbed)
     {
 	   if(screen)
 	   {
@@ -241,45 +241,16 @@ static void UpdateGrab(void)
         //SDL_SetCursor(cursors[0]);
         SetCursorState(false);
         SDL_WM_GrabInput(SDL_GRAB_ON);
+        flushmouse = true;
     }
-    else if (!grab && currently_grabbed)
+    else if (!grab && mousegrabbed)
     {
         //SDL_SetCursor(cursors[1]);
         SetCursorState(true);
         SDL_WM_GrabInput(SDL_GRAB_OFF);
     }
 
-    currently_grabbed = grab;
-}
-
-//
-// GrabMouse
-//
-static void GrabMouse (void)
-{
-   if(nomouse)
-      return;
-
-   if(screen)
-   {
-      SDL_WarpMouse(screen->width/ 2, screen->height / 2);
-   }
-
-   SDL_WM_GrabInput(SDL_GRAB_ON);
-   mousegrabbed = true;
-   flushmouse = true;
-}
-
-//
-// UngrabMouse
-//
-static void UngrabMouse (void)
-{
-   if(nomouse)
-      return;
-
-   SDL_WM_GrabInput(SDL_GRAB_OFF);
-   mousegrabbed = false;
+    mousegrabbed = grab;
 }
 
 //
