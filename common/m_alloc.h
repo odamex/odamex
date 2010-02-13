@@ -30,7 +30,7 @@
 
 // Visual C++ doesn't have stdint.h
 #if defined(_MSC_VER)
-	#if _MSC_VER > 1200
+	#if _MSC_VER > 1200 && !_XBOX
 		#include <vadefs.h>
 	#else	// Visual C++ 6.0 has problems
 		#ifndef _UINTPTR_T_DEFINED

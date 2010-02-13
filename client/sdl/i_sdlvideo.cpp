@@ -27,10 +27,12 @@
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
 #if WIN32
+#ifndef _XBOX
 #include <windows.h>
+#endif // !_XBOX
 #include "SDL_syswm.h"
 #include "resource.h"
-#endif
+#endif // WIN32
 
 #include "v_palette.h"
 #include "i_sdlvideo.h"
@@ -64,7 +66,7 @@ SDLVideo::SDLVideo(int parm)
 
     // [Russell] - Just for windows, display the icon in the system menu and
     // alt-tab display
-    #if WIN32
+    #if WIN32 && !_XBOX
     HICON Icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 
     if (Icon != 0)

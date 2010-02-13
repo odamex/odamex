@@ -43,8 +43,12 @@
 /* [Petteri] Use Winsock for Win32: */
 #ifdef _WIN32
 #	define WIN32_LEAN_AND_MEAN
+#ifdef _XBOX
+#	include <xtl.h>
+#else
 #	include <windows.h>
 #	include <winsock.h>
+#endif // !_XBOX
 #else
 #	include <sys/types.h>
 #	include <sys/socket.h>
@@ -55,7 +59,7 @@
 #	include <netdb.h>
 #	include <sys/ioctl.h>
 #	include <sys/time.h>
-#endif
+#endif // WIN32
 
 #ifndef _WIN32
 typedef int SOCKET;
@@ -214,9 +218,11 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
      }
      else
      {
+#ifndef _XBOX // Xbox will need its own implementation of gethostbyname -- Hyper_Eye
           if (! (h = gethostbyname(copy)) )
                 return 0;
           *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
+#endif // _XBOX
      }
 
      SockadrToNetadr (&sadr, a);
@@ -322,7 +328,9 @@ void NET_GetLocalAddress (void)
 	socklen_t namelen;
 	netadr_t net_local_adr;
 
+#ifndef _XBOX // This function will need to be implemented for Xbox -- Hyper_Eye
 	gethostname(buff, HOST_NAME_MAX);
+#endif
 	buff[HOST_NAME_MAX - 1] = 0;
 
 	NET_StringToAdr (buff, &net_local_adr);

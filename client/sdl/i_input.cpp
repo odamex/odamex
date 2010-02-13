@@ -27,13 +27,15 @@
 #ifdef WIN32
 #define _WIN32_WINNT 0x0400
 #define WIN32_LEAN_AND_MEAN
+#ifndef _XBOX
 #include <windows.h>
+#endif // !_XBOX
 #ifdef _MSC_VER
 #ifndef snprintf
 #define snprintf _snprintf
-#endif
-#endif
-#endif
+#endif // !snprintf
+#endif // MSC_VER
+#endif // WIN32
 
 #include <SDL.h>
 
@@ -81,7 +83,7 @@ static BOOL flushmouse = false;
 
 extern constate_e ConsoleState;
 
-#ifdef WIN32
+#if defined WIN32 && !defined _XBOX
 // denis - in fullscreen, prevent exit on accidental windows key press
 HHOOK g_hKeyboardHook;
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)

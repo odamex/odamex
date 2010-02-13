@@ -28,8 +28,10 @@
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
+#ifndef _XBOX
 #include <windows.h>
-#endif
+#endif // _XBOX
+#endif // WIN32
 
 #include "doomtype.h"
 #include "cmdlib.h"

@@ -25,9 +25,11 @@
 // denis - todo - remove
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#ifndef _XBOX
 #include <windows.h>
+#endif // !_XBOX
 #undef GetMessage
-#endif
+#endif // WIN32
 
 #ifdef UNIX
 // for getuid and geteuid
@@ -126,7 +128,7 @@ int main(int argc, char *argv[])
     	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-gdi") > 0)
         	putenv("SDL_VIDEODRIVER=windib");
 
-
+#ifndef _XBOX
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
         // SDL_mixer that causes occasional crashes.
@@ -134,6 +136,7 @@ int main(int argc, char *argv[])
 
         if (!SetProcessAffinityMask(GetCurrentProcess(), 1))
             LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
+#endif // _XBOX
 
 #endif
 
@@ -179,6 +182,8 @@ int main(int argc, char *argv[])
         }
 #ifndef WIN32
             fprintf(stderr, "%s\n", error.GetMessage().c_str());
+#elif _XBOX
+		// Use future Xbox error message handling.    -- Hyper_Eye
 #else
 		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
 #endif

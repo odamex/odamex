@@ -35,8 +35,12 @@
 #include <direct.h>
 #include <process.h>
 #define NOMINMAX
+#ifdef _XBOX
+#include <xtl.h>
+#else
 #include <windows.h>
-#endif
+#endif // !_XBOX
+#endif // WIN32
 
 #ifdef UNIX
 #define HAVE_PWD_H
@@ -80,9 +84,11 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 
+#ifndef _XBOX // I will add this back later -- Hyper_Eye
 #include "txt_main.h"
 #define ENDOOM_W 80
 #define ENDOOM_H 25
+#endif // _XBOX
 
 EXTERN_CVAR (show_endoom)
 
@@ -362,9 +368,11 @@ std::string I_GetBinaryDir()
 	std::string ret;
 
 #ifdef WIN32
+#ifndef _XBOX // I shall return -- Hyper_Eye
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
 	ret = tmp;
+#endif
 #else
 	if(!Args[0])
 		return "./";
@@ -421,6 +429,7 @@ void I_FinishClockCalibration ()
 
 void I_Endoom(void)
 {
+#ifndef _XBOX // I will return to this -- Hyper_Eye
 	unsigned char *endoom_data;
 	unsigned char *screendata;
 	int y;
@@ -460,6 +469,7 @@ void I_Endoom(void)
 	// Shut down text mode screen
 
 	TXT_Shutdown();
+#endif // Hyper_Eye
 }
 
 //
@@ -634,7 +644,7 @@ std::string I_GetClipboardText (void)
 	return ret;
 #endif
 
-#ifdef WIN32
+#if defined WIN32 && !defined _XBOX
 	std::string ret;
 
 	if(!IsClipboardFormatAvailable(CF_TEXT))
