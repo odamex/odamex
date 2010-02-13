@@ -75,7 +75,11 @@ static void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
+#ifdef _XBOX
+int i_main(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
 	try
 	{

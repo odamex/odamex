@@ -874,6 +874,9 @@
 		<Filter
 			Name="Xbox Files"
 			Filter="">
+			<File
+				RelativePath=".\xbox.cpp">
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
