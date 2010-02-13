@@ -332,9 +332,9 @@ wxInt32 Server::TranslateResponse(const wxUint16 &TagId,
                                   const wxUint16 &TagPacketType)
 {
     // It isn't a response
-    if (TagQRId == 1)
+    if (TagQRId != 2)
     {
-        //wxLogDebug(wxT("Query/Response Id is Query"));
+        //wxLogDebug(wxT("Query/Response Id is not valid"));
         
         return 0;
     }

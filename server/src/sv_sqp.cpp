@@ -221,9 +221,9 @@ static DWORD IntQrySendResponse(const WORD &TagId,
                                 const WORD &TagPacketType)
 {
     // It isn't a query, throw it away
-    if (TagQRId == 2)
+    if (TagQRId != 1)
     {
-        //Printf("Query/Response Id is Response");
+        //Printf("Query/Response Id is not valid");
         
         return 0;
     }
