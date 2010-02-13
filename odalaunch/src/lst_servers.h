@@ -3,7 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -17,29 +16,28 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	SV_MASTER
+//  Server list control class
 //
 //-----------------------------------------------------------------------------
 
+#ifndef __LST_SERVERS_H__
+#define __LST_SERVERS_H__
 
-#ifndef __SVMASTER_H__
-#define __SVMASTER_H__
+#include "net_packet.h"
+#include "lst_custom.h"
 
-#include "doomtype.h"
-#include "doomstat.h"
-#include "d_player.h"
-#include "p_local.h"
-#include "sv_main.h"
-#include "sv_master.h"
-#include "c_console.h"
+class LstOdaServerList : public wxAdvancedListCtrl
+{
+    public:
+        LstOdaServerList() { };
+        virtual ~LstOdaServerList();
 
-bool SV_AddMaster (const char *masterip);
-void SV_InitMasters();
-bool SV_AddMaster(const char *masterip);
-void SV_ListMasters ();
-bool SV_RemoveMaster (const char *masterip);
-void SV_UpdateMasterServers(void);
-void SV_UpdateMaster(void);
-void SV_ArchiveMasters(FILE *fp);
+        void SetupServerListColumns();
+        void AddServerToList(const Server &s, wxInt32 index, bool insert = true);
 
-#endif
+    protected:
+        
+        DECLARE_DYNAMIC_CLASS(LstOdaServerList)
+};
+
+#endif // __LST_SERVERS_H__

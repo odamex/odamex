@@ -43,6 +43,8 @@
 #include "g_game.h"
 #include "p_local.h"
 #include "sv_main.h"
+#include "sv_sqp.h"
+#include "sv_sqpold.h"
 #include "sv_master.h"
 #include "i_system.h"
 #include "c_console.h"
@@ -1918,6 +1920,10 @@ void SV_ConnectClient (void)
 	int challenge = MSG_ReadLong();
 	client_t  *cl;
 
+    // New querying system
+    if (SV_QryParseEnquiry(challenge) == 0)
+        return;
+    
 	if (challenge == LAUNCHER_CHALLENGE)  // for Launcher
 	{
 		SV_SendServerInfo ();

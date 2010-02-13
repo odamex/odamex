@@ -24,7 +24,9 @@
 #ifndef DLG_MAIN_H
 #define DLG_MAIN_H
 
-#include "lst_custom.h"
+#include "lst_players.h"
+#include "lst_servers.h"
+#include "lst_srvdetails.h"
 
 #include "dlg_config.h"
 #include "dlg_servers.h"
@@ -57,6 +59,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		dlgMain(wxWindow* parent,wxWindowID id = -1);
 		virtual ~dlgMain();
 		
+		Server          NullServer;
         Server          *QServer;
         MasterServer    *MServer;
         
@@ -82,9 +85,6 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnServerListClick(wxListEvent& event);
 		void OnServerListDoubleClick(wxListEvent& event);
-		void OnServerListRightClick(wxListEvent& event);
-		
-		void OnComboSelectMaster(wxCommandEvent& event);
 		
 		void OnShow(wxShowEvent &event);
 		void OnClose(wxCloseEvent &event);
@@ -94,8 +94,12 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 FindServer(wxString);
 		wxInt32 FindServerInList(wxString);
 		
-		wxAdvancedListCtrl *m_LstCtrlServers;
-		wxAdvancedListCtrl *m_LstCtrlPlayers;
+		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
+            const wxString &waddirs, const wxString &Password = wxT(""));
+		
+		LstOdaServerList *m_LstCtrlServers;
+		LstOdaPlayerList *m_LstCtrlPlayers;
+        LstOdaSrvDetails *m_LstOdaSrvDetails;
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
@@ -161,6 +165,8 @@ class dlgMain : public wxFrame, wxThreadHelper
             ,mtrs_server_singletimeout
             
             ,mtrs_server_noservers // There are no servers to query!
+
+            ,mtrs_servers_querydone // Query of all servers complete
             
             ,mtrs_max
         } mtrs_t;

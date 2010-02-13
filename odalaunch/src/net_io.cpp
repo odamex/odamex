@@ -685,14 +685,14 @@ bool BufferedSocket::SetRemoteAddress(const wxString &Address)
 }
 
 // Gets the outgoing address
-void BufferedSocket::GetRemoteAddress(wxString &Address, wxUint16 &Port)
+void BufferedSocket::GetRemoteAddress(wxString &Address, wxUint16 &Port) const
 {
     Address = wxString::Format(_T("%s"),inet_ntoa(m_RemoteAddress.sin_addr));
     Port = ntohs(m_RemoteAddress.sin_port);
 }
 
 // Gets the outgoing address in "address:port" format
-wxString BufferedSocket::GetRemoteAddress()
+wxString BufferedSocket::GetRemoteAddress() const
 {
     return wxString::FromAscii(inet_ntoa(m_RemoteAddress.sin_addr)) << 
             _T(":") << 

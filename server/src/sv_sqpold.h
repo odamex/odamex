@@ -17,29 +17,16 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	SV_MASTER
+//  Old version of the server query protocol, kept for clients and older 
+//  launchers
 //
 //-----------------------------------------------------------------------------
 
 
-#ifndef __SVMASTER_H__
-#define __SVMASTER_H__
+#ifndef __SV_SQPOLD_H__
+#define __SV_SQPOLD_H__
 
-#include "doomtype.h"
-#include "doomstat.h"
-#include "d_player.h"
-#include "p_local.h"
-#include "sv_main.h"
-#include "sv_master.h"
-#include "c_console.h"
+void SV_SendServerInfo ();
+bool SV_IsValidToken(DWORD token);
 
-bool SV_AddMaster (const char *masterip);
-void SV_InitMasters();
-bool SV_AddMaster(const char *masterip);
-void SV_ListMasters ();
-bool SV_RemoveMaster (const char *masterip);
-void SV_UpdateMasterServers(void);
-void SV_UpdateMaster(void);
-void SV_ArchiveMasters(FILE *fp);
-
-#endif
+#endif // __SV_SQPOLD_H__
