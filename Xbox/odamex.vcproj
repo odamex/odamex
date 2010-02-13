@@ -875,7 +875,10 @@
 			Name="Xbox Files"
 			Filter="">
 			<File
-				RelativePath=".\xbox.cpp">
+				RelativePath=".\i_xbox.cpp">
+			</File>
+			<File
+				RelativePath=".\i_xbox.h">
 			</File>
 		</Filter>
 	</Files>

@@ -84,6 +84,10 @@ typedef int SOCKET;
 #include "g_game.h"
 #include "i_net.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 #include "minilzo.h"
 
 int         net_socket;
@@ -218,11 +222,9 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
      }
      else
      {
-#ifndef _XBOX // Xbox will need its own implementation of gethostbyname -- Hyper_Eye
           if (! (h = gethostbyname(copy)) )
                 return 0;
           *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
-#endif // _XBOX
      }
 
      SockadrToNetadr (&sadr, a);

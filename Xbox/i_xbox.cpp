@@ -1,6 +1,8 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
+// $Id$
+//
 // Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -45,6 +47,11 @@ extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicL
 
 int i_main(int argc, char *argv[]); // i_main.cpp
 
+struct hostent *gethostbyname(const char *name)
+{
+	return NULL; // placeholder -- Hyper_Eye
+}
+
 /* XBox device mounting */
 LONG xbox_MountDevice(LPSTR sSymbolicLinkName, LPSTR sDeviceName)
 {
@@ -70,11 +77,11 @@ void xbox_MountPartitions()
 
 void  __cdecl main()
 {
-	DWORD			 launchDataType;
-	LAUNCH_DATA		 launchData;
-	char			*xargv[100];
-	int				 xargc = 1;
-	
+	DWORD            launchDataType;
+	LAUNCH_DATA      launchData;
+	char            *xargv[100];
+	int              xargc = 1;
+
 	XGetLaunchInfo (&launchDataType, &launchData);
 
 	if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) {
