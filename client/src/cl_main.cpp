@@ -852,20 +852,15 @@ bool CL_PrepareConnect(void)
 		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
 	}
 
+    Printf(PRINT_HIGH, "\n");
+
+    // DEH/BEX Patch files
     std::vector<std::string> PatchFiles;
 
-    // TODO: Version REMOVEME
-    if (SERVERMAJ >= CLIENTMAJ && 
-        SERVERMIN >= CLIENTMIN && 
-        SERVERREL >= CLIENTREL)
-    {
-        size_t PatchCount = MSG_ReadByte();
+    size_t PatchCount = MSG_ReadByte();
     
-        for (i = 0; i < PatchCount; ++i)
-            PatchFiles.push_back(MSG_ReadString());
-    }
-
-	Printf(PRINT_HIGH, "\n");
+    for (i = 0; i < PatchCount; ++i)
+        PatchFiles.push_back(MSG_ReadString());
 	
     // TODO: Allow deh/bex file downloads
 	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, wadhashes, PatchFiles);
@@ -1016,13 +1011,7 @@ void CL_TryToConnect(DWORD server_token)
 
 		MSG_WriteLong(&net_buffer, (int)rate);
         
-        // Only 0.4.1 servers support passwords
-        if ((SERVERMAJ >= 0) &&
-        	(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
-        	(SERVERMIN > 4)))
-        {
-            MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());            
-        }
+        MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());            
         
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
@@ -1842,105 +1831,32 @@ void CL_ReadPacketHeader(void)
 void CL_GetServerSettings(void)
 {
 	cvar_t *var = NULL, *prev = NULL;
-	
-	// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
-	unsigned int deathmatchcvar = 0, teamplaycvar = 0, usectfcvar = 0;
-	
-	// GhostlyDeath <June 19, 2008> -- If 0.4.1+ use string list instead
-	if ((SERVERMAJ >= 0) &&
-		(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
-		(SERVERMIN > 4)))
-	{
-		while (MSG_ReadByte() != 2)
-		{
-			std::string CvarName = MSG_ReadString();
-			std::string CvarValue = MSG_ReadString();
-			
-			var = cvar_t::FindCVar (CvarName.c_str(), &prev);
-			
-			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
-			if (var)
-			{
-				if (var->flags() & CVAR_SERVERINFO)
-                    var->Set(CvarValue.c_str());
-			}
-			else
-			{
-				// [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
-				// for cleanup on program termination
-				var = new cvar_t (CvarName.c_str(), 
-                                  NULL, 
-                                  CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
-                                  
-                var->Set(CvarValue.c_str());
-			}
-			
-			// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
-			if (SERVERMIN == 4 && SERVERREL < 2) {
-				if (strcmp(CvarValue.c_str(), "0") != 0) {
-					if (strcmp(CvarName.c_str(), "deathmatch") == 0) {
-						deathmatchcvar = 1;
-					} else if (strcmp(CvarName.c_str(), "teamplay") == 0) {
-						teamplaycvar = 1;
-					} else if (strcmp(CvarName.c_str(), "usectf") == 0) {
-						usectfcvar = 1;
-					}
-				}
-			}
-		}
-					
-		// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
-		if (SERVERMIN == 4 && SERVERREL < 2) {
-			if (usectfcvar) gametype = GM_CTF;
-			else if (teamplaycvar) gametype = GM_TEAMDM;
-			else if (deathmatchcvar) gametype = GM_DM;
-			else gametype = GM_COOP;
-		}
-	}
-	else
-	{
-		usectfcvar = MSG_ReadByte() ? 1 : 0;
-
-		// General server settings
-		maxclients.Set((int)MSG_ReadShort());
-
-		// Game settings
-		allowcheats.Set((BOOL)MSG_ReadByte());
-		deathmatchcvar = MSG_ReadByte() ? 1 : 0;
-		fraglimit.Set((int)MSG_ReadShort());
-		timelimit.Set((int)MSG_ReadShort());
-
-		// Map behavior
-		skill.Set((int)MSG_ReadShort());
-		weaponstay.Set((BOOL)MSG_ReadByte());
-		nomonsters.Set((BOOL)MSG_ReadByte());
-		monstersrespawn.Set((BOOL)MSG_ReadByte());
-		itemsrespawn.Set((BOOL)MSG_ReadByte());
-		fastmonsters.Set((BOOL)MSG_ReadByte());
-
-		// Action rules
-		allowexit.Set((BOOL)MSG_ReadByte());
-		fragexitswitch.Set((BOOL)MSG_ReadByte());
-		allowjump.Set((BOOL)MSG_ReadByte());
-		sv_freelook.Set((BOOL)MSG_ReadByte());
-		infiniteammo.Set((BOOL)MSG_ReadByte());
-		maxplayers.Set((int)MSG_ReadByte());
-
-		// Teamplay/CTF
-		scorelimit.Set((int)MSG_ReadShort());
-		friendlyfire.Set((BOOL)MSG_ReadByte());
-		teamplaycvar = MSG_ReadByte() ? 1 : 0;
-	
-		allowtargetnames.Set((BOOL)MSG_ReadByte());
-
-		cvar_t::UnlatchCVars ();
 		
-		if (usectfcvar) gametype = GM_CTF;
-		else if (teamplaycvar) gametype = GM_TEAMDM;
-		else if (deathmatchcvar) gametype = GM_DM;
-		else gametype = GM_COOP;
-	}
-	
+	while (MSG_ReadByte() != 2)
+	{
+		std::string CvarName = MSG_ReadString();
+		std::string CvarValue = MSG_ReadString();
+			
+		var = cvar_t::FindCVar (CvarName.c_str(), &prev);
+			
+		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
+		if (var)
+		{
+			if (var->flags() & CVAR_SERVERINFO)
+                var->Set(CvarValue.c_str());
+        }
+        else
+        {
+            // [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
+            // for cleanup on program termination
+            var = new cvar_t (CvarName.c_str(), NULL,
+                CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
+                                  
+            var->Set(CvarValue.c_str());
+        }
+			
+    }
+    
 	// Nes - update the skies in case sv_freelook is changed.
 	R_InitSkyMap ();
 }
