@@ -92,7 +92,6 @@ struct hostent *gethostbyname(const char *name)
 	WSAEVENT               hEvent;
 	XNDNS                 *pDns = NULL;
 	INT                    err;
-	int                    i;
 	
 	if(!name)
 		return NULL;
@@ -106,13 +105,13 @@ struct hostent *gethostbyname(const char *name)
 	{
 		if(he)
 		{
-			for(i = 0; i < 4; i++)
+			if(he->h_addr_list)
 			{
-				if(he->h_addr_list[i])
-					free(he->h_addr_list[i]);
-
-				free(he);
+				if(he->h_addr_list[0])
+					free(he->h_addr_list[0]);
+				free(he->h_addr_list);
 			}
+			free(he);
 		}
 
 		he = (struct hostent *)malloc(sizeof(struct hostent));
@@ -122,11 +121,10 @@ struct hostent *gethostbyname(const char *name)
 			return NULL;
 		}
 
-		he->h_addr_list = (char **)malloc(sizeof(char*) * 4);
-		for(i = 0; i < 4; i++)
-			he->h_addr_list[i] = (char *)malloc(sizeof(unsigned long));
+		he->h_addr_list = (char **)malloc(sizeof(char*));
+		he->h_addr_list[0] = (char *)malloc(sizeof(struct in_addr));
 
-		memcpy(&he->h_addr_list, &pDns->aina[0], sizeof(struct in_addr));
+		memcpy(he->h_addr_list[0], pDns->aina, sizeof(struct in_addr));
 
 		XNetDnsRelease(pDns);
 		WSACloseEvent(hEvent);
@@ -188,6 +186,32 @@ void xbox_MountPartitions()
 	xbox_MountDevice(DriveD, CdRom); // DVD-ROM or start path
 }
 
+void xbox_InitNet()
+{
+	XNetStartupParams xnsp;
+
+	ZeroMemory( &xnsp, sizeof(xnsp) );
+	xnsp.cfgSizeOfStruct = sizeof(xnsp);
+
+	xnsp.cfgPrivatePoolSizeInPages = 64; // == 256kb, default = 12 (48kb)
+	xnsp.cfgEnetReceiveQueueLength = 16; // == 32kb, default = 8 (16kb)
+	xnsp.cfgIpFragMaxSimultaneous = 16; // default = 4
+	xnsp.cfgIpFragMaxPacketDiv256 = 32; // == 8kb, default = 8 (2kb)
+	xnsp.cfgSockMaxSockets = 64; // default = 64
+	xnsp.cfgSockDefaultRecvBufsizeInK = 128; // default = 16
+	xnsp.cfgSockDefaultSendBufsizeInK = 128; // default = 16
+
+	// Bypass security so we can talk to the outside world as we please
+	xnsp.cfgFlags = XNET_STARTUP_BYPASS_SECURITY;
+
+	XNetStartup( &xnsp );
+}
+
+void xbox_CloseNetwork()
+{
+	XNetCleanup();
+}
+
 void  __cdecl main()
 {
 	DWORD            launchDataType;
@@ -211,7 +235,11 @@ void  __cdecl main()
 
 	xbox_MountPartitions();
 
+	xbox_InitNet();
+
 	i_main(xargc, xargv);
+
+	xbox_CloseNetwork();
 }
 
 #endif // _XBOX
