@@ -35,6 +35,13 @@ struct hostent
 	char   **h_addr_list;   /* list of addresses */
 };
 
+#undef getenv
+char *getenv(const char *);
+#undef putenv
+int putenv(const char *);
+#undef getcwd
+char *getcwd(char *buf, size_t size);
+
 struct hostent *gethostbyname(const char *name);
 int gethostname(char *name, int namelen);
 

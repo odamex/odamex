@@ -659,8 +659,13 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 {
 	std::string found;
 
+#ifdef _XBOX
+	if(dir[dir.length() - 1] != '\\')
+		dir += "\\";
+#else
 	if(dir[dir.length() - 1] != '/')
 		dir += "/";
+#endif
 
 	std::transform(hash.begin(), hash.end(), hash.begin(), toupper);
 	std::string dothash = ".";
@@ -790,8 +795,13 @@ void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char se
 		FixPathSeparator(segment);
 		I_ExpandHomeDir(segment);
 
+#ifdef _XBOX
+		if(segment[segment.length() - 1] != '/')
+			segment += "/"; // TODO - This is repeated a lot. Why isn't it a function yet? -- Hyper_Eye
+#else
 		if(segment[segment.length() - 1] != '/')
 			segment += "/";
+#endif
 
 		dirs.push_back(segment);
 	}
@@ -844,8 +854,13 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 		{
 			std::string &dir = dirs[i];
 
+#ifdef _XBOX
+			if(dir[dir.length() - 1] != '\\')
+				dir += "\\";
+#else
 			if(dir[dir.length() - 1] != '/')
 				dir += "/";
+#endif
 
 			return dir + found;
 		}

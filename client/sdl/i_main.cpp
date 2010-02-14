@@ -58,6 +58,10 @@
 #include "i_sound.h"
 #include "r_main.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
@@ -185,6 +189,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "%s\n", error.GetMessage().c_str());
 #elif _XBOX
 		// Use future Xbox error message handling.    -- Hyper_Eye
+		return -1;
 #else
 		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
 #endif

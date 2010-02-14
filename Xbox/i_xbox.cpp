@@ -50,6 +50,40 @@ extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicL
 
 int i_main(int argc, char *argv[]); // i_main.cpp
 
+// getenv - Environment variables don't exist on Xbox. Return NULL.
+
+char *getenv(const char *)
+{
+	return NULL;
+}
+
+// putenv - Environment variables don't exist on Xbox. Just return success.
+
+int putenv(const char *)
+{
+	return 0;
+}
+
+// getcwd - Return working directory which is always D:\
+
+char *getcwd(char *buf, size_t size)
+{
+	if(size > 0 && buf)
+	{
+		if(size >= 3)
+		{
+			strcpy(buf, "D:\\");
+			return buf;
+		}
+		else
+			errno = ERANGE;
+	}
+	else
+		errno = EINVAL;
+
+	return NULL;
+}
+
 // Custom implementation of gethostbyname()
 
 struct hostent *gethostbyname(const char *name)
@@ -159,7 +193,7 @@ void  __cdecl main()
 	DWORD            launchDataType;
 	LAUNCH_DATA      launchData;
 	char            *xargv[100];
-	int              xargc = 1;
+	int              xargc = 0;
 
 	XGetLaunchInfo (&launchDataType, &launchData);
 

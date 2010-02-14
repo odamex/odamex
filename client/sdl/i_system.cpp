@@ -84,6 +84,10 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 #ifndef _XBOX // I will add this back later -- Hyper_Eye
 #include "txt_main.h"
 #define ENDOOM_W 80
@@ -327,8 +331,13 @@ std::string I_GetUserFileName (const char *file)
 #ifdef WIN32
 	std::string path = I_GetBinaryDir();
 
+#ifdef _XBOX
+	if(path[path.length() - 1] != '\\')
+		path += "\\";
+#else
 	if(path[path.length() - 1] != '/')
 		path += "/";
+#endif // _XBOX
 
 	path += file;
 #endif
@@ -399,9 +408,14 @@ std::string I_GetBinaryDir()
 				if(!segment.length())
 					continue;
 
+#ifdef _XBOX
+				if(segment[segment.length() - 1] != '\\')
+					segment += "\\";
+#else
 				if(segment[segment.length() - 1] != '/')
 					segment += "/";
 				segment += Args[0];
+#endif // _XBOX
 
 				if(realpath(segment.c_str(), realp))
 				{
