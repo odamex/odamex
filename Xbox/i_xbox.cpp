@@ -55,7 +55,7 @@ int i_main(int argc, char *argv[]); // i_main.cpp
 struct hostent *gethostbyname(const char *name)
 {
 	static struct hostent *he = NULL;
-	WSAEVENT               hEvent; WSACreateEvent();
+	WSAEVENT               hEvent;
 	XNDNS                 *pDns = NULL;
 	INT                    err;
 	int                    i;

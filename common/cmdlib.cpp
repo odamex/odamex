@@ -48,9 +48,15 @@ std::string progdir, startdir; // denis - todo - maybe move this into Args
 
 void FixPathSeparator (std::string &path)
 {
+#ifdef _XBOX // Xbox does not handle '/' in paths
+	for(size_t i = 0; i < path.length(); i++)
+		if(path[i] == '/')
+			path[i] = '\\';	
+#else
 	for(size_t i = 0; i < path.length(); i++)
 		if(path[i] == '\\')
 			path[i] = '/';
+#endif
 }
 
 char *copystring (const char *s)

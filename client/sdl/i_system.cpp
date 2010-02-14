@@ -333,6 +333,8 @@ std::string I_GetUserFileName (const char *file)
 	path += file;
 #endif
 
+	FixPathSeparator(path);
+
 	return path;
 }
 
@@ -367,12 +369,13 @@ std::string I_GetBinaryDir()
 {
 	std::string ret;
 
-#ifdef WIN32
-#ifndef _XBOX // I shall return -- Hyper_Eye
+#ifdef _XBOX
+	// D:\ always corresponds to the binary path whether running from DVD or HDD.
+	ret = "D:\\"; 
+#elif defined WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
 	ret = tmp;
-#endif
 #else
 	if(!Args[0])
 		return "./";

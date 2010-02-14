@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
         // [Russell] - No more double-tapping of capslock to enable autorun
         putenv("SDL_DISABLE_LOCK_KEYS=1");
 
-#ifdef WIN32
+#if defined WIN32 && !defined _XBOX
     	// From the SDL 1.2.10 release notes:
     	//
     	// > The "windib" video driver is the default now, to prevent
@@ -132,7 +132,6 @@ int main(int argc, char *argv[])
     	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-gdi") > 0)
         	putenv("SDL_VIDEODRIVER=windib");
 
-#ifndef _XBOX
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
         // SDL_mixer that causes occasional crashes.
@@ -140,8 +139,6 @@ int main(int argc, char *argv[])
 
         if (!SetProcessAffinityMask(GetCurrentProcess(), 1))
             LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
-#endif // _XBOX
-
 #endif
 
 		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
