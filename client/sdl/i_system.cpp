@@ -408,14 +408,9 @@ std::string I_GetBinaryDir()
 				if(!segment.length())
 					continue;
 
-#ifdef _XBOX
-				if(segment[segment.length() - 1] != '\\')
-					segment += "\\";
-#else
 				if(segment[segment.length() - 1] != '/')
 					segment += "/";
 				segment += Args[0];
-#endif // _XBOX
 
 				if(realpath(segment.c_str(), realp))
 				{
@@ -429,7 +424,12 @@ std::string I_GetBinaryDir()
 
 	FixPathSeparator(ret);
 
+#ifdef _XBOX
+	size_t slash = ret.find_last_of('\\');
+#else
 	size_t slash = ret.find_last_of('/');
+#endif
+
 	if(slash == std::string::npos)
 		return "";
 	else

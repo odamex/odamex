@@ -193,13 +193,15 @@ void  __cdecl main()
 	DWORD            launchDataType;
 	LAUNCH_DATA      launchData;
 	char            *xargv[100];
-	int              xargc = 0;
+	int              xargc = 1;
+
+	xargv[0] = strdup("D:\\default.xbe"); // mimic argv[0]
 
 	XGetLaunchInfo (&launchDataType, &launchData);
 
 	if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) 
 	{
-		xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchDataType)->szCmdLine, " ");
+		xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, " ");
 		while(xargv[xargc] != NULL)
 		{
 			xargc++;
