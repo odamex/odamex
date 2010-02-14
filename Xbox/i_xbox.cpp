@@ -23,6 +23,9 @@
 #ifdef _XBOX
 
 #include <xtl.h>
+#include <errno.h>
+
+#include "i_xbox.h"
 
 // Partition device mapping
 #define DriveC "\\??\\C:"
@@ -47,9 +50,85 @@ extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicL
 
 int i_main(int argc, char *argv[]); // i_main.cpp
 
+// Custom implementation of gethostbyname()
+
 struct hostent *gethostbyname(const char *name)
 {
-	return NULL; // placeholder -- Hyper_Eye
+	static struct hostent *he = NULL;
+	WSAEVENT               hEvent; WSACreateEvent();
+	XNDNS                 *pDns = NULL;
+	INT                    err;
+	int                    i;
+	
+	if(!name)
+		return NULL;
+
+	hEvent = WSACreateEvent();
+	err = XNetDnsLookup(name, hEvent, &pDns);
+
+	WaitForSingleObject( (HANDLE)hEvent, INFINITE);
+
+	if(pDns && pDns->iStatus == 0)
+	{
+		if(he)
+		{
+			for(i = 0; i < 4; i++)
+			{
+				if(he->h_addr_list[i])
+					free(he->h_addr_list[i]);
+
+				free(he);
+			}
+		}
+
+		he = (struct hostent *)malloc(sizeof(struct hostent));
+		if(!he)
+		{
+			// Failed to allocate!
+			return NULL;
+		}
+
+		he->h_addr_list = (char **)malloc(sizeof(char*) * 4);
+		for(i = 0; i < 4; i++)
+			he->h_addr_list[i] = (char *)malloc(sizeof(unsigned long));
+
+		memcpy(&he->h_addr_list, &pDns->aina[0], sizeof(struct in_addr));
+
+		XNetDnsRelease(pDns);
+		WSACloseEvent(hEvent);
+
+		return he;
+	}
+
+	XNetDnsRelease(pDns);
+	WSACloseEvent(hEvent);
+
+	return NULL;
+}
+
+// Custom implementation of gethostname()
+
+int gethostname(char *name, int namelen)
+{
+	XNADDR xna;
+	DWORD  dwState;
+
+	if(name)
+	{
+		if(namelen > 0)
+		{
+			dwState = XNetGetTitleXnAddr(&xna);
+			XNetInAddrToString(xna.ina, name, namelen);
+
+			return 0;
+		}
+		else
+			errno = EINVAL;
+	}
+	else
+		errno = EFAULT;
+	
+	return -1;
 }
 
 /* XBox device mounting */
@@ -84,9 +163,11 @@ void  __cdecl main()
 
 	XGetLaunchInfo (&launchDataType, &launchData);
 
-	if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) {
+	if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) 
+	{
 		xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchDataType)->szCmdLine, " ");
-		while(xargv[xargc] != NULL) {
+		while(xargv[xargc] != NULL)
+		{
 			xargc++;
 			xargv[xargc] = strtok(NULL, " ");
 		}

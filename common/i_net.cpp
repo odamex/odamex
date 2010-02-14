@@ -330,9 +330,7 @@ void NET_GetLocalAddress (void)
 	socklen_t namelen;
 	netadr_t net_local_adr;
 
-#ifndef _XBOX // This function will need to be implemented for Xbox -- Hyper_Eye
 	gethostname(buff, HOST_NAME_MAX);
-#endif
 	buff[HOST_NAME_MAX - 1] = 0;
 
 	NET_StringToAdr (buff, &net_local_adr);

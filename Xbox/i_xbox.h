@@ -26,7 +26,8 @@
 
 #ifdef _XBOX
 
-struct hostent {
+struct hostent
+{
 	char   *h_name;         /* canonical name of host */
 	char   **h_aliases;     /* alias list */
 	int    h_addrtype;      /* host address type */
@@ -34,7 +35,8 @@ struct hostent {
 	char   **h_addr_list;   /* list of addresses */
 };
 
-hostent *gethostbyname(const char *name);
+struct hostent *gethostbyname(const char *name);
+int gethostname(char *name, int namelen);
 
 #endif // _XBOX
 
