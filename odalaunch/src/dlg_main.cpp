@@ -632,9 +632,6 @@ void dlgMain::OnGetList(wxCommandEvent &event)
 	
 	mtcs_Request.Signal = mtcs_getmaster;
 
-    if (GetThread() && GetThread()->IsRunning())
-        return;
-
     // Create monitor thread and run it
     if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
     {
