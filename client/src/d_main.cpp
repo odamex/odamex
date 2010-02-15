@@ -796,8 +796,8 @@ void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char se
 		I_ExpandHomeDir(segment);
 
 #ifdef _XBOX
-		if(segment[segment.length() - 1] != '/')
-			segment += "/"; // TODO - This is repeated a lot. Why isn't it a function yet? -- Hyper_Eye
+		if(segment[segment.length() - 1] != '\\')
+			segment += "\\"; // TODO - This is repeated a lot. Why isn't it a function yet? -- Hyper_Eye
 #else
 		if(segment[segment.length() - 1] != '/')
 			segment += "/";

@@ -145,7 +145,11 @@ BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_ne
 {
     FixPathSeparator(filename);
 
+#ifdef _XBOX
+    size_t l = filename.find_last_of('\\');
+#else
     size_t l = filename.find_last_of('/');
+#endif
 	if(l == filename.length())
 		return false;
 
@@ -176,7 +180,11 @@ void M_ExtractFilePath (std::string filename, std::string &dest)
 {
     FixPathSeparator(filename);
 
+#ifdef _XBOX
+	size_t l = filename.find_last_of('\\');
+#else
 	size_t l = filename.find_last_of('/');
+#endif
 	if(l == std::string::npos)
 		l = filename.length();
 
@@ -225,7 +233,11 @@ void M_ExtractFileBase (std::string filename, std::string &dest)
 {
     FixPathSeparator(filename);
 
+#ifdef _XBOX
+	size_t l = filename.find_last_of('\\');
+#else
 	size_t l = filename.find_last_of('/');
+#endif
 	if(l == std::string::npos)
 		l = 0;
 	else
@@ -247,7 +259,11 @@ void M_ExtractFileName (std::string filename, std::string &dest)
 {
     FixPathSeparator(filename);
 
+#ifdef _XBOX
+	size_t l = filename.find_last_of('\\');
+#else
 	size_t l = filename.find_last_of('/');
+#endif
 	if(l == std::string::npos)
 		l = 0;
 	else
