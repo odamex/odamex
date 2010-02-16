@@ -22,6 +22,8 @@
 
 #include "lst_srvdetails.h"
 
+#include <algorithm>
+
 IMPLEMENT_DYNAMIC_CLASS(LstOdaSrvDetails, wxListCtrl)
 
 typedef enum
@@ -78,7 +80,12 @@ void LstOdaSrvDetails::InsertLine(const wxString &Name, const wxString &Value)
     SetItem(ListItem);
 }
 
-void LstOdaSrvDetails::LoadDetailsFromServer(const Server &In)
+static bool CvarCompare(const Cvar_t &a, const Cvar_t &b)
+{
+    return a.Name < b.Name;
+}
+
+void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
 {   
     DeleteAllItems();
     DeleteAllColumns();
@@ -120,6 +127,9 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server &In)
     InsertHeader(wxT("Game Settings"), wxRED, wxWHITE);
     
     InsertLine(wxT("Time left"), wxString::Format(wxT("%u"), In.Info.TimeLeft));
+    
+    // Sort cvars ascending
+    sort(In.Info.Cvars.begin(), In.Info.Cvars.end(), CvarCompare);
     
     for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
         InsertLine(In.Info.Cvars[i].Name, In.Info.Cvars[i].Value);

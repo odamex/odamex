@@ -33,7 +33,7 @@ class LstOdaSrvDetails : public wxListCtrl
         LstOdaSrvDetails() { };
         virtual ~LstOdaSrvDetails() { };
         
-        void LoadDetailsFromServer(const Server &);
+        void LoadDetailsFromServer(Server &);
         
         //wxEvent *Clone(void);
     protected:
