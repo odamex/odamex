@@ -74,6 +74,8 @@ EXTERN_CVAR (website)
 
 EXTERN_CVAR (natport)
 
+extern int last_revision;
+
 struct CvarField_t 
 { 
     std::string Name;
@@ -85,7 +87,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 1
+#define PROTOCOL_VERSION 2
 
 /* 
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -110,6 +112,12 @@ struct CvarField_t
 static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 {
     std::vector<CvarField_t> Cvars;
+
+    // TODO: Remove me before 0.5 release
+    QRYNEWINFO(2)
+    {
+        MSG_WriteLong(&ml_message, last_revision);
+    }
 
     cvar_t *var = GetFirstCvar();
     

@@ -102,11 +102,14 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     InsertColumn(srvdetails_field_value, wxT(""), wxLIST_FORMAT_LEFT, 150);
     
     // Version
-    InsertLine(wxT("Version"), wxString::Format(wxT("%u.%u.%u"), 
+    InsertLine(wxT("Version"), wxString::Format(wxT("%u.%u.%u-r%u"), 
                                 In.Info.VersionMajor, 
                                 In.Info.VersionMinor, 
-                                In.Info.VersionPatch));
+                                In.Info.VersionPatch,
+                                In.Info.VersionRevision));
     
+    InsertLine(wxT("QP Version"), wxString::Format(wxT("%u"), 
+        In.Info.VersionProtocol));
     
     // Patch (BEX/DEH) files
     InsertLine(wxT(""), wxT(""));                            

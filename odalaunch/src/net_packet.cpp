@@ -166,6 +166,7 @@ void Server::ResetData()
     Info.VersionMajor = 0;
     Info.VersionMinor = 0;
     Info.VersionPatch = 0;
+    Info.VersionRevision = 0;
     Info.VersionProtocol = 0;
     Info.Name = wxT("");
     Info.MaxClients = 0;
@@ -208,6 +209,12 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
     Info.VersionMinor = VersionMinor;
     Info.VersionPatch = VersionPatch;
     Info.VersionProtocol = ProtocolVersion;
+    
+    // TODO: Remove me before 0.5 release
+    QRYNEWINFO(2)
+    {
+        Socket.Read32(Info.VersionRevision);
+    }
     
     wxUint8 CvarCount;
     

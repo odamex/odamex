@@ -50,7 +50,7 @@
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
 #define VERSION (0*256+44)
-#define PROTOCOL_VERSION 1
+#define PROTOCOL_VERSION 2
 
 #define TAG_ID 0xAD0
 
@@ -100,6 +100,7 @@ struct ServerInfo_t
     wxUint8 VersionMajor; // Launcher specific: Version fields
     wxUint8 VersionMinor;
     wxUint8 VersionPatch;
+    wxUint32 VersionRevision;
     wxUint32 VersionProtocol;
     wxString Name; // Launcher specific: Server name
     wxUint8 MaxClients; // Launcher specific: Maximum clients
