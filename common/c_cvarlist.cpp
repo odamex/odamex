@@ -26,8 +26,6 @@
 // Server settings
 // -----------------------
 
-// Server "message of the day" that gets to displayed to clients upon connecting
-CVAR (motd,		"Welcome to Odamex",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Game mode
 CVAR (gametype,			"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // (Teamplay/CTF): Players can injure others on the same team

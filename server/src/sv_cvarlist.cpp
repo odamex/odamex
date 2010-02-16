@@ -34,6 +34,8 @@ CVAR (log_fulltimestamps, "0", CVAR_ARCHIVE)
 // Server administrative settings
 // ------------------------------
 
+// Server "message of the day" that gets to displayed to clients upon connecting
+CVAR (motd,		"Welcome to Odamex",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Server name that appears to masters, clients and launchers
 CVAR (hostname,		"Untitled Odamex Server",	CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Administrator email address
