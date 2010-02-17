@@ -245,7 +245,7 @@ void P_MovePlayer (player_t *player)
 	}
 	else if (cmd->ucmd.upmove != 0)
 	{
-		if (player->mo->waterlevel >= 2)
+		if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
 		{
 			player->mo->momz = cmd->ucmd.upmove << 9;
 			if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))

@@ -95,9 +95,9 @@ class BufferedSocket
         // Set the outgoing address in "address:port" format
         bool SetRemoteAddress(const wxString &Address);
         // Gets the outgoing address
-        void GetRemoteAddress(wxString &Address, wxUint16 &Port);
+        void GetRemoteAddress(wxString &Address, wxUint16 &Port) const;
         // Gets the outgoing address in "address:port" format
-        wxString GetRemoteAddress();
+        wxString GetRemoteAddress() const;
 
         // Send/receive data
         wxInt32 SendData(const wxInt32 &Timeout);

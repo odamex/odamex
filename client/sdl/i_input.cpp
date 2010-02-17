@@ -119,8 +119,8 @@ static bool MouseShouldBeGrabbed()
 	//if (!grabmouse)
 	//	return false;
 
-    // when menu is active or game is paused, release the mouse 
-    if (menuactive || paused)
+    // when menu is active, console is down or game is paused, release the mouse 
+    if (menuactive || ConsoleState == c_down || paused)
         return false;
 
     // only grab mouse when playing levels (but not demos)

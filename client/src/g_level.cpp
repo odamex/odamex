@@ -467,7 +467,7 @@ void G_DoCompleted (void)
 
 	// [ML] Chex mode: they didn't even show the intermission screen
 	// after the fifth level - I checked.
-	if (gamemode == retail_chex & !strncmp(level.mapname,"E1M5",4)) {
+	if (gamemode == retail_chex && !strncmp(level.mapname,"E1M5",4)) {
 		G_WorldDone();
 		return;
 	}

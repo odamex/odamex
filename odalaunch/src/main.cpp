@@ -36,8 +36,6 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
 
-
-
 IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
@@ -52,9 +50,9 @@ bool Application::OnInit()
     // load resources
     InitXmlResource();
 
-    // create main window and show it
+    // create main window, get size dimensions and show it
     MAIN_DIALOG = new dlgMain(0L);
-    
+   
     if (MAIN_DIALOG) 
         MAIN_DIALOG->Show();
         

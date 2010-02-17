@@ -3,7 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2009 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -17,29 +16,28 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	SV_MASTER
+//	Query protocol for server
 //
 //-----------------------------------------------------------------------------
 
+#ifndef __SV_SQP_H__
+#define __SV_SQP_H__
 
-#ifndef __SVMASTER_H__
-#define __SVMASTER_H__
-
+#include "version.h"
 #include "doomtype.h"
-#include "doomstat.h"
-#include "d_player.h"
-#include "p_local.h"
-#include "sv_main.h"
-#include "sv_master.h"
-#include "c_console.h"
 
-bool SV_AddMaster (const char *masterip);
-void SV_InitMasters();
-bool SV_AddMaster(const char *masterip);
-void SV_ListMasters ();
-bool SV_RemoveMaster (const char *masterip);
-void SV_UpdateMasterServers(void);
-void SV_UpdateMaster(void);
-void SV_ArchiveMasters(FILE *fp);
+#define ASSEMBLEVERSION(MAJOR,MINOR,PATCH) ((MAJOR) * 256 + (MINOR)(PATCH))
+#define DISECTVERSION(VERSION,MAJOR,MINOR,PATCH) \
+        { \
+            MAJOR = (VERSION / 256); \
+            MINOR = ((VERSION % 256) / 10); \
+            PATCH = ((VERSION % 256) % 10); \
+        }
+        
+#define VERSIONMAJOR(VERSION) (VERSION / 256)
+#define VERSIONMINOR(VERSION) ((VERSION % 256) / 10)
+#define VERSIONPATCH(VERSION) ((VERSION % 256) % 10)
 
-#endif
+DWORD SV_QryParseEnquiry(const DWORD &Tag);
+
+#endif // __SV_SQP_H__

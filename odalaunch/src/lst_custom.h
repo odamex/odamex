@@ -35,7 +35,7 @@ class wxAdvancedListCtrl : public wxListCtrl
 {      
     public:
         wxAdvancedListCtrl() { };
-        ~wxAdvancedListCtrl() { };
+        virtual ~wxAdvancedListCtrl() { };
         
         void SetSortColumnAndOrder(wxInt32 &Column, wxInt32 &Order)
         {
@@ -53,9 +53,8 @@ class wxAdvancedListCtrl : public wxListCtrl
 
         void Sort();
                 
-        void AddImageSmall(wxImage Image);
-        void SetColumnImage(wxListItem &li, wxInt32 ImageIndex);
-        long ALCInsertItem(wxListItem &info);
+        int AddImageSmall(wxImage Image);
+        long ALCInsertItem(const wxString &Text = wxT(""));
         
         wxEvent *Clone(void);
 
