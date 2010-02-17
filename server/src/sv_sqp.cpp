@@ -163,7 +163,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
     MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
 
     MSG_WriteString(&ml_message, "Red");
-    MSG_WriteLong(&ml_message, 0xFF000000);
+    MSG_WriteLong(&ml_message, 0x00FF0000);
     MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
 
     // TODO: When real dynamic teams are implemented

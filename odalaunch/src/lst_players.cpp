@@ -70,8 +70,8 @@ void LstOdaPlayerList::SetupPlayerListColumns()
     SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
     
     ImageList_Spectator = AddImageSmall(wxArtProvider::GetBitmap(wxART_FIND).ConvertToImage());
-    ImageList_RedBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")).ConvertToImage());
     ImageList_BlueBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_blue")).ConvertToImage());
+    ImageList_RedBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")).ConvertToImage());
 }
 
 LstOdaPlayerList::~LstOdaPlayerList() 
@@ -154,62 +154,68 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
         if (s.Info.GameType == GT_TeamDeathmatch || 
             s.Info.GameType == GT_CaptureTheFlag)
 		{
-            wxString teamstr = _T("Unknown");
-            wxInt32 teamscore = 0;
-            wxUint16 scorelimit = s.Info.ScoreLimit;
+            wxUint8 TeamId;
+            wxString TeamName = wxT("Unknown");
+            wxUint32 TeamColour = 0;
+            wxInt16 TeamScore = 0;
             
             li.SetColumn(playerlist_field_team); 
             
-            switch(s.Info.Players[i].Team)
+            // Player has a team index it is associated with
+            TeamId = s.Info.Players[i].Team;
+
+            // Acquire info about the team the player is in
+            // TODO: Hack alert, we only accept blue and red teams, since
+            // dynamic teams are not implemented and GOLD/NONE teams exist
+            // Just accept these 2 for now
+            if ((TeamId == 0) || (TeamId == 1))
+            {
+                wxUint8 TC_Red = 0, TC_Green = 0, TC_Blue = 0;
+
+                TeamName = s.Info.Teams[TeamId].Name;
+                TeamColour = s.Info.Teams[TeamId].Colour;
+                TeamScore = s.Info.Teams[TeamId].Score;
+
+                TC_Red = ((TeamColour >> 16) & 0x00FFFFFF);
+                TC_Green = ((TeamColour >> 8) & 0x0000FFFF);
+                TC_Blue = (TeamColour & 0x000000FF);
+
+                li.SetTextColour(wxColour(TC_Red, TC_Green, TC_Blue));
+            }
+            else
+                TeamId = 3;
+
+            li.SetText(TeamName);
+
+            SetItem(li);
+
+            // Set the team colour and bullet icon for the player
+            switch(TeamId)
 			{
                 case 0:
                 {
-                    li.SetTextColour(*wxBLUE);      
-                    teamstr = _T("Blue");
                     SetItemColumnImage(li.m_itemId, playerlist_field_team,
                         ImageList_BlueBullet);
-                    teamscore = s.Info.Teams[0].Score;
                 }
                 break;
 				
 				case 1:
                 {
-                    li.SetTextColour(*wxRED);
-                    teamstr = _T("Red");
                     SetItemColumnImage(li.m_itemId, playerlist_field_team,
                         ImageList_RedBullet);
-					teamscore = s.Info.Teams[1].Score;
                 }
                 break;
-				
-				case 2:
-                {
-                    // no gold in 'dem mountains boy.
-                    li.SetTextColour(wxColor(255,200,40));
-                    teamstr = wxT("Gold");
-					teamscore = s.Info.Teams[2].Score;
-                }
-                break;
-				
+
 				default:
                 {
                     li.SetTextColour(*wxBLACK);
-                    teamstr = wxT("Unknown");
-                    teamscore = 0;
-                    scorelimit = 0;
                 }
                 break;
 			}
 
-            li.SetText(teamstr);
-
-            SetItem(li);
-            
             li.SetColumn(playerlist_field_teamscore);
             
-            li.SetText(wxString::Format(_T("%d/%d"), 
-                                        teamscore, 
-                                        scorelimit));
+            li.SetText(wxString::Format(wxT("%d"), TeamScore));
             
             SetItem(li);
         }

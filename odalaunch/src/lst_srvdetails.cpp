@@ -110,6 +110,19 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     
     InsertLine(wxT("QP Version"), wxString::Format(wxT("%u"), 
         In.Info.VersionProtocol));
+
+    // Status of the game 
+    InsertLine(wxT(""), wxT(""));                            
+    InsertHeader(wxT("Game Status"), wxRED, wxWHITE);
+    
+    InsertLine(wxT("Time left"), wxString::Format(wxT("%u"), In.Info.TimeLeft));
+    
+    if (In.Info.GameType == GT_TeamDeathmatch || 
+        In.Info.GameType == GT_CaptureTheFlag)
+    {
+        InsertLine(wxT("Score Limit"), wxString::Format(wxT("%u"), 
+            In.Info.ScoreLimit));
+    }
     
     // Patch (BEX/DEH) files
     InsertLine(wxT(""), wxT(""));                            
@@ -128,9 +141,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     // Gameplay variables (Cvars, others)
     InsertLine(wxT(""), wxT(""));                            
     InsertHeader(wxT("Game Settings"), wxRED, wxWHITE);
-    
-    InsertLine(wxT("Time left"), wxString::Format(wxT("%u"), In.Info.TimeLeft));
-    
+
     // Sort cvars ascending
     sort(In.Info.Cvars.begin(), In.Info.Cvars.end(), CvarCompare);
     
