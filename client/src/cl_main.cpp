@@ -1245,7 +1245,7 @@ void CL_TouchSpecialThing (void)
 {
 	AActor *mo = CL_FindThingById(MSG_ReadShort());
 
-	if(!consoleplayer || !consoleplayer().mo || !mo)
+	if(!consoleplayer().mo || !mo)
 		return;
 
 	P_TouchSpecialThing (mo, consoleplayer().mo, true);
