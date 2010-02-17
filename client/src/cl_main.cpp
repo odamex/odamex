@@ -85,7 +85,6 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
-EXTERN_CVAR (friendlyfire)
 EXTERN_CVAR (weaponstay)
 
 EXTERN_CVAR (cl_name)
