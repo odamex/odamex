@@ -36,6 +36,8 @@ class IVideo
 	virtual void SetWindowedScale (float scale);
 	virtual bool CanBlit ();
 
+	virtual bool SetOverscan (float scale);
+
 	virtual bool SetMode (int width, int height, int bits, bool fs);
 	virtual void SetPalette (DWORD *palette);
 	

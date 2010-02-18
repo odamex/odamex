@@ -80,6 +80,7 @@ EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
 EXTERN_CVAR (autoadjust_video_settings)
+EXTERN_CVAR (vid_overscan)
 
 EXTERN_CVAR (dimamount)
 EXTERN_CVAR (dimcolor)
@@ -470,6 +471,8 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	}
 
 	I_SetMode (width, height, bits);
+
+	I_SetOverscan (vid_overscan);
 
 	CleanXfac = width / 320;
 	CleanYfac = height / 200;

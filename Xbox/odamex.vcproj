@@ -18,8 +18,8 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="4"
-				ImproveFloatingPointConsistency="TRUE"
+				Optimization="0"
+				ImproveFloatingPointConsistency="FALSE"
 				OmitFramePointers="FALSE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories=".,..\client\src,..\client\sdl,..\common"
@@ -170,15 +170,19 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="4"
+				Optimization="0"
 				GlobalOptimizations="FALSE"
+				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="FALSE"
-				ImproveFloatingPointConsistency="TRUE"
+				ImproveFloatingPointConsistency="FALSE"
+				FavorSizeOrSpeed="0"
 				OmitFramePointers="FALSE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories=".,..\client\src,..\client\sdl,..\common"
 				PreprocessorDefinitions="NDEBUG;WIN32;_XBOX;NOASM"
 				StringPooling="TRUE"
+				MinimalRebuild="FALSE"
+				ExceptionHandling="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"

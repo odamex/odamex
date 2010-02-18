@@ -25,6 +25,8 @@
 #include <xtl.h>
 #include <errno.h>
 
+#include <SDL.h>
+
 #include "i_xbox.h"
 
 // Partition device mapping
@@ -210,6 +212,32 @@ void xbox_InitNet()
 void xbox_CloseNetwork()
 {
 	XNetCleanup();
+}
+
+int xbox_SetScreenPosition(float x, float y)
+{
+	float x2, y2;
+
+	SDL_XBOX_SetScreenPosition(x, y);
+	SDL_XBOX_GetScreenPosition(&x2, &y2);
+
+	if(x != x2 || y != y2)
+		return -1;
+
+	return 0;
+}
+
+int xbox_SetScreenStretch(float xs, float ys)
+{
+	float xs2, ys2;
+
+	SDL_XBOX_SetScreenStretch(xs, ys);
+	SDL_XBOX_GetScreenStretch(&xs2, &ys2);
+
+	if(xs != xs2 || ys != ys2)
+		return -1;
+
+	return 0;
 }
 
 void  __cdecl main()

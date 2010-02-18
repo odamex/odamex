@@ -46,6 +46,11 @@ char *getcwd(char *buf, size_t size);
 struct hostent *gethostbyname(const char *name);
 int gethostname(char *name, int namelen);
 
+// Set the x, y screen starting position in relation to 0,0
+int xbox_SetScreenPosition(float x, float y);
+// Stretch the image to some percentage of its full resolution - 1.0 = 100%
+int xbox_SetScreenStretch(float xs, float ys);
+
 #endif // _XBOX
 
 #endif // _I_XBOX_H

@@ -54,6 +54,7 @@ static IVideo *Video;
 EXTERN_CVAR (vid_fps)
 EXTERN_CVAR (vid_ticker)
 EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_overscan)
 
 CVAR_FUNC_IMPL (vid_winscale)
 {
@@ -69,6 +70,15 @@ CVAR_FUNC_IMPL (vid_winscale)
 		NewBits = DisplayBits;
 		setmodeneeded = true;
 	}
+}
+
+CVAR_FUNC_IMPL (vid_overscan)
+{
+	if(var > 1.0)
+		var = 1.0;
+
+	if (Video)
+		Video->SetOverscan(var);
 }
 
 void STACK_ARGS I_ShutdownHardware ()
@@ -314,6 +324,11 @@ EDisplayType I_DisplayType ()
 	return Video->GetDisplayType ();
 }
 
+bool I_SetOverscan (float scale)
+{
+	return Video->SetOverscan (scale);
+}
+
 void I_SetMode (int &width, int &height, int &bits)
 {
 	bool fs = false;
@@ -550,6 +565,8 @@ EDisplayType IVideo::GetDisplayType () { return DISPLAY_Both; }
 bool IVideo::FullscreenChanged (bool fs) { return true; }
 void IVideo::SetWindowedScale (float scale) {}
 bool IVideo::CanBlit () { return true; }
+
+bool IVideo::SetOverscan (float scale) { return true; }
 
 bool IVideo::SetMode (int width, int height, int bits, bool fs) { return true; }
 void IVideo::SetPalette (DWORD *palette) {}

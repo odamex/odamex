@@ -249,6 +249,7 @@ CVAR_FUNC_DECL (screenblocks, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (vid_ticker, "0", CVAR_CLIENTINFO)
 // Resizes the window by a scale factor
 CVAR_FUNC_DECL (vid_winscale, "1.0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
+// Overscan
+CVAR_FUNC_DECL (vid_overscan, "1.0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")
