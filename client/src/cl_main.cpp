@@ -954,24 +954,28 @@ void CL_InitNetwork (void)
     SZ_Clear(&net_buffer);
 
     size_t ParamIndex = Args.CheckParm ("-connect");
-    const char *ipaddress = Args.GetArg(ParamIndex + 1);
-
-    if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
+    
+    if (ParamIndex)
     {
-		NET_StringToAdr (ipaddress, &serveraddr);
+		const char *ipaddress = Args.GetArg(ParamIndex + 1);
 
-        const char *passhash = Args.GetArg(ParamIndex + 2);
+		if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
+		{
+			NET_StringToAdr (ipaddress, &serveraddr);
 
-        if (passhash && passhash[0] != '-' && passhash[0] != '+')
-        {
-            connectpasshash = MD5SUM(passhash);            
-        }
+			const char *passhash = Args.GetArg(ParamIndex + 2);
 
-		if (!serveraddr.port)
-			I_SetPort(serveraddr, SERVERPORT);
+			if (passhash && passhash[0] != '-' && passhash[0] != '+')
+			{
+				connectpasshash = MD5SUM(passhash);            
+			}
 
-		lastconaddr = serveraddr;
-		gamestate = GS_CONNECTING;
+			if (!serveraddr.port)
+				I_SetPort(serveraddr, SERVERPORT);
+
+			lastconaddr = serveraddr;
+			gamestate = GS_CONNECTING;
+		}
     }
 
 	G_SetDefaultTurbo ();
@@ -1462,6 +1466,7 @@ void CL_UpdateMobjInfo(void)
 		return;
 
 	mo->flags = flags;
+	//mo->flags2 = flags2;
 }
 
 
