@@ -1347,7 +1347,7 @@ void S_ParseSndInfo (void)
 	sfx_oof = S_FindSoundByLump (W_CheckNumForName ("dsoof"));
 }
 
-BEGIN_COMMAND (soundlist)
+BEGIN_COMMAND (snd_soundlist)
 {
 	char lumpname[9];
 	int i;
@@ -1362,9 +1362,9 @@ BEGIN_COMMAND (soundlist)
 		else
 			Printf (PRINT_HIGH, "%3d. %s **not present**\n", i+1, S_sfx[i].name);
 }
-END_COMMAND (soundlist)
+END_COMMAND (snd_soundlist)
 
-BEGIN_COMMAND (soundlinks)
+BEGIN_COMMAND (snd_soundlinks)
 {
 	int i;
 
@@ -1372,7 +1372,14 @@ BEGIN_COMMAND (soundlinks)
 		if (S_sfx[i].link)
 			Printf (PRINT_HIGH, "%s -> %s\n", S_sfx[i].name, S_sfx[i].link->name);
 }
-END_COMMAND (soundlinks)
+END_COMMAND (snd_soundlinks)
+
+BEGIN_COMMAND (snd_restart)
+{
+	S_Stop ();
+	S_Init (snd_sfxvolume, snd_musicvolume);
+}
+END_COMMAND (snd_restart)
 
 void A_Ambient (AActor *actor)
 {

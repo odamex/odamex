@@ -85,7 +85,6 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
-EXTERN_CVAR (friendlyfire)
 EXTERN_CVAR (weaponstay)
 
 EXTERN_CVAR (cl_name)
@@ -852,20 +851,15 @@ bool CL_PrepareConnect(void)
 		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256, (gameversion % 256) / 10, (gameversion % 256) % 10);
 	}
 
+    Printf(PRINT_HIGH, "\n");
+
+    // DEH/BEX Patch files
     std::vector<std::string> PatchFiles;
 
-    // TODO: Version REMOVEME
-    if (SERVERMAJ >= CLIENTMAJ && 
-        SERVERMIN >= CLIENTMIN && 
-        SERVERREL >= CLIENTREL)
-    {
-        size_t PatchCount = MSG_ReadByte();
+    size_t PatchCount = MSG_ReadByte();
     
-        for (i = 0; i < PatchCount; ++i)
-            PatchFiles.push_back(MSG_ReadString());
-    }
-
-	Printf(PRINT_HIGH, "\n");
+    for (i = 0; i < PatchCount; ++i)
+        PatchFiles.push_back(MSG_ReadString());
 	
     // TODO: Allow deh/bex file downloads
 	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, wadhashes, PatchFiles);
@@ -960,24 +954,28 @@ void CL_InitNetwork (void)
     SZ_Clear(&net_buffer);
 
     size_t ParamIndex = Args.CheckParm ("-connect");
-    const char *ipaddress = Args.GetArg(ParamIndex + 1);
-
-    if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
+    
+    if (ParamIndex)
     {
-		NET_StringToAdr (ipaddress, &serveraddr);
+		const char *ipaddress = Args.GetArg(ParamIndex + 1);
 
-        const char *passhash = Args.GetArg(ParamIndex + 2);
+		if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
+		{
+			NET_StringToAdr (ipaddress, &serveraddr);
 
-        if (passhash && passhash[0] != '-' && passhash[0] != '+')
-        {
-            connectpasshash = MD5SUM(passhash);            
-        }
+			const char *passhash = Args.GetArg(ParamIndex + 2);
 
-		if (!serveraddr.port)
-			I_SetPort(serveraddr, SERVERPORT);
+			if (passhash && passhash[0] != '-' && passhash[0] != '+')
+			{
+				connectpasshash = MD5SUM(passhash);            
+			}
 
-		lastconaddr = serveraddr;
-		gamestate = GS_CONNECTING;
+			if (!serveraddr.port)
+				I_SetPort(serveraddr, SERVERPORT);
+
+			lastconaddr = serveraddr;
+			gamestate = GS_CONNECTING;
+		}
     }
 
 	G_SetDefaultTurbo ();
@@ -1016,13 +1014,7 @@ void CL_TryToConnect(DWORD server_token)
 
 		MSG_WriteLong(&net_buffer, (int)rate);
         
-        // Only 0.4.1 servers support passwords
-        if ((SERVERMAJ >= 0) &&
-        	(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
-        	(SERVERMIN > 4)))
-        {
-            MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());            
-        }
+        MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());            
         
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
@@ -1255,17 +1247,12 @@ void CL_Corpse(void)
 //
 void CL_TouchSpecialThing (void)
 {
-	byte who = MSG_ReadByte();
 	AActor *mo = CL_FindThingById(MSG_ReadShort());
-	player_t &p = idplayer(who);
 
-	if(!validplayer(p) || !mo)
+	if(!consoleplayer().mo || !mo)
 		return;
 
-	if (!p.mo)
-		return;
-
-	//P_TouchSpecialThing (mo, p.mo);
+	P_TouchSpecialThing (mo, consoleplayer().mo, true);
 }
 
 
@@ -1479,6 +1466,7 @@ void CL_UpdateMobjInfo(void)
 		return;
 
 	mo->flags = flags;
+	//mo->flags2 = flags2;
 }
 
 
@@ -1847,105 +1835,32 @@ void CL_ReadPacketHeader(void)
 void CL_GetServerSettings(void)
 {
 	cvar_t *var = NULL, *prev = NULL;
-	
-	// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
-	unsigned int deathmatchcvar = 0, teamplaycvar = 0, usectfcvar = 0;
-	
-	// GhostlyDeath <June 19, 2008> -- If 0.4.1+ use string list instead
-	if ((SERVERMAJ >= 0) &&
-		(((SERVERMIN == 4) && (SERVERREL >= 1)) ||
-		(SERVERMIN > 4)))
-	{
-		while (MSG_ReadByte() != 2)
-		{
-			std::string CvarName = MSG_ReadString();
-			std::string CvarValue = MSG_ReadString();
-			
-			var = cvar_t::FindCVar (CvarName.c_str(), &prev);
-			
-			// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
-			if (var)
-			{
-				if (var->flags() & CVAR_SERVERINFO)
-                    var->Set(CvarValue.c_str());
-			}
-			else
-			{
-				// [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
-				// for cleanup on program termination
-				var = new cvar_t (CvarName.c_str(), 
-                                  NULL, 
-                                  CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
-                                  
-                var->Set(CvarValue.c_str());
-			}
-			
-			// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
-			if (SERVERMIN == 4 && SERVERREL < 2) {
-				if (strcmp(CvarValue.c_str(), "0") != 0) {
-					if (strcmp(CvarName.c_str(), "deathmatch") == 0) {
-						deathmatchcvar = 1;
-					} else if (strcmp(CvarName.c_str(), "teamplay") == 0) {
-						teamplaycvar = 1;
-					} else if (strcmp(CvarName.c_str(), "usectf") == 0) {
-						usectfcvar = 1;
-					}
-				}
-			}
-		}
-					
-		// Nes - Maintain compatability with severs using deathmatch/teamplay/usectf.
-		if (SERVERMIN == 4 && SERVERREL < 2) {
-			if (usectfcvar) gametype = GM_CTF;
-			else if (teamplaycvar) gametype = GM_TEAMDM;
-			else if (deathmatchcvar) gametype = GM_DM;
-			else gametype = GM_COOP;
-		}
-	}
-	else
-	{
-		usectfcvar = MSG_ReadByte() ? 1 : 0;
-
-		// General server settings
-		maxclients.Set((int)MSG_ReadShort());
-
-		// Game settings
-		allowcheats.Set((BOOL)MSG_ReadByte());
-		deathmatchcvar = MSG_ReadByte() ? 1 : 0;
-		fraglimit.Set((int)MSG_ReadShort());
-		timelimit.Set((int)MSG_ReadShort());
-
-		// Map behavior
-		skill.Set((int)MSG_ReadShort());
-		weaponstay.Set((BOOL)MSG_ReadByte());
-		nomonsters.Set((BOOL)MSG_ReadByte());
-		monstersrespawn.Set((BOOL)MSG_ReadByte());
-		itemsrespawn.Set((BOOL)MSG_ReadByte());
-		fastmonsters.Set((BOOL)MSG_ReadByte());
-
-		// Action rules
-		allowexit.Set((BOOL)MSG_ReadByte());
-		fragexitswitch.Set((BOOL)MSG_ReadByte());
-		allowjump.Set((BOOL)MSG_ReadByte());
-		sv_freelook.Set((BOOL)MSG_ReadByte());
-		infiniteammo.Set((BOOL)MSG_ReadByte());
-		maxplayers.Set((int)MSG_ReadByte());
-
-		// Teamplay/CTF
-		scorelimit.Set((int)MSG_ReadShort());
-		friendlyfire.Set((BOOL)MSG_ReadByte());
-		teamplaycvar = MSG_ReadByte() ? 1 : 0;
-	
-		allowtargetnames.Set((BOOL)MSG_ReadByte());
-
-		cvar_t::UnlatchCVars ();
 		
-		if (usectfcvar) gametype = GM_CTF;
-		else if (teamplaycvar) gametype = GM_TEAMDM;
-		else if (deathmatchcvar) gametype = GM_DM;
-		else gametype = GM_COOP;
-	}
-	
+	while (MSG_ReadByte() != 2)
+	{
+		std::string CvarName = MSG_ReadString();
+		std::string CvarValue = MSG_ReadString();
+			
+		var = cvar_t::FindCVar (CvarName.c_str(), &prev);
+			
+		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it               
+		if (var)
+		{
+			if (var->flags() & CVAR_SERVERINFO)
+                var->Set(CvarValue.c_str());
+        }
+        else
+        {
+            // [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
+            // for cleanup on program termination
+            var = new cvar_t (CvarName.c_str(), NULL,
+                CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
+                                  
+            var->Set(CvarValue.c_str());
+        }
+			
+    }
+    
 	// Nes - update the skies in case sv_freelook is changed.
 	R_InitSkyMap ();
 }
@@ -2037,9 +1952,9 @@ void CL_Switch()
 
 	if(!P_SetButtonInfo(&lines[l], state, time)) // denis - fixme - security
 		if(wastoggled)
-			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_SPECIAL_REPEAT);  // denis - fixme - security
+			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL);  // denis - fixme - security
 
-	if(wastoggled && !(lines[l].flags & ML_SPECIAL_REPEAT)) // non repeat special
+	if(wastoggled && !(lines[l].flags & ML_REPEAT_SPECIAL)) // non repeat special
 		lines[l].special = 0;
 }
 
@@ -2488,6 +2403,8 @@ void CL_InitCommands(void)
 	cmds[svc_launcher_challenge]= &CL_Clear;
 	
 	cmds[svc_spectate]   		= &CL_Spectate;
+	
+	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
 }
 
 //

@@ -115,93 +115,95 @@
 //
 typedef enum
 {
-    // Call P_SpecialThing when touched.
-    MF_SPECIAL		= 1,
-    // Blocks.
-    MF_SOLID		= 2,
-    // Can be hit.
-    MF_SHOOTABLE	= 4,
-    // Don't use the sector links (invisible but touchable).
-    MF_NOSECTOR		= 8,
-    // Don't use the blocklinks (inert but displayable)
-    MF_NOBLOCKMAP	= 16,                    
-	
-    // Not to be activated by sound, deaf monster.
-    MF_AMBUSH		= 32,
-    // Will try to attack right back.
-    MF_JUSTHIT		= 64,
-    // Will take at least one step before attacking.
-    MF_JUSTATTACKED	= 128,
-    // On level spawning (initial position),
-    //  hang from ceiling instead of stand on floor.
-    MF_SPAWNCEILING	= 256,
-    // Don't apply gravity (every tic),
-    //  that is, object will float, keeping current height
-    //  or changing it actively.
-    MF_NOGRAVITY	= 512,
-	
-    // Movement flags.
-    // This allows jumps from high places.
-    MF_DROPOFF		= 0x400,
-    // For players, will pick up items.
-    MF_PICKUP		= 0x800,
-    // Player cheat. ???
-    MF_NOCLIP		= 0x1000,
-    // Player: keep info about sliding along walls.
-    MF_SLIDE		= 0x2000,
-    // Allow moves to any height, no gravity.
-    // For active floaters, e.g. cacodemons, pain elementals.
-    MF_FLOAT		= 0x4000,
-    // Don't cross lines
-    //   ??? or look at heights on teleport.
-    MF_TELEPORT		= 0x8000,
-    // Don't hit same species, explode on block.
-    // Player missiles as well as fireballs of various kinds.
-    MF_MISSILE		= 0x10000,	
-    // Dropped by a demon, not level spawned.
-    // E.g. ammo clips dropped by dying former humans.
-    MF_DROPPED		= 0x20000,
-    // Use fuzzy draw (shadow demons or spectres),
-    //  temporary player invisibility powerup.
-    MF_SHADOW		= 0x40000,
-    // Flag: don't bleed when shot (use puff),
-    //  barrels and shootable furniture shall not bleed.
-    MF_NOBLOOD		= 0x80000,
-    // Don't stop moving halfway off a step,
-    //  that is, have dead bodies slide down all the way.
-    MF_CORPSE		= 0x100000,
-    // Floating to a height for a move, ???
-    //  don't auto float to target's height.
-    MF_INFLOAT		= 0x200000,
-	
-    // On kill, count this enemy object
-    //  towards intermission kill total.
-    // Happy gathering.
-    MF_COUNTKILL	= 0x400000,
-    
-    // On picking up, count this item object
-    //  towards intermission item total.
-    MF_COUNTITEM	= 0x800000,
-	
-    // Special handling: skull in flight.
-    // Neither a cacodemon nor a missile.
-    MF_SKULLFLY		= 0x1000000,
-	
-    // Don't spawn this object
-    //  in death match mode (e.g. key cards).
-    MF_NOTDMATCH    	= 0x2000000,
+// --- mobj.flags ---
+
+	MF_SPECIAL		= 0x00000001,	// call P_SpecialThing when touched
+	MF_SOLID		= 0x00000002,
+	MF_SHOOTABLE	= 0x00000004,
+	MF_NOSECTOR		= 0x00000008,	// don't use the sector links
+									// (invisible but touchable)
+	MF_NOBLOCKMAP	= 0x00000010,	// don't use the blocklinks
+									// (inert but displayable)
+	MF_AMBUSH		= 0x00000020,	// not activated by sound; deaf monster
+	MF_JUSTHIT		= 0x00000040,	// try to attack right back
+	MF_JUSTATTACKED	= 0x00000080,	// take at least one step before attacking
+	MF_SPAWNCEILING	= 0x00000100,	// hang from ceiling instead of floor
+	MF_NOGRAVITY	= 0x00000200,	// don't apply gravity every tic
+
+// movement flags
+	MF_DROPOFF		= 0x00000400,	// allow jumps from high places
+	MF_PICKUP		= 0x00000800,	// for players to pick up items
+	MF_NOCLIP		= 0x00001000,	// player cheat
+	MF_SLIDE		= 0x00002000,	// keep info about sliding along walls
+	MF_FLOAT		= 0x00004000,	// allow moves to any height, no gravity
+	MF_TELEPORT		= 0x00008000,	// don't cross lines or look at heights
+	MF_MISSILE		= 0x00010000,	// don't hit same species, explode on block
+
+	MF_DROPPED		= 0x00020000,	// dropped by a demon, not level spawned
+	MF_SHADOW		= 0x00040000,	// actor is hard for monsters to see
+	MF_NOBLOOD		= 0x00080000,	// don't bleed when shot (use puff)
+	MF_CORPSE		= 0x00100000,	// don't stop moving halfway off a step
+	MF_INFLOAT		= 0x00200000,	// floating to a height for a move, don't
+									// auto float to target's height
+
+	MF_COUNTKILL	= 0x00400000,	// count towards intermission kill total
+	MF_COUNTITEM	= 0x00800000,	// count towards intermission item total
+
+	MF_SKULLFLY		= 0x01000000,	// skull in flight
+	MF_NOTDMATCH	= 0x02000000,	// don't spawn in death match (key cards)
 	
     // Player sprites in multiplayer modes are modified
     //  using an internal color lookup table for re-indexing.
-    // If 0x4 0x8 or 0xc,
-    //  use a translation table for player colormaps
-    MF_TRANSLATION  	= 0xc000000,
-
-    // GhostlyDeath -- thing is/was a spectator and can't be seen!
-    MF_SPECTATOR		= 0x40000000,
+    // If 0x4 0x8 or 0xc, use a translation table for player colormaps
+    MF_TRANSLATION	= 0xc000000,
+    
+	MF_UNMORPHED	= 0x10000000,	// [RH] Actor is the unmorphed version of something else	
+	MF_FALLING		= 0x20000000,	
+    MF_SPECTATOR	= 0x40000000,	// GhostlyDeath -- thing is/was a spectator and can't be seen!
+	MF_ICECORPSE	= 0x80000000,	// a frozen corpse (for blasting) [RH] was 0x800000
 	
-	// a frozen corpse (for blasting) [RH] was 0x800000
-	MF_ICECORPSE		= 0x80000000
+// --- mobj.flags2 ---
+
+	MF2_LOGRAV			= 0x00000001,	// alternate gravity setting
+	MF2_WINDTHRUST		= 0x00000002,	// gets pushed around by the wind
+										// specials
+	MF2_FLOORBOUNCE		= 0x00000004,	// bounces off the floor
+	MF2_BLASTED			= 0x00000008,	// missile will pass through ghosts
+	MF2_FLY				= 0x00000010,	// fly mode is active
+	MF2_FLOORCLIP		= 0x00000020,	// if feet are allowed to be clipped
+	MF2_SPAWNFLOAT		= 0x00000040,	// spawn random float z
+	MF2_NOTELEPORT		= 0x00000080,	// does not teleport
+	MF2_RIP				= 0x00000100,	// missile rips through solid
+										// targets
+	MF2_PUSHABLE		= 0x00000200,	// can be pushed by other moving
+										// mobjs
+	MF2_SLIDE			= 0x00000400,	// slides against walls
+	MF2_ONMOBJ			= 0x00000800,	// mobj is resting on top of another
+										// mobj
+	MF2_PASSMOBJ		= 0x00001000,	// Enable z block checking.  If on,
+										// this flag will allow the mobj to
+										// pass over/under other mobjs.
+	MF2_CANNOTPUSH		= 0x00002000,	// cannot push other pushable mobjs
+	MF2_THRUGHOST		= 0x00004000,	// missile will pass through ghosts [RH] was 8
+	MF2_BOSS			= 0x00008000,	// mobj is a major boss
+	MF2_FIREDAMAGE		= 0x00010000,	// does fire damage
+	MF2_NODMGTHRUST		= 0x00020000,	// does not thrust target when damaging
+	MF2_TELESTOMP		= 0x00040000,	// mobj can stomp another
+	MF2_FLOATBOB		= 0x00080000,	// use float bobbing z movement
+	MF2_DONTDRAW		= 0x00100000,	// don't generate a vissprite
+	MF2_IMPACT			= 0x00200000, 	// an MF_MISSILE mobj can activate SPAC_IMPACT
+	MF2_PUSHWALL		= 0x00400000, 	// mobj can push walls
+	MF2_MCROSS			= 0x00800000,	// can activate monster cross lines
+	MF2_PCROSS			= 0x01000000,	// can activate projectile cross lines
+	MF2_CANTLEAVEFLOORPIC = 0x02000000,	// stay within a certain floor type
+	MF2_NONSHOOTABLE	= 0x04000000,	// mobj is totally non-shootable, 
+										// but still considered solid
+	MF2_INVULNERABLE	= 0x08000000,	// mobj is invulnerable
+	MF2_DORMANT			= 0x10000000,	// thing is dormant
+	MF2_ICEDAMAGE		= 0x20000000,	// does ice damage
+	MF2_SEEKERMISSILE	= 0x40000000,	// is a seeker (for reflection)
+	MF2_REFLECTIVE		= 0x80000000	// reflects missiles	
+	
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A
@@ -323,6 +325,7 @@ public:
     int				tics;	// state tic counter
 	state_t			*state;
 	int				flags;
+	int				flags2;	// Heretic flags
 	int 			health;
 
     // Movement direction, movement generation (zig-zagging).

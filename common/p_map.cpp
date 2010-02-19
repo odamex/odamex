@@ -96,10 +96,10 @@ BOOL PIT_StompThing (AActor *thing)
 
 	if (!(thing->flags & MF_SHOOTABLE))
 		return true;
-		
+
 	if (thing->player && thing->player->spectator)
 		return true;
-		
+
 	if (tmthing->player && tmthing->player->spectator)
 		return true;
 
@@ -215,7 +215,11 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 	const msecnode_t *m;
 	const sector_t *sec;
 
-	if (!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1 ||
+	if (mo->flags2 & MF2_FLY)	// [ML] [demobreak] This check breaks icarus demo2!
+	{
+		friction = FRICTION_FLY;
+	}
+	else if (!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1 ||
 		(mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
 	{
 		friction = mo->subsector->sector->friction;
@@ -413,14 +417,14 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)) )
 		return true;	// can't hit thing
 
-		
+
 	// GhostlyDeath -- Spectators go through everything!
 	if (thing->player && thing->player->spectator)
 		return true;
 	// and vice versa
 	if (tmthing->player && tmthing->player->spectator)
 		return true;
-		
+
     if (tmthing->player && thing->player && sv_unblockplayers)
         return true;
 
@@ -692,7 +696,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 		floatok = true;
 
 		if (!(thing->flags & MF_TELEPORT)
-			&& tmceilingz - thing->z < thing->height)
+			&& tmceilingz - thing->z < thing->height && !(thing->flags2 & MF2_FLY))
 		{
 			return false;		// mobj must lower itself to fit
 		}
@@ -701,20 +705,27 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 			// too big a step up
 			return false;
 		}
+		
+		if (thing->flags2 & MF2_FLY)
+		{
+			// When flying, slide up or down blocking lines until the actor
+			// is not blocked.
+			if (thing->z+thing->height > tmceilingz)
+			{
+				thing->momz = -8*FRACUNIT;
+				return false;
+			}
+			else if (thing->z < tmfloorz && tmfloorz-tmdropoffz > 24*FRACUNIT)
+			{
+				thing->momz = 8*FRACUNIT;
+				return false;
+			}
+		}		
 
 		// killough 3/15/98: Allow certain objects to drop off
 		if (!(thing->flags&(MF_DROPOFF|MF_FLOAT))
 			&& tmfloorz - tmdropoffz > 24*FRACUNIT)
 			return false;	// don't stand over a dropoff
-
-		/*if ((tmthing->player && !tmthing->player->spectator) &&
-			(thing->player && !thing->player->spectator))
-			return false;*/
-			
-		/*if (!(tmthing->player && tmthing->player->spectator) && (thing != tmthing))
-			return false;
-		if (!(thing->player && thing->player->spectator) && (thing != tmthing))
-			return false;*/
 	}
 
 	// the move is ok,
@@ -869,12 +880,12 @@ void P_HitSlideLine (line_t* ld)
 
 	side = P_PointOnLineSide (slidemo->x, slidemo->y, ld);
 
-	lineangle = R_PointToAngle2 (0,0, ld->dx, ld->dy);
+	lineangle = P_PointToAngle (0,0, ld->dx, ld->dy);
 
 	if (side == 1)
 		lineangle += ANG180;
 
-	moveangle = R_PointToAngle2 (0,0, tmxmove, tmymove);
+	moveangle = P_PointToAngle (0,0, tmxmove, tmymove);
 	deltaangle = moveangle-lineangle;
 
 	if (icyfloor && (deltaangle > ANG45) && (deltaangle < ANG90+ANG45))
@@ -1310,9 +1321,9 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	// Spawn bullet puffs or blod spots,
 	// depending on target type.
 	if ((in->d.thing->flags & MF_NOBLOOD))
-		P_SpawnPuff (x,y,z, R_PointToAngle2 (0, 0, trace.dx, trace.dy) - ANG180, 2);
+		P_SpawnPuff (x,y,z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, 2);
 	else
-		P_SpawnBlood (x,y,z, R_PointToAngle2 (0, 0, trace.dx, trace.dy) - ANG180, la_damage);
+		P_SpawnBlood (x,y,z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, la_damage);
 
 	if (la_damage) {
 		// [RH] try and figure out means of death;
@@ -1461,7 +1472,7 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 			// hit nothing
 			return;
 		}
-		P_SpawnPuff (x2, y2, z, R_PointToAngle2 (0, 0, trace.dx, trace.dy) - ANG180, updown);*/
+		P_SpawnPuff (x2, y2, z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, updown);*/
 	}
 }
 
@@ -1781,7 +1792,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 		// keep checking
 		return true;
 	}
-	
+
 	// GhostlyDeath -- if it's a spectator, keep checking
 	if (thing->player && thing->player->spectator)
 		return true;
@@ -1848,7 +1859,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 bool P_ChangeSector (sector_t *sector, bool crunch)
 {
 	int x, y;
-	
+
 	nofit = false;
 	crushchange = crunch;
 

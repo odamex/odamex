@@ -116,6 +116,9 @@ static void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
             PickupMessage(toucher, GOTSHOTGUN2);
         }
         break;
+        
+        default:
+        break;
     }
 }
 
@@ -379,11 +382,14 @@ BOOL P_GivePower (player_t *player, int /*powertype_t*/ power)
 //
 // P_TouchSpecialThing
 //
-void P_TouchSpecialThing (AActor *special, AActor *toucher)
+void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 {
 	player_t*	player;
 	int 		i;
 	int 		sound;
+
+    if (clientside && network_game && !FromServer)
+        return;
 
     if(predicting)
         return;
@@ -964,7 +970,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 			|| !source->player
 			|| source->player->readyweapon != wp_chainsaw))
 	{
-		ang = R_PointToAngle2 ( inflictor->x,
+		ang = P_PointToAngle ( inflictor->x,
 								inflictor->y,
 								target->x,
 								target->y);

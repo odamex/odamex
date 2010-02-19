@@ -31,13 +31,9 @@ BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListCtrl)
      EVT_WINDOW_CREATE(wxAdvancedListCtrl::OnCreateControl)
 END_EVENT_TABLE()
 
-// this is so we can jump over the sort arrow images
-enum
-{
-    LIST_SORT_ARROW_UP = 0
-    ,LIST_SORT_ARROW_DOWN
-    ,FIRST_IMAGE
-};
+// Sort arrow
+static int ImageList_SortArrowUp = -1;
+static int ImageList_SortArrowDown = -1;
 
 // Sorting arrow XPM images
 static const char *SortArrowAscending[] =
@@ -100,32 +96,25 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
 }
 
 // Add any additional bitmaps/icons to the internal image list
-void wxAdvancedListCtrl::AddImageSmall(wxImage Image)
+int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 {
     if (GetImageList(wxIMAGE_LIST_SMALL) == NULL)
     {
         // Art provider images are 16x15, WTF?! Kept for compatibility :'(
-        wxImageList *ImageList = new wxImageList(16, 15, true, FIRST_IMAGE);
+        wxImageList *ImageList = new wxImageList(16, 15, true);
         AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
         
         // Add our sort icons by default.
-        GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
-        GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowDescending));
+        ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowAscending));
+        ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(wxImage(SortArrowDescending));
     }
     
     if (Image.IsOk())
     {
-        GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
+        return GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
     }
-}
-
-// Adjusts the index, so it jumps over the sort arrow images.
-void wxAdvancedListCtrl::SetColumnImage(wxListItem &li, wxInt32 ImageIndex)
-{
-    if (ImageIndex < -1)
-        ImageIndex = -1;
-
-    li.SetImage(((ImageIndex == -1) ? ImageIndex : FIRST_IMAGE + ImageIndex));
+    
+    return -1;
 }
 
 // [Russell] - These are 2 heavily modified routines of the javascript natural 
@@ -296,12 +285,23 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
     Item2.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE); 
 
     Item1Flipped.SetId(NextRow);
-    Item1Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
+    Item1Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA 
+        | wxLIST_MASK_IMAGE);
 
     Item2Flipped.SetId(Row);
-    Item2Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
+    Item2Flipped.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA 
+        | wxLIST_MASK_IMAGE);
 
-    // Flip the data for columns too.
+    // Due to bugs/limitations with wxWidgets, certain stuff needs to be 
+    // physically taken from the list control as GetItem is finicky
+    wxColour Item1Colour = GetItemTextColour(Row);
+    wxColour Item2Colour = GetItemTextColour(NextRow);
+    wxInt32 Item1State = GetItemState(Row, wxLIST_STATE_SELECTED 
+        | wxLIST_STATE_FOCUSED);
+    wxInt32 Item2State = GetItemState(NextRow, wxLIST_STATE_SELECTED 
+        | wxLIST_STATE_FOCUSED);
+    
+    // Flip the data for columns.
     for (wxInt32 ColumnCounter = 0; 
          ColumnCounter < GetColumnCount(); 
          ++ColumnCounter) 
@@ -316,13 +316,11 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
         // Set data for the first item
         Item2Flipped.SetImage(Item2.GetImage()); 
         Item2Flipped.SetData(Item2.GetData()); 
-        Item2Flipped.SetTextColour(Item2.GetTextColour()); 
         Item2Flipped.SetText(Item2.GetText());
 
         // Now the second
         Item1Flipped.SetImage(Item1.GetImage()); 
         Item1Flipped.SetData(Item1.GetData()); 
-        Item1Flipped.SetTextColour(Item1.GetTextColour()); 
         Item1Flipped.SetText(Item1.GetText());
 
         // Set them
@@ -333,6 +331,14 @@ void wxAdvancedListCtrl::FlipRow(long Row, long NextRow)
         SetItem(Item2Flipped);
     }
 
+    // Due to bugs/limitations with wxWidgets, certain stuff needs to be 
+    // physically taken from the list control as GetItem is finicky
+    SetItemState(NextRow, Item1State, wxLIST_STATE_SELECTED 
+        | wxLIST_STATE_FOCUSED);
+    SetItemState(Row, Item2State, wxLIST_STATE_SELECTED 
+        | wxLIST_STATE_FOCUSED);
+    SetItemTextColour(NextRow, Item1Colour);
+    SetItemTextColour(Row, Item2Colour);
 }
 
 // A custom sort routine, we do our own sorting.
@@ -513,18 +519,18 @@ void wxAdvancedListCtrl::ColourList()
 }
 
 // Our variation of InsertItem, so we can do magical things!
-long wxAdvancedListCtrl::ALCInsertItem(wxListItem &info)
+long wxAdvancedListCtrl::ALCInsertItem(const wxString &Text)
 {
-    //Sort();
-
-    // TODO: We need to remember this item id, because the last item on the list
-    // does not get sorted, we can't move sort either, because then the return 
-    // index would be stale.
-    info.SetId(InsertItem(GetItemCount(), info.GetText()));
+    wxListItem ListItem;
+    
+    ListItem.m_itemId = InsertItem(GetItemCount(), Text, -1);
    
-    ColourListItem(info);
+    ColourListItem(ListItem.m_itemId);
 
-    SetItem(info);
+    SetItem(ListItem);
 
-    return info.GetId();
+    // wxWidgets bug: Required for sorting colours correctly
+    SetItemTextColour(ListItem.m_itemId, GetTextColour());
+
+    return ListItem.m_itemId;
 }

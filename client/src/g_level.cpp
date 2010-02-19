@@ -467,7 +467,7 @@ void G_DoCompleted (void)
 
 	// [ML] Chex mode: they didn't even show the intermission screen
 	// after the fifth level - I checked.
-	if (gamemode == retail_chex & !strncmp(level.mapname,"E1M5",4)) {
+	if (gamemode == retail_chex && !strncmp(level.mapname,"E1M5",4)) {
 		G_WorldDone();
 		return;
 	}
@@ -887,10 +887,9 @@ void G_SetLevelStrings (void)
 	for (; i < 6; i++)
 		ReplaceString (&ClusterInfos[4 + i].entertext, Strings[start+i].string);
 
-	if (level.info)
+	if (level.info && level.info->level_name)
 		strncpy (level.level_name, level.info->level_name, 63);
 }
-
 
 void G_SerializeLevel (FArchive &arc, bool hubLoad)
 {

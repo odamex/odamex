@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -120,6 +120,7 @@ extern void (*hcolfunc_post4) (int sx, int yl, int yh);
 
 //
 // Utility functions.
+
 int
 R_PointOnSide
 ( fixed_t	x,
@@ -137,12 +138,8 @@ R_PointToAngle
 ( fixed_t	x,
   fixed_t	y );
 
-angle_t
-R_PointToAngle2
-( fixed_t	x1,
-  fixed_t	y1,
-  fixed_t	x2,
-  fixed_t	y2 );
+// 2/1/10: Updated (from EE) to restore vanilla style, with tweak for overflow tolerance
+angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y);
 
 fixed_t
 R_PointToDist
@@ -165,6 +162,7 @@ R_AddPointToBox
 
 fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy);
 void R_SetFOV (float fov);
+float R_GetFOV (void);
 
 //
 // REFRESH - the actual rendering functions.

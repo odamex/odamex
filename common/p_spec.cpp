@@ -873,12 +873,12 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 		C_MidPrint (msg, p);
 	}
-	
+
 	if (serverside && network_game && msg != NULL)
 	{
 		C_MidPrint (msg, p);
 	}
-	
+
 	return false;
 }
 
@@ -903,14 +903,20 @@ P_CrossSpecialLine
   AActor*	thing,
   bool      FromServer)
 {
+	int lineActivation;
+
     if (clientside && network_game && !FromServer)
         return;
-        
+
     line_t*	line = &lines[linenum];
+
+	lineActivation = GET_SPAC(line->flags);
+	if (lineActivation == SPAC_USETHROUGH)
+		lineActivation = SPAC_USE;
 
 	if(thing)
 	{
-		if (!(line->flags & ML_SPECIAL_CROSS))
+		if (lineActivation != SPAC_CROSS)
 			return;
 
 		//	Triggers that other things can activate
@@ -931,15 +937,15 @@ P_CrossSpecialLine
 				default: break;
 			}
 
-			if(!(line->flags & ML_SPECIAL_MONSTER))
+			if(!(line->flags & ML_MONSTERSCANACTIVATE))
 				return;
 		}
 		else
 		{
 			// Likewise, player should not trigger monster lines
-			if(line->flags & ML_SPECIAL_MONSTER_ONLY)
+			if(lineActivation == SPAC_MCROSS)
 				return;
-			
+
 			// And spectators should only trigger teleporters
 			if (thing->player->spectator)
 			{
@@ -976,7 +982,7 @@ P_CrossSpecialLine
 	}
 
 	LineSpecials[line->special] (line, thing);
-	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 
 	OnActivatedLine(line, thing, side, 0);
 }
@@ -993,28 +999,28 @@ P_ShootSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return;
-	
+
 	if(thing)
 	{
-		if (!(line->flags & ML_SPECIAL_SHOOT))
+		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
 			return;
 
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (!thing->player && !(line->flags & ML_SPECIAL_MONSTER))
+		if (!thing->player && !(GET_SPAC(line->flags) == SPAC_MCROSS))
 			return;
 	}
 
 	LineSpecials[line->special] (line, thing);
 
-	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 	OnActivatedLine(line, thing, 0, 2);
 
 	if(serverside)
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-		OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 	}
 }
 
@@ -1033,7 +1039,7 @@ P_UseSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return false;
-	
+
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1053,14 +1059,14 @@ P_UseSpecialLine
 
 	if(thing)
 	{
-		if (!(line->flags & ML_SPECIAL_USE))
+		if (!(GET_SPAC(line->flags) == SPAC_USE))
 			return false;
 
 		// Switches that other things can activate.
 		if (!thing->player)
 		{
 			// not for monsters?
-			if (!(line->flags & ML_SPECIAL_MONSTER))
+			if (!(GET_SPAC(line->flags) == SPAC_MCROSS))
 				return false;
 
 			// never open secret doors
@@ -1077,13 +1083,13 @@ P_UseSpecialLine
 
 	if(LineSpecials[line->special] (line, thing))
 	{
-		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 		OnActivatedLine(line, thing, side, 1);
 
 		if(serverside)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-			OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
 
@@ -1980,7 +1986,7 @@ BOOL PIT_PushThing (AActor *thing)
 
 		if ((speed > 0) && (P_CheckSight (thing, tmpusher->m_Source, true)))
 		{
-			angle_t pushangle = R_PointToAngle2 (thing->x, thing->y, sx, sy);
+			angle_t pushangle = P_PointToAngle (thing->x, thing->y, sx, sy);
 			if (tmpusher->m_Source->type == MT_PUSH)
 				pushangle += ANG180;    // away
 			pushangle >>= ANGLETOFINESHIFT;

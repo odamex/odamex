@@ -1112,7 +1112,7 @@ void G_InitLevelLocals ()
 	int i;
 
 	NormalLight.maps = realcolormaps;
-
+	
 	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
 
@@ -1302,7 +1302,7 @@ void G_SetLevelStrings (void)
 	for (; i < 6; i++)
 		ReplaceString ((const char **)&ClusterInfos[4 + i].entertext, Strings[start+i].string);
 
-	if (level.info)
+	if (level.info && level.info->level_name)
 		strncpy (level.level_name, level.info->level_name, 63);
 }
 

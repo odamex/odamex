@@ -372,6 +372,8 @@
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_draw.h" />
 		<Unit filename="..\src\r_drawt.cpp" />
+		<Unit filename="..\src\r_fps.cpp" />
+		<Unit filename="..\src\r_fps.h" />
 		<Unit filename="..\src\r_main.cpp" />
 		<Unit filename="..\src\r_main.h" />
 		<Unit filename="..\src\r_plane.cpp" />

@@ -37,6 +37,7 @@
 
 #include <SDL.h>
 
+#include "doomstat.h"
 #include "m_argv.h"
 #include "i_input.h"
 #include "v_video.h"
@@ -46,9 +47,12 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 
+EXTERN_CVAR (vid_fullscreen)
+EXTERN_CVAR (vid_defwidth)
+EXTERN_CVAR (vid_defheight)
+
 static BOOL mousepaused = true; // SoM: This should start off true
 static BOOL havefocus = false;
-static BOOL noidle = false;
 static BOOL nomouse = false;
 
 // Used by the console for making keys repeat
@@ -94,46 +98,32 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 }
 #endif
 
-//
-// I_InitInput
-//
-bool I_InitInput (void)
+static bool MouseShouldBeGrabbed()
 {
-	if(Args.CheckParm("-nomouse"))
-	{
-		nomouse = true;
-	}
+	// if the window doesn't have focus, never grab it
+	if (!havefocus)
+		return false;
 
-	atterm (I_ShutdownInput);
+	// always grab the mouse when full screen (dont want to 
+	// see the mouse pointer)
+	if (vid_fullscreen)
+		return true;
 
-	noidle = Args.CheckParm ("-noidle");
+	// Don't grab the mouse if mouse input is disabled
+	if (nomouse)
+		return false;
 
-	SDL_EnableUNICODE(true);
-	
-	// denis - disable key repeats as they mess with the mouse in XP
-	SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
+	// if we specify not to grab the mouse, never grab
+	//if (!grabmouse)
+	//	return false;
 
-#ifdef WIN32
-	// denis - in fullscreen, prevent exit on accidental windows key press
-	// [Russell] - Disabled because it screws with the mouse
-	//g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
-#endif
+    // when menu is active, console is down or game is paused, release the mouse 
+    if (menuactive || ConsoleState == c_down || paused)
+        return false;
 
-	return true;
-}
+    // only grab mouse when playing levels (but not demos)
 
-//
-// I_ShutdownInput
-//
-void STACK_ARGS I_ShutdownInput (void)
-{
-	I_PauseMouse();
-
-#ifdef WIN32
-	// denis - in fullscreen, prevent exit on accidental windows key press
-	// [Russell] - Disabled because it screws with the mouse
-	//UnhookWindowsHookEx(g_hKeyboardHook);
-#endif
+    return (gamestate == GS_LEVEL) && !demoplayback;
 }
 
 //
@@ -145,6 +135,50 @@ static void SetCursorState (int visible)
       return;
 
    SDL_ShowCursor(visible ? SDL_ENABLE : SDL_DISABLE);
+}
+
+// Update the value of havefocus when we get a focus event
+//
+// We try to make ourselves be well-behaved: the grab on the mouse
+// is removed if we lose focus (such as a popup window appearing),
+// and we dont move the mouse around if we aren't focused either.
+
+static void UpdateFocus(void)
+{
+    Uint8 state;
+
+    state = SDL_GetAppState();
+
+    // We should have input (keyboard) focus and be visible 
+    // (not minimized)
+    havefocus = (state & SDL_APPINPUTFOCUS) && (state & SDL_APPACTIVE);
+}
+
+//
+// UpdateGrab (From chocolate-doom)
+//
+static void UpdateGrab(void)
+{
+    bool grab;
+
+    grab = MouseShouldBeGrabbed();
+
+    if (grab && !mousegrabbed)
+    {
+	   if(screen)
+		  SDL_WarpMouse(screen->width/ 2, screen->height / 2);
+
+        SetCursorState(false);
+        SDL_WM_GrabInput(SDL_GRAB_ON);
+        flushmouse = true;
+    }
+    else if (!grab && mousegrabbed)
+    {
+        SetCursorState(true);
+        SDL_WM_GrabInput(SDL_GRAB_OFF);
+    }
+
+    mousegrabbed = grab;
 }
 
 // denis - from chocolate doom
@@ -170,53 +204,60 @@ static int AccelerateMouse(int val)
 }
 
 //
-// GrabMouse
+// I_InitInput
 //
-static void GrabMouse (void)
+bool I_InitInput (void)
 {
-   if(nomouse)
-      return;
+	if(Args.CheckParm("-nomouse"))
+	{
+		nomouse = true;
+	}
 
-   if(screen)
-   {
-      SDL_WarpMouse(screen->width/ 2, screen->height / 2);
-   }
+	atterm (I_ShutdownInput);
 
-   SDL_WM_GrabInput(SDL_GRAB_ON);
-   mousegrabbed = true;
-   flushmouse = true;
+	SDL_EnableUNICODE(true);
+	
+	// denis - disable key repeats as they mess with the mouse in XP
+	SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
+
+#ifdef WIN32
+	// denis - in fullscreen, prevent exit on accidental windows key press
+	// [Russell] - Disabled because it screws with the mouse
+	//g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
+#endif
+	//CreateCursors();
+	UpdateFocus();
+	UpdateGrab();
+
+	return true;
 }
 
 //
-// UngrabMouse
+// I_ShutdownInput
 //
-static void UngrabMouse (void)
+void STACK_ARGS I_ShutdownInput (void)
 {
-   if(nomouse)
-      return;
+	//SDL_SetCursor(cursors[1]);
+	SDL_ShowCursor(1);
+	SDL_WM_GrabInput(SDL_GRAB_OFF);
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
-   SDL_WM_GrabInput(SDL_GRAB_OFF);
-   mousegrabbed = false;
+#ifdef WIN32
+	// denis - in fullscreen, prevent exit on accidental windows key press
+	// [Russell] - Disabled because it screws with the mouse
+	//UnhookWindowsHookEx(g_hKeyboardHook);
+#endif
 }
 
 //
 // I_PauseMouse
 //
-
-EXTERN_CVAR (vid_fullscreen)
-EXTERN_CVAR (vid_defwidth)
-EXTERN_CVAR (vid_defheight)
-
 void I_PauseMouse (void)
 {
    // denis - disable key repeats as they mess with the mouse in XP
    SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
-   if (vid_fullscreen)
-    return;
-   
-   UngrabMouse();
-   SetCursorState(true);
+   UpdateGrab();
    
    mousepaused = true;
 }
@@ -226,14 +267,12 @@ void I_PauseMouse (void)
 //
 void I_ResumeMouse (void)
 {
-   if(havefocus)
-   {
-      GrabMouse();
-      SetCursorState(false);
+	UpdateGrab();
 
-      // denis - disable key repeats as they mess with the mouse in XP
-      SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
-   }
+	if(havefocus)
+		// denis - disable key repeats as they mess with the mouse in XP
+		SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
+
    mousepaused = false;
 }
 
@@ -249,18 +288,12 @@ void I_GetEvent (void)
 
    SDL_Event ev;
    
-   if (!(SDL_GetAppState()&SDL_APPINPUTFOCUS) && havefocus)
-   {
-      havefocus = false;
-      UngrabMouse();
-      SetCursorState(true);
-   }
-   else if((SDL_GetAppState()&SDL_APPINPUTFOCUS) && !havefocus)
-   {
-      havefocus = true;
-      if(!mousepaused)
-         I_ResumeMouse();
-   }
+	if (!havefocus)
+		I_PauseMouse();
+	else
+	{
+		I_ResumeMouse();
+	}
 
    while(SDL_PollEvent(&ev))
    {
@@ -287,6 +320,11 @@ void I_GetEvent (void)
          }
          break;
          
+		case SDL_ACTIVEEVENT:
+			// need to update our focus state
+			UpdateFocus();
+		break;         
+         
          case SDL_KEYDOWN:
             event.type = ev_keydown;
             event.data1 = ev.key.keysym.sym;
@@ -309,8 +347,9 @@ void I_GetEvent (void)
                event.data1 = event.data2 = event.data3 = 0;
             else
 #endif
-            D_PostEvent(&event);
-            break;
+         D_PostEvent(&event);
+         break;
+         
          case SDL_KEYUP:
             event.type = ev_keyup;
             event.data1 = ev.key.keysym.sym;
@@ -318,14 +357,17 @@ void I_GetEvent (void)
                event.data2 = event.data3 = ev.key.keysym.unicode;
             else
                event.data2 = event.data3 = 0;
-            D_PostEvent(&event);
-            break;
+         D_PostEvent(&event);
+         break;
+         
          case SDL_MOUSEMOTION:
             if(flushmouse)
             {
                flushmouse = false;
                break;
             }
+            if (!havefocus)
+				break;
 			// denis - ignore artificially inserted events (see SDL_WarpMouse below)
 			if(ev.motion.x == screen->width/2 &&
 			   ev.motion.y == screen->height/2)
@@ -335,10 +377,11 @@ void I_GetEvent (void)
             mouseevent.data2 += AccelerateMouse(ev.motion.xrel);
             mouseevent.data3 -= AccelerateMouse(ev.motion.yrel);
             sendmouseevent = 1;
-            break;
+         break;
+         
          case SDL_MOUSEBUTTONDOWN:
-            if(nomouse)
-		break;
+            if(nomouse || !havefocus)
+				break;
             event.type = ev_keydown;
             if(ev.button.button == SDL_BUTTON_LEFT)
             {
@@ -360,11 +403,12 @@ void I_GetEvent (void)
             else if(ev.button.button == SDL_BUTTON_WHEELDOWN)
                event.data1 = KEY_MWHEELDOWN;
 
-			D_PostEvent(&event);
-            break; 
-         case SDL_MOUSEBUTTONUP:
-            if(nomouse)
-		break;
+		D_PostEvent(&event);
+		break; 
+		
+		case SDL_MOUSEBUTTONUP:
+            if(nomouse || !havefocus)
+				break;
             event.type = ev_keyup;
             if(ev.button.button == SDL_BUTTON_LEFT)
             {
@@ -386,8 +430,8 @@ void I_GetEvent (void)
             else if(ev.button.button == SDL_BUTTON_WHEELDOWN)
                event.data1 = KEY_MWHEELDOWN;
 
-			D_PostEvent(&event);
-            break;
+		D_PostEvent(&event);
+		break;
       };
    }
 

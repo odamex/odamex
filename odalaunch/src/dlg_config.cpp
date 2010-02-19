@@ -303,7 +303,7 @@ void dlgConfig::OnUpClick(wxCommandEvent &event)
 void dlgConfig::OnDownClick(wxCommandEvent &event)
 {
     // Get the selected item
-    wxUint32 i = m_LstCtrlWadDirectories->GetSelection();
+    wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
 
     if ((i != wxNOT_FOUND) && (i + 1 < m_LstCtrlWadDirectories->GetCount()))
     {

@@ -80,6 +80,7 @@ void AActor::Serialize (FArchive &arc)
 			<< tics
 			<< state
 			<< flags
+			<< flags2
 			<< health
 			<< movedir
 			<< visdir
@@ -127,6 +128,7 @@ void AActor::Serialize (FArchive &arc)
 			>> tics
 			>> state
 			>> flags
+			>> flags2
 			>> health
 			>> movedir
 			>> visdir
@@ -184,7 +186,7 @@ AActor::AActor () :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
     floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0),
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
     health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
     player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
     translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
@@ -194,21 +196,21 @@ AActor::AActor () :
 }
 
 AActor::AActor (const AActor &other) :
-    x(other.x), y(other.y), z(other.z), snext(other.snext), sprev(other.sprev), 
-    angle(other.angle), sprite(other.sprite), frame(other.frame), 
-    pitch(other.pitch), roll(other.roll), effects(other.effects), 
-    bnext(other.bnext), bprev(other.bprev), subsector(other.subsector), 
-    floorz(other.floorz), ceilingz(other.ceilingz), radius(other.radius), 
+    x(other.x), y(other.y), z(other.z), snext(other.snext), sprev(other.sprev),
+    angle(other.angle), sprite(other.sprite), frame(other.frame),
+    pitch(other.pitch), roll(other.roll), effects(other.effects),
+    bnext(other.bnext), bprev(other.bprev), subsector(other.subsector),
+    floorz(other.floorz), ceilingz(other.ceilingz), radius(other.radius),
     height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
-    validcount(other.validcount), type(other.type), info(other.info), 
-    tics(other.tics), state(other.state), flags(other.flags), 
-    health(other.health), movedir(other.movedir), movecount(other.movecount), 
-    visdir(other.visdir), reactiontime(other.reactiontime), 
-    threshold(other.threshold), player(other.player), lastlook(other.lastlook), 
+    validcount(other.validcount), type(other.type), info(other.info),
+    tics(other.tics), state(other.state), flags(other.flags), flags2(other.flags2),
+    health(other.health), movedir(other.movedir), movecount(other.movecount),
+    visdir(other.visdir), reactiontime(other.reactiontime),
+    threshold(other.threshold), player(other.player), lastlook(other.lastlook),
     inext(other.inext), iprev(other.iprev), translation(other.translation),
-    translucency(other.translucency), waterlevel(other.waterlevel), 
-    onground(other.onground), touching_sectorlist(other.touching_sectorlist), 
-    deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex), 
+    translucency(other.translucency), waterlevel(other.waterlevel),
+    onground(other.onground), touching_sectorlist(other.touching_sectorlist),
+    deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
     netid(other.netid), tid(other.tid)
 {
 	self.init(this);
@@ -221,46 +223,47 @@ AActor &AActor::operator= (const AActor &other)
     z = other.z;
     snext = other.snext;
     sprev = other.sprev;
-    angle = other.angle; 
+    angle = other.angle;
     sprite = other.sprite;
-    frame = other.frame; 
-    pitch = other.pitch; 
+    frame = other.frame;
+    pitch = other.pitch;
     roll = other.roll;
     effects = other.effects;
     bnext = other.bnext;
     bprev = other.bprev;
-    subsector = other.subsector; 
+    subsector = other.subsector;
     floorz = other.floorz;
     ceilingz = other.ceilingz;
-    radius = other.radius; 
+    radius = other.radius;
     height = other.height;
     momx = other.momx;
     momy = other.momy;
     momz = other.momz;
     validcount = other.validcount;
     type = other.type;
-    info = other.info; 
+    info = other.info;
     tics = other.tics;
     state = other.state;
-    flags= other.flags; 
+    flags = other.flags;
+    flags2 = other.flags2;
     health = other.health;
     movedir = other.movedir;
-    movecount = other.movecount; 
-    visdir = other.visdir; 
-    reactiontime = other.reactiontime; 
+    movecount = other.movecount;
+    visdir = other.visdir;
+    reactiontime = other.reactiontime;
     threshold = other.threshold;
     player = other.player;
-    lastlook = other.lastlook; 
+    lastlook = other.lastlook;
     inext = other.inext;
     iprev = other.iprev;
     translation = other.translation;
     translucency = other.translucency;
-    waterlevel = other.waterlevel; 
+    waterlevel = other.waterlevel;
     onground = other.onground;
-    touching_sectorlist = other.touching_sectorlist; 
+    touching_sectorlist = other.touching_sectorlist;
     deadtic = other.deadtic;
     oldframe = other.oldframe;
-    rndindex = other.rndindex; 
+    rndindex = other.rndindex;
     netid = other.netid;
     tid = other.tid;
 
@@ -456,7 +459,7 @@ void P_XYMovement (AActor *mo)
 		return; 	// no friction for missiles ever
 	}
 
-	if (mo->z > mo->floorz && !mo->waterlevel && !(mo->player && mo->player->spectator))
+	if (mo->z > mo->floorz && !(mo->flags2 & MF2_FLY) && !mo->waterlevel && !(mo->player && mo->player->spectator))
 		return;		// no friction when airborne (GhostlyDeath 06/04/2008 -- but not when spectating)
 
 	if (mo->flags & MF_CORPSE)
@@ -527,9 +530,7 @@ void P_ZMovement (AActor *mo)
    if (mo->player && mo->z < mo->floorz)
    {
       mo->player->viewheight -= mo->floorz-mo->z;
-
-      mo->player->deltaviewheight
-            = (VIEWHEIGHT - mo->player->viewheight)>>3;
+      mo->player->deltaviewheight = (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
 
     // adjust height
@@ -555,6 +556,11 @@ void P_ZMovement (AActor *mo)
       }
 
    }
+	if (mo->player && (mo->flags2 & MF2_FLY) && (mo->z > mo->floorz))
+	{
+		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
+		mo->momz = FixedMul (mo->momz, FRICTION_FLY);
+	}
 
     // clip movement
    if (mo->z <= mo->floorz)
@@ -977,7 +983,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
     floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0),
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
     health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
     player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
     translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
@@ -998,6 +1004,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	radius = info->radius;
 	height = info->height;
 	flags = info->flags;
+	flags2 = info->flags2;
 	health = info->spawnhealth;
 	translucency = info->translucency;
 	rndindex = M_Random();
@@ -1586,7 +1593,7 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
     th->target = source->ptr();	// where it came from
-    an = R_PointToAngle2 (source->x, source->y, dest_x, dest_y);
+    an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
     // fuzzy player
     if (dest_flags & MF_SHADOW)

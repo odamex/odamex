@@ -15,24 +15,29 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// DESCRIPTION:    
-//	Miscellaneous stuff for gui
-//	AUTHOR:	Russell Rice, John D Corrado
+// DESCRIPTION:
+//  Player list control class
 //
 //-----------------------------------------------------------------------------
 
-#ifndef MISC_H
-#define MISC_H
+#ifndef __LST_PLAYERS_H__
+#define __LST_PLAYERS_H__
 
-#include <wx/process.h>
-#include <wx/tokenzr.h>
+#include "net_packet.h"
 #include "lst_custom.h"
 
-#define BOOLSTR(b) ((b) ? wxT("Yes") : wxT("No"))
+class LstOdaPlayerList : public wxAdvancedListCtrl
+{
+    public:
+        LstOdaPlayerList() { };
+        virtual ~LstOdaPlayerList();
 
-void SetupServerListColumns(wxAdvancedListCtrl *list);
-void SetupPlayerListHeader(wxAdvancedListCtrl *list);
-void AddServerToList(wxAdvancedListCtrl *list, Server &s, wxInt32 index, wxInt8 insert = 1);
-void AddPlayersToList(wxAdvancedListCtrl *list, Server &s);
-void LaunchGame(wxString Address, wxString ODX_Path, wxString waddirs, wxString Password = _T(""));
-#endif
+        void AddPlayersToList(const Server &s);
+        void SetupPlayerListColumns();
+
+    protected:
+        
+        DECLARE_DYNAMIC_CLASS(LstOdaPlayerList)
+};
+
+#endif // __LST_PLAYERS_H__

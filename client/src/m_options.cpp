@@ -922,10 +922,9 @@ void M_OptDrawer (void)
 			{
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
 			}
-
 		}
 	}
-
+/*	[ML] Commented out 1/25/10 - it seems unneccessary and looks messy
 	CanScrollUp = (CurrentMenu->scrollpos != 0);
 	CanScrollDown = (i < CurrentMenu->numitems);
 	VisBottom = i - 1;

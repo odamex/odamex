@@ -24,20 +24,12 @@
 #include "c_cvars.h"
 
 // Server settings
-// -----------------------
+// ---------------
 
 // Game mode
 CVAR (gametype,			"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-// (Teamplay/CTF): Players can injure others on the same team
-CVAR (friendlyfire,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // (Teamplay/CTF): Game ends when team score is reached
 CVAR (scorelimit,		"5", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-// (Teamplay): Teams that are enabled
-CVAR (teamsinplay,		"2", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-// (CTF) Flag settings
-CVAR (ctf_manualreturn,	"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-CVAR (ctf_flagathometoscore,	"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-CVAR (ctf_flagtimeout,	"600", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Cheat code usage is allowed
 CVAR (allowcheats,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Exit switch/teleports are usable
@@ -74,6 +66,13 @@ CVAR (speedhackfix,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR (weaponstay,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Give double ammo regardless of difficulty
 CVAR (doubleammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+// Compatibility options for vanilla
+// ---------------------------------
+
+// Enable/disable inifnitely tall actors
+CVAR (co_realactorheight, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 
 // Misc stuff
 // ----------

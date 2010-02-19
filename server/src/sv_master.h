@@ -42,7 +42,4 @@ void SV_UpdateMasterServers(void);
 void SV_UpdateMaster(void);
 void SV_ArchiveMasters(FILE *fp);
 
-void SV_SendServerInfo ();
-bool SV_IsValidToken(DWORD token);
-
 #endif

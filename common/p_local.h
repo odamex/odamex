@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -64,7 +64,7 @@
 #define WATER_SINK_SMALL_FACTOR	4
 #define WATER_SINK_SPEED		(FRACUNIT/2)
 #define WATER_JUMP_SPEED		(FRACUNIT*7/2)
- 
+
 // follow a player exlusively for 3 seconds
 #define BASETHRESHOLD	100
 
@@ -187,6 +187,8 @@ P_PathTraverse
   int			flags,
   BOOL		(*trav) (intercept_t *));
 
+// [ML] 2/1/10: Break out P_PointToAngle from R_PointToAngle2 (from EE)
+angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y);
 
 //
 // P_MAP
@@ -257,7 +259,7 @@ extern AActor** 		blocklinks; 	// for thing chains
 extern int				maxammo[NUMAMMO];
 extern int				clipammo[NUMAMMO];
 
-void P_TouchSpecialThing (AActor *special, AActor *toucher);
+void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer = false);
 
 void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
 

@@ -61,7 +61,7 @@ void P_ForwardThrust (player_t *player, angle_t angle, fixed_t move)
 {
 	angle >>= ANGLETOFINESHIFT;
 
-	if ((player->mo->waterlevel)
+	if ((player->mo->waterlevel || (player->mo->flags2 & MF2_FLY))
 		&& player->mo->pitch != 0)
 	{
 		angle_t pitch = (angle_t)player->mo->pitch >> ANGLETOFINESHIFT;
@@ -93,6 +93,11 @@ void P_CalcHeight (player_t *player)
 	// Note: don't reduce bobbing here if on ice: if you reduce bobbing here,
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
+	
+	if ((player->mo->flags2 & MF2_FLY) && !player->mo->onground)
+	{
+		player->bob = FRACUNIT / 2;
+	}	
 
 	if (!player->spectator)
 		if (serverside || !predicting)
@@ -217,6 +222,10 @@ void P_MovePlayer (player_t *player)
 		{
 			player->mo->momz = 4*FRACUNIT;
 		}
+		else if (player->mo->flags2 & MF2_FLY)
+		{
+			player->mo->momz = 3*FRACUNIT;
+		}		
 		else if (allowjump && player->mo->onground && !player->mo->momz)
 		{
 			player->mo->momz += 7*FRACUNIT;
@@ -226,12 +235,35 @@ void P_MovePlayer (player_t *player)
 		}
 	}
 
-	if (cmd->ucmd.upmove &&
-		(player->mo->waterlevel >= 2))
-	{
-		player->mo->momz = cmd->ucmd.upmove << 8;
+	if (cmd->ucmd.upmove == -32768)
+	{ // Only land if in the air
+		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
+		{
+			player->mo->flags2 &= ~MF2_FLY;
+			player->mo->flags &= ~MF_NOGRAVITY;
+		}
 	}
-
+	else if (cmd->ucmd.upmove != 0)
+	{
+		if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
+		{
+			player->mo->momz = cmd->ucmd.upmove << 9;
+			if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+			{
+				player->mo->flags2 |= MF2_FLY;
+				player->mo->flags |= MF_NOGRAVITY;
+				if (player->mo->momz <= -39*FRACUNIT)
+				{ // Stop falling scream
+					S_StopSound (player->mo, CHAN_VOICE);
+				}
+			}
+		}
+		else if (cmd->ucmd.upmove > 0)
+		{
+			//P_PlayerUseArtifact (player, arti_fly);
+		}
+	}
+	
 	// Look left/right
 	if(clientside || stepmode)
 	{
@@ -242,7 +274,7 @@ void P_MovePlayer (player_t *player)
 	}
 
 	// GhostlyDeath <Jun, 4 2008> -- Treat spectators as on the ground
-	mo->onground = ((mo->z <= mo->floorz) || (mo->player && mo->player->spectator));
+	mo->onground = (mo->z <= mo->floorz);
 
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
@@ -263,7 +295,7 @@ void P_MovePlayer (player_t *player)
 
 		movefactor = P_GetMoveFactor (mo, &friction);
 		bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
-		if (!mo->onground && !mo->waterlevel)
+		if (!mo->onground && !(mo->flags2 & MF2_FLY) && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
 			movefactor >>= 8;
@@ -272,7 +304,7 @@ void P_MovePlayer (player_t *player)
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
 
-		if(mo->onground)
+		if(mo->onground || (mo->flags2 & MF2_FLY))
 		{
 			if (forwardmove)
 			{
@@ -332,7 +364,7 @@ void P_DeathThink (player_t *player)
 
 	if (player->attacker && player->attacker != player->mo)
 	{
-		angle = R_PointToAngle2 (player->mo->x,
+		angle = P_PointToAngle (player->mo->x,
 								 player->mo->y,
 								 player->attacker->x,
 								 player->attacker->y);
@@ -383,6 +415,11 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags |= MF_NOCLIP;
 	else
 		player->mo->flags &= ~MF_NOCLIP;
+		
+	if (player->cheats & CF_FLY)
+		player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
+	else
+		player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
 
 	// chain saw run forward
 	cmd = &player->cmd;

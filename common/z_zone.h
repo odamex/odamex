@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -37,6 +37,7 @@
 #define PU_MUSIC				3		// static while playing
 #define PU_DAVE 				4		// anything else Dave wants static
 #define PU_FREE                 5       // a free block [ML] 12/4/06: Readded from Chocodoom
+#define PU_DEHACKED				6		// static while processing a patch
 #define PU_LEVEL				50		// static until level exited
 #define PU_LEVSPEC				51		// a special thinker in a level
 // Tags >= 100 are purgable whenever needed.

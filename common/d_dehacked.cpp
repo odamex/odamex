@@ -1043,6 +1043,8 @@ static int PatchThing (int thingy)
 					if (info->flags & 0x60000000)
 						info->translucency = (info->flags & 0x60000000) >> 15;
 				}
+				if (v2changed)
+					info->flags2 = value2;
 			}
 			else DPrintf (unknown_str, Line1, "Thing", thingNum);
 		} else if (!stricmp (Line1, "Height")) {
@@ -1788,6 +1790,193 @@ bool DoDehPatch (const char *patchfile, BOOL autoloading)
 
     return true;
 }
+
+static int DehUseCount;
+/*
+static void UnloadDehSupp ()
+{
+	if (--DehUseCount <= 0)
+	{
+		DehUseCount = 0;
+		Z_FreeTags (PU_DEHACKED, PU_DEHACKED);
+		GStrings.FlushNames ();
+		GStrings.Compact ();
+		G_SetLevelStrings ();
+	}
+}
+
+static bool LoadDehSupp ()
+{
+	int lump = W_CheckNumForName ("DEHSUPP");
+	bool gotnames = false;
+	int i;
+	BYTE *supp;
+
+	if (lump == -1)
+	{
+		return false;
+	}
+
+	if (++DehUseCount > 1)
+	{
+		return true;
+	}
+
+	supp = (BYTE *)W_CacheLumpNum (lump, PU_DEHACKED);
+
+	for (;;)
+	{
+		if (CompareLabel ("NAME", supp))
+		{
+			gotnames = true;
+			NumNames = GetWord (supp + 6);
+			NameBase = (char *)(supp + 8 + NumNames * 2);
+			NameOffs = (WORD *)GetWordSpace (supp + 8, NumNames);
+			supp += GetWord (supp + 4) + 6;
+		}
+		else if (CompareLabel ("HIGH", supp))
+		{
+			NumOrgHeights = GetWord (supp + 4);
+			OrgHeights = supp + 6;
+			supp += NumOrgHeights + 6;
+		}
+		else if (CompareLabel ("ACTF", supp))
+		{
+			NumCodePtrs = GetWord (supp + 4);
+			if ((unsigned)NumCodePtrs > sizeof(CodePtrs)/sizeof(CodePtrs[0]))
+			{
+				Printf ("DEHSUPP defines %d code pointers, but there are only %d\n",
+					NumCodePtrs, sizeof(CodePtrs)/sizeof(CodePtrs[0]));
+				return false;
+			}
+			CodePtrNames = (CodePtrMap *)GetWordSpace (supp + 6, NumCodePtrs*2);
+			supp += 6 + NumCodePtrs * 4;
+		}
+		else if (CompareLabel ("ACTM", supp))
+		{
+			NumActions = GetWord (supp + 4);
+			ActionList = supp + 6;
+			supp += NumActions + 6;
+		}
+		else if (CompareLabel ("CODP", supp))
+		{
+			NumCodeP = GetWord (supp + 4);
+			CodePConv = GetWordSpace (supp + 6, NumCodeP);
+			supp += 6 + NumCodeP * 2;
+		}
+		else if (CompareLabel ("SPRN", supp))
+		{
+			char *sprites;
+
+			NumSprites = GetWord (supp + 4);
+			Z_Malloc (NumSprites*sizeof(char*), PU_DEHACKED, &OrgSprNames);
+			sprites = (char *)Z_Malloc (NumSprites*8, PU_DEHACKED, NULL);
+			for (i = 0; i < NumSprites; i++)
+			{
+				sprites[i*4+0] = supp[6+i*4+0];
+				sprites[i*4+1] = supp[6+i*4+1];
+				sprites[i*4+2] = supp[6+i*4+2];
+				sprites[i*4+3] = supp[6+i*4+3];
+				sprites[i*4+4] = 0;
+				sprites[i*4+5] = 0;
+				sprites[i*4+6] = 0;
+				sprites[i*4+7] = 0;
+				OrgSprNames[i] = sprites + i*4;
+			}
+			supp += 6 + NumSprites * 4;
+		}
+		else if (CompareLabel ("STAT", supp))
+		{
+			if (!gotnames)
+			{
+				Printf ("Names must come before state map\n");
+				return false;
+			}
+			NumStateMaps = GetWord (supp + 4);
+			Z_Malloc (NumStateMaps*sizeof(*StateMap), PU_DEHACKED, &StateMap);
+			for (i = 0; i < NumStateMaps; i++)
+			{
+				const char *name = GetName (GetWord (supp + 6 + i*4));
+				const TypeInfo *type = TypeInfo::FindType (name);
+				if (type == NULL)
+				{
+					Printf ("Can't find type %s\n", name);
+					return false;
+				}
+				else if (type->ActorInfo == NULL)
+				{
+					Printf ("%s has no ActorInfo\n", name);
+					return false;
+				}
+				else
+				{
+					AActor *def = GetDefaultByType (type);
+
+					switch (supp[6 + i*4 + 2])
+					{
+					case FirstState:
+						StateMap[i].State = type->ActorInfo->OwnedStates;
+						break;
+					case SpawnState:
+						StateMap[i].State = def->SpawnState;
+						break;
+					case DeathState:
+						StateMap[i].State = def->DeathState;
+						break;
+					}
+					StateMap[i].StateSpan = supp[6+i*4+3];
+				}
+			}
+			supp += 6 + NumStateMaps * 4;
+		}
+		else if (CompareLabel ("SND ", supp))
+		{
+			NumSounds = GetWord (supp + 4);
+			SoundMap = GetWordSpace (supp + 6, NumSounds);
+			supp += 6 + NumSounds * 2;
+		}
+		else if (CompareLabel ("INFN", supp))
+		{
+			NumInfos = GetWord (supp + 4);
+			InfoNames = GetWordSpace (supp + 6, NumInfos);
+			supp += 6 + NumInfos * 2;
+		}
+		else if (CompareLabel ("TBIT", supp))
+		{
+			NumBitNames = GetWord (supp + 4);
+			Z_Malloc (sizeof(BitName)*NumBitNames, PU_DEHACKED, &BitNames);
+			for (i = 0; i < NumBitNames; i++)
+			{
+				BitNames[i].Name = GetWord (supp + 6 + i*3);
+				BitNames[i].Bit = supp[6+i*3+2] & 0x1f;
+				BitNames[i].WhichFlags = clamp (supp[6+i*3+2] >> 5, 0, 3);
+			}
+			supp += 6 + NumBitNames * 3;
+		}
+		else if (CompareLabel ("REND", supp))
+		{
+			NumStyleNames = GetWord (supp + 4);
+			Z_Malloc (sizeof(StyleName)*NumStyleNames, PU_DEHACKED, &StyleNames);
+			for (i = 0; i < NumStyleNames; i++)
+			{
+				StyleNames[i].Name = GetWord (supp + 6 + i*3);
+				StyleNames[i].Num = supp[6+i*3+2];
+			}
+			supp += 6 + NumStyleNames * 3;
+		}
+		else if (CompareLabel ("END ", supp))
+		{
+			return true;
+		}
+		else
+		{
+			Printf ("Unknown block %c%c%c%c in DEHSUPP\n",
+				supp[0], supp[1], supp[2], supp[3]);
+			return false;
+		}
+	}
+}
+*/
 
 VERSION_CONTROL (d_dehacked_cpp, "$Id$")
 

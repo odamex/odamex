@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -71,7 +71,7 @@ void DDoor::Serialize (FArchive &arc)
 void DDoor::RunThink ()
 {
 	EResult res;
-		
+
 	switch (m_Direction)
 	{
 	case 0:
@@ -84,18 +84,18 @@ void DDoor::RunThink ()
 				m_Direction = -1; // time to go back down
 				DoorSound (false);
 				break;
-				
+
 			case doorCloseWaitOpen:
 				m_Direction = 1;
 				DoorSound (true);
 				break;
-				
+
 			default:
 				break;
 			}
 		}
 		break;
-		
+
 	case 2:
 		//	INITIAL WAIT
 		if (!--m_TopCountdown)
@@ -107,13 +107,13 @@ void DDoor::RunThink ()
 				m_Type = doorRaise;
 				DoorSound (true);
 				break;
-				
+
 			default:
 				break;
 			}
 		}
 		break;
-		
+
 	case -1:
 		// DOWN
 		res = MoveCeiling (m_Speed, m_Sector->floorheight, false, m_Direction);
@@ -127,12 +127,12 @@ void DDoor::RunThink ()
 				m_Sector->ceilingdata = NULL;	//jff 2/22/98
 				Destroy ();						// unlink and free
 				break;
-				
+
 			case doorCloseWaitOpen:
 				m_Direction = 0;
 				m_TopCountdown = m_TopWait;
 				break;
-				
+
 			default:
 				break;
 			}
@@ -143,7 +143,7 @@ void DDoor::RunThink ()
 			{
 			case doorClose:				// DO NOT GO BACK UP!
 				break;
-				
+
 			default:
 				m_Direction = 1;
 				DoorSound (true);
@@ -151,11 +151,11 @@ void DDoor::RunThink ()
 			}
 		}
 		break;
-		
+
 	case 1:
 		// UP
 		res = MoveCeiling (m_Speed, m_TopHeight, false, m_Direction);
-		
+
 		if (res == pastdest)
 		{
 			//S_StopSound (m_Sector->soundorg);
@@ -165,13 +165,13 @@ void DDoor::RunThink ()
 				m_Direction = 0; // wait at top
 				m_TopCountdown = m_TopWait;
 				break;
-				
+
 			case doorCloseWaitOpen:
 			case doorOpen:
 				m_Sector->ceilingdata = NULL;	//jff 2/22/98
 				Destroy ();						// unlink and free
 				break;
-				
+
 			default:
 				break;
 			}
@@ -199,7 +199,7 @@ void DDoor::DoorSound (bool raise) const
 		else
 			snd = "doors/dr1_clos";
 	}
-	
+
 	S_Sound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
 }
 
@@ -285,7 +285,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 				{
 					door->m_Direction = 1;	// go back up
 				}
-				else if (line->flags & ML_SPECIAL_USE)
+				else if (GET_SPAC(line->flags) != SPAC_PUSH)
 					// [RH] activate push doors don't go back down when you
 					//		run into them (otherwise opening them would be
 					//		a real pain).
@@ -315,7 +315,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 			if (new DDoor (sec, type, speed, delay))
 				rtn = true;
 		}
-				
+
 	}
 	return rtn;
 }

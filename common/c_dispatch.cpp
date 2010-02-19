@@ -159,10 +159,8 @@ void C_DoCommand (const char *cmd)
 		if (check != -1)
 			Actions[check] = 0;
 
-		if (check == ACTION_MLOOK && lookspring)
-		{
+		if ((check == ACTION_LOOKDOWN || check == ACTION_LOOKUP) && lookspring)
 			AddCommandString ("centerview");
-		}
 	}
 
 	// Check if this is a normal command

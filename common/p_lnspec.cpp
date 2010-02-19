@@ -310,7 +310,7 @@ FUNC(LS_Generic_Stairs)
 	BOOL res = EV_BuildStairs (ln->args[0], type, ln,
 							   ln->args[2] * FRACUNIT, SPEED(ln->args[1]), 0, ln->args[4], ln->args[3] & 2, 0);
 
-	if (res && ln && (ln->flags & ML_SPECIAL_REPEAT) && ln->special == Generic_Stairs)
+	if (res && ln && (ln->flags & ML_REPEAT_SPECIAL) && ln->special == Generic_Stairs)
 		// Toggle direction of next activation of repeatable stairs
 		ln->args[3] ^= 1;
 

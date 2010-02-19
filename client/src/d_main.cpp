@@ -1327,7 +1327,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	wadfiles.clear();
 
 	std::string custwad;
-	if(!wadnames.empty())
+	if(wadnames.size() && W_IsIWAD(wadnames[0]))
 		custwad = wadnames[0];
 
 	D_AddDefWads(custwad);
@@ -1538,7 +1538,7 @@ void D_DoomMain (void)
 
 	Printf_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
 	if(gamestate != GS_CONNECTING)
-		Printf(PRINT_HIGH, "Type connect <internet address> or use the Odamex Launcher to connect to a game.\n");
+		Printf(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
     Printf(PRINT_HIGH, "\n");
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!

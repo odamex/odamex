@@ -43,6 +43,8 @@
 #include "g_game.h"
 #include "p_local.h"
 #include "sv_main.h"
+#include "sv_sqp.h"
+#include "sv_sqpold.h"
 #include "sv_master.h"
 #include "i_system.h"
 #include "c_console.h"
@@ -82,6 +84,7 @@ std::vector<BanEntry_t> BanList;		// People who are banned
 std::vector<BanEntry_t> WhiteList;		// people who are [accidently] banned but can get inside
 
 // General server settings
+EXTERN_CVAR(motd)
 EXTERN_CVAR(hostname)
 EXTERN_CVAR(email)
 EXTERN_CVAR(website)
@@ -1918,6 +1921,10 @@ void SV_ConnectClient (void)
 	int challenge = MSG_ReadLong();
 	client_t  *cl;
 
+    // New querying system
+    if (SV_QryParseEnquiry(challenge) == 0)
+        return;
+    
 	if (challenge == LAUNCHER_CHALLENGE)  // for Launcher
 	{
 		SV_SendServerInfo ();
@@ -2072,6 +2079,8 @@ void SV_ConnectClient (void)
 		MSG_WriteMarker(&cl.reliablebuf, svc_connectclient);
 		MSG_WriteByte(&cl.reliablebuf, players[n].id);
 	}
+	
+	SV_MidPrint((char *)motd.cstring(),(player_t *) &players[n]);
 }
 
 extern BOOL singleplayerjustdied;
@@ -3094,8 +3103,6 @@ void SV_GetPlayerCmd(player_t &player)
 
 void SV_UpdateConsolePlayer(player_t &player)
 {
-	size_t j;
-
 	// GhostlyDeath -- Spectators are on their own really
 	if (player.spectator)
 		return;
@@ -3128,33 +3135,6 @@ void SV_UpdateConsolePlayer(player_t &player)
 //	MSG_WriteShort (&cl->netbuf, mo->momx >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momy >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momz >> FRACBITS);
-
-	// GhostlyDeath <July 16, 2008> -- Update player weapons and stuff after a bit
-	if ((gametic % 70) == 0)	// send this less often
-	{
-		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
-
-		for(j = 0; j < NUMWEAPONS; j++)
-			MSG_WriteByte (&cl->reliablebuf, player.weaponowned[j]);
-
-		for(j = 0; j < NUMAMMO; j++)
-		{
-			MSG_WriteShort (&cl->reliablebuf, player.maxammo[j]);
-			MSG_WriteShort (&cl->reliablebuf, player.ammo[j]);
-		}
-
-		MSG_WriteByte (&cl->reliablebuf, player.health);
-		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
-		MSG_WriteByte (&cl->reliablebuf, player.armortype);
-
-		// GhostlyDeath <July 17, 2008> -- What weapon do we send to the client?
-		if (player.pendingweapon == wp_nochange)
-			MSG_WriteByte (&cl->reliablebuf, player.readyweapon | 64);
-		else
-			MSG_WriteByte(&cl->reliablebuf, player.pendingweapon);
-
-		MSG_WriteByte (&cl->reliablebuf, player.backpack);
-	}
 }
 
 //
@@ -3763,6 +3743,17 @@ void SV_SetMoveableSectors()
 		|| (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DMover))))
 			sec->moveable = true;
 	}
+}
+
+void SV_TouchSpecial(AActor *special, player_t *player)
+{
+    client_t *cl = &player->client;
+    
+    if (cl == NULL || special == NULL)
+        return;
+        
+    MSG_WriteMarker(&cl->reliablebuf, svc_touchspecial);
+    MSG_WriteShort(&cl->reliablebuf, special->netid);
 }
 
 //

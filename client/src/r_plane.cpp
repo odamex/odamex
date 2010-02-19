@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -194,7 +194,7 @@ R_MapPlane
 	{
 		// Determine lighting based on the span's distance from the viewer.
 		index = distance >> LIGHTZSHIFT;
-		
+
 		if (index >= MAXLIGHTZ)
 			index = MAXLIGHTZ-1;
 
@@ -220,7 +220,7 @@ R_MapPlane
 void R_ClearPlanes (void)
 {
 	int i;
-	
+
 	// opening / clipping determination
 	for (i = 0; i < viewwidth ; i++)
 	{
@@ -270,9 +270,16 @@ visplane_t *R_FindPlane (fixed_t height, int picnum, int lightlevel,
 	visplane_t *check;
 	unsigned hash;						// killough
 
-	if (picnum == skyflatnum || picnum & PL_SKYFLAT)	// killough 10/98
-		height = lightlevel = 0;		// most skies map together
-		
+	if (picnum == skyflatnum || picnum & PL_SKYFLAT) {	// killough 10/98
+		lightlevel = 0;		// most skies map together
+
+		// haleyjd 05/06/08: but not all. If height > viewz, set height to
+		// 1 instead of 0, to keep ceilings mapping with ceilings, and floors
+		// mapping with floors.
+		if(height > viewz)
+			height = 1;
+	}
+
 	// New visplane algorithm uses hash table -- killough
 	hash = visplane_hash (picnum, lightlevel, height);
 
@@ -302,9 +309,9 @@ visplane_t *R_FindPlane (fixed_t height, int picnum, int lightlevel,
 	check->colormap = basecolormap;		// [RH] Save colormap
 	check->minx = viewwidth;			// Was SCREENWIDTH -- killough 11/98
 	check->maxx = -1;
-	
+
 	memset (check->top, 0xff, sizeof(*check->top) * screen->width);
-				
+
 	return check;
 }
 
@@ -322,7 +329,7 @@ R_CheckPlane
     int		unionl;
     int		unionh;
     int		x;
-	
+
 	if (start < pl->minx)
 	{
 		intrl = pl->minx;
@@ -333,7 +340,7 @@ R_CheckPlane
 		unionl = pl->minx;
 		intrl = start;
 	}
-		
+
 	if (stop > pl->maxx)
 	{
 		intrh = pl->maxx;
@@ -420,7 +427,7 @@ static void _skycolumn (void (*drawfunc)(void), int x)
 	{
 		int angle = ((((viewangle + xtoviewangle[x])^skyflip)>>skyshift) + frontpos)>>16;
 
-		dc_texturefrac = dc_texturemid + (dc_yl - centery) * dc_iscale;
+		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
 		dc_source = R_GetColumn (skytex, angle);
 		drawfunc ();
 	}
@@ -541,11 +548,11 @@ void R_DrawPlanes (void)
 		{
 			if (pl->minx > pl->maxx)
 				continue;
-	
+
 			// sky flat
 			if (pl->picnum == skyflatnum || pl->picnum & PL_SKYFLAT)
 			{
-				
+
 				if (pl->picnum == skyflatnum)
 				{	// use sky1 [ML] 5/11/06 - Use it always!
 					skytex = skytexture;
@@ -553,7 +560,7 @@ void R_DrawPlanes (void)
 				}
 				else
 				{
-				
+
 					// MBF's linedef-controlled skies
 					// Sky Linedef
 					short picnum = (pl->picnum & ~PL_SKYFLAT)-1;

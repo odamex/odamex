@@ -49,6 +49,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 static void C_TabComplete (void);
 static BOOL TabbedLast;		// Last key pressed was tab
@@ -64,11 +65,12 @@ extern int		gametic;
 extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
 
-int			ConRows, ConCols, PhysRows;
+unsigned int	ConRows, ConCols, PhysRows;
 char		*Lines, *Last = NULL;
 BOOL		vidactive = false, gotconback = false;
 BOOL		cursoron = false;
-int			SkipRows, ConBottom, ConScroll, RowAdjust;
+int			SkipRows, ConBottom;
+unsigned int	RowAdjust;
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
 char		VersionString[8];
@@ -80,6 +82,7 @@ BOOL		KeysCtrl;
 
 static bool midprinting;
 
+#define CONSOLEBUFFER 512
 
 #define SCROLLUP 1
 #define SCROLLDN 2
@@ -130,7 +133,6 @@ static void setmsgcolor (int index, const char *color);
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
 
-
 cvar_t msglevel ("msg", "0", CVAR_ARCHIVE);
 
 CVAR_FUNC_IMPL (msg0color)
@@ -172,31 +174,36 @@ CVAR_FUNC_IMPL (msgmidcolor)
 // conscrlock 2 = Nothing brings scroll to the bottom.
 EXTERN_CVAR (conscrlock)
 
-static void maybedrawnow (void)
+//
+// C_Close
+//
+void C_Close()
 {
-/*	if (vidactive &&
-		((gameaction != ga_nothing && ConsoleState == c_down)
-		|| gamestate == GS_STARTUP))
+	if(altconback)
 	{
-		static size_t lastprinttime = 0;
-		size_t nowtime = I_GetTime();
-
-		if (nowtime - lastprinttime > 1)
-		{
-			I_BeginUpdate ();
-			C_DrawConsole ();
-			I_FinishUpdate ();
-			lastprinttime = nowtime;
-		}
-	}*/
+		I_FreeScreen(altconback);
+		altconback = NULL;
+	}
+	if(conback)
+	{
+		I_FreeScreen(conback);
+		conback = NULL;
+	}
 }
 
+//
+// C_InitConsole
+//
 void C_InitConsole (int width, int height, BOOL ingame)
 {
 	int row;
 	char *zap;
 	char *old;
 	int cols, rows;
+
+	bool firstTime = true;
+	if(firstTime)
+		atterm (C_Close);
 
 	if ( (vidactive = ingame) )
 	{
@@ -224,6 +231,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 
 			bg = W_CachePatch (num);
 
+			delete conback;
 			if (isRaw)
 				conback = I_AllocateScreen (320, 200, 8);
 			else
@@ -238,8 +246,11 @@ void C_InitConsole (int width, int height, BOOL ingame)
 
 			if (stylize)
 			{
-				byte *fadetable = (byte *)W_CacheLumpName ("COLORMAP", PU_CACHE), f, *v, *i;
 				int x, y;
+				byte f = 0, *v = NULL, *i = NULL;
+				byte *fadetable;
+
+				fadetable = (byte *)W_CacheLumpName ("COLORMAP", PU_CACHE);
 
 				for (y = 0; y < conback->height; y++)
 				{
@@ -265,6 +276,10 @@ void C_InitConsole (int width, int height, BOOL ingame)
 								v = fadetable + (30 - x) * 256;
 							else if (x > 312)
 								v = fadetable + (x - 289) * 256;
+
+							if (v == NULL)
+                                I_FatalError("COuld not stylize the console\n");
+
 							*i = v[*i];
 							i++;
 						}
@@ -285,22 +300,21 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	}
 
 	cols = ConCols;
-	rows = ConRows;
+	rows = CONSOLEBUFFER;
 
 	ConCols = width / 8 - 2;
 	PhysRows = height / 8;
-	ConRows = PhysRows * 10;
 
 	old = Lines;
-	Lines = (char *)Malloc (ConRows * (ConCols + 2) + 1);
+	Lines = (char *)Malloc (CONSOLEBUFFER * (ConCols + 2) + 1);
 
-	for (row = 0, zap = Lines; row < ConRows; row++, zap += ConCols + 2)
+	for (row = 0, zap = Lines; row < CONSOLEBUFFER; row++, zap += ConCols + 2)
 	{
 		zap[0] = 0;
 		zap[1] = 0;
 	}
 
-	Last = Lines + (ConRows - 1) * (ConCols + 2);
+	Last = Lines + (CONSOLEBUFFER - 1) * (ConCols + 2);
 
 	if (old)
 	{
@@ -421,8 +435,8 @@ void C_AddNotifyString (int printlevel, const char *source)
 int PrintString (int printlevel, const char *outline)
 {
 	const char *cp, *newcp;
-	static int xp = 0;
-	int newxp;
+	static unsigned int xp = 0;
+	unsigned int newxp;
 	int mask;
 	BOOL scroll;
 
@@ -470,7 +484,7 @@ int PrintString (int printlevel, const char *outline)
 				{
 					Last[0] = 1;
 				}
-				memmove (Lines, Lines + (ConCols + 2), (ConCols + 2) * (ConRows - 1));
+				memmove (Lines, Lines + (ConCols + 2), (ConCols + 2) * (CONSOLEBUFFER - 1));
 				Last[0] = 0;
 				Last[1] = 0;
 				newxp = 0;
@@ -527,8 +541,6 @@ int PrintString (int printlevel, const char *outline)
 
 	printxormask = 0;
 
-	maybedrawnow ();
-
 	return strlen (outline);
 }
 
@@ -566,6 +578,18 @@ int VPrintf (int printlevel, const char *format, va_list parms)
 			LOG << outlinelog;
 			LOG.flush();
 		}
+
+		// Up the row buffer for the console.
+		// This is incremented here so that any time we
+		// print something we know about it.  This feels pretty hacky!
+
+		// We need to know if there were any new lines being printed
+		// in our string.
+
+		int newLineCount = std::count(outline, outline + strlen(outline),'\n');
+
+		if (ConRows < CONSOLEBUFFER)
+			ConRows+=(newLineCount > 1 ? newLineCount+1 : 1);
 	}
 
 	return PrintString (printlevel, outline);
@@ -650,7 +674,8 @@ void C_Ticker (void)
 		switch (ScrollState)
 		{
 			case SCROLLUP:
-				RowAdjust++;
+				if (RowAdjust < ConRows - SkipRows - ConBottom/8)
+					RowAdjust++;
 				break;
 
 			case SCROLLDN:
@@ -707,9 +732,9 @@ void C_Ticker (void)
 			}
 		}
 
-		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > ConRows)
+		if (SkipRows + RowAdjust + (ConBottom/8) + 1 > CONSOLEBUFFER)
 		{
-			RowAdjust = ConRows - SkipRows - ConBottom;
+			RowAdjust = CONSOLEBUFFER - SkipRows - ConBottom;
 		}
 	}
 
@@ -763,13 +788,11 @@ void C_InitTicker (const char *label, unsigned int max)
 	TickerMax = max;
 	TickerLabel = label;
 	TickerAt = 0;
-	maybedrawnow ();
 }
 
 void C_SetTicker (unsigned int at)
 {
 	TickerAt = at > TickerMax ? TickerMax : at;
-	maybedrawnow ();
 }
 
 void C_DrawConsole (void)
@@ -885,7 +908,7 @@ void C_DrawConsole (void)
 
 				// Indicate that the view has been scrolled up (10)
 				// and if we can scroll no further (12)
-				c = (SkipRows + RowAdjust + ConBottom/8 != ConRows) ? 10 : 12;
+				c = (SkipRows + RowAdjust + ConBottom/8 < ConRows) ? 10 : 12;
 				screen->PrintStr (0, ConBottom - 28, &c, 1);
 			}
 		}
@@ -969,7 +992,7 @@ void C_ServerDisconnectEffect(void)
 }
 
 
-static void makestartposgood (void)
+static void C_StartPosReset (void)
 {
 	int n;
 	int pos = CmdLine[259];
@@ -1004,12 +1027,15 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		C_TabComplete ();
 		break;
 	case KEY_PGUP:
-		if (KeysShifted)
-			// Move to top of console buffer
-			RowAdjust = ConRows - SkipRows - ConBottom/8;
-		else
-			// Start scrolling console buffer up
-			ScrollState = SCROLLUP;
+		if (ConRows > ConBottom/8)
+		{
+			if (KeysShifted)
+				// Move to top of console buffer
+				RowAdjust = ConRows - SkipRows - ConBottom/8;
+			else
+				// Start scrolling console buffer up
+				ScrollState = SCROLLUP;
+		}
 		break;
 	case KEY_PGDN:
 		if (KeysShifted)
@@ -1028,7 +1054,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		// Move cursor to end of line
 
 		buffer[1] = buffer[0];
-		makestartposgood ();
+		C_StartPosReset ();
 		break;
 	case KEY_LEFTARROW:
 		if(KeysCtrl)
@@ -1047,7 +1073,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 				buffer[1]--;
 			}
 		}
-		makestartposgood ();
+		C_StartPosReset ();
 		break;
 	case KEY_RIGHTARROW:
 		if(KeysCtrl)
@@ -1063,7 +1089,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 				buffer[1]++;
 			}
 		}
-		makestartposgood ();
+		C_StartPosReset ();
 		break;
 	case KEY_BACKSPACE:
 		// Erase character to left of cursor
@@ -1082,7 +1108,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			buffer[1]--;
 			if (buffer[len+4])
 				buffer[len+4]--;
-			makestartposgood ();
+			C_StartPosReset ();
 		}
 
 		TabbedLast = false;
@@ -1101,7 +1127,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 				*(c - 1) = *c;
 
 			buffer[0]--;
-			makestartposgood ();
+			C_StartPosReset ();
 		}
 
 		TabbedLast = false;
@@ -1133,7 +1159,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			strcpy ((char *)&buffer[2], HistPos->String);
 			buffer[0] = buffer[1] = strlen ((char *)&buffer[2]);
 			buffer[len+4] = 0;
-			makestartposgood();
+			C_StartPosReset ();
 		}
 
 		TabbedLast = false;
@@ -1154,7 +1180,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			buffer[0] = buffer[1] = 0;
 		}
 		buffer[len+4] = 0;
-		makestartposgood();
+		C_StartPosReset ();
 		TabbedLast = false;
 		break;
 	case KEY_MOUSE3:
@@ -1187,7 +1213,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 					}
 					buffer[0]++;
 					buffer[1]++;
-					makestartposgood ();
+					C_StartPosReset ();
 					HistPos = NULL;
 				}
 				TabbedLast = false;
@@ -1307,7 +1333,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 						}
 						buffer[0]++;
 						buffer[1]++;
-						makestartposgood ();
+						C_StartPosReset ();
 						HistPos = NULL;
 					}
 					TabbedLast = false;
@@ -1339,7 +1365,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 				}
 				buffer[0]++;
 				buffer[1]++;
-				makestartposgood ();
+				C_StartPosReset ();
 				HistPos = NULL;
 			}
 			TabbedLast = false;
@@ -1439,7 +1465,7 @@ BEGIN_COMMAND (clear)
 
 	RowAdjust = 0;
 	C_FlushDisplay ();
-	for (i = 0; i < ConRows; i++, row += ConCols + 2)
+	for (i = 0; i < CONSOLEBUFFER; i++, row += ConCols + 2)
 		row[1] = 0;
 }
 END_COMMAND (clear)
@@ -1615,14 +1641,7 @@ static void C_TabComplete (void)
 	CmdLine[0] = CmdLine[1] = strlen ((char *)(CmdLine + 2)) + 1;
 	CmdLine[CmdLine[0] + 1] = ' ';
 
-	makestartposgood ();
+	C_StartPosReset ();
 }
 
-
-
-
-
 VERSION_CONTROL (c_console_cpp, "$Id$")
-
-
-

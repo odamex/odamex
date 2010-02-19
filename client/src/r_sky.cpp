@@ -53,8 +53,10 @@ fixed_t		skyiscale;
 int			skyshift;					//		[ML] 5/11/06 - remove sky2 remenants
 fixed_t		skypos=0,		skyspeed=0;
 
-
-EXTERN_CVAR (r_stretchsky)
+CVAR_FUNC_IMPL(r_stretchsky)
+{
+	R_InitSkyMap ();
+}
 
 char SKYFLATNAME[8] = "F_SKY1";
 
@@ -73,17 +75,16 @@ void R_InitSkyMap ()
 {
 	if (textureheight == NULL)
 		return;
+		
+	skytexturemid = 100*FRACUNIT;
+	skystretch = 0;
 
 	if (textureheight[skytexture] <= (128 << FRACBITS))
 	{
-                skytexturemid = 100*FRACUNIT;
-                skystretch = (r_stretchsky && sv_freelook && cl_mouselook);
+		//skystretch = (r_stretchsky && sv_freelook && cl_mouselook);
+		skystretch = r_stretchsky;
 	}
-	else
-	{
-		skytexturemid = 100*FRACUNIT;
-		skystretch = 0;
-	}
+
 	skyheight = textureheight[skytexture] << skystretch;
 
 	if (viewwidth && viewheight)
@@ -97,7 +98,7 @@ void R_InitSkyMap ()
 
 	// The sky map is 256*128*4 maps.
 	skyshift = 22+skystretch-16;
-	if (texturewidthmask[skytexture] >= 256*2-1)
+	if (texturewidthmask[skytexture] >= 127)
 		skyshift -= skystretch;
 }
 
