@@ -3229,7 +3229,6 @@ void SV_Spectate (player_t &player)
 						MSG_WriteByte (&(players[j].client.reliablebuf), false);
 					}
 					P_KillMobj(NULL, player.mo, NULL, true);
-					player.mo->player = NULL;
 					player.playerstate = PST_REBORN;
 					if (gametype != GM_TEAMDM && gametype != GM_CTF)
 						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname);

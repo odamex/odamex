@@ -1069,8 +1069,9 @@ P_UseSpecialLine
 		}
 		else
 		{
-			// spectators can't use switches
-			if(thing->player->spectator)
+			// spectators and dead players can't use switches
+			if(thing->player->spectator ||
+                           thing->player->playerstate != PST_LIVE)
 				return false;
 		}
 	}
