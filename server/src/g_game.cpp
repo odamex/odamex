@@ -731,9 +731,6 @@ void G_TeamSpawnPlayer (player_t &player) // [Toke - CTF - starts] Modified this
 	if (player.userinfo.team == TEAM_RED)  // [Toke - CTF - starts]
 		selections = redteam_p - redteamstarts;
 
-	if (player.userinfo.team == TEAM_GOLD)  // [Toke - CTF - starts]
-		selections = goldteam_p - goldteamstarts;
-
 	// denis - fall back to deathmatch spawnpoints, if no team ones available
 	if (selections < 1)
 	{

@@ -1361,14 +1361,6 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 				I_Error ("No red team starts");
 		}
 
-		if (player.userinfo.team == TEAM_GOLD)  // [Toke - CTF - starts]
-		{
-			selections = goldteam_p - goldteamstarts;
-
-			if (selections < 1)
-				I_Error ("No gold team starts");
-		}
-
 		if (selections < 1)
 			I_Error ("No team starts");
 

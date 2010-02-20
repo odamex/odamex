@@ -1192,7 +1192,6 @@ typedef enum
 
 	S_BSOK,	// Blue Flag
 	S_RSOK,	// Red Flag
-	S_GSOK,	// Gold Flag // Remove me in 0.5
 
 	// -----[ BLUE Flag Animation ]-------
 	S_BFLG,
@@ -1214,23 +1213,11 @@ typedef enum
 	S_RFLG7,
 	S_RFLG8,
 
-	// -----[ GOLD Flag Animation ]-------
-	S_GFLG,
-	S_GFLG2,
-	S_GFLG3,
-	S_GFLG4,
-	S_GFLG5,
-	S_GFLG6,
-	S_GFLG7,
-	S_GFLG8,
-
 	// -----------------------------------
 	S_BDWN,	// Blue Flag
 	S_RDWN,	// Red Flag
-	S_GDWN,	// Gold Flag
 	S_BCAR,	// Blue Flag
 	S_RCAR,	// Red Flag
-	S_GCAR,	// Gold Flag
 	// -----------------------------------
 
 	NUMSTATES

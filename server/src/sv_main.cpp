@@ -1139,7 +1139,6 @@ void SV_CheckTeam (player_t &player)
 	{
 		case TEAM_BLUE:
 		case TEAM_RED:
-		case TEAM_GOLD:
 
 		if(gametype == GM_CTF && player.userinfo.team < 2)
 			break;
@@ -1160,9 +1159,6 @@ void SV_CheckTeam (player_t &player)
 			break;
 		case TEAM_RED:
 			player.userinfo.color = (0x00FF0000);
-			break;
-		case TEAM_GOLD:
-			player.userinfo.color = (0x00FFFF00);
 			break;
 		default:
 			break;
@@ -3168,10 +3164,6 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 
 		case TEAM_RED:
 			player.userinfo.skin = R_FindSkin ("RedTeam");
-			break;
-
-		case TEAM_GOLD:
-			player.userinfo.skin = R_FindSkin ("GoldTeam");
 			break;
 
 		default:

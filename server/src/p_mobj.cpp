@@ -1319,21 +1319,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	// [Toke - CTF - starts] CTF starts - count Gold team start positions
-	if (mthing->type == 5082 && sv_teamspawns)
-	{
-		if (goldteam_p == &goldteamstarts[MaxGoldTeamStarts])
-		{
-			int offset = MaxGoldTeamStarts;
-			MaxGoldTeamStarts *= 2;
-			goldteamstarts = (mapthing2_t *)Realloc (goldteamstarts, MaxGoldTeamStarts * sizeof(mapthing2_t));
-			goldteam_p = &goldteamstarts[offset];
-		}
-		memcpy (goldteam_p, mthing, sizeof(*mthing));
-		goldteam_p++;
-		return;
-	}
-
 	// check for players specially
 	if ((mthing->type <= 4 && mthing->type > 0)
 		|| (mthing->type >= 4001 && mthing->type <= 4001 + MAXPLAYERSTARTS - 4))

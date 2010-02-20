@@ -198,10 +198,6 @@ extern	mapthing2_t		*redteamstarts;
 extern	size_t			MaxRedTeamStarts;
 extern	mapthing2_t*	redteam_p;
 
-		// Gold team starts
-extern	mapthing2_t		*goldteamstarts;
-extern	size_t				MaxGoldTeamStarts;
-extern	mapthing2_t*	goldteam_p;
 // ----------------------------------------------
 
 // Intermission stats.

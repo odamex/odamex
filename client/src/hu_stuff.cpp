@@ -363,7 +363,6 @@ void HU_DrawTargetNames(void)
 				{
 					case TEAM_BLUE: ProposedColor = CR_BLUE; break;
 					case TEAM_RED: ProposedColor = CR_RED; break;
-					case TEAM_GOLD: ProposedColor = CR_GOLD; break;
 					default: ProposedColor = CR_GREY; break;
 				}
 			}
@@ -1394,13 +1393,6 @@ void HU_TeamScores2 (player_t *player)
 				   rlocy + 30,
 				   176);
 
-	// Gold Bar
-//	screen->Clear (glocx + 8,
-//				   glocy + 24,
-//				   glocx + 235,
-//				   glocx + 30,
-//				   231);
-
 	// Scoreboard Identify
 	// Dan - Tells which current game mode is being played
     if (gametype == GM_CTF)
@@ -1446,19 +1438,6 @@ void HU_TeamScores2 (player_t *player)
         screen->DrawText	  (CR_GREY	,rlocx + 163	,rlocy + 32	,"DEATH"				);
 	}
 	screen->DrawText	  (CR_GREY	,rlocx + 208	,rlocy + 32	,"PING"				);
-
-
-	// GOLD
-/*	screen->DrawText	  (CR_GREY	,glocx + 8		,glocy + 16	,"SCORE:"			);
-
-	screen->DrawText	  (CR_GREY	,glocx + 115	,glocy + 0	,"TOTAL FRAGS:"		);
-	screen->DrawText	  (CR_GREY	,glocx + 111	,glocy + 8	,"AVERAGE PING:"	);
-	screen->DrawText	  (CR_GREY	,glocx + 100	,glocy + 16	,"AVERAGE FRAGS:"	);
-
-	screen->DrawText	  (CR_GREY	,glocx + 8		,glocy + 32	,"NAME"				);	if (ctfmode)
-	screen->DrawText	  (CR_GREY	,glocx + 126	,glocy + 32	,"POINT"			);
-	screen->DrawText	  (CR_GREY	,glocx + 169	,glocy + 32	,"FRAG"				);
-	screen->DrawText	  (CR_GREY	,glocx + 208	,glocy + 32	,"PING"				);*/
 
 
 	// Blue team score

@@ -710,13 +710,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 
 	  case SPR_BFLG: // [Toke - CTF] Blue flag
 	  case SPR_RFLG: // [Toke - CTF] Red flag
-	  case SPR_GFLG: // [Toke - CTF] Gold flag // Remove me in 0.5
 	  case SPR_BDWN:
 	  case SPR_RDWN:
-	  case SPR_GDWN: // Remove me in 0.5
 	  case SPR_BSOK:
 	  case SPR_RSOK:
-	  case SPR_GSOK: // Remove me in 0.5
 		return;
 
 	  default:
