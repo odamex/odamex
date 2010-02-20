@@ -1170,8 +1170,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	if(!p->ingame())
 		return;
 
-	bool spectator = p->spectator;
-
 	if (p->playerstate == PST_REBORN)
 		G_PlayerReborn (*p);
 
@@ -1185,9 +1183,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->pitch = mobj->roll = 0;
 	mobj->player = p;
 	mobj->health = p->health;
-
-	if (spectator)
-		mobj->translucency = 0;
 
 	// [RH] Set player sprite based on skin
 	if(p->userinfo.skin >= numskins)
@@ -1206,9 +1201,15 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->viewheight = VIEWHEIGHT;
 	p->attacker = AActor::AActorPtr();
 
-	p->spectator = spectator;
-
 	consoleplayer().camera = displayplayer().mo;
+	
+	// Set up some special spectator stuff
+	if (p->spectator)
+	{
+		mobj->translucency = 0;
+		p->mo->flags |= MF_SPECTATOR;
+		p->mo->flags2 &= MF2_FLY;
+	}
 
 	// [RH] Allow chasecam for demo watching
 	if ((demoplayback || demonew) && chasedemo)
@@ -1216,9 +1217,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	// setup gun psprite
 	P_SetupPsprites (p);
-
-	if (p->spectator)
-		p->mo->flags |= MF_SPECTATOR;
 
 	// give all cards in death match mode
 	if (gametype != GM_COOP)

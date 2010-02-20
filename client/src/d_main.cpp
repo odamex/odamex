@@ -1524,9 +1524,6 @@ void D_DoomMain (void)
 			{
 				// single player warp (like in g_level)
 				serverside = true;
-				//allowexit = "1";
-				//nomonsters = "0";
-				//gametype = GM_COOP;
 
 				players.clear();
 				players.push_back(player_t());

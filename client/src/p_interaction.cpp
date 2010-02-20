@@ -808,7 +808,10 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 
 	// GhostlyDeath -- Joinkill is only set on players, so we should be safe!
 	if (joinkill)
+	{
 		target->flags |= MF_SPECTATOR;
+		target->flags2 |= MF2_FLY;
+	}
 
 	if (target->type != MT_SKULL)
 		target->flags &= ~MF_NOGRAVITY;
