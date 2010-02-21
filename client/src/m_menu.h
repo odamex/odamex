@@ -89,6 +89,8 @@ typedef enum {
 	screenres,
 	bitflag,
 	listelement,
+	joyactive,
+	joyaxis,
 	nochoice
 } itemtype;
 

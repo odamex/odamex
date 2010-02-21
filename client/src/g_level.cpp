@@ -74,7 +74,7 @@ BOOL savegamerestore;
 
 extern int mousex, mousey;
 
-extern int joyxmove, joyymove, Impulse;
+extern int joyforward, joystrafe, joyturn, joylook, Impulse;
 extern BOOL sendpause, sendsave, sendcenterview;
 
 level_locals_t level;			// info about current level
@@ -610,7 +610,7 @@ void G_DoLoadLevel (int position)
 	for (i = 0; i < NUM_ACTIONS; i++)
 		if (i != ACTION_MLOOK && i != ACTION_KLOOK)
 			Actions[i] = 0;
-	joyxmove = joyymove = 0;
+	joyforward = joystrafe = joyturn = joylook = 0;
 	mousex = mousey = 0;
 	sendpause = sendsave = paused = sendcenterview = false;
 

@@ -53,6 +53,8 @@
 #include "i_xbox.h"
 #endif
 
+#define JOY_DEADZONE 2000
+
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
@@ -64,6 +66,11 @@ static BOOL nomouse = false;
 // Used by the console for making keys repeat
 int KeyRepeatDelay;
 int KeyRepeatRate;
+
+EXTERN_CVAR (use_joystick)
+EXTERN_CVAR (joy_active)
+
+static SDL_Joystick *openedjoy = NULL;
 
 // denis - from chocolate doom
 //
@@ -209,6 +216,118 @@ static int AccelerateMouse(int val)
     }
 }
 
+// This turns on automatic event polling for joysticks so that the state
+// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
+//
+// EnableJoystickPolling
+//
+static int EnableJoystickPolling()
+{
+	return SDL_JoystickEventState(SDL_ENABLE);
+}
+
+static int DisableJoystickPolling()
+{
+	return SDL_JoystickEventState(SDL_IGNORE);
+}
+
+CVAR_FUNC_IMPL (use_joystick)
+{
+	if(var <= 0.0)
+	{
+		I_CloseJoystick();
+		DisableJoystickPolling();
+	}
+	else
+	{
+		I_OpenJoystick();
+		EnableJoystickPolling();
+	}
+}
+
+
+CVAR_FUNC_IMPL (joy_active)
+{
+	if( (var < 0) || (var > I_GetJoystickCount()) )
+		var = 0.0;
+
+	I_CloseJoystick();
+
+	I_OpenJoystick();
+}
+
+//
+// I_GetJoystickCount
+//
+int I_GetJoystickCount()
+{
+	return SDL_NumJoysticks();
+}
+
+//
+// I_GetJoystickNameFromIndex
+//
+std::string I_GetJoystickNameFromIndex (int index)
+{
+	const char  *joyname = NULL;
+	std::string  ret;
+
+	joyname = SDL_JoystickName(index);
+
+	if(!joyname)
+		return "";
+	
+	ret = joyname;
+
+	return ret;
+}
+
+//
+// I_OpenJoystick
+//
+bool I_OpenJoystick()
+{
+	int numjoy;
+
+	numjoy = I_GetJoystickCount();
+
+	if(!numjoy)
+		return false;
+
+	if(joy_active > numjoy)
+		joy_active.Set(0.0);
+
+	if(!SDL_JoystickOpened(joy_active))
+		openedjoy = SDL_JoystickOpen(joy_active);
+
+	if(!SDL_JoystickOpened(joy_active))
+		return false;
+
+	return true;
+}
+
+//
+// I_CloseJoystick
+//
+void I_CloseJoystick()
+{
+	extern int joyforward, joystrafe, joyturn, joylook;
+	int        ndx;
+
+	if(!I_GetJoystickCount() || !openedjoy)
+		return;
+
+	ndx = SDL_JoystickIndex(openedjoy);
+
+	if(SDL_JoystickOpened(ndx))
+		SDL_JoystickClose(openedjoy);
+
+	openedjoy = NULL;
+
+	// Reset joy position values. Wouldn't want to get stuck in a turn or something. -- Hyper_Eye
+	joyforward = joystrafe = joyturn = joylook = 0;
+}
+
 //
 // I_InitInput
 //
@@ -225,6 +344,16 @@ bool I_InitInput (void)
 	
 	// denis - disable key repeats as they mess with the mouse in XP
 	SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
+
+	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
+	Printf(PRINT_HIGH, "I_InitInput: Initializing SDL's joystick subsystem.\n");
+	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+
+	if((int)use_joystick && I_GetJoystickCount())
+	{
+		I_OpenJoystick();
+		EnableJoystickPolling();
+	}
 
 #ifdef WIN32
 	// denis - in fullscreen, prevent exit on accidental windows key press
@@ -335,7 +464,7 @@ void I_GetEvent (void)
             event.type = ev_keydown;
             event.data1 = ev.key.keysym.sym;
 #ifdef _XBOX
-			xbox_TranslateSdlKbdEvent(ev);
+            xbox_TranslateSdlKbdEvent(ev);
 #endif
             if(event.data1 >= SDLK_KP0 && event.data1 <= SDLK_KP9)
                event.data2 = event.data3 = '0' + (event.data1 - SDLK_KP0);
@@ -363,7 +492,7 @@ void I_GetEvent (void)
             event.type = ev_keyup;
             event.data1 = ev.key.keysym.sym;
 #ifdef _XBOX
-			xbox_TranslateSdlKbdEvent(ev);
+            xbox_TranslateSdlKbdEvent(ev);
 #endif
             if ( (ev.key.keysym.unicode & 0xFF80) == 0 ) 
                event.data2 = event.data3 = ev.key.keysym.unicode;
@@ -418,7 +547,7 @@ void I_GetEvent (void)
 		D_PostEvent(&event);
 		break; 
 		
-		case SDL_MOUSEBUTTONUP:
+	case SDL_MOUSEBUTTONUP:
             if(nomouse || !havefocus)
 				break;
             event.type = ev_keyup;
@@ -441,6 +570,29 @@ void I_GetEvent (void)
                event.data1 = KEY_MWHEELUP;
             else if(ev.button.button == SDL_BUTTON_WHEELDOWN)
                event.data1 = KEY_MWHEELDOWN;
+
+		D_PostEvent(&event);
+		break;
+	case SDL_JOYBUTTONDOWN:
+            	event.type = ev_keydown;
+		event.data1 = ev.jbutton.button + KEY_JOY1;
+
+		D_PostEvent(&event);
+		break;
+	case SDL_JOYBUTTONUP:
+            	event.type = ev_keyup;
+		event.data1 = ev.jbutton.button + KEY_JOY1;
+
+		D_PostEvent(&event);
+		break;
+	case SDL_JOYAXISMOTION:
+		event.type = ev_joystick;
+		event.data1 = 0;
+		event.data2 = ev.jaxis.axis;
+		if( (ev.jaxis.value < JOY_DEADZONE) && (ev.jaxis.value > -JOY_DEADZONE) )
+			event.data3 = 0;
+		else
+			event.data3 = ev.jaxis.value;
 
 		D_PostEvent(&event);
 		break;

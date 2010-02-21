@@ -1681,8 +1681,17 @@ bool M_Responder (event_t* ev)
 
 	// eat mouse events
 	if(menuactive)
+	{
 		if(ev->type == ev_mouse)
 			return true;
+		else if(ev->type == ev_joystick)
+		{
+			if(OptionsActive)
+				M_OptResponder (ev);
+			// Eat joystick events for now -- Hyper_Eye
+			return true;
+		}
+	}
 
 	if (ev->type == ev_keydown)
 	{

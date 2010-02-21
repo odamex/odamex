@@ -29,6 +29,7 @@
 
 #include "doomdef.h"
 #include "dstrings.h"
+#include "minilzo.h"
 
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -38,6 +39,7 @@
 
 #include "i_system.h"
 #include "i_video.h"
+#include "i_input.h"
 #include "z_zone.h"
 #include "v_video.h"
 #include "v_text.h"
@@ -103,6 +105,18 @@ EXTERN_CVAR (displaymouse)
 EXTERN_CVAR (mouse_acceleration)
 EXTERN_CVAR (mouse_threshold)
 
+// Joystick menu -- Hyper_Eye
+void JoystickSetup (void);
+EXTERN_CVAR (use_joystick)
+EXTERN_CVAR (joy_active)
+EXTERN_CVAR (joy_forwardaxis)
+EXTERN_CVAR (joy_strafeaxis)
+EXTERN_CVAR (joy_turnaxis)
+EXTERN_CVAR (joy_lookaxis)
+EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_invert)
+EXTERN_CVAR (joy_freelook)
+
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
 void M_StartControlPanel(void);
@@ -135,8 +149,11 @@ value_t OffOn[2] = {
 menu_t  *CurrentMenu;
 int		CurrentItem;
 static BOOL	WaitingForKey;
-static const char	   *OldMessage;
-static itemtype OldType;
+static BOOL	WaitingForAxis;
+static const char	   *OldContMessage;
+static itemtype OldContType;
+static const char	   *OldAxisMessage;
+static itemtype OldAxisType;
 
 /*=======================================
  *
@@ -160,6 +177,7 @@ static menuitem_t OptionItems[] =
 	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
 	{ more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
 	{ more,		"Mouse Setup" ,			{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
+	{ more,		"Joystick Setup" ,		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
 	{ more,		"Go to console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
 	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
 	{ more,		"Set video mode",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SetVidMode} },
@@ -226,9 +244,36 @@ menu_t MouseMenu = {
     MouseItems,
 };
 
+/*=======================================
+ *
+ * Joystick Menu
+ *
+ *=======================================*/
 
+static menuitem_t JoystickItems[] =
+{
+	{ discrete	,	"Use Joystick"							, {&use_joystick},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ joyactive	,	"Active Joystick"						, {&joy_active},		{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ whitetext	,	"Press ENTER to change"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
+	{ joyaxis	,	"Walk Analog Axis"						, {&joy_forwardaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ joyaxis	,	"Strafe Analog Axis"					, {&joy_strafeaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ joyaxis	,	"Turn Analog Axis"						, {&joy_turnaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ joyaxis	,	"Look Analog Axis"						, {&joy_lookaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
+};
 
-
+menu_t JoystickMenu = {
+    "M_MOUSET", // Temporarily use the same graphic as the mouse. -- Hyper_Eye
+    0,
+    STACKARRAY_LENGTH(JoystickItems),
+    177,
+    JoystickItems,
+};
 
 /*=======================================
  *
@@ -734,7 +779,41 @@ void M_OptDrawer (void)
 	{
 		item = CurrentMenu->items + i;
 
-		if (item->type != screenres)
+		if (item->type == screenres)
+		{
+			const char *str = NULL;
+
+			for (x = 0; x < 3; x++)
+			{
+				switch (x)
+				{
+				case 0:
+					str = item->b.res1;
+					break;
+				case 1:
+					str = item->c.res2;
+					break;
+				case 2:
+					str = item->d.res3;
+					break;
+				}
+				if (str)
+				{
+					if (x == item->e.highlight)
+						color = CR_GREY;
+					else
+						color = CR_RED;
+
+					screen->DrawTextCleanMove (color, 104 * x + 20, y, str);
+				}
+			}
+
+			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey)) || WaitingForAxis || testingmode))
+			{
+				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
+			}
+		}
+		else
 		{
 			width = V_StringWidth (item->label);
 			switch (item->type)
@@ -832,47 +911,41 @@ void M_OptDrawer (void)
 			}
 			break;
 
+			case joyactive:
+			{
+				char        str[32];
+				int         numjoy;
+				std::string joyname;
+
+				numjoy = I_GetJoystickCount();
+
+				if(!numjoy)
+					strcpy(str, "No device detected");
+
+				if((int)item->a.cvar->value() > numjoy)
+					item->a.cvar->Set(0.0);
+
+				joyname = I_GetJoystickNameFromIndex((int)item->a.cvar->value());
+
+				snprintf(str, 32, "[%d] %s", (int)item->a.cvar->value(), joyname.c_str());
+
+				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, str);
+			}
+			break;
+
+			case joyaxis:
+			{
+				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, item->a.cvar->cstring());
+			}
+			break;
+
 			default:
 				break;
 			}
 
-			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey))
+			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
-			}
-		}
-		else
-		{
-			const char *str = NULL;
-
-			for (x = 0; x < 3; x++)
-			{
-				switch (x)
-				{
-				case 0:
-					str = item->b.res1;
-					break;
-				case 1:
-					str = item->c.res2;
-					break;
-				case 2:
-					str = item->d.res3;
-					break;
-				}
-				if (str)
-				{
-					if (x == item->e.highlight)
-						color = CR_GREY;
-					else
-						color = CR_RED;
-
-					screen->DrawTextCleanMove (color, 104 * x + 20, y, str);
-				}
-			}
-
-			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey)) || testingmode))
-			{
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
 			}
 		}
 	}
@@ -897,6 +970,7 @@ void M_OptResponder (event_t *ev)
 
 	item = CurrentMenu->items + CurrentItem;
 
+	// Waiting on a key press for control binding
 	if (WaitingForKey)
 	{
 		if (ch != KEY_ESCAPE)
@@ -905,8 +979,38 @@ void M_OptResponder (event_t *ev)
 			M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 		}
 		WaitingForKey = false;
-		CurrentMenu->items[0].label = OldMessage;
-		CurrentMenu->items[0].type = OldType;
+		CurrentMenu->items[0].label = OldContMessage;
+		CurrentMenu->items[0].type = OldContType;
+		return;
+	}
+
+	// Waiting on an analog axis motion for setting analog control
+	if (WaitingForAxis)
+	{
+		if(ev->type == ev_keydown)
+		{
+			if(ch == KEY_ESCAPE)
+			{
+				WaitingForAxis = false;
+				CurrentMenu->items[8].label = OldAxisMessage;
+				CurrentMenu->items[8].type = OldAxisType;
+			}
+		}
+		else if (ev->type == ev_joystick)
+		{
+			if(ev->data1 == 0) // Analog Motion
+			{
+				// Require the control to be activated to at least the half-way point
+				// to make sure we get the one that is intended -- Hyper_Eye
+				if( (ev->data3 > (SHRT_MAX / 2)) || (ev->data3 < (SHRT_MIN / 2)) )
+				{
+					item->a.cvar->Set(ev->data2);
+					WaitingForAxis = false;
+					CurrentMenu->items[8].label = OldAxisMessage;
+					CurrentMenu->items[8].type = OldAxisType;
+				}
+			}
+		}
 		return;
 	}
 
@@ -1046,6 +1150,24 @@ void M_OptResponder (event_t *ev)
 					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
 					break;
 
+				case joyactive:
+					{
+						char        str[32];
+						int         numjoy;
+						std::string joyname;
+
+						numjoy = I_GetJoystickCount();
+
+						if(!numjoy)
+							strcpy(str, "No device detected");
+						else if((int)item->a.cvar->value() > numjoy)
+							item->a.cvar->Set(0.0);
+						else if((int)item->a.cvar->value() > 0)
+							item->a.cvar->Set(item->a.cvar->value() - 1);
+					}
+					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+
 				default:
 					break;
 			}
@@ -1116,6 +1238,25 @@ void M_OptResponder (event_t *ev)
 					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
 					break;
 
+				case joyactive:
+					{
+						char        str[32];
+						int         numjoy;
+						std::string joyname;
+
+						numjoy = I_GetJoystickCount();
+
+						if(!numjoy)
+							strcpy(str, "No device detected");
+						else if((int)item->a.cvar->value() >= numjoy)
+							item->a.cvar->Set(0.0);
+						else if((int)item->a.cvar->value() < (numjoy - 1))
+							item->a.cvar->Set(item->a.cvar->value() + 1);
+
+					}
+					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					break;
+
 				default:
 					break;
 			}
@@ -1172,8 +1313,8 @@ void M_OptResponder (event_t *ev)
 			else if (item->type == control)
 			{
 				WaitingForKey = true;
-				OldMessage = CurrentMenu->items[0].label;
-				OldType = CurrentMenu->items[0].type;
+				OldContMessage = CurrentMenu->items[0].label;
+				OldContType = CurrentMenu->items[0].type;
 				CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
 				CurrentMenu->items[0].type = redtext;
 			}
@@ -1182,6 +1323,14 @@ void M_OptResponder (event_t *ev)
 				CurrentMenu->lastOn = CurrentItem;
 				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.lfunc (CurrentItem);
+			}
+			else if (item->type == joyaxis)
+			{
+				WaitingForAxis = true;
+				OldAxisMessage = CurrentMenu->items[8].label;
+				OldAxisType = CurrentMenu->items[8].type;
+				CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
+				CurrentMenu->items[8].type = redtext;
 			}
 			else if (item->type == screenres)
 			{
@@ -1260,6 +1409,11 @@ void ResetCustomColors (void)
 void MouseSetup (void) // [Toke] for mouse menu
 {
 	M_SwitchMenu (&MouseMenu);
+}
+
+void JoystickSetup (void)
+{
+	M_SwitchMenu (&JoystickMenu);
 }
 
 static void CustomizeControls (void)
@@ -1456,7 +1610,6 @@ BEGIN_COMMAND (menu_video)
 	SetVidMode ();
 }
 END_COMMAND (menu_video)
-
 
 VERSION_CONTROL (m_options_cpp, "$Id$")
 
