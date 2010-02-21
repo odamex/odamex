@@ -248,7 +248,7 @@ CVAR_FUNC_IMPL (use_joystick)
 
 CVAR_FUNC_IMPL (joy_active)
 {
-	if( (var < 0) || (var > I_GetJoystickCount()) )
+	if( (var < 0.0) || ((int)var > I_GetJoystickCount()) )
 		var = 0.0;
 
 	I_CloseJoystick();

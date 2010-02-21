@@ -913,23 +913,24 @@ void M_OptDrawer (void)
 
 			case joyactive:
 			{
-				char        str[32];
 				int         numjoy;
 				std::string joyname;
 
 				numjoy = I_GetJoystickCount();
 
-				if(!numjoy)
-					strcpy(str, "No device detected");
-
 				if((int)item->a.cvar->value() > numjoy)
 					item->a.cvar->Set(0.0);
 
-				joyname = I_GetJoystickNameFromIndex((int)item->a.cvar->value());
+				if(!numjoy)
+					joyname = "No device detected";
+				else
+				{
+					joyname = "[";
+					joyname += item->a.cvar->cstring();
+					joyname += "] " + I_GetJoystickNameFromIndex((int)item->a.cvar->value());
+				}
 
-				snprintf(str, 32, "[%d] %s", (int)item->a.cvar->value(), joyname.c_str());
-
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, str);
+				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
 			}
 			break;
 
@@ -1152,15 +1153,11 @@ void M_OptResponder (event_t *ev)
 
 				case joyactive:
 					{
-						char        str[32];
 						int         numjoy;
-						std::string joyname;
 
 						numjoy = I_GetJoystickCount();
 
-						if(!numjoy)
-							strcpy(str, "No device detected");
-						else if((int)item->a.cvar->value() > numjoy)
+						if((int)item->a.cvar->value() > numjoy)
 							item->a.cvar->Set(0.0);
 						else if((int)item->a.cvar->value() > 0)
 							item->a.cvar->Set(item->a.cvar->value() - 1);
@@ -1240,15 +1237,11 @@ void M_OptResponder (event_t *ev)
 
 				case joyactive:
 					{
-						char        str[32];
 						int         numjoy;
-						std::string joyname;
 
 						numjoy = I_GetJoystickCount();
 
-						if(!numjoy)
-							strcpy(str, "No device detected");
-						else if((int)item->a.cvar->value() >= numjoy)
+						if((int)item->a.cvar->value() >= numjoy)
 							item->a.cvar->Set(0.0);
 						else if((int)item->a.cvar->value() < (numjoy - 1))
 							item->a.cvar->Set(item->a.cvar->value() + 1);
