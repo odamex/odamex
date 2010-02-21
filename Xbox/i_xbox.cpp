@@ -234,6 +234,9 @@ void xbox_TranslateSdlKbdEvent(SDL_Event &ev)
 				case SDLK_RIGHTBRACKET:
 					ev.key.keysym.unicode = '}';
 					break;
+				case SDLK_BACKSLASH:
+					ev.key.keysym.unicode = '|';
+					break;
 				case SDLK_SEMICOLON:
 					ev.key.keysym.unicode = SDLK_COLON;
 					break;

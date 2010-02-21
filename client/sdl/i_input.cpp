@@ -291,10 +291,10 @@ bool I_OpenJoystick()
 
 	numjoy = I_GetJoystickCount();
 
-	if(!numjoy)
+	if(!numjoy || !use_joystick)
 		return false;
 
-	if(joy_active > numjoy)
+	if((int)joy_active > numjoy)
 		joy_active.Set(0.0);
 
 	if(!SDL_JoystickOpened(joy_active))
@@ -314,6 +314,7 @@ void I_CloseJoystick()
 	extern int joyforward, joystrafe, joyturn, joylook;
 	int        ndx;
 
+#ifndef _XBOX
 	if(!I_GetJoystickCount() || !openedjoy)
 		return;
 
@@ -323,6 +324,7 @@ void I_CloseJoystick()
 		SDL_JoystickClose(openedjoy);
 
 	openedjoy = NULL;
+#endif
 
 	// Reset joy position values. Wouldn't want to get stuck in a turn or something. -- Hyper_Eye
 	joyforward = joystrafe = joyturn = joylook = 0;
@@ -574,28 +576,37 @@ void I_GetEvent (void)
 		D_PostEvent(&event);
 		break;
 	case SDL_JOYBUTTONDOWN:
-            	event.type = ev_keydown;
-		event.data1 = ev.jbutton.button + KEY_JOY1;
+		if(ev.jbutton.which == joy_active)
+		{
+			event.type = ev_keydown;
+			event.data1 = ev.jbutton.button + KEY_JOY1;
 
-		D_PostEvent(&event);
-		break;
+			D_PostEvent(&event);
+			break;
+		}
 	case SDL_JOYBUTTONUP:
-            	event.type = ev_keyup;
-		event.data1 = ev.jbutton.button + KEY_JOY1;
+		if(ev.jbutton.which == joy_active)
+		{
+			event.type = ev_keyup;
+			event.data1 = ev.jbutton.button + KEY_JOY1;
 
-		D_PostEvent(&event);
-		break;
+			D_PostEvent(&event);
+			break;
+		}
 	case SDL_JOYAXISMOTION:
-		event.type = ev_joystick;
-		event.data1 = 0;
-		event.data2 = ev.jaxis.axis;
-		if( (ev.jaxis.value < JOY_DEADZONE) && (ev.jaxis.value > -JOY_DEADZONE) )
-			event.data3 = 0;
-		else
-			event.data3 = ev.jaxis.value;
+		if(ev.jbutton.which == joy_active)
+		{
+			event.type = ev_joystick;
+			event.data1 = 0;
+			event.data2 = ev.jaxis.axis;
+			if( (ev.jaxis.value < JOY_DEADZONE) && (ev.jaxis.value > -JOY_DEADZONE) )
+				event.data3 = 0;
+			else
+				event.data3 = ev.jaxis.value;
 
-		D_PostEvent(&event);
-		break;
+			D_PostEvent(&event);
+			break;
+		}
       };
    }
 
