@@ -53,7 +53,7 @@
 #include "i_xbox.h"
 #endif
 
-#define JOY_DEADZONE 2000
+#define JOY_DEADZONE 6000
 
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
