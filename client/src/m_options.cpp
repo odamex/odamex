@@ -925,9 +925,8 @@ void M_OptDrawer (void)
 					joyname = "No device detected";
 				else
 				{
-					joyname = "[";
-					joyname += item->a.cvar->cstring();
-					joyname += "] " + I_GetJoystickNameFromIndex((int)item->a.cvar->value());
+					joyname = item->a.cvar->cstring();
+					joyname += ": " + I_GetJoystickNameFromIndex((int)item->a.cvar->value());
 				}
 
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
@@ -1005,6 +1004,19 @@ void M_OptResponder (event_t *ev)
 				// to make sure we get the one that is intended -- Hyper_Eye
 				if( (ev->data3 > (SHRT_MAX / 2)) || (ev->data3 < (SHRT_MIN / 2)) )
 				{
+					if( (ev->data2 == (int)joy_forwardaxis) && 
+							strcmp(joy_forwardaxis.name(), item->a.cvar->name()) )
+						joy_forwardaxis.Set(item->a.cvar->value());
+					else if( (ev->data2 == (int)joy_strafeaxis) && 
+							strcmp(joy_strafeaxis.name(), item->a.cvar->name()) )
+						joy_strafeaxis.Set(item->a.cvar->value());
+					else if( (ev->data2 == (int)joy_turnaxis) && 
+							strcmp(joy_turnaxis.name(), item->a.cvar->name()) )
+						joy_turnaxis.Set(item->a.cvar->value());
+					else if( (ev->data2 == (int)joy_lookaxis) && 
+							strcmp(joy_lookaxis.name(), item->a.cvar->name()) )
+						joy_lookaxis.Set(item->a.cvar->value());
+
 					item->a.cvar->Set(ev->data2);
 					WaitingForAxis = false;
 					CurrentMenu->items[8].label = OldAxisMessage;
