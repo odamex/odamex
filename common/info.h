@@ -187,16 +187,12 @@ typedef enum
 	//	[Toke - CTF]
 	SPR_BSOK,
 	SPR_RSOK,
-	SPR_GSOK, // Remove me in 0.5
 	SPR_BFLG,
 	SPR_RFLG,
-	SPR_GFLG, // Remove me in 0.5
 	SPR_BDWN,
 	SPR_RDWN,
-	SPR_GDWN, // Remove me in 0.5
 	SPR_BCAR,
 	SPR_RCAR,
-	SPR_GCAR, // Remove me in 0.5
 
 	NUMSPRITES
 
@@ -1429,16 +1425,12 @@ typedef enum {
 	//	[Toke - CTF]
 	MT_BSOK,
 	MT_RSOK,
-	MT_GSOK, // Remove me in 0.5
 	MT_BFLG,
 	MT_RFLG,
-	MT_GFLG, // Remove me in 0.5
 	MT_BDWN,
 	MT_RDWN,
-	MT_GDWN, // Remove me in 0.5
 	MT_BCAR,
 	MT_RCAR,
-	MT_GCAR, // Remove me in 0.5
 	// -----------------------------------
 
 	NUMMOBJTYPES

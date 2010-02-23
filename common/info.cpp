@@ -47,7 +47,7 @@ const char *sprnames[NUMSPRITES+1] = {
 	"GIB1","GIB2","GIB3","GIB4","GIB5","GIB6","GIB7","UNKN",
 
 	//	[Toke - CTF]
-	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","GDWN","BCAR","RCAR",
+	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR",
 	0
 };
 
