@@ -27,6 +27,11 @@
 #include "d_event.h"
 #include "c_cvars.h"
 
+// Some defines...
+#define LINEHEIGHT	16
+#define SKULLXOFF	-32
+#define NUM_MENU_ITEMS(m)	(sizeof(m)/sizeof(m[0]))
+
 //
 // MENUS
 //
@@ -135,6 +140,8 @@ typedef struct menu_s {
 	int				numitems;
 	int				indent;
 	menuitem_t	   *items;
+	int				scrolltop;
+	int				scrollpos;	
 } menu_t;
 
 typedef struct value_s {
@@ -193,6 +200,3 @@ extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
 #endif
-
-
-

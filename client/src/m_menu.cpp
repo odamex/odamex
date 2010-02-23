@@ -88,9 +88,6 @@ char				saveOldString[SAVESTRINGSIZE];
 
 bool 				menuactive;
 
-#define SKULLXOFF	-32
-#define LINEHEIGHT	16
-
 extern bool st_firsttime;
 
 extern bool			sendpause;

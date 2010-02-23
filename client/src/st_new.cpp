@@ -48,19 +48,14 @@ static const patch_t	*flagiconbcur;
 static const patch_t	*flagiconrcur;
 static const patch_t	*flagiconbhome;
 static const patch_t	*flagiconrhome;
-static const patch_t	*flagiconghome;
 static const patch_t	*flagiconbtakenbyb;
 static const patch_t	*flagiconbtakenbyr;
-static const patch_t	*flagiconbtakenbyg;
 static const patch_t	*flagiconrtakenbyb;
 static const patch_t	*flagiconrtakenbyr;
-static const patch_t	*flagiconrtakenbyg;
 static const patch_t	*flagicongtakenbyb;
 static const patch_t	*flagicongtakenbyr;
-static const patch_t	*flagicongtakenbyg;
 static const patch_t	*flagiconbdropped;
 static const patch_t	*flagiconrdropped;
-static const patch_t	*flagicongdropped;
 static const char		ammopatches[4][8] = { "CLIPA0", "SHELA0", "CELLA0", "ROCKA0" };
 static int		NameUp = -1;
 
@@ -139,8 +134,6 @@ void ST_initNew (void)
 	flagiconbtakenbyr = W_CachePatch ("FLAGI3BR", PU_STATIC);
 	flagiconrtakenbyb = W_CachePatch ("FLAGI3RB", PU_STATIC);
 	flagiconrtakenbyr = W_CachePatch ("FLAGI3RR", PU_STATIC);
-	flagicongtakenbyb = W_CachePatch ("FLAGI3GB", PU_STATIC);
-	flagicongtakenbyr = W_CachePatch ("FLAGI3GR", PU_STATIC);
 	flagiconbdropped = W_CachePatch ("FLAGIC4B", PU_STATIC);
 	flagiconrdropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
 
