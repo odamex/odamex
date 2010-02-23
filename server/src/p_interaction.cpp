@@ -724,10 +724,6 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		case SPR_RSOK:
 			SV_SocketTouch(*player, it_redflag);
 			return;
-		case SPR_GFLG: // Remove me in 0.5
-		case SPR_GDWN: // Remove me in 0.5
-		case SPR_GSOK: // Remove me in 0.5
-			return; // Remove me in 0.5
 	  default:
 		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
 	}
