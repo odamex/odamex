@@ -45,14 +45,12 @@ int TEAMpoints[NUMFLAGS];
 static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 {
 	{MT_BFLG, MT_BDWN, MT_BCAR},
-	{MT_RFLG, MT_RDWN, MT_RCAR},
-	{MT_GFLG, MT_GDWN, MT_GCAR}
+	{MT_RFLG, MT_RDWN, MT_RCAR}
 };
 
 char *team_names[NUMTEAMS + 2] =
 {
-	"BLUE", "RED", "GOLD",
-	"", ""
+	"BLUE", "RED", "", ""
 };
 
 static int ctf_points[NUM_CTF_SCORE] =
@@ -446,22 +444,6 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
             }
 		}
 		break;
-		
-        case TEAM_GOLD:
-        {
-            if (gametype != GM_CTF && teamsinplay < 3)
-                break;
-            
-            for (size_t j = 0; j < MaxGoldTeamStarts; ++j)
-            {
-                size_t i = M_Random () % selections;
-                if (G_CheckSpot (player, &goldteamstarts[i]) )
-                {
-                    return &goldteamstarts[i];
-                }
-            }
-        }
-        break;
         
         default:
         {
@@ -479,9 +461,6 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
 		else 
 		if (teamsinplay >= 2 && MaxRedTeamStarts)
 			return &redteamstarts[0];
-		else
-		if (teamsinplay >= 3 && MaxGoldTeamStarts)
-			return &goldteamstarts[0];
 	}
 
 	return NULL;

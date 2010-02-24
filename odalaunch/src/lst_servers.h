@@ -37,6 +37,8 @@ class LstOdaServerList : public wxAdvancedListCtrl
 
     protected:
         
+        void ClearItemCells(long item);
+        
         DECLARE_DYNAMIC_CLASS(LstOdaServerList)
 };
 

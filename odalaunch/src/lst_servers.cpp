@@ -317,6 +317,28 @@ LstOdaServerList::~LstOdaServerList()
     ConfigInfo.Write(wxT("ServerListWidthAddress"), WidthAddress);
 }
 
+// Clears text and images located in all cells of a particular item
+void LstOdaServerList::ClearItemCells(long item)
+{
+    int ColumnCount;
+    wxListItem ListItem;
+    
+    ListItem.m_itemId = item;
+    ListItem.m_mask = wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE;
+    ListItem.m_text = wxT("");
+    ListItem.m_image = -1;
+    
+    ColumnCount = GetColumnCount();
+    
+    // iterate through each column, resetting everything to 'nothing'
+    for (int i = 0; i < ColumnCount; ++i)
+    {
+        ListItem.m_col = i;
+        
+        SetItem(ListItem);
+    }
+}
+
 /*
     Takes a server structure and adds it to the list control
     if insert is 1, then add an item to the list, otherwise it will
@@ -341,6 +363,12 @@ void LstOdaServerList::AddServerToList(const Server &s,
     }
     else
     {
+        // All cells must be cleared on a "replace" operation, otherwise if the 
+        // server failed to respond a second time 'round, we would end up with 
+        // some stale data (which is highly dependent on the response check 
+        // below)
+        ClearItemCells(index);
+        
         li.m_itemId = index;
     }
        

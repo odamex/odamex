@@ -85,7 +85,6 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
-EXTERN_CVAR (friendlyfire)
 EXTERN_CVAR (weaponstay)
 
 EXTERN_CVAR (cl_name)
@@ -955,24 +954,28 @@ void CL_InitNetwork (void)
     SZ_Clear(&net_buffer);
 
     size_t ParamIndex = Args.CheckParm ("-connect");
-    const char *ipaddress = Args.GetArg(ParamIndex + 1);
-
-    if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
+    
+    if (ParamIndex)
     {
-		NET_StringToAdr (ipaddress, &serveraddr);
+		const char *ipaddress = Args.GetArg(ParamIndex + 1);
 
-        const char *passhash = Args.GetArg(ParamIndex + 2);
+		if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
+		{
+			NET_StringToAdr (ipaddress, &serveraddr);
 
-        if (passhash && passhash[0] != '-' && passhash[0] != '+')
-        {
-            connectpasshash = MD5SUM(passhash);            
-        }
+			const char *passhash = Args.GetArg(ParamIndex + 2);
 
-		if (!serveraddr.port)
-			I_SetPort(serveraddr, SERVERPORT);
+			if (passhash && passhash[0] != '-' && passhash[0] != '+')
+			{
+				connectpasshash = MD5SUM(passhash);            
+			}
 
-		lastconaddr = serveraddr;
-		gamestate = GS_CONNECTING;
+			if (!serveraddr.port)
+				I_SetPort(serveraddr, SERVERPORT);
+
+			lastconaddr = serveraddr;
+			gamestate = GS_CONNECTING;
+		}
     }
 
 	G_SetDefaultTurbo ();
@@ -1246,7 +1249,7 @@ void CL_TouchSpecialThing (void)
 {
 	AActor *mo = CL_FindThingById(MSG_ReadShort());
 
-	if(!consoleplayer || !consoleplayer().mo || !mo)
+	if(!consoleplayer().mo || !mo)
 		return;
 
 	P_TouchSpecialThing (mo, consoleplayer().mo, true);
@@ -1456,6 +1459,7 @@ void CL_UpdateMobjInfo(void)
 {
 	int netid = MSG_ReadShort();
 	int flags = MSG_ReadLong();
+	//int flags2 = MSG_ReadLong();
 
 	AActor *mo = CL_FindThingById(netid);
 
@@ -1463,6 +1467,7 @@ void CL_UpdateMobjInfo(void)
 		return;
 
 	mo->flags = flags;
+	//mo->flags2 = flags2;
 }
 
 

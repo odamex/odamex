@@ -340,6 +340,7 @@ public:
 		// GhostlyDeath -- Initialize EVERYTHING
 		mo = AActor::AActorPtr();
 		id = 0;
+		playerstate = PST_CONTACT;
 		fov = 90.0;
 		viewz = 0 << FRACBITS;
 		viewheight = 0 << FRACBITS;
@@ -359,6 +360,8 @@ public:
 		fragcount = 0;
 		deathcount = 0;
 		killcount = 0;
+		pendingweapon = wp_nochange;
+		readyweapon = wp_nochange;		
 		for (i = 0; i < NUMWEAPONS; i++)
 			weaponowned[i] = false;
 		for (i = 0; i < NUMAMMO; i++)
@@ -368,6 +371,7 @@ public:
 		}
 		attackdown = 0;
 		usedown = 0;
+		cheats = 0;
 		refire = 0;
 		damagecount = 0;
 		bonuscount = 0;
@@ -381,13 +385,8 @@ public:
 		camera = AActor::AActorPtr();
 		air_finished = 0;
 		ping = 0;
-		
-		// GhostlyDeath -- Do what was above incase
-		playerstate = PST_CONTACT;
-		pendingweapon = wp_pistol;
-		readyweapon = wp_pistol;
-		cheats = 0;
 		spectator = false;
+
 		joinafterspectatortime = level.time - TICRATE*5;
 		prefcolor = 0;
 		

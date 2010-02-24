@@ -37,16 +37,14 @@ static int tintglow = 0;
 
 char *team_names[NUMTEAMS + 2] =
 {
-	"BLUE", "RED", "GOLD",
-	"", ""
+	"BLUE", "RED", "", ""
 };
 
 // denis - this is a lot clearer than doubly nested switches
 static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 {
 	{MT_BFLG, MT_BDWN, MT_BCAR},
-	{MT_RFLG, MT_RDWN, MT_RCAR},
-	{MT_GFLG, MT_GDWN, MT_GCAR}
+	{MT_RFLG, MT_RDWN, MT_RCAR}
 };
 
 EXTERN_CVAR		(screenblocks)
@@ -171,7 +169,6 @@ void CTF_TossFlag (void)
 
 	if (CTFdata.BlueScreen)	CTFdata.BlueScreen	= false;
 	if (CTFdata.RedScreen)	CTFdata.RedScreen	= false;
-	if (CTFdata.GoldScreen)	CTFdata.GoldScreen	= false;
 }
 
 BEGIN_COMMAND	(flagtoss)

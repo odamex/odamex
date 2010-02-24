@@ -215,7 +215,7 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 	const msecnode_t *m;
 	const sector_t *sec;
 
-	if (mo->flags2 & MF2_FLY)	// [ML] [demobreak] This check breaks icarus demo2!
+	if (mo->flags2 & MF2_FLY)
 	{
 		friction = FRICTION_FLY;
 	}
@@ -411,9 +411,6 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (thing == tmthing)
 		return true;
 
-	if (thing->flags & MF_SPECTATOR)
-		return true;
-
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)) )
 		return true;	// can't hit thing
 
@@ -427,9 +424,6 @@ BOOL PIT_CheckThing (AActor *thing)
 
     if (tmthing->player && thing->player && sv_unblockplayers)
         return true;
-
-	/*if (!(thing->player && thing->player->spectator))
-		return true;*/
 
 	blockdist = thing->radius + tmthing->radius;
 

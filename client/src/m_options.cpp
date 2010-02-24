@@ -124,7 +124,9 @@ void M_StartControlPanel(void);
 int  M_StringHeight(char *string);
 void M_ClearMenus (void);
 
-
+static bool CanScrollUp;
+static bool CanScrollDown;
+static int VisBottom;
 
 value_t YesNo[2] = {
 	{ 0.0, "No" },
@@ -283,35 +285,51 @@ menu_t JoystickMenu = {
 
 static menuitem_t ControlsItems[] = {
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Attack",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
-	{ control,	"Next Weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },	// Was already here
-	{ control,	"Previous Weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },	// TIJ
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Controls",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
-	{ control,	"Walk forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
-	{ control,	"Backpedal",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
-	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
-	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
-	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
+	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
+	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
 	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
 	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveright"} },
-	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
+	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
+	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
+	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
+	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
+	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+movedown"} },
+	{ control,	"Stop flying",			{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"land"} },
+	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
+	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
 	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
 	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
 	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
-	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
-	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
+	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
+	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Chat",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
+	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Weapons",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
+	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Toggle automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
-	{ control,	"View Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
-	{ control,	"Console",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} }
+	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
+	{ control,	"Coop spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
+	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"screenshot"} },
+	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} }
 };
 
 menu_t ControlsMenu = {
 	"M_CONTRO",
-	1,
+	3,
 	STACKARRAY_LENGTH(ControlsItems),
 	0,
 	ControlsItems,
+	2,
 };
 
 /*=======================================
@@ -455,7 +473,10 @@ static value_t TextColors[] =
 	{ 4.0, "brown" },
 	{ 5.0, "gold" },
 	{ 6.0, "red" },
-	{ 7.0, "blue" }
+	{ 7.0, "blue" },
+	{ 8.0, "orange" },
+	{ 9.0, "yellow" },
+	{ 10.0, "white" }
 };
 
 static value_t MessageLevels[] = {
@@ -699,7 +720,9 @@ void M_SwitchMenu (menu_t *menu)
 	MenuStack[MenuStackDepth].isNewStyle = true;
 	MenuStack[MenuStackDepth].drawSkull = false;
 	MenuStackDepth++;
-
+	
+	CanScrollUp = false;
+	CanScrollDown = false;
 	CurrentMenu = menu;
 	CurrentItem = menu->lastOn;
 
@@ -766,17 +789,23 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 void M_OptDrawer (void)
 {
 	int color;
-	int y, width, i, x;
+	int y, width, i, x, ytop;
 	int valx = 0, valy = 0;
+	int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
 
 	title = W_CachePatch (CurrentMenu->title);
-
 	screen->DrawPatchClean (title, 160-title->width()/2, 10);
 
-	for (i = 0, y = 15 + title->height(); i < CurrentMenu->numitems; i++, y += 8)	// TIJ
+	y = 15 + title->height();
+	ytop = y + CurrentMenu->scrolltop * 8;
+
+	for (i = 0; i < CurrentMenu->numitems && y <= 200 - theight; i++, y += 8)	// TIJ
 	{
+		if (i == CurrentMenu->scrolltop)
+			i += CurrentMenu->scrollpos;
+				
 		item = CurrentMenu->items + i;
 
 		if (item->type == screenres)
@@ -831,6 +860,11 @@ void M_OptDrawer (void)
 			case whitetext:
 				x = 160 - width / 2;
 				color = CR_GREY;
+				break;
+
+			case bricktext:
+				x = 160 - width / 2;
+				color = CR_BRICK;
 				break;
 
 			case listelement:
@@ -949,18 +983,16 @@ void M_OptDrawer (void)
 			}
 		}
 	}
-/*	[ML] Commented out 1/25/10 - it seems unneccessary and looks messy
-	if (CurrentMenu == &MouseMenu) // [Toke] print mouse values to the screen
-	{
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 32,  mouse_sensitivity.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 40, m_pitch.cstring());
-		//screen->DrawTextCleanMove (CR_GREEN, valx + 242, valy + 32, dynresval.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 72, m_side.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 80, m_forward.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 96,  mouse_acceleration.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 104, mouse_threshold.cstring());
-	}
-*/
+	
+	VisBottom = i - 1;
+	CanScrollUp = (CurrentMenu->scrollpos != 0);
+	CanScrollDown = (i < CurrentMenu->numitems);
+
+	if (CanScrollUp)
+		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
+
+	if (CanScrollDown)
+		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, (CleanYfac < 3 ? 190 : 200));
 }
 
 void M_OptResponder (event_t *ev)
@@ -973,7 +1005,7 @@ void M_OptResponder (event_t *ev)
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
 	{
-		if (ch != KEY_ESCAPE)
+		if (ch != KEY_ESCAPE && ev->type == ev_keydown)
 		{
 			C_ChangeBinding (item->e.command, ch);
 			M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
@@ -1057,10 +1089,20 @@ void M_OptResponder (event_t *ev)
 
 				do
 				{
-					if (++CurrentItem == CurrentMenu->numitems)
+					CurrentItem++;
+					if (CanScrollDown && CurrentItem == VisBottom)
+					{
+						CurrentMenu->scrollpos++;
+						VisBottom++;
+					}
+					if (CurrentItem == CurrentMenu->numitems)
+					{
+						CurrentMenu->scrollpos = 0;
 						CurrentItem = 0;
+					}
 				} while (CurrentMenu->items[CurrentItem].type == redtext ||
 						 CurrentMenu->items[CurrentItem].type == whitetext ||
+						 CurrentMenu->items[CurrentItem].type == bricktext ||
 						 (CurrentMenu->items[CurrentItem].type == screenres &&
 						  !CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1087,10 +1129,20 @@ void M_OptResponder (event_t *ev)
 
 				do
 				{
-					if (--CurrentItem < 0)
+					CurrentItem--;
+					if (CanScrollUp &&
+						CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
+					{
+						CurrentMenu->scrollpos--;
+					}
+					if (CurrentItem < 0)
+					{
+						CurrentMenu->scrollpos = MAX (0,CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
 						CurrentItem = CurrentMenu->numitems - 1;
+					}
 				} while (CurrentMenu->items[CurrentItem].type == redtext ||
 						 CurrentMenu->items[CurrentItem].type == whitetext ||
+						 CurrentMenu->items[CurrentItem].type == bricktext ||
 						 (CurrentMenu->items[CurrentItem].type == screenres &&
 						  !CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1100,7 +1152,54 @@ void M_OptResponder (event_t *ev)
 				S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 			break;
+			
+		case KEY_PGUP:
+			{
+				if (CanScrollUp)
+				{
+					CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+					if (CurrentMenu->scrollpos < 0)
+					{
+						CurrentMenu->scrollpos = 0;
+					}
+					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+					while (CurrentMenu->items[CurrentItem].type == redtext ||
+						   CurrentMenu->items[CurrentItem].type == whitetext ||
+						   CurrentMenu->items[CurrentItem].type == bricktext ||
+						   (CurrentMenu->items[CurrentItem].type == screenres &&
+							!CurrentMenu->items[CurrentItem].b.res1))
+					{
+						++CurrentItem;
+					}
+					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				}
+			}
+			break;
 
+		case KEY_PGDN:
+			{
+				if (CanScrollDown)
+				{
+					int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+					CurrentMenu->scrollpos += pagesize;
+					if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+					{
+						CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+					}
+					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+					while (CurrentMenu->items[CurrentItem].type == redtext ||
+						   CurrentMenu->items[CurrentItem].type == whitetext ||
+						   CurrentMenu->items[CurrentItem].type == bricktext ||
+						   (CurrentMenu->items[CurrentItem].type == screenres &&
+							!CurrentMenu->items[CurrentItem].b.res1))
+					{
+						++CurrentItem;
+					}
+					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				}
+			}
+			break;
+		
 		case KEY_LEFTARROW:
 			switch (item->type)
 			{

@@ -96,7 +96,6 @@ extern char *team_names[NUMTEAMS+2];
 //	Colors
 #define	BLUECOLOR		200
 #define	REDCOLOR		176
-#define	GOLDCOLOR		231
 
 #endif
 

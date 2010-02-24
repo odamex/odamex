@@ -273,7 +273,6 @@ void P_MovePlayer (player_t *player)
 		P_PlayerLookUpDown(player);
 	}
 
-	// GhostlyDeath <Jun, 4 2008> -- Treat spectators as on the ground
 	mo->onground = (mo->z <= mo->floorz);
 
 	// [RH] Don't let frozen players move

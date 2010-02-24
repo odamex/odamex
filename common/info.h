@@ -187,16 +187,12 @@ typedef enum
 	//	[Toke - CTF]
 	SPR_BSOK,
 	SPR_RSOK,
-	SPR_GSOK, // Remove me in 0.5
 	SPR_BFLG,
 	SPR_RFLG,
-	SPR_GFLG, // Remove me in 0.5
 	SPR_BDWN,
 	SPR_RDWN,
-	SPR_GDWN, // Remove me in 0.5
 	SPR_BCAR,
 	SPR_RCAR,
-	SPR_GCAR, // Remove me in 0.5
 
 	NUMSPRITES
 
@@ -1192,7 +1188,6 @@ typedef enum
 
 	S_BSOK,	// Blue Flag
 	S_RSOK,	// Red Flag
-	S_GSOK,	// Gold Flag // Remove me in 0.5
 
 	// -----[ BLUE Flag Animation ]-------
 	S_BFLG,
@@ -1214,23 +1209,11 @@ typedef enum
 	S_RFLG7,
 	S_RFLG8,
 
-	// -----[ GOLD Flag Animation ]-------
-	S_GFLG,
-	S_GFLG2,
-	S_GFLG3,
-	S_GFLG4,
-	S_GFLG5,
-	S_GFLG6,
-	S_GFLG7,
-	S_GFLG8,
-
 	// -----------------------------------
 	S_BDWN,	// Blue Flag
 	S_RDWN,	// Red Flag
-	S_GDWN,	// Gold Flag
 	S_BCAR,	// Blue Flag
 	S_RCAR,	// Red Flag
-	S_GCAR,	// Gold Flag
 	// -----------------------------------
 
 	NUMSTATES
@@ -1442,16 +1425,12 @@ typedef enum {
 	//	[Toke - CTF]
 	MT_BSOK,
 	MT_RSOK,
-	MT_GSOK, // Remove me in 0.5
 	MT_BFLG,
 	MT_RFLG,
-	MT_GFLG, // Remove me in 0.5
 	MT_BDWN,
 	MT_RDWN,
-	MT_GDWN, // Remove me in 0.5
 	MT_BCAR,
 	MT_RCAR,
-	MT_GCAR, // Remove me in 0.5
 	// -----------------------------------
 
 	NUMMOBJTYPES

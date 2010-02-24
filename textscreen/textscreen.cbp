@@ -92,7 +92,7 @@
 		</Build>
 		<VirtualTargets>
 			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
-			<Add alias="All (WIN VC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
 		</VirtualTargets>
 		<Compiler>
 			<Add directory="..\common" />

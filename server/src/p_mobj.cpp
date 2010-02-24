@@ -1190,8 +1190,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	player_t *p = &player;
 
-	bool spectator = p->spectator;
-
 	if (p->playerstate == PST_REBORN)
 		G_PlayerReborn (*p);
 
@@ -1204,9 +1202,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	mobj->pitch = mobj->roll = 0;
 	mobj->player = p;
 	mobj->health = p->health;
-
-	if (spectator)
-		mobj->translucency = 0;
 
 	// [RH] Set player sprite based on skin
 	if(p->userinfo.skin >= numskins)
@@ -1224,8 +1219,15 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->fixedcolormap = 0;
 	p->viewheight = VIEWHEIGHT;
 	p->attacker = AActor::AActorPtr();
-	p->spectator = spectator;
 
+	// Set up some special spectator stuff
+	if (p->spectator)
+	{
+		mobj->translucency = 0;
+		p->mo->flags |= MF_SPECTATOR;
+		p->mo->flags2 |= MF2_FLY;
+	}
+	
 	// [RH] Allow chasecam for demo watching
 	//if ((demoplayback || demonew) && chasedemo)
 	//	p->cheats = CF_CHASECAM;
@@ -1239,9 +1241,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 	}
-
-	if (p->spectator)
-		p->mo->flags |= MF_SPECTATOR;
 
 	if(serverside)
 	{
@@ -1317,21 +1316,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		}
 		memcpy (redteam_p, mthing, sizeof(*mthing));
 		redteam_p++;
-		return;
-	}
-
-	// [Toke - CTF - starts] CTF starts - count Gold team start positions
-	if (mthing->type == 5082 && sv_teamspawns)
-	{
-		if (goldteam_p == &goldteamstarts[MaxGoldTeamStarts])
-		{
-			int offset = MaxGoldTeamStarts;
-			MaxGoldTeamStarts *= 2;
-			goldteamstarts = (mapthing2_t *)Realloc (goldteamstarts, MaxGoldTeamStarts * sizeof(mapthing2_t));
-			goldteam_p = &goldteamstarts[offset];
-		}
-		memcpy (goldteam_p, mthing, sizeof(*mthing));
-		goldteam_p++;
 		return;
 	}
 

@@ -127,6 +127,8 @@ char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
 char startmap[8];
 BOOL autostart;
+BOOL autorecord;
+std::string demorecordfile;
 BOOL advancedemo;
 event_t events[MAXEVENTS];
 int eventhead;
@@ -1526,7 +1528,7 @@ void D_DoomMain (void)
 
 	Printf_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
 	if(gamestate != GS_CONNECTING)
-		Printf(PRINT_HIGH, "Type connect <ip address> or use the Odamex Launcher to connect to a game.\n");
+		Printf(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
     Printf(PRINT_HIGH, "\n");
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
@@ -1541,9 +1543,6 @@ void D_DoomMain (void)
 			{
 				// single player warp (like in g_level)
 				serverside = true;
-				allowexit = "1";
-				nomonsters = "0";
-				gametype = GM_COOP;
 
 				players.clear();
 				players.push_back(player_t());
@@ -1552,6 +1551,9 @@ void D_DoomMain (void)
 			}
 
 			G_InitNew (startmap);
+			if (autorecord)
+				if (G_RecordDemo(demorecordfile.c_str()))
+					G_BeginRecording();
 		}
         else
 		{

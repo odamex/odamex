@@ -43,7 +43,9 @@ typedef struct brokenlines_s brokenlines_t;
 #define CR_RED				6
 #define CR_BLUE				7
 #define CR_ORANGE			8
-#define NUM_TEXT_COLORS		9
+#define CR_YELLOW			9
+#define CR_WHITE			10
+#define NUM_TEXT_COLORS		11
 
 #define TEXTCOLOR_BRICK		"\x8aA"
 #define TEXTCOLOR_TAN		"\x8aB"
@@ -55,9 +57,12 @@ typedef struct brokenlines_s brokenlines_t;
 #define TEXTCOLOR_RED		"\x8aG"
 #define TEXTCOLOR_BLUE		"\x8aH"
 #define TEXTCOLOR_ORANGE	"\x8aI"
+#define TEXTCOLOR_WHITE		"\x8aJ"
+#define TEXTCOLOR_YELLOW	"\x8aK"
 
 #define TEXTCOLOR_NORMAL	"\x8a-"
 #define TEXTCOLOR_BOLD		"\x8a+"
+
 /*
 int V_StringWidth (const byte *str);
 inline int V_StringWidth (const char *str) { return V_StringWidth ((const byte *)str); }

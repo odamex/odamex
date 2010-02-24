@@ -109,15 +109,15 @@ BOOL 			noblit; 				// for comparative timing purposes
 bool	 		viewactive;
 
 // Describes if a network game is being played
-BOOL            network_game;
+BOOL			network_game;
 // Use only for demos, it is a old variable for the old network code
-BOOL 						netgame;
+BOOL			netgame;
 // Describes if this is a multiplayer game or not
-BOOL						multiplayer;
+BOOL			multiplayer;
 // The player vector, contains all player information
 std::vector<player_t>		players;
 // The null player
-player_t					nullplayer;
+player_t		nullplayer;
 
 enum demoversion_t
 {
@@ -1388,14 +1388,6 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 				I_Error ("No red team starts");
 		}
 
-		if (player.userinfo.team == TEAM_GOLD)  // [Toke - CTF - starts]
-		{
-			selections = goldteam_p - goldteamstarts;
-
-			if (selections < 1)
-				I_Error ("No gold team starts");
-		}
-
 		if (selections < 1)
 			I_Error ("No team starts");
 
@@ -1802,7 +1794,7 @@ void G_WriteDemoTiccmd ()
 //
 // G_RecordDemo
 //
-bool G_RecordDemo (char* name)
+bool G_RecordDemo (const char* name)
 {
     strcpy (demoname, name);
     strcat (demoname, ".lmp");
@@ -1895,21 +1887,31 @@ void RecordCommand(int argc, char **argv)
 {
 	if(argc > 2)
 	{
-
-		if(G_RecordDemo(argv[2]))
+		demorecordfile = std::string(argv[2]);
+		
+		if (gamestate != GS_STARTUP)
 		{
-			players.clear();
-			players.push_back(player_t());
-			players.back().playerstate = PST_REBORN;
-			players.back().id = 1;
+			if(G_RecordDemo(demorecordfile.c_str()))
+			{
+				players.clear();
+				players.push_back(player_t());
+				players.back().playerstate = PST_REBORN;
+				players.back().id = 1;
 
-			player_t &con = idplayer(1);
-			consoleplayer_id = displayplayer_id = con.id;
+				player_t &con = idplayer(1);
+				consoleplayer_id = displayplayer_id = con.id;
 
-			serverside = true;
+				serverside = true;
 
-			G_InitNew(argv[1]);
-			G_BeginRecording();
+				G_InitNew(argv[1]);
+				G_BeginRecording();
+			}
+		}
+		else
+		{
+			strncpy (startmap, argv[1], 8);
+			autostart = true;
+			autorecord = true;
 		}
 	}
 	else

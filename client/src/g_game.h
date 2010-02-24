@@ -47,7 +47,7 @@ void G_BuildSaveName (std::string &name, int slot);
 void G_SaveGame (int slot, char* description);
 
 // Only called by startup code.
-bool G_RecordDemo (char* name);
+bool G_RecordDemo (const char* name);
 
 void G_BeginRecording (void);
 

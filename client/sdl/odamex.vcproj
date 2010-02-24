@@ -118,7 +118,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories=".,..\src,..\..\common"
+				AdditionalIncludeDirectories=".,..\src,..\..\common,..\..\textscreen"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;NOASM;NOMINMAX;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"

@@ -84,11 +84,7 @@ team_t D_TeamByName (const char *team)
 	else if (!stricmp (team, "red"))
 		return TEAM_RED;
 
-	else if (!stricmp (team, "gold"))
-		return TEAM_GOLD;
-
 	else return TEAM_NONE;
-
 }
 
 void D_SetupUserInfo (void)

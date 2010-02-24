@@ -254,15 +254,6 @@ public:
 		ping = 0;
 		last_received = 0;
 		tic = 0;
-		spectator = 0;
-		
-		// GhostlyDeath -- Do what was above incase
-		playerstate = PST_LIVE;
-		fragcount = 0;
-		deathcount = 0;
-		pendingweapon = wp_pistol;
-		readyweapon = wp_pistol;
-		cheats = 0;
 		spectator = false;
 	}
 
@@ -347,6 +338,7 @@ public:
 		}
 
 		tic = other.tic;
+		spectator = other.spectator;
 	
 		for(i = 0; i < BACKUPTICS; i++)
 			netcmds[i] = other.netcmds[i];

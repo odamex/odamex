@@ -88,9 +88,6 @@ char				saveOldString[SAVESTRINGSIZE];
 
 bool 				menuactive;
 
-#define SKULLXOFF	-32
-#define LINEHEIGHT	16
-
 extern bool st_firsttime;
 
 extern bool			sendpause;
@@ -1441,18 +1438,17 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 		{
 			case TEAM_NONE: team = TEAM_BLUE; break;
 			case TEAM_BLUE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_GOLD; break;
+			case TEAM_RED: team = TEAM_BLUE; break;
 			default:
-			case TEAM_GOLD: team = TEAM_NONE; break;
+			team = TEAM_NONE; break;
 		}
 	}
 	else
 	{
 		switch(team)
 		{
-			case TEAM_NONE: team = TEAM_GOLD; break;
+			case TEAM_NONE: team = TEAM_RED; break;
 			case TEAM_RED: team = TEAM_BLUE; break;
-			case TEAM_GOLD: team = TEAM_RED; break;
 			default:
 			case TEAM_BLUE: team = TEAM_NONE; break;
 		}
