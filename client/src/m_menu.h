@@ -86,6 +86,7 @@ void M_RefreshModesList ();
 typedef enum {
 	whitetext,
 	redtext,
+	bricktext,
 	more,
 	slider,
 	discrete,

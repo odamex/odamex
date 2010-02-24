@@ -241,7 +241,7 @@ menu_t MouseMenu = {
 static menuitem_t ControlsItems[] = {
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ whitetext,"Controls",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Controls",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
 	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
@@ -262,15 +262,15 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ whitetext,"Chat",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Chat",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
 	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ whitetext,"Weapons",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Weapons",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
 	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ whitetext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Toggle automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
 	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
 	{ control,	"Coop spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
@@ -778,6 +778,11 @@ void M_OptDrawer (void)
 				color = CR_GREY;
 				break;
 
+			case bricktext:
+				x = 160 - width / 2;
+				color = CR_BRICK;
+				break;
+
 			case listelement:
 				x = CurrentMenu->indent + 14;
 				color = CR_RED;
@@ -975,6 +980,7 @@ void M_OptResponder (event_t *ev)
 					}
 				} while (CurrentMenu->items[CurrentItem].type == redtext ||
 						 CurrentMenu->items[CurrentItem].type == whitetext ||
+						 CurrentMenu->items[CurrentItem].type == bricktext ||
 						 (CurrentMenu->items[CurrentItem].type == screenres &&
 						  !CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1014,6 +1020,7 @@ void M_OptResponder (event_t *ev)
 					}
 				} while (CurrentMenu->items[CurrentItem].type == redtext ||
 						 CurrentMenu->items[CurrentItem].type == whitetext ||
+						 CurrentMenu->items[CurrentItem].type == bricktext ||
 						 (CurrentMenu->items[CurrentItem].type == screenres &&
 						  !CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1036,6 +1043,7 @@ void M_OptResponder (event_t *ev)
 					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
 					while (CurrentMenu->items[CurrentItem].type == redtext ||
 						   CurrentMenu->items[CurrentItem].type == whitetext ||
+						   CurrentMenu->items[CurrentItem].type == bricktext ||
 						   (CurrentMenu->items[CurrentItem].type == screenres &&
 							!CurrentMenu->items[CurrentItem].b.res1))
 					{
@@ -1059,6 +1067,7 @@ void M_OptResponder (event_t *ev)
 					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
 					while (CurrentMenu->items[CurrentItem].type == redtext ||
 						   CurrentMenu->items[CurrentItem].type == whitetext ||
+						   CurrentMenu->items[CurrentItem].type == bricktext ||
 						   (CurrentMenu->items[CurrentItem].type == screenres &&
 							!CurrentMenu->items[CurrentItem].b.res1))
 					{
