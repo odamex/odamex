@@ -1378,6 +1378,7 @@ void D_DoomMain (void)
 	M_ClearRandom();
 
 	gamestate = GS_STARTUP;
+	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in	
 
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError ("Could not initialize LZO routines");
@@ -1387,7 +1388,6 @@ void D_DoomMain (void)
 	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
 
 	M_LoadDefaults ();			// load before initing other systems
-	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
 	iwad = Args.CheckValue("-iwad");
