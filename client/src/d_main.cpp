@@ -114,8 +114,7 @@ extern BOOL gameisdead;
 extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
-extern int NoWipe;		// [RH] Don't wipe when travelling in hubs
-
+extern int NoWipe;			// [RH] Don't wipe when travelling in hubs
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
@@ -1372,6 +1371,10 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 //
 void D_DoomMain (void)
 {
+	unsigned p;
+	const char *iwad;
+	extern std::string defdemoname;
+
 	M_ClearRandom();
 
 	gamestate = GS_STARTUP;
@@ -1387,7 +1390,7 @@ void D_DoomMain (void)
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
-	const char *iwad = Args.CheckValue("-iwad");
+	iwad = Args.CheckValue("-iwad");
 	if(!iwad)
 		iwad = "";
 
@@ -1421,13 +1424,27 @@ void D_DoomMain (void)
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
+	// Check for -playdemo, play a single demo then quit.
+	p = Args.CheckParm ("-playdemo");
+	// Hack to check for +playdemo command, since if you just add it normally
+	// it won't run because it's attempting to run a demo and still set up the
+	// first map as normal.
+	if (!p)
+		p = Args.CheckParm ("+playdemo");
+	if (p && p < Args.NumArgs()-1)
+	{
+		Printf (PRINT_HIGH, "Playdemo parameter found on command line.\n");
+		singledemo = true;
+		defdemoname = Args.GetArg (p+1);
+	}
+	
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{
 		skill.Set (val[0]-'0');
 	}
 
-	unsigned p = Args.CheckParm ("-warp");
+	p = Args.CheckParm ("-warp");
 	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
 	{
 		int ep, map;
@@ -1518,23 +1535,28 @@ void D_DoomMain (void)
 	// denis - bring back the demos
     if ( gameaction != ga_loadgame )
     {
-		if (autostart || netgame)
+		if (autostart || netgame || singledemo)
 		{
-			if(autostart)
+			if (singledemo)
+				G_DoPlayDemo();
+			else
 			{
-				// single player warp (like in g_level)
-				serverside = true;
+				if(autostart)
+				{
+					// single player warp (like in g_level)
+					serverside = true;
 
-				players.clear();
-				players.push_back(player_t());
-				players.back().playerstate = PST_REBORN;
-				consoleplayer_id = displayplayer_id = players.back().id = 1;
+					players.clear();
+					players.push_back(player_t());
+					players.back().playerstate = PST_REBORN;
+					consoleplayer_id = displayplayer_id = players.back().id = 1;
+				}
+				
+				G_InitNew (startmap);
+				if (autorecord)
+					if (G_RecordDemo(demorecordfile.c_str()))
+						G_BeginRecording();
 			}
-
-			G_InitNew (startmap);
-			if (autorecord)
-				if (G_RecordDemo(demorecordfile.c_str()))
-					G_BeginRecording();
 		}
         else
 		{
@@ -1551,7 +1573,6 @@ void D_DoomMain (void)
 	p = Args.CheckParm ("+demotest");
 	if (p && p < Args.NumArgs()-1)
 	{
-		extern std::string defdemoname;
 		void	G_DoPlayDemo (bool justStreamInput = false);
 		void	G_Ticker (void);
 		demotest = 1;
