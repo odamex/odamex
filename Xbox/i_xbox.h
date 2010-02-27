@@ -38,6 +38,8 @@ struct hostent
 #define h_addr h_addr_list
 };
 
+#undef exit
+#define exit xbox_exit
 #undef getenv
 char *getenv(const char *);
 #undef putenv
@@ -54,6 +56,8 @@ void xbox_TranslateSdlKbdEvent(SDL_Event &ev);
 int xbox_SetScreenPosition(float x, float y);
 // Stretch the image to some percentage of its full resolution - 1.0 = 100%
 int xbox_SetScreenStretch(float xs, float ys);
+
+void xbox_exit(int status);
 
 #endif // _XBOX
 

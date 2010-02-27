@@ -25,6 +25,7 @@
 				AdditionalIncludeDirectories=".,..\client\src,..\client\sdl,..\common"
 				PreprocessorDefinitions="_DEBUG;WIN32;_XBOX;NOASM"
 				MinimalRebuild="TRUE"
+				ExceptionHandling="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="FALSE"

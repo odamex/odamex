@@ -50,6 +50,10 @@
 #include <vector>
 #include <map>
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;

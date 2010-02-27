@@ -339,6 +339,18 @@ int xbox_SetScreenStretch(float xs, float ys)
 	return 0;
 }
 
+// xbox_exit - Custom exit function for Xbox
+
+void xbox_exit(int status)
+{
+	xbox_CloseNetwork();
+
+	SDL_Quit();
+
+	// Passing NULL to this function returns to the dashboard.
+	XLaunchNewImage(NULL, NULL);
+}
+
 void  __cdecl main()
 {
 	DWORD            launchDataType;
@@ -364,9 +376,7 @@ void  __cdecl main()
 
 	xbox_InitNet();
 
-	i_main(xargc, xargv);
-
-	xbox_CloseNetwork();
+	i_main(xargc, xargv); // Does not return
 }
 
 #endif // _XBOX
