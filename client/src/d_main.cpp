@@ -1420,10 +1420,19 @@ void D_DoomMain (void)
 	if (STARTUP5[0])	Printf (PRINT_HIGH, "%s\n", STARTUP5);
 
 	devparm = Args.CheckParm ("-devparm");
+	
+	// Record a vanilla demo
+	p = Args.CheckParm ("-record");
+	if (p)
+	{
+		autorecord = true;
+		autostart = true;
+		demorecordfile = Args.GetArg (p+1);
+	}
 
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
-
+		
 	// Check for -playdemo, play a single demo then quit.
 	p = Args.CheckParm ("-playdemo");
 	// Hack to check for +playdemo command, since if you just add it normally
