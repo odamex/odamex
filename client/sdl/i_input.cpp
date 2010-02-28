@@ -594,7 +594,7 @@ void I_GetEvent (void)
 			break;
 		}
 	case SDL_JOYAXISMOTION:
-		if(ev.jbutton.which == joy_active)
+		if(ev.jaxis.which == joy_active)
 		{
 			event.type = ev_joystick;
 			event.data1 = 0;

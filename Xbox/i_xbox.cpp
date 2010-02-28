@@ -47,6 +47,7 @@ typedef struct _STRING
 } UNICODE_STRING, *PUNICODE_STRING, ANSI_STRING, *PANSI_STRING;
 
 extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicLinkName,IN PUNICODE_STRING DeviceName);
+extern "C" XBOXAPI LONG WINAPI IoDeleteSymbolicLink(IN PUNICODE_STRING SymbolicLinkName);
 
 int i_main(int argc, char *argv[]); // i_main.cpp
 
@@ -280,11 +281,28 @@ LONG xbox_MountDevice(LPSTR sSymbolicLinkName, LPSTR sDeviceName)
 	return IoCreateSymbolicLink(&symbolicLinkName, &deviceName);
 }
 
+LONG xbox_UnMountDevice(LPSTR sSymbolicLinkName)
+{
+  UNICODE_STRING  symbolicLinkName;
+  symbolicLinkName.Buffer  = sSymbolicLinkName;
+  symbolicLinkName.Length = (USHORT)strlen(sSymbolicLinkName);
+  symbolicLinkName.MaximumLength = (USHORT)strlen(sSymbolicLinkName) + 1;
+
+  return IoDeleteSymbolicLink(&symbolicLinkName);
+}
+
 void xbox_MountPartitions()
 {
 	xbox_MountDevice(DriveE, DeviceE); // Standard save partition
 	xbox_MountDevice(DriveF, DeviceF); // Non-stock partition - modded consoles only
 	xbox_MountDevice(DriveD, CdRom); // DVD-ROM or start path
+}
+
+void xbox_UnMountPartitions()
+{
+	xbox_UnMountDevice(DriveE);
+	xbox_UnMountDevice(DriveF);
+	xbox_UnMountDevice(DriveD);
 }
 
 void xbox_InitNet()
@@ -344,6 +362,8 @@ int xbox_SetScreenStretch(float xs, float ys)
 void xbox_exit(int status)
 {
 	xbox_CloseNetwork();
+
+	xbox_UnMountPartitions();
 
 	SDL_Quit();
 
