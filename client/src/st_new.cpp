@@ -152,12 +152,12 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (hud_scale)
 		{
-			scrn->DrawPatchCleanNoMove (sttminus, x, y);
+			scrn->DrawLucentPatchCleanNoMove (sttminus, x, y);
 			x += CleanXfac * sttminus->width();
 		}
 		else
 		{
-			scrn->DrawPatch (sttminus, x, y);
+			scrn->DrawLucentPatch (sttminus, x, y);
 			x += sttminus->width();
 		}
 		num = -num;
@@ -172,12 +172,12 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 		{
 			if (hud_scale)
 			{
-				scrn->DrawPatchCleanNoMove (tallnum[*d - '0'], x, y);
+				scrn->DrawLucentPatchCleanNoMove (tallnum[*d - '0'], x, y);
 				x += CleanXfac * tallnum[*d - '0']->width();
 			}
 			else
 			{
-				scrn->DrawPatch (tallnum[*d - '0'], x, y);
+				scrn->DrawLucentPatch (tallnum[*d - '0'], x, y);
 				x += tallnum[*d - '0']->width();
 			}
 		}
@@ -212,10 +212,10 @@ void ST_newDraw (void)
 
 	// Draw health
 	if (hud_scale)
-		screen->DrawPatchCleanNoMove (medi, 20 * CleanXfac,
+		screen->DrawLucentPatchCleanNoMove (medi, 20 * CleanXfac,
 									  screen->height - 2*CleanYfac);
 	else
-		screen->DrawPatch (medi, 20, screen->height - 2);
+		screen->DrawLucentPatch (medi, 20, screen->height - 2);
 	ST_DrawNum (40 * xscale, y, screen, plyr->health);
 
 	// Draw armor
@@ -228,9 +228,9 @@ void ST_newDraw (void)
 		if (current_armor)
 		{
 			if (hud_scale)
-				screen->DrawPatchCleanNoMove (current_armor, 20 * CleanXfac, y - 4*CleanYfac);
+				screen->DrawLucentPatchCleanNoMove (current_armor, 20 * CleanXfac, y - 4*CleanYfac);
 			else
-				screen->DrawPatch (current_armor, 20, y - 4);
+				screen->DrawLucentPatch (current_armor, 20, y - 4);
 		}
 		ST_DrawNum (40*xscale, y - (armors[0]->height()+3)*yscale,
 					 screen, plyr->armorpoints);
@@ -242,11 +242,11 @@ void ST_newDraw (void)
 		const patch_t *ammopatch = ammos[weaponinfo[plyr->readyweapon].ammo];
 
 		if (hud_scale)
-			screen->DrawPatchCleanNoMove (ammopatch,
+			screen->DrawLucentPatchCleanNoMove (ammopatch,
 										  screen->width - 14 * CleanXfac,
 										  screen->height - 4 * CleanYfac);
 		else
-			screen->DrawPatch (ammopatch, screen->width - 14,
+			screen->DrawLucentPatch (ammopatch, screen->width - 14,
 							   screen->height - 4);
 		ST_DrawNumRight (screen->width - 25 * xscale, y, screen,
 						 plyr->ammo[ammo]);
@@ -271,9 +271,9 @@ void ST_newDraw (void)
 			if (plyr->cards[i])
 			{
 				if (hud_scale)
-					screen->DrawPatchCleanNoMove (keys[i], screen->width - 10*CleanXfac, y);
+					screen->DrawLucentPatchCleanNoMove (keys[i], screen->width - 10*CleanXfac, y);
 				else
-					screen->DrawPatch (keys[i], screen->width - 10, y);
+					screen->DrawLucentPatch (keys[i], screen->width - 10, y);
 				y += (8 + (i < 3 ? 0 : 2)) * yscale;
 			}
 		}
@@ -328,32 +328,32 @@ void ST_newDrawCTF (void)
 	if (hud_scale) {
 
 		if (plyr->userinfo.team == TEAM_BLUE)
-			screen->DrawPatchCleanNoMove (flagiconbcur,
+			screen->DrawLucentPatchCleanNoMove (flagiconbcur,
 										  screen->width - 19 * CleanXfac,
 										  1 * CleanYfac);
 		else if (plyr->userinfo.team == TEAM_RED)
-			screen->DrawPatchCleanNoMove (flagiconrcur,
+			screen->DrawLucentPatchCleanNoMove (flagiconrcur,
 										  screen->width - 19 * CleanXfac,
 										  19 * CleanYfac);
 
-		screen->DrawPatchCleanNoMove (flagbluepatch,
+		screen->DrawLucentPatchCleanNoMove (flagbluepatch,
 									  screen->width - 18 * CleanXfac,
 									  2 * CleanYfac);
-		screen->DrawPatchCleanNoMove (flagredpatch,
+		screen->DrawLucentPatchCleanNoMove (flagredpatch,
 									  screen->width - 18 * CleanXfac,
 									  20 * CleanYfac);
 	} else {
 
 		if (plyr->userinfo.team == TEAM_BLUE)
-			screen->DrawPatch (flagiconbcur, screen->width - 19,
+			screen->DrawLucentPatch (flagiconbcur, screen->width - 19,
 							   1);
 		else if (plyr->userinfo.team == TEAM_RED)
-			screen->DrawPatch (flagiconrcur, screen->width - 19,
+			screen->DrawLucentPatch (flagiconrcur, screen->width - 19,
 							   19);
 
-		screen->DrawPatch (flagbluepatch, screen->width - 18,
+		screen->DrawLucentPatch (flagbluepatch, screen->width - 18,
 						   2);
-		screen->DrawPatch (flagredpatch, screen->width - 18,
+		screen->DrawLucentPatch (flagredpatch, screen->width - 18,
 						   20);
 	}
 

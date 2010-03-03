@@ -123,7 +123,7 @@ static bool MouseShouldBeGrabbed()
 
     // only grab mouse when playing levels (but not demos)
 
-    return (gamestate == GS_LEVEL) && !demoplayback;
+    return (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback;
 }
 
 //
