@@ -59,6 +59,9 @@ void ST_Init (void);
 // Draw the HUD (only if old status bar is not drawn)
 void ST_newDraw (void);
 
+// Draw the New DM HUD (only if old status bar is not drawn, multiplayer and user choice)
+void ST_newDrawDM (void);
+
 // Draw the CTF HUD (separated for spectator)
 void ST_newDrawCTF (void);
 

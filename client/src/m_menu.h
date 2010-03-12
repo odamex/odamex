@@ -27,6 +27,11 @@
 #include "d_event.h"
 #include "c_cvars.h"
 
+// Some defines...
+#define LINEHEIGHT	16
+#define SKULLXOFF	-32
+#define NUM_MENU_ITEMS(m)	(sizeof(m)/sizeof(m[0]))
+
 //
 // MENUS
 //
@@ -90,6 +95,7 @@ void M_RefreshModesList ();
 typedef enum {
 	whitetext,
 	redtext,
+	bricktext,
 	more,
 	slider,
 	discrete,
@@ -202,34 +208,6 @@ extern int		CurrentItem;
 
 extern short	 itemOn;
 extern oldmenu_t *currentMenu;
-
-//==========================================================================
-//
-// MIN
-//
-// Returns the minimum of a and b.
-//==========================================================================
-
-template<class T>
-inline
-const T MIN (const T a, const T b)
-{
-	return a < b ? a : b;
-}
-
-//==========================================================================
-//
-// MAX
-//
-// Returns the maximum of a and b.
-//==========================================================================
-
-template<class T>
-inline
-const T MAX (const T a, const T b)
-{
-	return a > b ? a : b;
-}
 
 
 #endif

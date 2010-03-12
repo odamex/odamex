@@ -471,13 +471,14 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 	I_SetMode (width, height, bits);
 
-	CleanXfac = width / 320;
 	CleanYfac = height / 200;
 
-	if(!CleanXfac)
-		CleanXfac = 1;
 	if(!CleanYfac)
 		CleanYfac = 1;
+		
+	// [ML] The height determines the scale, these should always be the same 
+	// or stuff like the menu will be stretched on widescreen resolutions
+	CleanXfac = CleanYfac;
 
 	CleanWidth = width / CleanXfac;
 	CleanHeight = height / CleanYfac;

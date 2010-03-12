@@ -710,13 +710,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 
 	  case SPR_BFLG: // [Toke - CTF] Blue flag
 	  case SPR_RFLG: // [Toke - CTF] Red flag
-	  case SPR_GFLG: // [Toke - CTF] Gold flag // Remove me in 0.5
 	  case SPR_BDWN:
 	  case SPR_RDWN:
-	  case SPR_GDWN: // Remove me in 0.5
 	  case SPR_BSOK:
 	  case SPR_RSOK:
-	  case SPR_GSOK: // Remove me in 0.5
 		return;
 
 	  default:
@@ -808,7 +805,10 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 
 	// GhostlyDeath -- Joinkill is only set on players, so we should be safe!
 	if (joinkill)
+	{
 		target->flags |= MF_SPECTATOR;
+		target->flags2 |= MF2_FLY;
+	}
 
 	if (target->type != MT_SKULL)
 		target->flags &= ~MF_NOGRAVITY;

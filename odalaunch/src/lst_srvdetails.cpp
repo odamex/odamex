@@ -134,8 +134,28 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     }
     else
     {
-        for (size_t i = 0; i < In.Info.Patches.size(); i += 2)
-            InsertLine(In.Info.Patches[i], In.Info.Patches[i + 1]);
+        size_t i = 0;
+        size_t PatchesCount = In.Info.Patches.size();
+        
+        wxString Current, Next;
+                
+        // A while loop is used to format this correctly
+        while (i < PatchesCount)
+        {           
+            Current = In.Info.Patches[i];
+            
+            ++i;
+            
+            if (i < PatchesCount)
+                Next = In.Info.Patches[i];
+            
+            ++i;
+            
+            InsertLine(Current, Next);
+            
+            Current = wxT("");
+            Next = wxT("");
+        }
     }
     
     // Gameplay variables (Cvars, others)

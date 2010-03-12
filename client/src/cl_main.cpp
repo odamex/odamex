@@ -1459,6 +1459,7 @@ void CL_UpdateMobjInfo(void)
 {
 	int netid = MSG_ReadShort();
 	int flags = MSG_ReadLong();
+	//int flags2 = MSG_ReadLong();
 
 	AActor *mo = CL_FindThingById(netid);
 

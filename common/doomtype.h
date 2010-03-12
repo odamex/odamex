@@ -164,6 +164,35 @@ extern std::ifstream CON;
 #define	PRINT_CHAT			3		// chat messages
 #define PRINT_TEAMCHAT		4		// chat messages from a teammate
 
+
+//==========================================================================
+//
+// MIN
+//
+// Returns the minimum of a and b.
+//==========================================================================
+
+template<class T>
+inline
+const T MIN (const T a, const T b)
+{
+	return a < b ? a : b;
+}
+
+//==========================================================================
+//
+// MAX
+//
+// Returns the maximum of a and b.
+//==========================================================================
+
+template<class T>
+inline
+const T MAX (const T a, const T b)
+{
+	return a > b ? a : b;
+}
+
 #endif
 
 

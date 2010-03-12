@@ -200,6 +200,9 @@ extern BOOL				floatok;
 extern fixed_t			tmfloorz;
 extern fixed_t			tmceilingz;
 extern msecnode_t		*sector_list;		// phares 3/16/98
+extern AActor			*BlockingMobj;
+extern line_t			*BlockingLine;		// Used only by P_Move
+											// This is not necessarily a *blocking* line
 
 //Added by MC: tmsectortype
 extern fixed_t			tmdropoffz; //Needed in b_move.c
@@ -207,7 +210,10 @@ extern sector_t			*tmsector;
 
 extern	line_t* 		ceilingline;
 
+bool	P_TestMobjZ (AActor *mobj);
 bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
+AActor	*P_CheckOnmobj (AActor *thing);
+void	P_FakeZMovement (AActor *mo);
 BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y);
 BOOL	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);

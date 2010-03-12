@@ -123,7 +123,7 @@ static bool MouseShouldBeGrabbed()
 
     // only grab mouse when playing levels (but not demos)
 
-    return (gamestate == GS_LEVEL) && !demoplayback;
+    return (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback;
 }
 
 //
@@ -218,7 +218,9 @@ bool I_InitInput (void)
 	SDL_EnableUNICODE(true);
 	
 	// denis - disable key repeats as they mess with the mouse in XP
-	SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
+	// mike - maybe not?
+	//SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL*2);
 
 #ifdef WIN32
 	// denis - in fullscreen, prevent exit on accidental windows key press
@@ -255,7 +257,7 @@ void STACK_ARGS I_ShutdownInput (void)
 void I_PauseMouse (void)
 {
    // denis - disable key repeats as they mess with the mouse in XP
-   SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+   //SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
    UpdateGrab();
    
@@ -271,7 +273,7 @@ void I_ResumeMouse (void)
 
 	if(havefocus)
 		// denis - disable key repeats as they mess with the mouse in XP
-		SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
+		//SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
 
    mousepaused = false;
 }

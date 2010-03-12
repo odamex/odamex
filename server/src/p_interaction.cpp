@@ -724,10 +724,6 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		case SPR_RSOK:
 			SV_SocketTouch(*player, it_redflag);
 			return;
-		case SPR_GFLG: // Remove me in 0.5
-		case SPR_GDWN: // Remove me in 0.5
-		case SPR_GSOK: // Remove me in 0.5
-			return; // Remove me in 0.5
 	  default:
 		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
 	}
@@ -1052,7 +1048,10 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 
 	// GhostlyDeath -- Joinkill is only set on players, so we should be safe!
 	if (joinkill)
+	{
 		target->flags |= MF_SPECTATOR;
+		target->flags2 |= MF2_FLY;
+	}
 
 	if (target->type != MT_SKULL)
 		target->flags &= ~MF_NOGRAVITY;

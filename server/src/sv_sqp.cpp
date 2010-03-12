@@ -74,7 +74,7 @@ EXTERN_CVAR (website)
 
 EXTERN_CVAR (natport)
 
-extern int last_revision;
+extern unsigned int last_revision;
 
 struct CvarField_t 
 { 

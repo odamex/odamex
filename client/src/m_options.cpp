@@ -115,7 +115,6 @@ static bool CanScrollUp;
 static bool CanScrollDown;
 static int VisBottom;
 
-
 value_t YesNo[2] = {
 	{ 0.0, "No" },
 	{ 1.0, "Yes" }
@@ -243,7 +242,7 @@ menu_t MouseMenu = {
 static menuitem_t ControlsItems[] = {
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ whitetext,"Controls",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Controls",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
 	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
@@ -264,11 +263,11 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ whitetext,"Chat",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Chat",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
 	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ whitetext,"Weapons",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Weapons",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
 	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
@@ -387,7 +386,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,	"Screen size",			{&screenblocks},	   	{3.0}, {12.0},	{1.0}, {NULL} },
 	{ slider,	"Brightness",			{&gammalevel},			{1.0}, {5.0},	{1.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ slider,   "UI Transperancy",      {&dimamount},           {0.0}, {1.0},   {0.1}, {NULL} },
+	{ slider,   "UI Transparency",      {&dimamount},           {0.0}, {1.0},   {0.1}, {NULL} },
 	{ slider,   "UI Trans Red",         {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Trans Green",       {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Trans Blue",        {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
@@ -678,7 +677,9 @@ void M_SwitchMenu (menu_t *menu)
 	MenuStack[MenuStackDepth].isNewStyle = true;
 	MenuStack[MenuStackDepth].drawSkull = false;
 	MenuStackDepth++;
-
+	
+	CanScrollUp = false;
+	CanScrollDown = false;
 	CanScrollUp = false;
 	CanScrollDown = false;
 	CurrentMenu = menu;
@@ -757,7 +758,6 @@ void M_OptDrawer (void)
 	patch_t *title;
 
 	luioffset = (gamemode == registered_heretic ? 2 : 0);
-
 	if (W_CheckNumForName(CurrentMenu->title) == -1)
 	{
 		// Try drawing it as text, maybe if this fails we just set a number for height and move on
@@ -773,13 +773,12 @@ void M_OptDrawer (void)
 	}
 
 	ytop = y + CurrentMenu->scrolltop * 8;
+
 	for (i = 0; i < CurrentMenu->numitems && y <= 200 - theight; i++, y += 8)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
-		{
 			i += CurrentMenu->scrollpos;
-		}
-
+				
 		item = CurrentMenu->items + i;
 
 		if (item->type != screenres)
@@ -800,6 +799,11 @@ void M_OptDrawer (void)
 			case whitetext:
 				x = 160 - width / 2;
 				color = CR_GREY;
+				break;
+
+			case bricktext:
+				x = 160 - width / 2;
+				color = CR_BRICK;
 				break;
 
 			case listelement:
@@ -924,32 +928,16 @@ void M_OptDrawer (void)
 			}
 		}
 	}
-/*	[ML] Commented out 1/25/10 - it seems unneccessary and looks messy
+	
+	VisBottom = i - 1;
 	CanScrollUp = (CurrentMenu->scrollpos != 0);
 	CanScrollDown = (i < CurrentMenu->numitems);
-	VisBottom = i - 1;
 
 	if (CanScrollUp)
-	{
 		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
-	}
-	if (CanScrollDown)
-	{
-		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, y-8);
-	}
 
-/*	[ML] Commented out 1/25/10 - it seems unneccessary and looks messy
-	if (CurrentMenu == &MouseMenu) // [Toke] print mouse values to the screen
-	{
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 32,  mouse_sensitivity.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 40, m_pitch.cstring());
-		//screen->DrawTextCleanMove (CR_GREEN, valx + 242, valy + 32, dynresval.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 72, m_side.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 80, m_forward.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 96,  mouse_acceleration.cstring());
-		screen->DrawTextCleanMove (CR_GREEN, valx + 188, valy + 104, mouse_threshold.cstring());
-	}
-*/
+	if (CanScrollDown)
+		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, (CleanYfac < 3 ? 190 : 200));
 }
 
 void M_OptResponder (event_t *ev)
@@ -1015,6 +1003,7 @@ void M_OptResponder (event_t *ev)
 					}
 				} while (CurrentMenu->items[CurrentItem].type == redtext ||
 						 CurrentMenu->items[CurrentItem].type == whitetext ||
+						 CurrentMenu->items[CurrentItem].type == bricktext ||
 						 (CurrentMenu->items[CurrentItem].type == screenres &&
 						  !CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1054,6 +1043,7 @@ void M_OptResponder (event_t *ev)
 					}
 				} while (CurrentMenu->items[CurrentItem].type == redtext ||
 						 CurrentMenu->items[CurrentItem].type == whitetext ||
+						 CurrentMenu->items[CurrentItem].type == bricktext ||
 						 (CurrentMenu->items[CurrentItem].type == screenres &&
 						  !CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1063,47 +1053,54 @@ void M_OptResponder (event_t *ev)
 				S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 			break;
+			
+		case KEY_PGUP:
+			{
+				if (CanScrollUp)
+				{
+					CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+					if (CurrentMenu->scrollpos < 0)
+					{
+						CurrentMenu->scrollpos = 0;
+					}
+					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+					while (CurrentMenu->items[CurrentItem].type == redtext ||
+						   CurrentMenu->items[CurrentItem].type == whitetext ||
+						   CurrentMenu->items[CurrentItem].type == bricktext ||
+						   (CurrentMenu->items[CurrentItem].type == screenres &&
+							!CurrentMenu->items[CurrentItem].b.res1))
+					{
+						++CurrentItem;
+					}
+					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				}
+			}
+			break;
 
-	case KEY_PGUP:
-		if (CanScrollUp)
-		{
-			CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
-			if (CurrentMenu->scrollpos < 0)
+		case KEY_PGDN:
 			{
-				CurrentMenu->scrollpos = 0;
+				if (CanScrollDown)
+				{
+					int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+					CurrentMenu->scrollpos += pagesize;
+					if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+					{
+						CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+					}
+					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+					while (CurrentMenu->items[CurrentItem].type == redtext ||
+						   CurrentMenu->items[CurrentItem].type == whitetext ||
+						   CurrentMenu->items[CurrentItem].type == bricktext ||
+						   (CurrentMenu->items[CurrentItem].type == screenres &&
+							!CurrentMenu->items[CurrentItem].b.res1))
+					{
+						++CurrentItem;
+					}
+					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				}
 			}
-			CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
-			while (CurrentMenu->items[CurrentItem].type == redtext ||
-				   CurrentMenu->items[CurrentItem].type == whitetext ||
-				   (CurrentMenu->items[CurrentItem].type == screenres &&
-					!CurrentMenu->items[CurrentItem].b.res1))
-			{
-				++CurrentItem;
-			}
-			S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
-		}
-		break;
-
-	case KEY_PGDN:
-		if (CanScrollDown)
-		{
-			int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
-			CurrentMenu->scrollpos += pagesize;
-			if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
-			{
-				CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
-			}
-			CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
-			while (CurrentMenu->items[CurrentItem].type == redtext ||
-				   CurrentMenu->items[CurrentItem].type == whitetext ||
-				   (CurrentMenu->items[CurrentItem].type == screenres &&
-					!CurrentMenu->items[CurrentItem].b.res1))
-			{
-				++CurrentItem;
-			}
-			S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
-		}
-		break;
+			break;
+		
 		case KEY_LEFTARROW:
 			switch (item->type)
 			{

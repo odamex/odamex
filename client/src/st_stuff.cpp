@@ -353,6 +353,9 @@ patch_t* 				keys[NUMCARDS+NUMCARDS/2];
 // face status patches [RH] no longer static
 patch_t* 				faces[ST_NUMFACES];
 
+// New HUD health indicator
+patch_t*				hudcross[6];
+
 // face background
 static patch_t* 		faceback;
 
@@ -1404,7 +1407,10 @@ void ST_Drawer (void)
 	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
 	{
 		if (DrawNewHUD)
-			ST_newDraw ();
+			//if (!multiplayer)
+			//	ST_newDraw ();
+			//else
+				ST_newDrawDM ();
 		else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
 			ST_newDrawCTF();
 		st_firsttime = true;
@@ -1478,22 +1484,29 @@ void ST_loadGraphics(void)
 	else
 		skin = &skins[consoleplayer().userinfo.skin];
 
+	if (gamemode == registered_heretic) {
+		bignums = "IN%d";
+		smallnums = "SMALLIN%d";
+	} else {
+		bignums = "STTNUM%d";
+		smallnums = "STYSNUM%d";
+	}
+		
 	// Load the numbers, tall and short
 	for (i=0;i<10;i++)
 	{
-		if (gamemode == registered_heretic) {
-			bignums = "IN%d";
-			smallnums = "SMALLIN%d";
-		} else {
-			bignums = "STTNUM%d";
-			smallnums = "STYSNUM%d";
-		}
-
 		sprintf(namebuf, bignums, i);
 		tallnum[i] = W_CachePatch(namebuf, PU_STATIC);
 		sprintf(namebuf, smallnums, i);
 		shortnum[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
+	
+	for (i=0;i<6;i++)
+	{
+		sprintf(namebuf, "STCROS%d", i);
+		hudcross[i] = W_CachePatch(namebuf, PU_STATIC);
+	}
+	
 if (gamemode != registered_heretic) {
 	// Load percent key.
 	//Note: why not load STMINUS here, too?

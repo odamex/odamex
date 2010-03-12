@@ -44,7 +44,6 @@ enum team_t
 {
 	TEAM_BLUE,
 	TEAM_RED,
-	TEAM_GOLD,
 	
 	NUMTEAMS,
 	

@@ -1139,7 +1139,6 @@ void SV_CheckTeam (player_t &player)
 	{
 		case TEAM_BLUE:
 		case TEAM_RED:
-		case TEAM_GOLD:
 
 		if(gametype == GM_CTF && player.userinfo.team < 2)
 			break;
@@ -1160,9 +1159,6 @@ void SV_CheckTeam (player_t &player)
 			break;
 		case TEAM_RED:
 			player.userinfo.color = (0x00FF0000);
-			break;
-		case TEAM_GOLD:
-			player.userinfo.color = (0x00FFFF00);
 			break;
 		default:
 			break;
@@ -3170,10 +3166,6 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 			player.userinfo.skin = R_FindSkin ("RedTeam");
 			break;
 
-		case TEAM_GOLD:
-			player.userinfo.skin = R_FindSkin ("GoldTeam");
-			break;
-
 		default:
 			break;
 	}
@@ -3229,7 +3221,6 @@ void SV_Spectate (player_t &player)
 						MSG_WriteByte (&(players[j].client.reliablebuf), false);
 					}
 					P_KillMobj(NULL, player.mo, NULL, true);
-					player.mo->player = NULL;
 					player.playerstate = PST_REBORN;
 					if (gametype != GM_TEAMDM && gametype != GM_CTF)
 						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname);

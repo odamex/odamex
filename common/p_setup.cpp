@@ -119,15 +119,12 @@ std::vector<mapthing2_t> playerstarts;
 //	[Toke - CTF - starts] Teamplay starts
 size_t			MaxBlueTeamStarts;
 size_t			MaxRedTeamStarts;
-size_t			MaxGoldTeamStarts;
 
 mapthing2_t		*blueteamstarts;
 mapthing2_t		*redteamstarts;
-mapthing2_t		*goldteamstarts;
 
 mapthing2_t		*blueteam_p;
 mapthing2_t		*redteam_p;
-mapthing2_t		*goldteam_p;
 
 //
 // P_LoadVertexes
@@ -1313,13 +1310,6 @@ void P_AllocStarts(void)
 		redteamstarts = (mapthing2_t *)Malloc (MaxRedTeamStarts * sizeof(mapthing2_t));
 	}
 	redteam_p = redteamstarts;
-
-	if (!goldteamstarts) // [Toke - CTF - starts]
-	{
-		MaxGoldTeamStarts = 16;
-		goldteamstarts = (mapthing2_t *)Malloc (MaxGoldTeamStarts * sizeof(mapthing2_t));
-	}
-	goldteam_p = goldteamstarts;
 }
 
 //
