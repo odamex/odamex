@@ -511,7 +511,9 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-    if (W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
+    if (gamemode == registered_heretic)
+        demosequence = (demosequence+1)%7;
+    else if (W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
         demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;
@@ -519,7 +521,9 @@ void D_DoAdvanceDemo (void)
     switch (demosequence)
     {
         case 0:
-            if (gamemode == commercial)
+			if (gamemode == registered_heretic)
+				pagetic = 210;
+            else if (gamemode == commercial)
                 pagetic = TICRATE * 11;
             else
                 pagetic = 170;
@@ -528,22 +532,40 @@ void D_DoAdvanceDemo (void)
             pagename = gameinfo.titlePage;
 
             S_StartMusic(gameinfo.titleMusic);
-
-            break;
+		break;
+		
         case 1:
-            G_DeferedPlayDemo("DEMO1");
-
-            break;
+			if (gamemode == registered_heretic)
+			{
+				pagetic = 140;
+				pagename = gameinfo.titlePage;
+			}
+			else
+				G_DeferedPlayDemo("DEMO1");
+		break;
+		
         case 2:
-            pagetic = 200;
-            gamestate = GS_DEMOSCREEN;
-            pagename = "CREDIT";
-
-            break;
+            if (gamemode == registered_heretic)
+				G_DeferedPlayDemo("DEMO1");
+			else
+			{
+				pagetic = 200;
+				gamestate = GS_DEMOSCREEN;
+				pagename = "CREDIT";
+			}
+		break;
+		
         case 3:
-            G_DeferedPlayDemo("DEMO2");
-
-            break;
+			if (gamemode == registered_heretic)
+			{
+				pagetic = 200;
+				gamestate = GS_DEMOSCREEN;
+				pagename = "CREDIT";
+			}
+			else
+				G_DeferedPlayDemo("DEMO2");
+		break;
+		
         case 4:
             gamestate = GS_DEMOSCREEN;
 
@@ -558,30 +580,51 @@ void D_DoAdvanceDemo (void)
             }
             else
             {
-                pagetic = 200;
-
-                // [ML] Chex mode and Heretic just cycles this screen
-				if (gamemode == retail_chex || gamemode == registered_heretic)
-					pagename = "CREDIT";
+            	if (gamemode == registered_heretic)
+					G_DeferedPlayDemo("DEMO2");
 				else
-					pagename = "HELP2";
+				{
+					pagetic = 200;
+
+					// [ML] Chex mode and Heretic just cycles this screen
+					if (gamemode == retail_chex)
+						pagename = "CREDIT";
+					else
+						pagename = "HELP2";
+				}
             }
-
-            break;
+		break;
+		
         case 5:
-            G_DeferedPlayDemo("DEMO3");
-
-            break;
+			if (gamemode == registered_heretic)
+			{
+				pagetic = 200;
+				gamestate = GS_DEMOSCREEN;
+				
+				// If shareware show the order screen instead
+				//if (gamemode == shareware)
+				//	pagename = "ORDER";
+				//else
+				pagename = "CREDIT";
+			}
+			else
+				G_DeferedPlayDemo("DEMO3");
+		break;
+		
         case 6:
-            pagetic = 200;
-            gamestate = GS_DEMOSCREEN;
-            pagename = "CREDIT";
-
-            break;
+			if (gamemode == registered_heretic)
+				G_DeferedPlayDemo("DEMO3");
+			else
+			{
+				pagetic = 200;
+				gamestate = GS_DEMOSCREEN;
+				pagename = "CREDIT";
+			}
+		break;
+		
         case 7:
             G_DeferedPlayDemo("DEMO4");
-
-            break;
+		break;
     }
 
     // [Russell] - Still need this toilet humor for now unfortunately
