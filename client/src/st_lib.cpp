@@ -36,6 +36,7 @@
 #include "i_system.h"
 
 #include "w_wad.h"
+#include "gi.h"
 
 #include "st_stuff.h"
 #include "st_lib.h"
@@ -56,7 +57,7 @@ patch_t*				sttminus;
 
 void STlib_init(void)
 {
-	sttminus = W_CachePatch((gamemode == registered_heretic ? "NEGNUM": "STTMINUS"), PU_STATIC);
+	sttminus = W_CachePatch((gameinfo.gametype & GAME_Heretic ? "NEGNUM": "STTMINUS"), PU_STATIC);
 }
 
 

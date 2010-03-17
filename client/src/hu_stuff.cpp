@@ -40,6 +40,7 @@
 #include "cl_ctf.h"
 #include "i_video.h"
 #include "i_input.h"
+#include "gi.h"
 
 #define QUEUESIZE		128
 #define MESSAGESIZE		256
@@ -131,7 +132,7 @@ void HU_Init (void)
 	j = k = HU_FONTSTART;
 
 	// Quick hack to handle the FONTA (and FONTB) of Heretic and Hexen
-	if (gamemode == registered_heretic) {
+	if (gameinfo.gametype & GAME_Heretic) {
 		tplate = "FONTA%02u";
 		sub = HU_FONTSTART - 1;
 		hu_raven = true;

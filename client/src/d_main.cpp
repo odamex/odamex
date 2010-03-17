@@ -295,7 +295,7 @@ void D_Display (void)
 				AM_Drawer ();
 			C_DrawMid ();
 			CTF_DrawHud ();
-			if (gamemode != registered_heretic) {
+			if (!(gameinfo.gametype & GAME_Heretic)) {
 				ST_Drawer ();
 				HU_Drawer ();
 			}
@@ -476,7 +476,7 @@ void D_PageDrawer (void)
 		page->Blit (0, 0, page->width, page->height,
 			screen, 0, 0, screen->width, screen->height);
 
-		if (gamemode == registered_heretic && demosequence == 1)
+		if ((gameinfo.gametype & GAME_Heretic) && demosequence == 1)
 			screen->DrawPatchIndirect((patch_t *)W_CacheLumpName("ADVISOR",PU_CACHE),4,160);
 	}
 	else
@@ -511,7 +511,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-    if (gamemode == registered_heretic)
+    if (gameinfo.gametype & GAME_Heretic)
         demosequence = (demosequence+1)%7;
     else if (W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
         demosequence = (demosequence+1)%8;
@@ -521,7 +521,7 @@ void D_DoAdvanceDemo (void)
     switch (demosequence)
     {
         case 0:
-			if (gamemode == registered_heretic)
+			if (gameinfo.gametype & GAME_Heretic)
 				pagetic = 210;
             else if (gamemode == commercial)
                 pagetic = TICRATE * 11;
@@ -535,7 +535,7 @@ void D_DoAdvanceDemo (void)
 		break;
 		
         case 1:
-			if (gamemode == registered_heretic)
+			if (gameinfo.gametype & GAME_Heretic)
 			{
 				pagetic = 140;
 				pagename = gameinfo.titlePage;
@@ -545,7 +545,7 @@ void D_DoAdvanceDemo (void)
 		break;
 		
         case 2:
-            if (gamemode == registered_heretic)
+            if (gameinfo.gametype & GAME_Heretic)
 				G_DeferedPlayDemo("DEMO1");
 			else
 			{
@@ -556,7 +556,7 @@ void D_DoAdvanceDemo (void)
 		break;
 		
         case 3:
-			if (gamemode == registered_heretic)
+			if (gameinfo.gametype & GAME_Heretic)
 			{
 				pagetic = 200;
 				gamestate = GS_DEMOSCREEN;
@@ -580,7 +580,7 @@ void D_DoAdvanceDemo (void)
             }
             else
             {
-            	if (gamemode == registered_heretic)
+            	if (gameinfo.gametype & GAME_Heretic)
 					G_DeferedPlayDemo("DEMO2");
 				else
 				{
@@ -596,7 +596,7 @@ void D_DoAdvanceDemo (void)
 		break;
 		
         case 5:
-			if (gamemode == registered_heretic)
+			if (gameinfo.gametype & GAME_Heretic)
 			{
 				pagetic = 200;
 				gamestate = GS_DEMOSCREEN;
@@ -612,7 +612,7 @@ void D_DoAdvanceDemo (void)
 		break;
 		
         case 6:
-			if (gamemode == registered_heretic)
+			if (gameinfo.gametype & GAME_Heretic)
 				G_DeferedPlayDemo("DEMO3");
 			else
 			{

@@ -31,6 +31,18 @@
 #include "farchive.h"
 #include "doomdef.h"
 
+#ifndef EGAMETYPE
+#define EGAMETYPE
+enum EGameType
+{
+	GAME_Any	 = 0,
+	GAME_Doom	 = 1,
+	GAME_Heretic = 2,
+	GAME_Hexen	 = 4,
+	GAME_Raven	 = 6
+};
+#endif
+
 typedef enum
 {
 	SPR_TROO,

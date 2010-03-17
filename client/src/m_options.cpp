@@ -42,6 +42,7 @@
 #include "v_video.h"
 #include "v_text.h"
 #include "w_wad.h"
+#include "gi.h"
 
 #include "r_local.h"
 
@@ -708,7 +709,7 @@ void M_SwitchMenu (menu_t *menu)
 
 bool M_StartOptionsMenu (void)
 {
-	if (gamemode == registered_heretic)
+	if (gameinfo.gametype & GAME_Heretic)
 		OptionMenu.title = "Options";
 
 	M_SwitchMenu (&OptionMenu);
@@ -757,7 +758,7 @@ void M_OptDrawer (void)
 	menuitem_t *item;
 	patch_t *title;
 
-	luioffset = (gamemode == registered_heretic ? 2 : 0);
+	luioffset = (gameinfo.gametype & GAME_Heretic ? 2 : 0);
 	if (W_CheckNumForName(CurrentMenu->title) == -1)
 	{
 		// Try drawing it as text, maybe if this fails we just set a number for height and move on

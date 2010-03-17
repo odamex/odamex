@@ -224,7 +224,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			if (num == -1)
 				stylize = true;
 
-			if (gamemode == registered_heretic) {
+			if (gameinfo.gametype & GAME_Heretic) {
 				num = W_GetNumForName (gameinfo.consoleBack);
 				isRaw = gameinfo.flags & GI_PAGESARERAW;
 			}

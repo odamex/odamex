@@ -29,6 +29,11 @@
 
 gameinfo_t gameinfo;
 
+const char *GameNames[5] =
+{
+	NULL, "Doom", "Heretic", NULL, "Hexen"
+};
+
 static const char *doomquitsounds[8] =
 {
 	"player/male/death1",
@@ -90,7 +95,8 @@ gameinfo_t HereticGameInfo =
 	NULL,
 	17,
 	"FLAT513",
-	&HereticBorder
+	&HereticBorder,
+	GAME_Heretic
 };
 
 gameinfo_t HereticSWGameInfo =
@@ -114,7 +120,8 @@ gameinfo_t HereticSWGameInfo =
 	NULL,
 	17,
 	"FLOOR04",
-	&HereticBorder
+	&HereticBorder,
+	GAME_Heretic
 };
 
 gameinfo_t SharewareGameInfo =
@@ -138,7 +145,8 @@ gameinfo_t SharewareGameInfo =
 	doomquitsounds,
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	GAME_Doom
 };
 
 gameinfo_t RegisteredGameInfo =
@@ -162,7 +170,8 @@ gameinfo_t RegisteredGameInfo =
 	doomquitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	GAME_Doom
 };
 
 gameinfo_t RetailGameInfo =
@@ -186,7 +195,8 @@ gameinfo_t RetailGameInfo =
 	doomquitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
-	&DoomBorder
+	&DoomBorder,
+	GAME_Doom
 };
 
 gameinfo_t CommercialGameInfo =
@@ -210,7 +220,8 @@ gameinfo_t CommercialGameInfo =
 	doom2quitsounds,
 	3,
 	"GRNROCK",
-	&DoomBorder
+	&DoomBorder,
+	GAME_Doom
 };
 
 VERSION_CONTROL (gi_cpp, "$Id$")

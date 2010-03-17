@@ -79,6 +79,7 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
+#include "gi.h"
 
 #include "txt_main.h"
 #define ENDOOM_W 80
@@ -427,7 +428,7 @@ void I_Endoom(void)
 	int indent;
 	char *endlump;
 
-	if (gamemode == registered_heretic)
+	if (gameinfo.gametype & GAME_Heretic)
 		endlump = "ENDTEXT";
 	else
 		endlump = "ENDOOM";

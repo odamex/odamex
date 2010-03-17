@@ -696,7 +696,7 @@ void M_DrawLoad (void)
 {
 	int i;
 
-	if (gamemode == registered_heretic)
+	if (gameinfo.gametype & GAME_Heretic)
 	{
 		LoadDef.y = 30;
 		LoadDef.x = 70;
@@ -763,7 +763,7 @@ void M_DrawSave(void)
 {
 	int i;
 
-	if (gamemode == registered_heretic)
+	if (gameinfo.gametype & GAME_Heretic)
 	{
 		LoadDef.y = 30;
 		LoadDef.x = 70;
@@ -957,7 +957,7 @@ void M_ReadThis2(int choice)
 
 void M_ReadThis3(int choice)
 {
-    if ((gameinfo.flags & GI_SHAREWARE) || gamemode == registered_heretic) {
+    if ((gameinfo.flags & GI_SHAREWARE) || (gameinfo.gametype & GAME_Heretic)) {
         choice = 0;
         drawSkull = false;
         M_SetupNextMenu(&ReadDef3);
@@ -982,7 +982,7 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 {
 	int i;
 
-	if (gamemode == registered_heretic)
+	if (gameinfo.gametype & GAME_Heretic)
 		screen->DrawPatchClean(W_CachePatch("M_FSLOT"), x-8, y+7);
 	else
 	{
@@ -1039,7 +1039,8 @@ void M_NewGame(int choice)
 		M_SetupNextMenu(&NewDef);
 	else
 	{
-		if (gamemode == registered_heretic) {
+		if (gameinfo.gametype & GAME_Heretic) 
+		{
 			EpiDef.numitems = htc_ep_end;
 			EpiDef.menuitems = HereticEpisodeMenu;
 			EpiDef.routine = NULL;
@@ -1106,7 +1107,8 @@ void M_Episode (int choice)
 	}
 
 	epi = choice;
-	if (gamemode == registered_heretic) {
+	if (gameinfo.gametype & GAME_Heretic)
+	{
 		NewDef.menuitems = HereticNewGameMenu;
 		NewDef.routine = NULL;
 		NewDef.x = 38;
@@ -1184,7 +1186,7 @@ void M_DrawReadThis3 (void)
 //
 void M_DrawOptions(void)
 {
-	if (gamemode == registered_heretic)
+	if (gameinfo.gametype & GAME_Heretic)
 		screen->DrawTextLargeClean (0, 108, 15, "OPTIONS");
 	else
 		screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
@@ -1327,7 +1329,7 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw player name box
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y, "Name");
-	if (gamemode == registered_heretic)
+	if (gameinfo.gametype & GAME_Heretic)
 		M_DrawSaveLoadSlot (PSetupDef.x + 48, PSetupDef.y-4);
 
 	else
@@ -2095,7 +2097,7 @@ void M_Drawer (void)
 			for (i = 0; i < max; i++)
 			{
 				if (currentMenu->menuitems[i].name[0]) {
-					if (gamemode == registered_heretic)
+					if (gameinfo.gametype & GAME_Heretic)
 					{
 						screen->DrawTextLargeClean(0, x, y, currentMenu->menuitems[i].name);
 						y += HTCLINEHEIGHT;
@@ -2111,7 +2113,7 @@ void M_Drawer (void)
 			// DRAW SKULL
 			if (drawSkull)
 			{
-				if (gamemode == registered_heretic)
+				if (gameinfo.gametype & GAME_Heretic)
 					screen->DrawPatchClean (W_CachePatch(arrowName[whichSkull]),
 						x + ARROWXOFF, (currentMenu->y + itemOn*HTCLINEHEIGHT + ARROWYOFF));
 				else
@@ -2250,7 +2252,7 @@ void M_Init (void)
 
         MainDef.y += 8;
     }
-    else if (gamemode == registered_heretic)
+    else if (gameinfo.gametype & GAME_Heretic)
     {
     	// Heretic changes stuff
 		MainDef.numitems = NUM_MENU_ITEMS (HereticMainMenu);

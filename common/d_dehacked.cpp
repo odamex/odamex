@@ -43,6 +43,7 @@
 #include "d_player.h"
 #include "m_fileio.h"
 #include "p_local.h"
+#include "gi.h"
 
 // Miscellaneous info that used to be constant
 struct DehInfo deh = {
@@ -858,7 +859,7 @@ static int GetLine (void)
 static int PatchThing (int thingy)
 {
     size_t thingNum = (size_t)thingy;
-    const char **SoundMap = (gamemode == registered_heretic ? HereticSoundMap : DoomSoundMap);
+    const char **SoundMap = (gameinfo.gametype & GAME_Heretic ? HereticSoundMap : DoomSoundMap);
 
 	static const struct Key keys[] = {
 		{ "ID #",				myoffsetof(mobjinfo_t,doomednum) },

@@ -1484,7 +1484,7 @@ void ST_loadGraphics(void)
 	else
 		skin = &skins[consoleplayer().userinfo.skin];
 
-	if (gamemode == registered_heretic) {
+	if (gameinfo.gametype & GAME_Heretic) {
 		bignums = "IN%d";
 		smallnums = "SMALLIN%d";
 	} else {
@@ -1507,7 +1507,7 @@ void ST_loadGraphics(void)
 		hudcross[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
 	
-if (gamemode != registered_heretic) {
+if (!(gameinfo.gametype & GAME_Heretic)) {
 	// Load percent key.
 	//Note: why not load STMINUS here, too?
 	tallpercent = W_CachePatch("STTPRCNT", PU_STATIC);
@@ -1558,12 +1558,12 @@ if (gamemode != registered_heretic) {
 	}
 }
 	// status bar background bits
-	if (gamemode == registered_heretic)
+	if (gameinfo.gametype & GAME_Heretic)
 		sbar = W_CachePatch("STATBAR", PU_STATIC);
 	else
 		sbar = W_CachePatch("STBAR", PU_STATIC);
 
-if (gamemode != registered_heretic) {
+if (!(gameinfo.gametype & GAME_Heretic)) {
 	// face states
 	facenum = 0;
 
