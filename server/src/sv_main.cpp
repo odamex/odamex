@@ -1671,7 +1671,7 @@ bool SV_BanCheck (client_t *cl, int n)
 		}
 
 		// Now see if there is an exception on our ban...
-		if (WhiteList.size() > 0)
+		if (WhiteList.empty() == false)
 		{
 			for (size_t k = 0; k < WhiteList.size(); k++)
 			{
