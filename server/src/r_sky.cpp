@@ -30,7 +30,7 @@
 
 // [ML] 5/11/06 - Remove sky2
 int 		skyflatnum;
-int 		skytexture;
+int 		sky1texture;
 
 fixed_t		skypos=0,		skyspeed=0;
 

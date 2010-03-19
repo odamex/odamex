@@ -33,9 +33,8 @@
 #include "c_cvars.h"
 #include "g_level.h"
 #include "r_sky.h"
-
-EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(cl_mouselook)
+#include "gi.h"
+#include "w_wad.h"
 
 extern int *texturewidthmask;
 
@@ -43,15 +42,15 @@ extern int *texturewidthmask;
 // sky mapping
 //
 int 		skyflatnum;
-int 		skytexture;					//		[ML] 5/11/06 - remove sky2 remenants
+int 		sky1texture,	sky2texture;
 fixed_t		skytexturemid;
 fixed_t		skyscale;
 int			skystretch;
-fixed_t		skyheight;					
 fixed_t		skyiscale;
 
-int			skyshift;					//		[ML] 5/11/06 - remove sky2 remenants
-fixed_t		skypos=0,		skyspeed=0;
+int			sky1shift,		sky2shift;
+fixed_t		sky1pos=0,		sky1speed=0;
+fixed_t		sky2pos=0,		sky2speed=0;
 
 CVAR_FUNC_IMPL(r_stretchsky)
 {
@@ -70,36 +69,74 @@ extern fixed_t freelookviewheight;
 // Called whenever the view size changes.
 //
 // [ML] 5/11/06 - Remove sky2 stuffs
+// [ML] 3/16/10 - Bring it back!
 
 void R_InitSkyMap ()
 {
+	texpatch_t *texpatch;
+	patch_t *wpatch;
+	int p_height, t_height,i,j,count;
+
 	if (textureheight == NULL)
 		return;
-		
-	skytexturemid = 100*FRACUNIT;
-	skystretch = 0;
 
-	if (textureheight[skytexture] <= (128 << FRACBITS))
+	if (sky2texture && textureheight[sky1texture] != textureheight[sky2texture])
 	{
-		//skystretch = (r_stretchsky && sv_freelook && cl_mouselook);
-		skystretch = r_stretchsky;
+		Printf (PRINT_HIGH,"\x1f+Both sky textures must be the same height.\x1f-\n");
+		sky2texture = sky1texture;
 	}
 
-	skyheight = textureheight[skytexture] << skystretch;
+	t_height = textures[sky1texture]->height;
+	p_height = 0;
+
+	count = textures[sky1texture]->patchcount;
+	texpatch = &(textures[sky1texture]->patches[0]);
+	
+	// Find the tallest patch in the texture
+	for(i = 0; i < count; i++, texpatch++)
+	{
+		wpatch = W_CachePatch(texpatch->patch);
+		if(wpatch->height() > p_height)
+			p_height = SAFESHORT(wpatch->height());
+	}
+
+	textures[sky1texture]->height = MAX(t_height,p_height);
+	textureheight[sky1texture] = textures[sky1texture]->height << FRACBITS;
+	
+	j = 1;
+	while (j < (textures[sky1texture]->height))
+		j <<= 1;
+
+	textureheightmask[sky1texture] = j-1;
+
+	if (textureheight[sky1texture] <= (128 << FRACBITS))
+	{
+		skytexturemid = 200/2*FRACUNIT;
+		skystretch = r_stretchsky;
+	}
+	else
+	{
+		skytexturemid = 199<<FRACBITS;//textureheight[sky1texture]-1;
+		skystretch = 0;
+	}
 
 	if (viewwidth && viewheight)
 	{
 		skyiscale = (200*FRACUNIT) / (((freelookviewheight<<detailxshift) * viewwidth) / (viewwidth<<detailxshift));
 		skyscale = ((((freelookviewheight<<detailxshift) * viewwidth) / (viewwidth<<detailxshift)) << FRACBITS) /(200);
 
-		skyiscale = FixedMul (skyiscale, FixedDiv (clipangle, ANG45));
-		skyscale = FixedMul (skyscale, FixedDiv (ANG45, clipangle));
+		skyiscale = FixedMul (skyiscale, FixedDiv (FieldOfView, 2048));
+		skyscale = FixedMul (skyscale, FixedDiv (2048, FieldOfView));
 	}
 
-	// The sky map is 256*128*4 maps.
-	skyshift = 22+skystretch-16;
-	if (texturewidthmask[skytexture] >= 127)
-		skyshift -= skystretch;
+	// The DOOM sky map is 256*128*4 maps.
+	// The Heretic sky map is 256*200*4 maps.
+	sky1shift = 22+skystretch-16;
+	sky2shift = 22+skystretch-16;	
+	if (texturewidthmask[sky1texture] >= 127)
+		sky1shift -= skystretch;
+	if (texturewidthmask[sky2texture] >= 127)
+		sky2shift -= skystretch;		
 }
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")

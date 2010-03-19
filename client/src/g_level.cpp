@@ -562,8 +562,7 @@ void G_DoLoadLevel (int position)
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
-	// [ML] 5/11/06 - remove sky2 remenants
-	skytexture = R_TextureNumForName (level.skypic);
+	sky1texture = R_TextureNumForName (level.skypic);
 
 	// [RH] Set up details about sky rendering
 	R_InitSkyMap ();

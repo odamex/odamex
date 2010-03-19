@@ -27,8 +27,8 @@
 // SKY, store the number for name.
 extern char SKYFLATNAME[8];
 
-extern int 		skytexture; //,	sky2texture;        [ML] 5/11/06 - Remove sky2
-extern fixed_t	skypos;    //,		sky2pos;
+extern int 		sky1texture,	sky2texture;        // [ML] 5/11/06 - Remove sky2
+extern fixed_t	sky1pos,		sky2pos;
 
 #endif
 

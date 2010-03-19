@@ -70,7 +70,7 @@ CVAR_FUNC_IMPL (crosshair)
 fixed_t 		pspritexscale;
 fixed_t			pspriteyscale;
 fixed_t 		pspritexiscale;
-//fixed_t		sky1scale;			// [RH] Sky 1 scale factor
+fixed_t			sky1scale;			// [RH] Sky 1 scale factor
 									// [ML] 5/11/06 - Removed sky2
 int*			spritelights;
 
