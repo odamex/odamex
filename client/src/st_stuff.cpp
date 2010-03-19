@@ -67,7 +67,7 @@ bool		st_firsttime;
 // lump number for PLAYPAL
 static int		lu_palette;
 
-
+EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (idmypos)
 CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
 {
@@ -125,7 +125,27 @@ float BaseBlendA;
 //
 // STATUS BAR DATA
 //
+//
+// Status Bar Object for GameModeInfo
+//
 
+// From EE, gameinfo defined status bar
+// haleyjd 10/12/03: DOOM's status bar object
+
+static void ST_DoomTicker(void);
+static void ST_DoomDrawer(void);
+static void ST_DoomStart(void);
+static void ST_DoomInit(void);
+
+stbarfns_t DoomStatusBar =
+{
+   ST_HEIGHT,
+
+   ST_DoomTicker,
+   ST_DoomDrawer,
+   ST_DoomStart,
+   ST_DoomInit
+};
 
 // N/256*100% probability
 //	that the normal face state will change
@@ -1268,13 +1288,17 @@ void ST_updateWidgets(void)
 
 }
 
-void ST_Ticker (void)
+void ST_DoomTicker (void)
 {
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
 	st_oldhealth = consoleplayer().health;
 }
 
+void ST_Ticker (void)
+{
+	gameinfo.StatusBar->Ticker();
+}
 static int st_palette = 0;
 
 /* Original redscreen palette method - replaces ZDoom method - ML       */
@@ -1399,49 +1423,54 @@ void ST_diffDraw(void)
 	ST_drawWidgets(false);
 }
 
-void ST_Drawer (void)
+void ST_DoomDrawer (void)
 {
+	if (st_firsttime)
+		ST_doRefresh ();
+	else
+		ST_diffDraw ();
+}
+
+void ST_Drawer(void)
+{
+	stbarfns_t *StatusBar = gameinfo.StatusBar;
+	
 	if (noisedebug)
 		S_NoiseDebug ();
-
-	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
+		
+	if ((screenblocks > 10 && viewactive) || (&consoleplayer())->spectator)
 	{
-		if (DrawNewHUD)
-			//if (!multiplayer)
-			//	ST_newDraw ();
-			//else
-				ST_newDrawDM ();
-		else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
-			ST_newDrawCTF();
-		st_firsttime = true;
+		if (!(gameinfo.gametype & GAME_Heretic))
+		{
+			if (DrawNewHUD)
+				if (!multiplayer)
+					ST_newDraw ();
+				else
+					ST_newDrawDM ();
+			else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
+				ST_newDrawCTF();
+			st_firsttime = true;
+		}
 	}
 	else
 	{
 		stbarscreen->Lock ();
 		stnumscreen->Lock ();
-
-		if (st_firsttime)
-		{
-			ST_doRefresh ();
-		}
-		else
-		{
-			ST_diffDraw ();
-		}
+		
+		StatusBar->Drawer();
 
 		stnumscreen->Unlock ();
 		stbarscreen->Unlock ();
-	}
-
-
+	}	
+	
 	if (viewheight <= ST_Y)
 		ST_nameDraw (ST_Y - 11 * CleanYfac);
 	else
-		ST_nameDraw (screen->height - 11 * CleanYfac);
+		ST_nameDraw (screen->height - 11 * CleanYfac);	
 
 	// Do red-/gold-shifts from damage/items
 	ST_doPaletteStuff();
-
+	
 	// [RH] Hey, it's somewhere to put the idmypos stuff!
 	if (idmypos)
 		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
@@ -1853,19 +1882,13 @@ void ST_createWidgets(void)
 
 }
 
+
 static BOOL	st_stopped = true;
 
-
-void ST_Start (void)
+void ST_DoomStart (void)
 {
-	if (!st_stopped)
-		ST_Stop();
-
 	ST_initData();
 	ST_createWidgets();
-	st_stopped = false;
-	st_firsttime = true;
-	st_scale.Set (st_scale.cstring());
 }
 
 void ST_Stop (void)
@@ -1878,6 +1901,24 @@ void ST_Stop (void)
 	st_stopped = true;
 }
 
+void ST_Start (void)
+{
+	if (!st_stopped)
+		ST_Stop();
+
+	gameinfo.StatusBar->Start();
+
+	st_stopped = false;
+	st_firsttime = true;
+	st_scale.Set (st_scale.cstring());
+}
+
+void ST_DoomInit (void)
+{
+	ST_loadData();
+}
+
+
 void ST_Init (void)
 {
 	if(!stbarscreen)
@@ -1885,10 +1926,10 @@ void ST_Init (void)
 
 	if(!stnumscreen)
 		stnumscreen = I_AllocateScreen (320, 32, 8);
-
-	ST_loadData();
+			
+	gameinfo.StatusBar->Init();
 }
 
-VERSION_CONTROL (st_stuff_cpp, "$Id$")
 
+VERSION_CONTROL (st_stuff_cpp, "$Id$")
 

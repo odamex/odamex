@@ -38,6 +38,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option parameters="-iwad heretic.wad" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -382,6 +383,7 @@
 		<Unit filename="..\src\r_things.cpp" />
 		<Unit filename="..\src\s_sound.cpp" />
 		<Unit filename="..\src\s_sound.h" />
+		<Unit filename="..\src\st_heretic.cpp" />
 		<Unit filename="..\src\st_lib.cpp" />
 		<Unit filename="..\src\st_lib.h" />
 		<Unit filename="..\src\st_new.cpp" />

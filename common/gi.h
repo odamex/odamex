@@ -26,6 +26,7 @@
 #define __GI_H__
 
 #include "doomtype.h"
+#include "st_stuff.h"
 
 #define GI_MAPxx				0x00000001
 #define GI_PAGESARERAW			0x00000002
@@ -94,6 +95,8 @@ typedef struct
 	const char **quitSounds;	// Pointer to list of quit sound lumps
 	int maxSwitch;
 	char borderFlat[8];			// Flat to use when changing screen size
+
+	stbarfns_t *StatusBar;     	// status bar function set
 	gameborder_t *border;
 	EGameType gametype;			// Indicates which game this is
 } gameinfo_t;

@@ -295,10 +295,9 @@ void D_Display (void)
 				AM_Drawer ();
 			C_DrawMid ();
 			CTF_DrawHud ();
-			if (!(gameinfo.gametype & GAME_Heretic)) {
 				ST_Drawer ();
+			if (!(gameinfo.gametype & GAME_Heretic))
 				HU_Drawer ();
-			}
 			break;
 
 		case GS_INTERMISSION:

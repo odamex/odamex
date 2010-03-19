@@ -95,6 +95,7 @@ gameinfo_t HereticGameInfo =
 	NULL,
 	17,
 	"FLAT513",
+	&HticStatusBar,
 	&HereticBorder,
 	GAME_Heretic
 };
@@ -120,6 +121,7 @@ gameinfo_t HereticSWGameInfo =
 	NULL,
 	17,
 	"FLOOR04",
+	&HticStatusBar,
 	&HereticBorder,
 	GAME_Heretic
 };
@@ -145,6 +147,7 @@ gameinfo_t SharewareGameInfo =
 	doomquitsounds,
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
+	&DoomStatusBar,	
 	&DoomBorder,
 	GAME_Doom
 };
@@ -170,6 +173,7 @@ gameinfo_t RegisteredGameInfo =
 	doomquitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
+	&DoomStatusBar,
 	&DoomBorder,
 	GAME_Doom
 };
@@ -195,6 +199,7 @@ gameinfo_t RetailGameInfo =
 	doomquitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
+	&DoomStatusBar,
 	&DoomBorder,
 	GAME_Doom
 };
@@ -220,6 +225,7 @@ gameinfo_t CommercialGameInfo =
 	doom2quitsounds,
 	3,
 	"GRNROCK",
+	&DoomStatusBar,
 	&DoomBorder,
 	GAME_Doom
 };
