@@ -156,7 +156,7 @@ typedef struct st_binicon_s st_binicon_t;
 //
 void STlib_init(void);
 
-
+void STlib_scaleRect (int x, int y, int w, int h);
 
 // Number widget routines
 void

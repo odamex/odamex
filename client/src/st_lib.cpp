@@ -48,16 +48,12 @@
 
 // in AM_map.c
 extern BOOL			automapactive;
+extern patch_t		*negminus;
 
-//
-// Hack display negative frags.
-//	Loads and store the stminus lump.
-//
-patch_t*				sttminus;
 
 void STlib_init(void)
 {
-	sttminus = W_CachePatch((gameinfo.gametype & GAME_Heretic ? "NEGNUM": "STTMINUS"), PU_STATIC);
+
 }
 
 
@@ -157,7 +153,7 @@ void STlib_drawNum (st_number_t *n, bool refresh)
 
 	// draw a minus sign if necessary
 	if (neg)
-		STlib_scalePatch (x - 8, n->y, sttminus);
+		STlib_scalePatch (x - 8, n->y, negminus);
 }
 
 

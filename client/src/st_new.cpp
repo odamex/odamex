@@ -37,6 +37,7 @@
 #include "i_system.h"
 #include "m_swap.h"
 #include "st_stuff.h"
+#include "st_lib.h"
 #include "c_cvars.h"
 #include "cl_ctf.h"
 #include "hu_stuff.h"
@@ -62,7 +63,7 @@ static const patch_t	*flagiconrdropped;
 static const char		ammopatches[4][8] = { "CLIPA0", "SHELA0", "CELLA0", "ROCKA0" };
 static int		NameUp = -1;
 
-extern patch_t	*sttminus;
+extern patch_t	*negminus;
 extern patch_t	*tallnum[10];
 extern patch_t	*faces[];
 extern patch_t	*hudcross[];
@@ -168,13 +169,13 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (hud_scale)
 		{
-			scrn->DrawLucentPatchCleanNoMove (sttminus, x, y);
-			x += CleanXfac * sttminus->width();
+			scrn->DrawLucentPatchCleanNoMove (negminus, x, y);
+			x += CleanXfac * negminus->width();
 		}
 		else
 		{
-			scrn->DrawLucentPatch (sttminus, x, y);
-			x += sttminus->width();
+			scrn->DrawLucentPatch (negminus, x, y);
+			x += negminus->width();
 		}
 		num = -num;
 	}
@@ -223,7 +224,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	} while (d /= 10);
 
 	if (num < 0)
-		x -= sttminus->width() * xscale;
+		x -= negminus->width() * xscale;
 
 	ST_DrawNum (x, y, scrn, num);
 }
@@ -240,7 +241,7 @@ void ST_DrawNumNewRight (int x, int y, int num)
 	x -= w;
 
 	if (num < 0)
-		x -= sttminus->width();	
+		x -= negminus->width();	
 
 	ST_DrawNumNew (x, y,  num);
 }

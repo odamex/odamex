@@ -76,14 +76,14 @@ CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
 		// Stretch status bar to fill width of screen
 
 		ST_WIDTH = screen->width;
-   		ST_HEIGHT = (32 * screen->height) / 200;
+   		ST_HEIGHT = (42 * screen->height) / 200;
 	}
 	else
 	{
 		// Do not stretch status bar
 
 		ST_WIDTH = 320;
-		ST_HEIGHT = 32;
+		ST_HEIGHT = 42;
 	}
 
 	if (!(&consoleplayer())->spectator) {
@@ -137,15 +137,15 @@ static void ST_DoomDrawer(void);
 static void ST_DoomStart(void);
 static void ST_DoomInit(void);
 
-stbarfns_t DoomStatusBar =
-{
-   ST_HEIGHT,
+static void ST_HticTicker(void);
+static void ST_HticDrawer(void);
+static void ST_HticStart(void);
+static void ST_HticInit(void);
 
-   ST_DoomTicker,
-   ST_DoomDrawer,
-   ST_DoomStart,
-   ST_DoomInit
-};
+//
+// Defines
+//
+#define ST_HBARHEIGHT 42
 
 // N/256*100% probability
 //	that the normal face state will change
@@ -323,6 +323,32 @@ int						ST_WIDTH;
 int						ST_X;
 int						ST_Y;
 
+
+//
+// Status Bar Object for GameModeInfo
+//
+stbarfns_t HticStatusBar =
+{
+   ST_HBARHEIGHT,
+
+   ST_HticTicker,
+   ST_HticDrawer,
+   ST_HticStart,
+   ST_HticInit,
+};
+
+stbarfns_t DoomStatusBar =
+{
+   ST_HEIGHT,
+
+   ST_DoomTicker,
+   ST_DoomDrawer,
+   ST_DoomStart,
+   ST_DoomInit
+};
+
+static BOOL	st_stopped = true;
+
 // used for making messages go away
 static int				st_msgcounter=0;
 
@@ -330,7 +356,7 @@ static int				st_msgcounter=0;
 static st_stateenum_t	st_gamestate;
 
 // whether left-side main status bar is active
-static bool			st_statusbaron;
+bool			st_statusbaron;
 
 // whether status bar chat is active
 static bool			st_chat;
@@ -365,13 +391,20 @@ patch_t*		 		tallnum[10];
 patch_t*		 		tallpercent;
 
 // 0-9, short, yellow (,different!) numbers
-static patch_t* 		shortnum[10];
+// [ML] no longer static
+patch_t* 				shortnum[10];
 
 // 3 key-cards, 3 skulls, [RH] 3 combined
 patch_t* 				keys[NUMCARDS+NUMCARDS/2];
 
 // face status patches [RH] no longer static
 patch_t* 				faces[ST_NUMFACES];
+
+// negative number patch
+patch_t*				negminus;
+
+// LAME graphic
+patch_t*				lamenum;
 
 // New HUD health indicator
 patch_t*				hudcross[6];
@@ -416,10 +449,10 @@ static st_multicon_t	w_arms[6];
 static st_multicon_t	w_faces;
 
 // keycard widgets
-static st_multicon_t	w_keyboxes[3];
+st_multicon_t	w_keyboxes[3];
 
 // armor widget
-static st_percent_t 	w_armor;
+st_percent_t 	w_armor;
 
 // ammo widgets
 static st_number_t		w_ammo[4];
@@ -430,7 +463,7 @@ static st_number_t		w_maxammo[4];
 // flagbox blue indicator widget
 static st_binicon_t		w_flagboxblu;
 
-// flagbox red indicator widger
+// flagbox red indicator widget
 static st_binicon_t		w_flagboxred;
 
 // number of frags so far in deathmatch
@@ -450,15 +483,41 @@ static int		st_facecount = 0;
 int				st_faceindex = 0;
 
 // holds key-type for each key box on bar
-static int		keyboxes[3];
+int		keyboxes[3];
 
 // copy of player info
-static int		st_health, st_armor;
+int		st_health, st_armor;
 static int		st_ammo[4], st_maxammo[4];
 static int		st_weaponowned[6] = {0}, st_current_ammo;
 
 // a random number per tick
-static int		st_randomnumber;
+int		st_randomnumber;
+
+
+// current state variables
+static int chainhealth;        // current position of the gem
+static int chainwiggle;        // small randomized addend for chain y coord.
+
+static patch_t*			statbar;
+static patch_t*			invbar;
+static patch_t* 		sbar_back;
+static patch_t* 		godeyes_left;
+static patch_t* 		godeyes_right;
+static patch_t*			sbar_topleft;
+static patch_t*			sbar_topright;
+static patch_t*			chain;
+static patch_t*			lifegem;
+static patch_t*			ltface;
+static patch_t*			rtface;
+
+
+// health widget
+st_number_t 			w_numhealth;
+
+
+/***************************************************************/
+/**				 CHEAT CODE COMMANDS & FUNCTIONS			  **/
+/***************************************************************/
 
 // these are now in d_dehacked.cpp
 extern byte cheat_mus_seq[9];
@@ -499,53 +558,6 @@ cheatseq_t		cheat_clev = { cheat_clev_seq, 0 };
 cheatseq_t		cheat_mypos = { cheat_mypos_seq, 0 };
 
 
-//
-// STATUS BAR CODE
-//
-void ST_Stop(void);
-void ST_createWidgets(void);
-
-void ST_refreshBackground(void)
-{
-	if (st_statusbaron)
-	{
-		// [RH] If screen is wider than the status bar,
-		//      draw stuff around status bar.
-		if (FG->width > ST_WIDTH)
-		{
-			R_DrawBorder (0, ST_Y, ST_X, FG->height);
-			R_DrawBorder (FG->width - ST_X, ST_Y, FG->width, FG->height);
-		}
-
-		BG->DrawPatch (sbar, 0, 0);
-
-		if (gametype == GM_CTF) {
-			BG->DrawPatch (flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
-			BG->DrawPatch (flagbox, ST_FLGBOXX, ST_FLGBOXY);
-		} else if (gametype == GM_COOP)
-			BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
-
-		if (multiplayer)
-		{
-			if (!demoplayback || !democlassic) {
-				// [RH] Always draw faceback with the player's color
-				//		using a translation rather than a different patch.
-				V_ColorMap = translationtables + (consoleplayer().id) * 256;
-				BG->DrawTranslatedPatch (faceback, ST_FX, ST_FY);
-			} else {
-				BG->DrawPatch (faceclassic[consoleplayer().id-1], ST_FX, ST_FY);
-			}
-		}
-
-		BG->Blit (0, 0, 320, 32, stnumscreen, 0, 0, 320, 32);
-
-		if (!st_scale)
-			stnumscreen->Blit (0, 0, 320, 32,
-				FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
-	}
-}
-
-
 EXTERN_CVAR (allowcheats)
 
 // Checks whether cheats are enabled or not, returns true if they're NOT enabled
@@ -566,228 +578,6 @@ BOOL CheckCheatmode (void)
 	{
 		return false;
 	}
-}
-
-// Respond to keyboard input events, intercept cheats.
-// [RH] Cheats eatkey the last keypress used to trigger them
-bool ST_Responder (event_t *ev)
-{
-	  player_t *plyr = &consoleplayer();
-	  bool eatkey = false;
-	  int i;
-
-	  // Filter automap on/off.
-	  if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
-	  {
-		switch(ev->data1)
-		{
-		case AM_MSGENTERED:
-			st_gamestate = AutomapState;
-			st_firsttime = true;
-			break;
-
-		case AM_MSGEXITED:
-			st_gamestate = FirstPersonState;
-			break;
-		}
-	}
-
-	// if a user keypress...
-    else if (ev->type == ev_keydown)
-    {
-        // 'dqd' cheat for toggleable god mode
-        if (cht_CheckCheat(&cheat_god, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            // [Russell] - give full health
-            plyr->mo->health = deh.StartHealth;
-            plyr->health = deh.StartHealth;
-
-            AddCommandString("god");
-
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_IDDQD);
-            eatkey = true;
-        }
-
-        // 'fa' cheat for killer fucking arsenal
-        else if (cht_CheckCheat(&cheat_ammonokey, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf(PRINT_HIGH, "Ammo (No keys) Added\n");
-
-            plyr->armorpoints = deh.FAArmor;
-            plyr->armortype = deh.FAAC;
-
-            weapontype_t pendweap = plyr->pendingweapon;
-            for (i = 0; i<NUMWEAPONS; i++)
-                P_GiveWeapon (plyr, (weapontype_t)i, false);
-            plyr->pendingweapon = pendweap;
-
-            for (i=0; i<NUMAMMO; i++)
-                plyr->ammo[i] = plyr->maxammo[i];
-
-            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-            MSG_WriteByte(&net_buffer, 1);
-
-            eatkey = true;
-        }
-
-        // 'kfa' cheat for key full ammo
-        else if (cht_CheckCheat(&cheat_ammo, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf(PRINT_HIGH, "Very Happy Ammo Added\n");
-
-            plyr->armorpoints = deh.KFAArmor;
-            plyr->armortype = deh.KFAAC;
-
-            weapontype_t pendweap = plyr->pendingweapon;
-            for (i = 0; i<NUMWEAPONS; i++)
-                P_GiveWeapon (plyr, (weapontype_t)i, false);
-            plyr->pendingweapon = pendweap;
-
-            for (i=0; i<NUMAMMO; i++)
-                plyr->ammo[i] = plyr->maxammo[i];
-
-            for (i=0; i<NUMCARDS; i++)
-                plyr->cards[i] = true;
-
-            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-            MSG_WriteByte(&net_buffer, 2);
-
-            eatkey = true;
-        }
-        // [Russell] - Only doom 1/registered can have idspispopd and
-        // doom 2/final can have idclip
-        else if (cht_CheckCheat(&cheat_noclip, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            if ((gamemode != shareware) && (gamemode != registered) &&
-                (gamemode != retail))
-                return false;
-
-            AddCommandString("noclip");
-
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_NOCLIP);
-            eatkey = true;
-        }
-        else if (cht_CheckCheat(&cheat_commercial_noclip, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            if (gamemode != commercial)
-                return false;
-
-            AddCommandString("noclip");
-
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_NOCLIP);
-            eatkey = true;
-        }
-        // 'behold?' power-up cheats
-        for (i=0; i<6; i++)
-        {
-            if (cht_CheckCheat(&cheat_powerup[i], (char)ev->data2))
-            {
-                if (CheckCheatmode ())
-                    return false;
-
-                Printf(PRINT_HIGH, "Power-up toggled\n");
-                if (!plyr->powers[i])
-                    P_GivePower( plyr, i);
-                else if (i!=pw_strength)
-                    plyr->powers[i] = 1;
-                else
-                    plyr->powers[i] = 0;
-
-                MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-                MSG_WriteByte(&net_buffer, 3);
-                MSG_WriteByte(&net_buffer, (byte)i);
-
-                eatkey = true;
-            }
-        }
-
-        // 'behold' power-up menu
-        if (cht_CheckCheat(&cheat_powerup[6], (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf (PRINT_HIGH, "%s\n", STSTR_BEHOLD);
-
-        }
-
-        // 'choppers' invulnerability & chainsaw
-        else if (cht_CheckCheat(&cheat_choppers, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf(PRINT_HIGH, "... Doesn't suck - GM\n");
-            plyr->weaponowned[wp_chainsaw] = true;
-
-            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-            MSG_WriteByte(&net_buffer, 4);
-
-            eatkey = true;
-        }
-
-        // 'clev' change-level cheat
-        else if (cht_CheckCheat(&cheat_clev, (char)ev->data2))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            char buf[16];
-			//char *bb;
-
-            cht_GetParam(&cheat_clev, buf);
-            buf[2] = 0;
-
-			// [ML] Chex mode: always set the episode number to 1.
-			// FIXME: This is probably a horrible hack, it sure looks like one at least
-			if (gamemode == retail_chex)
-				sprintf(buf,"1%c",buf[1]);
-
-            sprintf (buf + 3, "map %s\n", buf);
-            AddCommandString (buf + 3);
-            eatkey = true;
-        }
-
-        // 'mypos' for player position
-        else if (cht_CheckCheat(&cheat_mypos, (char)ev->data2))
-        {
-            AddCommandString ("toggle idmypos");
-            eatkey = true;
-        }
-
-        // 'idmus' change-music cheat
-        else if (cht_CheckCheat(&cheat_mus, (char)ev->data2))
-        {
-            char buf[16];
-
-            cht_GetParam(&cheat_mus, buf);
-            buf[2] = 0;
-
-            sprintf (buf + 3, "idmus %s\n", buf);
-            AddCommandString (buf + 3);
-            eatkey = true;
-        }
-    }
-
-    return eatkey;
 }
 
 // Console cheats
@@ -961,6 +751,17 @@ BEGIN_COMMAND (fov)
 END_COMMAND (fov)
 
 
+//
+// STATUS BAR CODE
+//
+void ST_Stop(void);
+
+/***************************************************************/
+/**				   DOOM STATUS BAR FUNCTIONS				  **/
+/***************************************************************/
+
+void ST_createWidgets(void);
+
 int ST_calcPainOffset(void)
 {
 	int 		health;
@@ -983,6 +784,60 @@ int ST_calcPainOffset(void)
 	return lastcalc;
 }
 
+static patch_t *LoadFaceGraphic (char *name, int namespc)
+{
+	char othername[9];
+	int lump;
+
+	lump = W_CheckNumForName (name, namespc);
+	if (lump == -1)
+	{
+		strcpy (othername, name);
+		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
+		lump = W_GetNumForName (othername);
+	}
+	return W_CachePatch (lump, PU_STATIC);
+}
+
+void ST_refreshBackground(void)
+{
+	if (st_statusbaron)
+	{
+		// [RH] If screen is wider than the status bar,
+		//      draw stuff around status bar.
+		if (FG->width > ST_WIDTH)
+		{
+			R_DrawBorder (0, ST_Y, ST_X, FG->height);
+			R_DrawBorder (FG->width - ST_X, ST_Y, FG->width, FG->height);
+		}
+
+		BG->DrawPatch (sbar, 0, 0);
+
+		if (gametype == GM_CTF) {
+			BG->DrawPatch (flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
+			BG->DrawPatch (flagbox, ST_FLGBOXX, ST_FLGBOXY);
+		} else if (gametype == GM_COOP)
+			BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
+
+		if (multiplayer)
+		{
+			if (!demoplayback || !democlassic) {
+				// [RH] Always draw faceback with the player's color
+				//		using a translation rather than a different patch.
+				V_ColorMap = translationtables + (consoleplayer().id) * 256;
+				BG->DrawTranslatedPatch (faceback, ST_FX, ST_FY);
+			} else {
+				BG->DrawPatch (faceclassic[consoleplayer().id-1], ST_FX, ST_FY);
+			}
+		}
+
+		BG->Blit (0, 0, 320, 32, stnumscreen, 0, 0, 320, 32);
+
+		if (!st_scale)
+			stnumscreen->Blit (0, 0, 320, 32,
+				FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
+	}
+}
 
 //
 // This is a not-very-pretty routine which handles
@@ -1285,82 +1140,6 @@ void ST_updateWidgets(void)
 	// get rid of chat window if up because of message
 	if (!--st_msgcounter)
 		st_chat = st_oldchat;
-
-}
-
-void ST_DoomTicker (void)
-{
-	st_randomnumber = M_Random();
-	ST_updateWidgets();
-	st_oldhealth = consoleplayer().health;
-}
-
-void ST_Ticker (void)
-{
-	gameinfo.StatusBar->Ticker();
-}
-static int st_palette = 0;
-
-/* Original redscreen palette method - replaces ZDoom method - ML       */
-void ST_doPaletteStuff(void)
-{
-
-    int		palette;
-    byte*	pal;
-    int		cnt;
-    int		bzc;
-
-	player_t *plyr = &consoleplayer();
-
-    cnt = plyr->damagecount;
-
-    if (plyr->powers[pw_strength])
-    {
-	// slowly fade the berzerk out
-        bzc = 12 - (plyr->powers[pw_strength]>>6);
-
-        if (bzc > cnt)
-            cnt = bzc;
-    }
-
-    if (cnt)
-    {
-        palette = (cnt+7)>>3;
-
-		if (gamemode == retail_chex)
-			palette = RADIATIONPAL;
-		else {
-			if (palette >= NUMREDPALS)
-				palette = NUMREDPALS-1;
-
-			palette += STARTREDPALS;
-		}
-    }
-
-    else if (plyr->bonuscount)
-    {
-        palette = (plyr->bonuscount+7)>>3;
-
-        if (palette >= NUMBONUSPALS)
-            palette = NUMBONUSPALS-1;
-
-        palette += STARTBONUSPALS;
-    }
-
-    else if ( plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
-        palette = RADIATIONPAL;
-
-    else
-        palette = 0;
-
-    if (palette != st_palette)
-    {
-        st_palette = palette;
-        pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
-
-        I_SetOldPalette (pal);
-    }
-
 }
 
 void ST_drawWidgets(bool refresh)
@@ -1400,10 +1179,12 @@ void ST_drawWidgets(bool refresh)
 		STlib_updateBinIcon (&w_flagboxred, refresh);
 	}
 
+
 	if (st_scale && st_statusbaron)
 		stnumscreen->Blit (0, 0, 320, 32,
 			FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 }
+
 
 void ST_doRefresh(void)
 {
@@ -1414,7 +1195,6 @@ void ST_doRefresh(void)
 
 	// and refresh all widgets
 	ST_drawWidgets(true);
-
 }
 
 void ST_diffDraw(void)
@@ -1423,77 +1203,6 @@ void ST_diffDraw(void)
 	ST_drawWidgets(false);
 }
 
-void ST_DoomDrawer (void)
-{
-	if (st_firsttime)
-		ST_doRefresh ();
-	else
-		ST_diffDraw ();
-}
-
-void ST_Drawer(void)
-{
-	stbarfns_t *StatusBar = gameinfo.StatusBar;
-	
-	if (noisedebug)
-		S_NoiseDebug ();
-		
-	if ((screenblocks > 10 && viewactive) || (&consoleplayer())->spectator)
-	{
-		if (!(gameinfo.gametype & GAME_Heretic))
-		{
-			if (DrawNewHUD)
-				if (!multiplayer)
-					ST_newDraw ();
-				else
-					ST_newDrawDM ();
-			else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
-				ST_newDrawCTF();
-			st_firsttime = true;
-		}
-	}
-	else
-	{
-		stbarscreen->Lock ();
-		stnumscreen->Lock ();
-		
-		StatusBar->Drawer();
-
-		stnumscreen->Unlock ();
-		stbarscreen->Unlock ();
-	}	
-	
-	if (viewheight <= ST_Y)
-		ST_nameDraw (ST_Y - 11 * CleanYfac);
-	else
-		ST_nameDraw (screen->height - 11 * CleanYfac);	
-
-	// Do red-/gold-shifts from damage/items
-	ST_doPaletteStuff();
-	
-	// [RH] Hey, it's somewhere to put the idmypos stuff!
-	if (idmypos)
-		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
-				consoleplayer().camera->angle/FRACUNIT,
-				consoleplayer().camera->x/FRACUNIT,
-				consoleplayer().camera->y/FRACUNIT,
-				consoleplayer().camera->z/FRACUNIT);
-}
-
-static patch_t *LoadFaceGraphic (char *name, int namespc)
-{
-	char othername[9];
-	int lump;
-
-	lump = W_CheckNumForName (name, namespc);
-	if (lump == -1)
-	{
-		strcpy (othername, name);
-		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-		lump = W_GetNumForName (othername);
-	}
-	return W_CachePatch (lump, PU_STATIC);
-}
 
 void ST_loadGraphics(void)
 {
@@ -1513,13 +1222,8 @@ void ST_loadGraphics(void)
 	else
 		skin = &skins[consoleplayer().userinfo.skin];
 
-	if (gameinfo.gametype & GAME_Heretic) {
-		bignums = "IN%d";
-		smallnums = "SMALLIN%d";
-	} else {
-		bignums = "STTNUM%d";
-		smallnums = "STYSNUM%d";
-	}
+	bignums = "STTNUM%d";
+	smallnums = "STYSNUM%d";
 		
 	// Load the numbers, tall and short
 	for (i=0;i<10;i++)
@@ -1536,7 +1240,6 @@ void ST_loadGraphics(void)
 		hudcross[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
 	
-if (!(gameinfo.gametype & GAME_Heretic)) {
 	// Load percent key.
 	//Note: why not load STMINUS here, too?
 	tallpercent = W_CachePatch("STTPRCNT", PU_STATIC);
@@ -1585,14 +1288,10 @@ if (!(gameinfo.gametype & GAME_Heretic)) {
 		sprintf(namebuf, "STFB%d", i);
 		faceclassic[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
-}
+	
 	// status bar background bits
-	if (gameinfo.gametype & GAME_Heretic)
-		sbar = W_CachePatch("STATBAR", PU_STATIC);
-	else
-		sbar = W_CachePatch("STBAR", PU_STATIC);
+	sbar = W_CachePatch("STBAR", PU_STATIC);
 
-if (!(gameinfo.gametype & GAME_Heretic)) {
 	// face states
 	facenum = 0;
 
@@ -1630,94 +1329,6 @@ if (!(gameinfo.gametype & GAME_Heretic)) {
 	strcpy (namebuf+3, "DEAD0");
 	faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
 }
-}
-
-void ST_loadData (void)
-{
-    lu_palette = W_GetNumForName ("PLAYPAL");
-	ST_loadGraphics();
-}
-
-void ST_unloadGraphics (void)
-{
-
-	int i;
-
-	// unload the numbers, tall and short
-	for (i=0;i<10;i++)
-	{
-		Z_ChangeTag(tallnum[i], PU_CACHE);
-		Z_ChangeTag(shortnum[i], PU_CACHE);
-	}
-	// unload tall percent
-	Z_ChangeTag(tallpercent, PU_CACHE);
-
-	// unload arms background
-	Z_ChangeTag(armsbg, PU_CACHE);
-
-	// unload flags background
-	Z_ChangeTag(flagsbg, PU_CACHE);
-
-	// unload flagbox
-	Z_ChangeTag(flagbox, PU_CACHE);
-	Z_ChangeTag(flagboxblu, PU_CACHE);
-	Z_ChangeTag(flagboxred, PU_CACHE);
-
-	// unload gray #'s
-	for (i=0;i<6;i++)
-		Z_ChangeTag(arms[i][0], PU_CACHE);
-
-	// unload the key cards
-	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
-		Z_ChangeTag(keys[i], PU_CACHE);
-
-	Z_ChangeTag(sbar, PU_CACHE);
-	Z_ChangeTag(faceback, PU_CACHE);
-
-	for (i=0;i<ST_NUMFACES;i++)
-		Z_ChangeTag(faces[i], PU_CACHE);
-
-	// Note: nobody ain't seen no unloading
-	//	 of stminus yet. Dude.
-
-
-}
-
-void ST_unloadData(void)
-{
-	ST_unloadGraphics();
-	ST_unloadNew();
-}
-
-void ST_initData(void)
-{
-	int i;
-
-	st_firsttime = true;
-
-	st_gamestate = FirstPersonState;
-
-	st_statusbaron = true;
-	st_oldchat = st_chat = false;
-	st_cursoron = false;
-
-	st_faceindex = 0;
-	//memset (st_palette, 255, sizeof(st_palette));
-	st_palette = -1;
-
-	st_oldhealth = -1;
-
-	for (i=0;i<NUMWEAPONS;i++)
-		oldweaponsowned[i] = consoleplayer().weaponowned[i];
-
-	for (i=0;i<3;i++)
-		keyboxes[i] = -1;
-
-	STlib_init();
-	ST_initNew();
-}
-
-
 
 void ST_createWidgets(void)
 {
@@ -1882,13 +1493,790 @@ void ST_createWidgets(void)
 
 }
 
+void ST_DoomDrawer (void)
+{
+	if (st_firsttime)
+		ST_doRefresh ();
+	else
+		ST_diffDraw ();
+}
 
-static BOOL	st_stopped = true;
+void ST_DoomTicker (void)
+{
+	ST_updateWidgets();	
+}
 
 void ST_DoomStart (void)
 {
-	ST_initData();
+	int i;
+	
+	st_faceindex = 0;
+	
+	for (i=0;i<NUMWEAPONS;i++)
+		oldweaponsowned[i] = consoleplayer().weaponowned[i];
+		
+	ST_initNew();
 	ST_createWidgets();
+	st_firsttime = true;
+}
+
+void ST_DoomInit (void)
+{
+	ST_loadGraphics();
+}
+
+/***************************************************************/
+/**				  HERETIC STATUS BAR FUNCTIONS				  **/
+/***************************************************************/
+
+void ST_HticCreateWidgets(void);
+
+//
+// ST_chainShadow
+//
+// Draws two 16x10 shaded areas on the ends of the life chain, using
+// the light-fading colormaps to darken what's already been drawn.
+//
+void ST_HticShadeChain(int left, int right, int top, int height)
+{
+	int i;
+	int pitch;
+	int diff;
+	byte *top_p;
+
+	if (st_scale)
+	{
+		
+		pitch = BG->pitch;
+		top_p = BG->buffer;
+	}
+	else
+	{
+		top += ST_Y;
+		left += ST_X;
+		right += ST_X;
+		pitch = FG->pitch;
+		top_p = FG->buffer;
+	}
+
+	top_p += top*pitch + left;
+	diff = right+15-left;
+
+	for (i = 0; i < 16; i++)
+	{
+		unsigned int *darkener = Col2RGB8[18 + i*2];
+		int h = height;
+		byte *dest = top_p;
+		do
+		{
+			unsigned int lbg = darkener[*dest] | 0x1f07c1f;
+			unsigned int rbg = darkener[*(dest+diff)] | 0x1f07c1f;
+			*dest = RGB32k[0][0][lbg & (lbg>>15)];
+			*(dest+diff) = RGB32k[0][0][rbg & (rbg>>15)];
+			dest += pitch;
+		} while (--h);
+		top_p++;
+		diff -= 2;
+	}
+
+	STlib_scaleRect (left, top, 16, height);
+	STlib_scaleRect (right, top, 16, height);
+	
+}
+
+//
+// ST_HticDrawChainWidget
+//
+// Draws the chain & gem health indicator at the bottom
+//
+void ST_HticDrawChainWidget(void)
+{
+	player_t *plyr = &consoleplayer();	
+   int y = 32;
+   int chainpos = chainhealth;
+   
+   // bound chainpos between 0 and 100
+   if(chainpos < 0)
+      chainpos = 0;
+   if(chainpos > 100)
+      chainpos = 100;
+   
+   // the total length between the left- and right-most gem
+   // positions is 256 pixels, so scale the chainpos by that
+   // amount (gem can range from 17 to 273)
+   chainpos = (chainpos << 8) / 100;
+      
+   // jiggle y coordinate when chain is moving
+   if(plyr->health != chainhealth)
+      y += chainwiggle;
+
+   // draw the chain -- links repeat every 17 pixels, so we
+   // wrap the chain back to the starting position every 17
+   BG->DrawPatch(chain, 2 + (chainpos%17), y);
+   
+   // draw the gem (17 is the far left pos., 273 is max)   
+   // TODO: fix life gem for multiplayer modes
+   BG->DrawPatch(lifegem, 17 + chainpos, y);
+}
+
+static void ST_HticDrawWidgets(bool refresh)
+{
+	int i;
+	
+	STlib_updateNum (&w_numhealth, refresh);
+
+	if (gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
+		for (i = 0; i < 3; i++)
+			STlib_updateMultIcon (&w_keyboxes[i], refresh);
+			
+	//ST_HticDrawChainWidget();
+			
+	if (st_scale && st_statusbaron)
+		stnumscreen->Blit (0, 0, 320, 42,
+			FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
+}
+
+static void ST_HticRefreshBackground(void)
+{
+	if (st_statusbaron)
+	{
+		// [RH] If screen is wider than the status bar,
+		//      draw stuff around status bar.
+		if (FG->width > ST_WIDTH)
+		{
+			R_DrawBorder (0, ST_Y, ST_X, FG->height);
+			R_DrawBorder (FG->width - ST_X, ST_Y, FG->width, FG->height);
+		}
+
+		BG->DrawPatch (sbar_back, 0, 0);
+		
+		// TODO: Inventory bar
+		BG->DrawPatch (statbar, 34, 2);
+   
+		// draw the tops of the faces
+		FG->DrawPatchIndirect(sbar_topleft, 0, 200-ST_HBARHEIGHT-sbar_topleft->height()+1);
+		FG->DrawPatchIndirect(sbar_topright, 290, 200-ST_HBARHEIGHT-sbar_topright->height()+1); 
+		
+		ST_HticDrawChainWidget();
+	
+		// draw face patches to cover over spare ends of chain
+		BG->DrawPatch(ltface, 0, 32);
+		BG->DrawPatch(rtface, 276, 32);	
+		
+		ST_HticShadeChain (19, 277, 32, 10);  	
+
+		BG->Blit (0, 0, 320, 42, stnumscreen, 0, 0, 320, 42);
+
+		if (!st_scale)
+			stnumscreen->Blit (0, 0, 320, 42,
+				FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
+	}
+}
+
+//
+// ST_HticLoadGraphics
+//
+void ST_HticLoadGraphics(void)
+{
+	int i;
+	char namebuf[9];
+	char *bignums;
+	char *smallnums;
+
+	bignums = "IN%d";
+	smallnums = "SMALLIN%d";
+	
+	// Load the numbers, tall and short
+	for (i=0;i<10;i++)
+	{
+		sprintf(namebuf, bignums, i);
+		tallnum[i] = W_CachePatch(namebuf, PU_STATIC);
+		sprintf(namebuf, smallnums, i);
+		shortnum[i] = W_CachePatch(namebuf, PU_STATIC);
+	}
+	
+	lamenum = W_CachePatch("LAME");
+   
+	i = 0;
+	keys[0] = (patch_t *)W_CachePatch("YKEYICON",PU_STATIC);
+	keys[1] = (patch_t *)W_CachePatch("GKEYICON",PU_STATIC);
+	keys[2] = (patch_t *)W_CachePatch("BKEYICON",PU_STATIC);
+	
+	negminus = (patch_t *)W_CachePatch("NEGNUM",PU_STATIC);
+
+	// update the status bar patch for the appropriate game mode
+	statbar = W_CachePatch((multiplayer?"STATBAR":"LIFEBAR"));	
+
+	sbar_back = (patch_t *)W_CachePatch("BARBACK",PU_STATIC);
+	godeyes_left = W_CachePatch("GOD1", PU_STATIC);
+	godeyes_right = W_CachePatch("GOD2", PU_STATIC);
+	sbar_topleft = W_CachePatch("LTFCTOP", PU_STATIC);
+	sbar_topright = W_CachePatch("RTFCTOP", PU_STATIC);
+	
+	chain = W_CachePatch("CHAIN", PU_STATIC);
+	lifegem = W_CachePatch("LIFEGEM2", PU_STATIC);
+	ltface = W_CachePatch("LTFACE", PU_STATIC);
+	rtface = W_CachePatch("RTFACE", PU_STATIC);
+}
+
+void ST_HticCreateWidgets(void)
+{
+	// health percentage
+	STlib_initNum(&w_numhealth,
+					88,
+					12,
+					tallnum,
+					&st_health,
+					&st_statusbaron,
+					2);
+				  
+	// keyboxes 0-2
+	STlib_initMultIcon(&w_keyboxes[0],
+					   153,
+					   6,
+					   keys,
+					   &keyboxes[0],
+					   &st_statusbaron);
+
+	STlib_initMultIcon(&w_keyboxes[1],
+					   153,
+					   14,
+					   keys,
+					   &keyboxes[1],
+					   &st_statusbaron);
+
+	STlib_initMultIcon(&w_keyboxes[2],
+					   153,
+					   22,
+					   keys,
+					   &keyboxes[2],
+					   &st_statusbaron);
+}
+
+void ST_HticUpdateWidgets(void)
+{
+	int i;
+	player_t *plyr = &consoleplayer();
+   	
+	// update the chain health value
+	st_health = plyr->health;
+	st_armor = plyr->armorpoints;
+   
+	if(st_health != chainhealth)
+	{
+		int max, min, diff, sgn = 1;
+
+		// set lower bound to zero
+		if(st_health < 0)
+			st_health = 0;
+
+		// determine the max and min of the two values, and whether or
+		// not to add or subtract from the chain position w/sgn
+		if(st_health > chainhealth)
+		{
+		   max = st_health; min = chainhealth;
+		}
+		else
+		{
+		   sgn = -1; max = chainhealth; min = st_health;
+		}
+
+		// consider 1/4th of the difference
+		diff = (max - min) >> 2;
+
+		// don't move less than 1 or more than 8 units per tic
+		if(diff < 1)
+		   diff = 1;
+		else if(diff > 8)
+		   diff = 8;
+
+		chainhealth += (sgn * diff);
+	}
+
+	// update chain wiggle value
+	if(level.time & 1)
+		chainwiggle = st_randomnumber & 1; 
+		
+	// update keycard multiple widgets
+	for (i=0;i<3;i++)
+	{
+		keyboxes[i] = plyr->cards[i] ? i : -1;
+
+		// [RH] show multiple keys per box, too
+		if (plyr->cards[i+3])
+			keyboxes[i] = (keyboxes[i] == -1) ? i+3 : i+6;
+	}		
+}
+
+//
+// ST_HticStart
+//
+void ST_HticStart(void)
+{
+	ST_HticCreateWidgets();	
+	
+	st_firsttime = true;
+}
+
+//
+// ST_HticTicker
+//
+// Processing code for Heretic status bar
+//
+void ST_HticTicker(void)
+{
+	ST_HticUpdateWidgets();
+}
+
+void ST_HticDoRefresh(void)
+{
+	st_firsttime = false;
+
+	// draw status bar background to off-screen buff
+	ST_HticRefreshBackground();
+
+	// and refresh all widgets
+	ST_HticDrawWidgets(true);
+}
+
+void ST_HticDiffDraw(void)
+{
+	// update all widgets
+	ST_HticDrawWidgets(false);
+}
+
+//
+// ST_HticDrawer
+//
+// Draws the Heretic status bar
+//
+void ST_HticDrawer(void)
+{
+	if (st_firsttime)
+		ST_HticDoRefresh ();
+	else
+		ST_HticDiffDraw ();
+}
+
+//
+// ST_HticInit
+//
+// Initializes the Heretic status bar:
+// * Caches most patch graphics used throughout
+//
+void ST_HticInit(void)
+{
+	ST_HticLoadGraphics();
+}
+
+/***************************************************************/
+/**				   COMMON STATUS BAR FUNCTIONS				  **/
+/***************************************************************/
+
+// Respond to keyboard input events, intercept cheats.
+// [RH] Cheats eatkey the last keypress used to trigger them
+bool ST_Responder (event_t *ev)
+{
+	  player_t *plyr = &consoleplayer();
+	  bool eatkey = false;
+	  int i;
+
+	  // Filter automap on/off.
+	  if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
+	  {
+		switch(ev->data1)
+		{
+		case AM_MSGENTERED:
+			st_gamestate = AutomapState;
+			st_firsttime = true;
+			break;
+
+		case AM_MSGEXITED:
+			st_gamestate = FirstPersonState;
+			break;
+		}
+	}
+
+	// if a user keypress...
+    else if (ev->type == ev_keydown)
+    {
+        // 'dqd' cheat for toggleable god mode
+        if (cht_CheckCheat(&cheat_god, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
+            // [Russell] - give full health
+            plyr->mo->health = deh.StartHealth;
+            plyr->health = deh.StartHealth;
+
+            AddCommandString("god");
+
+            // Net_WriteByte (DEM_GENERICCHEAT);
+            // Net_WriteByte (CHT_IDDQD);
+            eatkey = true;
+        }
+
+        // 'fa' cheat for killer fucking arsenal
+        else if (cht_CheckCheat(&cheat_ammonokey, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
+            Printf(PRINT_HIGH, "Ammo (No keys) Added\n");
+
+            plyr->armorpoints = deh.FAArmor;
+            plyr->armortype = deh.FAAC;
+
+            weapontype_t pendweap = plyr->pendingweapon;
+            for (i = 0; i<NUMWEAPONS; i++)
+                P_GiveWeapon (plyr, (weapontype_t)i, false);
+            plyr->pendingweapon = pendweap;
+
+            for (i=0; i<NUMAMMO; i++)
+                plyr->ammo[i] = plyr->maxammo[i];
+
+            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+            MSG_WriteByte(&net_buffer, 1);
+
+            eatkey = true;
+        }
+
+        // 'kfa' cheat for key full ammo
+        else if (cht_CheckCheat(&cheat_ammo, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
+            Printf(PRINT_HIGH, "Very Happy Ammo Added\n");
+
+            plyr->armorpoints = deh.KFAArmor;
+            plyr->armortype = deh.KFAAC;
+
+            weapontype_t pendweap = plyr->pendingweapon;
+            for (i = 0; i<NUMWEAPONS; i++)
+                P_GiveWeapon (plyr, (weapontype_t)i, false);
+            plyr->pendingweapon = pendweap;
+
+            for (i=0; i<NUMAMMO; i++)
+                plyr->ammo[i] = plyr->maxammo[i];
+
+            for (i=0; i<NUMCARDS; i++)
+                plyr->cards[i] = true;
+
+            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+            MSG_WriteByte(&net_buffer, 2);
+
+            eatkey = true;
+        }
+        // [Russell] - Only doom 1/registered can have idspispopd and
+        // doom 2/final can have idclip
+        else if (cht_CheckCheat(&cheat_noclip, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
+            if ((gamemode != shareware) && (gamemode != registered) &&
+                (gamemode != retail))
+                return false;
+
+            AddCommandString("noclip");
+
+            // Net_WriteByte (DEM_GENERICCHEAT);
+            // Net_WriteByte (CHT_NOCLIP);
+            eatkey = true;
+        }
+        else if (cht_CheckCheat(&cheat_commercial_noclip, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
+            if (gamemode != commercial)
+                return false;
+
+            AddCommandString("noclip");
+
+            // Net_WriteByte (DEM_GENERICCHEAT);
+            // Net_WriteByte (CHT_NOCLIP);
+            eatkey = true;
+        }
+        // 'behold?' power-up cheats
+        for (i=0; i<6; i++)
+        {
+            if (cht_CheckCheat(&cheat_powerup[i], (char)ev->data2))
+            {
+                if (CheckCheatmode ())
+                    return false;
+
+                Printf(PRINT_HIGH, "Power-up toggled\n");
+                if (!plyr->powers[i])
+                    P_GivePower( plyr, i);
+                else if (i!=pw_strength)
+                    plyr->powers[i] = 1;
+                else
+                    plyr->powers[i] = 0;
+
+                MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+                MSG_WriteByte(&net_buffer, 3);
+                MSG_WriteByte(&net_buffer, (byte)i);
+
+                eatkey = true;
+            }
+        }
+
+        // 'behold' power-up menu
+        if (cht_CheckCheat(&cheat_powerup[6], (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
+            Printf (PRINT_HIGH, "%s\n", STSTR_BEHOLD);
+
+        }
+
+        // 'choppers' invulnerability & chainsaw
+        else if (cht_CheckCheat(&cheat_choppers, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
+            Printf(PRINT_HIGH, "... Doesn't suck - GM\n");
+            plyr->weaponowned[wp_chainsaw] = true;
+
+            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
+            MSG_WriteByte(&net_buffer, 4);
+
+            eatkey = true;
+        }
+
+        // 'clev' change-level cheat
+        else if (cht_CheckCheat(&cheat_clev, (char)ev->data2))
+        {
+            if (CheckCheatmode ())
+                return false;
+
+            char buf[16];
+			//char *bb;
+
+            cht_GetParam(&cheat_clev, buf);
+            buf[2] = 0;
+
+			// [ML] Chex mode: always set the episode number to 1.
+			// FIXME: This is probably a horrible hack, it sure looks like one at least
+			if (gamemode == retail_chex)
+				sprintf(buf,"1%c",buf[1]);
+
+            sprintf (buf + 3, "map %s\n", buf);
+            AddCommandString (buf + 3);
+            eatkey = true;
+        }
+
+        // 'mypos' for player position
+        else if (cht_CheckCheat(&cheat_mypos, (char)ev->data2))
+        {
+            AddCommandString ("toggle idmypos");
+            eatkey = true;
+        }
+
+        // 'idmus' change-music cheat
+        else if (cht_CheckCheat(&cheat_mus, (char)ev->data2))
+        {
+            char buf[16];
+
+            cht_GetParam(&cheat_mus, buf);
+            buf[2] = 0;
+
+            sprintf (buf + 3, "idmus %s\n", buf);
+            AddCommandString (buf + 3);
+            eatkey = true;
+        }
+    }
+
+    return eatkey;
+}
+
+void ST_Ticker (void)
+{
+	st_randomnumber = M_Random();
+	gameinfo.StatusBar->Ticker();
+	st_oldhealth = consoleplayer().health;
+}
+static int st_palette = 0;
+
+/* Original redscreen palette method - replaces ZDoom method - ML       */
+void ST_doPaletteStuff(void)
+{
+
+    int		palette;
+    byte*	pal;
+    int		cnt;
+    int		bzc;
+
+	player_t *plyr = &consoleplayer();
+
+    cnt = plyr->damagecount;
+
+    if (plyr->powers[pw_strength])
+    {
+	// slowly fade the berzerk out
+        bzc = 12 - (plyr->powers[pw_strength]>>6);
+
+        if (bzc > cnt)
+            cnt = bzc;
+    }
+
+    if (cnt)
+    {
+        palette = (cnt+7)>>3;
+
+		if (gamemode == retail_chex)
+			palette = RADIATIONPAL;
+		else {
+			if (palette >= NUMREDPALS)
+				palette = NUMREDPALS-1;
+
+			palette += STARTREDPALS;
+		}
+    }
+
+    else if (plyr->bonuscount)
+    {
+        palette = (plyr->bonuscount+7)>>3;
+
+        if (palette >= NUMBONUSPALS)
+            palette = NUMBONUSPALS-1;
+
+        palette += STARTBONUSPALS;
+    }
+
+    else if ( plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
+        palette = RADIATIONPAL;
+
+    else
+        palette = 0;
+
+    if (palette != st_palette)
+    {
+        st_palette = palette;
+        pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
+
+        I_SetOldPalette (pal);
+    }
+
+}
+
+void ST_Drawer(void)
+{
+	stbarfns_t *StatusBar = gameinfo.StatusBar;
+	
+	if (noisedebug)
+		S_NoiseDebug ();
+		
+	if ((screenblocks > 10 && viewactive) || (&consoleplayer())->spectator)
+	{
+		if (!(gameinfo.gametype & GAME_Heretic))
+		{
+			if (DrawNewHUD)
+				if (!multiplayer)
+					ST_newDraw ();
+				else
+					ST_newDrawDM ();
+			else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
+				ST_newDrawCTF();
+			st_firsttime = true;
+		}
+	}
+	else
+	{
+		stbarscreen->Lock ();
+		stnumscreen->Lock ();
+		
+		StatusBar->Drawer();
+
+		stnumscreen->Unlock ();
+		stbarscreen->Unlock ();
+	}	
+	
+	if (viewheight <= ST_Y)
+		ST_nameDraw (ST_Y - 11 * CleanYfac);
+	else
+		ST_nameDraw (screen->height - 11 * CleanYfac);	
+
+	// Do red-/gold-shifts from damage/items
+	ST_doPaletteStuff();
+	
+	// [RH] Hey, it's somewhere to put the idmypos stuff!
+	if (idmypos)
+		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
+				consoleplayer().camera->angle/FRACUNIT,
+				consoleplayer().camera->x/FRACUNIT,
+				consoleplayer().camera->y/FRACUNIT,
+				consoleplayer().camera->z/FRACUNIT);
+}
+
+void ST_unloadGraphics (void)
+{
+	int i;
+
+	// unload the numbers, tall and short
+	for (i=0;i<10;i++)
+	{
+		Z_ChangeTag(tallnum[i], PU_CACHE);
+		Z_ChangeTag(shortnum[i], PU_CACHE);
+	}
+	// unload tall percent
+	Z_ChangeTag(tallpercent, PU_CACHE);
+
+	// unload arms background
+	Z_ChangeTag(armsbg, PU_CACHE);
+
+	// unload flags background
+	Z_ChangeTag(flagsbg, PU_CACHE);
+
+	// unload flagbox
+	Z_ChangeTag(flagbox, PU_CACHE);
+	Z_ChangeTag(flagboxblu, PU_CACHE);
+	Z_ChangeTag(flagboxred, PU_CACHE);
+
+	// unload gray #'s
+	for (i=0;i<6;i++)
+		Z_ChangeTag(arms[i][0], PU_CACHE);
+
+	// unload the key cards
+	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
+		Z_ChangeTag(keys[i], PU_CACHE);
+
+	Z_ChangeTag(sbar, PU_CACHE);
+	Z_ChangeTag(faceback, PU_CACHE);
+
+	for (i=0;i<ST_NUMFACES;i++)
+		Z_ChangeTag(faces[i], PU_CACHE);
+
+	Z_ChangeTag(negminus, PU_CACHE);
+}
+
+void ST_unloadData(void)
+{
+	ST_unloadGraphics();
+	ST_unloadNew();
+}
+
+void ST_initData(void)
+{
+	int i;
+
+	st_firsttime = true;
+
+	st_gamestate = FirstPersonState;
+
+	st_statusbaron = true;
+	st_oldchat = st_chat = false;
+	st_cursoron = false;
+	st_palette = -1;
+	st_oldhealth = -1;
+
+	for (i=0;i<3;i++)
+		keyboxes[i] = -1;
 }
 
 void ST_Stop (void)
@@ -1905,31 +2293,26 @@ void ST_Start (void)
 {
 	if (!st_stopped)
 		ST_Stop();
-
+	
+	ST_initData();
 	gameinfo.StatusBar->Start();
 
 	st_stopped = false;
-	st_firsttime = true;
 	st_scale.Set (st_scale.cstring());
 }
-
-void ST_DoomInit (void)
-{
-	ST_loadData();
-}
-
 
 void ST_Init (void)
 {
 	if(!stbarscreen)
-		stbarscreen = I_AllocateScreen (320, 32, 8);
+		stbarscreen = I_AllocateScreen (320, 42, 8);
 
 	if(!stnumscreen)
-		stnumscreen = I_AllocateScreen (320, 32, 8);
-			
+		stnumscreen = I_AllocateScreen (320, 42, 8);
+
+    lu_palette = W_GetNumForName ("PLAYPAL");
+    
 	gameinfo.StatusBar->Init();
 }
 
 
 VERSION_CONTROL (st_stuff_cpp, "$Id$")
-
