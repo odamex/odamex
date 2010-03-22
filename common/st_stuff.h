@@ -41,6 +41,21 @@ extern int ST_Y;
 // STATUS BAR
 //
 
+
+// From EE, gameinfo defined status bar
+// haleyjd 10/12/03: DOOM's status bar object
+
+void ST_DoomTicker (void);
+void ST_DoomDrawer (void);
+void ST_DoomStart (void);
+void ST_DoomInit (void);
+
+void ST_HticTicker (void);
+void ST_HticDrawer (void);
+void ST_HticStart (void);
+void ST_HticInit (void);
+
+
 // [ML] From EE, another gameinfo definition
 // haleyjd 10/12/03: structure for gamemode-independent status bar interface
 
@@ -74,6 +89,9 @@ void ST_Start (void);
 
 // Called by startup code.
 void ST_Init (void);
+
+// Draw the Heretic FS HUD (only if old status bar is not drawn)
+void ST_HticDrawFullScreenStuff (void);
 
 // Draw the HUD (only if old status bar is not drawn)
 void ST_newDraw (void);

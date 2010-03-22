@@ -463,7 +463,7 @@ void DCanvas::LargeTextWrapper (EWrapperCode drawer, int normalcolor, int x, int
 		if (c == '\n')
 		{
 			cx = x;
-			cy += 18;
+			cy += 20;
 			continue;
 		}
 

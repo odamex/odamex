@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include "info.h"
 #include "gi.h"
+#include "st_stuff.h"
 
 gameinfo_t gameinfo;
 
@@ -74,6 +75,30 @@ static gameborder_t HereticBorder =
 	"bordbl", "bordb", "bordbr"
 };
 
+
+//
+// Status Bar Object for GameModeInfo
+//
+stbarfns_t HticStatusBar =
+{
+   42,
+
+   ST_HticTicker,
+   ST_HticDrawer,
+   ST_HticStart,
+   ST_HticInit,
+};
+
+stbarfns_t DoomStatusBar =
+{
+   32,
+
+   ST_DoomTicker,
+   ST_DoomDrawer,
+   ST_DoomStart,
+   ST_DoomInit
+};
+
 gameinfo_t HereticGameInfo =
 {
 	GI_PAGESARERAW | GI_INFOINDEXED,
@@ -95,6 +120,7 @@ gameinfo_t HereticGameInfo =
 	NULL,
 	17,
 	"FLAT513",
+	"ENDTEXT",
 	&HticStatusBar,
 	&HereticBorder,
 	GAME_Heretic
@@ -121,6 +147,7 @@ gameinfo_t HereticSWGameInfo =
 	NULL,
 	17,
 	"FLOOR04",
+	"ENDTEXT",
 	&HticStatusBar,
 	&HereticBorder,
 	GAME_Heretic
@@ -147,6 +174,7 @@ gameinfo_t SharewareGameInfo =
 	doomquitsounds,
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
+	"ENDOOM",
 	&DoomStatusBar,	
 	&DoomBorder,
 	GAME_Doom
@@ -173,6 +201,7 @@ gameinfo_t RegisteredGameInfo =
 	doomquitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
+	"ENDOOM",
 	&DoomStatusBar,
 	&DoomBorder,
 	GAME_Doom
@@ -199,6 +228,7 @@ gameinfo_t RetailGameInfo =
 	doomquitsounds,
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
+	"ENDOOM",
 	&DoomStatusBar,
 	&DoomBorder,
 	GAME_Doom
@@ -225,10 +255,10 @@ gameinfo_t CommercialGameInfo =
 	doom2quitsounds,
 	3,
 	"GRNROCK",
+	"ENDOOM",
 	&DoomStatusBar,
 	&DoomBorder,
 	GAME_Doom
 };
 
 VERSION_CONTROL (gi_cpp, "$Id$")
-

@@ -41,6 +41,7 @@
 #include "c_cvars.h"
 #include "cl_ctf.h"
 #include "hu_stuff.h"
+#include "gi.h"
 
 EXTERN_CVAR(fraglimit)
 
@@ -155,7 +156,7 @@ void ST_initNew (void)
 	flagiconrdropped = W_CachePatch ("FLAGIC4R", PU_STATIC);
 
 	widestnum = widest;
-	numheight = tallnum[0]->height();
+	numheight = ((gameinfo.gametype & GAME_Doom) ? tallnum[0]->height() : 20);
 
 	if (multiplayer && (gametype == GM_COOP || demoplayback || !netgame) && level.time)
 		NameUp = level.time + 2*TICRATE;
@@ -263,6 +264,7 @@ void ST_newDraw (void)
 									  screen->height - 2*CleanYfac);
 	else
 		screen->DrawLucentPatch (medi, 20, screen->height - 2);
+	
 	ST_DrawNum (40 * xscale, y, screen, plyr->health);
 
 	// Draw armor
@@ -295,6 +297,7 @@ void ST_newDraw (void)
 		else
 			screen->DrawLucentPatch (ammopatch, screen->width - 14,
 							   screen->height - 4);
+
 		ST_DrawNumRight (screen->width - 25 * xscale, y, screen,
 						 plyr->ammo[ammo]);
 	}
@@ -325,6 +328,20 @@ void ST_newDraw (void)
 			}
 		}
 	}
+}
+
+void ST_HticDrawFullScreenStuff (void)
+{
+	player_t *plyr = &consoleplayer();
+	ammotype_t ammo = weaponinfo[plyr->readyweapon].ammo;	
+	unsigned int x,y;
+
+	x = (hud_scale ? 320 : screen->width);
+	y = (hud_scale ? 180 : screen->height - 20);
+
+	// Draw health
+	ST_DrawNumNew(4, y, plyr->health ? plyr->health : 0);
+		
 }
 
 void ST_newDrawDM (void)

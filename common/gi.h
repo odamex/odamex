@@ -95,7 +95,7 @@ typedef struct
 	const char **quitSounds;	// Pointer to list of quit sound lumps
 	int maxSwitch;
 	char borderFlat[8];			// Flat to use when changing screen size
-
+	char endoom[8];				// ENDOOM lump
 	stbarfns_t *StatusBar;     	// status bar function set
 	gameborder_t *border;
 	EGameType gametype;			// Indicates which game this is

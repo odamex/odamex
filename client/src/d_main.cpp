@@ -296,7 +296,6 @@ void D_Display (void)
 			C_DrawMid ();
 			CTF_DrawHud ();
 				ST_Drawer ();
-			if (!(gameinfo.gametype & GAME_Heretic))
 				HU_Drawer ();
 			break;
 

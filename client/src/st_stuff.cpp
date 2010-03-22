@@ -76,14 +76,14 @@ CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
 		// Stretch status bar to fill width of screen
 
 		ST_WIDTH = screen->width;
-   		ST_HEIGHT = (42 * screen->height) / 200;
+   		ST_HEIGHT = (gameinfo.StatusBar->height * screen->height) / 200;
 	}
 	else
 	{
 		// Do not stretch status bar
 
 		ST_WIDTH = 320;
-		ST_HEIGHT = 42;
+		ST_HEIGHT = gameinfo.StatusBar->height;
 	}
 
 	if (!(&consoleplayer())->spectator) {
@@ -125,22 +125,6 @@ float BaseBlendA;
 //
 // STATUS BAR DATA
 //
-//
-// Status Bar Object for GameModeInfo
-//
-
-// From EE, gameinfo defined status bar
-// haleyjd 10/12/03: DOOM's status bar object
-
-static void ST_DoomTicker(void);
-static void ST_DoomDrawer(void);
-static void ST_DoomStart(void);
-static void ST_DoomInit(void);
-
-static void ST_HticTicker(void);
-static void ST_HticDrawer(void);
-static void ST_HticStart(void);
-static void ST_HticInit(void);
 
 //
 // Defines
@@ -323,30 +307,6 @@ int						ST_WIDTH;
 int						ST_X;
 int						ST_Y;
 
-
-//
-// Status Bar Object for GameModeInfo
-//
-stbarfns_t HticStatusBar =
-{
-   ST_HBARHEIGHT,
-
-   ST_HticTicker,
-   ST_HticDrawer,
-   ST_HticStart,
-   ST_HticInit,
-};
-
-stbarfns_t DoomStatusBar =
-{
-   ST_HEIGHT,
-
-   ST_DoomTicker,
-   ST_DoomDrawer,
-   ST_DoomStart,
-   ST_DoomInit
-};
-
 static BOOL	st_stopped = true;
 
 // used for making messages go away
@@ -514,6 +474,8 @@ static patch_t*			rtface;
 // health widget
 st_number_t 			w_numhealth;
 
+// armor widget
+st_number_t				w_numarmor;
 
 /***************************************************************/
 /**				 CHEAT CODE COMMANDS & FUNCTIONS			  **/
@@ -1515,7 +1477,6 @@ void ST_DoomStart (void)
 	for (i=0;i<NUMWEAPONS;i++)
 		oldweaponsowned[i] = consoleplayer().weaponowned[i];
 		
-	ST_initNew();
 	ST_createWidgets();
 	st_firsttime = true;
 }
@@ -1624,6 +1585,8 @@ static void ST_HticDrawWidgets(bool refresh)
 	int i;
 	
 	STlib_updateNum (&w_numhealth, refresh);
+	STlib_updateNum (&w_ready, refresh);
+	STlib_updateNum (&w_numarmor, refresh);
 
 	if (gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
 		for (i = 0; i < 3; i++)
@@ -1632,7 +1595,7 @@ static void ST_HticDrawWidgets(bool refresh)
 	//ST_HticDrawChainWidget();
 			
 	if (st_scale && st_statusbaron)
-		stnumscreen->Blit (0, 0, 320, 42,
+		stnumscreen->Blit (0, 0, 320, gameinfo.StatusBar->height,
 			FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 }
 
@@ -1665,10 +1628,10 @@ static void ST_HticRefreshBackground(void)
 		
 		ST_HticShadeChain (19, 277, 32, 10);  	
 
-		BG->Blit (0, 0, 320, 42, stnumscreen, 0, 0, 320, 42);
+		BG->Blit (0, 0, 320, gameinfo.StatusBar->height, stnumscreen, 0, 0, 320, gameinfo.StatusBar->height);
 
 		if (!st_scale)
-			stnumscreen->Blit (0, 0, 320, 42,
+			stnumscreen->Blit (0, 0, 320, gameinfo.StatusBar->height,
 				FG, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 	}
 }
@@ -1697,7 +1660,6 @@ void ST_HticLoadGraphics(void)
 	
 	lamenum = W_CachePatch("LAME");
    
-	i = 0;
 	keys[0] = (patch_t *)W_CachePatch("YKEYICON",PU_STATIC);
 	keys[1] = (patch_t *)W_CachePatch("GKEYICON",PU_STATIC);
 	keys[2] = (patch_t *)W_CachePatch("BKEYICON",PU_STATIC);
@@ -1720,16 +1682,34 @@ void ST_HticLoadGraphics(void)
 }
 
 void ST_HticCreateWidgets(void)
-{
+{	
 	// health percentage
 	STlib_initNum(&w_numhealth,
-					88,
+					87,
 					12,
 					tallnum,
 					&st_health,
 					&st_statusbaron,
-					2);
-				  
+					3);
+
+	// ready weapon ammo
+	STlib_initNum(&w_ready,
+				  135,
+				  4,
+				  tallnum,
+				  &st_current_ammo,
+				  &st_statusbaron,
+				  ST_AMMOWIDTH );
+
+	// armor percentage - should be colored later
+	STlib_initNum(&w_numarmor,
+					  254,
+					  12,
+					  tallnum,
+					  &st_armor,
+					  &st_statusbaron, 
+					  3);
+
 	// keyboxes 0-2
 	STlib_initMultIcon(&w_keyboxes[0],
 					   153,
@@ -1756,8 +1736,16 @@ void ST_HticCreateWidgets(void)
 void ST_HticUpdateWidgets(void)
 {
 	int i;
+	static int	largeammo = 1994; // means "n/a"
 	player_t *plyr = &consoleplayer();
-   	
+
+	if (weaponinfo[plyr->readyweapon].ammo == am_noammo)
+		w_ready.num = &largeammo;
+	else
+		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
+
+	w_ready.data = plyr->readyweapon;
+	   	
 	// update the chain health value
 	st_health = plyr->health;
 	st_armor = plyr->armorpoints;
@@ -2174,17 +2162,17 @@ void ST_Drawer(void)
 		
 	if ((screenblocks > 10 && viewactive) || (&consoleplayer())->spectator)
 	{
-		if (!(gameinfo.gametype & GAME_Heretic))
-		{
-			if (DrawNewHUD)
-				if (!multiplayer)
-					ST_newDraw ();
+		if (DrawNewHUD)
+			if (!multiplayer)
+				if (gameinfo.gametype & GAME_Heretic)
+					ST_HticDrawFullScreenStuff();
 				else
-					ST_newDrawDM ();
-			else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
-				ST_newDrawCTF();
-			st_firsttime = true;
-		}
+					ST_newDrawDM();
+			else
+				ST_newDrawDM();
+		else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
+			ST_newDrawCTF();
+		st_firsttime = true;
 	}
 	else
 	{
@@ -2295,6 +2283,7 @@ void ST_Start (void)
 		ST_Stop();
 	
 	ST_initData();
+	ST_initNew();
 	gameinfo.StatusBar->Start();
 
 	st_stopped = false;
@@ -2304,10 +2293,10 @@ void ST_Start (void)
 void ST_Init (void)
 {
 	if(!stbarscreen)
-		stbarscreen = I_AllocateScreen (320, 42, 8);
+		stbarscreen = I_AllocateScreen (320, gameinfo.StatusBar->height, 8);
 
 	if(!stnumscreen)
-		stnumscreen = I_AllocateScreen (320, 42, 8);
+		stnumscreen = I_AllocateScreen (320, gameinfo.StatusBar->height, 8);
 
     lu_palette = W_GetNumForName ("PLAYPAL");
     
