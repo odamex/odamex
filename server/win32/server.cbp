@@ -400,6 +400,7 @@
 		<Unit filename="..\src\r_things.cpp" />
 		<Unit filename="..\src\s_sound.cpp" />
 		<Unit filename="..\src\s_sound.h" />
+		<Unit filename="..\src\st_server.cpp" />
 		<Unit filename="..\src\sv_ctf.cpp" />
 		<Unit filename="..\src\sv_ctf.h" />
 		<Unit filename="..\src\sv_cvarlist.cpp" />
