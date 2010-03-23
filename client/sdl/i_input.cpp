@@ -24,6 +24,7 @@
 // SoM 12-24-05: yeah... I'm programming on christmas eve. 
 // Removed all the DirectX crap.
 
+#include <list>
 #ifdef WIN32
 #define _WIN32_WINNT 0x0400
 #define WIN32_LEAN_AND_MEAN
@@ -70,7 +71,8 @@ int KeyRepeatRate;
 EXTERN_CVAR (use_joystick)
 EXTERN_CVAR (joy_active)
 
-static SDL_Joystick *openedjoy = NULL;
+static SDL_Joystick     *openedjoy = NULL;
+static std::list<SDL_Event*>  JoyEventList;
 
 // denis - from chocolate doom
 //
@@ -216,6 +218,103 @@ static int AccelerateMouse(int val)
     }
 }
 
+// Add any joystick event to a list if it will require manual polling
+// to detect release. This includes hat events (mostly due to d-pads not
+// triggering the centered event when released) and analog axis bound
+// as a key/button -- HyperEye
+//
+// RegisterJoystickEvent
+//
+static int RegisterJoystickEvent(SDL_Event *ev, int value)
+{
+	SDL_Event *evc;
+	event_t    event;
+
+	if(!ev)
+		return -1;
+
+	if(ev->type == SDL_JOYHATMOTION)
+	{
+		if(JoyEventList.size())
+		{
+			std::list<SDL_Event*>::iterator i;
+
+			for(i = JoyEventList.begin(); i != JoyEventList.end(); ++i)
+			{
+				if(((*i)->type == ev->type) && ((*i)->jhat.which == ev->jhat.which) 
+							&& ((*i)->jhat.hat == ev->jhat.hat) && ((*i)->jhat.value == value))
+					return 0;
+			}
+		}
+
+		evc = new SDL_Event;
+
+		evc->type = ev->type;
+		evc->jhat.hat = ev->jhat.hat;
+		evc->jhat.which = ev->jhat.which;
+		evc->jhat.value = value;
+
+		event.data1 = event.data2 = event.data3 = 0;
+
+		event.type = ev_keydown;
+		if(value == SDL_HAT_UP)
+			event.data1 = (ev->jhat.hat * 4) + KEY_HAT1;
+		else if(value == SDL_HAT_RIGHT)
+			event.data1 = (ev->jhat.hat * 4) + KEY_HAT2;
+		else if(value == SDL_HAT_DOWN)
+			event.data1 = (ev->jhat.hat * 4) + KEY_HAT3;
+		else if(value == SDL_HAT_LEFT)
+			event.data1 = (ev->jhat.hat * 4) + KEY_HAT4;
+	}
+
+	if(evc)
+	{
+		JoyEventList.push_back(evc);
+		D_PostEvent(&event);
+		return 1;
+	}
+
+	return 0;
+}
+
+void UpdateJoystickEvents()
+{
+	std::list<SDL_Event*>::iterator i;
+	event_t    event;
+
+	if(JoyEventList.size())
+	{
+		i = JoyEventList.begin();
+		while(i != JoyEventList.end())
+		{
+			if((*i)->type == SDL_JOYHATMOTION)
+			{
+				if(!(SDL_JoystickGetHat(openedjoy, (*i)->jhat.hat) & (*i)->jhat.value))
+				{
+					event.data1 = event.data2 = event.data3 = 0;
+
+					event.type = ev_keyup;
+					if((*i)->jhat.value == SDL_HAT_UP)
+						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT1;
+					else if((*i)->jhat.value == SDL_HAT_RIGHT)
+						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT2;
+					else if((*i)->jhat.value == SDL_HAT_DOWN)
+						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT3;
+					else if((*i)->jhat.value == SDL_HAT_LEFT)
+						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT4;
+
+					D_PostEvent(&event);
+
+					delete *i;
+					i = JoyEventList.erase(i);
+					continue;
+				}
+				++i;
+			}
+		}
+	}
+}
+
 // This turns on automatic event polling for joysticks so that the state
 // of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
 //
@@ -314,7 +413,7 @@ void I_CloseJoystick()
 	extern int joyforward, joystrafe, joyturn, joylook;
 	int        ndx;
 
-#ifndef _XBOX
+#ifndef _XBOX // This is to avoid a bug in SDLx
 	if(!I_GetJoystickCount() || !openedjoy)
 		return;
 
@@ -607,6 +706,22 @@ void I_GetEvent (void)
 			D_PostEvent(&event);
 			break;
 		}
+	case SDL_JOYHATMOTION:
+		if(ev.jhat.which == joy_active)
+		{
+			// Each of these need to be tested because more than one can be pressed and a
+			// unique event is needed for each
+			if(ev.jhat.value & SDL_HAT_UP)
+				RegisterJoystickEvent(&ev, SDL_HAT_UP);
+			if(ev.jhat.value & SDL_HAT_RIGHT)
+				RegisterJoystickEvent(&ev, SDL_HAT_RIGHT);
+			if(ev.jhat.value & SDL_HAT_DOWN)
+				RegisterJoystickEvent(&ev, SDL_HAT_DOWN);
+			if(ev.jhat.value & SDL_HAT_LEFT)
+				RegisterJoystickEvent(&ev, SDL_HAT_LEFT);
+
+			break;
+		}
       };
    }
 
@@ -623,6 +738,9 @@ void I_GetEvent (void)
           SDL_WarpMouse(screen->width/ 2, screen->height / 2);
        }
    }
+
+   if(use_joystick)
+       UpdateJoystickEvents();
 }
 
 //

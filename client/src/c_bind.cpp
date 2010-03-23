@@ -157,7 +157,11 @@ const char *KeyNames[NUM_KEYS] = {
    // 0163 - 0166
 	"joy25",	"joy26",	"joy27",	"joy28",
    // 0167 - 016A
-	"joy29",	"joy30",	"joy31",	"joy32"
+	"joy29",	"joy30",	"joy31",	"joy32",
+  // 016B - 016E
+	"hat1up",	"hat1right","hat1down",	"hat1left",
+  // 016F - 0172
+	"hat2up",	"hat2right","hat2down",	"hat2left"
 };
 
 static std::string Bindings[NUM_KEYS];

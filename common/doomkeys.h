@@ -139,6 +139,14 @@
 #define KEY_JOY30				0x168
 #define KEY_JOY31				0x169
 #define KEY_JOY32				0x16A
-#define NUM_KEYS				0x16B
+#define KEY_HAT1				0x16B
+#define KEY_HAT2				0x16C
+#define KEY_HAT3				0x16D
+#define KEY_HAT4				0x16E
+#define KEY_HAT5				0x16F
+#define KEY_HAT6				0x170
+#define KEY_HAT7				0x171
+#define KEY_HAT8				0x172
+#define NUM_KEYS				0x173
 
 #endif	// __DOOMKEYS_H__
