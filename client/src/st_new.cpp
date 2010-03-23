@@ -203,16 +203,34 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	}
 }
 
-void ST_DrawNumNew(int x, int y, int num)
+void ST_DrawNumNew(int x, int y, DCanvas *scrn, int num)
 {
-	char digits[8];
+	char digits[8], *d;
+	int xpos;
+	xpos = x;
 	
 	sprintf (digits, "%d", num);
-
-	if (hud_scale)
-		screen->DrawTextLargeClean (CR_RED, x, y, digits);
-	else
-		screen->DrawTextLarge (CR_RED, x, y, digits);
+	
+	d = digits;
+	while (*d)
+	{
+		if (*d >= '0' && *d <= '9')
+		{
+			if (hud_scale)
+			{
+				scrn->DrawColoredLucentPatchIndirect (b_font[(*d - '0')+15], x+2, y+2);
+				scrn->DrawLucentPatchIndirect (b_font[(*d - '0')+15], x, y);
+				x += (b_font[(*d - '0')+15]->width()+2);
+			}
+			else
+			{
+				scrn->DrawColoredLucentPatch (b_font[*d - '0'+15], x+2, y+2);
+				scrn->DrawPatch (b_font[*d - '0'+15], x, y);
+				x += b_font[*d - '0'+15]->width()+2;
+			}
+		}
+		d++;
+	}
 }
 
 void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
@@ -230,7 +248,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	ST_DrawNum (x, y, scrn, num);
 }
 
-void ST_DrawNumNewRight (int x, int y, int num)
+void ST_DrawNumNewRight (int x, int y, DCanvas *scrn, int num)
 {
 	int d = abs(num);
 	
@@ -244,7 +262,7 @@ void ST_DrawNumNewRight (int x, int y, int num)
 	if (num < 0)
 		x -= negminus->width();	
 
-	ST_DrawNumNew (x, y,  num);
+	ST_DrawNumNew (x, y, screen, num);
 }
 
 void ST_newDraw (void)
@@ -335,12 +353,13 @@ void ST_HticDrawFullScreenStuff (void)
 	player_t *plyr = &consoleplayer();
 	ammotype_t ammo = weaponinfo[plyr->readyweapon].ammo;	
 	unsigned int x,y;
+	int xscale = hud_scale ? CleanXfac : 1;
+	int yscale = hud_scale ? CleanYfac : 1;
 
-	x = (hud_scale ? 320 : screen->width);
-	y = (hud_scale ? 180 : screen->height - 20);
+	y = 180;//screen->height - numheight * yscale;
 
 	// Draw health
-	ST_DrawNumNew(4, y, plyr->health ? plyr->health : 0);
+	ST_DrawNumNew(4, y, screen, plyr->health);
 		
 }
 
@@ -373,7 +392,7 @@ void ST_newDrawDM (void)
 		screen->DrawTextLarge (CR_RED, 4, y, timeremain);
 
 	// Draw health
-	ST_DrawNumNew((x / 2) - 30, y, plyr->health ? plyr->health : 0);
+	ST_DrawNumNew((x / 2) - 30, y, screen, plyr->health ? plyr->health : 0);
 	
 	// Draw middle health icon
 	h = (plyr->health > 100 ? 100 : plyr->health);
@@ -384,7 +403,7 @@ void ST_newDrawDM (void)
 		screen->DrawPatch (hudcross[0], (screen->width/2)-(hudcross[0]->width()/2), screen->height - 32 * CleanYfac);	
 
 	// Draw armor
-	ST_DrawNumNew((x / 2) + 30, y, plyr->armorpoints ? plyr->armorpoints : 0);
+	ST_DrawNumNew((x / 2) + 30, y, screen, plyr->armorpoints ? plyr->armorpoints : 0);
 	
 	// Draw ammo
 	if (ammo < NUMAMMO)
@@ -396,17 +415,17 @@ void ST_newDrawDM (void)
 		else
 			screen->DrawPatch (ammopatch, screen->width - 12, screen->height - 4);
 			
-		ST_DrawNumNewRight (x - 28, y, plyr->ammo[ammo]);
+		ST_DrawNumNewRight (x - 28, y, screen, plyr->ammo[ammo]);
 	}
 	
 	// Draw fraglimit
-	ST_DrawNumNewRight(x-(fraglimit > 0 ? 6 : 4), 4, fraglimit);
+	ST_DrawNumNewRight(x-(fraglimit > 0 ? 6 : 4), 4, screen, fraglimit);
 	
 	// Draw highest current frag count
-	ST_DrawNumNewRight(x-(sortedplayers[0]->fragcount > 0 ? 6 : 4), 18, sortedplayers[0]->fragcount);
+	ST_DrawNumNewRight(x-(sortedplayers[0]->fragcount > 0 ? 6 : 4), 18, screen, sortedplayers[0]->fragcount);
 	
 	// Draw player's frag count
-	ST_DrawNumNewRight(x-(plyr->fragcount > 0 ? 6 : 4), 32, plyr->fragcount);
+	ST_DrawNumNewRight(x-(plyr->fragcount > 0 ? 6 : 4), 32, screen, plyr->fragcount);
 }
 
 void ST_newDrawCTF (void)

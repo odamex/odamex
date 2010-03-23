@@ -295,8 +295,8 @@ void D_Display (void)
 				AM_Drawer ();
 			C_DrawMid ();
 			CTF_DrawHud ();
-				ST_Drawer ();
-				HU_Drawer ();
+			ST_Drawer ();
+			HU_Drawer ();
 			break;
 
 		case GS_INTERMISSION:
@@ -1371,7 +1371,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	wadfiles.clear();
 
 	std::string custwad;
-	if(wadnames.size() && W_IsIWAD(wadnames[0]))
+	if(wadnames.empty() == false && W_IsIWAD(wadnames[0]))
 		custwad = wadnames[0];
 
 	D_AddDefWads(custwad);

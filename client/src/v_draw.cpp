@@ -290,7 +290,7 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 		unsigned int *fg2rgb;
 		fixed_t fglevel, bglevel, translevel;
 		
-		translevel = 0xFFFF * hud_transparency;
+		translevel = 0xFFFF * (hud_transparency < 0.5 ? hud_transparency : 0.5);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -301,7 +301,7 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 	do
 	{
 		unsigned int bg = bg2rgb[*dest];
-		bg = (bg+bg) | 0x1f07c1f;
+		bg = (bg) | 0x1f07c1f;
 		*dest = RGB32k[0][0][bg & (bg>>15)];
 		dest += pitch; 
 	} while (--count);

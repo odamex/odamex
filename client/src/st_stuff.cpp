@@ -2167,11 +2167,12 @@ void ST_Drawer(void)
 				if (gameinfo.gametype & GAME_Heretic)
 					ST_HticDrawFullScreenStuff();
 				else
-					ST_newDrawDM();
+					ST_newDraw();
 			else
 				ST_newDrawDM();
 		else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
 			ST_newDrawCTF();
+			
 		st_firsttime = true;
 	}
 	else
