@@ -3265,7 +3265,7 @@ void SV_RConPassword (player_t &player)
 	std::string challenge = MSG_ReadString();
 	std::string password = rcon_password.cstring();
 
-	if (MD5SUM(password + cl->digest) == challenge)
+	if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
 	{
 		cl->allow_rcon = true;
 		Printf(PRINT_HIGH, "rcon login from %s", NET_AdrToString(cl->address));
