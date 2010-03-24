@@ -1007,7 +1007,11 @@ void M_OptResponder (event_t *ev)
 	{
 		if(ev->type == ev_keydown)
 		{
+#ifdef _XBOX
+			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
+#else
 			if (ch != KEY_ESCAPE)
+#endif
 			{
 				C_ChangeBinding (item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);

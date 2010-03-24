@@ -1784,7 +1784,11 @@ bool M_Responder (event_t* ev)
 	// Pop-up menu?
 	if (!menuactive)
 	{
+#ifdef _XBOX
+		if (ch == KEY_ESCAPE || ch == KEY_JOY9)
+#else
 		if (ch == KEY_ESCAPE)
+#endif
 		{
 			M_StartControlPanel ();
 			M_SetupNextMenu (&MainDef);
