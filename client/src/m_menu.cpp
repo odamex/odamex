@@ -792,7 +792,7 @@ char	tempstring[80];
 
 void M_QuickSaveResponse(int ch)
 {
-	if (ch == 'y')
+	if (ch == 'y' || ch == KEY_JOY4)
 	{
 		M_DoSave (quickSaveSlot);
 		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
@@ -839,7 +839,7 @@ void M_QuickSave(void)
 //
 void M_QuickLoadResponse(int ch)
 {
-	if (ch == 'y')
+	if (ch == 'y' || ch == KEY_JOY4)
 	{
 		M_LoadSelect(quickSaveSlot);
 		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
@@ -973,7 +973,7 @@ void M_DrawEpisode(void)
 
 void M_VerifyNightmare(int ch)
 {
-	if (ch != 'y') {
+	if (ch != 'y' && ch != KEY_JOY4) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1060,7 +1060,7 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if (toupper(ch) != 'Y') {
+	if (toupper(ch) != 'Y' && ch != KEY_JOY4) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1089,7 +1089,7 @@ void M_EndGame(int choice)
 
 void M_QuitResponse(int ch)
 {
-	if (toupper(ch) != 'Y') {
+	if (toupper(ch) != 'Y' && ch != KEY_JOY4) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1721,12 +1721,14 @@ bool M_Responder (event_t* ev)
 			}
 			break;
 
+		  case KEY_JOY2:
 		  case KEY_ESCAPE:
 			genStringEnter = 0;
 			M_ClearMenus ();
 			strcpy(&savegamestrings[saveSlot][0],saveOldString);
 			break;
 
+		  case KEY_JOY1:
 		  case KEY_ENTER:
 			genStringEnter = 0;
 			M_ClearMenus ();
@@ -1756,7 +1758,7 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			!(ch2 == ' ' || toupper(ch2) == 'N' || toupper(ch2) == 'Y' || ch == KEY_ESCAPE))
+			!(ch2 == ' ' || toupper(ch2) == 'N' || toupper(ch2) == 'Y' || ch == KEY_ESCAPE || ch == KEY_JOY2 || ch == KEY_JOY4))
 			return true;
 
 		menuactive = messageLastMenuActive;
@@ -1796,6 +1798,7 @@ bool M_Responder (event_t* ev)
 	// Keys usable within menu
 	switch (ch)
 	{
+	  case KEY_HAT3:
 	  case KEY_DOWNARROW:
 		do
 		{
@@ -1812,6 +1815,7 @@ bool M_Responder (event_t* ev)
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
+	  case KEY_HAT1:
 	  case KEY_UPARROW:
 		do
 		{
@@ -1828,6 +1832,7 @@ bool M_Responder (event_t* ev)
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
+	  case KEY_HAT4:
 	  case KEY_LEFTARROW:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
@@ -1837,6 +1842,7 @@ bool M_Responder (event_t* ev)
 		}
 		return true;
 
+	  case KEY_HAT2:
 	  case KEY_RIGHTARROW:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
@@ -1846,6 +1852,7 @@ bool M_Responder (event_t* ev)
 		}
 		return true;
 
+	  case KEY_JOY1:
 	  case KEY_ENTER:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status)
@@ -1867,6 +1874,7 @@ bool M_Responder (event_t* ev)
 	  // [RH] Escape now moves back one menu instead of
 	  //	  quitting the menu system. Thus, backspace
 	  //	  is now ignored.
+	  case KEY_JOY2:
 	  case KEY_ESCAPE:
 		currentMenu->lastOn = itemOn;
 		M_PopMenuStack ();

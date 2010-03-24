@@ -1005,15 +1005,18 @@ void M_OptResponder (event_t *ev)
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
 	{
-		if (ch != KEY_ESCAPE && ev->type == ev_keydown)
+		if(ev->type == ev_keydown)
 		{
-			C_ChangeBinding (item->e.command, ch);
-			M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
+			if (ch != KEY_ESCAPE)
+			{
+				C_ChangeBinding (item->e.command, ch);
+				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
+			}
+			WaitingForKey = false;
+			CurrentMenu->items[0].label = OldContMessage;
+			CurrentMenu->items[0].type = OldContType;
+			return;
 		}
-		WaitingForKey = false;
-		CurrentMenu->items[0].label = OldContMessage;
-		CurrentMenu->items[0].type = OldContType;
-		return;
 	}
 
 	// Waiting on an analog axis motion for setting analog control
@@ -1073,6 +1076,7 @@ void M_OptResponder (event_t *ev)
 
 	switch (ch)
 	{
+		case KEY_HAT3:
 		case KEY_DOWNARROW:
 			{
 				int modecol;
@@ -1113,6 +1117,7 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+		case KEY_HAT1:
 		case KEY_UPARROW:
 			{
 				int modecol;
@@ -1200,6 +1205,7 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 		
+		case KEY_HAT4:
 		case KEY_LEFTARROW:
 			switch (item->type)
 			{
@@ -1281,6 +1287,7 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+		case KEY_HAT2:
 		case KEY_RIGHTARROW:
 			switch (item->type)
 			{
@@ -1374,6 +1381,7 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+		case KEY_JOY1:
 		case KEY_ENTER:
 			if (CurrentMenu == &ModesMenu)
 			{
@@ -1441,6 +1449,7 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+		case KEY_JOY2:
 		case KEY_ESCAPE:
 			CurrentMenu->lastOn = CurrentItem;
 			M_PopMenuStack ();

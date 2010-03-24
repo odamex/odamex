@@ -265,6 +265,8 @@ static int RegisterJoystickEvent(SDL_Event *ev, int value)
 			event.data1 = (ev->jhat.hat * 4) + KEY_HAT3;
 		else if(value == SDL_HAT_LEFT)
 			event.data1 = (ev->jhat.hat * 4) + KEY_HAT4;
+
+		event.data2 = event.data1;
 	}
 
 	if(evc)
@@ -679,6 +681,7 @@ void I_GetEvent (void)
 		{
 			event.type = ev_keydown;
 			event.data1 = ev.jbutton.button + KEY_JOY1;
+			event.data2 = event.data1;
 
 			D_PostEvent(&event);
 			break;
@@ -688,6 +691,7 @@ void I_GetEvent (void)
 		{
 			event.type = ev_keyup;
 			event.data1 = ev.jbutton.button + KEY_JOY1;
+			event.data2 = event.data1;
 
 			D_PostEvent(&event);
 			break;
