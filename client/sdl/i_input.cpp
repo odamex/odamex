@@ -249,9 +249,7 @@ static int RegisterJoystickEvent(SDL_Event *ev, int value)
 
 		evc = new SDL_Event;
 
-		evc->type = ev->type;
-		evc->jhat.hat = ev->jhat.hat;
-		evc->jhat.which = ev->jhat.which;
+		memcpy(evc, ev, sizeof(SDL_Event));
 		evc->jhat.value = value;
 
 		event.data1 = event.data2 = event.data3 = 0;
@@ -336,8 +334,14 @@ CVAR_FUNC_IMPL (use_joystick)
 {
 	if(var <= 0.0)
 	{
+		// Don't let Xbox users disable joystick support because
+		// they won't have any way to reenable through the menu.
+#ifdef _XBOX
+		use_joystick = 1.0;
+#else
 		I_CloseJoystick();
 		DisableJoystickPolling();
+#endif
 	}
 	else
 	{

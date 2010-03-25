@@ -112,7 +112,11 @@ CVAR (novert,				"0",	CVAR_ARCHIVE)
 CVAR (dynres_state,			"0",	CVAR_ARCHIVE)
 CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+#ifdef _XBOX
+CVAR_FUNC_DECL (use_joystick, "1", CVAR_ARCHIVE)
+#else
 CVAR_FUNC_DECL (use_joystick, "0", CVAR_ARCHIVE)
+#endif
 CVAR_FUNC_DECL (joy_active, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_strafeaxis, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_forwardaxis, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -251,7 +255,11 @@ CVAR (autoadjust_video_settings, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 // Frames per second counter
 CVAR (vid_fps, "0", CVAR_CLIENTINFO)
 // Fullscreen mode
+#ifdef _XBOX
+CVAR (vid_fullscreen, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+#else
 CVAR (vid_fullscreen, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+#endif
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Older (Doom-style) FPS counter

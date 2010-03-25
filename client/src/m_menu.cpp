@@ -741,7 +741,12 @@ void M_SaveSelect (int choice)
 	saveSlot = choice;
 	strcpy(saveOldString,savegamestrings[choice]);
 	if (!strcmp(savegamestrings[choice],EMPTYSTRING))
-		savegamestrings[choice][0] = 0;
+	{
+		time_t     ti = time(NULL);
+		struct tm *lt = localtime(&ti);
+
+		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
+	}
 	saveCharIndex = strlen(savegamestrings[choice]);
 }
 
