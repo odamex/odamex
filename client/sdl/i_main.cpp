@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 		startdir = I_GetCWD();
 
 		// init console
-		C_InitConsole (80 * 8, 25 * 8, false);
+		C_InitConsole (80 * 8, 25 * 8, 8, false);
 
 		D_DoomMain ();
 	}

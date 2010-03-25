@@ -1016,9 +1016,9 @@ void M_DrawHereticMainMenu (void)
 	int frame;
 
 	frame = (MenuTime / 3) % 18;
-	screen->DrawPatchClean (W_CachePatch("M_HTIC"), 88, 0);
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpNum(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
-	screen->DrawPatchClean ((patch_t *)W_CacheLumpNum(SkullBaseLump + frame, PU_CACHE), 232, 10);
+	screen->DrawPatchIndirect (W_CachePatch("M_HTIC"), 88, 0);
+	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpNum(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
+	screen->DrawPatchIndirect ((patch_t *)W_CacheLumpNum(SkullBaseLump + frame, PU_CACHE), 232, 10);
 }
 
 void M_DrawNewGame(void)
@@ -1133,7 +1133,7 @@ void M_DrawReadThis1 (void)
 		}
 
 		if (readpage == NULL)
-			readpage = I_AllocateScreen(pwidth,pheight,8);
+			readpage = I_AllocateScreen(pwidth,pheight,screen->bits);
 
 		readpage->Lock ();
 		readpage->DrawBlock (0, 0, pwidth, pheight, (byte *)W_CachePatch (gameinfo.info.infoPage[0]));
@@ -1297,7 +1297,7 @@ void M_PlayerSetup (int choice)
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
 	PlayerTics = PlayerState->tics;
 	if (FireScreen == NULL)
-		FireScreen = I_AllocateScreen (72, 72+5, 8);
+		FireScreen = I_AllocateScreen (72, 72+5, screen->bits);
 
 	// [Nes] Intialize the player preview color.
 	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
@@ -2114,8 +2114,8 @@ void M_Drawer (void)
 			if (drawSkull)
 			{
 				if (gameinfo.gametype & GAME_Heretic)
-					screen->DrawPatchClean (W_CachePatch(arrowName[whichSkull]),
-						x + ARROWXOFF, (currentMenu->y + itemOn*HTCLINEHEIGHT + ARROWYOFF));
+					screen->DrawPatchIndirect (W_CachePatch(arrowName[whichSkull]),
+						x + ARROWXOFF, (currentMenu->y - 1 + itemOn*HTCLINEHEIGHT));
 				else
 					screen->DrawPatchClean (W_CachePatch(skullName[whichSkull]),
 						x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);

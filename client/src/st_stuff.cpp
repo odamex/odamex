@@ -1601,6 +1601,9 @@ static void ST_HticDrawWidgets(bool refresh)
 
 static void ST_HticRefreshBackground(void)
 {
+	int st_edgeheight;
+	player_t *plyr = &consoleplayer();	
+	
 	if (st_statusbaron)
 	{
 		// [RH] If screen is wider than the status bar,
@@ -1615,16 +1618,24 @@ static void ST_HticRefreshBackground(void)
 		
 		// TODO: Inventory bar
 		BG->DrawPatch (statbar, 34, 2);
-   
+
+		st_edgeheight = 200 - gameinfo.StatusBar->height - sbar_topleft->height() + 1;
+
 		// draw the tops of the faces
-		FG->DrawPatchIndirect(sbar_topleft, 0, 200-ST_HBARHEIGHT-sbar_topleft->height()+1);
-		FG->DrawPatchIndirect(sbar_topright, 290, 200-ST_HBARHEIGHT-sbar_topright->height()+1); 
+		FG->DrawPatchIndirect(sbar_topleft, 0, st_edgeheight);
+		FG->DrawPatchIndirect(sbar_topright, 290, st_edgeheight); 
 		
 		ST_HticDrawChainWidget();
 	
 		// draw face patches to cover over spare ends of chain
 		BG->DrawPatch(ltface, 0, 32);
 		BG->DrawPatch(rtface, 276, 32);	
+			
+		if ((plyr->cheats & CF_GODMODE)	|| plyr->powers[pw_invulnerability])
+		{
+			BG->DrawPatch (godeyes_left, 16, 9);
+			BG->DrawPatch (godeyes_right, 287, 9);
+		}		
 		
 		ST_HticShadeChain (19, 277, 32, 10);  	
 
@@ -1791,8 +1802,8 @@ void ST_HticUpdateWidgets(void)
 		keyboxes[i] = plyr->cards[i] ? i : -1;
 
 		// [RH] show multiple keys per box, too
-		if (plyr->cards[i+3])
-			keyboxes[i] = (keyboxes[i] == -1) ? i+3 : i+6;
+		//if (plyr->cards[i+3])
+		//	keyboxes[i] = (keyboxes[i] == -1) ? i+3 : i+6;
 	}		
 }
 
@@ -2294,10 +2305,10 @@ void ST_Start (void)
 void ST_Init (void)
 {
 	if(!stbarscreen)
-		stbarscreen = I_AllocateScreen (320, gameinfo.StatusBar->height, 8);
+		stbarscreen = I_AllocateScreen (320, gameinfo.StatusBar->height, screen->bits);
 
 	if(!stnumscreen)
-		stnumscreen = I_AllocateScreen (320, gameinfo.StatusBar->height, 8);
+		stnumscreen = I_AllocateScreen (320, gameinfo.StatusBar->height, screen->bits);
 
     lu_palette = W_GetNumForName ("PLAYPAL");
     

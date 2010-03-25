@@ -194,7 +194,7 @@ void C_Close()
 //
 // C_InitConsole
 //
-void C_InitConsole (int width, int height, BOOL ingame)
+void C_InitConsole (int width, int height, int bits, BOOL ingame)
 {
 	int row;
 	char *zap;
@@ -211,7 +211,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
       // and to store the disconnect screenshot
       delete altconback;
 
-      altconback = I_AllocateScreen(width, height, 8);
+      altconback = I_AllocateScreen(width, height, bits);
 
 		if (!gotconback)
 		{
@@ -233,9 +233,9 @@ void C_InitConsole (int width, int height, BOOL ingame)
 
 			delete conback;
 			if (isRaw)
-				conback = I_AllocateScreen (320, 200, 8);
+				conback = I_AllocateScreen (320, 200, bits);
 			else
-				conback = I_AllocateScreen (bg->width(), bg->height(), 8);
+				conback = I_AllocateScreen (bg->width(), bg->height(), bits);
 
 			conback->Lock ();
 
@@ -656,7 +656,7 @@ void C_AdjustBottom (void)
 
 void C_NewModeAdjust (void)
 {
-	C_InitConsole (screen->width, screen->height, true);
+	C_InitConsole (screen->width, screen->height, screen->bits, true);
 	C_FlushDisplay ();
 	C_AdjustBottom ();
 }

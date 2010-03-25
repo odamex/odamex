@@ -651,7 +651,7 @@ void D_DoAdvanceDemo (void)
 		}
 
 		if (page == NULL)
-			page = I_AllocateScreen (width, height, 8);
+			page = I_AllocateScreen (width, height, screen->bits);
 
 		page->Lock ();
 		if (gameinfo.flags & GI_PAGESARERAW)

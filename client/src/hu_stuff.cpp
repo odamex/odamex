@@ -1687,7 +1687,7 @@ void OdamexEffect (int xa, int ya, int xb, int yb)
 		return;
 
 	if (!odacanvas)
-		odacanvas = I_AllocateScreen((xb - xa), (yb - ya), 8);
+		odacanvas = I_AllocateScreen((xb - xa), (yb - ya), screen->bits);
 
 	screen->CopyRect(xa, ya, (xb - xa), (yb - ya), 0, 0, odacanvas);
 	odacanvas->Dim ();

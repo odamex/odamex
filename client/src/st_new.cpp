@@ -278,8 +278,7 @@ void ST_newDraw (void)
 
 	// Draw health
 	if (hud_scale)
-		screen->DrawLucentPatchCleanNoMove (medi, 20 * CleanXfac,
-									  screen->height - 2*CleanYfac);
+		screen->DrawLucentPatchIndirect (medi, 20, 198);
 	else
 		screen->DrawLucentPatch (medi, 20, screen->height - 2);
 	
@@ -360,7 +359,7 @@ void ST_HticDrawFullScreenStuff (void)
 
 	// Draw health
 	ST_DrawNumNew(4, y, screen, plyr->health);
-		
+	
 }
 
 void ST_newDrawDM (void)

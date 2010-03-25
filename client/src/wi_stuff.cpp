@@ -1053,7 +1053,7 @@ void WI_loadData (void)
 
 	// background
 	bg = W_CachePatch (name);
-	background = I_AllocateScreen (bg->width(), bg->height(), 8);
+	background = I_AllocateScreen (bg->width(), bg->height(), screen->bits);
 	background->Lock ();
 	background->DrawPatch (bg, 0, 0);
 	background->Unlock ();

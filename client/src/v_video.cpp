@@ -471,6 +471,7 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 	I_SetMode (width, height, bits);
 
+	//CleanXfac = width / 320;
 	CleanYfac = height / 200;
 
 	if(!CleanYfac)
@@ -655,11 +656,12 @@ void V_Init (void)
             (vid_fullscreen ? "FULLSCREEN" : "WINDOWED"));
 	else
         AddCommandString("checkres");
-
-	V_InitConChars (0xf7);
-	C_InitConsole (screen->width, screen->height, true);
-
+	
 	V_InitPalette ();
+	V_InitConChars (0xf7);
+	C_InitConsole (screen->width, screen->height, screen->bits, true);
+
+	
 }
 
 void DCanvas::AttachPalette (palette_t *pal)

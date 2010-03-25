@@ -596,12 +596,20 @@ void DCanvas::DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x0, i
 //
 void DCanvas::DrawIWrapper (EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
+	int nwidth;
+	
+	nwidth = (height*4)/3;
+	
 	if (width == 320 && height == 200)
 		DrawWrapper (drawer, patch, x0, y0);
+	if (width == 640 && height == 400)
+		DrawSWrapper (drawer, patch,
+			 (width * x0) / 320, (height * y0) / 200,
+			 (width * patch->width()) / 320, (height * patch->height()) / 200);	
 	else
 		DrawSWrapper (drawer, patch,
 			 (width * x0) / 320, (height * y0) / 200,
-			 (width * patch->width()) / 320, (height * patch->height()) / 200);
+			 (width * patch->width()) / 320, (height * patch->height()) / 200);	
 }
 
 //

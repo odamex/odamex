@@ -53,7 +53,7 @@ void V_InitConChars (byte transcolor)
 	byte *d, *s, v, *src;
 	patch_t *chars;
 	int x, y, z, a;
-	DCanvas *scrn = I_AllocateScreen(128, 128, 8);
+	DCanvas *scrn = I_AllocateScreen(128, 128, screen->bits);
 	DCanvas &temp = *scrn;
 
 	chars = W_CachePatch ("CONCHARS");
@@ -631,7 +631,7 @@ void DCanvas::LargeTextSWrapper (EWrapperCode drawer, int normalcolor, int x, in
 		if (cx+w > width)
 			break;
 
-		DrawCWrapper (drawer, b_font[c], cx, cy);
+		DrawIWrapper (drawer, b_font[c], cx, cy);
 		cx+=w;
 	}
 }
