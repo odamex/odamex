@@ -747,7 +747,7 @@ void D_AddDefWads (std::string iwad)
 //
 // [Russell] - Change the meaning, this will load multiple patch files if
 //             specified
-void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
+void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vector<std::string>())
 {
     DArgs files;
     BOOL noDef = false;
@@ -970,13 +970,13 @@ void D_DoomMain (void)
 	D_AddDefWads(iwad);
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
+	SV_InitMultipleFiles (wadfiles);
 	
 	// [RH] Initialize configurable strings.
 	D_InitStrings ();
+	D_DoDefDehackedPatch();
 	
 	I_Init ();
-
-	D_CheckNetGame ();
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks ();
@@ -1016,6 +1016,13 @@ void D_DoomMain (void)
 		Printf (PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
 		timelimit.Set (20);
 	}
+	
+	// [RH] Now that all text strings are set up,
+	// insert them into the level and cluster data.
+	G_SetLevelStrings ();
+
+	// [RH] Parse any SNDINFO lumps
+	S_ParseSndInfo();
 
 	// Check for -file in shareware
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
@@ -1026,6 +1033,9 @@ void D_DoomMain (void)
 
 	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
 	P_Init ();
+		
+	Printf (PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
+	D_CheckNetGame ();
 		
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems ();
