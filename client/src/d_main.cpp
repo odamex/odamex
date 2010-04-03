@@ -1262,7 +1262,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 
 	// already loaded these?
-	if (lastWadRebootSuccess &&
+ 	if (lastWadRebootSuccess &&
 		!wadhashes.empty() &&
 			needhashes ==
 				std::vector<std::string>(wadhashes.begin()+1, wadhashes.end()))
@@ -1297,7 +1297,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	wadfiles.clear();
 
 	std::string custwad;
-	if(wadnames.empty() == false && W_IsIWAD(wadnames[0]))
+	if(wadnames.empty() == false)
 		custwad = wadnames[0];
 
 	D_AddDefWads(custwad);
