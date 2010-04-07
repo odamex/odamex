@@ -3860,6 +3860,7 @@ END_COMMAND(step)
 BEGIN_COMMAND (playerinfo)
 {
 	player_t *player = &consoleplayer();
+	char ip[16];
 
 	if(argc > 1)
 	{
@@ -3880,8 +3881,15 @@ BEGIN_COMMAND (playerinfo)
 		Printf (PRINT_HIGH, "Not a valid player\n");
 		return;
 	}
+	
+	sprintf(ip,"%u.%u.%u.%u",
+			(int)player->client.address.ip[0],
+			(int)player->client.address.ip[1],
+			(int)player->client.address.ip[2],
+			(int)player->client.address.ip[3]);
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
+	Printf (PRINT_HIGH, " IP Address       - %s \n",		  ip);
 	Printf (PRINT_HIGH, " userinfo.netname - %s \n",		  player->userinfo.netname);
 	Printf (PRINT_HIGH, " userinfo.team    - %d \n",		  player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.aimdist - %d \n",		  player->userinfo.aimdist);
