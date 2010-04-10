@@ -40,6 +40,8 @@ struct hostent
 
 #undef exit
 #define exit xbox_exit
+#undef atexit
+#define atexit xbox_atexit
 #undef getenv
 char *getenv(const char *);
 #undef putenv
@@ -58,6 +60,7 @@ int xbox_SetScreenPosition(float x, float y);
 int xbox_SetScreenStretch(float xs, float ys);
 
 void xbox_exit(int status);
+void xbox_atexit(void (*function)(void));
 
 #endif // _XBOX
 

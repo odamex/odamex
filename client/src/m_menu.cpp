@@ -733,6 +733,9 @@ void M_DoSave (int slot)
 //
 void M_SaveSelect (int choice)
 {
+	time_t     ti = time(NULL);
+	struct tm *lt = localtime(&ti);
+
 	// we are going to be intercepting all chars
 	genStringEnter = 1;
 	genStringEnd = M_DoSave;
@@ -740,13 +743,9 @@ void M_SaveSelect (int choice)
 
 	saveSlot = choice;
 	strcpy(saveOldString,savegamestrings[choice]);
-	if (!strcmp(savegamestrings[choice],EMPTYSTRING))
-	{
-		time_t     ti = time(NULL);
-		struct tm *lt = localtime(&ti);
 
-		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
-	}
+	strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
+
 	saveCharIndex = strlen(savegamestrings[choice]);
 }
 
@@ -1065,7 +1064,7 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if (toupper(ch) != 'Y' && ch != KEY_JOY4) {
+	if (ch != KEY_JOY4 && toupper(ch) != 'Y') {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1094,7 +1093,7 @@ void M_EndGame(int choice)
 
 void M_QuitResponse(int ch)
 {
-	if (toupper(ch) != 'Y' && ch != KEY_JOY4) {
+	if (ch != KEY_JOY4 && toupper(ch) != 'Y') {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1763,7 +1762,7 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			!(ch2 == ' ' || toupper(ch2) == 'N' || toupper(ch2) == 'Y' || ch == KEY_ESCAPE || ch == KEY_JOY2 || ch == KEY_JOY4))
+			!(ch2 == ' ' || ch == KEY_ESCAPE || ch == KEY_JOY2 || ch == KEY_JOY4 || toupper(ch2) == 'N' || toupper(ch2) == 'Y'))
 			return true;
 
 		menuactive = messageLastMenuActive;

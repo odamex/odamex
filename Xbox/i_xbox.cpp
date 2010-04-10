@@ -23,6 +23,7 @@
 #ifdef _XBOX
 
 #include <xtl.h>
+#include <list>
 #include <errno.h>
 
 #include "i_xbox.h"
@@ -45,6 +46,8 @@ typedef struct _STRING
 	USHORT	MaximumLength;
 	PSTR	Buffer;
 } UNICODE_STRING, *PUNICODE_STRING, ANSI_STRING, *PANSI_STRING;
+
+std::list<void (*)(void)>ExitFuncList;
 
 extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicLinkName,IN PUNICODE_STRING DeviceName);
 extern "C" XBOXAPI LONG WINAPI IoDeleteSymbolicLink(IN PUNICODE_STRING SymbolicLinkName);
@@ -357,15 +360,26 @@ int xbox_SetScreenStretch(float xs, float ys)
 	return 0;
 }
 
+// xbox_atexit - Custom atexit function for Xbox
+
+void xbox_atexit(void (*function)(void))
+{
+	if(function)
+		ExitFuncList.push_back(function);
+}
+
 // xbox_exit - Custom exit function for Xbox
 
 void xbox_exit(int status)
 {
+	std::list<void (*)(void)>::iterator funcIter;
+
+	for(funcIter = ExitFuncList.begin(); funcIter != ExitFuncList.end(); ++funcIter)
+		(*funcIter)();
+
 	xbox_CloseNetwork();
 
 	xbox_UnMountPartitions();
-
-	SDL_Quit();
 
 	// Passing NULL to this function returns to the dashboard.
 	XLaunchNewImage(NULL, NULL);
