@@ -1834,8 +1834,8 @@ BOOL PIT_ChangeSector (AActor *thing)
 									 thing->y,
 									 thing->z + thing->height/2, MT_BLOOD);
 
-			mo->momx = (P_Random (mo) - P_Random (mo)) << 12;
-			mo->momy = (P_Random (mo) - P_Random (mo)) << 12;
+			mo->momx = P_RandomDiff (mo) << 12;
+			mo->momy = P_RandomDiff (mo) << 12;
 		}
 	}
 

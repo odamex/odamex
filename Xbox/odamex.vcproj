@@ -58,7 +58,8 @@
 				Name="XboxImageTool"
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
-				NoLibWarn="TRUE"/>
+				NoLibWarn="TRUE"
+				TitleName="Odamex"/>
 		</Configuration>
 		<Configuration
 			Name="Profile|Xbox"
@@ -171,13 +172,13 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				Optimization="2"
 				GlobalOptimizations="FALSE"
 				InlineFunctionExpansion="0"
-				EnableIntrinsicFunctions="FALSE"
-				ImproveFloatingPointConsistency="FALSE"
-				FavorSizeOrSpeed="0"
-				OmitFramePointers="FALSE"
+				EnableIntrinsicFunctions="TRUE"
+				ImproveFloatingPointConsistency="TRUE"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories=".,..\client\src,..\client\sdl,..\common"
 				PreprocessorDefinitions="NDEBUG;WIN32;_XBOX;NOASM"
@@ -219,7 +220,8 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"/>
+				StackSize="65536"
+				TitleName="Odamex"/>
 		</Configuration>
 		<Configuration
 			Name="Release_LTCG|Xbox"
