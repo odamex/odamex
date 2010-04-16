@@ -27,6 +27,7 @@
 #include <errno.h>
 
 #include "i_xbox.h"
+#include "i_system.h"
 
 // Partition device mapping
 #define DriveC "\\??\\C:"
@@ -52,7 +53,9 @@ std::list<void (*)(void)>ExitFuncList;
 extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicLinkName,IN PUNICODE_STRING DeviceName);
 extern "C" XBOXAPI LONG WINAPI IoDeleteSymbolicLink(IN PUNICODE_STRING SymbolicLinkName);
 
-int i_main(int argc, char *argv[]); // i_main.cpp
+// External function declarations
+extern int i_main(int argc, char *argv[]); // i_main.cpp
+extern size_t I_BytesToMegabytes (size_t Bytes); // i_system.cpp
 
 // getenv - Environment variables don't exist on Xbox. Return NULL.
 
@@ -165,6 +168,39 @@ int gethostname(char *name, int namelen)
 		errno = EFAULT;
 	
 	return -1;
+}
+
+void xbox_PrintMemoryDebug()
+{
+	extern size_t got_heapsize;
+	MEMORYSTATUS  stat;
+	static DWORD  lastmem = 0;
+	char          buf[100];
+
+	// Get the memory status.
+	GlobalMemoryStatus(&stat);
+
+	if (stat.dwAvailPhys != lastmem)
+	{
+		sprintf(buf, "\nMemory Debug:\n");
+		OutputDebugString( buf );
+
+		sprintf(buf, "Heap Size: \t%4d MB\n", got_heapsize);
+		OutputDebugString( buf );
+
+
+		sprintf(buf, "Total Physical Memory: \t%4d bytes / %4d MB\n", stat.dwTotalPhys, I_BytesToMegabytes(stat.dwTotalPhys));
+		OutputDebugString( buf );
+
+		sprintf(buf, "Used Physical Memory : \t%4d bytes / %4d MB\n", stat.dwTotalPhys - stat.dwAvailPhys, 
+																			I_BytesToMegabytes(stat.dwTotalPhys - stat.dwAvailPhys));
+		OutputDebugString( buf );
+
+		sprintf(buf, "Free Physical Memory : \t%4d bytes / %4d MB\n\n", stat.dwAvailPhys, I_BytesToMegabytes(stat.dwAvailPhys));
+		OutputDebugString( buf );
+
+		lastmem = stat.dwAvailPhys;
+	}
 }
 
 void xbox_TranslateSdlKbdEvent(SDL_Event &ev)

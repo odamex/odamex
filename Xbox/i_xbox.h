@@ -52,6 +52,8 @@ char *getcwd(char *buf, size_t size);
 struct hostent *gethostbyname(const char *name);
 int gethostname(char *name, int namelen);
 
+void xbox_PrintMemoryDebug();
+
 void xbox_TranslateSdlKbdEvent(SDL_Event &ev);
 
 // Set the x, y screen starting position in relation to 0,0

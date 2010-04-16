@@ -107,7 +107,11 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
+#ifdef _XBOX
+size_t def_heapsize = 8;
+#else
 size_t def_heapsize = 32;
+#endif
 const size_t min_heapsize = 8;
 
 // The size we got back from I_ZoneBase in megabytes
