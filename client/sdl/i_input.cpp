@@ -570,9 +570,7 @@ void I_GetEvent (void)
          case SDL_KEYDOWN:
             event.type = ev_keydown;
             event.data1 = ev.key.keysym.sym;
-#ifdef _XBOX
-            xbox_TranslateSdlKbdEvent(ev);
-#endif
+
             if(event.data1 >= SDLK_KP0 && event.data1 <= SDLK_KP9)
                event.data2 = event.data3 = '0' + (event.data1 - SDLK_KP0);
             else if(event.data1 == SDLK_KP_PERIOD)
@@ -598,9 +596,7 @@ void I_GetEvent (void)
          case SDL_KEYUP:
             event.type = ev_keyup;
             event.data1 = ev.key.keysym.sym;
-#ifdef _XBOX
-            xbox_TranslateSdlKbdEvent(ev);
-#endif
+
             if ( (ev.key.keysym.unicode & 0xFF80) == 0 ) 
                event.data2 = event.data3 = ev.key.keysym.unicode;
             else
