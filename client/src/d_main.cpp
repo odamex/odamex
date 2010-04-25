@@ -91,6 +91,10 @@
 #include "cl_ctf.h"
 #include "cl_main.h"
 
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
 extern size_t got_heapsize;
 
 //extern void M_RestoreMode (void); // [Toke - Menu]

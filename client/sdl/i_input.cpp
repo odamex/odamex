@@ -334,9 +334,9 @@ CVAR_FUNC_IMPL (use_joystick)
 {
 	if(var <= 0.0)
 	{
-		// Don't let Xbox users disable joystick support because
+		// Don't let console users disable joystick support because
 		// they won't have any way to reenable through the menu.
-#ifdef _XBOX
+#if defined(_XBOX) || defined(GEKKO)
 		use_joystick = 1.0;
 #else
 		I_CloseJoystick();

@@ -50,21 +50,27 @@
 #	include <winsock.h>
 #endif // !_XBOX
 #else
-#	include <sys/types.h>
+#ifdef GEKKO // Wii/GC
+#	include <network.h>
+#else
 #	include <sys/socket.h>
 #	include <netinet/in.h>
 #	include <arpa/inet.h>
-#	include <errno.h>
-#	include <unistd.h>
 #	include <netdb.h>
 #	include <sys/ioctl.h>
+#endif // GEKKO
+#	include <sys/types.h>
+#	include <errno.h>
+#	include <unistd.h>
 #	include <sys/time.h>
 #endif // WIN32
 
 #ifndef _WIN32
 typedef int SOCKET;
+#ifndef GEKKO
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET -1
+#endif
 #define closesocket close
 #define ioctlsocket ioctl
 #define Sleep(x)	usleep (x * 1000)
@@ -88,9 +94,13 @@ typedef int SOCKET;
 #include "i_xbox.h"
 #endif
 
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
 #include "minilzo.h"
 
-int         net_socket;
+int         inet_socket;
 int         localport;
 netadr_t    net_from;   // address of who sent the packet
 
@@ -159,7 +169,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 
 void CloseNetwork (void)
 {
-	closesocket (net_socket);
+	closesocket (inet_socket);
 #ifdef _WIN32
 	WSACleanup ();
 #endif
@@ -252,7 +262,7 @@ int NET_GetPacket (void)
 
     fromlen = sizeof(from);
 	net_message.clear();
-    ret = recvfrom (net_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+    ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
 
     if (ret == -1)
     {
@@ -297,7 +307,7 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
 
     NetadrToSockadr (&to, &addr);
 
-	ret = sendto (net_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
 
 	buf.clear();
 
@@ -336,7 +346,7 @@ void NET_GetLocalAddress (void)
 	NET_StringToAdr (buff, &net_local_adr);
 
 	namelen = sizeof(address);
-	if (getsockname (net_socket, (struct sockaddr *)&address, &namelen) == -1)
+	if (getsockname (inet_socket, (struct sockaddr *)&address, &namelen) == -1)
         Printf (PRINT_HIGH, "NET_Init: getsockname:", strerror(errno));
 
 	net_local_adr.port = address.sin_port;
@@ -752,9 +762,9 @@ void InitNetCommon(void)
    WSAStartup( 0x0101, &wsad );
 #endif
 
-   net_socket = UDPsocket ();
-   BindToLocalPort (net_socket, localport);
-   if (ioctlsocket (net_socket, FIONBIO, &_true) == -1)
+   inet_socket = UDPsocket ();
+   BindToLocalPort (inet_socket, localport);
+   if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
 	// enter message information into message info structs
@@ -774,9 +784,9 @@ bool NetWaitOrTimeout(size_t ms)
 	fd_set fds;
 
 	FD_ZERO(&fds);
-	FD_SET(net_socket, &fds);
+	FD_SET(inet_socket, &fds);
 
-	int ret = select(net_socket + 1, &fds, NULL, NULL, &timeout);
+	int ret = select(inet_socket + 1, &fds, NULL, NULL, &timeout);
 
 	if(ret == 1)
 		return true;

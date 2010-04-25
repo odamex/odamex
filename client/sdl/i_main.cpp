@@ -79,7 +79,7 @@ static void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-#ifdef _XBOX
+#if defined(_XBOX) || defined(GEKKO)
 int i_main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 {
 	try
 	{
-#ifdef UNIX
+#if defined(UNIX) && !defined(GEKKO)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif

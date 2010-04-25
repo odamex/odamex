@@ -112,7 +112,7 @@ CVAR (novert,				"0",	CVAR_ARCHIVE)
 CVAR (dynres_state,			"0",	CVAR_ARCHIVE)
 CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-#ifdef _XBOX
+#if defined(_XBOX) || defined(GEKKO)
 CVAR_FUNC_DECL (use_joystick, "1", CVAR_ARCHIVE)
 #else
 CVAR_FUNC_DECL (use_joystick, "0", CVAR_ARCHIVE)
@@ -255,7 +255,7 @@ CVAR (autoadjust_video_settings, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 // Frames per second counter
 CVAR (vid_fps, "0", CVAR_CLIENTINFO)
 // Fullscreen mode
-#ifdef _XBOX
+#if defined(_XBOX) || defined(GEKKO)
 CVAR (vid_fullscreen, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 #else
 CVAR (vid_fullscreen, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)

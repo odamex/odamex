@@ -27,10 +27,14 @@
 
 #include "version.h"
 
+#ifdef GEKKO
+#include <gctypes.h>
+#endif
+
 #ifndef __BYTEBOOL__
 #define __BYTEBOOL__
 // [RH] Some windows includes already define this
-#if !defined(_WINDEF_) && !defined(__wtypes_h__)
+#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
 typedef int BOOL;
 #endif
 #ifndef __cplusplus
@@ -55,7 +59,9 @@ typedef enum {false, true} dboolean;
 // Predefined with some OS.
 #ifndef UNIX
 #ifndef _MSC_VER
+#ifndef GEKKO
 #include <values.h>
+#endif
 #endif
 #endif
 

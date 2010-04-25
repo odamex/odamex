@@ -88,7 +88,11 @@
 #include "i_xbox.h"
 #endif
 
-#ifndef _XBOX // I will add this back later -- Hyper_Eye
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
+#if !defined(_XBOX) && !defined(GEKKO)// I will add this back later -- Hyper_Eye
 #include "txt_main.h"
 #define ENDOOM_W 80
 #define ENDOOM_H 25
@@ -275,7 +279,7 @@ std::string I_GetCWD ()
 	return ret;
 }
 
-#ifdef UNIX
+#if defined(UNIX) && !defined(GEKKO)
 std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
@@ -303,7 +307,7 @@ std::string I_GetHomeDir(std::string user = "")
 
 std::string I_GetUserFileName (const char *file)
 {
-#ifdef UNIX
+#if defined(UNIX) && !defined(GEKKO) 
 	std::string path = I_GetHomeDir();
 
 	if(path[path.length() - 1] != '/')
@@ -330,9 +334,7 @@ std::string I_GetUserFileName (const char *file)
 
 	path += "/";
 	path += file;
-#endif
-
-#ifdef WIN32
+#else
 	std::string path = I_GetBinaryDir();
 
 #ifdef _XBOX
@@ -353,7 +355,7 @@ std::string I_GetUserFileName (const char *file)
 
 void I_ExpandHomeDir (std::string &path)
 {
-#ifdef UNIX
+#if defined(UNIX) && !defined(GEKKO) 
 	if(!path.length())
 		return;
 
@@ -385,6 +387,8 @@ std::string I_GetBinaryDir()
 #ifdef _XBOX
 	// D:\ always corresponds to the binary path whether running from DVD or HDD.
 	ret = "D:\\"; 
+#elif defined GEKKO
+	ret = "sd:/";
 #elif defined WIN32
 	char tmp[MAX_PATH]; // denis - todo - make separate function
 	GetModuleFileName (NULL, tmp, sizeof(tmp));
@@ -450,7 +454,7 @@ void I_FinishClockCalibration ()
 
 void I_Endoom(void)
 {
-#ifndef _XBOX // I will return to this -- Hyper_Eye
+#if !defined(_XBOX) && !defined(GEKKO)// I will return to this -- Hyper_Eye
 	unsigned char *endoom_data;
 	unsigned char *screendata;
 	int y;
