@@ -59,7 +59,10 @@
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"
-				TitleName="Odamex"/>
+				TitleID="0x4F444D58"
+				TitleName="Odamex"
+				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
 		</Configuration>
 		<Configuration
 			Name="Profile|Xbox"
@@ -110,7 +113,11 @@
 				Name="XboxImageTool"
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
-				NoLibWarn="TRUE"/>
+				NoLibWarn="TRUE"
+				TitleID="0x4F444D58"
+				TitleName="Odamex"
+				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
 		</Configuration>
 		<Configuration
 			Name="Profile_FastCap|Xbox"
@@ -162,7 +169,11 @@
 				Name="XboxImageTool"
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
-				NoLibWarn="TRUE"/>
+				NoLibWarn="TRUE"
+				TitleID="0x4F444D58"
+				TitleName="Odamex"
+				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Xbox"
@@ -221,7 +232,10 @@
 			<Tool
 				Name="XboxImageTool"
 				StackSize="65536"
-				TitleName="Odamex"/>
+				TitleID="0x4F444D58"
+				TitleName="Odamex"
+				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
 		</Configuration>
 		<Configuration
 			Name="Release_LTCG|Xbox"
@@ -271,7 +285,11 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"/>
+				StackSize="65536"
+				TitleID="0x4F444D58"
+				TitleName="Odamex"
+				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
 		</Configuration>
 	</Configurations>
 	<References>
