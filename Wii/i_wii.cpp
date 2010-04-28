@@ -35,7 +35,7 @@
 
 #ifdef DEBUG
 #include <debug.h>
-//#include "net_print.h"
+#include "net_print.h"
 #endif
 
 #include "i_wii.h"
@@ -117,14 +117,16 @@ void wii_InitNet()
 	{
 #if DEBUG
 		// Connect to the remote debug console
-//		if(net_print_init(NULL,0) >= 0)
-//			net_print_string( __FILE__, __LINE__, "net_print_init() successful");
+		if(net_print_init(NULL,0) >= 0)
+			net_print_string( __FILE__, __LINE__, "net_print_init() successful");
 
 		// Initialize the debug listener
-//		DEBUG_Init(100, 5656);
+		DEBUG_Init(100, 5656);
 		
+#if 0 // Enable this section to debug remotely over a network connection.
 		// Wait for the debugger
-//		_break();
+		_break();
+#endif
 #endif
 	}
 }
@@ -139,14 +141,14 @@ int main(int argc, char *argv[])
 	if(!fatInitDefault()) 
 	{
 #if DEBUG
-//		net_print_string( __FILE__, __LINE__, "Unable to initialise FAT subsystem, exiting.");
+		net_print_string( __FILE__, __LINE__, "Unable to initialise FAT subsystem, exiting.");
 #endif
 		exit(0);
 	}
 	if(chdir("sd:/"))
 	{
 #if DEBUG
-//		net_print_string( __FILE__, __LINE__, "Could not change to root directory, exiting.");
+		net_print_string( __FILE__, __LINE__, "Could not change to root directory, exiting.");
 #endif
 		exit(0);
 	}
