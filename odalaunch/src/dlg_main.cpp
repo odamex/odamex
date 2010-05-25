@@ -251,6 +251,24 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
                     ped.GetValue());
 }
 
+
+// Posts a thread message to the main thread
+void dlgMain::ThreadPostEvent(wxEventType EventType, int win_id, mtrs_t Signal, 
+    wxInt32 Index, wxInt32 ListIndex)
+{
+    static wxCommandEvent event(EventType, win_id);
+    
+    mtrs_struct_t *Result = new mtrs_struct_t;
+    
+    Result->Signal = Signal;                
+    Result->Index = Index;
+    Result->ServerListIndex = ListIndex;
+    
+    event.SetClientData(Result);
+    
+    wxPostEvent(this, event);
+}
+
 // [Russell] - Monitor thread entry point
 void *dlgMain::Entry()
 {
@@ -268,30 +286,14 @@ void *dlgMain::Entry()
         MServer->QueryMasters(MasterTimeout);
             
         if (!MServer->GetServerCount())
-        {
-            mtrs_struct_t *Result = new mtrs_struct_t;
-
-            Result->Signal = mtrs_master_timeout;                
-            Result->Index = -1;
-            Result->ServerListIndex = -1;
-                    
-            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-            event.SetClientData(Result);
-                  
-            wxPostEvent(this, event); 
+        {          
+            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
+                mtrs_master_timeout, -1, -1);
         }
         else
         {                 
-            mtrs_struct_t *Result = new mtrs_struct_t;
-
-            Result->Signal = mtrs_master_success;                
-            Result->Index = -1;
-            Result->ServerListIndex = -1;
-                
-            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-            event.SetClientData(Result);
-                  
-            wxPostEvent(this, event);               
+            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
+                mtrs_master_success, -1, -1);             
         }
 
         if (QServer != NULL && MServer->GetServerCount())
@@ -318,16 +320,8 @@ void *dlgMain::Entry()
         // [Russell] - This includes custom servers.
         if (!MServer->GetServerCount())
         {
-            mtrs_struct_t *Result = new mtrs_struct_t;
-
-            Result->Signal = mtrs_server_noservers;                
-            Result->Index = -1;
-            Result->ServerListIndex = -1;
-                
-            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-            event.SetClientData(Result);
-                  
-            wxPostEvent(this, event);                  
+            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
+                mtrs_server_noservers, -1, -1);               
         }
 
         ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
@@ -374,18 +368,9 @@ void *dlgMain::Entry()
                 }          
             }
         }
-        
-        // All servers queried
-        mtrs_struct_t *Result = new mtrs_struct_t;
 
-        Result->Signal = mtrs_servers_querydone;                
-        Result->Index = -1;
-        Result->ServerListIndex = -1;
-                
-        wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-        event.SetClientData(Result);
-                    
-        wxPostEvent(this, event);      
+        ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
+            mtrs_servers_querydone, -1, -1);              
     }
         
     // User requested single server to be refreshed
@@ -398,29 +383,15 @@ void *dlgMain::Entry()
         if (MServer->GetServerCount())
         if (QServer[mtcs_Request.Index].Query(ServerTimeout))
         {
-            mtrs_struct_t *Result = new mtrs_struct_t;
-
-            Result->Signal = mtrs_server_singlesuccess;                
-            Result->Index = mtcs_Request.Index;
-            Result->ServerListIndex = mtcs_Request.ServerListIndex;
-                
-            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, -1);
-            event.SetClientData(Result);
-                    
-            wxPostEvent(this, event);      
+            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
+                mtrs_server_singlesuccess, mtcs_Request.Index, 
+                mtcs_Request.ServerListIndex);     
         }
         else
         {
-            mtrs_struct_t *Result = new mtrs_struct_t;
-
-            Result->Signal = mtrs_server_singletimeout;                
-            Result->Index = mtcs_Request.Index;
-            Result->ServerListIndex = mtcs_Request.ServerListIndex;
-                
-            wxCommandEvent event(wxEVT_THREAD_MONITOR_SIGNAL, mtrs_server_singletimeout);
-            event.SetClientData(Result);
-                    
-            wxPostEvent(this, event);    
+            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, 
+                mtrs_server_singletimeout, mtrs_server_singletimeout, 
+                mtcs_Request.Index, mtcs_Request.ServerListIndex);
         }                     
     }
     

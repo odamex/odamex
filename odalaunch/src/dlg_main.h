@@ -198,6 +198,10 @@ class dlgMain : public wxFrame, wxThreadHelper
         } wtrs_struct_t;
         
         wtrs_struct_t wtrs_Result;
+
+        // Posts a message from a secondary thread to the main thread
+        void ThreadPostEvent(wxEventType EventType, int win_id, mtrs_t Signal, 
+            wxInt32 Index, wxInt32 ListIndex);
         
         void OnMonitorSignal(wxCommandEvent&);
         void OnWorkerSignal(wxCommandEvent&);
