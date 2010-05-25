@@ -33,7 +33,6 @@
 #include <wx/msgdlg.h>
 #include <wx/utils.h>
 #include <wx/tipwin.h>
-#include <wx/recguard.h>
 #include <wx/app.h>
 #include <wx/imaglist.h>
 #include <wx/artprov.h>
@@ -577,27 +576,11 @@ void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 // Launch button click
 void dlgMain::OnLaunch(wxCommandEvent &event)
 {
-    wxInt32 i;
-    wxListItem item;
     wxString Password;
+    wxInt32 i;
     
-    if (!m_LstCtrlServers->GetItemCount() || 
-        !m_LstCtrlServers->GetSelectedItemCount())
-    {
-        return;
-    }
-        
-    i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, 
-        wxLIST_STATE_SELECTED);
-        
-    item.SetId(i);
-    item.SetColumn(7);
-    item.SetMask(wxLIST_MASK_TEXT);
-        
-    m_LstCtrlServers->GetItem(item);
-        
-    i = FindServer(item.GetText()); 
-
+    i = GetSelectedServerArrayIndex();
+    
     if (i == -1)
         return;
 
@@ -644,15 +627,18 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
 // Get Master List button click
 void dlgMain::OnGetList(wxCommandEvent &event)
 {
-    // prevent reentrancy
-    static wxRecursionGuardFlag s_rgf;
-    wxRecursionGuard recursion_guard(s_rgf);
-    
-    if (recursion_guard.IsInside())
-        return;	
-
     if (GetThread() && GetThread()->IsRunning())
         return;
+
+    // Create monitor thread
+    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
+    {
+        wxMessageBox(_T("Could not create monitor thread!"), 
+                     _T("Error"), 
+                     wxOK | wxICON_ERROR);
+                     
+        wxExit();
+    }
 
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
@@ -662,57 +648,17 @@ void dlgMain::OnGetList(wxCommandEvent &event)
 	
 	mtcs_Request.Signal = mtcs_getmaster;
 
-    // Create monitor thread and run it
-    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
-    {
-        wxMessageBox(_T("Could not create monitor thread!"), 
-                     _T("Error"), 
-                     wxOK | wxICON_ERROR);
-                     
-        wxExit();
-    }
-	
     GetThread()->Run();    
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
 {   
-    // prevent reentrancy
-    static wxRecursionGuardFlag s_rgf;
-    wxRecursionGuard recursion_guard(s_rgf);
-    
-    if (recursion_guard.IsInside())
-        return;	
+    wxInt32 li, ai;
 
     if (GetThread() && GetThread()->IsRunning())
         return;
 
-    if (!m_LstCtrlServers->GetItemCount() || !m_LstCtrlServers->GetSelectedItemCount())
-        return;
-        
-    m_LstCtrlPlayers->DeleteAllItems();
-        
-    wxInt32 listindex = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-        
-    wxListItem item;
-    item.SetId(listindex);
-    item.SetColumn(7);
-    item.SetMask(wxLIST_MASK_TEXT);
-        
-    m_LstCtrlServers->GetItem(item);
-        
-    wxInt32 arrayindex = FindServer(item.GetText()); 
-        
-    if (arrayindex == -1)
-        return;
-                
-    TotalPlayers -= QServer[arrayindex].Info.Players.size();
-    
-    mtcs_Request.Signal = mtcs_getsingleserver;
-    mtcs_Request.ServerListIndex = listindex;
-    mtcs_Request.Index = arrayindex;
-
-    // Create monitor thread and run it
+    // Create monitor thread
     if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
     {
         wxMessageBox(_T("Could not create monitor thread!"), 
@@ -721,25 +667,42 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
                      
         wxExit();
     }
+
+    li = GetSelectedServerListIndex();    
+    ai = GetSelectedServerArrayIndex();
+    
+    if (li == -1 || ai == -1)
+        return;
+    
+    m_LstCtrlPlayers->DeleteAllItems();
+                
+    TotalPlayers -= QServer[ai].Info.Players.size();
+    
+    mtcs_Request.Signal = mtcs_getsingleserver;
+    mtcs_Request.ServerListIndex = li;
+    mtcs_Request.Index = ai;
 
     GetThread()->Run();   
 }
 
 void dlgMain::OnRefreshAll(wxCommandEvent &event)
 {
-    // prevent reentrancy
-    static wxRecursionGuardFlag s_rgf;
-    wxRecursionGuard recursion_guard(s_rgf);
-    
-    if (recursion_guard.IsInside())
-        return;	
-
     if (GetThread() && GetThread()->IsRunning())
         return;
 
     if (!MServer->GetServerCount())
         return;
-        
+
+    // Create monitor thread
+    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
+    {
+        wxMessageBox(_T("Could not create monitor thread!"), 
+                     _T("Error"), 
+                     wxOK | wxICON_ERROR);
+                     
+        wxExit();
+    }
+       
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
     
@@ -750,50 +713,27 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
     mtcs_Request.ServerListIndex = -1;
     mtcs_Request.Index = -1;
 
-    // Create monitor thread and run it
-    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
-    {
-        wxMessageBox(_T("Could not create monitor thread!"), 
-                     _T("Error"), 
-                     wxOK | wxICON_ERROR);
-                     
-        wxExit();
-    }
-
     GetThread()->Run();   
 }
 
 // when the user clicks on the server list
 void dlgMain::OnServerListClick(wxListEvent& event)
-{
-    // clear any tooltips remaining
-    m_LstCtrlServers->SetToolTip(_T(""));
+{   
+    wxInt32 i;
     
-    if ((m_LstCtrlServers->GetItemCount() > 0) && (m_LstCtrlServers->GetSelectedItemCount() == 1))
-    {
-        m_LstCtrlPlayers->DeleteAllItems();
+    i = GetSelectedServerArrayIndex();
+    
+    if (i == -1)
+        return;
+    
+    m_LstCtrlPlayers->DeleteAllItems();
         
-        wxInt32 i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-        
-        wxListItem item;
-        item.SetId(i);
-        item.SetColumn(7);
-        item.SetMask(wxLIST_MASK_TEXT);
-        
-        m_LstCtrlServers->GetItem(item);
-        
-        i = FindServer(item.GetText()); 
-        
-        if (i > -1)
-        {
-            m_LstCtrlPlayers->AddPlayersToList(QServer[i]);
+    m_LstCtrlPlayers->AddPlayersToList(QServer[i]);
             
-            if (QServer[i].GotResponse() == false)
-                m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
-            else
-                m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[i]);
-        }
-    }
+    if (QServer[i].GotResponse() == false)
+        m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
+    else
+        m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[i]);
 }
 
 void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path, 
@@ -853,12 +793,9 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
 // when the user double clicks on the server list
 void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 {
-    if ((m_LstCtrlServers->GetItemCount() > 0) && (m_LstCtrlServers->GetSelectedItemCount() == 1))
-    {
-        wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmLaunch);
+    wxCommandEvent LaunchEvent(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmLaunch);
     
-        wxPostEvent(this, event);
-    }
+    wxPostEvent(this, LaunchEvent);
 }
 
 // returns a index of the server address as the internal array index
@@ -891,6 +828,42 @@ wxInt32 dlgMain::FindServerInList(wxString Address)
     }
     
     return -1;
+}
+
+// Retrieves the currently selected server in list index form
+wxInt32 dlgMain::GetSelectedServerListIndex()
+{
+    wxInt32 i;
+
+    if (!m_LstCtrlServers->GetItemCount() || 
+        !m_LstCtrlServers->GetSelectedItemCount())
+    {
+        return -1;
+    }
+        
+    i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, 
+        wxLIST_STATE_SELECTED);
+        
+    return i;
+}
+
+// Retrieves the currently selected server in array index form
+wxInt32 dlgMain::GetSelectedServerArrayIndex()
+{
+    wxListItem item;
+    wxInt32 i;
+
+    i = GetSelectedServerListIndex();
+
+    item.SetId(i);
+    item.SetColumn(7);
+    item.SetMask(wxLIST_MASK_TEXT);
+        
+    m_LstCtrlServers->GetItem(item);
+        
+    i = FindServer(item.GetText()); 
+    
+    return i;
 }
 
 // About information

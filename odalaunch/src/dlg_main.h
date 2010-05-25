@@ -93,6 +93,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		wxInt32 FindServer(wxString);
 		wxInt32 FindServerInList(wxString);
+		wxInt32 GetSelectedServerListIndex();
+		wxInt32 GetSelectedServerArrayIndex();
 		
 		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
             const wxString &waddirs, const wxString &Password = wxT(""));
