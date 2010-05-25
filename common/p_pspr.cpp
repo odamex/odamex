@@ -407,8 +407,10 @@ A_Lower
 		P_SetPsprite (player,  ps_weapon, S_NULL);
 		return;
 	}
-
-	player->readyweapon = player->pendingweapon;
+	
+	// haleyjd 03/28/10: do not assume pendingweapon is valid
+	if (player->pendingweapon < NUMWEAPONS)
+		player->readyweapon = player->pendingweapon;
 
 	P_BringUpWeapon (player);
 }

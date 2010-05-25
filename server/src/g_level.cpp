@@ -626,7 +626,7 @@ void G_ChangeMap (void)
 	}
 	else
 	{
-		if (shufflemaplist && RandomMaps.size())
+		if (shufflemaplist && RandomMaps.empty() == false)
 		{
 			// Change the map
 			if (RandomMaps[RandomMapPos]->WadCmds)

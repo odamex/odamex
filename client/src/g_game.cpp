@@ -78,7 +78,7 @@ void	G_DoReborn (player_t &playernum);
 
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
-void	G_DoPlayDemo (bool justStreamInput = false);
+//void	G_DoPlayDemo (bool justStreamInput = false);
 void	G_DoCompleted (void);
 void	G_DoVictory (void);
 void	G_DoWorldDone (void);
@@ -142,6 +142,7 @@ EXTERN_CVAR(nomonsters)
 EXTERN_CVAR(fastmonsters)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(allowjump)
+EXTERN_CVAR(co_realactorheight)
 
 CVAR_FUNC_IMPL(cl_mouselook)
 {
@@ -2211,6 +2212,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		// comatibility
 		sv_freelook = "0";
 		allowjump = "0";
+		co_realactorheight = "0";
 
 		return;
 	} else {

@@ -1671,7 +1671,7 @@ bool SV_BanCheck (client_t *cl, int n)
 		}
 
 		// Now see if there is an exception on our ban...
-		if (WhiteList.size() > 0)
+		if (WhiteList.empty() == false)
 		{
 			for (size_t k = 0; k < WhiteList.size(); k++)
 			{
@@ -2257,7 +2257,7 @@ static bool STACK_ARGS compare_player_points (const player_t *arg1, const player
 //
 void SV_DrawScores()
 {
-    char str[80], str2[80];
+    char str[80], str2[80], ip[16];
     std::vector<player_t *> sortedplayers(players.size());
     size_t i, j;
 
@@ -2269,8 +2269,8 @@ void SV_DrawScores()
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_points);
 
         Printf (PRINT_HIGH, "\n");
-        Printf_Bold("--------------------------------------");
-        Printf_Bold("           CAPTURE THE FLAG");
+        Printf_Bold("                    CAPTURE THE FLAG");
+        Printf_Bold("-----------------------------------------------------------");        
 
         if (scorelimit)
             sprintf (str, "Scorelimit: %-6d", (int)scorelimit);
@@ -2282,22 +2282,31 @@ void SV_DrawScores()
         else
             sprintf (str2, "Timelimit: N/A");
 
-        Printf_Bold("%s  %18s", str, str2);
+        Printf_Bold("%s  %35s", str, str2);
 
         for (j = 0; j < 2; j++) {
             if (j == 0) {
                 Printf (PRINT_HIGH, "\n");
-                Printf_Bold("-----------------------------BLUE TEAM");
+                Printf_Bold("--------------------------------------------------BLUE TEAM");
             } else {
                 Printf (PRINT_HIGH, "\n");
-                Printf_Bold("------------------------------RED TEAM");
+                Printf_Bold("---------------------------------------------------RED TEAM");
             }
-            Printf_Bold("Name            Points Caps Frags Time");
-            Printf_Bold("--------------------------------------");
+            Printf_Bold("ID  Address          Name            Points Caps Frags Time");
+            Printf_Bold("-----------------------------------------------------------");
 
             for (i = 0; i < sortedplayers.size(); i++) {
                 if ((unsigned)sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
-                    Printf(PRINT_HIGH, "%-15s %-6d N/A  %-5d  N/A",
+						
+					sprintf(ip,"%u.%u.%u.%u",
+						(int)sortedplayers[i]->client.address.ip[0],
+						(int)sortedplayers[i]->client.address.ip[1],
+						(int)sortedplayers[i]->client.address.ip[2],
+						(int)sortedplayers[i]->client.address.ip[3]);
+						                	
+                    Printf(PRINT_HIGH, "%-3d %-16s %-15s %-6d N/A  %-5d  N/A",
+						i+1,
+						ip,
                         sortedplayers[i]->userinfo.netname,
                         sortedplayers[i]->points,
                         //sortedplayers[i]->captures,
@@ -2307,18 +2316,12 @@ void SV_DrawScores()
             }
         }
 
-		Printf (PRINT_HIGH, "\n");
-        Printf_Bold("----------------------------SPECTATORS");
-            for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->spectator)
-                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
-            }
     } else if (gametype == GM_TEAMDM) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
         Printf (PRINT_HIGH, "\n");
-        Printf_Bold("--------------------------------------");
-        Printf_Bold("           TEAM DEATHMATCH");
+        Printf_Bold("                     TEAM DEATHMATCH");
+        Printf_Bold("-----------------------------------------------------------");        
 
         if (fraglimit)
             sprintf (str, "Fraglimit: %-7d", (int)fraglimit);
@@ -2330,18 +2333,18 @@ void SV_DrawScores()
         else
             sprintf (str2, "Timelimit: N/A");
 
-        Printf_Bold("%s  %18s", str, str2);
+        Printf_Bold("%s  %35s", str, str2);
 
         for (j = 0; j < 2; j++) {
             if (j == 0) {
                 Printf (PRINT_HIGH, "\n");
-                Printf_Bold("-----------------------------BLUE TEAM");
+                Printf_Bold("--------------------------------------------------BLUE TEAM");
             } else {
                 Printf (PRINT_HIGH, "\n");
-                Printf_Bold("------------------------------RED TEAM");
+                Printf_Bold("---------------------------------------------------RED TEAM");
             }
-            Printf_Bold("Name            Frags Deaths  K/D Time");
-            Printf_Bold("--------------------------------------");
+            Printf_Bold("ID  Address          Name            Frags Deaths  K/D Time");
+            Printf_Bold("-----------------------------------------------------------");
 
             for (i = 0; i < sortedplayers.size(); i++) {
                 if ((unsigned)sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
@@ -2351,29 +2354,33 @@ void SV_DrawScores()
                         sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
                     else
                         sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
-
-                    Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A\n",
-                        sortedplayers[i]->userinfo.netname,
-                        sortedplayers[i]->fragcount,
-                        sortedplayers[i]->deathcount,
-                        str);
-                        //sortedplayers[i]->GameTime / 60);
+						
+					sprintf(ip,"%u.%u.%u.%u",
+						(int)sortedplayers[i]->client.address.ip[0],
+						(int)sortedplayers[i]->client.address.ip[1],
+						(int)sortedplayers[i]->client.address.ip[2],
+						(int)sortedplayers[i]->client.address.ip[3]);
+					
+					Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s  N/A",
+						i+1,
+						ip,
+						sortedplayers[i]->userinfo.netname,
+						sortedplayers[i]->fragcount,
+						sortedplayers[i]->deathcount,
+						str);
+						//sortedplayers[i]->GameTime / 60);
                 }
             }
         }
 
 		Printf (PRINT_HIGH, "\n");
-        Printf_Bold("----------------------------SPECTATORS");
-            for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->spectator)
-                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
-            }
+
     } else if (gametype != GM_COOP) {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 
         Printf (PRINT_HIGH, "\n");
-        Printf_Bold("--------------------------------------");
-        Printf_Bold("              DEATHMATCH");
+        Printf_Bold("                        DEATHMATCH");
+        Printf_Bold("-----------------------------------------------------------");        
 
         if (fraglimit)
             sprintf (str, "Fraglimit: %-7d", (int)fraglimit);
@@ -2383,12 +2390,12 @@ void SV_DrawScores()
         if (timelimit)
             sprintf (str2, "Timelimit: %-7d", (int)timelimit);
         else
-            sprintf (str2, "Timelimit: N/A");
+            sprintf (str2, "Timelimit: N/A   ");
 
-        Printf_Bold("%s  %18s", str, str2);
+        Printf_Bold("%s  %35s", str, str2);
 
-        Printf_Bold("Name            Frags Deaths  K/D Time");
-        Printf_Bold("--------------------------------------");
+        Printf_Bold("ID  Address          Name            Frags Deaths  K/D Time");
+        Printf_Bold("-----------------------------------------------------------");
 
         for (i = 0; i < sortedplayers.size(); i++) {
         	if (!sortedplayers[i]->spectator) {
@@ -2398,8 +2405,16 @@ void SV_DrawScores()
 					sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount);
 				else
 					sprintf (str, "%2.1f", (float)sortedplayers[i]->fragcount / (float)sortedplayers[i]->deathcount);
-
-				Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A",
+					
+				sprintf(ip,"%u.%u.%u.%u",
+					(int)sortedplayers[i]->client.address.ip[0],
+					(int)sortedplayers[i]->client.address.ip[1],
+					(int)sortedplayers[i]->client.address.ip[2],
+					(int)sortedplayers[i]->client.address.ip[3]);
+					
+				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s  N/A",
+					i+1,
+					ip,
 					sortedplayers[i]->userinfo.netname,
 					sortedplayers[i]->fragcount,
 					sortedplayers[i]->deathcount,
@@ -2409,19 +2424,14 @@ void SV_DrawScores()
         }
 
 		Printf (PRINT_HIGH, "\n");
-        Printf_Bold("----------------------------SPECTATORS");
-            for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->spectator)
-                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
-            }
     } else {
         std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
 
         Printf (PRINT_HIGH, "\n");
-        Printf_Bold("--------------------------------------");
-        Printf_Bold("             COOPERATIVE");
-        Printf_Bold("Name            Kills Deaths  K/D Time");
-        Printf_Bold("--------------------------------------");
+        Printf_Bold("                       COOPERATIVE");
+        Printf_Bold("-----------------------------------------------------------");        
+        Printf_Bold("ID  Address          Name            Kills Deaths  K/D Time");
+        Printf_Bold("-----------------------------------------------------------");
 
         for (i = 0; i < sortedplayers.size(); i++) {
         	if (!sortedplayers[i]->spectator) {
@@ -2431,8 +2441,16 @@ void SV_DrawScores()
 					sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount);
 				else
 					sprintf (str, "%2.1f", (float)sortedplayers[i]->killcount / (float)sortedplayers[i]->deathcount);
+					
+				sprintf(ip,"%u.%u.%u.%u",
+					(int)sortedplayers[i]->client.address.ip[0],
+					(int)sortedplayers[i]->client.address.ip[1],
+					(int)sortedplayers[i]->client.address.ip[2],
+					(int)sortedplayers[i]->client.address.ip[3]);
 
-				Printf(PRINT_HIGH, "%-15s %-5d %-6d %4s  N/A",
+				Printf(PRINT_HIGH, "%-3d %-16s %-15s %-5d %-6d %4s  N/A",
+					i+1,
+					ip,
 					sortedplayers[i]->userinfo.netname,
 					sortedplayers[i]->killcount,
 					sortedplayers[i]->deathcount,
@@ -2442,21 +2460,30 @@ void SV_DrawScores()
         }
 
 		Printf (PRINT_HIGH, "\n");
-        Printf_Bold("----------------------------SPECTATORS");
-            for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->spectator)
-                        Printf(PRINT_HIGH, "%-15s\n", sortedplayers[i]->userinfo.netname);
-            }
     }
+
+    Printf_Bold("-------------------------------------------------SPECTATORS");
+        for (i = 0; i < sortedplayers.size(); i++) {
+            if (sortedplayers[i]->spectator) {
+					
+				sprintf(ip,"%u.%u.%u.%u",
+					(int)sortedplayers[i]->client.address.ip[0],
+					(int)sortedplayers[i]->client.address.ip[1],
+					(int)sortedplayers[i]->client.address.ip[2],
+					(int)sortedplayers[i]->client.address.ip[3]);
+					
+				Printf(PRINT_HIGH, "%-3d %-16s %-15s\n", i+1,ip,sortedplayers[i]->userinfo.netname);
+            }
+        }
 
     Printf (PRINT_HIGH, "\n");
 }
 
-BEGIN_COMMAND (displayscores)
+BEGIN_COMMAND (showscores)
 {
     SV_DrawScores();
 }
-END_COMMAND (displayscores)
+END_COMMAND (showscores)
 
 //
 // SV_BroadcastPrintf
@@ -3265,7 +3292,7 @@ void SV_RConPassword (player_t &player)
 	std::string challenge = MSG_ReadString();
 	std::string password = rcon_password.cstring();
 
-	if (MD5SUM(password + cl->digest) == challenge)
+	if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
 	{
 		cl->allow_rcon = true;
 		Printf(PRINT_HIGH, "rcon login from %s", NET_AdrToString(cl->address));
@@ -3833,6 +3860,7 @@ END_COMMAND(step)
 BEGIN_COMMAND (playerinfo)
 {
 	player_t *player = &consoleplayer();
+	char ip[16];
 
 	if(argc > 1)
 	{
@@ -3853,8 +3881,15 @@ BEGIN_COMMAND (playerinfo)
 		Printf (PRINT_HIGH, "Not a valid player\n");
 		return;
 	}
+	
+	sprintf(ip,"%u.%u.%u.%u",
+			(int)player->client.address.ip[0],
+			(int)player->client.address.ip[1],
+			(int)player->client.address.ip[2],
+			(int)player->client.address.ip[3]);
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
+	Printf (PRINT_HIGH, " IP Address       - %s \n",		  ip);
 	Printf (PRINT_HIGH, " userinfo.netname - %s \n",		  player->userinfo.netname);
 	Printf (PRINT_HIGH, " userinfo.team    - %d \n",		  player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.aimdist - %d \n",		  player->userinfo.aimdist);
@@ -3865,6 +3900,13 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
+
+BEGIN_COMMAND (playerlist)
+{
+	
+	
+}
+END_COMMAND (playerlist)
 
 void OnChangedSwitchTexture (line_t *line, int useAgain)
 {

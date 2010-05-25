@@ -248,7 +248,7 @@ void M_ExtractFileBase (std::string filename, std::string &dest)
 		e = filename.length();
 
 	if(l < filename.length())
-		dest = filename.substr(l, filename.length()-e);
+		dest = filename.substr(l, e);
 }
 
 //
