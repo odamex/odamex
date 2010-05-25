@@ -382,6 +382,8 @@
 		<Unit filename="src\lst_srvdetails.h" />
 		<Unit filename="src\main.cpp" />
 		<Unit filename="src\main.h" />
+		<Unit filename="src\md5.cpp" />
+		<Unit filename="src\md5.h" />
 		<Unit filename="src\net_io.cpp">
 			<Option virtualFolder="network\" />
 		</Unit>

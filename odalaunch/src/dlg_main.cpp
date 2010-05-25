@@ -25,6 +25,8 @@
 #include "dlg_main.h"
 #include "query_thread.h"
 
+#include "md5.h"
+
 #include <wx/settings.h>
 #include <wx/menu.h>
 #include <wx/statusbr.h>
@@ -575,12 +577,19 @@ void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 // Launch button click
 void dlgMain::OnLaunch(wxCommandEvent &event)
 {
-    if (!m_LstCtrlServers->GetItemCount() || !m_LstCtrlServers->GetSelectedItemCount())
-        return;
-        
-    wxInt32 i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-        
+    wxInt32 i;
     wxListItem item;
+    wxString Password;
+    
+    if (!m_LstCtrlServers->GetItemCount() || 
+        !m_LstCtrlServers->GetSelectedItemCount())
+    {
+        return;
+    }
+        
+    i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, 
+        wxLIST_STATE_SELECTED);
+        
     item.SetId(i);
     item.SetColumn(7);
     item.SetMask(wxLIST_MASK_TEXT);
@@ -589,26 +598,47 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
         
     i = FindServer(item.GetText()); 
 
-    wxPasswordEntryDialog ped(this, 
-                            _T("Please enter a password"), 
-                            _T("Server is passworded"),
-                            _T(""));
+    if (i == -1)
+        return;
 
+    // If the server is passworded, pop up a password entry dialog for them to
+    // specify one before going any further
     if (QServer[i].Info.PasswordHash.IsEmpty() == false)
     {                           
-        ped.ShowModal();
+        wxPasswordEntryDialog ped(this, wxT("Please enter a password"),
+            wxT("This server is passworded"), wxT(""));
         
-        if (ped.GetValue().IsEmpty())
-            return;
+        while (1)
+        {          
+            // Show the dialog box and get the resulting value
+            ped.ShowModal();
+        
+            Password = ped.GetValue();
+        
+            // User possibly hit cancel or did not enter anything, just exit
+            if (Password.IsEmpty())
+                return;
+            
+            // Do an MD5 comparison of the password with the servers one, if it
+            // fails, keep asking the user to enter a valid password, otherwise 
+            // dive out and connect to the server
+            if (QServer[i].Info.PasswordHash != MD5SUM(Password.c_str()))
+            {
+                wxMessageDialog Message(this, wxT("Incorrect password"), 
+                    wxT("Incorrect password"), wxOK | wxICON_HAND);
+                
+                Message.ShowModal();
+                
+                // Reset the text so weird things don't happen
+                ped.SetValue("");
+            }
+            else
+                break;
+        }
     }
     
-    if (i > -1)
-    {
-        LaunchGame(QServer[i].GetAddress(), 
-                    launchercfg_s.odamex_directory, 
-                    launchercfg_s.wad_paths,
-                    ped.GetValue());
-    }
+    LaunchGame(QServer[i].GetAddress(), launchercfg_s.odamex_directory,
+        launchercfg_s.wad_paths, Password);
 }
 
 // Get Master List button click

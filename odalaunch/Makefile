@@ -9,7 +9,8 @@ SOURCES = src/dlg_config.cpp \
  src/main.cpp \
  src/net_io.cpp \
  src/query_thread.cpp \
- src/frm_odaget.cpp
+ src/frm_odaget.cpp \
+ src/md5.cpp
 
 HEADERS = src/*.h
 
