@@ -61,7 +61,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		Server          NullServer;
         Server          *QServer;
-        MasterServer    *MServer;
+        MasterServer    MServer;
         
         launchercfg_t launchercfg_s;
 	protected:
@@ -95,6 +95,8 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 FindServerInList(wxString);
 		wxInt32 GetSelectedServerListIndex();
 		wxInt32 GetSelectedServerArrayIndex();
+
+		bool IsAddressValid(const wxString &);
 		
 		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
             const wxString &waddirs, const wxString &Password = wxT(""));

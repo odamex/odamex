@@ -148,14 +148,12 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstCtrlPlayers->SetupPlayerListColumns();
 
 	// set up the master server information
-	MServer = new MasterServer;
-    
-    MServer->AddMaster(_T("master1.odamex.net"), 15000);
-    MServer->AddMaster(_T("voxelsoft.com"), 15000);
+    MServer.AddMaster(_T("master1.odamex.net"), 15000);
+    MServer.AddMaster(_T("voxelsoft.com"), 15000);
     
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
-    server_dlg = new dlgServers(MServer, this);
+    server_dlg = new dlgServers(&MServer, this);
     
     /* Get the first directory for wad downloading */
     wxInt32 Pos = launchercfg_s.wad_paths.Find(wxT(PATH_DELIMITER), false);
@@ -178,10 +176,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 dlgMain::~dlgMain()
 {
     // Cleanup
-    delete MServer;
-    
-    MServer = NULL;
-    
     delete[] QServer;
     
     QServer = NULL;
@@ -226,29 +220,27 @@ void dlgMain::OnShow(wxShowEvent &event)
 // manually connect to a server
 void dlgMain::OnManualConnect(wxCommandEvent &event)
 {
-    wxString ted_result = _T("");
-    wxTextEntryDialog ted(this, 
-                            _T("Please enter IP Address and Port"), 
-                            _T("Please enter IP Address and Port"),
-                            _T("0.0.0.0:0"));
-                            
+    wxString ped_result;
+    wxString ted_result;
+    
+    wxTextEntryDialog ted(this, wxT("Please enter IP Address and Port"), 
+        wxT("Please enter IP Address and Port"), wxT("0.0.0.0:0"));
+
+    wxPasswordEntryDialog ped(this, wxT("Enter an optional password"), 
+        wxT("Enter an optional password"), wxT(""));
+
     // show it
     ted.ShowModal();
-    ted_result = ted.GetValue();
     
-    wxString ped_result = _T("");
-    wxPasswordEntryDialog ped(this, 
-                            _T("Enter an optional password"), 
-                            _T("Enter an optional password"),
-                            _T(""));
-                            
+    ted_result = ted.GetValue();
+
+    if (ted_result.IsEmpty() || ted_result == wxT("0.0.0.0:0"))
+        return;
+
     ped.ShowModal();
     
-    if (!ted_result.IsEmpty() && ted_result != _T("0.0.0.0:0"))
-        LaunchGame(ted_result, 
-                    launchercfg_s.odamex_directory, 
-                    launchercfg_s.wad_paths,
-                    ped.GetValue());
+    LaunchGame(ted_result, launchercfg_s.odamex_directory, 
+        launchercfg_s.wad_paths, ped.GetValue());
 }
 
 
@@ -280,10 +272,10 @@ bool dlgMain::MonThrGetMasterList()
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
 
     // Query the masters with the timeout
-    MServer->QueryMasters(MasterTimeout);
+    MServer.QueryMasters(MasterTimeout);
    
     // Get the amount of servers found
-    ServerCount = MServer->GetServerCount();
+    ServerCount = MServer.GetServerCount();
 
     // Check if we timed out or we were successful
     Signal = (ServerCount > 0) ? mtrs_master_success : mtrs_master_timeout;
@@ -313,7 +305,7 @@ void dlgMain::MonThrGetServerList()
     wxUint16 Port = 0;
 
     // [Russell] - This includes custom servers.
-    if (!MServer->GetServerCount())
+    if (!MServer.GetServerCount())
     {
         MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
             mtrs_server_noservers, -1, -1);
@@ -330,7 +322,7 @@ void dlgMain::MonThrGetServerList()
         gets executed with a different server, eventually all the way
         down to 0 servers.
     */
-    while(count < MServer->GetServerCount())
+    while(count < MServer.GetServerCount())
     {
         for(size_t i = 0; i < NUM_THREADS; i++)
         {
@@ -348,9 +340,9 @@ void dlgMain::MonThrGetServerList()
                     count++;
                 }
             }
-            if(serverNum < MServer->GetServerCount())
+            if(serverNum < MServer.GetServerCount())
             {
-                MServer->GetServerAddress(serverNum, Address, Port);
+                MServer.GetServerAddress(serverNum, Address, Port);
                 QServer[serverNum].SetAddress(Address, Port);
 
                 // add the thread to the vector
@@ -379,7 +371,7 @@ void dlgMain::MonThrGetSingleServer()
     wxFileConfig ConfigInfo;
     wxInt32 ServerTimeout;
 
-    if (!MServer->GetServerCount())
+    if (!MServer.GetServerCount())
         return;
 
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
@@ -446,7 +438,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         {
             // We use multiple masters you see, if one fails and the others are
             // working, atleast we can get some useful data
-            if (!MServer->GetServerCount())
+            if (!MServer.GetServerCount())
             {
                 wxMessageBox(wxT("No master servers could be contacted"), 
                     wxT("Error"), wxOK | wxICON_ERROR);
@@ -503,7 +495,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             break;
     }
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %u"), MServer->GetPing()), 1);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %u"), MServer.GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), TotalPlayers), 3);
 
     delete Result;
@@ -545,7 +537,7 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
     
     GetStatusBar()->SetStatusText(wxString::Format(_T("Queried Server %d of %d"), 
                                                    QueriedServers, 
-                                                   MServer->GetServerCount()), 
+                                                   MServer.GetServerCount()), 
                                                    2);
                                                    
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), 
@@ -698,7 +690,7 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
     if (GetThread() && GetThread()->IsRunning())
         return;
 
-    if (!MServer->GetServerCount())
+    if (!MServer.GetServerCount())
         return;
 
     // Create monitor thread
@@ -809,7 +801,7 @@ void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 // returns a index of the server address as the internal array index
 wxInt32 dlgMain::FindServer(wxString Address)
 {
-    for (size_t i = 0; i < MServer->GetServerCount(); i++)
+    for (size_t i = 0; i < MServer.GetServerCount(); i++)
         if (QServer[i].GetAddress().IsSameAs(Address))
             return i;
     
@@ -872,6 +864,12 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
     i = FindServer(item.GetText()); 
     
     return i;
+}
+
+// Checks whether an odamex-style address format is valid
+bool dlgMain::IsAddressValid(const wxString &Address)
+{
+    // TODO
 }
 
 // About information
