@@ -253,7 +253,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
 
 
 // Posts a thread message to the main thread
-void dlgMain::ThreadPostEvent(wxEventType EventType, int win_id, mtrs_t Signal, 
+void dlgMain::MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal, 
     wxInt32 Index, wxInt32 ListIndex)
 {
     static wxCommandEvent event(EventType, win_id);
@@ -269,131 +269,168 @@ void dlgMain::ThreadPostEvent(wxEventType EventType, int win_id, mtrs_t Signal,
     wxPostEvent(this, event);
 }
 
+bool dlgMain::MonThrGetMasterList()
+{
+    wxFileConfig ConfigInfo;
+    wxInt32 MasterTimeout;
+    size_t ServerCount;
+    mtrs_t Signal;
+
+    // Get the masters timeout from the config file
+    ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
+
+    // Query the masters with the timeout
+    MServer->QueryMasters(MasterTimeout);
+   
+    // Get the amount of servers found
+    ServerCount = MServer->GetServerCount();
+
+    // Check if we timed out or we were successful
+    Signal = (ServerCount > 0) ? mtrs_master_success : mtrs_master_timeout;
+
+    // Free the server list array (if it exists) and reallocate a new sized
+    // array of server objects
+    delete[] QServer;
+    QServer = NULL;
+
+    if (ServerCount > 0)
+        QServer = new Server [ServerCount];
+
+    // Post the result to our main thread and exit
+    MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, Signal, -1, -1);
+    
+    return (Signal == mtrs_master_success) ? true : false;
+}
+
+void dlgMain::MonThrGetServerList()
+{
+    wxFileConfig ConfigInfo;
+    wxInt32 ServerTimeout;
+    
+    size_t count = 0;
+    size_t serverNum = 0;
+    wxString Address = _T("");
+    wxUint16 Port = 0;
+
+    // [Russell] - This includes custom servers.
+    if (!MServer->GetServerCount())
+    {
+        MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
+            mtrs_server_noservers, -1, -1);
+        
+        return;
+    }
+
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
+    
+    /* 
+        Thread pool manager:
+        Executes a number of threads that contain the same amount of
+        servers, when a thread finishes, it gets deleted and another
+        gets executed with a different server, eventually all the way
+        down to 0 servers.
+    */
+    while(count < MServer->GetServerCount())
+    {
+        for(size_t i = 0; i < NUM_THREADS; i++)
+        {
+            if((threadVector.size() != 0) && ((threadVector.size() - 1) >= i))
+            {
+                // monitor our thread vector, delete ONLY if the thread is
+                // finished
+                if(threadVector[i]->IsRunning())
+                    continue;
+                else
+                {
+                    threadVector[i]->Wait();
+                    delete threadVector[i];
+                    threadVector.erase(threadVector.begin() + i);
+                    count++;
+                }
+            }
+            if(serverNum < MServer->GetServerCount())
+            {
+                MServer->GetServerAddress(serverNum, Address, Port);
+                QServer[serverNum].SetAddress(Address, Port);
+
+                // add the thread to the vector
+                threadVector.push_back(new QueryThread(this, 
+                    &QServer[serverNum], serverNum, ServerTimeout));
+
+                // create and run the thread
+                if(threadVector[threadVector.size() - 1]->Create() == 
+                   wxTHREAD_NO_ERROR)
+                {
+                    threadVector[threadVector.size() - 1]->Run();
+                }
+
+                // DUMB: our next server will be this incremented value
+                serverNum++;
+            }          
+        }
+    }
+
+    MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
+        mtrs_servers_querydone, -1, -1);  
+}
+
+void dlgMain::MonThrGetSingleServer()
+{
+    wxFileConfig ConfigInfo;
+    wxInt32 ServerTimeout;
+
+    if (!MServer->GetServerCount())
+        return;
+
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
+
+    if (QServer[mtcs_Request.Index].Query(ServerTimeout))
+    {
+        MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
+            mtrs_server_singlesuccess, mtcs_Request.Index, 
+            mtcs_Request.ServerListIndex);     
+    }
+    else
+    {
+        MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, 
+            mtrs_server_singletimeout, mtrs_server_singletimeout, 
+            mtcs_Request.Index, mtcs_Request.ServerListIndex);
+    }     
+}
+
 // [Russell] - Monitor thread entry point
 void *dlgMain::Entry()
 {
-    wxFileConfig ConfigInfo;
-    wxInt32 MasterTimeout, ServerTimeout;
-    
-    // Can I order a master server request with a list of server addresses
-    // to go with that kthx?
-    if (mtcs_Request.Signal == mtcs_getmaster)
-    {           
-        mtcs_Request.Signal = mtcs_getservers;
-            
-        ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
-            
-        MServer->QueryMasters(MasterTimeout);
-            
-        if (!MServer->GetServerCount())
-        {          
-            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
-                mtrs_master_timeout, -1, -1);
-        }
-        else
-        {                 
-            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
-                mtrs_master_success, -1, -1);             
-        }
-
-        if (QServer != NULL && MServer->GetServerCount())
-        {
-            delete[] QServer;
-            
-            QServer = new Server [MServer->GetServerCount()];
-        }
-        else
-            QServer = new Server [MServer->GetServerCount()];
-
-    }
-    
-    // get a new list of servers
-    if (mtcs_Request.Signal == mtcs_getservers)
+    switch (mtcs_Request.Signal)
     {
-        size_t count = 0;
-        size_t serverNum = 0;
-        wxString Address = _T("");
-        wxUint16 Port = 0;
-   
-        mtcs_Request.Signal = mtcs_none;
-
-        // [Russell] - This includes custom servers.
-        if (!MServer->GetServerCount())
+        // Retrieve server data from all available master servers and then fall
+        // through to querying those servers
+        case mtcs_getmaster:
         {
-            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
-                mtrs_server_noservers, -1, -1);               
+            if (MonThrGetMasterList() == false)
+                break;
         }
 
-        ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
-    
-        /* 
-            Thread pool manager:
-            Executes a number of threads that contain the same amount of
-            servers, when a thread finishes, it gets deleted and another
-            gets executed with a different server, eventually all the way
-            down to 0 servers.
-        */
-        while(count < MServer->GetServerCount())
+        // Query the current list of servers that are available to us
+        case mtcs_getservers:
         {
-            for(size_t i = 0; i < NUM_THREADS; i++)
-            {
-                if((threadVector.size() != 0) && ((threadVector.size() - 1) >= i))
-                {
-                    // monitor our thread vector, delete ONLY if the thread is
-                    // finished
-                    if(threadVector[i]->IsRunning())
-                        continue;
-                    else
-                    {
-                        threadVector[i]->Wait();
-                        delete threadVector[i];
-                        threadVector.erase(threadVector.begin() + i);
-                        count++;
-                    }
-                }
-                if(serverNum < MServer->GetServerCount())
-                {
-                    MServer->GetServerAddress(serverNum, Address, Port);
-                    QServer[serverNum].SetAddress(Address, Port);
-
-                    // add the thread to the vector
-                    threadVector.push_back(new QueryThread(this, &QServer[serverNum], serverNum, ServerTimeout));
-
-                    // create and run the thread
-                    if(threadVector[threadVector.size() - 1]->Create() == wxTHREAD_NO_ERROR)
-                        threadVector[threadVector.size() - 1]->Run();
-
-                    // DUMB: our next server will be this incremented value
-                    serverNum++;
-                }          
-            }
+            MonThrGetServerList();
         }
+        break;
 
-        ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
-            mtrs_servers_querydone, -1, -1);              
-    }
+        // Query a single server
+        case mtcs_getsingleserver:
+        {
+            MonThrGetSingleServer();
+        }
+        break;
         
-    // User requested single server to be refreshed
-    if (mtcs_Request.Signal == mtcs_getsingleserver)
-    {            
-        mtcs_Request.Signal = mtcs_none;
-
-        ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
-
-        if (MServer->GetServerCount())
-        if (QServer[mtcs_Request.Index].Query(ServerTimeout))
-        {
-            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
-                mtrs_server_singlesuccess, mtcs_Request.Index, 
-                mtcs_Request.ServerListIndex);     
-        }
-        else
-        {
-            ThreadPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, 
-                mtrs_server_singletimeout, mtrs_server_singletimeout, 
-                mtcs_Request.Index, mtcs_Request.ServerListIndex);
-        }                     
+        default:
+            break;
     }
+
+    // Reset the signal and then exit out
+    mtcs_Request.Signal = mtcs_none;
     
     return NULL;
 }
