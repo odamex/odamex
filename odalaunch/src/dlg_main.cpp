@@ -255,6 +255,31 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
         launchercfg_s.wad_paths, ped.GetValue());
 }
 
+// Posts a message from the main thread to the monitor thread
+bool dlgMain::MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index, 
+    wxInt32 ListIndex)
+{
+    if (GetThread() && GetThread()->IsRunning())
+        return false;
+
+    // Create monitor thread
+    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
+    {
+        wxMessageBox(_T("Could not create monitor thread!"), 
+                     _T("Error"), 
+                     wxOK | wxICON_ERROR);
+                     
+        wxExit();
+    }
+    
+	mtcs_Request.Signal = CommandSignal;
+    mtcs_Request.Index = Index;
+    mtcs_Request.ServerListIndex = ListIndex;
+
+    GetThread()->Run();
+    
+    return true;
+}
 
 // Posts a thread message to the main thread
 void dlgMain::MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal, 
@@ -639,46 +664,18 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
 // Get Master List button click
 void dlgMain::OnGetList(wxCommandEvent &event)
 {
-    if (GetThread() && GetThread()->IsRunning())
-        return;
-
-    // Create monitor thread
-    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
-    {
-        wxMessageBox(_T("Could not create monitor thread!"), 
-                     _T("Error"), 
-                     wxOK | wxICON_ERROR);
-                     
-        wxExit();
-    }
-
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
         
     QueriedServers = 0;
     TotalPlayers = 0;
-	
-	mtcs_Request.Signal = mtcs_getmaster;
-
-    GetThread()->Run();    
+    
+    MainThrPostEvent(mtcs_getmaster);
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
 {   
     wxInt32 li, ai;
-
-    if (GetThread() && GetThread()->IsRunning())
-        return;
-
-    // Create monitor thread
-    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
-    {
-        wxMessageBox(_T("Could not create monitor thread!"), 
-                     _T("Error"), 
-                     wxOK | wxICON_ERROR);
-                     
-        wxExit();
-    }
 
     li = GetSelectedServerListIndex();    
     ai = GetSelectedServerArrayIndex();
@@ -690,42 +687,21 @@ void dlgMain::OnRefreshServer(wxCommandEvent &event)
                 
     TotalPlayers -= QServer[ai].Info.Players.size();
     
-    mtcs_Request.Signal = mtcs_getsingleserver;
-    mtcs_Request.ServerListIndex = li;
-    mtcs_Request.Index = ai;
-
-    GetThread()->Run();   
+    MainThrPostEvent(mtcs_getsingleserver, ai, li);
 }
 
 void dlgMain::OnRefreshAll(wxCommandEvent &event)
 {
-    if (GetThread() && GetThread()->IsRunning())
-        return;
-
     if (!MServer.GetServerCount())
         return;
 
-    // Create monitor thread
-    if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
-    {
-        wxMessageBox(_T("Could not create monitor thread!"), 
-                     _T("Error"), 
-                     wxOK | wxICON_ERROR);
-                     
-        wxExit();
-    }
-       
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
     
     QueriedServers = 0;
     TotalPlayers = 0;
     
-    mtcs_Request.Signal = mtcs_getservers;
-    mtcs_Request.ServerListIndex = -1;
-    mtcs_Request.Index = -1;
-
-    GetThread()->Run();   
+    MainThrPostEvent(mtcs_getsingleserver, -1, -1); 
 }
 
 // when the user clicks on the server list
