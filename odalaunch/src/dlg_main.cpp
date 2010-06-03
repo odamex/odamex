@@ -39,6 +39,7 @@
 #include <wx/iconbndl.h>
 #include <wx/aboutdlg.h>
 #include <wx/generic/aboutdlgg.h>
+#include <wx/regex.h>
 
 // Control ID assignments for events
 // application icon
@@ -229,15 +230,26 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     wxPasswordEntryDialog ped(this, wxT("Enter an optional password"), 
         wxT("Enter an optional password"), wxT(""));
 
-    // show it
-    ted.ShowModal();
+    // Keep asking for a valid ip/port number
+    while (1)
+    {
+        if (ted.ShowModal() == wxID_CANCEL)
+            return;
     
-    ted_result = ted.GetValue();
+        ted_result = ted.GetValue();
 
-    if (ted_result.IsEmpty() || ted_result == wxT("0.0.0.0:0"))
+        if (IsAddressValid(ted_result) == false)
+        {
+            wxMessageBox(wxT("Invalid IP address/Port number"));
+            continue;
+        }
+        else
+            break;
+    }
+
+    // Show password entry dialog
+    if (ped.ShowModal() == wxID_CANCEL)
         return;
-
-    ped.ShowModal();
     
     LaunchGame(ted_result, launchercfg_s.odamex_directory, 
         launchercfg_s.wad_paths, ped.GetValue());
@@ -867,9 +879,53 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
 }
 
 // Checks whether an odamex-style address format is valid
-bool dlgMain::IsAddressValid(const wxString &Address)
+bool dlgMain::IsAddressValid(wxString Address)
 {
-    // TODO
+    wxInt32 Colon;
+    wxString RegEx;
+    wxRegEx ReValIP;
+    wxString IPHost;
+    wxUint16 Port;
+
+    // Get rid of any whitespace on either side of the string
+    Address.Trim(false);
+    Address.Trim(true);
+
+    if (Address.IsEmpty() == true)
+        return false;
+
+    // Set the regular expression and load it in
+    RegEx = wxT("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4]"
+                    "[0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9]"
+                    "[0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+
+    ReValIP.Compile(RegEx);
+
+    if (ReValIP.IsValid() == false)
+    {
+        wxMessageBox(wxT("RegEx invalid"));
+        return false;
+    }
+
+    // Find the colon that separates the ip address and the port number
+    Colon = Address.Find(wxT(':'), true);
+
+    if (Colon == wxNOT_FOUND)
+        return false;
+
+    // Check if there is something after the colon
+    if (Colon + 1 >= Address.Len())
+        return false;
+
+    // Acquire the ip address and port number
+    Port = wxAtoi(Address.Mid(Colon + 1));
+    IPHost = Address.Mid(0, Colon);
+
+    // Finally do the comparison
+    if ((Port > 0) && (ReValIP.Matches(IPHost) == true))
+        return true;
+    else
+        return false;
 }
 
 // About information

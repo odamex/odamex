@@ -676,7 +676,10 @@ bool BufferedSocket::SetRemoteAddress(const wxString &Address)
     if (Colon == wxNOT_FOUND)
         return false;
     
-    wxUint16 Port = wxAtoi(Address.Mid(Colon));
+    if (Colon + 1 >= Address.Len())
+        return false;
+    
+    wxUint16 Port = wxAtoi(Address.Mid(Colon + 1));
     wxString HostIP = Address.Mid(0, Colon);
     
     SetRemoteAddress(HostIP, Port);

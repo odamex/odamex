@@ -96,7 +96,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 GetSelectedServerListIndex();
 		wxInt32 GetSelectedServerArrayIndex();
 
-		bool IsAddressValid(const wxString &);
+		bool IsAddressValid(wxString);
 		
 		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
             const wxString &waddirs, const wxString &Password = wxT(""));
