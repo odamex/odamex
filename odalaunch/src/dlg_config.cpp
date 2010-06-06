@@ -136,19 +136,19 @@ void dlgConfig::Show()
     m_TxtCtrlServerTimeout->SetValue(ServerTimeout);
     m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
 
-    UserChangedSetting = 0;
+    UserChangedSetting = false;
 
     ShowModal();
 }
 
 void dlgConfig::OnCheckedBox(wxCommandEvent &event)
 {
-    UserChangedSetting = 1;
+    UserChangedSetting = true;
 }
 
 void dlgConfig::OnChooseOdamexPath(wxFileDirPickerEvent &event)
 {
-    UserChangedSetting = 1;
+    UserChangedSetting = true;
 }
 
 // User pressed ok button
@@ -157,11 +157,17 @@ void dlgConfig::OnOK(wxCommandEvent &event)
     wxMessageDialog msgdlg(this, _T("Save settings?"), _T("Save settings?"),
                            wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
 
-    if (UserChangedSetting == 1)
+    if (UserChangedSetting == false)
+    {
+        Close();
+        
+        return;
+    }
+
     if (msgdlg.ShowModal() == wxID_YES)
     {
         // reset 'dirty' flag
-        UserChangedSetting = 0;
+        UserChangedSetting = false;
 
         // Store data into global launcher configuration structure
         cfg_file->get_list_on_start = m_ChkCtrlGetListOnStart->GetValue();
@@ -179,7 +185,7 @@ void dlgConfig::OnOK(wxCommandEvent &event)
         SaveSettings();
     }
     else
-        UserChangedSetting = 0;
+        UserChangedSetting = false;
 
     // Close window
     Close();
@@ -187,7 +193,7 @@ void dlgConfig::OnOK(wxCommandEvent &event)
 
 void dlgConfig::OnTextChange(wxCommandEvent &event)
 {
-    UserChangedSetting = 1;
+    UserChangedSetting = true;
 }
 
 /*
@@ -219,7 +225,7 @@ void dlgConfig::OnAddDir(wxCommandEvent &event)
         {
             m_LstCtrlWadDirectories->Append(WadDirectory);
 
-            UserChangedSetting = 1;
+            UserChangedSetting = true;
         }
     }
     else
@@ -256,7 +262,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent &event)
         // Get the selected item and replace it
         m_LstCtrlWadDirectories->SetString(i, WadDirectory);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
     else
         wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
@@ -273,7 +279,7 @@ void dlgConfig::OnDeleteDir(wxCommandEvent &event)
     {
         m_LstCtrlWadDirectories->Delete(i);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
     else
         wxMessageBox(_T("Select an item to delete."));
@@ -295,7 +301,7 @@ void dlgConfig::OnUpClick(wxCommandEvent &event)
 
         m_LstCtrlWadDirectories->SetSelection(i - 1);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
 }
 
@@ -315,7 +321,7 @@ void dlgConfig::OnDownClick(wxCommandEvent &event)
 
         m_LstCtrlWadDirectories->SetSelection(i + 1);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
 }
 
@@ -356,7 +362,7 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
     {
         wxMessageBox(_T("Environment variables import successful!"));
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
     else
         wxMessageBox(_T("Environment variables contains paths that have been already imported."));

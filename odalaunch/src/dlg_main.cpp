@@ -501,7 +501,9 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             
             QServer[Result->Index].ResetData();
             
-            if (launchercfg_s.show_blocked_servers)
+            if (launchercfg_s.show_blocked_servers == false)
+                break;
+
             if (i == -1)
                 m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->Index);
             else
@@ -552,7 +554,9 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
             
             QServer[event.GetInt()].ResetData();
             
-            if (launchercfg_s.show_blocked_servers)
+            if (launchercfg_s.show_blocked_servers == false)
+                break;
+
             if (i == -1)
                 m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], event.GetInt());
             else

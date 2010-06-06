@@ -115,7 +115,7 @@ class dlgConfig: public wxDialog
 
         launchercfg_t *cfg_file;
         
-        wxInt32 UserChangedSetting;
+        bool UserChangedSetting;
 
 	private:
 
