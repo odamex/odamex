@@ -654,7 +654,7 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
                 Message.ShowModal();
                 
                 // Reset the text so weird things don't happen
-                ped.SetValue("");
+                ped.SetValue(wxT(""));
             }
             else
                 break;
@@ -705,7 +705,7 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
     QueriedServers = 0;
     TotalPlayers = 0;
     
-    MainThrPostEvent(mtcs_getsingleserver, -1, -1); 
+    MainThrPostEvent(mtcs_getservers, -1, -1); 
 }
 
 // when the user clicks on the server list
