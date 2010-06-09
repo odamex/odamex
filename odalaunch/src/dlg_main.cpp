@@ -618,6 +618,8 @@ void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 void dlgMain::OnLaunch(wxCommandEvent &event)
 {
     wxString Password;
+    wxString UsrPwHash;
+    wxString SrvPwHash;
     wxInt32 i;
     
     i = GetSelectedServerArrayIndex();
@@ -627,10 +629,14 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
 
     // If the server is passworded, pop up a password entry dialog for them to
     // specify one before going any further
-    if (QServer[i].Info.PasswordHash.IsEmpty() == false)
+    SrvPwHash = QServer[i].Info.PasswordHash;
+
+    if (SrvPwHash.IsEmpty() == false)
     {                           
         wxPasswordEntryDialog ped(this, wxT("Please enter a password"),
             wxT("This server is passworded"), wxT(""));
+        
+        SrvPwHash.MakeUpper();
         
         while (1)
         {          
@@ -643,10 +649,13 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
             if (Password.IsEmpty())
                 return;
             
+            UsrPwHash = MD5SUM(Password);
+            UsrPwHash.MakeUpper();
+            
             // Do an MD5 comparison of the password with the servers one, if it
             // fails, keep asking the user to enter a valid password, otherwise 
             // dive out and connect to the server
-            if (QServer[i].Info.PasswordHash != MD5SUM(Password.c_str()))
+            if (SrvPwHash != UsrPwHash)
             {
                 wxMessageDialog Message(this, wxT("Incorrect password"), 
                     wxT("Incorrect password"), wxOK | wxICON_HAND);
