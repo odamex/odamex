@@ -1596,7 +1596,7 @@ static int PatchStrings (int dummy)
 			if (!stricmp (Strings[i++].name, Line1))
 				break;
 
-		if (!Strings[i].name) {
+		if (!Strings[--i].name) {
 			DPrintf ("Unknown string: %s\n", Line1);
 		} else {
 			ReplaceSpecialChars (holdstring);
