@@ -134,6 +134,12 @@ value_t OffOn[2] = {
 	{ 1.0, "Off" }
 };
 
+value_t OnOffAuto[3] = {
+	{ 0.0, "Off" },
+	{ 1.0, "On" },
+	{ 2.0, "Auto" }
+};
+
 menu_t  *CurrentMenu;
 int		CurrentItem;
 static BOOL	WaitingForKey;
@@ -385,7 +391,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Trans Blue",        {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete,	"Crosshair",			{&crosshair},		   	{9.0}, {0.0},	{0.0}, {Crosshairs} },
-	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
+	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{3.0}, {0.0},	{0.0}, {OnOffAuto} },
 	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },
 	{ discrete, "Screen wipe style",	{&wipetype},			{4.0}, {0.0},	{0.0}, {Wipes} },
 	{ discrete, "Show DOS Ending Screen",	{&show_endoom},			{2.0}, {0.0},	{0.0}, {OnOff} },
