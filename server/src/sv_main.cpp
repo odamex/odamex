@@ -652,6 +652,9 @@ void SV_InitNetwork (void)
 	stepmode = Args.CheckParm ("-stepmode");
 
 	gametime = I_GetTime ();
+	
+	// Nes - Connect with the master servers. (If valid)
+	SV_InitMasters();
 }
 
 

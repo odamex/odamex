@@ -227,7 +227,7 @@ void SV_UpdateMaster(void)
 // Server appears in the server list when true.
 CVAR_FUNC_IMPL (usemasters)
 {
-    SV_InitMasters();
+	if (network_game) SV_InitMasters();
 }
 
 BEGIN_COMMAND (addmaster)
