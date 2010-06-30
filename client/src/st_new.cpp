@@ -260,7 +260,7 @@ void ST_newDraw (void)
 	else if (gametype != GM_COOP)
 	{
 		// Draw frags (in DM)
-		ST_DrawNumRight (screen->width - 2, 1, screen, plyr->fragcount);
+		ST_DrawNumRight (screen->width - (2 * xscale), 2 * yscale, screen, plyr->fragcount);
 	}
 	else
 	{
