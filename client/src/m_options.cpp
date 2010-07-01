@@ -351,7 +351,7 @@ static menuitem_t JoystickItems[] =
 };
 
 menu_t JoystickMenu = {
-    "M_MOUSET", // Temporarily use the same graphic as the mouse. -- Hyper_Eye
+    "M_JOYSTK",
     0,
     STACKARRAY_LENGTH(JoystickItems),
     177,
