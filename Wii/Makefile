@@ -25,20 +25,20 @@ INCLUDES	:=  ../common ../client/src ../client/sdl ./
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -g -O2 -Wall -DUNIX -DNOASM $(MACHDEP) $(INCLUDE)
-#CFLAGS	= -g -Wall -DDEBUG -D_WII -DUNIX -DNOASM $(MACHDEP) $(INCLUDE)
+CFLAGS	= -O2 -Wall -DUNIX -DNOASM -DGCONSOLE $(MACHDEP) $(INCLUDE)
+#CFLAGS	= -g -Wall -DDEBUG -D_WII -DUNIX -DNOASM -DGCONSOLE $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=	$(CFLAGS)
 
 
-#LDFLAGS	=	$(MACHDEP) -Wl,-Map,$(notdir $@).map
-LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
+LDFLAGS	=	$(MACHDEP) -Wl,-Map,$(notdir $@).map
+#LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
 LIBS	:=	-lSDL_mixer -lsmpeg -lvorbisidec -lSDL -lz \
 			-lfat -lwiiuse -lbte -logc -lm -lwiikeyboard \
-			-ldb
+#			-ldb
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

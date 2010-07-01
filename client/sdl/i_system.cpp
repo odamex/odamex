@@ -92,7 +92,7 @@
 #include "i_wii.h"
 #endif
 
-#if !defined(_XBOX) && !defined(GEKKO)// I will add this back later -- Hyper_Eye
+#ifndef GCONSOLE // I will add this back later -- Hyper_Eye
 #include "txt_main.h"
 #define ENDOOM_W 80
 #define ENDOOM_H 25
@@ -454,7 +454,7 @@ void I_FinishClockCalibration ()
 
 void I_Endoom(void)
 {
-#if !defined(_XBOX) && !defined(GEKKO)// I will return to this -- Hyper_Eye
+#ifndef GCONSOLE // I will return to this -- Hyper_Eye
 	unsigned char *endoom_data;
 	unsigned char *screendata;
 	int y;

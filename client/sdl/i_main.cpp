@@ -79,7 +79,7 @@ static void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-#if defined(_XBOX) || defined(GEKKO)
+#ifdef GCONSOLE
 int i_main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])

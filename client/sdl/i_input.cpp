@@ -336,7 +336,7 @@ CVAR_FUNC_IMPL (use_joystick)
 	{
 		// Don't let console users disable joystick support because
 		// they won't have any way to reenable through the menu.
-#if defined(_XBOX) || defined(GEKKO)
+#ifdef GCONSOLE
 		use_joystick = 1.0;
 #else
 		I_CloseJoystick();
