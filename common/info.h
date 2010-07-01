@@ -1417,7 +1417,6 @@ typedef enum {
 	MT_SPARK,		// Throws out sparks when activated
 	MT_FOUNTAIN,	// Just a container for a particle fountain
 	MT_NODE,		//Added by MC:
-	MT_BOTTRACE,
 	MT_WATERZONE,
 	MT_SECRETTRIGGER,
 

@@ -243,8 +243,8 @@ CVAR_FUNC_DECL (r_detail, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDIS
 CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
 // Draw player sprites
 CVAR (r_drawplayersprites, "1", CVAR_CLIENTINFO)
-// Stretch sky textures
-CVAR_FUNC_DECL (r_stretchsky, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+// Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
+CVAR_FUNC_DECL (r_stretchsky, "2", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // TODO: document
 CVAR (r_viewsize, "0", CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)

@@ -103,7 +103,7 @@ class dlgServers: public wxDialog
         
         void LoadServersIn();
 
-        wxInt32 UserChangedSetting;
+        bool UserChangedSetting;
 
         MasterServer *MServer;
 
