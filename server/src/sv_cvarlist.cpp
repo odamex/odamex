@@ -87,6 +87,8 @@ CVAR (natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (flooddelay, "1.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // GhostlyDeath <August 14, 2008> -- Randomize the map list
 CVAR_FUNC_DECL (shufflemaplist,	"0", CVAR_ARCHIVE)
+// [Spleen] limits the rate of clients to avoid bandwidth issues
+CVAR (maxrate, "8000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Gameplay settings
 // =================

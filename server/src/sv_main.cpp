@@ -94,6 +94,7 @@ EXTERN_CVAR(clientcount)
 EXTERN_CVAR(globalspectatorchat)
 EXTERN_CVAR(allowtargetnames)
 EXTERN_CVAR(flooddelay)
+EXTERN_CVAR(maxrate)
 
 CVAR_FUNC_IMPL (maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
@@ -3503,8 +3504,8 @@ void SV_ParseCommands(player_t &player)
 		case clc_rate:
 			player.client.rate = MSG_ReadLong();
 			// denis - prevent problems by locking rate within a range
-			if(player.client.rate < 500)player.client.rate = 500;
-			if(player.client.rate > 8000)player.client.rate = 8000;
+            if(player.client.rate < 500)player.client.rate = 500;
+			if(player.client.rate > maxrate)player.client.rate = maxrate;
 			break;
 
 		case clc_ack:
