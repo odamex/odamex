@@ -57,7 +57,10 @@
 #	include <sys/time.h>
 #endif
 
-#ifndef _WIN32
+#ifdef _WIN32
+#define EACCES WSAEACCES
+#define EADDRNOTAVAIL WSAEADDRNOTAVAIL
+#else
 typedef int SOCKET;
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET -1
