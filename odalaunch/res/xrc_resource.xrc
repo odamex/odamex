@@ -253,7 +253,7 @@
 													<flag>wxALL|wxEXPAND</flag>
 													<border>2</border>
 													<object class="wxListCtrl" name="Id_LstCtrlServerDetails" subclass="LstOdaSrvDetails">
-														<style>wxLC_HRULES|wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL</style>
+														<style>wxLC_HRULES|wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL|wxALWAYS_SHOW_SB</style>
 													</object>
 												</object>
 											</object>
@@ -276,7 +276,7 @@
 		<title>Configure Settings</title>
 		<centered>1</centered>
 		<object class="wxFlexGridSizer">
-			<rows>0</rows>
+			<rows>1</rows>
 			<cols>1</cols>
 			<vgap>0</vgap>
 			<hgap>0</hgap>
@@ -284,85 +284,228 @@
 			<growablerows></growablerows>
 			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxALL|wxEXPAND</flag>
+				<flag>wxEXPAND</flag>
 				<border>5</border>
-				<object class="wxStaticBoxSizer">
-					<orient>wxVERTICAL</orient>
-					<label>Masters and Servers</label>
+				<object class="wxBoxSizer">
+					<orient>wxHORIZONTAL</orient>
 					<object class="sizeritem">
 						<option>0</option>
-						<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+						<flag>wxALL</flag>
 						<border>5</border>
-						<object class="wxBoxSizer">
+						<object class="wxStaticBoxSizer">
 							<orient>wxVERTICAL</orient>
+							<label>Masters and Servers</label>
 							<object class="sizeritem">
 								<option>0</option>
-								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+								<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
 								<border>5</border>
-								<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
-									<pos>0,76</pos>
-									<label>Get Master List on application start</label>
-									<checked>0</checked>
+								<object class="wxBoxSizer">
+									<orient>wxVERTICAL</orient>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+										<border>5</border>
+										<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
+											<pos>0,76</pos>
+											<label>Get Master List on application start</label>
+											<checked>0</checked>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+										<border>5</border>
+										<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
+											<pos>0,114</pos>
+											<label>Show blocked servers</label>
+											<checked>0</checked>
+										</object>
+									</object>
 								</object>
 							</object>
 							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+								<option>1</option>
+								<flag>wxEXPAND</flag>
 								<border>5</border>
-								<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
-									<pos>0,114</pos>
-									<label>Show blocked servers</label>
-									<checked>0</checked>
+								<object class="wxBoxSizer">
+									<orient>wxHORIZONTAL</orient>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALIGN_CENTER|wxALL</flag>
+										<border>5</border>
+										<object class="wxStaticText" name="4">
+											<label>Master Timeout (ms):</label>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL</flag>
+										<border>5</border>
+										<object class="wxTextCtrl" name="Id_TxtCtrlMasterTimeout">
+											<value>500</value>
+											<maxlength>0</maxlength>
+										</object>
+									</object>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>1</option>
+								<flag>wxEXPAND</flag>
+								<border>5</border>
+								<object class="wxBoxSizer">
+									<orient>wxHORIZONTAL</orient>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALIGN_CENTER|wxALL</flag>
+										<border>5</border>
+										<object class="wxStaticText" name="6">
+											<label>Server Timeout (ms):</label>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL</flag>
+										<border>5</border>
+										<object class="wxTextCtrl" name="Id_TxtCtrlServerTimeout">
+											<value>500</value>
+											<maxlength>0</maxlength>
+										</object>
+									</object>
 								</object>
 							</object>
 						</object>
 					</object>
 					<object class="sizeritem">
-						<option>1</option>
-						<flag>wxEXPAND</flag>
+						<option>0</option>
+						<flag>wxALL</flag>
 						<border>5</border>
-						<object class="wxBoxSizer">
+						<object class="wxStaticBoxSizer">
 							<orient>wxHORIZONTAL</orient>
+							<label>Ping Quality</label>
 							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALIGN_CENTER|wxALL</flag>
+								<option>1</option>
+								<flag>wxEXPAND</flag>
 								<border>5</border>
-								<object class="wxStaticText">
-									<label>Master Timeout (ms):</label>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL</flag>
-								<border>5</border>
-								<object class="wxTextCtrl" name="Id_TxtCtrlMasterTimeout">
-									<value>500</value>
-									<maxlength>0</maxlength>
-								</object>
-							</object>
-						</object>
-					</object>
-					<object class="sizeritem">
-						<option>1</option>
-						<flag>wxEXPAND</flag>
-						<border>5</border>
-						<object class="wxBoxSizer">
-							<orient>wxHORIZONTAL</orient>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALIGN_CENTER|wxALL</flag>
-								<border>5</border>
-								<object class="wxStaticText">
-									<label>Server Timeout (ms):</label>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL</flag>
-								<border>5</border>
-								<object class="wxTextCtrl" name="Id_TxtCtrlServerTimeout">
-									<value>500</value>
-									<maxlength>0</maxlength>
+								<object class="wxFlexGridSizer">
+									<rows>1</rows>
+									<cols>1</cols>
+									<vgap>0</vgap>
+									<hgap>0</hgap>
+									<growablecols></growablecols>
+									<growablerows></growablerows>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBitmap" name="Id_StcBmpPQGood">
+													<tooltip>Green is good</tooltip>
+													<bitmap />
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>5</border>
+												<object class="wxSpinCtrl" name="Id_SpnCtrlPQGood">
+													<style>wxSP_ARROW_KEYS</style>
+													<tooltip>Green is good</tooltip>
+													<value>150</value>
+													<min>0</min>
+													<max>200</max>
+												</object>
+											</object>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBitmap" name="Id_StcBmpPQPlayable">
+													<tooltip>Orange is playable</tooltip>
+													<bitmap />
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>5</border>
+												<object class="wxSpinCtrl" name="Id_SpnCtrlPQPlayable">
+													<style>wxSP_ARROW_KEYS</style>
+													<tooltip>Orange is playable</tooltip>
+													<value>300</value>
+													<min>200</min>
+													<max>350</max>
+												</object>
+											</object>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBitmap" name="Id_StcBmpPQLaggy">
+													<tooltip>Red means server is laggy</tooltip>
+													<bitmap />
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>5</border>
+												<object class="wxSpinCtrl" name="Id_SpnCtrlPQLaggy">
+													<style>wxSP_ARROW_KEYS</style>
+													<tooltip>Red means server is laggy</tooltip>
+													<value>350</value>
+													<min>300</min>
+													<max>600</max>
+												</object>
+											</object>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBitmap" name="Id_StcBmpPQBad">
+													<tooltip>Gray possibly means unplayable</tooltip>
+													<bitmap />
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticLine" name="m_staticline4">
+													<style>wxLI_HORIZONTAL</style>
+													<tooltip>Gray possibly means unplayable</tooltip>
+												</object>
+											</object>
+										</object>
+									</object>
 								</object>
 							</object>
 						</object>

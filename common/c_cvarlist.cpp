@@ -66,6 +66,8 @@ CVAR (speedhackfix,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR (weaponstay,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Give double ammo regardless of difficulty
 CVAR (doubleammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+// GhostlyDeath <July 3, 2010> -- Bind to host
+CVAR (sv_bindaddress, "", CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Compatibility options for vanilla
 // ---------------------------------

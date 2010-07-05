@@ -201,10 +201,13 @@ void SV_AcknowledgePacket(player_t &player)
 			if (cl->reliablebuf.overflowed)
 			{
 				// do full update
-				Printf(PRINT_HIGH, "need full update\n");
+				Printf(PRINT_HIGH, "reliablebuf overflowed, need full update\n");
 				cl->last_sequence = sequence;
 				return;
 			}
+
+			if (cl->reliablebuf.cursize > 600)
+				SV_SendPacket(player);
 
 		}
 	}

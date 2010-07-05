@@ -113,6 +113,7 @@ buf_t compressed, decompressed;
 lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
 
 EXTERN_CVAR(port)
+EXTERN_CVAR(sv_bindaddress)
 
 msg_info_t clc_info[clc_max];
 msg_info_t svc_info[svc_max];
@@ -132,6 +133,9 @@ SOCKET UDPsocket (void)
 	return s;
 }
 
+void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s);
+void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a);
+
 //
 // BindToLocalPort
 //
@@ -139,18 +143,49 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 {
 	int v;
 	struct sockaddr_in address;
+	netadr_t na;
 
 	memset (&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
-	address.sin_addr.s_addr = INADDR_ANY;
+	
+	// GhostlyDeath <July 3, 2010> -- Bind to local IP
+	if (serverside)
+	{
+		// Just use our existing function
+		if (!NET_StringToAdr(sv_bindaddress.cstring(), &na))
+			address.sin_addr.s_addr = INADDR_ANY;	// Failure
+		else
+			NetadrToSockadr(&na, &address);
+	}
+	else	// Client should use any address
+		address.sin_addr.s_addr = INADDR_ANY;
 	u_short next = wanted;
 
 	// denis - try several ports
 	do
 	{
 		address.sin_port = htons(next++);
-
+		
 		v = bind (s, (sockaddr *)&address, sizeof(address));
+		
+		// GhostlyDeath <July 3, 2010> -- Fallback to any address
+#ifdef _WIN32
+		errno = WSAGetLastError();
+#endif
+		
+		if (address.sin_addr.s_addr != INADDR_ANY &&
+#ifdef _WIN32
+			(errno == WSAEACCES || errno == WSAEADDRNOTAVAIL)
+#else
+			(errno == EACCES || errno == EADDRNOTAVAIL)
+#endif
+			)
+		{
+			Printf (PRINT_HIGH, "BindToLocalPort: %s\n", strerror(errno));
+			next--;
+			address.sin_addr.s_addr = INADDR_ANY;
+			continue;
+		}
 
 		if(next > wanted + 16)
 		{
@@ -163,7 +198,14 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	sprintf(tmp, "%d", next - 1);
 	port.ForceSet(tmp);
 
-	Printf(PRINT_HIGH, "Bound to local port %d\n", next - 1);
+	if (address.sin_addr.s_addr == INADDR_ANY)
+		Printf(PRINT_HIGH, "Bound to local port %d\n", next - 1);
+	else
+	{
+		SockadrToNetadr(&address, &na);
+		
+		Printf(PRINT_HIGH, "Bound to local address %s\n", NET_AdrToString(na));
+	}
 }
 
 
@@ -225,17 +267,12 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
              *colon = 0;
              sadr.sin_port = htons(atoi(colon+1));
           }
-
-     if (copy[0] >= '0' && copy[0] <= '9')
-     {
-          *(int *)&sadr.sin_addr = inet_addr(copy);
-     }
-     else
-     {
-          if (! (h = gethostbyname(copy)) )
-                return 0;
-          *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
-     }
+	
+	// GhostlyDeath <July 3, 2010> -- Just use gethostbyname(), because the old
+	// code was too bad and should never be mentioned ever again.
+	if (!(h = gethostbyname(copy)))
+		return false;
+	*(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
 
      SockadrToNetadr (&sadr, a);
 
@@ -281,18 +318,15 @@ int NET_GetPacket (void)
                              NET_AdrToString (net_from));
              return false;
         }
-
-        Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
-		return false;
 #else
         if (errno == EWOULDBLOCK)
             return false;
         if (errno == ECONNREFUSED)
             return false;
+#endif
 
         Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
-        return false;
-#endif
+		return false;
     }
     net_message.setcursize(ret);
     SockadrToNetadr (&from, &net_from);
@@ -304,12 +338,12 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
 {
     int                   ret;
     struct sockaddr_in    addr;
-
+   	
     NetadrToSockadr (&to, &addr);
 
 	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
 
-	buf.clear();
+	buf.clear();	
 
     if (ret == -1)
     {
@@ -347,7 +381,12 @@ void NET_GetLocalAddress (void)
 
 	namelen = sizeof(address);
 	if (getsockname (inet_socket, (struct sockaddr *)&address, &namelen) == -1)
-        Printf (PRINT_HIGH, "NET_Init: getsockname:", strerror(errno));
+	{
+#ifdef _WIN32
+		errno = WSAGetLastError();
+#endif
+		Printf (PRINT_HIGH, "NET_Init: getsockname:", strerror(errno));
+	}
 
 	net_local_adr.port = address.sin_port;
 
@@ -765,7 +804,12 @@ void InitNetCommon(void)
    inet_socket = UDPsocket ();
    BindToLocalPort (inet_socket, localport);
    if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
+   {
+#ifdef _WIN32
+		errno = WSAGetLastError();
+#endif
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+   }
 
 	// enter message information into message info structs
 	InitNetMessageFormats();

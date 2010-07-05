@@ -1381,6 +1381,22 @@ BEGIN_COMMAND (snd_restart)
 }
 END_COMMAND (snd_restart)
 
+BEGIN_COMMAND (changemus)
+{
+//	int loopmus;
+//
+//	if (argc > 2)
+//	{
+//		loopmus = atoi (argv[2]);
+//		S_ChangeMusic (std::string(argv[1]), loopmus);
+//	}
+//	else if (argc == 2)
+//	{
+		S_ChangeMusic (std::string(argv[1]), 1);
+//	}
+}
+END_COMMAND (changemus)
+
 void A_Ambient (AActor *actor)
 {
 }

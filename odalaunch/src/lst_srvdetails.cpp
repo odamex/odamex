@@ -34,6 +34,13 @@ typedef enum
     ,max_srvdetails_fields
 } srvdetails_fields_t;
 
+// Adjusts the width of the name and value columns to the longest item
+void LstOdaSrvDetails::ResizeNameValueColumns()
+{
+    SetColumnWidth(srvdetails_field_name, wxLIST_AUTOSIZE);
+    SetColumnWidth(srvdetails_field_value, wxLIST_AUTOSIZE);
+}
+
 void LstOdaSrvDetails::InsertHeader(const wxString &Name, 
                                     const wxColor *NameColor,
                                     const wxColor *NameBGColor)
@@ -167,4 +174,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     
     for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
         InsertLine(In.Info.Cvars[i].Name, In.Info.Cvars[i].Value);
+
+    // Resize the columns
+    ResizeNameValueColumns();
 }

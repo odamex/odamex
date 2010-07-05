@@ -37,6 +37,8 @@ class LstOdaSrvDetails : public wxListCtrl
         
         //wxEvent *Clone(void);
     protected:
+        void ResizeNameValueColumns();
+
         void InsertLine(const wxString &Name, const wxString &Value);
         void InsertHeader(const wxString &Name, 
                           const wxColor *NameColor,

@@ -262,6 +262,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
 	{ control,	"Spectate",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spectate"} },
 	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
+	{ control,	"Show Scoreboard",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Inventory",			{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Activate item",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"invuse"} },
