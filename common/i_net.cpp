@@ -124,7 +124,6 @@ void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a);
 void BindToLocalPort (SOCKET s, u_short wanted)
 {
 	int v;
-	struct hostent* h;
 	struct sockaddr_in address;
 	netadr_t na;
 
@@ -152,7 +151,17 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 		v = bind (s, (sockaddr *)&address, sizeof(address));
 		
 		// GhostlyDeath <July 3, 2010> -- Fallback to any address
-		if (address.sin_addr.s_addr != INADDR_ANY && (errno == EACCES || errno == EADDRNOTAVAIL))
+#ifdef _WIN32
+		errno = WSAGetLastError();
+#endif
+		
+		if (address.sin_addr.s_addr != INADDR_ANY &&
+#ifdef _WIN32
+			(errno == WSAEACCES || errno == WSAEADDRNOTAVAIL)
+#else
+			(errno == EACCES || errno == EADDRNOTAVAIL)
+#endif
+			)
 		{
 			Printf (PRINT_HIGH, "BindToLocalPort: %s\n", strerror(errno));
 			next--;
@@ -291,18 +300,15 @@ int NET_GetPacket (void)
                              NET_AdrToString (net_from));
              return false;
         }
-
-        Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
-		return false;
 #else
         if (errno == EWOULDBLOCK)
             return false;
         if (errno == ECONNREFUSED)
             return false;
+#endif
 
         Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
-        return false;
-#endif
+		return false;
     }
     net_message.setcursize(ret);
     SockadrToNetadr (&from, &net_from);
@@ -357,7 +363,12 @@ void NET_GetLocalAddress (void)
 
 	namelen = sizeof(address);
 	if (getsockname (net_socket, (struct sockaddr *)&address, &namelen) == -1)
-        Printf (PRINT_HIGH, "NET_Init: getsockname:", strerror(errno));
+	{
+#ifdef _WIN32
+		errno = WSAGetLastError();
+#endif
+		Printf (PRINT_HIGH, "NET_Init: getsockname:", strerror(errno));
+	}
 
 	net_local_adr.port = address.sin_port;
 
@@ -775,7 +786,12 @@ void InitNetCommon(void)
    net_socket = UDPsocket ();
    BindToLocalPort (net_socket, localport);
    if (ioctlsocket (net_socket, FIONBIO, &_true) == -1)
+   {
+#ifdef _WIN32
+		errno = WSAGetLastError();
+#endif
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+   }
 
 	// enter message information into message info structs
 	InitNetMessageFormats();
