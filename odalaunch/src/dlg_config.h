@@ -121,6 +121,7 @@ class dlgConfig: public wxDialog
         wxStaticBitmap *m_StcBmpPQGood;
         wxStaticBitmap *m_StcBmpPQPlayable;
         wxStaticBitmap *m_StcBmpPQLaggy;
+        wxStaticBitmap *m_StcBmpPQBad;
 
         wxFileConfig ConfigInfo;
 

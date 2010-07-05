@@ -289,7 +289,7 @@
 				<object class="wxBoxSizer">
 					<orient>wxHORIZONTAL</orient>
 					<object class="sizeritem">
-						<option>1</option>
+						<option>0</option>
 						<flag>wxALL</flag>
 						<border>5</border>
 						<object class="wxStaticBoxSizer">
@@ -376,7 +376,7 @@
 						</object>
 					</object>
 					<object class="sizeritem">
-						<option>1</option>
+						<option>0</option>
 						<flag>wxALL</flag>
 						<border>5</border>
 						<object class="wxStaticBoxSizer">
@@ -404,6 +404,7 @@
 												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
 												<object class="wxStaticBitmap" name="Id_StcBmpPQGood">
+													<tooltip>Green is good</tooltip>
 													<bitmap />
 												</object>
 											</object>
@@ -413,6 +414,7 @@
 												<border>5</border>
 												<object class="wxSpinCtrl" name="Id_SpnCtrlPQGood">
 													<style>wxSP_ARROW_KEYS</style>
+													<tooltip>Green is good</tooltip>
 													<value>150</value>
 													<min>0</min>
 													<max>200</max>
@@ -428,9 +430,10 @@
 											<orient>wxHORIZONTAL</orient>
 											<object class="sizeritem">
 												<option>1</option>
-												<flag>wxALL</flag>
+												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
 												<object class="wxStaticBitmap" name="Id_StcBmpPQPlayable">
+													<tooltip>Orange is playable</tooltip>
 													<bitmap />
 												</object>
 											</object>
@@ -440,6 +443,7 @@
 												<border>5</border>
 												<object class="wxSpinCtrl" name="Id_SpnCtrlPQPlayable">
 													<style>wxSP_ARROW_KEYS</style>
+													<tooltip>Orange is playable</tooltip>
 													<value>300</value>
 													<min>200</min>
 													<max>350</max>
@@ -455,9 +459,10 @@
 											<orient>wxHORIZONTAL</orient>
 											<object class="sizeritem">
 												<option>1</option>
-												<flag>wxALL</flag>
+												<flag>wxALIGN_CENTER|wxALL</flag>
 												<border>5</border>
 												<object class="wxStaticBitmap" name="Id_StcBmpPQLaggy">
+													<tooltip>Red means server is laggy</tooltip>
 													<bitmap />
 												</object>
 											</object>
@@ -467,9 +472,36 @@
 												<border>5</border>
 												<object class="wxSpinCtrl" name="Id_SpnCtrlPQLaggy">
 													<style>wxSP_ARROW_KEYS</style>
+													<tooltip>Red means server is laggy</tooltip>
 													<value>350</value>
 													<min>300</min>
 													<max>600</max>
+												</object>
+											</object>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBitmap" name="Id_StcBmpPQBad">
+													<tooltip>Gray possibly means unplayable</tooltip>
+													<bitmap />
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticLine" name="m_staticline4">
+													<style>wxLI_HORIZONTAL</style>
+													<tooltip>Gray possibly means unplayable</tooltip>
 												</object>
 											</object>
 										</object>

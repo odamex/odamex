@@ -53,6 +53,7 @@ static wxInt32 Id_SpnCtrlPQLaggy = XRCID("Id_SpnCtrlPQLaggy");
 static wxInt32 Id_StcBmpPQGood = XRCID("Id_StcBmpPQGood");
 static wxInt32 Id_StcBmpPQPlayable = XRCID("Id_StcBmpPQPlayable");
 static wxInt32 Id_StcBmpPQLaggy = XRCID("Id_StcBmpPQLaggy");
+static wxInt32 Id_StcBmpPQBad = XRCID("Id_StcBmpPQBad");
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
@@ -108,15 +109,13 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     m_StcBmpPQGood = wxStaticCast(FindWindow(Id_StcBmpPQGood), wxStaticBitmap);
     m_StcBmpPQPlayable = wxStaticCast(FindWindow(Id_StcBmpPQPlayable), wxStaticBitmap);
     m_StcBmpPQLaggy = wxStaticCast(FindWindow(Id_StcBmpPQLaggy), wxStaticBitmap);
+    m_StcBmpPQBad = wxStaticCast(FindWindow(Id_StcBmpPQBad), wxStaticBitmap);
 
     // Ping quality icons
     m_StcBmpPQGood->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_green")));
     m_StcBmpPQPlayable->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_orange")));
     m_StcBmpPQLaggy->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")));
-
-    m_StcBmpPQGood->SetToolTip(wxT("Green is great"));
-    m_StcBmpPQPlayable->SetToolTip(wxT("Orange is playable"));
-    m_StcBmpPQLaggy->SetToolTip(wxT("Red means server is laggy"));
+    m_StcBmpPQBad->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_gray")));
 
     // Load current configuration from global configuration structure
     cfg_file = cfg;
