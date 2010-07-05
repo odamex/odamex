@@ -253,7 +253,7 @@
 													<flag>wxALL|wxEXPAND</flag>
 													<border>2</border>
 													<object class="wxListCtrl" name="Id_LstCtrlServerDetails" subclass="LstOdaSrvDetails">
-														<style>wxLC_HRULES|wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL</style>
+														<style>wxLC_HRULES|wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL|wxALWAYS_SHOW_SB</style>
 													</object>
 												</object>
 											</object>
