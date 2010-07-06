@@ -47,6 +47,7 @@ struct launchercfg_t
 #include <wx/textctrl.h>
 #include <wx/filepicker.h>
 #include <wx/spinctrl.h>
+#include <wx/statbmp.h>
 
 // config file value names
 #define GETLISTONSTART      "GET_LIST_ON_START"
