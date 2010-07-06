@@ -417,7 +417,7 @@
 													<tooltip>Green is good</tooltip>
 													<value>150</value>
 													<min>0</min>
-													<max>200</max>
+													<max>995</max>
 												</object>
 											</object>
 										</object>
@@ -445,8 +445,8 @@
 													<style>wxSP_ARROW_KEYS</style>
 													<tooltip>Orange is playable</tooltip>
 													<value>300</value>
-													<min>200</min>
-													<max>350</max>
+													<min>0</min>
+													<max>997</max>
 												</object>
 											</object>
 										</object>
@@ -474,8 +474,8 @@
 													<style>wxSP_ARROW_KEYS</style>
 													<tooltip>Red means server is laggy</tooltip>
 													<value>350</value>
-													<min>300</min>
-													<max>600</max>
+													<min>0</min>
+													<max>999</max>
 												</object>
 											</object>
 										</object>

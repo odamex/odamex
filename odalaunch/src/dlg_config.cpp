@@ -31,6 +31,7 @@
 #include <wx/msgdlg.h>
 #include <wx/wfstream.h>
 #include <wx/tokenzr.h>
+#include <wx/recguard.h>
 
 #include "main.h"
 
@@ -189,8 +190,31 @@ void dlgConfig::OnChooseOdamexPath(wxFileDirPickerEvent &event)
     UserChangedSetting = true;
 }
 
+// Ping quality spin control changes
 void dlgConfig::OnSpinValChange(wxSpinEvent &event)
 {
+    wxInt32 PQGood, PQPlayable, PQLaggy;
+
+    PQGood = m_SpnCtrlPQGood->GetValue();
+    PQPlayable = m_SpnCtrlPQPlayable->GetValue();
+    
+    // Handle spin values that go beyond a certain range
+    // wxWidgets Bug: Double-clicking the down arrow on a spin control will go
+    // 1 more below even though we force it not to, we use an event so we 
+    // counteract this with using +2 stepping
+    if (PQGood >= PQPlayable)
+    {
+        m_SpnCtrlPQPlayable->SetValue(PQGood + 2);
+    }
+
+    PQPlayable = m_SpnCtrlPQPlayable->GetValue();
+    PQLaggy = m_SpnCtrlPQLaggy->GetValue();
+
+    if (PQPlayable >= PQLaggy)
+    {
+        m_SpnCtrlPQLaggy->SetValue(PQPlayable + 2);
+    }
+
     UserChangedSetting = true;
 }
 
