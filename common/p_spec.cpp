@@ -789,6 +789,10 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 
 	if (!p)
 		return false;
+    
+    // [Spleen] Clients in network games don't know about keys
+    if (clientside && network_game)
+        return true;
 
 	const char *msg = NULL;
 	BOOL bc, rc, yc, bs, rs, ys;
