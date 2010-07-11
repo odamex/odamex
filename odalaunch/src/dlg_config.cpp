@@ -43,8 +43,8 @@ static wxInt32 Id_DirCtrlChooseOdamexPath = XRCID("Id_DirCtrlChooseOdamexPath");
 
 static wxInt32 Id_LstCtrlWadDirectories = XRCID("Id_LstCtrlWadDirectories");
 
-static wxInt32 Id_TxtCtrlMasterTimeout = XRCID("Id_TxtCtrlMasterTimeout");
-static wxInt32 Id_TxtCtrlServerTimeout = XRCID("Id_TxtCtrlServerTimeout");
+static wxInt32 Id_SpnCtrlMasterTimeout = XRCID("Id_SpnCtrlMasterTimeout");
+static wxInt32 Id_SpnCtrlServerTimeout = XRCID("Id_SpnCtrlServerTimeout");
 static wxInt32 Id_TxtCtrlExtraCmdLineArgs = XRCID("Id_TxtCtrlExtraCmdLineArgs");
 
 static wxInt32 Id_SpnCtrlPQGood = XRCID("Id_SpnCtrlPQGood");
@@ -76,8 +76,8 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(Id_ChkCtrlGetListOnStart, dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(Id_ChkCtrlShowBlockedServers, dlgConfig::OnCheckedBox)
 	
-	EVT_TEXT(Id_TxtCtrlMasterTimeout, dlgConfig::OnTextChange)
-	EVT_TEXT(Id_TxtCtrlServerTimeout, dlgConfig::OnTextChange)
+	EVT_TEXT(Id_SpnCtrlMasterTimeout, dlgConfig::OnTextChange)
+	EVT_TEXT(Id_SpnCtrlServerTimeout, dlgConfig::OnTextChange)
 	EVT_TEXT(Id_TxtCtrlExtraCmdLineArgs, dlgConfig::OnTextChange)
 	
 	EVT_SPINCTRL(Id_SpnCtrlPQGood, dlgConfig::OnSpinValChange)
@@ -99,8 +99,8 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     m_DirCtrlChooseWadDir = wxStaticCast(FindWindow(Id_DirCtrlChooseWadDir), wxDirPickerCtrl);
     m_DirCtrlChooseOdamexPath = wxStaticCast(FindWindow(Id_DirCtrlChooseOdamexPath), wxDirPickerCtrl);
 
-    m_TxtCtrlMasterTimeout = wxStaticCast(FindWindow(Id_TxtCtrlMasterTimeout), wxTextCtrl);
-    m_TxtCtrlServerTimeout = wxStaticCast(FindWindow(Id_TxtCtrlServerTimeout), wxTextCtrl);
+    m_SpnCtrlMasterTimeout = wxStaticCast(FindWindow(Id_SpnCtrlMasterTimeout), wxSpinCtrl);
+    m_SpnCtrlServerTimeout = wxStaticCast(FindWindow(Id_SpnCtrlServerTimeout), wxSpinCtrl);
     m_TxtCtrlExtraCmdLineArgs = wxStaticCast(FindWindow(Id_TxtCtrlExtraCmdLineArgs), wxTextCtrl);
 
     m_SpnCtrlPQGood = wxStaticCast(FindWindow(Id_SpnCtrlPQGood), wxSpinCtrl);
@@ -161,8 +161,8 @@ void dlgConfig::Show()
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("500"));
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
-    m_TxtCtrlMasterTimeout->SetValue(MasterTimeout);
-    m_TxtCtrlServerTimeout->SetValue(ServerTimeout);
+    m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
+    m_SpnCtrlServerTimeout->SetValue(ServerTimeout);
     m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
 
     wxInt32 PQGood, PQPlayable, PQLaggy;
@@ -448,8 +448,8 @@ void dlgConfig::LoadSettings()
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
-    ConfigInfo.Write(wxT(MASTERTIMEOUT), m_TxtCtrlMasterTimeout->GetValue());
-    ConfigInfo.Write(wxT(SERVERTIMEOUT), m_TxtCtrlServerTimeout->GetValue());
+    ConfigInfo.Write(wxT(MASTERTIMEOUT), m_SpnCtrlMasterTimeout->GetValue());
+    ConfigInfo.Write(wxT(SERVERTIMEOUT), m_SpnCtrlServerTimeout->GetValue());
     ConfigInfo.Write(wxT(EXTRACMDLINEARGS), m_TxtCtrlExtraCmdLineArgs->GetValue());
     ConfigInfo.Write(wxT(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(wxT(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);

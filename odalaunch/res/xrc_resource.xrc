@@ -341,9 +341,12 @@
 										<option>0</option>
 										<flag>wxALL</flag>
 										<border>5</border>
-										<object class="wxTextCtrl" name="Id_TxtCtrlMasterTimeout">
+										<object class="wxSpinCtrl" name="Id_SpnCtrlMasterTimeout">
+											<style>wxSP_ARROW_KEYS</style>
+											<tooltip>Timeout for the master servers</tooltip>
 											<value>500</value>
-											<maxlength>0</maxlength>
+											<min>0</min>
+											<max>5000</max>
 										</object>
 									</object>
 								</object>
@@ -366,9 +369,12 @@
 										<option>0</option>
 										<flag>wxALL</flag>
 										<border>5</border>
-										<object class="wxTextCtrl" name="Id_TxtCtrlServerTimeout">
-											<value>500</value>
-											<maxlength>0</maxlength>
+										<object class="wxSpinCtrl" name="Id_SpnCtrlServerTimeout">
+											<style>wxSP_ARROW_KEYS</style>
+											<tooltip>Timeout for all servers</tooltip>
+											<value>1000</value>
+											<min>0</min>
+											<max>5000</max>
 										</object>
 									</object>
 								</object>

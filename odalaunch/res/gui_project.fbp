@@ -1735,11 +1735,11 @@
                                                 <event name="OnUpdateUI"></event>
                                             </object>
                                         </object>
-                                        <object class="sizeritem" expanded="0">
+                                        <object class="sizeritem" expanded="1">
                                             <property name="border">5</property>
                                             <property name="flag">wxALL</property>
                                             <property name="proportion">0</property>
-                                            <object class="wxTextCtrl" expanded="0">
+                                            <object class="wxSpinCtrl" expanded="1">
                                                 <property name="bg"></property>
                                                 <property name="context_help"></property>
                                                 <property name="context_menu">1</property>
@@ -1748,21 +1748,23 @@
                                                 <property name="font"></property>
                                                 <property name="hidden">0</property>
                                                 <property name="id">wxID_ANY</property>
+                                                <property name="initial">500</property>
+                                                <property name="max">5000</property>
                                                 <property name="maximum_size"></property>
-                                                <property name="maxlength">0</property>
+                                                <property name="min">0</property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">Id_TxtCtrlMasterTimeout</property>
+                                                <property name="name">Id_SpnCtrlMasterTimeout</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
-                                                <property name="style"></property>
+                                                <property name="style">wxSP_ARROW_KEYS</property>
                                                 <property name="subclass"></property>
-                                                <property name="tooltip"></property>
+                                                <property name="tooltip">Timeout for the master servers</property>
                                                 <property name="validator_data_type"></property>
                                                 <property name="validator_style">wxFILTER_NONE</property>
                                                 <property name="validator_type">wxDefaultValidator</property>
                                                 <property name="validator_variable"></property>
-                                                <property name="value">500</property>
+                                                <property name="value"></property>
                                                 <property name="window_extra_style"></property>
                                                 <property name="window_name"></property>
                                                 <property name="window_style"></property>
@@ -1788,10 +1790,8 @@
                                                 <event name="OnRightUp"></event>
                                                 <event name="OnSetFocus"></event>
                                                 <event name="OnSize"></event>
-                                                <event name="OnText"></event>
-                                                <event name="OnTextEnter"></event>
-                                                <event name="OnTextMaxLen"></event>
-                                                <event name="OnTextURL"></event>
+                                                <event name="OnSpinCtrl"></event>
+                                                <event name="OnSpinCtrlText"></event>
                                                 <event name="OnUpdateUI"></event>
                                             </object>
                                         </object>
@@ -1862,11 +1862,11 @@
                                                 <event name="OnUpdateUI"></event>
                                             </object>
                                         </object>
-                                        <object class="sizeritem" expanded="0">
+                                        <object class="sizeritem" expanded="1">
                                             <property name="border">5</property>
                                             <property name="flag">wxALL</property>
                                             <property name="proportion">0</property>
-                                            <object class="wxTextCtrl" expanded="0">
+                                            <object class="wxSpinCtrl" expanded="1">
                                                 <property name="bg"></property>
                                                 <property name="context_help"></property>
                                                 <property name="context_menu">1</property>
@@ -1875,21 +1875,23 @@
                                                 <property name="font"></property>
                                                 <property name="hidden">0</property>
                                                 <property name="id">wxID_ANY</property>
+                                                <property name="initial">1000</property>
+                                                <property name="max">5000</property>
                                                 <property name="maximum_size"></property>
-                                                <property name="maxlength">0</property>
+                                                <property name="min">0</property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">Id_TxtCtrlServerTimeout</property>
+                                                <property name="name">Id_SpnCtrlServerTimeout</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
-                                                <property name="style"></property>
+                                                <property name="style">wxSP_ARROW_KEYS</property>
                                                 <property name="subclass"></property>
-                                                <property name="tooltip"></property>
+                                                <property name="tooltip">Timeout for all servers</property>
                                                 <property name="validator_data_type"></property>
                                                 <property name="validator_style">wxFILTER_NONE</property>
                                                 <property name="validator_type">wxDefaultValidator</property>
                                                 <property name="validator_variable"></property>
-                                                <property name="value">500</property>
+                                                <property name="value"></property>
                                                 <property name="window_extra_style"></property>
                                                 <property name="window_name"></property>
                                                 <property name="window_style"></property>
@@ -1915,10 +1917,8 @@
                                                 <event name="OnRightUp"></event>
                                                 <event name="OnSetFocus"></event>
                                                 <event name="OnSize"></event>
-                                                <event name="OnText"></event>
-                                                <event name="OnTextEnter"></event>
-                                                <event name="OnTextMaxLen"></event>
-                                                <event name="OnTextURL"></event>
+                                                <event name="OnSpinCtrl"></event>
+                                                <event name="OnSpinCtrlText"></event>
                                                 <event name="OnUpdateUI"></event>
                                             </object>
                                         </object>
@@ -1930,7 +1930,7 @@
                             <property name="border">5</property>
                             <property name="flag">wxALL</property>
                             <property name="proportion">0</property>
-                            <object class="wxStaticBoxSizer" expanded="1">
+                            <object class="wxStaticBoxSizer" expanded="0">
                                 <property name="id">wxID_ANY</property>
                                 <property name="label">Ping Quality</property>
                                 <property name="minimum_size"></property>
@@ -1938,11 +1938,11 @@
                                 <property name="orient">wxHORIZONTAL</property>
                                 <property name="permission">none</property>
                                 <event name="OnUpdateUI"></event>
-                                <object class="sizeritem" expanded="1">
+                                <object class="sizeritem" expanded="0">
                                     <property name="border">5</property>
                                     <property name="flag">wxEXPAND</property>
                                     <property name="proportion">1</property>
-                                    <object class="wxFlexGridSizer" expanded="1">
+                                    <object class="wxFlexGridSizer" expanded="0">
                                         <property name="cols">1</property>
                                         <property name="flexible_direction">wxBOTH</property>
                                         <property name="growablecols"></property>
@@ -1954,11 +1954,11 @@
                                         <property name="permission">none</property>
                                         <property name="rows">1</property>
                                         <property name="vgap">0</property>
-                                        <object class="sizeritem" expanded="1">
+                                        <object class="sizeritem" expanded="0">
                                             <property name="border">5</property>
                                             <property name="flag">wxEXPAND</property>
                                             <property name="proportion">1</property>
-                                            <object class="wxBoxSizer" expanded="1">
+                                            <object class="wxBoxSizer" expanded="0">
                                                 <property name="minimum_size"></property>
                                                 <property name="name">bSizer30</property>
                                                 <property name="orient">wxHORIZONTAL</property>
@@ -2079,11 +2079,11 @@
                                                 </object>
                                             </object>
                                         </object>
-                                        <object class="sizeritem" expanded="1">
+                                        <object class="sizeritem" expanded="0">
                                             <property name="border">5</property>
                                             <property name="flag">wxEXPAND</property>
                                             <property name="proportion">1</property>
-                                            <object class="wxBoxSizer" expanded="1">
+                                            <object class="wxBoxSizer" expanded="0">
                                                 <property name="minimum_size"></property>
                                                 <property name="name">bSizer24</property>
                                                 <property name="orient">wxHORIZONTAL</property>
@@ -2204,11 +2204,11 @@
                                                 </object>
                                             </object>
                                         </object>
-                                        <object class="sizeritem" expanded="1">
+                                        <object class="sizeritem" expanded="0">
                                             <property name="border">5</property>
                                             <property name="flag">wxEXPAND</property>
                                             <property name="proportion">1</property>
-                                            <object class="wxBoxSizer" expanded="1">
+                                            <object class="wxBoxSizer" expanded="0">
                                                 <property name="minimum_size"></property>
                                                 <property name="name">bSizer28</property>
                                                 <property name="orient">wxHORIZONTAL</property>
@@ -2329,7 +2329,7 @@
                                                 </object>
                                             </object>
                                         </object>
-                                        <object class="sizeritem" expanded="1">
+                                        <object class="sizeritem" expanded="0">
                                             <property name="border">5</property>
                                             <property name="flag">wxEXPAND</property>
                                             <property name="proportion">1</property>
