@@ -253,4 +253,4 @@ CVAR (vid_ticker, "0", CVAR_CLIENTINFO)
 CVAR_FUNC_DECL (vid_winscale, "1.0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 
-VERSION_CONTROL (c_cvarlist_cpp, "$Id$")
+VERSION_CONTROL (cl_cvarlist_cpp, "$Id$")
