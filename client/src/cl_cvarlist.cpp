@@ -132,9 +132,9 @@ CVAR (show_endoom, "1", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
 // Rate of client updates
 CVAR_FUNC_DECL (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Maximum number of clients who can connect to the server
-CVAR (maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 // Maximum amount of players who can join the game, others are spectators
-CVAR (maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_name,		"Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

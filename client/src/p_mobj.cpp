@@ -40,8 +40,8 @@
 void G_PlayerReborn (player_t &player);
 
 EXTERN_CVAR (weaponstay)
-EXTERN_CVAR (itemsrespawn)
-EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (sv_itemsrespawn)
+EXTERN_CVAR (sv_nomonsters)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 
@@ -1009,7 +1009,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	translucency = info->translucency;
 	rndindex = M_Random();
 
-	if (skill != sk_nightmare)
+	if (sv_skill != sk_nightmare)
 		reactiontime = info->reactiontime;
 
 	lastlook = P_Random () % MAXPLAYERS_VANILLA;
@@ -1097,7 +1097,7 @@ void P_RespawnSpecials (void)
 		return;
 
 	// only respawn items in deathmatch
-	if (gametype == GM_COOP || !itemsrespawn)
+	if (sv_gametype == GM_COOP || !sv_itemsrespawn)
 		return;
 
 	// nothing left to respawn?
@@ -1219,7 +1219,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if (gametype != GM_COOP)
+	if (sv_gametype != GM_COOP)
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 
@@ -1283,7 +1283,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (gametype == GM_COOP &&
+		if (sv_gametype == GM_COOP &&
 			(validplayer(p) && p.ingame()))
 		{
 			P_SpawnPlayer (p, mthing);
@@ -1300,7 +1300,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (mthing->type >= 5080 && mthing->type <= 5082)
 		return;
 
-	if (gametype != GM_COOP)
+	if (sv_gametype != GM_COOP)
 	{
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
@@ -1318,12 +1318,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// check for apropriate skill level
-	if (skill == sk_baby)
+	if (sv_skill == sk_baby)
 		bit = 1;
-	else if (skill == sk_nightmare)
+	else if (sv_skill == sk_nightmare)
 		bit = 4;
 	else
-		bit = 1 << ((int)skill - 2);
+		bit = 1 << ((int)sv_skill - 2);
 
 	if (!(mthing->flags & bit))
 		return;
@@ -1368,7 +1368,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (sv_gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
@@ -1392,7 +1392,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [csDoom] don't spawn any monsters
-	if (nomonsters || !serverside)
+	if (sv_nomonsters || !serverside)
 	{
 		if (i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL) )
 		{

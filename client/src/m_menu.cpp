@@ -979,7 +979,7 @@ void M_VerifyNightmare(int ch)
 
 void M_StartGame(int choice)
 {
-	skill.Set ((float)choice+1);
+	sv_skill.Set ((float)choice+1);
 
 	G_DeferedInitNew (CalcMapName (epi+1, 1));
 	M_ClearMenus ();
@@ -1404,7 +1404,7 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw skin setting
 	{
-		if (gametype != GM_CTF) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
+		if (sv_gametype != GM_CTF) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
 		{
 			int x = V_StringWidth ("Skin") + 8 + PSetupDef.x;
 			screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Skin");
@@ -1791,7 +1791,7 @@ bool M_Responder (event_t* ev)
 			else
 			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if (gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 5)
+				if (sv_gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 5)
 					itemOn = itemOn + 2;
 				else	itemOn++;
 			}
@@ -1807,7 +1807,7 @@ bool M_Responder (event_t* ev)
 			else
 			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if (gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 7)
+				if (sv_gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 7)
 					itemOn = itemOn - 2;
 				else itemOn--;
 			}
@@ -2046,7 +2046,7 @@ void M_Ticker (void)
 	if (currentMenu == &PSetupDef)
 	{
 		// [Toke - CTF] skip skins selection
-		if (gametype == GM_CTF)
+		if (sv_gametype == GM_CTF)
 			if (itemOn == 6)
 				itemOn = 5;
 

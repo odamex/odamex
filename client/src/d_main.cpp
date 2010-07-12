@@ -135,8 +135,8 @@ bool demotest;
 static int demosequence;
 static int pagetic;
 
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_nomonsters)
 
 const char *LOG_FILE;
 
@@ -1450,7 +1450,7 @@ void D_DoomMain (void)
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{
-		skill.Set (val[0]-'0');
+		sv_skill.Set (val[0]-'0');
 	}
 
 	p = Args.CheckParm ("-warp");

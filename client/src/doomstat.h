@@ -69,7 +69,7 @@ extern	char			startmap[8];		// [RH] Actual map name now
 extern	BOOL 			autostart;
 
 // Selected by user.
-EXTERN_CVAR (skill)
+EXTERN_CVAR (sv_skill)
 
 // Nightmare mode flag, single player.
 extern	BOOL 			respawnmonsters;
@@ -83,7 +83,7 @@ extern	BOOL			multiplayer;
 extern BOOL            network_game;
 
 // Game mode
-EXTERN_CVAR (gametype)
+EXTERN_CVAR (sv_gametype)
 
 #define GM_COOP		0.0f
 #define GM_DM		1.0f

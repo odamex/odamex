@@ -86,9 +86,9 @@ void	G_DoSaveGame (void);
 
 void	CL_RunTics (void);
 
-EXTERN_CVAR (skill)
+EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
-EXTERN_CVAR (monstersrespawn)
+EXTERN_CVAR (sv_monstersrespawn)
 
 EXTERN_CVAR (chasedemo)
 
@@ -138,10 +138,10 @@ enum demoversion_t
 #define DOOM_BOOM_DEMO_START	0xC8
 #define DOOM_BOOM_DEMO_END	0xD6
 
-EXTERN_CVAR(nomonsters)
-EXTERN_CVAR(fastmonsters)
+EXTERN_CVAR(sv_nomonsters)
+EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(allowjump)
+EXTERN_CVAR(sv_allowjump)
 EXTERN_CVAR(co_realactorheight)
 
 CVAR_FUNC_IMPL(cl_mouselook)
@@ -428,8 +428,8 @@ BEGIN_COMMAND (spynext)
 			break;
 		}
 		else if (consoleplayer().spectator ||
-			 gametype == GM_COOP ||
-			 (gametype != GM_DM &&
+			 sv_gametype == GM_COOP ||
+			 (sv_gametype != GM_DM &&
 				players[curr].userinfo.team == consoleplayer().userinfo.team))
 		{
 			displayplayer_id = players[curr].id;
@@ -1314,7 +1314,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 
-	if(!serverside || gametype == GM_COOP)
+	if(!serverside || sv_gametype == GM_COOP)
 		return;
 
 	//if (!ctfmode)
@@ -1403,7 +1403,7 @@ void G_DoReborn (player_t &player)
 		player.mo->player = NULL;
 
 	// spawn at random spot if in death match
-	if (gametype != GM_COOP)
+	if (sv_gametype != GM_COOP)
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
@@ -1828,13 +1828,13 @@ void G_BeginRecording (void)
         mapid = level.mapname[3] - '0';
     }
 
-    *demo_p++ = (unsigned char)(skill-1);
+    *demo_p++ = (unsigned char)(sv_skill-1);
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = gametype;
-    *demo_p++ = monstersrespawn;
-    *demo_p++ = fastmonsters;
-    *demo_p++ = nomonsters;
+    *demo_p++ = sv_gametype;
+    *demo_p++ = sv_monstersrespawn;
+    *demo_p++ = sv_fastmonsters;
+    *demo_p++ = sv_nomonsters;
     *demo_p++ = 0;
 
     *demo_p++ = 1;
@@ -2102,13 +2102,13 @@ void G_DoPlayDemo (bool justStreamInput)
 
 		demoversion = *demo_p++ == DOOM_1_9_1_DEMO ? LMP_DOOM_1_9_1 : LMP_DOOM_1_9;
 		float s = (float)((*demo_p++)+1);
-		skill = s;
+		sv_skill = s;
 		byte episode = *demo_p++;
 		byte map = *demo_p++;
-		gametype = *demo_p++;
-		monstersrespawn = *demo_p++;
-		fastmonsters = *demo_p++;
-		nomonsters = *demo_p++;
+		sv_gametype = *demo_p++;
+		sv_monstersrespawn = *demo_p++;
+		sv_fastmonsters = *demo_p++;
+		sv_nomonsters = *demo_p++;
 		byte who = *demo_p++;
 
 		if(!justStreamInput)
@@ -2184,7 +2184,7 @@ void G_DoPlayDemo (bool justStreamInput)
 
 		// comatibility
 		sv_freelook = "0";
-		allowjump = "0";
+		sv_allowjump = "0";
 		co_realactorheight = "0";
 
 		return;
@@ -2312,9 +2312,9 @@ BOOL G_CheckDemoStatus (void)
 	return false;
 }
 
-EXTERN_CVAR (fraglimit)
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (fragexitswitch)
+EXTERN_CVAR (sv_fraglimit)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_fragexitswitch)
 
 BOOL CheckIfExitIsGood (AActor *self)
 {
@@ -2322,20 +2322,20 @@ BOOL CheckIfExitIsGood (AActor *self)
 		return false;
 
 	// [Toke - dmflags] Old location of DF_NO_EXIT
-    // [ML] 04/4/06: Check for fragexitswitch - seems a bit hacky
+    // [ML] 04/4/06: Check for sv_fragexitswitch - seems a bit hacky
 
     unsigned int i;
 
     for(i = 0; i < players.size(); i++)
-        if(players[i].fragcount == fraglimit)
+        if(players[i].fragcount == sv_fraglimit)
             break;
 
-    if (gametype != GM_COOP && self)
+    if (sv_gametype != GM_COOP && self)
     {
-        if (!allowexit && fragexitswitch && i == players.size())
+        if (!sv_allowexit && sv_fragexitswitch && i == players.size())
             return false;
 
-        if (!allowexit && !fragexitswitch)
+        if (!sv_allowexit && !sv_fragexitswitch)
             return false;
     }
 

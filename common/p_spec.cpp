@@ -58,7 +58,7 @@
 // [RH] Needed for sky scrolling
 #include "r_sky.h"
 
-EXTERN_CVAR (allowexit)
+EXTERN_CVAR (sv_allowexit)
 
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
@@ -1148,7 +1148,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 20, MOD_UNKNOWN);
 
-			if(gametype == GM_COOP || allowexit)
+			if(sv_gametype == GM_COOP || sv_allowexit)
 			{
 				if (gamestate == GS_LEVEL && player->health <= 10)
 					G_ExitLevel(0, 1);

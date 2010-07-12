@@ -40,39 +40,39 @@
 extern std::vector<std::string> patchfiles, wadnames, wadhashes;
 static buf_t ml_message(MAX_UDP_PACKET);
 
-EXTERN_CVAR (usemasters)
-EXTERN_CVAR (hostname)
-EXTERN_CVAR (maxclients)
+EXTERN_CVAR (sv_usemasters)
+EXTERN_CVAR (sv_hostname)
+EXTERN_CVAR (sv_maxclients)
 
 EXTERN_CVAR (port)
 
 //bond===========================
-EXTERN_CVAR (timelimit)			
-EXTERN_CVAR (fraglimit)			
-EXTERN_CVAR (email)
-EXTERN_CVAR (itemsrespawn)
-EXTERN_CVAR (weaponstay)
-EXTERN_CVAR (friendlyfire)
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (infiniteammo)
-EXTERN_CVAR (nomonsters)
-EXTERN_CVAR (monstersrespawn)
-EXTERN_CVAR (fastmonsters)
-EXTERN_CVAR (allowjump)
+EXTERN_CVAR (sv_timelimit)			
+EXTERN_CVAR (sv_fraglimit)			
+EXTERN_CVAR (sv_email)
+EXTERN_CVAR (sv_itemsrespawn)
+EXTERN_CVAR (sv_weaponstay)
+EXTERN_CVAR (sv_friendlyfire)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_infiniteammo)
+EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (waddownload)
-EXTERN_CVAR (emptyreset)
-EXTERN_CVAR (cleanmaps)
-EXTERN_CVAR (fragexitswitch)
+EXTERN_CVAR (sv_waddownload)
+EXTERN_CVAR (sv_emptyreset)
+EXTERN_CVAR (sv_cleanmaps)
+EXTERN_CVAR (sv_fragexitswitch)
 //bond===========================
 
-EXTERN_CVAR (teamsinplay)
+EXTERN_CVAR (sv_teamsinplay)
 
-EXTERN_CVAR (maxplayers)
-EXTERN_CVAR (password)
-EXTERN_CVAR (website)
+EXTERN_CVAR (sv_maxplayers)
+EXTERN_CVAR (join_password)
+EXTERN_CVAR (sv_website)
 
-EXTERN_CVAR (natport)
+EXTERN_CVAR (sv_natport)
 
 extern unsigned int last_revision;
 
@@ -145,10 +145,10 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
 		MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
 	}
 	
-	MSG_WriteString(&ml_message, (strlen(password.cstring()) ? MD5SUM(password.cstring()).c_str() : ""));
+	MSG_WriteString(&ml_message, (strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : ""));
 	MSG_WriteString(&ml_message, level.mapname);
 	
-    int timeleft = (int)(timelimit - level.time/(TICRATE*60));
+    int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 	if (timeleft < 0) 
         timeleft = 0;
         
@@ -167,7 +167,7 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
     MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
 
     // TODO: When real dynamic teams are implemented
-    //byte TeamCount = (byte)teamsinplay;
+    //byte TeamCount = (byte)sv_teamsinplay;
     //MSG_WriteByte(&ml_message, TeamCount);
     
     //for (byte i = 0; i < TeamCount; ++i)

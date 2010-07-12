@@ -62,11 +62,11 @@
 extern int nextupdate;
 extern int shotclock;
 
-EXTERN_CVAR (endmapscript)
-EXTERN_CVAR (startmapscript)
-EXTERN_CVAR (curmap)
-EXTERN_CVAR (nextmap)
-EXTERN_CVAR (loopepisode)
+EXTERN_CVAR (sv_endmapscript)
+EXTERN_CVAR (sv_startmapscript)
+EXTERN_CVAR (sv_curmap)
+EXTERN_CVAR (sv_nextmap)
+EXTERN_CVAR (sv_loopepisode)
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
@@ -195,8 +195,8 @@ void G_DeferedInitNew (char *mapname)
 	strncpy (d_mapname, mapname, 8);
 	gameaction = ga_newgame;
 
-	// nextmap cvar may be overridden by a script
-	nextmap.ForceSet(d_mapname);
+	// sv_nextmap cvar may be overridden by a script
+	sv_nextmap.ForceSet(d_mapname);
 }
 
 
@@ -422,7 +422,7 @@ void G_GenerateRandomMaps(void)
 	RandomMapPos = 0;
 }
 
-CVAR_FUNC_IMPL (shufflemaplist)
+CVAR_FUNC_IMPL (sv_shufflemaplist)
 {
 	// Create random list
 	if (var)
@@ -495,7 +495,7 @@ BEGIN_COMMAND (addmap)
         }
 
         // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
-        if (shufflemaplist)
+        if (sv_shufflemaplist)
 	        G_GenerateRandomMaps();
 	}
 }
@@ -604,7 +604,7 @@ void G_ChangeMap (void)
         }
 
 		// if deathmatch, stay on same level
-		if(gametype != GM_COOP)
+		if(sv_gametype != GM_COOP)
 			next = level.mapname;
 		else
 			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
@@ -613,10 +613,10 @@ void G_ChangeMap (void)
 		if (!strncmp (next, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))
 		{
 			// NES - exiting a Doom 1 episode moves to the next episode, rather than always going back to E1M1
-			if (gameinfo.flags & GI_MAPxx || gamemode == shareware || (!loopepisode &&
+			if (gameinfo.flags & GI_MAPxx || gamemode == shareware || (!sv_loopepisode &&
 				((gamemode == registered && level.cluster == 3) || (gamemode == retail && level.cluster == 4))))
 					next = CalcMapName(1, 1);
-				else if (loopepisode)
+				else if (sv_loopepisode)
 					next = CalcMapName(level.cluster, 1);
 				else
 					next = CalcMapName(level.cluster+1, 1);
@@ -626,7 +626,7 @@ void G_ChangeMap (void)
 	}
 	else
 	{
-		if (shufflemaplist && RandomMaps.empty() == false)
+		if (sv_shufflemaplist && RandomMaps.empty() == false)
 		{
 			// Change the map
 			if (RandomMaps[RandomMapPos]->WadCmds)
@@ -665,8 +665,8 @@ void G_ChangeMap (void)
 	}
 
 	// run script at the end of each map
-	if(strlen(endmapscript.cstring()))
-		AddCommandString(endmapscript.cstring(), true);
+	if(strlen(sv_endmapscript.cstring()))
+		AddCommandString(sv_endmapscript.cstring(), true);
 }
 
 void SV_ClientFullUpdate(player_t &pl);
@@ -694,21 +694,21 @@ void G_DoNewGame (void)
 		MSG_WriteString (&cl->reliablebuf, d_mapname);
 	}
 
-	curmap.ForceSet(d_mapname);
+	sv_curmap.ForceSet(d_mapname);
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
 
 	// run script at the start of each map
-	if(strlen(startmapscript.cstring()))
-		AddCommandString(startmapscript.cstring(), true);
+	if(strlen(sv_startmapscript.cstring()))
+		AddCommandString(sv_startmapscript.cstring(), true);
 
 	for(i = 0; i < players.size(); i++)
 	{
 		if(!players[i].ingame())
 			continue;
 
-		if (gametype == GM_TEAMDM || gametype == GM_CTF)
+		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 			SV_CheckTeam(players[i]);
 		else
 			players[i].userinfo.color = players[i].prefcolor;
@@ -717,10 +717,10 @@ void G_DoNewGame (void)
 	}
 }
 
-EXTERN_CVAR (skill)
-EXTERN_CVAR (monstersrespawn)
-EXTERN_CVAR (fastmonsters)
-EXTERN_CVAR (maxplayers)
+EXTERN_CVAR (sv_skill)
+EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (sv_maxplayers)
 
 void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
@@ -742,14 +742,14 @@ void G_InitNew (const char *mapname)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
-	int old_gametype = gametype;
+	int old_gametype = sv_gametype;
 
 	cvar_t::UnlatchCVars ();
 
-	if(old_gametype != gametype || gametype != GM_COOP) {
+	if(old_gametype != sv_gametype || sv_gametype != GM_COOP) {
 		unnatural_level_progression = true;
 
-		// Nes - Force all players to be spectators when the gametype is not now or previously co-op.
+		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
 		for (i = 0; i < players.size(); i++) {
 			for (size_t j = 0; j < players.size(); j++) {
 				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
@@ -775,12 +775,12 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	if (skill == sk_nightmare || monstersrespawn)
+	if (sv_skill == sk_nightmare || sv_monstersrespawn)
 		respawnmonsters = true;
 	else
 		respawnmonsters = false;
 
-	bool wantFast = fastmonsters || (skill == sk_nightmare);
+	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
 	if (wantFast != isFast)
 	{
 		if (wantFast)
@@ -824,7 +824,7 @@ void G_InitNew (const char *mapname)
 	}
 
 	// if only one player allowed, then this is a single player server
-	if(maxplayers == 1)
+	if(sv_maxplayers == 1)
 		multiplayer = false;
 	else
 		multiplayer = true;
@@ -960,7 +960,7 @@ void G_DoLoadLevel (int position)
 	}
 
 	// [deathz0r] It's a smart idea to reset the team points
-	if (gametype == GM_TEAMDM || gametype == GM_CTF)
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 			TEAMpoints[i] = 0;
@@ -997,7 +997,7 @@ void G_DoLoadLevel (int position)
 	flagdata *tempflag;
 
 	// Nes - CTF Pre flag setup
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		tempflag = &CTFdata[it_blueflag];
 		tempflag->flaglocated = false;
 
@@ -1008,7 +1008,7 @@ void G_DoLoadLevel (int position)
 	P_SetupLevel (level.mapname, position);
 
 	// Nes - CTF Post flag setup
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		tempflag = &CTFdata[it_blueflag];
 		if (!tempflag->flaglocated)
 			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Blue flag pedestal not found! No blue flags in game.\n");
@@ -1071,7 +1071,7 @@ void G_WorldDone (void)
 		else
 			nextcluster = FindClusterInfo (FindLevelInfo (level.secretmap)->cluster);
 
-		if (nextcluster->cluster != level.cluster && gametype == GM_COOP) {
+		if (nextcluster->cluster != level.cluster && sv_gametype == GM_COOP) {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
 			if (nextcluster->entertext) {

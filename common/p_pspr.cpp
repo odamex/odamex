@@ -42,7 +42,7 @@
 #define WEAPONBOTTOM				128*FRACUNIT
 #define WEAPONTOP					32*FRACUNIT
 
-EXTERN_CVAR(infiniteammo)
+EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 
 //
@@ -223,7 +223,7 @@ BOOL P_CheckAmmo (player_t *player)
 
 static void DecreaseAmmo(player_t *player, int amount)
 {
-	if (!infiniteammo)
+	if (!sv_infiniteammo)
 	{
 		ammotype_t ammonum = weaponinfo[player->readyweapon].ammo;
 

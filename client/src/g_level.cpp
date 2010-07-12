@@ -63,8 +63,8 @@ static cluster_info_t *FindDefClusterInfo (int cluster);
 
 extern int timingdemo;
 
-EXTERN_CVAR(fastmonsters)
-EXTERN_CVAR(monstersrespawn)
+EXTERN_CVAR(sv_fastmonsters)
+EXTERN_CVAR(sv_monstersrespawn)
 
 // Start time for timing demos
 int starttime;
@@ -281,8 +281,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 }
 END_COMMAND (wad)
 
-EXTERN_CVAR(allowexit)
-EXTERN_CVAR(nomonsters)
+EXTERN_CVAR(sv_allowexit)
+EXTERN_CVAR(sv_nomonsters)
 
 void G_DoNewGame (void)
 {
@@ -301,9 +301,9 @@ void G_DoNewGame (void)
 
 	// denis - single player warp (like in d_main)
 	serverside = true;
-	allowexit = "1";
-	nomonsters = "0";
-	gametype = GM_COOP;
+	sv_allowexit = "1";
+	sv_nomonsters = "0";
+	sv_gametype = GM_COOP;
 
 	players.clear();
 	players.push_back(player_t());
@@ -340,10 +340,10 @@ void G_InitNew (const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	if (skill > sk_nightmare)
-		skill.Set (sk_nightmare);
-	else if (skill < sk_baby)
-		skill.Set (sk_baby);
+	if (sv_skill > sk_nightmare)
+		sv_skill.Set (sk_nightmare);
+	else if (sv_skill < sk_baby)
+		sv_skill.Set (sk_baby);
 
 	cvar_t::UnlatchCVars ();
 
@@ -365,12 +365,12 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	if (skill == sk_nightmare || monstersrespawn)
+	if (sv_skill == sk_nightmare || sv_monstersrespawn)
 		respawnmonsters = true;
 	else
 		respawnmonsters = false;
 
-	bool wantFast = fastmonsters || (skill == sk_nightmare);
+	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
 	if (wantFast != isFast)
 	{
 		if (wantFast)
@@ -476,7 +476,7 @@ void G_DoCompleted (void)
 	strncpy (wminfo.lname0, level.info->pname, 8);
 	strncpy (wminfo.current, level.mapname, 8);
 
-	if (gametype != GM_COOP &&
+	if (sv_gametype != GM_COOP &&
 		!(level.flags & LEVEL_CHANGEMAPCHEAT)) {
 		strncpy (wminfo.next, level.mapname, 8);
 		strncpy (wminfo.lname1, level.info->pname, 8);
@@ -653,7 +653,7 @@ void G_WorldDone (void)
 		else
 			nextcluster = FindClusterInfo (FindLevelInfo (level.secretmap)->cluster);
 
-		if (nextcluster->cluster != level.cluster && gametype == GM_COOP) {
+		if (nextcluster->cluster != level.cluster && sv_gametype == GM_COOP) {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
 			if (nextcluster->entertext) {

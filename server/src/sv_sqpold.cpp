@@ -41,39 +41,39 @@ std::vector<std::string> wadnames, wadhashes;
 extern std::vector<std::string> patchfiles;
 static buf_t ml_message(MAX_UDP_PACKET);
 
-EXTERN_CVAR (usemasters)
-EXTERN_CVAR (hostname)
-EXTERN_CVAR (maxclients)
+EXTERN_CVAR (sv_usemasters)
+EXTERN_CVAR (sv_hostname)
+EXTERN_CVAR (sv_maxclients)
 
 EXTERN_CVAR (port)
 
 //bond===========================
-EXTERN_CVAR (timelimit)			
-EXTERN_CVAR (fraglimit)			
-EXTERN_CVAR (email)
-EXTERN_CVAR (itemsrespawn)
-EXTERN_CVAR (weaponstay)
-EXTERN_CVAR (friendlyfire)
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (infiniteammo)
-EXTERN_CVAR (nomonsters)
-EXTERN_CVAR (monstersrespawn)
-EXTERN_CVAR (fastmonsters)
-EXTERN_CVAR (allowjump)
+EXTERN_CVAR (sv_timelimit)			
+EXTERN_CVAR (sv_fraglimit)			
+EXTERN_CVAR (sv_email)
+EXTERN_CVAR (sv_itemsrespawn)
+EXTERN_CVAR (sv_weaponstay)
+EXTERN_CVAR (sv_friendlyfire)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_infiniteammo)
+EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (waddownload)
-EXTERN_CVAR (emptyreset)
-EXTERN_CVAR (cleanmaps)
-EXTERN_CVAR (fragexitswitch)
+EXTERN_CVAR (sv_waddownload)
+EXTERN_CVAR (sv_emptyreset)
+EXTERN_CVAR (sv_cleanmaps)
+EXTERN_CVAR (sv_fragexitswitch)
 //bond===========================
 
-EXTERN_CVAR (teamsinplay)
+EXTERN_CVAR (sv_teamsinplay)
 
-EXTERN_CVAR (maxplayers)
-EXTERN_CVAR (password)
-EXTERN_CVAR (website)
+EXTERN_CVAR (sv_maxplayers)
+EXTERN_CVAR (join_password)
+EXTERN_CVAR (sv_website)
 
-EXTERN_CVAR (natport)
+EXTERN_CVAR (sv_natport)
 
 //
 // denis - each launcher reply contains a random token so that
@@ -157,7 +157,7 @@ void SV_SendServerInfo()
 	if(MSG_BytesLeft() == 4)
 		MSG_WriteLong(&ml_message, MSG_ReadLong());
 
-	MSG_WriteString(&ml_message, (char *)hostname.cstring());
+	MSG_WriteString(&ml_message, (char *)sv_hostname.cstring());
 
 	byte playersingame = 0;
 	for (i = 0; i < players.size(); ++i)
@@ -167,7 +167,7 @@ void SV_SendServerInfo()
 	}
 
 	MSG_WriteByte(&ml_message, playersingame);
-	MSG_WriteByte(&ml_message, maxclients);
+	MSG_WriteByte(&ml_message, sv_maxclients);
 
 	MSG_WriteString(&ml_message, level.mapname);
 
@@ -179,10 +179,10 @@ void SV_SendServerInfo()
 	for (i = 1; i < numwads; ++i)
 		MSG_WriteString(&ml_message, wadnames[i].c_str());
 
-	MSG_WriteBool(&ml_message, (gametype == GM_DM || gametype == GM_TEAMDM));
-	MSG_WriteByte(&ml_message, (BYTE)skill);
-	MSG_WriteBool(&ml_message, (gametype == GM_TEAMDM));
-	MSG_WriteBool(&ml_message, (gametype == GM_CTF));
+	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
+	MSG_WriteByte(&ml_message, (BYTE)sv_skill);
+	MSG_WriteBool(&ml_message, (sv_gametype == GM_TEAMDM));
+	MSG_WriteBool(&ml_message, (sv_gametype == GM_CTF));
 
 	for (i = 0; i < players.size(); ++i)
 	{
@@ -192,7 +192,7 @@ void SV_SendServerInfo()
 			MSG_WriteShort(&ml_message, players[i].fragcount);
 			MSG_WriteLong(&ml_message, players[i].ping);
 
-			if (gametype == GM_TEAMDM || gametype == GM_CTF)
+			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 				MSG_WriteByte(&ml_message, players[i].userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);
@@ -202,15 +202,15 @@ void SV_SendServerInfo()
 	for (i = 1; i < numwads; ++i)
 		MSG_WriteString(&ml_message, wadhashes[i].c_str());
 
-	MSG_WriteString(&ml_message, website.cstring());
+	MSG_WriteString(&ml_message, sv_website.cstring());
 
-	if (gametype == GM_TEAMDM || gametype == GM_CTF)
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		MSG_WriteLong(&ml_message, scorelimit);
+		MSG_WriteLong(&ml_message, sv_scorelimit);
 		
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
-			if ((gametype == GM_CTF && i < 2) || (gametype != GM_CTF && i < teamsinplay)) {
+			if ((sv_gametype == GM_CTF && i < 2) || (sv_gametype != GM_CTF && i < sv_teamsinplay)) {
 				MSG_WriteByte(&ml_message, 1);
 				MSG_WriteLong(&ml_message, TEAMpoints[i]);
 			} else {
@@ -222,29 +222,29 @@ void SV_SendServerInfo()
 	MSG_WriteShort(&ml_message, VERSION);
 
 //bond===========================
-	MSG_WriteString(&ml_message, (char *)email.cstring());
+	MSG_WriteString(&ml_message, (char *)sv_email.cstring());
 
-	int timeleft = (int)(timelimit - level.time/(TICRATE*60));
+	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 	if (timeleft<0) timeleft=0;
 
-	MSG_WriteShort(&ml_message,(int)timelimit);
+	MSG_WriteShort(&ml_message,(int)sv_timelimit);
 	MSG_WriteShort(&ml_message,timeleft);
-	MSG_WriteShort(&ml_message,(int)fraglimit);
+	MSG_WriteShort(&ml_message,(int)sv_fraglimit);
 
-	MSG_WriteBool(&ml_message, (itemsrespawn ? true : false));
-	MSG_WriteBool(&ml_message, (weaponstay ? true : false));
-	MSG_WriteBool(&ml_message, (friendlyfire ? true : false));
-	MSG_WriteBool(&ml_message, (allowexit ? true : false));
-	MSG_WriteBool(&ml_message, (infiniteammo ? true : false));
-	MSG_WriteBool(&ml_message, (nomonsters ? true : false));
-	MSG_WriteBool(&ml_message, (monstersrespawn ? true : false));
-	MSG_WriteBool(&ml_message, (fastmonsters ? true : false));
-	MSG_WriteBool(&ml_message, (allowjump ? true : false));
+	MSG_WriteBool(&ml_message, (sv_itemsrespawn ? true : false));
+	MSG_WriteBool(&ml_message, (sv_weaponstay ? true : false));
+	MSG_WriteBool(&ml_message, (sv_friendlyfire ? true : false));
+	MSG_WriteBool(&ml_message, (sv_allowexit ? true : false));
+	MSG_WriteBool(&ml_message, (sv_infiniteammo ? true : false));
+	MSG_WriteBool(&ml_message, (sv_nomonsters ? true : false));
+	MSG_WriteBool(&ml_message, (sv_monstersrespawn ? true : false));
+	MSG_WriteBool(&ml_message, (sv_fastmonsters ? true : false));
+	MSG_WriteBool(&ml_message, (sv_allowjump ? true : false));
 	MSG_WriteBool(&ml_message, (sv_freelook ? true : false));
-	MSG_WriteBool(&ml_message, (waddownload ? true : false));
-	MSG_WriteBool(&ml_message, (emptyreset ? true : false));
-	MSG_WriteBool(&ml_message, (cleanmaps ? true : false));
-	MSG_WriteBool(&ml_message, (fragexitswitch ? true : false));
+	MSG_WriteBool(&ml_message, (sv_waddownload ? true : false));
+	MSG_WriteBool(&ml_message, (sv_emptyreset ? true : false));
+	MSG_WriteBool(&ml_message, (sv_cleanmaps ? true : false));
+	MSG_WriteBool(&ml_message, (sv_fragexitswitch ? true : false));
 
 	for (i = 0; i < players.size(); ++i)
 	{
@@ -262,7 +262,7 @@ void SV_SendServerInfo()
 //bond===========================
 
     MSG_WriteLong(&ml_message, (DWORD)0x01020304);
-    MSG_WriteShort(&ml_message, (WORD)maxplayers);
+    MSG_WriteShort(&ml_message, (WORD)sv_maxplayers);
     
     for (i = 0; i < players.size(); ++i)
     {
@@ -273,7 +273,7 @@ void SV_SendServerInfo()
     }
 
     MSG_WriteLong(&ml_message, (DWORD)0x01020305);
-    MSG_WriteShort(&ml_message, strlen(password.cstring()) ? 1 : 0);
+    MSG_WriteShort(&ml_message, strlen(join_password.cstring()) ? 1 : 0);
     
     // GhostlyDeath -- Send Game Version info
     MSG_WriteLong(&ml_message, GAMEVER);

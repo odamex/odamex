@@ -32,7 +32,7 @@
 #include "huffman.h"
 #include "i_net.h"
 
-EXTERN_CVAR (networkcompression)
+EXTERN_CVAR (sv_networkcompression)
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);
@@ -148,7 +148,7 @@ bool SV_SendPacket(player_t &pl)
 	SZ_Clear(&cl->reliablebuf);
 	
 	// compress the packet, but not the sequence id
-	if(networkcompression && sendd.size() > sizeof(int))
+	if(sv_networkcompression && sendd.size() > sizeof(int))
 		SV_CompressPacket(sendd, sizeof(int), cl);
 
 	NET_SendPacket(sendd, cl->address);

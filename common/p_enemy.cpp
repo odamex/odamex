@@ -38,8 +38,8 @@
 
 #include "d_player.h"
 
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (fastmonsters)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_fastmonsters)
 
 enum dirtype_t
 {
@@ -771,7 +771,7 @@ void A_Chase (AActor *actor)
 	if (actor->flags & MF_JUSTATTACKED)
 	{
 		actor->flags &= ~MF_JUSTATTACKED;
-		if ((skill != sk_nightmare) && !fastmonsters)
+		if ((sv_skill != sk_nightmare) && !sv_fastmonsters)
 			P_NewChaseDir (actor);
 		return;
 	}
@@ -789,8 +789,8 @@ void A_Chase (AActor *actor)
 	// check for missile attack
 	if (actor->info->missilestate)
 	{
-		if (skill < sk_nightmare
-			&& actor->movecount && !fastmonsters)
+		if (sv_skill < sk_nightmare
+			&& actor->movecount && !sv_fastmonsters)
 		{
 			goto nomissile;
 		}
@@ -1794,7 +1794,7 @@ void A_BossDeath (AActor *actor)
 	}
 
 	// [RH] If noexit, then don't end the level.
-	if (gametype != GM_COOP && !allowexit)
+	if (sv_gametype != GM_COOP && !sv_allowexit)
 		return;
 
 	G_ExitLevel (0, 1);
@@ -1918,7 +1918,7 @@ void A_BrainExplode (AActor *mo)
 void A_BrainDie (AActor *mo)
 {
 	// [RH] If noexit, then don't end the level.
-	if (gametype != GM_COOP && !allowexit)
+	if (sv_gametype != GM_COOP && !sv_allowexit)
 		return;
 
 	G_ExitLevel (0, 1);
@@ -1937,7 +1937,7 @@ void A_BrainSpit (AActor *mo)
 		return;
 
 	brain.easy ^= 1;		// killough 3/26/98: use brain struct
-	if (skill <= sk_easy && (!brain.easy))
+	if (sv_skill <= sk_easy && (!brain.easy))
 		return;
 
 	// shoot a cube at current target
