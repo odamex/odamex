@@ -68,6 +68,8 @@ CVAR (sv_weaponstay,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 CVAR (sv_doubleammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // GhostlyDeath <July 3, 2010> -- Bind to host
 CVAR (sv_bindaddress, "", CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+// Give max health, max armor, most weapons, max ammo. No pickups.
+CVAR (sv_arenamode,                "0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 // Compatibility options for vanilla
 // ---------------------------------
