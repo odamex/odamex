@@ -2673,6 +2673,21 @@ void SV_UpdateMissiles(player_t &pl)
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
 			MSG_WriteLong (&cl->netbuf, mo->movecount);
 
+
+            if (mo->target)
+            {
+                MSG_WriteMarker (&cl->netbuf, svc_actor_target);
+                MSG_WriteShort(&cl->netbuf, mo->netid);
+                MSG_WriteShort (&cl->netbuf, mo->target->netid);
+            }
+            
+            if (mo->tracer)
+            {
+                MSG_WriteMarker (&cl->netbuf, svc_actor_tracer);
+                MSG_WriteShort(&cl->netbuf, mo->netid);
+                MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
+            }
+            
 			if ((mobjinfo[mo->type].spawnstate == (statenum_t)(mo->state - states)) ||
                 (mobjinfo[mo->type].seestate == (statenum_t)(mo->state - states)) ||
                 (mobjinfo[mo->type].painstate == (statenum_t)(mo->state - states)) ||
@@ -2736,6 +2751,13 @@ void SV_UpdateMonsters(player_t &pl)
 			MSG_WriteShort (&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->movedir);
 			MSG_WriteLong (&cl->netbuf, mo->movecount);
+
+            if (mo->target)
+            {
+                MSG_WriteMarker (&cl->netbuf, svc_actor_target);
+                MSG_WriteShort(&cl->netbuf, mo->netid);
+                MSG_WriteShort (&cl->netbuf, mo->target->netid);
+            }
 
 			if ((mobjinfo[mo->type].spawnstate == (statenum_t)(mo->state - states)) ||
                 (mobjinfo[mo->type].seestate == (statenum_t)(mo->state - states)) ||
