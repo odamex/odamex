@@ -99,7 +99,7 @@ END_EVENT_TABLE()
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
     wxFileConfig ConfigInfo;   
-    wxInt32 WindowWidth, WindowHeight;
+    wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
     wxString Version;
 
     // Loads the frame from the xml resource file
@@ -123,6 +123,17 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
                     GetClientSize().GetHeight());
     
     SetClientSize(WindowWidth, WindowHeight);
+    
+    // Set Window position
+    ConfigInfo.Read(wxT("MainWindowPosX"), 
+                    &WindowPosX, 
+                    GetPosition().x);
+                    
+    ConfigInfo.Read(wxT("MainWindowPosY"), 
+                    &WindowPosY, 
+                    GetPosition().y);
+    
+    Move(WindowPosX, WindowPosY);
     
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 1;
@@ -208,7 +219,9 @@ void dlgMain::OnClose(wxCloseEvent &event)
 
     ConfigInfo.Write(wxT("MainWindowWidth"), GetClientSize().GetWidth());
     ConfigInfo.Write(wxT("MainWindowHeight"), GetClientSize().GetHeight());
-    
+    ConfigInfo.Write(wxT("MainWindowPosX"), GetPosition().x);
+    ConfigInfo.Write(wxT("MainWindowPosY"), GetPosition().y);
+
     event.Skip();
 }
 
