@@ -4,6 +4,7 @@ SOURCES = src/dlg_config.cpp \
  src/lst_servers.cpp \
  src/lst_srvdetails.cpp \
  src/net_packet.cpp \
+ src/dlg_about.cpp \
  src/dlg_main.cpp \
  src/dlg_servers.cpp \
  src/main.cpp \
