@@ -978,4 +978,201 @@
 			<fields>1</fields>
 		</object>
 	</object>
+	<object class="wxDialog" name="dlgAbout">
+		<style>wxDEFAULT_DIALOG_STYLE</style>
+		<size>413,540</size>
+		<title>About The Odamex Launcher</title>
+		<centered>1</centered>
+		<object class="wxBoxSizer">
+			<orient>wxVERTICAL</orient>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxEXPAND | wxALL</flag>
+				<border>5</border>
+				<object class="wxPanel">
+					<style>wxRAISED_BORDER|wxTAB_TRAVERSAL</style>
+					<object class="wxFlexGridSizer">
+						<rows>1</rows>
+						<cols>1</cols>
+						<vgap>0</vgap>
+						<hgap>0</hgap>
+						<growablecols>0</growablecols>
+						<growablerows>0,1,2,3</growablerows>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxBoxSizer">
+								<orient>wxHORIZONTAL</orient>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticBitmap" name="m_bitmap5">
+										<bitmap>../../media/icon_odalaunch_96.png</bitmap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALIGN_CENTER</flag>
+									<border>5</border>
+									<object class="wxBoxSizer">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="1">
+												<font>
+													<size>14</size>
+													<family>default</family>
+													<style>normal</style>
+													<weight>bold</weight>
+													<underlined>0</underlined>
+												</font>
+												<label>The Odamex Launcher</label>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="Id_StcTxtCopyright">
+												<label>...</label>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="Id_StcTxtVersion">
+												<label>...</label>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>1</option>
+											<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
+											<border>5</border>
+											<object class="wxHyperlinkCtrl" name="Id_HLCtrlWebsite">
+												<label>http://www.odamex.net</label>
+												<url>http://www.odamex.net</url>
+												<style>wxHL_DEFAULT_STYLE</style>
+											</object>
+										</object>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALIGN_CENTER</flag>
+							<border>5</border>
+							<object class="wxBoxSizer">
+								<orient>wxHORIZONTAL</orient>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER|wxBOTTOM|wxLEFT|wxTOP</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<font>
+											<size>10</size>
+											<family>default</family>
+											<style>italic</style>
+											<weight>normal</weight>
+											<underlined>0</underlined>
+										</font>
+										<label>Built with</label>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxBOTTOM|wxLEFT|wxTOP</flag>
+									<border>5</border>
+									<object class="wxHyperlinkCtrl">
+										<label>wxWidgets</label>
+										<url>http://www.wxwidgets.org</url>
+										<style>wxHL_DEFAULT_STYLE</style>
+										<font>
+											<size>10</size>
+											<family>default</family>
+											<style>italic</style>
+											<weight>normal</weight>
+											<underlined>0</underlined>
+										</font>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER|wxBOTTOM|wxRIGHT|wxTOP</flag>
+									<border>5</border>
+									<object class="wxStaticText" name="Id_StcTxtWxVer">
+										<font>
+											<size>10</size>
+											<family>default</family>
+											<style>italic</style>
+											<weight>normal</weight>
+											<underlined>0</underlined>
+										</font>
+										<label>...</label>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>Developed by</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="Id_TxtCtrlDevelopers">
+										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
+										<value>Russell Rice\nMichael Wood\nJohn D Corrado</value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>License</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="Id_TxtCtrlLicense">
+										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
+										<value>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.</value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALIGN_CENTER|wxALL</flag>
+							<border>5</border>
+							<object class="wxStdDialogButtonSizer">
+								<object class="button">
+									<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="wxID_OK">
+										<label>&amp;OK</label>
+									</object>
+								</object>
+							</object>
+						</object>
+					</object>
+				</object>
+			</object>
+		</object>
+	</object>
 </resource>
