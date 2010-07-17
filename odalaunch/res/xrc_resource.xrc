@@ -411,7 +411,7 @@
 												<border>5</border>
 												<object class="wxStaticBitmap" name="Id_StcBmpPQGood">
 													<tooltip>Green is good</tooltip>
-													<bitmap />
+													<bitmap>bullet_green-16x15.png</bitmap>
 												</object>
 											</object>
 											<object class="sizeritem">
@@ -440,7 +440,7 @@
 												<border>5</border>
 												<object class="wxStaticBitmap" name="Id_StcBmpPQPlayable">
 													<tooltip>Orange is playable</tooltip>
-													<bitmap />
+													<bitmap>bullet_orange-16x15.png</bitmap>
 												</object>
 											</object>
 											<object class="sizeritem">
@@ -469,7 +469,7 @@
 												<border>5</border>
 												<object class="wxStaticBitmap" name="Id_StcBmpPQLaggy">
 													<tooltip>Red means server is laggy</tooltip>
-													<bitmap />
+													<bitmap>bullet_red-16x15.png</bitmap>
 												</object>
 											</object>
 											<object class="sizeritem">
@@ -498,7 +498,7 @@
 												<border>5</border>
 												<object class="wxStaticBitmap" name="Id_StcBmpPQBad">
 													<tooltip>Gray possibly means unplayable</tooltip>
-													<bitmap />
+													<bitmap>bullet_gray-16x15.png</bitmap>
 												</object>
 											</object>
 											<object class="sizeritem">
@@ -1131,7 +1131,7 @@
 									<border>5</border>
 									<object class="wxTextCtrl" name="Id_TxtCtrlDevelopers">
 										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
-										<value>Russell Rice\nMichael Wood\nJohn D Corrado</value>
+										<value>Russell Rice (mailto:russell@odamex.net)\nMichael Wood (mailto:mwoodj@knology.net)\nJohn D Corrado</value>
 										<maxlength>0</maxlength>
 									</object>
 								</object>

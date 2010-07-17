@@ -24,8 +24,10 @@
 
 #include "net_packet.h"
 
-#include <wx/xrc/xmlres.h>
+#include <wx/event.h>
+#include <wx/utils.h> 
 #include <wx/version.h> 
+#include <wx/xrc/xmlres.h>
 
 #define _ODA_COPYRIGHT_ "Copyright (C) 2006-2010 by The Odamex Team."
 
@@ -34,9 +36,13 @@ static wxInt32 Id_StcTxtVersion = XRCID("Id_StcTxtVersion");
 static wxInt32 Id_TxtCtrlDevelopers = XRCID("Id_TxtCtrlDevelopers");
 static wxInt32 Id_StcTxtWxVer = XRCID("Id_StcTxtWxVer");
 
+BEGIN_EVENT_TABLE(dlgAbout, wxDialog)
+    EVT_TEXT_URL(Id_TxtCtrlDevelopers, dlgAbout::OnTxtCtrlUrlClick)
+END_EVENT_TABLE()
+
 dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
 {
-    wxString Version, wxWidgetsVersion;
+    wxString Text, Version, wxWidgetsVersion;
     
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgAbout"));
     
@@ -50,7 +56,13 @@ dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
         
     m_TxtCtrlDevelopers = wxDynamicCast(FindWindow(Id_TxtCtrlDevelopers), 
         wxTextCtrl);
-       
+    
+    // wxWidgets Bug: wxTE_AUTO_URL appears to get set AFTER SetValue() has been
+    // called, this causes urls to not get recognized (msw XRC handler problem?)
+    Text = m_TxtCtrlDevelopers->GetValue();
+    m_TxtCtrlDevelopers->SetValue(wxT(""));
+    m_TxtCtrlDevelopers->WriteText(Text);
+    
     // Set (protocol) version info on desired text control
     Version = wxString::Format(
         wxT("Version %d.%d.%d - Protocol Version %d"), 
@@ -70,4 +82,26 @@ dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
     
     m_StcTxtWxVer->SetLabel(wxWidgetsVersion);
     
+}
+
+// wxTextCtrl doesn't provide a handler for urls, so we use an almost
+// undocumented event handler provided by wx
+void dlgAbout::OnTxtCtrlUrlClick(wxTextUrlEvent &event)
+{
+    wxString URL;
+    wxTextCtrl *Control;
+    wxMouseEvent MouseEvent;
+       
+    MouseEvent = event.GetMouseEvent();
+    
+    if (MouseEvent.LeftDown())
+    {
+        Control = wxDynamicCast(event.GetEventObject(), wxTextCtrl);
+        
+        URL = Control->GetRange(event.GetURLStart(), event.GetURLEnd());
+    
+        wxLaunchDefaultBrowser(URL);
+    
+        event.Skip();
+    }
 }

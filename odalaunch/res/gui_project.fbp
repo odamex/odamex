@@ -21,7 +21,7 @@
         <property name="skip_python_events">1</property>
         <property name="use_enum">0</property>
         <property name="use_microsoft_bom">0</property>
-        <object class="Frame" expanded="1">
+        <object class="Frame" expanded="0">
             <property name="bg"></property>
             <property name="center">wxBOTH</property>
             <property name="context_help"></property>
@@ -430,7 +430,7 @@
                     </object>
                 </object>
             </object>
-            <object class="wxToolBar" expanded="1">
+            <object class="wxToolBar" expanded="0">
                 <property name="bg"></property>
                 <property name="bitmapsize">38,38</property>
                 <property name="context_help"></property>
@@ -1969,7 +1969,7 @@
                                                     <property name="proportion">1</property>
                                                     <object class="wxStaticBitmap" expanded="0">
                                                         <property name="bg"></property>
-                                                        <property name="bitmap"></property>
+                                                        <property name="bitmap">bullet_green-16x15.png; Load From File</property>
                                                         <property name="context_help"></property>
                                                         <property name="context_menu">1</property>
                                                         <property name="enabled">1</property>
@@ -2094,7 +2094,7 @@
                                                     <property name="proportion">1</property>
                                                     <object class="wxStaticBitmap" expanded="0">
                                                         <property name="bg"></property>
-                                                        <property name="bitmap"></property>
+                                                        <property name="bitmap">bullet_orange-16x15.png; Load From File</property>
                                                         <property name="context_help"></property>
                                                         <property name="context_menu">1</property>
                                                         <property name="enabled">1</property>
@@ -2219,7 +2219,7 @@
                                                     <property name="proportion">1</property>
                                                     <object class="wxStaticBitmap" expanded="0">
                                                         <property name="bg"></property>
-                                                        <property name="bitmap"></property>
+                                                        <property name="bitmap">bullet_red-16x15.png; Load From File</property>
                                                         <property name="context_help"></property>
                                                         <property name="context_menu">1</property>
                                                         <property name="enabled">1</property>
@@ -2344,7 +2344,7 @@
                                                     <property name="proportion">0</property>
                                                     <object class="wxStaticBitmap" expanded="0">
                                                         <property name="bg"></property>
-                                                        <property name="bitmap"></property>
+                                                        <property name="bitmap">bullet_gray-16x15.png; Load From File</property>
                                                         <property name="context_help"></property>
                                                         <property name="context_menu">1</property>
                                                         <property name="enabled">1</property>
@@ -5106,7 +5106,7 @@
                                             <property name="validator_style">wxFILTER_NONE</property>
                                             <property name="validator_type">wxDefaultValidator</property>
                                             <property name="validator_variable"></property>
-                                            <property name="value">Russell Rice&#x0A;Michael Wood&#x0A;John D Corrado</property>
+                                            <property name="value">Russell Rice (mailto:russell@odamex.net)&#x0A;Michael Wood (mailto:mwoodj@knology.net)&#x0A;John D Corrado</property>
                                             <property name="window_extra_style"></property>
                                             <property name="window_name"></property>
                                             <property name="window_style"></property>

@@ -36,10 +36,16 @@ class dlgAbout : public wxDialog
     
     protected:
         
+        void OnTxtCtrlUrlClick(wxTextUrlEvent &event);
+        
         wxStaticText *m_StcTxtCopyright;
         wxStaticText *m_StcTxtVersion;
         wxStaticText *m_StcTxtWxVer;
-        wxTextCtrl *m_TxtCtrlDevelopers;        
+        wxTextCtrl *m_TxtCtrlDevelopers;
+        
+	private:
+
+		DECLARE_EVENT_TABLE()
 };
 
 #endif // __DLG_ABOUT_H__
