@@ -329,11 +329,13 @@ void  __cdecl main()
 
 	xargv[0] = strdup("D:\\default.xbe"); // mimic argv[0]
 
-	XGetLaunchInfo (&launchDataType, &launchData);
-
-	if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) 
+	if(XGetLaunchInfo (&launchDataType, &launchData) == ERROR_SUCCESS)
 	{
-		xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, " ");
+		if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) 
+			xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, " ");
+		else if(launchDataType == LDT_TITLE && !strcmp(((PLD_DEMO)&launchData)->szLauncherXBE, "odalaunch.xbe"))
+			xargv[xargc] = strtok((char*)((PLD_DEMO)&launchData)->Reserved, " ");
+
 		while(xargv[xargc] != NULL)
 		{
 			xargc++;
