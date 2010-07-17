@@ -14,11 +14,11 @@ proc startServer {} {
  wait
  set serverout [open odasrv.log r]
 
- server "gametype 1"
- server "hostname Unnamed"
- server "maxclients 2"
- server "maxplayers 2"
- server "timelimit 0"
+ server "sv_gametype 1"
+ server "sv_hostname Unnamed"
+ server "sv_maxclients 2"
+ server "sv_maxplayers 2"
+ server "sv_timelimit 0"
  server "map 1"
 }
 

@@ -8,7 +8,7 @@ proc main {} {
  global server client serverout clientout
 
  # set defaults
- server "globalspectatorchat 1"
+ server "sv_globalspectatorchat 1"
  server "map 1"
  client "print_stdout 1"
  client "cl_name Player"
@@ -31,7 +31,7 @@ proc main {} {
  wait 1
 
  # disable global chat
- server "globalspectatorchat 0"
+ server "sv_globalspectatorchat 0"
  clear
  wait 1
  test "say hello" "<Player to SPECTATORS> hello"
@@ -50,7 +50,7 @@ proc main {} {
 
  wait 1
  # test teamplay
- server "gametype 2; map 1"
+ server "sv_gametype 2; map 1"
  clear
  test "join" "Player joined the game on the BLUE team."
  clear
