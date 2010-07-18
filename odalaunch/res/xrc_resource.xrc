@@ -980,7 +980,6 @@
 	</object>
 	<object class="wxDialog" name="dlgAbout">
 		<style>wxDEFAULT_DIALOG_STYLE</style>
-		<size>413,540</size>
 		<title>About The Odamex Launcher</title>
 		<centered>1</centered>
 		<object class="wxBoxSizer">
@@ -1038,7 +1037,7 @@
 											<flag>wxALIGN_CENTER|wxALL</flag>
 											<border>5</border>
 											<object class="wxStaticText" name="Id_StcTxtCopyright">
-												<label>...</label>
+												<label>Copyright (C) 2006-2010 by The Odamex Team.</label>
 											</object>
 										</object>
 										<object class="sizeritem">
@@ -1046,7 +1045,7 @@
 											<flag>wxALIGN_CENTER|wxALL</flag>
 											<border>5</border>
 											<object class="wxStaticText" name="Id_StcTxtVersion">
-												<label>...</label>
+												<label>Version %d.%d.%d - Protocol Version %d</label>
 											</object>
 										</object>
 										<object class="sizeritem">
@@ -1113,7 +1112,7 @@
 											<weight>normal</weight>
 											<underlined>0</underlined>
 										</font>
-										<label>...</label>
+										<label>, 2.11.0-1</label>
 									</object>
 								</object>
 							</object>

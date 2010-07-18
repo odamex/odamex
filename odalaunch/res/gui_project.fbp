@@ -4470,7 +4470,7 @@
             <property name="minimum_size"></property>
             <property name="name">dlgAbout</property>
             <property name="pos"></property>
-            <property name="size">413,540</property>
+            <property name="size">-1,-1</property>
             <property name="style">wxDEFAULT_DIALOG_STYLE</property>
             <property name="subclass"></property>
             <property name="title">About The Odamex Launcher</property>
@@ -4721,7 +4721,7 @@
                                                     <property name="font"></property>
                                                     <property name="hidden">0</property>
                                                     <property name="id">wxID_ANY</property>
-                                                    <property name="label">...</property>
+                                                    <property name="label">Copyright (C) 2006-2010 by The Odamex Team.</property>
                                                     <property name="maximum_size"></property>
                                                     <property name="minimum_size"></property>
                                                     <property name="name">Id_StcTxtCopyright</property>
@@ -4777,7 +4777,7 @@
                                                     <property name="font"></property>
                                                     <property name="hidden">0</property>
                                                     <property name="id">wxID_ANY</property>
-                                                    <property name="label">...</property>
+                                                    <property name="label">Version %d.%d.%d - Protocol Version %d</property>
                                                     <property name="maximum_size"></property>
                                                     <property name="minimum_size"></property>
                                                     <property name="name">Id_StcTxtVersion</property>
@@ -5022,7 +5022,7 @@
                                             <property name="font">,93,90,10,70,0</property>
                                             <property name="hidden">0</property>
                                             <property name="id">wxID_ANY</property>
-                                            <property name="label">...</property>
+                                            <property name="label">, 2.11.0-1</property>
                                             <property name="maximum_size"></property>
                                             <property name="minimum_size"></property>
                                             <property name="name">Id_StcTxtWxVer</property>
