@@ -216,10 +216,10 @@ float			zdoomsens;
 
 // Joystick values are repeated
 // Store a value for each of the analog axis controls -- Hyper_Eye
-int 			joyforward;
-int 			joystrafe;
-int			joyturn;
-int			joylook;
+int				joyforward;
+int				joystrafe;
+int				joyturn;
+int				joylook;
 
 EXTERN_CVAR (joy_forwardaxis)
 EXTERN_CVAR (joy_strafeaxis)

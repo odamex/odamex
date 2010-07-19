@@ -48,14 +48,20 @@ typedef struct _STRING
 	PSTR	Buffer;
 } UNICODE_STRING, *PUNICODE_STRING, ANSI_STRING, *PANSI_STRING;
 
-std::list<void (*)(void)>ExitFuncList;
-
+// These are undocumented Xbox functions that are not in the XDK includes.
+// They can be found by looking through the symbols found in the Xbox libs (xapilib.lib mostly).
 extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicLinkName,IN PUNICODE_STRING DeviceName);
 extern "C" XBOXAPI LONG WINAPI IoDeleteSymbolicLink(IN PUNICODE_STRING SymbolicLinkName);
+extern "C" INT WINAPI XWriteTitleInfoAndRebootA(LPVOID,LPVOID,DWORD,DWORD,LPVOID);
 
 // External function declarations
-extern int i_main(int argc, char *argv[]); // i_main.cpp
-extern size_t I_BytesToMegabytes (size_t Bytes); // i_system.cpp
+extern int    i_main(int argc, char *argv[]);		// i_main.cpp
+extern size_t I_BytesToMegabytes (size_t Bytes);	// i_system.cpp
+
+//Globals
+std::list<void (*)(void)>	 ExitFuncList;
+DWORD                        LauncherID;
+char						*LauncherXBE = NULL;
 
 // getenv - Environment variables don't exist on Xbox. Return NULL.
 
@@ -103,6 +109,18 @@ struct hostent *gethostbyname(const char *name)
 	if(!name)
 		return NULL;
 
+	if(he)
+	{
+		if(he->h_addr_list)
+		{
+			if(he->h_addr_list[0])
+				free(he->h_addr_list[0]);
+			free(he->h_addr_list);
+		}
+		free(he);
+		he = NULL;
+	}
+
 	hEvent = WSACreateEvent();
 	err = XNetDnsLookup(name, hEvent, &pDns);
 
@@ -110,17 +128,6 @@ struct hostent *gethostbyname(const char *name)
 
 	if(pDns && pDns->iStatus == 0)
 	{
-		if(he)
-		{
-			if(he->h_addr_list)
-			{
-				if(he->h_addr_list[0])
-					free(he->h_addr_list[0]);
-				free(he->h_addr_list);
-			}
-			free(he);
-		}
-
 		he = (struct hostent *)malloc(sizeof(struct hostent));
 		if(!he)
 		{
@@ -132,17 +139,12 @@ struct hostent *gethostbyname(const char *name)
 		he->h_addr_list[0] = (char *)malloc(sizeof(struct in_addr));
 
 		memcpy(he->h_addr_list[0], pDns->aina, sizeof(struct in_addr));
-
-		XNetDnsRelease(pDns);
-		WSACloseEvent(hEvent);
-
-		return he;
 	}
 
 	XNetDnsRelease(pDns);
 	WSACloseEvent(hEvent);
 
-	return NULL;
+	return he;
 }
 
 // Custom implementation of gethostname()
@@ -295,6 +297,46 @@ int xbox_SetScreenStretch(float xs, float ys)
 	return 0;
 }
 
+void xbox_RecordLauncherXBE(char *szLauncherXBE, DWORD dwID)
+{
+	if(szLauncherXBE  && !LauncherXBE)
+	{
+		LauncherXBE = strdup(szLauncherXBE);
+		LauncherID = dwID;
+	}
+}
+
+// xbox_reboot - Exit Odamex and perform a warm reboot (no startup logo) to a launcher or dashboard
+
+void xbox_reboot()
+{
+	LD_LAUNCH_DASHBOARD launchData = { XLD_LAUNCH_DASHBOARD_MAIN_MENU };
+
+	// If Odamex was started with a launcher we want to return to it.
+	if(LauncherXBE)
+	{
+		long   pathLen;
+		char  *mntDev;
+		char  *p;
+
+		// Determine the necessary D: mapping for the launcher XBE
+		p = strrchr(LauncherXBE, '\\');
+		pathLen = (long)p - (long)LauncherXBE;
+
+		mntDev = (char *)malloc(pathLen + 1);
+		memcpy(mntDev, LauncherXBE, pathLen);
+		mntDev[pathLen] = '\0'; // This is necessary
+
+		p++; // Now conveniently Points to the start of our XBE name with path stripped off.
+
+		// Return to the launcher XBE
+		XWriteTitleInfoAndRebootA(p, mntDev, LDT_TITLE, LauncherID, &launchData);
+	}
+
+	// Return to the dashboard
+	XLaunchNewImage( NULL, (LAUNCH_DATA*)&launchData );
+}
+
 // xbox_atexit - Custom atexit function for Xbox
 
 void xbox_atexit(void (*function)(void))
@@ -316,8 +358,7 @@ void xbox_exit(int status)
 
 	xbox_UnMountPartitions();
 
-	// Passing NULL to this function returns to the dashboard.
-	XLaunchNewImage(NULL, NULL);
+	xbox_reboot();
 }
 
 void  __cdecl main()
@@ -333,8 +374,11 @@ void  __cdecl main()
 	{
 		if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) 
 			xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, " ");
-		else if(launchDataType == LDT_TITLE && !strcmp(((PLD_DEMO)&launchData)->szLauncherXBE, "odalaunch.xbe"))
+		else if(launchDataType == LDT_TITLE && ((PLD_DEMO)&launchData)->dwID == 0x4F444C43)
+		{
+			xbox_RecordLauncherXBE(((PLD_DEMO)&launchData)->szLauncherXBE, ((PLD_DEMO)&launchData)->dwID);
 			xargv[xargc] = strtok((char*)((PLD_DEMO)&launchData)->Reserved, " ");
+		}
 
 		while(xargv[xargc] != NULL)
 		{
