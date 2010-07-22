@@ -66,8 +66,6 @@ CVAR (sv_speedhackfix,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR (sv_weaponstay,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Give double ammo regardless of difficulty
 CVAR (sv_doubleammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// Give max health, max armor, most weapons, max ammo. No pickups.
-CVAR (sv_arenamode,                "0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 // Compatibility options for vanilla
 // ---------------------------------

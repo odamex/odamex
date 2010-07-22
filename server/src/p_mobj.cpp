@@ -47,7 +47,6 @@ EXTERN_CVAR	(sv_weaponstay)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_itemrespawntime)
-EXTERN_CVAR (sv_arenamode)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 
@@ -1251,52 +1250,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		// send new objects
 		SV_SpawnMobj(mobj);
 	}
-
-	if (sv_arenamode) {
-                size_t i;
-
-                p->health = deh.MaxSoulsphere;
-                p->mo->health = p->health;
-                p->armorpoints = deh.MaxArmor;
-                p->armortype = deh.BlueAC;
-                p->readyweapon = p->pendingweapon = wp_supershotgun;
-                p->backpack = true;
-                p->powers[pw_strength] = true;
-
-                for (i = 0; i < NUMWEAPONS; i++)
-                        p->weaponowned[i] = true;
-
-                p->weaponowned[wp_bfg] = false;
-                p->weaponowned[wp_chainsaw] = false;
-
-                for (i = 0; i < NUMAMMO; i++) {
-                        p->maxammo[i] *= 2;
-                        p->ammo[i] = p->maxammo[i];
-                }
-
-                // inform client
-                {
-                        size_t j;
-                        client_t *cl = &p->client;
-
-                        MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
-
-                        for(j = 0; j < NUMWEAPONS; j++)
-                                MSG_WriteByte (&cl->reliablebuf, p->weaponowned[j]);
-
-                        for(j = 0; j < NUMAMMO; j++)
-                        {
-                                MSG_WriteShort (&cl->reliablebuf, p->maxammo[j]);
-                                MSG_WriteShort (&cl->reliablebuf, p->ammo[j]);
-                        }
-
-                        MSG_WriteByte (&cl->reliablebuf, p->health);
-                        MSG_WriteByte (&cl->reliablebuf, p->armorpoints);
-                        MSG_WriteByte (&cl->reliablebuf, p->armortype);
-                        MSG_WriteByte (&cl->reliablebuf, p->readyweapon);
-                        MSG_WriteByte (&cl->reliablebuf, p->backpack);
-		}
-	}
 }
 
 EXTERN_CVAR(sv_maxplayers)
@@ -1539,8 +1492,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (sv_nomonsters)
 		if (i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL) )
 			return;
-	if (sv_arenamode && (mobjinfo[i].flags & MF_SPECIAL) && (mthing->type < MT_BSOK || mthing->type > MT_RDWN))
-		return;
 
 	// spawn it
 	x = mthing->x << FRACBITS;
