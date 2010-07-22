@@ -64,7 +64,7 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 			method |= adaptive_select_mask;
 	}
 
-	printf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
+	DPrintf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
 
 	if(MSG_CompressMinilzo(send, reserved, need_gap))
 		method |= minilzo_mask;
@@ -77,7 +77,7 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 		send.ptr()[sizeof(int)] = svc_compressed;
 		send.ptr()[sizeof(int) + 1] = method;
 	}
-	printf("SV_CompressPacket %x %d\n", (int)method, (int)send.size());
+	DPrintf("SV_CompressPacket %x %d\n", (int)method, (int)send.size());
 
 }
 
