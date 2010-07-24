@@ -87,7 +87,7 @@ static fixed_t	topstep;
 static fixed_t	bottomfrac;
 static fixed_t	bottomstep;
 
-static short	*maskedtexturecol;
+static int  	*maskedtexturecol;
 
 void (*R_RenderSegLoop)(void);
 
@@ -97,7 +97,7 @@ void (*R_RenderSegLoop)(void);
 //
 static void BlastMaskedColumn (void (*blastfunc)(column_t *column), int texnum)
 {
-	if (maskedtexturecol[dc_x] != MAXSHORT)
+	if (maskedtexturecol[dc_x] != MAXINT)
 	{
 		// calculate lighting
 		if (!fixedcolormap)
@@ -141,7 +141,7 @@ static void BlastMaskedColumn (void (*blastfunc)(column_t *column), int texnum)
 
 		// draw the texture
 		blastfunc ((column_t *)((byte *)R_GetColumn(texnum, maskedtexturecol[dc_x]) -3));
-		maskedtexturecol[dc_x] = MAXSHORT;
+		maskedtexturecol[dc_x] = MAXINT;
 	}
 	spryscale += rw_scalestep;
 	rw_light += rw_lightstep;
@@ -612,7 +612,7 @@ void R_RenderSegLoop2 (void)
 // A wall segment will be drawn
 //	between start and stop pixels (inclusive).
 //
-extern short *openings;
+extern int *openings;
 extern size_t maxopenings;
 
 void
@@ -670,13 +670,13 @@ R_StoreWallRange
 		if (need > maxopenings)
 		{
 			drawseg_t *ds;
-			short *oldopenings = openings;
-			short *oldlast = lastopening;
+			int *oldopenings = openings;
+			int *oldlast = lastopening;
 
 			do
 				maxopenings = maxopenings ? maxopenings*2 : 16384;
 			while (need > maxopenings);
-			openings = (short *)Realloc (openings, maxopenings * sizeof(*openings));
+			openings = (int *)Realloc (openings, maxopenings * sizeof(*openings));
 			lastopening = openings + pos;
 			DPrintf ("MaxOpenings increased to %u\n", maxopenings);
 

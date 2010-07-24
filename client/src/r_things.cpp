@@ -76,8 +76,8 @@ int*			spritelights;
 
 // constant arrays
 //	used for psprite clipping and initializing clipping
-short			*negonearray;
-short			*screenheightarray;
+int			*negonearray;
+int			*screenheightarray;
 
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
@@ -628,8 +628,8 @@ vissprite_t *R_NewVisSprite (void)
 // Masked means: partly transparent, i.e. stored
 //	in posts/runs of opaque pixels.
 //
-short*			mfloorclip;
-short*			mceilingclip;
+int*			mfloorclip;
+int*			mceilingclip;
 
 fixed_t 		spryscale;
 fixed_t 		sprtopscreen;
@@ -1345,7 +1345,7 @@ void R_SortVisSprites (void)
 
 // [RH] Allocated in R_MultiresInit() to
 // SCREENWIDTH entries each.
-short *r_dsclipbot, *r_dscliptop;
+int *r_dsclipbot, *r_dscliptop;
 
 // [RH] The original code used -2 to indicate that a sprite was not clipped.
 //		With ZDoom's freelook, it's possible that the rendering process
@@ -1481,7 +1481,7 @@ void R_DrawSprite (vissprite_t *spr)
 	for (x = spr->x1 ; x<=spr->x2 ; x++)
 	{
 		if (r_dsclipbot[x] == NOT_CLIPPED)
-			r_dsclipbot[x] = (short)viewheight;
+			r_dsclipbot[x] = (int)viewheight;
 
 		if (r_dscliptop[x] == NOT_CLIPPED)
 			r_dscliptop[x] = -1;

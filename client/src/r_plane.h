@@ -31,7 +31,7 @@
 #define PL_SKYFLAT (0x80000000)
 
 // Visplane related.
-extern	short*			lastopening;
+extern	int*			lastopening;
 
 
 typedef void (*planefunction_t) (int top, int bottom);
@@ -39,8 +39,8 @@ typedef void (*planefunction_t) (int top, int bottom);
 extern planefunction_t	floorfunc;
 extern planefunction_t	ceilingfunc_t;
 
-extern short			*floorclip;
-extern short			*ceilingclip;
+extern int  			*floorclip;
+extern int  			*ceilingclip;
 
 extern fixed_t			*yslope;
 extern fixed_t			*distscale;

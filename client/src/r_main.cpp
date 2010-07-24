@@ -742,7 +742,7 @@ void R_ExecuteSetViewSize (void)
 
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
-		screenheightarray[i] = (short)viewheight;
+		screenheightarray[i] = (int)viewheight;
 
 	// planes
 	for (i = 0; i < viewwidth; i++)
@@ -1139,7 +1139,7 @@ void R_MultiresInit (void)
 	int i;
 
 	// in r_things.c
-	extern short *r_dscliptop, *r_dsclipbot;
+	extern int *r_dscliptop, *r_dsclipbot;
 	// in r_draw.c
 	extern byte **ylookup;
 	extern int *columnofs;
@@ -1155,27 +1155,27 @@ void R_MultiresInit (void)
 
 	ylookup = (byte **)M_Malloc (screen->height * sizeof(byte *));
 	columnofs = (int *)M_Malloc (screen->width * sizeof(int));
-	r_dscliptop = (short *)M_Malloc (screen->width * sizeof(short));
-	r_dsclipbot = (short *)M_Malloc (screen->width * sizeof(short));
+	r_dscliptop = (int *)M_Malloc (screen->width * sizeof(int));
+	r_dsclipbot = (int *)M_Malloc (screen->width * sizeof(int));
 
 	// Moved from R_InitSprites()
-	negonearray = (short *)M_Malloc (sizeof(short) * screen->width);
+	negonearray = (int *)M_Malloc (sizeof(int) * screen->width);
 
 	// These get set in R_ExecuteSetViewSize()
-	screenheightarray = (short *)M_Malloc (sizeof(short) * screen->width);
+	screenheightarray = (int *)M_Malloc (sizeof(int) * screen->width);
 	xtoviewangle = (angle_t *)M_Malloc (sizeof(angle_t) * (screen->width + 1));
 
 	// GhostlyDeath -- Clean up the buffers
 	memset(ylookup, 0, screen->height * sizeof(byte*));
 	memset(columnofs, 0, screen->width * sizeof(int));
-	memset(r_dscliptop, 0, screen->width * sizeof(short));
-	memset(r_dsclipbot, 0, screen->width * sizeof(short));
+	memset(r_dscliptop, 0, screen->width * sizeof(int));
+	memset(r_dsclipbot, 0, screen->width * sizeof(int));
 
 	for(i = 0; i < screen->width; i++)
 	{
 		negonearray[i] = -1;
 	}
-    memset(screenheightarray, 0, screen->width * sizeof(short));
+    memset(screenheightarray, 0, screen->width * sizeof(int));
     memset(xtoviewangle, 0, screen->width * sizeof(angle_t) + 1);
 
 	R_InitFuzzTable ();
