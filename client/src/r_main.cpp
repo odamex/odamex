@@ -1107,11 +1107,13 @@ void R_RenderPlayerView (player_t *player)
 		hcolfunc_post4 = rt_map4cols;
 	}
 
+    // [Russell] - From zdoom 1.22 source, added camera pointer check
 	// Never draw the player unless in chasecam mode
-	if(camera)
-	if (camera->player && !(player->cheats & CF_CHASECAM))
+	if (camera && camera->player && !(player->cheats & CF_CHASECAM))
 	{
+		camera->flags2 |= MF2_DONTDRAW;
 		R_RenderBSPNode (numnodes - 1);
+		camera->flags2 &= ~MF2_DONTDRAW;
 	}
 	else
 		R_RenderBSPNode (numnodes-1);	// The head node is the last node output.
