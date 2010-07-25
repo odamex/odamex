@@ -234,7 +234,7 @@ AActor &AActor::operator= (const AActor &other)
     info = other.info;
     tics = other.tics;
     state = other.state;
-    flags= other.flags;
+    flags = other.flags;
     flags2 = other.flags2;
     health = other.health;
     movedir = other.movedir;
@@ -271,7 +271,7 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 {
     state_t*	st;
 
-    // denis - prevent harmful state cycles
+	// denis - prevent harmful state cycles
 	static unsigned int callstack;
 	if(callstack++ > 16)
 	{
@@ -352,7 +352,7 @@ void P_ExplodeMissile (AActor* mo)
 		if (mo->info->deathsound)
 			S_Sound (mo, CHAN_VOICE, mo->info->deathsound, 1, ATTN_NORM);
 
-		mo->effects = 0;				// [RH]
+		mo->effects = 0;		// [RH]
 	}
 }
 
@@ -403,7 +403,7 @@ void P_XYMovement (AActor *mo)
 
 	do
 	{
-		if ( xmove > maxmove || ymove > maxmove )
+		if (xmove > maxmove || ymove > maxmove )
 		{
 			ptryx = mo->x + xmove/2;
 			ptryy = mo->y + ymove/2;
@@ -456,7 +456,9 @@ void P_XYMovement (AActor *mo)
 	}
 
 	if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
+	{
 		return; 	// no friction for missiles ever
+	}
 
 	if (mo->z > mo->floorz && !mo->waterlevel && !(mo->flags2 & MF2_FLY) )
 		return;		// no friction when airborne
@@ -561,7 +563,7 @@ void P_ZMovement (AActor *mo)
 		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
 		mo->momz = FixedMul (mo->momz, FRICTION_FLY);
 	}
-	
+
     // clip movement
    if (mo->z <= mo->floorz)
    {
@@ -598,7 +600,7 @@ void P_ZMovement (AActor *mo)
       if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
       {
 	    // the skull slammed into something
-         mo->momz = -mo->momz;
+        mo->momz = -mo->momz;
       }
 
 
@@ -665,6 +667,7 @@ void P_ZMovement (AActor *mo)
    }
 }
 
+
 //
 // P_NightmareRespawn
 //
@@ -703,14 +706,15 @@ void P_NightmareRespawn (AActor *mobj)
     else
 		z = ONFLOORZ;
 
-    // inherit attributes from deceased one
+	// spawn it
+	// inherit attributes from deceased one
 	if(serverside)
 	{
 		AActor *mo = new AActor (x,y,z, mobj->type);
 		mo->spawnpoint = mobj->spawnpoint;
 		mo->angle = ANG45 * (mthing->angle/45);
 
-	    if (mthing->flags & MTF_AMBUSH)
+		if (mthing->flags & MTF_AMBUSH)
 			mo->flags |= MF_AMBUSH;
 
 		SV_SpawnMobj(mo);
@@ -718,8 +722,8 @@ void P_NightmareRespawn (AActor *mobj)
 		mo->reactiontime = 18;
 	}
 
-    // remove the old monster,
-	mobj->Destroy();
+	// remove the old monster,
+	mobj->Destroy ();
 }
 
 //
@@ -904,7 +908,7 @@ void AActor::RunThink ()
 		P_XYMovement (this);
 
 		if (ObjectFlags & OF_MassDestruction)
-			return; 		// actor was destroyed
+			return;		// actor was destroyed
 	}
 
 	if ((z != floorz) || momz)
@@ -912,7 +916,7 @@ void AActor::RunThink ()
 		P_ZMovement (this);
 
 		if (ObjectFlags & OF_MassDestruction)
-			return; 		// actor was destroyed
+			return;		// actor was destroyed
 	}
 
 	if(subsector)
@@ -953,7 +957,7 @@ void AActor::RunThink ()
 		// you can cycle through multiple states in a tic
 		if (!tics)
 			if (!P_SetMobjState (this, state->nextstate) )
-				return; 				// freed itself
+				return; 		// freed itself
 	}
 	else
 	{
@@ -975,6 +979,12 @@ void AActor::RunThink ()
 		P_NightmareRespawn (this);
 	}
 }
+
+//
+//
+// P_SpawnMobj
+//
+//
 
 AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
@@ -1021,7 +1031,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	tics = st->tics;
 	sprite = st->sprite;
 	frame = st->frame;
-	touching_sectorlist = NULL; 	// NULL head of sector list // phares 3/13/98
+	touching_sectorlist = NULL;	// NULL head of sector list // phares 3/13/98
 
 	// set subsector and/or block links
 	LinkToWorld ();
@@ -1041,7 +1051,6 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 		z = iz;
 	}
 }
-
 
 //
 // P_RemoveMobj
@@ -1083,7 +1092,7 @@ void AActor::Destroy ()
 	// unlink from sector and block lists
 	UnlinkFromWorld ();
 
-	// Delete all nodes on the current sector_list					phares 3/16/98
+	// Delete all nodes on the current sector_list			phares 3/16/98
 	if (sector_list)
 	{
 		P_DelSeclist (sector_list);
@@ -1104,15 +1113,15 @@ EXTERN_CVAR (sv_itemsrespawn)
 //
 void P_RespawnSpecials (void)
 {
-	fixed_t 						x;
-	fixed_t 						y;
-	fixed_t 						z;
+	fixed_t 			x;
+	fixed_t 			y;
+	fixed_t 			z;
 
 	subsector_t*			ss;
 	AActor* 						mo;
-	mapthing2_t*			mthing;
+	mapthing2_t* 		mthing;
 
-	int 							i;
+	int 				i;
 
 	if(!serverside)
 		return;
@@ -1180,7 +1189,7 @@ void P_RespawnSpecials (void)
 // P_SpawnPlayer
 // Called when a player is spawned on the level.
 // Most of the player structure stays unchanged
-//		between levels.
+//	between levels.
 //
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 {
@@ -1194,6 +1203,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		G_PlayerReborn (*p);
 
 	AActor *mobj = new AActor (mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
+
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
 	//		  mobj->translation = translationtables + 256*playernum;
@@ -1227,7 +1237,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		p->mo->flags |= MF_SPECTATOR;
 		p->mo->flags2 |= MF2_FLY;
 	}
-	
+
 	// [RH] Allow chasecam for demo watching
 	//if ((demoplayback || demonew) && chasedemo)
 	//	p->cheats = CF_CHASECAM;
@@ -1427,7 +1437,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// [RH] Determine if it is an old ambient thing, and if so,
-	//				map it to MT_AMBIENT with the proper parameter.
+	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing->type >= 14001 && mthing->type <= 14064)
 	{
 		mthing->args[0] = mthing->type - 14000;
@@ -1457,11 +1467,11 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		i = MT_UNKNOWNTHING;
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
-	//				it to the unknown thing.
+	//		it to the unknown thing.
 	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
 	{
 		Printf (PRINT_HIGH, "Type %i at (%i, %i) has no frames\n",
-			mthing->type, mthing->x, mthing->y);
+				mthing->type, mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
 	}
 
@@ -1474,18 +1484,18 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		switch (i)
 		{
-		case MT_CHAINGUN:
-		case MT_SHOTGUN:
-		case MT_SUPERSHOTGUN:
-		case MT_MISC25: 		// BFG
-		case MT_MISC26: 		// chainsaw
-		case MT_MISC27: 		// rocket launcher
-		case MT_MISC28: 		// plasma gun
-			if ((mthing->flags & (MTF_DEATHMATCH|MTF_SINGLE)) == MTF_DEATHMATCH)
-				return;
-			break;
-		default:
-			break;
+			case MT_CHAINGUN:
+			case MT_SHOTGUN:
+			case MT_SUPERSHOTGUN:
+			case MT_MISC25: 		// BFG
+			case MT_MISC26: 		// chainsaw
+			case MT_MISC27: 		// rocket launcher
+			case MT_MISC28: 		// plasma gun
+				if ((mthing->flags & (MTF_DEATHMATCH|MTF_SINGLE)) == MTF_DEATHMATCH)
+					return;
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -1625,7 +1635,7 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
 //
 // P_CheckMissileSpawn
 // Moves the missile forward a bit
-//		and possibly explodes it right there.
+//	and possibly explodes it right there.
 //
 BOOL P_CheckMissileSpawn (AActor* th)
 {
@@ -1686,30 +1696,30 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
 	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
 
-	if (th->info->seesound)
+    if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
-	th->target = source->ptr();			// where it came from
-	an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
+    th->target = source->ptr();	// where it came from
+    an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
-	// fuzzy player
-	if (dest_flags & MF_SHADOW)
+    // fuzzy player
+    if (dest_flags & MF_SHADOW)
 		an += (P_Random()-P_Random())<<20;
 
-	th->angle = an;
-	an >>= ANGLETOFINESHIFT;
-	th->momx = FixedMul (th->info->speed, finecosine[an]);
-	th->momy = FixedMul (th->info->speed, finesine[an]);
+    th->angle = an;
+    an >>= ANGLETOFINESHIFT;
+    th->momx = FixedMul (th->info->speed, finecosine[an]);
+    th->momy = FixedMul (th->info->speed, finesine[an]);
 
-	dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
-	dist = dist / th->info->speed;
+    dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
+    dist = dist / th->info->speed;
 
-	if (dist < 1)
+    if (dist < 1)
 		dist = 1;
 
-	th->momz = (dest_z - source->z) / dist;
+    th->momz = (dest_z - source->z) / dist;
 
-	P_CheckMissileSpawn (th);
+    P_CheckMissileSpawn (th);
 
 	SV_SpawnMobj(th);
 

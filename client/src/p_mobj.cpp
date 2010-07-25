@@ -16,9 +16,10 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Moving object handling. Spawn functions.
+//	Moving object handling. Spawn functions.
 //
 //-----------------------------------------------------------------------------
+
 
 #include "m_alloc.h"
 #include "i_system.h"
@@ -482,7 +483,7 @@ void P_XYMovement (AActor *mo)
 	if (mo->momx > -STOPSPEED && mo->momx < STOPSPEED
 		&& mo->momy > -STOPSPEED && mo->momy < STOPSPEED
 		&& (!player || (player->mo != mo)
-			|| !(player->cmd.ucmd.forwardmove | player->cmd.ucmd.sidemove)))
+		|| !(player->cmd.ucmd.forwardmove | player->cmd.ucmd.sidemove)))
 	{
 		// if in a walking frame, stop moving
 		// killough 10/98:
@@ -530,7 +531,9 @@ void P_ZMovement (AActor *mo)
    if (mo->player && mo->z < mo->floorz)
    {
       mo->player->viewheight -= mo->floorz-mo->z;
-      mo->player->deltaviewheight = (VIEWHEIGHT - mo->player->viewheight)>>3;
+
+      mo->player->deltaviewheight
+            = (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
 
     // adjust height
@@ -700,9 +703,10 @@ void P_NightmareRespawn (AActor *mobj)
 	// spawn the new monster
 	mthing = &mobj->spawnpoint;
 
-	if (mobj->info->flags & MF_SPAWNCEILING)
+    // spawn it
+    if (mobj->info->flags & MF_SPAWNCEILING)
 		z = ONCEILINGZ;
-	else
+    else
 		z = ONFLOORZ;
 
 	// spawn it
@@ -722,7 +726,6 @@ void P_NightmareRespawn (AActor *mobj)
 	// remove the old monster,
 	mobj->Destroy ();
 }
-
 
 //
 // [RH] Some new functions to work with Thing IDs. ------->
@@ -991,6 +994,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 {
 	state_t *st;
 
+	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= NUMMOBJTYPES)
 	{
 		I_Error ("Tried to spawn actor type %d\n", itype);
@@ -1220,8 +1224,10 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	// give all cards in death match mode
 	if (sv_gametype != GM_COOP)
+	{
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
+	}
 
 	if (consoleplayer().camera == p->mo)
 	{
@@ -1354,8 +1360,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
 		Printf (PRINT_HIGH, "Unknown type %i at (%i, %i)\n",
-				 mthing->type,
-				 mthing->x, mthing->y);
+			mthing->type,
+			mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
@@ -1460,12 +1466,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 //		P_DeactivateMobj (mobj);
 }
 
-
-
 //
 // GAME SPAWN FUNCTIONS
 //
-
 
 //
 // P_SpawnPuff
@@ -1500,6 +1503,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 //
 void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
 {
+	// denis - not clientside
 	if(!serverside)
 		return;
 
@@ -1545,7 +1549,6 @@ BOOL P_CheckMissileSpawn (AActor* th)
 	}
 	return true;
 }
-
 
 //
 // P_SpawnMissile
