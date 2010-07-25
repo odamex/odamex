@@ -137,6 +137,8 @@ static int pagetic;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
+EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
 
 const char *LOG_FILE;
 

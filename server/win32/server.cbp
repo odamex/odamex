@@ -279,6 +279,7 @@
 		<Unit filename="..\..\common\doomdata.h" />
 		<Unit filename="..\..\common\doomdef.h" />
 		<Unit filename="..\..\common\doomstat.cpp" />
+		<Unit filename="..\..\common\doomstat.h" />
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />
 		<Unit filename="..\..\common\dsectoreffect.h" />
@@ -377,7 +378,6 @@
 		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
 		<Unit filename="..\src\d_player.h" />
-		<Unit filename="..\src\doomstat.h" />
 		<Unit filename="..\src\g_game.cpp" />
 		<Unit filename="..\src\g_game.h" />
 		<Unit filename="..\src\g_level.cpp" />

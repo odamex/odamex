@@ -106,7 +106,7 @@ BOOL			timingdemo; 			// if true, exit with report on completion
 BOOL 			nodrawers;				// for comparative timing purposes
 BOOL 			noblit; 				// for comparative timing purposes
 
-bool	 		viewactive;
+BOOL	 		viewactive;
 
 // Describes if a network game is being played
 BOOL			network_game;
@@ -143,6 +143,10 @@ EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowjump)
 EXTERN_CVAR(co_realactorheight)
+EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
+EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
+EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
+
 
 CVAR_FUNC_IMPL(cl_mouselook)
 {
