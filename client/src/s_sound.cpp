@@ -1383,17 +1383,28 @@ END_COMMAND (snd_restart)
 
 BEGIN_COMMAND (changemus)
 {
-//	int loopmus;
-//
-//	if (argc > 2)
-//	{
-//		loopmus = atoi (argv[2]);
-//		S_ChangeMusic (std::string(argv[1]), loopmus);
-//	}
-//	else if (argc == 2)
-//	{
+	int loopmus;
+
+	if (argc == 1)
+	{
+	    Printf(PRINT_HIGH, "Usage: changemus lumpname [loop]");
+	    Printf(PRINT_HIGH, "\n");
+	    Printf(PRINT_HIGH, "Plays music from an internal lump, loop\n");
+	    Printf(PRINT_HIGH, "parameter determines if the music should play\n");
+	    Printf(PRINT_HIGH, "continuously or not, (1 or 0, default: 1)\n");
+	    
+	    return;
+	}
+
+	if (argc > 2)
+	{
+		loopmus = atoi (argv[2]);
+		S_ChangeMusic (std::string(argv[1]), loopmus);
+	}
+	else if (argc == 2)
+	{
 		S_ChangeMusic (std::string(argv[1]), 1);
-//	}
+	}
 }
 END_COMMAND (changemus)
 
