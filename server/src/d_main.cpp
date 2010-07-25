@@ -71,7 +71,6 @@
 #include "cmdlib.h"
 #include "s_sound.h"
 #include "m_swap.h"
-#include "v_text.h"
 #include "gi.h"
 #include "sv_main.h"
 

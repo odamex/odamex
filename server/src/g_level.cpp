@@ -44,7 +44,6 @@
 #include "v_video.h"
 #include "p_saveg.h"
 #include "d_protocol.h"
-#include "v_text.h"
 #include "d_main.h"
 #include "p_mobj.h"
 #include "m_fileio.h"

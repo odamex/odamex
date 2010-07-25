@@ -27,7 +27,6 @@
 
 #include "doomtype.h"
 #include "v_video.h"
-#include "v_text.h"
 #include "st_stuff.h"
 #include "c_dispatch.h"
 #include "m_swap.h"
