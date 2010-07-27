@@ -252,8 +252,11 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	C_HideConsole();
 
     // add our iwad if it is one
+    // [ML] 7/26/2010: otherwise reload the currently-loaded iwad
     if (W_IsIWAD(argv[1]))
         wads.push_back(argv[1]);
+    else
+        wads.push_back(wadfiles[1].c_str());
 
     // check whether they are wads or patch files
 	for (QWORD i = 1; i < argc; i++)

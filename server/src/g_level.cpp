@@ -279,6 +279,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	{
 		wads.push_back(argv[1]);
 		AddedIWAD = true;
+	} else {
+        wads.push_back(wadfiles[1].c_str());
 	}
 
     // check whether they are wads or patch files
