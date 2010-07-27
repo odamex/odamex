@@ -295,7 +295,7 @@ BOOL P_Move (AActor *actor)
 	tryy = (origy = actor->y) + (deltay = speed * yspeed[actor->movedir]);
 
 	// killough 3/15/98: don't jump over dropoffs:
-	try_ok = P_TryMove (actor, tryx, tryy);
+	try_ok = P_TryMove (actor, tryx, tryy, false);
 
 	if (try_ok && friction > ORIG_FRICTION)
 	{
@@ -1597,7 +1597,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	}																// phares
 	 */
 	// Check for movements.
-    if (!P_TryMove (other, other->x, other->y))
+    if (!P_TryMove (other, other->x, other->y, false))
 	{
 		// kill it immediately
 		P_DamageMobj (other, actor, actor, 10000, MOD_UNKNOWN);

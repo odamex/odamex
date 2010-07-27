@@ -73,6 +73,8 @@ CVAR (sv_doubleammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Enable/disable inifnitely tall actors
 CVAR (co_realactorheight, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+// [Spleen] When enabled, monsters can get pushed or thrusted off of ledges, like in boom
+CVAR (co_allowdropoff, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 // Misc stuff
 // ----------

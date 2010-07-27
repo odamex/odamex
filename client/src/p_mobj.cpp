@@ -418,7 +418,7 @@ void P_XYMovement (AActor *mo)
 		}
 
 		// killough 3/15/98: Allow objects to drop off
-		if (!P_TryMove (mo, ptryx, ptryy))
+		if (!P_TryMove (mo, ptryx, ptryy, true))
 		{
 			// blocked move
 			if (mo->player)
@@ -1542,7 +1542,7 @@ BOOL P_CheckMissileSpawn (AActor* th)
 
 	// killough 3/15/98: no dropoff (really = don't care for missiles)
 
-	if (!P_TryMove (th, th->x, th->y))
+	if (!P_TryMove (th, th->x, th->y, false))
 	{
 		P_ExplodeMissile (th);
 		return false;

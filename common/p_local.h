@@ -214,7 +214,7 @@ bool	P_TestMobjZ (AActor *mobj);
 bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
 AActor	*P_CheckOnmobj (AActor *thing);
 void	P_FakeZMovement (AActor *mo);
-BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y);
+BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y, bool dropoff);
 BOOL	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
 bool	P_CheckSight (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
