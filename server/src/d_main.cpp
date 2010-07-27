@@ -75,6 +75,7 @@
 #include "sv_main.h"
 
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (waddirs)
 
 extern size_t got_heapsize;
 
@@ -623,6 +624,8 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
     AddSearchDir(dirs, getenv("HOME"), separator);
+    AddSearchDir(dirs, waddirs.cstring(), separator);
+
 
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
