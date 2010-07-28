@@ -124,11 +124,11 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     // Set Window position
     ConfigInfo.Read(wxT("MainWindowPosX"), 
                     &WindowPosX, 
-                    GetPosition().x);
+                    0);
                     
     ConfigInfo.Read(wxT("MainWindowPosY"), 
                     &WindowPosY, 
-                    GetPosition().y);
+                    0);
     
     Move(WindowPosX, WindowPosY);
     
