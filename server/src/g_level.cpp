@@ -437,67 +437,75 @@ BEGIN_COMMAND (addmap)
 {
 	if (argc > 1)
 	{
-        struct maplist_s *NewMap;
-        struct maplist_s *OldMap = NULL;
-
-		// Initalize the structure
-        NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
-        NewMap->WadCmds = NULL;
-
-        // Add it to our linked list
-        if ( MapListBegin == NULL )
-        { // This is the first entry
-            MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
-            OldMap = NULL;
+	    if (argc > 2 && !W_IsIWAD(argv[2]))
+        {
+            Printf(PRINT_HIGH,"IWAD not specified, map will not be loaded.\n");
+            return;
         }
         else
-        { // Tag it on to the end.
-        	OldMap = MapListEnd;
-            MapListEnd->Next = NewMap;
-            MapListEnd = NewMap;
-            NewMap->Next = MapListBegin;
-        }
-
-        // Fill in MapName
-        NewMap->MapName = (char *) Malloc(strlen(argv[1])+1);
-        NewMap->MapName[strlen(argv[1])] = '\0';
-        strcpy(NewMap->MapName, argv[1]);
-
-        // Any more arguments are passed to the wad ccmd
-        if ( argc > 2 )
         {
-            std::string arglist = "wad ";
+            struct maplist_s *NewMap;
+            struct maplist_s *OldMap = NULL;
 
-            for (size_t i = 2; i < argc; ++i)
-            {
-                arglist += argv[i];
-                arglist += ' ';
+            // Initalize the structure
+            NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
+            NewMap->WadCmds = NULL;
+
+            // Add it to our linked list
+            if ( MapListBegin == NULL )
+            { // This is the first entry
+                MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
+                OldMap = NULL;
+            }
+            else
+            { // Tag it on to the end.
+                OldMap = MapListEnd;
+                MapListEnd->Next = NewMap;
+                MapListEnd = NewMap;
+                NewMap->Next = MapListBegin;
             }
 
-            NewMap->WadCmds = (char *) Malloc(strlen(arglist.c_str())+1);
-            NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
-            strcpy(NewMap->WadCmds, arglist.c_str());
-        }
-        else// if ( NewMap == MapListBegin )
-        {
-			// GhostlyDeath <August 14, 2008> -- Changed logic, remember WAD
-			if (OldMap)
-			{
-				NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds)+1);
-				NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
-				strcpy(NewMap->WadCmds, OldMap->WadCmds);
-			}
-			else
-			{
-				NewMap->WadCmds = (char *) Malloc(2);
-				NewMap->WadCmds[0] = '-';
-				NewMap->WadCmds[1] = '\0';
-			}
-        }
+            // Fill in MapName
+            NewMap->MapName = (char *) Malloc(strlen(argv[1])+1);
+            NewMap->MapName[strlen(argv[1])] = '\0';
+            strcpy(NewMap->MapName, argv[1]);
 
-        // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
-        if (sv_shufflemaplist)
-	        G_GenerateRandomMaps();
+            // Any more arguments are passed to the wad ccmd
+            if ( argc > 2 )
+            {
+                std::string arglist = "wad ";
+
+                for (size_t i = 2; i < argc; ++i)
+                {
+                    arglist += argv[i];
+                    arglist += ' ';
+                }
+
+                NewMap->WadCmds = (char *) Malloc(strlen(arglist.c_str())+1);
+                NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
+                strcpy(NewMap->WadCmds, arglist.c_str());
+            }
+            else// if ( NewMap == MapListBegin )
+            {
+                // GhostlyDeath <August 14, 2008> -- Changed logic, remember WAD
+                if (OldMap)
+                {
+                    NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds)+1);
+                    NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
+                    strcpy(NewMap->WadCmds, OldMap->WadCmds);
+                }
+                else
+                {
+                    NewMap->WadCmds = (char *) Malloc(2);
+                    NewMap->WadCmds[0] = '-';
+                    NewMap->WadCmds[1] = '\0';
+                }
+            }
+
+            // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
+            if (sv_shufflemaplist)
+                G_GenerateRandomMaps();
+        }
 	}
 }
 END_COMMAND (addmap)
@@ -585,6 +593,7 @@ BEGIN_COMMAND (forcenextmap)
 
 	G_ChangeMap ();
 }
+
 END_COMMAND (forcenextmap)
 
 BOOL 			secretexit;
