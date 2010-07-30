@@ -488,8 +488,10 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	
     CleanXfac = ((height * 4)/3) / 320; 
     CleanYfac = height / 200; 
-    if (CleanXfac < CleanYfac) CleanYfac = CleanXfac; 
-    if (CleanYfac < CleanXfac) CleanXfac = CleanYfac;
+    if (CleanXfac < CleanYfac) 
+        CleanYfac = CleanXfac; 
+    else 
+        CleanXfac = CleanYfac;
 
 
 
