@@ -80,7 +80,7 @@ typedef struct
 } gamewadinfo_t;
 
 #if _MSC_VER <= 1200	// GhostlyDeath -- Work on VC6
-static gamewadinfo_t doomwadnames[10];
+static gamewadinfo_t doomwadnames[11];
 bool WasVC6Inited = false;
 
 void W_VC6Init(void)
