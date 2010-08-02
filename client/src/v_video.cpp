@@ -486,7 +486,7 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows con_scaletext to have some purpose...
 	
-    CleanXfac = ((height * 4)/3) / 320; 
+    CleanXfac = width / 320; 
     CleanYfac = height / 200; 
     if (CleanXfac < CleanYfac) 
         CleanYfac = CleanXfac; 
