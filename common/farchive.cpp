@@ -936,7 +936,7 @@ DWORD FArchive::MapObject (const DObject *obj)
 
 DWORD FArchive::HashObject (const DObject *obj) const
 {
-	return (DWORD)((ptrdiff_t)obj % EObjectHashSize);
+	return (DWORD)((size_t)obj % EObjectHashSize);
 }
 
 DWORD FArchive::FindObjectIndex (const DObject *obj) const
