@@ -339,7 +339,7 @@ static const char			*lnametexts[2];
 
 static DCanvas			*background;
 
-EXTERN_CVAR (maxplayers)
+EXTERN_CVAR (sv_maxplayers)
 
 //
 // CODE
@@ -407,7 +407,7 @@ void WI_drawLF (void)
 	}
 
 	// draw "Finished!"
-	if (!multiplayer || maxplayers <= 1)
+	if (!multiplayer || sv_maxplayers <= 1)
 		FB->DrawPatchClean (finished, (320 - finished->width())/2, y);  // (Removed) Dan - Causes GUI Issues |FIX-ME|
 }
 
@@ -997,7 +997,7 @@ void WI_Ticker (void)
 	switch (state)
 	{
 		case StatCount:
-			if (multiplayer && maxplayers > 1)
+			if (multiplayer && sv_maxplayers > 1)
 				WI_updateNoState();
 			else
 				WI_updateStats();
@@ -1223,7 +1223,7 @@ void WI_Drawer (void)
 		switch (state)
 		{
 		case StatCount:
-			if (multiplayer && maxplayers > 1)
+			if (multiplayer && sv_maxplayers > 1)
 				WI_drawNetgameStats();
 			else
 				WI_drawStats();

@@ -103,7 +103,7 @@ void			CTF_Sound				(flag_t f, flag_score_t event);
 mapthing2_t    *CTF_SelectTeamPlaySpot	(player_t &player, int selections);
 
 //	Externals
-EXTERN_CVAR (scorelimit)
+EXTERN_CVAR (sv_scorelimit)
 
 //	Server-Side CTF Game Data
 extern flagdata CTFdata[NUMFLAGS];

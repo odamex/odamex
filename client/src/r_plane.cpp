@@ -70,8 +70,8 @@ visplane_t 				*ceilingplane;
 //
 
 size_t					maxopenings;
-short					*openings;
-short					*lastopening;
+int	    				*openings;
+int 					*lastopening;
 
 
 //
@@ -79,8 +79,8 @@ short					*lastopening;
 //	floorclip starts out SCREENHEIGHT
 //	ceilingclip starts out -1
 //
-short					*floorclip;
-short					*ceilingclip;
+int     				*floorclip;
+int 					*ceilingclip;
 
 //
 // spanstart holds the start of a plane span
@@ -224,9 +224,9 @@ void R_ClearPlanes (void)
 	// opening / clipping determination
 	for (i = 0; i < viewwidth ; i++)
 	{
-		floorclip[i] = (short)viewheight;
+		floorclip[i] = (int)viewheight;
 	}
-	memset (ceilingclip, 0xff, sizeof(*ceilingclip) * viewwidth);
+	memset (ceilingclip, 0xffffffffu, sizeof(*ceilingclip) * viewwidth);
 
 	for (i = 0; i < MAXVISPLANES; i++)	// new code -- killough
 		for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
@@ -352,7 +352,7 @@ R_CheckPlane
 		intrh = stop;
 	}
 
-	for (x=intrl ; x <= intrh && pl->top[x] == 0xffff; x++)
+	for (x=intrl ; x <= intrh && pl->top[x] == 0xffffffffu; x++)
 		;
 
 	if (x > intrh)
@@ -390,10 +390,10 @@ R_CheckPlane
 void
 R_MakeSpans
 ( int		x,
-  int		t1,
-  int		b1,
-  int		t2,
-  int		b2 )
+  unsigned int		t1,
+  unsigned int		b1,
+  unsigned int		t2,
+  unsigned int		b2 )
 {
 	for (; t1 < t2 && t1 <= b1; t1++)
 		R_MapPlane (t1, spanstart[t1], x-1);
@@ -423,7 +423,7 @@ static void _skycolumn (void (*drawfunc)(void), int x)
 	dc_yl = _skypl->top[x];
 	dc_yh = _skypl->bottom[x];
 
-	if (dc_yl <= dc_yh)
+	if (dc_yl != -1 && dc_yl <= dc_yh)
 	{
 		int angle = ((((viewangle + xtoviewangle[x])^skyflip)>>skyshift) + frontpos)>>16;
 
@@ -695,8 +695,8 @@ void R_DrawPlanes (void)
 
 				planezlight = zlight[light];
 
-				pl->top[pl->maxx+1] = 0xffff;
-				pl->top[pl->minx-1] = 0xffff;
+				pl->top[pl->maxx+1] = 0xffffffffu;
+				pl->top[pl->minx-1] = 0xffffffffu;
 
 				stop = pl->maxx + 1;
 
@@ -726,8 +726,8 @@ BOOL R_PlaneInitData (void)
 	delete[] yslope;
 	delete[] distscale;
 
-	floorclip = new short[screen->width];
-	ceilingclip = new short[screen->width];
+	floorclip = new int[screen->width];
+	ceilingclip = new int[screen->width];
 
 	spanstart = new int[screen->height];
 

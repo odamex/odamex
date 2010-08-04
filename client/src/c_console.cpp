@@ -1572,7 +1572,7 @@ void C_DrawMid (void)
 EXTERN_CVAR (revealsecrets)
 void C_RevealSecret()
 {
-	if(!revealsecrets || gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for revealsecrets
+	if(!revealsecrets || sv_gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for revealsecrets
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint ("A secret is revealed!");

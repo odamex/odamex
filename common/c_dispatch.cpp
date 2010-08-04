@@ -159,7 +159,7 @@ void C_DoCommand (const char *cmd)
 		if (check != -1)
 			Actions[check] = 0;
 
-		if ((check == ACTION_LOOKDOWN || check == ACTION_LOOKUP) && lookspring)
+		if ((check == ACTION_LOOKDOWN || check == ACTION_LOOKUP || check == ACTION_MLOOK) && lookspring)
 			AddCommandString ("centerview");
 	}
 

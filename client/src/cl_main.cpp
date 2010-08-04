@@ -93,7 +93,7 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
-EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
@@ -102,21 +102,21 @@ EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 
-EXTERN_CVAR (maxplayers)
-EXTERN_CVAR (maxclients)
-EXTERN_CVAR (infiniteammo)
-EXTERN_CVAR (fraglimit)
-EXTERN_CVAR (timelimit)
-EXTERN_CVAR (nomonsters)
-EXTERN_CVAR (fastmonsters)
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (fragexitswitch)
-EXTERN_CVAR (allowjump)
-EXTERN_CVAR (scorelimit)
-EXTERN_CVAR (monstersrespawn)
-EXTERN_CVAR (itemsrespawn)
-EXTERN_CVAR (allowcheats)
-EXTERN_CVAR (allowtargetnames)
+EXTERN_CVAR (sv_maxplayers)
+EXTERN_CVAR (sv_maxclients)
+EXTERN_CVAR (sv_infiniteammo)
+EXTERN_CVAR (sv_fraglimit)
+EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_fragexitswitch)
+EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_scorelimit)
+EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_itemsrespawn)
+EXTERN_CVAR (sv_allowcheats)
+EXTERN_CVAR (sv_allowtargetnames)
 EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR (interscoredraw)
@@ -181,7 +181,7 @@ void CL_QuitNetGame(void)
 	network_game = false;
 	
 	sv_freelook = 1;
-	allowjump = 1;
+	sv_allowjump = 1;
 
 	actor_by_netid.clear();
 	players.clear();
@@ -379,10 +379,10 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (allowcheats)
+    if (sv_allowcheats)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -619,7 +619,7 @@ void CL_UpdateFrags(void)
 {
 	player_t &p = CL_FindPlayer(MSG_ReadByte());
 
-	if(gametype != GM_COOP)
+	if(sv_gametype != GM_COOP)
 		p.fragcount = MSG_ReadShort();
 	else
 		p.killcount = MSG_ReadShort();
@@ -1355,7 +1355,7 @@ void CL_SpawnPlayer()
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if(gametype != GM_COOP)
+	if(sv_gametype != GM_COOP)
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 }
@@ -2557,7 +2557,7 @@ void CL_RunTics (void)
 		TicCount = 0;
 	}
 
-	if (gametype == GM_CTF)
+	if (sv_gametype == GM_CTF)
 		CTF_RunTics ();
 }
 

@@ -46,10 +46,10 @@
 
 #define BONUSADD		6
 
-EXTERN_CVAR (friendlyfire)
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (fragexitswitch)              // [ML] 04/4/06: Added comprimise for older exit method
-EXTERN_CVAR (doubleammo)
+EXTERN_CVAR (sv_friendlyfire)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_fragexitswitch)              // [ML] 04/4/06: Added comprimise for older exit method
+EXTERN_CVAR (sv_doubleammo)
 
 int shotclock = 0;
 
@@ -89,8 +89,8 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 	else
 		num = clipammo[ammo]/2;
 
-	if (skill == sk_baby
-		|| skill == sk_nightmare || doubleammo)
+	if (sv_skill == sk_baby
+		|| sv_skill == sk_nightmare || sv_doubleammo)
 	{
 		// give double ammo in trainer mode,
 		// you'll need in nightmare
@@ -155,7 +155,7 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 
 	return true;
 }
-EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (sv_weaponstay)
 
 //
 // P_GiveWeapon
@@ -172,7 +172,7 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		return false;
 
 	// [Toke - dmflags] old location of DF_WEAPONS_STAY
-	if (multiplayer && weaponstay && !dropped)
+	if (multiplayer && sv_weaponstay && !dropped)
 	{
 		// leave placed weapons forever on net games
 		if (player->weaponowned[weapon])
@@ -181,7 +181,7 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
-		if (gametype != GM_COOP)
+		if (sv_gametype != GM_COOP)
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 5);
 		else
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 2);
@@ -933,7 +933,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	}
 
 	if (attacker && attacker->player) {
-		if (((gametype == GM_TEAMDM || gametype == GM_CTF) && self->player->userinfo.team == attacker->player->userinfo.team) || gametype == GM_COOP) {
+		if (((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && self->player->userinfo.team == attacker->player->userinfo.team) || sv_gametype == GM_COOP) {
 			int rnum = P_Random ();
 
 			self = attacker;
@@ -1010,7 +1010,7 @@ extern BOOL singleplayerjustdied;
 //
 // KillMobj
 //
-EXTERN_CVAR (fraglimit)
+EXTERN_CVAR (sv_fraglimit)
 
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill)
 {
@@ -1078,17 +1078,17 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 				{
 					splayer->fragcount--;
 					// [Toke] Minus a team frag for suicide
-					if (gametype == GM_TEAMDM)
+					if (sv_gametype == GM_TEAMDM)
 						TEAMpoints[splayer->userinfo.team]--;
 				}
 				// [Toke] Minus a team frag for killing team mate
-				else if ((gametype == GM_TEAMDM || gametype == GM_CTF) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
+				else if ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
 				{
 					splayer->fragcount--;
 
-					if (gametype == GM_TEAMDM)
+					if (sv_gametype == GM_TEAMDM)
 						TEAMpoints[splayer->userinfo.team]--;
-					else if (gametype == GM_CTF)
+					else if (sv_gametype == GM_CTF)
 						SV_CTFEvent ((flag_t)0, SCORE_BETRAYAL, *splayer);
 				}
 				else
@@ -1096,9 +1096,9 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 					splayer->fragcount++;
 
 					// [Toke] Add a team frag
-					if (gametype == GM_TEAMDM)
+					if (sv_gametype == GM_TEAMDM)
 						TEAMpoints[splayer->userinfo.team]++;
-					else if (gametype == GM_CTF) {
+					else if (sv_gametype == GM_CTF) {
 						if (tplayer->flags[(flag_t)splayer->userinfo.team])
 							SV_CTFEvent ((flag_t)0, SCORE_CARRIERKILL, *splayer);
 						else
@@ -1111,7 +1111,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		}
 
 		// [deathz0r] Stats for co-op scoreboard
-		if (gametype == GM_COOP && (target->flags & MF_COUNTKILL) || (target->type == MT_SKULL))
+		if (sv_gametype == GM_COOP && (target->flags & MF_COUNTKILL) || (target->type == MT_SKULL))
 		{
 			splayer->killcount++;
 			SV_UpdateFrags (*splayer);
@@ -1120,7 +1120,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 	}
 
 	// [Toke - CTF]
-	if (gametype == GM_CTF && target->player)
+	if (sv_gametype == GM_CTF && target->player)
 		CTF_CheckFlags ( *target->player );
 
 	if (target->player)
@@ -1134,7 +1134,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 			tplayer->fragcount--;	// [RH] Cumulative frag count
 
 			// [JDC] Minus a team frag
-			if (gametype == GM_TEAMDM)
+			if (sv_gametype == GM_TEAMDM)
 				TEAMpoints[tplayer->userinfo.team]--;
 		}
 
@@ -1168,22 +1168,22 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 	if (target->player && level.time && !joinkill && !shotclock)
 		ClientObituary (target, inflictor, source);
 
-	// Check fraglimit.
+	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)
 	{
-		// [Toke] Better fraglimit
-		if (gametype == GM_DM && fraglimit && splayer->fragcount >= (int)fraglimit && !fragexitswitch) // [ML] 04/4/06: Added !fragexitswitch
+		// [Toke] Better sv_fraglimit
+		if (sv_gametype == GM_DM && sv_fraglimit && splayer->fragcount >= (int)sv_fraglimit && !sv_fragexitswitch) // [ML] 04/4/06: Added !sv_fragexitswitch
 		{
 				SV_BroadcastPrintf (PRINT_HIGH, "Frag limit hit. Game won by %s!\n", splayer->userinfo.netname);
 				shotclock = TICRATE*2;
 		}
 
-		// [Toke] TeamDM fraglimit
-		if (gametype == GM_TEAMDM && fraglimit)
+		// [Toke] TeamDM sv_fraglimit
+		if (sv_gametype == GM_TEAMDM && sv_fraglimit)
 		{
 			for(size_t i = 0; i < NUMFLAGS; i++)
 			{
-				if (TEAMpoints[i] >= (int)fraglimit)
+				if (TEAMpoints[i] >= (int)sv_fraglimit)
 				{
 					SV_BroadcastPrintf (PRINT_HIGH, "Frag limit hit. %s team wins!\n", team_names[i]);
 					shotclock = TICRATE*2;
@@ -1273,7 +1273,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	}
 
 	player = target->player;
-	if (player && skill == sk_baby)
+	if (player && sv_skill == sk_baby)
 		damage >>= 1;	// take half damage in trainer mode
 
 	// Some close combat weapons should not
@@ -1311,7 +1311,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	if (player)
 	{
 		// end of game hell hack
-		if(gametype == GM_COOP || allowexit)
+		if(sv_gametype == GM_COOP || sv_allowexit)
 		if ((target->subsector->sector->special & 255) == dDamage_End
 			&& damage >= target->health)
 		{
@@ -1344,10 +1344,10 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 			damage -= saved;
 		}
 
-		// only armordamage with friendlyfire
-		if (!friendlyfire && source && source->player && target != source && mod != MOD_TELEFRAG &&
-			(((gametype == GM_TEAMDM || gametype == GM_CTF) && target->player->userinfo.team == source->player->userinfo.team)
-			|| gametype == GM_COOP))
+		// only armordamage with sv_friendlyfire
+		if (!sv_friendlyfire && source && source->player && target != source && mod != MOD_TELEFRAG &&
+			(((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && target->player->userinfo.team == source->player->userinfo.team)
+			|| sv_gametype == GM_COOP))
 			damage = 0;
 
 		player->health -= damage;		// mirror mobj health here for Dave

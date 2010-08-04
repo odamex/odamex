@@ -37,8 +37,6 @@
 #include <wx/imaglist.h>
 #include <wx/artprov.h>
 #include <wx/iconbndl.h>
-#include <wx/aboutdlg.h>
-#include <wx/generic/aboutdlgg.h>
 #include <wx/regex.h>
 
 // Control ID assignments for events
@@ -99,7 +97,7 @@ END_EVENT_TABLE()
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
     wxFileConfig ConfigInfo;   
-    wxInt32 WindowWidth, WindowHeight;
+    wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
     wxString Version;
 
     // Loads the frame from the xml resource file
@@ -107,9 +105,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     
     // Sets the title of the application with a version string to boot
     Version = wxString::Format(
-        wxT("The Odamex Launcher v%d.%d.%d - PV%d"), 
-        VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION), 
-        PROTOCOL_VERSION);
+        wxT("The Odamex Launcher v%d.%d.%d"), 
+        VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION));
     
     SetLabel(Version);
     
@@ -123,6 +120,17 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
                     GetClientSize().GetHeight());
     
     SetClientSize(WindowWidth, WindowHeight);
+    
+    // Set Window position
+    ConfigInfo.Read(wxT("MainWindowPosX"), 
+                    &WindowPosX, 
+                    0);
+                    
+    ConfigInfo.Read(wxT("MainWindowPosY"), 
+                    &WindowPosY, 
+                    0);
+    
+    Move(WindowPosX, WindowPosY);
     
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 1;
@@ -155,6 +163,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
     server_dlg = new dlgServers(&MServer, this);
+    AboutDialog = new dlgAbout(this);
     
     /* Get the first directory for wad downloading */
     wxInt32 Pos = launchercfg_s.wad_paths.Find(wxT(PATH_DELIMITER), false);
@@ -208,7 +217,9 @@ void dlgMain::OnClose(wxCloseEvent &event)
 
     ConfigInfo.Write(wxT("MainWindowWidth"), GetClientSize().GetWidth());
     ConfigInfo.Write(wxT("MainWindowHeight"), GetClientSize().GetHeight());
-    
+    ConfigInfo.Write(wxT("MainWindowPosX"), GetPosition().x);
+    ConfigInfo.Write(wxT("MainWindowPosY"), GetPosition().y);
+
     event.Skip();
 }
 
@@ -920,14 +931,8 @@ bool dlgMain::IsAddressValid(wxString Address)
 // About information
 void dlgMain::OnAbout(wxCommandEvent& event)
 {
-    wxAboutDialogInfo AboutDialogInfo;
-
-    AboutDialogInfo.SetName(GetLabel());
-    
-    AboutDialogInfo.AddDeveloper(wxT("The Odamex Team"));
-    AboutDialogInfo.SetWebSite(wxT("http://www.odamex.net"));
-        
-    wxAboutBox(AboutDialogInfo);
+    if (AboutDialog)
+        AboutDialog->Show();
 }
 
 void dlgMain::OnOpenWebsite(wxCommandEvent &event)

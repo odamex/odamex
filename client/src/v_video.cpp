@@ -471,17 +471,32 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	}
 
 	I_SetMode (width, height, bits);
-
+	
 	I_SetOverscan (vid_overscan);
 
-	CleanYfac = height / 200;
+	/*
+	CleanXfac = ((height * 4)/3) / 320;
 
-	if(!CleanYfac)
-		CleanYfac = 1;
+	if(!CleanXfac)
+		CleanXfac = 1;
 		
 	// [ML] The height determines the scale, these should always be the same 
 	// or stuff like the menu will be stretched on widescreen resolutions
-	CleanXfac = CleanYfac;
+	CleanYfac = CleanXfac;
+	*/
+	
+	// [ML] 7/30/10: Going back to this style, they'll still be the same in the end
+	// This uses the smaller of the two results. It's still not ideal but at least
+	// this allows con_scaletext to have some purpose...
+	
+    CleanXfac = width / 320; 
+    CleanYfac = height / 200; 
+    if (CleanXfac < CleanYfac) 
+        CleanYfac = CleanXfac; 
+    else 
+        CleanXfac = CleanYfac;
+
+
 
 	CleanWidth = width / CleanXfac;
 	CleanHeight = height / CleanYfac;

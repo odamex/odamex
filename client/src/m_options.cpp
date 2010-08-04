@@ -264,12 +264,6 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
 	{ control,	"Show Scoreboard",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Inventory",			{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Activate item",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"invuse"} },
-	{ control,	"Activate all items",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"invuseall"} },
-	{ control,	"Next item",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"invnext"} },
-	{ control,	"Previous item",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"invprev"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
 	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"screenshot"} },
@@ -865,7 +859,7 @@ void M_OptDrawer (void)
 	y = 15 + title->height();
 	ytop = y + CurrentMenu->scrolltop * 8;
 
-	for (i = 0; i < CurrentMenu->numitems && y <= 200 - theight; i++, y += 8)	// TIJ
+	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += 8)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
 			i += CurrentMenu->scrollpos;
@@ -1056,7 +1050,7 @@ void M_OptDrawer (void)
 		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
 
 	if (CanScrollDown)
-		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, (CleanYfac < 3 ? 190 : 200));
+		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
 }
 
 void M_OptResponder (event_t *ev)

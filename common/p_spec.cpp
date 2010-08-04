@@ -58,7 +58,7 @@
 // [RH] Needed for sky scrolling
 #include "r_sky.h"
 
-EXTERN_CVAR (allowexit)
+EXTERN_CVAR (sv_allowexit)
 
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
@@ -789,6 +789,10 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 
 	if (!p)
 		return false;
+    
+    // [Spleen] Clients in network games don't know about keys
+    if (clientside && network_game)
+        return true;
 
 	const char *msg = NULL;
 	BOOL bc, rc, yc, bs, rs, ys;
@@ -1144,7 +1148,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 20, MOD_UNKNOWN);
 
-			if(gametype == GM_COOP || allowexit)
+			if(sv_gametype == GM_COOP || sv_allowexit)
 			{
 				if (gamestate == GS_LEVEL && player->health <= 10)
 					G_ExitLevel(0, 1);

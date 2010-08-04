@@ -11,10 +11,10 @@ proc start {} {
  wait
  set serverout [open odasrv.log r]
 
- server "gametype 1"
- server "maxclients $numplayers"
- server "maxplayers $numplayers"
- server "timelimit 0"
+ server "sv_gametype 1"
+ server "sv_maxclients $numplayers"
+ server "sv_maxplayers $numplayers"
+ server "sv_timelimit 0"
  server "map 1"
 
  # clear server only

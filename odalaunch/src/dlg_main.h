@@ -28,6 +28,7 @@
 #include "lst_servers.h"
 #include "lst_srvdetails.h"
 
+#include "dlg_about.h"
 #include "dlg_config.h"
 #include "dlg_servers.h"
 #include "frm_odaget.h"
@@ -107,6 +108,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
+        dlgAbout *AboutDialog;
         frmOdaGet *OdaGet;
         
 		wxInt32 TotalPlayers;

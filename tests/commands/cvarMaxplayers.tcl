@@ -8,17 +8,17 @@ proc main {} {
  global server client serverout clientout port
 
  # set defaults
- server "globalspectatorchat 1"
+ server "sv_globalspectatorchat 1"
  server "map 1"
  client "print_stdout 1"
  client "cl_name Player"
 
  wait
 
- # reset maxclients and maxplayers
+ # reset sv_maxclients and sv_maxplayers
  clear
- server "maxclients 2"
- server "maxplayers 2"
+ server "sv_maxclients 2"
+ server "sv_maxplayers 2"
  server "map 1"
  client "disconnect"
  client "reconnect"
@@ -26,10 +26,10 @@ proc main {} {
 
  # kick client off the server
  clear
- server "maxclients 0"
- expect $serverout {maxclients will be changed for next game.}
- server "maxplayers 0"
- expect $serverout {maxplayers will be changed for next game.}
+ server "sv_maxclients 0"
+ expect $serverout {sv_maxclients will be changed for next game.}
+ server "sv_maxplayers 0"
+ expect $serverout {sv_maxplayers will be changed for next game.}
  server "map 1"
  expect $serverout {Player disconnected. (SPECTATOR, 0 FRAGS, 0 DEATHS)}
 
@@ -42,10 +42,10 @@ proc main {} {
  for {set i 0} {$i < 9} {incr i} { gets $clientout }
  expect $clientout {Server is full} 0
 
- # change maxplayers (non-latched)
+ # change sv_maxplayers (non-latched)
  clear
- server "maxplayers 2"
- expect $serverout {maxplayers will be changed for next game.}
+ server "sv_maxplayers 2"
+ expect $serverout {sv_maxplayers will be changed for next game.}
  server "map 1"
 
  # try to connect
@@ -57,12 +57,12 @@ proc main {} {
  for {set i 0} {$i < 9} {incr i} { gets $clientout }
  expect $clientout {Server is full} 0
 
- # change maxplayers and maxclients
+ # change sv_maxplayers and sv_maxclients
  clear
- server "maxclients 2"
- expect $serverout {maxclients will be changed for next game.}
- server "maxplayers 0"
- expect $serverout {maxplayers will be changed for next game.}
+ server "sv_maxclients 2"
+ expect $serverout {sv_maxclients will be changed for next game.}
+ server "sv_maxplayers 0"
+ expect $serverout {sv_maxplayers will be changed for next game.}
  server "map 1"
  clear
 
@@ -77,17 +77,17 @@ proc main {} {
  expect $clientout {=================================} 0
  expect $clientout {MAP01: entryway} 0
 
- # try to join with maxplayers 0
+ # try to join with sv_maxplayers 0
  clear
  client "+use"
  wait
  client "-use"
  expect $serverout {}
 
- # change maxplayers
+ # change sv_maxplayers
  clear
- server "maxplayers 2"
- expect $serverout {maxplayers will be changed for next game.}
+ server "sv_maxplayers 2"
+ expect $serverout {sv_maxplayers will be changed for next game.}
  server "map 1"
 
  # try to join
@@ -97,10 +97,10 @@ proc main {} {
  client "-use"
  expect $serverout {Player joined the game.}
 
- # change maxplayers and player should become a spectator
+ # change sv_maxplayers and player should become a spectator
  clear
- server "maxplayers 0"
- expect $serverout {maxplayers will be changed for next game.}
+ server "sv_maxplayers 0"
+ expect $serverout {sv_maxplayers will be changed for next game.}
  server "map 1"
  expect $serverout {Player became a spectator.}
  expect $serverout {--- MAP01: entryway ---}

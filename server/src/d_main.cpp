@@ -71,11 +71,11 @@
 #include "cmdlib.h"
 #include "s_sound.h"
 #include "m_swap.h"
-#include "v_text.h"
 #include "gi.h"
 #include "sv_main.h"
 
-EXTERN_CVAR (timelimit)
+EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (waddirs)
 
 extern size_t got_heapsize;
 
@@ -624,6 +624,8 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
     AddSearchDir(dirs, getenv("HOME"), separator);
+    AddSearchDir(dirs, waddirs.cstring(), separator);
+
 
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
@@ -996,7 +998,7 @@ void D_DoomMain (void)
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{
-		skill.Set (val[0]-'0');
+		sv_skill.Set (val[0]-'0');
 	}
 
 	if (devparm)
@@ -1007,14 +1009,14 @@ void D_DoomMain (void)
 	{
 		double time = atof (v);
 		Printf (PRINT_HIGH, "Levels will end after %g minute%s.\n", time, time > 1 ? "s" : "");
-		timelimit.Set ((float)time);
+		sv_timelimit.Set ((float)time);
 	}
 
 	const char *w = Args.CheckValue ("-avg");
 	if (w)
 	{
 		Printf (PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
-		timelimit.Set (20);
+		sv_timelimit.Set (20);
 	}
 	
 	// [RH] Now that all text strings are set up,

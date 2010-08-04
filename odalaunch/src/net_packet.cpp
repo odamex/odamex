@@ -229,25 +229,25 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
         
         // Filter out important information for us to use, it'd be nicer to have
         // a launcher-side cvar implementation though
-        if (Cvar.Name == wxT("hostname"))
+        if (Cvar.Name == wxT("sv_hostname"))
         {
             Info.Name = Cvar.Value;
             
             continue;
         }
-        else if (Cvar.Name == wxT("maxplayers"))
+        else if (Cvar.Name == wxT("sv_maxplayers"))
         {
             Info.MaxPlayers = (wxUint8)wxAtoi(Cvar.Value);
             
             continue;
         }
-        else if (Cvar.Name == wxT("gametype"))
+        else if (Cvar.Name == wxT("sv_gametype"))
         {
             Info.GameType = (GameType_t)wxAtoi(Cvar.Value);
             
             continue;
         }
-        else if (Cvar.Name == wxT("scorelimit"))
+        else if (Cvar.Name == wxT("sv_scorelimit"))
         {
             Info.ScoreLimit = wxAtoi(Cvar.Value);
             

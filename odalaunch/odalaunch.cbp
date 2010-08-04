@@ -348,6 +348,12 @@
 		</Unit>
 		<Unit filename="res\xrc_resource.h" />
 		<Unit filename="res\xrc_resource.xrc" />
+		<Unit filename="src\dlg_about.cpp">
+			<Option virtualFolder="dialogs\" />
+		</Unit>
+		<Unit filename="src\dlg_about.h">
+			<Option virtualFolder="dialogs\" />
+		</Unit>
 		<Unit filename="src\dlg_config.cpp">
 			<Option virtualFolder="dialogs\" />
 		</Unit>

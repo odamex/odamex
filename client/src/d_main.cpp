@@ -147,8 +147,11 @@ bool demotest;
 static int demosequence;
 static int pagetic;
 
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (waddirs)
+EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
+EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
 
 const char *LOG_FILE;
 
@@ -852,6 +855,7 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
     AddSearchDir(dirs, getenv("HOME"), separator);
+    AddSearchDir(dirs, waddirs.cstring(), separator);
 
     dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
@@ -1477,7 +1481,7 @@ void D_DoomMain (void)
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{
-		skill.Set (val[0]-'0');
+		sv_skill.Set (val[0]-'0');
 	}
 
 	p = Args.CheckParm ("-warp");

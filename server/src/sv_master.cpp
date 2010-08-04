@@ -70,8 +70,8 @@ static buf_t ml_message(MAX_UDP_PACKET);
 
 static std::vector<masterserver> masters;
 
-EXTERN_CVAR (usemasters)
-EXTERN_CVAR (natport)
+EXTERN_CVAR (sv_usemasters)
+EXTERN_CVAR (sv_natport)
 EXTERN_CVAR (port)
 
 //
@@ -79,8 +79,8 @@ EXTERN_CVAR (port)
 //
 void SV_InitMasters(void)
 {
-	if (!usemasters)
-		Printf(PRINT_HIGH, "Masters will not be contacted because usemasters is 0\n");
+	if (!sv_usemasters)
+		Printf(PRINT_HIGH, "Masters will not be contacted because sv_usemasters is 0\n");
     else
     {
         // [Russell] - Add some default masters
@@ -182,8 +182,8 @@ void SV_UpdateMasterServer(masterserver &m)
 		MSG_WriteLong(&ml_message, CHALLENGE);
 
 		// send out actual port, because NAT may present an incorrect port to the master
-		if(natport)
-			MSG_WriteShort(&ml_message, natport);
+		if(sv_natport)
+			MSG_WriteShort(&ml_message, sv_natport);
 		else
 			MSG_WriteShort(&ml_message, port);
 
@@ -204,7 +204,7 @@ void SV_UpdateMasterServers(void)
 //
 void SV_UpdateMaster(void)
 {
-	if (!usemasters)
+	if (!sv_usemasters)
 		return;
 
 	// update master addresses from names every 3 hours
@@ -225,7 +225,7 @@ void SV_UpdateMaster(void)
 }
 
 // Server appears in the server list when true.
-CVAR_FUNC_IMPL (usemasters)
+CVAR_FUNC_IMPL (sv_usemasters)
 {
 	if (network_game) SV_InitMasters();
 }

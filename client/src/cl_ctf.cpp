@@ -324,7 +324,7 @@ void CTF_DrawHud (void)
     int tintglowtype;
     bool hasflag = false, hasflags[NUMFLAGS];
 
-	if(gametype != GM_CTF)
+	if(sv_gametype != GM_CTF)
 		return;
 
 	player_t &co = consoleplayer();

@@ -47,6 +47,7 @@ struct launchercfg_t
 #include <wx/textctrl.h>
 #include <wx/filepicker.h>
 #include <wx/spinctrl.h>
+#include <wx/statbmp.h>
 
 // config file value names
 #define GETLISTONSTART      "GET_LIST_ON_START"
@@ -110,8 +111,8 @@ class dlgConfig: public wxDialog
 
         wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
 
-        wxTextCtrl *m_TxtCtrlMasterTimeout;
-        wxTextCtrl *m_TxtCtrlServerTimeout;
+        wxSpinCtrl *m_SpnCtrlMasterTimeout;
+        wxSpinCtrl *m_SpnCtrlServerTimeout;
         wxTextCtrl *m_TxtCtrlExtraCmdLineArgs;
 
         wxSpinCtrl *m_SpnCtrlPQGood;
