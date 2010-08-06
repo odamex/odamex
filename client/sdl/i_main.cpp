@@ -58,8 +58,6 @@
 
 DArgs Args;
 
-typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
-
 // functions to be called at shutdown are stored in this stack
 typedef void (STACK_ARGS *term_func_t)(void);
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;
@@ -135,12 +133,12 @@ int main(int argc, char *argv[])
         //
         // [ML] 8/6/10: Updated to match prboom+'s I_SetAffinityMask.  We don't do everything
         // you might find in there but we do enough for now.
-        
+        typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);        
         HMODULE kernel32_dll = LoadLibrary("kernel32.dll");
         
         if (kernel32_dll)
         {
-            SetAffinityFunc SetAffinity = (SetAffinityFunc)GetProcAddress(kernel32_dll, "SetProcessAffinityMask");;
+            SetAffinityFunc SetAffinity = (SetAffinityFunc)GetProcAddress(kernel32_dll, "SetProcessAffinityMask");
 
             if (!SetAffinity(GetCurrentProcess(), 1))
                 LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
