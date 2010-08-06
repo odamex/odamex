@@ -423,17 +423,10 @@ BEGIN_COMMAND (serverinfo)
 }
 END_COMMAND (serverinfo)
 
+// rate: takes a bps value
 CVAR_FUNC_IMPL (rate)
 {
-	if (var < 100)
-	{
-		var.Set (100);
-	}
-	else if (var > 100000)
-	{
-		var.Set (100000);
-	}
-	else if (connected)
+	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
 		MSG_WriteLong(&net_buffer, (int)var);
