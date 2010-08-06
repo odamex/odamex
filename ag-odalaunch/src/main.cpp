@@ -30,6 +30,7 @@
 
 #include "agol_main.h"
 #include "net_io.h"
+#include "gui_config.h"
 
 using namespace std;
 
@@ -110,6 +111,9 @@ int main(int argc, char *argv[])
 	AG_EventLoop();
 
 	delete mainWindow;
+
+	// Save the gui configuration
+	GuiConfig::Save();
 
 	AG_Destroy();
 

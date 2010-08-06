@@ -4,7 +4,8 @@ SOURCES = src/main.cpp \
 	src/event_handler.cpp \
 	src/net_io.cpp \
 	src/net_packet.cpp \
-	src/game_command.cpp
+	src/game_command.cpp \
+	src/gui_config.cpp
 
 HEADERS = src/*.h
 

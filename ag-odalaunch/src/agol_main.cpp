@@ -214,6 +214,10 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 
 	list = AG_TableNewPolled(parent, AG_TABLE_EXPAND, EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::UpdateServerList));
+
+  	AG_TableSetRowDblClickFn(list, EventReceiver, "%p", 
+			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnLaunch));
+
 	AG_WidgetSetFocusable(list, 0);
 
 	col = AG_TableAddCol(list, "Server Name", "200px", NULL);

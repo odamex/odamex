@@ -114,9 +114,11 @@ AG_Box *AGOL_Settings::CreateWadDirButtonBox(void *parent)
 	AG_ButtonNew(bbox, AG_BUTTON_HFILL, "Move Up");
 	AG_ButtonNew(bbox, AG_BUTTON_HFILL, "Move Down");
 
+#ifndef GCONSOLE
 	AG_SeparatorNewHoriz(bbox);
 
 	AG_ButtonNew(bbox, AG_BUTTON_HFILL, "Get Environment");
+#endif
 
 	return bbox;
 }
