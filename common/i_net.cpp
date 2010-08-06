@@ -358,10 +358,13 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 // denis - use this function to mark the start of your server message
 // as it allows for better debugging and optimization of network code
 //
-void MSG_WriteMarker (buf_t *b, svc_t c)
+// [ML] 8/4/10: Moved to sv_main and slightly modified to provide an adequate
+//      but temporary fix for bug 594 until netcode_bringup2 is complete.
+//      Thanks to spleen for providing good brainpower!
+/*void MSG_WriteMarker (buf_t *b, svc_t c)
 {
 	b->WriteByte((byte)c);
-}
+}*/
 
 //
 // MSG_WriteMarker
