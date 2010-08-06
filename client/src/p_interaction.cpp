@@ -405,11 +405,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 
 	fixed_t delta = special->z - toucher->z;
 
-	if (delta > toucher->height || delta < -8*FRACUNIT)
-	{
-		// out of reach
+    // Out of reach
+    // ...but leave this to the server to handle if the client is connected
+	if ((delta > toucher->height || delta < -8*FRACUNIT) && !(clientside && network_game))
 		return;
-	}
 
 	sound = 0;
 	player = toucher->player;
