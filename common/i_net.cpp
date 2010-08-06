@@ -202,26 +202,20 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
 
      // strip off a trailing :port if present
      for (colon = copy ; *colon ; colon++)
-          if (*colon == ':')
-          {
-             *colon = 0;
-             sadr.sin_port = htons(atoi(colon+1));
-          }
+        if (*colon == ':')
+        {
+            *colon = 0;
+            sadr.sin_port = htons(atoi(colon+1));
+        }
 
-     if (copy[0] >= '0' && copy[0] <= '9')
-     {
-          *(int *)&sadr.sin_addr = inet_addr(copy);
-     }
-     else
-     {
-          if (! (h = gethostbyname(copy)) )
-                return 0;
-          *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
-     }
+    if (! (h = gethostbyname(copy)) )
+        return 0;
+        
+    *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
 
-     SockadrToNetadr (&sadr, a);
+    SockadrToNetadr (&sadr, a);
 
-     return true;
+    return true;
 }
 
 bool NET_CompareAdr (netadr_t a, netadr_t b)
