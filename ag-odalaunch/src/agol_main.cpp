@@ -36,6 +36,7 @@
 #include "agol_main.h"
 #include "agol_settings.h"
 #include "game_command.h"
+#include "gui_config.h"
 #include "typedefs.h"
 #include "icons.h"
 
@@ -74,7 +75,15 @@ AGOL_MainWindow::AGOL_MainWindow()
 	SettingsDialog = NULL;
 	QServer = NULL;
 
+	// Show the window
 	AG_WindowShow(MainWindow);
+
+	bool masterOnStart = false;
+
+	// If query master on start is configured post the event.
+	GuiConfig::Read("MasterOnStart", (uint8_t&)masterOnStart);
+	if(masterOnStart)
+		AG_PostEvent(MainWindow, MainButtonBox->mlist, "button-pushed", NULL);
 }
 
 AGOL_MainWindow::~AGOL_MainWindow()
@@ -452,11 +461,27 @@ void AGOL_MainWindow::OnLaunch(AG_Event *event)
 {
 	GameCommand cmd;
 	string      sAddr;
+	string      waddirs;
+	string      extraParams;
 	int         ndx = GetSelectedServerArrayIndex();
 
 	// No selection
 	if(ndx < 0)
 		return;
+
+	if(GuiConfig::Read("WadDirs", waddirs))
+	{
+		char cwd[PATH_MAX];
+
+		if(!AG_GetCWD(cwd, PATH_MAX))
+			cmd.AddParameter("-waddir", string(cwd));
+	}
+	else
+		cmd.AddParameter("-waddir", waddirs);
+
+	if(!GuiConfig::Read("ExtraParams", extraParams))
+		cmd.AddParameter(extraParams);
+
 
 	QServer[ndx].GetLock();
 	sAddr = QServer[ndx].GetAddress();
@@ -847,14 +872,19 @@ void AGOL_MainWindow::UpdateServInfoList(AG_Event *event)
 //*****************//
 void *AGOL_MainWindow::GetMasterList(void *arg)
 {
-	string   address = "";
-	size_t   serverCount = 0;
-	uint16_t port = 0;
+	string       address = "";
+	size_t       serverCount = 0;
+	uint16_t     port = 0;
+	unsigned int masterTimeout;
 
+	if(GuiConfig::Read("MasterTimeout", masterTimeout) || masterTimeout <= 0)
+		masterTimeout = 500;
+
+	// Get the lock
 	MServer.GetLock();
 
 	// Get a list of servers
-	MServer.QueryMasters(500);
+	MServer.QueryMasters(masterTimeout);
 
 	serverCount = MServer.GetServerCount();
 
@@ -895,10 +925,14 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 
 int AGOL_MainWindow::QuerySingleServer(Server *server)
 {
-	int ret;
+	unsigned int serverTimeout;
+	int          ret;
+
+	if(GuiConfig::Read("ServerTimeout", serverTimeout) || serverTimeout <= 0)
+		serverTimeout = 500;
 
 	server->GetLock();
-	ret = server->Query(2000);
+	ret = server->Query(serverTimeout);
 	server->Unlock();
 
 	return ret;
