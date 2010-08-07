@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: game_command.h 1696 2010-08-05 03:16:10Z hypereye $
+// $Id$
 //
 // Copyright (C) 2006-2010 by The Odamex Team.
 //
