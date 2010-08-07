@@ -716,7 +716,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		return;
 
 	  default:
-		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
+		//I_Error ("P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+		Printf (PRINT_HIGH,"P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+		return;
 	}
 
 	if (serverside && special->flags & MF_COUNTITEM)

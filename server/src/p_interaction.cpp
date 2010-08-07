@@ -725,7 +725,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 			SV_SocketTouch(*player, it_redflag);
 			return;
 	  default:
-		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
+		//I_Error ("P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+		Printf(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+		return;
 	}
 
 	if (special->flags & MF_COUNTITEM)
