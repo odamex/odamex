@@ -293,7 +293,37 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					if (thing && !thing->player)
 						return false;	// JDC: bad guys never close doors
 
-					door->m_Direction = -1;	// start going down immediately
+					// From Chocolate Doom:
+                        // When is a door not a door?
+                        // In Vanilla, door->direction is set, even though
+                        // "specialdata" might not actually point at a door.
+                    if (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DPlat)))
+                    {
+                        // Erm, this is a plat, not a door.
+                        // This notably causes a problem in ep1-0500.lmp where
+                        // a plat and a door are cross-referenced; the door
+                        // doesn't open on 64-bit.
+                        // The direction field in vldoor_t corresponds to the wait
+                        // field in plat_t.  Let's set that to -1 instead.
+                        
+                        DPlat *plat = static_cast<DPlat *>(sec->floordata);
+                        byte state;
+                        int count;
+                        
+                        plat->GetState(state, count);
+                        
+                        if (count >= 16)    // ep1-0500 always returns a count of 16.
+                            return false;   // We may be able to always return false?
+                    }
+                    else
+                    {
+                        // This isn't a door OR a plat.  Now we're in trouble.
+                        Printf(PRINT_HIGH, "EV_DoDoor: Tried to close something that wasn't a door.\n");
+
+                        // Try closing it anyway. At least it will work on 32-bit
+                        // machines.
+                        door->m_Direction = -1;
+                    }
 				}
 				return true;
 			}
