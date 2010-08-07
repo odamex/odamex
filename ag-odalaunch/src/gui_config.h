@@ -36,6 +36,8 @@ public:
 
 	static int Save();
 
+	static void Unset(std::string option);
+
 	static int Write(std::string option, std::string value);
 	static int Write(std::string option, int8_t value);
 	static int Write(std::string option, int16_t value);

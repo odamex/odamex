@@ -47,6 +47,12 @@ int GuiConfig::Save()
 	return AG_ConfigSave();
 }
 
+void GuiConfig::Unset(std::string option)
+{
+	if(option.size())
+		AG_Unset(agConfig, option.c_str());
+}
+
 int GuiConfig::Write(std::string option, std::string value)
 {
 	if(!option.size() || !value.size())

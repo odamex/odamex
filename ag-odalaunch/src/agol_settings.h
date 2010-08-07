@@ -26,7 +26,15 @@
 #ifndef _AGOL_SETTINGS_H
 #define _AGOL_SETTINGS_H
 
+#include "agol_dirsel.h"
 #include "event_handler.h"
+#include "typedefs.h"
+
+#ifdef WIN32
+#define PATH_DELIMITER ';'
+#else
+#define PATH_DELIMITER ':'
+#endif
 
 typedef struct
 {
@@ -36,7 +44,6 @@ typedef struct
 	AG_Numerical *masterTimeoutSpin;
 	AG_Numerical *serverTimeoutSpin;
 } ODA_SrvOptionsBox;
-
 
 // AG_Settings - Class for the settings dialog
 class AGOL_Settings : private ODA_EventRegister
@@ -51,6 +58,12 @@ private:
 	// Event Handlers
 	void               OnCancel(AG_Event *event);
 	void               OnOK(AG_Event *event);
+	void               UpdateWadDirList(AG_Event *event);
+	void               WadDirSelectorOk(AG_Event *event);
+	void               OnAddWadDir(AG_Event *event);
+	void               OnDeleteWadDir(AG_Event *event);
+	void               OnMoveWadDirUp(AG_Event *event);
+	void               OnMoveWadDirDown(AG_Event *event);
 
 	// Interface Creation Functions
 	ODA_SrvOptionsBox *CreateSrvOptionsBox(void *parent);
@@ -63,6 +76,11 @@ private:
 	AG_Button         *CreateCancelButton(void *parent);
 	AG_Box            *CreateMainButtonBox(void *parent);
 
+	// Save Functions
+	void               SaveWadDirs();
+	void               SaveServerOptions();
+	void               SaveExtraParams();
+
 	// Interface Components
 	AG_Window         *SettingsDialog;
 	ODA_SrvOptionsBox *SrvOptionsBox;
@@ -73,10 +91,17 @@ private:
 	AG_Textbox        *ExtraCmdParamsEntry;
 	AG_Box            *MainButtonBox;
 
-	EventHandler      *CloseEventHandler;
+	AGOL_DirSelector  *DirSel;
 
+	EventHandler      *CloseEventHandler;
+	EventHandler      *DirSelCloseHandler;
+
+	int                MasterOnStart;
+	int                ShowBlocked;
 	unsigned int       MasterTimeout;
 	unsigned int       ServerTimeout;
+
+	std::list<std::string>  WadDirs;
 };
 
 #endif

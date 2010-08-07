@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 	int              c;
 
 	/* Initialize Agar-Core. */
-	if (AG_InitCore("ag-odalaunch", AG_VERBOSE) == -1) 
+	if (AG_InitCore("ag-odalaunch", AG_VERBOSE | AG_CREATE_DATADIR) == -1) 
 	{
 		cerr << AG_GetError() << endl;
 		return (-1);
