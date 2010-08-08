@@ -75,6 +75,8 @@ void STACK_ARGS I_ShutdownHardware ()
 {
 	if (Video)
 		delete Video, Video = NULL;
+		
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 void I_InitHardware ()

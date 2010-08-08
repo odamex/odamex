@@ -476,6 +476,8 @@ void STACK_ARGS I_Quit (void)
 	CL_QuitNetGame();
 
 	M_SaveDefaults();
+	
+	I_ShutdownHardware();
 
 	if (show_endoom && !Args.CheckParm ("-novideo"))
 		I_Endoom();
