@@ -303,7 +303,7 @@ void I_GetEvent (void)
       switch(ev.type)
       {
          case SDL_QUIT:
-            AddCommandString("quit");
+            AddCommandString("menu_quit");
             break;
          // Resizable window mode resolutions
          case SDL_VIDEORESIZE:
