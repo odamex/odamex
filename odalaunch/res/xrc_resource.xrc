@@ -1130,7 +1130,7 @@
 									<border>5</border>
 									<object class="wxTextCtrl" name="Id_TxtCtrlDevelopers">
 										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
-										<value>Russell Rice (mailto:russell@odamex.net)\nMichael Wood (mailto:mwoodj@knology.net)\nJohn D Corrado</value>
+										<value>Russell Rice (mailto:russell@odamex.net)\nMichael Wood (mailto:mwoodj@huntsvegas.org)\nJohn D Corrado</value>
 										<maxlength>0</maxlength>
 									</object>
 								</object>

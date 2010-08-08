@@ -17,7 +17,7 @@
 //
 // DESCRIPTION:
 //	Multi-Threaded Server Queries
-//	AUTHOR:	Mike Wood (Hyper_Eye)
+//	AUTHOR:	Michael Wood (mwoodj at huntsvegas dot org)
 //
 //-----------------------------------------------------------------------------
 
