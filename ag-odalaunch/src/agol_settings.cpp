@@ -55,11 +55,6 @@ AGOL_Settings::AGOL_Settings()
 	DirSel = NULL;
 
 	AG_WindowShow(SettingsDialog);
-
-	// Only update the wad dir list when explicitly requested.
-	// I moved this here because it will be overwritten if the
-	// widget is not shown yet.
-	AG_TlistSetRefresh(WadDirList, -1);
 }
 
 AGOL_Settings::~AGOL_Settings()
@@ -155,13 +150,10 @@ AG_Tlist *AGOL_Settings::CreateWadDirList(void *parent)
 	string    waddirs;
 	char      cwd[PATH_MAX];
 
-	wdlist = AG_TlistNewPolled(parent, AG_TLIST_EXPAND | AG_TLIST_NOSELSTATE, EventReceiver, "%p",
+	wdlist = AG_TlistNewPolled(parent, AG_TLIST_EXPAND, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::UpdateWadDirList));
+	AG_TlistSetCompareFn(wdlist, AG_TlistCompareStrings);
 	AG_TlistSizeHintPixels(wdlist, 400, 0);
-
-	// I moved this to the constructor for now - MJW
-	// Only update when requested
-	//AG_TlistSetRefresh(wdlist, -1); 
 
 	// Read the WadDirs option from the config file
 	if(GuiConfig::Read("WadDirs", waddirs))
@@ -313,14 +305,14 @@ void AGOL_Settings::UpdateWadDirList(AG_Event *event)
 {
 	list<string>::iterator i;
 
-	// Clear the list
+	// Clear the list and store selection
 	AG_TlistBegin(WadDirList);
 
 	// Traverse the waddir list and add them to the tlist widget
 	for(i = WadDirs.begin(); i != WadDirs.end(); i++)
 		AG_TlistAddS(WadDirList, agIconDirectory.s, (*i).c_str());
 	
-	// Restore list selection (if selection memory is enabled)
+	// Restore list selection
 	AG_TlistEnd(WadDirList);
 }
 
@@ -331,9 +323,6 @@ void AGOL_Settings::AddWadDirSelectorOk(AG_Event *event)
 	// If a path came back add it to the list
 	if(waddir && strlen(waddir) > 0 && !IsWadDirDuplicate(waddir))
 		WadDirs.push_back(waddir);
-
-	// Trigger the polling function for the wad tlist
-	AG_TlistRefresh(WadDirList);
 
 	DeleteEventHandler(DirSelOkHandler);
 
@@ -374,9 +363,6 @@ void AGOL_Settings::ReplaceWadDirSelectorOk(AG_Event *event)
 				*i = waddir;
 				break;
 			}
-
-		// Trigger the polling function for the wad tlist
-		AG_TlistRefresh(WadDirList);
 	}
 
 	DeleteEventHandler(DirSelOkHandler);
@@ -419,9 +405,6 @@ void AGOL_Settings::OnDeleteWadDir(AG_Event *event)
 				WadDirs.erase(i);
 				break;
 			}
-
-		// Trigger the tlist polling function for refresh
-		AG_TlistRefresh(WadDirList);
 	}
 }
 
@@ -447,9 +430,6 @@ void AGOL_Settings::OnMoveWadDirUp(AG_Event *event)
 
 			prev = i;
 		}
-
-		// Trigger the tlist polling function for refresh
-		AG_TlistRefresh(WadDirList);
 	}
 }
 
@@ -474,9 +454,6 @@ void AGOL_Settings::OnMoveWadDirDown(AG_Event *event)
 
 			prev = i;
 		}
-
-		// Trigger the tlist polling function for refresh
-		AG_TlistRefresh(WadDirList);
 	}
 }
 

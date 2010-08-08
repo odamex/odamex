@@ -108,11 +108,11 @@ int GameCommand::Launch()
 	}
 	else // parent
 	{
-		waitpid(pid, &status, 0);
+		//waitpid(pid, &status, 0);
 		
-		if(status)
-			AG_TextErrorS("Failed to launch Odamex.\n"
-					"Please verify that your Odamex path is set correctly.");
+		//if(status)
+			//AG_TextErrorS("Failed to launch Odamex.\n"
+			//		"Please verify that your Odamex path is set correctly.");
 	}
 
 	for(int j = 0; j < argc; j++)

@@ -231,7 +231,7 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 
 	col = AG_TableAddCol(list, "Server Name", "200px", NULL);
 	col = AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
-	col = AG_TableAddCol(list, "Players", "<  Players  >", NULL);
+	col = AG_TableAddCol(list, "Players", "<  Players  >", &AGOL_MainWindow::CellCompare);
 	col = AG_TableAddCol(list, "WADs", "100px", NULL);
 	col = AG_TableAddCol(list, "Map", "<  MAP00  >", NULL);
 	col = AG_TableAddCol(list, "Type", "105px", NULL);
@@ -1001,4 +1001,47 @@ void *AGOL_MainWindow::QueryServerThrEntry(void *arg)
 bool AGOL_MainWindow::CvarCompare(const Cvar_t &a, const Cvar_t &b)
 {
 	return a.Name < b.Name;
+}
+
+int AGOL_MainWindow::CellCompare(const void *p1, const void *p2)
+{
+	AG_TableCell *c1 = (AG_TableCell*)p1;
+	AG_TableCell *c2 = (AG_TableCell*)p2;
+
+	// Make sure the cells are the same type
+	if (c1->type != c2->type || strcmp(c1->fmt, c2->fmt) != 0) 
+	{
+		// See if one of the cells is null
+		if (c1->type == AG_CELL_NULL || c2->type == AG_CELL_NULL) 
+		{
+			// Sort out the null (unset) cells
+			return (c1->type == AG_CELL_NULL ? 1 : -1);
+		}
+		return 1;
+	}
+
+	switch(c1->type)
+	{
+		case AG_CELL_STRING:
+		{
+			uint32_t c1_plyrtot, c1_plyrmax;
+			uint32_t c2_plyrtot, c2_plyrmax;
+			char     c;
+
+			istringstream is1(c1->data.s);
+			istringstream is2(c2->data.s);
+
+			// Parse the player total strings ("tot/max")
+			is1 >> c1_plyrtot >> c >> c1_plyrmax;
+			is2 >> c2_plyrtot >> c >> c2_plyrmax;
+
+			// Compare player max if player total is equal
+			if(c1_plyrtot == c2_plyrtot)
+				return c1_plyrmax - c2_plyrmax;
+
+			return c1_plyrtot - c2_plyrtot;
+		}
+		default:
+			return 1;
+	}
 }

@@ -114,6 +114,7 @@ private:
 	void *QueryServerThrEntry(void *arg);
 
 	static bool CvarCompare(const Cvar_t &a, const Cvar_t &b);
+	static int  CellCompare(const void *p1, const void *p2);
 
 	// Interface Components
 	AG_Window                *MainWindow;
