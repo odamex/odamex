@@ -59,8 +59,10 @@ private:
 	void               OnCancel(AG_Event *event);
 	void               OnOK(AG_Event *event);
 	void               UpdateWadDirList(AG_Event *event);
-	void               WadDirSelectorOk(AG_Event *event);
+	void               AddWadDirSelectorOk(AG_Event *event);
 	void               OnAddWadDir(AG_Event *event);
+	void               ReplaceWadDirSelectorOk(AG_Event *event);
+	void               OnReplaceWadDir(AG_Event *event);
 	void               OnDeleteWadDir(AG_Event *event);
 	void               OnMoveWadDirUp(AG_Event *event);
 	void               OnMoveWadDirDown(AG_Event *event);
@@ -71,7 +73,6 @@ private:
 	// Interface Creation Functions
 	ODA_SrvOptionsBox *CreateSrvOptionsBox(void *parent);
 	AG_Box            *CreateOdamexPathBox(void *parent);
-	AG_Textbox        *CreateOdamexPathEntry(void *parent);
 	AG_Label          *CreateOdamexPathLabel(void *parent);
 	AG_Box            *CreateWadDirConfigBox(void *parent);
 	AG_Tlist          *CreateWadDirList(void *parent);

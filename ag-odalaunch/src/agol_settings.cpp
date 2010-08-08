@@ -123,6 +123,7 @@ AG_Label *AGOL_Settings::CreateOdamexPathLabel(void *parent)
 	string    oppath;
 
 	oplabel = AG_LabelNewS(parent, AG_LABEL_FRAME | AG_LABEL_EXPAND, "");
+	AG_LabelValign(oplabel, AG_TEXT_MIDDLE);
 
 	GuiConfig::Read("OdamexPath", oppath);
 
@@ -195,7 +196,8 @@ AG_Box *AGOL_Settings::CreateWadDirButtonBox(void *parent)
 
 	AG_ButtonNewFn(bbox, AG_BUTTON_HFILL, "Add", EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::OnAddWadDir));
-	AG_ButtonNew(bbox, AG_BUTTON_HFILL, "Replace");
+	AG_ButtonNewFn(bbox, AG_BUTTON_HFILL, "Replace", EventReceiver, "%p",
+			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::OnReplaceWadDir));
 	AG_ButtonNewFn(bbox, AG_BUTTON_HFILL, "Delete", EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::OnDeleteWadDir));
 
@@ -309,7 +311,7 @@ void AGOL_Settings::UpdateWadDirList(AG_Event *event)
 	AG_TlistEnd(WadDirList);
 }
 
-void AGOL_Settings::WadDirSelectorOk(AG_Event *event)
+void AGOL_Settings::AddWadDirSelectorOk(AG_Event *event)
 {
 	char *waddir = AG_STRING(2);
 
@@ -335,7 +337,53 @@ void AGOL_Settings::OnAddWadDir(AG_Event *event)
 	DirSel = new AGOL_DirSelector("Select a folder containing WAD files");
 
 	// Register and set the OK and Cancel events
-	DirSelOkHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::WadDirSelectorOk);
+	DirSelOkHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::AddWadDirSelectorOk);
+	DirSel->SetOkAction(DirSelOkHandler);
+	DirSelCancelHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::DirectorySelectorCancel);
+	DirSel->SetCancelAction(DirSelCancelHandler);
+}
+
+void AGOL_Settings::ReplaceWadDirSelectorOk(AG_Event *event)
+{
+	AG_TlistItem *selitem = AG_TlistSelectedItem(WadDirList);
+	char         *waddir  = AG_STRING(2);
+
+	if((selitem && strlen(selitem->text) > 0) && (waddir && strlen(waddir) > 0))
+	{
+		list<string>::iterator i;
+
+		// Look for the selected directory in the list
+		for(i = WadDirs.begin(); i != WadDirs.end(); ++i)
+			if(*i == selitem->text)
+			{
+				// Replace the item with the new path
+				*i = waddir;
+				break;
+			}
+
+		// Trigger the polling function for the wad tlist
+		AG_TlistRefresh(WadDirList);
+	}
+
+	DeleteEventHandler(DirSelOkHandler);
+
+	delete DirSel;
+	DirSel = NULL;
+}
+
+void AGOL_Settings::OnReplaceWadDir(AG_Event *event)
+{
+	if(DirSel)
+		return;
+
+	if(AG_TlistSelectedItem(WadDirList) == NULL)
+		return;
+
+	// Create and display a new directory selector dialog
+	DirSel = new AGOL_DirSelector("Select a folder containing WAD files");
+
+	// Register and set the OK and Cancel events
+	DirSelOkHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::ReplaceWadDirSelectorOk);
 	DirSel->SetOkAction(DirSelOkHandler);
 	DirSelCancelHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::DirectorySelectorCancel);
 	DirSel->SetCancelAction(DirSelCancelHandler);
