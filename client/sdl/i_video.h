@@ -58,6 +58,9 @@ void I_ReadScreen (byte *scr);
 void I_BeginRead (void);
 void I_EndRead (void);
 
+void I_SetWindowCaption(void);
+void I_SetWindowIcon(void);
+
 bool I_CheckResolution (int width, int height, int bpp);
 void I_ClosestResolution (int *width, int *height, int bits);
 bool I_SetResolution (int width, int height, int bpp);

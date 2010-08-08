@@ -180,7 +180,14 @@ void I_SetPalette (DWORD *pal)
 // Set the window caption
 void I_SetWindowCaption(void)
 {
-
+	// [Russell] - A basic version string that will eventually get replaced
+	//             better than "Odamex SDL Alpha Build 001" or something :P    
+	
+	std::string title = "Odamex - v";
+	title += DOTVERSIONSTR;
+		
+	// [Russell] - Update window caption with name
+	SDL_WM_SetCaption (title.c_str(), title.c_str());
 }
 
 // Set the window icon

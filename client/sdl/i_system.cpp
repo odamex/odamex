@@ -431,7 +431,10 @@ void I_Endoom(void)
 	// Set up text mode screen
 
 	TXT_Init();
-
+ 
+    I_SetWindowCaption();
+    I_SetWindowIcon();
+    
 	// Write the data to the screen memory
 
 	screendata = TXT_GetScreenData();
