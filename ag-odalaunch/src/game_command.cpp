@@ -28,6 +28,7 @@
 #include <cstdlib>
 
 #include "game_command.h"
+#include "gui_config.h"
 
 using namespace std;
 
@@ -48,10 +49,15 @@ int GameCommand::Launch()
 	list<string>::iterator i;
 
 	// !!!!TEMPORARY!!!!
-	cmd = "odamex -waddir ~/Games/doomwads ";
+	if(!GuiConfig::Read("OdamexPath", cmd))
+		cmd+= "/";
+
+	cmd += "odamex";
 
 	for(i = Parameters.begin(); i != Parameters.end(); ++i)
-		cmd += *i + " ";
+		cmd += " " + *i;
+	
+	cout << "Starting Odamex with command: " << cmd << endl;
 
 	system(cmd.c_str());
 	// !!!!TEMPORARY!!!!

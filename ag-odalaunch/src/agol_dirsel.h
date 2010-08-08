@@ -35,6 +35,7 @@ public:
 	~AGOL_DirSelector();
 
 	void SetOkAction(EventHandler *event);
+	void SetCancelAction(EventHandler *event);
 
 private:
 	AG_Window         *FileSelWindow;

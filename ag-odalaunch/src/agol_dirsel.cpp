@@ -63,3 +63,9 @@ void AGOL_DirSelector::SetOkAction(EventHandler *event)
 	if(event)
 		AG_FileDlgOkAction(FileDlg, EventReceiver, "%p%p", event, FileDlg->cwd);
 }
+
+void AGOL_DirSelector::SetCancelAction(EventHandler *event)
+{
+	if(event)
+		AG_FileDlgCancelAction(FileDlg, EventReceiver, "%p", event);
+}

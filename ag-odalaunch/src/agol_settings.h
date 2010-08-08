@@ -64,9 +64,15 @@ private:
 	void               OnDeleteWadDir(AG_Event *event);
 	void               OnMoveWadDirUp(AG_Event *event);
 	void               OnMoveWadDirDown(AG_Event *event);
+	void               OdamexPathSelectorOk(AG_Event *event);
+	void               OnBrowseOdamexPath(AG_Event *event);
+	void               DirectorySelectorCancel(AG_Event *event);
 
 	// Interface Creation Functions
 	ODA_SrvOptionsBox *CreateSrvOptionsBox(void *parent);
+	AG_Box            *CreateOdamexPathBox(void *parent);
+	AG_Textbox        *CreateOdamexPathEntry(void *parent);
+	AG_Label          *CreateOdamexPathLabel(void *parent);
 	AG_Box            *CreateWadDirConfigBox(void *parent);
 	AG_Tlist          *CreateWadDirList(void *parent);
 	AG_Box            *CreateWadDirButtonBox(void *parent);
@@ -77,13 +83,16 @@ private:
 	AG_Box            *CreateMainButtonBox(void *parent);
 
 	// Save Functions
-	void               SaveWadDirs();
 	void               SaveServerOptions();
+	void               SaveOdamexPath();
+	void               SaveWadDirs();
 	void               SaveExtraParams();
 
 	// Interface Components
 	AG_Window         *SettingsDialog;
 	ODA_SrvOptionsBox *SrvOptionsBox;
+	AG_Box            *OdamexPathBox;
+	AG_Label          *OdamexPathLabel;
 	AG_Box            *WadDirConfigBox;
 	AG_Tlist          *WadDirList;
 	AG_Box            *WadDirButtonBox;
@@ -94,7 +103,8 @@ private:
 	AGOL_DirSelector  *DirSel;
 
 	EventHandler      *CloseEventHandler;
-	EventHandler      *DirSelCloseHandler;
+	EventHandler      *DirSelOkHandler;
+	EventHandler      *DirSelCancelHandler;
 
 	int                MasterOnStart;
 	int                ShowBlocked;

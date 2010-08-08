@@ -38,9 +38,12 @@ AGOL_Settings::AGOL_Settings()
 {
 	SettingsDialog = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
 	AG_WindowSetCaptionS(SettingsDialog, "Configure Settings");
-	AG_WindowSetSpacing(SettingsDialog, 1);
 
 	SrvOptionsBox = CreateSrvOptionsBox(SettingsDialog);
+#ifndef GCONSOLE
+	OdamexPathBox = CreateOdamexPathBox(SettingsDialog);
+	OdamexPathLabel = CreateOdamexPathLabel(OdamexPathBox);
+#endif
 	WadDirConfigBox = CreateWadDirConfigBox(SettingsDialog);
 	WadDirList = CreateWadDirList(WadDirConfigBox);
 	WadDirButtonBox = CreateWadDirButtonBox(WadDirConfigBox);
@@ -49,6 +52,7 @@ AGOL_Settings::AGOL_Settings()
 	MainButtonBox = CreateMainButtonBox(SettingsDialog);
 
 	CloseEventHandler = NULL;
+	DirSel = NULL;
 
 	AG_WindowShow(SettingsDialog);
 
@@ -68,9 +72,10 @@ ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
 	ODA_SrvOptionsBox *obox = new ODA_SrvOptionsBox;
 
 	obox->optionsBox = AG_BoxNewVert(parent, AG_BOX_FRAME);
-	AG_BoxSetLabelS(obox->optionsBox, "Masters and Servers");
-	AG_BoxSetPadding(obox->optionsBox, 25);
-	AG_BoxSetSpacing(obox->optionsBox, 10);
+	AG_LabelNewS(obox->optionsBox, 0, "Masters and Servers");
+	obox->optionsBox = AG_BoxNewVert(obox->optionsBox, 0);
+	AG_BoxSetPadding(obox->optionsBox, 5);
+	AG_BoxSetSpacing(obox->optionsBox, 5);
 
 	obox->masterOnStartCheck = AG_CheckboxNewInt(obox->optionsBox, 0, 
 			"Get Master List on application start", &MasterOnStart);
@@ -78,9 +83,11 @@ ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
 	obox->showBlockedCheck = AG_CheckboxNewInt(obox->optionsBox, 0, 
 			"Show blocked servers", &ShowBlocked);
 
+	// Read the options. If they are not set they will be 0.
 	GuiConfig::Read("MasterOnStart", MasterOnStart);
 	GuiConfig::Read("ShowBlockedServers", ShowBlocked);
 
+	// Read the timeout options. If they are not set use a default value of 500ms.
 	if(GuiConfig::Read("MasterTimeout", MasterTimeout) || MasterTimeout <= 0)
 		MasterTimeout = 500;
 	if(GuiConfig::Read("ServerTimeout", ServerTimeout) || ServerTimeout <= 0)
@@ -97,14 +104,46 @@ ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
 	return obox;
 }
 
+AG_Box *AGOL_Settings::CreateOdamexPathBox(void *parent)
+{
+	AG_Box *opbox;
+
+	opbox = AG_BoxNewVert(parent, AG_BOX_HFILL | AG_BOX_FRAME);
+	AG_LabelNewS(opbox, 0, "Odamex Path");
+	opbox = AG_BoxNewHoriz(opbox, AG_BOX_HFILL);
+	AG_BoxSetPadding(opbox, 5);
+	AG_BoxSetSpacing(opbox, 5);
+
+	return opbox;
+}
+
+AG_Label *AGOL_Settings::CreateOdamexPathLabel(void *parent)
+{
+	AG_Label *oplabel;
+	string    oppath;
+
+	oplabel = AG_LabelNewS(parent, AG_LABEL_FRAME | AG_LABEL_EXPAND, "");
+
+	GuiConfig::Read("OdamexPath", oppath);
+
+	if(oppath.size())
+		AG_LabelTextS(oplabel, oppath.c_str());
+
+	AG_ButtonNewFn(parent, 0, "Browse", EventReceiver, "%p",
+			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::OnBrowseOdamexPath));
+
+	return oplabel;
+}
+
 AG_Box *AGOL_Settings::CreateWadDirConfigBox(void *parent)
 {
 	AG_Box *wdbox;
 
-	wdbox = AG_BoxNewHoriz(parent, AG_BOX_EXPAND | AG_BOX_FRAME);
-	AG_BoxSetLabelS(wdbox, "Wad Directories");
-	AG_BoxSetPadding(wdbox, 15);
-	AG_BoxSetSpacing(wdbox, 10);
+	wdbox = AG_BoxNewVert(parent, AG_BOX_FRAME);
+	AG_LabelNewS(wdbox, 0, "Wad Directories");
+	wdbox = AG_BoxNewHoriz(wdbox, 0);
+	AG_BoxSetPadding(wdbox, 5);
+	AG_BoxSetSpacing(wdbox, 5);
 
 	return wdbox;
 }
@@ -123,8 +162,10 @@ AG_Tlist *AGOL_Settings::CreateWadDirList(void *parent)
 	// Only update when requested
 	//AG_TlistSetRefresh(wdlist, -1); 
 
+	// Read the WadDirs option from the config file
 	if(GuiConfig::Read("WadDirs", waddirs))
 	{
+		// If there are no waddirs configured insert the current working directory
 		if(!AG_GetCWD(cwd, PATH_MAX))
 			WadDirs.push_back(string(cwd));
 	}
@@ -133,8 +174,10 @@ AG_Tlist *AGOL_Settings::CreateWadDirList(void *parent)
 		size_t oldpos = 0;
 		size_t pos = waddirs.find(PATH_DELIMITER);
 
+		// Parse the waddirs option
 		while(pos != string::npos)
 		{
+			// Put a wad path into the list
 			WadDirs.push_back(waddirs.substr(oldpos, pos - oldpos));
 			oldpos = pos + 1;
 			pos = waddirs.find(PATH_DELIMITER, oldpos);
@@ -176,10 +219,11 @@ AG_Box *AGOL_Settings::CreateExtraCmdParamsBox(void *parent)
 {
 	AG_Box *ecpbox;
 
-	// This box has to be homogenous for the textbox to look right. I'm not sure why.
-	ecpbox = AG_BoxNewHoriz(parent, AG_BOX_HFILL | AG_BOX_HOMOGENOUS | AG_BOX_FRAME);
-	AG_BoxSetLabelS(ecpbox, "Extra command line arguments");
-	AG_BoxSetPadding(ecpbox, 20);
+	ecpbox = AG_BoxNewVert(parent, AG_BOX_HFILL | AG_BOX_FRAME);
+	AG_LabelNewS(ecpbox, 0, "Extra command line arguments");
+	ecpbox = AG_BoxNewHoriz(ecpbox, AG_BOX_HFILL);
+	AG_BoxSetPadding(ecpbox, 5);
+	AG_BoxSetSpacing(ecpbox, 5);
 
 	return ecpbox;
 }
@@ -191,8 +235,10 @@ AG_Textbox *AGOL_Settings::CreateExtraCmdParamsEntry(void *parent)
 
 	ecptextbox = AG_TextboxNew(parent, AG_TEXTBOX_HFILL, NULL);
 
+	// Read the ExtraParams option from the config file
 	GuiConfig::Read("ExtraParams", extraParams);
 
+	// Put the extra params into the textbox
 	if(extraParams.size())
 		AG_TextboxSetString(ecptextbox, extraParams.c_str());
 
@@ -216,23 +262,34 @@ AG_Box *AGOL_Settings::CreateMainButtonBox(void *parent)
 	return bbox;
 }
 
-// Event Handlers
+//*************************//
+// Event Handler Functions //
+//*************************//
+
 void AGOL_Settings::OnCancel(AG_Event *event)
 {
+	// Detach and destroy the window + contents
 	AG_ObjectDetach(SettingsDialog);
 
+	// Call the close handler if one was set
 	if(CloseEventHandler)
 		CloseEventHandler->Trigger(event);
 }
 
 void AGOL_Settings::OnOK(AG_Event *event)
 {
-	SaveWadDirs();
+	// Call all the save functions
 	SaveServerOptions();
+#ifndef GCONSOLE
+	SaveOdamexPath();
+#endif
+	SaveWadDirs();
 	SaveExtraParams();
 
+	// Detach and destroy the window + contents
 	AG_ObjectDetach(SettingsDialog);
 
+	// Call the close handler if one was set
 	if(CloseEventHandler)
 		CloseEventHandler->Trigger(event);
 }
@@ -241,11 +298,14 @@ void AGOL_Settings::UpdateWadDirList(AG_Event *event)
 {
 	list<string>::iterator i;
 
+	// Clear the list
 	AG_TlistBegin(WadDirList);
 
+	// Traverse the waddir list and add them to the tlist widget
 	for(i = WadDirs.begin(); i != WadDirs.end(); i++)
 		AG_TlistAddS(WadDirList, agIconDirectory.s, (*i).c_str());
 	
+	// Restore list selection (if selection memory is enabled)
 	AG_TlistEnd(WadDirList);
 }
 
@@ -253,20 +313,32 @@ void AGOL_Settings::WadDirSelectorOk(AG_Event *event)
 {
 	char *waddir = AG_STRING(2);
 
+	// If a path came back add it to the list
 	if(waddir && strlen(waddir) > 0)
 		WadDirs.push_back(string(waddir));
 
+	// Trigger the polling function for the wad tlist
 	AG_TlistRefresh(WadDirList);
 
+	DeleteEventHandler(DirSelOkHandler);
+
 	delete DirSel;
+	DirSel = NULL;
 }
 
 void AGOL_Settings::OnAddWadDir(AG_Event *event)
 {
+	if(DirSel)
+		return;
+
+	// Create and display a new directory selector dialog
 	DirSel = new AGOL_DirSelector("Select a folder containing WAD files");
 
-	DirSelCloseHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::WadDirSelectorOk);
-	DirSel->SetOkAction(DirSelCloseHandler);
+	// Register and set the OK and Cancel events
+	DirSelOkHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::WadDirSelectorOk);
+	DirSel->SetOkAction(DirSelOkHandler);
+	DirSelCancelHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::DirectorySelectorCancel);
+	DirSel->SetCancelAction(DirSelCancelHandler);
 }
 
 void AGOL_Settings::OnDeleteWadDir(AG_Event *event)
@@ -277,13 +349,16 @@ void AGOL_Settings::OnDeleteWadDir(AG_Event *event)
 	{
 		list<string>::iterator i;
 
+		// Look for the selected directory in the list
 		for(i = WadDirs.begin(); i != WadDirs.end(); ++i)
 			if(*i == selitem->text)
 			{
+				// Delete the list item
 				WadDirs.erase(i);
 				break;
 			}
 
+		// Trigger the tlist polling function for refresh
 		AG_TlistRefresh(WadDirList);
 	}
 }
@@ -297,10 +372,12 @@ void AGOL_Settings::OnMoveWadDirUp(AG_Event *event)
 		list<string>::iterator i;
 		list<string>::iterator prev;
 
+		// Look for the selected directory in the list
 		for(i = WadDirs.begin(); i != WadDirs.end(); ++i)
 		{
 			if(*i == selitem->text)
 			{
+				// Swap the item with the one before it
 				if(i != WadDirs.begin())
 					iter_swap(i, prev);
 				break;
@@ -309,6 +386,7 @@ void AGOL_Settings::OnMoveWadDirUp(AG_Event *event)
 			prev = i;
 		}
 
+		// Trigger the tlist polling function for refresh
 		AG_TlistRefresh(WadDirList);
 	}
 }
@@ -322,10 +400,12 @@ void AGOL_Settings::OnMoveWadDirDown(AG_Event *event)
 		list<string>::iterator i = WadDirs.begin();
 		list<string>::iterator prev = WadDirs.begin();
 
+		// Look for the selected directory in the list
 		for(++i; i != WadDirs.end(); ++i)
 		{
 			if(*prev == selitem->text)
 			{
+				// Swap the item with the one after it
 				iter_swap(prev, i);
 				break;
 			}
@@ -333,21 +413,51 @@ void AGOL_Settings::OnMoveWadDirDown(AG_Event *event)
 			prev = i;
 		}
 
+		// Trigger the tlist polling function for refresh
 		AG_TlistRefresh(WadDirList);
 	}
 }
 
-// Save Functions
-void AGOL_Settings::SaveWadDirs()
+void AGOL_Settings::OdamexPathSelectorOk(AG_Event *event)
 {
-	list<string>::iterator i;
-	string liststr;
+	char *odapath = AG_STRING(2);
 
-	for(i = WadDirs.begin(); i != WadDirs.end(); ++i)
-		liststr += *i + PATH_DELIMITER;
+	// If a path came back set the odamex path label
+	if(odapath && strlen(odapath) > 0)
+		AG_LabelTextS(OdamexPathLabel, odapath);
 
-	GuiConfig::Write("WadDirs", liststr);
+	DeleteEventHandler(DirSelOkHandler);
+
+	delete DirSel;
+	DirSel = NULL;
 }
+
+void AGOL_Settings::OnBrowseOdamexPath(AG_Event *event)
+{
+	if(DirSel)
+		return;
+
+	// Create and display a new directory selector dialog
+	DirSel = new AGOL_DirSelector("Select your Odamex folder");
+
+	// Register and set the OK and Cancel events
+	DirSelOkHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::OdamexPathSelectorOk);
+	DirSel->SetOkAction(DirSelOkHandler);
+	DirSelCancelHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::DirectorySelectorCancel);
+	DirSel->SetCancelAction(DirSelCancelHandler);
+}
+
+void AGOL_Settings::DirectorySelectorCancel(AG_Event *event)
+{
+	DeleteEventHandler(DirSelCancelHandler);
+
+	delete DirSel;
+	DirSel = NULL;
+}
+
+//****************//
+// Save Functions //
+//****************//
 
 void AGOL_Settings::SaveServerOptions()
 {
@@ -355,6 +465,26 @@ void AGOL_Settings::SaveServerOptions()
 	GuiConfig::Write("ShowBlockedServers", ShowBlocked);
 	GuiConfig::Write("MasterTimeout", MasterTimeout);
 	GuiConfig::Write("ServerTimeout", ServerTimeout);
+}
+
+void AGOL_Settings::SaveOdamexPath()
+{
+	if(OdamexPathLabel->text && strlen(OdamexPathLabel->text) > 0)
+		GuiConfig::Write("OdamexPath", string(OdamexPathLabel->text));
+	else
+		GuiConfig::Unset("OdamexPath");
+}
+
+void AGOL_Settings::SaveWadDirs()
+{
+	list<string>::iterator i;
+	string liststr;
+
+	// Construct a single string with a seperator for saving
+	for(i = WadDirs.begin(); i != WadDirs.end(); ++i)
+		liststr += *i + PATH_DELIMITER;
+
+	GuiConfig::Write("WadDirs", liststr);
 }
 
 void AGOL_Settings::SaveExtraParams()
@@ -369,7 +499,10 @@ void AGOL_Settings::SaveExtraParams()
 		GuiConfig::Unset("ExtraParams");
 }
 
-// Public
+//******************//
+// Public Functions //
+//******************//
+
 void AGOL_Settings::SetWindowCloseEvent(EventHandler *handler)
 {
 	CloseEventHandler = handler;
