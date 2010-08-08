@@ -474,7 +474,7 @@ void AGOL_MainWindow::OnLaunch(AG_Event *event)
 		char cwd[PATH_MAX];
 
 		if(!AG_GetCWD(cwd, PATH_MAX))
-			cmd.AddParameter("-waddir", string(cwd));
+			cmd.AddParameter("-waddir", cwd);
 	}
 	else
 		cmd.AddParameter("-waddir", waddirs);

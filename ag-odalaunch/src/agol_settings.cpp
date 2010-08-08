@@ -168,7 +168,7 @@ AG_Tlist *AGOL_Settings::CreateWadDirList(void *parent)
 	{
 		// If there are no waddirs configured insert the current working directory
 		if(!AG_GetCWD(cwd, PATH_MAX))
-			WadDirs.push_back(string(cwd));
+			WadDirs.push_back(cwd);
 	}
 	else
 	{
@@ -264,6 +264,19 @@ AG_Box *AGOL_Settings::CreateMainButtonBox(void *parent)
 	return bbox;
 }
 
+bool AGOL_Settings::IsWadDirDuplicate(string waddir)
+{
+	list<string>::iterator i;
+
+	for(i = WadDirs.begin(); i != WadDirs.end(); i++)
+	{
+		if(*i == waddir)
+			return true;
+	}
+
+	return false;
+}
+
 //*************************//
 // Event Handler Functions //
 //*************************//
@@ -316,8 +329,8 @@ void AGOL_Settings::AddWadDirSelectorOk(AG_Event *event)
 	char *waddir = AG_STRING(2);
 
 	// If a path came back add it to the list
-	if(waddir && strlen(waddir) > 0)
-		WadDirs.push_back(string(waddir));
+	if(waddir && strlen(waddir) > 0 && !IsWadDirDuplicate(waddir))
+		WadDirs.push_back(waddir);
 
 	// Trigger the polling function for the wad tlist
 	AG_TlistRefresh(WadDirList);
@@ -348,7 +361,8 @@ void AGOL_Settings::ReplaceWadDirSelectorOk(AG_Event *event)
 	AG_TlistItem *selitem = AG_TlistSelectedItem(WadDirList);
 	char         *waddir  = AG_STRING(2);
 
-	if((selitem && strlen(selitem->text) > 0) && (waddir && strlen(waddir) > 0))
+	if((selitem && strlen(selitem->text) > 0) && 
+		(waddir && strlen(waddir) > 0 && !IsWadDirDuplicate(waddir)))
 	{
 		list<string>::iterator i;
 
@@ -518,7 +532,7 @@ void AGOL_Settings::SaveServerOptions()
 void AGOL_Settings::SaveOdamexPath()
 {
 	if(OdamexPathLabel->text && strlen(OdamexPathLabel->text) > 0)
-		GuiConfig::Write("OdamexPath", string(OdamexPathLabel->text));
+		GuiConfig::Write("OdamexPath", OdamexPathLabel->text);
 	else
 		GuiConfig::Unset("OdamexPath");
 }
@@ -542,7 +556,7 @@ void AGOL_Settings::SaveExtraParams()
 	extraParams = AG_TextboxDupString(ExtraCmdParamsEntry);
 
 	if(extraParams && strlen(extraParams) > 0)
-		GuiConfig::Write("ExtraParams", string(extraParams));
+		GuiConfig::Write("ExtraParams", extraParams);
 	else
 		GuiConfig::Unset("ExtraParams");
 }

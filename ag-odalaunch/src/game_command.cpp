@@ -26,9 +26,20 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <errno.h>
+
+#ifndef WIN32
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif
+
+#include <agar/core.h>
+#include <agar/gui.h>
 
 #include "game_command.h"
 #include "gui_config.h"
+
+#define MAX_ARGS 100
 
 using namespace std;
 
@@ -48,19 +59,65 @@ int GameCommand::Launch()
 	string cmd;
 	list<string>::iterator i;
 
-	// !!!!TEMPORARY!!!!
-	if(!GuiConfig::Read("OdamexPath", cmd))
-		cmd+= "/";
+#ifdef _XBOX
+	cout << "Xbox: Stub!" << endl;
+#elif WIN32
+	cout << "Windows: Stub!" << endl;
+#else
+	char  *argv[MAX_ARGS];
+	int    argc = 1;
+	pid_t  pid;
+	int    status;
 
+	// Get the odamex bin path
+	if(GuiConfig::Read("OdamexPath", cmd))
+	{
+		char cwd[PATH_MAX];
+
+		// No path is configured so use the CWD
+		if(!AG_GetCWD(cwd, PATH_MAX))
+			cmd = string(cwd) + "/";
+	}
+	else
+		cmd += "/";
+
+	// Add the bin to the path
 	cmd += "odamex";
 
-	for(i = Parameters.begin(); i != Parameters.end(); ++i)
-		cmd += " " + *i;
+	// The path with bin tacked on is the first arg
+	argv[0] = strdup(cmd.c_str());
 	
-	cout << "Starting Odamex with command: " << cmd << endl;
+	// Add each param as an arg
+	for(i = Parameters.begin(); i != Parameters.end(); ++i, ++argc)
+		argv[argc] = strdup((*i).c_str());
 
-	system(cmd.c_str());
-	// !!!!TEMPORARY!!!!
+	// Mark the end
+	argv[argc] = NULL;
+
+	// Fork off a new process
+	if((pid = fork()) < 0)
+		cerr << "Fork Failed: " << strerror(errno) << endl;
+	else if(pid == 0) // child
+	{
+		// Execute the command
+		if(execvp(*argv, argv) < 0)
+		{
+			cerr << "Failed to execute: " << strerror(errno) << endl;
+			exit(1); // Exit child process
+		}
+	}
+	else // parent
+	{
+		waitpid(pid, &status, 0);
+		
+		if(status)
+			AG_TextErrorS("Failed to launch Odamex.\n"
+					"Please verify that your Odamex path is set correctly.");
+	}
+
+	for(int j = 0; j < argc; j++)
+		free(argv[j]);
+#endif
 
 	return 0;
 }
