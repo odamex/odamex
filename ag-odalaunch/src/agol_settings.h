@@ -30,12 +30,6 @@
 #include "event_handler.h"
 #include "typedefs.h"
 
-#ifdef WIN32
-#define PATH_DELIMITER ';'
-#else
-#define PATH_DELIMITER ':'
-#endif
-
 typedef struct
 {
 	AG_Box       *optionsBox;
@@ -81,8 +75,6 @@ private:
 	AG_Box            *CreateWadDirButtonBox(void *parent);
 	AG_Box            *CreateExtraCmdParamsBox(void *parent);
 	AG_Textbox        *CreateExtraCmdParamsEntry(void *parent);
-	AG_Button         *CreateOKButton(void *parent);
-	AG_Button         *CreateCancelButton(void *parent);
 	AG_Box            *CreateMainButtonBox(void *parent);
 
 	// Save Functions

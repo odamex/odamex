@@ -35,6 +35,7 @@
 
 #include "agol_main.h"
 #include "agol_settings.h"
+#include "agol_solo.h"
 #include "game_command.h"
 #include "gui_config.h"
 #include "typedefs.h"
@@ -73,6 +74,7 @@ AGOL_MainWindow::AGOL_MainWindow()
 	MServer.AddMaster("voxelsoft.com", 15000);
 
 	SettingsDialog = NULL;
+	SoloGameDialog = NULL;
 	QServer = NULL;
 
 	// Show the window
@@ -497,7 +499,22 @@ void AGOL_MainWindow::OnLaunch(AG_Event *event)
 
 void AGOL_MainWindow::OnOfflineLaunch(AG_Event *event)
 {
-	cout << "Solo Launch: Stub" << endl;
+	if(SoloGameDialog)
+		return;
+
+	SoloGameDialog = new AGOL_Solo();
+
+	CloseSoloGameHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCloseSoloGameDialog);
+
+	SoloGameDialog->SetWindowCloseEvent(CloseSoloGameHandler);
+}
+
+void AGOL_MainWindow::OnCloseSoloGameDialog(AG_Event *event)
+{
+	DeleteEventHandler(CloseSoloGameHandler);
+
+	delete SoloGameDialog;
+	SoloGameDialog = NULL;
 }
 
 void AGOL_MainWindow::OnRefreshSelected(AG_Event *event)
@@ -547,7 +564,7 @@ void AGOL_MainWindow::OnCustomServer(AG_Event *event)
 
 void AGOL_MainWindow::OnReportBug(AG_Event *event)
 {
-	cout << "Report Bug: Stub" << endl;
+	AG_TextMsgS(AG_MSG_INFO, "Please report any bugs at: http://odamex.net/bugs/\n\nThank You!");
 }
 
 void AGOL_MainWindow::OnAbout(AG_Event *event)

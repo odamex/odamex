@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "agol_settings.h"
+#include "agol_solo.h"
 #include "event_handler.h"
 #include "oda_thread.h"
 #include "net_packet.h"
@@ -70,6 +71,7 @@ private:
 	void OnExit(AG_Event *event);
 	void OnLaunch(AG_Event *event);
 	void OnOfflineLaunch(AG_Event *event);
+	void OnCloseSoloGameDialog(AG_Event *event);
 	void OnRefreshSelected(AG_Event *event);
 	void OnRefreshAll(AG_Event *event);
 	void OnGetMasterList(AG_Event *event);
@@ -129,6 +131,8 @@ private:
 
 	AGOL_Settings            *SettingsDialog;
 	EventHandler             *CloseSettingsHandler;
+	AGOL_Solo                *SoloGameDialog;
+	EventHandler             *CloseSoloGameHandler;
 
 	// Servers
 	MasterServer              MServer;

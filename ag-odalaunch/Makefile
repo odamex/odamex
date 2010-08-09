@@ -2,6 +2,7 @@ SOURCES = src/main.cpp \
 	src/agol_main.cpp \
 	src/agol_settings.cpp \
 	src/agol_dirsel.cpp \
+	src/agol_solo.cpp \
 	src/event_handler.cpp \
 	src/net_io.cpp \
 	src/net_packet.cpp \

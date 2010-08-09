@@ -1,0 +1,347 @@
+// Emacs style mode select   -*- C++ -*- 
+//-----------------------------------------------------------------------------
+//
+// $Id $
+//
+// Copyright (C) 2006-2010 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//	Solo Game
+//
+// AUTHORS:
+//	 Michael Wood (mwoodj at huntsvegas dot org)
+//
+//-----------------------------------------------------------------------------
+
+#include <iostream>
+#include <string>
+#include <algorithm>
+#include <list>
+
+#include <agar/core.h>
+#include <agar/gui.h>
+
+#include "agol_solo.h"
+#include "gui_config.h"
+#include "game_command.h"
+
+using namespace std;
+
+const string DoomIWadNames[] =
+{
+	"DOOM2F.WAD",
+	"DOOM2.WAD",
+	"PLUTONIA.WAD",
+	"TNT.WAD",
+	"DOOMU.WAD",
+	"DOOM.WAD",
+	"DOOM1.WAD",
+	"FREEDOOM.WAD",
+	"FREEDM.WAD",
+	"CHEX.WAD",
+	""
+};
+
+AGOL_Solo::AGOL_Solo()
+{
+	SoloGameDialog = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
+	AG_WindowSetCaptionS(SoloGameDialog, "Solo Game");
+	AG_WindowSetGeometryAligned(SoloGameDialog, AG_WINDOW_MC, 600, 400);
+
+	WadListsBox = CreateWadListsBox(SoloGameDialog);
+	IwadBox = CreateIwadBox(WadListsBox);
+	IwadList = CreateIwadList(IwadBox);;
+	PwadBox = CreatePwadBox(WadListsBox);
+	PwadList = CreatePwadList(PwadBox);
+	MainButtonBox = CreateMainButtonBox(SoloGameDialog);
+
+	PopulateWadLists();
+
+	CloseEventHandler = NULL;
+
+	AG_WindowShow(SoloGameDialog);
+}
+
+AGOL_Solo::~AGOL_Solo()
+{
+
+}
+
+AG_Box *AGOL_Solo::CreateWadListsBox(void *parent)
+{
+	AG_Box *wlbox;
+
+	wlbox = AG_BoxNewHoriz(parent, AG_BOX_EXPAND | AG_BOX_HOMOGENOUS);
+
+	return wlbox;
+}
+
+AG_Box *AGOL_Solo::CreateIwadBox(void *parent)
+{
+	AG_Box *iwbox;
+
+	iwbox = AG_BoxNewVert(parent, AG_BOX_EXPAND | AG_BOX_FRAME);
+	AG_LabelNewS(iwbox, 0, "Select IWAD");
+	iwbox = AG_BoxNewVert(iwbox, AG_BOX_EXPAND);
+	AG_BoxSetPadding(iwbox, 5);
+	AG_BoxSetSpacing(iwbox, 5);
+
+	return iwbox;
+}
+
+AG_Tlist *AGOL_Solo::CreateIwadList(void *parent)
+{
+	AG_Tlist *iwlist;
+
+	iwlist = AG_TlistNew(parent, AG_TLIST_EXPAND);
+
+	return iwlist;
+}
+
+AG_Box *AGOL_Solo::CreatePwadBox(void *parent)
+{
+	AG_Box *pwbox;
+
+	pwbox = AG_BoxNewVert(parent, AG_BOX_EXPAND | AG_BOX_FRAME);
+	AG_LabelNewS(pwbox, 0, "Select WADs");
+	pwbox = AG_BoxNewVert(pwbox, AG_BOX_EXPAND);
+	AG_BoxSetPadding(pwbox, 5);
+	AG_BoxSetSpacing(pwbox, 5);
+
+	return pwbox;
+}
+
+AG_Tlist *AGOL_Solo::CreatePwadList(void *parent)
+{
+	AG_Tlist *pwlist;
+
+	pwlist = AG_TlistNew(parent, AG_TLIST_MULTITOGGLE | AG_TLIST_EXPAND);
+
+	return pwlist;
+}
+
+AG_Box *AGOL_Solo::CreateMainButtonBox(void *parent)
+{
+	AG_Box *bbox;
+
+	bbox = AG_BoxNewHoriz(parent, AG_BOX_HFILL);
+
+	// This empty box positions the buttons to the right
+	AG_BoxNewHoriz(bbox, AG_BOX_HFILL);
+
+	AG_ButtonNewFn(bbox, 0, "Cancel", EventReceiver, "%p", 
+			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Solo::OnCancel));
+	AG_ButtonNewFn(bbox, 0, "Launch", EventReceiver, "%p", 
+			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Solo::OnLaunch));
+
+	return bbox;
+}
+
+void AGOL_Solo::PopulateWadLists()
+{
+	string       waddirs;
+	list<string> waddirList;
+	list<string>::iterator wditer;
+
+	// Read the WadDirs option from the config file
+	if(GuiConfig::Read("WadDirs", waddirs))
+	{
+		char cwd[PATH_MAX];
+
+		// If there are no waddirs configured insert the current working directory
+		if(!AG_GetCWD(cwd, PATH_MAX))
+			waddirList.push_back(cwd);
+	}
+	else
+	{
+		size_t oldpos = 0;
+		size_t pos = waddirs.find(PATH_DELIMITER);
+
+		// Parse the waddirs option
+		while(pos != string::npos)
+		{
+			// Put a wad path into the list
+			waddirList.push_back(waddirs.substr(oldpos, pos - oldpos));
+			oldpos = pos + 1;
+			pos = waddirs.find(PATH_DELIMITER, oldpos);
+		}
+	}
+
+	// Loop through the directory list and find all the wad files
+	for(wditer = waddirList.begin(); wditer != waddirList.end(); ++wditer)
+	{
+		AG_Dir      *dir;
+		AG_FileInfo  info;
+
+		if(!(*wditer).size())
+			continue;
+
+		// Open the wad directory
+		if((dir = AG_OpenDir((*wditer).c_str())) == NULL)
+		{
+			cerr << "Failed to open directory (" << *wditer << "): " << AG_GetError() << endl;
+			continue;
+		}
+
+		// Loop through all the directory contents
+		for(size_t i = 0; i < dir->nents; i++)
+		{
+			string curFile(dir->ents[i]);
+			string path(*wditer + AG_PATHSEP + curFile);
+
+			if(AG_GetFileInfo(path.c_str(), &info) == -1)
+				continue;
+
+			// Make sure this item is a regular file
+			if(info.type == AG_FILE_REGULAR)
+			{
+				string fileUpper;
+
+				// Convert the wad name to uppercase
+				fileUpper.resize(curFile.size());
+				transform(curFile.begin(), curFile.end(), fileUpper.begin(), ::toupper);
+
+				// Find the last '.' in the file name
+				size_t dot = fileUpper.rfind('.');
+
+				// If the file has no extension move on to the next one.
+				if(dot == string::npos)
+					continue;
+
+				// Compare the file extension to the acceptable extensions for Odamex.
+				if(fileUpper.substr(dot + 1, fileUpper.size()) == "WAD")
+				{
+					// If this is an IWAD put it in the IWAD list.
+					if(WadIsIWAD(curFile))
+						AG_TlistAddS(IwadList, agIconDoc.s, dir->ents[i]);
+					else
+						AG_TlistAddS(PwadList, agIconDoc.s, dir->ents[i]);
+				}
+				else if(fileUpper.substr(dot + 1, fileUpper.size()) == "DEH" ||
+						fileUpper.substr(dot + 1, fileUpper.size()) == "BEX")
+					AG_TlistAddS(PwadList, agIconDoc.s, dir->ents[i]);
+			}
+		}
+
+		AG_CloseDir(dir);
+	}
+}
+
+bool AGOL_Solo::WadIsIWAD(string wad)
+{
+	string wadUpper;
+
+	// Get the wad in all uppercase
+	wadUpper.resize(wad.size());
+	transform(wad.begin(), wad.end(), wadUpper.begin(), ::toupper);
+
+	// Compare to the supported iwad file names
+	for(int i = 0; DoomIWadNames[i].size(); i++)
+	{
+		if(wadUpper == DoomIWadNames[i])
+			return true;
+	}
+
+	return false;
+}
+
+void AGOL_Solo::OnCancel(AG_Event *event)
+{
+	// Detach and destroy the window + contents
+	AG_ObjectDetach(SoloGameDialog);
+
+	// Call the close handler if one was set
+	if(CloseEventHandler)
+		CloseEventHandler->Trigger(event);
+}
+
+void AGOL_Solo::OnLaunch(AG_Event *event)
+{
+	GameCommand cmd;
+	string      wad;
+	string      waddirs;
+	string      extraParams;
+	bool        pwadGame = false;
+
+	// Get the selected iwad
+	for(size_t i = 1; i <= IwadList->nitems; i++)
+	{
+		AG_TlistItem *selitem = AG_TlistFindByIndex(IwadList, i);
+
+		if(selitem && selitem->selected && strlen(selitem->text) > 0)
+		{
+			wad = selitem->text;
+			break;
+		}
+	}
+
+	// We can't continue if no iwad is selected
+	if(!wad.size())
+	{
+		AG_TextErrorS("You must choose an IWAD!");
+		return;
+	}
+
+	// Get the waddir option
+	if(GuiConfig::Read("WadDirs", waddirs))
+	{
+		char cwd[PATH_MAX];
+
+		// No waddirs are set so use CWD
+		if(!AG_GetCWD(cwd, PATH_MAX))
+			cmd.AddParameter("-waddir", cwd);
+	}
+	else
+		cmd.AddParameter("-waddir", waddirs);
+
+	// Add the iwad parameter
+	cmd.AddParameter("-iwad", wad);
+
+	// Find any selected pwads
+	for(size_t i = 1; i <= PwadList->nitems; i++)
+	{
+		AG_TlistItem *selitem = AG_TlistFindByIndex(PwadList, i);
+
+		if(selitem && selitem->selected && strlen(selitem->text) > 0)
+		{
+			if(!pwadGame)
+			{
+				cmd.AddParameter("-file");
+				pwadGame = true;
+			}
+
+			cmd.AddParameter(selitem->text);
+		}
+	}
+
+	// Add the extra parameters
+	if(!GuiConfig::Read("ExtraParams", extraParams))
+		cmd.AddParameter(extraParams);
+
+	// Launch the game
+	cmd.Launch();
+
+	// Detach and destroy the window + contents
+	AG_ObjectDetach(SoloGameDialog);
+
+	// Call the close handler if one was set
+	if(CloseEventHandler)
+		CloseEventHandler->Trigger(event);
+}
+
+void AGOL_Solo::SetWindowCloseEvent(EventHandler *handler)
+{
+	CloseEventHandler = handler;
+
+	AG_AddEvent(SoloGameDialog, "window-close", EventReceiver, "%p", handler);
+}
