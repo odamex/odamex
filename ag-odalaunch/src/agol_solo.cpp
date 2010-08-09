@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id $
+// $Id$
 //
 // Copyright (C) 2006-2010 by The Odamex Team.
 //
@@ -60,7 +60,7 @@ AGOL_Solo::AGOL_Solo()
 
 	WadListsBox = CreateWadListsBox(SoloGameDialog);
 	IwadBox = CreateIwadBox(WadListsBox);
-	IwadList = CreateIwadList(IwadBox);;
+	IwadList = CreateIwadList(IwadBox);
 	PwadBox = CreatePwadBox(WadListsBox);
 	PwadList = CreatePwadList(PwadBox);
 	MainButtonBox = CreateMainButtonBox(SoloGameDialog);
@@ -267,26 +267,16 @@ void AGOL_Solo::OnCancel(AG_Event *event)
 
 void AGOL_Solo::OnLaunch(AG_Event *event)
 {
-	GameCommand cmd;
-	string      wad;
-	string      waddirs;
-	string      extraParams;
-	bool        pwadGame = false;
+	AG_TlistItem *selitem;
+	GameCommand   cmd;
+	string        wad;
+	string        waddirs;
+	string        extraParams;
 
-	// Get the selected iwad
-	for(size_t i = 1; i <= IwadList->nitems; i++)
-	{
-		AG_TlistItem *selitem = AG_TlistFindByIndex(IwadList, i);
-
-		if(selitem && selitem->selected && strlen(selitem->text) > 0)
-		{
-			wad = selitem->text;
-			break;
-		}
-	}
-
-	// We can't continue if no iwad is selected
-	if(!wad.size())
+	// Add the iwad parameter
+	if(((selitem = AG_TlistSelectedItem(IwadList)) != NULL) && (strlen(selitem->text) > 0))
+		cmd.AddParameter("-iwad", selitem->text);
+	else // We can't continue if no iwad is selected
 	{
 		AG_TextErrorS("You must choose an IWAD!");
 		return;
@@ -304,23 +294,18 @@ void AGOL_Solo::OnLaunch(AG_Event *event)
 	else
 		cmd.AddParameter("-waddir", waddirs);
 
-	// Add the iwad parameter
-	cmd.AddParameter("-iwad", wad);
-
-	// Find any selected pwads
-	for(size_t i = 1; i <= PwadList->nitems; i++)
+	// If there are selected items traverse the wad list
+	if(AG_TlistSelectedItem(PwadList))
 	{
-		AG_TlistItem *selitem = AG_TlistFindByIndex(PwadList, i);
+		cmd.AddParameter("-file");
 
-		if(selitem && selitem->selected && strlen(selitem->text) > 0)
+		// Find any selected pwads
+		for(size_t i = 1; i <= PwadList->nitems; i++)
 		{
-			if(!pwadGame)
-			{
-				cmd.AddParameter("-file");
-				pwadGame = true;
-			}
+			selitem = AG_TlistFindByIndex(PwadList, i);
 
-			cmd.AddParameter(selitem->text);
+			if(selitem && selitem->selected && strlen(selitem->text) > 0)
+				cmd.AddParameter(selitem->text);
 		}
 	}
 
