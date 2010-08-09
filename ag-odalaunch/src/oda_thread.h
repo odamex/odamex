@@ -72,7 +72,7 @@ static void *CallThreadFunc(void *arg)
 class ODA_Thread
 {
 public:
-	ODA_Thread() : m_Running(false), m_RMutex(NULL) {};
+	ODA_Thread() { m_Running = false; m_RMutex = NULL; }
 
 	int Create(ODA_ThreadBase *classPtr, THREAD_FUNC_PTR funcPtr, void *arg)
 	{

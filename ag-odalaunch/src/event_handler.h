@@ -99,8 +99,8 @@ private:
 class EventHandler
 {
 public:
-	EventHandler(ODA_EventRegister *classPtr, EVENT_FUNC_PTR funcPtr) :
-		 ThisPtr(classPtr), FuncPtr(funcPtr) {};
+	EventHandler(ODA_EventRegister *classPtr, EVENT_FUNC_PTR funcPtr)
+		{ ThisPtr = classPtr, FuncPtr = funcPtr; }
 	~EventHandler() {};
 
 	void Trigger(AG_Event *event)

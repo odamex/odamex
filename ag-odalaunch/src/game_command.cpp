@@ -67,7 +67,6 @@ int GameCommand::Launch()
 	char  *argv[MAX_ARGS];
 	int    argc = 1;
 	pid_t  pid;
-	int    status;
 
 	// Get the odamex bin path
 	if(GuiConfig::Read("OdamexPath", cmd))
@@ -108,11 +107,15 @@ int GameCommand::Launch()
 	}
 	else // parent
 	{
-		//waitpid(pid, &status, 0);
+#if 0
+		int status;
+
+		waitpid(pid, &status, 0);
 		
-		//if(status)
-			//AG_TextErrorS("Failed to launch Odamex.\n"
-			//		"Please verify that your Odamex path is set correctly.");
+		if(status)
+			AG_TextErrorS("Failed to launch Odamex.\n"
+					"Please verify that your Odamex path is set correctly.");
+#endif
 	}
 
 	for(int j = 0; j < argc; j++)

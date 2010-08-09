@@ -16,7 +16,7 @@ LD = g++
 
 AGCONFIG = agar-config
 
-CFLAGS = $(shell $(AGCONFIG) --cflags) -g
+CFLAGS = $(shell $(AGCONFIG) --cflags) -g -Wall
 LFLAGS = $(shell $(AGCONFIG) --libs) -lSDL_image -g
 
 # Add the universal build flags if this is wx_mac

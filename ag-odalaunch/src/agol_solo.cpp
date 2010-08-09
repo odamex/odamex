@@ -194,7 +194,7 @@ void AGOL_Solo::PopulateWadLists()
 		}
 
 		// Loop through all the directory contents
-		for(size_t i = 0; i < dir->nents; i++)
+		for(int i = 0; i < dir->nents; i++)
 		{
 			string curFile(dir->ents[i]);
 			string path(*wditer + AG_PATHSEP + curFile);
@@ -300,7 +300,7 @@ void AGOL_Solo::OnLaunch(AG_Event *event)
 		cmd.AddParameter("-file");
 
 		// Find any selected pwads
-		for(size_t i = 1; i <= PwadList->nitems; i++)
+		for(int i = 1; i <= PwadList->nitems; i++)
 		{
 			selitem = AG_TlistFindByIndex(PwadList, i);
 

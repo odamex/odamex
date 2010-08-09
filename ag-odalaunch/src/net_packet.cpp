@@ -78,7 +78,7 @@ int32_t MasterServer::Parse()
 
 	// begin reading
 
-	int32_t temp_response;
+	uint32_t temp_response;
 
 	Socket.Read32(temp_response);
 

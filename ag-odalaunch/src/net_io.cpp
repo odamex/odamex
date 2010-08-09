@@ -44,9 +44,9 @@
 using namespace std;
 
 BufferedSocket::BufferedSocket() :	m_BadRead(false), m_BadWrite(false),
-									m_Socket(0), m_SendPing(0), m_ReceivePing(0),
-									m_SocketBuffer(NULL)
+									m_Socket(0), m_SendPing(0), m_ReceivePing(0)
 {
+	m_SocketBuffer = NULL;
 	memset(&m_RemoteAddress, 0, sizeof(struct sockaddr_in));
 	ClearBuffer();
 }
@@ -279,7 +279,6 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
         
 bool BufferedSocket::ReadString(string &str)
 {
-	static char cstr[2048];
 	signed char ch;
 
     if (!CanRead(1))
