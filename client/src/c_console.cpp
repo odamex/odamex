@@ -968,7 +968,9 @@ void C_ToggleConsole (void)
 
 void C_HideConsole (void)
 {
-//	if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP)
+    // [Russell] - Prevent console from going up when downloading files or
+    // connecting
+    if (gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
 	{
 		ConsoleState = c_up;
 		ConBottom = 0;
