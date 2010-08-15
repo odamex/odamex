@@ -1085,9 +1085,15 @@ void D_AddDefWads (std::string iwad)
 	}
 
 	I_SetTitleString(IdentifyVersion(iwad).c_str());
+}
 
+//
+// D_AddDefSkins
+//
+/*void D_AddDefSkins (void)
+{
 	// [RH] Add any .wad files in the skins directory
-/*#ifndef UNIX // denis - fixme - 1) _findnext not implemented on linux or osx, use opendir 2) server does not need skins, does it?
+#ifndef UNIX // denis - fixme - 1) _findnext not implemented on linux or osx, use opendir 2) server does not need skins, does it?
 	{
 		char curdir[256];
 
@@ -1148,9 +1154,16 @@ void D_AddDefWads (std::string iwad)
 			chdir (curdir);
 		}
 	}
-#endif*/
+#endif
+}*/
 
-	modifiedgame = false;
+//
+// D_AddCmdParameterFiles
+// Add the files specified with -file, do this only when it first loads
+//
+void D_AddCmdParameterFiles(void)
+{
+    modifiedgame = false;
 
 	DArgs files = Args.GatherFiles ("-file", ".wad", true);
 	if (files.NumArgs() > 0)
@@ -1399,6 +1412,7 @@ void D_DoomMain (void)
 		iwad = "";
 
 	D_AddDefWads(iwad);
+	D_AddCmdParameterFiles();
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
 
