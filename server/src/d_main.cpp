@@ -900,8 +900,9 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 	// Restart the memory manager
 	Z_Init();
-
+	
 	wadfiles.clear();
+	modifiedgame = false;
 
 	std::string custwad;
 	if(wadnames.empty() == false)

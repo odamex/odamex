@@ -1312,6 +1312,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
 
 	wadfiles.clear();
+	modifiedgame = false;	
 
 	std::string custwad;
 	if(wadnames.empty() == false)
