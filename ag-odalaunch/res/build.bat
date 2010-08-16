@@ -1,1 +1,1 @@
-reswrap -o ..\src\icons.h *.png
+reswrap -o ..\src\icons.h *.png ..\..\media\icon_odalaunch_96.png

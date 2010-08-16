@@ -36,6 +36,7 @@
 #include "agol_main.h"
 #include "agol_settings.h"
 #include "agol_solo.h"
+#include "agol_about.h"
 #include "game_command.h"
 #include "gui_config.h"
 #include "typedefs.h"
@@ -75,6 +76,7 @@ AGOL_MainWindow::AGOL_MainWindow()
 
 	SettingsDialog = NULL;
 	SoloGameDialog = NULL;
+	AboutDialog = NULL;
 	QServer = NULL;
 
 	// Show the window
@@ -569,7 +571,22 @@ void AGOL_MainWindow::OnReportBug(AG_Event *event)
 
 void AGOL_MainWindow::OnAbout(AG_Event *event)
 {
-	cout << "About: Stub" << endl;
+	if(AboutDialog)
+		return;
+
+	AboutDialog= new AGOL_About();
+
+	CloseAboutHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCloseAboutDialog);
+
+	AboutDialog->SetWindowCloseEvent(CloseAboutHandler);
+}
+
+void AGOL_MainWindow::OnCloseAboutDialog(AG_Event *event)
+{
+	DeleteEventHandler(CloseAboutHandler);
+
+	delete AboutDialog;
+	AboutDialog = NULL;
 }
 
 void AGOL_MainWindow::OnMouseOverWidget(AG_Event *event)
@@ -720,8 +737,8 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 		}
 
 		AG_TableAddRow(ServerList, "%s:%u:%s:%s:%s:%s:%s:%s", name.c_str(), QServer[i].GetPing(), 
-										plyrCnt.str().c_str(), pwads.c_str(), map.c_str(), 
-										gametype.c_str(), iwad.c_str(), sAddr.c_str());
+		                                       plyrCnt.str().c_str(), pwads.c_str(), map.c_str(), 
+		                                           gametype.c_str(), iwad.c_str(), sAddr.c_str());
 
 		// Keep track of the total number of players across all servers
 		totalPlayers += QServer[i].Info.Players.size();
@@ -806,9 +823,9 @@ void AGOL_MainWindow::UpdateServInfoList(AG_Event *event)
 
 		// Version
 		rowStream << "Version " << (int)QServer[srv].Info.VersionMajor << "." <<
-				(int)QServer[srv].Info.VersionMinor << "." <<
-				(int)QServer[srv].Info.VersionPatch << "-r" <<
-				(int)QServer[srv].Info.VersionRevision;
+		                           (int)QServer[srv].Info.VersionMinor << "." <<
+		                           (int)QServer[srv].Info.VersionPatch << "-r" <<
+		                           (int)QServer[srv].Info.VersionRevision;
 		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
 		rowStream.str("");
 

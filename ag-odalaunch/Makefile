@@ -1,13 +1,15 @@
-SOURCES = src/main.cpp \
+SOURCES = \
+	src/agol_about.cpp \
+	src/agol_dirsel.cpp \
 	src/agol_main.cpp \
 	src/agol_settings.cpp \
-	src/agol_dirsel.cpp \
 	src/agol_solo.cpp \
 	src/event_handler.cpp \
-	src/net_io.cpp \
-	src/net_packet.cpp \
 	src/game_command.cpp \
-	src/gui_config.cpp
+	src/gui_config.cpp \
+	src/main.cpp \
+	src/net_io.cpp \
+	src/net_packet.cpp
 
 HEADERS = src/*.h
 
@@ -17,8 +19,7 @@ LD = g++
 AGCONFIG = agar-config
 
 CFLAGS = $(shell $(AGCONFIG) --cflags) -g -Wall
-LFLAGS = $(shell $(AGCONFIG) --libs) -lSDL_image -g
-
+LFLAGS = $(shell $(AGCONFIG) --libs) -g -lSDL_image
 # Add the universal build flags if this is wx_mac
 #ifneq (,$(findstring wx_mac, $(strip $(shell $(AGCONFIG) --basename 2>&1))))
 #	CFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc -isysroot /Developer/SDKs/MacOSX10.4u.sdk

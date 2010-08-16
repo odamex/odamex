@@ -30,6 +30,7 @@
 
 #include "agol_settings.h"
 #include "agol_solo.h"
+#include "agol_about.h"
 #include "event_handler.h"
 #include "oda_thread.h"
 #include "net_packet.h"
@@ -81,6 +82,7 @@ private:
 	void OnCustomServer(AG_Event *event);
 	void OnReportBug(AG_Event *event);
 	void OnAbout(AG_Event *event);
+	void OnCloseAboutDialog(AG_Event *event);
 	void OnMouseOverWidget(AG_Event *event);
 	void UpdateServerList(AG_Event *event);
 	void UpdatePlayerList(AG_Event*);
@@ -133,6 +135,8 @@ private:
 	EventHandler             *CloseSettingsHandler;
 	AGOL_Solo                *SoloGameDialog;
 	EventHandler             *CloseSoloGameHandler;
+	AGOL_About               *AboutDialog;
+	EventHandler             *CloseAboutHandler;
 
 	// Servers
 	MasterServer              MServer;
