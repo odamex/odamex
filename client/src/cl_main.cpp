@@ -1946,9 +1946,9 @@ void CL_Switch()
 
 	if(!P_SetButtonInfo(&lines[l], state, time)) // denis - fixme - security
 		if(wastoggled)
-			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_SPECIAL_REPEAT);  // denis - fixme - security
+			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL);  // denis - fixme - security
 
-	if(wastoggled && !(lines[l].flags & ML_SPECIAL_REPEAT)) // non repeat special
+	if(wastoggled && !(lines[l].flags & ML_REPEAT_SPECIAL)) // non repeat special
 		lines[l].special = 0;
 }
 

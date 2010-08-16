@@ -914,9 +914,6 @@ P_CrossSpecialLine
 
 	if(thing)
 	{
-		if (!(line->flags & ML_SPECIAL_CROSS))
-			return;
-
 		//	Triggers that other things can activate
 		if (!thing->player)
 		{
@@ -935,13 +932,16 @@ P_CrossSpecialLine
 				default: break;
 			}
 
-			if(!(line->flags & ML_SPECIAL_MONSTER))
+			if(!(GET_SPAC(line->flags) == SPAC_MCROSS))
 				return;
 		}
 		else
 		{
+		    if (!(GET_SPAC(line->flags) == SPAC_CROSS))
+                return;
+                
 			// Likewise, player should not trigger monster lines
-			if(line->flags & ML_SPECIAL_MONSTER_ONLY)
+			if(GET_SPAC(line->flags) == SPAC_MCROSS)
 				return;
 
 			// And spectators should only trigger teleporters
@@ -980,7 +980,7 @@ P_CrossSpecialLine
 	}
 
 	LineSpecials[line->special] (line, thing);
-	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 
 	OnActivatedLine(line, thing, side, 0);
 }
@@ -1000,25 +1000,25 @@ P_ShootSpecialLine
 
 	if(thing)
 	{
-		if (!(line->flags & ML_SPECIAL_SHOOT))
+		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
 			return;
 
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (!thing->player && !(line->flags & ML_SPECIAL_MONSTER))
+		if (!thing->player && !(GET_SPAC(line->flags) == SPAC_MCROSS))
 			return;
 	}
 
 	LineSpecials[line->special] (line, thing);
 
-	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 	OnActivatedLine(line, thing, 0, 2);
 
 	if(serverside)
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-		OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 	}
 }
 
@@ -1057,14 +1057,15 @@ P_UseSpecialLine
 
 	if(thing)
 	{
-		if (!(line->flags & ML_SPECIAL_USE))
+		if (!(GET_SPAC(line->flags) == SPAC_USE) &&
+            !(GET_SPAC(line->flags) == SPAC_USETHROUGH))
 			return false;
 
 		// Switches that other things can activate.
 		if (!thing->player)
 		{
 			// not for monsters?
-			if (!(line->flags & ML_SPECIAL_MONSTER))
+			if (!(line->flags & ML_MONSTERSCANACTIVATE))
 				return false;
 
 			// never open secret doors
@@ -1082,13 +1083,13 @@ P_UseSpecialLine
 
 	if(LineSpecials[line->special] (line, thing))
 	{
-		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 		OnActivatedLine(line, thing, side, 1);
 
 		if(serverside)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-			OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
 

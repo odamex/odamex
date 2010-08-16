@@ -1606,8 +1606,12 @@ BOOL PTR_UseTraverse (intercept_t *in)
 
     P_UseSpecialLine (usething, in->d.line, side);
 
-    // can't use for than one special line in a row
-    return false;
+	//WAS can't use more than one special line in a row
+	//jff 3/21/98 NOW multiple use allowed with enabling line flag
+	//[RH] And now I've changed it again. If the line is of type
+	//	   SPAC_USE, then it eats the use. Everything else passes
+	//	   it through, including SPAC_USETHROUGH.
+	return (GET_SPAC(in->d.line->flags) == SPAC_USE) ? false : true;
 }
 
 // Returns false if a "oof" sound should be made because of a blocking
