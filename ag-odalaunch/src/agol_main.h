@@ -61,7 +61,7 @@ typedef struct
 class AGOL_MainWindow : private ODA_EventRegister, ODA_ThreadBase
 {
 public:
-	AGOL_MainWindow();
+	AGOL_MainWindow(int width, int height);
 	~AGOL_MainWindow();
 
 private:
@@ -92,6 +92,7 @@ private:
 	void UpdateStatusbarTooltip(const char *tip);
 	void ClearStatusbarTooltip();
 	void UpdateStatusbarMasterPing(uint32_t ping);
+	int  GetServerRowIndex(std::string address);
 	int  GetSelectedServerListIndex();
 	int  GetSelectedServerArrayIndex();
 	void ClearList(AG_Table *table);

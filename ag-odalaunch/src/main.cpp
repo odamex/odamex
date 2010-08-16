@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
 	char            *drivers = NULL;
 	char            *optArg;
 	int              c;
+	int              width, height;
 
 	/* Initialize Agar-Core. */
 	if (AG_InitCore("ag-odalaunch", AG_VERBOSE | AG_CREATE_DATADIR) == -1) 
@@ -66,6 +67,14 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	// Get the dimensions for initialization
+	if(GuiConfig::Read("MainWindow-Width", width) || width <= 0)
+		width = 640;
+	if(GuiConfig::Read("MainWindow-Height", height) || height <= 0)
+		height = 480;
+
+	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
+
 	if(!drivers || !strstr(drivers, "sdl"))
 	{
 		/* Initialize Agar-GUI. */
@@ -75,13 +84,13 @@ int main(int argc, char *argv[])
 			return (-1);
 		}
 		if(agDriverSw)
-			AG_ResizeDisplay(640, 480);
+			AG_ResizeDisplay(width, height);
 	}
 	else // Alternative initialization. This will only initialize single-window display.
 	{
 		if(!strcmp(drivers, "sdlfb"))
 		{
-			if (AG_InitVideo(640, 480, 32, AG_VIDEO_SDL | AG_VIDEO_RESIZABLE) == -1) 
+			if (AG_InitVideo(width, height, 32, AG_VIDEO_SDL | AG_VIDEO_RESIZABLE) == -1) 
 			{
 				cerr << AG_GetError() << endl;
 				return (-1);
@@ -89,7 +98,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			if (AG_InitVideo(640, 480, 32, AG_VIDEO_OPENGL_OR_SDL | AG_VIDEO_RESIZABLE) == -1) 
+			if (AG_InitVideo(width, height, 32, AG_VIDEO_OPENGL_OR_SDL | AG_VIDEO_RESIZABLE) == -1) 
 			{
 				cerr << AG_GetError() << endl;
 				return (-1);
@@ -101,7 +110,7 @@ int main(int argc, char *argv[])
 	BufferedSocket::InitializeSocketAPI();
 
 	// Create the main window
-	mainWindow = new AGOL_MainWindow();
+	mainWindow = new AGOL_MainWindow(width, height);
 
 	// Set key bindings
 	AG_BindGlobalKey(AG_KEY_ESCAPE, AG_KEYMOD_ANY, AG_QuitGUI);

@@ -44,12 +44,12 @@
 
 using namespace std;
 
-AGOL_MainWindow::AGOL_MainWindow()
+AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 {
 	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl) 
 	// make the window plain (no window decorations). No flags for multi-window drivers (glx, wgl)
 	MainWindow = AG_WindowNew(agDriverSw ? AG_WINDOW_PLAIN : 0);
-	AG_WindowSetGeometryAligned(MainWindow, AG_WINDOW_TL, 640, 480);
+	AG_WindowSetGeometryAligned(MainWindow, AG_WINDOW_MC, width, height);
 	AG_WindowSetCaptionS(MainWindow, "The Odamex Launcher");
 
 	// Create the components of the main window
@@ -92,6 +92,9 @@ AGOL_MainWindow::AGOL_MainWindow()
 
 AGOL_MainWindow::~AGOL_MainWindow()
 {
+	GuiConfig::Write("MainWindow-Width", MainWindow->r.w);
+	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
+
 	delete[] QServer;
 
 	delete MainStatusbar;
@@ -331,8 +334,8 @@ void AGOL_MainWindow::UpdateStatusbarMasterPing(uint32_t ping)
 }
 
 AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label, 
-                                       const unsigned char *icon, int iconsize, 
-                                       EVENT_FUNC_PTR handler)
+                                         const unsigned char *icon, int iconsize, 
+                                         EVENT_FUNC_PTR handler)
 {
 	AG_Button   *button;
 	SDL_Surface *sf;
@@ -349,6 +352,22 @@ AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label,
 		cerr << "Failed to load icon: " << IMG_GetError() << endl;
 
 	return button;
+}
+
+int AGOL_MainWindow::GetServerRowIndex(string address)
+{
+	// Loop until the server address is found
+	for(int row = 0; row < ServerList->m; row++)
+	{
+		// Selection has no address field data
+		if(!ServerList->cells[row][7].data.s)
+			continue;
+
+		if(address == string(ServerList->cells[row][7].data.s))
+			return row;
+	}
+
+	return -1;
 }
 
 int AGOL_MainWindow::GetSelectedServerListIndex()
@@ -636,6 +655,8 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 {
 	unsigned int totalPlayers = 0;
 	size_t       serverCount;
+	int          selectedNdx;
+	string       selectedAddr;
 
 	// If we can't immediately get a lock on the
 	// master server don't update the list this tick.
@@ -645,6 +666,19 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 	serverCount = MServer.GetServerCount();
 
 	MServer.Unlock();
+
+	// Until polled row selection handling improves we
+	// will handle it ourselves
+	if((selectedNdx = GetSelectedServerArrayIndex()) != -1)
+	{
+		if(QServer[selectedNdx].TryLock())
+			return;
+
+		selectedAddr = QServer[selectedNdx].GetAddress();
+		AG_TableDeselectAllRows(ServerList);
+
+		QServer[selectedNdx].Unlock();
+	}
 
 	// Saves table selection and clears the rows
 	AG_TableBegin(ServerList);
@@ -749,8 +783,17 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 	// Restore row selection
 	AG_TableEnd(ServerList);
 
+	// Restore the row selection ourselves for now
+	if(selectedAddr.size())
+	{
+		int row = GetServerRowIndex(selectedAddr);
+
+		if(row != -1)
+			AG_TableSelectRow(ServerList, row);
+	}
+
 	// Highlight changed cells of the selected row
-	CompleteRowSelection(ServerList);
+//	CompleteRowSelection(ServerList);
 
 	// Update the total players in the statusbar
 	AG_LabelText(MainStatusbar->players->labels[0], "Total Players: %u", totalPlayers);

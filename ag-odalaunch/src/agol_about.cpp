@@ -59,10 +59,11 @@ AGOL_About::~AGOL_About()
 
 AG_Box *AGOL_About::CreateTopBox(void *parent)
 {
-	AG_Box      *tbox;
-	AG_Box      *box;
-	AG_Label    *label;
-	SDL_Surface *sf;
+	AG_Box         *tbox;
+	AG_Box         *box;
+	AG_Label       *label;
+	SDL_Surface    *sf;
+	AG_AgarVersion  agv;
 
 	tbox = AG_BoxNewHoriz(parent, 0);
 
@@ -78,12 +79,17 @@ AG_Box *AGOL_About::CreateTopBox(void *parent)
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 	label = AG_LabelNew(box, AG_LABEL_HFILL, "Version %d.%d.%d - Protocol Version %d",
 			VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION), PROTOCOL_VERSION);
+
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 	label = AG_LabelNewS(box, AG_LABEL_HFILL, "http://www.odamex.net");
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 
-	label = AG_LabelNew(parent, AG_LABEL_HFILL, "Built with Agar, Version %d.%d.%d", 
-		AGAR_MAJOR_VERSION, AGAR_MINOR_VERSION, AGAR_PATCHLEVEL);
+	AG_GetVersion(&agv);
+	label = AG_LabelNew(parent, AG_LABEL_HFILL, "Built with Agar, Version %d.%d.%d",
+			agv.major, agv.minor, agv.patch);
+	AG_LabelJustify(label, AG_TEXT_CENTER);
+
+	label = AG_LabelNew(parent, AG_LABEL_HFILL, "(%s)", agv.release);
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 
 	return tbox;
@@ -102,7 +108,7 @@ AG_Box *AGOL_About::CreateDevBox(void *parent)
 	dbox = AG_BoxNewHoriz(dbox, AG_BOX_FRAME | AG_BOX_EXPAND);
 
 	label = AG_LabelNewS(dbox, AG_LABEL_EXPAND, 
-			"Michael Wood (mailto:mwoodj@knology.net)\n"
+			"Michael Wood (mailto:mwoodj@huntsvegas.org)\n"
 			"Russell Rice (mailto:russell@odamex.net)");
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 
