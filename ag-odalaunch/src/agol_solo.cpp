@@ -205,21 +205,18 @@ void AGOL_Solo::PopulateWadLists()
 			// Make sure this item is a regular file
 			if(info.type == AG_FILE_REGULAR)
 			{
-				string fileUpper;
-
 				// Convert the wad name to uppercase
-				fileUpper.resize(curFile.size());
-				transform(curFile.begin(), curFile.end(), fileUpper.begin(), ::toupper);
+				transform(curFile.begin(), curFile.end(), curFile.begin(), ::toupper);
 
 				// Find the last '.' in the file name
-				size_t dot = fileUpper.rfind('.');
+				size_t dot = curFile.rfind('.');
 
 				// If the file has no extension move on to the next one.
 				if(dot == string::npos)
 					continue;
 
 				// Compare the file extension to the acceptable extensions for Odamex.
-				if(fileUpper.substr(dot + 1, fileUpper.size()) == "WAD")
+				if(curFile.substr(dot + 1, curFile.size()) == "WAD")
 				{
 					// If this is an IWAD put it in the IWAD list.
 					if(WadIsIWAD(curFile))
@@ -227,8 +224,8 @@ void AGOL_Solo::PopulateWadLists()
 					else
 						AG_TlistAddS(PwadList, agIconDoc.s, dir->ents[i]);
 				}
-				else if(fileUpper.substr(dot + 1, fileUpper.size()) == "DEH" ||
-						fileUpper.substr(dot + 1, fileUpper.size()) == "BEX")
+				else if(curFile.substr(dot + 1, curFile.size()) == "DEH" ||
+						curFile.substr(dot + 1, curFile.size()) == "BEX")
 					AG_TlistAddS(PwadList, agIconDoc.s, dir->ents[i]);
 			}
 		}
@@ -239,16 +236,13 @@ void AGOL_Solo::PopulateWadLists()
 
 bool AGOL_Solo::WadIsIWAD(string wad)
 {
-	string wadUpper;
-
 	// Get the wad in all uppercase
-	wadUpper.resize(wad.size());
-	transform(wad.begin(), wad.end(), wadUpper.begin(), ::toupper);
+	transform(wad.begin(), wad.end(), wad.begin(), ::toupper);
 
 	// Compare to the supported iwad file names
 	for(int i = 0; DoomIWadNames[i].size(); i++)
 	{
-		if(wadUpper == DoomIWadNames[i])
+		if(wad == DoomIWadNames[i])
 			return true;
 	}
 

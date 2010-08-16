@@ -39,8 +39,6 @@
 #include "game_command.h"
 #include "gui_config.h"
 
-#define MAX_ARGS 100
-
 using namespace std;
 
 void GameCommand::AddParameter(string parameter)
@@ -56,32 +54,32 @@ void GameCommand::AddParameter(string parameter, string value)
 
 int GameCommand::Launch()
 {
-	string cmd;
 	list<string>::iterator i;
-
-#ifdef _XBOX
-	cout << "Xbox: Stub!" << endl;
-#elif WIN32
-	cout << "Windows: Stub!" << endl;
-#else
-	char  *argv[MAX_ARGS];
-	int    argc = 1;
-	pid_t  pid;
+	string        cmd;
+	AG_ProcessID  pid;
+	char         *argv[AG_ARG_MAX];
+	int           argc = 1;
 
 	// Get the odamex bin path
 	if(GuiConfig::Read("OdamexPath", cmd))
 	{
-		char cwd[PATH_MAX];
+		char cwd[AG_PATHNAME_MAX];
 
 		// No path is configured so use the CWD
-		if(!AG_GetCWD(cwd, PATH_MAX))
-			cmd = string(cwd) + "/";
+		if(!AG_GetCWD(cwd, AG_PATHNAME_MAX))
+			cmd = string(cwd) + AG_PATHSEP;
 	}
 	else
-		cmd += "/";
+		cmd += AG_PATHSEP;
 
 	// Add the bin to the path
+#ifdef _XBOX
+	cout << "Xbox: Stub!" << endl;
+#elif WIN32
+	cmd += "odamex.exe";
+#else
 	cmd += "odamex";
+#endif
 
 	// The path with bin tacked on is the first arg
 	argv[0] = strdup(cmd.c_str());
@@ -93,34 +91,27 @@ int GameCommand::Launch()
 	// Mark the end
 	argv[argc] = NULL;
 
-	// Fork off a new process
-	if((pid = fork()) < 0)
-		cerr << "Fork Failed: " << strerror(errno) << endl;
-	else if(pid == 0) // child
+	// Launch Odamex
+	if((pid = AG_Execute(*argv, argv)) == -1)
 	{
-		// Execute the command
-		if(execvp(*argv, argv) < 0)
-		{
-			cerr << "Failed to execute: " << strerror(errno) << endl;
-			exit(1); // Exit child process
-		}
-	}
-	else // parent
-	{
-#if 0
-		int status;
-
-		waitpid(pid, &status, 0);
-		
-		if(status)
-			AG_TextErrorS("Failed to launch Odamex.\n"
-					"Please verify that your Odamex path is set correctly.");
-#endif
+		AG_TextErrorS("Failed to launch Odamex.\n"
+			"Please verify that your Odamex path is set correctly.");
+		return -1;
 	}
 
 	for(int j = 0; j < argc; j++)
 		free(argv[j]);
-#endif
+
+	// Give the new process a very short time to start or fail.
+	usleep(5000);
+
+	// Perform a non-blocking wait to find out if the launch failed.
+	if(AG_WaitOnProcess(pid, AG_EXEC_WAIT_IMMEDIATE) == -1)
+	{
+		AG_TextErrorS("Failed to launch Odamex.\n"
+			"Please verify that your Odamex path is set correctly.");
+		return -1;
+	}
 
 	return 0;
 }
