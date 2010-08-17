@@ -285,7 +285,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 				{
 					door->m_Direction = 1;	// go back up
 				}
-				else if (GET_SPAC(line->flags) != SPAC_PUSH)
+				else if (GET_SPAC(line->flags) == SPAC_USE)
 					// [RH] activate push doors don't go back down when you
 					//		run into them (otherwise opening them would be
 					//		a real pain).

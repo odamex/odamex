@@ -912,11 +912,17 @@ P_CrossSpecialLine
 
     line_t*	line = &lines[linenum];
 
+    int flags = line->flags;    
+    int linespac = GET_SPAC(line->flags);
+
 	if(thing)
 	{
 		//	Triggers that other things can activate
 		if (!thing->player)
 		{
+		    //if (!(GET_SPAC(line->flags) == SPAC_CROSS))
+            //    return;
+			
 			// Things that should NOT trigger specials...
 			switch(thing->type)
 			{
@@ -931,9 +937,11 @@ P_CrossSpecialLine
 
 				default: break;
 			}
-
-			if(!(GET_SPAC(line->flags) == SPAC_MCROSS))
-				return;
+            
+            // This breaks the ability for the eyes to activate the silent teleporter lines
+            // in boomedit.wad, but without it vanilla demos break.
+			if(!(line->flags & ML_MONSTERSCANACTIVATE))
+                return;
 		}
 		else
 		{
@@ -997,7 +1005,7 @@ P_ShootSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return;
-
+    
 	if(thing)
 	{
 		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
@@ -1006,7 +1014,7 @@ P_ShootSpecialLine
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (!thing->player && !(GET_SPAC(line->flags) == SPAC_MCROSS))
+		if (!thing->player && !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
 
@@ -1037,7 +1045,7 @@ P_UseSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return false;
-
+    
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1095,6 +1103,7 @@ P_UseSpecialLine
 
     return true;
 }
+
 
 //
 // P_PlayerInSpecialSector
