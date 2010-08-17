@@ -85,6 +85,7 @@ private:
 	void OnCloseAboutDialog(AG_Event *event);
 	void OnMouseOverWidget(AG_Event *event);
 	void UpdateServerList(AG_Event *event);
+	void OnServerListClick(AG_Event *event);
 
 	// Interface Interaction Functions
 	void UpdateStatusbarTooltip(const char *tip);

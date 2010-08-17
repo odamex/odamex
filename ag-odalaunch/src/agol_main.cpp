@@ -234,6 +234,9 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
   	AG_TableSetRowDblClickFn(list, EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnLaunch));
 
+	AG_TableSetRowClickFn(list, EventReceiver, "%p",
+			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnServerListClick));
+
 	AG_WidgetSetFocusable(list, 0);
 
 	col = AG_TableAddCol(list, "Server Name", "200px", NULL);
@@ -682,6 +685,11 @@ void AGOL_MainWindow::OnRefreshSelected(AG_Event *event)
 		return;
 
 	QuerySingleServer(&QServer[ndx]);
+
+	ndx = GetSelectedServerListIndex();
+
+	UpdatePlayerList(ndx);
+	UpdateServInfoList(ndx);
 }
 
 void AGOL_MainWindow::OnRefreshAll(AG_Event *event)
@@ -925,14 +933,6 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 
 		if(row != -1)
 			AG_TableSelectRow(ServerList, row);
-
-		UpdatePlayerList(row);
-		UpdateServInfoList(row);
-	}
-	else
-	{
-		UpdatePlayerList(-1);
-		UpdateServInfoList(-1);
 	}
 
 	// Highlight changed cells of the selected row
@@ -940,6 +940,14 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 
 	// Update the total players in the statusbar
 	AG_LabelText(MainStatusbar->players->labels[0], "Total Players: %u", totalPlayers);
+}
+
+void AGOL_MainWindow::OnServerListClick(AG_Event *event)
+{
+	int row = AG_INT(2);
+
+	UpdatePlayerList(row);
+	UpdateServInfoList(row);
 }
 
 //*****************//
@@ -1018,6 +1026,10 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	size_t   count = 0;
 	size_t   serverCount = 0;
 	size_t   serversQueried = 0;
+	int      selectedNdx;
+
+	ClearList(PlayerList);
+	ClearList(ServInfoList);
 
 	MServer.GetLock();
 
@@ -1061,6 +1073,11 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 		}
 		AG_LabelText(MainStatusbar->queried->labels[0], "Queried Servers %i of %i", (int)count, (int)serverCount);
 	}
+
+	selectedNdx = GetSelectedServerListIndex();
+
+	UpdatePlayerList(selectedNdx);
+	UpdateServInfoList(selectedNdx);
 
 	return NULL;
 }
