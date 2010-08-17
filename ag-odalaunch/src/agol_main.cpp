@@ -253,8 +253,8 @@ AG_Table *AGOL_MainWindow::CreatePlayerList(void *parent)
 	AG_Table *list;
 	int       col;
 
-	list = AG_TableNewPolled(parent, AG_TABLE_EXPAND, EventReceiver, "%p", 
-			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::UpdatePlayerList));
+	list = AG_TableNew(parent, AG_TABLE_EXPAND);
+
 	AG_WidgetSetFocusable(list, 0);
 
 	col = AG_TableAddCol(list, "Player Name", "175px", NULL);
@@ -272,8 +272,8 @@ AG_Table *AGOL_MainWindow::CreateServInfoList(void *parent)
 	AG_Table *list;
 	int       col;
 
-	list = AG_TableNewPolled(parent, AG_TABLE_EXPAND, EventReceiver, "%p",
-			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::UpdateServInfoList));
+	list = AG_TableNew(parent, AG_TABLE_EXPAND);
+
 	AG_TableSetColumnAction(list, AG_TABLE_COL_SELECT);
 	AG_WidgetSetFocusable(list, 0);
 
@@ -445,6 +445,141 @@ void AGOL_MainWindow::CompleteRowSelection(AG_Table *table)
 
 	// Make sure all cells of the selected row are highlighted
 	AG_TableSelectRow(ServerList, ndx);
+}
+
+void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
+{
+	// No server selected
+	if(serverNdx < 0)
+	{
+		ClearList(PlayerList);
+		return;
+	}
+
+	QServer[serverNdx].GetLock();
+
+	if(QServer[serverNdx].Info.Players.size())
+	{
+		AG_TableBegin(PlayerList);
+
+		for(size_t i = 0; i < QServer[serverNdx].Info.Players.size(); i++)
+		{
+			string name = " ";
+	
+			if(QServer[serverNdx].Info.Players[i].Name.size())
+				name = QServer[serverNdx].Info.Players[i].Name;
+
+			AG_TableAddRow(PlayerList, "%s:%u:%u:%i:%u:%u", name.c_str(), 
+			                     QServer[serverNdx].Info.Players[i].Ping,
+			                     QServer[serverNdx].Info.Players[i].Time,
+			                     QServer[serverNdx].Info.Players[i].Frags,
+			                     QServer[serverNdx].Info.Players[i].Kills,
+			                     QServer[serverNdx].Info.Players[i].Deaths);
+		}
+
+		AG_TableEnd(PlayerList);
+	}
+	else
+		ClearList(PlayerList);
+
+	QServer[serverNdx].Unlock();
+}
+
+void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
+{
+	// No server selected
+	if(serverNdx < 0)
+	{
+		ClearList(ServInfoList);
+		return;
+	}
+
+	QServer[serverNdx].GetLock();
+
+	if(QServer[serverNdx].Info.Cvars.size())
+	{
+		ostringstream rowStream;
+
+		AG_TableBegin(ServInfoList);
+
+		// Version
+		rowStream << "Version " << (int)QServer[serverNdx].Info.VersionMajor << "." <<
+		                           (int)QServer[serverNdx].Info.VersionMinor << "." <<
+		                           (int)QServer[serverNdx].Info.VersionPatch << "-r" <<
+		                           (int)QServer[serverNdx].Info.VersionRevision;
+		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
+		rowStream.str("");
+
+		// Query Protocol Version
+		rowStream << "QP Version " << QServer[serverNdx].Info.VersionProtocol;
+		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
+		rowStream.str("");
+
+		AG_TableAddRow(ServInfoList, "");
+
+		// Status
+		AG_TableAddRow(ServInfoList, "Game Status");
+
+		rowStream << "Time Left " << QServer[serverNdx].Info.TimeLeft;
+		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
+		rowStream.str("");
+
+		if(QServer[serverNdx].Info.GameType == GT_TeamDeathmatch ||
+			QServer[serverNdx].Info.GameType == GT_CaptureTheFlag)
+		{
+			rowStream << "Score Limit " << QServer[serverNdx].Info.ScoreLimit;
+			AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
+			rowStream.str("");
+		}
+
+		AG_TableAddRow(ServInfoList, "");
+
+		// Patch (BEX/DEH) files
+		AG_TableAddRow(ServInfoList, "BEX/DEH Files");
+
+		if(QServer[serverNdx].Info.Patches.size() <= 0)
+			AG_TableAddRow(ServInfoList, "None");
+		else
+		{
+			size_t patchCnt = QServer[serverNdx].Info.Patches.size();
+			size_t i = 0;
+
+			while(i < patchCnt)
+			{
+				string patch = QServer[serverNdx].Info.Patches[i];
+
+				++i;
+
+				if(i < patchCnt)
+					patch += " " + QServer[serverNdx].Info.Patches[i];
+
+				++i;
+
+				AG_TableAddRow(ServInfoList, "%s", patch.c_str());
+			}
+		}
+
+		AG_TableAddRow(ServInfoList, "");
+
+		// Gameplay variables (Cvars, others)
+		AG_TableAddRow(ServInfoList, "Game Settings");
+
+		// Sort cvars ascending
+		sort(QServer[serverNdx].Info.Cvars.begin(), QServer[serverNdx].Info.Cvars.end(), AGOL_MainWindow::CvarCompare);
+
+		for(size_t i = 0; i < QServer[serverNdx].Info.Cvars.size(); ++i)
+		{
+			rowStream << QServer[serverNdx].Info.Cvars[i].Name << " " << QServer[serverNdx].Info.Cvars[i].Value;
+			AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
+			rowStream.str("");
+		}
+
+		AG_TableEnd(ServInfoList);
+	}
+	else
+		ClearList(ServInfoList);
+	
+	QServer[serverNdx].Unlock();
 }
 
 //*************************//
@@ -790,6 +925,14 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 
 		if(row != -1)
 			AG_TableSelectRow(ServerList, row);
+
+		UpdatePlayerList(row);
+		UpdateServInfoList(row);
+	}
+	else
+	{
+		UpdatePlayerList(-1);
+		UpdateServInfoList(-1);
 	}
 
 	// Highlight changed cells of the selected row
@@ -797,151 +940,6 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 
 	// Update the total players in the statusbar
 	AG_LabelText(MainStatusbar->players->labels[0], "Total Players: %u", totalPlayers);
-}
-
-void AGOL_MainWindow::UpdatePlayerList(AG_Event*)
-{
-	int srv = GetSelectedServerArrayIndex();
-
-	// No server selected
-	if(srv < 0)
-	{
-		ClearList(PlayerList);
-		return;
-	}
-
-	// If we can't immediately get a lock
-	// don't bother to update this tick.
-	if(QServer[srv].TryLock())
-		return;
-
-	if(QServer[srv].Info.Players.size())
-	{
-		AG_TableBegin(PlayerList);
-
-		for(size_t i = 0; i < QServer[srv].Info.Players.size(); i++)
-		{
-			string name = " ";
-	
-			if(QServer[srv].Info.Players[i].Name.size())
-				name = QServer[srv].Info.Players[i].Name;
-
-			AG_TableAddRow(PlayerList, "%s:%u:%u:%i:%u:%u", name.c_str(), 
-														QServer[srv].Info.Players[i].Ping,
-														QServer[srv].Info.Players[i].Time,
-														QServer[srv].Info.Players[i].Frags,
-														QServer[srv].Info.Players[i].Kills,
-														QServer[srv].Info.Players[i].Deaths);
-		}
-
-		AG_TableEnd(PlayerList);
-	}
-	else
-		ClearList(PlayerList);
-
-	QServer[srv].Unlock();
-}
-
-void AGOL_MainWindow::UpdateServInfoList(AG_Event *event)
-{
-	int srv = GetSelectedServerArrayIndex();
-
-	// No server selected
-	if(srv < 0)
-	{
-		ClearList(ServInfoList);
-		return;
-	}
-
-	// If we can't immediately get a lock
-	// don't bother to update this tick.
-	if(QServer[srv].TryLock())
-		return;
-
-	if(QServer[srv].Info.Cvars.size())
-	{
-		ostringstream rowStream;
-
-		AG_TableBegin(ServInfoList);
-
-		// Version
-		rowStream << "Version " << (int)QServer[srv].Info.VersionMajor << "." <<
-		                           (int)QServer[srv].Info.VersionMinor << "." <<
-		                           (int)QServer[srv].Info.VersionPatch << "-r" <<
-		                           (int)QServer[srv].Info.VersionRevision;
-		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
-		rowStream.str("");
-
-		// Query Protocol Version
-		rowStream << "QP Version " << QServer[srv].Info.VersionProtocol;
-		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
-		rowStream.str("");
-
-		AG_TableAddRow(ServInfoList, "");
-
-		// Status
-		AG_TableAddRow(ServInfoList, "Game Status");
-
-		rowStream << "Time Left " << QServer[srv].Info.TimeLeft;
-		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
-		rowStream.str("");
-
-		if(QServer[srv].Info.GameType == GT_TeamDeathmatch ||
-			QServer[srv].Info.GameType == GT_CaptureTheFlag)
-		{
-			rowStream << "Score Limit " << QServer[srv].Info.ScoreLimit;
-			AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
-			rowStream.str("");
-		}
-
-		AG_TableAddRow(ServInfoList, "");
-
-		// Patch (BEX/DEH) files
-		AG_TableAddRow(ServInfoList, "BEX/DEH Files");
-
-		if(QServer[srv].Info.Patches.size() <= 0)
-			AG_TableAddRow(ServInfoList, "None");
-		else
-		{
-			size_t patchCnt = QServer[srv].Info.Patches.size();
-			size_t i = 0;
-
-			while(i < patchCnt)
-			{
-				string patch = QServer[srv].Info.Patches[i];
-
-				++i;
-
-				if(i < patchCnt)
-					patch += " " + QServer[srv].Info.Patches[i];
-
-				++i;
-
-				AG_TableAddRow(ServInfoList, "%s", patch.c_str());
-			}
-		}
-
-		AG_TableAddRow(ServInfoList, "");
-
-		// Gameplay variables (Cvars, others)
-		AG_TableAddRow(ServInfoList, "Game Settings");
-
-		// Sort cvars ascending
-		sort(QServer[srv].Info.Cvars.begin(), QServer[srv].Info.Cvars.end(), AGOL_MainWindow::CvarCompare);
-
-		for(size_t i = 0; i < QServer[srv].Info.Cvars.size(); ++i)
-		{
-			rowStream << QServer[srv].Info.Cvars[i].Name << " " << QServer[srv].Info.Cvars[i].Value;
-			AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
-			rowStream.str("");
-		}
-
-		AG_TableEnd(ServInfoList);
-	}
-	else
-		ClearList(ServInfoList);
-	
-	QServer[srv].Unlock();
 }
 
 //*****************//

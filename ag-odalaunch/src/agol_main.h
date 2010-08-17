@@ -85,8 +85,6 @@ private:
 	void OnCloseAboutDialog(AG_Event *event);
 	void OnMouseOverWidget(AG_Event *event);
 	void UpdateServerList(AG_Event *event);
-	void UpdatePlayerList(AG_Event*);
-	void UpdateServInfoList(AG_Event *event);
 
 	// Interface Interaction Functions
 	void UpdateStatusbarTooltip(const char *tip);
@@ -97,6 +95,8 @@ private:
 	int  GetSelectedServerArrayIndex();
 	void ClearList(AG_Table *table);
 	void CompleteRowSelection(AG_Table *table);
+	void UpdatePlayerList(int serverNdx);
+	void UpdateServInfoList(int serverNdx);
 
 	// Interface Creation Functions
 	AG_Menu       *CreateMainMenu(void *parent);
