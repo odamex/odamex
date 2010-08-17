@@ -88,16 +88,18 @@ private:
 	void OnServerListClick(AG_Event *event);
 
 	// Interface Interaction Functions
-	void UpdateStatusbarTooltip(const char *tip);
-	void ClearStatusbarTooltip();
-	void UpdateStatusbarMasterPing(uint32_t ping);
-	int  GetServerRowIndex(std::string address);
-	int  GetSelectedServerListIndex();
-	int  GetSelectedServerArrayIndex();
-	void ClearList(AG_Table *table);
-	void CompleteRowSelection(AG_Table *table);
-	void UpdatePlayerList(int serverNdx);
-	void UpdateServInfoList(int serverNdx);
+	void           UpdateStatusbarTooltip(const char *tip);
+	void           ClearStatusbarTooltip();
+	void           UpdateStatusbarMasterPing(uint32_t ping);
+	int            GetSelectedServerListRow();
+	int            GetSelectedServerArrayIndex();
+	std::string    GetAddrFromServerListRow(int row);
+	int            GetServerListRowFromAddr(std::string address);
+	int            GetServerArrayIndexFromListRow(int row);
+	void           ClearList(AG_Table *table);
+	void           CompleteRowSelection(AG_Table *table);
+	void           UpdatePlayerList(int serverNdx);
+	void           UpdateServInfoList(int serverNdx);
 
 	// Interface Creation Functions
 	AG_Menu       *CreateMainMenu(void *parent);

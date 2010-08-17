@@ -357,23 +357,7 @@ AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label,
 	return button;
 }
 
-int AGOL_MainWindow::GetServerRowIndex(string address)
-{
-	// Loop until the server address is found
-	for(int row = 0; row < ServerList->m; row++)
-	{
-		// Selection has no address field data
-		if(!ServerList->cells[row][7].data.s)
-			continue;
-
-		if(address == string(ServerList->cells[row][7].data.s))
-			return row;
-	}
-
-	return -1;
-}
-
-int AGOL_MainWindow::GetSelectedServerListIndex()
+int AGOL_MainWindow::GetSelectedServerListRow()
 {
 	// Loop until a selected row is found
 	for(int row = 0; row < ServerList->m; row++)
@@ -388,20 +372,18 @@ int AGOL_MainWindow::GetSelectedServerArrayIndex()
 	int    row;
 	size_t serverCount;
 	string cellAddr;
-	string srvAddr;
 
 	// Get the selected list row index
-	row = GetSelectedServerListIndex();
+	row = GetSelectedServerListRow();
 
 	// No selection
 	if(row < 0)
 		return -1;
 
-	// Selection has no address field data
-	if(!ServerList->cells[row][7].data.s)
-		return -1;
+	cellAddr = GetAddrFromServerListRow(row);
 
-	cellAddr = ServerList->cells[row][7].data.s;
+	if(!cellAddr.size())
+		return -1;
 
 	// Get the number of servers
 	MServer.GetLock();
@@ -415,6 +397,75 @@ int AGOL_MainWindow::GetSelectedServerArrayIndex()
 	// Loop until the selected server array is found
 	for(size_t i = 0; i < serverCount; i++)
 	{
+		string srvAddr;
+
+		QServer[i].GetLock();
+		srvAddr = QServer[i].GetAddress();
+		QServer[i].Unlock();
+
+		if(srvAddr == cellAddr)
+			return i;
+	}
+
+	return -1;
+}
+
+string AGOL_MainWindow::GetAddrFromServerListRow(int row)
+{
+	// Row has no address field data
+	if(!ServerList->cells[row][7].data.s)
+		return "";
+
+	return string(ServerList->cells[row][7].data.s);
+}
+
+int AGOL_MainWindow::GetServerListRowFromAddr(string address)
+{
+	// Loop until the server address is found
+	for(int row = 0; row < ServerList->m; row++)
+	{
+		string cellAddr;;
+
+		cellAddr = GetAddrFromServerListRow(row);
+		
+		if(!cellAddr.size())
+			continue;
+
+		if(address == cellAddr)
+			return row;
+	}
+
+	return -1;
+}
+
+int AGOL_MainWindow::GetServerArrayIndexFromListRow(int row)
+{
+	size_t serverCount;
+	string cellAddr;
+
+	// No selection
+	if(row < 0)
+		return -1;
+
+	cellAddr = GetAddrFromServerListRow(row);
+
+	if(!cellAddr.size())
+		return -1;
+
+	// Get the number of servers
+	MServer.GetLock();
+	serverCount = MServer.GetServerCount();
+	MServer.Unlock();
+
+	// No servers
+	if(serverCount <= 0)
+		return -1;
+
+	// Loop until the selected server array is found
+	for(size_t i = 0; i < serverCount; i++)
+	{
+		string srvAddr;
+
 		QServer[i].GetLock();
 		srvAddr = QServer[i].GetAddress();
 		QServer[i].Unlock();
@@ -440,7 +491,7 @@ void AGOL_MainWindow::CompleteRowSelection(AG_Table *table)
 	int ndx;
 
 	// Get the selected list row index
-	ndx = GetSelectedServerListIndex();
+	ndx = GetSelectedServerListRow();
 
 	// No selection
 	if(ndx < 0)
@@ -686,8 +737,6 @@ void AGOL_MainWindow::OnRefreshSelected(AG_Event *event)
 
 	QuerySingleServer(&QServer[ndx]);
 
-	ndx = GetSelectedServerListIndex();
-
 	UpdatePlayerList(ndx);
 	UpdateServInfoList(ndx);
 }
@@ -929,7 +978,7 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 	// Restore the row selection ourselves for now
 	if(selectedAddr.size())
 	{
-		int row = GetServerRowIndex(selectedAddr);
+		int row = GetServerListRowFromAddr(selectedAddr);
 
 		if(row != -1)
 			AG_TableSelectRow(ServerList, row);
@@ -945,9 +994,10 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 void AGOL_MainWindow::OnServerListClick(AG_Event *event)
 {
 	int row = AG_INT(2);
+	int ndx = GetServerArrayIndexFromListRow(row);
 
-	UpdatePlayerList(row);
-	UpdateServInfoList(row);
+	UpdatePlayerList(ndx);
+	UpdateServInfoList(ndx);
 }
 
 //*****************//
@@ -1074,7 +1124,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 		AG_LabelText(MainStatusbar->queried->labels[0], "Queried Servers %i of %i", (int)count, (int)serverCount);
 	}
 
-	selectedNdx = GetSelectedServerListIndex();
+	selectedNdx = GetSelectedServerArrayIndex();
 
 	UpdatePlayerList(selectedNdx);
 	UpdateServInfoList(selectedNdx);
