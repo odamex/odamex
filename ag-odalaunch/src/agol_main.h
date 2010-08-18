@@ -74,7 +74,6 @@ public:
 
 private:
 	// Event Handler Functions
-	void OnWindowResize(AG_Event *event);
 	void OnOpenSettingsDialog(AG_Event *event);
 	void OnCloseSettingsDialog(AG_Event *event);
 	void OnExit(AG_Event *event);

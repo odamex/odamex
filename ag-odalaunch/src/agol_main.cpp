@@ -67,9 +67,6 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 	if(agDriverSw)
 		AG_WindowMaximize(MainWindow);
 
-	AG_AddEvent(MainWindow, "window-user-resize", EventReceiver, "%p", 
-			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnWindowResize));
-
 	// set up the master server information
 	MServer.AddMaster("master1.odamex.net", 15000);
 	MServer.AddMaster("voxelsoft.com", 15000);
@@ -495,19 +492,16 @@ void AGOL_MainWindow::ClearList(AG_Table *table)
 
 void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 {
+	ClearList(PlayerList);
+
 	// No server selected
 	if(serverNdx < 0)
-	{
-		ClearList(PlayerList);
 		return;
-	}
 
 	QServer[serverNdx].GetLock();
 
 	if(QServer[serverNdx].Info.Players.size())
 	{
-		AG_TableBegin(PlayerList);
-
 		for(size_t i = 0; i < QServer[serverNdx].Info.Players.size(); i++)
 		{
 			string name = " ";
@@ -522,31 +516,24 @@ void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 			                     QServer[serverNdx].Info.Players[i].Kills,
 			                     QServer[serverNdx].Info.Players[i].Deaths);
 		}
-
-		AG_TableEnd(PlayerList);
 	}
-	else
-		ClearList(PlayerList);
 
 	QServer[serverNdx].Unlock();
 }
 
 void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 {
+	ClearList(ServInfoList);
+
 	// No server selected
 	if(serverNdx < 0)
-	{
-		ClearList(ServInfoList);
 		return;
-	}
 
 	QServer[serverNdx].GetLock();
 
 	if(QServer[serverNdx].Info.Cvars.size())
 	{
 		ostringstream rowStream;
-
-		AG_TableBegin(ServInfoList);
 
 		// Version
 		rowStream << "Version " << (int)QServer[serverNdx].Info.VersionMajor << "." <<
@@ -619,11 +606,7 @@ void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 			AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
 			rowStream.str("");
 		}
-
-		AG_TableEnd(ServInfoList);
 	}
-	else
-		ClearList(ServInfoList);
 	
 	QServer[serverNdx].Unlock();
 }
@@ -654,34 +637,20 @@ void AGOL_MainWindow::UpdateQueriedLabelCompleted(int completed)
 
 void AGOL_MainWindow::SetServerListRowCellFlags(int row)
 {
-	AG_TableCell *cell = NULL;
+	// Disable cell comparison on all but the last column (address:port)
+	// for the selection restoration cell comparison.
+	for(int i = 0; i < ServerList->n - 1; i++)
+	{
+		AG_TableCell *cell = NULL;
 
-	// Only compare the last cell of the list [7]
-	// when restoring row selection.
-	cell = AG_TableGetCell(ServerList, row, 0);
-	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
-	cell = AG_TableGetCell(ServerList, row, 1);
-	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
-	cell = AG_TableGetCell(ServerList, row, 2);
-	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
-	cell = AG_TableGetCell(ServerList, row, 3);
-	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
-	cell = AG_TableGetCell(ServerList, row, 4);
-	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
-	cell = AG_TableGetCell(ServerList, row, 5);
-	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
-	cell = AG_TableGetCell(ServerList, row, 6);
-	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
+		cell = AG_TableGetCell(ServerList, row, i);
+		cell->flags |= AG_TABLE_CELL_NOCOMPARE;
+	}
 }
 
 //*************************//
 // Event Handler Functions //
 //*************************//
-void AGOL_MainWindow::OnWindowResize(AG_Event *event)
-{
-
-}
-
 void AGOL_MainWindow::OnOpenSettingsDialog(AG_Event *event)
 {
 	if(SettingsDialog)
