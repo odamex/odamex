@@ -454,7 +454,10 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		case WalkMany:
 			flags |= ML_REPEAT_SPECIAL;
 		case WalkOnce:
-			flags |= SPAC_CROSS << ML_SPAC_SHIFT;
+            if (passthrough)
+                flags |= SPAC_CROSSTHROUGH << ML_SPAC_SHIFT;
+            else
+                flags |= SPAC_CROSS << ML_SPAC_SHIFT;
 			break;
 
 		case SwitchMany:

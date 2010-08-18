@@ -937,12 +937,24 @@ P_CrossSpecialLine
             
             // This breaks the ability for the eyes to activate the silent teleporter lines
             // in boomedit.wad, but without it vanilla demos break.
-			if(!(line->flags & ML_MONSTERSCANACTIVATE))
-                return;
+            switch (line->special)
+            {
+				case Teleport:
+				case Teleport_NoFog:
+				case Teleport_Line:
+				break;
+				                
+                default:
+                    if(!(line->flags & ML_MONSTERSCANACTIVATE))
+                        return;                
+                break;
+            }
+
 		}
 		else
 		{
-		    if (!(GET_SPAC(line->flags) == SPAC_CROSS))
+		    if (!(GET_SPAC(line->flags) == SPAC_CROSS) && 
+                !(GET_SPAC(line->flags) == SPAC_CROSSTHROUGH))
                 return;
                 
 			// Likewise, player should not trigger monster lines

@@ -138,6 +138,7 @@ typedef struct
 #define SPAC_PUSH		4	// when player/monster pushes line
 #define SPAC_PCROSS		5	// when projectile crosses line
 #define SPAC_USETHROUGH	6	// SPAC_USE, but passes it through
+#define SPAC_CROSSTHROUGH 7 // SPAC_CROSS, but passes it through
 
 // [RH] Monsters (as well as players) can active the line
 #define ML_MONSTERSCANACTIVATE		0x2000
