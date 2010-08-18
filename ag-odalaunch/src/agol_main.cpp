@@ -305,8 +305,12 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 
 	//AG_SeparatorNewVert(statusbar->statbox);
 
-	statusbar->queried = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
-	AG_StatusbarAddLabel(statusbar->queried , AG_LABEL_STATIC, "Queried Servers 0 of 0");
+	//statusbar->queried = new ODA_QueriedStatusbar;
+	statusbar->queried.statusbar = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
+	statusbar->queried.completed = statusbar->queried.total = 0;
+	AG_MutexInit(&statusbar->queried.mutex);
+	AG_StatusbarAddLabel(statusbar->queried.statusbar, AG_LABEL_POLLED_MT, "Queried Servers %i of %i", 
+			&statusbar->queried.mutex, &statusbar->queried.completed, &statusbar->queried.total);
 
 	//AG_SeparatorNewVert(statusbar->statbox);
 
@@ -634,6 +638,30 @@ void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 		ClearList(ServInfoList);
 	
 	QServer[serverNdx].Unlock();
+}
+
+void AGOL_MainWindow::UpdateQueriedLabelTotal(int total)
+{
+	if(total < 0)
+		return;
+
+	AG_MutexLock(&MainStatusbar->queried.mutex);
+
+	MainStatusbar->queried.total = total;
+
+	AG_MutexUnlock(&MainStatusbar->queried.mutex);
+}
+
+void AGOL_MainWindow::UpdateQueriedLabelCompleted(int completed)
+{
+	if(completed < 0)
+		return;
+
+	AG_MutexLock(&MainStatusbar->queried.mutex);
+
+	MainStatusbar->queried.completed = completed;
+
+	AG_MutexUnlock(&MainStatusbar->queried.mutex);
 }
 
 //*************************//
@@ -1029,14 +1057,16 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 		return NULL;
 	}
 
-	// Allocate the array of server classes
-	delete[] QServer;
-	QServer = new Server[serverCount];
-
 	// Update the statusbar with the master ping
 	UpdateStatusbarMasterPing(MServer.GetPing());
 
 	MServer.Unlock();
+
+	// Allocate the array of server classes
+	delete[] QServer;
+	QServer = new Server[serverCount];
+
+	UpdateQueriedLabelTotal(serverCount);
 
 	// Set the address for each server
 	for(size_t i = 0; i < serverCount; i++)
@@ -1080,6 +1110,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 
 	ClearList(PlayerList);
 	ClearList(ServInfoList);
+	UpdateQueriedLabelCompleted(0);
 
 	MServer.GetLock();
 
@@ -1121,7 +1152,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 				serversQueried++;
 			}
 		}
-		AG_LabelText(MainStatusbar->queried->labels[0], "Queried Servers %i of %i", (int)count, (int)serverCount);
+		UpdateQueriedLabelCompleted((int)count);
 	}
 
 	selectedNdx = GetSelectedServerArrayIndex();

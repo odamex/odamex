@@ -48,13 +48,21 @@ typedef struct
 	AG_Button *exit;
 } ODA_ButtonBox;
 
+typedef struct
+{
+	AG_Statusbar *statusbar;
+	AG_Mutex      mutex;
+	int           completed;
+	int           total;
+} ODA_QueriedStatusbar;
+
 typedef struct 
 {
-	AG_Box       *statbox;
-	AG_Statusbar *tooltip;
-	AG_Statusbar *mping;
-	AG_Statusbar *queried;
-	AG_Statusbar *players;
+	AG_Box               *statbox;
+	AG_Statusbar         *tooltip;
+	AG_Statusbar         *mping;
+	ODA_QueriedStatusbar  queried;
+	AG_Statusbar         *players;
 } ODA_Statusbar;
 
 // AGOL_MainWindow - Class for the main window
@@ -100,6 +108,8 @@ private:
 	void           CompleteRowSelection(AG_Table *table);
 	void           UpdatePlayerList(int serverNdx);
 	void           UpdateServInfoList(int serverNdx);
+	void           UpdateQueriedLabelTotal(int total);
+	void           UpdateQueriedLabelCompleted(int completed);
 
 	// Interface Creation Functions
 	AG_Menu       *CreateMainMenu(void *parent);
