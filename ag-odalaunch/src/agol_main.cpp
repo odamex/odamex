@@ -415,11 +415,15 @@ int AGOL_MainWindow::GetSelectedServerArrayIndex()
 
 string AGOL_MainWindow::GetAddrFromServerListRow(int row)
 {
+	AG_TableCell *cell = NULL;
+
+	cell = AG_TableGetCell(ServerList, row, 7);
+
 	// Row has no address field data
-	if(!ServerList->cells[row][7].data.s)
+	if(!cell || !cell->data.s)
 		return "";
 
-	return string(ServerList->cells[row][7].data.s);
+	return string(cell->data.s);
 }
 
 int AGOL_MainWindow::GetServerListRowFromAddr(string address)
@@ -487,21 +491,6 @@ void AGOL_MainWindow::ClearList(AG_Table *table)
 
 	AG_TableBegin(table);
 	AG_TableEnd(table);
-}
-
-void AGOL_MainWindow::CompleteRowSelection(AG_Table *table)
-{
-	int ndx;
-
-	// Get the selected list row index
-	ndx = GetSelectedServerListRow();
-
-	// No selection
-	if(ndx < 0)
-		return;
-
-	// Make sure all cells of the selected row are highlighted
-	AG_TableSelectRow(ServerList, ndx);
 }
 
 void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
@@ -661,6 +650,28 @@ void AGOL_MainWindow::UpdateQueriedLabelCompleted(int completed)
 	MainStatusbar->queried.completed = completed;
 
 	AG_MutexUnlock(&MainStatusbar->queried.mutex);
+}
+
+void AGOL_MainWindow::SetServerListRowCellFlags(int row)
+{
+	AG_TableCell *cell = NULL;
+
+	// Only compare the last cell of the list [7]
+	// when restoring row selection.
+	cell = AG_TableGetCell(ServerList, row, 0);
+	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
+	cell = AG_TableGetCell(ServerList, row, 1);
+	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
+	cell = AG_TableGetCell(ServerList, row, 2);
+	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
+	cell = AG_TableGetCell(ServerList, row, 3);
+	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
+	cell = AG_TableGetCell(ServerList, row, 4);
+	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
+	cell = AG_TableGetCell(ServerList, row, 5);
+	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
+	cell = AG_TableGetCell(ServerList, row, 6);
+	cell->flags |= AG_TABLE_CELL_NOCOMPARE;
 }
 
 //*************************//
@@ -874,8 +885,6 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 {
 	unsigned int totalPlayers = 0;
 	size_t       serverCount;
-	int          selectedNdx;
-	string       selectedAddr;
 
 	// If we can't immediately get a lock on the
 	// master server don't update the list this tick.
@@ -885,19 +894,6 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 	serverCount = MServer.GetServerCount();
 
 	MServer.Unlock();
-
-	// Until polled row selection handling improves we
-	// will handle it ourselves
-	if((selectedNdx = GetSelectedServerArrayIndex()) != -1)
-	{
-		if(QServer[selectedNdx].TryLock())
-			return;
-
-		selectedAddr = QServer[selectedNdx].GetAddress();
-		AG_TableDeselectAllRows(ServerList);
-
-		QServer[selectedNdx].Unlock();
-	}
 
 	// Saves table selection and clears the rows
 	AG_TableBegin(ServerList);
@@ -918,6 +914,7 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 		string        pwads;
 		string        gametype;
 		size_t        wadCnt = 0;
+		int           row;
 		
 		// If we can't immediately get a lock on this server
 		// move on to the next one.
@@ -928,9 +925,14 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 
 		if(!QServer[i].GetPing())
 		{
-			// Display just the address for unqueried or unreachable servers
-			AG_TableAddRow(ServerList, ":::::::%s", sAddr.c_str());
 			QServer[i].Unlock();
+
+			// Display just the address for unqueried or unreachable servers
+			row = AG_TableAddRow(ServerList, ":::::::%s", sAddr.c_str());
+
+			// Set the cell flags
+			SetServerListRowCellFlags(row);
+
 			continue;
 		}
 
@@ -989,9 +991,12 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 				gametype = "Unknown";
 		}
 
-		AG_TableAddRow(ServerList, "%s:%u:%s:%s:%s:%s:%s:%s", name.c_str(), QServer[i].GetPing(), 
-		                                       plyrCnt.str().c_str(), pwads.c_str(), map.c_str(), 
-		                                           gametype.c_str(), iwad.c_str(), sAddr.c_str());
+		row = AG_TableAddRow(ServerList, "%s:%u:%s:%s:%s:%s:%s:%s", name.c_str(), QServer[i].GetPing(), 
+		                                             plyrCnt.str().c_str(), pwads.c_str(), map.c_str(), 
+		                                                 gametype.c_str(), iwad.c_str(), sAddr.c_str());
+
+		// Set the cell flags
+		SetServerListRowCellFlags(row);
 
 		// Keep track of the total number of players across all servers
 		totalPlayers += QServer[i].Info.Players.size();
@@ -1001,18 +1006,6 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 
 	// Restore row selection
 	AG_TableEnd(ServerList);
-
-	// Restore the row selection ourselves for now
-	if(selectedAddr.size())
-	{
-		int row = GetServerListRowFromAddr(selectedAddr);
-
-		if(row != -1)
-			AG_TableSelectRow(ServerList, row);
-	}
-
-	// Highlight changed cells of the selected row
-//	CompleteRowSelection(ServerList);
 
 	// Update the total players in the statusbar
 	AG_LabelText(MainStatusbar->players->labels[0], "Total Players: %u", totalPlayers);

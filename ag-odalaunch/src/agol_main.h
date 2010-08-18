@@ -110,6 +110,7 @@ private:
 	void           UpdateServInfoList(int serverNdx);
 	void           UpdateQueriedLabelTotal(int total);
 	void           UpdateQueriedLabelCompleted(int completed);
+	void           SetServerListRowCellFlags(int row);
 
 	// Interface Creation Functions
 	AG_Menu       *CreateMainMenu(void *parent);
