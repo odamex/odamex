@@ -305,7 +305,6 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 
 	//AG_SeparatorNewVert(statusbar->statbox);
 
-	//statusbar->queried = new ODA_QueriedStatusbar;
 	statusbar->queried.statusbar = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
 	statusbar->queried.completed = statusbar->queried.total = 0;
 	AG_MutexInit(&statusbar->queried.mutex);

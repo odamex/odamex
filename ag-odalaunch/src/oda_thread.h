@@ -45,30 +45,6 @@ typedef struct
 	void            *arg;
 } ThreadArg_t;
 
-static void *CallThreadFunc(void *arg)
-{
-	ThreadArg_t *targ = (ThreadArg_t *)arg;
-
-	if(targ && targ->classPtr && targ->rMutex && targ->running)
-	{
-		void *ret;
-
-		ret = CALL_MEMBER_FN(*targ->classPtr, targ->funcPtr)(targ->arg);
-
-		AG_MutexLock(targ->rMutex);
-		*targ->running = false;
-		AG_MutexUnlock(targ->rMutex);
-
-		delete targ;
-
-		AG_ThreadExit(ret);
-	}
-
-	AG_ThreadExit(NULL);
-
-	return NULL;
-}
-
 class ODA_Thread
 {
 public:
@@ -100,6 +76,30 @@ public:
 		targ->arg = arg;
 
 		return AG_ThreadCreate(&m_Thread, CallThreadFunc, targ);
+	}
+
+	static void *CallThreadFunc(void *arg)
+	{
+		ThreadArg_t *targ = (ThreadArg_t *)arg;
+
+		if(targ && targ->classPtr && targ->rMutex && targ->running)
+		{
+			void *ret;
+
+			ret = CALL_MEMBER_FN(*targ->classPtr, targ->funcPtr)(targ->arg);
+
+			AG_MutexLock(targ->rMutex);
+			*targ->running = false;
+			AG_MutexUnlock(targ->rMutex);
+
+			delete targ;
+
+			AG_ThreadExit(ret);
+		}
+
+		AG_ThreadExit(NULL);
+
+		return NULL;
 	}
 
 	bool IsRunning()
