@@ -409,8 +409,11 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	short special = SHORT(mld->special);
 	short tag = SHORT(mld->tag);
 	short flags = SHORT(mld->flags);
-	BOOL passthrough;
+	bool passthrough;
 	int i;
+	
+	passthrough = (flags & ML_PASSUSE_BOOM);
+	
 	flags = flags & 0x01ff;	// Ignore flags unknown to DOOM
 
 	if (special <= NUM_SPECIALS)

@@ -912,9 +912,6 @@ P_CrossSpecialLine
 
     line_t*	line = &lines[linenum];
 
-    int flags = line->flags;    
-    int linespac = GET_SPAC(line->flags);
-
 	if(thing)
 	{
 		//	Triggers that other things can activate

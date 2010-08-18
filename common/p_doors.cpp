@@ -276,8 +276,8 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		// if door already has a thinker, use it
 		if (sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DDoor)))
 		{
-			DDoor *door = static_cast<DDoor *>(sec->ceilingdata);
-
+			DDoor *door = static_cast<DDoor *>(sec->ceilingdata);	
+			
 			// ONLY FOR "RAISE" DOORS, NOT "OPEN"s
 			if (door->m_Type == DDoor::doorRaise && type == DDoor::doorRaise)
 			{
@@ -285,7 +285,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 				{
 					door->m_Direction = 1;	// go back up
 				}
-				else if (GET_SPAC(line->flags) == SPAC_USE)
+				else if (GET_SPAC(line->flags) != SPAC_PUSH)
 					// [RH] activate push doors don't go back down when you
 					//		run into them (otherwise opening them would be
 					//		a real pain).
@@ -297,7 +297,12 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                         // When is a door not a door?
                         // In Vanilla, door->direction is set, even though
                         // "specialdata" might not actually point at a door.
-                    if (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DPlat)))
+                        
+                    if (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DDoor)))
+                    {
+                        door->m_Direction = 1;	// go back up
+                    }
+                    else if (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DPlat)))
                     {
                         // Erm, this is a plat, not a door.
                         // This notably causes a problem in ep1-0500.lmp where
@@ -314,15 +319,6 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                         
                         if (count >= 16)    // ep1-0500 always returns a count of 16.
                             return false;   // We may be able to always return false?
-                    }
-                    else
-                    {
-                        // This isn't a door OR a plat.  Now we're in trouble.
-                        Printf(PRINT_HIGH, "EV_DoDoor: Tried to close something that wasn't a door.\n");
-
-                        // Try closing it anyway. At least it will work on 32-bit
-                        // machines.
-                        door->m_Direction = -1;
                     }
 				}
 				return true;
