@@ -492,6 +492,7 @@ void AGOL_MainWindow::ClearList(AG_Table *table)
 
 void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 {
+	// Always start with an empty list
 	ClearList(PlayerList);
 
 	// No server selected
@@ -523,6 +524,7 @@ void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 
 void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 {
+	// Always start with an empty list
 	ClearList(ServInfoList);
 
 	// No server selected
@@ -548,10 +550,10 @@ void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
 		rowStream.str("");
 
-		AG_TableAddRow(ServInfoList, "");
+		AG_TableAddRow(ServInfoList, "%s", "");
 
 		// Status
-		AG_TableAddRow(ServInfoList, "Game Status");
+		AG_TableAddRow(ServInfoList, "%s", "Game Status");
 
 		rowStream << "Time Left " << QServer[serverNdx].Info.TimeLeft;
 		AG_TableAddRow(ServInfoList, "%s", rowStream.str().c_str());
@@ -565,13 +567,13 @@ void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 			rowStream.str("");
 		}
 
-		AG_TableAddRow(ServInfoList, "");
+		AG_TableAddRow(ServInfoList, "%s", "");
 
 		// Patch (BEX/DEH) files
-		AG_TableAddRow(ServInfoList, "BEX/DEH Files");
+		AG_TableAddRow(ServInfoList, "%s", "BEX/DEH Files");
 
 		if(QServer[serverNdx].Info.Patches.size() <= 0)
-			AG_TableAddRow(ServInfoList, "None");
+			AG_TableAddRow(ServInfoList, "%s", "None");
 		else
 		{
 			size_t patchCnt = QServer[serverNdx].Info.Patches.size();
@@ -592,10 +594,10 @@ void AGOL_MainWindow::UpdateServInfoList(int serverNdx)
 			}
 		}
 
-		AG_TableAddRow(ServInfoList, "");
+		AG_TableAddRow(ServInfoList, "%s", "");
 
 		// Gameplay variables (Cvars, others)
-		AG_TableAddRow(ServInfoList, "Game Settings");
+		AG_TableAddRow(ServInfoList, "%s", "Game Settings");
 
 		// Sort cvars ascending
 		sort(QServer[serverNdx].Info.Cvars.begin(), QServer[serverNdx].Info.Cvars.end(), AGOL_MainWindow::CvarCompare);
