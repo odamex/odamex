@@ -351,6 +351,23 @@ private:
 	DGlow2 ();
 };
 
+// [RH] Phased light thinker
+class DPhased : public DLighting
+{
+	DECLARE_SERIAL (DPhased, DLighting)
+public:
+	DPhased (sector_t *sector);
+	DPhased (sector_t *sector, int baselevel, int phase);
+	void		RunThink ();
+protected:
+	byte		m_BaseLevel;
+	byte		m_Phase;
+private:
+	DPhased ();
+	DPhased (sector_t *sector, int baselevel);
+	int PhaseHelper (sector_t *sector, int index, int light, sector_t *prev);
+};
+
 #define GLOWSPEED				8
 #define STROBEBRIGHT			5
 #define FASTDARK				15

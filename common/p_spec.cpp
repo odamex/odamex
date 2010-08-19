@@ -911,14 +911,16 @@ P_CrossSpecialLine
         return;
 
     line_t*	line = &lines[linenum];
+    int flagos = GET_SPAC(line->flags);
 
 	if(thing)
 	{
 		//	Triggers that other things can activate
 		if (!thing->player)
 		{
-		    //if (!(GET_SPAC(line->flags) == SPAC_CROSS))
-            //    return;
+		    if (!(GET_SPAC(line->flags) == SPAC_CROSS)
+                && !(GET_SPAC(line->flags) == SPAC_MCROSS))
+                return;
 			
 			// Things that should NOT trigger specials...
 			switch(thing->type)
@@ -1396,6 +1398,15 @@ void P_SpawnSpecials (void)
 			// fire flickering
 			new DFireFlicker (sector);
 			sector->special &= 0xff00;
+			break;
+
+		  // [RH] Hexen-like phased lighting
+		case LightSequenceStart:
+			new DPhased (sector);
+			break;
+
+		case Light_Phased:
+			new DPhased (sector, 48, 63 - (sector->lightlevel & 63));
 			break;
 
 		case Sky2:
