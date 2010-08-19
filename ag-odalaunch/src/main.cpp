@@ -28,6 +28,8 @@
 #include <agar/core.h>
 #include <agar/gui.h>
 
+#include <SDL/SDL.h>
+
 #include "agol_main.h"
 #include "net_io.h"
 #include "gui_config.h"

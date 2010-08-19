@@ -39,6 +39,10 @@
 #include "game_command.h"
 #include "gui_config.h"
 
+#ifdef WIN32
+#define usleep(t) Sleep(t / 1000)
+#endif
+
 using namespace std;
 
 void GameCommand::AddParameter(string parameter)
