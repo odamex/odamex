@@ -31,6 +31,8 @@
 #include "dstrings.h"
 #include "c_console.h"
 
+#include "p_spec.h"
+
 IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 
 DDoor::DDoor ()
@@ -114,9 +116,18 @@ void DDoor::RunThink ()
 		}
 		break;
 		
-	case -1:
+    case -1:
 		// DOWN
-		res = MoveCeiling (m_Speed, m_Sector->floorheight, false, m_Direction);
+        res = MoveCeiling (m_Speed, m_Sector->floorheight, false, m_Direction);
+        if (m_LightTag)
+        {
+            EV_LightTurnOnPartway(m_Line->id,
+                FixedDiv(
+                    m_Sector->ceilingheight - m_Sector->floorheight,
+                    m_TopHeight - m_Sector->floorheight
+                )
+            );
+        }
 		if (res == pastdest)
 		{
 			//S_StopSound (m_Sector->soundorg);
@@ -136,6 +147,10 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
+            if (m_LightTag)
+            {
+                EV_LightTurnOnPartway(m_Line->id, 0);
+            }
 		}
 		else if (res == crushed)
 		{
@@ -156,6 +171,15 @@ void DDoor::RunThink ()
 		// UP
 		res = MoveCeiling (m_Speed, m_TopHeight, false, m_Direction);
 		
+        if (m_LightTag)
+        {
+            EV_LightTurnOnPartway(m_Line->id,
+                FixedDiv(
+                    m_Sector->ceilingheight - m_Sector->floorheight,
+                    m_TopHeight - m_Sector->floorheight
+                )
+            );
+        }
 		if (res == pastdest)
 		{
 			//S_StopSound (m_Sector->soundorg);
@@ -175,6 +199,10 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
+            if (m_LightTag)
+            {
+                EV_LightTurnOnPartway(m_Line->id, FRACUNIT);
+            }
 		}
 		break;
 	}
@@ -212,12 +240,14 @@ DDoor::DDoor (sector_t *sector)
 //		and made them more general to support the new specials.
 
 // [RH] SpawnDoor: Helper function for EV_DoDoor
-DDoor::DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay)
+DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	: DMovingCeiling (sec)
 {
 	m_Type = type;
 	m_TopWait = delay;
 	m_Speed = speed;
+    m_Line = ln;
+    m_LightTag = m_Line->id;
 
 	switch (type)
 	{
@@ -253,6 +283,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 	BOOL		rtn = false;
 	int 		secnum;
 	sector_t*	sec;
+    DDoor *door;
 
 	if (lock && thing && !P_CheckKeys (thing->player, lock, tag))
 		return false;
@@ -276,7 +307,9 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		// if door already has a thinker, use it
 		if (sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DDoor)))
 		{
-			DDoor *door = static_cast<DDoor *>(sec->ceilingdata);	
+			door = static_cast<DDoor *>(sec->ceilingdata);	
+            door->m_LightTag = line->id;
+            door->m_Line = line;
 			
 			// ONLY FOR "RAISE" DOORS, NOT "OPEN"s
 			if (door->m_Type == DDoor::doorRaise && type == DDoor::doorRaise)
@@ -324,8 +357,14 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 				return true;
 			}
 		}
-		if (new DDoor (sec, type, speed, delay))
+        else
+        {
+            door = new DDoor(sec, line, type, speed, delay);
+        }
+		if (door)
+        {
 			rtn = true;
+        }
 	}
 	else
 	{	// [RH] Remote door
@@ -338,7 +377,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 			if (sec->ceilingdata)
 				continue;
 
-			if (new DDoor (sec, type, speed, delay))
+			if (new DDoor (sec, line, type, speed, delay))
 				rtn = true;
 		}
 				

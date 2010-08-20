@@ -379,6 +379,7 @@ void	EV_StartLightStrobing (int tag, int utics, int ltics);
 void	EV_TurnTagLightsOff (int tag);
 void	EV_LightTurnOn (int tag, int bright);
 void	EV_LightChange (int tag, int value);
+int     EV_LightTurnOnPartway(int tag, int level);
 
 void	P_SpawnGlowingLight (sector_t *sector);
 
@@ -552,7 +553,8 @@ public:
 	};
 
 	DDoor (sector_t *sector);
-	DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
+	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
+    DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
 
 	void RunThink ();
 protected:
@@ -568,6 +570,10 @@ protected:
 	// (keep in case a door going down is reset)
 	// when it reaches 0, start going down
 	int 		m_TopCountdown;
+
+    line_t      *m_Line;
+
+    int         m_LightTag;
 
 	void DoorSound (bool raise) const;
 
