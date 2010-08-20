@@ -113,6 +113,7 @@ EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR (interscoredraw)
 EXTERN_CVAR(cl_connectalert)
+EXTERN_CVAR(cl_disconnectalert)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -239,7 +240,7 @@ void CL_DisconnectClient(void)
 		{
 			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
 			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
-			if (cl_connectalert && &player != &consoleplayer())
+			if (cl_disconnectalert && &player != &consoleplayer())
 				S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
 			players.erase(players.begin() + i);
 			break;

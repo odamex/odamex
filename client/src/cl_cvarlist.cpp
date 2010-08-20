@@ -102,7 +102,9 @@ CVAR_FUNC_DECL (ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // --------------
 
 // GhostlyDeath <August 1, 2008> -- Join/Part Sound
+// [ML] 8/20/2010 - Join sound, part sound
 CVAR (cl_connectalert, "1", CVAR_ARCHIVE)
+CVAR (cl_disconnectalert, "1", CVAR_ARCHIVE)
 
 CVAR_FUNC_DECL (cl_mouselook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 

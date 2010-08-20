@@ -113,6 +113,7 @@ EXTERN_CVAR (mouse_threshold)
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_sfxvolume)
 EXTERN_CVAR (cl_connectalert)
+EXTERN_CVAR (cl_disconnectalert)
 
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
@@ -312,12 +313,13 @@ menu_t MouseMenu = {
   *=======================================*/
 
 static menuitem_t SoundItems[] = {
-	{ whitetext ,   "Sound Levels"                          , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
+	{ bricktext ,   "Sound Levels"                          , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
 	{ slider    ,	"Music Volume"                          , {&snd_musicvolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
 	{ slider    ,	"Sound Volume"                          , {&snd_sfxvolume},		{0.0},      {1.0},	    {0.1},      {NULL} },
 	{ redtext   ,	" "                                     , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
-	{ whitetext ,   "Other Options"                         , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
+	{ bricktext ,   "Multiplayer Options"                   , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
 	{ discrete  ,   "Player Connect Alert"                  , {&cl_connectalert},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete  ,   "Player Disconnect Alert"               , {&cl_disconnectalert},{2.0},		{0.0},		{0.0},		{OnOff} }	
  };
 
 menu_t SoundMenu = {
