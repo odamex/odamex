@@ -941,7 +941,7 @@ P_CrossSpecialLine
             // in boomedit.wad, but without it vanilla demos break.
             switch (line->special)
             {
-				//case Teleport:
+				case Teleport:
 				case Teleport_NoFog:
 				case Teleport_Line:
 				break;
