@@ -241,6 +241,12 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
             
             continue;
         }
+        else if (Cvar.Name == wxT("sv_maxclients"))
+        {
+            Info.MaxClients = (wxUint8)wxAtoi(Cvar.Value);
+
+            continue;
+        }
         else if (Cvar.Name == wxT("sv_gametype"))
         {
             Info.GameType = (GameType_t)wxAtoi(Cvar.Value);
