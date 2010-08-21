@@ -63,6 +63,10 @@
 // Data.
 #include "m_menu.h"
 
+#define MENUBOXWIDTH	236
+#define MENUBOXHEIGHT	200
+#define TEAMPLAYBORDER	4
+
 //
 // defaulted values
 //
@@ -803,10 +807,20 @@ void M_OptDrawer (void)
 {
 	int color;
 	int y, width, i, x, ytop;
+	int x1,y1,x2,y2;
 	int valx = 0, valy = 0;
 	int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
+	
+	x1 = (screen->width / 2)-(160*CleanXfac);
+	y1 = (screen->height / 2)-(100*CleanYfac);
+	
+    x2 = (screen->width / 2)+(160*CleanXfac);
+	y2 = (screen->height / 2)+(100*CleanYfac);
+	
+	// Background effect
+	OdamexEffect(x1,y1,x2,y2);
 
 	title = W_CachePatch (CurrentMenu->title);
 	screen->DrawPatchClean (title, 160-title->width()/2, 10);

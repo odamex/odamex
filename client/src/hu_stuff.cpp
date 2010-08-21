@@ -79,7 +79,6 @@ void HU_DMScores2 (player_t *player);
 void HU_TeamScores1 (player_t *player);
 void HU_TeamScores2 (player_t *player);
 
-void OdamexEffect (int xa, int ya, int xb, int yb);
 
 extern inline int V_StringWidth (const char *str);
 
