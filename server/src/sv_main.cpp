@@ -572,25 +572,6 @@ BEGIN_COMMAND(kickban)
 }
 END_COMMAND(kickban)
 
-// denis - list connected clients
-BEGIN_COMMAND (who)
-{
-	bool anybody = false;
-
-	for(int i = players.size()-1; i >= 0 ; i--)
-	{
-		Printf(PRINT_HIGH, "(%02d): %s - %s - frags:%d ping:%d\n", players[i].id, players[i].userinfo.netname, NET_AdrToString(clients[i].address), players[i].fragcount, players[i].ping);
-		anybody = true;
-	}
-
-	if(!anybody)
-	{
-		Printf(PRINT_HIGH, "There are no players on the server\n");
-		return;
-	}
-}
-END_COMMAND (who)
-
 BEGIN_COMMAND (say)
 {
 	if (argc > 1)
@@ -3929,8 +3910,19 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (playerlist)
 {
-	
-	
+	bool anybody = false;
+
+	for(int i = players.size()-1; i >= 0 ; i--)
+	{
+		Printf(PRINT_HIGH, "(%02d): %s - %s - frags:%d ping:%d\n", players[i].id, players[i].userinfo.netname, NET_AdrToString(clients[i].address), players[i].fragcount, players[i].ping);
+		anybody = true;
+	}
+
+	if(!anybody)
+	{
+		Printf(PRINT_HIGH, "There are no players on the server\n");
+		return;
+	}
 }
 END_COMMAND (playerlist)
 
