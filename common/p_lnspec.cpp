@@ -762,13 +762,13 @@ FUNC(LS_Thing_SetGoal)
 FUNC(LS_FloorAndCeiling_LowerByValue)
 // FloorAndCeiling_LowerByValue (tag, speed, height)
 {
-	//return EV_DoElevator (ln, DElevator::elevateLower, SPEED(arg1), arg2*FRACUNIT, arg0);
+	return EV_DoElevator (ln, DElevator::elevateLower, SPEED(ln->args[1]), ln->args[2]*FRACUNIT, ln->args[0]);
 }
 
 FUNC(LS_FloorAndCeiling_RaiseByValue)
 // FloorAndCeiling_RaiseByValue (tag, speed, height)
 {
-	//return EV_DoElevator (ln, DElevator::elevateRaise, SPEED(arg1), arg2*FRACUNIT, arg0);
+	return EV_DoElevator (ln, DElevator::elevateRaise, SPEED(ln->args[1]), ln->args[2]*FRACUNIT, ln->args[0]);
 }
 
 FUNC(LS_FloorAndCeiling_LowerRaise)
