@@ -74,7 +74,6 @@ BOOL	G_CheckDemoStatus (void);
 void	G_ReadDemoTiccmd ();
 void	G_WriteDemoTiccmd ();
 void	G_PlayerReborn (player_t &player);
-void	G_DoReborn (player_t &playernum);
 
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);

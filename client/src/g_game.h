@@ -34,6 +34,8 @@
 //
 void G_DeathMatchSpawnPlayer (player_t &player);
 
+void G_DoReborn (player_t &playernum);
+
 void G_DeferedPlayDemo (const char* demo);
 
 // Can be called by the startup code or M_Responder,

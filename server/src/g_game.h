@@ -32,6 +32,7 @@
 // GAME
 //
 void G_DeathMatchSpawnPlayer (player_t &player);
+void G_DoReborn (player_t &player);
 
 void G_DeferedPlayDemo (char* demo);
 

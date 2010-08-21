@@ -37,6 +37,7 @@
 #include "vectors.h"
 #include "p_mobj.h"
 #include "sv_ctf.h"
+#include "g_game.h"
 
 mapthing2_t 		itemrespawnque[ITEMQUESIZE];
 int 				itemrespawntime[ITEMQUESIZE];
@@ -1262,6 +1263,43 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	}
 }
 
+//
+// P_PreservePlayer
+//
+void P_PreservePlayer(player_t &player)
+{
+	if (!serverside || sv_gametype != GM_COOP || !validplayer(player) || !player.ingame())
+		return;
+
+	if(!unnatural_level_progression)
+		player.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
+
+	G_DoReborn(player);
+
+	// inform client
+	{
+		size_t i;
+		client_t *cl = &player.client;
+
+		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
+
+		for(i = 0; i < NUMWEAPONS; i++)
+			MSG_WriteByte (&cl->reliablebuf, player.weaponowned[i]);
+
+		for(i = 0; i < NUMAMMO; i++)
+		{
+			MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
+			MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
+		}
+
+		MSG_WriteByte (&cl->reliablebuf, player.health);
+		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
+		MSG_WriteByte (&cl->reliablebuf, player.armortype);
+		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+		MSG_WriteByte (&cl->reliablebuf, player.backpack);
+	}
+}
+
 EXTERN_CVAR(sv_maxplayers)
 EXTERN_CVAR(sv_teamspawns)
 
@@ -1337,42 +1375,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (mthing->args[0] != position)
 			return;
 
-		// save spots for respawning in network games
-		size_t playernum = mthing->type <= 4 ? mthing->type-1 : (mthing->type - 4001 + 4)%MAXPLAYERSTARTS;
 		playerstarts.push_back(*mthing);
-		player_t &p = idplayer(playernum+1);
-
-		if (sv_gametype == GM_COOP && validplayer(p) && p.ingame())
-		{
-			if(!unnatural_level_progression)
-				p.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
-
-			P_SpawnPlayer (p, mthing);
-
-			// inform client
-			{
-				size_t j;
-				client_t *cl = &p.client;
-
-				MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
-
-				for(j = 0; j < NUMWEAPONS; j++)
-					MSG_WriteByte (&cl->reliablebuf, p.weaponowned[j]);
-
-				for(j = 0; j < NUMAMMO; j++)
-				{
-					MSG_WriteShort (&cl->reliablebuf, p.maxammo[j]);
-					MSG_WriteShort (&cl->reliablebuf, p.ammo[j]);
-				}
-
-				MSG_WriteByte (&cl->reliablebuf, p.health);
-				MSG_WriteByte (&cl->reliablebuf, p.armorpoints);
-				MSG_WriteByte (&cl->reliablebuf, p.armortype);
-				MSG_WriteByte (&cl->reliablebuf, p.readyweapon);
-				MSG_WriteByte (&cl->reliablebuf, p.backpack);
-			}
-		}
-
 		return;
 	}
 
