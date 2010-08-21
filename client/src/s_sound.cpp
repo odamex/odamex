@@ -401,7 +401,7 @@ int
 	// GhostlyDeath <November 16, 2008> -- ExM8 has the full volume effect
 	// [Russell] - Change this to an option and remove the dependence on
 	// we run doom 1 or not
-	if (!co_level8soundfeature && level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
+	if ((multiplayer && !co_level8soundfeature) && level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
 		return 0;
 
     // angle of source to listener

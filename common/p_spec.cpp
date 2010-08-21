@@ -911,7 +911,6 @@ P_CrossSpecialLine
         return;
 
     line_t*	line = &lines[linenum];
-    int flagos = GET_SPAC(line->flags);
 
 	if(thing)
 	{

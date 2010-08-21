@@ -169,10 +169,10 @@ CVAR_FUNC_IMPL (msgmidcolor)
 //       scrolling up. Otherwise, any new messages will
 //       automatically pull the console back to the bottom.
 //
-// conscrlock 0 = All new lines bring scroll to the bottom.
-// conscrlock 1 = Only input commands bring scroll to the bottom.
-// conscrlock 2 = Nothing brings scroll to the bottom.
-EXTERN_CVAR (conscrlock)
+// con_scrlock 0 = All new lines bring scroll to the bottom.
+// con_scrlock 1 = Only input commands bring scroll to the bottom.
+// con_scrlock 2 = Nothing brings scroll to the bottom.
+EXTERN_CVAR (con_scrlock)
 
 //
 // C_Close
@@ -517,7 +517,7 @@ int PrintString (int printlevel, const char *outline)
 			{
 				SkipRows = 1;
 
-				if (conscrlock > 0 && RowAdjust != 0)
+				if (con_scrlock > 0 && RowAdjust != 0)
 					RowAdjust++;
 				else
 					RowAdjust = 0;
@@ -1227,8 +1227,8 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			// Execute command line (ENTER)
 			buffer[2 + buffer[0]] = 0;
 
-			if (conscrlock == 1) // NES - If conscrlock = 1, send console scroll to bottom.
-				RowAdjust = 0;   // conscrlock = 0 does it automatically.
+			if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
+				RowAdjust = 0;   // con_scrlock = 0 does it automatically.
 
 			if (HistHead && stricmp (HistHead->String, (char *)&buffer[2]) == 0)
 			{

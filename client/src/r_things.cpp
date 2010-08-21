@@ -56,7 +56,7 @@ static int crosshair_lump;
 
 static void R_InitCrosshair();
 
-CVAR_FUNC_IMPL (crosshair)
+CVAR_FUNC_IMPL (hud_crosshair)
 {
 	R_InitCrosshair();
 }
@@ -84,8 +84,8 @@ int			*screenheightarray;
 
 EXTERN_CVAR (r_drawplayersprites)
 
-EXTERN_CVAR (crosshairdim)
-EXTERN_CVAR (crosshairscale) 
+EXTERN_CVAR (hud_crosshairdim)
+EXTERN_CVAR (hud_crosshairscale) 
 
 //
 // INITIALIZATION FUNCTIONS
@@ -504,7 +504,7 @@ END_COMMAND (skins)
 
 static void R_InitCrosshair()
 {
-	int xhairnum = (int)crosshair;
+	int xhairnum = (int)hud_crosshair;
 
 	if (xhairnum)
 	{
@@ -1509,17 +1509,17 @@ static void R_DrawCrosshair (void)
 	if (camera->player && camera->player->spectator)
 		return;
 
-	if(crosshair && crosshair_lump)
+	if(hud_crosshair && crosshair_lump)
 	{
-		if (crosshairdim && crosshairscale)
+		if (hud_crosshairdim && hud_crosshairscale)
 			screen->DrawLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
-        else if (crosshairscale)
+        else if (hud_crosshairscale)
 			screen->DrawPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
-        else if (crosshairdim)
+        else if (hud_crosshairdim)
 			screen->DrawLucentPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);

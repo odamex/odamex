@@ -84,7 +84,7 @@
 #define ENDOOM_W 80
 #define ENDOOM_H 25
 
-EXTERN_CVAR (show_endoom)
+EXTERN_CVAR (r_showendoom)
 
 QWORD (*I_GetTime) (void);
 QWORD (*I_WaitForTic) (QWORD);
@@ -482,7 +482,7 @@ void STACK_ARGS I_Quit (void)
 	
 	I_ShutdownHardware();
 
-	if (show_endoom && !Args.CheckParm ("-novideo"))
+	if (r_showendoom && !Args.CheckParm ("-novideo"))
 		I_Endoom();
 }
 
