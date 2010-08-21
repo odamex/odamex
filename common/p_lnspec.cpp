@@ -774,7 +774,7 @@ FUNC(LS_FloorAndCeiling_RaiseByValue)
 FUNC(LS_FloorAndCeiling_LowerRaise)
 // FloorAndCeiling_LowerRaise (tag, fspeed, cspeed)
 {
-	//return EV_DoCeiling (DCeiling::ceilRaiseToHighest, ln, ln->args[0], SPEED(ln->args[2]), 0, 0, 0, 0, 0) ||
+	return EV_DoCeiling (DCeiling::ceilRaiseToHighest, ln, ln->args[0], SPEED(ln->args[2]), 0, 0, 0, 0, 0) ||
 		EV_DoFloor (DFloor::floorLowerToLowest, ln, ln->args[0], SPEED(ln->args[1]), 0, 0, 0);
 }
 
