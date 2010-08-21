@@ -41,6 +41,9 @@ void HU_Init (void);
 BOOL HU_Responder (event_t* ev);
 void HU_Drawer (void);
 
+
+void OdamexEffect (int xa, int ya, int xb, int yb);
+
 extern int headsupactive;
 
 // [RH] Draw deathmatch scores

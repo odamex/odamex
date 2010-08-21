@@ -21,7 +21,7 @@
 // AUTHORS: 
 //  John Corrado
 //  Russell Rice (russell at odamex dot net)
-//  Michael Wood (mwoodj at knology dot net)
+//  Michael Wood (mwoodj at huntsvegas dot org)
 //
 //-----------------------------------------------------------------------------
 

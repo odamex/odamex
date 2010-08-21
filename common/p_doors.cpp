@@ -31,6 +31,8 @@
 #include "dstrings.h"
 #include "c_console.h"
 
+#include "p_spec.h"
+
 IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 
 DDoor::DDoor ()
@@ -114,9 +116,18 @@ void DDoor::RunThink ()
 		}
 		break;
 		
-	case -1:
+    case -1:
 		// DOWN
-		res = MoveCeiling (m_Speed, m_Sector->floorheight, false, m_Direction);
+        res = MoveCeiling (m_Speed, m_Sector->floorheight, false, m_Direction);
+        if (m_LightTag)
+        {
+            EV_LightTurnOnPartway(m_Line->id,
+                FixedDiv(
+                    m_Sector->ceilingheight - m_Sector->floorheight,
+                    m_TopHeight - m_Sector->floorheight
+                )
+            );
+        }
 		if (res == pastdest)
 		{
 			//S_StopSound (m_Sector->soundorg);
@@ -136,6 +147,10 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
+            if (m_LightTag)
+            {
+                EV_LightTurnOnPartway(m_Line->id, 0);
+            }
 		}
 		else if (res == crushed)
 		{
@@ -156,6 +171,15 @@ void DDoor::RunThink ()
 		// UP
 		res = MoveCeiling (m_Speed, m_TopHeight, false, m_Direction);
 		
+        if (m_LightTag)
+        {
+            EV_LightTurnOnPartway(m_Line->id,
+                FixedDiv(
+                    m_Sector->ceilingheight - m_Sector->floorheight,
+                    m_TopHeight - m_Sector->floorheight
+                )
+            );
+        }
 		if (res == pastdest)
 		{
 			//S_StopSound (m_Sector->soundorg);
@@ -175,6 +199,10 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
+            if (m_LightTag)
+            {
+                EV_LightTurnOnPartway(m_Line->id, FRACUNIT);
+            }
 		}
 		break;
 	}
@@ -212,12 +240,14 @@ DDoor::DDoor (sector_t *sector)
 //		and made them more general to support the new specials.
 
 // [RH] SpawnDoor: Helper function for EV_DoDoor
-DDoor::DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay)
+DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	: DMovingCeiling (sec)
 {
 	m_Type = type;
 	m_TopWait = delay;
 	m_Speed = speed;
+    m_Line = ln;
+    m_LightTag = m_Line->id;
 
 	switch (type)
 	{
@@ -253,6 +283,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 	BOOL		rtn = false;
 	int 		secnum;
 	sector_t*	sec;
+    DDoor *door;
 
 	if (lock && thing && !P_CheckKeys (thing->player, lock, tag))
 		return false;
@@ -276,8 +307,10 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		// if door already has a thinker, use it
 		if (sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DDoor)))
 		{
-			DDoor *door = static_cast<DDoor *>(sec->ceilingdata);
-
+			door = static_cast<DDoor *>(sec->ceilingdata);	
+            door->m_LightTag = line->id;
+            door->m_Line = line;
+			
 			// ONLY FOR "RAISE" DOORS, NOT "OPEN"s
 			if (door->m_Type == DDoor::doorRaise && type == DDoor::doorRaise)
 			{
@@ -285,7 +318,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 				{
 					door->m_Direction = 1;	// go back up
 				}
-				else if (line->flags & ML_SPECIAL_USE)
+				else if (GET_SPAC(line->flags) != SPAC_PUSH)
 					// [RH] activate push doors don't go back down when you
 					//		run into them (otherwise opening them would be
 					//		a real pain).
@@ -293,13 +326,45 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					if (thing && !thing->player)
 						return false;	// JDC: bad guys never close doors
 
-					door->m_Direction = -1;	// start going down immediately
+					// From Chocolate Doom:
+                        // When is a door not a door?
+                        // In Vanilla, door->direction is set, even though
+                        // "specialdata" might not actually point at a door.
+                        
+                    if (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DDoor)))
+                    {
+                        door->m_Direction = 1;	// go back up
+                    }
+                    else if (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DPlat)))
+                    {
+                        // Erm, this is a plat, not a door.
+                        // This notably causes a problem in ep1-0500.lmp where
+                        // a plat and a door are cross-referenced; the door
+                        // doesn't open on 64-bit.
+                        // The direction field in vldoor_t corresponds to the wait
+                        // field in plat_t.  Let's set that to -1 instead.
+                        
+                        DPlat *plat = static_cast<DPlat *>(sec->floordata);
+                        byte state;
+                        int count;
+                        
+                        plat->GetState(state, count);
+                        
+                        if (count >= 16)    // ep1-0500 always returns a count of 16.
+                            return false;   // We may be able to always return false?
+                    }
 				}
 				return true;
 			}
 		}
-		if (new DDoor (sec, type, speed, delay))
+        else
+        {
+            door = new DDoor(sec, line, type, speed, delay);
+        }
+		if (door)
+        {
 			rtn = true;
+        }
 	}
 	else
 	{	// [RH] Remote door
@@ -312,7 +377,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 			if (sec->ceilingdata)
 				continue;
 
-			if (new DDoor (sec, type, speed, delay))
+			if (new DDoor (sec, line, type, speed, delay))
 				rtn = true;
 		}
 				

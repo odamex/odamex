@@ -79,7 +79,6 @@ void HU_DMScores2 (player_t *player);
 void HU_TeamScores1 (player_t *player);
 void HU_TeamScores2 (player_t *player);
 
-void OdamexEffect (int xa, int ya, int xb, int yb);
 
 extern inline int V_StringWidth (const char *str);
 
@@ -632,7 +631,7 @@ static bool STACK_ARGS compare_player_points (const player_t *arg1, const player
 	return arg2->points < arg1->points;
 }
 
-EXTERN_CVAR (usehighresboard)
+EXTERN_CVAR (hud_usehighresboard)
 
 #define CTFBOARDWIDTH	236
 #define CTFBOARDHEIGHT	103
@@ -645,7 +644,7 @@ void HU_DrawScores (player_t *player)
 {
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		if (usehighresboard)
+		if (hud_usehighresboard)
 		{
 			if (screen->width > (CTFBOARDWIDTH * 2)) // If board will fit
 				HU_TeamScores2 (player);
@@ -657,7 +656,7 @@ void HU_DrawScores (player_t *player)
 	}
 	else
 	{
-		if (usehighresboard && screen->width != 320)
+		if (hud_usehighresboard && screen->width != 320)
 			HU_DMScores2 (player);
 		else
 			HU_DMScores1 (player);

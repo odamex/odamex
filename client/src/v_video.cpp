@@ -82,8 +82,8 @@ EXTERN_CVAR (vid_defbits)
 EXTERN_CVAR (autoadjust_video_settings)
 EXTERN_CVAR (vid_overscan)
 
-EXTERN_CVAR (dimamount)
-EXTERN_CVAR (dimcolor)
+EXTERN_CVAR (ui_dimamount)
+EXTERN_CVAR (ui_dimcolor)
 
 extern "C" {
 palette_t *DefaultPalette;
@@ -234,12 +234,12 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 
 void DCanvas::Dim () const
 {
-	if (dimamount < 0)
-		dimamount.Set (0.0f);
-	else if (dimamount > 1)
-		dimamount.Set (1.0f);
+	if (ui_dimamount < 0)
+		ui_dimamount.Set (0.0f);
+	else if (ui_dimamount > 1)
+		ui_dimamount.Set (1.0f);
 
-	if (dimamount == 0)
+	if (ui_dimamount == 0)
 		return;
 
 	if (is8bit())
@@ -254,10 +254,10 @@ void DCanvas::Dim () const
 			unsigned int *fg2rgb;
 			fixed_t amount;
 
-			amount = (fixed_t)(dimamount * 64);
+			amount = (fixed_t)(ui_dimamount * 64);
 			fg2rgb = Col2RGB8[amount];
 			bg2rgb = Col2RGB8[64-amount];
-			fg = fg2rgb[V_GetColorFromString (DefaultPalette->basecolors, dimcolor.cstring())];
+			fg = fg2rgb[V_GetColorFromString (DefaultPalette->basecolors, ui_dimcolor.cstring())];
 		}
 
 		spot = buffer;
@@ -277,11 +277,11 @@ void DCanvas::Dim () const
 	{
 		int x, y;
 		int *line;
-		int fill = V_GetColorFromString (NULL, dimcolor.cstring());
+		int fill = V_GetColorFromString (NULL, ui_dimcolor.cstring());
 
 		line = (int *)(screen->buffer);
 
-		if (dimamount == 1.0)
+		if (ui_dimamount == 1.0)
 		{
 			fill = (fill >> 2) & 0x3f3f3f;
 			for (y = 0; y < height; y++)
@@ -293,7 +293,7 @@ void DCanvas::Dim () const
 				line += pitch >> 2;
 			}
 		}
-		else if (dimamount == 2.0)
+		else if (ui_dimamount == 2.0)
 		{
 			fill = (fill >> 1) & 0x7f7f7f;
 			for (y = 0; y < height; y++)
@@ -305,7 +305,7 @@ void DCanvas::Dim () const
 				line += pitch >> 2;
 			}
 		}
-		else if (dimamount == 3.0)
+		else if (ui_dimamount == 3.0)
 		{
 			fill = fill - ((fill >> 2) & 0x3f3f3f);
 			for (y = 0; y < height; y++)

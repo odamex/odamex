@@ -98,7 +98,7 @@
 #define ENDOOM_H 25
 #endif // _XBOX
 
-EXTERN_CVAR (show_endoom)
+EXTERN_CVAR (r_showendoom)
 
 QWORD (*I_GetTime) (void);
 QWORD (*I_WaitForTic) (QWORD);
@@ -465,7 +465,10 @@ void I_Endoom(void)
 	// Set up text mode screen
 
 	TXT_Init();
-
+ 
+    I_SetWindowCaption();
+    I_SetWindowIcon();
+    
 	// Write the data to the screen memory
 
 	screendata = TXT_GetScreenData();
@@ -511,8 +514,10 @@ void STACK_ARGS I_Quit (void)
 	CL_QuitNetGame();
 
 	M_SaveDefaults();
+	
+	I_ShutdownHardware();
 
-	if (show_endoom && !Args.CheckParm ("-novideo"))
+	if (r_showendoom && !Args.CheckParm ("-novideo"))
 		I_Endoom();
 }
 

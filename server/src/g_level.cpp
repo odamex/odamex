@@ -366,7 +366,7 @@ void G_GenerateRandomMaps(void)
 	bool* Used = NULL;
 	size_t Count = 0;
 	maplist_s* Rover = NULL;
-	size_t i, j;
+	size_t i, j, random_seed;
 	std::vector<maplist_s*> Ptrs;
 
 	// Clear old map list
@@ -396,11 +396,14 @@ void G_GenerateRandomMaps(void)
 
 	for (i = 0; i < Count; i++)
 		Used[i] = 0;
+		
+    srand((unsigned)time(0)); 
 
 	// Now populate the list
 	for (i = 0; i < Count; i++)
 	{
-		j = (M_Random() + M_Random()) % Count;
+	    random_seed = rand();
+		j = random_seed % Count;
 
 		// Move forward if j is used
 		while (Used[j])

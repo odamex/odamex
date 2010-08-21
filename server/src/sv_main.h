@@ -94,6 +94,7 @@ void SV_MidPrint (const char *msg, player_t *p);
 int SV_CountTeamPlayers(int team);
 
 extern std::vector<std::string> wadnames;
+void MSG_WriteMarker (buf_t *b, svc_t c);
 
 #endif
 

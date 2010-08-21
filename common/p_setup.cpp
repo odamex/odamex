@@ -44,6 +44,7 @@
 
 #include "p_setup.h"
 
+void P_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
@@ -1391,14 +1392,18 @@ void P_SetupLevel (char *lumpname, int position)
 	P_LoadThings (lumpnum+ML_THINGS);
 	P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
 	
-    // if deathmatch, randomly spawn the active players
     if (serverside)
     {
 		for (i=0 ; i<players.size() ; i++)
+		{
+			P_PreservePlayer(players[i]);
+
+    		// if deathmatch, randomly spawn the active players
 			if (players[i].ingame())
 			{
 				G_DeathMatchSpawnPlayer (players[i]); // denis - this function checks for deathmatch internally
 			}				
+		}
     }
 	
 	// clear special respawning que

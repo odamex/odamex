@@ -76,6 +76,9 @@ CVAR (co_realactorheight, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERIN
 // [Spleen] When enabled, monsters can get pushed or thrusted off of ledges, like in boom
 CVAR (co_allowdropoff, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+// Enable/disable the "level 8 full sound at far distances" feature
+CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 // Misc stuff
 // ----------
 

@@ -405,11 +405,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 
 	fixed_t delta = special->z - toucher->z;
 
-	if (delta > toucher->height || delta < -8*FRACUNIT)
-	{
-		// out of reach
+    // Out of reach
+    // ...but leave this to the server to handle if the client is connected
+	if ((delta > toucher->height || delta < -8*FRACUNIT) && !(clientside && network_game))
 		return;
-	}
 
 	sound = 0;
 	player = toucher->player;
@@ -717,7 +716,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		return;
 
 	  default:
-		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
+		//I_Error ("P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+		Printf (PRINT_HIGH,"P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+		return;
 	}
 
 	if (serverside && special->flags & MF_COUNTITEM)

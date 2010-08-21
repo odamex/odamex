@@ -121,6 +121,7 @@ EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR (interscoredraw)
 EXTERN_CVAR(cl_connectalert)
+EXTERN_CVAR(cl_disconnectalert)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -247,7 +248,7 @@ void CL_DisconnectClient(void)
 		{
 			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
 			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
-			if (cl_connectalert && &player != &consoleplayer())
+			if (cl_disconnectalert && &player != &consoleplayer())
 				S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
 			players.erase(players.begin() + i);
 			break;
@@ -431,17 +432,10 @@ BEGIN_COMMAND (serverinfo)
 }
 END_COMMAND (serverinfo)
 
+// rate: takes a bps value
 CVAR_FUNC_IMPL (rate)
 {
-	if (var < 100)
-	{
-		var.Set (100);
-	}
-	else if (var > 100000)
-	{
-		var.Set (100000);
-	}
-	else if (connected)
+	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
 		MSG_WriteLong(&net_buffer, (int)var);
@@ -1961,9 +1955,9 @@ void CL_Switch()
 
 	if(!P_SetButtonInfo(&lines[l], state, time)) // denis - fixme - security
 		if(wastoggled)
-			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_SPECIAL_REPEAT);  // denis - fixme - security
+			P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL);  // denis - fixme - security
 
-	if(wastoggled && !(lines[l].flags & ML_SPECIAL_REPEAT)) // non repeat special
+	if(wastoggled && !(lines[l].flags & ML_REPEAT_SPECIAL)) // non repeat special
 		lines[l].special = 0;
 }
 

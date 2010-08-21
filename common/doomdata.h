@@ -118,44 +118,36 @@ typedef struct
 // the texture at the top pixel of the line for both
 // top and bottom textures (use next to windows).
 
-// upper texture unpegged
-#define ML_DONTPEGTOP				8
 
-// lower texture unpegged
-#define ML_DONTPEGBOTTOM			16	
+#define ML_DONTPEGTOP		0x0008	// upper texture unpegged
+#define ML_DONTPEGBOTTOM	0x0010	// lower texture unpegged
+#define ML_SECRET			0x0020	// don't map as two sided: IT'S A SECRET!
+#define ML_SOUNDBLOCK		0x0040	// don't let sound cross two of these
+#define ML_DONTDRAW 		0x0080	// don't draw on the automap
+#define ML_MAPPED			0x0100	// set if already drawn in automap
+#define ML_REPEAT_SPECIAL	0x0200	// special is repeatable
+#define ML_SPAC_SHIFT		10
+#define ML_SPAC_MASK		0x1c00
+#define GET_SPAC(flags)		((flags&ML_SPAC_MASK)>>ML_SPAC_SHIFT)
 
-// In AutoMap: don't map as two sided: IT'S A SECRET!
-#define ML_SECRET					32
+// Special activation types
+#define SPAC_CROSS		0	// when player crosses line
+#define SPAC_USE		1	// when player uses line
+#define SPAC_MCROSS		2	// when monster crosses line
+#define SPAC_IMPACT		3	// when projectile hits line
+#define SPAC_PUSH		4	// when player/monster pushes line
+#define SPAC_PCROSS		5	// when projectile crosses line
+#define SPAC_USETHROUGH	6	// SPAC_USE, but passes it through
+#define SPAC_CROSSTHROUGH 7 // SPAC_CROSS, but passes it through
 
-// Sound rendering: don't let sound cross two of these.
-#define ML_SOUNDBLOCK				64
-
-// Don't draw on the automap at all.
-#define ML_DONTDRAW					128
-
-// Set if already seen, thus drawn in automap.
-#define ML_MAPPED					256
+// [RH] Monsters (as well as players) can active the line
+#define ML_MONSTERSCANACTIVATE		0x2000
 
 // [RH] BOOM's ML_PASSUSE flag (conflicts with ML_REPEATSPECIAL)
-#define ML_PASSUSE_BOOM				0x200
+#define ML_PASSUSE_BOOM				0x0200
 
-// Line activates something when crossed
-#define ML_SPECIAL_CROSS			0x400
-
-// Line can also activate stuff when crossed by a monster
-#define ML_SPECIAL_MONSTER			0x800
-
-// Line can only activate stuff when crossed by a monster
-#define ML_SPECIAL_MONSTER_ONLY		0x1000
-
-// Line activates something when pressed
-#define ML_SPECIAL_USE				0x2000
-
-// Line activates something when shot
-#define ML_SPECIAL_SHOOT			0x4000
-
-// Line can keep activating stuff multiple times
-#define ML_SPECIAL_REPEAT			0x8000
+// [RH] Line blocks everything
+#define ML_BLOCKEVERYTHING			0x8000
 
 // Sector definition, from editing
 typedef struct

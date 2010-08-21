@@ -914,12 +914,13 @@ P_CrossSpecialLine
 
 	if(thing)
 	{
-		if (!(line->flags & ML_SPECIAL_CROSS))
-			return;
-
 		//	Triggers that other things can activate
 		if (!thing->player)
 		{
+		    if (!(GET_SPAC(line->flags) == SPAC_CROSS)
+                && !(GET_SPAC(line->flags) == SPAC_MCROSS))
+                return;
+			
 			// Things that should NOT trigger specials...
 			switch(thing->type)
 			{
@@ -934,14 +935,31 @@ P_CrossSpecialLine
 
 				default: break;
 			}
+            
+            // This breaks the ability for the eyes to activate the silent teleporter lines
+            // in boomedit.wad, but without it vanilla demos break.
+            switch (line->special)
+            {
+				case Teleport:
+				case Teleport_NoFog:
+				case Teleport_Line:
+				break;
+				                
+                default:
+                    if(!(line->flags & ML_MONSTERSCANACTIVATE))
+                        return;                
+                break;
+            }
 
-			if(!(line->flags & ML_SPECIAL_MONSTER))
-				return;
 		}
 		else
 		{
+		    if (!(GET_SPAC(line->flags) == SPAC_CROSS) && 
+                !(GET_SPAC(line->flags) == SPAC_CROSSTHROUGH))
+                return;
+                
 			// Likewise, player should not trigger monster lines
-			if(line->flags & ML_SPECIAL_MONSTER_ONLY)
+			if(GET_SPAC(line->flags) == SPAC_MCROSS)
 				return;
 
 			// And spectators should only trigger teleporters
@@ -980,7 +998,7 @@ P_CrossSpecialLine
 	}
 
 	LineSpecials[line->special] (line, thing);
-	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 
 	OnActivatedLine(line, thing, side, 0);
 }
@@ -997,28 +1015,28 @@ P_ShootSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return;
-
+    
 	if(thing)
 	{
-		if (!(line->flags & ML_SPECIAL_SHOOT))
+		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
 			return;
 
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (!thing->player && !(line->flags & ML_SPECIAL_MONSTER))
+		if (!thing->player && !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
 
 	LineSpecials[line->special] (line, thing);
 
-	line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 	OnActivatedLine(line, thing, 0, 2);
 
 	if(serverside)
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-		OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 	}
 }
 
@@ -1037,7 +1055,7 @@ P_UseSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return false;
-
+    
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1057,14 +1075,15 @@ P_UseSpecialLine
 
 	if(thing)
 	{
-		if (!(line->flags & ML_SPECIAL_USE))
+		if (!(GET_SPAC(line->flags) == SPAC_USE) &&
+            !(GET_SPAC(line->flags) == SPAC_USETHROUGH))
 			return false;
 
 		// Switches that other things can activate.
 		if (!thing->player)
 		{
 			// not for monsters?
-			if (!(line->flags & ML_SPECIAL_MONSTER))
+			if (!(line->flags & ML_MONSTERSCANACTIVATE))
 				return false;
 
 			// never open secret doors
@@ -1082,18 +1101,19 @@ P_UseSpecialLine
 
 	if(LineSpecials[line->special] (line, thing))
 	{
-		line->special = line->flags & ML_SPECIAL_REPEAT ? line->special : 0;
+		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 		OnActivatedLine(line, thing, side, 1);
 
 		if(serverside)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
-			OnChangedSwitchTexture (line, line->flags & ML_SPECIAL_REPEAT);
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 		}
 	}
 
     return true;
 }
+
 
 //
 // P_PlayerInSpecialSector
@@ -1377,6 +1397,15 @@ void P_SpawnSpecials (void)
 			// fire flickering
 			new DFireFlicker (sector);
 			sector->special &= 0xff00;
+			break;
+
+		  // [RH] Hexen-like phased lighting
+		case LightSequenceStart:
+			new DPhased (sector);
+			break;
+
+		case Light_Phased:
+			new DPhased (sector, 48, 63 - (sector->lightlevel & 63));
 			break;
 
 		case Sky2:

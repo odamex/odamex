@@ -51,6 +51,7 @@ class					DFlicker;
 class					DGlow;
 class					DGlow2;
 class					DLightFlash;
+class					DPhased;
 class					DStrobe;
 class				DMover;
 class					DElevator;

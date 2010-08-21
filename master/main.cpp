@@ -54,7 +54,7 @@
 using namespace std;
 
 #define MAX_SERVERS					1024
-#define MAX_SERVERS_PER_IP			16
+#define MAX_SERVERS_PER_IP			64
 #define MAX_SERVER_AGE				5000
 #define MAX_UNVERIFIED_SERVER_AGE	1000
 
