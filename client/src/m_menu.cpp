@@ -1781,13 +1781,11 @@ bool M_Responder (event_t* ev)
 	if (!menuactive)
 	{
 	    // [ML] This is a regular binding now too!
-		/*if (ch == KEY_ESCAPE)
+		if (ch == KEY_ESCAPE)
 		{
-			M_StartControlPanel ();
-			M_SetupNextMenu (&MainDef);
-			S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+			AddCommandString("menu_main");
 			return true;
-		}*/
+		}
 		return false;
 	}
 	
