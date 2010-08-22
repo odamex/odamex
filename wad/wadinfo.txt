@@ -155,7 +155,7 @@ XHAIR5	0	0
 XHAIR6	2	2
 XHAIR7	0	0
 XHAIR8	7	6
-ODAMEX	0	0
+CONBACK	0	0
 
 # List of Sprites
 [sprites]

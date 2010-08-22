@@ -514,6 +514,8 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 //	M_RefreshModesList (); // [Toke - crap]
 
+    gotconback = false;
+
 	return true;
 }
 

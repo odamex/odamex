@@ -221,28 +221,31 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			patch_t *bg;
 			int num;
 
-			num = W_CheckNumForName ("ODAMEX");
+			num = W_CheckNumForName ("CONBACK");
+			//num2 = W_CheckNumForName ("M_DOOM");
 			if (num == -1)
 			{
 				stylize = true;
-				num = W_GetNumForName ("ODAMEX");
+				num = W_GetNumForName ("CONBACK");
 				isRaw = gameinfo.flags & GI_PAGESARERAW;
 			}
 
 			bg = W_CachePatch (num);
+			//gg = W_CachePatch (num2);
 
 			delete conback;
 			if (isRaw)
 				conback = I_AllocateScreen (320, 200, 8);
 			else
-				conback = I_AllocateScreen (bg->width(), bg->height(), 8);
+				conback = I_AllocateScreen (screen->width, screen->height, 8);
 
 			conback->Lock ();
 
 			if (isRaw)
 				conback->DrawBlock (0, 0, 320, 200, (byte *)bg);
 			else
-				conback->DrawPatch (bg, 0, 0);
+				conback->DrawPatch (bg, (screen->width/2)-(bg->width()/2), (screen->height/2)-(bg->height()/2));
+				//conback->DrawPatch (gg, ((screen->width/2)-(gg->width()/2))+3*CleanXfac, ((screen->height/2)-(gg->height()/2)) + 15*CleanYfac);
 
 			if (stylize)
 			{
@@ -834,7 +837,7 @@ void C_DrawConsole (void)
          if(altinfullscreen)
          {
             altconback->Blit (0, 0, altconback->width, altconback->height,
-                           screen, 0, 0, screen->width, visheight);
+                           screen, 0, 0, altconback->width, altconback->height);
          }
          else
          {
