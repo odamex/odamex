@@ -45,6 +45,7 @@
 #include "cl_ctf.h"
 #include "r_sky.h"
 #include "cl_main.h"
+#include "c_bind.h"
 
 #include "gi.h"
 
@@ -1683,6 +1684,7 @@ bool M_Responder (event_t* ev)
 {
 	int ch, ch2;
 	int i;
+	const char *cmd;
 
 	ch = ch2 = -1;
 
@@ -1704,6 +1706,8 @@ bool M_Responder (event_t* ev)
 		M_OptResponder (ev);
 		return true;
 	}
+
+	cmd = C_GetBinding (ch);
 
 	// Save Game string input
 	// [RH] and Player Name string input
@@ -1780,7 +1784,7 @@ bool M_Responder (event_t* ev)
 	// Pop-up menu?
 	if (!menuactive)
 	{
-	    // [ML] This is a regular binding now too!
+		// [ML] This is a regular binding now too!
 		if (ch == KEY_ESCAPE)
 		{
 			AddCommandString("menu_main");
@@ -1789,7 +1793,15 @@ bool M_Responder (event_t* ev)
 		return false;
 	}
 	
-
+	if(cmd)
+	{
+		// Respond to the main menu binding
+		if(!strcmp(cmd, "menu_main"))
+		{
+			M_ClearMenus();
+			return true;
+		}
+	}
 
 	// Keys usable within menu
 	switch (ch)

@@ -31,6 +31,7 @@
 #include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
+#include "c_bind.h"
 #include "hu_stuff.h"
 #include "i_system.h"
 #include "i_video.h"
@@ -1021,6 +1022,8 @@ static void makestartposgood (void)
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 {
+	const char *cmd = C_GetBinding (ev->data1);
+
 	switch (ev->data1)
 	{
 	case KEY_TAB:
@@ -1273,7 +1276,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			AddCommandString ((char *)&buffer[2]);
 			TabbedLast = false;
 		}
-		else if (ev->data2 == '`' || ev->data1 == KEY_ESCAPE)
+		else if (ev->data1 == KEY_ESCAPE || (cmd && !strcmp(cmd, "toggleconsole")))
 		{
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
@@ -1282,7 +1285,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			{
 				C_HideConsole();
 				gamestate = GS_DEMOSCREEN;
-				if (ev->data2 == '`')
+				if (cmd && !strcmp(cmd, "toggleconsole"))
 					return true;
 				return false;
 			}

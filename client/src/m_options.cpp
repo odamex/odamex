@@ -1056,6 +1056,7 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
+	const char *cmd = C_GetBinding(ch);
 
 	item = CurrentMenu->items + CurrentItem;
 
@@ -1082,6 +1083,16 @@ void M_OptResponder (event_t *ev)
 			sprintf (val, "%d", newflags);
 			flagsvar->Set (val);
 			return;
+	}
+
+	if(cmd)
+	{
+		// Respond to the main menu binding
+		if(!strcmp(cmd, "menu_main"))
+		{
+			M_ClearMenus();
+			return;
+		}
 	}
 
 	switch (ch)
