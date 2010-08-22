@@ -39,7 +39,6 @@
  * to the original DOOM's keymappings.
  */
 char DefBindings[] =
-    "bind escape menu_main; "
 	"bind grave toggleconsole; "			// <- This is new
 	"bind 1 \"impulse 1\"; "
 	"bind 2 \"impulse 2\"; "
