@@ -328,8 +328,9 @@ void P_ExplodeMissile (AActor* mo)
 		MSG_WriteLong (&cl->reliablebuf, mo->y);
 		MSG_WriteLong (&cl->reliablebuf, mo->z);
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
-		MSG_WriteShort(&cl->reliablebuf, mo->netid);
+        // [CG] Commented out serverside
+		// MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
+		// MSG_WriteShort(&cl->reliablebuf, mo->netid);
 	}
 
 
