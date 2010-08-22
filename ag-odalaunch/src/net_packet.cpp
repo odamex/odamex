@@ -252,6 +252,12 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 
 			continue;
 		}
+		else if (Cvar.Name == "sv_maxclients")
+		{
+			Info.MaxClients = (uint8_t)atoi(Cvar.Value.c_str());
+
+			continue;
+		}
 		else if (Cvar.Name == "sv_gametype")
 		{
 			Info.GameType = (GameType_t)atoi(Cvar.Value.c_str());

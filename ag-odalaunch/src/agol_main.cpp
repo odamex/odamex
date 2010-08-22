@@ -310,8 +310,11 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 
 	//AG_SeparatorNewVert(statusbar->statbox);
 
-	statusbar->players = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
-	AG_StatusbarAddLabel(statusbar->players, AG_LABEL_STATIC, "Total Players: 0");
+	statusbar->players.statusbar = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
+	statusbar->players.numplayers = 0;
+	AG_MutexInit(&statusbar->players.mutex);
+	AG_StatusbarAddLabel(statusbar->players.statusbar, AG_LABEL_POLLED_MT, "Total Players: %i",
+			&statusbar->players.mutex, &statusbar->players.numplayers);
 
 	return statusbar;
 }
@@ -637,6 +640,27 @@ void AGOL_MainWindow::UpdateQueriedLabelCompleted(int completed)
 	AG_MutexUnlock(&MainStatusbar->queried.mutex);
 }
 
+void AGOL_MainWindow::ResetTotalPlayerCount()
+{
+	AG_MutexLock(&MainStatusbar->players.mutex);
+
+	MainStatusbar->players.numplayers = 0;
+
+	AG_MutexUnlock(&MainStatusbar->players.mutex);
+}
+
+void AGOL_MainWindow::AddToPlayerTotal(int num)
+{
+	if(num <= 0)
+		return;
+
+	AG_MutexLock(&MainStatusbar->players.mutex);
+
+	MainStatusbar->players.numplayers += num;
+
+	AG_MutexUnlock(&MainStatusbar->players.mutex);
+}
+
 void AGOL_MainWindow::SetServerListRowCellFlags(int row)
 {
 	// Disable cell comparison on all but the last column (address:port)
@@ -854,8 +878,7 @@ void AGOL_MainWindow::OnMouseOverWidget(AG_Event *event)
 
 void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 {
-	unsigned int totalPlayers = 0;
-	size_t       serverCount;
+	size_t serverCount;
 
 	// If we can't immediately get a lock on the
 	// master server don't update the list this tick.
@@ -868,6 +891,9 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 
 	// Saves table selection and clears the rows
 	AG_TableBegin(ServerList);
+
+	// Reset the total player count statusbar
+	ResetTotalPlayerCount();
 
 	if(serverCount <= 0)
 	{
@@ -925,7 +951,7 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 				pwads += QServer[i].Info.Wads[j].Name.substr(0, QServer[i].Info.Wads[j].Name.find('.')) + " ";
 
 		// Player Count column
-		plyrCnt << QServer[i].Info.Players.size() << "/" << (int)QServer[i].Info.MaxPlayers;
+		plyrCnt << QServer[i].Info.Players.size() << "/" << (int)QServer[i].Info.MaxClients;
 
 		// Map column
 		if(QServer[i].Info.CurrentMap.size())
@@ -969,17 +995,15 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 		// Set the cell flags
 		SetServerListRowCellFlags(row);
 
-		// Keep track of the total number of players across all servers
-		totalPlayers += QServer[i].Info.Players.size();
+		// Add to the player total statusbar
+		if(QServer[i].Info.Players.size())
+			AddToPlayerTotal(QServer[i].Info.Players.size());
 
 		QServer[i].Unlock();
 	}
 
 	// Restore row selection
 	AG_TableEnd(ServerList);
-
-	// Update the total players in the statusbar
-	AG_LabelText(MainStatusbar->players->labels[0], "Total Players: %u", totalPlayers);
 }
 
 void AGOL_MainWindow::OnServerListClick(AG_Event *event)

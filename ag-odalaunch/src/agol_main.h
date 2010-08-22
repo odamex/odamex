@@ -56,13 +56,20 @@ typedef struct
 	int           total;
 } ODA_QueriedStatusbar;
 
+typedef struct
+{
+	AG_Statusbar *statusbar;
+	AG_Mutex      mutex;
+	int           numplayers;
+} ODA_PlayersStatusbar;
+
 typedef struct 
 {
 	AG_Box               *statbox;
 	AG_Statusbar         *tooltip;
 	AG_Statusbar         *mping;
 	ODA_QueriedStatusbar  queried;
-	AG_Statusbar         *players;
+	ODA_PlayersStatusbar  players;
 } ODA_Statusbar;
 
 // AGOL_MainWindow - Class for the main window
@@ -109,6 +116,8 @@ private:
 	void           UpdateServInfoList(int serverNdx);
 	void           UpdateQueriedLabelTotal(int total);
 	void           UpdateQueriedLabelCompleted(int completed);
+	void           ResetTotalPlayerCount();
+	void           AddToPlayerTotal(int num);
 	void           SetServerListRowCellFlags(int row);
 
 	// Interface Creation Functions
