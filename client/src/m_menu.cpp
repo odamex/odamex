@@ -1780,15 +1780,17 @@ bool M_Responder (event_t* ev)
 	// Pop-up menu?
 	if (!menuactive)
 	{
-		if (ch == KEY_ESCAPE)
+	    // [ML] This is a regular binding now too!
+		/*if (ch == KEY_ESCAPE)
 		{
 			M_StartControlPanel ();
 			M_SetupNextMenu (&MainDef);
 			S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
 			return true;
-		}
+		}*/
 		return false;
 	}
+	
 
 
 	// Keys usable within menu
