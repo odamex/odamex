@@ -119,7 +119,7 @@ void DDoor::RunThink ()
     case -1:
 		// DOWN
         res = MoveCeiling (m_Speed, m_Sector->floorheight, false, m_Direction);
-        if (m_Line->id)
+        if (m_Line && m_Line->id)
         {
             EV_LightTurnOnPartway(m_Line->id,
                 FixedDiv(
@@ -147,7 +147,7 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-            if (m_Line->id)
+            if (m_Line && m_Line->id)
             {
                 EV_LightTurnOnPartway(m_Line->id, 0);
             }
@@ -171,7 +171,7 @@ void DDoor::RunThink ()
 		// UP
 		res = MoveCeiling (m_Speed, m_TopHeight, false, m_Direction);
 		
-        if (m_Line->id)
+        if (m_Line && m_Line->id)
         {
             EV_LightTurnOnPartway(m_Line->id,
                 FixedDiv(
@@ -199,7 +199,7 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-            if (m_Line->id)
+            if (m_Line && m_Line->id)
             {
                 EV_LightTurnOnPartway(m_Line->id, FRACUNIT);
             }
