@@ -517,6 +517,8 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 //	M_RefreshModesList (); // [Toke - crap]
 
+    gotconback = false;
+
 	return true;
 }
 
@@ -554,13 +556,15 @@ BOOL V_SetResolution (int width, int height, int bits)
 BEGIN_COMMAND (vid_setmode)
 {
 	BOOL	goodmode = false;
-	int		width = 0, height = screen->height;
+	int		width = 0, height = 0;
 	int		bits = DisplayBits;
 
 	if (argc > 1) {
 		width = atoi (argv[1]);
 		if (argc > 2) {
 			height = atoi (argv[2]);
+			if (!height)
+                height = screen->height;
 			if (argc > 3) {
 				bits = 8;
 				//bits = atoi (argv[3]);

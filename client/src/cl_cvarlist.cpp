@@ -33,7 +33,7 @@ CVAR (am_showsecrets,		"1",		CVAR_ARCHIVE)
 CVAR (am_showmonsters,		"1",		CVAR_ARCHIVE)
 CVAR (am_showtime,			"1",		CVAR_ARCHIVE)
 CVAR (am_classicmapstring,  "0",        CVAR_ARCHIVE)
-CVAR (am_usecustomcolors,	"1",		CVAR_ARCHIVE)
+CVAR (am_usecustomcolors,	"0",		CVAR_ARCHIVE)
 CVAR (am_ovshare,           "0",        CVAR_ARCHIVE)
 
 CVAR (am_backcolor,			"00 00 3a",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

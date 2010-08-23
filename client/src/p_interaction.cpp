@@ -853,8 +853,8 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		}
 
 		// play die sound
-		if (target->player != &consoleplayer() && !joinkill)
-			A_PlayerScream(target);
+        // if (target->player != &consoleplayer() && !joinkill)
+        //     A_PlayerScream(target);
 	}
 
 	if(target->health > 0) // denis - when this function is used standalone

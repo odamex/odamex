@@ -119,7 +119,7 @@ void DDoor::RunThink ()
     case -1:
 		// DOWN
         res = MoveCeiling (m_Speed, m_Sector->floorheight, false, m_Direction);
-        if (m_LightTag)
+        if (m_Line && m_Line->id)
         {
             EV_LightTurnOnPartway(m_Line->id,
                 FixedDiv(
@@ -147,7 +147,7 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-            if (m_LightTag)
+            if (m_Line && m_Line->id)
             {
                 EV_LightTurnOnPartway(m_Line->id, 0);
             }
@@ -171,7 +171,7 @@ void DDoor::RunThink ()
 		// UP
 		res = MoveCeiling (m_Speed, m_TopHeight, false, m_Direction);
 		
-        if (m_LightTag)
+        if (m_Line && m_Line->id)
         {
             EV_LightTurnOnPartway(m_Line->id,
                 FixedDiv(
@@ -199,7 +199,7 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-            if (m_LightTag)
+            if (m_Line && m_Line->id)
             {
                 EV_LightTurnOnPartway(m_Line->id, FRACUNIT);
             }
@@ -247,7 +247,6 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	m_TopWait = delay;
 	m_Speed = speed;
     m_Line = ln;
-    m_LightTag = m_Line->id;
 
 	switch (type)
 	{
@@ -308,7 +307,6 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		if (sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DDoor)))
 		{
 			door = static_cast<DDoor *>(sec->ceilingdata);	
-            door->m_LightTag = line->id;
             door->m_Line = line;
 			
 			// ONLY FOR "RAISE" DOORS, NOT "OPEN"s

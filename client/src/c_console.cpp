@@ -31,6 +31,7 @@
 #include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
+#include "c_bind.h"
 #include "hu_stuff.h"
 #include "i_system.h"
 #include "i_video.h"
@@ -220,28 +221,31 @@ void C_InitConsole (int width, int height, BOOL ingame)
 			patch_t *bg;
 			int num;
 
-			num = W_CheckNumForName ("ODAMEX");
+			num = W_CheckNumForName ("CONBACK");
+			//num2 = W_CheckNumForName ("M_DOOM");
 			if (num == -1)
 			{
 				stylize = true;
-				num = W_GetNumForName ("ODAMEX");
+				num = W_GetNumForName ("CONBACK");
 				isRaw = gameinfo.flags & GI_PAGESARERAW;
 			}
 
 			bg = W_CachePatch (num);
+			//gg = W_CachePatch (num2);
 
 			delete conback;
 			if (isRaw)
 				conback = I_AllocateScreen (320, 200, 8);
 			else
-				conback = I_AllocateScreen (bg->width(), bg->height(), 8);
+				conback = I_AllocateScreen (screen->width, screen->height, 8);
 
 			conback->Lock ();
 
 			if (isRaw)
 				conback->DrawBlock (0, 0, 320, 200, (byte *)bg);
 			else
-				conback->DrawPatch (bg, 0, 0);
+				conback->DrawPatch (bg, (screen->width/2)-(bg->width()/2), (screen->height/2)-(bg->height()/2));
+				//conback->DrawPatch (gg, ((screen->width/2)-(gg->width()/2))+3*CleanXfac, ((screen->height/2)-(gg->height()/2)) + 15*CleanYfac);
 
 			if (stylize)
 			{
@@ -833,7 +837,7 @@ void C_DrawConsole (void)
          if(altinfullscreen)
          {
             altconback->Blit (0, 0, altconback->width, altconback->height,
-                           screen, 0, 0, screen->width, visheight);
+                           screen, 0, 0, altconback->width, altconback->height);
          }
          else
          {
@@ -1021,6 +1025,8 @@ static void makestartposgood (void)
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 {
+	const char *cmd = C_GetBinding (ev->data1);
+
 	switch (ev->data1)
 	{
 	case KEY_TAB:
@@ -1273,7 +1279,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			AddCommandString ((char *)&buffer[2]);
 			TabbedLast = false;
 		}
-		else if (ev->data2 == '`' || ev->data1 == KEY_ESCAPE)
+		else if (ev->data1 == KEY_ESCAPE || (cmd && !strcmp(cmd, "toggleconsole")))
 		{
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
@@ -1282,7 +1288,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			{
 				C_HideConsole();
 				gamestate = GS_DEMOSCREEN;
-				if (ev->data2 == '`')
+				if (cmd && !strcmp(cmd, "toggleconsole"))
 					return true;
 				return false;
 			}

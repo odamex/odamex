@@ -273,13 +273,25 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
 	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_main"} },
+	{ control,	"Help menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_help"} },
+	{ control,	"Save menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_save"} },
+	{ control,	"Load menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_load"} },
+	{ control,	"Options menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_options"} },
+	{ control,	"Display options",	    {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_display"} },	
+	{ control,	"Player setup menu",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_player"} },
+	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_keys"} },
+	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_video"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
     { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizeup"} },		
 	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizedown"} },	
 	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
 	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"screenshot"} },
 	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} },
-	{ control,  "Quit",			        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
+	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_endgame"} },
+	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
 };
  
 menu_t ControlsMenu = {
@@ -408,12 +420,18 @@ menu_t CompatMenu = {
  *
  *=======================================*/
 static void StartMessagesMenu (void);
+static void StartAutomapMenu (void);
 void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
-EXTERN_CVAR (st_scale)
+EXTERN_CVAR (am_ovshare)
+EXTERN_CVAR (am_showmonsters)
+EXTERN_CVAR (am_showsecrets)
+EXTERN_CVAR (am_showtime)
+EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
+EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
 EXTERN_CVAR (wipetype)
 EXTERN_CVAR (screenblocks)
@@ -490,32 +508,25 @@ CVAR_FUNC_IMPL (ui_transblue)
 
 static menuitem_t VideoItems[] = {
 	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
+	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {5.0},	{1.0},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },	
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ slider,   "HUD Transparency",         {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
+	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
-	{ discrete, "Use high-res scoreboard",  {&hud_usehighresboard}, {2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "High-res scoreboard",  {&hud_usehighresboard}, {2.0}, {0.0},	{0.0},  {OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Green",      {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },	
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Rotate automap",		    {&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Overlay automap",		    {&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
-	{ discrete, "Standard map colors",	    {&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {NoYes} },
-	{ more,     "Reset custom map colors",  {NULL},                 {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
-	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Screen wipe style",	    {&wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
-	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete,	"Reveal secrets alert"   ,  {&revealsecrets},	    {2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete,	"Show player target names",	{&hud_targetcount},	    {2.0}, {0.0},   {0.0},	{OnOff} },	
 };
 
 menu_t VideoMenu = {
@@ -524,7 +535,7 @@ menu_t VideoMenu = {
 	STACKARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
-	2,
+	3,
 };
 
 /*=======================================
@@ -563,12 +574,12 @@ static value_t MessageLevels[] = {
 };
 
 static menuitem_t MessagesItems[] = {
-	{ discrete,	"Scale text in high res", {&con_scaletext},		{2.0}, {0.0}, 	{0.0}, {OnOff} },
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
+	{ discrete,	"Scale message text",    {&con_scaletext},		{2.0}, {0.0}, 	{0.0}, {OnOff} },	
+    { discrete,	"Show player target names",	{&hud_targetcount},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete, "Reveal Secrets",       {&revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ whitetext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
 	{ cdiscrete, "Obituaries",			{&msg1color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
 	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
@@ -583,6 +594,40 @@ menu_t MessagesMenu = {
 	STACKARRAY_LENGTH(MessagesItems),
 	0,
 	MessagesItems,
+};
+
+/*=======================================
+ *
+ * Automap Menu
+ *
+ *=======================================*/
+ 
+static value_t ClassicMapStringTypes[] = {
+	{ 0.0, "Odamex" },
+	{ 1.0, "Classic" }
+};
+
+static menuitem_t AutomapItems[] = {
+	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+    { discrete, "Show monster count",	{&am_showmonsters},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show secrets count",	{&am_showsecrets},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show map timer", 	    {&am_showtime}, 	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
+        
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ bricktext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },	
+	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ more,     "Reset custom map colors",  {NULL},             {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
+};
+
+menu_t AutomapMenu = {
+	"M_MESS",
+	0,
+	STACKARRAY_LENGTH(AutomapItems),
+	0,
+	AutomapItems,
 };
 
 
@@ -623,7 +668,7 @@ static menuitem_t ModesItems[] = {
 #ifdef _XBOX
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
-	{ discrete, "Fullscreen",			{&vid_fullscreen},			{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
 #endif
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1086,6 +1131,7 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
+	const char *cmd = C_GetBinding(ch);
 
 	item = CurrentMenu->items + CurrentItem;
 
@@ -1163,6 +1209,16 @@ void M_OptResponder (event_t *ev)
 			sprintf (val, "%d", newflags);
 			flagsvar->Set (val);
 			return;
+	}
+
+	if(cmd)
+	{
+		// Respond to the main menu binding
+		if(!strcmp(cmd, "menu_main"))
+		{
+			M_ClearMenus();
+			return;
+		}
 	}
 
 	switch (ch)
@@ -1603,6 +1659,11 @@ void Reset2Saved (void)
 static void StartMessagesMenu (void)
 {
 	M_SwitchMenu (&MessagesMenu);
+}
+
+static void StartAutomapMenu (void)
+{
+	M_SwitchMenu (&AutomapMenu);
 }
 
 void ResetCustomColors (void)

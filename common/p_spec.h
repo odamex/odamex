@@ -573,8 +573,6 @@ protected:
 
     line_t      *m_Line;
 
-    int         m_LightTag;
-
 	void DoorSound (bool raise) const;
 
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
