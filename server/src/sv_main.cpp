@@ -68,7 +68,7 @@ bool clientside = false, serverside = true;
 bool predicting = false;
 baseapp_t baseapp = server;
 
-bool stepmode = false;
+bool step_mode = false;
 
 #define IPADDRSIZE 4	// GhostlyDeath -- Someone might want to do IPv6 junk
 
@@ -442,6 +442,17 @@ void SV_IPListClear (std::vector<BanEntry_t> *list, std::string listname)
 	}
 }
 
+BEGIN_COMMAND (stepmode)
+{
+    if (step_mode)
+        step_mode = false;
+    else
+        step_mode = true;
+        
+    return;
+}
+END_COMMAND (stepmode)
+
 BEGIN_COMMAND(addban)
 {
 	std::string reason;
@@ -631,7 +642,7 @@ void SV_InitNetwork (void)
 		sv_maxclients.Set(w); // denis - todo
 	}
 
-	stepmode = Args.CheckParm ("-stepmode");
+	step_mode = Args.CheckParm ("-stepmode");
 
 	gametime = I_GetTime ();
 	
@@ -2033,7 +2044,7 @@ void SV_ConnectClient (void)
 	players[n].killcount	= 0;
 	players[n].points		= 0;
 
-	if(!stepmode) {
+	if(!step_mode) {
 		players[n].spectator	= true;
 		for (size_t j = 0; j < players.size(); j++)
 		{
@@ -3094,7 +3105,7 @@ void SV_GetPlayerCmd(player_t &player)
 	cmd->ucmd.buttons = MSG_ReadByte();
 	if (gamestate != GS_INTERMISSION && player.playerstate != PST_DEAD)
 	{
-		if(stepmode)cmd->ucmd.yaw = MSG_ReadShort();
+		if(step_mode)cmd->ucmd.yaw = MSG_ReadShort();
 		else player.mo->angle = MSG_ReadShort() << 16;
 
 		if (!sv_freelook)
@@ -3835,7 +3846,7 @@ void SV_RunTics (void)
 		}
 	}
 
-	if(newtics > 0 && !stepmode)
+	if(newtics > 0 && !step_mode)
 	{
 		SV_StepTics(newtics);
 		gametime = nowtime;

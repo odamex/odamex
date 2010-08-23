@@ -54,7 +54,7 @@
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
 
-extern bool stepmode;
+extern bool step_mode;
 
 // denis - client version (VERSION or other supported)
 short version = 0;
@@ -256,6 +256,17 @@ void CL_DisconnectClient(void)
 }
 
 /////// CONSOLE COMMANDS ///////
+
+BEGIN_COMMAND (stepmode)
+{
+    if (step_mode)
+        step_mode = false;
+    else
+        step_mode = true;
+        
+    return;
+}
+END_COMMAND (stepmode)
 
 BEGIN_COMMAND (connect)
 {
@@ -2505,7 +2516,7 @@ void CL_SendCmd(void)
     cmd = &consoleplayer().cmd;
 
 	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	if(stepmode) MSG_WriteShort(&net_buffer, cmd->ucmd.yaw);
+	if(step_mode) MSG_WriteShort(&net_buffer, cmd->ucmd.yaw);
 	else MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, (p->mo->pitch + (cmd->ucmd.pitch << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);

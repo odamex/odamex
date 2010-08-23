@@ -749,8 +749,8 @@ BOOL G_Responder (event_t *ev)
 		{
 			if (dynres_state == 0)
 			{
-				mousex = ev->data2 * (mouse_sensitivity + 5) / 10; // [Toke - Mouse] Marriage of origonal and zdoom mouse code, functions like doom2.exe code
-				mousey = ev->data3 * (mouse_sensitivity + 5) / 10;
+				mousex = (int)(ev->data2 * (mouse_sensitivity + 5) / 10); // [Toke - Mouse] Marriage of origonal and zdoom mouse code, functions like doom2.exe code
+				mousey = (int)(ev->data3 * (mouse_sensitivity + 5) / 10);
 			}
 			else if (dynres_state == 1)
 			{

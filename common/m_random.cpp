@@ -81,7 +81,7 @@ static const unsigned char rndtable[256] = {
 
 unsigned char rndindex, prndindex;
 
-extern bool stepmode;
+extern bool step_mode;
 
 //
 // denis - Every actor has a random number generator so they can be sync'ed
@@ -89,7 +89,7 @@ extern bool stepmode;
 //
 int P_Random (AActor *actor)
 {
-	if(!actor || demoplayback || demorecording || stepmode)
+	if(!actor || demoplayback || demorecording || step_mode)
 		return P_Random ();
 
 	return (rndtable[++actor->rndindex]);

@@ -59,7 +59,7 @@ int 			lastnettic;
 int 			skiptics;
 int 			ticdup; 		
 
-bool stepmode = false;
+bool step_mode = false;
 
 void D_ProcessEvents (void); 
 void G_BuildTiccmd (ticcmd_t *cmd); 
@@ -89,7 +89,7 @@ void D_CheckNetGame (void)
 
     ticdup = 1;
 
-    stepmode = Args.CheckParm ("-stepmode");
+    step_mode = Args.CheckParm ("-stepmode");
 }
 
 
@@ -152,7 +152,7 @@ void TryRunTics (void)
 	}
 	
 	// run the realtics tics
-	if(!stepmode)
+	if(!step_mode)
 		TryStepTics(realtics);
 	else
 	{
