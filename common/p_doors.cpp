@@ -247,7 +247,9 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	m_TopWait = delay;
 	m_Speed = speed;
     m_Line = ln;
-    m_LightTag = m_Line->id;
+
+	if(m_Line->id)
+		m_LightTag = m_Line->id;
 
 	switch (type)
 	{
