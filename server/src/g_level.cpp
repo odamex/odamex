@@ -678,8 +678,11 @@ void G_ChangeMap (void)
 	}
 
 	// run script at the end of each map
+	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
+	// when onlcvars (addcommandstring's second param) is true.  Is there a 
+	// reason why the mapscripts ahve to be safe mode?	
 	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring(), true);
+		AddCommandString(sv_endmapscript.cstring()/*, true*/);
 }
 
 void SV_ClientFullUpdate(player_t &pl);
@@ -713,8 +716,11 @@ void G_DoNewGame (void)
 	gameaction = ga_nothing;
 
 	// run script at the start of each map
+	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
+	// when onlcvars (addcommandstring's second param) is true.  Is there a 
+	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_startmapscript.cstring()))
-		AddCommandString(sv_startmapscript.cstring(), true);
+		AddCommandString(sv_startmapscript.cstring()/*,true*/);
 
 	for(i = 0; i < players.size(); i++)
 	{
