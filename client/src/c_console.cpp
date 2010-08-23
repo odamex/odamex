@@ -1503,6 +1503,8 @@ EXTERN_CVAR (con_midtime)
 void C_MidPrint (const char *msg, player_t *p)
 {
 	int i;
+    std::string Str;
+    size_t StrLength;
 
 	if (MidMsg)
 		V_FreeBrokenLines (MidMsg);
@@ -1510,11 +1512,23 @@ void C_MidPrint (const char *msg, player_t *p)
 	if (msg)
 	{
 		midprinting = true;
-		//Printf (PRINT_HIGH,
-		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n%s\n"
-		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n", msg);
+
+        // [Russell] - convert textual "\n" into the binary representation for
+        // line breaking
+        Str = msg;
+        StrLength = Str.length();
+
+        for (i = 0; i < StrLength && i + 1 < StrLength; ++i)
+        {
+            if ((Str[i] == '\\') && (Str[i + 1] == 'n'))
+            {
+                Str[i] = '\n';
+                Str = Str.erase(i + 1, 1);
+            }
+        }
+
+        msg = Str.c_str();
+
 		Printf (PRINT_HIGH, "%s\n", msg);
 		midprinting = false;
 
