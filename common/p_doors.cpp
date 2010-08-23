@@ -328,11 +328,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                         // When is a door not a door?
                         // In Vanilla, door->direction is set, even though
                         // "specialdata" might not actually point at a door.
-                        
-                    if (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DDoor)))
-                    {
-                        door->m_Direction = 1;	// go back up
-                    }
+
                     else if (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DPlat)))
                     {
                         // Erm, this is a plat, not a door.
@@ -350,6 +346,10 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                         
                         if (count >= 16)    // ep1-0500 always returns a count of 16.
                             return false;   // We may be able to always return false?
+                    }
+                    else
+                    {
+                        door->m_Direction = -1;	// try going back down anyway?
                     }
 				}
 				return true;
