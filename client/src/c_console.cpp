@@ -1500,11 +1500,14 @@ static brokenlines_t *MidMsg = NULL;
 static int MidTicker = 0, MidLines;
 EXTERN_CVAR (con_midtime)
 
-void C_MidPrint (const char *msg, player_t *p)
+void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
 	int i;
     std::string Str;
     size_t StrLength;
+    
+    if (!msgtime)
+        msgtime = con_midtime;
 
 	if (MidMsg)
 		V_FreeBrokenLines (MidMsg);
@@ -1534,7 +1537,7 @@ void C_MidPrint (const char *msg, player_t *p)
 
 		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)msg)) )
 		{
-			MidTicker = (int)(con_midtime * TICRATE) + gametic;
+			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
 			for (i = 0; MidMsg[i].width != -1; i++)
 				;

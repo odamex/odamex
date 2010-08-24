@@ -409,12 +409,12 @@ BEGIN_COMMAND (echo)
 }
 END_COMMAND (echo)
 
-void C_MidPrint (const char *msg, player_t *p)
+void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
     if (p == NULL)
         return;
 
-    SV_MidPrint(msg, p);
+    SV_MidPrint(msg, p, msgtime);
 }
 
 void C_RevealSecret ()

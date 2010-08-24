@@ -1047,7 +1047,10 @@ void CL_Print (void)
 // Print a message in the middle of the screen
 void CL_MidPrint (void)
 {
-    C_MidPrint(MSG_ReadString());
+    const char *str = MSG_ReadString();
+    int msgtime = MSG_ReadShort();
+    
+    C_MidPrint(str,NULL,msgtime);
 }
 
 
