@@ -221,11 +221,7 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 	Info.VersionPatch = VersionPatch;
 	Info.VersionProtocol = ProtocolVersion;
 
-	// TODO: Remove me before 0.5 release
-	QRYNEWINFO(2)
-	{
-		Socket.Read32(Info.VersionRevision);
-	}
+	Socket.Read32(Info.VersionRevision);
 
 	uint8_t CvarCount;
 
