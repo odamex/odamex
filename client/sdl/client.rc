@@ -75,7 +75,7 @@ BEGIN
             VALUE "FileDescription", "Odamex Client\0"
             VALUE "FileVersion", "0.5.0\0"
             VALUE "InternalName", "Odamex Client\0"
-            VALUE "LegalCopyright", "Copyright © 2006-2009 The Odamex Team\0"
+            VALUE "LegalCopyright", "Copyright © 2006-2010 The Odamex Team\0"
             VALUE "LegalTrademarks", "Doom® is a Registered Trademark of id Software, Inc.\0"
             VALUE "OriginalFilename", "odamex.exe\0"
             VALUE "PrivateBuild", "\0"
