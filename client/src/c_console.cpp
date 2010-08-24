@@ -1594,10 +1594,10 @@ void C_DrawMid (void)
 }
 
 // denis - moved secret discovery message to this function
-EXTERN_CVAR (revealsecrets)
+EXTERN_CVAR (hud_revealsecrets)
 void C_RevealSecret()
 {
-	if(!revealsecrets || sv_gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for revealsecrets
+	if(!hud_revealsecrets || sv_gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for hud_revealsecrets
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint ("A secret is revealed!");

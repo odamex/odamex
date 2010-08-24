@@ -80,7 +80,7 @@ EXTERN_CVAR (mouse_type)
 EXTERN_CVAR (novert)
 
 // [ML] 09/4/06: Show secret revealed message, 0 = off, 1 = on
-EXTERN_CVAR (revealsecrets)
+EXTERN_CVAR (hud_revealsecrets)
 
 // Show messages has default, 0 = off, 1 = on
 EXTERN_CVAR (show_messages)
@@ -103,10 +103,10 @@ EXTERN_CVAR (co_level8soundfeature)
 EXTERN_CVAR (hud_targetcount)
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_transparency)
-EXTERN_CVAR (revealsecrets)
+EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (co_allowdropoff)
-EXTERN_CVAR(co_realactorheight)
+EXTERN_CVAR (co_realactorheight)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -120,6 +120,7 @@ EXTERN_CVAR (mouse_threshold)
 // [Ralphis - Menu] Sound Menu
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_sfxvolume)
+EXTERN_CVAR (snd_crossover)
 EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 
@@ -337,6 +338,7 @@ static menuitem_t SoundItems[] = {
 	{ bricktext ,   "Sound Levels"                          , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
 	{ slider    ,	"Music Volume"                          , {&snd_musicvolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
 	{ slider    ,	"Sound Volume"                          , {&snd_sfxvolume},		{0.0},      {1.0},	    {0.1},      {NULL} },
+	{ discrete  ,   "Stereo Switch"                         , {&snd_crossover},	    {2.0},		{0.0},		{0.0},		{OnOff} },	
 	{ redtext   ,	" "                                     , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
 	{ bricktext ,   "Multiplayer Options"                   , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
 	{ discrete  ,   "Player Connect Alert"                  , {&cl_connectalert},	{2.0},		{0.0},		{0.0},		{OnOff} },
@@ -391,7 +393,7 @@ EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
 EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
-EXTERN_CVAR (wipetype)
+EXTERN_CVAR (r_wipetype)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (hud_usehighresboard)
@@ -483,7 +485,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },	
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
-	{ discrete, "Screen wipe style",	    {&wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
+	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
 };
 
@@ -535,7 +537,7 @@ static menuitem_t MessagesItems[] = {
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
 	{ discrete,	"Scale message text",    {&con_scaletext},		{2.0}, {0.0}, 	{0.0}, {OnOff} },	
     { discrete,	"Show player target names",	{&hud_targetcount},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete, "Reveal Secrets",       {&revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
+	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
