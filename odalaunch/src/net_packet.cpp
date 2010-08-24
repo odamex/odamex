@@ -210,11 +210,7 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
     Info.VersionPatch = VersionPatch;
     Info.VersionProtocol = ProtocolVersion;
     
-    // TODO: Remove me before 0.5 release
-    QRYNEWINFO(2)
-    {
-        Socket.Read32(Info.VersionRevision);
-    }
+    Socket.Read32(Info.VersionRevision);
     
     wxUint8 CvarCount;
     
@@ -227,8 +223,7 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
         Socket.ReadString(Cvar.Name);
         Socket.ReadString(Cvar.Value);
         
-        // Filter out important information for us to use, it'd be nicer to have
-        // a launcher-side cvar implementation though
+        // Filter out important information for us to use
         if (Cvar.Name == wxT("sv_hostname"))
         {
             Info.Name = Cvar.Value;
