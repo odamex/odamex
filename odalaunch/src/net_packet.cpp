@@ -215,12 +215,12 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
     // TODO: Remove guard for next release
     QRYNEWINFO(2)
     {
+        // bond - time
+        Socket.Read32(Info.PTime);
+
         // The servers real protocol version
         // bond - real protocol
         Socket.Read32(Info.VersionRealProtocol);
-
-        // bond - time
-        Socket.Read32(Info.PTime);
     }
 
     Socket.Read32(Info.VersionRevision);

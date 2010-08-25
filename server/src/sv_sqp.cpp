@@ -117,12 +117,12 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     // TODO: Remove guard for next release
     QRYNEWINFO(2)
     {
+        // bond - time
+        MSG_WriteLong(&ml_message, EqTime);
+
         // The servers real protocol version
         // bond - real protocol
         MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
-
-        // bond - time
-        MSG_WriteLong(&ml_message, EqTime);
     }
 
     // Built revision of server
