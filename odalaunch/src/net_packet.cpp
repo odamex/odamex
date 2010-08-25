@@ -168,6 +168,8 @@ void Server::ResetData()
     Info.VersionPatch = 0;
     Info.VersionRevision = 0;
     Info.VersionProtocol = 0;
+    Info.VersionRealProtocol = 0;
+    Info.PTime = 0;
     Info.Name = wxT("");
     Info.MaxClients = 0;
     Info.MaxPlayers = 0;
@@ -210,6 +212,17 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
     Info.VersionPatch = VersionPatch;
     Info.VersionProtocol = ProtocolVersion;
     
+    // TODO: Remove guard for next release
+    QRYNEWINFO(2)
+    {
+        // The servers real protocol version
+        // bond - real protocol
+        Socket.Read32(Info.VersionRealProtocol);
+
+        // bond - time
+        Socket.Read32(Info.PTime);
+    }
+
     Socket.Read32(Info.VersionRevision);
     
     wxUint8 CvarCount;
@@ -474,6 +487,8 @@ wxInt32 Server::Query(wxInt32 Timeout)
         Socket.Write32(challenge);
         Socket.Write32(VERSION);
         Socket.Write32(PROTOCOL_VERSION);
+        // bond - time
+        Socket.Write32(Info.PTime);
         
         if(!Socket.SendData(Timeout))
             return 0;
