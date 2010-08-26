@@ -48,10 +48,10 @@
 #define HU_INPUTY		(0 + (SHORT(hu_font[0]->height) +1))
 
 #define CTFBOARDWIDTH	236
-#define CTFBOARDHEIGHT	103
+#define CTFBOARDHEIGHT	19
 
 #define DMBOARDWIDTH	368
-#define DMBOARDHEIGHT	100
+#define DMBOARDHEIGHT	16
 
 #define TEAMPLAYBORDER	10
 #define DMBORDER		20
@@ -634,9 +634,6 @@ static bool STACK_ARGS compare_player_points (const player_t *arg1, const player
 
 EXTERN_CVAR (hud_usehighresboard)
 
-#define CTFBOARDWIDTH	236
-#define CTFBOARDHEIGHT	103
-
 //
 // [Toke - Scores] HU_DrawScores
 // Decides which scoreboard to draw
@@ -821,7 +818,7 @@ void HU_DMScores2 (player_t *player)
 {
 	char str[80];
 	std::vector<player_t *> sortedplayers(players.size());
-	unsigned int i, j;
+	unsigned int i, j, listsize;
 
 	if (player->camera->player)
 		player = player->camera->player;
@@ -835,6 +832,8 @@ void HU_DMScores2 (player_t *player)
 	else
 		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
 
+    listsize = sortedplayers.size();
+    
 	//	Timelimit display
 /*
 	if (deathmatch && sv_timelimit && gamestate == GS_LEVEL)
@@ -859,24 +858,20 @@ void HU_DMScores2 (player_t *player)
 		screen->DrawTextClean (CR_GREY, screen->width/2 - V_StringWidth (str)/2*CleanXfac, y - 12 * CleanYfac, str);
 	}
 */
-
-
-
 	// Board location
-	int marginx = (screen->width  - DMBOARDWIDTH)	/ 2;
-	int marginy = (screen->height - DMBOARDHEIGHT)	/ 2;
-
 	int y = 21;
-
+	
+	int marginx = (screen->width  - DMBOARDWIDTH) / 2;
+	int marginy = (screen->height - DMBOARDHEIGHT) / 2;
 
 	int locx = marginx;
 	int locy = marginy / 2;
-
+   
 	// Background effect
-	OdamexEffect (locx - DMBORDER,
-				  locy - DMBORDER,
-				  locx + DMBOARDWIDTH  + DMBORDER,
-				  locy + DMBOARDHEIGHT + DMBORDER);
+	OdamexEffect (locx - DMBORDER, 
+                  locy - DMBORDER,
+				  locx + DMBOARDWIDTH  + DMBORDER, 
+				  locy + DMBOARDHEIGHT + (listsize*10) + DMBORDER);
 
 	// Scoreboard Identify
     // Dan - Tells which current game mode is being played
@@ -919,11 +914,8 @@ void HU_DMScores2 (player_t *player)
 	screen->DrawText	  (CR_GREY	,locx + 301		,locy + 11	,"PING"			);
 	screen->DrawText	  (CR_GREY	,locx + 339		,locy + 11	,"TIME"			);
 
-
-	i = sortedplayers.size();
-
 	//	Draw player info
-	for (i = 0; i < sortedplayers.size() && y < ST_Y - 12 * CleanYfac; i++)
+	for (i = 0; i < listsize && y < ST_Y - 12 * CleanYfac; i++)
 	{
 		int color = sortedplayers[i]->userinfo.color;
 
@@ -1323,6 +1315,7 @@ void HU_TeamScores1 (player_t *player)
 void HU_TeamScores2 (player_t *player)
 {
 	char str[80];
+	unsigned int listsize;
 
 	std::vector<player_t *> sortedplayers(players.size());
 
@@ -1353,6 +1346,8 @@ void HU_TeamScores2 (player_t *player)
 		sortedplayers[j] = &players[j];
 
 	std::sort(sortedplayers.begin(), sortedplayers.end(), sv_gametype == GM_CTF ? compare_player_points : compare_player_frags);
+	
+	listsize = sortedplayers.size();
 
 	// Board locations
 	int marginx = (screen->width - (CTFBOARDWIDTH * 2)) / 4;
@@ -1368,7 +1363,7 @@ void HU_TeamScores2 (player_t *player)
 	int rlocx = (marginx * 3) + CTFBOARDWIDTH;
 	int rlocy = marginy;
 
-
+    
 	//int glocx
 	//int glocy
 
@@ -1376,7 +1371,7 @@ void HU_TeamScores2 (player_t *player)
 	OdamexEffect (blocx - TEAMPLAYBORDER,
 				  blocy - TEAMPLAYBORDER,
 				  rlocx + CTFBOARDWIDTH  + TEAMPLAYBORDER,
-				  rlocy + CTFBOARDHEIGHT + TEAMPLAYBORDER);
+				  rlocy + CTFBOARDHEIGHT + (listsize*10) + TEAMPLAYBORDER);
 
 	// Player scores header
 	// Blue Bar
