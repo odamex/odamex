@@ -421,8 +421,8 @@ std::string MD5SUM(std::string in)
 
 wxString MD5SUM(const wxString &Input)
 {
-    std::string str = MD5SUM(Input.c_str(), Input.Len());
+    std::string str = MD5SUM(Input.char_str(), Input.Len());
     
-    return wxString::Format(wxT("%s"), str.c_str());
+    return wxString(str.c_str(), wxConvUTF8);
 }
 
