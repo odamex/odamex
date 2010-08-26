@@ -717,9 +717,9 @@ void HU_DMScores1 (player_t *player)
 	// Scoreboard Identify
 	// Dan - Tells which current game mode is being played
 	if (sv_gametype != GM_COOP)
-		screen->DrawText (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Deathmatch");
+		screen->DrawTextClean (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Deathmatch");
 	else
-		screen->DrawText (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Cooperative");
+		screen->DrawTextClean (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Cooperative");
 
 	//	Header display
 	screen->DrawTextClean (CR_GREY,	16	* CleanXfac,	25	* CleanYfac, "NAME");
