@@ -609,7 +609,10 @@ BEGIN_COMMAND (menu_quit)
 {	// F10
 	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
-	M_QuitDOOM(0);
+	if (gameinfo.gametype & GAME_Heretic)
+        M_QuitHERETIC(0);
+	else
+        M_QuitDOOM(0);
 }
 END_COMMAND (menu_quit)
 
