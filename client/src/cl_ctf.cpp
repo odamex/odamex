@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -324,7 +324,7 @@ void CTF_DrawHud (void)
     int tintglowtype;
     bool hasflag = false, hasflags[NUMFLAGS];
 
-	if(gametype != GM_CTF)
+	if(sv_gametype != GM_CTF)
 		return;
 
 	player_t &co = consoleplayer();

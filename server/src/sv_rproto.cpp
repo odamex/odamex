@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
 #include "huffman.h"
 #include "i_net.h"
 
-EXTERN_CVAR (networkcompression)
+EXTERN_CVAR (sv_networkcompression)
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);
@@ -64,7 +64,7 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 			method |= adaptive_select_mask;
 	}
 
-	printf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
+	DPrintf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
 
 	if(MSG_CompressMinilzo(send, reserved, need_gap))
 		method |= minilzo_mask;
@@ -77,7 +77,7 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 		send.ptr()[sizeof(int)] = svc_compressed;
 		send.ptr()[sizeof(int) + 1] = method;
 	}
-	printf("SV_CompressPacket %x %d\n", (int)method, (int)send.size());
+	DPrintf("SV_CompressPacket %x %d\n", (int)method, (int)send.size());
 
 }
 
@@ -148,7 +148,7 @@ bool SV_SendPacket(player_t &pl)
 	SZ_Clear(&cl->reliablebuf);
 	
 	// compress the packet, but not the sequence id
-	if(networkcompression && sendd.size() > sizeof(int))
+	if(sv_networkcompression && sendd.size() > sizeof(int))
 		SV_CompressPacket(sendd, sizeof(int), cl);
 
 	NET_SendPacket(sendd, cl->address);
@@ -201,10 +201,13 @@ void SV_AcknowledgePacket(player_t &player)
 			if (cl->reliablebuf.overflowed)
 			{
 				// do full update
-				Printf(PRINT_HIGH, "need full update\n");
+				Printf(PRINT_HIGH, "reliablebuf overflowed, need full update\n");
 				cl->last_sequence = sequence;
 				return;
 			}
+
+			if (cl->reliablebuf.cursize > 600)
+				SV_SendPacket(player);
 
 		}
 	}

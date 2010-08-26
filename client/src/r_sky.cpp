@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,6 +38,9 @@
 #include "w_wad.h"
 
 extern int *texturewidthmask;
+
+EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR(cl_mouselook)
 
 //
 // sky mapping
@@ -112,7 +116,7 @@ void R_InitSkyMap ()
 	if (textureheight[sky1texture] <= (128 << FRACBITS))
 	{
 		skytexturemid = 200/2*FRACUNIT;
-		skystretch = r_stretchsky;
+		skystretch = (r_stretchsky == 1) || (r_stretchsky == 2 && sv_freelook && cl_mouselook);
 	}
 	else
 	{

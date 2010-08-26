@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 
-// SoM 12-24-05: yeah... I'm programming on christmas eve. 
+// SoM 12-24-05: yeah... I'm programming on christmas eve.
 // Removed all the DirectX crap.
 
 #ifdef WIN32
@@ -75,7 +75,7 @@ EXTERN_CVAR (mouse_threshold)
 // joek - sort mouse grab issue
 static BOOL mousegrabbed = false;
 
-// SoM: if true, the mouse events in the queue should be ignored until at least once event cycle 
+// SoM: if true, the mouse events in the queue should be ignored until at least once event cycle
 // is complete.
 static BOOL flushmouse = false;
 
@@ -86,9 +86,9 @@ extern constate_e ConsoleState;
 HHOOK g_hKeyboardHook;
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-    if (nCode < 0 || nCode != HC_ACTION )  // do not process message 
-        return CallNextHookEx( g_hKeyboardHook, nCode, wParam, lParam); 
- 
+    if (nCode < 0 || nCode != HC_ACTION )  // do not process message
+        return CallNextHookEx( g_hKeyboardHook, nCode, wParam, lParam);
+
 	KBDLLHOOKSTRUCT* p = (KBDLLHOOKSTRUCT*)lParam;
 	if((wParam == WM_KEYDOWN || wParam == WM_KEYUP)
 		&& (mousegrabbed && ((p->vkCode == VK_LWIN) || (p->vkCode == VK_RWIN))))
@@ -104,7 +104,7 @@ static bool MouseShouldBeGrabbed()
 	if (!havefocus)
 		return false;
 
-	// always grab the mouse when full screen (dont want to 
+	// always grab the mouse when full screen (dont want to
 	// see the mouse pointer)
 	if (vid_fullscreen)
 		return true;
@@ -117,7 +117,7 @@ static bool MouseShouldBeGrabbed()
 	//if (!grabmouse)
 	//	return false;
 
-    // when menu is active, console is down or game is paused, release the mouse 
+    // when menu is active, console is down or game is paused, release the mouse
     if (menuactive || ConsoleState == c_down || paused)
         return false;
 
@@ -149,7 +149,7 @@ static void UpdateFocus(void)
 
     state = SDL_GetAppState();
 
-    // We should have input (keyboard) focus and be visible 
+    // We should have input (keyboard) focus and be visible
     // (not minimized)
     havefocus = (state & SDL_APPINPUTFOCUS) && (state & SDL_APPACTIVE);
 }
@@ -187,9 +187,9 @@ static void UpdateGrab(void)
 //
 static int AccelerateMouse(int val)
 {
-    if (!mouse_acceleration) 
+    if (!mouse_acceleration)
         return val;
-        
+
     if (val < 0)
         return -AccelerateMouse(-val);
 
@@ -216,7 +216,7 @@ bool I_InitInput (void)
 	atterm (I_ShutdownInput);
 
 	SDL_EnableUNICODE(true);
-	
+
 	// denis - disable key repeats as they mess with the mouse in XP
 	// mike - maybe not?
 	//SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
@@ -260,7 +260,7 @@ void I_PauseMouse (void)
    //SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
    UpdateGrab();
-   
+
    mousepaused = true;
 }
 
@@ -289,7 +289,7 @@ void I_GetEvent (void)
    int sendmouseevent = 0;
 
    SDL_Event ev;
-   
+
 	if (!havefocus)
 		I_PauseMouse();
 	else
@@ -303,7 +303,7 @@ void I_GetEvent (void)
       switch(ev.type)
       {
          case SDL_QUIT:
-            AddCommandString("quit");
+            AddCommandString("menu_quit");
             break;
          // Resizable window mode resolutions
          case SDL_VIDEORESIZE:
@@ -311,9 +311,9 @@ void I_GetEvent (void)
              if (!mousegrabbed && !vid_fullscreen)
              {
                 char Command[64];
-                
+
                 snprintf(Command, sizeof(Command), "vid_setmode %d %d", ev.resize.w, ev.resize.h);
-               
+
                 AddCommandString(Command);
 
                 vid_defwidth.Set((float)ev.resize.w);
@@ -321,12 +321,12 @@ void I_GetEvent (void)
              }
          }
          break;
-         
+
 		case SDL_ACTIVEEVENT:
 			// need to update our focus state
 			UpdateFocus();
-		break;         
-         
+		break;
+
          case SDL_KEYDOWN:
             event.type = ev_keydown;
             event.data1 = ev.key.keysym.sym;
@@ -338,12 +338,15 @@ void I_GetEvent (void)
                event.data2 = event.data3 = '/';
             else if(event.data1 == SDLK_KP_ENTER)
                event.data2 = event.data3 = '\r';
-            else if ( (ev.key.keysym.unicode & 0xFF80) == 0 ) 
+            else if ( (ev.key.keysym.unicode & 0xFF80) == 0 )
                event.data2 = event.data3 = ev.key.keysym.unicode;
             else
                event.data2 = event.data3 = 0;
 
 #ifdef WIN32
+            //HeX9109: Alt+F4 for cheats! Thanks Spleen
+            if(event.data1 == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
+                AddCommandString("menu_quit");
             // SoM: Ignore the tab portion of alt-tab presses
             if(event.data1 == SDLK_TAB && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
                event.data1 = event.data2 = event.data3 = 0;
@@ -351,17 +354,17 @@ void I_GetEvent (void)
 #endif
          D_PostEvent(&event);
          break;
-         
+
          case SDL_KEYUP:
             event.type = ev_keyup;
             event.data1 = ev.key.keysym.sym;
-            if ( (ev.key.keysym.unicode & 0xFF80) == 0 ) 
+            if ( (ev.key.keysym.unicode & 0xFF80) == 0 )
                event.data2 = event.data3 = ev.key.keysym.unicode;
             else
                event.data2 = event.data3 = 0;
          D_PostEvent(&event);
          break;
-         
+
          case SDL_MOUSEMOTION:
             if(flushmouse)
             {
@@ -380,7 +383,7 @@ void I_GetEvent (void)
             mouseevent.data3 -= AccelerateMouse(ev.motion.yrel);
             sendmouseevent = 1;
          break;
-         
+
          case SDL_MOUSEBUTTONDOWN:
             if(nomouse || !havefocus)
 				break;
@@ -406,8 +409,8 @@ void I_GetEvent (void)
                event.data1 = KEY_MWHEELDOWN;
 
 		D_PostEvent(&event);
-		break; 
-		
+		break;
+
 		case SDL_MOUSEBUTTONUP:
             if(nomouse || !havefocus)
 				break;
@@ -444,7 +447,7 @@ void I_GetEvent (void)
           mouseevent.data1 = mbuttons;
           D_PostEvent(&mouseevent);
        }
-       
+
        if(mousegrabbed && screen)
        {
           SDL_WarpMouse(screen->width/ 2, screen->height / 2);

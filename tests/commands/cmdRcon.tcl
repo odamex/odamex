@@ -21,19 +21,19 @@ proc main {} {
  client "set rcon_password"
  expect $serverout {}
 
- # password too short
+ # rcon_password too short
  server "set rcon_password a"
  clear
  client "set rcon_password a"
  expect $serverout {}
 
- # bad password
+ # bad rcon_password
  server "rcon_password $pass"
  clear
  client "rcon_password whatever"
  expect $serverout {}
 
- # good password
+ # good rcon_password
  clear
  client "rcon_password $pass"
  expect $serverout {rcon login from 127.0.0.1:10501}

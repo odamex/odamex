@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -45,6 +46,7 @@
 #include "cl_ctf.h"
 #include "r_sky.h"
 #include "cl_main.h"
+#include "c_bind.h"
 
 #include "gi.h"
 
@@ -90,7 +92,7 @@ int 				saveCharIndex;	// which char we're editing
 // old save description before edit
 char				saveOldString[SAVESTRINGSIZE];
 
-bool 				menuactive;
+BOOL 				menuactive;
 
 extern bool st_firsttime;
 
@@ -184,7 +186,6 @@ bool M_DemoNoPlay;
 static DCanvas *FireScreen;
 
 EXTERN_CVAR (hud_targetnames)
-EXTERN_CVAR(cl_connectalert)
 
 //
 // DOOM MENU
@@ -1079,7 +1080,7 @@ void M_VerifyNightmare(int ch)
 
 void M_StartGame(int choice)
 {
-	skill.Set ((float)choice+1);
+	sv_skill.Set ((float)choice+1);
 
 	G_DeferedInitNew (CalcMapName (epi+1, 1));
 	M_ClearMenus ();
@@ -1320,6 +1321,17 @@ static void M_PlayerSetupTicker (void)
 static void M_PlayerSetupDrawer (void)
 {
 	int lheight = LINEHEIGHT;
+	int x1,x2,y1,y2;
+	
+	x1 = (screen->width / 2)-(160*CleanXfac);
+	y1 = (screen->height / 2)-(100*CleanYfac);
+	
+    x2 = (screen->width / 2)+(160*CleanXfac);
+	y2 = (screen->height / 2)+(100*CleanYfac);
+	
+	// Background effect
+	OdamexEffect(x1,y1,x2,y2);
+	    
 	// Draw title
 	{
 		char *title;
@@ -1556,7 +1568,7 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw skin setting
 	{
-		if (gametype != GM_CTF) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
+		if (sv_gametype != GM_CTF) // [Toke - CTF] Dont allow skin selection if in CTF or Teamplay mode
 		{
 			int x = V_StringWidth ("Skin") + 8 + PSetupDef.x;
 			screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + lheight*6, "Skin");
@@ -1812,6 +1824,7 @@ bool M_Responder (event_t* ev)
 {
 	int ch, ch2;
 	int i;
+	const char *cmd;
 
 	ch = ch2 = -1;
 
@@ -1833,6 +1846,8 @@ bool M_Responder (event_t* ev)
 		M_OptResponder (ev);
 		return true;
 	}
+
+	cmd = C_GetBinding (ch);
 
 	// Save Game string input
 	// [RH] and Player Name string input
@@ -1909,16 +1924,24 @@ bool M_Responder (event_t* ev)
 	// Pop-up menu?
 	if (!menuactive)
 	{
+		// [ML] This is a regular binding now too!
 		if (ch == KEY_ESCAPE)
 		{
-			M_StartControlPanel ();
-			M_SetupNextMenu (&MainDef);
-			S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+			AddCommandString("menu_main");
 			return true;
 		}
 		return false;
 	}
-
+	
+	if(cmd)
+	{
+		// Respond to the main menu binding
+		if(!strcmp(cmd, "menu_main"))
+		{
+			M_ClearMenus();
+			return true;
+		}
+	}
 
 	// Keys usable within menu
 	switch (ch)
@@ -1931,7 +1954,7 @@ bool M_Responder (event_t* ev)
 			else
 			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if (gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 5)
+				if (sv_gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 5)
 					itemOn = itemOn + 2;
 				else	itemOn++;
 			}
@@ -1947,7 +1970,7 @@ bool M_Responder (event_t* ev)
 			else
 			{
 				// [Toke - CTF]  Skip the skins item in CTF or Teamplay mode
-				if (gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 7)
+				if (sv_gametype == GM_CTF && currentMenu == &PSetupDef && itemOn == 7)
 					itemOn = itemOn - 2;
 				else itemOn--;
 			}
@@ -2199,7 +2222,7 @@ void M_Ticker (void)
 	if (currentMenu == &PSetupDef)
 	{
 		// [Toke - CTF] skip skins selection
-		if (gametype == GM_CTF)
+		if (sv_gametype == GM_CTF)
 			if (itemOn == 6)
 				itemOn = 5;
 

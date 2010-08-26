@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62)
-// Copyright (C) 2006-2009 by The Odamex Team
+// Copyright (C) 2006-2010 by The Odamex Team
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,7 +54,7 @@
 using namespace std;
 
 #define MAX_SERVERS					1024
-#define MAX_SERVERS_PER_IP			16
+#define MAX_SERVERS_PER_IP			64
 #define MAX_SERVER_AGE				5000
 #define MAX_UNVERIFIED_SERVER_AGE	1000
 

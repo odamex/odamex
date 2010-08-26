@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,6 +31,7 @@
 #include <wx/msgdlg.h>
 #include <wx/wfstream.h>
 #include <wx/tokenzr.h>
+#include <wx/recguard.h>
 
 #include "main.h"
 
@@ -42,9 +43,18 @@ static wxInt32 Id_DirCtrlChooseOdamexPath = XRCID("Id_DirCtrlChooseOdamexPath");
 
 static wxInt32 Id_LstCtrlWadDirectories = XRCID("Id_LstCtrlWadDirectories");
 
-static wxInt32 Id_TxtCtrlMasterTimeout = XRCID("Id_TxtCtrlMasterTimeout");
-static wxInt32 Id_TxtCtrlServerTimeout = XRCID("Id_TxtCtrlServerTimeout");
+static wxInt32 Id_SpnCtrlMasterTimeout = XRCID("Id_SpnCtrlMasterTimeout");
+static wxInt32 Id_SpnCtrlServerTimeout = XRCID("Id_SpnCtrlServerTimeout");
 static wxInt32 Id_TxtCtrlExtraCmdLineArgs = XRCID("Id_TxtCtrlExtraCmdLineArgs");
+
+static wxInt32 Id_SpnCtrlPQGood = XRCID("Id_SpnCtrlPQGood");
+static wxInt32 Id_SpnCtrlPQPlayable = XRCID("Id_SpnCtrlPQPlayable");
+static wxInt32 Id_SpnCtrlPQLaggy = XRCID("Id_SpnCtrlPQLaggy");
+
+static wxInt32 Id_StcBmpPQGood = XRCID("Id_StcBmpPQGood");
+static wxInt32 Id_StcBmpPQPlayable = XRCID("Id_StcBmpPQPlayable");
+static wxInt32 Id_StcBmpPQLaggy = XRCID("Id_StcBmpPQLaggy");
+static wxInt32 Id_StcBmpPQBad = XRCID("Id_StcBmpPQBad");
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
@@ -66,9 +76,13 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_CHECKBOX(Id_ChkCtrlGetListOnStart, dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(Id_ChkCtrlShowBlockedServers, dlgConfig::OnCheckedBox)
 	
-	EVT_TEXT(Id_TxtCtrlMasterTimeout, dlgConfig::OnTextChange)
-	EVT_TEXT(Id_TxtCtrlServerTimeout, dlgConfig::OnTextChange)
+	EVT_TEXT(Id_SpnCtrlMasterTimeout, dlgConfig::OnTextChange)
+	EVT_TEXT(Id_SpnCtrlServerTimeout, dlgConfig::OnTextChange)
 	EVT_TEXT(Id_TxtCtrlExtraCmdLineArgs, dlgConfig::OnTextChange)
+	
+	EVT_SPINCTRL(Id_SpnCtrlPQGood, dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(Id_SpnCtrlPQPlayable, dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(Id_SpnCtrlPQLaggy, dlgConfig::OnSpinValChange)
 END_EVENT_TABLE()
 
 // Window constructor
@@ -85,9 +99,24 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     m_DirCtrlChooseWadDir = wxStaticCast(FindWindow(Id_DirCtrlChooseWadDir), wxDirPickerCtrl);
     m_DirCtrlChooseOdamexPath = wxStaticCast(FindWindow(Id_DirCtrlChooseOdamexPath), wxDirPickerCtrl);
 
-    m_TxtCtrlMasterTimeout = wxStaticCast(FindWindow(Id_TxtCtrlMasterTimeout), wxTextCtrl);
-    m_TxtCtrlServerTimeout = wxStaticCast(FindWindow(Id_TxtCtrlServerTimeout), wxTextCtrl);
+    m_SpnCtrlMasterTimeout = wxStaticCast(FindWindow(Id_SpnCtrlMasterTimeout), wxSpinCtrl);
+    m_SpnCtrlServerTimeout = wxStaticCast(FindWindow(Id_SpnCtrlServerTimeout), wxSpinCtrl);
     m_TxtCtrlExtraCmdLineArgs = wxStaticCast(FindWindow(Id_TxtCtrlExtraCmdLineArgs), wxTextCtrl);
+
+    m_SpnCtrlPQGood = wxStaticCast(FindWindow(Id_SpnCtrlPQGood), wxSpinCtrl);
+    m_SpnCtrlPQPlayable = wxStaticCast(FindWindow(Id_SpnCtrlPQPlayable), wxSpinCtrl);
+    m_SpnCtrlPQLaggy = wxStaticCast(FindWindow(Id_SpnCtrlPQLaggy), wxSpinCtrl);
+
+    m_StcBmpPQGood = wxStaticCast(FindWindow(Id_StcBmpPQGood), wxStaticBitmap);
+    m_StcBmpPQPlayable = wxStaticCast(FindWindow(Id_StcBmpPQPlayable), wxStaticBitmap);
+    m_StcBmpPQLaggy = wxStaticCast(FindWindow(Id_StcBmpPQLaggy), wxStaticBitmap);
+    m_StcBmpPQBad = wxStaticCast(FindWindow(Id_StcBmpPQBad), wxStaticBitmap);
+
+    // Ping quality icons
+    m_StcBmpPQGood->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_green")));
+    m_StcBmpPQPlayable->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_orange")));
+    m_StcBmpPQLaggy->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")));
+    m_StcBmpPQBad->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_gray")));
 
     // Load current configuration from global configuration structure
     cfg_file = cfg;
@@ -132,23 +161,61 @@ void dlgConfig::Show()
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("500"));
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
-    m_TxtCtrlMasterTimeout->SetValue(MasterTimeout);
-    m_TxtCtrlServerTimeout->SetValue(ServerTimeout);
+    m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
+    m_SpnCtrlServerTimeout->SetValue(ServerTimeout);
     m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
 
-    UserChangedSetting = 0;
+    wxInt32 PQGood, PQPlayable, PQLaggy;
+    
+    ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, 150);
+    ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 300);
+    ConfigInfo.Read(wxT("IconPingQualityLaggy"), &PQLaggy, 350);
+    
+    m_SpnCtrlPQGood->SetValue(PQGood);
+    m_SpnCtrlPQPlayable->SetValue(PQPlayable);
+    m_SpnCtrlPQLaggy->SetValue(PQLaggy);
+
+    UserChangedSetting = false;
 
     ShowModal();
 }
 
 void dlgConfig::OnCheckedBox(wxCommandEvent &event)
 {
-    UserChangedSetting = 1;
+    UserChangedSetting = true;
 }
 
 void dlgConfig::OnChooseOdamexPath(wxFileDirPickerEvent &event)
 {
-    UserChangedSetting = 1;
+    UserChangedSetting = true;
+}
+
+// Ping quality spin control changes
+void dlgConfig::OnSpinValChange(wxSpinEvent &event)
+{
+    wxInt32 PQGood, PQPlayable, PQLaggy;
+
+    PQGood = m_SpnCtrlPQGood->GetValue();
+    PQPlayable = m_SpnCtrlPQPlayable->GetValue();
+    
+    // Handle spin values that go beyond a certain range
+    // wxWidgets Bug: Double-clicking the down arrow on a spin control will go
+    // 1 more below even though we force it not to, we use an event so we 
+    // counteract this with using +2 stepping
+    if (PQGood >= PQPlayable)
+    {
+        m_SpnCtrlPQPlayable->SetValue(PQGood + 2);
+    }
+
+    PQPlayable = m_SpnCtrlPQPlayable->GetValue();
+    PQLaggy = m_SpnCtrlPQLaggy->GetValue();
+
+    if (PQPlayable >= PQLaggy)
+    {
+        m_SpnCtrlPQLaggy->SetValue(PQPlayable + 2);
+    }
+
+    UserChangedSetting = true;
 }
 
 // User pressed ok button
@@ -157,11 +224,17 @@ void dlgConfig::OnOK(wxCommandEvent &event)
     wxMessageDialog msgdlg(this, _T("Save settings?"), _T("Save settings?"),
                            wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
 
-    if (UserChangedSetting == 1)
+    if (UserChangedSetting == false)
+    {
+        Close();
+        
+        return;
+    }
+
     if (msgdlg.ShowModal() == wxID_YES)
     {
         // reset 'dirty' flag
-        UserChangedSetting = 0;
+        UserChangedSetting = false;
 
         // Store data into global launcher configuration structure
         cfg_file->get_list_on_start = m_ChkCtrlGetListOnStart->GetValue();
@@ -179,7 +252,7 @@ void dlgConfig::OnOK(wxCommandEvent &event)
         SaveSettings();
     }
     else
-        UserChangedSetting = 0;
+        UserChangedSetting = false;
 
     // Close window
     Close();
@@ -187,7 +260,7 @@ void dlgConfig::OnOK(wxCommandEvent &event)
 
 void dlgConfig::OnTextChange(wxCommandEvent &event)
 {
-    UserChangedSetting = 1;
+    UserChangedSetting = true;
 }
 
 /*
@@ -219,7 +292,7 @@ void dlgConfig::OnAddDir(wxCommandEvent &event)
         {
             m_LstCtrlWadDirectories->Append(WadDirectory);
 
-            UserChangedSetting = 1;
+            UserChangedSetting = true;
         }
     }
     else
@@ -256,7 +329,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent &event)
         // Get the selected item and replace it
         m_LstCtrlWadDirectories->SetString(i, WadDirectory);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
     else
         wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
@@ -273,7 +346,7 @@ void dlgConfig::OnDeleteDir(wxCommandEvent &event)
     {
         m_LstCtrlWadDirectories->Delete(i);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
     else
         wxMessageBox(_T("Select an item to delete."));
@@ -295,7 +368,7 @@ void dlgConfig::OnUpClick(wxCommandEvent &event)
 
         m_LstCtrlWadDirectories->SetSelection(i - 1);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
 }
 
@@ -315,7 +388,7 @@ void dlgConfig::OnDownClick(wxCommandEvent &event)
 
         m_LstCtrlWadDirectories->SetSelection(i + 1);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
 }
 
@@ -356,7 +429,7 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
     {
         wxMessageBox(_T("Environment variables import successful!"));
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
     else
         wxMessageBox(_T("Environment variables contains paths that have been already imported."));
@@ -375,13 +448,16 @@ void dlgConfig::LoadSettings()
 // Save settings to configuration file
 void dlgConfig::SaveSettings()
 {
-    ConfigInfo.Write(wxT(MASTERTIMEOUT), m_TxtCtrlMasterTimeout->GetValue());
-    ConfigInfo.Write(wxT(SERVERTIMEOUT), m_TxtCtrlServerTimeout->GetValue());
+    ConfigInfo.Write(wxT(MASTERTIMEOUT), m_SpnCtrlMasterTimeout->GetValue());
+    ConfigInfo.Write(wxT(SERVERTIMEOUT), m_SpnCtrlServerTimeout->GetValue());
     ConfigInfo.Write(wxT(EXTRACMDLINEARGS), m_TxtCtrlExtraCmdLineArgs->GetValue());
-    ConfigInfo.Write(_T(GETLISTONSTART), cfg_file->get_list_on_start);
-	ConfigInfo.Write(_T(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
-	ConfigInfo.Write(_T(DELIMWADPATHS), cfg_file->wad_paths);
-    ConfigInfo.Write(_T(ODAMEX_DIRECTORY), cfg_file->odamex_directory);
+    ConfigInfo.Write(wxT(GETLISTONSTART), cfg_file->get_list_on_start);
+	ConfigInfo.Write(wxT(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);
+	ConfigInfo.Write(wxT(DELIMWADPATHS), cfg_file->wad_paths);
+    ConfigInfo.Write(wxT(ODAMEX_DIRECTORY), cfg_file->odamex_directory);
+    ConfigInfo.Write(wxT("IconPingQualityGood"), m_SpnCtrlPQGood->GetValue());
+    ConfigInfo.Write(wxT("IconPingQualityPlayable"), m_SpnCtrlPQPlayable->GetValue());
+    ConfigInfo.Write(wxT("IconPingQualityLaggy"), m_SpnCtrlPQLaggy->GetValue());
 
 	ConfigInfo.Flush();
 }

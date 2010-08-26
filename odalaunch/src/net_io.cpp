@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,7 +20,7 @@
 //
 // AUTHORS: 
 //  Russell Rice (russell at odamex dot net)
-//  Michael Wood (mwoodj at knology dot net)
+//  Michael Wood (mwoodj at huntsvegas dot org)
 //
 //-----------------------------------------------------------------------------
 
@@ -676,7 +676,10 @@ bool BufferedSocket::SetRemoteAddress(const wxString &Address)
     if (Colon == wxNOT_FOUND)
         return false;
     
-    wxUint16 Port = wxAtoi(Address.Mid(Colon));
+    if (Colon + 1 >= Address.Len())
+        return false;
+    
+    wxUint16 Port = wxAtoi(Address.Mid(Colon + 1));
     wxString HostIP = Address.Mid(0, Colon);
     
     SetRemoteAddress(HostIP, Port);

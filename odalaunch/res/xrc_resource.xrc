@@ -253,7 +253,7 @@
 													<flag>wxALL|wxEXPAND</flag>
 													<border>2</border>
 													<object class="wxListCtrl" name="Id_LstCtrlServerDetails" subclass="LstOdaSrvDetails">
-														<style>wxLC_HRULES|wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL</style>
+														<style>wxLC_HRULES|wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL|wxALWAYS_SHOW_SB</style>
 													</object>
 												</object>
 											</object>
@@ -276,7 +276,7 @@
 		<title>Configure Settings</title>
 		<centered>1</centered>
 		<object class="wxFlexGridSizer">
-			<rows>0</rows>
+			<rows>1</rows>
 			<cols>1</cols>
 			<vgap>0</vgap>
 			<hgap>0</hgap>
@@ -284,85 +284,234 @@
 			<growablerows></growablerows>
 			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxALL|wxEXPAND</flag>
+				<flag>wxEXPAND</flag>
 				<border>5</border>
-				<object class="wxStaticBoxSizer">
-					<orient>wxVERTICAL</orient>
-					<label>Masters and Servers</label>
+				<object class="wxBoxSizer">
+					<orient>wxHORIZONTAL</orient>
 					<object class="sizeritem">
 						<option>0</option>
-						<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+						<flag>wxALL</flag>
 						<border>5</border>
-						<object class="wxBoxSizer">
+						<object class="wxStaticBoxSizer">
 							<orient>wxVERTICAL</orient>
+							<label>Masters and Servers</label>
 							<object class="sizeritem">
 								<option>0</option>
-								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+								<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
 								<border>5</border>
-								<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
-									<pos>0,76</pos>
-									<label>Get Master List on application start</label>
-									<checked>0</checked>
+								<object class="wxBoxSizer">
+									<orient>wxVERTICAL</orient>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+										<border>5</border>
+										<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
+											<pos>0,76</pos>
+											<label>Get Master List on application start</label>
+											<checked>0</checked>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+										<border>5</border>
+										<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
+											<pos>0,114</pos>
+											<label>Show blocked servers</label>
+											<checked>0</checked>
+										</object>
+									</object>
 								</object>
 							</object>
 							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+								<option>1</option>
+								<flag>wxEXPAND</flag>
 								<border>5</border>
-								<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
-									<pos>0,114</pos>
-									<label>Show blocked servers</label>
-									<checked>0</checked>
+								<object class="wxBoxSizer">
+									<orient>wxHORIZONTAL</orient>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALIGN_CENTER|wxALL</flag>
+										<border>5</border>
+										<object class="wxStaticText" name="4">
+											<label>Master Timeout (ms):</label>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL</flag>
+										<border>5</border>
+										<object class="wxSpinCtrl" name="Id_SpnCtrlMasterTimeout">
+											<style>wxSP_ARROW_KEYS</style>
+											<tooltip>Timeout for the master servers</tooltip>
+											<value>500</value>
+											<min>0</min>
+											<max>5000</max>
+										</object>
+									</object>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>1</option>
+								<flag>wxEXPAND</flag>
+								<border>5</border>
+								<object class="wxBoxSizer">
+									<orient>wxHORIZONTAL</orient>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALIGN_CENTER|wxALL</flag>
+										<border>5</border>
+										<object class="wxStaticText" name="6">
+											<label>Server Timeout (ms):</label>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL</flag>
+										<border>5</border>
+										<object class="wxSpinCtrl" name="Id_SpnCtrlServerTimeout">
+											<style>wxSP_ARROW_KEYS</style>
+											<tooltip>Timeout for all servers</tooltip>
+											<value>1000</value>
+											<min>0</min>
+											<max>5000</max>
+										</object>
+									</object>
 								</object>
 							</object>
 						</object>
 					</object>
 					<object class="sizeritem">
-						<option>1</option>
-						<flag>wxEXPAND</flag>
+						<option>0</option>
+						<flag>wxALL</flag>
 						<border>5</border>
-						<object class="wxBoxSizer">
+						<object class="wxStaticBoxSizer">
 							<orient>wxHORIZONTAL</orient>
+							<label>Ping Quality</label>
 							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALIGN_CENTER|wxALL</flag>
+								<option>1</option>
+								<flag>wxEXPAND</flag>
 								<border>5</border>
-								<object class="wxStaticText">
-									<label>Master Timeout (ms):</label>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL</flag>
-								<border>5</border>
-								<object class="wxTextCtrl" name="Id_TxtCtrlMasterTimeout">
-									<value>500</value>
-									<maxlength>0</maxlength>
-								</object>
-							</object>
-						</object>
-					</object>
-					<object class="sizeritem">
-						<option>1</option>
-						<flag>wxEXPAND</flag>
-						<border>5</border>
-						<object class="wxBoxSizer">
-							<orient>wxHORIZONTAL</orient>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALIGN_CENTER|wxALL</flag>
-								<border>5</border>
-								<object class="wxStaticText">
-									<label>Server Timeout (ms):</label>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL</flag>
-								<border>5</border>
-								<object class="wxTextCtrl" name="Id_TxtCtrlServerTimeout">
-									<value>500</value>
-									<maxlength>0</maxlength>
+								<object class="wxFlexGridSizer">
+									<rows>1</rows>
+									<cols>1</cols>
+									<vgap>0</vgap>
+									<hgap>0</hgap>
+									<growablecols></growablecols>
+									<growablerows></growablerows>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBitmap" name="Id_StcBmpPQGood">
+													<tooltip>Green is good</tooltip>
+													<bitmap>bullet_green-16x15.png</bitmap>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>5</border>
+												<object class="wxSpinCtrl" name="Id_SpnCtrlPQGood">
+													<style>wxSP_ARROW_KEYS</style>
+													<tooltip>Green is good</tooltip>
+													<value>150</value>
+													<min>0</min>
+													<max>995</max>
+												</object>
+											</object>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBitmap" name="Id_StcBmpPQPlayable">
+													<tooltip>Orange is playable</tooltip>
+													<bitmap>bullet_orange-16x15.png</bitmap>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>5</border>
+												<object class="wxSpinCtrl" name="Id_SpnCtrlPQPlayable">
+													<style>wxSP_ARROW_KEYS</style>
+													<tooltip>Orange is playable</tooltip>
+													<value>300</value>
+													<min>0</min>
+													<max>997</max>
+												</object>
+											</object>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBitmap" name="Id_StcBmpPQLaggy">
+													<tooltip>Red means server is laggy</tooltip>
+													<bitmap>bullet_red-16x15.png</bitmap>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>5</border>
+												<object class="wxSpinCtrl" name="Id_SpnCtrlPQLaggy">
+													<style>wxSP_ARROW_KEYS</style>
+													<tooltip>Red means server is laggy</tooltip>
+													<value>350</value>
+													<min>0</min>
+													<max>999</max>
+												</object>
+											</object>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBitmap" name="Id_StcBmpPQBad">
+													<tooltip>Gray possibly means unplayable</tooltip>
+													<bitmap>bullet_gray-16x15.png</bitmap>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALIGN_CENTER|wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticLine" name="m_staticline4">
+													<style>wxLI_HORIZONTAL</style>
+													<tooltip>Gray possibly means unplayable</tooltip>
+												</object>
+											</object>
+										</object>
+									</object>
 								</object>
 							</object>
 						</object>
@@ -827,6 +976,202 @@
 		<object class="wxStatusBar" name="m_statusBar2">
 			<style>wxST_SIZEGRIP</style>
 			<fields>1</fields>
+		</object>
+	</object>
+	<object class="wxDialog" name="dlgAbout">
+		<style>wxDEFAULT_DIALOG_STYLE</style>
+		<title>About The Odamex Launcher</title>
+		<centered>1</centered>
+		<object class="wxBoxSizer">
+			<orient>wxVERTICAL</orient>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxEXPAND | wxALL</flag>
+				<border>5</border>
+				<object class="wxPanel">
+					<style>wxRAISED_BORDER|wxTAB_TRAVERSAL</style>
+					<object class="wxFlexGridSizer">
+						<rows>1</rows>
+						<cols>1</cols>
+						<vgap>0</vgap>
+						<hgap>0</hgap>
+						<growablecols>0</growablecols>
+						<growablerows>0,1,2,3</growablerows>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxBoxSizer">
+								<orient>wxHORIZONTAL</orient>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticBitmap" name="m_bitmap5">
+										<bitmap>../../media/icon_odalaunch_96.png</bitmap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALIGN_CENTER</flag>
+									<border>5</border>
+									<object class="wxBoxSizer">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="1">
+												<font>
+													<size>14</size>
+													<family>default</family>
+													<style>normal</style>
+													<weight>bold</weight>
+													<underlined>0</underlined>
+												</font>
+												<label>The Odamex Launcher</label>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="Id_StcTxtCopyright">
+												<label>Copyright (C) 2006-2010 by The Odamex Team.</label>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="Id_StcTxtVersion">
+												<label>Version %d.%d.%d - Protocol Version %d</label>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>1</option>
+											<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
+											<border>5</border>
+											<object class="wxHyperlinkCtrl" name="Id_HLCtrlWebsite">
+												<label>http://www.odamex.net</label>
+												<url>http://www.odamex.net</url>
+												<style>wxHL_DEFAULT_STYLE</style>
+											</object>
+										</object>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALIGN_CENTER</flag>
+							<border>5</border>
+							<object class="wxBoxSizer">
+								<orient>wxHORIZONTAL</orient>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER|wxBOTTOM|wxLEFT|wxTOP</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<font>
+											<size>10</size>
+											<family>default</family>
+											<style>italic</style>
+											<weight>normal</weight>
+											<underlined>0</underlined>
+										</font>
+										<label>Built with</label>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxBOTTOM|wxLEFT|wxTOP</flag>
+									<border>5</border>
+									<object class="wxHyperlinkCtrl">
+										<label>wxWidgets</label>
+										<url>http://www.wxwidgets.org</url>
+										<style>wxHL_DEFAULT_STYLE</style>
+										<font>
+											<size>10</size>
+											<family>default</family>
+											<style>italic</style>
+											<weight>normal</weight>
+											<underlined>0</underlined>
+										</font>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER|wxBOTTOM|wxRIGHT|wxTOP</flag>
+									<border>5</border>
+									<object class="wxStaticText" name="Id_StcTxtWxVer">
+										<font>
+											<size>10</size>
+											<family>default</family>
+											<style>italic</style>
+											<weight>normal</weight>
+											<underlined>0</underlined>
+										</font>
+										<label>, 2.11.0-1</label>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>Developed by</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="Id_TxtCtrlDevelopers">
+										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
+										<value>Russell Rice (mailto:russell@odamex.net)\nMichael Wood (mailto:mwoodj@huntsvegas.org)\nJohn D Corrado</value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label>License</label>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="Id_TxtCtrlLicense">
+										<style>wxTE_AUTO_URL|wxTE_CENTRE|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2</style>
+										<value>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.</value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALIGN_CENTER|wxALL</flag>
+							<border>5</border>
+							<object class="wxStdDialogButtonSizer">
+								<object class="button">
+									<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="wxID_OK">
+										<label>&amp;OK</label>
+									</object>
+								</object>
+							</object>
+						</object>
+					</object>
+				</object>
+			</object>
 		</object>
 	</object>
 </resource>

@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -520,7 +521,7 @@ cheatseq_t		cheat_clev = { cheat_clev_seq, 0 };
 cheatseq_t		cheat_mypos = { cheat_mypos_seq, 0 };
 
 
-EXTERN_CVAR (allowcheats)
+EXTERN_CVAR (sv_allowcheats)
 
 // Checks whether cheats are enabled or not, returns true if they're NOT enabled
 // and false if they ARE enabled (stupid huh? not my work [Russell])
@@ -528,12 +529,12 @@ BOOL CheckCheatmode (void)
 {
 	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
 	// are disabled
-	if (skill == sk_nightmare && !multiplayer)
+	if (sv_skill == sk_nightmare && !multiplayer)
         return true;
 
-	if ((multiplayer || gametype != GM_COOP) && !allowcheats)
+	if ((multiplayer || sv_gametype != GM_COOP) && !sv_allowcheats)
 	{
-		Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
+		Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 		return true;
 	}
 	else
@@ -775,10 +776,10 @@ void ST_refreshBackground(void)
 
 		BG->DrawPatch (sbar, 0, 0);
 
-		if (gametype == GM_CTF) {
+		if (sv_gametype == GM_CTF) {
 			BG->DrawPatch (flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
 			BG->DrawPatch (flagbox, ST_FLGBOXX, ST_FLGBOXY);
-		} else if (gametype == GM_COOP)
+		} else if (sv_gametype == GM_COOP)
 			BG->DrawPatch (armsbg, ST_ARMSBGX, ST_ARMSBGY);
 
 		if (multiplayer)
@@ -1041,18 +1042,18 @@ void ST_updateWidgets(void)
 	ST_updateFaceWidget();
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && gametype == GM_COOP;
+	st_armson = st_statusbaron && sv_gametype == GM_COOP;
 
 	// used by w_frags widget
-	st_fragson = gametype != GM_COOP && st_statusbaron;
+	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
 
 	//	[Toke - CTF]
-	if (gametype == GM_CTF)
+	if (sv_gametype == GM_CTF)
 		st_fragscount = TEAMpoints[plyr->userinfo.team]; // denis - todo - scoring for ctf
 	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
 
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		switch(CTFdata[it_blueflag].state)
 		{
 			case flag_home:
@@ -1109,10 +1110,10 @@ void ST_drawWidgets(bool refresh)
 	int i;
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && gametype == GM_COOP;
+	st_armson = st_statusbaron && sv_gametype == GM_COOP;
 
 	// used by w_frags widget
-	st_fragson = gametype != GM_COOP && st_statusbaron;
+	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
 
 	STlib_updateNum (&w_ready, refresh);
 
@@ -1130,13 +1131,13 @@ void ST_drawWidgets(bool refresh)
 
 	STlib_updateMultIcon (&w_faces, refresh);
 
-	if (gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
+	if (sv_gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
 		for (i = 0; i < 3; i++)
 			STlib_updateMultIcon (&w_keyboxes[i], refresh);
 
 	STlib_updateNum (&w_frags, refresh);
 
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		STlib_updateBinIcon (&w_flagboxblu, refresh);
 		STlib_updateBinIcon (&w_flagboxred, refresh);
 	}
@@ -1588,7 +1589,7 @@ static void ST_HticDrawWidgets(bool refresh)
 	STlib_updateNum (&w_ready, refresh);
 	STlib_updateNum (&w_numarmor, refresh);
 
-	if (gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
+	if (sv_gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
 		for (i = 0; i < 3; i++)
 			STlib_updateMultIcon (&w_keyboxes[i], refresh);
 			
@@ -2181,7 +2182,7 @@ void ST_Drawer(void)
 					ST_newDraw();
 			else
 				ST_newDrawDM();
-		else if (DrawNewSpecHUD && gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
+		else if (DrawNewSpecHUD && sv_gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
 			ST_newDrawCTF();
 			
 		st_firsttime = true;

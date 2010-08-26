@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -202,26 +203,20 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
 
      // strip off a trailing :port if present
      for (colon = copy ; *colon ; colon++)
-          if (*colon == ':')
-          {
-             *colon = 0;
-             sadr.sin_port = htons(atoi(colon+1));
-          }
+        if (*colon == ':')
+        {
+            *colon = 0;
+            sadr.sin_port = htons(atoi(colon+1));
+        }
 
-     if (copy[0] >= '0' && copy[0] <= '9')
-     {
-          *(int *)&sadr.sin_addr = inet_addr(copy);
-     }
-     else
-     {
-          if (! (h = gethostbyname(copy)) )
-                return 0;
-          *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
-     }
+    if (! (h = gethostbyname(copy)) )
+        return 0;
+        
+    *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
 
-     SockadrToNetadr (&sadr, a);
+    SockadrToNetadr (&sadr, a);
 
-     return true;
+    return true;
 }
 
 bool NET_CompareAdr (netadr_t a, netadr_t b)
@@ -358,10 +353,13 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 // denis - use this function to mark the start of your server message
 // as it allows for better debugging and optimization of network code
 //
-void MSG_WriteMarker (buf_t *b, svc_t c)
+// [ML] 8/4/10: Moved to sv_main and slightly modified to provide an adequate
+//      but temporary fix for bug 594 until netcode_bringup2 is complete.
+//      Thanks to spleen for providing good brainpower!
+/*void MSG_WriteMarker (buf_t *b, svc_t c)
 {
 	b->WriteByte((byte)c);
-}
+}*/
 
 //
 // MSG_WriteMarker

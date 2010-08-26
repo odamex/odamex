@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -936,7 +936,7 @@ DWORD FArchive::MapObject (const DObject *obj)
 
 DWORD FArchive::HashObject (const DObject *obj) const
 {
-	return (DWORD)((ptrdiff_t)obj % EObjectHashSize);
+	return (DWORD)((size_t)obj % EObjectHashSize);
 }
 
 DWORD FArchive::FindObjectIndex (const DObject *obj) const

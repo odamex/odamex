@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -401,7 +402,7 @@ int
 	// GhostlyDeath <November 16, 2008> -- ExM8 has the full volume effect
 	// [Russell] - Change this to an option and remove the dependence on
 	// we run doom 1 or not
-	if (!co_level8soundfeature && level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
+	if ((multiplayer && !co_level8soundfeature) && level.levelnum != 8 && approx_dist > S_CLIPPING_DIST)
 		return 0;
 
     // angle of source to listener
@@ -533,7 +534,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	}
 	else if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
 			(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
-			&& gametype == GM_CTF)
+			&& sv_gametype == GM_CTF)
 	{
 		basepriority = 300;
 	}
@@ -593,7 +594,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
   // try to find a channel
 	if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
 		(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
-		&& gametype == GM_CTF)
+		&& sv_gametype == GM_CTF)
 		cnum = channel;
 	else
 		cnum = S_getChannel(pt, sfx, priority);
@@ -747,7 +748,7 @@ void S_StopSound (fixed_t *pt)
 		{
 			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
 				(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
-				&& gametype == GM_CTF)
+				&& sv_gametype == GM_CTF)
 				return;
 			S_StopChannel (i);
 		}
@@ -1380,6 +1381,33 @@ BEGIN_COMMAND (snd_restart)
 	S_Init (snd_sfxvolume, snd_musicvolume);
 }
 END_COMMAND (snd_restart)
+
+BEGIN_COMMAND (changemus)
+{
+	int loopmus;
+
+	if (argc == 1)
+	{
+	    Printf(PRINT_HIGH, "Usage: changemus lumpname [loop]");
+	    Printf(PRINT_HIGH, "\n");
+	    Printf(PRINT_HIGH, "Plays music from an internal lump, loop\n");
+	    Printf(PRINT_HIGH, "parameter determines if the music should play\n");
+	    Printf(PRINT_HIGH, "continuously or not, (1 or 0, default: 1)\n");
+	    
+	    return;
+	}
+
+	if (argc > 2)
+	{
+		loopmus = atoi (argv[2]);
+		S_ChangeMusic (std::string(argv[1]), loopmus);
+	}
+	else if (argc == 2)
+	{
+		S_ChangeMusic (std::string(argv[1]), 1);
+	}
+}
+END_COMMAND (changemus)
 
 void A_Ambient (AActor *actor)
 {

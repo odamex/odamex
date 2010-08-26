@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -445,7 +446,7 @@ void SZ_Write (buf_t *b, const void *data, int length);
 void SZ_Write (buf_t *b, const byte *data, int startpos, int length);
 
 void MSG_WriteByte (buf_t *b, byte c);
-void MSG_WriteMarker (buf_t *b, svc_t c);
+//void MSG_WriteMarker (buf_t *b, svc_t c);
 void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);

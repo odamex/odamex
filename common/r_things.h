@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -72,18 +73,18 @@ extern vissprite_t		vsprsortedhead;
 
 // Constant arrays used for psprite clipping
 //	and initializing clipping.
-extern short			*negonearray;
-extern short			*screenheightarray;
+extern int			*negonearray;
+extern int			*screenheightarray;
 
 // vars for R_DrawMaskedColumn
-extern short*			mfloorclip;
-extern short*			mceilingclip;
-extern fixed_t			spryscale;
-extern fixed_t			sprtopscreen;
+extern int*			mfloorclip;
+extern int*			mceilingclip;
+extern fixed_t		spryscale;
+extern fixed_t		sprtopscreen;
 
-extern fixed_t			pspritexscale;
-extern fixed_t			pspriteyscale;
-extern fixed_t			pspritexiscale;
+extern fixed_t		pspritexscale;
+extern fixed_t		pspriteyscale;
+extern fixed_t		pspritexiscale;
 
 
 void R_DrawMaskedColumn (column_t* column);

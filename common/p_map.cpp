@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,7 +80,7 @@ AActor *onmobj; // generic global onmobj...used for landing on pods/players
 // Temporary holder for thing_sectorlist threads
 msecnode_t* sector_list = NULL;		// phares 3/16/98
 
-
+EXTERN_CVAR(co_allowdropoff)
 
 //
 // TELEPORT MOVE
@@ -305,7 +306,7 @@ static // killough 3/26/98: make static
 BOOL PIT_CrossLine (line_t* ld)
 {
 	if (!(ld->flags & ML_TWOSIDED) ||
-		(ld->flags & (ML_BLOCKING|ML_BLOCKMONSTERS)))
+		(ld->flags & (ML_BLOCKING|ML_BLOCKMONSTERS|ML_BLOCKEVERYTHING)))
 		if (!(tmbbox[BOXLEFT]   > ld->bbox[BOXRIGHT]  ||
 			  tmbbox[BOXRIGHT]  < ld->bbox[BOXLEFT]   ||
 			  tmbbox[BOXTOP]    < ld->bbox[BOXBOTTOM] ||
@@ -670,7 +671,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 // Attempt to move to a new position,
 // crossing special lines unless MF_TELEPORT is set.
 //
-BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
+BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 {
 	fixed_t 	oldx;
 	fixed_t 	oldy;
@@ -717,7 +718,8 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y)
 		}		
 
 		// killough 3/15/98: Allow certain objects to drop off
-		if (!(thing->flags&(MF_DROPOFF|MF_FLOAT))
+		// [Spleen] Unless co_allowdropoff is true, monsters can now get pushed or thrusted off of ledges like in BOOM
+		if (!((thing->flags&(MF_DROPOFF|MF_FLOAT)) || (dropoff && co_allowdropoff))
 			&& tmfloorz - tmdropoffz > 24*FRACUNIT)
 			return false;	// don't stand over a dropoff
 	}
@@ -1030,9 +1032,9 @@ void P_SlideMove (AActor *mo)
 		// the move must have hit the middle, so stairstep
 	  stairstep:
 		// killough 3/15/98: Allow objects to drop off ledges
-		if (!P_TryMove (mo, mo->x, mo->y + mo->momy))
+		if (!P_TryMove (mo, mo->x, mo->y + mo->momy, true))
 		{
-			P_TryMove (mo, mo->x + mo->momx, mo->y);
+			P_TryMove (mo, mo->x + mo->momx, mo->y, true);
 		}
 		return;
 	}
@@ -1045,7 +1047,7 @@ void P_SlideMove (AActor *mo)
 		newy = FixedMul (mo->momy, bestslidefrac);
 
 		// killough 3/15/98: Allow objects to drop off ledges
-		if (!P_TryMove (mo, mo->x+newx, mo->y+newy))
+		if (!P_TryMove (mo, mo->x+newx, mo->y+newy, true))
 			goto stairstep;
 	}
 
@@ -1073,7 +1075,7 @@ void P_SlideMove (AActor *mo)
 			mo->player->momy = tmymove;
 	}*/
 
-	if (!P_TryMove (mo, mo->x+tmxmove, mo->y+tmymove))
+	if (!P_TryMove (mo, mo->x+tmxmove, mo->y+tmymove, true))
 	{
 		goto retry;
 	}
@@ -1605,8 +1607,16 @@ BOOL PTR_UseTraverse (intercept_t *in)
 
     P_UseSpecialLine (usething, in->d.line, side);
 
-    // can't use for than one special line in a row
-    return false;
+	//WAS can't use more than one special line in a row
+	//jff 3/21/98 NOW multiple use allowed with enabling line flag
+	//[RH] And now I've changed it again. If the line is of type
+	//	   SPAC_USE, then it eats the use. Everything else passes
+	//	   it through, including SPAC_USETHROUGH.
+	//[ML] And NOW (8/16/10) it checks whether it's use or NOT the passthrough flags
+	// (passthru on a cross or use line).  This may get augmented/changed even more in the future.
+	return (GET_SPAC(in->d.line->flags) == SPAC_USE || 
+            (GET_SPAC(in->d.line->flags) != SPAC_CROSSTHROUGH && 
+             GET_SPAC(in->d.line->flags) != SPAC_USETHROUGH)) ? false : true;
 }
 
 // Returns false if a "oof" sound should be made because of a blocking

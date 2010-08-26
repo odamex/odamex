@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,7 +43,7 @@
 #define WEAPONBOTTOM				128*FRACUNIT
 #define WEAPONTOP					32*FRACUNIT
 
-EXTERN_CVAR(infiniteammo)
+EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 
 //
@@ -223,7 +224,7 @@ BOOL P_CheckAmmo (player_t *player)
 
 static void DecreaseAmmo(player_t *player, int amount)
 {
-	if (!infiniteammo)
+	if (!sv_infiniteammo)
 	{
 		ammotype_t ammonum = weaponinfo[player->readyweapon].ammo;
 
@@ -407,8 +408,10 @@ A_Lower
 		P_SetPsprite (player,  ps_weapon, S_NULL);
 		return;
 	}
-
-	player->readyweapon = player->pendingweapon;
+	
+	// haleyjd 03/28/10: do not assume pendingweapon is valid
+	if (player->pendingweapon < NUMWEAPONS)
+		player->readyweapon = player->pendingweapon;
 
 	P_BringUpWeapon (player);
 }

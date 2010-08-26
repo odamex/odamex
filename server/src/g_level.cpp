@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,7 +45,6 @@
 #include "v_video.h"
 #include "p_saveg.h"
 #include "d_protocol.h"
-#include "v_text.h"
 #include "d_main.h"
 #include "p_mobj.h"
 #include "m_fileio.h"
@@ -62,11 +62,11 @@
 extern int nextupdate;
 extern int shotclock;
 
-EXTERN_CVAR (endmapscript)
-EXTERN_CVAR (startmapscript)
-EXTERN_CVAR (curmap)
-EXTERN_CVAR (nextmap)
-EXTERN_CVAR (loopepisode)
+EXTERN_CVAR (sv_endmapscript)
+EXTERN_CVAR (sv_startmapscript)
+EXTERN_CVAR (sv_curmap)
+EXTERN_CVAR (sv_nextmap)
+EXTERN_CVAR (sv_loopepisode)
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
@@ -195,8 +195,8 @@ void G_DeferedInitNew (char *mapname)
 	strncpy (d_mapname, mapname, 8);
 	gameaction = ga_newgame;
 
-	// nextmap cvar may be overridden by a script
-	nextmap.ForceSet(d_mapname);
+	// sv_nextmap cvar may be overridden by a script
+	sv_nextmap.ForceSet(d_mapname);
 }
 
 
@@ -280,6 +280,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	{
 		wads.push_back(argv[1]);
 		AddedIWAD = true;
+	} else {
+        wads.push_back(wadfiles[1].c_str());
 	}
 
     // check whether they are wads or patch files
@@ -365,7 +367,7 @@ void G_GenerateRandomMaps(void)
 	bool* Used = NULL;
 	size_t Count = 0;
 	maplist_s* Rover = NULL;
-	size_t i, j;
+	size_t i, j, random_seed;
 	std::vector<maplist_s*> Ptrs;
 
 	// Clear old map list
@@ -395,11 +397,14 @@ void G_GenerateRandomMaps(void)
 
 	for (i = 0; i < Count; i++)
 		Used[i] = 0;
+		
+    srand((unsigned)time(0)); 
 
 	// Now populate the list
 	for (i = 0; i < Count; i++)
 	{
-		j = (M_Random() + M_Random()) % Count;
+	    random_seed = rand();
+		j = random_seed % Count;
 
 		// Move forward if j is used
 		while (Used[j])
@@ -422,7 +427,7 @@ void G_GenerateRandomMaps(void)
 	RandomMapPos = 0;
 }
 
-CVAR_FUNC_IMPL (shufflemaplist)
+CVAR_FUNC_IMPL (sv_shufflemaplist)
 {
 	// Create random list
 	if (var)
@@ -436,67 +441,75 @@ BEGIN_COMMAND (addmap)
 {
 	if (argc > 1)
 	{
-        struct maplist_s *NewMap;
-        struct maplist_s *OldMap = NULL;
-
-		// Initalize the structure
-        NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
-        NewMap->WadCmds = NULL;
-
-        // Add it to our linked list
-        if ( MapListBegin == NULL )
-        { // This is the first entry
-            MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
-            OldMap = NULL;
+	    if (argc > 2 && !W_IsIWAD(argv[2]))
+        {
+            Printf(PRINT_HIGH,"IWAD not specified, map will not be loaded.\n");
+            return;
         }
         else
-        { // Tag it on to the end.
-        	OldMap = MapListEnd;
-            MapListEnd->Next = NewMap;
-            MapListEnd = NewMap;
-            NewMap->Next = MapListBegin;
-        }
-
-        // Fill in MapName
-        NewMap->MapName = (char *) Malloc(strlen(argv[1])+1);
-        NewMap->MapName[strlen(argv[1])] = '\0';
-        strcpy(NewMap->MapName, argv[1]);
-
-        // Any more arguments are passed to the wad ccmd
-        if ( argc > 2 )
         {
-            std::string arglist = "wad ";
+            struct maplist_s *NewMap;
+            struct maplist_s *OldMap = NULL;
 
-            for (size_t i = 2; i < argc; ++i)
-            {
-                arglist += argv[i];
-                arglist += ' ';
+            // Initalize the structure
+            NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
+            NewMap->WadCmds = NULL;
+
+            // Add it to our linked list
+            if ( MapListBegin == NULL )
+            { // This is the first entry
+                MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
+                OldMap = NULL;
+            }
+            else
+            { // Tag it on to the end.
+                OldMap = MapListEnd;
+                MapListEnd->Next = NewMap;
+                MapListEnd = NewMap;
+                NewMap->Next = MapListBegin;
             }
 
-            NewMap->WadCmds = (char *) Malloc(strlen(arglist.c_str())+1);
-            NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
-            strcpy(NewMap->WadCmds, arglist.c_str());
-        }
-        else// if ( NewMap == MapListBegin )
-        {
-			// GhostlyDeath <August 14, 2008> -- Changed logic, remember WAD
-			if (OldMap)
-			{
-				NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds)+1);
-				NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
-				strcpy(NewMap->WadCmds, OldMap->WadCmds);
-			}
-			else
-			{
-				NewMap->WadCmds = (char *) Malloc(2);
-				NewMap->WadCmds[0] = '-';
-				NewMap->WadCmds[1] = '\0';
-			}
-        }
+            // Fill in MapName
+            NewMap->MapName = (char *) Malloc(strlen(argv[1])+1);
+            NewMap->MapName[strlen(argv[1])] = '\0';
+            strcpy(NewMap->MapName, argv[1]);
 
-        // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
-        if (shufflemaplist)
-	        G_GenerateRandomMaps();
+            // Any more arguments are passed to the wad ccmd
+            if ( argc > 2 )
+            {
+                std::string arglist = "wad ";
+
+                for (size_t i = 2; i < argc; ++i)
+                {
+                    arglist += argv[i];
+                    arglist += ' ';
+                }
+
+                NewMap->WadCmds = (char *) Malloc(strlen(arglist.c_str())+1);
+                NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
+                strcpy(NewMap->WadCmds, arglist.c_str());
+            }
+            else// if ( NewMap == MapListBegin )
+            {
+                // GhostlyDeath <August 14, 2008> -- Changed logic, remember WAD
+                if (OldMap)
+                {
+                    NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds)+1);
+                    NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
+                    strcpy(NewMap->WadCmds, OldMap->WadCmds);
+                }
+                else
+                {
+                    NewMap->WadCmds = (char *) Malloc(2);
+                    NewMap->WadCmds[0] = '-';
+                    NewMap->WadCmds[1] = '\0';
+                }
+            }
+
+            // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
+            if (sv_shufflemaplist)
+                G_GenerateRandomMaps();
+        }
 	}
 }
 END_COMMAND (addmap)
@@ -584,6 +597,7 @@ BEGIN_COMMAND (forcenextmap)
 
 	G_ChangeMap ();
 }
+
 END_COMMAND (forcenextmap)
 
 BOOL 			secretexit;
@@ -604,7 +618,7 @@ void G_ChangeMap (void)
         }
 
 		// if deathmatch, stay on same level
-		if(gametype != GM_COOP)
+		if(sv_gametype != GM_COOP)
 			next = level.mapname;
 		else
 			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
@@ -613,10 +627,10 @@ void G_ChangeMap (void)
 		if (!strncmp (next, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))
 		{
 			// NES - exiting a Doom 1 episode moves to the next episode, rather than always going back to E1M1
-			if (gameinfo.flags & GI_MAPxx || gamemode == shareware || (!loopepisode &&
+			if (gameinfo.flags & GI_MAPxx || gamemode == shareware || (!sv_loopepisode &&
 				((gamemode == registered && level.cluster == 3) || (gamemode == retail && level.cluster == 4))))
 					next = CalcMapName(1, 1);
-				else if (loopepisode)
+				else if (sv_loopepisode)
 					next = CalcMapName(level.cluster, 1);
 				else
 					next = CalcMapName(level.cluster+1, 1);
@@ -626,7 +640,7 @@ void G_ChangeMap (void)
 	}
 	else
 	{
-		if (shufflemaplist && RandomMaps.empty() == false)
+		if (sv_shufflemaplist && RandomMaps.empty() == false)
 		{
 			// Change the map
 			if (RandomMaps[RandomMapPos]->WadCmds)
@@ -665,8 +679,11 @@ void G_ChangeMap (void)
 	}
 
 	// run script at the end of each map
-	if(strlen(endmapscript.cstring()))
-		AddCommandString(endmapscript.cstring(), true);
+	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
+	// when onlcvars (addcommandstring's second param) is true.  Is there a 
+	// reason why the mapscripts ahve to be safe mode?	
+	if(strlen(sv_endmapscript.cstring()))
+		AddCommandString(sv_endmapscript.cstring()/*, true*/);
 }
 
 void SV_ClientFullUpdate(player_t &pl);
@@ -694,21 +711,24 @@ void G_DoNewGame (void)
 		MSG_WriteString (&cl->reliablebuf, d_mapname);
 	}
 
-	curmap.ForceSet(d_mapname);
+	sv_curmap.ForceSet(d_mapname);
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
 
 	// run script at the start of each map
-	if(strlen(startmapscript.cstring()))
-		AddCommandString(startmapscript.cstring(), true);
+	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
+	// when onlcvars (addcommandstring's second param) is true.  Is there a 
+	// reason why the mapscripts ahve to be safe mode?
+	if(strlen(sv_startmapscript.cstring()))
+		AddCommandString(sv_startmapscript.cstring()/*,true*/);
 
 	for(i = 0; i < players.size(); i++)
 	{
 		if(!players[i].ingame())
 			continue;
 
-		if (gametype == GM_TEAMDM || gametype == GM_CTF)
+		if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 			SV_CheckTeam(players[i]);
 		else
 			players[i].userinfo.color = players[i].prefcolor;
@@ -717,10 +737,10 @@ void G_DoNewGame (void)
 	}
 }
 
-EXTERN_CVAR (skill)
-EXTERN_CVAR (monstersrespawn)
-EXTERN_CVAR (fastmonsters)
-EXTERN_CVAR (maxplayers)
+EXTERN_CVAR (sv_skill)
+EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (sv_maxplayers)
 
 void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
@@ -742,14 +762,14 @@ void G_InitNew (const char *mapname)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
-	int old_gametype = gametype;
+	int old_gametype = sv_gametype;
 
 	cvar_t::UnlatchCVars ();
 
-	if(old_gametype != gametype || gametype != GM_COOP) {
+	if(old_gametype != sv_gametype || sv_gametype != GM_COOP) {
 		unnatural_level_progression = true;
 
-		// Nes - Force all players to be spectators when the gametype is not now or previously co-op.
+		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
 		for (i = 0; i < players.size(); i++) {
 			for (size_t j = 0; j < players.size(); j++) {
 				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
@@ -775,12 +795,12 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	if (skill == sk_nightmare || monstersrespawn)
+	if (sv_skill == sk_nightmare || sv_monstersrespawn)
 		respawnmonsters = true;
 	else
 		respawnmonsters = false;
 
-	bool wantFast = fastmonsters || (skill == sk_nightmare);
+	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
 	if (wantFast != isFast)
 	{
 		if (wantFast)
@@ -824,7 +844,7 @@ void G_InitNew (const char *mapname)
 	}
 
 	// if only one player allowed, then this is a single player server
-	if(maxplayers == 1)
+	if(sv_maxplayers == 1)
 		multiplayer = false;
 	else
 		multiplayer = true;
@@ -960,7 +980,7 @@ void G_DoLoadLevel (int position)
 	}
 
 	// [deathz0r] It's a smart idea to reset the team points
-	if (gametype == GM_TEAMDM || gametype == GM_CTF)
+	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 			TEAMpoints[i] = 0;
@@ -997,7 +1017,7 @@ void G_DoLoadLevel (int position)
 	flagdata *tempflag;
 
 	// Nes - CTF Pre flag setup
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		tempflag = &CTFdata[it_blueflag];
 		tempflag->flaglocated = false;
 
@@ -1008,7 +1028,7 @@ void G_DoLoadLevel (int position)
 	P_SetupLevel (level.mapname, position);
 
 	// Nes - CTF Post flag setup
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		tempflag = &CTFdata[it_blueflag];
 		if (!tempflag->flaglocated)
 			SV_BroadcastPrintf(PRINT_HIGH, "WARNING: Blue flag pedestal not found! No blue flags in game.\n");
@@ -1071,7 +1091,7 @@ void G_WorldDone (void)
 		else
 			nextcluster = FindClusterInfo (FindLevelInfo (level.secretmap)->cluster);
 
-		if (nextcluster->cluster != level.cluster && gametype == GM_COOP) {
+		if (nextcluster->cluster != level.cluster && sv_gametype == GM_COOP) {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
 			if (nextcluster->entertext) {

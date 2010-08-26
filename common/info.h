@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1429,7 +1430,6 @@ typedef enum {
 	MT_SPARK,		// Throws out sparks when activated
 	MT_FOUNTAIN,	// Just a container for a particle fountain
 	MT_NODE,		//Added by MC:
-	MT_BOTTRACE,
 	MT_WATERZONE,
 	MT_SECRETTRIGGER,
 

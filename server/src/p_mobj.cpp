@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,15 +38,16 @@
 #include "vectors.h"
 #include "p_mobj.h"
 #include "sv_ctf.h"
+#include "g_game.h"
 
 mapthing2_t 		itemrespawnque[ITEMQUESIZE];
 int 				itemrespawntime[ITEMQUESIZE];
 int 				iquehead;
 int 				iquetail;
 
-EXTERN_CVAR	(weaponstay)
+EXTERN_CVAR	(sv_weaponstay)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_itemrespawntime)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
@@ -234,7 +236,7 @@ AActor &AActor::operator= (const AActor &other)
     info = other.info;
     tics = other.tics;
     state = other.state;
-    flags= other.flags;
+    flags = other.flags;
     flags2 = other.flags2;
     health = other.health;
     movedir = other.movedir;
@@ -271,7 +273,7 @@ BOOL P_SetMobjState (AActor *mobj, statenum_t state)
 {
     state_t*	st;
 
-    // denis - prevent harmful state cycles
+	// denis - prevent harmful state cycles
 	static unsigned int callstack;
 	if(callstack++ > 16)
 	{
@@ -327,8 +329,9 @@ void P_ExplodeMissile (AActor* mo)
 		MSG_WriteLong (&cl->reliablebuf, mo->y);
 		MSG_WriteLong (&cl->reliablebuf, mo->z);
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
-		MSG_WriteShort(&cl->reliablebuf, mo->netid);
+        // [CG] Commented out serverside
+		// MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
+		// MSG_WriteShort(&cl->reliablebuf, mo->netid);
 	}
 
 
@@ -352,7 +355,7 @@ void P_ExplodeMissile (AActor* mo)
 		if (mo->info->deathsound)
 			S_Sound (mo, CHAN_VOICE, mo->info->deathsound, 1, ATTN_NORM);
 
-		mo->effects = 0;				// [RH]
+		mo->effects = 0;		// [RH]
 	}
 }
 
@@ -403,7 +406,7 @@ void P_XYMovement (AActor *mo)
 
 	do
 	{
-		if ( xmove > maxmove || ymove > maxmove )
+		if (xmove > maxmove || ymove > maxmove )
 		{
 			ptryx = mo->x + xmove/2;
 			ptryy = mo->y + ymove/2;
@@ -418,7 +421,7 @@ void P_XYMovement (AActor *mo)
 		}
 
 		// killough 3/15/98: Allow objects to drop off
-		if (!P_TryMove (mo, ptryx, ptryy))
+		if (!P_TryMove (mo, ptryx, ptryy, true))
 		{
 			// blocked move
 			if (mo->player)
@@ -456,7 +459,9 @@ void P_XYMovement (AActor *mo)
 	}
 
 	if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
+	{
 		return; 	// no friction for missiles ever
+	}
 
 	if (mo->z > mo->floorz && !mo->waterlevel && !(mo->flags2 & MF2_FLY) )
 		return;		// no friction when airborne
@@ -561,7 +566,7 @@ void P_ZMovement (AActor *mo)
 		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
 		mo->momz = FixedMul (mo->momz, FRICTION_FLY);
 	}
-	
+
     // clip movement
    if (mo->z <= mo->floorz)
    {
@@ -598,7 +603,7 @@ void P_ZMovement (AActor *mo)
       if (correct_lost_soul_bounce && mo->flags & MF_SKULLFLY)
       {
 	    // the skull slammed into something
-         mo->momz = -mo->momz;
+        mo->momz = -mo->momz;
       }
 
 
@@ -665,6 +670,7 @@ void P_ZMovement (AActor *mo)
    }
 }
 
+
 //
 // P_NightmareRespawn
 //
@@ -703,14 +709,15 @@ void P_NightmareRespawn (AActor *mobj)
     else
 		z = ONFLOORZ;
 
-    // inherit attributes from deceased one
+	// spawn it
+	// inherit attributes from deceased one
 	if(serverside)
 	{
 		AActor *mo = new AActor (x,y,z, mobj->type);
 		mo->spawnpoint = mobj->spawnpoint;
 		mo->angle = ANG45 * (mthing->angle/45);
 
-	    if (mthing->flags & MTF_AMBUSH)
+		if (mthing->flags & MTF_AMBUSH)
 			mo->flags |= MF_AMBUSH;
 
 		SV_SpawnMobj(mo);
@@ -718,8 +725,8 @@ void P_NightmareRespawn (AActor *mobj)
 		mo->reactiontime = 18;
 	}
 
-    // remove the old monster,
-	mobj->Destroy();
+	// remove the old monster,
+	mobj->Destroy ();
 }
 
 //
@@ -853,7 +860,7 @@ AActor *AActor::FindGoal (const AActor *actor, int tid, int kind)
 
 // <------- [RH] End new functions
 
-EXTERN_CVAR(speedhackfix)
+EXTERN_CVAR(sv_speedhackfix)
 
 //
 // P_MobjThinker
@@ -904,7 +911,7 @@ void AActor::RunThink ()
 		P_XYMovement (this);
 
 		if (ObjectFlags & OF_MassDestruction)
-			return; 		// actor was destroyed
+			return;		// actor was destroyed
 	}
 
 	if ((z != floorz) || momz)
@@ -912,7 +919,7 @@ void AActor::RunThink ()
 		P_ZMovement (this);
 
 		if (ObjectFlags & OF_MassDestruction)
-			return; 		// actor was destroyed
+			return;		// actor was destroyed
 	}
 
 	if(subsector)
@@ -953,7 +960,7 @@ void AActor::RunThink ()
 		// you can cycle through multiple states in a tic
 		if (!tics)
 			if (!P_SetMobjState (this, state->nextstate) )
-				return; 				// freed itself
+				return; 		// freed itself
 	}
 	else
 	{
@@ -975,6 +982,12 @@ void AActor::RunThink ()
 		P_NightmareRespawn (this);
 	}
 }
+
+//
+//
+// P_SpawnMobj
+//
+//
 
 AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
@@ -1009,7 +1022,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 
 	netid = ServerNetID.ObtainNetID();
 
-	if (skill != sk_nightmare)
+	if (sv_skill != sk_nightmare)
 		reactiontime = info->reactiontime;
 
 	lastlook = P_Random () % MAXPLAYERS;
@@ -1021,7 +1034,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	tics = st->tics;
 	sprite = st->sprite;
 	frame = st->frame;
-	touching_sectorlist = NULL; 	// NULL head of sector list // phares 3/13/98
+	touching_sectorlist = NULL;	// NULL head of sector list // phares 3/13/98
 
 	// set subsector and/or block links
 	LinkToWorld ();
@@ -1041,7 +1054,6 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 		z = iz;
 	}
 }
-
 
 //
 // P_RemoveMobj
@@ -1083,7 +1095,7 @@ void AActor::Destroy ()
 	// unlink from sector and block lists
 	UnlinkFromWorld ();
 
-	// Delete all nodes on the current sector_list					phares 3/16/98
+	// Delete all nodes on the current sector_list			phares 3/16/98
 	if (sector_list)
 	{
 		P_DelSeclist (sector_list);
@@ -1096,7 +1108,7 @@ void AActor::Destroy ()
 	Super::Destroy ();
 }
 
-EXTERN_CVAR (itemsrespawn)
+EXTERN_CVAR (sv_itemsrespawn)
 
 
 //
@@ -1104,21 +1116,21 @@ EXTERN_CVAR (itemsrespawn)
 //
 void P_RespawnSpecials (void)
 {
-	fixed_t 						x;
-	fixed_t 						y;
-	fixed_t 						z;
+	fixed_t 			x;
+	fixed_t 			y;
+	fixed_t 			z;
 
 	subsector_t*			ss;
 	AActor* 						mo;
-	mapthing2_t*			mthing;
+	mapthing2_t* 		mthing;
 
-	int 							i;
+	int 				i;
 
 	if(!serverside)
 		return;
 
 	// only respawn items in deathmatch
-	if (!itemsrespawn)
+	if (!sv_itemsrespawn)
 		return;
 
 	// nothing left to respawn?
@@ -1180,7 +1192,7 @@ void P_RespawnSpecials (void)
 // P_SpawnPlayer
 // Called when a player is spawned on the level.
 // Most of the player structure stays unchanged
-//		between levels.
+//	between levels.
 //
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 {
@@ -1194,6 +1206,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		G_PlayerReborn (*p);
 
 	AActor *mobj = new AActor (mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
+
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
 	//		  mobj->translation = translationtables + 256*playernum;
@@ -1227,7 +1240,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 		p->mo->flags |= MF_SPECTATOR;
 		p->mo->flags2 |= MF2_FLY;
 	}
-	
+
 	// [RH] Allow chasecam for demo watching
 	//if ((demoplayback || demonew) && chasedemo)
 	//	p->cheats = CF_CHASECAM;
@@ -1236,7 +1249,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if (gametype != GM_COOP)
+	if (sv_gametype != GM_COOP)
 	{
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
@@ -1252,7 +1265,44 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	}
 }
 
-EXTERN_CVAR(maxplayers)
+//
+// P_PreservePlayer
+//
+void P_PreservePlayer(player_t &player)
+{
+	if (!serverside || sv_gametype != GM_COOP || !validplayer(player) || !player.ingame())
+		return;
+
+	if(!unnatural_level_progression)
+		player.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
+
+	G_DoReborn(player);
+
+	// inform client
+	{
+		size_t i;
+		client_t *cl = &player.client;
+
+		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
+
+		for(i = 0; i < NUMWEAPONS; i++)
+			MSG_WriteByte (&cl->reliablebuf, player.weaponowned[i]);
+
+		for(i = 0; i < NUMAMMO; i++)
+		{
+			MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
+			MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
+		}
+
+		MSG_WriteByte (&cl->reliablebuf, player.health);
+		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
+		MSG_WriteByte (&cl->reliablebuf, player.armortype);
+		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+		MSG_WriteByte (&cl->reliablebuf, player.backpack);
+	}
+}
+
+EXTERN_CVAR(sv_maxplayers)
 EXTERN_CVAR(sv_teamspawns)
 
 //
@@ -1327,42 +1377,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (mthing->args[0] != position)
 			return;
 
-		// save spots for respawning in network games
-		size_t playernum = mthing->type <= 4 ? mthing->type-1 : (mthing->type - 4001 + 4)%MAXPLAYERSTARTS;
 		playerstarts.push_back(*mthing);
-		player_t &p = idplayer(playernum+1);
-
-		if (gametype == GM_COOP && validplayer(p) && p.ingame())
-		{
-			if(!unnatural_level_progression)
-				p.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
-
-			P_SpawnPlayer (p, mthing);
-
-			// inform client
-			{
-				size_t j;
-				client_t *cl = &p.client;
-
-				MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
-
-				for(j = 0; j < NUMWEAPONS; j++)
-					MSG_WriteByte (&cl->reliablebuf, p.weaponowned[j]);
-
-				for(j = 0; j < NUMAMMO; j++)
-				{
-					MSG_WriteShort (&cl->reliablebuf, p.maxammo[j]);
-					MSG_WriteShort (&cl->reliablebuf, p.ammo[j]);
-				}
-
-				MSG_WriteByte (&cl->reliablebuf, p.health);
-				MSG_WriteByte (&cl->reliablebuf, p.armorpoints);
-				MSG_WriteByte (&cl->reliablebuf, p.armortype);
-				MSG_WriteByte (&cl->reliablebuf, p.readyweapon);
-				MSG_WriteByte (&cl->reliablebuf, p.backpack);
-			}
-		}
-
 		return;
 	}
 
@@ -1408,26 +1423,26 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}*/
 
 	// GhostlyDeath -- Correctly spawn things
-	if (gametype != GM_COOP && !(mthing->flags & MTF_DEATHMATCH))
+	if (sv_gametype != GM_COOP && !(mthing->flags & MTF_DEATHMATCH))
 		return;
-	if (gametype == GM_COOP && maxplayers == 1 && !(mthing->flags & MTF_SINGLE))
+	if (sv_gametype == GM_COOP && sv_maxplayers == 1 && !(mthing->flags & MTF_SINGLE))
 		return;
-	if (gametype == GM_COOP && maxplayers != 1 && !(mthing->flags & MTF_COOPERATIVE))
+	if (sv_gametype == GM_COOP && sv_maxplayers != 1 && !(mthing->flags & MTF_COOPERATIVE))
 		return;
 
 	// check for apropriate skill level
-	if (skill == sk_baby)
+	if (sv_skill == sk_baby)
 		bit = 1;
-	else if (skill == sk_nightmare)
+	else if (sv_skill == sk_nightmare)
 		bit = 4;
 	else
-		bit = 1 << ((int)skill - 2);
+		bit = 1 << ((int)sv_skill - 2);
 
 	if (!(mthing->flags & bit))
 		return;
 
 	// [RH] Determine if it is an old ambient thing, and if so,
-	//				map it to MT_AMBIENT with the proper parameter.
+	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing->type >= 14001 && mthing->type <= 14064)
 	{
 		mthing->args[0] = mthing->type - 14000;
@@ -1457,16 +1472,16 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		i = MT_UNKNOWNTHING;
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
-	//				it to the unknown thing.
+	//		it to the unknown thing.
 	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
 	{
 		Printf (PRINT_HIGH, "Type %i at (%i, %i) has no frames\n",
-			mthing->type, mthing->x, mthing->y);
+				mthing->type, mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (sv_gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
@@ -1474,22 +1489,22 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		switch (i)
 		{
-		case MT_CHAINGUN:
-		case MT_SHOTGUN:
-		case MT_SUPERSHOTGUN:
-		case MT_MISC25: 		// BFG
-		case MT_MISC26: 		// chainsaw
-		case MT_MISC27: 		// rocket launcher
-		case MT_MISC28: 		// plasma gun
-			if ((mthing->flags & (MTF_DEATHMATCH|MTF_SINGLE)) == MTF_DEATHMATCH)
-				return;
-			break;
-		default:
-			break;
+			case MT_CHAINGUN:
+			case MT_SHOTGUN:
+			case MT_SUPERSHOTGUN:
+			case MT_MISC25: 		// BFG
+			case MT_MISC26: 		// chainsaw
+			case MT_MISC27: 		// rocket launcher
+			case MT_MISC28: 		// plasma gun
+				if ((mthing->flags & (MTF_DEATHMATCH|MTF_SINGLE)) == MTF_DEATHMATCH)
+					return;
+				break;
+			default:
+				break;
 		}
 	}
 
-	if (nomonsters)
+	if (sv_nomonsters)
 		if (i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL) )
 			return;
 
@@ -1540,7 +1555,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	SV_SpawnMobj(mobj);
 
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		// [Toke - CTF] Setup flag sockets
 		if (mthing->type == ID_BLUE_FLAG)
 		{
@@ -1625,7 +1640,7 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
 //
 // P_CheckMissileSpawn
 // Moves the missile forward a bit
-//		and possibly explodes it right there.
+//	and possibly explodes it right there.
 //
 BOOL P_CheckMissileSpawn (AActor* th)
 {
@@ -1641,7 +1656,7 @@ BOOL P_CheckMissileSpawn (AActor* th)
 
 	// killough 3/15/98: no dropoff (really = don't care for missiles)
 
-	if (!P_TryMove (th, th->x, th->y))
+	if (!P_TryMove (th, th->x, th->y, false))
 	{
 		P_ExplodeMissile (th);
 		return false;
@@ -1686,30 +1701,30 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
 	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
 
-	if (th->info->seesound)
+    if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
-	th->target = source->ptr();			// where it came from
-	an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
+    th->target = source->ptr();	// where it came from
+    an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
-	// fuzzy player
-	if (dest_flags & MF_SHADOW)
+    // fuzzy player
+    if (dest_flags & MF_SHADOW)
 		an += (P_Random()-P_Random())<<20;
 
-	th->angle = an;
-	an >>= ANGLETOFINESHIFT;
-	th->momx = FixedMul (th->info->speed, finecosine[an]);
-	th->momy = FixedMul (th->info->speed, finesine[an]);
+    th->angle = an;
+    an >>= ANGLETOFINESHIFT;
+    th->momx = FixedMul (th->info->speed, finecosine[an]);
+    th->momy = FixedMul (th->info->speed, finesine[an]);
 
-	dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
-	dist = dist / th->info->speed;
+    dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
+    dist = dist / th->info->speed;
 
-	if (dist < 1)
+    if (dist < 1)
 		dist = 1;
 
-	th->momz = (dest_z - source->z) / dist;
+    th->momz = (dest_z - source->z) / dist;
 
-	P_CheckMissileSpawn (th);
+    P_CheckMissileSpawn (th);
 
 	SV_SpawnMobj(th);
 

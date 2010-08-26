@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,8 +39,8 @@
 
 #include "d_player.h"
 
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (fastmonsters)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_fastmonsters)
 
 enum dirtype_t
 {
@@ -295,7 +296,7 @@ BOOL P_Move (AActor *actor)
 	tryy = (origy = actor->y) + (deltay = speed * yspeed[actor->movedir]);
 
 	// killough 3/15/98: don't jump over dropoffs:
-	try_ok = P_TryMove (actor, tryx, tryy);
+	try_ok = P_TryMove (actor, tryx, tryy, false);
 
 	if (try_ok && friction > ORIG_FRICTION)
 	{
@@ -771,7 +772,7 @@ void A_Chase (AActor *actor)
 	if (actor->flags & MF_JUSTATTACKED)
 	{
 		actor->flags &= ~MF_JUSTATTACKED;
-		if ((skill != sk_nightmare) && !fastmonsters)
+		if ((sv_skill != sk_nightmare) && !sv_fastmonsters)
 			P_NewChaseDir (actor);
 		return;
 	}
@@ -789,8 +790,8 @@ void A_Chase (AActor *actor)
 	// check for missile attack
 	if (actor->info->missilestate)
 	{
-		if (skill < sk_nightmare
-			&& actor->movecount && !fastmonsters)
+		if (sv_skill < sk_nightmare
+			&& actor->movecount && !sv_fastmonsters)
 		{
 			goto nomissile;
 		}
@@ -1597,7 +1598,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	}																// phares
 	 */
 	// Check for movements.
-    if (!P_TryMove (other, other->x, other->y))
+    if (!P_TryMove (other, other->x, other->y, false))
 	{
 		// kill it immediately
 		P_DamageMobj (other, actor, actor, 10000, MOD_UNKNOWN);
@@ -1794,7 +1795,7 @@ void A_BossDeath (AActor *actor)
 	}
 
 	// [RH] If noexit, then don't end the level.
-	if (gametype != GM_COOP && !allowexit)
+	if (sv_gametype != GM_COOP && !sv_allowexit)
 		return;
 
 	G_ExitLevel (0, 1);
@@ -1918,7 +1919,7 @@ void A_BrainExplode (AActor *mo)
 void A_BrainDie (AActor *mo)
 {
 	// [RH] If noexit, then don't end the level.
-	if (gametype != GM_COOP && !allowexit)
+	if (sv_gametype != GM_COOP && !sv_allowexit)
 		return;
 
 	G_ExitLevel (0, 1);
@@ -1937,7 +1938,7 @@ void A_BrainSpit (AActor *mo)
 		return;
 
 	brain.easy ^= 1;		// killough 3/26/98: use brain struct
-	if (skill <= sk_easy && (!brain.easy))
+	if (sv_skill <= sk_easy && (!brain.easy))
 		return;
 
 	// shoot a cube at current target

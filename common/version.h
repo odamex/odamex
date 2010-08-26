@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,10 +30,10 @@
 #endif
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "40"
-#define GAMEVER (0*256+44)
+#define CONFIGVERSIONSTR "50"
+#define GAMEVER (0*256+50)
 
-#define DOTVERSIONSTR "0.4.4"
+#define DOTVERSIONSTR "0.5.0"
 
 #define SERVERMAJ (gameversion / 256)
 #define SERVERMIN ((gameversion % 256) / 10)
@@ -45,7 +45,7 @@
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
 // earlier than this version.
-#define SAVESIG "ODAMEXSAVE042   "	// Needs to be exactly 16 chars long
+#define SAVESIG "ODAMEXSAVE050   "	// Needs to be exactly 16 chars long
 
 // denis - per-file svn version stamps
 class file_version

@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,6 +34,8 @@
 // GAME
 //
 void G_DeathMatchSpawnPlayer (player_t &player);
+
+void G_DoReborn (player_t &playernum);
 
 void G_DeferedPlayDemo (const char* demo);
 

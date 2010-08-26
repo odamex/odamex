@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,9 +17,10 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Moving object handling. Spawn functions.
+//	Moving object handling. Spawn functions.
 //
 //-----------------------------------------------------------------------------
+
 
 #include "m_alloc.h"
 #include "i_system.h"
@@ -40,8 +42,8 @@
 void G_PlayerReborn (player_t &player);
 
 EXTERN_CVAR (weaponstay)
-EXTERN_CVAR (itemsrespawn)
-EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (sv_itemsrespawn)
+EXTERN_CVAR (sv_nomonsters)
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 
@@ -417,7 +419,7 @@ void P_XYMovement (AActor *mo)
 		}
 
 		// killough 3/15/98: Allow objects to drop off
-		if (!P_TryMove (mo, ptryx, ptryy))
+		if (!P_TryMove (mo, ptryx, ptryy, true))
 		{
 			// blocked move
 			if (mo->player)
@@ -482,7 +484,7 @@ void P_XYMovement (AActor *mo)
 	if (mo->momx > -STOPSPEED && mo->momx < STOPSPEED
 		&& mo->momy > -STOPSPEED && mo->momy < STOPSPEED
 		&& (!player || (player->mo != mo)
-			|| !(player->cmd.ucmd.forwardmove | player->cmd.ucmd.sidemove)))
+		|| !(player->cmd.ucmd.forwardmove | player->cmd.ucmd.sidemove)))
 	{
 		// if in a walking frame, stop moving
 		// killough 10/98:
@@ -530,7 +532,9 @@ void P_ZMovement (AActor *mo)
    if (mo->player && mo->z < mo->floorz)
    {
       mo->player->viewheight -= mo->floorz-mo->z;
-      mo->player->deltaviewheight = (VIEWHEIGHT - mo->player->viewheight)>>3;
+
+      mo->player->deltaviewheight
+            = (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
 
     // adjust height
@@ -700,9 +704,10 @@ void P_NightmareRespawn (AActor *mobj)
 	// spawn the new monster
 	mthing = &mobj->spawnpoint;
 
-	if (mobj->info->flags & MF_SPAWNCEILING)
+    // spawn it
+    if (mobj->info->flags & MF_SPAWNCEILING)
 		z = ONCEILINGZ;
-	else
+    else
 		z = ONFLOORZ;
 
 	// spawn it
@@ -722,7 +727,6 @@ void P_NightmareRespawn (AActor *mobj)
 	// remove the old monster,
 	mobj->Destroy ();
 }
-
 
 //
 // [RH] Some new functions to work with Thing IDs. ------->
@@ -991,6 +995,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 {
 	state_t *st;
 
+	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= NUMMOBJTYPES)
 	{
 		I_Error ("Tried to spawn actor type %d\n", itype);
@@ -1009,7 +1014,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	translucency = info->translucency;
 	rndindex = M_Random();
 
-	if (skill != sk_nightmare)
+	if (sv_skill != sk_nightmare)
 		reactiontime = info->reactiontime;
 
 	lastlook = P_Random () % MAXPLAYERS_VANILLA;
@@ -1097,7 +1102,7 @@ void P_RespawnSpecials (void)
 		return;
 
 	// only respawn items in deathmatch
-	if (gametype == GM_COOP || !itemsrespawn)
+	if (sv_gametype == GM_COOP || !sv_itemsrespawn)
 		return;
 
 	// nothing left to respawn?
@@ -1219,9 +1224,11 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if (gametype != GM_COOP)
+	if (sv_gametype != GM_COOP)
+	{
 		for (int i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
+	}
 
 	if (consoleplayer().camera == p->mo)
 	{
@@ -1231,6 +1238,15 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	// [RH] If someone is in the way, kill them
 	P_TeleportMove (mobj, mobj->x, mobj->y, mobj->z, true);
+}
+
+//
+// P_PreservePlayer
+//
+void P_PreservePlayer(player_t &player)
+{
+	if(!serverside)
+		return;
 }
 
 //
@@ -1283,7 +1299,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (gametype == GM_COOP &&
+		if (sv_gametype == GM_COOP &&
 			(validplayer(p) && p.ingame()))
 		{
 			P_SpawnPlayer (p, mthing);
@@ -1300,7 +1316,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (mthing->type >= 5080 && mthing->type <= 5082)
 		return;
 
-	if (gametype != GM_COOP)
+	if (sv_gametype != GM_COOP)
 	{
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
@@ -1318,12 +1334,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// check for apropriate skill level
-	if (skill == sk_baby)
+	if (sv_skill == sk_baby)
 		bit = 1;
-	else if (skill == sk_nightmare)
+	else if (sv_skill == sk_nightmare)
 		bit = 4;
 	else
-		bit = 1 << ((int)skill - 2);
+		bit = 1 << ((int)sv_skill - 2);
 
 	if (!(mthing->flags & bit))
 		return;
@@ -1354,8 +1370,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
 		Printf (PRINT_HIGH, "Unknown type %i at (%i, %i)\n",
-				 mthing->type,
-				 mthing->x, mthing->y);
+			mthing->type,
+			mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
@@ -1368,7 +1384,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (sv_gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
@@ -1392,7 +1408,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [csDoom] don't spawn any monsters
-	if (nomonsters || !serverside)
+	if (sv_nomonsters || !serverside)
 	{
 		if (i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL) )
 		{
@@ -1460,12 +1476,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 //		P_DeactivateMobj (mobj);
 }
 
-
-
 //
 // GAME SPAWN FUNCTIONS
 //
-
 
 //
 // P_SpawnPuff
@@ -1500,6 +1513,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 //
 void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
 {
+	// denis - not clientside
 	if(!serverside)
 		return;
 
@@ -1538,14 +1552,13 @@ BOOL P_CheckMissileSpawn (AActor* th)
 
 	// killough 3/15/98: no dropoff (really = don't care for missiles)
 
-	if (!P_TryMove (th, th->x, th->y))
+	if (!P_TryMove (th, th->x, th->y, false))
 	{
 		P_ExplodeMissile (th);
 		return false;
 	}
 	return true;
 }
-
 
 //
 // P_SpawnMissile

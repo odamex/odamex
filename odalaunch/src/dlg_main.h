@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 #include "lst_servers.h"
 #include "lst_srvdetails.h"
 
+#include "dlg_about.h"
 #include "dlg_config.h"
 #include "dlg_servers.h"
 #include "frm_odaget.h"
@@ -61,7 +62,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		Server          NullServer;
         Server          *QServer;
-        MasterServer    *MServer;
+        MasterServer    MServer;
         
         launchercfg_t launchercfg_s;
 	protected:
@@ -93,6 +94,10 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		wxInt32 FindServer(wxString);
 		wxInt32 FindServerInList(wxString);
+		wxInt32 GetSelectedServerListIndex();
+		wxInt32 GetSelectedServerArrayIndex();
+
+		bool IsAddressValid(wxString);
 		
 		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
             const wxString &waddirs, const wxString &Password = wxT(""));
@@ -103,6 +108,7 @@ class dlgMain : public wxFrame, wxThreadHelper
         
         dlgConfig *config_dlg;
         dlgServers *server_dlg;
+        dlgAbout *AboutDialog;
         frmOdaGet *OdaGet;
         
 		wxInt32 TotalPlayers;
@@ -196,6 +202,19 @@ class dlgMain : public wxFrame, wxThreadHelper
         } wtrs_struct_t;
         
         wtrs_struct_t wtrs_Result;
+
+        // Posts a message from the main thread to the monitor thread
+        bool MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index = -1, 
+            wxInt32 ListIndex = -1);
+
+        // Posts a message from a secondary thread to the main thread
+        void MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal, 
+            wxInt32 Index, wxInt32 ListIndex);
+        
+        // Various functions for communicating with masters and servers
+        bool MonThrGetMasterList();
+        void MonThrGetServerList();
+        void MonThrGetSingleServer();
         
         void OnMonitorSignal(wxCommandEvent&);
         void OnWorkerSignal(wxCommandEvent&);

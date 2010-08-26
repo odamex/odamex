@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -81,8 +82,8 @@ EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
 EXTERN_CVAR (autoadjust_video_settings)
 
-EXTERN_CVAR (dimamount)
-EXTERN_CVAR (dimcolor)
+EXTERN_CVAR (ui_dimamount)
+EXTERN_CVAR (ui_dimcolor)
 
 extern "C" {
 palette_t *DefaultPalette;
@@ -233,12 +234,12 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 
 void DCanvas::Dim () const
 {
-	if (dimamount < 0)
-		dimamount.Set (0.0f);
-	else if (dimamount > 1)
-		dimamount.Set (1.0f);
+	if (ui_dimamount < 0)
+		ui_dimamount.Set (0.0f);
+	else if (ui_dimamount > 1)
+		ui_dimamount.Set (1.0f);
 
-	if (dimamount == 0)
+	if (ui_dimamount == 0)
 		return;
 
 	if (is8bit())
@@ -253,10 +254,10 @@ void DCanvas::Dim () const
 			unsigned int *fg2rgb;
 			fixed_t amount;
 
-			amount = (fixed_t)(dimamount * 64);
+			amount = (fixed_t)(ui_dimamount * 64);
 			fg2rgb = Col2RGB8[amount];
 			bg2rgb = Col2RGB8[64-amount];
-			fg = fg2rgb[V_GetColorFromString (DefaultPalette->basecolors, dimcolor.cstring())];
+			fg = fg2rgb[V_GetColorFromString (DefaultPalette->basecolors, ui_dimcolor.cstring())];
 		}
 
 		spot = buffer;
@@ -276,11 +277,11 @@ void DCanvas::Dim () const
 	{
 		int x, y;
 		int *line;
-		int fill = V_GetColorFromString (NULL, dimcolor.cstring());
+		int fill = V_GetColorFromString (NULL, ui_dimcolor.cstring());
 
 		line = (int *)(screen->buffer);
 
-		if (dimamount == 1.0)
+		if (ui_dimamount == 1.0)
 		{
 			fill = (fill >> 2) & 0x3f3f3f;
 			for (y = 0; y < height; y++)
@@ -292,7 +293,7 @@ void DCanvas::Dim () const
 				line += pitch >> 2;
 			}
 		}
-		else if (dimamount == 2.0)
+		else if (ui_dimamount == 2.0)
 		{
 			fill = (fill >> 1) & 0x7f7f7f;
 			for (y = 0; y < height; y++)
@@ -304,7 +305,7 @@ void DCanvas::Dim () const
 				line += pitch >> 2;
 			}
 		}
-		else if (dimamount == 3.0)
+		else if (ui_dimamount == 3.0)
 		{
 			fill = fill - ((fill >> 2) & 0x3f3f3f);
 			for (y = 0; y < height; y++)
@@ -470,16 +471,30 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	}
 
 	I_SetMode (width, height, bits);
+	
+	/*
+	CleanXfac = ((height * 4)/3) / 320;
 
-	//CleanXfac = width / 320;
-	CleanYfac = height / 200;
-
-	if(!CleanYfac)
-		CleanYfac = 1;
+	if(!CleanXfac)
+		CleanXfac = 1;
 		
 	// [ML] The height determines the scale, these should always be the same 
 	// or stuff like the menu will be stretched on widescreen resolutions
-	CleanXfac = CleanYfac;
+	CleanYfac = CleanXfac;
+	*/
+	
+	// [ML] 7/30/10: Going back to this style, they'll still be the same in the end
+	// This uses the smaller of the two results. It's still not ideal but at least
+	// this allows con_scaletext to have some purpose...
+	
+    CleanXfac = width / 320; 
+    CleanYfac = height / 200; 
+    if (CleanXfac < CleanYfac) 
+        CleanYfac = CleanXfac; 
+    else 
+        CleanXfac = CleanYfac;
+
+
 
 	CleanWidth = width / CleanXfac;
 	CleanHeight = height / CleanYfac;
@@ -499,6 +514,8 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	R_MultiresInit ();
 
 //	M_RefreshModesList (); // [Toke - crap]
+
+    gotconback = false;
 
 	return true;
 }
@@ -537,13 +554,15 @@ BOOL V_SetResolution (int width, int height, int bits)
 BEGIN_COMMAND (vid_setmode)
 {
 	BOOL	goodmode = false;
-	int		width = 0, height = screen->height;
+	int		width = 0, height = 0;
 	int		bits = DisplayBits;
 
 	if (argc > 1) {
 		width = atoi (argv[1]);
 		if (argc > 2) {
 			height = atoi (argv[2]);
+			if (!height)
+                height = screen->height;
 			if (argc > 3) {
 				bits = 8;
 				//bits = atoi (argv[3]);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 
 extern int shotclock;
 
-EXTERN_CVAR (teamsinplay)
+EXTERN_CVAR (sv_teamsinplay)
 
 EXTERN_CVAR (ctf_manualreturn)
 EXTERN_CVAR (ctf_flagathometoscore)
@@ -210,7 +210,7 @@ void SV_FlagScore (player_t &player, flag_t f)
 	CTF_SpawnFlag(f);
 
 	// checks to see if a team won a game
-	if(TEAMpoints[player.userinfo.team] >= scorelimit && scorelimit != 0)
+	if(TEAMpoints[player.userinfo.team] >= sv_scorelimit && sv_scorelimit != 0)
 	{
 		SV_BroadcastPrintf (PRINT_HIGH, "Score limit reached. %s team wins!\n", team_names[player.userinfo.team]);
 		shotclock = TICRATE*2;
@@ -415,7 +415,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
     {
         case TEAM_BLUE:
         {
-            if (gametype != GM_CTF && teamsinplay < 1)
+            if (sv_gametype != GM_CTF && sv_teamsinplay < 1)
                 break;
             
             for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
@@ -431,7 +431,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
         
         case TEAM_RED:
         {
-            if (gametype != GM_CTF && teamsinplay < 2)
+            if (sv_gametype != GM_CTF && sv_teamsinplay < 2)
                 break;
                 
             for (size_t j = 0; j < MaxRedTeamStarts; ++j)
@@ -452,14 +452,14 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
         break;
     }
 
-	if (gametype == GM_CTF) {
+	if (sv_gametype == GM_CTF) {
 		if (MaxBlueTeamStarts) return &blueteamstarts[0];
 		else if (MaxRedTeamStarts) return &redteamstarts[0];
 	} else {
-		if (teamsinplay >= 1 && MaxBlueTeamStarts)
+		if (sv_teamsinplay >= 1 && MaxBlueTeamStarts)
 			return &blueteamstarts[0];
 		else 
-		if (teamsinplay >= 2 && MaxRedTeamStarts)
+		if (sv_teamsinplay >= 2 && MaxRedTeamStarts)
 			return &redteamstarts[0];
 	}
 

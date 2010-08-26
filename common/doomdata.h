@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -120,6 +121,7 @@ typedef struct
 // the texture at the top pixel of the line for both
 // top and bottom textures (use next to windows).
 
+
 #define ML_DONTPEGTOP		0x0008	// upper texture unpegged
 #define ML_DONTPEGBOTTOM	0x0010	// lower texture unpegged
 #define ML_SECRET			0x0020	// don't map as two sided: IT'S A SECRET!
@@ -139,6 +141,7 @@ typedef struct
 #define SPAC_PUSH		4	// when player/monster pushes line
 #define SPAC_PCROSS		5	// when projectile crosses line
 #define SPAC_USETHROUGH	6	// SPAC_USE, but passes it through
+#define SPAC_CROSSTHROUGH 7 // SPAC_CROSS, but passes it through
 
 // [RH] Monsters (as well as players) can active the line
 #define ML_MONSTERSCANACTIVATE		0x2000

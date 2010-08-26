@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -48,7 +48,7 @@
 
 extern bool predicting;
 
-EXTERN_CVAR (doubleammo)
+EXTERN_CVAR (sv_doubleammo)
 
 static void PickupMessage (AActor *toucher, const char *message)
 {
@@ -151,8 +151,8 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 	else
 		num = clipammo[ammo]/2;
 
-	if (skill == sk_baby
-		|| skill == sk_nightmare || doubleammo)
+	if (sv_skill == sk_baby
+		|| sv_skill == sk_nightmare || sv_doubleammo)
 	{
 		// give double ammo in trainer mode,
 		// you'll need in nightmare
@@ -218,7 +218,7 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 	return true;
 }
 
-EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (sv_weaponstay)
 
 //
 // P_GiveWeapon
@@ -234,7 +234,7 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 	if ((state->frame & FF_FRAMEMASK) >= sprites[state->sprite].numframes)
 		return false;
 
-	if (multiplayer && weaponstay && !dropped)
+	if (multiplayer && sv_weaponstay && !dropped)
 	{
 		if (player->weaponowned[weapon])
 			return false;
@@ -242,7 +242,7 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
-		if (gametype != GM_COOP)
+		if (sv_gametype != GM_COOP)
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 5);
 		else
 			P_GiveAmmo (player, weaponinfo[weapon].ammo, 2);
@@ -405,11 +405,10 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 
 	fixed_t delta = special->z - toucher->z;
 
-	if (delta > toucher->height || delta < -8*FRACUNIT)
-	{
-		// out of reach
+    // Out of reach
+    // ...but leave this to the server to handle if the client is connected
+	if ((delta > toucher->height || delta < -8*FRACUNIT) && !(clientside && network_game))
 		return;
-	}
 
 	sound = 0;
 	player = toucher->player;
@@ -717,7 +716,9 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		return;
 
 	  default:
-		I_Error ("P_SpecialThing: Unknown gettable thing %d\n", special->sprite);
+		//I_Error ("P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+		Printf (PRINT_HIGH,"P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+		return;
 	}
 
 	if (serverside && special->flags & MF_COUNTITEM)
@@ -852,8 +853,8 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		}
 
 		// play die sound
-		if (target->player != &consoleplayer() && !joinkill)
-			A_PlayerScream(target);
+        // if (target->player != &consoleplayer() && !joinkill)
+        //     A_PlayerScream(target);
 	}
 
 	if(target->health > 0) // denis - when this function is used standalone
@@ -958,7 +959,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	}
 
 	player = target->player;
-	if (player && skill == sk_baby)
+	if (player && sv_skill == sk_baby)
 		damage >>= 1;	// take half damage in trainer mode
 
 	// Some close combat weapons should not
@@ -996,7 +997,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	if (player)
 	{
 		// end of game hell hack
-		if(gametype == GM_COOP /*|| allowexit*/)
+		if(sv_gametype == GM_COOP /*|| sv_allowexit*/)
 		if ((target->subsector->sector->special & 255) == dDamage_End
 			&& damage >= target->health)
 		{
@@ -1029,8 +1030,8 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 			damage -= saved;
 		}
 
-		// only armordamage with friendlyfire
-		//if (!friendlyfire && (teamplay || !deathmatch) && source && source->player && target != source &&
+		// only armordamage with sv_friendlyfire
+		//if (!sv_friendlyfireaaaaaaaaaaaaaaaaaaa && (teamplay || !deathmatch) && source && source->player && target != source &&
 		//	target->player->userinfo.team == source->player->userinfo.team && (mod != MOD_TELEFRAG))
 		//		damage = 0;
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,6 +31,7 @@
 #include "c_console.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
+#include "c_bind.h"
 #include "hu_stuff.h"
 #include "i_system.h"
 #include "i_video.h"
@@ -169,10 +170,10 @@ CVAR_FUNC_IMPL (msgmidcolor)
 //       scrolling up. Otherwise, any new messages will
 //       automatically pull the console back to the bottom.
 //
-// conscrlock 0 = All new lines bring scroll to the bottom.
-// conscrlock 1 = Only input commands bring scroll to the bottom.
-// conscrlock 2 = Nothing brings scroll to the bottom.
-EXTERN_CVAR (conscrlock)
+// con_scrlock 0 = All new lines bring scroll to the bottom.
+// con_scrlock 1 = Only input commands bring scroll to the bottom.
+// con_scrlock 2 = Nothing brings scroll to the bottom.
+EXTERN_CVAR (con_scrlock)
 
 //
 // C_Close
@@ -221,8 +222,6 @@ void C_InitConsole (int width, int height, int bits, BOOL ingame)
 			int num;
 
 			num = W_CheckNumForName (gameinfo.consoleBack);
-			if (num == -1)
-				stylize = true;
 
 			if (gameinfo.gametype & GAME_Heretic) {
 				num = W_GetNumForName (gameinfo.consoleBack);
@@ -235,14 +234,15 @@ void C_InitConsole (int width, int height, int bits, BOOL ingame)
 			if (isRaw)
 				conback = I_AllocateScreen (320, 200, bits);
 			else
-				conback = I_AllocateScreen (bg->width(), bg->height(), bits);
+				conback = I_AllocateScreen (screen->width, screen->height, 8);
 
 			conback->Lock ();
 
 			if (isRaw)
 				conback->DrawBlock (0, 0, 320, 200, (byte *)bg);
 			else
-				conback->DrawPatch (bg, 0, 0);
+				conback->DrawPatch (bg, (screen->width/2)-(bg->width()/2), (screen->height/2)-(bg->height()/2));
+				//conback->DrawPatch (gg, ((screen->width/2)-(gg->width()/2))+3*CleanXfac, ((screen->height/2)-(gg->height()/2)) + 15*CleanYfac);
 
 			if (stylize)
 			{
@@ -518,7 +518,7 @@ int PrintString (int printlevel, const char *outline)
 			{
 				SkipRows = 1;
 
-				if (conscrlock > 0 && RowAdjust != 0)
+				if (con_scrlock > 0 && RowAdjust != 0)
 					RowAdjust++;
 				else
 					RowAdjust = 0;
@@ -834,7 +834,7 @@ void C_DrawConsole (void)
          if(altinfullscreen)
          {
             altconback->Blit (0, 0, altconback->width, altconback->height,
-                           screen, 0, 0, screen->width, visheight);
+                           screen, 0, 0, altconback->width, altconback->height);
          }
          else
          {
@@ -969,7 +969,9 @@ void C_ToggleConsole (void)
 
 void C_HideConsole (void)
 {
-//	if (gamestate != GS_FULLCONSOLE && gamestate != GS_STARTUP)
+    // [Russell] - Prevent console from going up when downloading files or
+    // connecting
+    if (gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
 	{
 		ConsoleState = c_up;
 		ConBottom = 0;
@@ -1020,6 +1022,8 @@ static void C_StartPosReset (void)
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 {
+	const char *cmd = C_GetBinding (ev->data1);
+
 	switch (ev->data1)
 	{
 	case KEY_TAB:
@@ -1226,8 +1230,8 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			// Execute command line (ENTER)
 			buffer[2 + buffer[0]] = 0;
 
-			if (conscrlock == 1) // NES - If conscrlock = 1, send console scroll to bottom.
-				RowAdjust = 0;   // conscrlock = 0 does it automatically.
+			if (con_scrlock == 1) // NES - If con_scrlock = 1, send console scroll to bottom.
+				RowAdjust = 0;   // con_scrlock = 0 does it automatically.
 
 			if (HistHead && stricmp (HistHead->String, (char *)&buffer[2]) == 0)
 			{
@@ -1272,7 +1276,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			AddCommandString ((char *)&buffer[2]);
 			TabbedLast = false;
 		}
-		else if (ev->data2 == '`' || ev->data1 == KEY_ESCAPE)
+		else if (ev->data1 == KEY_ESCAPE || (cmd && !strcmp(cmd, "toggleconsole")))
 		{
 			// Close console, clear command line, but if we're in the
 			// fullscreen console mode, there's nothing to fall back on
@@ -1281,7 +1285,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			{
 				C_HideConsole();
 				gamestate = GS_DEMOSCREEN;
-				if (ev->data2 == '`')
+				if (cmd && !strcmp(cmd, "toggleconsole"))
 					return true;
 				return false;
 			}
@@ -1493,9 +1497,14 @@ static brokenlines_t *MidMsg = NULL;
 static int MidTicker = 0, MidLines;
 EXTERN_CVAR (con_midtime)
 
-void C_MidPrint (const char *msg, player_t *p)
+void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
 	int i;
+    std::string Str;
+    size_t StrLength;
+    
+    if (!msgtime)
+        msgtime = con_midtime;
 
 	if (MidMsg)
 		V_FreeBrokenLines (MidMsg);
@@ -1503,17 +1512,29 @@ void C_MidPrint (const char *msg, player_t *p)
 	if (msg)
 	{
 		midprinting = true;
-		//Printf (PRINT_HIGH,
-		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n%s\n"
-		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n", msg);
+
+        // [Russell] - convert textual "\n" into the binary representation for
+        // line breaking
+        Str = msg;
+        StrLength = Str.length();
+
+        for (i = 0; i < StrLength && i + 1 < StrLength; ++i)
+        {
+            if ((Str[i] == '\\') && (Str[i + 1] == 'n'))
+            {
+                Str[i] = '\n';
+                Str = Str.erase(i + 1, 1);
+            }
+        }
+
+        msg = Str.c_str();
+
 		Printf (PRINT_HIGH, "%s\n", msg);
 		midprinting = false;
 
 		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)msg)) )
 		{
-			MidTicker = (int)(con_midtime * TICRATE) + gametic;
+			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
 			for (i = 0; MidMsg[i].width != -1; i++)
 				;
@@ -1570,10 +1591,10 @@ void C_DrawMid (void)
 }
 
 // denis - moved secret discovery message to this function
-EXTERN_CVAR (revealsecrets)
+EXTERN_CVAR (hud_revealsecrets)
 void C_RevealSecret()
 {
-	if(!revealsecrets || gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for revealsecrets
+	if(!hud_revealsecrets || sv_gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for hud_revealsecrets
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint ("A secret is revealed!");

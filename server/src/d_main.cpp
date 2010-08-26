@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -71,11 +72,11 @@
 #include "cmdlib.h"
 #include "s_sound.h"
 #include "m_swap.h"
-#include "v_text.h"
 #include "gi.h"
 #include "sv_main.h"
 
-EXTERN_CVAR (timelimit)
+EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (waddirs)
 
 extern size_t got_heapsize;
 
@@ -650,6 +651,8 @@ std::string BaseFileSearch (std::string file, std::string ext, std::string hashd
 	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
     AddSearchDir(dirs, getenv("HOME"), separator);
+    AddSearchDir(dirs, waddirs.cstring(), separator);
+
 
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
@@ -688,9 +691,15 @@ void D_AddDefWads (std::string iwad)
 	}
 
 	I_SetTitleString (IdentifyVersion(iwad).c_str());
+}
 
+//
+//D D_AddDefSkins
+//
+/*void D_AddDefSkins (void)
+{
 	// [RH] Add any .wad files in the skins directory
-/*#ifndef UNIX // denis - fixme - 1) _findnext not implemented on linux or osx, use opendir 2) server does not need skins, does it?
+#ifndef UNIX // denis - fixme - 1) _findnext not implemented on linux or osx, use opendir 2) server does not need skins, does it?
 	{
 		char curdir[256];
 
@@ -751,9 +760,28 @@ void D_AddDefWads (std::string iwad)
 			chdir (curdir);
 		}
 	}
-#endif*/
+#endif
+}*/
 
-	modifiedgame = false;
+//
+// D_AddCmdParameterFiles
+// Add the files specified with -file, do this only when it first loads
+//
+void D_AddCmdParameterFiles(void)
+{
+    modifiedgame = false;
+	
+	DArgs files = Args.GatherFiles ("-file", ".wad", true);
+	if (files.NumArgs() > 0)
+	{
+		modifiedgame = true;
+		for (size_t i = 0; i < files.NumArgs(); i++)
+		{
+			std::string file = BaseFileSearch (files.GetArg (i), ".WAD");
+			if (file.length())
+				wadfiles.push_back(file);
+		}
+	}	
 }
 
 //
@@ -761,7 +789,7 @@ void D_AddDefWads (std::string iwad)
 //
 // [Russell] - Change the meaning, this will load multiple patch files if
 //             specified
-void D_DoDefDehackedPatch (const std::vector<std::string> &patch_files)
+void D_DoDefDehackedPatch (const std::vector<std::string> patch_files = std::vector<std::string>())
 {
     DArgs files;
     BOOL noDef = false;
@@ -899,11 +927,12 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 	// Restart the memory manager
 	Z_Init();
-
+	
 	wadfiles.clear();
+	modifiedgame = false;
 
 	std::string custwad;
-	if(wadnames.empty() == false && W_IsIWAD(wadnames[0]))
+	if(wadnames.empty() == false)
 		custwad = wadnames[0];
 
 	D_AddDefWads(custwad);
@@ -956,6 +985,8 @@ int teamplayset;
 
 void D_DoomMain (void)
 {
+	const char *iwad;
+	
 	M_ClearRandom();
 
 	gamestate = GS_STARTUP;
@@ -965,24 +996,34 @@ void D_DoomMain (void)
 		I_FatalError ("Could not initialize LZO routines");
 
     C_ExecCmdLineParams (false, true);	// [Nes] test for +logfile command
-
+	
+	// Always log by default
     if (!LOG.is_open())
     	C_DoCommand("logfile");
 
 	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
 
-	I_Init ();
-
-	D_CheckNetGame ();
-
 	M_LoadDefaults ();			// load before initing other systems
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
-	// Base systems have been inited; enable cvar callbacks
-	cvar_t::EnableCallbacks ();
+	iwad = Args.CheckValue("-iwad");
+	if(!iwad)
+		iwad = "";
 
+	D_AddDefWads(iwad);
+	D_AddCmdParameterFiles();
+
+	wadhashes = W_InitMultipleFiles (wadfiles);
+	SV_InitMultipleFiles (wadfiles);
+	
 	// [RH] Initialize configurable strings.
 	D_InitStrings ();
+	D_DoDefDehackedPatch();
+	
+	I_Init ();
+
+	// Base systems have been inited; enable cvar callbacks
+	cvar_t::EnableCallbacks ();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
 	if (STARTUP1[0])	Printf (PRINT_HIGH, "%s\n", STARTUP1);
@@ -999,7 +1040,7 @@ void D_DoomMain (void)
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{
-		skill.Set (val[0]-'0');
+		sv_skill.Set (val[0]-'0');
 	}
 
 	if (devparm)
@@ -1010,20 +1051,36 @@ void D_DoomMain (void)
 	{
 		double time = atof (v);
 		Printf (PRINT_HIGH, "Levels will end after %g minute%s.\n", time, time > 1 ? "s" : "");
-		timelimit.Set ((float)time);
+		sv_timelimit.Set ((float)time);
 	}
 
 	const char *w = Args.CheckValue ("-avg");
 	if (w)
 	{
 		Printf (PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
-		timelimit.Set (20);
+		sv_timelimit.Set (20);
 	}
+	
+	// [RH] Now that all text strings are set up,
+	// insert them into the level and cluster data.
+	G_SetLevelStrings ();
+
+	// [RH] Parse any SNDINFO lumps
+	S_ParseSndInfo();
 
 	// Check for -file in shareware
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_FatalError ("You cannot -file with the shareware version. Register!");
 
+	Printf (PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
+	R_Init ();
+
+	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
+	P_Init ();
+		
+	Printf (PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
+	D_CheckNetGame ();
+		
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems ();
 
@@ -1031,6 +1088,10 @@ void D_DoomMain (void)
 	// about to begin the game.
 	cvar_t::EnableNoSet ();
 
+	// [RH] Now that all game subsystems have been initialized,
+	// do all commands on the command line other than +set
+	C_ExecCmdLineParams (false, false);
+	
 	Printf(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
 
 #ifdef UNIX
@@ -1039,36 +1100,12 @@ void D_DoomMain (void)
 #endif
 
 	// Use wads mentioned on the commandline to start with
-	std::vector<std::string> start_wads;
-	std::string custwad;
+	//std::vector<std::string> start_wads;
+	//std::string custwad;
 
-	const char *iwad = Args.CheckValue("-iwad");
-	if(!iwad)
-		custwad = "";
-	else
-	{
-		custwad = iwad;
-		FixPathSeparator (custwad);
-	}
+	//iwad = Args.CheckValue("-iwad");
+	//D_DoomWadReboot(start_wads);
 
-	start_wads.push_back(custwad);
-
-	DArgs files = Args.GatherFiles ("-file", ".wad", true);
-	if (files.NumArgs() > 0)
-	{
-		modifiedgame = true;
-		for (size_t i = 0; i < files.NumArgs(); i++)
-		{
-			start_wads.push_back(files.GetArg (i));
-		}
-	}
-
-	D_DoomWadReboot(start_wads);
-
-
-	// [RH] Now that all game subsystems have been initialized,
-	// do all commands on the command line other than +set
-	C_ExecCmdLineParams (false, false);
 
 	unsigned p = Args.CheckParm ("-warp");
 	if (p && p < Args.NumArgs() - (1+(gameinfo.flags & GI_MAPxx ? 0 : 1)))
@@ -1101,13 +1138,9 @@ void D_DoomMain (void)
 
 	strncpy(level.mapname, startmap, sizeof(level.mapname));
 
-    gamestate = GS_STARTUP;
-
 	G_ChangeMap ();
 
 	D_DoomLoop (); // never returns
 }
 
 VERSION_CONTROL (d_main_cpp, "$Id$")
-
-

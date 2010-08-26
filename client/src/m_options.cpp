@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -64,6 +64,10 @@
 // Data.
 #include "m_menu.h"
 
+#define MENUBOXWIDTH	236
+#define MENUBOXHEIGHT	200
+#define TEAMPLAYBORDER	4
+
 //
 // defaulted values
 //
@@ -77,7 +81,7 @@ EXTERN_CVAR (mouse_type)
 EXTERN_CVAR (novert)
 
 // [ML] 09/4/06: Show secret revealed message, 0 = off, 1 = on
-EXTERN_CVAR (revealsecrets)
+EXTERN_CVAR (hud_revealsecrets)
 
 // Show messages has default, 0 = off, 1 = on
 EXTERN_CVAR (show_messages)
@@ -92,9 +96,19 @@ EXTERN_CVAR (cl_run)
 EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookspring)
 EXTERN_CVAR (lookstrafe)
-EXTERN_CVAR (crosshair)
+EXTERN_CVAR (hud_crosshair)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (cl_autoaim)
+
+// [Ralphis - Menu] Compatibility Menu
+EXTERN_CVAR (co_level8soundfeature)
+EXTERN_CVAR (hud_targetcount)
+EXTERN_CVAR (hud_scale)
+EXTERN_CVAR (hud_transparency)
+EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR (r_showendoom)
+EXTERN_CVAR (co_allowdropoff)
+EXTERN_CVAR (co_realactorheight)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -104,6 +118,13 @@ EXTERN_CVAR (m_forward)
 EXTERN_CVAR (displaymouse)
 EXTERN_CVAR (mouse_acceleration)
 EXTERN_CVAR (mouse_threshold)
+
+// [Ralphis - Menu] Sound Menu
+EXTERN_CVAR (snd_musicvolume)
+EXTERN_CVAR (snd_sfxvolume)
+EXTERN_CVAR (snd_crossover)
+EXTERN_CVAR (cl_connectalert)
+EXTERN_CVAR (cl_disconnectalert)
 
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
@@ -136,6 +157,12 @@ value_t OffOn[2] = {
 	{ 1.0, "Off" }
 };
 
+value_t OnOffAuto[3] = {
+	{ 0.0, "Off" },
+	{ 1.0, "On" },
+	{ 2.0, "Auto" }
+};
+
 menu_t  *CurrentMenu;
 int		CurrentItem;
 static BOOL	WaitingForKey;
@@ -151,31 +178,33 @@ static itemtype OldType;
 static void PlayerSetup (void);
 static void CustomizeControls (void);
 static void VideoOptions (void);
+static void SoundOptions (void);
+static void CompatOptions (void);
 static void GoToConsole (void);
 void Reset2Defaults (void);
 void Reset2Saved (void);
-
-EXTERN_CVAR (snd_musicvolume)
 
 static void SetVidMode (void);
 
 static menuitem_t OptionItems[] =
 {
-	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
-	{ more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
-	{ more,		"Mouse Setup" ,			{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
-	{ more,		"Go to console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
-	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
-	{ more,		"Set video mode",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SetVidMode} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ slider,	"Music volume", 		{&snd_musicvolume},		{0.0}, {1.0},	{0.1}, {NULL} },
-	{ slider,	"Sound volume",			{&snd_sfxvolume},		{0.0}, {1.0},	{0.1}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Lookspring",			{&lookspring},			{2.0}, {0.0},	{0.0}, {OnOff} },
+    { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
+ 	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
+	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
+//	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
+ 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+ 	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CompatOptions} },
+	{ more,		"Sound Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SoundOptions} },
+ 	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
+	{ more,		"Set Video Mode",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SetVidMode} },
+    { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ more,		"Go To Console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
+    { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete,	"Always Run",			{&cl_run},				{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
-	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
+ 	{ discrete, "Lookspring",			{&lookspring},			{2.0}, {0.0},	{0.0}, {OnOff} },
+ 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+ 	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
+ 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
 };
 
 menu_t OptionMenu = {
@@ -186,7 +215,79 @@ menu_t OptionMenu = {
 	OptionItems,
 };
 
+/*=======================================
+ *
+ * Controls Menu
+ *
+ *=======================================*/
 
+static menuitem_t ControlsItems[] = {
+	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
+	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
+	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
+	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveright"} },
+	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
+	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
+	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
+	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
+	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
+	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
+	{ control,	"Toggle Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
+	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
+	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
+	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+movedown"} },
+	{ control,	"Stop flying",			{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"land"} },
+	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
+	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
+	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
+	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
+	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
+	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
+	{ control,	"Spectate",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spectate"} },
+	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
+	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_main"} },
+	{ control,	"Help menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_help"} },
+	{ control,	"Save menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_save"} },
+	{ control,	"Load menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_load"} },
+	{ control,	"Options menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_options"} },
+	{ control,	"Display options",	    {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_display"} },	
+	{ control,	"Player setup menu",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_player"} },
+	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_keys"} },
+	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_video"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ bricktext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+    { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizeup"} },		
+	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizedown"} },	
+	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
+	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"screenshot"} },
+	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} },
+	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_endgame"} },
+	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
+};
+
+menu_t ControlsMenu = {
+	"M_CONTRO",
+	3,
+	STACKARRAY_LENGTH(ControlsItems),
+	0,
+	ControlsItems,
+	2,
+};
 
 // -------------------------------------------------------
 //
@@ -209,8 +310,6 @@ static menuitem_t MouseItems[] =
 	{ slider	,	"Horizontal Sensitivity" 				, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
 	{ slider	,	"Vertical Sensitivity"					, {&m_pitch},			{0.0},		{1.85},		{0.025},	{NULL}						},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	/*{ discrete,	"Use Dynamic Resolution"				, {&dynres_state},		{2.0},		{0.0},		{0.0},		{OnOff}						},*/
-	/*{ slider	,	"Dynamic Resolution"					, {&dynresval},			{1.001},	{1.232},	{0.003},	{NULL}						},*/
 	{ discrete	,	"Horizontal Movement"					, {&lookstrafe},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Vertical Movement"						, {&novert},			{2.0},		{0.0},		{0.0},		{OffOn}						},
 	{ slider	,	"Horizontal Movement Speed"				, {&m_side},			{0.0},		{15},		{0.5},		{NULL}						},
@@ -230,69 +329,51 @@ menu_t MouseMenu = {
     MouseItems,
 };
 
+ /*=======================================
+  *
+  * Sound Menu [Ralphis]
+  *
+  *=======================================*/
 
+static menuitem_t SoundItems[] = {
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
+	{ bricktext ,   "Sound Levels"                          , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
+	{ slider    ,	"Music Volume"                          , {&snd_musicvolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
+	{ slider    ,	"Sound Volume"                          , {&snd_sfxvolume},		{0.0},      {1.0},	    {0.1},      {NULL} },
+	{ discrete  ,   "Stereo Switch"                         , {&snd_crossover},	    {2.0},		{0.0},		{0.0},		{OnOff} },	
+	{ redtext   ,	" "                                     , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
+	{ bricktext ,   "Multiplayer Options"                   , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
+	{ discrete  ,   "Player Connect Alert"                  , {&cl_connectalert},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete  ,   "Player Disconnect Alert"               , {&cl_disconnectalert},{2.0},		{0.0},		{0.0},		{OnOff} }	
+ };
 
-
-
-/*=======================================
- *
- * Controls Menu
- *
- *=======================================*/
-
-static menuitem_t ControlsItems[] = {
-	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Controls",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
-	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
-	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
-	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
-	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveright"} },
-	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
-	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
-	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
-	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
-	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+movedown"} },
-	{ control,	"Stop flying",			{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"land"} },
-	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
-	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
-	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
-	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
-	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
-	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
-	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Chat",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
-	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Weapons",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
-	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ whitetext,"Inventory",			{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Activate item",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"invuse"} },
-	{ control,	"Activate all items",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"invuseall"} },
-	{ control,	"Next item",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"invnext"} },
-	{ control,	"Previous item",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"invprev"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ whitetext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Toggle automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
-	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
-	{ control,	"Coop spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
-	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"screenshot"} },
-	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} }
+menu_t SoundMenu = {
+	"M_SOUND",
+	2,
+	STACKARRAY_LENGTH(SoundItems),
+	177,
+	SoundItems,
 };
 
-menu_t ControlsMenu = {
-	"Customize Controls",
-	3,
-	STACKARRAY_LENGTH(ControlsItems),
-	0,
-	ControlsItems,
+ /*=======================================
+  *
+  * Compatibility Menu [Ralphis]
+  *
+  *=======================================*/
+
+static menuitem_t CompatItems[] = {
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
+	{ bricktext ,   "Enhanced Interaction"                  , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
+	{ discrete  ,	"Items drop off ledges"                 , {&co_allowdropoff},	{2.0},      {0.0},	    {0.0},      {OnOff} },
+	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },	
+ };
+
+menu_t CompatMenu = {
+	"M_COMPAT",
 	2,
+	STACKARRAY_LENGTH(CompatItems),
+	177,
+	CompatItems,
 };
 
 /*=======================================
@@ -301,18 +382,24 @@ menu_t ControlsMenu = {
  *
  *=======================================*/
 static void StartMessagesMenu (void);
+static void StartAutomapMenu (void);
 void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
-EXTERN_CVAR (st_scale)
+EXTERN_CVAR (am_ovshare)
+EXTERN_CVAR (am_showmonsters)
+EXTERN_CVAR (am_showsecrets)
+EXTERN_CVAR (am_showtime)
+EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
+EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
-EXTERN_CVAR (wipetype)
+EXTERN_CVAR (r_wipetype)
 EXTERN_CVAR (screenblocks)
-EXTERN_CVAR (dimamount)
-EXTERN_CVAR (usehighresboard)
-EXTERN_CVAR (show_endoom)
+EXTERN_CVAR (ui_dimamount)
+EXTERN_CVAR (hud_usehighresboard)
+EXTERN_CVAR (r_showendoom)
 
 static value_t Crosshairs[] =
 {
@@ -382,27 +469,26 @@ CVAR_FUNC_IMPL (ui_transblue)
 }
 
 static menuitem_t VideoItems[] = {
-	{ more,		"Messages",				{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)StartMessagesMenu} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ slider,	"Screen size",			{&screenblocks},	   	{3.0}, {12.0},	{1.0}, {NULL} },
-	{ slider,	"Brightness",			{&gammalevel},			{1.0}, {5.0},	{1.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ slider,   "UI Transparency",      {&dimamount},           {0.0}, {1.0},   {0.1}, {NULL} },
-	{ slider,   "UI Trans Red",         {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Trans Green",       {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Trans Blue",        {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete,	"Crosshair",			{&crosshair},		   	{9.0}, {0.0},	{0.0}, {Crosshairs} },
-	{ discrete, "Stretch short skies",	{&r_stretchsky},	   	{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Stretch status bar",	{&st_scale},			{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Screen wipe style",	{&wipetype},			{4.0}, {0.0},	{0.0}, {Wipes} },
-	{ discrete, "Show DOS Ending Screen",	{&show_endoom},			{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Use high-res scoreboard",	{&usehighresboard},			{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0}, {OnOff} },
-	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0}, {Overlays} },
-	{ discrete, "Standard map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0}, {NoYes} },
-	{ more,     "Reset custom map colors", {NULL},              {0.0}, {0.0},   {0.0}, {(value_t *)ResetCustomColors} }
+	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
+	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
+	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
+	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
+	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {5.0},	{1.0},  {NULL} },
+	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },	
+	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
+	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
+	{ discrete, "High-res scoreboard",  {&hud_usehighresboard}, {2.0}, {0.0},	{0.0},  {OnOff} },
+	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
+	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
+	{ slider,   "UI Background Green",      {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
+	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
+	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },	
+	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
+	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
+	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
+    { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
 };
 
 menu_t VideoMenu = {
@@ -411,6 +497,7 @@ menu_t VideoMenu = {
 	STACKARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
+	3,
 };
 
 /*=======================================
@@ -449,12 +536,12 @@ static value_t MessageLevels[] = {
 };
 
 static menuitem_t MessagesItems[] = {
-	{ discrete,	"Scale text in high res", {&con_scaletext},		{2.0}, {0.0}, 	{0.0}, {OnOff} },
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
-	{ discrete, "Reveal Secrets",       {&revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
+	{ discrete,	"Scale message text",    {&con_scaletext},		{2.0}, {0.0}, 	{0.0}, {OnOff} },	
+    { discrete,	"Show player target names",	{&hud_targetcount},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ whitetext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
 	{ cdiscrete, "Obituaries",			{&msg1color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
 	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{8.0}, {0.0},	{0.0}, {TextColors} },
@@ -469,6 +556,40 @@ menu_t MessagesMenu = {
 	STACKARRAY_LENGTH(MessagesItems),
 	0,
 	MessagesItems,
+};
+
+/*=======================================
+ *
+ * Automap Menu
+ *
+ *=======================================*/
+ 
+static value_t ClassicMapStringTypes[] = {
+	{ 0.0, "Odamex" },
+	{ 1.0, "Classic" }
+};
+
+static menuitem_t AutomapItems[] = {
+	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+    { discrete, "Show monster count",	{&am_showmonsters},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show secrets count",	{&am_showsecrets},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show map timer", 	    {&am_showtime}, 	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
+        
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ bricktext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },	
+	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ more,     "Reset custom map colors",  {NULL},             {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
+};
+
+menu_t AutomapMenu = {
+	"M_MESS",
+	0,
+	STACKARRAY_LENGTH(AutomapItems),
+	0,
+	AutomapItems,
 };
 
 
@@ -505,7 +626,7 @@ static char VMTestText[] = "Press T to test mode for 5 seconds";
 static menuitem_t ModesItems[] = {
 	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Fullscreen",			{&vid_fullscreen},			{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ discrete, "Fullscreen",			{&vid_fullscreen},		{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -538,20 +659,20 @@ menu_t ModesMenu = {
 
 static cvar_t *flagsvar;
 
-EXTERN_CVAR(dimcolor)
+EXTERN_CVAR(ui_dimcolor)
 
 // [Russell] - Modified to send new colours
 static void M_SendUINewColor (int red, int green, int blue)
 {
 	char command[24];
 
-	sprintf (command, "dimcolor \"%02x %02x %02x\"", red, green, blue);
+	sprintf (command, "ui_dimcolor \"%02x %02x %02x\"", red, green, blue);
 	AddCommandString (command);
 }
 
 static void M_SlideUIRed (int val)
 {
-	int color = V_GetColorFromString(NULL, dimcolor.cstring());
+	int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
 	int red = val;
 
 	M_SendUINewColor (red, GPART(color), BPART(color));
@@ -559,7 +680,7 @@ static void M_SlideUIRed (int val)
 
 static void M_SlideUIGreen (int val)
 {
-    int color = V_GetColorFromString(NULL, dimcolor.cstring());
+    int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
 	int green = val;
 
 	M_SendUINewColor (RPART(color), green, BPART(color));
@@ -567,7 +688,7 @@ static void M_SlideUIGreen (int val)
 
 static void M_SlideUIBlue (int val)
 {
-    int color = V_GetColorFromString(NULL, dimcolor.cstring());
+    int color = V_GetColorFromString(NULL, ui_dimcolor.cstring());
 	int blue = val;
 
 	M_SendUINewColor (RPART(color), GPART(color), blue);
@@ -753,10 +874,20 @@ void M_OptDrawer (void)
 {
 	int color;
 	int y, width, i, x, ytop;
+	int x1,y1,x2,y2;
 	int valx = 0, valy = 0;
 	int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
+	
+	x1 = (screen->width / 2)-(160*CleanXfac);
+	y1 = (screen->height / 2)-(100*CleanYfac);
+	
+    x2 = (screen->width / 2)+(160*CleanXfac);
+	y2 = (screen->height / 2)+(100*CleanYfac);
+	
+	// Background effect
+	OdamexEffect(x1,y1,x2,y2);
 
 	luioffset = (gameinfo.gametype & GAME_Heretic ? 2 : 0);
 	if (W_CheckNumForName(CurrentMenu->title) == -1)
@@ -775,7 +906,7 @@ void M_OptDrawer (void)
 
 	ytop = y + CurrentMenu->scrolltop * 8;
 
-	for (i = 0; i < CurrentMenu->numitems && y <= 200 - theight; i++, y += 8)	// TIJ
+	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += 8)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
 			i += CurrentMenu->scrollpos;
@@ -938,13 +1069,14 @@ void M_OptDrawer (void)
 		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
 
 	if (CanScrollDown)
-		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, (CleanYfac < 3 ? 190 : 200));
+		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
 }
 
 void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
+	const char *cmd = C_GetBinding(ch);
 
 	item = CurrentMenu->items + CurrentItem;
 
@@ -971,6 +1103,16 @@ void M_OptResponder (event_t *ev)
 			sprintf (val, "%d", newflags);
 			flagsvar->Set (val);
 			return;
+	}
+
+	if(cmd)
+	{
+		// Respond to the main menu binding
+		if(!strcmp(cmd, "menu_main"))
+		{
+			M_ClearMenus();
+			return;
+		}
 	}
 
 	switch (ch)
@@ -1370,6 +1512,11 @@ static void StartMessagesMenu (void)
 	M_SwitchMenu (&MessagesMenu);
 }
 
+static void StartAutomapMenu (void)
+{
+	M_SwitchMenu (&AutomapMenu);
+}
+
 void ResetCustomColors (void)
 {
 	AddCommandString ("resetcustomcolors");
@@ -1408,6 +1555,17 @@ static void VideoOptions (void)
 {
 	M_SwitchMenu (&VideoMenu);
 }
+
+void SoundOptions (void) // [Ralphis] for sound menu
+{
+	M_SwitchMenu (&SoundMenu);
+}
+
+void CompatOptions (void) // [Ralphis] for compatibility menu
+{
+	M_SwitchMenu (&CompatMenu);
+}
+
 
 BEGIN_COMMAND (menu_display)
 {

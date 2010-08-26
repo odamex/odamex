@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -103,7 +103,7 @@ void			CTF_Sound				(flag_t f, flag_score_t event);
 mapthing2_t    *CTF_SelectTeamPlaySpot	(player_t &player, int selections);
 
 //	Externals
-EXTERN_CVAR (scorelimit)
+EXTERN_CVAR (sv_scorelimit)
 
 //	Server-Side CTF Game Data
 extern flagdata CTFdata[NUMFLAGS];

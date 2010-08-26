@@ -25,8 +25,7 @@ proc main {} {
  client "playdemo demo1"
  wait 4
 
- expect $clientout {Cannot play demo because WAD didn't load} 0
- expect $clientout {Use the 'wad' command} 0
+ expect $clientout {Playing demo demo1} 0
  expect $clientout {} 0
 }
 

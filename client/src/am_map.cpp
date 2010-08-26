@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -835,7 +836,7 @@ BOOL AM_Responder (event_t *ev)
 				rc = false;
 			}
 		}
-		if (gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data2))
+		if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data2))
 		{
 			rc = true;	// [RH] Eat last keypress of cheat sequence
 			cheating = (cheating+1) % 3;
@@ -1453,8 +1454,8 @@ void AM_drawPlayers(void)
 		mpoint_t pt;
 
 		if (!players[i].ingame() || !p->mo ||
-			(((gametype == GM_DM && p != &conplayer) ||
-			((gametype == GM_TEAMDM || gametype == GM_CTF) && p->userinfo.team != conplayer.userinfo.team))
+			(((sv_gametype == GM_DM && p != &conplayer) ||
+			((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && p->userinfo.team != conplayer.userinfo.team))
 			&& !demoplayback && !(conplayer.spectator)) || p->spectator)
 		{
 			continue;
@@ -1605,7 +1606,7 @@ void AM_Drawer (void)
 		height = (hu_font[0]->height() + 1) * CleanYfac;
 		OV_Y = screen->height - ((32 * screen->height) / 200);
 
-		if (gametype == GM_COOP)
+		if (sv_gametype == GM_COOP)
 		{
 			if (am_showmonsters)
 			{

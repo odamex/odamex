@@ -700,6 +700,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\sv_sqp.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\sv_sqpold.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\v_palette.h"
 				>
 			</File>
@@ -813,6 +821,14 @@
 			</File>
 			<File
 				RelativePath="..\src\sv_rproto.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\sv_sqp.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\sv_sqpold.cpp"
 				>
 			</File>
 			<File

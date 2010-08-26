@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -58,7 +59,7 @@
 // [RH] Needed for sky scrolling
 #include "r_sky.h"
 
-EXTERN_CVAR (allowexit)
+EXTERN_CVAR (sv_allowexit)
 
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
@@ -789,6 +790,10 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 
 	if (!p)
 		return false;
+    
+    // [Spleen] Clients in network games don't know about keys
+    if (clientside && network_game)
+        return true;
 
 	const char *msg = NULL;
 	BOOL bc, rc, yc, bs, rs, ys;
@@ -916,12 +921,13 @@ P_CrossSpecialLine
 
 	if(thing)
 	{
-		if (lineActivation != SPAC_CROSS)
-			return;
-
 		//	Triggers that other things can activate
 		if (!thing->player)
 		{
+		    if (!(GET_SPAC(line->flags) == SPAC_CROSS)
+                && !(GET_SPAC(line->flags) == SPAC_MCROSS))
+                return;
+			
 			// Things that should NOT trigger specials...
 			switch(thing->type)
 			{
@@ -936,14 +942,31 @@ P_CrossSpecialLine
 
 				default: break;
 			}
+            
+            // This breaks the ability for the eyes to activate the silent teleporter lines
+            // in boomedit.wad, but without it vanilla demos break.
+            switch (line->special)
+            {
+				case Teleport:
+				case Teleport_NoFog:
+				case Teleport_Line:
+				break;
+				                
+                default:
+                    if(!(line->flags & ML_MONSTERSCANACTIVATE))
+                        return;                
+                break;
+            }
 
-			if(!(line->flags & ML_MONSTERSCANACTIVATE))
-				return;
 		}
 		else
 		{
+		    if (!(GET_SPAC(line->flags) == SPAC_CROSS) && 
+                !(GET_SPAC(line->flags) == SPAC_CROSSTHROUGH))
+                return;
+                
 			// Likewise, player should not trigger monster lines
-			if(lineActivation == SPAC_MCROSS)
+			if(GET_SPAC(line->flags) == SPAC_MCROSS)
 				return;
 
 			// And spectators should only trigger teleporters
@@ -999,7 +1022,7 @@ P_ShootSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return;
-
+    
 	if(thing)
 	{
 		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
@@ -1008,7 +1031,7 @@ P_ShootSpecialLine
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (!thing->player && !(GET_SPAC(line->flags) == SPAC_MCROSS))
+		if (!thing->player && !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
 
@@ -1039,7 +1062,7 @@ P_UseSpecialLine
 {
     if (clientside && network_game && !FromServer)
         return false;
-
+    
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1059,14 +1082,15 @@ P_UseSpecialLine
 
 	if(thing)
 	{
-		if (!(GET_SPAC(line->flags) == SPAC_USE))
+		if (!(GET_SPAC(line->flags) == SPAC_USE) &&
+            !(GET_SPAC(line->flags) == SPAC_USETHROUGH))
 			return false;
 
 		// Switches that other things can activate.
 		if (!thing->player)
 		{
 			// not for monsters?
-			if (!(GET_SPAC(line->flags) == SPAC_MCROSS))
+			if (!(line->flags & ML_MONSTERSCANACTIVATE))
 				return false;
 
 			// never open secret doors
@@ -1096,6 +1120,7 @@ P_UseSpecialLine
 
     return true;
 }
+
 
 //
 // P_PlayerInSpecialSector
@@ -1150,7 +1175,7 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (!(level.time & 0x1f))
 				P_DamageMobj (player->mo, NULL, NULL, 20, MOD_UNKNOWN);
 
-			if(gametype == GM_COOP || allowexit)
+			if(sv_gametype == GM_COOP || sv_allowexit)
 			{
 				if (gamestate == GS_LEVEL && player->health <= 10)
 					G_ExitLevel(0, 1);
@@ -1379,6 +1404,15 @@ void P_SpawnSpecials (void)
 			// fire flickering
 			new DFireFlicker (sector);
 			sector->special &= 0xff00;
+			break;
+
+		  // [RH] Hexen-like phased lighting
+		case LightSequenceStart:
+			new DPhased (sector);
+			break;
+
+		case Light_Phased:
+			new DPhased (sector, 48, 63 - (sector->lightlevel & 63));
 			break;
 
 		case Sky2:

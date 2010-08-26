@@ -1,6 +1,6 @@
 /*
 
-	Copyright(C) 2006 The Odamex Team
+	Copyright(C) 2006 - 2010 by The Odamex Team
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -71,7 +71,7 @@ BEGIN_COMMAND (version)
 	if (argc == 1)
 	{
 		// distribution
-		Printf(PRINT_HIGH, "Odamex v%s r%d - Copyright(C) 2007-2009 The Odamex Team\n", DOTVERSIONSTR, last_revision);
+		Printf(PRINT_HIGH, "Odamex v%s r%d - Copyright(C) 2007-2010 The Odamex Team\n", DOTVERSIONSTR, last_revision);
 	}
 	else
 	{

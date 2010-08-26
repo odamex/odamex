@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -188,7 +188,7 @@ void DThinker::DestroyMostThinkers ()
 	DObject::EndFrame ();
 }
 
-EXTERN_CVAR (speedhackfix)
+EXTERN_CVAR (sv_speedhackfix)
 
 void DThinker::RunThinkers ()
 {
@@ -201,7 +201,7 @@ void DThinker::RunThinkers ()
 		if ( currentthinker->IsKindOf (RUNTIME_CLASS (AActor))
 				   && static_cast<AActor *>(currentthinker)->player
 				   && static_cast<AActor *>(currentthinker)->player->playerstate != PST_DEAD
-				   && !speedhackfix && !demoplayback && (serverside && !clientside))
+				   && !sv_speedhackfix && !demoplayback && (serverside && !clientside))
 			;
 		else
 			currentthinker->RunThink ();

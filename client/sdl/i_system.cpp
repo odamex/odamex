@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -85,7 +86,7 @@
 #define ENDOOM_W 80
 #define ENDOOM_H 25
 
-EXTERN_CVAR (show_endoom)
+EXTERN_CVAR (r_showendoom)
 
 QWORD (*I_GetTime) (void);
 QWORD (*I_WaitForTic) (QWORD);
@@ -432,7 +433,10 @@ void I_Endoom(void)
 	// Set up text mode screen
 
 	TXT_Init();
-
+ 
+    I_SetWindowCaption();
+    I_SetWindowIcon();
+    
 	// Write the data to the screen memory
 
 	screendata = TXT_GetScreenData();
@@ -477,8 +481,10 @@ void STACK_ARGS I_Quit (void)
 	CL_QuitNetGame();
 
 	M_SaveDefaults();
+	
+	I_ShutdownHardware();
 
-	if (show_endoom && !Args.CheckParm ("-novideo"))
+	if (r_showendoom && !Args.CheckParm ("-novideo"))
 		I_Endoom();
 }
 

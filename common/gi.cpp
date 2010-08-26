@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -164,7 +164,7 @@ gameinfo_t SharewareGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	"ODAMEX",
+	"CONBACK",
 	{ 'D','_','V','I','C','T','O','R' },
 	{ 'F','L','O','O','R','4','_','8' },
 	"HELP2",
@@ -191,7 +191,7 @@ gameinfo_t RegisteredGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	"ODAMEX",
+	"CONBACK",
 	{ 'D','_','V','I','C','T','O','R' },
 	{ 'F','L','O','O','R','4','_','8' },
 	"HELP2",
@@ -218,7 +218,7 @@ gameinfo_t RetailGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	"ODAMEX",
+	"CONBACK",
 	{ 'D','_','V','I','C','T','O','R' },
 	{ 'F','L','O','O','R','4','_','8' },
 	"CREDIT",
@@ -245,7 +245,7 @@ gameinfo_t CommercialGameInfo =
 	0,
 	200/35,
 	"misc/chat",
-	"ODAMEX",
+	"CONBACK",
 	{ 'D','_','R','E','A','D','_','M' },
 	"SLIME16",
 	"CREDIT",

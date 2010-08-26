@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,6 +37,8 @@ class LstOdaSrvDetails : public wxListCtrl
         
         //wxEvent *Clone(void);
     protected:
+        void ResizeNameValueColumns();
+
         void InsertLine(const wxString &Name, const wxString &Value);
         void InsertHeader(const wxString &Name, 
                           const wxColor *NameColor,

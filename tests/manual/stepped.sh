@@ -57,15 +57,15 @@ echo "starting server"
 tail -f -s 0.001 $svr | ./odasrv -stepmode > $svro 2> $svre &
 sleep 2
 
-echo gametype	0   >> $svr
+echo sv_gametype	0   >> $svr
 sleep 0.1
-echo nomonsters 0   >> $svr
+echo sv_nomonsters 0   >> $svr
 sleep 0.1
-echo skill      4   >> $svr
+echo sv_skill      4   >> $svr
 sleep 0.1
-echo maxplayers 1   >> $svr
+echo sv_maxplayers 1   >> $svr
 sleep 0.1
-echo speedhackfix 1 >> $svr
+echo sv_speedhackfix 1 >> $svr
 sleep 0.1
 
 # launch client

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -210,6 +210,7 @@ static int ImageList_Padlock = -1;
 static int ImageList_PingGreen = -1;
 static int ImageList_PingOrange = -1;
 static int ImageList_PingRed = -1;
+static int ImageList_PingGray = -1;
 
 typedef enum
 {
@@ -289,7 +290,7 @@ void LstOdaServerList::SetupServerListColumns()
     ImageList_PingGreen = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_green")).ConvertToImage());
     ImageList_PingOrange = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_orange")).ConvertToImage());
     ImageList_PingRed = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")).ConvertToImage());
-
+    ImageList_PingGray = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_gray")).ConvertToImage());
 }
 
 LstOdaServerList::~LstOdaServerList()
@@ -348,6 +349,9 @@ void LstOdaServerList::AddServerToList(const Server &s,
                                         wxInt32 index, 
                                         bool insert)
 {
+    wxFileConfig ConfigInfo;
+    wxInt32 PQGood, PQPlayable, PQLaggy;
+    
     wxInt32 i = 0;
     wxListItem li;
     
@@ -397,8 +401,10 @@ void LstOdaServerList::AddServerToList(const Server &s,
     SetItem(li);
 
     // Number of players, Maximum players column
+    // TODO: acquire max players, max clients and spectators from these 2 and
+    // create some kind of graphical column maybe
     li.m_col = serverlist_field_players;
-    li.m_text = wxString::Format(_T("%d/%d"),s.Info.Players.size(),s.Info.MaxPlayers);
+    li.m_text = wxString::Format(_T("%d/%d"),s.Info.Players.size(),s.Info.MaxClients);
     
     SetItem(li); 
     
@@ -491,21 +497,29 @@ void LstOdaServerList::AddServerToList(const Server &s,
     SetItemColumnImage(li.m_itemId, serverlist_field_name, 
         (s.Info.PasswordHash.Length() ? ImageList_Padlock : -1));
     
+    ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, 150);
+    ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 300);
+    ConfigInfo.Read(wxT("IconPingQualityLaggy"), &PQLaggy, 350);
+    
     // Coloured bullets for ping quality
-    // TODO: Add launcher settings to change these ping thresholds
-    if (Ping < 100)
+    if (Ping < PQGood)
     {
         SetItemColumnImage(li.m_itemId, serverlist_field_ping, 
             ImageList_PingGreen);
     }
-    else if (Ping < 200)
+    else if (Ping < PQPlayable)
     {
         SetItemColumnImage(li.m_itemId, serverlist_field_ping, 
             ImageList_PingOrange);
     }
-    else
+    else if (Ping < PQLaggy)
     {
         SetItemColumnImage(li.m_itemId, serverlist_field_ping, 
             ImageList_PingRed);
+    }
+    else
+    {
+        SetItemColumnImage(li.m_itemId, serverlist_field_ping, 
+            ImageList_PingGray);
     }
 }

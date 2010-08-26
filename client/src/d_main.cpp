@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -137,8 +138,11 @@ bool demotest;
 static int demosequence;
 static int pagetic;
 
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (nomonsters)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (waddirs)
+EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
+EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
 
 const char *LOG_FILE;
 
@@ -880,6 +884,7 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
 	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
     AddSearchDir(dirs, getenv("HOME"), separator);
+    AddSearchDir(dirs, waddirs.cstring(), separator);
 
     dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
@@ -1155,9 +1160,15 @@ void D_AddDefWads (std::string iwad)
 	}
 
 	I_SetTitleString(IdentifyVersion(iwad).c_str());
+}
 
+//
+// D_AddDefSkins
+//
+/*void D_AddDefSkins (void)
+{
 	// [RH] Add any .wad files in the skins directory
-/*#ifndef UNIX // denis - fixme - 1) _findnext not implemented on linux or osx, use opendir 2) server does not need skins, does it?
+#ifndef UNIX // denis - fixme - 1) _findnext not implemented on linux or osx, use opendir 2) server does not need skins, does it?
 	{
 		char curdir[256];
 
@@ -1218,9 +1229,16 @@ void D_AddDefWads (std::string iwad)
 			chdir (curdir);
 		}
 	}
-#endif*/
+#endif
+}*/
 
-	modifiedgame = false;
+//
+// D_AddCmdParameterFiles
+// Add the files specified with -file, do this only when it first loads
+//
+void D_AddCmdParameterFiles(void)
+{
+    modifiedgame = false;
 
 	DArgs files = Args.GatherFiles ("-file", ".wad", true);
 	if (files.NumArgs() > 0)
@@ -1336,7 +1354,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 
 	// already loaded these?
-	if (lastWadRebootSuccess &&
+ 	if (lastWadRebootSuccess &&
 		!wadhashes.empty() &&
 			needhashes ==
 				std::vector<std::string>(wadhashes.begin()+1, wadhashes.end()))
@@ -1369,9 +1387,10 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
 
 	wadfiles.clear();
+	modifiedgame = false;	
 
 	std::string custwad;
-	if(wadnames.empty() == false && W_IsIWAD(wadnames[0]))
+	if(wadnames.empty() == false)
 		custwad = wadnames[0];
 
 	D_AddDefWads(custwad);
@@ -1469,6 +1488,7 @@ void D_DoomMain (void)
 		iwad = "";
 
 	D_AddDefWads(iwad);
+	D_AddCmdParameterFiles();
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
 
@@ -1524,7 +1544,7 @@ void D_DoomMain (void)
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{
-		skill.Set (val[0]-'0');
+		sv_skill.Set (val[0]-'0');
 	}
 
 	p = Args.CheckParm ("-warp");

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,8 +42,8 @@ enum
 	wipe_NUMWIPES
 };
 
-EXTERN_CVAR (wipetype)
-static int CurrentWipeType;
+EXTERN_CVAR (r_wipetype)
+static int Currentr_wipetype;
 
 static short *wipe_scr_start = NULL;
 static short *wipe_scr_end = NULL;
@@ -426,13 +426,13 @@ int wipe_exitFade (int ticks)
 
 int wipe_StartScreen (void)
 {
-	CurrentWipeType = (int)wipetype;
-	if (CurrentWipeType < 0)
-		CurrentWipeType = 0;
-	else if (CurrentWipeType >= wipe_NUMWIPES)
-		CurrentWipeType = wipe_NUMWIPES-1;
+	Currentr_wipetype = (int)r_wipetype;
+	if (Currentr_wipetype < 0)
+		Currentr_wipetype = 0;
+	else if (Currentr_wipetype >= wipe_NUMWIPES)
+		Currentr_wipetype = wipe_NUMWIPES-1;
 
-	if (CurrentWipeType)
+	if (Currentr_wipetype)
 	{
         delete[] wipe_scr_start;
         
@@ -449,7 +449,7 @@ int wipe_StartScreen (void)
 
 int wipe_EndScreen (void)
 {
-	if (CurrentWipeType)
+	if (Currentr_wipetype)
 	{
         delete[] wipe_scr_end;
             
@@ -475,25 +475,25 @@ int wipe_ScreenWipe (int ticks)
 	};
 	int rc;
 
-	if (CurrentWipeType == wipe_None)
+	if (Currentr_wipetype == wipe_None)
 		return true;
 
 	// initial stuff
 	if (!go)
 	{
 		go = 1;
-		(*wipes[(CurrentWipeType-1)*3])(ticks);
+		(*wipes[(Currentr_wipetype-1)*3])(ticks);
 	}
 
 	// do a piece of wipe-in
 	V_MarkRect(0, 0, screen->width, screen->height);
-	rc = (*wipes[(CurrentWipeType-1)*3+1])(ticks);
+	rc = (*wipes[(Currentr_wipetype-1)*3+1])(ticks);
 
 	// final stuff
 	if (rc)
 	{
 		go = 0;
-		(*wipes[(CurrentWipeType-1)*3+2])(ticks);
+		(*wipes[(Currentr_wipetype-1)*3+2])(ticks);
 	}
 
 	return !go;

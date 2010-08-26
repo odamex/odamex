@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@ CVAR (am_showsecrets,		"1",		CVAR_ARCHIVE)
 CVAR (am_showmonsters,		"1",		CVAR_ARCHIVE)
 CVAR (am_showtime,			"1",		CVAR_ARCHIVE)
 CVAR (am_classicmapstring,  "0",        CVAR_ARCHIVE)
-CVAR (am_usecustomcolors,	"1",		CVAR_ARCHIVE)
+CVAR (am_usecustomcolors,	"0",		CVAR_ARCHIVE)
 CVAR (am_ovshare,           "0",        CVAR_ARCHIVE)
 
 CVAR (am_backcolor,			"00 00 3a",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -68,15 +68,11 @@ CVAR (am_ovteleportcolor,	"ff a3 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (print_stdout, "0", CVAR_ARCHIVE)
 CVAR (con_notifytime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Scale notify text at high resolutions?
-CVAR (con_scaletext, "1", CVAR_ARCHIVE)
-CVAR (conscrlock, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (con_scaletext, "1", CVAR_ARCHIVE)                                 // Scale notify text at high resolutions
+CVAR (con_scrlock, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (con_midtime, "3", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR (dimamount, "0.7", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (dimcolor, "00 00 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR (hud_transparency, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL (msg0color, "6", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (msg1color, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -94,6 +90,8 @@ CVAR (interscoredraw, "1", CVAR_ARCHIVE)
 // Menus
 // -----
 
+CVAR (ui_dimamount, "0.7", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (ui_dimcolor, "00 00 00", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (ui_transred, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (ui_transgreen, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -102,7 +100,9 @@ CVAR_FUNC_DECL (ui_transblue, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // --------------
 
 // GhostlyDeath <August 1, 2008> -- Join/Part Sound
+// [ML] 8/20/2010 - Join sound, part sound
 CVAR (cl_connectalert, "1", CVAR_ARCHIVE)
+CVAR (cl_disconnectalert, "1", CVAR_ARCHIVE)
 
 CVAR_FUNC_DECL (cl_mouselook, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 
@@ -124,17 +124,14 @@ CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 //CVAR (joy_xthreshold, "0.15", CVAR_ARCHIVE)
 //CVAR (joy_ythreshold, "0.15", CVAR_ARCHIVE)
 
-CVAR (revealsecrets,        "0", CVAR_ARCHIVE)
 CVAR (show_messages, "1", CVAR_ARCHIVE)
 
-CVAR (show_endoom, "1", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
-
 // Rate of client updates
-CVAR_FUNC_DECL (rate, "10000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (rate, "200000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Maximum number of clients who can connect to the server
-CVAR (maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 // Maximum amount of players who can join the game, others are spectators
-CVAR (maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
+CVAR (sv_maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_name,		"Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -143,32 +140,32 @@ CVAR (cl_gender,	"male",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_skin,		"base",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_team,		"blue",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR (wipetype, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
 CVAR (chasedemo, "0", CVAR_NULL)
 
 CVAR (cl_run,		"1",	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
 CVAR (invertmouse,	"0",	CVAR_ARCHIVE)		// Invert mouse look down/up?
 CVAR (lookstrafe,	"0",	CVAR_ARCHIVE)		// Always strafe with mouse?
-CVAR (m_pitch,		"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)		// Mouse speeds
+CVAR (m_pitch,		"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)		    // Mouse speeds
 CVAR (m_yaw,		"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (m_forward,	"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (m_side,		"2.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (displaymouse,	"0",	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
 
-// Crosshair transparency
-CVAR (crosshairdim, "0", CVAR_ARCHIVE)
-// Crosshair scaling
-CVAR (crosshairscale, "0", CVAR_ARCHIVE)
 
 CVAR (idmypos, "0", CVAR_NULL)
 
 // Heads up display
 // ----------------
 
+CVAR (hud_revealsecrets, "0", CVAR_ARCHIVE)
+CVAR (hud_transparency, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_scale, "0", CVAR_ARCHIVE)
 CVAR (hud_targetnames, "1", CVAR_ARCHIVE)
-CVAR (usehighresboard, "1",	CVAR_ARCHIVE)
+CVAR (hud_usehighresboard, "1",	CVAR_ARCHIVE)
+
+CVAR (hud_crosshairdim, "0", CVAR_ARCHIVE)      // Crosshair transparency
+CVAR (hud_crosshairscale, "0", CVAR_ARCHIVE)    // Crosshair scaling
+CVAR_FUNC_DECL (hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // Show target counts
 
 // GhostlyDeath <November 2, 2008> -- someone had the order wrong (0-9!)
 CVAR (chatmacro1, "I'm ready to kick butt!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -182,29 +179,14 @@ CVAR (chatmacro8, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro9, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro0, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL (hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-// Compatibility options for vanilla
-// ---------------------------------
-
-// Enable/disable the "level 8 full sound at far distances" feature
-CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE)
-
 // Sound and music
 // ---------------
 
-// Sound volume
-CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Music volume
-CVAR_FUNC_DECL (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR (snd_crossover, "0", CVAR_ARCHIVE)
-
-// Sample rate
-CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-// number of channels available
-BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)      // Sound volume
+CVAR_FUNC_DECL (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // Music volume
+CVAR (snd_crossover, "0", CVAR_ARCHIVE)                                         // Stereo switch
+CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)             // Sample rate
+BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     // Number of channels available
 {
 	S_Stop();
 	S_Init (snd_sfxvolume, snd_musicvolume);
@@ -213,6 +195,7 @@ END_CUSTOM_CVAR (snd_channels)
 
 // Status bar
 // ----------
+
 CVAR_FUNC_DECL (st_scale, "1", CVAR_ARCHIVE)
 
 // Video and Renderer
@@ -221,7 +204,7 @@ CVAR_FUNC_DECL (st_scale, "1", CVAR_ARCHIVE)
 // Gamma correction level, 1 - 4
 CVAR_FUNC_DECL (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Type of crosshair, 0 means none
-CVAR_FUNC_DECL (crosshair, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (hud_crosshair, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method
 CVAR (r_columnmethod, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 // Detail level?
@@ -230,8 +213,11 @@ CVAR_FUNC_DECL (r_detail, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDIS
 CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
 // Draw player sprites
 CVAR (r_drawplayersprites, "1", CVAR_CLIENTINFO)
-// Stretch sky textures
-CVAR_FUNC_DECL (r_stretchsky, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+// Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
+CVAR_FUNC_DECL (r_stretchsky, "2", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR (r_wipetype, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (r_showendoom, "1", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
 
 // TODO: document
 CVAR (r_viewsize, "0", CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
@@ -253,4 +239,4 @@ CVAR (vid_ticker, "0", CVAR_CLIENTINFO)
 CVAR_FUNC_DECL (vid_winscale, "1.0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 
-VERSION_CONTROL (c_cvarlist_cpp, "$Id$")
+VERSION_CONTROL (cl_cvarlist_cpp, "$Id$")

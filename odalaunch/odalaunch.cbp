@@ -196,6 +196,7 @@
 					<Add library="oleaut32.lib" />
 					<Add library="rpcrt4.lib" />
 					<Add library="ws2_32.lib" />
+					<Add library="winspool.lib" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 					<Add directory=".\res" />
@@ -279,6 +280,7 @@
 					<Add library="oleaut32.lib" />
 					<Add library="rpcrt4.lib" />
 					<Add library="ws2_32.lib" />
+					<Add library="winspool.lib" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
 					<Add directory=".\res" />
@@ -348,6 +350,12 @@
 		</Unit>
 		<Unit filename="res\xrc_resource.h" />
 		<Unit filename="res\xrc_resource.xrc" />
+		<Unit filename="src\dlg_about.cpp">
+			<Option virtualFolder="dialogs\" />
+		</Unit>
+		<Unit filename="src\dlg_about.h">
+			<Option virtualFolder="dialogs\" />
+		</Unit>
 		<Unit filename="src\dlg_config.cpp">
 			<Option virtualFolder="dialogs\" />
 		</Unit>
@@ -382,6 +390,8 @@
 		<Unit filename="src\lst_srvdetails.h" />
 		<Unit filename="src\main.cpp" />
 		<Unit filename="src\main.h" />
+		<Unit filename="src\md5.cpp" />
+		<Unit filename="src\md5.h" />
 		<Unit filename="src\net_io.cpp">
 			<Option virtualFolder="network\" />
 		</Unit>

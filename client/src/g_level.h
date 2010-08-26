@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -108,7 +108,7 @@ struct level_locals_s {
 	int			levelnum;
 	char		level_name[64];			// the descriptive name (Outer Base, etc)
 	char		mapname[8];				// the server name (base1, etc)
-	char		nextmap[8];				// go here when fraglimit is hit
+	char		nextmap[8];				// go here when sv_fraglimit is hit
 	char		secretmap[8];			// map to go to when used secret exit
 
 	DWORD		flags;

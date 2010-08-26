@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -409,11 +409,11 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	short special = SHORT(mld->special);
 	short tag = SHORT(mld->tag);
 	short flags = SHORT(mld->flags);
-	BOOL passthrough;
+	bool passthrough;
 	int i;
-
+	
 	passthrough = (flags & ML_PASSUSE_BOOM);
-
+	
 	flags = flags & 0x01ff;	// Ignore flags unknown to DOOM
 
 	if (special <= NUM_SPECIALS)
@@ -434,7 +434,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	{
 		if (special >= OdamexStaticInits && special < OdamexStaticInits + NUM_STATIC_INITS)
 		{
-			// A ZDoom Static_Init special
+			// An Odamex Static_Init special
 			ld->special = Static_Init;
 			ld->args[0] = tag;
 			ld->args[1] = special - OdamexStaticInits;
@@ -454,7 +454,10 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		case WalkMany:
 			flags |= ML_REPEAT_SPECIAL;
 		case WalkOnce:
-			flags |= SPAC_CROSS << ML_SPAC_SHIFT;
+            if (passthrough)
+                flags |= SPAC_CROSSTHROUGH << ML_SPAC_SHIFT;
+            else
+                flags |= SPAC_CROSS << ML_SPAC_SHIFT;
 			break;
 
 		case SwitchMany:

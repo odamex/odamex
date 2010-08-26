@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -162,11 +163,11 @@ void	P_SpawnSpecials (void);
 void	P_UpdateSpecials (void);
 
 // when needed
-void P_CrossSpecialLine (int linenum, int side, AActor*	thing, bool FromServer = false);
-void P_ShootSpecialLine (AActor* thing, line_t*	line, bool FromServer = false);
-bool P_UseSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
+void    P_CrossSpecialLine (int linenum, int side, AActor*	thing, bool FromServer = false);
+void    P_ShootSpecialLine (AActor* thing, line_t*	line, bool FromServer = false);
+bool    P_UseSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
 
-void P_PlayerInSpecialSector (player_t *player);
+void    P_PlayerInSpecialSector (player_t *player);
 
 //
 // getSide()
@@ -351,6 +352,23 @@ private:
 	DGlow2 ();
 };
 
+// [RH] Phased light thinker
+class DPhased : public DLighting
+{
+	DECLARE_SERIAL (DPhased, DLighting)
+public:
+	DPhased (sector_t *sector);
+	DPhased (sector_t *sector, int baselevel, int phase);
+	void		RunThink ();
+protected:
+	byte		m_BaseLevel;
+	byte		m_Phase;
+private:
+	DPhased ();
+	DPhased (sector_t *sector, int baselevel);
+	int PhaseHelper (sector_t *sector, int index, int light, sector_t *prev);
+};
+
 #define GLOWSPEED				8
 #define STROBEBRIGHT			5
 #define FASTDARK				15
@@ -362,6 +380,7 @@ void	EV_StartLightStrobing (int tag, int utics, int ltics);
 void	EV_TurnTagLightsOff (int tag);
 void	EV_LightTurnOn (int tag, int bright);
 void	EV_LightChange (int tag, int value);
+int     EV_LightTurnOnPartway(int tag, int level);
 
 void	P_SpawnGlowingLight (sector_t *sector);
 
@@ -535,7 +554,8 @@ public:
 	};
 
 	DDoor (sector_t *sector);
-	DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
+	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
+    DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
 
 	void RunThink ();
 protected:
@@ -551,6 +571,8 @@ protected:
 	// (keep in case a door going down is reset)
 	// when it reaches 0, start going down
 	int 		m_TopCountdown;
+
+    line_t      *m_Line;
 
 	void DoorSound (bool raise) const;
 

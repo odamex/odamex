@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,7 +26,7 @@
 #include "c_console.h"
 #include "doomstat.h"
 
-EXTERN_CVAR (speedhackfix)
+EXTERN_CVAR (sv_speedhackfix)
 
 //
 // P_Ticker
@@ -38,7 +39,7 @@ void P_Ticker (void)
 	if (!multiplayer && !demoplayback && menuactive && players[0].viewz != 1)
 		return;
 
-	if((serverside && speedhackfix) || (clientside && serverside))
+	if((serverside && sv_speedhackfix) || (clientside && serverside))
 	{
 		for(size_t i = 0; i < players.size(); i++)
 			if(players[i].ingame())

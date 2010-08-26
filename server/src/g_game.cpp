@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -63,8 +64,6 @@ void	G_ReadDemoTiccmd (ticcmd_t* cmd, int player);
 void	G_WriteDemoTiccmd (ticcmd_t* cmd, int player, int buf);
 void	G_PlayerReborn (player_t &player);
 
-void	G_DoReborn (player_t &playernum);
-
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
 void	G_DoPlayDemo (void);
@@ -73,7 +72,7 @@ void	G_DoVictory (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
-EXTERN_CVAR (timelimit)
+EXTERN_CVAR (sv_timelimit)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -129,10 +128,10 @@ enum demoversion_t
 
 FILE *recorddemo_fp;
 
-EXTERN_CVAR(nomonsters)
-EXTERN_CVAR(fastmonsters)
+EXTERN_CVAR(sv_nomonsters)
+EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(monstersrespawn)
+EXTERN_CVAR(sv_monstersrespawn)
 
 char			demoname[256];
 BOOL 			demorecording;
@@ -369,13 +368,13 @@ void G_BeginRecording (void)
         mapid = level.mapname[3] - '0';
     }
 
-    *demo_p++ = (unsigned char)(skill-1);
+    *demo_p++ = (unsigned char)(sv_skill-1);
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = gametype;
-    *demo_p++ = monstersrespawn;
-    *demo_p++ = fastmonsters;
-    *demo_p++ = nomonsters;
+    *demo_p++ = sv_gametype;
+    *demo_p++ = sv_monstersrespawn;
+    *demo_p++ = sv_fastmonsters;
+    *demo_p++ = sv_nomonsters;
     *demo_p++ = 0;
 
     *demo_p++ = 1;
@@ -386,7 +385,7 @@ void G_BeginRecording (void)
     fwrite(demo_tmp, 13, 1, recorddemo_fp);
 }
 
-EXTERN_CVAR(maxplayers)
+EXTERN_CVAR(sv_maxplayers)
 
 void RecordCommand(int argc, char **argv)
 {
@@ -405,7 +404,7 @@ void RecordCommand(int argc, char **argv)
 			return;
 		}
 
-		maxplayers = 4;
+		sv_maxplayers = 4;
 
 		if(G_RecordDemo(argv[2]))
 		{
@@ -767,10 +766,10 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 
-	if(gametype == GM_COOP)
+	if(sv_gametype == GM_COOP)
 		return;
 
-	if(gametype == GM_TEAMDM || gametype == GM_CTF)
+	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		G_TeamSpawnPlayer (player);
 		return;
@@ -835,14 +834,14 @@ void G_DoReborn (player_t &player)
 		return;
 
 	// spawn at random team spot if in team game
-	if(gametype == GM_TEAMDM || gametype == GM_CTF)
+	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		G_TeamSpawnPlayer (player);
 		return;
 	}
 
 	// spawn at random spot if in death match
-	if(gametype != GM_COOP)
+	if(sv_gametype != GM_COOP)
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
@@ -962,9 +961,9 @@ BOOL G_CheckDemoStatus (void)
 	return false;
 }
 
-EXTERN_CVAR (fraglimit)
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (fragexitswitch)
+EXTERN_CVAR (sv_fraglimit)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_fragexitswitch)
 
 BOOL CheckIfExitIsGood (AActor *self)
 {
@@ -972,20 +971,20 @@ BOOL CheckIfExitIsGood (AActor *self)
 		return false;
 
 	// [Toke - dmflags] Old location of DF_NO_EXIT
-    // [ML] 04/4/06: Check for fragexitswitch - seems a bit hacky
+    // [ML] 04/4/06: Check for sv_fragexitswitch - seems a bit hacky
 
     unsigned int i;
 
     for(i = 0; i < players.size(); i++)
-        if(players[i].fragcount == fraglimit)
+        if(players[i].fragcount == sv_fraglimit)
             break;
 
-    if (gametype != GM_COOP && self)
+    if (sv_gametype != GM_COOP && self)
     {
-        if (!allowexit && fragexitswitch && i == players.size())
+        if (!sv_allowexit && sv_fragexitswitch && i == players.size())
             return false;
 
-        if (!allowexit && !fragexitswitch)
+        if (!sv_allowexit && !sv_fragexitswitch)
             return false;
     }
 

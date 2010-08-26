@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -85,14 +85,8 @@ SDLVideo::SDLVideo(int parm)
 #endif
     }
     #endif
-
-	// [Russell] - A basic version string that will eventually get replaced
-	//             better than "Odamex SDL Alpha Build 001" or something :P
-	std::string title = "Odamex - v";
-	title += DOTVERSIONSTR;
-		
-	// [Russell] - Update window caption with name
-	SDL_WM_SetCaption (title.c_str(), title.c_str());
+    
+    I_SetWindowCaption();
 
    sdlScreen = NULL;
    infullscreen = false;

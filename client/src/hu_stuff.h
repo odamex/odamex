@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,6 +41,9 @@
 void HU_Init (void);
 BOOL HU_Responder (event_t* ev);
 void HU_Drawer (void);
+
+
+void OdamexEffect (int xa, int ya, int xb, int yb);
 
 extern int headsupactive;
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,7 +35,6 @@
 #include "m_swap.h"
 #include "v_palette.h"
 #include "v_video.h"
-#include "v_text.h"
 #include "w_wad.h"
 #include "z_zone.h"
 #include "r_main.h"
@@ -410,12 +409,12 @@ BEGIN_COMMAND (echo)
 }
 END_COMMAND (echo)
 
-void C_MidPrint (const char *msg, player_t *p)
+void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
     if (p == NULL)
         return;
 
-    SV_MidPrint(msg, p);
+    SV_MidPrint(msg, p, msgtime);
 }
 
 void C_RevealSecret ()

@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -37,6 +38,8 @@
 #include "r_data.h"
 
 extern int CleanWidth, CleanHeight, CleanXfac, CleanYfac;
+
+extern BOOL    gotconback;
 
 extern int DisplayWidth, DisplayHeight, DisplayBits;
 

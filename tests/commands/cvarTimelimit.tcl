@@ -7,12 +7,12 @@ source tests/commands/common.tcl
 proc deathmatch {} {
  global server client serverout clientout port
 
- server "gametype 1"
+ server "sv_gametype 1"
 
- # 7 second timelimit
+ # 7 second sv_timelimit
  clear
  server "map 1"
- server "timelimit 0.125"
+ server "sv_timelimit 0.125"
  server "map 2"
  clear
 
@@ -30,12 +30,12 @@ proc deathmatch {} {
 proc coop {} {
  global server client serverout clientout port
 
- server "gametype 0"
+ server "sv_gametype 0"
 
- # 7 second timelimit
+ # 7 second sv_timelimit
  clear
  server "map 1"
- server "timelimit 0.125"
+ server "sv_timelimit 0.125"
  server "map 2"
  clear
 
@@ -47,7 +47,7 @@ proc coop {} {
  # wait our time
  wait 5
  expect $serverout ""
- expect $serverout "--------------------------------------"
+ expect $serverout "COOPERATIVE"
  expect $clientout "" 0
  expect $clientout "--------------------------------------" 0
 }
@@ -55,12 +55,12 @@ proc coop {} {
 proc teamplay {} {
  global server client serverout clientout port
 
- server "gametype 2"
+ server "sv_gametype 2"
 
- # 7 second timelimit
+ # 7 second sv_timelimit
  clear
  server "map 1"
- server "timelimit 0.125"
+ server "sv_timelimit 0.125"
  server "map 2"
  clear
 
@@ -81,7 +81,7 @@ proc main {} {
  coop
  teamplay
  # reset
- server "timelimit 0"
+ server "sv_timelimit 0"
 }
 
 start

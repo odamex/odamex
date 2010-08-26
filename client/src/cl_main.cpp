@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,7 +54,7 @@
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
 
-extern bool stepmode;
+extern bool step_mode;
 
 // denis - client version (VERSION or other supported)
 short version = 0;
@@ -85,7 +85,7 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
-EXTERN_CVAR (weaponstay)
+EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
@@ -94,25 +94,26 @@ EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 
-EXTERN_CVAR (maxplayers)
-EXTERN_CVAR (maxclients)
-EXTERN_CVAR (infiniteammo)
-EXTERN_CVAR (fraglimit)
-EXTERN_CVAR (timelimit)
-EXTERN_CVAR (nomonsters)
-EXTERN_CVAR (fastmonsters)
-EXTERN_CVAR (allowexit)
-EXTERN_CVAR (fragexitswitch)
-EXTERN_CVAR (allowjump)
-EXTERN_CVAR (scorelimit)
-EXTERN_CVAR (monstersrespawn)
-EXTERN_CVAR (itemsrespawn)
-EXTERN_CVAR (allowcheats)
-EXTERN_CVAR (allowtargetnames)
+EXTERN_CVAR (sv_maxplayers)
+EXTERN_CVAR (sv_maxclients)
+EXTERN_CVAR (sv_infiniteammo)
+EXTERN_CVAR (sv_fraglimit)
+EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR (sv_fragexitswitch)
+EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_scorelimit)
+EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_itemsrespawn)
+EXTERN_CVAR (sv_allowcheats)
+EXTERN_CVAR (sv_allowtargetnames)
 EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR (interscoredraw)
 EXTERN_CVAR(cl_connectalert)
+EXTERN_CVAR(cl_disconnectalert)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -173,7 +174,7 @@ void CL_QuitNetGame(void)
 	network_game = false;
 	
 	sv_freelook = 1;
-	allowjump = 1;
+	sv_allowjump = 1;
 
 	actor_by_netid.clear();
 	players.clear();
@@ -239,7 +240,7 @@ void CL_DisconnectClient(void)
 		{
 			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
 			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
-			if (cl_connectalert && &player != &consoleplayer())
+			if (cl_disconnectalert && &player != &consoleplayer())
 				S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
 			players.erase(players.begin() + i);
 			break;
@@ -255,6 +256,17 @@ void CL_DisconnectClient(void)
 }
 
 /////// CONSOLE COMMANDS ///////
+
+BEGIN_COMMAND (stepmode)
+{
+    if (step_mode)
+        step_mode = false;
+    else
+        step_mode = true;
+        
+    return;
+}
+END_COMMAND (stepmode)
 
 BEGIN_COMMAND (connect)
 {
@@ -371,10 +383,10 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (allowcheats)
+    if (sv_allowcheats)
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set allowcheats 1' to enable this command.\n");
+        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -423,17 +435,10 @@ BEGIN_COMMAND (serverinfo)
 }
 END_COMMAND (serverinfo)
 
+// rate: takes a bps value
 CVAR_FUNC_IMPL (rate)
 {
-	if (var < 100)
-	{
-		var.Set (100);
-	}
-	else if (var > 100000)
-	{
-		var.Set (100000);
-	}
-	else if (connected)
+	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
 		MSG_WriteLong(&net_buffer, (int)var);
@@ -611,7 +616,7 @@ void CL_UpdateFrags(void)
 {
 	player_t &p = CL_FindPlayer(MSG_ReadByte());
 
-	if(gametype != GM_COOP)
+	if(sv_gametype != GM_COOP)
 		p.fragcount = MSG_ReadShort();
 	else
 		p.killcount = MSG_ReadShort();
@@ -1042,7 +1047,10 @@ void CL_Print (void)
 // Print a message in the middle of the screen
 void CL_MidPrint (void)
 {
-    C_MidPrint(MSG_ReadString());
+    const char *str = MSG_ReadString();
+    int msgtime = MSG_ReadShort();
+    
+    C_MidPrint(str,NULL,msgtime);
 }
 
 
@@ -1347,7 +1355,7 @@ void CL_SpawnPlayer()
 	P_SetupPsprites (p);
 
 	// give all cards in death match mode
-	if(gametype != GM_COOP)
+	if(sv_gametype != GM_COOP)
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 }
@@ -2511,7 +2519,7 @@ void CL_SendCmd(void)
     cmd = &consoleplayer().cmd;
 
 	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	if(stepmode) MSG_WriteShort(&net_buffer, cmd->ucmd.yaw);
+	if(step_mode) MSG_WriteShort(&net_buffer, cmd->ucmd.yaw);
 	else MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, (p->mo->pitch + (cmd->ucmd.pitch << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
@@ -2549,7 +2557,7 @@ void CL_RunTics (void)
 		TicCount = 0;
 	}
 
-	if (gametype == GM_CTF)
+	if (sv_gametype == GM_CTF)
 		CTF_RunTics ();
 }
 

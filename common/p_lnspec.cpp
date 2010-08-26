@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -759,6 +759,18 @@ FUNC(LS_Thing_SetGoal)
 	return true;
 }
 
+FUNC(LS_FloorAndCeiling_LowerByValue)
+// FloorAndCeiling_LowerByValue (tag, speed, height)
+{
+	return EV_DoElevator (ln, DElevator::elevateLower, SPEED(ln->args[1]), ln->args[2]*FRACUNIT, ln->args[0]);
+}
+
+FUNC(LS_FloorAndCeiling_RaiseByValue)
+// FloorAndCeiling_RaiseByValue (tag, speed, height)
+{
+	return EV_DoElevator (ln, DElevator::elevateRaise, SPEED(ln->args[1]), ln->args[2]*FRACUNIT, ln->args[0]);
+}
+
 FUNC(LS_FloorAndCeiling_LowerRaise)
 // FloorAndCeiling_LowerRaise (tag, fspeed, cspeed)
 {
@@ -1332,13 +1344,13 @@ lnSpecFunc LineSpecials[256] =
 {
 	LS_NOP,
 	LS_NOP,		// Polyobj_StartLine,
-	LS_NOP,		// Removed 11/3/06 by ML - No more polyobjects! (LS_Polyobj_RotateLeft)
-	LS_NOP,		// Removed 11/3/06 by ML - No more polyobjects! (LS_Polyobj_RotateRight)
-	LS_NOP,		// Removed 11/3/06 by ML - No more polyobjects! (LS_Polyobj_Move)
+	LS_NOP,
+	LS_NOP,
+	LS_NOP,
 	LS_NOP,		// Polyobj_ExplicitLine
-	LS_NOP,		// Removed 11/3/06 by ML - No more polyobjects! (LS_Polyobj_MoveTimes8)
-	LS_NOP,		// Removed 11/3/06 by ML - No more polyobjects! (LS_Polyobj_DoorSwing)
-	LS_NOP,		// Removed 11/3/06 by ML - No more polyobjects! (LS_Polyobj_DoorSlide)
+	LS_NOP,
+	LS_NOP,
+	LS_NOP,
 	LS_NOP,		// 9
 	LS_Door_Close,
 	LS_Door_Open,
@@ -1420,13 +1432,13 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 87
 	LS_NOP,		// 88
 	LS_NOP,		// 89
-	LS_NOP,         // Removed 11/3/06 by ML - No more polyobjects!
 	LS_NOP,
 	LS_NOP,
 	LS_NOP,
 	LS_NOP,
 	LS_NOP,
-	LS_NOP,
+	LS_FloorAndCeiling_LowerByValue,
+	LS_FloorAndCeiling_RaiseByValue,
 	LS_NOP,		// 97
 	LS_NOP,		// 98
 	LS_NOP,		// 99
@@ -1450,7 +1462,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 117
 	LS_NOP,		// 118
 	LS_NOP,		// 119
-	LS_NOP,          // [ML] 12/4/06: Removed p_quake
+	LS_NOP,
 	LS_NOP,		// Line_SetIdentification
 	LS_NOP,		// 122
 	LS_NOP,		// 123
@@ -1460,20 +1472,14 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 127
 	LS_NOP,		// 128
 	LS_UsePuzzleItem,
-	LS_NOP,		// 130
-	LS_NOP,		// 131
-//	LS_Thing_Activate,
-//	LS_Thing_Deactivate,
+	LS_NOP,
+	LS_NOP,
 	LS_Thing_Remove,
-        LS_NOP,         // Was LS_Thing_Destroy,
-	LS_NOP,		// 134
-	LS_NOP,		// 135
-	LS_NOP,		// 136
-	LS_NOP,		// 137
-//	LS_Thing_Projectile,
-//	LS_Thing_Spawn,
-//	LS_Thing_ProjectileGravity,
-//	LS_Thing_SpawnNoFog,
+	LS_NOP,
+	LS_NOP,
+	LS_NOP,
+	LS_NOP,
+	LS_NOP,
 	LS_Floor_Waggle,
 	LS_NOP,		// 139
 	LS_Sector_ChangeSound,

@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@
 #include "hu_stuff.h"
 #include "gi.h"
 
-EXTERN_CVAR(fraglimit)
+EXTERN_CVAR(sv_fraglimit)
 
 static int		widestnum, numheight;
 static const patch_t	*medi;
@@ -158,7 +158,7 @@ void ST_initNew (void)
 	widestnum = widest;
 	numheight = ((gameinfo.gametype & GAME_Doom) ? tallnum[0]->height() : 20);
 
-	if (multiplayer && (gametype == GM_COOP || demoplayback || !netgame) && level.time)
+	if (multiplayer && (sv_gametype == GM_COOP || demoplayback || !netgame) && level.time)
 		NameUp = level.time + 2*TICRATE;
 }
 
@@ -320,14 +320,14 @@ void ST_newDraw (void)
 	}
 
 	// Draw top-right info. (Keys/Frags/Score)
-    if (gametype == GM_CTF)
+    if (sv_gametype == GM_CTF)
     {
 		ST_newDrawCTF();
     }
-	else if (gametype != GM_COOP)
+	else if (sv_gametype != GM_COOP)
 	{
 		// Draw frags (in DM)
-		ST_DrawNumRight (screen->width - 2, 1, screen, plyr->fragcount);
+		ST_DrawNumRight (screen->width - (2 * xscale), 2 * yscale, screen, plyr->fragcount);
 	}
 	else
 	{
@@ -375,7 +375,7 @@ void ST_newDrawDM (void)
 	for (k = 0; k < sortedplayers.size(); k++)
 		sortedplayers[k] = &players[k];
 		
-	if(gametype != GM_COOP)
+	if(sv_gametype != GM_COOP)
 		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 	else
 		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
@@ -418,7 +418,7 @@ void ST_newDrawDM (void)
 	}
 	
 	// Draw fraglimit
-	ST_DrawNumNewRight(x-(fraglimit > 0 ? 6 : 4), 4, screen, fraglimit);
+	ST_DrawNumNewRight(x-(sv_fraglimit > 0 ? 6 : 4), 4, screen, sv_fraglimit);
 	
 	// Draw highest current frag count
 	ST_DrawNumNewRight(x-(sortedplayers[0]->fragcount > 0 ? 6 : 4), 18, screen, sortedplayers[0]->fragcount);

@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,7 +57,7 @@ static int crosshair_lump;
 
 static void R_InitCrosshair();
 
-CVAR_FUNC_IMPL (crosshair)
+CVAR_FUNC_IMPL (hud_crosshair)
 {
 	R_InitCrosshair();
 }
@@ -76,16 +77,16 @@ int*			spritelights;
 
 // constant arrays
 //	used for psprite clipping and initializing clipping
-short			*negonearray;
-short			*screenheightarray;
+int			*negonearray;
+int			*screenheightarray;
 
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
 
 EXTERN_CVAR (r_drawplayersprites)
 
-EXTERN_CVAR (crosshairdim)
-EXTERN_CVAR (crosshairscale) 
+EXTERN_CVAR (hud_crosshairdim)
+EXTERN_CVAR (hud_crosshairscale) 
 
 //
 // INITIALIZATION FUNCTIONS
@@ -504,7 +505,7 @@ END_COMMAND (skins)
 
 static void R_InitCrosshair()
 {
-	int xhairnum = (int)crosshair;
+	int xhairnum = (int)hud_crosshair;
 
 	if (xhairnum)
 	{
@@ -628,8 +629,8 @@ vissprite_t *R_NewVisSprite (void)
 // Masked means: partly transparent, i.e. stored
 //	in posts/runs of opaque pixels.
 //
-short*			mfloorclip;
-short*			mceilingclip;
+int*			mfloorclip;
+int*			mceilingclip;
 
 fixed_t 		spryscale;
 fixed_t 		sprtopscreen;
@@ -1345,7 +1346,7 @@ void R_SortVisSprites (void)
 
 // [RH] Allocated in R_MultiresInit() to
 // SCREENWIDTH entries each.
-short *r_dsclipbot, *r_dscliptop;
+int *r_dsclipbot, *r_dscliptop;
 
 // [RH] The original code used -2 to indicate that a sprite was not clipped.
 //		With ZDoom's freelook, it's possible that the rendering process
@@ -1481,7 +1482,7 @@ void R_DrawSprite (vissprite_t *spr)
 	for (x = spr->x1 ; x<=spr->x2 ; x++)
 	{
 		if (r_dsclipbot[x] == NOT_CLIPPED)
-			r_dsclipbot[x] = (short)viewheight;
+			r_dsclipbot[x] = (int)viewheight;
 
 		if (r_dscliptop[x] == NOT_CLIPPED)
 			r_dscliptop[x] = -1;
@@ -1509,17 +1510,17 @@ static void R_DrawCrosshair (void)
 	if (camera->player && camera->player->spectator)
 		return;
 
-	if(crosshair && crosshair_lump)
+	if(hud_crosshair && crosshair_lump)
 	{
-		if (crosshairdim && crosshairscale)
+		if (hud_crosshairdim && hud_crosshairscale)
 			screen->DrawLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
-        else if (crosshairscale)
+        else if (hud_crosshairscale)
 			screen->DrawPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
-        else if (crosshairdim)
+        else if (hud_crosshairdim)
 			screen->DrawLucentPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);

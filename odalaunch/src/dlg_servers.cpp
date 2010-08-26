@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -109,18 +109,23 @@ void dlgServers::OnButtonOK(wxCommandEvent &event)
     wxMessageDialog msgdlg(this, _T("Save settings?"), _T("Save settings?"),
                            wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
 
-    if (UserChangedSetting == 1)
+    if (UserChangedSetting == false)
+    {
+        Close();
+        return;
+    }
+
     if (msgdlg.ShowModal() == wxID_YES)
     {
         // reset 'dirty' flag
-        UserChangedSetting = 0;
+        UserChangedSetting = false;
         
         LoadServersIn();
 
         SaveSettings();
     }
     else
-        UserChangedSetting = 0;
+        UserChangedSetting = false;
 
     Close();
 }
@@ -190,7 +195,7 @@ void dlgServers::OnButtonAddServer(wxCommandEvent &event)
         
         SERVER_LIST->Append(addr_portfmt, (void *)(cs));      
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
 }
 
@@ -236,7 +241,7 @@ void dlgServers::OnButtonReplaceServer(wxCommandEvent &event)
         SERVER_LIST->SetString(i, addr_portfmt);
         SERVER_LIST->SetClientData(i, (void *)(cs));
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
 }
 
@@ -253,7 +258,7 @@ void dlgServers::OnButtonDeleteServer(wxCommandEvent &event)
         
         SERVER_LIST->Delete(i);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
 }
 
@@ -274,7 +279,7 @@ void dlgServers::OnButtonMoveServerUp(wxCommandEvent &event)
 
         SERVER_LIST->SetSelection(i - 1);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
 }
 
@@ -295,7 +300,7 @@ void dlgServers::OnButtonMoveServerDown(wxCommandEvent &event)
 
         SERVER_LIST->SetSelection(i + 1);
 
-        UserChangedSetting = 1;
+        UserChangedSetting = true;
     }
 }
 
