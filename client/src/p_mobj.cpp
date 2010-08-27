@@ -895,8 +895,8 @@ void AActor::RunThink ()
 		}
 	}
 
-
 	// Handle X and Y momemtums
+    BlockingMobj = NULL;	
 	if (momx || momy || (flags & MF_SKULLFLY))
 	{
 		P_XYMovement (this);

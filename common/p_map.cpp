@@ -44,6 +44,7 @@
 
 fixed_t 		tmbbox[4];
 static AActor  *tmthing;
+static int 		tmflags;
 static fixed_t	tmx;
 static fixed_t	tmy;
 static fixed_t	tmz;	// [RH] Needed for third dimension of teleporters
@@ -76,11 +77,13 @@ line_t** 		spechit;
 int 			numspechit;
 
 AActor *onmobj; // generic global onmobj...used for landing on pods/players
+AActor *BlockingMobj;
 
 // Temporary holder for thing_sectorlist threads
 msecnode_t* sector_list = NULL;		// phares 3/16/98
 
 EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR (co_realactorheight)
 
 //
 // TELEPORT MOVE
@@ -427,13 +430,21 @@ BOOL PIT_CheckThing (AActor *thing)
         return true;
 
 	blockdist = thing->radius + tmthing->radius;
-
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
 		// didn't hit thing
 		return true;
 	}
-
+	      
+	if ((tmthing->flags2 & MF2_PASSMOBJ) && co_realactorheight)
+	{
+		// check if a mobj passed over/under another object
+		if (/*!(thing->flags & MF_SPECIAL) &&*/
+			((tmthing->z >= thing->z + thing->height ||
+			  tmthing->z + tmthing->height < thing->z)))
+			return true;
+	}
+	
     // check for skulls slamming into things
 	if (tmthing->flags & MF_SKULLFLY)
 	{
@@ -601,6 +612,8 @@ BOOL Check_Sides(AActor* actor, int x, int y)
 //	tmdropoffz = the lowest point contacted (monsters won't move to a dropoff)
 //	speciallines[]
 //	numspeciallines
+//  AActor *BlockingMobj = pointer to thing that blocked position (NULL if not
+//   blocked, or blocked by a line).
 bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 {
 	int xl, xh;
@@ -609,6 +622,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	subsector_t *newsubsec;
 
 	tmthing = thing;
+	tmflags = thing->flags;
 
 	tmx = x;
 	tmy = y;
@@ -635,7 +649,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	validcount++;
 	numspechit = 0;
 
-	if (tmthing->flags & MF_NOCLIP)
+	if (tmflags & MF_NOCLIP && !(tmflags & MF_SKULLFLY))
 		return true;
 
 	// Check things first, possibly picking things up.
@@ -647,12 +661,18 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
-
+	
+	BlockingMobj = NULL;
 	for (bx=xl ; bx<=xh ; bx++)
 		for (by=yl ; by<=yh ; by++)
 			if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
 				return false;
-
+	
+	// check lines
+	if (tmflags & MF_NOCLIP)
+		return true;
+		    
+    BlockingMobj = NULL;
 	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
@@ -681,7 +701,28 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 
 	floatok = false;
     if (!P_CheckPosition (thing, x, y))
-		return false;		// solid wall or thing
+    {
+         // solid wall or thing        
+         if (!BlockingMobj)
+             return false;
+         else
+         {
+             if (BlockingMobj->player || !thing->player)
+                 return false;
+                 
+             else if (BlockingMobj->z+BlockingMobj->height-thing->z 
+                 > 24*FRACUNIT 
+                 || (BlockingMobj->subsector->sector->ceilingheight
+                 -(BlockingMobj->z+BlockingMobj->height) < thing->height)
+                 || (tmceilingz-(BlockingMobj->z+BlockingMobj->height) 
+                 < thing->height))
+             {
+                 return false;
+            }
+        }
+        if (!(tmthing->flags2 & MF2_PASSMOBJ))
+            return false;             
+    }
 
 	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
 	{
