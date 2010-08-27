@@ -3624,6 +3624,8 @@ void SV_WinCheck (void)
 	}
 }
 
+EXTERN_CVAR (sv_waddownloadcap)
+
 //
 // SV_WadDownloads
 //
@@ -3634,8 +3636,9 @@ void SV_WadDownloads (void)
 		return;
 
 	// don't send too much
-	if(gametic%(2 * (players.size()+1)))
-		return;
+	// [ML] 8/27/10: ...unless the server admin allows it
+	if(gametic%(2 * (players.size()+1)) && sv_waddownloadcap)
+        return;
 
 	// wad downloading
 	for(size_t i = 0; i < players.size(); i++)
