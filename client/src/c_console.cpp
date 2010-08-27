@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1500,9 +1500,14 @@ static brokenlines_t *MidMsg = NULL;
 static int MidTicker = 0, MidLines;
 EXTERN_CVAR (con_midtime)
 
-void C_MidPrint (const char *msg, player_t *p)
+void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
 	int i;
+    std::string Str;
+    size_t StrLength;
+    
+    if (!msgtime)
+        msgtime = con_midtime;
 
 	if (MidMsg)
 		V_FreeBrokenLines (MidMsg);
@@ -1510,17 +1515,29 @@ void C_MidPrint (const char *msg, player_t *p)
 	if (msg)
 	{
 		midprinting = true;
-		//Printf (PRINT_HIGH,
-		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n%s\n"
-		//	"\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-		//	"\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n", msg);
+
+        // [Russell] - convert textual "\n" into the binary representation for
+        // line breaking
+        Str = msg;
+        StrLength = Str.length();
+
+        for (i = 0; i < StrLength && i + 1 < StrLength; ++i)
+        {
+            if ((Str[i] == '\\') && (Str[i + 1] == 'n'))
+            {
+                Str[i] = '\n';
+                Str = Str.erase(i + 1, 1);
+            }
+        }
+
+        msg = Str.c_str();
+
 		Printf (PRINT_HIGH, "%s\n", msg);
 		midprinting = false;
 
 		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)msg)) )
 		{
-			MidTicker = (int)(con_midtime * TICRATE) + gametic;
+			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
 			for (i = 0; MidMsg[i].width != -1; i++)
 				;
@@ -1577,10 +1594,10 @@ void C_DrawMid (void)
 }
 
 // denis - moved secret discovery message to this function
-EXTERN_CVAR (revealsecrets)
+EXTERN_CVAR (hud_revealsecrets)
 void C_RevealSecret()
 {
-	if(!revealsecrets || sv_gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for revealsecrets
+	if(!hud_revealsecrets || sv_gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for hud_revealsecrets
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint ("A secret is revealed!");

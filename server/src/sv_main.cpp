@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -773,12 +773,16 @@ void SV_GetPackets (void)
 }
 
 // Print a midscreen message to a client
-void SV_MidPrint (const char *msg, player_t *p)
+void SV_MidPrint (const char *msg, player_t *p, int msgtime)
 {
     client_t *cl = &p->client;
 
     MSG_WriteMarker(&cl->reliablebuf, svc_midprint);
     MSG_WriteString(&cl->reliablebuf, msg);
+    if (msgtime)
+        MSG_WriteShort(&cl->reliablebuf, msgtime);
+    else
+        MSG_WriteShort(&cl->reliablebuf, 0);
 }
 
 //
@@ -2072,7 +2076,7 @@ void SV_ConnectClient (void)
 		MSG_WriteByte(&cl.reliablebuf, players[n].id);
 	}
 	
-	SV_MidPrint((char *)sv_motd.cstring(),(player_t *) &players[n]);
+	SV_MidPrint((char *)sv_motd.cstring(),(player_t *) &players[n], 6);
 }
 
 extern BOOL singleplayerjustdied;

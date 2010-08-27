@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -168,6 +168,8 @@ void Server::ResetData()
     Info.VersionPatch = 0;
     Info.VersionRevision = 0;
     Info.VersionProtocol = 0;
+    Info.VersionRealProtocol = 0;
+    Info.PTime = 0;
     Info.Name = wxT("");
     Info.MaxClients = 0;
     Info.MaxPlayers = 0;
@@ -210,11 +212,18 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
     Info.VersionPatch = VersionPatch;
     Info.VersionProtocol = ProtocolVersion;
     
-    // TODO: Remove me before 0.5 release
+    // TODO: Remove guard for next release
     QRYNEWINFO(2)
     {
-        Socket.Read32(Info.VersionRevision);
+        // bond - time
+        Socket.Read32(Info.PTime);
+
+        // The servers real protocol version
+        // bond - real protocol
+        Socket.Read32(Info.VersionRealProtocol);
     }
+
+    Socket.Read32(Info.VersionRevision);
     
     wxUint8 CvarCount;
     
@@ -227,8 +236,7 @@ void Server::ReadInformation(const wxUint8 &VersionMajor,
         Socket.ReadString(Cvar.Name);
         Socket.ReadString(Cvar.Value);
         
-        // Filter out important information for us to use, it'd be nicer to have
-        // a launcher-side cvar implementation though
+        // Filter out important information for us to use
         if (Cvar.Name == wxT("sv_hostname"))
         {
             Info.Name = Cvar.Value;
@@ -479,6 +487,8 @@ wxInt32 Server::Query(wxInt32 Timeout)
         Socket.Write32(challenge);
         Socket.Write32(VERSION);
         Socket.Write32(PROTOCOL_VERSION);
+        // bond - time
+        Socket.Write32(Info.PTime);
         
         if(!Socket.SendData(Timeout))
             return 0;

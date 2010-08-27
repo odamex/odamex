@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -137,10 +137,7 @@ CVAR (joy_invert, "0", CVAR_ARCHIVE)
 //CVAR (joy_xthreshold, "0.15", CVAR_ARCHIVE)
 //CVAR (joy_ythreshold, "0.15", CVAR_ARCHIVE)
 
-CVAR (revealsecrets, "0", CVAR_ARCHIVE)
 CVAR (show_messages, "1", CVAR_ARCHIVE)
-
-CVAR (r_showendoom, "1", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
 
 // Rate of client updates
 CVAR_FUNC_DECL (rate, "200000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -155,8 +152,6 @@ CVAR (cl_color,		"40 cf 00",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE
 CVAR (cl_gender,	"male",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_skin,		"base",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_team,		"blue",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR (wipetype, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (chasedemo, "0", CVAR_NULL)
 
@@ -174,6 +169,8 @@ CVAR (idmypos, "0", CVAR_NULL)
 
 // Heads up display
 // ----------------
+
+CVAR (hud_revealsecrets, "0", CVAR_ARCHIVE)
 CVAR (hud_transparency, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_scale, "0", CVAR_ARCHIVE)
 CVAR (hud_targetnames, "1", CVAR_ARCHIVE)
@@ -195,26 +192,14 @@ CVAR (chatmacro8, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro9, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro0, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
-
-
-// Compatibility options for vanilla
-// ---------------------------------
-
 // Sound and music
 // ---------------
 
-// Sound volume
-CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// Music volume
-CVAR_FUNC_DECL (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR (snd_crossover, "0", CVAR_ARCHIVE)
-
-// Sample rate
-CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-// number of channels available
-BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)      // Sound volume
+CVAR_FUNC_DECL (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // Music volume
+CVAR (snd_crossover, "0", CVAR_ARCHIVE)                                         // Stereo switch
+CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)             // Sample rate
+BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     // Number of channels available
 {
 	S_Stop();
 	S_Init (snd_sfxvolume, snd_musicvolume);
@@ -223,6 +208,7 @@ END_CUSTOM_CVAR (snd_channels)
 
 // Status bar
 // ----------
+
 CVAR_FUNC_DECL (st_scale, "1", CVAR_ARCHIVE)
 
 // Video and Renderer
@@ -242,6 +228,9 @@ CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
 CVAR (r_drawplayersprites, "1", CVAR_CLIENTINFO)
 // Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
 CVAR_FUNC_DECL (r_stretchsky, "2", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR (r_wipetype, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (r_showendoom, "1", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
 
 // TODO: document
 CVAR (r_viewsize, "0", CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)

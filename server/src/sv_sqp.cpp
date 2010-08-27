@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -109,15 +109,24 @@ struct CvarField_t
 // IntQryBuildInformation()
 //
 // Protocol building routine, the passed parameter is the enquirer version
-static void IntQryBuildInformation(const DWORD &EqProtocolVersion)
+static void IntQryBuildInformation(const DWORD &EqProtocolVersion, 
+    const DWORD &EqTime)
 {
     std::vector<CvarField_t> Cvars;
 
-    // TODO: Remove me before 0.5 release
+    // TODO: Remove guard for next release
     QRYNEWINFO(2)
     {
-        MSG_WriteLong(&ml_message, last_revision);
+        // bond - time
+        MSG_WriteLong(&ml_message, EqTime);
+
+        // The servers real protocol version
+        // bond - real protocol
+        MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
     }
+
+    // Built revision of server
+    MSG_WriteLong(&ml_message, last_revision);
 
     cvar_t *var = GetFirstCvar();
     
@@ -296,6 +305,14 @@ static DWORD IntQrySendResponse(const WORD &TagId,
     // Begin enquirer version translation
     DWORD EqVersion = MSG_ReadLong();
     DWORD EqProtocolVersion = MSG_ReadLong();
+    DWORD EqTime = 0;
+
+    // TODO: Remove guard for next release
+    // bond - time
+    QRYNEWINFO(2)
+    {
+        EqTime = MSG_ReadLong();
+    }
 
     // Override other packet types for older enquirer version response
     if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) || 
@@ -315,10 +332,19 @@ static DWORD IntQrySendResponse(const WORD &TagId,
     MSG_WriteLong(&ml_message, ReTag);
     MSG_WriteLong(&ml_message, GAMEVER);
     
-    // Enquirer is an old version
-    if (RePacketType == 2)
+    // Enquirer requested the version info of the server or the server
+    // determined it is an old version
+    if (RePacketType == 1 || RePacketType == 2)
     {       
+        // bond - real protocol
         MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
+
+        // TODO: Remove guard for next release
+        // bond - time
+        QRYNEWINFO(2)
+        {
+            MSG_WriteLong(&ml_message, EqTime);
+        }
 
         NET_SendPacket(ml_message, net_from);
         
@@ -338,7 +364,7 @@ static DWORD IntQrySendResponse(const WORD &TagId,
     else
         MSG_WriteLong(&ml_message, EqProtocolVersion);
     
-    IntQryBuildInformation(EqProtocolVersion);
+    IntQryBuildInformation(EqProtocolVersion, EqTime);
     
     NET_SendPacket(ml_message, net_from);
 

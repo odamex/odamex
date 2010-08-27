@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -89,7 +89,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 void SV_SoundAvoidCl (player_t &player, AActor *mo, byte channel, char *name, byte attenuation);
 
-void SV_MidPrint (const char *msg, player_t *p);
+void SV_MidPrint (const char *msg, player_t *p, int msgtime=0);
 
 int SV_CountTeamPlayers(int team);
 

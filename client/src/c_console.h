@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2009 by The Odamex Team.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -68,7 +68,7 @@ void C_FlushDisplay (void);
 void C_InitTicker (const char *label, unsigned int max);
 void C_SetTicker (unsigned int at);
 
-void C_MidPrint (const char *msg, player_t *p = NULL);
+void C_MidPrint (const char *msg, player_t *p = NULL, int msgtime=0);
 void C_DrawMid (void);
 
 BOOL C_Responder (event_t *ev);
