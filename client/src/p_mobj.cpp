@@ -39,6 +39,11 @@
 #include "vectors.h"
 #include "cl_ctf.h"
 
+#define WATER_SINK_FACTOR		3
+#define WATER_SINK_SMALL_FACTOR	4
+#define WATER_SINK_SPEED		(FRACUNIT/2)
+#define WATER_JUMP_SPEED		(FRACUNIT*7/2)
+
 void G_PlayerReborn (player_t &player);
 
 EXTERN_CVAR (weaponstay)
@@ -428,10 +433,33 @@ void P_XYMovement (AActor *mo)
 		// killough 3/15/98: Allow objects to drop off
 		if (!P_TryMove (mo, ptryx, ptryy, true))
 		{
-			// blocked move
-			if (mo->player)
-			{	// try to slide along it
-				P_SlideMove (mo);
+			if (mo->flags2 & MF2_SLIDE)
+			{
+				// try to slide along it
+				if (BlockingMobj == NULL)
+				{ // slide against wall
+					if (mo->player && mo->waterlevel && mo->waterlevel < 3
+						&& (mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove))
+					{
+						mo->momz = WATER_JUMP_SPEED;
+					}
+					P_SlideMove (mo);
+				}
+				else
+				{ // slide against mobj
+					if (P_TryMove (mo, mo->x, ptryy, true))
+					{
+						mo->momx = 0;
+					}
+					else if (P_TryMove (mo, ptryx, mo->y, true))
+					{
+						mo->momy = 0;
+					}
+					else
+					{
+						mo->momx = mo->momy = 0;
+					}
+				}
 			}
 			else if (mo->flags & MF_MISSILE)
 			{
