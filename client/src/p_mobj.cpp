@@ -83,6 +83,8 @@ void AActor::Serialize (FArchive &arc)
 			<< state
 			<< flags
 			<< flags2
+			<< special1
+			<< special2			
 			<< health
 			<< movedir
 			<< visdir
@@ -131,6 +133,8 @@ void AActor::Serialize (FArchive &arc)
 			>> state
 			>> flags
 			>> flags2
+			>> special1
+			>> special2			
 			>> health
 			>> movedir
 			>> visdir
@@ -188,11 +192,11 @@ AActor::AActor () :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
     floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
-    health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
-    player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
-    translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
-    oldframe(0), rndindex(0), netid(0), tid(0)
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), 
+    flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0), 
+    visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), inext(NULL), 
+    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), onground(0), 
+    touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0), tid(0)
 {
 	self.init(this);
 }
@@ -206,6 +210,7 @@ AActor::AActor (const AActor &other) :
     height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
     validcount(other.validcount), type(other.type), info(other.info),
     tics(other.tics), state(other.state), flags(other.flags), flags2(other.flags2),
+    special1(other.special1), special2(other.special2),
     health(other.health), movedir(other.movedir), movecount(other.movecount),
     visdir(other.visdir), reactiontime(other.reactiontime),
     threshold(other.threshold), player(other.player), lastlook(other.lastlook),
@@ -248,6 +253,8 @@ AActor &AActor::operator= (const AActor &other)
     state = other.state;
     flags = other.flags;
     flags2 = other.flags2;
+    special1 = other.special1;
+    special2 = other.special2;    
     health = other.health;
     movedir = other.movedir;
     movecount = other.movecount;
@@ -457,11 +464,10 @@ void P_XYMovement (AActor *mo)
 	}
 
 	if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
-	{
 		return; 	// no friction for missiles ever
-	}
 
-	if (mo->z > mo->floorz && !(mo->flags2 & MF2_FLY) && !mo->waterlevel && !(mo->player && mo->player->spectator))
+	if (mo->z > mo->floorz && !(mo->flags2 & MF2_ONMOBJ) && !(mo->flags2 & MF2_FLY)
+        && !mo->waterlevel && !(mo->player && mo->player->spectator))
 		return;		// no friction when airborne (GhostlyDeath 06/04/2008 -- but not when spectating)
 
 	if (mo->flags & MF_CORPSE)
@@ -671,6 +677,15 @@ void P_ZMovement (AActor *mo)
    }
 }
 
+//
+// PlayerLandedOnThing
+//
+static void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
+{
+	mo->player->deltaviewheight = mo->momz>>3;
+	S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_IDLE);
+//	mo->player->centering = true;
+}
 
 //
 // P_NightmareRespawn
@@ -865,6 +880,8 @@ AActor *AActor::FindGoal (const AActor *actor, int tid, int kind)
 //
 void AActor::RunThink ()
 {
+    AActor *onmo;
+    
 	if(!subsector)
 		return;
 
@@ -896,7 +913,7 @@ void AActor::RunThink ()
 	}
 
 	// Handle X and Y momemtums
-    BlockingMobj = NULL;	
+    BlockingMobj = NULL;
 	if (momx || momy || (flags & MF_SKULLFLY))
 	{
 		P_XYMovement (this);
@@ -905,12 +922,56 @@ void AActor::RunThink ()
 			return;		// actor was destroyed
 	}
 
-	if ((z != floorz) || momz)
+	if (flags2 & MF2_FLOATBOB)
+	{ // Floating item bobbing motion (special1 is height)
+		z = floorz + special1;
+	}
+	else if ((z != floorz) || momz || BlockingMobj)
 	{
-		P_ZMovement (this);
-
-		if (ObjectFlags & OF_MassDestruction)
-			return;		// actor was destroyed
+	    // Handle Z momentum and gravity
+		if (flags2 & MF2_PASSMOBJ)
+		{
+		    if (!(onmo = P_CheckOnmobj (this)))
+			{
+				P_ZMovement (this);
+				if (player && flags2 & MF2_ONMOBJ)
+				{
+					flags2 &= ~MF2_ONMOBJ;
+				}
+			}
+			else
+			{
+			    if (player)
+				{
+					//if (momz < 1 && !(flags2&MF2_FLY))
+					//{
+					//	PlayerLandedOnThing (this, onmo);
+					//}
+					
+					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
+					{
+						player->viewheight -= z + onmo->height - z;
+						player->deltaviewheight =
+							(VIEWHEIGHT - player->viewheight)>>3;
+						z = onmo->z + onmo->height;
+						flags2 |= MF2_ONMOBJ;
+						momz = 0;
+					}
+					else
+					{
+						// hit the bottom of the blocking mobj
+						momz = 0;
+					}				    
+				}
+			}
+		}
+	    else
+	    {
+            P_ZMovement (this);        
+	    }
+	    
+        if (ObjectFlags & OF_MassDestruction)
+            return;		// actor was destroyed
 	}
 
 	if(subsector)

@@ -670,6 +670,15 @@ void P_ZMovement (AActor *mo)
    }
 }
 
+//
+// PlayerLandedOnThing
+//
+static void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
+{
+	mo->player->deltaviewheight = mo->momz>>3;
+	S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_IDLE);
+//	mo->player->centering = true;
+}
 
 //
 // P_NightmareRespawn
@@ -867,6 +876,8 @@ EXTERN_CVAR(sv_speedhackfix)
 //
 void AActor::RunThink ()
 {
+    AActor *onmo;
+        
 	if (type == MT_PLAYER && health <= 0)
 		deadtic++;
 
@@ -906,6 +917,7 @@ void AActor::RunThink ()
 
 
 	// Handle X and Y momemtums
+    BlockingMobj = NULL;	
 	if (momx || momy || (flags & MF_SKULLFLY))
 	{
 		P_XYMovement (this);
@@ -914,12 +926,56 @@ void AActor::RunThink ()
 			return;		// actor was destroyed
 	}
 
-	if ((z != floorz) || momz)
+	if (flags2 & MF2_FLOATBOB)
+	{ // Floating item bobbing motion (special1 is height)
+		z = floorz + special1;
+	}
+	else if ((z != floorz) || momz || BlockingMobj)
 	{
-		P_ZMovement (this);
-
-		if (ObjectFlags & OF_MassDestruction)
-			return;		// actor was destroyed
+	    // Handle Z momentum and gravity
+		if (flags2 & MF2_PASSMOBJ)
+		{
+		    if (!(onmo = P_CheckOnmobj (this)))
+			{
+				P_ZMovement (this);
+				if (player && flags2 & MF2_ONMOBJ)
+				{
+					flags2 &= ~MF2_ONMOBJ;
+				}
+			}
+			else
+			{
+			    if (player)
+				{
+					//if (momz < 1 && !(flags2&MF2_FLY))
+					//{
+					//	PlayerLandedOnThing (this, onmo);
+					//}
+					
+					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
+					{
+						player->viewheight -= z + onmo->height - z;
+						player->deltaviewheight =
+							(VIEWHEIGHT - player->viewheight)>>3;
+						z = onmo->z + onmo->height;
+						flags2 |= MF2_ONMOBJ;
+						momz = 0;
+					}
+					else
+					{
+						// hit the bottom of the blocking mobj
+						momz = 0;
+					}				    
+				}
+			}
+		}
+	    else
+	    {
+            P_ZMovement (this);        
+	    }
+	    
+        if (ObjectFlags & OF_MassDestruction)
+            return;		// actor was destroyed
 	}
 
 	if(subsector)

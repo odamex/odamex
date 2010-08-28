@@ -274,7 +274,7 @@ void P_MovePlayer (player_t *player)
 		P_PlayerLookUpDown(player);
 	}
 
-	mo->onground = (mo->z <= mo->floorz);
+	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
 
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
@@ -326,6 +326,60 @@ void P_MovePlayer (player_t *player)
 	{
 		player->cheats &= ~CF_REVERTPLEASE;
 		player->camera = player->mo;
+	}
+}
+
+// [RH] (Adapted from Q2)
+// P_FallingDamage
+//
+void P_FallingDamage (AActor *ent)
+{
+	float	delta;
+	int		damage;
+
+	if (!ent->player)
+		return;		// not a player
+
+	if (ent->flags & MF_NOCLIP)
+		return;
+
+	if ((ent->player->oldvelocity[2] < 0)
+		&& (ent->momz > ent->player->oldvelocity[2])
+		&& (!(ent->flags2 & MF2_ONMOBJ)
+			|| !(ent->z <= ent->floorz)))
+	{
+		delta = (float)ent->player->oldvelocity[2];
+	}
+	else
+	{
+		if (!(ent->flags2 & MF2_ONMOBJ))
+			return;
+		delta = (float)(ent->momz - ent->player->oldvelocity[2]);
+	}
+	delta = delta*delta * 2.03904313e-11f;
+
+	if (delta < 1)
+		return;
+
+	if (delta < 15)
+	{
+		//ent->s.event = EV_FOOTSTEP;
+		return;
+	}
+
+	if (delta > 30)
+	{
+		damage = (int)((delta-30)/2);
+		if (damage < 1)
+			damage = 1;
+
+		if (0)
+			P_DamageMobj (ent, NULL, NULL, damage, MOD_FALLING);
+	}
+	else
+	{
+		//ent->s.event = EV_FALLSHORT;
+		return;
 	}
 }
 
