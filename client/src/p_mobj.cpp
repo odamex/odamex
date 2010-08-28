@@ -722,6 +722,8 @@ void P_NightmareRespawn (AActor *mobj)
     // spawn it
     if (mobj->info->flags & MF_SPAWNCEILING)
 		z = ONCEILINGZ;
+	else if (mobj->info->flags2 & MF2_FLOATBOB)
+		z = mthing->z << FRACBITS;		
     else
 		z = ONFLOORZ;
 
@@ -1049,6 +1051,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
     floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
     validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
+    special1(0),special2(0),
     health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
     player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
     translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
@@ -1105,6 +1108,10 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	else if (iz == ONCEILINGZ)
 	{
 		z = ceilingz - height;
+	}
+	else if (flags2 & MF2_FLOATBOB)
+	{
+		z = floorz + iz;		// artifact z passed in as height
 	}
 	else
 	{
@@ -1205,6 +1212,12 @@ void P_RespawnSpecials (void)
 	else if (z == ONCEILINGZ)
 		mo->z -= mthing->z << FRACBITS;
 
+	if (mo->flags2 & MF2_FLOATBOB)
+	{ // Seed random starting index for bobbing motion
+		mo->health = M_Random();
+		mo->special1 = mthing->z << FRACBITS;
+	}
+	
 	// pull it from the que
 	iquetail = (iquetail+1)&(ITEMQUESIZE-1);
 }
@@ -1514,6 +1527,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (z == ONCEILINGZ)
 		mobj->z -= mthing->z << FRACBITS;
 	mobj->spawnpoint = *mthing;
+
+	if (mobj->flags2 & MF2_FLOATBOB)
+	{ // Seed random starting index for bobbing motion
+		mobj->health = M_Random();
+		mobj->special1 = mthing->z << FRACBITS;
+	}
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);
