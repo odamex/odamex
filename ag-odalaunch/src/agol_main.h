@@ -73,7 +73,7 @@ typedef struct
 } ODA_Statusbar;
 
 // AGOL_MainWindow - Class for the main window
-class AGOL_MainWindow : private ODA_EventRegister, ODA_ThreadBase
+class AGOL_MainWindow : private ODA_ThreadBase, ODA_EventRegister
 {
 public:
 	AGOL_MainWindow(int width, int height);

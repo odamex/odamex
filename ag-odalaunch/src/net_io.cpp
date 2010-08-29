@@ -36,9 +36,11 @@
 #include <agar/core.h>
 
 #include "net_io.h"
+#include "xbox_main.h"
 
-#ifndef WIN32
+#ifndef _WIN32
 #define closesocket close
+#define INVALID_SOCKET -1
 #endif
 
 using namespace std;
@@ -60,7 +62,7 @@ BufferedSocket::~BufferedSocket()
 // System-specific Initialize and shutdown functions
 bool BufferedSocket::InitializeSocketAPI()
 {
-#ifdef WIN32
+#ifdef _WIN32
 	WSADATA wsaData;
 
 	if(WSAStartup(MAKEWORD(1, 1), &wsaData) != 0)
@@ -72,7 +74,7 @@ bool BufferedSocket::InitializeSocketAPI()
 
 void BufferedSocket::ShutdownSocketAPI()
 {
-#ifdef WIN32
+#ifdef _WIN32
 	WSACleanup();
 #endif
 }
@@ -84,14 +86,26 @@ void BufferedSocket::ReportError(int line, const char *function, const char *fmt
 	if(!function || !fmt)
 		return;
 
-	fprintf(stderr, "[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
-	
 
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
 
+#ifdef _XBOX
+	char errorstr[1024];
+
+	sprintf(errorstr, "[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
+	OutputDebugString(errorstr);
+
+	vsprintf(errorstr, fmt, ap);
+	OutputDebugString(errorstr);
+
+	OutputDebugString("\n");
+#else
+	fprintf(stderr, "[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
+	vfprintf(stderr, fmt, ap);
 	fputs("\n", stderr);
+#endif // _XBOX
+
+	va_end(ap);
 }
        
 bool BufferedSocket::CreateSocket()
@@ -100,9 +114,13 @@ bool BufferedSocket::CreateSocket()
 
 	m_Socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
-	if(m_Socket < 0)
+	if(m_Socket == INVALID_SOCKET)
 	{
-		ReportError(__LINE__, __FUNCTION__, strerror(errno));
+#ifdef _WIN32
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
+#else
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
+#endif
 		return false;
 	}
 
@@ -110,7 +128,11 @@ bool BufferedSocket::CreateSocket()
 				(struct sockaddr *)&m_RemoteAddress,
 				sizeof(m_RemoteAddress)) == -1)
 	{
-		ReportError(__LINE__, __FUNCTION__, strerror(errno));
+#ifdef _WIN32
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
+#else
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
+#endif
 		return false;
 	}
 
@@ -134,7 +156,11 @@ void BufferedSocket::SetRemoteAddress(const string &Address, const int16_t &Port
 
 	if((he = gethostbyname((const char *)Address.c_str())) == NULL)
 	{
-		ReportError(__LINE__, __FUNCTION__, strerror(errno));
+#ifdef _WIN32
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
+#else
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
+#endif
 		return;
     }
 
@@ -199,7 +225,13 @@ int32_t BufferedSocket::SendData(const int32_t &Timeout)
 	m_SendPing = AG_GetTicks() - sw;
 
 	if(BytesSent < 0 && errno > 0)
-		ReportError(__LINE__, __FUNCTION__, strerror(errno));
+	{
+#ifdef _WIN32
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
+#else
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
+#endif
+	}
 
 	// return the amount of bytes sent
 	return BytesSent;
@@ -231,7 +263,13 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	if (DestroyMe == true)
 	{
 		if(errno > 0)
-			ReportError(__LINE__, __FUNCTION__, strerror(errno));
+		{
+#ifdef _WIN32
+			ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
+#else
+			ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
+#endif
+		}
 
 		m_SendPing = 0;
 		m_ReceivePing = 0;
@@ -246,7 +284,11 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	// -1 = Error; 0 = Closed Connection
 	if(m_BufferSize <= 0)
 	{
-		ReportError(__LINE__, __FUNCTION__, strerror(errno));
+#ifdef _WIN32
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
+#else
+		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
+#endif
 
 		m_SendPing = 0;
 		m_ReceivePing = 0;

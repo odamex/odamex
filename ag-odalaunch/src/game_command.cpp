@@ -28,7 +28,11 @@
 #include <cstdlib>
 #include <errno.h>
 
-#ifndef WIN32
+#ifdef _XBOX
+#include <xtl.h>
+#endif
+
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/wait.h>
 #endif
@@ -39,7 +43,7 @@
 #include "game_command.h"
 #include "gui_config.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #define usleep(t) Sleep(t / 1000)
 #endif
 
@@ -79,7 +83,7 @@ int GameCommand::Launch()
 	// Add the bin to the path
 #ifdef _XBOX
 	cout << "Xbox: Stub!" << endl;
-#elif WIN32
+#elif _WIN32
 	cmd += "odamex.exe";
 #else
 	cmd += "odamex";

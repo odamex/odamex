@@ -27,7 +27,9 @@
 #ifndef NET_IO_H
 #define NET_IO_H
 
-#ifdef WIN32
+#ifdef _XBOX
+	#include <xtl.h>
+#elif _WIN32
     #include <windows.h>
     #include <winsock.h>
 #else
@@ -39,6 +41,10 @@
 #endif
 
 #include "typedefs.h"
+
+#ifndef _WIN32
+#define SOCKET int
+#endif
 
 #define MAX_PAYLOAD 8192
 
@@ -128,7 +134,7 @@ private:
 	bool    m_BadWrite;
         
 	// the socket
-	int     m_Socket;
+	SOCKET  m_Socket;
         
 	// local address
 	struct sockaddr_in m_LocalAddress;

@@ -716,9 +716,9 @@ void AGOL_MainWindow::OnLaunch(AG_Event *event)
 
 	if(GuiConfig::Read("WadDirs", waddirs))
 	{
-		char cwd[PATH_MAX];
+		char cwd[AG_PATHNAME_MAX];
 
-		if(!AG_GetCWD(cwd, PATH_MAX))
+		if(!AG_GetCWD(cwd, AG_PATHNAME_MAX))
 			cmd.AddParameter("-waddir", cwd);
 	}
 	else
@@ -1139,6 +1139,12 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 				serversQueried++;
 			}
 		}
+#ifdef _XBOX
+		// This yield is required on Xbox. Without it the Xbox sometimes fails to give the other
+		// threads CPU time and that results in an unacceptably long query and an interface pause
+		// while this thread continuously queries the other threads for completion. -- Hyper_Eye
+		AG_Delay(1);
+#endif
 		UpdateQueriedLabelCompleted((int)count);
 	}
 

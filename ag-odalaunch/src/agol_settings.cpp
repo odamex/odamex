@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <string>
+#include <algorithm>
 
 #include <agar/core.h>
 #include <agar/gui.h>
@@ -148,7 +149,7 @@ AG_Tlist *AGOL_Settings::CreateWadDirList(void *parent)
 {
 	AG_Tlist *wdlist;
 	string    waddirs;
-	char      cwd[PATH_MAX];
+	char      cwd[AG_PATHNAME_MAX];
 
 	wdlist = AG_TlistNewPolled(parent, AG_TLIST_EXPAND, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_Settings::UpdateWadDirList));
@@ -159,7 +160,7 @@ AG_Tlist *AGOL_Settings::CreateWadDirList(void *parent)
 	if(GuiConfig::Read("WadDirs", waddirs))
 	{
 		// If there are no waddirs configured insert the current working directory
-		if(!AG_GetCWD(cwd, PATH_MAX))
+		if(!AG_GetCWD(cwd, AG_PATHNAME_MAX))
 			WadDirs.push_back(cwd);
 	}
 	else

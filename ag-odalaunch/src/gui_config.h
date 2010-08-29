@@ -28,7 +28,7 @@
 #ifndef _GUI_CONFIG_H
 #define _GUI_CONFIG_H
 
-#ifdef WIN32
+#ifdef _WIN32
 #define PATH_DELIMITER ';'
 #else
 #define PATH_DELIMITER ':'

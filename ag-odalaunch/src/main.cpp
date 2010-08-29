@@ -33,10 +33,15 @@
 #include "agol_main.h"
 #include "net_io.h"
 #include "gui_config.h"
+#include "xbox_main.h"
 
 using namespace std;
 
+#ifdef GCONSOLE
+int agol_main(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
 	AGOL_MainWindow *mainWindow;
 	char            *drivers = NULL;
@@ -77,6 +82,11 @@ int main(int argc, char *argv[])
 
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
 
+#ifdef _XBOX
+	if(!drivers)
+		drivers = strdup("sdlfb");
+#endif
+
 	if(!drivers || !strstr(drivers, "sdl"))
 	{
 		/* Initialize Agar-GUI. */
@@ -90,7 +100,7 @@ int main(int argc, char *argv[])
 	}
 	else // Alternative initialization. This will only initialize single-window display.
 	{
-		if(!strcmp(drivers, "sdlfb"))
+		if(drivers && !strcmp(drivers, "sdlfb"))
 		{
 			if (AG_InitVideo(width, height, 32, AG_VIDEO_SDL | AG_VIDEO_RESIZABLE) == -1) 
 			{
@@ -106,6 +116,10 @@ int main(int argc, char *argv[])
 				return (-1);
 			}
 		}
+
+#ifdef _XBOX
+		AG_SetRefreshRate(30);
+#endif
 	}
 
 	// Initialize socket API

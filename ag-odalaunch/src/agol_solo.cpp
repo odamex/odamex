@@ -156,10 +156,10 @@ void AGOL_Solo::PopulateWadLists()
 	// Read the WadDirs option from the config file
 	if(GuiConfig::Read("WadDirs", waddirs))
 	{
-		char cwd[PATH_MAX];
+		char cwd[AG_PATHNAME_MAX];
 
 		// If there are no waddirs configured insert the current working directory
-		if(!AG_GetCWD(cwd, PATH_MAX))
+		if(!AG_GetCWD(cwd, AG_PATHNAME_MAX))
 			waddirList.push_back(cwd);
 	}
 	else
@@ -279,10 +279,10 @@ void AGOL_Solo::OnLaunch(AG_Event *event)
 	// Get the waddir option
 	if(GuiConfig::Read("WadDirs", waddirs))
 	{
-		char cwd[PATH_MAX];
+		char cwd[AG_PATHNAME_MAX];
 
 		// No waddirs are set so use CWD
-		if(!AG_GetCWD(cwd, PATH_MAX))
+		if(!AG_GetCWD(cwd, AG_PATHNAME_MAX))
 			cmd.AddParameter("-waddir", cwd);
 	}
 	else
