@@ -33,7 +33,10 @@
 #include "agol_main.h"
 #include "net_io.h"
 #include "gui_config.h"
+
+#ifdef _XBOX
 #include "xbox_main.h"
+#endif
 
 using namespace std;
 

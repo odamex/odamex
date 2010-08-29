@@ -36,7 +36,10 @@
 #include <agar/core.h>
 
 #include "net_io.h"
+
+#ifdef _XBOX
 #include "xbox_main.h"
+#endif
 
 #ifndef _WIN32
 #define closesocket close
