@@ -35,7 +35,7 @@ struct hostent
 	int    h_addrtype;   /* host address type */
 	int    h_length;     /* length of address */
 	char **h_addr_list;  /* list of addresses */
-#define h_addr h_addr_list
+#define h_addr h_addr_list[0]
 };
 
 #undef exit
