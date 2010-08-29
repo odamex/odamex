@@ -184,7 +184,8 @@ typedef enum
 	SPR_GIB7,
 	// [RH] Dummy for unknown mapthing
 	SPR_UNKN,
-	
+	SPR_TLGL,
+		
 	//	[Toke - CTF]
 	SPR_BSOK,
 	SPR_RSOK,
@@ -1183,6 +1184,11 @@ typedef enum
 	S_GIB7,
 	S_AMBIENTSOUND,
 	S_UNKNOWNTHING,
+	S_BRIDGE1,
+	S_BRIDGE2,
+	S_BRIDGE3,
+	S_BRIDGE4,
+	S_BRIDGE5,	
 
 	// -----------------------------------
 	//	[Toke - CTF]
@@ -1409,6 +1415,7 @@ typedef enum {
 	MT_GIB7,
 	// [RH] Miscellaneous things
 	MT_UNKNOWNTHING,
+	MT_BRIDGE,	
 	MT_PUSH,		// Boom's push thing
 	MT_PULL,		// Boom's pull thing
 	MT_PATHNODE,

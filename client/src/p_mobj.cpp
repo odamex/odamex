@@ -973,16 +973,16 @@ void AActor::RunThink ()
 			{
 			    if (player)
 				{
-					//if (momz < 1 && !(flags2&MF2_FLY))
-					//{
-					//	PlayerLandedOnThing (this, onmo);
-					//}
+					if (momz < -GRAVITY*8 && !(flags2&MF2_FLY))
+					{
+						PlayerLandedOnThing (this, onmo);
+					}
 					
 					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
 					{
-						player->viewheight -= z + onmo->height - z;
-						player->deltaviewheight =
-							(VIEWHEIGHT - player->viewheight)>>3;
+						//player->viewheight -= z + onmo->height - z;
+						//player->deltaviewheight =
+						//	(VIEWHEIGHT - player->viewheight)>>3;
 						z = onmo->z + onmo->height;
 						flags2 |= MF2_ONMOBJ;
 						momz = 0;
