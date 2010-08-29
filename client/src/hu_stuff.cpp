@@ -48,7 +48,7 @@
 #define HU_INPUTY		(0 + (SHORT(hu_font[0]->height) +1))
 
 #define CTFBOARDWIDTH	236
-#define CTFBOARDHEIGHT	19
+#define CTFBOARDHEIGHT	40
 
 #define DMBOARDWIDTH	368
 #define DMBOARDHEIGHT	16
@@ -1343,11 +1343,19 @@ void HU_TeamScores2 (player_t *player)
 		player = player->camera->player;
 
 	for (j = 0; j < sortedplayers.size(); j++)
+	{
 		sortedplayers[j] = &players[j];
+		
+        if (sortedplayers[j]->userinfo.team == TEAM_BLUE)
+            bcount++;
+            
+        if (sortedplayers[j]->userinfo.team == TEAM_RED)
+            rcount++;            
+	}
 
 	std::sort(sortedplayers.begin(), sortedplayers.end(), sv_gametype == GM_CTF ? compare_player_points : compare_player_frags);
 	
-	listsize = sortedplayers.size();
+	listsize = (rcount > bcount ? rcount : bcount);
 
 	// Board locations
 	int marginx = (screen->width - (CTFBOARDWIDTH * 2)) / 4;
@@ -1528,7 +1536,7 @@ void HU_TeamScores2 (player_t *player)
 
 				bluey += 10;
 
-				bcount++;
+				//bcount++;
 			}
 
 			if (sortedplayers[i]->userinfo.team == TEAM_RED)
@@ -1591,7 +1599,7 @@ void HU_TeamScores2 (player_t *player)
 
 				redy += 10;
 
-				rcount++;
+				//rcount++;
 			}
 		}
 	}
