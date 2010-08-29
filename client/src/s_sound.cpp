@@ -331,6 +331,10 @@ int
 	{
 		if (!Channel[i].sfxinfo)	// No sfx playing here (sfxinfo == NULL)
 		{
+			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
+				sv_gametype == GM_CTF)
+				continue;
+			
 			cnum = i;
 			break;
 		}
@@ -343,6 +347,10 @@ int
 		for (i=0 ; i < (int)numChannels ; i++)
 			if (Channel[i].priority <= priority)
 			{
+				if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
+					sv_gametype == GM_CTF)
+					continue;
+				
 				cnum = i;
 				break;
 			}
@@ -531,11 +539,6 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	if (sfx->lumpnum == sfx_empty)
 	{
 		basepriority = -1000;
-	}
-	else if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
-			 sv_gametype == GM_CTF)
-	{
-		basepriority = 300;
 	}
 	else if (attenuation <= 0)
 	{
