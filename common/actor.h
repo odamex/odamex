@@ -327,6 +327,8 @@ public:
 	state_t			*state;
 	int				flags;
 	int				flags2;	// Heretic flags
+	int				special1;		// Special info
+	int				special2;		// Special info	
 	int 			health;
 
     // Movement direction, movement generation (zig-zagging).

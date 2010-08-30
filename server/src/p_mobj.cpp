@@ -40,6 +40,11 @@
 #include "sv_ctf.h"
 #include "g_game.h"
 
+#define WATER_SINK_FACTOR		3
+#define WATER_SINK_SMALL_FACTOR	4
+#define WATER_SINK_SPEED		(FRACUNIT/2)
+#define WATER_JUMP_SPEED		(FRACUNIT*7/2)
+
 mapthing2_t 		itemrespawnque[ITEMQUESIZE];
 int 				itemrespawntime[ITEMQUESIZE];
 int 				iquehead;
@@ -89,6 +94,8 @@ void AActor::Serialize (FArchive &arc)
 			<< state
 			<< flags
 			<< flags2
+			<< special1
+			<< special2
 			<< health
 			<< movedir
 			<< visdir
@@ -131,6 +138,8 @@ void AActor::Serialize (FArchive &arc)
 			>> state
 			>> flags
 			>> flags2
+			>> special1
+			>> special2
 			>> health
 			>> movedir
 			>> visdir
@@ -178,7 +187,8 @@ AActor::AActor () :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
     floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), 
+    flags(0), flags2(0), special1(0), special2(0), 
     health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
     player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
     translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
@@ -196,6 +206,7 @@ AActor::AActor (const AActor &other) :
     height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
     validcount(other.validcount), type(other.type), info(other.info),
     tics(other.tics), state(other.state), flags(other.flags), flags2(other.flags2),
+    special1(other.special1), special2(other.special2),
     health(other.health), movedir(other.movedir), movecount(other.movecount),
     visdir(other.visdir), reactiontime(other.reactiontime),
     threshold(other.threshold), player(other.player), lastlook(other.lastlook),
@@ -238,6 +249,8 @@ AActor &AActor::operator= (const AActor &other)
     state = other.state;
     flags = other.flags;
     flags2 = other.flags2;
+    special1 = other.special1;
+    special2 = other.special2;
     health = other.health;
     movedir = other.movedir;
     movecount = other.movecount;
@@ -329,9 +342,8 @@ void P_ExplodeMissile (AActor* mo)
 		MSG_WriteLong (&cl->reliablebuf, mo->y);
 		MSG_WriteLong (&cl->reliablebuf, mo->z);
 
-        // [CG] Commented out serverside
-		// MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
-		// MSG_WriteShort(&cl->reliablebuf, mo->netid);
+		MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
+		MSG_WriteShort(&cl->reliablebuf, mo->netid);
 	}
 
 
@@ -423,10 +435,33 @@ void P_XYMovement (AActor *mo)
 		// killough 3/15/98: Allow objects to drop off
 		if (!P_TryMove (mo, ptryx, ptryy, true))
 		{
-			// blocked move
-			if (mo->player)
-			{	// try to slide along it
-				P_SlideMove (mo);
+            if (mo->flags2 & MF2_SLIDE)
+			{
+				// try to slide along it
+				if (BlockingMobj == NULL)
+				{ // slide against wall
+					if (mo->player && mo->waterlevel && mo->waterlevel < 3
+						&& (mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove))
+					{
+						mo->momz = WATER_JUMP_SPEED;
+					}
+					P_SlideMove (mo);
+				}
+				else
+				{ // slide against mobj
+					if (P_TryMove (mo, mo->x, ptryy, true))
+					{
+						mo->momx = 0;
+					}
+					else if (P_TryMove (mo, ptryx, mo->y, true))
+					{
+						mo->momy = 0;
+					}
+					else
+					{
+						mo->momx = mo->momy = 0;
+					}
+				}
 			}
 			else if (mo->flags & MF_MISSILE)
 			{
@@ -670,6 +705,15 @@ void P_ZMovement (AActor *mo)
    }
 }
 
+//
+// PlayerLandedOnThing
+//
+static void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
+{
+	mo->player->deltaviewheight = mo->momz>>3;
+	S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_IDLE);
+//	mo->player->centering = true;
+}
 
 //
 // P_NightmareRespawn
@@ -867,6 +911,8 @@ EXTERN_CVAR(sv_speedhackfix)
 //
 void AActor::RunThink ()
 {
+    AActor *onmo;
+        
 	if (type == MT_PLAYER && health <= 0)
 		deadtic++;
 
@@ -906,6 +952,7 @@ void AActor::RunThink ()
 
 
 	// Handle X and Y momemtums
+    BlockingMobj = NULL;	
 	if (momx || momy || (flags & MF_SKULLFLY))
 	{
 		P_XYMovement (this);
@@ -914,12 +961,56 @@ void AActor::RunThink ()
 			return;		// actor was destroyed
 	}
 
-	if ((z != floorz) || momz)
+	if (flags2 & MF2_FLOATBOB)
+	{ // Floating item bobbing motion (special1 is height)
+		z = floorz + special1;
+	}
+	else if ((z != floorz) || momz || BlockingMobj)
 	{
-		P_ZMovement (this);
-
-		if (ObjectFlags & OF_MassDestruction)
-			return;		// actor was destroyed
+	    // Handle Z momentum and gravity
+		if (flags2 & MF2_PASSMOBJ)
+		{
+		    if (!(onmo = P_CheckOnmobj (this)))
+			{
+				P_ZMovement (this);
+				if (player && flags2 & MF2_ONMOBJ)
+				{
+					flags2 &= ~MF2_ONMOBJ;
+				}
+			}
+			else
+			{
+			    if (player)
+				{
+					if (momz < -GRAVITY*8 && !(flags2&MF2_FLY))
+					{
+						PlayerLandedOnThing (this, onmo);
+					}
+					
+					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
+					{
+						//player->viewheight -= z + onmo->height - z;
+						//player->deltaviewheight =
+						//	(VIEWHEIGHT - player->viewheight)>>3;
+						z = onmo->z + onmo->height;
+						flags2 |= MF2_ONMOBJ;
+						momz = 0;
+					}
+					else
+					{
+						// hit the bottom of the blocking mobj
+						momz = 0;
+					}				    
+				}
+			}
+		}
+	    else
+	    {
+            P_ZMovement (this);        
+	    }
+	    
+        if (ObjectFlags & OF_MassDestruction)
+            return;		// actor was destroyed
 	}
 
 	if(subsector)
@@ -993,7 +1084,8 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
     floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
+    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), 
+    flags(0), flags2(0), special1(0), special2(0),
     health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
     player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
     translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
@@ -1182,6 +1274,12 @@ void P_RespawnSpecials (void)
 	else if (z == ONCEILINGZ)
 		mo->z -= mthing->z << FRACBITS;
 
+	if (mo->flags2 & MF2_FLOATBOB)
+	{ // Seed random starting index for bobbing motion
+		mo->health = M_Random();
+		mo->special1 = mthing->z << FRACBITS;
+	}
+	
 	// pull it from the que
 	iquetail = (iquetail+1)&(ITEMQUESIZE-1);
 
@@ -1535,6 +1633,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (z == ONCEILINGZ)
 		mobj->z -= mthing->z << FRACBITS;
 	mobj->spawnpoint = *mthing;
+	
+	if (mobj->flags2 & MF2_FLOATBOB)
+	{ // Seed random starting index for bobbing motion
+		mobj->health = M_Random();
+		mobj->special1 = mthing->z << FRACBITS;
+	}	
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);

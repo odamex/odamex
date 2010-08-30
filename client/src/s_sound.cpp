@@ -331,6 +331,10 @@ int
 	{
 		if (!Channel[i].sfxinfo)	// No sfx playing here (sfxinfo == NULL)
 		{
+			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
+				sv_gametype == GM_CTF)
+				continue;
+			
 			cnum = i;
 			break;
 		}
@@ -343,6 +347,10 @@ int
 		for (i=0 ; i < (int)numChannels ; i++)
 			if (Channel[i].priority <= priority)
 			{
+				if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
+					sv_gametype == GM_CTF)
+					continue;
+				
 				cnum = i;
 				break;
 			}
@@ -532,12 +540,6 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	{
 		basepriority = -1000;
 	}
-	else if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
-			(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
-			&& sv_gametype == GM_CTF)
-	{
-		basepriority = 300;
-	}
 	else if (attenuation <= 0)
 	{
 		basepriority = 200;
@@ -593,8 +595,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 
   // try to find a channel
 	if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
-		(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
-		&& sv_gametype == GM_CTF)
+		 sv_gametype == GM_CTF)
 		cnum = channel;
 	else
 		cnum = S_getChannel(pt, sfx, priority);
@@ -747,8 +748,7 @@ void S_StopSound (fixed_t *pt)
 		if (Channel[i].sfxinfo && (Channel[i].pt == pt))
 		{
 			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
-				(SERVERMAJ >= 0 && ((SERVERMIN == 4 && SERVERREL >= 2) || SERVERMIN > 4))
-				&& sv_gametype == GM_CTF)
+				 sv_gametype == GM_CTF)
 				return;
 			S_StopChannel (i);
 		}

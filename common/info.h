@@ -196,7 +196,7 @@ typedef enum
 	SPR_GIB7,
 	// [RH] Dummy for unknown mapthing
 	SPR_UNKN,
-	
+		
 	//	[Toke - CTF]
 	SPR_BSOK,
 	SPR_RSOK,
@@ -206,7 +206,9 @@ typedef enum
 	SPR_RDWN,
 	SPR_BCAR,
 	SPR_RCAR,
-
+	
+	SPR_TLGL,
+	
 	NUMSPRITES
 
 } spritenum_t;
@@ -1228,7 +1230,11 @@ typedef enum
 	S_BCAR,	// Blue Flag
 	S_RCAR,	// Red Flag
 	// -----------------------------------
-
+	S_BRIDGE1,
+	S_BRIDGE2,
+	S_BRIDGE3,
+	S_BRIDGE4,
+	S_BRIDGE5,	
 	NUMSTATES
 } statenum_t;
 
@@ -1444,7 +1450,9 @@ typedef enum {
 	MT_BCAR,
 	MT_RCAR,
 	// -----------------------------------
-
+	
+	MT_BRIDGE,	
+	
 	NUMMOBJTYPES
 
 } mobjtype_t;
