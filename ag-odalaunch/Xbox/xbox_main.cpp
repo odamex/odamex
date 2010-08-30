@@ -28,17 +28,25 @@
 
 #include "xbox_main.h"
 
-// Partition device mapping
+// Xbox drive letters
 #define DriveC "\\??\\C:"
-#define DeviceC "\\Device\\Harddisk0\\Partition2"
 #define DriveD "\\??\\D:"
-#define CdRom "\\Device\\CdRom0"
 #define DriveE "\\??\\E:"
-#define DeviceE "\\Device\\Harddisk0\\Partition1"
 #define DriveF "\\??\\F:"
-#define DeviceF "\\Device\\Harddisk0\\Partition6"
 #define DriveG "\\??\\G:"
+#define DriveT "\\??\\T:"
+#define DriveU "\\??\\U:"
+#define DriveX "\\??\\X:"
+
+// Partition device mapping
+#define DeviceC "\\Device\\Harddisk0\\Partition2"
+#define CdRom "\\Device\\CdRom0"
+#define DeviceE "\\Device\\Harddisk0\\Partition1"
+#define DeviceF "\\Device\\Harddisk0\\Partition6"
 #define DeviceG "\\Device\\Harddisk0\\Partition7"
+#define DeviceT "\\Device\\Harddisk0\\Partition1\\TDATA\\4F444C43"
+#define DeviceU "\\Device\\Harddisk0\\Partition1\\UDATA\\4F444C43"
+#define DeviceX "\\Device\\Harddisk0\\Partition3"
 
 typedef struct _STRING 
 {
@@ -157,9 +165,12 @@ LONG xbox_UnMountDevice(LPSTR sSymbolicLinkName)
 //
 void xbox_MountPartitions()
 {
+	xbox_MountDevice(DriveD, CdRom);   // DVD-ROM or start path
 	xbox_MountDevice(DriveE, DeviceE); // Standard save partition
 	xbox_MountDevice(DriveF, DeviceF); // Non-stock partition - modded consoles only
-	xbox_MountDevice(DriveD, CdRom); // DVD-ROM or start path
+	xbox_MountDevice(DriveG, DeviceG); // Non-stock partition - modded consoles only
+	xbox_MountDevice(DriveT, DeviceT); // AG-Odalaunch's unique TDATA - peristent save data (configs, etc.)
+	xbox_MountDevice(DriveX, DeviceX); // Cache partition - appropriate place for temporary files
 }
 
 //
@@ -167,9 +178,12 @@ void xbox_MountPartitions()
 //
 void xbox_UnMountPartitions()
 {
+	xbox_UnMountDevice(DriveD);
 	xbox_UnMountDevice(DriveE);
 	xbox_UnMountDevice(DriveF);
-	xbox_UnMountDevice(DriveD);
+	xbox_UnMountDevice(DriveG);
+	xbox_UnMountDevice(DriveT);
+	xbox_UnMountDevice(DriveX);
 }
 
 //

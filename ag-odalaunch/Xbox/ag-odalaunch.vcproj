@@ -54,7 +54,13 @@
 				Name="XboxImageTool"
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
-				NoLibWarn="TRUE"/>
+				NoLibWarn="TRUE"
+				TitleID="0x4F444C43"
+				XboxGameRating="0"
+				TitleName="Odalaunch"
+				TitleImage="../res/TitleImage.xbx"
+				SaveGameImage="../res/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 		<Configuration
 			Name="Profile|Xbox"
@@ -104,7 +110,13 @@
 				Name="XboxImageTool"
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
-				NoLibWarn="TRUE"/>
+				NoLibWarn="TRUE"
+				TitleID="0x4F444C43"
+				XboxGameRating="0"
+				TitleName="Odalaunch"
+				TitleImage="../res/TitleImage.xbx"
+				SaveGameImage="../res/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 		<Configuration
 			Name="Profile_FastCap|Xbox"
@@ -155,7 +167,13 @@
 				Name="XboxImageTool"
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
-				NoLibWarn="TRUE"/>
+				NoLibWarn="TRUE"
+				TitleID="0x4F444C43"
+				XboxGameRating="0"
+				TitleName="Odalaunch"
+				TitleImage="../res/TitleImage.xbx"
+				SaveGameImage="../res/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Xbox"
@@ -204,7 +222,13 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"/>
+				StackSize="65536"
+				TitleID="0x4F444C43"
+				XboxGameRating="0"
+				TitleName="Odalaunch"
+				TitleImage="../res/TitleImage.xbx"
+				SaveGameImage="../res/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 		<Configuration
 			Name="Release_LTCG|Xbox"
@@ -253,7 +277,13 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"/>
+				StackSize="65536"
+				TitleID="0x4F444C43"
+				XboxGameRating="0"
+				TitleName="Odalaunch"
+				TitleImage="../res/TitleImage.xbx"
+				SaveGameImage="../res/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 	</Configurations>
 	<References>

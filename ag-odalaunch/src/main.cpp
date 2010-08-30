@@ -121,7 +121,8 @@ int main(int argc, char *argv[])
 		}
 
 #ifdef _XBOX
-		AG_SetRefreshRate(30);
+		// Software cursor only updates at the refresh rate so make it respectable
+		AG_SetRefreshRate(60);
 #endif
 	}
 

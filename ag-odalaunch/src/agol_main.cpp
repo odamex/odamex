@@ -818,7 +818,7 @@ void AGOL_MainWindow::OnAbout(AG_Event *event)
 	if(AboutDialog)
 		return;
 
-	AboutDialog= new AGOL_About();
+	AboutDialog = new AGOL_About();
 
 	CloseAboutHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCloseAboutDialog);
 
@@ -1143,7 +1143,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 		// This yield is required on Xbox. Without it the Xbox sometimes fails to give the other
 		// threads CPU time and that results in an unacceptably long query and an interface pause
 		// while this thread continuously queries the other threads for completion. -- Hyper_Eye
-		AG_Delay(1);
+		AG_Delay(1); // 1ms yield
 #endif
 		UpdateQueriedLabelCompleted((int)count);
 	}
