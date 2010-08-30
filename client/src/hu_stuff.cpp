@@ -1399,7 +1399,10 @@ void HU_TeamScores2 (player_t *player)
 	// Scoreboard Identify
 	// Dan - Tells which current game mode is being played
     if (sv_gametype == GM_CTF)
-        screen->DrawText (CR_GOLD,blocx + 275,blocy + 0,"Capture The Flag");
+    {
+        strcpy(str, "Capture The Flag");
+        screen->DrawText (CR_GOLD,(screen->width/2)-(V_StringWidth(str)/2),blocy + 0,str);        
+    }
 
 	// BLUE
 	screen->DrawText	  (CR_GREY	,blocx + 8	,blocy + 16	,"SCORE:"			);
