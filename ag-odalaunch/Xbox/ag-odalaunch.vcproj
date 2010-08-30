@@ -35,7 +35,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libag_guid.lib libag_cored.lib SDL_imaged.lib libSDLxd.lib freetype-2.1.5.lib libpthreadXBd.lib xapilibd.lib d3d8d.lib d3dx8d.lib xgraphicsd.lib dsoundd.lib dmusicd.lib xactengd.lib xsndtrkd.lib xvoiced.lib xonlined.lib xboxkrnl.lib xbdm.lib"
-				OutputFile="$(OutDir)/$(ProjectName).exe"
+				OutputFile="$(OutDir)/odalaunch.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
@@ -52,6 +52,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
+				FileName="$(TargetDir)odalaunch.xbe"
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"
@@ -88,7 +89,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="xapilib.lib d3d8i.lib d3dx8.lib xgraphics.lib dsound.lib dmusici.lib xactengi.lib xsndtrk.lib xvoice.lib xonlines.lib xboxkrnl.lib xbdm.lib xperf.lib"
-				OutputFile="$(OutDir)/$(ProjectName).exe"
+				OutputFile="$(OutDir)/odalaunch.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
@@ -108,6 +109,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
+				FileName="$(TargetDir)odalaunch.xbe"
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"
@@ -145,7 +147,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="xapilib.lib d3d8i.lib d3dx8.lib xgraphics.lib dsound.lib dmusici.lib xactengi.lib xsndtrk.lib xvoice.lib xonlines.lib xboxkrnl.lib xbdm.lib xperf.lib"
-				OutputFile="$(OutDir)/$(ProjectName).exe"
+				OutputFile="$(OutDir)/odalaunch.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
@@ -165,6 +167,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
+				FileName="$(TargetDir)odalaunch.xbe"
 				StackSize="65536"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"
@@ -202,7 +205,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libag_gui.lib libag_core.lib SDL_image.lib libSDLx.lib freetype-2.1.5.lib libpthreadXB.lib xapilib.lib d3d8.lib d3dx8.lib xgraphics.lib dsound.lib dmusic.lib xacteng.lib xsndtrk.lib xvoice.lib xonline.lib xboxkrnl.lib"
-				OutputFile="$(OutDir)/$(ProjectName).exe"
+				OutputFile="$(OutDir)/odalaunch.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
@@ -222,6 +225,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
+				FileName="$(TargetDir)odalaunch.xbe"
 				StackSize="65536"
 				TitleID="0x4F444C43"
 				XboxGameRating="0"
@@ -257,7 +261,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="xapilib.lib d3d8ltcg.lib d3dx8.lib xgraphicsltcg.lib dsound.lib dmusicltcg.lib xactengltcg.lib xsndtrk.lib xvoice.lib xonlines.lib xboxkrnl.lib"
-				OutputFile="$(OutDir)/$(ProjectName).exe"
+				OutputFile="$(OutDir)/odalaunch.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/$(ProjectName).pdb"
@@ -277,6 +281,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
+				FileName="$(TargetDir)odalaunch.xbe"
 				StackSize="65536"
 				TitleID="0x4F444C43"
 				XboxGameRating="0"

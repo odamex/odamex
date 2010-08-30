@@ -82,7 +82,7 @@ int GameCommand::Launch()
 
 	// Add the bin to the path
 #ifdef _XBOX
-	cout << "Xbox: Stub!" << endl;
+	cmd += "odamex.xbe";
 #elif _WIN32
 	cmd += "odamex.exe";
 #else
