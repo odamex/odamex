@@ -58,8 +58,7 @@ BufferedSocket::BufferedSocket() :	m_BadRead(false), m_BadWrite(false),
 
 BufferedSocket::~BufferedSocket()
 {
-	if(m_SocketBuffer)
-		free(m_SocketBuffer);
+	delete m_SocketBuffer;
 }
 
 // System-specific Initialize and shutdown functions
@@ -714,13 +713,9 @@ bool BufferedSocket::CanWrite(const size_t &Bytes)
  
 void BufferedSocket::ClearBuffer()
 {
-	if(m_SocketBuffer)
-	{
-		free(m_SocketBuffer);
-		m_SocketBuffer = NULL;
-	}
+	delete m_SocketBuffer;
 
-	m_SocketBuffer = (byte *)malloc(MAX_PAYLOAD);
+	m_SocketBuffer = new byte[MAX_PAYLOAD];
 
 	if(m_SocketBuffer == NULL)
 		ReportError(__LINE__, __FUNCTION__, "Failed to allocate m_SocketBuffer!");
