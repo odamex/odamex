@@ -29,17 +29,25 @@
 #include "i_xbox.h"
 #include "i_system.h"
 
-// Partition device mapping
+// Xbox drive letters
 #define DriveC "\\??\\C:"
-#define DeviceC "\\Device\\Harddisk0\\Partition2"
 #define DriveD "\\??\\D:"
-#define CdRom "\\Device\\CdRom0"
 #define DriveE "\\??\\E:"
-#define DeviceE "\\Device\\Harddisk0\\Partition1"
 #define DriveF "\\??\\F:"
-#define DeviceF "\\Device\\Harddisk0\\Partition6"
 #define DriveG "\\??\\G:"
+#define DriveT "\\??\\T:"
+#define DriveU "\\??\\U:"
+#define DriveX "\\??\\X:"
+
+// Partition device mapping
+#define DeviceC "\\Device\\Harddisk0\\Partition2"
+#define CdRom "\\Device\\CdRom0"
+#define DeviceE "\\Device\\Harddisk0\\Partition1"
+#define DeviceF "\\Device\\Harddisk0\\Partition6"
 #define DeviceG "\\Device\\Harddisk0\\Partition7"
+#define DeviceT "\\Device\\Harddisk0\\Partition1\\TDATA\\4F444D58"
+#define DeviceU "\\Device\\Harddisk0\\Partition1\\UDATA\\4F444D58"
+#define DeviceX "\\Device\\Harddisk0\\Partition3"
 
 typedef struct _STRING 
 {
@@ -63,22 +71,30 @@ std::list<void (*)(void)>	 ExitFuncList;
 DWORD                        LauncherID;
 char						*LauncherXBE = NULL;
 
-// getenv - Environment variables don't exist on Xbox. Return NULL.
-
+//
+// getenv 
+// Environment variables don't exist on Xbox. Return NULL.
+//
 char *getenv(const char *)
 {
 	return NULL;
 }
 
-// putenv - Environment variables don't exist on Xbox. Just return success.
-
+//
+// putenv 
+//
+// Environment variables don't exist on Xbox. Just return success.
+//
 int putenv(const char *)
 {
 	return 0;
 }
 
-// getcwd - Return working directory which is always D:\
-
+//
+// getcwd 
+//
+// Return working directory which is always D:\
+//
 char *getcwd(char *buf, size_t size)
 {
 	if(size > 0 && buf)
@@ -97,8 +113,11 @@ char *getcwd(char *buf, size_t size)
 	return NULL;
 }
 
-// Custom implementation of gethostbyname()
-
+//
+// gethostbyname
+//
+// Custom implementation for Xbox
+//
 struct hostent *gethostbyname(const char *name)
 {
 	static struct hostent *he = NULL;
@@ -147,8 +166,11 @@ struct hostent *gethostbyname(const char *name)
 	return he;
 }
 
-// Custom implementation of gethostname()
-
+//
+// gethostname
+//
+// Custom implementation for Xbox
+//
 int gethostname(char *name, int namelen)
 {
 	XNADDR xna;
@@ -172,6 +194,9 @@ int gethostname(char *name, int namelen)
 	return -1;
 }
 
+//
+// xbox_PrintMemoryDebug
+//
 void xbox_PrintMemoryDebug()
 {
 	extern size_t got_heapsize;
@@ -205,7 +230,11 @@ void xbox_PrintMemoryDebug()
 	}
 }
 
-/* XBox device mounting */
+//
+// xbox_MountDevice
+//
+// XBox device mounting
+//
 LONG xbox_MountDevice(LPSTR sSymbolicLinkName, LPSTR sDeviceName)
 {
 	UNICODE_STRING deviceName;
@@ -221,30 +250,50 @@ LONG xbox_MountDevice(LPSTR sSymbolicLinkName, LPSTR sDeviceName)
 	return IoCreateSymbolicLink(&symbolicLinkName, &deviceName);
 }
 
+//
+// xbox_UnMountDevice
+//
 LONG xbox_UnMountDevice(LPSTR sSymbolicLinkName)
 {
-  UNICODE_STRING  symbolicLinkName;
-  symbolicLinkName.Buffer  = sSymbolicLinkName;
-  symbolicLinkName.Length = (USHORT)strlen(sSymbolicLinkName);
-  symbolicLinkName.MaximumLength = (USHORT)strlen(sSymbolicLinkName) + 1;
+	UNICODE_STRING  symbolicLinkName;
+	symbolicLinkName.Buffer  = sSymbolicLinkName;
+	symbolicLinkName.Length = (USHORT)strlen(sSymbolicLinkName);
+	symbolicLinkName.MaximumLength = (USHORT)strlen(sSymbolicLinkName) + 1;
 
-  return IoDeleteSymbolicLink(&symbolicLinkName);
+	return IoDeleteSymbolicLink(&symbolicLinkName);
 }
 
+//
+// xbox_MountPartitions
+//
 void xbox_MountPartitions()
 {
+	xbox_MountDevice(DriveD, CdRom); // DVD-ROM or start path
 	xbox_MountDevice(DriveE, DeviceE); // Standard save partition
 	xbox_MountDevice(DriveF, DeviceF); // Non-stock partition - modded consoles only
-	xbox_MountDevice(DriveD, CdRom); // DVD-ROM or start path
+	xbox_MountDevice(DriveG, DeviceG); // Non-stock partition - modded consoles only
+	xbox_MountDevice(DriveT, DeviceT); // Odamex's unique TDATA - peristent save data (configs, etc.)
+	xbox_MountDevice(DriveU, DeviceU); // Odamex's unique UDATA - user save data (save games)
+	xbox_MountDevice(DriveX, DeviceX); // Cache partition - appropriate place for temporary files
 }
 
+//
+// xbox_UnMountPartitions
+//
 void xbox_UnMountPartitions()
 {
+	xbox_UnMountDevice(DriveD);
 	xbox_UnMountDevice(DriveE);
 	xbox_UnMountDevice(DriveF);
-	xbox_UnMountDevice(DriveD);
+	xbox_UnMountDevice(DriveG);
+	xbox_UnMountDevice(DriveT);
+	xbox_UnMountDevice(DriveU);
+	xbox_UnMountDevice(DriveX);
 }
 
+//
+// xbox_InitNet
+//
 void xbox_InitNet()
 {
 	XNetStartupParams xnsp;
@@ -266,11 +315,17 @@ void xbox_InitNet()
 	XNetStartup( &xnsp );
 }
 
+//
+// xbox_CloseNetwork
+//
 void xbox_CloseNetwork()
 {
 	XNetCleanup();
 }
 
+//
+// xbox_SetScreenPosition
+//
 int xbox_SetScreenPosition(float x, float y)
 {
 	float x2, y2;
@@ -284,6 +339,9 @@ int xbox_SetScreenPosition(float x, float y)
 	return 0;
 }
 
+//
+// xbox_SetScreenStretch
+//
 int xbox_SetScreenStretch(float xs, float ys)
 {
 	float xs2, ys2;
@@ -297,6 +355,9 @@ int xbox_SetScreenStretch(float xs, float ys)
 	return 0;
 }
 
+//
+// xbox_RecordLauncherXBE
+//
 void xbox_RecordLauncherXBE(char *szLauncherXBE, DWORD dwID)
 {
 	if(szLauncherXBE  && !LauncherXBE)
@@ -306,22 +367,25 @@ void xbox_RecordLauncherXBE(char *szLauncherXBE, DWORD dwID)
 	}
 }
 
-// xbox_reboot - Exit Odamex and perform a warm reboot (no startup logo) to a launcher or dashboard
-
+//
+// xbox_reboot 
+//
+// Exit Odamex and perform a warm reboot (no startup logo) to a launcher or dashboard
+//
 void xbox_reboot()
 {
 	LD_LAUNCH_DASHBOARD launchData = { XLD_LAUNCH_DASHBOARD_MAIN_MENU };
 
-	// If Odamex was started with a launcher we want to return to it.
+	// If Odamex was started from a launcher we want to return to it.
 	if(LauncherXBE)
 	{
-		long   pathLen;
+		size_t pathLen;
 		char  *mntDev;
 		char  *p;
 
 		// Determine the necessary D: mapping for the launcher XBE
 		p = strrchr(LauncherXBE, '\\');
-		pathLen = (long)p - (long)LauncherXBE;
+		pathLen = p - LauncherXBE;
 
 		mntDev = (char *)malloc(pathLen + 1);
 		memcpy(mntDev, LauncherXBE, pathLen);
@@ -337,16 +401,22 @@ void xbox_reboot()
 	XLaunchNewImage( NULL, (LAUNCH_DATA*)&launchData );
 }
 
-// xbox_atexit - Custom atexit function for Xbox
-
+//
+// xbox_atexit 
+//
+// Custom atexit function for Xbox
+//
 void xbox_atexit(void (*function)(void))
 {
 	if(function)
 		ExitFuncList.push_back(function);
 }
 
-// xbox_exit - Custom exit function for Xbox
-
+//
+// xbox_exit
+//
+// Custom exit function for Xbox
+//
 void xbox_exit(int status)
 {
 	std::list<void (*)(void)>::iterator funcIter;
@@ -361,6 +431,11 @@ void xbox_exit(int status)
 	xbox_reboot();
 }
 
+//
+// main
+//
+// Entry point on Xbox
+//
 void  __cdecl main()
 {
 	DWORD            launchDataType;
