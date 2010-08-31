@@ -99,11 +99,15 @@ int GameCommand::Launch()
 	// Mark the end
 	argv[argc] = NULL;
 
+	// Save the ag-odalaunch configuration settings
+	GuiConfig::Save();
+
 	// Launch Odamex
 	if((pid = AG_Execute(*argv, argv)) == -1)
 	{
 		AG_TextErrorS("Failed to launch Odamex.\n"
 			"Please verify that your Odamex path is set correctly.");
+		OutputDebugString(AG_GetError());
 		return -1;
 	}
 

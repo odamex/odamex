@@ -60,7 +60,8 @@ typedef struct _STRING
 // They can be found by looking through the symbols found in the Xbox libs (xapilib.lib mostly).
 extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicLinkName,IN PUNICODE_STRING DeviceName);
 extern "C" XBOXAPI LONG WINAPI IoDeleteSymbolicLink(IN PUNICODE_STRING SymbolicLinkName);
-extern "C" INT WINAPI XWriteTitleInfoAndRebootA(LPVOID,LPVOID,DWORD,DWORD,LPVOID);
+extern "C" XBOXAPI INT WINAPI XWriteTitleInfoAndRebootA(LPVOID,LPVOID,DWORD,DWORD,LPVOID);
+extern "C" XBOXAPI LONG WINAPI HalWriteSMBusValue(UCHAR devddress, UCHAR offset, UCHAR writedw, DWORD data);
 
 // External function declarations
 extern int    i_main(int argc, char *argv[]);		// i_main.cpp
@@ -268,7 +269,7 @@ LONG xbox_UnMountDevice(LPSTR sSymbolicLinkName)
 //
 void xbox_MountPartitions()
 {
-	xbox_MountDevice(DriveD, CdRom); // DVD-ROM or start path
+	xbox_MountDevice(DriveD, CdRom);   // DVD-ROM or start path
 	xbox_MountDevice(DriveE, DeviceE); // Standard save partition
 	xbox_MountDevice(DriveF, DeviceF); // Non-stock partition - modded consoles only
 	xbox_MountDevice(DriveG, DeviceG); // Non-stock partition - modded consoles only
@@ -356,6 +357,25 @@ int xbox_SetScreenStretch(float xs, float ys)
 }
 
 //
+// xbox_EnableCustomLED
+//
+void xbox_EnableCustomLED()
+{
+	// 0xF0 = Solid Red
+	HalWriteSMBusValue(0x20, 0x08, 0, 0xF0);
+	Sleep(10);
+	HalWriteSMBusValue(0x20, 0x07, 0, 1);
+}
+
+//
+// xbox_DisableCustomLED
+//
+void xbox_DisableCustomLED()
+{
+	HalWriteSMBusValue(0x20, 0x07, 0, 0);
+}
+
+//
 // xbox_RecordLauncherXBE
 //
 void xbox_RecordLauncherXBE(char *szLauncherXBE, DWORD dwID)
@@ -428,6 +448,8 @@ void xbox_exit(int status)
 
 	xbox_UnMountPartitions();
 
+	xbox_DisableCustomLED();
+
 	xbox_reboot();
 }
 
@@ -465,6 +487,8 @@ void  __cdecl main()
 	xbox_MountPartitions();
 
 	xbox_InitNet();
+
+	xbox_EnableCustomLED();
 
 	i_main(xargc, xargv); // Does not return
 }

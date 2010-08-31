@@ -62,7 +62,8 @@
 				TitleID="0x4F444D58"
 				TitleName="Odamex"
 				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
-				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 		<Configuration
 			Name="Profile|Xbox"
@@ -117,7 +118,8 @@
 				TitleID="0x4F444D58"
 				TitleName="Odamex"
 				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
-				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 		<Configuration
 			Name="Profile_FastCap|Xbox"
@@ -173,7 +175,8 @@
 				TitleID="0x4F444D58"
 				TitleName="Odamex"
 				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
-				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Xbox"
@@ -235,7 +238,8 @@
 				TitleID="0x4F444D58"
 				TitleName="Odamex"
 				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
-				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 		<Configuration
 			Name="Release_LTCG|Xbox"
@@ -289,7 +293,8 @@
 				TitleID="0x4F444D58"
 				TitleName="Odamex"
 				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
-				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"/>
+				SaveGameImage="$(ProjectDir)/../Media/SaveImage.xbx"
+				XBEVersion="050"/>
 		</Configuration>
 	</Configurations>
 	<References>
