@@ -108,6 +108,12 @@ void AActor::Serialize (FArchive &arc)
 			<< lastlook
 			<< tracer->netid
 			<< tid
+			<< special
+			<< args[0]
+			<< args[1]
+			<< args[2]
+			<< args[3]
+			<< args[4]			
 			<< goal->netid
 			<< (unsigned)0
 			<< translucency
@@ -152,6 +158,12 @@ void AActor::Serialize (FArchive &arc)
 			>> lastlook
 			>> tracer->netid
 			>> tid
+			>> special
+			>> args[0]
+			>> args[1]
+			>> args[2]
+			>> args[3]
+			>> args[4]			
 			>> goal->netid
 			>> dummy
 			>> translucency
@@ -175,11 +187,13 @@ void MapThing::Serialize (FArchive &arc)
 {
 	if (arc.IsStoring ())
 	{
-		arc << thingid << x << y << z << angle << type << flags;
+		arc << thingid << x << y << z << angle << type << flags << special
+			<< args[0] << args[1] << args[2] << args[3] << args[4];
 	}
 	else
 	{
-		arc >> thingid >> x >> y >> z >> angle >> type >> flags;
+		arc >> thingid >> x >> y >> z >> angle >> type >> flags >> special
+			>> args[0] >> args[1] >> args[2] >> args[3] >> args[4];
 	}
 }
 
@@ -192,7 +206,7 @@ AActor::AActor () :
     health(0), movedir(0), movecount(0), visdir(0), reactiontime(0), threshold(0),
     player(NULL), lastlook(0), inext(NULL), iprev(NULL), translation(NULL),
     translucency(0), waterlevel(0), onground(0), touching_sectorlist(NULL), deadtic(0),
-    oldframe(0), rndindex(0), netid(0), tid(0)
+    oldframe(0), rndindex(0), netid(0), tid(0), special(0)
 {
 	self.init(this);
 }
@@ -214,7 +228,7 @@ AActor::AActor (const AActor &other) :
     translucency(other.translucency), waterlevel(other.waterlevel),
     onground(other.onground), touching_sectorlist(other.touching_sectorlist),
     deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
-    netid(other.netid), tid(other.tid)
+    netid(other.netid), tid(other.tid), special(other.special)
 {
 	self.init(this);
 }
@@ -271,6 +285,7 @@ AActor &AActor::operator= (const AActor &other)
     rndindex = other.rndindex;
     netid = other.netid;
     tid = other.tid;
+    special = other.special;
 
 	return *this;
 }
@@ -1279,6 +1294,8 @@ void P_RespawnSpecials (void)
 		mo->health = M_Random();
 		mo->special1 = mthing->z << FRACBITS;
 	}
+	
+	mo->special = 0;
 	
 	// pull it from the que
 	iquetail = (iquetail+1)&(ITEMQUESIZE-1);

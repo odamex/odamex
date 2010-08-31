@@ -1409,8 +1409,19 @@ BEGIN_COMMAND (changemus)
 }
 END_COMMAND (changemus)
 
+static void SetTicker (int *tics, struct AmbientSound *ambient)
+{
+
+}
+
 void A_Ambient (AActor *actor)
 {
+
+}
+
+void S_ActivateAmbient (AActor *origin, int ambient)
+{
+
 }
 
 //

@@ -507,6 +507,9 @@ void A_Ambient (AActor *actor)
 {
 }
 
+void S_ActivateAmbient (AActor *origin, int ambient)
+{
+}
 
 VERSION_CONTROL (s_sound_cpp, "$Id$")
 
