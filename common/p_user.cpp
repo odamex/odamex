@@ -206,7 +206,16 @@ void P_MovePlayer (player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
+	
+	if (player->jumpTics)
+		player->jumpTics--;
+	
+	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
 
+	// [RH] Don't let frozen players move
+	if (player->cheats & CF_FROZEN)
+		return;
+		
 	// Move around.
 	// Reactiontime is used to prevent movement
 	//	for a bit after a teleport.
@@ -227,12 +236,14 @@ void P_MovePlayer (player_t *player)
 		{
 			player->mo->momz = 3*FRACUNIT;
 		}		
-		else if (sv_allowjump && player->mo->onground && !player->mo->momz)
+		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
 		{
-			player->mo->momz += 7*FRACUNIT;
-
+			player->mo->momz += 8*FRACUNIT;
 			if(!player->spectator)
 				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
+				
+            player->mo->flags2 &= ~MF2_ONMOBJ;
+            player->jumpTics = 18;				
 		}
 	}
 
@@ -248,17 +259,17 @@ void P_MovePlayer (player_t *player)
 	{
 		if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
 		{
-			player->mo->momz = cmd->ucmd.upmove << 9;
-			if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
-			{
-				player->mo->flags2 |= MF2_FLY;
-				player->mo->flags |= MF_NOGRAVITY;
-				if (player->mo->momz <= -39*FRACUNIT)
-				{ // Stop falling scream
-					S_StopSound (player->mo, CHAN_VOICE);
-				}
+			player->mo->momz = cmd->ucmd.upmove << 8;
+        }
+        else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+        {
+			player->mo->flags2 |= MF2_FLY;
+			player->mo->flags |= MF_NOGRAVITY;
+			if (player->mo->momz <= -39*FRACUNIT)
+            { // Stop falling scream
+				S_StopSound (player->mo, CHAN_VOICE);
 			}
-		}
+        }        
 		else if (cmd->ucmd.upmove > 0)
 		{
 			//P_PlayerUseArtifact (player, arti_fly);
@@ -273,12 +284,6 @@ void P_MovePlayer (player_t *player)
 		// Look up/down stuff
 		P_PlayerLookUpDown(player);
 	}
-
-	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
-
-	// [RH] Don't let frozen players move
-	if (player->cheats & CF_FROZEN)
-		return;
 
 	// killough 10/98:
 	//

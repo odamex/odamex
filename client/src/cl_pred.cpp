@@ -44,6 +44,7 @@ angle_t cl_angle[MAXSAVETICS];
 angle_t cl_pitch[MAXSAVETICS];
 fixed_t cl_viewheight[MAXSAVETICS];
 fixed_t cl_deltaviewheight[MAXSAVETICS];
+fixed_t cl_jumpTics[MAXSAVETICS];
 int     reactiontime[MAXSAVETICS];
 
 bool predicting;
@@ -181,6 +182,7 @@ void CL_PredictPlayers (int predtic)
 				p->mo->pitch = cl_pitch[predtic%MAXSAVETICS];
 				p->viewheight = cl_viewheight[predtic%MAXSAVETICS];
 				p->deltaviewheight = cl_deltaviewheight[predtic%MAXSAVETICS];
+				p->jumpTics = cl_jumpTics[predtic%MAXSAVETICS];
 				p->mo->reactiontime = reactiontime[predtic%MAXSAVETICS];
 			}
 	
@@ -202,12 +204,13 @@ void CL_PredictMove (void)
 	if (!p->tic || !p->mo)
 		return;
 
-	// Save player angle, viewheight and deltaviewheight
+	// Save player angle, viewheight,deltaviewheight and jumpTics.
 	// Will use it later to predict movements
 	cl_angle[gametic%MAXSAVETICS] = p->mo->angle;
 	cl_pitch[gametic%MAXSAVETICS] = p->mo->pitch;
 	cl_viewheight[gametic%MAXSAVETICS] = p->viewheight;
 	cl_deltaviewheight[gametic%MAXSAVETICS] = p->deltaviewheight;
+	cl_jumpTics[gametic%MAXSAVETICS] = p->jumpTics;
 	reactiontime[gametic%MAXSAVETICS] = p->mo->reactiontime;
 
 	// Disable sounds, etc, during prediction

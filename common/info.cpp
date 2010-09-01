@@ -5973,6 +5973,34 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// flags2
 	S_NULL,		// raisestate
 	0x10000
+	},
+
+	{		// MT_MAPSPOT
+	9001,		// doomednum
+	S_TNT1,		// spawnstate
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	16*FRACUNIT,		// radius
+	16*FRACUNIT,		// height
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_NOBLOCKMAP|MF_NOSECTOR|MF_NOGRAVITY,		// flags
+	0,		// flags2
+	S_NULL,		// raisestate
+	0x10000
 	}
 };
 

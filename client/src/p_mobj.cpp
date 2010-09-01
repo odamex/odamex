@@ -655,19 +655,23 @@ void P_ZMovement (AActor *mo)
         mo->momz = -mo->momz;
       }
 
-
       if (mo->momz < 0)
       {
-         if (mo->player && mo->momz < -GRAVITY*8 && !(mo->player->spectator))
+         
+         if (mo->player)
          {
-		// Squat down.
-		// Decrease viewheight for a moment
-		// after hitting the ground (hard),
-		// and utter appropriate sound.
-            mo->player->deltaviewheight = mo->momz>>3;
+             mo->player->jumpTics = 7;	// delay any jumping for a short while
+             if (mo->momz < -GRAVITY*8*-655 && !(mo->player->spectator))
+             {
+                // Squat down.
+                // Decrease viewheight for a moment
+                // after hitting the ground (hard),
+                // and utter appropriate sound.
+                mo->player->deltaviewheight = mo->momz>>3;
 
-            if (!predicting)
-                S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+                if (!predicting)
+                    S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+            }
          }
          mo->momz = 0;
       }

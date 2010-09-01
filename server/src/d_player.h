@@ -200,7 +200,7 @@ public:
 	
 	// Overlay view sprites (gun, etc).
 	pspdef_t	psprites[NUMPSPRITES];
-
+	int			jumpTics;				// delay the next jump for a moment
 	int			respawn_time;			// [RH] delay respawning until this tic
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 	
@@ -380,6 +380,7 @@ public:
 		extralight = 0;
 		fixedcolormap = 0;
 		memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
+		jumpTics = 0;
 		respawn_time = 0;
 		for (i = 0; i < 3; i++)
 			oldvelocity[i] = 0 << FRACBITS;
@@ -457,7 +458,8 @@ public:
 
 		for(i = 0; i < NUMPSPRITES; i++)
 			psprites[i] = other.psprites[i];
-	
+        
+        jumpTics = other.jumpTics;
 		respawn_time = other.respawn_time;
 
 		oldvelocity[0] = other.oldvelocity[0];
