@@ -130,6 +130,12 @@ struct level_locals_s {
 
 	int			total_monsters;
 	int			killed_monsters;
+	
+	// The following are all used for ACS scripting
+	byte		*behavior;
+	int			*scripts;
+	int			*strings;
+	SDWORD		vars[NUM_MAPVARS];	
 };
 typedef struct level_locals_s level_locals_t;
 
