@@ -661,7 +661,7 @@ void P_ZMovement (AActor *mo)
          if (mo->player)
          {
              mo->player->jumpTics = 7;	// delay any jumping for a short while
-             if (mo->momz < -GRAVITY*8*-655 && !(mo->player->spectator))
+             if (mo->momz < -GRAVITY*8 && !(mo->player->spectator))
              {
                 // Squat down.
                 // Decrease viewheight for a moment
