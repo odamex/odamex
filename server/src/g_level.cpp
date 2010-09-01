@@ -78,6 +78,9 @@ extern int mapchange;
 // Start time for timing demos
 int starttime;
 
+// ACS variables with world scope
+int WorldVars[NUM_WORLDVARS];
+
 BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
 extern BOOL netdemo;

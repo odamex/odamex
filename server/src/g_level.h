@@ -29,6 +29,9 @@
 #include "doomdef.h"
 #include "m_fixed.h"
 
+#define NUM_MAPVARS				32
+#define NUM_WORLDVARS			64
+
 #define LEVEL_NOINTERMISSION	0x00000001
 #define	LEVEL_DOUBLESKY			0x00000004
 #define LEVEL_NOSOUNDCLIPPING	0x00000008

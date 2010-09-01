@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -78,6 +78,9 @@ line_t* 		lines;
 
 int 			numsides;
 side_t* 		sides;
+
+// [RH] Set true if the map contains a BEHAVIOR lump
+bool			HasBehavior;
 
 // BLOCKMAP
 // Created from axis aligned bounding box
@@ -343,7 +346,7 @@ void P_LoadSectors (int lump)
 	mapsector_t*		ms;
 	sector_t*			ss;
 	int					defSeqType;
-	
+
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
 
@@ -352,7 +355,7 @@ void P_LoadSectors (int lump)
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 	memset(sectors, 0, sizeof(sector_t)*numsectors);
-	
+
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
 
 	if (level.flags & LEVEL_SNDSEQTOTALCTRL)
@@ -369,7 +372,10 @@ void P_LoadSectors (int lump)
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
 		ss->lightlevel = SHORT(ms->lightlevel);
-		ss->special = P_TranslateSectorSpecial (SHORT(ms->special));
+		if (HasBehavior)
+			ss->special = SHORT(ms->special);
+		else	// [RH] Translate to new sector special
+			ss->special = P_TranslateSectorSpecial (SHORT(ms->special));
 		ss->tag = SHORT(ms->tag);
 		ss->thinglist = NULL;
 		ss->touching_thinglist = NULL;		// phares 3/14/98
@@ -500,6 +506,41 @@ void P_LoadThings (int lump)
 	Z_Free (data);
 }
 
+// [RH]
+// P_LoadThings2
+//
+// Same as P_LoadThings() except it assumes Things are
+// saved Hexen-style. Position also controls which single-
+// player start spots are spawned by filtering out those
+// whose first parameter don't match position.
+//
+void P_LoadThings2 (int lump, int position)
+{
+	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	mapthing2_t *mt = (mapthing2_t *)data;
+	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
+
+	for ( ; mt < lastmt; mt++)
+	{
+		// [RH] At this point, monsters unique to Doom II were weeded out
+		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
+		//		handle these and more cases better, so we just pass it
+		//		everything and let it decide what to do with them.
+
+		mt->thingid = SHORT(mt->thingid);
+		mt->x = SHORT(mt->x);
+		mt->y = SHORT(mt->y);
+		mt->z = SHORT(mt->z);
+		mt->angle = SHORT(mt->angle);
+		mt->type = SHORT(mt->type);
+		mt->flags = SHORT(mt->flags);
+
+		P_SpawnMapThing (mt, position);
+	}
+
+	Z_Free (data);
+}
+
 //
 // P_LoadLineDefs
 //
@@ -613,13 +654,13 @@ void P_FinishLoadingLineDefs (void)
 	}
 }
 
-void P_LoadLineDefs2 (int lump)
+void P_LoadLineDefs (int lump)
 {
 	byte *data;
 	int i;
 	line_t *ld;
-	int lumplen = W_LumpLength (lump);
-	numlines = lumplen / sizeof(maplinedef2_t);
+
+	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
 	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
 	memset (lines, 0, numlines*sizeof(line_t));
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
@@ -627,22 +668,22 @@ void P_LoadLineDefs2 (int lump)
 	ld = lines;
 	for (i=0 ; i<numlines ; i++, ld++)
 	{
-		maplinedef2_t *mld = ((maplinedef2_t *)data) + i;
+		maplinedef_t *mld = ((maplinedef_t *)data) + i;
 
 		// [RH] Translate old linedef special and flags to be
 		//		compatible with the new format.
-		//P_TranslateLineDef (ld, mld);
+		P_TranslateLineDef (ld, mld);
 
-		unsigned short v = SHORT(mld->v1);
+		short v = SHORT(mld->v1);
 
-		if(v >= numvertexes)
+		if(v < 0 || v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = SHORT(mld->v2);
 
-		if(v >= numvertexes)
+		if(v < 0 || v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
@@ -661,44 +702,41 @@ void P_LoadLineDefs2 (int lump)
 	Z_Free (data);
 }
 
-void P_LoadLineDefs (int lump)
+// [RH] Same as P_LoadLineDefs() except it uses Hexen-style LineDefs.
+void P_LoadLineDefs2 (int lump)
 {
-	byte *data;
-	int i;
-	line_t *ld;
-	int lumplen = W_LumpLength (lump);
+	byte*				data;
+	int 				i;
+	maplinedef2_t*		mld;
+	line_t* 			ld;
 
-	if(lumplen % sizeof(maplinedef_t) != 0
-		&& lumplen % sizeof(maplinedef2_t) == 0)
-	{
-		P_LoadLineDefs2(lump);
-		return;
-	}
-
-	numlines = lumplen / sizeof(maplinedef_t);
-	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
+	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
+	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL,0 );
 	memset (lines, 0, numlines*sizeof(line_t));
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
 
+	mld = (maplinedef2_t *)data;
 	ld = lines;
-	for (i=0 ; i<numlines ; i++, ld++)
+	for (i = 0; i < numlines; i++, mld++, ld++)
 	{
-		maplinedef_t *mld = ((maplinedef_t *)data) + i;
+		int j;
 
-		// [RH] Translate old linedef special and flags to be
-		//		compatible with the new format.
-		P_TranslateLineDef (ld, mld);
+		for (j = 0; j < 5; j++)
+			ld->args[j] = mld->args[j];
 
-		unsigned short v = SHORT(mld->v1);
+		ld->flags = SHORT(mld->flags);
+		ld->special = mld->special;
 
-		if(v >= numvertexes)
+		short v = SHORT(mld->v1);
+
+		if(v < 0 || v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = SHORT(mld->v2);
 
-		if(v >= numvertexes)
+		if(v < 0 || v >= numvertexes)
 			I_Error("P_LoadLineDefs: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
@@ -1118,7 +1156,7 @@ void P_CreateBlockMap()
 
 	// Create the blockmap lump
 	blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * (4+NBlocks+linetotal), PU_LEVEL, 0);
-	
+
 	// blockmap header
 	blockmaplump[0] = bmaporgx = xorg << FRACBITS;
 	blockmaplump[1] = bmaporgy = yorg << FRACBITS;
@@ -1287,6 +1325,35 @@ void P_GroupLines (void)
 }
 
 //
+// [RH] P_LoadBehavior
+//
+static int STACK_ARGS sortscripts (const void *a, const void *b)
+{
+	return ((*(int *)a)%1000 - (*(int *)b)%1000);
+}
+
+void P_LoadBehavior (int lumpnum)
+{
+	byte *behavior = (byte *)W_CacheLumpNum (lumpnum, PU_LEVEL);
+
+	if (behavior[0] != 'A' || behavior[1] != 'C' ||
+		behavior[2] != 'S' || behavior[3] != 0)
+	{
+		Z_Free (behavior);
+		return;
+	}
+
+	level.behavior = behavior;
+	level.scripts = (int *)(behavior + ((int *)behavior)[1]);
+	level.strings = &level.scripts[level.scripts[0]*3+1];
+
+	// Make sure scripts are listed in order (to make finding them quicker)
+	qsort (&level.scripts[1], level.scripts[0], 3*sizeof(int), sortscripts);
+
+	DPrintf ("Loaded %d scripts, %d strings\n", level.scripts[0], level.strings[0]);
+}
+
+//
 // P_AllocStarts
 //
 void P_AllocStarts(void)
@@ -1358,13 +1425,22 @@ void P_SetupLevel (char *lumpname, int position)
 	// find map num
 	lumpnum = W_GetNumForName (lumpname);
 
+	// [RH] Check if this map is Hexen-style.
+	//		LINEDEFS and THINGS need to be handled accordingly.
+	//		If it is, we also need to distinguish between projectile cross and hit
+	HasBehavior = W_CheckLumpName (lumpnum+ML_BEHAVIOR, "BEHAVIOR");
+	//oldshootactivation = !HasBehavior;
+
     level.time = 0;
 
 	// note: most of this ordering is important
 	P_LoadVertexes (lumpnum+ML_VERTEXES);
 	P_LoadSectors (lumpnum+ML_SECTORS);
 	P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
-	P_LoadLineDefs (lumpnum+ML_LINEDEFS);
+	if (!HasBehavior)
+		P_LoadLineDefs (lumpnum+ML_LINEDEFS);
+	else
+		P_LoadLineDefs2 (lumpnum+ML_LINEDEFS);	// [RH] Load Hexen-style linedefs
 	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
@@ -1387,12 +1463,23 @@ void P_SetupLevel (char *lumpname, int position)
 		}
 	}
 	P_GroupLines ();
-	
+
 	P_AllocStarts();
-	
-	P_LoadThings (lumpnum+ML_THINGS);
-	P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
-	
+
+	if (!HasBehavior)
+		P_LoadThings (lumpnum+ML_THINGS);
+	else
+		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
+
+	if (!HasBehavior)
+		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
+
+	// [RH] Load in the BEHAVIOR lump
+	level.behavior = NULL;
+	level.scripts = level.strings = NULL;
+	if (HasBehavior)
+		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+
     if (serverside)
     {
 		for (i=0 ; i<players.size() ; i++)
@@ -1403,22 +1490,22 @@ void P_SetupLevel (char *lumpname, int position)
 			if (players[i].ingame())
 			{
 				G_DeathMatchSpawnPlayer (players[i]); // denis - this function checks for deathmatch internally
-			}				
+			}
 		}
     }
-	
+
 	// clear special respawning que
 	iquehead = iquetail = 0;
-		
+
 	// killough 3/26/98: Spawn icon landings:
 	P_SpawnBrainTargets();
-	
+
 	// set up world state
 	P_SpawnSpecials ();
-	
+
 	// build subsector connect matrix
 	//	UNUSED P_ConnectSubsectors ();
-	
+
 	R_OldBlend = ~0;
 
 	// preload graphics

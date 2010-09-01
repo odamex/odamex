@@ -677,6 +677,18 @@ unsigned W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest,
 	return read;
 }
 
+
+//
+// W_CheckLumpName
+//
+bool W_CheckLumpName (unsigned lump, const char *name)
+{
+	if (lump >= numlumps)
+		return false;
+
+	return !strnicmp (lumpinfo[lump].name, name, 8);
+}
+
 //
 // W_GetLumpName
 //
