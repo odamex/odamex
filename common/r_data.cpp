@@ -136,6 +136,9 @@ int*			flattranslation;
 
 int*			texturetranslation;
 
+// [RH] Tutti-Frutti fix
+unsigned int	dc_mask;
+
 
 //
 // MAPTEXTURE_T CACHING

@@ -25,7 +25,4 @@
 #ifndef __R_DRAW__
 #define __R_DRAW__
 
-// [RH] Tutti-Frutti fix
-extern unsigned int		dc_mask;
-
 #endif

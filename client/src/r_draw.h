@@ -51,9 +51,6 @@ extern "C" unsigned int	dc_tspans[4][256];
 extern "C" unsigned int	*dc_ctspan[4];
 extern "C" unsigned int	horizspans[4];
 
-// [RH] Tutti-Frutti fix
-extern "C" unsigned int		dc_mask;
-
 
 // [RH] Pointers to the different column and span drawers...
 
