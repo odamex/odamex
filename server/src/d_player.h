@@ -22,7 +22,6 @@
 //-----------------------------------------------------------------------------
 
 
-
 #ifndef __D_PLAYER_H__
 #define __D_PLAYER_H__
 
@@ -156,12 +155,13 @@ public:
     // Power ups. invinc and invis are tic counters.
 	int			powers[NUMPOWERS];
 	bool		cards[NUMCARDS];
-
-	// [Toke - CTF]
-	bool		flags[NUMFLAGS];
-	int			points;
 	bool		backpack;
-	
+
+	// [Toke - CTF] Points in a special game mode
+	int			points;
+	// [Toke - CTF - Carry] Remembers the flag when grabbed
+	bool		flags[NUMFLAGS];
+
     // Frags, deaths, monster kills
 	int			fragcount;
 	int			deathcount;
@@ -177,13 +177,13 @@ public:
 
     // True if button down last tic.
 	int			attackdown, usedown;
-    
+
 	// Bit flags, for cheats and debug.
     // See cheat_t, above.
 	int			cheats;
-    
+
 	// Refired shots are less accurate.
-    int			refire;
+	short		refire;
 	
 	// For screen flashing (red or bright).
 	int			damagecount, bonuscount;
@@ -197,10 +197,12 @@ public:
     // Current PLAYPAL, ???
     //  can be set to REDCOLORMAP for pain, etc.
 	int			fixedcolormap;
-	
+
 	// Overlay view sprites (gun, etc).
 	pspdef_t	psprites[NUMPSPRITES];
+	
 	int			jumpTics;				// delay the next jump for a moment
+
 	int			respawn_time;			// [RH] delay respawning until this tic
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 	
@@ -460,6 +462,7 @@ public:
 			psprites[i] = other.psprites[i];
         
         jumpTics = other.jumpTics;
+		
 		respawn_time = other.respawn_time;
 
 		oldvelocity[0] = other.oldvelocity[0];
@@ -545,5 +548,6 @@ typedef struct wbstartstruct_s
 
 
 #endif // __D_PLAYER_H__
+
 
 
