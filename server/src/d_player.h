@@ -156,12 +156,13 @@ public:
     // Power ups. invinc and invis are tic counters.
 	int			powers[NUMPOWERS];
 	bool		cards[NUMCARDS];
-
-	// [Toke - CTF]
-	bool		flags[NUMFLAGS];
-	int			points;
 	bool		backpack;
-	
+
+	// [Toke - CTF] Points in a special game mode
+	int			points;
+	// [Toke - CTF - Carry] Remembers the flag when grabbed
+	bool		flags[NUMFLAGS];
+
     // Frags, deaths, monster kills
 	int			fragcount;
 	int			deathcount;
@@ -177,11 +178,11 @@ public:
 
     // True if button down last tic.
 	int			attackdown, usedown;
-    
+
 	// Bit flags, for cheats and debug.
     // See cheat_t, above.
 	int			cheats;
-    
+
 	// Refired shots are less accurate.
     int			refire;
 	
@@ -197,7 +198,7 @@ public:
     // Current PLAYPAL, ???
     //  can be set to REDCOLORMAP for pain, etc.
 	int			fixedcolormap;
-	
+
 	// Overlay view sprites (gun, etc).
 	pspdef_t	psprites[NUMPSPRITES];
 	int			jumpTics;				// delay the next jump for a moment
@@ -337,7 +338,6 @@ public:
 	player_s()
 	{
 		size_t i;
-
 		// GhostlyDeath -- Initialize EVERYTHING
 		mo = AActor::AActorPtr();
 		id = 0;
@@ -362,7 +362,7 @@ public:
 		deathcount = 0;
 		killcount = 0;
 		pendingweapon = wp_nochange;
-		readyweapon = wp_nochange;		
+		readyweapon = wp_nochange;
 		for (i = 0; i < NUMWEAPONS; i++)
 			weaponowned[i] = false;
 		for (i = 0; i < NUMAMMO; i++)
@@ -545,5 +545,6 @@ typedef struct wbstartstruct_s
 
 
 #endif // __D_PLAYER_H__
+
 
 

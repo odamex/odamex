@@ -99,14 +99,18 @@ public:
 	bool ingame()
 	{
 		return playerstate == PST_LIVE ||
-		playerstate == PST_DEAD ||
-		playerstate == PST_REBORN;
+				playerstate == PST_DEAD ||
+				playerstate == PST_REBORN;
 	}
+
+	// player identifier on server
+	byte		id;
+	
+	// current player state, see playerstate_t
+	byte		playerstate;
 
 	AActor::AActorPtr	mo;
 
-	byte		id;
-	BYTE		playerstate;
 	struct ticcmd_t	cmd;
 
 	// [RH] who is this?
@@ -122,7 +126,7 @@ public:
 	fixed_t		deltaviewheight;
     // bounded/scaled total momentum.
 	fixed_t		bob;
-	
+
     // This is only used between levels,
     // mo->health is used during levels.
 	int			health;
@@ -161,7 +165,7 @@ public:
 	int			cheats;
 
 	// Refired shots are less accurate.
-	short		refire;
+    int			refire;
 	
 	// For screen flashing (red or bright).
 	int			damagecount, bonuscount;
@@ -183,6 +187,7 @@ public:
 
 	int			respawn_time;			// [RH] delay respawning until this tic
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
+	
 	AActor::AActorPtr camera;			// [RH] Whose eyes this player sees through
 
 	int			air_finished;			// [RH] Time when you start drowning
@@ -216,7 +221,7 @@ public:
 		armortype = 0;
 		for (i = 0; i < NUMPOWERS; i++)
 			powers[i] = 0;
-		for ( i = 0; i < NUMCARDS; i++)
+		for (i = 0; i < NUMCARDS; i++)
 			cards[i] = false;
 		backpack = false;
 		points = 0;
