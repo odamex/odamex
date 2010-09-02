@@ -37,7 +37,7 @@
 #define DriveG "\\??\\G:"
 #define DriveT "\\??\\T:"
 #define DriveU "\\??\\U:"
-#define DriveX "\\??\\X:"
+#define DriveZ "\\??\\Z:"
 
 // Partition device mapping
 #define DeviceC "\\Device\\Harddisk0\\Partition2"
@@ -47,7 +47,7 @@
 #define DeviceG "\\Device\\Harddisk0\\Partition7"
 #define DeviceT "\\Device\\Harddisk0\\Partition1\\TDATA\\4F444D58"
 #define DeviceU "\\Device\\Harddisk0\\Partition1\\UDATA\\4F444D58"
-#define DeviceX "\\Device\\Harddisk0\\Partition3"
+#define DeviceZ "\\Device\\Harddisk0\\Partition5"
 
 typedef struct _STRING 
 {
@@ -267,15 +267,34 @@ LONG xbox_UnMountDevice(LPSTR sSymbolicLinkName)
 //
 // xbox_MountPartitions
 //
+// Some of these partitions are automatically mounted but just 
+// to be on the safe side the mount will be attempted anyway
+//
+// Some of these partitions are only found on some modded consoles.
+// These partitions will only successfully mount on consoles where
+// the modder has created these partitions.
+//
+// F is likely to be found on systems that shipped with stock hdd's
+// that were 10GB in size. Since the Xbox hdd was advertised as 8GB,
+// 2GB were left unpartitioned on these and that extra space will
+// typically be partitioned into F: during modding and games or apps
+// will be installed there (like this one.) F: will also be found
+// on non-stock hdd's of any size where any space above 8GB and below
+// 137GB will be partitioned into F:
+//
+// G is likely to be found on non-stock hdd's that are larger than 137GB
+// due to the partition size limitation. Anything above 137GB is partitioned
+// into G: and it is used, typically, for the same purposes as F.
+//
 void xbox_MountPartitions()
 {
-	xbox_MountDevice(DriveD, CdRom);   // DVD-ROM or start path
+	xbox_MountDevice(DriveD, CdRom);   // DVD-ROM or start path - automounted
 	xbox_MountDevice(DriveE, DeviceE); // Standard save partition
 	xbox_MountDevice(DriveF, DeviceF); // Non-stock partition - modded consoles only
 	xbox_MountDevice(DriveG, DeviceG); // Non-stock partition - modded consoles only
-	xbox_MountDevice(DriveT, DeviceT); // Odamex's unique TDATA - peristent save data (configs, etc.)
-	xbox_MountDevice(DriveU, DeviceU); // Odamex's unique UDATA - user save data (save games)
-	xbox_MountDevice(DriveX, DeviceX); // Cache partition - appropriate place for temporary files
+	xbox_MountDevice(DriveT, DeviceT); // Odamex's unique TDATA - peristent save data (configs, etc.) - automounted
+	xbox_MountDevice(DriveU, DeviceU); // Odamex's unique UDATA - user save data (save games) - automounted
+	xbox_MountDevice(DriveZ, DeviceZ); // Cache partition - appropriate place for temporary files - automounted
 }
 
 //
@@ -289,7 +308,7 @@ void xbox_UnMountPartitions()
 	xbox_UnMountDevice(DriveG);
 	xbox_UnMountDevice(DriveT);
 	xbox_UnMountDevice(DriveU);
-	xbox_UnMountDevice(DriveX);
+	xbox_UnMountDevice(DriveZ);
 }
 
 //
