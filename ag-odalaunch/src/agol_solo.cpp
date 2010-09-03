@@ -105,6 +105,9 @@ AG_Tlist *AGOL_Solo::CreateIwadList(void *parent)
 
 	iwlist = AG_TlistNew(parent, AG_TLIST_EXPAND);
 
+	// Set the list item compare function
+	AG_TlistSetCompareFn(iwlist, AG_TlistCompareStrings);
+
 	return iwlist;
 }
 
@@ -126,6 +129,9 @@ AG_Tlist *AGOL_Solo::CreatePwadList(void *parent)
 	AG_Tlist *pwlist;
 
 	pwlist = AG_TlistNew(parent, AG_TLIST_MULTITOGGLE | AG_TLIST_EXPAND);
+
+	// Set the list item compare function
+	AG_TlistSetCompareFn(pwlist, AG_TlistCompareStrings);
 
 	return pwlist;
 }
@@ -218,6 +224,10 @@ void AGOL_Solo::PopulateWadLists()
 				// Compare the file extension to the acceptable extensions for Odamex.
 				if(curFile.substr(dot + 1, curFile.size()) == "WAD")
 				{
+					// Exclude odamex.wad
+					if(curFile == "ODAMEX.WAD")
+						continue;
+
 					// If this is an IWAD put it in the IWAD list.
 					if(WadIsIWAD(curFile))
 						AG_TlistAddS(IwadList, agIconDoc.s, dir->ents[i]);
@@ -232,6 +242,10 @@ void AGOL_Solo::PopulateWadLists()
 
 		AG_CloseDir(dir);
 	}
+
+	// Remove any duplicate items
+	AG_TlistUniq(IwadList);
+	AG_TlistUniq(PwadList);
 }
 
 bool AGOL_Solo::WadIsIWAD(string wad)
