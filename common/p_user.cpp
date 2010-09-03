@@ -207,83 +207,14 @@ void P_MovePlayer (player_t *player)
 	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
 	
-	if (player->jumpTics)
-		player->jumpTics--;
+	if(clientside || step_mode)
+        mo->angle += cmd->ucmd.yaw << 16;
 	
 	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
 
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
 		return;
-		
-	// Move around.
-	// Reactiontime is used to prevent movement
-	//	for a bit after a teleport.
-	if (player->mo->reactiontime)
-	{
-		player->mo->reactiontime--;
-		return;
-	}
-
-	// [RH] check for swim/jump
-	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
-	{
-		if (player->mo->waterlevel >= 2)
-		{
-			player->mo->momz = 4*FRACUNIT;
-		}
-		else if (player->mo->flags2 & MF2_FLY)
-		{
-			player->mo->momz = 3*FRACUNIT;
-		}		
-		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
-		{
-			player->mo->momz += 8*FRACUNIT;
-			if(!player->spectator)
-				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
-				
-            player->mo->flags2 &= ~MF2_ONMOBJ;
-            player->jumpTics = 18;				
-		}
-	}
-
-	if (cmd->ucmd.upmove == -32768)
-	{ // Only land if in the air
-		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
-		{
-			player->mo->flags2 &= ~MF2_FLY;
-			player->mo->flags &= ~MF_NOGRAVITY;
-		}
-	}
-	else if (cmd->ucmd.upmove != 0)
-	{
-		if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
-		{
-			player->mo->momz = cmd->ucmd.upmove << 8;
-        }
-        else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
-        {
-			player->mo->flags2 |= MF2_FLY;
-			player->mo->flags |= MF_NOGRAVITY;
-			if (player->mo->momz <= -39*FRACUNIT)
-            { // Stop falling scream
-				S_StopSound (player->mo, CHAN_VOICE);
-			}
-        }        
-		else if (cmd->ucmd.upmove > 0)
-		{
-			//P_PlayerUseArtifact (player, arti_fly);
-		}
-	}
-	
-	// Look left/right
-	if(clientside || step_mode)
-	{
-		mo->angle += cmd->ucmd.yaw << 16;
-
-		// Look up/down stuff
-		P_PlayerLookUpDown(player);
-	}
 
 	// killough 10/98:
 	//
@@ -309,28 +240,25 @@ void P_MovePlayer (player_t *player)
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
 
-		if(mo->onground || (mo->flags2 & MF2_FLY))
+		if (forwardmove)
 		{
-			if (forwardmove)
-			{
-				P_ForwardThrust (player, mo->angle, forwardmove);
-			}
-			if (sidemove)
-			{
-				P_SideThrust (player, mo->angle, sidemove);
-			}
+			P_ForwardThrust (player, mo->angle, forwardmove);
+		}
+		if (sidemove)
+		{
+			P_SideThrust (player, mo->angle, sidemove);
 		}
 
 		if (mo->state == &states[S_PLAY])
 		{
 			P_SetMobjState (player->mo, S_PLAY_RUN1); // denis - fixme - this function might destoy player->mo without setting it to 0
 		}
-	}
-
-	if (player->cheats & CF_REVERTPLEASE)
-	{
-		player->cheats &= ~CF_REVERTPLEASE;
-		player->camera = player->mo;
+		
+        if (player->cheats & CF_REVERTPLEASE)
+        {
+            player->cheats &= ~CF_REVERTPLEASE;
+            player->camera = player->mo;
+        }
 	}
 }
 
@@ -497,8 +425,53 @@ void P_PlayerThink (player_t *player)
 			P_DeathThink (player);
 			return;
 		}
+		
+        if (player->jumpTics)
+            player->jumpTics--;
 
-		P_MovePlayer (player);
+        // Look left/right
+        if(clientside || step_mode)
+            // Look up/down stuff
+            P_PlayerLookUpDown(player);            
+		
+        // Move around.
+        // Reactiontime is used to prevent movement
+        //	for a bit after a teleport.
+        if (player->mo->reactiontime)
+        {
+            player->mo->reactiontime--;           
+        }
+        else
+        {
+            // [RH] check for swim/jump
+            if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
+            {
+                if (player->mo->waterlevel >= 2)
+                {
+                    player->mo->momz = 4*FRACUNIT;
+                }
+                else if (player->mo->flags2 & MF2_FLY)
+                {
+                    player->mo->momz = 3*FRACUNIT;
+                }		
+                else if (sv_allowjump && player->mo->onground && !player->jumpTics)
+                {
+                    player->mo->momz += 8*FRACUNIT;
+                    if(!player->spectator)
+                        S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
+                        
+                    player->mo->flags2 &= ~MF2_ONMOBJ;
+                    player->jumpTics = 18;				
+                }
+            }
+            
+            if (cmd->ucmd.upmove && (player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY))
+            {
+                player->mo->momz = cmd->ucmd.upmove << 8;
+            }
+                
+            P_MovePlayer (player);            
+        }
 
 		P_CalcHeight (player);
 	}
