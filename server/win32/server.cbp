@@ -393,6 +393,7 @@
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_draw.h" />
 		<Unit filename="..\src\r_main.cpp" />
+		<Unit filename="..\src\r_main.h" />
 		<Unit filename="..\src\r_plane.cpp" />
 		<Unit filename="..\src\r_plane.h" />
 		<Unit filename="..\src\r_sky.cpp" />
