@@ -107,7 +107,6 @@ int GameCommand::Launch()
 	{
 		AG_TextErrorS("Failed to launch Odamex.\n"
 			"Please verify that your Odamex path is set correctly.");
-		OutputDebugString(AG_GetError());
 		return -1;
 	}
 
