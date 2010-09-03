@@ -203,7 +203,12 @@ void AGOL_Solo::PopulateWadLists()
 		for(int i = 0; i < dir->nents; i++)
 		{
 			string curFile(dir->ents[i]);
-			string path(*wditer + AG_PATHSEP + curFile);
+			string path;
+
+			if((*wditer)[(*wditer).size()-1] == AG_PATHSEPCHAR)
+				path = *wditer + curFile;
+			else
+				path = *wditer + AG_PATHSEP + curFile;
 
 			if(AG_GetFileInfo(path.c_str(), &info) == -1)
 				continue;
