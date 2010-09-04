@@ -152,7 +152,13 @@ typedef DWORD				BITFIELD;
 #endif
 #endif
 
-
+#ifdef _WIN32
+#define PATHSEP "\\"
+#define PATHSEPCHAR '\\'
+#else
+#define PATHSEP "/"
+#define PATHSEPCHAR '/'
+#endif
 
 // [RH] This gets used all over; define it here:
 int STACK_ARGS Printf (int printlevel, const char *, ...);

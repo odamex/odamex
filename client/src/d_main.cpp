@@ -672,13 +672,8 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 {
 	std::string found;
 
-#ifdef _XBOX
-	if(dir[dir.length() - 1] != '\\')
-		dir += "\\";
-#else
-	if(dir[dir.length() - 1] != '/')
-		dir += "/";
-#endif
+	if(dir[dir.length() - 1] != PATHSEPCHAR)
+		dir += PATHSEP;
 
 	std::transform(hash.begin(), hash.end(), hash.begin(), toupper);
 	std::string dothash = ".";
@@ -802,13 +797,8 @@ void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char se
 		FixPathSeparator(segment);
 		I_ExpandHomeDir(segment);
 
-#ifdef _XBOX
-		if(segment[segment.length() - 1] != '\\')
-			segment += "\\"; // TODO - This is repeated a lot. Why isn't it a function yet? -- Hyper_Eye
-#else
-		if(segment[segment.length() - 1] != '/')
-			segment += "/";
-#endif
+		if(segment[segment.length() - 1] != PATHSEPCHAR)
+			segment += PATHSEP;
 
 		dirs.push_back(segment);
 	}
@@ -828,7 +818,7 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 		const char separator = ';';
 	#else
 		// absolute path?
-		if(file[0] == '/' || file[0] == '~')
+		if(file[0] == PATHSEPCHAR || file[0] == '~')
 			return file;
 
 		const char separator = ':';
@@ -862,13 +852,8 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 		{
 			std::string &dir = dirs[i];
 
-#ifdef _XBOX
-			if(dir[dir.length() - 1] != '\\')
-				dir += "\\";
-#else
-			if(dir[dir.length() - 1] != '/')
-				dir += "/";
-#endif
+			if(dir[dir.length() - 1] != PATHSEPCHAR)
+				dir += PATHSEP;
 
 			return dir + found;
 		}
@@ -1127,14 +1112,14 @@ void D_AddDefWads (std::string iwad)
 			int stuffstart;
 
 			std::string pd = progdir;
-			if(pd[pd.length() - 1] != '/')
-				pd += '/';
+			if(pd[pd.length() - 1] != PATHSEPCHAR)
+				pd += PATHSEPCHAR;
 
 			stuffstart = sprintf (skindir, "%sskins", pd.c_str());
 
 			if (!chdir (skindir))
 			{
-				skindir[stuffstart++] = '/';
+				skindir[stuffstart++] = PATHSEPCHAR;
 				if ((handle = I_FindFirst ("*.wad", &findstate)) != -1)
 				{
 					do
@@ -1154,10 +1139,10 @@ void D_AddDefWads (std::string iwad)
 			if (home)
 			{
 				stuffstart = sprintf (skindir, "%s%s.odamex/skins", home,
-									  home[strlen(home)-1] == '/' ? "" : "/");
+									  home[strlen(home)-1] == PATHSEPCHAR ? "" : PATHSEP);
 				if (!chdir (skindir))
 				{
-					skindir[stuffstart++] = '/';
+					skindir[stuffstart++] = PATHSEPCHAR;
 					if ((handle = I_FindFirst ("*.wad", &findstate)) != -1)
 					{
 						do
@@ -1348,7 +1333,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 		// strip absolute paths, as they present a security risk
 		FixPathSeparator(tmp);
-		size_t slash = tmp.find_last_of('/');
+		size_t slash = tmp.find_last_of(PATHSEPCHAR);
 		if(slash != std::string::npos)
 			tmp = tmp.substr(slash + 1, tmp.length() - slash);
 
