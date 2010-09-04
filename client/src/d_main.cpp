@@ -742,18 +742,8 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 		return "";
 	}
 
-	while (true)
+	do
 	{
-		if(!FindNextFile(hFind, &FindFileData))
-		{
-			dwError = GetLastError();
-
-			if(dwError != ERROR_NO_MORE_FILES)
-				Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
-
-			break;
-		}
-
 		if(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 
@@ -777,7 +767,11 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 				Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
 			}
 		}
-	}
+	} while(FindNextFile(hFind, &FindFileData));
+
+	dwError = GetLastError();
+	if(dwError != ERROR_NO_MORE_FILES)
+		Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
 
 	FindClose(hFind);
 #endif
