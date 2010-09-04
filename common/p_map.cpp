@@ -44,6 +44,7 @@
 
 fixed_t 		tmbbox[4];
 static AActor  *tmthing;
+static int 		tmflags;
 static fixed_t	tmx;
 static fixed_t	tmy;
 static fixed_t	tmz;	// [RH] Needed for third dimension of teleporters
@@ -76,11 +77,13 @@ line_t** 		spechit;
 int 			numspechit;
 
 AActor *onmobj; // generic global onmobj...used for landing on pods/players
+AActor *BlockingMobj;
 
 // Temporary holder for thing_sectorlist threads
 msecnode_t* sector_list = NULL;		// phares 3/16/98
 
 EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR (co_realactorheight)
 
 //
 // TELEPORT MOVE
@@ -427,13 +430,21 @@ BOOL PIT_CheckThing (AActor *thing)
         return true;
 
 	blockdist = thing->radius + tmthing->radius;
-
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
 		// didn't hit thing
 		return true;
 	}
-
+	      
+	if ((tmthing->flags2 & MF2_PASSMOBJ) && co_realactorheight)
+	{
+		// check if a mobj passed over/under another object
+		if (/*!(thing->flags & MF_SPECIAL) &&*/
+			((tmthing->z >= thing->z + thing->height ||
+			  tmthing->z + tmthing->height < thing->z)))
+			return true;
+	}
+	
     // check for skulls slamming into things
 	if (tmthing->flags & MF_SKULLFLY)
 	{
@@ -576,6 +587,46 @@ BOOL Check_Sides(AActor* actor, int x, int y)
 	return(false);												//   |
 }																// phares
 
+
+//---------------------------------------------------------------------------
+//
+// PIT_CheckOnmobjZ
+//
+//---------------------------------------------------------------------------
+
+BOOL PIT_CheckOnmobjZ (AActor *thing)
+{
+	fixed_t blockdist;
+
+	if(!(thing->flags&(MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)))
+	{ // Can't hit thing
+		return(true);
+	}
+	blockdist = thing->radius+tmthing->radius;
+	if(abs(thing->x-tmx) >= blockdist || abs(thing->y-tmy) >= blockdist)
+	{ // Didn't hit thing
+		return(true);
+	}
+	if(thing == tmthing)
+	{ // Don't clip against self
+		return(true);
+	}
+	if(tmthing->z > thing->z+thing->height)
+	{
+		return(true);
+	}
+	else if(tmthing->z+tmthing->height < thing->z)
+	{ // under thing
+		return(true);
+	}
+	if(thing->flags&MF_SOLID)
+	{
+		onmobj = thing;
+	}
+	return(!(thing->flags&MF_SOLID));
+}
+
+
 //
 // MOVEMENT CLIPPING
 //
@@ -601,6 +652,8 @@ BOOL Check_Sides(AActor* actor, int x, int y)
 //	tmdropoffz = the lowest point contacted (monsters won't move to a dropoff)
 //	speciallines[]
 //	numspeciallines
+//  AActor *BlockingMobj = pointer to thing that blocked position (NULL if not
+//   blocked, or blocked by a line).
 bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 {
 	int xl, xh;
@@ -609,6 +662,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	subsector_t *newsubsec;
 
 	tmthing = thing;
+	tmflags = thing->flags;
 
 	tmx = x;
 	tmy = y;
@@ -635,7 +689,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	validcount++;
 	numspechit = 0;
 
-	if (tmthing->flags & MF_NOCLIP)
+	if (tmflags & MF_NOCLIP && !(tmflags & MF_SKULLFLY))
 		return true;
 
 	// Check things first, possibly picking things up.
@@ -647,12 +701,18 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
-
+	
+	BlockingMobj = NULL;
 	for (bx=xl ; bx<=xh ; bx++)
 		for (by=yl ; by<=yh ; by++)
 			if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
 				return false;
-
+	
+	// check lines
+	if (tmflags & MF_NOCLIP)
+		return true;
+		    
+    BlockingMobj = NULL;
 	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
@@ -664,6 +724,134 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 				return false;
 
 	return true;
+}
+
+//
+// P_CheckOnmobj(AActor *thing)
+// Checks if the new Z position is legal
+//
+AActor *P_CheckOnmobj (AActor *thing)
+{
+	int	xl,xh,yl,yh,bx,by;
+	subsector_t *newsubsec;
+	fixed_t x, y;
+	byte oldmo[sizeof(AActor)];
+	//AActor oldmo (*thing);	// save the old mobj before the fake zmovement
+
+	memcpy (oldmo, &thing->x, (byte *)&thing[1] - (byte *)&thing->x);
+
+	x = thing->x;
+	y = thing->y;
+	tmthing = thing;
+	tmflags = thing->flags;
+	P_FakeZMovement (tmthing);
+
+	tmx = x;
+	tmy = y;
+
+	tmbbox[BOXTOP] = y + tmthing->radius;
+	tmbbox[BOXBOTTOM] = y - tmthing->radius;
+	tmbbox[BOXRIGHT] = x + tmthing->radius;
+	tmbbox[BOXLEFT] = x - tmthing->radius;
+
+	newsubsec = R_PointInSubsector (x, y);
+	ceilingline = NULL;
+
+//
+// the base floor / ceiling is from the subsector that contains the
+// point. Any contacted lines the step closer together will adjust them
+//
+	tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
+	tmceilingz = newsubsec->sector->ceilingheight;
+
+	//Added by MC: Fill the tmsector.
+	tmsector = newsubsec->sector;
+
+	validcount++;
+	numspechit = 0;
+
+	if ( tmflags & MF_NOCLIP )
+		return NULL;
+
+//
+// check things first, possibly picking things up
+// the bounding box is extended by MAXRADIUS because DActors are grouped
+// into mapblocks based on their origin point, and can overlap into adjacent
+// blocks by up to MAXRADIUS units
+//
+	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+
+	for (bx=xl ; bx<=xh ; bx++)
+		for (by=yl ; by<=yh ; by++)
+			if (!P_BlockThingsIterator(bx,by,PIT_CheckOnmobjZ))
+			{
+				//*tmthing = oldmo;
+				memcpy (&tmthing->x, oldmo, (byte *)&thing[1] - (byte *)&thing->x);
+				return onmobj;
+			}
+	//*tmthing = oldmo;
+	memcpy (&tmthing->x, oldmo, (byte *)&thing[1] - (byte *)&thing->x);
+	return NULL;
+}
+
+//
+// P_FakeZMovement
+// Fake the zmovement so that we can check if a move is legal
+//
+void P_FakeZMovement(AActor *mo)
+{
+	int dist;
+	int delta;
+//
+// adjust height
+//
+	mo->z += mo->momz;
+	if (mo->flags&MF_FLOAT && mo->target)
+	{		// float down towards target if too close
+		if (!(mo->flags&MF_SKULLFLY) && !(mo->flags&MF_INFLOAT))
+		{
+			dist = P_AproxDistance(mo->x-mo->target->x, mo->y-mo->target->y);
+			delta = (mo->target->z+(mo->height>>1))-mo->z;
+			if (delta < 0 && dist < -(delta*3))
+				mo->z -= FLOATSPEED;
+			else if (delta > 0 && dist < (delta*3))
+				mo->z += FLOATSPEED;
+		}
+	}
+	if (mo->player && mo->flags2&MF2_FLY && !(mo->z <= mo->floorz))
+	{
+		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
+	}
+
+//
+// clip movement
+//
+	if(mo->z <= mo->floorz)
+	{ // Hit the floor
+		mo->z = mo->floorz;
+		if(mo->momz < 0)
+		{
+			mo->momz = 0;
+		}
+		if(mo->flags & MF_SKULLFLY)
+		{ // The skull slammed into something
+			mo->momz = -mo->momz;
+		}
+	}
+
+	if (mo->z + mo->height > mo->ceilingz)
+	{		// hit the ceiling
+		if (mo->momz > 0)
+			mo->momz = 0;
+		mo->z = mo->ceilingz - mo->height;
+		if (mo->flags & MF_SKULLFLY)
+		{		// the skull slammed into something
+			mo->momz = -mo->momz;
+		}
+	}
 }
 
 //
@@ -681,7 +869,28 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 
 	floatok = false;
     if (!P_CheckPosition (thing, x, y))
-		return false;		// solid wall or thing
+    {
+         // solid wall or thing        
+         if (!BlockingMobj)
+             return false;
+         else
+         {
+             if (BlockingMobj->player || !thing->player)
+                 return false;
+                 
+             else if (BlockingMobj->z+BlockingMobj->height-thing->z 
+                 > 24*FRACUNIT 
+                 || (BlockingMobj->subsector->sector->ceilingheight
+                 -(BlockingMobj->z+BlockingMobj->height) < thing->height)
+                 || (tmceilingz-(BlockingMobj->z+BlockingMobj->height) 
+                 < thing->height))
+             {
+                 return false;
+            }
+        }
+        if (!(tmthing->flags2 & MF2_PASSMOBJ))
+            return false;             
+    }
 
 	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
 	{
@@ -694,11 +903,6 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 			&& tmceilingz - thing->z < thing->height && !(thing->flags2 & MF2_FLY))
 		{
 			return false;		// mobj must lower itself to fit
-		}
-		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT)
-		{
-			// too big a step up
-			return false;
 		}
 		
 		if (thing->flags2 & MF2_FLY)
@@ -715,8 +919,14 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 				thing->momz = 8*FRACUNIT;
 				return false;
 			}
-		}		
-
+		}
+				
+		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT)
+		{
+			// too big a step up
+			return false;
+		}
+		
 		// killough 3/15/98: Allow certain objects to drop off
 		// [Spleen] Unless co_allowdropoff is true, monsters can now get pushed or thrusted off of ledges like in BOOM
 		if (!((thing->flags&(MF_DROPOFF|MF_FLOAT)) || (dropoff && co_allowdropoff))

@@ -69,6 +69,9 @@ EXTERN_CVAR(sv_monstersrespawn)
 // Start time for timing demos
 int starttime;
 
+// ACS variables with world scope
+int WorldVars[NUM_WORLDVARS];
+
 extern BOOL netdemo;
 BOOL savegamerestore;
 

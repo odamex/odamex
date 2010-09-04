@@ -29,6 +29,9 @@
 #include "doomdef.h"
 #include "m_fixed.h"
 
+#define NUM_MAPVARS				32
+#define NUM_WORLDVARS			64
+
 #define LEVEL_NOINTERMISSION	0x00000001
 #define	LEVEL_DOUBLESKY			0x00000004
 #define LEVEL_NOSOUNDCLIPPING	0x00000008
@@ -56,7 +59,7 @@
 #define LEVEL_CHANGEMAPCHEAT	0x40000000		// Don't display cluster messages
 #define LEVEL_VISITED			0x80000000		// Used for intermission map
 
-
+struct acsdefered_s;
 
 struct level_info_s {
 	char		mapname[9];
@@ -71,6 +74,7 @@ struct level_info_s {
 	DWORD		flags;
 	int			cluster;
 	FLZOMemFile	*snapshot;
+	struct acsdefered_s *defered;
 };
 typedef struct level_info_s level_info_t;
 
@@ -89,6 +93,7 @@ struct level_pwad_info_s
 	DWORD		flags;
 	int			cluster;
 	FLZOMemFile	*snapshot;
+	struct acsdefered_s *defered;
 
 	// level_pwad_info_s				[ML] 5/11/06 Removed sky scrolling/sky2
 	DWORD		fadeto;
@@ -127,6 +132,12 @@ struct level_locals_s {
 
 	int			total_monsters;
 	int			killed_monsters;
+	
+	// The following are all used for ACS scripting
+	byte		*behavior;
+	int			*scripts;
+	int			*strings;
+	SDWORD		vars[NUM_MAPVARS];	
 };
 typedef struct level_locals_s level_locals_t;
 
@@ -144,6 +155,8 @@ typedef struct cluster_info_s cluster_info_t;
 extern level_locals_t level;
 extern level_info_t LevelInfos[];
 extern cluster_info_t ClusterInfos[];
+
+extern int WorldVars[NUM_WORLDVARS];
 
 extern BOOL savegamerestore;
 

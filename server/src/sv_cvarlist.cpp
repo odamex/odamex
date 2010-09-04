@@ -44,6 +44,8 @@ CVAR (sv_email,		"email@domain.com",			CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOE
 CVAR (sv_website,      "http://odamex.net/",         CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Enables WAD file downloading
 CVAR (sv_waddownload,	"0",		CVAR_ARCHIVE | CVAR_SERVERINFO)
+// Enables WAD file download cap
+CVAR (sv_waddownloadcap, "0", CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Reset the current map when the last player leaves
 CVAR (sv_emptyreset,   "0",        CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Allow spectators talk to show to ingame players

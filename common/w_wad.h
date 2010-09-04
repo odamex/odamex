@@ -110,7 +110,7 @@ void	W_Profile (const char *fname);
 void	W_Close ();
 
 int		W_FindLump (const char *name, int *lastlump);	// [RH]	Find lumps with duplication
-//BOOL	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's name == name // denis - todo - replace with map<>
+bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's name == name // denis - todo - replace with map<>
 
 //unsigned W_LumpNameHash (const char *name);				// [RH] Create hash key from an 8-char name
 

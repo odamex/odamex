@@ -29,6 +29,9 @@
 #include "doomdef.h"
 #include "m_fixed.h"
 
+#define NUM_MAPVARS				32
+#define NUM_WORLDVARS			64
+
 #define LEVEL_NOINTERMISSION	0x00000001
 #define	LEVEL_DOUBLESKY			0x00000004
 #define LEVEL_NOSOUNDCLIPPING	0x00000008
@@ -127,6 +130,12 @@ struct level_locals_s {
 
 	int			total_monsters;
 	int			killed_monsters;
+	
+	// The following are all used for ACS scripting
+	byte		*behavior;
+	int			*scripts;
+	int			*strings;
+	SDWORD		vars[NUM_MAPVARS];	
 };
 typedef struct level_locals_s level_locals_t;
 

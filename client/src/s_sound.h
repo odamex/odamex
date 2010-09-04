@@ -156,6 +156,11 @@ void S_UpdateSounds (void *listener);
 void S_SetMusicVolume (float volume);
 void S_SetSfxVolume (float volume);
 
+// [RH] Activates an ambient sound. Called when the thing is added to the map.
+//		(0-biased)
+void S_ActivateAmbient (AActor *mobj, int ambient);
+
+
 // [RH] S_sfx "maintenance" routines
 void S_ParseSndInfo (void);
 

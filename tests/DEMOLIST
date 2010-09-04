@@ -74,10 +74,6 @@ doom2.wad gothicdm demo1 {8a000000 15e7516 1f6ad61 0}
 doom2.wad gothicdm demo2 {cc000000 f7e73f0d 7ba7453 1000000}
 doom2.wad gothicdm demo3 {9f000000 feb6b278 52f6fa 30000}
 doom2.wad gothicdm demo4 {4000000 fc8143d8 d91e92 500000}
-doom2.wad . 30nm4048 {956aa5c0 a0fc3b2 45883a1 ff800000}
-doom2.wad . nm30cop1.lmp {42000000 b322497 3570d3a 1a00000}
-doom2.wad . nm30cop2.lmp {42000000 b322497 3570d3a 1a00000}
-doom2.wad . coopuv30.lmp {79000000 9e3efe3 17f50c8 ff800000}
 doom2.wad {hacx.wad hacx.deh} demo1 {c6825a68 126a2e 8ca90c6 80000}
 doom2.wad {hacx.wad hacx.deh} demo2 {4c494740 ee782ad7 fe069da1 2400000}
 doom2.wad {hacx.wad hacx.deh} demo3 {4243ffa8 1f97fbb fd400c3a 0}
@@ -85,4 +81,11 @@ doom2.wad 32in24-7-024.wad 32in24-7-024_map03.lmp {3e000000 1f5db85 fdbf2140 fff
 doom2.wad av.wad demo1 {75000000 15db991 f7060477 0}
 doom2.wad av.wad demo2 {f68b6b80 fca9568d f7de99be ffba0000}
 doom2.wad av.wad demo3 {5d06f460 faf1f911 f97036ab ffa80000}
+doom2.wad . 30nm4048 {956aa5c0 a0fc3b2 45883a1 ff800000}
+doom2.wad . nm30cop1.lmp {42000000 b322497 3570d3a 1a00000}
+doom2.wad . nm30cop2.lmp {42000000 b322497 3570d3a 1a00000}
+doom2.wad . coopuv30.lmp {79000000 9e3efe3 17f50c8 ff800000}
 doom.wad . ep1-0500.lmp {32b2c260 26a396a 195c4994 ff780000}
+doom2.wad tntgrvnc.wad demo1 {84000000 fdfa79b3 fd4b31ad 0}
+doom2.wad tntgrvnc.wad demo2 {c8000000 fd241794 72afe ffd00000}
+doom2.wad tntgrvnc.wad demo3 {62000000 effa02 fefe74d2 a00000}

@@ -48,7 +48,7 @@
 #define HU_INPUTY		(0 + (SHORT(hu_font[0]->height) +1))
 
 #define CTFBOARDWIDTH	236
-#define CTFBOARDHEIGHT	19
+#define CTFBOARDHEIGHT	40
 
 #define DMBOARDWIDTH	368
 #define DMBOARDHEIGHT	16
@@ -1343,11 +1343,19 @@ void HU_TeamScores2 (player_t *player)
 		player = player->camera->player;
 
 	for (j = 0; j < sortedplayers.size(); j++)
+	{
 		sortedplayers[j] = &players[j];
+		
+        if (sortedplayers[j]->userinfo.team == TEAM_BLUE)
+            bcount++;
+            
+        if (sortedplayers[j]->userinfo.team == TEAM_RED)
+            rcount++;            
+	}
 
 	std::sort(sortedplayers.begin(), sortedplayers.end(), sv_gametype == GM_CTF ? compare_player_points : compare_player_frags);
 	
-	listsize = sortedplayers.size();
+	listsize = (rcount > bcount ? rcount : bcount);
 
 	// Board locations
 	int marginx = (screen->width - (CTFBOARDWIDTH * 2)) / 4;
@@ -1391,7 +1399,10 @@ void HU_TeamScores2 (player_t *player)
 	// Scoreboard Identify
 	// Dan - Tells which current game mode is being played
     if (sv_gametype == GM_CTF)
-        screen->DrawText (CR_GOLD,blocx + 275,blocy + 0,"Capture The Flag");
+    {
+        strcpy(str, "Capture The Flag");
+        screen->DrawText (CR_GOLD,(screen->width/2)-(V_StringWidth(str)/2),blocy + 0,str);        
+    }
 
 	// BLUE
 	screen->DrawText	  (CR_GREY	,blocx + 8	,blocy + 16	,"SCORE:"			);
@@ -1528,7 +1539,7 @@ void HU_TeamScores2 (player_t *player)
 
 				bluey += 10;
 
-				bcount++;
+				//bcount++;
 			}
 
 			if (sortedplayers[i]->userinfo.team == TEAM_RED)
@@ -1591,7 +1602,7 @@ void HU_TeamScores2 (player_t *player)
 
 				redy += 10;
 
-				rcount++;
+				//rcount++;
 			}
 		}
 	}

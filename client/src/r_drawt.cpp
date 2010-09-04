@@ -37,7 +37,7 @@
 #include "r_things.h"
 #include "v_video.h"
 
-byte dc_temp[1200*4]; // denis - todo - security, overflow
+byte dc_temp[1536*4]; // denis - todo - security, overflow
 unsigned int dc_tspans[4][256];
 unsigned int *dc_ctspan[4];
 unsigned int *horizspan[4];
