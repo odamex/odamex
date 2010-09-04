@@ -278,7 +278,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
     hashes.resize(wads.size());
 
-	D_DoomWadReboot(wads, hashes, patch_files);
+	D_DoomWadReboot(wads, patch_files, hashes);
 
 	D_StartTitle ();
 	CL_QuitNetGame();
