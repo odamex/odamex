@@ -665,6 +665,14 @@ SOURCE=..\..\common\r_things.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\sc_man.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\sc_man.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\common\st_stuff.h
 # End Source File
 # Begin Source File
