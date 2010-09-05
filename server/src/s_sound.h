@@ -31,7 +31,12 @@
 
 
 #define MAX_SNDNAME			63
+
+//joek - choco goodness below
+// when to clip out sounds
+// Does not fit the large outdoor areas.
 #define S_CLIPPING_DIST		(1200*0x10000)
+
 
 class AActor;
 
@@ -77,6 +82,7 @@ void S_Init (float sfxVolume, float musicVolume);
 // Kills playing sounds at start of level,
 //	determines music if any, changes music.
 //
+void S_Stop(void);
 void S_Start(void);
 
 // Start sound for thing at <ent>
@@ -88,6 +94,7 @@ void S_PlatSound (fixed_t *pt, int channel, const char *name, float volume, int 
 void S_LoopedSound (AActor *ent, int channel, const char *name, float volume, int attenuation);
 void S_LoopedSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation);
 void S_SoundID (int channel, int sfxid, float volume, int attenuation);
+void S_SoundID (fixed_t x, fixed_t y, int channel, int sound_id, float volume, int attenuation);
 void S_SoundID (AActor *ent, int channel, int sfxid, float volume, int attenuation);
 void S_SoundID (fixed_t *pt, int channel, int sfxid, float volume, int attenuation);
 void S_LoopedSoundID (AActor *ent, int channel, int sfxid, float volume, int attenuation);
@@ -115,15 +122,12 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sfxid, float volume, int att
 #define ATTN_STATIC				3	// diminish very rapidly with distance
 #define ATTN_SURROUND			4	// like ATTN_NONE, but plays in surround sound
 
-
-// [RH] From Hexen.
-//		Prevents too many of the same sound from playing simultaneously.
-BOOL S_StopSoundID (int sound_id, int priority);
-
 // Stops a sound emanating from one of an entity's channels
 void S_StopSound (AActor *ent, int channel);
 void S_StopSound (fixed_t *pt, int channel);
 void S_StopSound (fixed_t *pt);
+
+bool S_StopSoundID (int sound_id);
 
 // Stop sound for all channels
 void S_StopAllChannels (void);
@@ -161,6 +165,7 @@ void S_SetSfxVolume (float volume);
 //		(0-biased)
 void S_ActivateAmbient (AActor *mobj, int ambient);
 
+
 // [RH] S_sfx "maintenance" routines
 void S_ParseSndInfo (void);
 
@@ -169,7 +174,7 @@ int S_FindSound (const char *logicalname);
 int S_FindSoundByLump (int lump);
 int S_AddSound (char *logicalname, char *lumpname);	// Add sound by lumpname
 int S_AddSoundLump (char *logicalname, int lump);	// Add sound by lump index
-void S_ClearSoundLumps(void);
+void S_ClearSoundLumps (void);
 
 void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation);
 
