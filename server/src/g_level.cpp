@@ -452,12 +452,12 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 		case MITYPE_CLUSTER:
 			SC_MustGetNumber ();
 			*((int *)(info + handler->data1)) = sc_Number;
-			//if (HexenHack)
-			//{
-				cluster_info_t *cluster = FindClusterInfo (sc_Number);
-				if (cluster)
-					cluster->flags |= CLUSTER_HUB;
-			//}
+			if (HexenHack)
+			{
+				cluster_info_t *clusterH = FindClusterInfo (sc_Number);
+				if (clusterH)
+					clusterH->flags |= CLUSTER_HUB;
+			}
 			break;
 
 		case MITYPE_STRING:
