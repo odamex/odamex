@@ -59,12 +59,12 @@
 #define LEVEL_CHANGEMAPCHEAT	0x40000000		// Don't display cluster messages
 #define LEVEL_VISITED			0x80000000		// Used for intermission map
 
-
+struct acsdefered_s;
 
 struct level_info_s {
 	char		mapname[9];
 	int			levelnum;
-	char		*level_name;
+	const char	*level_name;
 	char		pname[9];
 	char		nextmap[9];
 	char		secretmap[9];
@@ -74,6 +74,7 @@ struct level_info_s {
 	DWORD		flags;
 	int			cluster;
 	FLZOMemFile	*snapshot;
+	struct acsdefered_s *defered;
 };
 typedef struct level_info_s level_info_t;
 
@@ -82,7 +83,7 @@ struct level_pwad_info_s
 	// level_info_s
 	char		mapname[8];
 	int			levelnum;
-	char		*level_name;
+	const char		*level_name;
 	char		pname[8];
 	char		nextmap[8];
 	char		secretmap[8];
@@ -92,6 +93,7 @@ struct level_pwad_info_s
 	DWORD		flags;
 	int			cluster;
 	FLZOMemFile	*snapshot;
+	struct acsdefered_s *defered;
 
 	// level_pwad_info_s				[ML] 5/11/06 Removed sky scrolling/sky2
 	DWORD		fadeto;
@@ -144,8 +146,8 @@ struct cluster_info_s {
 	char		messagemusic[9];
 	// [Russell] - Naturally, this should have an extra byte for the null terminator
 	char		finaleflat[9];
-	char		*exittext;
-	char		*entertext;
+	const char		*exittext;
+	const char		*entertext;
 	int			flags;
 };
 typedef struct cluster_info_s cluster_info_t;
@@ -153,6 +155,8 @@ typedef struct cluster_info_s cluster_info_t;
 extern level_locals_t level;
 extern level_info_t LevelInfos[];
 extern cluster_info_t ClusterInfos[];
+
+extern int WorldVars[NUM_WORLDVARS];
 
 extern BOOL savegamerestore;
 
