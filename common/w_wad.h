@@ -117,6 +117,9 @@ bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's n
 // [RH] Combine multiple marked ranges of lumps into one.
 void	W_MergeLumps (const char *start, const char *end, int);
 
+// [RH] Copy an 8-char string and uppercase it.
+void uppercopy (char *to, const char *from);
+
 // [RH] Copies the lump name to to using uppercopy
 void W_GetLumpName (char *to, unsigned lump);
 

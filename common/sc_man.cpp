@@ -565,8 +565,8 @@ void SC_ScriptError (const char *message, const char **args)
 	vsprintf (composed, message, args);
 #endif*/
 	
-	I_Error ("Script error, \"%s\" line %d:\n", ScriptName.c_str(),
-		sc_Line);
+	I_Error ("Script error, \"%s\" line %d: %s\n", ScriptName.c_str(),
+		sc_Line, message);
 }
 
 
