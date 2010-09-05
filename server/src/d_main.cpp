@@ -945,6 +945,7 @@ std::vector<size_t> D_DoomWadReboot(
 	D_DoDefDehackedPatch(patch_files);
 
 	G_SetLevelStrings ();
+	G_ParseMapInfo ();
 	S_ParseSndInfo();
 
 	R_Init();
@@ -1041,7 +1042,8 @@ void D_DoomMain (void)
 	// [RH] Now that all text strings are set up,
 	// insert them into the level and cluster data.
 	G_SetLevelStrings ();
-
+	// [RH] Parse through all loaded mapinfo lumps
+	G_ParseMapInfo ();	
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();
 
