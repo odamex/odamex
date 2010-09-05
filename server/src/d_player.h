@@ -187,10 +187,10 @@ public:
 	
 	// For screen flashing (red or bright).
 	int			damagecount, bonuscount;
-	
+
     // Who did damage (NULL for floors/ceilings).
-	AActor::AActorPtr attacker;
-	
+	AActor::AActorPtrCounted attacker;
+
     // So gun flashes light up areas.
 	int			extralight;
 
@@ -210,8 +210,14 @@ public:
 
 	int			air_finished;			// [RH] Time when you start drowning
 
+	int			GameTime;				// [Dash|RD] Length of time that this client has been in the game.
 	time_t	JoinTime;					// [Dash|RD] Time this client joined.
     int         ping;                   // [Fly] guess what :)
+	int         last_received;
+
+	fixed_t     real_origin[3];       // coordinates and velocity which
+	fixed_t     real_velocity[3];     // a client got from the server
+	int         tic;                  // and that was on tic "tic"
 
     bool		spectator;			// [GhostlyDeath] spectating?
     int			joinafterspectatortime; // Nes - Join after spectator time.
@@ -334,7 +340,9 @@ public:
 				memcpy(packetsize, other.packetsize, sizeof(packetsize));
 				memcpy(packetseq, other.packetseq, sizeof(packetseq));
 		}
-	}client;
+	} client;
+
+	struct ticcmd_t netcmds[BACKUPTICS];
 
 	player_s()
 	{
@@ -364,7 +372,7 @@ public:
 		deathcount = 0;
 		killcount = 0;
 		pendingweapon = wp_nochange;
-		readyweapon = wp_nochange;		
+		readyweapon = wp_nochange;
 		for (i = 0; i < NUMWEAPONS; i++)
 			weaponowned[i] = false;
 		for (i = 0; i < NUMAMMO; i++)
@@ -385,10 +393,17 @@ public:
 		jumpTics = 0;
 		respawn_time = 0;
 		for (i = 0; i < 3; i++)
+		{
 			oldvelocity[i] = 0 << FRACBITS;
+			real_origin[i] = 0 << FRACBITS;
+			real_velocity[i] = 0 << FRACBITS;
+		}
 		camera = AActor::AActorPtr();
 		air_finished = 0;
+		GameTime = 0;
 		ping = 0;
+		last_received = 0;
+		tic = 0;
 		spectator = false;
 
 		joinafterspectatortime = level.time - TICRATE*5;
@@ -473,12 +488,25 @@ public:
 		air_finished = other.air_finished;
 		
 		JoinTime = other.JoinTime;
+		GameTime = other.GameTime;
 		ping = other.ping;
-		
+
+		last_received = other.last_received;
+
+		for(i = 0; i < 3; i++)
+		{
+			real_origin[i] = other.real_origin[i];
+			real_velocity[i] = other.real_velocity[i];
+		}
+
+		tic = other.tic;
 		spectator = other.spectator;
 		joinafterspectatortime = other.joinafterspectatortime;
 		
 		prefcolor = other.prefcolor;
+	
+		for(i = 0; i < BACKUPTICS; i++)
+			netcmds[i] = other.netcmds[i];
 		
         LastMessage.Time = other.LastMessage.Time;
 		LastMessage.Message = other.LastMessage.Message;

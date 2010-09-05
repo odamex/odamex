@@ -26,6 +26,7 @@
 #define __D_PLAYER_H__
 
 #include <vector>
+#include <queue>
 
 #include <time.h>
 
@@ -46,21 +47,37 @@
 #include "actor.h"
 
 #include "d_netinf.h"
-
-
+#include "i_net.h"
+#include "huffman.h"
 
 //
 // Player states.
 //
 typedef enum
 {
+	// Connecting or hacking
+	PST_CONTACT,
+
+	// Stealing or pirating
+	PST_DOWNLOAD,
+
+	// Staling or loitering
+	PST_SPECTATE,
+
+	// Spying or remote server administration
+	PST_STEALTH_SPECTATE,
+
 	// Playing or camping.
 	PST_LIVE,
+
 	// Dead on the ground, view follows killer.
 	PST_DEAD,
-	// Ready to restart/respawn???
-	PST_REBORN			
 
+	// Ready to restart/respawn???
+	PST_REBORN,		
+	
+	// These are cleaned up at the end of a frame
+	PST_DISCONNECT
 } playerstate_t;
 
 
@@ -87,6 +104,7 @@ typedef enum
 	CF_REVERTPLEASE		= 128
 } cheat_t;
 
+#define MAX_PLAYER_SEE_MOBJ	0x7F
 
 //
 // Extended player object info: player_t
@@ -170,7 +188,7 @@ public:
 	// For screen flashing (red or bright).
 	int			damagecount, bonuscount;
 
-	// Who did damage (NULL for floors/ceilings).
+    // Who did damage (NULL for floors/ceilings).
 	AActor::AActorPtrCounted attacker;
 
     // So gun flashes light up areas.
@@ -193,6 +211,7 @@ public:
 	int			air_finished;			// [RH] Time when you start drowning
 
 	int			GameTime;				// [Dash|RD] Length of time that this client has been in the game.
+	time_t	JoinTime;					// [Dash|RD] Time this client joined.
     int         ping;                   // [Fly] guess what :)
 	int         last_received;
 
@@ -200,7 +219,128 @@ public:
 	fixed_t     real_velocity[3];     // a client got from the server
 	int         tic;                  // and that was on tic "tic"
 
-	bool		spectator;			// [GhostlyDeath] spectating?
+    bool		spectator;			// [GhostlyDeath] spectating?
+    int			joinafterspectatortime; // Nes - Join after spectator time.
+    
+    int			prefcolor;			// Nes - Preferred color. Server only.
+    
+    // For flood protection
+    struct LastMessage_s
+    {
+        QWORD Time;
+        std::string Message;
+    } LastMessage;
+
+	// denis - things that are pending to be sent to this player
+	std::queue<AActor::AActorPtr> to_spawn;
+	
+	// denis - client structure is here now for a 1:1
+	struct client_t
+	{
+		netadr_t    address;
+		
+		buf_t       netbuf;
+		buf_t       reliablebuf;
+		
+		// protocol version supported by the client
+		short		version;
+		short		majorversion;	// GhostlyDeath -- Major
+		short		minorversion;	// GhostlyDeath -- Minor
+
+		// for reliable protocol
+		buf_t       relpackets; // save reliable packets here
+		int         packetbegin[256]; // the beginning of a packet
+		int         packetsize[256]; // the size of a packet
+		int         packetseq[256];
+		int         sequence;
+		int         last_sequence;
+		byte        packetnum;
+
+		int         rate;
+		int         reliable_bps;	// bytes per second
+		int         unreliable_bps;
+
+		int			last_received;	// for timeouts
+
+		int			lastcmdtic, lastclientcmdtic;
+		
+		std::string	digest;			// randomly generated string that the client must use for any hashes it sends back
+		bool        allow_rcon;     // allow remote admin
+		bool		displaydisconnect; // display disconnect message when disconnecting
+
+		huffman_server	compressor;	// denis - adaptive huffman compression
+
+		class download_t
+		{
+		public:
+			std::string name;
+			unsigned int next_offset;
+			
+			download_t() : name(""), next_offset(0) {}
+			download_t(const download_t& other) : name(other.name), next_offset(other.next_offset) {}
+		}download;
+		
+		client_t()
+		{
+			// GhostlyDeath -- Initialize to Zero
+			memset(&address, 0, sizeof(netadr_t));
+			version = 0;
+			majorversion = 0;
+			minorversion = 0;
+			for (size_t i = 0; i < 256; i++)
+			{
+				packetbegin[i] = 0;
+				packetsize[i] = 0;
+				packetseq[i] = 0;
+			}
+			sequence = 0;
+			last_sequence = 0;
+			packetnum = 0;
+			rate = 0;
+			reliable_bps = 0;
+			unreliable_bps = 0;
+			last_received = 0;
+			lastcmdtic = 0;
+			lastclientcmdtic = 0;
+			
+			// GhostlyDeath -- done with the {}
+			netbuf = MAX_UDP_PACKET;
+			reliablebuf = MAX_UDP_PACKET;
+			relpackets = MAX_UDP_PACKET*50;
+			digest = "";
+			allow_rcon = false;
+			displaydisconnect = true;
+		/*
+		huffman_server	compressor;	// denis - adaptive huffman compression*/
+		}
+		client_t(const client_t &other)
+			: address(other.address),
+			netbuf(other.netbuf),
+			reliablebuf(other.reliablebuf),
+			version(other.version),
+			majorversion(other.majorversion),
+			minorversion(other.minorversion),
+			relpackets(other.relpackets),
+			sequence(other.sequence),
+			last_sequence(other.last_sequence),
+			packetnum(other.packetnum),
+			rate(other.rate),
+			reliable_bps(other.reliable_bps),
+			unreliable_bps(other.unreliable_bps),
+			last_received(other.last_received),
+			lastcmdtic(other.lastcmdtic),
+			lastclientcmdtic(other.lastclientcmdtic),
+			digest(other.digest),
+			allow_rcon(false),
+			displaydisconnect(true),
+			compressor(other.compressor),
+			download(other.download)
+		{
+				memcpy(packetbegin, other.packetbegin, sizeof(packetbegin));
+				memcpy(packetsize, other.packetsize, sizeof(packetsize));
+				memcpy(packetseq, other.packetseq, sizeof(packetseq));
+		}
+	} client;
 
 	struct ticcmd_t netcmds[BACKUPTICS];
 
@@ -211,7 +351,7 @@ public:
 		// GhostlyDeath -- Initialize EVERYTHING
 		mo = AActor::AActorPtr();
 		id = 0;
-		playerstate = PST_LIVE;
+		playerstate = PST_CONTACT;
 		fov = 90.0;
 		viewz = 0 << FRACBITS;
 		viewheight = 0 << FRACBITS;
@@ -265,6 +405,12 @@ public:
 		last_received = 0;
 		tic = 0;
 		spectator = false;
+
+		joinafterspectatortime = level.time - TICRATE*5;
+		prefcolor = 0;
+		
+		LastMessage.Time = 0;
+		LastMessage.Message = "";
 	}
 
 	player_s &operator =(const player_s &other)
@@ -291,6 +437,9 @@ public:
 
 		for(i = 0; i < NUMCARDS; i++)
 			cards[i] = other.cards[i];
+
+		for(i = 0; i < NUMFLAGS; i++)
+			flags[i] = other.flags[i];
 
 		points = other.points;
 		backpack = other.backpack;
@@ -338,6 +487,7 @@ public:
 		camera = other.camera;
 		air_finished = other.air_finished;
 		
+		JoinTime = other.JoinTime;
 		GameTime = other.GameTime;
 		ping = other.ping;
 
@@ -351,15 +501,24 @@ public:
 
 		tic = other.tic;
 		spectator = other.spectator;
+		joinafterspectatortime = other.joinafterspectatortime;
+		
+		prefcolor = other.prefcolor;
 	
 		for(i = 0; i < BACKUPTICS; i++)
 			netcmds[i] = other.netcmds[i];
 		
+        LastMessage.Time = other.LastMessage.Time;
+		LastMessage.Message = other.LastMessage.Message;
+		
+		client = other.client;
+
 		return *this;
 	}
 };
 
 typedef player_s player_t;
+typedef player_t::client_t client_t;
 
 // Bookkeeping on players - state.
 extern std::vector<player_t> players;
