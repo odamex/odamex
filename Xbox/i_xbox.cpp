@@ -23,11 +23,16 @@
 #ifdef _XBOX
 
 #include <xtl.h>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <list>
 #include <errno.h>
 
 #include "i_xbox.h"
 #include "i_system.h"
+
+using namespace std;
 
 // Xbox drive letters
 #define DriveC "\\??\\C:"
@@ -48,6 +53,8 @@
 #define DeviceT "\\Device\\Harddisk0\\Partition1\\TDATA\\4F444D58"
 #define DeviceU "\\Device\\Harddisk0\\Partition1\\UDATA\\4F444D58"
 #define DeviceZ "\\Device\\Harddisk0\\Partition5"
+
+#define INVALID_FILE_ATTRIBUTES -1
 
 typedef struct _STRING 
 {
@@ -73,30 +80,30 @@ DWORD                        LauncherID;
 char						*LauncherXBE = NULL;
 
 //
-// getenv 
+// xbox_Getenv 
 // Environment variables don't exist on Xbox. Return NULL.
 //
-char *getenv(const char *)
+char *xbox_Getenv(const char *)
 {
 	return NULL;
 }
 
 //
-// putenv 
+// xbox_Putenv 
 //
 // Environment variables don't exist on Xbox. Just return success.
 //
-int putenv(const char *)
+int xbox_Putenv(const char *)
 {
 	return 0;
 }
 
 //
-// getcwd 
+// xbox_GetCWD 
 //
 // Return working directory which is always D:\
 //
-char *getcwd(char *buf, size_t size)
+char *xbox_GetCWD(char *buf, size_t size)
 {
 	if(size > 0 && buf)
 	{
@@ -115,11 +122,11 @@ char *getcwd(char *buf, size_t size)
 }
 
 //
-// gethostbyname
+// xbox_GetHostByName
 //
 // Custom implementation for Xbox
 //
-struct hostent *gethostbyname(const char *name)
+struct hostent *xbox_GetHostByName(const char *name)
 {
 	static struct hostent *he = NULL;
 	WSAEVENT               hEvent;
@@ -168,11 +175,11 @@ struct hostent *gethostbyname(const char *name)
 }
 
 //
-// gethostname
+// xbox_GetHostname
 //
 // Custom implementation for Xbox
 //
-int gethostname(char *name, int namelen)
+int xbox_GetHostname(char *name, int namelen)
 {
 	XNADDR xna;
 	DWORD  dwState;
@@ -376,6 +383,63 @@ int xbox_SetScreenStretch(float xs, float ys)
 }
 
 //
+// xbox_WriteSaveMeta
+//
+void xbox_WriteSaveMeta(string path, string text)
+{
+	if(!path.size() || !text.size())
+		return;
+
+	string   filename = path + PATHSEP + "SaveMeta.xbx";
+	ofstream metafile(filename.c_str());
+
+	if(metafile.fail())
+	{
+		I_Error ("Failed to create %s save meta:\n%s",
+			   filename.c_str(), strerror (errno));
+		return;
+	}
+
+	metafile << "Name=" << text;
+
+	metafile.close();
+}
+
+//
+// xbox_GetSavePath
+//
+string xbox_GetSavePath(string file, int slot)
+{
+	ostringstream path;
+	DWORD         attrs;
+
+	path << setiosflags(ios::right);
+	path << setfill('0');
+
+	path << "U:" << PATHSEP << setw(12) << slot;
+
+	if((attrs = GetFileAttributes(path.str().c_str())) == INVALID_FILE_ATTRIBUTES)
+	{
+		if(!SUCCEEDED(CreateDirectory(path.str().c_str(), NULL)))
+		{
+			I_FatalError ("Failed to create %s directory:\n%s",
+						   path.str().c_str(), strerror (errno));
+		}
+
+		xbox_WriteSaveMeta(path.str(), "Empty Slot");
+	}
+	else
+	{
+		if (attrs & ~FILE_ATTRIBUTE_DIRECTORY)
+			I_FatalError ("%s must be a directory", path.str().c_str());
+	}
+
+	path << PATHSEP << file;
+
+	return path.str();
+}
+
+//
 // xbox_EnableCustomLED
 //
 void xbox_EnableCustomLED()
@@ -411,7 +475,7 @@ void xbox_RecordLauncherXBE(char *szLauncherXBE, DWORD dwID)
 //
 // Exit Odamex and perform a warm reboot (no startup logo) to a launcher or dashboard
 //
-void xbox_reboot()
+void xbox_Reboot()
 {
 	LD_LAUNCH_DASHBOARD launchData = { XLD_LAUNCH_DASHBOARD_MAIN_MENU };
 
@@ -423,7 +487,7 @@ void xbox_reboot()
 		char  *p;
 
 		// Determine the necessary D: mapping for the launcher XBE
-		p = strrchr(LauncherXBE, '\\');
+		p = strrchr(LauncherXBE, PATHSEPCHAR);
 		pathLen = p - LauncherXBE;
 
 		mntDev = (char *)malloc(pathLen + 1);
@@ -441,22 +505,22 @@ void xbox_reboot()
 }
 
 //
-// xbox_atexit 
+// xbox_AtExit 
 //
 // Custom atexit function for Xbox
 //
-void xbox_atexit(void (*function)(void))
+void xbox_AtExit(void (*function)(void))
 {
 	if(function)
 		ExitFuncList.push_back(function);
 }
 
 //
-// xbox_exit
+// xbox_Exit
 //
 // Custom exit function for Xbox
 //
-void xbox_exit(int status)
+void xbox_Exit(int status)
 {
 	std::list<void (*)(void)>::iterator funcIter;
 
@@ -469,7 +533,7 @@ void xbox_exit(int status)
 
 	xbox_DisableCustomLED();
 
-	xbox_reboot();
+	xbox_Reboot();
 }
 
 //

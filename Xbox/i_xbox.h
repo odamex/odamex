@@ -38,20 +38,30 @@ struct hostent
 #define h_addr h_addr_list[0]
 };
 
-#undef exit
-#define exit xbox_exit
-#undef atexit
-#define atexit xbox_atexit
+// Xbox function overrides
 #undef getenv
-char *getenv(const char *);
+#define getenv xbox_Getenv
 #undef putenv
-int putenv(const char *);
+#define putenv xbox_Putenv
 #undef getcwd
-char *getcwd(char *buf, size_t size);
+#define getcwd xbox_GetCWD
+#undef exit
+#define exit xbox_Exit
+#undef atexit
+#define atexit xbox_AtExit
+#define gethostbyname xbox_GetHostByName
+#define gethostname xbox_GetHostname
 
-struct hostent *gethostbyname(const char *name);
-int gethostname(char *name, int namelen);
+// Xbox function override declarations
+char *xbox_Getenv(const char *);
+int xbox_Putenv(const char *);
+char *xbox_GetCWD(char *buf, size_t size);
+struct hostent *xbox_GetHostByName(const char *name);
+int xbox_GetHostname(char *name, int namelen);
+void xbox_Exit(int status);
+void xbox_AtExit(void (*function)(void));
 
+// Print useful memory information for debugging
 void xbox_PrintMemoryDebug();
 
 // Set the x, y screen starting position in relation to 0,0
@@ -59,8 +69,11 @@ int xbox_SetScreenPosition(float x, float y);
 // Stretch the image to some percentage of its full resolution - 1.0 = 100%
 int xbox_SetScreenStretch(float xs, float ys);
 
-void xbox_exit(int status);
-void xbox_atexit(void (*function)(void));
+// Write a SaveMeta.xbx file
+void xbox_WriteSaveMeta(std::string path, std::string text);
+
+// Get a unique save path for a save slot
+std::string xbox_GetSavePath(std::string file, int slot);
 
 #endif // _XBOX
 

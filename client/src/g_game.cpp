@@ -62,6 +62,10 @@
 #include "cl_main.h"
 #include "gi.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 #include <math.h> // for pow()
 
 #include <sstream>
@@ -1591,7 +1595,11 @@ void G_BuildSaveName (std::string &name, int slot)
 {
     std::stringstream ssName;
 
+#ifdef _XBOX
+	std::string path = xbox_GetSavePath(name, slot);
+#else
 	std::string path = I_GetUserFileName ((const char *)name.c_str());
+#endif
 
 	ssName << path;
     ssName << SAVEGAMENAME;
@@ -1617,6 +1625,10 @@ void G_DoSaveGame (void)
 	{
         return;
 	}
+
+#ifdef _XBOX
+	xbox_WriteSaveMeta(name.substr(0, name.rfind(PATHSEPCHAR)), description);
+#endif
 
 	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name.c_str());
 

@@ -335,6 +335,11 @@ std::string I_GetUserFileName (const char *file)
 
 	path += PATHSEP;
 	path += file;
+#elif defined(_XBOX)
+	std::string path = "T:";
+
+	path += PATHSEP;
+	path += file;
 #else
 	std::string path = I_GetBinaryDir();
 
