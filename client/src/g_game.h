@@ -29,45 +29,41 @@
 #include "d_event.h"
 #include "d_player.h"
 
-
 //
 // GAME
 //
-void G_DeathMatchSpawnPlayer (player_t &player);
+void G_DeathMatchSpawnPlayer(player_t &player);
+void G_DoReborn(player_t &player);
 
-void G_DoReborn (player_t &playernum);
-
-void G_DeferedPlayDemo (const char* demo);
+void G_DeferedPlayDemo(const char* demo);
 
 // Can be called by the startup code or M_Responder,
 // calls P_SetupLevel or W_EnterWorld.
-void G_LoadGame (char* name);
+void G_LoadGame(char* name);
 
-void G_DoLoadGame (void);
+void G_DoLoadGame(void);
 
 // Called by M_Responder.
-void G_BuildSaveName (std::string &name, int slot);
-void G_SaveGame (int slot, char* description);
+void G_BuildSaveName(std::string &name, int slot);
+void G_SaveGame(int slot, char* description);
 
 // Only called by startup code.
-bool G_RecordDemo (const char* name);
+bool G_RecordDemo(const char* name);
 
-void G_BeginRecording (void);
+void G_BeginRecording(void);
 
-void G_PlayDemo (char* name);
-void G_DoPlayDemo (bool justStreamInput = false);
-void G_TimeDemo (char* name);
-BOOL G_CheckDemoStatus (void);
+void G_PlayDemo(char* name);
+void G_DoPlayDemo(bool justStreamInput = false);
+void G_TimeDemo(char* name);
+BOOL G_CheckDemoStatus(void);
 
-void G_WorldDone (void);
+void G_WorldDone(void);
 
-void G_Ticker (void);
-BOOL G_Responder (event_t*	ev);
+void G_Ticker(void);
+BOOL G_Responder(event_t*	ev);
 
-void G_ScreenShot (char *filename);
+void G_ScreenShot(char *filename);
 
-void G_PlayerFinishLevel (player_t &player);
+void G_PlayerFinishLevel(player_t &player);
 
 #endif
-
-
