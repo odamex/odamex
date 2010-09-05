@@ -28,7 +28,10 @@
 #include "d_player.h"
 #include "r_data.h"
 
+// killough 10/98: special mask indicates sky flat comes from sidedef
+#define PL_SKYFLAT (0x80000000)
 
+BOOL R_AlignFlat (int linenum, int side, int fc);
 
 //
 // POV related.

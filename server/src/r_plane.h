@@ -25,8 +25,4 @@
 #ifndef __R_PLANE_H__
 #define __R_PLANE_H__
 
-#define PL_SKYFLAT (0x80000000)
-
-BOOL R_AlignFlat (int linenum, int side, int fc);
-
 #endif // __R_PLANE_H__

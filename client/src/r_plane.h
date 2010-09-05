@@ -27,13 +27,8 @@
 
 #include "r_data.h"
 
-
-// killough 10/98: special mask indicates sky flat comes from sidedef
-#define PL_SKYFLAT (0x80000000)
-
 // Visplane related.
 extern	int*			lastopening;
-
 
 typedef void (*planefunction_t) (int top, int bottom);
 
@@ -76,8 +71,6 @@ visplane_t *R_FindPlane
   angle_t		angle);
 
 visplane_t *R_CheckPlane (visplane_t *pl, int start, int stop);
-
-BOOL R_AlignFlat (int linenum, int side, int fc);
 
 // [RH] Added for multires support
 BOOL R_PlaneInitData (void);
