@@ -1248,6 +1248,8 @@ void G_SetLevelStrings (void)
 
 void G_SerializeLevel (FArchive &arc, bool hubLoad)
 {
+    int i;
+    
 	if (arc.IsStoring ())
 	{
 		unsigned int playernum = players.size();
@@ -1255,8 +1257,13 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.fadeto
 			<< level.found_secrets
 			<< level.found_items
-			<< level.killed_monsters
-			<< playernum;
+			<< level.killed_monsters;
+			//<< playernum;
+
+		for (i = 0; i < NUM_MAPVARS; i++)
+			arc << level.vars[i];
+			
+        arc << playernum;
 	}
 	else
 	{
@@ -1265,18 +1272,22 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			>> level.fadeto
 			>> level.found_secrets
 			>> level.found_items
-			>> level.killed_monsters
-			>> playernum;
+			>> level.killed_monsters;
+			//>> playernum;
+			
+		for (i = 0; i < NUM_MAPVARS; i++)
+			arc >> level.vars[i];
+        
+        arc >> playernum;
 
 		players.resize(playernum);
 	}
-	if (!hubLoad)
-	{
-		P_SerializePlayers (arc);
-	}
+
 	P_SerializeThinkers (arc, hubLoad);
     P_SerializeWorld (arc);
     P_SerializeSounds (arc);
+	if (!hubLoad)
+		P_SerializePlayers (arc);    
 }
 
 // Archives the current level

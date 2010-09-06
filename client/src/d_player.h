@@ -349,9 +349,10 @@ public:
 		size_t i;
 
 		// GhostlyDeath -- Initialize EVERYTHING
-		mo = AActor::AActorPtr();
 		id = 0;
 		playerstate = PST_CONTACT;
+		mo = AActor::AActorPtr();
+		memset(&cmd, 0, sizeof(ticcmd_t));
 		fov = 90.0;
 		viewz = 0 << FRACBITS;
 		viewheight = 0 << FRACBITS;

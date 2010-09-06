@@ -503,7 +503,7 @@ void P_PlayerThink (player_t *player)
 		P_CalcHeight (player);
 	}
 
-	if (player->mo->subsector->sector->special || player->mo->subsector->sector->damage)
+	if (player->mo->subsector && (player->mo->subsector->sector->special || player->mo->subsector->sector->damage))
 		P_PlayerInSpecialSector (player);
 
 	// Check for weapon change.
