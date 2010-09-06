@@ -23,10 +23,18 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <iostream>
 #include <xtl.h>
 #include <xstring>
 
+#include <agar/core.h>
+
+#include <SDL/SDL.h>
+
 #include "xbox_main.h"
+#include "typedefs.h"
+
+using namespace std;
 
 // Xbox drive letters
 #define DriveC "\\??\\C:"
@@ -61,6 +69,39 @@ extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicL
 extern "C" XBOXAPI LONG WINAPI IoDeleteSymbolicLink(IN PUNICODE_STRING SymbolicLinkName);
 
 extern int agol_main(int argc, char *argv[]);
+
+enum
+{
+	JOY_BTTN_A = 0,
+	JOY_BTTN_B,
+	JOY_BTTN_X,
+	JOY_BTTN_Y,
+	JOY_BTTN_WHITE,
+	JOY_BTTN_BLACK,
+	JOY_BTTN_LTRIG,
+	JOY_BTTN_RTRIG,
+	JOY_BTTN_START,
+	JOY_BTTN_BACK,
+	JOY_BTTN_RSTICK,
+	JOY_BTTN_LSTICK,
+	JOY_BTTN_TOTAL
+};
+
+enum
+{
+	JOY_AXIS_LX = 0,
+	JOY_AXIS_LY,
+	JOY_AXIS_RX,
+	JOY_AXIS_RY,
+	JOY_AXIS_TOTAL
+};
+
+#define JOYPAD1 0
+#define JOY_DEADZONE 3200
+
+static SDL_Joystick *OpenedJoy = NULL;
+static AG_Timeout    JoyUpdateTimeout;
+static bool          BPressed[JOY_BTTN_TOTAL];
 
 //
 // inet_ntoa
@@ -203,6 +244,166 @@ void xbox_UnMountPartitions()
 	xbox_UnMountDevice(DriveG);
 	xbox_UnMountDevice(DriveT);
 	xbox_UnMountDevice(DriveZ);
+}
+
+//
+// xbox_UpdateJoystick
+//
+uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
+{
+	int16_t     axis_x = 0, axis_y = 0;
+	int16_t     move_x = 0, move_y = 0;
+	int         mouse_x, mouse_y;
+	uint8_t     button;
+
+	if(!SDL_JoystickOpened(JOYPAD1) || !OpenedJoy)
+		return false;
+
+	// Get the cursor position
+	SDL_GetMouseState(&mouse_x, &mouse_y);
+
+	// Get the current joystick state
+	SDL_JoystickUpdate();
+
+	// Left Stick X Axis
+	axis_x = SDL_JoystickGetAxis(OpenedJoy, JOY_AXIS_LX);
+	// Left Stick Y Axis
+	axis_y = SDL_JoystickGetAxis(OpenedJoy, JOY_AXIS_LY);
+
+	if(axis_x || axis_y)
+	{
+		if(axis_x > JOY_DEADZONE)
+			axis_x -= JOY_DEADZONE;
+		else if(axis_x < -JOY_DEADZONE)
+			axis_x += JOY_DEADZONE;
+		else
+			axis_x = 0;
+
+		if(axis_y > JOY_DEADZONE)
+			axis_y -= JOY_DEADZONE;
+		else if(axis_y < -JOY_DEADZONE)
+			axis_y += JOY_DEADZONE;
+		else
+			axis_y = 0;
+
+		move_x = mouse_x;
+		move_y = mouse_y;
+
+		if(axis_x)
+			move_x += axis_x / 2000;
+		if(axis_y)
+			move_y += axis_y / 2000;
+
+		// Move the cursor
+		if(move_x || move_y)
+			SDL_WarpMouse(move_x, move_y);
+	}
+
+	// Get all the button states
+	for(int i = 0; i < JOY_BTTN_TOTAL; i++)
+	{
+		SDL_Event ev;
+
+		button = SDL_JoystickGetButton(OpenedJoy, i);
+
+		// A Button
+		if(i == JOY_BTTN_A)
+		{
+			if(button && !BPressed[i])
+			{
+				ev.button.type = SDL_MOUSEBUTTONDOWN;
+				ev.button.state = SDL_PRESSED;
+			}
+			else if(!button && BPressed[i])
+			{
+				ev.button.type = SDL_MOUSEBUTTONUP;
+				ev.button.state = SDL_RELEASED;
+			}
+			else
+				continue;
+
+			ev.button.which = 0;
+			ev.button.button = SDL_BUTTON_LEFT;
+			ev.button.x = mouse_x;
+			ev.button.y = mouse_y;
+		}
+		// Triggers
+		else if(i == JOY_BTTN_LTRIG || i == JOY_BTTN_RTRIG)
+		{
+			if(button && !BPressed[i])
+			{
+				ev.key.type = SDL_KEYDOWN;
+				ev.key.state = SDL_PRESSED;
+			}
+			else if(!button && BPressed[i])
+			{
+				ev.key.type = SDL_KEYUP;
+				ev.key.state = SDL_RELEASED;
+			}
+			else
+				continue;
+
+			if(i == JOY_BTTN_LTRIG)
+				ev.key.keysym.sym = SDLK_PAGEUP;
+			else
+				ev.key.keysym.sym = SDLK_PAGEDOWN;
+		}
+		else
+			continue;
+
+		BPressed[i] = !BPressed[i];
+
+		// Push the translated event
+		SDL_PushEvent(&ev);
+	}
+
+	// Repeat after interval
+	return ival;
+}
+
+//
+// xbox_EnableJoystickUpdates
+//
+void xbox_EnableJoystickUpdates(bool enable)
+{
+	AG_LockTimeouts(NULL);
+
+	if(enable)
+	{
+		if(!AG_TimeoutIsScheduled(NULL, &JoyUpdateTimeout))
+			AG_ScheduleTimeout(NULL, &JoyUpdateTimeout, 5);
+	}
+	else
+	{
+		if(AG_TimeoutIsScheduled(NULL, &JoyUpdateTimeout))
+			AG_DelTimeout(NULL, &JoyUpdateTimeout);
+	}
+
+	AG_UnlockTimeouts(NULL);
+}
+
+//
+// xbox_InitializeJoystick
+//
+int xbox_InitializeJoystick()
+{
+	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+
+	// We will manually retrieve the states
+	SDL_JoystickEventState(SDL_IGNORE);
+
+	OpenedJoy = SDL_JoystickOpen(JOYPAD1);
+
+	if(!SDL_JoystickOpened(JOYPAD1))
+		return -1;
+
+	AG_SetTimeout(&JoyUpdateTimeout, xbox_UpdateJoystick, NULL, 0);
+
+	xbox_EnableJoystickUpdates(true);
+
+	fill_n(BPressed, (size_t)JOY_BTTN_TOTAL, false);
+
+	return 0;
 }
 
 //

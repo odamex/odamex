@@ -41,6 +41,9 @@ struct hostent
 
 char *inet_ntoa(struct in_addr in);
 struct hostent *gethostbyname(const char *name);
+int xbox_InitializeJoystick(void);
+void xbox_EnableJoystickUpdates(bool);
+
 
 #endif // _XBOX
 

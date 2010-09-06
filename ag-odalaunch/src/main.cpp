@@ -123,6 +123,8 @@ int main(int argc, char *argv[])
 #ifdef _XBOX
 		// Software cursor only updates at the refresh rate so make it respectable
 		AG_SetRefreshRate(60);
+		// Initialize the Xbox controller
+		xbox_InitializeJoystick();
 #endif
 	}
 

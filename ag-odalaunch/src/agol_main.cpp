@@ -42,6 +42,10 @@
 #include "typedefs.h"
 #include "icons.h"
 
+#ifdef _XBOX
+#include "xbox_main.h"
+#endif
+
 using namespace std;
 
 AGOL_MainWindow::AGOL_MainWindow(int width, int height)
@@ -1109,6 +1113,10 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	size_t   serversQueried = 0;
 	int      selectedNdx;
 
+#ifdef _XBOX
+	xbox_EnableJoystickUpdates(false);
+#endif
+
 	StartServerListPoll();
 
 	ClearList(PlayerList);
@@ -1174,6 +1182,10 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 
 	UpdatePlayerList(selectedNdx);
 	UpdateServInfoList(selectedNdx);
+
+#ifdef _XBOX
+	xbox_EnableJoystickUpdates(true);
+#endif
 
 	return NULL;
 }
