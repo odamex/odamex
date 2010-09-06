@@ -2332,7 +2332,7 @@ BOOL CheckIfExitIsGood (AActor *self)
     unsigned int i;
 
     for(i = 0; i < players.size(); i++)
-        if(players[i].fragcount == sv_fraglimit)
+        if(players[i].fragcount >= sv_fraglimit)
             break;
 
     if (sv_gametype != GM_COOP && self)
