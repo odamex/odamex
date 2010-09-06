@@ -1378,8 +1378,6 @@ std::vector<size_t> D_DoomWadReboot(
 	S_Init (snd_sfxvolume, snd_musicvolume);
 	ST_Init();
 
-	//NoWipe = 1;
-
 	// preserve state
 	lastWadRebootSuccess = fails.empty();
 

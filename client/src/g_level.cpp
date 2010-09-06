@@ -714,6 +714,26 @@ void G_InitNew (const char *mapname)
 //
 BOOL 			secretexit;
 static int		startpos;	// [RH] Support for multiple starts per level
+extern BOOL		NoWipe;		// [RH] Don't wipe when travelling in hubs
+
+// [RH] The position parameter to these next three functions should
+//		match the first parameter of the single player start spots
+//		that should appear in the next map.
+static void goOn (int position)
+{
+	cluster_info_t *thiscluster = FindClusterInfo (level.cluster);
+	cluster_info_t *nextcluster = FindClusterInfo (FindLevelInfo (level.nextmap)->cluster);
+
+	startpos = position;
+	gameaction = ga_completed;
+
+	if (thiscluster && (thiscluster->flags & CLUSTER_HUB))
+	{
+		if ((level.flags & LEVEL_NOINTERMISSION) || (nextcluster == thiscluster))
+			NoWipe = 4;
+		D_DrawIcon = "TELEICON";
+	}
+}
 
 void G_ExitLevel (int position, int drawscores)
 {
@@ -722,8 +742,10 @@ void G_ExitLevel (int position, int drawscores)
     // Never called.
 
 	secretexit = false;
+	goOn (position);
 
-	gameaction = ga_completed;
+	//gameaction = ga_completed;
+	
 }
 
 // Here's for the german edition.
@@ -739,8 +761,9 @@ void G_SecretExitLevel (int position, int drawscores)
 		secretexit = false;
 	else
 		secretexit = true;
-
-	gameaction = ga_completed;
+    
+    goOn (position);
+	//gameaction = ga_completed;
 }
 
 void G_DoCompleted (void)
