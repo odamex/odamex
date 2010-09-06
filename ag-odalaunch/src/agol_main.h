@@ -119,6 +119,8 @@ private:
 	void           ResetTotalPlayerCount();
 	void           AddToPlayerTotal(int num);
 	void           SetServerListRowCellFlags(int row);
+	void           StartServerListPoll();
+	void           StopServerListPoll();
 
 	// Interface Creation Functions
 	AG_Menu       *CreateMainMenu(void *parent);
@@ -140,6 +142,7 @@ private:
 	void *QueryAllServers(void *arg);
 	void *QueryServerThrEntry(void *arg);
 
+	// Comapre functions
 	static bool CvarCompare(const Cvar_t &a, const Cvar_t &b);
 	static int  CellCompare(const void *p1, const void *p2);
 

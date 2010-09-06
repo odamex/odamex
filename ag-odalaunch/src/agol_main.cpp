@@ -76,15 +76,18 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 	AboutDialog = NULL;
 	QServer = NULL;
 
-	// Show the window
-	AG_WindowShow(MainWindow);
-
-	bool masterOnStart = false;
+	// Don't poll the server list by default
+	StopServerListPoll();
 
 	// If query master on start is configured post the event.
+	bool masterOnStart = false;
+
 	GuiConfig::Read("MasterOnStart", (uint8_t&)masterOnStart);
 	if(masterOnStart)
 		AG_PostEvent(MainWindow, MainButtonBox->mlist, "button-pushed", NULL);
+
+	// Show the window
+	AG_WindowShow(MainWindow);
 }
 
 AGOL_MainWindow::~AGOL_MainWindow()
@@ -674,6 +677,16 @@ void AGOL_MainWindow::SetServerListRowCellFlags(int row)
 	}
 }
 
+void AGOL_MainWindow::StartServerListPoll()
+{
+	AG_TableSetPollInterval(ServerList, 250);
+}
+
+void AGOL_MainWindow::StopServerListPoll()
+{
+	AG_TableSetPollInterval(ServerList, 0);
+}
+
 //*************************//
 // Event Handler Functions //
 //*************************//
@@ -770,6 +783,7 @@ void AGOL_MainWindow::OnRefreshSelected(AG_Event *event)
 
 	QuerySingleServer(&QServer[ndx]);
 
+	UpdateServerList(NULL);
 	UpdatePlayerList(ndx);
 	UpdateServInfoList(ndx);
 }
@@ -1095,6 +1109,8 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	size_t   serversQueried = 0;
 	int      selectedNdx;
 
+	StartServerListPoll();
+
 	ClearList(PlayerList);
 	ClearList(ServInfoList);
 	UpdateQueriedLabelCompleted(0);
@@ -1147,6 +1163,12 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 #endif
 		UpdateQueriedLabelCompleted((int)count);
 	}
+
+	// Stop the server list automatic polling
+	StopServerListPoll();
+
+	// Issue a final update in case polling disabled before the final servers could be updated
+	UpdateServerList(NULL);
 
 	selectedNdx = GetSelectedServerArrayIndex();
 
