@@ -1287,7 +1287,12 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			if (gamestate == GS_FULLCONSOLE || gamestate == GS_CONNECTING || gamestate == GS_DOWNLOAD)
 			{
 				C_HideConsole();
-				gamestate = GS_DEMOSCREEN;
+
+                // [Russell] Don't enable toggling of console when downloading 
+                // or connecting, it creates screen artifacts
+                if (gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
+                    gamestate = GS_DEMOSCREEN;
+
 				if (cmd && !strcmp(cmd, "toggleconsole"))
 					return true;
 				return false;
