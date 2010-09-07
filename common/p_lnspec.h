@@ -300,7 +300,12 @@ struct line_s;
 class AActor;
 
 typedef BOOL (*lnSpecFunc)(struct line_s	*line,
-						   class AActor		*activator);
+						   class AActor		*activator,
+						   int				arg1,
+						   int				arg2,
+						   int				arg3,
+						   int				arg4,
+						   int				arg5);
 
 extern lnSpecFunc LineSpecials[256];
 
@@ -308,6 +313,7 @@ BOOL EV_CeilingCrushStop (int tag);
 int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
 void EV_StopPlat (int tag);
 
+extern int TeleportSide;
 
 #endif //__P_LNSPEC_H__
 

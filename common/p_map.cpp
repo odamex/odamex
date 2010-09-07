@@ -631,6 +631,27 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 // MOVEMENT CLIPPING
 //
 
+
+BOOL P_TestMobjLocation (AActor *mobj)
+{
+	int flags;
+
+	flags = mobj->flags;
+	mobj->flags &= ~MF_PICKUP;
+	if (P_CheckPosition(mobj, mobj->x, mobj->y))
+	{ // XY is ok, now check Z
+		mobj->flags = flags;
+		if ((mobj->z < mobj->floorz)
+			|| (mobj->z + mobj->height > mobj->ceilingz))
+		{ // Bad Z
+			return false;
+		}
+		return true;
+	}
+	mobj->flags = flags;
+	return false;
+}
+
 //
 // P_CheckPosition
 // This is purely informative, nothing is modified

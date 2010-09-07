@@ -1145,8 +1145,12 @@ P_CrossSpecialLine
 			}
 		}
 	}
+	
+	TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing);
+	LineSpecials[line->special] (line, thing, line->args[0],
+					line->args[1], line->args[2],
+					line->args[3], line->args[4]);
 	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 
 	OnActivatedLine(line, thing, side, 0);
@@ -1176,8 +1180,12 @@ P_ShootSpecialLine
 		if (!thing->player && !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
+	
+	//TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing);
+	LineSpecials[line->special] (line, thing, line->args[0],
+					line->args[1], line->args[2],
+					line->args[3], line->args[4]);
 
 	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 	OnActivatedLine(line, thing, 0, 2);
@@ -1247,8 +1255,12 @@ P_UseSpecialLine
 				return false;
 		}
 	}
+	
+    TeleportSide = side;
 
-	if(LineSpecials[line->special] (line, thing))
+	if(LineSpecials[line->special] (line, thing, line->args[0],
+					line->args[1], line->args[2],
+					line->args[3], line->args[4]))
 	{
 		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 		OnActivatedLine(line, thing, side, 1);
@@ -1684,7 +1696,7 @@ void P_SpawnSpecials (void)
 		}
 
 	// [RH] Start running any open scripts on this map
-//	P_StartOpenScripts ();
+	P_StartOpenScripts ();
 }
 
 // killough 2/28/98:

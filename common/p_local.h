@@ -212,6 +212,7 @@ extern sector_t			*tmsector;
 extern	line_t* 		ceilingline;
 
 bool	P_TestMobjZ (AActor *mobj);
+BOOL	P_TestMobjLocation (AActor *mobj);
 bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
 AActor	*P_CheckOnmobj (AActor *thing);
 void	P_FakeZMovement (AActor *mo);

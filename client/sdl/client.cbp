@@ -38,7 +38,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-file demo.wad +map map01" />
+				<Option parameters="-directx -file demo.wad +map map01" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -460,6 +460,8 @@
 		<Unit filename="..\..\common\md5.h" />
 		<Unit filename="..\..\common\minilzo.cpp" />
 		<Unit filename="..\..\common\minilzo.h" />
+		<Unit filename="..\..\common\p_acs.cpp" />
+		<Unit filename="..\..\common\p_acs.h" />
 		<Unit filename="..\..\common\p_ceiling.cpp" />
 		<Unit filename="..\..\common\p_doors.cpp" />
 		<Unit filename="..\..\common\p_enemy.cpp" />
@@ -484,6 +486,7 @@
 		<Unit filename="..\..\common\p_spec.h" />
 		<Unit filename="..\..\common\p_switch.cpp" />
 		<Unit filename="..\..\common\p_teleport.cpp" />
+		<Unit filename="..\..\common\p_things.cpp" />
 		<Unit filename="..\..\common\p_tick.cpp" />
 		<Unit filename="..\..\common\p_tick.h" />
 		<Unit filename="..\..\common\p_user.cpp" />

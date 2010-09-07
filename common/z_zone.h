@@ -40,6 +40,7 @@
 #define PU_FREE                 5       // a free block [ML] 12/4/06: Readded from Chocodoom
 #define PU_LEVEL				50		// static until level exited
 #define PU_LEVSPEC				51		// a special thinker in a level
+#define PU_LEVACS				52		// [RH] An ACS script in a level
 // Tags >= 100 are purgable whenever needed.
 #define PU_PURGELEVEL			100
 #define PU_CACHE				101
