@@ -1536,8 +1536,8 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 127
 	LS_NOP,		// 128
 	LS_UsePuzzleItem,
-	LS_NOP,
-	LS_NOP,
+	LS_Thing_Activate,
+	LS_Thing_Deactivate,
 	LS_Thing_Remove,
 	LS_NOP,
 	LS_NOP,
@@ -1632,7 +1632,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_Scroll_Floor,
 	LS_Scroll_Ceiling,
 	LS_NOP,		// Scroll_Texture_Offsets
-	LS_NOP,
+	LS_ACS_ExecuteAlways,
 	LS_PointPush_SetForce,
 	LS_Plat_RaiseAndStayTx0,
 	LS_Thing_SetGoal,
