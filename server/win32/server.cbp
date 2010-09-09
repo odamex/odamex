@@ -394,7 +394,6 @@
 		<Unit filename="..\..\common\z_zone.h" />
 		<Unit filename="..\src\c_console.cpp" />
 		<Unit filename="..\src\d_main.cpp" />
-		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
 		<Unit filename="..\src\g_game.cpp" />
 		<Unit filename="..\src\g_level.cpp" />
