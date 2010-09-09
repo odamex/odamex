@@ -344,6 +344,7 @@
 		<Unit filename="..\src\cl_main.cpp" />
 		<Unit filename="..\src\cl_main.h" />
 		<Unit filename="..\src\cl_pred.cpp" />
+		<Unit filename="..\src\cl_stubs.cpp" />
 		<Unit filename="..\src\d_main.cpp" />
 		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />

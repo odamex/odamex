@@ -422,6 +422,7 @@
 		<Unit filename="..\src\sv_sqp.h" />
 		<Unit filename="..\src\sv_sqpold.cpp" />
 		<Unit filename="..\src\sv_sqpold.h" />
+		<Unit filename="..\src\sv_stubs.cpp" />
 		<Unit filename="..\src\v_palette.cpp" />
 		<Unit filename="resource.h">
 			<Option target="Win Release (GCC)" />
