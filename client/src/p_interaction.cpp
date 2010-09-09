@@ -1048,6 +1048,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 	}
 
 	// do the damage
+	if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
 	{
 		target->health -= damage;
 		if (target->health <= 0)
@@ -1057,7 +1058,9 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		}
 	}
 
+    if (!(target->flags2 & MF2_DORMANT))
 	{
+	    // [RH] Only react if not dormant
 		if ( (P_Random() < target->info->painchance)
 			 && !(target->flags&MF_SKULLFLY) )
 		{
