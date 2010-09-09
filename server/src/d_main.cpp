@@ -84,7 +84,6 @@ extern void M_RestoreMode (void);
 extern void R_ExecuteSetViewSize (void);
 void C_DoCommand (const char *cmd);
 
-void D_CheckNetGame (void);
 void D_ProcessEvents (void);
 void G_BuildTiccmd (ticcmd_t* cmd);
 void D_DoAdvanceDemo (void);
@@ -1057,8 +1056,8 @@ void D_DoomMain (void)
 	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
 	P_Init ();
 		
-	Printf (PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
-	D_CheckNetGame ();
+	Printf (PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
+    SV_InitNetwork();
 		
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems ();
