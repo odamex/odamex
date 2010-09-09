@@ -102,6 +102,7 @@ enum
 static SDL_Joystick *OpenedJoy = NULL;
 static AG_Timeout    JoyUpdateTimeout;
 static bool          BPressed[JOY_BTTN_TOTAL];
+static uint8_t       HPressed = 0;
 
 //
 // inet_ntoa
@@ -255,6 +256,7 @@ uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
 	int16_t     move_x = 0, move_y = 0;
 	int         mouse_x, mouse_y;
 	uint8_t     button;
+	uint8_t     hat;
 
 	if(!SDL_JoystickOpened(JOYPAD1) || !OpenedJoy)
 		return false;
@@ -295,7 +297,7 @@ uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
 			move_y += axis_y / 2000;
 
 		// Move the cursor
-		if(move_x || move_y)
+		if(move_x != mouse_x || move_y != mouse_y)
 			SDL_WarpMouse(move_x, move_y);
 	}
 
@@ -355,6 +357,49 @@ uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
 
 		// Push the translated event
 		SDL_PushEvent(&ev);
+	}
+
+	// Hat (D-Pad)
+	hat = SDL_JoystickGetHat(OpenedJoy, 0);
+	if(HPressed) // A hat position is recorded
+	{
+		if(!(hat & HPressed))
+		{
+			SDL_Event ev;
+
+			ev.key.type = SDL_KEYUP;
+			ev.key.state = SDL_RELEASED;
+
+			if(HPressed == SDL_HAT_UP)
+				ev.key.keysym.sym = SDLK_UP;
+			else
+				ev.key.keysym.sym = SDLK_DOWN;
+
+			HPressed = 0;
+
+			SDL_PushEvent(&ev);
+		}
+	}
+	if(!HPressed) // Either nothing was pushed before or the state has changed
+	{
+		SDL_Event ev;
+
+		ev.key.type = SDL_KEYDOWN;
+		ev.key.state = SDL_PRESSED;
+
+		if(hat & SDL_HAT_UP)
+		{
+			ev.key.keysym.sym = SDLK_UP;
+			HPressed = SDL_HAT_UP;
+		}
+		else if(hat & SDL_HAT_DOWN)
+		{
+			ev.key.keysym.sym = SDLK_DOWN;
+			HPressed = SDL_HAT_DOWN;
+		}
+
+		if(HPressed)
+			SDL_PushEvent(&ev);
 	}
 
 	// Repeat after interval
