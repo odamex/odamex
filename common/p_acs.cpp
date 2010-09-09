@@ -456,7 +456,7 @@ void DLevelScript::RunScript ()
 			case PCD_PUSHNUMBER:
 				PushToStack (NEXTWORD);
 				break;
-/*
+
 			case PCD_LSPEC1:
 				LineSpecials[NEXTWORD] (activationline, activator,
 										STACK(1), 0, 0, 0, 0);
@@ -518,7 +518,7 @@ void DLevelScript::RunScript ()
 									 pc[1], pc[2], pc[3], pc[4], pc[5]);
 				pc += 6;
 				break;
-*/
+
 			case PCD_ADD:
 				STACK(2) = STACK(2) + STACK(1);
 				sp--;
