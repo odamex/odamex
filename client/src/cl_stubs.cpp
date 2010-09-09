@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "c_cvars.h"
+
 void D_SetupUserInfo (void) {}
 void D_SendServerInfoChange (const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange (byte **stream) {}
