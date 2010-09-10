@@ -102,7 +102,7 @@ extern int				iquetail;
 
 void	P_RespawnSpecials (void);
 
-BOOL	P_SetMobjState (AActor* mobj, statenum_t state);
+bool	P_SetMobjState (AActor* mobj, statenum_t state);
 
 void	P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown);
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);

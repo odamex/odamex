@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netinfo.cpp 1788 2010-08-24 04:42:57Z russellrice $
+// $Id: cl_stubs.cpp 1788 2010-08-24 04:42:57Z russellrice $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2010 by The Odamex Team.
@@ -21,13 +21,16 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "actor.h"
 #include "c_cvars.h"
 
-void D_SetupUserInfo (void) {}
-void D_SendServerInfoChange (const cvar_t *cvar, const char *value) {}
-void D_DoServerInfoChange (byte **stream) {}
-void D_WriteUserInfoStrings (int i, byte **stream, bool compact) {}
-void D_ReadUserInfoStrings (int i, byte **stream, bool update) {}
+void D_SetupUserInfo(void) {}
+void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
+void D_DoServerInfoChange(byte **stream) {}
+void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
+void D_ReadUserInfoStrings(int i, byte **stream, bool update) {}
 
-VERSION_CONTROL (d_netinfo_cpp, "$Id: d_netinfo.cpp 1788 2010-08-24 04:42:57Z russellrice $")
+void SV_SpawnMobj(AActor *mobj) {}
+
+VERSION_CONTROL(d_netinfo_cpp, "$Id: cl_stubs.cpp 1788 2010-08-24 04:42:57Z russellrice $")
 
