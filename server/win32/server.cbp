@@ -342,6 +342,8 @@
 		<Unit filename="..\..\common\p_local.h" />
 		<Unit filename="..\..\common\p_map.cpp" />
 		<Unit filename="..\..\common\p_maputl.cpp" />
+		<Unit filename="..\..\common\p_mobj.cpp" />
+		<Unit filename="..\..\common\p_mobj.h" />
 		<Unit filename="..\..\common\p_pillar.cpp" />
 		<Unit filename="..\..\common\p_plats.cpp" />
 		<Unit filename="..\..\common\p_pspr.cpp" />
@@ -402,8 +404,6 @@
 		<Unit filename="..\src\i_system.h" />
 		<Unit filename="..\src\m_misc.cpp" />
 		<Unit filename="..\src\p_interaction.cpp" />
-		<Unit filename="..\src\p_mobj.cpp" />
-		<Unit filename="..\src\p_mobj.h" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_main.cpp" />
 		<Unit filename="..\src\r_plane.cpp" />
@@ -417,6 +417,7 @@
 		<Unit filename="..\src\sv_main.h" />
 		<Unit filename="..\src\sv_master.cpp" />
 		<Unit filename="..\src\sv_master.h" />
+		<Unit filename="..\src\sv_mobj.cpp" />
 		<Unit filename="..\src\sv_rproto.cpp" />
 		<Unit filename="..\src\sv_sqp.cpp" />
 		<Unit filename="..\src\sv_sqp.h" />
