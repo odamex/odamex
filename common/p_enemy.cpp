@@ -39,6 +39,8 @@
 
 #include "d_player.h"
 
+extern bool HasBehavior;
+
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 
@@ -182,10 +184,17 @@ BOOL P_CheckMeleeRange (AActor *actor)
 		return false;
 	if (pl->z + pl->height < actor->z)
 		return false;*/
-
-	if (!P_CheckSight (actor, pl))
-		return false;
-
+		
+    if (HasBehavior)
+    {
+        if (!P_CheckSight2(actor, pl))
+            return false;
+    }
+	else
+	{
+        if (!P_CheckSight (actor, pl))
+            return false;	    
+	}
 	return true;
 }
 
@@ -195,9 +204,17 @@ BOOL P_CheckMeleeRange (AActor *actor)
 BOOL P_CheckMissileRange (AActor *actor)
 {
 	fixed_t dist;
-
-	if (!P_CheckSight (actor, actor->target))
-		return false;
+    
+    if (HasBehavior)
+    {
+        if (!P_CheckSight2 (actor, actor->target))
+            return false;
+    }
+    else
+    {
+        if (!P_CheckSight (actor, actor->target))
+            return false;
+    }
 
 	if (actor->flags & MF_JUSTHIT)
 	{
@@ -574,7 +591,8 @@ BOOL P_LookForPlayers (AActor *actor, BOOL allaround)
 
 		if (sightcheckfailed[actor->lastlook])
 			continue;
-		else if(!P_CheckSight (actor, player->mo))
+		else if((HasBehavior && !P_CheckSight2 (actor, player->mo))
+                || (!HasBehavior && !P_CheckSight (actor, player->mo)))
 		{
 			sightcheckfailed[actor->lastlook] = true;
 			continue;			// out of sight
@@ -670,7 +688,8 @@ void A_Look (AActor *actor)
 
 		if (actor->flags & MF_AMBUSH)
 		{
-			if (P_CheckSight (actor, actor->target))
+			if ((HasBehavior && P_CheckSight2 (actor, actor->target)) 
+                || (!HasBehavior && P_CheckSight (actor, actor->target)))
 				goto seeyou;
 		}
 		else
@@ -809,7 +828,8 @@ void A_Chase (AActor *actor)
 	// possibly choose another target
 	if (multiplayer
 		&& !actor->threshold
-		&& !P_CheckSight (actor, actor->target) )
+		&& ((HasBehavior && !P_CheckSight2 (actor, actor->target)) 
+            || (!HasBehavior && !P_CheckSight (actor, actor->target))))
 	{
 		if (P_LookForPlayers(actor,true))
 			return; 	// got a new target
@@ -922,7 +942,9 @@ void A_CPosRefire (AActor *actor)
 
 	if (!actor->target
 		|| actor->target->health <= 0
-		|| !P_CheckSight (actor, actor->target) )
+		|| (HasBehavior && !P_CheckSight2 (actor, actor->target))
+        || (!HasBehavior && !P_CheckSight (actor, actor->target))
+        )
 	{
 		P_SetMobjState (actor, actor->info->seestate);
 	}
@@ -939,7 +961,9 @@ void A_SpidRefire (AActor *actor)
 
 	if (!actor->target
 		|| actor->target->health <= 0
-		|| !P_CheckSight (actor, actor->target) )
+		|| (HasBehavior && !P_CheckSight2 (actor, actor->target))		
+		|| (!HasBehavior && !P_CheckSight (actor, actor->target))
+        )
 	{
 		P_SetMobjState (actor, actor->info->seestate);
 	}
@@ -1345,7 +1369,8 @@ void A_Fire (AActor *actor)
 		return;
 
 	// don't move it if the vile lost sight
-	if (!P_CheckSight (actor->target, dest) )
+	if ((HasBehavior && !P_CheckSight2 (actor->target, dest))
+        || (!HasBehavior && !P_CheckSight (actor->target, dest)) )
 		return;
 
 	an = dest->angle >> ANGLETOFINESHIFT;
@@ -1396,7 +1421,8 @@ void A_VileAttack (AActor *actor)
 
 	A_FaceTarget (actor);
 
-	if (!P_CheckSight (actor, actor->target) )
+	if ((HasBehavior && !P_CheckSight2 (actor, actor->target))
+      || (!HasBehavior && !P_CheckSight (actor, actor->target)) )
 		return;
 
 	S_Sound (actor, CHAN_WEAPON, "vile/stop", 1, ATTN_NORM);

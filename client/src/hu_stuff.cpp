@@ -80,7 +80,7 @@ void HU_DMScores2 (player_t *player);
 void HU_TeamScores1 (player_t *player);
 void HU_TeamScores2 (player_t *player);
 
-
+extern bool HasBehavior;
 extern inline int V_StringWidth (const char *str);
 
 static void ShoveChatStr (std::string str, byte who);
@@ -307,9 +307,17 @@ void HU_DrawTargetNames(void)
 				continue;
 			
 			// Check to see if the other player is visible
-			if (!P_CheckSightEdges(displayplayer().mo, players[i].mo, 0.0))
-				continue;
-			
+			if (HasBehavior)
+			{
+                if (!P_CheckSightEdges2(displayplayer().mo, players[i].mo, 0.0))
+                    continue;
+			}			
+			else
+			{
+                if (!P_CheckSightEdges(displayplayer().mo, players[i].mo, 0.0))
+                    continue;
+			}
+
 			// GhostlyDeath -- Don't draw dead enemies
 			if (!consoleplayer().spectator &&
 				(players[i].mo->health <= 0))

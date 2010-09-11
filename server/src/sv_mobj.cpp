@@ -709,6 +709,39 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
+	// [RH] Record polyobject-related things
+	if (HexenHack)
+	{
+		switch (mthing->type)
+		{
+		case PO_HEX_ANCHOR_TYPE:
+			mthing->type = PO_ANCHOR_TYPE;
+			break;
+		case PO_HEX_SPAWN_TYPE:
+			mthing->type = PO_SPAWN_TYPE;
+			break;
+		case PO_HEX_SPAWNCRUSH_TYPE:
+			mthing->type = PO_SPAWNCRUSH_TYPE;
+			break;
+		}
+	}
+
+	if (mthing->type == PO_ANCHOR_TYPE ||
+		mthing->type == PO_SPAWN_TYPE ||
+		mthing->type == PO_SPAWNCRUSH_TYPE)
+	{
+		polyspawns_t *polyspawn = new polyspawns_t;
+		polyspawn->next = polyspawns;
+		polyspawn->x = mthing->x << FRACBITS;
+		polyspawn->y = mthing->y << FRACBITS;
+		polyspawn->angle = mthing->angle;
+		polyspawn->type = mthing->type;
+		polyspawns = polyspawn;
+		if (mthing->type != PO_ANCHOR_TYPE)
+			po_NumPolyobjs++;
+		return;
+	}	
+
 	// check for players specially
 	if ((mthing->type <= 4 && mthing->type > 0)
 		|| (mthing->type >= 4001 && mthing->type <= 4001 + MAXPLAYERSTARTS - 4))

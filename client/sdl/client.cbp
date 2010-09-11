@@ -38,7 +38,6 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-directx -file demo.wad +map map01" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -489,6 +488,7 @@
 		<Unit filename="..\..\common\p_tick.h" />
 		<Unit filename="..\..\common\p_user.cpp" />
 		<Unit filename="..\..\common\p_xlat.cpp" />
+		<Unit filename="..\..\common\po_man.cpp" />
 		<Unit filename="..\..\common\r_bsp.h" />
 		<Unit filename="..\..\common\r_data.cpp" />
 		<Unit filename="..\..\common\r_data.h" />

@@ -1682,6 +1682,7 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 	}
 	P_SerializeThinkers (arc, hubLoad);
 	P_SerializeWorld (arc);
+	P_SerializePolyobjs (arc);
 	P_SerializeSounds (arc);
 	if (!hubLoad)
 		P_SerializePlayers (arc);

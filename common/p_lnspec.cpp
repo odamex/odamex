@@ -54,6 +54,66 @@ FUNC(LS_NOP)
 	return false;
 }
 
+FUNC(LS_Polyobj_RotateLeft)
+// Polyobj_RotateLeft (po, speed, angle)
+{
+	return EV_RotatePoly (ln, arg0, arg1, arg2, 1, false);
+}
+
+FUNC(LS_Polyobj_RotateRight)
+// Polyobj_rotateRight (po, speed, angle)
+{
+	return EV_RotatePoly (ln, arg0, arg1, arg2, -1, false);
+}
+
+FUNC(LS_Polyobj_Move)
+// Polyobj_Move (po, speed, angle, distance)
+{
+	return EV_MovePoly (ln, arg0, SPEED(arg1), BYTEANGLE(arg2), arg3 * FRACUNIT, false);
+}
+
+FUNC(LS_Polyobj_MoveTimes8)
+// Polyobj_MoveTimes8 (po, speed, angle, distance)
+{
+	return EV_MovePoly (ln, arg0, SPEED(arg1), BYTEANGLE(arg2), arg3 * FRACUNIT * 8, false);
+}
+
+FUNC(LS_Polyobj_DoorSwing)
+// Polyobj_DoorSwing (po, speed, angle, delay)
+{
+	return EV_OpenPolyDoor (ln, arg0, arg1, BYTEANGLE(arg2), arg3, 0, PODOOR_SWING);
+}
+
+FUNC(LS_Polyobj_DoorSlide)
+// Polyobj_DoorSlide (po, speed, angle, distance, delay)
+{
+	return EV_OpenPolyDoor (ln, arg0, SPEED(arg1), BYTEANGLE(arg2), arg4, arg3*FRACUNIT, PODOOR_SLIDE);
+}
+
+FUNC(LS_Polyobj_OR_RotateLeft)
+// Polyobj_OR_RotateLeft (po, speed, angle)
+{
+	return EV_RotatePoly (ln, arg0, arg1, arg2, 1, true);
+}
+
+FUNC(LS_Polyobj_OR_RotateRight)
+// Polyobj_OR_RotateRight (po, speed, angle)
+{
+	return EV_RotatePoly (ln, arg0, arg1, arg2, -1, true);
+}
+
+FUNC(LS_Polyobj_OR_Move)
+// Polyobj_OR_Move (po, speed, angle, distance)
+{
+	return EV_MovePoly (ln, arg0, SPEED(arg1), BYTEANGLE(arg2), arg3 * FRACUNIT, true);
+}
+
+FUNC(LS_Polyobj_OR_MoveTimes8)
+// Polyobj_OR_MoveTimes8 (po, speed, angle, distance)
+{
+	return EV_MovePoly (ln, arg0, SPEED(arg1), BYTEANGLE(arg2), arg3 * FRACUNIT * 8, true);
+}
+
 FUNC(LS_Door_Close)
 // Door_Close (tag, speed)
 {
@@ -1413,13 +1473,13 @@ lnSpecFunc LineSpecials[256] =
 {
 	LS_NOP,
 	LS_NOP,		// Polyobj_StartLine,
-	LS_NOP,
-	LS_NOP,
-	LS_NOP,
+	LS_Polyobj_RotateLeft,
+	LS_Polyobj_RotateRight,
+	LS_Polyobj_Move,
 	LS_NOP,		// Polyobj_ExplicitLine
-	LS_NOP,
-	LS_NOP,
-	LS_NOP,
+	LS_Polyobj_MoveTimes8,
+	LS_Polyobj_DoorSwing,
+	LS_Polyobj_DoorSlide,
 	LS_NOP,		// 9
 	LS_Door_Close,
 	LS_Door_Open,
@@ -1501,10 +1561,10 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 87
 	LS_NOP,		// 88
 	LS_NOP,		// 89
-	LS_NOP,
-	LS_NOP,
-	LS_NOP,
-	LS_NOP,
+	LS_Polyobj_OR_RotateLeft,
+	LS_Polyobj_OR_RotateRight,
+	LS_Polyobj_OR_Move,
+	LS_Polyobj_OR_MoveTimes8,
 	LS_NOP,
 	LS_FloorAndCeiling_LowerByValue,
 	LS_FloorAndCeiling_RaiseByValue,

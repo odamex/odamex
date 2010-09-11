@@ -68,6 +68,8 @@ bool clientside = false, serverside = true;
 bool predicting = false;
 baseapp_t baseapp = server;
 
+extern bool HasBehavior;
+
 bool step_mode = false;
 
 #define IPADDRSIZE 4	// GhostlyDeath -- Someone might want to do IPv6 junk
@@ -232,6 +234,7 @@ void SV_ServerSettingChange (void);
 // some doom functions
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 bool P_CheckSightEdges (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
+bool P_CheckSightEdges2 (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
 
 void SV_WinCheck (void);
 
@@ -1318,7 +1321,8 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
 		ok = true;
 
-	else if(player.mo && mo->player && sv_antiwallhack && P_CheckSightEdges(player.mo, mo, 5)/*player.awaresector[sectors - mo->subsector->sector]*/)
+	else if(player.mo && mo->player && sv_antiwallhack && 
+         ((HasBehavior && P_CheckSightEdges2(player.mo, mo, 5)) || (!HasBehavior && P_CheckSightEdges(player.mo, mo, 5)))/*player.awaresector[sectors - mo->subsector->sector]*/)
 		ok = true;
 
 	std::vector<size_t>::iterator a = std::find(mo->players_aware.begin(), mo->players_aware.end(), player.id);
