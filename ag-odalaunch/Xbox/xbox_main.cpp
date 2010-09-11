@@ -308,7 +308,7 @@ uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
 
 		button = SDL_JoystickGetButton(OpenedJoy, i);
 
-		// A Button
+		// Mouse Button Translations
 		if(i == JOY_BTTN_A)
 		{
 			if(button && !BPressed[i])
@@ -329,8 +329,8 @@ uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
 			ev.button.x = mouse_x;
 			ev.button.y = mouse_y;
 		}
-		// Triggers
-		else if(i == JOY_BTTN_LTRIG || i == JOY_BTTN_RTRIG)
+		// Keyboard Translations
+		else if(i == JOY_BTTN_B || i == JOY_BTTN_LTRIG || i == JOY_BTTN_RTRIG)
 		{
 			if(button && !BPressed[i])
 			{
@@ -345,7 +345,9 @@ uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
 			else
 				continue;
 
-			if(i == JOY_BTTN_LTRIG)
+			if(i == JOY_BTTN_B)
+				ev.key.keysym.sym = SDLK_RETURN;
+			else if(i == JOY_BTTN_LTRIG)
 				ev.key.keysym.sym = SDLK_PAGEUP;
 			else
 				ev.key.keysym.sym = SDLK_PAGEDOWN;
@@ -372,12 +374,25 @@ uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
 
 			if(HPressed == SDL_HAT_UP)
 				ev.key.keysym.sym = SDLK_UP;
-			else
+			else if(HPressed == SDL_HAT_DOWN)
 				ev.key.keysym.sym = SDLK_DOWN;
-
-			HPressed = 0;
+			else
+				ev.key.keysym.sym = SDLK_TAB;
 
 			SDL_PushEvent(&ev);
+
+			// In the Agar tabcycle code the action is taken when the tab keyup
+			// event is received and it is then that the shift modifier is tested
+			// so shift needs to be released after the tab event has been pushed or
+			// the modifier will not be active when the test occurs.
+			if(HPressed == SDL_HAT_LEFT)
+			{
+				// Push the mod keyup event
+				ev.key.keysym.sym = SDLK_LSHIFT;
+				SDL_PushEvent(&ev);
+			}
+
+			HPressed = 0;
 		}
 	}
 	if(!HPressed) // Either nothing was pushed before or the state has changed
@@ -396,6 +411,20 @@ uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
 		{
 			ev.key.keysym.sym = SDLK_DOWN;
 			HPressed = SDL_HAT_DOWN;
+		}
+		else if(hat & SDL_HAT_RIGHT)
+		{
+			ev.key.keysym.sym = SDLK_TAB;
+			HPressed = SDL_HAT_RIGHT;
+		}
+		else if(hat & SDL_HAT_LEFT)
+		{
+			// Push the mod keydown event
+			ev.key.keysym.sym = SDLK_LSHIFT;
+			SDL_PushEvent(&ev);
+
+			ev.key.keysym.sym = SDLK_TAB;
+			HPressed = SDL_HAT_LEFT;
 		}
 
 		if(HPressed)
