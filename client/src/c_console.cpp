@@ -1033,6 +1033,9 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		// Try to do tab-completion
 		C_TabComplete ();
 		break;
+#ifdef _XBOX
+	case KEY_JOY7: // Left Trigger
+#endif
 	case KEY_PGUP:
 		if (ConRows > ConBottom/8)
 		{
@@ -1044,6 +1047,9 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 				ScrollState = SCROLLUP;
 		}
 		break;
+#ifdef _XBOX
+	case KEY_JOY8: // Right Trigger
+#endif
 	case KEY_PGDN:
 		if (KeysShifted)
 			// Move to bottom of console buffer
@@ -1396,6 +1402,10 @@ BOOL C_Responder (event_t *ev)
 
 		switch (ev->data1)
 		{
+#ifdef _XBOX
+		case KEY_JOY7: // Left Trigger
+		case KEY_JOY8: // Right Trigger
+#endif
 		case KEY_PGUP:
 		case KEY_PGDN:
 			ScrollState = SCROLLNO;

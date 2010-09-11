@@ -84,7 +84,7 @@ static void STACK_ARGS call_terms (void)
 }
 
 #ifdef GCONSOLE
-int i_main(int argc, char *argv[])
+int I_Main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
 #endif

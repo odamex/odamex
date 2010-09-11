@@ -71,13 +71,14 @@ extern "C" XBOXAPI INT WINAPI XWriteTitleInfoAndRebootA(LPVOID,LPVOID,DWORD,DWOR
 extern "C" XBOXAPI LONG WINAPI HalWriteSMBusValue(UCHAR devddress, UCHAR offset, UCHAR writedw, DWORD data);
 
 // External function declarations
-extern int    i_main(int argc, char *argv[]);		// i_main.cpp
+extern int    I_Main(int argc, char *argv[]);		// i_main.cpp
 extern size_t I_BytesToMegabytes (size_t Bytes);	// i_system.cpp
 
 //Globals
-std::list<void (*)(void)>	 ExitFuncList;
-DWORD                        LauncherID;
-char						*LauncherXBE = NULL;
+static std::list<void (*)(void)>  ExitFuncList;
+static DWORD                      LauncherID;
+static char                      *LauncherXBE = NULL;
+static bool                       Xbox_RROD = false; // Novelty - Red Ring of DOOM!
 
 //
 // xbox_Getenv 
@@ -430,7 +431,7 @@ string xbox_GetSavePath(string file, int slot)
 	}
 	else
 	{
-		if (attrs & ~FILE_ATTRIBUTE_DIRECTORY)
+		if (!(attrs & FILE_ATTRIBUTE_DIRECTORY))
 			I_FatalError ("%s must be a directory", path.str().c_str());
 	}
 
@@ -531,7 +532,8 @@ void xbox_Exit(int status)
 
 	xbox_UnMountPartitions();
 
-	xbox_DisableCustomLED();
+	if(Xbox_RROD)
+		xbox_DisableCustomLED();
 
 	xbox_Reboot();
 }
@@ -562,6 +564,8 @@ void  __cdecl main()
 
 		while(xargv[xargc] != NULL)
 		{
+			if(!stricmp(xargv[xargc], "-rrod"))
+				Xbox_RROD = true;
 			xargc++;
 			xargv[xargc] = strtok(NULL, " ");
 		}
@@ -571,9 +575,10 @@ void  __cdecl main()
 
 	xbox_InitNet();
 
-	xbox_EnableCustomLED();
+	if(Xbox_RROD)
+		xbox_EnableCustomLED();
 
-	i_main(xargc, xargv); // Does not return
+	I_Main(xargc, xargv); // Does not return
 }
 
 #endif // _XBOX
