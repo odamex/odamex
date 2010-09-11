@@ -38,6 +38,7 @@ IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 
 DDoor::DDoor ()
 {
+	m_Line = NULL;
 }
 
 void DDoor::Serialize (FArchive &arc)
