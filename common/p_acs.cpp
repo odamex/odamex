@@ -400,7 +400,7 @@ void DLevelScript::RunScript ()
 		state = SCRIPT_Running;
 	}
 	break;
-/*
+
 	case SCRIPT_PolyWait:
 		// Wait for polyobj(s) to stop moving, then enter state running
 		if (!PO_Busy (statedata))
@@ -408,7 +408,7 @@ void DLevelScript::RunScript ()
 			state = SCRIPT_Running;
 		}
 		break;
-*/
+
 	case SCRIPT_ScriptWaitPre:
 		// Wait for a script to start running, then enter state scriptwait
 		if (controller->RunningScripts[statedata])

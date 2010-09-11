@@ -166,12 +166,10 @@ DPolyDoor::DPolyDoor (int polyNum, podoortype_t type)
 
 // ===== Polyobj Event Code =====
 
-//==========================================================================
+
 //
 // T_RotatePoly
 //
-//==========================================================================
-
 void DRotatePoly::RunThink ()
 {
 	if (PO_RotatePolyobj (m_PolyObj, m_Speed))
@@ -200,13 +198,9 @@ void DRotatePoly::RunThink ()
 	}
 }
 
-//==========================================================================
 //
 // EV_RotatePoly
 //
-//==========================================================================
-
-
 BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle,
 					int direction, BOOL overRide)
 {
@@ -285,12 +279,9 @@ BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle,
 	return true;
 }
 
-//==========================================================================
 //
 // T_MovePoly
 //
-//==========================================================================
-
 void DMovePoly::RunThink ()
 {
 	polyobj_t *poly;
@@ -318,12 +309,9 @@ void DMovePoly::RunThink ()
 	}
 }
 
-//==========================================================================
 //
 // EV_MovePoly
 //
-//==========================================================================
-
 BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle,
 				  fixed_t dist, BOOL overRide)
 {
@@ -376,12 +364,10 @@ BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle,
 	return true;
 }
 
-//==========================================================================
+
 //
 // T_PolyDoor
 //
-//==========================================================================
-
 void DPolyDoor::RunThink ()
 {
 	int absSpeed;
@@ -497,12 +483,9 @@ void DPolyDoor::RunThink ()
 	}
 }
 
-//==========================================================================
 //
 // EV_OpenPolyDoor
 //
-//==========================================================================
-
 BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle,
 					  int delay, int distance, podoortype_t type)
 {
@@ -577,12 +560,10 @@ BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle,
 	
 // ===== Higher Level Poly Interface code =====
 
-//==========================================================================
+
 //
 // GetPolyobj
 //
-//==========================================================================
-
 static polyobj_t *GetPolyobj (int polyNum)
 {
 	int i;
@@ -597,12 +578,9 @@ static polyobj_t *GetPolyobj (int polyNum)
 	return NULL;
 }
 
-//==========================================================================
 //
 // GetPolyobjMirror
 //
-//==========================================================================
-
 static int GetPolyobjMirror(int poly)
 {
 	int i;
@@ -617,12 +595,9 @@ static int GetPolyobjMirror(int poly)
 	return 0;
 }
 
-//==========================================================================
 //
 // ThrustMobj
 //
-//==========================================================================
-
 void ThrustMobj (AActor *actor, seg_t *seg, polyobj_t *po)
 {
 	int thrustAngle;
@@ -676,12 +651,10 @@ void ThrustMobj (AActor *actor, seg_t *seg, polyobj_t *po)
 	}
 }
 
-//==========================================================================
+
 //
 // UpdateSegBBox
 //
-//==========================================================================
-
 static void UpdateSegBBox (seg_t *seg)
 {
 	line_t *line;
@@ -733,12 +706,10 @@ static void UpdateSegBBox (seg_t *seg)
 	}
 }
 
-//==========================================================================
+
 //
 // PO_MovePolyobj
 //
-//==========================================================================
-
 BOOL PO_MovePolyobj (int num, int x, int y)
 {
 	int count;
@@ -837,12 +808,9 @@ BOOL PO_MovePolyobj (int num, int x, int y)
 	return true;
 }
 
-//==========================================================================
 //
 // RotatePt
 //
-//==========================================================================
-
 static void RotatePt (int an, fixed_t *x, fixed_t *y, fixed_t startSpotX, fixed_t startSpotY)
 {
 	fixed_t tr_x, tr_y;
@@ -860,12 +828,9 @@ static void RotatePt (int an, fixed_t *x, fixed_t *y, fixed_t startSpotX, fixed_
 	*y = (gyt+gxt)+startSpotY;
 }
 
-//==========================================================================
 //
 // PO_RotatePolyobj
 //
-//==========================================================================
-
 BOOL PO_RotatePolyobj (int num, angle_t angle)
 {
 	int count;
@@ -942,12 +907,9 @@ BOOL PO_RotatePolyobj (int num, angle_t angle)
 	return true;
 }
 
-//==========================================================================
 //
 // UnLinkPolyobj
 //
-//==========================================================================
-
 static void UnLinkPolyobj (polyobj_t *po)
 {
 	polyblock_t *link;
@@ -977,12 +939,9 @@ static void UnLinkPolyobj (polyobj_t *po)
 	}
 }
 
-//==========================================================================
 //
 // LinkPolyobj
 //
-//==========================================================================
-
 static void LinkPolyobj (polyobj_t *po)
 {
 	int leftX, rightX;
@@ -1064,12 +1023,9 @@ static void LinkPolyobj (polyobj_t *po)
 	}
 }
 
-//==========================================================================
 //
 // CheckMobjBlocking
 //
-//==========================================================================
-
 static BOOL CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 {
 	AActor *mobj;
@@ -1130,12 +1086,9 @@ static BOOL CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 	return blocked;
 }
 
-//==========================================================================
 //
 // InitBlockMap
 //
-//==========================================================================
-
 static void InitBlockMap (void)
 {
 	int i;
@@ -1192,14 +1145,11 @@ static void InitBlockMap (void)
 	}
 }
 
-//==========================================================================
 //
 // IterFindPolySegs
 //
 //              Passing NULL for segList will cause IterFindPolySegs to
 //      count the number of segs in the polyobj
-//==========================================================================
-
 static void IterFindPolySegs (int x, int y, seg_t **segList)
 {
 	int i;
@@ -1227,13 +1177,9 @@ static void IterFindPolySegs (int x, int y, seg_t **segList)
 	I_Error ("IterFindPolySegs: Non-closed Polyobj located.\n");
 }
 
-
-//==========================================================================
 //
 // SpawnPolyobj
 //
-//==========================================================================
-
 static void SpawnPolyobj (int index, int tag, BOOL crush)
 {
 	int i;
@@ -1352,12 +1298,9 @@ static void SpawnPolyobj (int index, int tag, BOOL crush)
 	}
 }
 
-//==========================================================================
 //
 // TranslateToStartSpot
 //
-//==========================================================================
-
 static void TranslateToStartSpot (int tag, int originX, int originY)
 {
 	seg_t **tempSeg;
@@ -1438,12 +1381,9 @@ static void TranslateToStartSpot (int tag, int originX, int originY)
 	sub->poly = po;
 }
 
-//==========================================================================
 //
 // PO_Init
 //
-//==========================================================================
-
 void PO_Init (void)
 {
 	// [RH] Hexen found the polyobject-related things by reloading the map's
@@ -1499,12 +1439,9 @@ void PO_Init (void)
 	InitBlockMap();
 }
 
-//==========================================================================
 //
 // PO_Busy
 //
-//==========================================================================
-
 BOOL PO_Busy (int polyobj)
 {
 	polyobj_t *poly;
