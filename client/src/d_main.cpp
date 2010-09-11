@@ -775,10 +775,10 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 }
 
 //
-// denis - AddSearchDir
+// denis - D_AddSearchDir
 // Split a new directory string using the separator and append results to the output
 //
-void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
+void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
 {
 	if(!dir)
 		return;
@@ -836,11 +836,11 @@ std::string BaseFileSearch (std::string file, std::string ext = "", std::string 
 	dirs.push_back(startdir);
 	dirs.push_back(progdir);
 
-	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
-	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-    AddSearchDir(dirs, getenv("HOME"), separator);
-    AddSearchDir(dirs, waddirs.cstring(), separator);
+	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
+	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
+	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
+	D_AddSearchDir(dirs, getenv("HOME"), separator);
+	D_AddSearchDir(dirs, waddirs.cstring(), separator);
 
     dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
