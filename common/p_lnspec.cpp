@@ -49,6 +49,13 @@ int TeleportSide;
 // Set true if this special was activated from inside a script.
 BOOL InScript;
 
+// 9/11/10: Add poly action definitions here, even though they're in p_local...
+// Why are these needed here?  Linux won't compile without these definitions?? 
+//
+BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle, fixed_t dist, BOOL overRide);
+BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle, int delay, int distance, podoortype_t type);
+BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int direction, BOOL overRide);
+
 FUNC(LS_NOP)
 {
 	return false;
