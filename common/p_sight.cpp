@@ -63,6 +63,9 @@ bool PTR_SightTraverse (intercept_t *in)
 	fixed_t slope;
 
 	li = in->d.line;
+	
+	if (!li->backsector)
+        return false;
 
 //
 // crosses a two sided line
@@ -116,6 +119,7 @@ bool P_SightBlockLinesIterator (int x, int y)
 	offset = y*bmapwidth+x;
 
 	polyLink = PolyBlockMap[offset];
+	
 	while(polyLink)
 	{
 		if(polyLink->polyobj)
@@ -198,9 +202,9 @@ bool P_SightBlockLinesIterator (int x, int y)
 
 bool P_SightTraverseIntercepts ( void )
 {
-	size_t count = intercepts.Size();
+	size_t  count = intercepts.Size();
 	fixed_t dist;
-	size_t		scan;
+	size_t	scan;
 	intercept_t *in = 0;
 	divline_t dl;
 //
@@ -215,8 +219,6 @@ bool P_SightTraverseIntercepts ( void )
 //
 // go through in order
 //
-	in = 0;					// shut up compiler warning
-
 	while (count--)
 	{
 		dist = MAXINT;
@@ -229,6 +231,7 @@ bool P_SightTraverseIntercepts ( void )
 
 		if ( !PTR_SightTraverse (in) )
 			return false;					// don't bother going farther
+			
 		in->frac = MAXINT;
 	}
 

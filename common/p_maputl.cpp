@@ -438,16 +438,22 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 	polyblock_t *polyLink;
 
 	offset = y*bmapwidth + x;
-	if (PolyBlockMap) {
+	if (PolyBlockMap)
+	{
 		polyLink = PolyBlockMap[offset];
-		while (polyLink) {
-			if (polyLink->polyobj && polyLink->polyobj->validcount != validcount) {
+		
+		while (polyLink)
+		{
+			if (polyLink->polyobj && polyLink->polyobj->validcount != validcount)
+			{
 				int i;
 				seg_t **tempSeg = polyLink->polyobj->segs;
 				polyLink->polyobj->validcount = validcount;
 
-				for (i = polyLink->polyobj->numsegs; i; i--, tempSeg++) {
-					if ((*tempSeg)->linedef->validcount != validcount) {
+				for (i = polyLink->polyobj->numsegs; i; i--, tempSeg++)
+				{
+					if ((*tempSeg)->linedef->validcount != validcount)
+					{
 						(*tempSeg)->linedef->validcount = validcount;
 						if (!func ((*tempSeg)->linedef))
 							return false;
@@ -667,18 +673,6 @@ BOOL P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 		if (dist > maxfrac)
 			return true;		// checked everything in range
 
-#if 0  // UNUSED
-	{
-
-		// don't check these yet, there may be others inserted
-		in = scan = intercepts;
-		for ( scan = 0 ; scan<intercepts.Size() ; scan++)
-			if (intercepts[scan].frac > maxfrac)
-				*in++ = *scan;
-		intercepts.Resize(scan);
-		return false;
-	}
-#endif
 
 		if ( !func (in) )
 			return false;		// don't bother going farther
