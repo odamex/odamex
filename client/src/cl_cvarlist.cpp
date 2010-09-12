@@ -233,7 +233,11 @@ CVAR (r_drawplayersprites, "1", CVAR_CLIENTINFO)
 // Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
 CVAR_FUNC_DECL (r_stretchsky, "2", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+#ifdef _XBOX // The burn wipe works better in 720p
+CVAR (r_wipetype, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+#else
 CVAR (r_wipetype, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+#endif
 CVAR (r_showendoom, "1", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
 
 // TODO: document
