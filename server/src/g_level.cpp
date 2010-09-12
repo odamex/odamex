@@ -490,7 +490,7 @@ static void zapDefereds (acsdefered_t *def)
 
 void P_RemoveDefereds (void)
 {
-	int i;
+	unsigned int i;
 
 	// Remove any existing defereds
 	for (i = 0; i < numwadlevelinfos; i++)
@@ -1789,7 +1789,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 {
 	if (arc.IsStoring ())
 	{
-		int i;
+		unsigned int i;
 
 		for (i = 0; i < numwadlevelinfos; i++)
 			if (wadlevelinfos[i].defered)
