@@ -918,6 +918,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		mobj->special1 = mthing->z << FRACBITS;
 	}
 
+	// [RH] Set the thing's special
+	mobj->special = mthing->special;
+	memcpy (mobj->args, mthing->args, sizeof(mobj->args));
+	
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);
 	if (mobj->flags & MF_COUNTKILL)
@@ -961,8 +965,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [RH] Go dormant as needed
-//	if (mthing->flags & MTF_DORMANT)
-//		P_DeactivateMobj (mobj);
+	if (mthing->flags & MTF_DORMANT)
+		P_DeactivateMobj (mobj);
 }
 
 VERSION_CONTROL (sv_mobj_cpp, "$Id: sv_mobj.cpp 1832 2010-09-01 23:59:33Z mike $")

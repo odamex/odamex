@@ -851,8 +851,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	mobj->AddToHash ();
 
 	// [RH] Go dormant as needed
-//	if (mthing->flags & MTF_DORMANT)
-//		P_DeactivateMobj (mobj);
+	if (mthing->flags & MTF_DORMANT)
+		P_DeactivateMobj (mobj);
 }
 
 VERSION_CONTROL (cl_mobj_cpp, "$Id: cl_mobj.cpp 1832 2010-09-01 23:59:33Z mike $")
