@@ -50,6 +50,14 @@
 #include <vector>
 #include <map>
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
+#if _MSC_VER == 1310
+#pragma optimize("",off)
+#endif
+
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
@@ -114,6 +122,7 @@ EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR (interscoredraw)
 EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
+EXTERN_CVAR (waddirs)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -2106,23 +2115,52 @@ void IntDownloadComplete(void)
     }
 
     // got the wad! save it!
-    std::string filename = "./"; // denis - todo try first of waddir/DOOMWADDIR/startdir/progdir in that order
-    filename += download.filename;
+    std::vector<std::string> dirs;
+    std::string filename;
+    size_t i;
+#ifdef WIN32
+    const char separator = ';';
+#else
+    const char separator = ':';
+#endif
 
-    // check for existing file
-    if(M_FileExists(filename.c_str()))
+    // Try to save to the wad paths in this order -- Hyper_Eye
+    D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
+    D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
+    D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
+    D_AddSearchDir(dirs, waddirs.cstring(), separator);
+    dirs.push_back(startdir);
+    dirs.push_back(progdir);
+
+    dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
+
+    for(i = 0; i < dirs.size(); i++)
     {
-        // there is an existing file, so use a new file whose name includes the checksum
-        filename += ".";
-        filename += actual_md5;
+        filename.clear();
+        filename = dirs[i];
+        if(filename[filename.length() - 1] != PATHSEPCHAR)
+            filename += PATHSEP;
+        filename += download.filename;
+
+        // check for existing file
+   	    if(M_FileExists(filename.c_str()))
+   	    {
+   	        // there is an existing file, so use a new file whose name includes the checksum
+   	        filename += ".";
+   	        filename += actual_md5;
+   	    }
+
+        if (M_WriteFile(filename, download.buf->ptr(), download.buf->maxsize()))
+            break;
     }
 
-    if (!M_WriteFile(filename, download.buf->ptr(), download.buf->maxsize()))
+    // Unable to write
+    if(i == dirs.size())
     {
         download.filename = "";
         download.md5 = "";
         download.got_bytes = 0;
-		
+
         if (download.buf != NULL)
         {
             delete download.buf;

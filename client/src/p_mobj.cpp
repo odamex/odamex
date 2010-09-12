@@ -1634,7 +1634,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 
 	AActor *puff;
 
-	z += ((P_Random () - P_Random ()) << 10);
+	z += (P_RandomDiff () << 10);
 
 	puff = new AActor (x, y, z, MT_PUFF);
 	puff->momz = FRACUNIT;
@@ -1661,7 +1661,7 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
 
 	AActor *th;
 
-	z += (P_Random () - P_Random ()) << 10;
+	z += P_RandomDiff () << 10;
 	th = new AActor (x, y, z, MT_BLOOD);
 	th->momz = FRACUNIT*2;
 	th->tics -= P_Random (th) & 3;
@@ -1750,7 +1750,7 @@ AActor *P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
     // fuzzy player
     if (dest_flags & MF_SHADOW)
-		an += (P_Random()-P_Random())<<20;
+		an += P_RandomDiff()<<20;
 
     th->angle = an;
     an >>= ANGLETOFINESHIFT;

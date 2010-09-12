@@ -62,6 +62,10 @@
 #include "cl_main.h"
 #include "gi.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 #include <math.h> // for pow()
 
 #include <sstream>
@@ -217,12 +221,20 @@ int	mousey;
 float			zdoomsens;
 
 
-// joystick values are repeated
-// [RH] now, if the joystick is enabled, it will generate an event every tick
-//		so the values here are reset to zero after each tic build (in case
-//		use_joystick gets set to 0 when the joystick is off center)
-int 			joyxmove;
-int 			joyymove;
+// Joystick values are repeated
+// Store a value for each of the analog axis controls -- Hyper_Eye
+int				joyforward;
+int				joystrafe;
+int				joyturn;
+int				joylook;
+
+EXTERN_CVAR (joy_forwardaxis)
+EXTERN_CVAR (joy_strafeaxis)
+EXTERN_CVAR (joy_turnaxis)
+EXTERN_CVAR (joy_lookaxis)
+EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_invert)
+EXTERN_CVAR (joy_freelook)
 
 int 			savegameslot;
 char			savedescription[32];
@@ -509,6 +521,9 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 			cmd->ucmd.yaw += angleturn[tspeed];
 	}
 
+	// Joystick analog strafing -- Hyper_Eye
+	side += (((float)joystrafe / (float)SHRT_MAX) * sidemove[speed]);
+
 	if (Actions[ACTION_LOOKUP])
 		look += lookspeed[speed];
 	if (Actions[ACTION_LOOKDOWN])
@@ -532,6 +547,15 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 			forward += forwardmove[speed];
 		if (Actions[ACTION_BACK])
 			forward -= forwardmove[speed];
+	}
+
+	// Joystick analog look -- Hyper_Eye
+	if(joy_freelook && sv_freelook)
+	{
+		if (joy_invert)
+			look += (((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+		else
+			look -= (((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
 	}
 
 	if (Actions[ACTION_MOVERIGHT])
@@ -562,23 +586,21 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	}
 	Impulse = 0;
 
-	// [RH] Scale joystick moves to full range of allowed speeds
 	if (strafe || lookstrafe)
-		side += (MAXPLMOVE * joyxmove) / 256;
+		side += (((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
 	else
-		cmd->ucmd.yaw -= (angleturn[1] * joyxmove) / 256;
+		cmd->ucmd.yaw -= (((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10);
 
-	// [RH] Scale joystick moves over full range
 	if (Actions[ACTION_MLOOK])
 	{
-		if (invertmouse)
-			look -= (joyymove * 32767) / 256;
+		if (joy_invert)
+			look += (((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
 		else
-			look += (joyymove * 32767) / 256;
+			look -= (((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
 	}
 	else
 	{
-		forward += (MAXPLMOVE * joyymove) / 256;
+		forward -= (((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook))
@@ -654,9 +676,6 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		turntick--;
 		cmd->ucmd.yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
-
-	joyxmove = 0;
-	joyymove = 0;
 }
 
 
@@ -814,8 +833,20 @@ BOOL G_Responder (event_t *ev)
 		break;
 
 	  case ev_joystick:
-		joyxmove = ev->data2;
-		joyymove = ev->data3;
+	  	if(ev->data1 == 0) // Axis Movement
+		{
+			if(ev->data2 == joy_strafeaxis) // Strafe
+				joystrafe = ev->data3;
+			else if(ev->data2 == joy_forwardaxis) // Move
+				joyforward = ev->data3;
+			else if(ev->data2 == joy_turnaxis) // Turn
+				joyturn = ev->data3;
+			else if(ev->data2 == joy_lookaxis) // Look
+				joylook = ev->data3;
+			else
+				break; // The default case will be to treat the analog control as a button -- Hyper_Eye
+		}
+
 		break;
 
 	}
@@ -1564,7 +1595,11 @@ void G_BuildSaveName (std::string &name, int slot)
 {
     std::stringstream ssName;
 
+#ifdef _XBOX
+	std::string path = xbox_GetSavePath(name, slot);
+#else
 	std::string path = I_GetUserFileName ((const char *)name.c_str());
+#endif
 
 	ssName << path;
     ssName << SAVEGAMENAME;
@@ -1590,6 +1625,10 @@ void G_DoSaveGame (void)
 	{
         return;
 	}
+
+#ifdef _XBOX
+	xbox_WriteSaveMeta(name.substr(0, name.rfind(PATHSEPCHAR)), description);
+#endif
 
 	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name.c_str());
 

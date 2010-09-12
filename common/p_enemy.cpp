@@ -845,7 +845,7 @@ void A_FaceTarget (AActor *actor)
 									actor->target->y);
 
 	if (actor->target->flags & MF_SHADOW)
-		actor->angle += (P_Random(actor) - P_Random(actor))<<21;
+		actor->angle += P_RandomDiff(actor)<<21;
 }
 
 //
@@ -865,7 +865,7 @@ void A_PosAttack (AActor *actor)
 	slope = P_AimLineAttack (actor, angle, MISSILERANGE);
 
 	S_Sound (actor, CHAN_WEAPON, "grunt/attack", 1, ATTN_NORM);
-	angle += (P_Random(actor) - P_Random (actor))<<20;
+	angle += P_RandomDiff (actor)<<20;
 	damage = ((P_Random (actor)%5)+1)*3;
 	P_LineAttack (actor, angle, MISSILERANGE, slope, damage);
 }
@@ -886,7 +886,7 @@ void A_SPosAttack (AActor *actor)
 
 	for (i=0 ; i<3 ; i++)
     {
-		int angle = bangle + ((P_Random (actor) - P_Random (actor))<<20);
+		int angle = bangle + (P_RandomDiff (actor)<<20);
 		int damage = ((P_Random (actor)%5)+1)*3;
 		P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
     }
@@ -907,7 +907,7 @@ void A_CPosAttack (AActor *actor)
 	bangle = actor->angle;
 	slope = P_AimLineAttack (actor, bangle, MISSILERANGE);
 
-	angle = bangle + ((P_Random (actor) - P_Random (actor))<<20);
+	angle = bangle + (P_RandomDiff (actor)<<20);
 	damage = ((P_Random (actor)%5)+1)*3;
 	P_LineAttack (actor, angle, MISSILERANGE, slope, damage);
 }
@@ -1902,7 +1902,7 @@ void A_BrainExplode (AActor *mo)
 	if(!clientside)
 		return;
 
-	int x = mo->x + (P_Random (mo) - P_Random (mo))*2048;
+	int x = mo->x + P_RandomDiff (mo)*2048;
 	int y = mo->y;
 	int z = 128 + P_Random (mo)*2*FRACUNIT;
 	AActor *th = new AActor (x,y,z, MT_ROCKET);

@@ -40,6 +40,10 @@
 
 #include "doomdef.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 #define NUM_CHANNELS 16
 
 static int mixer_freq;

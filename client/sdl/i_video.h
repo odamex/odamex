@@ -29,7 +29,6 @@
 #include "doomtype.h"
 #include "v_video.h"
 
-
 // [RH] True if the display is not in a window
 extern BOOL Fullscreen;
 
@@ -65,6 +64,8 @@ void I_SetWindowIcon(void);
 bool I_CheckResolution (int width, int height, int bpp);
 void I_ClosestResolution (int *width, int *height, int bits);
 bool I_SetResolution (int width, int height, int bpp);
+
+bool I_SetOverscan (float scale);
 
 void I_StartModeIterator (int bits);
 bool I_NextMode (int *width, int *height);

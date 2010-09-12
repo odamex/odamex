@@ -34,6 +34,11 @@ void STACK_ARGS I_ShutdownInput (void);
 void I_PauseMouse();
 void I_ResumeMouse();
 
+int I_GetJoystickCount();
+std::string I_GetJoystickNameFromIndex (int index);
+bool I_OpenJoystick();
+void I_CloseJoystick();
+
 void I_GetEvent (void);
 
 #endif

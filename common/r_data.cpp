@@ -840,7 +840,7 @@ int R_FlatNumForName (const char* name)
 //
 int R_CheckTextureNumForName (const char *name)
 {
-	char uname[9];
+	unsigned char uname[9];
 	int  i;
 
 	// "NoTexture" marker.
@@ -848,13 +848,13 @@ int R_CheckTextureNumForName (const char *name)
 		return 0;
 
 	// [RH] Use a hash table instead of linear search
-	strncpy (uname, name, 9); // denis - todo - string limit?
+	strncpy ((char *)uname, name, 9); // denis - todo - string limit?
 	std::transform(uname, uname + sizeof(uname), uname, toupper);
 
 	i = textures[/*W_LumpNameHash (uname) % (unsigned) numtextures*/0]->index; // denis - todo - replace with map<>
 
 	while (i != -1) {
-		if (!strncmp (textures[i]->name, uname, 8))
+		if (!strncmp (textures[i]->name, (char *)uname, 8))
 			break;
 		i = textures[i]->next;
 	}

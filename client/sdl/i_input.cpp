@@ -24,16 +24,19 @@
 // SoM 12-24-05: yeah... I'm programming on christmas eve.
 // Removed all the DirectX crap.
 
+#include <list>
 #ifdef WIN32
 #define _WIN32_WINNT 0x0400
 #define WIN32_LEAN_AND_MEAN
+#ifndef _XBOX
 #include <windows.h>
+#endif // !_XBOX
 #ifdef _MSC_VER
 #ifndef snprintf
 #define snprintf _snprintf
-#endif
-#endif
-#endif
+#endif // !snprintf
+#endif // MSC_VER
+#endif // WIN32
 
 #include <SDL.h>
 
@@ -47,6 +50,12 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
+#define JOY_DEADZONE 6000
+
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
@@ -58,6 +67,12 @@ static BOOL nomouse = false;
 // Used by the console for making keys repeat
 int KeyRepeatDelay;
 int KeyRepeatRate;
+
+EXTERN_CVAR (use_joystick)
+EXTERN_CVAR (joy_active)
+
+static SDL_Joystick     *openedjoy = NULL;
+static std::list<SDL_Event*>  JoyEventList;
 
 // denis - from chocolate doom
 //
@@ -81,7 +96,7 @@ static BOOL flushmouse = false;
 
 extern constate_e ConsoleState;
 
-#ifdef WIN32
+#if defined WIN32 && !defined _XBOX
 // denis - in fullscreen, prevent exit on accidental windows key press
 HHOOK g_hKeyboardHook;
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
@@ -203,6 +218,223 @@ static int AccelerateMouse(int val)
     }
 }
 
+// Add any joystick event to a list if it will require manual polling
+// to detect release. This includes hat events (mostly due to d-pads not
+// triggering the centered event when released) and analog axis bound
+// as a key/button -- HyperEye
+//
+// RegisterJoystickEvent
+//
+static int RegisterJoystickEvent(SDL_Event *ev, int value)
+{
+	SDL_Event *evc;
+	event_t    event;
+
+	if(!ev)
+		return -1;
+
+	if(ev->type == SDL_JOYHATMOTION)
+	{
+		if(JoyEventList.size())
+		{
+			std::list<SDL_Event*>::iterator i;
+
+			for(i = JoyEventList.begin(); i != JoyEventList.end(); ++i)
+			{
+				if(((*i)->type == ev->type) && ((*i)->jhat.which == ev->jhat.which) 
+							&& ((*i)->jhat.hat == ev->jhat.hat) && ((*i)->jhat.value == value))
+					return 0;
+			}
+		}
+
+		evc = new SDL_Event;
+
+		memcpy(evc, ev, sizeof(SDL_Event));
+		evc->jhat.value = value;
+
+		event.data1 = event.data2 = event.data3 = 0;
+
+		event.type = ev_keydown;
+		if(value == SDL_HAT_UP)
+			event.data1 = (ev->jhat.hat * 4) + KEY_HAT1;
+		else if(value == SDL_HAT_RIGHT)
+			event.data1 = (ev->jhat.hat * 4) + KEY_HAT2;
+		else if(value == SDL_HAT_DOWN)
+			event.data1 = (ev->jhat.hat * 4) + KEY_HAT3;
+		else if(value == SDL_HAT_LEFT)
+			event.data1 = (ev->jhat.hat * 4) + KEY_HAT4;
+
+		event.data2 = event.data1;
+	}
+
+	if(evc)
+	{
+		JoyEventList.push_back(evc);
+		D_PostEvent(&event);
+		return 1;
+	}
+
+	return 0;
+}
+
+void UpdateJoystickEvents()
+{
+	std::list<SDL_Event*>::iterator i;
+	event_t    event;
+
+	if(JoyEventList.size())
+	{
+		i = JoyEventList.begin();
+		while(i != JoyEventList.end())
+		{
+			if((*i)->type == SDL_JOYHATMOTION)
+			{
+				if(!(SDL_JoystickGetHat(openedjoy, (*i)->jhat.hat) & (*i)->jhat.value))
+				{
+					event.data1 = event.data2 = event.data3 = 0;
+
+					event.type = ev_keyup;
+					if((*i)->jhat.value == SDL_HAT_UP)
+						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT1;
+					else if((*i)->jhat.value == SDL_HAT_RIGHT)
+						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT2;
+					else if((*i)->jhat.value == SDL_HAT_DOWN)
+						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT3;
+					else if((*i)->jhat.value == SDL_HAT_LEFT)
+						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT4;
+
+					D_PostEvent(&event);
+
+					delete *i;
+					i = JoyEventList.erase(i);
+					continue;
+				}
+				++i;
+			}
+		}
+	}
+}
+
+// This turns on automatic event polling for joysticks so that the state
+// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
+//
+// EnableJoystickPolling
+//
+static int EnableJoystickPolling()
+{
+	return SDL_JoystickEventState(SDL_ENABLE);
+}
+
+static int DisableJoystickPolling()
+{
+	return SDL_JoystickEventState(SDL_IGNORE);
+}
+
+CVAR_FUNC_IMPL (use_joystick)
+{
+	if(var <= 0.0)
+	{
+		// Don't let console users disable joystick support because
+		// they won't have any way to reenable through the menu.
+#ifdef GCONSOLE
+		use_joystick = 1.0;
+#else
+		I_CloseJoystick();
+		DisableJoystickPolling();
+#endif
+	}
+	else
+	{
+		I_OpenJoystick();
+		EnableJoystickPolling();
+	}
+}
+
+
+CVAR_FUNC_IMPL (joy_active)
+{
+	if( (var < 0.0) || ((int)var > I_GetJoystickCount()) )
+		var = 0.0;
+
+	I_CloseJoystick();
+
+	I_OpenJoystick();
+}
+
+//
+// I_GetJoystickCount
+//
+int I_GetJoystickCount()
+{
+	return SDL_NumJoysticks();
+}
+
+//
+// I_GetJoystickNameFromIndex
+//
+std::string I_GetJoystickNameFromIndex (int index)
+{
+	const char  *joyname = NULL;
+	std::string  ret;
+
+	joyname = SDL_JoystickName(index);
+
+	if(!joyname)
+		return "";
+	
+	ret = joyname;
+
+	return ret;
+}
+
+//
+// I_OpenJoystick
+//
+bool I_OpenJoystick()
+{
+	int numjoy;
+
+	numjoy = I_GetJoystickCount();
+
+	if(!numjoy || !use_joystick)
+		return false;
+
+	if((int)joy_active > numjoy)
+		joy_active.Set(0.0);
+
+	if(!SDL_JoystickOpened(joy_active))
+		openedjoy = SDL_JoystickOpen(joy_active);
+
+	if(!SDL_JoystickOpened(joy_active))
+		return false;
+
+	return true;
+}
+
+//
+// I_CloseJoystick
+//
+void I_CloseJoystick()
+{
+	extern int joyforward, joystrafe, joyturn, joylook;
+	int        ndx;
+
+#ifndef _XBOX // This is to avoid a bug in SDLx
+	if(!I_GetJoystickCount() || !openedjoy)
+		return;
+
+	ndx = SDL_JoystickIndex(openedjoy);
+
+	if(SDL_JoystickOpened(ndx))
+		SDL_JoystickClose(openedjoy);
+
+	openedjoy = NULL;
+#endif
+
+	// Reset joy position values. Wouldn't want to get stuck in a turn or something. -- Hyper_Eye
+	joyforward = joystrafe = joyturn = joylook = 0;
+}
+
 //
 // I_InitInput
 //
@@ -221,6 +453,16 @@ bool I_InitInput (void)
 	// mike - maybe not?
 	//SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL*2);
+
+	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
+	Printf(PRINT_HIGH, "I_InitInput: Initializing SDL's joystick subsystem.\n");
+	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+
+	if((int)use_joystick && I_GetJoystickCount())
+	{
+		I_OpenJoystick();
+		EnableJoystickPolling();
+	}
 
 #ifdef WIN32
 	// denis - in fullscreen, prevent exit on accidental windows key press
@@ -330,6 +572,7 @@ void I_GetEvent (void)
          case SDL_KEYDOWN:
             event.type = ev_keydown;
             event.data1 = ev.key.keysym.sym;
+
             if(event.data1 >= SDLK_KP0 && event.data1 <= SDLK_KP9)
                event.data2 = event.data3 = '0' + (event.data1 - SDLK_KP0);
             else if(event.data1 == SDLK_KP_PERIOD)
@@ -411,7 +654,7 @@ void I_GetEvent (void)
 		D_PostEvent(&event);
 		break;
 
-		case SDL_MOUSEBUTTONUP:
+	case SDL_MOUSEBUTTONUP:
             if(nomouse || !havefocus)
 				break;
             event.type = ev_keyup;
@@ -437,6 +680,56 @@ void I_GetEvent (void)
 
 		D_PostEvent(&event);
 		break;
+	case SDL_JOYBUTTONDOWN:
+		if(ev.jbutton.which == joy_active)
+		{
+			event.type = ev_keydown;
+			event.data1 = ev.jbutton.button + KEY_JOY1;
+			event.data2 = event.data1;
+
+			D_PostEvent(&event);
+			break;
+		}
+	case SDL_JOYBUTTONUP:
+		if(ev.jbutton.which == joy_active)
+		{
+			event.type = ev_keyup;
+			event.data1 = ev.jbutton.button + KEY_JOY1;
+			event.data2 = event.data1;
+
+			D_PostEvent(&event);
+			break;
+		}
+	case SDL_JOYAXISMOTION:
+		if(ev.jaxis.which == joy_active)
+		{
+			event.type = ev_joystick;
+			event.data1 = 0;
+			event.data2 = ev.jaxis.axis;
+			if( (ev.jaxis.value < JOY_DEADZONE) && (ev.jaxis.value > -JOY_DEADZONE) )
+				event.data3 = 0;
+			else
+				event.data3 = ev.jaxis.value;
+
+			D_PostEvent(&event);
+			break;
+		}
+	case SDL_JOYHATMOTION:
+		if(ev.jhat.which == joy_active)
+		{
+			// Each of these need to be tested because more than one can be pressed and a
+			// unique event is needed for each
+			if(ev.jhat.value & SDL_HAT_UP)
+				RegisterJoystickEvent(&ev, SDL_HAT_UP);
+			if(ev.jhat.value & SDL_HAT_RIGHT)
+				RegisterJoystickEvent(&ev, SDL_HAT_RIGHT);
+			if(ev.jhat.value & SDL_HAT_DOWN)
+				RegisterJoystickEvent(&ev, SDL_HAT_DOWN);
+			if(ev.jhat.value & SDL_HAT_LEFT)
+				RegisterJoystickEvent(&ev, SDL_HAT_LEFT);
+
+			break;
+		}
       };
    }
 
@@ -453,6 +746,9 @@ void I_GetEvent (void)
           SDL_WarpMouse(screen->width/ 2, screen->height / 2);
        }
    }
+
+   if(use_joystick)
+       UpdateJoystickEvents();
 }
 
 //

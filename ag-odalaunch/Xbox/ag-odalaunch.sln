@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ag-odalaunch", "ag-odalaunch.vcproj", "{476A692A-AFB6-4881-9E3E-7DF3BB19B202}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Profile = Profile
+		Profile_FastCap = Profile_FastCap
+		Release = Release
+		Release_LTCG = Release_LTCG
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Debug.ActiveCfg = Debug|Xbox
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Debug.Build.0 = Debug|Xbox
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Profile.ActiveCfg = Profile|Xbox
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Profile.Build.0 = Profile|Xbox
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Profile_FastCap.ActiveCfg = Profile_FastCap|Xbox
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Profile_FastCap.Build.0 = Profile_FastCap|Xbox
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Release.ActiveCfg = Release|Xbox
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Release.Build.0 = Release|Xbox
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Release_LTCG.ActiveCfg = Release_LTCG|Xbox
+		{476A692A-AFB6-4881-9E3E-7DF3BB19B202}.Release_LTCG.Build.0 = Release_LTCG|Xbox
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

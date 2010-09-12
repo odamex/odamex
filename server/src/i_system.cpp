@@ -305,8 +305,8 @@ std::string I_GetHomeDir(std::string user = "")
 			I_FatalError ("Please set your HOME variable");
 	}
 	
-	if(home[home.length() - 1] != '/')
-		home += "/";
+	if(home[home.length() - 1] != PATHSEPCHAR)
+		home += PATHSEP;
 
 	return home;
 }
@@ -317,8 +317,8 @@ std::string I_GetUserFileName (const char *file)
 #ifdef UNIX
 	std::string path = I_GetHomeDir();
 
-	if(path[path.length() - 1] != '/')
-		path += "/";
+	if(path[path.length() - 1] != PATHSEPCHAR)
+		path += PATHSEP;
 
 	path += ".odamex";
 
@@ -339,15 +339,15 @@ std::string I_GetUserFileName (const char *file)
 		}
 	}
 
-	path += "/";
+	path += PATHSEP;
 	path += file;
 #endif
 
 #ifdef WIN32
 	std::string path = I_GetBinaryDir();
 
-	if(path[path.length() - 1] != '/')
-		path += "/";
+	if(path[path.length() - 1] != PATHSEPCHAR)
+		path += PATHSEP;
 	
 	path += file;
 #endif
@@ -366,7 +366,7 @@ void I_ExpandHomeDir (std::string &path)
 		
 	std::string user;
 
-	size_t slash_pos = path.find_first_of('/');
+	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
 	size_t end_pos = path.length();
 	
 	if(slash_pos == std::string::npos)
@@ -413,8 +413,8 @@ std::string I_GetBinaryDir()
 				if(!segment.length())
 					continue;
 
-				if(segment[segment.length() - 1] != '/')
-					segment += "/";
+				if(segment[segment.length() - 1] != PATHSEPCHAR)
+					segment += PATHSEP;
 				segment += Args[0];
 
 				if(realpath(segment.c_str(), realp))
@@ -429,7 +429,7 @@ std::string I_GetBinaryDir()
 
 	FixPathSeparator(ret);
 
-	size_t slash = ret.find_last_of('/');
+	size_t slash = ret.find_last_of(PATHSEPCHAR);
 	if(slash == std::string::npos)
 		return "";
 	else
