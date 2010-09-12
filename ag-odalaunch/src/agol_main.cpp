@@ -147,10 +147,12 @@ AG_Menu *AGOL_MainWindow::CreateMainMenu(void *parent)
 
 	// Advanced menu
 	m = AG_MenuNode(menu->root, "Advanced", NULL);
+	AG_MenuDisable(m);
 	AG_MenuAction(m, "Manual Connect", NULL, EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnManualConnect));
 	AG_MenuAction(m, "Custom Servers", NULL, EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCustomServer));
+	AG_MenuEnable(m);
 	
 	// Help menu
 	m = AG_MenuNode(menu->root, "Help", NULL);
