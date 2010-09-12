@@ -237,7 +237,11 @@ menu_t OptionMenu = {
  *=======================================*/
  
 static menuitem_t ControlsItems[] = {
+#ifdef _XBOX
+	{ whitetext,"A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+#else
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+#endif
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
@@ -661,8 +665,13 @@ EXTERN_CVAR (vid_fullscreen)
 
 static value_t Depths[22];
 
+#ifdef _XBOX
+static char VMEnterText[] = "Press A to set mode";
+static char VMTestText[] = "Press X to test mode for 5 seconds";
+#else
 static char VMEnterText[] = "Press ENTER to set mode";
 static char VMTestText[] = "Press T to test mode for 5 seconds";
+#endif
 
 static menuitem_t ModesItems[] = {
 	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
@@ -1522,6 +1531,9 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 
+#ifdef _XBOX
+		case KEY_JOY9: // Start button
+#endif
 		case KEY_BACKSPACE:
 			if (item->type == control)
 			{
@@ -1605,7 +1617,11 @@ void M_OptResponder (event_t *ev)
 			break;
 
 		default:
+#ifdef _XBOX
+			if (ev->data2 == 't' || ev->data2 == KEY_JOY3)
+#else
 			if (ev->data2 == 't')
+#endif
 			{
 				// Test selected resolution
 				if (CurrentMenu == &ModesMenu)

@@ -59,6 +59,21 @@ char DefBindings[] =
 	"bind downarrow +back; "
 	"bind , +moveleft; "
 	"bind . +moveright; "
+#ifdef _XBOX // Alternative defaults for Xbox
+	"bind hat1right +right; "
+	"bind hat1left +left; "
+	"bind hat1up +forward; "
+	"bind hat1down +back; "
+	"bind joy1 +use; "
+	"bind joy2 weapnext; "
+	"bind joy3 +strafe; "
+	"bind joy4 weapprev; "
+	"bind joy5 togglemap; "
+	"bind joy6 +showscores; "
+	"bind joy7 +speed; "
+	"bind joy8 +attack; "
+	"bind joy10 toggleconsole; "
+#else
 	"bind mouse1 +attack; "
 	"bind mouse2 +strafe; "
 	"bind mouse3 +forward; "
@@ -67,6 +82,7 @@ char DefBindings[] =
 	"bind joy2 +strafe; "
 	"bind joy3 +speed; "
 	"bind joy4 +use; "
+#endif
 	"bind capslock \"toggle cl_run\"; "	// <- This too
 	"bind f1 menu_help; "
 	"bind f2 menu_save; "

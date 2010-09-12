@@ -115,9 +115,9 @@ CVAR (dynres_state,			"0",	CVAR_ARCHIVE)
 CVAR (dynresval,			"1.0",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 #ifdef GCONSOLE
-CVAR_FUNC_DECL (use_joystick, "1", CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (use_joystick, "1", CVAR_ARCHIVE)
 #else
-CVAR_FUNC_DECL (use_joystick, "0", CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (use_joystick, "0", CVAR_ARCHIVE)
 #endif
 CVAR_FUNC_DECL (joy_active, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_strafeaxis, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -147,7 +147,11 @@ CVAR (sv_maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 CVAR (sv_maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (cl_name,		"Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+#ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
+	CVAR (cl_name,		"Xbox Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+#else
+	CVAR (cl_name,		"Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+#endif
 CVAR (cl_color,		"40 cf 00",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_gender,	"male",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_skin,		"base",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -234,9 +238,16 @@ CVAR (r_showendoom, "1", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
 
 // TODO: document
 CVAR (r_viewsize, "0", CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
-// Default video dimensions and bitdepth
-CVAR (vid_defwidth, "320", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (vid_defheight, "200", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+#ifdef GCONSOLE
+	// Standard SDTV resolution is the default on game consoles
+	CVAR (vid_defwidth, "640", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+	CVAR (vid_defheight, "480", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+#else
+	// Default video dimensions
+	CVAR (vid_defwidth, "320", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+	CVAR (vid_defheight, "200", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+#endif
+// Default bitdepth
 CVAR (vid_defbits, "8", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Force video mode
 CVAR (autoadjust_video_settings, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
@@ -244,9 +255,9 @@ CVAR (autoadjust_video_settings, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 CVAR (vid_fps, "0", CVAR_CLIENTINFO)
 // Fullscreen mode
 #ifdef GCONSOLE
-CVAR (vid_fullscreen, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR (vid_fullscreen, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 #else
-CVAR (vid_fullscreen, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR (vid_fullscreen, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 #endif
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
