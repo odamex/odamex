@@ -900,7 +900,7 @@ void R_ProjectSprite (AActor *thing)
 
 	sector_t*			heightsec;			// killough 3/27/98
 
-	if (thing->translucency == 0)
+	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0)
 		return;
 
         // GhostlyDeath -- Don't draw yourself if you are spectating
