@@ -77,11 +77,17 @@ int main(int argc, char *argv[])
 		}
 	}
 
+#ifdef _XBOX
+	// For now just use a resolution that is compensates for overscan on most televisions
+	width = 600;
+	height = 450;
+#else
 	// Get the dimensions for initialization
 	if(GuiConfig::Read("MainWindow-Width", width) || width <= 0)
 		width = 640;
 	if(GuiConfig::Read("MainWindow-Height", height) || height <= 0)
 		height = 480;
+#endif
 
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
 
