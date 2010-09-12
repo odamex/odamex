@@ -900,7 +900,21 @@ std::vector<size_t> D_DoomWadReboot(
 
 	// Close all open WAD files
 	W_Close();
-
+	
+	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
+    // I have never used memset, I hope I am not invoking satan by doing this :(
+	if (wadlevelinfos)
+    {
+        memset(wadlevelinfos,0,sizeof(wadlevelinfos));        
+        numwadlevelinfos = 0;
+    }
+    
+    if (wadclusterinfos)
+    {
+        memset(wadclusterinfos,0,sizeof(wadclusterinfos));
+        numwadclusterinfos = 0;	        
+    }
+	
 	// Restart the memory manager
 	Z_Init();
 	

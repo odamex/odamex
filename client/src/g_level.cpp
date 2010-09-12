@@ -84,10 +84,10 @@ extern BOOL sendpause, sendsave, sendcenterview;
 
 level_locals_t level;			// info about current level
 
-static level_pwad_info_t *wadlevelinfos;
-static cluster_info_t *wadclusterinfos;
-static size_t numwadlevelinfos = 0;
-static size_t numwadclusterinfos = 0;
+level_pwad_info_t *wadlevelinfos;
+cluster_info_t *wadclusterinfos;
+size_t numwadlevelinfos = 0;
+size_t numwadclusterinfos = 0;
 
 BOOL HexenHack;
 
@@ -480,7 +480,7 @@ static void zapDefereds (acsdefered_t *def)
 
 void P_RemoveDefereds (void)
 {
-	int i;
+	unsigned int i;
 
 	// Remove any existing defereds
 	for (i = 0; i < numwadlevelinfos; i++)
@@ -1425,7 +1425,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 {
 	if (arc.IsStoring ())
 	{
-		int i;
+		unsigned int i;
 
 		for (i = 0; i < numwadlevelinfos; i++)
 			if (wadlevelinfos[i].defered)
