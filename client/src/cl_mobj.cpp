@@ -345,7 +345,10 @@ void AActor::RunThink ()
 
 	if(predicting)
 		return;
-
+		
+	if (flags2 & MF2_DORMANT)
+		return;
+		
     // cycle through states,
     // calling action functions at transitions
 	if (tics != -1)
