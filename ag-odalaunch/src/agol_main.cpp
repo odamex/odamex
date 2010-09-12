@@ -238,10 +238,8 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
   	AG_TableSetRowDblClickFn(list, EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnLaunch));
 
-	AG_TableSetRowClickFn(list, EventReceiver, "%p",
-			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnServerListClick));
-
-	AG_WidgetSetFocusable(list, 0);
+	AG_SetEvent(list, "row-selected", EventReceiver, "%p", 
+			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnServerListRowSelected));
 
 	col = AG_TableAddCol(list, "Server Name", "200px", NULL);
 	col = AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
@@ -1024,7 +1022,7 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 	AG_TableEnd(ServerList);
 }
 
-void AGOL_MainWindow::OnServerListClick(AG_Event *event)
+void AGOL_MainWindow::OnServerListRowSelected(AG_Event *event)
 {
 	int row = AG_INT(2);
 	int ndx = GetServerArrayIndexFromListRow(row);
