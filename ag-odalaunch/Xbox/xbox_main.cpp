@@ -24,6 +24,9 @@
 //-----------------------------------------------------------------------------
 
 #include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <fstream>
 #include <xtl.h>
 #include <xstring>
 
@@ -104,6 +107,10 @@ static AG_Timeout    JoyUpdateTimeout;
 static bool          BPressed[JOY_BTTN_TOTAL];
 static uint8_t       HPressed = 0;
 
+static ofstream  XBLogFile;
+static AG_Mutex  XBLogMutex;
+static bool      DebugConsole = false;
+
 //
 // inet_ntoa
 //
@@ -169,6 +176,58 @@ struct hostent *gethostbyname(const char *name)
 	WSACloseEvent(hEvent);
 
 	return he;
+}
+
+//
+// xbox_InitLogFile
+//
+int xbox_InitLogFile()
+{
+	AG_MutexInit(&XBLogMutex);
+
+	AG_MutexLock(&XBLogMutex);
+
+	XBLogFile.open("T:\\ag-odalaunch.log");
+	if(XBLogFile.fail())
+	{
+		AG_MutexUnlock(&XBLogMutex);
+		return -1;
+	}
+
+	AG_MutexUnlock(&XBLogMutex);
+
+	return 0;
+}
+
+//
+// xbox_CloseLogFile
+//
+void xbox_CloseLogFile()
+{
+	AG_MutexLock(&XBLogMutex);
+
+	XBLogFile.close();
+
+	AG_MutexUnlock(&XBLogMutex);
+}
+
+
+//
+// xbox_OutputDebugString
+//
+void xbox_OutputDebugString(const char *str)
+{
+	if(!str)
+		return;
+
+	AG_MutexLock(&XBLogMutex);
+
+	if(DebugConsole)
+		OutputDebugString(str);
+
+	XBLogFile << str;
+
+	AG_MutexUnlock(&XBLogMutex);
 }
 
 //
@@ -528,6 +587,8 @@ void __cdecl main()
 	{
 		if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE)
 		{
+			DebugConsole = true;
+
 			xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, " ");
 
 			while(xargv[xargc] != NULL)
@@ -538,15 +599,26 @@ void __cdecl main()
 		}
 	}
 
+	// Mount the partitions
 	xbox_MountPartitions();
 
+	// Initialize the log file
+	xbox_InitLogFile();
+
+	// Initialize the network
 	xbox_InitNet();
 
 	agol_main(xargc, xargv); // Normal entry point
 
+	// Shutdown the network
 	xbox_CloseNetwork();
 
+	// Close the log file
+	xbox_CloseLogFile();
+
+	// Unmount the partitions
 	xbox_UnMountPartitions();
 
+	// Return to the dashboard
 	XLaunchNewImage(NULL, NULL);
 }
