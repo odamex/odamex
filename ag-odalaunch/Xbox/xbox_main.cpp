@@ -157,7 +157,7 @@ struct hostent *gethostbyname(const char *name)
 
 	WaitForSingleObject( (HANDLE)hEvent, INFINITE);
 
-	if(pDns && pDns->iStatus == 0)
+	if(pDns && pDns->iStatus == 0 || isdigit(name[0]))
 	{
 		he = (struct hostent *)malloc(sizeof(struct hostent));
 		if(!he)
@@ -169,7 +169,10 @@ struct hostent *gethostbyname(const char *name)
 		he->h_addr_list = (char **)malloc(sizeof(char*));
 		he->h_addr_list[0] = (char *)malloc(sizeof(struct in_addr));
 
-		memcpy(he->h_addr_list[0], pDns->aina, sizeof(struct in_addr));
+		if(pDns && pDns->iStatus == 0)
+			memcpy(he->h_addr_list[0], pDns->aina, sizeof(struct in_addr));
+		else // Some Xbox's will not handle an IP address being passed to XNetDnsLookup()
+			*(int *)he->h_addr_list[0] = inet_addr(name);
 	}
 
 	XNetDnsRelease(pDns);
