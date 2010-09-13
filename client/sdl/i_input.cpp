@@ -586,6 +586,12 @@ void I_GetEvent (void)
             else
                event.data2 = event.data3 = 0;
 
+#ifdef _XBOX
+			// Fix for ENTER key on Xbox
+            if(event.data1 == SDLK_RETURN)
+               event.data2 = event.data3 = '\r';
+#endif
+
 #ifdef WIN32
             //HeX9109: Alt+F4 for cheats! Thanks Spleen
             if(event.data1 == SDLK_F4 && SDL_GetModState() & (KMOD_LALT | KMOD_RALT))
