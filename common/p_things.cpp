@@ -244,7 +244,7 @@ BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
 	return rtn != 0;
 }
 
-BOOL P_CheckMissileSpawn (AActor *th);
+bool P_CheckMissileSpawn (AActor *th);
 
 BOOL P_Thing_Projectile (int tid, int type, angle_t angle,
 						 fixed_t speed, fixed_t vspeed, BOOL gravity)
