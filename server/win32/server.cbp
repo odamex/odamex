@@ -337,6 +337,7 @@
 		<Unit filename="..\..\common\p_enemy.cpp" />
 		<Unit filename="..\..\common\p_floor.cpp" />
 		<Unit filename="..\..\common\p_inter.h" />
+		<Unit filename="..\..\common\p_interaction.cpp" />
 		<Unit filename="..\..\common\p_lights.cpp" />
 		<Unit filename="..\..\common\p_lnspec.cpp" />
 		<Unit filename="..\..\common\p_lnspec.h" />
@@ -405,7 +406,6 @@
 		<Unit filename="..\src\i_system.cpp" />
 		<Unit filename="..\src\i_system.h" />
 		<Unit filename="..\src\m_misc.cpp" />
-		<Unit filename="..\src\p_interaction.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_main.cpp" />
 		<Unit filename="..\src\r_plane.cpp" />
