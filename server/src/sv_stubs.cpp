@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netinfo.cpp 1788 2010-08-24 04:42:57Z russellrice $
+// $Id: sv_stubs.cpp $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
@@ -23,6 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include "c_cvars.h"
+#include "d_player.h"
 #include "doomdef.h"
 
 void D_SetupUserInfo (void) {}
@@ -34,5 +35,7 @@ void D_ReadUserInfoStrings (int i, byte **stream, bool update) {}
 void PickupMessage(AActor *toucher, const char *message) {}
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon) {}
 
-VERSION_CONTROL (d_netinfo_cpp, "$Id: d_netinfo.cpp 1788 2010-08-24 04:42:57Z russellrice $")
+void AM_Stop(void) {}
+
+VERSION_CONTROL (sv_stubs_cpp, "$Id: sv_stubs.cpp $")
 

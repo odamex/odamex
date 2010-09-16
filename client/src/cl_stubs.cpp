@@ -46,6 +46,7 @@ void SV_SendDamagePlayer(player_t *player, int pain) {}
 void SV_SendDamageMobj(AActor *target, int pain) {}
 void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who) {}
 void SV_UpdateFrags(player_t &player) {}
+void SV_ActorTarget(AActor *actor) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id: cl_stubs.cpp $")
 

@@ -677,6 +677,11 @@ void AM_Stop (void)
 {
 	static event_t st_notify = { ev_keyup, AM_MSGEXITED, 0, 0 };
 
+    if (!automapactive)
+    {
+        return;
+    }
+
 	AM_unloadPics ();
 	automapactive = false;
 	ST_Responder (&st_notify);
