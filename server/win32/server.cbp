@@ -332,6 +332,7 @@
 		<Unit filename="..\..\common\p_acs.cpp" />
 		<Unit filename="..\..\common\p_acs.h" />
 		<Unit filename="..\..\common\p_ceiling.cpp" />
+		<Unit filename="..\..\common\p_ctf.h" />
 		<Unit filename="..\..\common\p_doors.cpp" />
 		<Unit filename="..\..\common\p_enemy.cpp" />
 		<Unit filename="..\..\common\p_floor.cpp" />
@@ -412,7 +413,6 @@
 		<Unit filename="..\src\r_things.cpp" />
 		<Unit filename="..\src\s_sound.cpp" />
 		<Unit filename="..\src\sv_ctf.cpp" />
-		<Unit filename="..\src\sv_ctf.h" />
 		<Unit filename="..\src\sv_cvarlist.cpp" />
 		<Unit filename="..\src\sv_main.cpp" />
 		<Unit filename="..\src\sv_main.h" />

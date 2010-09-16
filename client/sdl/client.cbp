@@ -338,7 +338,6 @@
 		<Unit filename="..\src\c_bind.h" />
 		<Unit filename="..\src\c_console.cpp" />
 		<Unit filename="..\src\cl_ctf.cpp" />
-		<Unit filename="..\src\cl_ctf.h" />
 		<Unit filename="..\src\cl_cvarlist.cpp" />
 		<Unit filename="..\src\cl_main.cpp" />
 		<Unit filename="..\src\cl_main.h" />
@@ -361,7 +360,6 @@
 		<Unit filename="..\src\m_misc.cpp" />
 		<Unit filename="..\src\m_options.cpp" />
 		<Unit filename="..\src\p_interaction.cpp" />
-		<Unit filename="..\src\p_interaction.h" />
 		<Unit filename="..\src\r_bsp.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_drawt.cpp" />
@@ -458,6 +456,7 @@
 		<Unit filename="..\..\common\p_acs.cpp" />
 		<Unit filename="..\..\common\p_acs.h" />
 		<Unit filename="..\..\common\p_ceiling.cpp" />
+		<Unit filename="..\..\common\p_ctf.h" />
 		<Unit filename="..\..\common\p_doors.cpp" />
 		<Unit filename="..\..\common\p_enemy.cpp" />
 		<Unit filename="..\..\common\p_floor.cpp" />
