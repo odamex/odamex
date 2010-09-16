@@ -85,7 +85,7 @@
 #include "v_text.h"
 #include "gi.h"
 #include "stats.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 #include "cl_main.h"
 
 extern size_t got_heapsize;

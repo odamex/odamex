@@ -39,7 +39,7 @@
 #include "cl_main.h"
 #include "c_console.h"
 #include "d_main.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 #include "m_random.h"
 #include "w_wad.h"
 #include "md5.h"

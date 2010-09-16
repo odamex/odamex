@@ -49,7 +49,7 @@
 #include "cl_main.h"
 #include "gi.h"
 
-#include "cl_ctf.h"
+#include "p_ctf.h"
 
 /* Reimplement old way of doing red/gold colors, from Chocolate Doom - ML */
 

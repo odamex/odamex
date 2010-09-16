@@ -17,48 +17,45 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Handling interactions (i.e., collisions).
+//  Handling interactions (i.e., collisions).
 //
 //-----------------------------------------------------------------------------
-
 
 // Data.
 #include "doomdef.h"
 #include "dstrings.h"
-
 #include "doomstat.h"
-
 #include "m_random.h"
 #include "i_system.h"
-
 #include "c_console.h"
 #include "c_dispatch.h"
-
 #include "p_local.h"
-
 #include "s_sound.h"
-
 #include "p_inter.h"
 #include "p_lnspec.h"
-
+#include "p_ctf.h"
 #include "sv_main.h"
 
-#include "sv_ctf.h"
+#define BONUSADD 6
 
-#define BONUSADD		6
+extern bool predicting;
+extern bool singleplayerjustdied;
 
+
+EXTERN_CVAR(sv_doubleammo)
+EXTERN_CVAR(sv_weaponstay)
+EXTERN_CVAR(sv_fraglimit)
+EXTERN_CVAR(sv_fragexitswitch) // [ML] 04/4/06: Added compromise for older exit method
 EXTERN_CVAR (sv_friendlyfire)
 EXTERN_CVAR (sv_allowexit)
-EXTERN_CVAR (sv_fragexitswitch)              // [ML] 04/4/06: Added comprimise for older exit method
-EXTERN_CVAR (sv_doubleammo)
 
 int shotclock = 0;
+int MeansOfDeath;
 
 // a weapon is found with two clip loads,
 // a big item has five clip loads
-int 	maxammo[NUMAMMO] = {200, 50, 300, 50};
-int 	clipammo[NUMAMMO] = {10, 4, 20, 1};
-
+int maxammo[NUMAMMO] = {200, 50, 300, 50};
+int clipammo[NUMAMMO] = {10, 4, 20, 1};
 
 
 //
@@ -156,7 +153,6 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 
 	return true;
 }
-EXTERN_CVAR (sv_weaponstay)
 
 //
 // P_GiveWeapon
@@ -316,8 +312,6 @@ BOOL P_GivePower (player_t *player, int /*powertype_t*/ power)
 	player->powers[power] = 1;
 	return true;
 }
-
-
 
 //
 // P_TouchSpecialThing
@@ -1008,43 +1002,12 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
 }
 
-extern BOOL singleplayerjustdied;
-
 //
-// KillMobj
+// P_KillMobj
 //
-EXTERN_CVAR (sv_fraglimit)
-
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill)
 {
-	for (size_t i = 0; i < players.size(); i++)
-	{
-		client_t *cl = &clients[i];
-
-		if(!SV_IsPlayerAllowedToSee(players[i], target))
-			continue;
-
-		// send death location first
-		MSG_WriteMarker (&cl->netbuf, svc_movemobj);
-		MSG_WriteShort (&cl->netbuf, target->netid);
-		MSG_WriteByte (&cl->netbuf, target->rndindex);
-		MSG_WriteLong (&cl->netbuf, target->x);
-		MSG_WriteLong (&cl->netbuf, target->y);
-		MSG_WriteLong (&cl->netbuf, target->z);
-		MSG_WriteMarker (&cl->reliablebuf, svc_killmobj);
-
-		if (source)
-			MSG_WriteShort (&cl->reliablebuf, source->netid);
-		else
-			MSG_WriteShort (&cl->reliablebuf, 0);
-
-		MSG_WriteShort (&cl->reliablebuf, target->netid);
-		MSG_WriteShort (&cl->reliablebuf, inflictor ? inflictor->netid : 0);
-		MSG_WriteShort (&cl->reliablebuf, target->health);
-		MSG_WriteLong (&cl->reliablebuf, MeansOfDeath);
-		MSG_WriteByte (&cl->reliablebuf, joinkill);
-	}
-
+	SV_SendKillMobj(source, target, inflictor, joinkill);
 	AActor *mo;
 
 	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
@@ -1077,14 +1040,16 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		{
 			if (!joinkill && !shotclock)
 			{
-				if (target->player == source->player)	// [RH] Cumulative frag count
+				if (target->player == source->player) // [RH] Cumulative frag count
 				{
 					splayer->fragcount--;
 					// [Toke] Minus a team frag for suicide
 					if (sv_gametype == GM_TEAMDM)
+					{
 						TEAMpoints[splayer->userinfo.team]--;
+					}
 				}
-				// [Toke] Minus a team frag for killing team mate
+				// [Toke] Minus a team frag for killing teammate
 				else if ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && (splayer->userinfo.team == tplayer->userinfo.team)) // [Toke - Teamplay || deathz0r - updated]
 				{
 					splayer->fragcount--;
@@ -1124,7 +1089,9 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 
 	// [Toke - CTF]
 	if (sv_gametype == GM_CTF && target->player)
+	{
 		CTF_CheckFlags ( *target->player );
+	}
 
 	if (target->player)
 	{
@@ -1151,7 +1118,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		P_DropWeapon (tplayer);
 	}
 
-	if(target->health > 0) // denis - when this function is used standalone
+	if (target->health > 0) // denis - when this function is used standalone
 		target->health = 0;
 
 		if (target->health < -target->info->spawnhealth
@@ -1226,17 +1193,14 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 	if (!item)
 		return; //Happens if bot or player killed when using fists.
 
-	if(serverside)
+	// denis - dropped things will spawn serverside
+	if (serverside)
 	{
 		mo = new AActor (target->x, target->y, ONFLOORZ, item);
 		mo->flags |= MF_DROPPED;	// special versions of items
-
 		SV_SpawnMobj(mo);
 	}
 }
-
-
-
 
 //
 // P_DamageMobj
@@ -1249,8 +1213,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 // Source can be NULL for slime, barrel explosions
 // and other environmental stuff.
 //
-int MeansOfDeath;
-
+// [Toke] This is no longer needed client-side
 void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
 	unsigned	ang;
@@ -1363,15 +1326,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		if (player->damagecount > 100)
 			player->damagecount = 100;	// teleport stomp does 10k points...
 
-        for (size_t i=0; i < players.size(); i++)
-		{
-            client_t *cl = &clients[i];
-
-			MSG_WriteMarker (&cl->reliablebuf, svc_damageplayer);
-			MSG_WriteByte (&cl->reliablebuf, player->id);
-            MSG_WriteByte (&cl->reliablebuf, player->armorpoints);
-            MSG_WriteShort (&cl->reliablebuf, target->health - damage);
-        }
+		SV_SendDamagePlayer(player, target->health - damage);
 	}
 
 	// do the damage
@@ -1392,15 +1347,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 
 		if(!player)
 		{
-			for (size_t i = 0; i < players.size(); i++)
-			{
-				client_t *cl = &clients[i];
-
-				MSG_WriteMarker (&cl->reliablebuf, svc_damagemobj);
-				MSG_WriteShort (&cl->reliablebuf, target->netid);
-				MSG_WriteShort (&cl->reliablebuf, target->health);
-				MSG_WriteByte (&cl->reliablebuf, pain);
-			}
+			SV_SendDamageMobj(target, pain);
 		}
 
 		if ( pain < target->info->painchance
@@ -1424,7 +1371,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 			// sleeping early; 2/21/98: Place priority on players
 
 			if (!target->lastenemy || !target->lastenemy->player ||
-				 target->lastenemy->health <= 0)
+				target->lastenemy->health <= 0)
 				target->lastenemy = target->target; // remember last enemy - killough
 
 			target->target = source->ptr();
@@ -1437,8 +1384,6 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		}
 	}
 }
-
-BOOL CheckCheatmode (void);
 
 VERSION_CONTROL (p_interaction_cpp, "$Id$")
 

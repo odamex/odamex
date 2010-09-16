@@ -24,7 +24,7 @@
 
 #include "sv_main.h"
 #include "m_random.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 #include "s_sound.h"
 #include "i_system.h"
 
@@ -33,7 +33,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 extern int shotclock;
 
 EXTERN_CVAR (sv_teamsinplay)
-
+EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (ctf_manualreturn)
 EXTERN_CVAR (ctf_flagathometoscore)
 EXTERN_CVAR (ctf_flagtimeout)

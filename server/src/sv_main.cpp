@@ -52,7 +52,7 @@
 #include "m_argv.h"
 #include "m_random.h"
 #include "vectors.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 #include "w_wad.h"
 #include "md5.h"
 
@@ -2083,7 +2083,7 @@ void SV_ConnectClient (void)
 	SV_MidPrint((char *)sv_motd.cstring(),(player_t *) &players[n], 6);
 }
 
-extern BOOL singleplayerjustdied;
+extern bool singleplayerjustdied;
 
 //
 // SV_DisconnectClient
@@ -4016,6 +4016,63 @@ void MSG_WriteMarker (buf_t *b, svc_t c)
 	b->WriteByte((byte)c);
 }
 
+void SV_SendDamagePlayer(player_t *player, int damage)
+{
+	for (size_t i=0; i < players.size(); i++)
+	{
+		client_t *cl = &clients[i];
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_damageplayer);
+		MSG_WriteByte(&cl->reliablebuf, player->id);
+		MSG_WriteByte(&cl->reliablebuf, player->armorpoints);
+		MSG_WriteShort(&cl->reliablebuf, damage);
+	}
+}
+
+void SV_SendDamageMobj(AActor *target, int pain)
+{
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		client_t *cl = &clients[i];
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_damagemobj);
+		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteShort(&cl->reliablebuf, target->health);
+		MSG_WriteByte(&cl->reliablebuf, pain);
+	}
+}
+
+void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
+				     bool joinkill)
+{
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		client_t *cl = &clients[i];
+
+		if(!SV_IsPlayerAllowedToSee(players[i], target))
+			continue;
+
+		// send death location first
+		MSG_WriteMarker(&cl->netbuf, svc_movemobj);
+		MSG_WriteShort(&cl->netbuf, target->netid);
+		MSG_WriteByte(&cl->netbuf, target->rndindex);
+		MSG_WriteLong(&cl->netbuf, target->x);
+		MSG_WriteLong(&cl->netbuf, target->y);
+		MSG_WriteLong(&cl->netbuf, target->z);
+		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
+
+		if (source)
+			MSG_WriteShort(&cl->reliablebuf, source->netid);
+		else
+			MSG_WriteShort(&cl->reliablebuf, 0);
+
+		MSG_WriteShort (&cl->reliablebuf, target->netid);
+		MSG_WriteShort (&cl->reliablebuf, inflictor ? inflictor->netid : 0);
+		MSG_WriteShort (&cl->reliablebuf, target->health);
+		MSG_WriteLong (&cl->reliablebuf, MeansOfDeath);
+		MSG_WriteByte (&cl->reliablebuf, joinkill);
+	}
+}
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")
 

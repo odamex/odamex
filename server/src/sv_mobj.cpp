@@ -36,7 +36,7 @@
 #include "vectors.h"
 #include "p_mobj.h"
 #include "sv_main.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 #include "g_game.h"
 
 extern mapthing2_t      itemrespawnque[ITEMQUESIZE];

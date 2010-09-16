@@ -23,12 +23,16 @@
 //-----------------------------------------------------------------------------
 
 #include "c_cvars.h"
+#include "doomdef.h"
 
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {} 
 void D_DoServerInfoChange (byte **stream) {} 
 void D_WriteUserInfoStrings (int i, byte **stream, bool compact) {} 
 void D_ReadUserInfoStrings (int i, byte **stream, bool update) {}
+
+void PickupMessage(AActor *toucher, const char *message) {}
+void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon) {}
 
 VERSION_CONTROL (d_netinfo_cpp, "$Id: d_netinfo.cpp 1788 2010-08-24 04:42:57Z russellrice $")
 

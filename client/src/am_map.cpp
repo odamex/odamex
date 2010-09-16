@@ -37,7 +37,7 @@
 #include "m_cheat.h"
 #include "i_system.h"
 #include "c_dispatch.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 
 // Needs access to LFB.
 #include "v_video.h"

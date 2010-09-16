@@ -23,6 +23,11 @@
 
 #include "actor.h"
 #include "c_cvars.h"
+#include "p_ctf.h"
+#include "doomdef.h"
+#include "d_player.h"
+
+void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
 
 void D_SetupUserInfo(void) {}
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
@@ -30,7 +35,17 @@ void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
 void D_ReadUserInfoStrings(int i, byte **stream, bool update) {}
 
-void SV_SpawnMobj(AActor *mobj) {}
+void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker) {}
 
-VERSION_CONTROL(d_netinfo_cpp, "$Id: cl_stubs.cpp 1788 2010-08-24 04:42:57Z russellrice $")
+void SV_SpawnMobj(AActor *mobj) {}
+void SV_TouchSpecial(AActor *special, player_t *player) {}
+bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab) { return false; }
+void SV_SocketTouch (player_t &player, flag_t f) {}
+void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill) {}
+void SV_SendDamagePlayer(player_t *player, int pain) {}
+void SV_SendDamageMobj(AActor *target, int pain) {}
+void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who) {}
+void SV_UpdateFrags(player_t &player) {}
+
+VERSION_CONTROL (cl_stubs_cpp, "$Id: cl_stubs.cpp $")
 

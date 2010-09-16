@@ -38,7 +38,7 @@
 #include "v_text.h"
 #include "v_video.h"
 #include "cl_main.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 #include "i_video.h"
 #include "i_input.h"
 

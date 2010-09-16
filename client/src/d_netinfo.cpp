@@ -41,7 +41,7 @@
 #include "st_stuff.h"
 #include "cl_main.h"
 
-#include "cl_ctf.h"
+#include "p_ctf.h"
 
 
 EXTERN_CVAR (cl_autoaim)

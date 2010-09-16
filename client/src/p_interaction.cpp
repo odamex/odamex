@@ -17,38 +17,57 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Handling interactions (i.e., collisions).
+//  Handling interactions (i.e., collisions).
 //
 //-----------------------------------------------------------------------------
 
 // Data.
 #include "doomdef.h"
 #include "dstrings.h"
-
 #include "doomstat.h"
-
 #include "m_random.h"
 #include "i_system.h"
-
-#include "am_map.h"
-
 #include "c_console.h"
 #include "c_dispatch.h"
-
 #include "p_local.h"
-
 #include "s_sound.h"
-
 #include "p_inter.h"
 #include "p_lnspec.h"
+#include "p_ctf.h"
+// #include "p_interaction.h"
+#include "am_map.h"
 
-#include "p_interaction.h"
-
-#include "cl_ctf.h"
+#define BONUSADD 6
 
 extern bool predicting;
+extern bool singleplayerjustdied;
 
-EXTERN_CVAR (sv_doubleammo)
+EXTERN_CVAR(sv_doubleammo)
+EXTERN_CVAR(sv_weaponstay)
+EXTERN_CVAR(sv_fraglimit)
+EXTERN_CVAR(sv_fragexitswitch) // [ML] 04/4/06: Added compromise for older exit method
+EXTERN_CVAR (sv_friendlyfire)
+EXTERN_CVAR (sv_allowexit)
+
+int shotclock = 0;
+int MeansOfDeath;
+
+// a weapon is found with two clip loads,
+// a big item has five clip loads
+int maxammo[NUMAMMO] = {200, 50, 300, 50};
+int clipammo[NUMAMMO] = {10, 4, 20, 1};
+
+void SV_SpawnMobj(AActor *mobj);
+void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...);
+void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker);
+void SV_UpdateFrags(player_t &player);
+void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who);
+void SV_TouchSpecial(AActor *special, player_t *player);
+bool SV_FlagTouch (player_t &player, flag_t f, bool firstgrab);
+void SV_SocketTouch (player_t &player, flag_t f);
+void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
+void SV_SendDamagePlayer(player_t *player, int pain);
+void SV_SendDamageMobj(AActor *target, int pain);
 
 static void PickupMessage (AActor *toucher, const char *message)
 {
@@ -218,8 +237,6 @@ BOOL P_GiveAmmo (player_t *player, ammotype_t ammo, int num)
 	return true;
 }
 
-EXTERN_CVAR (sv_weaponstay)
-
 //
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
@@ -234,8 +251,10 @@ BOOL P_GiveWeapon (player_t *player, weapontype_t weapon, BOOL dropped)
 	if ((state->frame & FF_FRAMEMASK) >= sprites[state->sprite].numframes)
 		return false;
 
+	// [Toke - dmflags] old location of DF_WEAPONS_STAY
 	if (multiplayer && sv_weaponstay && !dropped)
 	{
+		// leave placed weapons forever on net games
 		if (player->weaponowned[weapon])
 			return false;
 
@@ -385,13 +404,17 @@ BOOL P_GivePower (player_t *player, int /*powertype_t*/ power)
 void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 {
 	player_t*	player;
-	int 		i;
-	int 		sound;
+	size_t		i;
+	int			sound;
+	bool		firstgrab = false;
+
+	if (!toucher || !special) // [Toke - fix99]
+		return;
 
     if (clientside && network_game && !FromServer)
         return;
 
-    if(predicting)
+    if (predicting)
         return;
 
     // Dead thing touching.
@@ -407,13 +430,17 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 
     // Out of reach
     // ...but leave this to the server to handle if the client is connected
-	if ((delta > toucher->height || delta < -8*FRACUNIT) && !(clientside && network_game))
+	if ((delta > toucher->height || delta < -8*FRACUNIT) &&
+	    !(clientside && network_game))
+	{
 		return;
+	}
 
 	sound = 0;
+
 	player = toucher->player;
 
-	if(!player)
+	if (!player)
 		return;
 
 	// Identify by sprite.
@@ -423,12 +450,14 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 	  case SPR_ARM1:
 		if (!P_GiveArmor (player, deh.GreenAC))
 			return;
+        SV_TouchSpecial(special, player);
 		PickupMessage (toucher, GOTARMOR);
 		break;
 
 	  case SPR_ARM2:
 		if (!P_GiveArmor (player, deh.BlueAC))
 			return;
+        SV_TouchSpecial(special, player);
 		PickupMessage (toucher, GOTMEGA);
 		break;
 
@@ -438,6 +467,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		if (player->health > deh.MaxSoulsphere)
 			player->health = deh.MaxSoulsphere;
 		player->mo->health = player->health;
+        SV_TouchSpecial(special, player);
 		PickupMessage (toucher, GOTHTHBONUS);
 		break;
 
@@ -447,6 +477,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 			player->armorpoints = deh.MaxArmor;
 		if (!player->armortype)
 			player->armortype = deh.GreenAC;
+        SV_TouchSpecial(special, player);
 		PickupMessage (toucher, GOTARMBONUS);
 		break;
 
@@ -457,6 +488,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		player->mo->health = player->health;
 		PickupMessage (toucher, GOTSUPER);
 		sound = 1;
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_MEGA:
@@ -465,6 +497,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		P_GiveArmor (player,deh.BlueAC);
 		PickupMessage (toucher, GOTMSPHERE);
 		sound = 1;
+        SV_TouchSpecial(special, player);
 		break;
 
 		// cards
@@ -476,6 +509,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		sound = 3;
 		if (!multiplayer)
 			break;
+        SV_TouchSpecial(special, player);
 		return;
 
 	  case SPR_YKEY:
@@ -485,6 +519,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		sound = 3;
 		if (!multiplayer)
 			break;
+        SV_TouchSpecial(special, player);
 		return;
 
 	  case SPR_RKEY:
@@ -494,6 +529,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		sound = 3;
 		if (!multiplayer)
 			break;
+        SV_TouchSpecial(special, player);
 		return;
 
 	  case SPR_BSKU:
@@ -503,6 +539,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		sound = 3;
 		if (!multiplayer)
 			break;
+        SV_TouchSpecial(special, player);
 		return;
 
 	  case SPR_YSKU:
@@ -512,6 +549,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		sound = 3;
 		if (!multiplayer)
 			break;
+        SV_TouchSpecial(special, player);
 		return;
 
 	  case SPR_RSKU:
@@ -521,6 +559,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		sound = 3;
 		if (!multiplayer)
 			break;
+        SV_TouchSpecial(special, player);
 		return;
 
 		// medikits, heals
@@ -538,6 +577,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 
 		if (!P_GiveBody (player, 25))
 			return;
+        SV_TouchSpecial(special, player);
 		break;
 
 
@@ -547,6 +587,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 			return;
 		PickupMessage (toucher, GOTINVUL);
 		sound = 1;
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_PSTR:
@@ -556,6 +597,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		if (player->readyweapon != wp_fist)
 			player->pendingweapon = wp_fist;
 		sound = 1;
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_PINS:
@@ -563,6 +605,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 			return;
 		PickupMessage (toucher, GOTINVIS);
 		sound = 1;
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_SUIT:
@@ -570,6 +613,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 			return;
 		PickupMessage (toucher, GOTSUIT);
 		sound = 1;
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_PMAP:
@@ -577,6 +621,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 			return;
 		PickupMessage (toucher, GOTMAP);
 		sound = 1;
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_PVIS:
@@ -584,6 +629,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 			return;
 		PickupMessage (toucher, GOTVISOR);
 		sound = 1;
+        SV_TouchSpecial(special, player);
 		break;
 
 		// ammo
@@ -599,48 +645,56 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 				return;
 		}
 		PickupMessage (toucher, GOTCLIP);
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_AMMO:
 		if (!P_GiveAmmo (player, am_clip,5))
 			return;
 		PickupMessage (toucher, GOTCLIPBOX);
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_ROCK:
 		if (!P_GiveAmmo (player, am_misl,1))
 			return;
 		PickupMessage (toucher, GOTROCKET);
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_BROK:
 		if (!P_GiveAmmo (player, am_misl,5))
 			return;
 		PickupMessage (toucher, GOTROCKBOX);
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_CELL:
 		if (!P_GiveAmmo (player, am_cell,1))
 			return;
 		PickupMessage (toucher, GOTCELL);
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_CELP:
 		if (!P_GiveAmmo (player, am_cell,5))
 			return;
 		PickupMessage (toucher, GOTCELLBOX);
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_SHEL:
 		if (!P_GiveAmmo (player, am_shell,1))
 			return;
 		PickupMessage (toucher, GOTSHELLS);
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_SBOX:
 		if (!P_GiveAmmo (player, am_shell,5))
 			return;
 		PickupMessage (toucher, GOTSHELLBOX);
+        SV_TouchSpecial(special, player);
 		break;
 
 	  case SPR_BPAK:
@@ -653,10 +707,12 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		for (i=0 ; i<NUMAMMO ; i++)
 			P_GiveAmmo (player, (ammotype_t)i, 1);
 		PickupMessage (toucher, GOTBACKPACK);
+        SV_TouchSpecial(special, player);
 		break;
 
 		// weapons
 	  case SPR_BFUG:
+        SV_TouchSpecial(special, player);
 		if (!P_GiveWeapon (player, wp_bfg, special->flags & MF_DROPPED))
 			return;
 		PickupMessage (toucher, GOTBFG9000);
@@ -664,6 +720,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		break;
 
 	  case SPR_MGUN:
+        SV_TouchSpecial(special, player);
 		if (!P_GiveWeapon (player, wp_chaingun, special->flags & MF_DROPPED))
 			return;
 		PickupMessage (toucher, GOTCHAINGUN);
@@ -671,6 +728,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		break;
 
 	  case SPR_CSAW:
+        SV_TouchSpecial(special, player);
 		if (!P_GiveWeapon (player, wp_chainsaw, special->flags & MF_DROPPED))
 			return;
 		PickupMessage (toucher, GOTCHAINSAW);
@@ -678,6 +736,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		break;
 
 	  case SPR_LAUN:
+        SV_TouchSpecial(special, player);
 		if (!P_GiveWeapon (player, wp_missile, special->flags & MF_DROPPED))
 			return;
 		PickupMessage (toucher, GOTLAUNCHER);
@@ -685,6 +744,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		break;
 
 	  case SPR_PLAS:
+        SV_TouchSpecial(special, player);
 		if (!P_GiveWeapon (player, wp_plasma, special->flags & MF_DROPPED))
 			return;
 		PickupMessage (toucher, GOTPLASMA);
@@ -692,6 +752,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		break;
 
 	  case SPR_SHOT:
+        SV_TouchSpecial(special, player);
 		if (!P_GiveWeapon (player, wp_shotgun, special->flags & MF_DROPPED))
 			return;
 		PickupMessage (toucher, GOTSHOTGUN);
@@ -699,6 +760,7 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		break;
 
 	  case SPR_SGN2:
+        SV_TouchSpecial(special, player);
 		if (!P_GiveWeapon (player, wp_supershotgun, special->flags & MF_DROPPED))
 			return;
 		PickupMessage (toucher, GOTSHOTGUN2);
@@ -706,18 +768,38 @@ void P_TouchSpecialThing (AActor *special, AActor *toucher, bool FromServer)
 		break;
 
 	// [Toke - CTF - Core]
+	case SPR_BFLG: // Player touches the blue flag at its base
+		firstgrab = true;
 
-	  case SPR_BFLG: // [Toke - CTF] Blue flag
-	  case SPR_RFLG: // [Toke - CTF] Red flag
-	  case SPR_BDWN:
-	  case SPR_RDWN:
-	  case SPR_BSOK:
-	  case SPR_RSOK:
+	case SPR_BDWN: // Player touches the blue flag after it's been dropped
+		if (!SV_FlagTouch(*player, it_blueflag, firstgrab))
+		{
+			return;
+		}
+		sound = 3;
+		break;
+
+	case SPR_BSOK:
+		SV_SocketTouch(*player, it_blueflag);
 		return;
 
-	  default:
-		//I_Error ("P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
-		Printf (PRINT_HIGH,"P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+	case SPR_RFLG: // Player touches the red flag at its base
+		firstgrab = true;
+
+	case SPR_RDWN: // Player touches the red flag after its been dropped
+		if (!SV_FlagTouch(*player, it_redflag, firstgrab))
+		{
+			return;
+		}
+		sound = 3;
+
+	case SPR_RSOK:
+		SV_SocketTouch(*player, it_redflag);
+		return;
+
+	default:
+		// I_Error ("P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite,special->info->name);
+		Printf(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite, special->info->name);
 		return;
 	}
 
@@ -800,7 +882,10 @@ void SexMessage (const char *from, char *to, int gender)
 //
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill)
 {
+	SV_SendKillMobj(source, target, inflictor, joinkill);
 	AActor *mo;
+	player_t *splayer;
+	player_t *tplayer;
 
 	target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
 
@@ -820,29 +905,133 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 	// [RH] Also set the thing's tid to 0. [why?]
 	target->tid = 0;
 
-	if (serverside && target->flags & MF_COUNTKILL)
-		level.killed_monsters++;
+	if (source)
+	{
+		splayer = source->player;
+	}
+	else
+	{
+		splayer = 0;
+	}
+	tplayer = target->player;
 
-	if (demoplayback && source && source->player && target->player) {
+	if (source && source->player)
+	{
+		// Don't count any frags at level start, because they're just telefrags
+		// resulting from insufficient deathmatch starts, and it wouldn't be
+		// fair to count them toward a player's score.
+		if (target->player && level.time)
+		{
+			if (!joinkill && !shotclock)
+			{
+				if (target->player == source->player) // [RH] Cumulative frag count
+				{
+					splayer->fragcount--;
+					// [Toke] Minus a team frag for suicide
+					if (sv_gametype == GM_TEAMDM)
+					{
+						TEAMpoints[splayer->userinfo.team]--;
+					}
+				}
+				// [Toke] Minus a team frag for killing teammate
+				else if ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+				         (splayer->userinfo.team == tplayer->userinfo.team))
+				{
+					// [Toke - Teamplay || deathz0r - updated]
+					splayer->fragcount--;
+					if (sv_gametype == GM_TEAMDM)
+					{
+						TEAMpoints[splayer->userinfo.team]--;
+					}
+					else if (sv_gametype == GM_CTF)
+					{
+						SV_CTFEvent((flag_t)0, SCORE_BETRAYAL, *splayer);
+					}
+				}
+				else
+				{
+					splayer->fragcount++;
+					// [Toke] Add a team frag
+					if (sv_gametype == GM_TEAMDM)
+					{
+						TEAMpoints[splayer->userinfo.team]++;
+					}
+					else if (sv_gametype == GM_CTF)
+					{
+						if (tplayer->flags[(flag_t)splayer->userinfo.team])
+						{
+							SV_CTFEvent ((flag_t)0, SCORE_CARRIERKILL, *splayer);
+						}
+						else
+						{
+							SV_CTFEvent ((flag_t)0, SCORE_KILL, *splayer);
+						}
+					}
+				}
+			}
+			SV_UpdateFrags(*splayer);
+		}
+		// [deathz0r] Stats for co-op scoreboard
+		if (sv_gametype == GM_COOP && ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
+		{
+			splayer->killcount++;
+			level.killed_monsters++;
+			SV_UpdateFrags(*splayer);
+		}
+	}
+
+	if (demoplayback && source && source->player && target->player)
+	{
 		if (target->player == source->player) // Nes - Local demo
+		{
 			source->player->fragcount--;
+		}
 		else
+		{
 			source->player->fragcount++;
+		}
+	}
+
+	// [Toke - CTF]
+	if (sv_gametype == GM_CTF && target->player)
+	{
+		CTF_CheckFlags ( *target->player );
 	}
 
 	if (target->player)
 	{
+		if (!joinkill && !shotclock)
+		{
+			tplayer->deathcount++;
+		}
+		// count environment kills against you
+		if (!source && !joinkill && !shotclock)
+		{
+			tplayer->fragcount--; // [RH] Cumulative frag count
+			// [JDC] Minus a team frag
+			if (sv_gametype == GM_TEAMDM)
+			{
+				TEAMpoints[tplayer->userinfo.team]--;
+			}
+		}
+
 		CTF_CheckFlags (*target->player);
 
 		// [NightFang] - Added this, thought it would be cooler
 		// [Fly] - No, it's not cooler
 		// target->player->cheats = CF_CHASECAM;
 
-		// [RH] Force a delay between death and respawn
-		// [Toke] Lets not fuck up deathmatch tactics ok randy?
+		SV_UpdateFrags(*tplayer);
 
 		target->flags &= ~MF_SOLID;
 		target->player->playerstate = PST_DEAD;
+		if (!multiplayer)
+		{
+			singleplayerjustdied = true;
+		}
+		// [RH] Force a delay between death and respawn
+		// [Toke] Lets not fuck up deathmatch tactics ok randy?
+		// tplayer->respawn_time = level.time + 60*TICRATE; // 1 minute forced respawn
 		target->player->respawn_time = level.time; // vanilla immediate respawn
 		P_DropWeapon (target->player);
 
@@ -857,26 +1046,59 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
         //     A_PlayerScream(target);
 	}
 
-	if(target->health > 0) // denis - when this function is used standalone
+	if (target->health > 0) // denis - when this function is used standalone
+	{
 		target->health = 0;
+	}
 
-		if (target->health < -target->info->spawnhealth
-			&& target->info->xdeathstate)
-		{
-			P_SetMobjState (target, target->info->xdeathstate);
-		}
-		else
-			P_SetMobjState (target, target->info->deathstate);
+	if (target->health < -target->info->spawnhealth
+		&& target->info->xdeathstate)
+	{
+		P_SetMobjState (target, target->info->xdeathstate);
+	}
+	else
+	{
+		P_SetMobjState (target, target->info->deathstate);
+	}
 
-	target->tics -= P_Random (target) & 3;
+	target->tics -= P_Random(target) & 3;
 
 	if (target->tics < 1)
+	{
 		target->tics = 1;
+	}
 
 	// [RH] Death messages
 	// Nes - Server now broadcasts obituaries.
-	//if (target->player && level.time && multiplayer && !(demoplayback && democlassic) && !joinkill)
-	//	ClientObituary (target, inflictor, source);
+	// [CG] Since this is a stub, no worries anymore.
+	if (target->player && level.time && multiplayer && !(demoplayback && democlassic) && !joinkill)
+	{
+		ClientObituary (target, inflictor, source);
+	}
+	// Check sv_fraglimit.
+	if (source && source->player && target->player && level.time)
+	{
+		// [Toke] Better sv_fraglimit
+		if (sv_gametype == GM_DM && sv_fraglimit && splayer->fragcount >= (int)sv_fraglimit && !sv_fragexitswitch) // [ML] 04/4/06: Added !sv_fragexitswitch
+		{
+				SV_BroadcastPrintf (PRINT_HIGH, "Frag limit hit. Game won by %s!\n", splayer->userinfo.netname);
+				shotclock = TICRATE*2;
+		}
+
+		// [Toke] TeamDM sv_fraglimit
+		if (sv_gametype == GM_TEAMDM && sv_fraglimit)
+		{
+			for(size_t i = 0; i < NUMFLAGS; i++)
+			{
+				if (TEAMpoints[i] >= (int)sv_fraglimit)
+				{
+					SV_BroadcastPrintf (PRINT_HIGH, "Frag limit hit. %s team wins!\n", team_names[i]);
+					shotclock = TICRATE*2;
+					break;
+				}
+			}
+		}
+	}
 
 	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
 		return;
@@ -909,15 +1131,13 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 		return; //Happens if bot or player killed when using fists.
 
 	// denis - dropped things will spawn serverside
-	if(serverside)
+	if (serverside)
 	{
 		mo = new AActor (target->x, target->y, ONFLOORZ, item);
 		mo->flags |= MF_DROPPED;	// special versions of items
+		SV_SpawnMobj(mo);
 	}
 }
-
-
-
 
 //
 // P_DamageMobj
@@ -929,7 +1149,7 @@ void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkil
 // Source and inflictor are the same for melee attacks.
 // Source can be NULL for slime, barrel explosions
 // and other environmental stuff.
-
+//
 // [Toke] This is no longer needed client-side
 void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
@@ -1031,7 +1251,7 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 		}
 
 		// only armordamage with sv_friendlyfire
-		//if (!sv_friendlyfireaaaaaaaaaaaaaaaaaaa && (teamplay || !deathmatch) && source && source->player && target != source &&
+		//if (!sv_friendlyfire && (teamplay || !deathmatch) && source && source->player && target != source &&
 		//	target->player->userinfo.team == source->player->userinfo.team && (mod != MOD_TELEFRAG))
 		//		damage = 0;
 
@@ -1058,11 +1278,18 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 			return;
 		}
 	}
-    
+
     if (!(target->flags2 & MF2_DORMANT))
 	{
-		if ( (P_Random() < target->info->painchance)
-			 && !(target->flags&MF_SKULLFLY) )
+		int pain = P_Random();
+
+		if (!player)
+		{
+			SV_SendDamageMobj(target, pain);
+		}
+		if (pain < target->info->painchance &&
+		    !(target->flags & MF_SKULLFLY) &&
+			!(player && !damage))
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
 

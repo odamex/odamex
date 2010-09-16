@@ -57,7 +57,7 @@
 #include "minilzo.h"
 
 #include "sv_main.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)

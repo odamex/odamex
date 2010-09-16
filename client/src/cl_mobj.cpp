@@ -36,7 +36,7 @@
 #include "vectors.h"
 #include "p_mobj.h"
 #include "cl_main.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 #include "st_stuff.h"
 #include "hu_stuff.h"
 
