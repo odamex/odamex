@@ -1164,15 +1164,18 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->health = 0;
 	}
 
-	if (target->health < -target->info->spawnhealth
-		&& target->info->xdeathstate)
-	{
-		P_SetMobjState(target, target->info->xdeathstate);
-	}
-	else
-	{
-		P_SetMobjState(target, target->info->deathstate);
-	}
+    if (target != consoleplayer().camera)
+    {
+        if (target->health < -target->info->spawnhealth
+            && target->info->xdeathstate)
+        {
+            P_SetMobjState(target, target->info->xdeathstate);
+        }
+        else
+        {
+            P_SetMobjState(target, target->info->deathstate);
+        }
+    }
 
 	target->tics -= P_Random(target) & 3;
 
@@ -1217,7 +1220,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
                         "Frag limit hit. %s team wins!\n",
                         team_names[i]
                     );
-					shotclock = TICRATE*2;
+					shotclock = TICRATE * 2;
 					break;
 				}
 			}
