@@ -39,6 +39,8 @@
 #include "doomstat.h"
 #include "m_alloc.h"
 #include "d_player.h"
+#include "r_defs.h"
+#include "i_system.h"
 
 IMPLEMENT_CLASS (DConsoleCommand, DObject)
 IMPLEMENT_CLASS (DConsoleAlias, DConsoleCommand)
@@ -849,6 +851,38 @@ BEGIN_COMMAND (stoplog)
 	}
 }
 END_COMMAND (stoplog)
+
+BOOL P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+					int arg0, int arg1, int arg2, int always);
+
+BEGIN_COMMAND (puke)
+{
+	if (argc < 2 || argc > 5) {
+		Printf (PRINT_HIGH, " puke <script> [arg1] [arg2] [arg3]\n");
+	} else {
+		int script = atoi (argv[1]);
+		int arg0=0, arg1=0, arg2=0;
+
+		if (argc > 2) {
+			arg0 = atoi (argv[2]);
+			if (argc > 3) {
+				arg1 = atoi (argv[3]);
+				if (argc > 4) {
+					arg2 = atoi (argv[4]);
+				}
+			}
+		}
+		P_StartScript (m_Instigator, NULL, script, level.mapname, 0, arg0, arg1, arg2, false);
+	}
+}
+END_COMMAND (puke)
+
+BEGIN_COMMAND (error)
+{
+	std::string text = BuildString (argc - 1, (const char **)(argv + 1));
+	I_Error (text.c_str());
+}
+END_COMMAND (error)
 
 VERSION_CONTROL (c_dispatch_cpp, "$Id$")
 

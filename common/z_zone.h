@@ -41,6 +41,7 @@
 #define PU_DEHACKED				6		// static while processing a patch
 #define PU_LEVEL				50		// static until level exited
 #define PU_LEVSPEC				51		// a special thinker in a level
+#define PU_LEVACS				52		// [RH] An ACS script in a level
 // Tags >= 100 are purgable whenever needed.
 #define PU_PURGELEVEL			100
 #define PU_CACHE				101

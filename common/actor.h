@@ -360,7 +360,9 @@ public:
     mapthing2_t		spawnpoint;	
 	
 	// Thing being chased/attacked for tracers.
-	AActorPtr		tracer; 
+	AActorPtr		tracer;
+	byte			special;		// special
+	byte			args[5];		// special arguments	
 	
 	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
 
@@ -392,7 +394,7 @@ public:
 	static AActor *FindGoal (const AActor *first, int tid, int kind);
 
 	int             netid;          // every object has its own netid
-	short			tid;			// thing identifier
+	short			tid;			// thing identifier		
 
 private:
 	static AActor *TIDHash[128];

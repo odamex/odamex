@@ -619,7 +619,7 @@ void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char se
 // denis - BaseFileSearch
 // Check all paths of interest for a given file with a possible extension
 //
-std::string BaseFileSearch (std::string file, std::string ext, std::string hashd)
+std::string BaseFileSearch(std::string file, std::string ext, std::string hash)
 {
 	#ifdef WIN32
 		// absolute path?
@@ -909,8 +909,11 @@ void SV_InitMultipleFiles (std::vector<std::string> filenames)
 // change wads at runtime
 // on 404, returns a vector of bad files
 //
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
-                                     const std::vector<std::string> &patch_files)
+std::vector<size_t> D_DoomWadReboot(
+	const std::vector<std::string> &wadnames,
+    const std::vector<std::string> &patch_files,
+    std::vector<std::string> needhashes
+)
 {
 	std::vector<size_t> fails;
 
@@ -968,6 +971,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	D_DoDefDehackedPatch(patch_files);
 
 	G_SetLevelStrings ();
+	G_ParseMapInfo ();
 	S_ParseSndInfo();
 
 	R_Init();
@@ -1064,7 +1068,8 @@ void D_DoomMain (void)
 	// [RH] Now that all text strings are set up,
 	// insert them into the level and cluster data.
 	G_SetLevelStrings ();
-
+	// [RH] Parse through all loaded mapinfo lumps
+	G_ParseMapInfo ();	
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();
 

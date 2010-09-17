@@ -50,6 +50,7 @@
 #include "g_game.h"
 
 #include "s_sound.h"
+#include "sc_man.h"
 
 // State.
 #include "r_state.h"
@@ -170,6 +171,150 @@ static void P_SpawnPushers(void);		// phares 3/20/98
 //
 //		Animating line specials
 //
+//#define MAXLINEANIMS			64
+
+//extern	short	numlinespecials;
+//extern	line_t* linespeciallist[MAXLINEANIMS];
+
+//
+// [RH] P_InitAnimDefs
+//
+// This uses a Hexen ANIMDEFS lump to define the animation sequences
+//
+static void P_InitAnimDefs (void)
+{
+	int lump = W_CheckNumForName ("ANIMDEFS");
+	enum {
+		limbo,
+		newflat,
+		readingflat,
+		newtexture,
+		readingtexture,
+		warp
+	} state = limbo, newstate = limbo;
+	int frame, min, max;
+	char name[9];
+
+	if (lump >= 0)
+	{
+		SC_OpenLumpNum (lump, "ANIMDEFS");
+
+		while (SC_GetString ())
+		{
+			if (SC_Compare ("flat"))
+			{
+				newstate = newflat;
+			}
+			else if (SC_Compare ("texture"))
+			{
+				newstate = newtexture;
+			}
+			else if (SC_Compare ("warp"))
+			{
+				newstate = warp;
+				SC_MustGetString ();
+				if (SC_Compare ("flat"))
+				{
+					SC_MustGetString ();
+					flatwarp[R_FlatNumForName (sc_String)] = true;
+				}
+				else if (SC_Compare ("texture"))
+				{
+					// TODO: Make texture warping work with wall textures
+					SC_MustGetString ();
+					R_TextureNumForName (sc_String);
+				}
+				else
+				{
+					SC_ScriptError (NULL, NULL);
+				}
+			}
+			else if (SC_Compare ("pic"))
+			{
+				SC_MustGetNumber ();
+				frame = sc_Number;
+				SC_MustGetString ();
+				if (SC_Compare ("tics"))
+				{
+					SC_MustGetNumber ();
+					min = max = sc_Number;
+				}
+				else if (SC_Compare ("rand"))
+				{
+					SC_MustGetNumber ();
+					min = sc_Number;
+					SC_MustGetNumber ();
+					max = sc_Number;
+				}
+				else
+				{
+					SC_ScriptError (NULL);
+				}
+			}
+
+			if (newstate == newtexture || newstate == newflat || newstate == warp)
+			{
+				if (state != limbo)
+				{
+					if (lastanim->numframes < 2)
+						I_FatalError ("P_InitAnimDefs: %s needs at least 2 frames", name);
+
+					lastanim->countdown = lastanim->speedmin[0];
+					lastanim++;
+				}
+
+				if (newstate != warp)
+				{
+					// 1/11/98 killough -- removed limit by array-doubling
+					if (lastanim >= anims + maxanims)
+					{
+						size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
+						anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
+						lastanim = anims + maxanims;
+						maxanims = newmax;
+					}
+
+					lastanim->uniqueframes = 1;
+					lastanim->curframe = 0;
+					lastanim->numframes = 0;
+					lastanim->istexture = (newstate == newtexture);
+					memset (lastanim->speedmin, 1, MAX_ANIM_FRAMES * sizeof(*lastanim->speedmin));
+					memset (lastanim->speedmax, 1, MAX_ANIM_FRAMES * sizeof(*lastanim->speedmax));
+
+					SC_MustGetString ();
+
+					if (lastanim->istexture)
+						lastanim->basepic = R_TextureNumForName (sc_String);
+					else
+						lastanim->basepic = R_FlatNumForName (sc_String);
+
+					strncpy (name, sc_String, 8);
+					name[8] = 0;
+				}
+
+				state = (newstate == newflat) ? readingflat : 
+						(newstate == newtexture) ? readingtexture : limbo;
+				newstate = limbo;
+			}
+			else if (state == readingflat || state == readingtexture)
+			{
+				if (lastanim->numframes < MAX_ANIM_FRAMES)
+				{
+					lastanim->speedmin[lastanim->numframes] = min;
+					lastanim->speedmax[lastanim->numframes] = max;
+					lastanim->framepic[lastanim->numframes] = frame + lastanim->basepic - 1;
+					lastanim->numframes++;
+				}
+			}
+		}
+		if (state == readingflat || state == readingtexture)
+		{
+			lastanim->countdown = lastanim->speedmin[0];
+			lastanim++;
+		}
+		SC_Close ();
+	}
+}
 
 /*
  *P_InitPicAnims
@@ -207,7 +352,10 @@ void P_InitPicAnims (void)
 		lastanim = 0;
 		maxanims = 0;
 	}
-
+	
+	// [RH] Load an ANIMDEFS lump first
+	P_InitAnimDefs ();
+	
 	if (W_CheckNumForName ("ANIMATED") == -1)
 		return;
 
@@ -1003,8 +1151,12 @@ P_CrossSpecialLine
 			}
 		}
 	}
+	
+	TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing);
+	LineSpecials[line->special] (line, thing, line->args[0],
+					line->args[1], line->args[2],
+					line->args[3], line->args[4]);
 	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 
 	OnActivatedLine(line, thing, side, 0);
@@ -1034,8 +1186,12 @@ P_ShootSpecialLine
 		if (!thing->player && !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
+	
+	//TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing);
+	LineSpecials[line->special] (line, thing, line->args[0],
+					line->args[1], line->args[2],
+					line->args[3], line->args[4]);
 
 	line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 	OnActivatedLine(line, thing, 0, 2);
@@ -1105,8 +1261,12 @@ P_UseSpecialLine
 				return false;
 		}
 	}
+	
+    TeleportSide = side;
 
-	if(LineSpecials[line->special] (line, thing))
+	if(LineSpecials[line->special] (line, thing, line->args[0],
+					line->args[1], line->args[2],
+					line->args[3], line->args[4]))
 	{
 		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 		OnActivatedLine(line, thing, side, 1);
@@ -1420,7 +1580,36 @@ void P_SpawnSpecials (void)
 			break;
 
 		default:
-			break;
+			// [RH] Try for normal Hexen scroller
+			if ((sector->special & 0xff) >= Scroll_North_Slow &&
+				(sector->special & 0xff) <= Scroll_SouthWest_Fast)
+			{
+				static char hexenScrollies[24][2] =
+				{
+					{  0,  1 }, {  0,  2 }, {  0,  4 },
+					{ -1,  0 }, { -2,  0 }, { -4,  0 },
+					{  0, -1 }, {  0, -2 }, {  0, -4 },
+					{  1,  0 }, {  2,  0 }, {  4,  0 },
+					{  1,  1 }, {  2,  2 }, {  4,  4 },
+					{ -1,  1 }, { -2,  2 }, { -4,  4 },
+					{ -1, -1 }, { -2, -2 }, { -4, -4 },
+					{  1, -1 }, {  2, -2 }, {  4, -4 }
+				};
+				int i = (sector->special & 0xff) - Scroll_North_Slow;
+				int dx = hexenScrollies[i][0] * (FRACUNIT/2);
+				int dy = hexenScrollies[i][1] * (FRACUNIT/2);
+
+				new DScroller (DScroller::sc_floor, dx, dy, -1, sector-sectors, 0);
+				// Hexen scrolling floors cause the player to move
+				// faster than they scroll. I do this just for compatibility
+				// with Hexen and recommend using Killough's more-versatile
+				// scrollers instead.
+				dx = FixedMul (-dx, CARRYFACTOR*2);
+				dy = FixedMul (dy, CARRYFACTOR*2);
+				new DScroller (DScroller::sc_carry, dx, dy, -1, sector-sectors, 0);
+				sector->special &= 0xff00;
+			}
+		break;
 		}
 	}
 
@@ -1513,7 +1702,7 @@ void P_SpawnSpecials (void)
 		}
 
 	// [RH] Start running any open scripts on this map
-//	P_StartOpenScripts ();
+	P_StartOpenScripts ();
 }
 
 // killough 2/28/98:

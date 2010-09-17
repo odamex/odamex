@@ -110,12 +110,15 @@ void	W_Profile (const char *fname);
 void	W_Close ();
 
 int		W_FindLump (const char *name, int *lastlump);	// [RH]	Find lumps with duplication
-//BOOL	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's name == name // denis - todo - replace with map<>
+bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's name == name // denis - todo - replace with map<>
 
 //unsigned W_LumpNameHash (const char *name);				// [RH] Create hash key from an 8-char name
 
 // [RH] Combine multiple marked ranges of lumps into one.
 void	W_MergeLumps (const char *start, const char *end, int);
+
+// [RH] Copy an 8-char string and uppercase it.
+void uppercopy (char *to, const char *from);
 
 // [RH] Copies the lump name to to using uppercopy
 void W_GetLumpName (char *to, unsigned lump);

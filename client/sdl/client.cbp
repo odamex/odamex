@@ -338,7 +338,6 @@
 		<Unit filename="..\src\c_bind.cpp" />
 		<Unit filename="..\src\c_bind.h" />
 		<Unit filename="..\src\c_console.cpp" />
-		<Unit filename="..\src\c_console.h" />
 		<Unit filename="..\src\cl_ctf.cpp" />
 		<Unit filename="..\src\cl_ctf.h" />
 		<Unit filename="..\src\cl_cvarlist.cpp" />
@@ -346,42 +345,32 @@
 		<Unit filename="..\src\cl_main.h" />
 		<Unit filename="..\src\cl_pred.cpp" />
 		<Unit filename="..\src\d_main.cpp" />
-		<Unit filename="..\src\d_main.h" />
 		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
-		<Unit filename="..\src\d_player.h" />
 		<Unit filename="..\src\f_finale.cpp" />
 		<Unit filename="..\src\f_finale.h" />
 		<Unit filename="..\src\f_wipe.cpp" />
 		<Unit filename="..\src\f_wipe.h" />
 		<Unit filename="..\src\g_game.cpp" />
-		<Unit filename="..\src\g_game.h" />
 		<Unit filename="..\src\g_level.cpp" />
-		<Unit filename="..\src\g_level.h" />
 		<Unit filename="..\src\hu_stuff.cpp" />
 		<Unit filename="..\src\hu_stuff.h" />
 		<Unit filename="..\src\m_menu.cpp" />
 		<Unit filename="..\src\m_menu.h" />
 		<Unit filename="..\src\m_misc.cpp" />
-		<Unit filename="..\src\m_misc.h" />
 		<Unit filename="..\src\m_options.cpp" />
 		<Unit filename="..\src\p_interaction.cpp" />
 		<Unit filename="..\src\p_interaction.h" />
 		<Unit filename="..\src\p_mobj.cpp" />
 		<Unit filename="..\src\r_bsp.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
-		<Unit filename="..\src\r_draw.h" />
 		<Unit filename="..\src\r_drawt.cpp" />
 		<Unit filename="..\src\r_main.cpp" />
-		<Unit filename="..\src\r_main.h" />
 		<Unit filename="..\src\r_plane.cpp" />
-		<Unit filename="..\src\r_plane.h" />
 		<Unit filename="..\src\r_segs.cpp" />
 		<Unit filename="..\src\r_sky.cpp" />
-		<Unit filename="..\src\r_sky.h" />
 		<Unit filename="..\src\r_things.cpp" />
 		<Unit filename="..\src\s_sound.cpp" />
-		<Unit filename="..\src\s_sound.h" />
 		<Unit filename="..\src\st_heretic.cpp" />
 		<Unit filename="..\src\st_lib.cpp" />
 		<Unit filename="..\src\st_lib.h" />
@@ -389,13 +378,13 @@
 		<Unit filename="..\src\st_stuff.cpp" />
 		<Unit filename="..\src\v_draw.cpp" />
 		<Unit filename="..\src\v_palette.cpp" />
-		<Unit filename="..\src\v_palette.h" />
 		<Unit filename="..\src\v_text.cpp" />
 		<Unit filename="..\src\v_text.h" />
 		<Unit filename="..\src\v_video.cpp" />
 		<Unit filename="..\src\wi_stuff.cpp" />
 		<Unit filename="..\src\wi_stuff.h" />
 		<Unit filename="..\..\common\actor.h" />
+		<Unit filename="..\..\common\c_console.h" />
 		<Unit filename="..\..\common\c_cvarlist.cpp" />
 		<Unit filename="..\..\common\c_cvars.cpp" />
 		<Unit filename="..\..\common\c_cvars.h" />
@@ -408,8 +397,10 @@
 		<Unit filename="..\..\common\d_event.h" />
 		<Unit filename="..\..\common\d_items.cpp" />
 		<Unit filename="..\..\common\d_items.h" />
+		<Unit filename="..\..\common\d_main.h" />
 		<Unit filename="..\..\common\d_net.h" />
 		<Unit filename="..\..\common\d_netinf.h" />
+		<Unit filename="..\..\common\d_player.h" />
 		<Unit filename="..\..\common\d_protocol.cpp" />
 		<Unit filename="..\..\common\d_protocol.h" />
 		<Unit filename="..\..\common\d_ticcmd.h" />
@@ -430,6 +421,8 @@
 		<Unit filename="..\..\common\errors.h" />
 		<Unit filename="..\..\common\farchive.cpp" />
 		<Unit filename="..\..\common\farchive.h" />
+		<Unit filename="..\..\common\g_game.h" />
+		<Unit filename="..\..\common\g_level.h" />
 		<Unit filename="..\..\common\gi.cpp" />
 		<Unit filename="..\..\common\gi.h" />
 		<Unit filename="..\..\common\huffman.cpp" />
@@ -439,6 +432,7 @@
 		<Unit filename="..\..\common\info.cpp" />
 		<Unit filename="..\..\common\info.h" />
 		<Unit filename="..\..\common\lzoconf.h" />
+		<Unit filename="..\..\common\lzodefs.h" />
 		<Unit filename="..\..\common\m_alloc.cpp" />
 		<Unit filename="..\..\common\m_alloc.h" />
 		<Unit filename="..\..\common\m_argv.cpp" />
@@ -453,6 +447,7 @@
 		<Unit filename="..\..\common\m_fixed.h" />
 		<Unit filename="..\..\common\m_memio.cpp" />
 		<Unit filename="..\..\common\m_memio.h" />
+		<Unit filename="..\..\common\m_misc.h" />
 		<Unit filename="..\..\common\m_random.cpp" />
 		<Unit filename="..\..\common\m_random.h" />
 		<Unit filename="..\..\common\m_swap.cpp" />
@@ -461,6 +456,8 @@
 		<Unit filename="..\..\common\md5.h" />
 		<Unit filename="..\..\common\minilzo.cpp" />
 		<Unit filename="..\..\common\minilzo.h" />
+		<Unit filename="..\..\common\p_acs.cpp" />
+		<Unit filename="..\..\common\p_acs.h" />
 		<Unit filename="..\..\common\p_ceiling.cpp" />
 		<Unit filename="..\..\common\p_doors.cpp" />
 		<Unit filename="..\..\common\p_enemy.cpp" />
@@ -485,15 +482,24 @@
 		<Unit filename="..\..\common\p_spec.h" />
 		<Unit filename="..\..\common\p_switch.cpp" />
 		<Unit filename="..\..\common\p_teleport.cpp" />
+		<Unit filename="..\..\common\p_things.cpp" />
 		<Unit filename="..\..\common\p_tick.cpp" />
 		<Unit filename="..\..\common\p_tick.h" />
 		<Unit filename="..\..\common\p_user.cpp" />
 		<Unit filename="..\..\common\p_xlat.cpp" />
+		<Unit filename="..\..\common\r_bsp.h" />
 		<Unit filename="..\..\common\r_data.cpp" />
 		<Unit filename="..\..\common\r_data.h" />
 		<Unit filename="..\..\common\r_defs.h" />
+		<Unit filename="..\..\common\r_draw.h" />
 		<Unit filename="..\..\common\r_local.h" />
+		<Unit filename="..\..\common\r_main.h" />
+		<Unit filename="..\..\common\r_plane.h" />
+		<Unit filename="..\..\common\r_segs.h" />
+		<Unit filename="..\..\common\r_sky.h" />
 		<Unit filename="..\..\common\r_state.h" />
+		<Unit filename="..\..\common\r_things.h" />
+		<Unit filename="..\..\common\s_sound.h" />
 		<Unit filename="..\..\common\sc_man.cpp" />
 		<Unit filename="..\..\common\sc_man.h" />
 		<Unit filename="..\..\common\st_stuff.h" />
@@ -503,6 +509,7 @@
 		<Unit filename="..\..\common\tables.cpp" />
 		<Unit filename="..\..\common\tables.h" />
 		<Unit filename="..\..\common\tarray.h" />
+		<Unit filename="..\..\common\v_palette.h" />
 		<Unit filename="..\..\common\v_video.h" />
 		<Unit filename="..\..\common\vectors.cpp" />
 		<Unit filename="..\..\common\vectors.h" />
@@ -516,6 +523,15 @@
 			<code_completion />
 			<envvars />
 			<debugger />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

@@ -57,7 +57,7 @@ enum
 	ML_REJECT,			// LUT, sector-sector visibility
 	ML_BLOCKMAP,			// LUT, motion clipping, walls/grid element
 	ML_BEHAVIOR			// [RH] Hexen-style scripts. If present, THINGS
-						//		and LINEDEFS are also Hexen-style.
+						//		and LINEDEFS are also Hexen-style.	
 };
 
 

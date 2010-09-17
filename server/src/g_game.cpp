@@ -913,7 +913,7 @@ void G_SaveGame (int slot, char *description)
 {
 }
 
-void G_BuildSaveName (char *name, int slot)
+void G_BuildSaveName (std::string &name, int slot)
 {
 }
 
@@ -976,7 +976,7 @@ BOOL CheckIfExitIsGood (AActor *self)
     unsigned int i;
 
     for(i = 0; i < players.size(); i++)
-        if(players[i].fragcount == sv_fraglimit)
+        if(players[i].fragcount >= sv_fraglimit)
             break;
 
     if (sv_gametype != GM_COOP && self)

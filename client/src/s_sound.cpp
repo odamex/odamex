@@ -53,11 +53,6 @@
 #define S_PITCH_PERTURB 		1
 #define S_STEREO_SWING			(96<<FRACBITS)
 
-//joek - choco goodness below
-// when to clip out sounds
-// Does not fit the large outdoor areas.
-#define S_CLIPPING_DIST		(1200*0x10000)
-
 // Distance tp origin when sounds should be maxed out.
 // This should relate to movement clipping resolution
 // (see BLOCKMAP handling).
@@ -386,7 +381,8 @@ EXTERN_CVAR (co_level8soundfeature)
 int
 		S_AdjustSoundParams
 		( AActor*	listener,
-		  fixed_t*	source,
+		  fixed_t	sx,
+		  fixed_t	sy,
 		  float*		vol,
 		  int*		sep,
 		  int*		pitch )
@@ -401,8 +397,8 @@ int
 
     // calculate the distance to sound origin
     //  and clip it if necessary
-	adx = abs(listener->x - source[0]);
-	ady = abs(listener->y - source[1]);
+	adx = abs(listener->x - sx);
+	ady = abs(listener->y - sy);
 
     // From _GG1_ p.428. Appox. eucledian distance fast.
 	approx_dist = adx + ady - ((adx < ady ? adx : ady)>>1);
@@ -416,8 +412,8 @@ int
     // angle of source to listener
 	angle = R_PointToAngle2(listener->x,
 				listener->y,
-				source[0],
-				source[1]);
+				sx,
+				sy);
 
 	if (angle > listener->angle)
 		angle = angle - listener->angle;
@@ -491,16 +487,6 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		return;
 	}
 
-	if (pt == (fixed_t *)(~0))
-	{
-		pt = NULL;
-	}
-	else if (pt != NULL)
-	{
-		x = pt[0];
-		y = pt[1];
-	}
-
 // Remove some duplicate sounds (mainly for plasma)
 	 S_StopSoundID(sfx_id);
 
@@ -517,8 +503,14 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
   //  and if not, modify the params
 	if (pt)
 	{
-
-		rc = S_AdjustSoundParams(S_WHICHEARS.mo, pt, &volume, &sep, &pitch);
+		if (pt == (fixed_t *)(~0))
+			pt = NULL;
+		else {
+			x = pt[0];
+			y = pt[1];
+		}
+		
+		rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
 
 		if (consoleplayer().mo && x == S_WHICHEARS.mo->x
 				  && y == S_WHICHEARS.mo->y)
@@ -938,7 +930,8 @@ void S_UpdateSounds (void *listener_p)
 				if (c->pt && listener_p != c->pt)
 				{
 					audible = S_AdjustSoundParams(listener,
-							c->pt,
+							c->x,
+							c->y,
 							&volume,
 							&sep,
 							&pitch);
@@ -1409,8 +1402,19 @@ BEGIN_COMMAND (changemus)
 }
 END_COMMAND (changemus)
 
+static void SetTicker (int *tics, struct AmbientSound *ambient)
+{
+
+}
+
 void A_Ambient (AActor *actor)
 {
+
+}
+
+void S_ActivateAmbient (AActor *origin, int ambient)
+{
+
 }
 
 //

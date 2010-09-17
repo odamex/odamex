@@ -102,6 +102,12 @@ void AActor::Serialize (FArchive &arc)
 			<< lastlook
 			/*<< tracer ? tracer->netid : 0*/
 			<< tid
+            << special
+			<< args[0]
+			<< args[1]
+			<< args[2]
+			<< args[3]
+			<< args[4]
 			/*<< goal ? goal->netid : 0*/
 			<< (unsigned)0
 			<< translucency
@@ -152,6 +158,12 @@ void AActor::Serialize (FArchive &arc)
 			>> lastlook
 			/*>> tracer->netid*/
 			>> tid
+			>> special
+			>> args[0]
+			>> args[1]
+			>> args[2]
+			>> args[3]
+			>> args[4]			
 			/*>> goal->netid*/
 			>> dummy
 			>> translucency
@@ -185,11 +197,13 @@ void MapThing::Serialize (FArchive &arc)
 {
 	if (arc.IsStoring ())
 	{
-		arc << thingid << x << y << z << angle << type << flags;
+		arc << thingid << x << y << z << angle << type << flags << special
+			<< args[0] << args[1] << args[2] << args[3] << args[4];
 	}
 	else
 	{
-		arc >> thingid >> x >> y >> z >> angle >> type >> flags;
+		arc >> thingid >> x >> y >> z >> angle >> type >> flags >> special
+			>> args[0] >> args[1] >> args[2] >> args[3] >> args[4];
 	}
 }
 
@@ -201,7 +215,8 @@ AActor::AActor () :
     flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0), 
     visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), inext(NULL), 
     iprev(NULL), translation(NULL), translucency(0), waterlevel(0), onground(0), 
-    touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0), tid(0)
+    touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0), special(0),
+    tid(0)    
 {
 	self.init(this);
 }
@@ -223,7 +238,7 @@ AActor::AActor (const AActor &other) :
     translucency(other.translucency), waterlevel(other.waterlevel),
     onground(other.onground), touching_sectorlist(other.touching_sectorlist),
     deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
-    netid(other.netid), tid(other.tid)
+    special(other.special), netid(other.netid), tid(other.tid)
 {
 	self.init(this);
 }
@@ -280,6 +295,7 @@ AActor &AActor::operator= (const AActor &other)
     rndindex = other.rndindex;
     netid = other.netid;
     tid = other.tid;
+    special = other.special;
 
 	return *this;
 }
@@ -639,19 +655,23 @@ void P_ZMovement (AActor *mo)
         mo->momz = -mo->momz;
       }
 
-
       if (mo->momz < 0)
       {
-         if (mo->player && mo->momz < -GRAVITY*8 && !(mo->player->spectator))
+         
+         if (mo->player)
          {
-		// Squat down.
-		// Decrease viewheight for a moment
-		// after hitting the ground (hard),
-		// and utter appropriate sound.
-            mo->player->deltaviewheight = mo->momz>>3;
+             mo->player->jumpTics = 7;	// delay any jumping for a short while
+             if (mo->momz < -GRAVITY*8 && !(mo->player->spectator))
+             {
+                // Squat down.
+                // Decrease viewheight for a moment
+                // after hitting the ground (hard),
+                // and utter appropriate sound.
+                mo->player->deltaviewheight = mo->momz>>3;
 
-            if (!predicting)
-                S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+                if (!predicting)
+                    S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+            }
          }
          mo->momz = 0;
       }
@@ -1246,6 +1266,8 @@ void P_RespawnSpecials (void)
 		mo->special1 = mthing->z << FRACBITS;
 	}
 	
+	mo->special = 0;
+	
 	// pull it from the que
 	iquetail = (iquetail+1)&(ITEMQUESIZE-1);
 }
@@ -1561,6 +1583,18 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		mobj->health = M_Random();
 		mobj->special1 = mthing->z << FRACBITS;
 	}
+	
+	// [RH] Set the thing's special
+	mobj->special = mthing->special;
+	memcpy (mobj->args, mthing->args, sizeof(mobj->args));
+
+	// [RH] If it's an ambient sound, activate it
+	//if (i == MT_AMBIENT)
+	//	S_ActivateAmbient (mobj, mobj->args[0]);
+
+	// [RH] If a fountain and not dormant, start it
+//	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
+//		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);

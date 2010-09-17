@@ -484,7 +484,7 @@ void D_PageDrawer (void)
 	else
 	{
 		screen->Clear (0, 0, screen->width, screen->height, 0);
-		screen->PrintStr (0, 0, "Page graphic goes here", 22);
+		//screen->PrintStr (0, 0, "Page graphic goes here", 22);
 	}
 }
 
@@ -852,7 +852,7 @@ void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char se
 // denis - BaseFileSearch
 // Check all paths of interest for a given file with a possible extension
 //
-std::string BaseFileSearch (std::string file, std::string ext = "", std::string hash = "")
+std::string BaseFileSearch(std::string file, std::string ext, std::string hash)
 {
 	#ifdef WIN32
 		// absolute path?
@@ -1345,9 +1345,11 @@ void V_InitPalette (void);
 
 bool lastWadRebootSuccess = true;
 
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
-                                     std::vector<std::string> needhashes,
-                                     const std::vector<std::string> &patch_files)
+std::vector<size_t> D_DoomWadReboot(
+	const std::vector<std::string> &wadnames,
+    const std::vector<std::string> &patch_files,
+    std::vector<std::string> needhashes
+)
 {
 	std::vector<size_t> fails;
 	size_t i;
@@ -1440,6 +1442,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	V_InitPalette();
 
 	G_SetLevelStrings ();
+	G_ParseMapInfo ();	
 	S_ParseSndInfo();
 
 	M_Init();
@@ -1448,8 +1451,6 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 	S_Init (snd_sfxvolume, snd_musicvolume);
 	ST_Init();
-
-	//NoWipe = 1;
 
 	// preserve state
 	lastWadRebootSuccess = fails.empty();
@@ -1581,6 +1582,9 @@ void D_DoomMain (void)
 	// [RH] Now that all text strings are set up,
 	// insert them into the level and cluster data.
 	G_SetLevelStrings ();
+	
+	// [RH] Parse through all loaded mapinfo lumps
+	G_ParseMapInfo ();	
 
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();

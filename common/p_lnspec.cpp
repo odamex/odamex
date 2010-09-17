@@ -34,12 +34,17 @@
 #include "tables.h"
 #include "i_system.h"
 
-#define FUNC(a) static BOOL a (line_t *ln, AActor *it)
+#define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
+							   int arg2, int arg3, int arg4)
 
 #define SPEED(a)		((a)*(FRACUNIT/8))
 #define TICS(a)			(((a)*TICRATE)/35)
 #define OCTICS(a)		(((a)*TICRATE)/8)
 #define	BYTEANGLE(a)	((angle_t)((a)<<24))
+
+// Used by the teleporters to know if they were
+// activated by walking across the backside of a line.
+int TeleportSide;
 
 // Set true if this special was activated from inside a script.
 BOOL InScript;
@@ -602,15 +607,17 @@ FUNC(LS_Exit_Secret)
 FUNC(LS_Teleport_NewMap)
 // Teleport_NewMap (map, position)
 {
-	level_info_t *info = FindLevelByNum (ln->args[0]);
+   	if (!TeleportSide)
+	{ 
+        level_info_t *info = FindLevelByNum (ln->args[0]);
 
-	if (it && (info && CheckIfExitIsGood (it)))
-	{
-		strncpy (level.nextmap, info->mapname, 8);
-		G_ExitLevel (ln->args[1], 1);
-		return true;
+        if (it && (info && CheckIfExitIsGood (it)))
+        {
+            strncpy (level.nextmap, info->mapname, 8);
+            G_ExitLevel (ln->args[1], 1);
+            return true;
+        }
 	}
-
 	return false;
 }
 
@@ -618,20 +625,20 @@ FUNC(LS_Teleport)
 // Teleport (tid)
 {
 	if(!it) return false;
-	return EV_Teleport (ln->args[0], it);
+	return EV_Teleport (ln->args[0], TeleportSide, it);
 }
 
 FUNC(LS_Teleport_NoFog)
 // Teleport_NoFog (tid)
 {
 	if(!it) return false;
-	return EV_SilentTeleport (ln->args[0], ln, it);
+	return EV_SilentTeleport (ln->args[0], ln, TeleportSide, it);
 }
 
 FUNC(LS_Teleport_EndGame)
 // Teleport_EndGame ()
 {
-	if (it && CheckIfExitIsGood (it))
+	if (!TeleportSide && it && CheckIfExitIsGood (it))
 	{
 		strncpy (level.nextmap, "EndGameC", 8);
 		G_ExitLevel (0, 1);
@@ -644,7 +651,7 @@ FUNC(LS_Teleport_Line)
 // Teleport_Line (thisid, destid, reversed)
 {
 	if(!it) return false;
-	return EV_SilentLineTeleport (ln, it, ln->args[1], ln->args[2]);
+	return EV_SilentLineTeleport (ln, TeleportSide, it, ln->args[1], ln->args[2]);
 }
 
 FUNC(LS_ThrustThing)
@@ -693,7 +700,7 @@ FUNC(LS_HealThing)
 
 	return true;
 }
-/*
+
 FUNC(LS_Thing_Activate)
 // Thing_Activate (tid)
 {
@@ -723,7 +730,7 @@ FUNC(LS_Thing_Deactivate)
 
 	return true;
 }
-*/
+
 FUNC(LS_Thing_Remove)
 // Thing_Remove (tid)
 {
@@ -755,6 +762,63 @@ FUNC(LS_Thing_SetGoal)
 		}
 		self = self->FindByTID (ln->args[0]);
 	}
+
+	return true;
+}
+
+FUNC(LS_ACS_Execute)
+// ACS_Execute (script, map, s_arg1, s_arg2, s_arg3)
+{
+	level_info_t *info;
+
+	if ( (ln->args[1] == 0) || !(info = FindLevelByNum (ln->args[1])) )
+		return P_StartScript (it, ln, ln->args[0], level.mapname, TeleportSide, ln->args[2], ln->args[3], ln->args[4], 0);
+	else
+		return P_StartScript (it, ln, ln->args[0], info->mapname, TeleportSide, ln->args[2], ln->args[3], ln->args[4], 0);
+}
+
+FUNC(LS_ACS_ExecuteAlways)
+// ACS_ExecuteAlways (script, map, s_arg1, s_arg2, s_arg3)
+{
+	level_info_t *info;
+
+	if ( (ln->args[1] == 0) || !(info = FindLevelByNum (ln->args[1])) )
+		return P_StartScript (it, ln, ln->args[0], level.mapname, TeleportSide, ln->args[2], ln->args[3], ln->args[4], 1);
+	else
+		return P_StartScript (it, ln, ln->args[0], info->mapname, TeleportSide, ln->args[2], ln->args[3], ln->args[4], 1);
+}
+
+FUNC(LS_ACS_LockedExecute)
+// ACS_LockedExecute (script, map, s_arg1, s_arg2, lock)
+{
+	if (ln->args[4] && !P_CheckKeys (it->player, (card_t)ln->args[4], 1))
+		return false;
+	else
+		return LS_ACS_Execute (ln, it, ln->args[0], ln->args[1], ln->args[2], ln->args[3], 0);
+}
+
+FUNC(LS_ACS_Suspend)
+// ACS_Suspend (script, map)
+{
+	level_info_t *info;
+
+	if ( (ln->args[1] == 0) || !(info = FindLevelByNum (ln->args[1])) )
+		P_SuspendScript (ln->args[0], level.mapname);
+	else
+		P_SuspendScript (ln->args[0], info->mapname);
+
+	return true;
+}
+
+FUNC(LS_ACS_Terminate)
+// ACS_Terminate (script, map)
+{
+	level_info_t *info;
+
+	if ( (ln->args[1] == 0) || !(info = FindLevelByNum (ln->args[1])) )
+		P_TerminateScript (ln->args[0], level.mapname);
+	else
+		P_TerminateScript (ln->args[0], info->mapname);
 
 	return true;
 }
@@ -1422,10 +1486,10 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 77
 	LS_NOP,		// 78
 	LS_NOP,		// 79
-	LS_NOP,
-	LS_NOP,
-	LS_NOP,
-	LS_NOP,
+	LS_ACS_Execute,
+	LS_ACS_Suspend,
+	LS_ACS_Terminate,
+	LS_ACS_LockedExecute,
 	LS_NOP,		// 84
 	LS_NOP,		// 85
 	LS_NOP,		// 86

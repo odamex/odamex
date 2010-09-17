@@ -117,6 +117,9 @@ int R_FindSkin (const char *name);	// [RH] Find a skin
 
 unsigned int SlopeDiv(unsigned int num, unsigned int den);
 
+// [RH] Tutti-Frutti fix
+extern "C" unsigned int		dc_mask;
+
 #endif
 
 
