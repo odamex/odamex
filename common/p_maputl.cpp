@@ -424,6 +424,7 @@ void AActor::SetOrigin (fixed_t ix, fixed_t iy, fixed_t iz)
 // to P_BlockLinesIterator, then make one or more calls
 // to it.
 //
+extern polyblock_t **PolyBlockMap;
 
 BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 {
@@ -432,6 +433,37 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 
 	int offset = *(blockmap + (bmapwidth*y + x));
 	int *list = blockmaplump + offset;
+	
+	/* [RH] Polyobj stuff from Hexen --> */
+	polyblock_t *polyLink;
+
+	offset = y*bmapwidth + x;
+	if (PolyBlockMap)
+	{
+		polyLink = PolyBlockMap[offset];
+		
+		while (polyLink)
+		{
+			if (polyLink->polyobj && polyLink->polyobj->validcount != validcount)
+			{
+				int i;
+				seg_t **tempSeg = polyLink->polyobj->segs;
+				polyLink->polyobj->validcount = validcount;
+
+				for (i = polyLink->polyobj->numsegs; i; i--, tempSeg++)
+				{
+					if ((*tempSeg)->linedef->validcount != validcount)
+					{
+						(*tempSeg)->linedef->validcount = validcount;
+						if (!func ((*tempSeg)->linedef))
+							return false;
+					}
+				}
+			}
+			polyLink = polyLink->next;
+		}
+	}
+	/* <-- Polyobj stuff from Hexen */	
 
 	// [RH] Get past starting 0 (from BOOM)
 	// denis - not so fast, this breaks doom1.wad 1.9 demo1
@@ -641,18 +673,6 @@ BOOL P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 		if (dist > maxfrac)
 			return true;		// checked everything in range
 
-#if 0  // UNUSED
-	{
-
-		// don't check these yet, there may be others inserted
-		in = scan = intercepts;
-		for ( scan = 0 ; scan<intercepts.Size() ; scan++)
-			if (intercepts[scan].frac > maxfrac)
-				*in++ = *scan;
-		intercepts.Resize(scan);
-		return false;
-	}
-#endif
 
 		if ( !func (in) )
 			return false;		// don't bother going farther

@@ -36,6 +36,7 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
+#include "dstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
 #include "gi.h"
@@ -52,7 +53,7 @@
 #include "m_argv.h"
 #include "m_random.h"
 #include "vectors.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 #include "w_wad.h"
 #include "md5.h"
 
@@ -67,6 +68,8 @@ extern level_locals_t level;
 bool clientside = false, serverside = true;
 bool predicting = false;
 baseapp_t baseapp = server;
+
+extern bool HasBehavior;
 
 bool step_mode = false;
 
@@ -95,6 +98,8 @@ EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_maxrate)
+
+void SexMessage (const char *from, char *to, int gender);
 
 CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
@@ -232,6 +237,7 @@ void SV_ServerSettingChange (void);
 // some doom functions
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 bool P_CheckSightEdges (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
+bool P_CheckSightEdges2 (const AActor* t1, const AActor* t2, float radius_boost = 0.0);
 
 void SV_WinCheck (void);
 
@@ -1318,7 +1324,8 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
 		ok = true;
 
-	else if(player.mo && mo->player && sv_antiwallhack && P_CheckSightEdges(player.mo, mo, 5)/*player.awaresector[sectors - mo->subsector->sector]*/)
+	else if(player.mo && mo->player && sv_antiwallhack && 
+         ((HasBehavior && P_CheckSightEdges2(player.mo, mo, 5)) || (!HasBehavior && P_CheckSightEdges(player.mo, mo, 5)))/*player.awaresector[sectors - mo->subsector->sector]*/)
 		ok = true;
 
 	std::vector<size_t>::iterator a = std::find(mo->players_aware.begin(), mo->players_aware.end(), player.id);
@@ -2079,7 +2086,7 @@ void SV_ConnectClient (void)
 	SV_MidPrint((char *)sv_motd.cstring(),(player_t *) &players[n], 6);
 }
 
-extern BOOL singleplayerjustdied;
+extern bool singleplayerjustdied;
 
 //
 // SV_DisconnectClient
@@ -4012,6 +4019,285 @@ void MSG_WriteMarker (buf_t *b, svc_t c)
 	b->WriteByte((byte)c);
 }
 
+// [RH]
+// ClientObituary: Show a message when a player dies
+//
+void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
+{
+	const char *message;
+	char gendermessage[1024];
+	int  gender;
+
+	if (!self->player)
+		return;
+
+	gender = self->player->userinfo.gender;
+
+	// Treat voodoo dolls as unknown deaths
+	if (inflictor && inflictor->player == self->player)
+		MeansOfDeath = MOD_UNKNOWN;
+
+	message = NULL;
+
+	switch (MeansOfDeath) {
+		case MOD_SUICIDE:
+			message = OB_SUICIDE;
+			break;
+		case MOD_FALLING:
+			message = OB_FALLING;
+			break;
+		case MOD_CRUSH:
+			message = OB_CRUSH;
+			break;
+		case MOD_EXIT:
+			message = OB_EXIT;
+			break;
+		case MOD_WATER:
+			message = OB_WATER;
+			break;
+		case MOD_SLIME:
+			message = OB_SLIME;
+			break;
+		case MOD_LAVA:
+			message = OB_LAVA;
+			break;
+		case MOD_BARREL:
+			message = OB_BARREL;
+			break;
+		case MOD_SPLASH:
+			message = OB_SPLASH;
+			break;
+	}
+
+	if (attacker && !message) {
+		if (attacker == self) {
+			switch (MeansOfDeath) {
+				case MOD_R_SPLASH:
+					message = OB_R_SPLASH;
+					break;
+				case MOD_ROCKET:
+					message = OB_ROCKET;
+					break;
+				default:
+					message = OB_KILLEDSELF;
+					break;
+			}
+		} else if (!attacker->player) {
+					if (MeansOfDeath == MOD_HIT) {
+						switch (attacker->type) {
+							case MT_UNDEAD:
+								message = OB_UNDEADHIT;
+								break;
+							case MT_TROOP:
+								message = OB_IMPHIT;
+								break;
+							case MT_HEAD:
+								message = OB_CACOHIT;
+								break;
+							case MT_SERGEANT:
+								message = OB_DEMONHIT;
+								break;
+							case MT_SHADOWS:
+								message = OB_SPECTREHIT;
+								break;
+							case MT_BRUISER:
+								message = OB_BARONHIT;
+								break;
+							case MT_KNIGHT:
+								message = OB_KNIGHTHIT;
+								break;
+							default:
+								break;
+						}
+					} else {
+						switch (attacker->type) {
+							case MT_POSSESSED:
+								message = OB_ZOMBIE;
+								break;
+							case MT_SHOTGUY:
+								message = OB_SHOTGUY;
+								break;
+							case MT_VILE:
+								message = OB_VILE;
+								break;
+							case MT_UNDEAD:
+								message = OB_UNDEAD;
+								break;
+							case MT_FATSO:
+								message = OB_FATSO;
+								break;
+							case MT_CHAINGUY:
+								message = OB_CHAINGUY;
+								break;
+							case MT_SKULL:
+								message = OB_SKULL;
+								break;
+							case MT_TROOP:
+								message = OB_IMP;
+								break;
+							case MT_HEAD:
+								message = OB_CACO;
+								break;
+							case MT_BRUISER:
+								message = OB_BARON;
+								break;
+							case MT_KNIGHT:
+								message = OB_KNIGHT;
+								break;
+							case MT_SPIDER:
+								message = OB_SPIDER;
+								break;
+							case MT_BABY:
+								message = OB_BABY;
+								break;
+							case MT_CYBORG:
+								message = OB_CYBORG;
+								break;
+							case MT_WOLFSS:
+								message = OB_WOLFSS;
+								break;
+							default:
+								break;
+						}
+					}
+		}
+	}
+
+	if (message) {
+		SexMessage (message, gendermessage, gender);
+		SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+		return;
+	}
+
+	if (attacker && attacker->player) {
+		if (((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && self->player->userinfo.team == attacker->player->userinfo.team) || sv_gametype == GM_COOP) {
+			int rnum = P_Random ();
+
+			self = attacker;
+			gender = self->player->userinfo.gender;
+
+			if (rnum < 64)
+				message = OB_FRIENDLY1;
+			else if (rnum < 128)
+				message = OB_FRIENDLY2;
+			else if (rnum < 192)
+				message = OB_FRIENDLY3;
+			else
+				message = OB_FRIENDLY4;
+		} else {
+			switch (MeansOfDeath) {
+				case MOD_FIST:
+					message = OB_MPFIST;
+					break;
+				case MOD_CHAINSAW:
+					message = OB_MPCHAINSAW;
+					break;
+				case MOD_PISTOL:
+					message = OB_MPPISTOL;
+					break;
+				case MOD_SHOTGUN:
+					message = OB_MPSHOTGUN;
+					break;
+				case MOD_SSHOTGUN:
+					message = OB_MPSSHOTGUN;
+					break;
+				case MOD_CHAINGUN:
+					message = OB_MPCHAINGUN;
+					break;
+				case MOD_ROCKET:
+					message = OB_MPROCKET;
+					break;
+				case MOD_R_SPLASH:
+					message = OB_MPR_SPLASH;
+					break;
+				case MOD_PLASMARIFLE:
+					message = OB_MPPLASMARIFLE;
+					break;
+				case MOD_BFG_BOOM:
+					message = OB_MPBFG_BOOM;
+					break;
+				case MOD_BFG_SPLASH:
+					message = OB_MPBFG_SPLASH;
+					break;
+				case MOD_TELEFRAG:
+					message = OB_MPTELEFRAG;
+					break;
+			}
+		}
+	}
+
+	if (message) {
+		SexMessage (message, gendermessage, gender);
+
+		std::string work = "%s ";
+		work += gendermessage;
+		work += ".\n";
+
+		SV_BroadcastPrintf (PRINT_MEDIUM, work.c_str(), self->player->userinfo.netname,
+							attacker->player->userinfo.netname);
+		return;
+	}
+
+	SexMessage (OB_DEFAULT, gendermessage, gender);
+	SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+}
+void SV_SendDamagePlayer(player_t *player, int damage)
+{
+	for (size_t i=0; i < players.size(); i++)
+	{
+		client_t *cl = &clients[i];
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_damageplayer);
+		MSG_WriteByte(&cl->reliablebuf, player->id);
+		MSG_WriteByte(&cl->reliablebuf, player->armorpoints);
+		MSG_WriteShort(&cl->reliablebuf, damage);
+	}
+}
+
+void SV_SendDamageMobj(AActor *target, int pain)
+{
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		client_t *cl = &clients[i];
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_damagemobj);
+		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteShort(&cl->reliablebuf, target->health);
+		MSG_WriteByte(&cl->reliablebuf, pain);
+	}
+}
+
+void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
+				     bool joinkill)
+{
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		client_t *cl = &clients[i];
+
+		if(!SV_IsPlayerAllowedToSee(players[i], target))
+			continue;
+
+		// send death location first
+		MSG_WriteMarker(&cl->netbuf, svc_movemobj);
+		MSG_WriteShort(&cl->netbuf, target->netid);
+		MSG_WriteByte(&cl->netbuf, target->rndindex);
+		MSG_WriteLong(&cl->netbuf, target->x);
+		MSG_WriteLong(&cl->netbuf, target->y);
+		MSG_WriteLong(&cl->netbuf, target->z);
+		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
+
+		if (source)
+			MSG_WriteShort(&cl->reliablebuf, source->netid);
+		else
+			MSG_WriteShort(&cl->reliablebuf, 0);
+
+		MSG_WriteShort (&cl->reliablebuf, target->netid);
+		MSG_WriteShort (&cl->reliablebuf, inflictor ? inflictor->netid : 0);
+		MSG_WriteShort (&cl->reliablebuf, target->health);
+		MSG_WriteLong (&cl->reliablebuf, MeansOfDeath);
+		MSG_WriteByte (&cl->reliablebuf, joinkill);
+	}
+}
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")
 

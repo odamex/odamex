@@ -96,5 +96,9 @@ int SV_CountTeamPlayers(int team);
 extern std::vector<std::string> wadnames;
 void MSG_WriteMarker (buf_t *b, svc_t c);
 
+void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
+void SV_SendDamagePlayer(player_t *player, int pain);
+void SV_SendDamageMobj(AActor *target, int pain);
+
 #endif
 

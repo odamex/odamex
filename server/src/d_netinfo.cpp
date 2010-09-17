@@ -52,14 +52,6 @@ int D_GenderToInt (const char *gender)
 		return GENDER_MALE;
 }
 
-void D_SetupUserInfo (void)
-{
-}
-
-void D_UserInfoChanged (cvar_t *cvar)
-{
-}
-
 bool SetServerVar (const char *name, const char *value)
 {
 	cvar_t *dummy;
@@ -82,18 +74,6 @@ void D_SendServerInfoChange (const cvar_t *cvar, const char *value)
 	SetServerVar (cvar->name(), (char *)value);
 
 	SV_ServerSettingChange ();
-}
-
-void D_DoServerInfoChange (byte **stream)
-{
-}
-
-void D_WriteUserInfoStrings (int i, byte **stream, bool compact)
-{
-}
-
-void D_ReadUserInfoStrings (int i, byte **stream, bool update)
-{
 }
 
 FArchive &operator<< (FArchive &arc, userinfo_t &info)

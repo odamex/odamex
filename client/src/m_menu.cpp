@@ -43,7 +43,7 @@
 #include "m_menu.h"
 #include "v_text.h"
 #include "st_stuff.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 #include "r_sky.h"
 #include "cl_main.h"
 #include "c_bind.h"

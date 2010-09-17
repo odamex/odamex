@@ -35,11 +35,13 @@
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "md5.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 
 std::vector<std::string> wadnames, wadhashes;
 extern std::vector<std::string> patchfiles;
 static buf_t ml_message(MAX_UDP_PACKET);
+
+EXTERN_CVAR (sv_scorelimit) // [CG] Should this go below in //bond ?
 
 EXTERN_CVAR (sv_usemasters)
 EXTERN_CVAR (sv_hostname)

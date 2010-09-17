@@ -84,10 +84,10 @@ extern BOOL sendpause, sendsave, sendcenterview;
 
 level_locals_t level;			// info about current level
 
-static level_pwad_info_t *wadlevelinfos;
-static cluster_info_t *wadclusterinfos;
-static size_t numwadlevelinfos = 0;
-static size_t numwadclusterinfos = 0;
+level_pwad_info_t *wadlevelinfos;
+cluster_info_t *wadclusterinfos;
+size_t numwadlevelinfos = 0;
+size_t numwadclusterinfos = 0;
 
 BOOL HexenHack;
 
@@ -480,7 +480,7 @@ static void zapDefereds (acsdefered_t *def)
 
 void P_RemoveDefereds (void)
 {
-	int i;
+	unsigned int i;
 
 	// Remove any existing defereds
 	for (i = 0; i < numwadlevelinfos; i++)
@@ -608,6 +608,8 @@ END_COMMAND (wad)
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_nomonsters)
+EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR(sv_allowjump)
 
 void G_DoNewGame (void)
 {
@@ -628,6 +630,8 @@ void G_DoNewGame (void)
 	serverside = true;
 	sv_allowexit = "1";
 	sv_nomonsters = "0";
+	sv_freelook = "1";
+	sv_allowjump = "1";
 	sv_gametype = GM_COOP;
 
 	players.clear();
@@ -1313,6 +1317,7 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 
 	P_SerializeThinkers (arc, hubLoad);
     P_SerializeWorld (arc);
+    P_SerializePolyobjs (arc);
     P_SerializeSounds (arc);
 	if (!hubLoad)
 		P_SerializePlayers (arc);    
@@ -1419,7 +1424,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 {
 	if (arc.IsStoring ())
 	{
-		int i;
+		unsigned int i;
 
 		for (i = 0; i < numwadlevelinfos; i++)
 			if (wadlevelinfos[i].defered)

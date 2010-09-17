@@ -95,8 +95,6 @@ CVAR (sv_maxrate, "200000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Gameplay settings
 // =================
 
-// (Teamplay/CTF): Players can injure others on the same team
-CVAR (sv_friendlyfire,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // (Teamplay): Teams that are enabled
 CVAR (sv_teamsinplay,		"2", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // (CTF) Flags dropped by the player must be returned manually

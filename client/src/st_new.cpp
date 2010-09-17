@@ -39,7 +39,7 @@
 #include "st_stuff.h"
 #include "st_lib.h"
 #include "c_cvars.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 #include "hu_stuff.h"
 #include "gi.h"
 

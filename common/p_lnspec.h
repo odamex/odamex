@@ -28,8 +28,16 @@
 #include "doomtype.h"
 
 typedef enum {
-    //  Removed 11/3/06 by ML - No more polyobjects! (1-9)
-
+    // Removed 11/3/06 by ML - No more polyobjects! (1-9)
+    // [ML] 9/9/10 - They're back baby!
+    Polyobj_StartLine = 1,
+	Polyobj_RotateLeft = 2,
+	Polyobj_RotateRight = 3,
+	Polyobj_Move = 4,
+	Polyobj_ExplicitLine = 5,
+	Polyobj_MoveTimes8 = 6,
+	Polyobj_DoorSwing = 7,
+	Polyobj_DoorSlide = 8,
 	Door_Close = 10,
 	Door_Open = 11,
 	Door_Raise = 12,
@@ -86,7 +94,15 @@ typedef enum {
 
 	Teleport_NewMap = 74,
 	Teleport_EndGame = 75,
+	ACS_Execute = 80,
+	ACS_Suspend = 81,
+	ACS_Terminate = 82,
+	ACS_LockedExecute = 83,
 
+	Polyobj_OR_RotateLeft = 90,
+	Polyobj_OR_RotateRight = 91,
+	Polyobj_OR_Move = 92,
+	Polyobj_OR_MoveTimes8 = 93,
 	Pillar_BuildAndCrush = 94,
 
 	FloorAndCeiling_LowerByValue = 95,
@@ -180,7 +196,7 @@ typedef enum {
 	Scroll_Floor = 223,
 	Scroll_Ceiling = 224,
 	Scroll_Texture_Offsets = 225,
-
+    ACS_ExecuteAlways = 226,
 	PointPush_SetForce = 227,
 
 	Plat_RaiseAndStayTx0 = 228,

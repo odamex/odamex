@@ -38,7 +38,6 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-iwad heretic.wad" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -339,11 +338,12 @@
 		<Unit filename="..\src\c_bind.h" />
 		<Unit filename="..\src\c_console.cpp" />
 		<Unit filename="..\src\cl_ctf.cpp" />
-		<Unit filename="..\src\cl_ctf.h" />
 		<Unit filename="..\src\cl_cvarlist.cpp" />
 		<Unit filename="..\src\cl_main.cpp" />
 		<Unit filename="..\src\cl_main.h" />
+		<Unit filename="..\src\cl_mobj.cpp" />
 		<Unit filename="..\src\cl_pred.cpp" />
+		<Unit filename="..\src\cl_stubs.cpp" />
 		<Unit filename="..\src\d_main.cpp" />
 		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
@@ -359,9 +359,6 @@
 		<Unit filename="..\src\m_menu.h" />
 		<Unit filename="..\src\m_misc.cpp" />
 		<Unit filename="..\src\m_options.cpp" />
-		<Unit filename="..\src\p_interaction.cpp" />
-		<Unit filename="..\src\p_interaction.h" />
-		<Unit filename="..\src\p_mobj.cpp" />
 		<Unit filename="..\src\r_bsp.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_drawt.cpp" />
@@ -459,16 +456,20 @@
 		<Unit filename="..\..\common\p_acs.cpp" />
 		<Unit filename="..\..\common\p_acs.h" />
 		<Unit filename="..\..\common\p_ceiling.cpp" />
+		<Unit filename="..\..\common\p_ctf.h" />
 		<Unit filename="..\..\common\p_doors.cpp" />
 		<Unit filename="..\..\common\p_enemy.cpp" />
 		<Unit filename="..\..\common\p_floor.cpp" />
 		<Unit filename="..\..\common\p_inter.h" />
+		<Unit filename="..\..\common\p_interaction.cpp" />
 		<Unit filename="..\..\common\p_lights.cpp" />
 		<Unit filename="..\..\common\p_lnspec.cpp" />
 		<Unit filename="..\..\common\p_lnspec.h" />
 		<Unit filename="..\..\common\p_local.h" />
 		<Unit filename="..\..\common\p_map.cpp" />
 		<Unit filename="..\..\common\p_maputl.cpp" />
+		<Unit filename="..\..\common\p_mobj.cpp" />
+		<Unit filename="..\..\common\p_mobj.h" />
 		<Unit filename="..\..\common\p_pillar.cpp" />
 		<Unit filename="..\..\common\p_plats.cpp" />
 		<Unit filename="..\..\common\p_pspr.cpp" />
@@ -487,6 +488,7 @@
 		<Unit filename="..\..\common\p_tick.h" />
 		<Unit filename="..\..\common\p_user.cpp" />
 		<Unit filename="..\..\common\p_xlat.cpp" />
+		<Unit filename="..\..\common\po_man.cpp" />
 		<Unit filename="..\..\common\r_bsp.h" />
 		<Unit filename="..\..\common\r_data.cpp" />
 		<Unit filename="..\..\common\r_data.h" />

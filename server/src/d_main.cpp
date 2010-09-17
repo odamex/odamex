@@ -84,7 +84,6 @@ extern void M_RestoreMode (void);
 extern void R_ExecuteSetViewSize (void);
 void C_DoCommand (const char *cmd);
 
-void D_CheckNetGame (void);
 void D_ProcessEvents (void);
 void G_BuildTiccmd (ticcmd_t* cmd);
 void D_DoAdvanceDemo (void);
@@ -927,7 +926,21 @@ std::vector<size_t> D_DoomWadReboot(
 
 	// Close all open WAD files
 	W_Close();
-
+	
+	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
+    // I have never used memset, I hope I am not invoking satan by doing this :(
+	if (wadlevelinfos)
+    {
+        memset(wadlevelinfos,0,sizeof(wadlevelinfos));        
+        numwadlevelinfos = 0;
+    }
+    
+    if (wadclusterinfos)
+    {
+        memset(wadclusterinfos,0,sizeof(wadclusterinfos));
+        numwadclusterinfos = 0;	        
+    }
+	
 	// Restart the memory manager
 	Z_Init();
 	
@@ -1083,8 +1096,8 @@ void D_DoomMain (void)
 	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
 	P_Init ();
 		
-	Printf (PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
-	D_CheckNetGame ();
+	Printf (PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
+    SV_InitNetwork();
 		
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems ();

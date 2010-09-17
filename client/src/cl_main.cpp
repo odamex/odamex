@@ -25,6 +25,7 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
+#include "dstrings.h"
 #include "d_player.h"
 #include "g_game.h"
 #include "d_net.h"
@@ -39,7 +40,7 @@
 #include "cl_main.h"
 #include "c_console.h"
 #include "d_main.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 #include "m_random.h"
 #include "w_wad.h"
 #include "md5.h"
@@ -133,7 +134,7 @@ void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
-BOOL P_CheckMissileSpawn (AActor* th);
+bool P_CheckMissileSpawn (AActor* th);
 void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -2559,6 +2560,78 @@ void CL_RunTics (void)
 
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics ();
+}
+
+void PickupMessage (AActor *toucher, const char *message)
+{
+	// Some maps have multiple items stacked on top of each other.
+	// It looks odd to display pickup messages for all of them.
+	static int lastmessagetic;
+	static const char *lastmessage = NULL;
+
+	if (toucher == consoleplayer().camera
+		&& (lastmessagetic != gametic || lastmessage != message))
+	{
+		lastmessagetic = gametic;
+		lastmessage = message;
+		Printf (PRINT_LOW, "%s\n", message);
+	}
+}
+
+//
+// void WeaponPickupMessage (weapontype_t &Weapon)
+//
+// This is used for displaying weaponstay messages, it is inevitably a hack
+// because weaponstay is a hack
+void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
+{
+    switch (Weapon)
+    {
+        case wp_shotgun:
+        {
+            PickupMessage(toucher, GOTSHOTGUN);
+        }
+        break;
+
+        case wp_chaingun:
+        {
+            PickupMessage(toucher, GOTCHAINGUN);
+        }
+        break;
+
+        case wp_missile:
+        {
+            PickupMessage(toucher, GOTLAUNCHER);
+        }
+        break;
+
+        case wp_plasma:
+        {
+            PickupMessage(toucher, GOTPLASMA);
+        }
+        break;
+
+        case wp_bfg:
+        {
+            PickupMessage(toucher, GOTBFG9000);
+        }
+        break;
+
+        case wp_chainsaw:
+        {
+            PickupMessage(toucher, GOTCHAINSAW);
+        }
+        break;
+
+        case wp_supershotgun:
+        {
+            PickupMessage(toucher, GOTSHOTGUN2);
+        }
+        break;
+        
+        default:
+        break;
+    }
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}

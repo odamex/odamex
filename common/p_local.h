@@ -102,7 +102,7 @@ extern int				iquetail;
 
 void	P_RespawnSpecials (void);
 
-BOOL	P_SetMobjState (AActor* mobj, statenum_t state);
+bool	P_SetMobjState (AActor* mobj, statenum_t state);
 
 void	P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown);
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
@@ -153,6 +153,10 @@ typedef struct
 		line_t* line;
 	}					d;
 } intercept_t;
+
+#define MAXINTERCEPTS	128
+
+extern TArray<intercept_t> intercepts;
 
 typedef BOOL (*traverser_t) (intercept_t *in);
 
@@ -220,10 +224,12 @@ BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y, bool dropoff);
 BOOL	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
 bool	P_CheckSight (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
+bool	P_CheckSight2 (const AActor* t1, const AActor* t2);
 void	P_UseLines (player_t* player);
 
 // GhostlyDeath -- I put this here
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
+bool P_CheckSightEdges2(const AActor* t1, const AActor* t2, float radius_boost);
 
 bool	P_ChangeSector (sector_t* sector, bool crunch);
 
@@ -299,6 +305,123 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 #define MOD_HIT				22
 
 extern	int MeansOfDeath;
+
+//
+// PO_MAN
+//
+typedef enum
+{
+	PODOOR_NONE,
+	PODOOR_SLIDE,
+	PODOOR_SWING,
+	
+	NUMTYPES	
+} podoortype_t;
+
+inline FArchive &operator<< (FArchive &arc, podoortype_t type)
+{
+	return arc << (BYTE)type;
+}
+inline FArchive &operator>> (FArchive &arc, podoortype_t &out)
+{
+	BYTE in; arc >> in; out = (podoortype_t)in; return arc;
+}
+
+class DPolyAction : public DThinker
+{
+	DECLARE_SERIAL (DPolyAction, DThinker)
+public:
+	DPolyAction (int polyNum);
+protected:
+	DPolyAction ();
+	int m_PolyObj;
+	int m_Speed;
+	int m_Dist;
+
+	friend void ThrustMobj (AActor *actor, seg_t *seg, polyobj_t *po);
+};
+
+class DRotatePoly : public DPolyAction
+{
+	DECLARE_SERIAL (DRotatePoly, DPolyAction)
+public:
+	DRotatePoly (int polyNum);
+	void RunThink ();
+protected:
+	friend BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int direction, BOOL overRide);
+private:
+	DRotatePoly ();
+};
+
+class DMovePoly : public DPolyAction
+{
+	DECLARE_SERIAL (DMovePoly, DPolyAction)
+public:
+	DMovePoly (int polyNum);
+	void RunThink ();
+protected:
+	DMovePoly ();
+	int m_Angle;
+	fixed_t m_xSpeed; // for sliding walls
+	fixed_t m_ySpeed;
+
+	friend BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle, fixed_t dist, BOOL overRide);
+};
+
+class DPolyDoor : public DMovePoly
+{
+	DECLARE_SERIAL (DPolyDoor, DMovePoly)
+public:
+	DPolyDoor (int polyNum, podoortype_t type);
+	void RunThink ();
+protected:
+	int m_Direction;
+	int m_TotalDist;
+	int m_Tics;
+	int m_WaitTics;
+	podoortype_t m_Type;
+	bool m_Close;
+
+	friend BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle, int delay, int distance, podoortype_t type);
+private:
+	DPolyDoor ();
+};
+
+// [RH] Data structure for P_SpawnMapThing() to keep track
+//		of polyobject-related things.
+typedef struct polyspawns_s
+{
+	struct polyspawns_s *next;
+	fixed_t x;
+	fixed_t y;
+	short angle;
+	short type;
+} polyspawns_t;
+
+enum
+{
+	PO_HEX_ANCHOR_TYPE = 3000,
+	PO_HEX_SPAWN_TYPE,
+	PO_HEX_SPAWNCRUSH_TYPE,
+
+	// [RH] Thing numbers that don't conflict with Doom things
+	PO_ANCHOR_TYPE = 9300,
+	PO_SPAWN_TYPE,
+	PO_SPAWNCRUSH_TYPE
+};
+
+#define PO_LINE_START 1 // polyobj line start special
+#define PO_LINE_EXPLICIT 5
+
+extern polyobj_t *polyobjs; // list of all poly-objects on the level
+extern int po_NumPolyobjs;
+extern polyspawns_t *polyspawns;	// [RH] list of polyobject things to spawn
+
+
+BOOL PO_MovePolyobj (int num, int x, int y);
+BOOL PO_RotatePolyobj (int num, angle_t angle);
+void PO_Init (void);
+BOOL PO_Busy (int polyobj);
 
 //
 // P_SPEC

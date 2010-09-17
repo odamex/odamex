@@ -57,7 +57,7 @@
 #include "minilzo.h"
 
 #include "sv_main.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
@@ -94,10 +94,10 @@ extern BOOL sendpause, sendsave, sendcenterview;
 
 level_locals_t level;			// info about current level
 
-static level_pwad_info_t *wadlevelinfos;
-static cluster_info_t *wadclusterinfos;
-static size_t numwadlevelinfos = 0;
-static size_t numwadclusterinfos = 0;
+level_pwad_info_t *wadlevelinfos;
+cluster_info_t *wadclusterinfos;
+size_t numwadlevelinfos = 0;
+size_t numwadclusterinfos = 0;
 
 BOOL HexenHack;
 
@@ -490,7 +490,7 @@ static void zapDefereds (acsdefered_t *def)
 
 void P_RemoveDefereds (void)
 {
-	int i;
+	unsigned int i;
 
 	// Remove any existing defereds
 	for (i = 0; i < numwadlevelinfos; i++)
@@ -1682,6 +1682,7 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 	}
 	P_SerializeThinkers (arc, hubLoad);
 	P_SerializeWorld (arc);
+	P_SerializePolyobjs (arc);
 	P_SerializeSounds (arc);
 	if (!hubLoad)
 		P_SerializePlayers (arc);
@@ -1788,7 +1789,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 {
 	if (arc.IsStoring ())
 	{
-		int i;
+		unsigned int i;
 
 		for (i = 0; i < numwadlevelinfos; i++)
 			if (wadlevelinfos[i].defered)

@@ -85,7 +85,7 @@
 #include "v_text.h"
 #include "gi.h"
 #include "stats.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 #include "cl_main.h"
 
 extern size_t got_heapsize;
@@ -140,6 +140,8 @@ static int pagetic;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_freelook)
+EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
 EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
@@ -1381,6 +1383,20 @@ std::vector<size_t> D_DoomWadReboot(
 
 	// Close all open WAD files
 	W_Close();
+	
+	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
+    // I have never used memset, I hope I am not invoking satan by doing this :(
+	if (wadlevelinfos)
+    {
+        memset(wadlevelinfos,0,sizeof(wadlevelinfos));        
+        numwadlevelinfos = 0;
+    }
+    
+    if (wadclusterinfos)
+    {
+        memset(wadclusterinfos,0,sizeof(wadclusterinfos));
+        numwadclusterinfos = 0;	        
+    }
 
 	// Restart the memory manager
 	Z_Init();
@@ -1652,7 +1668,11 @@ void D_DoomMain (void)
 				{
 					// single player warp (like in g_level)
 					serverside = true;
-
+                    sv_allowexit = "1";
+                    sv_nomonsters = "0";
+                    sv_freelook = "1";
+                    sv_allowjump = "1";
+                    sv_gametype = GM_COOP;
 					players.clear();
 					players.push_back(player_t());
 					players.back().playerstate = PST_REBORN;

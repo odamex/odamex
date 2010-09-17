@@ -35,7 +35,7 @@
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "md5.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 
 #define MASTERPORT			15000
 

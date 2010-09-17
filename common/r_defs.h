@@ -314,6 +314,31 @@ struct seg_s
 };
 typedef struct seg_s seg_t;
 
+// ===== Polyobj data =====
+typedef struct FPolyObj
+{
+	int			numsegs;
+	seg_t		**segs;
+	fixed_t		startSpot[3];
+	vertex_t	*originalPts;	// used as the base for the rotations
+	vertex_t	*prevPts; 		// use to restore the old point values
+	angle_t		angle;
+	int			tag;			// reference tag assigned in HereticEd
+	int			bbox[4];
+	int			validcount;
+	BOOL		crush; 			// should the polyobj attempt to crush mobjs?
+	int			seqType;
+	fixed_t		size;			// polyobj size (area of POLY_AREAUNIT == size of FRACUNIT)
+	DThinker	*specialdata;	// pointer to a thinker, if the poly is moving
+} polyobj_t;
+
+typedef struct polyblock_s
+{
+	polyobj_t *polyobj;
+	struct polyblock_s *prev;
+	struct polyblock_s *next;
+} polyblock_t;
+
 //
 // A SubSector.
 // References a Sector.
@@ -326,6 +351,7 @@ typedef struct subsector_s
 	sector_t		*sector;
 	unsigned short	numlines;
 	unsigned short	firstline;
+	polyobj_t	    *poly;
 } subsector_t;
 
 //
