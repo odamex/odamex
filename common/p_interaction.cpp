@@ -1145,10 +1145,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
         }
         else
         {
-            if (serverside)
-            {
-                P_DropWeapon(target->player);
-            }
+            P_DropWeapon(target->player);
             target->player->respawn_time = level.time; // vanilla immediate respawn
         }
 
@@ -1164,17 +1161,14 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->health = 0;
 	}
 
-    if (target != consoleplayer().camera)
+    if (target->health < -target->info->spawnhealth
+        && target->info->xdeathstate)
     {
-        if (target->health < -target->info->spawnhealth
-            && target->info->xdeathstate)
-        {
-            P_SetMobjState(target, target->info->xdeathstate);
-        }
-        else
-        {
-            P_SetMobjState(target, target->info->deathstate);
-        }
+        P_SetMobjState(target, target->info->xdeathstate);
+    }
+    else
+    {
+        P_SetMobjState(target, target->info->deathstate);
     }
 
 	target->tics -= P_Random(target) & 3;
