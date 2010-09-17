@@ -171,6 +171,8 @@ private:
 	// Threads
 	ODA_Thread                MasterThread;
 	std::vector<ODA_Thread*>  QServerThread;
+
+	bool                      StartupQuery;
 };
 
 #endif
