@@ -622,6 +622,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\common\doomkeys.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\common\doomstat.cpp"
 				>
 			</File>

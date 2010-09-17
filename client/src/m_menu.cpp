@@ -50,6 +50,10 @@
 
 #include "gi.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 extern patch_t* 	hu_font[HU_FONTSIZE];
 
 // temp for screenblocks (0-9)
@@ -730,6 +734,9 @@ void M_DoSave (int slot)
 //
 void M_SaveSelect (int choice)
 {
+	time_t     ti = time(NULL);
+	struct tm *lt = localtime(&ti);
+
 	// we are going to be intercepting all chars
 	genStringEnter = 1;
 	genStringEnd = M_DoSave;
@@ -737,8 +744,9 @@ void M_SaveSelect (int choice)
 
 	saveSlot = choice;
 	strcpy(saveOldString,savegamestrings[choice]);
-	if (!strcmp(savegamestrings[choice],EMPTYSTRING))
-		savegamestrings[choice][0] = 0;
+
+	strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
+
 	saveCharIndex = strlen(savegamestrings[choice]);
 }
 
@@ -789,7 +797,7 @@ char	tempstring[80];
 
 void M_QuickSaveResponse(int ch)
 {
-	if (ch == 'y')
+	if (ch == 'y' || ch == KEY_JOY4)
 	{
 		M_DoSave (quickSaveSlot);
 		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
@@ -836,7 +844,7 @@ void M_QuickSave(void)
 //
 void M_QuickLoadResponse(int ch)
 {
-	if (ch == 'y')
+	if (ch == 'y' || ch == KEY_JOY4)
 	{
 		M_LoadSelect(quickSaveSlot);
 		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
@@ -970,7 +978,7 @@ void M_DrawEpisode(void)
 
 void M_VerifyNightmare(int ch)
 {
-	if (ch != 'y') {
+	if (ch != 'y' && ch != KEY_JOY4) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1057,7 +1065,7 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if (toupper(ch) != 'Y') {
+	if ((isalpha(ch) && toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1086,7 +1094,7 @@ void M_EndGame(int choice)
 
 void M_QuitResponse(int ch)
 {
-	if (toupper(ch) != 'Y') {
+	if ((isalpha(ch) && toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1691,8 +1699,17 @@ bool M_Responder (event_t* ev)
 
 	// eat mouse events
 	if(menuactive)
+	{
 		if(ev->type == ev_mouse)
 			return true;
+		else if(ev->type == ev_joystick)
+		{
+			if(OptionsActive)
+				M_OptResponder (ev);
+			// Eat joystick events for now -- Hyper_Eye
+			return true;
+		}
+	}
 
 	if (ev->type == ev_keydown)
 	{
@@ -1724,12 +1741,14 @@ bool M_Responder (event_t* ev)
 			}
 			break;
 
+		  case KEY_JOY2:
 		  case KEY_ESCAPE:
 			genStringEnter = 0;
 			M_ClearMenus ();
 			strcpy(&savegamestrings[saveSlot][0],saveOldString);
 			break;
 
+		  case KEY_JOY1:
 		  case KEY_ENTER:
 			genStringEnter = 0;
 			M_ClearMenus ();
@@ -1759,7 +1778,7 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			!(ch2 == ' ' || toupper(ch2) == 'N' || toupper(ch2) == 'Y' || ch == KEY_ESCAPE))
+			!(ch2 == ' ' || ch == KEY_ESCAPE || toupper(ch2) == 'N' || toupper(ch2) == 'Y' || ch == KEY_JOY2 || ch == KEY_JOY4))
 			return true;
 
 		menuactive = messageLastMenuActive;
@@ -1786,7 +1805,11 @@ bool M_Responder (event_t* ev)
 	if (!menuactive)
 	{
 		// [ML] This is a regular binding now too!
+#ifdef _XBOX
+		if (ch == KEY_ESCAPE || ch == KEY_JOY9)
+#else
 		if (ch == KEY_ESCAPE)
+#endif
 		{
 			AddCommandString("menu_main");
 			return true;
@@ -1807,6 +1830,7 @@ bool M_Responder (event_t* ev)
 	// Keys usable within menu
 	switch (ch)
 	{
+	  case KEY_HAT3:
 	  case KEY_DOWNARROW:
 		do
 		{
@@ -1823,6 +1847,7 @@ bool M_Responder (event_t* ev)
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
+	  case KEY_HAT1:
 	  case KEY_UPARROW:
 		do
 		{
@@ -1839,6 +1864,7 @@ bool M_Responder (event_t* ev)
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
+	  case KEY_HAT4:
 	  case KEY_LEFTARROW:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
@@ -1848,6 +1874,7 @@ bool M_Responder (event_t* ev)
 		}
 		return true;
 
+	  case KEY_HAT2:
 	  case KEY_RIGHTARROW:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
@@ -1857,6 +1884,7 @@ bool M_Responder (event_t* ev)
 		}
 		return true;
 
+	  case KEY_JOY1:
 	  case KEY_ENTER:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status)
@@ -1878,6 +1906,7 @@ bool M_Responder (event_t* ev)
 	  // [RH] Escape now moves back one menu instead of
 	  //	  quitting the menu system. Thus, backspace
 	  //	  is now ignored.
+	  case KEY_JOY2:
 	  case KEY_ESCAPE:
 		currentMenu->lastOn = itemOn;
 		M_PopMenuStack ();

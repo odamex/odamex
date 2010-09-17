@@ -574,7 +574,7 @@ const char* GetBase(const char* in)
 {
 	const char* out = &in[strlen(in) - 1];
 
-	while (out > in && *(out-1) != '/' && *(out-1) != '\\')
+	while (out > in && *(out-1) != PATHSEPCHAR)
 		out--;
 
 	return out;

@@ -28,10 +28,14 @@
 
 #include "version.h"
 
+#ifdef GEKKO
+#include <gctypes.h>
+#endif
+
 #ifndef __BYTEBOOL__
 #define __BYTEBOOL__
 // [RH] Some windows includes already define this
-#if !defined(_WINDEF_) && !defined(__wtypes_h__)
+#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
 typedef int BOOL;
 #endif
 #ifndef __cplusplus
@@ -56,7 +60,9 @@ typedef enum {false, true} dboolean;
 // Predefined with some OS.
 #ifndef UNIX
 #ifndef _MSC_VER
+#ifndef GEKKO
 #include <values.h>
+#endif
 #endif
 #endif
 
@@ -66,6 +72,11 @@ typedef enum {false, true} dboolean;
 
 #ifdef OSF1
 #define __int64 long
+#endif
+
+#ifdef _XBOX
+typedef unsigned __int64 uint64_t;
+typedef unsigned __int32 uint32_t;
 #endif
 
 #ifdef UNIX
@@ -141,7 +152,13 @@ typedef DWORD				BITFIELD;
 #endif
 #endif
 
-
+#ifdef _WIN32
+#define PATHSEP "\\"
+#define PATHSEPCHAR '\\'
+#else
+#define PATHSEP "/"
+#define PATHSEPCHAR '/'
+#endif
 
 // [RH] This gets used all over; define it here:
 int STACK_ARGS Printf (int printlevel, const char *, ...);

@@ -112,6 +112,12 @@ int P_Random();
 // As P_Random, but used by the play simulation, one per actor
 int P_Random(AActor *actor);
 
+
+// Optimization safe random difference functions -- Hyper_Eye 04/11/2010
+int P_RandomDiff ();
+int P_RandomDiff (AActor *actor);
+
+
 // Fix randoms for demos.
 void M_ClearRandom(void);
 

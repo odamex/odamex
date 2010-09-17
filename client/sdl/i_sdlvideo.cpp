@@ -27,14 +27,20 @@
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
 #if WIN32
+#ifndef _XBOX
 #include <windows.h>
+#endif // !_XBOX
 #include "SDL_syswm.h"
 #include "resource.h"
-#endif
+#endif // WIN32
 
 #include "v_palette.h"
 #include "i_sdlvideo.h"
 #include "i_system.h"
+
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
 
 SDLVideo::SDLVideo(int parm)
 {
@@ -64,7 +70,7 @@ SDLVideo::SDLVideo(int parm)
 
     // [Russell] - Just for windows, display the icon in the system menu and
     // alt-tab display
-    #if WIN32
+    #if WIN32 && !_XBOX
     HICON Icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 
     if (Icon != 0)
@@ -176,7 +182,25 @@ void SDLVideo::SetWindowedScale (float scale)
    /// HAHA FIXME
 }
 
+bool SDLVideo::SetOverscan (float scale)
+{
+	int   ret = 0;
 
+	if(scale > 1.0)
+		return false;
+
+#ifdef _XBOX
+	if(xbox_SetScreenStretch( -(screenw - (screenw * scale)), -(screenh - (screenh * scale))) )
+		ret = -1;
+	if(xbox_SetScreenPosition( (screenw - (screenw * scale)) / 2, (screenh - (screenh * scale)) / 2) )
+		ret = -1;
+#endif
+
+	if(ret)
+		return false;
+
+	return true;
+}
 
 bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
 {

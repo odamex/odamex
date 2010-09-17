@@ -26,12 +26,14 @@
 // denis - todo - remove
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#ifndef _XBOX
 #include <windows.h>
 #undef GetMessage
 typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
+#endif // !_XBOX
 #else
 #include <sched.h>
-#endif
+#endif // WIN32
 
 #ifdef UNIX
 // for getuid and geteuid
@@ -60,6 +62,10 @@ typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
 #include "i_sound.h"
 #include "r_main.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
@@ -77,11 +83,15 @@ static void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
+#ifdef GCONSOLE
+int I_Main(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
 	try
 	{
-#ifdef UNIX
+#if defined(UNIX) && !defined(GEKKO)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
@@ -114,7 +124,7 @@ int main(int argc, char *argv[])
         // [Russell] - No more double-tapping of capslock to enable autorun
         putenv("SDL_DISABLE_LOCK_KEYS=1");
 
-#ifdef WIN32
+#if defined WIN32 && !defined _XBOX
     	// From the SDL 1.2.10 release notes:
     	//
     	// > The "windib" video driver is the default now, to prevent
@@ -129,7 +139,6 @@ int main(int argc, char *argv[])
         	putenv("SDL_VIDEODRIVER=directx");
     	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-gdi") > 0)
         	putenv("SDL_VIDEODRIVER=windib");
-
 
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
@@ -193,6 +202,8 @@ int main(int argc, char *argv[])
         }
 #ifndef WIN32
             fprintf(stderr, "%s\n", error.GetMessage().c_str());
+#elif _XBOX
+		// Use future Xbox error message handling.    -- Hyper_Eye
 #else
 		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
 #endif
