@@ -216,17 +216,24 @@ void xbox_CloseLogFile()
 //
 // xbox_OutputDebugString
 //
-void xbox_OutputDebugString(const char *str)
+void xbox_OutputDebugString(const char *str, ...)
 {
+	va_list ap;
+	char    res[1024];
+
 	if(!str)
 		return;
+
+	va_start(ap, str);
+	_vsnprintf(res, sizeof(res), str, ap);
 
 	AG_MutexLock(&XBLogMutex);
 
 	if(DebugConsole)
-		OutputDebugString(str);
+		OutputDebugString(res);
 
-	XBLogFile << str;
+	XBLogFile << res;
+	XBLogFile.flush();
 
 	AG_MutexUnlock(&XBLogMutex);
 }
