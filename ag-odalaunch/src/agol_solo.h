@@ -46,6 +46,8 @@ private:
 
 	void               PopulateWadLists();
 	bool               WadIsIWAD(std::string wad);
+	bool               PwadIsFileType(std::string wad, std::string extension);
+	bool               PWadListContainsFileType(std::string extension);
 
 	void               OnCancel(AG_Event *event);
 	void               OnLaunch(AG_Event *event);

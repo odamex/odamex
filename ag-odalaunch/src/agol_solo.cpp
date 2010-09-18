@@ -268,6 +268,57 @@ bool AGOL_Solo::WadIsIWAD(string wad)
 	return false;
 }
 
+bool AGOL_Solo::PwadIsFileType(string wad, string extension)
+{
+	if(wad.size() > 0 && extension.size() > 0)
+	{
+		// Convert the wad name to uppercase
+		transform(wad.begin(), wad.end(), wad.begin(), ::toupper);
+
+		// Convert the extension to uppercase
+		transform(extension.begin(), extension.end(), extension.begin(), ::toupper);
+
+		size_t dot = wad.rfind('.');
+
+		if(wad.substr(dot + 1, wad.size()) == extension)
+			return true;
+	}
+
+	return false;
+}
+
+bool AGOL_Solo::PWadListContainsFileType(string extension)
+{
+	if(extension.size() > 0)
+	{
+		for(int i = 1; i <= PwadList->nitems; i++)
+		{
+			AG_TlistItem *selitem = AG_TlistFindByIndex(PwadList, i);
+
+			if(selitem && strlen(selitem->text) > 0)
+			{
+				string wad(selitem->text);
+
+				// Convert the wad name to uppercase
+				transform(wad.begin(), wad.end(), wad.begin(), ::toupper);
+
+				// Convert the extension to uppercase
+				transform(extension.begin(), extension.end(), extension.begin(), ::toupper);
+
+				size_t dot = wad.rfind('.');
+
+				// If the file has no extension move on to the next one.
+				if(dot == string::npos)
+					continue;
+
+				if(wad.substr(dot + 1, wad.size()) == extension)
+					return true;
+			}
+		}
+	}
+	return false;
+}
+
 void AGOL_Solo::OnCancel(AG_Event *event)
 {
 	// Detach and destroy the window + contents
@@ -310,15 +361,56 @@ void AGOL_Solo::OnLaunch(AG_Event *event)
 	// If there are selected items traverse the wad list
 	if(AG_TlistSelectedItem(PwadList))
 	{
-		cmd.AddParameter("-file");
-
-		// Find any selected pwads
-		for(int i = 1; i <= PwadList->nitems; i++)
+		// WAD files
+		if(PWadListContainsFileType("WAD"))
 		{
-			selitem = AG_TlistFindByIndex(PwadList, i);
+			cmd.AddParameter("-file");
 
-			if(selitem && selitem->selected && strlen(selitem->text) > 0)
-				cmd.AddParameter(selitem->text);
+			// Find any selected pwads
+			for(int i = 1; i <= PwadList->nitems; i++)
+			{
+				selitem = AG_TlistFindByIndex(PwadList, i);
+
+				if(selitem && selitem->selected && strlen(selitem->text) > 0)
+				{
+					if(PwadIsFileType(selitem->text, "WAD"))
+						cmd.AddParameter(selitem->text);
+				}
+			}
+		}
+		// Dehacked patches
+		if(PWadListContainsFileType("DEH"))
+		{
+			cmd.AddParameter("-deh");
+
+			// Find any selected pwads
+			for(int i = 1; i <= PwadList->nitems; i++)
+			{
+				selitem = AG_TlistFindByIndex(PwadList, i);
+
+				if(selitem && selitem->selected && strlen(selitem->text) > 0)
+				{
+					if(PwadIsFileType(selitem->text, "DEH"))
+						cmd.AddParameter(selitem->text);
+				}
+			}
+		}
+		// BEX patches
+		if(PWadListContainsFileType("BEX"))
+		{
+			cmd.AddParameter("-bex");
+
+			// Find any selected pwads
+			for(int i = 1; i <= PwadList->nitems; i++)
+			{
+				selitem = AG_TlistFindByIndex(PwadList, i);
+
+				if(selitem && selitem->selected && strlen(selitem->text) > 0)
+				{
+					if(PwadIsFileType(selitem->text, "BEX"))
+						cmd.AddParameter(selitem->text);
+				}
+			}
 		}
 	}
 
