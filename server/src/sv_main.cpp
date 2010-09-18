@@ -3262,7 +3262,7 @@ void SV_Spectate (player_t &player)
 			// Check to see if there are enough "activeplayers"
 			for (size_t i = 0; i < players.size(); i++)
 			{
-				if (!players[i].spectator)
+				if (!players[i].spectator && players[i].playerstate != PST_CONTACT && players[i].playerstate != PST_DOWNLOAD)
 					NumPlayers++;
 			}
 
