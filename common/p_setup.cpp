@@ -42,7 +42,7 @@
 #include "p_lnspec.h"
 #include "v_palette.h"
 #include "c_console.h"
-
+#include "gi.h"
 #include "p_setup.h"
 
 void P_PreservePlayer(player_t &player);
@@ -1527,7 +1527,7 @@ void P_Init (void)
 {
 	P_InitSwitchList ();
 	P_InitPicAnims ();
-	R_InitSprites (sprnames);
+	R_InitSprites (gameinfo.sprnames);
 }
 
 

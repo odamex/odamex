@@ -99,6 +99,7 @@ typedef struct
 	stbarfns_t *StatusBar;     	// status bar function set
 	gameborder_t *border;
 	EGameType gametype;			// Indicates which game this is
+	const char **sprnames;      // Sprite names list [TEMPORARY - ML]
 } gameinfo_t;
 
 extern gameinfo_t gameinfo;

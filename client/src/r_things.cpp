@@ -43,6 +43,7 @@
 
 #include "cmdlib.h"
 #include "s_sound.h"
+#include "gi.h"
 
 extern fixed_t FocalLengthX, FocalLengthY;
 
@@ -112,7 +113,7 @@ void R_CacheSprite (spritedef_t *sprite)
 	patch_t *patch;
 
 	DPrintf ("cache sprite %s\n",
-		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
+		sprite - sprites < NUMSPRITES ? gameinfo.sprnames[sprite - sprites] : "");
 	for (i = 0; i < sprite->numframes; i++)
 	{
 		for (r = 0; r < 8; r++)
