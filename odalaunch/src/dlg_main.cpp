@@ -113,13 +113,14 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     // Sets the window size
     ConfigInfo.Read(wxT("MainWindowWidth"), 
                     &WindowWidth, 
-                    GetClientSize().GetWidth());
+                    0);
                     
     ConfigInfo.Read(wxT("MainWindowHeight"), 
                     &WindowHeight, 
-                    GetClientSize().GetHeight());
+                    0);
     
-    SetClientSize(WindowWidth, WindowHeight);
+    if (WindowWidth >= 0 && WindowHeight >= 0)
+        SetClientSize(WindowWidth, WindowHeight);
     
     // Set Window position
     ConfigInfo.Read(wxT("MainWindowPosX"), 
@@ -130,7 +131,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
                     &WindowPosY, 
                     0);
     
-    Move(WindowPosX, WindowPosY);
+    if (WindowPosX >= 0 && WindowPosY >= 0)
+        Move(WindowPosX, WindowPosY);
     
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 1;
