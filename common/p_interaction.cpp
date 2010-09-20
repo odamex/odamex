@@ -1085,6 +1085,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		}
 	}
 
+    // [CG] No need for any of this anymore
+    /*
 	if (demoplayback && source && source->player && target->player)
 	{
 		if (target->player == source->player) // Nes - Local demo
@@ -1096,6 +1098,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			source->player->fragcount++;
 		}
 	}
+    */
 
 	// [Toke - CTF]
 	if (sv_gametype == GM_CTF && target->player)
