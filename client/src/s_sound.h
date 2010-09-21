@@ -32,6 +32,11 @@
 
 #define MAX_SNDNAME			63
 
+//joek - choco goodness below
+// when to clip out sounds
+// Does not fit the large outdoor areas.
+#define S_CLIPPING_DIST		(1200*0x10000)
+
 
 class AActor;
 
@@ -86,7 +91,7 @@ void S_Sound (AActor *ent, int channel, const char *name, float volume, int atte
 void S_Sound (fixed_t *pt, int channel, const char *name, float volume, int attenuation);
 void S_Sound (fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation);
 void S_PlatSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation); // [Russell] - Hack to stop multiple plat stop sounds
-void S_LoopedSound (AActor *ent, int channel, const char *name, float volume, int attenuation); 
+void S_LoopedSound (AActor *ent, int channel, const char *name, float volume, int attenuation);
 void S_LoopedSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation);
 void S_SoundID (int channel, int sfxid, float volume, int attenuation);
 void S_SoundID (fixed_t x, fixed_t y, int channel, int sound_id, float volume, int attenuation);
@@ -121,8 +126,8 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sfxid, float volume, int att
 void S_StopSound (AActor *ent, int channel);
 void S_StopSound (fixed_t *pt, int channel);
 void S_StopSound (fixed_t *pt);
-		
-bool S_StopSoundID(int sound_id);
+
+bool S_StopSoundID (int sound_id);
 
 // Stop sound for all channels
 void S_StopAllChannels (void);
@@ -169,12 +174,12 @@ int S_FindSound (const char *logicalname);
 int S_FindSoundByLump (int lump);
 int S_AddSound (char *logicalname, char *lumpname);	// Add sound by lumpname
 int S_AddSoundLump (char *logicalname, int lump);	// Add sound by lump index
-void S_ClearSoundLumps();
+void S_ClearSoundLumps (void);
 
 void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation);
 
 // [RH] Prints sound debug info to the screen.
-//		Modelled after Hexen's noise cheat. // denis - this reference to hexen is ok gpl-wise
+//		Modelled after Hexen's noise cheat.
 void S_NoiseDebug (void);
 
 class cvar_t;

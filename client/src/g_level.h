@@ -161,6 +161,7 @@ extern int WorldVars[NUM_WORLDVARS];
 extern BOOL savegamerestore;
 
 void G_InitNew (const char *mapname);
+void G_ChangeMap (void);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,

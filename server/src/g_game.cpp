@@ -913,7 +913,7 @@ void G_SaveGame (int slot, char *description)
 {
 }
 
-void G_BuildSaveName (char *name, int slot)
+void G_BuildSaveName (std::string &name, int slot)
 {
 }
 
