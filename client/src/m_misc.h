@@ -29,9 +29,6 @@
 
 #include "doomtype.h"
 
-// [Russell] Simple function to check whether the given string is an iwad name
-BOOL M_IsIWAD(std::string filename);
-
 void M_LoadDefaults (void);
 
 void STACK_ARGS M_SaveDefaults (void);

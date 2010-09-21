@@ -102,9 +102,6 @@ int				dc_color;				// [RH] Color for column filler
 // first pixel in a column (possibly virtual) 
 byte*			dc_source;				
 
-// [RH] Tutti-Frutti fix
-unsigned int	dc_mask;
-
 // just for profiling 
 int 			dccount;
 }
