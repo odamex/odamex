@@ -222,6 +222,8 @@ void dlgMain::OnClose(wxCloseEvent &event)
     ConfigInfo.Write(wxT("MainWindowPosX"), GetPosition().x);
     ConfigInfo.Write(wxT("MainWindowPosY"), GetPosition().y);
 
+    ConfigInfo.Flush();
+
     event.Skip();
 }
 
@@ -764,7 +766,7 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     }
     
     #ifdef __WXMSW__
-      wxString binname = ODX_Path + wxT('\\') + _T("odamex");
+      wxString binname = ODX_Path + wxT('\\') + wxT("odamex");
     #elif __WXMAC__
       wxString binname = ODX_Path + wxT("/odamex.app/Contents/MacOS/odamex");
     #else
@@ -794,13 +796,17 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
     
     if (!ExtraCmdLineArgs.IsEmpty())
-        cmdline += wxString::Format(_T(" %s"), 
+        cmdline += wxString::Format(wxT(" %s"), 
                                     ExtraCmdLineArgs.c_str());
 
-	if (wxExecute(cmdline, wxEXEC_ASYNC, NULL) == -1)
+    // wxWidgets likes to spit out its own message box on msw after our one
+    #ifndef __WXMSW__
+	if (wxExecute(cmdline, wxEXEC_ASYNC, NULL) <= 0)
         wxMessageBox(wxString::Format(wxT("Could not start %s!"), 
                                         binname.c_str()));
-	
+    #else
+    wxExecute(cmdline, wxEXEC_ASYNC, NULL);
+    #endif
 }
 
 
