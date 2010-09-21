@@ -580,8 +580,6 @@ const char* GetBase(const char* in)
 	return out;
 }
 
-std::vector<std::string> dummy_need_hashes;
-
 BEGIN_COMMAND (wad) // denis - changes wads
 {
 	std::vector<std::string> wads, patch_files, hashes;
