@@ -289,6 +289,8 @@ END_COMMAND (wad)
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_nomonsters)
+EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR(sv_allowjump)
 
 void G_DoNewGame (void)
 {
@@ -309,6 +311,8 @@ void G_DoNewGame (void)
 	serverside = true;
 	sv_allowexit = "1";
 	sv_nomonsters = "0";
+	sv_freelook = "1";
+	sv_allowjump = "1";
 	sv_gametype = GM_COOP;
 
 	players.clear();

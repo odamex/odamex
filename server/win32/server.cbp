@@ -375,7 +375,6 @@
 		<Unit filename="..\src\c_console.h" />
 		<Unit filename="..\src\d_main.cpp" />
 		<Unit filename="..\src\d_main.h" />
-		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
 		<Unit filename="..\src\d_player.h" />
 		<Unit filename="..\src\g_game.cpp" />

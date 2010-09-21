@@ -150,6 +150,8 @@ static int pagetic;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_freelook)
+EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
 EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
@@ -1580,7 +1582,11 @@ void D_DoomMain (void)
 				{
 					// single player warp (like in g_level)
 					serverside = true;
-
+                    sv_allowexit = "1";
+                    sv_nomonsters = "0";
+                    sv_freelook = "1";
+                    sv_allowjump = "1";
+                    sv_gametype = GM_COOP;
 					players.clear();
 					players.push_back(player_t());
 					players.back().playerstate = PST_REBORN;
