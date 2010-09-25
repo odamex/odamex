@@ -66,4 +66,9 @@ void G_ScreenShot(char *filename);
 
 void G_PlayerFinishLevel(player_t &player);
 
+extern level_pwad_info_t *wadlevelinfos;
+extern cluster_info_t *wadclusterinfos;
+extern size_t numwadlevelinfos;
+extern size_t numwadclusterinfos;
+
 #endif

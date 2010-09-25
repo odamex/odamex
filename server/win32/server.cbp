@@ -355,6 +355,8 @@
 		<Unit filename="..\..\common\r_local.h" />
 		<Unit filename="..\..\common\r_state.h" />
 		<Unit filename="..\..\common\r_things.h" />
+		<Unit filename="..\..\common\sc_man.cpp" />
+		<Unit filename="..\..\common\sc_man.h" />
 		<Unit filename="..\..\common\st_stuff.h" />
 		<Unit filename="..\..\common\stats.cpp" />
 		<Unit filename="..\..\common\stats.h" />

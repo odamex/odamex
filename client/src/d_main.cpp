@@ -1313,6 +1313,20 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 
 	// Close all open WAD files
 	W_Close();
+	
+	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
+    // I have never used memset, I hope I am not invoking satan by doing this :(
+	if (wadlevelinfos)
+    {
+        memset(wadlevelinfos,0,sizeof(wadlevelinfos));        
+        numwadlevelinfos = 0;
+    }
+    
+    if (wadclusterinfos)
+    {
+        memset(wadclusterinfos,0,sizeof(wadclusterinfos));
+        numwadclusterinfos = 0;	        
+    }	
 
 	// Restart the memory manager
 	Z_Init();
@@ -1374,6 +1388,7 @@ std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
 	V_InitPalette();
 
 	G_SetLevelStrings ();
+	G_ParseMapInfo ();	
 	S_ParseSndInfo();
 
 	M_Init();
@@ -1515,6 +1530,9 @@ void D_DoomMain (void)
 	// [RH] Now that all text strings are set up,
 	// insert them into the level and cluster data.
 	G_SetLevelStrings ();
+	
+	// [RH] Parse through all loaded mapinfo lumps
+	G_ParseMapInfo ();	
 
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();

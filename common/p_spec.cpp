@@ -50,6 +50,7 @@
 #include "g_game.h"
 
 #include "s_sound.h"
+#include "sc_man.h"
 
 // State.
 #include "r_state.h"
@@ -1414,7 +1415,36 @@ void P_SpawnSpecials (void)
 			break;
 
 		default:
-			break;
+			// [RH] Try for normal Hexen scroller
+			if ((sector->special & 0xff) >= Scroll_North_Slow &&
+				(sector->special & 0xff) <= Scroll_SouthWest_Fast)
+			{
+				static char hexenScrollies[24][2] =
+				{
+					{  0,  1 }, {  0,  2 }, {  0,  4 },
+					{ -1,  0 }, { -2,  0 }, { -4,  0 },
+					{  0, -1 }, {  0, -2 }, {  0, -4 },
+					{  1,  0 }, {  2,  0 }, {  4,  0 },
+					{  1,  1 }, {  2,  2 }, {  4,  4 },
+					{ -1,  1 }, { -2,  2 }, { -4,  4 },
+					{ -1, -1 }, { -2, -2 }, { -4, -4 },
+					{  1, -1 }, {  2, -2 }, {  4, -4 }
+				};
+				int i = (sector->special & 0xff) - Scroll_North_Slow;
+				int dx = hexenScrollies[i][0] * (FRACUNIT/2);
+				int dy = hexenScrollies[i][1] * (FRACUNIT/2);
+
+				new DScroller (DScroller::sc_floor, dx, dy, -1, sector-sectors, 0);
+				// Hexen scrolling floors cause the player to move
+				// faster than they scroll. I do this just for compatibility
+				// with Hexen and recommend using Killough's more-versatile
+				// scrollers instead.
+				dx = FixedMul (-dx, CARRYFACTOR*2);
+				dy = FixedMul (dy, CARRYFACTOR*2);
+				new DScroller (DScroller::sc_carry, dx, dy, -1, sector-sectors, 0);
+				sector->special &= 0xff00;
+			}
+		break;
 		}
 	}
 

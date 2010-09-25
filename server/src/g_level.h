@@ -81,15 +81,15 @@ typedef struct level_info_s level_info_t;
 struct level_pwad_info_s
 {
 	// level_info_s
-	char		mapname[8];
+	char		mapname[9];
 	int			levelnum;
-	const char		*level_name;
-	char		pname[8];
-	char		nextmap[8];
-	char		secretmap[8];
+	const char	*level_name;
+	char		pname[9];
+	char		nextmap[9];
+	char		secretmap[9];
 	int			partime;
-	char		skypic[8];
-	char		music[8];
+	char		skypic[9];
+	char		music[9];
 	DWORD		flags;
 	int			cluster;
 	FLZOMemFile	*snapshot;
@@ -152,6 +152,9 @@ struct cluster_info_s {
 };
 typedef struct cluster_info_s cluster_info_t;
 
+// Only one cluster flag right now
+#define CLUSTER_HUB		0x00000001
+
 extern level_locals_t level;
 extern level_info_t LevelInfos[];
 extern cluster_info_t ClusterInfos[];
@@ -159,6 +162,7 @@ extern cluster_info_t ClusterInfos[];
 extern int WorldVars[NUM_WORLDVARS];
 
 extern BOOL savegamerestore;
+extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
 void G_InitNew (const char *mapname);
 void G_ChangeMap (void);
@@ -182,6 +186,8 @@ level_info_t *FindLevelInfo (char *mapname);
 level_info_t *FindLevelByNum (int num);
 
 char *CalcMapName (int episode, int level);
+
+void G_ParseMapInfo (void);
 
 void G_ClearSnapshots (void);
 void G_SnapshotLevel (void);

@@ -38,6 +38,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option parameters="-file demo.wad +map map01" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -492,6 +493,8 @@
 		<Unit filename="..\..\common\r_defs.h" />
 		<Unit filename="..\..\common\r_local.h" />
 		<Unit filename="..\..\common\r_state.h" />
+		<Unit filename="..\..\common\sc_man.cpp" />
+		<Unit filename="..\..\common\sc_man.h" />
 		<Unit filename="..\..\common\st_stuff.h" />
 		<Unit filename="..\..\common\stats.cpp" />
 		<Unit filename="..\..\common\stats.h" />
@@ -512,6 +515,15 @@
 			<code_completion />
 			<envvars />
 			<debugger />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>
