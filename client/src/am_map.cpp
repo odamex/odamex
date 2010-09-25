@@ -54,6 +54,7 @@ extern patch_t *hu_font[];
 #include "dstrings.h"
 
 #include "am_map.h"
+#include "gi.h"
 
 static int Background, YourColor, WallColor, TSWallColor,
 		   FDWallColor, CDWallColor, ThingColor,
@@ -64,6 +65,7 @@ static int Background, YourColor, WallColor, TSWallColor,
 		   TeleportColor, ExitColor;
 
 static int lockglow = 0;
+static byte *maplump;           // pointer to the raw data for the automap background.
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
@@ -616,15 +618,21 @@ void AM_initColors (BOOL overlayed)
 //
 //
 void AM_loadPics(void)
-{
-	int i;
+{  
+ 	int i;
 	char namebuf[9];
-
-	for (i = 0; i < 10; i++)
-	{
-		sprintf(namebuf, "AMMNUM%d", i);
-		marknums[i] = W_CachePatch (namebuf, PU_STATIC);
-	}
+	
+    if (gameinfo.flags & GAME_Heretic)
+    	maplump = (byte *)W_CacheLumpName("AUTOPAGE", PU_STATIC);
+    	
+    else
+    {	
+        for (i = 0; i < 10; i++)
+        {
+            sprintf(namebuf, "AMMNUM%d", i);
+            marknums[i] = W_CachePatch (namebuf, PU_STATIC);
+        }
+    }
 }
 
 void AM_unloadPics(void)
