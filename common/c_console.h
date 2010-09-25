@@ -43,7 +43,7 @@ typedef enum cstate_t {
 extern constate_e	ConsoleState;
 
 // Initialize the console
-void C_InitConsole (int width, int height, BOOL ingame);
+void C_InitConsole (int width, int height, int bits, BOOL ingame);
 
 // SoM
 void C_ServerDisconnectEffect(void);

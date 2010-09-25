@@ -934,7 +934,7 @@ void C_FullConsole (void)
 	if (gamestate != GS_STARTUP)
 	{
 		gamestate = GS_FULLCONSOLE;
-		level.music[0] = '\0';
+		level.music = '\0';
 		S_Start ();
 // 		SN_StopAllSequences ();
 		V_SetBlend (0,0,0,0);

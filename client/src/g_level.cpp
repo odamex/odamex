@@ -63,6 +63,50 @@
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
 
+static const char Musics1[48][9] =
+{
+	"D_E1M1",		"D_E1M2",		"D_E1M3",		"D_E1M4",		"D_E1M5",
+	"D_E1M6",		"D_E1M7",		"D_E1M8",		"D_E1M9",		"D_E2M1",
+	"D_E2M2",		"D_E2M3",		"D_E2M4",		"D_E2M5",		"D_E2M6",
+	"D_E2M7",		"D_E2M8",		"D_E2M9",		"D_E3M1",		"D_E3M2",
+	"D_E3M3",		"D_E3M4",		"D_E3M5",		"D_E3M6",		"D_E3M7",
+	"D_E3M8",		"D_E3M9",		"D_E3M4",		"D_E3M2",		"D_E3M3",
+	"D_E1M5",		"D_E2M7",		"D_E2M4",		"D_E2M6",		"D_E2M5",
+	"D_E1M9",		"MUS_E2M1",		"MUS_E2M2",		"MUS_E2M3",		"MUS_E2M4",
+	"MUS_E1M4",		"MUS_E2M6",		"MUS_E2M7",		"MUS_E2M8",		"MUS_E2M9",
+	"MUS_E3M2",		"MUS_E3M3",		"MUS_E1M6"
+};
+
+static const char Musics2[36][9] =
+{
+	"MUS_E1M1",		"MUS_E1M2",		"MUS_E1M3",		"MUS_E1M4",		"MUS_E1M5",
+	"MUS_E1M6",		"MUS_E1M7",		"MUS_E1M8",		"MUS_E1M9",		"MUS_E2M1",
+	"MUS_E2M2",		"MUS_E2M3",		"MUS_E2M4",		"MUS_E1M4",		"MUS_E2M6",
+	"MUS_E2M7",		"MUS_E2M8",		"MUS_E2M9",		"MUS_E1M1",		"MUS_E3M2",
+	"MUS_E3M3",		"MUS_E1M6",		"MUS_E1M3",		"MUS_E1M2",		"MUS_E1M5",
+	"MUS_E1M9",		"MUS_E2M6",		"MUS_E1M6",		"MUS_E1M2",		"MUS_E1M3",
+	"MUS_E1M4",		"MUS_E1M5",		"MUS_E1M1",		"MUS_E1M7",		"MUS_E1M8",
+	"MUS_E1M9"
+};
+
+static const char Musics3[32][9] =
+{
+	"D_RUNNIN",		"D_STALKS",		"D_COUNTD",		"D_BETWEE",		"D_DOOM",
+	"D_THE_DA",		"D_SHAWN",		"D_DDTBLU",		"D_IN_CIT",		"D_DEAD",
+	"D_STLKS2",		"D_THEDA2",		"D_DOOM2",		"D_DDTBL2",		"D_RUNNI2",
+	"D_DEAD2",		"D_STLKS3",		"D_ROMERO",		"D_SHAWN2",		"D_MESSAG",
+	"D_COUNT2",		"D_DDTBL3",		"D_AMPIE",		"D_THEDA3",		"D_ADRIAN",
+	"D_MESSG2",		"D_ROMER2",		"D_TENSE",		"D_SHAWN3",		"D_OPENIN",
+	"D_EVIL",		"D_ULTIMA"
+};
+
+static const char Musics4[15][9] =
+{
+	"D_VICTOR",		"D_VICTOR",		"D_VICTOR",		"D_VICTOR",		"D_READ_M",
+	"D_READ_M",		"D_READ_M",		"D_READ_M",		"D_READ_M",		"D_READ_M",
+	"MUS_CPTD",		"MUS_CPTD",		"MUS_CPTD",		"MUS_CPTD",		"MUS_CPTD"
+};
+
 extern int timingdemo;
 
 EXTERN_CVAR(sv_fastmonsters)
@@ -319,7 +363,7 @@ void G_ParseMapInfo (void)
 				memcpy (levelinfo, &defaultinfo, sizeof(*levelinfo));
 				uppercopy (levelinfo->mapname, sc_String);
 				SC_MustGetString ();
-				ReplaceString (&levelinfo->level_name, sc_String);
+				ReplaceString ((char **)&levelinfo->level_name, sc_String);
 				// Set up levelnum now so that the Teleport_NewMap specials
 				// in hexen.wad work without modification.
 				if (!strnicmp (levelinfo->mapname, "MAP", 3) && levelinfo->mapname[5] == 0)
@@ -453,12 +497,12 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 
 		case MITYPE_STRING:
 			SC_MustGetString ();
-			ReplaceString ((const char **)(info + handler->data1), sc_String);
+			ReplaceString ((char **)(info + handler->data1), sc_String);
 			break;
 
 		case MITYPE_CSTRING:
 			SC_MustGetString ();
-			strncpy ((char *)(info + handler->data1), sc_String, handler->data2);
+			strncpy ((char *)(info + handler->data1), (const char *)sc_String, handler->data2);
 			*((char *)(info + handler->data1 + handler->data2)) = '\0';
 			break;
 		}
@@ -1082,21 +1126,29 @@ void G_InitLevelLocals ()
 	BaseBlendA = 0.0f;		// Remove underwater blend effect, if any
 	NormalLight.maps = realcolormaps;
 
-	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
+	if ((i = FindWadLevelInfo (level.mapname)) > -1)
+	{
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
 
 		// [ML] 5/11/06 - Remove sky scrolling and sky2
 		level.info = (level_info_t *)pinfo;
 		info = (level_info_t *)pinfo;
 		level.fadeto = pinfo->fadeto;
-		if (level.fadeto) {
+		
+		if (level.fadeto)
+		{
 			NormalLight.maps = DefaultPalette->maps.colormaps;
-		} else {
+		}
+		else
+		{
 			R_SetDefaultColormap (pinfo->fadetable);
 		}
+		
 		level.outsidefog = pinfo->outsidefog;
 		level.flags |= LEVEL_DEFINEDINMAPINFO;
-	} else {
+	}
+	else
+	{
 		info = FindDefLevelInfo (level.mapname);
 		level.info = info;
 		level.fadeto = 0;
@@ -1104,30 +1156,33 @@ void G_InitLevelLocals ()
 		R_SetDefaultColormap ("COLORMAP");
 	}
 
-	if (info->level_name) {
+	if (info->level_name)
+	{
 		level.partime = info->partime;
 		level.cluster = info->cluster;
 		level.flags = info->flags;
 		level.levelnum = info->levelnum;
+		level.music = info->music;
 
 		strncpy (level.level_name, info->level_name, 63);
 		strncpy (level.nextmap, info->nextmap, 8);
 		strncpy (level.secretmap, info->secretmap, 8);
-		strncpy (level.music, info->music, 8);
 		strncpy (level.skypic, info->skypic, 8);
-	} else {
+	}
+	else
+	{
 		level.partime = level.cluster = 0;
 		strcpy (level.level_name, "Unnamed");
 		level.nextmap[0] =
-			level.secretmap[0] =
-			level.music[0] = 0;
-			strncpy (level.skypic, "SKY1", 8);
+			level.secretmap[0] = 0;
+		level.music = '\0';
+		strncpy (level.skypic, "SKY1", 8);
 		level.flags = 0;
 		level.levelnum = 1;
 	}
 
-//	memset (level.vars, 0, sizeof(level.vars));
-
+	memset (level.vars, 0, sizeof(level.vars));
+    
 	if (oldfade != level.fadeto)
 		RefreshPalettes ();
 }
@@ -1216,50 +1271,107 @@ cluster_info_t *FindClusterInfo (int cluster)
 void G_SetLevelStrings (void)
 {
 	char temp[8];
-	const char *namepart;
+	char *namepart;
 	int i, start;
 
 	temp[0] = '0';
 	temp[1] = ':';
 	temp[2] = 0;
 
-	for (i = 65; i < 101; i++) {		// HUSTR_E1M1 .. HUSTR_E4M9
+	for (i = 65; i < 101; i++) 		// HUSTR_E1M1 .. HUSTR_E4M9
+	{
 		if (temp[0] < '9')
 			temp[0]++;
 		else
 			temp[0] = '1';
 
-		if ( (namepart = strstr (Strings[i].string, temp)) ) {
+		if ( (namepart = strstr (Strings[i].string, temp)) ) 
+		{
 			namepart += 2;
 			while (*namepart && *namepart <= ' ')
 				namepart++;
-		} else {
+		}
+		else
+		{
 			namepart = Strings[i].string;
 		}
 
-		ReplaceString (&LevelInfos[i-65].level_name, namepart);
+		if (gameinfo.gametype != GAME_Heretic)
+		{
+			ReplaceString (&LevelInfos[i-65].level_name, namepart);
+			ReplaceString (&LevelInfos[i-65].music, Musics1[i-65]);
+		}
+	}
+		
+	if (gameinfo.gametype == GAME_Heretic)
+	{
+		for (i = 0; i < 4*9; i++)
+		{
+			ReplaceString (&LevelInfos[i].level_name, Strings[355+i].string);
+			ReplaceString (&LevelInfos[i].music, Musics2[i]);
+			LevelInfos[i].cluster = 11 + (i / 9);
+			LevelInfos[i].pname[0] = 0;
+		}
+		for (i = 0; i < 9; i++)
+		{
+			strcpy (LevelInfos[i+3*9].skypic, "SKY1");
+		}
+		LevelInfos[7].flags = LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPECLOWERFLOOR|LEVEL_HEADSPECIAL;
+		LevelInfos[16].flags = LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPECLOWERFLOOR|LEVEL_MINOTAURSPECIAL;
+		LevelInfos[25].flags = LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPECLOWERFLOOR|LEVEL_SORCERER2SPECIAL;
+		LevelInfos[34].flags = LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPECLOWERFLOOR|LEVEL_HEADSPECIAL;
+	
+		//SetEndSequence (LevelInfos[16].nextmap, END_Underwater);
+		//SetEndSequence (LevelInfos[25].nextmap, END_Demon);
+
+		LevelInfos[8].nextmap[3] = LevelInfos[8].secretmap[3] = '7';
+		LevelInfos[17].nextmap[3] = LevelInfos[17].secretmap[3] = '5';
+		LevelInfos[26].nextmap[3] = LevelInfos[26].secretmap[3] = '5';
+		LevelInfos[35].nextmap[3] = LevelInfos[35].secretmap[3] = '5';
+	}
+	else if (gameinfo.gametype == GAME_Doom)
+	{
+		//SetEndSequence (LevelInfos[16].nextmap, END_Pic2);
+		//SetEndSequence (LevelInfos[25].nextmap, END_Bunny);
+	}
+
+	//SetEndSequence (LevelInfos[7].nextmap, END_Pic1);
+	//SetEndSequence (LevelInfos[34].nextmap, END_Pic3);
+	//SetEndSequence (LevelInfos[43].nextmap, END_Pic3);
+	//SetEndSequence (LevelInfos[77].nextmap, END_Cast);
+
+	for (i = 0; i < 12; i++)
+	{
+		if (i < 9)
+			ReplaceString (&LevelInfos[i+36].level_name, Strings[391+i].string);
+		ReplaceString (&LevelInfos[i+36].music, Musics1[i+36]);
 	}
 
 	for (i = 0; i < 4; i++)
 		ReplaceString (&ClusterInfos[i].exittext, Strings[221+i].string);
 
 	if (gamemission == pack_plut)
-		start = 133;		// PHUSTR_1
+		start = 133;
 	else if (gamemission == pack_tnt)
-		start = 165;		// THUSTR_1
+		start = 165;
 	else
-		start = 101;		// HUSTR_1
+		start = 101;
 
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i < 32; i++)
+	{
 		sprintf (temp, "%d:", i + 1);
-		if ( (namepart = strstr (Strings[i+start].string, temp)) ) {
+		if ( (namepart = strstr (Strings[i+start].string, temp)) )
+		{
 			namepart += strlen (temp);
 			while (*namepart && *namepart <= ' ')
 				namepart++;
-		} else {
+		}
+		else
+		{
 			namepart = Strings[i+start].string;
 		}
-		ReplaceString (&LevelInfos[36+i].level_name, namepart);
+		ReplaceString (&LevelInfos[48+i].level_name, namepart);
+		ReplaceString (&LevelInfos[48+i].music, Musics3[i]);
 	}
 
 	if (gamemission == pack_plut)
@@ -1273,6 +1385,10 @@ void G_SetLevelStrings (void)
 		ReplaceString (&ClusterInfos[4 + i].exittext, Strings[start+i].string);
 	for (; i < 6; i++)
 		ReplaceString (&ClusterInfos[4 + i].entertext, Strings[start+i].string);
+	for (i = 350; i <= 354; i++)
+		ReplaceString (&ClusterInfos[10 + i - 350].exittext, Strings[i].string);
+	for (i = 0; i < 15; i++)
+		ReplaceString (&ClusterInfos[i].messagemusic, Musics4[i]);
 
 	if (level.info && level.info->level_name)
 		strncpy (level.level_name, level.info->level_name, 63);
@@ -1471,259 +1587,187 @@ level_info_t LevelInfos[] = {
 	{
 		"E1M1",
 		1,
-		NULL,
 		"WILV00",
 		"E1M2",
 		"E1M9",
-		30,
 		"SKY1",
-		"D_E1M1",
-		0,
 		1,
-		0
+		30,
 	},
 	{
 		"E1M2",
 		2,
-		NULL,
 		"WILV01",
 		"E1M3",
 		"E1M9",
-		75,
 		"SKY1",
-		"D_E1M2",
-		0,
 		1,
-		0
+		75,
 	},
 	{
 		"E1M3",
 		3,
-		NULL,
 		"WILV02",
 		"E1M4",
 		"E1M9",
-		120,
 		"SKY1",
-		"D_E1M3",
-		0,
 		1,
-		0
+		120,
 	},
 	{
 		"E1M4",
 		4,
-		NULL,
 		"WILV03",
 		"E1M5",
 		"E1M9",
-		90,
 		"SKY1",
-		"D_E1M4",
-		0,
 		1,
-		0
+		90,
 	},
 	{
 		"E1M5",
 		5,
-		NULL,
 		"WILV04",
 		"E1M6",
 		"E1M9",
-		165,
 		"SKY1",
-		"D_E1M5",
-		0,
 		1,
-		0
+		165,
 	},
 	{
 		"E1M6",
 		6,
-		NULL,
 		"WILV05",
 		"E1M7",
 		"E1M9",
-		180,
 		"SKY1",
-		"D_E1M6",
-		0,
 		1,
-		0
+		180,
 	},
 	{
 		"E1M7",
 		7,
-		NULL,
 		"WILV06",
 		"E1M8",
 		"E1M9",
-		180,
 		"SKY1",
-		"D_E1M7",
-		0,
 		1,
-		0
+		180,
 	},
 	{
 		"E1M8",
 		8,
-		NULL,
 		"WILV07",
-		"EndGame1",
-//		{ 'E','n','d','G','a','m','e','1' },
+		"",
 		"E1M9",
-		30,
 		"SKY1",
-		"D_E1M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,
 		1,
-		0
+		30,
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,
 	},
 	{
 		"E1M9",
 		9,
-		NULL,
 		"WILV08",
 		"E1M4",
 		"E1M4",
-		165,
 		"SKY1",
-		"D_E1M9",
-		0,
 		1,
-		0
+		165,
 	},
 
 	// Registered/Retail Episode 2
 	{
 		"E2M1",
 		11,
-		NULL,
 		"WILV10",
 		"E2M2",
 		"E2M9",
-		90,
 		"SKY2",
-		"D_E2M1",
-		0,
 		2,
-		0
+		90,
 	},
 
 	{
 		"E2M2",
 		12,
-		NULL,
 		"WILV11",
 		"E2M3",
 		"E2M9",
-		90,
 		"SKY2",
-		"D_E2M2",
-		0,
 		2,
-		0
+		90,
 	},
 	{
 		"E2M3",
 		13,
-		NULL,
 		"WILV12",
 		"E2M4",
 		"E2M9",
-		90,
 		"SKY2",
-		"D_E2M3",
-		0,
 		2,
-		0
+		90,
 	},
 	{
 		"E2M4",
 		14,
-		NULL,
 		"WILV13",
 		"E2M5",
 		"E2M9",
-		120,
 		"SKY2",
-		"D_E2M4",
-		0,
 		2,
-		0
+		120,
 	},
 	{
 		"E2M5",
 		15,
-		NULL,
 		"WILV14",
 		"E2M6",
 		"E2M9",
-		90,
 		"SKY2",
-		"D_E2M5",
-		0,
 		2,
-		0
+		90,
 	},
 	{
 		"E2M6",
 		16,
-		NULL,
 		"WILV15",
 		"E2M7",
 		"E2M9",
-		360,
 		"SKY2",
-		"D_E2M6",
-		0,
 		2,
-		0
+		360,
 	},
 	{
 		"E2M7",
 		17,
-		NULL,
 		"WILV16",
 		"E2M8",
 		"E2M9",
-		240,
 		"SKY2",
-		"D_E2M7",
-		0,
 		2,
-		0
+		240,
 	},
 	{
 		"E2M8",
 		18,
-		NULL,
 		"WILV17",
-		"EndGame2",
-//		{ 'E','n','d','G','a','m','e','2' },
+		"",
 		"E2M9",
-		30,
 		"SKY2",
-		"D_E2M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,
 		2,
-		0
+		30,
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_CYBORGSPECIAL,
 	},
 	{
 		"E2M9",
 		19,
-		NULL,
 		"WILV18",
 		"E2M6",
 		"E2M6",
-		170,
 		"SKY2",
-		"D_E2M9",
-		0,
 		2,
-		0
+		170,
 	},
 
 	// Registered/Retail Episode 3
@@ -1731,258 +1775,306 @@ level_info_t LevelInfos[] = {
 	{
 		"E3M1",
 		21,
-		NULL,
 		"WILV20",
 		"E3M2",
 		"E3M9",
-		90,
 		"SKY3",
-		"D_E3M1",
-		0,
 		3,
-		0
+		90,
 	},
 	{
 		"E3M2",
 		22,
-		NULL,
 		"WILV21",
 		"E3M3",
 		"E3M9",
-		45,
 		"SKY3",
-		"D_E3M2",
-		0,
 		3,
-		0
+		45,
 	},
 	{
 		"E3M3",
 		23,
-		NULL,
 		"WILV22",
 		"E3M4",
 		"E3M9",
-		90,
 		"SKY3",
-		"D_E3M3",
-		0,
 		3,
-		0
+		90,
 	},
 	{
 		"E3M4",
 		24,
-		NULL,
 		"WILV23",
 		"E3M5",
 		"E3M9",
-		150,
 		"SKY3",
-		"D_E3M4",
-		0,
 		3,
-		0
+		150,
 	},
 	{
 		"E3M5",
 		25,
-		NULL,
 		"WILV24",
 		"E3M6",
 		"E3M9",
-		90,
 		"SKY3",
-		"D_E3M5",
-		0,
 		3,
-		0
+		90,
 	},
 	{
 		"E3M6",
 		26,
-		NULL,
 		"WILV25",
 		"E3M7",
 		"E3M9",
-		90,
 		"SKY3",
-		"D_E3M6",
-		0,
 		3,
-		0
+		90,
 	},
 	{
 		"E3M7",
 		27,
-		NULL,
 		"WILV26",
 		"E3M8",
 		"E3M9",
-		165,
 		"SKY3",
-		"D_E3M7",
-		0,
 		3,
-		0
+		165,
 	},
 	{
 		"E3M8",
 		28,
-		NULL,
 		"WILV27",
-		"EndGame3",
-//		{ 'E','n','d','G','a','m','e','3' },
+		"",
 		"E3M9",
-		30,
 		"SKY3",
-		"D_E3M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,
 		3,
-		0
+		30,
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL,
 	},
 	{
 		"E3M9",
 		29,
-		NULL,
 		"WILV28",
 		"E3M7",
 		"E3M7",
-		135,
 		"SKY3",
-		"D_E3M9",
-		0,
 		3,
-		0
+		135,
 	},
 
 	// Retail Episode 4
 	{
 		"E4M1",
 		31,
-		NULL,
 		"WILV30",
 		"E4M2",
 		"E4M9",
-		0,
 		"SKY4",
-		"D_E3M4",
-		0,
 		4,
-		0
 	},
 	{
 		"E4M2",
 		32,
-		NULL,
 		"WILV31",
 		"E4M3",
 		"E4M9",
-		0,
 		"SKY4",
-		"D_E3M2",
-		0,
 		4,
-		0
 	},
 	{
 		"E4M3",
 		33,
-		NULL,
 		"WILV32",
 		"E4M4",
 		"E4M9",
-		0,
 		"SKY4",
-		"D_E3M3",
-		0,
 		4,
-		0
 	},
 	{
 		"E4M4",
 		34,
-		NULL,
 		"WILV33",
 		"E4M5",
 		"E4M9",
-		0,
 		"SKY4",
-		"D_E1M5",
-		0,
 		4,
-		0
 	},
 	{
 		"E4M5",
 		35,
-		NULL,
 		"WILV34",
 		"E4M6",
 		"E4M9",
-		0,
 		"SKY4",
-		"D_E2M7",
-		0,
 		4,
-		0
 	},
 	{
 		"E4M6",
 		36,
-		NULL,
 		"WILV35",
 		"E4M7",
 		"E4M9",
-		0,
 		"SKY4",
-		"D_E2M4",
-		LEVEL_CYBORGSPECIAL|LEVEL_SPECOPENDOOR,
 		4,
-		0
+		0,
+		LEVEL_CYBORGSPECIAL|LEVEL_SPECOPENDOOR,
 	},
 	{
 		"E4M7",
 		37,
-		NULL,
 		"WILV36",
 		"E4M8",
 		"E4M9",
-		0,
 		"SKY4",
-		"D_E2M6",
-		0,
 		4,
-		0
 	},
 	{
 		"E4M8",
 		38,
-		NULL,
 		"WILV37",
-		"EndGame4",
-//		{ 'E','n','d','G','a','m','e','4' },
+		"",
 		"E4M9",
-		0,
 		"SKY4",
-		"D_E2M5",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,
 		4,
-		0
+		0,
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPIDERSPECIAL|LEVEL_SPECLOWERFLOOR,
 	},
 	{
 		"E4M9",
 		39,
-		NULL,
 		"WILV38",
 		"E4M3",
 		"E4M3",
-		0,
 		"SKY4",
-		"D_E1M9",
-		0,
 		4,
-		0
+	},
+
+	// Heretic Episode 5
+	{
+		"E5M1",
+		41,
+		{0},
+		"E5M2",
+		"E5M9",
+		"SKY3",
+		15,
+	},
+	{
+		"E5M2",
+		42,
+		{0},
+		"E5M3",
+		"E5M9",
+		"SKY3",
+		15,
+	},
+	{
+		"E5M3",
+		43,
+		{0},
+		"E5M4",
+		"E5M9",
+		"SKY3",
+		15,
+	},
+	{
+		"E5M4",
+		44,
+		{0},
+		"E5M5",
+		"E5M9",
+		"SKY3",
+		15,
+	},
+	{
+		"E5M5",
+		45,
+		{0},
+		"E5M6",
+		"E5M9",
+		"SKY3",
+		15,
+	},
+	{
+		"E5M6",
+		46,
+		{0},
+		"E5M7",
+		"E5M9",
+		"SKY3",
+		15,
+	},
+	{
+		"E5M7",
+		47,
+		{0},
+		"E5M8",
+		"E5M9",
+		"SKY3",
+		15,
+	},
+	{
+		"E5M8",
+		48,
+		{0},
+		"",
+		"E5M9",
+		"SKY3",
+		15,
+		0,
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPECLOWERFLOOR|LEVEL_MINOTAURSPECIAL
+	},
+	{
+		"E5M9",
+		49,
+		{0},
+		"E5M4",
+		"E5M4",
+		"SKY3",
+		15,
+	},
+
+	// Heretic Episode 6
+	{
+		"E6M1",
+		51,
+		{0},
+		"E6M2",
+		"E6M2",
+		"SKY1",
+		16,
+		0,
+		0,
+		NULL,
+		"Untitled"
+	},
+	{
+		"E6M2",
+		52,
+		{0},
+		"E6M3",
+		"E6M3",
+		"SKY1",
+		16,
+		0,
+		0,
+		NULL,
+		"Untitled"
+	},
+	{
+		"E6M3",
+		53,
+		{0},
+		"E6M1",
+		"E6M1",
+		"SKY1",
+		16,
+		0,
+		0,
+		NULL,
+		"Untitled"
 	},
 
 	// DOOM 2 Levels
@@ -1990,718 +2082,415 @@ level_info_t LevelInfos[] = {
 	{
 		"MAP01",
 		1,
-		NULL,
 		"CWILV00",
 		"MAP02",
 		"MAP02",
-		30,
 		"SKY1",
-        "D_RUNNIN",
-//		{ 'D','_','R','U','N','N','I','N' },
-		0,
 		5,
-		0
+		30,
+		0,
 	},
 	{
 		"MAP02",
 		2,
-		NULL,
 		"CWILV01",
 		"MAP03",
 		"MAP03",
-		90,
 		"SKY1",
-		"D_STALKS",
-//		{ 'D','_','S','T','A','L','K','S' },
-		0,
 		5,
-		0
+		90,
+		0,
 	},
 	{
 		"MAP03",
 		3,
-		NULL,
 		"CWILV02",
 		"MAP04",
 		"MAP04",
-		120,
 		"SKY1",
-        "D_COUNTD",
-//		{ 'D','_','C','O','U','N','T','D' },
-		0,
 		5,
-		0
+		120,
+		0,
 	},
 	{
 		"MAP04",
 		4,
-		NULL,
 		"CWILV03",
 		"MAP05",
 		"MAP05",
-		120,
 		"SKY1",
-		"D_BETWEE",
-//		{ 'D','_','B','E','T','W','E','E' },
-		0,
 		5,
-		0
+		120,
+		0,
 	},
 	{
 		"MAP05",
 		5,
-		NULL,
 		"CWILV04",
 		"MAP06",
 		"MAP06",
-		90,
 		"SKY1",
-		"D_DOOM",
-		0,
 		5,
-		0
+		90,
+		0,
 	},
 	{
 		"MAP06",
 		6,
-		NULL,
 		"CWILV05",
 		"MAP07",
 		"MAP07",
-		150,
 		"SKY1",
-		"D_THE_DA",
-//		{ 'D','_','T','H','E','_','D','A' },
-		0,
 		5,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP07",
 		7,
-		NULL,
 		"CWILV06",
 		"MAP08",
 		"MAP08",
-		120,
 		"SKY1",
-		"D_SHAWN",
-		LEVEL_MAP07SPECIAL,
 		6,
-		0
+		120,
+		LEVEL_MAP07SPECIAL,
 	},
 	{
 		"MAP08",
 		8,
-		NULL,
 		"CWILV07",
 		"MAP09",
 		"MAP09",
-		120,
 		"SKY1",
-		"D_DDTBLU",
-//		{ 'D','_','D','D','T','B','L','U' },
-		0,
 		6,
-		0
+		120,
+		0,
 	},
 	{
 		"MAP09",
 		9,
-		NULL,
 		"CWILV08",
 		"MAP10",
 		"MAP10",
-		270,
 		"SKY1",
-        "D_IN_CIT",
-//		{ 'D','_','I','N','_','C','I','T' },
-		0,
 		6,
-		0
+		270,
+		0,
 	},
 	{
 		"MAP10",
 		10,
-		NULL,
 		"CWILV09",
 		"MAP11",
 		"MAP11",
-		90,
 		"SKY1",
-		"D_DEAD",
-		0,
 		6,
-		0
+		90,
+		0,
 	},
 	{
 		"MAP11",
 		11,
-		NULL,
 		"CWILV10",
 		"MAP12",
 		"MAP12",
-		210,
 		"SKY1",
-        "D_STLKS2",
-//		{ 'D','_','S','T','L','K','S','2' },
-		0,
 		6,
-		0
+		210,
+		0,
 	},
 	{
 		"MAP12",
 		12,
-		NULL,
 		"CWILV11",
 		"MAP13",
 		"MAP13",
-		150,
 		"SKY2",
-		"D_THEDA2",
-//		{ 'D','_','T','H','E','D','A','2' },
-		0,
 		7,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP13",
 		13,
-		NULL,
 		"CWILV12",
 		"MAP14",
 		"MAP14",
-		150,
 		"SKY2",
-		"D_DOOM2",
-		0,
 		7,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP14",
 		14,
-		NULL,
 		"CWILV13",
 		"MAP15",
 		"MAP15",
-		150,
 		"SKY2",
-		"D_DDTBL2",
-//		{ 'D','_','D','D','T','B','L','2' },
-		0,
 		7,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP15",
 		15,
-		NULL,
 		"CWILV14",
 		"MAP16",
 		"MAP31",
-		210,
 		"SKY2",
-		"D_RUNNI2",
-//		{ 'D','_','R','U','N','N','I','2' },
-		0,
 		7,
-		0
+		210,
+		0,
 	},
 	{
 		"MAP16",
 		16,
-		NULL,
 		"CWILV15",
 		"MAP17",
 		"MAP17",
-		150,
 		"SKY2",
-		"D_DEAD2",
-		0,
 		7,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP17",
 		17,
-		NULL,
 		"CWILV16",
 		"MAP18",
 		"MAP18",
-		420,
 		"SKY2",
-		"D_STLKS3",
-//		{ 'D','_','S','T','L','K','S','3' },
-		0,
 		7,
-		0
+		420,
+		0,
 	},
 	{
 		"MAP18",
 		18,
-		NULL,
 		"CWILV17",
 		"MAP19",
 		"MAP19",
-		150,
 		"SKY2",
-		"D_ROMERO",
-//		{ 'D','_','R','O','M','E','R','O' },
-		0,
 		7,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP19",
 		19,
-		NULL,
 		"CWILV18",
 		"MAP20",
 		"MAP20",
-		210,
 		"SKY2",
-		"D_SHAWN2",
-//		{ 'D','_','S','H','A','W','N','2' },
-		0,
 		7,
-		0
+		210,
+		0,
 	},
 	{
 		"MAP20",
 		20,
-		NULL,
 		"CWILV19",
 		"MAP21",
 		"MAP21",
-		150,
 		"SKY2",
-		"D_MESSAG",
-//		{ 'D','_','M','E','S','S','A','G' },
-		0,
 		7,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP21",
 		21,
-		NULL,
 		"CWILV20",
 		"MAP22",
 		"MAP22",
-		240,
 		"SKY3",
-		"D_COUNT2",
-//		{ 'D','_','C','O','U','N','T','2' },
-		0,
 		8,
-		0
+		240,
+		0,
 	},
 	{
 		"MAP22",
 		22,
-		NULL,
 		"CWILV21",
 		"MAP23",
 		"MAP23",
-		150,
 		"SKY3",
-		"D_DDTBL3",
-//		{ 'D','_','D','D','T','B','L','3' },
-		0,
 		8,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP23",
 		23,
-		NULL,
 		"CWILV22",
 		"MAP24",
 		"MAP24",
-		180,
 		"SKY3",
-		"D_AMPIE",
-		0,
 		8,
-		0
+		180,
+		0,
 	},
 	{
 		"MAP24",
 		24,
-		NULL,
 		"CWILV23",
 		"MAP25",
 		"MAP25",
-		150,
 		"SKY3",
-		"D_THEDA3",
-//		{ 'D','_','T','H','E','D','A','3' },
-		0,
 		8,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP25",
 		25,
-		NULL,
 		"CWILV24",
 		"MAP26",
 		"MAP26",
-		150,
 		"SKY3",
-		"D_ADRIAN",
-//		{ 'D','_','A','D','R','I','A','N' },
-		0,
 		8,
-		0
+		150,
+		0,
 	},
 	{
 		"MAP26",
 		26,
-		NULL,
 		"CWILV25",
 		"MAP27",
 		"MAP27",
-		300,
 		"SKY3",
-		"D_MESSG2",
-//		{ 'D','_','M','E','S','S','G','2' },
-		0,
 		8,
-		0
+		300,
+		0,
 	},
 	{
 		"MAP27",
 		27,
-		NULL,
 		"CWILV26",
 		"MAP28",
 		"MAP28",
-		330,
 		"SKY3",
-        "D_ROMER2",
-//		{ 'D','_','R','O','M','E','R','2' },
-		0,
 		8,
-		0
+		330,
+		0,
 	},
 	{
 		"MAP28",
 		28,
-		NULL,
 		"CWILV27",
 		"MAP29",
 		"MAP29",
-		420,
 		"SKY3",
-		"D_TENSE",
-		0,
 		8,
-		0
+		420,
+		0,
 	},
 	{
 		"MAP29",
 		29,
-		NULL,
 		"CWILV28",
 		"MAP30",
 		"MAP30",
-		300,
 		"SKY3",
-		"D_SHAWN3",
-//		{ 'D','_','S','H','A','W','N','3' },
-		0,
 		8,
-		0
+		300,
+		0,
 	},
 	{
 		"MAP30",
 		30,
-		NULL,
 		"CWILV29",
-        "EndGameC",
-        "EndGameC",
-//		{ 'E','n','d','G','a','m','e','C' },
-//		{ 'E','n','d','G','a','m','e','C' },
-		180,
+		"",
+		"",
 		"SKY3",
-		"D_OPENIN",
-//		{ 'D','_','O','P','E','N','I','N' },
-		LEVEL_MONSTERSTELEFRAG,
 		8,
-		0
+		180,
+		LEVEL_MONSTERSTELEFRAG,
 	},
 	{
 		"MAP31",
 		31,
-		NULL,
 		"CWILV30",
 		"MAP16",
 		"MAP32",
-		120,
 		"SKY3",
-		"D_EVIL",
-		0,
 		9,
-		0
+		120,
+		0,
 	},
 	{
 		"MAP32",
 		32,
-		NULL,
 		"CWILV31",
 		"MAP16",
 		"MAP16",
-		30,
 		"SKY3",
-		"D_ULTIMA",
-//		{ 'D','_','U','L','T','I','M','A' },
-		0,
 		10,
-		0
+		30,
+		0,
 	},
 
-// Registered/Retail Heretic Episode 1
-	{
-		"E1M1",
-		1,
-		NULL,
-		"WILV00",
-		"E1M2",
-		"E1M9",
-		30,
-		"SKY1",
-		"MUS_E1M1",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M2",
-		2,
-		NULL,
-		"WILV01",
-		"E1M3",
-		"E1M9",
-		75,
-		"SKY1",
-		"MUS_E1M2",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M3",
-		3,
-		NULL,
-		"WILV02",
-		"E1M4",
-		"E1M9",
-		120,
-		"SKY1",
-		"MUS_E1M3",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M4",
-		4,
-		NULL,
-		"WILV03",
-		"E1M5",
-		"E1M9",
-		90,
-		"SKY1",
-		"MUS_E1M4",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M5",
-		5,
-		NULL,
-		"WILV04",
-		"E1M6",
-		"E1M9",
-		165,
-		"SKY1",
-		"MUS_E1M5",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M6",
-		6,
-		NULL,
-		"WILV05",
-		"E1M7",
-		"E1M9",
-		180,
-		"SKY1",
-		"MUS_E1M6",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M7",
-		7,
-		NULL,
-		"WILV06",
-		"E1M8",
-		"E1M9",
-		180,
-		"SKY1",
-		"MUS_E1M7",
-		0,
-		1,
-		0
-	},
-	{
-		"E1M8",
-		8,
-		NULL,
-		"WILV07",
-		"EndGame1",
-//		{ 'E','n','d','G','a','m','e','1' },
-		"E1M9",
-		30,
-		"SKY1",
-		"MUS_E1M8",
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_BRUISERSPECIAL|LEVEL_SPECLOWERFLOOR,
-		1,
-		0
-	},
-	{
-		"E1M9",
-		9,
-		NULL,
-		"WILV08",
-		"E1M4",
-		"E1M4",
-		165,
-		"SKY1",
-		"MUS_E1M9",
-		0,
-		1,
-		0
-	},
+	// End-of-list marker
 	{
 		"",
-		0,
-		NULL,
-		"",
-		"",
-		"",
-		0,
-		"",
-		"",
-		0,
-		0,
-		0
 	}
 };
 
 // Episode/Cluster information
 cluster_info_t ClusterInfos[] = {
-	{
-		1,		// DOOM Episode 1
-		"D_VICTOR",
-		"FLOOR4_8",
-//		{ 'F','L','O','O','R','4','_','8' }, // questionable
-		NULL,
-		NULL,
-		0
+	{		// DOOM Episode 1
+		1,	"FLOOR4_8",	NULL,	NULL,	"D_VICTOR",	0
 	},
-	{
-		2,		// DOOM Episode 2
-		"D_VICTOR",
-		"SFLR6_1",
-		NULL,
-		NULL,
-		0
+	{		// DOOM Episode 2
+		2,	"SFLR6_1",	NULL,	NULL,	"D_VICTOR",	0
 	},
-	{
-		3,		// DOOM Episode 3
-		"D_VICTOR",
-		"MFLR8_4",
-		NULL,
-		NULL,
-		0
+	{		// DOOM Episode 3
+		3,	"MFLR8_4",	NULL,	NULL,	"D_VICTOR", 0
 	},
-	{
-		4,		// DOOM Episode 4
-		"D_VICTOR",
-		"MFLR8_3",
-		NULL,
-		NULL,
-		0
+	{		// DOOM Episode 4
+		4,	"MFLR8_3",	NULL,	NULL,	"D_VICTOR", 0
 	},
-	{
-		5,		// DOOM II first cluster (up thru level 6)
-		"D_READ_M",
-		"SLIME16",
-		NULL,
-		NULL,
-		0
+	{		// DOOM II first cluster (up thru level 6)
+		5,	"SLIME16",	NULL,	NULL,	"D_READ_M",	0
 	},
-	{
-		6,		// DOOM II second cluster (up thru level 11)
-		"D_READ_M",
-		"RROCK14",
-		NULL,
-		NULL,
-		0
+	{		// DOOM II second cluster (up thru level 11)
+		6,	"RROCK14",	NULL,	NULL,	"D_READ_M",	0
 	},
-	{
-		7,		// DOOM II third cluster (up thru level 20)
-		"D_READ_M",
-		"RROCK07",
-		NULL,
-		NULL,
-		0
+	{		// DOOM II third cluster (up thru level 20)
+		7,	"RROCK07",	NULL,	NULL,	"D_READ_M",	0
 	},
-	{
-		8,		// DOOM II fourth cluster (up thru level 30)
-		"D_READ_M",
-		"RROCK17",
-		NULL,
-		NULL,
-		0
+	{		// DOOM II fourth cluster (up thru level 30)
+		8,	"RROCK17",	NULL,	NULL,	"D_READ_M",	0
 	},
-	{
-		9,		// DOOM II fifth cluster (level 31)
-		"D_READ_M",
-		"RROCK13",
-		NULL,
-		NULL,
-		0
+	{		// DOOM II fifth cluster (level 31)
+		9,	"RROCK13",	NULL,	NULL,	"D_READ_M",	0
 	},
-	{
-		10,		// DOOM II sixth cluster (level 32)
-		"D_READ_M",
-		"RROCK19",
-		NULL,
-		NULL,
-		0
+	{		// DOOM II sixth cluster (level 32)
+		10,	"RROCK19",	NULL,	NULL,	"D_READ_M",	0
 	},
-	{
-		0,
-		"",
-		"",
-		NULL,
-		NULL,
-		0		// End-of-clusters marker
-	}
+    {		// Heretic episode 1
+		11,	"FLOOR25",	NULL,	NULL,	"",	0
+	},
+	{		// Heretic episode 2
+		12,	"FLATHUH1",	NULL,	NULL,	"",	0
+	},
+	{		// Heretic episode 3
+		13,	"FLTWAWA2",	NULL,	NULL,	"",	0
+	},
+	{		// Heretic episode 4
+		14,	"FLOOR28",	NULL,	NULL,	"",	0
+	},
+	{		// Heretic episode 5
+		15,	"FLOOR08",	NULL,	NULL,	"",	0
+	},
+	{		// Heretic episode 6
+		16, "FLOOR25",	NULL,	NULL,	"",	0
+	},
+	{		// End-of-clusters marker
+		0,	"",	NULL,	NULL,	"",	0
+	}	
 };
 
 VERSION_CONTROL (g_level_cpp, "$Id$")
-
-
-
-
-

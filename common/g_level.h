@@ -55,6 +55,20 @@
 #define LEVEL_FREELOOK_NO		0x00010000
 #define LEVEL_FREELOOK_YES		0x00020000
 
+// The absence of both of the following bits means that this level does not
+// use falling damage (though damage can be forced with dmflags).
+#define LEVEL_FALLDMG_ZD		0x00040000		// Level uses ZDoom's falling damage
+#define LEVEL_FALLDMG_HX		0x00080000		// Level uses Hexen's falling damage
+
+#define LEVEL_HEADSPECIAL		0x00100000		// Heretic episode 1/4
+#define LEVEL_MINOTAURSPECIAL	0x00200000		// Heretic episode 2/5
+#define LEVEL_SORCERER2SPECIAL	0x00400000		// Heretic episode 3
+#define LEVEL_SPECKILLMONSTERS	0x00800000
+
+#define LEVEL_STARTLIGHTNING	0x01000000		// Automatically start lightning
+#define LEVEL_FILTERSTARTS		0x02000000		// Apply mapthing filtering to player starts
+
+#define LEVEL_SWAPSKIES			0x10000000		// Used by lightning
 #define LEVEL_DEFINEDINMAPINFO	0x20000000		// Level was defined in a MAPINFO lump
 #define LEVEL_CHANGEMAPCHEAT	0x40000000		// Don't display cluster messages
 #define LEVEL_VISITED			0x80000000		// Used for intermission map
@@ -64,15 +78,15 @@ struct acsdefered_s;
 struct level_info_s {
 	char		mapname[9];
 	int			levelnum;
-	const char	*level_name;
 	char		pname[9];
 	char		nextmap[9];
 	char		secretmap[9];
-	int			partime;
 	char		skypic[9];
-	char		music[9];
-	DWORD		flags;
 	int			cluster;
+	int			partime;
+	DWORD		flags;
+	char		*music;
+	char		*level_name;
 	FLZOMemFile	*snapshot;
 	struct acsdefered_s *defered;
 };
@@ -89,7 +103,7 @@ struct level_pwad_info_s
 	char		secretmap[9];
 	int			partime;
 	char		skypic[9];
-	char		music[9];
+	char		*music;
 	DWORD		flags;
 	int			cluster;
 	FLZOMemFile	*snapshot;
@@ -121,7 +135,7 @@ struct level_locals_s {
 	DWORD		fadeto;					// The color the palette fades to (usually black)
 	DWORD		outsidefog;				// The fog for sectors with sky ceilings
 
-	char		music[8];
+	char		*music;
 	char		skypic[8];
 
 	int			total_secrets;
@@ -143,11 +157,11 @@ typedef struct level_locals_s level_locals_t;
 
 struct cluster_info_s {
 	int			cluster;
-	char		messagemusic[9];
 	// [Russell] - Naturally, this should have an extra byte for the null terminator
 	char		finaleflat[9];
-	const char		*exittext;
-	const char		*entertext;
+	char		*exittext;
+	char		*entertext;
+	char		*messagemusic;	
 	int			flags;
 };
 typedef struct cluster_info_s cluster_info_t;

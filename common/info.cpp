@@ -52,27 +52,6 @@ const char *sprnames[NUMSPRITES+1] = {
 	0
 };
 
-
-const char *hticsprnames[NUMHTICSPRITES+1] = {
-    "IMPX","ACLO","PTN1","SHLD","SHD2","BAGH","SPMP","INVS","PTN2","SOAR",
-    "INVU","PWBK","EGGC","EGGM","FX01","SPHL","TRCH","FBMB","XPL1","ATLP",
-    "PPOD","AMG1","SPSH","LVAS","SLDG","SKH1","SKH2","SKH3","SKH4","CHDL",
-    "SRTC","SMPL","STGS","STGL","STCS","STCL","KFR1","BARL","BRPL","MOS1",
-    "MOS2","WTRH","HCOR","KGZ1","KGZB","KGZG","KGZY","VLCO","VFBL","VTFB",
-    "SFFI","TGLT","TELE","STFF","PUF3","PUF4","BEAK","WGNT","GAUN","PUF1",
-    "WBLS","BLSR","FX18","FX17","WMCE","MACE","FX02","WSKL","HROD","FX00",
-    "FX20","FX21","FX22","FX23","GWND","PUF2","WPHX","PHNX","FX04","FX08",
-    "FX09","WBOW","CRBW","FX03","BLOD","PLAY","FDTH","BSKL","CHKN","MUMM",
-    "FX15","BEAS","FRB1","SNKE","SNFX","HEAD","FX05","FX06","FX07","CLNK",
-    "WZRD","FX11","FX10","KNIG","SPAX","RAXE","SRCR","FX14","SOR2","SDTH",
-    "FX16","MNTR","FX12","FX13","AKYY","BKYY","CKYY","AMG2","AMM1","AMM2",
-    "AMC1","AMC2","AMS1","AMS2","AMP1","AMP2","AMB1","AMB2", "UNKN",
-
-	//	[Toke - CTF]
-	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR","TLGL",
-	0
-};
-
 class player_s;
 struct pspdef_s;
 

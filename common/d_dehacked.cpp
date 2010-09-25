@@ -610,7 +610,7 @@ static void BackupData (void)
 //		OrgSfxNames[i] = S_sfx[i].name;
 
 	for (i = 0; i < NUMSPRITES; i++)
-		OrgSprNames[i] = gameinfo.sprnames[i];
+		OrgSprNames[i] = sprnames[i];
 
 	for (i = 0; i < NUMSTATES; i++)
 		OrgActionPtrs[i] = states[i].action;
@@ -618,7 +618,7 @@ static void BackupData (void)
 	memcpy(backupStates, states, sizeof(states));
 	memcpy(backupMobjInfo, mobjinfo, sizeof(mobjinfo));
 	memcpy(backupWeaponInfo, weaponinfo, sizeof(weaponinfo));
-	memcpy(backupSprnames, gameinfo.sprnames, sizeof(gameinfo.sprnames));
+	memcpy(backupSprnames, sprnames, sizeof(sprnames));
 	memcpy(backupClipAmmo, clipammo, sizeof(clipammo));
 	memcpy(backupMaxAmmo, maxammo, sizeof(maxammo));
 	backupDeh = deh;
@@ -637,7 +637,7 @@ void UndoDehPatch ()
 //		OrgSfxNames[i] = S_sfx[i].name;
 
 	for (i = 0; i < NUMSPRITES; i++)
-		OrgSprNames[i] = gameinfo.sprnames[i];
+		OrgSprNames[i] = sprnames[i];
 
 	for (i = 0; i < NUMSTATES; i++)
 		OrgActionPtrs[i] = states[i].action;
@@ -649,7 +649,7 @@ void UndoDehPatch ()
 	isFast = false;
 
 	memcpy(weaponinfo, backupWeaponInfo, sizeof(weaponinfo));
-	memcpy(gameinfo.sprnames, backupSprnames, sizeof(gameinfo.sprnames));
+	memcpy(sprnames, backupSprnames, sizeof(sprnames));
 	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
 	memcpy(maxammo, backupMaxAmmo, sizeof(maxammo));
 	deh = backupDeh;
@@ -1163,7 +1163,7 @@ static int PatchSprite (int sprNum)
 		offset = (offset - toff[dversion] - 22044) / 8;
 
 		if (offset >= 0 && offset < NUMSPRITES) {
-			gameinfo.sprnames[sprNum] = OrgSprNames[offset];
+			sprnames[sprNum] = OrgSprNames[offset];
 		} else {
 			DPrintf ("Sprite name %d out of range.\n", offset);
 		}
@@ -1500,8 +1500,8 @@ static int PatchText (int oldSize)
 
 	// Search through sprite names
 	for (i = 0; i < NUMSPRITES; i++) {
-		if (!strcmp (gameinfo.sprnames[i], oldStr)) {
-			gameinfo.sprnames[i] = copystring (newStr);
+		if (!strcmp (sprnames[i], oldStr)) {
+			sprnames[i] = copystring (newStr);
 			good = true;
 			// See above.
 		}

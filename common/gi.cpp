@@ -123,8 +123,7 @@ gameinfo_t HereticGameInfo =
 	"ENDTEXT",
 	&HticStatusBar,
 	&HereticBorder,
-	GAME_Heretic,
-	hticsprnames
+	GAME_Heretic
 };
 
 gameinfo_t HereticSWGameInfo =
@@ -151,8 +150,7 @@ gameinfo_t HereticSWGameInfo =
 	"ENDTEXT",
 	&HticStatusBar,
 	&HereticBorder,
-	GAME_Heretic,
-	hticsprnames
+	GAME_Heretic
 };
 
 gameinfo_t SharewareGameInfo =
@@ -179,8 +177,7 @@ gameinfo_t SharewareGameInfo =
 	"ENDOOM",
 	&DoomStatusBar,	
 	&DoomBorder,
-	GAME_Doom,
-	sprnames
+	GAME_Doom
 };
 
 gameinfo_t RegisteredGameInfo =
@@ -207,8 +204,7 @@ gameinfo_t RegisteredGameInfo =
 	"ENDOOM",
 	&DoomStatusBar,
 	&DoomBorder,
-	GAME_Doom,
-	sprnames
+	GAME_Doom
 };
 
 gameinfo_t RetailGameInfo =
@@ -235,8 +231,7 @@ gameinfo_t RetailGameInfo =
 	"ENDOOM",
 	&DoomStatusBar,
 	&DoomBorder,
-	GAME_Doom,
-	sprnames
+	GAME_Doom
 };
 
 gameinfo_t CommercialGameInfo =
@@ -263,8 +258,7 @@ gameinfo_t CommercialGameInfo =
 	"ENDOOM",
 	&DoomStatusBar,
 	&DoomBorder,
-	GAME_Doom,
-	sprnames
+	GAME_Doom
 };
 
 VERSION_CONTROL (gi_cpp, "$Id$")

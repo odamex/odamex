@@ -281,7 +281,8 @@ void S_Stop (void)
 	mus_paused = 0;
 
 	// [RH] This is a lot simpler now.
-	S_ChangeMusic (std::string(level.music, 8), true);
+	if (level.music)
+		S_ChangeMusic (std::string(level.music), true);
 
 	nextcleanup = 15;
 }

@@ -643,6 +643,252 @@ gamestring_t Strings[] = {
 	{ str_notchanged, "D2_INTBG5", "RROCK13", NULL },
 	{ str_notchanged, "D2_INTBG6", "RROCK19", NULL },
 	{ str_notchanged, "D2_INTBG7", "BOSSBACK", NULL },
+	{ str_notchanged, "HE1TEXT",	"with the destruction of the iron\n"\
+		"liches and their minions, the last\n"\
+		"of the undead are cleared from this\n"\
+		"plane of existence.\n\n"\
+		"those creatures had to come from\n"\
+		"somewhere, though, and you have the\n"\
+		"sneaky suspicion that the fiery\n"\
+		"portal of hell's maw opens onto\n"\
+		"their home dimension.\n\n"\
+		"to make sure that more undead\n"\
+		"(or even worse things) don't come\n"\
+		"through, you'll have to seal hell's\n"\
+		"maw from the other side. of course\n"\
+		"this means you may get stuck in a\n"\
+		"very unfriendly world, but no one\n"\
+		"ever said being a Heretic was easy!"	
+		, NULL },
+	{ str_notchanged, "HE2TEXT",	"the mighty maulotaurs have proved\n"\
+		"to be no match for you, and as\n"\
+		"their steaming corpses slide to the\n"\
+		"ground you feel a sense of grim\n"\
+		"satisfaction that they have been\n"\
+		"destroyed.\n\n"\
+		"the gateways which they guarded\n"\
+		"have opened, revealing what you\n"\
+		"hope is the way home. but as you\n"\
+		"step through, mocking laughter\n"\
+		"rings in your ears.\n\n"\
+		"was some other force controlling\n"\
+		"the maulotaurs? could there be even\n"\
+		"more horrific beings through this\n"\
+		"gate? the sweep of a crystal dome\n"\
+		"overhead where the sky should be is\n"\
+		"certainly not a good sign...."
+		, NULL },
+	{ str_notchanged, "HE3TEXT",	"the death of d'sparil has loosed\n"\
+		"the magical bonds holding his\n"\
+		"creatures on this plane, their\n"\
+		"dying screams overwhelming his own\n"\
+		"cries of agony.\n\n"\
+		"your oath of vengeance fulfilled,\n"\
+		"you enter the portal to your own\n"\
+		"world, mere moments before the dome\n"\
+		"shatters into a million pieces.\n\n"\
+		"but if d'sparil's power is broken\n"\
+		"forever, why don't you feel safe?\n"\
+		"was it that last shout just before\n"\
+		"his death, the one that sounded\n"\
+		"like a curse? or a summoning? you\n"\
+		"can't really be sure, but it might\n"\
+		"just have been a scream.\n\n"\
+		"then again, what about the other\n"\
+		"serpent riders?"
+		, NULL },
+	{ str_notchanged, "HE4TEXT",	"you thought you would return to your\n"\
+		"own world after d'sparil died, but\n"\
+		"his final act banished you to his\n"\
+		"own plane. here you entered the\n"\
+		"shattered remnants of lands\n"\
+		"conquered by d'sparil. you defeated\n"\
+		"the last guardians of these lands,\n"\
+		"but now you stand before the gates\n"\
+		"to d'sparil's stronghold. until this\n"\
+		"moment you had no doubts about your\n"\
+		"ability to face anything you might\n"\
+		"encounter, but beyond this portal\n"\
+		"lies the very heart of the evil\n"\
+		"which invaded your world. d'sparil\n"\
+		"might be dead, but the pit where he\n"\
+		"was spawned remains. now you must\n"\
+		"enter that pit in the hopes of\n"\
+		"finding a way out. and somewhere,\n"\
+		"in the darkest corner of d'sparil's\n"\
+		"demesne, his personal bodyguards\n"\
+		"await your arrival ..."
+		, NULL },
+	{ str_notchanged, "HE5TEXT",	"as the final maulotaur bellows his\n"\
+		"death-agony, you realize that you\n"\
+		"have never come so close to your own\n"\
+		"destruction. not even the fight with\n"\
+		"d'sparil and his disciples had been\n"\
+		"this desperate. grimly you stare at\n"\
+		"the gates which open before you,\n"\
+		"wondering if they lead home, or if\n"\
+		"they open onto some undreamed-of\n"\
+		"horror. you find yourself wondering\n"\
+		"if you have the strength to go on,\n"\
+		"if nothing but death and pain await\n"\
+		"you. but what else can you do, if\n"\
+		"the will to fight is gone? can you\n"\
+		"force yourself to continue in the\n"\
+		"face of such despair? do you have\n"\
+		"the courage? you find, in the end,\n"\
+		"that it is not within you to\n"\
+		"surrender without a fight. eyes\n"\
+		"wide, you go to meet your fate."
+		, NULL },
+	{ str_notchanged, "HHUSTR_E1M1",		"E1M1:  THE DOCKS"      , NULL },
+	{ str_notchanged, "HHUSTR_E1M2",		"E1M2:  THE DUNGEONS"   , NULL },
+	{ str_notchanged, "HHUSTR_E1M3",		"E1M3:  THE GATEHOUSE"  , NULL },
+	{ str_notchanged, "HHUSTR_E1M4",		"E1M4:  THE GUARD TOWER", NULL },
+	{ str_notchanged, "HHUSTR_E1M5",		"E1M5:  THE CITADEL"    , NULL },
+	{ str_notchanged, "HHUSTR_E1M6",		"E1M6:  THE CATHEDRAL"  , NULL },
+	{ str_notchanged, "HHUSTR_E1M7",		"E1M7:  THE CRYPTS"     , NULL },
+	{ str_notchanged, "HHUSTR_E1M8",		"E1M8:  HELL'S MAW"     , NULL },
+	{ str_notchanged, "HHUSTR_E1M9",		"E1M9:  THE GRAVEYARD"  , NULL },
+	{ str_notchanged, "HHUSTR_E2M1",		"E2M1:  THE CRATER"          , NULL },
+	{ str_notchanged, "HHUSTR_E2M2",		"E2M2:  THE LAVA PITS"       , NULL },
+	{ str_notchanged, "HHUSTR_E2M3",		"E2M3:  THE RIVER OF FIRE"   , NULL },
+	{ str_notchanged, "HHUSTR_E2M4",		"E2M4:  THE ICE GROTTO"      , NULL },
+	{ str_notchanged, "HHUSTR_E2M5",		"E2M5:  THE CATACOMBS"       , NULL },
+	{ str_notchanged, "HHUSTR_E2M6",		"E2M6:  THE LABYRINTH"       , NULL },
+	{ str_notchanged, "HHUSTR_E2M7",		"E2M7:  THE GREAT HALL"      , NULL },
+	{ str_notchanged, "HHUSTR_E2M8",		"E2M8:  THE PORTALS OF CHAOS", NULL },
+	{ str_notchanged, "HHUSTR_E2M9",		"E2M9:  THE GLACIER"         , NULL },
+	{ str_notchanged, "HHUSTR_E3M1",		"E3M1:  THE STOREHOUSE"       , NULL },
+	{ str_notchanged, "HHUSTR_E3M2",		"E3M2:  THE CESSPOOL"         , NULL },
+	{ str_notchanged, "HHUSTR_E3M3",		"E3M3:  THE CONFLUENCE"       , NULL },
+	{ str_notchanged, "HHUSTR_E3M4",		"E3M4:  THE AZURE FORTRESS"   , NULL },
+	{ str_notchanged, "HHUSTR_E3M5",		"E3M5:  THE OPHIDIAN LAIR"    , NULL },
+	{ str_notchanged, "HHUSTR_E3M6",		"E3M6:  THE HALLS OF FEAR"    , NULL },
+	{ str_notchanged, "HHUSTR_E3M7",		"E3M7:  THE CHASM"            , NULL },
+	{ str_notchanged, "HHUSTR_E3M8",		"E3M8:  D'SPARIL'S KEEP"      , NULL },
+	{ str_notchanged, "HHUSTR_E3M9",		"E3M9:  THE AQUIFER"          , NULL },
+	{ str_notchanged, "HHUSTR_E4M1",		"E4M1:  CATAFALQUE"           , NULL },
+	{ str_notchanged, "HHUSTR_E4M2",		"E4M2:  BLOCKHOUSE"           , NULL },
+	{ str_notchanged, "HHUSTR_E4M3",		"E4M3:  AMBULATORY"           , NULL },
+	{ str_notchanged, "HHUSTR_E4M4",		"E4M4:  SEPULCHER"            , NULL },
+	{ str_notchanged, "HHUSTR_E4M5",		"E4M5:  GREAT STAIR"          , NULL },
+	{ str_notchanged, "HHUSTR_E4M6",		"E4M6:  HALLS OF THE APOSTATE", NULL },
+	{ str_notchanged, "HHUSTR_E4M7",		"E4M7:  RAMPARTS OF PERDITION", NULL },
+	{ str_notchanged, "HHUSTR_E4M8",		"E4M8:  SHATTERED BRIDGE"     , NULL },
+	{ str_notchanged, "HHUSTR_E4M9",		"E4M9:  MAUSOLEUM"            , NULL },
+	{ str_notchanged, "HHUSTR_E5M1",		"E5M1:  OCHRE CLIFFS"         , NULL },
+	{ str_notchanged, "HHUSTR_E5M2",		"E5M2:  RAPIDS"               , NULL },
+	{ str_notchanged, "HHUSTR_E5M3",		"E5M3:  QUAY"                 , NULL },
+	{ str_notchanged, "HHUSTR_E5M4",		"E5M4:  COURTYARD"            , NULL },
+	{ str_notchanged, "HHUSTR_E5M5",		"E5M5:  HYDRATYR"             , NULL },
+	{ str_notchanged, "HHUSTR_E5M6",		"E5M6:  COLONNADE"            , NULL },
+	{ str_notchanged, "HHUSTR_E5M7",		"E5M7:  FOETID MANSE"         , NULL },
+	{ str_notchanged, "HHUSTR_E5M8",		"E5M8:  FIELD OF JUDGEMENT"   , NULL },
+	{ str_notchanged, "HHUSTR_E5M9",		"E5M9:  SKEIN OF D'SPARIL"    , NULL },
+	{ str_notchanged, "TXT_GOTBLUEKEY",		"BLUE KEY"  , NULL },
+	{ str_notchanged, "TXT_GOTYELLOWKEY",		"YELLOW KEY", NULL },
+	{ str_notchanged, "TXT_GOTGREENKEY",		"GREEN KEY" , NULL },
+	{ str_notchanged, "TXT_ARTIHEALTH",		"QUARTZ FLASK"             , NULL },
+	{ str_notchanged, "TXT_ARTIFLY",		"WINGS OF WRATH"           , NULL },
+	{ str_notchanged, "TXT_ARTIINVULNERABILITY",	"RING OF INVINCIBILITY"    , NULL },
+	{ str_notchanged, "TXT_ARTITOMEOFPOWER",	"TOME OF POWER"            , NULL },
+	{ str_notchanged, "TXT_ARTIINVISIBILITY",	"SHADOWSPHERE"             , NULL },
+	{ str_notchanged, "TXT_ARTIEGG",		"MORPH OVUM"               , NULL },
+	{ str_notchanged, "TXT_ARTISUPERHEALTH",	"MYSTIC URN"               , NULL },
+	{ str_notchanged, "TXT_ARTITORCH",		"TORCH"                    , NULL },
+	{ str_notchanged, "TXT_ARTIFIREBOMB",		"TIME BOMB OF THE ANCIENTS", NULL },
+	{ str_notchanged, "TXT_ARTITELEPORT",		"CHAOS DEVICE"             , NULL },
+	{ str_notchanged, "TXT_ITEMHEALTH",		"CRYSTAL VIAL"    , NULL },
+	{ str_notchanged, "TXT_ITEMBAGOFHOLDING",	"BAG OF HOLDING"  , NULL },
+	{ str_notchanged, "TXT_ITEMSHIELD1",		"SILVER SHIELD"   , NULL },
+	{ str_notchanged, "TXT_ITEMSHIELD2",		"ENCHANTED SHIELD", NULL },
+	{ str_notchanged, "TXT_ITEMSUPERMAP",		"MAP SCROLL"      , NULL },
+	{ str_notchanged, "TXT_AMMOGOLDWAND1",		"WAND CRYSTAL"             , NULL },
+	{ str_notchanged, "TXT_AMMOGOLDWAND2",		"CRYSTAL GEODE"            , NULL },
+	{ str_notchanged, "TXT_AMMOMACE1",		"MACE SPHERES"             , NULL },
+	{ str_notchanged, "TXT_AMMOMACE2",		"PILE OF MACE SPHERES"     , NULL },
+	{ str_notchanged, "TXT_AMMOCROSSBOW1",		"ETHEREAL ARROWS"          , NULL },
+	{ str_notchanged, "TXT_AMMOCROSSBOW2",		"QUIVER OF ETHEREAL ARROWS", NULL },
+	{ str_notchanged, "TXT_AMMOBLASTER1",		"CLAW ORB"                 , NULL },
+	{ str_notchanged, "TXT_AMMOBLASTER2",		"ENERGY ORB"               , NULL },
+	{ str_notchanged, "TXT_AMMOSKULLROD1",		"LESSER RUNES"             , NULL },
+	{ str_notchanged, "TXT_AMMOSKULLROD2",		"GREATER RUNES"            , NULL },
+	{ str_notchanged, "TXT_AMMOPHOENIXROD1",	"FLAME ORB"                , NULL },
+	{ str_notchanged, "TXT_AMMOPHOENIXROD2",	"INFERNO ORB"              , NULL },
+	{ str_notchanged, "TXT_WPNMACE",		"FIREMACE"                    , NULL },
+	{ str_notchanged, "TXT_WPNCROSSBOW",		"ETHEREAL CROSSBOW"           , NULL },
+	{ str_notchanged, "TXT_WPNBLASTER",		"DRAGON CLAW"                 , NULL },
+	{ str_notchanged, "TXT_WPNSKULLROD",		"HELLSTAFF"                   , NULL },
+	{ str_notchanged, "TXT_WPNPHOENIXROD",		"PHOENIX ROD"                 , NULL },
+	{ str_notchanged, "TXT_WPNGAUNTLETS",		"GAUNTLETS OF THE NECROMANCER", NULL },
+	{ str_notchanged, "TXT_NEEDBLUEKEY",		"YOU NEED A BLUE KEY TO OPEN THIS DOOR"  , NULL },
+	{ str_notchanged, "TXT_NEEDGREENKEY",		"YOU NEED A GREEN KEY TO OPEN THIS DOOR" , NULL },
+	{ str_notchanged, "TXT_NEEDYELLOWKEY",		"YOU NEED A YELLOW KEY TO OPEN THIS DOOR", NULL },
+	{ str_notchanged, "TXT_CHEATHEALTH",		"FULL HEALTH", NULL },
+	{ str_notchanged, "TXT_CHEATKEYS",		"ALL KEYS"   , NULL },
+	{ str_notchanged, "TXT_CHEATSOUNDON",		"SOUND DEBUG ON" , NULL },
+	{ str_notchanged, "TXT_CHEATSOUNDOFF",		"SOUND DEBUG OFF", NULL },
+	{ str_notchanged, "TXT_CHEATIDDQD",		"TRYING TO CHEAT, EH?  NOW YOU DIE!" , NULL },
+	{ str_notchanged, "TXT_CHEATIDKFA",		"CHEATER - YOU DON'T DESERVE WEAPONS", NULL },
+	{ str_notchanged, "TXT_CHEATTICKERON",		"TICKER ON" , NULL },
+	{ str_notchanged, "TXT_CHEATTICKEROFF",		"TICKER OFF", NULL },
+	{ str_notchanged, "TXT_CHEATARTIFACTS3",	"YOU GOT IT", NULL },
+	{ str_notchanged, "RAVENQUITMSG",		"Are you sure you want to quit?", NULL },
+	{ str_notchanged, "TXT_MANA_1",			"", NULL },
+	{ str_notchanged, "TXT_MANA_2",			"", NULL },
+	{ str_notchanged, "TXT_MANA_BOTH",		"", NULL },
+	{ str_notchanged, "TXT_KEY_STEEL",		"", NULL },
+	{ str_notchanged, "TXT_KEY_CAVE",		"", NULL },
+	{ str_notchanged, "TXT_KEY_AXE",		"", NULL },
+	{ str_notchanged, "TXT_KEY_FIRE",		"", NULL },
+	{ str_notchanged, "TXT_KEY_EMERALD",		"", NULL },
+	{ str_notchanged, "TXT_KEY_DUNGEON",		"", NULL },
+	{ str_notchanged, "TXT_KEY_SILVER",		"", NULL },
+	{ str_notchanged, "TXT_KEY_RUSTED",		"", NULL },
+	{ str_notchanged, "TXT_KEY_HORN",		"", NULL },
+	{ str_notchanged, "TXT_KEY_SWAMP",		"", NULL },
+	{ str_notchanged, "TXT_KEY_CASTLE",		"", NULL },
+	{ str_notchanged, "TXT_ARTIINVULNERABILITY2",	"", NULL },
+	{ str_notchanged, "TXT_ARTISUMMON",		"", NULL },
+	{ str_notchanged, "TXT_ARTIEGG2",		"", NULL },
+	{ str_notchanged, "TXT_ARTIPOISONBAG",		"", NULL },
+	{ str_notchanged, "TXT_ARTITELEPORTOTHER",	"", NULL },
+	{ str_notchanged, "TXT_ARTISPEED",		"", NULL },
+	{ str_notchanged, "TXT_ARTIBOOSTMANA",		"", NULL },
+	{ str_notchanged, "TXT_ARTIBOOSTARMOR",		"", NULL },
+	{ str_notchanged, "TXT_ARTIBLASTRADIUS",	"", NULL },
+	{ str_notchanged, "TXT_ARTIHEALINGRADIUS",	"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZSKULL",		"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZGEMBIG",		"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZGEMRED",		"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZGEMGREEN1",	"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZGEMGREEN2",	"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZGEMBLUE1",	"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZGEMBLUE2",	"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZBOOK1",		"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZBOOK2",		"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZSKULL2",		"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZFWEAPON",	"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZCWEAPON",	"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZMWEAPON",	"", NULL },
+	{ str_notchanged, "TXT_ARTIPUZZGEAR",		"", NULL },
+	{ str_notchanged, "TXT_USEPUZZLEFAILED",	"", NULL },
+	{ str_notchanged, "TXT_ARMOR1",			"", NULL },
+	{ str_notchanged, "TXT_ARMOR2",			"", NULL },
+	{ str_notchanged, "TXT_ARMOR3",			"", NULL },
+	{ str_notchanged, "TXT_ARMOR4",			"", NULL },
+	{ str_notchanged, "TXT_WEAPON_F2",		"", NULL },
+	{ str_notchanged, "TXT_WEAPON_F3",		"", NULL },
+	{ str_notchanged, "TXT_WEAPON_F4",		"", NULL },
+	{ str_notchanged, "TXT_WEAPON_C2",		"", NULL },
+	{ str_notchanged, "TXT_WEAPON_C3",		"", NULL },
+	{ str_notchanged, "TXT_WEAPON_C4",		"", NULL },
+	{ str_notchanged, "TXT_WEAPON_M2",		"", NULL },
+	{ str_notchanged, "TXT_WEAPON_M3",		"", NULL },
+	{ str_notchanged, "TXT_WEAPON_M4",		"", NULL },
+	{ str_notchanged, "TXT_QUIETUS_PIECE",		"", NULL },
+	{ str_notchanged, "TXT_WRAITHVERGE_PIECE",	"", NULL },	
+
 	{ str_notchanged, NULL, NULL, NULL },
 };
 
@@ -692,7 +938,7 @@ public:
 }rst;
 
 
-void ReplaceString (const char **ptr, const char *str)
+void ReplaceString (char **ptr, const char *str)
 {
 	if (*ptr)
 	{
