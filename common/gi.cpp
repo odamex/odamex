@@ -27,8 +27,43 @@
 #include "info.h"
 #include "gi.h"
 #include "st_stuff.h"
+#include "am_map.h"
 
 gameinfo_t gameinfo;
+
+
+//
+// The vector graphics for the automap.
+//  A line drawing of the player pointing right,
+//   starting from the middle.
+//
+#define R ((8*PLAYERRADIUS)/7)
+static mline_t player_arrow[] = {
+	{ { -R+R/8, 0 }, { R, 0 } }, // -----
+	{ { R, 0 }, { R-R/2, R/4 } },  // ----->
+	{ { R, 0 }, { R-R/2, -R/4 } },
+	{ { -R+R/8, 0 }, { -R-R/8, R/4 } }, // >---->
+	{ { -R+R/8, 0 }, { -R-R/8, -R/4 } },
+	{ { -R+3*R/8, 0 }, { -R+R/8, R/4 } }, // >>--->
+	{ { -R+3*R/8, 0 }, { -R+R/8, -R/4 } }
+};
+
+static mline_t heretic_player_arrow[] = {
+  { { -R+R/4, 0 }, { 0, 0} }, // center line.
+  { { -R+R/4, R/8 }, { R, 0} }, // blade
+  { { -R+R/4, -R/8 }, { R, 0 } },
+  { { -R+R/4, -R/4 }, { -R+R/4, R/4 } }, // crosspiece
+  { { -R+R/8, -R/4 }, { -R+R/8, R/4 } },
+  { { -R+R/8, -R/4 }, { -R+R/4, -R/4} }, //crosspiece connectors
+  { { -R+R/8, R/4 }, { -R+R/4, R/4} },
+  { { -R-R/4, R/8 }, { -R-R/4, -R/8 } }, //pommel
+  { { -R-R/4, R/8 }, { -R+R/8, R/8 } },
+  { { -R-R/4, -R/8}, { -R+R/8, -R/8 } }
+  };
+#undef R
+
+#define NUMPLYRLINES (sizeof(player_arrow)/sizeof(mline_t))
+#define NUMHTICPLYRLINES (sizeof(heretic_player_arrow)/sizeof(mline_t))
 
 const char *GameNames[5] =
 {
@@ -127,7 +162,9 @@ gameinfo_t HereticGameInfo =
 	"FLAT513",
 	"ENDTEXT",
 	&HticStatusBar,
-	HTICMARKS,        // markNumFmt	
+	HTICMARKS,        // markNumFmt
+	heretic_player_arrow,
+	NUMHTICPLYRLINES,
 	&HereticBorder,
 	GAME_Heretic
 };
@@ -156,6 +193,8 @@ gameinfo_t HereticSWGameInfo =
 	"ENDTEXT",
 	&HticStatusBar,
 	HTICMARKS,        // markNumFmt	
+	heretic_player_arrow,
+	NUMHTICPLYRLINES,	
 	&HereticBorder,
 	GAME_Heretic
 };
@@ -184,6 +223,8 @@ gameinfo_t SharewareGameInfo =
 	"ENDOOM",
 	&DoomStatusBar,
 	DOOMMARKS,
+	player_arrow,
+	NUMHTICPLYRLINES,	
 	&DoomBorder,
 	GAME_Doom
 };
@@ -211,7 +252,9 @@ gameinfo_t RegisteredGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	"ENDOOM",
 	&DoomStatusBar,
-	DOOMMARKS,	
+	DOOMMARKS,
+	player_arrow,
+	NUMPLYRLINES,
 	&DoomBorder,
 	GAME_Doom
 };
@@ -239,7 +282,9 @@ gameinfo_t RetailGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	"ENDOOM",
 	&DoomStatusBar,
-	DOOMMARKS,	
+	DOOMMARKS,
+	player_arrow,
+	NUMPLYRLINES,	
 	&DoomBorder,
 	GAME_Doom
 };
@@ -267,7 +312,9 @@ gameinfo_t CommercialGameInfo =
 	"GRNROCK",
 	"ENDOOM",
 	&DoomStatusBar,
-	DOOMMARKS,	
+	DOOMMARKS,
+	player_arrow,
+	NUMPLYRLINES,	
 	&DoomBorder,
 	GAME_Doom
 };

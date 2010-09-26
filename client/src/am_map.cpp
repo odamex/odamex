@@ -54,7 +54,52 @@ extern patch_t *hu_font[];
 #include "dstrings.h"
 
 #include "am_map.h"
+#include "am_data.h"
+
 #include "gi.h"
+
+#define R ((8*PLAYERRADIUS)/7)
+static mline_t cheat_player_arrow[] = {
+	{ { -R+R/8, 0 }, { R, 0 } }, // -----
+	{ { R, 0 }, { R-R/2, R/6 } },  // ----->
+	{ { R, 0 }, { R-R/2, -R/6 } },
+	{ { -R+R/8, 0 }, { -R-R/8, R/6 } }, // >----->
+	{ { -R+R/8, 0 }, { -R-R/8, -R/6 } },
+	{ { -R+3*R/8, 0 }, { -R+R/8, R/6 } }, // >>----->
+	{ { -R+3*R/8, 0 }, { -R+R/8, -R/6 } },
+	{ { -R/2, 0 }, { -R/2, -R/6 } }, // >>-d--->
+	{ { -R/2, -R/6 }, { -R/2+R/6, -R/6 } },
+	{ { -R/2+R/6, -R/6 }, { -R/2+R/6, R/4 } },
+	{ { -R/6, 0 }, { -R/6, -R/6 } }, // >>-dd-->
+	{ { -R/6, -R/6 }, { 0, -R/6 } },
+	{ { 0, -R/6 }, { 0, R/4 } },
+	{ { R/6, R/4 }, { R/6, -R/7 } }, // >>-ddt->
+	{ { R/6, -R/7 }, { R/6+R/32, -R/7-R/32 } },
+	{ { R/6+R/32, -R/7-R/32 }, { R/6+R/10, -R/7 } }
+};
+#undef R
+#define NUMCHEATPLYRLINES (sizeof(cheat_player_arrow)/sizeof(mline_t))
+
+#define R (FRACUNIT)
+// [RH] Avoid lots of warnings without compiler-specific #pragmas
+#define L(a,b,c,d) { {(fixed_t)((a)*R),(fixed_t)((b)*R)}, {(fixed_t)((c)*R),(fixed_t)((d)*R)} }
+static mline_t triangle_guy[] = {
+	L (-.867,-.5, .867,-.5),
+	L (.867,-.5, 0,1),
+	L (0,1, -.867,-.5)
+};
+#define NUMTRIANGLEGUYLINES (sizeof(triangle_guy)/sizeof(mline_t))
+
+static mline_t thintriangle_guy[] = {
+	L (-.5,-.7, 1,0),
+	L (1,0, -.5,.7),
+	L (-.5,.7, -.5,-.7)
+};
+
+#undef L
+#undef R
+#define NUMTHINTRIANGLEGUYLINES (sizeof(thintriangle_guy)/sizeof(mline_t))
+
 
 static int Background, YourColor, WallColor, TSWallColor,
 		   FDWallColor, CDWallColor, ThingColor,
@@ -174,91 +219,10 @@ EXTERN_CVAR		(screenblocks)
 #define CXMTOF(x)  (MTOF((x)-m_x)/* - f_x*/)
 #define CYMTOF(y)  (f_h - MTOF((y)-m_y)/* + f_y*/)
 
-typedef struct {
-	int x, y;
-} fpoint_t;
-
-typedef struct {
-	fpoint_t a, b;
-} fline_t;
-
-typedef struct {
-	fixed_t x,y;
-} mpoint_t;
-
-typedef struct {
-	mpoint_t a, b;
-} mline_t;
-
-typedef struct {
-	fixed_t slp, islp;
-} islope_t;
-
 
 // backdrop
 static DCanvas *am_backdrop;
 bool am_gotbackdrop = false;
-
-//
-// The vector graphics for the automap.
-//  A line drawing of the player pointing right,
-//   starting from the middle.
-//
-#define R ((8*PLAYERRADIUS)/7)
-mline_t player_arrow[] = {
-	{ { -R+R/8, 0 }, { R, 0 } }, // -----
-	{ { R, 0 }, { R-R/2, R/4 } },  // ----->
-	{ { R, 0 }, { R-R/2, -R/4 } },
-	{ { -R+R/8, 0 }, { -R-R/8, R/4 } }, // >---->
-	{ { -R+R/8, 0 }, { -R-R/8, -R/4 } },
-	{ { -R+3*R/8, 0 }, { -R+R/8, R/4 } }, // >>--->
-	{ { -R+3*R/8, 0 }, { -R+R/8, -R/4 } }
-};
-#undef R
-#define NUMPLYRLINES (sizeof(player_arrow)/sizeof(mline_t))
-
-#define R ((8*PLAYERRADIUS)/7)
-mline_t cheat_player_arrow[] = {
-	{ { -R+R/8, 0 }, { R, 0 } }, // -----
-	{ { R, 0 }, { R-R/2, R/6 } },  // ----->
-	{ { R, 0 }, { R-R/2, -R/6 } },
-	{ { -R+R/8, 0 }, { -R-R/8, R/6 } }, // >----->
-	{ { -R+R/8, 0 }, { -R-R/8, -R/6 } },
-	{ { -R+3*R/8, 0 }, { -R+R/8, R/6 } }, // >>----->
-	{ { -R+3*R/8, 0 }, { -R+R/8, -R/6 } },
-	{ { -R/2, 0 }, { -R/2, -R/6 } }, // >>-d--->
-	{ { -R/2, -R/6 }, { -R/2+R/6, -R/6 } },
-	{ { -R/2+R/6, -R/6 }, { -R/2+R/6, R/4 } },
-	{ { -R/6, 0 }, { -R/6, -R/6 } }, // >>-dd-->
-	{ { -R/6, -R/6 }, { 0, -R/6 } },
-	{ { 0, -R/6 }, { 0, R/4 } },
-	{ { R/6, R/4 }, { R/6, -R/7 } }, // >>-ddt->
-	{ { R/6, -R/7 }, { R/6+R/32, -R/7-R/32 } },
-	{ { R/6+R/32, -R/7-R/32 }, { R/6+R/10, -R/7 } }
-};
-#undef R
-#define NUMCHEATPLYRLINES (sizeof(cheat_player_arrow)/sizeof(mline_t))
-
-#define R (FRACUNIT)
-// [RH] Avoid lots of warnings without compiler-specific #pragmas
-#define L(a,b,c,d) { {(fixed_t)((a)*R),(fixed_t)((b)*R)}, {(fixed_t)((c)*R),(fixed_t)((d)*R)} }
-mline_t triangle_guy[] = {
-	L (-.867,-.5, .867,-.5),
-	L (.867,-.5, 0,1),
-	L (0,1, -.867,-.5)
-};
-#define NUMTRIANGLEGUYLINES (sizeof(triangle_guy)/sizeof(mline_t))
-
-mline_t thintriangle_guy[] = {
-	L (-.5,-.7, 1,0),
-	L (1,0, -.5,.7),
-	L (-.5,.7, -.5,-.7)
-};
-#undef L
-#undef R
-#define NUMTHINTRIANGLEGUYLINES (sizeof(thintriangle_guy)/sizeof(mline_t))
-
-
 
 
 static int 	cheating = 0;
@@ -1511,13 +1475,13 @@ void AM_drawPlayers(void)
 		else
 			angle = conplayer.camera->angle;
 
-		if (cheating)
+		if (cheating && gameinfo.gametype == GAME_Doom)
 			AM_drawLineCharacter
 			(cheat_player_arrow, NUMCHEATPLYRLINES, 0,
 			 angle, YourColor, conplayer.camera->x, conplayer.camera->y);
 		else
 			AM_drawLineCharacter
-			(player_arrow, NUMPLYRLINES, 0, angle,
+			(gameinfo.playerArrow, gameinfo.plyrArrowLines, 0, angle,
 			 YourColor, conplayer.camera->x, conplayer.camera->y);
 		return;
 	}
@@ -1564,7 +1528,7 @@ void AM_drawPlayers(void)
 		}
 
 		AM_drawLineCharacter
-			(player_arrow, NUMPLYRLINES, 0, angle,
+			(gameinfo.playerArrow, gameinfo.plyrArrowLines, 0, angle,
 			 color, pt.x, pt.y);
     }
 }
