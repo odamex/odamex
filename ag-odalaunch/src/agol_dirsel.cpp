@@ -23,6 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <iostream>
 #include <string>
 
 #include <agar/core.h>
@@ -32,40 +33,46 @@
 
 using namespace std;
 
-AGOL_DirSelector::AGOL_DirSelector(string title)
+AGOL_DirSelector::AGOL_DirSelector()
 {
-	FileSelWindow = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
-	AG_WindowSetGeometryAligned(FileSelWindow, AG_WINDOW_MC, 500, 350);
+	Init("");
+}
+
+AGOL_DirSelector::AGOL_DirSelector(std::string title)
+{
+	Init(title);
+}
+
+void AGOL_DirSelector::Init(std::string title)
+{
+	DirSelWindow = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
+	AG_WindowSetGeometryAligned(DirSelWindow, AG_WINDOW_MC, 500, 350);
 
 	// Use the window title if provided.
 	if(title.size())
-		AG_WindowSetCaptionS(FileSelWindow, title.c_str());
+		AG_WindowSetCaptionS(DirSelWindow, title.c_str());
+	else
+		AG_WindowSetCaptionS(DirSelWindow, "Please select a directory");
 
-	FileDlg = AG_FileDlgNew(FileSelWindow, AG_FILEDLG_CLOSEWIN | AG_FILEDLG_EXPAND);
+	// Add the directory selection dialog widget to the window
+	DirDlg = AG_DirDlgNew(DirSelWindow, AG_DIRDLG_CLOSEWIN | AG_DIRDLG_LOAD | AG_DIRDLG_EXPAND);
 
-	AG_WindowShow(FileSelWindow);
-
-	// Hackishly make this file browser into a directory browser
-	// until a better solution is implemented.
-	AG_WidgetHide(FileDlg->tbFile);
-	AG_WidgetHide(FileDlg->tlFiles);
-	AG_WidgetHide(FileDlg->comTypes);
-	AG_PaneMoveDividerPct(FileDlg->hPane, 100);
+	AG_WindowShow(DirSelWindow);
 }
 
 AGOL_DirSelector::~AGOL_DirSelector()
 {
-	AG_ObjectDetach(FileSelWindow);
+	AG_ObjectDetach(DirSelWindow);
 }
 
 void AGOL_DirSelector::SetOkAction(EventHandler *event)
 {
 	if(event)
-		AG_FileDlgOkAction(FileDlg, EventReceiver, "%p%p", event, FileDlg->cwd);
+		AG_DirDlgOkAction(DirDlg, EventReceiver, "%p", event);
 }
 
 void AGOL_DirSelector::SetCancelAction(EventHandler *event)
 {
 	if(event)
-		AG_FileDlgCancelAction(FileDlg, EventReceiver, "%p", event);
+		AG_DirDlgCancelAction(DirDlg, EventReceiver, "%p", event);
 }
