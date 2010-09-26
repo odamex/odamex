@@ -73,6 +73,10 @@ EXTERN_CVAR (sv_loopepisode)
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
+static int FindEndSequence (int type, const char *picname);
+static void SetEndSequence (char *nextmap, int type);
+
+TArray<EndSequence> EndSequences;
 
 static const char Musics1[48][9] =
 {
@@ -522,6 +526,53 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 	else
 		clusterinfo->flags = flags;
 }
+
+
+static int FindEndSequence (int type, const char *picname)
+{
+	int i, num;
+
+	num = EndSequences.Size ();
+	for (i = 0; i < num; i++)
+	{
+		if (EndSequences[i].EndType == type &&
+			(type != END_Pic || stricmp (EndSequences[i].PicName, picname) == 0))
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+static void SetEndSequence (char *nextmap, int type)
+{
+	int seqnum;
+
+	seqnum = FindEndSequence (type, NULL);
+	if (seqnum == -1)
+	{
+		EndSequence newseq;
+		newseq.EndType = type;
+		memset (newseq.PicName, 0, sizeof(newseq.PicName));
+		seqnum = EndSequences.Push (newseq);
+	}
+	strcpy (nextmap, "enDSeQ");
+	*((WORD *)(nextmap + 6)) = (WORD)seqnum;
+}
+
+void G_SetForEndGame (char *nextmap)
+{
+	if (gamemode == commercial)
+	{
+		SetEndSequence (nextmap, END_Cast);
+	}
+	else
+	{ // The ExMx games actually have different ends based on the episode,
+	  // but I want to keep this simple.
+		SetEndSequence (nextmap, END_Pic1);
+	}
+}
+
 
 static void zapDefereds (acsdefered_t *def)
 {
@@ -1702,8 +1753,8 @@ void G_SetLevelStrings (void)
 		LevelInfos[25].flags = LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPECLOWERFLOOR|LEVEL_SORCERER2SPECIAL;
 		LevelInfos[34].flags = LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPECLOWERFLOOR|LEVEL_HEADSPECIAL;
 	
-		//SetEndSequence (LevelInfos[16].nextmap, END_Underwater);
-		//SetEndSequence (LevelInfos[25].nextmap, END_Demon);
+		SetEndSequence (LevelInfos[16].nextmap, END_Underwater);
+		SetEndSequence (LevelInfos[25].nextmap, END_Demon);
 
 		LevelInfos[8].nextmap[3] = LevelInfos[8].secretmap[3] = '7';
 		LevelInfos[17].nextmap[3] = LevelInfos[17].secretmap[3] = '5';
@@ -1712,14 +1763,14 @@ void G_SetLevelStrings (void)
 	}
 	else if (gameinfo.gametype == GAME_Doom)
 	{
-		//SetEndSequence (LevelInfos[16].nextmap, END_Pic2);
-		//SetEndSequence (LevelInfos[25].nextmap, END_Bunny);
+		SetEndSequence (LevelInfos[16].nextmap, END_Pic2);
+		SetEndSequence (LevelInfos[25].nextmap, END_Bunny);
 	}
 
-	//SetEndSequence (LevelInfos[7].nextmap, END_Pic1);
-	//SetEndSequence (LevelInfos[34].nextmap, END_Pic3);
-	//SetEndSequence (LevelInfos[43].nextmap, END_Pic3);
-	//SetEndSequence (LevelInfos[77].nextmap, END_Cast);
+	SetEndSequence (LevelInfos[7].nextmap, END_Pic1);
+	SetEndSequence (LevelInfos[34].nextmap, END_Pic3);
+	SetEndSequence (LevelInfos[43].nextmap, END_Pic3);
+	SetEndSequence (LevelInfos[77].nextmap, END_Cast);
 
 	for (i = 0; i < 12; i++)
 	{

@@ -155,6 +155,28 @@ struct level_locals_s {
 };
 typedef struct level_locals_s level_locals_t;
 
+
+enum EndTypes
+{
+	END_Pic,
+	END_Pic1,
+	END_Pic2,
+	END_Pic3,
+	END_Bunny,
+	END_Cast,
+	END_Demon,
+	END_Underwater,
+	END_Chess
+};
+
+struct EndSequence
+{
+	byte EndType;
+	char PicName[8];
+};
+
+extern TArray<EndSequence> EndSequences;
+
 struct cluster_info_s {
 	int			cluster;
 	// [Russell] - Naturally, this should have an extra byte for the null terminator
@@ -188,6 +210,7 @@ void G_DeferedInitNew (char *mapname);
 
 void G_ExitLevel (int position, int drawscores);
 void G_SecretExitLevel (int position, int drawscores);
+void G_SetForEndGame (char *nextmap);
 
 void G_DoLoadLevel (int position);
 

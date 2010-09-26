@@ -707,7 +707,7 @@ FUNC(LS_Teleport_EndGame)
 {
 	if (!TeleportSide && it && CheckIfExitIsGood (it))
 	{
-		strncpy (level.nextmap, "EndGameC", 8);
+		G_SetForEndGame (level.nextmap);
 		G_ExitLevel (0, 1);
 		return true;
 	}
