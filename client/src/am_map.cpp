@@ -54,7 +54,6 @@ extern patch_t *hu_font[];
 #include "dstrings.h"
 
 #include "am_map.h"
-#include "am_data.h"
 
 #include "gi.h"
 
