@@ -657,6 +657,8 @@ void AM_loadPics(void)
 	{
 		if (!am_gotbackdrop)
 		{
+			atterm(AM_Close);
+						
 			patch_t *bg;
 			int num;
 			
@@ -692,14 +694,15 @@ void AM_unloadPics(void)
 			marknums[i] = NULL;
 		}
 	}
-   
-   // haleyjd 12/22/02: backdrop support
-   if(am_backdrop && am_gotbackdrop)
-   {
+}
+
+void AM_Close(void)
+{
+	if(am_backdrop)
+	{
 		I_FreeScreen(am_backdrop);
 		am_backdrop = NULL;
-		am_gotbackdrop = false;
-   }
+	}	
 }
 
 void AM_clearMarks(void)
