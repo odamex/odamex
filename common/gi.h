@@ -97,6 +97,7 @@ typedef struct
 	char borderFlat[8];			// Flat to use when changing screen size
 	char endoom[8];				// ENDOOM lump
 	stbarfns_t *StatusBar;     	// status bar function set
+	const char *markNumFmt;    // automap mark number format string	
 	gameborder_t *border;
 	EGameType gametype;			// Indicates which game this is
 } gameinfo_t;

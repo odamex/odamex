@@ -278,7 +278,7 @@ void C_InitConsole (int width, int height, int bits, BOOL ingame)
 								v = fadetable + (x - 289) * 256;
 
 							if (v == NULL)
-                                I_FatalError("COuld not stylize the console\n");
+                                I_FatalError("Could not stylize the console\n");
 
 							*i = v[*i];
 							i++;

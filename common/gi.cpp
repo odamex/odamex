@@ -75,9 +75,14 @@ static gameborder_t HereticBorder =
 	"bordbl", "bordb", "bordbr"
 };
 
+//
+// Automap Objects for GameInfo
+//
+#define DOOMMARKS    "AMMNUM%d"
+#define HTICMARKS    "SMALLIN%d"
 
 //
-// Status Bar Object for GameModeInfo
+// Status Bar Object for GameInfo
 //
 stbarfns_t HticStatusBar =
 {
@@ -122,6 +127,7 @@ gameinfo_t HereticGameInfo =
 	"FLAT513",
 	"ENDTEXT",
 	&HticStatusBar,
+	HTICMARKS,        // markNumFmt	
 	&HereticBorder,
 	GAME_Heretic
 };
@@ -149,6 +155,7 @@ gameinfo_t HereticSWGameInfo =
 	"FLOOR04",
 	"ENDTEXT",
 	&HticStatusBar,
+	HTICMARKS,        // markNumFmt	
 	&HereticBorder,
 	GAME_Heretic
 };
@@ -175,7 +182,8 @@ gameinfo_t SharewareGameInfo =
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
 	"ENDOOM",
-	&DoomStatusBar,	
+	&DoomStatusBar,
+	DOOMMARKS,
 	&DoomBorder,
 	GAME_Doom
 };
@@ -203,6 +211,7 @@ gameinfo_t RegisteredGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	"ENDOOM",
 	&DoomStatusBar,
+	DOOMMARKS,	
 	&DoomBorder,
 	GAME_Doom
 };
@@ -230,6 +239,7 @@ gameinfo_t RetailGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	"ENDOOM",
 	&DoomStatusBar,
+	DOOMMARKS,	
 	&DoomBorder,
 	GAME_Doom
 };
@@ -257,6 +267,7 @@ gameinfo_t CommercialGameInfo =
 	"GRNROCK",
 	"ENDOOM",
 	&DoomStatusBar,
+	DOOMMARKS,	
 	&DoomBorder,
 	GAME_Doom
 };

@@ -39,7 +39,8 @@
 
 extern int CleanWidth, CleanHeight, CleanXfac, CleanYfac;
 
-extern BOOL    gotconback;
+extern BOOL		gotconback;
+extern bool		am_gotbackdrop;
 
 extern int DisplayWidth, DisplayHeight, DisplayBits;
 

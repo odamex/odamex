@@ -41,8 +41,8 @@
 
 // Needs access to LFB.
 #include "v_video.h"
-
 #include "v_text.h"
+#include "i_video.h"
 
 extern patch_t *hu_font[];
 
@@ -65,7 +65,6 @@ static int Background, YourColor, WallColor, TSWallColor,
 		   TeleportColor, ExitColor;
 
 static int lockglow = 0;
-static byte *maplump;           // pointer to the raw data for the automap background.
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
@@ -196,6 +195,9 @@ typedef struct {
 } islope_t;
 
 
+// backdrop
+static DCanvas *am_backdrop;
+bool am_gotbackdrop = false;
 
 //
 // The vector graphics for the automap.
@@ -592,26 +594,47 @@ void AM_initColors (BOOL overlayed)
 	}
 	else
 	{
-		/* Use colors corresponding to the original Doom's */
-		Background = V_GetColorFromString (palette, "00 00 00");
-		YourColor = V_GetColorFromString (palette, "FF FF FF");
-		AlmostBackground = V_GetColorFromString (palette, "10 10 10");
-		SecretWallColor =
-			WallColor = V_GetColorFromString (palette, "fc 00 00");
-		TSWallColor = V_GetColorFromString (palette, "80 80 80");
-		FDWallColor = V_GetColorFromString (palette, "bc 78 48");
-		LockedColor = V_GetColorFromString (NULL, "fc fc 00");
-        CDWallColor = V_GetColorFromString (palette, "fc fc 00");
-		ThingColor = V_GetColorFromString (palette, "74 fc 6c");
-		GridColor = V_GetColorFromString (palette, "4c 4c 4c");
-		XHairColor = V_GetColorFromString (palette, "80 80 80");
-		NotSeenColor = V_GetColorFromString (palette, "6c 6c 6c");
+		switch (gameinfo.gametype)
+		{
+			case GAME_Heretic:
+				/* Use colors corresponding to the original Doom's */
+				Background = V_GetColorFromString (palette, "00 00 00");
+				YourColor = V_GetColorFromString (palette, "FF FF FF");
+				AlmostBackground = V_GetColorFromString (palette, "10 10 10");
+				SecretWallColor =
+					WallColor = V_GetColorFromString (palette, "4c 33 11");
+				TSWallColor = V_GetColorFromString (palette, "59 5e 57");
+				FDWallColor = V_GetColorFromString (palette, "d0 b0 85");
+				LockedColor = V_GetColorFromString (NULL, "fc fc 00");
+				CDWallColor = V_GetColorFromString (palette, "68 3c 20");
+				ThingColor = V_GetColorFromString (palette, "38 38 38");
+				GridColor = V_GetColorFromString (palette, "4c 4c 4c");
+				XHairColor = V_GetColorFromString (palette, "80 80 80");
+				NotSeenColor = V_GetColorFromString (palette, "6c 6c 6c");			
+			break;
+			
+			default:
+				/* Use colors corresponding to the original Doom's */
+				Background = V_GetColorFromString (palette, "00 00 00");
+				YourColor = V_GetColorFromString (palette, "FF FF FF");
+				AlmostBackground = V_GetColorFromString (palette, "10 10 10");
+				SecretWallColor =
+					WallColor = V_GetColorFromString (palette, "fc 00 00");
+				TSWallColor = V_GetColorFromString (palette, "80 80 80");
+				FDWallColor = V_GetColorFromString (palette, "bc 78 48");
+				LockedColor = V_GetColorFromString (NULL, "fc fc 00");
+				CDWallColor = V_GetColorFromString (palette, "fc fc 00");
+				ThingColor = V_GetColorFromString (palette, "74 fc 6c");
+				GridColor = V_GetColorFromString (palette, "4c 4c 4c");
+				XHairColor = V_GetColorFromString (palette, "80 80 80");
+				NotSeenColor = V_GetColorFromString (palette, "6c 6c 6c");
+			break;
+		}
 	}
 
 	float backRed, backGreen, backBlue;
 
 	GetComponents (Background, palette, backRed, backGreen, backBlue);
-
 }
 
 //
@@ -619,20 +642,42 @@ void AM_initColors (BOOL overlayed)
 //
 void AM_loadPics(void)
 {  
- 	int i;
+ 	int i, lumpnum;
 	char namebuf[9];
 	
-    if (gameinfo.flags & GAME_Heretic)
-    	maplump = (byte *)W_CacheLumpName("AUTOPAGE", PU_STATIC);
-    	
-    else
-    {	
-        for (i = 0; i < 10; i++)
-        {
-            sprintf(namebuf, "AMMNUM%d", i);
-            marknums[i] = W_CachePatch (namebuf, PU_STATIC);
-        }
+    for (i = 0; i < 10; i++)
+    {
+        sprintf(namebuf, gameinfo.markNumFmt, i);
+        marknums[i] = W_CachePatch (namebuf, PU_STATIC);
     }
+
+	// haleyjd 12/22/02: automap background support (raw format)
+	// [ML] 9/25/10: Heavily modified to use our canvases.
+	if((lumpnum = W_CheckNumForName("AUTOPAGE")) != -1)
+	{
+		if (!am_gotbackdrop)
+		{
+			patch_t *bg;
+			int num;
+			
+			num = W_GetNumForName("AUTOPAGE");
+			// allocate backdrop
+			
+			bg = W_CachePatch (num);
+			delete am_backdrop;
+			
+			am_backdrop = I_AllocateScreen (320, 200, 8);
+			
+			am_backdrop->Lock ();
+			am_backdrop->DrawBlock (0, 0, 320, 200, (byte *)bg);
+			am_backdrop->Unlock ();
+			
+			am_gotbackdrop = true;
+		}
+				
+		//am_backdrop->Blit (0, 0, am_backdrop->width, am_backdrop->height,
+		//					   screen, 0, 0, screen->width, screen->height);
+	}
 }
 
 void AM_unloadPics(void)
@@ -647,6 +692,14 @@ void AM_unloadPics(void)
 			marknums[i] = NULL;
 		}
 	}
+   
+   // haleyjd 12/22/02: backdrop support
+   if(am_backdrop && am_gotbackdrop)
+   {
+		I_FreeScreen(am_backdrop);
+		am_backdrop = NULL;
+		am_gotbackdrop = false;
+   }
 }
 
 void AM_clearMarks(void)
@@ -957,24 +1010,30 @@ void AM_Ticker (void)
 void AM_clearFB (int color)
 {
 	int y;
+	
+	if(am_gotbackdrop && am_backdrop)
+		am_backdrop->Blit (0, 0, am_backdrop->width, am_backdrop->height,
+							screen, 0, 0, screen->width, screen->height);		
+	else
+	{
+		if (screen->is8bit()) {
+			if (f_w == f_p)
+				memset (fb, color, f_w*f_h);
+			else
+				for (y = 0; y < f_h; y++)
+					memset (fb + y * f_p, color, f_w);
+		} else {
+			int x;
+			int *line;
 
-	if (screen->is8bit()) {
-		if (f_w == f_p)
-			memset (fb, color, f_w*f_h);
-		else
-			for (y = 0; y < f_h; y++)
-				memset (fb + y * f_p, color, f_w);
-	} else {
-		int x;
-		int *line;
-
-		line = (int *)(fb);
-		for (y = 0; y < f_h; y++) {
-			for (x = 0; x < f_w; x++) {
-				line[x] = color;
+			line = (int *)(fb);
+			for (y = 0; y < f_h; y++) {
+				for (x = 0; x < f_w; x++) {
+					line[x] = color;
+				}
+				line += f_p >> 2;
 			}
-			line += f_p >> 2;
-		}
+		}		
 	}
 }
 
@@ -1571,6 +1630,109 @@ void AM_drawCrosshair (int color)
 	fb[f_p*((f_h+1)/2)+(f_w/2)] = (byte)color; // single point for now
 }
 
+void AM_drawWidgets(void)
+{
+	if (!(viewactive && am_overlay < 2)) {
+
+		char line[64+10];
+		int OV_Y, i, time = level.time / TICRATE, height, epsub;
+		int wl_x1 = 0,wr_x1 = 0,wl_x2 = 0,wr_x2 = 0;
+
+		height = (hu_font[0]->height() + 1) * CleanYfac;
+		OV_Y = screen->height - ((32 * screen->height) / 200);
+		
+		if (gameinfo.gametype == GAME_Heretic)
+		{
+			wl_x1 = wr_x1 = 36;
+			wl_x2 = wr_x2 = 36;
+		}
+
+		if (sv_gametype == GM_COOP)
+		{
+			if (am_showmonsters)
+			{
+				sprintf (line, TEXTCOLOR_RED "MONSTERS:"
+							   TEXTCOLOR_NORMAL " %d / %d",
+							   level.killed_monsters, level.total_monsters);
+                if (viewactive && screenblocks == 11)
+                    FB->DrawTextClean (CR_GREY, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 4) + 1, line);
+                else if (viewactive && screenblocks == 12)
+                    FB->DrawTextClean (CR_GREY, 0, screen->height - (height * 2) + 1, line);
+                else
+                    FB->DrawTextClean (CR_GREY, (wl_x1 * CleanXfac), ST_Y - (height * 2) + 1, line);
+			}
+
+			if (am_showsecrets)
+			{
+				sprintf (line, TEXTCOLOR_RED "SECRETS:"
+							   TEXTCOLOR_NORMAL " %d / %d",
+							   level.found_secrets, level.total_secrets);
+                if (viewactive && screenblocks == 11)
+                    FB->DrawTextClean (CR_GREY, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 3) + 1, line);
+                else if (viewactive && screenblocks == 12)
+                    FB->DrawTextClean (CR_GREY, screen->width - V_StringWidth (line) * CleanXfac, screen->height - (height * 2) + 1, line);
+                else
+                    FB->DrawTextClean (CR_GREY, screen->width - ((V_StringWidth (line) + wr_x1) * CleanXfac), ST_Y - (height * 2) + 1, line);
+			}
+		}
+
+		if (am_classicmapstring) {
+		    i = 0;
+		    epsub = 0;
+            if (gamemission == doom2)
+                i = 100;
+            else if (gamemission == pack_plut)
+                i = 132;
+            else if (gamemission == pack_tnt)
+                i = 164;
+			else if (gameinfo.gametype & GAME_Heretic)
+				i = 354;
+            else {
+                i = 64;
+                epsub = level.cluster - 1;
+            }
+
+            sprintf (line, Strings[i+level.levelnum-epsub].string);
+            if (viewactive && screenblocks == 11)
+                FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
+            else if (viewactive && screenblocks == 12)
+                FB->DrawTextClean (CR_RED, 0, screen->height - (height * 1) + 1, line);
+            else
+                FB->DrawTextClean (CR_RED, (wl_x2 * CleanXfac), ST_Y - (height * 1) + 1, line);
+		} else {
+            line[0] = '\x8a';
+            line[1] = CR_RED + 'A';
+            i = 0;
+            while (i < 8 && level.mapname[i]) {
+                line[2 + i] = level.mapname[i];
+                i++;
+            }
+            i += 2;
+            line[i++] = ':';
+            line[i++] = ' ';
+            line[i++] = '\x8a';
+            line[i++] = '-';
+            strcpy (&line[i], level.level_name);
+            if (viewactive && screenblocks == 11)
+                FB->DrawTextClean (CR_GREY, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
+            else if (viewactive && screenblocks == 12)
+                FB->DrawTextClean (CR_GREY, 0, screen->height - (height * 1) + 1, line);
+            else
+                FB->DrawTextClean (CR_GREY, (wl_x2 * CleanXfac), ST_Y - (height * 1) + 1, line);
+		}
+
+		if (am_showtime) {
+			sprintf (line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
+            if (viewactive && screenblocks == 11)
+                FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 2) + 1, line);
+            else if (viewactive && screenblocks == 12)
+                FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, screen->height - (height * 1) + 1, line);
+            else
+                FB->DrawTextClean (CR_RED, screen->width - ((V_StringWidth (line) + wl_x2) * CleanXfac), ST_Y - (height * 1) + 1, line);
+		}
+	}	
+}
+
 void AM_Drawer (void)
 {
 	if (!automapactive)
@@ -1610,98 +1772,8 @@ void AM_Drawer (void)
 		AM_drawCrosshair(XHairColor);
 
 	AM_drawMarks();
-
-	if (!(viewactive && am_overlay < 2)) {
-
-		char line[64+10];
-		int OV_Y, i, time = level.time / TICRATE, height, epsub;
-
-		height = (hu_font[0]->height() + 1) * CleanYfac;
-		OV_Y = screen->height - ((32 * screen->height) / 200);
-
-		if (sv_gametype == GM_COOP)
-		{
-			if (am_showmonsters)
-			{
-				sprintf (line, TEXTCOLOR_RED "MONSTERS:"
-							   TEXTCOLOR_NORMAL " %d / %d",
-							   level.killed_monsters, level.total_monsters);
-                if (viewactive && screenblocks == 11)
-                    FB->DrawTextClean (CR_GREY, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 4) + 1, line);
-                else if (viewactive && screenblocks == 12)
-                    FB->DrawTextClean (CR_GREY, 0, screen->height - (height * 2) + 1, line);
-                else
-                    FB->DrawTextClean (CR_GREY, 0, ST_Y - (height * 2) + 1, line);
-			}
-
-			if (am_showsecrets)
-			{
-				sprintf (line, TEXTCOLOR_RED "SECRETS:"
-							   TEXTCOLOR_NORMAL " %d / %d",
-							   level.found_secrets, level.total_secrets);
-                if (viewactive && screenblocks == 11)
-                    FB->DrawTextClean (CR_GREY, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 3) + 1, line);
-                else if (viewactive && screenblocks == 12)
-                    FB->DrawTextClean (CR_GREY, screen->width - V_StringWidth (line) * CleanXfac, screen->height - (height * 2) + 1, line);
-                else
-                    FB->DrawTextClean (CR_GREY, screen->width - V_StringWidth (line) * CleanXfac, ST_Y - (height * 2) + 1, line);
-			}
-		}
-
-		if (am_classicmapstring) {
-		    i = 0;
-		    epsub = 0;
-            if (gamemission == doom2)
-                i = 100;
-            else if (gamemission == pack_plut)
-                i = 132;
-            else if (gamemission == pack_tnt)
-                i = 164;
-            else {
-                i = 64;
-                epsub = level.cluster - 1;
-            }
-
-            sprintf (line, Strings[i+level.levelnum-epsub].string);
-            if (viewactive && screenblocks == 11)
-                FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
-            else if (viewactive && screenblocks == 12)
-                FB->DrawTextClean (CR_RED, 0, screen->height - (height * 1) + 1, line);
-            else
-                FB->DrawTextClean (CR_RED, 0, ST_Y - (height * 1) + 1, line);
-		} else {
-            line[0] = '\x8a';
-            line[1] = CR_RED + 'A';
-            i = 0;
-            while (i < 8 && level.mapname[i]) {
-                line[2 + i] = level.mapname[i];
-                i++;
-            }
-            i += 2;
-            line[i++] = ':';
-            line[i++] = ' ';
-            line[i++] = '\x8a';
-            line[i++] = '-';
-            strcpy (&line[i], level.level_name);
-            if (viewactive && screenblocks == 11)
-                FB->DrawTextClean (CR_GREY, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
-            else if (viewactive && screenblocks == 12)
-                FB->DrawTextClean (CR_GREY, 0, screen->height - (height * 1) + 1, line);
-            else
-                FB->DrawTextClean (CR_GREY, 0, ST_Y - (height * 1) + 1, line);
-		}
-
-		if (am_showtime) {
-			sprintf (line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
-            if (viewactive && screenblocks == 11)
-                FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 2) + 1, line);
-            else if (viewactive && screenblocks == 12)
-                FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, screen->height - (height * 1) + 1, line);
-            else
-                FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, ST_Y - (height * 1) + 1, line);
-		}
-
-	}
+	
+	AM_drawWidgets();
 }
 
 VERSION_CONTROL (am_map_cpp, "$Id$")
