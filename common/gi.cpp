@@ -27,7 +27,6 @@
 #include "info.h"
 #include "gi.h"
 #include "st_stuff.h"
-#include "am_map.h"
 
 gameinfo_t gameinfo;
 

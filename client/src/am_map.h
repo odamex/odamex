@@ -26,37 +26,11 @@
 #define __AMMAP_H__
 
 #include "d_event.h"
-#include "m_fixed.h"
 
 // Used by ST StatusBar stuff.
 #define AM_MSGHEADER (('a'<<24)+('m'<<16))
 #define AM_MSGENTERED (AM_MSGHEADER | ('e'<<8))
 #define AM_MSGEXITED (AM_MSGHEADER | ('x'<<8))
-
-
-typedef struct {
-	int x, y;
-} fpoint_t;
-
-typedef struct {
-	fpoint_t a, b;
-} fline_t;
-
-typedef struct {
-	fixed_t x,y;
-} mpoint_t;
-
-typedef struct {
-	mpoint_t a, b;
-} mline_t;
-
-typedef struct {
-	fixed_t slp, islp;
-} islope_t;
-
-// player radius for movement checking
-// [ML] 9/26/10: This is only used in the automap...
-#define PLAYERRADIUS	16*FRACUNIT
 
 // Called by main loop.
 BOOL AM_Responder (event_t* ev);

@@ -26,8 +26,8 @@
 #define __GI_H__
 
 #include "doomtype.h"
+#include "doomdef.h"
 #include "st_stuff.h"
-#include "am_map.h"
 
 #define GI_MAPxx				0x00000001
 #define GI_PAGESARERAW			0x00000002

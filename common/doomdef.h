@@ -56,6 +56,7 @@
 
 
 #include "farchive.h"
+#include "m_fixed.h"
 
 //
 // denis
@@ -126,6 +127,11 @@ enum Language_t
 
 // State updates, number of tics / second.
 #define TICRATE 		35
+
+
+// player radius for movement checking
+// [ML] 9/26/10: This is only used in the automap...
+#define PLAYERRADIUS	16*FRACUNIT
 
 // The current state of the game: whether we are
 // playing, gazing at the intermission screen,
@@ -296,6 +302,26 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 	BYTE in; arc >> in; i = (powertype_t)in; return arc;
 }
 
+// AUTOMAP objects
+typedef struct {
+	int x, y;
+} fpoint_t;
+
+typedef struct {
+	fpoint_t a, b;
+} fline_t;
+
+typedef struct {
+	fixed_t x,y;
+} mpoint_t;
+
+typedef struct {
+	mpoint_t a, b;
+} mline_t;
+
+typedef struct {
+	fixed_t slp, islp;
+} islope_t;
 
 //
 // Power up durations, how many tics till expiration.

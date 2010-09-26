@@ -27,7 +27,6 @@
 #include "doomdef.h"
 #include "g_level.h"
 #include "z_zone.h"
-#include "doomdef.h"
 #include "st_stuff.h"
 #include "p_local.h"
 #include "p_lnspec.h"
@@ -52,9 +51,7 @@ extern patch_t *hu_font[];
 
 // Data.
 #include "dstrings.h"
-
 #include "am_map.h"
-
 #include "gi.h"
 
 #define R ((8*PLAYERRADIUS)/7)
