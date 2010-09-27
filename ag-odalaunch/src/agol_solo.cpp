@@ -356,7 +356,7 @@ void AGOL_Solo::OnLaunch(AG_Event *event)
 			cmd.AddParameter("-waddir", cwd);
 	}
 	else
-		cmd.AddParameter("-waddir", waddirs);
+		cmd.AddParameter("-waddir", "\"" + waddirs + "\"");
 
 	// If there are selected items traverse the wad list
 	if(AG_TlistSelectedItem(PwadList))
@@ -431,7 +431,10 @@ void AGOL_Solo::OnLaunch(AG_Event *event)
 
 void AGOL_Solo::SetWindowCloseEvent(EventHandler *handler)
 {
-	CloseEventHandler = handler;
+	if(handler)
+	{
+		CloseEventHandler = handler;
 
-	AG_AddEvent(SoloGameDialog, "window-close", EventReceiver, "%p", handler);
+		AG_AddEvent(SoloGameDialog, "window-close", EventReceiver, "%p", handler);
+	}
 }

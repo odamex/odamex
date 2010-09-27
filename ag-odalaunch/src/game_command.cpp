@@ -99,9 +99,6 @@ int GameCommand::Launch()
 	// Mark the end
 	argv[argc] = NULL;
 
-	// Save the ag-odalaunch configuration settings
-	GuiConfig::Save();
-
 	// Launch Odamex
 	if((pid = AG_Execute(*argv, argv)) == -1)
 	{

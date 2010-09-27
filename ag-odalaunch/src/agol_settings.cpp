@@ -294,6 +294,9 @@ void AGOL_Settings::OnOK(AG_Event *event)
 	SaveWadDirs();
 	SaveExtraParams();
 
+	// Save the ag-odalaunch configuration settings
+	GuiConfig::Save();
+
 	// Detach and destroy the window + contents
 	AG_ObjectDetach(SettingsDialog);
 
@@ -545,8 +548,11 @@ void AGOL_Settings::SaveExtraParams()
 
 void AGOL_Settings::SetWindowCloseEvent(EventHandler *handler)
 {
-	CloseEventHandler = handler;
+	if(handler)
+	{
+		CloseEventHandler = handler;
 
-	AG_AddEvent(SettingsDialog, "window-close", EventReceiver, "%p", handler);
+		AG_AddEvent(SettingsDialog, "window-close", EventReceiver, "%p", handler);
+	}
 }
 
