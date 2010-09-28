@@ -1542,6 +1542,9 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
             {
                 Str[i] = '\n';
                 Str = Str.erase(i + 1, 1);
+				// [NullPoint] Updating the string’s length so the loop does not  
+				// go outside the String’s length
+				StrLength = Str.length(); 
             }
         }
 
