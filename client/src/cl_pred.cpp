@@ -143,11 +143,17 @@ void CL_PredictPlayer (player_t *p)
 		p->mo->RunThink();
 		P_CalcHeight(p);
 	}
+	else if (predicting)
+	{
+	    P_MovePlayer(p);
+	    P_CalcHeight(p);
+	    p->mo->RunThink();
+	}
 	else
 	{
 		P_MovePlayer(p);
 		P_CalcHeight(p);
-		p->mo->RunThink();
+		P_PlayerThink(p);
 	}
 }
 
@@ -226,19 +232,18 @@ void CL_PredictMove (void)
 		predtic = 0;
 
 	// Predict each tic
-	while(++predtic < gametic)
+	while(predtic < gametic)
 	{
 		CL_PredictPlayers(predtic);
 		CL_PredictSectors(predtic);
+
+		++predtic;
 	}
 
 	predicting = false;
 
-	CL_PredictPlayers(predtic);
 	CL_PredictSectors(predtic);
-
-	P_PlayerThink (p);
-	P_CalcHeight(p);
+	CL_PredictPlayers(predtic);
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
