@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: cl_stubs.cpp 1788 2010-08-24 04:42:57Z russellrice $
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2010 by The Odamex Team.
@@ -48,5 +48,5 @@ void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who) {}
 void SV_UpdateFrags(player_t &player) {}
 void SV_ActorTarget(AActor *actor) {}
 
-VERSION_CONTROL (cl_stubs_cpp, "$Id: cl_stubs.cpp $")
+VERSION_CONTROL (cl_stubs_cpp, "$Id$")
 

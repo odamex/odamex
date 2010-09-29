@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: cl_mobj.cpp 1832 2010-09-01 23:59:33Z mike $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2010 by The Odamex Team.
@@ -855,5 +855,5 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		P_DeactivateMobj (mobj);
 }
 
-VERSION_CONTROL (cl_mobj_cpp, "$Id: cl_mobj.cpp 1832 2010-09-01 23:59:33Z mike $")
+VERSION_CONTROL (cl_mobj_cpp, "$Id$")
 

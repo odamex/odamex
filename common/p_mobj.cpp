@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.cpp 1832 2010-09-01 23:59:33Z mike $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2010 by The Odamex Team.
@@ -1084,4 +1084,4 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	P_CheckMissileSpawn (th);
 }
 
-VERSION_CONTROL (p_mobj_cpp, "$Id: p_mobj.cpp 1832 2010-09-01 23:59:33Z mike $")
+VERSION_CONTROL (p_mobj_cpp, "$Id$")
