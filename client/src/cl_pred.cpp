@@ -45,7 +45,7 @@ angle_t cl_pitch[MAXSAVETICS];
 fixed_t cl_viewheight[MAXSAVETICS];
 fixed_t cl_deltaviewheight[MAXSAVETICS];
 fixed_t cl_jumpTics[MAXSAVETICS];
-int     reactiontime[MAXSAVETICS];
+int     cl_reactiontime[MAXSAVETICS];
 
 bool predicting;
 
@@ -142,19 +142,19 @@ void CL_PredictPlayer (player_t *p)
 		P_DeathThink (p);
 		p->mo->RunThink();
 		P_CalcHeight(p);
-	}
-	else if (predicting)
-	{
-	    P_MovePlayer(p);
-	    P_CalcHeight(p);
-	    p->mo->RunThink();
+
+		return;
 	}
 	else
 	{
 		P_MovePlayer(p);
 		P_CalcHeight(p);
-		P_PlayerThink(p);
 	}
+
+	if (predicting)
+        p->mo->RunThink();
+    else
+        P_PlayerThink(p);
 }
 
 //
@@ -189,7 +189,7 @@ void CL_PredictPlayers (int predtic)
 				p->viewheight = cl_viewheight[predtic%MAXSAVETICS];
 				p->deltaviewheight = cl_deltaviewheight[predtic%MAXSAVETICS];
 				p->jumpTics = cl_jumpTics[predtic%MAXSAVETICS];
-				p->mo->reactiontime = reactiontime[predtic%MAXSAVETICS];
+				p->mo->reactiontime = cl_reactiontime[predtic%MAXSAVETICS];
 			}
 	
 			CL_PredictPlayer(p);
@@ -217,7 +217,7 @@ void CL_PredictMove (void)
 	cl_viewheight[gametic%MAXSAVETICS] = p->viewheight;
 	cl_deltaviewheight[gametic%MAXSAVETICS] = p->deltaviewheight;
 	cl_jumpTics[gametic%MAXSAVETICS] = p->jumpTics;
-	reactiontime[gametic%MAXSAVETICS] = p->mo->reactiontime;
+	cl_reactiontime[gametic%MAXSAVETICS] = p->mo->reactiontime;
 
 	// Disable sounds, etc, during prediction
 	predicting = true;

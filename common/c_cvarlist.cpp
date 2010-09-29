@@ -38,6 +38,10 @@ CVAR (sv_allowcheats,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR (sv_allowexit,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Players can jump
 CVAR (sv_allowjump,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+// Give double ammo regardless of difficulty
+CVAR (sv_doubleammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+// Makes water movement more realistic (?)
+CVAR_FUNC_DECL (sv_forcewater, "0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // Look up/down is allowed
 CVAR (sv_freelook,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Names of players appear in the FOV
@@ -66,8 +70,6 @@ CVAR (sv_timelimit,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDI
 CVAR (sv_speedhackfix,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Weapons stay
 CVAR (sv_weaponstay,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-// Give double ammo regardless of difficulty
-CVAR (sv_doubleammo,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 // Compatibility options for vanilla
 // ---------------------------------
