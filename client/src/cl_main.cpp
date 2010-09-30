@@ -1159,6 +1159,8 @@ void CL_SpawnMobj()
 {
 	fixed_t  x = 0, y = 0, z = 0;
 	AActor  *mo;
+	
+	int nummobjs = (gameinfo.gametype == GAME_Heretic ? NUMMOBJTYPES-NUMDOOMTYPES : NUMDOOMTYPES);
 
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
@@ -1170,7 +1172,7 @@ void CL_SpawnMobj()
 	byte rndindex = MSG_ReadByte();
 	SWORD state = MSG_ReadShort();
 
-	if(type >= NUMMOBJTYPES)
+	if(type >= nummobjs)
 		return;
 
 	CL_ClearID(netid);

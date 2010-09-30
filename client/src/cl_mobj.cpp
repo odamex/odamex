@@ -39,6 +39,7 @@
 #include "p_ctf.h"
 #include "st_stuff.h"
 #include "hu_stuff.h"
+#include "gi.h"
 
 extern mapthing2_t      itemrespawnque[ITEMQUESIZE];
 extern int              itemrespawntime[ITEMQUESIZE];
@@ -54,6 +55,8 @@ void G_PlayerReborn(player_t &player);
 
 void AActor::Serialize (FArchive &arc)
 {
+    int nummobjs = (gameinfo.gametype == GAME_Heretic ? NUMMOBJTYPES-NUMDOOMTYPES:NUMDOOMTYPES);
+    
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
@@ -167,11 +170,11 @@ void AActor::Serialize (FArchive &arc)
 		else
 			translation = translationtables + trans;
 		spawnpoint.Serialize (arc);
-		if(type >= NUMMOBJTYPES)
+		if(type >= nummobjs)
 			I_Error("Unknown object type in saved game");
 		if(sprite >= NUMSPRITES)
 			I_Error("Unknown sprite in saved game");
-		info = &mobjinfo[type];
+		info = &gameinfo.mobjinfo[type];
 		touching_sectorlist = NULL;
 		LinkToWorld ();
 		AddToHash ();
@@ -191,7 +194,7 @@ void P_ExplodeMissile (AActor* mo)
 {
 	mo->momx = mo->momy = mo->momz = 0;
 
-	P_SetMobjState (mo, mobjinfo[mo->type].deathstate);
+	P_SetMobjState (mo, gameinfo.mobjinfo[mo->type].deathstate);
 	if (mobjinfo[mo->type].deathstate != S_NULL)
 	{
 		// [RH] If the object is already translucent, don't change it.
@@ -419,6 +422,7 @@ void P_RespawnSpecials (void)
 	mapthing2_t* 		mthing;
 
 	int 				i;
+	int nummobjs = (gameinfo.gametype == GAME_Heretic ? NUMMOBJTYPES-NUMDOOMTYPES:NUMDOOMTYPES);
 
 	if(!serverside)
 		return;
@@ -441,12 +445,12 @@ void P_RespawnSpecials (void)
 	y = mthing->y << FRACBITS;
 
 	// find which type to spawn
-	for (i=0 ; i< NUMMOBJTYPES ; i++)
+	for (i=0 ; i< nummobjs; i++)
 	{
-		if (mthing->type == mobjinfo[i].doomednum)
+		if (mthing->type == gameinfo.mobjinfo[i].doomednum)
 			break;
 	}
-	if (mobjinfo[i].flags & MF_SPAWNCEILING)
+	if (gameinfo.mobjinfo[i].flags & MF_SPAWNCEILING)
 		z = ONCEILINGZ;
 	else
 		z = ONFLOORZ;
@@ -590,6 +594,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	int bit;
 	AActor *mobj;
 	fixed_t x, y, z;
+	
+	int nummobjs;
 
 	if (mthing->type == 0 || mthing->type == -1)
 		return;
@@ -704,6 +710,14 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (!(mthing->flags & bit))
 		return;
+		
+    // Determine the number of mobjs based on game
+    if (gameinfo.gametype == GAME_Heretic)
+        nummobjs = NUMMOBJTYPES-NUMDOOMTYPES;
+    else
+        nummobjs = NUMDOOMTYPES;
+                
+    int offset = (gameinfo.gametype == GAME_Doom ? 0 : NUMDOOMTYPES);
 
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
@@ -722,30 +736,30 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else
 	{
 		// find which type to spawn
-		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mthing->type == mobjinfo[i].doomednum)
+		for (i = 0; i < nummobjs; i++)
+			if (mthing->type == gameinfo.mobjinfo[i].doomednum)
 				break;
 	}
 
-	if (i >= NUMMOBJTYPES)
+	if (i >= nummobjs)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
 		Printf (PRINT_HIGH, "Unknown type %i at (%i, %i)\n",
 			mthing->type,
 			mthing->x, mthing->y);
-		i = MT_UNKNOWNTHING;
+		i = (gameinfo.gametype == GAME_Heretic ? MT_HTIC_UNKNOWNTHING-offset : MT_UNKNOWNTHING);
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
 	//		it to the unknown thing.
-	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
+	else if (sprites[states[gameinfo.mobjinfo[i].spawnstate].sprite].numframes == 0)
 	{
 		Printf (PRINT_HIGH, "Type %i at (%i, %i) has no frames\n",
 				mthing->type, mthing->x, mthing->y);
-		i = MT_UNKNOWNTHING;
+		i = (gameinfo.gametype == GAME_Heretic ? MT_HTIC_UNKNOWNTHING-offset : MT_UNKNOWNTHING);
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (sv_gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (sv_gametype != GM_COOP && gameinfo.mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
@@ -771,7 +785,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [csDoom] don't spawn any monsters
 	if (sv_nomonsters || !serverside)
 	{
-		if (i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL) )
+		if (i == MT_SKULL || (gameinfo.mobjinfo[i].flags & MF_COUNTKILL) )
 		{
 			return;
 		}
@@ -780,7 +794,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
     // for client...
 	// Type 14 is a teleport exit. We must spawn it here otherwise
 	// teleporters won't work well.
-	if (!serverside && (mthing->flags & MF_SPECIAL) && (mthing->type != 14))
+	if (!serverside && (mthing->flags & MF_SPECIAL) && mthing->type != 14)
 		return;
 
 	// spawn it
@@ -793,18 +807,18 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		sec->waterzone = 1;
 		return;
 	}
-	else if (i == MT_SECRETTRIGGER)
+	else if (i == MT_SECRETTRIGGER || i == MT_HTIC_SECRETTRIGGER)
 	{
 		level.total_secrets++;
 	}
 
-	if (mobjinfo[i].flags & MF_SPAWNCEILING)
+	if (gameinfo.mobjinfo[i].flags & MF_SPAWNCEILING)
 		z = ONCEILINGZ;
 	else
 		z = ONFLOORZ;
 
 	// only servers control spawning of special items
-	if (!serverside && mobjinfo[i].flags & MF_SPECIAL)
+	if (!serverside && gameinfo.mobjinfo[i].flags & MF_SPECIAL)
 		return;
 
 	mobj = new AActor (x, y, z, (mobjtype_t)i);
@@ -840,7 +854,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mobj->flags & MF_COUNTITEM)
 		level.total_items++;
 
-	if (i != MT_SPARK)
+	if (i != MT_SPARK && i != MT_HTIC_SPARK)
 		mobj->angle = ANG45 * (mthing->angle/45);
 
 	if (mthing->flags & MTF_AMBUSH)

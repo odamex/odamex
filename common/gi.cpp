@@ -165,7 +165,8 @@ gameinfo_t HereticGameInfo =
 	heretic_player_arrow,
 	NUMHTICPLYRLINES,
 	&HereticBorder,
-	GAME_Heretic
+	GAME_Heretic,
+	hticmobjinfo
 };
 
 gameinfo_t HereticSWGameInfo =
@@ -195,7 +196,8 @@ gameinfo_t HereticSWGameInfo =
 	heretic_player_arrow,
 	NUMHTICPLYRLINES,	
 	&HereticBorder,
-	GAME_Heretic
+	GAME_Heretic,
+	hticmobjinfo
 };
 
 gameinfo_t SharewareGameInfo =
@@ -225,7 +227,8 @@ gameinfo_t SharewareGameInfo =
 	player_arrow,
 	NUMHTICPLYRLINES,	
 	&DoomBorder,
-	GAME_Doom
+	GAME_Doom,
+	mobjinfo
 };
 
 gameinfo_t RegisteredGameInfo =
@@ -255,7 +258,8 @@ gameinfo_t RegisteredGameInfo =
 	player_arrow,
 	NUMPLYRLINES,
 	&DoomBorder,
-	GAME_Doom
+	GAME_Doom,
+	mobjinfo
 };
 
 gameinfo_t RetailGameInfo =
@@ -285,7 +289,8 @@ gameinfo_t RetailGameInfo =
 	player_arrow,
 	NUMPLYRLINES,	
 	&DoomBorder,
-	GAME_Doom
+	GAME_Doom,
+	mobjinfo
 };
 
 gameinfo_t CommercialGameInfo =
@@ -315,7 +320,8 @@ gameinfo_t CommercialGameInfo =
 	player_arrow,
 	NUMPLYRLINES,	
 	&DoomBorder,
-	GAME_Doom
+	GAME_Doom,
+	mobjinfo
 };
 
 VERSION_CONTROL (gi_cpp, "$Id$")

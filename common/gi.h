@@ -103,6 +103,7 @@ typedef struct
 	int plyrArrowLines;			// automap player arrow line count
 	gameborder_t *border;
 	EGameType gametype;			// Indicates which game this is
+	mobjinfo_t *mobjinfo;       // The set of game objects to use
 } gameinfo_t;
 
 extern gameinfo_t gameinfo;

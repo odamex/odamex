@@ -35,6 +35,7 @@
 #include "vectors.h"
 #include "g_game.h"
 #include "p_mobj.h"
+#include "gi.h"
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -192,15 +193,23 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     tid(0)
 {
 	state_t *st;
+	
+	int nummobjs;
+	
+	if (gameinfo.gametype == GAME_Heretic)
+        nummobjs = NUMMOBJTYPES - NUMDOOMTYPES;
+    else
+        nummobjs = NUMDOOMTYPES;
 
 	// Fly!!! fix it in P_RespawnSpecial
-	if ((unsigned int)itype >= NUMMOBJTYPES)
+	if ((unsigned int)itype >= nummobjs)
 	{
-		I_Error ("Tried to spawn actor type %d\n", itype);
+		Printf (PRINT_HIGH,"Tried to spawn actor type %d\n", itype);
+		return;
 	}
 
 	self.init(this);
-	info = &mobjinfo[itype];
+	info = &gameinfo.mobjinfo[itype];
 	type = itype;
 	x = ix;
 	y = iy;
