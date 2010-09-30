@@ -204,8 +204,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= nummobjs)
 	{
-		Printf (PRINT_HIGH,"Tried to spawn actor type %d\n", itype);
-		return;
+		I_Error (PRINT_HIGH,"Tried to spawn actor type %d\n", itype);
 	}
 
 	self.init(this);
