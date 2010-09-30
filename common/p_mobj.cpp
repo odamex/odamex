@@ -194,7 +194,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 {
 	state_t *st;
 	
-	int nummobjs;
+	unsigned int nummobjs;
 	
 	if (gameinfo.gametype == GAME_Heretic)
         nummobjs = NUMMOBJTYPES - NUMDOOMTYPES;
@@ -204,7 +204,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= nummobjs)
 	{
-		I_Error (PRINT_HIGH,"Tried to spawn actor type %d\n", itype);
+		I_Error ("Tried to spawn actor type %d\n", itype);
 	}
 
 	self.init(this);
