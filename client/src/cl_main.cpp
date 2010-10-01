@@ -1073,7 +1073,7 @@ void CL_UpdatePlayer()
 
 	if(!validplayer(*p) || !p->mo)
 	{
-		for (int i=0; i<33; i++)
+		for (int i=0; i<37; i++)
 			MSG_ReadByte();
 		return;
 	}
@@ -1101,6 +1101,14 @@ void CL_UpdatePlayer()
 	p->real_velocity[0] = p->mo->momx;
 	p->real_velocity[1] = p->mo->momy;
 	p->real_velocity[2] = p->mo->momz;
+
+    // [Russell] - hack, read and set invisibility flag
+    p->powers[pw_invisibility] = MSG_ReadLong();
+
+    if (p->powers[pw_invisibility])
+    {
+        p->mo->flags |= MF_SHADOW;
+    }
 
 	p->mo->frame = frame;
 

@@ -3023,6 +3023,11 @@ void SV_WriteCommands(void)
 				MSG_WriteLong(&cl->netbuf, players[j].mo->momx);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->momy);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->momz);
+				
+				// [Russell] - hack, tell the client about the partial
+				// invisibility power of another player.. (cheaters can disable
+                // this but its all we have for now)
+                MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
 			}
 
 		SV_UpdateHiddenMobj();
