@@ -1295,7 +1295,7 @@ void P_UpdateSpecials (void)
 // SPECIAL SPAWNING
 //
 
-BEGIN_CUSTOM_CVAR (forcewater, "0", CVAR_ARCHIVE)
+CVAR_FUNC_IMPL (sv_forcewater)
 {
 	if (gamestate == GS_LEVEL)
 	{
@@ -1309,7 +1309,6 @@ BEGIN_CUSTOM_CVAR (forcewater, "0", CVAR_ARCHIVE)
 		}
 	}
 }
-END_CUSTOM_CVAR (forcewater)
 
 //
 // P_SpawnSpecials
@@ -1472,7 +1471,7 @@ void P_SpawnSpecials (void)
 			{
 				sectors[s].heightsec = sec;
 				sectors[s].alwaysfake = !!lines[i].args[1];
-				if (forcewater)
+				if (sv_forcewater)
 					sec->waterzone = 2;
 			}
 			break;
