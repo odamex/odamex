@@ -876,7 +876,7 @@ bool CL_PrepareConnect(void)
         PatchFiles.push_back(MSG_ReadString());
 	
     // TODO: Allow deh/bex file downloads
-	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, wadhashes, PatchFiles);
+	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, PatchFiles, wadhashes);
 
 	if(missing_files.size())
 	{

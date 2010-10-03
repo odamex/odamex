@@ -36,28 +36,31 @@
 // calls all startup code, parses command line options.
 // If not overrided by user input, calls N_AdvanceDemo.
 //
-void D_DoomMain (void);
+void D_DoomMain(void);
 
-std::string BaseFileSearch (std::string, std::string ext = "", std::string hash = "");
-std::vector<size_t> D_DoomWadReboot (const std::vector<std::string> &wadnames,
-                                     const std::vector<std::string> &patch_files = std::vector<std::string>());
+std::string BaseFileSearch(std::string file, std::string ext = "",
+                           std::string hash = "");
+std::vector<size_t> D_DoomWadReboot(
+	const std::vector<std::string> &wadnames,
+    const std::vector<std::string> &patch_files = std::vector<std::string>(),
+    std::vector<std::string> needhashes = std::vector<std::string>()
+);
 
 // Called by IO functions when input is detected.
-void D_PostEvent (const event_t* ev);
-
-
+void D_PostEvent(const event_t* ev);
 
 //
 // BASE LEVEL
 //
-void D_PageTicker (void);
-void D_PageDrawer (void);
-void D_AdvanceDemo (void);
-void D_StartTitle (void);
+void D_PageTicker(void);
+void D_PageDrawer(void);
+void D_AdvanceDemo(void);
+void D_StartTitle(void);
 
 
 // [RH] Set this to something to draw an icon during the next screen refresh.
 extern char *D_DrawIcon;
 
 #endif
+
 
