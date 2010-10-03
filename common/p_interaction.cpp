@@ -602,6 +602,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
                 return;
             }
             PickupMessage(toucher, GOTSTIM);
+            SV_TouchSpecial(special, player);
             break;
 
 	    case SPR_MEDI:
