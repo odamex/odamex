@@ -1320,6 +1320,12 @@ std::vector<size_t> D_DoomWadReboot(
     // I have never used memset, I hope I am not invoking satan by doing this :(
 	if (wadlevelinfos)
     {
+		for (i = 0; i < numwadlevelinfos; i++)
+			if (wadlevelinfos[i].snapshot)
+			{
+				delete wadlevelinfos[i].snapshot;
+				wadlevelinfos[i].snapshot = NULL;
+			}
         memset(wadlevelinfos,0,sizeof(wadlevelinfos));        
         numwadlevelinfos = 0;
     }
