@@ -242,8 +242,8 @@ void CL_PredictMove (void)
 
 	predicting = false;
 
-	CL_PredictSectors(predtic);
 	CL_PredictPlayers(predtic);
+	CL_PredictSectors(predtic);
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
