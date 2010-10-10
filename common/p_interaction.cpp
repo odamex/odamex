@@ -411,17 +411,14 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 
     // Out of reach
     // ...but leave this to the server to handle if the client is connected
-    // [CG] Both clients and servers need to know if a player touched something
-    //      or not, because the server doesn't send a "touched X thing"
-    //      message.  I'm just commenting the code out for now, because I can
-    //      see that clients thinking they've touched a thing when the server
-    //      thinks they haven't can be an issue, but probably the way to fix
-    //      this is to have an svc_touchedspecialthing message (or something).
+    // [CG] This is called the the client upon receipt of the "touched special
+    //      thing" message (whatever it actually is), so this check should only
+    //      happen if serverside.
     /*
 	if ((delta > toucher->height || delta < -8*FRACUNIT) &&
 	    !(clientside && network_game))
     */
-	if ((delta > toucher->height || delta < -8*FRACUNIT))
+	if (serverside && (delta > toucher->height || delta < -8*FRACUNIT))
 	{
 		return;
 	}
