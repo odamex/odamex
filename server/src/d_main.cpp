@@ -889,6 +889,7 @@ std::vector<size_t> D_DoomWadReboot(
 )
 {
 	std::vector<size_t> fails;
+	size_t i;
 
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
 		I_FatalError ("\nYou cannot switch WAD with the shareware version. Register!");
@@ -905,6 +906,12 @@ std::vector<size_t> D_DoomWadReboot(
     // I have never used memset, I hope I am not invoking satan by doing this :(
 	if (wadlevelinfos)
     {
+		for (i = 0; i < numwadlevelinfos; i++)
+			if (wadlevelinfos[i].snapshot)
+			{
+				delete wadlevelinfos[i].snapshot;
+				wadlevelinfos[i].snapshot = NULL;
+			}    	
         memset(wadlevelinfos,0,sizeof(wadlevelinfos));        
         numwadlevelinfos = 0;
     }
@@ -927,7 +934,7 @@ std::vector<size_t> D_DoomWadReboot(
 
 	D_AddDefWads(custwad);
 
-	for(size_t i = 0; i < wadnames.size(); i++)
+	for(i = 0; i < wadnames.size(); i++)
 	{
 		std::string file = BaseFileSearch(wadnames[i], ".WAD");
 
