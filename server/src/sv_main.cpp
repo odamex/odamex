@@ -56,6 +56,7 @@
 #include "p_ctf.h"
 #include "w_wad.h"
 #include "md5.h"
+#include "p_mobj.h"
 
 #include <algorithm>
 #include <sstream>
@@ -4301,6 +4302,43 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteShort (&cl->reliablebuf, target->health);
 		MSG_WriteLong (&cl->reliablebuf, MeansOfDeath);
 		MSG_WriteByte (&cl->reliablebuf, joinkill);
+	}
+}
+
+// Tells clients to remove an actor from the world as it doesn't exist anymore
+void SV_SendDestroyActor(AActor *mo)
+{
+	if (mo->netid && mo->type != MT_PUFF)
+	{
+		for (size_t i = 0; i < mo->players_aware.size(); i++)
+		{
+			client_t *cl = &idplayer(mo->players_aware[i]).client;
+
+            // denis - todo - need a queue for destroyed (lost awareness) 
+            // objects, as a flood of destroyed things could easily overflow a 
+            // buffer
+			MSG_WriteMarker(&cl->reliablebuf, svc_removemobj); 
+			MSG_WriteShort(&cl->reliablebuf, mo->netid);
+		}
+	}
+
+	// AActor no longer active. NetID released.
+	if(mo->netid)
+		ServerNetID.ReleaseNetID( mo->netid );
+
+	if ((mo->flags & MF_SPECIAL) && !(mo->flags & MF_DROPPED))
+	{
+		if (mo->type != MT_INV && mo->type != MT_INS && 
+            (mo->type < MT_BSOK || mo->type > MT_RDWN))
+		{
+			itemrespawnque[iquehead] = mo->spawnpoint;
+			itemrespawntime[iquehead] = level.time;
+			iquehead = (iquehead+1)&(ITEMQUESIZE-1);
+
+			// lose one off the end?
+			if (iquehead == iquetail)
+				iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		}
 	}
 }
 

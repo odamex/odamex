@@ -46,6 +46,7 @@ extern fixed_t attackrange;
 
 void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
+void SV_SendDestroyActor(AActor *);
 
 EXTERN_CVAR(sv_freelook)
 
@@ -256,6 +257,34 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	{
 		z = iz;
 	}
+}
+
+
+//
+// P_RemoveMobj
+//
+void AActor::Destroy ()
+{
+	SV_SendDestroyActor(this);
+	
+	// [RH] Unlink from tid chain
+	RemoveFromHash ();
+
+	// unlink from sector and block lists
+	UnlinkFromWorld ();
+
+	// Delete all nodes on the current sector_list			phares 3/16/98
+	if (sector_list)
+	{
+		P_DelSeclist (sector_list);
+		sector_list = NULL;
+	}
+
+	// stop any playing sound
+    if (clientside)
+		S_RelinkSound (this, NULL);
+
+	Super::Destroy ();
 }
 
 //

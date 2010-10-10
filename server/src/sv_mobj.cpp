@@ -389,57 +389,6 @@ void AActor::RunThink ()
 }
 
 //
-// P_RemoveMobj
-//
-void AActor::Destroy ()
-{
-	if (netid && type != MT_PUFF)
-	{
-		for (size_t i = 0; i < players_aware.size(); i++)
-		{
-			client_t *cl = &idplayer(players_aware[i]).client;
-
-			MSG_WriteMarker(&cl->reliablebuf, svc_removemobj); // denis - todo - need a queue for destroyed (lost awareness) objects, as a flood of destroyed things could easily overflow a buffer
-			MSG_WriteShort(&cl->reliablebuf, netid);
-		}
-	}
-
-	// AActor no longer active. NetID released.
-	if(netid)
-		ServerNetID.ReleaseNetID( netid );
-
-	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED))
-	{
-		if (type != MT_INV && type != MT_INS && (type < MT_BSOK || type > MT_RDWN))
-		{
-			itemrespawnque[iquehead] = spawnpoint;
-			itemrespawntime[iquehead] = level.time;
-			iquehead = (iquehead+1)&(ITEMQUESIZE-1);
-
-			// lose one off the end?
-			if (iquehead == iquetail)
-				iquetail = (iquetail+1)&(ITEMQUESIZE-1);
-		}
-	}
-
-	// [RH] Unlink from tid chain
-	RemoveFromHash ();
-
-	// unlink from sector and block lists
-	UnlinkFromWorld ();
-
-	// Delete all nodes on the current sector_list			phares 3/16/98
-	if (sector_list)
-	{
-		P_DelSeclist (sector_list);
-		sector_list = NULL;
-	}
-
-	// stop any playing sound
-	//	S_RelinkSound (this, NULL);
-
-	Super::Destroy ();
-}
 
 //
 // P_RespawnSpecials
