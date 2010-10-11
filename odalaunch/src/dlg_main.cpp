@@ -98,6 +98,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
     wxFileConfig ConfigInfo;   
     wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
+    bool WindowMaximized;
     wxString Version;
 
     // Loads the frame from the xml resource file
@@ -134,6 +135,11 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     if (WindowPosX >= 0 && WindowPosY >= 0)
         Move(WindowPosX, WindowPosY);
     
+    // Set whether this window is maximized or not
+    ConfigInfo.Read(wxT("MainWindowMaximized"), &WindowMaximized, false);
+
+    Maximize(WindowMaximized);
+
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 1;
     launchercfg_s.wad_paths = wxGetCwd();
@@ -221,6 +227,7 @@ void dlgMain::OnClose(wxCloseEvent &event)
     ConfigInfo.Write(wxT("MainWindowHeight"), GetClientSize().GetHeight());
     ConfigInfo.Write(wxT("MainWindowPosX"), GetPosition().x);
     ConfigInfo.Write(wxT("MainWindowPosY"), GetPosition().y);
+    ConfigInfo.Write(wxT("MainWindowMaximized"), IsMaximized());
 
     ConfigInfo.Flush();
 
