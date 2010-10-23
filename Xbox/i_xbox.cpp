@@ -56,6 +56,17 @@ using namespace std;
 
 #define INVALID_FILE_ATTRIBUTES -1
 
+// Custom LAUNCH_DATA struct for external XBE execution from AG_Execute()
+#define AG_LAUNCH_MAGIC 0x41474152
+
+typedef struct {
+	DWORD magic;               // Test this against AG_LAUNCH_MAGIC to know this special struct was used
+	DWORD dwID;                // The Title ID of the launcher XBE
+	CHAR  szLauncherXBE[256];  // The full path to the launcher XBE
+	CHAR  szLaunchedXBE[256];  // The full path to the launched XBE
+	CHAR  szCmdLine[MAX_LAUNCH_DATA_SIZE - 520]; // The command-line parameters
+} AG_LAUNCH_DATA, *PAG_LAUNCH_DATA;
+
 typedef struct _STRING 
 {
 	USHORT	Length;
@@ -557,10 +568,10 @@ void  __cdecl main()
 	{
 		if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) 
 			xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, " ");
-		else if(launchDataType == LDT_TITLE && ((PLD_DEMO)&launchData)->dwID == 0x4F444C43)
+		else if(launchDataType == LDT_TITLE && ((PAG_LAUNCH_DATA)&launchData)->magic == AG_LAUNCH_MAGIC)
 		{
-			xbox_RecordLauncherXBE(((PLD_DEMO)&launchData)->szLauncherXBE, ((PLD_DEMO)&launchData)->dwID);
-			xargv[xargc] = strtok((char*)((PLD_DEMO)&launchData)->Reserved, " ");
+			xbox_RecordLauncherXBE(((PAG_LAUNCH_DATA)&launchData)->szLauncherXBE, ((PAG_LAUNCH_DATA)&launchData)->dwID);
+			xargv[xargc] = strtok((char*)((PAG_LAUNCH_DATA)&launchData)->szCmdLine, " ");
 		}
 
 		while(xargv[xargc] != NULL)
