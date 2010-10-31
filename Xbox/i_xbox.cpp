@@ -54,8 +54,6 @@ using namespace std;
 #define DeviceU "\\Device\\Harddisk0\\Partition1\\UDATA\\4F444D58"
 #define DeviceZ "\\Device\\Harddisk0\\Partition5"
 
-#define INVALID_FILE_ATTRIBUTES -1
-
 // Custom LAUNCH_DATA struct for external XBE execution from AG_Execute()
 #define AG_LAUNCH_MAGIC 0x41474152
 
@@ -66,6 +64,23 @@ typedef struct {
 	CHAR  szLaunchedXBE[256];  // The full path to the launched XBE
 	CHAR  szCmdLine[MAX_LAUNCH_DATA_SIZE - 520]; // The command-line parameters
 } AG_LAUNCH_DATA, *PAG_LAUNCH_DATA;
+
+// Standard homebrew custom LAUNCH_DATA designed to launch emu's directly into a game.
+// This is used to pass custom parameters from many popular dashboards such as XBMC.
+#define CUSTOM_LAUNCH_MAGIC 0xEE456777
+
+typedef struct {
+	DWORD magic;
+	CHAR szFilename[300];
+	CHAR szLaunchXBEOnExit[100];
+	CHAR szRemap_D_As[350];
+	BYTE country;
+	BYTE launchInsertedMedia;
+	BYTE executionType;
+	CHAR reserved[MAX_LAUNCH_DATA_SIZE-757];
+} CUSTOM_LAUNCH_DATA, *PCUSTOM_LAUNCH_DATA;
+
+#define INVALID_FILE_ATTRIBUTES -1
 
 typedef struct _STRING 
 {
@@ -241,11 +256,13 @@ void xbox_PrintMemoryDebug()
 		OutputDebugString( buf );
 
 		sprintf(buf, "Used Physical Memory : \t%4d bytes / %4d MB\n", stat.dwTotalPhys - stat.dwAvailPhys, 
-																			I_BytesToMegabytes(stat.dwTotalPhys - stat.dwAvailPhys));
+		                                                             I_BytesToMegabytes(stat.dwTotalPhys - stat.dwAvailPhys));
 		OutputDebugString( buf );
 
-		sprintf(buf, "Free Physical Memory : \t%4d bytes / %4d MB\n\n", stat.dwAvailPhys, I_BytesToMegabytes(stat.dwAvailPhys));
+		sprintf(buf, "Free Physical Memory : \t%4d bytes / %4d MB\n", stat.dwAvailPhys, I_BytesToMegabytes(stat.dwAvailPhys));
 		OutputDebugString( buf );
+
+		OutputDebugString("\n");
 
 		lastmem = stat.dwAvailPhys;
 	}
@@ -566,8 +583,13 @@ void  __cdecl main()
 
 	if(XGetLaunchInfo (&launchDataType, &launchData) == ERROR_SUCCESS)
 	{
+		// Command line from debugger
 		if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) 
 			xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, " ");
+		// Command line from homebrew dashboards (XBMC, etc.)
+		else if(launchDataType == LDT_TITLE && ((PCUSTOM_LAUNCH_DATA)&launchData)->magic == CUSTOM_LAUNCH_MAGIC)
+			xargv[xargc] = strtok((char*)((PCUSTOM_LAUNCH_DATA)&launchData)->szFilename, " ");
+		// Command line from Agar application (AG_Odalaunch)
 		else if(launchDataType == LDT_TITLE && ((PAG_LAUNCH_DATA)&launchData)->magic == AG_LAUNCH_MAGIC)
 		{
 			xbox_RecordLauncherXBE(((PAG_LAUNCH_DATA)&launchData)->szLauncherXBE, ((PAG_LAUNCH_DATA)&launchData)->dwID);
@@ -578,6 +600,7 @@ void  __cdecl main()
 		{
 			if(!stricmp(xargv[xargc], "-rrod"))
 				Xbox_RROD = true;
+
 			xargc++;
 			xargv[xargc] = strtok(NULL, " ");
 		}
