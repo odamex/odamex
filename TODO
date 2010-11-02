@@ -41,6 +41,9 @@ in wx 2.9.0)
 
 Master Server:
 --------------
+* 0.6 - Optimize server ip/port list sending format so it saves space, currently 
+we send the same ip address multiple times if said ip has multiple servers 
+running (we could also use some other form of compression instead)
 
 
 Other:
@@ -50,8 +53,7 @@ system for the launcher, master and server, it must handle out-of-order,
 duplicate and dropped packets in some fashion, the idea is to make sure one-off
 communication between these crucial components are more reliable than what we
 have now. This system must sit between the actual socket code and the new 
-launcher protocol which has been implemented in the new_sqp branch on our svn
-repo.
+launcher protocol.
 * Use a build system to generate Makefiles, something like bakefile may be 
 sufficient enough.
 * Allow downloading of dehacked files
