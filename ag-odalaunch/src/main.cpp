@@ -149,6 +149,8 @@ int main(int argc, char *argv[])
 
 	delete mainWindow;
 
+	GuiConfig::Save();
+
 	AG_Destroy();
 
 	// Shutdown socket API
