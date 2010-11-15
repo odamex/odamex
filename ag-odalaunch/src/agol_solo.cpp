@@ -54,7 +54,7 @@ const string DoomIWadNames[] =
 
 AGOL_Solo::AGOL_Solo()
 {
-	SoloGameDialog = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
+	SoloGameDialog = AG_WindowNew(AG_WINDOW_MODAL);
 	AG_WindowSetCaptionS(SoloGameDialog, "Solo Game");
 	AG_WindowSetGeometryAligned(SoloGameDialog, AG_WINDOW_MC, 600, 400);
 

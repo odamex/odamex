@@ -23,7 +23,7 @@ CFLAGS = $(shell $(AGCONFIG) --cflags) -g -Wall
 LFLAGS = $(shell $(AGCONFIG) --libs) -g -lSDL_image
 
 ifneq ($(strip $(shell $(CC) -v 2>&1 |grep "mingw")),)
-	LFLAGS += -lwsock32 -lwinmm
+	LFLAGS += -static -lwsock32 -lwinmm -lpng -lz
 endif
 
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))

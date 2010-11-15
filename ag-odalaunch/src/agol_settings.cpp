@@ -37,7 +37,7 @@ using namespace std;
 
 AGOL_Settings::AGOL_Settings()
 {
-	SettingsDialog = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
+	SettingsDialog = AG_WindowNew(AG_WINDOW_MODAL);
 	AG_WindowSetCaptionS(SettingsDialog, "Configure Settings");
 
 	SrvOptionsBox = CreateSrvOptionsBox(SettingsDialog);
