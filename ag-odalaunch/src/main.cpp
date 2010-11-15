@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef _XBOX
-	// For now just use a resolution that is compensates for overscan on most televisions
+	// For now just use a resolution that compensates for overscan on most televisions
 	width = 600;
 	height = 450;
 #else
