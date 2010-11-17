@@ -37,6 +37,7 @@
 #include "v_palette.h"
 #include "i_sdlvideo.h"
 #include "i_system.h"
+#include "m_argv.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -205,6 +206,7 @@ bool SDLVideo::SetOverscan (float scale)
 bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
 {
    Uint32 flags = SDL_RESIZABLE;
+   int sbits = bits;
 
    // SoM: I'm not sure if we should request a software or hardware surface yet... So I'm
    // just ganna let SDL decide.
@@ -219,7 +221,11 @@ bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
          flags |= SDL_HWPALETTE;
    }
 
-   if(!(sdlScreen = SDL_SetVideoMode(width, height, bits, flags)))
+   // directx requires a 32-bit mode
+   if (Args.CheckParm ("-directx"))
+      sbits = 32;
+
+   if(!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
       return false;
 
    screenw = width;
@@ -259,9 +265,16 @@ void SDLVideo::UpdateScreen (DCanvas *canvas)
 {
    if(palettechanged)
    {
-      SDL_SetPalette(sdlScreen, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
-	  palettechanged = false;
+      if(canvas->m_Private == sdlScreen)
+         SDL_SetPalette(sdlScreen, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
+      else
+         SDL_SetPalette((SDL_Surface*)canvas->m_Private, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
+
+      palettechanged = false;
    }
+
+   if(canvas->m_Private != sdlScreen)
+      SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, NULL);
    
    SDL_Flip(sdlScreen);
 }
