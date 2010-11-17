@@ -39,6 +39,13 @@ typedef struct
 	AG_Numerical *serverTimeoutSpin;
 } ODA_SrvOptionsBox;
 
+typedef struct
+{
+	AG_Box    *optionsBox;
+	AG_Label  *driverLabel;
+	AG_UCombo *driverCombo;
+} ODA_GuiOptionsBox;
+
 // AG_Settings - Class for the settings dialog
 class AGOL_Settings : private ODA_EventRegister
 {
@@ -67,7 +74,9 @@ private:
 	void               DirectorySelectorCancel(AG_Event *event);
 
 	// Interface Creation Functions
+	AG_Box            *CreateTopOptionsBox(void *parent);
 	ODA_SrvOptionsBox *CreateSrvOptionsBox(void *parent);
+	ODA_GuiOptionsBox *CreateGuiOptionsBox(void *parent);
 	AG_Box            *CreateOdamexPathBox(void *parent);
 	AG_Label          *CreateOdamexPathLabel(void *parent);
 	AG_Box            *CreateWadDirConfigBox(void *parent);
@@ -79,13 +88,16 @@ private:
 
 	// Save Functions
 	void               SaveServerOptions();
+	void               SaveGuiOptions();
 	void               SaveOdamexPath();
 	void               SaveWadDirs();
 	void               SaveExtraParams();
 
 	// Interface Components
 	AG_Window         *SettingsDialog;
+	AG_Box            *TopOptionsBox;
 	ODA_SrvOptionsBox *SrvOptionsBox;
+	ODA_GuiOptionsBox *GuiOptionsBox;
 	AG_Box            *OdamexPathBox;
 	AG_Label          *OdamexPathLabel;
 	AG_Box            *WadDirConfigBox;

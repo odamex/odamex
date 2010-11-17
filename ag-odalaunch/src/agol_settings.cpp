@@ -40,7 +40,9 @@ AGOL_Settings::AGOL_Settings()
 	SettingsDialog = AG_WindowNew(AG_WINDOW_MODAL);
 	AG_WindowSetCaptionS(SettingsDialog, "Configure Settings");
 
-	SrvOptionsBox = CreateSrvOptionsBox(SettingsDialog);
+	TopOptionsBox = CreateTopOptionsBox(SettingsDialog);
+	SrvOptionsBox = CreateSrvOptionsBox(TopOptionsBox);
+	GuiOptionsBox = CreateGuiOptionsBox(TopOptionsBox);
 #ifndef GCONSOLE
 	OdamexPathBox = CreateOdamexPathBox(SettingsDialog);
 	OdamexPathLabel = CreateOdamexPathLabel(OdamexPathBox);
@@ -61,6 +63,16 @@ AGOL_Settings::AGOL_Settings()
 AGOL_Settings::~AGOL_Settings()
 {
 	delete SrvOptionsBox;
+	delete GuiOptionsBox;
+}
+
+AG_Box *AGOL_Settings::CreateTopOptionsBox(void *parent)
+{
+	AG_Box *tbox = AG_BoxNewHoriz(parent, AG_BOX_HFILL | AG_BOX_HOMOGENOUS);
+	AG_BoxSetPadding(tbox, 0);
+	AG_BoxSetSpacing(tbox, 0);
+
+	return tbox;
 }
 
 ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
@@ -69,7 +81,7 @@ ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
 
 	obox->optionsBox = AG_BoxNewVert(parent, AG_BOX_FRAME);
 	AG_LabelNewS(obox->optionsBox, 0, "Masters and Servers");
-	obox->optionsBox = AG_BoxNewVert(obox->optionsBox, 0);
+	obox->optionsBox = AG_BoxNewVert(obox->optionsBox, AG_BOX_EXPAND);
 	AG_BoxSetPadding(obox->optionsBox, 5);
 	AG_BoxSetSpacing(obox->optionsBox, 5);
 
@@ -98,6 +110,51 @@ ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
 	AG_NumericalSetRangeInt(obox->serverTimeoutSpin, 1, 5000);
 
 	return obox;
+}
+
+ODA_GuiOptionsBox *AGOL_Settings::CreateGuiOptionsBox(void *parent)
+{
+	char               drvList[128];
+	AG_Box            *vdbox;
+	ODA_GuiOptionsBox *gbox = new ODA_GuiOptionsBox;
+
+	gbox->optionsBox = AG_BoxNewVert(parent, AG_BOX_FRAME);
+	AG_LabelNewS(gbox->optionsBox, 0, "Gui Options");
+	gbox->optionsBox = AG_BoxNewVert(gbox->optionsBox, AG_BOX_EXPAND);
+	AG_BoxSetPadding(gbox->optionsBox, 5);
+	AG_BoxSetSpacing(gbox->optionsBox, 5);
+
+	// Video Driver Option
+	vdbox = AG_BoxNewHoriz(gbox->optionsBox, AG_BOX_HFILL);
+	AG_BoxSetPadding(vdbox, 0);
+	AG_BoxSetSpacing(vdbox, 0);
+
+	gbox->driverLabel = AG_LabelNewS(vdbox, 0, "Video Driver:   ");
+
+	gbox->driverCombo = AG_UComboNew(vdbox, AG_UCOMBO_HFILL);
+	AG_UComboSizeHint(gbox->driverCombo, "XXXXXXXXXXXX", 3);
+
+	AG_ListDriverNames(drvList, 128);
+
+	if(strlen(drvList) > 0)
+	{
+		size_t oldpos = 0;
+		size_t pos = 0;
+
+		while(pos != string::npos)
+		{
+			AG_TlistItem *item;
+
+			pos = string(drvList).find(' ', oldpos);
+			item = AG_TlistAdd(gbox->driverCombo->list, NULL, string(drvList).substr(oldpos, pos - oldpos).c_str());
+			if(string(item->text) == string(agDriverOps->name))
+				AG_ButtonTextS(gbox->driverCombo->button, item->text);
+			oldpos = pos + 1;
+		}
+	}
+	// End - Video Driver Option
+
+	return gbox;
 }
 
 AG_Box *AGOL_Settings::CreateOdamexPathBox(void *parent)
@@ -288,6 +345,7 @@ void AGOL_Settings::OnOK(AG_Event *event)
 {
 	// Call all the save functions
 	SaveServerOptions();
+	SaveGuiOptions();
 #ifndef GCONSOLE
 	SaveOdamexPath();
 #endif
@@ -508,6 +566,23 @@ void AGOL_Settings::SaveServerOptions()
 	GuiConfig::Write("ShowBlockedServers", ShowBlocked);
 	GuiConfig::Write("MasterTimeout", MasterTimeout);
 	GuiConfig::Write("ServerTimeout", ServerTimeout);
+}
+
+void AGOL_Settings::SaveGuiOptions()
+{
+	if(GuiOptionsBox && GuiOptionsBox->driverCombo)
+	{
+		char *driver;
+
+		driver = GuiOptionsBox->driverCombo->button->lbl->text;
+
+		if(driver && strlen(driver) > 0)
+			GuiConfig::Write("VideoDriver", driver);
+
+		if(string(driver) != string(agDriverOps->name))
+			AG_TextMsgS(AG_MSG_INFO, "The selected video driver will be\n"
+			                         "used when the application is restarted.");
+	}
 }
 
 void AGOL_Settings::SaveOdamexPath()

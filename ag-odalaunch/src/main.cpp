@@ -91,6 +91,17 @@ int main(int argc, char *argv[])
 
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
 
+	// Check if a video driver is specified in the config file
+	if(!drivers)
+	{
+		string cfgDriver;
+
+		GuiConfig::Read("VideoDriver", cfgDriver);
+
+		if(cfgDriver.size())
+			drivers = strdup(cfgDriver.c_str());
+	}
+
 #ifdef _XBOX
 	if(!drivers)
 		drivers = strdup("sdlfb");
