@@ -265,14 +265,12 @@ void SDLVideo::UpdateScreen (DCanvas *canvas)
 {
    if(palettechanged)
    {
-      if(canvas->m_Private == sdlScreen)
-         SDL_SetPalette(sdlScreen, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
-      else
-         SDL_SetPalette((SDL_Surface*)canvas->m_Private, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
-
+      // m_Private may or may not be the primary surface (sdlScreen)
+      SDL_SetPalette((SDL_Surface*)canvas->m_Private, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
       palettechanged = false;
    }
 
+   // If not writing directly to the screen blit to the primary surface
    if(canvas->m_Private != sdlScreen)
       SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, NULL);
    
@@ -360,6 +358,7 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 	}
 	else
 	{
+	  // This is not as fast as writing to the primary surface but it may be desirable in some situations
 	  if(bits == 8)
 		 scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0, 0, 0, 0);
 	  else
