@@ -879,6 +879,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
                 return;
             }
             sound = 3;
+            break;
 
         case SPR_RSOK:
             SV_SocketTouch(*player, it_redflag);
