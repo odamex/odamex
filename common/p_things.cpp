@@ -373,4 +373,4 @@ BOOL P_DeactivateMobj (AActor *mobj)
 	return false;
 }
 
-VERSION_CONTROL (p_spec_cpp, "$Id$")
+VERSION_CONTROL (p_things_cpp, "$Id$")
