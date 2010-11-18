@@ -109,6 +109,7 @@ void CL_CTFEvent (void)
 		case SCORE_KILL:
 		case SCORE_BETRAYAL:
 		case SCORE_CARRIERKILL:
+		case SCORE_RETURN:
 			break;
 
 		case SCORE_GRAB:
@@ -118,7 +119,6 @@ void CL_CTFEvent (void)
 				CTF_CarryFlag(player, flag);
 			break;
 
-		case SCORE_RETURN:
 		case SCORE_CAPTURE:
 			if(validplayer(player))
 				CTF_CheckFlags(player);
