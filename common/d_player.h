@@ -268,7 +268,9 @@ public:
 		bool        allow_rcon;     // allow remote admin
 		bool		displaydisconnect; // display disconnect message when disconnecting
 
+#ifndef _XBOX // Temporary Xbox bug work around -- Hyper_Eye
 		huffman_server	compressor;	// denis - adaptive huffman compression
+#endif
 
 		class download_t
 		{
@@ -333,7 +335,9 @@ public:
 			digest(other.digest),
 			allow_rcon(false),
 			displaydisconnect(true),
+#ifndef _XBOX // Temporary Xbox bug work around - Hyper_Eye
 			compressor(other.compressor),
+#endif
 			download(other.download)
 		{
 				memcpy(packetbegin, other.packetbegin, sizeof(packetbegin));
