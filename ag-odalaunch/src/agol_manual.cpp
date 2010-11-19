@@ -24,6 +24,7 @@
 //-----------------------------------------------------------------------------
 
 #include <iostream>
+#include <string>
 
 #include <agar/core.h>
 #include <agar/gui.h>

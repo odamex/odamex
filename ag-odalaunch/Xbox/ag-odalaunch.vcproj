@@ -308,6 +308,9 @@
 				RelativePath="..\src\agol_main.cpp">
 			</File>
 			<File
+				RelativePath="..\src\agol_manual.cpp">
+			</File>
+			<File
 				RelativePath="..\src\agol_settings.cpp">
 			</File>
 			<File
@@ -347,6 +350,9 @@
 			</File>
 			<File
 				RelativePath="..\src\agol_main.h">
+			</File>
+			<File
+				RelativePath="..\src\agol_manual.h">
 			</File>
 			<File
 				RelativePath="..\src\agol_settings.h">
