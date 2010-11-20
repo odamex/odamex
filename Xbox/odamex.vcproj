@@ -326,7 +326,13 @@
 				RelativePath="..\client\src\cl_main.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\cl_mobj.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\cl_pred.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\cl_stubs.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\d_main.cpp">
@@ -360,12 +366,6 @@
 			</File>
 			<File
 				RelativePath="..\client\src\m_options.cpp">
-			</File>
-			<File
-				RelativePath="..\client\src\p_interaction.cpp">
-			</File>
-			<File
-				RelativePath="..\client\src\p_mobj.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\r_bsp.cpp">
@@ -430,22 +430,7 @@
 				RelativePath="..\client\src\c_bind.h">
 			</File>
 			<File
-				RelativePath="..\client\src\c_console.h">
-			</File>
-			<File
-				RelativePath="..\client\src\cl_ctf.h">
-			</File>
-			<File
 				RelativePath="..\client\src\cl_main.h">
-			</File>
-			<File
-				RelativePath="..\client\src\d_main.h">
-			</File>
-			<File
-				RelativePath="..\client\src\d_player.h">
-			</File>
-			<File
-				RelativePath="..\client\src\doomstat.h">
 			</File>
 			<File
 				RelativePath="..\client\src\f_finale.h">
@@ -454,43 +439,13 @@
 				RelativePath="..\client\src\f_wipe.h">
 			</File>
 			<File
-				RelativePath="..\client\src\g_game.h">
-			</File>
-			<File
-				RelativePath="..\client\src\g_level.h">
-			</File>
-			<File
 				RelativePath="..\client\src\hu_stuff.h">
 			</File>
 			<File
 				RelativePath="..\client\src\m_menu.h">
 			</File>
 			<File
-				RelativePath="..\client\src\m_misc.h">
-			</File>
-			<File
-				RelativePath="..\client\src\p_interaction.h">
-			</File>
-			<File
-				RelativePath="..\client\src\r_draw.h">
-			</File>
-			<File
-				RelativePath="..\client\src\r_main.h">
-			</File>
-			<File
-				RelativePath="..\client\src\r_plane.h">
-			</File>
-			<File
-				RelativePath="..\client\src\r_sky.h">
-			</File>
-			<File
-				RelativePath="..\client\src\s_sound.h">
-			</File>
-			<File
 				RelativePath="..\client\src\st_lib.h">
-			</File>
-			<File
-				RelativePath="..\client\src\v_palette.h">
 			</File>
 			<File
 				RelativePath="..\client\src\v_text.h">
@@ -504,6 +459,9 @@
 			Filter="">
 			<File
 				RelativePath="..\common\actor.h">
+			</File>
+			<File
+				RelativePath="..\common\c_console.h">
 			</File>
 			<File
 				RelativePath="..\common\c_cvarlist.cpp">
@@ -542,10 +500,16 @@
 				RelativePath="..\common\d_items.h">
 			</File>
 			<File
+				RelativePath="..\common\d_main.h">
+			</File>
+			<File
 				RelativePath="..\common\d_net.h">
 			</File>
 			<File
 				RelativePath="..\common\d_netinf.h">
+			</File>
+			<File
+				RelativePath="..\common\d_player.h">
 			</File>
 			<File
 				RelativePath="..\common\d_protocol.cpp">
@@ -569,7 +533,13 @@
 				RelativePath="..\common\doomdef.h">
 			</File>
 			<File
+				RelativePath="..\common\doomkeys.h">
+			</File>
+			<File
 				RelativePath="..\common\doomstat.cpp">
+			</File>
+			<File
+				RelativePath="..\common\doomstat.h">
 			</File>
 			<File
 				RelativePath="..\common\doomtype.h">
@@ -600,6 +570,12 @@
 			</File>
 			<File
 				RelativePath="..\common\farchive.h">
+			</File>
+			<File
+				RelativePath="..\common\g_game.h">
+			</File>
+			<File
+				RelativePath="..\common\g_level.h">
 			</File>
 			<File
 				RelativePath="..\common\gi.cpp">
@@ -674,6 +650,9 @@
 				RelativePath="..\common\m_memio.h">
 			</File>
 			<File
+				RelativePath="..\common\m_misc.h">
+			</File>
+			<File
 				RelativePath="..\common\m_random.cpp">
 			</File>
 			<File
@@ -698,7 +677,16 @@
 				RelativePath="..\common\minilzo.h">
 			</File>
 			<File
+				RelativePath="..\common\p_acs.cpp">
+			</File>
+			<File
+				RelativePath="..\common\p_acs.h">
+			</File>
+			<File
 				RelativePath="..\common\p_ceiling.cpp">
+			</File>
+			<File
+				RelativePath="..\common\p_ctf.h">
 			</File>
 			<File
 				RelativePath="..\common\p_doors.cpp">
@@ -711,6 +699,9 @@
 			</File>
 			<File
 				RelativePath="..\common\p_inter.h">
+			</File>
+			<File
+				RelativePath="..\common\p_interaction.cpp">
 			</File>
 			<File
 				RelativePath="..\common\p_lights.cpp">
@@ -729,6 +720,12 @@
 			</File>
 			<File
 				RelativePath="..\common\p_maputl.cpp">
+			</File>
+			<File
+				RelativePath="..\common\p_mobj.cpp">
+			</File>
+			<File
+				RelativePath="..\common\p_mobj.h">
 			</File>
 			<File
 				RelativePath="..\common\p_pillar.cpp">
@@ -770,6 +767,9 @@
 				RelativePath="..\common\p_teleport.cpp">
 			</File>
 			<File
+				RelativePath="..\common\p_things.cpp">
+			</File>
+			<File
 				RelativePath="..\common\p_tick.cpp">
 			</File>
 			<File
@@ -780,6 +780,9 @@
 			</File>
 			<File
 				RelativePath="..\common\p_xlat.cpp">
+			</File>
+			<File
+				RelativePath="..\common\po_man.cpp">
 			</File>
 			<File
 				RelativePath="..\common\r_bsp.h">
@@ -794,16 +797,37 @@
 				RelativePath="..\common\r_defs.h">
 			</File>
 			<File
+				RelativePath="..\common\r_draw.h">
+			</File>
+			<File
 				RelativePath="..\common\r_local.h">
 			</File>
 			<File
+				RelativePath="..\common\r_main.h">
+			</File>
+			<File
+				RelativePath="..\common\r_plane.h">
+			</File>
+			<File
 				RelativePath="..\common\r_segs.h">
+			</File>
+			<File
+				RelativePath="..\common\r_sky.h">
 			</File>
 			<File
 				RelativePath="..\common\r_state.h">
 			</File>
 			<File
 				RelativePath="..\common\r_things.h">
+			</File>
+			<File
+				RelativePath="..\common\s_sound.h">
+			</File>
+			<File
+				RelativePath="..\common\sc_man.cpp">
+			</File>
+			<File
+				RelativePath="..\common\sc_man.h">
 			</File>
 			<File
 				RelativePath="..\common\st_stuff.h">
@@ -825,6 +849,9 @@
 			</File>
 			<File
 				RelativePath="..\common\tarray.h">
+			</File>
+			<File
+				RelativePath="..\common\v_palette.h">
 			</File>
 			<File
 				RelativePath="..\common\v_video.h">
@@ -857,9 +884,6 @@
 		<Filter
 			Name="SDL Files"
 			Filter="">
-			<File
-				RelativePath="..\client\sdl\afxres.h">
-			</File>
 			<File
 				RelativePath="..\client\sdl\hardware.cpp">
 			</File>
