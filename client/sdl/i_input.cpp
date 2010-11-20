@@ -282,36 +282,36 @@ void UpdateJoystickEvents()
 	std::list<SDL_Event*>::iterator i;
 	event_t    event;
 
-	if(JoyEventList.size())
+	if(!JoyEventList.size())
+		return;
+
+	i = JoyEventList.begin();
+	while(i != JoyEventList.end())
 	{
-		i = JoyEventList.begin();
-		while(i != JoyEventList.end())
+		if((*i)->type == SDL_JOYHATMOTION)
 		{
-			if((*i)->type == SDL_JOYHATMOTION)
+			if(!(SDL_JoystickGetHat(openedjoy, (*i)->jhat.hat) & (*i)->jhat.value))
 			{
-				if(!(SDL_JoystickGetHat(openedjoy, (*i)->jhat.hat) & (*i)->jhat.value))
-				{
-					event.data1 = event.data2 = event.data3 = 0;
+				event.data1 = event.data2 = event.data3 = 0;
 
-					event.type = ev_keyup;
-					if((*i)->jhat.value == SDL_HAT_UP)
-						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT1;
-					else if((*i)->jhat.value == SDL_HAT_RIGHT)
-						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT2;
-					else if((*i)->jhat.value == SDL_HAT_DOWN)
-						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT3;
-					else if((*i)->jhat.value == SDL_HAT_LEFT)
-						event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT4;
+				event.type = ev_keyup;
+				if((*i)->jhat.value == SDL_HAT_UP)
+					event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT1;
+				else if((*i)->jhat.value == SDL_HAT_RIGHT)
+					event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT2;
+				else if((*i)->jhat.value == SDL_HAT_DOWN)
+					event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT3;
+				else if((*i)->jhat.value == SDL_HAT_LEFT)
+					event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT4;
 
-					D_PostEvent(&event);
+				D_PostEvent(&event);
 
-					delete *i;
-					i = JoyEventList.erase(i);
-					continue;
-				}
-				++i;
+				delete *i;
+				i = JoyEventList.erase(i);
+				continue;
 			}
 		}
+		++i;
 	}
 }
 
