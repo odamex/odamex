@@ -56,7 +56,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"
+				StackSize="0x80000"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"
 				TitleID="0x4F444D58"
@@ -112,7 +112,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"
+				StackSize="0x80000"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"
 				TitleID="0x4F444D58"
@@ -169,7 +169,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"
+				StackSize="0x80000"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"
 				TitleID="0x4F444D58"
@@ -234,7 +234,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"
+				StackSize="0x80000"
 				TitleID="0x4F444D58"
 				TitleName="Odamex"
 				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
@@ -292,7 +292,7 @@
 				Name="XboxDeploymentTool"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"
+				StackSize="0x80000"
 				TitleID="0x4F444D58"
 				TitleName="Odamex"
 				TitleImage="$(ProjectDir)/../Media/TitleImage.xbx"
