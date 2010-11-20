@@ -45,6 +45,7 @@
 #include "dstrings.h"
 #include "v_video.h"
 #include "p_saveg.h"
+#include "p_acs.h"
 #include "d_protocol.h"
 #include "d_main.h"
 #include "p_mobj.h"
@@ -56,7 +57,7 @@
 #include "minilzo.h"
 
 #include "sv_main.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
@@ -478,6 +479,34 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 		clusterinfo->flags = flags;
 }
 
+static void zapDefereds (acsdefered_t *def)
+{
+	while (def) {
+		acsdefered_t *next = def->next;
+		delete def;
+		def = next;
+	}
+}
+
+void P_RemoveDefereds (void)
+{
+	unsigned int i;
+
+	// Remove any existing defereds
+	for (i = 0; i < numwadlevelinfos; i++)
+		if (wadlevelinfos[i].defered) {
+			zapDefereds (wadlevelinfos[i].defered);
+			wadlevelinfos[i].defered = NULL;
+		}
+
+	for (i = 0; LevelInfos[i].level_name; i++)
+		if (LevelInfos[i].defered) {
+			zapDefereds (LevelInfos[i].defered);
+			LevelInfos[i].defered = NULL;
+		}
+}
+
+
 //
 // G_InitNew
 // Can be called by the startup code or the menu task,
@@ -550,8 +579,6 @@ const char* GetBase(const char* in)
 
 	return out;
 }
-
-std::vector<std::string> dummy_need_hashes;
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
@@ -1361,6 +1388,7 @@ void G_DoLoadLevel (int position)
 
 	level.starttime = I_GetTime ();
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
+	P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 	//	C_FlushDisplay ();
 }
 
@@ -1652,6 +1680,7 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 	}
 	P_SerializeThinkers (arc, hubLoad);
 	P_SerializeWorld (arc);
+	P_SerializePolyobjs (arc);
 	P_SerializeSounds (arc);
 	if (!hubLoad)
 		P_SerializePlayers (arc);
@@ -1743,6 +1772,54 @@ void G_SerializeSnapshots (FArchive &arc)
 			level_info_t *i = FindLevelInfo (mapname);
 			i->snapshot = new FLZOMemFile;
 			i->snapshot->Serialize (arc);
+			arc >> mapname[0];
+		}
+	}
+}
+
+static void writeDefereds (FArchive &arc, level_info_t *i)
+{
+	arc.Write (i->mapname, 8);
+	arc << i->defered;
+}
+
+void P_SerializeACSDefereds (FArchive &arc)
+{
+	if (arc.IsStoring ())
+	{
+		unsigned int i;
+
+		for (i = 0; i < numwadlevelinfos; i++)
+			if (wadlevelinfos[i].defered)
+				writeDefereds (arc, (level_info_s *)&wadlevelinfos[i]);
+
+		for (i = 0; LevelInfos[i].level_name; i++)
+			if (LevelInfos[i].defered)
+				writeDefereds (arc, &LevelInfos[i]);
+
+		// Signal end of defereds
+		arc << (char)0;
+	}
+	else
+	{
+		char mapname[8];
+
+		P_RemoveDefereds ();
+
+		arc >> mapname[0];
+		while (mapname[0])
+		{
+			arc.Read (&mapname[1], 7);
+			level_info_t *i = FindLevelInfo (mapname);
+			if (i == NULL)
+			{
+				char name[9];
+
+				strncpy (name, mapname, 8);
+				name[8] = 0;
+				I_Error ("Unknown map '%s' in savegame", name);
+			}
+			arc >> i->defered;
 			arc >> mapname[0];
 		}
 	}

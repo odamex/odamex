@@ -831,10 +831,21 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag);
 //
 // P_TELEPT
 //
-BOOL EV_Teleport (int tid, AActor *thing);
-BOOL EV_SilentTeleport (int tid, line_t *line, AActor *thing);
-BOOL EV_SilentLineTeleport (line_t *line, AActor *thing, int id,
+BOOL EV_Teleport (int tid, int side, AActor *thing);
+BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing);
+BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 							BOOL reverse);
+
+//
+// [RH] ACS (see also p_acs.h)
+//
+
+BOOL P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+					int arg0, int arg1, int arg2, int always);
+void P_SuspendScript (int script, char *map);
+void P_TerminateScript (int script, char *map);
+void P_StartOpenScripts (void);
+void P_DoDeferedScripts (void);							
 
 #endif
 

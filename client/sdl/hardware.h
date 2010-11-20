@@ -31,6 +31,8 @@ class IVideo
  public:
 	virtual ~IVideo () {}
 
+	virtual std::string GetVideoDriverName();
+
 	virtual EDisplayType GetDisplayType ();
 	virtual bool FullscreenChanged (bool fs);
 	virtual void SetWindowedScale (float scale);

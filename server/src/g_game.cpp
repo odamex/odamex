@@ -52,7 +52,7 @@
 #include "g_game.h"
 #include "g_level.h"
 #include "sv_main.h"
-#include "sv_ctf.h"
+#include "p_ctf.h"
 #include "gi.h"
 
 #define SAVESTRINGSIZE	24
@@ -105,7 +105,7 @@ player_t					nullplayer;
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
-BOOL			singleplayerjustdied = false;	// Nes - When it's okay for single-player servers to reload.
+bool			singleplayerjustdied = false;	// Nes - When it's okay for single-player servers to reload.
 
 enum demoversion_t
 {

@@ -96,5 +96,11 @@ int SV_CountTeamPlayers(int team);
 extern std::vector<std::string> wadnames;
 void MSG_WriteMarker (buf_t *b, svc_t c);
 
+void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
+void SV_SendDamagePlayer(player_t *player, int pain);
+void SV_SendDamageMobj(AActor *target, int pain);
+// Tells clients to remove an actor from the world as it doesn't exist anymore
+void SV_SendDestroyActor(AActor *mo);
+
 #endif
 

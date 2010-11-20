@@ -421,6 +421,14 @@ void I_ClosestResolution (int *width, int *height, int bits)
 	}
 }
 
+bool I_CheckVideoDriver (const char *name)
+{
+	if(!name)
+		return false;
+
+	return (std::string(name) == Video->GetVideoDriverName());
+}
+
 void I_StartModeIterator (int bits)
 {
 	Video->StartModeIterator (bits);
@@ -570,6 +578,8 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 // denis - here is a blank implementation of IVideo that allows the client
 // to run without actual video output (e.g. script-controlled demo testing)
 EDisplayType IVideo::GetDisplayType () { return DISPLAY_Both; }
+
+std::string IVideo::GetVideoDriverName () { return ""; }
 
 bool IVideo::FullscreenChanged (bool fs) { return true; }
 void IVideo::SetWindowedScale (float scale) {}

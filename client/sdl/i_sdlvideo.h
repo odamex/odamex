@@ -35,6 +35,8 @@ class SDLVideo : public IVideo
    SDLVideo(int parm);
 	virtual ~SDLVideo (void);
 
+	virtual std::string GetVideoDriverName();
+
 	virtual bool CanBlit (void) {return false;}
 	virtual EDisplayType GetDisplayType (void) {return DISPLAY_Both;}
 

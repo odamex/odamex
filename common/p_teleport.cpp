@@ -44,7 +44,7 @@ extern void P_CalcHeight (player_t *player);
 // TELEPORTATION
 //
 // [RH] Changed to look for a destination by ThingID
-BOOL EV_Teleport (int tid, AActor *thing)
+BOOL EV_Teleport (int tid, int side, AActor *thing)
 {
 	AActor *m;
 	unsigned	an;
@@ -107,7 +107,7 @@ BOOL EV_Teleport (int tid, AActor *thing)
 // [RH] Changed to find destination by tid rather than sector
 //
 
-BOOL EV_SilentTeleport (int tid, line_t *line, AActor *thing)
+BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing)
 {
 	AActor    *m;
 
@@ -185,7 +185,7 @@ BOOL EV_SilentTeleport (int tid, line_t *line, AActor *thing)
 #define FUDGEFACTOR 10
 
 // [RH] Modified to support different source and destination ids.
-BOOL EV_SilentLineTeleport (line_t *line, AActor *thing, int id,
+BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 							BOOL reverse)
 {
 	int i;

@@ -65,6 +65,8 @@ bool I_CheckResolution (int width, int height, int bpp);
 void I_ClosestResolution (int *width, int *height, int bits);
 bool I_SetResolution (int width, int height, int bpp);
 
+bool I_CheckVideoDriver (const char *name);
+
 bool I_SetOverscan (float scale);
 
 void I_StartModeIterator (int bits);

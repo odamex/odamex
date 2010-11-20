@@ -38,7 +38,7 @@
 #include "m_swap.h"
 #include "st_stuff.h"
 #include "c_cvars.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 
 static int		widestnum, numheight;
 static const patch_t	*medi;

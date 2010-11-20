@@ -80,7 +80,7 @@ int 			numsides;
 side_t* 		sides;
 
 // [RH] Set true if the map contains a BEHAVIOR lump
-bool			HasBehavior;
+bool			HasBehavior = false;
 
 // BLOCKMAP
 // Created from axis aligned bounding box
@@ -1385,6 +1385,7 @@ void P_AllocStarts(void)
 // P_SetupLevel
 //
 extern dyncolormap_t NormalLight;
+extern polyblock_t **PolyBlockMap;
 
 // [RH] position indicates the start spot to spawn at
 void P_SetupLevel (char *lumpname, int position)
@@ -1415,6 +1416,8 @@ void P_SetupLevel (char *lumpname, int position)
 
 	// [RH] clear out the mid-screen message
 	C_MidPrint (NULL);
+	
+	PolyBlockMap = NULL;
 
 	DThinker::DestroyAllThinkers ();
 	Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
@@ -1463,6 +1466,8 @@ void P_SetupLevel (char *lumpname, int position)
 		}
 	}
 	P_GroupLines ();
+	
+    po_NumPolyobjs = 0;
 
 	P_AllocStarts();
 
@@ -1473,6 +1478,8 @@ void P_SetupLevel (char *lumpname, int position)
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
+    
+    PO_Init ();
 
 	// [RH] Load in the BEHAVIOR lump
 	level.behavior = NULL;

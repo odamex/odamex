@@ -2,6 +2,7 @@ SOURCES = \
 	src/agol_about.cpp \
 	src/agol_dirsel.cpp \
 	src/agol_main.cpp \
+	src/agol_manual.cpp \
 	src/agol_settings.cpp \
 	src/agol_solo.cpp \
 	src/event_handler.cpp \
@@ -22,7 +23,7 @@ CFLAGS = $(shell $(AGCONFIG) --cflags) -g -Wall
 LFLAGS = $(shell $(AGCONFIG) --libs) -g -lSDL_image
 
 ifneq ($(strip $(shell $(CC) -v 2>&1 |grep "mingw")),)
-	LFLAGS += -lwsock32 -lwinmm
+	LFLAGS += -static -lwsock32 -lwinmm -lpng -lz
 endif
 
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))

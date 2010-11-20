@@ -1517,7 +1517,7 @@ EXTERN_CVAR (con_midtime)
 
 void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
-	int i;
+	unsigned int i;
     std::string Str;
     size_t StrLength;
     

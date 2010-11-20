@@ -250,11 +250,14 @@
 			WholeProgramOptimization="TRUE">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="3"
+				Optimization="2"
+				EnableIntrinsicFunctions="TRUE"
+				ImproveFloatingPointConsistency="TRUE"
+				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories=".,..\client\src,..\client\sdl,..\common"
-				PreprocessorDefinitions="WIN32;_XBOX;NOASM"
+				PreprocessorDefinitions="NDEBUG;WIN32;_XBOX;LTCG;NOASM;GCONSOLE"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -268,7 +271,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xapilib.lib d3d8ltcg.lib d3dx8.lib xgraphicsltcg.lib dsound.lib dmusicltcg.lib xactengltcg.lib xsndtrk.lib xvoice.lib xonlines.lib xboxkrnl.lib"
+				AdditionalDependencies="libSDLx.lib  libSmpegX.lib xapilib.lib d3d8ltcg.lib d3dx8.lib xgraphicsltcg.lib dsound.lib dmusicltcg.lib xactengltcg.lib xsndtrk.lib xvoice.lib xonlines.lib xboxkrnl.lib"
 				OutputFile="$(OutDir)/$(ProjectName).exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"

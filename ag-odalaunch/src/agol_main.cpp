@@ -37,6 +37,7 @@
 #include "agol_settings.h"
 #include "agol_solo.h"
 #include "agol_about.h"
+#include "agol_manual.h"
 #include "game_command.h"
 #include "gui_config.h"
 #include "typedefs.h"
@@ -78,6 +79,7 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 	SettingsDialog = NULL;
 	SoloGameDialog = NULL;
 	AboutDialog = NULL;
+	ManualDialog = NULL;
 	QServer = NULL;
 
 	// Don't poll the server list by default
@@ -147,9 +149,9 @@ AG_Menu *AGOL_MainWindow::CreateMainMenu(void *parent)
 
 	// Advanced menu
 	m = AG_MenuNode(menu->root, "Advanced", NULL);
-	AG_MenuDisable(m);
 	AG_MenuAction(m, "Manual Connect", NULL, EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnManualConnect));
+	AG_MenuDisable(m);
 	AG_MenuAction(m, "Custom Servers", NULL, EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCustomServer));
 	AG_MenuEnable(m);
@@ -714,6 +716,66 @@ void AGOL_MainWindow::OnCloseSettingsDialog(AG_Event *event)
 	SettingsDialog = NULL;
 }
 
+void AGOL_MainWindow::OnAbout(AG_Event *event)
+{
+	if(AboutDialog)
+		return;
+
+	AboutDialog = new AGOL_About();
+
+	CloseAboutHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCloseAboutDialog);
+
+	AboutDialog->SetWindowCloseEvent(CloseAboutHandler);
+}
+
+void AGOL_MainWindow::OnCloseAboutDialog(AG_Event *event)
+{
+	DeleteEventHandler(CloseAboutHandler);
+
+	delete AboutDialog;
+	AboutDialog = NULL;
+}
+
+void AGOL_MainWindow::OnOfflineLaunch(AG_Event *event)
+{
+	if(SoloGameDialog)
+		return;
+
+	SoloGameDialog = new AGOL_Solo();
+
+	CloseSoloGameHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCloseSoloGameDialog);
+
+	SoloGameDialog->SetWindowCloseEvent(CloseSoloGameHandler);
+}
+
+void AGOL_MainWindow::OnCloseSoloGameDialog(AG_Event *event)
+{
+	DeleteEventHandler(CloseSoloGameHandler);
+
+	delete SoloGameDialog;
+	SoloGameDialog = NULL;
+}
+
+void AGOL_MainWindow::OnManualConnect(AG_Event *event)
+{
+	if(ManualDialog)
+		return;
+
+	ManualDialog = new AGOL_Manual();
+
+	CloseManualHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCloseManualDialog);
+
+	ManualDialog->SetWindowCloseEvent(CloseManualHandler);
+}
+
+void AGOL_MainWindow::OnCloseManualDialog(AG_Event *event)
+{
+	DeleteEventHandler(CloseManualHandler);
+
+	delete ManualDialog;
+	ManualDialog = NULL;
+}
+
 void AGOL_MainWindow::OnExit(AG_Event *event)
 {
 	AG_QuitGUI();
@@ -736,10 +798,10 @@ void AGOL_MainWindow::OnLaunch(AG_Event *event)
 		char cwd[AG_PATHNAME_MAX];
 
 		if(!AG_GetCWD(cwd, AG_PATHNAME_MAX))
-			cmd.AddParameter("-waddir", cwd);
+			cmd.AddParameter("-waddir", "\"" + string(cwd) + "\"");
 	}
 	else
-		cmd.AddParameter("-waddir", waddirs);
+		cmd.AddParameter("-waddir", "\"" + waddirs + "\"");
 
 	if(!GuiConfig::Read("ExtraParams", extraParams))
 		cmd.AddParameter(extraParams);
@@ -755,26 +817,6 @@ void AGOL_MainWindow::OnLaunch(AG_Event *event)
 	cmd.AddParameter("-connect", sAddr);
 
 	cmd.Launch();
-}
-
-void AGOL_MainWindow::OnOfflineLaunch(AG_Event *event)
-{
-	if(SoloGameDialog)
-		return;
-
-	SoloGameDialog = new AGOL_Solo();
-
-	CloseSoloGameHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCloseSoloGameDialog);
-
-	SoloGameDialog->SetWindowCloseEvent(CloseSoloGameHandler);
-}
-
-void AGOL_MainWindow::OnCloseSoloGameDialog(AG_Event *event)
-{
-	DeleteEventHandler(CloseSoloGameHandler);
-
-	delete SoloGameDialog;
-	SoloGameDialog = NULL;
 }
 
 void AGOL_MainWindow::OnRefreshSelected(AG_Event *event)
@@ -816,11 +858,6 @@ void AGOL_MainWindow::OnOdaGetConfig(AG_Event *event)
 	cout << "OdaGet Config: Stub" << endl;
 }
 
-void AGOL_MainWindow::OnManualConnect(AG_Event *event)
-{
-	cout << "Manual Connect: Stub" << endl;
-}
-
 void AGOL_MainWindow::OnCustomServer(AG_Event *event)
 {
 	cout << "Custom Server: Stub" << endl;
@@ -829,26 +866,6 @@ void AGOL_MainWindow::OnCustomServer(AG_Event *event)
 void AGOL_MainWindow::OnReportBug(AG_Event *event)
 {
 	AG_TextMsgS(AG_MSG_INFO, "Please report any bugs at: http://odamex.net/bugs/\n\nThank You!");
-}
-
-void AGOL_MainWindow::OnAbout(AG_Event *event)
-{
-	if(AboutDialog)
-		return;
-
-	AboutDialog = new AGOL_About();
-
-	CloseAboutHandler = RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCloseAboutDialog);
-
-	AboutDialog->SetWindowCloseEvent(CloseAboutHandler);
-}
-
-void AGOL_MainWindow::OnCloseAboutDialog(AG_Event *event)
-{
-	DeleteEventHandler(CloseAboutHandler);
-
-	delete AboutDialog;
-	AboutDialog = NULL;
 }
 
 void AGOL_MainWindow::OnMouseOverWidget(AG_Event *event)

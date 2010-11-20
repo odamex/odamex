@@ -40,7 +40,7 @@ void EventReceiver(AG_Event *event)
 
 ODA_EventRegister::~ODA_EventRegister()
 {
-	list<class EventHandler*>::iterator listIter;
+	list<EventHandler*>::iterator listIter;
 
 	listIter = HandlerList.begin();
 
@@ -62,7 +62,7 @@ EventHandler *ODA_EventRegister::RegisterEventHandler(EVENT_FUNC_PTR funcPtr)
 
 bool ODA_EventRegister::DeleteEventHandler(EventHandler *handler)
 {
-	list<class EventHandler*>::iterator listIter;
+	list<EventHandler*>::iterator listIter;
 
 	for(listIter = HandlerList.begin(); listIter != HandlerList.end(); ++listIter)
 	{

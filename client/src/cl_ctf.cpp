@@ -6,8 +6,7 @@
 // Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
+// modify it under the terms of the GNU General Public License // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -27,7 +26,7 @@
 #include	"z_zone.h"
 #include	"v_video.h"
 #include	"p_local.h"
-#include	"cl_ctf.h"
+#include	"p_ctf.h"
 #include    "st_stuff.h"
 
 flagdata CTFdata[NUMFLAGS];
@@ -110,6 +109,7 @@ void CL_CTFEvent (void)
 		case SCORE_KILL:
 		case SCORE_BETRAYAL:
 		case SCORE_CARRIERKILL:
+		case SCORE_RETURN:
 			break;
 
 		case SCORE_GRAB:
@@ -119,7 +119,6 @@ void CL_CTFEvent (void)
 				CTF_CarryFlag(player, flag);
 			break;
 
-		case SCORE_RETURN:
 		case SCORE_CAPTURE:
 			if(validplayer(player))
 				CTF_CheckFlags(player);

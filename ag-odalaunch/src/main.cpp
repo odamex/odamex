@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef _XBOX
-	// For now just use a resolution that is compensates for overscan on most televisions
+	// For now just use a resolution that compensates for overscan on most televisions
 	width = 600;
 	height = 450;
 #else
@@ -90,6 +90,17 @@ int main(int argc, char *argv[])
 #endif
 
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
+
+	// Check if a video driver is specified in the config file
+	if(!drivers)
+	{
+		string cfgDriver;
+
+		GuiConfig::Read("VideoDriver", cfgDriver);
+
+		if(cfgDriver.size())
+			drivers = strdup(cfgDriver.c_str());
+	}
 
 #ifdef _XBOX
 	if(!drivers)
@@ -149,7 +160,6 @@ int main(int argc, char *argv[])
 
 	delete mainWindow;
 
-	// Save the gui configuration
 	GuiConfig::Save();
 
 	AG_Destroy();

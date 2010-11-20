@@ -41,7 +41,7 @@
 #include "st_stuff.h"
 #include "cl_main.h"
 
-#include "cl_ctf.h"
+#include "p_ctf.h"
 
 
 EXTERN_CVAR (cl_autoaim)
@@ -87,10 +87,6 @@ team_t D_TeamByName (const char *team)
 	else return TEAM_NONE;
 }
 
-void D_SetupUserInfo (void)
-{
-}
-
 void D_UserInfoChanged (cvar_t *cvar)
 {
 //	if (gamestate != GS_STARTUP)
@@ -98,22 +94,6 @@ void D_UserInfoChanged (cvar_t *cvar)
 
 	if (connected)
 		CL_SendUserInfo();
-}
-
-void D_SendServerInfoChange (const cvar_t *cvar, const char *value)
-{
-}
-
-void D_DoServerInfoChange (byte **stream)
-{
-}
-
-void D_WriteUserInfoStrings (int i, byte **stream, bool compact)
-{
-}
-
-void D_ReadUserInfoStrings (int i, byte **stream, bool update)
-{
 }
 
 FArchive &operator<< (FArchive &arc, userinfo_t &info)

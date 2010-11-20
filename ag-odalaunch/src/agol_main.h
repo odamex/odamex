@@ -31,6 +31,7 @@
 #include "agol_settings.h"
 #include "agol_solo.h"
 #include "agol_about.h"
+#include "agol_manual.h"
 #include "event_handler.h"
 #include "oda_thread.h"
 #include "net_packet.h"
@@ -83,20 +84,21 @@ private:
 	// Event Handler Functions
 	void OnOpenSettingsDialog(AG_Event *event);
 	void OnCloseSettingsDialog(AG_Event *event);
-	void OnExit(AG_Event *event);
-	void OnLaunch(AG_Event *event);
+	void OnAbout(AG_Event *event);
+	void OnCloseAboutDialog(AG_Event *event);
 	void OnOfflineLaunch(AG_Event *event);
 	void OnCloseSoloGameDialog(AG_Event *event);
+	void OnManualConnect(AG_Event *event);
+	void OnCloseManualDialog(AG_Event *event);
+	void OnExit(AG_Event *event);
+	void OnLaunch(AG_Event *event);
 	void OnRefreshSelected(AG_Event *event);
 	void OnRefreshAll(AG_Event *event);
 	void OnGetMasterList(AG_Event *event);
 	void OnGetWAD(AG_Event *event);
 	void OnOdaGetConfig(AG_Event *event);
-	void OnManualConnect(AG_Event *event);
 	void OnCustomServer(AG_Event *event);
 	void OnReportBug(AG_Event *event);
-	void OnAbout(AG_Event *event);
-	void OnCloseAboutDialog(AG_Event *event);
 	void OnMouseOverWidget(AG_Event *event);
 	void UpdateServerList(AG_Event *event);
 	void OnServerListRowSelected(AG_Event *event);
@@ -163,6 +165,8 @@ private:
 	EventHandler             *CloseSoloGameHandler;
 	AGOL_About               *AboutDialog;
 	EventHandler             *CloseAboutHandler;
+	AGOL_Manual              *ManualDialog;
+	EventHandler             *CloseManualHandler;
 
 	// Servers
 	MasterServer              MServer;

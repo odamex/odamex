@@ -25,16 +25,9 @@
 
 #include <iostream>
 #include <string>
-#include <cstdlib>
-#include <errno.h>
 
 #ifdef _XBOX
 #include <xtl.h>
-#endif
-
-#ifndef _WIN32
-#include <sys/types.h>
-#include <sys/wait.h>
 #endif
 
 #include <agar/core.h>
@@ -98,9 +91,6 @@ int GameCommand::Launch()
 
 	// Mark the end
 	argv[argc] = NULL;
-
-	// Save the ag-odalaunch configuration settings
-	GuiConfig::Save();
 
 	// Launch Odamex
 	if((pid = AG_Execute(*argv, argv)) == -1)

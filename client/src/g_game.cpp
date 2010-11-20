@@ -163,6 +163,7 @@ CVAR_FUNC_IMPL(cl_mouselook)
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
+bool			singleplayerjustdied = false;
 
 char			demoname[256];
 BOOL 			demorecording;

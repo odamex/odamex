@@ -135,10 +135,13 @@ int main(int argc, char *argv[])
 
    		// SoM: the gdi interface is much faster for windowed modes which are more
    		// commonly used. Thus, GDI is default.
-     	if (Args.CheckParm ("-directx"))
-        	putenv("SDL_VIDEODRIVER=directx");
-    	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-gdi") > 0)
+		//
+		// GDI mouse issues fill many users with great sadness. We are going back
+		// to directx as defulat for now and the people will rejoice. --Hyper_Eye
+     	if (Args.CheckParm ("-gdi"))
         	putenv("SDL_VIDEODRIVER=windib");
+    	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
+        	putenv("SDL_VIDEODRIVER=directx");
 
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in

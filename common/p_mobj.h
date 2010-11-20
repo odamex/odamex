@@ -17,21 +17,13 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Map Objects, MObj, definition and handling.
+//   Map Objects, MObj, definition and handling.
 //
 //-----------------------------------------------------------------------------
 
 
-#ifndef __P_MOBJ_H__
-#define __P_MOBJ_H__
-
-void	G_PlayerReborn		(player_t &player);
-void	CTF_RememberFlagPos (mapthing2_t *mthing);
-
-extern	int			numspechit;
-extern	BOOL		demonew;
-extern	fixed_t		attackrange;
-extern	line_t	  **spechit;
+#ifndef __PMOBJ_H__
+#define __PMOBJ_H__
 
 //-----------------------------------------------------------------------------
 //
@@ -107,4 +99,16 @@ class NetIDHandler
 
 extern NetIDHandler ServerNetID;
 
+bool P_SetMobjState(AActor *mobj, statenum_t state);
+void P_XYMovement(AActor *mo);
+void P_ZMovement(AActor *mo);
+void PlayerLandedOnThing(AActor *mo, AActor *onmobj); // [CG] Used to be 'static'
+void P_NightmareRespawn(AActor *mo);
+void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown);
+void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
+bool P_CheckMissileSpawn(AActor* th);
+AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
+void P_SpawnPlayerMissile(AActor *source, mobjtype_t type);
+
 #endif
+

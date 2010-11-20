@@ -3,7 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -17,13 +16,42 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	System specific interface stuff.
+//	Manual Connect Dialog
+//
+// AUTHORS:
+//	 Michael Wood (mwoodj at huntsvegas dot org)
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+#ifndef _AGOL_MANUAL_H
+#define _AGOL_MANUAL_H
 
-#include <stdio.h>
+#include "event_handler.h"
 
-VERSION_CONTROL (r_draw_cpp, "$Id$")
+class AGOL_Manual : private ODA_EventRegister
+{
+public:
+	AGOL_Manual();
+	~AGOL_Manual();
 
+	void SetWindowCloseEvent(EventHandler *handler);
+
+private:
+	AG_Box       *CreateMainBox(void *parent);
+	AG_Box       *CreateButtonBox(void *parent);
+	AG_Textbox   *CreateServerEntry(void *parent);
+	AG_Textbox   *CreatePasswordEntry(void *parent);
+
+	void          OnCancel(AG_Event *event);
+	void          OnOK(AG_Event *event);
+
+	AG_Window    *ManualDialog;
+	AG_Box       *MainBox;
+	AG_Textbox   *ServerEntry;
+	AG_Textbox   *PasswordEntry;
+	AG_Box       *ButtonBox;
+
+	EventHandler *CloseEventHandler;
+};
+
+#endif

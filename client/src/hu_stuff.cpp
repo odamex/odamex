@@ -38,7 +38,7 @@
 #include "v_text.h"
 #include "v_video.h"
 #include "cl_main.h"
-#include "cl_ctf.h"
+#include "p_ctf.h"
 #include "i_video.h"
 #include "i_input.h"
 
@@ -80,7 +80,7 @@ void HU_DMScores2 (player_t *player);
 void HU_TeamScores1 (player_t *player);
 void HU_TeamScores2 (player_t *player);
 
-
+extern bool HasBehavior;
 extern inline int V_StringWidth (const char *str);
 
 static void ShoveChatStr (std::string str, byte who);
@@ -307,9 +307,17 @@ void HU_DrawTargetNames(void)
 				continue;
 			
 			// Check to see if the other player is visible
-			if (!P_CheckSightEdges(displayplayer().mo, players[i].mo, 0.0))
-				continue;
-			
+			if (HasBehavior)
+			{
+                if (!P_CheckSightEdges2(displayplayer().mo, players[i].mo, 0.0))
+                    continue;
+			}			
+			else
+			{
+                if (!P_CheckSightEdges(displayplayer().mo, players[i].mo, 0.0))
+                    continue;
+			}
+
 			// GhostlyDeath -- Don't draw dead enemies
 			if (!consoleplayer().spectator &&
 				(players[i].mo->health <= 0))
@@ -451,7 +459,7 @@ void HU_Drawer (void)
 		
         for (size_t i = 0; i < players.size(); ++i)
 		{
-            if (!players[i].spectator)
+            if (!players[i].spectator && players[i].playerstate != PST_CONTACT && players[i].playerstate != PST_DOWNLOAD)
                 ++num_players;
         }
 		
@@ -748,7 +756,7 @@ void HU_DMScores1 (player_t *player)
 				color = BestColor (DefaultPalette->basecolors, RPART(color), GPART(color), BPART(color), DefaultPalette->numcolors);
 
 			// Display Color
-			if (!sortedplayers[i]->spectator)
+			if (!sortedplayers[i]->spectator && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD)
 				screen->Clear ((5 * CleanXfac), y, (13 * CleanXfac), y + hu_font[0]->height() * CleanYfac, color);
 
 			// Display Frags or Kills if coop
@@ -938,7 +946,7 @@ void HU_DMScores2 (player_t *player)
 						  BPART(blob),
 						  DefaultPalette->numcolors);
 
-		if (!sortedplayers[i]->spectator)
+		if (!sortedplayers[i]->spectator && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD)
 			screen->Clear (locx,
 						   locy + y,
 						   locx + 7,
@@ -1161,7 +1169,7 @@ void HU_TeamScores1 (player_t *player)
 								  BPART(blob),
 								  DefaultPalette->numcolors);
 
-				if (!sortedplayers[i]->spectator)
+				if (!sortedplayers[i]->spectator && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD)
 					screen->Clear (1, bluey, (7 * CleanXfac), bluey + (7 * CleanYfac), blob);
 
 				screen->DrawTextClean (colorblue	,	10	* CleanXfac,			bluey			,			str				);
@@ -1490,7 +1498,7 @@ void HU_TeamScores2 (player_t *player)
 								  BPART(blob),
 								  DefaultPalette->numcolors);
 
-				if (!sortedplayers[i]->spectator)
+				if (!sortedplayers[i]->spectator && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD)
 					screen->Clear (blocx,
 								   blocy + bluey,
 								   blocx + 7,
@@ -1723,7 +1731,8 @@ void HU_ConsoleScores (player_t *player)
             Printf_Bold("--------------------------------------\n");
 
             for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
+                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator 
+                && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD) {
                     if (sortedplayers[i] != player)
                         Printf(PRINT_HIGH, "%-15s %-6d N/A  %-5d %4d\n",
                             sortedplayers[i]->userinfo.netname,
@@ -1781,7 +1790,8 @@ void HU_ConsoleScores (player_t *player)
             Printf_Bold("--------------------------------------\n");
 
             for (i = 0; i < sortedplayers.size(); i++) {
-                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator) {
+                if (sortedplayers[i]->userinfo.team == j && !sortedplayers[i]->spectator 
+                && sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD) {
                     if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
                         sprintf (str, "0.0");
                     else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
@@ -1841,7 +1851,8 @@ void HU_ConsoleScores (player_t *player)
         Printf_Bold("--------------------------------------\n");
 
         for (i = 0; i < sortedplayers.size(); i++) {
-        	if (!sortedplayers[i]->spectator) {
+        	if (!sortedplayers[i]->spectator 
+        	&& sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD) {
 				if (sortedplayers[i]->fragcount <= 0) // Copied from HU_DMScores1.
 					sprintf (str, "0.0");
 				else if (sortedplayers[i]->fragcount >= 1 && sortedplayers[i]->deathcount == 0)
@@ -1885,7 +1896,8 @@ void HU_ConsoleScores (player_t *player)
         Printf_Bold("--------------------------------------\n");
 
         for (i = 0; i < sortedplayers.size(); i++) {
-        	if (!sortedplayers[i]->spectator) {
+        	if (!sortedplayers[i]->spectator
+        	&& sortedplayers[i]->playerstate != PST_CONTACT && sortedplayers[i]->playerstate != PST_DOWNLOAD) {
 				if (sortedplayers[i]->killcount <= 0) // Copied from HU_DMScores1.
 					sprintf (str, "0.0");
 				else if (sortedplayers[i]->killcount >= 1 && sortedplayers[i]->deathcount == 0)

@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
@@ -37,6 +38,7 @@
 #include "v_palette.h"
 #include "i_sdlvideo.h"
 #include "i_system.h"
+#include "m_argv.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -164,6 +166,22 @@ SDLVideo::~SDLVideo(void)
 }
 
 
+std::string SDLVideo::GetVideoDriverName()
+{
+  char driver[128];
+
+  if((SDL_VideoDriverName(driver, 128)) == NULL)
+  {
+    char *pdrv; // Don't modify or free this
+
+    if((pdrv = getenv("SDL_VIDEODRIVER")) == NULL)
+      return ""; // Can't determine driver
+
+    return std::string(pdrv); // Return the environment variable
+  }
+
+  return std::string(driver); // Return the name as provided by SDL
+}
 
 
 bool SDLVideo::FullscreenChanged (bool fs)
@@ -205,6 +223,7 @@ bool SDLVideo::SetOverscan (float scale)
 bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
 {
    Uint32 flags = SDL_RESIZABLE;
+   int sbits = bits;
 
    // SoM: I'm not sure if we should request a software or hardware surface yet... So I'm
    // just ganna let SDL decide.
@@ -219,7 +238,11 @@ bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
          flags |= SDL_HWPALETTE;
    }
 
-   if(!(sdlScreen = SDL_SetVideoMode(width, height, bits, flags)))
+   // fullscreen directx requires a 32-bit mode to fix broken palette
+   if (I_CheckVideoDriver("directx") && fs)
+      sbits = 32;
+
+   if(!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
       return false;
 
    screenw = width;
@@ -259,9 +282,14 @@ void SDLVideo::UpdateScreen (DCanvas *canvas)
 {
    if(palettechanged)
    {
-      SDL_SetPalette(sdlScreen, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
-	  palettechanged = false;
+      // m_Private may or may not be the primary surface (sdlScreen)
+      SDL_SetPalette((SDL_Surface*)canvas->m_Private, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
+      palettechanged = false;
    }
+
+   // If not writing directly to the screen blit to the primary surface
+   if(canvas->m_Private != sdlScreen)
+      SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, NULL);
    
    SDL_Flip(sdlScreen);
 }

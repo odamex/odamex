@@ -36,6 +36,7 @@
 #include "r_state.h"
 #include "m_random.h"
 #include "p_saveg.h"
+#include "p_acs.h"
 #include "v_palette.h"
 
 //
@@ -237,6 +238,57 @@ void P_SerializeSounds (FArchive &arc)
 	// denis - todo
 }
 
+//
+// ArchivePolyobjs
+//
+#define ASEG_POLYOBJS	104
+
+void P_SerializePolyobjs (FArchive &arc)
+{
+	int i;
+	polyobj_t *po;
+
+	if (arc.IsStoring ())
+	{
+		arc << (int)ASEG_POLYOBJS << po_NumPolyobjs;
+		for(i = 0, po = polyobjs; i < po_NumPolyobjs; i++, po++)
+		{
+			arc << po->tag << po->angle << po->startSpot[0] <<
+				po->startSpot[1] << po->startSpot[2];
+  		}
+	}
+	else
+	{
+		int data;
+		angle_t angle;
+		fixed_t deltaX, deltaY, deltaZ;
+
+		arc >> data;
+		if (data != ASEG_POLYOBJS)
+			I_Error ("Polyobject marker missing");
+
+		arc >> data;
+		if (data != po_NumPolyobjs)
+		{
+			I_Error ("UnarchivePolyobjs: Bad polyobj count");
+		}
+		for (i = 0, po = polyobjs; i < po_NumPolyobjs; i++, po++)
+		{
+			arc >> data;
+			if (data != po->tag)
+			{
+				I_Error ("UnarchivePolyobjs: Invalid polyobj tag");
+			}
+			arc >> angle;
+			PO_RotatePolyobj (po->tag, angle);
+			arc >> deltaX >> deltaY >> deltaZ;
+			deltaX -= po->startSpot[0];
+			deltaY -= po->startSpot[1];
+			deltaZ -= po->startSpot[2];
+			PO_MovePolyobj (po->tag, deltaX, deltaY);
+		}
+	}
+}
 
 VERSION_CONTROL (p_saveg_cpp, "$Id$")
 

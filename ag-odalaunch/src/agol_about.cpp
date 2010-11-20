@@ -180,7 +180,10 @@ void AGOL_About::OnOK(AG_Event *event)
 
 void AGOL_About::SetWindowCloseEvent(EventHandler *handler)
 {
-	CloseEventHandler = handler;
+	if(handler)
+	{
+		CloseEventHandler = handler;
 
-	AG_AddEvent(AboutDialog, "window-close", EventReceiver, "%p", handler);
+		AG_AddEvent(AboutDialog, "window-close", EventReceiver, "%p", handler);
+	}
 }

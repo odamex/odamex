@@ -31,6 +31,7 @@
 class AGOL_DirSelector
 {
 public:
+	AGOL_DirSelector();
 	AGOL_DirSelector(std::string title);
 	~AGOL_DirSelector();
 
@@ -38,8 +39,10 @@ public:
 	void SetCancelAction(EventHandler *event);
 
 private:
-	AG_Window         *FileSelWindow;
-	AG_FileDlg        *FileDlg;
+	void        Init(std::string title);
+
+	AG_Window  *DirSelWindow;
+	AG_DirDlg  *DirDlg;
 };
 
 #endif
