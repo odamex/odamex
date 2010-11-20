@@ -1130,16 +1130,6 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	size_t   serversQueried = 0;
 	int      selectedNdx;
 
-#ifdef _XBOX
-	xbox_EnableJoystickUpdates(false);
-#endif
-
-	StartServerListPoll();
-
-	ClearList(PlayerList);
-	ClearList(ServInfoList);
-	UpdateQueriedLabelCompleted(0);
-
 	MServer.GetLock();
 
 	serverCount = MServer.GetServerCount();
@@ -1149,6 +1139,16 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	// There are no servers to query
 	if(serverCount <= 0)
 		return NULL;
+
+#ifdef _XBOX
+	xbox_EnableJoystickUpdates(false);
+#endif
+
+	StartServerListPoll();
+
+	ClearList(PlayerList);
+	ClearList(ServInfoList);
+	UpdateQueriedLabelCompleted(0);
 
 	while(count < serverCount)
 	{
