@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
@@ -165,6 +166,22 @@ SDLVideo::~SDLVideo(void)
 }
 
 
+std::string SDLVideo::GetVideoDriverName()
+{
+  char driver[128];
+
+  if((SDL_VideoDriverName(driver, 128)) == NULL)
+  {
+    char *pdrv; // Don't modify or free this
+
+    if((pdrv = getenv("SDL_VIDEODRIVER")) == NULL)
+      return ""; // Can't determine driver
+
+    return std::string(pdrv); // Return the environment variable
+  }
+
+  return std::string(driver); // Return the name as provided by SDL
+}
 
 
 bool SDLVideo::FullscreenChanged (bool fs)
@@ -221,8 +238,8 @@ bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
          flags |= SDL_HWPALETTE;
    }
 
-   // directx requires a 32-bit mode
-   if (Args.CheckParm ("-directx"))
+   // fullscreen directx requires a 32-bit mode to fix broken palette
+   if (I_CheckVideoDriver("directx") && fs)
       sbits = 32;
 
    if(!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
@@ -358,7 +375,6 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 	}
 	else
 	{
-	  // This is not as fast as writing to the primary surface but it may be desirable in some situations
 	  if(bits == 8)
 		 scrn->m_Private = s = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bits, 0, 0, 0, 0);
 	  else
