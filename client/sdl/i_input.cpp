@@ -71,8 +71,15 @@ int KeyRepeatRate;
 EXTERN_CVAR (use_joystick)
 EXTERN_CVAR (joy_active)
 
-static SDL_Joystick     *openedjoy = NULL;
-static std::list<SDL_Event*>  JoyEventList;
+typedef struct
+{
+	SDL_Event    Event;
+	unsigned int RegTick;
+	unsigned int LastTick;
+} JoystickEvent_t;
+
+static SDL_Joystick *openedjoy = NULL;
+static std::list<JoystickEvent_t*> JoyEventList;
 
 // denis - from chocolate doom
 //
@@ -227,8 +234,8 @@ static int AccelerateMouse(int val)
 //
 static int RegisterJoystickEvent(SDL_Event *ev, int value)
 {
-	SDL_Event *evc;
-	event_t    event;
+	JoystickEvent_t *evc = NULL;
+	event_t          event;
 
 	if(!ev)
 		return -1;
@@ -237,20 +244,21 @@ static int RegisterJoystickEvent(SDL_Event *ev, int value)
 	{
 		if(JoyEventList.size())
 		{
-			std::list<SDL_Event*>::iterator i;
+			std::list<JoystickEvent_t*>::iterator i;
 
 			for(i = JoyEventList.begin(); i != JoyEventList.end(); ++i)
 			{
-				if(((*i)->type == ev->type) && ((*i)->jhat.which == ev->jhat.which) 
-							&& ((*i)->jhat.hat == ev->jhat.hat) && ((*i)->jhat.value == value))
+				if(((*i)->Event.type == ev->type) && ((*i)->Event.jhat.which == ev->jhat.which) 
+							&& ((*i)->Event.jhat.hat == ev->jhat.hat) && ((*i)->Event.jhat.value == value))
 					return 0;
 			}
 		}
 
-		evc = new SDL_Event;
+		evc = new JoystickEvent_t;;
 
-		memcpy(evc, ev, sizeof(SDL_Event));
-		evc->jhat.value = value;
+		memcpy(&evc->Event, ev, sizeof(SDL_Event));
+		evc->Event.jhat.value = value;
+		evc->LastTick = evc->RegTick = SDL_GetTicks();
 
 		event.data1 = event.data2 = event.data3 = 0;
 
@@ -279,7 +287,7 @@ static int RegisterJoystickEvent(SDL_Event *ev, int value)
 
 void UpdateJoystickEvents()
 {
-	std::list<SDL_Event*>::iterator i;
+	std::list<JoystickEvent_t*>::iterator i;
 	event_t    event;
 
 	if(!JoyEventList.size())
@@ -288,30 +296,46 @@ void UpdateJoystickEvents()
 	i = JoyEventList.begin();
 	while(i != JoyEventList.end())
 	{
-		if((*i)->type == SDL_JOYHATMOTION)
+		if((*i)->Event.type == SDL_JOYHATMOTION)
 		{
-			if(!(SDL_JoystickGetHat(openedjoy, (*i)->jhat.hat) & (*i)->jhat.value))
-			{
-				event.data1 = event.data2 = event.data3 = 0;
-
+			// Hat position released
+			if(!(SDL_JoystickGetHat(openedjoy, (*i)->Event.jhat.hat) & (*i)->Event.jhat.value))
 				event.type = ev_keyup;
-				if((*i)->jhat.value == SDL_HAT_UP)
-					event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT1;
-				else if((*i)->jhat.value == SDL_HAT_RIGHT)
-					event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT2;
-				else if((*i)->jhat.value == SDL_HAT_DOWN)
-					event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT3;
-				else if((*i)->jhat.value == SDL_HAT_LEFT)
-					event.data1 = ((*i)->jhat.hat * 4) + KEY_HAT4;
+			// Hat button still held - Repeat at key repeat interval
+			else if((SDL_GetTicks() - (*i)->RegTick >= SDL_DEFAULT_REPEAT_DELAY) && 
+		            (SDL_GetTicks() - (*i)->LastTick >= SDL_DEFAULT_REPEAT_INTERVAL*2))
+			{
+				(*i)->LastTick = SDL_GetTicks();
+				event.type = ev_keydown;
+			}
+			else
+			{
+				i++;
+				continue;
+			}
 
-				D_PostEvent(&event);
+			event.data1 = event.data2 = event.data3 = 0;
 
+			if((*i)->Event.jhat.value == SDL_HAT_UP)
+				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT1;
+			else if((*i)->Event.jhat.value == SDL_HAT_RIGHT)
+				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT2;
+			else if((*i)->Event.jhat.value == SDL_HAT_DOWN)
+				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT3;
+			else if((*i)->Event.jhat.value == SDL_HAT_LEFT)
+				event.data1 = ((*i)->Event.jhat.hat * 4) + KEY_HAT4;
+
+			D_PostEvent(&event);
+
+			if(event.type == ev_keyup)
+			{
+				// Delete the released event
 				delete *i;
 				i = JoyEventList.erase(i);
 				continue;
 			}
 		}
-		++i;
+		i++;
 	}
 }
 
