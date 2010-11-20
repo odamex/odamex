@@ -133,6 +133,7 @@ char *inet_ntoa(struct in_addr in)
 struct hostent *gethostbyname(const char *name)
 {
 	static struct hostent *he = NULL;
+	unsigned long          addr = INADDR_NONE;
 	WSAEVENT               hEvent;
 	XNDNS                 *pDns = NULL;
 	INT                    err;
@@ -140,24 +141,8 @@ struct hostent *gethostbyname(const char *name)
 	if(!name)
 		return NULL;
 
-	if(he)
-	{
-		if(he->h_addr_list)
-		{
-			if(he->h_addr_list[0])
-				free(he->h_addr_list[0]);
-			free(he->h_addr_list);
-		}
-		free(he);
-		he = NULL;
-	}
-
-	hEvent = WSACreateEvent();
-	err = XNetDnsLookup(name, hEvent, &pDns);
-
-	WaitForSingleObject( (HANDLE)hEvent, INFINITE);
-
-	if(pDns && pDns->iStatus == 0 || isdigit(name[0]))
+	// This data is static and it should not be freed.
+	if(!he)
 	{
 		he = (struct hostent *)malloc(sizeof(struct hostent));
 		if(!he)
@@ -168,15 +153,28 @@ struct hostent *gethostbyname(const char *name)
 
 		he->h_addr_list = (char **)malloc(sizeof(char*));
 		he->h_addr_list[0] = (char *)malloc(sizeof(struct in_addr));
-
-		if(pDns && pDns->iStatus == 0)
-			memcpy(he->h_addr_list[0], pDns->aina, sizeof(struct in_addr));
-		else // Some Xbox's will not handle an IP address being passed to XNetDnsLookup()
-			*(int *)he->h_addr_list[0] = inet_addr(name);
 	}
 
-	XNetDnsRelease(pDns);
-	WSACloseEvent(hEvent);
+	if(isdigit(name[0]))
+		addr = inet_addr(name);
+
+	if(addr != INADDR_NONE)
+		*(int *)he->h_addr_list[0] = addr;
+	else
+	{
+		hEvent = WSACreateEvent();
+		err = XNetDnsLookup(name, hEvent, &pDns);
+
+		WaitForSingleObject( (HANDLE)hEvent, INFINITE);
+
+		if(!pDns || pDns->iStatus != 0)
+			return NULL;
+
+		memcpy(he->h_addr_list[0], pDns->aina, sizeof(struct in_addr));
+
+		XNetDnsRelease(pDns);
+		WSACloseEvent(hEvent);
+	}
 
 	return he;
 }
@@ -218,17 +216,24 @@ void xbox_CloseLogFile()
 //
 // xbox_OutputDebugString
 //
-void xbox_OutputDebugString(const char *str)
+void xbox_OutputDebugString(const char *str, ...)
 {
+	va_list ap;
+	char    res[1024];
+
 	if(!str)
 		return;
+
+	va_start(ap, str);
+	_vsnprintf(res, sizeof(res), str, ap);
 
 	AG_MutexLock(&XBLogMutex);
 
 	if(DebugConsole)
-		OutputDebugString(str);
+		OutputDebugString(res);
 
-	XBLogFile << str;
+	XBLogFile << res;
+	XBLogFile.flush();
 
 	AG_MutexUnlock(&XBLogMutex);
 }

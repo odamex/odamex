@@ -90,7 +90,12 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 
 	GuiConfig::Read("MasterOnStart", (uint8_t&)masterOnStart);
 	if(masterOnStart)
+	{
+		StartupQuery = true;
 		AG_PostEvent(MainWindow, MainButtonBox->mlist, "button-pushed", NULL);
+	}
+	else
+		StartupQuery = false;
 
 	// Show the window
 	AG_WindowShow(MainWindow);
@@ -1060,6 +1065,13 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 	uint16_t     port = 0;
 	unsigned int masterTimeout;
 
+#ifdef _XBOX
+	// A slight delay is required to complete initialization on Xbox
+	// if this is the "Master On Start" query - 3/4 sec
+	if(StartupQuery)
+		AG_Delay(750);
+#endif
+
 	if(GuiConfig::Read("MasterTimeout", masterTimeout) || masterTimeout <= 0)
 		masterTimeout = 500;
 
@@ -1104,6 +1116,8 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 
 	// Query all the servers
 	QueryAllServers(NULL);
+
+	StartupQuery = false;
 
 	return NULL;
 }
