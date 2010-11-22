@@ -39,6 +39,17 @@
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
 
+#ifdef __WXMSW__
+    #include <windows.h>
+    #include <winsock.h>
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <sys/wait.h>
+    #include <netdb.h>
+#endif
+
 // Control ID assignments for events
 // application icon
 
@@ -900,7 +911,7 @@ bool dlgMain::IsAddressValid(wxString Address)
     wxString RegEx;
     wxRegEx ReValIP;
     wxString IPHost;
-    wxUint16 Port;
+    long Port;
 
     // Get rid of any whitespace on either side of the string
     Address.Trim(false);
@@ -922,25 +933,47 @@ bool dlgMain::IsAddressValid(wxString Address)
         return false;
     }
 
-    // Find the colon that separates the ip address and the port number
+    // Find the colon that separates the address and the port number
     Colon = Address.Find(wxT(':'), true);
 
-    if (Colon == wxNOT_FOUND)
-        return false;
+    if (Colon != wxNOT_FOUND)
+    {
+        wxString PortStr;
+        bool IsGood;
 
-    // Check if there is something after the colon
-    if (Colon + 1 >= Address.Len())
-        return false;
+        // Try to convert the substring after the : to a port number
+        PortStr = Address.Mid(Colon + 1);
 
-    // Acquire the ip address and port number
-    Port = wxAtoi(Address.Mid(Colon + 1));
+        IsGood = PortStr.ToLong(&Port);
+
+        // Check if there is something after the colon and if its actually a 
+        // numeric value
+        if ((Colon + 1 >= Address.Len()) || (IsGood == false) || (Port <= 0))
+        {
+            wxMessageBox(wxT("A number greater than 0 must exist after the :"));
+            return false;
+        }
+
+    }
+
+    // Finally get the address portion from the main string
     IPHost = Address.Mid(0, Colon);
 
     // Finally do the comparison
-    if ((Port > 0) && (ReValIP.Matches(IPHost) == true))
+    if (ReValIP.Matches(IPHost) == true)
         return true;
     else
-        return false;
+    {
+        struct hostent *he;
+
+        // Check to see if its a hostname rather than an IP address
+        he = gethostbyname((const char *)IPHost.char_str());
+
+        if (he != NULL)
+            return true;
+        else
+            return false;
+    }
 }
 
 // About information
