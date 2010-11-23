@@ -257,11 +257,15 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     wxString ped_result;
     wxString ted_result;
     
-    wxTextEntryDialog ted(this, wxT("Please enter IP Address and Port"), 
-        wxT("Please enter IP Address and Port"), wxT("0.0.0.0:0"));
+    const char *HelpText = "Please enter an IP Address or Hostname. \n\nAn "
+                            "optional port number can exist for IPs or Hosts\n"
+                            "by putting a : after the address.";
 
-    wxPasswordEntryDialog ped(this, wxT("Enter an optional password"), 
-        wxT("Enter an optional password"), wxT(""));
+    wxTextEntryDialog ted(this, wxT(HelpText), wxT("Manual Connect"), 
+        wxT("0.0.0.0:0"));
+
+    wxPasswordEntryDialog ped(this, wxT("Enter a password (optional)"), 
+        wxT("Manual Connect"), wxT(""));
 
     // Keep asking for a valid ip/port number
     while (1)
