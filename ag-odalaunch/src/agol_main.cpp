@@ -803,10 +803,10 @@ void AGOL_MainWindow::OnLaunch(AG_Event *event)
 		char cwd[AG_PATHNAME_MAX];
 
 		if(!AG_GetCWD(cwd, AG_PATHNAME_MAX))
-			cmd.AddParameter("-waddir", "\"" + string(cwd) + "\"");
+			cmd.AddParameter("-waddir", cwd);
 	}
 	else
-		cmd.AddParameter("-waddir", "\"" + waddirs + "\"");
+		cmd.AddParameter("-waddir", waddirs);
 
 	if(!GuiConfig::Read("ExtraParams", extraParams))
 		cmd.AddParameter(extraParams);
