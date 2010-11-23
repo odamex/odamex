@@ -1068,7 +1068,7 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if ((isalpha(ch) && toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1097,7 +1097,7 @@ void M_EndGame(int choice)
 
 void M_QuitResponse(int ch)
 {
-	if ((isalpha(ch) && toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1822,7 +1822,8 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			!(ch2 == ' ' || ch == KEY_ESCAPE || toupper(ch2) == 'N' || toupper(ch2) == 'Y' || ch == KEY_JOY2 || ch == KEY_JOY4))
+			(!(ch2 == ' ' || ch == KEY_ESCAPE || ch == KEY_JOY2 || ch == KEY_JOY4 ||
+			 (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
 			return true;
 
 		menuactive = messageLastMenuActive;

@@ -445,7 +445,7 @@ int AGOL_MainWindow::GetServerListRowFromAddr(string address)
 	// Loop until the server address is found
 	for(int row = 0; row < ServerList->m; row++)
 	{
-		string cellAddr;;
+		string cellAddr;
 
 		cellAddr = GetAddrFromServerListRow(row);
 		

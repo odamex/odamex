@@ -88,19 +88,14 @@ void BufferedSocket::ReportError(int line, const char *function, const char *fmt
 	if(!function || !fmt)
 		return;
 
-
 	va_start(ap, fmt);
 
 #ifdef _XBOX
 	char errorstr[1024];
 
-	sprintf(errorstr, "[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
-	xbox_OutputDebugString(errorstr);
-
+	xbox_OutputDebugString("[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
 	vsprintf(errorstr, fmt, ap);
-	xbox_OutputDebugString(errorstr);
-
-	xbox_OutputDebugString("\n");
+	xbox_OutputDebugString("%s\n", errorstr);
 #else
 	fprintf(stderr, "[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
 	vfprintf(stderr, fmt, ap);

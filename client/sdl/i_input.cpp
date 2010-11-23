@@ -254,7 +254,7 @@ static int RegisterJoystickEvent(SDL_Event *ev, int value)
 			}
 		}
 
-		evc = new JoystickEvent_t;;
+		evc = new JoystickEvent_t;
 
 		memcpy(&evc->Event, ev, sizeof(SDL_Event));
 		evc->Event.jhat.value = value;

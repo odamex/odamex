@@ -61,7 +61,7 @@ vec_t VectorLength (const vec3_t v)
 {
 	float	length;
 	
-	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];;
+	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
 	length = (float) sqrt (length);		// FIXME
 
 	return length;
