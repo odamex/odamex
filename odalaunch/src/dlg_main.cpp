@@ -266,17 +266,52 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     // Keep asking for a valid ip/port number
     while (1)
     {
+        bool good = false;
+
         if (ted.ShowModal() == wxID_CANCEL)
             return;
     
         ted_result = ted.GetValue();
 
-        if (IsAddressValid(ted_result) == false)
+        switch (IsAddressValid(ted_result))
         {
-            wxMessageBox(wxT("Invalid IP address/Port number"));
-            continue;
+            // Correct address
+            case _oda_iav_SUCCESS:
+            {
+                good = true;
+            }
+            break;
+
+            // Empty string
+            case _oda_iav_emptystr:
+            {
+                continue;
+            }
+
+            // Colon syntax bad
+            case _oda_iav_colerr:
+            {
+                wxMessageBox(wxT("A number > 0 must exist after the :"));
+                continue;
+            }
+
+            // Internal error
+            case _oda_iav_interr:
+            {
+                wxMessageBox(wxT("Regex compiler failure"));
+                return;
+            }
+
+            // Unknown error (usually bad regex match)
+            case _oda_iav_FAILURE:
+            {
+                wxMessageBox(wxT("Invalid IP address/hostname format"));
+                continue;
+            }
         }
-        else
+        
+        // Address is good to use
+        if (good == true)
             break;
     }
 
@@ -905,7 +940,7 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
 }
 
 // Checks whether an odamex-style address format is valid
-bool dlgMain::IsAddressValid(wxString Address)
+_oda_iav_err_t dlgMain::IsAddressValid(wxString Address)
 {
     wxInt32 Colon;
     wxString RegEx;
@@ -917,8 +952,11 @@ bool dlgMain::IsAddressValid(wxString Address)
     Address.Trim(false);
     Address.Trim(true);
 
+    // Don't accept nothing
     if (Address.IsEmpty() == true)
-        return false;
+    {
+        return _oda_iav_emptystr;
+    }
 
     // Set the regular expression and load it in
     RegEx = wxT("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4]"
@@ -929,8 +967,7 @@ bool dlgMain::IsAddressValid(wxString Address)
 
     if (ReValIP.IsValid() == false)
     {
-        wxMessageBox(wxT("RegEx invalid"));
-        return false;
+        return _oda_iav_interr;
     }
 
     // Find the colon that separates the address and the port number
@@ -950,8 +987,7 @@ bool dlgMain::IsAddressValid(wxString Address)
         // numeric value
         if ((Colon + 1 >= Address.Len()) || (IsGood == false) || (Port <= 0))
         {
-            wxMessageBox(wxT("A number greater than 0 must exist after the :"));
-            return false;
+            return _oda_iav_colerr;
         }
 
     }
@@ -961,7 +997,7 @@ bool dlgMain::IsAddressValid(wxString Address)
 
     // Finally do the comparison
     if (ReValIP.Matches(IPHost) == true)
-        return true;
+        return _oda_iav_SUCCESS;
     else
     {
         struct hostent *he;
@@ -970,9 +1006,9 @@ bool dlgMain::IsAddressValid(wxString Address)
         he = gethostbyname((const char *)IPHost.char_str());
 
         if (he != NULL)
-            return true;
+            return _oda_iav_SUCCESS;
         else
-            return false;
+            return _oda_iav_FAILURE;
     }
 }
 
