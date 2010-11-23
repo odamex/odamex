@@ -932,6 +932,9 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
 
     i = GetSelectedServerListIndex();
 
+    if (i == -1)
+        return -1;
+
     item.SetId(i);
     item.SetColumn(7);
     item.SetMask(wxLIST_MASK_TEXT);
