@@ -445,7 +445,7 @@ int AGOL_MainWindow::GetServerListRowFromAddr(string address)
 	// Loop until the server address is found
 	for(int row = 0; row < ServerList->m; row++)
 	{
-		string cellAddr;;
+		string cellAddr;
 
 		cellAddr = GetAddrFromServerListRow(row);
 		
@@ -803,10 +803,10 @@ void AGOL_MainWindow::OnLaunch(AG_Event *event)
 		char cwd[AG_PATHNAME_MAX];
 
 		if(!AG_GetCWD(cwd, AG_PATHNAME_MAX))
-			cmd.AddParameter("-waddir", "\"" + string(cwd) + "\"");
+			cmd.AddParameter("-waddir", cwd);
 	}
 	else
-		cmd.AddParameter("-waddir", "\"" + waddirs + "\"");
+		cmd.AddParameter("-waddir", waddirs);
 
 	if(!GuiConfig::Read("ExtraParams", extraParams))
 		cmd.AddParameter(extraParams);
@@ -1144,16 +1144,6 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	size_t   serversQueried = 0;
 	int      selectedNdx;
 
-#ifdef _XBOX
-	xbox_EnableJoystickUpdates(false);
-#endif
-
-	StartServerListPoll();
-
-	ClearList(PlayerList);
-	ClearList(ServInfoList);
-	UpdateQueriedLabelCompleted(0);
-
 	MServer.GetLock();
 
 	serverCount = MServer.GetServerCount();
@@ -1163,6 +1153,16 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	// There are no servers to query
 	if(serverCount <= 0)
 		return NULL;
+
+#ifdef _XBOX
+	xbox_EnableJoystickUpdates(false);
+#endif
+
+	StartServerListPoll();
+
+	ClearList(PlayerList);
+	ClearList(ServInfoList);
+	UpdateQueriedLabelCompleted(0);
 
 	while(count < serverCount)
 	{

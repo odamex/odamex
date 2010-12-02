@@ -602,7 +602,12 @@ BEGIN_COMMAND (wad) // denis - changes wads
     // add our iwad if it is one
 	if (W_IsIWAD(argv[1]))
 	{
-		wads.push_back(argv[1]);
+		std::string ext;
+
+		if(!M_ExtractFileExtension(argv[1], ext))
+			wads.push_back(std::string(argv[1]) + ".wad");
+		else
+			wads.push_back(argv[1]);
 		AddedIWAD = true;
 	} else {
         wads.push_back(wadfiles[1].c_str());

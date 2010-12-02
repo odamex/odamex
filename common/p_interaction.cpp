@@ -1133,6 +1133,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 		target->flags &= ~MF_SOLID;
 		target->player->playerstate = PST_DEAD;
+		P_DropWeapon(target->player);
 
 		if (!multiplayer)
 		{
@@ -1147,7 +1148,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
         }
         else
         {
-            P_DropWeapon(target->player);
             target->player->respawn_time = level.time; // vanilla immediate respawn
         }
 

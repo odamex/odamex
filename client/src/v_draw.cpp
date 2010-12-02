@@ -127,7 +127,7 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	unsigned int *fg2rgb, *bg2rgb;
 
 	{
-		fixed_t fglevel, bglevel, translevel;;
+		fixed_t fglevel, bglevel, translevel;
 
 		translevel = 0xFFFF * hud_transparency;
 		fglevel = translevel & ~0x3ff;

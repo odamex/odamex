@@ -145,7 +145,7 @@ BOOL HU_Responder (event_t *ev)
 {
 	unsigned char c;
 
-	if (ev->data1 == KEY_RALT || ev->data1 == KEY_LALT)
+	if (ev->data1 == KEY_RALT || ev->data1 == KEY_LALT || ev->data1 == KEY_HAT1)
 	{
 		altdown = (ev->type == ev_keydown);
 		return false;
@@ -173,11 +173,14 @@ BOOL HU_Responder (event_t *ev)
 	// send a macro
 	if (altdown)
 	{
-		if (ev->data2 >= '0' && ev->data2 <= '9')
+		if ((ev->data2 >= '0' && ev->data2 <= '9') || (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10))
 		{
-			ShoveChatStr (chat_macros[ev->data2 - '0']->cstring(), headsupactive - 1);
+			if (ev->data2 >= KEY_JOY1 && ev->data2 <= KEY_JOY10)
+				ShoveChatStr (chat_macros[ev->data2 - KEY_JOY1]->cstring(), headsupactive - 1);
+			else
+				ShoveChatStr (chat_macros[ev->data2 - '0']->cstring(), headsupactive - 1);
             
-            I_ResumeMouse();
+			I_ResumeMouse();
 			headsupactive = 0;
 			return true;
 		}
@@ -189,7 +192,7 @@ BOOL HU_Responder (event_t *ev)
 		headsupactive = 0;
 		return true;
 	}
-	else if (ev->data1 == KEY_ESCAPE)
+	else if (ev->data1 == KEY_ESCAPE || ev->data1 == KEY_JOY2)
 	{
         I_ResumeMouse();
 		headsupactive = 0;

@@ -94,6 +94,9 @@ char				saveOldString[SAVESTRINGSIZE];
 
 BOOL 				menuactive;
 
+int                 repeatKey;
+int                 repeatCount;
+
 extern bool st_firsttime;
 
 extern bool			sendpause;
@@ -1065,7 +1068,7 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if ((isalpha(ch) && toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1094,7 +1097,7 @@ void M_EndGame(int choice)
 
 void M_QuitResponse(int ch)
 {
-	if ((isalpha(ch) && toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
 	    M_ClearMenus ();
 		return;
 	}
@@ -1577,13 +1580,17 @@ static void M_SlidePlayerRed (int choice)
 {
 	int color = V_GetColorFromString(NULL, cl_color.cstring());
 	int red = RPART(color);
+	int accel = 0;
+
+	if(repeatCount >= 10)
+		accel = 5;
 
 	if (choice == 0) {
-		red -= 1;
+		red -= 1 + accel;
 		if (red < 0)
 			red = 0;
 	} else {
-		red += 1;
+		red += 1 + accel;
 		if (red > 255)
 			red = 255;
 	}
@@ -1595,13 +1602,17 @@ static void M_SlidePlayerGreen (int choice)
 {
 	int color = V_GetColorFromString(NULL, cl_color.cstring());
 	int green = GPART(color);
+	int accel = 0;
+
+	if(repeatCount >= 10)
+		accel = 5;
 
 	if (choice == 0) {
-		green -= 1;
+		green -= 1 + accel;
 		if (green < 0)
 			green = 0;
 	} else {
-		green += 1;
+		green += 1 + accel;
 		if (green > 255)
 			green = 255;
 	}
@@ -1613,13 +1624,17 @@ static void M_SlidePlayerBlue (int choice)
 {
 	int color = V_GetColorFromString(NULL, cl_color.cstring());
 	int blue = BPART(color);
+	int accel = 0;
+
+	if(repeatCount >= 10)
+		accel = 5;
 
 	if (choice == 0) {
-		blue -= 1;
+		blue -= 1 + accel;
 		if (blue < 0)
 			blue = 0;
 	} else {
-		blue += 1;
+		blue += 1 + accel;
 		if (blue > 255)
 			blue = 255;
 	}
@@ -1711,6 +1726,15 @@ bool M_Responder (event_t* ev)
 		}
 	}
 
+	if (ev->type == ev_keyup)
+	{
+		if(repeatKey == ev->data1)
+		{
+			repeatKey = 0;
+			repeatCount = 0;
+		}
+	}
+
 	if (ev->type == ev_keydown)
 	{
 		ch = ev->data1; 		// scancode
@@ -1724,6 +1748,26 @@ bool M_Responder (event_t* ev)
 		M_OptResponder (ev);
 		return true;
 	}
+
+	// Handle Repeat
+	switch(ch)
+	{
+	  case KEY_HAT4:
+	  case KEY_LEFTARROW:
+	  case KEY_HAT2:
+	  case KEY_RIGHTARROW:
+		if(repeatKey == ch)
+			repeatCount++;
+		else
+		{
+			repeatKey = ch;
+			repeatCount = 0;
+		}
+		break;
+	  default:
+		break;
+	}
+
 
 	cmd = C_GetBinding (ch);
 
@@ -1778,7 +1822,8 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			!(ch2 == ' ' || ch == KEY_ESCAPE || toupper(ch2) == 'N' || toupper(ch2) == 'Y' || ch == KEY_JOY2 || ch == KEY_JOY4))
+			(!(ch2 == ' ' || ch == KEY_ESCAPE || ch == KEY_JOY2 || ch == KEY_JOY4 ||
+			 (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
 			return true;
 
 		menuactive = messageLastMenuActive;

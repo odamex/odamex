@@ -153,7 +153,7 @@ void AGOL_Manual::OnOK(AG_Event *event)
 				cmd.AddParameter("-waddir", cwd);
 		}
 		else
-			cmd.AddParameter("-waddir", "\"" + waddirs + "\"");
+			cmd.AddParameter("-waddir", waddirs);
 
 
 		cmd.AddParameter("-connect", server);
