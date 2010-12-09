@@ -780,6 +780,9 @@ static char *igets (void)
 {
 	char *line;
 
+	if(!PatchPt)
+		return NULL;
+
 	if (*PatchPt == '\0')
 		return NULL;
 
