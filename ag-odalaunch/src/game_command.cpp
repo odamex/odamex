@@ -114,5 +114,37 @@ int GameCommand::Launch()
 		return -1;
 	}
 
+	Cleanup(pid);
+
 	return 0;
+}
+
+//******************//
+// Private Functions //
+//******************//
+void *GameCommand::Cleanup(void *vpPID)
+{
+	if(vpPID)
+	{
+		AG_ProcessID pid = *(AG_ProcessID*)vpPID;
+
+		if((AG_WaitOnProcess(pid, AG_EXEC_WAIT_INFINITE)) == pid)
+			cout << "Odamex client (" << pid << ") exited cleanly." << endl;
+		else
+			cout << "Odamex client (" << pid << ") exited with error: " << AG_GetError() << endl;
+
+		// It is most likely that the instance of the GameCommand class that launched
+		// this thread doesn't exist anymore so freeing this here is the only option.
+		delete (AG_ProcessID*)vpPID;
+	}
+
+	return NULL;
+}
+
+void GameCommand::Cleanup(AG_ProcessID pid)
+{
+	AG_ProcessID *pPID = new AG_ProcessID(pid);
+	AG_Thread     thread;
+
+	AG_ThreadCreate(&thread, Cleanup, (void *)pPID);
 }

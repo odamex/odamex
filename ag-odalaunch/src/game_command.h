@@ -37,6 +37,9 @@ public:
 	int Launch();
 
 private:
+	static void *Cleanup(void *vpPID);
+	void         Cleanup(AG_ProcessID pid);
+
 	std::list<std::string> Parameters;
 };
 

@@ -819,10 +819,10 @@ void WI_updateStats(void)
     if (acceleratestage && sp_state != 10)
     {
 	acceleratestage = 0;
-	cnt_kills = (wminfo.maxkills) ? (plrs[me].skills * 100) / wminfo.maxkills : 0;
-	cnt_items = (wminfo.maxitems) ? (plrs[me].sitems * 100) / wminfo.maxitems : 0;
-	cnt_secret = (wminfo.maxsecret) ? (plrs[me].ssecret * 100) / wminfo.maxsecret : 0;
-	cnt_time = plrs[me].stime / TICRATE;
+	cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
+	cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
+	cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
+	cnt_time = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
 	cnt_par = wminfo.partime / TICRATE;
 	S_Sound (CHAN_VOICE, "world/barrelx", 1, ATTN_NONE);
 	sp_state = 10;

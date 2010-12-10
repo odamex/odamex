@@ -40,6 +40,51 @@
 
 using namespace std;
 
+int AGOL_InitVideo(const char *drivers, const int width, const int height)
+{
+	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
+
+	if(!drivers || strncmp(drivers, "sdl", 3))
+	{
+		/* Initialize Agar-GUI. */
+		if (AG_InitGraphics(drivers) == -1) 
+		{
+			cerr << AG_GetError() << endl;
+			return -1;
+		}
+		if(agDriverSw)
+			AG_ResizeDisplay(width, height);
+	}
+	else // Alternative initialization. This will only initialize single-window display.
+	{
+		if(drivers && !strcmp(drivers, "sdlfb"))
+		{
+			if (AG_InitVideo(width, height, 32, AG_VIDEO_SDL | AG_VIDEO_RESIZABLE) == -1) 
+			{
+				cerr << AG_GetError() << endl;
+				return -1;
+			}
+		}
+		else
+		{
+			if (AG_InitVideo(width, height, 32, AG_VIDEO_OPENGL_OR_SDL | AG_VIDEO_RESIZABLE) == -1) 
+			{
+				cerr << AG_GetError() << endl;
+				return -1;
+			}
+		}
+
+	}
+
+#ifdef _XBOX
+	// Software cursor only updates at the refresh rate so make it respectable
+	if(agDriverSw)
+		AG_SetRefreshRate(60);
+#endif
+
+	return 0;
+}
+
 #ifdef GCONSOLE
 int agol_main(int argc, char *argv[])
 #else
@@ -77,7 +122,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-#ifdef _XBOX
+#ifdef GCONSOLE
 	// For now just use a resolution that compensates for overscan on most televisions
 	width = 600;
 	height = 450;
@@ -89,8 +134,6 @@ int main(int argc, char *argv[])
 		height = 480;
 #endif
 
-	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
-
 	// Check if a video driver is specified in the config file
 	if(!drivers)
 	{
@@ -100,50 +143,14 @@ int main(int argc, char *argv[])
 
 		if(cfgDriver.size())
 			drivers = strdup(cfgDriver.c_str());
-	}
-
 #ifdef _XBOX
-	if(!drivers)
-		drivers = strdup("sdlfb");
-#endif
-
-	if(!drivers || !strstr(drivers, "sdl"))
-	{
-		/* Initialize Agar-GUI. */
-		if (AG_InitGraphics(drivers) == -1) 
-		{
-			cerr << AG_GetError() << endl;
-			return (-1);
-		}
-		if(agDriverSw)
-			AG_ResizeDisplay(width, height);
-	}
-	else // Alternative initialization. This will only initialize single-window display.
-	{
-		if(drivers && !strcmp(drivers, "sdlfb"))
-		{
-			if (AG_InitVideo(width, height, 32, AG_VIDEO_SDL | AG_VIDEO_RESIZABLE) == -1) 
-			{
-				cerr << AG_GetError() << endl;
-				return (-1);
-			}
-		}
 		else
-		{
-			if (AG_InitVideo(width, height, 32, AG_VIDEO_OPENGL_OR_SDL | AG_VIDEO_RESIZABLE) == -1) 
-			{
-				cerr << AG_GetError() << endl;
-				return (-1);
-			}
-		}
-
-#ifdef _XBOX
-		// Software cursor only updates at the refresh rate so make it respectable
-		AG_SetRefreshRate(60);
-		// Initialize the Xbox controller
-		xbox_InitializeJoystick();
+			drivers = strdup("sdlfb");
 #endif
 	}
+
+	if(AGOL_InitVideo(drivers, width, height))
+		return (-1);
 
 	// Initialize socket API
 	BufferedSocket::InitializeSocketAPI();
@@ -154,6 +161,11 @@ int main(int argc, char *argv[])
 	// Set key bindings
 	AG_BindGlobalKey(AG_KEY_ESCAPE, AG_KEYMOD_ANY, AG_QuitGUI);
 	AG_BindGlobalKey(AG_KEY_F8, AG_KEYMOD_ANY, AG_ViewCapture);
+
+#ifdef _XBOX
+	// Initialize the Xbox controller
+	xbox_InitializeJoystick();
+#endif
 
 	// Event (main) Loop
 	AG_EventLoop();

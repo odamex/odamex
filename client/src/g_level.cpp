@@ -860,8 +860,6 @@ void G_DoCompleted (void)
 	{
 		wminfo.plyr[i].in = players[i].ingame();
 		wminfo.plyr[i].skills = players[i].killcount;
-		wminfo.plyr[i].sitems = level.found_items;
-		wminfo.plyr[i].ssecret = level.found_secrets;
 		wminfo.plyr[i].stime = level.time;
 		wminfo.plyr[i].fragcount = players[i].fragcount;
 
