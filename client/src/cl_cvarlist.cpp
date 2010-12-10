@@ -184,6 +184,18 @@ CVAR (hud_crosshairdim, "0", CVAR_ARCHIVE)      // Crosshair transparency
 CVAR (hud_crosshairscale, "0", CVAR_ARCHIVE)    // Crosshair scaling
 CVAR_FUNC_DECL (hud_targetcount, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // Show target counts
 
+#ifdef _XBOX
+CVAR (chatmacro0, "Hi.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // A
+CVAR (chatmacro1, "I'm ready to kick butt!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)   // B
+CVAR (chatmacro2, "Help!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                     // X
+CVAR (chatmacro3, "GG", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                        // Y
+CVAR (chatmacro4, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // Black
+CVAR (chatmacro5, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                        // White
+CVAR (chatmacro6, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     // Left Trigger
+CVAR (chatmacro7, "Come here!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                // Right Trigger
+CVAR (chatmacro8, "Thanks for the game. Bye.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE) // Start
+CVAR (chatmacro9, "I am on Xbox and can only use chat macros.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE) // Back
+#else
 // GhostlyDeath <November 2, 2008> -- someone had the order wrong (0-9!)
 CVAR (chatmacro1, "I'm ready to kick butt!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro2, "I'm OK.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -195,6 +207,7 @@ CVAR (chatmacro7, "Come here!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro8, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro9, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (chatmacro0, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+#endif
 
 // Sound and music
 // ---------------
