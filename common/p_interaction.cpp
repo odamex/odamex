@@ -1007,6 +1007,9 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// [RH] Also set the thing's tid to 0. [why?]
 	target->tid = 0;
 
+	if (serverside && target->flags & MF_COUNTKILL)
+		level.killed_monsters++;
+
 	if (source)
 	{
 		splayer = source->player;
@@ -1079,7 +1082,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
             ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
 		{
 			splayer->killcount++;
-			level.killed_monsters++;
 			SV_UpdateFrags(*splayer);
 		}
 	}
