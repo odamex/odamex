@@ -230,9 +230,11 @@ extern DWORD IndexedPalette[256];
 */
 void I_ScreenShot (const char *filename)
 {
-	byte *linear;
 	char  autoname[32];
 	char *lbmname;
+    SDL_Surface *surface;
+    SDL_Color colors[256];
+    DWORD *pal;
 
 	// find a file name to save it to
 	if (!filename || !strlen(filename))
@@ -240,74 +242,49 @@ void I_ScreenShot (const char *filename)
 		lbmname = autoname;
 		if (!FindFreeName (lbmname, "bmp\0bmp" + (screen->is8bit() << 2)))
 		{
-			Printf (PRINT_HIGH, "M_ScreenShot: Delete some screenshots\n");
+			Printf (PRINT_HIGH, "I_ScreenShot: Delete some screenshots\n");
 			return;
 		}
 		filename = autoname;
 	}
 
-	if (screen->is8bit())
-	{
-		// munge planar buffer to linear
-		linear = new byte[screen->width * screen->height];
-		I_ReadScreen (linear);
+    // Create an SDL_Surface object from our screen buffer
+    screen->Lock();
 
-        // [Russell] - Spit out a bitmap file
+    surface = SDL_CreateRGBSurfaceFrom(screen->buffer, screen->width, 
+        screen->height, 8, screen->width * 1, 0, 0, 0, 0);
+    
+    screen->Unlock();
 
-        // check endianess
-        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-            Uint32 rmask = 0xff000000;
-            Uint32 gmask = 0x00ff0000;
-            Uint32 bmask = 0x0000ff00;
-            Uint32 amask = 0x000000ff;
-        #else
-            Uint32 rmask = 0x000000ff;
-            Uint32 gmask = 0x0000ff00;
-            Uint32 bmask = 0x00ff0000;
-            Uint32 amask = 0xff000000;
-        #endif
+    if(surface == NULL) {
+        Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
+        return;
+    }
 
-		SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(linear, screen->width, screen->height, 8, screen->width * 1, rmask,gmask,bmask,amask);
+    // Set up the palette for our screen shot
+    pal = IndexedPalette;
 
-		SDL_Color colors[256];
+    for (int i = 0; i < 256; i+=1, pal++)
+    {
+        colors[i].r = RPART(*pal);
+        colors[i].g = GPART(*pal);
+        colors[i].b = BPART(*pal);
+        colors[i].unused = 0;
+    }
+        
+    SDL_SetColors(surface, colors, 0, 256);
 
-		// stolen from the WritePCXfile function, write palette data into SDL_Color
-		DWORD *pal;
-
-		pal = IndexedPalette;
-
-		for (int i = 0; i < 256; i+=1, pal++)
-            {
-                colors[i].r = RPART(*pal);
-                colors[i].g = GPART(*pal);
-                colors[i].b = BPART(*pal);
-                colors[i].unused = 0;
-            }
-
-        // set the palette
-        SDL_SetColors(surface, colors, 0, 256);
-
-		// save the bmp file
-		if (SDL_SaveBMP(surface, filename) == -1)
-        {
-            Printf (PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
-
-            SDL_FreeSurface(surface);
-            delete[] linear;
-            return;
-        }
-/*		WritePCXfile (filename, linear,
-					  screen->width, screen->height,
-					  IndexedPalette);*/
+    // save the bmp file
+    if (SDL_SaveBMP(surface, filename) == -1)
+    {
+        Printf (PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
 
         SDL_FreeSurface(surface);
-		delete[] linear;
-	}
-	else
-	{
-		// save the tga file
-		//I_WriteTGAfile (filename, &screen);
-	}
+        return;
+    }
+
+    SDL_FreeSurface(surface);
+
 	Printf (PRINT_HIGH, "screen shot taken: %s\n", filename);
 }
 
