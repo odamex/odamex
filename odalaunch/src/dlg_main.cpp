@@ -257,11 +257,11 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     wxString ped_result;
     wxString ted_result;
     
-    const char *HelpText = "Please enter an IP Address or Hostname. \n\nAn "
+    const wxString HelpText = wxT("Please enter an IP Address or Hostname. \n\nAn "
                             "optional port number can exist for IPs or Hosts\n"
-                            "by putting a : after the address.";
+                            "by putting a : after the address.");
 
-    wxTextEntryDialog ted(this, wxT(HelpText), wxT("Manual Connect"), 
+    wxTextEntryDialog ted(this, HelpText, wxT("Manual Connect"), 
         wxT("0.0.0.0:0"));
 
     wxPasswordEntryDialog ped(this, wxT("Enter a password (optional)"), 
