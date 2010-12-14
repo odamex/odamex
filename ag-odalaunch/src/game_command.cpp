@@ -44,13 +44,22 @@ using namespace std;
 
 void GameCommand::AddParameter(string parameter)
 {
+#ifdef _WIN32
+	Parameters.push_back(string("\"") + parameter + string("\""));
+#else
 	Parameters.push_back(parameter);
+#endif
 }
 
 void GameCommand::AddParameter(string parameter, string value)
 {
+#ifdef _WIN32
+	Parameters.push_back(string("\"") + parameter + string("\""));
+	Parameters.push_back(string("\"") + value + string("\""));
+#else
 	Parameters.push_back(parameter);
 	Parameters.push_back(value);
+#endif
 }
 
 int GameCommand::Launch()
