@@ -389,6 +389,10 @@ public:
 
 	buf_t &operator =(const buf_t &other)
 	{
+	    // Avoid self-assignment
+		if (this == &other)
+            return *this;
+
 		delete[] data;
 		
 		data = new byte[other.allocsize];
