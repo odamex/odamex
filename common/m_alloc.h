@@ -27,40 +27,21 @@
 
 #include <stdlib.h>
 
-
-// Visual C++ doesn't have stdint.h
-#if defined(_MSC_VER)
-	#if _MSC_VER > 1200 && !_XBOX
-		#include <vadefs.h>
-	#else	// Visual C++ 6.0 has problems
-		#ifndef _UINTPTR_T_DEFINED
-			#ifdef _WIN64
-				typedef unsigned __int64 uintptr_t;
-			#else
-				typedef unsigned int uintptr_t;
-			#endif
-			#define _UINTPTR_T_DEFINED
-		#endif
-	#endif
-#else
-	#include <stdint.h>
-#endif
-
-// These are the same as the same stdlib functions,
-// except they bomb out with an error requester
-// when they can't get the memory.
-
+// don't use these, use the macros below instead!
 void *Malloc (size_t size);
 void *Calloc (size_t num, size_t size);
 void *Realloc (void *memblock, size_t size);
-
-// don't use these, use the macros instead!
-void M_Free2 (uintptr_t &memblock);
+void M_Free2 (void **memblock);
 
 #define M_Malloc(s) Malloc((size_t)s)
 #define M_Calloc(n,s) Calloc((size_t)n, (size_t)s)
 #define M_Realloc(p,s) Realloc((void *)p, (size_t)s)
-#define M_Free(p) do { M_Free2((uintptr_t &)p); } while(0)
+
+#define M_Free(p) \
+    if (1) \
+        M_Free2((void **)&p); \
+    else \
+        (void)0
 
 #endif //__M_ALLOC_H__
 

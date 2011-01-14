@@ -77,12 +77,12 @@ void *Realloc (void *memblock, size_t size)
 // Wraps around the standard free() memory function. This variation is slightly 
 // more safer, as it only frees a block if its not NULL and will NULL it on
 // exiting.
-void M_Free2 (uintptr_t &memblock)
+void M_Free2 (void **memblock)
 {
-    if (memblock != (uintptr_t)NULL)
+    if (*memblock != NULL)
     {               
-        free((void *)memblock);
-        memblock = (uintptr_t)NULL;
+        free(*memblock);
+        *memblock = NULL;
     }
 }
 
