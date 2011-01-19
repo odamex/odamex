@@ -409,7 +409,7 @@ void P_RespawnSpecials (void)
 		return;
 
 	// only respawn items in deathmatch
-	if (sv_gametype == GM_COOP || !sv_itemsrespawn)
+	if (!sv_itemsrespawn)
 		return;
 
 	// nothing left to respawn?
