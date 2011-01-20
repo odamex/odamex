@@ -143,14 +143,16 @@ void I_SetMusicVolume (float volume)
 #else
 
 // [Russell] - From prboom+
-#ifdef _WIN32
+// [Russell] - Disabled as it causes too many problems on vista/7
+//#ifdef _WIN32
     // e6y: workaround
-    if (Mix_GetMusicType(NULL) == MUS_MID)
-        I_midiOutSetVolumes((int)(volume * MIX_MAX_VOLUME));
-    else
+//    if (Mix_GetMusicType(NULL) == MUS_MID)
+//        I_midiOutSetVolumes((int)(volume * MIX_MAX_VOLUME));
+//    else
         // It is non-midi, call Mix_VolumeMusic below
-#endif
-        Mix_VolumeMusic((int)(volume * MIX_MAX_VOLUME));
+//#endif
+    
+    Mix_VolumeMusic((int)(volume * MIX_MAX_VOLUME));
 
 #endif
 }
