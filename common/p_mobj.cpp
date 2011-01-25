@@ -213,7 +213,8 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	translucency = info->translucency;
 	rndindex = M_Random();
 
-	netid = ServerNetID.ObtainNetID();
+    if (multiplayer && serverside)
+        netid = ServerNetID.ObtainNetID();
 
 	if (sv_skill != sk_nightmare)
 		reactiontime = info->reactiontime;
