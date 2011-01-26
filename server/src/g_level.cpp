@@ -938,16 +938,12 @@ void G_ChangeMap (void)
 
 	if (!MapListPointer)
 	{
-		char *next = level.nextmap;
-
-        // for latched "deathmatch 0" cvar
-        if (gamestate == GS_STARTUP)
-        {
-            next = level.mapname;
-        }
+		char *next = level.nextmap;     
 
 		// if deathmatch, stay on same level
-		if(sv_gametype != GM_COOP)
+		// [ML] 1/25/10: OR if next is empty
+		if(gamestate == GS_STARTUP || 
+			sv_gametype != GM_COOP || !strlen(next))
 			next = level.mapname;
 		else
 			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
