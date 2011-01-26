@@ -576,7 +576,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
-	if (Impulse >= 1 && Impulse <= 7)
+	if (Impulse >= 1 && Impulse <= 8)
 	{
 		cmd->ucmd.buttons |= BT_CHANGE;
 		cmd->ucmd.buttons |= (Impulse - 1) << BT_WEAPONSHIFT;

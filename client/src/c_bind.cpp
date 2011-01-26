@@ -47,6 +47,7 @@ char DefBindings[] =
 	"bind 5 \"impulse 5\"; "
 	"bind 6 \"impulse 6\"; "
 	"bind 7 \"impulse 7\"; "
+	"bind 8 \"impulse 8\"; "
 	"bind - sizedown; "
 	"bind = sizeup; "
 	"bind ctrl +attack; "
