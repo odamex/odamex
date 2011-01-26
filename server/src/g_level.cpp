@@ -629,7 +629,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	// GhostlyDeath <August 14, 2008> -- Check our environment, if the same WADs are used, ignore this command
-	if (AddedIWAD)
+	if (AddedIWAD && !wadfiles.empty())
 	{
 		if (stricmp(GetBase(wads[0].c_str()), GetBase(wadfiles[1].c_str())) != 0)
 			Reboot = true;
