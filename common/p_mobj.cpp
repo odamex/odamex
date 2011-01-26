@@ -467,8 +467,8 @@ void P_XYMovement(AActor *mo)
     }
 
 	if (mo->z > mo->floorz && !(mo->flags2 & MF2_ONMOBJ) && !(mo->flags2 & MF2_FLY)
-        && !mo->waterlevel && !(mo->player && mo->player->spectator))
-		return;		// no friction when airborne (GhostlyDeath 06/04/2008 -- but not when spectating)
+        && !mo->waterlevel)
+		return;		// no friction when airborne
 
 	if (mo->flags & MF_CORPSE)
 	{
