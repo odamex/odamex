@@ -35,7 +35,9 @@
 #include <io.h>
 #include <direct.h>
 #include <process.h>
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #ifdef _XBOX
 #include <xtl.h>
 #else

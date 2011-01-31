@@ -129,7 +129,7 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = 0xFFFF * hud_transparency;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -157,7 +157,7 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 	{
 		fixed_t fglevel, bglevel, translevel;
 		
-		translevel = 0xFFFF * hud_transparency;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -211,7 +211,7 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	{
 		fixed_t fglevel, bglevel, translevel;
 		
-		translevel = 0xFFFF * hud_transparency;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -240,7 +240,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 	{
 		fixed_t fglevel, bglevel, translevel;
 		
-		translevel = 0xFFFF * hud_transparency;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -291,7 +291,7 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 		unsigned int *fg2rgb;
 		fixed_t fglevel, bglevel, translevel;
 		
-		translevel = 0xFFFF * hud_transparency;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
