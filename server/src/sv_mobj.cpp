@@ -250,43 +250,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 }
 
 //
-// P_PreservePlayer
-//
-void P_PreservePlayer(player_t &player)
-{
-	if (!serverside || sv_gametype != GM_COOP || !validplayer(player) || !player.ingame())
-		return;
-
-	if(!unnatural_level_progression)
-		player.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
-
-	G_DoReborn(player);
-
-	// inform client
-	{
-		size_t i;
-		client_t *cl = &player.client;
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
-
-		for(i = 0; i < NUMWEAPONS; i++)
-			MSG_WriteByte (&cl->reliablebuf, player.weaponowned[i]);
-
-		for(i = 0; i < NUMAMMO; i++)
-		{
-			MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
-			MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
-		}
-
-		MSG_WriteByte (&cl->reliablebuf, player.health);
-		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
-		MSG_WriteByte (&cl->reliablebuf, player.armortype);
-		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
-		MSG_WriteByte (&cl->reliablebuf, player.backpack);
-	}
-}
-
-//
 // P_SpawnMapThing
 // The fields of the mapthing should
 // already be in host byte order.

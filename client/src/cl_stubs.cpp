@@ -49,6 +49,7 @@ void SV_UpdateFrags(player_t &player) {}
 void SV_ActorTarget(AActor *actor) {}
 void SV_SendDestroyActor(AActor *mo) {}
 void SV_ExplodeMissile(AActor *mo) {}
+void SV_PreservePlayer(player_t &player) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")
 

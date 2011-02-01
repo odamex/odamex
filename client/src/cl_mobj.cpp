@@ -268,15 +268,6 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 }
 
 //
-// P_PreservePlayer
-//
-void P_PreservePlayer(player_t &player)
-{
-	if(!serverside)
-		return;
-}
-
-//
 // P_SpawnMapThing
 // The fields of the mapthing should
 // already be in host byte order.

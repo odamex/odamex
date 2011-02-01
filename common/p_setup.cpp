@@ -45,7 +45,7 @@
 
 #include "p_setup.h"
 
-void P_PreservePlayer(player_t &player);
+void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
@@ -1491,7 +1491,7 @@ void P_SetupLevel (char *lumpname, int position)
     {
 		for (i=0 ; i<players.size() ; i++)
 		{
-			P_PreservePlayer(players[i]);
+			SV_PreservePlayer(players[i]);
 
     		// if deathmatch, randomly spawn the active players
 			if (players[i].ingame())
