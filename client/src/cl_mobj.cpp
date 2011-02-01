@@ -49,6 +49,7 @@ extern BOOL demonew;
 EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(chasedemo)
+EXTERN_CVAR(sv_itemrespawntime)
 
 void G_PlayerReborn(player_t &player);
 
@@ -396,19 +397,20 @@ void P_RespawnSpecials (void)
 
 	int 				i;
 
+    // clients do no control respawning of items
 	if(!serverside)
 		return;
 
-	// only respawn items in deathmatch
-	if (sv_gametype == GM_COOP || !sv_itemsrespawn)
+    // allow respawning if we specified it
+	if (!sv_itemsrespawn)
 		return;
 
 	// nothing left to respawn?
 	if (iquehead == iquetail)
 		return;
 
-	// wait at least 30 seconds
-	if (level.time - itemrespawntime[iquetail] < 30*TICRATE)
+	// wait a certain number of seconds before respawning this special
+	if (level.time - itemrespawntime[iquetail] < sv_itemrespawntime*TICRATE)
 		return;
 
 	mthing = &itemrespawnque[iquetail];

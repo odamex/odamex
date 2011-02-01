@@ -267,6 +267,22 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 void AActor::Destroy ()
 {
 	SV_SendDestroyActor(this);
+
+    // Add special to item respawn queue if it is destined to be respawned
+	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED))
+	{
+		if (type != MT_INV && type != MT_INS && 
+            (type < MT_BSOK || type > MT_RDWN))
+		{
+			itemrespawnque[iquehead] = spawnpoint;
+			itemrespawntime[iquehead] = level.time;
+			iquehead = (iquehead+1)&(ITEMQUESIZE-1);
+
+			// lose one off the end?
+			if (iquehead == iquetail)
+				iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		}
+	}
 	
 	// [RH] Unlink from tid chain
 	RemoveFromHash ();

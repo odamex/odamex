@@ -4327,21 +4327,6 @@ void SV_SendDestroyActor(AActor *mo)
 	// AActor no longer active. NetID released.
 	if(mo->netid)
 		ServerNetID.ReleaseNetID( mo->netid );
-
-	if ((mo->flags & MF_SPECIAL) && !(mo->flags & MF_DROPPED))
-	{
-		if (mo->type != MT_INV && mo->type != MT_INS && 
-            (mo->type < MT_BSOK || mo->type > MT_RDWN))
-		{
-			itemrespawnque[iquehead] = mo->spawnpoint;
-			itemrespawntime[iquehead] = level.time;
-			iquehead = (iquehead+1)&(ITEMQUESIZE-1);
-
-			// lose one off the end?
-			if (iquehead == iquetail)
-				iquetail = (iquetail+1)&(ITEMQUESIZE-1);
-		}
-	}
 }
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")

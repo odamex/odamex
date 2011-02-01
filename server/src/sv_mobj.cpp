@@ -405,10 +405,11 @@ void P_RespawnSpecials (void)
 
 	int 				i;
 
+    // clients do no control respawning of items
 	if(!serverside)
 		return;
 
-	// only respawn items in deathmatch
+    // allow respawning if we specified it
 	if (!sv_itemsrespawn)
 		return;
 
@@ -416,7 +417,7 @@ void P_RespawnSpecials (void)
 	if (iquehead == iquetail)
 		return;
 
-	// wait a certain number of seconds
+	// wait a certain number of seconds before respawning this special
 	if (level.time - itemrespawntime[iquetail] < sv_itemrespawntime*TICRATE)
 		return;
 
