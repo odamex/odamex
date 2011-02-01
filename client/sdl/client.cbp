@@ -183,7 +183,7 @@
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
-					<Add library="Ws2_32.lib" />
+					<Add library="wsock32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -232,8 +232,8 @@
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
-					<Add option="/wd4430" />
 					<Add option="/Zi" />
+					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOASM" />
@@ -251,11 +251,12 @@
 					<Add directory="..\..\libtextscreen" />
 				</ResourceCompiler>
 				<Linker>
+					<Add option="/DEBUG" />
 					<Add option="/debug" />
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
-					<Add library="Ws2_32.lib" />
+					<Add library="wsock32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />

@@ -162,7 +162,7 @@
 					<Add directory="..\..\common" />
 				</Compiler>
 				<Linker>
-					<Add library="Ws2_32.lib" />
+					<Add library="wsock32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -220,7 +220,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="/debug" />
-					<Add library="Ws2_32.lib" />
+					<Add library="wsock32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
