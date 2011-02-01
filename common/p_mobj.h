@@ -25,6 +25,8 @@
 #ifndef __PMOBJ_H__
 #define __PMOBJ_H__
 
+#define REMOVECORPSESTIC TICRATE*80
+
 //-----------------------------------------------------------------------------
 //
 // denis - superior NetIDHandler
