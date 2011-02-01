@@ -49,6 +49,8 @@ void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 
 EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR(sv_itemsrespawn)
+EXTERN_CVAR(sv_itemrespawntime)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -1128,6 +1130,94 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
 	P_CheckMissileSpawn (th);
+}
+
+
+//
+// P_RespawnSpecials
+//
+void P_RespawnSpecials (void)
+{
+	fixed_t 			x;
+	fixed_t 			y;
+	fixed_t 			z;
+
+	subsector_t*			ss;
+	AActor* 						mo;
+	mapthing2_t* 		mthing;
+
+	int 				i;
+
+    // clients do no control respawning of items
+	if(!serverside)
+		return;
+
+    // allow respawning if we specified it
+	if (!sv_itemsrespawn)
+		return;
+
+	// nothing left to respawn?
+	if (iquehead == iquetail)
+		return;
+
+	// wait a certain number of seconds before respawning this special
+	if (level.time - itemrespawntime[iquetail] < sv_itemrespawntime*TICRATE)
+		return;
+
+	mthing = &itemrespawnque[iquetail];
+
+	x = mthing->x << FRACBITS;
+	y = mthing->y << FRACBITS;
+
+	// find which type to spawn
+	for (i=0 ; i< NUMMOBJTYPES ; i++)
+	{
+		if (mthing->type == mobjinfo[i].doomednum)
+			break;
+	}
+
+	// [Fly] crashes sometimes without it
+	if (i >= NUMMOBJTYPES)
+	{
+		// pull it from the que
+		iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		return;
+	}
+
+	if (mobjinfo[i].flags & MF_SPAWNCEILING)
+		z = ONCEILINGZ;
+	else
+		z = ONFLOORZ;
+
+	// spawn a teleport fog at the new spot
+	ss = R_PointInSubsector (x, y);
+	mo = new AActor (x, y, z, MT_IFOG);
+	SV_SpawnMobj(mo);
+    if (clientside)
+        S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
+
+	// spawn it
+	mo = new AActor (x, y, z, (mobjtype_t)i);
+	mo->spawnpoint = *mthing;
+	mo->angle = ANG45 * (mthing->angle/45);
+
+	if (z == ONFLOORZ)
+		mo->z += mthing->z << FRACBITS;
+	else if (z == ONCEILINGZ)
+		mo->z -= mthing->z << FRACBITS;
+
+	if (mo->flags2 & MF2_FLOATBOB)
+	{ // Seed random starting index for bobbing motion
+		mo->health = M_Random();
+		mo->special1 = mthing->z << FRACBITS;
+	}
+	
+	mo->special = 0;
+	
+	// pull it from the que
+	iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+
+	SV_SpawnMobj(mo);
 }
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")
