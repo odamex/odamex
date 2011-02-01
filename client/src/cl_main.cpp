@@ -1147,6 +1147,8 @@ void CL_UpdateLocalPlayer(void)
 	p.real_velocity[1] = MSG_ReadLong();
 	p.real_velocity[2] = MSG_ReadLong();
 
+    p.mo->waterlevel = MSG_ReadLong();
+
 	real_plats.clear();
 }
 

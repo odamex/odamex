@@ -46,6 +46,7 @@ fixed_t cl_viewheight[MAXSAVETICS];
 fixed_t cl_deltaviewheight[MAXSAVETICS];
 fixed_t cl_jumpTics[MAXSAVETICS];
 int     cl_reactiontime[MAXSAVETICS];
+byte    cl_waterlevel[MAXSAVETICS];
 
 bool predicting;
 
@@ -190,7 +191,8 @@ void CL_PredictPlayers (int predtic)
 				p->viewheight = cl_viewheight[buf];
 				p->deltaviewheight = cl_deltaviewheight[buf];
 				p->jumpTics = cl_jumpTics[buf];
-				p->mo->reactiontime = cl_reactiontime[buf];				
+				p->mo->reactiontime = cl_reactiontime[buf];
+				p->mo->waterlevel = cl_waterlevel[buf];
 			}
 	
 			CL_PredictPlayer(p);
@@ -221,6 +223,7 @@ void CL_PredictMove (void)
 	cl_deltaviewheight[buf] = p->deltaviewheight;
 	cl_jumpTics[buf] = p->jumpTics;
 	cl_reactiontime[buf] = p->mo->reactiontime;
+    cl_waterlevel[buf] = p->mo->waterlevel;
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
