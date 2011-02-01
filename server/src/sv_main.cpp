@@ -3188,7 +3188,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	MSG_WriteLong (&cl->netbuf, mo->momy);
 	MSG_WriteLong (&cl->netbuf, mo->momz);
 
-    MSG_WriteLong (&cl->netbuf, mo->waterlevel);
+    MSG_WriteByte (&cl->netbuf, mo->waterlevel);
 
 	SV_UpdateMovingSectors(cl); // denis - fixme - todo - only info about the sector player is standing on info should be sent. note that this is not player->mo->subsector->sector
 
