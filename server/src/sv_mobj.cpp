@@ -164,54 +164,6 @@ void AActor::Serialize (FArchive &arc)
 }
 
 //
-// P_ExplodeMissile
-//
-void P_ExplodeMissile (AActor* mo)
-{
-	for (size_t i = 0; i < players.size(); i++)
-	{
-		client_t *cl = &clients[i];
-
-		if(!SV_IsPlayerAllowedToSee(players[i], mo))
-			continue;
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_movemobj);
-		MSG_WriteShort (&cl->reliablebuf, mo->netid);
-		MSG_WriteByte (&cl->reliablebuf, mo->rndindex);
-		MSG_WriteLong (&cl->reliablebuf, mo->x);
-		MSG_WriteLong (&cl->reliablebuf, mo->y);
-		MSG_WriteLong (&cl->reliablebuf, mo->z);
-
-		MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
-		MSG_WriteShort(&cl->reliablebuf, mo->netid);
-	}
-
-
-	mo->momx = mo->momy = mo->momz = 0;
-
-	P_SetMobjState (mo, mobjinfo[mo->type].deathstate);
-	if (mobjinfo[mo->type].deathstate != S_NULL)
-	{
-		// [RH] If the object is already translucent, don't change it.
-		// Otherwise, make it 66% translucent.
-		if (mo->translucency == FRACUNIT)
-			mo->translucency = TRANSLUC66;
-
-		mo->tics -= P_Random(mo) & 3;
-
-		if (mo->tics < 1)
-			mo->tics = 1;
-
-		mo->flags &= ~MF_MISSILE;
-
-		if (mo->info->deathsound)
-			S_Sound (mo, CHAN_VOICE, mo->info->deathsound, 1, ATTN_NORM);
-
-		mo->effects = 0;		// [RH]
-	}
-}
-
-//
 // P_MobjThinker
 //
 void AActor::RunThink ()

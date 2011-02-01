@@ -4329,6 +4329,28 @@ void SV_SendDestroyActor(AActor *mo)
 		ServerNetID.ReleaseNetID( mo->netid );
 }
 
+// Missile exploded so tell clients about it
+void SV_ExplodeMissile(AActor *mo)
+{
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		client_t *cl = &clients[i];
+
+		if(!SV_IsPlayerAllowedToSee(players[i], mo))
+			continue;
+
+		MSG_WriteMarker (&cl->reliablebuf, svc_movemobj);
+		MSG_WriteShort (&cl->reliablebuf, mo->netid);
+		MSG_WriteByte (&cl->reliablebuf, mo->rndindex);
+		MSG_WriteLong (&cl->reliablebuf, mo->x);
+		MSG_WriteLong (&cl->reliablebuf, mo->y);
+		MSG_WriteLong (&cl->reliablebuf, mo->z);
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_explodemissile);
+		MSG_WriteShort(&cl->reliablebuf, mo->netid);
+	}
+}
+
 VERSION_CONTROL (sv_main_cpp, "$Id$")
 
 

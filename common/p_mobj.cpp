@@ -47,6 +47,7 @@ extern fixed_t attackrange;
 void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
+void SV_ExplodeMissile(AActor *);
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn)
@@ -1218,6 +1219,40 @@ void P_RespawnSpecials (void)
 	iquetail = (iquetail+1)&(ITEMQUESIZE-1);
 
 	SV_SpawnMobj(mo);
+}
+
+
+//
+// P_ExplodeMissile
+//
+void P_ExplodeMissile (AActor* mo)
+{
+	SV_ExplodeMissile(mo);
+	
+	mo->momx = mo->momy = mo->momz = 0;
+
+	P_SetMobjState (mo, mobjinfo[mo->type].deathstate);
+	if (mobjinfo[mo->type].deathstate != S_NULL)
+	{
+		// [RH] If the object is already translucent, don't change it.
+		// Otherwise, make it 66% translucent.
+		//if (mo->translucency == FRACUNIT)
+		//	mo->translucency = TRANSLUC66;
+
+		mo->translucency = FRACUNIT;
+
+		mo->tics -= P_Random(mo) & 3;
+
+		if (mo->tics < 1)
+			mo->tics = 1;
+
+		mo->flags &= ~MF_MISSILE;
+
+		if (mo->info->deathsound)
+			S_Sound (mo, CHAN_VOICE, mo->info->deathsound, 1, ATTN_NORM);
+
+		mo->effects = 0;		// [RH]
+	}
 }
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")

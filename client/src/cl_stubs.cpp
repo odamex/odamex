@@ -48,6 +48,7 @@ void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who) {}
 void SV_UpdateFrags(player_t &player) {}
 void SV_ActorTarget(AActor *actor) {}
 void SV_SendDestroyActor(AActor *mo) {}
+void SV_ExplodeMissile(AActor *mo) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")
 
