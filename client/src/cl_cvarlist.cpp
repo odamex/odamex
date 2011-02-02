@@ -237,8 +237,8 @@ CVAR_FUNC_DECL (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (hud_crosshair, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method
 CVAR (r_columnmethod, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
-// Detail level?
-CVAR_FUNC_DECL (r_detail, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Detail level (affects performance)
+CVAR_FUNC_DECL (r_detail, "2", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Disables all texturing of walls
 CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
 // Draw player sprites

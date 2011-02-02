@@ -1126,7 +1126,7 @@ void R_RenderPlayerView (player_t *player)
 	R_DrawMasked ();
 
 	// [RH] Apply detail mode doubling
-	//R_DetailDouble ();
+	R_DetailDouble ();
 }
 
 //
