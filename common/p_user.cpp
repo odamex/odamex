@@ -325,12 +325,12 @@ void P_MovePlayer (player_t *player)
 		{
 			P_SetMobjState (player->mo, S_PLAY_RUN1); // denis - fixme - this function might destoy player->mo without setting it to 0
 		}
-	}
 
-	if (player->cheats & CF_REVERTPLEASE)
-	{
-		player->cheats &= ~CF_REVERTPLEASE;
-		player->camera = player->mo;
+		if (player->cheats & CF_REVERTPLEASE)
+		{
+			player->cheats &= ~CF_REVERTPLEASE;
+			player->camera = player->mo;
+		}		
 	}
 }
 

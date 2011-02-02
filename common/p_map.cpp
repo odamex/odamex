@@ -84,6 +84,7 @@ msecnode_t* sector_list = NULL;		// phares 3/16/98
 
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
+EXTERN_CVAR (co_boomlinecheck)
 
 //
 // TELEPORT MOVE
@@ -1901,14 +1902,15 @@ void P_UseLines (player_t *player)
 	y2 = y1 + (USERANGE>>FRACBITS)*finesine[angle];
 
 	// old code:
-	//
-	// P_PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse );
-	//
-	// This added test makes the "oof" sound work on 2s lines -- killough:
-
-	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse))
-		if (!P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse))
-			UV_SoundAvoidPlayer (usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+	if (!co_boomlinecheck)
+		P_PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse );
+	else {
+		// This added test makes the "oof" sound work on 2s lines -- killough:
+		// [ML] It also apparently allows additional silent bfg tricks not present in vanilla...
+		if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse))
+			if (!P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse))
+				UV_SoundAvoidPlayer (usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+	}
 }
 
 //

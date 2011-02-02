@@ -109,6 +109,7 @@ EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
+EXTERN_CVAR (co_boomlinecheck)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -420,6 +421,7 @@ static menuitem_t CompatItems[] = {
 	{ bricktext ,   "Enhanced Interaction"                  , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
 	{ discrete  ,	"Items drop off ledges"                 , {&co_allowdropoff},	{2.0},      {0.0},	    {0.0},      {OnOff} },
 	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },	
+	{ discrete  ,	"BOOM Use Line Extra Checks"    		, {&co_boomlinecheck},{2.0},      {0.0},	    {0.0},      {OnOff} },		
  };
 
 menu_t CompatMenu = {
