@@ -241,10 +241,15 @@ void P_LineOpening (const line_t *linedef)
 
 	front = linedef->frontsector;
 	back = linedef->backsector;
-
-	opentop = (front->ceilingheight < back->ceilingheight) ?
-		front->ceilingheight :
-		back->ceilingheight;
+	
+	if (front && !back)
+		opentop = front->ceilingheight;
+	else if (!front && back)
+		opentop = back->ceilingheight;
+	else 
+		opentop = (front->ceilingheight < back->ceilingheight) ?
+			front->ceilingheight :
+			back->ceilingheight;
 
 	if (front->floorheight > back->floorheight)
 	{
