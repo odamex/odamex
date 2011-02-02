@@ -252,7 +252,6 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
-					<Add option="/debug" />
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />

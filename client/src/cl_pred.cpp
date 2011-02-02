@@ -50,35 +50,48 @@ byte    cl_waterlevel[MAXSAVETICS];
 
 bool predicting;
 
-std::vector <plat_pred_t> real_plats;
+TArray <plat_pred_t> real_plats;
 
 //
 // CL_ResetSectors
 //
 void CL_ResetSectors (void)
 {
-	for(size_t i = 0; i < real_plats.size(); i++)
+	for(size_t i = 0; i < real_plats.Size(); i++)
 	{
 		plat_pred_t *pred = &real_plats[i];
 		sector_t *sec = &sectors[pred->secnum];
 
 		if(!sec->floordata)
 		{
-			if(real_plats.erase(real_plats.begin() + i) == real_plats.end())
-				break;
-			
+			real_plats.Pop(real_plats[i]);
+            
+            if (!real_plats.Size())
+                break;
+                
 			continue;
 		}
 
 		if(sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat)))
 		{
-			DPlat *plat = (DPlat *)sec->floordata;
-			sec->floorheight = pred->floorheight;
-			plat->SetState(pred->state, pred->count);
-		}
-		else if(sec->floordata && sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor)))
-		{
-			sec->floorheight = pred->floorheight;
+			DPlat *Plat = (DPlat *)sec->floordata;
+            
+            
+            sec->floorheight = pred->floorheight;
+            sec->ceilingheight = pred->ceilingheight;
+            P_ChangeSector(sec, false);
+	
+            Plat->m_Speed = pred->m_Speed;
+            Plat->m_Low = pred->m_Low;
+            Plat->m_High = pred->m_High;
+            Plat->m_Wait = pred->m_Wait;
+            Plat->m_Count = pred->m_Count;
+            Plat->m_Status = (DPlat::EPlatState)pred->m_Status;
+            Plat->m_OldStatus = (DPlat::EPlatState)pred->m_OldStatus;
+            Plat->m_Crush = pred->m_Crush;
+            Plat->m_Tag = pred->m_Tag;
+            Plat->m_Type = (DPlat::EPlatType)pred->m_Type;
+            Plat->m_PostWait = pred->m_PostWait;
 		}
 	}
 }
@@ -88,17 +101,16 @@ void CL_ResetSectors (void)
 //
 void CL_PredictSectors (int predtic)
 {
-	for(size_t i = 0; i < real_plats.size(); i++)
+	for(size_t i = 0; i < real_plats.Size(); i++)
 	{
 		plat_pred_t *pred = &real_plats[i];
 		sector_t *sec = &sectors[pred->secnum];
 
 		if(pred->tic < predtic)
 		{
-			if(sec->floordata && (sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat))
-				|| sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor))))
-			{
-				sec->floordata->RunThink();
+			if(sec->floordata && sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat)))
+			{                
+                sec->floordata->RunThink();
 			}
 		}
 	}
@@ -201,7 +213,7 @@ void CL_PredictPlayers (int predtic)
 }
 
 //
-// CL_PredicMove
+// CL_PredictMove
 //
 void CL_PredictMove (void)
 {
@@ -212,6 +224,10 @@ void CL_PredictMove (void)
 
 	if (!p->tic || !p->mo)
 		return;
+
+    #ifdef _PRED_DBG
+    fixed_t origx, origy, origz;
+    #endif
 
 	// Save player angle, viewheight,deltaviewheight and jumpTics.
 	// Will use it later to predict movements
@@ -225,6 +241,13 @@ void CL_PredictMove (void)
 	cl_reactiontime[buf] = p->mo->reactiontime;
     cl_waterlevel[buf] = p->mo->waterlevel;
 
+    #ifdef _PRED_DBG
+    // Backup original position
+	origx = p->mo->x;
+	origy = p->mo->y;
+	origz = p->mo->z;
+    #endif
+    
 	// Disable sounds, etc, during prediction
 	predicting = true;
 
@@ -238,18 +261,29 @@ void CL_PredictMove (void)
 		predtic = 0;
 
 	// Predict each tic
-	while(predtic < gametic)
+	while(++predtic < gametic)
 	{
 		CL_PredictPlayers(predtic);
 		CL_PredictSectors(predtic);
-
-		++predtic;
 	}
 
 	predicting = false;
 
 	CL_PredictPlayers(predtic);
-	CL_PredictSectors(predtic);
+	// [Russell] - I don't think we need to call this as DThinker::RunThinkers()
+	// will already run the platform thinkers after prediction
+    //CL_PredictSectors(predtic);
+    
+    #ifdef _PRED_DBG
+	if ((origx == p->mo->x) && (origy == p->mo->y) && (origz == p->mo->z))
+    {
+        Printf(PRINT_HIGH, "%d tics predicted\n", predtic);
+    }
+    else
+    {
+        Printf(PRINT_HIGH, "%d tics failed\n", predtic);
+    }
+    #endif
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")

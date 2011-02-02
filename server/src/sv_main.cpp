@@ -1493,11 +1493,29 @@ void SV_UpdateSectors(client_t* cl)
 // SV_UpdateMovingSectors
 // Update doors, floors, ceilings etc... that are actively moving
 //
-void SV_UpdateMovingSectors(client_t* cl)
+void SV_UpdateMovingSectors(player_t &pl)
 {
-	for (int s=0; s<numsectors; s++)
+    //const msecnode_t *m;
+    //int s;
+
+    client_t *cl = &pl.client;
+    AActor *mo = pl.mo;
+    
+    // [Russell] - I disabled sending sectors player is standing on because it
+    // does not sync up if an elevator has a sector tag for 2 or more sectors
+    // (udm3.wad map31 for example)
+    
+    for (int s=0; s<numsectors; s++)
+	// [Russell] - Reenable to send sectors player is standing on
+	//for (m = mo->touching_sectorlist; m; m = m->m_tnext)
 	{
 		sector_t* sec = &sectors[s];
+		// [Russell] - Reenable to send sectors player is standing on
+		//sector_t* sec = m->m_sector;
+
+        // Cheap (fast) way of getting a sector index
+        // [Russell] - Reenable to send sectors player is standing on
+        //s = sec - sectors;
 
 		if(sec->floordata)
 		{
@@ -1507,25 +1525,22 @@ void SV_UpdateMovingSectors(client_t* cl)
 				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
 				MSG_WriteLong (&cl->netbuf, sec->floorheight);
-				MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
+                MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
+                MSG_WriteByte (&cl->netbuf, 0);
 
-				DPlat *plat = (DPlat *)sec->floordata;
-				byte state; int count;
-				plat->GetState(state, count);
+				DPlat *Plat = (DPlat *)sec->floordata;
 
-				MSG_WriteByte (&cl->netbuf, state);
-				MSG_WriteLong (&cl->netbuf, count);
-			}
-			else if(sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor)))
-			{
-				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
-				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
-				MSG_WriteShort (&cl->netbuf, s);
-				MSG_WriteLong (&cl->netbuf, sec->floorheight);
-				MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
-
-				MSG_WriteByte (&cl->netbuf, 0);
-				MSG_WriteLong (&cl->netbuf, 0);
+                MSG_WriteLong(&cl->netbuf, Plat->m_Speed);
+                MSG_WriteLong(&cl->netbuf, Plat->m_Low);
+                MSG_WriteLong(&cl->netbuf, Plat->m_High);
+                MSG_WriteLong(&cl->netbuf, Plat->m_Wait);
+                MSG_WriteLong(&cl->netbuf, Plat->m_Count);
+                MSG_WriteLong(&cl->netbuf, Plat->m_Status);
+                MSG_WriteLong(&cl->netbuf, Plat->m_OldStatus);
+                MSG_WriteBool(&cl->netbuf, Plat->m_Crush);
+                MSG_WriteLong(&cl->netbuf, Plat->m_Tag);
+                MSG_WriteLong(&cl->netbuf, Plat->m_Type);
+                MSG_WriteBool(&cl->netbuf, Plat->m_PostWait);
 			}
 		}
 	}
@@ -3190,8 +3205,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 
     MSG_WriteByte (&cl->netbuf, mo->waterlevel);
 
-	SV_UpdateMovingSectors(cl); // denis - fixme - todo - only info about the sector player is standing on info should be sent. note that this is not player->mo->subsector->sector
-
+    SV_UpdateMovingSectors(player); // denis - fixme - todo - only info about the sector player is standing on info should be sent. note that this is not player->mo->subsector->sector
 //	MSG_WriteShort (&cl->netbuf, mo->momx >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momy >> FRACBITS);
 //	MSG_WriteShort (&cl->netbuf, mo->momz >> FRACBITS);
