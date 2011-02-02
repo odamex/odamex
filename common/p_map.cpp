@@ -368,13 +368,11 @@ BOOL PIT_CheckLine (line_t *ld)
 	if (!ld->backsector)
 		return false;		// one sided line
 
-    if (!(tmthing->flags & MF_MISSILE) )
+    if (!(tmthing->flags & MF_MISSILE) || (ld->flags & ML_BLOCKEVERYTHING))
     {
-		if ( ld->flags & ML_BLOCKING )
-			return false;	// explicitly blocking everything
-
-		if ( !tmthing->player && ld->flags & ML_BLOCKMONSTERS )
-			return false;	// block monsters only
+		if ((ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING)) || 	// explicitly blocking everything
+			(!tmthing->player && ld->flags & ML_BLOCKMONSTERS))	// block monsters only
+				return false;
     }
 
 	// set openrange, opentop, openbottom
@@ -1449,7 +1447,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 		frac = in->frac - FixedDiv (4*FRACUNIT,attackrange);
 		z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
-		if (!(li->flags & ML_TWOSIDED))
+		if (!(li->flags & ML_TWOSIDED) || (li->flags & ML_BLOCKEVERYTHING))
 			goto hitline;
 
 		// crosses a two sided line
@@ -1866,7 +1864,7 @@ BOOL PTR_NoWayTraverse (intercept_t *in)
 	line_t *ld = in->d.line;					// This linedef
 
 	return ld->special || !(					// Ignore specials
-		ld->flags & (ML_BLOCKING) || (			// Always blocking
+		ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING) || (		// Always blocking
 		P_LineOpening(ld),						// Find openings
 		openrange <= 0 ||						// No opening
 		openbottom > usething->z+24*FRACUNIT ||	// Too high it blocks
