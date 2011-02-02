@@ -309,7 +309,7 @@ void P_MovePlayer (player_t *player)
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
 
-		if(mo->onground || (mo->flags2 & MF2_FLY))
+		if(mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)
 		{
 			if (forwardmove)
 			{
