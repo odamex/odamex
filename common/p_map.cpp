@@ -921,11 +921,11 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
     {
          // solid wall or thing        
          if (!BlockingMobj)
-             goto pushline;
+            goto pushline;
          else
          {
              if (BlockingMobj->player || !thing->player)
-                 goto pushline;
+                 return false;
                  
              else if (BlockingMobj->z+BlockingMobj->height-thing->z 
                  > 24*FRACUNIT 
@@ -934,7 +934,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
                  || (tmceilingz-(BlockingMobj->z+BlockingMobj->height) 
                  < thing->height))
              {
-                 goto pushline;
+                 return false;
             }
         }
         if (!(tmthing->flags2 & MF2_PASSMOBJ))
@@ -944,14 +944,14 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
 	{
 		if (tmceilingz - tmfloorz < thing->height)
-			goto pushline;		// doesn't fit
+			return false;		// doesn't fit
 
 		floatok = true;
 
 		if (!(thing->flags & MF_TELEPORT)
 			&& tmceilingz - thing->z < thing->height && !(thing->flags2 & MF2_FLY))
 		{
-			goto pushline;		// mobj must lower itself to fit
+			return false;		// mobj must lower itself to fit
 		}
 		
 		if (thing->flags2 & MF2_FLY)
@@ -961,12 +961,12 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 			if (thing->z+thing->height > tmceilingz)
 			{
 				thing->momz = -8*FRACUNIT;
-				goto pushline;
+				return false;
 			}
 			else if (thing->z < tmfloorz && tmfloorz-tmdropoffz > 24*FRACUNIT)
 			{
 				thing->momz = 8*FRACUNIT;
-				goto pushline;
+				return false;
 			}
 		}
 				
