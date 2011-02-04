@@ -1225,6 +1225,7 @@ P_UseSpecialLine
 	if(thing)
 	{
 		if (!(GET_SPAC(line->flags) == SPAC_USE) &&
+			!(GET_SPAC(line->flags) == SPAC_PUSH) &&
             !(GET_SPAC(line->flags) == SPAC_USETHROUGH))
 			return false;
 
@@ -1257,7 +1258,7 @@ P_UseSpecialLine
 		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 		OnActivatedLine(line, thing, side, 1);
 
-		if(serverside)
+		if(serverside && !(GET_SPAC(line->flags) == SPAC_PUSH))
 		{
 			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
 			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);

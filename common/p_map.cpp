@@ -67,6 +67,7 @@ sector_t*		tmsector;
 // keep track of the line that lowers the ceiling,
 // so missiles don't explode against sky hack walls
 line_t* 		ceilingline;
+line_t			*BlockingLine;
 
 // keep track of special lines as they are hit,
 // but don't process them until the move is proven valid
@@ -306,6 +307,21 @@ int P_GetMoveFactor (const AActor *mo, int *frictionp)
 // longer and probably really isn't worth the effort.
 //
 
+//
+// CheckForPushSpecial
+//
+static void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
+{
+	if (line->special)
+	{
+		if (mobj->flags2 & MF2_PUSHWALL)
+		{
+			P_UseSpecialLine(mobj, line, side);
+		}
+	}
+}
+
+
 static // killough 3/26/98: make static
 BOOL PIT_CrossLine (line_t* ld)
 {
@@ -364,15 +380,21 @@ BOOL PIT_CheckLine (line_t *ld)
     // NOTE: specials are NOT sorted by order,
     // so two special lines that are only 8 pixels apart
     // could be crossed in either order.
-
+	
 	if (!ld->backsector)
-		return false;		// one sided line
+	{ // One sided line
+		BlockingLine = ld;
+		CheckForPushSpecial (ld, 0, tmthing);
+		return false;
+	}
 
     if (!(tmthing->flags & MF_MISSILE) || (ld->flags & ML_BLOCKEVERYTHING))
     {
 		if ((ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING)) || 	// explicitly blocking everything
-			(!tmthing->player && ld->flags & ML_BLOCKMONSTERS))	// block monsters only
+			(!tmthing->player && ld->flags & ML_BLOCKMONSTERS)) {	// block monsters only
+				CheckForPushSpecial (ld, 0, tmthing);
 				return false;
+		}
     }
 
 	// set openrange, opentop, openbottom
@@ -383,10 +405,14 @@ BOOL PIT_CheckLine (line_t *ld)
 	{
 		tmceilingz = opentop;
 		ceilingline = ld;
+		BlockingLine = ld;
 	}
 
 	if (openbottom > tmfloorz)
+	{
 		tmfloorz = openbottom;
+		BlockingLine = ld;		
+	}
 
 	if (lowfloor < tmdropoffz)
 		tmdropoffz = lowfloor;
@@ -693,7 +719,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
 	newsubsec = R_PointInSubsector (x,y);
-	ceilingline = NULL;
+	ceilingline = BlockingLine = NULL;
 
 	if(!newsubsec)
 		return false;
@@ -874,6 +900,9 @@ void P_FakeZMovement(AActor *mo)
 	}
 }
 
+
+
+
 //
 // P_TryMove
 // Attempt to move to a new position,
@@ -892,11 +921,11 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
     {
          // solid wall or thing        
          if (!BlockingMobj)
-             return false;
+             goto pushline;
          else
          {
              if (BlockingMobj->player || !thing->player)
-                 return false;
+                 goto pushline;
                  
              else if (BlockingMobj->z+BlockingMobj->height-thing->z 
                  > 24*FRACUNIT 
@@ -905,7 +934,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
                  || (tmceilingz-(BlockingMobj->z+BlockingMobj->height) 
                  < thing->height))
              {
-                 return false;
+                 goto pushline;
             }
         }
         if (!(tmthing->flags2 & MF2_PASSMOBJ))
@@ -915,14 +944,14 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
 	{
 		if (tmceilingz - tmfloorz < thing->height)
-			return false;		// doesn't fit
+			goto pushline;		// doesn't fit
 
 		floatok = true;
 
 		if (!(thing->flags & MF_TELEPORT)
 			&& tmceilingz - thing->z < thing->height && !(thing->flags2 & MF2_FLY))
 		{
-			return false;		// mobj must lower itself to fit
+			goto pushline;		// mobj must lower itself to fit
 		}
 		
 		if (thing->flags2 & MF2_FLY)
@@ -932,19 +961,19 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 			if (thing->z+thing->height > tmceilingz)
 			{
 				thing->momz = -8*FRACUNIT;
-				return false;
+				goto pushline;
 			}
 			else if (thing->z < tmfloorz && tmfloorz-tmdropoffz > 24*FRACUNIT)
 			{
 				thing->momz = 8*FRACUNIT;
-				return false;
+				goto pushline;
 			}
 		}
 				
 		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT)
 		{
 			// too big a step up
-			return false;
+			goto pushline;
 		}
 		
 		// killough 3/15/98: Allow certain objects to drop off
@@ -985,6 +1014,23 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 	}
 
 	return true;
+
+pushline:
+	if(!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
+	{
+		int numSpecHitTemp;
+
+		numSpecHitTemp = numspechit;
+		while (numSpecHitTemp > 0)
+		{
+			numSpecHitTemp--;
+			// see which lines were pushed
+			ld = spechit[numSpecHitTemp];
+			side = P_PointOnLineSide (thing->x, thing->y, ld);
+			CheckForPushSpecial (ld, side, thing);
+		}
+	}
+	return false;
 }
 
 
