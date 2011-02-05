@@ -166,6 +166,7 @@ void	P_UpdateSpecials (void);
 void    P_CrossSpecialLine (int linenum, int side, AActor*	thing, bool FromServer = false);
 void    P_ShootSpecialLine (AActor* thing, line_t*	line, bool FromServer = false);
 bool    P_UseSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
+bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
 
 void    P_PlayerInSpecialSector (player_t *player);
 

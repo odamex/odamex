@@ -1270,6 +1270,69 @@ P_UseSpecialLine
 
 
 //
+// P_PushSpecialLine
+// Called when a thing pushes a special line, only in advanced map format
+// Only the front sides of lines are pushable.
+//
+bool
+P_PushSpecialLine
+( AActor*	thing,
+  line_t*	line,
+  int		side,
+  bool      FromServer)
+{
+	// Err...
+	// Use the back sides of VERY SPECIAL lines...
+	if (side)
+		return false;
+
+	if(thing)
+	{
+		if (GET_SPAC(line->flags) != SPAC_PUSH)
+			return false;
+
+		// Switches that other things can activate.
+		if (!thing->player)
+		{
+			// not for monsters?
+			if (!(line->flags & ML_MONSTERSCANACTIVATE))
+				return false;
+
+			// never open secret doors
+			if (line->flags & ML_SECRET)
+				return false;
+		}
+		else
+		{
+			// spectators and dead players can't push walls
+			if(thing->player->spectator ||
+                           thing->player->playerstate != PST_LIVE)
+				return false;
+		}
+	}
+	
+    TeleportSide = side;
+
+	if(LineSpecials[line->special] (line, thing, line->args[0],
+					line->args[1], line->args[2],
+					line->args[3], line->args[4]))
+	{
+		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
+		OnActivatedLine(line, thing, side, 1);
+
+		if(serverside)
+		{
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		}
+	}
+
+    return true;
+}
+
+
+
+//
 // P_PlayerInSpecialSector
 // Called every tic frame
 //	that the player origin is in a special sector

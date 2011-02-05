@@ -56,6 +56,7 @@ static int		ls_y;	// Lost Soul position for Lost Soul checks		// phares
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
 BOOL 			floatok;
+extern bool 	HasBehavior;	// ZDoom in Hexen Format
 
 fixed_t 		tmfloorz;
 fixed_t 		tmceilingz;
@@ -316,7 +317,7 @@ static void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
 	{
 		if (mobj->flags2 & MF2_PUSHWALL)
 		{
-			P_UseSpecialLine(mobj, line, side);
+			P_PushSpecialLine(mobj, line, side);
 		}
 	}
 }
@@ -925,7 +926,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
          else
          {
              if (BlockingMobj->player || !thing->player)
-                 return false;
+                 goto pushline;
                  
              else if (BlockingMobj->z+BlockingMobj->height-thing->z 
                  > 24*FRACUNIT 
@@ -934,7 +935,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
                  || (tmceilingz-(BlockingMobj->z+BlockingMobj->height) 
                  < thing->height))
              {
-                 return false;
+                 goto pushline;
             }
         }
         if (!(tmthing->flags2 & MF2_PASSMOBJ))
@@ -944,14 +945,14 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
 	{
 		if (tmceilingz - tmfloorz < thing->height)
-			return false;		// doesn't fit
+			goto pushline;		// doesn't fit
 
 		floatok = true;
 
 		if (!(thing->flags & MF_TELEPORT)
 			&& tmceilingz - thing->z < thing->height && !(thing->flags2 & MF2_FLY))
 		{
-			return false;		// mobj must lower itself to fit
+			goto pushline;		// mobj must lower itself to fit
 		}
 		
 		if (thing->flags2 & MF2_FLY)
@@ -961,12 +962,12 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 			if (thing->z+thing->height > tmceilingz)
 			{
 				thing->momz = -8*FRACUNIT;
-				return false;
+				goto pushline;
 			}
 			else if (thing->z < tmfloorz && tmfloorz-tmdropoffz > 24*FRACUNIT)
 			{
 				thing->momz = 8*FRACUNIT;
-				return false;
+				goto pushline;
 			}
 		}
 				
@@ -1016,7 +1017,9 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 	return true;
 
 pushline:
-	if(!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
+	if (!HasBehavior)
+		return false;
+	else if(!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
 	{
 		int numSpecHitTemp;
 
