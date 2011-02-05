@@ -20,7 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <mmsystem.h>
@@ -87,7 +87,7 @@ int curpause = 0;
 EXTERN_CVAR (snd_musicvolume)
 
 // [Russell] - From prboom+
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 void I_midiOutSetVolumes(int volume)
 {
   MMRESULT result;
