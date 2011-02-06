@@ -888,7 +888,21 @@ void P_FakeZMovement(AActor *mo)
 			mo->momz = -mo->momz;
 		}
 	}
-
+	else if(mo->flags2 & MF2_LOGRAV)
+	{
+		if (mo->momz == 0)
+			mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -0.2);
+		else
+			mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity * 0.1);
+	}
+	else if (! (mo->flags & MF_NOGRAVITY) )
+	{
+		if (mo->momz == 0)
+			mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -2);
+		else
+			mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity);
+	}
+	
 	if (mo->z + mo->height > mo->ceilingz)
 	{		// hit the ceiling
 		if (mo->momz > 0)

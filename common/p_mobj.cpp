@@ -314,6 +314,7 @@ void AActor::Destroy ()
 void AActor::RunThink ()
 {
     AActor *onmo;
+    fixed_t minmom;
     
 	if(!subsector)
 		return;
@@ -390,8 +391,11 @@ void AActor::RunThink ()
 			{
 			    if (player)
 				{
-					if (momz < -GRAVITY*8 && !(flags2&MF2_FLY))
+					minmom = (fixed_t)(GRAVITY*subsector->sector->gravity*-8);
+					
+					if (momz < minmom && !(flags2&MF2_FLY))
 					{
+						Printf (PRINT_HIGH,"minmom: %d, momz: %d",minmom,momz);
 						PlayerLandedOnThing (this, onmo);
 					}
 					
@@ -817,8 +821,10 @@ void P_ZMovement(AActor *mo)
          
          if (mo->player)
          {
+			 fixed_t minmom = (fixed_t)(GRAVITY*mo->subsector->sector->gravity*-8);
+			 
              mo->player->jumpTics = 7;	// delay any jumping for a short while
-             if (mo->momz < -GRAVITY*8 && !(mo->player->spectator))
+             if (mo->momz < minmom && !(mo->player->spectator) && !(mo->flags2 & MF2_FLY))
              {
                 // Squat down.
                 // Decrease viewheight for a moment
@@ -851,12 +857,40 @@ void P_ZMovement(AActor *mo)
          return;
       }
    }
-   else if (! (mo->flags & MF_NOGRAVITY) )
+   else
    {
-      if (mo->momz == 0)
-         mo->momz = -GRAVITY*2;
-      else
-         mo->momz -= GRAVITY;
+ 		fixed_t startmomz = mo->momz;
+
+		if (!mo->waterlevel || (mo->player &&
+			!(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
+		{
+			if (mo->flags2 & MF2_LOGRAV)
+			{
+				if (mo->momz == 0)
+					mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -0.2);
+				else
+					mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity * 0.1);
+			}
+			else if (! (mo->flags & MF_NOGRAVITY) )
+			{
+				if (mo->momz == 0)
+					mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -2);
+				else
+					mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity);
+			}
+			if (mo->waterlevel > 1)
+			{
+				if (mo->momz < -WATER_SINK_SPEED)
+				{
+					mo->momz = (startmomz < -WATER_SINK_SPEED) ? startmomz : -WATER_SINK_SPEED;
+				}
+				else
+				{
+					mo->momz = startmomz + ((mo->momz - startmomz) >>
+						(mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
+				}
+			}
+		}
    }
 
    if (mo->z + mo->height > mo->ceilingz)
