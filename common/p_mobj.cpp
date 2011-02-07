@@ -776,7 +776,10 @@ void P_ZMovement(AActor *mo)
 		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
 		mo->momz = FixedMul (mo->momz, FRICTION_FLY);
 	}
-
+	if (mo->waterlevel && !(mo->flags & MF_NOGRAVITY))
+	{
+		mo->momz = FixedMul (mo->momz, mo->subsector->sector->friction);
+	}
     // clip movement
    if (mo->z <= mo->floorz)
    {
