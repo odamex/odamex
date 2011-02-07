@@ -43,6 +43,7 @@
 
 extern bool predicting;
 extern fixed_t attackrange;
+extern bool HasBehavior;
 
 void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
@@ -922,7 +923,7 @@ void P_ZMovement(AActor *mo)
 
 		if (mo->flags & MF_MISSILE && !(mo->flags & MF_NOCLIP))
 		{
-			if (mo->subsector->sector->ceilingpic == skyflatnum)
+			if ((HasBehavior && mo->subsector->sector->ceilingpic == skyflatnum))
 			{
 				mo->Destroy ();
 				return;
