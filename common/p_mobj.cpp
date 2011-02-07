@@ -776,10 +776,12 @@ void P_ZMovement(AActor *mo)
 		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
 		mo->momz = FixedMul (mo->momz, FRICTION_FLY);
 	}
+	
 	if (mo->waterlevel && !(mo->flags & MF_NOGRAVITY))
 	{
 		mo->momz = FixedMul (mo->momz, mo->subsector->sector->friction);
 	}
+	
     // clip movement
    if (mo->z <= mo->floorz)
    {
@@ -898,25 +900,37 @@ void P_ZMovement(AActor *mo)
 
    if (mo->z + mo->height > mo->ceilingz)
    {
-	// hit the ceiling
-      if (mo->momz > 0)
-         mo->momz = 0;
-      {
-         mo->z = mo->ceilingz - mo->height;
-      }
+		// hit the ceiling
+		mo->z = mo->ceilingz - mo->height;
+		if (mo->flags2 & MF2_FLOORBOUNCE)
+		{
+			// reverse momentum here for ceiling bounce
+			mo->momz = FixedMul (mo->momz, (fixed_t)(-0.75*FRACUNIT));
+			if (mo->info->seesound)
+			{
+				S_Sound (mo, CHAN_BODY, mo->info->seesound, 1, ATTN_IDLE);
+			}
+			return;
+		}		
+		if (mo->momz > 0)
+			mo->momz = 0;
 
-      if (mo->flags & MF_SKULLFLY)
-      {	// the skull slammed into something
-         mo->momz = -mo->momz;
-      }
+		if (mo->flags & MF_SKULLFLY)
+		{	// the skull slammed into something
+			mo->momz = -mo->momz;
+		}
 
-      if ( (mo->flags & MF_MISSILE)
-            && !(mo->flags & MF_NOCLIP) )
-      {
-         P_ExplodeMissile (mo);
-         return;
-      }
-   }
+		if (mo->flags & MF_MISSILE && !(mo->flags & MF_NOCLIP))
+		{
+			if (mo->subsector->sector->ceilingpic == skyflatnum)
+			{
+				mo->Destroy ();
+				return;
+			}			
+			P_ExplodeMissile (mo);
+			return;
+		}
+	}
 }
 
 //
