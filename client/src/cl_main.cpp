@@ -1658,6 +1658,12 @@ player_t* player = &players[consoleplayer];
 	 weaponinfo[player->readyweapon].downstate);
 	 }
 */
+void CL_ChangeWeapon (void)
+{
+	player_t *p = &consoleplayer();
+	p->pendingweapon = (weapontype_t)MSG_ReadByte();
+}
+
 
 
 //
@@ -2450,6 +2456,7 @@ void CL_InitCommands(void)
 	cmds[svc_fireshotgun]		= &CL_FireShotgun;
 	cmds[svc_firessg]			= &CL_FireSSG;
 	cmds[svc_firechaingun]		= &CL_FireChainGun;
+	cmds[svc_changeweapon]		= &CL_ChangeWeapon;
 	cmds[svc_connectclient]		= &CL_ConnectClient;
 	cmds[svc_disconnectclient]	= &CL_DisconnectClient;
 	cmds[svc_activateline]		= &CL_ActivateLine;

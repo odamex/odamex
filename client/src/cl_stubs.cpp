@@ -50,6 +50,7 @@ void SV_ActorTarget(AActor *actor) {}
 void SV_SendDestroyActor(AActor *mo) {}
 void SV_ExplodeMissile(AActor *mo) {}
 void SV_PreservePlayer(player_t &player) {}
+void MSG_WriteMarker (buf_t *b, svc_t c) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")
 

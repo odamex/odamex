@@ -29,6 +29,7 @@
 #include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
+#include "i_net.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -468,6 +469,8 @@ void P_PlayerThink (player_t *player)
 	//		it a warning if the player trying to spawn is a bot
 	if (!player->mo)
 		I_Error ("No player %d start\n", player->id);
+		
+	client_t *cl = &player->client;
 
 	// fixme: do this in the cheat code
 	if (player->cheats & CF_NOCLIP)
@@ -549,6 +552,12 @@ void P_PlayerThink (player_t *player)
 			|| (gamemode != shareware) )
 			{
 				player->pendingweapon = newweapon;
+						
+				if (serverside)
+				{
+					MSG_WriteMarker	(&cl->reliablebuf, svc_changeweapon);
+					MSG_WriteByte (&cl->reliablebuf, (byte)player->pendingweapon);	
+				}
 			}
 		}
 	}
