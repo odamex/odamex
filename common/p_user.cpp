@@ -554,7 +554,7 @@ void P_PlayerThink (player_t *player)
 				player->pendingweapon = newweapon;
 						
 				if (serverside)
-				{
+				{	// [ML] From Zdaemon .99: use changeweapon here
 					MSG_WriteMarker	(&cl->reliablebuf, svc_changeweapon);
 					MSG_WriteByte (&cl->reliablebuf, (byte)player->pendingweapon);	
 				}

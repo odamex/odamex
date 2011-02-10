@@ -1658,6 +1658,11 @@ player_t* player = &players[consoleplayer];
 	 weaponinfo[player->readyweapon].downstate);
 	 }
 */
+
+//
+// CL_ChangeWeapon
+// [ML] From Zdaemon .99
+//
 void CL_ChangeWeapon (void)
 {
 	player_t *p = &consoleplayer();
