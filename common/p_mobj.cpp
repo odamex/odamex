@@ -396,7 +396,6 @@ void AActor::RunThink ()
 					
 					if (momz < minmom && !(flags2&MF2_FLY))
 					{
-						Printf (PRINT_HIGH,"minmom: %d, momz: %d",minmom,momz);
 						PlayerLandedOnThing (this, onmo);
 					}
 					

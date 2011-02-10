@@ -330,7 +330,7 @@ void P_MovePlayer (player_t *player)
 		{
 			player->cheats &= ~CF_REVERTPLEASE;
 			player->camera = player->mo;
-		}		
+		}
 	}
 }
 
@@ -512,7 +512,7 @@ void P_PlayerThink (player_t *player)
 	if (cmd->ucmd.buttons & BT_SPECIAL)
 		cmd->ucmd.buttons = 0;
 
-	if ((cmd->ucmd.buttons & BT_CHANGE) || cmd->ucmd.impulse >= 50)
+	if (serverside && (cmd->ucmd.buttons & BT_CHANGE) || cmd->ucmd.impulse >= 50)
 	{
 		// [RH] Support direct weapon changes
 		if (cmd->ucmd.impulse) {
