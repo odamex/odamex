@@ -515,7 +515,7 @@ void P_PlayerThink (player_t *player)
 	if (cmd->ucmd.buttons & BT_SPECIAL)
 		cmd->ucmd.buttons = 0;
 
-	if (serverside && (cmd->ucmd.buttons & BT_CHANGE) || cmd->ucmd.impulse >= 50)
+	if ((cmd->ucmd.buttons & BT_CHANGE) || cmd->ucmd.impulse >= 50)
 	{
 		// [RH] Support direct weapon changes
 		if (cmd->ucmd.impulse) {
