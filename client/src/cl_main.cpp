@@ -1148,6 +1148,8 @@ void CL_UpdateLocalPlayer(void)
 	p.real_velocity[2] = MSG_ReadLong();
 
     p.mo->waterlevel = MSG_ReadByte();
+
+	real_plats.clear();
 }
 
 void CL_ResendSvGametic(void)
@@ -1773,57 +1775,34 @@ void CL_UpdateMovingSector(void)
 {
 	int tic = MSG_ReadLong();
 	unsigned short s = (unsigned short)MSG_ReadShort();
-    fixed_t fh = MSG_ReadLong(); // floor height
-    fixed_t ch = MSG_ReadLong(); // ceiling height
-    byte Type = MSG_ReadByte();
+	unsigned long fh = MSG_ReadLong(); // floor height
+	MSG_ReadLong(); // ceiling height
+	byte state = MSG_ReadByte();
+	int count = MSG_ReadLong();
 
-	plat_pred_t pred = {s, tic, fh, ch};
-
-	switch(Type)
-	{
-	    case 0:
-	    {
-            pred.m_Speed = MSG_ReadLong();
-            pred.m_Low = MSG_ReadLong();
-            pred.m_High = MSG_ReadLong();
-            pred.m_Wait = MSG_ReadLong();
-            pred.m_Count = MSG_ReadLong();
-            pred.m_Status = MSG_ReadLong();
-            pred.m_OldStatus = MSG_ReadLong();
-            pred.m_Crush = MSG_ReadBool();
-            pred.m_Tag = MSG_ReadLong();
-            pred.m_Type = MSG_ReadLong();
-            pred.m_PostWait = MSG_ReadBool();
-	    }
-	    break;
-
-	    default:
-            return;
-	}
-	
+/*
 	if(!sectors || s >= numsectors)
 		return;
 
+	plat_pred_t pred = {s, state, count, tic, fh};
+//	sector_t *sec = &sectors[s];
 
-	sector_t *sec = &sectors[s];
-
-	if(!sec->floordata)
-		sec->floordata = new DPlat(sec);
+//	if(!sec->floordata)
+//		sec->floordata = new DMovingFloor(sec);
 
 	size_t i;
 
-	for(i = 0; i < real_plats.Size(); i++)
+	for(i = 0; i < real_plats.size(); i++)
 	{
 		if(real_plats[i].secnum == s)
 		{
 			real_plats[i] = pred;
-
 			break;
 		}
 	}
 
-	if(i == real_plats.Size())
-		real_plats.Push(pred);
+	if(i == real_plats.size())
+		real_plats.push_back(pred);*/
 }
 
 
@@ -2064,7 +2043,7 @@ void CL_LoadMap(void)
 
 	G_InitNew (mapname);
 
-	real_plats.Clear();
+	real_plats.clear();
 
 	CTF_CheckFlags(consoleplayer());
 

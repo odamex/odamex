@@ -446,6 +446,7 @@ public:
 	void SetState(byte state, int count) { m_Status = (EPlatState)state; m_Count = count; }
 	void GetState(byte &state, int &count) { state = (byte)m_Status; count = m_Count; }
 
+protected:
 	DPlat (sector_t *sector);
 
 	fixed_t 	m_Speed;
@@ -459,7 +460,6 @@ public:
 	int 		m_Tag;
 	EPlatType	m_Type;
 	bool		m_PostWait;
-protected:
 
 	void PlayPlatSound (const char *sound);
 	void Reactivate ();

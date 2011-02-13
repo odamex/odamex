@@ -45,25 +45,15 @@ extern bool predicting;
 struct plat_pred_t
 {
 	size_t secnum;
+
+	byte state;
+	int count;
 	int tic;
 
-    fixed_t floorheight;
-    fixed_t ceilingheight;
-
-	fixed_t 	m_Speed;
-	fixed_t 	m_Low;
-	fixed_t 	m_High;
-	int 		m_Wait;
-	int 		m_Count;
-	int	        m_Status;
-	int     	m_OldStatus;
-	bool 		m_Crush;
-	int 		m_Tag;
-	int     	m_Type;
-	bool		m_PostWait;
+	unsigned long floorheight;
 };
 
-extern TArray <plat_pred_t> real_plats;
+extern std::vector <plat_pred_t> real_plats;
 
 void CL_QuitNetGame(void);
 void CL_InitNetwork (void);

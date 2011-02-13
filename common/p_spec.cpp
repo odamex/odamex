@@ -1056,6 +1056,9 @@ P_CrossSpecialLine
   AActor*	thing,
   bool      FromServer)
 {
+    if (clientside && network_game && !FromServer)
+        return;
+
     line_t*	line = &lines[linenum];
 
 	if(thing)
@@ -1163,6 +1166,8 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
+    if (clientside && network_game && !FromServer)
+        return;
     
 	if(thing)
 	{
@@ -1205,6 +1210,9 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
+    if (clientside && network_game && !FromServer)
+        return false;
+    
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
