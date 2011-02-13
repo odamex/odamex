@@ -88,7 +88,10 @@ EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (co_zdoomphys)
-EXTERN_CVAR (sv_gravity)
+CVAR_FUNC_IMPL (sv_gravity)
+{
+	level.gravity = var;
+}
 
 //
 // TELEPORT MOVE
@@ -852,25 +855,23 @@ AActor *P_CheckOnmobj (AActor *thing)
 //
 void P_FakeZMovement(AActor *mo)
 {
-	int dist;
-	int delta;
 //
 // adjust height
-//
+//	
 	mo->z += mo->momz;
-	if (mo->flags&MF_FLOAT && mo->target)
-	{		// float down towards target if too close
-		if (!(mo->flags&MF_SKULLFLY) && !(mo->flags&MF_INFLOAT))
+	if ((mo->flags&MF_FLOAT) && mo->target)
+	{ // float down towards target if too close
+		if (!(mo->flags & MF_SKULLFLY) && !(mo->flags & MF_INFLOAT))
 		{
-			dist = P_AproxDistance(mo->x-mo->target->x, mo->y-mo->target->y);
-			delta = (mo->target->z+(mo->height>>1))-mo->z;
+			fixed_t dist = P_AproxDistance (mo->x - mo->target->x, mo->y - mo->target->y);
+			fixed_t delta = (mo->target->z + (mo->height>>1)) - mo->z;
 			if (delta < 0 && dist < -(delta*3))
 				mo->z -= FLOATSPEED;
 			else if (delta > 0 && dist < (delta*3))
 				mo->z += FLOATSPEED;
 		}
 	}
-	if (mo->player && mo->flags2&MF2_FLY && !(mo->z <= mo->floorz))
+	if (mo->player && mo->flags2&MF2_FLY && (mo->z > mo->floorz))
 	{
 		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
 	}
@@ -878,62 +879,14 @@ void P_FakeZMovement(AActor *mo)
 //
 // clip movement
 //
-	if(mo->z <= mo->floorz)
-	{ // Hit the floor
+	if (mo->z <= mo->floorz)
+	{ // hit the floor
 		mo->z = mo->floorz;
-		if(mo->momz < 0)
-		{
-			mo->momz = 0;
-		}
-		if(mo->flags & MF_SKULLFLY)
-		{ // The skull slammed into something
-			mo->momz = -mo->momz;
-		}
 	}
-	else if(mo->flags2 & MF2_LOGRAV)
-	{
-		if (co_zdoomphys)
-		{
-			if (mo->momz == 0)
-				mo->momz = (fixed_t)(sv_gravity * mo->subsector->sector->gravity * -20.48);
-			else
-				mo->momz -= (fixed_t)(sv_gravity * mo->subsector->sector->gravity * 10.24);
-		}
-		else
-		{
-			if (mo->momz == 0)
-				mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -0.2);
-			else
-				mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity * 0.1);	
-		}
-	}
-	else if (!(mo->flags & MF_NOGRAVITY))
-	{
-		if (co_zdoomphys)
-		{
-			if (mo->momz == 0)
-				mo->momz = (fixed_t)(sv_gravity * mo->subsector->sector->gravity * -163.84);
-			else
-				mo->momz -= (fixed_t)(sv_gravity * mo->subsector->sector->gravity * 81.92);
-		}
-		else
-		{
-			if (mo->momz == 0)
-				mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -2);
-			else
-				mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity);
-		}
-	}
-	
+
 	if (mo->z + mo->height > mo->ceilingz)
-	{		// hit the ceiling
-		if (mo->momz > 0)
-			mo->momz = 0;
+	{ // hit the ceiling
 		mo->z = mo->ceilingz - mo->height;
-		if (mo->flags & MF_SKULLFLY)
-		{		// the skull slammed into something
-			mo->momz = -mo->momz;
-		}
 	}
 }
 

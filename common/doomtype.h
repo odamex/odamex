@@ -217,6 +217,39 @@ const T MAX (const T a, const T b)
 	return a > b ? a : b;
 }
 
+
+
+
+//==========================================================================
+//
+// clamp
+//
+// Clamps in to the range [min,max].
+//==========================================================================
+#ifdef clamp
+#undef clamp
 #endif
+template<class T>
+inline
+T clamp (const T in, const T min, const T max)
+{
+	return in <= min ? min : in >= max ? max : in;
+}
 
+//==========================================================================
+//
+// swap
+//
+// Swaps the values of a and b.
+//==========================================================================
+#ifdef swap
+#undef swap
+#endif
+template<class T>
+inline
+void swap (T &a, T &b)
+{
+	T temp = a; a = b; b = temp;
+}
 
+#endif

@@ -70,6 +70,8 @@ EXTERN_CVAR (sv_startmapscript)
 EXTERN_CVAR (sv_curmap)
 EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
+EXTERN_CVAR (sv_gravity)
+EXTERN_CVAR (sv_aircontrol)
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
@@ -166,6 +168,7 @@ enum EMIType
 	MITYPE_IGNORE,
 	MITYPE_EATNEXT,
 	MITYPE_INT,
+	MITYPE_FLOAT,
 	MITYPE_COLOR,
 	MITYPE_MAPNAME,
 	MITYPE_LUMPNAME,
@@ -221,7 +224,9 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 }
+	{ MITYPE_EATNEXT,	0, 0 },	
+	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -396,6 +401,11 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			*((int *)(info + handler->data1)) = sc_Number;
 			break;
 
+		case MITYPE_FLOAT:
+			SC_MustGetFloat ();
+			*((float *)(info + handler->data1)) = sc_Float;
+			break;
+			
 		case MITYPE_COLOR:
 			{
 				SC_MustGetString ();
@@ -1460,7 +1470,10 @@ void G_InitLevelLocals ()
 	int i;
 
 	NormalLight.maps = realcolormaps;
-	
+
+	level.gravity = sv_gravity;
+	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
+		
 	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
 
@@ -1475,6 +1488,14 @@ void G_InitLevelLocals ()
 		}
 		level.outsidefog = pinfo->outsidefog;
 		level.flags |= LEVEL_DEFINEDINMAPINFO;
+		if (pinfo->gravity != 0.f)
+		{
+			level.gravity = pinfo->gravity;
+		}
+		if (pinfo->aircontrol != 0.f)
+		{
+			level.aircontrol = (fixed_t)(pinfo->aircontrol * 65536.f);
+		}		
 	} else {
 		info = FindDefLevelInfo (level.mapname);
 		level.info = info;
@@ -1655,6 +1676,21 @@ void G_SetLevelStrings (void)
 }
 
 
+void G_AirControlChanged ()
+{
+	if (level.aircontrol <= 256)
+	{
+		level.airfriction = FRACUNIT;
+	}
+	else
+	{
+		// Friction is inversely proportional to the amount of control
+		float fric = ((float)level.aircontrol/65536.f) * -0.0941f + 1.0004f;
+		level.airfriction = (fixed_t)(fric * 65536.f);
+	}
+}
+
+
 void G_SerializeLevel (FArchive &arc, bool hubLoad)
 {
 	if (arc.IsStoring ())
@@ -1663,8 +1699,9 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.fadeto
 			<< level.found_secrets
 			<< level.found_items
-			<< level.killed_monsters;
-
+			<< level.killed_monsters
+			<< level.gravity
+			<< level.aircontrol;
 //		for (i = 0; i < NUM_MAPVARS; i++)
 //			arc << level.vars[i];
 	}

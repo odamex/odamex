@@ -99,7 +99,7 @@ extern int				itemrespawntime[ITEMQUESIZE];
 extern int				iquehead;
 extern int				iquetail;
 
-
+void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);
 
 bool	P_SetMobjState (AActor* mobj, statenum_t state);

@@ -54,7 +54,6 @@ EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
-EXTERN_CVAR(sv_gravity)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -394,30 +393,27 @@ void AActor::RunThink ()
 			{
 			    if (player)
 				{
-					
-					minmom = (co_zdoomphys ? (fixed_t)(sv_gravity * subsector->sector->gravity * -655.36f) :
+					minmom = (co_zdoomphys ? (fixed_t)(level.gravity * subsector->sector->gravity * -655.36f) :
 											 (fixed_t)(GRAVITY*subsector->sector->gravity*-8));
 					
 					if (momz < minmom && !(flags2&MF2_FLY))
 					{
 						PlayerLandedOnThing (this, onmo);
 					}
-					
-					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
-					{
-						//player->viewheight -= z + onmo->height - z;
-						//player->deltaviewheight =
-						//	(VIEWHEIGHT - player->viewheight)>>3;
-						z = onmo->z + onmo->height;
-						flags2 |= MF2_ONMOBJ;
-						momz = 0;
-					}
-					else
-					{
-						// hit the bottom of the blocking mobj
-						momz = 0;
-					}				    
 				}
+					
+				if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
+				{
+					/*if (player)
+					{
+						player->viewheight -= z + onmo->height - z;
+						player->deltaviewheight =
+							(VIEWHEIGHT - player->viewheight)>>3;
+					}*/
+					z = onmo->z + onmo->height;
+				}
+				flags2 |= MF2_ONMOBJ;
+				momz = 0;
 			}
 		}
 	    else
@@ -554,10 +550,12 @@ void P_XYMovement(AActor *mo)
 	fixed_t ptryx, ptryy;
 	player_t *player = NULL;
 	fixed_t xmove, ymove;
+	fixed_t maxmove;
+	static const int windTab[3] = {2048*5, 2048*10, 2048*25};
 
 	if (!mo->subsector)
 		return;
-
+			
 	if (!mo->momx && !mo->momy)
 	{
 		if (mo->flags & MF_SKULLFLY)
@@ -571,26 +569,36 @@ void P_XYMovement(AActor *mo)
 		return;
 	}
 
+	maxmove = (mo->waterlevel < 2) || (mo->flags & MF_MISSILE) ? MAXMOVE : MAXMOVE/4;
+	
+	if (mo->flags2 & MF2_WINDTHRUST)
+	{
+		int special = mo->subsector->sector->special;
+		switch (special)
+		{
+			case 40: case 41: case 42: // Wind_East
+				P_ThrustMobj (mo, 0, windTab[special-40]);
+				break;
+			case 43: case 44: case 45: // Wind_North
+				P_ThrustMobj (mo, ANG90, windTab[special-43]);
+				break;
+			case 46: case 47: case 48: // Wind_South
+				P_ThrustMobj (mo, ANG270, windTab[special-46]);
+				break;
+			case 49: case 50: case 51: // Wind_West
+				P_ThrustMobj (mo, ANG180, windTab[special-49]);
+				break;
+		}
+	}
+	
+	xmove = mo->momx = clamp (mo->momx, -maxmove, maxmove);
+	ymove = mo->momy = clamp (mo->momy, -maxmove, maxmove);
+
 	player = mo->player;
 
 	if(!player || !player->mo)
 		player = NULL;
-
-	int maxmove = (mo->waterlevel < 2) || (mo->flags & MF_MISSILE) ? MAXMOVE : MAXMOVE/4;
-
-	if (mo->momx > maxmove)
-		mo->momx = maxmove;
-	else if (mo->momx < -maxmove)
-		mo->momx = -maxmove;
-
-	if (mo->momy > maxmove)
-		mo->momy = maxmove;
-	else if (mo->momy < -maxmove)
-		mo->momy = -maxmove;
-
-	xmove = mo->momx;
-	ymove = mo->momy;
-
+		
 	maxmove /= 2;
 
 	do
@@ -612,13 +620,16 @@ void P_XYMovement(AActor *mo)
 		// killough 3/15/98: Allow objects to drop off
 		if (!P_TryMove (mo, ptryx, ptryy, true))
 		{
+			// blocked move
             if (mo->flags2 & MF2_SLIDE)
 			{
 				// try to slide along it
 				if (BlockingMobj == NULL)
 				{ // slide against wall
-					if (mo->player && mo->waterlevel && mo->waterlevel < 3
-						&& (mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove))
+					if (BlockingLine != NULL &&
+						mo->player && mo->waterlevel && mo->waterlevel < 3 &&
+						(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove) &&
+						BlockingLine->sidenum[1] != -1)
 					{
 						mo->momz = WATER_JUMP_SPEED;
 					}
@@ -675,18 +686,30 @@ void P_XYMovement(AActor *mo)
 		return; 	// no friction for missiles ever
     }
 
-	if (mo->z > mo->floorz && !(mo->flags2 & MF2_ONMOBJ) && !(mo->flags2 & MF2_FLY)
-        && !mo->waterlevel)
-		return;		// no friction when airborne
+	// [ML] From ZDoom 1.23...
+	if (mo->z > mo->floorz && !(mo->flags2 & MF2_ONMOBJ) &&
+		!(mo->flags2 & MF2_FLY)	&& !mo->waterlevel)
+	{ // [RH] Friction when falling is available for larger aircontrols
+		if (co_zdoomphys && player != NULL && level.airfriction != FRACUNIT)
+		{
+			mo->momx = FixedMul (mo->momx, level.airfriction);
+			mo->momy = FixedMul (mo->momy, level.airfriction);
+
+			if (player->mo == mo)		//  Not voodoo dolls
+			{
+				player->mo->momx = FixedMul (player->mo->momx, level.airfriction);
+				player->mo->momy = FixedMul (player->mo->momy, level.airfriction);
+			}
+		}
+		return;
+	}
 
 	if (mo->flags & MF_CORPSE)
 	{
 		// do not stop sliding
 		//  if halfway off a step with some momentum
-		if (mo->momx > FRACUNIT/4
-			|| mo->momx < -FRACUNIT/4
-			|| mo->momy > FRACUNIT/4
-			|| mo->momy < -FRACUNIT/4)
+		if (mo->momx > FRACUNIT/4 || mo->momx < -FRACUNIT/4
+			|| mo->momy > FRACUNIT/4 || mo->momy < -FRACUNIT/4)
 		{
 			if (mo->floorz != mo->subsector->sector->floorheight)
 				return;
@@ -731,6 +754,16 @@ void P_XYMovement(AActor *mo)
 
 		mo->momx = FixedMul (mo->momx, friction);
 		mo->momy = FixedMul (mo->momy, friction);
+
+		// killough 10/98: Always decrease player bobbing by ORIG_FRICTION.
+		// This prevents problems with bobbing on ice, where it was not being
+		// reduced fast enough, leading to all sorts of kludges being developed.
+		
+		if (co_zdoomphys && player && player->mo == mo)		//  Not voodoo dolls
+		{
+			player->mo->momx = FixedMul (player->mo->momx, ORIG_FRICTION);
+			player->mo->momy = FixedMul (player->mo->momy, ORIG_FRICTION);
+		}		
 	}
 }
 
@@ -834,7 +867,7 @@ void P_ZMovement(AActor *mo)
          	
 			if (co_zdoomphys)
 			{
-				float minmom = sv_gravity * mo->subsector->sector->gravity * -655.36f;
+				float minmom = level.gravity * mo->subsector->sector->gravity * -655.36f;
 				float mom = (float)mo->momz;
 				
 				if (mom < minmom)
@@ -897,9 +930,9 @@ void P_ZMovement(AActor *mo)
 				if (co_zdoomphys)
 				{
 					if (mo->momz == 0)
-						mo->momz = (fixed_t)(sv_gravity * mo->subsector->sector->gravity * -20.48);
+						mo->momz = (fixed_t)(level.gravity * mo->subsector->sector->gravity * -20.48);
 					else
-						mo->momz -= (fixed_t)(sv_gravity * mo->subsector->sector->gravity * 10.24);
+						mo->momz -= (fixed_t)(level.gravity * mo->subsector->sector->gravity * 10.24);
 				}
 				else
 				{
@@ -914,9 +947,9 @@ void P_ZMovement(AActor *mo)
 				if (co_zdoomphys)
 				{
 					if (mo->momz == 0)
-						mo->momz = (fixed_t)(sv_gravity * mo->subsector->sector->gravity * -163.84);
+						mo->momz = (fixed_t)(level.gravity * mo->subsector->sector->gravity * -163.84);
 					else
-						mo->momz -= (fixed_t)(sv_gravity * mo->subsector->sector->gravity * 81.92);
+						mo->momz -= (fixed_t)(level.gravity * mo->subsector->sector->gravity * 81.92);
 				}
 				else
 				{
@@ -928,9 +961,11 @@ void P_ZMovement(AActor *mo)
 			}
 			if (mo->waterlevel > 1)
 			{
-				if (mo->momz < -WATER_SINK_SPEED)
+				fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
+
+				if (mo->momz < sinkspeed)
 				{
-					mo->momz = (startmomz < -WATER_SINK_SPEED) ? startmomz : -WATER_SINK_SPEED;
+					mo->momz = (startmomz < sinkspeed) ? startmomz : sinkspeed;
 				}
 				else
 				{
@@ -1529,6 +1564,16 @@ void P_ExplodeMissile (AActor* mo)
 
 		mo->effects = 0;		// [RH]
 	}
+}
+
+//
+// P_ThrustMobj
+//
+void P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move)
+{
+	angle >>= ANGLETOFINESHIFT;
+	mo->momx += FixedMul (move, finecosine[angle]);
+	mo->momy += FixedMul (move, finesine[angle]);
 }
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")

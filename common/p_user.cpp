@@ -44,7 +44,6 @@
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (sv_gravity)
 EXTERN_CVAR (co_zdoomphys)
 
 extern bool predicting, step_mode;
@@ -202,6 +201,12 @@ void P_PlayerLookUpDown (player_t *p)
 	}
 }
 
+CVAR_FUNC_IMPL (sv_aircontrol)
+{
+	level.aircontrol = (fixed_t)((float)var * 65536.f);
+	G_AirControlChanged ();
+}
+
 //
 // P_MovePlayer
 //
@@ -317,8 +322,16 @@ void P_MovePlayer (player_t *player)
 		if (!mo->onground && !(mo->flags2 & MF2_FLY) && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
-			movefactor >>= 8;
-			bobfactor >>= 8;
+			if (co_zdoomphys)
+			{
+				movefactor = FixedMul (movefactor, level.aircontrol);
+				bobfactor = FixedMul (bobfactor, level.aircontrol);
+			}
+			else
+			{
+				movefactor >>= 8;
+				bobfactor >>= 8;
+			}
 		}
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
