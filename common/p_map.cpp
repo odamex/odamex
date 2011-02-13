@@ -2002,15 +2002,114 @@ void P_UseLines (player_t *player)
 AActor* 		bombsource;
 AActor* 		bombspot;
 int 			bombdamage;
+float			bombdamagefloat;
 int				bombmod;
+vec3_t			bombvec;
 
 //
-// PIT_RadiusAttack
+// PIT_ZdoomRadiusAttack
 // "bombsource" is the creature
 // that caused the explosion at "bombspot".
 // [RH] Now it knows about vertical distances and
 //      can thrust things vertically, too.
-//
+// [ML] 2/12/11: Restoring ZDoom 1.22 PIT_RadiusAttack for 3D thrusting
+
+// [RH] Damage scale to apply to thing that shot the missile.
+static float selfthrustscale;
+
+BEGIN_CUSTOM_CVAR (sv_splashfactor, "1.0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+{
+	if (var <= 0.0f)
+		var.Set (1.0f);
+	else
+		selfthrustscale = 1.0f / var;
+}
+END_CUSTOM_CVAR (sv_splashfactor)
+
+BOOL PIT_ZdoomRadiusAttack (AActor *thing)
+{
+	if (!(thing->flags & MF_SHOOTABLE) )
+		return true;
+
+	// Boss spider and cyborg
+	// take no damage from concussion.
+	if (thing->flags2 & MF2_BOSS)
+		return true;	
+
+	// Barrels always use the original code, since this makes
+	// them far too "active."
+	if (bombspot->type != MT_BARREL && thing->type != MT_BARREL) {
+		// [RH] New code (based on stuff in Q2)
+		float points;
+		vec3_t thingvec;
+
+		VectorPosition (thing, thingvec);
+		thingvec[2] += (float)(thing->height >> (FRACBITS+1));
+		{
+			vec3_t v;
+			float len;
+
+			VectorSubtract (bombvec, thingvec, v);
+			len = VectorLength (v);
+			points = bombdamagefloat - len;
+		}
+		if (thing == bombsource)
+			points = points * sv_splashfactor;
+		if (points > 0) {
+			if ((!HasBehavior && P_CheckSight (thing, bombspot, true)) ||
+				(HasBehavior && P_CheckSight2 (thing, bombspot, true))) {
+				vec3_t dir;
+				float thrust;
+				fixed_t momx = thing->momx;
+				fixed_t momy = thing->momy;
+
+				P_DamageMobj (thing, bombspot, bombsource, (int)points, bombmod);
+				
+				thrust = points * 35000.0f / (float)thing->info->mass;
+				VectorSubtract (thingvec, bombvec, dir);
+				VectorScale (dir, thrust, dir);
+				if (bombsource != thing) {
+					dir[2] *= 0.5f;
+				} else if (sv_splashfactor) {
+					dir[0] *= selfthrustscale;
+					dir[1] *= selfthrustscale;
+					dir[2] *= selfthrustscale;
+				}
+				thing->momx = momx + (fixed_t)(dir[0]);
+				thing->momy = momy + (fixed_t)(dir[1]);
+				thing->momz += (fixed_t)(dir[2]);
+			}
+		}
+	} else {
+		// [RH] Old code just for barrels
+		fixed_t dx;
+		fixed_t dy;
+		fixed_t dist;
+
+		dx = abs(thing->x - bombspot->x);
+		dy = abs(thing->y - bombspot->y);
+
+		dist = dx>dy ? dx : dy;
+		dist = (dist - thing->radius) >> FRACBITS;
+
+		if (dist >= bombdamage)
+			return true;  // out of range
+
+		if (dist < 0)
+			dist = 0;
+
+
+		if ((!HasBehavior && P_CheckSight (thing, bombspot)) ||
+			(HasBehavior && P_CheckSight2 (thing, bombspot)) )
+		{
+			// must be in direct path
+			P_DamageMobj (thing, bombspot, bombsource, bombdamage - dist, bombmod);
+		}
+	}
+
+	return true;
+}
+
 
 //
 // PIT_RadiusAttack
@@ -2044,7 +2143,8 @@ BOOL PIT_RadiusAttack (AActor *thing)
     if (dist >= bombdamage)
 	return true;	// out of range
 
-    if ( P_CheckSight (thing, bombspot) )
+    if ((!HasBehavior && P_CheckSight (thing, bombspot)) ||
+		(HasBehavior && P_CheckSight2 (thing, bombspot)) )
     {
 		// must be in direct path
 		P_DamageMobj (thing, bombspot, bombsource, bombdamage - dist, bombmod);
@@ -2078,10 +2178,24 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 	bombsource = source;
 	bombdamage = damage;
 	bombmod = mod;
-
+	bombdamagefloat = (float)damage;
+	bombmod = mod;
+	VectorPosition (spot, bombvec);
+	
 	for (y=yl ; y<=yh ; y++)
+	{
 		for (x=xl ; x<=xh ; x++)
-			P_BlockThingsIterator (x, y, PIT_RadiusAttack);
+		{
+			if (co_zdoomphys)
+			{
+				P_BlockThingsIterator (x, y, PIT_ZdoomRadiusAttack);
+			}
+			else
+			{
+				P_BlockThingsIterator (x, y, PIT_RadiusAttack);				
+			}
+		}		
+	}
 }
 
 

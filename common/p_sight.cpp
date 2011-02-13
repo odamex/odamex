@@ -381,7 +381,7 @@ sightcounts2[2]++;
 =====================
 */
 
-bool P_CheckSight2 (const AActor *t1, const AActor *t2)
+bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 {
 	if(!t1 || !t2)
 		return false;
