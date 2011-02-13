@@ -43,6 +43,7 @@ extern bool HasBehavior;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (co_realactorheight)
 
 enum dirtype_t
 {
@@ -180,10 +181,13 @@ BOOL P_CheckMeleeRange (AActor *actor)
 		return true;
 
 	// [RH] Don't melee things too far above or below actor.
-/*	if (pl->z > actor->z + actor->height)
-		return false;
-	if (pl->z + pl->height < actor->z)
-		return false;*/
+	if (co_realactorheight)
+	{
+		if (pl->z > actor->z + actor->height)
+			return false;
+		if (pl->z + pl->height < actor->z)
+			return false;
+	}
 		
     if (HasBehavior)
     {
@@ -668,9 +672,19 @@ void A_KeenDie (AActor *actor)
 void A_Look (AActor *actor)
 {
 	AActor *targ;
+	AActor *newgoal;
 
 	if(!actor->subsector)
 		return;
+
+	// [RH] Set goal now if appropriate
+	if (actor->special == Thing_SetGoal && actor->args[0] == 0) 
+	{
+		actor->special = 0;
+		newgoal = AActor::FindGoal (NULL, actor->args[1], MT_PATHNODE);
+		actor->goal = newgoal->ptr();
+		actor->reactiontime = actor->args[2] * TICRATE + level.time;
+	}
 
 	actor->threshold = 0;		// any shot will wake up
 	targ = actor->subsector->sector->soundtarget;
@@ -742,6 +756,7 @@ void A_Look (AActor *actor)
 void A_Chase (AActor *actor)
 {
 	int delta;
+	AActor *ngoal;
 
 	// GhostlyDeath -- Don't chase spectators at all
 	if (actor->target && actor->target->player && actor->target->player->spectator)
@@ -782,9 +797,12 @@ void A_Chase (AActor *actor)
 		// look for a new target
 		if (P_LookForPlayers (actor, true) && actor->target != actor->goal)
 			return; 	// got a new target
-
-		P_SetMobjState (actor, actor->info->spawnstate); // denis - todo - this sometimes leads to a stack overflow due to infinite recursion: A_Chase->SetMobjState->A_Look->SetMobjState
-		return;
+		
+		if (!actor->target)
+		{
+			P_SetMobjState (actor, actor->info->spawnstate); // denis - todo - this sometimes leads to a stack overflow due to infinite recursion: A_Chase->SetMobjState->A_Look->SetMobjState
+			return;
+		}
 	}
 
 	// do not attack twice in a row
@@ -795,7 +813,27 @@ void A_Chase (AActor *actor)
 			P_NewChaseDir (actor);
 		return;
 	}
-
+	
+	// [RH] Don't attack if just moving toward goal
+	if (actor->target == actor->goal)
+	{
+		if (P_CheckMeleeRange (actor))
+		{
+			// reached the goal
+			actor->reactiontime = actor->goal->args[1] * TICRATE + level.time;
+			ngoal = AActor::FindGoal (NULL, actor->goal->args[0], MT_PATHNODE);
+			if (ngoal)
+				actor->goal = ngoal->ptr();
+			else
+				actor->goal = AActor::AActorPtr();
+				
+			actor->target = AActor::AActorPtr();
+			P_SetMobjState (actor, actor->info->spawnstate);
+			return;
+		}
+		goto nomissile;
+	}
+	
 	// check for melee attack
 	if (actor->info->meleestate && P_CheckMeleeRange (actor))
 	{

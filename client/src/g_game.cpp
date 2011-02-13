@@ -638,7 +638,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	if (strafe || lookstrafe)
 		side += (int)((float)mousex * m_side);
 	else
-		cmd->ucmd.yaw -= (int)((float)(mousex*0x8) * m_yaw);
+		cmd->ucmd.yaw -= (int)((float)(mousex*0x8) * m_yaw) / ticdup;
 
 	mousex = mousey = 0;
 

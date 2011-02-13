@@ -29,6 +29,7 @@
 #include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
+#include "i_net.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -43,6 +44,8 @@
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
+EXTERN_CVAR (sv_gravity)
+EXTERN_CVAR (co_zdoomphys)
 
 extern bool predicting, step_mode;
 
@@ -225,7 +228,7 @@ void P_MovePlayer (player_t *player)
 		return;
 	}
 
-	// [RH] check for swim/jump
+	// [RH] check for jump
 	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
 	{
 		if (player->mo->waterlevel >= 2)
@@ -246,36 +249,47 @@ void P_MovePlayer (player_t *player)
             player->jumpTics = 18;				
 		}
 	}
-
-	if (cmd->ucmd.upmove == -32768)
-	{ // Only land if in the air
-		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
-		{
-			player->mo->flags2 &= ~MF2_FLY;
-			player->mo->flags &= ~MF_NOGRAVITY;
-		}
-	}
-	else if (cmd->ucmd.upmove != 0)
+	
+	if (co_zdoomphys)
 	{
-		if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
+		if (cmd->ucmd.upmove &&
+			(player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY))
 		{
 			player->mo->momz = cmd->ucmd.upmove << 8;
-        }
-        else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
-        {
-			player->mo->flags2 |= MF2_FLY;
-			player->mo->flags |= MF_NOGRAVITY;
-			if (player->mo->momz <= -39*FRACUNIT)
-            { // Stop falling scream
-				S_StopSound (player->mo, CHAN_VOICE);
-			}
-        }        
-		else if (cmd->ucmd.upmove > 0)
-		{
-			//P_PlayerUseArtifact (player, arti_fly);
-		}
+		}		
 	}
-	
+	else
+	{
+		if (cmd->ucmd.upmove == -32768)
+		{ // Only land if in the air
+			if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
+			{
+				player->mo->flags2 &= ~MF2_FLY;
+				player->mo->flags &= ~MF_NOGRAVITY;
+			}
+		}
+		else if (cmd->ucmd.upmove != 0)
+		{
+			if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
+			{
+				player->mo->momz = cmd->ucmd.upmove << 8;
+			}
+			else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+			{
+				player->mo->flags2 |= MF2_FLY;
+				player->mo->flags |= MF_NOGRAVITY;
+				if (player->mo->momz <= -39*FRACUNIT)
+				{ // Stop falling scream
+					S_StopSound (player->mo, CHAN_VOICE);
+				}
+			}        
+			else if (cmd->ucmd.upmove > 0)
+			{
+				//P_PlayerUseArtifact (player, arti_fly);
+			}
+		}		
+	}
+
 	// Look left/right
 	if(clientside || step_mode)
 	{
@@ -308,8 +322,10 @@ void P_MovePlayer (player_t *player)
 		}
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
-
-		if(mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)
+		
+		// [ML] Check for these conditions unless advanced physics is on
+		if(co_zdoomphys || 
+			(!co_zdoomphys && (mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)))
 		{
 			if (forwardmove)
 			{
@@ -325,12 +341,12 @@ void P_MovePlayer (player_t *player)
 		{
 			P_SetMobjState (player->mo, S_PLAY_RUN1); // denis - fixme - this function might destoy player->mo without setting it to 0
 		}
-	}
 
-	if (player->cheats & CF_REVERTPLEASE)
-	{
-		player->cheats &= ~CF_REVERTPLEASE;
-		player->camera = player->mo;
+		if (player->cheats & CF_REVERTPLEASE)
+		{
+			player->cheats &= ~CF_REVERTPLEASE;
+			player->camera = player->mo;
+		}
 	}
 }
 
@@ -468,6 +484,8 @@ void P_PlayerThink (player_t *player)
 	//		it a warning if the player trying to spawn is a bot
 	if (!player->mo)
 		I_Error ("No player %d start\n", player->id);
+		
+	client_t *cl = &player->client;
 
 	// fixme: do this in the cheat code
 	if (player->cheats & CF_NOCLIP)
@@ -549,6 +567,12 @@ void P_PlayerThink (player_t *player)
 			|| (gamemode != shareware) )
 			{
 				player->pendingweapon = newweapon;
+						
+				if (serverside)
+				{	// [ML] From Zdaemon .99: use changeweapon here
+					MSG_WriteMarker	(&cl->reliablebuf, svc_changeweapon);
+					MSG_WriteByte (&cl->reliablebuf, (byte)player->pendingweapon);	
+				}
 			}
 		}
 	}

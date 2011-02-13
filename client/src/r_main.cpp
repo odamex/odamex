@@ -107,7 +107,7 @@ int 			viewangletox[FINEANGLES/2];
 // from clipangle to -clipangle.
 angle_t 		*xtoviewangle;
 
-fixed_t			*finecosine = &finesine[FINEANGLES/4];
+const fixed_t	*finecosine = &finesine[FINEANGLES/4];
 
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 int				scalelightfixed[MAXLIGHTSCALE];
@@ -417,7 +417,9 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 // R_InitTables
 //
 //
-
+#if 0
+// [Russell] - Calling this function can desync demos (tnt demo1 msvc being a 
+// prime example)
 void R_InitTables (void)
 {
 	int i;
@@ -439,7 +441,7 @@ void R_InitTables (void)
 		finesine[i] = (fixed_t)(FRACUNIT * sin (a));
 	}
 }
-
+#endif
 
 //
 //
@@ -823,7 +825,7 @@ void R_Init (void)
 {
 	R_InitData ();
 	//R_InitPointToAngle ();
-	R_InitTables ();
+//	R_InitTables ();
 	// viewwidth / viewheight are set by the defaults
 
 	R_SetViewSize ((int)screenblocks);

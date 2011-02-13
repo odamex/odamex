@@ -37,7 +37,9 @@
 #include <io.h>
 #include <process.h>
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 #include <mmsystem.h>
 #include <direct.h> // SoM: I don't know HOW this has been overlooked until now...

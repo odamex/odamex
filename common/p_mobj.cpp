@@ -43,6 +43,7 @@
 
 extern bool predicting;
 extern fixed_t attackrange;
+extern bool HasBehavior;
 
 void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
@@ -52,6 +53,8 @@ void SV_ExplodeMissile(AActor *);
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_itemrespawntime)
+EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(sv_gravity)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -314,6 +317,7 @@ void AActor::Destroy ()
 void AActor::RunThink ()
 {
     AActor *onmo;
+    fixed_t minmom;
     
 	if(!subsector)
 		return;
@@ -390,7 +394,11 @@ void AActor::RunThink ()
 			{
 			    if (player)
 				{
-					if (momz < -GRAVITY*8 && !(flags2&MF2_FLY))
+					
+					minmom = (co_zdoomphys ? (fixed_t)(sv_gravity * subsector->sector->gravity * -655.36f) :
+											 (fixed_t)(GRAVITY*subsector->sector->gravity*-8));
+					
+					if (momz < minmom && !(flags2&MF2_FLY))
 					{
 						PlayerLandedOnThing (this, onmo);
 					}
@@ -772,7 +780,12 @@ void P_ZMovement(AActor *mo)
 		mo->z += finesine[(FINEANGLES/80*level.time)&FINEMASK]/8;
 		mo->momz = FixedMul (mo->momz, FRICTION_FLY);
 	}
-
+	
+	if (mo->waterlevel && !(mo->flags & MF_NOGRAVITY))
+	{
+		mo->momz = FixedMul (mo->momz, mo->subsector->sector->friction);
+	}
+	
     // clip movement
    if (mo->z <= mo->floorz)
    {
@@ -817,8 +830,27 @@ void P_ZMovement(AActor *mo)
          
          if (mo->player)
          {
+         	bool momsquat = false;
+         	
+			if (co_zdoomphys)
+			{
+				float minmom = sv_gravity * mo->subsector->sector->gravity * -655.36f;
+				float mom = (float)mo->momz;
+				
+				if (mom < minmom)
+					momsquat = true;
+			}
+			else
+			{
+				fixed_t minmom = (fixed_t)(GRAVITY*mo->subsector->sector->gravity*-8);
+				fixed_t mom = mo->momz;
+				
+				if (mom < minmom)
+					momsquat = true;				
+			}
+
              mo->player->jumpTics = 7;	// delay any jumping for a short while
-             if (mo->momz < -GRAVITY*8 && !(mo->player->spectator))
+             if (momsquat && !(mo->player->spectator) && !(mo->flags2 & MF2_FLY))
              {
                 // Squat down.
                 // Decrease viewheight for a moment
@@ -829,8 +861,10 @@ void P_ZMovement(AActor *mo)
                 if (clientside && !predicting)
                     S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
             }
+            
+            mo->momz = 0;
          }
-         mo->momz = 0;
+         
       }
       mo->z = mo->floorz;
 
@@ -851,35 +885,95 @@ void P_ZMovement(AActor *mo)
          return;
       }
    }
-   else if (! (mo->flags & MF_NOGRAVITY) )
+   else
    {
-      if (mo->momz == 0)
-         mo->momz = -GRAVITY*2;
-      else
-         mo->momz -= GRAVITY;
+ 		fixed_t startmomz = mo->momz;
+
+		if (!mo->waterlevel || (mo->player &&
+			!(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
+		{
+			if (mo->flags2 & MF2_LOGRAV)
+			{
+				if (co_zdoomphys)
+				{
+					if (mo->momz == 0)
+						mo->momz = (fixed_t)(sv_gravity * mo->subsector->sector->gravity * -20.48);
+					else
+						mo->momz -= (fixed_t)(sv_gravity * mo->subsector->sector->gravity * 10.24);
+				}
+				else
+				{
+					if (mo->momz == 0)
+						mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -0.2);
+					else
+						mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity * 0.1);
+				}
+			}
+			else if (! (mo->flags & MF_NOGRAVITY) )
+			{
+				if (co_zdoomphys)
+				{
+					if (mo->momz == 0)
+						mo->momz = (fixed_t)(sv_gravity * mo->subsector->sector->gravity * -163.84);
+					else
+						mo->momz -= (fixed_t)(sv_gravity * mo->subsector->sector->gravity * 81.92);
+				}
+				else
+				{
+					if (mo->momz == 0)
+						mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -2);
+					else
+						mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity);					
+				}
+			}
+			if (mo->waterlevel > 1)
+			{
+				if (mo->momz < -WATER_SINK_SPEED)
+				{
+					mo->momz = (startmomz < -WATER_SINK_SPEED) ? startmomz : -WATER_SINK_SPEED;
+				}
+				else
+				{
+					mo->momz = startmomz + ((mo->momz - startmomz) >>
+						(mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
+				}
+			}
+		}
    }
 
    if (mo->z + mo->height > mo->ceilingz)
    {
-	// hit the ceiling
-      if (mo->momz > 0)
-         mo->momz = 0;
-      {
-         mo->z = mo->ceilingz - mo->height;
-      }
+		// hit the ceiling
+		mo->z = mo->ceilingz - mo->height;
+		if (mo->flags2 & MF2_FLOORBOUNCE)
+		{
+			// reverse momentum here for ceiling bounce
+			mo->momz = FixedMul (mo->momz, (fixed_t)(-0.75*FRACUNIT));
+			if (mo->info->seesound)
+			{
+				S_Sound (mo, CHAN_BODY, mo->info->seesound, 1, ATTN_IDLE);
+			}
+			return;
+		}		
+		if (mo->momz > 0)
+			mo->momz = 0;
 
-      if (mo->flags & MF_SKULLFLY)
-      {	// the skull slammed into something
-         mo->momz = -mo->momz;
-      }
+		if (mo->flags & MF_SKULLFLY)
+		{	// the skull slammed into something
+			mo->momz = -mo->momz;
+		}
 
-      if ( (mo->flags & MF_MISSILE)
-            && !(mo->flags & MF_NOCLIP) )
-      {
-         P_ExplodeMissile (mo);
-         return;
-      }
-   }
+		if (mo->flags & MF_MISSILE && !(mo->flags & MF_NOCLIP))
+		{
+			if ((HasBehavior && mo->subsector->sector->ceilingpic == skyflatnum))
+			{
+				mo->Destroy ();
+				return;
+			}			
+			P_ExplodeMissile (mo);
+			return;
+		}
+	}
 }
 
 //
