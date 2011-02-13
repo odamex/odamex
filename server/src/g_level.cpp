@@ -1702,6 +1702,9 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.killed_monsters
 			<< level.gravity
 			<< level.aircontrol;
+			
+			G_AirControlChanged ();
+			
 //		for (i = 0; i < NUM_MAPVARS; i++)
 //			arc << level.vars[i];
 	}
