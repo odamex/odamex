@@ -748,6 +748,8 @@ void G_InitNew (const char *mapname)
 	demoplayback = false;
 	automapactive = false;
 	viewactive = true;
+	
+	D_SetupUserInfo();
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);

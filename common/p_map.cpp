@@ -1643,28 +1643,22 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
 
 	// can't shoot outside view angles
-	if(sv_freelook)
-	{
-		// [RH] Technically, this is now correct for an engine with true 6 DOF
-		// instead of one which implements y-shearing, like we currently do.
-		angle_t topangle = t1->pitch - ANG(32);
-		angle_t bottomangle = t1->pitch + ANG(32);
 
-		if (topangle < ANG180)
-			topslope = finetangent[FINEANGLES/2-1];
-		else
-			topslope = finetangent[FINEANGLES/4-((signed)topangle>>ANGLETOFINESHIFT)];
+	// [RH] Technically, this is now correct for an engine with true 6 DOF
+	// instead of one which implements y-shearing, like we currently do.
+	angle_t topangle = t1->pitch - ANG(32);
+	angle_t bottomangle = t1->pitch + ANG(32);
 
-		if (bottomangle >= ANG180)
-			bottomslope = finetangent[0];
-		else
-			bottomslope = finetangent[FINEANGLES/4-((signed)bottomangle>>ANGLETOFINESHIFT)];
-	}
+	if (topangle <= ANG360 - ANG180)
+		topslope = finetangent[FINEANGLES/2-1];
 	else
-	{
-		topslope = 100*FRACUNIT/160;
-		bottomslope = -100*FRACUNIT/160;
-	}
+		topslope = finetangent[FINEANGLES/4-((signed)topangle>>ANGLETOFINESHIFT)];
+
+	if (bottomangle >= ANG180)
+		bottomslope = finetangent[0];
+	else
+		bottomslope = finetangent[FINEANGLES/4-((signed)bottomangle>>ANGLETOFINESHIFT)];
+
 
 	attackrange = distance;
 	linetarget = NULL;
@@ -2140,13 +2134,9 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 		for (x=xl ; x<=xh ; x++)
 		{
 			if (co_zdoomphys)
-			{
 				P_BlockThingsIterator (x, y, PIT_ZdoomRadiusAttack);
-			}
 			else
-			{
 				P_BlockThingsIterator (x, y, PIT_RadiusAttack);				
-			}
 		}		
 	}
 }

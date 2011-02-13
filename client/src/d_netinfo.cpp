@@ -87,10 +87,24 @@ team_t D_TeamByName (const char *team)
 	else return TEAM_NONE;
 }
 
+void D_SetupUserInfo(void) {
+
+	userinfo_t *coninfo = &consoleplayer().userinfo;
+	
+	memset (&consoleplayer().userinfo, 0, sizeof(userinfo_t));
+	
+	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
+	coninfo->team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
+	coninfo->color	 = V_GetColorFromString (NULL, cl_color.cstring());
+	coninfo->skin	 = R_FindSkin (cl_skin.cstring());
+	coninfo->gender  = D_GenderByName (cl_gender.cstring());
+	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
+}
+
 void D_UserInfoChanged (cvar_t *cvar)
 {
-//	if (gamestate != GS_STARTUP)
-//		D_SetupUserInfo();
+	if (gamestate != GS_STARTUP && !connected)
+		D_SetupUserInfo();
 
 	if (connected)
 		CL_SendUserInfo();

@@ -697,8 +697,8 @@ void P_XYMovement(AActor *mo)
 
 			if (player->mo == mo)		//  Not voodoo dolls
 			{
-				player->mo->momx = FixedMul (player->mo->momx, level.airfriction);
-				player->mo->momy = FixedMul (player->mo->momy, level.airfriction);
+				mo->momx = FixedMul (mo->momx, level.airfriction);
+				mo->momy = FixedMul (mo->momy, level.airfriction);
 			}
 		}
 		return;
@@ -754,16 +754,6 @@ void P_XYMovement(AActor *mo)
 
 		mo->momx = FixedMul (mo->momx, friction);
 		mo->momy = FixedMul (mo->momy, friction);
-
-		// killough 10/98: Always decrease player bobbing by ORIG_FRICTION.
-		// This prevents problems with bobbing on ice, where it was not being
-		// reduced fast enough, leading to all sorts of kludges being developed.
-		
-		if (co_zdoomphys && player && player->mo == mo)		//  Not voodoo dolls
-		{
-			player->mo->momx = FixedMul (player->mo->momx, ORIG_FRICTION);
-			player->mo->momy = FixedMul (player->mo->momy, ORIG_FRICTION);
-		}		
 	}
 }
 
@@ -1391,55 +1381,79 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 	// see which target is to be aimed at
 	an = source->angle;
-
-	slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-
-	if (!linetarget)
+	if (source->player && source->player->userinfo.aimdist == 0 && sv_freelook)
 	{
-		an += 1<<26;
+		slope = pitchslope;
+	}
+	else
+	{
 		slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
 
 		if (!linetarget)
 		{
-			an -= 2<<26;
+			an += 1<<26;
 			slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+
+			if (!linetarget)
+			{
+				an -= 2<<26;
+				slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+			}
+
+			if (!linetarget)
+			{
+				an = source->angle;
+
+				if(sv_freelook)
+					slope = pitchslope;
+				else
+					slope = 0;
+			}
 		}
 
-		if (!linetarget)
+		if (linetarget && source->player)
 		{
-			an = source->angle;
-
-			if(sv_freelook)
+			if (sv_freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
+			{
+				an = source->angle;
 				slope = pitchslope;
-			else
-				slope = 0;
+			}
 		}
 	}
-
-	// GhostlyDeath <June 19, 2006> -- fix flawed logic here (!linetarget not linetarget)
-	if (!linetarget && source->player)
-	{
-		if (sv_freelook && abs(slope - pitchslope) > source->player->userinfo.aimdist)
-		{
-			an = source->angle;
-			slope = pitchslope;
-		}
-	}
-
+	
 	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
-
-	fixed_t speed = th->info->speed;
-
-	th->target = source->ptr();
-	th->angle = an;
-    th->momx = FixedMul(speed, finecosine[an>>ANGLETOFINESHIFT]);
-    th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);
-    th->momz = FixedMul(speed, slope);
-
-	SV_SpawnMobj(th);
 
 	if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
+
+	th->target = source->ptr();
+	th->angle = an;
+		
+	if (co_zdoomphys)
+	{
+		vec3_t velocity;
+		float speed = FIXED2FLOAT (th->info->speed);
+
+		velocity[0] = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
+		velocity[1] = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
+		velocity[2] = FIXED2FLOAT (slope);
+
+		VectorNormalize (velocity);
+
+		th->momx = FLOAT2FIXED (velocity[0] * speed);
+		th->momy = FLOAT2FIXED (velocity[1] * speed);
+		th->momz = FLOAT2FIXED (velocity[2] * speed);
+	}
+	else
+	{
+		fixed_t speed = th->info->speed;
+
+		th->momx = FixedMul(speed, finecosine[an>>ANGLETOFINESHIFT]);
+		th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);
+		th->momz = FixedMul(speed, slope);
+	}
+
+	SV_SpawnMobj(th);
 
 	P_CheckMissileSpawn (th);
 }

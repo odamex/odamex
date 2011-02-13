@@ -149,7 +149,7 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 //
 void P_NoiseAlert (AActor *target, AActor *emmiter)
 {
-	if (target->player && (target->player->cheats & CF_NOTARGET))
+	if (target->player && (!multiplayer && (target->player->cheats & CF_NOTARGET)))
 		return;
 
 	validcount++;

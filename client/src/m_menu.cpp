@@ -1143,8 +1143,8 @@ EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_skin)
-EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_gender)
+EXTERN_CVAR (cl_autoaim)
 
 void M_PlayerSetup (int choice)
 {
