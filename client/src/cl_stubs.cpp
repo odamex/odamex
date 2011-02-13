@@ -50,6 +50,9 @@ void SV_ActorTarget(AActor *actor) {}
 void SV_SendDestroyActor(AActor *mo) {}
 void SV_ExplodeMissile(AActor *mo) {}
 void SV_PreservePlayer(player_t &player) {}
+			
+void CTF_RememberFlagPos(mapthing2_t *mthing) {}
+void CTF_SpawnFlag(flag_t f) {}
 void MSG_WriteMarker (buf_t *b, svc_t c) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")
