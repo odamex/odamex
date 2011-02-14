@@ -1168,6 +1168,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -1197,6 +1198,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	20*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	"grunt/active",		// activesound
@@ -1226,6 +1228,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	20*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	"shotguy/active",		// activesound
@@ -1255,6 +1258,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	15,		// speed
 	20*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	500,		// mass
 	0,		// damage
 	"vile/active",		// activesound
@@ -1284,6 +1288,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -1313,6 +1318,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10,		// speed
 	20*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	500,		// mass
 	0,		// damage
 	"skeleton/active",		// activesound
@@ -1342,6 +1348,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10*FRACUNIT,		// speed
 	11*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	10,		// damage
 	NULL,		// activesound
@@ -1371,6 +1378,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -1400,6 +1408,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	48*FRACUNIT,		// radius
 	64*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	1000,		// mass
 	0,		// damage
 	"fatso/active",		// activesound
@@ -1429,6 +1438,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	20*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	8,		// damage
 	NULL,		// activesound
@@ -1458,6 +1468,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	20*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	"chainguy/active",		// activesound
@@ -1487,6 +1498,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	20*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	"imp/active",		// activesound
@@ -1516,6 +1528,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10,		// speed
 	30*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	400,		// mass
 	0,		// damage
 	"demon/active",		// activesound
@@ -1545,6 +1558,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10,		// speed
 	30*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	400,		// mass
 	0,		// damage
 	"spectre/active",		// activesound
@@ -1574,6 +1588,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	31*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	400,		// mass
 	0,		// damage
 	"caco/active",		// activesound
@@ -1603,6 +1618,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	24*FRACUNIT,		// radius
 	64*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	1000,		// mass
 	0,		// damage
 	"baron/active",		// activesound
@@ -1632,6 +1648,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	15*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	8,		// damage
 	NULL,		// activesound
@@ -1661,6 +1678,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	24*FRACUNIT,		// radius
 	64*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	1000,		// mass
 	0,		// damage
 	"knight/active",		// activesound
@@ -1690,6 +1708,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	16*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	50,		// mass
 	3,		// damage
 	"skull/active",		// activesound
@@ -1719,6 +1738,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	12,		// speed
 	128*FRACUNIT,		// radius
 	100*FRACUNIT,		// height
+	100*FRACUNIT,	// cdheight
 	1000,		// mass
 	0,		// damage
 	"spider/active",		// activesound
@@ -1748,6 +1768,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	12,		// speed
 	64*FRACUNIT,		// radius
 	64*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	600,		// mass
 	0,		// damage
 	"baby/active",		// activesound
@@ -1777,6 +1798,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	16,		// speed
 	40*FRACUNIT,		// radius
 	110*FRACUNIT,		// height
+	110*FRACUNIT,	// cdheight
 	1000,		// mass
 	0,		// damage
 	"cyber/active",		// activesound
@@ -1806,6 +1828,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	31*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	400,		// mass
 	0,		// damage
 	"pain/active",		// activesound
@@ -1835,6 +1858,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	8,		// speed
 	20*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	"wolfss/active",		// activesound
@@ -1864,6 +1888,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	72*FRACUNIT,		// height
+	51*FRACUNIT,	// cdheight
 	10000000,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -1892,7 +1917,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"brain/death",		// deathsound
 	0,		// speed
 	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height (actually 86; don't stack these)
+	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight (actually 86; don't stack these)
 	10000000,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -1922,6 +1948,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	32*FRACUNIT,		// height
+	32*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -1951,6 +1978,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	32*FRACUNIT,		// height
+	32*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -1980,6 +2008,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	32*FRACUNIT,		// height
+	32*FRACUNIT,	// cdheight
 	100,		// mass
 	3,		// damage
 	NULL,		// activesound
@@ -2009,6 +2038,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2038,6 +2068,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	10*FRACUNIT,		// radius
 	42*FRACUNIT,		// height
+	34*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2067,6 +2098,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	3,		// damage
 	NULL,		// activesound
@@ -2096,6 +2128,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	5,		// damage
 	NULL,		// activesound
@@ -2125,6 +2158,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	20*FRACUNIT,		// speed
 	11*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	20,		// damage
 	NULL,		// activesound
@@ -2154,6 +2188,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	25*FRACUNIT,		// speed
 	13*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	5,		// damage
 	NULL,		// activesound
@@ -2183,6 +2218,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	25*FRACUNIT,		// speed
 	13*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	100,		// damage
 	NULL,		// activesound
@@ -2212,6 +2248,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	25*FRACUNIT,		// speed
 	13*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	5,		// damage
 	NULL,		// activesound
@@ -2241,6 +2278,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2270,6 +2308,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2299,6 +2338,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2328,6 +2368,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2357,6 +2398,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2386,6 +2428,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2415,6 +2458,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2444,6 +2488,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2473,6 +2518,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2502,6 +2548,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2531,6 +2578,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2560,6 +2608,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2589,6 +2638,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2618,6 +2668,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2647,6 +2698,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2676,6 +2728,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2705,6 +2758,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2734,6 +2788,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2763,6 +2818,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2792,6 +2848,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2821,6 +2878,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2850,6 +2908,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2879,6 +2938,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2908,6 +2968,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2937,6 +2998,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2966,6 +3028,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -2995,6 +3058,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3024,6 +3088,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3053,6 +3118,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3082,6 +3148,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3111,6 +3178,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3140,6 +3208,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3169,6 +3238,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3198,6 +3268,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3227,6 +3298,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3256,6 +3328,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3285,6 +3358,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3314,6 +3388,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3343,6 +3418,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3372,6 +3448,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3401,6 +3478,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3430,6 +3508,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3459,6 +3538,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	74*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3488,6 +3568,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	54*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3517,6 +3598,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	44*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3546,6 +3628,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	48*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3575,6 +3658,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	34*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3604,6 +3688,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	48*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3633,6 +3718,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	34*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3662,6 +3748,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	44*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3691,6 +3778,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	40*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3720,6 +3808,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	50*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3749,6 +3838,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	48*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3778,6 +3868,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3807,6 +3898,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	82*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3836,6 +3928,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	82*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3865,6 +3958,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	82*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3894,6 +3988,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3923,6 +4018,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3952,6 +4048,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -3981,6 +4078,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	47*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4010,6 +4108,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	120*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4039,6 +4138,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4068,6 +4168,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	54*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4097,6 +4198,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	68*FRACUNIT,		// height
+	68*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4126,6 +4228,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	84*FRACUNIT,		// height
+	84*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4155,6 +4258,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	84*FRACUNIT,		// height
+	79*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4184,6 +4288,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	68*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4213,6 +4318,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	52*FRACUNIT,		// height
+	52*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4242,6 +4348,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	84*FRACUNIT,		// height
+	84*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4271,6 +4378,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	68*FRACUNIT,		// height
+	68*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4300,6 +4408,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	52*FRACUNIT,		// height
+	52*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4329,6 +4438,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	52*FRACUNIT,		// height
+	52*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4358,6 +4468,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	68*FRACUNIT,		// height
+	68*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4387,6 +4498,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4416,6 +4528,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4445,6 +4558,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4474,6 +4588,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4503,6 +4618,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4532,6 +4648,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4561,6 +4678,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4590,6 +4708,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4619,6 +4738,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4648,6 +4768,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	60*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4677,6 +4798,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4706,6 +4828,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	54*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4735,6 +4858,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	40*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4764,6 +4888,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4793,6 +4918,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4822,6 +4948,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	32*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	124*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4851,6 +4978,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	46*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4880,6 +5008,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	88*FRACUNIT,		// height
+	88*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4909,6 +5038,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	88*FRACUNIT,		// height
+	88*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4938,6 +5068,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	64*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4967,6 +5098,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	64*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4996,6 +5128,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	64*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5025,6 +5158,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	64*FRACUNIT,		// height
+	64*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5054,6 +5188,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5083,6 +5218,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5112,6 +5248,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5141,6 +5278,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+	4*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5170,6 +5308,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+	4*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5199,6 +5338,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+	4*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5228,6 +5368,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+	4*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5257,6 +5398,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+	4*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5286,6 +5428,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+	4*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5315,6 +5458,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+	4*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5344,6 +5488,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+	4*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5373,6 +5518,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	32*FRACUNIT,		// radius
 	56*FRACUNIT,		// height
+	56*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5403,6 +5549,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	8,		// radius
 	8,		// height
+	8*FRACUNIT,	// cdheight
 	10,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5433,6 +5580,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	8,		// radius
 	8,		// height
+	8*FRACUNIT,	// cdheight
 	10,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5462,6 +5610,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	8,		// radius
 	8,		// height
+	8*FRACUNIT,	// cdheight
 	10,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5491,6 +5640,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5520,6 +5670,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5549,6 +5700,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5578,6 +5730,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5607,6 +5760,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	0*FRACUNIT,		// height
+	0*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5636,6 +5790,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5665,6 +5820,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5694,6 +5850,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5724,6 +5881,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	14*FRACUNIT,		// height
+	14*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5754,6 +5912,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	14*FRACUNIT,		// height
+	14*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5787,6 +5946,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5817,6 +5977,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5847,6 +6008,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5877,6 +6039,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5907,6 +6070,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5937,6 +6101,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	20*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5966,6 +6131,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	36*FRACUNIT,		// radius
 	4*FRACUNIT,		// height
+	4*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5994,6 +6160,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -6022,6 +6189,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -6050,6 +6218,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	32*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -6078,6 +6247,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -6106,6 +6276,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	8*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
+	8*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound

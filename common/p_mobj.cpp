@@ -56,6 +56,7 @@ EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_nomonsters)
 
@@ -215,7 +216,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	x = ix;
 	y = iy;
 	radius = info->radius;
-	height = info->height;
+	height = P_ThingInfoHeight(info);
 	flags = info->flags;
 	flags2 = info->flags2;
 	health = info->spawnhealth;
@@ -406,7 +407,7 @@ void AActor::RunThink ()
 					}
 				}
 					
-				if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
+				if (onmo->z + P_ThingInfoHeight(onmo->info) - z <= 24 * FRACUNIT)
 				{
 					/*if (player)
 					{
@@ -414,7 +415,7 @@ void AActor::RunThink ()
 						player->deltaviewheight =
 							(VIEWHEIGHT - player->viewheight)>>3;
 					}*/
-					z = onmo->z + onmo->height;
+					z = onmo->z + P_ThingInfoHeight(onmo->info);
 				}
 				flags2 |= MF2_ONMOBJ;
 				momz = 0;
@@ -629,6 +630,19 @@ void AActor::Serialize (FArchive &arc)
 	}
 }
 
+//
+// P_ThingInfoHeight [From EE]
+//
+// haleyjd 07/06/05:
+//
+// Function to retrieve proper thing height information for a thing.
+//
+int P_ThingInfoHeight(mobjinfo_t *mi)
+{
+   return
+      (co_realactorheight && mi->cdheight ?
+       mi->cdheight : mi->height);
+}
 
 //
 //
@@ -926,7 +940,7 @@ void P_ZMovement(AActor *mo)
          dist = P_AproxDistance (mo->x - mo->target->x,
                                  mo->y - mo->target->y);
 
-         delta =(mo->target->z + (mo->height>>1)) - mo->z;
+         delta =(mo->target->z + (P_ThingInfoHeight(mo->info)>>1)) - mo->z;
 
          if (delta<0 && dist < -(delta*3) )
             mo->z -= FLOATSPEED;
@@ -1103,10 +1117,10 @@ void P_ZMovement(AActor *mo)
 		}
    }
 
-   if (mo->z + mo->height > mo->ceilingz)
+   if (mo->z + P_ThingInfoHeight(mo->info) > mo->ceilingz)
    {
 		// hit the ceiling
-		mo->z = mo->ceilingz - mo->height;
+		mo->z = mo->ceilingz - P_ThingInfoHeight(mo->info);
 		if (mo->flags2 & MF2_FLOORBOUNCE)
 		{
 			// reverse momentum here for ceiling bounce

@@ -36,6 +36,7 @@
 #include "r_state.h"
 #include "c_cvars.h"
 #include "gi.h"
+#include "p_mobj.h"
 
 #include "d_player.h"
 
@@ -1276,7 +1277,7 @@ BOOL PIT_VileCheck (AActor *thing)
 		int oldflags = corpsehit->flags;
 
 		corpsehit->flags |= MF_SOLID;
-		corpsehit->height = corpsehit->info->height;
+		corpsehit->height = P_ThingInfoHeight(corpsehit->info);
 		check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
 		corpsehit->flags = oldflags;
 		corpsehit->radius = oldradius;
@@ -1351,7 +1352,7 @@ void A_VileChase (AActor *actor)
 					if ((demoplayback || demorecording) && democlassic) {
 						corpsehit->height <<= 2;
 					} else {
-						corpsehit->height = info->height;	// [RH] Use real mobj height
+						corpsehit->height = P_ThingInfoHeight(info);	// [RH] Use real mobj height
 						corpsehit->radius = info->radius;	// [RH] Use real radius
 					}
 

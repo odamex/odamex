@@ -33,6 +33,7 @@
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "p_mobj.h"
 
 #include "s_sound.h"
 
@@ -471,8 +472,8 @@ BOOL PIT_CheckThing (AActor *thing)
 	{
 		// check if a mobj passed over/under another object
 		if (/*!(thing->flags & MF_SPECIAL) &&*/
-			((tmthing->z >= thing->z + thing->height ||
-			  tmthing->z + tmthing->height < thing->z)))
+			((tmthing->z >= thing->z + P_ThingInfoHeight(thing->info) ||
+			  tmthing->z + P_ThingInfoHeight(tmthing->info) < thing->z)))
 			return true;
 	}
 	
@@ -491,9 +492,9 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->flags & MF_MISSILE)
 	{
 		// see if it went over / under
-		if (tmthing->z > thing->z + thing->height)
+		if (tmthing->z > thing->z + P_ThingInfoHeight(thing->info))
 			return true;				// overhead
-		if (tmthing->z+tmthing->height < thing->z)
+		if (tmthing->z+P_ThingInfoHeight(tmthing->info) < thing->z)
 			return true;				// underneath
 
 		if (tmthing->target && (
@@ -642,11 +643,11 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 	{ // Don't clip against self
 		return(true);
 	}
-	if(tmthing->z > thing->z+thing->height)
+	if(tmthing->z > thing->z+P_ThingInfoHeight(thing->info))
 	{
 		return(true);
 	}
-	else if(tmthing->z+tmthing->height < thing->z)
+	else if(tmthing->z+P_ThingInfoHeight(tmthing->info) < thing->z)
 	{ // under thing
 		return(true);
 	}

@@ -1473,6 +1473,7 @@ typedef struct
 	int speed;
 	int radius;
 	int height;
+	int cdheight;
 	int mass;
 	int damage;
 	const char *activesound;	// [RH] not int
