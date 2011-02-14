@@ -6029,7 +6029,91 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF2_DONTDRAW,		// flags2
 	S_NULL,		// raisestate
 	0x10000
-	}	
+	},
+
+	{		// MT_BRIDGE32
+	5061,		// doomednum
+	S_TNT1,		// spawnstate
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	32*FRACUNIT,		// radius
+	8*FRACUNIT,		// height
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_SOLID|MF_NOGRAVITY,		// flags
+	0,		// flags2
+	S_NULL,		// raisestate
+	0x10000
+	},
+	
+	{		// MT_BRIDGE16
+	5064,		// doomednum
+	S_TNT1,		// spawnstate
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	16*FRACUNIT,		// radius
+	8*FRACUNIT,		// height
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_SOLID|MF_NOGRAVITY,		// flags
+	0,		// flags2
+	S_NULL,		// raisestate
+	0x10000
+	},
+
+	{		// MT_BRIDGE8
+	5065,		// doomednum
+	S_TNT1,		// spawnstate
+	1000,		// spawnhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	8*FRACUNIT,		// radius
+	8*FRACUNIT,		// height
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+	MF_SOLID|MF_NOGRAVITY,		// flags
+	0,		// flags2
+	S_NULL,		// raisestate
+	0x10000
+	}
 };
 
 VERSION_CONTROL (info_cpp, "$Id$")
