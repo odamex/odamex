@@ -1441,6 +1441,7 @@ typedef enum {
 	
 	MT_BRIDGE,	
 	MT_MAPSPOT,
+	MT_MAPSPOTGRAVITY,
 		
 	NUMMOBJTYPES
 

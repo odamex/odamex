@@ -32,6 +32,8 @@ CVAR (sv_gametype,			"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CV
 CVAR (sv_friendlyfire,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // (Teamplay/CTF): Game ends when team score is reached
 CVAR (sv_scorelimit,		"5", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+// (Teamplay/CTF) When disabled, treat team spawns like normal deathmatch spawns.
+CVAR (sv_teamspawns, "1", CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 // Cheat code usage is allowed
 CVAR (sv_allowcheats,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Exit switch/teleports are usable

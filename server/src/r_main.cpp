@@ -47,6 +47,10 @@ void R_SpanInitData ();
 extern int *walllights;
 extern dyncolormap_t NormalLight;
 
+// [Russell] - Server expects these to exist
+// [Russell] - Doesn't get used serverside
+byte *translationtables;
+
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
 int 			viewangleoffset;

@@ -103,8 +103,6 @@ CVAR (ctf_manualreturn,	"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR (ctf_flagathometoscore,	"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // (CTF) A flag that is dropped will be returned automatically after this timeout
 CVAR (ctf_flagtimeout,	"600", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-// (Teamplay/CTF) When disabled, treat team spawns like normal deathmatch spawns.
-CVAR (sv_teamspawns, "1", CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 

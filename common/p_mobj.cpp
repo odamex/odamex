@@ -35,6 +35,7 @@
 #include "vectors.h"
 #include "g_game.h"
 #include "p_mobj.h"
+#include "p_ctf.h"
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -45,6 +46,7 @@ extern bool predicting;
 extern fixed_t attackrange;
 extern bool HasBehavior;
 
+void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
@@ -54,6 +56,8 @@ EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(sv_teamspawns)
+EXTERN_CVAR(sv_nomonsters)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -489,6 +493,139 @@ void AActor::RunThink ()
 			return;
 
 		P_NightmareRespawn (this);
+	}
+}
+
+
+void AActor::Serialize (FArchive &arc)
+{
+	Super::Serialize (arc);
+	if (arc.IsStoring ())
+	{
+		int playerid = player ? player->id : 0;
+		arc << x
+			<< y
+			<< z
+			<< pitch
+			<< angle
+			<< roll
+			<< (int)sprite
+			<< frame
+			<< effects
+			<< floorz
+			<< ceilingz
+			<< radius
+			<< height
+			<< momx
+			<< momy
+			<< momz
+			<< (int)type
+			<< tics
+			<< state
+			<< flags
+			<< flags2
+			<< special1
+			<< special2			
+			<< health
+			<< movedir
+			<< visdir
+			<< movecount
+			/*<< target ? target->netid : 0*/
+			/*<< lastenemy ? lastenemy->netid : 0*/
+			<< reactiontime
+			<< threshold
+			<< playerid
+			<< lastlook
+			/*<< tracer ? tracer->netid : 0*/
+			<< tid
+            << special
+			<< args[0]
+			<< args[1]
+			<< args[2]
+			<< args[3]
+			<< args[4]
+			/*<< goal ? goal->netid : 0*/
+			<< (unsigned)0
+			<< translucency
+			<< waterlevel;
+
+		if (translation)
+			arc << (DWORD)(translation - translationtables);
+		else
+			arc << (DWORD)0xffffffff;
+		spawnpoint.Serialize (arc);
+	}
+	else
+	{
+		unsigned dummy;
+		unsigned playerid;
+		arc >> x
+			>> y
+			>> z
+			>> pitch
+			>> angle
+			>> roll
+			>> (int&)sprite
+			>> frame
+			>> effects
+			>> floorz
+			>> ceilingz
+			>> radius
+			>> height
+			>> momx
+			>> momy
+			>> momz
+			>> (int&)type
+			>> tics
+			>> state
+			>> flags
+			>> flags2
+			>> special1
+			>> special2			
+			>> health
+			>> movedir
+			>> visdir
+			>> movecount
+			/*>> target->netid*/
+			/*>> lastenemy->netid*/
+			>> reactiontime
+			>> threshold
+			>> playerid
+			>> lastlook
+			/*>> tracer->netid*/
+			>> tid
+			>> special
+			>> args[0]
+			>> args[1]
+			>> args[2]
+			>> args[3]
+			>> args[4]			
+			/*>> goal->netid*/
+			>> dummy
+			>> translucency
+			>> waterlevel;
+
+		DWORD trans;
+		arc >> trans;
+		if (trans == (DWORD)0xffffffff)
+			translation = NULL;
+		else
+			translation = translationtables + trans;
+		spawnpoint.Serialize (arc);
+		if(type >= NUMMOBJTYPES)
+			I_Error("Unknown object type in saved game");
+		if(sprite >= NUMSPRITES)
+			I_Error("Unknown sprite in saved game");
+		info = &mobjinfo[type];
+		touching_sectorlist = NULL;
+		LinkToWorld ();
+		AddToHash ();
+		if(playerid && validplayer(idplayer(playerid)))
+		{
+			player = &idplayer(playerid);
+			player->mo = ptr();
+			player->camera = player->mo;
+		}
 	}
 }
 
@@ -1588,6 +1725,335 @@ void P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move)
 	angle >>= ANGLETOFINESHIFT;
 	mo->momx += FixedMul (move, finecosine[angle]);
 	mo->momy += FixedMul (move, finesine[angle]);
+}
+
+//
+// P_SpawnMapThing
+// The fields of the mapthing should
+// already be in host byte order.
+//
+// [RH] position is used to weed out unwanted start spots
+//
+void P_SpawnMapThing (mapthing2_t *mthing, int position)
+{
+	int i;
+	int bit;
+	AActor *mobj;
+	fixed_t x, y, z;
+
+	if (mthing->type == 0 || mthing->type == -1)
+		return;
+
+	// count deathmatch start positions
+	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082))
+		&& !sv_teamspawns)
+	{
+		// [Nes] Maximum vanilla demo starts are fixed at 10.
+		if (deathmatch_p >= &deathmatchstarts[10] && (demoplayback || demorecording) && democlassic)
+			return;
+
+		if (deathmatch_p == &deathmatchstarts[MaxDeathmatchStarts])
+		{
+			// [RH] Get more deathmatchstarts
+			int offset = MaxDeathmatchStarts;
+			MaxDeathmatchStarts *= 2;
+			deathmatchstarts = (mapthing2_t *)Realloc (deathmatchstarts, MaxDeathmatchStarts * sizeof(mapthing2_t));
+			deathmatch_p = &deathmatchstarts[offset];
+		}
+		memcpy (deathmatch_p, mthing, sizeof(*mthing));
+		deathmatch_p++;
+		return;
+	}
+
+	// [Toke - CTF - starts] CTF starts - count Blue team start positions
+	if (mthing->type == 5080 && sv_teamspawns)
+	{
+		if (blueteam_p == &blueteamstarts[MaxBlueTeamStarts])
+		{
+			int offset = MaxBlueTeamStarts;
+			MaxBlueTeamStarts *= 2;
+			blueteamstarts = (mapthing2_t *)Realloc (blueteamstarts, MaxBlueTeamStarts * sizeof(mapthing2_t));
+			blueteam_p = &blueteamstarts[offset];
+		}
+		memcpy (blueteam_p, mthing, sizeof(*mthing));
+		blueteam_p++;
+		return;
+	}
+
+	// [Toke - CTF - starts] CTF starts - count Red team start positions
+	if (mthing->type == 5081 && sv_teamspawns)
+	{
+		if (redteam_p == &redteamstarts[MaxRedTeamStarts])
+		{
+			int offset = MaxRedTeamStarts;
+			MaxRedTeamStarts *= 2;
+			redteamstarts = (mapthing2_t *)Realloc (redteamstarts, MaxRedTeamStarts * sizeof(mapthing2_t));
+			redteam_p = &redteamstarts[offset];
+		}
+		memcpy (redteam_p, mthing, sizeof(*mthing));
+		redteam_p++;
+		return;
+	}
+
+	// [RH] Record polyobject-related things
+	if (HexenHack)
+	{
+		switch (mthing->type)
+		{
+		case PO_HEX_ANCHOR_TYPE:
+			mthing->type = PO_ANCHOR_TYPE;
+			break;
+		case PO_HEX_SPAWN_TYPE:
+			mthing->type = PO_SPAWN_TYPE;
+			break;
+		case PO_HEX_SPAWNCRUSH_TYPE:
+			mthing->type = PO_SPAWNCRUSH_TYPE;
+			break;
+		}
+	}
+
+	if (mthing->type == PO_ANCHOR_TYPE ||
+		mthing->type == PO_SPAWN_TYPE ||
+		mthing->type == PO_SPAWNCRUSH_TYPE)
+	{
+		polyspawns_t *polyspawn = new polyspawns_t;
+		polyspawn->next = polyspawns;
+		polyspawn->x = mthing->x << FRACBITS;
+		polyspawn->y = mthing->y << FRACBITS;
+		polyspawn->angle = mthing->angle;
+		polyspawn->type = mthing->type;
+		polyspawns = polyspawn;
+		if (mthing->type != PO_ANCHOR_TYPE)
+			po_NumPolyobjs++;
+		return;
+	}	
+
+	// check for players specially
+	if ((mthing->type <= 4 && mthing->type > 0)
+		|| (mthing->type >= 4001 && mthing->type <= 4001 + MAXPLAYERSTARTS - 4))
+	{
+		// [RH] Only spawn spots that match position.
+		if (mthing->args[0] != position)
+			return;
+
+		// save spots for respawning in network games
+		size_t playernum = mthing->type <= 4 ? mthing->type-1 : (mthing->type - 4001 + 4)%MAXPLAYERSTARTS;
+		playerstarts.push_back(*mthing);
+		player_t &p = idplayer(playernum+1);
+
+		if (sv_gametype == GM_COOP &&
+			(validplayer(p) && p.ingame()))
+		{
+			P_SpawnPlayer (p, mthing);
+			return;
+		}
+
+		return;
+	}
+
+	if (sv_gametype != GM_COOP)
+	{
+		if (!(mthing->flags & MTF_DEATHMATCH))
+			return;
+	}
+	else if (multiplayer)
+	{
+		if (!(mthing->flags & MTF_COOPERATIVE))
+			return;
+	}
+
+	if (!multiplayer)
+	{
+		if (!(mthing->flags & MTF_SINGLE))
+			return;
+	}
+
+	// check for apropriate skill level
+	if (sv_skill == sk_baby)
+		bit = 1;
+	else if (sv_skill == sk_nightmare)
+		bit = 4;
+	else
+		bit = 1 << ((int)sv_skill - 2);
+
+	if (!(mthing->flags & bit))
+		return;
+
+	// [RH] Determine if it is an old ambient thing, and if so,
+	//		map it to MT_AMBIENT with the proper parameter.
+	if (mthing->type >= 14001 && mthing->type <= 14064)
+	{
+		mthing->args[0] = mthing->type - 14000;
+		mthing->type = 14065;
+		i = MT_AMBIENT;
+	}
+	// [RH] Check if it's a particle fountain
+	else if (mthing->type >= 9027 && mthing->type <= 9033)
+	{
+		mthing->args[0] = mthing->type - 9026;
+		i = MT_FOUNTAIN;
+	}
+	else
+	{
+		// find which type to spawn
+		for (i = 0; i < NUMMOBJTYPES; i++)
+			if (mthing->type == mobjinfo[i].doomednum)
+				break;
+	}
+
+	if (i >= NUMMOBJTYPES)
+	{
+		// [RH] Don't die if the map tries to spawn an unknown thing
+		Printf (PRINT_HIGH, "Unknown type %i at (%i, %i)\n",
+			mthing->type,
+			mthing->x, mthing->y);
+		i = MT_UNKNOWNTHING;
+	}
+	// [RH] If the thing's corresponding sprite has no frames, also map
+	//		it to the unknown thing.
+	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
+	{
+		Printf (PRINT_HIGH, "Type %i at (%i, %i) has no frames\n",
+				mthing->type, mthing->x, mthing->y);
+		i = MT_UNKNOWNTHING;
+	}
+
+	// don't spawn keycards and players in deathmatch
+	if (sv_gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
+		return;
+
+	// don't spawn deathmatch weapons in offline single player mode
+	if (!multiplayer)
+	{
+		switch (i)
+		{
+			case MT_CHAINGUN:
+			case MT_SHOTGUN:
+			case MT_SUPERSHOTGUN:
+			case MT_MISC25: 		// BFG
+			case MT_MISC26: 		// chainsaw
+			case MT_MISC27: 		// rocket launcher
+			case MT_MISC28: 		// plasma gun
+				if ((mthing->flags & (MTF_DEATHMATCH|MTF_SINGLE)) == MTF_DEATHMATCH)
+					return;
+				break;
+			default:
+				break;
+		}
+	}
+
+	// [csDoom] don't spawn any monsters
+	if (sv_nomonsters || !serverside)
+	{
+		if (i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL) )
+		{
+			return;
+		}
+	}
+	
+    //#if 0
+    // for client...
+	// Type 14 is a teleport exit. We must spawn it here otherwise
+	// teleporters won't work well.
+	if (!serverside && (mthing->flags & MF_SPECIAL) && (mthing->type != 14))
+		return;
+    //#endif
+
+	// spawn it
+	x = mthing->x << FRACBITS;
+	y = mthing->y << FRACBITS;
+
+	if (i == MT_WATERZONE)
+	{
+		sector_t *sec = R_PointInSubsector (x, y)->sector;
+		sec->waterzone = 1;
+		return;
+	}
+	else if (i == MT_SECRETTRIGGER)
+	{
+		level.total_secrets++;
+	}
+
+	if (mobjinfo[i].flags & MF_SPAWNCEILING)
+		z = ONCEILINGZ;
+	else
+		z = ONFLOORZ;
+
+	// only servers control spawning of special items
+	if (!serverside && mobjinfo[i].flags & MF_SPECIAL)
+		return;
+
+	mobj = new AActor (x, y, z, (mobjtype_t)i);
+
+	if (z == ONFLOORZ)
+		mobj->z += mthing->z << FRACBITS;
+	else if (z == ONCEILINGZ)
+		mobj->z -= mthing->z << FRACBITS;
+	mobj->spawnpoint = *mthing;
+
+	if (mobj->flags2 & MF2_FLOATBOB)
+	{ // Seed random starting index for bobbing motion
+		mobj->health = M_Random();
+		mobj->special1 = mthing->z << FRACBITS;
+	}
+
+	// [RH] Set the thing's special
+	mobj->special = mthing->special;
+	memcpy (mobj->args, mthing->args, sizeof(mobj->args));
+
+	// [RH] If it's an ambient sound, activate it
+	//if (i == MT_AMBIENT)
+	//	S_ActivateAmbient (mobj, mobj->args[0]);
+
+	// [RH] If a fountain and not dormant, start it
+//	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
+//		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
+
+	if (mobj->tics > 0)
+		mobj->tics = 1 + (P_Random () % mobj->tics);
+	if (mobj->flags & MF_COUNTKILL)
+		level.total_monsters++;
+	if (mobj->flags & MF_COUNTITEM)
+		level.total_items++;
+
+	if (i != MT_SPARK)
+		mobj->angle = ANG45 * (mthing->angle/45);
+
+	if (mthing->flags & MTF_AMBUSH)
+		mobj->flags |= MF_AMBUSH;
+
+	// [RH] Add ThingID to mobj and link it in with the others
+	mobj->tid = mthing->thingid;
+	mobj->AddToHash ();
+
+	SV_SpawnMobj(mobj);
+
+	if (sv_gametype == GM_CTF) {
+		// [Toke - CTF] Setup flag sockets
+		if (mthing->type == ID_BLUE_FLAG)
+		{
+			flagdata *data = &CTFdata[it_blueflag];
+			if (data->flaglocated)
+				return;
+
+			CTF_RememberFlagPos (mthing);
+			CTF_SpawnFlag(it_blueflag);
+		}
+
+		if (mthing->type == ID_RED_FLAG)
+		{
+			flagdata *data = &CTFdata[it_redflag];
+			if (data->flaglocated)
+				return;
+
+			CTF_RememberFlagPos (mthing);
+			CTF_SpawnFlag(it_redflag);
+		}
+	}
+
+	// [RH] Go dormant as needed
+	if (mthing->flags & MTF_DORMANT)
+		P_DeactivateMobj (mobj);
 }
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")

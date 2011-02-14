@@ -201,7 +201,7 @@ void CL_PredictPlayers (int predtic)
 }
 
 //
-// CL_PredicMove
+// CL_PredictMove
 //
 void CL_PredictMove (void)
 {
@@ -212,6 +212,10 @@ void CL_PredictMove (void)
 
 	if (!p->tic || !p->mo)
 		return;
+
+    #ifdef _PRED_DBG
+    fixed_t origx, origy, origz;
+    #endif
 
 	// Save player angle, viewheight,deltaviewheight and jumpTics.
 	// Will use it later to predict movements
@@ -225,6 +229,13 @@ void CL_PredictMove (void)
 	cl_reactiontime[buf] = p->mo->reactiontime;
     cl_waterlevel[buf] = p->mo->waterlevel;
 
+    #ifdef _PRED_DBG
+    // Backup original position
+	origx = p->mo->x;
+	origy = p->mo->y;
+	origz = p->mo->z;
+    #endif
+    
 	// Disable sounds, etc, during prediction
 	predicting = true;
 
@@ -250,6 +261,18 @@ void CL_PredictMove (void)
 
 	CL_PredictPlayers(predtic);
 	CL_PredictSectors(predtic);
+
+    
+    #ifdef _PRED_DBG
+	if ((origx == p->mo->x) && (origy == p->mo->y) && (origz == p->mo->z))
+    {
+        Printf(PRINT_HIGH, "%d tics predicted\n", predtic);
+    }
+    else
+    {
+        Printf(PRINT_HIGH, "%d tics failed\n", predtic);
+    }
+    #endif
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
