@@ -236,16 +236,14 @@ T clamp (const T in, const T min, const T max)
 	return in <= min ? min : in >= max ? max : in;
 }
 
-#ifdef _WIN32
+
 //==========================================================================
 //
 // swap
 //
 // Swaps the values of a and b.
 //==========================================================================
-#ifdef swap
-#undef swap
-#endif
+#ifndef swap
 template<class T>
 inline
 void swap (T &a, T &b)
