@@ -214,7 +214,7 @@ void CTF_MoveFlags ()
 			player_t &player = idplayer(CTFdata[i].flagger);
 			AActor *flag = CTFdata[i].actor;
 
-			if(!player.mo)
+			if(!player.mo || &player == &displayplayer())
 			{
 				flag->UnlinkFromWorld ();
 				return;
