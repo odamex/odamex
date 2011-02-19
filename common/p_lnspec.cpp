@@ -1003,6 +1003,12 @@ FUNC(LS_Light_MaxNeighbor)
 	return true;
 }
 
+FUNC(LS_Radius_Quake)
+// Radius_Quake (intensity, duration, damrad, tremrad, tid)
+{
+	return P_StartQuake (arg4, arg0, arg1, arg2, arg3);
+}
+
 FUNC(LS_UsePuzzleItem)
 // UsePuzzleItem (item, script)
 {
@@ -1598,7 +1604,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 117
 	LS_NOP,		// 118
 	LS_NOP,		// 119
-	LS_NOP,
+	LS_Radius_Quake,
 	LS_NOP,		// Line_SetIdentification
 	LS_NOP,		// 122
 	LS_NOP,		// 123

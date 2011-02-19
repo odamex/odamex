@@ -499,6 +499,8 @@ void P_PlayerThink (player_t *player)
 		I_Error ("No player %d start\n", player->id);
 		
 	client_t *cl = &player->client;
+	
+	player->xviewshift = 0;		// [RH] Make sure view is in right place
 
 	// fixme: do this in the cheat code
 	if (player->cheats & CF_NOCLIP)
@@ -695,6 +697,8 @@ void player_s::Serialize (FArchive &arc)
 			/*<< attacker->netid*/
 			<< extralight
 			<< fixedcolormap
+			<< xviewshift
+			<< jumpTics			
 			<< respawn_time
 			<< air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
@@ -739,6 +743,8 @@ void player_s::Serialize (FArchive &arc)
 			/*>> attacker->netid*/
 			>> extralight
 			>> fixedcolormap
+			>> xviewshift
+			>> jumpTics			
 			>> respawn_time
 			>> air_finished;
 		for (i = 0; i < NUMPOWERS; i++)

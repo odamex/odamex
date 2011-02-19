@@ -237,19 +237,4 @@ T clamp (const T in, const T min, const T max)
 }
 
 
-//==========================================================================
-//
-// swap
-//
-// Swaps the values of a and b.
-//==========================================================================
-#ifndef swap
-template<class T>
-inline
-void swap (T &a, T &b)
-{
-	T temp = a; a = b; b = temp;
-}
-#endif
-
 #endif

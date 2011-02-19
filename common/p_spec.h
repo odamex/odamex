@@ -846,7 +846,13 @@ BOOL P_StartScript (AActor *who, line_t *where, int script, char *map, int lineS
 void P_SuspendScript (int script, char *map);
 void P_TerminateScript (int script, char *map);
 void P_StartOpenScripts (void);
-void P_DoDeferedScripts (void);							
+void P_DoDeferedScripts (void);
+
+
+//
+// [RH] p_quake.c
+//
+BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad);
 
 #endif
 
