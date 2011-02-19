@@ -2580,6 +2580,7 @@ void CL_SendCmd(void)
 	MSG_WriteShort(&net_buffer, p->mo->pitch >> 16);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
+	MSG_WriteShort(&net_buffer, cmd->ucmd.upmove);
 	MSG_WriteByte(&net_buffer, cmd->ucmd.impulse);
 
     // send the current cmds in the message
@@ -2591,6 +2592,7 @@ void CL_SendCmd(void)
 	MSG_WriteShort(&net_buffer, (p->mo->pitch + (cmd->ucmd.pitch << 16)) >> 16);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
 	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
+	MSG_WriteShort(&net_buffer, cmd->ucmd.upmove);
 	MSG_WriteByte(&net_buffer, cmd->ucmd.impulse);
 
     NET_SendPacket(net_buffer, serveraddr);

@@ -3068,6 +3068,7 @@ void SV_GetPlayerCmd(player_t &player)
 		MSG_ReadLong();
 		MSG_ReadLong();
 		MSG_ReadShort();
+		MSG_ReadLong(); // 24 bytes;
 		return;
 	}
 
@@ -3075,11 +3076,11 @@ void SV_GetPlayerCmd(player_t &player)
 	if (  cl->lastclientcmdtic && (tic - cl->lastclientcmdtic >= 2)
 		     && gamestate != GS_INTERMISSION)
 	{
-		cmd->ucmd.buttons = MSG_ReadByte();
+		cmd->ucmd.buttons = MSG_ReadByte(); // 1
 
 		if(player.playerstate != PST_DEAD)
 		{
-			player.mo->angle = MSG_ReadShort() << 16;
+			player.mo->angle = MSG_ReadShort() << 16; // 3
 
 			if (!sv_freelook)
 			{
@@ -3087,13 +3088,14 @@ void SV_GetPlayerCmd(player_t &player)
 				MSG_ReadShort();
 			}
 			else
-				player.mo->pitch = MSG_ReadShort() << 16;
+				player.mo->pitch = MSG_ReadShort() << 16; // 5
 		}
 		else
 			MSG_ReadLong();
 
-		cmd->ucmd.forwardmove = MSG_ReadShort();
-		cmd->ucmd.sidemove = MSG_ReadShort();
+		cmd->ucmd.forwardmove = MSG_ReadShort(); // 7
+		cmd->ucmd.sidemove = MSG_ReadShort(); // 9
+        cmd->ucmd.upmove = MSG_ReadShort(); // 11
 
 		if ( abs(cmd->ucmd.forwardmove) > 12800
 			|| abs(cmd->ucmd.sidemove) > 12800)
@@ -3102,7 +3104,7 @@ void SV_GetPlayerCmd(player_t &player)
 			return;
 		}
 
-		cmd->ucmd.impulse = MSG_ReadByte();
+		cmd->ucmd.impulse = MSG_ReadByte(); // 12
 
 		if(!sv_speedhackfix && gamestate == GS_LEVEL)
 		{
@@ -3112,17 +3114,17 @@ void SV_GetPlayerCmd(player_t &player)
 	}
 	else
 	{
-		// get 10 bytes
+		// get 12 bytes
 		MSG_ReadLong();
 		MSG_ReadLong();
-		MSG_ReadShort();
+		MSG_ReadLong();
 	}
 
 	// get current cmds and angle
-	cmd->ucmd.buttons = MSG_ReadByte();
+	cmd->ucmd.buttons = MSG_ReadByte(); // 13
 	if (gamestate != GS_INTERMISSION && player.playerstate != PST_DEAD)
 	{
-		if(step_mode)cmd->ucmd.yaw = MSG_ReadShort();
+		if(step_mode)cmd->ucmd.yaw = MSG_ReadShort(); // 15
 		else player.mo->angle = MSG_ReadShort() << 16;
 
 		if (!sv_freelook)
@@ -3131,13 +3133,14 @@ void SV_GetPlayerCmd(player_t &player)
 			MSG_ReadShort();
 		}
 		else
-			player.mo->pitch = MSG_ReadShort() << 16;
+			player.mo->pitch = MSG_ReadShort() << 16; // 17
 	}
 	else
 		MSG_ReadLong();
 
-	cmd->ucmd.forwardmove = MSG_ReadShort();
-	cmd->ucmd.sidemove = MSG_ReadShort();
+	cmd->ucmd.forwardmove = MSG_ReadShort(); // 19
+	cmd->ucmd.sidemove = MSG_ReadShort(); // 21
+    cmd->ucmd.upmove = MSG_ReadShort(); // 23
 
 	if ( abs(cmd->ucmd.forwardmove) > 12800
 		|| abs(cmd->ucmd.sidemove) > 12800)
@@ -3146,7 +3149,7 @@ void SV_GetPlayerCmd(player_t &player)
 		return;
 	}
 
-	cmd->ucmd.impulse = MSG_ReadByte();
+	cmd->ucmd.impulse = MSG_ReadByte(); // 24
 
 	if(!sv_speedhackfix && gamestate == GS_LEVEL)
 	{
