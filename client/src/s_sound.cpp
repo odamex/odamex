@@ -482,7 +482,8 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
   	// check for bogus sound lump
 	if (sfx->lumpnum < 0 || sfx->lumpnum > (int)numlumps)
 	{
-		Printf(PRINT_HIGH,"Bad sfx lump #: %d\n", sfx->lumpnum);
+		// [ML] We don't have to announce it though do we?
+		//Printf(PRINT_HIGH,"Bad sfx lump #: %d\n", sfx->lumpnum);
 		return;
 	}
 
