@@ -492,9 +492,9 @@ BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->flags & MF_MISSILE)
 	{
 		// see if it went over / under
-		if (tmthing->z > thing->z + P_ThingInfoHeight(thing->info))
+		if (tmthing->z > thing->z + thing->height)
 			return true;				// overhead
-		if (tmthing->z+P_ThingInfoHeight(tmthing->info) < thing->z)
+		if (tmthing->z+tmthing->height < thing->z)
 			return true;				// underneath
 
 		if (tmthing->target && (
