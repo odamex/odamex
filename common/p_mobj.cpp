@@ -2016,8 +2016,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	memcpy (mobj->args, mthing->args, sizeof(mobj->args));
 
 	// [RH] If it's an ambient sound, activate it
-	//if (i == MT_AMBIENT)
-	//	S_ActivateAmbient (mobj, mobj->args[0]);
+	if (i == MT_AMBIENT)
+		S_ActivateAmbient (mobj, mobj->args[0]);
 
 	// [RH] If a fountain and not dormant, start it
 //	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))

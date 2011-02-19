@@ -1343,6 +1343,82 @@ void S_ParseSndInfo (void)
 	sfx_oof = S_FindSoundByLump (W_CheckNumForName ("dsoof"));
 }
 
+
+static void SetTicker (int *tics, struct AmbientSound *ambient)
+{
+	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
+	{
+		*tics = 1;
+	}
+	else if (ambient->type & RANDOM)
+	{
+		*tics = (int)(((float)rand() / (float)RAND_MAX) *
+				(float)(ambient->periodmax - ambient->periodmin)) +
+				ambient->periodmin;
+	}
+	else
+	{
+		*tics = ambient->periodmin;
+	}
+}
+
+void A_Ambient (AActor *actor)
+{
+	struct AmbientSound *ambient = &Ambients[actor->args[0]];
+
+	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
+	{
+		if (S_GetSoundPlayingInfo (actor, S_FindSound (ambient->sound)))
+			return;
+
+		if (ambient->sound[0])
+		{
+			S_StartNamedSound (actor, NULL, 0, 0, CHAN_BODY,
+				ambient->sound, ambient->volume, ambient->attenuation, true);
+
+			SetTicker (&actor->tics, ambient);
+		}
+		else
+		{
+			actor->Destroy ();
+		}
+	}
+	else
+	{
+		if (ambient->sound[0])
+		{
+			S_StartNamedSound (actor, NULL, 0, 0, CHAN_BODY,
+				ambient->sound, ambient->volume, ambient->attenuation, false);
+
+			SetTicker (&actor->tics, ambient);
+		}
+		else
+		{
+			actor->Destroy ();
+		}
+	}
+}
+
+void S_ActivateAmbient (AActor *origin, int ambient)
+{
+	struct AmbientSound *amb = &Ambients[ambient];
+
+	if (!(amb->type & 3) && !amb->periodmin)
+	{
+		sfxinfo_t *sfx = S_sfx + S_FindSound (amb->sound);
+
+		// Make sure the sound has been loaded so we know how long it is
+		if (!sfx->data)
+			I_LoadSound (sfx);
+		amb->periodmin = (sfx->ms * TICRATE) / 1000;
+	}
+
+	if (amb->type & (RANDOM|PERIODIC))
+		SetTicker (&origin->tics, amb);
+	else
+		origin->tics = 1;
+}
+
 BEGIN_COMMAND (snd_soundlist)
 {
 	char lumpname[9];
@@ -1403,21 +1479,6 @@ BEGIN_COMMAND (changemus)
 	}
 }
 END_COMMAND (changemus)
-
-static void SetTicker (int *tics, struct AmbientSound *ambient)
-{
-
-}
-
-void A_Ambient (AActor *actor)
-{
-
-}
-
-void S_ActivateAmbient (AActor *origin, int ambient)
-{
-
-}
 
 //
 // UV_SoundAvoidCl
