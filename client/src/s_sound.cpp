@@ -31,6 +31,7 @@
 #include "i_sound.h"
 #include "i_music.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "c_dispatch.h"
 #include "z_zone.h"
 #include "m_random.h"
@@ -235,7 +236,8 @@ void S_Init (float sfxVolume, float musicVolume)
 	//Printf (PRINT_HIGH, "S_Init: default sfx volume %f\n", sfxVolume);
 
 	// [RH] Read in sound sequences
-	//NumSequences = 0;
+	NumSequences = 0;
+	S_ParseSndSeq ();
 
 	S_SetSfxVolume (sfxVolume);
 	S_SetMusicVolume (musicVolume);

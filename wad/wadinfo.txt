@@ -3,6 +3,7 @@
 # List of data Lumps
 [lumps]
 SNDINFO
+SNDSEQ
 SWITCHES
 ANIMATED
 CRBRICK

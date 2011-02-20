@@ -350,6 +350,7 @@
 		<Unit filename="..\..\common\p_plats.cpp" />
 		<Unit filename="..\..\common\p_pspr.cpp" />
 		<Unit filename="..\..\common\p_pspr.h" />
+		<Unit filename="..\..\common\p_quake.cpp" />
 		<Unit filename="..\..\common\p_saveg.cpp" />
 		<Unit filename="..\..\common\p_saveg.h" />
 		<Unit filename="..\..\common\p_setup.cpp" />

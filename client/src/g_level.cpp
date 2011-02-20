@@ -49,6 +49,7 @@
 #include "p_acs.h"
 #include "d_protocol.h"
 #include "v_text.h"
+#include "s_sndseq.h"
 #include "sc_man.h"
 #include "cl_main.h"
 #include "m_fileio.h"
