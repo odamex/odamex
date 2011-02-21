@@ -32,7 +32,7 @@
 #include "m_swap.h"
 #include "m_bbox.h"
 #include "tables.h"
-#include "s_sndseq.h"
+
 
 // MACROS ------------------------------------------------------------------
 

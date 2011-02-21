@@ -813,6 +813,50 @@ FUNC(LS_Thing_Remove)
 	return true;
 }
 
+FUNC(LS_Thing_Destroy)
+// Thing_Destroy (tid)
+{
+	AActor *mobj = AActor::FindByTID (NULL, arg0);
+
+	while (mobj)
+	{
+		AActor *temp = mobj->FindByTID (arg0);
+
+		if (mobj->flags & MF_SHOOTABLE)
+			P_DamageMobj (mobj, NULL, it, mobj->health, MOD_UNKNOWN);
+
+		mobj = temp;
+	}
+
+	return true;
+}
+
+FUNC(LS_Thing_Projectile)
+// Thing_Projectile (tid, type, angle, speed, vspeed)
+{
+	return P_Thing_Projectile (arg0, arg1, BYTEANGLE(arg2), arg3<<(FRACBITS-3),
+		arg4<<(FRACBITS-3), false);
+}
+
+FUNC(LS_Thing_ProjectileGravity)
+// Thing_ProjectileGravity (tid, type, angle, speed, vspeed)
+{
+	return P_Thing_Projectile (arg0, arg1, BYTEANGLE(arg2), arg3<<(FRACBITS-3),
+		arg4<<(FRACBITS-3), true);
+}
+
+FUNC(LS_Thing_Spawn)
+// Thing_Spawn (tid, type, angle)
+{
+	return P_Thing_Spawn (arg0, arg1, BYTEANGLE(arg2), true);
+}
+
+FUNC(LS_Thing_SpawnNoFog)
+// Thing_SpawnNoFog (tid, type, angle)
+{
+	return P_Thing_Spawn (arg0, arg1, BYTEANGLE(arg2), false);
+}
+
 FUNC(LS_Thing_SetGoal)
 // Thing_SetGoal (tid, goal, delay)
 {
@@ -1617,11 +1661,11 @@ lnSpecFunc LineSpecials[256] =
 	LS_Thing_Activate,
 	LS_Thing_Deactivate,
 	LS_Thing_Remove,
-	LS_NOP,
-	LS_NOP,
-	LS_NOP,
-	LS_NOP,
-	LS_NOP,
+	LS_Thing_Destroy,
+	LS_Thing_Projectile,
+	LS_Thing_Spawn,
+	LS_Thing_ProjectileGravity,
+	LS_Thing_SpawnNoFog,
 	LS_Floor_Waggle,
 	LS_NOP,		// 139
 	LS_Sector_ChangeSound,
