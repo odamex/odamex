@@ -298,6 +298,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\s_sndseq.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\st_lib.cpp"
 				>
 			</File>
@@ -425,6 +429,10 @@
 			</File>
 			<File
 				RelativePath="..\src\s_sound.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\s_sndseq.h"
 				>
 			</File>
 			<File
@@ -978,6 +986,10 @@
 				</File>
 				<File
 					RelativePath="..\..\common\p_pspr.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\common\p_quake.cpp"
 					>
 				</File>
 				<File

@@ -56,30 +56,34 @@ void DEarthquake::RunThink ()
 
 	if (level.time % 48 == 0)
 		S_Sound (m_Spot, CHAN_BODY, "world/quake", 1, ATTN_NORM);
-
-	for (i = 0; i < players.size(); i++)
+		
+	if (serverside)
 	{
-		if (players[i].ingame() && !(players[i].cheats & CF_NOCLIP))
+		for (i = 0; i < players.size(); i++)
 		{
-			AActor *mo = players[i].mo;
-
-			if (!(level.time & 7) &&
-				 mo->x >= m_DamageBox[BOXLEFT] && mo->x < m_DamageBox[BOXRIGHT] &&
-				 mo->y >= m_DamageBox[BOXTOP] && mo->y < m_DamageBox[BOXBOTTOM])
+			if (players[i].ingame() && !(players[i].cheats & CF_NOCLIP))
 			{
-				int mult = 1024 * m_Intensity;
-				P_DamageMobj (mo, NULL, NULL, m_Intensity / 2, MOD_UNKNOWN);
-				mo->momx += (P_Random ()-128) * mult;
-				mo->momy += (P_Random ()-128) * mult;
-			}
+				AActor *mo = players[i].mo;
 
-			if (mo->x >= m_TremorBox[BOXLEFT] && mo->x < m_TremorBox[BOXRIGHT] &&
-				 mo->y >= m_TremorBox[BOXTOP] && mo->y < m_TremorBox[BOXBOTTOM])
-			{
-				players[i].xviewshift = m_Intensity;
+				if (!(level.time & 7) &&
+					 mo->x >= m_DamageBox[BOXLEFT] && mo->x < m_DamageBox[BOXRIGHT] &&
+					 mo->y >= m_DamageBox[BOXTOP] && mo->y < m_DamageBox[BOXBOTTOM])
+				{
+					int mult = 1024 * m_Intensity;
+					P_DamageMobj (mo, NULL, NULL, m_Intensity / 2, MOD_UNKNOWN);
+					mo->momx += (P_Random ()-128) * mult;
+					mo->momy += (P_Random ()-128) * mult;
+				}
+
+				if (mo->x >= m_TremorBox[BOXLEFT] && mo->x < m_TremorBox[BOXRIGHT] &&
+					 mo->y >= m_TremorBox[BOXTOP] && mo->y < m_TremorBox[BOXBOTTOM])
+				{
+					players[i].xviewshift = m_Intensity;
+				}
 			}
 		}
 	}
+
 	if (--m_Countdown == 0)
 	{
 		Destroy ();
