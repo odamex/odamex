@@ -89,6 +89,13 @@ CVAR (co_boomlinecheck, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO
 // Enable/disable the "level 8 full sound at far distances" feature
 CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+// Enable/disable zdoom-based gravity and physics interactions
+CVAR (co_zdoomphys, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR_FUNC_DECL (sv_gravity, "800", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+CVAR_FUNC_DECL (sv_aircontrol, "0.00390625", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+
 // Misc stuff
 // ----------
 

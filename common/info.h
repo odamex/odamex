@@ -1441,7 +1441,11 @@ typedef enum {
 	
 	MT_BRIDGE,	
 	MT_MAPSPOT,
-		
+	MT_MAPSPOTGRAVITY,
+	MT_BRIDGE32,
+	MT_BRIDGE16,
+	MT_BRIDGE8,
+	
 	NUMMOBJTYPES
 
 } mobjtype_t;
@@ -1469,6 +1473,7 @@ typedef struct
 	int speed;
 	int radius;
 	int height;
+	int cdheight;
 	int mass;
 	int damage;
 	const char *activesound;	// [RH] not int

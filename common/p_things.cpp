@@ -264,7 +264,7 @@ BOOL P_Thing_Projectile (int tid, int type, angle_t angle,
 
 	while ( (spot = AActor::FindByTID (spot, tid)) )
 	{
-		if (spot->type != MT_MAPSPOT /*&& spot->type != MT_MAPSPOTGRAVITY*/)
+		if (spot->type != MT_MAPSPOT && spot->type != MT_MAPSPOTGRAVITY)
 			continue;
 
 		mobj = new AActor (spot->x, spot->y, spot->z, (mobjtype_t)kind);

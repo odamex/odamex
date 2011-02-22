@@ -112,5 +112,8 @@ bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 void P_SpawnPlayerMissile(AActor *source, mobjtype_t type);
 
+// [ML] From EE
+int P_ThingInfoHeight(mobjinfo_t *mi);
+
 #endif
 

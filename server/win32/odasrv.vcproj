@@ -635,6 +635,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\common\p_quake.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\common\p_saveg.cpp"
 					>
 				</File>

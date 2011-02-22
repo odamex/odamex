@@ -901,6 +901,16 @@ void R_SetupFrame (player_t *player)
 	}
 
 	viewangle = camera->angle + viewangleoffset;
+
+	if (camera->player && camera->player->xviewshift && !paused)
+	{
+		int intensity = camera->player->xviewshift;
+		viewx += ((M_Random() % (intensity<<2))
+					-(intensity<<1))<<FRACBITS;
+		viewy += ((M_Random()%(intensity<<2))
+					-(intensity<<1))<<FRACBITS;
+	}
+		
 	extralight = camera == player->mo ? player->extralight : 0;
 
 	viewsin = finesine[viewangle>>ANGLETOFINESHIFT];

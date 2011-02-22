@@ -146,7 +146,7 @@ CVAR (sv_maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 // Maximum amount of players who can join the game, others are spectators
 CVAR (sv_maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 
-CVAR (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 	CVAR (cl_name,		"Xbox Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #else

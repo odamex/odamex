@@ -98,10 +98,17 @@ EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
-EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
+
+CVAR_FUNC_IMPL (cl_autoaim)
+{
+	if (var < 0)
+		var.Set(0.0f);
+	else if (var > 5000.0f)
+		var.Set(5000.0f);
+}
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_maxclients)
@@ -118,11 +125,11 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_allowtargetnames)
-EXTERN_CVAR(cl_mouselook)
-EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR (cl_mouselook)
+EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (interscoredraw)
-EXTERN_CVAR(cl_connectalert)
-EXTERN_CVAR(cl_disconnectalert)
+EXTERN_CVAR (cl_connectalert)
+EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 
 void CL_RunTics (void);
@@ -539,24 +546,23 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(void)
 {
-	userinfo_t coninfo;
+	userinfo_t *coninfo = &consoleplayer().userinfo;
 
-    memset (&coninfo, 0, sizeof(coninfo));
+    memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
 
-	strncpy (coninfo.netname, cl_name.cstring(), MAXPLAYERNAME);
-	coninfo.team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-	coninfo.aimdist = (fixed_t)(cl_autoaim * 16384.0);
-	coninfo.color	 = V_GetColorFromString (NULL, cl_color.cstring());
-	coninfo.skin	 = R_FindSkin (cl_skin.cstring());
-	coninfo.gender  = D_GenderByName (cl_gender.cstring());
-
+	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
+	coninfo->team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
+	coninfo->color	 = V_GetColorFromString (NULL, cl_color.cstring());
+	coninfo->skin	 = R_FindSkin (cl_skin.cstring());
+	coninfo->gender  = D_GenderByName (cl_gender.cstring());
+	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, coninfo.netname);
-	MSG_WriteByte	(&net_buffer, coninfo.team); // [Toke]
-	MSG_WriteLong	(&net_buffer, coninfo.gender);
-	MSG_WriteLong	(&net_buffer, coninfo.color);
-	MSG_WriteString	(&net_buffer, (char *)skins[coninfo.skin].name); // [Toke - skins]
-	MSG_WriteLong	(&net_buffer, coninfo.aimdist);
+	MSG_WriteString	(&net_buffer, coninfo->netname);
+	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
+	MSG_WriteLong	(&net_buffer, coninfo->gender);
+	MSG_WriteLong	(&net_buffer, coninfo->color);
+	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
+	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 }
 
 

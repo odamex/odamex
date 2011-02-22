@@ -146,6 +146,7 @@ EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowjump)
 EXTERN_CVAR(co_realactorheight)
+EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
 EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
@@ -638,7 +639,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	if (strafe || lookstrafe)
 		side += (int)((float)mousex * m_side);
 	else
-		cmd->ucmd.yaw -= (int)((float)(mousex*0x8) * m_yaw);
+		cmd->ucmd.yaw -= (int)((float)(mousex*0x8) * m_yaw) / ticdup;
 
 	mousex = mousey = 0;
 
@@ -2231,6 +2232,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_freelook = "0";
 		sv_allowjump = "0";
 		co_realactorheight = "0";
+		co_zdoomphys = "0";
 
 		return;
 	} else {

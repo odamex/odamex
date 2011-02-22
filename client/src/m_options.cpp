@@ -98,7 +98,6 @@ EXTERN_CVAR (lookspring)
 EXTERN_CVAR (lookstrafe)
 EXTERN_CVAR (hud_crosshair)
 EXTERN_CVAR (cl_mouselook)
-EXTERN_CVAR (cl_autoaim)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_level8soundfeature)

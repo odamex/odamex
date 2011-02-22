@@ -29,7 +29,6 @@
 
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
 
-void D_SetupUserInfo(void) {}
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}

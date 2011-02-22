@@ -210,6 +210,10 @@ SOURCE=..\src\s_sound.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\s_sndseq.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\st_lib.cpp
 # End Source File
 # Begin Source File
@@ -347,6 +351,10 @@ SOURCE=..\src\r_sky.h
 # Begin Source File
 
 SOURCE=..\src\s_sound.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\s_sndseq.h
 # End Source File
 # Begin Source File
 
@@ -771,6 +779,10 @@ SOURCE=..\..\common\p_pspr.cpp
 # Begin Source File
 
 SOURCE=..\..\common\p_pspr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\common\p_quake.cpp
 # End Source File
 # Begin Source File
 

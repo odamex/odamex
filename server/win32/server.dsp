@@ -581,6 +581,10 @@ SOURCE=..\..\common\p_pspr.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\common\p_quake.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\common\p_saveg.cpp
 # End Source File
 # Begin Source File

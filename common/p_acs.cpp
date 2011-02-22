@@ -1118,6 +1118,37 @@ void DLevelScript::RunScript ()
 				sp -= 3;
 				break;
 
+			case PCD_FIXEDMUL:
+				STACK(2) = FixedMul (STACK(2), STACK(1));
+				sp--;
+				break;
+
+			case PCD_FIXEDDIV:
+				STACK(2) = FixedDiv (STACK(2), STACK(1));
+				sp--;
+				break;
+
+			case PCD_SETGRAVITY:
+				level.gravity = (float)STACK(1) / 65536.f;
+				sp--;
+				break;
+
+			case PCD_SETGRAVITYDIRECT:
+				level.gravity = (float)pc[0] / 65536.f;
+				pc++;
+				break;
+
+			case PCD_SETAIRCONTROL:
+				level.aircontrol = STACK(1);
+				sp--;
+				G_AirControlChanged ();
+				break;
+
+			case PCD_SETAIRCONTROLDIRECT:
+				level.aircontrol = pc[0];
+				pc++;
+				G_AirControlChanged ();
+				break;
 		}
 	}
 

@@ -367,6 +367,8 @@
 		<Unit filename="..\src\r_segs.cpp" />
 		<Unit filename="..\src\r_sky.cpp" />
 		<Unit filename="..\src\r_things.cpp" />
+		<Unit filename="..\src\s_sndseq.cpp" />
+		<Unit filename="..\src\s_sndseq.h" />
 		<Unit filename="..\src\s_sound.cpp" />
 		<Unit filename="..\src\st_lib.cpp" />
 		<Unit filename="..\src\st_lib.h" />
@@ -473,6 +475,7 @@
 		<Unit filename="..\..\common\p_plats.cpp" />
 		<Unit filename="..\..\common\p_pspr.cpp" />
 		<Unit filename="..\..\common\p_pspr.h" />
+		<Unit filename="..\..\common\p_quake.cpp" />
 		<Unit filename="..\..\common\p_saveg.cpp" />
 		<Unit filename="..\..\common\p_saveg.h" />
 		<Unit filename="..\..\common\p_setup.cpp" />

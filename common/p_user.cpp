@@ -44,6 +44,7 @@
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
+EXTERN_CVAR (co_zdoomphys)
 
 extern bool predicting, step_mode;
 
@@ -200,6 +201,12 @@ void P_PlayerLookUpDown (player_t *p)
 	}
 }
 
+CVAR_FUNC_IMPL (sv_aircontrol)
+{
+	level.aircontrol = (fixed_t)((float)var * 65536.f);
+	G_AirControlChanged ();
+}
+
 //
 // P_MovePlayer
 //
@@ -226,7 +233,7 @@ void P_MovePlayer (player_t *player)
 		return;
 	}
 
-	// [RH] check for swim/jump
+	// [RH] check for jump
 	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
 	{
 		if (player->mo->waterlevel >= 2)
@@ -247,36 +254,47 @@ void P_MovePlayer (player_t *player)
             player->jumpTics = 18;				
 		}
 	}
-
-	if (cmd->ucmd.upmove == -32768)
-	{ // Only land if in the air
-		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
-		{
-			player->mo->flags2 &= ~MF2_FLY;
-			player->mo->flags &= ~MF_NOGRAVITY;
-		}
-	}
-	else if (cmd->ucmd.upmove != 0)
+	
+	if (co_zdoomphys)
 	{
-		if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
+		if (cmd->ucmd.upmove &&
+			(player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY))
 		{
 			player->mo->momz = cmd->ucmd.upmove << 8;
-        }
-        else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
-        {
-			player->mo->flags2 |= MF2_FLY;
-			player->mo->flags |= MF_NOGRAVITY;
-			if (player->mo->momz <= -39*FRACUNIT)
-            { // Stop falling scream
-				S_StopSound (player->mo, CHAN_VOICE);
-			}
-        }        
-		else if (cmd->ucmd.upmove > 0)
-		{
-			//P_PlayerUseArtifact (player, arti_fly);
-		}
+		}		
 	}
-	
+	else
+	{
+		if (cmd->ucmd.upmove == -32768)
+		{ // Only land if in the air
+			if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
+			{
+				player->mo->flags2 &= ~MF2_FLY;
+				player->mo->flags &= ~MF_NOGRAVITY;
+			}
+		}
+		else if (cmd->ucmd.upmove != 0)
+		{
+			if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
+			{
+				player->mo->momz = cmd->ucmd.upmove << 8;
+			}
+			else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+			{
+				player->mo->flags2 |= MF2_FLY;
+				player->mo->flags |= MF_NOGRAVITY;
+				if (player->mo->momz <= -39*FRACUNIT)
+				{ // Stop falling scream
+					S_StopSound (player->mo, CHAN_VOICE);
+				}
+			}        
+			else if (cmd->ucmd.upmove > 0)
+			{
+				//P_PlayerUseArtifact (player, arti_fly);
+			}
+		}		
+	}
+
 	// Look left/right
 	if(clientside || step_mode)
 	{
@@ -304,13 +322,23 @@ void P_MovePlayer (player_t *player)
 		if (!mo->onground && !(mo->flags2 & MF2_FLY) && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
-			movefactor >>= 8;
-			bobfactor >>= 8;
+			if (co_zdoomphys)
+			{
+				movefactor = FixedMul (movefactor, level.aircontrol);
+				bobfactor = FixedMul (bobfactor, level.aircontrol);
+			}
+			else
+			{
+				movefactor >>= 8;
+				bobfactor >>= 8;
+			}
 		}
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
-
-		if(mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)
+		
+		// [ML] Check for these conditions unless advanced physics is on
+		if(co_zdoomphys || 
+			(!co_zdoomphys && (mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)))
 		{
 			if (forwardmove)
 			{
@@ -471,6 +499,8 @@ void P_PlayerThink (player_t *player)
 		I_Error ("No player %d start\n", player->id);
 		
 	client_t *cl = &player->client;
+	
+	player->xviewshift = 0;		// [RH] Make sure view is in right place
 
 	// fixme: do this in the cheat code
 	if (player->cheats & CF_NOCLIP)
@@ -667,6 +697,8 @@ void player_s::Serialize (FArchive &arc)
 			/*<< attacker->netid*/
 			<< extralight
 			<< fixedcolormap
+			<< xviewshift
+			<< jumpTics			
 			<< respawn_time
 			<< air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
@@ -711,6 +743,8 @@ void player_s::Serialize (FArchive &arc)
 			/*>> attacker->netid*/
 			>> extralight
 			>> fixedcolormap
+			>> xviewshift
+			>> jumpTics			
 			>> respawn_time
 			>> air_finished;
 		for (i = 0; i < NUMPOWERS; i++)

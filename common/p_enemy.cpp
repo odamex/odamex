@@ -36,6 +36,7 @@
 #include "r_state.h"
 #include "c_cvars.h"
 #include "gi.h"
+#include "p_mobj.h"
 
 #include "d_player.h"
 
@@ -44,6 +45,7 @@ extern bool HasBehavior;
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_realactorheight)
+EXTERN_CVAR (co_zdoomphys)
 
 enum dirtype_t
 {
@@ -149,7 +151,7 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 //
 void P_NoiseAlert (AActor *target, AActor *emmiter)
 {
-	if (target->player && (target->player->cheats & CF_NOTARGET))
+	if (target->player && (!multiplayer && (target->player->cheats & CF_NOTARGET)))
 		return;
 
 	validcount++;
@@ -295,9 +297,27 @@ BOOL P_Move (AActor *actor)
 	if (!actor->subsector)
 		return false;
 
+	if (actor->flags2 & MF2_BLASTED)
+		return true;
+		
 	if (actor->movedir == DI_NODIR)
 		return false;
 
+	// [RH] Instead of yanking non-floating monsters to the ground,
+	// let gravity drop them down, unless they're moving down a step.
+	if (co_zdoomphys && !(actor->flags & MF_NOGRAVITY) && actor->z > actor->floorz
+		&& !(actor->flags2 & MF2_ONMOBJ))
+	{
+		if (actor->z > actor->floorz + 24*FRACUNIT)
+		{
+			return false;
+		}
+		else
+		{
+			actor->z = actor->floorz;
+		}
+	}
+	
 	if ((unsigned)actor->movedir >= 8)
 		I_Error ("Weird actor->movedir!");
 
@@ -354,7 +374,8 @@ BOOL P_Move (AActor *actor)
 			// if the special is not a door
 			// that can be opened,
 			// return false
-			if (P_UseSpecialLine (actor, ld, 0))
+			if (P_UseSpecialLine (actor, ld, 0) ||
+				P_PushSpecialLine (actor, ld, 0))
 				good = true;
 		}
 		return good;
@@ -363,8 +384,8 @@ BOOL P_Move (AActor *actor)
 	{
 		actor->flags &= ~MF_INFLOAT;
 	}
-
-	if (!(actor->flags & MF_FLOAT))
+	
+	if (!co_zdoomphys && !(actor->flags & MF_FLOAT))
 		actor->z = actor->floorz;
 
 	return true;
@@ -1276,7 +1297,7 @@ BOOL PIT_VileCheck (AActor *thing)
 		int oldflags = corpsehit->flags;
 
 		corpsehit->flags |= MF_SOLID;
-		corpsehit->height = corpsehit->info->height;
+		corpsehit->height = P_ThingInfoHeight(corpsehit->info);
 		check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
 		corpsehit->flags = oldflags;
 		corpsehit->radius = oldradius;
@@ -1351,7 +1372,7 @@ void A_VileChase (AActor *actor)
 					if ((demoplayback || demorecording) && democlassic) {
 						corpsehit->height <<= 2;
 					} else {
-						corpsehit->height = info->height;	// [RH] Use real mobj height
+						corpsehit->height = P_ThingInfoHeight(info);	// [RH] Use real mobj height
 						corpsehit->radius = info->radius;	// [RH] Use real radius
 					}
 

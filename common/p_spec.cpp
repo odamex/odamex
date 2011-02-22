@@ -61,6 +61,7 @@
 #include "r_sky.h"
 
 EXTERN_CVAR (sv_allowexit)
+extern bool	HasBehavior;
 
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
@@ -2265,7 +2266,8 @@ BOOL PIT_PushThing (AActor *thing)
 		// If speed <= 0, you're outside the effective radius. You also have
 		// to be able to see the push/pull source point.
 
-		if ((speed > 0) && (P_CheckSight (thing, tmpusher->m_Source, true)))
+		if ((speed > 0) && ((HasBehavior && P_CheckSight2 (thing, tmpusher->m_Source, true))
+			|| (!HasBehavior && P_CheckSight (thing, tmpusher->m_Source, true))))
 		{
 			angle_t pushangle = P_PointToAngle (thing->x, thing->y, sx, sy);
 			if (tmpusher->m_Source->type == MT_PUSH)
