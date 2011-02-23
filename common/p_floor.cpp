@@ -862,6 +862,8 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 		elevator->m_Speed = speed;
 		elevator->StartFloorSound ();
 
+        sec->floordata = sec->ceilingdata = elevator;
+
 		// set up the fields according to the type of elevator action
 		switch (elevtype)
 		{

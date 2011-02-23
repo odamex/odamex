@@ -446,7 +446,6 @@ public:
 	void SetState(byte state, int count) { m_Status = (EPlatState)state; m_Count = count; }
 	void GetState(byte &state, int &count) { state = (byte)m_Status; count = m_Count; }
 
-protected:
 	DPlat (sector_t *sector);
 
 	fixed_t 	m_Speed;
@@ -460,6 +459,7 @@ protected:
 	int 		m_Tag;
 	EPlatType	m_Type;
 	bool		m_PostWait;
+protected:
 
 	void PlayPlatSound (const char *sound);
 	void Reactivate ();
@@ -507,12 +507,13 @@ public:
 
 	};
 
+	DPillar ();
+
 	DPillar (sector_t *sector, EPillar type, fixed_t speed, fixed_t height,
 			 fixed_t height2, bool crush);
 
 	void RunThink ();
 
-protected:
 	EPillar		m_Type;
 	fixed_t		m_FloorSpeed;
 	fixed_t		m_CeilingSpeed;
@@ -520,8 +521,6 @@ protected:
 	fixed_t		m_CeilingTarget;
 	bool		m_Crush;
 
-private:
-	DPillar ();
 };
 
 inline FArchive &operator<< (FArchive &arc, DPillar::EPillar type)
@@ -559,7 +558,7 @@ public:
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
 
 	void RunThink ();
-protected:
+
 	EVlDoor		m_Type;
 	fixed_t 	m_TopHeight;
 	fixed_t 	m_Speed;
@@ -574,7 +573,7 @@ protected:
 	int 		m_TopCountdown;
 
     line_t      *m_Line;
-
+protected:
 	void DoorSound (bool raise) const;
 
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
@@ -640,7 +639,6 @@ public:
 
 	void RunThink ();
 
-protected:
 	ECeiling	m_Type;
 	fixed_t 	m_BottomHeight;
 	fixed_t 	m_TopHeight;
@@ -658,6 +656,7 @@ protected:
 	// ID
 	int 		m_Tag;
 	int 		m_OldDirection;
+protected:
 
 	void PlayCeilingSound ();
 
@@ -738,7 +737,6 @@ public:
 
 	void RunThink ();
 
-protected:
 	EFloor	 	m_Type;
 	bool 		m_Crush;
 	int 		m_Direction;
@@ -754,6 +752,8 @@ protected:
 	int			m_PauseTime;
 	int			m_StepTime;
 	int			m_PerStepTime;
+
+protected:
 
 	void StartFloorSound ();
 
@@ -794,13 +794,13 @@ public:
 
 	void RunThink ();
 
-protected:
 	EElevator	m_Type;
 	int			m_Direction;
 	fixed_t		m_FloorDestHeight;
 	fixed_t		m_CeilingDestHeight;
 	fixed_t		m_Speed;
 
+protected:
 	void StartFloorSound ();
 
 	friend BOOL EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,

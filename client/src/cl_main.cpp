@@ -1155,7 +1155,7 @@ void CL_UpdateLocalPlayer(void)
 
     p.mo->waterlevel = MSG_ReadByte();
 
-	real_plats.clear();
+	real_plats.Clear();
 }
 
 void CL_ResendSvGametic(void)
@@ -1781,34 +1781,218 @@ void CL_UpdateMovingSector(void)
 {
 	int tic = MSG_ReadLong();
 	unsigned short s = (unsigned short)MSG_ReadShort();
-	unsigned long fh = MSG_ReadLong(); // floor height
-	MSG_ReadLong(); // ceiling height
-	byte state = MSG_ReadByte();
-	int count = MSG_ReadLong();
+    fixed_t fh = MSG_ReadLong(); // floor height
+    fixed_t ch = MSG_ReadLong(); // ceiling height
+    byte Type = MSG_ReadByte();
 
-/*
-	if(!sectors || s >= numsectors)
-		return;
+    // Replaces the data in the corresponding struct
+    // 0 = floors, 1 = ceilings, 2 = elevators/pillars 
+    byte ReplaceType;
 
-	plat_pred_t pred = {s, state, count, tic, fh};
-//	sector_t *sec = &sectors[s];
+	plat_pred_t pred;
+	
+	memset(&pred, 0, sizeof(pred));
 
-//	if(!sec->floordata)
-//		sec->floordata = new DMovingFloor(sec);
+	pred.secnum = s;
+	pred.tic = tic;
+	pred.floorheight = fh;
+	pred.ceilingheight = ch;
 
-	size_t i;
+	switch(Type)
+	{
+        // Floors
+        case 0:
+        {
+            pred.Floor.m_Type = (DFloor::EFloor)MSG_ReadLong();
+            pred.Floor.m_Crush = MSG_ReadBool();
+            pred.Floor.m_Direction = MSG_ReadLong();
+            pred.Floor.m_NewSpecial = MSG_ReadShort();
+            pred.Floor.m_Texture = MSG_ReadShort();
+            pred.Floor.m_FloorDestHeight = MSG_ReadLong();
+            pred.Floor.m_Speed = MSG_ReadLong();
+            pred.Floor.m_ResetCount = MSG_ReadLong();
+            pred.Floor.m_OrgHeight = MSG_ReadLong();
+            pred.Floor.m_Delay = MSG_ReadLong();
+            pred.Floor.m_PauseTime = MSG_ReadLong();
+            pred.Floor.m_StepTime = MSG_ReadLong(); 
+            pred.Floor.m_PerStepTime = MSG_ReadLong();
 
-	for(i = 0; i < real_plats.size(); i++)
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->floordata)
+                sec->floordata = new DFloor(sec);
+
+            ReplaceType = 0;
+        }
+        break;
+
+        // Platforms
+	    case 1:
+	    {
+            pred.Floor.m_Speed = MSG_ReadLong();
+            pred.Floor.m_Low = MSG_ReadLong();
+            pred.Floor.m_High = MSG_ReadLong();
+            pred.Floor.m_Wait = MSG_ReadLong();
+            pred.Floor.m_Count = MSG_ReadLong();
+            pred.Floor.m_Status = MSG_ReadLong();
+            pred.Floor.m_OldStatus = MSG_ReadLong();
+            pred.Floor.m_Crush = MSG_ReadBool();
+            pred.Floor.m_Tag = MSG_ReadLong();
+            pred.Floor.m_Type = MSG_ReadLong();
+            pred.Floor.m_PostWait = MSG_ReadBool();
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->floordata)
+                sec->floordata = new DPlat(sec);
+
+            ReplaceType = 0;
+	    }
+	    break;
+
+        // Ceilings
+        case 2:
+        {
+            pred.Ceiling.m_Type = (DCeiling::ECeiling)MSG_ReadLong();
+            pred.Ceiling.m_BottomHeight = MSG_ReadLong();
+            pred.Ceiling.m_TopHeight = MSG_ReadLong();
+            pred.Ceiling.m_Speed = MSG_ReadLong();
+            pred.Ceiling.m_Speed1 = MSG_ReadLong();
+            pred.Ceiling.m_Speed2 = MSG_ReadLong();
+            pred.Ceiling.m_Crush = MSG_ReadBool();
+            pred.Ceiling.m_Silent = MSG_ReadLong();
+            pred.Ceiling.m_Direction = MSG_ReadLong();
+            pred.Ceiling.m_Texture = MSG_ReadLong();
+            pred.Ceiling.m_NewSpecial = MSG_ReadLong();
+            pred.Ceiling.m_Tag = MSG_ReadLong();
+            pred.Ceiling.m_OldDirection = MSG_ReadLong();
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->ceilingdata)
+                sec->ceilingdata = new DCeiling(sec);
+
+            ReplaceType = 1;
+        }
+        break;
+
+        // Doors
+        case 3:
+        {
+            int LineIndex;
+
+            pred.Ceiling.m_Type = (DDoor::EVlDoor)MSG_ReadLong();
+            pred.Ceiling.m_TopHeight = MSG_ReadLong();
+            pred.Ceiling.m_Speed = MSG_ReadLong();
+            pred.Ceiling.m_Direction = MSG_ReadLong();
+            pred.Ceiling.m_TopWait = MSG_ReadLong();
+            pred.Ceiling.m_TopCountdown = MSG_ReadLong();
+            LineIndex = MSG_ReadLong();
+
+            if (!lines || LineIndex >= numlines)
+                return;
+
+            pred.Ceiling.m_Line = &lines[LineIndex];
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->ceilingdata)
+                sec->ceilingdata = new DDoor(sec);
+
+            ReplaceType = 1;
+        }
+        break;
+
+        // Elevators
+        case 4:
+        {
+            pred.Both.m_Type = (DElevator::EElevator)MSG_ReadLong();
+            pred.Both.m_Direction = MSG_ReadLong();
+            pred.Both.m_FloorDestHeight = MSG_ReadLong();
+            pred.Both.m_CeilingDestHeight = MSG_ReadLong();
+            pred.Both.m_Speed = MSG_ReadLong();
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->ceilingdata && !sec->floordata)
+                sec->ceilingdata = sec->floordata = new DElevator(sec);
+
+            ReplaceType = 2;
+        }
+        break;
+
+        // Pillars
+        case 5:
+        {
+            pred.Both.m_Type = (DPillar::EPillar)MSG_ReadLong();
+            pred.Both.m_FloorSpeed = MSG_ReadLong();
+            pred.Both.m_CeilingSpeed = MSG_ReadLong();
+            pred.Both.m_FloorTarget = MSG_ReadLong();
+            pred.Both.m_CeilingTarget = MSG_ReadLong();
+            pred.Both.m_Crush = MSG_ReadBool();
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->ceilingdata && !sec->floordata)
+                sec->ceilingdata = sec->floordata = new DPillar();
+
+            ReplaceType = 2;
+        }
+        break;
+
+	    default:
+            return;
+	}
+
+    size_t i;
+
+	for(i = 0; i < real_plats.Size(); i++)
 	{
 		if(real_plats[i].secnum == s)
 		{
-			real_plats[i] = pred;
+            real_plats[i].tic = pred.tic;
+
+			if (ReplaceType == 0)
+            {
+                real_plats[i].floorheight = pred.floorheight;
+                real_plats[i].Floor = pred.Floor;
+            }
+            else if (ReplaceType == 1)
+            {
+                real_plats[i].ceilingheight = pred.ceilingheight;
+                real_plats[i].Ceiling = pred.Ceiling;
+            }
+            else
+            {
+                real_plats[i].floorheight = pred.floorheight;
+                real_plats[i].ceilingheight = pred.ceilingheight;
+                real_plats[i].Both = pred.Both;
+            }
+
 			break;
 		}
 	}
 
-	if(i == real_plats.size())
-		real_plats.push_back(pred);*/
+	if(i == real_plats.Size())
+		real_plats.Push(pred);
 }
 
 
@@ -2028,6 +2212,9 @@ void CL_ActivateLine(void)
 	case 2:
 		P_ShootSpecialLine(mo, &lines[l], true);
 		break;
+    case 3:
+        P_PushSpecialLine(mo, &lines[l], side, true);
+        break;
 	}
 }
 
@@ -2049,7 +2236,7 @@ void CL_LoadMap(void)
 
 	G_InitNew (mapname);
 
-	real_plats.clear();
+	real_plats.Clear();
 
 	CTF_CheckFlags(consoleplayer());
 

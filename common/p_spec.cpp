@@ -1057,9 +1057,6 @@ P_CrossSpecialLine
   AActor*	thing,
   bool      FromServer)
 {
-    if (clientside && network_game && !FromServer)
-        return;
-
     line_t*	line = &lines[linenum];
 
 	if(thing)
@@ -1167,9 +1164,6 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
-    if (clientside && network_game && !FromServer)
-        return;
-    
 	if(thing)
 	{
 		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
@@ -1211,9 +1205,6 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
-    if (clientside && network_game && !FromServer)
-        return false;
-    
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1327,7 +1318,7 @@ P_PushSpecialLine
 					line->args[3], line->args[4]))
 	{
 		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
-		OnActivatedLine(line, thing, side, 1);
+		OnActivatedLine(line, thing, side, 3);
 
 		if(serverside)
 		{

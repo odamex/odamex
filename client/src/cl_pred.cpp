@@ -35,6 +35,9 @@
 #include "c_console.h"
 #include "cl_main.h"
 
+// Prediction debugging info
+#define _PRED_DBG
+
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 void P_DeathThink (player_t *player);
@@ -50,36 +53,143 @@ byte    cl_waterlevel[MAXSAVETICS];
 
 bool predicting;
 
-std::vector <plat_pred_t> real_plats;
+TArray <plat_pred_t> real_plats;
 
 //
 // CL_ResetSectors
 //
 void CL_ResetSectors (void)
 {
-	for(size_t i = 0; i < real_plats.size(); i++)
+	for(size_t i = 0; i < real_plats.Size(); i++)
 	{
 		plat_pred_t *pred = &real_plats[i];
 		sector_t *sec = &sectors[pred->secnum];
 
-		if(!sec->floordata)
+		if(!sec->floordata && !sec->ceilingdata)
 		{
-			if(real_plats.erase(real_plats.begin() + i) == real_plats.end())
-				break;
-			
+			real_plats.Pop(real_plats[i]);
+
+            if (!real_plats.Size())
+                break;
+
 			continue;
 		}
 
-		if(sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat)))
+		// Pillars and elevators set both floordata and ceilingdata
+		if(sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
 		{
-			DPlat *plat = (DPlat *)sec->floordata;
-			sec->floorheight = pred->floorheight;
-			plat->SetState(pred->state, pred->count);
+			DPillar *Pillar = (DPillar *)sec->ceilingdata;
+            
+            sec->floorheight = pred->floorheight;
+            sec->ceilingheight = pred->ceilingheight;
+            P_ChangeSector(sec, false);
+
+            Pillar->m_Type = (DPillar::EPillar)pred->Both.m_Type;
+            Pillar->m_FloorSpeed = pred->Both.m_FloorSpeed;
+            Pillar->m_CeilingSpeed = pred->Both.m_CeilingSpeed;
+            Pillar->m_FloorTarget = pred->Both.m_FloorTarget;
+            Pillar->m_CeilingTarget = pred->Both.m_CeilingTarget;
+            Pillar->m_Crush = pred->Both.m_Crush;
+            
+            continue;
 		}
-		else if(sec->floordata && sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor)))
+
+        if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
+        {
+            DElevator *Elevator = (DElevator *)sec->ceilingdata;
+
+            sec->floorheight = pred->floorheight;
+            sec->ceilingheight = pred->ceilingheight;
+            P_ChangeSector(sec, false);
+
+            Elevator->m_Type = (DElevator::EElevator)pred->Both.m_Type;
+            Elevator->m_Direction = pred->Both.m_Direction;
+            Elevator->m_FloorDestHeight = pred->Both.m_FloorDestHeight;
+            Elevator->m_CeilingDestHeight = pred->Both.m_CeilingDestHeight;
+            Elevator->m_Speed = pred->Both.m_Speed;
+            
+            continue;
+        }
+
+		if (sec->floordata && sec->floordata->IsA(RUNTIME_CLASS(DFloor)))
+        {
+            DFloor *Floor = (DFloor *)sec->floordata;
+
+            sec->floorheight = pred->floorheight;
+            P_ChangeSector(sec, false);
+
+            Floor->m_Type = (DFloor::EFloor)pred->Floor.m_Type;
+            Floor->m_Crush = pred->Floor.m_Crush;
+            Floor->m_Direction = pred->Floor.m_Direction;
+            Floor->m_NewSpecial = pred->Floor.m_NewSpecial;
+            Floor->m_Texture = pred->Floor.m_Texture;
+            Floor->m_FloorDestHeight = pred->Floor.m_FloorDestHeight;
+            Floor->m_Speed = pred->Floor.m_Speed;
+            Floor->m_ResetCount = pred->Floor.m_ResetCount;
+            Floor->m_OrgHeight = pred->Floor.m_OrgHeight;
+            Floor->m_Delay = pred->Floor.m_Delay;
+            Floor->m_PauseTime = pred->Floor.m_PauseTime;
+            Floor->m_StepTime = pred->Floor.m_StepTime;
+            Floor->m_PerStepTime = pred->Floor.m_PerStepTime;
+        }
+
+		if(sec->floordata && sec->floordata->IsA(RUNTIME_CLASS(DPlat)))
 		{
-			sec->floorheight = pred->floorheight;
+			DPlat *Plat = (DPlat *)sec->floordata;
+            
+            sec->floorheight = pred->floorheight;
+            P_ChangeSector(sec, false);
+
+            Plat->m_Speed = pred->Floor.m_Speed;
+            Plat->m_Low = pred->Floor.m_Low;
+            Plat->m_High = pred->Floor.m_High;
+            Plat->m_Wait = pred->Floor.m_Wait;
+            Plat->m_Count = pred->Floor.m_Count;
+            Plat->m_Status = (DPlat::EPlatState)pred->Floor.m_Status;
+            Plat->m_OldStatus = (DPlat::EPlatState)pred->Floor.m_OldStatus;
+            Plat->m_Crush = pred->Floor.m_Crush;
+            Plat->m_Tag = pred->Floor.m_Tag;
+            Plat->m_Type = (DPlat::EPlatType)pred->Floor.m_Type;
+            Plat->m_PostWait = pred->Floor.m_PostWait;
 		}
+
+		if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
+        {
+            DCeiling *Ceiling = (DCeiling *)sec->ceilingdata;
+
+            sec->ceilingheight = pred->ceilingheight;
+            P_ChangeSector(sec, false);
+
+            Ceiling->m_Type = (DCeiling::ECeiling)pred->Ceiling.m_Type;
+            Ceiling->m_BottomHeight = pred->Ceiling.m_BottomHeight;
+            Ceiling->m_TopHeight = pred->Ceiling.m_TopHeight;
+            Ceiling->m_Speed = pred->Ceiling.m_Speed;
+            Ceiling->m_Speed1 = pred->Ceiling.m_Speed1;
+            Ceiling->m_Speed2 = pred->Ceiling.m_Speed2;
+            Ceiling->m_Crush = pred->Ceiling.m_Crush;
+            Ceiling->m_Silent = pred->Ceiling.m_Silent;
+            Ceiling->m_Direction = pred->Ceiling.m_Direction;
+            Ceiling->m_Texture = pred->Ceiling.m_Texture;
+            Ceiling->m_NewSpecial = pred->Ceiling.m_NewSpecial;
+            Ceiling->m_Tag = pred->Ceiling.m_Tag;
+            Ceiling->m_OldDirection = pred->Ceiling.m_OldDirection;
+        }
+
+		if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
+        {
+            DDoor *Door = (DDoor *)sec->ceilingdata;
+
+            sec->ceilingheight = pred->ceilingheight;
+            P_ChangeSector(sec, false);
+
+            Door->m_Type = (DDoor::EVlDoor)pred->Ceiling.m_Type;
+            Door->m_TopHeight = pred->Ceiling.m_TopHeight;
+            Door->m_Speed = pred->Ceiling.m_Speed;
+            Door->m_Direction = pred->Ceiling.m_Direction;
+            Door->m_TopWait = pred->Ceiling.m_TopWait;
+            Door->m_TopCountdown = pred->Ceiling.m_TopCountdown;
+            Door->m_Line = pred->Ceiling.m_Line;
+        }
 	}
 }
 
@@ -88,18 +198,36 @@ void CL_ResetSectors (void)
 //
 void CL_PredictSectors (int predtic)
 {
-	for(size_t i = 0; i < real_plats.size(); i++)
+	for(size_t i = 0; i < real_plats.Size(); i++)
 	{
 		plat_pred_t *pred = &real_plats[i];
 		sector_t *sec = &sectors[pred->secnum];
 
 		if(pred->tic < predtic)
 		{
-			if(sec->floordata && (sec->floordata->IsKindOf(RUNTIME_CLASS(DPlat))
-				|| sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor))))
-			{
-				sec->floordata->RunThink();
-			}
+            if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
+            {
+                sec->ceilingdata->RunThink();
+
+                continue;
+            } 
+
+            if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
+            {
+                sec->ceilingdata->RunThink();
+
+                continue;
+            }  
+
+            if (sec->floordata && sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor)))
+            {
+                sec->floordata->RunThink();
+            }
+
+            if (sec->ceilingdata && sec->ceilingdata->IsKindOf(RUNTIME_CLASS(DMovingCeiling)))
+            {
+                sec->ceilingdata->RunThink();
+            }
 		}
 	}
 }
@@ -249,19 +377,18 @@ void CL_PredictMove (void)
 		predtic = 0;
 
 	// Predict each tic
-	while(predtic < gametic)
+	while(++predtic < gametic)
 	{
 		CL_PredictPlayers(predtic);
 		CL_PredictSectors(predtic);
-
-		++predtic;
 	}
 
 	predicting = false;
 
 	CL_PredictPlayers(predtic);
-	CL_PredictSectors(predtic);
-
+	// [Russell] - I don't think we need to call this as DThinker::RunThinkers()
+	// will already run the moving sector thinkers after prediction
+    //CL_PredictSectors(predtic);
     
     #ifdef _PRED_DBG
 	if ((origx == p->mo->x) && (origy == p->mo->y) && (origz == p->mo->z))
