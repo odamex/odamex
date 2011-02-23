@@ -454,7 +454,20 @@ int WI_MapToIndex (char *map)
 	return i;
 }
 
-void WI_drawOnLnode (int n, patch_t *c[])
+
+// ====================================================================
+// WI_drawOnLnode
+// Purpose: Draw patches at a location based on episode/map
+// Args:    n   -- index to map# within episode
+//          c[] -- array of patches to be drawn
+//          numpatches -- haleyjd 04/12/03: bug fix - number of patches
+// Returns: void
+//
+// draw stuff at a location by episode/map#
+//
+// [Russell] - Modified for odamex, fixes a crash with certain pwads at
+// intermission change
+void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 {
 
 	int 	i;
@@ -472,7 +485,10 @@ void WI_drawOnLnode (int n, patch_t *c[])
 		right = left + c[i]->width();
 		bottom = top + c[i]->height();
 
-		if (left >= 0 && right < 320 && top >= 0 && bottom < 200)
+		if (left >= 0 && 
+            right < screen->width && 
+            top >= 0 && 
+            bottom < screen->height)
 		{
 			fits = true;
 		}
@@ -480,9 +496,9 @@ void WI_drawOnLnode (int n, patch_t *c[])
 		{
 			i++;
 		}
-	} while (!fits && i != 2);
+	} while (!fits && i != numpatches); // haleyjd: bug fix
 
-	if (fits && i<2)
+	if (fits && i < numpatches) // haleyjd: bug fix
 	{
 		FB->DrawPatchIndirect (c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
 	}
@@ -670,12 +686,12 @@ void WI_drawShowNextLoc (void)
 		// draw a splat on taken cities.
 		for (i=0; i < NUMMAPS; i++) {
 			if (FindLevelInfo (names[wbs->epsd][i])->flags & LEVEL_VISITED)
-				WI_drawOnLnode(i, &splat);
+				WI_drawOnLnode(i, &splat, 1);
 		}
 
 		// draw flashing ptr
 		if (snl_pointeron)
-			WI_drawOnLnode(WI_MapToIndex (wbs->next), yah);
+			WI_drawOnLnode(WI_MapToIndex (wbs->next), yah, 2);
 	}
 
 	// draws which level you are entering..
