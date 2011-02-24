@@ -36,7 +36,7 @@
 #include "cl_main.h"
 
 // Prediction debugging info
-#define _PRED_DBG
+//#define _PRED_DBG
 
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
