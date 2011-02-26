@@ -73,7 +73,6 @@ int AGOL_InitVideo(const char *drivers, const int width, const int height)
 				return -1;
 			}
 		}
-
 	}
 
 #ifdef _XBOX
