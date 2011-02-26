@@ -3280,7 +3280,13 @@ void SV_UpdateConsolePlayer(player_t &player)
 {
 	// GhostlyDeath -- Spectators are on their own really
 	if (player.spectator)
+	{
+        if (gametic % 3)
+            return;
+        
+        SV_UpdateMovingSectors(player);
 		return;
+	}
 
 	// It's not a good idea to send 33 bytes every tic.
 	if (gametic % 3)
