@@ -85,7 +85,8 @@ CVAR_FUNC_DECL (msgmidcolor, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // ------------
 
 // Determines whether to draw the scores on intermission.
-CVAR (interscoredraw, "1", CVAR_ARCHIVE)
+CVAR (wi_newintermission, "0", CVAR_ARCHIVE)
+
 
 // Menus
 // -----

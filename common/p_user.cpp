@@ -692,6 +692,8 @@ void player_s::Serialize (FArchive &arc)
 			<< cheats
 			<< refire
 			<< killcount
+			<< itemcount
+			<< secretcount			
 			<< damagecount
 			<< bonuscount
 			/*<< attacker->netid*/
@@ -738,6 +740,8 @@ void player_s::Serialize (FArchive &arc)
 			>> cheats
 			>> refire
 			>> killcount
+			>> itemcount
+			>> secretcount			
 			>> damagecount
 			>> bonuscount
 			/*>> attacker->netid*/

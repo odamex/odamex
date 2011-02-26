@@ -784,24 +784,15 @@ static void goOn (int position)
 
 void G_ExitLevel (int position, int drawscores)
 {
-    //if (multiplayer && drawscores && interscoredraw)
-    //    AddCommandString("displayscores");
-    // Never called.
-
 	secretexit = false;
 	goOn (position);
 
 	//gameaction = ga_completed;
-	
 }
 
 // Here's for the german edition.
 void G_SecretExitLevel (int position, int drawscores)
 {
-    //if (multiplayer && drawscores && interscoredraw)
-    //    AddCommandString("displayscores");
-    // Never called.
-
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gamemode == commercial)
 		 && (W_CheckNumForName("map31")<0))
@@ -875,7 +866,11 @@ void G_DoCompleted (void)
 	{
 		wminfo.plyr[i].in = players[i].ingame();
 		wminfo.plyr[i].skills = players[i].killcount;
+		wminfo.plyr[i].sitems = players[i].itemcount;
+		wminfo.plyr[i].ssecret = players[i].secretcount;		
 		wminfo.plyr[i].stime = level.time;
+		//memcpy (wminfo.plyr[i].frags, players[i].frags
+		//		, sizeof(wminfo.plyr[i].frags));		
 		wminfo.plyr[i].fragcount = players[i].fragcount;
 
 		if(&players[i] == &consoleplayer())
@@ -976,6 +971,8 @@ void G_DoLoadLevel (int position)
 			players[i].playerstate = PST_REBORN;
 
 		players[i].fragcount = 0;
+		players[i].itemcount = 0;
+		players[i].secretcount = 0;
 		players[i].deathcount = 0; // [Toke - Scores - deaths]
 		players[i].killcount = 0; // [deathz0r] Coop kills
 		players[i].points = 0;

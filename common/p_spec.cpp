@@ -1434,6 +1434,7 @@ void P_PlayerInSpecialSector (player_t *player)
 		}
 
 		if (sector->special & SECRET_MASK) {
+			player->secretcount++;
 			level.found_secrets++;
 			sector->special &= ~SECRET_MASK;
 			if (player->mo == consoleplayer().camera)

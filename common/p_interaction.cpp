@@ -896,9 +896,11 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             return;
 	}
 
-	if (serverside && special->flags & MF_COUNTITEM)
+	if (special->flags & MF_COUNTITEM)
 	{
-		level.found_items++;
+		player->itemcount++;
+		if (serverside)
+			level.found_items++;
 	}
 
 	special->Destroy();

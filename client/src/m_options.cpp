@@ -109,6 +109,7 @@ EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_boomlinecheck)
+EXTERN_CVAR (wi_newintermission)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -195,6 +196,7 @@ static void CustomizeControls (void);
 static void VideoOptions (void);
 static void SoundOptions (void);
 static void CompatOptions (void);
+static void GoToConsole (void);
 static void GoToConsole (void);
 void Reset2Defaults (void);
 void Reset2Saved (void);
@@ -324,7 +326,7 @@ menu_t ControlsMenu = {
 //
 // -------------------------------------------------------
 
-static value_t MouseBases[] =
+static value_t DoomOrOdamex[] =
 {
 	{ 0.0, "Doom" },
 	{ 1.0, "Odamex" },
@@ -332,7 +334,7 @@ static value_t MouseBases[] =
 
 static menuitem_t MouseItems[] =
 {
-	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{MouseBases}				},
+	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{DoomOrOdamex}				},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ discrete	,	"Always FreeLook"						, {&cl_mouselook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
@@ -534,7 +536,8 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
-	{ discrete, "High-res scoreboard",  {&hud_usehighresboard}, {2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "High-res scoreboard",  	{&hud_usehighresboard}, {2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Multiplayer Intermissions",{&wi_newintermission}, {2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Green",      {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },

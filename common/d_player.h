@@ -165,7 +165,7 @@ public:
     // Frags, deaths, monster kills
 	int			fragcount;
 	int			deathcount;
-	int			killcount;
+	int			killcount, itemcount, secretcount;		// for intermission
 
     // Is wp_nochange if not changing.
 	weapontype_t	pendingweapon;

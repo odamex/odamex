@@ -1401,7 +1401,8 @@ void P_SetupLevel (char *lumpname, int position)
 	{
 		for (i = 0; i < players.size(); i++)
 		{
-			players[i].killcount = 0;
+			players[i].killcount = players[i].secretcount 
+				= players[i].itemcount = 0;
 		}
 	}
 

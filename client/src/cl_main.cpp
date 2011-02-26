@@ -127,7 +127,6 @@ EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_allowtargetnames)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (interscoredraw)
 EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
@@ -2256,8 +2255,6 @@ void CL_FullGame()
 void CL_ExitLevel()
 {
 	if(gamestate != GS_DOWNLOAD) {
-        if (multiplayer && interscoredraw)
-            AddCommandString("displayscores");
 		gameaction = ga_completed;
 	}
 }
