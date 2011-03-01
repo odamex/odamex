@@ -339,8 +339,26 @@ void CL_PredictMove (void)
 	player_t *p = &consoleplayer();
 
 	if (!p->tic || !p->mo)
-		return;
-
+    {
+        if (!p->spectator)
+            return;
+        
+        // Predict sectors for local player who is a spectator
+        CL_ResetSectors();
+            
+        int predtic = gametic - MAXSAVETICS;
+            
+        if(predtic < 0)
+            predtic = 0;
+            
+        while(++predtic < gametic)
+        {
+            CL_PredictSectors(predtic);
+        }
+        
+		return;      
+    }
+    
     #ifdef _PRED_DBG
     fixed_t origx, origy, origz;
     #endif
