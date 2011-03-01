@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	CL_PRED
+//	Client-side prediction of local player, other players and moving sectors
 //
 //-----------------------------------------------------------------------------
 
