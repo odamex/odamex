@@ -127,6 +127,11 @@ msg_info_t clc_info[clc_max];
 msg_info_t svc_info[svc_max];
 
 #ifdef ODA_HAVE_MINIUPNP
+EXTERN_CVAR(sv_upnp)
+EXTERN_CVAR(sv_upnp_discovertimeout)
+EXTERN_CVAR(sv_upnp_description)
+EXTERN_CVAR(sv_upnp_externalip)
+
 static struct UPNPUrls urls;
 static struct IGDdatas data;
 
@@ -136,36 +141,68 @@ void init_upnp (void)
 	struct UPNPDev * dev;
 	char * descXML;
 	int descXMLsize = 0;
-	//printf("TB : init_upnp()\n");
+
+    char IPAddress[40];
+    int r;
+
+    if (!sv_upnp)
+        return;
+
 	memset(&urls, 0, sizeof(struct UPNPUrls));
 	memset(&data, 0, sizeof(struct IGDdatas));
-	devlist = upnpDiscover(2000, NULL, NULL, 0);
-	if (devlist)
-	{
-		dev = devlist;
-		while (dev)
-		{
-			if (strstr (dev->st, "InternetGatewayDevice"))
-				break;
-			dev = dev->pNext;
-		}
-		if (!dev)
-			dev = devlist; /* defaulting to first device */
+	
+	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
+	
+	devlist = upnpDiscover((int)sv_upnp_discovertimeout, NULL, NULL, 0);
+	
+	if (!devlist)
+    {
+		Printf(PRINT_HIGH, "UPnP: Router not found or timed out\n");   
+		
+        return;
+    }
 
-		Printf(PRINT_HIGH, "UPnP device :\n"
-		       " desc: %s\n st: %s\n",
-			   dev->descURL, dev->st);
+    dev = devlist;
 
-		descXML = (char *)miniwget(dev->descURL, &descXMLsize);
-		if (descXML)
-		{
-			parserootdesc (descXML, descXMLsize, &data);
-			free (descXML); descXML = 0;
-			GetUPNPUrls (&urls, &data, dev->descURL);
-		}
-		freeUPNPDevlist(devlist);
-	}
+    while (dev)
+    {
+        if (strstr (dev->st, "InternetGatewayDevice"))
+            break;
+        dev = dev->pNext;
+    }
 
+    if (!dev)
+        dev = devlist; /* defaulting to first device */
+
+    //Printf(PRINT_HIGH, "UPnP device :\n"
+      //      " desc: %s\n st: %s\n",
+        //    dev->descURL, dev->st);
+
+    descXML = (char *)miniwget(dev->descURL, &descXMLsize);
+
+    if (descXML)
+    {
+        parserootdesc (descXML, descXMLsize, &data);
+        free (descXML); descXML = 0;
+        GetUPNPUrls (&urls, &data, dev->descURL);
+    }
+
+    freeUPNPDevlist(devlist);
+
+    r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype, 
+            IPAddress);
+
+    if (r != 0)
+        Printf(PRINT_HIGH, 
+            "UPnP: Router found but unable to get external IP address\n");
+    else
+    {
+        Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n", 
+            IPAddress);
+
+        // Store ip address just in case admin wants it
+        sv_upnp_externalip.ForceSet(IPAddress);
+    }
 }
 
 void upnp_add_redir (const char * addr, int port)
@@ -173,16 +210,18 @@ void upnp_add_redir (const char * addr, int port)
 	char port_str[16];
 	int r;
 
+    if (!sv_upnp)
+        return;
+
 	if(urls.controlURL == NULL)
-	{
-		Printf(PRINT_HIGH, "UPnP router not found\n");
 		return;
-	}
+
 	sprintf(port_str, "%d", port);
 	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-	                        port_str, port_str, addr, 0, "UDP", NULL, 0);
-	if(r!=0)
-		Printf(PRINT_HIGH, "AddPortMapping(%s, %s, %s) failed: %d\n", port_str, port_str, addr, r);
+            port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
+	
+	if (r != 0)
+		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
 }
 
 void upnp_rem_redir (int port)
@@ -190,14 +229,18 @@ void upnp_rem_redir (int port)
 	char port_str[16];
 	int r;
 
+    if (!sv_upnp)
+        return;
+
 	if(urls.controlURL == NULL)
 		return;
 
 	sprintf(port_str, "%d", port);
-	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port_str, "UDP", 0);
+	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, 
+        port_str, "UDP", 0);
 
 	if (r != 0)
-        Printf(PRINT_HIGH, "DeletePortMapping(%s) failed: %d\n", port_str, r);
+        Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
 }
 #endif
 
