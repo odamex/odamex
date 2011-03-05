@@ -173,9 +173,9 @@ void upnp_add_redir (const char * addr, int port)
 	char port_str[16];
 	int r;
 
-	if(urls.controlURL[0] == '\0')
+	if(urls.controlURL == NULL)
 	{
-		Printf(PRINT_HIGH, "TB : the init was not done !\n");
+		Printf(PRINT_HIGH, "UPnP router not found\n");
 		return;
 	}
 	sprintf(port_str, "%d", port);
@@ -190,11 +190,9 @@ void upnp_rem_redir (int port)
 	char port_str[16];
 	int r;
 
-	if(urls.controlURL[0] == '\0')
-	{
-		Printf(PRINT_HIGH, "TB : the init was not done !\n");
+	if(urls.controlURL == NULL)
 		return;
-	}
+
 	sprintf(port_str, "%d", port);
 	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port_str, "UDP", 0);
 
