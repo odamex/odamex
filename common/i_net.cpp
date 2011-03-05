@@ -48,7 +48,8 @@
 #	include <xtl.h>
 #else
 #	include <windows.h>
-#	include <winsock.h>
+#	include <winsock2.h>
+#   include <ws2tcpip.h>
 #endif // !_XBOX
 #else
 #ifdef GEKKO // Wii/GC
@@ -101,6 +102,13 @@ typedef int SOCKET;
 
 #include "minilzo.h"
 
+#ifdef ODA_HAVE_MINIUPNP
+#define STATICLIB
+#include "miniwget.h"
+#include "miniupnpc.h"
+#include "upnpcommands.h"
+#endif
+
 int         inet_socket;
 int         localport;
 netadr_t    net_from;   // address of who sent the packet
@@ -117,6 +125,83 @@ EXTERN_CVAR(port)
 
 msg_info_t clc_info[clc_max];
 msg_info_t svc_info[svc_max];
+
+#ifdef ODA_HAVE_MINIUPNP
+static struct UPNPUrls urls;
+static struct IGDdatas data;
+
+void init_upnp (void)
+{
+	struct UPNPDev * devlist;
+	struct UPNPDev * dev;
+	char * descXML;
+	int descXMLsize = 0;
+	//printf("TB : init_upnp()\n");
+	memset(&urls, 0, sizeof(struct UPNPUrls));
+	memset(&data, 0, sizeof(struct IGDdatas));
+	devlist = upnpDiscover(2000, NULL, NULL, 0);
+	if (devlist)
+	{
+		dev = devlist;
+		while (dev)
+		{
+			if (strstr (dev->st, "InternetGatewayDevice"))
+				break;
+			dev = dev->pNext;
+		}
+		if (!dev)
+			dev = devlist; /* defaulting to first device */
+
+		Printf(PRINT_HIGH, "UPnP device :\n"
+		       " desc: %s\n st: %s\n",
+			   dev->descURL, dev->st);
+
+		descXML = (char *)miniwget(dev->descURL, &descXMLsize);
+		if (descXML)
+		{
+			parserootdesc (descXML, descXMLsize, &data);
+			free (descXML); descXML = 0;
+			GetUPNPUrls (&urls, &data, dev->descURL);
+		}
+		freeUPNPDevlist(devlist);
+	}
+
+}
+
+void upnp_add_redir (const char * addr, int port)
+{
+	char port_str[16];
+	int r;
+
+	if(urls.controlURL[0] == '\0')
+	{
+		Printf(PRINT_HIGH, "TB : the init was not done !\n");
+		return;
+	}
+	sprintf(port_str, "%d", port);
+	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
+	                        port_str, port_str, addr, 0, "UDP", NULL, 0);
+	if(r!=0)
+		Printf(PRINT_HIGH, "AddPortMapping(%s, %s, %s) failed: %d\n", port_str, port_str, addr, r);
+}
+
+void upnp_rem_redir (int port)
+{
+	char port_str[16];
+	int r;
+
+	if(urls.controlURL[0] == '\0')
+	{
+		Printf(PRINT_HIGH, "TB : the init was not done !\n");
+		return;
+	}
+	sprintf(port_str, "%d", port);
+	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port_str, "UDP", 0);
+
+	if (r != 0)
+        Printf(PRINT_HIGH, "DeletePortMapping(%s) failed: %d\n", port_str, r);
+}
+#endif
 
 //
 // UDPsocket
@@ -164,12 +249,20 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	sprintf(tmp, "%d", next - 1);
 	port.ForceSet(tmp);
 
+#ifdef ODA_HAVE_MINIUPNP
+    upnp_add_redir(NET_GetLocalAddress().c_str(), next - 1);
+#endif
+
 	Printf(PRINT_HIGH, "Bound to local port %d\n", next - 1);
 }
 
 
 void CloseNetwork (void)
 {
+#ifdef ODA_HAVE_MINIUPNP
+    upnp_rem_redir (port);
+#endif
+
 	closesocket (inet_socket);
 #ifdef _WIN32
 	WSACleanup ();
@@ -324,29 +417,30 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
     }
 }
 
+
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 512
 #endif
 
-void NET_GetLocalAddress (void)
+std::string NET_GetLocalAddress (void)
 {
-	char buff[HOST_NAME_MAX];
-	struct sockaddr_in address;
-	socklen_t namelen;
-	netadr_t net_local_adr;
+	static char buff[HOST_NAME_MAX];
+    hostent *ent;
+    struct in_addr addr;
+    std::string ret_str;
 
 	gethostname(buff, HOST_NAME_MAX);
 	buff[HOST_NAME_MAX - 1] = 0;
 
-	NET_StringToAdr (buff, &net_local_adr);
+    ent = gethostbyname(buff);
 
-	namelen = sizeof(address);
-	if (getsockname (inet_socket, (struct sockaddr *)&address, &namelen) == -1)
-        Printf (PRINT_HIGH, "NET_Init: getsockname:", strerror(errno));
+    for (int i = 0; ent->h_addr_list[i] != NULL; ++i)
+    {
+        addr.s_addr = *(u_long *)ent->h_addr_list[i];
+        ret_str += inet_ntoa(addr);
+    }
 
-	net_local_adr.port = address.sin_port;
-
-	Printf(PRINT_HIGH, "IP address %s\n", NET_AdrToString (net_local_adr) );
+    return ret_str;
 }
 
 
@@ -757,10 +851,15 @@ void InitNetCommon(void)
 
 #ifdef _WIN32
    WSADATA   wsad;
-   WSAStartup( 0x0101, &wsad );
+   WSAStartup( MAKEWORD(2,2), &wsad );
 #endif
 
    inet_socket = UDPsocket ();
+
+    #ifdef ODA_HAVE_MINIUPNP
+    init_upnp();
+    #endif
+
    BindToLocalPort (inet_socket, localport);
    if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));

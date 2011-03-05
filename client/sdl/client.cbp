@@ -25,7 +25,7 @@
 					<Add option="-s" />
 					<Add library="mingw32" />
 					<Add library="winmm" />
-					<Add library="wsock32" />
+					<Add library="ws2_32" />
 					<Add library="libtextscreen" />
 					<Add directory="..\..\lib" />
 				</Linker>
@@ -49,7 +49,7 @@
 				<Linker>
 					<Add library="mingw32" />
 					<Add library="winmm" />
-					<Add library="wsock32" />
+					<Add library="ws2_32" />
 					<Add library="libtextscreen-dbg" />
 					<Add directory="..\..\lib" />
 				</Linker>
@@ -183,7 +183,7 @@
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
-					<Add library="wsock32.lib" />
+					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -255,7 +255,7 @@
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
-					<Add library="wsock32.lib" />
+					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />

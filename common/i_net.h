@@ -443,7 +443,7 @@ bool NET_StringToAdr (const char *s, netadr_t *a);
 bool NET_CompareAdr (netadr_t a, netadr_t b);
 int  NET_GetPacket (void);
 void NET_SendPacket (buf_t &buf, netadr_t &to);
-void NET_GetLocalAddress (void);
+std::string NET_GetLocalAddress (void);
 
 void SZ_Clear (buf_t *buf);
 void SZ_Write (buf_t *b, const void *data, int length);
