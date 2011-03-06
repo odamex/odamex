@@ -392,6 +392,9 @@
 				RelativePath="..\client\src\r_things.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\s_sndseq.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\s_sound.cpp">
 			</File>
 			<File
@@ -443,6 +446,9 @@
 			</File>
 			<File
 				RelativePath="..\client\src\m_menu.h">
+			</File>
+			<File
+				RelativePath="..\client\src\s_sndseq.h">
 			</File>
 			<File
 				RelativePath="..\client\src\st_lib.h">
@@ -738,6 +744,9 @@
 			</File>
 			<File
 				RelativePath="..\common\p_pspr.h">
+			</File>
+			<File
+				RelativePath="..\common\p_quake.cpp">
 			</File>
 			<File
 				RelativePath="..\common\p_saveg.cpp">

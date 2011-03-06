@@ -150,6 +150,22 @@ char *xbox_GetCWD(char *buf, size_t size)
 }
 
 //
+// xbox_InetNtoa
+//
+char *xbox_InetNtoa(struct in_addr in)
+{
+	static char addr[32];
+
+	sprintf(addr, "%d.%d.%d.%d",
+				in.S_un.S_un_b.s_b1,
+				in.S_un.S_un_b.s_b2,
+				in.S_un.S_un_b.s_b3,
+				in.S_un.S_un_b.s_b4);
+
+	return addr;
+}
+
+//
 // xbox_GetHostByName
 //
 // Custom implementation for Xbox
