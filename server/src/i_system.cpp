@@ -570,6 +570,14 @@ std::string I_ConsoleInput (void)
     static char     buffer[1024] = {0};
     unsigned int    len = strlen(buffer);
 
+    char ch = (char)getch();
+
+    // detect ctrl-c
+    if (ch == 3)
+        return "quit";
+    else
+        ungetch(ch);
+
 	while(kbhit() && len < sizeof(text))
 	{
 		char ch = (char)getch();
