@@ -494,6 +494,9 @@ void STACK_ARGS I_FatalError (const char *error, ...)
     if (!has_exited)    // If it hasn't exited yet, exit now -- killough
     {
                 has_exited = 1; // Prevent infinitely recursive exits -- killough
+                #ifdef _WIN32
+                I_Quit();
+                #endif
                 exit(-1);
     }
 }

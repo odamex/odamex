@@ -605,6 +605,9 @@ END_COMMAND (say)
 BEGIN_COMMAND (rquit)
 {
 	SV_SendReconnectSignal();
+    #ifdef _WIN32
+    I_Quit();
+    #endif
 	exit (0);
 }
 END_COMMAND (rquit)
@@ -612,6 +615,9 @@ END_COMMAND (rquit)
 
 BEGIN_COMMAND (quit)
 {
+    #ifdef _WIN32
+    I_Quit();
+    #endif
 	exit (0);
 }
 END_COMMAND (quit)

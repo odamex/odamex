@@ -107,7 +107,8 @@ int __cdecl main(int argc, char *argv[])
 
 		Z_Init();
 
-		atterm (I_Quit);
+        // Windows I/O objects and atexit doesn't work very well
+		//atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
 		progdir = I_GetBinaryDir();
@@ -129,6 +130,7 @@ int __cdecl main(int argc, char *argv[])
             MessageBox(NULL, error.GetMessage().c_str(), "Odasrv Error", MB_OK);
         }
 
+        I_Quit();	
 		exit (-1);
     }
     catch (...)
