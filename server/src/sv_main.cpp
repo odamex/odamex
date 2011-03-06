@@ -601,12 +601,13 @@ BEGIN_COMMAND (say)
 }
 END_COMMAND (say)
 
+void STACK_ARGS call_terms (void);
 
 BEGIN_COMMAND (rquit)
 {
 	SV_SendReconnectSignal();
     #ifdef _WIN32
-    I_Quit();
+    call_terms();
     #endif
 	exit (0);
 }
@@ -616,7 +617,7 @@ END_COMMAND (rquit)
 BEGIN_COMMAND (quit)
 {
     #ifdef _WIN32
-    I_Quit();
+    call_terms();
     #endif
 	exit (0);
 }

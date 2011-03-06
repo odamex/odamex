@@ -70,7 +70,7 @@ void addterm (void (STACK_ARGS *func) (), const char *name)
 	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
-static void STACK_ARGS call_terms (void)
+void STACK_ARGS call_terms (void)
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
@@ -103,12 +103,12 @@ int __cdecl main(int argc, char *argv[])
 
 		timeBeginPeriod (TimerPeriod);
 
-		atexit (call_terms);
+        // Don't call this on windows!
+		//atexit (call_terms);
 
 		Z_Init();
 
-        // Windows I/O objects and atexit doesn't work very well
-		//atterm (I_Quit);
+		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
 		progdir = I_GetBinaryDir();
@@ -130,7 +130,6 @@ int __cdecl main(int argc, char *argv[])
             MessageBox(NULL, error.GetMessage().c_str(), "Odasrv Error", MB_OK);
         }
 
-        I_Quit();	
 		exit (-1);
     }
     catch (...)

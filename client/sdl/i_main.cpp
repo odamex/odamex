@@ -77,7 +77,7 @@ void addterm (void (STACK_ARGS *func) (), const char *name)
 	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
-static void STACK_ARGS call_terms (void)
+void STACK_ARGS call_terms (void)
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
@@ -180,7 +180,8 @@ int main(int argc, char *argv[])
 			normally or abnormally.
 		*/
 
-		atexit (call_terms);
+        // But avoid calling this on windows!
+		//atexit (call_terms);
 		Z_Init ();					// 1/18/98 killough: start up memory stuff first
 
         atterm (R_Shutdown);

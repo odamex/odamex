@@ -1095,6 +1095,8 @@ void M_EndGame(int choice)
 // M_QuitDOOM
 //
 
+void STACK_ARGS call_terms (void);
+
 void M_QuitResponse(int ch)
 {
 	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
@@ -1111,6 +1113,9 @@ void M_QuitResponse(int ch)
 			I_WaitVBL (105);
 		}
 	}
+    #ifdef _WIN32
+    call_terms();
+    #endif
 	exit (0);
 }
 
