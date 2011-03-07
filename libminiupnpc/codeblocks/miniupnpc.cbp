@@ -21,7 +21,6 @@
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="/DWIN32" />
 					<Add option="/DSTATICLIB" />
-					<Add option="/DDEBUG" />
 					<Add directory="..\..\libminiupnpc" />
 				</Compiler>
 			</Target>
@@ -57,7 +56,6 @@
 					<Add option="-g" />
 					<Add option="-DWIN32" />
 					<Add option="-DSTATICLIB" />
-					<Add option="-DDEBUG" />
 					<Add option="-D_WIN32_WINNT=0x501" />
 					<Add directory="..\..\libminiupnpc" />
 				</Compiler>
