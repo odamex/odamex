@@ -217,6 +217,17 @@ void upnp_add_redir (const char * addr, int port)
 		return;
 
 	sprintf(port_str, "%d", port);
+
+    // Set a description if none exists
+    if (!sv_upnp_description.cstring()[0])
+    {
+        char desc[64];
+
+        snprintf(desc, sizeof(desc), "Odasrv (%s:%s)", addr, port_str);
+
+        sv_upnp_description.Set(desc);
+    }
+
 	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
             port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
 	

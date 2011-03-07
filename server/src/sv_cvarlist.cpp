@@ -102,7 +102,7 @@ CVAR (sv_upnp, "1", CVAR_ARCHIVE)
 // The timeout looking for upnp routers
 CVAR (sv_upnp_discovertimeout, "2000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Description for the port mapping
-CVAR (sv_upnp_description, "Odasrv", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (sv_upnp_description, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Used to get the external IP address of the router, unsettable
 CVAR (sv_upnp_externalip, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 #endif
