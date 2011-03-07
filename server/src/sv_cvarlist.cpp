@@ -103,6 +103,8 @@ CVAR (sv_upnp, "1", CVAR_ARCHIVE)
 CVAR (sv_upnp_discovertimeout, "2000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Description for the port mapping
 CVAR (sv_upnp_description, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Used to get the internal IP address of the local computer, unsettable
+CVAR (sv_upnp_internalip, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 // Used to get the external IP address of the router, unsettable
 CVAR (sv_upnp_externalip, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 #endif

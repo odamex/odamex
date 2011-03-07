@@ -130,10 +130,13 @@ msg_info_t svc_info[svc_max];
 EXTERN_CVAR(sv_upnp)
 EXTERN_CVAR(sv_upnp_discovertimeout)
 EXTERN_CVAR(sv_upnp_description)
+EXTERN_CVAR(sv_upnp_internalip)
 EXTERN_CVAR(sv_upnp_externalip)
 
 static struct UPNPUrls urls;
 static struct IGDdatas data;
+
+static bool is_upnp_ok = false;
 
 void init_upnp (void)
 {
@@ -159,6 +162,8 @@ void init_upnp (void)
     {
 		Printf(PRINT_HIGH, "UPnP: Router not found or timed out\n");   
 		
+        is_upnp_ok = false;
+
         return;
     }
 
@@ -193,8 +198,12 @@ void init_upnp (void)
             IPAddress);
 
     if (r != 0)
+    {
         Printf(PRINT_HIGH, 
             "UPnP: Router found but unable to get external IP address\n");
+
+        is_upnp_ok = false;
+    }
     else
     {
         Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n", 
@@ -202,6 +211,8 @@ void init_upnp (void)
 
         // Store ip address just in case admin wants it
         sv_upnp_externalip.ForceSet(IPAddress);
+
+        is_upnp_ok = true;
     }
 }
 
@@ -210,7 +221,7 @@ void upnp_add_redir (const char * addr, int port)
 	char port_str[16];
 	int r;
 
-    if (!sv_upnp)
+    if (!sv_upnp || !is_upnp_ok)
         return;
 
 	if(urls.controlURL == NULL)
@@ -232,7 +243,18 @@ void upnp_add_redir (const char * addr, int port)
             port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
 	
 	if (r != 0)
+	{
 		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
+
+        is_upnp_ok = false;
+	}
+    else
+    {
+        Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s", 
+            sv_upnp_description.cstring());
+
+        is_upnp_ok = true;
+    }
 }
 
 void upnp_rem_redir (int port)
@@ -240,7 +262,7 @@ void upnp_rem_redir (int port)
 	char port_str[16];
 	int r;
 
-    if (!sv_upnp)
+    if (!sv_upnp || !is_upnp_ok)
         return;
 
 	if(urls.controlURL == NULL)
@@ -251,7 +273,12 @@ void upnp_rem_redir (int port)
         port_str, "UDP", 0);
 
 	if (r != 0)
+    {
         Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
+        is_upnp_ok = false;
+    }
+    else
+        is_upnp_ok = true;
 }
 #endif
 
@@ -302,7 +329,23 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	port.ForceSet(tmp);
 
 #ifdef ODA_HAVE_MINIUPNP
-    upnp_add_redir(NET_GetLocalAddress().c_str(), next - 1);
+    const char *ip = NET_GetLocalAddress().c_str();
+
+    if (ip)
+    {
+        sv_upnp_internalip.Set(ip);
+
+        Printf(PRINT_HIGH, "UPnP: Internal IP address is: %s\n", ip);
+
+        upnp_add_redir(ip, next - 1);
+    }
+    else
+    {
+        Printf(PRINT_HIGH, "UPnP: Could not get first internal IP address, "
+            "UPnP will not function\n");
+
+        is_upnp_ok = false;
+    }
 #endif
 
 	Printf(PRINT_HIGH, "Bound to local port %d\n", next - 1);
@@ -486,10 +529,12 @@ std::string NET_GetLocalAddress (void)
 
     ent = gethostbyname(buff);
 
-    for (int i = 0; ent->h_addr_list[i] != NULL; ++i)
+    // Return the first, IPv4 address
+    if (ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
     {
-        addr.s_addr = *(u_long *)ent->h_addr_list[i];
-        ret_str += inet_ntoa(addr);
+        addr.s_addr = *(u_long *)ent->h_addr_list[0];
+
+        ret_str = inet_ntoa(addr);
     }
 
     return ret_str;
