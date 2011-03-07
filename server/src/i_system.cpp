@@ -565,12 +565,17 @@ int I_FindAttr (findstate_t *fileinfo)
 // I_ConsoleInput
 //
 #ifdef WIN32
+int ShutdownNow();
+
 std::string I_ConsoleInput (void)
 {
 	// denis - todo - implement this properly!!!
     static char     text[1024] = {0};
     static char     buffer[1024] = {0};
     unsigned int    len = strlen(buffer);
+
+    if (ShutdownNow())
+        return "quit";
 
 	while(kbhit() && len < sizeof(text))
 	{

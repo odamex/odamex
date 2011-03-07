@@ -516,6 +516,8 @@ void STACK_ARGS I_Quit (void)
 	
 	I_ShutdownHardware();
 
+    CloseNetwork();
+
 	if (r_showendoom && !Args.CheckParm ("-novideo"))
 		I_Endoom();
 }

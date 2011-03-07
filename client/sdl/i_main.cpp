@@ -187,7 +187,6 @@ int main(int argc, char *argv[])
         atterm (R_Shutdown);
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
-        atterm (CloseNetwork);
 
 		// Figure out what directory the program resides in.
 		progdir = I_GetBinaryDir();

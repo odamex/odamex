@@ -84,10 +84,30 @@ int PrintString (int printlevel, char const *outline)
 }
 
 #ifdef WIN32
+static HANDLE hEvent;
+
+int ShutdownNow()
+{
+    return (WaitForSingleObject(hEvent, 1) == WAIT_OBJECT_0);
+}
+
+BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
+{
+    SetEvent(hEvent);
+    return TRUE;
+}
+
 int __cdecl main(int argc, char *argv[])
 {
     try
     {
+        // Handle ctrl-c, close box, shutdown and logoff events
+        if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
+            throw CDoomError("Could not set console control handler!\n");
+
+        if (!(hEvent = CreateEvent(NULL, FALSE, FALSE, NULL)))
+            throw CDoomError("Could not create console control event!\n");
+
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		Args.SetArgs (argc, argv);
 
