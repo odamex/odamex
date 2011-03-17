@@ -1,4 +1,4 @@
-/* $Id: upnpcommands.h,v 1.20 2011/02/15 11:13:22 nanard Exp $ */
+/* $Id: upnpcommands.h,v 1.22 2011/03/14 13:36:01 nanard Exp $ */
 /* Miniupnp project : http://miniupnp.free.fr/
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
@@ -141,11 +141,20 @@ UPNP_DeletePortMapping(const char * controlURL, const char * servicetype,
 /* UPNP_GetPortMappingNumberOfEntries()
  * not supported by all routers */
 LIBSPEC int
-UPNP_GetPortMappingNumberOfEntries(const char* controlURL, const char* servicetype, unsigned int * num);
+UPNP_GetPortMappingNumberOfEntries(const char* controlURL,
+                                   const char* servicetype,
+                                   unsigned int * num);
 
-/* UPNP_GetSpecificPortMappingEntry retrieves an existing port mapping
- * the result is returned in the intClient and intPort strings
- * please provide 16 and 6 bytes of data
+/* UPNP_GetSpecificPortMappingEntry()
+ *    retrieves an existing port mapping
+ * params :
+ *  in   extPort
+ *  in   proto
+ *  out  intClient (16 bytes)
+ *  out  intPort (6 bytes)
+ *  out  desc (80 bytes)
+ *  out  enabled (4 bytes)
+ *  out  leaseDuration (16 bytes)
  *
  * return value :
  * UPNPCOMMAND_SUCCESS, UPNPCOMMAND_INVALID_ARGS, UPNPCOMMAND_UNKNOWN_ERROR
@@ -156,9 +165,22 @@ UPNP_GetSpecificPortMappingEntry(const char * controlURL,
                                  const char * extPort,
                                  const char * proto,
                                  char * intClient,
-                                 char * intPort);
+                                 char * intPort,
+                                 char * desc,
+                                 char * enabled,
+                                 char * leaseDuration);
 
 /* UPNP_GetGenericPortMappingEntry()
+ * params :
+ *  in   index
+ *  out  extPort (6 bytes)
+ *  out  intClient (16 bytes)
+ *  out  intPort (6 bytes)
+ *  out  protocol (4 bytes)
+ *  out  desc (80 bytes)
+ *  out  enabled (4 bytes)
+ *  out  rHost (64 bytes)
+ *  out  duration (16 bytes)
  *
  * return value :
  * UPNPCOMMAND_SUCCESS, UPNPCOMMAND_INVALID_ARGS, UPNPCOMMAND_UNKNOWN_ERROR

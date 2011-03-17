@@ -1,4 +1,4 @@
-/* $Id: portlistingparse.h,v 1.3 2011/02/15 11:13:21 nanard Exp $ */
+/* $Id: portlistingparse.h,v 1.4 2011/02/15 23:03:56 nanard Exp $ */
 /* MiniUPnP project
  * http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
  * (c) 2011 Thomas Bernard 
@@ -7,6 +7,7 @@
 #ifndef __PORTLISTINGPARSE_H__
 #define __PORTLISTINGPARSE_H__
 
+#include "declspec.h"
 /* for the definition of UNSIGNED_INTEGER */
 #include "miniupnpctypes.h"
 
@@ -56,11 +57,11 @@ struct PortMappingParserData {
 	portMappingElt curelt;
 };
 
-void
+LIBSPEC void
 ParsePortListing(const char * buffer, int bufsize,
                  struct PortMappingParserData * pdata);
 
-void
+LIBSPEC void
 FreePortListing(struct PortMappingParserData * pdata);
 
 #ifdef __cplusplus

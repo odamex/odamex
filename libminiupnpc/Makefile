@@ -1,7 +1,7 @@
-# $Id: Makefile,v 1.71 2011/02/15 11:14:41 nanard Exp $
+# $Id: Makefile,v 1.73 2011/03/14 14:03:22 nanard Exp $
 # MiniUPnP Project
 # http://miniupnp.free.fr/
-# (c) 2005-2010 Thomas Bernard
+# (c) 2005-2011 Thomas Bernard
 # to install use :
 # $ PREFIX=/tmp/dummylocation make install
 # or
@@ -23,7 +23,7 @@ JNAERATOR = jnaerator-0.9.3.jar
 #LDLIBS=-lsocket -lnsl -lresolv
 
 # APIVERSION is used to build SONAME
-APIVERSION = 6
+APIVERSION = 7
 
 SRCS = igd_desc_parse.c miniupnpc.c minixml.c minisoap.c miniwget.c \
        upnpc.c upnpcommands.c upnpreplyparse.c testminixml.c \
@@ -187,15 +187,16 @@ miniwget.o: miniupnpc.h declspec.h igd_desc_parse.h miniupnpcstrings.h
 miniwget.o: miniwget.h connecthostport.h
 upnpc.o: miniwget.h declspec.h miniupnpc.h igd_desc_parse.h upnpcommands.h
 upnpc.o: upnpreplyparse.h portlistingparse.h miniupnpctypes.h upnperrors.h
-upnpcommands.o: upnpcommands.h upnpreplyparse.h portlistingparse.h
-upnpcommands.o: miniupnpctypes.h declspec.h miniupnpc.h igd_desc_parse.h
+upnpcommands.o: upnpcommands.h upnpreplyparse.h portlistingparse.h declspec.h
+upnpcommands.o: miniupnpctypes.h miniupnpc.h igd_desc_parse.h
 upnpreplyparse.o: upnpreplyparse.h minixml.h
 testminixml.o: minixml.h igd_desc_parse.h
 minixmlvalid.o: minixml.h
 testupnpreplyparse.o: upnpreplyparse.h
 minissdpc.o: minissdpc.h miniupnpc.h declspec.h igd_desc_parse.h codelength.h
 upnperrors.o: upnperrors.h declspec.h upnpcommands.h upnpreplyparse.h
-upnperrors.o: portlistingparse.h miniupnpctypes.h
+upnperrors.o: portlistingparse.h miniupnpctypes.h miniupnpc.h
+upnperrors.o: igd_desc_parse.h
 testigddescparse.o: igd_desc_parse.h minixml.h miniupnpc.h declspec.h
 testminiwget.o: miniwget.h declspec.h
 connecthostport.o: connecthostport.h

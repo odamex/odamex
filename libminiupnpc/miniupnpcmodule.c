@@ -1,4 +1,4 @@
-/* $Id: miniupnpcmodule.c,v 1.16 2011/02/07 00:58:02 nanard Exp $*/
+/* $Id: miniupnpcmodule.c,v 1.17 2011/03/14 14:04:33 nanard Exp $*/
 /* Project : miniupnp
  * Author : Thomas BERNARD
  * website : http://miniupnp.tuxfamily.org/
@@ -77,7 +77,8 @@ UPnP_discover(UPnPObject *self)
 	self->devlist = upnpDiscover((int)self->discoverdelay/*timeout in ms*/,
 	                             0/* multicast if*/,
 	                             0/*minissdpd socket*/,
-								 0/*sameport flag*/);
+								 0/*sameport flag*/,
+	                             0/*error */);
 	Py_END_ALLOW_THREADS
 	/* Py_RETURN_NONE ??? */
 	for(dev = self->devlist, i = 0; dev; dev = dev->pNext)
@@ -309,19 +310,28 @@ UPnP_getspecificportmapping(UPnPObject *self, PyObject *args)
 	char intClient[16];
 	char intPort[6];
 	unsigned short iPort;
+	char desc[80];
+	char enabled[4];
+	char leaseDuration[16];
 	if(!PyArg_ParseTuple(args, "Hs", &ePort, &proto))
 		return NULL;
+	extPort[0] = '\0'; intClient[0] = '\0'; intPort[0] = '\0';
+	desc[0] = '\0'; enabled[0] = '\0'; leaseDuration[0] = '\0';
 Py_BEGIN_ALLOW_THREADS
 	sprintf(extPort, "%hu", ePort);
 	UPNP_GetSpecificPortMappingEntry(self->urls.controlURL,
 	                                 self->data.first.servicetype,
 									 extPort, proto,
-									 intClient, intPort);
+									 intClient, intPort,
+	                                 desc, enabled, leaseDuration);
 Py_END_ALLOW_THREADS
 	if(intClient[0])
 	{
 		iPort = (unsigned short)atoi(intPort);
-		return Py_BuildValue("(s,H)", intClient, iPort);
+		return Py_BuildValue("(s,H,s,O,i)",
+		                     intClient, iPort, desc,
+		                     PyBool_FromLong(atoi(enabled)),
+		                     atoi(leaseDuration));
 	}
 	else
 	{

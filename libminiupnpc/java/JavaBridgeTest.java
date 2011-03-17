@@ -15,6 +15,9 @@ public class JavaBridgeTest {
         ByteBuffer lanaddr = ByteBuffer.allocate(16);
         ByteBuffer intClient = ByteBuffer.allocate(16);
         ByteBuffer intPort = ByteBuffer.allocate(6);
+        ByteBuffer desc = ByteBuffer.allocate(80);
+        ByteBuffer enabled = ByteBuffer.allocate(4);
+        ByteBuffer leaseDuration = ByteBuffer.allocate(16);
         int ret;
         int i;
 
@@ -24,7 +27,7 @@ public class JavaBridgeTest {
             return;
         }
 
-        devlist = miniupnpc.upnpDiscover(UPNP_DELAY, (String) null, (String) null, 0);
+        devlist = miniupnpc.upnpDiscover(UPNP_DELAY, (String) null, (String) null, 0, null);
         if (devlist != null) {
             System.out.println("List of UPNP devices found on the network :");
             for (UPNPDev device = devlist; device != null; device = device.pNext) {
@@ -61,16 +64,19 @@ public class JavaBridgeTest {
                         new String(lanaddr.array()), // internal client
                         "added via miniupnpc/JAVA !", // description
                         args[1], // protocol UDP or TCP
-                        null); // remote host (useless)
+                        null, // remote host (useless)
+                        "0"); // leaseDuration
                 if (ret != MiniupnpcLibrary.UPNPCOMMAND_SUCCESS)
                     System.out.println("AddPortMapping() failed with code " + ret);
                 ret = miniupnpc.UPNP_GetSpecificPortMappingEntry(
                         urls.controlURL.getString(0), new String(data.first.servicetype),
-                        args[0], args[1], intClient, intPort);
+                        args[0], args[1], intClient, intPort,
+                        desc, enabled, leaseDuration);
                 if (ret != MiniupnpcLibrary.UPNPCOMMAND_SUCCESS)
                     System.out.println("GetSpecificPortMappingEntry() failed with code " + ret);
                 System.out.println("InternalIP:Port = " +
-                        new String(intClient.array()) + ":" + new String(intPort.array()));
+                        new String(intClient.array()) + ":" + new String(intPort.array()) + 
+                        " (" + new String(desc.array()) + ")");
                 ret = miniupnpc.UPNP_DeletePortMapping(
                         urls.controlURL.getString(0),
                         new String(data.first.servicetype),

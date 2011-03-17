@@ -1,4 +1,4 @@
-/* $Id: upnperrors.c,v 1.3 2008/04/27 17:21:51 nanard Exp $ */
+/* $Id: upnperrors.c,v 1.4 2011/03/14 13:37:13 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas BERNARD
  * copyright (c) 2007 Thomas Bernard
@@ -9,6 +9,7 @@
 #include <string.h>
 #include "upnperrors.h"
 #include "upnpcommands.h"
+#include "miniupnpc.h"
 
 const char * strupnperror(int err)
 {
@@ -22,6 +23,12 @@ const char * strupnperror(int err)
 		break;
 	case UPNPCOMMAND_INVALID_ARGS:
 		s = "Miniupnpc Invalid Arguments";
+		break;
+	case UPNPDISCOVER_SOCKET_ERROR:
+		s = "Miniupnpc Socket error";
+		break;
+	case UPNPDISCOVER_MEMORY_ERROR:
+		s = "Miniupnpc Memory allocation error";
 		break;
 	case 401:
 		s = "Invalid Action";

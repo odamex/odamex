@@ -173,6 +173,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\portlistingparse.c"
+				>
+			</File>
+			<File
 				RelativePath="..\upnpcommands.c"
 				>
 			</File>
@@ -219,11 +223,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\miniupnpctypes.h"
+				>
+			</File>
+			<File
 				RelativePath="..\miniwget.h"
 				>
 			</File>
 			<File
 				RelativePath="..\minixml.h"
+				>
+			</File>
+			<File
+				RelativePath="..\portlistingparse.h"
 				>
 			</File>
 			<File

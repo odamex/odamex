@@ -1,4 +1,4 @@
-/* $Id: portlistingparse.c,v 1.2 2011/02/15 10:50:05 nanard Exp $ */
+/* $Id: portlistingparse.c,v 1.3 2011/02/15 22:56:13 nanard Exp $ */
 /* MiniUPnP project
  * http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
  * (c) 2011 Thomas Bernard 
@@ -13,7 +13,7 @@
 static const struct {
 	const portMappingElt code;
 	const char * const str;
-} const elements[] = {
+} elements[] = {
 	{ PortMappingEntry, "PortMappingEntry"},
 	{ NewRemoteHost, "NewRemoteHost"},
 	{ NewExternalPort, "NewExternalPort"},

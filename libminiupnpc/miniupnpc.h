@@ -1,8 +1,8 @@
-/* $Id: miniupnpc.h,v 1.20 2011/02/07 16:46:05 nanard Exp $ */
+/* $Id: miniupnpc.h,v 1.21 2011/03/14 13:37:12 nanard Exp $ */
 /* Project: miniupnp
  * http://miniupnp.free.fr/
  * Author: Thomas Bernard
- * Copyright (c) 2005-2006 Thomas Bernard
+ * Copyright (c) 2005-2011 Thomas Bernard
  * This software is subjects to the conditions detailed
  * in the LICENCE file provided within this distribution */
 #ifndef __MINIUPNPC_H__
@@ -11,6 +11,12 @@
 #include "declspec.h"
 #include "igd_desc_parse.h"
 
+/* error codes : */
+#define UPNPDISCOVER_SUCCESS (0)
+#define UPNPDISCOVER_UNKNOWN_ERROR (-1)
+#define UPNPDISCOVER_SOCKET_ERROR (-101)
+#define UPNPDISCOVER_MEMORY_ERROR (-102)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,9 +24,10 @@ extern "C" {
 /* Structures definitions : */
 struct UPNParg { const char * elt; const char * val; };
 
-char * simpleUPnPcommand(int, const char *, const char *,
-                      const char *, struct UPNParg *,
-                      int *);
+char *
+simpleUPnPcommand(int, const char *, const char *,
+                  const char *, struct UPNParg *,
+                  int *);
 
 struct UPNPDev {
 	struct UPNPDev * pNext;
@@ -42,8 +49,10 @@ struct UPNPDev {
  * multicast interface for sending SSDP discover packets.
  * If sameport is not null, SSDP packets will be sent from the source port
  * 1900 (same as destination port) otherwise system assign a source port. */
-LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
-                                      const char * minissdpdsock, int sameport);
+LIBSPEC struct UPNPDev *
+upnpDiscover(int delay, const char * multicastif,
+             const char * minissdpdsock, int sameport,
+             int * error);
 /* freeUPNPDevlist()
  * free list returned by upnpDiscover() */
 LIBSPEC void freeUPNPDevlist(struct UPNPDev * devlist);

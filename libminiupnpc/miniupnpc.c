@@ -1,4 +1,4 @@
-/* $Id: miniupnpc.c,v 1.87 2011/02/07 16:46:05 nanard Exp $ */
+/* $Id: miniupnpc.c,v 1.88 2011/03/14 13:37:12 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas BERNARD
  * copyright (c) 2005-2011 Thomas Bernard
@@ -251,7 +251,7 @@ parseMSEARCHReply(const char * reply, int size,
 	int a, b, i;
 	i = 0;
 	a = i;	/* start of the line */
-	b = 0;
+	b = 0;	/* end of the "header" (position of the colon) */
 	while(i<size)
 	{
 		switch(reply[i])
@@ -276,6 +276,7 @@ parseMSEARCHReply(const char * reply, int size,
 						putchar(reply[j]);
 					}
 					putchar('\n');*/
+					/* skip the colon and white spaces */
 					do { b++; } while(reply[b]==' ');
 					if(0==strncasecmp(reply+a, "location", 8))
 					{
@@ -309,8 +310,10 @@ parseMSEARCHReply(const char * reply, int size,
  * no devices was found.
  * It is up to the caller to free the chained list
  * delay is in millisecond (poll) */
-LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
-                              const char * minissdpdsock, int sameport)
+LIBSPEC struct UPNPDev *
+upnpDiscover(int delay, const char * multicastif,
+             const char * minissdpdsock, int sameport,
+             int * error)
 {
 	struct UPNPDev * tmp;
 	struct UPNPDev * devlist = 0;
@@ -345,6 +348,8 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 	MIB_IPFORWARDROW ip_forward;
 #endif
 
+	if(error)
+		*error = UPNPDISCOVER_UNKNOWN_ERROR;
 #if !defined(WIN32) && !defined(__amigaos__) && !defined(__amigaos4__)
 	/* first try to get infos from minissdpd ! */
 	if(!minissdpdsock)
@@ -353,8 +358,11 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 		devlist = getDevicesFromMiniSSDPD(deviceList[deviceIndex],
 		                                  minissdpdsock);
 		/* We return what we have found if it was not only a rootdevice */
-		if(devlist && !strstr(deviceList[deviceIndex], "rootdevice"))
+		if(devlist && !strstr(deviceList[deviceIndex], "rootdevice")) {
+			if(error)
+				*error = UPNPDISCOVER_SUCCESS;
 			return devlist;
+		}
 		deviceIndex++;
 	}
 	deviceIndex = 0;
@@ -367,6 +375,8 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 #endif
 	if(sudp < 0)
 	{
+		if(error)
+			*error = UPNPDISCOVER_SOCKET_ERROR;
 		PRINT_SOCKET_ERROR("socket");
 		return NULL;
 	}
@@ -450,6 +460,8 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 	if (setsockopt(sudp, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt)) < 0)
 #endif
 	{
+		if(error)
+			*error = UPNPDISCOVER_SOCKET_ERROR;
 		PRINT_SOCKET_ERROR("setsockopt");
 		return NULL;
 	}
@@ -471,6 +483,8 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 	/* Avant d'envoyer le paquet on bind pour recevoir la reponse */
     if (bind(sudp, &sockudp_r, 0/*ipv6*/?sizeof(struct sockaddr_in6):sizeof(struct sockaddr_in)) != 0)
 	{
+		if(error)
+			*error = UPNPDISCOVER_SOCKET_ERROR;
         PRINT_SOCKET_ERROR("bind");
 		closesocket(sudp);
 		return NULL;
@@ -497,6 +511,8 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 		n = sendto(sudp, bufr, n, 0,
 		           (struct sockaddr *)&sockudp_w, sizeof(struct sockaddr_in));
 		if (n < 0) {
+			if(error)
+				*error = UPNPDISCOVER_SOCKET_ERROR;
 			PRINT_SOCKET_ERROR("sendto");
 			closesocket(sudp);
 			return devlist;
@@ -507,6 +523,8 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 		hints.ai_socktype = SOCK_DGRAM;
 		/*hints.ai_flags = */
 		if ((rv = getaddrinfo(UPNP_MCAST_ADDR, XSTR(PORT), &hints, &servinfo)) != 0) {
+			if(error)
+				*error = UPNPDISCOVER_SOCKET_ERROR;
 #ifdef WIN32
 		    fprintf(stderr, "getaddrinfo() failed: %d\n", rv);
 #else
@@ -523,6 +541,8 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 		}
 		freeaddrinfo(servinfo);
 		if(n < 0) {
+			if(error)
+				*error = UPNPDISCOVER_SOCKET_ERROR;
 			closesocket(sudp);
 			return devlist;
 		}
@@ -532,12 +552,16 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 	n = ReceiveData(sudp, bufr, sizeof(bufr), delay);
 	if (n < 0) {
 		/* error */
+		if(error)
+			*error = UPNPDISCOVER_SOCKET_ERROR;
 		closesocket(sudp);
 		return devlist;
 	} else if (n == 0) {
 		/* no data or Time Out */
 		if (devlist || (deviceList[deviceIndex] == 0)) {
 			/* no more device type to look for... */
+			if(error)
+				*error = UPNPDISCOVER_SUCCESS;
 			closesocket(sudp);
 			return devlist;
 		}
@@ -566,6 +590,12 @@ LIBSPEC struct UPNPDev * upnpDiscover(int delay, const char * multicastif,
 			if(tmp)
 				continue;
 			tmp = (struct UPNPDev *)malloc(sizeof(struct UPNPDev)+urlsize+stsize);
+			if(!tmp) {
+				/* memory allocation error */
+				if(error)
+					*error = UPNPDISCOVER_MEMORY_ERROR;
+				return devlist;
+			}
 			tmp->pNext = devlist;
 			tmp->descURL = tmp->buffer;
 			tmp->st = tmp->buffer + 1 + urlsize;

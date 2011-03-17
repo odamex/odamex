@@ -26,6 +26,10 @@ EXPORTS
    UPNP_DeletePortMapping
    UPNP_GetPortMappingNumberOfEntries
    UPNP_GetSpecificPortMappingEntry
-   UPNP_GetGenericPortMappingEntry 
+   UPNP_GetGenericPortMappingEntry
+   UPNP_GetListOfPortMappings
 ; upnperrors
    strupnperror
+; portlistingparse
+   ParsePortListing
+   FreePortListing

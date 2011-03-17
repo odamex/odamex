@@ -144,6 +144,7 @@ void init_upnp (void)
 	struct UPNPDev * dev;
 	char * descXML;
 	int descXMLsize = 0;
+    int res = 0;
 
     char IPAddress[40];
     int r;
@@ -156,11 +157,12 @@ void init_upnp (void)
 	
 	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
 	
-	devlist = upnpDiscover((int)sv_upnp_discovertimeout, NULL, NULL, 0);
+	devlist = upnpDiscover((int)sv_upnp_discovertimeout, NULL, NULL, 0, &res);
 	
-	if (!devlist)
+	if (!devlist || res != UPNPDISCOVER_SUCCESS)
     {
-		Printf(PRINT_HIGH, "UPnP: Router not found or timed out\n");   
+		Printf(PRINT_HIGH, "UPnP: Router not found or timed out, error %d\n", 
+            res);   
 		
         is_upnp_ok = false;
 

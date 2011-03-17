@@ -1,7 +1,7 @@
-# $Id: Makefile.mingw,v 1.13 2010/04/17 22:07:59 nanard Exp $
+# $Id: Makefile.mingw,v 1.14 2011/02/15 23:03:55 nanard Exp $
 # Miniupnp project.
 # http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
-# (c) 2005-2008 Thomas Bernard
+# (c) 2005-2011 Thomas Bernard
 # This Makefile is made for MinGW
 #
 CC = gcc
@@ -13,7 +13,7 @@ LDLIBS = -lws2_32 -liphlpapi
 PYTHON=\utils\python25\python
 OBJS=miniwget.o minixml.o igd_desc_parse.o minisoap.o \
      miniupnpc.o upnpreplyparse.o upnpcommands.o upnperrors.o \
-     connecthostport.o
+     connecthostport.o portlistingparse.o
 OBJSDLL=$(addprefix dll/, $(OBJS))
 
 all:	init upnpc-static upnpc-shared testminixml libminiupnpc.a miniupnpc.dll
@@ -70,11 +70,11 @@ miniupnpcstrings.h: miniupnpcstrings.h.in wingenminiupnpcstrings
 
 minixml.o:	minixml.c minixml.h miniupnpcstrings.h
 
-upnpc.o:	upnpc.c miniwget.h minisoap.h miniupnpc.h igd_desc_parse.h upnpreplyparse.h upnpcommands.h
+upnpc.o:	upnpc.c miniwget.h minisoap.h miniupnpc.h igd_desc_parse.h upnpreplyparse.h upnpcommands.h upnperrors.h
 
-miniwget.o:	miniwget.c miniwget.h miniupnpcstrings.h
+miniwget.o:	miniwget.c miniwget.h miniupnpcstrings.h connecthostport.h
 
-minisoap.o:	minisoap.c minisoap.h
+minisoap.o:	minisoap.c minisoap.h miniupnpcstrings.h
 
 miniupnpc.o:	miniupnpc.c miniupnpc.h minisoap.h miniwget.h minixml.h
 
@@ -84,5 +84,5 @@ testminixml:	minixml.o igd_desc_parse.o testminixml.c
 
 upnpreplyparse.o:	upnpreplyparse.c upnpreplyparse.h minixml.h
 
-upnpcommands.o:	upnpcommands.c upnpcommands.h upnpreplyparse.h miniupnpc.h
+upnpcommands.o:	upnpcommands.c upnpcommands.h upnpreplyparse.h miniupnpc.h portlistingparse.h
 

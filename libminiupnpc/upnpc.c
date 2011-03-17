@@ -1,4 +1,4 @@
-/* $Id: upnpc.c,v 1.75 2011/02/15 11:13:21 nanard Exp $ */
+/* $Id: upnpc.c,v 1.77 2011/03/14 13:37:12 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
@@ -211,6 +211,7 @@ static void SetRedirectAndTest(struct UPNPUrls * urls,
 	char externalIPAddress[16];
 	char intClient[16];
 	char intPort[6];
+	char duration[16];
 	int r;
 
 	if(!iaddr || !iport || !eport || !proto)
@@ -242,15 +243,16 @@ static void SetRedirectAndTest(struct UPNPUrls * urls,
 	r = UPNP_GetSpecificPortMappingEntry(urls->controlURL,
 	                                 data->first.servicetype,
     	                             eport, proto,
-									 intClient, intPort);
+									 intClient, intPort, NULL/*desc*/,
+	                                 NULL/*enabled*/, duration);
 	if(r!=UPNPCOMMAND_SUCCESS)
 		printf("GetSpecificPortMappingEntry() failed with code %d (%s)\n",
 		       r, strupnperror(r));
 	
 	if(intClient[0]) {
 		printf("InternalIP:Port = %s:%s\n", intClient, intPort);
-		printf("external %s:%s %s is redirected to internal %s:%s\n",
-		       externalIPAddress, eport, proto, intClient, intPort);
+		printf("external %s:%s %s is redirected to internal %s:%s (duration=%s)\n",
+		       externalIPAddress, eport, proto, intClient, intPort, duration);
 	}
 }
 
@@ -290,6 +292,7 @@ int main(int argc, char ** argv)
 	const char * multicastif = 0;
 	const char * minissdpdpath = 0;
 	int retcode = 0;
+	int error = 0;
 
 #ifdef WIN32
 	WSADATA wsaData;
@@ -348,7 +351,7 @@ int main(int argc, char ** argv)
 	}
 
 	if( rootdescurl
-	  || (devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0)))
+	  || (devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0, &error)))
 	{
 		struct UPNPDev * device;
 		struct UPNPUrls urls;
@@ -361,6 +364,10 @@ int main(int argc, char ** argv)
 				printf(" desc: %s\n st: %s\n\n",
 					   device->descURL, device->st);
 			}
+		}
+		else
+		{
+			printf("upnpDiscover() error code=%d\n", error);
 		}
 		i = 1;
 		if( (rootdescurl && UPNP_GetIGDFromUrl(rootdescurl, &urls, &data, lanaddr, sizeof(lanaddr)))

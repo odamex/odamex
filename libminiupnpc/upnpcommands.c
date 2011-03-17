@@ -1,4 +1,4 @@
-/* $Id: upnpcommands.c,v 1.33 2011/02/15 11:13:21 nanard Exp $ */
+/* $Id: upnpcommands.c,v 1.35 2011/03/14 13:37:13 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
@@ -228,7 +228,7 @@ LIBSPEC int
 UPNP_GetLinkLayerMaxBitRates(const char * controlURL,
                              const char * servicetype,
                              unsigned int * bitrateDown,
-                             unsigned int* bitrateUp)
+                             unsigned int * bitrateUp)
 {
 	struct NameValueParserData pdata;
 	char * buffer;
@@ -255,7 +255,7 @@ UPNP_GetLinkLayerMaxBitRates(const char * controlURL,
 	down = GetValueFromNameValueList(&pdata, "NewLayer1DownstreamMaxBitRate");
 	up = GetValueFromNameValueList(&pdata, "NewLayer1UpstreamMaxBitRate");
 	/*GetValueFromNameValueList(&pdata, "NewWANAccessType");*/
-	/*GetValueFromNameValueList(&pdata, "NewPhysicalLinkSatus");*/
+	/*GetValueFromNameValueList(&pdata, "NewPhysicalLinkStatus");*/
 	if(down && up)
 		ret = UPNPCOMMAND_SUCCESS;
 
@@ -580,7 +580,10 @@ UPNP_GetSpecificPortMappingEntry(const char * controlURL,
                                  const char * extPort,
 							     const char * proto,
                                  char * intClient,
-                                 char * intPort)
+                                 char * intPort,
+                                 char * desc,
+                                 char * enabled,
+                                 char * leaseDuration)
 {
 	struct NameValueParserData pdata;
 	struct UPNParg * GetPortMappingArgs;
@@ -622,6 +625,25 @@ UPNP_GetSpecificPortMappingEntry(const char * controlURL,
 		intPort[5] = '\0';
 	} else
 		intPort[0] = '\0';
+
+	p = GetValueFromNameValueList(&pdata, "NewEnabled");
+	if(p && enabled) {
+		strncpy(enabled, p, 4);
+		enabled[3] = '\0';
+	}
+
+	p = GetValueFromNameValueList(&pdata, "NewPortMappingDescription");
+	if(p && desc) {
+		strncpy(desc, p, 80);
+		desc[79] = '\0';
+	}
+
+	p = GetValueFromNameValueList(&pdata, "NewLeaseDuration");
+	if(p && leaseDuration)
+	{
+		strncpy(leaseDuration, p, 16);
+		leaseDuration[15] = '\0';
+	}
 
 	p = GetValueFromNameValueList(&pdata, "errorCode");
 	if(p) {
