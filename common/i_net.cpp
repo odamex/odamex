@@ -264,7 +264,7 @@ void upnp_rem_redir (int port)
 	char port_str[16];
 	int r;
 
-    if (!sv_upnp || !is_upnp_ok)
+    if (!is_upnp_ok)
         return;
 
 	if(urls.controlURL == NULL)
