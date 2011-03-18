@@ -42,7 +42,7 @@
 
 using namespace std;
 
-void GameCommand::AddParameter(string parameter)
+void GameCommand::AddParameter(const string &parameter)
 {
 #ifdef _WIN32
 	Parameters.push_back(string("\"") + parameter + string("\""));
@@ -51,7 +51,7 @@ void GameCommand::AddParameter(string parameter)
 #endif
 }
 
-void GameCommand::AddParameter(string parameter, string value)
+void GameCommand::AddParameter(const string &parameter, const string &value)
 {
 #ifdef _WIN32
 	Parameters.push_back(string("\"") + parameter + string("\""));

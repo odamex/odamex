@@ -31,8 +31,8 @@
 class GameCommand
 {
 public:
-	void AddParameter(std::string parameter);
-	void AddParameter(std::string parameter, std::string value);
+	void AddParameter(const std::string &parameter);
+	void AddParameter(const std::string &parameter, const std::string &value);
 
 	int Launch();
 

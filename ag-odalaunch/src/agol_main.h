@@ -110,7 +110,7 @@ private:
 	int            GetSelectedServerListRow();
 	int            GetSelectedServerArrayIndex();
 	std::string    GetAddrFromServerListRow(int row);
-	int            GetServerListRowFromAddr(std::string address);
+	int            GetServerListRowFromAddr(const std::string &address);
 	int            GetServerArrayIndexFromListRow(int row);
 	void           ClearList(AG_Table *table);
 	void           CompleteRowSelection(AG_Table *table);

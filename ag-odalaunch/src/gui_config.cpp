@@ -47,13 +47,13 @@ int GuiConfig::Save()
 	return AG_ConfigSave();
 }
 
-void GuiConfig::Unset(std::string option)
+void GuiConfig::Unset(const string &option)
 {
 	if(option.size())
 		AG_Unset(agConfig, option.c_str());
 }
 
-int GuiConfig::Write(std::string option, std::string value)
+int GuiConfig::Write(const string &option, const string &value)
 {
 	if(!option.size() || !value.size())
 		return -1;
@@ -64,7 +64,7 @@ int GuiConfig::Write(std::string option, std::string value)
 	return 0;
 }
 
-int GuiConfig::Write(std::string option, int8_t value)
+int GuiConfig::Write(const string &option, const int8_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -75,7 +75,7 @@ int GuiConfig::Write(std::string option, int8_t value)
 	return 0;
 }
 
-int GuiConfig::Write(std::string option, int16_t value)
+int GuiConfig::Write(const string &option, const int16_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -86,7 +86,7 @@ int GuiConfig::Write(std::string option, int16_t value)
 	return 0;
 }
 
-int GuiConfig::Write(std::string option, int32_t value)
+int GuiConfig::Write(const string &option, const int32_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -97,7 +97,7 @@ int GuiConfig::Write(std::string option, int32_t value)
 	return 0;
 }
 
-int GuiConfig::Write(std::string option, uint8_t value)
+int GuiConfig::Write(const string &option, const uint8_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -108,7 +108,7 @@ int GuiConfig::Write(std::string option, uint8_t value)
 	return 0;
 }
 
-int GuiConfig::Write(std::string option, uint16_t value)
+int GuiConfig::Write(const string &option, const uint16_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -119,7 +119,7 @@ int GuiConfig::Write(std::string option, uint16_t value)
 	return 0;
 }
 
-int GuiConfig::Write(std::string option, uint32_t value)
+int GuiConfig::Write(const string &option, const uint32_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -130,7 +130,7 @@ int GuiConfig::Write(std::string option, uint32_t value)
 	return 0;
 }
 
-int GuiConfig::Write(std::string option, float value)
+int GuiConfig::Write(const string &option, const float &value)
 {
 	if(!option.size())
 		return -1;
@@ -141,7 +141,7 @@ int GuiConfig::Write(std::string option, float value)
 	return 0;
 }
 
-int GuiConfig::Write(std::string option, double value)
+int GuiConfig::Write(const string &option, const double &value)
 {
 	if(!option.size())
 		return -1;
@@ -152,7 +152,7 @@ int GuiConfig::Write(std::string option, double value)
 	return 0;
 }
 
-int GuiConfig::Read(std::string option, std::string &value)
+int GuiConfig::Read(const string &option, string &value)
 {
 	char *str = NULL;
 
@@ -169,7 +169,7 @@ int GuiConfig::Read(std::string option, std::string &value)
 	return 0;
 }
 
-int GuiConfig::Read(std::string option, int8_t &value)
+int GuiConfig::Read(const string &option, int8_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -179,7 +179,7 @@ int GuiConfig::Read(std::string option, int8_t &value)
 	return 0;
 }
 
-int GuiConfig::Read(std::string option, int16_t &value)
+int GuiConfig::Read(const string &option, int16_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -189,7 +189,7 @@ int GuiConfig::Read(std::string option, int16_t &value)
 	return 0;
 }
 
-int GuiConfig::Read(std::string option, int32_t &value)
+int GuiConfig::Read(const string &option, int32_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -199,7 +199,7 @@ int GuiConfig::Read(std::string option, int32_t &value)
 	return 0;
 }
 
-int GuiConfig::Read(std::string option, uint8_t &value)
+int GuiConfig::Read(const string &option, uint8_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -209,7 +209,7 @@ int GuiConfig::Read(std::string option, uint8_t &value)
 	return 0;
 }
 
-int GuiConfig::Read(std::string option, uint16_t &value)
+int GuiConfig::Read(const string &option, uint16_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -219,7 +219,7 @@ int GuiConfig::Read(std::string option, uint16_t &value)
 	return 0;
 }
 
-int GuiConfig::Read(std::string option, uint32_t &value)
+int GuiConfig::Read(const string &option, uint32_t &value)
 {
 	if(!option.size())
 		return -1;
@@ -229,7 +229,7 @@ int GuiConfig::Read(std::string option, uint32_t &value)
 	return 0;
 }
 
-int GuiConfig::Read(std::string option, float &value)
+int GuiConfig::Read(const string &option, float &value)
 {
 	if(!option.size())
 		return -1;
@@ -239,7 +239,7 @@ int GuiConfig::Read(std::string option, float &value)
 	return 0;
 }
 
-int GuiConfig::Read(std::string option, double &value)
+int GuiConfig::Read(const string &option, double &value)
 {
 	if(!option.size())
 		return -1;

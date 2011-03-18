@@ -440,7 +440,7 @@ string AGOL_MainWindow::GetAddrFromServerListRow(int row)
 	return string(cell->data.s);
 }
 
-int AGOL_MainWindow::GetServerListRowFromAddr(string address)
+int AGOL_MainWindow::GetServerListRowFromAddr(const string &address)
 {
 	// Loop until the server address is found
 	for(int row = 0; row < ServerList->m; row++)
