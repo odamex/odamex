@@ -120,7 +120,11 @@ int main(int argc, char *argv[])
 				Args.AppendArg(location.substr(0, term).c_str());
 			}
 		}
-
+		
+		// Set SDL video centering
+		putenv("SDL_VIDEO_WINDOW_POS=center");
+		putenv("SDL_VIDEO_CENTERED=1");
+		
         // [Russell] - No more double-tapping of capslock to enable autorun
         putenv("SDL_DISABLE_LOCK_KEYS=1");
 

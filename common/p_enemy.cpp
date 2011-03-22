@@ -213,7 +213,7 @@ BOOL P_CheckMissileRange (AActor *actor)
     
     if (HasBehavior)
     {
-        if (!P_CheckSight2 (actor, actor->target))
+        if (!P_CheckSight2 (actor, actor->target, false))
             return false;
     }
     else
