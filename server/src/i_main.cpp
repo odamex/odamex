@@ -227,7 +227,8 @@ int main (int argc, char **argv)
 		  left in an unstable state.
 		*/
 
-		atexit (call_terms);
+        // Don't use this on other platforms either
+		//atexit (call_terms);
 		Z_Init();					// 1/18/98 killough: start up memory stuff first
 
 		atterm (I_Quit);
