@@ -185,7 +185,9 @@ int main(int argc, char *argv[])
 		*/
 
         // But avoid calling this on windows!
-		//atexit (call_terms);
+		#ifndef _WIN32
+		atexit (call_terms);
+		#endif
 		Z_Init ();					// 1/18/98 killough: start up memory stuff first
 
         atterm (R_Shutdown);
