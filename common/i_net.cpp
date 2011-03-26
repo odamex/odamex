@@ -331,15 +331,15 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	port.ForceSet(tmp);
 
 #ifdef ODA_HAVE_MINIUPNP
-    const char *ip = NET_GetLocalAddress().c_str();
+    std::string ip = NET_GetLocalAddress();
 
-    if (ip)
+    if (!ip.empty())
     {
-        sv_upnp_internalip.Set(ip);
+        sv_upnp_internalip.Set(ip.c_str());
 
-        Printf(PRINT_HIGH, "UPnP: Internal IP address is: %s\n", ip);
+        Printf(PRINT_HIGH, "UPnP: Internal IP address is: %s\n", ip.c_str());
 
-        upnp_add_redir(ip, next - 1);
+        upnp_add_redir(ip.c_str(), next - 1);
     }
     else
     {
@@ -516,7 +516,7 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
 
 
 #ifndef HOST_NAME_MAX
-#define HOST_NAME_MAX 512
+#define HOST_NAME_MAX 256
 #endif
 
 std::string NET_GetLocalAddress (void)
