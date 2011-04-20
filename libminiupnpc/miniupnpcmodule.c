@@ -1,4 +1,4 @@
-/* $Id: miniupnpcmodule.c,v 1.17 2011/03/14 14:04:33 nanard Exp $*/
+/* $Id: miniupnpcmodule.c,v 1.18 2011/04/10 11:21:23 nanard Exp $*/
 /* Project : miniupnp
  * Author : Thomas BERNARD
  * website : http://miniupnp.tuxfamily.org/
@@ -32,7 +32,7 @@ typedef struct {
 	struct UPNPUrls urls;
 	struct IGDdatas data;
 	unsigned int discoverdelay;	/* value passed to upnpDiscover() */
-	char lanaddr[16];	/* our ip address on the LAN */
+	char lanaddr[40];	/* our ip address on the LAN */
 	char * multicastif;
 	char * minissdpdsocket;
 } UPnPObject;
@@ -78,6 +78,7 @@ UPnP_discover(UPnPObject *self)
 	                             0/* multicast if*/,
 	                             0/*minissdpd socket*/,
 								 0/*sameport flag*/,
+	                             0/*ip v6*/,
 	                             0/*error */);
 	Py_END_ALLOW_THREADS
 	/* Py_RETURN_NONE ??? */
@@ -196,7 +197,7 @@ Py_END_ALLOW_THREADS
 static PyObject *
 UPnP_externalipaddress(UPnPObject *self)
 {
-	char externalIPAddress[16];
+	char externalIPAddress[40];
 	int r;
 	externalIPAddress[0] = '\0';
 Py_BEGIN_ALLOW_THREADS
@@ -307,7 +308,7 @@ UPnP_getspecificportmapping(UPnPObject *self, PyObject *args)
 	char extPort[6];
 	unsigned short ePort;
 	const char * proto;
-	char intClient[16];
+	char intClient[40];
 	char intPort[6];
 	unsigned short iPort;
 	char desc[80];
@@ -345,7 +346,7 @@ UPnP_getgenericportmapping(UPnPObject *self, PyObject *args)
 {
 	int i, r;
 	char index[8];
-	char intClient[16];
+	char intClient[40];
 	char intPort[6];
 	unsigned short iPort;
 	char extPort[6];

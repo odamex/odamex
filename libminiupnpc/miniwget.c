@@ -1,4 +1,4 @@
-/* $Id: miniwget.c,v 1.42 2011/01/02 23:47:38 nanard Exp $ */
+/* $Id: miniwget.c,v 1.47 2011/04/11 17:26:21 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "miniupnpc.h"
 #ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -48,6 +47,7 @@
 #include "miniupnpcstrings.h"
 #include "miniwget.h"
 #include "connecthostport.h"
+#include "receivedata.h"
 
 /*
  * Read a HTTP response from a socket.
@@ -74,7 +74,7 @@ getHTTPResponse(int s, int * size)
 	header_buf = malloc(header_buf_len);
 	content_buf = malloc(content_buf_len);
 
-	while((n = ReceiveData(s, buf, 2048, 5000)) > 0)
+	while((n = receivedata(s, buf, 2048, 5000)) > 0)
 	{
 		if(headers)
 		{
@@ -277,8 +277,9 @@ end_of_stream:
  * Return NULL if something failed. */
 static void *
 miniwget3(const char * url, const char * host,
-		  unsigned short port, const char * path,
-		  int * size, char * addr_str, int addr_str_len, const char * httpversion)
+          unsigned short port, const char * path,
+          int * size, char * addr_str, int addr_str_len,
+          const char * httpversion)
 {
 	char buf[2048];
     int s;
@@ -294,11 +295,11 @@ miniwget3(const char * url, const char * host,
 	/* get address for caller ! */
 	if(addr_str)
 	{
-		struct sockaddr saddr;
+		struct sockaddr_storage saddr;
 		socklen_t saddrlen;
 
 		saddrlen = sizeof(saddr);
-		if(getsockname(s, &saddr, &saddrlen) < 0)
+		if(getsockname(s, (struct sockaddr *)&saddr, &saddrlen) < 0)
 		{
 			perror("getsockname");
 		}
@@ -312,10 +313,23 @@ miniwget3(const char * url, const char * host,
 		{
 		    printf("WSAAddressToStringA() failed : %d\n", WSAGetLastError());
 		}*/
+			/* the following code is only compatible with ip v4 addresses */
 			strncpy(addr_str, inet_ntoa(((struct sockaddr_in *)&saddr)->sin_addr), addr_str_len);
 #else
-			/*inet_ntop(AF_INET, &saddr.sin_addr, addr_str, addr_str_len);*/
-			n = getnameinfo(&saddr, saddrlen,
+#if 0
+			if(saddr.sa_family == AF_INET6) {
+				inet_ntop(AF_INET6,
+				          &(((struct sockaddr_in6 *)&saddr)->sin6_addr),
+				          addr_str, addr_str_len);
+			} else {
+				inet_ntop(AF_INET,
+				          &(((struct sockaddr_in *)&saddr)->sin_addr),
+				          addr_str, addr_str_len);
+			}
+#endif
+			/* getnameinfo return ip v6 address with the scope identifier
+			 * such as : 2a01:e35:8b2b:7330::%4281128194 */
+			n = getnameinfo((const struct sockaddr *)&saddr, saddrlen,
 			                addr_str, addr_str_len,
 			                NULL, 0,
 			                NI_NUMERICHOST | NI_NUMERICSERV);
@@ -400,6 +414,8 @@ miniwget2(const char * url, const char * host,
 int parseURL(const char * url, char * hostname, unsigned short * port, char * * path)
 {
 	char * p1, *p2, *p3;
+	if(!url)
+		return 0;
 	p1 = strstr(url, "://");
 	if(!p1)
 		return 0;
@@ -407,11 +423,39 @@ int parseURL(const char * url, char * hostname, unsigned short * port, char * * 
 	if(  (url[0]!='h') || (url[1]!='t')
 	   ||(url[2]!='t') || (url[3]!='p'))
 		return 0;
+	memset(hostname, 0, MAXHOSTNAMELEN + 1);
+	if(*p1 == '[')
+	{
+		/* IP v6 : http://[2a00:1450:8002::6a]/path/abc */
+		p2 = strchr(p1, ']');
+		p3 = strchr(p1, '/');
+		if(p2 && p3)
+		{
+			p2++;
+			strncpy(hostname, p1, MIN(MAXHOSTNAMELEN, (int)(p2-p1)));
+			if(*p2 == ':')
+			{
+				*port = 0;
+				p2++;
+				while( (*p2 >= '0') && (*p2 <= '9'))
+				{
+					*port *= 10;
+					*port += (unsigned short)(*p2 - '0');
+					p2++;
+				}
+			}
+			else
+			{
+				*port = 80;
+			}
+			*path = p3;
+			return 1;
+		}
+	}
 	p2 = strchr(p1, ':');
 	p3 = strchr(p1, '/');
 	if(!p3)
 		return 0;
-	memset(hostname, 0, MAXHOSTNAMELEN + 1);
 	if(!p2 || (p2>p3))
 	{
 		strncpy(hostname, p1, MIN(MAXHOSTNAMELEN, (int)(p3-p1)));
@@ -442,6 +486,9 @@ void * miniwget(const char * url, int * size)
 	*size = 0;
 	if(!parseURL(url, hostname, &port, &path))
 		return NULL;
+#ifdef DEBUG
+	printf("parsed url : hostname='%s' port=%hu path='%s'\n", hostname, port, path);
+#endif
 	return miniwget2(url, hostname, port, path, size, 0, 0);
 }
 
@@ -456,6 +503,9 @@ void * miniwget_getaddr(const char * url, int * size, char * addr, int addrlen)
 		addr[0] = '\0';
 	if(!parseURL(url, hostname, &port, &path))
 		return NULL;
+#ifdef DEBUG
+	printf("parsed url : hostname='%s' port=%hu path='%s'\n", hostname, port, path);
+#endif
 	return miniwget2(url, hostname, port, path, size, addr, addrlen);
 }
 

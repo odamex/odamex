@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6)
 
 project (miniupnpc C)
 set (MINIUPNPC_VERSION 1.5)
-set (MINIUPNPC_API_VERSION 6)
+set (MINIUPNPC_API_VERSION 8)
 
 if (NOT CMAKE_BUILD_TYPE)
   if (WIN32)
@@ -159,7 +159,7 @@ install (TARGETS ${UPNPC_INSTALL_TARGETS}
 install (FILES
 	miniupnpc.h
   miniwget.h
-  pnpcommands.h
+  upnpcommands.h
   igd_desc_parse.h
   upnpreplyparse.h
   upnperrors.h

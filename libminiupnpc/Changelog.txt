@@ -1,5 +1,29 @@
-$Id: Changelog.txt,v 1.135 2011/03/14 13:37:11 nanard Exp $
+$Id: Changelog.txt,v 1.142 2011/04/11 09:13:59 nanard Exp $
 miniUPnP client Changelog.
+
+2011/04/11:
+  moving ReceiveData() to a receivedata.c file.
+  parsing presentation url
+  adding IGD v2 WANIPv6FirewallControl commands
+
+2011/04/10:
+  update of miniupnpcmodule.c
+  comments in miniwget.c, update in testminiwget
+  Adding errors codes from IGD v2
+  new functions in upnpc.c for IGD v2
+
+2011/04/09:
+  Support for litteral ip v6 address in miniwget
+
+2011/04/08:
+  Adding support for urn:schemas-upnp-org:service:WANIPv6FirewallControl:1
+  Updating APIVERSION
+  Supporting IPV6 in upnpDiscover()
+  Adding a -6 option to upnpc command line tool
+
+2011/03/18:
+  miniwget/parseURL() : return an error when url param is null.
+  fixing GetListOfPortMappings()
 
 2011/03/14:
   upnpDiscover() now reporting an error code.

@@ -177,6 +177,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\receivedata.c"
+				>
+			</File>
+			<File
 				RelativePath="..\upnpcommands.c"
 				>
 			</File>
@@ -236,6 +240,10 @@
 			</File>
 			<File
 				RelativePath="..\portlistingparse.h"
+				>
+			</File>
+			<File
+				RelativePath="..\receivedata.h"
 				>
 			</File>
 			<File

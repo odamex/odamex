@@ -1,4 +1,4 @@
-/* $Id: upnpcommands.h,v 1.22 2011/03/14 13:36:01 nanard Exp $ */
+/* $Id: upnpcommands.h,v 1.23 2011/04/11 09:14:00 nanard Exp $ */
 /* Miniupnp project : http://miniupnp.free.fr/
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
@@ -220,6 +220,48 @@ UPNP_GetListOfPortMappings(const char * controlURL,
                            const char * protocol,
                            const char * numberOfPorts,
                            struct PortMappingParserData * data);
+
+/* IGD:2, functions for service WANIPv6FirewallControl:1 */ 
+LIBSPEC int
+UPNP_GetFirewallStatus(const char * controlURL,
+				const char * servicetype,
+				int * firewallEnabled, 
+				int * inboundPinholeAllowed);
+
+LIBSPEC int
+UPNP_GetOutboundPinholeTimeout(const char * controlURL, const char * servicetype,
+                    const char * remoteHost,
+                    const char * remotePort,
+                    const char * intClient,
+                    const char * intPort,
+                    const char * proto,
+                    int * opTimeout);
+
+LIBSPEC int
+UPNP_AddPinhole(const char * controlURL, const char * servicetype,
+                    const char * remoteHost,
+                    const char * remotePort,
+                    const char * intClient,
+                    const char * intPort,
+                    const char * proto,
+                    const char * leaseTime,
+                    char * uniqueID);
+
+LIBSPEC int
+UPNP_UpdatePinhole(const char * controlURL, const char * servicetype,
+                    const char * uniqueID,
+                    const char * leaseTime);
+
+LIBSPEC int
+UPNP_DeletePinhole(const char * controlURL, const char * servicetype, const char * uniqueID);
+
+LIBSPEC int
+UPNP_CheckPinholeWorking(const char * controlURL, const char * servicetype,
+                                 const char * uniqueID, int * isWorking);
+
+LIBSPEC int
+UPNP_GetPinholePackets(const char * controlURL, const char * servicetype,
+                                 const char * uniqueID, int * packets);
 
 #ifdef __cplusplus
 }

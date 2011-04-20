@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.73 2011/03/14 14:03:22 nanard Exp $
+# $Id: Makefile,v 1.76 2011/04/11 08:21:47 nanard Exp $
 # MiniUPnP Project
 # http://miniupnp.free.fr/
 # (c) 2005-2011 Thomas Bernard
@@ -23,17 +23,17 @@ JNAERATOR = jnaerator-0.9.3.jar
 #LDLIBS=-lsocket -lnsl -lresolv
 
 # APIVERSION is used to build SONAME
-APIVERSION = 7
+APIVERSION = 8
 
 SRCS = igd_desc_parse.c miniupnpc.c minixml.c minisoap.c miniwget.c \
        upnpc.c upnpcommands.c upnpreplyparse.c testminixml.c \
 	   minixmlvalid.c testupnpreplyparse.c minissdpc.c \
 	   upnperrors.c testigddescparse.c testminiwget.c \
-       connecthostport.c portlistringparse.c
+       connecthostport.c portlistringparse.c receivedata.c
 
 LIBOBJS = miniwget.o minixml.o igd_desc_parse.o minisoap.o \
           miniupnpc.o upnpreplyparse.o upnpcommands.o upnperrors.o \
-          connecthostport.o portlistingparse.o
+          connecthostport.o portlistingparse.o receivedata.o
 
 ifneq ($(OS), AmigaOS)
 CFLAGS := -fPIC $(CFLAGS)
@@ -62,15 +62,14 @@ EXECUTABLES_ADDTESTS = testminixml minixmlvalid testupnpreplyparse \
 
 TESTMINIXMLOBJS = minixml.o igd_desc_parse.o testminixml.o
 
-TESTMINIWGETOBJS = miniwget.o testminiwget.o miniupnpc.o minisoap.o \
-                   upnpcommands.o upnpreplyparse.o minixml.o \
-                   igd_desc_parse.o connecthostport.o
+TESTMINIWGETOBJS = miniwget.o testminiwget.o connecthostport.o receivedata.o
 
 TESTUPNPREPLYPARSE = testupnpreplyparse.o minixml.o upnpreplyparse.o
 
 TESTIGDDESCPARSE = testigddescparse.o igd_desc_parse.o minixml.o \
                    miniupnpc.o miniwget.o upnpcommands.o upnpreplyparse.o \
-                   minisoap.o connecthostport.o
+                   minisoap.o connecthostport.o receivedata.o \
+                   portlistingparse.o
 
 ifneq ($(OS), AmigaOS)
 EXECUTABLES := $(EXECUTABLES) upnpc-shared
@@ -181,10 +180,11 @@ igd_desc_parse.o: igd_desc_parse.h
 miniupnpc.o: miniupnpc.h declspec.h igd_desc_parse.h minissdpc.h miniwget.h
 miniupnpc.o: minisoap.h minixml.h upnpcommands.h upnpreplyparse.h
 miniupnpc.o: portlistingparse.h miniupnpctypes.h connecthostport.h
+miniupnpc.o: receivedata.h
 minixml.o: minixml.h
 minisoap.o: minisoap.h miniupnpcstrings.h
-miniwget.o: miniupnpc.h declspec.h igd_desc_parse.h miniupnpcstrings.h
-miniwget.o: miniwget.h connecthostport.h
+miniwget.o: miniupnpcstrings.h miniwget.h declspec.h connecthostport.h
+miniwget.o: receivedata.h
 upnpc.o: miniwget.h declspec.h miniupnpc.h igd_desc_parse.h upnpcommands.h
 upnpc.o: upnpreplyparse.h portlistingparse.h miniupnpctypes.h upnperrors.h
 upnpcommands.o: upnpcommands.h upnpreplyparse.h portlistingparse.h declspec.h
@@ -200,3 +200,4 @@ upnperrors.o: igd_desc_parse.h
 testigddescparse.o: igd_desc_parse.h minixml.h miniupnpc.h declspec.h
 testminiwget.o: miniwget.h declspec.h
 connecthostport.o: connecthostport.h
+receivedata.o: receivedata.h

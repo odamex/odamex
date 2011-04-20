@@ -1,4 +1,4 @@
-/* $Id: miniupnpc.c,v 1.88 2011/03/14 13:37:12 nanard Exp $ */
+/* $Id: miniupnpc.c,v 1.94 2011/04/18 17:46:36 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas BERNARD
  * copyright (c) 2005-2011 Thomas Bernard
@@ -49,13 +49,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <net/if.h>
 #if !defined(__amigaos__) && !defined(__amigaos4__)
 #include <poll.h>
 #endif
 #include <strings.h>
 #include <errno.h>
 #define closesocket close
-#define MINIUPNPC_IGNORE_EINTR
 #endif /* #else WIN32 */
 #ifdef MINIUPNPC_SET_SOCKET_TIMEOUT
 #include <sys/time.h>
@@ -72,6 +72,7 @@
 #include "minixml.h"
 #include "upnpcommands.h"
 #include "connecthostport.h"
+#include "receivedata.h"
 
 #ifdef WIN32
 #define PRINT_SOCKET_ERROR(x)    printf("Socket error: %s, %d\n", x, WSAGetLastError());
@@ -304,6 +305,9 @@ parseMSEARCHReply(const char * reply, int size,
 #define XSTR(s) STR(s)
 #define STR(s) #s
 #define UPNP_MCAST_ADDR "239.255.255.250"
+/* for IPv6 */
+#define UPNP_MCAST_LL_ADDR "FF02::C" /* link-local */
+#define UPNP_MCAST_SL_ADDR "FF05::C" /* site-local */
 
 /* upnpDiscover() :
  * return a chained list of all devices found or NULL if
@@ -313,6 +317,7 @@ parseMSEARCHReply(const char * reply, int size,
 LIBSPEC struct UPNPDev *
 upnpDiscover(int delay, const char * multicastif,
              const char * minissdpdsock, int sameport,
+             int ipv6,
              int * error)
 {
 	struct UPNPDev * tmp;
@@ -320,12 +325,16 @@ upnpDiscover(int delay, const char * multicastif,
 	int opt = 1;
 	static const char MSearchMsgFmt[] = 
 	"M-SEARCH * HTTP/1.1\r\n"
-	"HOST: " UPNP_MCAST_ADDR ":" XSTR(PORT) "\r\n"
+	"HOST: %s:" XSTR(PORT) "\r\n"
 	"ST: %s\r\n"
 	"MAN: \"ssdp:discover\"\r\n"
 	"MX: %u\r\n"
 	"\r\n";
 	static const char * const deviceList[] = {
+#if 0
+		"urn:schemas-upnp-org:device:InternetGatewayDevice:2",
+		"urn:schemas-upnp-org:service:WANIPConnection:2",
+#endif
 		"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
 		"urn:schemas-upnp-org:service:WANIPConnection:1",
 		"urn:schemas-upnp-org:service:WANPPPConnection:1",
@@ -336,10 +345,10 @@ upnpDiscover(int delay, const char * multicastif,
 	char bufr[1536];	/* reception and emission buffer */
 	int sudp;
 	int n;
-	struct sockaddr sockudp_r;
+	struct sockaddr_storage sockudp_r;
 	unsigned int mx;
 #ifdef NO_GETADDRINFO
-	struct sockaddr_in sockudp_w;
+	struct sockaddr_storage sockudp_w;
 #else
 	int rv;
 	struct addrinfo hints, *servinfo, *p;
@@ -369,9 +378,9 @@ upnpDiscover(int delay, const char * multicastif,
 #endif
 	/* fallback to direct discovery */
 #ifdef WIN32
-	sudp = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	sudp = socket(ipv6 ? PF_INET6 : PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 #else
-	sudp = socket(PF_INET, SOCK_DGRAM, 0);
+	sudp = socket(ipv6 ? PF_INET6 : PF_INET, SOCK_DGRAM, 0);
 #endif
 	if(sudp < 0)
 	{
@@ -381,13 +390,13 @@ upnpDiscover(int delay, const char * multicastif,
 		return NULL;
 	}
 	/* reception */
-	memset(&sockudp_r, 0, sizeof(struct sockaddr));
-	if(0/*ipv6*/) {
+	memset(&sockudp_r, 0, sizeof(struct sockaddr_storage));
+	if(ipv6) {
 		struct sockaddr_in6 * p = (struct sockaddr_in6 *)&sockudp_r;
 		p->sin6_family = AF_INET6;
 		if(sameport)
 			p->sin6_port = htons(PORT);
-		p->sin6_addr = in6addr_any;//IN6ADDR_ANY_INIT;/*INADDR_ANY;*/
+		p->sin6_addr = in6addr_any; /* in6addr_any is not available with MinGW32 3.4.2 */
 	} else {
 		struct sockaddr_in * p = (struct sockaddr_in *)&sockudp_r;
 		p->sin_family = AF_INET;
@@ -400,7 +409,8 @@ upnpDiscover(int delay, const char * multicastif,
  * SSDP multicast traffic */
 /* Get IP associated with the index given in the ip_forward struct
  * in order to give this ip to setsockopt(sudp, IPPROTO_IP, IP_MULTICAST_IF) */
-	if(GetBestRoute(inet_addr("223.255.255.255"), 0, &ip_forward) == NO_ERROR) {
+	if(!ipv6
+	   && (GetBestRoute(inet_addr("223.255.255.255"), 0, &ip_forward) == NO_ERROR)) {
 		DWORD dwRetVal = 0;
 		PMIB_IPADDRTABLE pIPAddrTable;
 		DWORD dwSize = 0;
@@ -468,20 +478,35 @@ upnpDiscover(int delay, const char * multicastif,
 
 	if(multicastif)
 	{
-		struct in_addr mc_if;
-		mc_if.s_addr = inet_addr(multicastif);
-		if(0/*ipv6*/) {
+		if(ipv6) {
+#if !defined(WIN32)
+			/* according to MSDN, if_nametoindex() is supported since
+			 * MS Windows Vista and MS Windows Server 2008.
+			 * http://msdn.microsoft.com/en-us/library/bb408409%28v=vs.85%29.aspx */
+			unsigned int ifindex = if_nametoindex(multicastif); /* eth0, etc. */
+			if(setsockopt(sudp, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(&ifindex)) < 0)
+			{
+				PRINT_SOCKET_ERROR("setsockopt");
+			}
+#else
+#ifdef DEBUG
+			printf("Setting of multicast interface not supported in IPv6 under Windows.\n");
+#endif
+#endif
 		} else {
+			struct in_addr mc_if;
+			mc_if.s_addr = inet_addr(multicastif); /* ex: 192.168.x.x */
 			((struct sockaddr_in *)&sockudp_r)->sin_addr.s_addr = mc_if.s_addr;
-		}
-		if(setsockopt(sudp, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&mc_if, sizeof(mc_if)) < 0)
-		{
-			PRINT_SOCKET_ERROR("setsockopt");
+			if(setsockopt(sudp, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&mc_if, sizeof(mc_if)) < 0)
+			{
+				PRINT_SOCKET_ERROR("setsockopt");
+			}
 		}
 	}
 
 	/* Avant d'envoyer le paquet on bind pour recevoir la reponse */
-    if (bind(sudp, &sockudp_r, 0/*ipv6*/?sizeof(struct sockaddr_in6):sizeof(struct sockaddr_in)) != 0)
+    if (bind(sudp, (const struct sockaddr *)&sockudp_r,
+	         ipv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in)) != 0)
 	{
 		if(error)
 			*error = UPNPDISCOVER_SOCKET_ERROR;
@@ -499,17 +524,30 @@ upnpDiscover(int delay, const char * multicastif,
 	{
 		/* sending the SSDP M-SEARCH packet */
 		n = snprintf(bufr, sizeof(bufr),
-		             MSearchMsgFmt, deviceList[deviceIndex++], mx);
-		/*printf("Sending %s", bufr);*/
+		             MSearchMsgFmt,
+		             ipv6 ? "[" UPNP_MCAST_LL_ADDR "]" : UPNP_MCAST_ADDR,
+		             deviceList[deviceIndex++], mx);
+#ifdef DEBUG
+		printf("Sending %s", bufr);
+#endif
 #ifdef NO_GETADDRINFO
 		/* the following code is not using getaddrinfo */
 		/* emission */
-		memset(&sockudp_w, 0, sizeof(struct sockaddr_in));
-		sockudp_w.sin_family = AF_INET;
-		sockudp_w.sin_port = htons(PORT);
-		sockudp_w.sin_addr.s_addr = inet_addr(UPNP_MCAST_ADDR);
+		memset(&sockudp_w, 0, sizeof(struct sockaddr_storage));
+		if(ipv6) {
+			struct sockaddr_in6 * p = (struct sockaddr_in6 *)&sockudp_w;
+			p->sin6_family = AF_INET6;
+			p->sin6_port = htons(PORT);
+			inet_pton(AF_INET6, UPNP_MCAST_LL_ADDR, &(p->sin6_addr));
+		} else {
+			struct sockaddr_in * p = (struct sockaddr_in *)&sockudp_w;
+			p->sin_family = AF_INET;
+			p->sin_port = htons(PORT);
+			p->sin_addr.s_addr = inet_addr(UPNP_MCAST_ADDR);
+		}
 		n = sendto(sudp, bufr, n, 0,
-		           (struct sockaddr *)&sockudp_w, sizeof(struct sockaddr_in));
+		           &sockudp_w,
+		           ipv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in));
 		if (n < 0) {
 			if(error)
 				*error = UPNPDISCOVER_SOCKET_ERROR;
@@ -522,7 +560,8 @@ upnpDiscover(int delay, const char * multicastif,
 		hints.ai_family = AF_UNSPEC; // AF_INET6 or AF_INET
 		hints.ai_socktype = SOCK_DGRAM;
 		/*hints.ai_flags = */
-		if ((rv = getaddrinfo(UPNP_MCAST_ADDR, XSTR(PORT), &hints, &servinfo)) != 0) {
+		if ((rv = getaddrinfo(ipv6 ? UPNP_MCAST_LL_ADDR : UPNP_MCAST_ADDR,
+		                      XSTR(PORT), &hints, &servinfo)) != 0) {
 			if(error)
 				*error = UPNPDISCOVER_SOCKET_ERROR;
 #ifdef WIN32
@@ -549,7 +588,7 @@ upnpDiscover(int delay, const char * multicastif,
 #endif /* #ifdef NO_GETADDRINFO */
 	}
 	/* Waiting for SSDP REPLY packet to M-SEARCH */
-	n = ReceiveData(sudp, bufr, sizeof(bufr), delay);
+	n = receivedata(sudp, bufr, sizeof(bufr), delay);
 	if (n < 0) {
 		/* error */
 		if(error)
@@ -651,19 +690,21 @@ LIBSPEC void GetUPNPUrls(struct UPNPUrls * urls, struct IGDdatas * data,
                  const char * descURL)
 {
 	char * p;
-	int n1, n2, n3;
+	int n1, n2, n3, n4;
 	n1 = strlen(data->urlbase);
 	if(n1==0)
 		n1 = strlen(descURL);
 	n1 += 2;	/* 1 byte more for Null terminator, 1 byte for '/' if needed */
-	n2 = n1; n3 = n1;
+	n2 = n1; n3 = n1; n4 = n1;
 	n1 += strlen(data->first.scpdurl);
 	n2 += strlen(data->first.controlurl);
 	n3 += strlen(data->CIF.controlurl);
+	n4 += strlen(data->IPv6FC.controlurl);
 
 	urls->ipcondescURL = (char *)malloc(n1);
 	urls->controlURL = (char *)malloc(n2);
 	urls->controlURL_CIF = (char *)malloc(n3);
+	urls->controlURL_6FC = (char *)malloc(n4);
 	/* maintenant on chope la desc du WANIPConnection */
 	if(data->urlbase[0] != '\0')
 		strncpy(urls->ipcondescURL, data->urlbase, n1);
@@ -673,12 +714,15 @@ LIBSPEC void GetUPNPUrls(struct UPNPUrls * urls, struct IGDdatas * data,
 	if(p) p[0] = '\0';
 	strncpy(urls->controlURL, urls->ipcondescURL, n2);
 	strncpy(urls->controlURL_CIF, urls->ipcondescURL, n3);
+	strncpy(urls->controlURL_6FC, urls->ipcondescURL, n4);
 	
 	url_cpy_or_cat(urls->ipcondescURL, data->first.scpdurl, n1);
 
 	url_cpy_or_cat(urls->controlURL, data->first.controlurl, n2);
 
 	url_cpy_or_cat(urls->controlURL_CIF, data->CIF.controlurl, n3);
+
+	url_cpy_or_cat(urls->controlURL_6FC, data->IPv6FC.controlurl, n4);
 
 #ifdef DEBUG
 	printf("urls->ipcondescURL='%s' %u n1=%d\n", urls->ipcondescURL,
@@ -687,6 +731,8 @@ LIBSPEC void GetUPNPUrls(struct UPNPUrls * urls, struct IGDdatas * data,
 	       (unsigned)strlen(urls->controlURL), n2);
 	printf("urls->controlURL_CIF='%s' %u n3=%d\n", urls->controlURL_CIF,
 	       (unsigned)strlen(urls->controlURL_CIF), n3);
+	printf("urls->controlURL_6FC='%s' %u n4=%d\n", urls->controlURL_6FC,
+	       (unsigned)strlen(urls->controlURL_6FC), n4);
 #endif
 }
 
@@ -701,56 +747,8 @@ FreeUPNPUrls(struct UPNPUrls * urls)
 	urls->ipcondescURL = 0;
 	free(urls->controlURL_CIF);
 	urls->controlURL_CIF = 0;
-}
-
-
-int ReceiveData(int socket, char * data, int length, int timeout)
-{
-    int n;
-#if !defined(WIN32) && !defined(__amigaos__) && !defined(__amigaos4__)
-    struct pollfd fds[1]; /* for the poll */
-#ifdef MINIUPNPC_IGNORE_EINTR
-    do {
-#endif
-        fds[0].fd = socket;
-        fds[0].events = POLLIN;
-        n = poll(fds, 1, timeout);
-#ifdef MINIUPNPC_IGNORE_EINTR
-    } while(n < 0 && errno == EINTR);
-#endif
-    if(n < 0)
-    {
-        PRINT_SOCKET_ERROR("poll");
-        return -1;
-    }
-    else if(n == 0)
-    {
-        return 0;
-    }
-#else
-    fd_set socketSet;
-    TIMEVAL timeval;
-    FD_ZERO(&socketSet);
-    FD_SET(socket, &socketSet);
-    timeval.tv_sec = timeout / 1000;
-    timeval.tv_usec = (timeout % 1000) * 1000;
-    n = select(FD_SETSIZE, &socketSet, NULL, NULL, &timeval);
-    if(n < 0)
-    {
-        PRINT_SOCKET_ERROR("select");
-        return -1;
-    }
-    else if(n == 0)
-    {
-        return 0;
-    }    
-#endif
-	n = recv(socket, data, length, 0);
-	if(n<0)
-	{
-		PRINT_SOCKET_ERROR("recv");
-	}
-	return n;
+	free(urls->controlURL_6FC);
+	urls->controlURL_6FC = 0;
 }
 
 int

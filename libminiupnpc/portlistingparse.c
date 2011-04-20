@@ -1,4 +1,4 @@
-/* $Id: portlistingparse.c,v 1.3 2011/02/15 22:56:13 nanard Exp $ */
+/* $Id: portlistingparse.c,v 1.4 2011/03/18 11:02:17 nanard Exp $ */
 /* MiniUPnP project
  * http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
  * (c) 2011 Thomas Bernard 
@@ -19,6 +19,7 @@ static const struct {
 	{ NewExternalPort, "NewExternalPort"},
 	{ NewProtocol, "NewProtocol"},
 	{ NewInternalPort, "NewInternalPort"},
+	{ NewInternalClient, "NewInternalClient"},
 	{ NewEnabled, "NewEnabled"},
 	{ NewDescription, "NewDescription"},
 	{ NewLeaseTime, "NewLeaseTime"},

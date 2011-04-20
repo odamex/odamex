@@ -1,4 +1,4 @@
-/* $Id: miniupnpc.h,v 1.21 2011/03/14 13:37:12 nanard Exp $ */
+/* $Id: miniupnpc.h,v 1.23 2011/04/11 08:21:46 nanard Exp $ */
 /* Project: miniupnp
  * http://miniupnp.free.fr/
  * Author: Thomas Bernard
@@ -52,6 +52,7 @@ struct UPNPDev {
 LIBSPEC struct UPNPDev *
 upnpDiscover(int delay, const char * multicastif,
              const char * minissdpdsock, int sameport,
+             int ipv6,
              int * error);
 /* freeUPNPDevlist()
  * free list returned by upnpDiscover() */
@@ -66,11 +67,13 @@ LIBSPEC void parserootdesc(const char *, int, struct IGDdatas *);
  * controlURL: controlURL of the WANIPConnection
  * ipcondescURL: url of the description of the WANIPConnection
  * controlURL_CIF: controlURL of the WANCommonInterfaceConfig
+ * controlURL_6FC: controlURL of the WANIPv6FirewallControl
  */
 struct UPNPUrls {
 	char * controlURL;
 	char * ipcondescURL;
 	char * controlURL_CIF;
+	char * controlURL_6FC;
 };
 
 /* UPNP_GetValidIGD() :
@@ -105,11 +108,6 @@ UPNP_GetIGDFromUrl(const char * rootdescurl,
 LIBSPEC void GetUPNPUrls(struct UPNPUrls *, struct IGDdatas *, const char *);
 
 LIBSPEC void FreeUPNPUrls(struct UPNPUrls *);
-
-/* Reads data from the specified socket. 
- * Returns the number of bytes read if successful, zero if no bytes were 
- * read or if we timed out. Returns negative if there was an error. */
-int ReceiveData(int socket, char * data, int length, int timeout);
 
 /* return 0 or 1 */
 LIBSPEC int UPNPIGD_IsConnected(struct UPNPUrls *, struct IGDdatas *);

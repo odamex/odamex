@@ -1,19 +1,19 @@
-# $Id: Makefile.mingw,v 1.14 2011/02/15 23:03:55 nanard Exp $
+# $Id: Makefile.mingw,v 1.16 2011/04/18 17:39:31 nanard Exp $
 # Miniupnp project.
 # http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
 # (c) 2005-2011 Thomas Bernard
 # This Makefile is made for MinGW
 #
 CC = gcc
-#CFLAGS = -Wall -g -DDEBUG
-CFLAGS = -Wall -Os -DNDEBUG
+#CFLAGS = -Wall -g -DDEBUG -D_WIN32_WINNT=0X501
+CFLAGS = -Wall -Os -DNDEBUG -D_WIN32_WINNT=0X501
 LDLIBS = -lws2_32 -liphlpapi
 # -lwsock32
 # -liphlpapi is used for GetBestRoute()
 PYTHON=\utils\python25\python
 OBJS=miniwget.o minixml.o igd_desc_parse.o minisoap.o \
      miniupnpc.o upnpreplyparse.o upnpcommands.o upnperrors.o \
-     connecthostport.o portlistingparse.o
+     connecthostport.o portlistingparse.o receivedata.o
 OBJSDLL=$(addprefix dll/, $(OBJS))
 
 all:	init upnpc-static upnpc-shared testminixml libminiupnpc.a miniupnpc.dll
@@ -37,8 +37,10 @@ pythonmodule:	libminiupnpc.a
 	$(PYTHON) setupmingw32.py install --skip-build
 
 miniupnpc.dll:	libminiupnpc.a $(OBJSDLL)
-	dllwrap -k --driver-name gcc --def miniupnpc.def \
-	--output-def miniupnpc.dll.def --implib miniupnpc.lib -o $@ \
+	dllwrap -k --driver-name gcc \
+	--def miniupnpc.def \
+	--output-def miniupnpc.dll.def \
+	--implib miniupnpc.lib -o $@ \
 	$(OBJSDLL) $(LDLIBS)
 
 miniupnpc.lib:	miniupnpc.dll
@@ -56,10 +58,10 @@ upnpc.o:
 	$(CC) $(CFLAGS) -c -o dll/$@ $<
 
 upnpc-static:	upnpc.o libminiupnpc.a
-	$(CC) -o $@ $^ $(LDLIBS)
+	$(CC) -enable-stdcall-fixup -o $@ $^ $(LDLIBS)
 
 upnpc-shared:	dll/upnpc.o miniupnpc.lib
-	$(CC) -o $@ $^ $(LDLIBS)
+	$(CC) -enable-stdcall-fixup -o $@ $^ $(LDLIBS)
 
 wingenminiupnpcstrings:	wingenminiupnpcstrings.o
 

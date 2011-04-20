@@ -157,7 +157,7 @@ void init_upnp (void)
 	
 	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
 	
-	devlist = upnpDiscover((int)sv_upnp_discovertimeout, NULL, NULL, 0, &res);
+	devlist = upnpDiscover((int)sv_upnp_discovertimeout, NULL, NULL, 0, 0, &res);
 	
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
     {

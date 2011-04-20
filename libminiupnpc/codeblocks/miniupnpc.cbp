@@ -111,6 +111,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="..\portlistingparse.h" />
+		<Unit filename="..\receivedata.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\receivedata.h" />
 		<Unit filename="..\upnpcommands.c">
 			<Option compilerVar="CC" />
 		</Unit>

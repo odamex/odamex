@@ -1,4 +1,4 @@
-/* $Id: upnpc.c,v 1.77 2011/03/14 13:37:12 nanard Exp $ */
+/* $Id: upnpc.c,v 1.84 2011/04/11 09:26:18 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
@@ -41,7 +41,7 @@ const char * protofix(const char * proto)
 static void DisplayInfos(struct UPNPUrls * urls,
                          struct IGDdatas * data)
 {
-	char externalIPAddress[16];
+	char externalIPAddress[40];
 	char connectionType[64];
 	char status[64];
 	char lastconnerr[64];
@@ -65,7 +65,19 @@ static void DisplayInfos(struct UPNPUrls * urls,
 	printf("  Time started : %s", ctime(&timestarted));
 	UPNP_GetLinkLayerMaxBitRates(urls->controlURL_CIF, data->CIF.servicetype,
 			&brDown, &brUp);
-	printf("MaxBitRateDown : %u bps   MaxBitRateUp %u bps\n", brDown, brUp);
+	printf("MaxBitRateDown : %u bps", brDown);
+	if(brDown >= 1000000) {
+		printf(" (%u.%u Mbps)", brDown / 1000000, (brDown / 100000) % 10);
+	} else if(brDown >= 1000) {
+		printf(" (%u Kbps)", brDown / 1000);
+	}
+	printf("   MaxBitRateUp %u bps", brUp);
+	if(brUp >= 1000000) {
+		printf(" (%u.%u Mbps)", brUp / 1000000, (brUp / 100000) % 10);
+	} else if(brUp >= 1000) {
+		printf(" (%u Kbps)", brUp / 1000);
+	}
+	printf("\n");
 	r = UPNP_GetExternalIPAddress(urls->controlURL,
 	                          data->first.servicetype,
 							  externalIPAddress);
@@ -96,7 +108,7 @@ static void ListRedirections(struct UPNPUrls * urls,
 	int r;
 	int i = 0;
 	char index[6];
-	char intClient[16];
+	char intClient[40];
 	char intPort[6];
 	char extPort[6];
 	char protocol[4];
@@ -208,8 +220,8 @@ static void SetRedirectAndTest(struct UPNPUrls * urls,
                                const char * proto,
                                const char * leaseDuration)
 {
-	char externalIPAddress[16];
-	char intClient[16];
+	char externalIPAddress[40];
+	char intClient[40];
 	char intPort[6];
 	char duration[16];
 	int r;
@@ -278,6 +290,161 @@ RemoveRedirect(struct UPNPUrls * urls,
 	printf("UPNP_DeletePortMapping() returned : %d\n", r);
 }
 
+/* IGD:2, functions for service WANIPv6FirewallControl:1 */
+static void GetFirewallStatus(struct UPNPUrls * urls, struct IGDdatas * data)
+{
+	unsigned int bytessent, bytesreceived, packetsreceived, packetssent;
+	int firewallEnabled = 0, inboundPinholeAllowed = 0;
+
+	UPNP_GetFirewallStatus(urls->controlURL_6FC, data->IPv6FC.servicetype, &firewallEnabled, &inboundPinholeAllowed);
+	printf("FirewallEnabled: %d & Inbound Pinhole Allowed: %d\n", firewallEnabled, inboundPinholeAllowed);
+	printf("GetFirewallStatus:\n   Firewall Enabled: %s\n   Inbound Pinhole Allowed: %s\n", (firewallEnabled)? "Yes":"No", (inboundPinholeAllowed)? "Yes":"No");
+	
+	bytessent = UPNP_GetTotalBytesSent(urls->controlURL_CIF, data->CIF.servicetype);
+	bytesreceived = UPNP_GetTotalBytesReceived(urls->controlURL_CIF, data->CIF.servicetype);
+	packetssent = UPNP_GetTotalPacketsSent(urls->controlURL_CIF, data->CIF.servicetype);
+	packetsreceived = UPNP_GetTotalPacketsReceived(urls->controlURL_CIF, data->CIF.servicetype);
+	printf("Bytes:   Sent: %8u\tRecv: %8u\n", bytessent, bytesreceived);
+	printf("Packets: Sent: %8u\tRecv: %8u\n", packetssent, packetsreceived);
+}
+
+/* Test function 
+ * 1 - Add pinhole
+ * 2 - Check if pinhole is working from the IGD side */
+static void SetPinholeAndTest(struct UPNPUrls * urls, struct IGDdatas * data,
+					const char * remoteaddr, const char * eport,
+					const char * intaddr, const char * iport,
+					const char * proto, const char * lease_time)
+{
+	char uniqueID[8];
+	//int isWorking = 0;
+	int r;
+
+	if(!intaddr || !remoteaddr || !iport || !eport || !proto || !lease_time)
+	{
+		fprintf(stderr, "Wrong arguments\n");
+		return;
+	}
+	/*proto = protofix(proto);
+	if(!proto)
+	{
+		fprintf(stderr, "invalid protocol\n");
+		return;
+	}*/
+	r = UPNP_AddPinhole(urls->controlURL_6FC, data->IPv6FC.servicetype, remoteaddr, eport, intaddr, iport, proto, lease_time, uniqueID);
+	if(r!=UPNPCOMMAND_SUCCESS)
+		printf("AddPinhole([%s]:%s -> [%s]:%s) failed with code %d (%s)\n",
+		       intaddr, iport, remoteaddr, eport, r, strupnperror(r));
+	else
+	{
+		printf("AddPinhole: ([%s]:%s -> [%s]:%s) / Pinhole ID = %s\n", intaddr, iport, remoteaddr, eport, uniqueID);
+		/*r = UPNP_CheckPinholeWorking(urls->controlURL_6FC, data->servicetype_6FC, uniqueID, &isWorking);
+		if(r!=UPNPCOMMAND_SUCCESS)
+			printf("CheckPinholeWorking() failed with code %d (%s)\n", r, strupnperror(r));
+		printf("CheckPinholeWorking: Pinhole ID = %s / IsWorking = %s\n", uniqueID, (isWorking)? "Yes":"No");*/
+	}
+}
+
+/* Test function
+ * 1 - Check if pinhole is working from the IGD side
+ * 2 - Update pinhole */
+static void GetPinholeAndUpdate(struct UPNPUrls * urls, struct IGDdatas * data,
+					const char * uniqueID, const char * lease_time)
+{
+	int isWorking = 0;
+	int r;
+
+	if(!uniqueID || !lease_time)
+	{
+		fprintf(stderr, "Wrong arguments\n");
+		return;
+	}
+	r = UPNP_CheckPinholeWorking(urls->controlURL_6FC, data->IPv6FC.servicetype, uniqueID, &isWorking);
+	printf("CheckPinholeWorking: Pinhole ID = %s / IsWorking = %s\n", uniqueID, (isWorking)? "Yes":"No");
+	if(r!=UPNPCOMMAND_SUCCESS)
+		printf("CheckPinholeWorking() failed with code %d (%s)\n", r, strupnperror(r));
+	if(isWorking || r==709)
+	{
+		r = UPNP_UpdatePinhole(urls->controlURL_6FC, data->IPv6FC.servicetype, uniqueID, lease_time);
+		printf("UpdatePinhole: Pinhole ID = %s with Lease Time: %s\n", uniqueID, lease_time);
+		if(r!=UPNPCOMMAND_SUCCESS)
+			printf("UpdatePinhole: ID (%s) failed with code %d (%s)\n", uniqueID, r, strupnperror(r));
+	}
+}
+
+/* Test function 
+ * Get pinhole timeout
+ */
+static void GetPinholeOutboundTimeout(struct UPNPUrls * urls, struct IGDdatas * data,
+					const char * remoteaddr, const char * eport,
+					const char * intaddr, const char * iport,
+					const char * proto)
+{
+	int timeout = 0;
+	int r;
+
+	if(!intaddr || !remoteaddr || !iport || !eport || !proto)
+	{
+		fprintf(stderr, "Wrong arguments\n");
+		return;
+	}
+
+	r = UPNP_GetOutboundPinholeTimeout(urls->controlURL_6FC, data->IPv6FC.servicetype, remoteaddr, eport, intaddr, iport, proto, &timeout);
+	if(r!=UPNPCOMMAND_SUCCESS)
+		printf("GetOutboundPinholeTimeout([%s]:%s -> [%s]:%s) failed with code %d (%s)\n",
+		       intaddr, iport, remoteaddr, eport, r, strupnperror(r));
+	else
+		printf("GetOutboundPinholeTimeout: ([%s]:%s -> [%s]:%s) / Timeout = %d\n", intaddr, iport, remoteaddr, eport, timeout);
+}
+
+static void
+GetPinholePackets(struct UPNPUrls * urls,
+               struct IGDdatas * data, const char * uniqueID)
+{
+	int r, pinholePackets = 0;
+	if(!uniqueID)
+	{
+		fprintf(stderr, "invalid arguments\n");
+		return;
+	}
+	r = UPNP_GetPinholePackets(urls->controlURL_6FC, data->IPv6FC.servicetype, uniqueID, &pinholePackets);
+	if(r!=UPNPCOMMAND_SUCCESS)
+		printf("GetPinholePackets() failed with code %d (%s)\n", r, strupnperror(r));
+	else
+		printf("GetPinholePackets: Pinhole ID = %s / PinholePackets = %d\n", uniqueID, pinholePackets);
+}
+
+static void
+CheckPinhole(struct UPNPUrls * urls,
+               struct IGDdatas * data, const char * uniqueID)
+{
+	int r, isWorking = 0;
+	if(!uniqueID)
+	{
+		fprintf(stderr, "invalid arguments\n");
+		return;
+	}
+	r = UPNP_CheckPinholeWorking(urls->controlURL_6FC, data->IPv6FC.servicetype, uniqueID, &isWorking);
+	if(r!=UPNPCOMMAND_SUCCESS)
+		printf("CheckPinholeWorking() failed with code %d (%s)\n", r, strupnperror(r));
+	else
+		printf("CheckPinholeWorking: Pinhole ID = %s / IsWorking = %s\n", uniqueID, (isWorking)? "Yes":"No");
+}
+
+static void
+RemovePinhole(struct UPNPUrls * urls,
+               struct IGDdatas * data, const char * uniqueID)
+{
+	int r;
+	if(!uniqueID)
+	{
+		fprintf(stderr, "invalid arguments\n");
+		return;
+	}
+	r = UPNP_DeletePinhole(urls->controlURL_6FC, data->IPv6FC.servicetype, uniqueID);
+	printf("UPNP_DeletePinhole() returned : %d\n", r);
+}
+
 
 /* sample upnp client program */
 int main(int argc, char ** argv)
@@ -293,6 +460,7 @@ int main(int argc, char ** argv)
 	const char * minissdpdpath = 0;
 	int retcode = 0;
 	int error = 0;
+	int ipv6 = 0;
 
 #ifdef WIN32
 	WSADATA wsaData;
@@ -317,6 +485,8 @@ int main(int argc, char ** argv)
 				multicastif = argv[++i];
 			else if(argv[i][1] == 'p')
 				minissdpdpath = argv[++i];
+			else if(argv[i][1] == '6')
+				ipv6 = 1;
 			else
 			{
 				command = argv[i][1];
@@ -334,24 +504,37 @@ int main(int argc, char ** argv)
 
 	if(!command || (command == 'a' && commandargc<4)
 	   || (command == 'd' && argc<2)
-	   || (command == 'r' && argc<2))
+	   || (command == 'r' && argc<2)
+	   || (command == 'A' && commandargc<6)
+	   || (command == 'U' && commandargc<2)
+	   || (command == 'D' && commandargc<1))
 	{
 		fprintf(stderr, "Usage :\t%s [options] -a ip port external_port protocol\n\t\tAdd port redirection\n", argv[0]);
 		fprintf(stderr, "       \t%s [options] -d external_port protocol [port2 protocol2] [...]\n\t\tDelete port redirection\n", argv[0]);
 		fprintf(stderr, "       \t%s [options] -s\n\t\tGet Connection status\n", argv[0]);
 		fprintf(stderr, "       \t%s [options] -l\n\t\tList redirections\n", argv[0]);
-		fprintf(stderr, "       \t%s [options] -L\n\t\tList redirections (using GetListOfPortMappings)\n", argv[0]);
+		fprintf(stderr, "       \t%s [options] -L\n\t\tList redirections (using GetListOfPortMappings, IGD v2)\n", argv[0]);
 		fprintf(stderr, "       \t%s [options] -r port1 protocol1 [port2 protocol2] [...]\n\t\tAdd all redirections to the current host\n", argv[0]);
+		fprintf(stderr, "       \t%s [options] -A remote_ip remote_port internal_ip internal_port protocol lease_time\n\t\tAdd Pinhole (for IGD:2 only)\n", argv[0]);
+		fprintf(stderr, "       \t%s [options] -U uniqueID new_lease_time\n\t\tUpdate Pinhole (for IGD:2 only)\n", argv[0]);
+		fprintf(stderr, "       \t%s [options] -C uniqueID\n\t\tCheck if Pinhole is Working (for IGD:2 only)\n", argv[0]);
+		fprintf(stderr, "       \t%s [options] -K uniqueID\n\t\tGet Number of packets going through the rule (for IGD:2 only)\n", argv[0]);
+		fprintf(stderr, "       \t%s [options] -D uniqueID\n\t\tDelete Pinhole (for IGD:2 only)\n", argv[0]);
+		fprintf(stderr, "       \t%s [options] -S\n\t\tGet Firewall status (for IGD:2 only)\n", argv[0]);
+		fprintf(stderr, "       \t%s [options] -G remote_ip remote_port internal_ip internal_port protocol\n\t\tGet Outbound Pinhole Timeout (for IGD:2 only)\n", argv[0]);
+		fprintf(stderr, "       \t%s [options] -P\n\t\tGet Presentation url\n", argv[0]);
 		fprintf(stderr, "\nprotocol is UDP or TCP\n");
 		fprintf(stderr, "Options:\n");
+		fprintf(stderr, "  -6 : use ip v6 instead of ip v4.\n");
 		fprintf(stderr, "  -u url : bypass discovery process by providing the XML root description url.\n");
-		fprintf(stderr, "  -m address : provide ip address of the interface to use for sending SSDP multicast packets.\n");
+		fprintf(stderr, "  -m address/interface : provide ip address (ip v4) or interface name (ip v6) to use for sending SSDP multicast packets.\n");
 		fprintf(stderr, "  -p path : use this path for MiniSSDPd socket.\n");
 		return 1;
 	}
 
 	if( rootdescurl
-	  || (devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0, &error)))
+	  || (devlist = upnpDiscover(2000, multicastif, minissdpdpath,
+	                             0/*sameport*/, ipv6, &error)))
 	{
 		struct UPNPDev * device;
 		struct UPNPUrls urls;
@@ -431,6 +614,47 @@ int main(int argc, char ** argv)
 					                   lanaddr, commandargv[i],
 									   commandargv[i], commandargv[i+1], "0");
 				}
+				break;
+			case 'A':
+				SetPinholeAndTest(&urls, &data,
+				                  commandargv[0], commandargv[1],
+				                  commandargv[2], commandargv[3],
+				                  commandargv[4], commandargv[5]);
+				break;
+			case 'U':
+				GetPinholeAndUpdate(&urls, &data,
+				                   commandargv[0], commandargv[1]);
+				break;
+			case 'C':
+				for(i=0; i<commandargc; i++)
+				{
+					CheckPinhole(&urls, &data, commandargv[i]);
+				}
+				break;
+			case 'K':
+				for(i=0; i<commandargc; i++)
+				{
+					GetPinholePackets(&urls, &data, commandargv[i]);
+				}
+				break;
+			case 'D':
+				for(i=0; i<commandargc; i++)
+				{
+					RemovePinhole(&urls, &data, commandargv[i]);
+				}
+				break;
+			case 'S':
+				GetFirewallStatus(&urls, &data);
+				break;
+			case 'G':
+				GetPinholeOutboundTimeout(&urls, &data,
+							commandargv[0], commandargv[1],
+							commandargv[2], commandargv[3],
+							commandargv[4]);
+				break;
+			case 'P':
+				printf("Presentation URL found:\n");
+				printf("            %s\n", data.presentationurl);
 				break;
 			default:
 				fprintf(stderr, "Unknown switch -%c\n", command);

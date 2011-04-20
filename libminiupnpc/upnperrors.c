@@ -1,4 +1,4 @@
-/* $Id: upnperrors.c,v 1.4 2011/03/14 13:37:13 nanard Exp $ */
+/* $Id: upnperrors.c,v 1.5 2011/04/10 11:19:36 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas BERNARD
  * copyright (c) 2007 Thomas Bernard
@@ -38,6 +38,36 @@ const char * strupnperror(int err)
 		break;
 	case 501:
 		s = "Action Failed";
+		break;
+	case 606:
+		s = "Action not authorized";
+		break;
+	case 701:
+		s = "PinholeSpaceExhausted";
+		break;
+	case 702:
+		s = "FirewallDisabled";
+		break;
+	case 703:
+		s = "InboundPinholeNotAllowed";
+		break;
+	case 704:
+		s = "NoSuchEntry";
+		break;
+	case 705:
+		s = "ProtocolNotSupported";
+		break;
+	case 706:
+		s = "InternalPortWildcardingNotAllowed";
+		break;
+	case 707:
+		s = "ProtocolWildcardingNotAllowed";
+		break;
+	case 708:
+		s = "WildcardNotPermittedInSrcIP";
+		break;
+	case 709:
+		s = "NoPacketSent";
 		break;
 	case 713:
 		s = "SpecifiedArrayIndexInvalid";
