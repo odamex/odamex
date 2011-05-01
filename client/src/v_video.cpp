@@ -679,7 +679,7 @@ void V_Init (void)
       bits = 8;
 	}
 
-    //if ((int)(autoadjust_video_settings))
+    if ((int)(autoadjust_video_settings))
         I_ClosestResolution (&width, &height, bits);
 
 	if (!V_SetResolution (width, height, bits))
