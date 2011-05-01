@@ -464,6 +464,8 @@ void DCanvas::Blit (int srcx, int srcy, int srcwidth, int srcheight,
 //
 BOOL V_DoModeSetup (int width, int height, int bits)
 {
+	int basew = 320, baseh = 200;
+	
 	// Free the virtual framebuffer
 	if(screen)
 	{
@@ -490,14 +492,18 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows con_scaletext to have some purpose...
 	
-    CleanXfac = width / 320; 
-    CleanYfac = height / 200; 
-    if (CleanXfac < CleanYfac) 
-        CleanYfac = CleanXfac; 
-    else 
-        CleanXfac = CleanYfac;
-
-
+    CleanXfac = width / basew; 
+    CleanYfac = height / baseh;
+    
+	if (CleanXfac == 0 || CleanYfac == 0)
+		CleanXfac = CleanYfac = 1;
+	else
+	{
+		if (CleanXfac < CleanYfac) 
+			CleanYfac = CleanXfac; 
+		else 
+			CleanXfac = CleanYfac;		
+	}
 
 	CleanWidth = width / CleanXfac;
 	CleanHeight = height / CleanYfac;
@@ -673,7 +679,7 @@ void V_Init (void)
       bits = 8;
 	}
 
-    if ((int)(autoadjust_video_settings))
+    //if ((int)(autoadjust_video_settings))
         I_ClosestResolution (&width, &height, bits);
 
 	if (!V_SetResolution (width, height, bits))
