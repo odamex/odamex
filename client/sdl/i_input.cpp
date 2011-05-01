@@ -574,10 +574,12 @@ void I_GetEvent (void)
          // Resizable window mode resolutions
          case SDL_VIDEORESIZE:
          {
-             if (!mousegrabbed && !vid_fullscreen)
-             {
+             if (!vid_fullscreen)
+             {            	
                 char Command[64];
-
+                
+                mousegrabbed = false;
+                
                 snprintf(Command, sizeof(Command), "vid_setmode %d %d", ev.resize.w, ev.resize.h);
 
                 AddCommandString(Command);
