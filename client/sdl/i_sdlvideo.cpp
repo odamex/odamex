@@ -46,6 +46,8 @@
 #include "i_xbox.h"
 #endif
 
+EXTERN_CVAR (autoadjust_video_settings)
+
 SDLVideo::SDLVideo(int parm)
 {
 	const SDL_version *SDLVersion = SDL_Linked_Version();
@@ -401,7 +403,7 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 	if(!s)
 	   I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
 	   
-	if(s->pitch != (width * (bits / 8)))
+	if(s->pitch != (width * (bits / 8)) && autoadjust_video_settings)
 	   Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
 
 	scrn->pitch = s->pitch;
