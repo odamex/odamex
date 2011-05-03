@@ -1101,7 +1101,7 @@ void D_DoomMain (void)
 	Printf(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
 
 #ifdef UNIX
-	if (Args.CheckParm("-background"))
+	if (Args.CheckParm("-fork"))
             daemon_init();
 #endif
 

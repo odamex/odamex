@@ -185,14 +185,19 @@ void daemon_init(void)
 {
     int   pid;
     FILE *fpid;
+    const char *pidfile;
 
     Printf(PRINT_HIGH, "Launched into the background\n");
 
     if ((pid = fork()) != 0)
 	exit(0);
-
+	
+	pidfile = Args.CheckValue("-fork");
+	if (!pidfile)
+		pidfile = "doomsv.pid";
+		
     pid = getpid();
-    fpid = fopen("doomsv.pid", "w");
+    fpid = fopen(pidfile, "w");
     fprintf(fpid, "%d\n", pid);
     fclose(fpid);
 }
