@@ -103,8 +103,18 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 
 AGOL_MainWindow::~AGOL_MainWindow()
 {
+	// Save window dimensions
 	GuiConfig::Write("MainWindow-Width", MainWindow->r.w);
 	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
+
+	// Save server list column sizes
+	for(int i = 0; i < ServerList->n; i++)
+	{
+		ostringstream colOption;
+
+		colOption << "SrvListColW_" << i;
+		GuiConfig::Write(colOption.str(), ServerList->cols[i].w);
+	}
 
 	delete[] QServer;
 
@@ -238,8 +248,9 @@ AG_Pane *AGOL_MainWindow::CreateBottomListPane(void *parent)
 
 AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 {
-	AG_Table *list;
-	int       col;
+	AG_Table      *list;
+	ostringstream  colSzSpec[8];
+	int            colW[8] = { 200, 33, 48, 100, 47, 105, 72, 125 };
 
 	list = AG_TableNewPolled(parent, AG_TABLE_EXPAND, EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::UpdateServerList));
@@ -250,14 +261,29 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 	AG_SetEvent(list, "row-selected", EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnServerListRowSelected));
 
-	col = AG_TableAddCol(list, "Server Name", "200px", NULL);
-	col = AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
-	col = AG_TableAddCol(list, "Players", "<  Players  >", &AGOL_MainWindow::CellCompare);
-	col = AG_TableAddCol(list, "WADs", "100px", NULL);
-	col = AG_TableAddCol(list, "Map", "<  MAP00  >", NULL);
-	col = AG_TableAddCol(list, "Type", "105px", NULL);
-	col = AG_TableAddCol(list, "Game IWAD", "<  Game IWAD  >", NULL);
-	col = AG_TableAddCol(list, "Address : Port", "125px", NULL);
+	// Configure each columns size spec
+	for(int i = 0; i < 8; i++)
+	{
+		ostringstream colOption;
+		int           width;
+
+		colOption << "SrvListColW_" << i;
+
+		// Check for a previously stored column size
+		if(!GuiConfig::Read(colOption.str(), width) && width > 0)
+			colW[i] = width;
+
+		colSzSpec[i] << colW[i] << "px";
+	}
+
+	AG_TableAddCol(list, "Server Name", colSzSpec[0].str().c_str(), NULL);
+	AG_TableAddCol(list, "Ping", colSzSpec[1].str().c_str(), NULL);
+	AG_TableAddCol(list, "Players", colSzSpec[2].str().c_str(), &AGOL_MainWindow::CellCompare);
+	AG_TableAddCol(list, "WADs", colSzSpec[3].str().c_str(), NULL);
+	AG_TableAddCol(list, "Map", colSzSpec[4].str().c_str(), NULL);
+	AG_TableAddCol(list, "Type", colSzSpec[5].str().c_str(), NULL);
+	AG_TableAddCol(list, "Game IWAD", colSzSpec[6].str().c_str(), NULL);
+	AG_TableAddCol(list, "Address : Port", colSzSpec[7].str().c_str(), NULL);
 
 	return list;
 }
@@ -265,18 +291,17 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 AG_Table *AGOL_MainWindow::CreatePlayerList(void *parent)
 {
 	AG_Table *list;
-	int       col;
 
 	list = AG_TableNew(parent, AG_TABLE_EXPAND);
 
 	AG_WidgetSetFocusable(list, 0);
 
-	col = AG_TableAddCol(list, "Player Name", "175px", NULL);
-	col = AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
-	col = AG_TableAddCol(list, "Time", "<  Time  >", NULL);
-	col = AG_TableAddCol(list, "Frags", "<  Frags  >", NULL);
-	col = AG_TableAddCol(list, "Kill Count", "<  Kill Count  >", NULL);
-	col = AG_TableAddCol(list, "Death Count", "<  Death Count  >", NULL);
+	AG_TableAddCol(list, "Player Name", "175px", NULL);
+	AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
+	AG_TableAddCol(list, "Time", "<  Time  >", NULL);
+	AG_TableAddCol(list, "Frags", "<  Frags  >", NULL);
+	AG_TableAddCol(list, "Kill Count", "<  Kill Count  >", NULL);
+	AG_TableAddCol(list, "Death Count", "<  Death Count  >", NULL);
 
 	return list;
 }
@@ -284,14 +309,13 @@ AG_Table *AGOL_MainWindow::CreatePlayerList(void *parent)
 AG_Table *AGOL_MainWindow::CreateServInfoList(void *parent)
 {
 	AG_Table *list;
-	int       col;
 
 	list = AG_TableNew(parent, AG_TABLE_EXPAND);
 
 	AG_TableSetColumnAction(list, AG_TABLE_COL_SELECT);
 	AG_WidgetSetFocusable(list, 0);
 
-	col = AG_TableAddCol(list, "Server Details", "-", NULL);
+	AG_TableAddCol(list, "Server Details", "-", NULL);
 
 	return list;
 }
