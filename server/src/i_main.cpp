@@ -193,7 +193,7 @@ void daemon_init(void)
 	exit(0);
 	
 	pidfile = Args.CheckValue("-fork");
-	if (!pidfile)
+	if (!pidfile || !strncmp(pidfile,"-",1))
 		pidfile = "doomsv.pid";
 		
     pid = getpid();
