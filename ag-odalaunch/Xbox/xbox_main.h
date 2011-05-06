@@ -28,6 +28,15 @@
 
 #ifdef _XBOX
 
+#include <fstream>
+#include <agar/core.h>
+#include <SDL/SDL.h>
+
+#include "typedefs.h"
+
+#define inet_ntoa Xbox::InetNtoa
+#define gethostbyname Xbox::GetHostByName
+
 // hostent
 struct hostent
 {
@@ -39,12 +48,75 @@ struct hostent
 #define h_addr h_addr_list[0]
 };
 
-char *inet_ntoa(struct in_addr in);
-struct hostent *gethostbyname(const char *name);
-void xbox_OutputDebugString(const char *str, ...);
-int xbox_InitializeJoystick(void);
-void xbox_EnableJoystickUpdates(bool);
+class Xbox
+{
+public:
+	static char *InetNtoa(struct in_addr in);
+	static struct hostent *GetHostByName(const char *name);
 
+	static int  InitializeJoystick(void);
+	static void EnableJoystickUpdates(bool);
+
+	static void MountPartitions();
+	static void UnMountPartitions();
+
+	static void OutputDebugString(const char *str, ...);
+	static int  InitLogFile();
+	static void CloseLogFile();
+
+	static void InitNet();
+	static void CloseNetwork();
+
+	static void EnableDebugConsole();
+
+private:
+	Xbox() {};
+	Xbox(const Xbox&) {};
+	Xbox& operator=(const Xbox&) {};
+
+	static LONG MountDevice(LPSTR sSymbolicLinkName, LPSTR sDeviceName);
+	static LONG UnMountDevice(LPSTR sSymbolicLinkName);
+
+	static uint32_t UpdateJoystick(void *obj, uint32_t ival, void *arg);
+
+	static const int JOYPAD1 = 0;
+	static const int JOY_DEADZONE = 3200;
+
+	enum
+	{
+		JOY_BTTN_A = 0,
+		JOY_BTTN_B,
+		JOY_BTTN_X,
+		JOY_BTTN_Y,
+		JOY_BTTN_WHITE,
+		JOY_BTTN_BLACK,
+		JOY_BTTN_LTRIG,
+		JOY_BTTN_RTRIG,
+		JOY_BTTN_START,
+		JOY_BTTN_BACK,
+		JOY_BTTN_RSTICK,
+		JOY_BTTN_LSTICK,
+		JOY_BTTN_TOTAL
+	};
+
+	enum
+	{
+		JOY_AXIS_LX = 0,
+		JOY_AXIS_LY,
+		JOY_AXIS_RX,
+		JOY_AXIS_RY,
+		JOY_AXIS_TOTAL
+	};
+
+	static SDL_Joystick *OpenedJoy;
+	static AG_Timeout    JoyUpdateTimeout;
+	static bool          BPressed[JOY_BTTN_TOTAL];
+	static uint8_t       HPressed;
+
+	static std::ofstream XBLogFile;
+	static AG_Mutex      XBLogMutex;
+	static bool          DebugConsole;
+};
 
 #endif // _XBOX
 

@@ -26,95 +26,30 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <fstream>
 #include <xtl.h>
 #include <xstring>
 
-#include <agar/core.h>
-
-#include <SDL/SDL.h>
-
 #include "xbox_main.h"
-#include "typedefs.h"
+#include "xbox_api.h"
 
 using namespace std;
 
-// Xbox drive letters
-#define DriveC "\\??\\C:"
-#define DriveD "\\??\\D:"
-#define DriveE "\\??\\E:"
-#define DriveF "\\??\\F:"
-#define DriveG "\\??\\G:"
-#define DriveT "\\??\\T:"
-#define DriveU "\\??\\U:"
-#define DriveZ "\\??\\Z:"
-
-// Partition device mapping
-#define DeviceC "\\Device\\Harddisk0\\Partition2"
-#define CdRom "\\Device\\CdRom0"
-#define DeviceE "\\Device\\Harddisk0\\Partition1"
-#define DeviceF "\\Device\\Harddisk0\\Partition6"
-#define DeviceG "\\Device\\Harddisk0\\Partition7"
-#define DeviceT "\\Device\\Harddisk0\\Partition1\\TDATA\\4F444C43"
-#define DeviceU "\\Device\\Harddisk0\\Partition1\\UDATA\\4F444C43"
-#define DeviceZ "\\Device\\Harddisk0\\Partition5"
-
-typedef struct _STRING 
-{
-	USHORT	Length;
-	USHORT	MaximumLength;
-	PSTR	Buffer;
-} UNICODE_STRING, *PUNICODE_STRING, ANSI_STRING, *PANSI_STRING;
-
-// These are undocumented Xbox functions that are not in the XDK includes.
-// They can be found by looking through the symbols found in the Xbox libs (xapilib.lib mostly).
-extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicLinkName,IN PUNICODE_STRING DeviceName);
-extern "C" XBOXAPI LONG WINAPI IoDeleteSymbolicLink(IN PUNICODE_STRING SymbolicLinkName);
-
 extern int agol_main(int argc, char *argv[]);
 
-enum
-{
-	JOY_BTTN_A = 0,
-	JOY_BTTN_B,
-	JOY_BTTN_X,
-	JOY_BTTN_Y,
-	JOY_BTTN_WHITE,
-	JOY_BTTN_BLACK,
-	JOY_BTTN_LTRIG,
-	JOY_BTTN_RTRIG,
-	JOY_BTTN_START,
-	JOY_BTTN_BACK,
-	JOY_BTTN_RSTICK,
-	JOY_BTTN_LSTICK,
-	JOY_BTTN_TOTAL
-};
+// Static members
+SDL_Joystick *Xbox::OpenedJoy = NULL;
+AG_Timeout    Xbox::JoyUpdateTimeout;
+bool          Xbox::BPressed[JOY_BTTN_TOTAL];
+uint8_t       Xbox::HPressed = 0;
 
-enum
-{
-	JOY_AXIS_LX = 0,
-	JOY_AXIS_LY,
-	JOY_AXIS_RX,
-	JOY_AXIS_RY,
-	JOY_AXIS_TOTAL
-};
-
-#define JOYPAD1 0
-#define JOY_DEADZONE 3200
-
-static SDL_Joystick *OpenedJoy = NULL;
-static AG_Timeout    JoyUpdateTimeout;
-static bool          BPressed[JOY_BTTN_TOTAL];
-static uint8_t       HPressed = 0;
-
-static ofstream  XBLogFile;
-static AG_Mutex  XBLogMutex;
-static bool      DebugConsole = false;
+std::ofstream Xbox::XBLogFile;
+AG_Mutex      Xbox::XBLogMutex;
+bool          Xbox::DebugConsole = false;
 
 //
-// inet_ntoa
+// InetNtoa
 //
-char *inet_ntoa(struct in_addr in)
+char *Xbox::InetNtoa(struct in_addr in)
 {
 	static char addr[32];
 
@@ -128,9 +63,9 @@ char *inet_ntoa(struct in_addr in)
 }
 
 //
-// gethostbyname
+// GetHostByName
 //
-struct hostent *gethostbyname(const char *name)
+struct hostent *Xbox::GetHostByName(const char *name)
 {
 	static struct hostent *he = NULL;
 	unsigned long          addr = INADDR_NONE;
@@ -180,9 +115,9 @@ struct hostent *gethostbyname(const char *name)
 }
 
 //
-// xbox_InitLogFile
+// InitLogFile
 //
-int xbox_InitLogFile()
+int Xbox::InitLogFile()
 {
 	AG_MutexInit(&XBLogMutex);
 
@@ -201,9 +136,9 @@ int xbox_InitLogFile()
 }
 
 //
-// xbox_CloseLogFile
+// CloseLogFile
 //
-void xbox_CloseLogFile()
+void Xbox::CloseLogFile()
 {
 	AG_MutexLock(&XBLogMutex);
 
@@ -214,9 +149,9 @@ void xbox_CloseLogFile()
 
 
 //
-// xbox_OutputDebugString
+// OutputDebugString
 //
-void xbox_OutputDebugString(const char *str, ...)
+void Xbox::OutputDebugString(const char *str, ...)
 {
 	va_list ap;
 	char    res[1024];
@@ -239,9 +174,9 @@ void xbox_OutputDebugString(const char *str, ...)
 }
 
 //
-// xbox_MountDevice
+// MountDevice
 //
-LONG xbox_MountDevice(LPSTR sSymbolicLinkName, LPSTR sDeviceName)
+LONG Xbox::MountDevice(LPSTR sSymbolicLinkName, LPSTR sDeviceName)
 {
 	UNICODE_STRING deviceName;
 	deviceName.Buffer  = sDeviceName;
@@ -257,9 +192,9 @@ LONG xbox_MountDevice(LPSTR sSymbolicLinkName, LPSTR sDeviceName)
 }
 
 //
-// xbox_UnMountDevice
+// UnMountDevice
 //
-LONG xbox_UnMountDevice(LPSTR sSymbolicLinkName)
+LONG Xbox::UnMountDevice(LPSTR sSymbolicLinkName)
 {
   UNICODE_STRING  symbolicLinkName;
   symbolicLinkName.Buffer  = sSymbolicLinkName;
@@ -270,7 +205,7 @@ LONG xbox_UnMountDevice(LPSTR sSymbolicLinkName)
 }
 
 //
-// xbox_MountPartitions
+// MountPartitions
 //
 // Some of these partitions are automatically mounted but just 
 // to be on the safe side the mount will be attempted anyway
@@ -291,33 +226,33 @@ LONG xbox_UnMountDevice(LPSTR sSymbolicLinkName)
 // due to the partition size limitation. Anything above 137GB is partitioned
 // into G: and it is used, typically, for the same purposes as F.
 //
-void xbox_MountPartitions()
+void Xbox::MountPartitions()
 {
-	xbox_MountDevice(DriveD, CdRom);   // DVD-ROM or start path - automounted
-	xbox_MountDevice(DriveE, DeviceE); // Standard save partition
-	xbox_MountDevice(DriveF, DeviceF); // Non-stock partition - modded consoles only
-	xbox_MountDevice(DriveG, DeviceG); // Non-stock partition - modded consoles only
-	xbox_MountDevice(DriveT, DeviceT); // AG-Odalaunch's unique TDATA - peristent save data (configs, etc.) - automounted
-	xbox_MountDevice(DriveZ, DeviceZ); // Cache partition - appropriate place for temporary files - automounted
+	MountDevice(DriveD, CdRom);   // DVD-ROM or start path - automounted
+	MountDevice(DriveE, DeviceE); // Standard save partition
+	MountDevice(DriveF, DeviceF); // Non-stock partition - modded consoles only
+	MountDevice(DriveG, DeviceG); // Non-stock partition - modded consoles only
+	MountDevice(DriveT, DeviceT); // AG-Odalaunch's unique TDATA - peristent save data (configs, etc.) - automounted
+	MountDevice(DriveZ, DeviceZ); // Cache partition - appropriate place for temporary files - automounted
 }
 
 //
-// xbox_UnMountPartitions
+// UnMountPartitions
 //
-void xbox_UnMountPartitions()
+void Xbox::UnMountPartitions()
 {
-	xbox_UnMountDevice(DriveD);
-	xbox_UnMountDevice(DriveE);
-	xbox_UnMountDevice(DriveF);
-	xbox_UnMountDevice(DriveG);
-	xbox_UnMountDevice(DriveT);
-	xbox_UnMountDevice(DriveZ);
+	UnMountDevice(DriveD);
+	UnMountDevice(DriveE);
+	UnMountDevice(DriveF);
+	UnMountDevice(DriveG);
+	UnMountDevice(DriveT);
+	UnMountDevice(DriveZ);
 }
 
 //
-// xbox_UpdateJoystick
+// UpdateJoystick
 //
-uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
+uint32_t Xbox::UpdateJoystick(void *obj, uint32_t ival, void *arg)
 {
 	int16_t     axis_x = 0, axis_y = 0;
 	int16_t     move_x = 0, move_y = 0;
@@ -503,9 +438,9 @@ uint32_t xbox_UpdateJoystick(void *obj, uint32_t ival, void *arg)
 }
 
 //
-// xbox_EnableJoystickUpdates
+// EnableJoystickUpdates
 //
-void xbox_EnableJoystickUpdates(bool enable)
+void Xbox::EnableJoystickUpdates(bool enable)
 {
 	AG_LockTimeouts(NULL);
 
@@ -524,9 +459,9 @@ void xbox_EnableJoystickUpdates(bool enable)
 }
 
 //
-// xbox_InitializeJoystick
+// InitializeJoystick
 //
-int xbox_InitializeJoystick()
+int Xbox::InitializeJoystick()
 {
 	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
 
@@ -538,9 +473,9 @@ int xbox_InitializeJoystick()
 	if(!SDL_JoystickOpened(JOYPAD1))
 		return -1;
 
-	AG_SetTimeout(&JoyUpdateTimeout, xbox_UpdateJoystick, NULL, 0);
+	AG_SetTimeout(&JoyUpdateTimeout, UpdateJoystick, NULL, 0);
 
-	xbox_EnableJoystickUpdates(true);
+	Xbox::EnableJoystickUpdates(true);
 
 	fill_n(BPressed, (size_t)JOY_BTTN_TOTAL, false);
 
@@ -548,9 +483,9 @@ int xbox_InitializeJoystick()
 }
 
 //
-// xbox_InitNet
+// InitNet
 //
-void xbox_InitNet()
+void Xbox::InitNet()
 {
 	XNetStartupParams xnsp;
 
@@ -572,15 +507,23 @@ void xbox_InitNet()
 }
 
 //
-// xbox_CloseNetwork
+// CloseNetwork
 //
-void xbox_CloseNetwork()
+void Xbox::CloseNetwork()
 {
 	XNetCleanup();
 }
 
 //
-// xbox_main
+// EnableDebugConsole
+//
+void Xbox::EnableDebugConsole()
+{
+	DebugConsole = true;
+}
+
+//
+// main
 //
 void __cdecl main()
 {
@@ -595,7 +538,7 @@ void __cdecl main()
 	{
 		if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE)
 		{
-			DebugConsole = true;
+			Xbox::EnableDebugConsole();
 
 			xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, " ");
 
@@ -608,24 +551,24 @@ void __cdecl main()
 	}
 
 	// Mount the partitions
-	xbox_MountPartitions();
+	Xbox::MountPartitions();
 
 	// Initialize the log file
-	xbox_InitLogFile();
+	Xbox::InitLogFile();
 
 	// Initialize the network
-	xbox_InitNet();
+	Xbox::InitNet();
 
 	agol_main(xargc, xargv); // Normal entry point
 
 	// Shutdown the network
-	xbox_CloseNetwork();
+	Xbox::CloseNetwork();
 
 	// Close the log file
-	xbox_CloseLogFile();
+	Xbox::CloseLogFile();
 
 	// Unmount the partitions
-	xbox_UnMountPartitions();
+	Xbox::UnMountPartitions();
 
 	// Return to the dashboard
 	XLaunchNewImage(NULL, NULL);

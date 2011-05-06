@@ -1179,7 +1179,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 		return NULL;
 
 #ifdef _XBOX
-	xbox_EnableJoystickUpdates(false);
+	Xbox::EnableJoystickUpdates(false);
 #endif
 
 	StartServerListPoll();
@@ -1239,7 +1239,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	UpdateServInfoList(selectedNdx);
 
 #ifdef _XBOX
-	xbox_EnableJoystickUpdates(true);
+	Xbox::EnableJoystickUpdates(true);
 #endif
 
 	return NULL;

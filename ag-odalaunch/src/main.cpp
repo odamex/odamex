@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 
 #ifdef _XBOX
 	// Initialize the Xbox controller
-	xbox_InitializeJoystick();
+	Xbox::InitializeJoystick();
 #endif
 
 	// Event (main) Loop
