@@ -37,12 +37,6 @@
 #include "net_io.h"
 #include "typedefs.h"
 
-namespace agOdalaunch {
-
-#define MASTER_CHALLENGE    777123
-#define MASTER_RESPONSE     777123
-#define SERVER_CHALLENGE    0xAD011002
-
 #define ASSEMBLEVERSION(MAJOR,MINOR,PATCH) ((MAJOR) * 256 + (MINOR)(PATCH))
 #define DISECTVERSION(V,MAJOR,MINOR,PATCH) \
 { \
@@ -59,6 +53,12 @@ namespace agOdalaunch {
 #define PROTOCOL_VERSION 1
 
 #define TAG_ID 0xAD0
+
+namespace agOdalaunch {
+
+const uint32_t MASTER_CHALLENGE = 777123;
+const uint32_t MASTER_RESPONSE  = 777123;
+const uint32_t SERVER_CHALLENGE = 0xAD011002;
 
 struct Cvar_t
 {

@@ -32,7 +32,7 @@
 
 namespace agOdalaunch {
 
-#define NUM_THREADS 5
+const size_t NUM_THREADS = 5;
 
 class ODA_ThreadBase {};
 

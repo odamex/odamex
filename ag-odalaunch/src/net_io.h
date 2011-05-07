@@ -45,10 +45,10 @@
 namespace agOdalaunch {
 
 #ifndef _WIN32
-#define SOCKET int
+typedef int SOCKET;
 #endif
 
-#define MAX_PAYLOAD 8192
+const size_t MAX_PAYLOAD = 8192;
 
 typedef unsigned char byte;
 

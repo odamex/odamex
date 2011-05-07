@@ -31,9 +31,9 @@
 namespace agOdalaunch {
 
 #ifdef _WIN32
-#define PATH_DELIMITER ';'
+const char PATH_DELIMITER = ';';
 #else
-#define PATH_DELIMITER ':'
+const char PATH_DELIMITER = ':';
 #endif
 
 class GuiConfig

@@ -45,7 +45,7 @@ namespace agOdalaunch {
 
 #ifndef _WIN32
 #define closesocket close
-#define INVALID_SOCKET -1
+const int INVALID_SOCKET = -1;
 #endif
 
 using namespace std;
