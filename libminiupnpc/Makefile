@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.76 2011/04/11 08:21:47 nanard Exp $
+# $Id: Makefile,v 1.78 2011/05/06 15:05:04 nanard Exp $
 # MiniUPnP Project
 # http://miniupnp.free.fr/
 # (c) 2005-2011 Thomas Bernard
@@ -89,12 +89,13 @@ FILESTOINSTALL := $(FILESTOINSTALL) $(SHAREDLIBRARY)
 endif
 
 
-.PHONY:	install clean depend all check everything installpythonmodule \
-	validateminixml
+.PHONY:	install clean depend all check everything \
+	installpythonmodule
+#	validateminixml validateminiwget
 
 all:	$(LIBRARY) $(EXECUTABLES)
 
-check:	validateminixml
+check:	validateminixml validateminiwget
 
 everything:	all $(EXECUTABLES_ADDTESTS)
 
@@ -108,6 +109,11 @@ installpythonmodule:	pythonmodule
 validateminixml:	minixmlvalid
 	@echo "minixml validation test"
 	./minixmlvalid
+	touch $@
+
+validateminiwget:	testminiwget minihttptestserver
+	@echo "miniwget validation test"
+	./testminiwget.sh
 	touch $@
 
 clean:
@@ -173,6 +179,8 @@ miniupnpcstrings.h:	miniupnpcstrings.h.in updateminiupnpcstrings.sh
 
 jar:	$(SHAREDLIBRARY) 
 	$(JAVA) -jar $(JNAERATOR) -library miniupnpc miniupnpc.h declspec.h upnpcommands.h upnpreplyparse.h igd_desc_parse.h miniwget.h upnperrors.h $(SHAREDLIBRARY) -package fr.free.miniupnp -o . -jar java/miniupnpc_$(OS).jar -v
+
+minihttptestserver:	minihttptestserver.o
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 

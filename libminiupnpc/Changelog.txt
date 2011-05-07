@@ -1,5 +1,9 @@
-$Id: Changelog.txt,v 1.142 2011/04/11 09:13:59 nanard Exp $
+$Id: Changelog.txt,v 1.144 2011/05/06 16:34:10 nanard Exp $
 miniUPnP client Changelog.
+
+2011/05/06:
+  Adding some tool to test and validate miniwget.c
+  simplified and debugged miniwget.c
 
 2011/04/11:
   moving ReceiveData() to a receivedata.c file.

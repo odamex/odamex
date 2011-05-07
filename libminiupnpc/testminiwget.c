@@ -1,7 +1,7 @@
-/* $Id: testminiwget.c,v 1.2 2011/04/10 11:20:21 nanard Exp $ */
+/* $Id: testminiwget.c,v 1.3 2011/05/06 16:33:53 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
- * Copyright (c) 2005-2009 Thomas Bernard
+ * Copyright (c) 2005-2011 Thomas Bernard
  * This software is subject to the conditions detailed in the
  * LICENCE file provided in this distribution.
  * */
@@ -9,6 +9,11 @@
 #include <stdlib.h>
 #include "miniwget.h"
 
+/**
+ * This program uses the miniwget / miniwget_getaddr function
+ * from miniwget.c in order to retreive a web ressource using
+ * a GET HTTP method, and store it in a file.
+ */
 int main(int argc, char * * argv)
 {
 	void * data;

@@ -1,4 +1,4 @@
-/* $Id: miniwget.c,v 1.47 2011/04/11 17:26:21 nanard Exp $ */
+/* $Id: miniwget.c,v 1.49 2011/05/06 14:54:42 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
@@ -58,7 +58,7 @@ getHTTPResponse(int s, int * size)
 {
 	char buf[2048];
 	int n;
-	int headers = 1;
+	int endofheaders = 0;
 	int chunked = 0;
 	int content_length = -1;
 	unsigned int chunksize = 0;
@@ -70,13 +70,17 @@ getHTTPResponse(int s, int * size)
 	char * content_buf;
 	int content_buf_len = 2048;
 	int content_buf_used = 0;
+	char chunksize_buf[32];
+	int chunksize_buf_index;
 
 	header_buf = malloc(header_buf_len);
 	content_buf = malloc(content_buf_len);
+	chunksize_buf[0] = '\0';
+	chunksize_buf_index = 0;
 
 	while((n = receivedata(s, buf, 2048, 5000)) > 0)
 	{
-		if(headers)
+		if(endofheaders == 0)
 		{
 			int i;
 			int linestart=0;
@@ -88,17 +92,43 @@ getHTTPResponse(int s, int * size)
 			}
 			memcpy(header_buf + header_buf_used, buf, n);
 			header_buf_used += n;
-			for(i = 0; i < (header_buf_used-3); i++) {
+			/* search for CR LF CR LF (end of headers)
+			 * recognize also LF LF */
+			i = 0;
+			while(i < (header_buf_used-1) && (endofheaders == 0)) {
+				if(header_buf[i] == '\r') {
+					i++;
+					if(header_buf[i] == '\n') {
+						i++;
+						if(i < header_buf_used && header_buf[i] == '\r') {
+							i++;
+							if(i < header_buf_used && header_buf[i] == '\n') {
+								endofheaders = i+1;
+							}
+						}
+					}
+				} else if(header_buf[i] == '\n') {
+					i++;
+					if(header_buf[i] == '\n') {
+						endofheaders = i+1;
+					}
+				}
+				i++;
+			}
+			if(endofheaders == 0)
+				continue;
+			/* parse header lines */
+			for(i = 0; i < endofheaders - 1; i++) {
 				if(colon <= linestart && header_buf[i]==':')
 				{
 					colon = i;
-					while(i < (n-3)
+					while(i < (endofheaders-1)
 					      && (header_buf[i+1] == ' ' || header_buf[i+1] == '\t'))
 						i++;
 					valuestart = i + 1;
 				}
 				/* detecting end of line */
-				else if(header_buf[i]=='\r' && header_buf[i+1]=='\n')
+				else if(header_buf[i]=='\r' || header_buf[i]=='\n')
 				{
 					if(colon > linestart && valuestart > colon)
 					{
@@ -115,7 +145,7 @@ getHTTPResponse(int s, int * size)
 #endif
 						}
 						else if(0==strncasecmp(header_buf+linestart, "transfer-encoding", colon-linestart)
-						   && 0==strncasecmp(buf+valuestart, "chunked", 7))
+						   && 0==strncasecmp(header_buf+valuestart, "chunked", 7))
 						{
 #ifdef DEBUG
 							printf("chunked transfer-encoding!\n");
@@ -123,76 +153,19 @@ getHTTPResponse(int s, int * size)
 							chunked = 1;
 						}
 					}
-					linestart = i+2;
+					while(header_buf[i]=='\r' || header_buf[i] == '\n')
+						i++;
+					linestart = i;
 					colon = linestart;
 					valuestart = 0;
 				} 
-				/* searching for the end of the HTTP headers */
-				if(header_buf[i]=='\r' && header_buf[i+1]=='\n'
-				   && header_buf[i+2]=='\r' && header_buf[i+3]=='\n')
-				{
-					headers = 0;	/* end */
-					i += 4;
-					if(i < header_buf_used)
-					{
-						if(chunked)
-						{
-							while(i<header_buf_used)
-							{
-								while(i<header_buf_used && isxdigit(header_buf[i]))
-								{
-									if(header_buf[i] >= '0' && header_buf[i] <= '9')
-										chunksize = (chunksize << 4) + (header_buf[i] - '0');
-									else
-										chunksize = (chunksize << 4) + ((header_buf[i] | 32) - 'a' + 10);
-									i++;
-								}
-								/* discarding chunk-extension */
-								while(i < header_buf_used && header_buf[i] != '\r') i++;
-								if(i < header_buf_used && header_buf[i] == '\r') i++;
-								if(i < header_buf_used && header_buf[i] == '\n') i++;
-#ifdef DEBUG
-								printf("chunksize = %u (%x)\n", chunksize, chunksize);
-#endif
-								if(chunksize == 0)
-								{
-#ifdef DEBUG
-									printf("end of HTTP content !\n");
-#endif
-									goto end_of_stream;	
-								}
-								bytestocopy = ((int)chunksize < header_buf_used - i)?chunksize:(header_buf_used - i);
-#ifdef DEBUG
-								printf("chunksize=%u bytestocopy=%u (i=%d header_buf_used=%d)\n",
-								       chunksize, bytestocopy, i, header_buf_used);
-#endif
-								if(content_buf_len < (int)(content_buf_used + bytestocopy))
-								{
-									content_buf = realloc(content_buf, content_buf_used + bytestocopy);
-									content_buf_len = content_buf_used + bytestocopy;
-								}
-								memcpy(content_buf + content_buf_used, header_buf + i, bytestocopy);
-								content_buf_used += bytestocopy;
-								chunksize -= bytestocopy;
-								i += bytestocopy;
-							}
-						}
-						else
-						{
-							if(content_buf_len < header_buf_used - i)
-							{
-								content_buf = realloc(content_buf, header_buf_used - i);
-								content_buf_len = header_buf_used - i;
-							}
-							memcpy(content_buf, header_buf + i, header_buf_used - i);
-							content_buf_used = header_buf_used - i;
-							i = header_buf_used;
-						}
-					}
-				}
 			}
+			/* copy the remaining of the received data back to buf */
+			n = header_buf_used - endofheaders;
+			memcpy(buf, header_buf + endofheaders, n);
+			/* if(headers) */
 		}
-		else
+		if(endofheaders)
 		{
 			/* content */
 			if(chunked)
@@ -203,19 +176,36 @@ getHTTPResponse(int s, int * size)
 					if(chunksize == 0)
 					{
 						/* reading chunk size */
-						if(i<n && buf[i] == '\r') i++;
-						if(i<n && buf[i] == '\n') i++;
+						if(chunksize_buf_index == 0) {
+							/* skipping any leading CR LF */
+							if(i<n && buf[i] == '\r') i++;
+							if(i<n && buf[i] == '\n') i++;
+						}
 						while(i<n && isxdigit(buf[i]))
 						{
-							if(buf[i] >= '0' && buf[i] <= '9')
-								chunksize = (chunksize << 4) + (buf[i] - '0');
-							else
-								chunksize = (chunksize << 4) + ((buf[i] | 32) - 'a' + 10);
+							chunksize_buf[chunksize_buf_index++] = buf[i];
+							chunksize_buf[chunksize_buf_index] = '\0';
 							i++;
 						}
-						while(i<n && buf[i] != '\r') i++; /* discarding chunk-extension */
+						while(i<n && buf[i] != '\r' && buf[i] != '\n')
+							i++; /* discarding chunk-extension */
 						if(i<n && buf[i] == '\r') i++;
-						if(i<n && buf[i] == '\n') i++;
+						if(i<n && buf[i] == '\n') {
+							int j;
+							for(j = 0; j < chunksize_buf_index; j++) {
+							if(chunksize_buf[j] >= '0'
+							   && chunksize_buf[j] <= '9')
+								chunksize = (chunksize << 4) + (chunksize_buf[j] - '0');
+							else
+								chunksize = (chunksize << 4) + ((chunksize_buf[j] | 32) - 'a' + 10);
+							}
+							chunksize_buf[0] = '\0';
+							chunksize_buf_index = 0;
+							i++;
+						} else {
+							/* not finished to get chunksize */
+							continue;
+						}
 #ifdef DEBUG
 						printf("chunksize = %u (%x)\n", chunksize, chunksize);
 #endif
@@ -243,6 +233,7 @@ getHTTPResponse(int s, int * size)
 			}
 			else
 			{
+				/* not chunked */
 				if(content_buf_used + n > content_buf_len)
 				{
 					content_buf = (char *)realloc((void *)content_buf, 
@@ -253,6 +244,7 @@ getHTTPResponse(int s, int * size)
 				content_buf_used += n;
 			}
 		}
+		/* use the Content-Length header value if available */
 		if(content_length > 0 && content_buf_used >= content_length)
 		{
 #ifdef DEBUG
