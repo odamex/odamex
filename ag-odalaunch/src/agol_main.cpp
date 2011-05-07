@@ -51,7 +51,9 @@ using namespace std;
 
 namespace agOdalaunch {
 
-AGOL_MainWindow::AGOL_MainWindow(int width, int height)
+AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
+	SettingsDialog(NULL), SoloGameDialog(NULL), AboutDialog(NULL),
+	ManualDialog(NULL), QServer(NULL), WindowExited(false)
 {
 	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl) 
 	// make the window plain (no window decorations). No flags for multi-window drivers (glx, wgl)
@@ -74,15 +76,13 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 	if(agDriverSw)
 		AG_WindowMaximize(MainWindow);
 
+	// Set the window close action
+	AG_AddEvent(MainWindow, "window-close", EventReceiver, "%p", 
+		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::SaveWidgetStates));
+
 	// set up the master server information
 	MServer.AddMaster("master1.odamex.net", 15000);
 	MServer.AddMaster("voxelsoft.com", 15000);
-
-	SettingsDialog = NULL;
-	SoloGameDialog = NULL;
-	AboutDialog = NULL;
-	ManualDialog = NULL;
-	QServer = NULL;
 
 	// Don't poll the server list by default
 	StopServerListPoll();
@@ -105,18 +105,15 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 
 AGOL_MainWindow::~AGOL_MainWindow()
 {
-	// Save window dimensions
-	GuiConfig::Write("MainWindow-Width", MainWindow->r.w);
-	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
-
-	// Save server list column sizes
-	for(int i = 0; i < ServerList->n; i++)
-	{
-		ostringstream colOption;
-
-		colOption << "SrvListColW_" << i;
-		GuiConfig::Write(colOption.str(), ServerList->cols[i].w);
-	}
+	// If the window exit action has not been performed by this time
+	// then the driver being used is a single-window driver that does
+	// not trigger the exit action when the window is closed (due to 
+	// the fact that the close button is actually for the driver window
+	// itself.) In that case it should be safe to save the widget states
+	// because the window is actually still valid. In all other cases
+	// the contents would be invalid and this would cause a crash!
+	if(!WindowExited)
+		SaveWidgetStates();
 
 	delete[] QServer;
 
@@ -363,6 +360,26 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 //*********************************//
 // Interface Interaction Functions //
 //*********************************//
+void AGOL_MainWindow::SaveWidgetStates()
+{
+	cout << "Saving widget states!" << endl;
+
+	// Save window dimensions
+	GuiConfig::Write("MainWindow-Width", MainWindow->r.w);
+	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
+
+	// Save server list column sizes
+	for(int i = 0; i < ServerList->n; i++)
+	{
+		ostringstream colOption;
+
+		colOption << "SrvListColW_" << i;
+		GuiConfig::Write(colOption.str(), ServerList->cols[i].w);
+	}
+
+	WindowExited = true;
+}
+
 void AGOL_MainWindow::UpdateStatusbarTooltip(const char *tip)
 {
 	if(tip)
@@ -809,6 +826,10 @@ void AGOL_MainWindow::OnCloseManualDialog(AG_Event *event)
 
 void AGOL_MainWindow::OnExit(AG_Event *event)
 {
+	// Save widget states
+	SaveWidgetStates();
+
+	// Exit the event loop
 	AG_QuitGUI();
 }
 

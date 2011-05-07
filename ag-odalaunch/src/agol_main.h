@@ -106,6 +106,7 @@ private:
 	void OnServerListRowSelected(AG_Event *event);
 
 	// Interface Interaction Functions
+	void           SaveWidgetStates();
 	void           UpdateStatusbarTooltip(const char *tip);
 	void           ClearStatusbarTooltip();
 	void           UpdateStatusbarMasterPing(uint32_t ping);
@@ -179,6 +180,7 @@ private:
 	std::vector<ODA_Thread*>  QServerThread;
 
 	bool                      StartupQuery;
+	bool                      WindowExited;
 };
 
 } // namespace
