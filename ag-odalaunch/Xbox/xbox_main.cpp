@@ -36,8 +36,6 @@ using namespace std;
 
 namespace agOdalaunch {
 
-extern int agol_main(int argc, char *argv[]);
-
 // Static members
 SDL_Joystick *Xbox::OpenedJoy = NULL;
 AG_Timeout    Xbox::JoyUpdateTimeout;
@@ -527,6 +525,8 @@ void Xbox::EnableDebugConsole()
 } // namespace
 
 using namespace agOdalaunch;
+
+extern int agol_main(int argc, char *argv[]);
 
 //
 // main

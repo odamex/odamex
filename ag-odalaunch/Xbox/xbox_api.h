@@ -26,7 +26,7 @@
 #ifndef _XBOX_API_H
 #define _XBOX_API_H
 
-namespace agOdalalunch {
+namespace agOdalaunch {
 
 // Xbox drive letters
 #define DriveC "\\??\\C:"
