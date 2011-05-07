@@ -35,6 +35,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 AGOL_Manual::AGOL_Manual()
 {
 	ManualDialog = AG_WindowNew(AG_WINDOW_MODAL);
@@ -192,3 +194,5 @@ void AGOL_Manual::SetWindowCloseEvent(EventHandler *handler)
 		AG_AddEvent(ManualDialog, "window-close", EventReceiver, "%p", handler);
 	}
 }
+
+} // namespace

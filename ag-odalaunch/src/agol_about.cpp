@@ -36,9 +36,11 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 AGOL_About::AGOL_About()
 {
-	AboutDialog = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG | AG_WINDOW_NORESIZE);
+	AboutDialog = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
 	AG_WindowSetCaptionS(AboutDialog, "About The Odamex Launcher");
 	AG_WindowSetGeometryAligned(AboutDialog, AG_WINDOW_MC, 350, 400);
 
@@ -187,3 +189,5 @@ void AGOL_About::SetWindowCloseEvent(EventHandler *handler)
 		AG_AddEvent(AboutDialog, "window-close", EventReceiver, "%p", handler);
 	}
 }
+
+} // namespace

@@ -32,6 +32,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 GuiConfig::GuiConfig()
 {
 
@@ -249,3 +251,4 @@ int GuiConfig::Read(const string &option, double &value)
 	return 0;
 }
 
+} // namespace

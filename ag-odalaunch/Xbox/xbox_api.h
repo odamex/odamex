@@ -26,6 +26,8 @@
 #ifndef _XBOX_API_H
 #define _XBOX_API_H
 
+namespace agOdalalunch {
+
 // Xbox drive letters
 #define DriveC "\\??\\C:"
 #define DriveD "\\??\\D:"
@@ -57,5 +59,7 @@ typedef struct _STRING
 // They can be found by looking through the symbols found in the Xbox libs (xapilib.lib mostly).
 extern "C" XBOXAPI LONG WINAPI IoCreateSymbolicLink(IN PUNICODE_STRING SymbolicLinkName,IN PUNICODE_STRING DeviceName);
 extern "C" XBOXAPI LONG WINAPI IoDeleteSymbolicLink(IN PUNICODE_STRING SymbolicLinkName);
+
+}
 
 #endif

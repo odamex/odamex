@@ -37,6 +37,8 @@
 #define inet_ntoa Xbox::InetNtoa
 #define gethostbyname Xbox::GetHostByName
 
+namespace agOdalaunch {
+
 // hostent
 struct hostent
 {
@@ -117,6 +119,8 @@ private:
 	static AG_Mutex      XBLogMutex;
 	static bool          DebugConsole;
 };
+
+} // namespace
 
 #endif // _XBOX
 

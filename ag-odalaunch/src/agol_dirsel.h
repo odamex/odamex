@@ -28,6 +28,8 @@
 
 #include "event_handler.h"
 
+namespace agOdalaunch {
+
 class AGOL_DirSelector
 {
 public:
@@ -44,5 +46,7 @@ private:
 	AG_Window  *DirSelWindow;
 	AG_DirDlg  *DirDlg;
 };
+
+} // namespace
 
 #endif

@@ -37,6 +37,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 const string DoomIWadNames[] =
 {
 	"DOOM2F.WAD",
@@ -438,3 +440,5 @@ void AGOL_Solo::SetWindowCloseEvent(EventHandler *handler)
 		AG_AddEvent(SoloGameDialog, "window-close", EventReceiver, "%p", handler);
 	}
 }
+
+} // namespace

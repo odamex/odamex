@@ -26,6 +26,8 @@
 #ifndef _TYPEDEFS_H
 #define _TYPEDEFS_H
 
+namespace agOdalaunch {
+
 #ifdef _MSC_VER
 	typedef signed   __int8   int8_t;
 	typedef signed   __int16  int16_t;
@@ -38,5 +40,7 @@
 #else
 	#include <stdint.h>
 #endif
+
+} // namespace
 
 #endif

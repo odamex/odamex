@@ -37,6 +37,8 @@
 #include "net_io.h"
 #include "typedefs.h"
 
+namespace agOdalaunch {
+
 #define MASTER_CHALLENGE    777123
 #define MASTER_RESPONSE     777123
 #define SERVER_CHALLENGE    0xAD011002
@@ -342,5 +344,7 @@ public:
 protected:
 	bool m_ValidResponse;
 };
+
+} // namespace
 
 #endif // NETPACKET_H

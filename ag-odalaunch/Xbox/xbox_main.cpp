@@ -34,6 +34,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 extern int agol_main(int argc, char *argv[]);
 
 // Static members
@@ -521,6 +523,10 @@ void Xbox::EnableDebugConsole()
 {
 	DebugConsole = true;
 }
+
+} // namespace
+
+using namespace agOdalaunch;
 
 //
 // main

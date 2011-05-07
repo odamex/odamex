@@ -54,6 +54,8 @@
 
 #include <agar/core.h>
 
+namespace agOdalaunch {
+
 #ifndef CALL_MEMBER_FN
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 #endif
@@ -110,5 +112,7 @@ private:
 	EVENT_FUNC_PTR     FuncPtr;
 	ODA_EventRegister *ThisPtr;
 };
+
+} // namespace
 
 #endif

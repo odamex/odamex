@@ -40,6 +40,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 int AGOL_InitVideo(const char *drivers, const int width, const int height)
 {
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
@@ -83,6 +85,10 @@ int AGOL_InitVideo(const char *drivers, const int width, const int height)
 
 	return 0;
 }
+
+} // namespace
+
+using namespace agOdalaunch;
 
 #ifdef GCONSOLE
 int agol_main(int argc, char *argv[])
@@ -182,3 +188,4 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+

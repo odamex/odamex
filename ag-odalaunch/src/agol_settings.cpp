@@ -35,6 +35,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 AGOL_Settings::AGOL_Settings()
 {
 	SettingsDialog = AG_WindowNew(AG_WINDOW_MODAL);
@@ -631,3 +633,4 @@ void AGOL_Settings::SetWindowCloseEvent(EventHandler *handler)
 	}
 }
 
+} // namespace

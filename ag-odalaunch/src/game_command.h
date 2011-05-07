@@ -28,6 +28,8 @@
 
 #include <list>
 
+namespace agOdalaunch {
+
 class GameCommand
 {
 public:
@@ -42,5 +44,7 @@ private:
 
 	std::list<std::string> Parameters;
 };
+
+} // namespace
 
 #endif

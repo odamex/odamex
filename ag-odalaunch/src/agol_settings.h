@@ -30,6 +30,8 @@
 #include "event_handler.h"
 #include "typedefs.h"
 
+namespace agOdalaunch {
+
 typedef struct
 {
 	AG_Box       *optionsBox;
@@ -120,5 +122,7 @@ private:
 
 	std::list<std::string>  WadDirs;
 };
+
+} // namespace
 
 #endif

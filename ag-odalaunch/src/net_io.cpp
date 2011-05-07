@@ -41,6 +41,8 @@
 #include "xbox_main.h"
 #endif
 
+namespace agOdalaunch {
+
 #ifndef _WIN32
 #define closesocket close
 #define INVALID_SOCKET -1
@@ -719,3 +721,5 @@ void BufferedSocket::ClearBuffer()
 
 	ResetBuffer();
 }
+
+} // namespace

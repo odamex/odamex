@@ -36,6 +36,8 @@
 #include "game_command.h"
 #include "gui_config.h"
 
+namespace agOdalaunch {
+
 #ifdef _WIN32
 #define usleep(t) Sleep(t / 1000)
 #endif
@@ -157,3 +159,5 @@ void GameCommand::Cleanup(AG_ProcessID pid)
 
 	AG_ThreadCreate(&thread, Cleanup, (void *)pPID);
 }
+
+} // namespace

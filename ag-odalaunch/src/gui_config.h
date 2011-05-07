@@ -28,6 +28,8 @@
 #ifndef _GUI_CONFIG_H
 #define _GUI_CONFIG_H
 
+namespace agOdalaunch {
+
 #ifdef _WIN32
 #define PATH_DELIMITER ';'
 #else
@@ -64,5 +66,7 @@ public:
 	static int Read(const std::string &option, float &value);
 	static int Read(const std::string &option, double &value);
 };
+
+} // namespace
 
 #endif

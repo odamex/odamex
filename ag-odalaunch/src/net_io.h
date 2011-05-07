@@ -42,6 +42,8 @@
 
 #include "typedefs.h"
 
+namespace agOdalaunch {
+
 #ifndef _WIN32
 #define SOCKET int
 #endif
@@ -144,5 +146,7 @@ private:
                
 	uint32_t m_SendPing, m_ReceivePing;
 };
+
+} // namespace
 
 #endif

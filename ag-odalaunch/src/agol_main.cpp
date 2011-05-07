@@ -49,6 +49,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 {
 	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl) 
@@ -1300,3 +1302,5 @@ int AGOL_MainWindow::CellCompare(const void *p1, const void *p2)
 			return 1;
 	}
 }
+
+} // namespace

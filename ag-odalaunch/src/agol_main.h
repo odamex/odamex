@@ -36,6 +36,8 @@
 #include "oda_thread.h"
 #include "net_packet.h"
 
+namespace agOdalaunch {
+
 typedef struct
 {
 	AG_Box    *buttonbox;
@@ -178,5 +180,7 @@ private:
 
 	bool                      StartupQuery;
 };
+
+} // namespace
 
 #endif

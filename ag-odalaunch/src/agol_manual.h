@@ -28,6 +28,8 @@
 
 #include "event_handler.h"
 
+namespace agOdalaunch {
+
 class AGOL_Manual : private ODA_EventRegister
 {
 public:
@@ -53,5 +55,7 @@ private:
 
 	EventHandler *CloseEventHandler;
 };
+
+} // namespace
 
 #endif

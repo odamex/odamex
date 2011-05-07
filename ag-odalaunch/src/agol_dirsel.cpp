@@ -33,6 +33,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 AGOL_DirSelector::AGOL_DirSelector()
 {
 	Init("");
@@ -76,3 +78,5 @@ void AGOL_DirSelector::SetCancelAction(EventHandler *event)
 	if(event)
 		AG_DirDlgCancelAction(DirDlg, EventReceiver, "%p", event);
 }
+
+} // namespace

@@ -30,6 +30,8 @@
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 #endif
 
+namespace agOdalaunch {
+
 #define NUM_THREADS 5
 
 class ODA_ThreadBase {};
@@ -125,5 +127,7 @@ private:
 	AG_Mutex  *m_RMutex;
 	bool       m_Running;
 };
+
+} // namespace
 
 #endif
