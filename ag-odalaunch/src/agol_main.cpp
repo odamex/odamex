@@ -88,16 +88,9 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 	StopServerListPoll();
 
 	// If query master on start is configured post the event.
-	bool masterOnStart = false;
-
-	GuiConfig::Read("MasterOnStart", (uint8_t&)masterOnStart);
-	if(masterOnStart)
-	{
-		StartupQuery = true;
+	GuiConfig::Read("MasterOnStart", (uint8_t&)StartupQuery);
+	if(StartupQuery)
 		AG_PostEvent(MainWindow, MainButtonBox->mlist, "button-pushed", NULL);
-	}
-	else
-		StartupQuery = false;
 
 	// Show the window
 	AG_WindowShow(MainWindow);

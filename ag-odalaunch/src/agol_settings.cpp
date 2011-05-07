@@ -37,7 +37,8 @@ using namespace std;
 
 namespace agOdalaunch {
 
-AGOL_Settings::AGOL_Settings()
+AGOL_Settings::AGOL_Settings() :
+	DirSel(NULL), CloseEventHandler(NULL)
 {
 	SettingsDialog = AG_WindowNew(AG_WINDOW_MODAL);
 	AG_WindowSetCaptionS(SettingsDialog, "Configure Settings");
@@ -55,9 +56,6 @@ AGOL_Settings::AGOL_Settings()
 	ExtraCmdParamsBox = CreateExtraCmdParamsBox(SettingsDialog);
 	ExtraCmdParamsEntry = CreateExtraCmdParamsEntry(ExtraCmdParamsBox);
 	MainButtonBox = CreateMainButtonBox(SettingsDialog);
-
-	CloseEventHandler = NULL;
-	DirSel = NULL;
 
 	AG_WindowShow(SettingsDialog);
 }
