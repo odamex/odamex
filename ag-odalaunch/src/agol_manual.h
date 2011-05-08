@@ -28,14 +28,40 @@
 
 #include "event_handler.h"
 
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
 namespace agOdalaunch {
 
+/**
+ * The manual connect window.
+ *
+ * This class provides a manual connect window which can be used to connect to a
+ * server at the provided host or IP and port.
+ */
 class AGOL_Manual : private ODA_EventRegister
 {
 public:
+	/**
+	 * Constructor.
+	 */
 	AGOL_Manual();
+
+	/**
+	 * Destructor.
+	 */
 	~AGOL_Manual();
 
+	/**
+	 * Set the window close event.
+	 *
+	 * The provided event handler will be called when the window closes.
+	 *
+	 * @param handler The event handler.
+	 */
 	void SetWindowCloseEvent(EventHandler *handler);
 
 private:

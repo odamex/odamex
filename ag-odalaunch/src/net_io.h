@@ -42,6 +42,12 @@
 
 #include "typedefs.h"
 
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
 namespace agOdalaunch {
 
 #ifndef _WIN32

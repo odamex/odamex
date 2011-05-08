@@ -26,6 +26,12 @@
 #ifndef _TYPEDEFS_H
 #define _TYPEDEFS_H
 
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
 namespace agOdalaunch {
 
 #ifdef _MSC_VER

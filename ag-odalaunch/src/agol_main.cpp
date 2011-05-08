@@ -355,8 +355,6 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 //*********************************//
 void AGOL_MainWindow::SaveWidgetStates()
 {
-	cout << "Saving widget states!" << endl;
-
 	// Save window dimensions
 	GuiConfig::Write("MainWindow-Width", MainWindow->r.w);
 	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
@@ -1227,7 +1225,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 				QServerThread.push_back(new ODA_Thread());
 
 				// Start the thread for a server query
-				QServerThread[QServerThread.size() - 1]->Create((ODA_ThreadBase*)this, 
+				QServerThread.back()->Create((ODA_ThreadBase*)this, 
 						(THREAD_FUNC_PTR)&AGOL_MainWindow::QueryServerThrEntry, &QServer[serversQueried]);
 
 				// Incremement the number of requested server queries

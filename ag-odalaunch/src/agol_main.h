@@ -36,8 +36,17 @@
 #include "oda_thread.h"
 #include "net_packet.h"
 
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
 namespace agOdalaunch {
 
+/**
+ * Main button box.
+ */
 typedef struct
 {
 	AG_Box    *buttonbox;
@@ -51,6 +60,9 @@ typedef struct
 	AG_Button *exit;
 } ODA_ButtonBox;
 
+/**
+ * Queried servers statusbar.
+ */
 typedef struct
 {
 	AG_Statusbar *statusbar;
@@ -59,6 +71,9 @@ typedef struct
 	int           total;
 } ODA_QueriedStatusbar;
 
+/**
+ * Players statusbar.
+ */
 typedef struct
 {
 	AG_Statusbar *statusbar;
@@ -66,6 +81,9 @@ typedef struct
 	int           numplayers;
 } ODA_PlayersStatusbar;
 
+/**
+ * Main statusbar.
+ */
 typedef struct 
 {
 	AG_Box               *statbox;
@@ -75,11 +93,25 @@ typedef struct
 	ODA_PlayersStatusbar  players;
 } ODA_Statusbar;
 
-// AGOL_MainWindow - Class for the main window
+/**
+ * The main window.
+ *
+ * This class contains the main application window.
+ */
 class AGOL_MainWindow : private ODA_ThreadBase, ODA_EventRegister
 {
 public:
+	/**
+	 * Constructor.
+	 *
+	 * @param width Width of window.
+	 * @param height Height of window.
+	 */
 	AGOL_MainWindow(int width, int height);
+
+	/**
+	 * Destructor.
+	 */
 	~AGOL_MainWindow();
 
 private:

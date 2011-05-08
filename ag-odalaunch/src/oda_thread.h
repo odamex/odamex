@@ -30,6 +30,12 @@
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 #endif
 
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
 namespace agOdalaunch {
 
 const size_t NUM_THREADS = 5;
