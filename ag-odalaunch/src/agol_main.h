@@ -139,6 +139,7 @@ private:
 
 	// Interface Interaction Functions
 	void           SaveWidgetStates();
+	void           ExitWindow();
 	void           UpdateStatusbarTooltip(const char *tip);
 	void           ClearStatusbarTooltip();
 	void           UpdateStatusbarMasterPing(uint32_t ping);

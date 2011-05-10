@@ -103,6 +103,23 @@ int GameCommand::Launch()
 	// Mark the end
 	argv[argc] = NULL;
 
+#ifdef GCONSOLE
+	// Game consoles will not return from this method if Odamex is successfully
+	// launched as the launcher will terminate. On game consoles the main windows
+	// widget states need to be saved before launch or changes will be lost.
+	AG_Window *mainWindow = NULL;
+	AG_Driver *drv;
+
+	AGOBJECT_FOREACH_CHILD(drv, &agDrivers, ag_driver)
+	{
+		if((mainWindow = (AG_Window*)AG_ObjectFindChild(drv, "MainWindow")) != NULL)
+			break;
+	}
+
+	if(mainWindow)
+		AG_PostEvent(mainWindow, mainWindow, "save-wstates", NULL);
+#endif
+
 	// Launch Odamex
 	if((pid = AG_Execute(*argv, argv)) == -1)
 	{

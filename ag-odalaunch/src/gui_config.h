@@ -45,9 +45,6 @@ const char PATH_DELIMITER = ':';
 class GuiConfig
 {
 public:
-	GuiConfig();
-	~GuiConfig();
-
 	static int Save();
 
 	static void Unset(const std::string &option);
@@ -71,6 +68,11 @@ public:
 	static int Read(const std::string &option, uint32_t &value);
 	static int Read(const std::string &option, float &value);
 	static int Read(const std::string &option, double &value);
+
+private:
+	GuiConfig();
+	GuiConfig(const GuiConfig&);
+	GuiConfig& operator=(const GuiConfig&);
 };
 
 } // namespace

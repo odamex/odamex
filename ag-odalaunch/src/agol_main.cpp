@@ -57,7 +57,7 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 {
 	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl) 
 	// make the window plain (no window decorations). No flags for multi-window drivers (glx, wgl)
-	MainWindow = AG_WindowNew(agDriverSw ? AG_WINDOW_PLAIN : 0);
+	MainWindow = AG_WindowNewNamedS(agDriverSw ? AG_WINDOW_PLAIN : 0, "MainWindow");
 	AG_WindowSetGeometryAligned(MainWindow, AG_WINDOW_MC, width, height);
 	AG_WindowSetCaptionS(MainWindow, "The Odamex Launcher");
 
@@ -77,7 +77,12 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 		AG_WindowMaximize(MainWindow);
 
 	// Set the window close action
+	AG_WindowSetCloseAction(MainWindow, AG_WINDOW_DETACH);
 	AG_AddEvent(MainWindow, "window-close", EventReceiver, "%p", 
+		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::ExitWindow));
+
+	// Add the save widget states event
+	AG_SetEvent(MainWindow, "save-wstates", EventReceiver, "%p",
 		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::SaveWidgetStates));
 
 	// set up the master server information
@@ -106,7 +111,7 @@ AGOL_MainWindow::~AGOL_MainWindow()
 	// because the window is actually still valid. In all other cases
 	// the contents would be invalid and this would cause a crash!
 	if(!WindowExited)
-		SaveWidgetStates();
+		ExitWindow();
 
 	delete[] QServer;
 
@@ -367,6 +372,11 @@ void AGOL_MainWindow::SaveWidgetStates()
 		colOption << "SrvListColW_" << i;
 		GuiConfig::Write(colOption.str(), ServerList->cols[i].w);
 	}
+}
+
+void AGOL_MainWindow::ExitWindow()
+{
+	SaveWidgetStates();
 
 	WindowExited = true;
 }
@@ -817,8 +827,7 @@ void AGOL_MainWindow::OnCloseManualDialog(AG_Event *event)
 
 void AGOL_MainWindow::OnExit(AG_Event *event)
 {
-	// Save widget states
-	SaveWidgetStates();
+	ExitWindow();
 
 	// Exit the event loop
 	AG_QuitGUI();

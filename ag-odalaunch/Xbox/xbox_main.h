@@ -178,9 +178,9 @@ public:
 	static void EnableDebugConsole();
 
 private:
-	Xbox() {};
-	Xbox(const Xbox&) {};
-	Xbox& operator=(const Xbox&) {};
+	Xbox();
+	Xbox(const Xbox&);
+	Xbox& operator=(const Xbox&);
 
 	static LONG MountDevice(LPSTR sSymbolicLinkName, LPSTR sDeviceName);
 	static LONG UnMountDevice(LPSTR sSymbolicLinkName);
