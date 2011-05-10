@@ -118,6 +118,8 @@ int GameCommand::Launch()
 
 	if(mainWindow)
 		AG_PostEvent(mainWindow, mainWindow, "save-wstates", NULL);
+
+	GuiConfig::Save();
 #endif
 
 	// Launch Odamex

@@ -136,10 +136,10 @@ private:
 	void OnMouseOverWidget(AG_Event *event);
 	void UpdateServerList(AG_Event *event);
 	void OnServerListRowSelected(AG_Event *event);
+	void SaveWidgetStates(AG_Event *event);
+	void ExitWindow(AG_Event *event);
 
 	// Interface Interaction Functions
-	void           SaveWidgetStates();
-	void           ExitWindow();
 	void           UpdateStatusbarTooltip(const char *tip);
 	void           ClearStatusbarTooltip();
 	void           UpdateStatusbarMasterPing(uint32_t ping);

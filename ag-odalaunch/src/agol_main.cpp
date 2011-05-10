@@ -111,7 +111,7 @@ AGOL_MainWindow::~AGOL_MainWindow()
 	// because the window is actually still valid. In all other cases
 	// the contents would be invalid and this would cause a crash!
 	if(!WindowExited)
-		ExitWindow();
+		ExitWindow(NULL);
 
 	delete[] QServer;
 
@@ -358,29 +358,6 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 //*********************************//
 // Interface Interaction Functions //
 //*********************************//
-void AGOL_MainWindow::SaveWidgetStates()
-{
-	// Save window dimensions
-	GuiConfig::Write("MainWindow-Width", MainWindow->r.w);
-	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
-
-	// Save server list column sizes
-	for(int i = 0; i < ServerList->n; i++)
-	{
-		ostringstream colOption;
-
-		colOption << "SrvListColW_" << i;
-		GuiConfig::Write(colOption.str(), ServerList->cols[i].w);
-	}
-}
-
-void AGOL_MainWindow::ExitWindow()
-{
-	SaveWidgetStates();
-
-	WindowExited = true;
-}
-
 void AGOL_MainWindow::UpdateStatusbarTooltip(const char *tip)
 {
 	if(tip)
@@ -827,7 +804,7 @@ void AGOL_MainWindow::OnCloseManualDialog(AG_Event *event)
 
 void AGOL_MainWindow::OnExit(AG_Event *event)
 {
-	ExitWindow();
+	ExitWindow(NULL);
 
 	// Exit the event loop
 	AG_QuitGUI();
@@ -1100,6 +1077,29 @@ void AGOL_MainWindow::OnServerListRowSelected(AG_Event *event)
 
 	UpdatePlayerList(ndx);
 	UpdateServInfoList(ndx);
+}
+
+void AGOL_MainWindow::SaveWidgetStates(AG_Event *event)
+{
+	// Save window dimensions
+	GuiConfig::Write("MainWindow-Width", MainWindow->r.w);
+	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
+
+	// Save server list column sizes
+	for(int i = 0; i < ServerList->n; i++)
+	{
+		ostringstream colOption;
+
+		colOption << "SrvListColW_" << i;
+		GuiConfig::Write(colOption.str(), ServerList->cols[i].w);
+	}
+}
+
+void AGOL_MainWindow::ExitWindow(AG_Event *event)
+{
+	SaveWidgetStates(NULL);
+
+	WindowExited = true;
 }
 
 //*****************//
