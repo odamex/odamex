@@ -24,6 +24,7 @@
 
 #include <string.h>
 #include <math.h>
+#include <cstddef>
 
 #include "v_video.h"
 #include "m_alloc.h"
