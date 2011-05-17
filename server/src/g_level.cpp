@@ -58,6 +58,7 @@
 
 #include "sv_main.h"
 #include "p_ctf.h"
+#include "p_unlag.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
@@ -72,6 +73,7 @@ EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_gravity)
 EXTERN_CVAR (sv_aircontrol)
+EXTERN_CVAR (sv_unlag)		// [SL] 2011-05-11
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
@@ -1156,6 +1158,10 @@ void G_InitNew (const char *mapname)
 		}
 		isFast = wantFast;
 	}
+    
+	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
+	if (sv_unlag && multiplayer && serverside)
+		Unlag::getInstance()->reset();
 
 	if (!savegamerestore)
 	{
@@ -1165,6 +1171,11 @@ void G_InitNew (const char *mapname)
 		// force players to be initialized upon first level load
 		for (size_t i = 0; i < players.size(); i++)
 		{
+			// [SL] 2011-05-11 - Register the players in the reconciliation
+			// system for unlagging
+			if (sv_unlag && multiplayer && serverside)
+				Unlag::getInstance()->registerPlayer(players[i].id);
+
 			if(!players[i].ingame())
 				continue;
 

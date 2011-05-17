@@ -844,7 +844,7 @@ void InitNetMessageFormats()
       MSG(clc_say,                "bs"),
       MSG(clc_move,               "x"),
       MSG(clc_userinfo,           "x"),
-      MSG(clc_svgametic,          "N"),
+      MSG(clc_pingreply,          "N"),
       MSG(clc_rate,               "N"),
       MSG(clc_ack,                "x"),
       MSG(clc_rcon,               "s"),
@@ -856,6 +856,8 @@ void InitNetMessageFormats()
       MSG(clc_kill,               "x"),
       MSG(clc_cheat,              "x"),
       MSG(clc_cheatpulse,         "x"),
+      //MSG(clc_svgametic,          "N"),
+      MSG(clc_svgametic,          "b"),
       MSG(clc_launcher_challenge, "x"),
       MSG(clc_challenge,          "x")
    };
@@ -868,7 +870,7 @@ void InitNetMessageFormats()
 	MSG(svc_playerinfo,         "x"),
 	MSG(svc_moveplayer,         "x"),
 	MSG(svc_updatelocalplayer,  "x"),
-	MSG(svc_svgametic,          "x"),
+	MSG(svc_pingrequest,        "x"),
 	MSG(svc_updateping,         "x"),
 	MSG(svc_spawnmobj,          "x"),
 	MSG(svc_disconnectclient,   "x"),
@@ -925,7 +927,8 @@ void InitNetMessageFormats()
 	MSG(svc_launcher_challenge, "x"),
 	MSG(svc_challenge,          "x"),
 	MSG(svc_connectclient,		"x"),
-	MSG(svc_midprint,           "x")
+ 	MSG(svc_midprint,           "x"),
+ 	MSG(svc_svgametic,          "x")
    };
 
    size_t i;

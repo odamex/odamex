@@ -37,6 +37,8 @@
 #include "doomstat.h"
 #include "p_pspr.h"
 
+#include "p_unlag.h"
+
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
 
@@ -45,6 +47,7 @@
 
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR(sv_unlag)			// [SL] 2011-05-11
 
 //
 // P_SetPsprite
@@ -655,6 +658,54 @@ void P_GunShot (AActor *mo, BOOL accurate)
 	P_LineAttack (mo, angle, MISSILERANGE, bulletslope, damage);
 }
 
+// P_FireHitscan
+//
+// [SL] - Factored out common code from the P_Fire procedures for the
+// hitscan weapons.  
+//   quantity:     number of bullets/pellets to fire.
+//   accurate:     spread out bullets because player is re-firing (or using shotgun)
+//   ssg_spread:   spread the pellets for the super shotgun
+//
+// It takes care of reconciling the players and sectors to account for the
+// shooter's network lag.
+//
+
+void P_FireHitscan (player_t *player, size_t quantity, bool accurate, bool ssg_spread)
+{
+	if (!serverside)
+		return;
+
+	// [SL] 2011-05-11 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	// NOTE: Important to reconcile sectors and players BEFORE calculating
+	// bulletslope!
+	if (sv_unlag && player->userinfo.unlag && multiplayer)
+		Unlag::getInstance()->reconcile(player->id);
+	P_BulletSlope (player->mo);
+	for (size_t i=0; i<quantity; i++)
+	{
+		int damage = 5 * (P_Random(player->mo) % 3 + 1);
+
+		angle_t angle = player->mo->angle;
+		fixed_t slope = bulletslope;
+		if (ssg_spread)		// for super shotgun
+		{
+			angle += P_RandomDiff(player->mo) << 19;
+			slope += P_RandomDiff(player->mo) << 5;
+		}            
+		if (!accurate)
+		{
+			// single-barrel shotgun or re-firing pistol/chaingun 
+			angle += P_RandomDiff(player->mo) << 18;
+		}
+		P_LineAttack(player->mo, angle, MISSILERANGE, slope, damage);
+	}
+    
+	// [SL] 2011-05-11 - Restore players and sectors to their current position
+	// according to the server.
+	if (sv_unlag && player->userinfo.unlag && multiplayer)
+		Unlag::getInstance()->restore(player->id);
+}
 
 //
 // A_FirePistol
@@ -671,11 +722,7 @@ void A_FirePistol (player_t *player, pspdef_t *psp)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	if(serverside)
-	{
-		P_BulletSlope (player->mo);
-		P_GunShot (player->mo, !player->refire);
-	}
+	P_FireHitscan (player, 1, !player->refire, false);	// [SL] 2011-05-11
 }
 
 
@@ -693,13 +740,7 @@ void A_FireShotgun (player_t *player, pspdef_t *psp)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	if(serverside)
-	{
-		P_BulletSlope (player->mo);
-
-		for (size_t i = 0 ; i < 7 ; i++)
-			P_GunShot (player->mo, false);
-	}
+	P_FireHitscan(player, 7, false, false);		// [SL] 2011-05-11
 }
 
 
@@ -709,9 +750,6 @@ void A_FireShotgun (player_t *player, pspdef_t *psp)
 //
 void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 {
-	angle_t 	angle;
-	int 		damage;
-
 	A_FireSound (player, "weapons/sshotf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
@@ -721,21 +759,7 @@ void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	if(serverside)
-	{
-		P_BulletSlope (player->mo);
-
-		for (size_t i = 0 ; i < 20 ;i++)
-		{
-			damage = 5*(P_Random (player->mo)%3+1);
-			angle = player->mo->angle;
-			angle += P_RandomDiff (player->mo) << 19;
-			P_LineAttack (player->mo,
-						  angle,
-						  MISSILERANGE,
-						  bulletslope + (P_RandomDiff(player->mo) << 5), damage);
-		}
-	}
+	P_FireHitscan(player, 20, true, true);		// [SL] 2011-05-11
 }
 
 //
@@ -759,11 +783,7 @@ void A_FireCGun (player_t *player, pspdef_t *psp)
 				  + psp->state
 				  - &states[S_CHAIN1]) );
 
-	if(serverside)
-	{
-		P_BulletSlope (player->mo);
-		P_GunShot (player->mo, !player->refire);
-	}
+	P_FireHitscan(player, 1, !player->refire, false);	// [SL] 2011-05-11
 }
 
 

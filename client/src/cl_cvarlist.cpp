@@ -148,6 +148,9 @@ CVAR (sv_maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 CVAR (sv_maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR_FUNC_DECL (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// [SL] 2011-05-11 - Client opt-in/out for serverside unlagging
+CVAR (cl_unlag,				"1",		CVAR_USERINFO | CVAR_ARCHIVE)
+
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 	CVAR (cl_name,		"Xbox Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #else

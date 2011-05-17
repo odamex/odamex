@@ -74,6 +74,7 @@ buf_t     net_buffer(MAX_UDP_PACKET);
 
 bool      noservermsgs;
 int       last_received;
+byte      last_svgametic = 0;
 
 std::string connectpasshash = "";
 
@@ -101,6 +102,7 @@ EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
+EXTERN_CVAR (cl_unlag)
 
 CVAR_FUNC_IMPL (cl_autoaim)
 {
@@ -397,6 +399,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, " userinfo.netname   - %s \n",		  player->userinfo.netname);
 	Printf (PRINT_HIGH, " userinfo.team      - %d \n",		  player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.aimdist   - %d \n",		  player->userinfo.aimdist);
+    Printf (PRINT_HIGH, " userinfo.unlag     - %d \n",        player->userinfo.unlag);
 	Printf (PRINT_HIGH, " userinfo.color     - %d \n",		  player->userinfo.color);
 	Printf (PRINT_HIGH, " userinfo.skin      - %s \n",		  skins[player->userinfo.skin].name);
 	Printf (PRINT_HIGH, " userinfo.gender    - %d \n",		  player->userinfo.gender);
@@ -569,6 +572,7 @@ void CL_SendUserInfo(void)
 	coninfo->skin	 = R_FindSkin (cl_skin.cstring());
 	coninfo->gender  = D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
+    coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
 	MSG_WriteString	(&net_buffer, coninfo->netname);
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
@@ -576,6 +580,7 @@ void CL_SendUserInfo(void)
 	MSG_WriteLong	(&net_buffer, coninfo->color);
 	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
+    MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
 }
 
 
@@ -1171,14 +1176,49 @@ void CL_UpdateLocalPlayer(void)
 	real_plats.Clear();
 }
 
-void CL_ResendSvGametic(void)
-{
-	int svgametic = MSG_ReadLong();
 
-	MSG_WriteMarker (&net_buffer, clc_svgametic);
-	MSG_WriteLong (&net_buffer, svgametic);
+//
+// CL_SaveSvGametic
+// 
+// Receives the server's gametic at the time the packet was sent.  It will be
+// sent back to the server with the next cmd.
+//
+// [SL] 2011-05-11
+void CL_SaveSvGametic(void)
+{
+	last_svgametic = MSG_ReadByte();
+}    
+
+
+//
+// CL_SendSvGametic
+//
+// Sends the most recent gametic received from the server so the server can
+// accurately calculate this client's lag
+//
+// [SL] 2011-05-11
+void CL_SendSvGametic(void)
+{
+	MSG_WriteMarker(&net_buffer, clc_svgametic);
+	MSG_WriteByte(&net_buffer, last_svgametic++);
 }
 
+
+//
+// CL_SendPingReply
+//
+// Replies to a server's ping request
+//
+// [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
+// for clarity since it sends timestamps, not gametics.
+//
+void CL_SendPingReply(void)
+{
+	int svtimestamp = MSG_ReadLong();
+
+	MSG_WriteMarker (&net_buffer, clc_pingreply);
+	MSG_WriteLong (&net_buffer, svtimestamp);
+}
 
 //
 // CL_UpdatePing
@@ -2624,7 +2664,6 @@ void CL_InitCommands(void)
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
 	cmds[svc_teampoints]		= &CL_TeamPoints;
 
-	cmds[svc_svgametic]			= &CL_ResendSvGametic;
 	cmds[svc_updateping]		= &CL_UpdatePing;
 	cmds[svc_spawnmobj]			= &CL_SpawnMobj;
 	cmds[svc_mobjspeedangle]	= &CL_SetMobjSpeedAndAngle;
@@ -2653,6 +2692,8 @@ void CL_InitCommands(void)
 	cmds[svc_switch]			= &CL_Switch;
 	cmds[svc_print]				= &CL_Print;
     cmds[svc_midprint]          = &CL_MidPrint;
+    cmds[svc_pingrequest]       = &CL_SendPingReply;
+	cmds[svc_svgametic]			= &CL_SaveSvGametic;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;
@@ -2758,7 +2799,6 @@ extern int outrate;
 //
 void CL_SendCmd(void)
 {
-	ticcmd_t *cmd;
 	player_t *p;
 
 	if (gametic < 1 )
@@ -2785,33 +2825,39 @@ void CL_SendCmd(void)
 	}
 	// GhostlyDeath -- We just throw it all away down here since we need those buttons!
 
+	ticcmd_t *prevcmd = &localcmds[(gametic-1) % MAXSAVETICS];
+	ticcmd_t *curcmd  = &consoleplayer().cmd;
+
+    // [SL] 2011-05-11 - Send the latest gametic we've received from the server
+	// only if the client is firing a weapon
+	if (prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK)
+		CL_SendSvGametic();
+
 	MSG_WriteMarker(&net_buffer, clc_move);
 
     MSG_WriteLong(&net_buffer, gametic); // current tic
 
     // send the previous cmds in the message, so if the last packet
     // was dropped, it can be recovered
-    cmd = &localcmds[(gametic-1) % MAXSAVETICS];
-
-	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	MSG_WriteShort(&net_buffer, p->mo->angle >> 16);
-	MSG_WriteShort(&net_buffer, p->mo->pitch >> 16);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.upmove);
-	MSG_WriteByte(&net_buffer, cmd->ucmd.impulse);
+	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.buttons);
+	MSG_WriteShort(&net_buffer,	p->mo->angle >> 16);
+	MSG_WriteShort(&net_buffer,	p->mo->pitch >> 16);
+	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.forwardmove);
+	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.sidemove);
+	MSG_WriteShort(&net_buffer, prevcmd->ucmd.upmove);
+	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.impulse);
 
     // send the current cmds in the message
-    cmd = &consoleplayer().cmd;
-
-	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	if(step_mode) MSG_WriteShort(&net_buffer, cmd->ucmd.yaw);
-	else MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
-	MSG_WriteShort(&net_buffer, (p->mo->pitch + (cmd->ucmd.pitch << 16)) >> 16);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.upmove);
-	MSG_WriteByte(&net_buffer, cmd->ucmd.impulse);
+	MSG_WriteByte(&net_buffer,	curcmd->ucmd.buttons);
+	if (step_mode) 
+		MSG_WriteShort(&net_buffer, curcmd->ucmd.yaw);
+	else 
+		MSG_WriteShort(&net_buffer, (p->mo->angle + (curcmd->ucmd.yaw << 16)) >> 16);
+	MSG_WriteShort(&net_buffer,	(p->mo->pitch + (curcmd->ucmd.pitch << 16)) >> 16);
+	MSG_WriteShort(&net_buffer,	curcmd->ucmd.forwardmove);
+	MSG_WriteShort(&net_buffer,	curcmd->ucmd.sidemove);
+	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
+	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
 
     NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
