@@ -237,7 +237,6 @@
 				</Compiler>
 				<Linker>
 					<Add option="/DEBUG" />
-					<Add option="/debug" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -384,6 +383,8 @@
 		<Unit filename="..\..\common\p_things.cpp" />
 		<Unit filename="..\..\common\p_tick.cpp" />
 		<Unit filename="..\..\common\p_tick.h" />
+		<Unit filename="..\..\common\p_unlag.cpp" />
+		<Unit filename="..\..\common\p_unlag.h" />
 		<Unit filename="..\..\common\p_user.cpp" />
 		<Unit filename="..\..\common\p_xlat.cpp" />
 		<Unit filename="..\..\common\po_man.cpp" />
