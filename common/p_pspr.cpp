@@ -47,7 +47,6 @@
 
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(sv_unlag)			// [SL] 2011-05-11
 
 //
 // P_SetPsprite
@@ -679,8 +678,8 @@ void P_FireHitscan (player_t *player, size_t quantity, bool accurate, bool ssg_s
 	// this player hit the fire button clientside.
 	// NOTE: Important to reconcile sectors and players BEFORE calculating
 	// bulletslope!
-	if (sv_unlag && player->userinfo.unlag && multiplayer)
-		Unlag::getInstance()->reconcile(player->id);
+	Unlag::getInstance().reconcile(player->id);
+
 	P_BulletSlope (player->mo);
 	for (size_t i=0; i<quantity; i++)
 	{
@@ -703,8 +702,7 @@ void P_FireHitscan (player_t *player, size_t quantity, bool accurate, bool ssg_s
     
 	// [SL] 2011-05-11 - Restore players and sectors to their current position
 	// according to the server.
-	if (sv_unlag && player->userinfo.unlag && multiplayer)
-		Unlag::getInstance()->restore(player->id);
+	Unlag::getInstance().restore(player->id);
 }
 
 //

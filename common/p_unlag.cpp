@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_dehacked.cpp 2023 2010-12-09 08:07:46Z hypereye $
+// $Id: p_unlag.cpp $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2010 by The Odamex Team.
@@ -51,10 +51,10 @@ EXTERN_CVAR(sv_unlag)
 // Returns a pointer to the only allowable Unlag object
 //
 
-Unlag* Unlag::getInstance()
+Unlag& Unlag::getInstance()
 {
 	static Unlag instance;
-	return &instance;
+	return instance;
 }
 
 Unlag::~Unlag()
@@ -62,6 +62,16 @@ Unlag::~Unlag()
 	Unlag::reset();   
 }
 
+//
+// Unlag::enabled
+//
+// Denotes whether sv_unlag is set and it is a multiplayer game
+// run on the server.
+ 
+bool Unlag::enabled()
+{
+	return (sv_unlag && serverside && multiplayer);
+}
 
 //
 // Unlag::movePlayer
@@ -74,6 +84,9 @@ Unlag::~Unlag()
 
 void Unlag::movePlayer(player_t *player, fixed_t x, fixed_t y, fixed_t z)
 {
+	if (!player->mo)
+		return;
+
 	subsector_t *dest_subsector = R_PointInSubsector (x,y);
 	
 	player->mo->SetOrigin(x, y, z);
@@ -117,7 +130,7 @@ void Unlag::reconcilePlayerPositions(byte shooter_id, size_t ticsago)
 		player_t *player = player_history[i].player;
 
 		// skip over the player shooting and any spectators
-		if (player->id == shooter_id || player->spectator)
+		if (player->id == shooter_id || player->spectator || !player->mo)
 			continue;
 	
 		fixed_t dest_x, dest_y, dest_z; // position to move player to
@@ -230,14 +243,15 @@ void Unlag::reset()
 
 void Unlag::recordPlayerPositions()
 {
-	if (!serverside || !multiplayer || !sv_unlag)
+	if (!Unlag::enabled())
 		return;
 
 	for (size_t i=0; i<player_history.size(); i++)
 	{
 		player_t *player = player_history[i].player;
 	
-		if (player->playerstate == PST_LIVE && !player->spectator)
+		if (player->playerstate == PST_LIVE && 
+			!player->spectator && player->mo)
 		{
 			size_t cur = player_history[i].history_size++ 
 						 % Unlag::MAX_HISTORY_TICS;
@@ -261,7 +275,7 @@ void Unlag::recordPlayerPositions()
 
 void Unlag::recordSectorPositions()
 {
-	if (!serverside || !multiplayer || !sv_unlag)
+	if (!Unlag::enabled())
 		return;
 
 	for (size_t i=0; i<sector_history.size(); i++)
@@ -303,13 +317,12 @@ void Unlag::refreshRegisteredPlayers()
 
 void Unlag::registerPlayer(byte player_id)
 {
-	if (!serverside || !multiplayer || !sv_unlag)
+	if (!Unlag::enabled())
 		return;
 
 	player_history.push_back(PlayerHistoryRecord());
 	player_history.back().player_id = player_id;
 	player_history.back().history_size = 0;
-	player_history.back().unlag = true;
 	player_history.back().changed_flags = false;
 
 	refreshRegisteredPlayers();
@@ -328,7 +341,7 @@ void Unlag::registerPlayer(byte player_id)
 
 void Unlag::unregisterPlayer(byte player_id)
 {
-	if (!serverside || !multiplayer || !sv_unlag)
+	if (!Unlag::enabled())
 		return;
 
 	// look up the index corresponding to this player in player_history
@@ -350,8 +363,9 @@ void Unlag::unregisterPlayer(byte player_id)
 
 void Unlag::registerSector(sector_t *sector)
 {
-	if (!multiplayer || !serverside || !sv_unlag)
+	if (!Unlag::enabled())
 		return;
+
 	// Check if this sector already is in sector_history
 	for (size_t i=0; i<sector_history.size(); i++)
 	{
@@ -385,8 +399,9 @@ void Unlag::registerSector(sector_t *sector)
 
 void Unlag::unregisterSector(sector_t *sector)
 {
-	if (!serverside || !multiplayer || !sv_unlag)
+	if (!Unlag::enabled())
 		return;
+
 	for (size_t i=0; i<sector_history.size(); i++)
 	{
 		// note: comparing the pointers to the sector_t objects
@@ -410,12 +425,12 @@ void Unlag::unregisterSector(sector_t *sector)
 
 void Unlag::reconcile(byte shooter_id)
 {
-	if (!serverside || !multiplayer || !sv_unlag)
+	if (!Unlag::enabled())
 		return;	
 
 	size_t player_index = player_id_map[shooter_id];
 
-	// Check if client disables using unlagging
+	// Check if client disables unlagging for their weapons
 	if (!player_history[player_index].player->userinfo.unlag)
 		return;
 
@@ -438,7 +453,7 @@ void Unlag::reconcile(byte shooter_id)
 
 void Unlag::restore(byte shooter_id)
 {
-	if (!serverside || !multiplayer || !sv_unlag)
+	if (!Unlag::enabled())
 		return;
 
 	if (reconciled)
@@ -498,7 +513,7 @@ void Unlag::spawnUnreconciledBlood(byte shooter_id, byte target_id,
 						player_history[target_index].history_y[cur];
 	fixed_t dist_z = 	player_history[target_index].backup_z - 
 						player_history[target_index].history_z[cur];
-	if (reconciled)
+	if (reconciled) // reconciled will only be true if sv_unlag is 1
 	{
 		// spawn blood but shift it based on how far the target was
 		// moved during reconciliation
@@ -509,4 +524,5 @@ void Unlag::spawnUnreconciledBlood(byte shooter_id, byte target_id,
 		P_SpawnBlood(x, y, z, dir, damage);
 	}
 }
+
 

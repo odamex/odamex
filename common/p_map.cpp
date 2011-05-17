@@ -90,7 +90,6 @@ EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (co_zdoomphys)
-EXTERN_CVAR (sv_unlag)
 CVAR_FUNC_IMPL (sv_gravity)
 {
 	level.gravity = var;
@@ -1594,11 +1593,11 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	{
 		// [SL] 2011-05-11 - In unlagged games, spawn blood at the target's current
 		// position, not at their reconciled position
-		if (serverside && multiplayer && sv_unlag && shootthing->player && th->player)
+		if (shootthing->player && th->player)
 		{
-			Unlag::getInstance()->spawnUnreconciledBlood(shootthing->player->id,
-														 th->player->id,
-														 x, y, z, dir, la_damage);
+			Unlag::getInstance().spawnUnreconciledBlood(shootthing->player->id,
+													    th->player->id,
+													    x, y, z, dir, la_damage);
 		}
 		else
 		{

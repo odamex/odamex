@@ -100,7 +100,6 @@ EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_maxrate)
-EXTERN_CVAR(sv_unlag)		// [SL] 2011-05-11
 
 void SexMessage (const char *from, char *to, int gender);
 
@@ -115,26 +114,8 @@ CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are a
 	while(players.size() > sv_maxclients)
 	{
 		int last = players.size() - 1;
-        byte player_id = players[last].id;
-
 		SV_DropClient(players[last]);
- 		players.erase(players.begin() + last);
-
-		// [SL] 2011-05-11 - Remove player from unlagging system
-		if (sv_unlag && multiplayer)
-			Unlag::getInstance()->unregisterPlayer(player_id);
 	}
-
-	// repair mo after player pointers are reset
-	for(size_t i = 0; i < players.size(); i++)
-	{
-		if(players[i].mo)
-			players[i].mo->player = &players[i];
-	}
-
-	// update tracking cvar
-	sv_clientcount.ForceSet(players.size());
-	//R_InitTranslationTables();
 }
 
 CVAR_FUNC_IMPL (sv_maxplayers)
@@ -730,6 +711,58 @@ void SV_CheckTimeouts (void)
 }
 
 //
+// SV_RemoveDisconnectedPlayer
+//
+// [SL] 2011-05-18 - Destroy a player's mo actor and remove the player_t
+// from the global players vector.  Update mo->player pointers.
+void SV_RemoveDisconnectedPlayer(player_t &player)
+{
+    int player_id = player.id;
+    
+	// remove player awareness from all actors
+	AActor *mo;
+	TThinkerIterator<AActor> iterator;
+	while ( (mo = iterator.Next() ) )
+	{
+		mo->players_aware.erase(
+				std::remove(mo->players_aware.begin(), 
+							mo->players_aware.end(), player.id),
+				mo->players_aware.end());
+	}
+
+	// remove this player's actor object
+	if (player.mo)
+	{
+		if (sv_gametype == GM_CTF)		//  [Toke - CTF]
+			CTF_CheckFlags(player);
+
+		player.mo->Destroy();
+		player.mo = AActor::AActorPtr();
+	}
+
+	// remove this player from the global players vector
+	for (size_t i=0; i<players.size(); i++)
+	{
+		if (players[i].id == player.id)
+			players.erase(players.begin() + i);
+	}
+	
+	// update tracking cvar
+	sv_clientcount.ForceSet(players.size());
+
+	// update mo->player pointers after we potentially change the memory
+	// addresses of the player_t objects with players.erase()
+	for (size_t i=0; i<players.size(); i++)
+	{
+		if (players[i].mo)
+			players[i].mo->player = &players[i];
+	}
+	
+	Unlag::getInstance().unregisterPlayer(player_id);
+}
+
+
+//
 // SV_GetPackets
 //
 void SV_GetPackets (void)
@@ -756,48 +789,16 @@ void SV_GetPackets (void)
 		}
 	}
 
-	size_t i = 0;
-    BOOL resetlevel = false;
-
-	// remove disconnected players
-	while (i < players.size())
+	// [SL] 2011-05-18 - Handle sv_emptyreset
+	static size_t last_player_count = players.size();
+	if (sv_emptyreset && players.size() == 0 && last_player_count > 0)
 	{
-        if(players[i].playerstate == PST_DISCONNECT)
-		{
-        	byte player_id = players[i].id;
-
-			players.erase(players.begin() + i);
-
-			// [SL] 2011-05-11 - Remove player from unlagging system
-			if (sv_unlag)
-				Unlag::getInstance()->unregisterPlayer(player_id);
-
-			// update tracking cvar
-			sv_clientcount.ForceSet(players.size());
-
-            if (sv_emptyreset && players.size() == 0)
-                resetlevel = true;
-        }
-		else
-        {
-            ++i;
-        }
-	}
-
-	// repair mo after player pointers are reset
-	for(i = 0; i < players.size(); ++i)
-	{
-		if(players[i].mo)
-			players[i].mo->player = &players[i];
-	}
-
-	if (resetlevel)
-    {
-        resetlevel = false;
-
+		// The last player just disconnected so reset the level
         G_DeferedInitNew(level.mapname);
     }
+	last_player_count = players.size();
 }
+
 
 // Print a midscreen message to a client
 void SV_MidPrint (const char *msg, player_t *p, int msgtime)
@@ -2229,8 +2230,7 @@ void SV_ConnectClient (void)
 
 	// [SL] 2011-05-11 - Register the player with the reconciliation system
 	// for unlagging
-	if (sv_unlag && multiplayer)
-		Unlag::getInstance()->registerPlayer(players[n].id);
+	Unlag::getInstance().registerPlayer(players[n].id);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
 
@@ -2268,25 +2268,6 @@ void SV_DisconnectClient(player_t &who)
 
 	   MSG_WriteMarker(&cl.reliablebuf, svc_disconnectclient);
 	   MSG_WriteByte(&cl.reliablebuf, who.id);
-	}
-
-	// remove player awareness from all actors
-	AActor *mo;
-    TThinkerIterator<AActor> iterator;
-    while ( (mo = iterator.Next() ) )
-    {
-		mo->players_aware.erase(
-					std::remove(mo->players_aware.begin(), mo->players_aware.end(), who.id),
-					mo->players_aware.end());
-	}
-
-	if(who.mo)
-	{
-		if(sv_gametype == GM_CTF) // [Toke - CTF]
-			CTF_CheckFlags (who);
-
-		who.mo->Destroy();
-		who.mo = AActor::AActorPtr();
 	}
 
 	if (who.client.displaydisconnect) {
@@ -2331,6 +2312,7 @@ void SV_DisconnectClient(player_t &who)
 	}
 
 	who.playerstate = PST_DISCONNECT;
+	SV_RemoveDisconnectedPlayer(who);
 }
 
 
@@ -3034,7 +3016,7 @@ void SV_CalcRoundtripDelay(player_t &player)
 	// around to zero again
 	size_t delay = ((gametic & 0xFF) + 256 - received_tic) & 0xFF;
 
-	Unlag::getInstance()->setRoundtripDelay(player.id, delay);
+	Unlag::getInstance().setRoundtripDelay(player.id, delay);
 }
 
 //
@@ -3998,8 +3980,7 @@ void SV_SetMoveableSectors()
  			sec->moveable = true;
 			// [SL] 2011-05-11 - Register this sector as a moveable sector with the
 			// reconciliation system for unlagging
-			if (sv_unlag) 
-				Unlag::getInstance()->registerSector(sec);
+			Unlag::getInstance().registerSector(sec);
 		}
 	}
 }

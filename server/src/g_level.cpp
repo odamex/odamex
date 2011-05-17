@@ -73,7 +73,6 @@ EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_gravity)
 EXTERN_CVAR (sv_aircontrol)
-EXTERN_CVAR (sv_unlag)		// [SL] 2011-05-11
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
@@ -1160,8 +1159,7 @@ void G_InitNew (const char *mapname)
 	}
     
 	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
-	if (sv_unlag && multiplayer && serverside)
-		Unlag::getInstance()->reset();
+	Unlag::getInstance().reset();
 
 	if (!savegamerestore)
 	{
@@ -1173,8 +1171,7 @@ void G_InitNew (const char *mapname)
 		{
 			// [SL] 2011-05-11 - Register the players in the reconciliation
 			// system for unlagging
-			if (sv_unlag && multiplayer && serverside)
-				Unlag::getInstance()->registerPlayer(players[i].id);
+			Unlag::getInstance().registerPlayer(players[i].id);
 
 			if(!players[i].ingame())
 				continue;

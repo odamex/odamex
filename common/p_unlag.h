@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_dehacked.h 1788 2010-08-24 04:42:57Z russellrice $
+// $Id: p_unlag.h $
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2010 by The Odamex Team.
@@ -40,7 +40,7 @@ class Unlag
 {
 public:
 	~Unlag();
-	static Unlag* getInstance();  // returns the instantiated Unlag object
+	static Unlag& getInstance();  // returns the instantiated Unlag object
 	void reset();	  // called when starting a level
 	void reconcile(byte player_id);
 	void restore(byte player_id);
@@ -54,7 +54,7 @@ public:
 	void spawnUnreconciledBlood(byte shooter_id, byte target_id,
 								fixed_t x, fixed_t y, fixed_t z,
 								angle_t dir, int damage);
-
+	static bool enabled();
 private:
 	// keep as a power of 2 so the compiler can optimize: n % MAX_HISTORY_TICS
 	// into: n & (MAX_HISTORY_TICS - 1)
@@ -77,9 +77,6 @@ private:
 		fixed_t		backup_y;
 		fixed_t		backup_z;
 		
-		// does the client want to use reconcillation for their shots?
-		bool		unlag;
-
 		// did we change player's MF_SHOOTABLE flag during reconciliation?
 		bool		changed_flags;
 		int			backup_flags; 
