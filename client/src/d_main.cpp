@@ -1478,6 +1478,14 @@ void D_DoomMain (void)
 		autostart = true;
 		demorecordfile = Args.GetArg (p+1);
 	}
+	
+	p = Args.CheckParm("-netrecord");
+	if(p)
+	{
+		std::string demoname = Args.GetArg (p+1);
+		CL_BeginNetRecord((char*)demoname.c_str());
+	}
+	
 
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
@@ -1592,6 +1600,13 @@ void D_DoomMain (void)
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
     //gamestate = GS_FULLCONSOLE;
+
+	p = Args.CheckParm("-netplay");
+	if(p){
+		std::string demoname = Args.GetArg (p+1);
+		CL_StartDemoPlayBack(demoname);
+		//D_DoomLoop();
+	}
 
 	// denis - bring back the demos
     if ( gameaction != ga_loadgame )

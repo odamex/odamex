@@ -38,6 +38,10 @@ extern int       last_received;
 
 extern buf_t     net_buffer;
 
+//demos - NullPoint
+extern bool netdemoRecord;
+extern bool netdemoPlayback;
+
 #define MAXSAVETICS 70
 extern ticcmd_t localcmds[MAXSAVETICS];
 
@@ -139,7 +143,15 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictMove (void);
 void CL_SendUserInfo(void);
 bool CL_Connect(void);
-
+//demos - NullPoint
+void CL_BeginNetRecord(char* demoname);
+void CL_WirteNetDemoMessages(buf_t netbuffer);
+void CL_StopRecordingNetDemo(void);
+void CL_ReadNetDemoMeassages(void);
+void CL_StopDemoPlayBack(void);
+void CL_StartDemoPlayBack(std::string demoname);
+void CL_CaptureDeliciousPackets(buf_t netbuffer);
+void CL_Reconnect(void);
 #endif
 
 

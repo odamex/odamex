@@ -123,6 +123,9 @@ enum svc_t
 	// for downloading
 	svc_wadinfo,			// denis - [ulong:filesize]
 	svc_wadchunk,			// denis - [ulong:offset], [ushort:len], [byte[]:data]
+		
+	// netdemos - NullPoint
+	svc_netdemocap = 100,
 	
 	// for compressed packets
 	svc_compressed = 200,

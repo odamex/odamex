@@ -895,6 +895,7 @@ void G_Ticker (void)
 	gamestate_t	oldgamestate;
 	size_t i;
 
+		
 	// Run client tics;
 	CL_RunTics ();
 
@@ -960,8 +961,11 @@ void G_Ticker (void)
 	if (demorecording)
 		G_WriteDemoTiccmd(); // read in all player commands
 
-    if (connected)
-    {
+	if(netdemoPlayback)
+		CL_ReadNetDemoMeassages(); //reads all of netmessages
+
+	if (connected && !netdemoPlayback)
+	{
        while ((packet_size = NET_GetPacket()) )
        {
 		   // denis - don't accept candy from strangers
@@ -999,12 +1003,20 @@ void G_Ticker (void)
 	   if (gametic - last_received > 65)
 		   noservermsgs = true;
 	}
-	else if (NET_GetPacket() )
+	else if (NET_GetPacket() && !netdemoPlayback)
 	{
 		// denis - don't accept candy from strangers
 		if((gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTING)
 			&& NET_CompareAdr(serveraddr, net_from))
 		{
+			if(netdemoRecord)
+			{
+				if(net_message.cursize != 0)
+				{
+					CL_CaptureDeliciousPackets(net_message);
+				}
+			}
+
 			int type = MSG_ReadLong();
 
 			if(type == CHALLENGE)
@@ -1026,6 +1038,8 @@ void G_Ticker (void)
 			}
 		}
 	}
+
+	
 
 	// check for special buttons
 	if(serverside && consoleplayer().ingame())
