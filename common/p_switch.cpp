@@ -37,6 +37,8 @@
 #include "w_wad.h"
 #include "gi.h"
 
+EXTERN_CVAR(co_zdoomswitches)
+
 //
 // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
 //
@@ -240,7 +242,20 @@ P_ChangeSwitchTexture
 			//		facing a big sector.
 			fixed_t x = line->v1->x + (line->dx >> 1);
 			fixed_t y = line->v1->y + (line->dy >> 1);
-			S_Sound (x, y, CHAN_VOICE, sound, 1, ATTN_STATIC);
+
+			if (co_zdoomswitches)
+			{
+				// [SL] 2011-05-16 - Play at a normal volume in the center of the
+				// sector containing switch
+				S_Sound (line->frontsector->soundorg, CHAN_BODY, sound, 1, ATTN_NORM);
+			}
+			else
+			{
+				// [SL] 2011-05-16 - Reverted the code to play the sound at full
+				// volume anywhere on the map to emulate vanilla doom behavior
+				S_Sound (CHAN_BODY, sound, 1, ATTN_NONE);
+			}
+				
 			*texture = (short)switchlist[i^1];
 			if (useAgain)
 				P_StartButton (line, where, switchlist[i], BUTTONTIME, x, y);
@@ -306,8 +321,22 @@ void DActiveButton::RunThink ()
 		default:
 			break;
 		}
-		
-		S_Sound (m_X, m_Y, CHAN_VOICE, "switches/normbutn", 1, ATTN_STATIC);
+	
+		if (co_zdoomswitches)
+		{
+			// [SL] 2011-05-16 - Play at a normal volume in the center of the sector
+			// containing switch
+			S_Sound (m_Line->frontsector->soundorg, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);			
+		}
+		else
+		{
+			// [SL] 2011-05-16 - Changed to play the switch resetting sound at the
+			// map location 0,0 to emulate the bug in vanilla doom
+			static fixed_t map_origin[2];
+			map_origin[0] = 0;
+			map_origin[1] = 0;
+			S_Sound (map_origin, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);
+		}
 		Destroy ();
 	}
 }
