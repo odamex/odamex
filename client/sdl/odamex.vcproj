@@ -198,7 +198,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\cl_demo.cpp"
+				RelativePath="..\src\cl_demo.cpp"
 				>
 			</File>
 			<File
