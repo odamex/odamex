@@ -1111,8 +1111,6 @@ void G_InitNew (const char *mapname)
 				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
 				MSG_WriteByte (&(players[j].client.reliablebuf), true);
 			}
-			players[i].mo->flags |= MF_SPECTATOR;
-			players[i].mo->flags2 |= MF2_FLY;
 			players[i].spectator = true;
 			players[i].playerstate = PST_LIVE;
 			players[i].joinafterspectatortime = -(TICRATE*5);
