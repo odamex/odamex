@@ -1518,8 +1518,6 @@ EXTERN_CVAR (con_midtime)
 void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
-    std::string Str;
-    size_t StrLength;
     
     if (!msgtime)
         msgtime = con_midtime;
@@ -1533,27 +1531,20 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
 
         // [Russell] - convert textual "\n" into the binary representation for
         // line breaking
-        Str = msg;
-        StrLength = Str.length();
+    	std::string str = msg;
 
-        for (i = 0; i < StrLength && i + 1 < StrLength; ++i)
-        {
-            if ((Str[i] == '\\') && (Str[i + 1] == 'n'))
-            {
-                Str[i] = '\n';
-                Str = Str.erase(i + 1, 1);
-				// [NullPoint] Updating the string’s length so the loop does not  
-				// go outside the String’s length
-				StrLength = Str.length(); 
-            }
-        }
+		for (size_t pos = str.find("\\n"); pos != std::string::npos; pos = str.find("\\n", pos))
+		{
+			str[pos] = '\n';
+			str.erase(pos+1, 1);
+		}
 
-        msg = Str.c_str();
+		char *newmsg = strdup(str.c_str());
 
-		Printf (PRINT_HIGH, "%s\n", msg);
+		Printf (PRINT_HIGH, "%s\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)msg)) )
+		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)newmsg)) )
 		{
 			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
@@ -1562,6 +1553,8 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
 
 			MidLines = i;
 		}
+
+		free(newmsg);
 	}
 	else
 		MidMsg = NULL;
