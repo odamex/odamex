@@ -27,6 +27,7 @@
 #include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "doomstat.h"
 #include "r_state.h"
 #include "dstrings.h"
@@ -133,6 +134,7 @@ void DDoor::RunThink ()
 		if (res == pastdest)
 		{
 			//S_StopSound (m_Sector->soundorg);
+			SN_StopSequence (m_Sector);
 			switch (m_Type)
 			{
 			case doorRaise:
@@ -185,6 +187,7 @@ void DDoor::RunThink ()
 		if (res == pastdest)
 		{
 			//S_StopSound (m_Sector->soundorg);
+			SN_StopSequence (m_Sector);
 			switch (m_Type)
 			{
 			case doorRaise:
@@ -214,23 +217,29 @@ void DDoor::RunThink ()
 void DDoor::DoorSound (bool raise) const
 {
 	const char *snd;
-
-	if (raise)
+	if (m_Sector->seqType >= 0)
 	{
-		if((m_Speed >= FRACUNIT*8))
-			snd = "doors/dr2_open";
-		else
-			snd = "doors/dr1_open";
+		SN_StartSequence (m_Sector, m_Sector->seqType, SEQ_DOOR);
 	}
 	else
 	{
-		if((m_Speed >= FRACUNIT*8))
-			snd = "doors/dr2_clos";
+		if (raise)
+		{
+			if((m_Speed >= FRACUNIT*8))
+				snd = "doors/dr2_open";
+			else
+				snd = "doors/dr1_open";
+		}
 		else
-			snd = "doors/dr1_clos";
+		{
+			if((m_Speed >= FRACUNIT*8))
+				snd = "doors/dr2_clos";
+			else
+				snd = "doors/dr1_clos";
+		}
+		
+		S_Sound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
 	}
-	
-	S_Sound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
 }
 
 DDoor::DDoor (sector_t *sector)

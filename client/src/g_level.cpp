@@ -997,7 +997,7 @@ void G_DoLoadLevel (int position)
 			actor->touching_sectorlist = NULL;
 	}
 
-// 	SN_StopAllSequences (); // denis - todo - equivalent?
+ 	SN_StopAllSequences (); // denis - todo - equivalent?
 	P_SetupLevel (level.mapname, position);
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
 	ST_Start();		// [RH] Make sure status bar knows who we are

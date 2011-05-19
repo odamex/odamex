@@ -114,7 +114,7 @@ struct sector_s
 	
     // list of mobjs in sector
 	AActor* 	thinglist;
-	
+	int			seqType;		// this sector's sound sequence	
 	int sky;
 
 	// killough 8/28/98: friction is a sector property, not an mobj property.

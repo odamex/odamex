@@ -1893,6 +1893,34 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (!(mthing->flags & bit))
 		return;
 
+	// [RH] sound sequence overrides
+	if (mthing->type >= 1400 && mthing->type < 1410)
+	{
+		R_PointInSubsector (mthing->x<<FRACBITS,
+			mthing->y<<FRACBITS)->sector->seqType = mthing->type - 1400;
+		return;
+	}
+	else if (mthing->type == 1411)
+	{
+		int type;
+
+		if (mthing->args[0] == 255)
+			type = -1;
+		else
+			type = mthing->args[0];
+
+		if (type > 63)
+		{
+			Printf (PRINT_HIGH, "Sound sequence %d out of range\n", type);
+		}
+		else
+		{
+			R_PointInSubsector (mthing->x << FRACBITS,
+				mthing->y << FRACBITS)->sector->seqType = type;
+		}
+		return;
+	}
+
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing->type >= 14001 && mthing->type <= 14064)

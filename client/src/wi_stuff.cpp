@@ -35,6 +35,7 @@
 #include "g_level.h"
 #include "r_local.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "doomstat.h"
 #include "v_video.h"
 #include "wi_stuff.h"
@@ -1578,7 +1579,7 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 
 	V_SetBlend (0,0,0,0);
 	S_StopAllChannels ();
-// 	SN_StopAllSequences ();
+ 	SN_StopAllSequences ();
 }
 
 VERSION_CONTROL (wi_stuff_cpp, "$Id$")

@@ -45,6 +45,7 @@
 #include "r_draw.h"
 #include "st_stuff.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "doomstat.h"
 #include "gi.h"
 
@@ -939,7 +940,7 @@ void C_FullConsole (void)
 		gamestate = GS_FULLCONSOLE;
 		level.music[0] = '\0';
 		S_Start ();
-// 		SN_StopAllSequences ();
+ 		SN_StopAllSequences ();
 		V_SetBlend (0,0,0,0);
 		I_PauseMouse ();
 	} else
