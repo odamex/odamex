@@ -67,16 +67,14 @@ void CL_WirteNetDemoMessages(buf_t netbuffer)
 	angle_t angle;
 	buf_t netbuffertemp;
 	netbuffertemp.resize(len + SAFETYMARGIN);
-	netbuffertemp.data = netbuffer.data;
+	memcpy(netbuffertemp.data, netbuffer.data, netbuffer.cursize);
 	netbuffertemp.cursize = netbuffer.cursize;
-	
 
 	if(!netdemoRecord)
 		return;
 
 	/*if(netdemoPaused)
 		return;*/
-
 
 	if(clientPlayer->mo)
 	{
@@ -88,6 +86,8 @@ void CL_WirteNetDemoMessages(buf_t netbuffer)
 		momz = clientPlayer->mo->momz;
 		angle = clientPlayer->mo->angle;
 	}
+	else
+		return;
 
 	MSG_WriteByte(&netbuffertemp, svc_netdemocap);
 	MSG_WriteLong(&netbuffertemp, gametic);
@@ -114,7 +114,6 @@ void CL_WirteNetDemoMessages(buf_t netbuffer)
 			MSG_WriteByte(&netbuffertemp, svc_changeweapon);
 			MSG_WriteByte(&netbuffertemp, clientPlayer->pendingweapon);
 	}*/
-
 
 	len = netbuffertemp.size();
 	fwrite(&len, sizeof(size_t), 1, recordnetdemo_fp);	
