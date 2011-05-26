@@ -510,6 +510,10 @@ void STACK_ARGS I_Quit (void)
 
 	G_ClearSnapshots ();
 
+	if(netdemoRecord){
+		CL_StopRecordingNetDemo();
+	}
+
 	CL_QuitNetGame();
 
 	M_SaveDefaults();

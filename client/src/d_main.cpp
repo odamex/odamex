@@ -1483,7 +1483,8 @@ void D_DoomMain (void)
 	if(p)
 	{
 		std::string demoname = Args.GetArg (p+1);
-		CL_BeginNetRecord((char*)demoname.c_str());
+		demoname.append(".odd");
+		CL_BeginNetRecord(demoname.c_str());
 	}
 	
 

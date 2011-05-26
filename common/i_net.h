@@ -127,6 +127,7 @@ enum svc_t
 		
 	// netdemos - NullPoint
 	svc_netdemocap = 100,
+	svc_netdemostop = 101,
 	
 	// for compressed packets
 	svc_compressed = 200,

@@ -447,7 +447,7 @@ BEGIN_COMMAND (spynext)
 		else if (consoleplayer().spectator ||
 			 sv_gametype == GM_COOP ||
 			 (sv_gametype != GM_DM &&
-				players[curr].userinfo.team == consoleplayer().userinfo.team))
+				players[curr].userinfo.team == consoleplayer().userinfo.team) || netdemoPlayback)
 		{
 			displayplayer_id = players[curr].id;
 			break;
@@ -473,6 +473,10 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	int 		side;
 	int			look;
 	int			fly;
+
+	/*// [NightFang] - we already have reserved cmds for demos - netdemos - NullPoint
+	if(netdemoPlayback)
+		return;*/
 
 	ticcmd_t	*base;
 
@@ -961,8 +965,13 @@ void G_Ticker (void)
 	if (demorecording)
 		G_WriteDemoTiccmd(); // read in all player commands
 
+	if(netdemoRecord && gamestate != GS_LEVEL)
+	{
+		CL_CaptureDeliciousPackets(&net_message);
+	}
+
 	if(netdemoPlayback)
-		CL_ReadNetDemoMeassages(); //reads all of netmessages
+		CL_ReadNetDemoMeassages(&net_message); //reads all of netmessages
 
 	if (connected && !netdemoPlayback)
 	{
@@ -1009,13 +1018,10 @@ void G_Ticker (void)
 		if((gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTING)
 			&& NET_CompareAdr(serveraddr, net_from))
 		{
-			if(netdemoRecord)
+			/*if(netdemoRecord)
 			{
-				if(net_message.cursize != 0)
-				{
-					CL_CaptureDeliciousPackets(net_message);
-				}
-			}
+				CL_CaptureDeliciousPackets(&net_message);
+			}*/
 
 			int type = MSG_ReadLong();
 

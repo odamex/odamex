@@ -140,6 +140,7 @@ void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress(int sequence);
 void CL_LocalDemoTic(void);
+void CL_NetDemoStop(void);
 
 //	[Toke - CTF]
 void CalcTeamFrags (void);
@@ -169,7 +170,7 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame(void)
 {
-	if(connected)
+	if(connected || !netdemoPlayback)
 	{
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
 
@@ -198,14 +199,14 @@ void CL_QuitNetGame(void)
 	actor_by_netid.clear();
 	players.clear();
 
-	//demos - NullPoint
+	/*//demos - NullPoint
 	if(netdemoRecord){
 		CL_StopRecordingNetDemo();
 	}
 
 	if(netdemoPlayback){
 		CL_StopDemoPlayBack();
-	}
+	}*/
 }
 
 
@@ -213,8 +214,12 @@ void CL_Reconnect(void)
 {
 	if (connected)
 	{
-		MSG_WriteMarker(&net_buffer, clc_disconnect);
-		NET_SendPacket(net_buffer, serveraddr);
+		if(!netdemoPlayback)
+		{
+			MSG_WriteMarker(&net_buffer, clc_disconnect);
+			NET_SendPacket(net_buffer, serveraddr);
+			
+		}
 		SZ_Clear(&net_buffer);
 		connected = false;
 		gameaction = ga_fullconsole;
@@ -562,25 +567,28 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(void)
 {
-	userinfo_t *coninfo = &consoleplayer().userinfo;
+	if(!netdemoPlayback)
+	{
+		userinfo_t *coninfo = &consoleplayer().userinfo;
 
-    memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
+		memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
 
-	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
-	coninfo->team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-	coninfo->color	 = V_GetColorFromString (NULL, cl_color.cstring());
-	coninfo->skin	 = R_FindSkin (cl_skin.cstring());
-	coninfo->gender  = D_GenderByName (cl_gender.cstring());
-	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
-    coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
-	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, coninfo->netname);
-	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
-	MSG_WriteLong	(&net_buffer, coninfo->gender);
-	MSG_WriteLong	(&net_buffer, coninfo->color);
-	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
-	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-    MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
+		strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
+		coninfo->team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
+		coninfo->color	 = V_GetColorFromString (NULL, cl_color.cstring());
+		coninfo->skin	 = R_FindSkin (cl_skin.cstring());
+		coninfo->gender  = D_GenderByName (cl_gender.cstring());
+		coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
+		coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
+		MSG_WriteMarker	(&net_buffer, clc_userinfo);
+		MSG_WriteString	(&net_buffer, coninfo->netname);
+		MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
+		MSG_WriteLong	(&net_buffer, coninfo->gender);
+		MSG_WriteLong	(&net_buffer, coninfo->color);
+		MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
+		MSG_WriteLong	(&net_buffer, coninfo->aimdist);
+		MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
+	}
 }
 
 
@@ -765,7 +773,7 @@ void CL_RequestConnectInfo(void)
 	if(gamestate != GS_DOWNLOAD)
 		gamestate = GS_CONNECTING;
 
-	if(!connecttimeout)
+	if(!connecttimeout || !netdemoPlayback)
 	{
 		connecttimeout = 140;
 
@@ -929,8 +937,11 @@ bool CL_Connect(void)
 	memset(packetseq, -1, sizeof(packetseq) );
 	packetnum = 0;
 
-	MSG_WriteMarker(&net_buffer, clc_ack);
-	MSG_WriteLong(&net_buffer, 0);
+	if(!netdemoPlayback)
+	{
+		MSG_WriteMarker(&net_buffer, clc_ack);
+		MSG_WriteLong(&net_buffer, 0);
+	}
 
 	if(gamestate == GS_DOWNLOAD && missing_file.length())
 	{
@@ -1027,7 +1038,7 @@ void CL_TryToConnect(DWORD server_token)
 	if (!serveraddr.ip[0])
 		return;
 
-	if (!connecttimeout)
+	if (!connecttimeout || !netdemoPlayback)
 	{
 		connecttimeout = 140; // 140 tics = 4 seconds
 
@@ -1199,8 +1210,10 @@ void CL_SaveSvGametic(void)
 // [SL] 2011-05-11
 void CL_SendSvGametic(void)
 {
-	MSG_WriteMarker(&net_buffer, clc_svgametic);
-	MSG_WriteByte(&net_buffer, last_svgametic++);
+	if(!netdemoPlayback){
+		MSG_WriteMarker(&net_buffer, clc_svgametic);
+		MSG_WriteByte(&net_buffer, last_svgametic++);
+	}
 }
 
 
@@ -1215,9 +1228,12 @@ void CL_SendSvGametic(void)
 void CL_SendPingReply(void)
 {
 	int svtimestamp = MSG_ReadLong();
-
-	MSG_WriteMarker (&net_buffer, clc_pingreply);
-	MSG_WriteLong (&net_buffer, svtimestamp);
+	
+	if(!netdemoPlayback)
+	{
+		MSG_WriteMarker (&net_buffer, clc_pingreply);
+		MSG_WriteLong (&net_buffer, svtimestamp);
+	}
 }
 
 //
@@ -2106,8 +2122,10 @@ void CL_ReadPacketHeader(void)
 {
 	unsigned int sequence = MSG_ReadLong();
 
-	MSG_WriteMarker(&net_buffer, clc_ack);
-	MSG_WriteLong(&net_buffer, sequence);
+	if(!netdemoPlayback){
+		MSG_WriteMarker(&net_buffer, clc_ack);
+		MSG_WriteLong(&net_buffer, sequence);
+	}
 
 	CL_Decompress(sequence);
 
@@ -2721,6 +2739,7 @@ void CL_InitCommands(void)
 	
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
 	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
+	cmds[svc_netdemostop]       = &CL_NetDemoStop;
 }
 
 //
@@ -2735,19 +2754,18 @@ void CL_ParseCommands(void)
 	if(once)CL_InitCommands();
 	once = false;
 
+	
 	if(netdemoRecord)
 	{
 		if(gamestate == GS_LEVEL)
 		{
-			CL_WirteNetDemoMessages(net_message);
+			CL_WirteNetDemoMessages(&net_message, true);
 		} 
 		else 
 		{
-			if(net_message.cursize != 0)
-			{
-				CL_CaptureDeliciousPackets(net_message);
-			}
+			CL_WirteNetDemoMessages(&net_message, false);
 		}
+		
 	}
 
 	while(connected)
@@ -2786,6 +2804,8 @@ void CL_ParseCommands(void)
 		}
 		
 	}
+
+	
 	
 	
 	
@@ -2800,6 +2820,9 @@ extern int outrate;
 void CL_SendCmd(void)
 {
 	player_t *p;
+
+	if(netdemoPlayback)
+		return;
 
 	if (gametic < 1 )
 		return;
@@ -2969,19 +2992,23 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
 void CL_LocalDemoTic()
 {
 	player_t* clientPlayer = &consoleplayer();
-	fixed_t x, y, z, momx, momy, momz;
+	fixed_t x, y, z, momx, momy, momz, pitch, viewheight, deltaviewheight, roll;
 	angle_t angle;
+	byte waterlevel;
 	
-	gametic = MSG_ReadLong();
+	
 	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
+	
 	clientPlayer->cmd.ucmd.use = MSG_ReadByte();
-	clientPlayer->cmd.ucmd.pitch = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.impulse = MSG_ReadByte();
 	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort() << 8;
+	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort() << 8;
+	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort() << 8;
 	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
+	gametic = MSG_ReadLong();
 
+	waterlevel = MSG_ReadByte();
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
 	z = MSG_ReadLong();
@@ -2989,6 +3016,11 @@ void CL_LocalDemoTic()
 	momy = MSG_ReadLong();
 	momz = MSG_ReadLong();
 	angle = MSG_ReadLong();
+	pitch = MSG_ReadLong();
+	
+	deltaviewheight = MSG_ReadLong();
+	viewheight = MSG_ReadLong();
+	roll = MSG_ReadLong();
 
 	if(clientPlayer->mo)
 	{
@@ -2999,8 +3031,17 @@ void CL_LocalDemoTic()
 		clientPlayer->mo->momy = momy;
 		clientPlayer->mo->momz = momz;
 		clientPlayer->mo->angle = angle;
+		clientPlayer->mo->pitch = pitch;
+		clientPlayer->mo->waterlevel = waterlevel;
+		clientPlayer->deltaviewheight = deltaviewheight;
+		clientPlayer->viewheight = viewheight;
+		clientPlayer->mo->roll = roll;
 	}
 
+}
+
+void CL_NetDemoStop(){
+	CL_StopDemoPlayBack();
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
