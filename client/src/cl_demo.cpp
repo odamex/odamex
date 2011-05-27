@@ -269,10 +269,11 @@ void CL_CaptureDeliciousPackets(buf_t* netbuffer)
 	//SZ_Clear(&netbuffer);
 }
 
-/*BEGIN_COMMAND(netrecord)
+BEGIN_COMMAND(netrecord)
 {
-	char* demonamearg = argv[1];
-	
+	std::string demonamearg = argv[1];
+	demonamearg.append(".odd");
+
 	if(netdemoRecord)
 	{
 		CL_StopRecordingNetDemo();
@@ -301,10 +302,10 @@ void CL_CaptureDeliciousPackets(buf_t* netbuffer)
 		return;
 	}
 	
-	CL_BeginNetRecord(demonamearg);
+	CL_BeginNetRecord(demonamearg.c_str());
 	CL_Reconnect();
 }
-END_COMMAND(netrecord)*/
+END_COMMAND(netrecord)
 
 /*BEGIN_COMMAND(netpuase){
 	if(netdemoPaused){
