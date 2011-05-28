@@ -238,16 +238,16 @@ P_ChangeSwitchTexture
 		if (texture)
 		{
 			// [RH] The original code played the sound at buttonlist->soundorg,
-			//		which wasn't necessarily anywhere near the switch if it was
-			//		facing a big sector.
+			//		which wasn't necessarily anywhere near the switch if 
+			//		it was facing a big sector.
 			fixed_t x = line->v1->x + (line->dx >> 1);
 			fixed_t y = line->v1->y + (line->dy >> 1);
 
 			if (co_zdoomswitches)
 			{
-				// [SL] 2011-05-16 - Play at a normal volume in the center of the
-				// sector containing switch
-				S_Sound (line->frontsector->soundorg, CHAN_BODY, sound, 1, ATTN_NORM);
+				// [SL] 2011-05-27 - Play at a normal volume in the center
+				// of the switch's linedef 
+				S_Sound (x, y, CHAN_BODY, sound, 1, ATTN_NORM);
 			}
 			else
 			{
@@ -324,18 +324,17 @@ void DActiveButton::RunThink ()
 	
 		if (co_zdoomswitches)
 		{
-			// [SL] 2011-05-16 - Play at a normal volume in the center of the sector
-			// containing switch
-			S_Sound (m_Line->frontsector->soundorg, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);			
+			// [SL] 2011-05-27 - Play at a normal volume in the center of the
+			//  switch's linedef
+			fixed_t x = m_Line->v1->x + (m_Line->dx >> 1);
+			fixed_t y = m_Line->v1->y + (m_Line->dy >> 1);
+			S_Sound (x, y, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);			
 		}
 		else
 		{
 			// [SL] 2011-05-16 - Changed to play the switch resetting sound at the
 			// map location 0,0 to emulate the bug in vanilla doom
-			static fixed_t map_origin[2];
-			map_origin[0] = 0;
-			map_origin[1] = 0;
-			S_Sound (map_origin, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);
+			S_Sound (0, 0, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);
 		}
 		Destroy ();
 	}
