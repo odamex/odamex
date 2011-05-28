@@ -59,6 +59,11 @@ int		sightcounts2[3];
 
 bool PTR_SightTraverse (intercept_t *in)
 {
+	// [SL] 2011-05-26 - ZDoom maps sometimes pass AActor* instead of line_t*
+	// in the intercept_t argument
+	if (!in->isaline)
+		return false;
+	
 	line_t  *li;
 	fixed_t slope;
 

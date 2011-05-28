@@ -237,7 +237,6 @@
 				</Compiler>
 				<Linker>
 					<Add option="/DEBUG" />
-					<Add option="/debug" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -399,6 +398,8 @@
 		<Unit filename="..\..\common\r_sky.h" />
 		<Unit filename="..\..\common\r_state.h" />
 		<Unit filename="..\..\common\r_things.h" />
+		<Unit filename="..\..\common\s_sndseq.cpp" />
+		<Unit filename="..\..\common\s_sndseq.h" />
 		<Unit filename="..\..\common\s_sound.h" />
 		<Unit filename="..\..\common\sc_man.cpp" />
 		<Unit filename="..\..\common\sc_man.h" />
