@@ -935,11 +935,15 @@ void S_UpdateSounds (void *listener_p)
 					}
 				}
 
-		// check non-local sounds for distance clipping
-		//  or modify their params
+				// check non-local sounds for distance clipping
+				//  or modify their params
 				if (listener_p != c->pt && c->attenuation != ATTN_NONE)	
 				{
-					// [SL] 2011-05-27 - client-produced sound!
+					if (c->pt)		// [SL] 2011-05-29
+					{
+						c->x = c->pt[0];	// update the sound coorindates
+						c->y = c->pt[1];	// for moving actors
+					}
 					audible = S_AdjustSoundParams(	listener, 
 													c->x, c->y,
 													&volume,
