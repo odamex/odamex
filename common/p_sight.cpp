@@ -62,6 +62,9 @@ bool PTR_SightTraverse (intercept_t *in)
 	line_t  *li;
 	fixed_t slope;
 
+	if (!in->isaline)
+		I_Error ("PTR_SightTraverse: non-line intercept\n");
+
 	li = in->d.line;
 	
 	if (!li->backsector)
@@ -214,6 +217,9 @@ bool P_SightTraverseIntercepts ( void )
 //
 	for (scan = 0 ; scan < intercepts.Size(); scan++)
 	{
+		if (!intercepts[scan].isaline)
+			I_Error ("P_SightTraverseIntercepts: non-line intercept\n");
+
 		P_MakeDivline (intercepts[scan].d.line, &dl);
 		intercepts[scan].frac = P_InterceptVector (&trace, &dl);
 	}

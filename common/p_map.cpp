@@ -1192,7 +1192,7 @@ BOOL PTR_SlideTraverse (intercept_t* in)
 	line_t* 	li;
 
 	if (!in->isaline)
-		I_Error ("PTR_SlideTraverse: not a line?");
+		I_Error ("PTR_SlideTraverse: non-line intercept\n");
 
 	li = in->d.line;
 
@@ -1851,6 +1851,9 @@ AActor *usething;
 
 BOOL PTR_UseTraverse (intercept_t *in)
 {
+	if (!in->isaline)
+		I_Error ("PTR_UseTraverse: non-line intercept\n");
+
 	if (!in->d.line->special)
 	{
 		P_LineOpening (in->d.line);
@@ -1894,6 +1897,9 @@ BOOL PTR_UseTraverse (intercept_t *in)
 
 BOOL PTR_NoWayTraverse (intercept_t *in)
 {
+	if (!in->isaline)
+		I_Error ("PTR_NoWayTraverse: non-line intercept\n");
+
 	line_t *ld = in->d.line;					// This linedef
 
 	return ld->special || !(					// Ignore specials
