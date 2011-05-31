@@ -68,7 +68,7 @@ extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
 
 unsigned int	ConRows, ConCols, PhysRows;
-char		*Lines, *Last = NULL;
+unsigned char	*Lines, *Last = NULL;
 BOOL		vidactive = false, gotconback = false;
 BOOL		cursoron = false;
 int			SkipRows, ConBottom;
@@ -199,8 +199,8 @@ void C_Close()
 void C_InitConsole (int width, int height, BOOL ingame)
 {
 	int row;
-	char *zap;
-	char *old;
+	unsigned char *zap;
+	unsigned char *old;
 	int cols, rows;
 
 	bool firstTime = true;
@@ -310,7 +310,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	PhysRows = height / 8;
 
 	old = Lines;
-	Lines = (char *)Malloc (CONSOLEBUFFER * (ConCols + 2) + 1);
+	Lines = (unsigned char *)Malloc (CONSOLEBUFFER * (ConCols + 2) + 1);
 
 	for (row = 0, zap = Lines; row < CONSOLEBUFFER; row++, zap += ConCols + 2)
 	{
@@ -801,7 +801,7 @@ void C_SetTicker (unsigned int at)
 
 void C_DrawConsole (void)
 {
-	char *zap;
+	unsigned char *zap;
 	int lines, left, offset;
 	static int oldbottom = 0;
 
@@ -887,7 +887,7 @@ void C_DrawConsole (void)
 	{
 		for (; lines > 1; lines--)
 		{
-			screen->PrintStr (left, offset + lines * 8, &zap[2], zap[1]);
+			screen->PrintStr (left, offset + lines * 8, (char*)&zap[2], zap[1]);
 			zap -= ConCols + 2;
 		}
 		if (ConBottom >= 20)
@@ -1171,7 +1171,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		if (HistPos)
 		{
 			strcpy ((char *)&buffer[2], HistPos->String);
-			buffer[0] = buffer[1] = strlen ((char *)&buffer[2]);
+			buffer[0] = buffer[1] = (BYTE)strlen ((char *)&buffer[2]);
 			buffer[len+4] = 0;
 			makestartposgood();
 		}
@@ -1186,7 +1186,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			HistPos = HistPos->Newer;
 
 			strcpy ((char *)&buffer[2], HistPos->String);
-			buffer[0] = buffer[1] = strlen ((char *)&buffer[2]);
+			buffer[0] = buffer[1] = (BYTE)strlen ((char *)&buffer[2]);
 		}
 		else
 		{
@@ -1484,7 +1484,7 @@ END_COMMAND (history)
 BEGIN_COMMAND (clear)
 {
 	int i;
-	char *row = Lines;
+	unsigned char *row = Lines;
 
 	RowAdjust = 0;
 	C_FlushDisplay ();
@@ -1674,7 +1674,7 @@ static void C_TabComplete (void)
 
 	// Found a valid replacement
 	strcpy ((char *)(CmdLine + TabStart), i->first.c_str());
-	CmdLine[0] = CmdLine[1] = strlen ((char *)(CmdLine + 2)) + 1;
+	CmdLine[0] = CmdLine[1] = (BYTE)strlen ((char *)(CmdLine + 2)) + 1;
 	CmdLine[CmdLine[0] + 1] = ' ';
 
 	makestartposgood ();
