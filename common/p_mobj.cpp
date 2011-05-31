@@ -1855,7 +1855,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (sv_gametype == GM_COOP &&
+		if (clientside && sv_gametype == GM_COOP &&
 			(validplayer(p) && p.ingame()))
 		{
 			P_SpawnPlayer (p, mthing);
