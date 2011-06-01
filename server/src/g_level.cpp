@@ -1703,8 +1703,8 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			
 			G_AirControlChanged ();
 			
-//		for (i = 0; i < NUM_MAPVARS; i++)
-//			arc << level.vars[i];
+		for (int i = 0; i < NUM_MAPVARS; i++)
+			arc << level.vars[i];
 	}
 	else
 	{
@@ -1712,17 +1712,23 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			>> level.fadeto
 			>> level.found_secrets
 			>> level.found_items
-			>> level.killed_monsters;
+			>> level.killed_monsters
+			>> level.gravity
+			>> level.aircontrol;
 
-//		for (i = 0; i < NUM_MAPVARS; i++)
-//			arc >> level.vars[i];
+			G_AirControlChanged ();
+
+		for (int i = 0; i < NUM_MAPVARS; i++)
+			arc >> level.vars[i];
 	}
+	
+	if (!hubLoad)
+		P_SerializePlayers (arc);
+
 	P_SerializeThinkers (arc, hubLoad);
 	P_SerializeWorld (arc);
 	P_SerializePolyobjs (arc);
 	P_SerializeSounds (arc);
-	if (!hubLoad)
-		P_SerializePlayers (arc);
 }
 
 // Archives the current level

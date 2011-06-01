@@ -1320,8 +1320,6 @@ void G_AirControlChanged ()
 
 void G_SerializeLevel (FArchive &arc, bool hubLoad)
 {
-    int i;
-    
 	if (arc.IsStoring ())
 	{
 		unsigned int playernum = players.size();
@@ -1332,14 +1330,13 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.killed_monsters
 			<< level.gravity
 			<< level.aircontrol;
-			//<< playernum;
 			
 		G_AirControlChanged ();
-
-		for (i = 0; i < NUM_MAPVARS; i++)
+	
+		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc << level.vars[i];
 			
-        arc << playernum;
+		arc << playernum;
 	}
 	else
 	{
@@ -1348,25 +1345,26 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			>> level.fadeto
 			>> level.found_secrets
 			>> level.found_items
-			>> level.killed_monsters;
+			>> level.killed_monsters
+			>> level.gravity
+			>> level.aircontrol;
+
+		G_AirControlChanged ();
 			
-			//>> playernum;
-			
-		for (i = 0; i < NUM_MAPVARS; i++)
+		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc >> level.vars[i];
         
-        arc >> playernum;
+       	arc >> playernum;
 
 		players.resize(playernum);
 	}
-		
-	P_SerializeThinkers (arc, hubLoad);
-    P_SerializeWorld (arc);
-    P_SerializePolyobjs (arc);
-    P_SerializeSounds (arc);
-	
 	if (!hubLoad)
 		P_SerializePlayers (arc);
+		
+	P_SerializeThinkers (arc, hubLoad);
+	P_SerializeWorld (arc);
+	P_SerializePolyobjs (arc);
+	P_SerializeSounds (arc);
 }
 
 // Archives the current level
