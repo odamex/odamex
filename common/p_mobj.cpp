@@ -1992,15 +1992,23 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			return;
 		}
 	}
-	
-    //#if 0
+
+    // [SL] 2011-05-31 - Moved so that clients get right level.total_items, etc
+	if (i == MT_SECRETTRIGGER)
+	{
+		level.total_secrets++;
+	}
+	if (mobjinfo[i].flags & MF_COUNTKILL)
+		level.total_monsters++;
+	if (mobjinfo[i].flags & MF_COUNTITEM)
+		level.total_items++;
+
     // for client...
 	// Type 14 is a teleport exit. We must spawn it here otherwise
 	// teleporters won't work well.
 	if (!serverside && (mthing->flags & MF_SPECIAL) && (mthing->type != 14))
 		return;
-    //#endif
-
+    
 	// spawn it
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
@@ -2010,10 +2018,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		sector_t *sec = R_PointInSubsector (x, y)->sector;
 		sec->waterzone = 1;
 		return;
-	}
-	else if (i == MT_SECRETTRIGGER)
-	{
-		level.total_secrets++;
 	}
 
 	if (mobjinfo[i].flags & MF_SPAWNCEILING)
@@ -2053,10 +2057,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);
-	if (mobj->flags & MF_COUNTKILL)
-		level.total_monsters++;
-	if (mobj->flags & MF_COUNTITEM)
-		level.total_items++;
 
 	if (i != MT_SPARK)
 		mobj->angle = ANG45 * (mthing->angle/45);
