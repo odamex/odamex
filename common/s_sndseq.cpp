@@ -630,6 +630,11 @@ static bool TwiddleSeqNum (int &sequence, seqtype_t type)
 	if (type < SEQ_NUMSEQTYPES)
 		sequence = SeqTrans[sequence + type * 64];
 
+	// [SL] 2011-05-29 - Prevent a segfault if passed a bad sequence number
+	// perhaps this should produce an error msg instead
+	if (sequence >= NumSequences || sequence < 0)
+		return false;
+
 	if (sequence == -1 || Sequences[sequence] == NULL)
 		return false;
 	else
