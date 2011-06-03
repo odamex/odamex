@@ -815,7 +815,10 @@ void P_XYMovement(AActor *mo)
 					mo->Destroy ();
 					return;
 				}
-				P_ExplodeMissile (mo);
+				// [SL] 2011-06-02 - Only server should control explosions 
+				if (serverside)
+					 P_ExplodeMissile (mo);
+
 			}
 			else
 			{
@@ -1055,7 +1058,9 @@ void P_ZMovement(AActor *mo)
       if ( (mo->flags & MF_MISSILE)
             && !(mo->flags & MF_NOCLIP) )
       {
-         P_ExplodeMissile (mo);
+		// [SL] 2011-06-02 - Only server should control explosions 
+		if (serverside)
+			P_ExplodeMissile (mo);
          return;
       }
    }
@@ -1146,7 +1151,9 @@ void P_ZMovement(AActor *mo)
 				mo->Destroy ();
 				return;
 			}			
-			P_ExplodeMissile (mo);
+			// [SL] 2011-06-02 - Only server should control explosions 
+			if (serverside)
+				P_ExplodeMissile (mo);
 			return;
 		}
 	}
@@ -1422,12 +1429,13 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
         SV_SpawnMobj(th);
 }
 
+void SV_AwarenessUpdate(player_t &pl, AActor* mo);
 //
 // P_CheckMissileSpawn
 // Moves the missile forward a bit
 //	and possibly explodes it right there.
 //
-bool P_CheckMissileSpawn (AActor* th)
+void P_CheckMissileSpawn (AActor* th)
 {
 	th->tics -= P_Random (th) & 3;
 	if (th->tics < 1)
@@ -1441,12 +1449,20 @@ bool P_CheckMissileSpawn (AActor* th)
 
 	// killough 3/15/98: no dropoff (really = don't care for missiles)
 
+	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
+	// make sure we spawn the missile first, send it to all clients immediately
+	// instead of queueing it, then explode it.
 	if (!P_TryMove (th, th->x, th->y, false))
 	{
+		for (size_t i = 0; i < players.size(); i++)
+		{
+			if (th)
+				SV_AwarenessUpdate(players[i], th);
+		}
 		P_ExplodeMissile (th);
-		return false;
 	}
-	return true;
+	else
+		SV_SpawnMobj(th);
 }
 
 //
@@ -1511,8 +1527,6 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     th->momz = (dest_z - source->z) / dist;
 
     P_CheckMissileSpawn (th);
-
-    SV_SpawnMobj(th);
 
     return th;
 }
@@ -1603,8 +1617,6 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);
 		th->momz = FixedMul(speed, slope);
 	}
-
-	SV_SpawnMobj(th);
 
 	P_CheckMissileSpawn (th);
 }

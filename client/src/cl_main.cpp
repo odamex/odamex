@@ -1227,7 +1227,6 @@ void CL_SpawnMobj()
 		if(target)
 			mo->target = target->ptr();
 		CL_SetMobjSpeedAndAngle();
-		P_CheckMissileSpawn(mo);
 	}
 
     if (mo->flags & MF_COUNTKILL)
