@@ -381,12 +381,14 @@ void Unlag::registerSector(sector_t *sector)
 	// sector.moveable is not set until the sector is triggered to move
 	// so fill the history buffers with the sector's initial heights
 	sector_history[new_index].history_size = Unlag::MAX_HISTORY_TICS;
-	memset(sector_history[new_index].history_ceilingheight,
-		   sector->ceilingheight,
-		   Unlag::MAX_HISTORY_TICS);
-	memset(sector_history[new_index].history_floorheight,
-		   sector->floorheight,
-		   Unlag::MAX_HISTORY_TICS);
+
+	for (size_t i = 0; i < Unlag::MAX_HISTORY_TICS; i++)
+	{
+		sector_history[new_index].history_ceilingheight[i]
+			= sector->ceilingheight;
+		sector_history[new_index].history_floorheight[i]
+			= sector->floorheight;
+	}
 }
 
 
