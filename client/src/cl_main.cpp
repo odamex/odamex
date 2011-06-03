@@ -1201,7 +1201,7 @@ void CL_SaveSvGametic(void)
 void CL_SendSvGametic(void)
 {
 	MSG_WriteMarker(&net_buffer, clc_svgametic);
-	MSG_WriteByte(&net_buffer, last_svgametic++);
+	MSG_WriteByte(&net_buffer, last_svgametic);
 }
 
 
@@ -2898,6 +2898,10 @@ void CL_RunTics (void)
 
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics ();
+
+	// [SL] 2011-05-29 - Haven't received a new tic from the server yet so
+	// increment the one we've already received.
+	last_svgametic++;
 }
 
 void PickupMessage (AActor *toucher, const char *message)
