@@ -71,6 +71,7 @@ bool clientside = false, serverside = true;
 bool predicting = false;
 baseapp_t baseapp = server;
 
+bool netdemoPlayback = false;
 extern bool HasBehavior;
 
 bool step_mode = false;

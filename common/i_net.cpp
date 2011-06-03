@@ -578,32 +578,39 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 // denis - use this function to mark the start of your client message
 // as it allows for better debugging and optimization of network code
 //
+extern bool netdemoPlayback;
+
 void MSG_WriteMarker (buf_t *b, clc_t c)
 {
-	b->WriteByte((byte)c);
+	if (!netdemoPlayback)
+		b->WriteByte((byte)c);
 }
 
 void MSG_WriteByte (buf_t *b, byte c)
 {
-    b->WriteByte((byte)c);
+	if (!netdemoPlayback)
+    	b->WriteByte((byte)c);
 }
 
 
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 {
-    b->WriteChunk((const char *)p, l);
+	if (!netdemoPlayback)
+    	b->WriteChunk((const char *)p, l);
 }
 
 
 void MSG_WriteShort (buf_t *b, short c)
 {
-    b->WriteShort(c);
+	if (!netdemoPlayback)
+    	b->WriteShort(c);
 }
 
 
 void MSG_WriteLong (buf_t *b, int c)
 {
-    b->WriteLong(c);
+	if (!netdemoPlayback)
+    	b->WriteLong(c);
 }
 
 //
@@ -612,7 +619,8 @@ void MSG_WriteLong (buf_t *b, int c)
 // Write an boolean value to a buffer
 void MSG_WriteBool(buf_t *b, bool Boolean)
 {
-    MSG_WriteByte(b, Boolean ? 1 : 0);
+	if (!netdemoPlayback)
+    	MSG_WriteByte(b, Boolean ? 1 : 0);
 }
 
 //
@@ -625,7 +633,8 @@ void MSG_WriteFloat(buf_t *b, float Float)
 
     StringStream << Float;
     
-    MSG_WriteString(b, (char *)StringStream.str().c_str());
+	if (!netdemoPlayback)
+    	MSG_WriteString(b, (char *)StringStream.str().c_str());
 }
 
 //
@@ -634,7 +643,8 @@ void MSG_WriteFloat(buf_t *b, float Float)
 // Write a string to a buffer and null terminate it
 void MSG_WriteString (buf_t *b, const char *s)
 {
-	b->WriteString(s);
+	if (!netdemoPlayback)
+		b->WriteString(s);
 }
 
 int MSG_BytesLeft(void)

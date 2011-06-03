@@ -170,7 +170,7 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame(void)
 {
-	if(connected || !netdemoPlayback)
+	if(connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
 
@@ -214,12 +214,8 @@ void CL_Reconnect(void)
 {
 	if (connected)
 	{
-		if(!netdemoPlayback)
-		{
-			MSG_WriteMarker(&net_buffer, clc_disconnect);
-			NET_SendPacket(net_buffer, serveraddr);
-			
-		}
+		MSG_WriteMarker(&net_buffer, clc_disconnect);
+		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
 		connected = false;
 		gameaction = ga_fullconsole;
@@ -567,28 +563,25 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(void)
 {
-	if(!netdemoPlayback)
-	{
-		userinfo_t *coninfo = &consoleplayer().userinfo;
+	userinfo_t *coninfo = &consoleplayer().userinfo;
 
-		memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
+	memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
 
-		strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
-		coninfo->team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-		coninfo->color	 = V_GetColorFromString (NULL, cl_color.cstring());
-		coninfo->skin	 = R_FindSkin (cl_skin.cstring());
-		coninfo->gender  = D_GenderByName (cl_gender.cstring());
-		coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
-		coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
-		MSG_WriteMarker	(&net_buffer, clc_userinfo);
-		MSG_WriteString	(&net_buffer, coninfo->netname);
-		MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
-		MSG_WriteLong	(&net_buffer, coninfo->gender);
-		MSG_WriteLong	(&net_buffer, coninfo->color);
-		MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
-		MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-		MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
-	}
+	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
+	coninfo->team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
+	coninfo->color	 = V_GetColorFromString (NULL, cl_color.cstring());
+	coninfo->skin	 = R_FindSkin (cl_skin.cstring());
+	coninfo->gender  = D_GenderByName (cl_gender.cstring());
+	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
+	coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
+	MSG_WriteMarker	(&net_buffer, clc_userinfo);
+	MSG_WriteString	(&net_buffer, coninfo->netname);
+	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
+	MSG_WriteLong	(&net_buffer, coninfo->gender);
+	MSG_WriteLong	(&net_buffer, coninfo->color);
+	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
+	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
+	MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
 }
 
 
@@ -773,7 +766,7 @@ void CL_RequestConnectInfo(void)
 	if(gamestate != GS_DOWNLOAD)
 		gamestate = GS_CONNECTING;
 
-	if(!connecttimeout || !netdemoPlayback)
+	if(!connecttimeout)
 	{
 		connecttimeout = 140;
 
@@ -937,11 +930,8 @@ bool CL_Connect(void)
 	memset(packetseq, -1, sizeof(packetseq) );
 	packetnum = 0;
 
-	if(!netdemoPlayback)
-	{
-		MSG_WriteMarker(&net_buffer, clc_ack);
-		MSG_WriteLong(&net_buffer, 0);
-	}
+	MSG_WriteMarker(&net_buffer, clc_ack);
+	MSG_WriteLong(&net_buffer, 0);
 
 	if(gamestate == GS_DOWNLOAD && missing_file.length())
 	{
@@ -1038,7 +1028,7 @@ void CL_TryToConnect(DWORD server_token)
 	if (!serveraddr.ip[0])
 		return;
 
-	if (!connecttimeout || !netdemoPlayback)
+	if (!connecttimeout)
 	{
 		connecttimeout = 140; // 140 tics = 4 seconds
 
@@ -1210,10 +1200,8 @@ void CL_SaveSvGametic(void)
 // [SL] 2011-05-11
 void CL_SendSvGametic(void)
 {
-	if(!netdemoPlayback){
-		MSG_WriteMarker(&net_buffer, clc_svgametic);
-		MSG_WriteByte(&net_buffer, last_svgametic++);
-	}
+	MSG_WriteMarker(&net_buffer, clc_svgametic);
+	MSG_WriteByte(&net_buffer, last_svgametic++);
 }
 
 
@@ -1229,11 +1217,8 @@ void CL_SendPingReply(void)
 {
 	int svtimestamp = MSG_ReadLong();
 	
-	if(!netdemoPlayback)
-	{
-		MSG_WriteMarker (&net_buffer, clc_pingreply);
-		MSG_WriteLong (&net_buffer, svtimestamp);
-	}
+	MSG_WriteMarker (&net_buffer, clc_pingreply);
+	MSG_WriteLong (&net_buffer, svtimestamp);
 }
 
 //
@@ -2122,10 +2107,8 @@ void CL_ReadPacketHeader(void)
 {
 	unsigned int sequence = MSG_ReadLong();
 
-	if(!netdemoPlayback){
-		MSG_WriteMarker(&net_buffer, clc_ack);
-		MSG_WriteLong(&net_buffer, sequence);
-	}
+	MSG_WriteMarker(&net_buffer, clc_ack);
+	MSG_WriteLong(&net_buffer, sequence);
 
 	CL_Decompress(sequence);
 
@@ -2821,7 +2804,7 @@ void CL_SendCmd(void)
 {
 	player_t *p;
 
-	if(netdemoPlayback)
+	if (netdemoPlayback)
 		return;
 
 	if (gametic < 1 )
