@@ -1591,18 +1591,17 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 		P_SpawnPuff (x,y,z, dir, 2);
 	else
 	{
+		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
 		// [SL] 2011-05-11 - In unlagged games, spawn blood at the target's current
 		// position, not at their reconciled position
 		if (shootthing->player && th->player)
 		{
-			Unlag::getInstance().spawnUnreconciledBlood(shootthing->player->id,
-													    th->player->id,
-													    x, y, z, dir, la_damage);
+			Unlag::getInstance().getReconciliationOffset(	shootthing->player->id,
+													    	th->player->id,
+													    	xoffs, yoffs, zoffs);
 		}
-		else
-		{
-			P_SpawnBlood (x,y,z, dir, la_damage);
-		}
+	
+		P_SpawnBlood (x + xoffs, y + yoffs, z + zoffs, dir, la_damage);
 	}
 
 	if (la_damage) {

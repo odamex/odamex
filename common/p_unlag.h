@@ -51,9 +51,8 @@ public:
 	void registerSector(sector_t *sector);
 	void unregisterSector(sector_t *sector);
 	void setRoundtripDelay(byte player_id, size_t delay);
-	void spawnUnreconciledBlood(byte shooter_id, byte target_id,
-								fixed_t x, fixed_t y, fixed_t z,
-								angle_t dir, int damage);
+	void getReconciliationOffset(	byte shooter_id, byte target_id,
+									fixed_t &x, fixed_t &y, fixed_t &z);
 	static bool enabled();
 private:
 	// keep as a power of 2 so the compiler can optimize: n % MAX_HISTORY_TICS

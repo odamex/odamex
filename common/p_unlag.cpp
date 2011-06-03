@@ -484,20 +484,14 @@ void Unlag::setRoundtripDelay(byte player_id, size_t delay)
 }
 
 
-void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
+//
+// Unlag::getReconciliationOffset
+//
+// Changes the x, y, z parameters to reflect how much a player was moved
+// during reconciliation.
 
-//
-// Unlag::spawnUnreconciledBlood
-//
-// Moves blood splatters spawned at a target's reconciled position to
-// the target's actual position.  More visually pleasing when the blood
-// is spawned near the player taking damage rather than spawned out of thin
-// air.
-//
-
-void Unlag::spawnUnreconciledBlood(byte shooter_id, byte target_id, 
-				   	 			   fixed_t x, fixed_t y, fixed_t z,
-								   angle_t dir, int damage)
+void Unlag::getReconciliationOffset(	byte shooter_id, byte target_id,
+			   	 			   			fixed_t &x, fixed_t &y, fixed_t &z)
 {
 	size_t target_index  = player_id_map[target_id];
 	size_t shooter_index = player_id_map[shooter_id];
@@ -506,22 +500,15 @@ void Unlag::spawnUnreconciledBlood(byte shooter_id, byte target_id,
 	size_t ticsago = player_history[shooter_index].current_lag;
     size_t cur = (player_history[target_index].history_size - 1 - ticsago)
                   % Unlag::MAX_HISTORY_TICS;
-	// calculate how far the target was moved during reconciliation
-	fixed_t dist_x = 	player_history[target_index].backup_x - 
-						player_history[target_index].history_x[cur];
-	fixed_t dist_y = 	player_history[target_index].backup_y - 
-						player_history[target_index].history_y[cur];
-	fixed_t dist_z = 	player_history[target_index].backup_z - 
-						player_history[target_index].history_z[cur];
-	if (reconciled) // reconciled will only be true if sv_unlag is 1
+	if (reconciled)	// reconciled will only be true if sv_unlag is 1
 	{
-		// spawn blood but shift it based on how far the target was
-		// moved during reconciliation
-		P_SpawnBlood(x + dist_x, y + dist_y, z + dist_z, dir, damage);	
-	}
-	else
-	{
-		P_SpawnBlood(x, y, z, dir, damage);
+		// calculate how far the target was moved during reconciliation
+		x = player_history[target_index].backup_x 
+			- player_history[target_index].history_x[cur];
+		y = player_history[target_index].backup_y 
+			- player_history[target_index].history_y[cur];
+		z =	player_history[target_index].backup_z 
+			- player_history[target_index].history_z[cur];
 	}
 }
 
