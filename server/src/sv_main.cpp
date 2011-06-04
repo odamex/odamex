@@ -1879,7 +1879,6 @@ bool SV_BanCheck (client_t *cl, int n)
 
 			SV_SendPacket (players[n]);
 			cl->displaydisconnect = false;
-			SV_DropClient(players[n]);
 			return true;
 		}
 		else if (exception)	// don't bother because they'll be allowed multiple times
