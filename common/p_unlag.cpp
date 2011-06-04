@@ -70,7 +70,7 @@ Unlag::~Unlag()
  
 bool Unlag::enabled()
 {
-	return (sv_unlag && serverside && multiplayer);
+	return (sv_unlag && serverside && multiplayer && !demoplayback);
 }
 
 //
@@ -495,6 +495,9 @@ void Unlag::setRoundtripDelay(byte player_id, size_t delay)
 void Unlag::getReconciliationOffset(	byte shooter_id, byte target_id,
 			   	 			   			fixed_t &x, fixed_t &y, fixed_t &z)
 {
+	if (!reconciled)	// reconciled will only be true if sv_unlag is 1)
+		return;
+
 	size_t target_index  = player_id_map[target_id];
 	size_t shooter_index = player_id_map[shooter_id];
 
@@ -502,16 +505,13 @@ void Unlag::getReconciliationOffset(	byte shooter_id, byte target_id,
 	size_t ticsago = player_history[shooter_index].current_lag;
     size_t cur = (player_history[target_index].history_size - 1 - ticsago)
                   % Unlag::MAX_HISTORY_TICS;
-	if (reconciled)	// reconciled will only be true if sv_unlag is 1
-	{
-		// calculate how far the target was moved during reconciliation
-		x = player_history[target_index].backup_x 
-			- player_history[target_index].history_x[cur];
-		y = player_history[target_index].backup_y 
-			- player_history[target_index].history_y[cur];
-		z =	player_history[target_index].backup_z 
-			- player_history[target_index].history_z[cur];
-	}
+	// calculate how far the target was moved during reconciliation
+	x = player_history[target_index].backup_x 
+		- player_history[target_index].history_x[cur];
+	y = player_history[target_index].backup_y 
+		- player_history[target_index].history_y[cur];
+	z =	player_history[target_index].backup_z 
+		- player_history[target_index].history_z[cur];
 }
 
 
