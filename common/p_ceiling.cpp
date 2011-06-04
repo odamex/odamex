@@ -27,6 +27,7 @@
 #include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "doomstat.h"
 #include "r_state.h"
 
@@ -79,12 +80,19 @@ void DCeiling::Serialize (FArchive &arc)
 
 void DCeiling::PlayCeilingSound ()
 {
+	if (m_Sector->seqType >= 0)
+	{
+		SN_StartSequence (m_Sector, m_Sector->seqType, SEQ_PLATFORM);
+	}
+	else
+	{	
 		if (m_Silent == 2)
-			;
+			SN_StartSequence (m_Sector, "Silence");
 		else if (m_Silent == 1)
-			;
+			SN_StartSequence (m_Sector, "CeilingSemiSilent");
 		else
 			S_LoopedSound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+	}
 }
 
 //

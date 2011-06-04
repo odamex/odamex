@@ -711,6 +711,7 @@ void SV_CheckTimeouts (void)
 	}
 }
 
+
 //
 // SV_RemoveDisconnectedPlayer
 //
@@ -1262,6 +1263,9 @@ byte SV_PlayerHearingLoss(player_t &pl, fixed_t &x, fixed_t &y)
 //
 void SV_SendMobjToClient(AActor *mo, client_t *cl)
 {
+	if (!mo)
+		return;
+
 	MSG_WriteMarker(&cl->reliablebuf, svc_spawnmobj);
 	MSG_WriteLong(&cl->reliablebuf, mo->x);
 	MSG_WriteLong(&cl->reliablebuf, mo->y);
@@ -1330,6 +1334,9 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 {
 	bool ok = false;
+
+	if (!mo)
+		return false;
 
 	if(player.mo == mo)
 		ok = true;
@@ -1417,6 +1424,9 @@ void SV_SpawnMobj(AActor *mo)
 //
 bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
 {
+	if (!mo)
+		return false;
+
 	if (mo->flags & MF_SPECTATOR)
 		return false; // GhostlyDeath -- always false, as usual!
 	else
@@ -3459,7 +3469,9 @@ void SV_Spectate (player_t &player)
 						MSG_WriteByte (&(players[j].client.reliablebuf), player.id);
 						MSG_WriteByte (&(players[j].client.reliablebuf), false);
 					}
-					P_KillMobj(NULL, player.mo, NULL, true);
+					
+					if (player.mo)
+						P_KillMobj(NULL, player.mo, NULL, true);
 					player.playerstate = PST_REBORN;
 					if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
 						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname);
@@ -3522,6 +3534,9 @@ void SV_RConPassword (player_t &player)
 //
 void SV_Suicide(player_t &player)
 {
+	if (!player.mo)
+		return;
+
 	// merry suicide!
 	P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
 	player.mo->player = NULL;
@@ -4220,7 +4235,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	char gendermessage[1024];
 	int  gender;
 
-	if (!self->player)
+	if (!self || !self->player)
 		return;
 
 	gender = self->player->userinfo.gender;

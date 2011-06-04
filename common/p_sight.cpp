@@ -62,6 +62,9 @@ bool PTR_SightTraverse (intercept_t *in)
 	line_t  *li;
 	fixed_t slope;
 
+	if (!in->isaline)
+		I_Error ("PTR_SightTraverse: non-line intercept\n");
+
 	li = in->d.line;
 	
 	if (!li->backsector)
@@ -150,9 +153,10 @@ bool P_SightBlockLinesIterator (int x, int y)
 						return false;	// stop checking
 
 				// store the line for later intersection testing
-                    intercept_t intercept;
-                    intercept.d.line = ld;
-                    intercepts.Push(intercept);
+					intercept_t intercept;
+					intercept.d.line = ld;
+					intercept.isaline = true;
+					intercepts.Push(intercept);
 				}
 				polyLink->polyobj->validcount = validcount;
 			}
@@ -184,9 +188,10 @@ bool P_SightBlockLinesIterator (int x, int y)
 			return false;	// stop checking
 
 	// store the line for later intersection testing
-       intercept_t intercept;
-       intercept.d.line = ld;
-       intercepts.Push(intercept);
+       	intercept_t intercept;
+       	intercept.d.line = ld;
+		intercept.isaline = true;
+       	intercepts.Push(intercept);
 	}
 
 	return true;			// everything was checked
@@ -212,6 +217,9 @@ bool P_SightTraverseIntercepts ( void )
 //
 	for (scan = 0 ; scan < intercepts.Size(); scan++)
 	{
+		if (!intercepts[scan].isaline)
+			I_Error ("P_SightTraverseIntercepts: non-line intercept\n");
+
 		P_MakeDivline (intercepts[scan].d.line, &dl);
 		intercepts[scan].frac = P_InterceptVector (&trace, &dl);
 	}
@@ -258,6 +266,7 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 	int count;
 
 	validcount++;
+	intercepts.Clear();
 
 	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
 		x1 += FRACUNIT;							// don't side exactly on a line
@@ -337,7 +346,7 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 	{
 		if (!P_SightBlockLinesIterator (mapx, mapy))
 		{
-sightcounts2[1]++;
+			sightcounts2[1]++;
 			return false;	// early out
 		}
 
@@ -365,7 +374,7 @@ sightcounts2[1]++;
 //
 // couldn't early out, so go through the sorted list
 //
-sightcounts2[2]++;
+	sightcounts2[2]++;
 
 	return P_SightTraverseIntercepts ( );
 }
@@ -383,7 +392,7 @@ sightcounts2[2]++;
 
 bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 {
-	if(!t1 || !t2)
+	if(!t1 || !t2 || !t1->subsector || !t2->subsector)
 		return false;
 
 	const sector_t *s1 = t1->subsector->sector;
@@ -394,10 +403,9 @@ bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 // check for trivial rejection
 //
 	if (rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
-sightcounts2[0]++;
+		sightcounts2[0]++;
 		return false;			// can't possibly be connected
 	}
-
 //
 // check precisely
 //
@@ -415,6 +423,8 @@ sightcounts2[0]++;
 		  (t2->z >= s2->heightsec->ceilingheight &&
 		   t1->z + t2->height <= s2->heightsec->ceilingheight))))
 		return false;
+
+	validcount++;
 
 	sightzstart = t1->z + t1->height - (t1->height >> 2);
 	bottomslope = (t2->z) - sightzstart;
@@ -444,7 +454,7 @@ bool P_CheckSightEdges2 (const AActor *t1, const AActor *t2, float radius_boost)
 // check for trivial rejection
 //
         if (rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
-sightcounts2[0]++;
+				sightcounts2[0]++;
                 return false;                   // can't possibly be connected
         }
 

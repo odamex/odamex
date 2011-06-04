@@ -380,13 +380,15 @@ EXTERN_CVAR (co_level8soundfeature)
 // Otherwise, modifies parameters and returns 1.
 //
 // joek - from Choco Doom
-int
-		S_AdjustSoundParams
-		( AActor*	listener,
-		  fixed_t*	source,
-		  float*		vol,
-		  int*		sep,
-		  int*		pitch )
+//
+// [SL] 2011-05-26 - Changed function parameters to accept x,y instead
+// of a fixed_t* for the sound origin
+int S_AdjustSoundParams(AActor*		listener,
+		  				fixed_t		x,
+		  				fixed_t		y,
+		  				float*		vol,
+		  				int*		sep,
+		  				int*		pitch )
 {
 	fixed_t	approx_dist;
 	fixed_t	adx;
@@ -398,8 +400,8 @@ int
 
     // calculate the distance to sound origin
     //  and clip it if necessary
-	adx = abs(listener->x - source[0]);
-	ady = abs(listener->y - source[1]);
+	adx = abs(listener->x - x);
+	ady = abs(listener->y - y);
 
     // From _GG1_ p.428. Appox. eucledian distance fast.
 	approx_dist = adx + ady - ((adx < ady ? adx : ady)>>1);
@@ -411,10 +413,7 @@ int
 		return 0;
 
     // angle of source to listener
-	angle = R_PointToAngle2(listener->x,
-				listener->y,
-				source[0],
-				source[1]);
+	angle = R_PointToAngle2(listener->x, listener->y, x, y);
 
 	if (angle > listener->angle)
 		angle = angle - listener->angle;
@@ -450,6 +449,7 @@ int
 
 	return (*vol > 0);
 }
+
 
 //
 // joek - choco's S_StartSoundAtVolume with some zdoom code
@@ -513,24 +513,24 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 
   // Check to see if it is audible,
   //  and if not, modify the params
-	if (pt)
+	if (attenuation != ATTN_NONE)
 	{
-
-		rc = S_AdjustSoundParams(S_WHICHEARS.mo, pt, &volume, &sep, &pitch);
-
-		if (consoleplayer().mo && x == S_WHICHEARS.mo->x
-				  && y == S_WHICHEARS.mo->y)
+		rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
+		
+		if (consoleplayer().mo && x == S_WHICHEARS.mo->x && 
+			y == S_WHICHEARS.mo->y)
 		{
 			sep = NORM_SEP;
 		}
-
 		if (!rc)
 			return;
 	}
 	else
 	{
 		sep = NORM_SEP;
-  	}
+	}
+
+
 
 	pitch = NORM_PITCH;
 
@@ -709,7 +709,10 @@ void S_PlatSound (fixed_t *pt, int channel, const char *name, float volume, int 
 
 void S_Sound (int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound ((AActor *)NULL, NULL, 0, 0, channel, name, volume, attenuation, false);
+	// [SL] 2011-05-27 - This particular S_Sound() function is only used for sounds
+	// that should be full volume regardless of location.  Ignore the specified
+	// attenuation and use ATTN_NONE instead.
+	S_StartNamedSound ((AActor *)NULL, NULL, 0, 0, channel, name, volume, ATTN_NONE, false);
 }
 
 void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)
@@ -878,7 +881,8 @@ void S_UpdateSounds (void *listener_p)
 	channel_t*	c;
 
 	AActor *listener = (AActor *)listener_p;
-
+	if (!listener)
+		return;
 
 
     // Clean up unused data.
@@ -931,15 +935,20 @@ void S_UpdateSounds (void *listener_p)
 					}
 				}
 
-		// check non-local sounds for distance clipping
-		//  or modify their params
-				if (c->pt && listener_p != c->pt)
+				// check non-local sounds for distance clipping
+				//  or modify their params
+				if (listener_p != c->pt && c->attenuation != ATTN_NONE)	
 				{
-					audible = S_AdjustSoundParams(listener,
-							c->pt,
-							&volume,
-							&sep,
-							&pitch);
+					if (c->pt)		// [SL] 2011-05-29
+					{
+						c->x = c->pt[0];	// update the sound coorindates
+						c->y = c->pt[1];	// for moving actors
+					}
+					audible = S_AdjustSoundParams(	listener, 
+													c->x, c->y,
+													&volume,
+													&sep,
+													&pitch);
 
 					if (!audible)
 					{

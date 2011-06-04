@@ -815,7 +815,10 @@ void P_XYMovement(AActor *mo)
 					mo->Destroy ();
 					return;
 				}
-				P_ExplodeMissile (mo);
+				// [SL] 2011-06-02 - Only server should control explosions 
+				if (serverside)
+					 P_ExplodeMissile (mo);
+
 			}
 			else
 			{
@@ -1055,7 +1058,9 @@ void P_ZMovement(AActor *mo)
       if ( (mo->flags & MF_MISSILE)
             && !(mo->flags & MF_NOCLIP) )
       {
-         P_ExplodeMissile (mo);
+		// [SL] 2011-06-02 - Only server should control explosions 
+		if (serverside)
+			P_ExplodeMissile (mo);
          return;
       }
    }
@@ -1146,7 +1151,9 @@ void P_ZMovement(AActor *mo)
 				mo->Destroy ();
 				return;
 			}			
-			P_ExplodeMissile (mo);
+			// [SL] 2011-06-02 - Only server should control explosions 
+			if (serverside)
+				P_ExplodeMissile (mo);
 			return;
 		}
 	}
@@ -1422,12 +1429,13 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
         SV_SpawnMobj(th);
 }
 
+void SV_AwarenessUpdate(player_t &pl, AActor* mo);
 //
 // P_CheckMissileSpawn
 // Moves the missile forward a bit
 //	and possibly explodes it right there.
 //
-bool P_CheckMissileSpawn (AActor* th)
+void P_CheckMissileSpawn (AActor* th)
 {
 	th->tics -= P_Random (th) & 3;
 	if (th->tics < 1)
@@ -1441,12 +1449,20 @@ bool P_CheckMissileSpawn (AActor* th)
 
 	// killough 3/15/98: no dropoff (really = don't care for missiles)
 
+	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
+	// make sure we spawn the missile first, send it to all clients immediately
+	// instead of queueing it, then explode it.
 	if (!P_TryMove (th, th->x, th->y, false))
 	{
+		for (size_t i = 0; i < players.size(); i++)
+		{
+			if (th)
+				SV_AwarenessUpdate(players[i], th);
+		}
 		P_ExplodeMissile (th);
-		return false;
 	}
-	return true;
+	else
+		SV_SpawnMobj(th);
 }
 
 //
@@ -1511,8 +1527,6 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     th->momz = (dest_z - source->z) / dist;
 
     P_CheckMissileSpawn (th);
-
-    SV_SpawnMobj(th);
 
     return th;
 }
@@ -1603,8 +1617,6 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);
 		th->momz = FixedMul(speed, slope);
 	}
-
-	SV_SpawnMobj(th);
 
 	P_CheckMissileSpawn (th);
 }
@@ -1855,7 +1867,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (sv_gametype == GM_COOP &&
+		if (clientside && sv_gametype == GM_COOP &&
 			(validplayer(p) && p.ingame()))
 		{
 			P_SpawnPlayer (p, mthing);
@@ -1892,6 +1904,34 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (!(mthing->flags & bit))
 		return;
+
+	// [RH] sound sequence overrides
+	if (mthing->type >= 1400 && mthing->type < 1410)
+	{
+		R_PointInSubsector (mthing->x<<FRACBITS,
+			mthing->y<<FRACBITS)->sector->seqType = mthing->type - 1400;
+		return;
+	}
+	else if (mthing->type == 1411)
+	{
+		int type;
+
+		if (mthing->args[0] == 255)
+			type = -1;
+		else
+			type = mthing->args[0];
+
+		if (type > 63)
+		{
+			Printf (PRINT_HIGH, "Sound sequence %d out of range\n", type);
+		}
+		else
+		{
+			R_PointInSubsector (mthing->x << FRACBITS,
+				mthing->y << FRACBITS)->sector->seqType = type;
+		}
+		return;
+	}
 
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
@@ -1964,15 +2004,23 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			return;
 		}
 	}
-	
-    //#if 0
+
+    // [SL] 2011-05-31 - Moved so that clients get right level.total_items, etc
+	if (i == MT_SECRETTRIGGER)
+	{
+		level.total_secrets++;
+	}
+	if (mobjinfo[i].flags & MF_COUNTKILL)
+		level.total_monsters++;
+	if (mobjinfo[i].flags & MF_COUNTITEM)
+		level.total_items++;
+
     // for client...
 	// Type 14 is a teleport exit. We must spawn it here otherwise
 	// teleporters won't work well.
 	if (!serverside && (mthing->flags & MF_SPECIAL) && (mthing->type != 14))
 		return;
-    //#endif
-
+    
 	// spawn it
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
@@ -1982,10 +2030,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		sector_t *sec = R_PointInSubsector (x, y)->sector;
 		sec->waterzone = 1;
 		return;
-	}
-	else if (i == MT_SECRETTRIGGER)
-	{
-		level.total_secrets++;
 	}
 
 	if (mobjinfo[i].flags & MF_SPAWNCEILING)
@@ -2025,10 +2069,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);
-	if (mobj->flags & MF_COUNTKILL)
-		level.total_monsters++;
-	if (mobj->flags & MF_COUNTITEM)
-		level.total_items++;
 
 	if (i != MT_SPARK)
 		mobj->angle = ANG45 * (mthing->angle/45);
