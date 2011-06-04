@@ -202,7 +202,11 @@ int main(int argc, char *argv[])
 		// init console
 		C_InitConsole (80 * 8, 25 * 8, false);
 
-		D_DoomMain ();
+		D_DoomMain (); // Usually does not return
+
+		// If D_DoomMain does return (as is the case with the +demotest parameter)
+		// proper termination needs to occur -- Hyper_Eye
+		call_terms ();
 	}
 	catch (CDoomError &error)
 	{
