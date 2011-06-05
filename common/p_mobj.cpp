@@ -270,6 +270,22 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	}
 }
 
+//
+// P_AnimationTick
+//
+void P_AnimationTick(AActor *mo)
+{
+	if (mo && mo->tics != -1)
+	{
+		mo->tics--;
+
+		// you can cycle through multiple states in a tic
+		if (!mo->tics)
+			if (!P_SetMobjState (mo, mo->state->nextstate) )
+				return;         // freed itself
+	}
+}
+
 
 //
 // P_RemoveMobj
@@ -467,16 +483,10 @@ void AActor::RunThink ()
 		
     // cycle through states,
     // calling action functions at transitions
-	if (tics != -1)
-	{
-		tics--;
+	if (!player)
+		P_AnimationTick(this);
 
-		// you can cycle through multiple states in a tic
-		if (!tics)
-			if (!P_SetMobjState (this, state->nextstate) )
-				return; 		// freed itself
-	}
-	else
+	if (tics == -1)
 	{
 		// check for nightmare respawn
 		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
