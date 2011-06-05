@@ -405,20 +405,20 @@ void AActor::RunThink ()
 					{
 						PlayerLandedOnThing (this, onmo);
 					}
-				}
 					
-				if (onmo->z + P_ThingInfoHeight(onmo->info) - z <= 24 * FRACUNIT)
-				{
-					/*if (player)
+					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
 					{
-						player->viewheight -= z + onmo->height - z;
-						player->deltaviewheight =
-							(VIEWHEIGHT - player->viewheight)>>3;
-					}*/
-					z = onmo->z + P_ThingInfoHeight(onmo->info);
+						/*if (player)
+						{
+							player->viewheight -= z + onmo->height - z;
+							player->deltaviewheight =
+								(VIEWHEIGHT - player->viewheight)>>3;
+						}*/
+						z = onmo->z + onmo->height;
+					}
+					flags2 |= MF2_ONMOBJ;
+					momz = 0;
 				}
-				flags2 |= MF2_ONMOBJ;
-				momz = 0;
 			}
 		}
 	    else
@@ -943,7 +943,7 @@ void P_ZMovement(AActor *mo)
          dist = P_AproxDistance (mo->x - mo->target->x,
                                  mo->y - mo->target->y);
 
-         delta =(mo->target->z + (P_ThingInfoHeight(mo->info)>>1)) - mo->z;
+		delta =(mo->target->z + (mo->height>>1)) - mo->z;
 
          if (delta<0 && dist < -(delta*3) )
             mo->z -= FLOATSPEED;
@@ -1038,10 +1038,9 @@ void P_ZMovement(AActor *mo)
                 if (clientside && !predicting)
                     S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
             }
-            
-            mo->momz = 0;
          }
          
+          mo->momz = 0;
       }
       mo->z = mo->floorz;
 
@@ -1122,10 +1121,10 @@ void P_ZMovement(AActor *mo)
 		}
    }
 
-   if (mo->z + P_ThingInfoHeight(mo->info) > mo->ceilingz)
+   if (mo->z + mo->height > mo->ceilingz)
    {
 		// hit the ceiling
-		mo->z = mo->ceilingz - P_ThingInfoHeight(mo->info);
+		mo->z = mo->ceilingz - mo->height;
 		if (mo->flags2 & MF2_FLOORBOUNCE)
 		{
 			// reverse momentum here for ceiling bounce
