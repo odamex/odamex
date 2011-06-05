@@ -148,6 +148,28 @@ static void BlastMaskedColumn (void (*blastfunc)(column_t *column), int texnum)
 	rw_light += rw_lightstep;
 }
 
+
+//
+// R_OrthogonalLightnumAdjustment
+//
+
+int R_OrthogonalLightnumAdjustment()
+{
+	int amount = 0;
+
+	// [RH] Only do it if not foggy and allowed
+    if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
+    {
+        // [SL] 2011-06-05 - Check for orthogonality within a tolerance 
+        // of 1/4 map unit
+        if (abs(curline->v1->y - curline->v2->y) < (FRACUNIT >> 2))
+            amount--;
+        else if (abs(curline->v1->x - curline->v2->x) < (FRACUNIT >> 2))
+            amount++;
+    }
+	return amount;
+}
+
 //
 // R_RenderMaskedSegRange
 //
@@ -203,16 +225,7 @@ R_RenderMaskedSegRange
 	lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)
 			->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
-	// [RH] Only do it if not foggy and allowed
-	if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
-	{
-		// [SL] 2011-06-05 - Check for orthogonality within a tolerance 
-		// of 1/16 map unit
-		if (abs(curline->v1->y - curline->v2->y) < (FRACUNIT >> 4))
-			lightnum--;
-		else if (abs(curline->v1->x - curline->v2->x) < (FRACUNIT >> 4))
-			lightnum++;
-	}
+	lightnum += R_OrthogonalLightnumAdjustment();
 
 	walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
 		lightnum <  0           ? scalelight[0] : scalelight[lightnum];
@@ -960,16 +973,7 @@ R_StoreWallRange
 			int lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT)
 					+ (foggy ? 0 : extralight);
 
-			// [RH] Only do it if not foggy and allowed
-			if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
-			{
-				// [SL] 2011-06-05 - Check for orthogonality within a tolerance
-				// of 1/16 map unit
-				if (abs(curline->v1->y - curline->v2->y) < (FRACUNIT >> 4))
-					lightnum--;
-				else if (abs(curline->v1->x - curline->v2->x) < (FRACUNIT >> 4))
-					lightnum++;
-			}
+			lightnum += R_OrthogonalLightnumAdjustment();
 
 			if (lightnum < 0)
 				walllights = scalelight[0];

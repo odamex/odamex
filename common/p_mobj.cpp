@@ -483,10 +483,11 @@ void AActor::RunThink ()
 		
     // cycle through states,
     // calling action functions at transitions
-	if (!player)
+	if (!player && tics != -1)
+	{
 		P_AnimationTick(this);
-
-	if (tics == -1)
+	}
+	else
 	{
 		// check for nightmare respawn
 		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
