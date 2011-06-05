@@ -206,11 +206,11 @@ R_RenderMaskedSegRange
 	// [RH] Only do it if not foggy and allowed
 	if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
 	{
-		// [SL] 2011-06-02 - Check for orthogonality within a tolerance of 
-		// 1 map unit
-		if (abs(curline->v1->y - curline->v2->y) < (1 * FRACUNIT))
+		// [SL] 2011-06-05 - Check for orthogonality within a tolerance 
+		// of 1/16 map unit
+		if (abs(curline->v1->y - curline->v2->y) < (FRACUNIT >> 4))
 			lightnum--;
-		else if (abs(curline->v1->x - curline->v2->x) < (1 * FRACUNIT))
+		else if (abs(curline->v1->x - curline->v2->x) < (FRACUNIT >> 4))
 			lightnum++;
 	}
 
@@ -963,11 +963,11 @@ R_StoreWallRange
 			// [RH] Only do it if not foggy and allowed
 			if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
 			{
-				// [SL] 2011-06-02 - Check for orthogonality within a tolerance of 
-				// 1 map unit
-				if (abs(curline->v1->y - curline->v2->y) < (1 * FRACUNIT))
+				// [SL] 2011-06-05 - Check for orthogonality within a tolerance
+				// of 1/16 map unit
+				if (abs(curline->v1->y - curline->v2->y) < (FRACUNIT >> 4))
 					lightnum--;
-				else if (abs(curline->v1->x - curline->v2->x) < (1 * FRACUNIT))
+				else if (abs(curline->v1->x - curline->v2->x) < (FRACUNIT >> 4))
 					lightnum++;
 			}
 
