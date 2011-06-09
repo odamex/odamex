@@ -40,6 +40,7 @@ IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 DDoor::DDoor ()
 {
 	m_Line = NULL;
+	m_Stage = 0;
 }
 
 void DDoor::Serialize (FArchive &arc)
@@ -87,12 +88,12 @@ void DDoor::RunThink ()
 			{
 			case doorRaise:
 				m_Direction = -1; // time to go back down
-				DoorSound (false);
+				PlayDoorSound(2);
 				break;
 				
 			case doorCloseWaitOpen:
 				m_Direction = 1;
-				DoorSound (true);
+				PlayDoorSound(1);
 				break;
 				
 			default:
@@ -110,7 +111,7 @@ void DDoor::RunThink ()
 			case doorRaiseIn5Mins:
 				m_Direction = 1;
 				m_Type = doorRaise;
-				DoorSound (true);
+				PlayDoorSound(1);
 				break;
 				
 			default:
@@ -165,7 +166,7 @@ void DDoor::RunThink ()
 				
 			default:
 				m_Direction = 1;
-				DoorSound (true);
+				PlayDoorSound(1);
 				break;
 			}
 		}
@@ -213,9 +214,13 @@ void DDoor::RunThink ()
 	}
 }
 
-// [RH] DoorSound: Plays door sound depending on direction and speed
-void DDoor::DoorSound (bool raise) const
+// [RH] PlayDoorSound: Plays door sound depending on direction and speed
+void DDoor::PlayDoorSound (int stage)
 {
+	// If we're already in this stage, don't play the sound again
+	if (m_Stage == stage || stage < 1)
+		return;
+
 	const char *snd;
 	if (m_Sector->seqType >= 0)
 	{
@@ -223,7 +228,7 @@ void DDoor::DoorSound (bool raise) const
 	}
 	else
 	{
-		if (raise)
+		if (stage == 1)
 		{
 			if((m_Speed >= FRACUNIT*8))
 				snd = "doors/dr2_open";
@@ -240,6 +245,7 @@ void DDoor::DoorSound (bool raise) const
 		
 		S_Sound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
 	}
+	m_Stage = stage;
 }
 
 DDoor::DDoor (sector_t *sector)
@@ -265,7 +271,7 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
 		//m_TopHeight -= 4*FRACUNIT;
 		m_Direction = -1;
-		DoorSound (false);
+		PlayDoorSound(2);
 		break;
 
 	case doorOpen:
@@ -273,13 +279,15 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 		m_Direction = 1;
 		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
 		if (m_TopHeight != sec->ceilingheight)
-			DoorSound (true);
+		{
+			PlayDoorSound(1);
+		}
 		break;
 
 	case doorCloseWaitOpen:
 		m_TopHeight = sec->ceilingheight;
 		m_Direction = -1;
-		DoorSound (false);
+		PlayDoorSound(2);
 		break;
 
 	case doorRaiseIn5Mins: // denis - fixme - does this need code?

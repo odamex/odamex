@@ -39,6 +39,7 @@ IMPLEMENT_SERIAL (DPlat, DMovingFloor)
 
 DPlat::DPlat ()
 {
+	m_Stage = 0;
 }
 
 void DPlat::Serialize (FArchive &arc)
@@ -72,8 +73,33 @@ void DPlat::Serialize (FArchive &arc)
 	}
 }
 
-void DPlat::PlayPlatSound (const char *sound)
+void DPlat::PlayPlatSound (int stage)
 {
+	if (m_Stage == stage || stage < 1)
+		return;
+	
+    
+	const char *snd;
+
+	switch (stage)
+	{
+	case 1:
+	case 3:
+		snd = "plats/pt1_strt";
+		break;
+	case 2:
+	case 4:
+		snd = "plats/pt1_stop";
+		break;
+	case 5:
+		snd = "plats/pt1_mid";
+		break;
+	}
+	if (stage > 4)
+		S_LoopedSound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
+	else 
+		S_Sound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
+	m_Stage = stage;
 }
 
 //
@@ -92,12 +118,12 @@ void DPlat::RunThink ()
 		{
 			m_Count = m_Wait;
 			m_Status = down;
-			//PlayPlatSound ("Platform");
-			S_Sound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			PlayPlatSound(1);
 		}
 		else if (res == pastdest)
 		{
-			S_PlatSound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
+			PlayPlatSound(4);
+
 			if (m_Type != platToggle)
 			{
 				m_Count = m_Wait;
@@ -130,7 +156,8 @@ void DPlat::RunThink ()
 
 		if (res == pastdest)
 		{
-			S_PlatSound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
+			PlayPlatSound(2);
+
 			// if not an instant toggle, start waiting
 			if (m_Type != platToggle)		//jff 3/14/98 toggle up down
 			{								// is silent, instant, no waiting
@@ -185,7 +212,7 @@ void DPlat::RunThink ()
 			*/
 			if(!m_PostWait)
 			{
-				S_Sound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+				PlayPlatSound(3);
 				m_PostWait = true;
 			}
 		}
@@ -287,26 +314,20 @@ manual_plat:
 		case DPlat::platRaiseAndStay:
 			plat->m_High = P_FindNextHighestFloor (sec, sec->floorheight);
 			plat->m_Status = DPlat::up;
-			//plat->PlayPlatSound ("Floor");
-			//S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
-			S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			plat->PlayPlatSound(5);
 			break;
 
 		case DPlat::platUpByValue:
 		case DPlat::platUpByValueStay:
 			plat->m_High = sec->floorheight + height;
 			plat->m_Status = DPlat::up;
-			//plat->PlayPlatSound ("Floor");
-			//S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
-			S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			plat->PlayPlatSound(5);
 			break;
 		
 		case DPlat::platDownByValue:
 			plat->m_Low = sec->floorheight - height;
 			plat->m_Status = DPlat::down;
-			//plat->PlayPlatSound ("Floor");
-			//S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
-			S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			plat->PlayPlatSound(5);
 			break;
 
 		case DPlat::platDownWaitUpStay:
@@ -317,8 +338,7 @@ manual_plat:
 
 			plat->m_High = sec->floorheight;
 			plat->m_Status = DPlat::down;
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound(1);
 			break;
 		
 		case DPlat::platUpWaitDownStay:
@@ -328,8 +348,7 @@ manual_plat:
 				plat->m_High = sec->floorheight;
 
 			plat->m_Status = DPlat::up;
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound(1);
 			break;
 
 		case DPlat::platPerpetualRaise:
@@ -345,8 +364,7 @@ manual_plat:
 
 			plat->m_Status = P_Random () & 1 ? DPlat::down : DPlat::up;
 
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound(1);
 			break;
 
 		case DPlat::platToggle:	//jff 3/14/98 add new type to support instant toggle
@@ -363,8 +381,7 @@ manual_plat:
 			plat->m_Low = P_FindNextLowestFloor (sec, sec->floorheight) + lip*FRACUNIT;
 			plat->m_Status = DPlat::down;
 			plat->m_High = sec->floorheight;
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound(1);
 			break;
 
 		case DPlat::platDownToLowestCeiling:
@@ -375,8 +392,7 @@ manual_plat:
 				plat->m_Low = sec->floorheight;
 
 			plat->m_Status = DPlat::down;
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound (1);
 			break;
 
 		default:

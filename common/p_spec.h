@@ -461,7 +461,7 @@ public:
 	bool		m_PostWait;
 protected:
 
-	void PlayPlatSound (const char *sound);
+	void PlayPlatSound (int stage);
 	void Reactivate ();
 	void Stop ();
 
@@ -574,7 +574,7 @@ public:
 
     line_t      *m_Line;
 protected:
-	void DoorSound (bool raise) const;
+	void PlayDoorSound (int stage);
 
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
