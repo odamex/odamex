@@ -36,7 +36,6 @@ public:
 	DSectorEffect (sector_t *sector);
 	~DSectorEffect ();
 	virtual void Destroy();
-	int			m_Stage;
 protected:
 	DSectorEffect ();
 	sector_t	*m_Sector;

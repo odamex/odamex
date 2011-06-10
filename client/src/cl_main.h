@@ -93,6 +93,7 @@ typedef struct
     // ID
     int 		m_Tag;
     int 		m_OldDirection;
+	int			m_Status;
 
     line_t      *m_Line;
 } pred_ceiling_t;

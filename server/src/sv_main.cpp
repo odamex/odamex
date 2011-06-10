@@ -1517,6 +1517,39 @@ void SV_UpdateSectors(client_t* cl)
 }
 
 //
+// SV_DestroyFinishedMovingSectors
+//
+// Calls Destroy() on moving sectors that are done moving.
+//
+void SV_DestroyFinishedMovingSectors()
+{
+	for (int i = 0; i < numsectors; i++)
+	{
+		if (sectors[i].floordata && 
+			sectors[i].floordata->IsA(RUNTIME_CLASS(DPlat)))
+		{
+			DPlat *plat = (DPlat *)sectors[i].floordata;
+			if (plat->m_Status == DPlat::destroy)
+			{
+				sectors[i].floordata = NULL;
+				plat->Destroy();
+			}
+		}
+
+		if (sectors[i].ceilingdata &&
+			sectors[i].ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
+		{
+			DDoor *door = (DDoor *)sectors[i].ceilingdata;
+			if (door->m_Status == DDoor::destroy)
+			{
+				sectors[i].ceilingdata = NULL;
+				door->Destroy();
+			}
+		}
+	}
+}
+
+//
 // SV_UpdateMovingSectors
 // Update doors, floors, ceilings etc... that are actively moving
 //
@@ -1617,7 +1650,6 @@ void SV_UpdateMovingSectors(player_t &pl)
                 MSG_WriteBool(&cl->netbuf, Plat->m_Crush);
                 MSG_WriteLong(&cl->netbuf, Plat->m_Tag);
                 MSG_WriteLong(&cl->netbuf, Plat->m_Type);
-                MSG_WriteBool(&cl->netbuf, Plat->m_PostWait);
 			}
 		}
 
@@ -1666,6 +1698,7 @@ void SV_UpdateMovingSectors(player_t &pl)
                 MSG_WriteLong (&cl->netbuf, Door->m_Direction);
                 MSG_WriteLong (&cl->netbuf, Door->m_TopWait);
                 MSG_WriteLong (&cl->netbuf, Door->m_TopCountdown);
+				MSG_WriteLong (&cl->netbuf, Door->m_Status);
                 MSG_WriteLong (&cl->netbuf, (Door->m_Line - lines));
             }
         }
@@ -3283,7 +3316,6 @@ void SV_GetPlayerCmd(player_t &player)
 	cl->lastcmdtic = gametic;
 }
 
-
 void SV_UpdateConsolePlayer(player_t &player)
 {
 	// GhostlyDeath -- Spectators are on their own really
@@ -3971,6 +4003,11 @@ void SV_StepTics (QWORD tics)
 		SV_SendPackets();
 		SV_ClearClientsBPS();
 		SV_CheckTimeouts();
+		
+		// Since clients are only sent sector updates every 3rd tic, don't destroy
+		// the finished moving sectors until we've sent the clients the update
+		if (!(gametic % 3))
+			SV_DestroyFinishedMovingSectors();
 
 		gametic++;
 	}

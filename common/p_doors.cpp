@@ -40,7 +40,8 @@ IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 DDoor::DDoor ()
 {
 	m_Line = NULL;
-	m_Stage = 0;
+	m_Status = init;
+	memset(m_PlayedSound, false, sizeof(m_PlayedSound));
 }
 
 void DDoor::Serialize (FArchive &arc)
@@ -53,7 +54,8 @@ void DDoor::Serialize (FArchive &arc)
 			<< m_Speed
 			<< m_Direction
 			<< m_TopWait
-			<< m_TopCountdown;
+			<< m_TopCountdown
+			<< m_Status;
 	}
 	else
 	{
@@ -62,7 +64,8 @@ void DDoor::Serialize (FArchive &arc)
 			>> m_Speed
 			>> m_Direction
 			>> m_TopWait
-			>> m_TopCountdown;
+			>> m_TopCountdown
+			>> m_Status;
 	}
 }
 
@@ -76,6 +79,17 @@ void DDoor::Serialize (FArchive &arc)
 //
 void DDoor::RunThink ()
 {
+	if (clientside && m_Status == destroy)
+	{
+		// make sure we play the finished sound because it doesn't
+		// get played earlier in single player
+		m_Status = finished;
+		PlayDoorSound();
+		m_Status = destroy;
+
+		m_Sector->ceilingdata = NULL;
+		Destroy();
+	}
 	EResult res;
 		
 	switch (m_Direction)
@@ -88,12 +102,14 @@ void DDoor::RunThink ()
 			{
 			case doorRaise:
 				m_Direction = -1; // time to go back down
-				PlayDoorSound(2);
+				m_Status = closing;
+				PlayDoorSound();
 				break;
 				
 			case doorCloseWaitOpen:
 				m_Direction = 1;
-				PlayDoorSound(1);
+				m_Status = opening;
+				PlayDoorSound();
 				break;
 				
 			default:
@@ -111,11 +127,12 @@ void DDoor::RunThink ()
 			case doorRaiseIn5Mins:
 				m_Direction = 1;
 				m_Type = doorRaise;
-				PlayDoorSound(1);
+				m_Status = opening;
+				PlayDoorSound();
 				break;
-				
+
 			default:
-				break;
+				return;
 			}
 		}
 		break;
@@ -140,13 +157,18 @@ void DDoor::RunThink ()
 			{
 			case doorRaise:
 			case doorClose:
-				m_Sector->ceilingdata = NULL;	//jff 2/22/98
-				Destroy ();						// unlink and free
+				if (serverside)
+					m_Status = destroy;
+				else
+					m_Status = finished;
+				PlayDoorSound();
 				break;
 				
 			case doorCloseWaitOpen:
 				m_Direction = 0;
 				m_TopCountdown = m_TopWait;
+				m_Status = waiting;
+				PlayDoorSound();
 				break;
 				
 			default:
@@ -166,7 +188,8 @@ void DDoor::RunThink ()
 				
 			default:
 				m_Direction = 1;
-				PlayDoorSound(1);
+				m_Status = reopening;
+				PlayDoorSound();
 				break;
 			}
 		}
@@ -194,12 +217,17 @@ void DDoor::RunThink ()
 			case doorRaise:
 				m_Direction = 0; // wait at top
 				m_TopCountdown = m_TopWait;
+				m_Status = waiting;
+				PlayDoorSound();
 				break;
 				
 			case doorCloseWaitOpen:
 			case doorOpen:
-				m_Sector->ceilingdata = NULL;	//jff 2/22/98
-				Destroy ();						// unlink and free
+				if (serverside)
+					m_Status = destroy;
+				else
+					m_Status = finished;
+				PlayDoorSound();
 				break;
 				
 			default:
@@ -215,11 +243,12 @@ void DDoor::RunThink ()
 }
 
 // [RH] PlayDoorSound: Plays door sound depending on direction and speed
-void DDoor::PlayDoorSound (int stage)
+void DDoor::PlayDoorSound ()
 {
-	// If we're already in this stage, don't play the sound again
-	if (m_Stage == stage || stage < 1)
+	// We've already played this sound so don't repeat it
+	if (m_PlayedSound[m_Status])
 		return;
+	m_PlayedSound[m_Status] = true;	
 
 	const char *snd;
 	if (m_Sector->seqType >= 0)
@@ -228,29 +257,53 @@ void DDoor::PlayDoorSound (int stage)
 	}
 	else
 	{
-		if (stage == 1)
+		switch(m_Status)
 		{
+		case opening:
+			m_PlayedSound[waiting] = false;
 			if((m_Speed >= FRACUNIT*8))
 				snd = "doors/dr2_open";
 			else
 				snd = "doors/dr1_open";
-		}
-		else
-		{
+			break;
+		case reopening:
+			m_PlayedSound[waiting] = false;
+			// [SL] 2011-06-10 - emulate vanilla Doom bug that plays the
+			// slower door opening sound when a door is forced to reopen
+			// due to a player standing underneath it when it's closing.
+			snd = "doors/dr1_open";
+			break;
+		case closing:
+			m_PlayedSound[opening] = false;
+			m_PlayedSound[reopening] = false;
 			if((m_Speed >= FRACUNIT*8))
 				snd = "doors/dr2_clos";
 			else
 				snd = "doors/dr1_clos";
+			break;
+		case finished:
+			// [SL] 2011-06-10 - emulate vanilla Doom bug that plays the
+			// blazing-door sound twice: when the door begins to close
+			// and when the door finishes closing.
+			if ((m_Speed >= FRACUNIT*8))
+				snd = "doors/dr2_clos";
+			else
+				return;
+			break;
+		default:
+			return;
 		}
-		
+
 		S_Sound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
 	}
-	m_Stage = stage;
 }
 
 DDoor::DDoor (sector_t *sector)
 	: DMovingCeiling (sector)
 {
+	m_Line = NULL;
+	m_Status = init;
+	memset(m_PlayedSound, false, sizeof(m_PlayedSound));
 }
 
 // [RH] Merged EV_VerticalDoor and EV_DoLockedDoor into EV_DoDoor
@@ -264,6 +317,8 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	m_TopWait = delay;
 	m_Speed = speed;
     m_Line = ln;
+	memset(m_PlayedSound, false, sizeof(m_PlayedSound));
+	m_Status = init;
 
 	switch (type)
 	{
@@ -271,7 +326,8 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
 		//m_TopHeight -= 4*FRACUNIT;
 		m_Direction = -1;
-		PlayDoorSound(2);
+		m_Status = closing;
+		PlayDoorSound();
 		break;
 
 	case doorOpen:
@@ -280,14 +336,16 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
 		if (m_TopHeight != sec->ceilingheight)
 		{
-			PlayDoorSound(1);
+			m_Status = opening;
+			PlayDoorSound();
 		}
 		break;
 
 	case doorCloseWaitOpen:
 		m_TopHeight = sec->ceilingheight;
 		m_Direction = -1;
-		PlayDoorSound(2);
+		m_Status = closing;
+		PlayDoorSound();
 		break;
 
 	case doorRaiseIn5Mins: // denis - fixme - does this need code?
@@ -334,6 +392,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 				if (door->m_Direction == -1)
 				{
 					door->m_Direction = 1;	// go back up
+					door->m_Status = DDoor::opening;
 				}
 				else if (GET_SPAC(line->flags) != SPAC_PUSH)
 					// [RH] activate push doors don't go back down when you
@@ -369,6 +428,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                     else
                     {
                         door->m_Direction = -1;	// try going back down anyway?
+						door->m_Status = DDoor::closing;
                     }
 				}
 				return true;
@@ -417,6 +477,7 @@ void P_SpawnDoorCloseIn30 (sector_t *sec)
 	door->m_Type = DDoor::doorRaise;
 	door->m_Speed = FRACUNIT*2;
 	door->m_TopCountdown = 30 * TICRATE;
+	door->m_Status = DDoor::waiting;
 }
 
 //
@@ -435,6 +496,7 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 	door->m_TopHeight -= 4*FRACUNIT;
 	door->m_TopWait = (150*TICRATE)/35;
 	door->m_TopCountdown = 5 * 60 * TICRATE;
+	door->m_Status = DDoor::waiting;
 }
 
 VERSION_CONTROL (p_doors_cpp, "$Id$")
