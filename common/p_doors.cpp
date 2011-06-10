@@ -81,15 +81,19 @@ void DDoor::RunThink ()
 {
 	if (clientside && m_Status == destroy)
 	{
-		// make sure we play the finished sound because it doesn't
-		// get played earlier in single player
-		m_Status = finished;
-		PlayDoorSound();
-		m_Status = destroy;
+		if (serverside)	// single player game
+		{
+			// make sure we play the finished sound because it doesn't
+			// get called for servers otherwise
+			m_Status = finished;
+			PlayDoorSound();
+			m_Status = destroy;
+		}
 
 		m_Sector->ceilingdata = NULL;
 		Destroy();
 	}
+
 	EResult res;
 		
 	switch (m_Direction)
@@ -132,7 +136,7 @@ void DDoor::RunThink ()
 				break;
 
 			default:
-				return;
+				break;
 			}
 		}
 		break;
@@ -160,15 +164,22 @@ void DDoor::RunThink ()
 				if (serverside)
 					m_Status = destroy;
 				else
+				{
+					// if the server sends the ceiling height of the door at the
+					// floor but prediction code says we're at the top, ignore it
+					if (!m_PlayedSound[closing] == opening)
+						break;	
+					// we really have finished
 					m_Status = finished;
-				PlayDoorSound();
+					PlayDoorSound();
+					break;
+				}
 				break;
 				
 			case doorCloseWaitOpen:
 				m_Direction = 0;
 				m_TopCountdown = m_TopWait;
 				m_Status = waiting;
-				PlayDoorSound();
 				break;
 				
 			default:
@@ -218,7 +229,6 @@ void DDoor::RunThink ()
 				m_Direction = 0; // wait at top
 				m_TopCountdown = m_TopWait;
 				m_Status = waiting;
-				PlayDoorSound();
 				break;
 				
 			case doorCloseWaitOpen:
@@ -226,8 +236,11 @@ void DDoor::RunThink ()
 				if (serverside)
 					m_Status = destroy;
 				else
+				{
 					m_Status = finished;
-				PlayDoorSound();
+					PlayDoorSound();
+					return;
+				}
 				break;
 				
 			default:
@@ -260,14 +273,12 @@ void DDoor::PlayDoorSound ()
 		switch(m_Status)
 		{
 		case opening:
-			m_PlayedSound[waiting] = false;
 			if((m_Speed >= FRACUNIT*8))
 				snd = "doors/dr2_open";
 			else
 				snd = "doors/dr1_open";
 			break;
 		case reopening:
-			m_PlayedSound[waiting] = false;
 			// [SL] 2011-06-10 - emulate vanilla Doom bug that plays the
 			// slower door opening sound when a door is forced to reopen
 			// due to a player standing underneath it when it's closing.
@@ -315,6 +326,7 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 {
 	m_Type = type;
 	m_TopWait = delay;
+	m_TopCountdown = -1;
 	m_Speed = speed;
     m_Line = ln;
 	memset(m_PlayedSound, false, sizeof(m_PlayedSound));
@@ -333,10 +345,10 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	case doorOpen:
 	case doorRaise:
 		m_Direction = 1;
+		m_Status = opening;
 		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
 		if (m_TopHeight != sec->ceilingheight)
 		{
-			m_Status = opening;
 			PlayDoorSound();
 		}
 		break;
@@ -393,6 +405,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 				{
 					door->m_Direction = 1;	// go back up
 					door->m_Status = DDoor::opening;
+					door->PlayDoorSound();
 				}
 				else if (GET_SPAC(line->flags) != SPAC_PUSH)
 					// [RH] activate push doors don't go back down when you
