@@ -165,7 +165,7 @@ public:
     // Frags, deaths, monster kills
 	int			fragcount;
 	int			deathcount;
-	int			killcount;
+	int			killcount, itemcount, secretcount;		// for intermission
 
     // Is wp_nochange if not changing.
 	weapontype_t	pendingweapon;
@@ -193,13 +193,13 @@ public:
 
     // So gun flashes light up areas.
 	int			extralight;
+										// Current PLAYPAL, ???
+	int			fixedcolormap;			//  can be set to REDCOLORMAP for pain, etc.
+	
+	int			xviewshift;				// [RH] view shift (for earthquakes)
 
-    // Current PLAYPAL, ???
-    //  can be set to REDCOLORMAP for pain, etc.
-	int			fixedcolormap;
-
-	// Overlay view sprites (gun, etc).
-	pspdef_t	psprites[NUMPSPRITES];
+	
+	pspdef_t	psprites[NUMPSPRITES];	// Overlay view sprites (gun, etc).
 	
 	int			jumpTics;				// delay the next jump for a moment
 

@@ -30,6 +30,14 @@
 #include "event_handler.h"
 #include "typedefs.h"
 
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
+namespace agOdalaunch {
+
 typedef struct
 {
 	AG_Box       *optionsBox;
@@ -46,13 +54,31 @@ typedef struct
 	AG_UCombo *driverCombo;
 } ODA_GuiOptionsBox;
 
-// AG_Settings - Class for the settings dialog
+/**
+ * The settings dialog.
+ *
+ * This class provides a settings dialog with configurable options.
+ */
 class AGOL_Settings : private ODA_EventRegister
 {
 public:
+	/**
+	 * Constructor.
+	 */
 	AGOL_Settings();
+
+	/**
+	 * Destructor.
+	 */
 	~AGOL_Settings();
 
+	/**
+	 * Set the window close event.
+	 *
+	 * The provided event handler will be called when the window closes.
+	 *
+	 * @param handler The event handler.
+	 */
 	void SetWindowCloseEvent(EventHandler *handler);
 
 private:
@@ -120,5 +146,7 @@ private:
 
 	std::list<std::string>  WadDirs;
 };
+
+} // namespace
 
 #endif

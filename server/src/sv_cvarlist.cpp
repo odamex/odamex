@@ -80,6 +80,10 @@ CVAR (sv_curmap, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 CVAR (sv_nextmap, "", CVAR_NULL | CVAR_NOENABLEDISABLE)	
 // Determines whether Doom 1 episodes should carry over.		
 CVAR (sv_loopepisode, "0", CVAR_ARCHIVE)	
+
+// Network settings
+// ----------------
+
 // Network compression (experimental)
 CVAR (sv_networkcompression, "0", CVAR_ARCHIVE)
 // NAT firewall workaround port number
@@ -92,6 +96,19 @@ CVAR_FUNC_DECL (sv_shufflemaplist,	"0", CVAR_ARCHIVE)
 // [Spleen] limits the rate of clients to avoid bandwidth issues
 CVAR (sv_maxrate, "200000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+#ifdef ODA_HAVE_MINIUPNP
+// Enable Universal Plug and Play to autoconfigure a compliant router
+CVAR (sv_upnp, "1", CVAR_ARCHIVE)
+// The timeout looking for upnp routers
+CVAR (sv_upnp_discovertimeout, "2000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Description for the port mapping
+CVAR (sv_upnp_description, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Used to get the internal IP address of the local computer, unsettable
+CVAR (sv_upnp_internalip, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)
+// Used to get the external IP address of the router, unsettable
+CVAR (sv_upnp_externalip, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)
+#endif
+
 // Gameplay settings
 // =================
 
@@ -103,8 +120,6 @@ CVAR (ctf_manualreturn,	"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR (ctf_flagathometoscore,	"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // (CTF) A flag that is dropped will be returned automatically after this timeout
 CVAR (ctf_flagtimeout,	"600", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-// (Teamplay/CTF) When disabled, treat team spawns like normal deathmatch spawns.
-CVAR (sv_teamspawns, "1", CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 

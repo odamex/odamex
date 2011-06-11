@@ -195,7 +195,7 @@
 					<Add library="ole32.lib" />
 					<Add library="oleaut32.lib" />
 					<Add library="rpcrt4.lib" />
-					<Add library="ws2_32.lib" />
+					<Add library="wsock32.lib" />
 					<Add library="winspool.lib" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />
@@ -279,7 +279,7 @@
 					<Add library="ole32.lib" />
 					<Add library="oleaut32.lib" />
 					<Add library="rpcrt4.lib" />
-					<Add library="ws2_32.lib" />
+					<Add library="wsock32.lib" />
 					<Add library="winspool.lib" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)" />
 					<Add directory="$(#WX.lib)\vc_$(WX_LIB)\$(WX_PLAT)$(WX_CFG)" />

@@ -72,8 +72,39 @@ void DPlat::Serialize (FArchive &arc)
 	}
 }
 
-void DPlat::PlayPlatSound (const char *sound)
+void DPlat::PlayPlatSound ()
 {
+	// Already played this sound so don't repeat it
+	if (m_PlayedSound[m_Status])
+		return;
+	m_PlayedSound[m_Status] = true;
+
+	const char *snd;
+	switch (m_Status)
+	{
+	case midup:
+	case middown:
+		snd = "plats/pt1_mid";
+		S_LoopedSound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
+		return;
+	case up:
+		m_PlayedSound[down] = false;
+		snd = "plats/pt1_strt";
+		break;
+	case down:
+		m_PlayedSound[up] = false;
+		snd = "plats/pt1_strt";
+		break;
+	case waiting:
+	case in_stasis:
+	case finished:
+		snd = "plats/pt1_stop";
+		break;
+	default:
+		return;
+	}
+
+	S_Sound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
 }
 
 //
@@ -85,19 +116,33 @@ void DPlat::RunThink ()
 		
 	switch (m_Status)
 	{
+	case destroy:
+		if (serverside && clientside)
+		{
+			// Single player only didn't get an opportunity to play the right
+			// sound earlier
+			m_Status = finished;
+			PlayPlatSound();
+		}
+		if (clientside)
+		{
+			m_Sector->floordata = NULL;
+			Destroy();
+		}
+		return;
+	case midup:
 	case up:
 		res = MoveFloor (m_Speed, m_High, m_Crush, 1);
 										
 		if (res == crushed && !m_Crush)
 		{
+			m_PlayedSound[waiting] = false;
 			m_Count = m_Wait;
 			m_Status = down;
-			//PlayPlatSound ("Platform");
-			S_Sound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			PlayPlatSound();
 		}
 		else if (res == pastdest)
 		{
-			S_PlatSound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
 			if (m_Type != platToggle)
 			{
 				m_Count = m_Wait;
@@ -106,12 +151,14 @@ void DPlat::RunThink ()
 				switch (m_Type)
 				{
 					case platDownWaitUpStay:
-						m_PostWait = false;
 					case platRaiseAndStay:
 					case platUpByValueStay:
 					case platDownToNearestFloor:
 					case platDownToLowestCeiling:
-						Destroy ();
+						if (serverside)
+							m_Status = destroy;	
+						else
+							m_Status = finished;
 						break;
 					default:
 						break;
@@ -122,15 +169,16 @@ void DPlat::RunThink ()
 				m_OldStatus = m_Status;		//jff 3/14/98 after action wait  
 				m_Status = in_stasis;		//for reactivation of toggle
 			}
+			PlayPlatSound();
 		}
 		break;
 		
+	case middown:
 	case down:
 		res = MoveFloor (m_Speed, m_Low, false, -1);
 
 		if (res == pastdest)
 		{
-			S_PlatSound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
 			// if not an instant toggle, start waiting
 			if (m_Type != platToggle)		//jff 3/14/98 toggle up down
 			{								// is silent, instant, no waiting
@@ -140,9 +188,11 @@ void DPlat::RunThink ()
 				switch (m_Type)
 				{
 					case platUpWaitDownStay:
-						m_PostWait = false;
 					case platUpByValue:
-						Destroy ();
+						if (serverside)
+							m_Status = destroy;
+						else
+							m_Status = finished;
 						break;
 					default:
 						break;
@@ -153,8 +203,9 @@ void DPlat::RunThink ()
 				m_OldStatus = m_Status;		//jff 3/14/98 after action wait  
 				m_Status = in_stasis;		//for reactivation of toggle
 			}
+			
+			PlayPlatSound();
 		}
-
 		//jff 1/26/98 remove the plat if it bounced so it can be tried again
 		//only affects plats that raise and bounce
 
@@ -163,7 +214,10 @@ void DPlat::RunThink ()
 		{
 			case platUpByValueStay:
 			case platRaiseAndStay:
-				Destroy ();
+				if (serverside)
+					m_Status = destroy;
+				else
+					m_Status = finished;
 			default:
 				break;
 		}
@@ -183,15 +237,12 @@ void DPlat::RunThink ()
 			else
 				PlayPlatSound ("Platform");
 			*/
-			if(!m_PostWait)
-			{
-				S_Sound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
-				m_PostWait = true;
-			}
+			PlayPlatSound();
 		}
 		break;
-
 	case in_stasis:
+		break;
+	default:
 		break;
 	}
 }
@@ -199,6 +250,8 @@ void DPlat::RunThink ()
 DPlat::DPlat (sector_t *sector)
 	: DMovingFloor (sector)
 {
+	m_Status = init;
+    memset(m_PlayedSound, false, sizeof(m_PlayedSound));
 }
 
 void P_ActivateInStasis (int tag)
@@ -286,27 +339,21 @@ manual_plat:
 		{
 		case DPlat::platRaiseAndStay:
 			plat->m_High = P_FindNextHighestFloor (sec, sec->floorheight);
-			plat->m_Status = DPlat::up;
-			//plat->PlayPlatSound ("Floor");
-			//S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
-			S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			plat->m_Status = DPlat::midup;
+			plat->PlayPlatSound();
 			break;
 
 		case DPlat::platUpByValue:
 		case DPlat::platUpByValueStay:
 			plat->m_High = sec->floorheight + height;
-			plat->m_Status = DPlat::up;
-			//plat->PlayPlatSound ("Floor");
-			//S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
-			S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			plat->m_Status = DPlat::midup;
+			plat->PlayPlatSound();
 			break;
 		
 		case DPlat::platDownByValue:
 			plat->m_Low = sec->floorheight - height;
-			plat->m_Status = DPlat::down;
-			//plat->PlayPlatSound ("Floor");
-			//S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
-			S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+			plat->m_Status = DPlat::middown;
+			plat->PlayPlatSound();
 			break;
 
 		case DPlat::platDownWaitUpStay:
@@ -317,8 +364,7 @@ manual_plat:
 
 			plat->m_High = sec->floorheight;
 			plat->m_Status = DPlat::down;
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound();
 			break;
 		
 		case DPlat::platUpWaitDownStay:
@@ -328,8 +374,7 @@ manual_plat:
 				plat->m_High = sec->floorheight;
 
 			plat->m_Status = DPlat::up;
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound();
 			break;
 
 		case DPlat::platPerpetualRaise:
@@ -345,8 +390,7 @@ manual_plat:
 
 			plat->m_Status = P_Random () & 1 ? DPlat::down : DPlat::up;
 
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound();
 			break;
 
 		case DPlat::platToggle:	//jff 3/14/98 add new type to support instant toggle
@@ -363,8 +407,7 @@ manual_plat:
 			plat->m_Low = P_FindNextLowestFloor (sec, sec->floorheight) + lip*FRACUNIT;
 			plat->m_Status = DPlat::down;
 			plat->m_High = sec->floorheight;
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound();
 			break;
 
 		case DPlat::platDownToLowestCeiling:
@@ -375,8 +418,7 @@ manual_plat:
 				plat->m_Low = sec->floorheight;
 
 			plat->m_Status = DPlat::down;
-			//plat->PlayPlatSound ("Platform");
-			S_Sound (sec->soundorg, CHAN_BODY, "plats/pt1_strt", 1, ATTN_NORM);
+			plat->PlayPlatSound();
 			break;
 
 		default:

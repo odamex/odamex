@@ -49,11 +49,15 @@
 
 using namespace std;
 
-AGOL_MainWindow::AGOL_MainWindow(int width, int height)
+namespace agOdalaunch {
+
+AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
+	SettingsDialog(NULL), SoloGameDialog(NULL), AboutDialog(NULL),
+	ManualDialog(NULL), QServer(NULL), WindowExited(false)
 {
 	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl) 
 	// make the window plain (no window decorations). No flags for multi-window drivers (glx, wgl)
-	MainWindow = AG_WindowNew(agDriverSw ? AG_WINDOW_PLAIN : 0);
+	MainWindow = AG_WindowNewNamedS(agDriverSw ? AG_WINDOW_PLAIN : 0, "MainWindow");
 	AG_WindowSetGeometryAligned(MainWindow, AG_WINDOW_MC, width, height);
 	AG_WindowSetCaptionS(MainWindow, "The Odamex Launcher");
 
@@ -72,30 +76,26 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 	if(agDriverSw)
 		AG_WindowMaximize(MainWindow);
 
+	// Set the window close action
+	AG_WindowSetCloseAction(MainWindow, AG_WINDOW_DETACH);
+	AG_AddEvent(MainWindow, "window-close", EventReceiver, "%p", 
+		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::ExitWindow));
+
+	// Add the save widget states event
+	AG_SetEvent(MainWindow, "save-wstates", EventReceiver, "%p",
+		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::SaveWidgetStates));
+
 	// set up the master server information
 	MServer.AddMaster("master1.odamex.net", 15000);
 	MServer.AddMaster("voxelsoft.com", 15000);
-
-	SettingsDialog = NULL;
-	SoloGameDialog = NULL;
-	AboutDialog = NULL;
-	ManualDialog = NULL;
-	QServer = NULL;
 
 	// Don't poll the server list by default
 	StopServerListPoll();
 
 	// If query master on start is configured post the event.
-	bool masterOnStart = false;
-
-	GuiConfig::Read("MasterOnStart", (uint8_t&)masterOnStart);
-	if(masterOnStart)
-	{
-		StartupQuery = true;
+	GuiConfig::Read("MasterOnStart", (uint8_t&)StartupQuery);
+	if(StartupQuery)
 		AG_PostEvent(MainWindow, MainButtonBox->mlist, "button-pushed", NULL);
-	}
-	else
-		StartupQuery = false;
 
 	// Show the window
 	AG_WindowShow(MainWindow);
@@ -103,8 +103,15 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height)
 
 AGOL_MainWindow::~AGOL_MainWindow()
 {
-	GuiConfig::Write("MainWindow-Width", MainWindow->r.w);
-	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
+	// If the window exit action has not been performed by this time
+	// then the driver being used is a single-window driver that does
+	// not trigger the exit action when the window is closed (due to 
+	// the fact that the close button is actually for the driver window
+	// itself.) In that case it should be safe to save the widget states
+	// because the window is actually still valid. In all other cases
+	// the contents would be invalid and this would cause a crash!
+	if(!WindowExited)
+		ExitWindow(NULL);
 
 	delete[] QServer;
 
@@ -238,8 +245,9 @@ AG_Pane *AGOL_MainWindow::CreateBottomListPane(void *parent)
 
 AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 {
-	AG_Table *list;
-	int       col;
+	AG_Table      *list;
+	ostringstream  colSzSpec[8];
+	int            colW[8] = { 200, 33, 48, 100, 47, 105, 72, 125 };
 
 	list = AG_TableNewPolled(parent, AG_TABLE_EXPAND, EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::UpdateServerList));
@@ -250,14 +258,29 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 	AG_SetEvent(list, "row-selected", EventReceiver, "%p", 
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnServerListRowSelected));
 
-	col = AG_TableAddCol(list, "Server Name", "200px", NULL);
-	col = AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
-	col = AG_TableAddCol(list, "Players", "<  Players  >", &AGOL_MainWindow::CellCompare);
-	col = AG_TableAddCol(list, "WADs", "100px", NULL);
-	col = AG_TableAddCol(list, "Map", "<  MAP00  >", NULL);
-	col = AG_TableAddCol(list, "Type", "105px", NULL);
-	col = AG_TableAddCol(list, "Game IWAD", "<  Game IWAD  >", NULL);
-	col = AG_TableAddCol(list, "Address : Port", "125px", NULL);
+	// Configure each columns size spec
+	for(int i = 0; i < 8; i++)
+	{
+		ostringstream colOption;
+		int           width;
+
+		colOption << "SrvListColW_" << i;
+
+		// Check for a previously stored column size
+		if(!GuiConfig::Read(colOption.str(), width) && width > 0)
+			colW[i] = width;
+
+		colSzSpec[i] << colW[i] << "px";
+	}
+
+	AG_TableAddCol(list, "Server Name", colSzSpec[0].str().c_str(), NULL);
+	AG_TableAddCol(list, "Ping", colSzSpec[1].str().c_str(), NULL);
+	AG_TableAddCol(list, "Players", colSzSpec[2].str().c_str(), &AGOL_MainWindow::CellCompare);
+	AG_TableAddCol(list, "WADs", colSzSpec[3].str().c_str(), NULL);
+	AG_TableAddCol(list, "Map", colSzSpec[4].str().c_str(), NULL);
+	AG_TableAddCol(list, "Type", colSzSpec[5].str().c_str(), NULL);
+	AG_TableAddCol(list, "Game IWAD", colSzSpec[6].str().c_str(), NULL);
+	AG_TableAddCol(list, "Address : Port", colSzSpec[7].str().c_str(), NULL);
 
 	return list;
 }
@@ -265,18 +288,17 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 AG_Table *AGOL_MainWindow::CreatePlayerList(void *parent)
 {
 	AG_Table *list;
-	int       col;
 
 	list = AG_TableNew(parent, AG_TABLE_EXPAND);
 
 	AG_WidgetSetFocusable(list, 0);
 
-	col = AG_TableAddCol(list, "Player Name", "175px", NULL);
-	col = AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
-	col = AG_TableAddCol(list, "Time", "<  Time  >", NULL);
-	col = AG_TableAddCol(list, "Frags", "<  Frags  >", NULL);
-	col = AG_TableAddCol(list, "Kill Count", "<  Kill Count  >", NULL);
-	col = AG_TableAddCol(list, "Death Count", "<  Death Count  >", NULL);
+	AG_TableAddCol(list, "Player Name", "175px", NULL);
+	AG_TableAddCol(list, "Ping", "<  Ping  >", NULL);
+	AG_TableAddCol(list, "Time", "<  Time  >", NULL);
+	AG_TableAddCol(list, "Frags", "<  Frags  >", NULL);
+	AG_TableAddCol(list, "Kill Count", "<  Kill Count  >", NULL);
+	AG_TableAddCol(list, "Death Count", "<  Death Count  >", NULL);
 
 	return list;
 }
@@ -284,14 +306,13 @@ AG_Table *AGOL_MainWindow::CreatePlayerList(void *parent)
 AG_Table *AGOL_MainWindow::CreateServInfoList(void *parent)
 {
 	AG_Table *list;
-	int       col;
 
 	list = AG_TableNew(parent, AG_TABLE_EXPAND);
 
 	AG_TableSetColumnAction(list, AG_TABLE_COL_SELECT);
 	AG_WidgetSetFocusable(list, 0);
 
-	col = AG_TableAddCol(list, "Server Details", "-", NULL);
+	AG_TableAddCol(list, "Server Details", "-", NULL);
 
 	return list;
 }
@@ -440,7 +461,7 @@ string AGOL_MainWindow::GetAddrFromServerListRow(int row)
 	return string(cell->data.s);
 }
 
-int AGOL_MainWindow::GetServerListRowFromAddr(string address)
+int AGOL_MainWindow::GetServerListRowFromAddr(const string &address)
 {
 	// Loop until the server address is found
 	for(int row = 0; row < ServerList->m; row++)
@@ -783,6 +804,9 @@ void AGOL_MainWindow::OnCloseManualDialog(AG_Event *event)
 
 void AGOL_MainWindow::OnExit(AG_Event *event)
 {
+	ExitWindow(NULL);
+
+	// Exit the event loop
 	AG_QuitGUI();
 }
 
@@ -1055,6 +1079,29 @@ void AGOL_MainWindow::OnServerListRowSelected(AG_Event *event)
 	UpdateServInfoList(ndx);
 }
 
+void AGOL_MainWindow::SaveWidgetStates(AG_Event *event)
+{
+	// Save window dimensions
+	GuiConfig::Write("MainWindow-Width", MainWindow->r.w);
+	GuiConfig::Write("MainWindow-Height", MainWindow->r.h);
+
+	// Save server list column sizes
+	for(int i = 0; i < ServerList->n; i++)
+	{
+		ostringstream colOption;
+
+		colOption << "SrvListColW_" << i;
+		GuiConfig::Write(colOption.str(), ServerList->cols[i].w);
+	}
+}
+
+void AGOL_MainWindow::ExitWindow(AG_Event *event)
+{
+	SaveWidgetStates(NULL);
+
+	WindowExited = true;
+}
+
 //*****************//
 // Query Functions //
 //*****************//
@@ -1155,7 +1202,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 		return NULL;
 
 #ifdef _XBOX
-	xbox_EnableJoystickUpdates(false);
+	Xbox::EnableJoystickUpdates(false);
 #endif
 
 	StartServerListPoll();
@@ -1187,7 +1234,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 				QServerThread.push_back(new ODA_Thread());
 
 				// Start the thread for a server query
-				QServerThread[QServerThread.size() - 1]->Create((ODA_ThreadBase*)this, 
+				QServerThread.back()->Create((ODA_ThreadBase*)this, 
 						(THREAD_FUNC_PTR)&AGOL_MainWindow::QueryServerThrEntry, &QServer[serversQueried]);
 
 				// Incremement the number of requested server queries
@@ -1215,7 +1262,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	UpdateServInfoList(selectedNdx);
 
 #ifdef _XBOX
-	xbox_EnableJoystickUpdates(true);
+	Xbox::EnableJoystickUpdates(true);
 #endif
 
 	return NULL;
@@ -1276,3 +1323,5 @@ int AGOL_MainWindow::CellCompare(const void *p1, const void *p2)
 			return 1;
 	}
 }
+
+} // namespace

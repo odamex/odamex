@@ -183,15 +183,6 @@
 							<object class="wxBoxSizer">
 								<orient>wxVERTICAL</orient>
 								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALIGN_CENTER|wxALL</flag>
-									<border>2</border>
-									<object class="wxStaticText" name="m_staticText811">
-										<label>Server List</label>
-										<wrap>-1</wrap>
-									</object>
-								</object>
-								<object class="sizeritem">
 									<option>1</option>
 									<flag>wxALL|wxEXPAND</flag>
 									<border>2</border>

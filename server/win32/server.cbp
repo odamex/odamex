@@ -21,11 +21,16 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
+					<Add option="-DODA_HAVE_MINIUPNP" />
+					<Add directory="..\..\libminiupnpc" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="..\..\lib\libminiupnpc.a" />
 					<Add library="winmm" />
-					<Add library="wsock32" />
+					<Add library="ws2_32" />
+					<Add library="iphlpapi" />
+					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
 			<Target title="Win Debug (GCC)">
@@ -44,10 +49,15 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
+					<Add option="-DODA_HAVE_MINIUPNP" />
+					<Add directory="..\..\libminiupnpc" />
 				</Compiler>
 				<Linker>
+					<Add library="..\..\lib\libminiupnpc-dbg.a" />
 					<Add library="winmm" />
-					<Add library="wsock32" />
+					<Add library="ws2_32" />
+					<Add library="iphlpapi" />
+					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
 			<Target title="Unix Release">
@@ -157,12 +167,13 @@
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DODA_HAVE_MINIUPNP" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libminiupnpc" />
 				</Compiler>
 				<Linker>
-					<Add library="Ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -176,6 +187,10 @@
 					<Add library="uuid.lib" />
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
+					<Add library="ws2_32.lib" />
+					<Add library="iphlpapi.lib" />
+					<Add library="..\..\lib\libminiupnpc.lib" />
+					<Add directory="..\..\lib" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
@@ -207,20 +222,21 @@
 					<Add option="/GS" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
-					<Add option="/wd4430" />
 					<Add option="/Zi" />
+					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DODA_HAVE_MINIUPNP" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
+					<Add directory="..\..\libminiupnpc" />
 				</Compiler>
 				<Linker>
-					<Add option="/debug" />
-					<Add library="Ws2_32.lib" />
+					<Add option="/DEBUG" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -234,6 +250,10 @@
 					<Add library="uuid.lib" />
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
+					<Add library="ws2_32.lib" />
+					<Add library="iphlpapi.lib" />
+					<Add library="..\..\lib\libminiupnpc-dbg.lib" />
+					<Add directory="..\..\lib" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
@@ -350,6 +370,7 @@
 		<Unit filename="..\..\common\p_plats.cpp" />
 		<Unit filename="..\..\common\p_pspr.cpp" />
 		<Unit filename="..\..\common\p_pspr.h" />
+		<Unit filename="..\..\common\p_quake.cpp" />
 		<Unit filename="..\..\common\p_saveg.cpp" />
 		<Unit filename="..\..\common\p_saveg.h" />
 		<Unit filename="..\..\common\p_setup.cpp" />
@@ -377,6 +398,8 @@
 		<Unit filename="..\..\common\r_sky.h" />
 		<Unit filename="..\..\common\r_state.h" />
 		<Unit filename="..\..\common\r_things.h" />
+		<Unit filename="..\..\common\s_sndseq.cpp" />
+		<Unit filename="..\..\common\s_sndseq.h" />
 		<Unit filename="..\..\common\s_sound.h" />
 		<Unit filename="..\..\common\sc_man.cpp" />
 		<Unit filename="..\..\common\sc_man.h" />

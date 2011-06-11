@@ -32,6 +32,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 /*
    Create a packet to send, which in turn will
    receive data from the server
@@ -503,3 +505,5 @@ int32_t Server::Query(int32_t Timeout)
 
 	return 0;
 }
+
+} // namespace

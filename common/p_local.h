@@ -99,7 +99,7 @@ extern int				itemrespawntime[ITEMQUESIZE];
 extern int				iquehead;
 extern int				iquetail;
 
-
+void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);
 
 bool	P_SetMobjState (AActor* mobj, statenum_t state);
@@ -224,7 +224,7 @@ BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y, bool dropoff);
 BOOL	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
 bool	P_CheckSight (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
-bool	P_CheckSight2 (const AActor* t1, const AActor* t2);
+bool	P_CheckSight2 (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
 void	P_UseLines (player_t* player);
 
 // GhostlyDeath -- I put this here

@@ -35,7 +35,9 @@
 #include <io.h>
 #include <direct.h>
 #include <process.h>
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #ifdef _XBOX
 #include <xtl.h>
 #else
@@ -485,7 +487,7 @@ void I_Endoom(void)
 	{
 		TXT_UpdateScreen();
 
-		if (TXT_GetChar() >= 0)
+		if (TXT_GetChar() > 0)
             break;
 
         TXT_Sleep(0);
@@ -514,6 +516,8 @@ void STACK_ARGS I_Quit (void)
 	
 	I_ShutdownHardware();
 
+    CloseNetwork();
+
 	if (r_showendoom && !Args.CheckParm ("-novideo"))
 		I_Endoom();
 }
@@ -525,6 +529,8 @@ void STACK_ARGS I_Quit (void)
 BOOL gameisdead;
 
 #define MAX_ERRORTEXT	1024
+
+void STACK_ARGS call_terms (void);
 
 void STACK_ARGS I_FatalError (const char *error, ...)
 {
@@ -547,6 +553,9 @@ void STACK_ARGS I_FatalError (const char *error, ...)
 	if (!has_exited)	// If it hasn't exited yet, exit now -- killough
 	{
 		has_exited = 1;	// Prevent infinitely recursive exits -- killough
+
+		call_terms();
+
 		exit(-1);
 	}
 }

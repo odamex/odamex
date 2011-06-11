@@ -61,6 +61,7 @@
 #include "r_sky.h"
 
 EXTERN_CVAR (sv_allowexit)
+extern bool	HasBehavior;
 
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
@@ -939,10 +940,6 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	if (!p)
 		return false;
     
-    // [Spleen] Clients in network games don't know about keys
-    if (clientside && network_game)
-        return true;
-
 	const char *msg = NULL;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
@@ -1056,9 +1053,6 @@ P_CrossSpecialLine
   AActor*	thing,
   bool      FromServer)
 {
-    if (clientside && network_game && !FromServer)
-        return;
-
     line_t*	line = &lines[linenum];
 
 	if(thing)
@@ -1166,9 +1160,6 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
-    if (clientside && network_game && !FromServer)
-        return;
-    
 	if(thing)
 	{
 		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
@@ -1210,9 +1201,6 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
-    if (clientside && network_game && !FromServer)
-        return false;
-    
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1232,8 +1220,9 @@ P_UseSpecialLine
 
 	if(thing)
 	{
-		if (!(GET_SPAC(line->flags) == SPAC_USE) &&
-            !(GET_SPAC(line->flags) == SPAC_USETHROUGH))
+		if ((GET_SPAC(line->flags) != SPAC_USE) &&
+			(GET_SPAC(line->flags) != SPAC_PUSH) &&
+            (GET_SPAC(line->flags) != SPAC_USETHROUGH))
 			return false;
 
 		// Switches that other things can activate.
@@ -1265,6 +1254,68 @@ P_UseSpecialLine
 		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 		OnActivatedLine(line, thing, side, 1);
 
+		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
+		{
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		}
+	}
+
+    return true;
+}
+
+
+//
+// P_PushSpecialLine
+// Called when a thing pushes a special line, only in advanced map format
+// Only the front sides of lines are pushable.
+//
+bool
+P_PushSpecialLine
+( AActor*	thing,
+  line_t*	line,
+  int		side,
+  bool      FromServer)
+{
+	// Err...
+	// Use the back sides of VERY SPECIAL lines...
+	if (side)
+		return false;
+
+	if(thing)
+	{
+		if (GET_SPAC(line->flags) != SPAC_PUSH)
+			return false;
+
+		// Switches that other things can activate.
+		if (!thing->player)
+		{
+			// not for monsters?
+			if (!(line->flags & ML_MONSTERSCANACTIVATE))
+				return false;
+
+			// never open secret doors
+			if (line->flags & ML_SECRET)
+				return false;
+		}
+		else
+		{
+			// spectators and dead players can't push walls
+			if(thing->player->spectator ||
+                           thing->player->playerstate != PST_LIVE)
+				return false;
+		}
+	}
+	
+    TeleportSide = side;
+
+	if(LineSpecials[line->special] (line, thing, line->args[0],
+					line->args[1], line->args[2],
+					line->args[3], line->args[4]))
+	{
+		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
+		OnActivatedLine(line, thing, side, 3);
+
 		if(serverside)
 		{
 			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
@@ -1274,6 +1325,7 @@ P_UseSpecialLine
 
     return true;
 }
+
 
 
 //
@@ -1382,6 +1434,7 @@ void P_PlayerInSpecialSector (player_t *player)
 		}
 
 		if (sector->special & SECRET_MASK) {
+			player->secretcount++;
 			level.found_secrets++;
 			sector->special &= ~SECRET_MASK;
 			if (player->mo == consoleplayer().camera)
@@ -2201,7 +2254,8 @@ BOOL PIT_PushThing (AActor *thing)
 		// If speed <= 0, you're outside the effective radius. You also have
 		// to be able to see the push/pull source point.
 
-		if ((speed > 0) && (P_CheckSight (thing, tmpusher->m_Source, true)))
+		if ((speed > 0) && ((HasBehavior && P_CheckSight2 (thing, tmpusher->m_Source, true))
+			|| (!HasBehavior && P_CheckSight (thing, tmpusher->m_Source, true))))
 		{
 			angle_t pushangle = P_PointToAngle (thing->x, thing->y, sx, sy);
 			if (tmpusher->m_Source->type == MT_PUSH)

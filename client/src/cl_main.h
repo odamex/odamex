@@ -27,6 +27,7 @@
 
 #include "i_net.h"
 #include "d_ticcmd.h"
+#include "r_defs.h"
 
 extern netadr_t  serveraddr;
 extern BOOL      connected;
@@ -42,18 +43,90 @@ extern ticcmd_t localcmds[MAXSAVETICS];
 
 extern bool predicting;
 
+typedef struct
+{ 
+    fixed_t 	m_Speed;
+    fixed_t 	m_Low;
+    fixed_t 	m_High;
+    int 		m_Wait;
+    int 		m_Count;
+    int     	m_Status;
+    int     	m_OldStatus;
+    bool 		m_Crush;
+    int 		m_Tag;
+    int	        m_Type;
+    bool		m_PostWait;
+
+    int 		m_Direction;
+    short 		m_NewSpecial;
+    short		m_Texture;
+    fixed_t 	m_FloorDestHeight;
+
+    int			m_ResetCount;
+    int			m_OrgHeight;
+    int			m_Delay;
+    int			m_PauseTime;
+    int			m_StepTime;
+    int			m_PerStepTime;
+} pred_floor_t;
+
+typedef struct
+{
+    int 		m_Type;
+    fixed_t 	m_TopHeight;
+    fixed_t 	m_Speed;
+
+    int 		m_Direction;
+    int 		m_TopWait;
+    int 		m_TopCountdown;
+
+    fixed_t 	m_BottomHeight;
+    fixed_t		m_Speed1;		// [RH] dnspeed of crushers
+    fixed_t		m_Speed2;		// [RH] upspeed of crushers
+    bool 		m_Crush;
+    int			m_Silent;
+
+    // [RH] Need these for BOOM-ish transferring ceilings
+    int			m_Texture;
+    int			m_NewSpecial;
+
+    // ID
+    int 		m_Tag;
+    int 		m_OldDirection;
+	int			m_Status;
+
+    line_t      *m_Line;
+} pred_ceiling_t;
+
+typedef struct
+{
+	int     	m_Type;
+	int			m_Direction;
+	fixed_t		m_FloorDestHeight;
+	fixed_t		m_CeilingDestHeight;
+	fixed_t		m_Speed;
+
+	fixed_t		m_FloorSpeed;
+	fixed_t		m_CeilingSpeed;
+	fixed_t		m_FloorTarget;
+	fixed_t		m_CeilingTarget;
+	bool		m_Crush;
+} pred_both_t;
+
 struct plat_pred_t
 {
 	size_t secnum;
-
-	byte state;
-	int count;
 	int tic;
 
-	unsigned long floorheight;
+    fixed_t floorheight;
+    fixed_t ceilingheight;
+
+    pred_floor_t Floor;
+    pred_ceiling_t Ceiling;
+    pred_both_t Both;
 };
 
-extern std::vector <plat_pred_t> real_plats;
+extern TArray <plat_pred_t> real_plats;
 
 void CL_QuitNetGame(void);
 void CL_InitNetwork (void);

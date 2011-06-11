@@ -25,7 +25,7 @@
 					<Add option="-s" />
 					<Add library="mingw32" />
 					<Add library="winmm" />
-					<Add library="wsock32" />
+					<Add library="ws2_32" />
 					<Add library="libtextscreen" />
 					<Add directory="..\..\lib" />
 				</Linker>
@@ -38,6 +38,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option parameters="-file demo.wad -nomusic" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -49,7 +50,7 @@
 				<Linker>
 					<Add library="mingw32" />
 					<Add library="winmm" />
-					<Add library="wsock32" />
+					<Add library="ws2_32" />
 					<Add library="libtextscreen-dbg" />
 					<Add directory="..\..\lib" />
 				</Linker>
@@ -73,6 +74,7 @@
 				<Linker>
 					<Add option="-s" />
 					<Add library="X11" />
+					<Add library="..\..\lib\libtextscreen.a" />
 				</Linker>
 			</Target>
 			<Target title="Unix Debug">
@@ -83,6 +85,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option parameters="-waddir ~/Games/doomwads -connect 66.170.3.2:10703" />
 				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -94,6 +97,7 @@
 				</Compiler>
 				<Linker>
 					<Add library="X11" />
+					<Add library="..\..\lib\libtextscreen-dbg.a" />
 				</Linker>
 			</Target>
 			<Target title="Mac Release">
@@ -183,7 +187,7 @@
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
-					<Add library="Ws2_32.lib" />
+					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -232,8 +236,8 @@
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
-					<Add option="/wd4430" />
 					<Add option="/Zi" />
+					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOASM" />
@@ -251,11 +255,11 @@
 					<Add directory="..\..\libtextscreen" />
 				</ResourceCompiler>
 				<Linker>
-					<Add option="/debug" />
+					<Add option="/DEBUG" />
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
-					<Add library="Ws2_32.lib" />
+					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -473,6 +477,7 @@
 		<Unit filename="..\..\common\p_plats.cpp" />
 		<Unit filename="..\..\common\p_pspr.cpp" />
 		<Unit filename="..\..\common\p_pspr.h" />
+		<Unit filename="..\..\common\p_quake.cpp" />
 		<Unit filename="..\..\common\p_saveg.cpp" />
 		<Unit filename="..\..\common\p_saveg.h" />
 		<Unit filename="..\..\common\p_setup.cpp" />
@@ -500,6 +505,8 @@
 		<Unit filename="..\..\common\r_sky.h" />
 		<Unit filename="..\..\common\r_state.h" />
 		<Unit filename="..\..\common\r_things.h" />
+		<Unit filename="..\..\common\s_sndseq.cpp" />
+		<Unit filename="..\..\common\s_sndseq.h" />
 		<Unit filename="..\..\common\s_sound.h" />
 		<Unit filename="..\..\common\sc_man.cpp" />
 		<Unit filename="..\..\common\sc_man.h" />

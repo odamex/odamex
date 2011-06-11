@@ -1095,6 +1095,8 @@ void M_EndGame(int choice)
 // M_QuitDOOM
 //
 
+void STACK_ARGS call_terms (void);
+
 void M_QuitResponse(int ch)
 {
 	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
@@ -1111,6 +1113,9 @@ void M_QuitResponse(int ch)
 			I_WaitVBL (105);
 		}
 	}
+
+    call_terms();
+
 	exit (0);
 }
 
@@ -1143,8 +1148,8 @@ EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_skin)
-EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_gender)
+EXTERN_CVAR (cl_autoaim)
 
 void M_PlayerSetup (int choice)
 {

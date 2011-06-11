@@ -31,9 +31,6 @@
 #include "d_player.h"
 #include "i_net.h"
 
-
-#define REMOVECOPRSESTIC TICRATE*80
-
 #define GAME_NORMAL		1
 #define GAME_TEAMPLAY	2
 #define GAME_CTF		3

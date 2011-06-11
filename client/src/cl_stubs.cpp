@@ -29,7 +29,6 @@
 
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
 
-void D_SetupUserInfo(void) {}
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
@@ -48,6 +47,14 @@ void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who) {}
 void SV_UpdateFrags(player_t &player) {}
 void SV_ActorTarget(AActor *actor) {}
 void SV_SendDestroyActor(AActor *mo) {}
+void SV_ExplodeMissile(AActor *mo) {}
+void SV_PreservePlayer(player_t &player) {}
+			
+void CTF_RememberFlagPos(mapthing2_t *mthing) {}
+void CTF_SpawnFlag(flag_t f) {}
+void MSG_WriteMarker (buf_t *b, svc_t c) {}
+void SV_AwarenessUpdate(player_t &pl, AActor* mo) {}
+
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")
 

@@ -389,6 +389,10 @@ public:
 
 	buf_t &operator =(const buf_t &other)
 	{
+	    // Avoid self-assignment
+		if (this == &other)
+            return *this;
+
 		delete[] data;
 		
 		data = new byte[other.allocsize];
@@ -439,14 +443,14 @@ bool NET_StringToAdr (const char *s, netadr_t *a);
 bool NET_CompareAdr (netadr_t a, netadr_t b);
 int  NET_GetPacket (void);
 void NET_SendPacket (buf_t &buf, netadr_t &to);
-void NET_GetLocalAddress (void);
+std::string NET_GetLocalAddress (void);
 
 void SZ_Clear (buf_t *buf);
 void SZ_Write (buf_t *b, const void *data, int length);
 void SZ_Write (buf_t *b, const byte *data, int startpos, int length);
 
 void MSG_WriteByte (buf_t *b, byte c);
-//void MSG_WriteMarker (buf_t *b, svc_t c);
+void MSG_WriteMarker (buf_t *b, svc_t c);
 void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);

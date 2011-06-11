@@ -37,6 +37,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 const string DoomIWadNames[] =
 {
 	"DOOM2F.WAD",
@@ -205,7 +207,7 @@ void AGOL_Solo::PopulateWadLists()
 			string curFile(dir->ents[i]);
 			string path;
 
-			if((*wditer)[(*wditer).size()-1] == AG_PATHSEPCHAR)
+			if((*wditer).rbegin()[0] == AG_PATHSEPCHAR)
 				path = *wditer + curFile;
 			else
 				path = *wditer + AG_PATHSEP + curFile;
@@ -438,3 +440,5 @@ void AGOL_Solo::SetWindowCloseEvent(EventHandler *handler)
 		AG_AddEvent(SoloGameDialog, "window-close", EventReceiver, "%p", handler);
 	}
 }
+
+} // namespace

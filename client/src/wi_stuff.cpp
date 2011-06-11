@@ -35,6 +35,7 @@
 #include "g_level.h"
 #include "r_local.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "doomstat.h"
 #include "v_video.h"
 #include "wi_stuff.h"
@@ -70,6 +71,13 @@ void WI_unloadData(void);
 #define SP_STATSY		50
 #define SP_TIMEX		16
 #define SP_TIMEY		168
+
+// NET GAME STUFF
+#define NG_STATSY				50
+#define NG_STATSX				(32 + star->width()/2 + 32*!dofrags)
+
+#define NG_SPACINGX 			64
+
 
 typedef enum
 {
@@ -265,6 +273,13 @@ static stateenum_t		state;
 static wbstartstruct_t* wbs;
 
 static std::vector<wbplayerstruct_t> plrs;	// = wbs->plyr
+static std::vector<int> cnt_kills_c;	// = cnt_kills
+static std::vector<int> cnt_items_c;	// = cnt_items
+static std::vector<int> cnt_secret_c;	// = cnt_secret
+static std::vector<int> cnt_frags_c;	// = cnt_frags
+static patch_t*			faceclassic[4];
+static int dofrags;
+static int ng_state;
 
 // used for general timing
 static int				cnt;
@@ -323,11 +338,18 @@ static patch_t* 		entering;
 static patch_t*			kills;
 static patch_t*			secret;
 static patch_t*			items;
+static patch_t* 		frags;
+static patch_t*			scrt;
 
 // Time sucks.
 static patch_t*			timepatch;
 static patch_t*			par;
 static patch_t*			sucks;
+
+// "Total", your face, your dead face
+static patch_t* 		total;
+static patch_t* 		star;
+static patch_t* 		bstar;
 
 static patch_t* 		p;		// [RH] Only one
 
@@ -341,6 +363,7 @@ static const char			*lnametexts[2];
 static DCanvas			*background;
 
 EXTERN_CVAR (sv_maxplayers)
+EXTERN_CVAR (wi_newintermission)
 
 //
 // CODE
@@ -408,7 +431,7 @@ void WI_drawLF (void)
 	}
 
 	// draw "Finished!"
-	if (!multiplayer || sv_maxplayers <= 1)
+	//if (!multiplayer || sv_maxplayers <= 1)
 		FB->DrawPatchClean (finished, (320 - finished->width())/2, y);  // (Removed) Dan - Causes GUI Issues |FIX-ME|
 }
 
@@ -454,7 +477,20 @@ int WI_MapToIndex (char *map)
 	return i;
 }
 
-void WI_drawOnLnode (int n, patch_t *c[])
+
+// ====================================================================
+// WI_drawOnLnode
+// Purpose: Draw patches at a location based on episode/map
+// Args:    n   -- index to map# within episode
+//          c[] -- array of patches to be drawn
+//          numpatches -- haleyjd 04/12/03: bug fix - number of patches
+// Returns: void
+//
+// draw stuff at a location by episode/map#
+//
+// [Russell] - Modified for odamex, fixes a crash with certain pwads at
+// intermission change
+void WI_drawOnLnode (int n, patch_t *c[], int numpatches)
 {
 
 	int 	i;
@@ -472,7 +508,10 @@ void WI_drawOnLnode (int n, patch_t *c[])
 		right = left + c[i]->width();
 		bottom = top + c[i]->height();
 
-		if (left >= 0 && right < 320 && top >= 0 && bottom < 200)
+		if (left >= 0 && 
+            right < screen->width && 
+            top >= 0 && 
+            bottom < screen->height)
 		{
 			fits = true;
 		}
@@ -480,9 +519,9 @@ void WI_drawOnLnode (int n, patch_t *c[])
 		{
 			i++;
 		}
-	} while (!fits && i != 2);
+	} while (!fits && i != numpatches); // haleyjd: bug fix
 
-	if (fits && i<2)
+	if (fits && i < numpatches) // haleyjd: bug fix
 	{
 		FB->DrawPatchIndirect (c[i], lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
 	}
@@ -592,8 +631,104 @@ void WI_drawAnimatedBack (void)
 	WI_slamBackground ();
 }
 
+int WI_drawNum (int n, int x, int y, int digits)
+{
+
+    int		fontwidth = num[0]->width();
+    int		neg;
+    int		temp;
+
+    if (digits < 0)
+    {
+	if (!n)
+	{
+	    // make variable-length zeros 1 digit long
+	    digits = 1;
+	}
+	else
+	{
+	    // figure out # of digits in #
+	    digits = 0;
+	    temp = n;
+
+	    while (temp)
+	    {
+		temp /= 10;
+		digits++;
+	    }
+	}
+    }
+
+    neg = n < 0;
+    if (neg)
+	n = -n;
+
+    // if non-number, do not draw it
+    if (n == 1994)
+	return 0;
+
+    // draw the new number
+    while (digits--)
+    {
+	x -= fontwidth;
+	screen->DrawPatchClean(num[ n % 10 ], x, y);
+	n /= 10;
+    }
+
+    // draw a minus sign if necessary
+    if (neg)
+	screen->DrawPatchClean(wiminus, x-=8, y);
+
+    return x;
+
+}
+
 #include "hu_stuff.h"
 extern patch_t *hu_font[HU_FONTSIZE];
+
+void WI_drawPercent (int p, int x, int y, int b = 0)
+{
+    if (p < 0)
+		return;
+
+	screen->DrawPatchClean (percent, x, y);
+	if (b == 0)
+		WI_drawNum(p, x, y, -1);
+	else
+		WI_drawNum(p * 100 / b, x, y, -1);
+}
+
+void WI_drawTime (int t, int x, int y)
+{
+
+    int		div;
+    int		n;
+
+    if (t<0)
+	return;
+
+    if (t <= 61*59)
+    {
+	div = 1;
+
+	do
+	{
+	    n = (t / div) % 60;
+	    x = WI_drawNum(n, x, y, 2) - colon->width();
+	    div *= 60;
+
+	    // draw
+	    if (div==60 || t / div)
+		screen->DrawPatchClean(colon, x, y);
+
+	} while (t / div);
+    }
+    else
+    {
+	// "sucks"
+	screen->DrawPatchClean(sucks, x - sucks->width(), y);
+    }
+}
 
 void WI_End (void)
 {
@@ -670,12 +805,12 @@ void WI_drawShowNextLoc (void)
 		// draw a splat on taken cities.
 		for (i=0; i < NUMMAPS; i++) {
 			if (FindLevelInfo (names[wbs->epsd][i])->flags & LEVEL_VISITED)
-				WI_drawOnLnode(i, &splat);
+				WI_drawOnLnode(i, &splat, 1);
 		}
 
 		// draw flashing ptr
 		if (snl_pointeron)
-			WI_drawOnLnode(WI_MapToIndex (wbs->next), yah);
+			WI_drawOnLnode(WI_MapToIndex (wbs->next), yah, 2);
 	}
 
 	// draws which level you are entering..
@@ -694,7 +829,7 @@ int WI_fragSum (player_t &player)
 	return player.fragcount;
 }
 
-void WI_drawNetgameStats (void)
+void WI_drawDeathmatchStats (void)
 {
 	// draw animated background
 	WI_drawAnimatedBack();
@@ -704,97 +839,242 @@ void WI_drawNetgameStats (void)
 	HU_DrawScores (&players[me]);
 }
 
-int WI_drawNum (int n, int x, int y, int digits)
+void WI_initNetgameStats (void)
 {
 
-    int		fontwidth = num[0]->width();
-    int		neg;
-    int		temp;
+	unsigned int i;
 
-    if (digits < 0)
-    {
-	if (!n)
+	state = StatCount;
+	acceleratestage = 0;
+	ng_state = 1;
+
+	cnt_pause = TICRATE;
+	
+	cnt_kills_c.clear();
+	cnt_items_c.clear();
+	cnt_secret_c.clear();
+	cnt_frags_c.clear();
+
+	for (i=0 ; i<players.size() ; i++)
 	{
-	    // make variable-length zeros 1 digit long
-	    digits = 1;
+		if (!players[i].ingame())
+			continue;
+
+		cnt_kills_c.push_back(0);
+		cnt_items_c.push_back(0);
+		cnt_secret_c.push_back(0);
+		cnt_frags_c.push_back(0);
+
+		dofrags += WI_fragSum(players[i]);
 	}
-	else
-	{
-	    // figure out # of digits in #
-	    digits = 0;
-	    temp = n;
 
-	    while (temp)
-	    {
-		temp /= 10;
-		digits++;
-	    }
-	}
-    }
-
-    neg = n < 0;
-    if (neg)
-	n = -n;
-
-    // if non-number, do not draw it
-    if (n == 1994)
-	return 0;
-
-    // draw the new number
-    while (digits--)
-    {
-	x -= fontwidth;
-	screen->DrawPatchClean(num[ n % 10 ], x, y);
-	n /= 10;
-    }
-
-    // draw a minus sign if necessary
-    if (neg)
-	screen->DrawPatchClean(wiminus, x-=8, y);
-
-    return x;
-
+	dofrags = !!dofrags;
+	
+	WI_initAnimatedBack();
 }
 
-void WI_drawPercent (int p, int x, int y)
+void WI_updateNetgameStats (void)
 {
-    if (p < 0)
-	return;
 
-	screen->DrawPatchClean(percent, x, y);
-    WI_drawNum(p, x, y, -1);
+	unsigned int i;
+	int fsum;
+	BOOL stillticking;
+
+	WI_updateAnimatedBack();
+
+	if (acceleratestage && ng_state != 10)
+	{
+		acceleratestage = 0;
+
+		for (i=0 ; i<players.size(); i++)
+		{
+			if (!players[i].ingame())
+				continue;
+
+			cnt_kills_c[i] = plrs[i].skills;
+			cnt_items_c[i] = plrs[i].sitems;
+			cnt_secret_c[i] = plrs[i].ssecret;
+
+			if (dofrags)
+				cnt_frags_c[i] = WI_fragSum (players[i]);
+		}
+		S_Sound (CHAN_VOICE, "weapons/rocklx", 1, ATTN_NONE);
+		ng_state = 10;
+	}
+
+	if (ng_state == 2)
+	{
+		if (!(bcnt&3))
+			S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+
+		stillticking = false;
+
+		for (i=0 ; i<players.size() ; i++)
+		{
+			if (!players[i].ingame())
+				continue;
+
+			cnt_kills_c[i] += 2;
+
+			if (cnt_kills_c[i] > plrs[i].skills)
+				cnt_kills_c[i] = plrs[i].skills;
+			else
+				stillticking = true;
+		}
+		
+		if (!stillticking)
+		{
+			S_Sound (CHAN_VOICE, "weapons/rocklx", 1, ATTN_NONE);
+			ng_state++;
+		}
+	}
+	else if (ng_state == 4)
+	{
+		if (!(bcnt&3))
+			S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+
+		stillticking = false;
+
+		for (i=0 ; i<players.size() ; i++)
+		{
+			if (!players[i].ingame())
+				continue;
+
+			cnt_items_c[i] += 2;
+			if (cnt_items_c[i] > plrs[i].sitems)
+				cnt_items_c[i] = plrs[i].sitems;
+			else
+				stillticking = true;
+		}
+		if (!stillticking)
+		{
+			S_Sound (CHAN_VOICE, "weapons/rocklx", 1, ATTN_NONE);
+			ng_state++;
+		}
+	}
+	else if (ng_state == 6)
+	{
+		if (!(bcnt&3))
+			S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+
+		stillticking = false;
+
+		for (i=0 ; i<players.size() ; i++)
+		{
+			if (!players[i].ingame())
+				continue;
+
+			cnt_secret_c[i] += 2;
+
+			if (cnt_secret_c[i] > plrs[i].ssecret)
+				cnt_secret_c[i] = plrs[i].ssecret;
+			else
+				stillticking = true;
+		}
+		
+		if (!stillticking)
+		{
+			S_Sound (CHAN_VOICE, "weapons/rocklx", 1, ATTN_NONE);
+			ng_state += 1 + 2*!dofrags;
+		}
+	}
+	else if (ng_state == 8)
+	{
+		if (!(bcnt&3))
+			S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+
+		stillticking = false;
+
+		for (i=0 ; i<players.size() ; i++)
+		{
+			if (!players[i].ingame())
+				continue;
+
+			cnt_frags_c[i] += 1;
+
+			if (cnt_frags_c[i] >= (fsum = WI_fragSum(players[i])))
+				cnt_frags_c[i] = fsum;
+			else
+				stillticking = true;
+		}
+		
+		if (!stillticking)
+		{
+			S_Sound (CHAN_VOICE, "player/male/death1", 1, ATTN_NONE);
+			ng_state++;
+		}
+	}
+	else if (ng_state == 10)
+	{
+		if (acceleratestage)
+		{
+			S_Sound (CHAN_VOICE, "weapons/shotgr", 1, ATTN_NONE);
+			if ( gamemode == commercial )
+				WI_initNoState();
+			else
+				WI_initShowNextLoc();
+		}
+	}
+	else if (ng_state & 1)
+	{
+		if (!--cnt_pause)
+		{
+			ng_state++;
+			cnt_pause = TICRATE;
+		}
+	}
 }
 
-void WI_drawTime (int t, int x, int y)
+void WI_drawNetgameStats(void)
 {
+	unsigned int i, x, y;
+	short pwidth = percent->width();
 
-    int		div;
-    int		n;
+	// draw animated background
+	WI_drawAnimatedBack(); 
 
-    if (t<0)
-	return;
+	WI_drawLF();
 
-    if (t <= 61*59)
-    {
-	div = 1;
+	// draw stat titles (top line)
+	screen->DrawPatchClean (kills, NG_STATSX+NG_SPACINGX-kills->width(), NG_STATSY);
 
-	do
+	screen->DrawPatchClean (items, NG_STATSX+2*NG_SPACINGX-items->width(), NG_STATSY);
+
+	screen->DrawPatchClean (scrt, NG_STATSX+3*NG_SPACINGX-scrt->width(), NG_STATSY);
+	
+	if (dofrags)
+		screen->DrawPatchClean (frags, NG_STATSX+4*NG_SPACINGX-frags->width(), NG_STATSY);
+
+	// draw stats
+	y = NG_STATSY + kills->height();
+
+	for (i = 0; i < players.size(); i++)
 	{
-	    n = (t / div) % 60;
-	    x = WI_drawNum(n, x, y, 2) - colon->width();
-	    div *= 60;
+		// [RH] Quick hack: Only show the first four players.
+		if (i >= 4)
+			break;
 
-	    // draw
-	    if (div==60 || t / div)
-		screen->DrawPatchClean(colon, x, y);
+		if (!players[i].ingame())
+			continue;
 
-	} while (t / div);
-    }
-    else
-    {
-	// "sucks"
-	screen->DrawPatchClean(sucks, x - sucks->width(), y);
-    }
+		x = NG_STATSX;
+		// [RH] Only use one graphic for the face backgrounds
+		//V_ColorMap = translationtables + i * 256;
+		screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
+
+		if (i == me)
+			screen->DrawPatchClean (star, x-p->width(), y);
+
+		x += NG_SPACINGX;
+		WI_drawPercent (cnt_kills_c[i], x-pwidth, y+10, wbs->maxkills);	x += NG_SPACINGX;
+		WI_drawPercent (cnt_items_c[i], x-pwidth, y+10, wbs->maxitems);	x += NG_SPACINGX;
+		WI_drawPercent (cnt_secret_c[i], x-pwidth, y+10, wbs->maxsecret); x += NG_SPACINGX;
+
+		if (dofrags)
+			WI_drawNum(cnt_frags_c[i], x, y+10, -1);
+
+		y += WI_SPACINGY;
+	}
 }
 
 static int	sp_state;
@@ -999,7 +1279,12 @@ void WI_Ticker (void)
 	{
 		case StatCount:
 			if (multiplayer && sv_maxplayers > 1)
-				WI_updateNoState();
+			{
+				if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
+					WI_updateNetgameStats();
+				else
+					WI_updateNoState();
+			}
 			else
 				WI_updateStats();
 			break;
@@ -1136,17 +1421,21 @@ void WI_loadData (void)
 	// "entering"
 	entering = W_CachePatch ("WIENTER", PU_STATIC);
 
-	p = W_CachePatch ("STPBANY", PU_STATIC);
-
 	// "kills"
     kills = W_CachePatch ("WIOSTK", PU_STATIC);
 
 	// "items"
     items = W_CachePatch ("WIOSTI", PU_STATIC);
-
+    
+    // "scrt"
+    scrt = W_CachePatch ("WIOSTS", PU_STATIC);
+    
 	// "secret"
     secret = W_CachePatch ("WISCRT2", PU_STATIC);
-
+    
+	// "frgs"
+	frags = (patch_t *)W_CacheLumpName ("WIFRGS", PU_STATIC);	 
+	
 	// "time"
     timepatch = W_CachePatch ("WITIME", PU_STATIC);
 
@@ -1155,6 +1444,23 @@ void WI_loadData (void)
 
     // "par"
     par = W_CachePatch ("WIPAR", PU_STATIC);
+
+	// "total"
+	total = (patch_t *)W_CacheLumpName ("WIMSTT", PU_STATIC);	
+
+	// your face
+	star = (patch_t *)W_CacheLumpName ("STFST01", PU_STATIC);
+
+	// dead face
+	bstar = (patch_t *)W_CacheLumpName("STFDEAD0", PU_STATIC);
+
+	p = W_CachePatch ("STPBANY", PU_STATIC);
+
+	// [Nes] Classic vanilla lifebars.
+	for (i = 0; i < 4; i++) {
+		sprintf(name, "STPB%d", i);
+		faceclassic[i] = W_CachePatch(name, PU_STATIC);
+	}	
 }
 
 void WI_unloadData (void)
@@ -1206,13 +1512,20 @@ void WI_unloadData (void)
     Z_ChangeTag(colon, PU_CACHE);
 	Z_ChangeTag(kills, PU_CACHE);
 	Z_ChangeTag(secret, PU_CACHE);
+	Z_ChangeTag(frags, PU_CACHE);	
 	Z_ChangeTag(items, PU_CACHE);
     Z_ChangeTag(finished, PU_CACHE);
     Z_ChangeTag(entering, PU_CACHE);
     Z_ChangeTag(timepatch, PU_CACHE);
     Z_ChangeTag(sucks, PU_CACHE);
     Z_ChangeTag(par, PU_CACHE);
+	Z_ChangeTag (total, PU_CACHE);
+	//	Z_ChangeTag(star, PU_CACHE);
+	//	Z_ChangeTag(bstar, PU_CACHE);
     Z_ChangeTag(p, PU_CACHE);
+
+	for (i=0 ; i<4 ; i++)
+		Z_ChangeTag(faceclassic[i], PU_CACHE);    
 }
 
 void WI_Drawer (void)
@@ -1225,7 +1538,12 @@ void WI_Drawer (void)
 		{
 		case StatCount:
 			if (multiplayer && sv_maxplayers > 1)
-				WI_drawNetgameStats();
+			{
+				if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
+					WI_drawNetgameStats();
+				else
+					WI_drawDeathmatchStats();
+			}
 			else
 				WI_drawStats();
 			break;
@@ -1257,10 +1575,11 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 	WI_initVariables (wbstartstruct);
 	WI_loadData ();
 	WI_initStats();
+	WI_initNetgameStats();
 
 	V_SetBlend (0,0,0,0);
 	S_StopAllChannels ();
-// 	SN_StopAllSequences ();
+ 	SN_StopAllSequences ();
 }
 
 VERSION_CONTROL (wi_stuff_cpp, "$Id$")

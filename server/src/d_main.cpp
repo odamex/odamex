@@ -126,6 +126,7 @@ static int demosequence;
 static int pagetic;
 
 const char *LOG_FILE;
+static bool RebootInit;
 
 //
 // D_ProcessEvents
@@ -964,12 +965,16 @@ std::vector<size_t> D_DoomWadReboot(
 	D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
 
-	G_SetLevelStrings ();
-	G_ParseMapInfo ();
-	S_ParseSndInfo();
+	if (DefaultsLoaded)	{		// [ML] This is being called while loading defaults,
+		G_SetLevelStrings ();
+		G_ParseMapInfo ();
+		S_ParseSndInfo();
 
-	R_Init();
-	P_Init();
+		R_Init();
+		P_Init();
+	} else {					// let DoomMain know it doesn't have to do everything
+		RebootInit = true;
+	}	
 
 	return fails;
 }
@@ -1004,19 +1009,21 @@ void D_DoomMain (void)
 	M_LoadDefaults ();			// load before initing other systems
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
-	iwad = Args.CheckValue("-iwad");
-	if(!iwad)
-		iwad = "";
+	if (!RebootInit) {
+		iwad = Args.CheckValue("-iwad");
+		if(!iwad)
+			iwad = "";
 
-	D_AddDefWads(iwad);
-	D_AddCmdParameterFiles();
+		D_AddDefWads(iwad);
+		D_AddCmdParameterFiles();
 
-	wadhashes = W_InitMultipleFiles (wadfiles);
-	SV_InitMultipleFiles (wadfiles);
+		wadhashes = W_InitMultipleFiles (wadfiles);
+		SV_InitMultipleFiles (wadfiles);
 	
-	// [RH] Initialize configurable strings.
-	D_InitStrings ();
-	D_DoDefDehackedPatch();
+		// [RH] Initialize configurable strings.
+		D_InitStrings ();
+		D_DoDefDehackedPatch();
+	}
 	
 	I_Init ();
 
@@ -1094,7 +1101,7 @@ void D_DoomMain (void)
 	Printf(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
 
 #ifdef UNIX
-	if (Args.CheckParm("-background"))
+	if (Args.CheckParm("-fork"))
             daemon_init();
 #endif
 

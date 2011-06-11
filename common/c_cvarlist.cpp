@@ -32,6 +32,8 @@ CVAR (sv_gametype,			"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CV
 CVAR (sv_friendlyfire,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // (Teamplay/CTF): Game ends when team score is reached
 CVAR (sv_scorelimit,		"5", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+// (Teamplay/CTF) When disabled, treat team spawns like normal deathmatch spawns.
+CVAR (sv_teamspawns, "1", CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 // Cheat code usage is allowed
 CVAR (sv_allowcheats,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Exit switch/teleports are usable
@@ -80,8 +82,23 @@ CVAR (co_realactorheight, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERIN
 // [Spleen] When enabled, monsters can get pushed or thrusted off of ledges, like in boom
 CVAR (co_allowdropoff, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+// [ML] When enabled, additional checks are made on two-sided lines, allows additional 
+// silent bfg tricks, and the player will "oof" on two-sided lines
+CVAR (co_boomlinecheck, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 // Enable/disable the "level 8 full sound at far distances" feature
 CVAR (co_level8soundfeature, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+// Enable/disable zdoom-based gravity and physics interactions
+CVAR (co_zdoomphys, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+// 0 - Play the switch resetting sound at map location (0,0) like the vanilla bug
+// 1 - switch sounds attenuate with distance like plats and doors.
+CVAR (co_zdoomswitches, "0", CVAR_SERVERINFO)
+
+CVAR_FUNC_DECL (sv_gravity, "800", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+CVAR_FUNC_DECL (sv_aircontrol, "0.00390625", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 
 // Misc stuff
 // ----------

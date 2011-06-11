@@ -109,7 +109,6 @@ void CL_CTFEvent (void)
 		case SCORE_KILL:
 		case SCORE_BETRAYAL:
 		case SCORE_CARRIERKILL:
-		case SCORE_RETURN:
 			break;
 
 		case SCORE_GRAB:
@@ -124,9 +123,10 @@ void CL_CTFEvent (void)
 				CTF_CheckFlags(player);
 			else
 				CTFdata[flag].flagger = 0;
-			CTFdata[flag].state = flag_home;
 			if(CTFdata[flag].actor)
 				CTFdata[flag].actor->Destroy();
+		case SCORE_RETURN:
+			CTFdata[flag].state = flag_home;
 			break;
 
 		case SCORE_DROP:

@@ -45,6 +45,7 @@
 #include "r_draw.h"
 #include "st_stuff.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "doomstat.h"
 #include "gi.h"
 
@@ -67,7 +68,7 @@ extern BOOL		automapactive;	// in AM_map.c
 extern BOOL		advancedemo;
 
 unsigned int	ConRows, ConCols, PhysRows;
-char		*Lines, *Last = NULL;
+unsigned char	*Lines, *Last = NULL;
 BOOL		vidactive = false, gotconback = false;
 BOOL		cursoron = false;
 int			SkipRows, ConBottom;
@@ -198,8 +199,8 @@ void C_Close()
 void C_InitConsole (int width, int height, BOOL ingame)
 {
 	int row;
-	char *zap;
-	char *old;
+	unsigned char *zap;
+	unsigned char *old;
 	int cols, rows;
 
 	bool firstTime = true;
@@ -309,7 +310,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 	PhysRows = height / 8;
 
 	old = Lines;
-	Lines = (char *)Malloc (CONSOLEBUFFER * (ConCols + 2) + 1);
+	Lines = (unsigned char *)Malloc (CONSOLEBUFFER * (ConCols + 2) + 1);
 
 	for (row = 0, zap = Lines; row < CONSOLEBUFFER; row++, zap += ConCols + 2)
 	{
@@ -800,7 +801,7 @@ void C_SetTicker (unsigned int at)
 
 void C_DrawConsole (void)
 {
-	char *zap;
+	unsigned char *zap;
 	int lines, left, offset;
 	static int oldbottom = 0;
 
@@ -886,7 +887,7 @@ void C_DrawConsole (void)
 	{
 		for (; lines > 1; lines--)
 		{
-			screen->PrintStr (left, offset + lines * 8, &zap[2], zap[1]);
+			screen->PrintStr (left, offset + lines * 8, (char*)&zap[2], zap[1]);
 			zap -= ConCols + 2;
 		}
 		if (ConBottom >= 20)
@@ -939,7 +940,7 @@ void C_FullConsole (void)
 		gamestate = GS_FULLCONSOLE;
 		level.music[0] = '\0';
 		S_Start ();
-// 		SN_StopAllSequences ();
+ 		SN_StopAllSequences ();
 		V_SetBlend (0,0,0,0);
 		I_PauseMouse ();
 	} else
@@ -1170,7 +1171,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 		if (HistPos)
 		{
 			strcpy ((char *)&buffer[2], HistPos->String);
-			buffer[0] = buffer[1] = strlen ((char *)&buffer[2]);
+			buffer[0] = buffer[1] = (BYTE)strlen ((char *)&buffer[2]);
 			buffer[len+4] = 0;
 			makestartposgood();
 		}
@@ -1185,7 +1186,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			HistPos = HistPos->Newer;
 
 			strcpy ((char *)&buffer[2], HistPos->String);
-			buffer[0] = buffer[1] = strlen ((char *)&buffer[2]);
+			buffer[0] = buffer[1] = (BYTE)strlen ((char *)&buffer[2]);
 		}
 		else
 		{
@@ -1483,7 +1484,7 @@ END_COMMAND (history)
 BEGIN_COMMAND (clear)
 {
 	int i;
-	char *row = Lines;
+	unsigned char *row = Lines;
 
 	RowAdjust = 0;
 	C_FlushDisplay ();
@@ -1518,8 +1519,6 @@ EXTERN_CVAR (con_midtime)
 void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
-    std::string Str;
-    size_t StrLength;
     
     if (!msgtime)
         msgtime = con_midtime;
@@ -1533,27 +1532,20 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
 
         // [Russell] - convert textual "\n" into the binary representation for
         // line breaking
-        Str = msg;
-        StrLength = Str.length();
+    	std::string str = msg;
 
-        for (i = 0; i < StrLength && i + 1 < StrLength; ++i)
-        {
-            if ((Str[i] == '\\') && (Str[i + 1] == 'n'))
-            {
-                Str[i] = '\n';
-                Str = Str.erase(i + 1, 1);
-				// [NullPoint] Updating the string’s length so the loop does not  
-				// go outside the String’s length
-				StrLength = Str.length(); 
-            }
-        }
+		for (size_t pos = str.find("\\n"); pos != std::string::npos; pos = str.find("\\n", pos))
+		{
+			str[pos] = '\n';
+			str.erase(pos+1, 1);
+		}
 
-        msg = Str.c_str();
+		char *newmsg = strdup(str.c_str());
 
-		Printf (PRINT_HIGH, "%s\n", msg);
+		Printf (PRINT_HIGH, "%s\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)msg)) )
+		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)newmsg)) )
 		{
 			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
@@ -1562,6 +1554,8 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
 
 			MidLines = i;
 		}
+
+		free(newmsg);
 	}
 	else
 		MidMsg = NULL;
@@ -1680,7 +1674,7 @@ static void C_TabComplete (void)
 
 	// Found a valid replacement
 	strcpy ((char *)(CmdLine + TabStart), i->first.c_str());
-	CmdLine[0] = CmdLine[1] = strlen ((char *)(CmdLine + 2)) + 1;
+	CmdLine[0] = CmdLine[1] = (BYTE)strlen ((char *)(CmdLine + 2)) + 1;
 	CmdLine[CmdLine[0] + 1] = ' ';
 
 	makestartposgood ();

@@ -70,7 +70,7 @@ void addterm (void (STACK_ARGS *func) (), const char *name)
 	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
-static void STACK_ARGS call_terms (void)
+void STACK_ARGS call_terms (void)
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
@@ -84,10 +84,30 @@ int PrintString (int printlevel, char const *outline)
 }
 
 #ifdef WIN32
+static HANDLE hEvent;
+
+int ShutdownNow()
+{
+    return (WaitForSingleObject(hEvent, 1) == WAIT_OBJECT_0);
+}
+
+BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
+{
+    SetEvent(hEvent);
+    return TRUE;
+}
+
 int __cdecl main(int argc, char *argv[])
 {
     try
     {
+        // Handle ctrl-c, close box, shutdown and logoff events
+        if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
+            throw CDoomError("Could not set console control handler!\n");
+
+        if (!(hEvent = CreateEvent(NULL, FALSE, FALSE, NULL)))
+            throw CDoomError("Could not create console control event!\n");
+
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		Args.SetArgs (argc, argv);
 
@@ -103,7 +123,8 @@ int __cdecl main(int argc, char *argv[])
 
 		timeBeginPeriod (TimerPeriod);
 
-		atexit (call_terms);
+        // Don't call this on windows!
+		//atexit (call_terms);
 
 		Z_Init();
 
@@ -164,14 +185,19 @@ void daemon_init(void)
 {
     int   pid;
     FILE *fpid;
+    const char *pidfile;
 
     Printf(PRINT_HIGH, "Launched into the background\n");
 
     if ((pid = fork()) != 0)
 	exit(0);
-
+	
+	pidfile = Args.CheckValue("-fork");
+	if (!pidfile || !strncmp(pidfile,"-",1))
+		pidfile = "doomsv.pid";
+		
     pid = getpid();
-    fpid = fopen("doomsv.pid", "w");
+    fpid = fopen(pidfile, "w");
     fprintf(fpid, "%d\n", pid);
     fclose(fpid);
 }
@@ -206,7 +232,8 @@ int main (int argc, char **argv)
 		  left in an unstable state.
 		*/
 
-		atexit (call_terms);
+        // Don't use this on other platforms either
+		//atexit (call_terms);
 		Z_Init();					// 1/18/98 killough: start up memory stuff first
 
 		atterm (I_Quit);
@@ -235,6 +262,7 @@ int main (int argc, char **argv)
             LOG << std::endl;
         }
 
+	call_terms();
 	exit (-1);
     }
     catch (...)

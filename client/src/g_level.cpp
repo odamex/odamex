@@ -49,6 +49,7 @@
 #include "p_acs.h"
 #include "d_protocol.h"
 #include "v_text.h"
+#include "s_sndseq.h"
 #include "sc_man.h"
 #include "cl_main.h"
 #include "m_fileio.h"
@@ -67,6 +68,8 @@ extern int timingdemo;
 
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
+EXTERN_CVAR(sv_gravity)
+EXTERN_CVAR(sv_aircontrol)
 
 // Start time for timing demos
 int starttime;
@@ -148,6 +151,8 @@ static const char *MapInfoMapLevel[] =
 	"cd_intermission_track",
 	"cd_title_track",
 	"warptrans",
+	"gravity",
+	"aircontrol",	
 	NULL
 };
 
@@ -156,6 +161,7 @@ enum EMIType
 	MITYPE_IGNORE,
 	MITYPE_EATNEXT,
 	MITYPE_INT,
+	MITYPE_FLOAT,
 	MITYPE_COLOR,
 	MITYPE_MAPNAME,
 	MITYPE_LUMPNAME,
@@ -211,7 +217,9 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 }
+	{ MITYPE_EATNEXT,	0, 0 },	
+	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -386,6 +394,11 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			*((int *)(info + handler->data1)) = sc_Number;
 			break;
 
+		case MITYPE_FLOAT:
+			SC_MustGetFloat ();
+			*((float *)(info + handler->data1)) = sc_Float;
+			break;
+			
 		case MITYPE_COLOR:
 			{
 				SC_MustGetString ();
@@ -736,6 +749,8 @@ void G_InitNew (const char *mapname)
 	demoplayback = false;
 	automapactive = false;
 	viewactive = true;
+	
+	D_SetupUserInfo();
 
 	strncpy (level.mapname, mapname, 8);
 	G_DoLoadLevel (0);
@@ -769,24 +784,15 @@ static void goOn (int position)
 
 void G_ExitLevel (int position, int drawscores)
 {
-    //if (multiplayer && drawscores && interscoredraw)
-    //    AddCommandString("displayscores");
-    // Never called.
-
 	secretexit = false;
 	goOn (position);
 
 	//gameaction = ga_completed;
-	
 }
 
 // Here's for the german edition.
 void G_SecretExitLevel (int position, int drawscores)
 {
-    //if (multiplayer && drawscores && interscoredraw)
-    //    AddCommandString("displayscores");
-    // Never called.
-
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gamemode == commercial)
 		 && (W_CheckNumForName("map31")<0))
@@ -860,7 +866,11 @@ void G_DoCompleted (void)
 	{
 		wminfo.plyr[i].in = players[i].ingame();
 		wminfo.plyr[i].skills = players[i].killcount;
+		wminfo.plyr[i].sitems = players[i].itemcount;
+		wminfo.plyr[i].ssecret = players[i].secretcount;		
 		wminfo.plyr[i].stime = level.time;
+		//memcpy (wminfo.plyr[i].frags, players[i].frags
+		//		, sizeof(wminfo.plyr[i].frags));		
 		wminfo.plyr[i].fragcount = players[i].fragcount;
 
 		if(&players[i] == &consoleplayer())
@@ -961,6 +971,8 @@ void G_DoLoadLevel (int position)
 			players[i].playerstate = PST_REBORN;
 
 		players[i].fragcount = 0;
+		players[i].itemcount = 0;
+		players[i].secretcount = 0;
 		players[i].deathcount = 0; // [Toke - Scores - deaths]
 		players[i].killcount = 0; // [deathz0r] Coop kills
 		players[i].points = 0;
@@ -985,7 +997,7 @@ void G_DoLoadLevel (int position)
 			actor->touching_sectorlist = NULL;
 	}
 
-// 	SN_StopAllSequences (); // denis - todo - equivalent?
+ 	SN_StopAllSequences (); // denis - todo - equivalent?
 	P_SetupLevel (level.mapname, position);
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
 	ST_Start();		// [RH] Make sure status bar knows who we are
@@ -1082,8 +1094,12 @@ void G_InitLevelLocals ()
 
 	BaseBlendA = 0.0f;		// Remove underwater blend effect, if any
 	NormalLight.maps = realcolormaps;
-
-	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
+	
+	level.gravity = sv_gravity;
+	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
+	
+	if ((i = FindWadLevelInfo (level.mapname)) > -1)
+	{
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
 
 		// [ML] 5/11/06 - Remove sky scrolling and sky2
@@ -1097,6 +1113,14 @@ void G_InitLevelLocals ()
 		}
 		level.outsidefog = pinfo->outsidefog;
 		level.flags |= LEVEL_DEFINEDINMAPINFO;
+		if (pinfo->gravity != 0.f)
+		{
+			level.gravity = pinfo->gravity;
+		}
+		if (pinfo->aircontrol != 0.f)
+		{
+			level.aircontrol = (fixed_t)(pinfo->aircontrol * 65536.f);
+		}
 	} else {
 		info = FindDefLevelInfo (level.mapname);
 		level.info = info;
@@ -1279,10 +1303,23 @@ void G_SetLevelStrings (void)
 		strncpy (level.level_name, level.info->level_name, 63);
 }
 
+
+void G_AirControlChanged ()
+{
+	if (level.aircontrol <= 256)
+	{
+		level.airfriction = FRACUNIT;
+	}
+	else
+	{
+		// Friction is inversely proportional to the amount of control
+		float fric = ((float)level.aircontrol/65536.f) * -0.0941f + 1.0004f;
+		level.airfriction = (fixed_t)(fric * 65536.f);
+	}
+}
+
 void G_SerializeLevel (FArchive &arc, bool hubLoad)
 {
-    int i;
-    
 	if (arc.IsStoring ())
 	{
 		unsigned int playernum = players.size();
@@ -1290,13 +1327,16 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.fadeto
 			<< level.found_secrets
 			<< level.found_items
-			<< level.killed_monsters;
-			//<< playernum;
-
-		for (i = 0; i < NUM_MAPVARS; i++)
+			<< level.killed_monsters
+			<< level.gravity
+			<< level.aircontrol;
+			
+		G_AirControlChanged ();
+	
+		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc << level.vars[i];
 			
-        arc << playernum;
+		arc << playernum;
 	}
 	else
 	{
@@ -1305,25 +1345,26 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			>> level.fadeto
 			>> level.found_secrets
 			>> level.found_items
-			>> level.killed_monsters;
-			//>> playernum;
+			>> level.killed_monsters
+			>> level.gravity
+			>> level.aircontrol;
+
+		G_AirControlChanged ();
 			
-		for (i = 0; i < NUM_MAPVARS; i++)
+		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc >> level.vars[i];
         
-        arc >> playernum;
+       	arc >> playernum;
 
 		players.resize(playernum);
 	}
-	
 	if (!hubLoad)
-		P_SerializePlayers (arc);    
+		P_SerializePlayers (arc);
 		
 	P_SerializeThinkers (arc, hubLoad);
-    P_SerializeWorld (arc);
-    P_SerializePolyobjs (arc);
-    P_SerializeSounds (arc);
-
+	P_SerializeWorld (arc);
+	P_SerializePolyobjs (arc);
+	P_SerializeSounds (arc);
 }
 
 // Archives the current level

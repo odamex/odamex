@@ -36,21 +36,32 @@
 #include "game_command.h"
 #include "gui_config.h"
 
+namespace agOdalaunch {
+
 #ifdef _WIN32
 #define usleep(t) Sleep(t / 1000)
 #endif
 
 using namespace std;
 
-void GameCommand::AddParameter(string parameter)
+void GameCommand::AddParameter(const string &parameter)
 {
+#ifdef _WIN32
+	Parameters.push_back(string("\"") + parameter + string("\""));
+#else
 	Parameters.push_back(parameter);
+#endif
 }
 
-void GameCommand::AddParameter(string parameter, string value)
+void GameCommand::AddParameter(const string &parameter, const string &value)
 {
+#ifdef _WIN32
+	Parameters.push_back(string("\"") + parameter + string("\""));
+	Parameters.push_back(string("\"") + value + string("\""));
+#else
 	Parameters.push_back(parameter);
 	Parameters.push_back(value);
+#endif
 }
 
 int GameCommand::Launch()
@@ -91,6 +102,25 @@ int GameCommand::Launch()
 
 	// Mark the end
 	argv[argc] = NULL;
+
+#ifdef GCONSOLE
+	// Game consoles will not return from this method if Odamex is successfully
+	// launched as the launcher will terminate. On game consoles the main windows
+	// widget states need to be saved before launch or changes will be lost.
+	AG_Window *mainWindow = NULL;
+	AG_Driver *drv;
+
+	AGOBJECT_FOREACH_CHILD(drv, &agDrivers, ag_driver)
+	{
+		if((mainWindow = (AG_Window*)AG_ObjectFindChild(drv, "MainWindow")) != NULL)
+			break;
+	}
+
+	if(mainWindow)
+		AG_PostEvent(mainWindow, mainWindow, "save-wstates", NULL);
+
+	GuiConfig::Save();
+#endif
 
 	// Launch Odamex
 	if((pid = AG_Execute(*argv, argv)) == -1)
@@ -148,3 +178,5 @@ void GameCommand::Cleanup(AG_ProcessID pid)
 
 	AG_ThreadCreate(&thread, Cleanup, (void *)pPID);
 }
+
+} // namespace

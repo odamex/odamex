@@ -24,6 +24,7 @@
 
 #include <xtl.h>
 #include <iostream>
+#include <string>
 #include <iomanip>
 #include <sstream>
 #include <list>
@@ -146,6 +147,22 @@ char *xbox_GetCWD(char *buf, size_t size)
 		errno = EINVAL;
 
 	return NULL;
+}
+
+//
+// xbox_InetNtoa
+//
+char *xbox_InetNtoa(struct in_addr in)
+{
+	static char addr[32];
+
+	sprintf(addr, "%d.%d.%d.%d",
+				in.S_un.S_un_b.s_b1,
+				in.S_un.S_un_b.s_b2,
+				in.S_un.S_un_b.s_b3,
+				in.S_un.S_un_b.s_b4);
+
+	return addr;
 }
 
 //
@@ -568,6 +585,40 @@ void xbox_Exit(int status)
 }
 
 //
+// xbox_PrepareArgs
+//
+// Convert to standard C arguments
+void xbox_PrepareArgs(string cmdline, char *argv[], int &argc)
+{
+	if(cmdline.size())
+	{
+		size_t pos, oldpos = 0;
+
+		do
+		{
+			if(cmdline[oldpos] == '"')
+				pos = cmdline.find('"', ++oldpos);
+			else
+				pos = cmdline.find(' ', oldpos);
+
+			if(pos != oldpos)
+			{
+				argv[argc] = strdup(cmdline.substr(oldpos, pos - oldpos).c_str());
+
+				if(!stricmp(argv[argc], "-rrod"))
+					Xbox_RROD = true;
+
+				argc++;
+			}
+
+			oldpos = pos + 1;
+		} while(pos != string::npos);
+	}
+
+	argv[argc] = NULL;
+}
+
+//
 // main
 //
 // Entry point on Xbox
@@ -585,24 +636,15 @@ void  __cdecl main()
 	{
 		// Command line from debugger
 		if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) 
-			xargv[xargc] = strtok(((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, " ");
+			xbox_PrepareArgs((char*)((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, xargv, xargc);
 		// Command line from homebrew dashboards (XBMC, etc.)
 		else if(launchDataType == LDT_TITLE && ((PCUSTOM_LAUNCH_DATA)&launchData)->magic == CUSTOM_LAUNCH_MAGIC)
-			xargv[xargc] = strtok((char*)((PCUSTOM_LAUNCH_DATA)&launchData)->szFilename, " ");
+			xbox_PrepareArgs((char*)((PCUSTOM_LAUNCH_DATA)&launchData)->szFilename, xargv, xargc);
 		// Command line from Agar application (AG_Odalaunch)
 		else if(launchDataType == LDT_TITLE && ((PAG_LAUNCH_DATA)&launchData)->magic == AG_LAUNCH_MAGIC)
 		{
 			xbox_RecordLauncherXBE(((PAG_LAUNCH_DATA)&launchData)->szLauncherXBE, ((PAG_LAUNCH_DATA)&launchData)->dwID);
-			xargv[xargc] = strtok((char*)((PAG_LAUNCH_DATA)&launchData)->szCmdLine, " ");
-		}
-
-		while(xargv[xargc] != NULL)
-		{
-			if(!stricmp(xargv[xargc], "-rrod"))
-				Xbox_RROD = true;
-
-			xargc++;
-			xargv[xargc] = strtok(NULL, " ");
+			xbox_PrepareArgs((char*)((PAG_LAUNCH_DATA)&launchData)->szCmdLine, xargv, xargc);
 		}
 	}
 

@@ -44,6 +44,8 @@
 #include "cmdlib.h"
 #include "s_sound.h"
 
+#include "qsort.h"
+
 extern fixed_t FocalLengthX, FocalLengthY;
 
 
@@ -1314,10 +1316,7 @@ static struct vissort_s {
 static int		spritesortersize = 0;
 static int		vsprcount;
 
-static int STACK_ARGS sv_compare (const void *arg1, const void *arg2)
-{
-	return ((struct vissort_s *)arg2)->depth - ((struct vissort_s *)arg1)->depth;
-}
+#define cmp_sprites(a, b) (b->depth < a->depth)
 
 void R_SortVisSprites (void)
 {
@@ -1340,7 +1339,7 @@ void R_SortVisSprites (void)
 		spritesorter[i].depth = vissprites[i].depth;
 	}
 
-	qsort (spritesorter, vsprcount, sizeof (struct vissort_s), sv_compare);
+    QSORT(vissort_s, spritesorter, vsprcount, cmp_sprites);
 }
 
 

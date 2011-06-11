@@ -55,6 +55,9 @@
 #define LEVEL_FREELOOK_NO		0x00010000
 #define LEVEL_FREELOOK_YES		0x00020000
 
+#define LEVEL_STARTLIGHTNING	0x01000000		// Automatically start lightning
+#define LEVEL_FILTERSTARTS		0x02000000		// Apply mapthing filtering to player starts
+
 #define LEVEL_DEFINEDINMAPINFO	0x20000000		// Level was defined in a MAPINFO lump
 #define LEVEL_CHANGEMAPCHEAT	0x40000000		// Don't display cluster messages
 #define LEVEL_VISITED			0x80000000		// Used for intermission map
@@ -99,6 +102,8 @@ struct level_pwad_info_s
 	DWORD		fadeto;
 	char		fadetable[8];
 	DWORD		outsidefog;
+	float		gravity;
+	float		aircontrol;	
 };
 typedef struct level_pwad_info_s level_pwad_info_t;
 
@@ -132,6 +137,10 @@ struct level_locals_s {
 
 	int			total_monsters;
 	int			killed_monsters;
+	
+	float		gravity;
+	fixed_t		aircontrol;
+	fixed_t		airfriction;	
 	
 	// The following are all used for ACS scripting
 	byte		*behavior;
@@ -178,6 +187,8 @@ void G_SecretExitLevel (int position, int drawscores);
 void G_DoLoadLevel (int position);
 
 void G_InitLevelLocals (void);
+
+void G_AirControlChanged ();
 
 void G_SetLevelStrings (void);
 

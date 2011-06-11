@@ -26,6 +26,14 @@
 #ifndef _TYPEDEFS_H
 #define _TYPEDEFS_H
 
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
+namespace agOdalaunch {
+
 #ifdef _MSC_VER
 	typedef signed   __int8   int8_t;
 	typedef signed   __int16  int16_t;
@@ -38,5 +46,7 @@
 #else
 	#include <stdint.h>
 #endif
+
+} // namespace
 
 #endif

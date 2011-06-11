@@ -19,15 +19,15 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>0.4.3</string>
+	<string>0.5.1</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.4.3</string>
+	<string>0.5.1</string>
 	<key>CFBundleGetInfoString</key>
-	<string>ODAMEX and its likeness © 2009 Odamex team.</string>
+	<string>ODAMEX and its likeness © 2011 Odamex team.</string>
 	<key>CFBundleLongVersionString</key>
-	<string>0.4.3</string>
+	<string>0.5.1</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>ODAMEX and its likeness © 2009 Odamex team.</string>
+	<string>ODAMEX and its likeness © 2011 Odamex team.</string>
 	<key>LSRequiresCarbon</key>
 	<true/>
 </dict>

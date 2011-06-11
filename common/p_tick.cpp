@@ -29,6 +29,8 @@
 
 EXTERN_CVAR (sv_speedhackfix)
 
+void P_AnimationTick(AActor *mo);
+
 //
 // P_Ticker
 //
@@ -45,6 +47,15 @@ void P_Ticker (void)
 		for(size_t i = 0; i < players.size(); i++)
 			if(players[i].ingame())
 				P_PlayerThink (&players[i]);
+	}
+
+	// [SL] 2011-06-05 - Tick player actor animations here since P_Ticker is
+	// called only once per tick.  AActor::RunThink is called whenever the
+	// server receives a cmd from the client, which can happen multiple times
+	// in a single gametic.
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		P_AnimationTick(players[i].mo);
 	}
 
 	DThinker::RunThinkers ();

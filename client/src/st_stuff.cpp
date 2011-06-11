@@ -788,7 +788,7 @@ END_COMMAND (god)
 
 BEGIN_COMMAND (notarget)
 {
-	if (CheckCheatmode ())
+	if (CheckCheatmode () || connected)
 		return;
 
 	consoleplayer().cheats ^= CF_NOTARGET;

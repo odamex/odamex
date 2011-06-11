@@ -33,6 +33,9 @@
 
 #include "net_io.h"
 
+// Default server port
+#define DEF_SERVERPORT 10666
+
 #define MASTER_CHALLENGE    777123
 #define MASTER_RESPONSE     777123
 #define SERVER_CHALLENGE    0xAD011002

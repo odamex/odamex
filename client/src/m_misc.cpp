@@ -58,7 +58,7 @@ std::string GetConfigPath (void)
 //
 
 // [RH] Don't write a config file if M_LoadDefaults hasn't been called.
-static BOOL DefaultsLoaded;
+bool DefaultsLoaded;
 
 void STACK_ARGS M_SaveDefaults (void)
 {

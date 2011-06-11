@@ -28,6 +28,17 @@ endif
 
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
 
+ag-odalaunch.app: ag-odalaunch
+	rm -rf ag-odalaunch.app 
+	mkdir ag-odalaunch.app
+	mkdir ag-odalaunch.app/Contents
+	mkdir ag-odalaunch.app/Contents/Resources
+	mkdir ag-odalaunch.app/Contents/MacOS
+	cp res/Info.plist ag-odalaunch.app/Contents
+	cp res/odalaunch.icns ag-odalaunch.app/Contents/Resources
+	echo -n "APPL????" > ag-odalaunch.app/Contents/PkgInfo
+	cp ag-odalaunch ag-odalaunch.app/Contents/MacOS
+
 ag-odalaunch: $(OBJECTS)
 	$(LD) $(OBJECTS) -o ag-odalaunch $(LFLAGS)
 

@@ -143,11 +143,14 @@ void cht_DoCheat (player_t *player, int cheat)
 			break;
 
 		case CHT_NOTARGET:
-			player->cheats ^= CF_NOTARGET;
-			if (player->cheats & CF_NOTARGET)
-				msg = "notarget ON";
-			else
-				msg = "notarget OFF";
+			if (!multiplayer)
+			{
+				player->cheats ^= CF_NOTARGET;
+				if (player->cheats & CF_NOTARGET)
+					msg = "notarget ON";
+				else
+					msg = "notarget OFF";
+			}
 			break;
 
 		case CHT_CHASECAM:

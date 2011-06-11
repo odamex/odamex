@@ -70,6 +70,8 @@ EXTERN_CVAR (sv_startmapscript)
 EXTERN_CVAR (sv_curmap)
 EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
+EXTERN_CVAR (sv_gravity)
+EXTERN_CVAR (sv_aircontrol)
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
@@ -166,6 +168,7 @@ enum EMIType
 	MITYPE_IGNORE,
 	MITYPE_EATNEXT,
 	MITYPE_INT,
+	MITYPE_FLOAT,
 	MITYPE_COLOR,
 	MITYPE_MAPNAME,
 	MITYPE_LUMPNAME,
@@ -221,7 +224,9 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 }
+	{ MITYPE_EATNEXT,	0, 0 },	
+	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -396,6 +401,11 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			*((int *)(info + handler->data1)) = sc_Number;
 			break;
 
+		case MITYPE_FLOAT:
+			SC_MustGetFloat ();
+			*((float *)(info + handler->data1)) = sc_Float;
+			break;
+			
 		case MITYPE_COLOR:
 			{
 				SC_MustGetString ();
@@ -629,7 +639,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	// GhostlyDeath <August 14, 2008> -- Check our environment, if the same WADs are used, ignore this command
-	if (AddedIWAD)
+	if (AddedIWAD && !wadfiles.empty())
 	{
 		if (stricmp(GetBase(wads[0].c_str()), GetBase(wadfiles[1].c_str())) != 0)
 			Reboot = true;
@@ -938,16 +948,12 @@ void G_ChangeMap (void)
 
 	if (!MapListPointer)
 	{
-		char *next = level.nextmap;
-
-        // for latched "deathmatch 0" cvar
-        if (gamestate == GS_STARTUP)
-        {
-            next = level.mapname;
-        }
+		char *next = level.nextmap;     
 
 		// if deathmatch, stay on same level
-		if(sv_gametype != GM_COOP)
+		// [ML] 1/25/10: OR if next is empty
+		if(gamestate == GS_STARTUP || 
+			sv_gametype != GM_COOP || !strlen(next))
 			next = level.mapname;
 		else
 			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
@@ -1105,8 +1111,6 @@ void G_InitNew (const char *mapname)
 				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
 				MSG_WriteByte (&(players[j].client.reliablebuf), true);
 			}
-			players[i].mo->flags |= MF_SPECTATOR;
-			players[i].mo->flags2 |= MF2_FLY;
 			players[i].spectator = true;
 			players[i].playerstate = PST_LIVE;
 			players[i].joinafterspectatortime = -(TICRATE*5);
@@ -1464,7 +1468,10 @@ void G_InitLevelLocals ()
 	int i;
 
 	NormalLight.maps = realcolormaps;
-	
+
+	level.gravity = sv_gravity;
+	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
+		
 	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
 
@@ -1479,6 +1486,14 @@ void G_InitLevelLocals ()
 		}
 		level.outsidefog = pinfo->outsidefog;
 		level.flags |= LEVEL_DEFINEDINMAPINFO;
+		if (pinfo->gravity != 0.f)
+		{
+			level.gravity = pinfo->gravity;
+		}
+		if (pinfo->aircontrol != 0.f)
+		{
+			level.aircontrol = (fixed_t)(pinfo->aircontrol * 65536.f);
+		}		
 	} else {
 		info = FindDefLevelInfo (level.mapname);
 		level.info = info;
@@ -1659,6 +1674,21 @@ void G_SetLevelStrings (void)
 }
 
 
+void G_AirControlChanged ()
+{
+	if (level.aircontrol <= 256)
+	{
+		level.airfriction = FRACUNIT;
+	}
+	else
+	{
+		// Friction is inversely proportional to the amount of control
+		float fric = ((float)level.aircontrol/65536.f) * -0.0941f + 1.0004f;
+		level.airfriction = (fixed_t)(fric * 65536.f);
+	}
+}
+
+
 void G_SerializeLevel (FArchive &arc, bool hubLoad)
 {
 	if (arc.IsStoring ())
@@ -1667,10 +1697,14 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.fadeto
 			<< level.found_secrets
 			<< level.found_items
-			<< level.killed_monsters;
-
-//		for (i = 0; i < NUM_MAPVARS; i++)
-//			arc << level.vars[i];
+			<< level.killed_monsters
+			<< level.gravity
+			<< level.aircontrol;
+			
+			G_AirControlChanged ();
+			
+		for (int i = 0; i < NUM_MAPVARS; i++)
+			arc << level.vars[i];
 	}
 	else
 	{
@@ -1678,17 +1712,23 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			>> level.fadeto
 			>> level.found_secrets
 			>> level.found_items
-			>> level.killed_monsters;
+			>> level.killed_monsters
+			>> level.gravity
+			>> level.aircontrol;
 
-//		for (i = 0; i < NUM_MAPVARS; i++)
-//			arc >> level.vars[i];
+			G_AirControlChanged ();
+
+		for (int i = 0; i < NUM_MAPVARS; i++)
+			arc >> level.vars[i];
 	}
+	
+	if (!hubLoad)
+		P_SerializePlayers (arc);
+
 	P_SerializeThinkers (arc, hubLoad);
 	P_SerializeWorld (arc);
 	P_SerializePolyobjs (arc);
 	P_SerializeSounds (arc);
-	if (!hubLoad)
-		P_SerializePlayers (arc);
 }
 
 // Archives the current level

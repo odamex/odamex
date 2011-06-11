@@ -42,11 +42,19 @@
 
 #include "typedefs.h"
 
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
+namespace agOdalaunch {
+
 #ifndef _WIN32
-#define SOCKET int
+typedef int SOCKET;
 #endif
 
-#define MAX_PAYLOAD 8192
+const size_t MAX_PAYLOAD = 8192;
 
 typedef unsigned char byte;
 
@@ -144,5 +152,7 @@ private:
                
 	uint32_t m_SendPing, m_ReceivePing;
 };
+
+} // namespace
 
 #endif

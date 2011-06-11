@@ -206,24 +206,33 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
     
     MSG_WriteByte(&ml_message, players.size());
     
+    // Player info
     for (size_t i = 0; i < players.size(); ++i)
     {
-        if (players[i].ingame())
-        {
-			MSG_WriteString(&ml_message, players[i].userinfo.netname);
-            MSG_WriteByte(&ml_message, players[i].userinfo.team);
-			MSG_WriteShort(&ml_message, players[i].ping);
+        MSG_WriteString(&ml_message, players[i].userinfo.netname);
+        MSG_WriteByte(&ml_message, players[i].userinfo.team);
+        MSG_WriteShort(&ml_message, players[i].ping);
 
-			int timeingame = (time(NULL) - players[i].JoinTime)/60;
-			if (timeingame < 0) 
-                timeingame = 0;
-			MSG_WriteShort(&ml_message, timeingame);
+        int timeingame = (time(NULL) - players[i].JoinTime)/60;
+        if (timeingame < 0) 
+            timeingame = 0;
 
-            MSG_WriteBool(&ml_message, players[i].spectator);
-            MSG_WriteShort(&ml_message, players[i].fragcount);
-			MSG_WriteShort(&ml_message, players[i].killcount);
-			MSG_WriteShort(&ml_message, players[i].deathcount);		
-        }
+        MSG_WriteShort(&ml_message, timeingame);
+
+        // FIXME - Treat non-players (downloaders/others) as spectators too for
+        // now
+        bool spectator;
+
+        spectator = (players[i].spectator || 
+            ((players[i].playerstate != PST_LIVE) &&
+            (players[i].playerstate != PST_DEAD) &&
+            (players[i].playerstate != PST_REBORN)));
+
+        MSG_WriteBool(&ml_message, spectator);
+
+        MSG_WriteShort(&ml_message, players[i].fragcount);
+        MSG_WriteShort(&ml_message, players[i].killcount);
+        MSG_WriteShort(&ml_message, players[i].deathcount);
     }
 }
 

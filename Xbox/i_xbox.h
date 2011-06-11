@@ -49,6 +49,7 @@ struct hostent
 #define exit xbox_Exit
 #undef atexit
 #define atexit xbox_AtExit
+#define inet_ntoa xbox_InetNtoa
 #define gethostbyname xbox_GetHostByName
 #define gethostname xbox_GetHostname
 
@@ -56,6 +57,7 @@ struct hostent
 char *xbox_Getenv(const char *);
 int xbox_Putenv(const char *);
 char *xbox_GetCWD(char *buf, size_t size);
+char *xbox_InetNtoa(struct in_addr in);
 struct hostent *xbox_GetHostByName(const char *name);
 int xbox_GetHostname(char *name, int namelen);
 void xbox_Exit(int status);

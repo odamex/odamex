@@ -254,18 +254,27 @@ void dlgMain::OnShow(wxShowEvent &event)
 // manually connect to a server
 void dlgMain::OnManualConnect(wxCommandEvent &event)
 {
+    wxFileConfig ConfigInfo;
+    wxInt32 ServerTimeout;
+    Server tmp_server;
+    wxString server_hash;
+    wxString ped_hash;
     wxString ped_result;
     wxString ted_result;
+    wxString IPHost;
+    long Port;
     
-    const char *HelpText = "Please enter an IP Address or Hostname. \n\nAn "
+    const wxString HelpText = wxT("Please enter an IP Address or Hostname. \n\nAn "
                             "optional port number can exist for IPs or Hosts\n"
-                            "by putting a : after the address.";
+                            "by putting a : after the address.");
 
-    wxTextEntryDialog ted(this, wxT(HelpText), wxT("Manual Connect"), 
+    wxTextEntryDialog ted(this, HelpText, wxT("Manual Connect"), 
         wxT("0.0.0.0:0"));
 
-    wxPasswordEntryDialog ped(this, wxT("Enter a password (optional)"), 
-        wxT("Manual Connect"), wxT(""));
+    wxPasswordEntryDialog ped(this, wxT("Server is password-protected. \n\n" 
+        "Please enter the password"), wxT("Manual Connect"), wxT(""));
+
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
 
     // Keep asking for a valid ip/port number
     while (1)
@@ -277,7 +286,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     
         ted_result = ted.GetValue();
 
-        switch (IsAddressValid(ted_result))
+        switch (IsAddressValid(ted_result, IPHost, Port))
         {
             // Correct address
             case _oda_iav_SUCCESS:
@@ -302,7 +311,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
             // Internal error
             case _oda_iav_interr:
             {
-                wxMessageBox(wxT("Regex compiler failure"));
+                wxMessageBox(wxT("Regex compiler failure, please report this"));
                 return;
             }
 
@@ -319,12 +328,59 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
             break;
     }
 
-    // Show password entry dialog
-    if (ped.ShowModal() == wxID_CANCEL)
+    // Query the server and try to acquire its password hash
+    tmp_server.SetAddress(IPHost, Port);
+    tmp_server.Query(ServerTimeout);
+
+    if (tmp_server.GotResponse() == false)
+    {
+        // Server is unreachable
+        wxMessageDialog Message(this, wxT("No response from server"), 
+            wxT("Manual Connect"), wxOK | wxICON_HAND);
+
+        Message.ShowModal();
+
         return;
+    }
+
+    server_hash = tmp_server.Info.PasswordHash;
+
+    // Uppercase both hashes for easier comparison
+    server_hash.MakeUpper();
+
+    // Show password entry dialog only if the server has a password
+    if (!server_hash.IsEmpty())
+    {
+        while(1)
+        {
+            if (ped.ShowModal() == wxID_CANCEL)
+                return;
+
+            ped_result = ped.GetValue();
+               
+            ped_hash = MD5SUM(ped_result);
+
+            ped_hash.MakeUpper();
+
+            if (ped_hash != server_hash)
+            {
+                wxMessageDialog Message(this, wxT("Incorrect password"), 
+                    wxT("Manual Connect"), wxOK | wxICON_HAND);
+
+                Message.ShowModal();
+
+                ped.SetValue(wxT(""));
+
+                continue;
+            }
+            else
+                break;
+        }
+    }
+
     
     LaunchGame(ted_result, launchercfg_s.odamex_directory, 
-        launchercfg_s.wad_paths, ped.GetValue());
+        launchercfg_s.wad_paths, ped_result);
 }
 
 // Posts a message from the main thread to the monitor thread
@@ -946,14 +1002,16 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
     return i;
 }
 
-// Checks whether an odamex-style address format is valid
-_oda_iav_err_t dlgMain::IsAddressValid(wxString Address)
+// Checks whether an odamex-style address format is valid, also gives the
+// separated ip/hostname and port number back to the caller
+_oda_iav_err_t dlgMain::IsAddressValid(wxString Address, wxString &OutIPHost, 
+    long &OutPort)
 {
     wxInt32 Colon;
     wxString RegEx;
     wxRegEx ReValIP;
     wxString IPHost;
-    long Port;
+    long Port = DEF_SERVERPORT;
 
     // Get rid of any whitespace on either side of the string
     Address.Trim(false);
@@ -1004,7 +1062,12 @@ _oda_iav_err_t dlgMain::IsAddressValid(wxString Address)
 
     // Finally do the comparison
     if (ReValIP.Matches(IPHost) == true)
+    {
+        OutIPHost = IPHost;
+        OutPort = Port;
+
         return _oda_iav_SUCCESS;
+    }
     else
     {
         struct hostent *he;
@@ -1013,7 +1076,12 @@ _oda_iav_err_t dlgMain::IsAddressValid(wxString Address)
         he = gethostbyname((const char *)IPHost.char_str());
 
         if (he != NULL)
+        {
+            OutIPHost = IPHost;
+            OutPort = Port;
+
             return _oda_iav_SUCCESS;
+        }
         else
             return _oda_iav_FAILURE;
     }

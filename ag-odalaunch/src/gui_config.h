@@ -28,41 +28,53 @@
 #ifndef _GUI_CONFIG_H
 #define _GUI_CONFIG_H
 
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
+namespace agOdalaunch {
+
 #ifdef _WIN32
-#define PATH_DELIMITER ';'
+const char PATH_DELIMITER = ';';
 #else
-#define PATH_DELIMITER ':'
+const char PATH_DELIMITER = ':';
 #endif
 
 class GuiConfig
 {
 public:
-	GuiConfig();
-	~GuiConfig();
-
 	static int Save();
 
-	static void Unset(std::string option);
+	static void Unset(const std::string &option);
 
-	static int Write(std::string option, std::string value);
-	static int Write(std::string option, int8_t value);
-	static int Write(std::string option, int16_t value);
-	static int Write(std::string option, int32_t value);
-	static int Write(std::string option, uint8_t value);
-	static int Write(std::string option, uint16_t value);
-	static int Write(std::string option, uint32_t value);
-	static int Write(std::string option, float value);
-	static int Write(std::string option, double value);
+	static int Write(const std::string &option, const std::string &value);
+	static int Write(const std::string &option, const int8_t &value);
+	static int Write(const std::string &option, const int16_t &value);
+	static int Write(const std::string &option, const int32_t &value);
+	static int Write(const std::string &option, const uint8_t &value);
+	static int Write(const std::string &option, const uint16_t &value);
+	static int Write(const std::string &option, const uint32_t &value);
+	static int Write(const std::string &option, const float &value);
+	static int Write(const std::string &option, const double &value);
 
-	static int Read(std::string option, std::string &value);
-	static int Read(std::string option, int8_t &value);
-	static int Read(std::string option, int16_t &value);
-	static int Read(std::string option, int32_t &value);
-	static int Read(std::string option, uint8_t &value);
-	static int Read(std::string option, uint16_t &value);
-	static int Read(std::string option, uint32_t &value);
-	static int Read(std::string option, float &value);
-	static int Read(std::string option, double &value);
+	static int Read(const std::string &option, std::string &value);
+	static int Read(const std::string &option, int8_t &value);
+	static int Read(const std::string &option, int16_t &value);
+	static int Read(const std::string &option, int32_t &value);
+	static int Read(const std::string &option, uint8_t &value);
+	static int Read(const std::string &option, uint16_t &value);
+	static int Read(const std::string &option, uint32_t &value);
+	static int Read(const std::string &option, float &value);
+	static int Read(const std::string &option, double &value);
+
+private:
+	GuiConfig();
+	GuiConfig(const GuiConfig&);
+	GuiConfig& operator=(const GuiConfig&);
 };
+
+} // namespace
 
 #endif

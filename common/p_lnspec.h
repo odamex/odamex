@@ -122,6 +122,8 @@ typedef enum {
 	Light_Flicker = 115,
 	Light_Strobe = 116,
 
+	Radius_Quake = 120,	// Earthquake
+
 	Line_SetIdentification = 121,
 
 	UsePuzzleItem = 129,

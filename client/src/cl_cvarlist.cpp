@@ -85,7 +85,8 @@ CVAR_FUNC_DECL (msgmidcolor, "5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // ------------
 
 // Determines whether to draw the scores on intermission.
-CVAR (interscoredraw, "1", CVAR_ARCHIVE)
+CVAR (wi_newintermission, "0", CVAR_ARCHIVE)
+
 
 // Menus
 // -----
@@ -146,7 +147,7 @@ CVAR (sv_maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 // Maximum amount of players who can join the game, others are spectators
 CVAR (sv_maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 
-CVAR (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 	CVAR (cl_name,		"Xbox Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #else
@@ -189,8 +190,8 @@ CVAR (chatmacro0, "Hi.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                   
 CVAR (chatmacro1, "I'm ready to kick butt!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)   // B
 CVAR (chatmacro2, "Help!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                     // X
 CVAR (chatmacro3, "GG", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                        // Y
-CVAR (chatmacro4, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // Black
-CVAR (chatmacro5, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                        // White
+CVAR (chatmacro4, "No", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // Black
+CVAR (chatmacro5, "Yes", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                        // White
 CVAR (chatmacro6, "I'll take care of it.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     // Left Trigger
 CVAR (chatmacro7, "Come here!", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                // Right Trigger
 CVAR (chatmacro8, "Thanks for the game. Bye.", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE) // Start
@@ -237,8 +238,8 @@ CVAR_FUNC_DECL (gammalevel, "1", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR_FUNC_DECL (hud_crosshair, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method
 CVAR (r_columnmethod, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
-// Detail level?
-CVAR_FUNC_DECL (r_detail, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Detail level (affects performance)
+CVAR_FUNC_DECL (r_detail, "2", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Disables all texturing of walls
 CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
 // Draw player sprites

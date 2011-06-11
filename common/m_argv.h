@@ -75,5 +75,7 @@ extern DArgs Args;
 
 void M_FindResponseFile(void);
 
+extern bool DefaultsLoaded; 
+
 #endif //__M_ARGV_H__
 

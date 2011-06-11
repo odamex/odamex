@@ -385,6 +385,9 @@
 				RelativePath="..\src\typedefs.h">
 			</File>
 			<File
+				RelativePath=".\xbox_api.h">
+			</File>
+			<File
 				RelativePath=".\xbox_main.h">
 			</File>
 		</Filter>

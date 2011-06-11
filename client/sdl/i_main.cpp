@@ -77,7 +77,7 @@ void addterm (void (STACK_ARGS *func) (), const char *name)
 	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
-static void STACK_ARGS call_terms (void)
+void STACK_ARGS call_terms (void)
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
@@ -120,7 +120,11 @@ int main(int argc, char *argv[])
 				Args.AppendArg(location.substr(0, term).c_str());
 			}
 		}
-
+		
+		// Set SDL video centering
+		putenv("SDL_VIDEO_WINDOW_POS=center");
+		putenv("SDL_VIDEO_CENTERED=1");
+		
         // [Russell] - No more double-tapping of capslock to enable autorun
         putenv("SDL_DISABLE_LOCK_KEYS=1");
 
@@ -180,7 +184,11 @@ int main(int argc, char *argv[])
 			normally or abnormally.
 		*/
 
-		atexit (call_terms);
+        // But avoid calling this on windows!
+        // Good on some platforms, useless on others
+//		#ifndef _WIN32
+//		atexit (call_terms);
+//		#endif
 		Z_Init ();					// 1/18/98 killough: start up memory stuff first
 
         atterm (R_Shutdown);
@@ -194,7 +202,11 @@ int main(int argc, char *argv[])
 		// init console
 		C_InitConsole (80 * 8, 25 * 8, false);
 
-		D_DoomMain ();
+		D_DoomMain (); // Usually does not return
+
+		// If D_DoomMain does return (as is the case with the +demotest parameter)
+		// proper termination needs to occur -- Hyper_Eye
+		call_terms ();
 	}
 	catch (CDoomError &error)
 	{
@@ -210,6 +222,7 @@ int main(int argc, char *argv[])
 #else
 		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
 #endif
+		call_terms();
 		exit (-1);
 	}
 #ifndef _DEBUG

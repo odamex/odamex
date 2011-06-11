@@ -32,13 +32,10 @@
 #include <vector>
 
 #include <agar/core.h> // For AG_Mutex
+#include <agar/config/ag_debug.h> // Determine if Agar is compiled for debugging
 
 #include "net_io.h"
 #include "typedefs.h"
-
-#define MASTER_CHALLENGE    777123
-#define MASTER_RESPONSE     777123
-#define SERVER_CHALLENGE    0xAD011002
 
 #define ASSEMBLEVERSION(MAJOR,MINOR,PATCH) ((MAJOR) * 256 + (MINOR)(PATCH))
 #define DISECTVERSION(V,MAJOR,MINOR,PATCH) \
@@ -56,6 +53,18 @@
 #define PROTOCOL_VERSION 1
 
 #define TAG_ID 0xAD0
+
+/**
+ * agOdalaunch namespace.
+ *
+ * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * namespace.
+ */
+namespace agOdalaunch {
+
+const uint32_t MASTER_CHALLENGE = 777123;
+const uint32_t MASTER_RESPONSE  = 777123;
+const uint32_t SERVER_CHALLENGE = 0xAD011002;
 
 struct Cvar_t
 {
@@ -163,9 +172,16 @@ public:
 	std::string GetAddress() const { return Socket.GetRemoteAddress(); }
 	uint32_t GetPing() const { return Ping; }
 
+#ifdef AG_DEBUG
+	// These funtions will cause termination on error when AG_DEBUG is enabled
+	int GetLock() { AG_MutexLock(&m_Mutex); return 0; }
+	int TryLock() { AG_MutexTrylock(&m_Mutex); return 0; }
+	int Unlock() { AG_MutexUnlock(&m_Mutex); return 0; }
+#else
 	int GetLock() { return AG_MutexLock(&m_Mutex); }
 	int TryLock() { return AG_MutexTrylock(&m_Mutex); }
 	int Unlock() { return AG_MutexUnlock(&m_Mutex); }
+#endif
 };
 
 class MasterServer : public ServerBase  // [Russell] - A master server packet
@@ -334,5 +350,7 @@ public:
 protected:
 	bool m_ValidResponse;
 };
+
+} // namespace
 
 #endif // NETPACKET_H

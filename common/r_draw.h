@@ -194,7 +194,7 @@ extern fixed_t dc_translevel;
 
 
 // [RH] Double view pixels by detail mode
-//void R_DetailDouble (void);
+void R_DetailDouble (void);
 
 void
 R_InitBuffer

@@ -27,6 +27,7 @@
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
+#include "s_sndseq.h"
 #include "doomstat.h"
 #include "r_state.h"
 #include "tables.h"
@@ -861,6 +862,8 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 		elevator->m_Type = elevtype;
 		elevator->m_Speed = speed;
 		elevator->StartFloorSound ();
+
+        sec->floordata = sec->ceilingdata = elevator;
 
 		// set up the fields according to the type of elevator action
 		switch (elevtype)

@@ -45,7 +45,7 @@
 
 #include "p_setup.h"
 
-void P_PreservePlayer(player_t &player);
+void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
@@ -379,6 +379,7 @@ void P_LoadSectors (int lump)
 		ss->tag = SHORT(ms->tag);
 		ss->thinglist = NULL;
 		ss->touching_thinglist = NULL;		// phares 3/14/98
+		ss->seqType = defSeqType;
 		ss->nextsec = -1;	//jff 2/26/98 add fields to support locking out
 		ss->prevsec = -1;	// stair retriggering until build completes
 
@@ -1401,7 +1402,8 @@ void P_SetupLevel (char *lumpname, int position)
 	{
 		for (i = 0; i < players.size(); i++)
 		{
-			players[i].killcount = 0;
+			players[i].killcount = players[i].secretcount 
+				= players[i].itemcount = 0;
 		}
 	}
 
@@ -1491,7 +1493,7 @@ void P_SetupLevel (char *lumpname, int position)
     {
 		for (i=0 ; i<players.size() ; i++)
 		{
-			P_PreservePlayer(players[i]);
+			SV_PreservePlayer(players[i]);
 
     		// if deathmatch, randomly spawn the active players
 			if (players[i].ingame())

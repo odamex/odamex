@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>
 #include <string>
 
 // [Russell] - Just for windows, display the icon in the system menu and
@@ -39,10 +40,13 @@
 #include "i_sdlvideo.h"
 #include "i_system.h"
 #include "m_argv.h"
+#include "m_memio.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
+
+EXTERN_CVAR (autoadjust_video_settings)
 
 SDLVideo::SDLVideo(int parm)
 {
@@ -111,15 +115,14 @@ SDLVideo::SDLVideo(int parm)
 
    SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
 
-   vidModeList = NULL;
-   vidModeCount = 0;
+   vidModeIterator = 0;
+   vidModeIteratorBits = 8;
+   vidModeList.clear();
 
    if(!sdllist)
    {
 	  // no fullscreen modes, but we could still try windowed
 	  Printf(PRINT_HIGH, "SDL_ListModes returned NULL. No fullscreen video modes are available.\n");
-      vidModeList = NULL; 
-	  vidModeCount = 0;
 	  return;
    }
    else if(sdllist == (SDL_Rect **)-1)
@@ -129,19 +132,33 @@ SDLVideo::SDLVideo(int parm)
    }
    else
    {
-      int i;
-      for(i = 0; sdllist[i]; i++)
-         ;
-
-      vidModeList = new vidMode[i];
-      vidModeCount = i;
-
-      for(i = 0; sdllist[i]; i++)
+      vidMode_t CustomVidModes[] = 
       {
-         vidModeList[i].width = sdllist[i]->w;
-         vidModeList[i].height = sdllist[i]->h;
-         vidModeList[i].bits = 8;
+         { 640, 480, 8 }
+        ,{ 640, 400, 8 }
+        ,{ 320, 240, 8 }
+        ,{ 320, 200, 8 }
+      }; 
+      
+      // Add in generic video modes reported by SDL
+      for(int i = 0; sdllist[i]; ++i)
+      {
+        vidMode_t vm;
+        
+        vm.width = sdllist[i]->w;
+        vm.height = sdllist[i]->h;
+        vm.bits = 8;
+
+        vidModeList.push_back(vm);
       }
+
+      // Now custom video modes to be added
+      for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
+        vidModeList.push_back(CustomVidModes[i]);
+
+      // Get rid of any duplicates (SDL some times reports duplicates as well)
+      vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end(), 
+            bp_vm_uni_cmp), vidModeList.end());
    }
 }
 
@@ -157,12 +174,6 @@ SDLVideo::~SDLVideo(void)
    }
 
    delete chainHead;
-
-   if(vidModeList)
-   {
-      delete [] vidModeList;
-      vidModeList = NULL;
-   }
 }
 
 
@@ -228,7 +239,7 @@ bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
    // SoM: I'm not sure if we should request a software or hardware surface yet... So I'm
    // just ganna let SDL decide.
 
-   if(fs && vidModeCount)
+   if(fs && !vidModeList.empty())
    {
       flags = 0;
        
@@ -327,7 +338,7 @@ void SDLVideo::ReadScreen (byte *block)
 
 int SDLVideo::GetModeCount ()
 {
-   return vidModeCount;
+   return vidModeList.size();
 }
 
 
@@ -340,17 +351,25 @@ void SDLVideo::StartModeIterator (int bits)
 
 bool SDLVideo::NextMode (int *width, int *height)
 {
-   while(vidModeIterator < vidModeCount)
+   std::vector<vidMode_t>::iterator it;
+
+   it = vidModeList.begin() + vidModeIterator;
+
+   while(it != vidModeList.end())
    {
-      if(vidModeList[vidModeIterator].bits == vidModeIteratorBits)
+      vidMode_t vm = *it;
+
+      if(vm.bits == vidModeIteratorBits)
       {
-         *width = vidModeList[vidModeIterator].width;
-         *height = vidModeList[vidModeIterator].height;
+         *width = vm.width;
+         *height = vm.height;
          vidModeIterator++;
          return true;
       }
 
       vidModeIterator++;
+
+      ++it;
    }
    return false;
 }
@@ -384,7 +403,7 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 	if(!s)
 	   I_FatalError("SDLVideo::AllocateSurface failed to allocate an SDL surface.");
 	   
-	if(s->pitch != (width * (bits / 8)))
+	if(s->pitch != (width * (bits / 8)) && autoadjust_video_settings)
 	   Printf(PRINT_HIGH, "Warning: SDLVideo::AllocateSurface got a surface with an abnormally wide pitch.\n");
 
 	scrn->pitch = s->pitch;

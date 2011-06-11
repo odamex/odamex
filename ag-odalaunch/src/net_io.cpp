@@ -41,9 +41,11 @@
 #include "xbox_main.h"
 #endif
 
+namespace agOdalaunch {
+
 #ifndef _WIN32
 #define closesocket close
-#define INVALID_SOCKET -1
+const int INVALID_SOCKET = -1;
 #endif
 
 using namespace std;
@@ -93,9 +95,9 @@ void BufferedSocket::ReportError(int line, const char *function, const char *fmt
 #ifdef _XBOX
 	char errorstr[1024];
 
-	xbox_OutputDebugString("[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
+	Xbox::OutputDebugString("[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
 	vsprintf(errorstr, fmt, ap);
-	xbox_OutputDebugString("%s\n", errorstr);
+	Xbox::OutputDebugString("%s\n", errorstr);
 #else
 	fprintf(stderr, "[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
 	vfprintf(stderr, fmt, ap);
@@ -719,3 +721,5 @@ void BufferedSocket::ClearBuffer()
 
 	ResetBuffer();
 }
+
+} // namespace

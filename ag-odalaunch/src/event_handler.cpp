@@ -29,6 +29,8 @@
 
 using namespace std;
 
+namespace agOdalaunch {
+
 void EventReceiver(AG_Event *event)
 {
 	EventHandler *handler = (EventHandler *)AG_PTR(1);
@@ -77,3 +79,5 @@ bool ODA_EventRegister::DeleteEventHandler(EventHandler *handler)
 
 	return false;
 }
+
+} // namespace

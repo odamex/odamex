@@ -48,7 +48,8 @@
 #	include <xtl.h>
 #else
 #	include <windows.h>
-#	include <winsock.h>
+#	include <winsock2.h>
+#   include <ws2tcpip.h>
 #endif // !_XBOX
 #else
 #ifdef GEKKO // Wii/GC
@@ -101,6 +102,13 @@ typedef int SOCKET;
 
 #include "minilzo.h"
 
+#ifdef ODA_HAVE_MINIUPNP
+#define STATICLIB
+#include "miniwget.h"
+#include "miniupnpc.h"
+#include "upnpcommands.h"
+#endif
+
 int         inet_socket;
 int         localport;
 netadr_t    net_from;   // address of who sent the packet
@@ -117,6 +125,164 @@ EXTERN_CVAR(port)
 
 msg_info_t clc_info[clc_max];
 msg_info_t svc_info[svc_max];
+
+#ifdef ODA_HAVE_MINIUPNP
+EXTERN_CVAR(sv_upnp)
+EXTERN_CVAR(sv_upnp_discovertimeout)
+EXTERN_CVAR(sv_upnp_description)
+EXTERN_CVAR(sv_upnp_internalip)
+EXTERN_CVAR(sv_upnp_externalip)
+
+static struct UPNPUrls urls;
+static struct IGDdatas data;
+
+static bool is_upnp_ok = false;
+
+void init_upnp (void)
+{
+	struct UPNPDev * devlist;
+	struct UPNPDev * dev;
+	char * descXML;
+	int descXMLsize = 0;
+    int res = 0;
+
+    char IPAddress[40];
+    int r;
+
+    if (!sv_upnp)
+        return;
+
+	memset(&urls, 0, sizeof(struct UPNPUrls));
+	memset(&data, 0, sizeof(struct IGDdatas));
+	
+	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
+	
+	devlist = upnpDiscover((int)sv_upnp_discovertimeout, NULL, NULL, 0, 0, &res);
+	
+	if (!devlist || res != UPNPDISCOVER_SUCCESS)
+    {
+		Printf(PRINT_HIGH, "UPnP: Router not found or timed out, error %d\n", 
+            res);   
+		
+        is_upnp_ok = false;
+
+        return;
+    }
+
+    dev = devlist;
+
+    while (dev)
+    {
+        if (strstr (dev->st, "InternetGatewayDevice"))
+            break;
+        dev = dev->pNext;
+    }
+
+    if (!dev)
+        dev = devlist; /* defaulting to first device */
+
+    //Printf(PRINT_HIGH, "UPnP device :\n"
+      //      " desc: %s\n st: %s\n",
+        //    dev->descURL, dev->st);
+
+    descXML = (char *)miniwget(dev->descURL, &descXMLsize);
+
+    if (descXML)
+    {
+        parserootdesc (descXML, descXMLsize, &data);
+        free (descXML); descXML = 0;
+        GetUPNPUrls (&urls, &data, dev->descURL);
+    }
+
+    freeUPNPDevlist(devlist);
+
+    r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype, 
+            IPAddress);
+
+    if (r != 0)
+    {
+        Printf(PRINT_HIGH, 
+            "UPnP: Router found but unable to get external IP address\n");
+
+        is_upnp_ok = false;
+    }
+    else
+    {
+        Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n", 
+            IPAddress);
+
+        // Store ip address just in case admin wants it
+        sv_upnp_externalip.ForceSet(IPAddress);
+
+        is_upnp_ok = true;
+    }
+}
+
+void upnp_add_redir (const char * addr, int port)
+{
+	char port_str[16];
+	int r;
+
+    if (!sv_upnp || !is_upnp_ok)
+        return;
+
+	if(urls.controlURL == NULL)
+		return;
+
+	sprintf(port_str, "%d", port);
+
+    // Set a description if none exists
+    if (!sv_upnp_description.cstring()[0])
+    {
+        char desc[64];
+
+        snprintf(desc, sizeof(desc), "Odasrv (%s:%s)", addr, port_str);
+
+        sv_upnp_description.Set(desc);
+    }
+
+	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
+            port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
+	
+	if (r != 0)
+	{
+		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
+
+        is_upnp_ok = false;
+	}
+    else
+    {
+        Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s", 
+            sv_upnp_description.cstring());
+
+        is_upnp_ok = true;
+    }
+}
+
+void upnp_rem_redir (int port)
+{
+	char port_str[16];
+	int r;
+
+    if (!is_upnp_ok)
+        return;
+
+	if(urls.controlURL == NULL)
+		return;
+
+	sprintf(port_str, "%d", port);
+	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, 
+        port_str, "UDP", 0);
+
+	if (r != 0)
+    {
+        Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
+        is_upnp_ok = false;
+    }
+    else
+        is_upnp_ok = true;
+}
+#endif
 
 //
 // UDPsocket
@@ -164,12 +330,36 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	sprintf(tmp, "%d", next - 1);
 	port.ForceSet(tmp);
 
+#ifdef ODA_HAVE_MINIUPNP
+    std::string ip = NET_GetLocalAddress();
+
+    if (!ip.empty())
+    {
+        sv_upnp_internalip.Set(ip.c_str());
+
+        Printf(PRINT_HIGH, "UPnP: Internal IP address is: %s\n", ip.c_str());
+
+        upnp_add_redir(ip.c_str(), next - 1);
+    }
+    else
+    {
+        Printf(PRINT_HIGH, "UPnP: Could not get first internal IP address, "
+            "UPnP will not function\n");
+
+        is_upnp_ok = false;
+    }
+#endif
+
 	Printf(PRINT_HIGH, "Bound to local port %d\n", next - 1);
 }
 
 
 void CloseNetwork (void)
 {
+#ifdef ODA_HAVE_MINIUPNP
+    upnp_rem_redir (port);
+#endif
+
 	closesocket (inet_socket);
 #ifdef _WIN32
 	WSACleanup ();
@@ -324,29 +514,32 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
     }
 }
 
+
 #ifndef HOST_NAME_MAX
-#define HOST_NAME_MAX 512
+#define HOST_NAME_MAX 256
 #endif
 
-void NET_GetLocalAddress (void)
+std::string NET_GetLocalAddress (void)
 {
-	char buff[HOST_NAME_MAX];
-	struct sockaddr_in address;
-	socklen_t namelen;
-	netadr_t net_local_adr;
+	static char buff[HOST_NAME_MAX];
+    hostent *ent;
+    struct in_addr addr;
+    std::string ret_str;
 
 	gethostname(buff, HOST_NAME_MAX);
 	buff[HOST_NAME_MAX - 1] = 0;
 
-	NET_StringToAdr (buff, &net_local_adr);
+    ent = gethostbyname(buff);
 
-	namelen = sizeof(address);
-	if (getsockname (inet_socket, (struct sockaddr *)&address, &namelen) == -1)
-        Printf (PRINT_HIGH, "NET_Init: getsockname:", strerror(errno));
+    // Return the first, IPv4 address
+    if (ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
+    {
+        addr.s_addr = *(u_long *)ent->h_addr_list[0];
 
-	net_local_adr.port = address.sin_port;
+        ret_str = inet_ntoa(addr);
+    }
 
-	Printf(PRINT_HIGH, "IP address %s\n", NET_AdrToString (net_local_adr) );
+    return ret_str;
 }
 
 
@@ -757,10 +950,15 @@ void InitNetCommon(void)
 
 #ifdef _WIN32
    WSADATA   wsad;
-   WSAStartup( 0x0101, &wsad );
+   WSAStartup( MAKEWORD(2,2), &wsad );
 #endif
 
    inet_socket = UDPsocket ();
+
+    #ifdef ODA_HAVE_MINIUPNP
+    init_upnp();
+    #endif
+
    BindToLocalPort (inet_socket, localport);
    if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));

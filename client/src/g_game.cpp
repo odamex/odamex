@@ -146,6 +146,7 @@ EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowjump)
 EXTERN_CVAR(co_realactorheight)
+EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
 EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
@@ -523,7 +524,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	}
 
 	// Joystick analog strafing -- Hyper_Eye
-	side += (((float)joystrafe / (float)SHRT_MAX) * sidemove[speed]);
+	side += (int)(((float)joystrafe / (float)SHRT_MAX) * sidemove[speed]);
 
 	if (Actions[ACTION_LOOKUP])
 		look += lookspeed[speed];
@@ -554,9 +555,9 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	if(joy_freelook && sv_freelook)
 	{
 		if (joy_invert)
-			look += (((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
 		else
-			look -= (((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+			look -= (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
 	}
 
 	if (Actions[ACTION_MOVERIGHT])
@@ -576,7 +577,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
-	if (Impulse >= 1 && Impulse <= 7)
+	if (Impulse >= 1 && Impulse <= 8)
 	{
 		cmd->ucmd.buttons |= BT_CHANGE;
 		cmd->ucmd.buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
@@ -588,20 +589,20 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	Impulse = 0;
 
 	if (strafe || lookstrafe)
-		side += (((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
+		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);
 	else
-		cmd->ucmd.yaw -= (((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10);
+		cmd->ucmd.yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) * (joy_sensitivity / 10));
 
 	if (Actions[ACTION_MLOOK])
 	{
 		if (joy_invert)
-			look += (((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
+			look += (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
 		else
-			look -= (((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
+			look -= (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
 	}
 	else
 	{
-		forward -= (((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
+		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook))
@@ -638,7 +639,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	if (strafe || lookstrafe)
 		side += (int)((float)mousex * m_side);
 	else
-		cmd->ucmd.yaw -= (int)((float)(mousex*0x8) * m_yaw);
+		cmd->ucmd.yaw -= (int)((float)(mousex*0x8) * m_yaw) / ticdup;
 
 	mousex = mousey = 0;
 
@@ -778,21 +779,21 @@ BOOL G_Responder (event_t *ev)
 			{
 				mousexleft = ev->data2;
 				mousexleft = -mousexleft;
-				mousex = pow((ev->data2 * (mouse_sensitivity + 5) / 10), dynresval);
+				mousex = (int) pow((ev->data2 * (mouse_sensitivity + 5) / 10), dynresval);
 
 				if (ev->data2 < 0)
 				{
-					mousexleft = pow((mousexleft * (mouse_sensitivity + 5) / 10), dynresval);
+					mousexleft = (int) pow((mousexleft * (mouse_sensitivity + 5) / 10), dynresval);
 					mousex = -mousexleft;
 				}
 
 				mouseydown = ev->data3;
 				mouseydown = -mouseydown;
-				mousey = pow((ev->data3 * (mouse_sensitivity + 5) / 10), dynresval);
+				mousey = (int) pow((ev->data3 * (mouse_sensitivity + 5) / 10), dynresval);
 
 				if (ev->data3 < 0)
 				{
-					mouseydown = pow((mouseydown * (mouse_sensitivity + 5) / 10), dynresval);
+					mouseydown = (int) pow((mouseydown * (mouse_sensitivity + 5) / 10), dynresval);
 					mousey = -mouseydown;
 				}
 			}
@@ -801,28 +802,28 @@ BOOL G_Responder (event_t *ev)
 		{
 			if (dynres_state == 0)
 			{
-				mousex = ev->data2 * (zdoomsens); // [Toke - Mouse] Zdoom mouse code
-				mousey = ev->data3 * (zdoomsens);
+				mousex = (int)(ev->data2 * (zdoomsens)); // [Toke - Mouse] Zdoom mouse code
+				mousey = (int)(ev->data3 * (zdoomsens));
 			}
 			else if (dynres_state == 1)
 			{
 				mousexleft = ev->data2;
 				mousexleft = -mousexleft;
-				mousex = pow((ev->data2 * (zdoomsens)), dynresval);
+				mousex = (int) pow((ev->data2 * (zdoomsens)), dynresval);
 
 				if (ev->data2 < 0)
 				{
-					mousexleft = pow((mousexleft * (zdoomsens)), dynresval);
+					mousexleft = (int) pow((mousexleft * (zdoomsens)), dynresval);
 					mousex = -mousexleft;
 				}
 
 				mouseydown = ev->data3;
 				mouseydown = -mouseydown;
-				mousey = pow((ev->data3 * (zdoomsens)), dynresval);
+				mousey = (int) pow((ev->data3 * (zdoomsens)), dynresval);
 
 				if (ev->data3 < 0)
 				{
-					mouseydown = pow((mouseydown * (zdoomsens)), dynresval);
+					mouseydown = (int) pow((mouseydown * (zdoomsens)), dynresval);
 					mousey = -mouseydown;
 				}
 			}
@@ -2231,6 +2232,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_freelook = "0";
 		sv_allowjump = "0";
 		co_realactorheight = "0";
+		co_zdoomphys = "0";
 
 		return;
 	} else {
