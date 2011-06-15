@@ -30,10 +30,10 @@
 #endif
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "51"
+#define CONFIGVERSIONSTR "52"
 #define GAMEVER (0*256+51)
 
-#define DOTVERSIONSTR "0.5.1"
+#define DOTVERSIONSTR "0.5.2"
 
 #define SERVERMAJ (gameversion / 256)
 #define SERVERMIN ((gameversion % 256) / 10)
@@ -45,7 +45,7 @@
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
 // earlier than this version.
-#define SAVESIG "ODAMEXSAVE050   "	// Needs to be exactly 16 chars long
+#define SAVESIG "ODAMEXSAVE052   "	// Needs to be exactly 16 chars long
 
 // denis - per-file svn version stamps
 class file_version
