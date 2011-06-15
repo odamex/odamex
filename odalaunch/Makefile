@@ -42,6 +42,9 @@ LFLAGS = $(shell $(WXCONFIG) $(WXVERSIONADDITION) --libs) -g
 
 # Add the universal build flags if this is wx_mac
 ifneq (,$(findstring wx_mac, $(strip $(shell $(WXCONFIG) --basename 2>&1))))
+	# g++-4.0 must be used to build with the 10.4 universal sdk
+	CC = g++-4.0
+	LD = g++-4.0
 	CFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc -isysroot /Developer/SDKs/MacOSX10.4u.sdk
 	LFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc -isysroot /Developer/SDKs/MacOSX10.4u.sdk
 endif
