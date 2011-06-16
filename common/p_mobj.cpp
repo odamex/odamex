@@ -1046,10 +1046,9 @@ void P_ZMovement(AActor *mo)
                 // Decrease viewheight for a moment
                 // after hitting the ground (hard),
                 // and utter appropriate sound.
-                mo->player->deltaviewheight = mo->momz>>3;
 
-                if (clientside && !predicting)
-                    S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+				if (clientside && !predicting)
+					PlayerLandedOnThing(mo, NULL);
             }
          }
          
@@ -1177,7 +1176,26 @@ void P_ZMovement(AActor *mo)
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 {
 	mo->player->deltaviewheight = mo->momz>>3;
-	S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_IDLE);
+	if (co_zdoomphys)
+	{
+		// [SL] 2011-06-16 - ZDoom Oomphiness
+		if (mo->health > 0)
+		{
+			if (mo->momz < (fixed_t)(level.gravity * mo->subsector->sector->gravity * -983.04f))
+			{
+				S_Sound (mo, CHAN_VOICE, "*grunt1", 1, ATTN_NORM);
+			}
+			if (onmobj != NULL)
+			{
+				S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+			}
+		}
+	}
+	else
+	{
+		// [SL] 2011-06-16 - Vanilla Doom Oomphiness
+		S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+	}
 //	mo->player->centering = true;
 }
 
