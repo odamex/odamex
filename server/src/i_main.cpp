@@ -262,6 +262,7 @@ int main (int argc, char **argv)
             LOG << std::endl;
         }
 
+	call_terms();
 	exit (-1);
     }
     catch (...)

@@ -150,7 +150,6 @@ void CL_ResetSectors (void)
             Plat->m_Crush = pred->Floor.m_Crush;
             Plat->m_Tag = pred->Floor.m_Tag;
             Plat->m_Type = (DPlat::EPlatType)pred->Floor.m_Type;
-            Plat->m_PostWait = pred->Floor.m_PostWait;
 		}
 
 		if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
@@ -188,6 +187,7 @@ void CL_ResetSectors (void)
             Door->m_Direction = pred->Ceiling.m_Direction;
             Door->m_TopWait = pred->Ceiling.m_TopWait;
             Door->m_TopCountdown = pred->Ceiling.m_TopCountdown;
+			Door->m_Status = (DDoor::EVlDoorState)pred->Ceiling.m_Status;
             Door->m_Line = pred->Ceiling.m_Line;
         }
 	}

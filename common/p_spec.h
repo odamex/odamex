@@ -421,10 +421,16 @@ class DPlat : public DMovingFloor
 public:
 	enum EPlatState
 	{
+		init = 0,
 		up,
 		down,
 		waiting,
-		in_stasis
+		in_stasis,
+		midup,
+		middown,
+		finished,
+		destroy,
+		state_size
 	};
 
 	enum EPlatType
@@ -458,13 +464,17 @@ public:
 	bool 		m_Crush;
 	int 		m_Tag;
 	EPlatType	m_Type;
-	bool		m_PostWait;
+
+	// [SL] 2011-06-09 - The most recent sound played by this plat
+	// Used to prevent repetition of sounds due to client predicition
+	EPlatState	m_CurrentSound;
 protected:
 
-	void PlayPlatSound (const char *sound);
+	void PlayPlatSound ();
 	void Reactivate ();
 	void Stop ();
 
+	bool m_PlayedSound[state_size];
 private:
 	DPlat ();
 
@@ -553,6 +563,18 @@ public:
 		doorCloseWaitOpen
 	};
 
+	enum EVlDoorState
+	{
+		init = 0,
+		opening,
+		closing,
+		waiting,
+		reopening,
+		finished,
+		destroy,
+		state_size
+	};
+ 
 	DDoor (sector_t *sector);
 	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
@@ -572,14 +594,21 @@ public:
 	// when it reaches 0, start going down
 	int 		m_TopCountdown;
 
+	EVlDoorState	m_Status;
+	// [SL] 2011-06-09 - The most recent sound played by this plat
+	// Used to prevent repetition of sounds due to client predicition
+	EVlDoorState	m_CurrentSound;
+
     line_t      *m_Line;
 protected:
-	void DoorSound (bool raise) const;
-
+	void PlayDoorSound ();
+	
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
 	friend void P_SpawnDoorCloseIn30 (sector_t *sec);
 	friend void P_SpawnDoorRaiseIn5Mins (sector_t *sec);
+
+	bool m_PlayedSound[state_size];
 private:
 	DDoor ();
 
@@ -593,7 +622,14 @@ inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoor &out)
 {
 	BYTE in; arc >> in; out = (DDoor::EVlDoor)in; return arc;
 }
-
+inline FArchive &operator<< (FArchive &arc, DDoor::EVlDoorState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoorState &out)
+{
+	BYTE in; arc >> in; out = (DDoor::EVlDoorState)in; return arc;
+}
 
 //
 // P_CEILNG

@@ -452,6 +452,8 @@ void P_DeathThink (player_t *player)
 
 	if (player->attacker && player->attacker != player->mo)
 	{
+		angle_t old_angle = player->mo->angle;
+
 		angle = P_PointToAngle (player->mo->x,
 								 player->mo->y,
 								 player->attacker->x,
@@ -472,6 +474,36 @@ void P_DeathThink (player_t *player)
 			player->mo->angle += ANG5;
 		else
 			player->mo->angle -= ANG5;
+
+
+       	if(player->mo->angle != old_angle && serverside)
+       	{
+			// [SL] 2011-06-15 - Tell the client to update his view to follow
+			// the actor who killed him
+			client_t *cl = &player->client;
+
+			MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
+			MSG_WriteByte(&cl->netbuf, player->id);     // player number
+			MSG_WriteLong(&cl->netbuf, cl->lastclientcmdtic);
+			MSG_WriteLong(&cl->netbuf, player->mo->x);
+			MSG_WriteLong(&cl->netbuf, player->mo->y);
+			MSG_WriteLong(&cl->netbuf, player->mo->z);
+			MSG_WriteLong(&cl->netbuf, player->mo->angle);
+			if (player->mo->frame == 32773)
+				MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
+			else
+				MSG_WriteByte(&cl->netbuf, player->mo->frame);
+
+			// write velocity
+			MSG_WriteLong(&cl->netbuf, player->mo->momx);
+			MSG_WriteLong(&cl->netbuf, player->mo->momy);
+			MSG_WriteLong(&cl->netbuf, player->mo->momz);
+			
+			// [Russell] - hack, tell the client about the partial
+			// invisibility power of another player.. (cheaters can disable
+			// this but its all we have for now)
+			MSG_WriteLong(&cl->netbuf, player->powers[pw_invisibility]);
+		}
 	}
 	else if (player->damagecount)
 		player->damagecount--;

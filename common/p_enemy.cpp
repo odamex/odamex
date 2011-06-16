@@ -2117,8 +2117,15 @@ void A_SpawnFly (AActor *mo)
 
 void A_PlayerScream (AActor *mo)
 {
+	if (!mo || !mo->player)
+		return;
+
 	char nametemp[128];
 	const char *sound;
+
+	// [SL] 2011-06-15 - Spectators shouldn't make any noises
+	if (mo->player->spectator)
+		return;
 
 	// [Fly] added for csDoom
 	if (mo->health < -mo->info->spawnhealth)

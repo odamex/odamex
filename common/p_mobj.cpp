@@ -270,6 +270,22 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	}
 }
 
+//
+// P_AnimationTick
+//
+void P_AnimationTick(AActor *mo)
+{
+	if (mo && mo->tics != -1)
+	{
+		mo->tics--;
+
+		// you can cycle through multiple states in a tic
+		if (!mo->tics)
+			if (!P_SetMobjState (mo, mo->state->nextstate) )
+				return;         // freed itself
+	}
+}
+
 
 //
 // P_RemoveMobj
@@ -405,20 +421,20 @@ void AActor::RunThink ()
 					{
 						PlayerLandedOnThing (this, onmo);
 					}
-				}
 					
-				if (onmo->z + P_ThingInfoHeight(onmo->info) - z <= 24 * FRACUNIT)
-				{
-					/*if (player)
+					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
 					{
-						player->viewheight -= z + onmo->height - z;
-						player->deltaviewheight =
-							(VIEWHEIGHT - player->viewheight)>>3;
-					}*/
-					z = onmo->z + P_ThingInfoHeight(onmo->info);
+						/*if (player)
+						{
+							player->viewheight -= z + onmo->height - z;
+							player->deltaviewheight =
+								(VIEWHEIGHT - player->viewheight)>>3;
+						}*/
+						z = onmo->z + onmo->height;
+					}
+					flags2 |= MF2_ONMOBJ;
+					momz = 0;
 				}
-				flags2 |= MF2_ONMOBJ;
-				momz = 0;
 			}
 		}
 	    else
@@ -467,14 +483,9 @@ void AActor::RunThink ()
 		
     // cycle through states,
     // calling action functions at transitions
-	if (tics != -1)
+	if (!player && tics != -1)
 	{
-		tics--;
-
-		// you can cycle through multiple states in a tic
-		if (!tics)
-			if (!P_SetMobjState (this, state->nextstate) )
-				return; 		// freed itself
+		P_AnimationTick(this);
 	}
 	else
 	{
@@ -943,7 +954,7 @@ void P_ZMovement(AActor *mo)
          dist = P_AproxDistance (mo->x - mo->target->x,
                                  mo->y - mo->target->y);
 
-         delta =(mo->target->z + (P_ThingInfoHeight(mo->info)>>1)) - mo->z;
+		delta =(mo->target->z + (mo->height>>1)) - mo->z;
 
          if (delta<0 && dist < -(delta*3) )
             mo->z -= FLOATSPEED;
@@ -1038,10 +1049,9 @@ void P_ZMovement(AActor *mo)
                 if (clientside && !predicting)
                     S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
             }
-            
-            mo->momz = 0;
          }
          
+          mo->momz = 0;
       }
       mo->z = mo->floorz;
 
@@ -1122,10 +1132,10 @@ void P_ZMovement(AActor *mo)
 		}
    }
 
-   if (mo->z + P_ThingInfoHeight(mo->info) > mo->ceilingz)
+   if (mo->z + mo->height > mo->ceilingz)
    {
 		// hit the ceiling
-		mo->z = mo->ceilingz - P_ThingInfoHeight(mo->info);
+		mo->z = mo->ceilingz - mo->height;
 		if (mo->flags2 & MF2_FLOORBOUNCE)
 		{
 			// reverse momentum here for ceiling bounce
@@ -1435,7 +1445,7 @@ void SV_AwarenessUpdate(player_t &pl, AActor* mo);
 // Moves the missile forward a bit
 //	and possibly explodes it right there.
 //
-void P_CheckMissileSpawn (AActor* th)
+bool P_CheckMissileSpawn (AActor* th)
 {
 	th->tics -= P_Random (th) & 3;
 	if (th->tics < 1)
@@ -1460,9 +1470,12 @@ void P_CheckMissileSpawn (AActor* th)
 				SV_AwarenessUpdate(players[i], th);
 		}
 		P_ExplodeMissile (th);
+		return false;
 	}
 	else
 		SV_SpawnMobj(th);
+
+	return true;
 }
 
 //

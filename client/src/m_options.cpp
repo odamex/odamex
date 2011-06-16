@@ -110,6 +110,8 @@ EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (wi_newintermission)
+EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (co_zdoomswitches)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -422,7 +424,9 @@ static menuitem_t CompatItems[] = {
 	{ bricktext ,   "Enhanced Interaction"                  , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
 	{ discrete  ,	"Items drop off ledges"                 , {&co_allowdropoff},	{2.0},      {0.0},	    {0.0},      {OnOff} },
 	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },	
-	{ discrete  ,	"BOOM Use Line Extra Checks"    		, {&co_boomlinecheck},{2.0},      {0.0},	    {0.0},      {OnOff} },		
+	{ discrete  ,	"BOOM Use Line Extra Checks"    		, {&co_boomlinecheck},	{2.0},      {0.0},	    {0.0},      {OnOff} },		{ discrete	,	"Use ZDoom physics"						, {&co_zdoomphys},		{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete	,	"Positional switch sounds"				, {&co_zdoomswitches},	{2.0},		{0.0},		{0.0},		{OnOff} },
+
  };
 
 menu_t CompatMenu = {

@@ -156,6 +156,9 @@ SDLVideo::SDLVideo(int parm)
       for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
         vidModeList.push_back(CustomVidModes[i]);
 
+      // Sort the modes
+      std::sort(vidModeList.begin(), vidModeList.end(), bp_vm_uni_sort);
+
       // Get rid of any duplicates (SDL some times reports duplicates as well)
       vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end(), 
             bp_vm_uni_cmp), vidModeList.end());
