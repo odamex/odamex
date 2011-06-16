@@ -516,11 +516,8 @@ void dlgMain::MonThrGetServerList()
                     &QServer[serverNum], serverNum, ServerTimeout));
 
                 // create and run the thread
-                if(threadVector[threadVector.size() - 1]->Create() == 
-                   wxTHREAD_NO_ERROR)
-                {
-                    threadVector[threadVector.size() - 1]->Run();
-                }
+                if(threadVector.back()->Create() == wxTHREAD_NO_ERROR)
+                    threadVector.back()->Run();
 
                 // DUMB: our next server will be this incremented value
                 serverNum++;
