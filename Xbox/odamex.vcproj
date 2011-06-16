@@ -392,9 +392,6 @@
 				RelativePath="..\client\src\r_things.cpp">
 			</File>
 			<File
-				RelativePath="..\client\src\s_sndseq.cpp">
-			</File>
-			<File
 				RelativePath="..\client\src\s_sound.cpp">
 			</File>
 			<File
@@ -794,6 +791,9 @@
 				RelativePath="..\common\po_man.cpp">
 			</File>
 			<File
+				RelativePath="..\common\qsort.h">
+			</File>
+			<File
 				RelativePath="..\common\r_bsp.h">
 			</File>
 			<File
@@ -828,6 +828,12 @@
 			</File>
 			<File
 				RelativePath="..\common\r_things.h">
+			</File>
+			<File
+				RelativePath="..\common\s_sndseq.cpp">
+			</File>
+			<File
+				RelativePath="..\common\s_sndseq.h">
 			</File>
 			<File
 				RelativePath="..\common\s_sound.h">
