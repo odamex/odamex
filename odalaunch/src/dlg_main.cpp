@@ -38,6 +38,7 @@
 #include <wx/artprov.h>
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
+#include <wx/process.h>
 
 #ifdef __WXMSW__
     #include <windows.h>
@@ -914,7 +915,9 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
 
     // wxWidgets likes to spit out its own message box on msw after our one
     #ifndef __WXMSW__
-	if (wxExecute(cmdline, wxEXEC_ASYNC, NULL) <= 0)
+	wxProcess *process = new wxProcess(wxPROCESS_REDIRECT);
+
+	if (wxExecute(cmdline, wxEXEC_ASYNC, process) <= 0)
         wxMessageBox(wxString::Format(wxT("Could not start %s!"), 
                                         binname.c_str()));
     #else
