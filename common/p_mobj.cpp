@@ -1445,7 +1445,7 @@ void SV_AwarenessUpdate(player_t &pl, AActor* mo);
 // Moves the missile forward a bit
 //	and possibly explodes it right there.
 //
-void P_CheckMissileSpawn (AActor* th)
+bool P_CheckMissileSpawn (AActor* th)
 {
 	th->tics -= P_Random (th) & 3;
 	if (th->tics < 1)
@@ -1470,9 +1470,12 @@ void P_CheckMissileSpawn (AActor* th)
 				SV_AwarenessUpdate(players[i], th);
 		}
 		P_ExplodeMissile (th);
+		return false;
 	}
 	else
 		SV_SpawnMobj(th);
+
+	return true;
 }
 
 //
