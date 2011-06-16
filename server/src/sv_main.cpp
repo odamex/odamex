@@ -101,6 +101,7 @@ EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_maxrate)
 
 void SexMessage (const char *from, char *to, int gender);
+void SV_RemoveDisconnectedPlayer(player_t &player);
 
 CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
 {
@@ -113,7 +114,12 @@ CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are a
 	while(players.size() > sv_maxclients)
 	{
 		int last = players.size() - 1;
+		MSG_WriteMarker (&players[last].client.reliablebuf, svc_print);
+		MSG_WriteByte (&players[last].client.reliablebuf, PRINT_CHAT);
+		MSG_WriteString (&players[last].client.reliablebuf, 
+						"Client limit reduced. Please try connecting again later.\n");
 		SV_DropClient(players[last]);
+		SV_RemoveDisconnectedPlayer(players[last]);
 	}
 
 	//R_InitTranslationTables();
@@ -786,6 +792,15 @@ void SV_GetPackets (void)
 			}
 		}
 	}
+
+	size_t i = 0;
+	while (i < players.size())
+	{
+		if (players[i].playerstate == PST_DISCONNECT)
+			SV_RemoveDisconnectedPlayer(players[i]);
+		else
+			i++;
+	}	
 
 	// [SL] 2011-05-18 - Handle sv_emptyreset
 	static size_t last_player_count = players.size();
@@ -2326,7 +2341,6 @@ void SV_DisconnectClient(player_t &who)
 	}
 
 	who.playerstate = PST_DISCONNECT;
-	SV_RemoveDisconnectedPlayer(who);
 }
 
 
