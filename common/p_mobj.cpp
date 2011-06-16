@@ -483,9 +483,11 @@ void AActor::RunThink ()
 		
     // cycle through states,
     // calling action functions at transitions
-	if (!player && tics != -1)
+	if (tics != -1)
 	{
-		P_AnimationTick(this);
+		// run P_AnimationTick on everything except players who aren't voodoo dolls
+		if (!(player && this == player->mo))
+			P_AnimationTick(this);
 	}
 	else
 	{
