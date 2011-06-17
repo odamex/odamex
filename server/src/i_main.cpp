@@ -183,21 +183,25 @@ static void handler (int s)
 //
 void daemon_init(void)
 {
-    int   pid;
-    FILE *fpid;
-    const char *pidfile;
+    int     pid;
+    FILE   *fpid;
+    string  pidfile;
 
     Printf(PRINT_HIGH, "Launched into the background\n");
 
     if ((pid = fork()) != 0)
-	exit(0);
+    {
+    	call_terms();
+    	exit(0);
+    }
 	
-	pidfile = Args.CheckValue("-fork");
-	if (!pidfile || !strncmp(pidfile,"-",1))
-		pidfile = "doomsv.pid";
-		
+    pidfile = string(Args.CheckValue("-fork"));
+
+    if(!pidfile.size() || pidfile[0] == '-')
+    	pidfile = "doomsv.pid";
+	
     pid = getpid();
-    fpid = fopen(pidfile, "w");
+    fpid = fopen(pidfile.c_str(), "w");
     fprintf(fpid, "%d\n", pid);
     fclose(fpid);
 }
