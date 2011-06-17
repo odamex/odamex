@@ -194,8 +194,10 @@ void daemon_init(void)
     	call_terms();
     	exit(0);
     }
-	
-    pidfile = string(Args.CheckValue("-fork"));
+
+	const char *forkargs = Args.CheckValue("-fork");
+	if (forkargs)    
+		pidfile = string(forkargs);
 
     if(!pidfile.size() || pidfile[0] == '-')
     	pidfile = "doomsv.pid";
