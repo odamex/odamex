@@ -177,7 +177,7 @@ endif
 TARGETS = $(SERVER_TARGET) $(CLIENT_TARGET) $(MASTER_TARGET) $(WADFILE_TARGET)
 
 # denis - fixme - cflags are quite messy, but removing these is a very delicate act, also use -Wall -Werror
-CFLAGS = $(CFLAGS_PLATFORM) -DNOASM -Icommon -g -Wall -O0
+CFLAGS = $(CFLAGS_PLATFORM) -DNOASM -Icommon -g -Wall -O2
 LFLAGS = $(LFLAGS_PLATFORM)
 
 CFLAGS_RELEASE = $(CFLAGS_PLATFORM) -DNOASM -Icommon -O3
