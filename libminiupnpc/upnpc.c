@@ -1,4 +1,4 @@
-/* $Id: upnpc.c,v 1.84 2011/04/11 09:26:18 nanard Exp $ */
+/* $Id: upnpc.c,v 1.87 2011/06/04 15:55:40 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
@@ -138,9 +138,9 @@ static void ListRedirections(struct UPNPUrls * urls,
 				   enabled, duration,
 				   desc, rHost);
 				   */
-			printf("%2d %s %5s->%s:%-5s '%s' '%s'\n",
+			printf("%2d %s %5s->%s:%-5s '%s' '%s' %s\n",
 			       i, protocol, extPort, intClient, intPort,
-			       desc, rHost);
+			       desc, rHost, duration);
 		else
 			printf("GetGenericPortMappingEntry() returned %d (%s)\n",
 			       r, strupnperror(r));
@@ -168,10 +168,11 @@ static void NewListRedirections(struct UPNPUrls * urls,
 	{
 		for(pm = pdata.head.lh_first; pm != NULL; pm = pm->entries.le_next)
 		{
-			printf("%2d %s %5hu->%s:%-5hu '%s' '%s'\n",
+			printf("%2d %s %5hu->%s:%-5hu '%s' '%s' %u\n",
 			       i, pm->protocol, pm->externalPort, pm->internalClient,
 			       pm->internalPort,
-			       pm->description, pm->remoteHost);
+			       pm->description, pm->remoteHost,
+			       (unsigned)pm->leaseTime);
 			i++;
 		}
 		FreePortListing(&pdata);
@@ -192,10 +193,11 @@ static void NewListRedirections(struct UPNPUrls * urls,
 	{
 		for(pm = pdata.head.lh_first; pm != NULL; pm = pm->entries.le_next)
 		{
-			printf("%2d %s %5hu->%s:%-5hu '%s' '%s'\n",
+			printf("%2d %s %5hu->%s:%-5hu '%s' '%s' %u\n",
 			       i, pm->protocol, pm->externalPort, pm->internalClient,
 			       pm->internalPort,
-			       pm->description, pm->remoteHost);
+			       pm->description, pm->remoteHost,
+			       (unsigned)pm->leaseTime);
 			i++;
 		}
 		FreePortListing(&pdata);
@@ -509,7 +511,7 @@ int main(int argc, char ** argv)
 	   || (command == 'U' && commandargc<2)
 	   || (command == 'D' && commandargc<1))
 	{
-		fprintf(stderr, "Usage :\t%s [options] -a ip port external_port protocol\n\t\tAdd port redirection\n", argv[0]);
+		fprintf(stderr, "Usage :\t%s [options] -a ip port external_port protocol [duration]\n\t\tAdd port redirection\n", argv[0]);
 		fprintf(stderr, "       \t%s [options] -d external_port protocol [port2 protocol2] [...]\n\t\tDelete port redirection\n", argv[0]);
 		fprintf(stderr, "       \t%s [options] -s\n\t\tGet Connection status\n", argv[0]);
 		fprintf(stderr, "       \t%s [options] -l\n\t\tList redirections\n", argv[0]);
@@ -595,7 +597,8 @@ int main(int argc, char ** argv)
 			case 'a':
 				SetRedirectAndTest(&urls, &data,
 				                   commandargv[0], commandargv[1],
-				                   commandargv[2], commandargv[3], "0");
+				                   commandargv[2], commandargv[3],
+				                   (commandargc > 4)?commandargv[4]:"0");
 				break;
 			case 'd':
 				for(i=0; i<commandargc; i+=2)

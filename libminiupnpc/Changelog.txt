@@ -1,5 +1,25 @@
-$Id: Changelog.txt,v 1.144 2011/05/06 16:34:10 nanard Exp $
+$Id: Changelog.txt,v 1.151 2011/06/17 22:59:41 nanard Exp $
 miniUPnP client Changelog.
+
+2011/06/18:
+  Fix for windows in miniwget.c
+
+2011/06/04:
+  display remote host in port mapping listing
+
+2011/06/03:
+  Fix in make install : there were missing headers
+
+2011/05/26:
+  Fix the socket leak in miniwget thanks to Richard Marsh.
+  Permit to add leaseduration in -a command. Display lease duration.
+
+2011/05/15:
+  Try both LinkLocal and SiteLocal multicast address for SSDP in IPv6
+
+2011/05/09:
+  add a test in testminiwget.sh.
+  more error checking in miniwget.c
 
 2011/05/06:
   Adding some tool to test and validate miniwget.c
