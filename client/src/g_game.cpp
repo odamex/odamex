@@ -2173,7 +2173,7 @@ void G_DoPlayDemo (bool justStreamInput)
 			// Co-op
 			sv_gametype = 0.0f;
 			sv_weaponstay = 1.0f;
-			sv_itemrespawn = 0.0f;
+			sv_itemsrespawn = 0.0f;
 		}
 
 		sv_monstersrespawn = *demo_p++;
