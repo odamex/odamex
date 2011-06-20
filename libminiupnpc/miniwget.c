@@ -1,4 +1,4 @@
-/* $Id: miniwget.c,v 1.49 2011/05/06 14:54:42 nanard Exp $ */
+/* $Id: miniwget.c,v 1.52 2011/06/17 22:59:42 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard
@@ -52,6 +52,8 @@
 /*
  * Read a HTTP response from a socket.
  * Process Content-Length and Transfer-encoding headers.
+ * return a pointer to the content buffer, which length is saved
+ * to the length parameter.
  */
 void *
 getHTTPResponse(int s, int * size)
@@ -181,7 +183,8 @@ getHTTPResponse(int s, int * size)
 							if(i<n && buf[i] == '\r') i++;
 							if(i<n && buf[i] == '\n') i++;
 						}
-						while(i<n && isxdigit(buf[i]))
+						while(i<n && isxdigit(buf[i])
+						     && chunksize_buf_index < (sizeof(chunksize_buf)-1))
 						{
 							chunksize_buf[chunksize_buf_index++] = buf[i];
 							chunksize_buf[chunksize_buf_index] = '\0';
@@ -221,9 +224,13 @@ getHTTPResponse(int s, int * size)
 					bytestocopy = ((int)chunksize < n - i)?chunksize:(n - i);
 					if((int)(content_buf_used + bytestocopy) > content_buf_len)
 					{
+						if(content_length >= content_buf_used + (int)bytestocopy) {
+							content_buf_len = content_length;
+						} else {
+							content_buf_len = content_buf_used + (int)bytestocopy;
+						}
 						content_buf = (char *)realloc((void *)content_buf, 
-						                              content_buf_used + bytestocopy);
-						content_buf_len = content_buf_used + bytestocopy;
+						                              content_buf_len);
 					}
 					memcpy(content_buf + content_buf_used, buf + i, bytestocopy);
 					content_buf_used += bytestocopy;
@@ -234,11 +241,20 @@ getHTTPResponse(int s, int * size)
 			else
 			{
 				/* not chunked */
+				if(content_length > 0
+				   && (content_buf_used + n) > content_length) {
+					/* skipping additional bytes */
+					n = content_length - content_buf_used;
+				}
 				if(content_buf_used + n > content_buf_len)
 				{
+					if(content_length >= content_buf_used + n) {
+						content_buf_len = content_length;
+					} else {
+						content_buf_len = content_buf_used + n;
+					}
 					content_buf = (char *)realloc((void *)content_buf, 
-					                              content_buf_used + n);
-					content_buf_len = content_buf_used + n;
+					                              content_buf_len);
 				}
 				memcpy(content_buf + content_buf_used, buf, n);
 				content_buf_used += n;
@@ -278,6 +294,7 @@ miniwget3(const char * url, const char * host,
 	int n;
 	int len;
 	int sent;
+	void * content;
 
 	*size = 0;
 	s = connecthostport(host, port);
@@ -363,7 +380,9 @@ miniwget3(const char * url, const char * host,
 			sent += n;
 		}
 	}
-	return getHTTPResponse(s, size);
+	content = getHTTPResponse(s, size);
+	closesocket(s);
+	return content;
 }
 
 /* miniwget2() :

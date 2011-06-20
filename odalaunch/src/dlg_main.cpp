@@ -38,6 +38,7 @@
 #include <wx/artprov.h>
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
+#include <wx/process.h>
 
 #ifdef __WXMSW__
     #include <windows.h>
@@ -515,11 +516,8 @@ void dlgMain::MonThrGetServerList()
                     &QServer[serverNum], serverNum, ServerTimeout));
 
                 // create and run the thread
-                if(threadVector[threadVector.size() - 1]->Create() == 
-                   wxTHREAD_NO_ERROR)
-                {
-                    threadVector[threadVector.size() - 1]->Run();
-                }
+                if(threadVector.back()->Create() == wxTHREAD_NO_ERROR)
+                    threadVector.back()->Run();
 
                 // DUMB: our next server will be this incremented value
                 serverNum++;
@@ -914,7 +912,9 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
 
     // wxWidgets likes to spit out its own message box on msw after our one
     #ifndef __WXMSW__
-	if (wxExecute(cmdline, wxEXEC_ASYNC, NULL) <= 0)
+	wxProcess *process = new wxProcess(wxPROCESS_REDIRECT);
+
+	if (wxExecute(cmdline, wxEXEC_ASYNC, process) <= 0)
         wxMessageBox(wxString::Format(wxT("Could not start %s!"), 
                                         binname.c_str()));
     #else

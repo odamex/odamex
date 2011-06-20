@@ -1368,10 +1368,6 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	else if (	player.mo && mo->player && sv_antiwallhack &&
 				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
 		ok = true;
-	else if (	player.mo && mo->player && sv_antiwallhack &&
-				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
-		ok = true;
-
 	else if(player.mo && mo->player && sv_antiwallhack && 
          ((HasBehavior && P_CheckSightEdges2(player.mo, mo, 5)) || (!HasBehavior && P_CheckSightEdges(player.mo, mo, 5)))/*player.awaresector[sectors - mo->subsector->sector]*/)
 		ok = true;
@@ -3740,7 +3736,8 @@ void SV_WantWad(player_t &player)
 //
 void SV_ParseCommands(player_t &player)
 {
-	 while(validplayer(player))
+	// [SL] 2011-06-16 - Ignore commands from disconnected players
+	 while(validplayer(player) && player.playerstate != PST_DISCONNECT)
 	 {
 		clc_t cmd = (clc_t)MSG_ReadByte();
 
