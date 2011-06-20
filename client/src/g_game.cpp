@@ -92,6 +92,8 @@ void	CL_RunTics (void);
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_itemsrespawn)
+EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (chasedemo)
 
@@ -2151,7 +2153,29 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_skill = s;
 		byte episode = *demo_p++;
 		byte map = *demo_p++;
-		sv_gametype = *demo_p++;
+		int deathmatch = *demo_p++;
+		if (deathmatch == 2)
+		{
+			// Altdeath
+			sv_gametype = 1.0f;
+			sv_weaponstay = 0.0f;
+			sv_itemsrespawn = 1.0f;
+		}
+		else if (deathmatch == 1)
+		{
+			// Classic deathmatch
+			sv_gametype = 1.0f;
+			sv_weaponstay = 1.0f;
+			sv_itemsrespawn = 0.0f;
+		}
+		else
+		{
+			// Co-op
+			sv_gametype = 0.0f;
+			sv_weaponstay = 1.0f;
+			sv_itemrespawn = 0.0f;
+		}
+
 		sv_monstersrespawn = *demo_p++;
 		sv_fastmonsters = *demo_p++;
 		sv_nomonsters = *demo_p++;
