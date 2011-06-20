@@ -417,6 +417,14 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 						door->PlayDoorSound();
 						return true;
 					}
+					else if (GET_SPAC(line->flags) == SPAC_PUSH)
+					{
+						// [RH] activate push doors don't go back down when you
+						// run into them (otherwise opening them would be
+						// a real pain).
+						door->m_Line = line;
+						return true;	
+					}
 					else if (thing && thing->player)
 					{
 						door->m_Direction = -1;	// go back down
