@@ -345,8 +345,11 @@ void Unlag::unregisterPlayer(byte player_id)
 		return;
 
 	// look up the index corresponding to this player in player_history
-	size_t player_index = player_id_map[player_id];
-	player_history.erase(player_history.begin() + player_index);
+	std::map<byte, size_t>::iterator mapit = player_id_map.find(player_id);
+	if (mapit == player_id_map.end())		// player_id not found
+		return;
+
+	player_history.erase(player_history.begin() + mapit->second);
 	player_id_map.erase(player_id);
 
 	refreshRegisteredPlayers();
