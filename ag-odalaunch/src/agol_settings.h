@@ -82,7 +82,7 @@ public:
 	void SetWindowCloseEvent(EventHandler *handler);
 
 private:
-	bool               IsWadDirDuplicate(std::string waddir);
+	bool               IsWadDirDuplicate(const std::string &waddir);
 
 	// Event Handlers
 	void               OnCancel(AG_Event *event);
