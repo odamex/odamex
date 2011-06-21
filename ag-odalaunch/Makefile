@@ -33,7 +33,7 @@ endif
 
 # Debug Profile (default)
 debug: CXXFLAGS += -g -Wall
-debug: LFLAGS += -g -lSDL_image
+debug: LFLAGS += -g
 debug: $(PROGRAM)
 
 # Release Profile
