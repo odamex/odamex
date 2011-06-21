@@ -1,3 +1,8 @@
+CXX = g++
+LD  = g++
+
+PROGRAM = ag-odalaunch
+
 SOURCES = \
 	src/agol_about.cpp \
 	src/agol_dirsel.cpp \
@@ -14,38 +19,47 @@ SOURCES = \
 
 HEADERS = src/*.h
 
-CC = g++
-LD = g++
-
 AGCONFIG = agar-config
 
-CFLAGS = $(shell $(AGCONFIG) --cflags) -g -Wall
-LFLAGS = $(shell $(AGCONFIG) --libs) -g -lSDL_image
+OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
 
+CXXFLAGS = $(shell $(AGCONFIG) --cflags)
+LFLAGS = $(shell $(AGCONFIG) --libs) -lSDL_image
+
+# mingw extras
 ifneq ($(strip $(shell $(CC) -v 2>&1 |grep "mingw")),)
 	LFLAGS += -static -lwsock32 -lwinmm -lpng -lz
 endif
 
-OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
+# Debug Profile (default)
+debug: CXXFLAGS += -g -Wall
+debug: LFLAGS += -g -lSDL_image
+debug: $(PROGRAM)
 
-ag-odalaunch.app: ag-odalaunch
-	rm -rf ag-odalaunch.app 
-	mkdir ag-odalaunch.app
-	mkdir ag-odalaunch.app/Contents
-	mkdir ag-odalaunch.app/Contents/Resources
-	mkdir ag-odalaunch.app/Contents/MacOS
-	cp res/Info.plist ag-odalaunch.app/Contents
-	cp res/odalaunch.icns ag-odalaunch.app/Contents/Resources
-	echo -n "APPL????" > ag-odalaunch.app/Contents/PkgInfo
-	cp ag-odalaunch ag-odalaunch.app/Contents/MacOS
+# Release Profile
+release: CXXFLAGS += -O3
+release: $(PROGRAM)
 
-ag-odalaunch: $(OBJECTS)
-	$(LD) $(OBJECTS) -o ag-odalaunch $(LFLAGS)
+all: $(debug)
+
+$(PROGRAM).app: $(PROGRAM)
+	rm -rf $@
+	mkdir $@
+	mkdir $@/Contents
+	mkdir $@/Contents/Resources
+	mkdir $@/Contents/MacOS
+	cp res/Info.plist $@/Contents
+	cp res/odalaunch.icns $@/Contents/Resources
+	echo -n "APPL????" > $@/Contents/PkgInfo
+	cp $< $@/Contents/MacOS
+
+$(PROGRAM): $(OBJECTS)
+	$(LD) $(OBJECTS) -o $@ $(LFLAGS)
 
 %.o: %.cpp $(HEADERS)
-	$(CC) $(CFLAGS) -Ires -c $< -o $@
+	$(CXX) $(CXXFLAGS) -Ires -c $< -o $@
 
 clean:
-	rm -rf ag-odalaunch.app
-	rm -rf ag-odalaunch
+	rm -rf $(PROGRAM).app
+	rm -rf $(PROGRAM)
 	rm -rf $(OBJECTS)
