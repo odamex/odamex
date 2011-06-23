@@ -867,14 +867,14 @@ void AGOL_MainWindow::OnRefreshAll(AG_Event *event)
 {
 	// Kick off a thread to query all the servers
 	if(!MasterThread.IsRunning())
-		MasterThread.Create((ODA_ThreadBase*)this, (THREAD_FUNC_PTR)&AGOL_MainWindow::QueryAllServers, NULL);
+		MasterThread.Create(static_cast<ODA_ThreadBase*>(this), (THREAD_FUNC_PTR)&AGOL_MainWindow::QueryAllServers, NULL);
 }
 
 void AGOL_MainWindow::OnGetMasterList(AG_Event *event)
 {
 	// Kick off a thread to get the master list and query all the servers
 	if(!MasterThread.IsRunning())
-		MasterThread.Create((ODA_ThreadBase*)this, (THREAD_FUNC_PTR)&AGOL_MainWindow::GetMasterList, NULL);
+		MasterThread.Create(static_cast<ODA_ThreadBase*>(this), (THREAD_FUNC_PTR)&AGOL_MainWindow::GetMasterList, NULL);
 }
 
 void AGOL_MainWindow::OnGetWAD(AG_Event *event)
@@ -1234,7 +1234,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 				QServerThread.push_back(new ODA_Thread());
 
 				// Start the thread for a server query
-				QServerThread.back()->Create((ODA_ThreadBase*)this, 
+				QServerThread.back()->Create(static_cast<ODA_ThreadBase*>(this), 
 						(THREAD_FUNC_PTR)&AGOL_MainWindow::QueryServerThrEntry, &QServer[serversQueried]);
 
 				// Incremement the number of requested server queries

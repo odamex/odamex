@@ -59,7 +59,7 @@ typedef struct
  *
  * This class provides a settings dialog with configurable options.
  */
-class AGOL_Settings : private ODA_EventRegister
+class AGOL_Settings : public ODA_EventRegister
 {
 public:
 	/**

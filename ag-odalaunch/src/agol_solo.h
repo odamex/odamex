@@ -43,7 +43,7 @@ namespace agOdalaunch {
  * select the wads they are interested in launching a solo game with and then start
  * the game.
  */
-class AGOL_Solo : private ODA_EventRegister
+class AGOL_Solo : public ODA_EventRegister
 {
 public:
 	/**

@@ -41,7 +41,7 @@ namespace agOdalaunch {
  *
  * This dialog provides information about the application, authors, and license.
  */
-class AGOL_About : private ODA_EventRegister
+class AGOL_About : public ODA_EventRegister
 {
 public:
 	/**

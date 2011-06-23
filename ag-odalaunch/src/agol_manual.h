@@ -42,7 +42,7 @@ namespace agOdalaunch {
  * This class provides a manual connect window which can be used to connect to a
  * server at the provided host or IP and port.
  */
-class AGOL_Manual : private ODA_EventRegister
+class AGOL_Manual : public ODA_EventRegister
 {
 public:
 	/**
