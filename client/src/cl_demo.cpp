@@ -61,9 +61,12 @@ void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
 	//captures the net packets and local movements
 	player_t* clientPlayer = &consoleplayer();
 	size_t len = netbuffer->cursize;
-	fixed_t x, y, z, momx, momy, momz, pitch, viewheight, deltaviewheight, roll = 0;
-	angle_t angle = 0;
-	byte waterlevel = 0;
+	byte waterlevel;
+	fixed_t x, y, z;
+	fixed_t momx, momy, momz;
+	fixed_t pitch, roll, viewheight, deltaviewheight;
+	angle_t angle;
+	int jumpTics, reactiontime;
 	buf_t netbuffertemp;
 	
 	netbuffertemp.resize(len + SAFETYMARGIN);
@@ -87,10 +90,12 @@ void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
 		momz = clientPlayer->mo->momz;
 		angle = clientPlayer->mo->angle;
 		pitch = clientPlayer->mo->pitch;
-		waterlevel = clientPlayer->mo->waterlevel;
-		deltaviewheight = clientPlayer->deltaviewheight;
-		viewheight = clientPlayer->viewheight;
 		roll = clientPlayer->mo->roll;
+		viewheight = clientPlayer->viewheight;
+		deltaviewheight = clientPlayer->deltaviewheight;
+		jumpTics = clientPlayer->jumpTics;
+		reactiontime = clientPlayer->mo->reactiontime;
+		waterlevel = clientPlayer->mo->waterlevel;
 	}
 	/*else
 		return;*/
@@ -99,15 +104,18 @@ void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
 	{
 		MSG_WriteByte(&netbuffertemp, svc_netdemocap);
 		
+		
 		MSG_WriteByte(&netbuffertemp, clientPlayer->cmd.ucmd.buttons);
-		MSG_WriteByte(&netbuffertemp, clientPlayer->cmd.ucmd.use);
-		MSG_WriteByte(&netbuffertemp, clientPlayer->cmd.ucmd.impulse);
+
+		//MSG_WriteByte(&netbuffertemp, clientPlayer->cmd.ucmd.use);
+		//MSG_WriteByte(&netbuffertemp, clientPlayer->cmd.ucmd.impulse);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.yaw);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.forwardmove);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.sidemove);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.upmove);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.roll);
-		MSG_WriteLong(&netbuffertemp, gametic);
+		//MSG_WriteLong(&netbuffertemp, gametic);
+		//MSG_WriteLong(&netbuffertemp, last_received);
 	
 		MSG_WriteByte(&netbuffertemp, waterlevel);
 		MSG_WriteLong(&netbuffertemp, x);
@@ -118,9 +126,11 @@ void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
 		MSG_WriteLong(&netbuffertemp, momz);
 		MSG_WriteLong(&netbuffertemp, angle);
 		MSG_WriteLong(&netbuffertemp, pitch);
-		MSG_WriteLong(&netbuffertemp, deltaviewheight);
-		MSG_WriteLong(&netbuffertemp, viewheight);
 		MSG_WriteLong(&netbuffertemp, roll);
+		MSG_WriteLong(&netbuffertemp, viewheight);
+		MSG_WriteLong(&netbuffertemp, deltaviewheight);
+		MSG_WriteLong(&netbuffertemp, jumpTics);
+		MSG_WriteLong(&netbuffertemp, reactiontime);
     }
 
 	//just going to keep this just case it is needed later - NullPoint
@@ -149,6 +159,7 @@ void CL_StopRecordingNetDemo()
 
 	size_t len = net_message.size();
 	fwrite(&len, sizeof(size_t), 1, recordnetdemo_fp);
+	fwrite(&gametic, sizeof(int), 1, recordnetdemo_fp);
 	fwrite(net_message.data, 1, len, recordnetdemo_fp);
 	
 	fclose(recordnetdemo_fp);
@@ -159,7 +170,7 @@ void CL_StopRecordingNetDemo()
 void CL_ReadNetDemoMeassages(buf_t* net_message)
 {
 	size_t len = 0;
-	player_t clientPlayer = consoleplayer();
+	player_t* clientPlayer = &consoleplayer();
 	
 	if(!netdemoPlayback)
 	{
@@ -173,6 +184,7 @@ void CL_ReadNetDemoMeassages(buf_t* net_message)
 	
 	
 	fread(&len, sizeof(size_t), 1, recordnetdemo_fp);
+	fread(&gametic, sizeof(int), 1, recordnetdemo_fp);
 	net_message->cursize = len;
 	net_message->readpos = 0;
 	fread(net_message->data, 1, len, recordnetdemo_fp);
@@ -195,7 +207,12 @@ void CL_ReadNetDemoMeassages(buf_t* net_message)
 		CL_ReadPacketHeader();
 		CL_ParseCommands();
 		CL_SaveCmd();
+
+		if (gametic - last_received > 65)
+		   noservermsgs = true;
 	}
+
+	
 	
 	SZ_Clear(net_message);
 }
@@ -262,19 +279,32 @@ void CL_CaptureDeliciousPackets(buf_t* netbuffer)
 
 	if(!netdemoRecord)
 		return;
+	
 
 	size_t len = netbuffer->cursize;
 	fwrite(&len, sizeof(size_t), 1, recordnetdemo_fp);
+	fwrite(&gametic, sizeof(int), 1, recordnetdemo_fp);
 	fwrite(netbuffer->data, 1, len, recordnetdemo_fp);
 	//SZ_Clear(&netbuffer);
 }
 
 BEGIN_COMMAND(netrecord)
 {
-	std::string demonamearg = argv[1];
-	demonamearg.append(".odd");
+	std::string demonamearg;
+	
+	
+	
+	if(argc < 2)
+	{
+		demonamearg = "demo.odd";
+	}
+	else
+	{
+		demonamearg = argv[1];
+		demonamearg.append(".odd");
+	}
 
-	if(netdemoRecord)
+	/*if(netdemoRecord)
 	{
 		CL_StopRecordingNetDemo();
 	}
@@ -287,23 +317,17 @@ BEGIN_COMMAND(netrecord)
 	{
 		Printf(PRINT_HIGH, "Need to be in a server for this to work.\n");
 		return;
-	}
+	}*/
 	
-
-	if(argc < 1)
-	{
-		Printf(PRINT_HIGH, "Please add a name for the demo.\n");
-		return;
-	}
-
 	if(recordnetdemo_fp)
 	{
-		Printf(PRINT_HIGH, "Need to stop recording / playing of a demo before recording a new one.\n");
+		Printf(PRINT_HIGH, "Need to stop recording / playing of a demo before recording a new one.\nuse the stopnetdemo command to stop the demo\n");
 		return;
 	}
-	
-	CL_BeginNetRecord(demonamearg.c_str());
+
 	CL_Reconnect();
+	CL_BeginNetRecord(demonamearg.c_str());
+	
 }
 END_COMMAND(netrecord)
 
@@ -326,7 +350,7 @@ BEGIN_COMMAND(netplay)
 
 	if(recordnetdemo_fp)
 	{
-		Printf(PRINT_HIGH, "Need to stop recording / playing of a demo before playing a new one.\n");
+		Printf(PRINT_HIGH, "Need to stop recording / playing of a demo before playing a new one.\nuse the stopnetdemo command to stop the demo\n");
 		return;
 	}
 

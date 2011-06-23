@@ -2978,21 +2978,24 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
 void CL_LocalDemoTic()
 {
 	player_t* clientPlayer = &consoleplayer();
-	fixed_t x, y, z, momx, momy, momz, pitch, viewheight, deltaviewheight, roll;
+	fixed_t x, y, z;
+	fixed_t momx, momy, momz;
+	fixed_t pitch, roll, viewheight, deltaviewheight;
 	angle_t angle;
+	int jumpTics, reactiontime;
 	byte waterlevel;
-	
 	
 	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
 	
-	clientPlayer->cmd.ucmd.use = MSG_ReadByte();
-	clientPlayer->cmd.ucmd.impulse = MSG_ReadByte();
+	//clientPlayer->cmd.ucmd.use = MSG_ReadByte();
+	//clientPlayer->cmd.ucmd.impulse = MSG_ReadByte();
 	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort() << 8;
-	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort() << 8;
-	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort() << 8;
+	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
-	gametic = MSG_ReadLong();
+	//gametic = MSG_ReadLong();
+	//last_received = MSG_ReadLong();
 
 	waterlevel = MSG_ReadByte();
 	x = MSG_ReadLong();
@@ -3003,10 +3006,11 @@ void CL_LocalDemoTic()
 	momz = MSG_ReadLong();
 	angle = MSG_ReadLong();
 	pitch = MSG_ReadLong();
-	
-	deltaviewheight = MSG_ReadLong();
-	viewheight = MSG_ReadLong();
 	roll = MSG_ReadLong();
+	viewheight = MSG_ReadLong();
+	deltaviewheight = MSG_ReadLong();
+	jumpTics = MSG_ReadLong();
+	reactiontime = MSG_ReadLong();
 
 	if(clientPlayer->mo)
 	{
@@ -3018,10 +3022,12 @@ void CL_LocalDemoTic()
 		clientPlayer->mo->momz = momz;
 		clientPlayer->mo->angle = angle;
 		clientPlayer->mo->pitch = pitch;
-		clientPlayer->mo->waterlevel = waterlevel;
-		clientPlayer->deltaviewheight = deltaviewheight;
-		clientPlayer->viewheight = viewheight;
 		clientPlayer->mo->roll = roll;
+		clientPlayer->viewheight = viewheight;
+		clientPlayer->deltaviewheight = deltaviewheight;
+		clientPlayer->jumpTics = jumpTics;
+		clientPlayer->mo->reactiontime = reactiontime;
+		clientPlayer->mo->waterlevel = waterlevel;
 	}
 
 }
