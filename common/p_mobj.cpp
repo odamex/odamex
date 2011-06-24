@@ -483,9 +483,11 @@ void AActor::RunThink ()
 		
     // cycle through states,
     // calling action functions at transitions
-	if (!player && tics != -1)
+	if (tics != -1)
 	{
-		P_AnimationTick(this);
+		// run P_AnimationTick on everything except players who aren't voodoo dolls
+		if (!(player && this == player->mo))
+			P_AnimationTick(this);
 	}
 	else
 	{
@@ -1044,10 +1046,9 @@ void P_ZMovement(AActor *mo)
                 // Decrease viewheight for a moment
                 // after hitting the ground (hard),
                 // and utter appropriate sound.
-                mo->player->deltaviewheight = mo->momz>>3;
 
-                if (clientside && !predicting)
-                    S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+				if (clientside && !predicting)
+					PlayerLandedOnThing(mo, NULL);
             }
          }
          
@@ -1175,7 +1176,26 @@ void P_ZMovement(AActor *mo)
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 {
 	mo->player->deltaviewheight = mo->momz>>3;
-	S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_IDLE);
+	if (co_zdoomphys)
+	{
+		// [SL] 2011-06-16 - ZDoom Oomphiness
+		if (mo->health > 0)
+		{
+			if (mo->momz < (fixed_t)(level.gravity * mo->subsector->sector->gravity * -983.04f))
+			{
+				S_Sound (mo, CHAN_VOICE, "*grunt1", 1, ATTN_NORM);
+			}
+			if (onmobj != NULL)
+			{
+				S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+			}
+		}
+	}
+	else
+	{
+		// [SL] 2011-06-16 - Vanilla Doom Oomphiness
+		S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+	}
 //	mo->player->centering = true;
 }
 
@@ -1445,7 +1465,7 @@ void SV_AwarenessUpdate(player_t &pl, AActor* mo);
 // Moves the missile forward a bit
 //	and possibly explodes it right there.
 //
-void P_CheckMissileSpawn (AActor* th)
+bool P_CheckMissileSpawn (AActor* th)
 {
 	th->tics -= P_Random (th) & 3;
 	if (th->tics < 1)
@@ -1470,9 +1490,12 @@ void P_CheckMissileSpawn (AActor* th)
 				SV_AwarenessUpdate(players[i], th);
 		}
 		P_ExplodeMissile (th);
+		return false;
 	}
 	else
 		SV_SpawnMobj(th);
+
+	return true;
 }
 
 //

@@ -393,58 +393,46 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		secnum = sec-sectors;
 
 		// if door already has a thinker, use it
-		if (sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DDoor)))
+		door = static_cast<DDoor *>(sec->ceilingdata);
+		// cph 2001/04/05 -
+		// Original Doom didn't distinguish floor/lighting/ceiling
+		// actions, so we need to do the same in demo compatibility mode.
+		//   [SL] 2011-06-20 - Credit to PrBoom for the fix
+		if (!door)
+			door = static_cast<DDoor *>(sec->floordata);
+		if (!door)
+			door = static_cast<DDoor *>(sec->lightingdata);
+
+		if (door)
 		{
-			door = static_cast<DDoor *>(sec->ceilingdata);	
-            door->m_Line = line;
-			
 			// ONLY FOR "RAISE" DOORS, NOT "OPEN"s
 			if (door->m_Type == DDoor::doorRaise && type == DDoor::doorRaise)
 			{
-				if (door->m_Direction == -1)
+				if (sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DDoor)))
 				{
-					door->m_Direction = 1;	// go back up
-					door->m_Status = DDoor::opening;
-					door->PlayDoorSound();
-				}
-				else if (GET_SPAC(line->flags) != SPAC_PUSH)
-					// [RH] activate push doors don't go back down when you
-					//		run into them (otherwise opening them would be
-					//		a real pain).
-				{
-					if (thing && !thing->player)
-						return false;	// JDC: bad guys never close doors
-
-					// From Chocolate Doom:
-                        // When is a door not a door?
-                        // In Vanilla, door->direction is set, even though
-                        // "specialdata" might not actually point at a door.
-
-                    else if (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DPlat)))
-                    {
-                        // Erm, this is a plat, not a door.
-                        // This notably causes a problem in ep1-0500.lmp where
-                        // a plat and a door are cross-referenced; the door
-                        // doesn't open on 64-bit.
-                        // The direction field in vldoor_t corresponds to the wait
-                        // field in plat_t.  Let's set that to -1 instead.
-                        
-                        DPlat *plat = static_cast<DPlat *>(sec->floordata);
-                        byte state;
-                        int count;
-                        
-                        plat->GetState(state, count);
-                        
-                        if (count >= 16)    // ep1-0500 always returns a count of 16.
-                            return false;   // We may be able to always return false?
-                    }
-                    else
-                    {
-                        door->m_Direction = -1;	// try going back down anyway?
+					if (door->m_Direction == -1)
+					{
+						door->m_Direction = 1;	// go back up
+						door->m_Status = DDoor::opening;
+						door->PlayDoorSound();
+						return true;
+					}
+					else if (GET_SPAC(line->flags) == SPAC_PUSH)
+					{
+						// [RH] activate push doors don't go back down when you
+						// run into them (otherwise opening them would be
+						// a real pain).
+						door->m_Line = line;
+						return true;	
+					}
+					else if (thing && thing->player)
+					{
+						door->m_Direction = -1;	// go back down
 						door->m_Status = DDoor::closing;
-                    }
+						return true;
+					}
 				}
-				return true;
+				return false;
 			}
 		}
         else

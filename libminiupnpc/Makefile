@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.78 2011/05/06 15:05:04 nanard Exp $
+# $Id: Makefile,v 1.80 2011/06/03 08:05:05 nanard Exp $
 # MiniUPnP Project
 # http://miniupnp.free.fr/
 # (c) 2005-2011 Thomas Bernard
@@ -44,7 +44,10 @@ OBJS = $(patsubst %.c,%.o,$(SRCS))
 
 # HEADERS to install
 HEADERS = miniupnpc.h miniwget.h upnpcommands.h igd_desc_parse.h \
-          upnpreplyparse.h upnperrors.h declspec.h
+          upnpreplyparse.h upnperrors.h miniupnpctypes.h \
+          portlistingparse.h \
+          declspec.h
+
 # library names
 LIBRARY = libminiupnpc.a
 ifeq ($(OS), Darwin)
@@ -111,7 +114,7 @@ validateminixml:	minixmlvalid
 	./minixmlvalid
 	touch $@
 
-validateminiwget:	testminiwget minihttptestserver
+validateminiwget:	testminiwget minihttptestserver testminiwget.sh
 	@echo "miniwget validation test"
 	./testminiwget.sh
 	touch $@

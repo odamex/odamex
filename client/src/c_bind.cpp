@@ -150,8 +150,8 @@ const char *KeyNames[NUM_KEYS] = {
   "kp=","uparrow","downarrow","rightarrow","leftarrow","ins","home","end", // 0110 - 0117
  "pgup",  "pgdn",    "f1",    "f2",    "f3",    "f4",    "f5",    "f6", // 0118 - 011F
    "f7",    "f8",    "f9",   "f10",   "f11",   "f12",   "f13",   "f14", // 0120 - 0127
-  "f15",    NULL,    NULL,    NULL,"numlock","capslock","scroll", NULL, // 0128 - 012F
-"shift",    NULL,  "ctrl",    NULL,   "alt",    NULL,    NULL,  "lwin", // 0130 - 0137
+  "f15",    NULL,    NULL,    NULL,"numlock","capslock","scroll", "rightshift", // 0128 - 012F
+"leftshift", "rightctrl", "leftctrl", "rightalt", "leftalt",    NULL,    NULL,  "lwin", // 0130 - 0137
  "rwin",    NULL,    NULL,  "help", "print", "sysrq", "break",    NULL,  // 0138 - 013F
    NULL,    NULL,    NULL,    // 0140 - 0142
 

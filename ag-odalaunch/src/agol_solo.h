@@ -43,7 +43,7 @@ namespace agOdalaunch {
  * select the wads they are interested in launching a solo game with and then start
  * the game.
  */
-class AGOL_Solo : private ODA_EventRegister
+class AGOL_Solo : public ODA_EventRegister
 {
 public:
 	/**
@@ -74,9 +74,9 @@ private:
 	AG_Box            *CreateMainButtonBox(void *parent);
 
 	void               PopulateWadLists();
-	bool               WadIsIWAD(std::string wad);
-	bool               PwadIsFileType(std::string wad, std::string extension);
-	bool               PWadListContainsFileType(std::string extension);
+	bool               WadIsIWAD(const std::string &wad);
+	bool               PwadIsFileType(const std::string &wad, const std::string &extension);
+	bool               PWadListContainsFileType(const std::string &extension);
 
 	void               OnCancel(AG_Event *event);
 	void               OnLaunch(AG_Event *event);

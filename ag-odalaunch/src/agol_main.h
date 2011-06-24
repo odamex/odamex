@@ -98,7 +98,7 @@ typedef struct
  *
  * This class contains the main application window.
  */
-class AGOL_MainWindow : private ODA_ThreadBase, ODA_EventRegister
+class AGOL_MainWindow : public ODA_ThreadBase, ODA_EventRegister
 {
 public:
 	/**

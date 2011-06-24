@@ -94,7 +94,7 @@ CVAR (co_zdoomphys, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 // 0 - Play the switch resetting sound at map location (0,0) like the vanilla bug
 // 1 - switch sounds attenuate with distance like plats and doors.
-CVAR (co_zdoomswitches, "0", CVAR_SERVERINFO)
+CVAR (co_zdoomswitches, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_FUNC_DECL (sv_gravity, "800", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR_FUNC_DECL (sv_aircontrol, "0.00390625", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)

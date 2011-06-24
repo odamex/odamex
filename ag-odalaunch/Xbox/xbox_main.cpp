@@ -475,7 +475,7 @@ int Xbox::InitializeJoystick()
 
 	AG_SetTimeout(&JoyUpdateTimeout, UpdateJoystick, NULL, 0);
 
-	Xbox::EnableJoystickUpdates(true);
+	EnableJoystickUpdates(true);
 
 	fill_n(BPressed, (size_t)JOY_BTTN_TOTAL, false);
 

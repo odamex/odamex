@@ -42,6 +42,7 @@ AGOL_Settings::AGOL_Settings() :
 {
 	SettingsDialog = AG_WindowNew(AG_WINDOW_MODAL);
 	AG_WindowSetCaptionS(SettingsDialog, "Configure Settings");
+	AG_WindowSetPosition(SettingsDialog, AG_WINDOW_MC, 0);
 
 	TopOptionsBox = CreateTopOptionsBox(SettingsDialog);
 	SrvOptionsBox = CreateSrvOptionsBox(TopOptionsBox);
@@ -314,7 +315,7 @@ AG_Box *AGOL_Settings::CreateMainButtonBox(void *parent)
 	return bbox;
 }
 
-bool AGOL_Settings::IsWadDirDuplicate(string waddir)
+bool AGOL_Settings::IsWadDirDuplicate(const string &waddir)
 {
 	list<string>::iterator i;
 

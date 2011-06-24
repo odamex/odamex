@@ -116,20 +116,6 @@ void DPlat::RunThink ()
 		
 	switch (m_Status)
 	{
-	case destroy:
-		if (serverside && clientside)
-		{
-			// Single player only didn't get an opportunity to play the right
-			// sound earlier
-			m_Status = finished;
-			PlayPlatSound();
-		}
-		if (clientside)
-		{
-			m_Sector->floordata = NULL;
-			Destroy();
-		}
-		return;
 	case midup:
 	case up:
 		res = MoveFloor (m_Speed, m_High, m_Crush, 1);
@@ -218,6 +204,7 @@ void DPlat::RunThink ()
 					m_Status = destroy;
 				else
 					m_Status = finished;
+				break;
 			default:
 				break;
 		}
@@ -244,6 +231,22 @@ void DPlat::RunThink ()
 		break;
 	default:
 		break;
+	}
+
+	if (clientside && m_Status == destroy)
+	{
+		if (serverside) // single player game
+		{
+			// make sure we play the finished sound because it doesn't
+			// get called for servers otherwise
+			m_Status = finished;
+			PlayPlatSound();
+			m_Status = destroy;
+		}
+
+		m_Sector->floordata = NULL;
+		Destroy();
+		return;
 	}
 }
 

@@ -2111,14 +2111,26 @@ void A_SpawnFly (AActor *mo)
 
 	// remove self (i.e., cube).
 	mo->Destroy ();
+
+	// [SL] 2011-06-19 - Emulate vanilla doom bug where monsters spawned after
+	// the start of the level (eg, spawned from a cube) are respawned at map
+	// location (0, 0).
+	memset(&newmobj->spawnpoint, 0, sizeof(newmobj->spawnpoint));
 }
 
 
 
 void A_PlayerScream (AActor *mo)
 {
+	if (!mo)
+		return;
+
 	char nametemp[128];
 	const char *sound;
+
+	// [SL] 2011-06-15 - Spectators shouldn't make any noises
+	if (mo->player && mo->player->spectator)
+		return;
 
 	// [Fly] added for csDoom
 	if (mo->health < -mo->info->spawnhealth)

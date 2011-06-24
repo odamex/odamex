@@ -25,7 +25,9 @@
 #include <stdlib.h>
 
 #include "doomtype.h"
+#include "i_system.h"
 #include "p_local.h"
+#include "p_mobj.h"
 #include "info.h"
 #include "s_sound.h"
 #include "tables.h"
@@ -243,8 +245,6 @@ BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
 
 	return rtn != 0;
 }
-
-bool P_CheckMissileSpawn (AActor *th);
 
 BOOL P_Thing_Projectile (int tid, int type, angle_t angle,
 						 fixed_t speed, fixed_t vspeed, BOOL gravity)
