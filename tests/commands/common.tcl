@@ -14,6 +14,7 @@ proc startServer {} {
  wait
  set serverout [open odasrv.log r]
 
+ server "sv_usemasters 0"
  server "sv_gametype 1"
  server "sv_hostname Unnamed"
  server "sv_maxclients 2"

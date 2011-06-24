@@ -100,7 +100,7 @@ public:
 	 *
 	 * @returns 0 on success, -1 on error.
 	 */
-	static int  InitializeJoystick(void);
+	static int InitializeJoystick(void);
 
 	/**
 	 * Enable or disable Xbox joystick updates.

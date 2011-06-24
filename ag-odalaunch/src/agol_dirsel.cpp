@@ -40,12 +40,12 @@ AGOL_DirSelector::AGOL_DirSelector()
 	Init("");
 }
 
-AGOL_DirSelector::AGOL_DirSelector(std::string title)
+AGOL_DirSelector::AGOL_DirSelector(const std::string &title)
 {
 	Init(title);
 }
 
-void AGOL_DirSelector::Init(std::string title)
+void AGOL_DirSelector::Init(const std::string &title)
 {
 	DirSelWindow = AG_WindowNew(AG_WINDOW_MODAL);
 	AG_WindowSetGeometryAligned(DirSelWindow, AG_WINDOW_MC, 500, 350);

@@ -59,7 +59,7 @@ typedef struct
  *
  * This class provides a settings dialog with configurable options.
  */
-class AGOL_Settings : private ODA_EventRegister
+class AGOL_Settings : public ODA_EventRegister
 {
 public:
 	/**
@@ -82,7 +82,7 @@ public:
 	void SetWindowCloseEvent(EventHandler *handler);
 
 private:
-	bool               IsWadDirDuplicate(std::string waddir);
+	bool               IsWadDirDuplicate(const std::string &waddir);
 
 	// Event Handlers
 	void               OnCancel(AG_Event *event);

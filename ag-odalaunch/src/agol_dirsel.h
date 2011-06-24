@@ -55,7 +55,7 @@ public:
 	 *
 	 * @param title Window title.
 	 */
-	AGOL_DirSelector(std::string title);
+	AGOL_DirSelector(const std::string &title);
 
 	/**
 	 * Destructor.
@@ -84,7 +84,7 @@ public:
 	void SetCancelAction(EventHandler *event);
 
 private:
-	void        Init(std::string title);
+	void        Init(const std::string &title);
 
 	AG_Window  *DirSelWindow;
 	AG_DirDlg  *DirDlg;

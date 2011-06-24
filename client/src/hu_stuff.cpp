@@ -303,7 +303,7 @@ void HU_DrawTargetNames(void)
 			continue;
 	
 		/* Now if they are visible... */
-		if (players[i].mo)
+		if (players[i].mo && players[i].mo->health > 0)
 		{
 			// If they are beyond 512 units, ignore
 			if (MobjToMobjDistance(displayplayer().mo, players[i].mo) > 512)

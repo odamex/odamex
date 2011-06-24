@@ -255,41 +255,46 @@ void AGOL_Solo::PopulateWadLists()
 	AG_TlistUniq(PwadList);
 }
 
-bool AGOL_Solo::WadIsIWAD(string wad)
+bool AGOL_Solo::WadIsIWAD(const string &wad)
 {
+	string upperWad(wad);
+
 	// Get the wad in all uppercase
-	transform(wad.begin(), wad.end(), wad.begin(), ::toupper);
+	transform(wad.begin(), wad.end(), upperWad.begin(), ::toupper);
 
 	// Compare to the supported iwad file names
 	for(int i = 0; DoomIWadNames[i].size(); i++)
 	{
-		if(wad == DoomIWadNames[i])
+		if(upperWad == DoomIWadNames[i])
 			return true;
 	}
 
 	return false;
 }
 
-bool AGOL_Solo::PwadIsFileType(string wad, string extension)
+bool AGOL_Solo::PwadIsFileType(const string &wad, const string &extension)
 {
 	if(wad.size() > 0 && extension.size() > 0)
 	{
+		string upperWad(wad);
+		string upperExt(extension);
+
 		// Convert the wad name to uppercase
-		transform(wad.begin(), wad.end(), wad.begin(), ::toupper);
+		transform(upperWad.begin(), upperWad.end(), upperWad.begin(), ::toupper);
 
 		// Convert the extension to uppercase
-		transform(extension.begin(), extension.end(), extension.begin(), ::toupper);
+		transform(upperExt.begin(), upperExt.end(), upperExt.begin(), ::toupper);
 
-		size_t dot = wad.rfind('.');
+		size_t dot = upperWad.rfind('.');
 
-		if(wad.substr(dot + 1, wad.size()) == extension)
+		if(upperWad.substr(dot + 1, upperWad.size()) == upperExt)
 			return true;
 	}
 
 	return false;
 }
 
-bool AGOL_Solo::PWadListContainsFileType(string extension)
+bool AGOL_Solo::PWadListContainsFileType(const string &extension)
 {
 	if(extension.size() > 0)
 	{
@@ -299,13 +304,14 @@ bool AGOL_Solo::PWadListContainsFileType(string extension)
 
 			if(selitem && strlen(selitem->text) > 0)
 			{
+				string upperExt(extension);
 				string wad(selitem->text);
 
 				// Convert the wad name to uppercase
 				transform(wad.begin(), wad.end(), wad.begin(), ::toupper);
 
 				// Convert the extension to uppercase
-				transform(extension.begin(), extension.end(), extension.begin(), ::toupper);
+				transform(upperExt.begin(), upperExt.end(), upperExt.begin(), ::toupper);
 
 				size_t dot = wad.rfind('.');
 
@@ -313,7 +319,7 @@ bool AGOL_Solo::PWadListContainsFileType(string extension)
 				if(dot == string::npos)
 					continue;
 
-				if(wad.substr(dot + 1, wad.size()) == extension)
+				if(wad.substr(dot + 1, wad.size()) == upperExt)
 					return true;
 			}
 		}

@@ -429,7 +429,6 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					{
 						door->m_Direction = -1;	// go back down
 						door->m_Status = DDoor::closing;
-						door->PlayDoorSound();
 						return true;
 					}
 				}
