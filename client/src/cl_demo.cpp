@@ -21,8 +21,7 @@
 
 FILE *recordnetdemo_fp = NULL;
 
-bool netdemoFinish = false;
-//bool netdemoPaused = false;
+bool netdemoPaused = false;
 bool netdemoRecord = false;
 bool netdemoPlayback = false;
 
@@ -43,8 +42,6 @@ void CL_BeginNetRecord(const char* demoname)
 	netdemoRecord = true;
 	netdemoPlayback = false;
 
-	//strcat(demoname, ".odd\0");
-	//demoname.append(".odd");
 	Printf(PRINT_HIGH, "Writing %s\n", demoname);
 
 	if(recordnetdemo_fp)
@@ -96,8 +93,8 @@ void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
 	if(!netdemoRecord)
 		return;
 
-	/*if(netdemoPaused)
-		return;*/
+	if(netdemoPaused)
+		return;
 
 	if(clientPlayer->mo)
 	{
@@ -116,8 +113,6 @@ void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
 		reactiontime = clientPlayer->mo->reactiontime;
 		waterlevel = clientPlayer->mo->waterlevel;
 	}
-	/*else
-		return;*/
 
 	if(usercmd)
 	{
@@ -126,15 +121,11 @@ void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
 		
 		MSG_WriteByte(&netbuffertemp, clientPlayer->cmd.ucmd.buttons);
 
-		//MSG_WriteByte(&netbuffertemp, clientPlayer->cmd.ucmd.use);
-		//MSG_WriteByte(&netbuffertemp, clientPlayer->cmd.ucmd.impulse);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.yaw);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.forwardmove);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.sidemove);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.upmove);
 		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.roll);
-		//MSG_WriteLong(&netbuffertemp, gametic);
-		//MSG_WriteLong(&netbuffertemp, last_received);
 	
 		MSG_WriteByte(&netbuffertemp, waterlevel);
 		MSG_WriteLong(&netbuffertemp, x);
@@ -151,13 +142,6 @@ void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
 		MSG_WriteLong(&netbuffertemp, jumpTics);
 		MSG_WriteLong(&netbuffertemp, reactiontime);
     }
-
-	//just going to keep this just case it is needed later - NullPoint
-	/*if (clientPlayer->pendingweapon != wp_nochange)
-	{
-			MSG_WriteByte(&netbuffertemp, svc_changeweapon);
-			MSG_WriteByte(&netbuffertemp, clientPlayer->pendingweapon);
-	}*/
 
 	CL_CaptureDeliciousPackets(&netbuffertemp);
 }
@@ -196,11 +180,9 @@ void CL_ReadNetDemoMeassages(buf_t* net_message)
 		return;
 	}
 	
-	/*if(netdemoPaused){
+	if(netdemoPaused){
 		return;
-	}*/
-
-	
+	}
 	
 	fread(&len, sizeof(size_t), 1, recordnetdemo_fp);
 	fread(&gametic, sizeof(int), 1, recordnetdemo_fp);
@@ -230,10 +212,6 @@ void CL_ReadNetDemoMeassages(buf_t* net_message)
 		if (gametic - last_received > 65)
 		   noservermsgs = true;
 	}
-
-	
-	
-	SZ_Clear(net_message);
 }
 
 
@@ -297,8 +275,7 @@ void CL_StartDemoPlayBack(std::string demoname)
 	netdemoPlayback = true;
 	gamestate = GS_CONNECTING;
 	netdemoRecord = false;
-	netdemoFinish = false;
-	//netdemoPaused = false;
+	netdemoPaused = false;
 }
 
 void CL_CaptureDeliciousPackets(buf_t* netbuffer)
@@ -319,15 +296,12 @@ void CL_CaptureDeliciousPackets(buf_t* netbuffer)
 	fwrite(&len, sizeof(size_t), 1, recordnetdemo_fp);
 	fwrite(&gametic, sizeof(int), 1, recordnetdemo_fp);
 	fwrite(netbuffer->data, 1, len, recordnetdemo_fp);
-	//SZ_Clear(&netbuffer);
 }
 
 BEGIN_COMMAND(netrecord)
 {
 	std::string demonamearg;
-	
-	
-	
+
 	if(argc < 2)
 	{
 		demonamearg = "demo.odd";
@@ -338,20 +312,6 @@ BEGIN_COMMAND(netrecord)
 		demonamearg.append(".odd");
 	}
 
-	/*if(netdemoRecord)
-	{
-		CL_StopRecordingNetDemo();
-	}
-
-	if(connected)
-	{
-		CL_QuitNetGame();
-	} 
-	else 
-	{
-		Printf(PRINT_HIGH, "Need to be in a server for this to work.\n");
-		return;
-	}*/
 	
 	if(recordnetdemo_fp)
 	{
@@ -365,15 +325,30 @@ BEGIN_COMMAND(netrecord)
 }
 END_COMMAND(netrecord)
 
-/*BEGIN_COMMAND(netpuase){
-	if(netdemoPaused){
+BEGIN_COMMAND(netpause)
+{
+	if(netdemoRecord)
+	{
+		Printf(PRINT_HIGH, "Need to be in demo playback to use this command\n");
+		return;
+	}
+
+	if(netdemoPaused)
+	{
 		netdemoPaused = false;
-	} else {
+		paused = false;
+		Printf(PRINT_HIGH, "Demo Unpaused\n");
+
+	} 
+	else 
+	{
 		netdemoPaused = true;
+		paused = true;
+		Printf(PRINT_HIGH, "Demo Paused\n");
 	}
 }
-END_COMMAND(netpuase)
-*/
+END_COMMAND(netpause)
+
 BEGIN_COMMAND(netplay)
 {
 	if(argc < 1)

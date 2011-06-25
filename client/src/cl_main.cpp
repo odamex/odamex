@@ -2987,15 +2987,11 @@ void CL_LocalDemoTic()
 	
 	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
 	
-	//clientPlayer->cmd.ucmd.use = MSG_ReadByte();
-	//clientPlayer->cmd.ucmd.impulse = MSG_ReadByte();
 	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
-	//gametic = MSG_ReadLong();
-	//last_received = MSG_ReadLong();
 
 	waterlevel = MSG_ReadByte();
 	x = MSG_ReadLong();

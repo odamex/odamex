@@ -333,7 +333,7 @@ void CL_PredictPlayers (int predtic)
 //
 void CL_PredictMove (void)
 {
-	if (noservermsgs)
+	if (noservermsgs || netdemoPaused)
 		return;
 
 	player_t *p = &consoleplayer();

@@ -476,10 +476,6 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	int			look;
 	int			fly;
 
-	/*// [NightFang] - we already have reserved cmds for demos - netdemos - NullPoint
-	if(netdemoPlayback)
-		return;*/
-
 	ticcmd_t	*base;
 
 	base = I_BaseTiccmd (); 			// empty, or external driver
@@ -1020,10 +1016,6 @@ void G_Ticker (void)
 		if((gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTING)
 			&& NET_CompareAdr(serveraddr, net_from))
 		{
-			/*if(netdemoRecord)
-			{
-				CL_CaptureDeliciousPackets(&net_message);
-			}*/
 
 			int type = MSG_ReadLong();
 
