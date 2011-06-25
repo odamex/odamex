@@ -400,7 +400,7 @@ void AActor::RunThink ()
 	else if ((z != floorz) || momz || BlockingMobj)
 	{
 	    // Handle Z momentum and gravity
-		if (flags2 & MF2_PASSMOBJ)
+		if (co_realactorheight && (flags2 & MF2_PASSMOBJ))
 		{
 		    if (!(onmo = P_CheckOnmobj (this)))
 			{
@@ -1136,7 +1136,6 @@ void P_ZMovement(AActor *mo)
    if (mo->z + mo->height > mo->ceilingz)
    {
 		// hit the ceiling
-		mo->z = mo->ceilingz - mo->height;
 		if (mo->flags2 & MF2_FLOORBOUNCE)
 		{
 			// reverse momentum here for ceiling bounce
@@ -1149,6 +1148,8 @@ void P_ZMovement(AActor *mo)
 		}		
 		if (mo->momz > 0)
 			mo->momz = 0;
+
+		mo->z = mo->ceilingz - mo->height;
 
 		if (mo->flags & MF_SKULLFLY)
 		{	// the skull slammed into something

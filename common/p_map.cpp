@@ -928,7 +928,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
                  goto pushline;
             }
         }
-        if (!(tmthing->flags2 & MF2_PASSMOBJ))
+        if (!(co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ)))
             return false;             
     }
 
