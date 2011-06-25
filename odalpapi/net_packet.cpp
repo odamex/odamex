@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: net_packet.cpp 2163 2011-05-07 19:44:07Z hypereye $
+// $Id$
 //
 // Copyright (C) 2006-2010 by The Odamex Team.
 //

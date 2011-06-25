@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: typedefs.h 2171 2011-05-08 17:58:07Z hypereye $
+// $Id$
 //
 // Copyright (C) 2006-2010 by The Odamex Team.
 //
