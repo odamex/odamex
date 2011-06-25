@@ -17,7 +17,7 @@
 #include "m_fileio.h"
 #include "c_dispatch.h"
 #include "d_net.h"
-
+#include "version.h"
 
 FILE *recordnetdemo_fp = NULL;
 
@@ -29,6 +29,14 @@ bool netdemoPlayback = false;
 //make the storage big for the new infomation
 #define SAFETYMARGIN 128
 
+typedef struct
+{
+	char	identifier[4];	// "ODAD"
+	byte	version;
+	byte	compression;	// type of compression used
+	int		index_size;		// gametic filepos index follows header
+	byte	reserved[54];	// for future use
+} netdemo_header_t;
 
 void CL_BeginNetRecord(const char* demoname)
 {
@@ -54,6 +62,17 @@ void CL_BeginNetRecord(const char* demoname)
 		return;
 	}
 
+	netdemo_header_t header;
+	header.identifier[0] = 'O';
+	header.identifier[1] = 'D';
+	header.identifier[2] = 'A';
+	header.identifier[3] = 'D';
+	header.version = NETDEMOVER;
+	header.compression = 0;
+	header.index_size = 0;
+	memset(header.reserved, 0, sizeof(header.reserved));
+
+	fwrite(&header, 1, sizeof(header), recordnetdemo_fp); 
 }
 
 void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
@@ -259,6 +278,21 @@ void CL_StartDemoPlayBack(std::string demoname)
 		return;
 	}
 
+	// read the demo's header file
+	netdemo_header_t header;
+	if (!fread(&header, 1, sizeof(header), recordnetdemo_fp) ||
+		strncmp(header.identifier, "ODAD", 4) != 0)
+	{
+		Printf(PRINT_HIGH, "Unable to read demo header.\n");
+		gameaction = ga_nothing;
+		gamestate = GS_FULLCONSOLE;
+		return;
+	}
+
+	if (header.version != NETDEMOVER)
+	{
+		// Do nothing since there is only one version of netdemo files currently
+	} 
 
 	netdemoPlayback = true;
 	gamestate = GS_CONNECTING;
