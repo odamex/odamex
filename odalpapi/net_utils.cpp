@@ -16,54 +16,51 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Main application sequence
+//	Utility functions
 //
 // AUTHORS: 
-//  John Corrado
 //  Russell Rice (russell at odamex dot net)
-//  Michael Wood (mwoodj at huntsvegas dot org)
+//  Michael Wood (mwoodj at knology dot net)
 //
 //-----------------------------------------------------------------------------
 
+#include <sys/time.h>
 
-// main dialog resource
-#include "xrc_resource.h"
+#include <limits>
 
-#include "main.h"
+#include "net_utils.h"
 
-#include "net_io.h"
+// GetMillisNow()
 
-#include <wx/xrc/xmlres.h>
-#include <wx/image.h>
-
-IMPLEMENT_APP(Application)
-
-bool Application::OnInit()
-{   
-    if (BufferedSocket::InitializeSocketAPI() == false)
-        return false;
-    
-    ::wxInitAllImageHandlers();
-
-	wxXmlResource::Get()->InitAllHandlers();
-
-    // load resources
-    InitXmlResource();
-
-    // create main window, get size dimensions and show it
-    MAIN_DIALOG = new dlgMain(0L);
-   
-    if (MAIN_DIALOG) 
-        MAIN_DIALOG->Show();
-        
-    SetTopWindow(MAIN_DIALOG);
-        
-    return true;
-}
-
-wxInt32 Application::OnExit()
+// denis - use this unless you want your program
+// to get confused every 49 days due to DWORD limit
+uint64_t _UnwrapTime(uint32_t now32)
 {
-    BufferedSocket::ShutdownSocketAPI();
-    
-    return 0;
+	static uint64_t last = 0;
+	uint64_t now = now32;
+	static uint64_t max = std::numeric_limits<DWORD>::max();
+
+	if(now < last%max)
+		last += (max-(last%max)) + now;
+	else
+		last = now;
+
+	return last;
 }
+
+int32_t _Millis()
+{
+    struct timeval tp;
+    
+    gettimeofday(&tp, (struct timezone *)NULL);
+
+    return (tp.tv_usec / 1000);
+}
+
+uint64_t GetMillisNow()
+{
+    return _UnwrapTime(_Millis());
+}
+
+// ???
+// ---

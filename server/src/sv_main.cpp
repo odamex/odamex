@@ -1360,10 +1360,6 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	else if (	player.mo && mo->player && sv_antiwallhack &&
 				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
 		ok = true;
-	else if (	player.mo && mo->player && sv_antiwallhack &&
-				player.spectator)	// GhostlyDeath -- Spectators MUST see players to F12 properly
-		ok = true;
-
 	else if(player.mo && mo->player && sv_antiwallhack && 
          ((HasBehavior && P_CheckSightEdges2(player.mo, mo, 5)) || (!HasBehavior && P_CheckSightEdges(player.mo, mo, 5)))/*player.awaresector[sectors - mo->subsector->sector]*/)
 		ok = true;

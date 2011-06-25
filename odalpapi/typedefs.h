@@ -16,17 +16,15 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	About Dialog
+//	 Type Definitions
 //
 // AUTHORS:
 //	 Michael Wood (mwoodj at huntsvegas dot org)
 //
 //-----------------------------------------------------------------------------
 
-#ifndef _AGOL_ABOUT_H
-#define _AGOL_ABOUT_H
-
-#include "event_handler.h"
+#ifndef _TYPEDEFS_H
+#define _TYPEDEFS_H
 
 /**
  * agOdalaunch namespace.
@@ -36,49 +34,18 @@
  */
 namespace agOdalaunch {
 
-/**
- * The about box.
- *
- * This dialog provides information about the application, authors, and license.
- */
-class AGOL_About : public ODA_EventRegister
-{
-public:
-	/**
-	 * Constructor.
-	 */
-	AGOL_About();
-
-	/**
-	 * Destructor.
-	 */
-	~AGOL_About();
-
-	/**
-	 * Set the window close event.
-	 *
-	 * The provided event handler will be called when the window closes.
-	 *
-	 * @param handler The event handler.
-	 */
-	void SetWindowCloseEvent(EventHandler *handler);
-
-private:
-	AG_Box       *CreateTopBox(void *parent);
-	AG_Box       *CreateDevBox(void *parent);
-	AG_Box       *CreateLicenseBox(void *parent);
-	AG_Button    *CreateOKButton(void *parent);
-
-	void          OnOK(AG_Event *event);
-
-	AG_Window    *AboutDialog;
-	AG_Box       *TopBox;
-	AG_Box       *DevBox;
-	AG_Box       *LicenseBox;
-	AG_Button    *OKButton;
-
-	EventHandler *CloseEventHandler;
-};
+#ifdef _MSC_VER
+	typedef signed   __int8   int8_t;
+	typedef signed   __int16  int16_t;
+	typedef signed   __int32  int32_t;
+	typedef unsigned __int8   uint8_t;
+	typedef unsigned __int16  uint16_t;
+	typedef unsigned __int32  uint32_t;
+	typedef signed   __int64  int64_t;
+	typedef unsigned __int64  uint64_t;
+#else
+	#include <stdint.h>
+#endif
 
 } // namespace
 

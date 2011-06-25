@@ -330,7 +330,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     }
 
     // Query the server and try to acquire its password hash
-    tmp_server.SetAddress(IPHost, Port);
+    tmp_server.SetAddress(IPHost.c_str(), Port);
     tmp_server.Query(ServerTimeout);
 
     if (tmp_server.GotResponse() == false)
@@ -467,8 +467,8 @@ void dlgMain::MonThrGetServerList()
     
     size_t count = 0;
     size_t serverNum = 0;
-    wxString Address = _T("");
-    wxUint16 Port = 0;
+    std::string Address;
+    uint16_t Port = 0;
 
     // [Russell] - This includes custom servers.
     if (!MServer.GetServerCount())
@@ -509,7 +509,7 @@ void dlgMain::MonThrGetServerList()
             if(serverNum < MServer.GetServerCount())
             {
                 MServer.GetServerAddress(serverNum, Address, Port);
-                QServer[serverNum].SetAddress(Address, Port);
+                QServer[serverNum].SetAddress(Address.c_str(), Port);
 
                 // add the thread to the vector
                 threadVector.push_back(new QueryThread(this, 
@@ -660,7 +660,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             break;
     }
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %u"), MServer.GetPing()), 1);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %llu"), MServer.GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), TotalPlayers), 3);
 
     delete Result;
@@ -935,7 +935,7 @@ void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 wxInt32 dlgMain::FindServer(wxString Address)
 {
     for (size_t i = 0; i < MServer.GetServerCount(); i++)
-        if (QServer[i].GetAddress().IsSameAs(Address))
+        if (QServer[i].GetAddress() == Address.c_str())
             return i;
     
     return -1;
@@ -1011,7 +1011,7 @@ _oda_iav_err_t dlgMain::IsAddressValid(wxString Address, wxString &OutIPHost,
     wxString RegEx;
     wxRegEx ReValIP;
     wxString IPHost;
-    long Port = DEF_SERVERPORT;
+    long Port = 10666;
 
     // Get rid of any whitespace on either side of the string
     Address.Trim(false);

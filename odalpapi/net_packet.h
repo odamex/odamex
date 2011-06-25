@@ -31,8 +31,11 @@
 #include <string>
 #include <vector>
 
+// todo: replace with a generic implementation
+#if 0
 #include <agar/core.h> // For AG_Mutex
 #include <agar/config/ag_debug.h> // Determine if Agar is compiled for debugging
+#endif
 
 #include "net_io.h"
 #include "typedefs.h"
@@ -60,7 +63,7 @@
  * All code for the ag-odalaunch launcher is contained within the agOdalaunch
  * namespace.
  */
-namespace agOdalaunch {
+//namespace agOdalaunch {
 
 const uint32_t MASTER_CHALLENGE = 777123;
 const uint32_t MASTER_RESPONSE  = 777123;
@@ -112,9 +115,9 @@ struct ServerInfo_t
 	uint8_t                  VersionMajor; // Launcher specific: Version fields
 	uint8_t                  VersionMinor;
 	uint8_t                  VersionPatch;
+	uint32_t                 VersionRevision;
 	uint32_t                 VersionProtocol;
 	uint32_t                 VersionRealProtocol;
-	uint32_t                 VersionRevision;
 	uint32_t                 PTime;
 	std::string              Name; // Launcher specific: Server name
 	uint8_t                  MaxClients; // Launcher specific: Maximum clients
@@ -141,9 +144,9 @@ protected:
 	uint32_t response;
 
 	// The time in milliseconds a packet was received
-	uint32_t Ping;
+	uint64_t Ping;
 
-	AG_Mutex m_Mutex;
+//	AG_Mutex m_Mutex;
 public:
 	// Constructor
 	ServerBase() 
@@ -152,7 +155,8 @@ public:
 		challenge = 0;
 		response = 0;
 
-		AG_MutexInit(&m_Mutex);
+    // todo: replace with a generic implementation
+//		AG_MutexInit(&m_Mutex);
 	}
 
 	// Destructor
@@ -172,7 +176,7 @@ public:
 	}
 
 	std::string GetAddress() const { return Socket.GetRemoteAddress(); }
-	uint32_t GetPing() const { return Ping; }
+	uint64_t GetPing() const { return Ping; }
 
 #ifdef AG_DEBUG
 	// These funtions will cause termination on error when AG_DEBUG is enabled
@@ -180,9 +184,10 @@ public:
 	int TryLock() { AG_MutexTrylock(&m_Mutex); return 0; }
 	int Unlock() { AG_MutexUnlock(&m_Mutex); return 0; }
 #else
-	int GetLock() { return AG_MutexLock(&m_Mutex); }
-	int TryLock() { return AG_MutexTrylock(&m_Mutex); }
-	int Unlock() { return AG_MutexUnlock(&m_Mutex); }
+    // todo: replace with a generic implementation
+	//int GetLock() { return AG_MutexLock(&m_Mutex); }
+	//int TryLock() { return AG_MutexTrylock(&m_Mutex); }
+	//int Unlock() { return AG_MutexUnlock(&m_Mutex); }
 #endif
 };
 
@@ -353,6 +358,6 @@ protected:
 	bool m_ValidResponse;
 };
 
-} // namespace
+//} // namespace
 
 #endif // NETPACKET_H

@@ -381,6 +381,6 @@ void dlgServers::LoadServersIn()
     {
         CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
         
-        MServer->AddCustomServer(cs->Address, cs->Port);
+        MServer->AddCustomServer(cs->Address.c_str(), cs->Port);
     }
 }

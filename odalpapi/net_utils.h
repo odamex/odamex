@@ -16,54 +16,19 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Main application sequence
+//	Utility functions
 //
 // AUTHORS: 
-//  John Corrado
 //  Russell Rice (russell at odamex dot net)
-//  Michael Wood (mwoodj at huntsvegas dot org)
+//  Michael Wood (mwoodj at knology dot net)
 //
 //-----------------------------------------------------------------------------
 
+#ifndef __NET_UTILS_H__
+#define __NET_UTILS_H__
 
-// main dialog resource
-#include "xrc_resource.h"
+#include "typedefs.h"
 
-#include "main.h"
+uint64_t GetMillisNow();
 
-#include "net_io.h"
-
-#include <wx/xrc/xmlres.h>
-#include <wx/image.h>
-
-IMPLEMENT_APP(Application)
-
-bool Application::OnInit()
-{   
-    if (BufferedSocket::InitializeSocketAPI() == false)
-        return false;
-    
-    ::wxInitAllImageHandlers();
-
-	wxXmlResource::Get()->InitAllHandlers();
-
-    // load resources
-    InitXmlResource();
-
-    // create main window, get size dimensions and show it
-    MAIN_DIALOG = new dlgMain(0L);
-   
-    if (MAIN_DIALOG) 
-        MAIN_DIALOG->Show();
-        
-    SetTopWindow(MAIN_DIALOG);
-        
-    return true;
-}
-
-wxInt32 Application::OnExit()
-{
-    BufferedSocket::ShutdownSocketAPI();
-    
-    return 0;
-}
+#endif // __NET_UTILS_H__

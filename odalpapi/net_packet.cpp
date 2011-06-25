@@ -32,7 +32,7 @@
 
 using namespace std;
 
-namespace agOdalaunch {
+//namespace agOdalaunch {
 
 /*
    Create a packet to send, which in turn will
@@ -181,8 +181,6 @@ void Server::ResetData()
 	Info.VersionPatch = 0;
 	Info.VersionRevision = 0;
 	Info.VersionProtocol = 0;
-	Info.VersionRealProtocol = 0;
-	Info.PTime = 0;
 	Info.Name = "";
 	Info.MaxClients = 0;
 	Info.MaxPlayers = 0;
@@ -216,17 +214,22 @@ void Server::ResetData()
 //
 // Read information built for us by the server
 void Server::ReadInformation(const uint8_t &VersionMajor, 
-                             const uint8_t &VersionMinor,
-                             const uint8_t &VersionPatch,
-                             const uint32_t &ProtocolVersion)
+		const uint8_t &VersionMinor,
+		const uint8_t &VersionPatch,
+		const uint32_t &ProtocolVersion)
 {
 	Info.VersionMajor = VersionMajor;
 	Info.VersionMinor = VersionMinor;
 	Info.VersionPatch = VersionPatch;
 	Info.VersionProtocol = ProtocolVersion;
 
-	Socket.Read32(Info.PTime);
-	Socket.Read32(Info.VersionRealProtocol);
+    // bond - time
+    Socket.Read32(Info.PTime);
+
+    // The servers real protocol version
+    // bond - real protocol
+    Socket.Read32(Info.VersionRealProtocol);
+
 	Socket.Read32(Info.VersionRevision);
 
 	uint8_t CvarCount;
@@ -353,9 +356,9 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 // Figures out the response from the server, deciding whether to use this data
 // or not
 int32_t Server::TranslateResponse(const uint16_t &TagId, 
-                                  const uint8_t &TagApplication,
-                                  const uint8_t &TagQRId,
-                                  const uint16_t &TagPacketType)
+		const uint8_t &TagApplication,
+		const uint8_t &TagQRId,
+		const uint16_t &TagPacketType)
 {
 	// It isn't a response
 	if (TagQRId != 2)
@@ -424,16 +427,16 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 	Socket.Read32(SvProtocolVersion);
 
 	if ((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) || 
-	    (VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
+			(VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
 	{
 		// Server is an older version
 		return 0;
 	}
 
 	ReadInformation(VERSIONMAJOR(SvVersion), 
-	                VERSIONMINOR(SvVersion), 
-	                VERSIONPATCH(SvVersion),
-	                SvProtocolVersion);
+			VERSIONMINOR(SvVersion), 
+			VERSIONPATCH(SvVersion),
+			SvProtocolVersion);
 
 	if (Socket.BadRead())
 	{        
@@ -459,9 +462,9 @@ int32_t Server::Parse()
 	if (TagId == TAG_ID)
 	{
 		int32_t Result = TranslateResponse(TagId, 
-		                                   TagApplication, 
-		                                   TagQRId, 
-		                                   TagPacketType);
+				TagApplication, 
+				TagQRId, 
+				TagPacketType);
 
 		Socket.ClearBuffer();
 
@@ -492,7 +495,6 @@ int32_t Server::Query(int32_t Timeout)
 		Socket.Write32(challenge);
 		Socket.Write32(VERSION);
 		Socket.Write32(PROTOCOL_VERSION);
-		Socket.Write32(Info.PTime);
 
 		if(!Socket.SendData(Timeout))
 			return 0;
@@ -511,4 +513,4 @@ int32_t Server::Query(int32_t Timeout)
 	return 0;
 }
 
-} // namespace
+//} // namespace

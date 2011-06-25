@@ -3,17 +3,19 @@ SOURCES = src/dlg_config.cpp \
  src/lst_players.cpp \
  src/lst_servers.cpp \
  src/lst_srvdetails.cpp \
- src/net_packet.cpp \
+ ../odalpapi/net_packet.cpp \
+ ../odalpapi/net_utils.cpp \
  src/dlg_about.cpp \
  src/dlg_main.cpp \
  src/dlg_servers.cpp \
  src/main.cpp \
- src/net_io.cpp \
+ ../odalpapi/net_io.cpp \
  src/query_thread.cpp \
  src/frm_odaget.cpp \
  src/md5.cpp
 
-HEADERS = src/*.h
+HEADERS = src/*.h \ 
+ ../odalpapi/*.h
 
 CC = g++
 LD = g++

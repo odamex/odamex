@@ -98,6 +98,7 @@ public:
 	 */
 	~ODA_EventRegister();
 
+protected:
 	/**
 	 * Register a function as an EventHandler.
 	 *
