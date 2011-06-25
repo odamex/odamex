@@ -476,7 +476,7 @@ void P_DeathThink (player_t *player)
 			player->mo->angle -= ANG5;
 
 
-       	if(player->mo->angle != old_angle && serverside)
+       	if(player->mo->angle != old_angle && serverside && !clientside)
        	{
 			// [SL] 2011-06-15 - Tell the client to update his view to follow
 			// the actor who killed him
