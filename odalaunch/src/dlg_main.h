@@ -47,6 +47,8 @@
 #include "query_thread.h"
 #include "net_packet.h"
 
+//using namespace agOdalaunch;
+
 // custom event declarations
 BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)

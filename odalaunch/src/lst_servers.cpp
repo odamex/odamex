@@ -355,7 +355,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     wxInt32 i = 0;
     wxListItem li;
     
-    wxUint32 Ping = 0;
+    wxUint64 Ping = 0;
     wxString GameType = wxT("");
     size_t WadCount = 0;
     
@@ -396,7 +396,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     Ping = s.GetPing();
 
     li.m_col = serverlist_field_ping;
-    li.m_text = wxString::Format(_T("%u"), Ping);
+    li.m_text = wxString::Format(_T("%llu"), Ping);
 
     SetItem(li);
 
@@ -415,24 +415,26 @@ void LstOdaServerList::AddServerToList(const Server &s,
     if (WadCount)
     {
         // pwad list
-        wxString wadlist = _T("");
-        wxString pwad = _T("");
+        std::string wadlist;
+        std::string pwad;
             
         for (i = 2; i < WadCount; ++i)
         {
-            pwad = s.Info.Wads[i].Name.Mid(0, s.Info.Wads[i].Name.Find('.'));
-            wadlist += wxString::Format(_T("%s "), pwad.c_str());
+            pwad = s.Info.Wads[i].Name.substr(0, s.Info.Wads[i].Name.find('.'));
+            
+            wadlist.append(pwad);
+            wadlist.append(" ");
         }
             
         li.m_col = serverlist_field_wads;
-        li.m_text = wadlist;
+        li.m_text = wadlist.c_str();
     
         SetItem(li);
     }
 
     // Map name column
     li.m_col = serverlist_field_map;
-    li.m_text = s.Info.CurrentMap.Upper();
+    li.m_text = s.Info.CurrentMap.c_str();
     
     SetItem(li);
        
@@ -482,10 +484,11 @@ void LstOdaServerList::AddServerToList(const Server &s,
     // IWAD column
     if (WadCount)
     {
-        wxString Iwad = s.Info.Wads[1].Name.Mid(0, s.Info.Wads[1].Name.Find('.'));
+        std::string iwad;
+        iwad = s.Info.Wads[1].Name.substr(0, s.Info.Wads[1].Name.find('.'));
         
         li.m_col = serverlist_field_iwad;
-        li.m_text = Iwad;
+        li.m_text = iwad.c_str();
     }
     
     SetItem(li);
@@ -495,7 +498,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     
     // Padlock icon for passworded servers
     SetItemColumnImage(li.m_itemId, serverlist_field_name, 
-        (s.Info.PasswordHash.Length() ? ImageList_Padlock : -1));
+        (s.Info.PasswordHash.length() ? ImageList_Padlock : -1));
     
     ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, 150);
     ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 300);

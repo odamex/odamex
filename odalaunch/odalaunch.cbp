@@ -323,6 +323,7 @@
 			<Add directory="$(#WX)\contrib\include" />
 			<Add directory=".\src" />
 			<Add directory=".\res" />
+			<Add directory="..\odalpapi" />
 		</Compiler>
 		<ResourceCompiler>
 			<Add directory="$(#WX.include)" />
@@ -392,18 +393,6 @@
 		<Unit filename="src\main.h" />
 		<Unit filename="src\md5.cpp" />
 		<Unit filename="src\md5.h" />
-		<Unit filename="src\net_io.cpp">
-			<Option virtualFolder="network\" />
-		</Unit>
-		<Unit filename="src\net_io.h">
-			<Option virtualFolder="network\" />
-		</Unit>
-		<Unit filename="src\net_packet.cpp">
-			<Option virtualFolder="network\" />
-		</Unit>
-		<Unit filename="src\net_packet.h">
-			<Option virtualFolder="network\" />
-		</Unit>
 		<Unit filename="src\query_thread.cpp" />
 		<Unit filename="src\query_thread.h" />
 		<Unit filename="src\wx_pch.h">
@@ -415,6 +404,27 @@
 			<Option target="Unix Debug" />
 			<Option target="Mac Release" />
 			<Option target="Mac Debug" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_io.cpp">
+			<Option virtualFolder="network\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_io.h">
+			<Option virtualFolder="network\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_packet.cpp">
+			<Option virtualFolder="network\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_packet.h">
+			<Option virtualFolder="network\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_utils.cpp">
+			<Option virtualFolder="network\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_utils.h">
+			<Option virtualFolder="network\" />
+		</Unit>
+		<Unit filename="..\odalpapi\typedefs.h">
+			<Option virtualFolder="network\" />
 		</Unit>
 		<Extensions>
 			<code_completion />
