@@ -5,11 +5,12 @@ SOURCES = src/dlg_config.cpp \
  src/lst_srvdetails.cpp \
  ../odalpapi/net_packet.cpp \
  ../odalpapi/net_utils.cpp \
+ ../odalpapi/net_error.cpp \
+ ../odalpapi/net_io.cpp \
  src/dlg_about.cpp \
  src/dlg_main.cpp \
  src/dlg_servers.cpp \
  src/main.cpp \
- ../odalpapi/net_io.cpp \
  src/query_thread.cpp \
  src/frm_odaget.cpp \
  src/md5.cpp
