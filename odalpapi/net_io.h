@@ -128,8 +128,6 @@ private:
 	bool CreateSocket();
 	void DestroySocket();
 
-	void ReportError(int line, const char *function, const char *fmt, ...);
-
 	void SetSendPing(const uint32_t &i) { m_SendPing = i; }
 	void SetRecvPing(const uint32_t &i) { m_ReceivePing = i; }
         

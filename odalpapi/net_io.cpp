@@ -33,17 +33,9 @@
 #include <time.h>
 #include <errno.h>
 
-// todo: replace with a generic implementation
-#if 0
-#include <agar/core.h>
-#endif
-
 #include "net_io.h"
 #include "net_utils.h"
-
-#ifdef _XBOX
-#include "xbox_main.h"
-#endif
+#include "net_error.h"
 
 //namespace agOdalaunch {
 
@@ -87,30 +79,6 @@ void BufferedSocket::ShutdownSocketAPI()
 #endif
 }
 
-void BufferedSocket::ReportError(int line, const char *function, const char *fmt, ...)
-{
-	va_list ap;
-
-	if(!function || !fmt)
-		return;
-
-	va_start(ap, fmt);
-
-#ifdef _XBOX
-	char errorstr[1024];
-
-	Xbox::OutputDebugString("[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
-	vsprintf(errorstr, fmt, ap);
-	Xbox::OutputDebugString("%s\n", errorstr);
-#else
-	fprintf(stderr, "[%s:%d] BufferedSocket::%s(): ", __FILE__, line, function);
-	vfprintf(stderr, fmt, ap);
-	fputs("\n", stderr);
-#endif // _XBOX
-
-	va_end(ap);
-}
-       
 bool BufferedSocket::CreateSocket()
 {
 	DestroySocket();
@@ -119,14 +87,8 @@ bool BufferedSocket::CreateSocket()
 
 	if(m_Socket == INVALID_SOCKET)
 	{
-// todo: replace with a generic implementation
-#if 0
-#ifdef _WIN32
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
-#else
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
-#endif
-#endif
+		ReportError(REPERR_NO_ARGS);
+
 		return false;
 	}
 
@@ -134,14 +96,7 @@ bool BufferedSocket::CreateSocket()
 				(struct sockaddr *)&m_RemoteAddress,
 				sizeof(m_RemoteAddress)) == -1)
 	{
-// todo: replace with a generic implementation
-#if 0
-#ifdef _WIN32
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
-#else
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
-#endif
-#endif
+		ReportError(REPERR_NO_ARGS);
 		return false;
 	}
 
@@ -153,7 +108,7 @@ void BufferedSocket::DestroySocket()
 	if (m_Socket != 0)
 	{
 		if (closesocket(m_Socket) != 0)
-			ReportError(__LINE__, __FUNCTION__, "Could not close socket: %d", m_Socket);
+			ReportError("Could not close socket: %d", m_Socket);
 
 		m_Socket = 0;
 	}
@@ -165,14 +120,7 @@ void BufferedSocket::SetRemoteAddress(const string &Address, const int16_t &Port
 
 	if((he = gethostbyname((const char *)Address.c_str())) == NULL)
 	{
-// todo: replace with a generic implementation
-#if 0
-#ifdef _WIN32
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
-#else
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
-#endif
-#endif
+		ReportError(REPERR_NO_ARGS);
 		return;
     }
 
@@ -233,16 +181,9 @@ int32_t BufferedSocket::SendData(const int32_t &Timeout)
 	// set the start ping
 	m_SendPing = GetMillisNow();
 
-	if(BytesSent < 0 && errno > 0)
+	if(BytesSent < 0)
 	{
-// todo: replace with a generic implementation
-#if 0
-#ifdef _WIN32
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
-#else
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
-#endif
-#endif
+		ReportError(REPERR_NO_ARGS);
 	}
 
 	// return the amount of bytes sent
@@ -273,17 +214,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 
 	if (DestroyMe == true)
 	{
-		if(errno > 0)
-		{
-// todo: replace with a generic implementation
-#if 0
-#ifdef _WIN32
-			ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
-#else
-			ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
-#endif
-#endif
-		}
+        ReportError(REPERR_NO_ARGS);
 
 		m_SendPing = 0;
 		m_ReceivePing = 0;
@@ -298,14 +229,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	// -1 = Error; 0 = Closed Connection
 	if(m_BufferSize <= 0)
 	{
-// todo: replace with a generic implementation
-#if 0
-#ifdef _WIN32
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(GetLastError()));
-#else
-		ReportError(__LINE__, __FUNCTION__, AG_Strerror(errno));
-#endif
-#endif
+		ReportError(REPERR_NO_ARGS);
 
 		m_SendPing = 0;
 		m_ReceivePing = 0;
@@ -342,7 +266,7 @@ bool BufferedSocket::ReadString(string &str)
 
     if (!CanRead(1))
     {
-        ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+        ReportError("End of buffer reached!");
 
         str = "";
 
@@ -367,7 +291,7 @@ bool BufferedSocket::ReadString(string &str)
 
     if (!isRead)
     {
-        ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+        ReportError("End of buffer reached!");
 
         str = "";
 
@@ -385,7 +309,7 @@ bool BufferedSocket::ReadBool(bool &val)
 {
 	if (!CanRead(1))
 	{
-		ReportError(__LINE__, __FUNCTION__, "ReadBool: End of buffer reached!");
+		ReportError("ReadBool: End of buffer reached!");
 
 		val = false;
 
@@ -400,7 +324,7 @@ bool BufferedSocket::ReadBool(bool &val)
 
 	if (value < 0 || value > 1)
 	{
-		ReportError(__LINE__, __FUNCTION__, "Value is not 0 or 1, possibly corrupted packet");
+		ReportError("Value is not 0 or 1, possibly corrupted packet");
 
 		val = false;
 
@@ -424,7 +348,7 @@ bool BufferedSocket::Read32(int32_t &Int32)
 	{
 		Int32 = 0;
 
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
@@ -447,7 +371,7 @@ bool BufferedSocket::Read16(int16_t &Int16)
 	{
 		Int16 = 0;
 
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
@@ -468,7 +392,7 @@ bool BufferedSocket::Read8(int8_t &Int8)
 	{
 		Int8 = 0;
 
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
@@ -492,7 +416,7 @@ bool BufferedSocket::Read32(uint32_t &Uint32)
 	{
 		Uint32 = 0;
 
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
@@ -516,7 +440,7 @@ bool BufferedSocket::Read16(uint16_t &Uint16)
 	{
 		Uint16 = 0;
 
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
@@ -537,7 +461,7 @@ bool BufferedSocket::Read8(uint8_t &Uint8)
 	{
 		Uint8 = 0;
 
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
@@ -559,7 +483,7 @@ bool BufferedSocket::WriteString(const string &str)
 {
 	if (!CanWrite(str.length() + 1))
 	{
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -578,7 +502,7 @@ bool BufferedSocket::WriteBool(const bool &val)
 {
 	if (!CanWrite(1))
 	{
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -596,7 +520,7 @@ bool BufferedSocket::Write32(const int32_t &Int32)
 {
 	if (!CanWrite(4))
 	{
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -617,7 +541,7 @@ bool BufferedSocket::Write16(const int16_t &Int16)
 {
 	if (!CanWrite(2))
 	{
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -636,7 +560,7 @@ bool BufferedSocket::Write8(const int8_t &Int8)
 {
 	if (!CanWrite(1))
 	{
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -658,7 +582,7 @@ bool BufferedSocket::Write32(const uint32_t &Uint32)
 {
 	if (!CanWrite(4))
 	{
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -679,7 +603,7 @@ bool BufferedSocket::Write16(const uint16_t &Uint16)
 {
 	if (!CanWrite(2))
 	{
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -698,7 +622,7 @@ bool BufferedSocket::Write8(const uint8_t &Uint8)
 {
 	if (!CanWrite(1))
 	{
-		ReportError(__LINE__, __FUNCTION__, "End of buffer reached!");
+		ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -733,7 +657,7 @@ void BufferedSocket::ClearBuffer()
 	m_SocketBuffer = new byte[MAX_PAYLOAD];
 
 	if(m_SocketBuffer == NULL)
-		ReportError(__LINE__, __FUNCTION__, "Failed to allocate m_SocketBuffer!");
+		ReportError("Failed to allocate m_SocketBuffer!");
 
 	m_BufferSize = 0;
 

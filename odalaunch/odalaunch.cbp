@@ -5,7 +5,7 @@
 		<Option title="launcher" />
 		<Option default_target="Debug" />
 		<Option compiler="gcc" />
-		<Option virtualFolders="dialogs\;network\;" />
+		<Option virtualFolders="dialogs\;odalpapi\;" />
 		<Build>
 			<Target title="Win Release (GCC)">
 				<Option platforms="Windows;" />
@@ -405,26 +405,32 @@
 			<Option target="Mac Release" />
 			<Option target="Mac Debug" />
 		</Unit>
+		<Unit filename="..\odalpapi\net_error.cpp">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
+		<Unit filename="..\odalpapi\net_error.h">
+			<Option virtualFolder="odalpapi\" />
+		</Unit>
 		<Unit filename="..\odalpapi\net_io.cpp">
-			<Option virtualFolder="network\" />
+			<Option virtualFolder="odalpapi\" />
 		</Unit>
 		<Unit filename="..\odalpapi\net_io.h">
-			<Option virtualFolder="network\" />
+			<Option virtualFolder="odalpapi\" />
 		</Unit>
 		<Unit filename="..\odalpapi\net_packet.cpp">
-			<Option virtualFolder="network\" />
+			<Option virtualFolder="odalpapi\" />
 		</Unit>
 		<Unit filename="..\odalpapi\net_packet.h">
-			<Option virtualFolder="network\" />
+			<Option virtualFolder="odalpapi\" />
 		</Unit>
 		<Unit filename="..\odalpapi\net_utils.cpp">
-			<Option virtualFolder="network\" />
+			<Option virtualFolder="odalpapi\" />
 		</Unit>
 		<Unit filename="..\odalpapi\net_utils.h">
-			<Option virtualFolder="network\" />
+			<Option virtualFolder="odalpapi\" />
 		</Unit>
 		<Unit filename="..\odalpapi\typedefs.h">
-			<Option virtualFolder="network\" />
+			<Option virtualFolder="odalpapi\" />
 		</Unit>
 		<Extensions>
 			<code_completion />
