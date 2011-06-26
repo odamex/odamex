@@ -16,22 +16,19 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Error handling
-//
-// AUTHORS: 
-//  Russell Rice (russell at odamex dot net)
-//  Michael Wood (mwoodj at knology dot net)
+//  std::string utility functions
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __NET_ERROR_H__
-#define __NET_ERROR_H__
+#include "str_utils.h"
 
-void _ReportError(const char *file, int line, const char *func, 
-    const char *fmt, ...);
-#define ReportError(...) \
-    _ReportError(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#include <algorithm>
 
-#define REPERR_NO_ARGS ""
+#include <ctype.h>
 
-#endif // __NET_ERROR_H__
+std::string stdstr_toupper(std::string s)
+{
+    std::transform(s.begin(), s.end(), s.begin(), (int (*)(int))std::toupper);
+    
+    return s;
+}

@@ -395,6 +395,8 @@
 		<Unit filename="src\md5.h" />
 		<Unit filename="src\query_thread.cpp" />
 		<Unit filename="src\query_thread.h" />
+		<Unit filename="src\str_utils.cpp" />
+		<Unit filename="src\str_utils.h" />
 		<Unit filename="src\wx_pch.h">
 			<Option compile="1" />
 			<Option weight="0" />

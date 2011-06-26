@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: net_io.cpp 2294 2011-06-25 11:28:38Z russellrice $
+// $Id$
 //
 // Copyright (C) 2006-2010 by The Odamex Team.
 //

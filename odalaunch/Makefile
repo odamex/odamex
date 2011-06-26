@@ -13,7 +13,8 @@ SOURCES = src/dlg_config.cpp \
  src/main.cpp \
  src/query_thread.cpp \
  src/frm_odaget.cpp \
- src/md5.cpp
+ src/md5.cpp \
+ src/str_utils.cpp
 
 HEADERS = src/*.h \ 
  ../odalpapi/*.h

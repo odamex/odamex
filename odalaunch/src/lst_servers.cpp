@@ -22,6 +22,8 @@
 
 #include "lst_servers.h"
 
+#include "str_utils.h"
+
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
 
@@ -434,7 +436,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
 
     // Map name column
     li.m_col = serverlist_field_map;
-    li.m_text = s.Info.CurrentMap.c_str();
+    li.m_text = stdstr_toupper(s.Info.CurrentMap).c_str();
     
     SetItem(li);
        
