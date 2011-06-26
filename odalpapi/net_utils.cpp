@@ -54,7 +54,7 @@ int32_t _Millis()
     
     gettimeofday(&tp, (struct timezone *)NULL);
 
-    return (tp.tv_usec / 1000);
+    return (tp.tv_sec * 1000 + (tp.tv_usec / 1000));
 }
 
 uint64_t GetMillisNow()
