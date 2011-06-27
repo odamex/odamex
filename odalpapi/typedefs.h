@@ -32,7 +32,7 @@
  * All code for the ag-odalaunch launcher is contained within the agOdalaunch
  * namespace.
  */
-namespace agOdalaunch {
+//namespace agOdalaunch {
 
 #ifdef _MSC_VER
 	typedef signed   __int8   int8_t;
@@ -45,8 +45,10 @@ namespace agOdalaunch {
 	typedef unsigned __int64  uint64_t;
 #else
 	#include <stdint.h>
+
+	typedef int DWORD;
 #endif
 
-} // namespace
+//} // namespace
 
 #endif

@@ -26,6 +26,9 @@
 
 #include "net_error.h"
 
+#include <cstdio>
+#include <cstdarg>
+
 #ifdef _WIN32
 #include <windows.h>
 #else
