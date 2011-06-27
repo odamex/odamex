@@ -1023,6 +1023,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 	tplayer = target->player;
 
+	// [SL] 2011-06-26 - Set the player's attacker.  For some reason this
+	// was not being set clientside 
+	if (tplayer)
+	{
+		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
+	}
+
 	if (source && source->player)
 	{
 		// Don't count any frags at level start, because they're just telefrags
