@@ -46,7 +46,9 @@
 #else
 	#include <stdint.h>
 
-	typedef int DWORD;
+    #ifndef _WIN32
+	typedef unsigned int DWORD;
+	#endif
 #endif
 
 //} // namespace
