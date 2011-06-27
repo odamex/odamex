@@ -24,6 +24,7 @@
 
 #include "dlg_main.h"
 #include "query_thread.h"
+#include "str_utils.h"
 
 #include "md5.h"
 
@@ -177,8 +178,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstCtrlPlayers->SetupPlayerListColumns();
 
 	// set up the master server information
-    MServer.AddMaster(_T("master1.odamex.net"), 15000);
-    MServer.AddMaster(_T("voxelsoft.com"), 15000);
+    MServer.AddMaster("master1.odamex.net", 15000);
+    MServer.AddMaster("voxelsoft.com", 15000);
     
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
@@ -330,7 +331,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     }
 
     // Query the server and try to acquire its password hash
-    tmp_server.SetAddress(IPHost.c_str(), Port);
+    tmp_server.SetAddress(wxstr_tostdstr(IPHost), Port);
     tmp_server.Query(ServerTimeout);
 
     if (tmp_server.GotResponse() == false)
@@ -344,7 +345,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
         return;
     }
 
-    server_hash = tmp_server.Info.PasswordHash;
+    server_hash = stdstr_towxstr(tmp_server.Info.PasswordHash);
 
     // Uppercase both hashes for easier comparison
     server_hash.MakeUpper();
@@ -509,7 +510,7 @@ void dlgMain::MonThrGetServerList()
             if(serverNum < MServer.GetServerCount())
             {
                 MServer.GetServerAddress(serverNum, Address, Port);
-                QServer[serverNum].SetAddress(Address.c_str(), Port);
+                QServer[serverNum].SetAddress(Address, Port);
 
                 // add the thread to the vector
                 threadVector.push_back(new QueryThread(this, 
@@ -621,7 +622,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         
         case mtrs_server_singletimeout:
         {
-            i = FindServerInList(QServer[Result->Index].GetAddress());
+            i = FindServerInList(stdstr_towxstr(QServer[Result->Index].GetAddress()));
 
             m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
             
@@ -674,7 +675,7 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
     {
         case 0: // server query timed out
         {
-            i = FindServerInList(QServer[event.GetInt()].GetAddress());
+            i = FindServerInList(stdstr_towxstr(QServer[event.GetInt()].GetAddress()));
 
             m_LstCtrlPlayers->DeleteAllItems();
             
@@ -755,7 +756,7 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
 
     // If the server is passworded, pop up a password entry dialog for them to
     // specify one before going any further
-    SrvPwHash = QServer[i].Info.PasswordHash;
+    SrvPwHash = stdstr_towxstr(QServer[i].Info.PasswordHash);
 
     if (SrvPwHash.IsEmpty() == false)
     {                           
@@ -796,7 +797,7 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
         }
     }
     
-    LaunchGame(QServer[i].GetAddress(), launchercfg_s.odamex_directory,
+    LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), launchercfg_s.odamex_directory,
         launchercfg_s.wad_paths, Password);
 }
 
@@ -935,7 +936,7 @@ void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 wxInt32 dlgMain::FindServer(wxString Address)
 {
     for (size_t i = 0; i < MServer.GetServerCount(); i++)
-        if (QServer[i].GetAddress() == Address.c_str())
+        if (stdstr_towxstr(QServer[i].GetAddress()) == Address)
             return i;
     
     return -1;

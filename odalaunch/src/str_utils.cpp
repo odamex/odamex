@@ -20,15 +20,28 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "str_utils.h"
-
 #include <algorithm>
 
-#include <ctype.h>
+#include "str_utils.h"
 
-std::string stdstr_toupper(std::string s)
+using namespace std;
+
+string stdstr_toupper(const string &s)
 {
-    std::transform(s.begin(), s.end(), s.begin(), (int (*)(int))std::toupper);
+    string upper(s);
+
+    transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
     
     return s;
+}
+
+// These can be removed for wx 2.9/3
+string wxstr_tostdstr(const wxString &s)
+{
+	return string(s.mb_str());
+}
+
+wxString stdstr_towxstr(const string &s)
+{
+	return wxString(s.c_str(), wxConvUTF8);
 }

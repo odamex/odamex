@@ -380,7 +380,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
        
     // Address column
     li.m_col = serverlist_field_address;    
-    li.m_text = s.GetAddress();
+    li.m_text = stdstr_towxstr(s.GetAddress());
 
     SetItem(li);
 
@@ -390,7 +390,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
 
     // Server name column
     li.m_col = serverlist_field_name;
-    li.m_text = s.Info.Name;
+    li.m_text = stdstr_towxstr(s.Info.Name);
        
     SetItem(li);
       
@@ -429,14 +429,14 @@ void LstOdaServerList::AddServerToList(const Server &s,
         }
             
         li.m_col = serverlist_field_wads;
-        li.m_text = wadlist.c_str();
+        li.m_text = stdstr_towxstr(wadlist);
     
         SetItem(li);
     }
 
     // Map name column
     li.m_col = serverlist_field_map;
-    li.m_text = stdstr_toupper(s.Info.CurrentMap).c_str();
+    li.m_text = stdstr_towxstr(s.Info.CurrentMap).Upper();
     
     SetItem(li);
        
@@ -490,7 +490,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
         iwad = s.Info.Wads[1].Name.substr(0, s.Info.Wads[1].Name.find('.'));
         
         li.m_col = serverlist_field_iwad;
-        li.m_text = iwad.c_str();
+        li.m_text = stdstr_towxstr(iwad);
     }
     
     SetItem(li);

@@ -24,7 +24,10 @@
 #define __STR_UTILS_H__
 
 #include <string>
+#include <wx/string.h>
 
-std::string stdstr_toupper(std::string);
+std::string stdstr_toupper(const std::string&);
+std::string wxstr_tostdstr(const wxString &s);
+wxString stdstr_towxstr(const std::string&);
 
 #endif // __STR_UTILS_H__
