@@ -3683,8 +3683,7 @@ void SV_WantWad(player_t &player)
 //
 void SV_ParseCommands(player_t &player)
 {
-	// [SL] 2011-06-16 - Ignore commands from disconnected players
-	 while(validplayer(player) && player.playerstate != PST_DISCONNECT)
+	 while(validplayer(player))
 	 {
 		clc_t cmd = (clc_t)MSG_ReadByte();
 
