@@ -101,7 +101,7 @@ EXTERN_CVAR (cl_mouselook)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_level8soundfeature)
-EXTERN_CVAR (hud_targetcount)
+EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_revealsecrets)
@@ -604,7 +604,7 @@ static value_t MessageLevels[] = {
 static menuitem_t MessagesItems[] = {
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
 	{ discrete,	"Scale message text",    {&con_scaletext},		{2.0}, {0.0}, 	{0.0}, {OnOff} },	
-    { discrete,	"Show player target names",	{&hud_targetcount},	{2.0}, {0.0},   {0.0},	{OnOff} },
+    { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
