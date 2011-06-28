@@ -96,6 +96,9 @@ CVAR (co_zdoomphys, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // 1 - switch sounds attenuate with distance like plats and doors.
 CVAR (co_zdoomswitches, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+// Dead player's view follows the actor who killed them
+CVAR (cl_deathcam, "1", CVAR_ARCHIVE)
+
 CVAR_FUNC_DECL (sv_gravity, "800", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR_FUNC_DECL (sv_aircontrol, "0.00390625", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 

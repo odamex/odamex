@@ -45,6 +45,7 @@ EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (cl_deathcam)
 
 extern bool predicting, step_mode;
 
@@ -426,9 +427,6 @@ void P_FallingDamage (AActor *ent)
 
 void P_DeathThink (player_t *player)
 {
-	angle_t 			angle;
-	angle_t 			delta;
-
 	P_MovePsprites (player);
 	player->mo->onground = (player->mo->z <= player->mo->floorz);
 
@@ -443,28 +441,32 @@ void P_DeathThink (player_t *player)
 	P_CalcHeight (player);
 	
 	// adjust the player's view to follow its attacker
-	if (player->attacker && player->attacker != player->mo)
+	if (cl_deathcam || !clientside)
 	{
-		angle = P_PointToAngle (player->mo->x,
-								 player->mo->y,
-								 player->attacker->x,
-								 player->attacker->y);
-
-		delta = angle - player->mo->angle;
-
-		if (delta < ANG5 || delta > (unsigned)-ANG5)
+		if (player->attacker && player->attacker != player->mo)
 		{
-			// Looking at killer,
-			//	so fade damage flash down.
-			player->mo->angle = angle;
+			angle_t angle = P_PointToAngle (player->mo->x,
+									 		player->mo->y,
+									 		player->attacker->x,
+									 		player->attacker->y);
 
-			if (player->damagecount && !predicting)
-				player->damagecount--;
+			angle_t delta = angle - player->mo->angle;
+
+			if (delta < ANG5 || delta > (unsigned)-ANG5)
+			{
+				// Looking at killer so fade damage flash down.
+				player->mo->angle = angle;
+
+				if (player->damagecount && !predicting)
+					player->damagecount--;
+			}
+			else if (delta < ANG180)
+				player->mo->angle += ANG5;
+			else
+				player->mo->angle -= ANG5;
 		}
-		else if (delta < ANG180)
-			player->mo->angle += ANG5;
-		else
-			player->mo->angle -= ANG5;
+		else if (player->damagecount && !predicting)
+			player->damagecount--;
 	}
 	else if (player->damagecount && !predicting)
 		player->damagecount--;

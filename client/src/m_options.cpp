@@ -112,6 +112,7 @@ EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (wi_newintermission)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomswitches)
+EXTERN_CVAR (cl_deathcam)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -426,6 +427,7 @@ static menuitem_t CompatItems[] = {
 	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },	
 	{ discrete  ,	"BOOM Use Line Extra Checks"    		, {&co_boomlinecheck},	{2.0},      {0.0},	    {0.0},      {OnOff} },		{ discrete	,	"Use ZDoom physics"						, {&co_zdoomphys},		{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete	,	"Positional switch sounds"				, {&co_zdoomswitches},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete	,	"Death view following"					, {&cl_deathcam},		{2.0},		{0.0},		{0.0},		{OnOff} },
 
  };
 
