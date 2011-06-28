@@ -144,7 +144,10 @@ static fixed_t P_AproxDistance2 (fixed_t *listener, fixed_t x, fixed_t y)
 
 static fixed_t P_AproxDistance2 (AActor *listener, fixed_t x, fixed_t y)
 {
-	return P_AproxDistance2 (&listener->x, x, y);
+	if (listener)
+		return P_AproxDistance2 (&listener->x, x, y);
+	else
+		return 0;
 }
 
 //
@@ -249,12 +252,12 @@ void S_Init (float sfxVolume, float musicVolume)
 	Channel = (channel_t *) Z_Malloc (numChannels*sizeof(channel_t), PU_STATIC, 0);
 	for (i = 0; i < numChannels; i++)
 	{
-		Channel[i].pt = NULL;
+		// Initialize the channel's variables
+		memset(&Channel[i], 0, sizeof(Channel[i]));
 		Channel[i].sound_id = -1;
-		Channel[i].priority = 0;
-		Channel[i].sfxinfo = 0;
 		Channel[i].handle = -1;
-		Channel[i].entchannel = 0;
+		Channel[i].attenuation = 0.0f;
+		Channel[i].volume = 0.0f;
 	}
 	I_SetChannels (numChannels);
 
@@ -367,6 +370,11 @@ int
     // channel is decided to be cnum.
 	Channel[cnum].sfxinfo = sfxinfo;
 	Channel[cnum].pt = (fixed_t *) origin;
+	if (Channel[cnum].pt)
+	{
+		Channel[cnum].x = Channel[cnum].pt[0];
+		Channel[cnum].y = Channel[cnum].pt[1];
+	}
 
 	return cnum;
 }
@@ -552,12 +560,14 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			case CHAN_VOICE:
 				basepriority = 75;
 				break;
-			default:
 			case CHAN_BODY:
 				basepriority = 50;
 				break;
 			case CHAN_ITEM:
 				basepriority = 25;
+				break;
+			default:
+				basepriority = 50;
 				break;
 		}
 		if (attenuation == 1)
