@@ -105,6 +105,8 @@ static fixed_t			xscale, yscale;
 static fixed_t			pviewx, pviewy;
 static angle_t			baseangle;
 
+EXTERN_CVAR (r_skypalette)
+
 #ifdef USEASM
 extern "C" void R_SetSpanSource_ASM (byte *flat);
 extern "C" void R_SetSpanColormap_ASM (byte *colormap);
@@ -593,7 +595,16 @@ void R_DrawPlanes (void)
 				if (fixedlightlev) {
 					dc_colormap = DefaultPalette->maps.colormaps + fixedlightlev;
 				} else if (fixedcolormap) {
-					dc_colormap = fixedcolormap;
+					if (r_skypalette)
+					{
+						dc_colormap = fixedcolormap;
+					}
+					else
+					{
+						// [SL] 2011-06-28 - Emulate vanilla Doom's handling of skies
+						// when the player has the invulnerability powerup
+						dc_colormap = DefaultPalette->maps.colormaps;
+					}
 				} else if (!fixedcolormap) {
 					dc_colormap = DefaultPalette->maps.colormaps;
 					colfunc = R_StretchColumn;

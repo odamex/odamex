@@ -246,6 +246,8 @@ CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
 CVAR (r_drawplayersprites, "1", CVAR_CLIENTINFO)
 // Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
 CVAR_FUNC_DECL (r_stretchsky, "2", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Invulnerability sphere changes the palette of the sky
+CVAR (r_skypalette, "0", CVAR_ARCHIVE)
 
 #ifdef _XBOX // The burn wipe works better in 720p
 CVAR (r_wipetype, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
