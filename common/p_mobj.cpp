@@ -421,20 +421,20 @@ void AActor::RunThink ()
 					{
 						PlayerLandedOnThing (this, onmo);
 					}
-					
-					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
-					{
-						/*if (player)
-						{
-							player->viewheight -= z + onmo->height - z;
-							player->deltaviewheight =
-								(VIEWHEIGHT - player->viewheight)>>3;
-						}*/
-						z = onmo->z + onmo->height;
-					}
-					flags2 |= MF2_ONMOBJ;
-					momz = 0;
 				}
+				if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
+				{
+					if (player)
+					{
+						player->viewheight -= onmo->z + onmo->height - z;
+						player->deltaviewheight =
+							(VIEWHEIGHT - player->viewheight)>>3;
+					}
+					z = onmo->z + onmo->height;
+				}
+				
+				flags2 |= MF2_ONMOBJ;
+				momz = 0;
 			}
 		}
 	    else
@@ -937,12 +937,11 @@ void P_ZMovement(AActor *mo)
     // check for smooth step up
    if (mo->player && mo->z < mo->floorz)
    {
-      mo->player->viewheight -= mo->floorz-mo->z;
+	  mo->player->viewheight -= mo->floorz-mo->z;
 
-      mo->player->deltaviewheight
-            = (VIEWHEIGHT - mo->player->viewheight)>>3;
+	  mo->player->deltaviewheight
+			= (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
-
     // adjust height
     // GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
    mo->z += mo->momz;

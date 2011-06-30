@@ -492,20 +492,21 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 //
 // P_BlockThingsIterator
 //
-BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*))
+BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *actor)
 {
 	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 		return true;
 	else
 	{
-		AActor *mobj;
-
-		for (mobj = blocklinks[y*bmapwidth+x] ;
-			 mobj ;
-			 mobj = mobj->bnext)
+		if (actor == NULL)
+			actor = blocklinks[y*bmapwidth+x];
+			
+		while (actor != NULL)
 		{
-				if (!func (mobj))
-					return false;
+			AActor *next = actor->bnext;
+			if (!func (actor))
+				return false;
+			actor = next;
 		}
 	}
 	return true;
