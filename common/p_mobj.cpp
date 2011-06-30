@@ -767,7 +767,8 @@ void P_XYMovement(AActor *mo)
 
 	do
 	{
-		if (xmove > maxmove || ymove > maxmove )
+		if ((xmove > maxmove || ymove > maxmove)
+		     || (co_zdoomphys && (xmove < -maxmove || ymove < -maxmove)))
 		{
 			ptryx = mo->x + xmove/2;
 			ptryy = mo->y + ymove/2;
