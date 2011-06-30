@@ -521,7 +521,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 
   // Check to see if it is audible,
   //  and if not, modify the params
-	if (attenuation != ATTN_NONE)
+	if (attenuation != ATTN_NONE && S_WHICHEARS.mo)
 	{
 		rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
 		
@@ -537,8 +537,6 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	{
 		sep = NORM_SEP;
 	}
-
-
 
 	pitch = NORM_PITCH;
 
@@ -891,9 +889,6 @@ void S_UpdateSounds (void *listener_p)
 	channel_t*	c;
 
 	AActor *listener = (AActor *)listener_p;
-	if (!listener)
-		return;
-
 
     // Clean up unused data.
     // This is currently not done for 16bit (sounds cached static).
@@ -947,15 +942,21 @@ void S_UpdateSounds (void *listener_p)
 
 				// check non-local sounds for distance clipping
 				//  or modify their params
-				if (listener_p != c->pt && c->attenuation != ATTN_NONE)	
+				if (listener && &(listener->x) != c->pt && c->attenuation != ATTN_NONE)	
 				{
+					fixed_t x, y;
 					if (c->pt)		// [SL] 2011-05-29
 					{
-						c->x = c->pt[0];	// update the sound coorindates
-						c->y = c->pt[1];	// for moving actors
+						x = c->pt[0];	// update the sound coorindates
+						y = c->pt[1];	// for moving actors
+					}
+					else
+					{
+						x = c->x;
+						y = c->y;
 					}
 					audible = S_AdjustSoundParams(	listener, 
-													c->x, c->y,
+													x, y,
 													&volume,
 													&sep,
 													&pitch);
@@ -1079,7 +1080,7 @@ static void S_StopChannel (unsigned int cnum)
 	unsigned int i;
 	channel_t* c;
 
-	if(cnum > numChannels - 1)
+	if(cnum > numChannels - 1 || cnum < 0)
 	{
 		printf("Trying to stop invalid channel %d", cnum);
 		return;
