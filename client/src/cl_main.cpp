@@ -1704,7 +1704,7 @@ void CL_Sound(void)
 		AActor *mo = consoleplayer().mo;
 
 		if(mo)
-			S_SoundID (mo->x, mo->y, attenuation, sfx_id, volume, attenuation);
+			S_SoundID (mo->x, mo->y, channel, sfx_id, volume, attenuation);
 
 		return;
 	}
