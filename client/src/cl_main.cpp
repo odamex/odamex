@@ -1239,7 +1239,10 @@ void CL_SpawnMobj()
 		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	if (mo->type == MT_TFOG)
-		S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	{
+		if (level.time)	// don't play sound on first tic of the level
+			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	}
 }
 
 //

@@ -661,9 +661,6 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 		// send new object
 		SV_SpawnMobj(mo);
-
-		if (level.time)
-			SV_Sound (mo->x, mo->y, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 	}
 
 	return true;
