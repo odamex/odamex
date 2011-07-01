@@ -217,6 +217,7 @@ CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)      
 CVAR_FUNC_DECL (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // Music volume
 CVAR (snd_crossover, "0", CVAR_ARCHIVE)                                         // Stereo switch
 CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)             // Sample rate
+CVAR (snd_timeout, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)					// Clean up finished sounds
 BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     // Number of channels available
 {
 	S_Stop();

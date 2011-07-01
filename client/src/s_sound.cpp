@@ -78,6 +78,7 @@ typedef struct
 	int			pitch;
 	int			priority;
 	BOOL		loop;
+	int			timer;		// countdown until sound is destroyed
 } channel_t;
 
 // [RH] Hacks for pitch variance
@@ -88,9 +89,6 @@ int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
 
 // joek - hack for silent bfg
 int sfx_noway, sfx_oof;
-
-// Nes - pre-v0.4.2 compat with no CHAN_ANNOUNCER
-extern int gameversion;
 
 // [RH] Print sound debugging info?
 cvar_t noisedebug ("noise", "0", 0);
@@ -121,6 +119,7 @@ static struct mus_playing_t
 	int   handle;
 } mus_playing;
 
+EXTERN_CVAR (snd_timeout)
 EXTERN_CVAR (snd_channels)
 size_t			numChannels;
 
@@ -519,14 +518,14 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			sfx = sfx->link;
 	}
 
-  // Check to see if it is audible,
-  //  and if not, modify the params
-	if (attenuation != ATTN_NONE && S_WHICHEARS.mo)
+	if (!S_WHICHEARS.mo)
+		return;
+	if (attenuation != ATTN_NONE)
 	{
+  		// Check to see if it is audible, and if not, modify the params
 		rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
 		
-		if (consoleplayer().mo && x == S_WHICHEARS.mo->x && 
-			y == S_WHICHEARS.mo->y)
+		if (x == S_WHICHEARS.mo->x && y == S_WHICHEARS.mo->y)
 		{
 			sep = NORM_SEP;
 		}
@@ -635,6 +634,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	Channel[cnum].x = x;
 	Channel[cnum].y = y;
 	Channel[cnum].loop = looping;
+	Channel[cnum].timer = 0;		// used to time-out sounds that don't stop
 }
 
 void S_SoundID (int channel, int sound_id, float volume, int attenuation)
@@ -914,6 +914,13 @@ void S_UpdateSounds (void *listener_p)
 	{
 		c = &Channel[cnum];
 		sfx = c->sfxinfo;
+
+		// [SL] 2011-06-30 - Stop a sound if it hasn't stopped yet
+		if (++c->timer > snd_timeout * TICRATE && snd_timeout > 0)
+		{
+			S_StopChannel(cnum);	
+			continue;
+		}
 
 		if (c->sfxinfo)
 		{
