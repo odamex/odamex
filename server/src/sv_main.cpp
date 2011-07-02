@@ -2446,12 +2446,12 @@ void SV_DrawScores()
         Printf_Bold("-----------------------------------------------------------");        
 
         if (sv_scorelimit)
-            sprintf (str, "Scorelimit: %-6d", (int)sv_scorelimit);
+            sprintf (str, "Scorelimit: %-6d", sv_scorelimit.asInt());
         else
             sprintf (str, "Scorelimit: N/A    ");
 
         if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str2, "Timelimit: N/A");
 
@@ -2497,12 +2497,12 @@ void SV_DrawScores()
         Printf_Bold("-----------------------------------------------------------");        
 
         if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", (int)sv_fraglimit);
+            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
         else
             sprintf (str, "Fraglimit: N/A    ");
 
         if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str2, "Timelimit: N/A");
 
@@ -2556,12 +2556,12 @@ void SV_DrawScores()
         Printf_Bold("-----------------------------------------------------------");        
 
         if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", (int)sv_fraglimit);
+            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
         else
             sprintf (str, "Fraglimit: N/A    ");
 
         if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str2, "Timelimit: N/A   ");
 
@@ -3713,10 +3713,14 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_rate:
-			player.client.rate = MSG_ReadLong();
-			// denis - prevent problems by locking rate within a range
-            if(player.client.rate < 500)player.client.rate = 500;
-			if(player.client.rate > sv_maxrate)player.client.rate = sv_maxrate;
+			{
+				player.client.rate = MSG_ReadLong();
+				// denis - prevent problems by locking rate within a range
+            	if (player.client.rate < 500)
+					player.client.rate = 500;
+				if (player.client.rate > sv_maxrate)
+					player.client.rate = sv_maxrate.asInt();
+			}
 			break;
 
 		case clc_ack:

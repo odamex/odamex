@@ -1934,7 +1934,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (sv_skill == sk_nightmare)
 		bit = 4;
 	else
-		bit = 1 << ((int)sv_skill - 2);
+		bit = 1 << (sv_skill.asInt() - 2);
 
 	if (!(mthing->flags & bit))
 		return;

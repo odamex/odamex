@@ -72,6 +72,10 @@ public:
 	operator float () const { return m_Value; }
 	unsigned int flags() const { return m_Flags; }
 
+	// return m_Value as an int, rounded to the nearest integer because
+	// casting truncates instead of rounding
+	int asInt() const { return static_cast<int>(m_Value >= 0.0f ? m_Value + 0.5f : m_Value - 0.5f); }
+
 	inline void Callback () { if (m_Callback) m_Callback (*this); }
 
 	void SetDefault (const char *value);

@@ -1876,13 +1876,13 @@ void G_BeginRecording (void)
         mapid = level.mapname[3] - '0';
     }
 
-    *demo_p++ = (unsigned char)(sv_skill-1);
+    *demo_p++ = sv_skill.asInt() - 1;
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = sv_gametype;
-    *demo_p++ = sv_monstersrespawn;
-    *demo_p++ = sv_fastmonsters;
-    *demo_p++ = sv_nomonsters;
+    *demo_p++ = sv_gametype.asInt();
+    *demo_p++ = sv_monstersrespawn.asInt();
+    *demo_p++ = sv_fastmonsters.asInt();
+    *demo_p++ = sv_nomonsters.asInt();
     *demo_p++ = 0;
 
     *demo_p++ = 1;

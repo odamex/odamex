@@ -412,7 +412,7 @@ void C_AddNotifyString (int printlevel, const char *source)
 		if (addtype == NEWLINE)
 			memmove (&NotifyStrings[0], &NotifyStrings[1], sizeof(struct NotifyText) * (NUMNOTIFIES-1));
 		strcpy ((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string);
-		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (int)(con_notifytime * TICRATE);
+		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (con_notifytime.asInt() * TICRATE);
 		NotifyStrings[NUMNOTIFIES-1].printlevel = printlevel;
 		addtype = NEWLINE;
 	}
@@ -1521,7 +1521,7 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
 	unsigned int i;
     
     if (!msgtime)
-        msgtime = con_midtime;
+        msgtime = con_midtime.asInt();
 
 	if (MidMsg)
 		V_FreeBrokenLines (MidMsg);
