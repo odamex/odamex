@@ -402,7 +402,7 @@ bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 //
 // check for trivial rejection
 //
-	if (rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
+	if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
 		sightcounts2[0]++;
 		return false;			// can't possibly be connected
 	}
@@ -453,7 +453,7 @@ bool P_CheckSightEdges2 (const AActor *t1, const AActor *t2, float radius_boost)
 //
 // check for trivial rejection
 //
-        if (rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
+        if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
 				sightcounts2[0]++;
                 return false;                   // can't possibly be connected
         }
@@ -778,7 +778,7 @@ P_CheckSight
     bitnum = 1 << (pnum&7);
 	
     // Check in REJECT table.
-    if (rejectmatrix[bytenum]&bitnum)
+    if (!rejectempty && rejectmatrix[bytenum]&bitnum)
     {
 		sightcounts[0]++;
 		
@@ -834,7 +834,7 @@ P_CheckSight
     bitnum = 1 << (pnum&7);
 	
     // Check in REJECT table.
-    if (rejectmatrix[bytenum]&bitnum)
+    if (!rejectempty && rejectmatrix[bytenum]&bitnum)
     {
 		sightcounts[0]++;
 		
