@@ -2157,23 +2157,23 @@ void G_DoPlayDemo (bool justStreamInput)
 		if (deathmatch == 2)
 		{
 			// Altdeath
-			sv_gametype = 1.0f;
-			sv_weaponstay = 0.0f;
-			sv_itemsrespawn = 1.0f;
+			sv_gametype.Set(GM_DM);
+			sv_weaponstay.Set(0.0f);
+			sv_itemsrespawn.Set(1.0f);
 		}
 		else if (deathmatch == 1)
 		{
 			// Classic deathmatch
-			sv_gametype = 1.0f;
-			sv_weaponstay = 1.0f;
-			sv_itemsrespawn = 0.0f;
+			sv_gametype.Set(GM_DM);
+			sv_weaponstay.Set(1.0f);
+			sv_itemsrespawn.Set(0.0f);
 		}
 		else
 		{
 			// Co-op
-			sv_gametype = 0.0f;
-			sv_weaponstay = 1.0f;
-			sv_itemsrespawn = 0.0f;
+			sv_gametype.Set(GM_COOP);
+			sv_weaponstay.Set(1.0f);
+			sv_itemsrespawn.Set(0.0f);
 		}
 
 		sv_monstersrespawn = *demo_p++;
