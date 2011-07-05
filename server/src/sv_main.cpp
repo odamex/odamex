@@ -599,24 +599,32 @@ END_COMMAND (say)
 
 void STACK_ARGS call_terms (void);
 
+void SV_QuitCommand()
+{
+	call_terms();
+	exit(0);
+}
+
 BEGIN_COMMAND (rquit)
 {
 	SV_SendReconnectSignal();
 
-    call_terms();
-
-	exit (0);
+	SV_QuitCommand();
 }
 END_COMMAND (rquit)
 
-
 BEGIN_COMMAND (quit)
 {
-    call_terms();
-
-	exit (0);
+	SV_QuitCommand();
 }
 END_COMMAND (quit)
+
+// An alias for 'quit'
+BEGIN_COMMAND (exit)
+{
+	SV_QuitCommand();
+}
+END_COMMAND (exit)
 
 
 //

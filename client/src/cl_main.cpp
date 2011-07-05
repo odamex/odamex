@@ -519,13 +519,24 @@ END_COMMAND (join)
 
 void STACK_ARGS call_terms (void);
 
-BEGIN_COMMAND (quit)
+void CL_QuitCommand()
 {
-    call_terms();
-
+	call_terms();
 	exit (0);
 }
+
+BEGIN_COMMAND (quit)
+{
+	CL_QuitCommand();
+}
 END_COMMAND (quit)
+
+// An alias for 'quit'
+BEGIN_COMMAND (exit)
+{
+	CL_QuitCommand();
+}
+END_COMMAND (exit)
 
 //
 // CL_MoveThing
