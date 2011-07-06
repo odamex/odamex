@@ -498,15 +498,14 @@ BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *actor)
 		return true;
 	else
 	{
-		if (actor == NULL)
-			actor = blocklinks[y*bmapwidth+x];
-			
-		while (actor != NULL)
+		AActor *mobj;
+
+		for (mobj = (actor != NULL ? actor : blocklinks[y*bmapwidth+x]) ;
+			 mobj ;
+			 mobj = mobj->bnext)
 		{
-			AActor *next = actor->bnext;
-			if (!func (actor))
+			if (!func (mobj))
 				return false;
-			actor = next;
 		}
 	}
 	return true;
