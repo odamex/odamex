@@ -1098,7 +1098,7 @@ void G_InitNew (const char *mapname)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
-	int old_gametype = sv_gametype;
+	int old_gametype = sv_gametype.asInt();
 
 	cvar_t::UnlatchCVars ();
 

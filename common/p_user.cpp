@@ -45,6 +45,7 @@ EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (cl_deathcam)
 
 extern bool predicting, step_mode;
 
@@ -426,9 +427,6 @@ void P_FallingDamage (AActor *ent)
 
 void P_DeathThink (player_t *player)
 {
-	angle_t 			angle;
-	angle_t 			delta;
-
 	P_MovePsprites (player);
 	player->mo->onground = (player->mo->z <= player->mo->floorz);
 
@@ -441,71 +439,36 @@ void P_DeathThink (player_t *player)
 
 	player->deltaviewheight = 0;
 	P_CalcHeight (player);
-
-	if(!serverside)
+	
+	// adjust the player's view to follow its attacker
+	if (cl_deathcam || !clientside)
 	{
-		if (player->damagecount && !predicting)
-			player->damagecount--;
-
-		return;
-	}
-
-	if (player->attacker && player->attacker != player->mo)
-	{
-		angle_t old_angle = player->mo->angle;
-
-		angle = P_PointToAngle (player->mo->x,
-								 player->mo->y,
-								 player->attacker->x,
-								 player->attacker->y);
-
-		delta = angle - player->mo->angle;
-
-		if (delta < ANG5 || delta > (unsigned)-ANG5)
+		if (player->attacker && player->attacker != player->mo)
 		{
-			// Looking at killer,
-			//	so fade damage flash down.
-			player->mo->angle = angle;
+			angle_t angle = P_PointToAngle (player->mo->x,
+									 		player->mo->y,
+									 		player->attacker->x,
+									 		player->attacker->y);
 
-			if (player->damagecount)
-				player->damagecount--;
-		}
-		else if (delta < ANG180)
-			player->mo->angle += ANG5;
-		else
-			player->mo->angle -= ANG5;
+			angle_t delta = angle - player->mo->angle;
 
+			if (delta < ANG5 || delta > (unsigned)-ANG5)
+			{
+				// Looking at killer so fade damage flash down.
+				player->mo->angle = angle;
 
-       	if(player->mo->angle != old_angle && serverside)
-       	{
-			// [SL] 2011-06-15 - Tell the client to update his view to follow
-			// the actor who killed him
-			client_t *cl = &player->client;
-
-			MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
-			MSG_WriteByte(&cl->netbuf, player->id);     // player number
-			MSG_WriteLong(&cl->netbuf, cl->lastclientcmdtic);
-			MSG_WriteLong(&cl->netbuf, player->mo->x);
-			MSG_WriteLong(&cl->netbuf, player->mo->y);
-			MSG_WriteLong(&cl->netbuf, player->mo->z);
-			MSG_WriteLong(&cl->netbuf, player->mo->angle);
-			if (player->mo->frame == 32773)
-				MSG_WriteByte(&cl->netbuf, PLAYER_FULLBRIGHTFRAME);
+				if (player->damagecount && !predicting)
+					player->damagecount--;
+			}
+			else if (delta < ANG180)
+				player->mo->angle += ANG5;
 			else
-				MSG_WriteByte(&cl->netbuf, player->mo->frame);
-
-			// write velocity
-			MSG_WriteLong(&cl->netbuf, player->mo->momx);
-			MSG_WriteLong(&cl->netbuf, player->mo->momy);
-			MSG_WriteLong(&cl->netbuf, player->mo->momz);
-			
-			// [Russell] - hack, tell the client about the partial
-			// invisibility power of another player.. (cheaters can disable
-			// this but its all we have for now)
-			MSG_WriteLong(&cl->netbuf, player->powers[pw_invisibility]);
+				player->mo->angle -= ANG5;
 		}
+		else if (player->damagecount && !predicting)
+			player->damagecount--;
 	}
-	else if (player->damagecount)
+	else if (player->damagecount && !predicting)
 		player->damagecount--;
 
 	if(serverside)
@@ -555,14 +518,14 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
+	if (player->playerstate == PST_DEAD)
+	{
+		P_DeathThink(player);
+		return;
+	}
+
 	if(serverside)
 	{
-		if (player->playerstate == PST_DEAD)
-		{
-			P_DeathThink (player);
-			return;
-		}
-
 		P_MovePlayer (player);
 
 		P_CalcHeight (player);

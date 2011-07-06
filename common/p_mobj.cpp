@@ -400,7 +400,7 @@ void AActor::RunThink ()
 	else if ((z != floorz) || momz || BlockingMobj)
 	{
 	    // Handle Z momentum and gravity
-		if (flags2 & MF2_PASSMOBJ)
+		if (co_realactorheight && (flags2 & MF2_PASSMOBJ))
 		{
 		    if (!(onmo = P_CheckOnmobj (this)))
 			{
@@ -421,20 +421,20 @@ void AActor::RunThink ()
 					{
 						PlayerLandedOnThing (this, onmo);
 					}
-					
-					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
-					{
-						/*if (player)
-						{
-							player->viewheight -= z + onmo->height - z;
-							player->deltaviewheight =
-								(VIEWHEIGHT - player->viewheight)>>3;
-						}*/
-						z = onmo->z + onmo->height;
-					}
-					flags2 |= MF2_ONMOBJ;
-					momz = 0;
 				}
+				if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
+				{
+					if (player)
+					{
+						player->viewheight -= onmo->z + onmo->height - z;
+						player->deltaviewheight =
+							(VIEWHEIGHT - player->viewheight)>>3;
+					}
+					z = onmo->z + onmo->height;
+				}
+				
+				flags2 |= MF2_ONMOBJ;
+				momz = 0;
 			}
 		}
 	    else
@@ -767,7 +767,8 @@ void P_XYMovement(AActor *mo)
 
 	do
 	{
-		if (xmove > maxmove || ymove > maxmove )
+		if ((xmove > maxmove || ymove > maxmove)
+		     || (co_zdoomphys && (xmove < -maxmove || ymove < -maxmove)))
 		{
 			ptryx = mo->x + xmove/2;
 			ptryy = mo->y + ymove/2;
@@ -936,12 +937,11 @@ void P_ZMovement(AActor *mo)
     // check for smooth step up
    if (mo->player && mo->z < mo->floorz)
    {
-      mo->player->viewheight -= mo->floorz-mo->z;
+	  mo->player->viewheight -= mo->floorz-mo->z;
 
-      mo->player->deltaviewheight
-            = (VIEWHEIGHT - mo->player->viewheight)>>3;
+	  mo->player->deltaviewheight
+			= (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
-
     // adjust height
     // GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
    mo->z += mo->momz;
@@ -1136,7 +1136,6 @@ void P_ZMovement(AActor *mo)
    if (mo->z + mo->height > mo->ceilingz)
    {
 		// hit the ceiling
-		mo->z = mo->ceilingz - mo->height;
 		if (mo->flags2 & MF2_FLOORBOUNCE)
 		{
 			// reverse momentum here for ceiling bounce
@@ -1149,6 +1148,8 @@ void P_ZMovement(AActor *mo)
 		}		
 		if (mo->momz > 0)
 			mo->momz = 0;
+
+		mo->z = mo->ceilingz - mo->height;
 
 		if (mo->flags & MF_SKULLFLY)
 		{	// the skull slammed into something
@@ -1933,7 +1934,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (sv_skill == sk_nightmare)
 		bit = 4;
 	else
-		bit = 1 << ((int)sv_skill - 2);
+		bit = 1 << (sv_skill.asInt() - 2);
 
 	if (!(mthing->flags & bit))
 		return;

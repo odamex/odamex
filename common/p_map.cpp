@@ -468,7 +468,9 @@ BOOL PIT_CheckThing (AActor *thing)
 		// didn't hit thing
 		return true;
 	}
-	      
+	
+	if (co_realactorheight)
+		BlockingMobj = thing;
 	if ((tmthing->flags2 & MF2_PASSMOBJ) && co_realactorheight)
 	{
 		// check if a mobj passed over/under another object
@@ -486,6 +488,8 @@ BOOL PIT_CheckThing (AActor *thing)
 		tmthing->flags &= ~MF_SKULLFLY;
 		tmthing->momx = tmthing->momy = tmthing->momz = 0;
 		P_SetMobjState (tmthing, tmthing->info->spawnstate);
+		if (co_realactorheight)
+			BlockingMobj = NULL;
 		return false;			// stop moving
 	}
 
@@ -550,7 +554,6 @@ BOOL PIT_CheckThing (AActor *thing)
 		// don't traverse any more
 		return false;
 	}
-
 	// check for special pickup
 	if (thing->flags & MF_SPECIAL)
 	{
@@ -714,17 +717,20 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	int yl, yh;
 	int bx, by;
 	subsector_t *newsubsec;
-
+	AActor *thingblocker;
+	AActor *fakedblocker;
+	fixed_t realheight = thing->height;
+	
 	tmthing = thing;
 	tmflags = thing->flags;
 
 	tmx = x;
 	tmy = y;
 
-	tmbbox[BOXTOP] = y + tmthing->radius;
-	tmbbox[BOXBOTTOM] = y - tmthing->radius;
-	tmbbox[BOXRIGHT] = x + tmthing->radius;
-	tmbbox[BOXLEFT] = x - tmthing->radius;
+	tmbbox[BOXTOP] = y + thing->radius;
+	tmbbox[BOXBOTTOM] = y - thing->radius;
+	tmbbox[BOXRIGHT] = x + thing->radius;
+	tmbbox[BOXLEFT] = x - thing->radius;
 
 	newsubsec = R_PointInSubsector (x,y);
 	ceilingline = BlockingLine = NULL;
@@ -757,16 +763,93 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 	
 	BlockingMobj = NULL;
-	for (bx=xl ; bx<=xh ; bx++)
-		for (by=yl ; by<=yh ; by++)
-			if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
-				return false;
 	
-	// check lines
-	if (tmflags & MF_NOCLIP)
-		return true;
-		    
-    BlockingMobj = NULL;
+	if (co_realactorheight)
+	{
+		thingblocker = NULL;
+		fakedblocker = NULL;
+		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
+			thing->height = realheight + 24*FRACUNIT;
+			
+		for (bx = xl; bx <= xh; bx++)
+		{
+			for (by = yl; by <= yh; by++)
+			{
+				AActor *robin = NULL;
+				do
+				{
+					if (!P_BlockThingsIterator (bx, by, PIT_CheckThing, robin))
+					{ // [RH] If a thing can be stepped up on, we need to continue checking
+					  // other things in the blocks and see if we hit something that is
+					  // definitely blocking. Otherwise, we need to check the lines, or we
+					  // could end up stuck inside a wall.
+						if (BlockingMobj == NULL)
+						{ // Thing slammed into something; don't let it move now.
+							thing->height = realheight;
+							return false;
+						}
+						else if (!BlockingMobj->player && thing->player &&
+							BlockingMobj->z+BlockingMobj->height-thing->z <= 24*FRACUNIT)
+						{
+							if (thingblocker == NULL ||
+								BlockingMobj->z > thingblocker->z)
+							{
+								thingblocker = BlockingMobj;
+							}
+							robin = BlockingMobj->bnext;
+							BlockingMobj = NULL;
+						}
+						else if (thing->player &&
+							thing->z + thing->height - BlockingMobj->z <= 24*FRACUNIT)
+						{
+							if (thingblocker)
+							{ // There is something to step up on. Return this thing as
+							  // the blocker so that we don't step up.
+								thing->height = realheight;
+								return false;
+							}
+							// Nothing is blocking us, but this actor potentially could
+							// if there is something else to step on.
+							fakedblocker = BlockingMobj;
+							robin = BlockingMobj->bnext;
+							BlockingMobj = NULL;
+						}
+						else
+						{ // Definitely blocking
+							thing->height = realheight;
+							return false;
+						}
+					}
+					else
+					{
+						robin = NULL;
+					}
+				} while (robin);
+			}
+		}
+			
+		// check lines
+		BlockingMobj = NULL;
+		thing->height = realheight;
+		if (tmflags & MF_NOCLIP)
+			return (BlockingMobj = thingblocker) == NULL;
+		if (tmceilingz - tmfloorz < thing->height)
+			return false;
+	}
+	else
+	{
+		for (bx=xl ; bx<=xh ; bx++)
+			for (by=yl ; by<=yh ; by++)
+				if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
+					return false;
+					
+		// check lines
+		if (tmflags & MF_NOCLIP)
+			return true;
+				
+		BlockingMobj = NULL;			
+	}
+
 	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
 	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
@@ -776,7 +859,9 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 		for (by=yl ; by<=yh ; by++)
 			if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
 				return false;
-
+	if (co_realactorheight)
+		return (BlockingMobj = thingblocker) == NULL;
+		
 	return true;
 }
 
@@ -784,52 +869,41 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 // P_CheckOnmobj(AActor *thing)
 // Checks if the new Z position is legal
 //
+
 AActor *P_CheckOnmobj (AActor *thing)
 {
+	fixed_t oldz;
+	bool good;
+
+	oldz = thing->z;
+	P_FakeZMovement (thing);
+	good = P_TestMobjZ (thing);
+	thing->z = oldz;
+
+	return good ? NULL : onmobj;
+}
+
+bool P_TestMobjZ (AActor *actor)
+{
 	int	xl,xh,yl,yh,bx,by;
-	subsector_t *newsubsec;
 	fixed_t x, y;
-	byte oldmo[sizeof(AActor)];
-	//AActor oldmo (*thing);	// save the old mobj before the fake zmovement
 
-	memcpy (oldmo, &thing->x, (byte *)&thing[1] - (byte *)&thing->x);
+	if (actor->flags & MF_NOCLIP)
+		return true;
 
-	x = thing->x;
-	y = thing->y;
-	tmthing = thing;
-	tmflags = thing->flags;
-	P_FakeZMovement (tmthing);
+	if (!(actor->flags & MF_SOLID))
+		return true;
 
-	tmx = x;
-	tmy = y;
+	tmx = x = actor->x;
+	tmy = y = actor->y;
+	tmthing = actor;
 
-	tmbbox[BOXTOP] = y + tmthing->radius;
-	tmbbox[BOXBOTTOM] = y - tmthing->radius;
-	tmbbox[BOXRIGHT] = x + tmthing->radius;
-	tmbbox[BOXLEFT] = x - tmthing->radius;
-
-	newsubsec = R_PointInSubsector (x, y);
-	ceilingline = NULL;
-
+	tmbbox[BOXTOP] = y + actor->radius;
+	tmbbox[BOXBOTTOM] = y - actor->radius;
+	tmbbox[BOXRIGHT] = x + actor->radius;
+	tmbbox[BOXLEFT] = x - actor->radius;
 //
-// the base floor / ceiling is from the subsector that contains the
-// point. Any contacted lines the step closer together will adjust them
-//
-	tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
-	tmceilingz = newsubsec->sector->ceilingheight;
-
-	//Added by MC: Fill the tmsector.
-	tmsector = newsubsec->sector;
-
-	validcount++;
-	numspechit = 0;
-
-	if ( tmflags & MF_NOCLIP )
-		return NULL;
-
-//
-// check things first, possibly picking things up
-// the bounding box is extended by MAXRADIUS because DActors are grouped
+// the bounding box is extended by MAXRADIUS because actors are grouped
 // into mapblocks based on their origin point, and can overlap into adjacent
 // blocks by up to MAXRADIUS units
 //
@@ -838,18 +912,14 @@ AActor *P_CheckOnmobj (AActor *thing)
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-	for (bx=xl ; bx<=xh ; bx++)
-		for (by=yl ; by<=yh ; by++)
-			if (!P_BlockThingsIterator(bx,by,PIT_CheckOnmobjZ))
-			{
-				//*tmthing = oldmo;
-				memcpy (&tmthing->x, oldmo, (byte *)&thing[1] - (byte *)&thing->x);
-				return onmobj;
-			}
-	//*tmthing = oldmo;
-	memcpy (&tmthing->x, oldmo, (byte *)&thing[1] - (byte *)&thing->x);
-	return NULL;
+	for (bx = xl; bx <= xh; bx++)
+		for (by = yl; by <= yh; by++)
+			if (!P_BlockThingsIterator (bx, by, PIT_CheckOnmobjZ))
+				return false;
+
+	return true;
 }
+
 
 //
 // P_FakeZMovement
@@ -911,7 +981,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 	floatok = false;
     if (!P_CheckPosition (thing, x, y))
     {
-         // solid wall or thing        
+         // solid wall or thing
          if (!BlockingMobj)
             goto pushline;
          else
@@ -929,7 +999,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
                  goto pushline;
             }
         }
-        if (!(tmthing->flags2 & MF2_PASSMOBJ))
+        if (!(co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ)))
             return false;             
     }
 
@@ -941,7 +1011,8 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 		floatok = true;
 
 		if (!(thing->flags & MF_TELEPORT)
-			&& tmceilingz - thing->z < thing->height && !(thing->flags2 & MF2_FLY))
+			&& tmceilingz - thing->z < thing->height 
+			&& !(thing->flags2 & MF2_FLY))
 		{
 			goto pushline;		// mobj must lower itself to fit
 		}
@@ -965,7 +1036,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT)
 		{
 			// too big a step up
-			goto pushline;
+			goto pushline;		
 		}
 		
 		// killough 3/15/98: Allow certain objects to drop off

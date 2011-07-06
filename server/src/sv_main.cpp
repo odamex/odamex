@@ -602,24 +602,32 @@ END_COMMAND (say)
 
 void STACK_ARGS call_terms (void);
 
+void SV_QuitCommand()
+{
+	call_terms();
+	exit(0);
+}
+
 BEGIN_COMMAND (rquit)
 {
 	SV_SendReconnectSignal();
 
-    call_terms();
-
-	exit (0);
+	SV_QuitCommand();
 }
 END_COMMAND (rquit)
 
-
 BEGIN_COMMAND (quit)
 {
-    call_terms();
-
-	exit (0);
+	SV_QuitCommand();
 }
 END_COMMAND (quit)
+
+// An alias for 'quit'
+BEGIN_COMMAND (exit)
+{
+	SV_QuitCommand();
+}
+END_COMMAND (exit)
 
 
 //
@@ -2478,12 +2486,12 @@ void SV_DrawScores()
         Printf_Bold("-----------------------------------------------------------");        
 
         if (sv_scorelimit)
-            sprintf (str, "Scorelimit: %-6d", (int)sv_scorelimit);
+            sprintf (str, "Scorelimit: %-6d", sv_scorelimit.asInt());
         else
             sprintf (str, "Scorelimit: N/A    ");
 
         if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str2, "Timelimit: N/A");
 
@@ -2529,12 +2537,12 @@ void SV_DrawScores()
         Printf_Bold("-----------------------------------------------------------");        
 
         if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", (int)sv_fraglimit);
+            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
         else
             sprintf (str, "Fraglimit: N/A    ");
 
         if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str2, "Timelimit: N/A");
 
@@ -2588,12 +2596,12 @@ void SV_DrawScores()
         Printf_Bold("-----------------------------------------------------------");        
 
         if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", (int)sv_fraglimit);
+            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
         else
             sprintf (str, "Fraglimit: N/A    ");
 
         if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str2, "Timelimit: N/A   ");
 
@@ -3739,8 +3747,7 @@ void SV_WantWad(player_t &player)
 //
 void SV_ParseCommands(player_t &player)
 {
-	// [SL] 2011-06-16 - Ignore commands from disconnected players
-	 while(validplayer(player) && player.playerstate != PST_DISCONNECT)
+	 while(validplayer(player))
 	 {
 		clc_t cmd = (clc_t)MSG_ReadByte();
 
@@ -3773,10 +3780,14 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_rate:
-			player.client.rate = MSG_ReadLong();
-			// denis - prevent problems by locking rate within a range
-            if(player.client.rate < 500)player.client.rate = 500;
-			if(player.client.rate > sv_maxrate)player.client.rate = sv_maxrate;
+			{
+				player.client.rate = MSG_ReadLong();
+				// denis - prevent problems by locking rate within a range
+            	if (player.client.rate < 500)
+					player.client.rate = 500;
+				if (player.client.rate > sv_maxrate)
+					player.client.rate = sv_maxrate.asInt();
+			}
 			break;
 
 		case clc_ack:

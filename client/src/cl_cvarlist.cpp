@@ -220,6 +220,7 @@ CVAR_FUNC_DECL (snd_sfxvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)      
 CVAR_FUNC_DECL (snd_musicvolume, "0.5", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)    // Music volume
 CVAR (snd_crossover, "0", CVAR_ARCHIVE)                                         // Stereo switch
 CVAR (snd_samplerate, "22050", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)             // Sample rate
+CVAR (snd_timeout, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)					// Clean up finished sounds
 BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     // Number of channels available
 {
 	S_Stop();
@@ -249,6 +250,8 @@ CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
 CVAR (r_drawplayersprites, "1", CVAR_CLIENTINFO)
 // Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
 CVAR_FUNC_DECL (r_stretchsky, "2", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Invulnerability sphere changes the palette of the sky
+CVAR (r_skypalette, "0", CVAR_ARCHIVE)
 
 #ifdef _XBOX // The burn wipe works better in 720p
 CVAR (r_wipetype, "2", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

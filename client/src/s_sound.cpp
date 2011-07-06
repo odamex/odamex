@@ -78,6 +78,7 @@ typedef struct
 	int			pitch;
 	int			priority;
 	BOOL		loop;
+	int			timer;		// countdown until sound is destroyed
 } channel_t;
 
 // [RH] Hacks for pitch variance
@@ -88,9 +89,6 @@ int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
 
 // joek - hack for silent bfg
 int sfx_noway, sfx_oof;
-
-// Nes - pre-v0.4.2 compat with no CHAN_ANNOUNCER
-extern int gameversion;
 
 // [RH] Print sound debugging info?
 cvar_t noisedebug ("noise", "0", 0);
@@ -121,6 +119,7 @@ static struct mus_playing_t
 	int   handle;
 } mus_playing;
 
+EXTERN_CVAR (snd_timeout)
 EXTERN_CVAR (snd_channels)
 size_t			numChannels;
 
@@ -144,7 +143,10 @@ static fixed_t P_AproxDistance2 (fixed_t *listener, fixed_t x, fixed_t y)
 
 static fixed_t P_AproxDistance2 (AActor *listener, fixed_t x, fixed_t y)
 {
-	return P_AproxDistance2 (&listener->x, x, y);
+	if (listener)
+		return P_AproxDistance2 (&listener->x, x, y);
+	else
+		return 0;
 }
 
 //
@@ -245,16 +247,16 @@ void S_Init (float sfxVolume, float musicVolume)
 	// Allocating the internal channels for mixing
 	// (the maximum numer of sounds rendered
 	// simultaneously) within zone memory.
-	numChannels = (int)snd_channels;
+	numChannels = snd_channels.asInt();
 	Channel = (channel_t *) Z_Malloc (numChannels*sizeof(channel_t), PU_STATIC, 0);
 	for (i = 0; i < numChannels; i++)
 	{
-		Channel[i].pt = NULL;
+		// Initialize the channel's variables
+		memset(&Channel[i], 0, sizeof(Channel[i]));
 		Channel[i].sound_id = -1;
-		Channel[i].priority = 0;
-		Channel[i].sfxinfo = 0;
 		Channel[i].handle = -1;
-		Channel[i].entchannel = 0;
+		Channel[i].attenuation = 0.0f;
+		Channel[i].volume = 0.0f;
 	}
 	I_SetChannels (numChannels);
 
@@ -367,6 +369,11 @@ int
     // channel is decided to be cnum.
 	Channel[cnum].sfxinfo = sfxinfo;
 	Channel[cnum].pt = (fixed_t *) origin;
+	if (Channel[cnum].pt)
+	{
+		Channel[cnum].x = Channel[cnum].pt[0];
+		Channel[cnum].y = Channel[cnum].pt[1];
+	}
 
 	return cnum;
 }
@@ -511,14 +518,14 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			sfx = sfx->link;
 	}
 
-  // Check to see if it is audible,
-  //  and if not, modify the params
+	if (!S_WHICHEARS.mo)
+		return;
 	if (attenuation != ATTN_NONE)
 	{
+  		// Check to see if it is audible, and if not, modify the params
 		rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
 		
-		if (consoleplayer().mo && x == S_WHICHEARS.mo->x && 
-			y == S_WHICHEARS.mo->y)
+		if (x == S_WHICHEARS.mo->x && y == S_WHICHEARS.mo->y)
 		{
 			sep = NORM_SEP;
 		}
@@ -529,8 +536,6 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	{
 		sep = NORM_SEP;
 	}
-
-
 
 	pitch = NORM_PITCH;
 
@@ -552,12 +557,14 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			case CHAN_VOICE:
 				basepriority = 75;
 				break;
-			default:
 			case CHAN_BODY:
 				basepriority = 50;
 				break;
 			case CHAN_ITEM:
 				basepriority = 25;
+				break;
+			default:
+				basepriority = 50;
 				break;
 		}
 		if (attenuation == 1)
@@ -627,6 +634,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	Channel[cnum].x = x;
 	Channel[cnum].y = y;
 	Channel[cnum].loop = looping;
+	Channel[cnum].timer = 0;		// used to time-out sounds that don't stop
 }
 
 void S_SoundID (int channel, int sound_id, float volume, int attenuation)
@@ -881,9 +889,6 @@ void S_UpdateSounds (void *listener_p)
 	channel_t*	c;
 
 	AActor *listener = (AActor *)listener_p;
-	if (!listener)
-		return;
-
 
     // Clean up unused data.
     // This is currently not done for 16bit (sounds cached static).
@@ -909,6 +914,13 @@ void S_UpdateSounds (void *listener_p)
 	{
 		c = &Channel[cnum];
 		sfx = c->sfxinfo;
+
+		// [SL] 2011-06-30 - Stop a sound if it hasn't stopped yet
+		if (++c->timer > snd_timeout * TICRATE && snd_timeout > 0)
+		{
+			S_StopChannel(cnum);	
+			continue;
+		}
 
 		if (c->sfxinfo)
 		{
@@ -937,15 +949,21 @@ void S_UpdateSounds (void *listener_p)
 
 				// check non-local sounds for distance clipping
 				//  or modify their params
-				if (listener_p != c->pt && c->attenuation != ATTN_NONE)	
+				if (listener && &(listener->x) != c->pt && c->attenuation != ATTN_NONE)	
 				{
+					fixed_t x, y;
 					if (c->pt)		// [SL] 2011-05-29
 					{
-						c->x = c->pt[0];	// update the sound coorindates
-						c->y = c->pt[1];	// for moving actors
+						x = c->pt[0];	// update the sound coorindates
+						y = c->pt[1];	// for moving actors
+					}
+					else
+					{
+						x = c->x;
+						y = c->y;
 					}
 					audible = S_AdjustSoundParams(	listener, 
-													c->x, c->y,
+													x, y,
 													&volume,
 													&sep,
 													&pitch);
@@ -1069,7 +1087,7 @@ static void S_StopChannel (unsigned int cnum)
 	unsigned int i;
 	channel_t* c;
 
-	if(cnum > numChannels - 1)
+	if(cnum > numChannels - 1 || cnum < 0)
 	{
 		printf("Trying to stop invalid channel %d", cnum);
 		return;

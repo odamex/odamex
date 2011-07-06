@@ -542,14 +542,24 @@ END_COMMAND (join)
 
 void STACK_ARGS call_terms (void);
 
+void CL_QuitCommand()
+{
+	call_terms();
+	exit (0);
+}
+
 BEGIN_COMMAND (quit)
 {
-    call_terms();
-
-	exit (0);
+	CL_QuitCommand();
 }
 END_COMMAND (quit)
 
+// An alias for 'quit'
+BEGIN_COMMAND (exit)
+{
+	CL_QuitCommand();
+}
+END_COMMAND (exit)
 
 BEGIN_COMMAND(stopnetdemo)
 {
@@ -1366,7 +1376,10 @@ void CL_SpawnMobj()
 		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	if (mo->type == MT_TFOG)
-		S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	{
+		if (level.time)	// don't play sound on first tic of the level
+			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	}
 }
 
 //
@@ -1831,7 +1844,7 @@ void CL_Sound(void)
 		AActor *mo = consoleplayer().mo;
 
 		if(mo)
-			S_SoundID (mo->x, mo->y, attenuation, sfx_id, volume, attenuation);
+			S_SoundID (mo->x, mo->y, channel, sfx_id, volume, attenuation);
 
 		return;
 	}

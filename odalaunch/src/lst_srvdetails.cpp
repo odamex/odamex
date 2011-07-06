@@ -20,9 +20,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "lst_srvdetails.h"
-
 #include <algorithm>
+
+#include "lst_srvdetails.h"
+#include "str_utils.h"
 
 IMPLEMENT_DYNAMIC_CLASS(LstOdaSrvDetails, wxListCtrl)
 
@@ -149,12 +150,12 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
         // A while loop is used to format this correctly
         while (i < PatchesCount)
         {           
-            Current = In.Info.Patches[i];
+            Current = stdstr_towxstr(In.Info.Patches[i]);
             
             ++i;
             
             if (i < PatchesCount)
-                Next = In.Info.Patches[i];
+                Next = stdstr_towxstr(In.Info.Patches[i]);
             
             ++i;
             
@@ -173,7 +174,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     sort(In.Info.Cvars.begin(), In.Info.Cvars.end(), CvarCompare);
     
     for (size_t i = 0; i < In.Info.Cvars.size(); ++i)
-        InsertLine(In.Info.Cvars[i].Name, In.Info.Cvars[i].Value);
+        InsertLine(stdstr_towxstr(In.Info.Cvars[i].Name), stdstr_towxstr(In.Info.Cvars[i].Value));
 
     // Resize the columns
     ResizeNameValueColumns();

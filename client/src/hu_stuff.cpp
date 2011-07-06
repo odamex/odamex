@@ -701,7 +701,7 @@ void HU_DMScores1 (player_t *player)
 /*
 	if (deathmatch && sv_timelimit && gamestate == GS_LEVEL)
 	{
-		int timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
+		int timeleft = (sv_timelimit.asInt() * TICRATE * 60) - level.time;
 		int hours, minutes, seconds;
 
 		if (timeleft < 0)
@@ -849,7 +849,7 @@ void HU_DMScores2 (player_t *player)
 /*
 	if (deathmatch && sv_timelimit && gamestate == GS_LEVEL)
 	{
-		int timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
+		int timeleft = (sv_timelimit.asInt() * TICRATE * 60) - level.time;
 		int hours, minutes, seconds;
 
 		if (timeleft < 0)
@@ -900,7 +900,7 @@ void HU_DMScores2 (player_t *player)
 	if (sv_gametype != GM_COOP)
 	{
 		screen->DrawText	  (CR_GREY	,locx + 266		,locy + 0	,"FRAGLIMIT:"	);
-		sprintf (str, "%d", (int)sv_fraglimit);
+		sprintf (str, "%d", sv_fraglimit.asInt());
 		screen->DrawText	  (CR_GREEN	,locx + 336		,locy + 0	,	str	);
 	}
 
@@ -1712,14 +1712,14 @@ void HU_ConsoleScores (player_t *player)
         Printf_Bold("           CAPTURE THE FLAG\n");
 
         if (sv_scorelimit)
-            sprintf (str, "Scorelimit: %-6d", (int)sv_scorelimit);
+            sprintf (str, "Scorelimit: %-6d", sv_scorelimit.asInt());
         else
             sprintf (str, "Scorelimit: N/A   ");
 
         Printf_Bold("%s  ", str);
 
         if (sv_timelimit)
-            sprintf (str, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str, "Timelimit: N/A");
 
@@ -1771,14 +1771,14 @@ void HU_ConsoleScores (player_t *player)
         Printf_Bold("           TEAM DEATHMATCH\n");
 
         if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", (int)sv_fraglimit);
+            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
         else
             sprintf (str, "Fraglimit: N/A    ");
 
         Printf_Bold("%s  ", str);
 
         if (sv_timelimit)
-            sprintf (str, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str, "Timelimit: N/A");
 
@@ -1837,14 +1837,14 @@ void HU_ConsoleScores (player_t *player)
         Printf_Bold("              DEATHMATCH\n");
 
         if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", (int)sv_fraglimit);
+            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
         else
             sprintf (str, "Fraglimit: N/A    ");
 
         Printf_Bold("%s  ", str);
 
         if (sv_timelimit)
-            sprintf (str, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str, "Timelimit: N/A");
 

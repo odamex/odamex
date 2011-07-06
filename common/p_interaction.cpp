@@ -1023,6 +1023,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 	tplayer = target->player;
 
+	// [SL] 2011-06-26 - Set the player's attacker.  For some reason this
+	// was not being set clientside 
+	if (tplayer)
+	{
+		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
+	}
+
 	if (source && source->player)
 	{
 		// Don't count any frags at level start, because they're just telefrags
@@ -1197,7 +1204,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM && sv_fraglimit &&
-            splayer->fragcount >= (int)sv_fraglimit && !sv_fragexitswitch)
+            splayer->fragcount >= sv_fraglimit && !sv_fragexitswitch)
 		{
             // [ML] 04/4/06: Added !sv_fragexitswitch
             SV_BroadcastPrintf(
@@ -1213,7 +1220,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		{
 			for (size_t i = 0; i < NUMFLAGS; i++)
 			{
-				if (TEAMpoints[i] >= (int)sv_fraglimit)
+				if (TEAMpoints[i] >= sv_fraglimit)
 				{
 					SV_BroadcastPrintf(
                         PRINT_HIGH,

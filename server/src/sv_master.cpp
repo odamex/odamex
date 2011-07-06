@@ -183,7 +183,7 @@ void SV_UpdateMasterServer(masterserver &m)
 
 		// send out actual port, because NAT may present an incorrect port to the master
 		if(sv_natport)
-			MSG_WriteShort(&ml_message, sv_natport);
+			MSG_WriteShort(&ml_message, sv_natport.asInt());
 		else
 			MSG_WriteShort(&ml_message, port);
 

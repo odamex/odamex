@@ -169,7 +169,7 @@ void SV_SendServerInfo()
 	}
 
 	MSG_WriteByte(&ml_message, playersingame);
-	MSG_WriteByte(&ml_message, sv_maxclients);
+	MSG_WriteByte(&ml_message, sv_maxclients.asInt());
 
 	MSG_WriteString(&ml_message, level.mapname);
 
@@ -182,7 +182,7 @@ void SV_SendServerInfo()
 		MSG_WriteString(&ml_message, wadnames[i].c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
-	MSG_WriteByte(&ml_message, (BYTE)sv_skill);
+	MSG_WriteByte(&ml_message, sv_skill.asInt());
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_TEAMDM));
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_CTF));
 
@@ -208,7 +208,7 @@ void SV_SendServerInfo()
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
-		MSG_WriteLong(&ml_message, sv_scorelimit);
+		MSG_WriteLong(&ml_message, sv_scorelimit.asInt());
 		
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
@@ -229,9 +229,9 @@ void SV_SendServerInfo()
 	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 	if (timeleft<0) timeleft=0;
 
-	MSG_WriteShort(&ml_message,(int)sv_timelimit);
+	MSG_WriteShort(&ml_message,sv_timelimit.asInt());
 	MSG_WriteShort(&ml_message,timeleft);
-	MSG_WriteShort(&ml_message,(int)sv_fraglimit);
+	MSG_WriteShort(&ml_message,sv_fraglimit.asInt());
 
 	MSG_WriteBool(&ml_message, (sv_itemsrespawn ? true : false));
 	MSG_WriteBool(&ml_message, (sv_weaponstay ? true : false));
@@ -257,14 +257,14 @@ void SV_SendServerInfo()
 			
 			int timeingame = (time(NULL) - players[i].JoinTime)/60;
 			if (timeingame<0) timeingame=0;
-			MSG_WriteShort(&ml_message, timeingame);
+				MSG_WriteShort(&ml_message, timeingame);
 		}
 	}
 	
 //bond===========================
 
     MSG_WriteLong(&ml_message, (DWORD)0x01020304);
-    MSG_WriteShort(&ml_message, (WORD)sv_maxplayers);
+    MSG_WriteShort(&ml_message, sv_maxplayers.asInt());
     
     for (i = 0; i < players.size(); ++i)
     {
