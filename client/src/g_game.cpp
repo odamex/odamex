@@ -60,6 +60,7 @@
 #include "g_game.h"
 #include "g_level.h"
 #include "cl_main.h"
+#include "cl_demo.h"
 #include "gi.h"
 
 #ifdef _XBOX
@@ -172,9 +173,10 @@ char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
 BOOL			democlassic;
-BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 FILE *recorddemo_fp;
+extern NetDemo	netdemo;
+extern bool		simulated_connection;
 
 int			demostartgametic;
 int				iffdemover;
@@ -449,7 +451,7 @@ BEGIN_COMMAND (spynext)
 		else if (consoleplayer().spectator ||
 			 sv_gametype == GM_COOP ||
 			 (sv_gametype != GM_DM &&
-				players[curr].userinfo.team == consoleplayer().userinfo.team) || netdemoPlayback)
+				players[curr].userinfo.team == consoleplayer().userinfo.team) || netdemo.isPlaying())
 		{
 			displayplayer_id = players[curr].id;
 			break;
@@ -963,15 +965,17 @@ void G_Ticker (void)
 	if (demorecording)
 		G_WriteDemoTiccmd(); // read in all player commands
 
-	if(netdemoRecord && gamestate != GS_LEVEL)
+	if(netdemo.isRecording() && gamestate != GS_LEVEL)
 	{
-		CL_CaptureDeliciousPackets(&net_message);
+		netdemo.capture(&net_message);
 	}
 
-	if(netdemoPlayback)
-		CL_ReadNetDemoMeassages(&net_message); //reads all of netmessages
+	if(netdemo.isPlaying())
+	{
+		netdemo.readMessages(&net_message);
+	}
 
-	if (connected && !netdemoPlayback)
+	if (connected && !simulated_connection)
 	{
        while ((packet_size = NET_GetPacket()) )
        {
@@ -1010,7 +1014,7 @@ void G_Ticker (void)
 	   if (gametic - last_received > 65)
 		   noservermsgs = true;
 	}
-	else if (NET_GetPacket() && !netdemoPlayback)
+	else if (NET_GetPacket() && !simulated_connection)
 	{
 		// denis - don't accept candy from strangers
 		if((gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTING)
@@ -1569,7 +1573,6 @@ void G_DoLoadGame (void)
 
 	CL_QuitNetGame();
 
-	netdemo = false;
 	netgame = false;
 	multiplayer = false;
 
@@ -2095,7 +2098,7 @@ BOOL G_ProcessIFFDemo (char *mapname)
 	}
 
 	if (numPlayers > 1)
-		multiplayer = netgame = netdemo = true;
+		multiplayer = netgame = true;
 
 	return false;
 }
@@ -2226,7 +2229,6 @@ void G_DoPlayDemo (bool justStreamInput)
     		if(players.size() > 1)
     		{
     			netgame = true;
-    			netdemo = true;
     			multiplayer = true;
 
     			for (size_t i = 0; i < players.size(); i++) {
@@ -2245,7 +2247,6 @@ void G_DoPlayDemo (bool justStreamInput)
     		else
     		{
     			netgame = false;
-    			netdemo = false;
     			multiplayer = false;
     		}
 
@@ -2345,7 +2346,6 @@ BOOL G_CheckDemoStatus (void)
 		Z_Free (demobuffer);
 
 		demoplayback = false;
-		netdemo = false;
 		netgame = false;
 		multiplayer = false;
 		serverside = false;

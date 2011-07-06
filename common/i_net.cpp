@@ -114,6 +114,7 @@ int         localport;
 netadr_t    net_from;   // address of who sent the packet
 
 buf_t       net_message(MAX_UDP_PACKET);
+extern bool	simulated_connection;
 
 // buffer for compression/decompression
 // can't be static to a function because some
@@ -490,6 +491,14 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
     int                   ret;
     struct sockaddr_in    addr;
 
+	// [SL] 2011-07-06 - Don't try to send a packet if we're not really connected
+	// (eg, a netdemo is being played back)
+	if (simulated_connection)
+	{
+		buf.clear();
+		return;
+	}
+
     NetadrToSockadr (&to, &addr);
 
 	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
@@ -578,39 +587,42 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 // denis - use this function to mark the start of your client message
 // as it allows for better debugging and optimization of network code
 //
-extern bool netdemoPlayback;
-
 void MSG_WriteMarker (buf_t *b, clc_t c)
 {
-	if (!netdemoPlayback)
-		b->WriteByte((byte)c);
+	if (simulated_connection)
+		return;
+	b->WriteByte((byte)c);
 }
 
 void MSG_WriteByte (buf_t *b, byte c)
 {
-	if (!netdemoPlayback)
-    	b->WriteByte((byte)c);
+	if (simulated_connection)
+		return;
+	b->WriteByte((byte)c);
 }
 
 
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 {
-	if (!netdemoPlayback)
-    	b->WriteChunk((const char *)p, l);
+	if (simulated_connection)
+		return;
+	b->WriteChunk((const char *)p, l);
 }
 
 
 void MSG_WriteShort (buf_t *b, short c)
 {
-	if (!netdemoPlayback)
-    	b->WriteShort(c);
+	if (simulated_connection)
+		return;
+	b->WriteShort(c);
 }
 
 
 void MSG_WriteLong (buf_t *b, int c)
 {
-	if (!netdemoPlayback)
-    	b->WriteLong(c);
+	if (simulated_connection)
+		return;
+	b->WriteLong(c);
 }
 
 //
@@ -619,8 +631,9 @@ void MSG_WriteLong (buf_t *b, int c)
 // Write an boolean value to a buffer
 void MSG_WriteBool(buf_t *b, bool Boolean)
 {
-	if (!netdemoPlayback)
-    	MSG_WriteByte(b, Boolean ? 1 : 0);
+	if (simulated_connection)
+		return;
+	MSG_WriteByte(b, Boolean ? 1 : 0);
 }
 
 //
@@ -629,12 +642,14 @@ void MSG_WriteBool(buf_t *b, bool Boolean)
 // Write a floating point number to a buffer
 void MSG_WriteFloat(buf_t *b, float Float)
 {
+	if (simulated_connection)
+		return;
+
     std::stringstream StringStream;
 
     StringStream << Float;
     
-	if (!netdemoPlayback)
-    	MSG_WriteString(b, (char *)StringStream.str().c_str());
+	MSG_WriteString(b, (char *)StringStream.str().c_str());
 }
 
 //
@@ -643,8 +658,9 @@ void MSG_WriteFloat(buf_t *b, float Float)
 // Write a string to a buffer and null terminate it
 void MSG_WriteString (buf_t *b, const char *s)
 {
-	if (!netdemoPlayback)
-		b->WriteString(s);
+	if (simulated_connection)
+		return;
+	b->WriteString(s);
 }
 
 int MSG_BytesLeft(void)

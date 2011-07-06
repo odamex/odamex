@@ -1,15 +1,28 @@
-/* This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
+// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id: cl_demo.cpp 2290 2011-06-27 05:05:38Z dr_sean $
+//
+// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
+// Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
+// Copyright (C) 2006-2010 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//	Functions for recording and playing back recordings of network games
+//
+//-----------------------------------------------------------------------------
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.*/
-
-
-// For this demo version I was looking at darkplaces and zdaemon 1.05
 #include "cl_main.h"
 #include "d_player.h"
 #include "m_argv.h"
@@ -17,187 +30,413 @@
 #include "m_fileio.h"
 #include "c_dispatch.h"
 #include "d_net.h"
+#include "cl_demo.h"
 #include "version.h"
 
-FILE *recordnetdemo_fp = NULL;
 
-bool netdemoPaused = false;
-bool netdemoRecord = false;
-bool netdemoPlayback = false;
-
-//make the storage big for the new infomation
-#define SAFETYMARGIN 128
-
-typedef struct
+NetDemo::NetDemo() : state(stopped), filename(""), demofp(NULL)
 {
-	char	identifier[4];	// "ODAD"
-	byte	version;
-	byte	compression;	// type of compression used
-	int		index_size;		// gametic filepos index follows header
-	byte	reserved[54];	// for future use
-} netdemo_header_t;
+}
 
-void CL_BeginNetRecord(const char* demoname)
+NetDemo::~NetDemo()
 {
-	netdemoRecord = true;
-	netdemoPlayback = false;
+	cleanUp();
+}
 
-	Printf(PRINT_HIGH, "Writing %s\n", demoname);
 
-	if(recordnetdemo_fp)
-	{ 
-		//this is to see if it already open
-		fclose(recordnetdemo_fp);
-        recordnetdemo_fp = NULL;
+//
+// copy
+//
+//   Copies the data from one NetDemo object to another
+ 
+void NetDemo::copy(NetDemo &to, const NetDemo &from)
+{
+	// free any memory used by structures and close open files
+	cleanUp();
+
+	to.state 		= from.state;
+	to.oldstate		= from.oldstate;
+	to.filename		= from.filename;
+	to.demofp		= from.demofp;
+	to.cmdbuf		= from.cmdbuf;
+	to.bufcursor	= from.bufcursor;
+	to.netbuf		= from.netbuf;
+	to.index		= from.index;
+	memcpy(&to.header, &from.header, sizeof(netdemo_header_t));
+}
+
+
+NetDemo::NetDemo(const NetDemo &rhs)
+{
+	copy(*this, rhs);
+}
+
+NetDemo& NetDemo::operator=(const NetDemo &rhs)
+{
+	copy(*this, rhs);
+	return *this;
+}
+
+//
+// cleanUp
+//
+//   Attempts to close any open files and generally exit gracefully.
+//
+
+void NetDemo::cleanUp()
+{
+	if (isRecording())
+	{
+		stopRecording();	// Try to write any unwritten data
+	}
+	
+	// close all files
+	if (demofp)
+	{
+		fclose(demofp);
+		demofp = NULL;
+	}
+	
+	index.clear();
+	state = NetDemo::stopped;
+}
+
+
+
+void NetDemo::error(const std::string message)
+{
+	cleanUp();
+	gameaction = ga_nothing;
+	gamestate = GS_FULLCONSOLE;
+
+	Printf(PRINT_HIGH, "%s\n", message.c_str());
+}
+
+
+//
+// startRecording()
+//
+// Creates the netdemo file with the specified filename.  A temporary
+// header is written which will be overwritten with the proper information
+// in stopRecording().
+
+bool NetDemo::startRecording(const std::string filename)
+{
+	this->filename = filename;
+
+	if (isPlaying() || isPaused())
+	{
+		error("Cannot record a netdemo while not connected to a server.");
+		return false;
 	}
 
-	recordnetdemo_fp = fopen(demoname, "w+b");
+	// Already recording so just ignore the command
+	if (isRecording())
+		return true;
 
-	if(!recordnetdemo_fp)
+	if (demofp != NULL)		// file is already open for some reason
 	{
-		Printf(PRINT_HIGH, "Couldn't open the file\n");
+		fclose(demofp);
+		demofp = NULL;
+	}
+
+	demofp = fopen(filename.c_str(), "wb");
+	if (!demofp)
+	{
+		error("Unable to create netdemo file.");
+		return false;
+	}
+
+	memset(&header, 0, sizeof(header));
+	strncpy(header.identifier, "ODAD", 4);
+	header.version = NETDEMOVER;
+	header.compression = 0;
+
+	// Note: The header is not finalized at this point.  Write it anyway to
+	// reserve space in the output file for it and overwrite it later.
+	if (!fwrite(&header, sizeof(header), 1, demofp))
+	{
+		error("Unable to write netdemo header.");
+		return false;
+	}
+
+	state = NetDemo::recording;
+	return true;
+}
+
+
+//
+// startPlaying()
+//
+//
+
+bool NetDemo::startPlaying(const std::string filename)
+{
+	this->filename = filename;
+
+	if (isPlaying())
+	{
+		// restart playing
+		cleanUp();
+		return startPlaying(filename);
+	}
+
+	if (isRecording())
+	{
+		error("Cannot play a netdemo while recording.");
+		return false;
+	}
+
+	if (!(demofp = fopen(filename.c_str(), "rb")))
+	{
+		error("Unable to open netdemo file.\n");
+		return false;
+	}
+
+    // read the demo's header file
+    if (fread(&header, 1, sizeof(header), demofp) < sizeof(header) ||
+        strncmp(header.identifier, "ODAD", 4) != 0)
+    {
+        error("Unable to read netdemo header.\n");
+        return false;
+    }
+
+    if (header.version != NETDEMOVER)
+    {
+        // Do nothing since there is only one version of netdemo files currently
+    }
+	
+
+	// read the demo's index
+	if (fseek(demofp, header.index_offset, SEEK_SET) != 0)
+	{
+		error("Unable to find netdemo index.\n");
+		return false;
+	}
+	
+	if (fread(&index, header.index_size, 1, demofp) < (unsigned)header.index_size)
+	{
+		error("Unable to read netdemo index.\n");
+		return false;
+	}
+
+	// get set up to read server cmds
+	fseek(demofp, sizeof(header), SEEK_SET);
+	state = NetDemo::playing;
+	return true;
+}
+
+
+// 
+// pause()
+//
+// Changes the netdemo's state to paused.  No messages will be read or written
+// while in this state.
+
+bool NetDemo::pause()
+{
+	if (isPlaying())
+	{
+		oldstate = state;
+		state = NetDemo::paused;
+		return true;
+	}
+	
+	return false;
+}
+
+
+//
+// resume()
+//
+// Changes the netdemo's state to its state prior to the call to pause()
+//
+
+bool NetDemo::resume()
+{
+	if (isPaused())
+	{
+		state = oldstate;
+		return true;
+	}
+
+	return false;
+}
+
+//
+// stopRecording()
+//
+// Writes the netdemo index to file and rewrites the netdemo header before
+// closing the netdemo file.
+
+bool NetDemo::stopRecording()
+{
+	if (!isRecording())
+	{
+		return false;
+	}
+	state = NetDemo::stopped;
+
+	// flush the netbuffer
+    SZ_Clear(&net_message);
+
+	// write the end-of-demo marker
+	MSG_WriteByte(&net_message, svc_netdemostop);
+	size_t len = net_message.size();
+	fwrite(&len, sizeof(size_t), 1, demofp); 
+	fwrite(&gametic, sizeof(int), 1, demofp);
+	fwrite(net_message.data, 1, len, demofp);
+
+	// tack the index onto the end of the recording
+	header.index_offset = ftell(demofp);
+	header.index_size = index.size() * sizeof(netdemo_index_entry_t);
+	for (size_t i = 0; i < index.size(); i++)
+	{
+		fwrite(&index[i], sizeof(netdemo_index_entry_t), 1, demofp);
+	}
+
+	// rewrite the header since index_offset and index_size is now known
+	fseek(demofp, 0, SEEK_SET);
+	fwrite(&header, 1, sizeof(header), demofp);
+
+	fclose(demofp);
+	demofp = NULL;
+
+	Printf(PRINT_HIGH, "Demo recording has stopped.\n");
+	return true;
+}
+
+
+//
+// stopPlaying()
+//
+// Closes the netdemo file and sets the state to stopped
+//
+
+bool NetDemo::stopPlaying()
+{
+	state = NetDemo::stopped;
+	SZ_Clear(&net_message);
+	CL_QuitNetGame();
+
+	if (demofp)
+	{
+		fclose(demofp);
+		demofp = NULL;
+	}
+	
+	Printf(PRINT_HIGH, "Demo has ended.\n");
+    gameaction = ga_fullconsole;
+    gamestate = GS_FULLCONSOLE;
+	return true;
+}
+
+
+//
+// writeFullUpdate()
+//
+// Write the entire state of the game to the netdemo file
+//
+
+void NetDemo::writeFullUpdate(int ticnum)
+{
+	// Update the netdemo's index
+	netdemo_index_entry_t index_entry;
+	index_entry.offset = ftell(demofp);
+	index_entry.ticnum = ticnum;
+	index.push_back(index_entry);
+
+	// TODO: simulate the server's update messages based on what the client
+	// knows of the world	
+}
+
+
+//
+// writeMessages()
+//
+// Captures the net packets and local movements and writes them to the
+// netdemo file.
+// 
+
+void NetDemo::writeMessages(buf_t *netbuffer, bool usercmd)
+{
+	if (!isRecording())
+	{
 		return;
 	}
 
-	netdemo_header_t header;
-	header.identifier[0] = 'O';
-	header.identifier[1] = 'D';
-	header.identifier[2] = 'A';
-	header.identifier[3] = 'D';
-	header.version = NETDEMOVER;
-	header.compression = 0;
-	header.index_size = 0;
-	memset(header.reserved, 0, sizeof(header.reserved));
-
-	fwrite(&header, 1, sizeof(header), recordnetdemo_fp); 
-}
-
-void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd)
-{
-	//captures the net packets and local movements
-	player_t* clientPlayer = &consoleplayer();
-	size_t len = netbuffer->cursize;
-	byte waterlevel;
-	fixed_t x, y, z;
-	fixed_t momx, momy, momz;
-	fixed_t pitch, roll, viewheight, deltaviewheight;
-	angle_t angle;
-	int jumpTics, reactiontime;
 	buf_t netbuffertemp;
+	size_t len = netbuffer->cursize;	
 	
-	netbuffertemp.resize(len + SAFETYMARGIN);
-	
+	const int safetymargin = 128;	// extra space to accomodate usercmd
+	netbuffertemp.resize(len + safetymargin);
 	memcpy(netbuffertemp.data, netbuffer->data, netbuffer->cursize);
 	netbuffertemp.cursize = netbuffer->cursize;
 
-	if(!netdemoRecord)
-		return;
+	// Record the local player's data
+	player_t *player = &consoleplayer();
+    if (player->mo && usercmd)
+    {
+		AActor *mo = player->mo;
 
-	if(netdemoPaused)
-		return;
+        MSG_WriteByte(&netbuffertemp, svc_netdemocap);
+        MSG_WriteByte(&netbuffertemp, player->cmd.ucmd.buttons);
+        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.yaw);
+        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.forwardmove);
+        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.sidemove);
+        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.upmove);
+        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.roll);
 
-	if(clientPlayer->mo)
-	{
-		x = clientPlayer->mo->x;
-		y = clientPlayer->mo->y;
-		z = clientPlayer->mo->z;
-		momx = clientPlayer->mo->momx;
-		momy = clientPlayer->mo->momy;
-		momz = clientPlayer->mo->momz;
-		angle = clientPlayer->mo->angle;
-		pitch = clientPlayer->mo->pitch;
-		roll = clientPlayer->mo->roll;
-		viewheight = clientPlayer->viewheight;
-		deltaviewheight = clientPlayer->deltaviewheight;
-		jumpTics = clientPlayer->jumpTics;
-		reactiontime = clientPlayer->mo->reactiontime;
-		waterlevel = clientPlayer->mo->waterlevel;
+        MSG_WriteByte(&netbuffertemp, mo->waterlevel);
+        MSG_WriteLong(&netbuffertemp, mo->x);
+        MSG_WriteLong(&netbuffertemp, mo->y);
+        MSG_WriteLong(&netbuffertemp, mo->z);
+        MSG_WriteLong(&netbuffertemp, mo->momx);
+        MSG_WriteLong(&netbuffertemp, mo->momy);
+        MSG_WriteLong(&netbuffertemp, mo->momz);
+        MSG_WriteLong(&netbuffertemp, mo->angle);
+        MSG_WriteLong(&netbuffertemp, mo->pitch);
+        MSG_WriteLong(&netbuffertemp, mo->roll);
+        MSG_WriteLong(&netbuffertemp, player->viewheight);
+        MSG_WriteLong(&netbuffertemp, player->deltaviewheight);
+        MSG_WriteLong(&netbuffertemp, player->jumpTics);
+        MSG_WriteLong(&netbuffertemp, mo->reactiontime);
 	}
 
-	if(usercmd)
-	{
-		MSG_WriteByte(&netbuffertemp, svc_netdemocap);
-		
-		
-		MSG_WriteByte(&netbuffertemp, clientPlayer->cmd.ucmd.buttons);
-
-		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.yaw);
-		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.forwardmove);
-		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.sidemove);
-		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.upmove);
-		MSG_WriteShort(&netbuffertemp, clientPlayer->cmd.ucmd.roll);
-	
-		MSG_WriteByte(&netbuffertemp, waterlevel);
-		MSG_WriteLong(&netbuffertemp, x);
-		MSG_WriteLong(&netbuffertemp, y);
-		MSG_WriteLong(&netbuffertemp, z);
-		MSG_WriteLong(&netbuffertemp, momx);
-		MSG_WriteLong(&netbuffertemp, momy);
-		MSG_WriteLong(&netbuffertemp, momz);
-		MSG_WriteLong(&netbuffertemp, angle);
-		MSG_WriteLong(&netbuffertemp, pitch);
-		MSG_WriteLong(&netbuffertemp, roll);
-		MSG_WriteLong(&netbuffertemp, viewheight);
-		MSG_WriteLong(&netbuffertemp, deltaviewheight);
-		MSG_WriteLong(&netbuffertemp, jumpTics);
-		MSG_WriteLong(&netbuffertemp, reactiontime);
-    }
-
-	CL_CaptureDeliciousPackets(&netbuffertemp);
+	capture(&netbuffertemp);
 }
-	
-void CL_StopRecordingNetDemo()
+
+
+//
+// readMessages()
+//
+//
+
+void NetDemo::readMessages(buf_t* netbuffer)
 {
-	if(!netdemoRecord)
+	if (!isPlaying())
 	{
-		Printf(PRINT_HIGH, "Not recording a demo no need to stop it.\n");
 		return;
 	}
 
-	netdemoRecord = false;
-	
-	SZ_Clear(&net_message);
-
-	MSG_WriteByte(&net_message, svc_netdemostop);
-
-	size_t len = net_message.size();
-	fwrite(&len, sizeof(size_t), 1, recordnetdemo_fp);
-	fwrite(&gametic, sizeof(int), 1, recordnetdemo_fp);
-	fwrite(net_message.data, 1, len, recordnetdemo_fp);
-	
-	fclose(recordnetdemo_fp);
-	recordnetdemo_fp = NULL;
-	Printf(PRINT_HIGH, "Demo has been stopped recording\n");
-}
-
-void CL_ReadNetDemoMeassages(buf_t* net_message)
-{
 	size_t len = 0;
-	player_t* clientPlayer = &consoleplayer();
-	
-	if(!netdemoPlayback)
-	{
-		return;
-	}
-	
-	if(netdemoPaused){
-		return;
-	}
-	
-	fread(&len, sizeof(size_t), 1, recordnetdemo_fp);
-	fread(&gametic, sizeof(int), 1, recordnetdemo_fp);
-	net_message->cursize = len;
-	net_message->readpos = 0;
-	fread(net_message->data, 1, len, recordnetdemo_fp);
- 		
-	if(!connected)
+	fread(&len, sizeof(size_t), 1, demofp);
+	fread(&gametic, sizeof(int), 1, demofp);
+
+	char *msgdata = new char[len];
+	fread(msgdata, 1, len, demofp);
+	netbuffer->WriteChunk(msgdata, len);
+	delete msgdata;
+
+	if (!connected)
 	{
 		int type = MSG_ReadLong();
-
-		if(type == CHALLENGE)
+		if (type == CHALLENGE)
 		{
 			CL_PrepareConnect();
-		} else if(type == 0){
+		}
+		else if (type == 0)
+		{
 			CL_Connect();
 		}
 	} 
@@ -208,182 +447,40 @@ void CL_ReadNetDemoMeassages(buf_t* net_message)
 		CL_ReadPacketHeader();
 		CL_ParseCommands();
 		CL_SaveCmd();
-
 		if (gametic - last_received > 65)
-		   noservermsgs = true;
+		{
+			noservermsgs = true;
+		}
 	}
 }
 
 
-void CL_StopDemoPlayBack()
+//
+// capture()
+//
+// Copies data from netbuffer to the recording file
+//
+
+void NetDemo::capture(const buf_t* netbuffer)
 {
-	
-	if(!netdemoPlayback)
+	if (!isRecording())
 	{
 		return;
 	}
 
-    SZ_Clear(&net_message);
- 
-    CL_QuitNetGame();
-    
-    Printf(PRINT_HIGH, "Demo was stopped.\n");
-	fclose(recordnetdemo_fp);
-	netdemoPlayback = false;
-	recordnetdemo_fp = NULL;
-	gameaction = ga_fullconsole;
-	gamestate = GS_FULLCONSOLE;
-}
-
-void CL_StartDemoPlayBack(std::string demoname)
-{
-	FixPathSeparator (demoname);
-	
-	if(recordnetdemo_fp)
-	{ 
-		//this is to see if it already open
-		fclose(recordnetdemo_fp);
-        recordnetdemo_fp = NULL;
-	}
-	
-	recordnetdemo_fp = fopen(demoname.c_str(), "r+b");
-
-	if(!recordnetdemo_fp)
+	if (gamestate == GS_DOWNLOAD)
 	{
-		Printf(PRINT_HIGH, "Couldn't open file");
-		gameaction = ga_nothing;
-		gamestate = GS_FULLCONSOLE;
+		// I think this will skip the downloading process
 		return;
 	}
 
-	// read the demo's header file
-	netdemo_header_t header;
-	if (!fread(&header, 1, sizeof(header), recordnetdemo_fp) ||
-		strncmp(header.identifier, "ODAD", 4) != 0)
-	{
-		Printf(PRINT_HIGH, "Unable to read demo header.\n");
-		gameaction = ga_nothing;
-		gamestate = GS_FULLCONSOLE;
-		return;
-	}
-
-	if (header.version != NETDEMOVER)
-	{
-		// Do nothing since there is only one version of netdemo files currently
-	} 
-
-	netdemoPlayback = true;
-	gamestate = GS_CONNECTING;
-	netdemoRecord = false;
-	netdemoPaused = false;
-}
-
-void CL_CaptureDeliciousPackets(buf_t* netbuffer)
-{
-	//captures just the net packets before the game
-	
-	if(gamestate == GS_DOWNLOAD)
-	{
-		//I think this will skip the downloading process
-		return;
-	}
-
-	if(!netdemoRecord)
-		return;
-	
-
+	// captures just the net packets before the game
 	size_t len = netbuffer->cursize;
-	fwrite(&len, sizeof(size_t), 1, recordnetdemo_fp);
-	fwrite(&gametic, sizeof(int), 1, recordnetdemo_fp);
-	fwrite(netbuffer->data, 1, len, recordnetdemo_fp);
+	fwrite(&len, sizeof(size_t), 1, demofp);
+	fwrite(&gametic, sizeof(int), 1, demofp);
+	fwrite(netbuffer->data, 1, len, demofp);
 }
 
-BEGIN_COMMAND(netrecord)
-{
-	std::string demonamearg;
 
-	if(argc < 2)
-	{
-		demonamearg = "demo.odd";
-	}
-	else
-	{
-		demonamearg = argv[1];
-		demonamearg.append(".odd");
-	}
 
-	
-	if(recordnetdemo_fp)
-	{
-		Printf(PRINT_HIGH, "Need to stop recording / playing of a demo before recording a new one.\nuse the stopnetdemo command to stop the demo\n");
-		return;
-	}
-
-	CL_Reconnect();
-	CL_BeginNetRecord(demonamearg.c_str());
-	
-}
-END_COMMAND(netrecord)
-
-BEGIN_COMMAND(netpause)
-{
-	if(netdemoRecord)
-	{
-		Printf(PRINT_HIGH, "Need to be in demo playback to use this command\n");
-		return;
-	}
-
-	if(netdemoPaused)
-	{
-		netdemoPaused = false;
-		paused = false;
-		Printf(PRINT_HIGH, "Demo Unpaused\n");
-
-	} 
-	else 
-	{
-		netdemoPaused = true;
-		paused = true;
-		Printf(PRINT_HIGH, "Demo Paused\n");
-	}
-}
-END_COMMAND(netpause)
-
-BEGIN_COMMAND(netplay)
-{
-	if(argc < 1)
-	{
-		Printf(PRINT_HIGH, "Usage: netplay <demoname>\n");
-		return;
-	}
-
-	if(recordnetdemo_fp)
-	{
-		Printf(PRINT_HIGH, "Need to stop recording / playing of a demo before playing a new one.\nuse the stopnetdemo command to stop the demo\n");
-		return;
-	}
-
-	if(connected)
-	{
-		CL_QuitNetGame();
-	}
-
-	std::string demonamearg = argv[1];
-
-	CL_StartDemoPlayBack(demonamearg);
-
-}
-END_COMMAND(netplay)
-
-BEGIN_COMMAND(stopnetdemo)
-{
-	if(netdemoRecord)
-	{
-		CL_StopRecordingNetDemo();
-	} 
-	else if(netdemoPlayback)
-	{
-		CL_StopDemoPlayBack();
-	}
-}
-END_COMMAND(stopnetdemo)
+VERSION_CONTROL (cl_demo_cpp, "$Id: cl_demo.cpp 2290 2011-06-27 05:05:38Z dr_sean $")

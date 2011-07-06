@@ -120,7 +120,6 @@ extern gameinfo_t CommercialGameInfo;
 extern QWORD testingmode;
 extern BOOL setsizeneeded;
 extern BOOL setmodeneeded;
-extern BOOL netdemo;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 EXTERN_CVAR (st_scale)
 extern BOOL gameisdead;
@@ -1414,6 +1413,9 @@ std::vector<size_t> D_DoomWadReboot(
 	return fails;
 }
 
+void CL_NetDemoRecord(std::string filename);
+void CL_NetDemoPlay(std::string filename);
+
 //
 // D_DoomMain
 //
@@ -1480,11 +1482,15 @@ void D_DoomMain (void)
 	}
 	
 	p = Args.CheckParm("-netrecord");
-	if(p)
+	if (p)
 	{
-		std::string demoname = Args.GetArg (p+1);
-		demoname.append(".odd");
-		CL_BeginNetRecord(demoname.c_str());
+		std::string demoname;
+		if (Args.GetArg(p + 1))
+			demoname = Args.GetArg(p + 1);
+		else
+			demoname = "demo";
+
+		CL_NetDemoRecord(demoname);
 	}
 	
 
@@ -1605,7 +1611,7 @@ void D_DoomMain (void)
 	p = Args.CheckParm("-netplay");
 	if(p){
 		std::string demoname = Args.GetArg (p+1);
-		CL_StartDemoPlayBack(demoname);
+		CL_NetDemoPlay(demoname);
 		//D_DoomLoop();
 	}
 

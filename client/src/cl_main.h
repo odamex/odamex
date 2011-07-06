@@ -38,11 +38,6 @@ extern int       last_received;
 
 extern buf_t     net_buffer;
 
-//demos - NullPoint
-extern bool netdemoRecord;
-extern bool netdemoPlayback;
-extern bool netdemoPaused;
-
 #define MAXSAVETICS 70
 extern ticcmd_t localcmds[MAXSAVETICS];
 

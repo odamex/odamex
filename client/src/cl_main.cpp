@@ -46,6 +46,7 @@
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
+#include "cl_demo.h"
 
 #include <string>
 #include <vector>
@@ -82,6 +83,9 @@ BOOL      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
+// [SL] 2011-07-06 - not really connected (playing back a netdemo)
+bool		simulated_connection = false;		
+
 int       packetseq[256];
 byte      packetnum;
 
@@ -94,6 +98,9 @@ huffman_client compressor;
 // denis - fast netid lookup
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
+
+// [SL] 2011-06-27 - Class to record and playback network recordings
+NetDemo netdemo;
 
 EXTERN_CVAR (sv_weaponstay)
 
@@ -139,8 +146,11 @@ void CL_GetServerSettings(void);
 void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress(int sequence);
+
 void CL_LocalDemoTic(void);
 void CL_NetDemoStop(void);
+void CL_NetDemoRecord(std::string filename);
+void CL_NetDemoPlay(std::string filename);
 
 //	[Toke - CTF]
 void CalcTeamFrags (void);
@@ -173,7 +183,6 @@ void CL_QuitNetGame(void)
 	if(connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
-
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
 	}
@@ -199,14 +208,14 @@ void CL_QuitNetGame(void)
 	actor_by_netid.clear();
 	players.clear();
 
-	/*//demos - NullPoint
-	if(netdemoRecord){
-		CL_StopRecordingNetDemo();
+	if (netdemo.isRecording())
+	{
+		netdemo.stopRecording();
 	}
-
-	if(netdemoPlayback){
-		CL_StopDemoPlayBack();
-	}*/
+	if (netdemo.isPlaying())
+	{
+		netdemo.stopPlaying();
+	}
 }
 
 
@@ -541,6 +550,74 @@ BEGIN_COMMAND (quit)
 }
 END_COMMAND (quit)
 
+
+BEGIN_COMMAND(stopnetdemo)
+{
+	if (netdemo.isRecording())
+	{
+		netdemo.stopRecording();
+	} 
+	else if (netdemo.isPlaying())
+	{
+		netdemo.stopPlaying();
+	}
+}
+END_COMMAND(stopnetdemo)
+
+BEGIN_COMMAND(netrecord)
+{
+	std::string filename;
+
+	if (argc < 2)
+	{
+		filename = "demo";
+	}
+	else
+	{
+		if (strlen(argv[1]) > 0)
+			filename = argv[1];
+	}
+
+	CL_Reconnect();
+	CL_NetDemoRecord(filename);
+}
+END_COMMAND(netrecord)
+
+BEGIN_COMMAND(netpause)
+{
+	if(netdemo.isPaused())
+	{
+		netdemo.resume();
+		paused = false;
+		Printf(PRINT_HIGH, "Demo resumed.\n");
+	} 
+	else 
+	{
+		netdemo.pause();
+		paused = true;
+		Printf(PRINT_HIGH, "Demo paused.\n");
+	}
+}
+END_COMMAND(netpause)
+
+BEGIN_COMMAND(netplay)
+{
+	if(argc < 1)
+	{
+		Printf(PRINT_HIGH, "Usage: netplay <demoname>\n");
+		return;
+	}
+
+	if(connected)
+	{
+		CL_QuitNetGame();
+	}
+
+	std::string filename = argv[1];
+	CL_NetDemoPlay(filename);
+}
+END_COMMAND(netplay)
+
 //
 // CL_MoveThing
 //
@@ -564,7 +641,6 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 void CL_SendUserInfo(void)
 {
 	userinfo_t *coninfo = &consoleplayer().userinfo;
-
 	memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
 
 	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
@@ -952,6 +1028,7 @@ bool CL_Connect(void)
     multiplayer = true;
     network_game = true;
 	serverside = false;
+	simulated_connection = netdemo.isPlaying();
 
 	CL_Decompress(0);
 	CL_ParseCommands();
@@ -1216,7 +1293,6 @@ void CL_SendSvGametic(void)
 void CL_SendPingReply(void)
 {
 	int svtimestamp = MSG_ReadLong();
-	
 	MSG_WriteMarker (&net_buffer, clc_pingreply);
 	MSG_WriteLong (&net_buffer, svtimestamp);
 }
@@ -2737,17 +2813,16 @@ void CL_ParseCommands(void)
 	once = false;
 
 	
-	if(netdemoRecord)
+	if(netdemo.isRecording())
 	{
 		if(gamestate == GS_LEVEL)
 		{
-			CL_WirteNetDemoMessages(&net_message, true);
+			netdemo.writeMessages(&net_message, true);
 		} 
 		else 
 		{
-			CL_WirteNetDemoMessages(&net_message, false);
+			netdemo.writeMessages(&net_message, false);
 		}
-		
 	}
 
 	while(connected)
@@ -2803,7 +2878,7 @@ void CL_SendCmd(void)
 {
 	player_t *p;
 
-	if (netdemoPlayback)
+	if (netdemo.isPlaying())	// we're not really connected to a server
 		return;
 
 	if (gametic < 1 )
@@ -2864,7 +2939,7 @@ void CL_SendCmd(void)
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
 	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
 
-    NET_SendPacket(net_buffer, serveraddr);
+	NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
 }
@@ -3028,9 +3103,22 @@ void CL_LocalDemoTic()
 
 }
 
-void CL_NetDemoStop(){
-	CL_StopDemoPlayBack();
+void CL_NetDemoStop()
+{
+	netdemo.stopPlaying();
 }
+
+void CL_NetDemoRecord(std::string filename)
+{
+	filename.append(".odd");
+	netdemo.startRecording(filename);
+}
+
+void CL_NetDemoPlay(std::string filename)
+{
+	netdemo.startPlaying(filename);
+}
+
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
