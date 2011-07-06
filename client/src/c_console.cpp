@@ -1011,7 +1011,7 @@ static void makestartposgood (void)
 	{ // Start of visible line is beyond end of line
 		n = curs - ConCols + 2;
 	}
-	if ((curs - pos) >= ConCols - 2)
+	if ((int)(curs - pos) >= (int)(ConCols - 2))
 	{ // The cursor is beyond the visible part of the line
 		n = curs - ConCols + 2;
 	}
@@ -1038,7 +1038,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 	case KEY_JOY7: // Left Trigger
 #endif
 	case KEY_PGUP:
-		if (ConRows > ConBottom/8)
+		if ((int)(ConRows) > (int)(ConBottom/8))
 		{
 			if (KeysShifted)
 				// Move to top of console buffer
