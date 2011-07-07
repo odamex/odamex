@@ -403,7 +403,7 @@ int S_AdjustSoundParams(AActor*		listener,
 	angle_t	angle;
 
 	if(!listener)
-		return false;
+		return 0;
 
     // calculate the distance to sound origin
     //  and clip it if necessary
@@ -518,9 +518,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			sfx = sfx->link;
 	}
 
-	if (!S_WHICHEARS.mo)
-		return;
-	if (attenuation != ATTN_NONE)
+	if (attenuation != ATTN_NONE && S_WHICHEARS.mo)
 	{
   		// Check to see if it is audible, and if not, modify the params
 		rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
