@@ -89,22 +89,30 @@ class SDLVideo : public IVideo
 
       bool operator<(const vidMode_t& right) const
       {
-         if (bits >= right.bits)
-            if (width >= right.width)
-               if (height >= right.height)
-                  return false;
-
-          return true;
+         if (bits < right.bits)
+            return true;
+         else if (bits == right.bits)
+         {
+            if (width < right.width)
+               return true;
+            else if (width == right.width && height < right.height)
+               return true;
+         }
+         return false;
       }
 
       bool operator>(const vidMode_t& right) const
       {
-         if (bits <= right.bits)
-            if (width <= right.width)
-               if (height <= right.height)
-                  return false;
-
-          return true;
+         if (bits > right.bits)
+            return true;
+		 else if (bits == right.bits)
+         {
+            if (width > right.width)
+               return true;
+			else if (width == right.width && height > right.height)
+               return true;
+		 }
+         return false;
       }
 
       bool operator==(const vidMode_t& right) const
