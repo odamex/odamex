@@ -991,7 +991,7 @@ void M_VerifyNightmare(int ch)
 
 void M_StartGame(int choice)
 {
-	sv_skill.Set ((float)choice+1);
+	sv_skill.Set ((float)(choice+1));
 
 	G_DeferedInitNew (CalcMapName (epi+1, 1));
 	M_ClearMenus ();

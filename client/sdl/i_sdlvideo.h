@@ -83,28 +83,45 @@ class SDLVideo : public IVideo
       cChain *next, *prev;
    };
 
-   typedef struct   
+   typedef struct vidMode_t
    {      
       int width, height, bits;
-   } vidMode_t;
 
-   // binary predicate for video mode comparison
-   static bool bp_vm_uni_cmp (vidMode_t first, vidMode_t second)
-   { 
-      return (first.width == second.width && 
-         first.height == second.height &&
-         first.bits == second.bits);
-   }
+      bool operator<(const vidMode_t& right) const
+      {
+         if (bits < right.bits)
+            return true;
+         else if (bits == right.bits)
+         {
+            if (width < right.width)
+               return true;
+            else if (width == right.width && height < right.height)
+               return true;
+         }
+         return false;
+      }
 
-   static bool bp_vm_uni_sort (vidMode_t first, vidMode_t second)
-   {
-      bool ret;
+      bool operator>(const vidMode_t& right) const
+      {
+         if (bits > right.bits)
+            return true;
+		 else if (bits == right.bits)
+         {
+            if (width > right.width)
+               return true;
+			else if (width == right.width && height > right.height)
+               return true;
+		 }
+         return false;
+      }
 
-      if (!(ret = first.width > second.width))
-          if(!(ret = first.height > second.height))
-              ret = first.bits > second.bits;
-      return ret;
-   }
+      bool operator==(const vidMode_t& right) const
+      {
+         return (width == right.width && 
+                 height == right.height &&
+                 bits == right.bits);
+      }
+   };
 
    std::vector<vidMode_t> vidModeList;
    size_t vidModeIterator;

@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Utility functions
+//	Error handling
 //
 // AUTHORS: 
 //  Russell Rice (russell at odamex dot net)
@@ -24,44 +24,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <iostream>
-#include <sys/time.h>
+#ifndef __NET_ERROR_H__
+#define __NET_ERROR_H__
 
-#include <limits>
+void _ReportError(const char *file, int line, const char *func, 
+    const char *fmt, ...);
+#define ReportError(...) \
+    _ReportError(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 
-#include "net_utils.h"
+#define REPERR_NO_ARGS ""
 
-// GetMillisNow()
-
-// denis - use this unless you want your program
-// to get confused every 49 days due to DWORD limit
-uint64_t _UnwrapTime(uint32_t now32)
-{
-	static uint64_t last = 0;
-	uint64_t now = now32;
-	static uint64_t max = std::numeric_limits<DWORD>::max();
-
-	if(now < last%max)
-		last += (max-(last%max)) + now;
-	else
-		last = now;
-
-	return last;
-}
-
-int32_t _Millis()
-{
-    struct timeval tp;
-    
-    gettimeofday(&tp, (struct timezone *)NULL);
-
-    return (tp.tv_sec * 1000 + (tp.tv_usec / 1000));
-}
-
-uint64_t GetMillisNow()
-{
-    return _UnwrapTime(_Millis());
-}
-
-// ???
-// ---
+#endif // __NET_ERROR_H__

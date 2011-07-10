@@ -16,41 +16,18 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	 Type Definitions
-//
-// AUTHORS:
-//	 Michael Wood (mwoodj at huntsvegas dot org)
+//  std::string utility functions
 //
 //-----------------------------------------------------------------------------
 
-#ifndef _TYPEDEFS_H
-#define _TYPEDEFS_H
+#ifndef __STR_UTILS_H__
+#define __STR_UTILS_H__
 
-/**
- * agOdalaunch namespace.
- *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
- * namespace.
- */
-//namespace agOdalaunch {
+#include <string>
+#include <wx/string.h>
 
-#ifdef _MSC_VER
-	typedef signed   __int8   int8_t;
-	typedef signed   __int16  int16_t;
-	typedef signed   __int32  int32_t;
-	typedef unsigned __int8   uint8_t;
-	typedef unsigned __int16  uint16_t;
-	typedef unsigned __int32  uint32_t;
-	typedef signed   __int64  int64_t;
-	typedef unsigned __int64  uint64_t;
-#else
-	#include <stdint.h>
+std::string stdstr_toupper(const std::string&);
+std::string wxstr_tostdstr(const wxString &s);
+wxString stdstr_towxstr(const std::string&);
 
-    #ifndef _WIN32
-	typedef unsigned int DWORD;
-	#endif
-#endif
-
-//} // namespace
-
-#endif
+#endif // __STR_UTILS_H__

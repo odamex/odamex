@@ -421,20 +421,20 @@ void AActor::RunThink ()
 					{
 						PlayerLandedOnThing (this, onmo);
 					}
-					
-					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
-					{
-						/*if (player)
-						{
-							player->viewheight -= z + onmo->height - z;
-							player->deltaviewheight =
-								(VIEWHEIGHT - player->viewheight)>>3;
-						}*/
-						z = onmo->z + onmo->height;
-					}
-					flags2 |= MF2_ONMOBJ;
-					momz = 0;
 				}
+				if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
+				{
+					if (player)
+					{
+						player->viewheight -= onmo->z + onmo->height - z;
+						player->deltaviewheight =
+							(VIEWHEIGHT - player->viewheight)>>3;
+					}
+					z = onmo->z + onmo->height;
+				}
+				
+				flags2 |= MF2_ONMOBJ;
+				momz = 0;
 			}
 		}
 	    else
@@ -767,7 +767,8 @@ void P_XYMovement(AActor *mo)
 
 	do
 	{
-		if (xmove > maxmove || ymove > maxmove )
+		if ((xmove > maxmove || ymove > maxmove)
+		     || (co_zdoomphys && (xmove < -maxmove || ymove < -maxmove)))
 		{
 			ptryx = mo->x + xmove/2;
 			ptryy = mo->y + ymove/2;
@@ -936,12 +937,11 @@ void P_ZMovement(AActor *mo)
     // check for smooth step up
    if (mo->player && mo->z < mo->floorz)
    {
-      mo->player->viewheight -= mo->floorz-mo->z;
+	  mo->player->viewheight -= mo->floorz-mo->z;
 
-      mo->player->deltaviewheight
-            = (VIEWHEIGHT - mo->player->viewheight)>>3;
+	  mo->player->deltaviewheight
+			= (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
-
     // adjust height
     // GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
    mo->z += mo->momz;
@@ -1460,7 +1460,7 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
         SV_SpawnMobj(th);
 }
 
-void SV_AwarenessUpdate(player_t &pl, AActor* mo);
+bool SV_AwarenessUpdate(player_t &pl, AActor* mo);
 //
 // P_CheckMissileSpawn
 // Moves the missile forward a bit
@@ -1934,7 +1934,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (sv_skill == sk_nightmare)
 		bit = 4;
 	else
-		bit = 1 << ((int)sv_skill - 2);
+		bit = 1 << (sv_skill.asInt() - 2);
 
 	if (!(mthing->flags & bit))
 		return;

@@ -415,7 +415,7 @@ BEGIN_COMMAND (serverinfo)
     // [Russell] - Find the largest cvar name, used for formatting
     while (Cvar)
 	{			
-        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        if (Cvar->flags() & CVAR_SERVERINFO)
         {
             size_t FieldLength = strlen(Cvar->name());
             
@@ -435,7 +435,7 @@ BEGIN_COMMAND (serverinfo)
     // Data
     while (Cvar)
 	{			
-        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        if (Cvar->flags() & CVAR_SERVERINFO)
         {
             Printf(PRINT_HIGH, 
                    "%*s - %s\n", 
@@ -519,13 +519,24 @@ END_COMMAND (join)
 
 void STACK_ARGS call_terms (void);
 
-BEGIN_COMMAND (quit)
+void CL_QuitCommand()
 {
-    call_terms();
-
+	call_terms();
 	exit (0);
 }
+
+BEGIN_COMMAND (quit)
+{
+	CL_QuitCommand();
+}
 END_COMMAND (quit)
+
+// An alias for 'quit'
+BEGIN_COMMAND (exit)
+{
+	CL_QuitCommand();
+}
+END_COMMAND (exit)
 
 //
 // CL_MoveThing
@@ -888,7 +899,7 @@ bool CL_PrepareConnect(void)
     // TODO: Allow deh/bex file downloads
 	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, PatchFiles, wadhashes);
 
-	if(missing_files.size())
+	if(!missing_files.empty())
 	{
 		// denis - download files
 		missing_file = wadnames[missing_files[0]];
@@ -1239,7 +1250,10 @@ void CL_SpawnMobj()
 		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	if (mo->type == MT_TFOG)
-		S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	{
+		if (level.time)	// don't play sound on first tic of the level
+			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	}
 }
 
 //
@@ -1704,7 +1718,7 @@ void CL_Sound(void)
 		AActor *mo = consoleplayer().mo;
 
 		if(mo)
-			S_SoundID (mo->x, mo->y, attenuation, sfx_id, volume, attenuation);
+			S_SoundID (mo->x, mo->y, channel, sfx_id, volume, attenuation);
 
 		return;
 	}

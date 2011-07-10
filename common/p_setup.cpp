@@ -1455,15 +1455,12 @@ void P_SetupLevel (char *lumpname, int position)
 
 	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
 	{
-		// [RH] Scan the rejectmatrix and see if it actually contains anything
-		int i, end = (W_LumpLength (lumpnum+ML_REJECT)-3) / 4;
-		for (i = 0; i < end; i++)
-			if (((int *)rejectmatrix)[i]) {
-				rejectempty = false;
-				break;
-			}
-		if (i >= end) {
-			DPrintf ("Reject matrix is empty\n");
+		// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
+		// If it's too short, the reject table should be ignored when 
+		// calling P_CheckSight
+		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
+		{
+			Printf(PRINT_HIGH, "Reject matrix is not valid and will be ignored.\n");
 			rejectempty = true;
 		}
 	}

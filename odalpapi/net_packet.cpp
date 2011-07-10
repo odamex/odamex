@@ -181,6 +181,8 @@ void Server::ResetData()
 	Info.VersionPatch = 0;
 	Info.VersionRevision = 0;
 	Info.VersionProtocol = 0;
+	Info.VersionRealProtocol = 0;
+	Info.PTime = 0;
 	Info.Name = "";
 	Info.MaxClients = 0;
 	Info.MaxPlayers = 0;
@@ -495,6 +497,8 @@ int32_t Server::Query(int32_t Timeout)
 		Socket.Write32(challenge);
 		Socket.Write32(VERSION);
 		Socket.Write32(PROTOCOL_VERSION);
+		// bond - time
+        Socket.Write32(Info.PTime);
 
 		if(!Socket.SendData(Timeout))
 			return 0;

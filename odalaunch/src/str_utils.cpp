@@ -16,52 +16,32 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Utility functions
-//
-// AUTHORS: 
-//  Russell Rice (russell at odamex dot net)
-//  Michael Wood (mwoodj at knology dot net)
+//  std::string utility functions
 //
 //-----------------------------------------------------------------------------
 
-#include <iostream>
-#include <sys/time.h>
+#include <algorithm>
 
-#include <limits>
+#include "str_utils.h"
 
-#include "net_utils.h"
+using namespace std;
 
-// GetMillisNow()
-
-// denis - use this unless you want your program
-// to get confused every 49 days due to DWORD limit
-uint64_t _UnwrapTime(uint32_t now32)
+string stdstr_toupper(const string &s)
 {
-	static uint64_t last = 0;
-	uint64_t now = now32;
-	static uint64_t max = std::numeric_limits<DWORD>::max();
+    string upper(s);
 
-	if(now < last%max)
-		last += (max-(last%max)) + now;
-	else
-		last = now;
-
-	return last;
-}
-
-int32_t _Millis()
-{
-    struct timeval tp;
+    transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
     
-    gettimeofday(&tp, (struct timezone *)NULL);
-
-    return (tp.tv_sec * 1000 + (tp.tv_usec / 1000));
+    return s;
 }
 
-uint64_t GetMillisNow()
+// These can be removed for wx 2.9/3
+string wxstr_tostdstr(const wxString &s)
 {
-    return _UnwrapTime(_Millis());
+	return string(s.mb_str());
 }
 
-// ???
-// ---
+wxString stdstr_towxstr(const string &s)
+{
+	return wxString(s.c_str(), wxConvUTF8);
+}

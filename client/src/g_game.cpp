@@ -1876,13 +1876,13 @@ void G_BeginRecording (void)
         mapid = level.mapname[3] - '0';
     }
 
-    *demo_p++ = (unsigned char)(sv_skill-1);
+    *demo_p++ = sv_skill.asInt() - 1;
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = sv_gametype;
-    *demo_p++ = sv_monstersrespawn;
-    *demo_p++ = sv_fastmonsters;
-    *demo_p++ = sv_nomonsters;
+    *demo_p++ = sv_gametype.asInt();
+    *demo_p++ = sv_monstersrespawn.asInt();
+    *demo_p++ = sv_fastmonsters.asInt();
+    *demo_p++ = sv_nomonsters.asInt();
     *demo_p++ = 0;
 
     *demo_p++ = 1;
@@ -2157,23 +2157,23 @@ void G_DoPlayDemo (bool justStreamInput)
 		if (deathmatch == 2)
 		{
 			// Altdeath
-			sv_gametype = 1.0f;
-			sv_weaponstay = 0.0f;
-			sv_itemsrespawn = 1.0f;
+			sv_gametype.Set(GM_DM);
+			sv_weaponstay.Set(0.0f);
+			sv_itemsrespawn.Set(1.0f);
 		}
 		else if (deathmatch == 1)
 		{
 			// Classic deathmatch
-			sv_gametype = 1.0f;
-			sv_weaponstay = 1.0f;
-			sv_itemsrespawn = 0.0f;
+			sv_gametype.Set(GM_DM);
+			sv_weaponstay.Set(1.0f);
+			sv_itemsrespawn.Set(0.0f);
 		}
 		else
 		{
 			// Co-op
-			sv_gametype = 0.0f;
-			sv_weaponstay = 1.0f;
-			sv_itemsrespawn = 0.0f;
+			sv_gametype.Set(GM_COOP);
+			sv_weaponstay.Set(1.0f);
+			sv_itemsrespawn.Set(0.0f);
 		}
 
 		sv_monstersrespawn = *demo_p++;

@@ -417,12 +417,12 @@ std::string MD5SUM(std::string in)
 	return MD5SUM(in.c_str(), in.length());
 }
 
-#include <wx/string.h>
+#include "str_utils.h"
 
 wxString MD5SUM(const wxString &Input)
 {
     std::string str = MD5SUM(Input.char_str(), Input.Len());
     
-    return wxString(str.c_str(), wxConvUTF8);
+    return stdstr_towxstr(str);
 }
 

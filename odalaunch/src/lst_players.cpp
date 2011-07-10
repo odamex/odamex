@@ -20,10 +20,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "lst_players.h"
-
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
+
+#include "lst_players.h"
+#include "str_utils.h"
 
 IMPLEMENT_DYNAMIC_CLASS(LstOdaPlayerList, wxAdvancedListCtrl)
 
@@ -115,7 +116,7 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
     {
         wxListItem li;
         
-        li.m_itemId = ALCInsertItem(s.Info.Players[i].Name);
+        li.m_itemId = ALCInsertItem(stdstr_towxstr(s.Info.Players[i].Name));
         
         li.SetMask(wxLIST_MASK_TEXT);
                
@@ -172,7 +173,7 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
             {
                 wxUint8 TC_Red = 0, TC_Green = 0, TC_Blue = 0;
 
-                TeamName = s.Info.Teams[TeamId].Name;
+                TeamName = stdstr_towxstr(s.Info.Teams[TeamId].Name);
                 TeamColour = s.Info.Teams[TeamId].Colour;
                 TeamScore = s.Info.Teams[TeamId].Score;
 

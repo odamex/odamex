@@ -980,7 +980,7 @@ void DLevelScript::RunScript ()
 				break;
 					
 			case PCD_GAMESKILL:
-				PushToStack ((int)(sv_skill));
+				PushToStack (sv_skill.asInt());
 				break;
 
 			case PCD_TIMER:
