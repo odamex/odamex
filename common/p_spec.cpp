@@ -1682,7 +1682,7 @@ void P_SpawnSpecials (void)
 			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 			{
 				sectors[s].heightsec = sec;
-				sectors[s].alwaysfake = !!lines[i].args[1];
+				sectors[s].alwaysfake = !lines[i].args[1];
 				if (sv_forcewater)
 					sec->waterzone = 2;
 			}

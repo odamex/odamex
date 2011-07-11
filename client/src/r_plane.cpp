@@ -630,7 +630,8 @@ void R_DrawPlanes (void)
 
 				ds_source = (byte *)W_CacheLumpNum (firstflat + useflatnum,
 										   PU_STATIC);
-
+										   
+				// [RH] warp a flat if desired
 				if (flatwarp[useflatnum])
 				{
 					if ((!warpedflats[useflatnum]
