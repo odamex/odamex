@@ -6225,7 +6225,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_SOLID|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000
+	0x10000,
+	"MT_BRIDGE32"
 	},
 	
 	{		// MT_BRIDGE16
@@ -6254,7 +6255,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_SOLID|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000
+	0x10000,
+	"MT_BRIDGE16"
 	},
 
 	{		// MT_BRIDGE8
@@ -6283,7 +6285,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_SOLID|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000
+	0x10000,
+	"MT_BRIDGE8"
 	},
 
 	{		// MT_ZDOOMBRIDGE
@@ -6312,7 +6315,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_SOLID|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000
+	0x10000,
+	"MT_ZDOOMBRIDGE"
 	}	
 };
 
