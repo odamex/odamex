@@ -132,7 +132,6 @@
 				</Compiler>
 				<Linker>
 					<Add library="wsock32" />
-					<Add library="wsock32" />
 				</Linker>
 			</Target>
 			<Target title="Win Release (VC)">
@@ -228,6 +227,7 @@
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 		</Compiler>
+		<Unit filename="..\common\version.h" />
 		<Unit filename="i_net.cpp" />
 		<Unit filename="i_net.h" />
 		<Unit filename="main.cpp" />

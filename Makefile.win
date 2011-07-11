@@ -56,7 +56,7 @@ CLIENT_HEADERS = $(wildcard $(CLIENT_DIR)/*.h) $(CLIENT_HEADERS_WIN32)
 CLIENT_SOURCES = $(wildcard $(CLIENT_DIR)/*.cpp) $(CLIENT_SOURCES_WIN32)
 CLIENT_OBJS = $(patsubst $(CLIENT_DIR)/%.cpp,$(OBJDIR)/$(CLIENT_DIR)/%.o,$(CLIENT_SOURCES))
 
-MASTER_HEADERS = master/i_net.h
+MASTER_HEADERS = master/i_net.h common/version.h
 MASTER_SOURCES = master/i_net.cpp master/main.cpp
 MASTER_OBJS = $(patsubst $(MASTER_DIR)/%.cpp,$(OBJDIR)/$(MASTER_DIR)/%.o,$(MASTER_SOURCES))
 
