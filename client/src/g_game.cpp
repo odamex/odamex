@@ -2258,7 +2258,6 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_allowjump = "0";
 		co_realactorheight = "0";
 		co_zdoomphys = "0";
-		cl_nobob = "0";
 
 		return;
 	} else {
