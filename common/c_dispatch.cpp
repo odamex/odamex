@@ -649,7 +649,7 @@ static int DumpHash (BOOL aliases)
 {
 	int count = 0;
 
-	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; i++)
+	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; ++i)
 	{
 		DConsoleCommand *cmd = i->second;
 
@@ -673,7 +673,7 @@ void DConsoleAlias::Archive (FILE *f)
 
 void DConsoleAlias::C_ArchiveAliases (FILE *f)
 {
-	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; i++)
+	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; ++i)
 	{
 		DConsoleCommand *alias = i->second;
 

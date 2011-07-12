@@ -408,6 +408,12 @@ void LstOdaServerList::AddServerToList(const Server &s,
     li.m_col = serverlist_field_players;
     li.m_text = wxString::Format(_T("%d/%d"),s.Info.Players.size(),s.Info.MaxClients);
     
+    // Colour the entire text column (wx/windows bug - exploited) if there are
+    // players
+    // TODO: Allow the user to select prefered colours
+    if (s.Info.Players.size())
+        li.SetTextColour(wxColor(0,192,0));
+
     SetItem(li); 
     
     // WAD files column

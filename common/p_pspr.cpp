@@ -42,11 +42,13 @@
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
 
-#define WEAPONBOTTOM				128*FRACUNIT
-#define WEAPONTOP					32*FRACUNIT
+#define WEAPONBOTTOM			128*FRACUNIT
+#define WEAPONTOP				32*FRACUNIT
 
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR(sv_allownobob)
+EXTERN_CVAR(cl_nobob)
 
 //
 // P_SetPsprite
@@ -332,10 +334,13 @@ A_WeaponReady
 		player->attackdown = false;
 
 	// bob the weapon based on movement speed
-	angle = (128*level.time)&FINEMASK;
-	psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angle]);
-	angle &= FINEANGLES/2-1;
-	psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angle]);
+	if ((!multiplayer && !cl_nobob) || (multiplayer && (!sv_allownobob || !cl_nobob))) 
+	{
+		angle = (128*level.time)&FINEMASK;
+		psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angle]);
+		angle &= FINEANGLES/2-1;
+		psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angle]);
+	}
 }
 
 //

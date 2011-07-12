@@ -686,7 +686,7 @@ public:
 	ReplacedStringTracker() : rs() {}
 	~ReplacedStringTracker()
 	{
-		for(iterator i = rs.begin(); i != rs.end(); i++)
+		for(iterator i = rs.begin(); i != rs.end(); ++i)
 			delete[] const_cast<char*>(i->first);
 	}
 }rst;

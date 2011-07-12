@@ -438,7 +438,7 @@ BEGIN_COMMAND (serverinfo)
     // [Russell] - Find the largest cvar name, used for formatting
     while (Cvar)
 	{			
-        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        if (Cvar->flags() & CVAR_SERVERINFO)
         {
             size_t FieldLength = strlen(Cvar->name());
             
@@ -458,7 +458,7 @@ BEGIN_COMMAND (serverinfo)
     // Data
     while (Cvar)
 	{			
-        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        if (Cvar->flags() & CVAR_SERVERINFO)
         {
             Printf(PRINT_HIGH, 
                    "%*s - %s\n", 
@@ -990,7 +990,7 @@ bool CL_PrepareConnect(void)
     // TODO: Allow deh/bex file downloads
 	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, PatchFiles, wadhashes);
 
-	if(missing_files.size())
+	if(!missing_files.empty())
 	{
 		// denis - download files
 		missing_file = wadnames[missing_files[0]];

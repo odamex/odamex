@@ -148,6 +148,7 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowjump)
+EXTERN_CVAR(cl_nobob)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
@@ -2270,6 +2271,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_allowjump = "0";
 		co_realactorheight = "0";
 		co_zdoomphys = "0";
+		cl_nobob = "0";
 
 		return;
 	} else {

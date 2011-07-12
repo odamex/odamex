@@ -1460,7 +1460,7 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
         SV_SpawnMobj(th);
 }
 
-void SV_AwarenessUpdate(player_t &pl, AActor* mo);
+bool SV_AwarenessUpdate(player_t &pl, AActor* mo);
 //
 // P_CheckMissileSpawn
 // Moves the missile forward a bit

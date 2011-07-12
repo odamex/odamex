@@ -231,7 +231,7 @@ void dlgMain::OnExit(wxCommandEvent& event)
 void dlgMain::OnClose(wxCloseEvent &event)
 {
     if (GetThread() && GetThread()->IsRunning())
-        GetThread()->Wait();
+        GetThread()->Delete();
 
     // Save GUI layout
     wxFileConfig ConfigInfo;
@@ -522,7 +522,26 @@ void dlgMain::MonThrGetServerList()
 
                 // DUMB: our next server will be this incremented value
                 serverNum++;
-            }          
+            }
+
+            // Let the main thread run the event loop
+            wxSafeYield(NULL, true);
+
+            // We got told to exit, so we should wait for these worker threads
+            // to gracefully exit
+            if (GetThread()->TestDestroy())
+            {
+                for (size_t j = 0; j < threadVector.size(); ++j)
+                {
+                    if (threadVector[j]->IsRunning())
+                    {
+                        threadVector[j]->Wait();
+                        delete threadVector[j];
+                    }
+                }
+
+                return;
+            }
         }
     }
 

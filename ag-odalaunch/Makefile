@@ -34,11 +34,11 @@ endif
 # Debug Profile (default)
 debug: CXXFLAGS += -g -Wall
 debug: LFLAGS += -g
-debug: $(PROGRAM)
+debug: $(PROGRAM) $(PROGRAM).app
 
 # Release Profile
 release: CXXFLAGS += -O3
-release: $(PROGRAM)
+release: $(PROGRAM) $(PROGRAM).app
 
 all: $(debug)
 
