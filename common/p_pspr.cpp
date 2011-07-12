@@ -473,6 +473,10 @@ void A_Punch (player_t *player, pspdef_t *psp)
 	int 		damage;
 	int 		slope;
 
+	// [SL] 2011-07-12 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	Unlag::getInstance().reconcile(player->id);
+
 	damage = (P_Random (player->mo)%10+1)<<1;
 
 	if (player->powers[pw_strength])
@@ -494,6 +498,10 @@ void A_Punch (player_t *player, pspdef_t *psp)
 											linetarget->x,
 											linetarget->y);
 	}
+
+	// [SL] 2011-07-12 - Restore players and sectors to their current position
+	// according to the server.
+	Unlag::getInstance().restore(player->id);
 }
 
 
@@ -504,6 +512,10 @@ void A_Saw (player_t *player, pspdef_t *psp)
 {
 	angle_t 	angle;
 	int 		damage;
+
+	// [SL] 2011-07-12 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	Unlag::getInstance().reconcile(player->id);
 
 	damage = 2 * (P_Random (player->mo)%10+1);
 	angle = player->mo->angle;
@@ -538,6 +550,10 @@ void A_Saw (player_t *player, pspdef_t *psp)
 			player->mo->angle += ANG90/20;
 	}
 	player->mo->flags |= MF_JUSTATTACKED;
+
+	// [SL] 2011-07-12 - Restore players and sectors to their current position
+	// according to the server.
+	Unlag::getInstance().restore(player->id);
 }
 
 
