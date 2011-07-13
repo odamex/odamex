@@ -608,7 +608,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		return;
 
 	handle = I_StartSound(sfx_id,
-			     (int)volume,
+			     volume,
 			     sep,
 			     Channel[cnum].pitch,
 			     looping);
