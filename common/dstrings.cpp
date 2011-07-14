@@ -596,7 +596,7 @@ gamestring_t Strings[] = {
 	{ str_notchanged, "OB_ZOMBIE", "was killed by a zombieman", NULL },
 	{ str_notchanged, "OB_SHOTGUY", "was shot by a sargeant", NULL },
 	{ str_notchanged, "OB_VILE", "was incinerated by an archvile", NULL },
-	{ str_notchanged, "OB_UNDEAD", "couldn't evade a revevant's fireball", NULL },
+	{ str_notchanged, "OB_UNDEAD", "couldn't evade a revenant's fireball", NULL },
 	{ str_notchanged, "OB_FATSO", "was squashed by a mancubus", NULL },
 	{ str_notchanged, "OB_CHAINGUY", "was perforated by a chaingunner", NULL },
 	{ str_notchanged, "OB_SKULL", "was spooked by a lost soul", NULL },

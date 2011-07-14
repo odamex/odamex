@@ -1516,7 +1516,10 @@ CVAR_FUNC_IMPL (sv_forcewater)
 
 		for (i = 0; i < numsectors; i++)
 		{
-			if (sectors[i].heightsec && sectors[i].heightsec->waterzone != 1)
+			if (sectors[i].heightsec && 
+				!(sectors[i].heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) && 
+				sectors[i].heightsec->waterzone != 1)
+
 				sectors[i].heightsec->waterzone = set;
 		}
 	}
@@ -1678,13 +1681,34 @@ void P_SpawnSpecials (void)
 		// killough 3/7/98:
 		// support for drawn heights coming from different sector
 		case Transfer_Heights:
-			sec = sides[*lines[i].sidenum].sector;
+		sec = sides[*lines[i].sidenum].sector;
+			if (sv_forcewater)
+			{
+				sec->waterzone = 2;
+			}
+			if (lines[i].args[1] & 2)
+			{
+				sec->MoreFlags |= SECF_FAKEFLOORONLY;
+			}
+			if (lines[i].args[1] & 4)
+			{
+				sec->MoreFlags |= SECF_CLIPFAKEPLANES;
+			}
+			if (lines[i].args[1] & 8)
+			{
+				sec->waterzone = 1;
+			}
+			if (lines[i].args[1] & 16)
+			{
+				sec->MoreFlags |= SECF_IGNOREHEIGHTSEC;
+			}
+			if (lines[i].args[1] & 32)
+			{
+				sec->MoreFlags |= SECF_NOFAKELIGHT;
+			}
 			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 			{
 				sectors[s].heightsec = sec;
-				sectors[s].alwaysfake = !lines[i].args[1];
-				if (sv_forcewater)
-					sec->waterzone = 2;
 			}
 			break;
 
@@ -2345,7 +2369,8 @@ void DPusher::RunThink ()
 			continue;
 		if (m_Type == p_wind)
 		{
-			if (sec->heightsec == NULL) // NOT special water sector
+			if (sec->heightsec == NULL ||
+				sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) // NOT special water sector
 			{
 				if (thing->z > thing->floorz) // above ground
 				{
@@ -2376,7 +2401,8 @@ void DPusher::RunThink ()
 		}
 		else // p_current
 		{
-			if (sec->heightsec == NULL)
+			if (sec->heightsec == NULL ||
+				sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
 			{ // NOT special water sector
 				if (thing->z > sec->floorheight) // above ground
 					xspeed = yspeed = 0; // no force

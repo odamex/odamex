@@ -647,6 +647,8 @@ void S_SoundID (fixed_t x, fixed_t y, int channel, int sound_id, float volume, i
 
 void S_SoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
+	if (ent->subsector->sector->MoreFlags & SECF_SILENT)
+		return;	
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, false);
 }
 
@@ -657,6 +659,8 @@ void S_SoundID (fixed_t *pt, int channel, int sound_id, float volume, int attenu
 
 void S_LoopedSoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
+	if (ent->subsector->sector->MoreFlags & SECF_SILENT)
+		return;	
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, true);
 }
 
@@ -669,7 +673,13 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
                                const char *name, float volume, float attenuation, bool looping)
 {
 	int sfx_id = -1;
-
+	
+	if (name == NULL ||
+		(ent != NULL && ent->subsector->sector->MoreFlags & SECF_SILENT))
+	{
+		return;
+	}
+	
 	if (*name == '*') {
 		// Sexed sound
 		char nametemp[128];

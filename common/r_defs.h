@@ -82,6 +82,52 @@ class player_s;
 // The SECTORS record, at runtime.
 // Stores things/mobjs.
 //
+
+// Ceiling/floor flags
+enum
+{
+	SECF_ABSLIGHTING	= 1		// floor/ceiling light is absolute, not relative
+};
+
+// Misc sector flags
+enum
+{
+	SECF_SILENT			= 1,	// actors in sector make no noise
+	SECF_FAKEFLOORONLY	= 2,	// when used as heightsec in R_FakeFlat, only copies floor
+	SECF_CLIPFAKEPLANES = 4,	// as a heightsec, clip planes to target sector's planes
+	SECF_NOFAKELIGHT	= 8,	// heightsec does not change lighting
+	SECF_IGNOREHEIGHTSEC= 16	// heightsec is only for triggering sector actions
+};
+
+/*
+enum
+{
+	SECSPAC_Enter		= 1,	// Trigger when player enters
+	SECSPAC_Exit		= 2,	// Trigger when player exits
+	SECSPAC_HitFloor	= 4,	// Trigger when player hits floor
+	SECSPAC_HitCeiling	= 8,	// Trigger when player hits ceiling
+	SECSPAC_Use			= 16,	// Trigger when player uses
+	SECSPAC_UseWall		= 32,	// Trigger when player uses a wall
+	SECSPAC_EyesDive	= 64,	// Trigger when player eyes go below fake floor
+	SECSPAC_EyesSurface = 128,	// Trigger when player eyes go above fake floor
+	SECSPAC_EyesBelowC	= 256,	// Trigger when player eyes go below fake ceiling
+	SECSPAC_EyesAboveC	= 512	// Triggen when player eyes go above fake ceiling
+};
+
+class ASectorAction : public AActor
+{
+	DECLARE_ACTOR (ASectorAction, AActor)
+public:
+	void Destroy ();
+	void BeginPlay ();
+	void Activate (AActor *source);
+	void Deactivate (AActor *source);
+	virtual bool TriggerAction (AActor *triggerer, int activationType);
+protected:
+	bool CheckTrigger (AActor *triggerer) const;
+};
+*/
+
 struct dyncolormap_s;
 
 class DSectorEffect;
@@ -175,6 +221,14 @@ struct sector_s
 
 	bool alwaysfake;	// [RH] Always apply heightsec modifications?
 	byte waterzone;		// [RH] Sector is underwater?
+	WORD MoreFlags;		// [RH] Misc sector flags
+
+	// [RH] Action specials for sectors. Like Skull Tag, but more
+	// flexible in a Bloody way. SecActTarget forms a list of actors
+	// joined by their tracer fields. When a potential sector action
+	// occurs, SecActTarget's TriggerAction method is called.
+	// [ML] Not yet...
+	// ASectorAction *SecActTarget;
 };
 typedef struct sector_s sector_t;
 

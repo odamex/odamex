@@ -989,7 +989,8 @@ R_StoreWallRange
 	//	and doesn't need to be marked.
 
 	// killough 3/7/98: add deep water check
-	if (frontsector->heightsec == NULL)
+	if (frontsector->heightsec == NULL ||
+		(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
 		if (frontsector->floorheight >= viewz)       // above view plane
 			markfloor = false;

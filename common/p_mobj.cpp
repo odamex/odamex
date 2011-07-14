@@ -1169,6 +1169,49 @@ void P_ZMovement(AActor *mo)
 			return;
 		}
 	}
+	/*  [ML] 7/13/11: This isn't going to be used just yet - no need...
+	if (mo->subsector->sector->heightsec != NULL && mo->subsector->sector->SecActTarget != NULL)
+	{
+		sector_t *hs = mo->subsector->sector->heightsec;
+		fixed_t waterz = hs->floorheight;
+		fixed_t newz;
+		fixed_t viewheight;
+
+		if (mo->player != NULL)
+		{
+			viewheight = mo->player->viewheight;
+		}
+		else
+		{
+			viewheight = mo->height / 2;
+		}
+
+		newz = mo->z + viewheight;
+		oldz += viewheight;
+
+		if (oldz <= waterz && newz > waterz)
+		{ // View went above fake floor
+			mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesSurface);
+		}
+		else if (oldz > waterz && newz <= waterz)
+		{ // View went below fake floor
+			mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesDive);
+		}
+
+		if (!(hs->MoreFlags & SECF_FAKEFLOORONLY))
+		{
+			waterz = hs->ceilingheight;
+			if (oldz <= waterz && newz > waterz)
+			{ // View went above fake floor
+				mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesAboveC);
+			}
+			else if (oldz > waterz && newz <= waterz)
+			{ // View went below fake floor
+				mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesBelowC);
+			}
+		}
+	}
+	*/
 }
 
 //
