@@ -675,7 +675,7 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 	int sfx_id = -1;
 	
 	if (name == NULL ||
-		(ent != NULL && ent->subsector->sector->MoreFlags & SECF_SILENT))
+		(ent && ent != (AActor *)(~0) && ent->subsector->sector->MoreFlags & SECF_SILENT))
 	{
 		return;
 	}
