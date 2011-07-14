@@ -1681,7 +1681,7 @@ void P_SpawnSpecials (void)
 		// killough 3/7/98:
 		// support for drawn heights coming from different sector
 		case Transfer_Heights:
-		sec = sides[*lines[i].sidenum].sector;
+			sec = sides[*lines[i].sidenum].sector;
 			if (sv_forcewater)
 			{
 				sec->waterzone = 2;

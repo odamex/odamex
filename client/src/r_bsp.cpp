@@ -51,6 +51,8 @@ int				MaxDrawSegs;
 drawseg_t		*drawsegs;
 drawseg_t*		ds_p;
 
+static BYTE		FakeSide;
+
 EXTERN_CVAR (r_drawflat)
 
 
@@ -322,33 +324,68 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		*ceilinglightlevel = sec->ceilinglightsec == NULL ? // killough 4/11/98
 			sec->lightlevel : sec->ceilinglightsec->lightlevel;
 
+	FakeSide = FAKED_Center;
+
 	if (sec->heightsec && !(sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
 		const sector_t *s = sec->heightsec;
 		sector_t *heightsec = camera->subsector->sector->heightsec;
 		
-		bool underwater = r_fakingunderwater ||
-			(heightsec && viewz <= heightsec->floorheight);
-		bool doorunderwater = false;
+		bool underwater = heightsec && viewz <= heightsec->floorheight;
 		int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
 		
 		// Replace sector being drawn, with a copy to be hacked
 		*tempsec = *sec;
+		
+		if (diffTex)
+		{
+			tempsec->floorheight = s->floorheight;
+			tempsec->floorpic = s->floorpic;
 
+			if (s->MoreFlags & SECF_FAKEFLOORONLY)
+			{
+				return sec;
+			}			
+		}
+		else
+		{
+			tempsec->floorheight = s->floorheight;
+		}
+
+		if (!(s->MoreFlags & SECF_FAKEFLOORONLY))
+		{
+			if (diffTex)
+			{
+				tempsec->ceilingheight = s->ceilingheight;
+				tempsec->ceilingpic = s->ceilingpic;
+			}
+			else
+			{
+				tempsec->ceilingheight = s->ceilingheight;
+			}
+		}
+		
+		fixed_t refceilz = s->ceilingheight;
+		fixed_t orgceilz = sec->ceilingheight;
+				
 		// Replace floor and ceiling height with other sector's heights.
-		tempsec->floorheight   = s->floorheight;
-		tempsec->ceilingheight = s->ceilingheight;
+		
+		if (underwater)
+		{
+			tempsec->floorheight = sec->floorheight;
+			tempsec->ceilingheight = s->floorheight-1;
+			tempsec->floorcolormap = s->floorcolormap;
+			tempsec->ceilingcolormap = s->ceilingcolormap;			
+		}
 
 		// Code for ZDoom. Allows the effect to be visible outside sectors with
 		// fake flat. The original is still around in case it turns out that this
 		// isn't always appropriate (which it isn't).
 		// [ML] Actually it's pretty appropriate, the boom way is deficient and 
 		//  has been removed.
-		if (viewz <= s->floorheight && s->floorheight > sec->floorheight)
+		if (underwater && !back)
 		{
-			tempsec->floorheight = sec->floorheight;
-			tempsec->floorcolormap = s->floorcolormap;
-			tempsec->floorpic = s->floorpic;
+			tempsec->floorpic = diffTex ? sec->floorpic : s->floorpic;
 			tempsec->floor_xoffs = s->floor_xoffs;
 			tempsec->floor_yoffs = s->floor_yoffs;
 			tempsec->floor_xscale = s->floor_xscale;
@@ -382,31 +419,38 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 				tempsec->base_ceiling_angle = s->base_ceiling_angle;
 				tempsec->base_ceiling_yoffs = s->base_ceiling_yoffs;
 			}
-			tempsec->lightlevel = s->lightlevel;
+			
+			if (!(s->MoreFlags & SECF_NOFAKELIGHT))
+			{			
+				tempsec->lightlevel = s->lightlevel;
 
-			if (floorlightlevel)
-				*floorlightlevel = s->floorlightsec == NULL ? s->lightlevel :
-					s->floorlightsec->lightlevel; // killough 3/16/98
+				if (floorlightlevel)
+					*floorlightlevel = s->floorlightsec == NULL ? s->lightlevel :
+						s->floorlightsec->lightlevel; // killough 3/16/98
 
-			if (ceilinglightlevel)
-				*ceilinglightlevel = s->ceilinglightsec == NULL ? s->lightlevel :
-					s->ceilinglightsec->lightlevel; // killough 4/11/98
+				if (ceilinglightlevel)
+					*ceilinglightlevel = s->ceilinglightsec == NULL ? s->lightlevel :
+						s->ceilinglightsec->lightlevel; // killough 4/11/98
+			}
+			FakeSide = FAKED_BelowFloor;
 		}
-		else if (viewz > s->ceilingheight && s->ceilingheight < sec->ceilingheight)
+		else if (heightsec && viewz >= heightsec->ceilingheight &&
+				 orgceilz > refceilz && !(s->MoreFlags & SECF_FAKEFLOORONLY))
 		{
 			tempsec->ceilingheight = s->ceilingheight;
 			tempsec->floorheight   = s->ceilingheight + 1;
 			tempsec->ceilingcolormap = s->ceilingcolormap;
 			tempsec->floorcolormap = s->floorcolormap;
-
-			tempsec->floorpic    = tempsec->ceilingpic    = s->ceilingpic;
-			tempsec->floor_xoffs = tempsec->ceiling_xoffs = s->ceiling_xoffs;
-			tempsec->floor_yoffs = tempsec->ceiling_yoffs = s->ceiling_yoffs;
-			tempsec->floor_xscale = tempsec->ceiling_xscale = s->ceiling_xscale;
-			tempsec->floor_yscale = tempsec->ceiling_yscale = s->ceiling_yscale;
-			tempsec->floor_angle = tempsec->ceiling_angle = s->ceiling_angle;
-			tempsec->base_floor_angle = tempsec->base_ceiling_angle = s->base_ceiling_angle;
-			tempsec->base_floor_yoffs = tempsec->base_ceiling_yoffs = s->base_ceiling_yoffs;
+			
+			tempsec->ceilingpic = diffTex ? sec->ceilingpic : s->ceilingpic;
+			tempsec->floorpic											= s->ceilingpic;
+			tempsec->floor_xoffs		= tempsec->ceiling_xoffs		= s->ceiling_xoffs;
+			tempsec->floor_yoffs		= tempsec->ceiling_yoffs		= s->ceiling_yoffs;
+			tempsec->floor_xscale		= tempsec->ceiling_xscale		= s->ceiling_xscale;
+			tempsec->floor_yscale		= tempsec->ceiling_yscale		= s->ceiling_yscale;
+			tempsec->floor_angle		= tempsec->ceiling_angle		= s->ceiling_angle;
+			tempsec->base_floor_angle	= tempsec->base_ceiling_angle	= s->base_ceiling_angle;
+			tempsec->base_floor_yoffs	= tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
 
 			if (s->floorpic != skyflatnum)
 			{
@@ -420,16 +464,20 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 				tempsec->base_floor_angle = s->base_floor_angle;
 				tempsec->base_floor_yoffs = s->base_floor_yoffs;
 			}
+			
+			if (!(s->MoreFlags & SECF_NOFAKELIGHT))
+			{
+				tempsec->lightlevel  = s->lightlevel;
 
-			tempsec->lightlevel  = s->lightlevel;
+				if (floorlightlevel)
+					*floorlightlevel = s->floorlightsec == NULL ? s->lightlevel :
+						s->floorlightsec->lightlevel; // killough 3/16/98
 
-			if (floorlightlevel)
-				*floorlightlevel = s->floorlightsec == NULL ? s->lightlevel :
-					s->floorlightsec->lightlevel; // killough 3/16/98
-
-			if (ceilinglightlevel)
-				*ceilinglightlevel = s->ceilinglightsec == NULL ? s->lightlevel :
-					s->ceilinglightsec->lightlevel; // killough 4/11/98
+				if (ceilinglightlevel)
+					*ceilinglightlevel = s->ceilinglightsec == NULL ? s->lightlevel :
+						s->ceilinglightsec->lightlevel; // killough 4/11/98
+			}
+			FakeSide = FAKED_AboveCeiling;
 		}
 				
 		sec = tempsec;					// Use other sector
