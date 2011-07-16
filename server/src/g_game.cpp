@@ -447,6 +447,26 @@ static void ChangeSpy (void)
 }
 */
 
+// [Russell] - Print remaining time for intermission screen
+EXTERN_CVAR(sv_inttimecountdown)
+
+static int intcd_oldtime = 0;
+
+void G_IntermissionCountdown(int mapchange)
+{
+    if (!sv_inttimecountdown)
+        return;
+
+    int newtime = ((mapchange / TICRATE) % 11);
+
+    if (intcd_oldtime != newtime)
+    {
+        SV_BroadcastPrintf(PRINT_LOW, "Next map countdown: %d\n", newtime);
+
+        intcd_oldtime = newtime;
+    }
+}
+
 //
 // G_Responder
 // Get info needed to make ticcmd_ts for the players.
@@ -526,10 +546,19 @@ void G_Ticker (void)
 		break;
 
 	case GS_INTERMISSION:
+	{
+		G_IntermissionCountdown(mapchange);
+
 		mapchange--; // denis - todo - check if all players are ready, proceed immediately
+
 		if (!mapchange)
+        {
 			G_ChangeMap ();
-	    break;
+
+            intcd_oldtime = 0;
+        }
+	}
+    break;
 
 	default:
 		break;
