@@ -118,8 +118,8 @@ CVAR (sv_teamsinplay,		"2", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | 
 CVAR (ctf_manualreturn,	"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // TODO: document
 CVAR (ctf_flagathometoscore,	"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// (CTF) A flag that is dropped will be returned automatically after this timeout
-CVAR (ctf_flagtimeout,	"600", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+// (CTF) Time for a dropped flag to be returned to its home base, in seconds
+CVAR (ctf_flagtimeout, "10", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // (ALL) Display a countdown to all players during intermission screen
 CVAR (sv_inttimecountdown, "1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
