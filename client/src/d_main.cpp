@@ -120,7 +120,6 @@ extern gameinfo_t CommercialGameInfo;
 extern QWORD testingmode;
 extern BOOL setsizeneeded;
 extern BOOL setmodeneeded;
-extern BOOL netdemo;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 EXTERN_CVAR (st_scale)
 extern BOOL gameisdead;
@@ -1414,6 +1413,9 @@ std::vector<size_t> D_DoomWadReboot(
 	return fails;
 }
 
+void CL_NetDemoRecord(std::string filename);
+void CL_NetDemoPlay(std::string filename);
+
 //
 // D_DoomMain
 //
@@ -1478,6 +1480,19 @@ void D_DoomMain (void)
 		autostart = true;
 		demorecordfile = Args.GetArg (p+1);
 	}
+	
+	p = Args.CheckParm("-netrecord");
+	if (p)
+	{
+		std::string demoname;
+		if (Args.GetArg(p + 1))
+			demoname = Args.GetArg(p + 1);
+		else
+			demoname = "demo";
+
+		CL_NetDemoRecord(demoname);
+	}
+	
 
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
@@ -1592,6 +1607,13 @@ void D_DoomMain (void)
 
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
     //gamestate = GS_FULLCONSOLE;
+
+	p = Args.CheckParm("-netplay");
+	if(p){
+		std::string demoname = Args.GetArg (p+1);
+		CL_NetDemoPlay(demoname);
+		//D_DoomLoop();
+	}
 
 	// denis - bring back the demos
     if ( gameaction != ga_loadgame )

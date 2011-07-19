@@ -72,6 +72,8 @@ CVAR (sv_timelimit,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDI
 CVAR (sv_speedhackfix,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Weapons stay
 CVAR (sv_weaponstay,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+// [SL] 2011-05-11 - Allow reconciliation for players on lagged connections
+CVAR (sv_unlag,				"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 // Compatibility options for vanilla
 // ---------------------------------

@@ -42,6 +42,7 @@
 #include "r_state.h"
 
 #include "z_zone.h"
+#include "p_unlag.h"
 
 fixed_t 		tmbbox[4];
 static AActor  *tmthing;
@@ -1656,10 +1657,23 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	// Spawn bullet puffs or blod spots,
 	// depending on target type.
+	angle_t dir = P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180;
 	if ((in->d.thing->flags & MF_NOBLOOD))
-		P_SpawnPuff (x,y,z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, 2);
+		P_SpawnPuff (x,y,z, dir, 2);
 	else
-		P_SpawnBlood (x,y,z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, la_damage);
+	{
+		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
+		// [SL] 2011-05-11 - In unlagged games, spawn blood at the target's current
+		// position, not at their reconciled position
+		if (shootthing->player && th->player)
+		{
+			Unlag::getInstance().getReconciliationOffset(	shootthing->player->id,
+													    	th->player->id,
+													    	xoffs, yoffs, zoffs);
+		}
+	
+		P_SpawnBlood (x + xoffs, y + yoffs, z + zoffs, dir, la_damage);
+	}
 
 	if (la_damage) {
 		// [RH] try and figure out means of death;

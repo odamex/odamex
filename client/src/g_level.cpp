@@ -77,7 +77,6 @@ int starttime;
 // ACS variables with world scope
 int WorldVars[NUM_WORLDVARS];
 
-extern BOOL netdemo;
 BOOL savegamerestore;
 
 extern int mousex, mousey;
@@ -635,7 +634,6 @@ void G_DoNewGame (void)
 
 	CL_QuitNetGame();
 
-	netdemo = false;
 	netgame = false;
 	multiplayer = false;
 

@@ -64,7 +64,7 @@ enum svc_t
 	svc_playerinfo,			// weapons, ammo, maxammo, raisedweapon for local player
 	svc_moveplayer,			// [byte] [int] [int] [int] [int] [byte]
 	svc_updatelocalplayer,	// [int] [int] [int] [int] [int]
-	svc_svgametic,			// [int]
+	svc_pingrequest,		// [SL] 2011-05-11 [long:timestamp]
 	svc_updateping,			// [byte] [byte]
 	svc_spawnmobj,			//
 	svc_disconnectclient,
@@ -112,6 +112,7 @@ enum svc_t
 	svc_spectate,			// [Nes] - [byte:state], [short:playernum]
 	svc_connectclient,
     svc_midprint,
+	svc_svgametic,			// [SL] 2011-05-11 - [byte]
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -123,6 +124,10 @@ enum svc_t
 	// for downloading
 	svc_wadinfo,			// denis - [ulong:filesize]
 	svc_wadchunk,			// denis - [ulong:offset], [ushort:len], [byte[]:data]
+		
+	// netdemos - NullPoint
+	svc_netdemocap = 100,
+	svc_netdemostop = 101,
 	
 	// for compressed packets
 	svc_compressed = 200,
@@ -142,7 +147,7 @@ enum clc_t
 	clc_say,
 	clc_move,			// send cmds
 	clc_userinfo,		// send userinfo
-	clc_svgametic,
+	clc_pingreply,		// [SL] 2011-05-11 - [long: timestamp]
 	clc_rate,
 	clc_ack,
 	clc_rcon,
@@ -154,6 +159,7 @@ enum clc_t
 	clc_kill,				// denis - suicide
 	clc_cheat,				// denis - god, pumpkins, etc
     clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
+	clc_svgametic,			// [SL] 2011-05-11 - [byte]
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,
