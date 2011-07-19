@@ -893,7 +893,7 @@ std::vector<size_t> D_DoomWadReboot(
 	size_t i;
 
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_FatalError ("\nYou cannot switch WAD with the shareware version. Register!");
+		I_Error ("\nYou cannot switch WAD with the shareware version. Register!");
 
 	SV_SendReconnectSignal();
 
@@ -1076,7 +1076,7 @@ void D_DoomMain (void)
 
 	// Check for -file in shareware
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_FatalError ("You cannot -file with the shareware version. Register!");
+		I_Error ("You cannot -file with the shareware version. Register!");
 
 	Printf (PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init ();

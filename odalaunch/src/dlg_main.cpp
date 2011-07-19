@@ -524,8 +524,8 @@ void dlgMain::MonThrGetServerList()
                 serverNum++;
             }
 
-            // Let the main thread run the event loop
-            wxSafeYield(NULL, true);
+            // Let other threads get some time
+            GetThread()->Sleep(20);
 
             // We got told to exit, so we should wait for these worker threads
             // to gracefully exit

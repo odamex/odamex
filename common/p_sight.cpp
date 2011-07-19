@@ -411,13 +411,13 @@ bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 //
 	// killough 4/19/98: make fake floors and ceilings block monster view
 
-	if ((s1->heightsec  &&
+	if ((s1->heightsec && !(s1->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		((t1->z + t1->height <= s1->heightsec->floorheight &&
 		  t2->z >= s1->heightsec->floorheight) ||
 		 (t1->z >= s1->heightsec->ceilingheight &&
 		  t2->z + t1->height <= s1->heightsec->ceilingheight)))
 		||
-		(s2->heightsec &&
+		(s2->heightsec && !(s2->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		 ((t2->z + t2->height <= s2->heightsec->floorheight &&
 		   t1->z >= s2->heightsec->floorheight) ||
 		  (t2->z >= s2->heightsec->ceilingheight &&

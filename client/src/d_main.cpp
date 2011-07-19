@@ -1303,7 +1303,7 @@ std::vector<size_t> D_DoomWadReboot(
 	lastWadRebootSuccess = false;
 
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_FatalError ("\nYou cannot switch WAD with the shareware version. Register!");
+		I_Error ("\nYou cannot switch WAD with the shareware version. Register!");
 
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
@@ -1560,7 +1560,7 @@ void D_DoomMain (void)
 
 	// Check for -file in shareware
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_FatalError ("You cannot -file with the shareware version. Register!");
+		I_Error ("You cannot -file with the shareware version. Register!");
 
 #ifdef WIN32
 	const char *sdlv = getenv("SDL_VIDEODRIVER");

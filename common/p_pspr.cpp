@@ -334,7 +334,9 @@ A_WeaponReady
 		player->attackdown = false;
 
 	// bob the weapon based on movement speed
-	if ((!multiplayer && !cl_nobob) || (multiplayer && (!sv_allownobob || !cl_nobob))) 
+	if (((demoplayback || demorecording) && democlassic) ||
+		(!multiplayer && !cl_nobob) || 
+		(multiplayer && (!sv_allownobob || !cl_nobob))) 
 	{
 		angle = (128*level.time)&FINEMASK;
 		psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angle]);

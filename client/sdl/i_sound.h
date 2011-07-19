@@ -56,7 +56,7 @@ void I_LoadSound (struct sfxinfo_struct *sfx);
 int
 I_StartSound
 (int			id,
- int			vol,
+ float			vol,
  int			sep,
  int			pitch,
  bool			loop);

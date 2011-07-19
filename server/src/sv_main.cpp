@@ -819,7 +819,8 @@ void SV_GetPackets (void)
 
 	// [SL] 2011-05-18 - Handle sv_emptyreset
 	static size_t last_player_count = players.size();
-	if (sv_emptyreset && players.size() == 0 && last_player_count > 0)
+	if (sv_emptyreset && players.size() == 0 && 
+		last_player_count > 0 && gamestate == GS_LEVEL)
 	{
 		// The last player just disconnected so reset the level
         G_DeferedInitNew(level.mapname);

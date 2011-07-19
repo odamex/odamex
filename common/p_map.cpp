@@ -248,7 +248,7 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 			if ((sec = m->m_sector)->special & FRICTION_MASK &&
 				(sec->friction < friction || friction == ORIG_FRICTION) &&
 				(mo->z <= sec->floorheight ||
-				(sec->heightsec &&
+				(sec->heightsec && !(sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 				mo->z <= sec->heightsec->floorheight)))
 			  friction = sec->friction, movefactor = sec->movefactor;
 	}
