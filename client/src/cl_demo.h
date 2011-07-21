@@ -35,6 +35,8 @@ private:
 	void error(const std::string message);
 	void reset();
 
+	void writeHeader();
+	void readHeader();
 	void writeFullUpdate(int ticnum);
 
 	typedef enum

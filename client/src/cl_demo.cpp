@@ -31,6 +31,7 @@
 #include "c_dispatch.h"
 #include "d_net.h"
 #include "cl_demo.h"
+#include "m_swap.h"
 #include "version.h"
 
 
@@ -114,6 +115,62 @@ void NetDemo::error(const std::string message)
 
 
 //
+// writeHeader()
+//
+// Writes the header struct to the netdemo file in little-endian format
+// Assumes that demofp has been opened correctly elsewhere.  Does not close
+// the file.
+
+void NetDemo::writeHeader()
+{
+	int tmpl;		// temp storage of LONG macro results for endian correctness
+	short tmps;		// temp storage of SHORT macro results for endian correctness
+
+	strncpy(header.identifier, "ODAD", 4);
+	header.version = NETDEMOVER;
+	header.compression = 0;
+
+	fseek(demofp, 0, SEEK_SET);
+	fwrite(header.identifier, 1, sizeof(header.identifier), demofp);
+	fwrite(&header.version, sizeof(byte), 1, demofp);
+	fwrite(&header.compression, sizeof(byte), 1, demofp);
+	tmpl = LONG(header.index_offset);
+	fwrite(&tmpl, sizeof(int), 1, demofp);
+	tmpl = LONG(header.index_size);
+	fwrite(&tmpl, sizeof(int), 1, demofp);
+	tmps = SHORT(header.index_spacing);
+	fwrite(&tmps, sizeof(short), 1, demofp);
+	fwrite(header.reserved, 1, sizeof(header.reserved), demofp);
+}
+
+
+//
+// readHeader()
+//
+// Reads the header struct from the netdemo file, converting it from
+// little-endian format to whatever the client's architecture uses.  Assumes
+// that demofp has been opened correctly elsewhere.  Does not close the file.
+
+void NetDemo::readHeader()
+{
+	int tmpl;
+	short tmps;
+
+	fseek(demofp, 0, SEEK_SET);
+	fread(header.identifier, 1, sizeof(header.identifier), demofp);
+	fread(&header.version, sizeof(byte), 1, demofp);
+	fread(&header.compression, sizeof(byte), 1, demofp);
+	fread(&tmpl, sizeof(int), 1, demofp);
+	header.index_offset = LONG(tmpl);
+	fread(&tmpl, sizeof(int), 1, demofp);
+	header.index_size = LONG(tmpl);
+	fread(&tmps, sizeof(short), 1, demofp);
+	header.index_spacing = SHORT(tmps);
+	fread(header.reserved, 1, sizeof(header.reserved), demofp);
+}
+
+
+//
 // startRecording()
 //
 // Creates the netdemo file with the specified filename.  A temporary
@@ -148,17 +205,7 @@ bool NetDemo::startRecording(const std::string filename)
 	}
 
 	memset(&header, 0, sizeof(header));
-	strncpy(header.identifier, "ODAD", 4);
-	header.version = NETDEMOVER;
-	header.compression = 0;
-
-	// Note: The header is not finalized at this point.  Write it anyway to
-	// reserve space in the output file for it and overwrite it later.
-	if (!fwrite(&header, sizeof(header), 1, demofp))
-	{
-		error("Unable to write netdemo header.");
-		return false;
-	}
+	writeHeader();
 
 	state = NetDemo::recording;
 	return true;
@@ -193,19 +240,12 @@ bool NetDemo::startPlaying(const std::string filename)
 		return false;
 	}
 
-    // read the demo's header file
-    if (fread(&header, 1, sizeof(header), demofp) < sizeof(header) ||
-        strncmp(header.identifier, "ODAD", 4) != 0)
-    {
-        error("Unable to read netdemo header.\n");
-        return false;
-    }
+	readHeader();
 
     if (header.version != NETDEMOVER)
     {
         // Do nothing since there is only one version of netdemo files currently
     }
-	
 
 	// read the demo's index
 	if (fseek(demofp, header.index_offset, SEEK_SET) != 0)
@@ -221,7 +261,8 @@ bool NetDemo::startPlaying(const std::string filename)
 	}
 
 	// get set up to read server cmds
-	fseek(demofp, sizeof(header), SEEK_SET);
+	//fseek(demofp, sizeof(header), SEEK_SET);
+	fseek(demofp, 64, SEEK_SET);
 	state = NetDemo::playing;
 	return true;
 }
@@ -282,22 +323,27 @@ bool NetDemo::stopRecording()
 
 	// write the end-of-demo marker
 	MSG_WriteByte(&net_message, svc_netdemostop);
-	size_t len = net_message.size();
-	fwrite(&len, sizeof(size_t), 1, demofp); 
-	fwrite(&gametic, sizeof(int), 1, demofp);
-	fwrite(net_message.data, 1, len, demofp);
+	size_t len = LONG(net_message.size());
+	fwrite(&len, sizeof(len), 1, demofp);
+	int tic = LONG(gametic);
+	fwrite(&tic, sizeof(tic), 1, demofp);
+	fwrite(net_message.data, 1, net_message.size(), demofp);
 
 	// tack the index onto the end of the recording
 	header.index_offset = ftell(demofp);
 	header.index_size = index.size() * sizeof(netdemo_index_entry_t);
+
+	int tmpl;
 	for (size_t i = 0; i < index.size(); i++)
 	{
-		fwrite(&index[i], sizeof(netdemo_index_entry_t), 1, demofp);
+		tmpl = LONG(index[i].ticnum);	// make sure we're using little-endian
+		fwrite(&tmpl, sizeof(int), 1, demofp);
+		tmpl = LONG(index[i].offset);	// make sure we're using little-endian
+		fwrite(&tmpl, sizeof(int), 1, demofp);		
 	}
 
 	// rewrite the header since index_offset and index_size is now known
-	fseek(demofp, 0, SEEK_SET);
-	fwrite(&header, 1, sizeof(header), demofp);
+	writeHeader();
 
 	fclose(demofp);
 	demofp = NULL;
@@ -475,10 +521,12 @@ void NetDemo::capture(const buf_t* netbuffer)
 	}
 
 	// captures just the net packets before the game
-	size_t len = netbuffer->cursize;
-	fwrite(&len, sizeof(size_t), 1, demofp);
-	fwrite(&gametic, sizeof(int), 1, demofp);
-	fwrite(netbuffer->data, 1, len, demofp);
+	size_t len = LONG(netbuffer->cursize);
+	fwrite(&len, sizeof(len), 1, demofp);
+	int tic = LONG(gametic);
+	fwrite(&tic, sizeof(tic), 1, demofp);
+
+	fwrite(netbuffer->data, 1, netbuffer->cursize, demofp);
 }
 
 
