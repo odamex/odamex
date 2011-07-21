@@ -40,7 +40,6 @@
 #include "r_main.h"
 #include "p_unlag.h"
 
-const size_t Unlag::MAX_HISTORY_TICS;   // defined in p_unlag.h
 
 EXTERN_CVAR(sv_unlag)
 
