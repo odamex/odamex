@@ -96,6 +96,9 @@ cvar_t noisedebug ("noise", "0", 0);
 // the set of channels available
 static channel_t *Channel;
 
+// For ZDoom sound curve
+static byte		*SoundCurve;
+
 // Maximum volume of a sound effect.
 // Internal default is max out of 0-15.
 CVAR_FUNC_IMPL (snd_sfxvolume)
@@ -121,6 +124,7 @@ static struct mus_playing_t
 
 EXTERN_CVAR (snd_timeout)
 EXTERN_CVAR (snd_channels)
+EXTERN_CVAR (co_zdoomsoundcurve)
 size_t			numChannels;
 
 static int		nextcleanup;
@@ -233,6 +237,9 @@ static void S_StopChannel (unsigned int cnum);
 //
 void S_Init (float sfxVolume, float musicVolume)
 {
+	int curvelump = W_GetNumForName ("SNDCURVE");
+	SoundCurve = (byte *)W_CacheLumpNum (curvelump, PU_STATIC);
+
 	unsigned int i;
 
 	//Printf (PRINT_HIGH, "S_Init: default sfx volume %f\n", sfxVolume);
@@ -380,6 +387,66 @@ int
 
 EXTERN_CVAR (co_level8soundfeature)
 
+
+//
+// S_AdjustZdoomSoundParams
+//
+// Utilizes the sndcurve lump to mimic volume and stereo separation
+// calculations from ZDoom 1.22
+
+int S_AdjustZdoomSoundParams(	AActor*	listener,
+								fixed_t	x,
+								fixed_t	y,
+								float*	vol,
+								int*	sep,
+								int*	pitch)
+{
+	const int MAX_SND_DIST = 2025;
+	
+	fixed_t* listener_pt;
+	if (listener)
+		listener_pt = &(listener->x);
+	else
+		listener_pt = NULL;
+		
+	int dist = (int)(FIXED2FLOAT(P_AproxDistance2 (listener_pt, x, y)));
+		
+	if (dist >= MAX_SND_DIST)
+	{
+		if (co_level8soundfeature && level.levelnum == 8)
+		{
+			dist = MAX_SND_DIST;
+		}
+		else
+		{
+			*vol = 0.0f;	// too far away to hear
+			return 0;
+		}
+	}
+	else if (dist < 0)
+	{
+		dist = 0;
+	}
+
+	*vol = (SoundCurve[dist] * snd_sfxvolume) / 128.0f;
+	if (dist > 0 && listener)
+	{
+		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
+		if (angle > listener->angle)
+			angle = angle - listener->angle;
+		else
+			angle = angle + (0xffffffff - listener->angle);
+		angle >>= ANGLETOFINESHIFT;
+		*sep = NORM_SEP - (FixedMul (S_STEREO_SWING, finesine[angle])>>FRACBITS);
+	}
+	else
+	{
+		*sep = NORM_SEP;
+	}
+	
+	return (*vol > 0);
+}
+
 //
 // Changes volume, stereo-separation, and pitch variables
 //  from the norm of a sound effect to be played.
@@ -517,18 +584,28 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		if (sfx->link)
 			sfx = sfx->link;
 	}
-
-	if (attenuation != ATTN_NONE && S_WHICHEARS.mo)
+	
+	
+	if (S_WHICHEARS.mo && attenuation != ATTN_NONE)
 	{
+	
   		// Check to see if it is audible, and if not, modify the params
-		rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
+		if (co_zdoomsoundcurve)
+		{
+			rc = S_AdjustZdoomSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
+		}
+		else
+		{
+			rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
+		}
 		
+		if (!rc)
+			return;
+
 		if (x == S_WHICHEARS.mo->x && y == S_WHICHEARS.mo->y)
 		{
 			sep = NORM_SEP;
 		}
-		if (!rc)
-			return;
 	}
 	else
 	{
@@ -970,11 +1047,24 @@ void S_UpdateSounds (void *listener_p)
 						x = c->x;
 						y = c->y;
 					}
-					audible = S_AdjustSoundParams(	listener, 
-													x, y,
-													&volume,
-													&sep,
-													&pitch);
+					
+					
+					if (co_zdoomsoundcurve)
+					{
+						audible = S_AdjustZdoomSoundParams(	listener, 
+															x, y,
+															&volume,
+															&sep,
+															&pitch);
+					}
+					else
+					{					
+						audible = S_AdjustSoundParams(	listener, 
+														x, y,
+														&volume,
+														&sep,
+														&pitch);
+					}
 
 					if (!audible)
 					{
