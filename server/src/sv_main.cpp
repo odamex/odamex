@@ -104,6 +104,7 @@ EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_maxrate)
+EXTERN_CVAR(sv_timeleft)
 
 void SexMessage (const char *from, char *to, int gender);
 void SV_RemoveDisconnectedPlayer(player_t &player);
@@ -3979,7 +3980,13 @@ team_t SV_WinningTeam (void)
 //
 void SV_TimelimitCheck()
 {
-	if(!sv_timelimit || level.time < (int)(sv_timelimit * TICRATE * 60) || shotclock || gamestate == GS_INTERMISSION)
+	if(!sv_timelimit)
+		return;	
+		
+	// [ML] Update the sv_timeleft cvar for clients
+	sv_timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
+	
+	if (sv_timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
 		return;
 
 	// LEVEL TIMER

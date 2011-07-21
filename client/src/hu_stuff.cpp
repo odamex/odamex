@@ -63,6 +63,7 @@ EXTERN_CVAR (con_scaletext)
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_scorelimit)
+EXTERN_CVAR (sv_timeleft)
 
 // Chat
 void HU_Init (void);
@@ -672,6 +673,36 @@ void HU_DrawScores (player_t *player)
 	}
 }
 
+void HU_DisplayTimer(int x, int y, bool scale = true)
+{
+	int timeleft, hours, minutes, seconds;
+	char str[80];
+	
+	if (sv_gametype != GM_COOP && sv_timeleft && gamestate == GS_LEVEL)
+	{
+		timeleft = sv_timeleft;
+		
+		if (timeleft < 0)
+			timeleft = 0;
+
+		hours = timeleft / (TICRATE * 3600);
+		timeleft -= hours * TICRATE * 3600;
+		minutes = timeleft / (TICRATE * 60);
+		timeleft -= minutes * TICRATE * 60;
+		seconds = timeleft / TICRATE;
+
+		if (hours)
+			sprintf (str, "Level ends in %02d:%02d:%02d", hours, minutes, seconds);
+		else
+			sprintf (str, "Level ends in %02d:%02d", minutes, seconds);
+		
+		if (scale)
+			screen->DrawTextClean (CR_GREY, x, y, str);			
+		else
+			screen->DrawText (CR_GREY, x, y, str);
+	}	
+}
+
 //
 // [Toke - Scores] HU_DMScores1
 //	Draws low-res DM scores
@@ -697,37 +728,15 @@ void HU_DMScores1 (player_t *player)
 
 	y = 34 * CleanYfac;
 
-	//	Timelimit display
-/*
-	if (deathmatch && sv_timelimit && gamestate == GS_LEVEL)
-	{
-		int timeleft = (sv_timelimit.asInt() * TICRATE * 60) - level.time;
-		int hours, minutes, seconds;
-
-		if (timeleft < 0)
-			timeleft = 0;
-
-		hours = timeleft / (TICRATE * 3600);
-		timeleft -= hours * TICRATE * 3600;
-		minutes = timeleft / (TICRATE * 60);
-		timeleft -= minutes * TICRATE * 60;
-		seconds = timeleft / TICRATE;
-
-		if (hours)
-			sprintf (str, "Level ends in %02d:%02d:%02d", hours, minutes, seconds);
-		else
-			sprintf (str, "Level ends in %02d:%02d", minutes, seconds);
-
-		screen->DrawTextClean (CR_GREY, screen->width/2 - V_StringWidth (str)/2*CleanXfac, y - 12 * CleanYfac, str);
-	}
-*/
-
 	// Scoreboard Identify
 	// Dan - Tells which current game mode is being played
 	if (sv_gametype != GM_COOP)
-		screen->DrawTextClean (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Deathmatch");
+		screen->DrawTextClean (CR_GOLD,120 * CleanXfac,4 * CleanYfac,"Deathmatch");
 	else
-		screen->DrawTextClean (CR_GOLD,120 * CleanXfac,10 * CleanYfac,"Cooperative");
+		screen->DrawTextClean (CR_GOLD,120 * CleanXfac,4 * CleanYfac,"Cooperative");
+
+	//	Timelimit display
+	HU_DisplayTimer(screen->width/2 - 126/2*CleanXfac, y - 20 * CleanYfac);
 
 	//	Header display
 	screen->DrawTextClean (CR_GREY,	16	* CleanXfac,	25	* CleanYfac, "NAME");
@@ -831,6 +840,15 @@ void HU_DMScores2 (player_t *player)
 	std::vector<player_t *> sortedplayers(players.size());
 	unsigned int i, j, listsize;
 
+	// Board location
+	int y = 21;
+	
+	int marginx = (screen->width  - DMBOARDWIDTH) / 2;
+	int marginy = (screen->height - DMBOARDHEIGHT) / 2;
+
+	int locx = marginx;
+	int locy = marginy / 2;
+	
 	if (player->camera->player)
 		player = player->camera->player;
 
@@ -844,39 +862,6 @@ void HU_DMScores2 (player_t *player)
 		std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
 
     listsize = sortedplayers.size();
-    
-	//	Timelimit display
-/*
-	if (deathmatch && sv_timelimit && gamestate == GS_LEVEL)
-	{
-		int timeleft = (sv_timelimit.asInt() * TICRATE * 60) - level.time;
-		int hours, minutes, seconds;
-
-		if (timeleft < 0)
-			timeleft = 0;
-
-		hours = timeleft / (TICRATE * 3600);
-		timeleft -= hours * TICRATE * 3600;
-		minutes = timeleft / (TICRATE * 60);
-		timeleft -= minutes * TICRATE * 60;
-		seconds = timeleft / TICRATE;
-
-		if (hours)
-			sprintf (str, "Level ends in %02d:%02d:%02d", hours, minutes, seconds);
-		else
-			sprintf (str, "Level ends in %02d:%02d", minutes, seconds);
-
-		screen->DrawTextClean (CR_GREY, screen->width/2 - V_StringWidth (str)/2*CleanXfac, y - 12 * CleanYfac, str);
-	}
-*/
-	// Board location
-	int y = 21;
-	
-	int marginx = (screen->width  - DMBOARDWIDTH) / 2;
-	int marginy = (screen->height - DMBOARDHEIGHT) / 2;
-
-	int locx = marginx;
-	int locy = marginy / 2;
    
 	// Background effect
 	OdamexEffect (locx - DMBORDER, 
@@ -884,6 +869,9 @@ void HU_DMScores2 (player_t *player)
 				  locx + DMBOARDWIDTH  + DMBORDER, 
 				  locy + DMBOARDHEIGHT + (listsize*10) + DMBORDER);
 
+	//	Timelimit display
+	HU_DisplayTimer(locx + 225,locy - DMBORDER+8,false);
+	
 	// Scoreboard Identify
     // Dan - Tells which current game mode is being played
     if (sv_gametype != GM_COOP)
@@ -1075,7 +1063,10 @@ void HU_TeamScores1 (player_t *player)
 	// Scoreboard Identify
 	// Dan - Tells which current game mode is being played
 	if (sv_gametype == GM_CTF)
-		screen->DrawText (CR_GOLD,100 * CleanXfac,0 * CleanYfac,"Capture The Flag");
+		screen->DrawTextClean (CR_GOLD,100 * CleanXfac,0 * CleanYfac,"Capture The Flag");
+
+	//	Timelimit display
+	HU_DisplayTimer(screen->width/2 - 126/2*CleanXfac, 8 * CleanYfac);
 
 	// Draw team stats header
 	screen->DrawTextClean	  (CR_GREY	,	243	* CleanXfac	,	26	* CleanYfac	,	"SCORE:"	);
@@ -1392,6 +1383,9 @@ void HU_TeamScores2 (player_t *player)
 				  rlocx + CTFBOARDWIDTH  + TEAMPLAYBORDER,
 				  rlocy + CTFBOARDHEIGHT + (listsize*10) + TEAMPLAYBORDER);
 
+	//	Timelimit display
+	HU_DisplayTimer(rlocx + 90,rlocy - TEAMPLAYBORDER+4,false);
+	
 	// Player scores header
 	// Blue Bar
 	screen->Clear (blocx + 8,

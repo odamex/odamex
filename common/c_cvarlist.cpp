@@ -67,13 +67,19 @@ CVAR (sv_nomonsters,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Skill level
 CVAR (sv_skill,            "3", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // Game ends on time limit being reached
-CVAR (sv_timelimit,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (sv_timelimit,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 // Speedhack code (server related)
 CVAR (sv_speedhackfix,		"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Weapons stay
 CVAR (sv_weaponstay,		"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // [SL] 2011-05-11 - Allow reconciliation for players on lagged connections
 CVAR (sv_unlag,				"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+// [ML] allow weapon bob changing
+CVAR (sv_allownobob, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+// [ML] Time left
+CVAR (sv_timeleft, "0", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 // Compatibility options for vanilla
 // ---------------------------------
@@ -103,7 +109,6 @@ CVAR (cl_deathcam, "1", CVAR_ARCHIVE)
 
 // Movebob
 CVAR (cl_nobob, "0", CVAR_ARCHIVE | CVAR_CLIENTARCHIVE | CVAR_CLIENTINFO)
-CVAR (sv_allownobob, "0", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_FUNC_DECL (sv_gravity, "800", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR_FUNC_DECL (sv_aircontrol, "0.00390625", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)

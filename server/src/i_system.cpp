@@ -89,7 +89,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-size_t def_heapsize = 32;
+size_t def_heapsize = 64;
 const size_t min_heapsize = 8;
 
 // The size we got back from I_ZoneBase in megabytes
