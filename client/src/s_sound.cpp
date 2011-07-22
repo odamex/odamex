@@ -598,14 +598,14 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		{
 			rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
 		}
-		
-		if (!rc)
-			return;
 
 		if (x == S_WHICHEARS.mo->x && y == S_WHICHEARS.mo->y)
 		{
 			sep = NORM_SEP;
 		}
+		
+		if (!rc)
+			return;
 	}
 	else
 	{
