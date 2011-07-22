@@ -121,26 +121,28 @@ void NetDemo::error(const std::string message)
 // Assumes that demofp has been opened correctly elsewhere.  Does not close
 // the file.
 
-void NetDemo::writeHeader()
+bool NetDemo::writeHeader()
 {
-	int tmpl;		// temp storage of LONG macro results for endian correctness
-	short tmps;		// temp storage of SHORT macro results for endian correctness
-
 	strncpy(header.identifier, "ODAD", 4);
 	header.version = NETDEMOVER;
 	header.compression = 0;
 
+	netdemo_header_t tmpheader;
+	memcpy(&tmpheader, &header, NetDemo::HEADER_SIZE);
+	// convert from native byte ordering to little-endian
+	tmpheader.index_offset = LONG(tmpheader.index_offset);
+	tmpheader.index_size = LONG(tmpheader.index_size);
+	tmpheader.index_spacing = SHORT(tmpheader.index_spacing);
+
 	fseek(demofp, 0, SEEK_SET);
-	fwrite(header.identifier, 1, sizeof(header.identifier), demofp);
-	fwrite(&header.version, sizeof(byte), 1, demofp);
-	fwrite(&header.compression, sizeof(byte), 1, demofp);
-	tmpl = LONG(header.index_offset);
-	fwrite(&tmpl, sizeof(int), 1, demofp);
-	tmpl = LONG(header.index_size);
-	fwrite(&tmpl, sizeof(int), 1, demofp);
-	tmps = SHORT(header.index_spacing);
-	fwrite(&tmps, sizeof(short), 1, demofp);
-	fwrite(header.reserved, 1, sizeof(header.reserved), demofp);
+	size_t cnt = fwrite(&tmpheader, 1, NetDemo::HEADER_SIZE, demofp);
+
+	if (cnt < NetDemo::HEADER_SIZE)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -151,22 +153,83 @@ void NetDemo::writeHeader()
 // little-endian format to whatever the client's architecture uses.  Assumes
 // that demofp has been opened correctly elsewhere.  Does not close the file.
 
-void NetDemo::readHeader()
+bool NetDemo::readHeader()
 {
-	int tmpl;
-	short tmps;
-
 	fseek(demofp, 0, SEEK_SET);
-	fread(header.identifier, 1, sizeof(header.identifier), demofp);
-	fread(&header.version, sizeof(byte), 1, demofp);
-	fread(&header.compression, sizeof(byte), 1, demofp);
-	fread(&tmpl, sizeof(int), 1, demofp);
-	header.index_offset = LONG(tmpl);
-	fread(&tmpl, sizeof(int), 1, demofp);
-	header.index_size = LONG(tmpl);
-	fread(&tmps, sizeof(short), 1, demofp);
-	header.index_spacing = SHORT(tmps);
-	fread(header.reserved, 1, sizeof(header.reserved), demofp);
+
+	size_t cnt = fread(&header, 1, NetDemo::HEADER_SIZE, demofp);
+	if (cnt < NetDemo::HEADER_SIZE)
+	{
+		return false;
+	}
+
+	// convert from little-endian to native byte ordering
+	header.index_offset = LONG(header.index_offset);
+	header.index_size = LONG(header.index_size);
+	header.index_spacing = SHORT(header.index_spacing);
+
+	return true;
+}
+
+
+//
+// writeIndex()
+//
+// Writes the snapshot index to the netdemo file, converting it to
+// little-endian format from whatever the client's architecture uses.  Assumes
+// that demofp has been opened correctly elsewhere.  Does not close the file.
+
+bool NetDemo::writeIndex()
+{
+	fseek(demofp, header.index_offset, SEEK_SET);
+
+	for (size_t i = 0; i < index.size(); i++)
+	{
+		netdemo_index_entry_t entry;
+		// convert to little-endian
+		entry.ticnum = LONG(index[i].ticnum);
+		entry.offset = LONG(index[i].offset);
+		
+		size_t cnt = fwrite(&entry, NetDemo::INDEX_ENTRY_SIZE, 1, demofp);
+		if (cnt < NetDemo::INDEX_ENTRY_SIZE)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
+//
+// readIndex()
+//
+// Reads the snapshot index from the netdemo file, converting it from
+// little-endian format to whatever the client's architecture uses.  Assumes
+// that demofp has been opened correctly elsewhere.  Does not close the file.
+
+bool NetDemo::readIndex()
+{
+	fseek(demofp, header.index_offset, SEEK_SET);
+
+	int num_snapshots = header.index_size / NetDemo::INDEX_ENTRY_SIZE;
+	for (int i = 0; i < num_snapshots; i++)
+	{
+		netdemo_index_entry_t entry;
+		size_t cnt = fread(&entry, NetDemo::INDEX_ENTRY_SIZE, 1, demofp);
+		if (cnt < NetDemo::INDEX_ENTRY_SIZE)
+		{
+			return false;
+		}
+
+		// convert from little-endian to native
+		entry.ticnum = LONG(entry.ticnum);	
+		entry.offset = LONG(entry.offset);
+
+		index.push_back(entry);
+	}
+
+	return true;
 }
 
 
@@ -205,7 +268,11 @@ bool NetDemo::startRecording(const std::string filename)
 	}
 
 	memset(&header, 0, sizeof(header));
-	writeHeader();
+	if (!writeHeader())
+	{
+		error("Unable to write netdemo header.");
+		return false;
+	}
 
 	state = NetDemo::recording;
 	return true;
@@ -236,11 +303,15 @@ bool NetDemo::startPlaying(const std::string filename)
 
 	if (!(demofp = fopen(filename.c_str(), "rb")))
 	{
-		error("Unable to open netdemo file.\n");
+		error("Unable to open netdemo file.");
 		return false;
 	}
 
-	readHeader();
+	if (!readHeader())
+	{
+		error("Unable to read netdemo header.");
+		return false;
+	}
 
     if (header.version != NETDEMOVER)
     {
@@ -253,16 +324,15 @@ bool NetDemo::startPlaying(const std::string filename)
 		error("Unable to find netdemo index.\n");
 		return false;
 	}
-	
-	if (fread(&index, header.index_size, 1, demofp) < (unsigned)header.index_size)
+
+	if (!readIndex())
 	{
 		error("Unable to read netdemo index.\n");
 		return false;
 	}
 
 	// get set up to read server cmds
-	//fseek(demofp, sizeof(header), SEEK_SET);
-	fseek(demofp, 64, SEEK_SET);
+	fseek(demofp, NetDemo::HEADER_SIZE, SEEK_SET);
 	state = NetDemo::playing;
 	return true;
 }
@@ -318,32 +388,31 @@ bool NetDemo::stopRecording()
 	}
 	state = NetDemo::stopped;
 
-	// flush the netbuffer
-    SZ_Clear(&net_message);
-
-	// write the end-of-demo marker
-	MSG_WriteByte(&net_message, svc_netdemostop);
-	size_t len = LONG(net_message.size());
-	fwrite(&len, sizeof(len), 1, demofp);
+	byte marker = svc_netdemostop;
+	size_t len = LONG(sizeof(marker));
 	int tic = LONG(gametic);
+
+	fwrite(&len, sizeof(len), 1, demofp);
 	fwrite(&tic, sizeof(tic), 1, demofp);
-	fwrite(net_message.data, 1, net_message.size(), demofp);
+	// write the end-of-demo marker
+	fwrite(&marker, sizeof(marker), 1, demofp);
 
-	// tack the index onto the end of the recording
+	// tack the snapshot index onto the end of the recording
 	header.index_offset = ftell(demofp);
-	header.index_size = index.size() * sizeof(netdemo_index_entry_t);
+	header.index_size = index.size() * NetDemo::INDEX_ENTRY_SIZE;
 
-	int tmpl;
-	for (size_t i = 0; i < index.size(); i++)
+	if (!writeIndex())
 	{
-		tmpl = LONG(index[i].ticnum);	// make sure we're using little-endian
-		fwrite(&tmpl, sizeof(int), 1, demofp);
-		tmpl = LONG(index[i].offset);	// make sure we're using little-endian
-		fwrite(&tmpl, sizeof(int), 1, demofp);		
+		error("Unable to write netdemo index.");
+		return false;
 	}
 
 	// rewrite the header since index_offset and index_size is now known
-	writeHeader();
+	if (!writeHeader())
+	{
+		error("Unable to write updated netdemo header.");
+		return false;
+	}
 
 	fclose(demofp);
 	demofp = NULL;
@@ -466,11 +535,20 @@ void NetDemo::readMessages(buf_t* netbuffer)
 	}
 
 	size_t len = 0;
-	fread(&len, sizeof(size_t), 1, demofp);
-	fread(&gametic, sizeof(int), 1, demofp);
+	size_t cnt = 0;
+	cnt += sizeof(size_t) * fread(&len, sizeof(size_t), 1, demofp);
+	len = LONG(len);			// convert to native byte order
+	cnt += sizeof(size_t) * fread(&gametic, sizeof(int), 1, demofp);
+	gametic = LONG(gametic);	// convert to native byte order
 
 	char *msgdata = new char[len];
-	fread(msgdata, 1, len, demofp);
+	cnt += fread(msgdata, 1, len, demofp);
+	if (cnt < len + sizeof(len) + sizeof(gametic))
+	{
+		error("Can not read netdemo message.");
+		return;
+	}
+
 	netbuffer->WriteChunk(msgdata, len);
 	delete msgdata;
 

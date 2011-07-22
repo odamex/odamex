@@ -35,8 +35,10 @@ private:
 	void error(const std::string message);
 	void reset();
 
-	void writeHeader();
-	void readHeader();
+	bool writeHeader();
+	bool readHeader();
+	bool writeIndex();
+	bool readIndex();
 	void writeFullUpdate(int ticnum);
 
 	typedef enum
@@ -63,7 +65,10 @@ private:
 		short	index_spacing;	// number of gametics between indices
 		byte    reserved[48];   // for future use
 	} netdemo_header_t;
-		
+	
+	static const size_t HEADER_SIZE = 64;
+	static const size_t INDEX_ENTRY_SIZE = 8;
+	
 	netdemo_state_t		state;
 	netdemo_state_t		oldstate;	// used when unpausing
 	std::string			filename;
