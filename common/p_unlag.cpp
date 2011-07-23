@@ -86,11 +86,7 @@ void Unlag::movePlayer(player_t *player, fixed_t x, fixed_t y, fixed_t z)
 	if (!player->mo)
 		return;
 
-	subsector_t *dest_subsector = R_PointInSubsector (x,y);
-	
 	player->mo->SetOrigin(x, y, z);
-	player->mo->floorz = dest_subsector->sector->floorheight;
-	player->mo->ceilingz = dest_subsector->sector->ceilingheight;
 }
 
 
