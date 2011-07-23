@@ -327,13 +327,13 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 	statusbar->statbox = AG_BoxNewHoriz(parent, AG_BOX_HOMOGENOUS | AG_BOX_HFILL);
 
 	statusbar->tooltip = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
-	AG_StatusbarAddLabel(statusbar->tooltip, AG_LABEL_STATIC, "Welcome to Odamex");
+	AG_StatusbarAddLabel(statusbar->tooltip, AG_LABEL_POLLED, "Welcome to Odamex");
 
 	// These separators are goofy inside a homogenous box.
 	//AG_SeparatorNewVert(statusbar->statbox);
 
 	statusbar->mping = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
-	AG_StatusbarAddLabel(statusbar->mping, AG_LABEL_STATIC, "Master Ping: 0");
+	AG_StatusbarAddLabel(statusbar->mping, AG_LABEL_POLLED, "Master Ping: 0");
 
 	//AG_SeparatorNewVert(statusbar->statbox);
 
