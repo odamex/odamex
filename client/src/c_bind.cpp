@@ -79,8 +79,7 @@ char DefBindings[] =
 	"bind mouse1 +attack; "
 	"bind mouse2 +strafe; "
 	"bind mouse3 +forward; "
-	"bind mouse4 +jump; "				// <- So is this <- change to jump
-	"bind mouse5 +speed; "				// <- new for +speed
+	"bind mouse4 +speed; "				// <- So is this
 	"bind joy1 +attack; "
 	"bind joy2 +strafe; "
 	"bind joy3 +speed; "
@@ -157,8 +156,8 @@ const char *KeyNames[NUM_KEYS] = {
    NULL,    NULL,    NULL,    // 0140 - 0142
 
 	// non-keyboard buttons that can be bound
-   // 0143 - 0146 & 0173
-	"mouse1",	"mouse2",	"mouse3",	"mouse4",	"mouse5"		// 5 mouse buttons
+   // 0143 - 0146
+	"mouse1",	"mouse2",	"mouse3",	"mouse4",		// 4 mouse buttons
    // 0147 - 014A
    "mwheelup",	"mwheeldown",NULL,		NULL,			// the wheel and some extra space
    // 014B - 014E

@@ -105,7 +105,6 @@
 #define KEY_MOUSE2				0x144
 #define KEY_MOUSE3				0x145
 #define KEY_MOUSE4				0x146
-#define KEY_MOUSE5				0x173 //[Xyltol 07/21/2011] - Add Mouse4 and Mouse5 support (MOUSE4 was defined but didn't actually work, heh).
 #define KEY_MWHEELUP          0x147
 #define KEY_MWHEELDOWN        0x148
 
@@ -149,6 +148,6 @@
 #define KEY_HAT6				0x170
 #define KEY_HAT7				0x171
 #define KEY_HAT8				0x172
-#define NUM_KEYS				0x174
+#define NUM_KEYS				0x173
 
 #endif	// __DOOMKEYS_H__
