@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 
-
 class NetDemo
 {
 public:
@@ -51,19 +50,19 @@ private:
 
 	typedef struct
 	{
-		int		ticnum;
-		int		offset;			// offset in the demo file
+		uint32_t	ticnum;
+		uint32_t	offset;			// offset in the demo file
 	} netdemo_index_entry_t;
 	
 	typedef struct
 	{
-		char    identifier[4];  // "ODAD"
-		byte    version;
-		byte    compression;    // type of compression used
-		int		index_offset;	// offset from start of the file for the index
-		int     index_size;     // gametic filepos index follows header
-		short	index_spacing;	// number of gametics between indices
-		byte    reserved[48];   // for future use
+		char		identifier[4];  // "ODAD"
+		byte		version;
+		byte    	compression;    // type of compression used
+		uint32_t	index_offset;	// offset from start of the file for the index
+		uint32_t	index_size;     // gametic filepos index follows header
+		short		index_spacing;	// number of gametics between indices
+		byte		reserved[48];   // for future use
 	} netdemo_header_t;
 	
 	static const size_t HEADER_SIZE = 64;

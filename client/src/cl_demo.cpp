@@ -23,6 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "doomtype.h"
 #include "cl_main.h"
 #include "d_player.h"
 #include "m_argv.h"
@@ -33,7 +34,6 @@
 #include "cl_demo.h"
 #include "m_swap.h"
 #include "version.h"
-
 
 NetDemo::NetDemo() : state(stopped), filename(""), demofp(NULL)
 {
@@ -63,7 +63,7 @@ void NetDemo::copy(NetDemo &to, const NetDemo &from)
 	to.bufcursor	= from.bufcursor;
 	to.netbuf		= from.netbuf;
 	to.index		= from.index;
-	memcpy(&to.header, &from.header, sizeof(netdemo_header_t));
+	memcpy(&to.header, &from.header, NetDemo::HEADER_SIZE);
 }
 
 
@@ -267,7 +267,7 @@ bool NetDemo::startRecording(const std::string filename)
 		return false;
 	}
 
-	memset(&header, 0, sizeof(header));
+	memset(&header, 0, NetDemo::HEADER_SIZE);
 	if (!writeHeader())
 	{
 		error("Unable to write netdemo header.");
@@ -389,8 +389,8 @@ bool NetDemo::stopRecording()
 	state = NetDemo::stopped;
 
 	byte marker = svc_netdemostop;
-	size_t len = LONG(sizeof(marker));
-	int tic = LONG(gametic);
+	uint32_t len = LONG(sizeof(marker));
+	uint32_t tic = LONG(gametic);
 
 	fwrite(&len, sizeof(len), 1, demofp);
 	fwrite(&tic, sizeof(tic), 1, demofp);
@@ -534,12 +534,13 @@ void NetDemo::readMessages(buf_t* netbuffer)
 		return;
 	}
 
-	size_t len = 0;
+	uint32_t len = 0;
+	uint32_t tic = 0;
 	size_t cnt = 0;
-	cnt += sizeof(size_t) * fread(&len, sizeof(size_t), 1, demofp);
+	cnt += sizeof(len) * fread(&len, sizeof(len), 1, demofp);
 	len = LONG(len);			// convert to native byte order
-	cnt += sizeof(size_t) * fread(&gametic, sizeof(int), 1, demofp);
-	gametic = LONG(gametic);	// convert to native byte order
+	cnt += sizeof(tic) * fread(&tic, sizeof(tic), 1, demofp);
+	gametic = LONG(tic);		// convert to native byte order
 
 	char *msgdata = new char[len];
 	cnt += fread(msgdata, 1, len, demofp);
@@ -599,9 +600,9 @@ void NetDemo::capture(const buf_t* netbuffer)
 	}
 
 	// captures just the net packets before the game
-	size_t len = LONG(netbuffer->cursize);
+	uint32_t len = LONG(netbuffer->cursize);
 	fwrite(&len, sizeof(len), 1, demofp);
-	int tic = LONG(gametic);
+	uint32_t tic = LONG(gametic);
 	fwrite(&tic, sizeof(tic), 1, demofp);
 
 	fwrite(netbuffer->data, 1, netbuffer->cursize, demofp);
