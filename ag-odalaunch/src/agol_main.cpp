@@ -320,7 +320,6 @@ AG_Table *AGOL_MainWindow::CreateServInfoList(void *parent)
 ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 {
 	ODA_Statusbar *statusbar;
-//	AG_Separator  *sep;
 
 	statusbar = new ODA_Statusbar;
 
@@ -329,21 +328,14 @@ ODA_Statusbar *AGOL_MainWindow::CreateMainStatusbar(void *parent)
 	statusbar->tooltip = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
 	AG_StatusbarAddLabel(statusbar->tooltip, AG_LABEL_POLLED, "Welcome to Odamex");
 
-	// These separators are goofy inside a homogenous box.
-	//AG_SeparatorNewVert(statusbar->statbox);
-
 	statusbar->mping = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
 	AG_StatusbarAddLabel(statusbar->mping, AG_LABEL_POLLED, "Master Ping: 0");
-
-	//AG_SeparatorNewVert(statusbar->statbox);
 
 	statusbar->queried.statusbar = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
 	statusbar->queried.completed = statusbar->queried.total = 0;
 	AG_MutexInit(&statusbar->queried.mutex);
 	AG_StatusbarAddLabel(statusbar->queried.statusbar, AG_LABEL_POLLED_MT, "Queried Servers %i of %i", 
 			&statusbar->queried.mutex, &statusbar->queried.completed, &statusbar->queried.total);
-
-	//AG_SeparatorNewVert(statusbar->statbox);
 
 	statusbar->players.statusbar = AG_StatusbarNew(statusbar->statbox, AG_STATUSBAR_EXPAND);
 	statusbar->players.numplayers = 0;
