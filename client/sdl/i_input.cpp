@@ -678,6 +678,14 @@ void I_GetEvent (void)
                event.data1 = KEY_MOUSE3;
                mbuttons |= 4;
             }
+			// [Xyltol 07/21/2011] - Add support for MOUSE4 and MOUSE5 (back thumb and front thumb on most mice)
+			else if(ev.button.button == SDL_BUTTON_X1){//back thumb
+				event.data1 = KEY_MOUSE4;
+				mbuttons |= 8;
+			}else if(ev.button.button == SDL_BUTTON_X2){//front thumb
+				event.data1 = KEY_MOUSE5;
+				mbuttons |= 16;
+			}
             else if(ev.button.button == SDL_BUTTON_WHEELUP)
                event.data1 = KEY_MWHEELUP;
             else if(ev.button.button == SDL_BUTTON_WHEELDOWN)
@@ -690,6 +698,7 @@ void I_GetEvent (void)
             if(nomouse || !havefocus)
 				break;
             event.type = ev_keyup;
+			
             if(ev.button.button == SDL_BUTTON_LEFT)
             {
                event.data1 = KEY_MOUSE1;
@@ -705,6 +714,14 @@ void I_GetEvent (void)
                event.data1 = KEY_MOUSE3;
                mbuttons &= ~4;
             }
+			// [Xyltol 07/21/2011] - Add support for MOUSE4 and MOUSE5 (back thumb and front thumb on most mice)
+			else if(ev.button.button == SDL_BUTTON_X1){//back thumb
+				event.data1 = KEY_MOUSE4;
+				mbuttons &= 8;
+			}else if(ev.button.button == SDL_BUTTON_X2){//front thumb
+				event.data1 = KEY_MOUSE5;
+				mbuttons &= 16;
+			}
             else if(ev.button.button == SDL_BUTTON_WHEELUP)
                event.data1 = KEY_MWHEELUP;
             else if(ev.button.button == SDL_BUTTON_WHEELDOWN)
