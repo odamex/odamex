@@ -465,6 +465,7 @@ void dlgMain::MonThrGetServerList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 ServerTimeout;
+    size_t ServerCount;
     
     size_t count = 0;
     size_t serverNum = 0;
@@ -472,7 +473,7 @@ void dlgMain::MonThrGetServerList()
     uint16_t Port = 0;
 
     // [Russell] - This includes custom servers.
-    if (!MServer.GetServerCount())
+    if (!(ServerCount = MServer.GetServerCount()))
     {
         MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
             mtrs_server_noservers, -1, -1);
@@ -482,6 +483,9 @@ void dlgMain::MonThrGetServerList()
 
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
     
+    delete[] QServer;
+    QServer = new Server [ServerCount];
+    
     /* 
         Thread pool manager:
         Executes a number of threads that contain the same amount of
@@ -489,7 +493,7 @@ void dlgMain::MonThrGetServerList()
         gets executed with a different server, eventually all the way
         down to 0 servers.
     */
-    while(count < MServer.GetServerCount())
+    while(count < ServerCount)
     {
         for(size_t i = 0; i < NUM_THREADS; i++)
         {
@@ -507,7 +511,7 @@ void dlgMain::MonThrGetServerList()
                     count++;
                 }
             }
-            if(serverNum < MServer.GetServerCount())
+            if(serverNum < ServerCount)
             {
                 MServer.GetServerAddress(serverNum, Address, Port);
                 QServer[serverNum].SetAddress(Address, Port);
