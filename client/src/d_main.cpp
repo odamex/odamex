@@ -149,6 +149,8 @@ static int pagetic;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (waddirs)
@@ -1314,7 +1316,7 @@ std::vector<size_t> D_DoomWadReboot(
 
 	// Close all open WAD files
 	W_Close();
-	
+
 	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
     // I have never used memset, I hope I am not invoking satan by doing this :(
 	if (wadlevelinfos)
@@ -1325,14 +1327,14 @@ std::vector<size_t> D_DoomWadReboot(
 				delete wadlevelinfos[i].snapshot;
 				wadlevelinfos[i].snapshot = NULL;
 			}
-        memset(wadlevelinfos,0,sizeof(wadlevelinfos));        
+        memset(wadlevelinfos,0,sizeof(wadlevelinfos));
         numwadlevelinfos = 0;
     }
-    
+
     if (wadclusterinfos)
     {
         memset(wadclusterinfos,0,sizeof(wadclusterinfos));
-        numwadclusterinfos = 0;	        
+        numwadclusterinfos = 0;
     }
 
 	// Restart the memory manager
@@ -1342,7 +1344,7 @@ std::vector<size_t> D_DoomWadReboot(
 	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
 
 	wadfiles.clear();
-	modifiedgame = false;	
+	modifiedgame = false;
 
 	std::string custwad;
 	if(wadnames.empty() == false)
@@ -1395,7 +1397,7 @@ std::vector<size_t> D_DoomWadReboot(
 	V_InitPalette();
 
 	G_SetLevelStrings ();
-	G_ParseMapInfo ();	
+	G_ParseMapInfo ();
 	S_ParseSndInfo();
 
 	M_Init();
@@ -1428,7 +1430,7 @@ void D_DoomMain (void)
 	M_ClearRandom();
 
 	gamestate = GS_STARTUP;
-	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in	
+	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError ("Could not initialize LZO routines");
@@ -1470,8 +1472,18 @@ void D_DoomMain (void)
 	if (STARTUP4[0])	Printf (PRINT_HIGH, "%s\n", STARTUP4);
 	if (STARTUP5[0])	Printf (PRINT_HIGH, "%s\n", STARTUP5);
 
+	// Nomonsters
+	sv_nomonsters = Args.CheckParm("-nomonsters");
+
+	// Respawn
+	sv_monstersrespawn = Args.CheckParm("-respawn");
+
+	// Fast
+	sv_fastmonsters = Args.CheckParm("-fast");
+
+    // developer mode
 	devparm = Args.CheckParm ("-devparm");
-	
+
 	// Record a vanilla demo
 	p = Args.CheckParm ("-record");
 	if (p)
@@ -1480,7 +1492,7 @@ void D_DoomMain (void)
 		autostart = true;
 		demorecordfile = Args.GetArg (p+1);
 	}
-	
+
 	p = Args.CheckParm("-netrecord");
 	if (p)
 	{
@@ -1492,11 +1504,11 @@ void D_DoomMain (void)
 
 		CL_NetDemoRecord(demoname);
 	}
-	
+
 
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
-		
+
 	// Check for -playdemo, play a single demo then quit.
 	p = Args.CheckParm ("-playdemo");
 	// Hack to check for +playdemo command, since if you just add it normally
@@ -1510,7 +1522,7 @@ void D_DoomMain (void)
 		singledemo = true;
 		defdemoname = Args.GetArg (p+1);
 	}
-	
+
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{
@@ -1551,9 +1563,9 @@ void D_DoomMain (void)
 	// [RH] Now that all text strings are set up,
 	// insert them into the level and cluster data.
 	G_SetLevelStrings ();
-	
+
 	// [RH] Parse through all loaded mapinfo lumps
-	G_ParseMapInfo ();	
+	G_ParseMapInfo ();
 
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();
@@ -1638,7 +1650,7 @@ void D_DoomMain (void)
 					players.back().playerstate = PST_REBORN;
 					consoleplayer_id = displayplayer_id = players.back().id = 1;
 				}
-				
+
 				G_InitNew (startmap);
 				if (autorecord)
 					if (G_RecordDemo(demorecordfile.c_str()))

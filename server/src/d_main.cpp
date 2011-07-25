@@ -76,6 +76,9 @@
 #include "sv_main.h"
 
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (waddirs)
 
 extern size_t got_heapsize;
@@ -744,7 +747,7 @@ void D_AddDefWads (std::string iwad)
 void D_AddCmdParameterFiles(void)
 {
     modifiedgame = false;
-	
+
 	DArgs files = Args.GatherFiles ("-file", ".wad", true);
 	if (files.NumArgs() > 0)
 	{
@@ -755,7 +758,7 @@ void D_AddCmdParameterFiles(void)
 			if (file.length())
 				wadfiles.push_back(file);
 		}
-	}	
+	}
 }
 
 //
@@ -902,7 +905,7 @@ std::vector<size_t> D_DoomWadReboot(
 
 	// Close all open WAD files
 	W_Close();
-	
+
 	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
     // I have never used memset, I hope I am not invoking satan by doing this :(
 	if (wadlevelinfos)
@@ -912,20 +915,20 @@ std::vector<size_t> D_DoomWadReboot(
 			{
 				delete wadlevelinfos[i].snapshot;
 				wadlevelinfos[i].snapshot = NULL;
-			}    	
-        memset(wadlevelinfos,0,sizeof(wadlevelinfos));        
+			}
+        memset(wadlevelinfos,0,sizeof(wadlevelinfos));
         numwadlevelinfos = 0;
     }
-    
+
     if (wadclusterinfos)
     {
         memset(wadclusterinfos,0,sizeof(wadclusterinfos));
-        numwadclusterinfos = 0;	        
+        numwadclusterinfos = 0;
     }
-	
+
 	// Restart the memory manager
 	Z_Init();
-	
+
 	wadfiles.clear();
 	modifiedgame = false;
 
@@ -974,7 +977,7 @@ std::vector<size_t> D_DoomWadReboot(
 		P_Init();
 	} else {					// let DoomMain know it doesn't have to do everything
 		RebootInit = true;
-	}	
+	}
 
 	return fails;
 }
@@ -989,17 +992,17 @@ int teamplayset;
 void D_DoomMain (void)
 {
 	const char *iwad;
-	
+
 	M_ClearRandom();
 
 	gamestate = GS_STARTUP;
-	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in	
+	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError ("Could not initialize LZO routines");
 
     C_ExecCmdLineParams (false, true);	// [Nes] test for +logfile command
-	
+
 	// Always log by default
     if (!LOG.is_open())
     	C_DoCommand("logfile");
@@ -1019,12 +1022,12 @@ void D_DoomMain (void)
 
 		wadhashes = W_InitMultipleFiles (wadfiles);
 		SV_InitMultipleFiles (wadfiles);
-	
+
 		// [RH] Initialize configurable strings.
 		D_InitStrings ();
 		D_DoDefDehackedPatch();
 	}
-	
+
 	I_Init ();
 
 	// Base systems have been inited; enable cvar callbacks
@@ -1037,6 +1040,16 @@ void D_DoomMain (void)
 	if (STARTUP4[0])	Printf (PRINT_HIGH, "%s\n", STARTUP4);
 	if (STARTUP5[0])	Printf (PRINT_HIGH, "%s\n", STARTUP5);
 
+	// Nomonsters
+	sv_nomonsters = Args.CheckParm("-nomonsters");
+
+	// Respawn
+	sv_monstersrespawn = Args.CheckParm("-respawn");
+
+	// Fast
+	sv_fastmonsters = Args.CheckParm("-fast");
+
+	// developer mode
 	devparm = Args.CheckParm ("-devparm");
 
     // get skill / episode / map from parms
@@ -1065,12 +1078,12 @@ void D_DoomMain (void)
 		Printf (PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
 		sv_timelimit.Set (20);
 	}
-	
+
 	// [RH] Now that all text strings are set up,
 	// insert them into the level and cluster data.
 	G_SetLevelStrings ();
 	// [RH] Parse through all loaded mapinfo lumps
-	G_ParseMapInfo ();	
+	G_ParseMapInfo ();
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();
 
@@ -1083,10 +1096,10 @@ void D_DoomMain (void)
 
 	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
 	P_Init ();
-		
+
 	Printf (PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
     SV_InitNetwork();
-		
+
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems ();
 
@@ -1097,7 +1110,7 @@ void D_DoomMain (void)
 	// [RH] Now that all game subsystems have been initialized,
 	// do all commands on the command line other than +set
 	C_ExecCmdLineParams (false, false);
-	
+
 	Printf(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
 
 #ifdef UNIX
