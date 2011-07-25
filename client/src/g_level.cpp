@@ -640,7 +640,6 @@ void G_DoNewGame (void)
 	// denis - single player warp (like in d_main)
 	serverside = true;
 	sv_allowexit = "1";
-	sv_nomonsters = "0";
 	sv_freelook = "1";
 	sv_allowjump = "1";
 	sv_gametype = GM_COOP;
