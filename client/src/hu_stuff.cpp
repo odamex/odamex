@@ -1574,7 +1574,7 @@ void HU_TeamScores2 (player_t *player)
 				if (sv_gametype == GM_CTF) {
                     // POINTS
                     sprintf (str, "%d", sortedplayers[i]->points);
-                    screen->DrawText	  (colorblue	,rlocx + 126	,rlocy + redy	,	str	);
+                    screen->DrawText	  (colorred	,rlocx + 126	,rlocy + redy	,	str	);
 
                     // FRAGS
                     sprintf (str, "%d", sortedplayers[i]->fragcount);
@@ -1582,7 +1582,7 @@ void HU_TeamScores2 (player_t *player)
 				} else {
                     // FRAGS
                     sprintf (str, "%d", sortedplayers[i]->fragcount);
-                    screen->DrawText	  (colorblue	,rlocx + 126	,rlocy + redy	,	str	);
+                    screen->DrawText	  (colorred	,rlocx + 126	,rlocy + redy	,	str	);
 
                     // DEATHS
                     sprintf (str, "%d", sortedplayers[i]->deathcount);

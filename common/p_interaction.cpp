@@ -1204,7 +1204,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM && sv_fraglimit &&
-            splayer->fragcount >= sv_fraglimit && !sv_fragexitswitch)
+            splayer->fragcount >= sv_fraglimit && !sv_fragexitswitch && !shotclock)
 		{
             // [ML] 04/4/06: Added !sv_fragexitswitch
             SV_BroadcastPrintf(
@@ -1216,7 +1216,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		}
 
 		// [Toke] TeamDM sv_fraglimit
-		if (sv_gametype == GM_TEAMDM && sv_fraglimit)
+		if (sv_gametype == GM_TEAMDM && sv_fraglimit && !shotclock)
 		{
 			for (size_t i = 0; i < NUMFLAGS; i++)
 			{

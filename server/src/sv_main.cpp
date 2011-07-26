@@ -4439,7 +4439,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		}
 	}
 
-	if (message) {
+	if (message && !shotclock) {
 		SexMessage (message, gendermessage, gender);
 		SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
 		return;
