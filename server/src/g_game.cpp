@@ -684,9 +684,38 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	// spawn a teleport fog
 	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	{
+		// [ML] 7/25/11: Incorporate pr+'s emulation of west-facing spawns being silent
 		an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+		xa = finecosine[an];
+		ya = finesine[an];
+		switch (an) {
+			case -4096: 
+				xa = finetangent[2048];   // finecosine[-4096]
+				ya = finetangent[0];      // finesine[-4096]
+          	break;
+			case -3072: 
+				xa = finetangent[3072];   // finecosine[-3072]
+				ya = finetangent[1024];   // finesine[-3072]
+          	break;
+			case -2048: 
+				xa = finesine[0];   // finecosine[-2048]
+				ya = finetangent[2048];   // finesine[-2048]
+          	break;
+			case -1024:	
+				xa = finesine[1024];     // finecosine[-1024]
+				ya = finetangent[3072];  // finesine[-1024]
+          	break;
+			case 1024:
+			case 2048:
+			case 3072:
+			case 4096:
+			case 0:	break; /* correct angles set above */
+			default:
+				I_Error("G_CheckSpot: unexpected angle %d\n",an);
+			break;
+		}
 
-		mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
+		mo = new AActor (x+20*xa, y+20*ya, z, MT_TFOG);
 
 		// send new object
 		SV_SpawnMobj(mo);
