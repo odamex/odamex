@@ -551,7 +551,7 @@ void NetDemo::readMessages(buf_t* netbuffer)
 	}
 
 	netbuffer->WriteChunk(msgdata, len);
-	delete msgdata;
+	delete [] msgdata;
 
 	if (!connected)
 	{
