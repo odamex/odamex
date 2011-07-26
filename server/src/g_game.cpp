@@ -647,6 +647,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	unsigned			an;
 	AActor* 			mo;
 	size_t 				i;
+	fixed_t 			xa,ya;
 
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
