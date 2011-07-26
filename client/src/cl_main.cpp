@@ -185,6 +185,7 @@ void CL_QuitNetGame(void)
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
+		sv_gametype = GM_COOP;
 	}
 	
 	if (paused)
@@ -204,6 +205,7 @@ void CL_QuitNetGame(void)
 	
 	sv_freelook = 1;
 	sv_allowjump = 1;
+	sv_allowexit = 1;
 
 	actor_by_netid.clear();
 	players.clear();
