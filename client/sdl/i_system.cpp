@@ -653,7 +653,7 @@ std::string I_GetClipboardText (void)
 		if(!bytes_left)
 		{
 			XDestroyWindow(dis, WindowEvents);
-			Printf(PRINT_HIGH, "I_GetClipboardText: Len was: %d", len);
+			DPrintf("I_GetClipboardText: Len was: %d", len);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
 			return "";
