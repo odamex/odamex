@@ -1287,7 +1287,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	{	
 		// [ML] 7/25/11: Incorporate pr+'s emulation of west-facing spawns being silent
-		an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+		an = ( ANG45 * ((signed int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
 		xa = finecosine[an];
 		ya = finesine[an];
 		switch (an) {
