@@ -578,8 +578,13 @@ END_COMMAND(stopnetdemo)
 
 BEGIN_COMMAND(netrecord)
 {
-	std::string filename;
+	if (netdemo.isRecording())
+	{
+		Printf(PRINT_HIGH, "Already recording a netdemo.  Please stop recording before beginning a new netdemo recording.\n");
+		return;
+	}
 
+	std::string filename;
 	if (argc < 2)
 	{
 		filename = "demo";
