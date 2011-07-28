@@ -576,10 +576,20 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 // [ML] 8/4/10: Moved to sv_main and slightly modified to provide an adequate
 //      but temporary fix for bug 594 until netcode_bringup2 is complete.
 //      Thanks to spleen for providing good brainpower!
-/*void MSG_WriteMarker (buf_t *b, svc_t c)
+//
+// [SL] 2011-07-17 - Moved back to i_net.cpp so that it can be used by
+// both client & server code.  Client has a stub function for SV_SendPackets.
+//
+void SV_SendPackets(void);
+
+void MSG_WriteMarker (buf_t *b, svc_t c)
 {
+    //[Spleen] final check to prevent huge packets from being sent to players
+    if (b->cursize > 600)
+        SV_SendPackets();
+    
 	b->WriteByte((byte)c);
-}*/
+}
 
 //
 // MSG_WriteMarker

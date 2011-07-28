@@ -149,6 +149,7 @@ void CL_Decompress(int sequence);
 
 void CL_LocalDemoTic(void);
 void CL_NetDemoStop(void);
+void CL_NetDemoSnapshot(void);
 void CL_NetDemoRecord(std::string filename);
 void CL_NetDemoPlay(std::string filename);
 
@@ -634,6 +635,26 @@ BEGIN_COMMAND(netplay)
 	CL_NetDemoPlay(filename);
 }
 END_COMMAND(netplay)
+
+BEGIN_COMMAND(ff)
+{
+	if (netdemo.isPlaying())
+	{
+		netdemo.skipTo(&net_message, gametic + netdemo.getSpacing());
+
+	}
+}
+END_COMMAND(ff)
+
+BEGIN_COMMAND(rew)
+{
+	if (netdemo.isPlaying())
+	{
+		netdemo.skipTo(&net_message, gametic - netdemo.getSpacing());
+
+	}
+}
+END_COMMAND(rew)
 
 //
 // CL_MoveThing
@@ -2816,8 +2837,10 @@ void CL_InitCommands(void)
 	cmds[svc_spectate]   		= &CL_Spectate;
 	
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
+
 	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
 	cmds[svc_netdemostop]       = &CL_NetDemoStop;
+	cmds[svc_netdemosnapshot]	= &CL_NetDemoSnapshot;
 }
 
 //
@@ -2831,19 +2854,6 @@ void CL_ParseCommands(void)
 	static bool once = true;
 	if(once)CL_InitCommands();
 	once = false;
-
-	
-	if(netdemo.isRecording())
-	{
-		if(gamestate == GS_LEVEL)
-		{
-			netdemo.writeMessages(&net_message, true);
-		} 
-		else 
-		{
-			netdemo.writeMessages(&net_message, false);
-		}
-	}
 
 	while(connected)
 	{
@@ -2881,12 +2891,6 @@ void CL_ParseCommands(void)
 		}
 		
 	}
-
-	
-	
-	
-	
-
 }
 
 extern int outrate;
@@ -3137,6 +3141,21 @@ void CL_NetDemoRecord(std::string filename)
 void CL_NetDemoPlay(std::string filename)
 {
 	netdemo.startPlaying(filename);
+}
+
+void CL_NetDemoSnapshot()
+{
+/*	// read the length of the snapshot
+	int len = MSG_ReadLong();
+
+
+	// [SL] DEBUG!
+	Printf(PRINT_HIGH, "Skipping over %d bytes of snapshot data\n", len);
+
+	// skip over the snapshot since it is handled elsewhere
+	byte b;
+	while (len--)
+		b = MSG_ReadByte(); */
 }
 
 
