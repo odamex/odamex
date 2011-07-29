@@ -685,12 +685,15 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	// spawn a teleport fog
 	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	{
-		// [ML] 7/25/11: Incorporate pr+'s emulation of west-facing spawns being silent
-		// [ML] 7/27/11: We're going the EE route now, it's 64-bit safe
+		// emulate out-of-bounds access to finecosine / finesine tables
+		// which cause west-facing player spawns to have the spawn-fog
+		// and its sound located off the map in vanilla Doom.
 		
+		// borrowed from Eternity Engine
+
 		// haleyjd: There was a weird bug with this statement:
 		//
-		// an = ( ANG45 * ((signed int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+		// an = (ANG45 * (mthing->angle/45)) >> ANGLETOFINESHIFT;
 		//
 		// Even though this code stores the result into an unsigned variable, most
 		// compilers seem to ignore that fact in the optimizer and use the resulting
@@ -700,19 +703,9 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		// of the finesine table, and the result is what I call the "ninja spawn,"
 		// which is missing the fog and sound, as it spawns somewhere out in the
 		// far reaches of the void.
-
-		//if(!co_compatflaghere)		// If we decide to keep the fixed behavior...
-		//{
-		//	an = ANG45 * (angle_t)(mthing->angle / 45);
-		//	xa = finecosine[an >> ANGLETOFINESHIFT];
-		//	ya = finesine[an >> ANGLETOFINESHIFT];
-		//}
-		//else
-		//{
 		
-		// emulate out-of-bounds access to finecosine / finesine tables
 		angle_t mtangle = (angle_t)(mthing->angle / 45);
-		 
+     
 		an = ANG45 * mtangle;
 
 		switch(mtangle)
@@ -720,24 +713,24 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 			case 4: // 180 degrees (0x80000000 >> 19 == -4096)
 				xa = finetangent[2048];
 				ya = finetangent[0];
-			break;
+				break;
 			case 5: // 225 degrees (0xA0000000 >> 19 == -3072)
 				xa = finetangent[3072];
 				ya = finetangent[1024];
-			break;
+				break;
 			case 6: // 270 degrees (0xC0000000 >> 19 == -2048)
 				xa = finesine[0];
 				ya = finetangent[2048];
-			break;
+				break;
 			case 7: // 315 degrees (0xE0000000 >> 19 == -1024)
 				xa = finesine[1024];
 				ya = finetangent[3072];
-			break;
+				break;
 			default: // everything else works properly
 				xa = finecosine[an >> ANGLETOFINESHIFT];
 				ya = finesine[an >> ANGLETOFINESHIFT];
-			break;
-		 }
+				break;
+		}
 
 		mo = new AActor (x+20*xa, y+20*ya, z, MT_TFOG);
 
