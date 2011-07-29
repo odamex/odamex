@@ -690,6 +690,16 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			     Channel[cnum].pitch,
 			     looping);
 
+	// I_StartSound can not find an empty channel.  Make sure this channel is clear
+	if (handle < 0)
+	{
+		Channel[cnum].handle = -1;
+		Channel[cnum].sfxinfo = NULL;
+		Channel[cnum].pt = NULL;
+		S_StopChannel(cnum);
+		return;
+	}
+
   // Assigns the handle to one of the channels in the
   //  mix/output buffer.
 	Channel[cnum].handle = handle;
