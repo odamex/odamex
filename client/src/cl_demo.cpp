@@ -341,7 +341,7 @@ bool NetDemo::startPlaying(const std::string filename)
 // 
 // pause()
 //
-// Changes the netdemo's state to paused.  No messages will be read or written
+// Changes the netdemo's state to paused.  No messages will be read
 // while in this state.
 
 bool NetDemo::pause()

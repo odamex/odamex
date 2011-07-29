@@ -602,13 +602,13 @@ END_COMMAND(netrecord)
 
 BEGIN_COMMAND(netpause)
 {
-	if(netdemo.isPaused())
+	if (netdemo.isPaused())
 	{
 		netdemo.resume();
 		paused = false;
 		Printf(PRINT_HIGH, "Demo resumed.\n");
 	} 
-	else 
+	else if (netdemo.isPlaying())
 	{
 		netdemo.pause();
 		paused = true;
