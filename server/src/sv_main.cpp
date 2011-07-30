@@ -2264,6 +2264,18 @@ void SV_ConnectClient (void)
 	if(connection_type == 1)
 	{
 		players[n].playerstate = PST_DOWNLOAD;
+		for (size_t j = 0; j < players.size(); j++)
+		{
+			if (n == j)
+				continue;
+
+			// [SL] 2011-07-30 - Other players should treat downloaders
+			// as spectators
+			MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+			MSG_WriteByte (&(players[j].client.reliablebuf), players[n].id);
+			MSG_WriteByte (&(players[j].client.reliablebuf), true);
+		}
+
 		return;
 	}
 	else if(connection_type == 2)
