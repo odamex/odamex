@@ -1107,7 +1107,14 @@ void G_InitNew (const char *mapname)
 
 		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
 		for (i = 0; i < players.size(); i++) {
+			// [SL] 2011-07-30 - Don't force downloading players to become spectators
+			// it stops their downloading
+			if (players[i].ingame())
+				continue;
+
 			for (size_t j = 0; j < players.size(); j++) {
+				if (players[j].ingame())
+					continue;
 				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
 				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
 				MSG_WriteByte (&(players[j].client.reliablebuf), true);
