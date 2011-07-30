@@ -389,8 +389,9 @@ bool NetDemo::stopRecording()
 	state = NetDemo::stopped;
 
 	byte marker = svc_netdemostop;
-	unsigned int len = LONG(sizeof(marker));
-	unsigned int tic = LONG(gametic);
+	uint32_t len = sizeof(marker);
+	len = LONG(len);
+	uint32_t tic = LONG(gametic);
 
 	fwrite(&len, sizeof(len), 1, demofp);
 	fwrite(&tic, sizeof(tic), 1, demofp);
@@ -534,8 +535,8 @@ void NetDemo::readMessages(buf_t* netbuffer)
 		return;
 	}
 
-	unsigned int len = 0;
-	unsigned int tic = 0;
+	uint32_t len = 0;
+	uint32_t tic = 0;
 	size_t cnt = 0;
 	cnt += sizeof(len) * fread(&len, sizeof(len), 1, demofp);
 	len = LONG(len);			// convert to native byte order
@@ -600,9 +601,10 @@ void NetDemo::capture(const buf_t* netbuffer)
 	}
 
 	// captures just the net packets before the game
-	unsigned int len = LONG(netbuffer->cursize);
+	uint32_t len = netbuffer->cursize;
+	len = LONG(len);
 	fwrite(&len, sizeof(len), 1, demofp);
-	unsigned int tic = LONG(gametic);
+	uint32_t tic = LONG(gametic);
 	fwrite(&tic, sizeof(tic), 1, demofp);
 
 	fwrite(netbuffer->data, 1, netbuffer->cursize, demofp);
