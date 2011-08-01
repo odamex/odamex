@@ -147,8 +147,6 @@ void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress(int sequence);
 
-void CL_LocalDemoTic(void);
-void CL_NetDemoStop(void);
 void CL_NetDemoRecord(std::string filename);
 void CL_NetDemoPlay(std::string filename);
 
@@ -2740,6 +2738,71 @@ void CL_Spectate()
 		displayplayer_id = consoleplayer_id;
 }
 
+//
+// CL_LocalDemoTic
+//
+
+void CL_LocalDemoTic(void)
+{
+	player_t* clientPlayer = &consoleplayer();
+	fixed_t x, y, z;
+	fixed_t momx, momy, momz;
+	fixed_t pitch, roll, viewheight, deltaviewheight;
+	angle_t angle;
+	int jumpTics, reactiontime;
+	byte waterlevel;
+	
+	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
+	
+	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
+
+	waterlevel = MSG_ReadByte();
+	x = MSG_ReadLong();
+	y = MSG_ReadLong();
+	z = MSG_ReadLong();
+	momx = MSG_ReadLong();
+	momy = MSG_ReadLong();
+	momz = MSG_ReadLong();
+	angle = MSG_ReadLong();
+	pitch = MSG_ReadLong();
+	roll = MSG_ReadLong();
+	viewheight = MSG_ReadLong();
+	deltaviewheight = MSG_ReadLong();
+	jumpTics = MSG_ReadLong();
+	reactiontime = MSG_ReadLong();
+
+	if(clientPlayer->mo)
+	{
+		clientPlayer->mo->x = x;
+		clientPlayer->mo->y = y;
+		clientPlayer->mo->z = z;
+		clientPlayer->mo->momx = momx;
+		clientPlayer->mo->momy = momy;
+		clientPlayer->mo->momz = momz;
+		clientPlayer->mo->angle = angle;
+		clientPlayer->mo->pitch = pitch;
+		clientPlayer->mo->roll = roll;
+		clientPlayer->viewheight = viewheight;
+		clientPlayer->deltaviewheight = deltaviewheight;
+		clientPlayer->jumpTics = jumpTics;
+		clientPlayer->mo->reactiontime = reactiontime;
+		clientPlayer->mo->waterlevel = waterlevel;
+	}
+}
+
+//
+// CL_NetDemoStop
+//
+
+void CL_NetDemoStop(void)
+{
+	netdemo.stopPlaying();
+}
+
 // client source (once)
 typedef void (*client_callback)();
 typedef std::map<svc_t, client_callback> cmdmap;
@@ -2881,12 +2944,6 @@ void CL_ParseCommands(void)
 		}
 		
 	}
-
-	
-	
-	
-	
-
 }
 
 extern int outrate;
@@ -3068,64 +3125,6 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
         default:
         break;
     }
-}
-
-void CL_LocalDemoTic()
-{
-	player_t* clientPlayer = &consoleplayer();
-	fixed_t x, y, z;
-	fixed_t momx, momy, momz;
-	fixed_t pitch, roll, viewheight, deltaviewheight;
-	angle_t angle;
-	int jumpTics, reactiontime;
-	byte waterlevel;
-	
-	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
-	
-	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
-
-	waterlevel = MSG_ReadByte();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
-	momx = MSG_ReadLong();
-	momy = MSG_ReadLong();
-	momz = MSG_ReadLong();
-	angle = MSG_ReadLong();
-	pitch = MSG_ReadLong();
-	roll = MSG_ReadLong();
-	viewheight = MSG_ReadLong();
-	deltaviewheight = MSG_ReadLong();
-	jumpTics = MSG_ReadLong();
-	reactiontime = MSG_ReadLong();
-
-	if(clientPlayer->mo)
-	{
-		clientPlayer->mo->x = x;
-		clientPlayer->mo->y = y;
-		clientPlayer->mo->z = z;
-		clientPlayer->mo->momx = momx;
-		clientPlayer->mo->momy = momy;
-		clientPlayer->mo->momz = momz;
-		clientPlayer->mo->angle = angle;
-		clientPlayer->mo->pitch = pitch;
-		clientPlayer->mo->roll = roll;
-		clientPlayer->viewheight = viewheight;
-		clientPlayer->deltaviewheight = deltaviewheight;
-		clientPlayer->jumpTics = jumpTics;
-		clientPlayer->mo->reactiontime = reactiontime;
-		clientPlayer->mo->waterlevel = waterlevel;
-	}
-
-}
-
-void CL_NetDemoStop()
-{
-	netdemo.stopPlaying();
 }
 
 void CL_NetDemoRecord(std::string filename)

@@ -140,15 +140,5 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictMove (void);
 void CL_SendUserInfo(void);
 bool CL_Connect(void);
-//demos - NullPoint
-void CL_BeginNetRecord(const char* demoname);
-void CL_WirteNetDemoMessages(buf_t* netbuffer, bool usercmd);
-void CL_StopRecordingNetDemo(void);
-void CL_ReadNetDemoMeassages(buf_t* net_message);
-void CL_StopDemoPlayBack(void);
-void CL_StartDemoPlayBack(std::string demoname);
-void CL_CaptureDeliciousPackets(buf_t* netbuffer);
-void CL_Reconnect(void);
 #endif
-
 
