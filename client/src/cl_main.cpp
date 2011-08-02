@@ -83,9 +83,6 @@ BOOL      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
-// [SL] 2011-07-06 - not really connected (playing back a netdemo)
-bool		simulated_connection = false;		
-
 int       packetseq[256];
 byte      packetnum;
 
@@ -101,6 +98,8 @@ netid_map_t actor_by_netid;
 
 // [SL] 2011-06-27 - Class to record and playback network recordings
 NetDemo netdemo;
+// [SL] 2011-07-06 - not really connected (playing back a netdemo)
+bool simulated_connection = false;		
 
 EXTERN_CVAR (sv_weaponstay)
 
@@ -146,9 +145,6 @@ void CL_GetServerSettings(void);
 void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress(int sequence);
-
-void CL_NetDemoRecord(std::string filename);
-void CL_NetDemoPlay(std::string filename);
 
 //	[Toke - CTF]
 void CalcTeamFrags (void);
@@ -560,6 +556,20 @@ BEGIN_COMMAND (exit)
 	CL_QuitCommand();
 }
 END_COMMAND (exit)
+
+
+void CL_NetDemoRecord(const std::string &filename)
+{
+	std::string full_filename(filename);
+	full_filename.append(".odd");
+	netdemo.startRecording(full_filename);
+}
+
+void CL_NetDemoPlay(const std::string &filename)
+{
+	netdemo.startPlaying(filename);
+}
+
 
 BEGIN_COMMAND(stopnetdemo)
 {
@@ -3126,18 +3136,6 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
         break;
     }
 }
-
-void CL_NetDemoRecord(std::string filename)
-{
-	filename.append(".odd");
-	netdemo.startRecording(filename);
-}
-
-void CL_NetDemoPlay(std::string filename)
-{
-	netdemo.startPlaying(filename);
-}
-
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
