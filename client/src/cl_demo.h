@@ -14,8 +14,8 @@ public:
 	NetDemo(const NetDemo &rhs);
 	NetDemo& operator=(const NetDemo &rhs);
 	
-	bool startPlaying(const std::string filename);
-	bool startRecording(const std::string filename);
+	bool startPlaying(const std::string &filename);
+	bool startRecording(const std::string &filename);
 	bool stopPlaying();
 	bool stopRecording();
 	bool pause();
@@ -31,7 +31,7 @@ public:
 private:
 	void cleanUp();
 	void copy(NetDemo &to, const NetDemo &from);
-	void error(const std::string message);
+	void error(const std::string &message);
 	void reset();
 
 	bool writeHeader();

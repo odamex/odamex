@@ -104,7 +104,7 @@ void NetDemo::cleanUp()
 
 
 
-void NetDemo::error(const std::string message)
+void NetDemo::error(const std::string &message)
 {
 	cleanUp();
 	gameaction = ga_nothing;
@@ -240,7 +240,7 @@ bool NetDemo::readIndex()
 // header is written which will be overwritten with the proper information
 // in stopRecording().
 
-bool NetDemo::startRecording(const std::string filename)
+bool NetDemo::startRecording(const std::string &filename)
 {
 	this->filename = filename;
 
@@ -284,7 +284,7 @@ bool NetDemo::startRecording(const std::string filename)
 //
 //
 
-bool NetDemo::startPlaying(const std::string filename)
+bool NetDemo::startPlaying(const std::string &filename)
 {
 	this->filename = filename;
 
