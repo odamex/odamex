@@ -227,6 +227,7 @@ BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     
 	S_Init (snd_sfxvolume, snd_musicvolume);
 }
 END_CUSTOM_CVAR (snd_channels)
+CVAR_FUNC_DECL (snd_nomusic, "0", CVAR_ARCHIVE)									// Toggles music subsystem
 
 // Status bar
 // ----------

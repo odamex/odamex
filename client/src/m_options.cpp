@@ -125,6 +125,7 @@ EXTERN_CVAR (mouse_threshold)
 
 // [Ralphis - Menu] Sound Menu
 EXTERN_CVAR (snd_musicvolume)
+EXTERN_CVAR (snd_nomusic)
 EXTERN_CVAR (snd_sfxvolume)
 EXTERN_CVAR (snd_crossover)
 EXTERN_CVAR (cl_connectalert)
@@ -404,6 +405,7 @@ static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
 	{ bricktext ,   "Sound Levels"                          , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
 	{ slider    ,	"Music Volume"                          , {&snd_musicvolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
+	{ discrete	,	"Disable Music System"					, {&snd_nomusic},		{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ slider    ,	"Sound Volume"                          , {&snd_sfxvolume},		{0.0},      {1.0},	    {0.1},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                         , {&snd_crossover},	    {2.0},		{0.0},		{0.0},		{OnOff} },	
 	{ redtext   ,	" "                                     , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
