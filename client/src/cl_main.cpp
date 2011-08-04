@@ -592,6 +592,12 @@ BEGIN_COMMAND(netrecord)
 		return;
 	}
 
+	if (!connected || simulated_connection)
+	{
+		Printf(PRINT_HIGH, "You must be connected to a server to record a netdemo.\n");
+		return;
+	}
+
 	std::string filename;
 	if (argc < 2)
 	{
@@ -633,10 +639,7 @@ BEGIN_COMMAND(netplay)
 		return;
 	}
 
-	if(connected)
-	{
-		CL_QuitNetGame();
-	}
+	CL_QuitNetGame();
 
 	std::string filename = argv[1];
 	CL_NetDemoPlay(filename);
