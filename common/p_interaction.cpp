@@ -1094,22 +1094,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			SV_UpdateFrags(*splayer);
 		}
 	}
-
-    // [CG] No need for any of this anymore
-    /*
-	if (demoplayback && source && source->player && target->player)
-	{
-		if (target->player == source->player) // Nes - Local demo
-		{
-			source->player->fragcount--;
-		}
-		else
-		{
-			source->player->fragcount++;
-		}
-	}
-    */
-
+	
 	// [Toke - CTF]
 	if (sv_gametype == GM_CTF && target->player)
 	{
@@ -1126,12 +1111,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		if (!source && !joinkill && !shotclock)
 		{
 			tplayer->fragcount--; // [RH] Cumulative frag count
-
-			// [JDC] Minus a team frag
-			if (sv_gametype == GM_TEAMDM)
-			{
-				TEAMpoints[tplayer->userinfo.team]--;
-			}
 		}
 
 		CTF_CheckFlags(*target->player);
