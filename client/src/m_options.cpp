@@ -98,6 +98,7 @@ EXTERN_CVAR (lookspring)
 EXTERN_CVAR (lookstrafe)
 EXTERN_CVAR (hud_crosshair)
 EXTERN_CVAR (cl_mouselook)
+EXTERN_CVAR (r_detail)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_level8soundfeature)
@@ -697,9 +698,17 @@ static char VMEnterText[] = "Press ENTER to set mode";
 static char VMTestText[] = "Press T to test mode for 5 seconds";
 #endif
 
+static value_t DetailModes[] = {
+	{ 0.0, "Normal" },
+	{ 1.0, "Double Horizontal" },
+	{ 2.0, "Double Vertical" },
+	{ 3.0, "Double Horiz & Vert" }
+};
+
+
 static menuitem_t ModesItems[] = {
 	{ discrete, "Screen mode",			{&DummyDepthCvar},		{0.0}, {0.0},	{0.0}, {Depths} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ discrete,	"Detail Mode",			{&r_detail},			{4.0}, {0.0},	{0.0}, {DetailModes} },
 #ifdef _XBOX
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
