@@ -2143,7 +2143,7 @@ void G_DoReborn (player_t &playernum);
 void SV_ConnectClient (void)
 {
 	int n;
-	size_t i;
+	size_t i,j;
 	int challenge = MSG_ReadLong();
 	client_t  *cl;
 
@@ -2264,9 +2264,9 @@ void SV_ConnectClient (void)
 	if(connection_type == 1)
 	{
 		players[n].playerstate = PST_DOWNLOAD;
-		for (size_t j = 0; j < players.size(); j++)
+		for (j = 0; j < players.size(); j++)
 		{
-			if (n == j)
+			if ((unsigned)n == j)
 				continue;
 
 			// [SL] 2011-07-30 - Other players should treat downloaders

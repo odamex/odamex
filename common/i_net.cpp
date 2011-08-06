@@ -109,9 +109,9 @@ typedef int SOCKET;
 #include "upnpcommands.h"
 #endif
 
-int         inet_socket;
-int         localport;
-netadr_t    net_from;   // address of who sent the packet
+unsigned int	inet_socket;
+int         	localport;
+netadr_t    	net_from;   // address of who sent the packet
 
 buf_t       net_message(MAX_UDP_PACKET);
 extern bool	simulated_connection;

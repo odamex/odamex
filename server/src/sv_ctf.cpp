@@ -365,7 +365,7 @@ void CTF_SpawnDroppedFlag (flag_t f, int x, int y, int z)
 
 	data->actor = flag->ptr();
 	data->state = flag_dropped;
-	data->timeout = (ctf_flagtimeout * TICRATE);
+	data->timeout = (size_t)(ctf_flagtimeout * TICRATE);
 	data->flagger = 0;
 }
 
