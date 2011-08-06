@@ -337,10 +337,6 @@ int
 	{
 		if (!Channel[i].sfxinfo)	// No sfx playing here (sfxinfo == NULL)
 		{
-			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
-				sv_gametype == GM_CTF)
-				continue;
-			
 			cnum = i;
 			break;
 		}
@@ -353,10 +349,6 @@ int
 		for (i=0 ; i < (int)numChannels ; i++)
 			if (Channel[i].priority <= priority)
 			{
-				if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
-					sv_gametype == GM_CTF)
-					continue;
-				
 				cnum = i;
 				break;
 			}
@@ -618,7 +610,11 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	{
 		basepriority = -1000;
 	}
-	else if (attenuation <= 0)
+	else if (channel == CHAN_ANNOUNCERE || channel == CHAN_ANNOUNCERF)
+	{
+		basepriority = 300;
+	}
+	else if (attenuation <= ATTN_NONE)
 	{
 		basepriority = 200;
 	}
@@ -642,7 +638,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 				basepriority = 50;
 				break;
 		}
-		if (attenuation == 1)
+		if (attenuation == ATTN_NORM)
 			basepriority += 50;
 	}
 	priority = basepriority;
@@ -673,14 +669,10 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 
 	S_StopSound (pt, channel);
 
-  // try to find a channel
-	if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
-		 sv_gametype == GM_CTF)
-		cnum = channel;
-	else
-		cnum = S_getChannel(pt, sfx, priority);
+  	// try to find a channel
+	cnum = S_getChannel(pt, sfx, priority);
 
-  // no channel found
+  	// no channel found
 	if (cnum < 0)
 		return;
 
@@ -851,9 +843,6 @@ void S_StopSound (fixed_t *pt)
 	for (unsigned int i = 0; i < numChannels; i++)
 		if (Channel[i].sfxinfo && (Channel[i].pt == pt))
 		{
-			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
-				 sv_gametype == GM_CTF)
-				return;
 			S_StopChannel (i);
 		}
 }
@@ -1197,7 +1186,7 @@ static void S_StopChannel (unsigned int cnum)
 
 	if(cnum > numChannels - 1 || cnum < 0)
 	{
-		printf("Trying to stop invalid channel %d", cnum);
+		printf("Trying to stop invalid channel %d\n", cnum);
 		return;
 	}
 
