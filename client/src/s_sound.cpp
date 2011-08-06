@@ -665,7 +665,16 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 
 	// joek - hack for silent bfg
 	if(sfx_id == sfx_noway || sfx_id == sfx_oof)
-		S_StopSound (pt);
+	{
+		for (size_t i = 0; i < numChannels; i++)
+		{
+			if (Channel[i].sfxinfo && (Channel[i].pt == pt) 
+				&& Channel[i].entchannel == CHAN_WEAPON)
+			{
+				S_StopChannel (i);
+			}
+		}
+	}
 
 	S_StopSound (pt, channel);
 
@@ -726,6 +735,9 @@ void S_SoundID (fixed_t x, fixed_t y, int channel, int sound_id, float volume, i
 
 void S_SoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
+	if (!ent)
+		return;
+
 	if (ent->subsector->sector->MoreFlags & SECF_SILENT)
 		return;	
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, false);
@@ -738,6 +750,9 @@ void S_SoundID (fixed_t *pt, int channel, int sound_id, float volume, int attenu
 
 void S_LoopedSoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
+	if (!ent)
+		return;
+
 	if (ent->subsector->sector->MoreFlags & SECF_SILENT)
 		return;	
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, true);

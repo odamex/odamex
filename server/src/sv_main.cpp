@@ -1003,24 +1003,20 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 	for (size_t i = 0; i < players.size(); i++ )
 	{
-		if (players[i].ingame())
+		if (players[i].ingame() && players[i].userinfo.team == team)
 		{
-			if (players[i].userinfo.team == team)	// [Toke - Teams]
-			{
-				cl = &clients[i];
+			cl = &clients[i];
 
-				MSG_WriteMarker  (&cl->netbuf, svc_startsound );
-                if (players[i].mo == NULL)
-                    MSG_WriteShort (&cl->netbuf, 0);
-                else
-                    MSG_WriteShort (&cl->netbuf, players[i].mo->netid);
-				MSG_WriteLong (&cl->netbuf, 0);
-				MSG_WriteLong (&cl->netbuf, 0);
-				MSG_WriteByte  (&cl->netbuf, channel );
-				MSG_WriteByte  (&cl->netbuf, sfx_id );
-			    MSG_WriteByte  (&cl->netbuf, attenuation );
-			    MSG_WriteByte  (&cl->netbuf, 255 );
-			}
+			MSG_WriteMarker	(&cl->netbuf, svc_startsound);
+			// Set netid to 0 since it's not a sound originating from any player's location
+			MSG_WriteShort	(&cl->netbuf, 0);		// netid
+			MSG_WriteLong	(&cl->netbuf, 0);		// x
+			MSG_WriteLong	(&cl->netbuf, 0);		// y
+			MSG_WriteByte	(&cl->netbuf, channel);
+			MSG_WriteByte	(&cl->netbuf, sfx_id);
+			MSG_WriteByte	(&cl->netbuf, attenuation);
+			MSG_WriteByte	(&cl->netbuf, 255 );	// volume [0 - 255]
+			
 		}
 	}
 }
