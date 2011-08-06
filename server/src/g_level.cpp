@@ -24,7 +24,6 @@
 
 #include <string>
 #include <vector>
-#include <algorithm>
 
 #include "d_main.h"
 #include "m_alloc.h"
@@ -680,124 +679,245 @@ BEGIN_COMMAND (wad) // denis - changes wads
 END_COMMAND (wad)
 
 
-// Map list code
-//
-
-// Map list entry structure
-typedef struct
+// Handle map cycling.
+struct maplist_s
 {
-	std::string MapName;
-	std::string WadCmds;
-} MapListEntry_t;
+	char *MapName;
+	char *WadCmds;
 
-// The map list itself
-std::vector<MapListEntry_t> MapList;
+	struct maplist_s *Next;
+};
 
-// The next map in the rotation, incrementally
-size_t MapListPosition = 0;
+struct maplist_s *MapListBegin = NULL;
+struct maplist_s *MapListEnd = NULL;
+struct maplist_s *MapListPointer = NULL;
 
-void G_ClearMapList()
+// GhostlyDeath <August 14, 2008> -- Random Map List
+std::vector<maplist_s*> RandomMaps;
+size_t RandomMapPos = 0;
+
+void G_ClearRandomMaps(void)
 {
-	MapList.clear();
-	MapListPosition = 0;
+	RandomMaps.clear();
+	RandomMapPos = 0;
 }
 
-void G_RandomizeMapList()
+void G_GenerateRandomMaps(void)
 {
-    random_shuffle(MapList.begin(), MapList.end());
-    MapListPosition = 0;
-}
+	bool* Used = NULL;
+	size_t Count = 0;
+	maplist_s* Rover = NULL;
+	size_t i, j, random_seed;
+	std::vector<maplist_s*> Ptrs;
 
-// Randomize the entire map list
-CVAR_FUNC_IMPL (sv_shufflemaplist)
-{
-    G_RandomizeMapList();
-}
+	// Clear old map list
+	G_ClearRandomMaps();
 
-// Adds a map and optional wad files to be loaded into the map list
-BEGIN_COMMAND (addmap)
-{
-	MapListEntry_t MapEntry; 
+	if (!MapListBegin)
+		return;
 
-	if (argc < 2)
+	// First count the number of entries in the map list
+	Rover = MapListBegin;
+
+	while (Rover)
 	{
-	    Printf(PRINT_HIGH, "Usage: addmap mapname [wads]\n");
-	    return;
+		Count++;
+		Ptrs.push_back(Rover);
+		Rover = Rover->Next;
+
+		if (Rover == MapListBegin)
+			break;
 	}
 
-    MapEntry.MapName = argv[1];
+	if (Count <= 0)
+		return;
 
-    // Add any wads if they were specified
-    if (argc > 2)
-    {
-        for (int i = 2; i < argc; ++i)
+	// Allocate our bool array
+	Used = new bool[Count];
+
+	for (i = 0; i < Count; i++)
+		Used[i] = 0;
+		
+    srand((unsigned)time(0)); 
+
+	// Now populate the list
+	for (i = 0; i < Count; i++)
+	{
+	    random_seed = rand();
+		j = random_seed % Count;
+
+		// Move forward if j is used
+		while (Used[j])
+		{
+			j++;
+
+			if (j == Count)
+				j = 0;
+		}
+
+		// Add it...
+		RandomMaps.push_back(Ptrs[j]);
+
+		// Marked used
+		Used[j] = true;
+	}
+
+	delete [] Used;
+
+	RandomMapPos = 0;
+}
+
+CVAR_FUNC_IMPL (sv_shufflemaplist)
+{
+	// Create random list
+	if (var)
+		G_GenerateRandomMaps();
+	// Erase random list...
+	else
+		G_ClearRandomMaps();
+}
+
+BEGIN_COMMAND (addmap)
+{
+	if (argc > 1)
+	{
+	    if (argc > 2 && !W_IsIWAD(argv[2]))
         {
-            MapEntry.WadCmds += argv[i];
-            MapEntry.WadCmds += " ";
+            Printf(PRINT_HIGH,"IWAD not specified, map will not be loaded.\n");
+            return;
         }
-    }
-    // Or.. check if there are maps already in the list, if so, get the last one
-    // and copy them for this one
-    else if (!MapList.empty())
-    {
-        MapEntry.WadCmds = MapList[MapList.size() - 1].WadCmds;
-    }
-    // Otherwise use the list of loaded wads instead (since the wad ccmd can
-    // change the wads at runtime, we want to be consistent with the maplist)
-    else
-    {
-        std::string Filename;
-
-        // i = 1, so we bypass loading odamex.wad (or displaying it with the
-        // maplist ccmd)
-        for (size_t i = 1; i < wadfiles.size(); ++i)
+        else
         {
-            M_ExtractFileName(wadfiles[i], Filename);
-            
-            MapEntry.WadCmds += Filename;
-            MapEntry.WadCmds += " ";
-        }
-    }
+            struct maplist_s *NewMap;
+            struct maplist_s *OldMap = NULL;
 
-    // Push the new entry on to the end of the vector
-    MapList.push_back(MapEntry);
+            // Initalize the structure
+            NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
+            NewMap->WadCmds = NULL;
+
+            // Add it to our linked list
+            if ( MapListBegin == NULL )
+            { // This is the first entry
+                MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
+                OldMap = NULL;
+            }
+            else
+            { // Tag it on to the end.
+                OldMap = MapListEnd;
+                MapListEnd->Next = NewMap;
+                MapListEnd = NewMap;
+                NewMap->Next = MapListBegin;
+            }
+
+            // Fill in MapName
+            NewMap->MapName = (char *) Malloc(strlen(argv[1])+1);
+            NewMap->MapName[strlen(argv[1])] = '\0';
+            strcpy(NewMap->MapName, argv[1]);
+
+            // Any more arguments are passed to the wad ccmd
+            if ( argc > 2 )
+            {
+                std::string arglist = "wad ";
+
+                for (size_t i = 2; i < argc; ++i)
+                {
+                    arglist += argv[i];
+                    arglist += ' ';
+                }
+
+                NewMap->WadCmds = (char *) Malloc(strlen(arglist.c_str())+1);
+                NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
+                strcpy(NewMap->WadCmds, arglist.c_str());
+            }
+            else// if ( NewMap == MapListBegin )
+            {
+                // GhostlyDeath <August 14, 2008> -- Changed logic, remember WAD
+                if (OldMap)
+                {
+                    NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds)+1);
+                    NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
+                    strcpy(NewMap->WadCmds, OldMap->WadCmds);
+                }
+                else
+                {
+                    NewMap->WadCmds = (char *) Malloc(2);
+                    NewMap->WadCmds[0] = '-';
+                    NewMap->WadCmds[1] = '\0';
+                }
+            }
+
+            // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
+            if (sv_shufflemaplist)
+                G_GenerateRandomMaps();
+        }
+	}
 }
 END_COMMAND (addmap)
 
-// Print out the contents of the map list
 BEGIN_COMMAND (maplist)
 {
-	if (MapList.empty())
+	if ( MapListBegin == NULL )
 	{
 		Printf( PRINT_HIGH, "Map list is empty.\n" );
 		return;
 	}
 
-	for (size_t i = 0; i < MapList.size(); ++i)
+	struct maplist_s *Iterator = MapListBegin;
+
+	while ( 1 )
 	{
-        Printf( PRINT_HIGH, "%lu - Map: %s - Wads: %s\n", i + 1, 
-            MapList[i].MapName.c_str(), MapList[i].WadCmds.c_str());
+		if ( Iterator->WadCmds )
+			Printf( PRINT_HIGH, "-> Wad: %s\n", Iterator->WadCmds);
+		Printf( PRINT_HIGH, " ^ Map: %s\n", Iterator->MapName);
+
+		Iterator = Iterator->Next;
+		if ( Iterator == MapListBegin ) // Looped back to the beginning.
+			break;
 	}
 }
 END_COMMAND (maplist)
 
-// Clear all maps in the map list
 BEGIN_COMMAND (clearmaplist)
 {
-	if (MapList.empty())
+	if ( MapListBegin == NULL )
 	{
-		Printf( PRINT_HIGH, "Map list is already empty.\n" );
+		Printf( PRINT_HIGH, "Map list is empty.\n" );
 		return;
 	}
 
-    G_ClearMapList();
+	MapListPointer = MapListBegin;
+
+	// Rip the ends off the linked list.
+	MapListEnd->Next = NULL;
+	MapListEnd = NULL;
+	MapListBegin = NULL;
+
+	struct maplist_s *NextPointer = MapListPointer->Next;
+
+	// Crawl through the linked list zapping entries.
+	while ( 1 )
+	{
+		M_Free( MapListPointer->MapName );
+		M_Free( MapListPointer->WadCmds );
+
+		M_Free( MapListPointer );
+
+		if ( NextPointer == NULL )
+			break; // The linked list is dead.
+
+		MapListPointer = NextPointer;
+		NextPointer = NextPointer->Next;
+	}
+
+	MapListPointer = NULL; // make sure
+
+	G_ClearRandomMaps();
 }
 END_COMMAND (clearmaplist)
 
-// Jump to next map in the list, with intermission
 BEGIN_COMMAND (nextmap)
 {
-	if (MapList.empty())
+	if (!MapListPointer)
 	{
 		Printf( PRINT_HIGH, "Map list is empty.\n" );
 		return;
@@ -807,10 +927,9 @@ BEGIN_COMMAND (nextmap)
 }
 END_COMMAND (nextmap)
 
-// Forcefully go to next map without intermission screen
 BEGIN_COMMAND (forcenextmap)
 {
-	if (MapList.empty())
+	if (!MapListPointer)
 	{
 		Printf( PRINT_HIGH, "Map list is empty.\n" );
 		return;
@@ -818,6 +937,7 @@ BEGIN_COMMAND (forcenextmap)
 
 	G_ChangeMap ();
 }
+
 END_COMMAND (forcenextmap)
 
 BOOL 			secretexit;
@@ -827,7 +947,7 @@ void G_ChangeMap (void)
 {
 	unnatural_level_progression = false;
 
-	if (MapList.empty())
+	if (!MapListPointer)
 	{
 		char *next = level.nextmap;     
 
@@ -856,25 +976,42 @@ void G_ChangeMap (void)
 	}
 	else
 	{
-        MapListEntry_t &MapListEntry = MapList[MapListPosition];
+		if (sv_shufflemaplist && RandomMaps.empty() == false)
+		{
+			// Change the map
+			if (RandomMaps[RandomMapPos]->WadCmds)
+			{
+				if (strcmp(RandomMaps[RandomMapPos]->WadCmds, "-" ) != 0)
+					AddCommandString(RandomMaps[RandomMapPos]->WadCmds);
+			}
+			G_DeferedInitNew(RandomMaps[RandomMapPos]->MapName);
 
-        // Load any wads given
-		if (MapListEntry.WadCmds.empty() == false)
-			AddCommandString("wad " + MapListEntry.WadCmds);
-		
-		// Change the map and bump the position of the next maplist entry
-		G_DeferedInitNew((char *)MapListEntry.MapName.c_str());
+			// Increment position
+			RandomMapPos++;
 
-        // Reset position in maplist if we go off the end
-        if (MapListPosition + 1 < MapList.size())
-            ++MapListPosition;
-        else
-        {
-            MapListPosition = 0;
+			// If our counter has reached it's end, regenerate the map
+			if (RandomMapPos >= RandomMaps.size())
+				G_GenerateRandomMaps();
+		}
+		else
+		{
+			if ( MapListPointer->WadCmds )
+			{
+				if ( strcmp( MapListPointer->WadCmds, "-" ) != 0 )
+					AddCommandString(MapListPointer->WadCmds);
+			}
 
-			if (sv_shufflemaplist)
-                G_RandomizeMapList();
-        }
+            char *next = MapListPointer->MapName;
+
+            // for latched "deathmatch 0" cvar
+            if (gamestate == GS_STARTUP)
+            {
+                next = level.mapname;
+            }
+
+			G_DeferedInitNew(next);
+			MapListPointer = MapListPointer->Next;
+		}
 	}
 
 	// run script at the end of each map
