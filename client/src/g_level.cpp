@@ -66,6 +66,8 @@ static cluster_info_t *FindDefClusterInfo (int cluster);
 
 extern int timingdemo;
 
+extern int shotclock;
+
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_gravity)
@@ -742,7 +744,8 @@ void G_InitNew (const char *mapname)
 	demoplayback = false;
 	automapactive = false;
 	viewactive = true;
-	
+	shotclock = 0;
+
 	D_SetupUserInfo();
 
 	strncpy (level.mapname, mapname, 8);
@@ -778,6 +781,8 @@ static void goOn (int position)
 void G_ExitLevel (int position, int drawscores)
 {
 	secretexit = false;
+	shotclock = 0;
+
 	goOn (position);
 
 	//gameaction = ga_completed;
@@ -793,6 +798,8 @@ void G_SecretExitLevel (int position, int drawscores)
 	else
 		secretexit = true;
     
+	shotclock = 0;
+
     goOn (position);
 	//gameaction = ga_completed;
 }
