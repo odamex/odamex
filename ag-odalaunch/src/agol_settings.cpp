@@ -133,7 +133,7 @@ ODA_GuiOptionsBox *AGOL_Settings::CreateGuiOptionsBox(void *parent)
 	gbox->driverLabel = AG_LabelNewS(vdbox, 0, "Video Driver:   ");
 
 	gbox->driverCombo = AG_UComboNew(vdbox, AG_UCOMBO_HFILL);
-	AG_UComboSizeHint(gbox->driverCombo, "XXXXXXXXXXXX", 3);
+	AG_UComboSizeHintPixels(gbox->driverCombo, 150, 3);
 
 	AG_ListDriverNames(drvList, 128);
 
@@ -194,9 +194,9 @@ AG_Box *AGOL_Settings::CreateWadDirConfigBox(void *parent)
 {
 	AG_Box *wdbox;
 
-	wdbox = AG_BoxNewVert(parent, AG_BOX_FRAME);
+	wdbox = AG_BoxNewVert(parent, AG_BOX_HFILL | AG_BOX_FRAME);
 	AG_LabelNewS(wdbox, 0, "Wad Directories");
-	wdbox = AG_BoxNewHoriz(wdbox, 0);
+	wdbox = AG_BoxNewHoriz(wdbox, AG_BOX_HFILL);
 	AG_BoxSetPadding(wdbox, 5);
 	AG_BoxSetSpacing(wdbox, 5);
 
