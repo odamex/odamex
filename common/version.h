@@ -47,7 +47,7 @@
 // earlier than this version.
 #define SAVESIG "ODAMEXSAVE052   "	// Needs to be exactly 16 chars long
 
-#define NETDEMOVER 1
+#define NETDEMOVER 2
 
 // denis - per-file svn version stamps
 class file_version

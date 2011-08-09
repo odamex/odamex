@@ -4286,23 +4286,6 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 	}
 }
 
-//
-// MSG_WriteMarker
-//
-// denis - use this function to mark the start of your server message
-// as it allows for better debugging and optimization of network code
-//
-// Spleen - moved to sv_main.cpp to allow SV_SendPackets call
-
-void MSG_WriteMarker (buf_t *b, svc_t c)
-{
-    //[Spleen] final check to prevent huge packets from being sent to players
-    if (b->cursize > 600)
-        SV_SendPackets();
-    
-	b->WriteByte((byte)c);
-}
-
 // [RH]
 // ClientObituary: Show a message when a player dies
 //

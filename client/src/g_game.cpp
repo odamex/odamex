@@ -966,11 +966,6 @@ void G_Ticker (void)
 	if (demorecording)
 		G_WriteDemoTiccmd(); // read in all player commands
 
-	if(netdemo.isRecording() && gamestate != GS_LEVEL)
-	{
-		netdemo.capture(&net_message);
-	}
-
 	if(netdemo.isPlaying())
 	{
 		netdemo.readMessages(&net_message);
@@ -978,42 +973,46 @@ void G_Ticker (void)
 
 	if (connected && !simulated_connection)
 	{
-       while ((packet_size = NET_GetPacket()) )
-       {
-		   // denis - don't accept candy from strangers
-		   if(!NET_CompareAdr(serveraddr, net_from))
-			  break;
+		while ((packet_size = NET_GetPacket()) )
+		{
+			// denis - don't accept candy from strangers
+			if(!NET_CompareAdr(serveraddr, net_from))
+				break;
 
-           realrate += packet_size;
-		   last_received = gametic;
-		   noservermsgs = false;
+			realrate += packet_size;
+			last_received = gametic;
+			noservermsgs = false;
 
-		   CL_ReadPacketHeader();
-           CL_ParseCommands();
+			CL_ReadPacketHeader();
 
-		   if (gameaction == ga_fullconsole) // Host_EndGame was called
-			   return;
-       }
+			if (netdemo.isRecording())
+				netdemo.capture(&net_message);
 
-       if (!(gametic%TICRATE))
-       {
-          netin = realrate;
-          realrate = 0;
-       }
+			CL_ParseCommands();
 
-       if (!noservermsgs)
-		   CL_SendCmd();  // send console commands to the server
+			if (gameaction == ga_fullconsole) // Host_EndGame was called
+				return;
+		}
 
-       CL_SaveCmd();      // save console commands
+		if (!(gametic%TICRATE))
+		{
+			netin = realrate;
+			realrate = 0;
+		}
 
-       if (!(gametic%TICRATE))
-       {
-           netout = outrate;
-           outrate = 0;
-       }
+		if (!noservermsgs)
+			CL_SendCmd();  // send console commands to the server
 
-	   if (gametic - last_received > 65)
-		   noservermsgs = true;
+		CL_SaveCmd();      // save console commands
+
+		if (!(gametic%TICRATE))
+		{
+			netout = outrate;
+			outrate = 0;
+		}
+
+		if (gametic - last_received > 65)
+			noservermsgs = true;
 	}
 	else if (NET_GetPacket() && !simulated_connection)
 	{
@@ -1021,6 +1020,8 @@ void G_Ticker (void)
 		if((gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTING)
 			&& NET_CompareAdr(serveraddr, net_from))
 		{
+			if (netdemo.isRecording())
+				netdemo.capture(&net_message);
 
 			int type = MSG_ReadLong();
 
@@ -1044,7 +1045,8 @@ void G_Ticker (void)
 		}
 	}
 
-	
+	if (netdemo.isRecording())
+		netdemo.writeMessages();
 
 	// check for special buttons
 	if(serverside && consoleplayer().ingame())
