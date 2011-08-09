@@ -60,6 +60,7 @@
 #include "g_game.h"
 #include "g_level.h"
 #include "cl_main.h"
+#include "cl_demo.h"
 #include "gi.h"
 
 #ifdef _XBOX
@@ -147,6 +148,7 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowjump)
+EXTERN_CVAR(cl_nobob)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
@@ -172,9 +174,10 @@ char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
 BOOL			democlassic;
-BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 FILE *recorddemo_fp;
+extern NetDemo	netdemo;
+extern bool		simulated_connection;
 
 int			demostartgametic;
 int				iffdemover;
@@ -256,7 +259,7 @@ player_t		&displayplayer()
 player_t		&idplayer(size_t id)
 {
 	// attempt a quick cached resolution
-	size_t translation[MAXPLAYERS] = {0};
+	static size_t translation[MAXPLAYERS] = {0};
 	size_t size = players.size();
 
 	if(id >= MAXPLAYERS)
@@ -449,7 +452,7 @@ BEGIN_COMMAND (spynext)
 		else if (consoleplayer().spectator ||
 			 sv_gametype == GM_COOP ||
 			 (sv_gametype != GM_DM &&
-				players[curr].userinfo.team == consoleplayer().userinfo.team))
+				players[curr].userinfo.team == consoleplayer().userinfo.team) || netdemo.isPlaying())
 		{
 			displayplayer_id = players[curr].id;
 			break;
@@ -897,6 +900,7 @@ void G_Ticker (void)
 	gamestate_t	oldgamestate;
 	size_t i;
 
+		
 	// Run client tics;
 	CL_RunTics ();
 
@@ -962,8 +966,18 @@ void G_Ticker (void)
 	if (demorecording)
 		G_WriteDemoTiccmd(); // read in all player commands
 
-    if (connected)
-    {
+	if(netdemo.isRecording() && gamestate != GS_LEVEL)
+	{
+		netdemo.capture(&net_message);
+	}
+
+	if(netdemo.isPlaying())
+	{
+		netdemo.readMessages(&net_message);
+	}
+
+	if (connected && !simulated_connection)
+	{
        while ((packet_size = NET_GetPacket()) )
        {
 		   // denis - don't accept candy from strangers
@@ -1001,12 +1015,13 @@ void G_Ticker (void)
 	   if (gametic - last_received > 65)
 		   noservermsgs = true;
 	}
-	else if (NET_GetPacket() )
+	else if (NET_GetPacket() && !simulated_connection)
 	{
 		// denis - don't accept candy from strangers
 		if((gamestate == GS_DOWNLOAD || gamestate == GS_CONNECTING)
 			&& NET_CompareAdr(serveraddr, net_from))
 		{
+
 			int type = MSG_ReadLong();
 
 			if(type == CHALLENGE)
@@ -1028,6 +1043,8 @@ void G_Ticker (void)
 			}
 		}
 	}
+
+	
 
 	// check for special buttons
 	if(serverside && consoleplayer().ingame())
@@ -1232,6 +1249,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	unsigned			an;
 	AActor* 			mo;
 	size_t 				i;
+	fixed_t 			xa,ya;
 
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
@@ -1268,9 +1286,54 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	// spawn a teleport fog
 	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	{
-		an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+		// emulate out-of-bounds access to finecosine / finesine tables
+		// which cause west-facing player spawns to have the spawn-fog
+		// and its sound located off the map in vanilla Doom.
+		
+		// borrowed from Eternity Engine
 
-		mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
+		// haleyjd: There was a weird bug with this statement:
+		//
+		// an = (ANG45 * (mthing->angle/45)) >> ANGLETOFINESHIFT;
+		//
+		// Even though this code stores the result into an unsigned variable, most
+		// compilers seem to ignore that fact in the optimizer and use the resulting
+		// value directly in a lea instruction. This causes the signed mapthing_t
+		// angle value to generate an out-of-bounds access into the fine trig
+		// lookups. In vanilla, this accesses the finetangent table and other parts
+		// of the finesine table, and the result is what I call the "ninja spawn,"
+		// which is missing the fog and sound, as it spawns somewhere out in the
+		// far reaches of the void.
+		
+		angle_t mtangle = (angle_t)(mthing->angle / 45);
+     
+		an = ANG45 * mtangle;
+
+		switch(mtangle)
+		{
+			case 4: // 180 degrees (0x80000000 >> 19 == -4096)
+				xa = finetangent[2048];
+				ya = finetangent[0];
+				break;
+			case 5: // 225 degrees (0xA0000000 >> 19 == -3072)
+				xa = finetangent[3072];
+				ya = finetangent[1024];
+				break;
+			case 6: // 270 degrees (0xC0000000 >> 19 == -2048)
+				xa = finesine[0];
+				ya = finetangent[2048];
+				break;
+			case 7: // 315 degrees (0xE0000000 >> 19 == -1024)
+				xa = finesine[1024];
+				ya = finetangent[3072];
+				break;
+			default: // everything else works properly
+				xa = finecosine[an >> ANGLETOFINESHIFT];
+				ya = finesine[an >> ANGLETOFINESHIFT];
+				break;
+		}
+
+		mo = new AActor (x+20*xa, y+20*ya, z, MT_TFOG);
 
 		if (level.time)
 			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);	// don't start sound on first frame
@@ -1557,7 +1620,6 @@ void G_DoLoadGame (void)
 
 	CL_QuitNetGame();
 
-	netdemo = false;
 	netgame = false;
 	multiplayer = false;
 
@@ -1876,13 +1938,13 @@ void G_BeginRecording (void)
         mapid = level.mapname[3] - '0';
     }
 
-    *demo_p++ = (unsigned char)(sv_skill-1);
+    *demo_p++ = sv_skill.asInt() - 1;
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = sv_gametype;
-    *demo_p++ = sv_monstersrespawn;
-    *demo_p++ = sv_fastmonsters;
-    *demo_p++ = sv_nomonsters;
+    *demo_p++ = sv_gametype.asInt();
+    *demo_p++ = sv_monstersrespawn.asInt();
+    *demo_p++ = sv_fastmonsters.asInt();
+    *demo_p++ = sv_nomonsters.asInt();
     *demo_p++ = 0;
 
     *demo_p++ = 1;
@@ -2083,7 +2145,7 @@ BOOL G_ProcessIFFDemo (char *mapname)
 	}
 
 	if (numPlayers > 1)
-		multiplayer = netgame = netdemo = true;
+		multiplayer = netgame = true;
 
 	return false;
 }
@@ -2157,23 +2219,23 @@ void G_DoPlayDemo (bool justStreamInput)
 		if (deathmatch == 2)
 		{
 			// Altdeath
-			sv_gametype = 1.0f;
-			sv_weaponstay = 0.0f;
-			sv_itemsrespawn = 1.0f;
+			sv_gametype.Set(GM_DM);
+			sv_weaponstay.Set(0.0f);
+			sv_itemsrespawn.Set(1.0f);
 		}
 		else if (deathmatch == 1)
 		{
 			// Classic deathmatch
-			sv_gametype = 1.0f;
-			sv_weaponstay = 1.0f;
-			sv_itemsrespawn = 0.0f;
+			sv_gametype.Set(GM_DM);
+			sv_weaponstay.Set(1.0f);
+			sv_itemsrespawn.Set(0.0f);
 		}
 		else
 		{
 			// Co-op
-			sv_gametype = 0.0f;
-			sv_weaponstay = 1.0f;
-			sv_itemsrespawn = 0.0f;
+			sv_gametype.Set(GM_COOP);
+			sv_weaponstay.Set(1.0f);
+			sv_itemsrespawn.Set(0.0f);
 		}
 
 		sv_monstersrespawn = *demo_p++;
@@ -2214,7 +2276,6 @@ void G_DoPlayDemo (bool justStreamInput)
     		if(players.size() > 1)
     		{
     			netgame = true;
-    			netdemo = true;
     			multiplayer = true;
 
     			for (size_t i = 0; i < players.size(); i++) {
@@ -2233,7 +2294,6 @@ void G_DoPlayDemo (bool justStreamInput)
     		else
     		{
     			netgame = false;
-    			netdemo = false;
     			multiplayer = false;
     		}
 
@@ -2266,10 +2326,13 @@ void G_DoPlayDemo (bool justStreamInput)
 	if(demo_p[0] >= DOOM_BOOM_DEMO_START ||
 	   demo_p[0] <= DOOM_BOOM_DEMO_END)
 	{
-		demo_p += 6; // xBOOM\0
-		Printf (PRINT_HIGH, "BOOM demos are not supported in this version.\n");
-		gameaction = ga_nothing;
-		return;
+		// [SL] 2011-08-03 - Version 1 of Odamex netdemos get detected by this
+		// code as a Boom format demo.  Since neither can be played using the
+		// -playdemo paramter, inform the user.  This could probably be handled
+		// more robustly.
+		Printf (PRINT_HIGH, "Unsupported demo format.  If you are trying to play an Odamex netdemo, please use the netplay command\n");
+        gameaction = ga_nothing;
+        return;
 	}
 
 	if (ReadLong (&demo_p) != FORM_ID) {
@@ -2333,7 +2396,6 @@ BOOL G_CheckDemoStatus (void)
 		Z_Free (demobuffer);
 
 		demoplayback = false;
-		netdemo = false;
 		netgame = false;
 		multiplayer = false;
 		serverside = false;

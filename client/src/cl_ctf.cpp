@@ -119,21 +119,36 @@ void CL_CTFEvent (void)
 			break;
 
 		case SCORE_CAPTURE:
-			if(validplayer(player))
-				CTF_CheckFlags(player);
-			else
-				CTFdata[flag].flagger = 0;
+			if (validplayer(player))
+			{
+				player.flags[flag] = 0;
+			}
+
+			CTFdata[flag].flagger = 0;
+			CTFdata[flag].state = flag_home;
 			if(CTFdata[flag].actor)
 				CTFdata[flag].actor->Destroy();
+			break;
+
 		case SCORE_RETURN:
+			if (validplayer(player))
+			{
+				player.flags[flag] = 0;
+			}
+		
+			CTFdata[flag].flagger = 0;
 			CTFdata[flag].state = flag_home;
+			if(CTFdata[flag].actor)
+				CTFdata[flag].actor->Destroy();
 			break;
 
 		case SCORE_DROP:
-			if(validplayer(player))
-				CTF_CheckFlags(player);
-			else
-				CTFdata[flag].flagger = 0;
+			if (validplayer(player))
+			{
+				player.flags[flag] = 0;
+			}
+		
+			CTFdata[flag].flagger = 0;
 			CTFdata[flag].state = flag_dropped;
 			if(CTFdata[flag].actor)
 				CTFdata[flag].actor->Destroy();

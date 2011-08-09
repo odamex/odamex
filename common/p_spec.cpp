@@ -1516,7 +1516,10 @@ CVAR_FUNC_IMPL (sv_forcewater)
 
 		for (i = 0; i < numsectors; i++)
 		{
-			if (sectors[i].heightsec && sectors[i].heightsec->waterzone != 1)
+			if (sectors[i].heightsec && 
+				!(sectors[i].heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) && 
+				sectors[i].heightsec->waterzone != 1)
+
 				sectors[i].heightsec->waterzone = set;
 		}
 	}
@@ -1679,13 +1682,41 @@ void P_SpawnSpecials (void)
 		// support for drawn heights coming from different sector
 		case Transfer_Heights:
 			sec = sides[*lines[i].sidenum].sector;
+			DPrintf("Sector tagged %d: TransferHeights \n",sec->tag);			
+			if (sv_forcewater)
+			{
+				sec->waterzone = 2;
+			}
+			if (lines[i].args[1] & 2)
+			{
+				sec->MoreFlags |= SECF_FAKEFLOORONLY;
+			}
+			if (lines[i].args[1] & 4)
+			{
+				sec->MoreFlags |= SECF_CLIPFAKEPLANES;
+				DPrintf("Sector tagged %d: CLIPFAKEPLANES \n",sec->tag);				
+			}
+			if (lines[i].args[1] & 8)
+			{
+				sec->waterzone = 1;
+				DPrintf("Sector tagged %d: Sets waterzone=1 \n",sec->tag);				
+			}
+			if (lines[i].args[1] & 16)
+			{
+				sec->MoreFlags |= SECF_IGNOREHEIGHTSEC;
+				DPrintf("Sector tagged %d: IGNOREHEIGHTSEC \n",sec->tag);				
+			}
+			if (lines[i].args[1] & 32)
+			{
+				sec->MoreFlags |= SECF_NOFAKELIGHT;
+				DPrintf("Sector tagged %d: NOFAKELIGHTS \n",sec->tag);				
+			}
 			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 			{
 				sectors[s].heightsec = sec;
-				sectors[s].alwaysfake = !!lines[i].args[1];
-				if (sv_forcewater)
-					sec->waterzone = 2;
 			}
+			
+			DPrintf("Sector tagged %d: MoreFlags: %u \n",sec->tag,sec->MoreFlags);
 			break;
 
 		// killough 3/16/98: Add support for setting
@@ -2345,7 +2376,8 @@ void DPusher::RunThink ()
 			continue;
 		if (m_Type == p_wind)
 		{
-			if (sec->heightsec == NULL) // NOT special water sector
+			if (sec->heightsec == NULL ||
+				sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) // NOT special water sector
 			{
 				if (thing->z > thing->floorz) // above ground
 				{
@@ -2376,7 +2408,8 @@ void DPusher::RunThink ()
 		}
 		else // p_current
 		{
-			if (sec->heightsec == NULL)
+			if (sec->heightsec == NULL ||
+				sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
 			{ // NOT special water sector
 				if (thing->z > sec->floorheight) // above ground
 					xspeed = yspeed = 0; // no force

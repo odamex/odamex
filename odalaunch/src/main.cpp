@@ -40,7 +40,7 @@ IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {   
-    if (InitializeSocketAPI() == false)
+    if (BufferedSocket::InitializeSocketAPI() == false)
         return false;
     
     ::wxInitAllImageHandlers();
@@ -63,7 +63,7 @@ bool Application::OnInit()
 
 wxInt32 Application::OnExit()
 {
-    ShutdownSocketAPI();
+    BufferedSocket::ShutdownSocketAPI();
     
     return 0;
 }

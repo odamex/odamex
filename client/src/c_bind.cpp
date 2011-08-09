@@ -50,9 +50,9 @@ char DefBindings[] =
 	"bind 8 \"impulse 8\"; "
 	"bind - sizedown; "
 	"bind = sizeup; "
-	"bind ctrl +attack; "
-	"bind alt +strafe; "
-	"bind shift +speed; "
+	"bind leftctrl +attack; "
+	"bind leftalt +strafe; "
+	"bind leftshift +speed; "
 	"bind space +use; "
 	"bind rightarrow +right; "
 	"bind leftarrow +left; "
@@ -79,7 +79,8 @@ char DefBindings[] =
 	"bind mouse1 +attack; "
 	"bind mouse2 +strafe; "
 	"bind mouse3 +forward; "
-	"bind mouse4 +speed; "				// <- So is this
+	"bind mouse4 +jump; "				// <- So is this <- change to jump
+	"bind mouse5 +speed; "				// <- new for +speed
 	"bind joy1 +attack; "
 	"bind joy2 +strafe; "
 	"bind joy3 +speed; "
@@ -156,8 +157,8 @@ const char *KeyNames[NUM_KEYS] = {
    NULL,    NULL,    NULL,    // 0140 - 0142
 
 	// non-keyboard buttons that can be bound
-   // 0143 - 0146
-	"mouse1",	"mouse2",	"mouse3",	"mouse4",		// 4 mouse buttons
+   // 0143 - 0146 & 0173
+	"mouse1",	"mouse2",	"mouse3",	"mouse4",			// 5 mouse buttons
    // 0147 - 014A
    "mwheelup",	"mwheeldown",NULL,		NULL,			// the wheel and some extra space
    // 014B - 014E
@@ -179,7 +180,7 @@ const char *KeyNames[NUM_KEYS] = {
   // 016B - 016E
 	"hat1up",	"hat1right","hat1down",	"hat1left",
   // 016F - 0172
-	"hat2up",	"hat2right","hat2down",	"hat2left"
+	"hat2up",	"hat2right","hat2down",	"hat2left", "mouse5"
 };
 
 static std::string Bindings[NUM_KEYS];

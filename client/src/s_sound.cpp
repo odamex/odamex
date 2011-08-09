@@ -78,6 +78,7 @@ typedef struct
 	int			pitch;
 	int			priority;
 	BOOL		loop;
+	int			timer;		// countdown until sound is destroyed
 } channel_t;
 
 // [RH] Hacks for pitch variance
@@ -89,14 +90,14 @@ int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
 // joek - hack for silent bfg
 int sfx_noway, sfx_oof;
 
-// Nes - pre-v0.4.2 compat with no CHAN_ANNOUNCER
-extern int gameversion;
-
 // [RH] Print sound debugging info?
 cvar_t noisedebug ("noise", "0", 0);
 
 // the set of channels available
 static channel_t *Channel;
+
+// For ZDoom sound curve
+static byte		*SoundCurve;
 
 // Maximum volume of a sound effect.
 // Internal default is max out of 0-15.
@@ -121,7 +122,9 @@ static struct mus_playing_t
 	int   handle;
 } mus_playing;
 
+EXTERN_CVAR (snd_timeout)
 EXTERN_CVAR (snd_channels)
+EXTERN_CVAR (co_zdoomsoundcurve)
 size_t			numChannels;
 
 static int		nextcleanup;
@@ -144,7 +147,10 @@ static fixed_t P_AproxDistance2 (fixed_t *listener, fixed_t x, fixed_t y)
 
 static fixed_t P_AproxDistance2 (AActor *listener, fixed_t x, fixed_t y)
 {
-	return P_AproxDistance2 (&listener->x, x, y);
+	if (listener)
+		return P_AproxDistance2 (&listener->x, x, y);
+	else
+		return 0;
 }
 
 //
@@ -231,6 +237,9 @@ static void S_StopChannel (unsigned int cnum);
 //
 void S_Init (float sfxVolume, float musicVolume)
 {
+	int curvelump = W_GetNumForName ("SNDCURVE");
+	SoundCurve = (byte *)W_CacheLumpNum (curvelump, PU_STATIC);
+
 	unsigned int i;
 
 	//Printf (PRINT_HIGH, "S_Init: default sfx volume %f\n", sfxVolume);
@@ -245,16 +254,16 @@ void S_Init (float sfxVolume, float musicVolume)
 	// Allocating the internal channels for mixing
 	// (the maximum numer of sounds rendered
 	// simultaneously) within zone memory.
-	numChannels = (int)snd_channels;
+	numChannels = snd_channels.asInt();
 	Channel = (channel_t *) Z_Malloc (numChannels*sizeof(channel_t), PU_STATIC, 0);
 	for (i = 0; i < numChannels; i++)
 	{
-		Channel[i].pt = NULL;
+		// Initialize the channel's variables
+		memset(&Channel[i], 0, sizeof(Channel[i]));
 		Channel[i].sound_id = -1;
-		Channel[i].priority = 0;
-		Channel[i].sfxinfo = 0;
 		Channel[i].handle = -1;
-		Channel[i].entchannel = 0;
+		Channel[i].attenuation = 0.0f;
+		Channel[i].volume = 0.0f;
 	}
 	I_SetChannels (numChannels);
 
@@ -328,10 +337,6 @@ int
 	{
 		if (!Channel[i].sfxinfo)	// No sfx playing here (sfxinfo == NULL)
 		{
-			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
-				sv_gametype == GM_CTF)
-				continue;
-			
 			cnum = i;
 			break;
 		}
@@ -344,10 +349,6 @@ int
 		for (i=0 ; i < (int)numChannels ; i++)
 			if (Channel[i].priority <= priority)
 			{
-				if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
-					sv_gametype == GM_CTF)
-					continue;
-				
 				cnum = i;
 				break;
 			}
@@ -367,11 +368,76 @@ int
     // channel is decided to be cnum.
 	Channel[cnum].sfxinfo = sfxinfo;
 	Channel[cnum].pt = (fixed_t *) origin;
+	if (Channel[cnum].pt)
+	{
+		Channel[cnum].x = Channel[cnum].pt[0];
+		Channel[cnum].y = Channel[cnum].pt[1];
+	}
 
 	return cnum;
 }
 
 EXTERN_CVAR (co_level8soundfeature)
+
+
+//
+// S_AdjustZdoomSoundParams
+//
+// Utilizes the sndcurve lump to mimic volume and stereo separation
+// calculations from ZDoom 1.22
+
+int S_AdjustZdoomSoundParams(	AActor*	listener,
+								fixed_t	x,
+								fixed_t	y,
+								float*	vol,
+								int*	sep,
+								int*	pitch)
+{
+	const int MAX_SND_DIST = 2025;
+	
+	fixed_t* listener_pt;
+	if (listener)
+		listener_pt = &(listener->x);
+	else
+		listener_pt = NULL;
+		
+	int dist = (int)(FIXED2FLOAT(P_AproxDistance2 (listener_pt, x, y)));
+		
+	if (dist >= MAX_SND_DIST)
+	{
+		if (co_level8soundfeature && level.levelnum == 8)
+		{
+			dist = MAX_SND_DIST;
+		}
+		else
+		{
+			*vol = 0.0f;	// too far away to hear
+			return 0;
+		}
+	}
+	else if (dist < 0)
+	{
+		dist = 0;
+	}
+
+	*vol = (SoundCurve[dist] * snd_sfxvolume) / 128.0f;
+	if (dist > 0 && listener)
+	{
+		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
+		if (angle > listener->angle)
+			angle = angle - listener->angle;
+		else
+			angle = angle + (0xffffffff - listener->angle);
+		angle >>= ANGLETOFINESHIFT;
+		*sep = NORM_SEP - (FixedMul (S_STEREO_SWING, finesine[angle])>>FRACBITS);
+	}
+	else
+	{
+		*sep = NORM_SEP;
+	}
+	
+	return (*vol > 0);
+}
 
 //
 // Changes volume, stereo-separation, and pitch variables
@@ -396,7 +462,7 @@ int S_AdjustSoundParams(AActor*		listener,
 	angle_t	angle;
 
 	if(!listener)
-		return false;
+		return 0;
 
     // calculate the distance to sound origin
     //  and clip it if necessary
@@ -510,18 +576,26 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		if (sfx->link)
 			sfx = sfx->link;
 	}
-
-  // Check to see if it is audible,
-  //  and if not, modify the params
-	if (attenuation != ATTN_NONE)
+	
+	
+	if (S_WHICHEARS.mo && attenuation != ATTN_NONE)
 	{
-		rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
-		
-		if (consoleplayer().mo && x == S_WHICHEARS.mo->x && 
-			y == S_WHICHEARS.mo->y)
+	
+  		// Check to see if it is audible, and if not, modify the params
+		if (co_zdoomsoundcurve)
+		{
+			rc = S_AdjustZdoomSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
+		}
+		else
+		{
+			rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
+		}
+
+		if (x == S_WHICHEARS.mo->x && y == S_WHICHEARS.mo->y)
 		{
 			sep = NORM_SEP;
 		}
+		
 		if (!rc)
 			return;
 	}
@@ -530,15 +604,17 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		sep = NORM_SEP;
 	}
 
-
-
 	pitch = NORM_PITCH;
 
 	if (sfx->lumpnum == sfx_empty)
 	{
 		basepriority = -1000;
 	}
-	else if (attenuation <= 0)
+	else if (channel == CHAN_ANNOUNCERE || channel == CHAN_ANNOUNCERF)
+	{
+		basepriority = 300;
+	}
+	else if (attenuation <= ATTN_NONE)
 	{
 		basepriority = 200;
 	}
@@ -552,15 +628,17 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			case CHAN_VOICE:
 				basepriority = 75;
 				break;
-			default:
 			case CHAN_BODY:
 				basepriority = 50;
 				break;
 			case CHAN_ITEM:
 				basepriority = 25;
 				break;
+			default:
+				basepriority = 50;
+				break;
 		}
-		if (attenuation == 1)
+		if (attenuation == ATTN_NORM)
 			basepriority += 50;
 	}
 	priority = basepriority;
@@ -587,26 +665,41 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 
 	// joek - hack for silent bfg
 	if(sfx_id == sfx_noway || sfx_id == sfx_oof)
-		S_StopSound (pt);
+	{
+		for (size_t i = 0; i < numChannels; i++)
+		{
+			if (Channel[i].sfxinfo && (Channel[i].pt == pt) 
+				&& Channel[i].entchannel == CHAN_WEAPON)
+			{
+				S_StopChannel (i);
+			}
+		}
+	}
 
 	S_StopSound (pt, channel);
 
-  // try to find a channel
-	if ((channel == CHAN_ANNOUNCERF || channel == CHAN_ANNOUNCERE) &&
-		 sv_gametype == GM_CTF)
-		cnum = channel;
-	else
-		cnum = S_getChannel(pt, sfx, priority);
+  	// try to find a channel
+	cnum = S_getChannel(pt, sfx, priority);
 
-  // no channel found
+  	// no channel found
 	if (cnum < 0)
 		return;
 
 	handle = I_StartSound(sfx_id,
-			     (int)volume,
+			     volume,
 			     sep,
 			     Channel[cnum].pitch,
 			     looping);
+
+	// I_StartSound can not find an empty channel.  Make sure this channel is clear
+	if (handle < 0)
+	{
+		Channel[cnum].handle = -1;
+		Channel[cnum].sfxinfo = NULL;
+		Channel[cnum].pt = NULL;
+		S_StopChannel(cnum);
+		return;
+	}
 
   // Assigns the handle to one of the channels in the
   //  mix/output buffer.
@@ -627,6 +720,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	Channel[cnum].x = x;
 	Channel[cnum].y = y;
 	Channel[cnum].loop = looping;
+	Channel[cnum].timer = 0;		// used to time-out sounds that don't stop
 }
 
 void S_SoundID (int channel, int sound_id, float volume, int attenuation)
@@ -641,6 +735,11 @@ void S_SoundID (fixed_t x, fixed_t y, int channel, int sound_id, float volume, i
 
 void S_SoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
+	if (!ent)
+		return;
+
+	if (ent->subsector->sector->MoreFlags & SECF_SILENT)
+		return;	
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, false);
 }
 
@@ -651,6 +750,11 @@ void S_SoundID (fixed_t *pt, int channel, int sound_id, float volume, int attenu
 
 void S_LoopedSoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
+	if (!ent)
+		return;
+
+	if (ent->subsector->sector->MoreFlags & SECF_SILENT)
+		return;	
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, true);
 }
 
@@ -663,7 +767,13 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
                                const char *name, float volume, float attenuation, bool looping)
 {
 	int sfx_id = -1;
-
+	
+	if (name == NULL ||
+		(ent && ent != (AActor *)(~0) && ent->subsector->sector->MoreFlags & SECF_SILENT))
+	{
+		return;
+	}
+	
 	if (*name == '*') {
 		// Sexed sound
 		char nametemp[128];
@@ -748,9 +858,6 @@ void S_StopSound (fixed_t *pt)
 	for (unsigned int i = 0; i < numChannels; i++)
 		if (Channel[i].sfxinfo && (Channel[i].pt == pt))
 		{
-			if ((i == CHAN_ANNOUNCERF || i == CHAN_ANNOUNCERE) &&
-				 sv_gametype == GM_CTF)
-				return;
 			S_StopChannel (i);
 		}
 }
@@ -881,9 +988,6 @@ void S_UpdateSounds (void *listener_p)
 	channel_t*	c;
 
 	AActor *listener = (AActor *)listener_p;
-	if (!listener)
-		return;
-
 
     // Clean up unused data.
     // This is currently not done for 16bit (sounds cached static).
@@ -909,6 +1013,13 @@ void S_UpdateSounds (void *listener_p)
 	{
 		c = &Channel[cnum];
 		sfx = c->sfxinfo;
+
+		// [SL] 2011-06-30 - Stop a sound if it hasn't stopped yet
+		if (++c->timer > snd_timeout * TICRATE && snd_timeout > 0)
+		{
+			S_StopChannel(cnum);	
+			continue;
+		}
 
 		if (c->sfxinfo)
 		{
@@ -937,18 +1048,37 @@ void S_UpdateSounds (void *listener_p)
 
 				// check non-local sounds for distance clipping
 				//  or modify their params
-				if (listener_p != c->pt && c->attenuation != ATTN_NONE)	
+				if (listener && &(listener->x) != c->pt && c->attenuation != ATTN_NONE)	
 				{
+					fixed_t x, y;
 					if (c->pt)		// [SL] 2011-05-29
 					{
-						c->x = c->pt[0];	// update the sound coorindates
-						c->y = c->pt[1];	// for moving actors
+						x = c->pt[0];	// update the sound coorindates
+						y = c->pt[1];	// for moving actors
 					}
-					audible = S_AdjustSoundParams(	listener, 
-													c->x, c->y,
-													&volume,
-													&sep,
-													&pitch);
+					else
+					{
+						x = c->x;
+						y = c->y;
+					}
+					
+					
+					if (co_zdoomsoundcurve)
+					{
+						audible = S_AdjustZdoomSoundParams(	listener, 
+															x, y,
+															&volume,
+															&sep,
+															&pitch);
+					}
+					else
+					{					
+						audible = S_AdjustSoundParams(	listener, 
+														x, y,
+														&volume,
+														&sep,
+														&pitch);
+					}
 
 					if (!audible)
 					{
@@ -1069,9 +1199,9 @@ static void S_StopChannel (unsigned int cnum)
 	unsigned int i;
 	channel_t* c;
 
-	if(cnum > numChannels - 1)
+	if(cnum > numChannels - 1 || cnum < 0)
 	{
-		printf("Trying to stop invalid channel %d", cnum);
+		printf("Trying to stop invalid channel %d\n", cnum);
 		return;
 	}
 

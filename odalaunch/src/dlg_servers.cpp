@@ -21,9 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#include "dlg_servers.h"
-
 #include <wx/settings.h>
 #include <wx/menu.h>
 #include <wx/statusbr.h>
@@ -31,6 +28,9 @@
 #include <wx/wfstream.h>
 #include <wx/tokenzr.h>
 #include <wx/dirdlg.h>
+
+#include "dlg_servers.h"
+#include "str_utils.h"
 
 // Widget ID's
 static wxInt32 ID_SERVERLIST = XRCID("ID_SERVERLIST");
@@ -381,6 +381,6 @@ void dlgServers::LoadServersIn()
     {
         CustomServer_t *cs = (CustomServer_t *)SERVER_LIST->GetClientData(i);
         
-        MServer->AddCustomServer(cs->Address, cs->Port);
+        MServer->AddCustomServer(wxstr_tostdstr(cs->Address), cs->Port);
     }
 }

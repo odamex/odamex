@@ -46,6 +46,7 @@
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
+#include "cl_demo.h"
 
 #include <string>
 #include <vector>
@@ -74,6 +75,7 @@ buf_t     net_buffer(MAX_UDP_PACKET);
 
 bool      noservermsgs;
 int       last_received;
+byte      last_svgametic = 0;
 
 std::string connectpasshash = "";
 
@@ -94,6 +96,11 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
+// [SL] 2011-06-27 - Class to record and playback network recordings
+NetDemo netdemo;
+// [SL] 2011-07-06 - not really connected (playing back a netdemo)
+bool simulated_connection = false;		
+
 EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (cl_name)
@@ -101,6 +108,7 @@ EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
+EXTERN_CVAR (cl_unlag)
 
 CVAR_FUNC_IMPL (cl_autoaim)
 {
@@ -169,9 +177,9 @@ void CL_QuitNetGame(void)
 	if(connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
-
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
+		sv_gametype = GM_COOP;
 	}
 	
 	if (paused)
@@ -191,9 +199,19 @@ void CL_QuitNetGame(void)
 	
 	sv_freelook = 1;
 	sv_allowjump = 1;
+	sv_allowexit = 1;
 
 	actor_by_netid.clear();
 	players.clear();
+
+	if (netdemo.isRecording())
+	{
+		netdemo.stopRecording();
+	}
+	if (netdemo.isPlaying())
+	{
+		netdemo.stopPlaying();
+	}
 }
 
 
@@ -387,6 +405,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, " userinfo.netname   - %s \n",		  player->userinfo.netname);
 	Printf (PRINT_HIGH, " userinfo.team      - %d \n",		  player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.aimdist   - %d \n",		  player->userinfo.aimdist);
+    Printf (PRINT_HIGH, " userinfo.unlag     - %d \n",        player->userinfo.unlag);
 	Printf (PRINT_HIGH, " userinfo.color     - %d \n",		  player->userinfo.color);
 	Printf (PRINT_HIGH, " userinfo.skin      - %s \n",		  skins[player->userinfo.skin].name);
 	Printf (PRINT_HIGH, " userinfo.gender    - %d \n",		  player->userinfo.gender);
@@ -415,7 +434,7 @@ BEGIN_COMMAND (serverinfo)
     // [Russell] - Find the largest cvar name, used for formatting
     while (Cvar)
 	{			
-        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        if (Cvar->flags() & CVAR_SERVERINFO)
         {
             size_t FieldLength = strlen(Cvar->name());
             
@@ -435,7 +454,7 @@ BEGIN_COMMAND (serverinfo)
     // Data
     while (Cvar)
 	{			
-        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        if (Cvar->flags() & CVAR_SERVERINFO)
         {
             Printf(PRINT_HIGH, 
                    "%*s - %s\n", 
@@ -519,13 +538,113 @@ END_COMMAND (join)
 
 void STACK_ARGS call_terms (void);
 
-BEGIN_COMMAND (quit)
+void CL_QuitCommand()
 {
-    call_terms();
-
+	call_terms();
 	exit (0);
 }
+
+BEGIN_COMMAND (quit)
+{
+	CL_QuitCommand();
+}
 END_COMMAND (quit)
+
+// An alias for 'quit'
+BEGIN_COMMAND (exit)
+{
+	CL_QuitCommand();
+}
+END_COMMAND (exit)
+
+
+void CL_NetDemoRecord(const std::string &filename)
+{
+	std::string full_filename(filename);
+	full_filename.append(".odd");
+	netdemo.startRecording(full_filename);
+}
+
+void CL_NetDemoPlay(const std::string &filename)
+{
+	netdemo.startPlaying(filename);
+}
+
+
+BEGIN_COMMAND(stopnetdemo)
+{
+	if (netdemo.isRecording())
+	{
+		netdemo.stopRecording();
+	} 
+	else if (netdemo.isPlaying())
+	{
+		netdemo.stopPlaying();
+	}
+}
+END_COMMAND(stopnetdemo)
+
+BEGIN_COMMAND(netrecord)
+{
+	if (netdemo.isRecording())
+	{
+		Printf(PRINT_HIGH, "Already recording a netdemo.  Please stop recording before beginning a new netdemo recording.\n");
+		return;
+	}
+
+	if (!connected || simulated_connection)
+	{
+		Printf(PRINT_HIGH, "You must be connected to a server to record a netdemo.\n");
+		return;
+	}
+
+	std::string filename;
+	if (argc < 2)
+	{
+		filename = "demo";
+	}
+	else
+	{
+		if (strlen(argv[1]) > 0)
+			filename = argv[1];
+	}
+
+	CL_Reconnect();
+	CL_NetDemoRecord(filename);
+}
+END_COMMAND(netrecord)
+
+BEGIN_COMMAND(netpause)
+{
+	if (netdemo.isPaused())
+	{
+		netdemo.resume();
+		paused = false;
+		Printf(PRINT_HIGH, "Demo resumed.\n");
+	} 
+	else if (netdemo.isPlaying())
+	{
+		netdemo.pause();
+		paused = true;
+		Printf(PRINT_HIGH, "Demo paused.\n");
+	}
+}
+END_COMMAND(netpause)
+
+BEGIN_COMMAND(netplay)
+{
+	if(argc < 1)
+	{
+		Printf(PRINT_HIGH, "Usage: netplay <demoname>\n");
+		return;
+	}
+
+	CL_QuitNetGame();
+
+	std::string filename = argv[1];
+	CL_NetDemoPlay(filename);
+}
+END_COMMAND(netplay)
 
 //
 // CL_MoveThing
@@ -550,8 +669,7 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 void CL_SendUserInfo(void)
 {
 	userinfo_t *coninfo = &consoleplayer().userinfo;
-
-    memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
+	memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
 
 	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
 	coninfo->team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
@@ -559,6 +677,7 @@ void CL_SendUserInfo(void)
 	coninfo->skin	 = R_FindSkin (cl_skin.cstring());
 	coninfo->gender  = D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
+	coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
 	MSG_WriteString	(&net_buffer, coninfo->netname);
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
@@ -566,6 +685,7 @@ void CL_SendUserInfo(void)
 	MSG_WriteLong	(&net_buffer, coninfo->color);
 	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
+	MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
 }
 
 
@@ -888,7 +1008,7 @@ bool CL_PrepareConnect(void)
     // TODO: Allow deh/bex file downloads
 	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, PatchFiles, wadhashes);
 
-	if(missing_files.size())
+	if(!missing_files.empty())
 	{
 		// denis - download files
 		missing_file = wadnames[missing_files[0]];
@@ -936,6 +1056,7 @@ bool CL_Connect(void)
     multiplayer = true;
     network_game = true;
 	serverside = false;
+	simulated_connection = netdemo.isPlaying();
 
 	CL_Decompress(0);
 	CL_ParseCommands();
@@ -1161,14 +1282,48 @@ void CL_UpdateLocalPlayer(void)
 	real_plats.Clear();
 }
 
-void CL_ResendSvGametic(void)
-{
-	int svgametic = MSG_ReadLong();
 
-	MSG_WriteMarker (&net_buffer, clc_svgametic);
-	MSG_WriteLong (&net_buffer, svgametic);
+//
+// CL_SaveSvGametic
+// 
+// Receives the server's gametic at the time the packet was sent.  It will be
+// sent back to the server with the next cmd.
+//
+// [SL] 2011-05-11
+void CL_SaveSvGametic(void)
+{
+	last_svgametic = MSG_ReadByte();
+}    
+
+
+//
+// CL_SendSvGametic
+//
+// Sends the most recent gametic received from the server so the server can
+// accurately calculate this client's lag
+//
+// [SL] 2011-05-11
+void CL_SendSvGametic(void)
+{
+	MSG_WriteMarker(&net_buffer, clc_svgametic);
+	MSG_WriteByte(&net_buffer, last_svgametic);
 }
 
+
+//
+// CL_SendPingReply
+//
+// Replies to a server's ping request
+//
+// [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
+// for clarity since it sends timestamps, not gametics.
+//
+void CL_SendPingReply(void)
+{
+	int svtimestamp = MSG_ReadLong();
+	MSG_WriteMarker (&net_buffer, clc_pingreply);
+	MSG_WriteLong (&net_buffer, svtimestamp);
+}
 
 //
 // CL_UpdatePing
@@ -1239,7 +1394,10 @@ void CL_SpawnMobj()
 		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	if (mo->type == MT_TFOG)
-		S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	{
+		if (level.time)	// don't play sound on first tic of the level
+			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	}
 }
 
 //
@@ -1704,7 +1862,7 @@ void CL_Sound(void)
 		AActor *mo = consoleplayer().mo;
 
 		if(mo)
-			S_SoundID (mo->x, mo->y, attenuation, sfx_id, volume, attenuation);
+			S_SoundID (mo->x, mo->y, channel, sfx_id, volume, attenuation);
 
 		return;
 	}
@@ -2593,6 +2751,71 @@ void CL_Spectate()
 		displayplayer_id = consoleplayer_id;
 }
 
+//
+// CL_LocalDemoTic
+//
+
+void CL_LocalDemoTic(void)
+{
+	player_t* clientPlayer = &consoleplayer();
+	fixed_t x, y, z;
+	fixed_t momx, momy, momz;
+	fixed_t pitch, roll, viewheight, deltaviewheight;
+	angle_t angle;
+	int jumpTics, reactiontime;
+	byte waterlevel;
+	
+	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
+	
+	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
+
+	waterlevel = MSG_ReadByte();
+	x = MSG_ReadLong();
+	y = MSG_ReadLong();
+	z = MSG_ReadLong();
+	momx = MSG_ReadLong();
+	momy = MSG_ReadLong();
+	momz = MSG_ReadLong();
+	angle = MSG_ReadLong();
+	pitch = MSG_ReadLong();
+	roll = MSG_ReadLong();
+	viewheight = MSG_ReadLong();
+	deltaviewheight = MSG_ReadLong();
+	jumpTics = MSG_ReadLong();
+	reactiontime = MSG_ReadLong();
+
+	if(clientPlayer->mo)
+	{
+		clientPlayer->mo->x = x;
+		clientPlayer->mo->y = y;
+		clientPlayer->mo->z = z;
+		clientPlayer->mo->momx = momx;
+		clientPlayer->mo->momy = momy;
+		clientPlayer->mo->momz = momz;
+		clientPlayer->mo->angle = angle;
+		clientPlayer->mo->pitch = pitch;
+		clientPlayer->mo->roll = roll;
+		clientPlayer->viewheight = viewheight;
+		clientPlayer->deltaviewheight = deltaviewheight;
+		clientPlayer->jumpTics = jumpTics;
+		clientPlayer->mo->reactiontime = reactiontime;
+		clientPlayer->mo->waterlevel = waterlevel;
+	}
+}
+
+//
+// CL_NetDemoStop
+//
+
+void CL_NetDemoStop(void)
+{
+	netdemo.stopPlaying();
+}
+
 // client source (once)
 typedef void (*client_callback)();
 typedef std::map<svc_t, client_callback> cmdmap;
@@ -2613,7 +2836,6 @@ void CL_InitCommands(void)
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
 	cmds[svc_teampoints]		= &CL_TeamPoints;
 
-	cmds[svc_svgametic]			= &CL_ResendSvGametic;
 	cmds[svc_updateping]		= &CL_UpdatePing;
 	cmds[svc_spawnmobj]			= &CL_SpawnMobj;
 	cmds[svc_mobjspeedangle]	= &CL_SetMobjSpeedAndAngle;
@@ -2642,6 +2864,8 @@ void CL_InitCommands(void)
 	cmds[svc_switch]			= &CL_Switch;
 	cmds[svc_print]				= &CL_Print;
     cmds[svc_midprint]          = &CL_MidPrint;
+    cmds[svc_pingrequest]       = &CL_SendPingReply;
+	cmds[svc_svgametic]			= &CL_SaveSvGametic;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;
@@ -2668,6 +2892,8 @@ void CL_InitCommands(void)
 	cmds[svc_spectate]   		= &CL_Spectate;
 	
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
+	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
+	cmds[svc_netdemostop]       = &CL_NetDemoStop;
 }
 
 //
@@ -2681,6 +2907,19 @@ void CL_ParseCommands(void)
 	static bool once = true;
 	if(once)CL_InitCommands();
 	once = false;
+
+	
+	if(netdemo.isRecording())
+	{
+		if(gamestate == GS_LEVEL)
+		{
+			netdemo.writeMessages(&net_message, true);
+		} 
+		else 
+		{
+			netdemo.writeMessages(&net_message, false);
+		}
+	}
 
 	while(connected)
 	{
@@ -2716,8 +2955,8 @@ void CL_ParseCommands(void)
 			for(size_t j = 0; j < history.size(); j++)
 				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
 		}
+		
 	}
-
 }
 
 extern int outrate;
@@ -2727,8 +2966,10 @@ extern int outrate;
 //
 void CL_SendCmd(void)
 {
-	ticcmd_t *cmd;
 	player_t *p;
+
+	if (netdemo.isPlaying())	// we're not really connected to a server
+		return;
 
 	if (gametic < 1 )
 		return;
@@ -2754,35 +2995,41 @@ void CL_SendCmd(void)
 	}
 	// GhostlyDeath -- We just throw it all away down here since we need those buttons!
 
+	ticcmd_t *prevcmd = &localcmds[(gametic-1) % MAXSAVETICS];
+	ticcmd_t *curcmd  = &consoleplayer().cmd;
+
+    // [SL] 2011-05-11 - Send the latest gametic we've received from the server
+	// only if the client is firing a weapon
+	if (prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK)
+		CL_SendSvGametic();
+
 	MSG_WriteMarker(&net_buffer, clc_move);
 
     MSG_WriteLong(&net_buffer, gametic); // current tic
 
     // send the previous cmds in the message, so if the last packet
     // was dropped, it can be recovered
-    cmd = &localcmds[(gametic-1) % MAXSAVETICS];
-
-	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	MSG_WriteShort(&net_buffer, p->mo->angle >> 16);
-	MSG_WriteShort(&net_buffer, p->mo->pitch >> 16);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.upmove);
-	MSG_WriteByte(&net_buffer, cmd->ucmd.impulse);
+	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.buttons);
+	MSG_WriteShort(&net_buffer,	p->mo->angle >> 16);
+	MSG_WriteShort(&net_buffer,	p->mo->pitch >> 16);
+	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.forwardmove);
+	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.sidemove);
+	MSG_WriteShort(&net_buffer, prevcmd->ucmd.upmove);
+	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.impulse);
 
     // send the current cmds in the message
-    cmd = &consoleplayer().cmd;
+	MSG_WriteByte(&net_buffer,	curcmd->ucmd.buttons);
+	if (step_mode) 
+		MSG_WriteShort(&net_buffer, curcmd->ucmd.yaw);
+	else 
+		MSG_WriteShort(&net_buffer, (p->mo->angle + (curcmd->ucmd.yaw << 16)) >> 16);
+	MSG_WriteShort(&net_buffer,	(p->mo->pitch + (curcmd->ucmd.pitch << 16)) >> 16);
+	MSG_WriteShort(&net_buffer,	curcmd->ucmd.forwardmove);
+	MSG_WriteShort(&net_buffer,	curcmd->ucmd.sidemove);
+	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
+	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
 
-	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	if(step_mode) MSG_WriteShort(&net_buffer, cmd->ucmd.yaw);
-	else MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
-	MSG_WriteShort(&net_buffer, (p->mo->pitch + (cmd->ucmd.pitch << 16)) >> 16);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.upmove);
-	MSG_WriteByte(&net_buffer, cmd->ucmd.impulse);
-
-    NET_SendPacket(net_buffer, serveraddr);
+	NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
 }
@@ -2815,6 +3062,10 @@ void CL_RunTics (void)
 
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics ();
+
+	// [SL] 2011-05-29 - Haven't received a new tic from the server yet so
+	// increment the one we've already received.
+	last_svgametic++;
 }
 
 void PickupMessage (AActor *toucher, const char *message)

@@ -402,7 +402,7 @@ bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 //
 // check for trivial rejection
 //
-	if (rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
+	if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
 		sightcounts2[0]++;
 		return false;			// can't possibly be connected
 	}
@@ -411,13 +411,13 @@ bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 //
 	// killough 4/19/98: make fake floors and ceilings block monster view
 
-	if ((s1->heightsec  &&
+	if ((s1->heightsec && !(s1->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		((t1->z + t1->height <= s1->heightsec->floorheight &&
 		  t2->z >= s1->heightsec->floorheight) ||
 		 (t1->z >= s1->heightsec->ceilingheight &&
 		  t2->z + t1->height <= s1->heightsec->ceilingheight)))
 		||
-		(s2->heightsec &&
+		(s2->heightsec && !(s2->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		 ((t2->z + t2->height <= s2->heightsec->floorheight &&
 		   t1->z >= s2->heightsec->floorheight) ||
 		  (t2->z >= s2->heightsec->ceilingheight &&
@@ -453,7 +453,7 @@ bool P_CheckSightEdges2 (const AActor *t1, const AActor *t2, float radius_boost)
 //
 // check for trivial rejection
 //
-        if (rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
+        if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
 				sightcounts2[0]++;
                 return false;                   // can't possibly be connected
         }
@@ -778,7 +778,7 @@ P_CheckSight
     bitnum = 1 << (pnum&7);
 	
     // Check in REJECT table.
-    if (rejectmatrix[bytenum]&bitnum)
+    if (!rejectempty && rejectmatrix[bytenum]&bitnum)
     {
 		sightcounts[0]++;
 		
@@ -834,7 +834,7 @@ P_CheckSight
     bitnum = 1 << (pnum&7);
 	
     // Check in REJECT table.
-    if (rejectmatrix[bytenum]&bitnum)
+    if (!rejectempty && rejectmatrix[bytenum]&bitnum)
     {
 		sightcounts[0]++;
 		

@@ -412,7 +412,7 @@ void C_AddNotifyString (int printlevel, const char *source)
 		if (addtype == NEWLINE)
 			memmove (&NotifyStrings[0], &NotifyStrings[1], sizeof(struct NotifyText) * (NUMNOTIFIES-1));
 		strcpy ((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string);
-		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (int)(con_notifytime * TICRATE);
+		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (con_notifytime.asInt() * TICRATE);
 		NotifyStrings[NUMNOTIFIES-1].printlevel = printlevel;
 		addtype = NEWLINE;
 	}
@@ -1011,7 +1011,7 @@ static void makestartposgood (void)
 	{ // Start of visible line is beyond end of line
 		n = curs - ConCols + 2;
 	}
-	if ((curs - pos) >= ConCols - 2)
+	if ((int)(curs - pos) >= (int)(ConCols - 2))
 	{ // The cursor is beyond the visible part of the line
 		n = curs - ConCols + 2;
 	}
@@ -1038,7 +1038,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 	case KEY_JOY7: // Left Trigger
 #endif
 	case KEY_PGUP:
-		if (ConRows > ConBottom/8)
+		if ((int)(ConRows) > (int)(ConBottom/8))
 		{
 			if (KeysShifted)
 				// Move to top of console buffer
@@ -1521,7 +1521,7 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
 	unsigned int i;
     
     if (!msgtime)
-        msgtime = con_midtime;
+        msgtime = con_midtime.asInt();
 
 	if (MidMsg)
 		V_FreeBrokenLines (MidMsg);

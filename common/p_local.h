@@ -175,7 +175,7 @@ extern fixed_t			lowfloor;
 void	P_LineOpening (const line_t *linedef);
 
 BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*) );
-BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*) );
+BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *start=NULL);
 
 #define PT_ADDLINES 	1
 #define PT_ADDTHINGS	2
@@ -215,7 +215,7 @@ extern sector_t			*tmsector;
 
 extern	line_t* 		ceilingline;
 
-bool	P_TestMobjZ (AActor *mobj);
+bool	P_TestMobjZ (AActor *actor);
 BOOL	P_TestMobjLocation (AActor *mobj);
 bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
 AActor	*P_CheckOnmobj (AActor *thing);

@@ -117,7 +117,7 @@ ticcmd_t *I_BaseTiccmd(void)
 #ifdef _XBOX
 size_t def_heapsize = 16;
 #else
-size_t def_heapsize = 32;
+size_t def_heapsize = 64;
 #endif
 const size_t min_heapsize = 8;
 
@@ -653,7 +653,7 @@ std::string I_GetClipboardText (void)
 		if(!bytes_left)
 		{
 			XDestroyWindow(dis, WindowEvents);
-			Printf(PRINT_HIGH, "I_GetClipboardText: Len was: %d", len);
+			DPrintf("I_GetClipboardText: Len was: %d", len);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
 			return "";

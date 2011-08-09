@@ -1,5 +1,10 @@
-$Id: Changelog.txt,v 1.151 2011/06/17 22:59:41 nanard Exp $
+$Id: Changelog.txt,v 1.152 2011/07/25 18:02:11 nanard Exp $
 miniUPnP client Changelog.
+
+VERSION 1.6 : released 2011/07/25
+
+2011/07/25:
+  Update doc for version 1.6 release
 
 2011/06/18:
   Fix for windows in miniwget.c

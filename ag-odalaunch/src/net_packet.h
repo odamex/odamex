@@ -112,8 +112,10 @@ struct ServerInfo_t
 	uint8_t                  VersionMajor; // Launcher specific: Version fields
 	uint8_t                  VersionMinor;
 	uint8_t                  VersionPatch;
-	uint32_t                 VersionRevision;
 	uint32_t                 VersionProtocol;
+	uint32_t                 VersionRealProtocol;
+	uint32_t                 VersionRevision;
+	uint32_t                 PTime;
 	std::string              Name; // Launcher specific: Server name
 	uint8_t                  MaxClients; // Launcher specific: Maximum clients
 	uint8_t                  MaxPlayers; // Launcher specific: Maximum players

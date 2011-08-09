@@ -109,11 +109,12 @@ typedef int SOCKET;
 #include "upnpcommands.h"
 #endif
 
-int         inet_socket;
-int         localport;
-netadr_t    net_from;   // address of who sent the packet
+unsigned int	inet_socket;
+int         	localport;
+netadr_t    	net_from;   // address of who sent the packet
 
 buf_t       net_message(MAX_UDP_PACKET);
+extern bool	simulated_connection;
 
 // buffer for compression/decompression
 // can't be static to a function because some
@@ -157,7 +158,7 @@ void init_upnp (void)
 	
 	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
 	
-	devlist = upnpDiscover((int)sv_upnp_discovertimeout, NULL, NULL, 0, 0, &res);
+	devlist = upnpDiscover(sv_upnp_discovertimeout.asInt(), NULL, NULL, 0, 0, &res);
 	
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
     {
@@ -490,6 +491,14 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
     int                   ret;
     struct sockaddr_in    addr;
 
+	// [SL] 2011-07-06 - Don't try to send a packet if we're not really connected
+	// (eg, a netdemo is being played back)
+	if (simulated_connection)
+	{
+		buf.clear();
+		return;
+	}
+
     NetadrToSockadr (&to, &addr);
 
 	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
@@ -580,30 +589,40 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 //
 void MSG_WriteMarker (buf_t *b, clc_t c)
 {
+	if (simulated_connection)
+		return;
 	b->WriteByte((byte)c);
 }
 
 void MSG_WriteByte (buf_t *b, byte c)
 {
-    b->WriteByte((byte)c);
+	if (simulated_connection)
+		return;
+	b->WriteByte((byte)c);
 }
 
 
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 {
-    b->WriteChunk((const char *)p, l);
+	if (simulated_connection)
+		return;
+	b->WriteChunk((const char *)p, l);
 }
 
 
 void MSG_WriteShort (buf_t *b, short c)
 {
-    b->WriteShort(c);
+	if (simulated_connection)
+		return;
+	b->WriteShort(c);
 }
 
 
 void MSG_WriteLong (buf_t *b, int c)
 {
-    b->WriteLong(c);
+	if (simulated_connection)
+		return;
+	b->WriteLong(c);
 }
 
 //
@@ -612,7 +631,9 @@ void MSG_WriteLong (buf_t *b, int c)
 // Write an boolean value to a buffer
 void MSG_WriteBool(buf_t *b, bool Boolean)
 {
-    MSG_WriteByte(b, Boolean ? 1 : 0);
+	if (simulated_connection)
+		return;
+	MSG_WriteByte(b, Boolean ? 1 : 0);
 }
 
 //
@@ -621,11 +642,14 @@ void MSG_WriteBool(buf_t *b, bool Boolean)
 // Write a floating point number to a buffer
 void MSG_WriteFloat(buf_t *b, float Float)
 {
+	if (simulated_connection)
+		return;
+
     std::stringstream StringStream;
 
     StringStream << Float;
     
-    MSG_WriteString(b, (char *)StringStream.str().c_str());
+	MSG_WriteString(b, (char *)StringStream.str().c_str());
 }
 
 //
@@ -634,6 +658,8 @@ void MSG_WriteFloat(buf_t *b, float Float)
 // Write a string to a buffer and null terminate it
 void MSG_WriteString (buf_t *b, const char *s)
 {
+	if (simulated_connection)
+		return;
 	b->WriteString(s);
 }
 
@@ -844,7 +870,7 @@ void InitNetMessageFormats()
       MSG(clc_say,                "bs"),
       MSG(clc_move,               "x"),
       MSG(clc_userinfo,           "x"),
-      MSG(clc_svgametic,          "N"),
+      MSG(clc_pingreply,          "N"),
       MSG(clc_rate,               "N"),
       MSG(clc_ack,                "x"),
       MSG(clc_rcon,               "s"),
@@ -856,6 +882,7 @@ void InitNetMessageFormats()
       MSG(clc_kill,               "x"),
       MSG(clc_cheat,              "x"),
       MSG(clc_cheatpulse,         "x"),
+      MSG(clc_svgametic,          "b"),
       MSG(clc_launcher_challenge, "x"),
       MSG(clc_challenge,          "x")
    };
@@ -868,7 +895,7 @@ void InitNetMessageFormats()
 	MSG(svc_playerinfo,         "x"),
 	MSG(svc_moveplayer,         "x"),
 	MSG(svc_updatelocalplayer,  "x"),
-	MSG(svc_svgametic,          "x"),
+	MSG(svc_pingrequest,        "x"),
 	MSG(svc_updateping,         "x"),
 	MSG(svc_spawnmobj,          "x"),
 	MSG(svc_disconnectclient,   "x"),
@@ -925,7 +952,8 @@ void InitNetMessageFormats()
 	MSG(svc_launcher_challenge, "x"),
 	MSG(svc_challenge,          "x"),
 	MSG(svc_connectclient,		"x"),
-	MSG(svc_midprint,           "x")
+ 	MSG(svc_midprint,           "x"),
+ 	MSG(svc_svgametic,          "x")
    };
 
    size_t i;

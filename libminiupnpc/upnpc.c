@@ -1,4 +1,4 @@
-/* $Id: upnpc.c,v 1.87 2011/06/04 15:55:40 nanard Exp $ */
+/* $Id: upnpc.c,v 1.88 2011/06/17 23:31:01 nanard Exp $ */
 /* Project : miniupnp
  * Author : Thomas Bernard
  * Copyright (c) 2005-2011 Thomas Bernard

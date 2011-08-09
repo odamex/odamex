@@ -101,6 +101,10 @@ SOURCE=.\main.cpp
 
 SOURCE=.\i_net.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\common\version.h
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 

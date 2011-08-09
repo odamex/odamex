@@ -400,7 +400,7 @@ void AActor::RunThink ()
 	else if ((z != floorz) || momz || BlockingMobj)
 	{
 	    // Handle Z momentum and gravity
-		if (flags2 & MF2_PASSMOBJ)
+		if (co_realactorheight && (flags2 & MF2_PASSMOBJ))
 		{
 		    if (!(onmo = P_CheckOnmobj (this)))
 			{
@@ -421,20 +421,20 @@ void AActor::RunThink ()
 					{
 						PlayerLandedOnThing (this, onmo);
 					}
-					
-					if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
-					{
-						/*if (player)
-						{
-							player->viewheight -= z + onmo->height - z;
-							player->deltaviewheight =
-								(VIEWHEIGHT - player->viewheight)>>3;
-						}*/
-						z = onmo->z + onmo->height;
-					}
-					flags2 |= MF2_ONMOBJ;
-					momz = 0;
 				}
+				if (onmo->z + onmo->height - z <= 24 * FRACUNIT)
+				{
+					if (player)
+					{
+						player->viewheight -= onmo->z + onmo->height - z;
+						player->deltaviewheight =
+							(VIEWHEIGHT - player->viewheight)>>3;
+					}
+					z = onmo->z + onmo->height;
+				}
+				
+				flags2 |= MF2_ONMOBJ;
+				momz = 0;
 			}
 		}
 	    else
@@ -767,7 +767,8 @@ void P_XYMovement(AActor *mo)
 
 	do
 	{
-		if (xmove > maxmove || ymove > maxmove )
+		if ((xmove > maxmove || ymove > maxmove)
+		     || (co_zdoomphys && (xmove < -maxmove || ymove < -maxmove)))
 		{
 			ptryx = mo->x + xmove/2;
 			ptryy = mo->y + ymove/2;
@@ -936,12 +937,11 @@ void P_ZMovement(AActor *mo)
     // check for smooth step up
    if (mo->player && mo->z < mo->floorz)
    {
-      mo->player->viewheight -= mo->floorz-mo->z;
+	  mo->player->viewheight -= mo->floorz-mo->z;
 
-      mo->player->deltaviewheight
-            = (VIEWHEIGHT - mo->player->viewheight)>>3;
+	  mo->player->deltaviewheight
+			= (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
-
     // adjust height
     // GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
    mo->z += mo->momz;
@@ -1136,7 +1136,6 @@ void P_ZMovement(AActor *mo)
    if (mo->z + mo->height > mo->ceilingz)
    {
 		// hit the ceiling
-		mo->z = mo->ceilingz - mo->height;
 		if (mo->flags2 & MF2_FLOORBOUNCE)
 		{
 			// reverse momentum here for ceiling bounce
@@ -1149,6 +1148,8 @@ void P_ZMovement(AActor *mo)
 		}		
 		if (mo->momz > 0)
 			mo->momz = 0;
+
+		mo->z = mo->ceilingz - mo->height;
 
 		if (mo->flags & MF_SKULLFLY)
 		{	// the skull slammed into something
@@ -1168,6 +1169,49 @@ void P_ZMovement(AActor *mo)
 			return;
 		}
 	}
+	/*  [ML] 7/13/11: This isn't going to be used just yet - no need...
+	if (mo->subsector->sector->heightsec != NULL && mo->subsector->sector->SecActTarget != NULL)
+	{
+		sector_t *hs = mo->subsector->sector->heightsec;
+		fixed_t waterz = hs->floorheight;
+		fixed_t newz;
+		fixed_t viewheight;
+
+		if (mo->player != NULL)
+		{
+			viewheight = mo->player->viewheight;
+		}
+		else
+		{
+			viewheight = mo->height / 2;
+		}
+
+		newz = mo->z + viewheight;
+		oldz += viewheight;
+
+		if (oldz <= waterz && newz > waterz)
+		{ // View went above fake floor
+			mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesSurface);
+		}
+		else if (oldz > waterz && newz <= waterz)
+		{ // View went below fake floor
+			mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesDive);
+		}
+
+		if (!(hs->MoreFlags & SECF_FAKEFLOORONLY))
+		{
+			waterz = hs->ceilingheight;
+			if (oldz <= waterz && newz > waterz)
+			{ // View went above fake floor
+				mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesAboveC);
+			}
+			else if (oldz > waterz && newz <= waterz)
+			{ // View went below fake floor
+				mo->subsector->sector->SecActTarget->TriggerAction (mo, SECSPAC_EyesBelowC);
+			}
+		}
+	}
+	*/
 }
 
 //
@@ -1459,7 +1503,7 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
         SV_SpawnMobj(th);
 }
 
-void SV_AwarenessUpdate(player_t &pl, AActor* mo);
+bool SV_AwarenessUpdate(player_t &pl, AActor* mo);
 //
 // P_CheckMissileSpawn
 // Moves the missile forward a bit
@@ -1933,7 +1977,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (sv_skill == sk_nightmare)
 		bit = 4;
 	else
-		bit = 1 << ((int)sv_skill - 2);
+		bit = 1 << (sv_skill.asInt() - 2);
 
 	if (!(mthing->flags & bit))
 		return;

@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <functional>
 #include <string>
 
 // [Russell] - Just for windows, display the icon in the system menu and
@@ -156,12 +157,11 @@ SDLVideo::SDLVideo(int parm)
       for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
         vidModeList.push_back(CustomVidModes[i]);
 
-      // Sort the modes
-      std::sort(vidModeList.begin(), vidModeList.end(), bp_vm_uni_sort);
+      // Reverse sort the modes
+      std::sort(vidModeList.begin(), vidModeList.end(), std::greater<vidMode_t>());
 
       // Get rid of any duplicates (SDL some times reports duplicates as well)
-      vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end(), 
-            bp_vm_uni_cmp), vidModeList.end());
+      vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
    }
 }
 

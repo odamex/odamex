@@ -37,14 +37,18 @@
 #include "doomstat.h"
 #include "p_pspr.h"
 
+#include "p_unlag.h"
+
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
 
-#define WEAPONBOTTOM				128*FRACUNIT
-#define WEAPONTOP					32*FRACUNIT
+#define WEAPONBOTTOM			128*FRACUNIT
+#define WEAPONTOP				32*FRACUNIT
 
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
+EXTERN_CVAR(sv_allownobob)
+EXTERN_CVAR(cl_nobob)
 
 //
 // P_SetPsprite
@@ -330,10 +334,15 @@ A_WeaponReady
 		player->attackdown = false;
 
 	// bob the weapon based on movement speed
-	angle = (128*level.time)&FINEMASK;
-	psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angle]);
-	angle &= FINEANGLES/2-1;
-	psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angle]);
+	if (((demoplayback || demorecording) && democlassic) ||
+		(!multiplayer && !cl_nobob) || 
+		(multiplayer && (!sv_allownobob || !cl_nobob))) 
+	{
+		angle = (128*level.time)&FINEMASK;
+		psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angle]);
+		angle &= FINEANGLES/2-1;
+		psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angle]);
+	}
 }
 
 //
@@ -472,10 +481,18 @@ void A_Punch (player_t *player, pspdef_t *psp)
 		damage *= 10;
 
 	angle = player->mo->angle;
-
 	angle += P_RandomDiff(player->mo) << 18;
+
+	// [SL] 2011-07-12 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	Unlag::getInstance().reconcile(player->id);
+
 	slope = P_AimLineAttack (player->mo, angle, MELEERANGE);
 	P_LineAttack (player->mo, angle, MELEERANGE, slope, damage);
+
+	// [SL] 2011-07-12 - Restore players and sectors to their current position
+	// according to the server.
+	Unlag::getInstance().restore(player->id);
 
 	// turn to face target
 	if (linetarget)
@@ -502,9 +519,17 @@ void A_Saw (player_t *player, pspdef_t *psp)
 	angle = player->mo->angle;
 	angle += P_RandomDiff(player->mo) << 18;
 
+	// [SL] 2011-07-12 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	Unlag::getInstance().reconcile(player->id);
+
 	// use meleerange + 1 so the puff doesn't skip the flash
 	P_LineAttack (player->mo, angle, MELEERANGE+1,
 				  P_AimLineAttack (player->mo, angle, MELEERANGE+1), damage);
+
+	// [SL] 2011-07-12 - Restore players and sectors to their current position
+	// according to the server.
+	Unlag::getInstance().restore(player->id);
 
 	if (!linetarget)
 	{
@@ -655,6 +680,53 @@ void P_GunShot (AActor *mo, BOOL accurate)
 	P_LineAttack (mo, angle, MISSILERANGE, bulletslope, damage);
 }
 
+// P_FireHitscan
+//
+// [SL] - Factored out common code from the P_Fire procedures for the
+// hitscan weapons.  
+//   quantity:     number of bullets/pellets to fire.
+//   accurate:     spread out bullets because player is re-firing (or using shotgun)
+//   ssg_spread:   spread the pellets for the super shotgun
+//
+// It takes care of reconciling the players and sectors to account for the
+// shooter's network lag.
+//
+
+void P_FireHitscan (player_t *player, size_t quantity, bool accurate, bool ssg_spread)
+{
+	if (!serverside)
+		return;
+
+	// [SL] 2011-05-11 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	// NOTE: Important to reconcile sectors and players BEFORE calculating
+	// bulletslope!
+	Unlag::getInstance().reconcile(player->id);
+
+	P_BulletSlope (player->mo);
+	for (size_t i=0; i<quantity; i++)
+	{
+		int damage = 5 * (P_Random(player->mo) % 3 + 1);
+
+		angle_t angle = player->mo->angle;
+		fixed_t slope = bulletslope;
+		if (ssg_spread)		// for super shotgun
+		{
+			angle += P_RandomDiff(player->mo) << 19;
+			slope += P_RandomDiff(player->mo) << 5;
+		}            
+		if (!accurate)
+		{
+			// single-barrel shotgun or re-firing pistol/chaingun 
+			angle += P_RandomDiff(player->mo) << 18;
+		}
+		P_LineAttack(player->mo, angle, MISSILERANGE, slope, damage);
+	}
+    
+	// [SL] 2011-05-11 - Restore players and sectors to their current position
+	// according to the server.
+	Unlag::getInstance().restore(player->id);
+}
 
 //
 // A_FirePistol
@@ -671,11 +743,7 @@ void A_FirePistol (player_t *player, pspdef_t *psp)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	if(serverside)
-	{
-		P_BulletSlope (player->mo);
-		P_GunShot (player->mo, !player->refire);
-	}
+	P_FireHitscan (player, 1, !player->refire, false);	// [SL] 2011-05-11
 }
 
 
@@ -693,13 +761,7 @@ void A_FireShotgun (player_t *player, pspdef_t *psp)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	if(serverside)
-	{
-		P_BulletSlope (player->mo);
-
-		for (size_t i = 0 ; i < 7 ; i++)
-			P_GunShot (player->mo, false);
-	}
+	P_FireHitscan(player, 7, false, false);		// [SL] 2011-05-11
 }
 
 
@@ -709,9 +771,6 @@ void A_FireShotgun (player_t *player, pspdef_t *psp)
 //
 void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 {
-	angle_t 	angle;
-	int 		damage;
-
 	A_FireSound (player, "weapons/sshotf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
@@ -721,21 +780,7 @@ void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	if(serverside)
-	{
-		P_BulletSlope (player->mo);
-
-		for (size_t i = 0 ; i < 20 ;i++)
-		{
-			damage = 5*(P_Random (player->mo)%3+1);
-			angle = player->mo->angle;
-			angle += P_RandomDiff (player->mo) << 19;
-			P_LineAttack (player->mo,
-						  angle,
-						  MISSILERANGE,
-						  bulletslope + (P_RandomDiff(player->mo) << 5), damage);
-		}
-	}
+	P_FireHitscan(player, 20, true, true);		// [SL] 2011-05-11
 }
 
 //
@@ -759,11 +804,7 @@ void A_FireCGun (player_t *player, pspdef_t *psp)
 				  + psp->state
 				  - &states[S_CHAIN1]) );
 
-	if(serverside)
-	{
-		P_BulletSlope (player->mo);
-		P_GunShot (player->mo, !player->refire);
-	}
+	P_FireHitscan(player, 1, !player->refire, false);	// [SL] 2011-05-11
 }
 
 
@@ -798,9 +839,14 @@ void A_BFGSpray (AActor *mo)
 	if(!serverside)
 		return;
 
-	// [RH] Don't crash if no target
-	if (!mo->target)
+	// note: mo->target is the player who fired the BFG
+	if (!mo->target || !mo->target->player)
 		return;
+
+	// [SL] 2011-07-12 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	player_t *player = mo->target->player;	// player who fired BFG
+	Unlag::getInstance().reconcile(player->id);
 
 	// offset angles from its attack angle
 	for (i=0 ; i<40 ; i++)
@@ -814,9 +860,19 @@ void A_BFGSpray (AActor *mo)
 		if (!linetarget)
 			continue;
 
-		new AActor (linetarget->x,
-					linetarget->y,
-					linetarget->z + (linetarget->height>>2),
+		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
+		// [SL] 2011-07-12 - In unlagged games, spawn BFG tracers at the 
+		// opponent's current position, not at their reconciled position
+		if (linetarget->player)
+		{
+			Unlag::getInstance().getReconciliationOffset(   player->id,
+															linetarget->player->id,
+															xoffs, yoffs, zoffs);
+		}
+
+		new AActor (linetarget->x + xoffs,
+					linetarget->y + yoffs,
+					linetarget->z + zoffs+ (linetarget->height>>2),
 					MT_EXTRABFG);
 
 		damage = 0;
@@ -825,6 +881,10 @@ void A_BFGSpray (AActor *mo)
 
 		P_DamageMobj (linetarget, mo->target,mo->target, damage, MOD_BFG_SPLASH);
 	}
+
+	// [SL] 2011-07-12 - Restore players and sectors to their current position
+	// according to the server.
+	Unlag::getInstance().restore(player->id);
 }
 
 

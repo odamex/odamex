@@ -57,6 +57,7 @@
 #include "w_wad.h"
 #include "md5.h"
 #include "p_mobj.h"
+#include "p_unlag.h"
 
 #include <algorithm>
 #include <sstream>
@@ -69,6 +70,10 @@ extern level_locals_t level;
 bool clientside = false, serverside = true;
 bool predicting = false;
 baseapp_t baseapp = server;
+
+// [SL] 2011-07-06 - not really connected (playing back a netdemo)
+// really only used clientside
+bool        simulated_connection = false;
 
 extern bool HasBehavior;
 
@@ -99,6 +104,7 @@ EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_maxrate)
+EXTERN_CVAR(sv_timeleft)
 
 void SexMessage (const char *from, char *to, int gender);
 void SV_RemoveDisconnectedPlayer(player_t &player);
@@ -121,8 +127,6 @@ CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are a
 		SV_DropClient(players[last]);
 		SV_RemoveDisconnectedPlayer(players[last]);
 	}
-
-	//R_InitTranslationTables();
 }
 
 CVAR_FUNC_IMPL (sv_maxplayers)
@@ -599,24 +603,32 @@ END_COMMAND (say)
 
 void STACK_ARGS call_terms (void);
 
+void SV_QuitCommand()
+{
+	call_terms();
+	exit(0);
+}
+
 BEGIN_COMMAND (rquit)
 {
 	SV_SendReconnectSignal();
 
-    call_terms();
-
-	exit (0);
+	SV_QuitCommand();
 }
 END_COMMAND (rquit)
 
-
 BEGIN_COMMAND (quit)
 {
-    call_terms();
-
-	exit (0);
+	SV_QuitCommand();
 }
 END_COMMAND (quit)
+
+// An alias for 'quit'
+BEGIN_COMMAND (exit)
+{
+	SV_QuitCommand();
+}
+END_COMMAND (exit)
 
 
 //
@@ -725,6 +737,8 @@ void SV_CheckTimeouts (void)
 // from the global players vector.  Update mo->player pointers.
 void SV_RemoveDisconnectedPlayer(player_t &player)
 {
+    int player_id = player.id;
+    
 	// remove player awareness from all actors
 	AActor *mo;
 	TThinkerIterator<AActor> iterator;
@@ -763,6 +777,8 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 		if (players[i].mo)
 			players[i].mo->player = &players[i];
 	}
+	
+	Unlag::getInstance().unregisterPlayer(player_id);
 }
 
 
@@ -804,13 +820,15 @@ void SV_GetPackets (void)
 
 	// [SL] 2011-05-18 - Handle sv_emptyreset
 	static size_t last_player_count = players.size();
-	if (sv_emptyreset && players.size() == 0 && last_player_count > 0)
+	if (sv_emptyreset && players.size() == 0 && 
+		last_player_count > 0 && gamestate == GS_LEVEL)
 	{
 		// The last player just disconnected so reset the level
         G_DeferedInitNew(level.mapname);
     }
 	last_player_count = players.size();
 }
+
 
 // Print a midscreen message to a client
 void SV_MidPrint (const char *msg, player_t *p, int msgtime)
@@ -985,24 +1003,20 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 	for (size_t i = 0; i < players.size(); i++ )
 	{
-		if (players[i].ingame())
+		if (players[i].ingame() && players[i].userinfo.team == team)
 		{
-			if (players[i].userinfo.team == team)	// [Toke - Teams]
-			{
-				cl = &clients[i];
+			cl = &clients[i];
 
-				MSG_WriteMarker  (&cl->netbuf, svc_startsound );
-                if (players[i].mo == NULL)
-                    MSG_WriteShort (&cl->netbuf, 0);
-                else
-                    MSG_WriteShort (&cl->netbuf, players[i].mo->netid);
-				MSG_WriteLong (&cl->netbuf, 0);
-				MSG_WriteLong (&cl->netbuf, 0);
-				MSG_WriteByte  (&cl->netbuf, channel );
-				MSG_WriteByte  (&cl->netbuf, sfx_id );
-			    MSG_WriteByte  (&cl->netbuf, attenuation );
-			    MSG_WriteByte  (&cl->netbuf, 255 );
-			}
+			MSG_WriteMarker	(&cl->netbuf, svc_startsound);
+			// Set netid to 0 since it's not a sound originating from any player's location
+			MSG_WriteShort	(&cl->netbuf, 0);		// netid
+			MSG_WriteLong	(&cl->netbuf, 0);		// x
+			MSG_WriteLong	(&cl->netbuf, 0);		// y
+			MSG_WriteByte	(&cl->netbuf, channel);
+			MSG_WriteByte	(&cl->netbuf, sfx_id);
+			MSG_WriteByte	(&cl->netbuf, attenuation);
+			MSG_WriteByte	(&cl->netbuf, 255 );	// volume [0 - 255]
+			
 		}
 	}
 }
@@ -1119,6 +1133,9 @@ void SV_SetupUserInfo (player_t &player)
 		p->userinfo.aimdist = 0;
 	if (p->userinfo.aimdist > 5000)
 		p->userinfo.aimdist = 5000;
+
+	// [SL] 2011-05-11 - Client opt-in/out of serverside unlagging
+	p->userinfo.unlag = MSG_ReadByte();
 
 	// Make sure the gender is valid
 	if(p->userinfo.gender >= NUMGENDER)
@@ -1716,6 +1733,23 @@ void SV_UpdateMovingSectors(player_t &pl)
 	}
 }
 
+
+//
+// SV_SendGametic
+// Sends gametic to synchronize with the client
+//
+// [SL] 2011-05-11 - Instead of sending the whole gametic (4 bytes),
+// send only the least significant byte to save bandwidth.  We use
+// the difference in these gametics to calculate a client's lag, so
+// 1 byte lets us calculate lag up to 7.3 seconds, which is plenty.
+//
+void SV_SendGametic(client_t* cl)
+{
+	MSG_WriteMarker(&cl->reliablebuf, svc_svgametic);
+	MSG_WriteByte(&cl->reliablebuf, gametic & 0xFF);
+}
+
+
 //
 // SV_ClientFullUpdate
 //
@@ -2105,7 +2139,7 @@ void G_DoReborn (player_t &playernum);
 void SV_ConnectClient (void)
 {
 	int n;
-	size_t i;
+	size_t i,j;
 	int challenge = MSG_ReadLong();
 	client_t  *cl;
 
@@ -2226,6 +2260,18 @@ void SV_ConnectClient (void)
 	if(connection_type == 1)
 	{
 		players[n].playerstate = PST_DOWNLOAD;
+		for (j = 0; j < players.size(); j++)
+		{
+			if ((unsigned)n == j)
+				continue;
+
+			// [SL] 2011-07-30 - Other players should treat downloaders
+			// as spectators
+			MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
+			MSG_WriteByte (&(players[j].client.reliablebuf), players[n].id);
+			MSG_WriteByte (&(players[j].client.reliablebuf), true);
+		}
+
 		return;
 	}
 	else if(connection_type == 2)
@@ -2256,6 +2302,10 @@ void SV_ConnectClient (void)
 	G_DoReborn (players[n]);
 	SV_ClientFullUpdate (players[n]);
 	SV_SendPacket (players[n]);
+
+	// [SL] 2011-05-11 - Register the player with the reconciliation system
+	// for unlagging
+	Unlag::getInstance().registerPlayer(players[n].id);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
 
@@ -2446,12 +2496,12 @@ void SV_DrawScores()
         Printf_Bold("-----------------------------------------------------------");        
 
         if (sv_scorelimit)
-            sprintf (str, "Scorelimit: %-6d", (int)sv_scorelimit);
+            sprintf (str, "Scorelimit: %-6d", sv_scorelimit.asInt());
         else
             sprintf (str, "Scorelimit: N/A    ");
 
         if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str2, "Timelimit: N/A");
 
@@ -2497,12 +2547,12 @@ void SV_DrawScores()
         Printf_Bold("-----------------------------------------------------------");        
 
         if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", (int)sv_fraglimit);
+            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
         else
             sprintf (str, "Fraglimit: N/A    ");
 
         if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str2, "Timelimit: N/A");
 
@@ -2556,12 +2606,12 @@ void SV_DrawScores()
         Printf_Bold("-----------------------------------------------------------");        
 
         if (sv_fraglimit)
-            sprintf (str, "Fraglimit: %-7d", (int)sv_fraglimit);
+            sprintf (str, "Fraglimit: %-7d", sv_fraglimit.asInt());
         else
             sprintf (str, "Fraglimit: N/A    ");
 
         if (sv_timelimit)
-            sprintf (str2, "Timelimit: %-7d", (int)sv_timelimit);
+            sprintf (str2, "Timelimit: %-7d", sv_timelimit.asInt());
         else
             sprintf (str2, "Timelimit: N/A   ");
 
@@ -3026,17 +3076,35 @@ void SV_RemoveCorpses (void)
 	}
 }
 
+//
+// SV_CalcRoundtripDelay
+//
+// [SL] 2011-05-11 - Calculate a client's lag based on how many
+// tics have passed since we sent the client this gametic 
+//
+void SV_CalcRoundtripDelay(player_t &player)
+{
+	// We only send the least significant byte of gametic
+	byte received_tic = MSG_ReadByte();
+	// since gametic is 0-255 here, we must account for when gametic wraps
+	// around to zero again
+	size_t delay = ((gametic & 0xFF) + 256 - received_tic) & 0xFF;
+
+	Unlag::getInstance().setRoundtripDelay(player.id, delay);
+}
 
 //
-// SV_SendGametic
-// Sends gametic to calculate ping
+// SV_SendPingRequest
+// Pings the client and requests a reply
 //
-void SV_SendGametic(client_t* cl)
+// [SL] 2011-05-11 - Changed from SV_SendGametic to SV_SendPingRequest
+//
+void SV_SendPingRequest(client_t* cl)
 {
 	if ((gametic%100) != 0)
 		return;
 
-	MSG_WriteMarker (&cl->reliablebuf, svc_svgametic);
+	MSG_WriteMarker (&cl->reliablebuf, svc_pingrequest);
 	MSG_WriteLong (&cl->reliablebuf, I_MSTime());
 }
 
@@ -3152,6 +3220,11 @@ void SV_WriteCommands(void)
 	for (i=0; i < players.size(); i++)
 	{
 		cl = &clients[i];
+    
+		// [SL] 2011-05-11 - Send the client the server's gametic
+		// this gametic is returned to the server with the client's
+		// next cmd
+		SV_SendGametic(cl);
 
 		// Don't need to update origin every tic.
 		// The server sends origin and velocity of a
@@ -3204,9 +3277,10 @@ void SV_WriteCommands(void)
 
 		SV_UpdateMonsters(players[i]);
 
-	 	SV_SendGametic(cl); // to calculate a ping value, when
-		                    // a client returns it.
-		SV_UpdatePing(cl);
+		// [SL] 2011-05-11 - Renamed SendGametic to SendPingRquest to more
+		// acurately convey its purpose
+		SV_SendPingRequest(cl);     // request ping reply
+		SV_UpdatePing(cl);          // client returns it
 	}
 
 	SV_UpdateDeadPlayers(); // Update dying players.
@@ -3683,8 +3757,7 @@ void SV_WantWad(player_t &player)
 //
 void SV_ParseCommands(player_t &player)
 {
-	// [SL] 2011-06-16 - Ignore commands from disconnected players
-	 while(validplayer(player) && player.playerstate != PST_DISCONNECT)
+	 while(validplayer(player))
 	 {
 		clc_t cmd = (clc_t)MSG_ReadByte();
 
@@ -3709,15 +3782,22 @@ void SV_ParseCommands(player_t &player)
 			SV_GetPlayerCmd(player);
 			break;
 
-		case clc_svgametic:
+		case clc_svgametic:  // [SL] 2011-05-11
+            SV_CalcRoundtripDelay(player);
+            break;
+		case clc_pingreply:  // [SL] 2011-05-11 - Changed to clc_pingreply
 			SV_CalcPing(player);
 			break;
 
 		case clc_rate:
-			player.client.rate = MSG_ReadLong();
-			// denis - prevent problems by locking rate within a range
-            if(player.client.rate < 500)player.client.rate = 500;
-			if(player.client.rate > sv_maxrate)player.client.rate = sv_maxrate;
+			{
+				player.client.rate = MSG_ReadLong();
+				// denis - prevent problems by locking rate within a range
+            	if (player.client.rate < 500)
+					player.client.rate = 500;
+				if (player.client.rate > sv_maxrate)
+					player.client.rate = sv_maxrate.asInt();
+			}
 			break;
 
 		case clc_ack:
@@ -3908,7 +3988,13 @@ team_t SV_WinningTeam (void)
 //
 void SV_TimelimitCheck()
 {
-	if(!sv_timelimit || level.time < (int)(sv_timelimit * TICRATE * 60) || shotclock || gamestate == GS_INTERMISSION)
+	if(!sv_timelimit)
+		return;	
+		
+	// [ML] Update the sv_timeleft cvar for clients
+	sv_timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
+	
+	if (sv_timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
 		return;
 
 	// LEVEL TIMER
@@ -3976,9 +4062,14 @@ void SV_SetMoveableSectors()
 	{
 		sector_t* sec = &sectors[i];
 
-		if ((sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DMover)))
-		|| (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DMover))))
-			sec->moveable = true;
+ 		if ((sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DMover)))
+ 		|| (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DMover))))
+		{
+ 			sec->moveable = true;
+			// [SL] 2011-05-11 - Register this sector as a moveable sector with the
+			// reconciliation system for unlagging
+			Unlag::getInstance().registerSector(sec);
+		}
 	}
 }
 
@@ -4117,6 +4208,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, " userinfo.netname - %s \n",		  player->userinfo.netname);
 	Printf (PRINT_HIGH, " userinfo.team    - %d \n",		  player->userinfo.team);
 	Printf (PRINT_HIGH, " userinfo.aimdist - %d \n",		  player->userinfo.aimdist);
+	Printf (PRINT_HIGH, " userinfo.unlag   - %d \n",          player->userinfo.unlag);
 	Printf (PRINT_HIGH, " userinfo.color   - %d \n",		  player->userinfo.color);
 	Printf (PRINT_HIGH, " userinfo.skin    - %s \n",		  skins[player->userinfo.skin].name);
 	Printf (PRINT_HIGH, " userinfo.gender  - %d \n",		  player->userinfo.gender);
@@ -4355,7 +4447,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		}
 	}
 
-	if (message) {
+	if (message && !shotclock) {
 		SexMessage (message, gendermessage, gender);
 		SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
 		return;

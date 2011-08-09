@@ -996,7 +996,10 @@ void R_ProjectSprite (AActor *thing)
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
 
 	heightsec = thing->subsector->sector->heightsec;
-
+	
+	if (heightsec != NULL && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
+		heightsec = NULL;
+	
 	if (heightsec)	// only clip things which are in special sectors
 	{
 		sector_t *phs = camera->subsector->sector->heightsec;
@@ -1433,7 +1436,8 @@ void R_DrawSprite (vissprite_t *spr)
 	// killough 4/9/98: optimize by adding mh
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
 
-	if (spr->heightsec)	// only things in specially marked sectors
+	if (spr->heightsec &&
+		!(spr->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))	// only things in specially marked sectors
 	{
 		fixed_t h,mh;
 		sector_t *phs = camera->subsector->sector->heightsec;

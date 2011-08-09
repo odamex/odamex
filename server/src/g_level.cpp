@@ -58,6 +58,7 @@
 
 #include "sv_main.h"
 #include "p_ctf.h"
+#include "p_unlag.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
@@ -1097,7 +1098,7 @@ void G_InitNew (const char *mapname)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
-	int old_gametype = sv_gametype;
+	int old_gametype = sv_gametype.asInt();
 
 	cvar_t::UnlatchCVars ();
 
@@ -1106,7 +1107,14 @@ void G_InitNew (const char *mapname)
 
 		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
 		for (i = 0; i < players.size(); i++) {
+			// [SL] 2011-07-30 - Don't force downloading players to become spectators
+			// it stops their downloading
+			if (!players[i].ingame())
+				continue;
+
 			for (size_t j = 0; j < players.size(); j++) {
+				if (!players[j].ingame())
+					continue;
 				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
 				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
 				MSG_WriteByte (&(players[j].client.reliablebuf), true);
@@ -1154,6 +1162,9 @@ void G_InitNew (const char *mapname)
 		}
 		isFast = wantFast;
 	}
+    
+	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
+	Unlag::getInstance().reset();
 
 	if (!savegamerestore)
 	{
@@ -1163,6 +1174,10 @@ void G_InitNew (const char *mapname)
 		// force players to be initialized upon first level load
 		for (size_t i = 0; i < players.size(); i++)
 		{
+			// [SL] 2011-05-11 - Register the players in the reconciliation
+			// system for unlagging
+			Unlag::getInstance().registerPlayer(players[i].id);
+
 			if(!players[i].ingame())
 				continue;
 

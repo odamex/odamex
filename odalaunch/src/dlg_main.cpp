@@ -24,6 +24,7 @@
 
 #include "dlg_main.h"
 #include "query_thread.h"
+#include "str_utils.h"
 
 #include "md5.h"
 
@@ -177,8 +178,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     m_LstCtrlPlayers->SetupPlayerListColumns();
 
 	// set up the master server information
-    MServer.AddMaster(_T("master1.odamex.net"), 15000);
-    MServer.AddMaster(_T("voxelsoft.com"), 15000);
+    MServer.AddMaster("master1.odamex.net", 15000);
+    MServer.AddMaster("voxelsoft.com", 15000);
     
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
@@ -230,7 +231,7 @@ void dlgMain::OnExit(wxCommandEvent& event)
 void dlgMain::OnClose(wxCloseEvent &event)
 {
     if (GetThread() && GetThread()->IsRunning())
-        GetThread()->Wait();
+        GetThread()->Delete();
 
     // Save GUI layout
     wxFileConfig ConfigInfo;
@@ -330,7 +331,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
     }
 
     // Query the server and try to acquire its password hash
-    tmp_server.SetAddress(IPHost, Port);
+    tmp_server.SetAddress(wxstr_tostdstr(IPHost), Port);
     tmp_server.Query(ServerTimeout);
 
     if (tmp_server.GotResponse() == false)
@@ -344,7 +345,7 @@ void dlgMain::OnManualConnect(wxCommandEvent &event)
         return;
     }
 
-    server_hash = tmp_server.Info.PasswordHash;
+    server_hash = stdstr_towxstr(tmp_server.Info.PasswordHash);
 
     // Uppercase both hashes for easier comparison
     server_hash.MakeUpper();
@@ -464,14 +465,15 @@ void dlgMain::MonThrGetServerList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 ServerTimeout;
+    size_t ServerCount;
     
     size_t count = 0;
     size_t serverNum = 0;
-    wxString Address = _T("");
-    wxUint16 Port = 0;
+    std::string Address;
+    uint16_t Port = 0;
 
     // [Russell] - This includes custom servers.
-    if (!MServer.GetServerCount())
+    if (!(ServerCount = MServer.GetServerCount()))
     {
         MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
             mtrs_server_noservers, -1, -1);
@@ -481,6 +483,9 @@ void dlgMain::MonThrGetServerList()
 
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
     
+    delete[] QServer;
+    QServer = new Server [ServerCount];
+    
     /* 
         Thread pool manager:
         Executes a number of threads that contain the same amount of
@@ -488,7 +493,7 @@ void dlgMain::MonThrGetServerList()
         gets executed with a different server, eventually all the way
         down to 0 servers.
     */
-    while(count < MServer.GetServerCount())
+    while(count < ServerCount)
     {
         for(size_t i = 0; i < NUM_THREADS; i++)
         {
@@ -506,7 +511,7 @@ void dlgMain::MonThrGetServerList()
                     count++;
                 }
             }
-            if(serverNum < MServer.GetServerCount())
+            if(serverNum < ServerCount)
             {
                 MServer.GetServerAddress(serverNum, Address, Port);
                 QServer[serverNum].SetAddress(Address, Port);
@@ -521,7 +526,26 @@ void dlgMain::MonThrGetServerList()
 
                 // DUMB: our next server will be this incremented value
                 serverNum++;
-            }          
+            }
+
+            // Let other threads get some time
+            GetThread()->Sleep(20);
+
+            // We got told to exit, so we should wait for these worker threads
+            // to gracefully exit
+            if (GetThread()->TestDestroy())
+            {
+                for (size_t j = 0; j < threadVector.size(); ++j)
+                {
+                    if (threadVector[j]->IsRunning())
+                    {
+                        threadVector[j]->Wait();
+                        delete threadVector[j];
+                    }
+                }
+
+                return;
+            }
         }
     }
 
@@ -621,7 +645,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
         
         case mtrs_server_singletimeout:
         {
-            i = FindServerInList(QServer[Result->Index].GetAddress());
+            i = FindServerInList(stdstr_towxstr(QServer[Result->Index].GetAddress()));
 
             m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
             
@@ -660,7 +684,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             break;
     }
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %u"), MServer.GetPing()), 1);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %llu"), MServer.GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), TotalPlayers), 3);
 
     delete Result;
@@ -674,7 +698,7 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
     {
         case 0: // server query timed out
         {
-            i = FindServerInList(QServer[event.GetInt()].GetAddress());
+            i = FindServerInList(stdstr_towxstr(QServer[event.GetInt()].GetAddress()));
 
             m_LstCtrlPlayers->DeleteAllItems();
             
@@ -755,7 +779,7 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
 
     // If the server is passworded, pop up a password entry dialog for them to
     // specify one before going any further
-    SrvPwHash = QServer[i].Info.PasswordHash;
+    SrvPwHash = stdstr_towxstr(QServer[i].Info.PasswordHash);
 
     if (SrvPwHash.IsEmpty() == false)
     {                           
@@ -796,7 +820,7 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
         }
     }
     
-    LaunchGame(QServer[i].GetAddress(), launchercfg_s.odamex_directory,
+    LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), launchercfg_s.odamex_directory,
         launchercfg_s.wad_paths, Password);
 }
 
@@ -935,7 +959,7 @@ void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 wxInt32 dlgMain::FindServer(wxString Address)
 {
     for (size_t i = 0; i < MServer.GetServerCount(); i++)
-        if (QServer[i].GetAddress().IsSameAs(Address))
+        if (stdstr_towxstr(QServer[i].GetAddress()) == Address)
             return i;
     
     return -1;
@@ -1011,7 +1035,7 @@ _oda_iav_err_t dlgMain::IsAddressValid(wxString Address, wxString &OutIPHost,
     wxString RegEx;
     wxRegEx ReValIP;
     wxString IPHost;
-    long Port = DEF_SERVERPORT;
+    long Port = 10666;
 
     // Get rid of any whitespace on either side of the string
     Address.Trim(false);

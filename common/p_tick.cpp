@@ -26,6 +26,7 @@
 #include "p_acs.h"
 #include "c_console.h"
 #include "doomstat.h"
+#include "p_unlag.h"
 
 EXTERN_CVAR (sv_speedhackfix)
 
@@ -62,6 +63,11 @@ void P_Ticker (void)
 	
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
+
+	// [SL] 2011-05-11 - Save player positions and moving sector heights so
+	// they can be reconciled later for unlagging
+	Unlag::getInstance().recordPlayerPositions();
+	Unlag::getInstance().recordSectorPositions();
 
 	// for par times
 	level.time++;
