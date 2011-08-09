@@ -48,6 +48,7 @@
 #include "version.h"
 #include "cl_main.h"
 #include "gi.h"
+#include "cl_demo.h"
 
 #include "p_ctf.h"
 
@@ -68,6 +69,7 @@ bool		st_firsttime;
 // lump number for PLAYPAL
 static int		lu_palette;
 
+extern NetDemo netdemo;
 
 EXTERN_CVAR (idmypos)
 CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
@@ -1326,6 +1328,10 @@ void ST_doPaletteStuff(void)
 
     else
         palette = 0;
+
+	// Don't do palette effects if using spynext in a netdemo
+	if (&(displayplayer()) != plyr && netdemo.isPlaying())
+		palette = 0;
 
     if (palette != st_palette)
     {
