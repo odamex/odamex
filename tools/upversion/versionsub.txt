@@ -11,7 +11,7 @@
 s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
 s|(\s*#define\s+PROTOCOL_VERSION\s+)\d+|$1$protocol_version|
 
-[odalaunch/src/net_packet.h]
+[odalpapi/net_packet.h]
 s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
 s|(\s*#define\s+PROTOCOL_VERSION\s+)\d+|$1$protocol_version|
 
