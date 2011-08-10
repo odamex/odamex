@@ -3224,7 +3224,8 @@ void SV_WriteCommands(void)
 		// [SL] 2011-05-11 - Send the client the server's gametic
 		// this gametic is returned to the server with the client's
 		// next cmd
-		SV_SendGametic(cl);
+		if (players[i].ingame())
+			SV_SendGametic(cl);
 
 		// Don't need to update origin every tic.
 		// The server sends origin and velocity of a
@@ -3933,11 +3934,11 @@ void SV_WadDownloads (void)
 
 		read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, sizeof(buff), buff, filelen);
 
-        // [Russell] - We take into account the maximum packet limit so we don't
-        // go over it and end up with a mangled package, the numeric values here
-        // represent the size of each written data type that follows
-        if ((cl->netbuf.cursize + 1 + 4 + 1 + 4 + 2 + read) >= 8192)
-            SV_SendPacket(players[i]);
+		// [SL] 2011-08-09 - Always send the data in netbuf and reliablebuf prior
+		// to writing a wadchunk to netbuf to keep packet sizes below the MTU.
+		// This prevents packets from getting dropped due to size on some networks.
+		if (cl->netbuf.size() + cl->reliablebuf.size())
+			SV_SendPacket(players[i]);
 
 		if(read)
 		{
@@ -4284,23 +4285,6 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 		MSG_WriteByte (&cl->reliablebuf, side);
 		MSG_WriteByte (&cl->reliablebuf, activationType);
 	}
-}
-
-//
-// MSG_WriteMarker
-//
-// denis - use this function to mark the start of your server message
-// as it allows for better debugging and optimization of network code
-//
-// Spleen - moved to sv_main.cpp to allow SV_SendPackets call
-
-void MSG_WriteMarker (buf_t *b, svc_t c)
-{
-    //[Spleen] final check to prevent huge packets from being sent to players
-    if (b->cursize > 600)
-        SV_SendPackets();
-    
-	b->WriteByte((byte)c);
 }
 
 // [RH]

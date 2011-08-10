@@ -55,14 +55,14 @@ void NetDemo::copy(NetDemo &to, const NetDemo &from)
 	// free any memory used by structures and close open files
 	cleanUp();
 
-	to.state 		= from.state;
-	to.oldstate		= from.oldstate;
-	to.filename		= from.filename;
-	to.demofp		= from.demofp;
-	to.cmdbuf		= from.cmdbuf;
-	to.bufcursor	= from.bufcursor;
-	to.netbuf		= from.netbuf;
-	to.index		= from.index;
+	to.state 			= from.state;
+	to.oldstate			= from.oldstate;
+	to.filename			= from.filename;
+	to.demofp			= from.demofp;
+	to.cmdbuf			= from.cmdbuf;
+	to.bufcursor		= from.bufcursor;
+	to.captured			= from.captured;
+	to.snapshot_index	= from.snapshot_index;
 	memcpy(&to.header, &from.header, NetDemo::HEADER_SIZE);
 }
 
@@ -98,7 +98,7 @@ void NetDemo::cleanUp()
 		demofp = NULL;
 	}
 	
-	index.clear();
+	snapshot_index.clear();
 	state = NetDemo::stopped;
 }
 
@@ -117,23 +117,25 @@ void NetDemo::error(const std::string &message)
 //
 // writeHeader()
 //
-// Writes the header struct to the netdemo file in little-endian format
-// Assumes that demofp has been opened correctly elsewhere.  Does not close
-// the file.
+//   Writes the header struct to the netdemo file in little-endian format
+//   Assumes that demofp has been opened correctly elsewhere.  Does not close
+//   the file.
 
 bool NetDemo::writeHeader()
 {
 	strncpy(header.identifier, "ODAD", 4);
 	header.version = NETDEMOVER;
 	header.compression = 0;
+	header.snapshot_spacing = NetDemo::SNAPSHOT_SPACING;
 
 	netdemo_header_t tmpheader;
 	memcpy(&tmpheader, &header, NetDemo::HEADER_SIZE);
 	// convert from native byte ordering to little-endian
-	tmpheader.index_offset = LONG(tmpheader.index_offset);
-	tmpheader.index_size = LONG(tmpheader.index_size);
-	tmpheader.index_spacing = SHORT(tmpheader.index_spacing);
-
+	tmpheader.snapshot_index_offset = LONG(tmpheader.snapshot_index_offset);
+	tmpheader.snapshot_index_size = LONG(tmpheader.snapshot_index_size);
+	tmpheader.snapshot_spacing = SHORT(tmpheader.snapshot_spacing);
+	tmpheader.first_gametic = LONG(tmpheader.first_gametic);
+	
 	fseek(demofp, 0, SEEK_SET);
 	size_t cnt = fwrite(&tmpheader, 1, NetDemo::HEADER_SIZE, demofp);
 
@@ -149,9 +151,9 @@ bool NetDemo::writeHeader()
 //
 // readHeader()
 //
-// Reads the header struct from the netdemo file, converting it from
-// little-endian format to whatever the client's architecture uses.  Assumes
-// that demofp has been opened correctly elsewhere.  Does not close the file.
+//   Reads the header struct from the netdemo file, converting it from
+//   little-endian format to whatever the client's architecture uses.  Assumes
+//   that demofp has been opened correctly elsewhere.  Does not close the file.
 
 bool NetDemo::readHeader()
 {
@@ -164,9 +166,10 @@ bool NetDemo::readHeader()
 	}
 
 	// convert from little-endian to native byte ordering
-	header.index_offset = LONG(header.index_offset);
-	header.index_size = LONG(header.index_size);
-	header.index_spacing = SHORT(header.index_spacing);
+	header.snapshot_index_offset = LONG(header.snapshot_index_offset);
+	header.snapshot_index_size = LONG(header.snapshot_index_size);
+	header.snapshot_spacing = SHORT(header.snapshot_spacing);
+	header.first_gametic = LONG(header.first_gametic);
 
 	return true;
 }
@@ -175,23 +178,23 @@ bool NetDemo::readHeader()
 //
 // writeIndex()
 //
-// Writes the snapshot index to the netdemo file, converting it to
-// little-endian format from whatever the client's architecture uses.  Assumes
-// that demofp has been opened correctly elsewhere.  Does not close the file.
+//   Writes the snapshot index to the netdemo file, converting it to
+//   little-endian format from whatever the client's architecture uses.  Assumes
+//   that demofp has been opened correctly elsewhere.  Does not close the file.
 
 bool NetDemo::writeIndex()
 {
-	fseek(demofp, header.index_offset, SEEK_SET);
+	fseek(demofp, header.snapshot_index_offset, SEEK_SET);
 
-	for (size_t i = 0; i < index.size(); i++)
+	for (size_t i = 0; i < snapshot_index.size(); i++)
 	{
-		netdemo_index_entry_t entry;
+		netdemo_snapshot_entry_t entry;
 		// convert to little-endian
-		entry.ticnum = LONG(index[i].ticnum);
-		entry.offset = LONG(index[i].offset);
+		entry.ticnum = LONG(snapshot_index[i].ticnum);
+		entry.offset = LONG(snapshot_index[i].offset);
 		
 		size_t cnt = fwrite(&entry, NetDemo::INDEX_ENTRY_SIZE, 1, demofp);
-		if (cnt < NetDemo::INDEX_ENTRY_SIZE)
+		if (cnt < 1)
 		{
 			return false;
 		}
@@ -204,20 +207,20 @@ bool NetDemo::writeIndex()
 //
 // readIndex()
 //
-// Reads the snapshot index from the netdemo file, converting it from
-// little-endian format to whatever the client's architecture uses.  Assumes
-// that demofp has been opened correctly elsewhere.  Does not close the file.
+//   Reads the snapshot index from the netdemo file, converting it from
+//   little-endian format to whatever the client's architecture uses.  Assumes
+//   that demofp has been opened correctly elsewhere.  Does not close the file.
 
 bool NetDemo::readIndex()
 {
-	fseek(demofp, header.index_offset, SEEK_SET);
+	fseek(demofp, header.snapshot_index_offset, SEEK_SET);
 
-	int num_snapshots = header.index_size / NetDemo::INDEX_ENTRY_SIZE;
+	int num_snapshots = header.snapshot_index_size / NetDemo::INDEX_ENTRY_SIZE;
 	for (int i = 0; i < num_snapshots; i++)
 	{
-		netdemo_index_entry_t entry;
+		netdemo_snapshot_entry_t entry;
 		size_t cnt = fread(&entry, NetDemo::INDEX_ENTRY_SIZE, 1, demofp);
-		if (cnt < NetDemo::INDEX_ENTRY_SIZE)
+		if (cnt < 1)
 		{
 			return false;
 		}
@@ -226,7 +229,7 @@ bool NetDemo::readIndex()
 		entry.ticnum = LONG(entry.ticnum);	
 		entry.offset = LONG(entry.offset);
 
-		index.push_back(entry);
+		snapshot_index.push_back(entry);
 	}
 
 	return true;
@@ -236,9 +239,9 @@ bool NetDemo::readIndex()
 //
 // startRecording()
 //
-// Creates the netdemo file with the specified filename.  A temporary
-// header is written which will be overwritten with the proper information
-// in stopRecording().
+//   Creates the netdemo file with the specified filename.  A temporary
+//   header is written which will be overwritten with the proper information
+//   in stopRecording().
 
 bool NetDemo::startRecording(const std::string &filename)
 {
@@ -268,6 +271,8 @@ bool NetDemo::startRecording(const std::string &filename)
 	}
 
 	memset(&header, 0, NetDemo::HEADER_SIZE);
+	// Note: The header is not finalized at this point.  Write it anyway to
+	// reserve space in the output file for it and overwrite it later.
 	if (!writeHeader())
 	{
 		error("Unable to write netdemo header.");
@@ -319,7 +324,7 @@ bool NetDemo::startPlaying(const std::string &filename)
     }
 
 	// read the demo's index
-	if (fseek(demofp, header.index_offset, SEEK_SET) != 0)
+	if (fseek(demofp, header.snapshot_index_offset, SEEK_SET) != 0)
 	{
 		error("Unable to find netdemo index.\n");
 		return false;
@@ -341,8 +346,8 @@ bool NetDemo::startPlaying(const std::string &filename)
 // 
 // pause()
 //
-// Changes the netdemo's state to paused.  No messages will be read
-// while in this state.
+//   Changes the netdemo's state to paused.  No messages will be read or written
+//   while in this state.
 
 bool NetDemo::pause()
 {
@@ -360,7 +365,7 @@ bool NetDemo::pause()
 //
 // resume()
 //
-// Changes the netdemo's state to its state prior to the call to pause()
+//   Changes the netdemo's state to its state prior to the call to pause()
 //
 
 bool NetDemo::resume()
@@ -377,8 +382,8 @@ bool NetDemo::resume()
 //
 // stopRecording()
 //
-// Writes the netdemo index to file and rewrites the netdemo header before
-// closing the netdemo file.
+//   Writes the netdemo index to file and rewrites the netdemo header before
+//   closing the netdemo file.
 
 bool NetDemo::stopRecording()
 {
@@ -399,8 +404,8 @@ bool NetDemo::stopRecording()
 	fwrite(&marker, sizeof(marker), 1, demofp);
 
 	// tack the snapshot index onto the end of the recording
-	header.index_offset = ftell(demofp);
-	header.index_size = index.size() * NetDemo::INDEX_ENTRY_SIZE;
+	header.snapshot_index_offset = ftell(demofp);
+	header.snapshot_index_size = snapshot_index.size() * NetDemo::INDEX_ENTRY_SIZE;
 
 	if (!writeIndex())
 	{
@@ -408,7 +413,8 @@ bool NetDemo::stopRecording()
 		return false;
 	}
 
-	// rewrite the header since index_offset and index_size is now known
+	// rewrite the header since snapsnot_index_offset and 
+	// snapshot_index_size are now known
 	if (!writeHeader())
 	{
 		error("Unable to write updated netdemo header.");
@@ -426,7 +432,7 @@ bool NetDemo::stopRecording()
 //
 // stopPlaying()
 //
-// Closes the netdemo file and sets the state to stopped
+//   Closes the netdemo file and sets the state to stopped
 //
 
 bool NetDemo::stopPlaying()
@@ -449,103 +455,175 @@ bool NetDemo::stopPlaying()
 
 
 //
-// writeFullUpdate()
+// writeSnapshot()
 //
-// Write the entire state of the game to the netdemo file
+//   Write the entire state of the game to the netdemo file
 //
 
-void NetDemo::writeFullUpdate(int ticnum)
+void NetDemo::writeSnapshot(buf_t *netbuffer)
 {
-	// Update the netdemo's index
-	netdemo_index_entry_t index_entry;
-	index_entry.offset = ftell(demofp);
-	index_entry.ticnum = ticnum;
-	index.push_back(index_entry);
+/*	// DEBUG
+	Printf(PRINT_HIGH, "Writing snapshot at tic %d\n", gametic);
 
-	// TODO: simulate the server's update messages based on what the client
-	// knows of the world	
+	// Update the netdemo's snapshot index
+	netdemo_snapshot_entry_t entry;
+	entry.offset = ftell(demofp);
+	entry.ticnum = gametic;
+	snapshot_index.push_back(entry);
+	
+	buf_t tempbuf(MAX_SNAPSHOT_SIZE);
+	P_WriteClientFullUpdate(tempbuf, consoleplayer());
+
+	uint32_t snapshot_datalen = tempbuf.size();
+
+	MSG_WriteByte(netbuffer, svc_netdemosnapshot);
+	MSG_WriteLong(netbuffer, snapshot_datalen);
+
+	MSG_WriteChunk(netbuffer, tempbuf.data, snapshot_datalen);
+
+	//[SL] DEBUG
+	Printf(PRINT_HIGH, "Writing %d bytes for snapshot\n", snapshot_datalen); */
+}
+
+void NetDemo::writeLocalCmd(buf_t *netbuffer) const
+{
+	// Record the local player's data
+	player_t *player = &consoleplayer();
+	if (!player->mo)
+		return;
+
+	AActor *mo = player->mo;
+
+	MSG_WriteByte(netbuffer, svc_netdemocap);
+	MSG_WriteByte(netbuffer, player->cmd.ucmd.buttons);
+	MSG_WriteShort(netbuffer, player->cmd.ucmd.yaw);
+	MSG_WriteShort(netbuffer, player->cmd.ucmd.forwardmove);
+	MSG_WriteShort(netbuffer, player->cmd.ucmd.sidemove);
+	MSG_WriteShort(netbuffer, player->cmd.ucmd.upmove);
+	MSG_WriteShort(netbuffer, player->cmd.ucmd.roll);
+
+	MSG_WriteByte(netbuffer, mo->waterlevel);
+	MSG_WriteLong(netbuffer, mo->x);
+	MSG_WriteLong(netbuffer, mo->y);
+	MSG_WriteLong(netbuffer, mo->z);
+	MSG_WriteLong(netbuffer, mo->momx);
+	MSG_WriteLong(netbuffer, mo->momy);
+	MSG_WriteLong(netbuffer, mo->momz);
+	MSG_WriteLong(netbuffer, mo->angle);
+	MSG_WriteLong(netbuffer, mo->pitch);
+	MSG_WriteLong(netbuffer, mo->roll);
+	MSG_WriteLong(netbuffer, player->viewheight);
+	MSG_WriteLong(netbuffer, player->deltaviewheight);
+	MSG_WriteLong(netbuffer, player->jumpTics);
+	MSG_WriteLong(netbuffer, mo->reactiontime);
 }
 
 
 //
 // writeMessages()
 //
-// Captures the net packets and local movements and writes them to the
-// netdemo file.
+//   Writes the packets received from the server and captures local player
+//   input and writes to the netdemo file.
 // 
 
-void NetDemo::writeMessages(buf_t *netbuffer, bool usercmd)
+void NetDemo::writeMessages()
 {
 	if (!isRecording())
 	{
 		return;
 	}
 
-	buf_t netbuffertemp;
-	size_t len = netbuffer->cursize;	
-	
-	const int safetymargin = 128;	// extra space to accomodate usercmd
-	netbuffertemp.resize(len + safetymargin);
-	memcpy(netbuffertemp.data, netbuffer->data, netbuffer->cursize);
-	netbuffertemp.cursize = netbuffer->cursize;
+	if (connected && gamestate == GS_LEVEL)
+	{
+		// Write the player's ticcmd
+		buf_t netbuf_localcmd(128);
+		writeLocalCmd(&netbuf_localcmd);
+		captured.push_back(netbuf_localcmd);
 
-	// Record the local player's data
-	player_t *player = &consoleplayer();
-    if (player->mo && usercmd)
-    {
-		AActor *mo = player->mo;
-
-        MSG_WriteByte(&netbuffertemp, svc_netdemocap);
-        MSG_WriteByte(&netbuffertemp, player->cmd.ucmd.buttons);
-        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.yaw);
-        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.forwardmove);
-        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.sidemove);
-        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.upmove);
-        MSG_WriteShort(&netbuffertemp, player->cmd.ucmd.roll);
-
-        MSG_WriteByte(&netbuffertemp, mo->waterlevel);
-        MSG_WriteLong(&netbuffertemp, mo->x);
-        MSG_WriteLong(&netbuffertemp, mo->y);
-        MSG_WriteLong(&netbuffertemp, mo->z);
-        MSG_WriteLong(&netbuffertemp, mo->momx);
-        MSG_WriteLong(&netbuffertemp, mo->momy);
-        MSG_WriteLong(&netbuffertemp, mo->momz);
-        MSG_WriteLong(&netbuffertemp, mo->angle);
-        MSG_WriteLong(&netbuffertemp, mo->pitch);
-        MSG_WriteLong(&netbuffertemp, mo->roll);
-        MSG_WriteLong(&netbuffertemp, player->viewheight);
-        MSG_WriteLong(&netbuffertemp, player->deltaviewheight);
-        MSG_WriteLong(&netbuffertemp, player->jumpTics);
-        MSG_WriteLong(&netbuffertemp, mo->reactiontime);
+		if ((gametic - header.first_gametic) % header.snapshot_spacing == 0
+			&& (unsigned)gametic > header.first_gametic)
+		{
+			buf_t netbuf_snapshot(NetDemo::MAX_SNAPSHOT_SIZE);
+			writeSnapshot(&netbuf_snapshot);
+			captured.push_front(netbuf_snapshot);
+		}
 	}
 
-	capture(&netbuffertemp);
+
+	byte *output_buf = new byte[captured.size() * MAX_UDP_PACKET];
+
+	uint32_t output_len = 0;
+	while (!captured.empty())
+	{
+		buf_t netbuf(captured.front());
+		uint32_t len = netbuf.BytesLeftToRead();
+
+		byte *chunk = netbuf.ReadChunk(len);
+		memcpy(output_buf + output_len, chunk, len);
+		output_len += len;
+		
+		captured.pop_front();
+	}
+
+	uint32_t le_output_len = LONG(output_len);
+	uint32_t le_gametic = LONG(gametic);
+
+	// write a blank message even if there is no data in order to preserve
+	// timing of the netdemo
+	if (header.first_gametic == 0)
+		header.first_gametic = gametic;
+
+	size_t cnt = 0;
+	cnt += sizeof(le_output_len) * fwrite(&le_output_len, sizeof(le_output_len), 1, demofp);
+	cnt += sizeof(le_gametic) * fwrite(&le_gametic, sizeof(le_gametic), 1, demofp);
+
+	cnt += fwrite(output_buf, 1, output_len, demofp);
+
+	delete [] output_buf;
 }
 
 
 //
-// readMessages()
+// readMessageHeader()
 //
-//
+// Reads the message length and gametic from the netdemo file into the
+// len and tic parameters.
+// Returns false upon file read error.
 
-void NetDemo::readMessages(buf_t* netbuffer)
+bool NetDemo::readMessageHeader(uint32_t &len, uint32_t &tic) const
 {
-	if (!isPlaying())
-	{
-		return;
-	}
+	len = tic = 0;
 
-	uint32_t len = 0;
-	uint32_t tic = 0;
 	size_t cnt = 0;
 	cnt += sizeof(len) * fread(&len, sizeof(len), 1, demofp);
-	len = LONG(len);			// convert to native byte order
 	cnt += sizeof(tic) * fread(&tic, sizeof(tic), 1, demofp);
-	gametic = LONG(tic);		// convert to native byte order
 
+	if (cnt < sizeof(len) + sizeof(tic))
+	{
+		return false;
+	}
+
+	// convert the values to native byte order
+	len = LONG(len);
+	tic = LONG(tic);
+
+	return true;
+}
+
+
+//
+// readMessageBody()
+//
+// Reads a message of length len from the netdemo file and stores the
+// message in netbuffer.
+//
+ 
+void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
+{
 	char *msgdata = new char[len];
-	cnt += fread(msgdata, 1, len, demofp);
-	if (cnt < len + sizeof(len) + sizeof(gametic))
+	
+	size_t cnt = fread(msgdata, 1, len, demofp);
+	if (cnt < len)
 	{
 		error("Can not read netdemo message.");
 		return;
@@ -565,12 +643,13 @@ void NetDemo::readMessages(buf_t* netbuffer)
 		{
 			CL_Connect();
 		}
-	} 
-	else 
+	}
+	else
 	{
 		last_received = gametic;
 		noservermsgs = false;
-		CL_ReadPacketHeader();
+		// Since packets are captured after the header is read, we do not
+		// have to read the packet header
 		CL_ParseCommands();
 		CL_SaveCmd();
 		if (gametic - last_received > 65)
@@ -582,12 +661,32 @@ void NetDemo::readMessages(buf_t* netbuffer)
 
 
 //
-// capture()
+// readMessages()
 //
-// Copies data from netbuffer to the recording file
 //
 
-void NetDemo::capture(const buf_t* netbuffer)
+void NetDemo::readMessages(buf_t* netbuffer)
+{
+	if (!isPlaying())
+	{
+		return;
+	}
+
+	uint32_t len, tic;
+	
+	readMessageHeader(len, tic);
+	gametic = tic;
+	readMessageBody(netbuffer, len);
+}
+
+
+//
+// capture()
+//
+// Copies data from inputbuffer just before the game parses it 
+//
+
+void NetDemo::capture(const buf_t* inputbuffer)
 {
 	if (!isRecording())
 	{
@@ -596,20 +695,88 @@ void NetDemo::capture(const buf_t* netbuffer)
 
 	if (gamestate == GS_DOWNLOAD)
 	{
-		// I think this will skip the downloading process
+		// NullPoint: I think this will skip the downloading process
 		return;
 	}
 
-	// captures just the net packets before the game
-	uint32_t len = netbuffer->cursize;
-	len = LONG(len);
-	fwrite(&len, sizeof(len), 1, demofp);
-	uint32_t tic = LONG(gametic);
-	fwrite(&tic, sizeof(tic), 1, demofp);
-
-	fwrite(netbuffer->data, 1, netbuffer->cursize, demofp);
+	if (inputbuffer->size() > 0)
+	{
+		captured.push_back(*inputbuffer);
+	}
 }
 
+
+//
+// snapshotLookup()
+//
+// Retrieves the offset in demofp of the snapshot closest to ticnum
+//
+
+int NetDemo::snapshotLookup(int ticnum)
+{
+	int index = ((ticnum - header.first_gametic) / header.snapshot_spacing) - 1;
+
+	if (index >= 0 && index < (int)snapshot_index.size())
+		return snapshot_index[index].offset;
+
+	// not found
+	return -1;
+}
+
+
+void NetDemo::skipTo(buf_t *netbuffer, int ticnum)
+{
+	int offset = snapshotLookup(ticnum);
+
+	if (offset < 0)
+		return;
+
+	SZ_Clear(netbuffer);
+	
+	fseek(demofp, offset, SEEK_SET);
+	
+	// let nature take its course the next time readMessages is called
+}
+
+
+
+//
+// readSnapshot()
+//
+//
+void NetDemo::readSnapshot(buf_t *netbuffer, int ticnum)
+{
+/*	if (!isPlaying())
+		return;
+
+	// Remove all players
+	players.clear();
+
+	// Remove all actors
+	TThinkerIterator<AActor> iterator;
+	AActor *mo;
+	while ( (mo = iterator.Next() ) )
+	{
+		mo->Destroy();
+	}
+
+	// Read the snapshot from the demo file into netbuffer
+	int file_offset = snapshotLookup(ticnum);
+	if (!file_offset)	// could not find a snapshot for that tic
+		return;
+
+	fseek(demofp, file_offset, SEEK_SET);
+	byte marker;
+	fread(&marker, sizeof(byte), 1, demofp);	// should be svc_netdemosnapshot
+	size_t snapshot_datalen;
+	fread(&snapshot_datalen, sizeof(size_t), 1, demofp);
+	
+	// TODO: resize netbuffer if it is too small to hold the snapshot
+	netbuffer->clear();
+	netbuffer->cursize = snapshot_datalen;
+	netbuffer->readpos = 0;
+	fread(netbuffer->data, 1, snapshot_datalen, demofp); */
+}
 
 
 VERSION_CONTROL (cl_demo_cpp, "$Id: cl_demo.cpp 2290 2011-06-27 05:05:38Z dr_sean $")

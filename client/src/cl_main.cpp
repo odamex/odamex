@@ -146,6 +146,10 @@ void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress(int sequence);
 
+void CL_LocalDemoTic(void);
+void CL_NetDemoStop(void);
+void CL_NetDemoSnapshot(void);
+
 //	[Toke - CTF]
 void CalcTeamFrags (void);
 
@@ -639,12 +643,35 @@ BEGIN_COMMAND(netplay)
 		return;
 	}
 
-	CL_QuitNetGame();
+	if(connected)
+	{
+		CL_QuitNetGame();
+	}
 
 	std::string filename = argv[1];
 	CL_NetDemoPlay(filename);
 }
 END_COMMAND(netplay)
+
+BEGIN_COMMAND(ff)
+{
+	if (netdemo.isPlaying())
+	{
+		netdemo.skipTo(&net_message, gametic + netdemo.getSpacing());
+
+	}
+}
+END_COMMAND(ff)
+
+BEGIN_COMMAND(rew)
+{
+	if (netdemo.isPlaying())
+	{
+		netdemo.skipTo(&net_message, gametic - netdemo.getSpacing());
+
+	}
+}
+END_COMMAND(rew)
 
 //
 // CL_MoveThing
@@ -2751,71 +2778,6 @@ void CL_Spectate()
 		displayplayer_id = consoleplayer_id;
 }
 
-//
-// CL_LocalDemoTic
-//
-
-void CL_LocalDemoTic(void)
-{
-	player_t* clientPlayer = &consoleplayer();
-	fixed_t x, y, z;
-	fixed_t momx, momy, momz;
-	fixed_t pitch, roll, viewheight, deltaviewheight;
-	angle_t angle;
-	int jumpTics, reactiontime;
-	byte waterlevel;
-	
-	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
-	
-	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
-
-	waterlevel = MSG_ReadByte();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
-	momx = MSG_ReadLong();
-	momy = MSG_ReadLong();
-	momz = MSG_ReadLong();
-	angle = MSG_ReadLong();
-	pitch = MSG_ReadLong();
-	roll = MSG_ReadLong();
-	viewheight = MSG_ReadLong();
-	deltaviewheight = MSG_ReadLong();
-	jumpTics = MSG_ReadLong();
-	reactiontime = MSG_ReadLong();
-
-	if(clientPlayer->mo)
-	{
-		clientPlayer->mo->x = x;
-		clientPlayer->mo->y = y;
-		clientPlayer->mo->z = z;
-		clientPlayer->mo->momx = momx;
-		clientPlayer->mo->momy = momy;
-		clientPlayer->mo->momz = momz;
-		clientPlayer->mo->angle = angle;
-		clientPlayer->mo->pitch = pitch;
-		clientPlayer->mo->roll = roll;
-		clientPlayer->viewheight = viewheight;
-		clientPlayer->deltaviewheight = deltaviewheight;
-		clientPlayer->jumpTics = jumpTics;
-		clientPlayer->mo->reactiontime = reactiontime;
-		clientPlayer->mo->waterlevel = waterlevel;
-	}
-}
-
-//
-// CL_NetDemoStop
-//
-
-void CL_NetDemoStop(void)
-{
-	netdemo.stopPlaying();
-}
-
 // client source (once)
 typedef void (*client_callback)();
 typedef std::map<svc_t, client_callback> cmdmap;
@@ -2892,8 +2854,10 @@ void CL_InitCommands(void)
 	cmds[svc_spectate]   		= &CL_Spectate;
 	
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
+
 	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
 	cmds[svc_netdemostop]       = &CL_NetDemoStop;
+	cmds[svc_netdemosnapshot]	= &CL_NetDemoSnapshot;
 }
 
 //
@@ -2907,19 +2871,6 @@ void CL_ParseCommands(void)
 	static bool once = true;
 	if(once)CL_InitCommands();
 	once = false;
-
-	
-	if(netdemo.isRecording())
-	{
-		if(gamestate == GS_LEVEL)
-		{
-			netdemo.writeMessages(&net_message, true);
-		} 
-		else 
-		{
-			netdemo.writeMessages(&net_message, false);
-		}
-	}
 
 	while(connected)
 	{
@@ -3140,13 +3091,95 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
     }
 }
 
+void CL_LocalDemoTic()
+{
+	player_t* clientPlayer = &consoleplayer();
+	fixed_t x, y, z;
+	fixed_t momx, momy, momz;
+	fixed_t pitch, roll, viewheight, deltaviewheight;
+	angle_t angle;
+	int jumpTics, reactiontime;
+	byte waterlevel;
+	
+	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
+	
+	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
+
+	waterlevel = MSG_ReadByte();
+	x = MSG_ReadLong();
+	y = MSG_ReadLong();
+	z = MSG_ReadLong();
+	momx = MSG_ReadLong();
+	momy = MSG_ReadLong();
+	momz = MSG_ReadLong();
+	angle = MSG_ReadLong();
+	pitch = MSG_ReadLong();
+	roll = MSG_ReadLong();
+	viewheight = MSG_ReadLong();
+	deltaviewheight = MSG_ReadLong();
+	jumpTics = MSG_ReadLong();
+	reactiontime = MSG_ReadLong();
+
+	if(clientPlayer->mo)
+	{
+		clientPlayer->mo->x = x;
+		clientPlayer->mo->y = y;
+		clientPlayer->mo->z = z;
+		clientPlayer->mo->momx = momx;
+		clientPlayer->mo->momy = momy;
+		clientPlayer->mo->momz = momz;
+		clientPlayer->mo->angle = angle;
+		clientPlayer->mo->pitch = pitch;
+		clientPlayer->mo->roll = roll;
+		clientPlayer->viewheight = viewheight;
+		clientPlayer->deltaviewheight = deltaviewheight;
+		clientPlayer->jumpTics = jumpTics;
+		clientPlayer->mo->reactiontime = reactiontime;
+		clientPlayer->mo->waterlevel = waterlevel;
+	}
+
+}
+
+//
+// CL_NetDemoStop
+//
+void CL_NetDemoStop()
+{
+	netdemo.stopPlaying();
+}
+
+void CL_NetDemoRecord(std::string filename)
+{
+	filename.append(".odd");
+	netdemo.startRecording(filename);
+}
+
+void CL_NetDemoPlay(std::string filename)
+{
+	netdemo.startPlaying(filename);
+}
+
+void CL_NetDemoSnapshot()
+{
+/*	// read the length of the snapshot
+	int len = MSG_ReadLong();
+
+
+	// [SL] DEBUG!
+	Printf(PRINT_HIGH, "Skipping over %d bytes of snapshot data\n", len);
+
+	// skip over the snapshot since it is handled elsewhere
+	byte b;
+	while (len--)
+		b = MSG_ReadByte(); */
+}
+
+
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
-
-
-
-
-
-

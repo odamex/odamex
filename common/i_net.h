@@ -128,6 +128,7 @@ enum svc_t
 	// netdemos - NullPoint
 	svc_netdemocap = 100,
 	svc_netdemostop = 101,
+	svc_netdemosnapshot = 102,
 	
 	// for compressed packets
 	svc_compressed = 200,
@@ -330,12 +331,12 @@ public:
 		return (const char *)begin;
 	}
 
-	size_t BytesLeftToRead()
+	size_t BytesLeftToRead() const
 	{
 		return overflowed || cursize < readpos ? 0 : cursize - readpos;
 	}
 
-	size_t BytesRead()
+	size_t BytesRead() const
 	{
 		return readpos;
 	}
@@ -345,12 +346,12 @@ public:
 		return data;
 	}
 
-	size_t size()
+	size_t size() const
 	{
 		return cursize;
 	}
 	
-	size_t maxsize()
+	size_t maxsize() const
 	{
 		return allocsize;
 	}
@@ -367,15 +368,31 @@ public:
 		overflowed = false;
 	}
 
-	void resize(size_t len)
+	void resize(size_t len, bool clearbuf = true)
 	{
-		delete[] data;
-		
+		byte *olddata = data;
 		data = new byte[len];
 		allocsize = len;
-		cursize = 0;
-		readpos = 0;
-		overflowed = false;
+		
+		if (!clearbuf)
+		{
+			if (cursize < allocsize)
+			{
+				memcpy(data, olddata, cursize);
+			}
+			else
+			{
+				clear();
+				overflowed = true;
+				Printf (PRINT_HIGH, "buf_t::resize(): overflow\n");
+			}
+		}
+		else
+		{
+			clear();
+		}
+
+		delete[] olddata;
 	}
 
 	byte *SZ_GetSpace(size_t length)
