@@ -1256,7 +1256,7 @@ void AM_drawWalls(void)
                 (((am_usecustomcolors || viewactive) &&
                 lines[i].special != Exit_Normal &&
                 lines[i].special != Exit_Secret) ||
-                !am_usecustomcolors && !viewactive))
+                (!am_usecustomcolors && !viewactive)))
             {
 				AM_drawMline(&l, WallColor);
 			}

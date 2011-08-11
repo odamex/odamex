@@ -426,7 +426,7 @@ oldmenu_t ReadDef3 =
 //
 // LOAD GAME MENU
 //
-enum
+enum load_t
 {
 	load1,
 	load2,
@@ -1187,21 +1187,21 @@ static void M_PlayerSetupTicker (void)
 static void M_PlayerSetupDrawer (void)
 {
 	int x1,x2,y1,y2;
-	
+
 	x1 = (screen->width / 2)-(160*CleanXfac);
 	y1 = (screen->height / 2)-(100*CleanYfac);
-	
+
     x2 = (screen->width / 2)+(160*CleanXfac);
 	y2 = (screen->height / 2)+(100*CleanYfac);
-	
+
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
-	    
+
 	// Draw title
 	{
 		patch_t *patch = W_CachePatch ("M_PSTTL");
         screen->DrawPatchClean (patch, 160-patch->width()/2, 10);
-        
+
 		/*screen->DrawPatchClean (patch,
 			160 - (patch->width() >> 1),
 			PSetupDef.y - (patch->height() * 3));*/
@@ -1867,7 +1867,7 @@ bool M_Responder (event_t* ev)
 		}
 		return false;
 	}
-	
+
 	if(cmd)
 	{
 		// Respond to the main menu binding

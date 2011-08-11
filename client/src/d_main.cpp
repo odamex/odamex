@@ -130,7 +130,7 @@ extern int NoWipe;			// [RH] Don't wipe when travelling in hubs
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
-char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
+const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
 char startmap[8];
 BOOL autostart;
@@ -1644,7 +1644,7 @@ void D_DoomMain (void)
                     sv_freelook = "1";
                     sv_allowjump = "1";
                     sv_gametype = GM_COOP;
-                    
+
 					players.clear();
 					players.push_back(player_t());
 					players.back().playerstate = PST_REBORN;

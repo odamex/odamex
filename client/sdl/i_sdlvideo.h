@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -46,10 +46,10 @@ class SDLVideo : public IVideo
 
 	virtual bool SetMode (int width, int height, int bits, bool fs);
 	virtual void SetPalette (DWORD *palette);
-	
+
 	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
 	virtual void SetOldPalette (byte *doompalette);
-	
+
 	virtual void UpdateScreen (DCanvas *canvas);
 	virtual void ReadScreen (byte *block);
 
@@ -83,8 +83,8 @@ class SDLVideo : public IVideo
       cChain *next, *prev;
    };
 
-   typedef struct vidMode_t
-   {      
+   struct vidMode_t
+   {
       int width, height, bits;
 
       bool operator<(const vidMode_t& right) const
@@ -117,7 +117,7 @@ class SDLVideo : public IVideo
 
       bool operator==(const vidMode_t& right) const
       {
-         return (width == right.width && 
+         return (width == right.width &&
                  height == right.height &&
                  bits == right.bits);
       }
@@ -131,12 +131,12 @@ class SDLVideo : public IVideo
    bool infullscreen;
    int screenw, screenh;
    int screenbits;
-   
+
    SDL_Color newPalette[256];
    SDL_Color palette[256];
    bool palettechanged;
-    
+
    cChain      *chainHead;
 };
-#endif 
+#endif
 
