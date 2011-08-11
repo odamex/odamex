@@ -323,6 +323,9 @@
 				RelativePath="..\client\src\cl_cvarlist.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\cl_demo.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\cl_main.cpp">
 			</File>
 			<File
@@ -428,6 +431,9 @@
 			</File>
 			<File
 				RelativePath="..\client\src\c_bind.h">
+			</File>
+			<File
+				RelativePath="..\client\src\cl_demo.h">
 			</File>
 			<File
 				RelativePath="..\client\src\cl_main.h">
@@ -780,6 +786,12 @@
 			</File>
 			<File
 				RelativePath="..\common\p_tick.h">
+			</File>
+			<File
+				RelativePath="..\common\p_unlag.cpp">
+			</File>
+			<File
+				RelativePath="..\common\p_unlag.h">
 			</File>
 			<File
 				RelativePath="..\common\p_user.cpp">
