@@ -48,7 +48,7 @@ static mobjtype_t flag_table[NUMFLAGS][NUMFLAGSTATES] =
 	{MT_RFLG, MT_RDWN, MT_RCAR}
 };
 
-char *team_names[NUMTEAMS + 2] =
+const char *team_names[NUMTEAMS + 2] =
 {
 	"BLUE", "RED", "", ""
 };
@@ -269,7 +269,7 @@ void SV_SocketTouch (player_t &player, flag_t f)
 		CTFdata[f].flagger = 0;
 		SV_FlagReturn(player, f);
 	}
-	
+
 	// Scoring with enemy flag.
 	for(size_t i = 0; i < NUMFLAGS; i++)
 		if(player.userinfo.team == (team_t)f && player.userinfo.team != (team_t)i &&
@@ -316,7 +316,7 @@ void CTF_RunTics (void)
 
 		if(data->state != flag_dropped)
 			continue;
-		
+
 		if (!ctf_flagtimeout)
 			continue;
 
@@ -401,7 +401,7 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 	data->x = mthing->x << FRACBITS;
 	data->y = mthing->y << FRACBITS;
 	data->z = mthing->z << FRACBITS;
-	
+
 	data->flaglocated = true;
 }
 
@@ -417,7 +417,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
         {
             if (sv_gametype != GM_CTF && sv_teamsinplay < 1)
                 break;
-            
+
             for (size_t j = 0; j < MaxBlueTeamStarts; ++j)
             {
                 size_t i = M_Random () % selections;
@@ -428,12 +428,12 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
             }
         }
         break;
-        
+
         case TEAM_RED:
         {
             if (sv_gametype != GM_CTF && sv_teamsinplay < 2)
                 break;
-                
+
             for (size_t j = 0; j < MaxRedTeamStarts; ++j)
             {
                 size_t i = M_Random () % selections;
@@ -444,10 +444,10 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
             }
 		}
 		break;
-        
+
         default:
         {
-            
+
         }
         break;
     }
@@ -458,7 +458,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot (player_t &player, int selections)
 	} else {
 		if (sv_teamsinplay >= 1 && MaxBlueTeamStarts)
 			return &blueteamstarts[0];
-		else 
+		else
 		if (sv_teamsinplay >= 2 && MaxRedTeamStarts)
 			return &redteamstarts[0];
 	}

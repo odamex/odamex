@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -112,7 +112,7 @@ size_t I_BytesToMegabytes (size_t Bytes)
 {
 	if (!Bytes)
         return 0;
-        
+
     return (Bytes/1024/1024);
 }
 
@@ -133,7 +133,7 @@ void *I_ZoneBase (size_t *size)
 
     if (def_heapsize < min_heapsize)
         def_heapsize = min_heapsize;
-        
+
     // Set the size
 	*size = I_MegabytesToBytes(def_heapsize);
 
@@ -141,13 +141,13 @@ void *I_ZoneBase (size_t *size)
 	while ((zone == NULL) && (*size >= I_MegabytesToBytes(min_heapsize)))
 	{
 	    zone = malloc (*size);
-	    
+
 	    if (zone != NULL)
             break;
-            
+
         *size -= I_MegabytesToBytes(1);
 	}
-	
+
     // Our heap size we received
     got_heapsize = I_BytesToMegabytes(*size);
 
@@ -204,9 +204,9 @@ QWORD I_MSTime (void)
 {
 	struct timeval tv;
 	struct timezone tz;
-	
+
 	gettimeofday(&tv, &tz);
-	
+
 	static QWORD basetime = 0;
 	static QWORD last = 0;
 	QWORD now = (QWORD)(tv.tv_sec)*1000 + (QWORD)(tv.tv_usec)/1000;
@@ -239,9 +239,9 @@ QWORD I_GetTimePolled (void)
 QWORD I_WaitForTicPolled (QWORD prevtic)
 {
     QWORD time;
-	
+
     while ((time = I_GetTimePolled()) <= prevtic)I_Yield();
-    
+
     return time;
 }
 
@@ -270,7 +270,7 @@ void I_WaitVBL (int count)
 //
 void I_Init (void)
 {
-	I_GetTime = I_GetTimePolled; 
+	I_GetTime = I_GetTimePolled;
 	I_WaitForTic = I_WaitForTicPolled;
 }
 
@@ -278,7 +278,7 @@ std::string I_GetCWD()
 {
 	char tmp[4096] = {0};
 	std::string ret = "./";
-	
+
 	const char *cwd = getcwd(tmp, sizeof(tmp));
 	if(cwd)
 		ret = cwd;
@@ -293,7 +293,7 @@ std::string I_GetHomeDir(std::string user = "")
 {
 	const char *envhome = getenv("HOME");
 	std::string home = envhome ? envhome : "";
-	
+
 	if (!home.length())
 	{
 #ifdef HAVE_PWD_H
@@ -302,11 +302,11 @@ std::string I_GetHomeDir(std::string user = "")
 		if(p && p->pw_dir)
 			home = p->pw_dir;
 #endif
-		
+
 		if (!home.length())
 			I_FatalError ("Please set your HOME variable");
 	}
-	
+
 	if(home[home.length() - 1] != PATHSEPCHAR)
 		home += PATHSEP;
 
@@ -350,7 +350,7 @@ std::string I_GetUserFileName (const char *file)
 
 	if(path[path.length() - 1] != PATHSEPCHAR)
 		path += PATHSEP;
-	
+
 	path += file;
 #endif
 
@@ -362,15 +362,15 @@ void I_ExpandHomeDir (std::string &path)
 #ifdef UNIX
 	if(!path.length())
 		return;
-		
+
 	if(path[0] != '~')
 		return;
-		
+
 	std::string user;
 
 	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
 	size_t end_pos = path.length();
-	
+
 	if(slash_pos == std::string::npos)
 		slash_pos = end_pos;
 
@@ -379,7 +379,7 @@ void I_ExpandHomeDir (std::string &path)
 
 	if(slash_pos != end_pos)
 		slash_pos++;
-	
+
 	path = I_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
 #endif
 }
@@ -458,7 +458,7 @@ void STACK_ARGS I_Quit (void)
 
     G_ClearSnapshots ();
     SV_SendDisconnectSignal();
-    
+
     CloseNetwork ();
 }
 
@@ -603,7 +603,7 @@ std::string I_ConsoleInput (void)
 		fflush(stdout);
 	}
 
-	if(len && buffer[len - 1] == '\n' || buffer[len - 1] == '\r')
+	if(len && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r'))
 	{
 		// echo newline back to user
 		char ch = '\n';
@@ -628,7 +628,7 @@ std::string I_ConsoleInput (void)
 	std::string ret;
     static char     text[1024] = {0};
     int             len;
-	
+
     fd_set fdr;
     FD_ZERO(&fdr);
     FD_SET(0, &fdr);
@@ -638,7 +638,7 @@ std::string I_ConsoleInput (void)
 
     if (!select(1, &fdr, NULL, NULL, &tv))
         return "";
-	
+
     len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
 
     if (len < 1)
@@ -650,7 +650,7 @@ std::string I_ConsoleInput (void)
 	{
 		if(text[len-1] == '\n' || text[len-1] == '\r')
 			text[len-1] = 0; // rip off the /n and terminate
-		
+
 		ret = text;
 		memset(text, 0, sizeof(text));
 		return ret;
