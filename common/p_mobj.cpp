@@ -1848,7 +1848,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// count deathmatch start positions
-	if ((mthing->type == 11 || mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082) && !sv_teamspawns)
+	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082))
+		&& !sv_teamspawns)
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (deathmatch_p >= &deathmatchstarts[10] && (demoplayback || demorecording) && democlassic)
