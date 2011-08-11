@@ -34,6 +34,7 @@
 #include "gi.h"
 #include "i_net.h"
 #include "i_system.h"
+#include "i_video.h"
 #include "c_dispatch.h"
 #include "st_stuff.h"
 #include "m_argv.h"
@@ -215,6 +216,20 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 	{
 		netdemo.stopPlaying();
+	}
+
+	// Reset the palette to default
+	if (I_HardwareInitialized())
+	{
+		int lu_palette = W_GetNumForName("PLAYPAL");
+		if (lu_palette != -1)
+		{
+			byte *pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE);
+			if (pal)
+			{
+				I_SetOldPalette(pal);
+			}
+		}
 	}
 }
 
