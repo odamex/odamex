@@ -3569,6 +3569,26 @@ void SV_Spectate (player_t &player)
 }
 
 //
+// SV_RConLogout
+//
+//   Removes rcon privileges
+//
+void SV_RConLogout (player_t &player)
+{
+	client_t *cl = &player.client;
+
+	// read and ignore the password field since rcon_logout doesn't use a password
+	MSG_ReadString();
+
+	if (cl->allow_rcon)
+	{
+		Printf(PRINT_HIGH, "rcon logout from %s", NET_AdrToString(cl->address));
+		cl->allow_rcon = false;
+	}
+}
+
+
+//
 // SV_RConPassword
 // denis
 //
@@ -3578,6 +3598,10 @@ void SV_RConPassword (player_t &player)
 
 	std::string challenge = MSG_ReadString();
 	std::string password = rcon_password.cstring();
+
+	// Don't display login messages again if the client is already logged in
+	if (cl->allow_rcon)
+		return;
 
 	if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
 	{
@@ -3815,8 +3839,16 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_rcon_password:
-			SV_RConPassword(player);
-			break;
+			{
+				bool login = MSG_ReadByte();
+
+				if (login)
+					SV_RConPassword(player);
+				else
+					SV_RConLogout(player);
+
+				break;
+			}
 
 		case clc_changeteam:
 			SV_ChangeTeam(player);

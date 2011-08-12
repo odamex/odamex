@@ -524,13 +524,29 @@ BEGIN_COMMAND (rcon_password)
 {
 	if (connected && argc > 1)
 	{
+		bool login = true;
+
 		MSG_WriteMarker(&net_buffer, clc_rcon_password);
+		MSG_WriteByte(&net_buffer, login);
 
 		std::string password = argv[1];
 		MSG_WriteString(&net_buffer, MD5SUM(password + digest).c_str());
 	}
 }
 END_COMMAND (rcon_password)
+
+BEGIN_COMMAND (rcon_logout)
+{
+	if (connected)
+	{
+		bool login = false;
+
+		MSG_WriteMarker(&net_buffer, clc_rcon_password);
+		MSG_WriteByte(&net_buffer, login);
+		MSG_WriteString(&net_buffer, "");
+	}
+}
+END_COMMAND (rcon_logout)
 
 
 BEGIN_COMMAND (playerteam)
