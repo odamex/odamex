@@ -61,27 +61,6 @@ typedef struct
 } ODA_ButtonBox;
 
 /**
- * Queried servers statusbar.
- */
-typedef struct
-{
-	AG_Statusbar *statusbar;
-	AG_Mutex      mutex;
-	int           completed;
-	int           total;
-} ODA_QueriedStatusbar;
-
-/**
- * Players statusbar.
- */
-typedef struct
-{
-	AG_Statusbar *statusbar;
-	AG_Mutex      mutex;
-	int           numplayers;
-} ODA_PlayersStatusbar;
-
-/**
  * Main statusbar.
  */
 typedef struct 
@@ -89,8 +68,21 @@ typedef struct
 	AG_Box               *statbox;
 	AG_Statusbar         *tooltip;
 	AG_Statusbar         *mping;
-	ODA_QueriedStatusbar  queried;
-	ODA_PlayersStatusbar  players;
+
+	struct ODA_QueriedStatusbar
+	{
+		AG_Statusbar *statusbar;
+		AG_Mutex      mutex;
+		int           completed;
+		int           total;
+	} queried;
+
+	struct ODA_PlayersStatusbar
+	{
+		AG_Statusbar *statusbar;
+		AG_Mutex      mutex;
+		int           numplayers;
+	} players;
 } ODA_Statusbar;
 
 /**

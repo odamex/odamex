@@ -157,6 +157,8 @@ void I_SetMusicVolume (float volume)
 #endif
 }
 
+EXTERN_CVAR (snd_nomusic)
+
 void I_InitMusic (void)
 {
 #ifndef OSX
@@ -167,7 +169,7 @@ void I_InitMusic (void)
 #endif
 #endif
 
-	if(Args.CheckParm("-nomusic"))
+	if(Args.CheckParm("-nomusic") || snd_nomusic)
 	{
 		Printf (PRINT_HIGH, "I_InitMusic: Music playback disabled\n");
 		return;
@@ -254,6 +256,20 @@ void STACK_ARGS I_ShutdownMusic(void)
 	I_UnRegisterSong(0);
 
 	music_initialized = false;
+}
+
+CVAR_FUNC_IMPL (snd_nomusic)
+{
+	if (var)
+	{
+		I_ShutdownMusic();
+		Printf (PRINT_HIGH, "Music playback disabled\n");
+	}
+	else
+	{
+		I_InitMusic();
+		Printf(PRINT_HIGH, "Music will begin with the next level change.\n");
+	}
 }
 
 void I_PlaySong (int handle, int _looping)

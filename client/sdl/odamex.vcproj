@@ -198,6 +198,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\cl_demo.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\cl_main.cpp"
 				>
 			</File>

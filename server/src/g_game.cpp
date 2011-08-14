@@ -447,6 +447,26 @@ static void ChangeSpy (void)
 }
 */
 
+// [Russell] - Print remaining time for intermission screen
+EXTERN_CVAR(sv_inttimecountdown)
+
+static int intcd_oldtime = 0;
+
+void G_IntermissionCountdown(int mapchange)
+{
+    if (!sv_inttimecountdown)
+        return;
+
+    int newtime = ((mapchange / TICRATE) % 11);
+
+    if (intcd_oldtime != newtime)
+    {
+        SV_BroadcastPrintf(PRINT_LOW, "Next map countdown: %d\n", newtime);
+
+        intcd_oldtime = newtime;
+    }
+}
+
 //
 // G_Responder
 // Get info needed to make ticcmd_ts for the players.
@@ -526,10 +546,19 @@ void G_Ticker (void)
 		break;
 
 	case GS_INTERMISSION:
+	{
+		G_IntermissionCountdown(mapchange);
+
 		mapchange--; // denis - todo - check if all players are ready, proceed immediately
+
 		if (!mapchange)
+        {
 			G_ChangeMap ();
-	    break;
+
+            intcd_oldtime = 0;
+        }
+	}
+    break;
 
 	default:
 		break;
@@ -618,6 +647,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	unsigned			an;
 	AActor* 			mo;
 	size_t 				i;
+	fixed_t 			xa,ya;
 
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
@@ -655,9 +685,54 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	// spawn a teleport fog
 	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	{
-		an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+		// emulate out-of-bounds access to finecosine / finesine tables
+		// which cause west-facing player spawns to have the spawn-fog
+		// and its sound located off the map in vanilla Doom.
+		
+		// borrowed from Eternity Engine
 
-		mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
+		// haleyjd: There was a weird bug with this statement:
+		//
+		// an = (ANG45 * (mthing->angle/45)) >> ANGLETOFINESHIFT;
+		//
+		// Even though this code stores the result into an unsigned variable, most
+		// compilers seem to ignore that fact in the optimizer and use the resulting
+		// value directly in a lea instruction. This causes the signed mapthing_t
+		// angle value to generate an out-of-bounds access into the fine trig
+		// lookups. In vanilla, this accesses the finetangent table and other parts
+		// of the finesine table, and the result is what I call the "ninja spawn,"
+		// which is missing the fog and sound, as it spawns somewhere out in the
+		// far reaches of the void.
+		
+		angle_t mtangle = (angle_t)(mthing->angle / 45);
+     
+		an = ANG45 * mtangle;
+
+		switch(mtangle)
+		{
+			case 4: // 180 degrees (0x80000000 >> 19 == -4096)
+				xa = finetangent[2048];
+				ya = finetangent[0];
+				break;
+			case 5: // 225 degrees (0xA0000000 >> 19 == -3072)
+				xa = finetangent[3072];
+				ya = finetangent[1024];
+				break;
+			case 6: // 270 degrees (0xC0000000 >> 19 == -2048)
+				xa = finesine[0];
+				ya = finetangent[2048];
+				break;
+			case 7: // 315 degrees (0xE0000000 >> 19 == -1024)
+				xa = finesine[1024];
+				ya = finetangent[3072];
+				break;
+			default: // everything else works properly
+				xa = finecosine[an >> ANGLETOFINESHIFT];
+				ya = finesine[an >> ANGLETOFINESHIFT];
+				break;
+		}
+
+		mo = new AActor (x+20*xa, y+20*ya, z, MT_TFOG);
 
 		// send new object
 		SV_SpawnMobj(mo);

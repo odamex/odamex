@@ -34,6 +34,7 @@
 #include "m_argv.h"
 #include "c_console.h"
 #include "cl_main.h"
+#include "cl_demo.h"
 
 // Prediction debugging info
 //#define _PRED_DBG
@@ -52,6 +53,8 @@ int     cl_reactiontime[MAXSAVETICS];
 byte    cl_waterlevel[MAXSAVETICS];
 
 bool predicting;
+
+extern NetDemo netdemo;
 
 TArray <plat_pred_t> real_plats;
 
@@ -333,7 +336,7 @@ void CL_PredictPlayers (int predtic)
 //
 void CL_PredictMove (void)
 {
-	if (noservermsgs)
+	if (noservermsgs || netdemo.isPaused())
 		return;
 
 	player_t *p = &consoleplayer();

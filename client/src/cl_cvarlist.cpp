@@ -148,6 +148,9 @@ CVAR (sv_maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 CVAR (sv_maxplayers,		"0", CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR_FUNC_DECL (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// [SL] 2011-05-11 - Client opt-in/out for serverside unlagging
+CVAR (cl_unlag,				"1",		CVAR_USERINFO | CVAR_ARCHIVE)
+
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 	CVAR (cl_name,		"Xbox Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #else
@@ -224,6 +227,7 @@ BEGIN_CUSTOM_CVAR (snd_channels, "12", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)     
 	S_Init (snd_sfxvolume, snd_musicvolume);
 }
 END_CUSTOM_CVAR (snd_channels)
+CVAR_FUNC_DECL (snd_nomusic, "0", CVAR_ARCHIVE)									// Toggles music subsystem
 
 // Status bar
 // ----------
@@ -240,7 +244,7 @@ CVAR_FUNC_DECL (hud_crosshair, "0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method
 CVAR (r_columnmethod, "1", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 // Detail level (affects performance)
-CVAR_FUNC_DECL (r_detail, "2", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (r_detail, "0", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Disables all texturing of walls
 CVAR (r_drawflat, "0", CVAR_CLIENTINFO)
 // Draw player sprites

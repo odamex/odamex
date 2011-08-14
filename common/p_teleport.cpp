@@ -260,9 +260,9 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 			// Make sure we are on correct side of exit linedef.
 			while (P_PointOnLineSide(x, y, l) != side && --fudge>=0)
 				if (abs(l->dx) > abs(l->dy))
-					y -= l->dx < 0 != side ? -1 : 1;
+					y -= ((l->dx < 0) != side ? -1 : 1);
 				else
-					x += l->dy < 0 != side ? -1 : 1;
+					x += ((l->dy < 0) != side ? -1 : 1);
 
 			// Attempt to teleport, aborting if blocked
 			// Adjust z position to be same height above ground as before.

@@ -34,7 +34,7 @@ int TEAMpoints[NUMFLAGS];
 
 static int tintglow = 0;
 
-char *team_names[NUMTEAMS + 2] =
+const char *team_names[NUMTEAMS + 2] =
 {
 	"BLUE", "RED", "", ""
 };
@@ -119,30 +119,36 @@ void CL_CTFEvent (void)
 			break;
 
 		case SCORE_CAPTURE:
-			if(validplayer(player))
-				CTF_CheckFlags(player);
-			else
-				CTFdata[flag].flagger = 0;
+			if (validplayer(player))
+			{
+				player.flags[flag] = 0;
+			}
+
+			CTFdata[flag].flagger = 0;
 			CTFdata[flag].state = flag_home;
 			if(CTFdata[flag].actor)
 				CTFdata[flag].actor->Destroy();
 			break;
 
 		case SCORE_RETURN:
-			if(validplayer(player))
-				CTF_CheckFlags(player);
-			else
-				CTFdata[flag].flagger = 0;
+			if (validplayer(player))
+			{
+				player.flags[flag] = 0;
+			}
+
+			CTFdata[flag].flagger = 0;
 			CTFdata[flag].state = flag_home;
 			if(CTFdata[flag].actor)
 				CTFdata[flag].actor->Destroy();
 			break;
 
 		case SCORE_DROP:
-			if(validplayer(player))
-				CTF_CheckFlags(player);
-			else
-				CTFdata[flag].flagger = 0;
+			if (validplayer(player))
+			{
+				player.flags[flag] = 0;
+			}
+
+			CTFdata[flag].flagger = 0;
 			CTFdata[flag].state = flag_dropped;
 			if(CTFdata[flag].actor)
 				CTFdata[flag].actor->Destroy();
@@ -341,11 +347,11 @@ void CTF_DrawHud (void)
 		hasflags[i] = false;
 		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == co.id)
 		{
-			hasflag = true;			
+			hasflag = true;
 			hasflags[i] = true;
 		}
 	}
-	
+
 	if (hasflag) {
 		if (tintglow < 15)
 			tintglowtype = tintglow;
@@ -357,7 +363,7 @@ void CTF_DrawHud (void)
 			tintglowtype = 75 - tintglow;
 		else
 			tintglowtype = 0;
-			
+
 		if (hasflags[0] && hasflags[1]) {
 			if (tintglow < 15 || tintglow > 60)
 				TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
@@ -368,7 +374,7 @@ void CTF_DrawHud (void)
 		}
 		else if (hasflags[0])
 			TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
-				(int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));		
+				(int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));
 		else if (hasflags[1])
 			TintScreen(BestColor (DefaultPalette->basecolors, 255,
 				(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));

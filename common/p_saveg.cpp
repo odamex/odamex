@@ -118,7 +118,8 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->ceilingcolormap->color
 				<< sec->ceilingcolormap->fade
 				<< sec->alwaysfake
-				<< sec->waterzone;
+				<< sec->waterzone
+				<< sec->MoreFlags;
 		}
 
 		// do lines
@@ -193,7 +194,8 @@ void P_SerializeWorld (FArchive &arc)
 				RPART(color), GPART(color), BPART(color),
 				RPART(fade), GPART(fade), BPART(fade));
 			arc >> sec->alwaysfake
-				>> sec->waterzone;
+				>> sec->waterzone
+				>> sec->MoreFlags;
 		}
 
 		// do lines

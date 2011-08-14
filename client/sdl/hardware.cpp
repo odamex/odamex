@@ -109,6 +109,11 @@ void I_InitHardware ()
 	Video->SetWindowedScale (vid_winscale);
 }
 
+bool I_HardwareInitialized()
+{
+	return (Video != NULL);
+}
+
 /** Remaining code is common to Win32 and Linux **/
 
 // VIDEO WRAPPERS ---------------------------------------------------------

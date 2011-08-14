@@ -180,6 +180,10 @@
 			>
 		</File>
 		<File
+			RelativePath="..\common\version.h"
+			>
+		</File>
+		<File
 			RelativePath=".\main.cpp"
 			>
 		</File>

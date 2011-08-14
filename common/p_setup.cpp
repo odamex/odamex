@@ -1530,6 +1530,23 @@ void P_Init (void)
 }
 
 
+// [ML] Do stuff when the timelimit is reset
+// Where else can I put this??
+EXTERN_CVAR(sv_timeleft)
+CVAR_FUNC_IMPL (sv_timelimit)
+{
+	if (var == 0)
+	{
+		level.time = 0;
+		sv_timeleft = "0";	
+	}
+	else
+	{
+		if (!sv_timeleft)
+			level.time = 0;
+	}
+}
+
 
 
 VERSION_CONTROL (p_setup_cpp, "$Id$")

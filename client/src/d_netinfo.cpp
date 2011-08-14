@@ -50,6 +50,7 @@ EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_team)
+EXTERN_CVAR (cl_unlag)
 
 enum
 {
@@ -58,7 +59,8 @@ enum
 	INFO_Color,
 	INFO_Skin,
 	INFO_Team,
-	INFO_Gender
+	INFO_Gender,
+    INFO_Unlag
 };
 
 
@@ -99,6 +101,7 @@ void D_SetupUserInfo(void) {
 	coninfo->skin	 = R_FindSkin (cl_skin.cstring());
 	coninfo->gender  = D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
+    coninfo->unlag   = cl_unlag;
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
@@ -115,7 +118,7 @@ FArchive &operator<< (FArchive &arc, userinfo_t &info)
 	arc.Write (&info.netname, sizeof(info.netname));
 	arc.Write (&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Write (&info.gender, sizeof(info.gender));
-	arc << info.aimdist << info.color << info.skin << 0;
+	arc << info.aimdist << info.color << info.skin << info.unlag << 0;
 	return arc;
 }
 
@@ -125,7 +128,7 @@ FArchive &operator>> (FArchive &arc, userinfo_t &info)
 	arc.Read (&info.team, sizeof(info.team));  // [Toke - Teams]
 	arc.Read (&info.gender, sizeof(info.gender));
 	int neverswitch;
-	arc >> info.aimdist >> info.color >> info.skin >> neverswitch;
+	arc >> info.aimdist >> info.color >> info.skin >> info.unlag >> neverswitch;
 	return arc;
 }
 

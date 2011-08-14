@@ -1094,22 +1094,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			SV_UpdateFrags(*splayer);
 		}
 	}
-
-    // [CG] No need for any of this anymore
-    /*
-	if (demoplayback && source && source->player && target->player)
-	{
-		if (target->player == source->player) // Nes - Local demo
-		{
-			source->player->fragcount--;
-		}
-		else
-		{
-			source->player->fragcount++;
-		}
-	}
-    */
-
+	
 	// [Toke - CTF]
 	if (sv_gametype == GM_CTF && target->player)
 	{
@@ -1126,12 +1111,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		if (!source && !joinkill && !shotclock)
 		{
 			tplayer->fragcount--; // [RH] Cumulative frag count
-
-			// [JDC] Minus a team frag
-			if (sv_gametype == GM_TEAMDM)
-			{
-				TEAMpoints[tplayer->userinfo.team]--;
-			}
 		}
 
 		CTF_CheckFlags(*target->player);
@@ -1204,7 +1183,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM && sv_fraglimit &&
-            splayer->fragcount >= sv_fraglimit && !sv_fragexitswitch)
+            splayer->fragcount >= sv_fraglimit && !sv_fragexitswitch && !shotclock)
 		{
             // [ML] 04/4/06: Added !sv_fragexitswitch
             SV_BroadcastPrintf(
@@ -1216,7 +1195,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		}
 
 		// [Toke] TeamDM sv_fraglimit
-		if (sv_gametype == GM_TEAMDM && sv_fraglimit)
+		if (sv_gametype == GM_TEAMDM && sv_fraglimit && !shotclock)
 		{
 			for (size_t i = 0; i < NUMFLAGS; i++)
 			{

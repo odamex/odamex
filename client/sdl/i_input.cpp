@@ -181,26 +181,28 @@ static void UpdateFocus(void)
 //
 static void UpdateGrab(void)
 {
-    bool grab;
+	bool grab = MouseShouldBeGrabbed();
 
-    grab = MouseShouldBeGrabbed();
+	if (grab && !mousegrabbed)
+	{
+		SetCursorState(false);
+		SDL_WM_GrabInput(SDL_GRAB_ON);
+		
+		// Warp the mouse back to the middle of the screen
+		if(screen)
+			SDL_WarpMouse(screen->width/ 2, screen->height / 2);
+		
+		// eat all pending input from outside the game
+		SDL_Event ev;
+		while (SDL_PollEvent(&ev));
+	}
+	else if (!grab && mousegrabbed)
+	{
+		SetCursorState(true);
+		SDL_WM_GrabInput(SDL_GRAB_OFF);
+	}
 
-    if (grab && !mousegrabbed)
-    {
-	   if(screen)
-		  SDL_WarpMouse(screen->width/ 2, screen->height / 2);
-
-        SetCursorState(false);
-        SDL_WM_GrabInput(SDL_GRAB_ON);
-        flushmouse = true;
-    }
-    else if (!grab && mousegrabbed)
-    {
-        SetCursorState(true);
-        SDL_WM_GrabInput(SDL_GRAB_OFF);
-    }
-
-    mousegrabbed = grab;
+	mousegrabbed = grab;
 }
 
 // denis - from chocolate doom
@@ -678,6 +680,14 @@ void I_GetEvent (void)
                event.data1 = KEY_MOUSE3;
                mbuttons |= 4;
             }
+			// [Xyltol 07/21/2011] - Add support for MOUSE4 and MOUSE5 (back thumb and front thumb on most mice)
+			else if(ev.button.button == SDL_BUTTON_X1){//back thumb
+				event.data1 = KEY_MOUSE4;
+				mbuttons |= 8;
+			}else if(ev.button.button == SDL_BUTTON_X2){//front thumb
+				event.data1 = KEY_MOUSE5;
+				mbuttons |= 16;
+			}
             else if(ev.button.button == SDL_BUTTON_WHEELUP)
                event.data1 = KEY_MWHEELUP;
             else if(ev.button.button == SDL_BUTTON_WHEELDOWN)
@@ -690,6 +700,7 @@ void I_GetEvent (void)
             if(nomouse || !havefocus)
 				break;
             event.type = ev_keyup;
+			
             if(ev.button.button == SDL_BUTTON_LEFT)
             {
                event.data1 = KEY_MOUSE1;
@@ -705,6 +716,14 @@ void I_GetEvent (void)
                event.data1 = KEY_MOUSE3;
                mbuttons &= ~4;
             }
+			// [Xyltol 07/21/2011] - Add support for MOUSE4 and MOUSE5 (back thumb and front thumb on most mice)
+			else if(ev.button.button == SDL_BUTTON_X1){//back thumb
+				event.data1 = KEY_MOUSE4;
+				mbuttons &= 8;
+			}else if(ev.button.button == SDL_BUTTON_X2){//front thumb
+				event.data1 = KEY_MOUSE5;
+				mbuttons &= 16;
+			}
             else if(ev.button.button == SDL_BUTTON_WHEELUP)
                event.data1 = KEY_MWHEELUP;
             else if(ev.button.button == SDL_BUTTON_WHEELDOWN)

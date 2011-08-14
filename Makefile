@@ -156,7 +156,7 @@ CLIENT_LFLAGS =
 
 # Master
 MASTER_DIR = master
-MASTER_HEADERS = master/i_net.h
+MASTER_HEADERS = master/i_net.h common/version.h
 MASTER_SOURCES = master/i_net.cpp master/main.cpp
 MASTER_OBJS = $(patsubst $(MASTER_DIR)/%.cpp,$(OBJDIR)/$(MASTER_DIR)/%.o,$(MASTER_SOURCES))
 MASTER_TARGET = $(BINDIR)/odamaster

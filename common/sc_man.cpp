@@ -69,7 +69,7 @@ int sc_Line;
 BOOL sc_End;
 BOOL sc_Crossed;
 BOOL sc_FileScripts = false;
-char *sc_ScriptsDir = "";
+char *sc_ScriptsDir;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -429,7 +429,7 @@ BOOL SC_GetFloat (void)
 		if (*stopper != 0)
 		{
 			//I_Error ("SC_GetFloat: Bad numeric constant \"%s\".\n"
-			//	"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);			
+			//	"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
 			Printf (PRINT_HIGH,"SC_GetFloat: Bad numeric constant \"%s\".\n"
 				"Script %s, Line %d\n", sc_String, ScriptName.c_str(), sc_Line);
 		}
@@ -571,7 +571,7 @@ void SC_ScriptError (const char *message, const char **args)
 
     Printf(PRINT_HIGH,"Script error, \"%s\" line %d: %s\n", ScriptName.c_str(),
 		sc_Line, message);
-	
+
 	//I_Error ("Script error, \"%s\" line %d: %s\n", ScriptName.c_str(),
 	//	sc_Line, message);
 }

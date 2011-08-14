@@ -52,6 +52,7 @@ extern int *walllights;
 extern BOOL DrawNewHUD;
 extern BOOL DrawNewSpecHUD;
 extern dyncolormap_t NormalLight;
+extern bool r_fakingunderwater;
 
 EXTERN_CVAR (r_viewsize)
 
@@ -418,7 +419,7 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 //
 //
 #if 0
-// [Russell] - Calling this function can desync demos (tnt demo1 msvc being a 
+// [Russell] - Calling this function can desync demos (tnt demo1 msvc being a
 // prime example)
 void R_InitTables (void)
 {
@@ -522,7 +523,7 @@ void R_SetFOV (float fov)
 {
 	if (fov == LastFOV)
 		return;
-		
+
 	if (fov < 1)
 		fov = 1;
 	else if (fov > 179)
@@ -910,7 +911,7 @@ void R_SetupFrame (player_t *player)
 		viewy += ((M_Random()%(intensity<<2))
 					-(intensity<<1))<<FRACBITS;
 	}
-		
+
 	extralight = camera == player->mo ? player->extralight : 0;
 
 	viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
@@ -919,7 +920,8 @@ void R_SetupFrame (player_t *player)
 	// killough 3/20/98, 4/4/98: select colormap based on player status
 	// [RH] Can also select a blend
 
-	if (camera->subsector->sector->heightsec)
+	if (camera->subsector->sector->heightsec &&
+		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
 		const sector_t *s = camera->subsector->sector->heightsec;
 		newblend = viewz < s->floorheight ? s->bottommap : viewz > s->ceilingheight ?
@@ -996,7 +998,7 @@ void R_SetupFrame (player_t *player)
 		{
 			int e;
 
-			if (i & (FRACUNIT-1) == 0)	// Unlikely, but possible
+			if (i & ((FRACUNIT-1) == 0))	// Unlikely, but possible
 			{
 				i >>= FRACBITS;
 				if (abs (i) < viewheight)
@@ -1119,6 +1121,9 @@ void R_RenderPlayerView (player_t *player)
 		hcolfunc_post2 = rt_map2cols;
 		hcolfunc_post4 = rt_map4cols;
 	}
+
+	// [RH] Hack to make windows into underwater areas possible
+	r_fakingunderwater = false;
 
     // [Russell] - From zdoom 1.22 source, added camera pointer check
 	// Never draw the player unless in chasecam mode

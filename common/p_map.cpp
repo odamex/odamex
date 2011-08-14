@@ -42,6 +42,7 @@
 #include "r_state.h"
 
 #include "z_zone.h"
+#include "p_unlag.h"
 
 fixed_t 		tmbbox[4];
 static AActor  *tmthing;
@@ -247,7 +248,7 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 			if ((sec = m->m_sector)->special & FRICTION_MASK &&
 				(sec->friction < friction || friction == ORIG_FRICTION) &&
 				(mo->z <= sec->floorheight ||
-				(sec->heightsec &&
+				(sec->heightsec && !(sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 				mo->z <= sec->heightsec->floorheight)))
 			  friction = sec->friction, movefactor = sec->movefactor;
 	}
@@ -387,7 +388,7 @@ BOOL PIT_CheckLine (line_t *ld)
     // NOTE: specials are NOT sorted by order,
     // so two special lines that are only 8 pixels apart
     // could be crossed in either order.
-	
+
 	if (!ld->backsector)
 	{ // One sided line
 		BlockingLine = ld;
@@ -418,7 +419,7 @@ BOOL PIT_CheckLine (line_t *ld)
 	if (openbottom > tmfloorz)
 	{
 		tmfloorz = openbottom;
-		BlockingLine = ld;		
+		BlockingLine = ld;
 	}
 
 	if (lowfloor < tmdropoffz)
@@ -467,7 +468,7 @@ BOOL PIT_CheckThing (AActor *thing)
 		// didn't hit thing
 		return true;
 	}
-	
+
 	if (co_realactorheight)
 		BlockingMobj = thing;
 	if ((tmthing->flags2 & MF2_PASSMOBJ) && co_realactorheight)
@@ -478,7 +479,7 @@ BOOL PIT_CheckThing (AActor *thing)
 			  tmthing->z + P_ThingInfoHeight(tmthing->info) < thing->z)))
 			return true;
 	}
-	
+
     // check for skulls slamming into things
 	if (tmthing->flags & MF_SKULLFLY)
 	{
@@ -719,7 +720,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	AActor *thingblocker;
 	AActor *fakedblocker;
 	fixed_t realheight = thing->height;
-	
+
 	tmthing = thing;
 	tmflags = thing->flags;
 
@@ -760,16 +761,16 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
 	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
 	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
-	
+
 	BlockingMobj = NULL;
-	
+
 	if (co_realactorheight)
 	{
 		thingblocker = NULL;
 		fakedblocker = NULL;
 		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
 			thing->height = realheight + 24*FRACUNIT;
-			
+
 		for (bx = xl; bx <= xh; bx++)
 		{
 			for (by = yl; by <= yh; by++)
@@ -826,7 +827,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 				} while (robin);
 			}
 		}
-			
+
 		// check lines
 		BlockingMobj = NULL;
 		thing->height = realheight;
@@ -841,12 +842,12 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 			for (by=yl ; by<=yh ; by++)
 				if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
 					return false;
-					
+
 		// check lines
 		if (tmflags & MF_NOCLIP)
 			return true;
-				
-		BlockingMobj = NULL;			
+
+		BlockingMobj = NULL;
 	}
 
 	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
@@ -860,7 +861,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 				return false;
 	if (co_realactorheight)
 		return (BlockingMobj = thingblocker) == NULL;
-		
+
 	return true;
 }
 
@@ -928,7 +929,7 @@ void P_FakeZMovement(AActor *mo)
 {
 //
 // adjust height
-//	
+//
 	mo->z += mo->momz;
 	if ((mo->flags&MF_FLOAT) && mo->target)
 	{ // float down towards target if too close
@@ -987,19 +988,19 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
          {
              if (BlockingMobj->player || !thing->player)
                  goto pushline;
-                 
-             else if (BlockingMobj->z+BlockingMobj->height-thing->z 
-                 > 24*FRACUNIT 
+
+             else if (BlockingMobj->z+BlockingMobj->height-thing->z
+                 > 24*FRACUNIT
                  || (BlockingMobj->subsector->sector->ceilingheight
                  -(BlockingMobj->z+BlockingMobj->height) < thing->height)
-                 || (tmceilingz-(BlockingMobj->z+BlockingMobj->height) 
+                 || (tmceilingz-(BlockingMobj->z+BlockingMobj->height)
                  < thing->height))
              {
                  goto pushline;
             }
         }
         if (!(co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ)))
-            return false;             
+            return false;
     }
 
 	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
@@ -1010,12 +1011,12 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 		floatok = true;
 
 		if (!(thing->flags & MF_TELEPORT)
-			&& tmceilingz - thing->z < thing->height 
+			&& tmceilingz - thing->z < thing->height
 			&& !(thing->flags2 & MF2_FLY))
 		{
 			goto pushline;		// mobj must lower itself to fit
 		}
-		
+
 		if (thing->flags2 & MF2_FLY)
 		{
 			// When flying, slide up or down blocking lines until the actor
@@ -1031,13 +1032,13 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 				goto pushline;
 			}
 		}
-				
+
 		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT)
 		{
 			// too big a step up
-			goto pushline;		
+			goto pushline;
 		}
-		
+
 		// killough 3/15/98: Allow certain objects to drop off
 		// [Spleen] Unless co_allowdropoff is true, monsters can now get pushed or thrusted off of ledges like in BOOM
 		if (!((thing->flags&(MF_DROPOFF|MF_FLOAT)) || (dropoff && co_allowdropoff))
@@ -1656,10 +1657,23 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	// Spawn bullet puffs or blod spots,
 	// depending on target type.
+	angle_t dir = P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180;
 	if ((in->d.thing->flags & MF_NOBLOOD))
-		P_SpawnPuff (x,y,z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, 2);
+		P_SpawnPuff (x,y,z, dir, 2);
 	else
-		P_SpawnBlood (x,y,z, P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180, la_damage);
+	{
+		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
+		// [SL] 2011-05-11 - In unlagged games, spawn blood at the target's current
+		// position, not at their reconciled position
+		if (shootthing->player && th->player)
+		{
+			Unlag::getInstance().getReconciliationOffset(	shootthing->player->id,
+													    	th->player->id,
+													    	xoffs, yoffs, zoffs);
+		}
+
+		P_SpawnBlood (x + xoffs, y + yoffs, z + zoffs, dir, la_damage);
+	}
 
 	if (la_damage) {
 		// [RH] try and figure out means of death;
@@ -1951,8 +1965,8 @@ BOOL PTR_UseTraverse (intercept_t *in)
 	//	   it through, including SPAC_USETHROUGH.
 	//[ML] And NOW (8/16/10) it checks whether it's use or NOT the passthrough flags
 	// (passthru on a cross or use line).  This may get augmented/changed even more in the future.
-	return (GET_SPAC(in->d.line->flags) == SPAC_USE || 
-            (GET_SPAC(in->d.line->flags) != SPAC_CROSSTHROUGH && 
+	return (GET_SPAC(in->d.line->flags) == SPAC_USE ||
+            (GET_SPAC(in->d.line->flags) != SPAC_CROSSTHROUGH &&
              GET_SPAC(in->d.line->flags) != SPAC_USETHROUGH)) ? false : true;
 }
 
@@ -2059,7 +2073,7 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 	// Boss spider and cyborg
 	// take no damage from concussion.
 	if (thing->flags2 & MF2_BOSS)
-		return true;	
+		return true;
 
 	// Barrels always use the original code, since this makes
 	// them far too "active."
@@ -2089,7 +2103,7 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 				fixed_t momy = thing->momy;
 
 				P_DamageMobj (thing, bombspot, bombsource, (int)points, bombmod);
-				
+
 				thrust = points * 35000.0f / (float)thing->info->mass;
 				VectorSubtract (thingvec, bombvec, dir);
 				VectorScale (dir, thrust, dir);
@@ -2206,7 +2220,7 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 	bombdamagefloat = (float)damage;
 	bombmod = mod;
 	VectorPosition (spot, bombvec);
-	
+
 	for (y=yl ; y<=yh ; y++)
 	{
 		for (x=xl ; x<=xh ; x++)
@@ -2214,8 +2228,8 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 			if (co_zdoomphys)
 				P_BlockThingsIterator (x, y, PIT_ZdoomRadiusAttack);
 			else
-				P_BlockThingsIterator (x, y, PIT_RadiusAttack);				
-		}		
+				P_BlockThingsIterator (x, y, PIT_RadiusAttack);
+		}
 	}
 }
 

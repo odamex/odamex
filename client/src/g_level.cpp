@@ -66,6 +66,8 @@ static cluster_info_t *FindDefClusterInfo (int cluster);
 
 extern int timingdemo;
 
+extern int shotclock;
+
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_gravity)
@@ -77,7 +79,6 @@ int starttime;
 // ACS variables with world scope
 int WorldVars[NUM_WORLDVARS];
 
-extern BOOL netdemo;
 BOOL savegamerestore;
 
 extern int mousex, mousey;
@@ -635,17 +636,11 @@ void G_DoNewGame (void)
 
 	CL_QuitNetGame();
 
-	netdemo = false;
 	netgame = false;
 	multiplayer = false;
 
 	// denis - single player warp (like in d_main)
 	serverside = true;
-	sv_allowexit = "1";
-	sv_nomonsters = "0";
-	sv_freelook = "1";
-	sv_allowjump = "1";
-	sv_gametype = GM_COOP;
 
 	players.clear();
 	players.push_back(player_t());
@@ -749,7 +744,8 @@ void G_InitNew (const char *mapname)
 	demoplayback = false;
 	automapactive = false;
 	viewactive = true;
-	
+	shotclock = 0;
+
 	D_SetupUserInfo();
 
 	strncpy (level.mapname, mapname, 8);
@@ -785,6 +781,8 @@ static void goOn (int position)
 void G_ExitLevel (int position, int drawscores)
 {
 	secretexit = false;
+	shotclock = 0;
+
 	goOn (position);
 
 	//gameaction = ga_completed;
@@ -800,6 +798,8 @@ void G_SecretExitLevel (int position, int drawscores)
 	else
 		secretexit = true;
     
+	shotclock = 0;
+
     goOn (position);
 	//gameaction = ga_completed;
 }
