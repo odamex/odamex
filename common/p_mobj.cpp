@@ -1847,6 +1847,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->type == 0 || mthing->type == -1)
 		return;
 
+	// only servers control spawning of items
+    // EXCEPT the client must spawn Type 14 (teleport exit). 
+	// otherwise teleporters won't work well.
+	if (!serverside && (mthing->type != 14))
+		return;
+
 	// count deathmatch start positions
 	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082))
 		&& !sv_teamspawns)
@@ -2092,12 +2098,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mobjinfo[i].flags & MF_COUNTITEM)
 		level.total_items++;
 
-    // for client...
-	// Type 14 is a teleport exit. We must spawn it here otherwise
-	// teleporters won't work well.
-	if (!serverside && (mthing->flags & MF_SPECIAL) && (mthing->type != 14))
-		return;
-
 	// spawn it
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
@@ -2113,10 +2113,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		z = ONCEILINGZ;
 	else
 		z = ONFLOORZ;
-
-	// only servers control spawning of special items
-	if (!serverside && mobjinfo[i].flags & MF_SPECIAL)
-		return;
 
 	mobj = new AActor (x, y, z, (mobjtype_t)i);
 
