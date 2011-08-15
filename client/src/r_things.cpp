@@ -1130,6 +1130,10 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 	vissprite_t*		vis;
 	vissprite_t 		avis;
 
+	// Don't display the weapon sprite if using spynext or spectating
+	if (displayplayer().id != consoleplayer().id || consoleplayer().spectator)
+		return;
+
 	// decide which patch to use
 #ifdef RANGECHECK
 	if ( (unsigned)psp->state->sprite >= (unsigned)numsprites) {
