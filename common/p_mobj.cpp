@@ -1511,6 +1511,9 @@ bool SV_AwarenessUpdate(player_t &pl, AActor* mo);
 //
 bool P_CheckMissileSpawn (AActor* th)
 {
+	if (!th)
+		return false;
+
 	th->tics -= P_Random (th) & 3;
 	if (th->tics < 1)
 		th->tics = 1;
@@ -1526,18 +1529,16 @@ bool P_CheckMissileSpawn (AActor* th)
 	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
 	// make sure we spawn the missile first, send it to all clients immediately
 	// instead of queueing it, then explode it.
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		SV_AwarenessUpdate(players[i], th);
+	}
+
 	if (!P_TryMove (th, th->x, th->y, false))
 	{
-		for (size_t i = 0; i < players.size(); i++)
-		{
-			if (th)
-				SV_AwarenessUpdate(players[i], th);
-		}
 		P_ExplodeMissile (th);
 		return false;
 	}
-	else
-		SV_SpawnMobj(th);
 
 	return true;
 }
