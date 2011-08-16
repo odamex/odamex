@@ -626,6 +626,9 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	if (cnt < len)
 	{
 		error("Can not read netdemo message.");
+
+        delete[] msgdata;
+
 		return;
 	}
 
