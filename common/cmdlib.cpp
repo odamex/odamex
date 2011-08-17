@@ -208,24 +208,23 @@ BOOL IsNum (char *str)
 	return result;
 }
 
-// [Russell] Returns 0 if strings are the same, optional parameter for case sensitivity
-int StdStringCompare(std::string string1, std::string string2, bool CaseInsensitive = false)
+// [Russell] Returns 0 if strings are the same, optional parameter for case 
+// sensitivity
+int StdStringCompare(const std::string &s1, const std::string &s2, 
+    bool CIS = false)
 {
 	// Convert to upper case
-	if (CaseInsensitive)
+	if (CIS)
 	{
-		std::transform(string1.begin(), string1.end(), string1.begin(), toupper);
-		std::transform(string2.begin(), string2.end(), string2.begin(), toupper);
+        std::string str1(s1), str2(s2);
+
+		std::transform(str1.begin(), str1.end(), str1.begin(), toupper);
+		std::transform(str2.begin(), str2.end(), str2.begin(), toupper);
+
+		return str1.compare(str2);
 	}
 
-	if (string1 < string2)
-		return -1;
-
-	else if (string1 > string2)
-		return 1;
-
-	// Strings are equal
-	return 0;
+    return s1.compare(s2);
 }
 
 
