@@ -113,6 +113,11 @@ CVAR (cl_deathcam, "1", CVAR_ARCHIVE)
 // Movebob
 CVAR (cl_nobob, "0", CVAR_ARCHIVE | CVAR_CLIENTARCHIVE | CVAR_CLIENTINFO)
 
+// [AM] Force a player to respawn.
+CVAR (sv_forcerespawn, "0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+// [AM] Force a player to respawn after a set amount of time
+CVAR (sv_forcerespawntime, "30", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 CVAR_FUNC_DECL (sv_gravity, "800", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 CVAR_FUNC_DECL (sv_aircontrol, "0.00390625", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 

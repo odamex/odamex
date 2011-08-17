@@ -46,6 +46,7 @@ EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (cl_deathcam)
+EXTERN_CVAR (sv_forcerespawn)
 
 extern bool predicting, step_mode;
 
@@ -474,9 +475,11 @@ void P_DeathThink (player_t *player)
 	if(serverside)
 	{
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
-								 || (!clientside && level.time >= player->respawn_time))) // forced respawn
+		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE 
+			|| (!clientside && sv_forcerespawn && level.time >= player->respawn_time)))
+		{
 			player->playerstate = PST_REBORN;
+		}
 	}
 }
 
