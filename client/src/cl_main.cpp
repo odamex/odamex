@@ -593,11 +593,17 @@ BEGIN_COMMAND (exit)
 END_COMMAND (exit)
 
 
+//
+// CL_NetDemoStop
+//
+void CL_NetDemoStop()
+{
+	netdemo.stopPlaying();
+}
+
 void CL_NetDemoRecord(const std::string &filename)
 {
-	std::string full_filename(filename);
-	full_filename.append(".odd");
-	netdemo.startRecording(full_filename);
+	netdemo.startRecording(filename);
 }
 
 void CL_NetDemoPlay(const std::string &filename)
@@ -605,6 +611,20 @@ void CL_NetDemoPlay(const std::string &filename)
 	netdemo.startPlaying(filename);
 }
 
+void CL_NetDemoSnapshot()
+{
+/*	// read the length of the snapshot
+	int len = MSG_ReadLong();
+
+
+	// [SL] DEBUG!
+	Printf(PRINT_HIGH, "Skipping over %d bytes of snapshot data\n", len);
+
+	// skip over the snapshot since it is handled elsewhere
+	byte b;
+	while (len--)
+		b = MSG_ReadByte(); */
+}
 
 BEGIN_COMMAND(stopnetdemo)
 {
@@ -643,6 +663,8 @@ BEGIN_COMMAND(netrecord)
 		if (strlen(argv[1]) > 0)
 			filename = argv[1];
 	}
+
+    M_AppendExtension(filename, ".odd");
 
 	CL_Reconnect();
 	CL_NetDemoRecord(filename);
@@ -3174,41 +3196,6 @@ void CL_LocalDemoTic()
 	}
 
 }
-
-//
-// CL_NetDemoStop
-//
-void CL_NetDemoStop()
-{
-	netdemo.stopPlaying();
-}
-
-void CL_NetDemoRecord(std::string filename)
-{
-	filename.append(".odd");
-	netdemo.startRecording(filename);
-}
-
-void CL_NetDemoPlay(std::string filename)
-{
-	netdemo.startPlaying(filename);
-}
-
-void CL_NetDemoSnapshot()
-{
-/*	// read the length of the snapshot
-	int len = MSG_ReadLong();
-
-
-	// [SL] DEBUG!
-	Printf(PRINT_HIGH, "Skipping over %d bytes of snapshot data\n", len);
-
-	// skip over the snapshot since it is handled elsewhere
-	byte b;
-	while (len--)
-		b = MSG_ReadByte(); */
-}
-
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}

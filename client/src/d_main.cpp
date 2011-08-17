@@ -1415,8 +1415,8 @@ std::vector<size_t> D_DoomWadReboot(
 	return fails;
 }
 
-void CL_NetDemoRecord(const std::string filename);
-void CL_NetDemoPlay(const std::string filename);
+void CL_NetDemoRecord(const std::string &filename);
+void CL_NetDemoPlay(const std::string &filename);
 
 //
 // D_DoomMain
