@@ -497,7 +497,7 @@ void dlgMain::MonThrGetServerList()
     {
         for(size_t i = 0; i < NUM_THREADS; i++)
         {
-            if((threadVector.size() != 0) && ((threadVector.size() - 1) >= i))
+            if((!threadVector.empty()) && ((threadVector.size() - 1) >= i))
             {
                 // monitor our thread vector, delete ONLY if the thread is
                 // finished
