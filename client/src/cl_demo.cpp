@@ -632,6 +632,12 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		return;
 	}
 
+	// ensure netbuffer has enough free space to hold this packet
+	if (netbuffer->maxsize() - netbuffer->size() < len)
+	{
+		netbuffer->resize(len + netbuffer->size() + 1, false);
+	}
+
 	netbuffer->WriteChunk(msgdata, len);
 	delete [] msgdata;
 
