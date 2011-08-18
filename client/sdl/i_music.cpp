@@ -169,7 +169,7 @@ void I_InitMusic (void)
 #endif
 #endif
 
-	if(Args.CheckParm("-nomusic") || snd_nomusic)
+	if(Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_nomusic)
 	{
 		Printf (PRINT_HIGH, "I_InitMusic: Music playback disabled\n");
 		return;
