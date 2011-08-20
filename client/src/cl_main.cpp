@@ -2525,14 +2525,25 @@ struct download_s
 
 		download_s()
 		{
-			filename = "";
-			md5 = "";
 			buf = NULL;
-			got_bytes = 0;
+			this->clear();
 		}
 
 		~download_s()
 		{
+		}
+
+		void clear()
+		{	
+			filename = "";
+			md5 = "";
+			got_bytes = 0;
+        	
+			if (buf != NULL)
+			{
+				delete buf;
+				buf = NULL;
+			}
 		}
 } download;
 
@@ -2553,16 +2564,7 @@ void IntDownloadComplete(void)
 		Printf(PRINT_HIGH, " %s on server\n", download.md5.c_str());
 		Printf(PRINT_HIGH, "Download failed: bad checksum\n");
 
-        download.filename = "";
-        download.md5 = "";
-        download.got_bytes = 0;
-		
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }   
-			
+		download.clear();
         CL_QuitNetGame();
         return;
     }
@@ -2610,32 +2612,14 @@ void IntDownloadComplete(void)
     // Unable to write
     if(i == dirs.size())
     {
-        download.filename = "";
-        download.md5 = "";
-        download.got_bytes = 0;
-
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }   
-            
+		download.clear();
         CL_QuitNetGame();
         return;            
     }
 
     Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
 
-    download.filename = "";
-    download.md5 = "";
-    download.got_bytes = 0;
-
-    if (download.buf != NULL)
-    {
-        delete download.buf;
-        download.buf = NULL;
-    }
-
+	download.clear();
     CL_QuitNetGame();
     CL_Reconnect();
 }
@@ -2732,21 +2716,21 @@ void CL_Download()
 	if(gamestate != GS_DOWNLOAD)
 		return;
 
+	if (download.buf == NULL)
+	{
+		// We must have not received the svc_wadinfo message
+		Printf(PRINT_HIGH, "Unable to start download, aborting\n");
+		download.clear();
+		CL_QuitNetGame();
+		return;
+	}
+
 	// check ranges
 	if(offset + len > download.buf->maxsize() || len > left || p == NULL)
 	{
 		Printf(PRINT_HIGH, "Bad download packet (%d, %d) encountered (%d), aborting\n", (int)offset, (int)left, (int)download.buf->size());
-        
-        download.filename = "";
-        download.md5 = "";
-        download.got_bytes = 0;
-        
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }
-        
+    	
+		download.clear();    
 		CL_QuitNetGame();
 		return;
 	}
