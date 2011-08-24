@@ -393,6 +393,9 @@ bool NetDemo::stopRecording()
 	}
 	state = NetDemo::stopped;
 
+	// write any remaining messages that have been captured
+	writeMessages();
+
 	byte marker = svc_netdemostop;
 	uint32_t len = sizeof(marker);
 	len = LONG(len);
