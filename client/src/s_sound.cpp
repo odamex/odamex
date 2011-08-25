@@ -45,8 +45,6 @@
 #include "vectors.h"
 #include "m_fileio.h"
 
-#define S_WHICHEARS (consoleplayer().spectator ? displayplayer() : consoleplayer())
-
 #define NORM_PITCH				128
 #define NORM_PRIORITY				64
 #define NORM_SEP				128
@@ -129,7 +127,6 @@ size_t			numChannels;
 
 static int		nextcleanup;
 
-
 static fixed_t P_AproxDistance2 (fixed_t *listener, fixed_t x, fixed_t y)
 {
 	// calculate the distance to sound origin
@@ -184,10 +181,10 @@ void S_NoiseDebug (void)
 			char temp[16];
 			fixed_t *origin = Channel[i].pt;
 
-			if (Channel[i].attenuation <= 0 && S_WHICHEARS.camera)
+			if (Channel[i].attenuation <= 0 && listenplayer().camera)
 			{
-				ox = S_WHICHEARS.camera->x;
-				oy = S_WHICHEARS.camera->y;
+				ox = listenplayer().camera->x;
+				oy = listenplayer().camera->y;
 			}
 			else if (origin)
 			{
@@ -211,7 +208,7 @@ void S_NoiseDebug (void)
 			screen->DrawText (color, 170, y, temp);
 			sprintf (temp, "%d", Channel[i].priority);
 			screen->DrawText (color, 200, y, temp);
-			sprintf (temp, "%d", P_AproxDistance2 (S_WHICHEARS.camera, ox, oy) / FRACUNIT);
+			sprintf (temp, "%d", P_AproxDistance2 (listenplayer().camera, ox, oy) / FRACUNIT);
 			screen->DrawText (color, 240, y, temp);
 			sprintf (temp, "%d", Channel[i].entchannel);
 			screen->DrawText (color, 280, y, temp);
@@ -578,20 +575,20 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	}
 	
 	
-	if (S_WHICHEARS.mo && attenuation != ATTN_NONE)
+	if (listenplayer().mo && attenuation != ATTN_NONE)
 	{
 	
   		// Check to see if it is audible, and if not, modify the params
 		if (co_zdoomsoundcurve)
 		{
-			rc = S_AdjustZdoomSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
+			rc = S_AdjustZdoomSoundParams(listenplayer().mo, x, y, &volume, &sep, &pitch);
 		}
 		else
 		{
-			rc = S_AdjustSoundParams(S_WHICHEARS.mo, x, y, &volume, &sep, &pitch);
+			rc = S_AdjustSoundParams(listenplayer().mo, x, y, &volume, &sep, &pitch);
 		}
 
-		if (x == S_WHICHEARS.mo->x && y == S_WHICHEARS.mo->y)
+		if (x == listenplayer().mo->x && y == listenplayer().mo->y)
 		{
 			sep = NORM_SEP;
 		}
@@ -827,7 +824,7 @@ void S_Sound (int channel, const char *name, float volume, int attenuation)
 
 void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	if(channel == CHAN_ITEM && ent != S_WHICHEARS.camera)
+	if(channel == CHAN_ITEM && ent != listenplayer().camera)
 		return;
 
 	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, attenuation, false);

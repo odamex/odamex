@@ -256,6 +256,14 @@ player_t		&displayplayer()
 	return idplayer(displayplayer_id);
 }
 
+player_t		&listenplayer()
+{
+	if (netdemo.isPlaying() || consoleplayer().spectator)
+		return displayplayer();
+
+	return consoleplayer();
+}
+
 player_t		&idplayer(size_t id)
 {
 	// attempt a quick cached resolution
