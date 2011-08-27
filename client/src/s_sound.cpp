@@ -315,38 +315,30 @@ void S_Start (void)
 
 
 //
-// S_FindDuplicateSounds
+// S_CompareChannels
 //
-// Checks if there are already max_duplicates instances of this same
-// sound being played.  If exceeded, it returns the number of the channel
-// with the lowest volume that is currently playing this sound.
+// A comparison function that determines which sound channel should
+// take priority.  Can be used with std::sort.  Returns true if 
+// channel a has less priority than channel b.
 //
-
-int S_FindDuplicateSounds(int sound_id)
+// Note: this implicitly gives preference to channel b if
+// channel a and b are equal.  The more recent sound should
+// therefore be in channel b to give preference to newer sounds.
+//
+bool S_CompareChannels(const channel_t &a, const channel_t &b)
 {
-	// the maximum number of the same sound that can be playing at once
-	const int max_duplicates = 2;
+	if (a.sfxinfo == NULL)	// empty channel
+		return true;
 
-	int duplicates = 0;
-	int quietest = -1;	// Channel with a matching sound_id and the lowest volume
+	if (b.sfxinfo == NULL)
+		return false;
 
-	for (int i = 0; i < (int)numChannels; i++)
-	{
-		if (Channel[i].sound_id == sound_id)
-		{
-			duplicates++;
+	if (a.priority < b.priority || (a.priority == b.priority && a.volume <= b.volume))
+		return true;
 
-			if (quietest == -1 || Channel[i].volume <= Channel[quietest].volume)
-				quietest = i;
-		}
-	}
-	
-	// over our threshold, so return the quietest channel, which will be kicked
-	if (duplicates > max_duplicates)
-		return quietest;
-	
-	return -1;
+	return false;
 }
+
 
 //
 // S_getChannel :
@@ -362,58 +354,49 @@ int
 {
     // channel number to use
 	int cnum = -1;
-	int i;
 
 	// not a valid sound	
 	if (!sfxinfo)
 		return -1;
 
+	// Sort the sound channels by ascending priority levels
+	std::sort(Channel, Channel + numChannels, S_CompareChannels);
+
+	// store priority and volume in a temp channel to use with S_CompareChannels
+	channel_t tempchan;
+	tempchan.priority = priority;
+	tempchan.volume = volume;
+	tempchan.sfxinfo = sfxinfo;
+
+	int sound_id = S_FindSound (sfxinfo->name);
+
 	// Limit the number of identical sounds playing at once
 	// tries to keep the plasma rifle from hogging all the channels
-	int sfx_id = S_FindSound (sfxinfo->name);
-	cnum = S_FindDuplicateSounds(sfx_id);	// -1 if there aren't duplicates
-	if (cnum != -1)
+	const int max_duplicates = 3;
+	int duplicates = 0;
+	for (int i = (int)numChannels - 1; i >= 0; i--)
 	{
-		// if the quietest duplicate sound is louder than this
-		// new sound, don't play the new sound
-		if (Channel[cnum].volume > volume)
-			return -1;
-	}
-
-   	// Find an open channel
-	if (cnum == -1)
-	{
-		for (i = 0; i < (int)numChannels; i++)
+		if (Channel[i].sound_id == sound_id)
 		{
-			if (!Channel[i].sfxinfo)	// No sfx playing here (sfxinfo == NULL)
-			{
+			// if we're over our limit, we may kick this channel
+			if (++duplicates >= max_duplicates)
 				cnum = i;
-				break;
-			}
 		}
 	}
 
-	// No open channels, cnum hasn't changed
-	// Look for channel with lower priority
+	// if the quietest duplicate sound is louder than this
+	// new sound, don't play the new sound
+	if (cnum != -1 && !S_CompareChannels(Channel[cnum], tempchan))
+		return -1;
+
+   	// Find an open channel or a channel with lower priority
 	if (cnum == -1)
 	{
-		for (i = 0 ; i < (int)numChannels ; i++)
+		for (int i = 0 ; i < (int)numChannels ; i++)
 		{
-			if (Channel[i].priority < priority)
+			if (S_CompareChannels(Channel[i], tempchan))
 			{
-				cnum = i;
-				break;
-			}
-		}
-	}
-
-	// Look for a channel with equal priority but lower volume
-	if(cnum == -1)
-	{
-		for (i = 0; i < (int)numChannels; i++)
-		{
-			if (Channel[i].priority == priority && Channel[i].volume <= volume)
-			{
+				// Channel[i] is either empty or has a lower priority
 				cnum = i;
 				break;
 			}
@@ -1090,7 +1073,6 @@ void S_UpdateSounds (void *listener_p)
 						x = c->x;
 						y = c->y;
 					}
-					
 					
 					if (co_zdoomsoundcurve)
 					{
