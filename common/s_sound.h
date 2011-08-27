@@ -127,8 +127,6 @@ void S_StopSound (AActor *ent, int channel);
 void S_StopSound (fixed_t *pt, int channel);
 void S_StopSound (fixed_t *pt);
 
-bool S_StopSoundID (int sound_id);
-
 // Stop sound for all channels
 void S_StopAllChannels (void);
 

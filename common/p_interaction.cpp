@@ -230,7 +230,7 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 
 		player->pendingweapon = weapon;
 
-		S_Sound(player->mo, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NORM);
+		S_Sound(player->mo, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);
 
         WeaponPickupMessage(player->mo, weapon);
 
@@ -918,14 +918,14 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
         {
 			case 0:
 			case 3:
-				S_Sound(ent, CHAN_ITEM, "misc/i_pkup", 1, ATTN_NORM);
+				S_Sound(ent, CHAN_ITEM, "misc/i_pkup", 1, ATTN_NONE);
 				break;
 			case 1:
 				S_Sound(ent, CHAN_ITEM, "misc/p_pkup", 1,
-					!ent ? ATTN_SURROUND : ATTN_NORM);
+					!ent ? ATTN_SURROUND : ATTN_NONE);
 				break;
 			case 2:
-				S_Sound(ent, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NORM);
+				S_Sound(ent, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);
 				break;
 		}
 	}

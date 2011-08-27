@@ -315,6 +315,40 @@ void S_Start (void)
 
 
 //
+// S_FindDuplicateSounds
+//
+// Checks if there are already max_duplicates instances of this same
+// sound being played.  If exceeded, it returns the number of the channel
+// with the lowest volume that is currently playing this sound.
+//
+
+int S_FindDuplicateSounds(int sound_id)
+{
+	// the maximum number of the same sound that can be playing at once
+	const int max_duplicates = 2;
+
+	int duplicates = 0;
+	int quietest = -1;	// Channel with a matching sound_id and the lowest volume
+
+	for (int i = 0; i < (int)numChannels; i++)
+	{
+		if (Channel[i].sound_id == sound_id)
+		{
+			duplicates++;
+
+			if (quietest == -1 || Channel[i].volume <= Channel[quietest].volume)
+				quietest = i;
+		}
+	}
+	
+	// over our threshold, so return the quietest channel, which will be kicked
+	if (duplicates > max_duplicates)
+		return quietest;
+	
+	return -1;
+}
+
+//
 // S_getChannel :
 //   If none available, return -1.  Otherwise channel #.
 //
@@ -323,44 +357,75 @@ int
 		S_getChannel
 		( void*		origin,
 		  sfxinfo_t*	sfxinfo,
+		  float		volume,
 		  int 		priority)
 {
     // channel number to use
 	int cnum = -1;
 	int i;
 
-    // Find an open channel
-	for (i=0; i < (int)numChannels; i++)
+	// not a valid sound	
+	if (!sfxinfo)
+		return -1;
+
+	// Limit the number of identical sounds playing at once
+	// tries to keep the plasma rifle from hogging all the channels
+	int sfx_id = S_FindSound (sfxinfo->name);
+	cnum = S_FindDuplicateSounds(sfx_id);	// -1 if there aren't duplicates
+	if (cnum != -1)
 	{
-		if (!Channel[i].sfxinfo)	// No sfx playing here (sfxinfo == NULL)
-		{
-			cnum = i;
-			break;
-		}
+		// if the quietest duplicate sound is louder than this
+		// new sound, don't play the new sound
+		if (Channel[cnum].volume > volume)
+			return -1;
 	}
 
-	// No open channels, cnum hasn't changed
+   	// Find an open channel
 	if (cnum == -1)
 	{
-		// Look for lower priority
-		for (i=0 ; i < (int)numChannels ; i++)
-			if (Channel[i].priority <= priority)
+		for (i = 0; i < (int)numChannels; i++)
+		{
+			if (!Channel[i].sfxinfo)	// No sfx playing here (sfxinfo == NULL)
 			{
 				cnum = i;
 				break;
 			}
-
-		// Still no channels we can use, don't bother with that sound
-		if(cnum == -1)
-		{
-			return -1;
-		}
-		else
-		{
-	    		// Otherwise, kick out lower priority.
-			S_StopChannel(cnum);
 		}
 	}
+
+	// No open channels, cnum hasn't changed
+	// Look for channel with lower priority
+	if (cnum == -1)
+	{
+		for (i = 0 ; i < (int)numChannels ; i++)
+		{
+			if (Channel[i].priority < priority)
+			{
+				cnum = i;
+				break;
+			}
+		}
+	}
+
+	// Look for a channel with equal priority but lower volume
+	if(cnum == -1)
+	{
+		for (i = 0; i < (int)numChannels; i++)
+		{
+			if (Channel[i].priority == priority && Channel[i].volume <= volume)
+			{
+				cnum = i;
+				break;
+			}
+		}
+	}
+
+	// Still no channels we can use, don't bother with that sound
+	if (cnum == -1)
+		return -1;
+	    		
+	// kick out lower priority.
+	S_StopChannel(cnum);
 
     // channel is decided to be cnum.
 	Channel[cnum].sfxinfo = sfxinfo;
@@ -562,9 +627,6 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 		y = pt[1];
 	}
 
-// Remove some duplicate sounds (mainly for plasma)
-	 S_StopSoundID(sfx_id);
-
 	if (sfx->link)
 		sfx = sfx->link;
 
@@ -574,10 +636,8 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			sfx = sfx->link;
 	}
 	
-	
 	if (listenplayer().mo && attenuation != ATTN_NONE)
 	{
-	
   		// Check to see if it is audible, and if not, modify the params
 		if (co_zdoomsoundcurve)
 		{
@@ -676,7 +736,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	S_StopSound (pt, channel);
 
   	// try to find a channel
-	cnum = S_getChannel(pt, sfx, priority);
+	cnum = S_getChannel(pt, sfx, volume, priority);
 
   	// no channel found
 	if (cnum < 0)
@@ -882,34 +942,6 @@ void S_StopAllChannels (void)
 			S_StopChannel (i);
 }
 
-//
-// joek - Hexen style S_StopSoundID
-// returns 1 on success (taken out a couple sounds) or 0 on fail
-// Has a limit imposed like hexen one so things don't go quiet all of a sudden
-// when using a plasma rifle or whatever
-
-#define DUPLICATE_LIMIT 2
-
-bool S_StopSoundID(int sound_id)
-{
-	int i;
-	int duplicates = 0;
-
-	for(i = 0; i < (int)numChannels; i++)
-	{
-		if(Channel[i].sound_id == sound_id)
-		{
-			duplicates++;
-
-			// Limit reached so take this one out
-			if(duplicates > DUPLICATE_LIMIT)
-				S_StopChannel(i);
-		}
-	}
-
-	// If we've taken any out, return 1
-	return duplicates>DUPLICATE_LIMIT;
-}
 
 // Moves all the sounds from one thing to another. If the destination is
 // NULL, then the sound becomes a positioned sound.
