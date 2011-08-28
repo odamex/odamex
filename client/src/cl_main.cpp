@@ -2262,6 +2262,10 @@ void CL_CheckMissedPacket(void)
 	}
 }
 
+// Decompress the packet sequence
+// [Russell] - reason this was failing is because of huffman routines, so just
+// use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
+// if 0'd sections
 void CL_Decompress(int sequence)
 {
 	if(!MSG_BytesLeft() || MSG_NextByte() != svc_compressed)
@@ -2271,9 +2275,7 @@ void CL_Decompress(int sequence)
 
 	byte method = MSG_ReadByte();
 
-	if(method & minilzo_mask)
-		MSG_DecompressMinilzo();
-
+#if 0
 	if(method & adaptive_mask)
 		MSG_DecompressAdaptive(compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0));
 	else
@@ -2281,9 +2283,14 @@ void CL_Decompress(int sequence)
 		// otherwise compressed packets can still contain codec updates
 		compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0);
 	}
+#endif
 
+	if(method & minilzo_mask)
+		MSG_DecompressMinilzo();
+#if 0
 	if(method & adaptive_record_mask)
 		compressor.ack_sent(net_message.ptr(), MSG_BytesLeft());
+#endif
 }
 
 //
