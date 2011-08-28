@@ -580,7 +580,10 @@ void DConsoleAlias::Run()
 		if (argc > 1)
         {
             for (size_t i = 1; i < argc; i++)
+            {
+                m_CommandParam += " ";
                 m_CommandParam += argv[i];
+            }
         }
 
         AddCommandString (m_CommandParam.c_str());
