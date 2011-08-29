@@ -1093,6 +1093,15 @@ bool CL_PrepareConnect(void)
 		// denis - download files
 		missing_file = wadnames[missing_files[0]];
 		missing_hash = wadhashes[missing_files[0]];
+
+		if (netdemo.isPlaying())
+		{
+			// Playing a netdemo and unable to download from the server
+			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n", missing_file.c_str());
+			CL_QuitNetGame();
+			return false;
+		}
+
 		gamestate = GS_DOWNLOAD;
 		Printf(PRINT_HIGH, "Will download \"%s\" from server\n", missing_file.c_str());
 	}
