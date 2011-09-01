@@ -144,6 +144,10 @@ EXTERN_CVAR (joy_sensitivity)
 EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
 
+// Network Options
+EXTERN_CVAR (rate);
+EXTERN_CVAR (cl_unlag);
+
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
 void M_StartControlPanel(void);
@@ -201,6 +205,7 @@ static void CustomizeControls (void);
 static void VideoOptions (void);
 static void SoundOptions (void);
 static void CompatOptions (void);
+static void NetworkOptions (void);
 static void GoToConsole (void);
 static void GoToConsole (void);
 void Reset2Defaults (void);
@@ -216,6 +221,7 @@ static menuitem_t OptionItems[] =
 	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
  	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
  	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CompatOptions} },
+	{ more,		"Network Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)NetworkOptions} },
 	{ more,		"Sound Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SoundOptions} },
  	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
 	{ more,		"Set Video Mode",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SetVidMode} },
@@ -423,6 +429,12 @@ menu_t SoundMenu = {
 	SoundItems,
 };
 
+
+/*=======================================
+ *
+ * Compatibility Options Menu
+ *
+ *=======================================*/
 static menuitem_t CompatItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
 	{ bricktext ,   "Enhanced Interaction"                  , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
@@ -440,6 +452,35 @@ menu_t CompatMenu = {
 	STACKARRAY_LENGTH(CompatItems),
 	177,
 	CompatItems,
+};
+
+
+/*=======================================
+ *
+ * Network Options Menu
+ *
+ *=======================================*/
+
+static value_t BandwidthLevels[] = {
+	{ 7000.0,		"56kbps" },
+	{ 200000.0,		"1.5Mbps" },
+	{ 375000.0,		"3.0Mbps" },
+	{ 750000.0,		"6.0Mbps" },
+};
+
+static menuitem_t NetworkItems[] = {
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
+	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
+	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },
+};
+
+menu_t NetworkMenu = {
+	"M_NETWRK",
+	2,
+	STACKARRAY_LENGTH(NetworkItems),
+	177,
+	NetworkItems,
 };
 
 /*=======================================
@@ -1769,6 +1810,11 @@ void SoundOptions (void) // [Ralphis] for sound menu
 void CompatOptions (void) // [Ralphis] for compatibility menu
 {
 	M_SwitchMenu (&CompatMenu);
+}
+
+void NetworkOptions (void)
+{
+	M_SwitchMenu (&NetworkMenu);
 }
 
 BEGIN_COMMAND (menu_display)
