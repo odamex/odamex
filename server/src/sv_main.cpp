@@ -4592,12 +4592,12 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 			continue;
 
 		// send death location first
-		MSG_WriteMarker(&cl->netbuf, svc_movemobj);
-		MSG_WriteShort(&cl->netbuf, target->netid);
-		MSG_WriteByte(&cl->netbuf, target->rndindex);
-		MSG_WriteLong(&cl->netbuf, target->x);
-		MSG_WriteLong(&cl->netbuf, target->y);
-		MSG_WriteLong(&cl->netbuf, target->z);
+		MSG_WriteMarker(&cl->reliablebuf, svc_movemobj);
+		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteByte(&cl->reliablebuf, target->rndindex);
+		MSG_WriteLong(&cl->reliablebuf, target->x);
+		MSG_WriteLong(&cl->reliablebuf, target->y);
+		MSG_WriteLong(&cl->reliablebuf, target->z);
 		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
 
 		if (source)
