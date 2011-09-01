@@ -1137,6 +1137,13 @@ void SV_SetupUserInfo (player_t &player)
 	// [SL] 2011-05-11 - Client opt-in/out of serverside unlagging
 	p->userinfo.unlag = MSG_ReadByte();
 
+	// [SL] 2011-09-01 - Send client svc_moveplayer messages every N tics
+	p->userinfo.update_rate = MSG_ReadByte();
+	if (p->userinfo.update_rate < 1)
+		p->userinfo.update_rate = 1;
+	else if (p->userinfo.update_rate > 3)
+		p->userinfo.update_rate = 3;
+
 	// Make sure the gender is valid
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
@@ -3227,13 +3234,15 @@ void SV_WriteCommands(void)
 		if (players[i].ingame())
 			SV_SendGametic(cl);
 
-		// Don't need to update origin every tic.
-		// The server sends origin and velocity of a
-		// player and the client always knows origin on
-		// on the next tic.
-		if (gametic % 2)
-			for (j=0; j < players.size(); j++)
-			{
+		for (j=0; j < players.size(); j++)
+		{
+			// Don't need to update origin every tic.
+			// The server sends origin and velocity of a
+			// player and the client always knows origin on
+			// on the next tic.
+			// HOWEVER, update as often as the player requests
+			if (gametic % players[i].userinfo.update_rate == 0)
+			{ 
 				if (!players[j].ingame() || !players[j].mo)
 					continue;
 
@@ -3269,6 +3278,7 @@ void SV_WriteCommands(void)
                 // this but its all we have for now)
                 MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
 			}
+		}
 
 		SV_UpdateHiddenMobj();
 

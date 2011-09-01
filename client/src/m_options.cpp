@@ -147,6 +147,7 @@ EXTERN_CVAR (joy_freelook)
 // Network Options
 EXTERN_CVAR (rate);
 EXTERN_CVAR (cl_unlag);
+EXTERN_CVAR (cl_updaterate);
 
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
@@ -465,13 +466,20 @@ static value_t BandwidthLevels[] = {
 	{ 7000.0,		"56kbps" },
 	{ 200000.0,		"1.5Mbps" },
 	{ 375000.0,		"3.0Mbps" },
-	{ 750000.0,		"6.0Mbps" },
+	{ 750000.0,		"6.0Mbps" }
+};
+
+static value_t UpdateRate[] = {
+	{ 1.0,			"Every tic" },
+	{ 2.0,			"Every 2nd tic" },
+	{ 3.0,			"Every 3rd tic" }
 };
 
 static menuitem_t NetworkItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
 	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
+	{ discrete,		"Position update freq",			{&cl_updaterate},	{3.0},		{0.0},		{0.0},		{UpdateRate} },
 	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },
 };
 

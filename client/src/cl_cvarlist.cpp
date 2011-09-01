@@ -151,6 +151,9 @@ CVAR_FUNC_DECL (cl_autoaim,	"5000",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABL
 // [SL] 2011-05-11 - Client opt-in/out for serverside unlagging
 CVAR (cl_unlag,				"1",		CVAR_USERINFO | CVAR_ARCHIVE)
 
+// [SL] 2011-09-01 - Server will send svc_moveplayer updates every N tics
+CVAR_FUNC_DECL (cl_updaterate, "2",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 	CVAR (cl_name,		"Xbox Player",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #else

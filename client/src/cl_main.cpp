@@ -119,6 +119,14 @@ CVAR_FUNC_IMPL (cl_autoaim)
 		var.Set(5000.0f);
 }
 
+CVAR_FUNC_IMPL (cl_updaterate)
+{
+	if (var < 1.0f)
+		var.Set(1.0f);
+	else if (var > 3.0f)
+		var.Set(3.0f);
+}
+
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_maxclients)
 EXTERN_CVAR (sv_infiniteammo)
@@ -421,15 +429,16 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname   - %s \n",		  player->userinfo.netname);
-	Printf (PRINT_HIGH, " userinfo.team      - %d \n",		  player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.aimdist   - %d \n",		  player->userinfo.aimdist);
-    Printf (PRINT_HIGH, " userinfo.unlag     - %d \n",        player->userinfo.unlag);
-	Printf (PRINT_HIGH, " userinfo.color     - %d \n",		  player->userinfo.color);
-	Printf (PRINT_HIGH, " userinfo.skin      - %s \n",		  skins[player->userinfo.skin].name);
-	Printf (PRINT_HIGH, " userinfo.gender    - %d \n",		  player->userinfo.gender);
-	Printf (PRINT_HIGH, " spectator          - %d \n",		  player->spectator);
-	Printf (PRINT_HIGH, " time               - %d \n",		  player->GameTime);
+	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname);
+	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
+	Printf (PRINT_HIGH, " userinfo.aimdist     - %d \n",	player->userinfo.aimdist);
+    Printf (PRINT_HIGH, " userinfo.unlag       - %d \n",	player->userinfo.unlag);
+	Printf (PRINT_HIGH, " userinfo.update_rate - %d \n",	player->userinfo.update_rate);
+	Printf (PRINT_HIGH, " userinfo.color       - %d \n",	player->userinfo.color);
+	Printf (PRINT_HIGH, " userinfo.skin        - %s \n",	skins[player->userinfo.skin].name);
+	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
+	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
+	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
@@ -758,6 +767,7 @@ void CL_SendUserInfo(void)
 	coninfo->gender  = D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
+	coninfo->update_rate = cl_updaterate;
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
 	MSG_WriteString	(&net_buffer, coninfo->netname);
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
@@ -766,6 +776,7 @@ void CL_SendUserInfo(void)
 	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
+	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
 }
 
 
