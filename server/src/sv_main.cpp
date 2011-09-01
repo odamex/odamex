@@ -3740,6 +3740,11 @@ void SV_WantWad(player_t &player)
 
 	if(!sv_waddownload)
 	{
+		// read and ignore the rest of the wad request
+		MSG_ReadString();
+		MSG_ReadString();
+		MSG_ReadLong();
+
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
 		MSG_WriteString (&cl->reliablebuf, "Server: Downloading is disabled\n");
@@ -3972,22 +3977,28 @@ void SV_WadDownloads (void)
 		if(!cl->download.name.length())
 			continue;
 
-		// read next bit of wad
 		static char buff[1024];
+		const float max_util = 0.75f;	// only utilize a percentage of client's bandwidth
+	
+		int capacity = (cl->rate * max_util - cl->reliable_bps - cl->unreliable_bps) / TICRATE;
+		int chunks_to_send = 1 + capacity / sizeof(buff);
 
-		unsigned int filelen = 0;
-		unsigned int read;
-
-		read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, sizeof(buff), buff, filelen);
-
-		// [SL] 2011-08-09 - Always send the data in netbuf and reliablebuf prior
-		// to writing a wadchunk to netbuf to keep packet sizes below the MTU.
-		// This prevents packets from getting dropped due to size on some networks.
-		if (cl->netbuf.size() + cl->reliablebuf.size())
-			SV_SendPacket(players[i]);
-
-		if(read)
+		while (chunks_to_send--)
 		{
+			// read next bit of wad
+			unsigned int read;
+			unsigned int filelen = 0;
+			read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, sizeof(buff), buff, filelen);
+			
+			if (!read)
+				break;
+
+			// [SL] 2011-08-09 - Always send the data in netbuf and reliablebuf prior
+			// to writing a wadchunk to netbuf to keep packet sizes below the MTU.
+			// This prevents packets from getting dropped due to size on some networks.
+			if (cl->netbuf.size() + cl->reliablebuf.size())
+				SV_SendPacket(players[i]);
+
 			if(!cl->download.next_offset)
 			{
 				MSG_WriteMarker (&cl->netbuf, svc_wadinfo);
