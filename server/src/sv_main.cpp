@@ -3527,6 +3527,10 @@ void SV_Spectate (player_t &player)
 				if ((multiplayer && level.time > player.joinafterspectatortime + TICRATE*3) ||
 					level.time > player.joinafterspectatortime + TICRATE*5) {
 					player.spectator = false;
+
+					// [SL] 2011-09-01 - Clear any previous SV_MidPrint (sv_motd for example)
+					SV_MidPrint("", &player, 0);
+
 					for (size_t j = 0; j < players.size(); j++) {
 						MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
 						MSG_WriteByte (&(players[j].client.reliablebuf), player.id);
