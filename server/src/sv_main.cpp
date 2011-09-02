@@ -98,12 +98,12 @@ EXTERN_CVAR(sv_hostname)
 EXTERN_CVAR(sv_email)
 EXTERN_CVAR(sv_website)
 EXTERN_CVAR(sv_waddownload)
+EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_emptyreset)
 EXTERN_CVAR(sv_clientcount)
 EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
-EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_timeleft)
 
 void SexMessage (const char *from, char *to, int gender);
@@ -214,6 +214,45 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 	}
 	else
 		Printf(PRINT_HIGH, "rcon password set");
+}
+
+//
+//  SV_SetClientRate
+//
+//  Performs range checking on client's rate
+//
+void SV_SetClientRate(client_t &client, int rate)
+{
+	if (rate < 1)
+		rate = 1;
+	else if (rate > sv_maxrate)
+		rate = sv_maxrate;
+
+	client.rate = rate;	
+}
+
+EXTERN_CVAR (sv_waddownloadcap)
+CVAR_FUNC_IMPL (sv_maxrate)
+{
+	// impose a minimum rate of 10kbps/client
+	if (var < 10)
+		var.Set(10);
+
+	if (sv_waddownloadcap > var)
+		sv_waddownloadcap.Set(var);
+
+	for (size_t i = 0; i < clients.size(); i++)
+	{
+		// ensure no clients exceed sv_maxrate
+		SV_SetClientRate(clients[i], clients[i].rate);
+	}
+}
+
+CVAR_FUNC_IMPL (sv_waddownloadcap)
+{
+	// sv_waddownloadcap can not be larger than sv_maxrate
+	if (var > sv_maxrate || var <= 0)
+		var.Set(sv_maxrate);
 }
 
 EXTERN_CVAR (sv_antiwallhack)
@@ -2136,6 +2175,8 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 	return AllowConnect;
 }
 
+
+
 //
 //	SV_ConnectClient
 //
@@ -2242,7 +2283,7 @@ void SV_ConnectClient (void)
 	SV_SetupUserInfo (players[n]); // send it to other players
 
 	// get rate value
-	cl->rate				= MSG_ReadLong();
+	SV_SetClientRate(*cl, MSG_ReadLong());
 
     std::string passhash = MSG_ReadString();
 
@@ -3835,12 +3876,8 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_rate:
 			{
-				player.client.rate = MSG_ReadLong();
 				// denis - prevent problems by locking rate within a range
-            	if (player.client.rate < 500)
-					player.client.rate = 500;
-				if (player.client.rate > sv_maxrate)
-					player.client.rate = sv_maxrate.asInt();
+				SV_SetClientRate(player.client, MSG_ReadLong());
 			}
 			break;
 
@@ -3961,11 +3998,6 @@ void SV_WadDownloads (void)
 	if(players.empty())
 		return;
 
-	// don't send too much
-	// [ML] 8/27/10: ...unless the server admin allows it
-	if(gametic%(2 * (players.size()+1)) && sv_waddownloadcap)
-        return;
-
 	// wad downloading
 	for(size_t i = 0; i < players.size(); i++)
 	{
@@ -3978,17 +4010,18 @@ void SV_WadDownloads (void)
 			continue;
 
 		static char buff[1024];
-		const float max_util = 0.75f;	// only utilize a percentage of client's bandwidth
-	
-		int capacity = (cl->rate * max_util - cl->reliable_bps - cl->unreliable_bps) / TICRATE;
-		int chunks_to_send = 1 + capacity / sizeof(buff);
+		// Smaller buffer for slower clients
+		int chunk_size = (sizeof(buff) > (unsigned)cl->rate*1000/TICRATE) ? cl->rate*1000/TICRATE : sizeof(buff);
 
-		while (chunks_to_send--)
+		// maximum rate client can download at (in bytes per second)
+		int download_rate = (sv_waddownloadcap > cl->rate) ? cl->rate*1000 : sv_waddownloadcap*1000;
+
+		do
 		{
 			// read next bit of wad
 			unsigned int read;
 			unsigned int filelen = 0;
-			read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, sizeof(buff), buff, filelen);
+			read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, chunk_size, buff, filelen);
 			
 			if (!read)
 				break;
@@ -4010,8 +4043,16 @@ void SV_WadDownloads (void)
 			MSG_WriteShort (&cl->netbuf, read);
 			MSG_WriteChunk (&cl->netbuf, buff, read);
 
+			// Make double-sure the wadchunk is sent in its own packet
+			if (cl->netbuf.size() + cl->reliablebuf.size())
+				SV_SendPacket(players[i]);
+
 			cl->download.next_offset += read;
-		}
+		} while (
+			(double)(cl->reliable_bps + cl->unreliable_bps) * TICRATE 
+				/ (double)(gametic % TICRATE)	// bps already used 
+				+ (double)chunk_size / TICRATE 	// bps this chunk will use
+			< (double)download_rate); 
 	}
 }
 

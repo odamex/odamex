@@ -463,10 +463,10 @@ menu_t CompatMenu = {
  *=======================================*/
 
 static value_t BandwidthLevels[] = {
-	{ 7000.0,		"56kbps" },
-	{ 200000.0,		"1.5Mbps" },
-	{ 375000.0,		"3.0Mbps" },
-	{ 750000.0,		"6.0Mbps" }
+	{ 7.0,			"56kbps" },
+	{ 200.0,		"1.5Mbps" },
+	{ 375.0,		"3.0Mbps" },
+	{ 750.0,		"6.0Mbps" }
 };
 
 static value_t UpdateRate[] = {

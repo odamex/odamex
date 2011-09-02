@@ -141,7 +141,7 @@ CVAR (joy_invert, "0", CVAR_ARCHIVE)
 CVAR (show_messages, "1", CVAR_ARCHIVE)
 
 // Rate of client updates
-CVAR_FUNC_DECL (rate, "200000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (rate, "200", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Maximum number of clients who can connect to the server
 CVAR (sv_maxclients,       "0", CVAR_SERVERINFO | CVAR_LATCH)
 // Maximum amount of players who can join the game, others are spectators

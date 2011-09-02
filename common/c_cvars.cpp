@@ -202,6 +202,12 @@ void cvar_t::SetDefault (const char *val)
 	}
 }
 
+void cvar_t::RestoreDefault ()
+{
+	Set(m_Default.c_str());	
+	m_Flags |= CVAR_ISDEFAULT;
+}
+
 cvar_t *cvar_t::cvar_set (const char *var_name, const char *val)
 {
 	cvar_t *var, *dummy;

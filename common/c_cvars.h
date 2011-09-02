@@ -79,6 +79,7 @@ public:
 	inline void Callback () { if (m_Callback) m_Callback (*this); }
 
 	void SetDefault (const char *value);
+	void RestoreDefault ();
 	void Set (const char *value);
 	void Set (float value);
 	void ForceSet (const char *value);

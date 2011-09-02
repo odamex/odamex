@@ -141,7 +141,7 @@ bool SV_SendPacket(player_t &pl)
 	if (gametic % 35)
 	    bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
 
-    if (bps < cl->rate)
+    if (bps < cl->rate*1000)
 	  if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
 	  {
          SZ_Write (&sendd, cl->netbuf.data, cl->netbuf.cursize);
