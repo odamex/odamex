@@ -54,7 +54,8 @@
 typedef int SOCKET;
 #endif
 
-const size_t MAX_PAYLOAD = 8192;
+// Max packet size to send and receive, in bytes
+const size_t MAX_PAYLOAD = 1400;
 
 typedef unsigned char byte;
 

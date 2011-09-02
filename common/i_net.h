@@ -30,7 +30,8 @@
 
 #include <string>
 
-#define	MAX_UDP_PACKET	8192
+// Max packet size to send and receive, in bytes
+#define	MAX_UDP_PACKET	1400
 
 #define SERVERPORT  10666
 #define CLIENTPORT  10667
