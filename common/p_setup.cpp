@@ -1460,7 +1460,7 @@ void P_SetupLevel (char *lumpname, int position)
 		// calling P_CheckSight
 		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
 		{
-			Printf(PRINT_HIGH, "Reject matrix is not valid and will be ignored.\n");
+			DPrintf("Reject matrix is not valid and will be ignored.\n");
 			rejectempty = true;
 		}
 	}
