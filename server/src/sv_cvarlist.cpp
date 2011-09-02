@@ -56,7 +56,7 @@ CVAR (sv_maxcorpses, "200", CVAR_ARCHIVE | CVAR_SERVERINFO)
 CVAR (sv_clientcount,	"0", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 // Deprecated
 CVAR (sv_cleanmaps, "", CVAR_NULL)
-// Antiwallhack code
+// Anti-wall hack code
 CVAR (sv_antiwallhack,	"0", CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // Maximum number of clients that can connect to the server
 CVAR_FUNC_DECL (sv_maxclients, "4", CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
@@ -85,7 +85,7 @@ CVAR (sv_loopepisode, "0", CVAR_ARCHIVE)
 // ----------------
 
 // Network compression (experimental)
-CVAR (sv_networkcompression, "0", CVAR_ARCHIVE)
+CVAR (sv_networkcompression, "0", CVAR_ARCHIVE | CVAR_SERVERINFO)
 // NAT firewall workaround port number
 CVAR (sv_natport,	"0", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // The time difference in which a player message to all players can be repeated
@@ -97,7 +97,7 @@ CVAR_FUNC_DECL (sv_shufflemaplist,	"0", CVAR_ARCHIVE)
 CVAR (sv_maxrate, "200000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 #ifdef ODA_HAVE_MINIUPNP
-// Enable Universal Plug and Play to autoconfigure a compliant router
+// Enable Universal Plug and Play to auto-configure a compliant router
 CVAR (sv_upnp, "1", CVAR_ARCHIVE)
 // The timeout looking for upnp routers
 CVAR (sv_upnp_discovertimeout, "2000", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -112,11 +112,12 @@ CVAR (sv_upnp_externalip, "", CVAR_NOSET | CVAR_NOENABLEDISABLE)
 // Gameplay settings
 // =================
 
-// (Teamplay): Teams that are enabled
+// (CTF/Team play): Teams that are enabled
 CVAR (sv_teamsinplay,		"2", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 // (CTF) Flags dropped by the player must be returned manually
 CVAR (ctf_manualreturn,	"0", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-// TODO: document
+// (CTF) Team flag must be at home pedestal for any captures of an enemy flag
+// returned to said pedestal to count as a point
 CVAR (ctf_flagathometoscore,	"1", CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // (CTF) Time for a dropped flag to be returned to its home base, in seconds
 CVAR (ctf_flagtimeout, "10", CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
