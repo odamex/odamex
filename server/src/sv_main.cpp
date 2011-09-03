@@ -4091,9 +4091,16 @@ void SV_TimelimitCheck()
 		return;
 
 	// [ML] Update the sv_timeleft cvar for clients
-	sv_timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
+	// [SL] 2011-09-03 - Updating sv_timeleft forces the server to send all
+	// the server settings to all the clients, hogging bandwidth, so
+	// only do it sparingly
+	int timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
 
-	if (sv_timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
+	// Update sv_timeleft every 10 seconds
+	if ((gametic % (10*TICRATE)) == 0)
+		sv_timeleft = timeleft;
+
+	if (timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
 		return;
 
 	// LEVEL TIMER
