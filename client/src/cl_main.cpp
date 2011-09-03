@@ -1387,7 +1387,7 @@ void CL_UpdateLocalPlayer(void)
 
     p.mo->waterlevel = MSG_ReadByte();
 
-	real_plats.Clear();
+//	real_plats.Clear();
 }
 
 
