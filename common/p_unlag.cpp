@@ -298,8 +298,10 @@ void Unlag::refreshRegisteredPlayers()
 	player_id_map.clear();
 	for (size_t i=0; i<player_history.size(); i++)
 	{
-		player_history[i].player = &idplayer(player_history[i].player_id);		
-		player_id_map[player_history[i].player_id] = i;
+		byte id = player_history[i].player_id;
+
+		player_history[i].player = &idplayer(id);		
+		player_id_map[id] = i;
 	}
 }
 
@@ -313,6 +315,10 @@ void Unlag::refreshRegisteredPlayers()
 void Unlag::registerPlayer(byte player_id)
 {
 	if (!Unlag::enabled())
+		return;
+
+	// don't register a bogus player id
+	if (!validplayer(idplayer(player_id)))
 		return;
 
 	player_history.push_back(PlayerHistoryRecord());
@@ -339,13 +345,8 @@ void Unlag::unregisterPlayer(byte player_id)
 	if (!Unlag::enabled())
 		return;
 
-	// look up the index corresponding to this player in player_history
-	std::map<byte, size_t>::iterator mapit = player_id_map.find(player_id);
-	if (mapit == player_id_map.end())		// player_id not found
-		return;
-
-	player_history.erase(player_history.begin() + mapit->second);
-	player_id_map.erase(player_id);
+	size_t history_index = player_id_map[player_id];
+	player_history.erase(player_history.begin() + history_index);
 
 	refreshRegisteredPlayers();
 }
@@ -476,6 +477,9 @@ void Unlag::restore(byte shooter_id)
 
 void Unlag::setRoundtripDelay(byte player_id, size_t delay)
 {
+	if (!Unlag::enabled())
+		return;
+
 	size_t player_index = player_id_map[player_id];
 
 	// set the lag to half the roundtrip delay since we have 
