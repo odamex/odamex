@@ -349,8 +349,10 @@ void Unlag::unregisterPlayer(byte player_id)
 		return;
 
 	size_t history_index = player_id_map[player_id];
-	player_history.erase(player_history.begin() + history_index);
+	if (history_index >= player_history.size())
+		return;
 
+	player_history.erase(player_history.begin() + history_index);
 	refreshRegisteredPlayers();
 }
 

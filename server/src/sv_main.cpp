@@ -799,6 +799,8 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 		player.mo = AActor::AActorPtr();
 	}
 
+	Unlag::getInstance().unregisterPlayer(player_id);
+
 	// remove this player from the global players vector
 	for (size_t i=0; i<players.size(); i++)
 	{
@@ -816,8 +818,6 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 		if (players[i].mo)
 			players[i].mo->player = &players[i];
 	}
-
-	Unlag::getInstance().unregisterPlayer(player_id);
 }
 
 
@@ -2259,6 +2259,10 @@ void SV_ConnectClient (void)
 	cl->version = MSG_ReadShort();
 	byte connection_type = MSG_ReadByte();
 
+	// [SL] 2011-05-11 - Register the player with the reconciliation system
+	// for unlagging
+	Unlag::getInstance().registerPlayer(players[n].id);
+
 	if (!SV_CheckClientVersion(cl, n))
 	{
 		SV_DropClient(players[n]);
@@ -2350,10 +2354,6 @@ void SV_ConnectClient (void)
 	G_DoReborn (players[n]);
 	SV_ClientFullUpdate (players[n]);
 	SV_SendPacket (players[n]);
-
-	// [SL] 2011-05-11 - Register the player with the reconciliation system
-	// for unlagging
-	Unlag::getInstance().registerPlayer(players[n].id);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
 
