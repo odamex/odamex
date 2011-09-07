@@ -778,7 +778,8 @@ void S_SoundID (AActor *ent, int channel, int sound_id, float volume, int attenu
 	if (!ent)
 		return;
 
-	if (ent->subsector->sector->MoreFlags & SECF_SILENT)
+	if (ent->subsector && ent->subsector->sector &&
+		ent->subsector->sector->MoreFlags & SECF_SILENT)
 		return;	
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, false);
 }
@@ -793,7 +794,8 @@ void S_LoopedSoundID (AActor *ent, int channel, int sound_id, float volume, int 
 	if (!ent)
 		return;
 
-	if (ent->subsector->sector->MoreFlags & SECF_SILENT)
+	if (ent->subsector && ent->subsector->sector &&
+		ent->subsector->sector->MoreFlags & SECF_SILENT)
 		return;	
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, true);
 }
@@ -809,7 +811,8 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 	int sfx_id = -1;
 	
 	if (name == NULL ||
-		(ent && ent != (AActor *)(~0) && ent->subsector->sector->MoreFlags & SECF_SILENT))
+			(ent && ent != (AActor *)(~0) && ent->subsector && ent->subsector->sector && 
+			ent->subsector->sector->MoreFlags & SECF_SILENT))
 	{
 		return;
 	}
