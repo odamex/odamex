@@ -2067,7 +2067,7 @@ END_CUSTOM_CVAR (sv_splashfactor)
 
 BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 {
-	if (!(thing->flags & MF_SHOOTABLE) )
+	if (!serverside || !(thing->flags & MF_SHOOTABLE))
 		return true;
 
 	// Boss spider and cyborg
@@ -2161,8 +2161,8 @@ BOOL PIT_RadiusAttack (AActor *thing)
     fixed_t	dy;
     fixed_t	dist;
 
-    if (!(thing->flags & MF_SHOOTABLE) )
-	return true;
+	if (!serverside || !(thing->flags & MF_SHOOTABLE))
+		return true;
 
     // Boss spider and cyborg
     // take no damage from concussion.
