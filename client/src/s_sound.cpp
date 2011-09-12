@@ -89,7 +89,7 @@ int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
 int sfx_noway, sfx_oof;
 
 // [RH] Print sound debugging info?
-cvar_t noisedebug ("noise", "0", 0);
+cvar_t noisedebug ("noise", "0", "", 0);
 
 // the set of channels available
 static channel_t *Channel;

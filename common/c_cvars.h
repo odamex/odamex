@@ -61,12 +61,13 @@ CVARS (console variables)
 class cvar_t
 {
 public:
-	cvar_t (const char *name, const char *def, DWORD flags);
-	cvar_t (const char *name, const char *def, DWORD flags, void (*callback)(cvar_t &));
+	cvar_t (const char *name, const char *def, const char *help, DWORD flags);
+	cvar_t (const char *name, const char *def, const char *help, DWORD flags, void (*callback)(cvar_t &));
 	virtual ~cvar_t ();
 
 	const char *cstring() const {return m_String.c_str(); }
 	const char *name() const { return m_Name.c_str(); }
+	const char *helptext() const {return m_HelpText.c_str(); }
 	const char *latched() const { return m_LatchedString.c_str(); }
 	float value() const { return m_Value; }
 	operator float () const { return m_Value; }
@@ -125,6 +126,7 @@ public:
 	static cvar_t *cvar_set (const char *var_name, const char *value);
 	static cvar_t *cvar_forceset (const char *var_name, const char *value);
 
+    // list all console variables
 	static void cvarlist();
 
 	cvar_t &operator = (float other) { ForceSet(other); return *this; }
@@ -136,11 +138,13 @@ private:
 
 	cvar_t (const cvar_t &var) {}
 
-	void InitSelf (const char *name, const char *def, DWORD flags, void (*callback)(cvar_t &));
+	void InitSelf (const char *name, const char *def, const char *help, DWORD flags, void (*callback)(cvar_t &));
 	void (*m_Callback)(cvar_t &);
 	cvar_t *m_Next;
 
 	std::string m_Name, m_String;
+	std::string m_HelpText;
+
 	float m_Value;
 
 	std::string m_LatchedString, m_Default;
@@ -159,26 +163,26 @@ cvar_t* GetFirstCvar(void);
 // to save more, bump this up.
 #define MAX_DEMOCVARS 32
 
-#define BEGIN_CUSTOM_CVAR(name,def,flags) \
+#define BEGIN_CUSTOM_CVAR(name,def,help,flags) \
 	static void cvarfunc_##name(cvar_t &); \
-	cvar_t name (#name, def, flags, cvarfunc_##name); \
+	cvar_t name (#name, def, help, flags, cvarfunc_##name); \
 	static void cvarfunc_##name(cvar_t &var)
 
 #define END_CUSTOM_CVAR(name)
 
-#define CUSTOM_CVAR(type,name,def,flags) \
+#define CUSTOM_CVAR(type,name,def,help,flags) \
 	static void cvarfunc_##name(F##type##CVar &); \
-	F##type##CVar name (#name, def, flags, cvarfunc_##name); \
+	F##type##CVar name (#name, def, help, flags, cvarfunc_##name); \
 	static void cvarfunc_##name(F##type##CVar &self)
 
-#define CVAR(name,def,flags) \
-	cvar_t name (#name, def, flags);
+#define CVAR(name,def,help,flags) \
+	cvar_t name (#name, def, help, flags);
 
 #define EXTERN_CVAR(name) extern cvar_t name;
 
-#define CVAR_FUNC_DECL(name,def,flags) \
+#define CVAR_FUNC_DECL(name,def,help,flags) \
     extern void cvarfunc_##name(cvar_t &); \
-    cvar_t name (#name, def, flags, cvarfunc_##name);
+    cvar_t name (#name, def, help, flags, cvarfunc_##name);
 
 #define CVAR_FUNC_IMPL(name) \
     EXTERN_CVAR(name) \

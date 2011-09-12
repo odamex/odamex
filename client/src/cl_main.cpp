@@ -2358,7 +2358,7 @@ void CL_GetServerSettings(void)
         {
             // [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
             // for cleanup on program termination
-            var = new cvar_t (CvarName.c_str(), NULL,
+            var = new cvar_t (CvarName.c_str(), NULL, "",
                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
                                   
             var->Set(CvarValue.c_str());
