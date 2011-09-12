@@ -72,7 +72,7 @@ public:
 	static void ShutdownSocketAPI();
 
 	// Set the outgoing address
-	void SetRemoteAddress(const std::string &Address, const int16_t &Port);
+	void SetRemoteAddress(const std::string &Address, const uint16_t &Port);
 	// Set the outgoing address in "address:port" format
 	bool SetRemoteAddress(const std::string &Address);
 	// Gets the outgoing address

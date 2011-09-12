@@ -114,7 +114,7 @@ void BufferedSocket::DestroySocket()
 	}
 }
 	
-void BufferedSocket::SetRemoteAddress(const string &Address, const int16_t &Port)
+void BufferedSocket::SetRemoteAddress(const string &Address, const uint16_t &Port)
 {
 	struct hostent *he;
 

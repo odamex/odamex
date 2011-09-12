@@ -170,12 +170,16 @@ public:
 	// Query the server
 	int32_t Query(int32_t Timeout);
 
-	void SetAddress(const std::string &Address, const int16_t &Port) 
+	void SetAddress(const std::string &Address, const uint16_t &Port) 
 	{ 
 		Socket.SetRemoteAddress(Address, Port);
 	}
 
 	std::string GetAddress() const { return Socket.GetRemoteAddress(); }
+	std::string GetAddress(std::string &Address, uint16_t &Port) const
+	{
+        Socket.GetRemoteAddress(Address, Port);
+	}
 	uint64_t GetPing() const { return Ping; }
 
 #ifdef AG_DEBUG
