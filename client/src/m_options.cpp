@@ -145,9 +145,9 @@ EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
 
 // Network Options
-EXTERN_CVAR (rate);
-EXTERN_CVAR (cl_unlag);
-EXTERN_CVAR (cl_updaterate);
+EXTERN_CVAR (rate)
+EXTERN_CVAR (cl_unlag)
+EXTERN_CVAR (cl_updaterate)
 
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
