@@ -1316,7 +1316,7 @@ void G_DoLoadLevel (int position)
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
-	skytexture = R_TextureNumForName (level.skypic);
+	sky1texture = R_TextureNumForName (level.skypic);
 
 	for (i = 0; i < players.size(); i++)
 	{
