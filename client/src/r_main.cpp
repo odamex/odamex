@@ -145,7 +145,7 @@ void (*hcolfunc_post2) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post4) (int sx, int yl, int yh);
 
 static int lastcenteryfrac;
-static int FieldOfView = 2048;	// Fineangles in the SCREENWIDTH wide window
+int FieldOfView = 2048;	// Fineangles in the SCREENWIDTH wide window
 
 //
 //

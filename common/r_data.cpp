@@ -23,18 +23,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
-// On the Alpha, accessing the shorts directly if they aren't aligned on a
-// 4-byte boundary causes unaligned access warnings. Why it does this it at
-// all and only while initing the textures is beyond me.
-
-
-#ifdef ALPHA
-#define SAFESHORT(s)	((short)(((byte *)&(s))[0] + ((byte *)&(s))[1] * 256))
-#else
-#define SAFESHORT(s)	SHORT(s)
-#endif
-
 #include "i_system.h"
 #include "z_zone.h"
 #include "m_alloc.h"
@@ -69,43 +57,6 @@
 // a patch or sprite is composed of zero or more columns.
 //
 
-// A single patch from a texture definition,
-//	basically a rectangular area within
-//	the texture rectangle.
-typedef struct
-{
-	// Block origin (always UL),
-	// which has already accounted
-	// for the internal origin of the patch.
-	int 		originx;
-	int 		originy;
-	int 		patch;
-} texpatch_t;
-
-
-// A maptexturedef_t describes a rectangular texture,
-//	which is composed of one or more mappatch_t structures
-//	that arrange graphic patches.
-typedef struct
-{
-	// Keep name for switch changing, etc.
-	char		name[9];
-	short		width;
-	short		height;
-
-	// [RH] Use a hash table similar to the one now used
-	//		in w_wad.c, thus speeding up level loads.
-	//		(possibly quite considerably for larger levels)
-	int			index;
-	int			next;
-
-	// All the patches[patchcount]
-	//	are drawn back to front into the cached texture.
-	short		patchcount;
-	texpatch_t	patches[1];
-
-} texture_t;
-
 
 
 int 			firstflat;
@@ -121,7 +72,7 @@ texture_t** 	textures;
 
 
 int*			texturewidthmask;
-static byte*	textureheightmask;		// [RH] Tutti-Frutti fix
+byte*			textureheightmask;		// [RH] Tutti-Frutti fix
 // needed for texture pegging
 fixed_t*		textureheight;
 static int*		texturecompositesize;
@@ -945,7 +896,7 @@ void R_PrecacheLevel (void)
 	// [RH] Possibly two sky textures now.
 	// [ML] 5/11/06 - Not anymore!
 
-	hitlist[skytexture] = 1;
+	hitlist[sky1texture] = 1;
 
 	for (i = numtextures - 1; i >= 0; i--)
 	{
