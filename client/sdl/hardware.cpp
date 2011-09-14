@@ -257,7 +257,7 @@ void I_ScreenShot (const char *filename)
     screen->Lock();
 
     surface = SDL_CreateRGBSurfaceFrom(screen->buffer, screen->width, 
-        screen->height, 8, screen->width * 1, 0, 0, 0, 0);
+        screen->height, 8, screen->pitch, 0, 0, 0, 0);
     
     screen->Unlock();
 
