@@ -34,7 +34,7 @@ using namespace std;
 
 namespace agOdalaunch {
 
-int GuiConfig::Save()
+bool GuiConfig::Save()
 {
 	return AG_ConfigSave();
 }
@@ -45,200 +45,200 @@ void GuiConfig::Unset(const string &option)
 		AG_Unset(agConfig, option.c_str());
 }
 
-int GuiConfig::Write(const string &option, const string &value)
+bool GuiConfig::Write(const string &option, const string &value)
 {
 	if(!option.size() || !value.size())
-		return -1;
+		return true;
 
 	if(AG_SetString(agConfig, option.c_str(), value.c_str()) == NULL)
-		return -1;
+		return true;
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Write(const string &option, const int8_t &value)
+bool GuiConfig::Write(const string &option, const int8_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	if(AG_SetSint8(agConfig, option.c_str(), value) == NULL)
-		return -1;
+		return true;
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Write(const string &option, const int16_t &value)
+bool GuiConfig::Write(const string &option, const int16_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	if(AG_SetSint16(agConfig, option.c_str(), value) == NULL)
-		return -1;
+		return true;
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Write(const string &option, const int32_t &value)
+bool GuiConfig::Write(const string &option, const int32_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	if(AG_SetSint32(agConfig, option.c_str(), value) == NULL)
-		return -1;
+		return true;
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Write(const string &option, const uint8_t &value)
+bool GuiConfig::Write(const string &option, const uint8_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	if(AG_SetUint8(agConfig, option.c_str(), value) == NULL)
-		return -1;
+		return true;
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Write(const string &option, const uint16_t &value)
+bool GuiConfig::Write(const string &option, const uint16_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	if(AG_SetUint16(agConfig, option.c_str(), value) == NULL)
-		return -1;
+		return true;
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Write(const string &option, const uint32_t &value)
+bool GuiConfig::Write(const string &option, const uint32_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	if(AG_SetUint32(agConfig, option.c_str(), value) == NULL)
-		return -1;
+		return true;
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Write(const string &option, const float &value)
+bool GuiConfig::Write(const string &option, const float &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	if(AG_SetFloat(agConfig, option.c_str(), value) == NULL)
-		return -1;
+		return true;
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Write(const string &option, const double &value)
+bool GuiConfig::Write(const string &option, const double &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	if(AG_SetDouble(agConfig, option.c_str(), value) == NULL)
-		return -1;
+		return true;
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Read(const string &option, string &value)
+bool GuiConfig::Read(const string &option, string &value)
 {
 	char *str = NULL;
 
 	if(!option.size())
-		return -1;
+		return true;
 
 	if((str = AG_GetStringDup(agConfig, option.c_str())) == NULL)
-		return -1;
+		return true;
 
 	value = str;
 
 	free(str);
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Read(const string &option, int8_t &value)
+bool GuiConfig::Read(const string &option, int8_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	value = AG_GetSint8(agConfig, option.c_str());
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Read(const string &option, int16_t &value)
+bool GuiConfig::Read(const string &option, int16_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	value = AG_GetSint16(agConfig, option.c_str());
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Read(const string &option, int32_t &value)
+bool GuiConfig::Read(const string &option, int32_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	value = AG_GetSint32(agConfig, option.c_str());
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Read(const string &option, uint8_t &value)
+bool GuiConfig::Read(const string &option, uint8_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	value = AG_GetUint8(agConfig, option.c_str());
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Read(const string &option, uint16_t &value)
+bool GuiConfig::Read(const string &option, uint16_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	value = AG_GetUint16(agConfig, option.c_str());
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Read(const string &option, uint32_t &value)
+bool GuiConfig::Read(const string &option, uint32_t &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	value = AG_GetUint32(agConfig, option.c_str());
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Read(const string &option, float &value)
+bool GuiConfig::Read(const string &option, float &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	value = AG_GetFloat(agConfig, option.c_str());
 
-	return 0;
+	return false;
 }
 
-int GuiConfig::Read(const string &option, double &value)
+bool GuiConfig::Read(const string &option, double &value)
 {
 	if(!option.size())
-		return -1;
+		return true;
 
 	value = AG_GetDouble(agConfig, option.c_str());
 
-	return 0;
+	return false;
 }
 
 } // namespace
