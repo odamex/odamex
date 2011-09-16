@@ -275,14 +275,12 @@ bool BufferedSocket::ReadString(string &str)
         return false;
     }
 
-    ostringstream in_str;
-
     // ooh, a priming read!
 	bool isRead = Read8(ch);
 
     while (ch != '\0' && isRead)
     {
-        in_str << ch;
+        str += ch;
 
         Read8(ch);
 
@@ -299,8 +297,6 @@ bool BufferedSocket::ReadString(string &str)
 
         return false;
     }
-
-	str = in_str.str();
 
 	return true;
 }
