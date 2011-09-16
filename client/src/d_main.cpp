@@ -1621,10 +1621,17 @@ void D_DoomMain (void)
     //gamestate = GS_FULLCONSOLE;
 
 	p = Args.CheckParm("-netplay");
-	if(p){
-		std::string demoname = Args.GetArg (p+1);
-		CL_NetDemoPlay(demoname);
-		//D_DoomLoop();
+	if (p)
+	{
+		if (Args.GetArg(p + 1))
+		{
+			std::string filename = Args.GetArg(p + 1);
+			CL_NetDemoPlay(filename);
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "No netdemo filename specified.\n");
+		}
 	}
 
 	// denis - bring back the demos
