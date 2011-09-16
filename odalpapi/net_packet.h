@@ -176,7 +176,7 @@ public:
 	}
 
 	std::string GetAddress() const { return Socket.GetRemoteAddress(); }
-	std::string GetAddress(std::string &Address, uint16_t &Port) const
+	void GetAddress(std::string &Address, uint16_t &Port) const
 	{
         Socket.GetRemoteAddress(Address, Port);
 	}
