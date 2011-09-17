@@ -90,6 +90,9 @@ CVAR (co_realactorheight, "0", "", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERV
 // [Spleen] When enabled, monsters can get pushed or thrusted off of ledges, like in boom
 CVAR (co_allowdropoff, "0", "", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+// [ML] When enabled, activate correct impact of projectiles and bullets on surfaces (spawning puffs,explosions)
+CVAR (co_fixweaponimpacts, "0", "", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 // [ML] When enabled, additional checks are made on two-sided lines, allows additional 
 // silent bfg tricks, and the player will "oof" on two-sided lines
 CVAR (co_boomlinecheck, "0", "", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

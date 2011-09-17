@@ -113,6 +113,8 @@ EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (wi_newintermission)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomswitches)
+EXTERN_CVAR (co_fixweaponimpacts)
+EXTERN_CVAR (co_zdoomsoundcurve)
 EXTERN_CVAR (cl_deathcam)
 
 // [Toke - Menu] New Menu Stuff.
@@ -437,14 +439,20 @@ menu_t SoundMenu = {
  *
  *=======================================*/
 static menuitem_t CompatItems[] = {
-    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
-	{ bricktext ,   "Enhanced Interaction"                  , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },   
+	{ bricktext,				"Enhanced Interaction"		, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },     
+	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },		
 	{ discrete  ,	"Items drop off ledges"                 , {&co_allowdropoff},	{2.0},      {0.0},	    {0.0},      {OnOff} },
-	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },	
-	{ discrete  ,	"BOOM Use Line Extra Checks"    		, {&co_boomlinecheck},	{2.0},      {0.0},	    {0.0},      {OnOff} },		{ discrete	,	"Use ZDoom physics"						, {&co_zdoomphys},		{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete	,	"Correct Weapon Impacts"				, {&co_fixweaponimpacts},{2.0},		{0.0},		{0.0},		{OnOff} },	
+	{ discrete	,	"Follow killer when dead"				, {&cl_deathcam},		{2.0},		{0.0},		{0.0},		{OnOff} },	
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },  
+	{ bricktext,				"BOOM Compatibility"		, {NULL},				{0.0}, 		{0.0},		{0.0}, 		{NULL} },     
+	{ discrete  ,	"Use Line Extra Checks"    				, {&co_boomlinecheck},	{2.0},      {0.0},	    {0.0},      {OnOff} },
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },  	
+	{ bricktext,				"ZDOOM Compatibility"		, {NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },     
+	{ discrete	,	"Use ZDoom physics"						, {&co_zdoomphys},		{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete	,	"Positional switch sounds"				, {&co_zdoomswitches},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete	,	"Death view following"					, {&cl_deathcam},		{2.0},		{0.0},		{0.0},		{OnOff} },
-
+	{ discrete	,	"Extended Sound Curve"					, {&co_zdoomsoundcurve},{2.0},		{0.0},		{0.0},		{OnOff} },	
  };
 
 menu_t CompatMenu = {

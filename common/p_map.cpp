@@ -88,6 +88,7 @@ msecnode_t* sector_list = NULL;		// phares 3/16/98
 
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
+EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (co_zdoomphys)
 CVAR_FUNC_IMPL (sv_gravity)
@@ -1543,6 +1544,10 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	AActor *th;
 	fixed_t dist, slope;
 	fixed_t thingtopslope, thingbottomslope;
+	fixed_t ceilingheight, floorheight;
+	bool spawnprecise;
+	
+	spawnprecise = (bool)co_fixweaponimpacts;
 
 	if (in->isaline)
 	{
@@ -1564,60 +1569,116 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 		// crosses a two sided line
 		P_LineOpening (li);
 
-//		if (z >= opentop || z <= openbottom)
-//			goto hitline;
-		dist = FixedMul (attackrange, in->frac);
-
-		if (li->frontsector->floorheight != li->backsector->floorheight)
+		if (spawnprecise)
 		{
-			slope = FixedDiv (openbottom - shootz , dist);
-			if (slope > aimslope)
+			if (z >= opentop || z <= openbottom)
 				goto hitline;
+
+			// [RH] set opentop and openbottom for P_LineAttack
+			if (P_PointOnLineSide (trace.x, trace.y, li))
+			{
+				opentop = li->frontsector->ceilingheight;
+				openbottom = li->frontsector->floorheight;
+			}
+			else 
+			{
+				opentop = li->backsector->ceilingheight;
+				openbottom = li->backsector->floorheight;
+			}
 		}
-
-		if (li->frontsector->ceilingheight != li->backsector->ceilingheight)
+		else
 		{
-			slope = FixedDiv (opentop - shootz , dist);
-			if (slope < aimslope)
-				goto hitline;
+			dist = FixedMul (attackrange, in->frac);
+
+			if (li->frontsector->floorheight != li->backsector->floorheight)
+			{
+				slope = FixedDiv (openbottom - shootz , dist);
+				if (slope > aimslope)
+					goto hitline;
+			}
+
+			if (li->frontsector->ceilingheight != li->backsector->ceilingheight)
+			{
+				slope = FixedDiv (opentop - shootz , dist);
+				if (slope < aimslope)
+					goto hitline;
+			}
 		}
 
 		// shot continues
-
-		// [RH] set opentop and openbottom for P_LineAttack
-	/*	if (P_PointOnLineSide (trace.x, trace.y, li)) {
-			opentop = li->frontsector->ceilingheight;
-			openbottom = li->frontsector->floorheight;
-		} else {
-			opentop = li->backsector->ceilingheight;
-			openbottom = li->backsector->floorheight;
-		}*/
 		return true;
-
-
+		
 		// hit line
 	  hitline:
 		// position a bit closer
-			frac = in->frac - FixedDiv (4*FRACUNIT,attackrange);
-		x = trace.x + FixedMul (trace.dx, frac);
-		y = trace.y + FixedMul (trace.dy, frac);
-		z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
-
-		if (li->frontsector->ceilingpic == skyflatnum)
+		if (spawnprecise)
 		{
-	    // don't shoot the sky!
-			if (z > li->frontsector->ceilingheight)
-				return false;
+			// [RH] If the trace went below/above the floor/ceiling, make the puff
+			//		appear in the right place and not on a wall.
+			int ceilingpic, updown;
 
-	    // it's a sky hack wall
-			if	(li->backsector && li->backsector->ceilingpic == skyflatnum)
-				return false;
+			if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li)) {
+				ceilingheight = li->frontsector->ceilingheight;
+				floorheight = li->frontsector->floorheight;
+				ceilingpic = li->frontsector->ceilingpic;
+			} else {
+				ceilingheight = li->backsector->ceilingheight;
+				floorheight = li->backsector->floorheight;
+				ceilingpic = li->backsector->ceilingpic;
+			}
+
+			if (z < floorheight) {
+				frac = FixedDiv (FixedMul (floorheight - shootz, frac), z - shootz);
+				z = floorheight;
+				updown = 0;
+			} else if (z > ceilingheight) {
+				// don't shoot the sky!
+				if (ceilingpic == skyflatnum) {
+					return false;
+				} else {
+					// Puffs on the ceiling need to be lowered to compensate for
+					// the height of the puff
+					ceilingheight -= mobjinfo[MT_PUFF].height;
+					frac = FixedDiv (FixedMul (ceilingheight - shootz, frac), z - shootz);
+					z = ceilingheight;
+				}
+				updown = 1;
+			} else {
+				if (li->backsector && z > opentop &&
+					li->frontsector->ceilingpic == skyflatnum &&
+					li->backsector->ceilingpic == skyflatnum)
+					return false;	// sky hack wall
+				updown = 2;
+			}
+
+			x = trace.x + FixedMul (trace.dx, frac);
+			y = trace.y + FixedMul (trace.dy, frac);
+
+			// Spawn bullet puffs.
+			P_SpawnPuff (x, y, z, R_PointToAngle2 (0, 0, li->dx, li->dy) - ANG90, updown);
 		}
+		else
+		{
+			frac = in->frac - FixedDiv (4*FRACUNIT,attackrange);
+			x = trace.x + FixedMul (trace.dx, frac);
+			y = trace.y + FixedMul (trace.dy, frac);
+			z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
+			if (li->frontsector->ceilingpic == skyflatnum)
+			{
+			// don't shoot the sky!
+				if (z > li->frontsector->ceilingheight)
+					return false;
 
-		// Spawn bullet puffs.
-		P_SpawnPuff (x,y,z,0,0);
+			// it's a sky hack wall
+				if	(li->backsector && li->backsector->ceilingpic == skyflatnum)
+					return false;
+			}
 
+			// Spawn bullet puffs.
+			P_SpawnPuff (x,y,z,0,0);
+		}
+		
 		// don't go any farther
 		return false;
 	}
