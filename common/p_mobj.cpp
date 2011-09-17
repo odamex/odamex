@@ -59,6 +59,7 @@ EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_nomonsters)
+EXTERN_CVAR(co_fixweaponimpacts)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -826,8 +827,19 @@ void P_XYMovement(AActor *mo)
 					// Hack to prevent missiles exploding
 					// against the sky.
 					// Does not handle sky floors.
-					mo->Destroy ();
-					return;
+
+					// [SL] 2011-09-16 - Add fix for impact of missiles against
+					// lower or upper walls whose line is facing away from a
+					// bordering sector with a F_SKY ceiling texture.  In vanilla
+					// Doom, the missile disappears when hitting such a wall
+					// instead of exploding.
+
+					if (!co_fixweaponimpacts ||
+						mo->z > ceilingline->backsector->ceilingheight)
+					{	
+						mo->Destroy ();
+						return;
+					}
 				}
 				// [SL] 2011-06-02 - Only server should control explosions
 				if (serverside)
