@@ -1034,10 +1034,20 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 			}
 		}
 
-		if (!(thing->flags & MF_TELEPORT) && tmfloorz-thing->z > 24*FRACUNIT)
+		if (!(thing->flags & MF_TELEPORT))
 		{
-			// too big a step up
-			goto pushline;
+			if (tmfloorz-thing->z > 24*FRACUNIT)
+			{
+				// too big a step up
+				goto pushline;
+			}
+			else if (co_fixweaponimpacts && thing->flags & MF_MISSILE &&
+					tmfloorz > thing->z)
+			{
+				// [SL] 2011-09-16 - Fix the vanilla Doom bug that allows
+				// missiles to climb stairs.
+				goto pushline;
+			}
 		}
 
 		// killough 3/15/98: Allow certain objects to drop off
