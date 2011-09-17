@@ -1272,6 +1272,14 @@ void P_GroupLines (void)
 	for (i = 0; i < numlines; i++, li++)
 	{
 		total++;
+		if (!li->frontsector && li->backsector)
+		{
+			// swap front and backsectors if a one-sided linedef
+			// does not have a front sector
+			li->frontsector = li->backsector;
+			li->backsector = NULL;
+		}
+			
 		li->frontsector->linecount++;
 
 		if (li->backsector && li->backsector != li->frontsector)
