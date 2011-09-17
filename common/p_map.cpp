@@ -1647,7 +1647,10 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 				if (li->backsector && z > opentop &&
 					li->frontsector->ceilingpic == skyflatnum &&
 					li->backsector->ceilingpic == skyflatnum)
-					return false;	// sky hack wall
+				{
+					if (!co_fixweaponimpacts || li->backsector->ceilingheight < z)
+						return false;	// sky hack wall
+				}
 				updown = 2;
 			}
 

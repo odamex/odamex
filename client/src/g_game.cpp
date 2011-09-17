@@ -151,6 +151,7 @@ EXTERN_CVAR(sv_allowjump)
 EXTERN_CVAR(cl_nobob)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
 EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
@@ -2327,6 +2328,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_allowjump = "0";
 		co_realactorheight = "0";
 		co_zdoomphys = "0";
+		co_fixweaponimpacts = "0";
 
 		return;
 	} else {
