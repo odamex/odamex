@@ -1279,8 +1279,9 @@ void P_GroupLines (void)
 			li->frontsector = li->backsector;
 			li->backsector = NULL;
 		}
-			
-		li->frontsector->linecount++;
+
+        if (li->frontsector)
+            li->frontsector->linecount++;
 
 		if (li->backsector && li->backsector != li->frontsector)
 		{
