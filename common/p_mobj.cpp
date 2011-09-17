@@ -1170,7 +1170,8 @@ void P_ZMovement(AActor *mo)
 
 		if (mo->flags & MF_MISSILE && !(mo->flags & MF_NOCLIP))
 		{
-			if ((HasBehavior && mo->subsector->sector->ceilingpic == skyflatnum))
+			if (((HasBehavior || co_fixweaponimpacts) && 
+				mo->subsector->sector->ceilingpic == skyflatnum))
 			{
 				mo->Destroy ();
 				return;
