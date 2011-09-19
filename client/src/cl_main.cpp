@@ -77,6 +77,7 @@ buf_t     net_buffer(MAX_UDP_PACKET);
 bool      noservermsgs;
 int       last_received;
 byte      last_svgametic = 0;
+int       received_last_svgametic = 0;
 
 std::string connectpasshash = "";
 
@@ -1316,7 +1317,8 @@ void CL_UpdatePlayer()
 		return;
 	}
 
-	int sv_gametic = MSG_ReadLong();
+	// the server processed the player's ticcmd sent during this tic
+	p->tic = MSG_ReadLong();
 	
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
@@ -1359,7 +1361,6 @@ void CL_UpdatePlayer()
 		return;
 
 	p->last_received = gametic;
-	p->tic = sv_gametic;
 }
 
 ticcmd_t localcmds[MAXSAVETICS];
@@ -1376,7 +1377,10 @@ void CL_UpdateLocalPlayer(void)
 {
 	player_t &p = consoleplayer();
 
+	// The server has processed the ticcmd that the local client sent
+	// during the the tic referenced below
 	p.tic = MSG_ReadLong();
+
 	p.real_origin[0] = MSG_ReadLong();
 	p.real_origin[1] = MSG_ReadLong();
 	p.real_origin[2] = MSG_ReadLong();
@@ -1401,22 +1405,11 @@ void CL_UpdateLocalPlayer(void)
 void CL_SaveSvGametic(void)
 {
 	last_svgametic = MSG_ReadByte();
+	received_last_svgametic = gametic;
+	#ifdef _UNLAG_DEBUG_
+	DPrintf("Unlag (%03d): client-tic %d, received svgametic\n", last_svgametic, gametic);
+	#endif	// _UNLAG_DEBUG_
 }    
-
-
-//
-// CL_SendSvGametic
-//
-// Sends the most recent gametic received from the server so the server can
-// accurately calculate this client's lag
-//
-// [SL] 2011-05-11
-void CL_SendSvGametic(void)
-{
-	MSG_WriteMarker(&net_buffer, clc_svgametic);
-	MSG_WriteByte(&net_buffer, last_svgametic);
-}
-
 
 //
 // CL_SendPingReply
@@ -2984,22 +2977,18 @@ void CL_ParseCommands(void)
 
 extern int outrate;
 
+
 //
 // CL_SendCmd
 //
 void CL_SendCmd(void)
 {
-	player_t *p;
+	player_t *p = &consoleplayer();
 
 	if (netdemo.isPlaying())	// we're not really connected to a server
 		return;
 
-	if (gametic < 1 )
-		return;
-
-	p = &consoleplayer();
-
-	if(!p->mo)
+	if (!p->mo || gametic < 1 )
 		return;
 
 	// denis - we know server won't accept two changes per tic, so we shouldn't
@@ -3021,14 +3010,17 @@ void CL_SendCmd(void)
 	ticcmd_t *prevcmd = &localcmds[(gametic-1) % MAXSAVETICS];
 	ticcmd_t *curcmd  = &consoleplayer().cmd;
 
-    // [SL] 2011-05-11 - Send the latest gametic we've received from the server
-	// only if the client is firing a weapon
-	if (prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK)
-		CL_SendSvGametic();
-
 	MSG_WriteMarker(&net_buffer, clc_move);
 
-    MSG_WriteLong(&net_buffer, gametic); // current tic
+	// Write current client-tic.  Server later sends this back to client
+	// when sending svc_updatelocalplayer so the client knows which ticcmds
+	// need to be used for client's positional prediction. 
+    MSG_WriteLong(&net_buffer, gametic);
+    
+    // Send the most recent server-tic.  This indicates to the server which
+    // update of player positions the client is basing his actions on.  Used
+    // by unlagging calculations.
+	MSG_WriteByte(&net_buffer, last_svgametic);
 
     // send the previous cmds in the message, so if the last packet
     // was dropped, it can be recovered
@@ -3052,10 +3044,36 @@ void CL_SendCmd(void)
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
 	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
 
+#ifdef _UNLAG_DEBUG_
+	if 	(player.size() == 2 && 
+		(prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK))
+	{
+		player_t *enemy;
+			
+		if (players[0].id != consoleplayer().id)
+			enemy = &players[0];
+		else
+			enemy = &players[1];
+			
+		int x = enemy->mo->x >> FRACBITS;
+		int y = enemy->mo->y >> FRACBITS;
+		DPrintf("Unlag: Weapon fired with svgametic = %d, enemy position = (%d, %d)\n", last_svgametic, x, y);
+	}
+#endif	// _UNLAG_DEBUG_
+	
 	NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
+    
+    // [SL] 2011-09-18 - Since momentum can be used to accurately predict a
+    // player's position if we're missing one tic worth of data, increment
+    // svgametic if we're only missing one tic
+    if (gametic - received_last_svgametic == 1)
+    {
+    	last_svgametic++;
+    }
 }
+
 
 //
 // CL_PlayerTimes
@@ -3085,10 +3103,6 @@ void CL_RunTics (void)
 
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics ();
-
-	// [SL] 2011-05-29 - Haven't received a new tic from the server yet so
-	// increment the one we've already received.
-	last_svgametic++;
 }
 
 void PickupMessage (AActor *toucher, const char *message)

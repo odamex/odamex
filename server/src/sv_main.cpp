@@ -1785,14 +1785,11 @@ void SV_UpdateMovingSectors(player_t &pl)
 // Sends gametic to synchronize with the client
 //
 // [SL] 2011-05-11 - Instead of sending the whole gametic (4 bytes),
-// send only the least significant byte to save bandwidth.  We use
-// the difference in these gametics to calculate a client's lag, so
-// 1 byte lets us calculate lag up to 7.3 seconds, which is plenty.
-//
+// send only the least significant byte to save bandwidth. 
 void SV_SendGametic(client_t* cl)
 {
-	MSG_WriteMarker(&cl->reliablebuf, svc_svgametic);
-	MSG_WriteByte(&cl->reliablebuf, gametic & 0xFF);
+	MSG_WriteMarker	(&cl->netbuf, svc_svgametic);
+	MSG_WriteByte	(&cl->netbuf, (byte)(gametic & 0xFF));
 }
 
 
@@ -3125,23 +3122,6 @@ void SV_RemoveCorpses (void)
 }
 
 //
-// SV_CalcRoundtripDelay
-//
-// [SL] 2011-05-11 - Calculate a client's lag based on how many
-// tics have passed since we sent the client this gametic
-//
-void SV_CalcRoundtripDelay(player_t &player)
-{
-	// We only send the least significant byte of gametic
-	byte received_tic = MSG_ReadByte();
-	// since gametic is 0-255 here, we must account for when gametic wraps
-	// around to zero again
-	size_t delay = ((gametic & 0xFF) + 256 - received_tic) & 0xFF;
-
-	Unlag::getInstance().setRoundtripDelay(player.id, delay);
-}
-
-//
 // SV_SendPingRequest
 // Pings the client and requests a reply
 //
@@ -3262,31 +3242,34 @@ void SV_SendPackets(void)
 //
 void SV_WriteCommands(void)
 {
-	size_t		i, j;
-	client_t	*cl;
+	// [SL] 2011-05-11 - Save player positions and moving sector heights so
+	// they can be reconciled later for unlagging
+	Unlag::getInstance().recordPlayerPositions();
+	Unlag::getInstance().recordSectorPositions();
 
-	for (i=0; i < players.size(); i++)
+	for (size_t i=0; i < players.size(); i++)
 	{
-		cl = &clients[i];
+		client_t *cl = &clients[i];
+		
+		// Don't need to update origin every tic.
+		// The server sends origin and velocity of a
+		// player and the client always knows origin on
+		// on the next tic.
+		// HOWEVER, update as often as the player requests
+		if (gametic % players[i].userinfo.update_rate == 0)
+		{ 
+			// [SL] 2011-05-11 - Send the client the server's gametic
+			// this gametic is returned to the server with the client's
+			// next cmd
+			if (players[i].ingame())
+				SV_SendGametic(cl);
 
-		// [SL] 2011-05-11 - Send the client the server's gametic
-		// this gametic is returned to the server with the client's
-		// next cmd
-		if (players[i].ingame())
-			SV_SendGametic(cl);
-
-		for (j=0; j < players.size(); j++)
-		{
-			// Don't need to update origin every tic.
-			// The server sends origin and velocity of a
-			// player and the client always knows origin on
-			// on the next tic.
-			// HOWEVER, update as often as the player requests
-			if (gametic % players[i].userinfo.update_rate == 0)
-			{ 
+			for (size_t j=0; j < players.size(); j++)
+			{
 				if (!players[j].ingame() || !players[j].mo)
 					continue;
 
+				// a player is updated about their own position elsewhere
 				if (j == i)
 					continue;
 
@@ -3299,7 +3282,11 @@ void SV_WriteCommands(void)
 
 				MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
 				MSG_WriteByte(&cl->netbuf, players[j].id);     // player number
-				MSG_WriteLong(&cl->netbuf, cl->lastclientcmdtic);
+
+				// [SL] 2011-09-14 - the most recently processed ticcmd from the
+				// client we're sending this message to.
+				MSG_WriteLong(&cl->netbuf, players[i].tic);
+
 				MSG_WriteLong(&cl->netbuf, players[j].mo->x);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->y);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->z);
@@ -3316,8 +3303,8 @@ void SV_WriteCommands(void)
 
 				// [Russell] - hack, tell the client about the partial
 				// invisibility power of another player.. (cheaters can disable
-                // this but its all we have for now)
-                MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
+				// this but its all we have for now)
+				MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
 			}
 		}
 
@@ -3329,8 +3316,6 @@ void SV_WriteCommands(void)
 
 		SV_UpdateMonsters(players[i]);
 
-		// [SL] 2011-05-11 - Renamed SendGametic to SendPingRquest to more
-		// acurately convey its purpose
 		SV_SendPingRequest(cl);     // request ping reply
 		SV_UpdatePing(cl);          // client returns it
 	}
@@ -3344,109 +3329,186 @@ void SV_PlayerTriedToCheat(player_t &player)
 	SV_DropClient(player);
 }
 
-void SV_GetPlayerCmd(player_t &player)
-{
-	client_t *cl = &player.client;
-	ticcmd_t *cmd = &player.cmd;
-	int tic = MSG_ReadLong(); // get client gametic
 
-	// denis - todo - (out of order packet)
-	if(!player.mo || cl->lastclientcmdtic > tic)
+//
+// SV_ProcessPlayerCmd
+//
+// Decides how many of a player's queued ticcmds should be processed and
+// prepares the player.cmd structure for P_PlayerThink().  Also has the
+// responsibility of ensuring the Unlag class has the appropriate latency
+// for the player whose ticcmd we're processing.
+//
+void SV_ProcessPlayerCmd(player_t &player)
+{
+	if (!validplayer(player))
+		return;
+
+	#ifdef _TICCMD_QUEUE_DEBUG_
+	DPrintf("Cmd queue size for %s: %d\n", 
+				player.userinfo.netname, player.cmds.size());
+	#endif	// _TICCMD_QUEUE_DEBUG_
+
+	// empty the queue and bail out if the player doesn't have a valid mobj
+	if (!player.mo)
 	{
-		MSG_ReadLong();
-		MSG_ReadLong();
-		MSG_ReadShort();
-		MSG_ReadLong();
-		MSG_ReadLong();
-		MSG_ReadShort();
-		MSG_ReadLong(); // 24 bytes;
+		while (!player.cmds.empty())
+			player.cmds.pop();
+
 		return;
 	}
 
-	// get the previous cmds and angle
-	if (  cl->lastclientcmdtic && (tic - cl->lastclientcmdtic >= 2)
-		     && gamestate != GS_INTERMISSION)
-	{
-		cmd->ucmd.buttons = MSG_ReadByte(); // 1
+	const int minimum_cmds = 1;
+	int num_cmds;	
 
-		if(player.playerstate != PST_DEAD)
+	// [SL] 2011-09-16 - Calculate how many ticcmds should be processed.  Under
+	// most circumstances, it should be 1 per gametic to have the smoothest
+	// player movement possible.
+	
+	if (player.spectator || 
+		player.playerstate == PST_DEAD || 
+		!P_VisibleToPlayers(player.mo))
+	{
+		// [SL] 2011-09-16 - The player's movement won't be visibile to anyone
+		// else so their movement doesn't need to appear smooth.  Process all
+		// queued ticcmds.
+		num_cmds = player.cmds.size();
+	}
+	else if ((int)player.cmds.size() > 2 + player.ping / TICRATE)
+	{
+		// The player connection experienced a large latency spike so try to
+		// catch up by processing more than one ticcmd at the expense of
+		// appearing perfectly smooth
+		num_cmds = 2;
+	}
+	else
+	{
+		// always run at least 1 ticcmd if possible
+		num_cmds = minimum_cmds;
+	}
+
+	for (int i = 0; i < num_cmds && !player.cmds.empty(); i++)
+	{
+		usercmd_t *ucmd = &(player.cmds.front().ucmd);
+
+		// check for a dead player trying to respawn
+		if (player.playerstate == PST_DEAD && ucmd->buttons && i >= minimum_cmds)
+			break;
+		
+		// check to see if a player suddenly became visible again
+		if (P_VisibleToPlayers(player.mo) && i >= minimum_cmds)
+			break;
+
+		if (player.playerstate != PST_DEAD)
 		{
-			player.mo->angle = MSG_ReadShort() << 16; // 3
+			if (step_mode)
+				player.mo->angle = ucmd->yaw;
+			else
+				player.mo->angle = ucmd->yaw << FRACBITS;
 
 			if (!sv_freelook)
-			{
 				player.mo->pitch = 0;
-				MSG_ReadShort();
-			}
 			else
-				player.mo->pitch = MSG_ReadShort() << 16; // 5
+				player.mo->pitch = ucmd->pitch << FRACBITS;
 		}
-		else
-			MSG_ReadLong();
 
-		cmd->ucmd.forwardmove = MSG_ReadShort(); // 7
-		cmd->ucmd.sidemove = MSG_ReadShort(); // 9
-        cmd->ucmd.upmove = MSG_ReadShort(); // 11
-
-		if ( abs(cmd->ucmd.forwardmove) > 12800
-			|| abs(cmd->ucmd.sidemove) > 12800)
+		if (abs(ucmd->forwardmove) > 12800 || abs(ucmd->sidemove) > 12800)
 		{
 			SV_PlayerTriedToCheat(player);
 			return;
 		}
 
-		cmd->ucmd.impulse = MSG_ReadByte(); // 12
+		// copy this ticcmd to the player.cmd so that it will be processsed
+		player.cmd.ucmd.buttons		= ucmd->buttons;
+		player.cmd.ucmd.yaw			= ucmd->yaw;
+		player.cmd.ucmd.pitch		= ucmd->pitch;
+		player.cmd.ucmd.forwardmove	= ucmd->forwardmove;
+		player.cmd.ucmd.sidemove	= ucmd->sidemove;
+		player.cmd.ucmd.upmove		= ucmd->upmove;
+		player.cmd.ucmd.impulse		= ucmd->impulse;
+		player.cmd.ucmd.roll		= ucmd->roll;
+		player.cmd.ucmd.msec		= ucmd->msec;
+		player.cmd.ucmd.use			= ucmd->use;
+		player.tic 					= player.cmds.front().tic;
+		
+		if (ucmd->buttons & BT_ATTACK)
+		{
+			Unlag::getInstance().setRoundtripDelay(player.id, player.cmds.front().svgametic);
+		}
 
-		if(!sv_speedhackfix && gamestate == GS_LEVEL)
+		// Apply this ticcmd using the game logic
+		if (!sv_speedhackfix && gamestate == GS_LEVEL)
 		{
 			P_PlayerThink(&player);
 			player.mo->RunThink();
 		}
+
+		player.cmds.pop();		// remove this tic from the queue after being processed
 	}
-	else
-	{
-		// get 12 bytes
-		MSG_ReadLong();
-		MSG_ReadLong();
-		MSG_ReadLong();
-	}
+}
 
-	// get current cmds and angle
-	cmd->ucmd.buttons = MSG_ReadByte(); // 13
-	if (gamestate != GS_INTERMISSION && player.playerstate != PST_DEAD)
-	{
-		if(step_mode)cmd->ucmd.yaw = MSG_ReadShort(); // 15
-		else player.mo->angle = MSG_ReadShort() << 16;
+//
+// SV_GetPlayerCmd
+//
+// Extracts a player's ticcmd message from their network buffer and queues
+// the ticcmd for later processing.  The client always sends its previous
+// ticcmd followed by its current ticcmd just in case there is a dropped
+// packet.
 
-		if (!sv_freelook)
-		{
-			player.mo->pitch = 0;
-			MSG_ReadShort();
-		}
-		else
-			player.mo->pitch = MSG_ReadShort() << 16; // 17
-	}
-	else
-		MSG_ReadLong();
+void SV_GetPlayerCmd(player_t &player)
+{
+	client_t *cl = &player.client;
+	ticcmd_t prevcmd, curcmd;
 
-	cmd->ucmd.forwardmove = MSG_ReadShort(); // 19
-	cmd->ucmd.sidemove = MSG_ReadShort(); // 21
-    cmd->ucmd.upmove = MSG_ReadShort(); // 23
+	// The client-tic at the time this message was sent.  The server stores
+	// this and sends it back the next time it tells the client
+	int tic 					= MSG_ReadLong();
+	
+	// The last server-tic the client received before sending this ticcmd.
+	// The server sends server-tics with every update of player positions.
+	byte svgametic				= MSG_ReadByte();
+	
+	// Get the previous cmd
+	prevcmd.tic					= tic - 1;
+	prevcmd.svgametic			= svgametic;
+	prevcmd.ucmd.buttons 		= MSG_ReadByte();
+	prevcmd.ucmd.yaw 			= MSG_ReadShort();
+	prevcmd.ucmd.pitch 			= MSG_ReadShort();
+	prevcmd.ucmd.forwardmove 	= MSG_ReadShort();
+	prevcmd.ucmd.sidemove		= MSG_ReadShort();
+	prevcmd.ucmd.upmove			= MSG_ReadShort();
+	prevcmd.ucmd.impulse		= MSG_ReadByte();
+	prevcmd.ucmd.roll			= 0;	// unused
+	prevcmd.ucmd.msec			= 0;	// unused
+	prevcmd.ucmd.use			= 0;	// unused
 
-	if ( abs(cmd->ucmd.forwardmove) > 12800
-		|| abs(cmd->ucmd.sidemove) > 12800)
-	{
-		SV_PlayerTriedToCheat(player);
+	// Get the current cmd
+	curcmd.tic					= tic;
+	curcmd.svgametic			= svgametic;
+	curcmd.ucmd.buttons 		= MSG_ReadByte();
+	curcmd.ucmd.yaw 			= MSG_ReadShort();
+	curcmd.ucmd.pitch 			= MSG_ReadShort();
+	curcmd.ucmd.forwardmove 	= MSG_ReadShort();
+	curcmd.ucmd.sidemove		= MSG_ReadShort();
+	curcmd.ucmd.upmove			= MSG_ReadShort();
+	curcmd.ucmd.impulse			= MSG_ReadByte();
+	curcmd.ucmd.roll			= 0;	// unused
+	curcmd.ucmd.msec			= 0;	// unused
+	curcmd.ucmd.use				= 0;	// unused
+
+	// out of order packet
+	// TODO: Insert into the appropriate place in the queue
+	if (!player.mo || cl->lastclientcmdtic > tic)
 		return;
-	}
 
-	cmd->ucmd.impulse = MSG_ReadByte(); // 24
-
-	if(!sv_speedhackfix && gamestate == GS_LEVEL)
+	// if the server somehow missed the previous cmd in the last cmd
+	// (dropped packet), add it to the queue
+	if (  cl->lastclientcmdtic && (tic - cl->lastclientcmdtic >= 2)
+		     && gamestate != GS_INTERMISSION)
 	{
-		P_PlayerThink(&player);
-		player.mo->RunThink();
+		player.cmds.push(prevcmd);
 	}
+
+	player.cmds.push(curcmd);
 
 	cl->lastclientcmdtic = tic;
 	cl->lastcmdtic = gametic;
@@ -3454,30 +3516,24 @@ void SV_GetPlayerCmd(player_t &player)
 
 void SV_UpdateConsolePlayer(player_t &player)
 {
+	AActor *mo = player.mo;
+	client_t *cl = &player.client;
+	
+	// only send updates every 3rd tic to save bandwidth
+	if (!mo || gametic % 3)		
+		return;
+
 	// GhostlyDeath -- Spectators are on their own really
 	if (player.spectator)
 	{
-        if (gametic % 3)
-            return;
-
         SV_UpdateMovingSectors(player);
 		return;
 	}
 
-	// It's not a good idea to send 33 bytes every tic.
-	if (gametic % 3)
-		return;
-
-	AActor *mo = player.mo;
-
-	if(!mo)
-		return;
-
-	client_t *cl = &player.client;
-
 	// client player will update his position if packets were missed
 	MSG_WriteMarker (&cl->netbuf, svc_updatelocalplayer);
-	MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
+	// client-tic of the most recently processed ticcmd for this client
+	MSG_WriteLong (&cl->netbuf, player.tic);
 
 	MSG_WriteLong (&cl->netbuf, mo->x);
 	MSG_WriteLong (&cl->netbuf, mo->y);
@@ -3867,9 +3923,6 @@ void SV_ParseCommands(player_t &player)
 			SV_GetPlayerCmd(player);
 			break;
 
-		case clc_svgametic:  // [SL] 2011-05-11
-            SV_CalcRoundtripDelay(player);
-            break;
 		case clc_pingreply:  // [SL] 2011-05-11 - Changed to clc_pingreply
 			SV_CalcPing(player);
 			break;
@@ -4153,6 +4206,9 @@ void SV_GameTics (void)
 		SV_TimelimitCheck();
 	}
 
+	for (size_t i = 0; i < players.size(); i++)
+		SV_ProcessPlayerCmd(players[i]);
+
 	SV_WadDownloads();
 	SV_UpdateMaster();
 }
@@ -4211,7 +4267,7 @@ void SV_StepTics (QWORD tics)
 		SV_SendPackets();
 		SV_ClearClientsBPS();
 		SV_CheckTimeouts();
-
+		
 		// Since clients are only sent sector updates every 3rd tic, don't destroy
 		// the finished moving sectors until we've sent the clients the update
 		if (!(gametic % 3))

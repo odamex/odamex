@@ -892,7 +892,6 @@ void InitNetMessageFormats()
       MSG(clc_kill,               "x"),
       MSG(clc_cheat,              "x"),
       MSG(clc_cheatpulse,         "x"),
-      MSG(clc_svgametic,          "b"),
       MSG(clc_launcher_challenge, "x"),
       MSG(clc_challenge,          "x")
    };

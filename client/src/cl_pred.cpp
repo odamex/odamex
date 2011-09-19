@@ -269,6 +269,9 @@ void CL_ResetPlayers ()
 //
 void CL_PredictPlayer (player_t *p)
 {
+	if (!p->mo)
+		return;
+		
 	if (p->playerstate == PST_DEAD)
 	{
 		P_DeathThink (p);
@@ -290,45 +293,64 @@ void CL_PredictPlayer (player_t *p)
 }
 
 //
+// CL_PredictLocalPlayer
+//
+// Processes all of consoleplayer's ticcmds since the last ticcmd the server
+// has acknowledged processing.
+void CL_PredictLocalPlayer (int predtic)
+{
+	player_t *p = &consoleplayer();
+	
+	// GhostlyDeath -- Ignore Spectators
+	if (!p->ingame() || !p->mo || p->spectator)
+		return;
+		
+	if (p->tic < predtic)
+	{
+		int buf = predtic%MAXSAVETICS;
+
+		ticcmd_t *cmd = &(p->cmd);
+		memcpy(cmd, &localcmds[buf], sizeof(ticcmd_t));
+
+		p->mo->angle = cl_angle[buf];
+		p->mo->pitch = cl_pitch[buf];
+		p->viewheight = cl_viewheight[buf];
+		p->deltaviewheight = cl_deltaviewheight[buf];
+		p->jumpTics = cl_jumpTics[buf];
+		p->mo->reactiontime = cl_reactiontime[buf];
+		p->mo->waterlevel = cl_waterlevel[buf];
+				
+		CL_PredictPlayer(p);
+	}
+}
+
+//
 // CL_PredictPlayers
 //
 void CL_PredictPlayers (int predtic)
 {
-	size_t n = players.size();
-
-	for(size_t i = 0; i < n; i++)
+	for(size_t i = 0; i < players.size(); i++)
 	{
 		player_t *p = &players[i];
-	
-		if (!p->ingame() || !p->mo)
+		if (p->id == consoleplayer().id)
 			continue;
 			
 		// GhostlyDeath -- Ignore Spectators
-		if (p->spectator)
+		if (!p->ingame() || !p->mo || p->spectator)
 			continue;
-
-		// Update this player if their last known status is before this tic
-		if(p->tic < predtic)
-		{
-			if(p == &consoleplayer())
-			{
-				int buf = predtic%MAXSAVETICS;
-
-				ticcmd_t *cmd = &consoleplayer().cmd;
-				memcpy(cmd, &localcmds[buf], sizeof(ticcmd_t));
-
-				p->mo->angle = cl_angle[buf];
-				p->mo->pitch = cl_pitch[buf];
-				p->viewheight = cl_viewheight[buf];
-				p->deltaviewheight = cl_deltaviewheight[buf];
-				p->jumpTics = cl_jumpTics[buf];
-				p->mo->reactiontime = cl_reactiontime[buf];
-				p->mo->waterlevel = cl_waterlevel[buf];
-			}
 	
-			CL_PredictPlayer(p);
+		// The client can accurately predict the position of a player for only
+		// one tic after the last position update receieved for that player.
+		// This relies on the fact that the player's current momentum
+		// determines their position in the next tic.
+		if (predtic == gametic && (gametic - p->last_received) == 1)
+		{
+			CL_PredictPlayer(p);			
 		}
 	}
+	
+	// Do consoleplayer's prediction 
+	CL_PredictLocalPlayer(predtic);
 }
 
 //
