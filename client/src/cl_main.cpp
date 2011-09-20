@@ -137,6 +137,7 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
@@ -213,6 +214,7 @@ void CL_QuitNetGame(void)
 	sv_freelook = 1;
 	sv_allowjump = 1;
 	sv_allowexit = 1;
+	sv_allowredscreen = 1;
 
 	actor_by_netid.clear();
 	players.clear();

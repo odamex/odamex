@@ -153,6 +153,7 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
 EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
@@ -1650,6 +1651,7 @@ void D_DoomMain (void)
                     sv_allowexit = "1";
                     sv_freelook = "1";
                     sv_allowjump = "1";
+                    sv_allowredscreen = "1";
                     sv_gametype = GM_COOP;
 
 					players.clear();

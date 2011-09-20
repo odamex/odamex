@@ -264,6 +264,9 @@ CVAR (r_wipetype, "1", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 CVAR (r_showendoom, "1", "", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
 
+// [ML] Value of red pain intensity shift
+CVAR_FUNC_DECL (r_painintensity, "1", "Value of red pain intensity shift", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 // TODO: document
 CVAR (r_viewsize, "0", "", CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
 #ifdef GCONSOLE
