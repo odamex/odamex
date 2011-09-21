@@ -954,6 +954,33 @@ void P_ZMovement(AActor *mo)
 	  mo->player->deltaviewheight
 			= (VIEWHEIGHT - mo->player->viewheight)>>3;
    }
+
+// apply gravity (if in zdoomland)
+   if (co_zdoomphys && (mo->z > mo->floorz && !(mo->flags & MF_NOGRAVITY)))
+   {
+		fixed_t startmomz = mo->momz;
+
+		if (!mo->waterlevel || mo->flags & MF_CORPSE || (mo->player &&
+			!(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
+		{
+			mo->momz -= (fixed_t)(level.gravity * mo->subsector->sector->gravity *
+				(mo->flags2 & MF2_LOGRAV ? 10.24 : 81.92));
+		}
+		if (mo->waterlevel > 1)
+		{
+			fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
+
+			if (mo->momz < sinkspeed)
+			{
+				mo->momz = (startmomz < sinkspeed) ? startmomz : sinkspeed;
+			}
+			else
+			{
+				mo->momz = startmomz + ((mo->momz - startmomz) >>
+					(mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
+			}
+		}
+   }
     // adjust height
     // GhostlyDeath <Jun, 4 2008> -- Floating monsters shouldn't adjust to spectator height
    mo->z += mo->momz;
@@ -1016,7 +1043,7 @@ void P_ZMovement(AActor *mo)
         // So we need to check that this is either retail or commercial
         // (but not doom2)
 
-      int correct_lost_soul_bounce = (gamemode == retail) ||
+      int correct_lost_soul_bounce = co_zdoomphys || (gamemode == retail) ||
                                      ((gamemode == commercial
                                      && (gamemission == pack_tnt ||
                                          gamemission == pack_plut)));
@@ -1026,10 +1053,10 @@ void P_ZMovement(AActor *mo)
 	    // the skull slammed into something
         mo->momz = -mo->momz;
       }
-
+		mo->z = mo->floorz;
       if (mo->momz < 0)
       {
-
+		 
          if (mo->player)
          {
          	bool momsquat = false;
@@ -1066,7 +1093,7 @@ void P_ZMovement(AActor *mo)
 
           mo->momz = 0;
       }
-      mo->z = mo->floorz;
+      //mo->z = mo->floorz;
 
 
 	// cph 2001/05/26 -
@@ -1089,57 +1116,41 @@ void P_ZMovement(AActor *mo)
    }
    else
    {
- 		fixed_t startmomz = mo->momz;
-
-		if (!mo->waterlevel || (mo->player &&
-			!(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
+		// apply gravity (if standard or boom)
+		if (!co_zdoomphys)
 		{
-			if (mo->flags2 & MF2_LOGRAV)
+			fixed_t startmomz = mo->momz;
+
+			if (!mo->waterlevel || (mo->player &&
+				!(mo->player->cmd.ucmd.forwardmove | mo->player->cmd.ucmd.sidemove)))
 			{
-				if (co_zdoomphys)
-				{
-					if (mo->momz == 0)
-						mo->momz = (fixed_t)(level.gravity * mo->subsector->sector->gravity * -20.48);
-					else
-						mo->momz -= (fixed_t)(level.gravity * mo->subsector->sector->gravity * 10.24);
-				}
-				else
+				if (mo->flags2 & MF2_LOGRAV)
 				{
 					if (mo->momz == 0)
 						mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -0.2);
 					else
 						mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity * 0.1);
 				}
-			}
-			else if (! (mo->flags & MF_NOGRAVITY) )
-			{
-				if (co_zdoomphys)
-				{
-					if (mo->momz == 0)
-						mo->momz = (fixed_t)(level.gravity * mo->subsector->sector->gravity * -163.84);
-					else
-						mo->momz -= (fixed_t)(level.gravity * mo->subsector->sector->gravity * 81.92);
-				}
-				else
+				else if (! (mo->flags & MF_NOGRAVITY) )
 				{
 					if (mo->momz == 0)
 						mo->momz = (fixed_t)(GRAVITY * mo->subsector->sector->gravity * -2);
 					else
 						mo->momz -= (fixed_t)(GRAVITY * mo->subsector->sector->gravity);
 				}
-			}
-			if (mo->waterlevel > 1)
-			{
-				fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
+				if (mo->waterlevel > 1)
+				{
+					fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
 
-				if (mo->momz < sinkspeed)
-				{
-					mo->momz = (startmomz < sinkspeed) ? startmomz : sinkspeed;
-				}
-				else
-				{
-					mo->momz = startmomz + ((mo->momz - startmomz) >>
-						(mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
+					if (mo->momz < sinkspeed)
+					{
+						mo->momz = (startmomz < sinkspeed) ? startmomz : sinkspeed;
+					}
+					else
+					{
+						mo->momz = startmomz + ((mo->momz - startmomz) >>
+							(mo->waterlevel == 1 ? WATER_SINK_SMALL_FACTOR : WATER_SINK_FACTOR));
+					}
 				}
 			}
 		}
@@ -1233,6 +1244,7 @@ void P_ZMovement(AActor *mo)
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 {
 	mo->player->deltaviewheight = mo->momz>>3;
+	
 	if (co_zdoomphys)
 	{
 		// [SL] 2011-06-16 - ZDoom Oomphiness
