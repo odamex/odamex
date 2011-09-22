@@ -458,6 +458,8 @@ END_COMMAND (kill)
 
 BEGIN_COMMAND (serverinfo)
 {   
+	std::vector<std::string> server_cvars;
+
     cvar_t *Cvar = GetFirstCvar();
     size_t MaxFieldLength = 0;
     
@@ -470,31 +472,32 @@ BEGIN_COMMAND (serverinfo)
             
             if (FieldLength > MaxFieldLength)
                 MaxFieldLength = FieldLength;                
+
+			// store this cvar name in our vector to be sorted later
+			server_cvars.push_back(Cvar->name());
         }
         
         Cvar = Cvar->GetNext();
     }
 
-    // [Russell] - Formatted output
-    Cvar = GetFirstCvar();
+	// sort the list of cvars
+	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
     Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
     
     // Data
-    while (Cvar)
-	{			
-        if (Cvar->flags() & CVAR_SERVERINFO)
-        {
-            Printf(PRINT_HIGH, 
-                   "%*s - %s\n", 
-                   MaxFieldLength,
-                   Cvar->name(), 
-                   Cvar->cstring());          
-        }
-        
-        Cvar = Cvar->GetNext();
-    }
+	for (size_t i = 0; i < server_cvars.size(); i++)
+	{
+		cvar_t *dummy;
+		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
+
+		Printf(PRINT_HIGH, 
+				"%*s - %s\n", 
+				MaxFieldLength,
+				Cvar->name(), 
+				Cvar->cstring());          
+	}
     
     Printf (PRINT_HIGH,	"\n");
 }
