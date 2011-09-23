@@ -1946,8 +1946,16 @@ player_t* player = &players[consoleplayer];
 //
 void CL_ChangeWeapon (void)
 {
-	player_t *p = &consoleplayer();
-	p->pendingweapon = (weapontype_t)MSG_ReadByte();
+	player_t *player = &consoleplayer();
+	weapontype_t newweapon = (weapontype_t)MSG_ReadByte();
+
+	// ensure that the client has the weapon
+	player->weaponowned[newweapon] = true;
+
+	// [SL] 2011-09-22 - Only change the weapon if the client doesn't already
+	// have that weapon up.
+	if (player->readyweapon != newweapon)
+		player->pendingweapon = newweapon;
 }
 
 
