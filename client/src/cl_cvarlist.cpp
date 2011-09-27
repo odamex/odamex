@@ -189,6 +189,7 @@ CVAR (hud_usehighresboard, "1", "",	CVAR_ARCHIVE)
 
 CVAR (hud_crosshairdim, "0", "Crosshair transparency", CVAR_ARCHIVE)      // Crosshair transparency
 CVAR (hud_crosshairscale, "0", "Crosshair scaling", CVAR_ARCHIVE)    // Crosshair scaling
+CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level", CVAR_ARCHIVE)
 CVAR_FUNC_DECL (hud_targetcount, "2", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // Show target counts
 
 #ifdef _XBOX
