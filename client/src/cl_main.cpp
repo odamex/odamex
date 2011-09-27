@@ -1390,7 +1390,9 @@ void CL_UpdateLocalPlayer(void)
 	p.real_velocity[1] = MSG_ReadLong();
 	p.real_velocity[2] = MSG_ReadLong();
 
-    p.mo->waterlevel = MSG_ReadByte();
+	byte waterlevel = MSG_ReadByte();
+	if (p.mo)
+		p.mo->waterlevel = waterlevel;
 
 //	real_plats.Clear();
 }
@@ -1608,10 +1610,6 @@ void CL_SpawnPlayer()
 
 	G_PlayerReborn (*p);
 
-	// denis - if this concerns the local player, restart the status bar
-	if(p->id == consoleplayer_id)
-		ST_Start ();
-
 	mobj = new AActor (x, y, z, MT_PLAYER);
 
 	// set color translations for player sprites
@@ -1657,6 +1655,10 @@ void CL_SpawnPlayer()
 	if(sv_gametype != GM_COOP)
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
+
+	// denis - if this concerns the local player, restart the status bar
+	if(p->id == consoleplayer_id)
+		ST_Start ();
 }
 
 //
