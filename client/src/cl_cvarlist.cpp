@@ -287,9 +287,9 @@ CVAR (autoadjust_video_settings, "1", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 CVAR (vid_fps, "0", "", CVAR_CLIENTINFO)
 // Fullscreen mode
 #ifdef GCONSOLE
-	CVAR (vid_fullscreen, "1", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (vid_fullscreen, "1", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 #else
-	CVAR (vid_fullscreen, "0", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (vid_fullscreen, "0", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 #endif
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
