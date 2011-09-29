@@ -172,6 +172,7 @@ void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
+void P_SetFloorCeil(AActor *mo);
 void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -753,16 +754,8 @@ END_COMMAND(rew)
 //
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
-	P_CheckPosition (mobj, x, y);
-	mobj->UnlinkFromWorld ();
-
-	mobj->x = x;
-	mobj->y = y;
-	mobj->z = z;
-	mobj->floorz = tmfloorz;
-	mobj->ceilingz = tmceilingz;
-
-	mobj->LinkToWorld ();
+	mobj->SetOrigin(x, y, z);
+	P_SetFloorCeil(mobj);	// set mobj->floorz, mobj->ceilingz
 }
 
 //

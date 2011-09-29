@@ -866,6 +866,28 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	return true;
 }
 
+
+//
+// P_SetFloorCeil
+//
+// Sets the floorz and ceilingz attributes of an actor based on the
+// actor's current sector
+
+void P_SetFloorCeil(AActor *mo)
+{
+	if (!mo)
+		return;
+
+	subsector_t *subsec = R_PointInSubsector(mo->x, mo->y);
+
+	if (subsec && subsec->sector)
+	{
+		mo->floorz		= subsec->sector->floorheight;
+		mo->ceilingz	= subsec->sector->ceilingheight;
+	}
+}
+
+
 //
 // P_CheckOnmobj(AActor *thing)
 // Checks if the new Z position is legal
