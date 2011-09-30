@@ -393,6 +393,7 @@ md5_finish(md5_state_t *pms, md5_byte_t digest[16])
 #include <cctype>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 std::string MD5SUM(const void *in, size_t size)
 {
