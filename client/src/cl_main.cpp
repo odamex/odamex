@@ -1309,26 +1309,27 @@ void CL_UpdatePlayer()
 
 	if(!validplayer(*p) || !p->mo)
 	{
-		for (int i=0; i<37; i++)
-			MSG_ReadByte();
+	    // Advance 37 bytes, because we don't need the following data anymore
+		MSG_SetOffset(37, buf_t::BT_SCUR);
+
 		return;
 	}
 
-	int sv_gametic = MSG_ReadLong();
+	int sv_gametic = MSG_ReadLong(); // 4
 	
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
+	x = MSG_ReadLong(); // 8
+	y = MSG_ReadLong(); // 12
+	z = MSG_ReadLong(); // 16
 	CL_MoveThing(p->mo, x, y, z);
-	p->mo->angle = MSG_ReadLong();
-	byte frame = MSG_ReadByte();
-	p->mo->momx = MSG_ReadLong();
-	p->mo->momy = MSG_ReadLong();
-	p->mo->momz = MSG_ReadLong();
+	p->mo->angle = MSG_ReadLong(); // 20
+	byte frame = MSG_ReadByte(); // 21
+	p->mo->momx = MSG_ReadLong(); // 25
+	p->mo->momy = MSG_ReadLong(); // 29
+	p->mo->momz = MSG_ReadLong(); // 33
 
 	p->real_origin[0] = x;
 	p->real_origin[1] = y;
@@ -1339,7 +1340,7 @@ void CL_UpdatePlayer()
 	p->real_velocity[2] = p->mo->momz;
 
     // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = MSG_ReadLong();
+    p->powers[pw_invisibility] = MSG_ReadLong(); // 37
 
     if (p->powers[pw_invisibility])
     {
