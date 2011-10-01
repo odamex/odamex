@@ -754,8 +754,8 @@ END_COMMAND(rew)
 //
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
+	P_CheckPosition(mobj, x, y);
 	mobj->SetOrigin(x, y, z);
-	P_SetFloorCeil(mobj);	// set mobj->floorz, mobj->ceilingz
 }
 
 //
