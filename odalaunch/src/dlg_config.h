@@ -105,6 +105,7 @@ class dlgConfig: public wxDialog
         
         wxCheckBox *m_ChkCtrlGetListOnStart;
         wxCheckBox *m_ChkCtrlShowBlockedServers;
+        wxCheckBox *m_ChkCtrlEnableBroadcasts;
 
         wxListBox *m_LstCtrlWadDirectories;
 

@@ -5,6 +5,7 @@
 		<size>845,505</size>
 		<title>The Odamex Launcher</title>
 		<centered>1</centered>
+		<aui_managed>0</aui_managed>
 		<object class="wxMenuBar">
 			<label></label>
 			<object class="wxMenu">
@@ -320,6 +321,16 @@
 													<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
 														<pos>0,114</pos>
 														<label>Show blocked servers</label>
+														<checked>0</checked>
+													</object>
+												</object>
+												<object class="sizeritem">
+													<option>0</option>
+													<flag>wxALL</flag>
+													<border>5</border>
+													<object class="wxCheckBox" name="Id_ChkCtrlEnableBroadcasts">
+														<tooltip>Sends queries to all servers on every network connection on port 10666 when getting a new master list</tooltip>
+														<label>Enable Network Broadcasting</label>
 														<checked>0</checked>
 													</object>
 												</object>
@@ -902,6 +913,7 @@
 		<style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
 		<size>400,300</size>
 		<title>OdaGet</title>
+		<aui_managed>0</aui_managed>
 		<object class="wxPanel">
 			<style>wxTAB_TRAVERSAL</style>
 			<object class="wxBoxSizer">
