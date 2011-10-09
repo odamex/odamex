@@ -71,6 +71,9 @@ public:
 	static bool InitializeSocketAPI();
 	static void ShutdownSocketAPI();
 
+    // Set network-wide broadcast ability
+    void SetBroadcast(bool enabled);
+
 	// Set the outgoing address
 	void SetRemoteAddress(const std::string &Address, const uint16_t &Port);
 	// Set the outgoing address in "address:port" format
@@ -142,6 +145,9 @@ private:
         
 	// the socket
 	SOCKET  m_Socket;
+
+    // broadcast mode
+    bool m_Broadcast;
         
 	// local address
 	struct sockaddr_in m_LocalAddress;

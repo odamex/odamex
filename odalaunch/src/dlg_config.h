@@ -48,6 +48,7 @@
 #define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
 #define MASTERTIMEOUT       "MasterTimeout"
 #define SERVERTIMEOUT       "ServerTimeout"
+#define USEBROADCAST        "UseBroadcast"
 
 #ifdef __WXMSW__
 #define PATH_DELIMITER ';'

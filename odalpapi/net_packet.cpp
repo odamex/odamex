@@ -517,4 +517,48 @@ int32_t Server::Query(int32_t Timeout)
 	return 0;
 }
 
+// Send network-wide broadcasts
+void MasterServer::QueryBC(const uint32_t &Timeout)
+{
+    BufferedSocket BCSocket;
+
+    BCSocket.ClearBuffer();
+
+    BCSocket.SetRemoteAddress("255.255.255.255", 10666);
+
+    // TODO: it might be better to create actual Server objects so we do not
+    // have to requery when we get past this stage
+    BCSocket.Write32(SERVER_VERSION_CHALLENGE);
+    BCSocket.Write32(VERSION);
+    BCSocket.Write32(PROTOCOL_VERSION);
+
+    BCSocket.SetBroadcast(true);
+
+    BCSocket.SendData(Timeout);
+
+    while (BCSocket.GetData(Timeout) != 0)
+    {
+        addr_t address = { "", 0, false};
+        size_t j = 0;
+
+        address.custom = false;
+
+        BCSocket.GetRemoteAddress(address.ip, address.port);
+
+        // Don't add the same address more than once.
+        for (; j < addresses.size(); ++j)
+        {
+            if (addresses[j].ip == address.ip && 
+                addresses[j].port == address.port)
+            {
+                break;
+            }
+        }
+
+        // didn't find it, so add it
+        if (j == addresses.size())
+            addresses.push_back(address);
+    }
+}
+
 //} // namespace
