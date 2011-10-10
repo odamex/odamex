@@ -49,6 +49,7 @@ using namespace std;
 BufferedSocket::BufferedSocket() :	m_BadRead(false), m_BadWrite(false),
 									m_Socket(0), m_SendPing(0), m_ReceivePing(0)
 {
+    m_Broadcast = false;
 	m_SocketBuffer = NULL;
 	memset(&m_RemoteAddress, 0, sizeof(struct sockaddr_in));
 	ClearBuffer();
@@ -56,6 +57,8 @@ BufferedSocket::BufferedSocket() :	m_BadRead(false), m_BadWrite(false),
 
 BufferedSocket::~BufferedSocket()
 {
+    DestroySocket();
+
 	delete m_SocketBuffer;
 }
 
@@ -92,16 +95,46 @@ bool BufferedSocket::CreateSocket()
 		return false;
 	}
 
-	if (connect(m_Socket,
-				(struct sockaddr *)&m_RemoteAddress,
-				sizeof(m_RemoteAddress)) == -1)
-	{
-		ReportError(REPERR_NO_ARGS);
-		return false;
-	}
+    if (m_Broadcast)
+    {
+        int optval = m_Broadcast ? 1 : 0;
+        int optvallen = sizeof(optval);
+        int result;
+
+        // Set broadcast mode on the socket
+        result = setsockopt(m_Socket, SOL_SOCKET, SO_BROADCAST, (char *)&optval, 
+                optvallen);
+
+        if (result != 0)
+        {
+            ReportError(REPERR_NO_ARGS);
+            return false;
+        }
+
+        // Need to bind to the local address otherwise it will not receive
+        // anything        
+        m_LocalAddress.sin_family = PF_INET;
+        m_LocalAddress.sin_port = htons(11510);
+        m_LocalAddress.sin_addr.s_addr = htonl( INADDR_ANY );
+        memset(m_LocalAddress.sin_zero, '\0', sizeof m_LocalAddress.sin_zero);
+
+        result = bind (m_Socket, (sockaddr *)&m_LocalAddress, 
+                    sizeof(m_LocalAddress));
+
+        if (result != 0)
+        {
+            ReportError(REPERR_NO_ARGS);
+            return false;
+        }
+    }
 
 	return true;
 }
+
+void BufferedSocket::SetBroadcast(bool enabled) 
+{ 
+    m_Broadcast = enabled;
+};
 
 void BufferedSocket::DestroySocket()
 {
@@ -114,7 +147,7 @@ void BufferedSocket::DestroySocket()
 	}
 }
 	
-void BufferedSocket::SetRemoteAddress(const string &Address, const int16_t &Port)
+void BufferedSocket::SetRemoteAddress(const string &Address, const uint16_t &Port)
 {
 	struct hostent *he;
 
@@ -175,8 +208,8 @@ int32_t BufferedSocket::SendData(const int32_t &Timeout)
 	if (CreateSocket() == false)
 		return 0;
 
-	// send the data
-	BytesSent = send(m_Socket, (const char *)m_SocketBuffer, m_BufferSize, 0);
+    BytesSent = sendto(m_Socket, (const char *)m_SocketBuffer, m_BufferSize, 0, 
+        (struct sockaddr *)&m_RemoteAddress, sizeof (m_RemoteAddress));
 
 	// set the start ping
 	m_SendPing = GetMillisNow();
@@ -196,6 +229,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	fd_set           readfds;
 	struct timeval   tv;
 	bool             DestroyMe = false;
+    int fromlen;
 
 	// clear it
 	ClearBuffer();
@@ -208,23 +242,25 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 		tv.tv_sec = Timeout / 1000;
 		tv.tv_usec = (Timeout % 1000) * 1000; // convert milliseconds to microseconds
 		res = select(m_Socket+1, &readfds, NULL, NULL, &tv);
-		if(res <=  0) // Timeout or error
+		if(res <= 0) // Timeout or error
 			DestroyMe = true;
 	}
 
 	if (DestroyMe == true)
 	{
-        ReportError(REPERR_NO_ARGS);
+        if (res == -1)
+            ReportError(REPERR_NO_ARGS);
 
 		m_SendPing = 0;
 		m_ReceivePing = 0;
 
-		DestroySocket();
-
 		return 0;
 	}
 
-	m_BufferSize = recv(m_Socket, (char *)m_SocketBuffer, MAX_PAYLOAD, 0);
+    fromlen = sizeof(m_RemoteAddress);
+
+    m_BufferSize = recvfrom(m_Socket, (char *)m_SocketBuffer, MAX_PAYLOAD, 0, 
+        (struct sockaddr *)&m_RemoteAddress, &fromlen);
 
 	// -1 = Error; 0 = Closed Connection
 	if(m_BufferSize <= 0)
@@ -233,8 +269,6 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 
 		m_SendPing = 0;
 		m_ReceivePing = 0;
-
-		DestroySocket();
 
 		return 0;
 	}
@@ -246,8 +280,6 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	{
 		m_BadRead = false;
 
-		DestroySocket();
-
 		// return bytes received   
 		return m_BufferSize;
 	}
@@ -255,7 +287,6 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	m_SendPing = 0;
 	m_ReceivePing = 0;
 
-	DestroySocket();
 
 	return 0;
 }
@@ -275,14 +306,12 @@ bool BufferedSocket::ReadString(string &str)
         return false;
     }
 
-    ostringstream in_str;
-
     // ooh, a priming read!
 	bool isRead = Read8(ch);
 
     while (ch != '\0' && isRead)
     {
-        in_str << ch;
+        str += ch;
 
         Read8(ch);
 
@@ -299,8 +328,6 @@ bool BufferedSocket::ReadString(string &str)
 
         return false;
     }
-
-	str = in_str.str();
 
 	return true;
 }

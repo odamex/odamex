@@ -693,6 +693,11 @@ void *MSG_ReadChunk (const size_t &size)
 	return net_message.ReadChunk(size);
 }
 
+size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc)
+{
+    return net_message.SetOffset(offset, loc);
+}
+
 // Output buffer size for LZO compression, extra space in case uncompressable
 #define OUT_LEN(a)      ((a) + (a) / 16 + 64 + 3)
 

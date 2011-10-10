@@ -68,6 +68,7 @@
 const uint32_t MASTER_CHALLENGE = 777123;
 const uint32_t MASTER_RESPONSE  = 777123;
 const uint32_t SERVER_CHALLENGE = 0xAD011002;
+const uint32_t SERVER_VERSION_CHALLENGE = 0xAD011001;
 
 struct Cvar_t
 {
@@ -170,12 +171,16 @@ public:
 	// Query the server
 	int32_t Query(int32_t Timeout);
 
-	void SetAddress(const std::string &Address, const int16_t &Port) 
+	void SetAddress(const std::string &Address, const uint16_t &Port) 
 	{ 
 		Socket.SetRemoteAddress(Address, Port);
 	}
 
 	std::string GetAddress() const { return Socket.GetRemoteAddress(); }
+	void GetAddress(std::string &Address, uint16_t &Port) const
+	{
+        Socket.GetRemoteAddress(Address, Port);
+	}
 	uint64_t GetPing() const { return Ping; }
 
 #ifdef AG_DEBUG
@@ -204,6 +209,9 @@ private:
 
 	std::vector<addr_t> addresses;
 	std::vector<addr_t> masteraddresses;
+
+    void QueryBC(const uint32_t &Timeout);
+
 public:
 	MasterServer() 
 	{ 
@@ -241,9 +249,12 @@ public:
 			masteraddresses.push_back(Master);
 	}
 
-	void QueryMasters(const uint32_t &Timeout)
+	void QueryMasters(const uint32_t &Timeout, const bool &Broadcast)
 	{           
 		DeleteAllNormalServers();
+
+        if (Broadcast)
+            QueryBC(Timeout);
 
 		for (size_t i = 0; i < masteraddresses.size(); ++i)
 		{

@@ -40,6 +40,9 @@ buf_t sendd(MAX_UDP_PACKET);
 //
 // SV_CompressPacket
 //
+// [Russell] - reason this was failing is because of huffman routines, so just
+// use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
+// if 0'd sections
 void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 {
 	if(plain.maxsize() < send.maxsize())
@@ -52,7 +55,7 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 	byte method = 0;
 
 	int need_gap = 2; // for svc_compressed and method, below
-	
+#if 0
 	if(MSG_CompressAdaptive(cl->compressor.get_codec(), send, reserved, need_gap))
 	{
 		reserved += need_gap;
@@ -63,7 +66,7 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 		if(cl->compressor.get_codec_id())
 			method |= adaptive_select_mask;
 	}
-
+#endif
 	DPrintf("SV_CompressPacket stage 2: %x %d\n", (int)method, (int)send.size());
 
 	if(MSG_CompressMinilzo(send, reserved, need_gap))
@@ -71,9 +74,10 @@ void SV_CompressPacket(buf_t &send, unsigned int reserved, client_t *cl)
 
 	if((method & adaptive_mask) || (method & minilzo_mask))
 	{
+#if 0
 		if(cl->compressor.packet_sent(cl->sequence - 1, plain.ptr() + sizeof(int), plain.size() - sizeof(int)))
 			method |= adaptive_record_mask;
-		
+#endif
 		send.ptr()[sizeof(int)] = svc_compressed;
 		send.ptr()[sizeof(int) + 1] = method;
 	}
@@ -137,7 +141,7 @@ bool SV_SendPacket(player_t &pl)
 	if (gametic % 35)
 	    bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
 
-    if (bps < cl->rate)
+    if (bps < cl->rate*1000)
 	  if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
 	  {
          SZ_Write (&sendd, cl->netbuf.data, cl->netbuf.cursize);

@@ -67,17 +67,17 @@ cvar_t* GetFirstCvar(void)
 
 int cvar_defflags;
 
-cvar_t::cvar_t (const char *var_name, const char *def, DWORD flags)
+cvar_t::cvar_t (const char *var_name, const char *def, const char *help, DWORD flags)
 {
-	InitSelf (var_name, def, flags, NULL);
+	InitSelf (var_name, def, help, flags, NULL);
 }
 
-cvar_t::cvar_t (const char *var_name, const char *def, DWORD flags, void (*callback)(cvar_t &))
+cvar_t::cvar_t (const char *var_name, const char *def, const char *help, DWORD flags, void (*callback)(cvar_t &))
 {
-	InitSelf (var_name, def, flags, callback);
+	InitSelf (var_name, def, help, flags, callback);
 }
 
-void cvar_t::InitSelf (const char *var_name, const char *def, DWORD var_flags, void (*callback)(cvar_t &))
+void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, DWORD var_flags, void (*callback)(cvar_t &))
 {
 	cvar_t *var, *dummy;
 
@@ -88,6 +88,7 @@ void cvar_t::InitSelf (const char *var_name, const char *def, DWORD var_flags, v
 	m_Value = 0.0f;
 	m_Flags = 0;
 	m_LatchedString = "";
+    m_HelpText = help;
 
 	if (def)
 		m_Default = def;
@@ -200,6 +201,12 @@ void cvar_t::SetDefault (const char *val)
 		Set (val);
 		m_Flags |= CVAR_ISDEFAULT;
 	}
+}
+
+void cvar_t::RestoreDefault ()
+{
+	Set(m_Default.c_str());	
+	m_Flags |= CVAR_ISDEFAULT;
 }
 
 cvar_t *cvar_t::cvar_set (const char *var_name, const char *val)
@@ -464,7 +471,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 		if ((cvar->m_Flags & CVAR_ARCHIVE) || (baseapp == client && cvar->m_Flags & CVAR_CLIENTARCHIVE)
 			|| (baseapp == server && cvar->m_Flags & CVAR_SERVERARCHIVE))
 		{
-			fprintf ((FILE *)f, "set %s \"%s\"\n", cvar->name(), cvar->cstring());
+			fprintf ((FILE *)f, "// %s\n", cvar->helptext());
+			fprintf ((FILE *)f, "set %s \"%s\"\n\n", cvar->name(), cvar->cstring());
 		}
 		cvar = cvar->m_Next;
 	}
@@ -509,7 +517,7 @@ BEGIN_COMMAND (set)
 
 		var = cvar_t::FindCVar (argv[1], &prev);
 		if (!var)
-			var = new cvar_t (argv[1], NULL, CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
+			var = new cvar_t (argv[1], NULL, "", CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
 
 		if (var->flags() & CVAR_NOSET)
 			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);
@@ -626,5 +634,27 @@ BEGIN_COMMAND (cvarlist)
 }
 END_COMMAND (cvarlist)
 
-VERSION_CONTROL (c_cvars_cpp, "$Id$")
+BEGIN_COMMAND (help)
+{
+    cvar_t *prev;
+    cvar_t *var;
 
+    if (argc < 2)
+    {
+		Printf (PRINT_HIGH, "usage: help <variable>\n");
+        return;
+    }
+
+    var = cvar_t::FindCVar (argv[1], &prev);
+
+    if (!var)
+    {
+        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+        return;
+    }
+
+    Printf(PRINT_HIGH, "Help: %s - %s\n", var->name(), var->helptext());
+}
+END_COMMAND (help)
+
+VERSION_CONTROL (c_cvars_cpp, "$Id$")

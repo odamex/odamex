@@ -113,6 +113,8 @@ EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (wi_newintermission)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomswitches)
+EXTERN_CVAR (co_fixweaponimpacts)
+EXTERN_CVAR (co_zdoomsoundcurve)
 EXTERN_CVAR (cl_deathcam)
 
 // [Toke - Menu] New Menu Stuff.
@@ -143,6 +145,11 @@ EXTERN_CVAR (joy_lookaxis)
 EXTERN_CVAR (joy_sensitivity)
 EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
+
+// Network Options
+EXTERN_CVAR (rate)
+EXTERN_CVAR (cl_unlag)
+EXTERN_CVAR (cl_updaterate)
 
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
@@ -201,6 +208,7 @@ static void CustomizeControls (void);
 static void VideoOptions (void);
 static void SoundOptions (void);
 static void CompatOptions (void);
+static void NetworkOptions (void);
 static void GoToConsole (void);
 static void GoToConsole (void);
 void Reset2Defaults (void);
@@ -216,6 +224,7 @@ static menuitem_t OptionItems[] =
 	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
  	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
  	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CompatOptions} },
+	{ more,		"Network Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)NetworkOptions} },
 	{ more,		"Sound Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SoundOptions} },
  	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
 	{ more,		"Set Video Mode",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SetVidMode} },
@@ -423,15 +432,27 @@ menu_t SoundMenu = {
 	SoundItems,
 };
 
-static menuitem_t CompatItems[] = {
-    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
-	{ bricktext ,   "Enhanced Interaction"                  , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
-	{ discrete  ,	"Items drop off ledges"                 , {&co_allowdropoff},	{2.0},      {0.0},	    {0.0},      {OnOff} },
-	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },	
-	{ discrete  ,	"BOOM Use Line Extra Checks"    		, {&co_boomlinecheck},	{2.0},      {0.0},	    {0.0},      {OnOff} },		{ discrete	,	"Use ZDoom physics"						, {&co_zdoomphys},		{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete	,	"Positional switch sounds"				, {&co_zdoomswitches},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete	,	"Death view following"					, {&cl_deathcam},		{2.0},		{0.0},		{0.0},		{OnOff} },
 
+/*=======================================
+ *
+ * Compatibility Options Menu
+ *
+ *=======================================*/
+static menuitem_t CompatItems[] = {
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },   
+	{ bricktext,				"Enhanced Interaction"		, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },     
+	{ discrete  ,	"Things are actual height"              , {&co_realactorheight},{2.0},      {0.0},	    {0.0},      {OnOff} },		
+	{ discrete  ,	"Items drop off ledges"                 , {&co_allowdropoff},	{2.0},      {0.0},	    {0.0},      {OnOff} },
+	{ discrete	,	"Correct Weapon Impacts"				, {&co_fixweaponimpacts},{2.0},		{0.0},		{0.0},		{OnOff} },	
+	{ discrete	,	"Follow killer when dead"				, {&cl_deathcam},		{2.0},		{0.0},		{0.0},		{OnOff} },	
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },  
+	{ bricktext,				"BOOM Compatibility"		, {NULL},				{0.0}, 		{0.0},		{0.0}, 		{NULL} },     
+	{ discrete  ,	"Use Line Extra Checks"    				, {&co_boomlinecheck},	{2.0},      {0.0},	    {0.0},      {OnOff} },
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },  	
+	{ bricktext,				"ZDOOM Compatibility"		, {NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },     
+	{ discrete	,	"Use ZDoom physics"						, {&co_zdoomphys},		{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete	,	"Positional switch sounds"				, {&co_zdoomswitches},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete	,	"Extended Sound Curve"					, {&co_zdoomsoundcurve},{2.0},		{0.0},		{0.0},		{OnOff} },	
  };
 
 menu_t CompatMenu = {
@@ -440,6 +461,42 @@ menu_t CompatMenu = {
 	STACKARRAY_LENGTH(CompatItems),
 	177,
 	CompatItems,
+};
+
+
+/*=======================================
+ *
+ * Network Options Menu
+ *
+ *=======================================*/
+
+static value_t BandwidthLevels[] = {
+	{ 7.0,			"56kbps" },
+	{ 200.0,		"1.5Mbps" },
+	{ 375.0,		"3.0Mbps" },
+	{ 750.0,		"6.0Mbps" }
+};
+
+static value_t UpdateRate[] = {
+	{ 1.0,			"Every tic" },
+	{ 2.0,			"Every 2nd tic" },
+	{ 3.0,			"Every 3rd tic" }
+};
+
+static menuitem_t NetworkItems[] = {
+    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
+	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Bandwidth",					{&rate},			{4.0},		{0.0},		{0.0},		{BandwidthLevels} },
+	{ discrete,		"Position update freq",			{&cl_updaterate},	{3.0},		{0.0},		{0.0},		{UpdateRate} },
+	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },
+};
+
+menu_t NetworkMenu = {
+	"M_NETWRK",
+	2,
+	STACKARRAY_LENGTH(NetworkItems),
+	177,
+	NetworkItems,
 };
 
 /*=======================================
@@ -467,6 +524,7 @@ EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (hud_usehighresboard)
 EXTERN_CVAR (r_showendoom)
+EXTERN_CVAR (r_painintensity)
 
 static value_t Crosshairs[] =
 {
@@ -541,6 +599,7 @@ static menuitem_t VideoItems[] = {
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {5.0},	{1.0},  {NULL} },
+	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },	
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },	
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
@@ -683,7 +742,7 @@ EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
 
-static cvar_t DummyDepthCvar (NULL, NULL, 0);
+static cvar_t DummyDepthCvar (NULL, NULL, "", 0);
 
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
@@ -1769,6 +1828,11 @@ void SoundOptions (void) // [Ralphis] for sound menu
 void CompatOptions (void) // [Ralphis] for compatibility menu
 {
 	M_SwitchMenu (&CompatMenu);
+}
+
+void NetworkOptions (void)
+{
+	M_SwitchMenu (&NetworkMenu);
 }
 
 BEGIN_COMMAND (menu_display)

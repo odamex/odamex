@@ -198,15 +198,15 @@ void C_DoCommand (const char *cmd)
 		// Checking for matching commands follows this search order:
 		//	1. Check the Commands map
 		//	2. Check the CVars list
-		command_map_t::iterator c = Commands().find(argv[0]);
+		command_map_t::iterator c = Commands().find(StdStringToLower(argv[0]));
 
 		if (c != Commands().end())
 		{
 			com = c->second;
 
 			if(!safemode
-			|| strcmp(argv[0], "if")==0
-			|| strcmp(argv[0], "exec")==0)
+			|| stricmp(argv[0], "if")==0
+			|| stricmp(argv[0], "exec")==0)
 			{
 				com->argc = argc;
 				com->argv = argv;
@@ -580,7 +580,10 @@ void DConsoleAlias::Run()
 		if (argc > 1)
         {
             for (size_t i = 1; i < argc; i++)
+            {
+                m_CommandParam += " ";
                 m_CommandParam += argv[i];
+            }
         }
 
         AddCommandString (m_CommandParam.c_str());
@@ -691,7 +694,7 @@ BEGIN_COMMAND (alias)
 	}
 	else
 	{
-		command_map_t::iterator i = Commands().find(argv[1]);
+		command_map_t::iterator i = Commands().find(StdStringToLower(argv[1]));
 
 		if(i != Commands().end())
 		{

@@ -332,11 +332,12 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		sector_t *heightsec = camera->subsector->sector->heightsec;
 
 		bool underwater = r_fakingunderwater || (heightsec && viewz <= heightsec->floorheight);
+
 		int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
 
 		// Replace sector being drawn, with a copy to be hacked
 		*tempsec = *sec;
-		
+
 		if (diffTex)
 		{
 			tempsec->floorheight = s->floorheight;
@@ -359,17 +360,17 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 				tempsec->ceilingheight = s->ceilingheight;
 			}
 		}
-		
+
 		fixed_t refceilz = s->ceilingheight;
 		fixed_t orgceilz = sec->ceilingheight;
 		bool gofake = false;
-		
+
 		if (viewz <= s->floorheight && s->floorheight > sec->floorheight)
 			gofake = true;
-				
+
 		// Replace floor and ceiling height with other sector's heights.
-		
-		if (underwater && viewz <= s->floorheight && s->floorheight > sec->floorheight)
+
+		if (underwater && /*viewz <= s->floorheight &&*/ s->floorheight > sec->floorheight)
 		{
 			tempsec->floorheight = sec->floorheight;
 			tempsec->ceilingheight = s->floorheight-1;
@@ -382,7 +383,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		// isn't always appropriate (which it isn't).
 		// [ML] Actually it's pretty appropriate, the boom way is deficient and 
 		//  has been removed.
-		if ((underwater && !back) && (viewz <= s->floorheight && s->floorheight > sec->floorheight))
+		if ((underwater && !back) && (/*viewz <= s->floorheight &&*/ s->floorheight > sec->floorheight))
 		{
 			tempsec->floorpic = diffTex ? sec->floorpic : s->floorpic;
 			tempsec->floor_xoffs = s->floor_xoffs;

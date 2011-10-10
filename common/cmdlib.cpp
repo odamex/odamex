@@ -22,7 +22,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -208,26 +207,70 @@ BOOL IsNum (char *str)
 	return result;
 }
 
-// [Russell] Returns 0 if strings are the same, optional parameter for case sensitivity
-int StdStringCompare(std::string string1, std::string string2, bool CaseInsensitive = false)
+// [Russell] Returns 0 if strings are the same, optional parameter for case 
+// sensitivity
+int StdStringCompare(const std::string &s1, const std::string &s2, 
+    bool CIS = false)
 {
 	// Convert to upper case
-	if (CaseInsensitive)
+	if (CIS)
 	{
-		std::transform(string1.begin(), string1.end(), string1.begin(), toupper);
-		std::transform(string2.begin(), string2.end(), string2.begin(), toupper);
+		return StdStringToUpper(s1).compare(StdStringToUpper(s2));
 	}
 
-	if (string1 < string2)
-		return -1;
-
-	else if (string1 > string2)
-		return 1;
-
-	// Strings are equal
-	return 0;
+    return s1.compare(s2);
 }
 
+size_t StdStringFind(const std::string& haystack, const std::string& needle,
+    size_t pos, size_t n, bool CIS, bool reverse)
+{
+    if (CIS)
+    {
+        if(reverse)
+        {
+            return StdStringToUpper(haystack).rfind(StdStringToUpper(needle).c_str(), pos, n);
+        }
+
+        return StdStringToUpper(haystack).find(StdStringToUpper(needle).c_str(), pos, n);
+    }
+
+    if(reverse)
+    {
+        return haystack.rfind(needle.c_str(), pos, n);
+    }
+
+    return haystack.find(needle.c_str(), pos, n);
+}
+
+size_t StdStringFind(const std::string& haystack, const std::string& needle,
+    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+{
+    return StdStringFind(haystack, needle, pos, n, CIS, false);
+}
+
+size_t StdStringRFind(const std::string& haystack, const std::string& needle,
+    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+{
+    return StdStringFind(haystack, needle, pos, n, CIS, true);
+}
+
+std::string StdStringToLower(const std::string& str)
+{
+    std::string lower(str);
+
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+    return lower;
+}
+
+std::string StdStringToUpper(const std::string& str)
+{
+    std::string upper(str);
+
+    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+
+    return upper;
+}
 
 VERSION_CONTROL (cmdlib_cpp, "$Id$")
 

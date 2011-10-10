@@ -1025,7 +1025,6 @@ void G_ChangeMap (void)
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
 void G_DoReborn(player_t &playernum);
-void SV_SendServerSettings(client_t *cl);
 
 //
 // G_DoNewGame
@@ -1125,6 +1124,9 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
+	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will
+	// send changed cvars
+	gamestate = GS_LEVEL;
 	SV_ServerSettingChange();
 
 	if (paused)
@@ -1314,7 +1316,7 @@ void G_DoLoadLevel (int position)
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
-	skytexture = R_TextureNumForName (level.skypic);
+	sky1texture = R_TextureNumForName (level.skypic);
 
 	for (i = 0; i < players.size(); i++)
 	{

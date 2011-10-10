@@ -527,6 +527,7 @@ extern std::vector<player_t> players;
 // Player taking events, and displaying.
 player_t		&consoleplayer();
 player_t		&displayplayer();
+player_t		&listenplayer();
 player_t		&idplayer(size_t id);
 bool			validplayer(player_t &ref);
 

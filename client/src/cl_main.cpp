@@ -119,6 +119,14 @@ CVAR_FUNC_IMPL (cl_autoaim)
 		var.Set(5000.0f);
 }
 
+CVAR_FUNC_IMPL (cl_updaterate)
+{
+	if (var < 1.0f)
+		var.Set(1.0f);
+	else if (var > 3.0f)
+		var.Set(3.0f);
+}
+
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_maxclients)
 EXTERN_CVAR (sv_infiniteammo)
@@ -129,6 +137,7 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
@@ -163,6 +172,7 @@ void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
+void P_SetFloorCeil(AActor *mo);
 void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -205,6 +215,7 @@ void CL_QuitNetGame(void)
 	sv_freelook = 1;
 	sv_allowjump = 1;
 	sv_allowexit = 1;
+	sv_allowredscreen = 1;
 
 	actor_by_netid.clear();
 	players.clear();
@@ -421,15 +432,16 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname   - %s \n",		  player->userinfo.netname);
-	Printf (PRINT_HIGH, " userinfo.team      - %d \n",		  player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.aimdist   - %d \n",		  player->userinfo.aimdist);
-    Printf (PRINT_HIGH, " userinfo.unlag     - %d \n",        player->userinfo.unlag);
-	Printf (PRINT_HIGH, " userinfo.color     - %d \n",		  player->userinfo.color);
-	Printf (PRINT_HIGH, " userinfo.skin      - %s \n",		  skins[player->userinfo.skin].name);
-	Printf (PRINT_HIGH, " userinfo.gender    - %d \n",		  player->userinfo.gender);
-	Printf (PRINT_HIGH, " spectator          - %d \n",		  player->spectator);
-	Printf (PRINT_HIGH, " time               - %d \n",		  player->GameTime);
+	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname);
+	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
+	Printf (PRINT_HIGH, " userinfo.aimdist     - %d \n",	player->userinfo.aimdist);
+    Printf (PRINT_HIGH, " userinfo.unlag       - %d \n",	player->userinfo.unlag);
+	Printf (PRINT_HIGH, " userinfo.update_rate - %d \n",	player->userinfo.update_rate);
+	Printf (PRINT_HIGH, " userinfo.color       - %d \n",	player->userinfo.color);
+	Printf (PRINT_HIGH, " userinfo.skin        - %s \n",	skins[player->userinfo.skin].name);
+	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
+	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
+	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
@@ -447,6 +459,8 @@ END_COMMAND (kill)
 
 BEGIN_COMMAND (serverinfo)
 {   
+	std::vector<std::string> server_cvars;
+
     cvar_t *Cvar = GetFirstCvar();
     size_t MaxFieldLength = 0;
     
@@ -459,39 +473,48 @@ BEGIN_COMMAND (serverinfo)
             
             if (FieldLength > MaxFieldLength)
                 MaxFieldLength = FieldLength;                
+
+			// store this cvar name in our vector to be sorted later
+			server_cvars.push_back(Cvar->name());
         }
         
         Cvar = Cvar->GetNext();
     }
 
-    // [Russell] - Formatted output
-    Cvar = GetFirstCvar();
+	// sort the list of cvars
+	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
     Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
     
     // Data
-    while (Cvar)
-	{			
-        if (Cvar->flags() & CVAR_SERVERINFO)
-        {
-            Printf(PRINT_HIGH, 
-                   "%*s - %s\n", 
-                   MaxFieldLength,
-                   Cvar->name(), 
-                   Cvar->cstring());          
-        }
-        
-        Cvar = Cvar->GetNext();
-    }
+	for (size_t i = 0; i < server_cvars.size(); i++)
+	{
+		cvar_t *dummy;
+		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
+
+		Printf(PRINT_HIGH, 
+				"%*s - %s\n", 
+				MaxFieldLength,
+				Cvar->name(), 
+				Cvar->cstring());          
+	}
     
     Printf (PRINT_HIGH,	"\n");
 }
 END_COMMAND (serverinfo)
 
-// rate: takes a bps value
+// rate: takes a kbps value
 CVAR_FUNC_IMPL (rate)
 {
+/*  // [SL] 2011-09-02 - Commented out this code as it would force clients with
+	// a version that has rate in kbps to have a rate of < 5000 bps on an older
+	// server version that has rate in bps, resulting in an unplayable connection.
+
+	const int max_rate = 5000;	// 40Mbps, likely set erroneously
+	if (var > max_rate)
+		var.RestoreDefault();		
+*/
 	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
@@ -593,11 +616,17 @@ BEGIN_COMMAND (exit)
 END_COMMAND (exit)
 
 
+//
+// CL_NetDemoStop
+//
+void CL_NetDemoStop()
+{
+	netdemo.stopPlaying();
+}
+
 void CL_NetDemoRecord(const std::string &filename)
 {
-	std::string full_filename(filename);
-	full_filename.append(".odd");
-	netdemo.startRecording(full_filename);
+	netdemo.startRecording(filename);
 }
 
 void CL_NetDemoPlay(const std::string &filename)
@@ -605,6 +634,20 @@ void CL_NetDemoPlay(const std::string &filename)
 	netdemo.startPlaying(filename);
 }
 
+void CL_NetDemoSnapshot()
+{
+/*	// read the length of the snapshot
+	int len = MSG_ReadLong();
+
+
+	// [SL] DEBUG!
+	Printf(PRINT_HIGH, "Skipping over %d bytes of snapshot data\n", len);
+
+	// skip over the snapshot since it is handled elsewhere
+	byte b;
+	while (len--)
+		b = MSG_ReadByte(); */
+}
 
 BEGIN_COMMAND(stopnetdemo)
 {
@@ -643,6 +686,8 @@ BEGIN_COMMAND(netrecord)
 		if (strlen(argv[1]) > 0)
 			filename = argv[1];
 	}
+
+    M_AppendExtension(filename, ".odd");
 
 	CL_Reconnect();
 	CL_NetDemoRecord(filename);
@@ -709,16 +754,8 @@ END_COMMAND(rew)
 //
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
-	P_CheckPosition (mobj, x, y);
-	mobj->UnlinkFromWorld ();
-
-	mobj->x = x;
-	mobj->y = y;
-	mobj->z = z;
-	mobj->floorz = tmfloorz;
-	mobj->ceilingz = tmceilingz;
-
-	mobj->LinkToWorld ();
+	P_CheckPosition(mobj, x, y);
+	mobj->SetOrigin(x, y, z);
 }
 
 //
@@ -736,6 +773,7 @@ void CL_SendUserInfo(void)
 	coninfo->gender  = D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
+	coninfo->update_rate = cl_updaterate;
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
 	MSG_WriteString	(&net_buffer, coninfo->netname);
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
@@ -744,6 +782,7 @@ void CL_SendUserInfo(void)
 	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
+	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
 }
 
 
@@ -1071,6 +1110,15 @@ bool CL_PrepareConnect(void)
 		// denis - download files
 		missing_file = wadnames[missing_files[0]];
 		missing_hash = wadhashes[missing_files[0]];
+
+		if (netdemo.isPlaying())
+		{
+			// Playing a netdemo and unable to download from the server
+			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n", missing_file.c_str());
+			CL_QuitNetGame();
+			return false;
+		}
+
 		gamestate = GS_DOWNLOAD;
 		Printf(PRINT_HIGH, "Will download \"%s\" from server\n", missing_file.c_str());
 	}
@@ -1261,26 +1309,27 @@ void CL_UpdatePlayer()
 
 	if(!validplayer(*p) || !p->mo)
 	{
-		for (int i=0; i<37; i++)
-			MSG_ReadByte();
+	    // Advance 37 bytes, because we don't need the following data anymore
+		MSG_SetOffset(37, buf_t::BT_SCUR);
+
 		return;
 	}
 
-	int sv_gametic = MSG_ReadLong();
+	int sv_gametic = MSG_ReadLong(); // 4
 	
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
+	x = MSG_ReadLong(); // 8
+	y = MSG_ReadLong(); // 12
+	z = MSG_ReadLong(); // 16
 	CL_MoveThing(p->mo, x, y, z);
-	p->mo->angle = MSG_ReadLong();
-	byte frame = MSG_ReadByte();
-	p->mo->momx = MSG_ReadLong();
-	p->mo->momy = MSG_ReadLong();
-	p->mo->momz = MSG_ReadLong();
+	p->mo->angle = MSG_ReadLong(); // 20
+	byte frame = MSG_ReadByte(); // 21
+	p->mo->momx = MSG_ReadLong(); // 25
+	p->mo->momy = MSG_ReadLong(); // 29
+	p->mo->momz = MSG_ReadLong(); // 33
 
 	p->real_origin[0] = x;
 	p->real_origin[1] = y;
@@ -1291,7 +1340,7 @@ void CL_UpdatePlayer()
 	p->real_velocity[2] = p->mo->momz;
 
     // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = MSG_ReadLong();
+    p->powers[pw_invisibility] = MSG_ReadLong(); // 37
 
     if (p->powers[pw_invisibility])
     {
@@ -1335,9 +1384,11 @@ void CL_UpdateLocalPlayer(void)
 	p.real_velocity[1] = MSG_ReadLong();
 	p.real_velocity[2] = MSG_ReadLong();
 
-    p.mo->waterlevel = MSG_ReadByte();
+	byte waterlevel = MSG_ReadByte();
+	if (p.mo)
+		p.mo->waterlevel = waterlevel;
 
-	real_plats.Clear();
+//	real_plats.Clear();
 }
 
 
@@ -1553,10 +1604,6 @@ void CL_SpawnPlayer()
 
 	G_PlayerReborn (*p);
 
-	// denis - if this concerns the local player, restart the status bar
-	if(p->id == consoleplayer_id)
-		ST_Start ();
-
 	mobj = new AActor (x, y, z, MT_PLAYER);
 
 	// set color translations for player sprites
@@ -1602,6 +1649,10 @@ void CL_SpawnPlayer()
 	if(sv_gametype != GM_COOP)
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
+
+	// denis - if this concerns the local player, restart the status bar
+	if(p->id == consoleplayer_id)
+		ST_Start ();
 }
 
 //
@@ -1891,8 +1942,16 @@ player_t* player = &players[consoleplayer];
 //
 void CL_ChangeWeapon (void)
 {
-	player_t *p = &consoleplayer();
-	p->pendingweapon = (weapontype_t)MSG_ReadByte();
+	player_t *player = &consoleplayer();
+	weapontype_t newweapon = (weapontype_t)MSG_ReadByte();
+
+	// ensure that the client has the weapon
+	player->weaponowned[newweapon] = true;
+
+	// [SL] 2011-09-22 - Only change the weapon if the client doesn't already
+	// have that weapon up.
+	if (player->readyweapon != newweapon)
+		player->pendingweapon = newweapon;
 }
 
 
@@ -2240,6 +2299,10 @@ void CL_CheckMissedPacket(void)
 	}
 }
 
+// Decompress the packet sequence
+// [Russell] - reason this was failing is because of huffman routines, so just
+// use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
+// if 0'd sections
 void CL_Decompress(int sequence)
 {
 	if(!MSG_BytesLeft() || MSG_NextByte() != svc_compressed)
@@ -2249,9 +2312,7 @@ void CL_Decompress(int sequence)
 
 	byte method = MSG_ReadByte();
 
-	if(method & minilzo_mask)
-		MSG_DecompressMinilzo();
-
+#if 0
 	if(method & adaptive_mask)
 		MSG_DecompressAdaptive(compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0));
 	else
@@ -2259,9 +2320,14 @@ void CL_Decompress(int sequence)
 		// otherwise compressed packets can still contain codec updates
 		compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0);
 	}
+#endif
 
+	if(method & minilzo_mask)
+		MSG_DecompressMinilzo();
+#if 0
 	if(method & adaptive_record_mask)
 		compressor.ack_sent(net_message.ptr(), MSG_BytesLeft());
+#endif
 }
 
 //
@@ -2301,7 +2367,7 @@ void CL_GetServerSettings(void)
         {
             // [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
             // for cleanup on program termination
-            var = new cvar_t (CvarName.c_str(), NULL,
+            var = new cvar_t (CvarName.c_str(), NULL, "",
                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
                                   
             var->Set(CvarValue.c_str());
@@ -2503,14 +2569,25 @@ struct download_s
 
 		download_s()
 		{
-			filename = "";
-			md5 = "";
 			buf = NULL;
-			got_bytes = 0;
+			this->clear();
 		}
 
 		~download_s()
 		{
+		}
+
+		void clear()
+		{	
+			filename = "";
+			md5 = "";
+			got_bytes = 0;
+        	
+			if (buf != NULL)
+			{
+				delete buf;
+				buf = NULL;
+			}
 		}
 } download;
 
@@ -2531,16 +2608,7 @@ void IntDownloadComplete(void)
 		Printf(PRINT_HIGH, " %s on server\n", download.md5.c_str());
 		Printf(PRINT_HIGH, "Download failed: bad checksum\n");
 
-        download.filename = "";
-        download.md5 = "";
-        download.got_bytes = 0;
-		
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }   
-			
+		download.clear();
         CL_QuitNetGame();
         return;
     }
@@ -2588,32 +2656,14 @@ void IntDownloadComplete(void)
     // Unable to write
     if(i == dirs.size())
     {
-        download.filename = "";
-        download.md5 = "";
-        download.got_bytes = 0;
-
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }   
-            
+		download.clear();
         CL_QuitNetGame();
         return;            
     }
 
     Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
 
-    download.filename = "";
-    download.md5 = "";
-    download.got_bytes = 0;
-
-    if (download.buf != NULL)
-    {
-        delete download.buf;
-        download.buf = NULL;
-    }
-
+	download.clear();
     CL_QuitNetGame();
     CL_Reconnect();
 }
@@ -2710,21 +2760,21 @@ void CL_Download()
 	if(gamestate != GS_DOWNLOAD)
 		return;
 
+	if (download.buf == NULL)
+	{
+		// We must have not received the svc_wadinfo message
+		Printf(PRINT_HIGH, "Unable to start download, aborting\n");
+		download.clear();
+		CL_QuitNetGame();
+		return;
+	}
+
 	// check ranges
 	if(offset + len > download.buf->maxsize() || len > left || p == NULL)
 	{
 		Printf(PRINT_HIGH, "Bad download packet (%d, %d) encountered (%d), aborting\n", (int)offset, (int)left, (int)download.buf->size());
-        
-        download.filename = "";
-        download.md5 = "";
-        download.got_bytes = 0;
-        
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }
-        
+    	
+		download.clear();    
 		CL_QuitNetGame();
 		return;
 	}
@@ -3174,41 +3224,6 @@ void CL_LocalDemoTic()
 	}
 
 }
-
-//
-// CL_NetDemoStop
-//
-void CL_NetDemoStop()
-{
-	netdemo.stopPlaying();
-}
-
-void CL_NetDemoRecord(std::string filename)
-{
-	filename.append(".odd");
-	netdemo.startRecording(filename);
-}
-
-void CL_NetDemoPlay(std::string filename)
-{
-	netdemo.startPlaying(filename);
-}
-
-void CL_NetDemoSnapshot()
-{
-/*	// read the length of the snapshot
-	int len = MSG_ReadLong();
-
-
-	// [SL] DEBUG!
-	Printf(PRINT_HIGH, "Skipping over %d bytes of snapshot data\n", len);
-
-	// skip over the snapshot since it is handled elsewhere
-	byte b;
-	while (len--)
-		b = MSG_ReadByte(); */
-}
-
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}

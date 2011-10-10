@@ -98,12 +98,12 @@ EXTERN_CVAR(sv_hostname)
 EXTERN_CVAR(sv_email)
 EXTERN_CVAR(sv_website)
 EXTERN_CVAR(sv_waddownload)
+EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_emptyreset)
 EXTERN_CVAR(sv_clientcount)
 EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
-EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_timeleft)
 
 void SexMessage (const char *from, char *to, int gender);
@@ -214,6 +214,45 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 	}
 	else
 		Printf(PRINT_HIGH, "rcon password set");
+}
+
+//
+//  SV_SetClientRate
+//
+//  Performs range checking on client's rate
+//
+void SV_SetClientRate(client_t &client, int rate)
+{
+	if (rate < 1)
+		rate = 1;
+	else if (rate > sv_maxrate)
+		rate = sv_maxrate;
+
+	client.rate = rate;	
+}
+
+EXTERN_CVAR (sv_waddownloadcap)
+CVAR_FUNC_IMPL (sv_maxrate)
+{
+	// impose a minimum rate of 10kbps/client
+	if (var < 10)
+		var.Set(10);
+
+	if (sv_waddownloadcap > var)
+		sv_waddownloadcap.Set(var);
+
+	for (size_t i = 0; i < clients.size(); i++)
+	{
+		// ensure no clients exceed sv_maxrate
+		SV_SetClientRate(clients[i], clients[i].rate);
+	}
+}
+
+CVAR_FUNC_IMPL (sv_waddownloadcap)
+{
+	// sv_waddownloadcap can not be larger than sv_maxrate
+	if (var > sv_maxrate || var <= 0)
+		var.Set(sv_maxrate);
 }
 
 EXTERN_CVAR (sv_antiwallhack)
@@ -760,6 +799,8 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 		player.mo = AActor::AActorPtr();
 	}
 
+	Unlag::getInstance().unregisterPlayer(player_id);
+
 	// remove this player from the global players vector
 	for (size_t i=0; i<players.size(); i++)
 	{
@@ -777,8 +818,6 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 		if (players[i].mo)
 			players[i].mo->player = &players[i];
 	}
-
-	Unlag::getInstance().unregisterPlayer(player_id);
 }
 
 
@@ -1136,6 +1175,13 @@ void SV_SetupUserInfo (player_t &player)
 
 	// [SL] 2011-05-11 - Client opt-in/out of serverside unlagging
 	p->userinfo.unlag = MSG_ReadByte();
+
+	// [SL] 2011-09-01 - Send client svc_moveplayer messages every N tics
+	p->userinfo.update_rate = MSG_ReadByte();
+	if (p->userinfo.update_rate < 1)
+		p->userinfo.update_rate = 1;
+	else if (p->userinfo.update_rate > 3)
+		p->userinfo.update_rate = 3;
 
 	// Make sure the gender is valid
 	if(p->userinfo.gender >= NUMGENDER)
@@ -2129,6 +2175,8 @@ bool SV_CheckClientVersion(client_t *cl, int n)
 	return AllowConnect;
 }
 
+
+
 //
 //	SV_ConnectClient
 //
@@ -2211,6 +2259,10 @@ void SV_ConnectClient (void)
 	cl->version = MSG_ReadShort();
 	byte connection_type = MSG_ReadByte();
 
+	// [SL] 2011-05-11 - Register the player with the reconciliation system
+	// for unlagging
+	Unlag::getInstance().registerPlayer(players[n].id);
+
 	if (!SV_CheckClientVersion(cl, n))
 	{
 		SV_DropClient(players[n]);
@@ -2235,7 +2287,7 @@ void SV_ConnectClient (void)
 	SV_SetupUserInfo (players[n]); // send it to other players
 
 	// get rate value
-	cl->rate				= MSG_ReadLong();
+	SV_SetClientRate(*cl, MSG_ReadLong());
 
     std::string passhash = MSG_ReadString();
 
@@ -2302,10 +2354,6 @@ void SV_ConnectClient (void)
 	G_DoReborn (players[n]);
 	SV_ClientFullUpdate (players[n]);
 	SV_SendPacket (players[n]);
-
-	// [SL] 2011-05-11 - Register the player with the reconciliation system
-	// for unlagging
-	Unlag::getInstance().registerPlayer(players[n].id);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
 
@@ -3227,13 +3275,15 @@ void SV_WriteCommands(void)
 		if (players[i].ingame())
 			SV_SendGametic(cl);
 
-		// Don't need to update origin every tic.
-		// The server sends origin and velocity of a
-		// player and the client always knows origin on
-		// on the next tic.
-		if (gametic % 2)
-			for (j=0; j < players.size(); j++)
-			{
+		for (j=0; j < players.size(); j++)
+		{
+			// Don't need to update origin every tic.
+			// The server sends origin and velocity of a
+			// player and the client always knows origin on
+			// on the next tic.
+			// HOWEVER, update as often as the player requests
+			if (gametic % players[i].userinfo.update_rate == 0)
+			{ 
 				if (!players[j].ingame() || !players[j].mo)
 					continue;
 
@@ -3269,6 +3319,7 @@ void SV_WriteCommands(void)
                 // this but its all we have for now)
                 MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
 			}
+		}
 
 		SV_UpdateHiddenMobj();
 
@@ -3527,6 +3578,10 @@ void SV_Spectate (player_t &player)
 				if ((multiplayer && level.time > player.joinafterspectatortime + TICRATE*3) ||
 					level.time > player.joinafterspectatortime + TICRATE*5) {
 					player.spectator = false;
+
+					// [SL] 2011-09-01 - Clear any previous SV_MidPrint (sv_motd for example)
+					SV_MidPrint("", &player, 0);
+
 					for (size_t j = 0; j < players.size(); j++) {
 						MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
 						MSG_WriteByte (&(players[j].client.reliablebuf), player.id);
@@ -3726,6 +3781,11 @@ void SV_WantWad(player_t &player)
 
 	if(!sv_waddownload)
 	{
+		// read and ignore the rest of the wad request
+		MSG_ReadString();
+		MSG_ReadString();
+		MSG_ReadLong();
+
 		MSG_WriteMarker (&cl->reliablebuf, svc_print);
 		MSG_WriteByte (&cl->reliablebuf, PRINT_HIGH);
 		MSG_WriteString (&cl->reliablebuf, "Server: Downloading is disabled\n");
@@ -3816,12 +3876,8 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_rate:
 			{
-				player.client.rate = MSG_ReadLong();
 				// denis - prevent problems by locking rate within a range
-            	if (player.client.rate < 500)
-					player.client.rate = 500;
-				if (player.client.rate > sv_maxrate)
-					player.client.rate = sv_maxrate.asInt();
+				SV_SetClientRate(player.client, MSG_ReadLong());
 			}
 			break;
 
@@ -3942,11 +3998,6 @@ void SV_WadDownloads (void)
 	if(players.empty())
 		return;
 
-	// don't send too much
-	// [ML] 8/27/10: ...unless the server admin allows it
-	if(gametic%(2 * (players.size()+1)) && sv_waddownloadcap)
-        return;
-
 	// wad downloading
 	for(size_t i = 0; i < players.size(); i++)
 	{
@@ -3958,22 +4009,29 @@ void SV_WadDownloads (void)
 		if(!cl->download.name.length())
 			continue;
 
-		// read next bit of wad
 		static char buff[1024];
+		// Smaller buffer for slower clients
+		int chunk_size = (sizeof(buff) > (unsigned)cl->rate*1000/TICRATE) ? cl->rate*1000/TICRATE : sizeof(buff);
 
-		unsigned int filelen = 0;
-		unsigned int read;
+		// maximum rate client can download at (in bytes per second)
+		int download_rate = (sv_waddownloadcap > cl->rate) ? cl->rate*1000 : sv_waddownloadcap*1000;
 
-		read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, sizeof(buff), buff, filelen);
-
-		// [SL] 2011-08-09 - Always send the data in netbuf and reliablebuf prior
-		// to writing a wadchunk to netbuf to keep packet sizes below the MTU.
-		// This prevents packets from getting dropped due to size on some networks.
-		if (cl->netbuf.size() + cl->reliablebuf.size())
-			SV_SendPacket(players[i]);
-
-		if(read)
+		do
 		{
+			// read next bit of wad
+			unsigned int read;
+			unsigned int filelen = 0;
+			read = W_ReadChunk(cl->download.name.c_str(), cl->download.next_offset, chunk_size, buff, filelen);
+			
+			if (!read)
+				break;
+
+			// [SL] 2011-08-09 - Always send the data in netbuf and reliablebuf prior
+			// to writing a wadchunk to netbuf to keep packet sizes below the MTU.
+			// This prevents packets from getting dropped due to size on some networks.
+			if (cl->netbuf.size() + cl->reliablebuf.size())
+				SV_SendPacket(players[i]);
+
 			if(!cl->download.next_offset)
 			{
 				MSG_WriteMarker (&cl->netbuf, svc_wadinfo);
@@ -3985,8 +4043,16 @@ void SV_WadDownloads (void)
 			MSG_WriteShort (&cl->netbuf, read);
 			MSG_WriteChunk (&cl->netbuf, buff, read);
 
+			// Make double-sure the wadchunk is sent in its own packet
+			if (cl->netbuf.size() + cl->reliablebuf.size())
+				SV_SendPacket(players[i]);
+
 			cl->download.next_offset += read;
-		}
+		} while (
+			(double)(cl->reliable_bps + cl->unreliable_bps) * TICRATE 
+				/ (double)(gametic % TICRATE)	// bps already used 
+				+ (double)chunk_size / TICRATE 	// bps this chunk will use
+			< (double)download_rate); 
 	}
 }
 
@@ -4025,9 +4091,16 @@ void SV_TimelimitCheck()
 		return;
 
 	// [ML] Update the sv_timeleft cvar for clients
-	sv_timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
+	// [SL] 2011-09-03 - Updating sv_timeleft forces the server to send all
+	// the server settings to all the clients, hogging bandwidth, so
+	// only do it sparingly
+	int timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
 
-	if (sv_timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
+	// Update sv_timeleft every 10 seconds
+	if ((gametic % (10*TICRATE)) == 0)
+		sv_timeleft = timeleft;
+
+	if (timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
 		return;
 
 	// LEVEL TIMER
@@ -4578,12 +4651,12 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 			continue;
 
 		// send death location first
-		MSG_WriteMarker(&cl->netbuf, svc_movemobj);
-		MSG_WriteShort(&cl->netbuf, target->netid);
-		MSG_WriteByte(&cl->netbuf, target->rndindex);
-		MSG_WriteLong(&cl->netbuf, target->x);
-		MSG_WriteLong(&cl->netbuf, target->y);
-		MSG_WriteLong(&cl->netbuf, target->z);
+		MSG_WriteMarker(&cl->reliablebuf, svc_movemobj);
+		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteByte(&cl->reliablebuf, target->rndindex);
+		MSG_WriteLong(&cl->reliablebuf, target->x);
+		MSG_WriteLong(&cl->reliablebuf, target->y);
+		MSG_WriteLong(&cl->reliablebuf, target->z);
 		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
 
 		if (source)

@@ -159,6 +159,8 @@ extern int				rw_angle1;
 extern visplane_t*		floorplane;
 extern visplane_t*		ceilingplane;
 
+extern int				FieldOfView;
+
 
 #endif // __R_STATE_H__
 

@@ -31,9 +31,9 @@
 
 // [ML] 5/11/06 - Remove sky2
 int 		skyflatnum;
-int 		skytexture;
+int 		sky1texture;
 
-fixed_t		skypos=0,		skyspeed=0;
+fixed_t		sky1pos=0,		sky1speed=0;
 
 char SKYFLATNAME[8] = "F_SKY1";
 
