@@ -202,7 +202,7 @@ int32_t BufferedSocket::SendData(const int32_t &Timeout)
 
 	m_BufferSize = m_BufferPos;
 
-	if(m_BufferSize <= 0)
+	if(!m_BufferSize)
 		return 0;
 
 	if (CreateSocket() == false)
@@ -225,6 +225,7 @@ int32_t BufferedSocket::SendData(const int32_t &Timeout)
 
 int32_t BufferedSocket::GetData(const int32_t &Timeout)
 {
+    int32_t BytesReceived;
 	int32_t          res;
 	fd_set           readfds;
 	struct timeval   tv;
@@ -259,11 +260,11 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 
     fromlen = sizeof(m_RemoteAddress);
 
-    m_BufferSize = recvfrom(m_Socket, (char *)m_SocketBuffer, MAX_PAYLOAD, 0, 
+    BytesReceived = recvfrom(m_Socket, (char *)m_SocketBuffer, MAX_PAYLOAD, 0, 
         (struct sockaddr *)&m_RemoteAddress, &fromlen);
 
 	// -1 = Error; 0 = Closed Connection
-	if(m_BufferSize <= 0)
+	if(BytesReceived <= 0)
 	{
 		ReportError(REPERR_NO_ARGS);
 
@@ -272,6 +273,8 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 
 		return 0;
 	}
+
+    m_BufferSize = BytesReceived;
 
 	// apply the receive ping
 	m_ReceivePing = GetMillisNow();
