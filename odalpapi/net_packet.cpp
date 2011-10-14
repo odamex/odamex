@@ -532,6 +532,8 @@ void MasterServer::QueryBC(const uint32_t &Timeout)
     BCSocket.Write32(VERSION);
     BCSocket.Write32(PROTOCOL_VERSION);
 
+    BCSocket.Write32(0);
+
     BCSocket.SetBroadcast(true);
 
     BCSocket.SendData(Timeout);
