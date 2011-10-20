@@ -415,7 +415,7 @@ cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)
 	*prev = NULL;
 	while (var)
 	{
-		if (stricmp (var->m_Name.c_str(), var_name) == 0)
+		if (StdStringCompare(var->m_Name, var_name, true) == 0)
 			break;
 		*prev = var;
 		var = var->m_Next;
