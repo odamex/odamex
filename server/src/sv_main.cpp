@@ -1188,13 +1188,16 @@ void SV_SetupUserInfo (player_t &player)
 		p->userinfo.gender = GENDER_NEUTER;
 
 	// Compare names and broadcast if different.
-	if (strncmp(old_netname, "", sizeof(old_netname)) && strncmp(p->userinfo.netname, old_netname, sizeof(old_netname))) {
+	if (StdStringCompare(old_netname, "", false) && 
+     StdStringCompare(p->userinfo.netname, old_netname, false))
+    {
 		switch (p->userinfo.gender) {
 			case 0: gendermessage = "his";  break;
 			case 1: gendermessage = "her";  break;
 			default: gendermessage = "its";  break;
 		}
-		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", old_netname, gendermessage.c_str(), p->userinfo.netname);
+		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", 
+            old_netname, gendermessage.c_str(), p->userinfo.netname);
 	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
