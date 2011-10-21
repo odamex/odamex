@@ -579,6 +579,9 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	int		cnum;
 	int handle;
 
+	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
+		return;
+
   	// check for bogus sound #
 	if (sfx_id < 1 || sfx_id > numsfx)
 	{
@@ -662,6 +665,9 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	{
 		switch (channel)
 		{
+			case CHAN_INTERFACE:
+				basepriority = 200;
+				break;
 			case CHAN_WEAPON:
 				basepriority = 100;
 				break;
@@ -810,6 +816,9 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 {
 	int sfx_id = -1;
 	
+	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
+		return;
+
 	if (name == NULL ||
 			(ent && ent != (AActor *)(~0) && ent->subsector && ent->subsector->sector && 
 			ent->subsector->sector->MoreFlags & SECF_SILENT))

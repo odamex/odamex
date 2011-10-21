@@ -1613,7 +1613,7 @@ void C_RevealSecret()
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint ("A secret is revealed!");
-	S_Sound (CHAN_AUTO, "misc/secret", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
 
 /****** Tab completion code ******/

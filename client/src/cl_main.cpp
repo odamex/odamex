@@ -279,7 +279,7 @@ void CL_ConnectClient(void)
 	if (&player == &consoleplayer())
 		return;
 		
-	S_Sound (CHAN_VOICE, "misc/pljoin", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
 }
 
 //
@@ -305,7 +305,7 @@ void CL_DisconnectClient(void)
 			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
 			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
 			if (cl_disconnectalert && &player != &consoleplayer())
-				S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
 			players.erase(players.begin() + i);
 			break;
 		}
@@ -1287,7 +1287,7 @@ void CL_Print (void)
 	Printf (level, "%s", str);
 
 	if ((level == PRINT_CHAT || level == PRINT_TEAMCHAT) && show_messages)
-		S_Sound (CHAN_VOICE, gameinfo.chatSound, 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 }
 
 // Print a message in the middle of the screen
