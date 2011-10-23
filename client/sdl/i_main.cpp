@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
             LOG << std::endl;
         }
 #ifndef WIN32
-            fprintf(stderr, "%s\n", error.GetMessage().c_str());
+            fprintf(stderr, "%s\n", error.GetMsg().c_str());
 #elif _XBOX
 		// Use future Xbox error message handling.    -- Hyper_Eye
 #else

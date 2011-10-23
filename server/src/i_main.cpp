@@ -260,11 +260,11 @@ int main (int argc, char **argv)
     }
     catch (CDoomError &error)
     {
-	fprintf (stderr, "%s\n", error.GetMessage().c_str());
+	fprintf (stderr, "%s\n", error.GetMsg().c_str());
 
 	if (LOG.is_open())
         {
-            LOG << error.GetMessage() << std::endl;
+            LOG << error.GetMsg() << std::endl;
             LOG << std::endl;
         }
 
