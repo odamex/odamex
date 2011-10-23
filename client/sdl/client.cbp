@@ -292,6 +292,8 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
+			<Add option="-Winvalid-pch" />
+			<Add option='-include &quot;cl_pch.h&quot;' />
 			<Add option="-fexceptions" />
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
@@ -347,6 +349,10 @@
 		<Unit filename="..\src\cl_main.cpp" />
 		<Unit filename="..\src\cl_main.h" />
 		<Unit filename="..\src\cl_mobj.cpp" />
+		<Unit filename="..\src\cl_pch.h">
+			<Option compile="1" />
+			<Option weight="0" />
+		</Unit>
 		<Unit filename="..\src\cl_pred.cpp" />
 		<Unit filename="..\src\cl_stubs.cpp" />
 		<Unit filename="..\src\d_main.cpp" />
@@ -391,6 +397,7 @@
 		<Unit filename="..\..\common\c_cvars.h" />
 		<Unit filename="..\..\common\c_dispatch.cpp" />
 		<Unit filename="..\..\common\c_dispatch.h" />
+		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\cmdlib.cpp" />
 		<Unit filename="..\..\common\cmdlib.h" />
 		<Unit filename="..\..\common\d_dehacked.cpp" />

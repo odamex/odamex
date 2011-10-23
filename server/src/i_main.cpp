@@ -142,12 +142,12 @@ int __cdecl main(int argc, char *argv[])
     {
 		if (LOG.is_open())
         {
-            LOG << error.GetMessage() << std::endl;
+            LOG << error.GetMsg() << std::endl;
             LOG << std::endl;
         }
         else
         {
-            MessageBox(NULL, error.GetMessage().c_str(), "Odasrv Error", MB_OK);
+            MessageBox(NULL, error.GetMsg().c_str(), "Odasrv Error", MB_OK);
         }
 
 		exit (-1);

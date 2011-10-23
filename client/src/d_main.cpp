@@ -457,7 +457,7 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf_Bold ("\n%s\n", error.GetMessage().c_str());
+			Printf_Bold ("\n%s\n", error.GetMsg().c_str());
 
 			CL_QuitNetGame ();
 

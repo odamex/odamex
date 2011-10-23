@@ -31,7 +31,7 @@ class CDoomError
 {
 public:
 	CDoomError (std::string message) : m_Message(message) {}
-	std::string GetMessage (void) const { return m_Message;	}
+	std::string GetMsg (void) const { return m_Message;	}
 
 private:
 	std::string m_Message;
