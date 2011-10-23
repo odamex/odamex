@@ -696,8 +696,8 @@ bool P_SetMobjState(AActor *mobj, statenum_t state)
 
 		// Modified handling.
 		// Call action functions when the state is set
-		if (st->action.acp1)
-			st->action.acp1(mobj);
+		if (st->action)
+			st->action(mobj);
 
 		state = st->nextstate;
     } while (!mobj->tics);
