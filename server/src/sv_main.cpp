@@ -3684,7 +3684,7 @@ void SV_Suicide(player_t &player)
 
 	// merry suicide!
 	P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
-	player.mo->player = NULL;
+	//player.mo->player = NULL;
 	//player.mo = NULL;
 }
 
