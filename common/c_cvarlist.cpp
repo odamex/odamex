@@ -114,9 +114,6 @@ CVAR (sv_unlag,				"1", "Allow reconciliation for players on lagged connections"
 CVAR (sv_allownobob, "0", "Allow weapon bob changing", 
       CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-// [ML] Time left
-CVAR (sv_timeleft, "0", "", CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-
 // [ML] Allow clients to adjust amount of red pain screen intensity
 CVAR (sv_allowredscreen, "0","Allow clients to adjust amount of red pain screen intensity", 
 	  CVAR_SERVERINFO | CVAR_SERVERARCHIVE)

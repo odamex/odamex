@@ -1444,6 +1444,16 @@ void CL_UpdatePing(void)
 	p.ping = MSG_ReadLong();
 }
 
+
+//
+// CL_UpdateTimeLeft
+// Changes the value of level.timeleft
+//
+void CL_UpdateTimeLeft(void)
+{
+	level.timeleft = MSG_ReadShort() * TICRATE;	// convert from seconds to tics
+}
+
 //
 // CL_SpawnMobj
 //
@@ -2909,6 +2919,7 @@ void CL_InitCommands(void)
     cmds[svc_midprint]          = &CL_MidPrint;
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
+	cmds[svc_timeleft]			= &CL_UpdateTimeLeft;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;

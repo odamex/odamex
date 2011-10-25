@@ -63,7 +63,6 @@ EXTERN_CVAR (con_scaletext)
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_scorelimit)
-EXTERN_CVAR (sv_timeleft)
 
 // Chat
 void HU_Init (void);
@@ -679,9 +678,9 @@ void HU_DisplayTimer(int x, int y, bool scale = true)
 	int timeleft, hours, minutes, seconds;
 	char str[80];
 
-	if (sv_gametype != GM_COOP && sv_timeleft && gamestate == GS_LEVEL)
+	if (sv_gametype != GM_COOP && level.timeleft && gamestate == GS_LEVEL)
 	{
-		timeleft = sv_timeleft;
+		timeleft = level.timeleft;
 
 		if (timeleft < 0)
 			timeleft = 0;
