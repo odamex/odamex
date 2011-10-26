@@ -22,7 +22,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -216,17 +215,62 @@ int StdStringCompare(const std::string &s1, const std::string &s2,
 	// Convert to upper case
 	if (CIS)
 	{
-        std::string str1(s1), str2(s2);
-
-		std::transform(str1.begin(), str1.end(), str1.begin(), toupper);
-		std::transform(str2.begin(), str2.end(), str2.begin(), toupper);
-
-		return str1.compare(str2);
+		return StdStringToUpper(s1).compare(StdStringToUpper(s2));
 	}
 
     return s1.compare(s2);
 }
 
+size_t StdStringFind(const std::string& haystack, const std::string& needle,
+    size_t pos, size_t n, bool CIS, bool reverse)
+{
+    if (CIS)
+    {
+        if(reverse)
+        {
+            return StdStringToUpper(haystack).rfind(StdStringToUpper(needle).c_str(), pos, n);
+        }
+
+        return StdStringToUpper(haystack).find(StdStringToUpper(needle).c_str(), pos, n);
+    }
+
+    if(reverse)
+    {
+        return haystack.rfind(needle.c_str(), pos, n);
+    }
+
+    return haystack.find(needle.c_str(), pos, n);
+}
+
+size_t StdStringFind(const std::string& haystack, const std::string& needle,
+    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+{
+    return StdStringFind(haystack, needle, pos, n, CIS, false);
+}
+
+size_t StdStringRFind(const std::string& haystack, const std::string& needle,
+    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+{
+    return StdStringFind(haystack, needle, pos, n, CIS, true);
+}
+
+std::string StdStringToLower(const std::string& str)
+{
+    std::string lower(str);
+
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+    return lower;
+}
+
+std::string StdStringToUpper(const std::string& str)
+{
+    std::string upper(str);
+
+    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+
+    return upper;
+}
 
 VERSION_CONTROL (cmdlib_cpp, "$Id$")
 

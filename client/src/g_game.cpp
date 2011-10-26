@@ -736,7 +736,7 @@ BOOL G_Responder (event_t *ev)
                 stricmp (cmd, "stepmode") &&
                 stricmp (cmd, "step")))
 			{
-				S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 				M_StartControlPanel ();
 				return true;
 			}

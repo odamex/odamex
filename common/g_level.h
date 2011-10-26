@@ -112,6 +112,7 @@ struct level_locals_s {
 	int			time;
 	int			starttime;
 	int			partime;
+	int			timeleft;
 
 	level_info_t *info;
 	int			cluster;

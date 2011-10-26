@@ -189,6 +189,7 @@ CVAR (hud_usehighresboard, "1", "",	CVAR_ARCHIVE)
 
 CVAR (hud_crosshairdim, "0", "Crosshair transparency", CVAR_ARCHIVE)      // Crosshair transparency
 CVAR (hud_crosshairscale, "0", "Crosshair scaling", CVAR_ARCHIVE)    // Crosshair scaling
+CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level", CVAR_ARCHIVE)
 CVAR_FUNC_DECL (hud_targetcount, "2", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // Show target counts
 
 #ifdef _XBOX
@@ -264,6 +265,9 @@ CVAR (r_wipetype, "1", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #endif
 CVAR (r_showendoom, "1", "", CVAR_ARCHIVE)   // [ML] 1/5/10: Add endoom support
 
+// [ML] Value of red pain intensity shift
+CVAR_FUNC_DECL (r_painintensity, "1", "Value of red pain intensity shift", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 // TODO: document
 CVAR (r_viewsize, "0", "", CVAR_CLIENTINFO | CVAR_NOSET | CVAR_NOENABLEDISABLE)
 #ifdef GCONSOLE
@@ -283,9 +287,9 @@ CVAR (autoadjust_video_settings, "1", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 CVAR (vid_fps, "0", "", CVAR_CLIENTINFO)
 // Fullscreen mode
 #ifdef GCONSOLE
-	CVAR (vid_fullscreen, "1", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (vid_fullscreen, "1", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 #else
-	CVAR (vid_fullscreen, "0", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+	CVAR_FUNC_DECL (vid_fullscreen, "0", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 #endif
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

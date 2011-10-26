@@ -38,6 +38,8 @@
 // Widget ID's
 static wxInt32 Id_ChkCtrlGetListOnStart = XRCID("Id_ChkCtrlGetListOnStart");
 static wxInt32 Id_ChkCtrlShowBlockedServers = XRCID("Id_ChkCtrlShowBlockedServers");
+static wxInt32 Id_ChkCtrlEnableBroadcasts = XRCID("Id_ChkCtrlEnableBroadcasts");
+
 static wxInt32 Id_DirCtrlChooseWadDir = XRCID("Id_DirCtrlChooseWadDir");
 static wxInt32 Id_DirCtrlChooseOdamexPath = XRCID("Id_DirCtrlChooseOdamexPath");
 
@@ -75,6 +77,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	// Misc events
 	EVT_CHECKBOX(Id_ChkCtrlGetListOnStart, dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(Id_ChkCtrlShowBlockedServers, dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(Id_ChkCtrlEnableBroadcasts, dlgConfig::OnCheckedBox)
 	
 	EVT_TEXT(Id_SpnCtrlMasterTimeout, dlgConfig::OnTextChange)
 	EVT_TEXT(Id_SpnCtrlServerTimeout, dlgConfig::OnTextChange)
@@ -93,6 +96,7 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
 
     m_ChkCtrlGetListOnStart = wxStaticCast(FindWindow(Id_ChkCtrlGetListOnStart), wxCheckBox);
     m_ChkCtrlShowBlockedServers = wxStaticCast(FindWindow(Id_ChkCtrlShowBlockedServers), wxCheckBox);
+    m_ChkCtrlEnableBroadcasts = wxStaticCast(FindWindow(Id_ChkCtrlEnableBroadcasts), wxCheckBox);
 
     m_LstCtrlWadDirectories = wxStaticCast(FindWindow(Id_LstCtrlWadDirectories), wxListBox);
 
@@ -158,7 +162,7 @@ void dlgConfig::Show()
     wxString MasterTimeout, ServerTimeout, ExtraCmdLineArgs;
 
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, wxT("500"));
-    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("500"));
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("1000"));
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
     m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
@@ -439,6 +443,12 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
 // Load settings from configuration file
 void dlgConfig::LoadSettings()
 {
+    bool UseBroadcast;
+
+    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
+
+    m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
+
     ConfigInfo.Read(_T(GETLISTONSTART), &cfg_file->get_list_on_start, 1);
     ConfigInfo.Read(_T(SHOWBLOCKEDSERVERS), &cfg_file->show_blocked_servers, cfg_file->show_blocked_servers);
 	cfg_file->wad_paths = ConfigInfo.Read(_T(DELIMWADPATHS), cfg_file->wad_paths);
@@ -458,6 +468,7 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(wxT("IconPingQualityGood"), m_SpnCtrlPQGood->GetValue());
     ConfigInfo.Write(wxT("IconPingQualityPlayable"), m_SpnCtrlPQPlayable->GetValue());
     ConfigInfo.Write(wxT("IconPingQualityLaggy"), m_SpnCtrlPQLaggy->GetValue());
+    ConfigInfo.Write(wxT(USEBROADCAST), m_ChkCtrlEnableBroadcasts->GetValue());
 
 	ConfigInfo.Flush();
 }

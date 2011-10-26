@@ -29,17 +29,7 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#include <wx/wxprec.h>
-
 #include "dlg_main.h"
-
-#ifdef __BORLANDC__
-	#pragma hdrstop
-#endif
-
-#ifndef WX_PRECOMP
-	#include <wx/wx.h>
-#endif
 
 class Application : public wxApp
 {

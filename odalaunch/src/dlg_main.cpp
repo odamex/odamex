@@ -432,14 +432,16 @@ bool dlgMain::MonThrGetMasterList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 MasterTimeout;
+    bool UseBroadcast;
     size_t ServerCount;
     mtrs_t Signal;
 
     // Get the masters timeout from the config file
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
+    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
 
     // Query the masters with the timeout
-    MServer.QueryMasters(MasterTimeout);
+    MServer.QueryMasters(MasterTimeout, UseBroadcast);
    
     // Get the amount of servers found
     ServerCount = MServer.GetServerCount();

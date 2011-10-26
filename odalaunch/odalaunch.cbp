@@ -36,8 +36,9 @@
 				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\gcc\debug" />
-				<Option type="0" />
+				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
@@ -52,8 +53,8 @@
 					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_PLAT" value="msw" />
 					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_PLAT" value="msw" />
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
@@ -206,10 +207,10 @@
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_VER" value="28" />
+					<Variable name="WX_CFG" value="" />
 					<Variable name="WX_LIB" value="lib" />
 					<Variable name="WX_PLAT" value="msw" />
-					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_VER" value="28" />
 				</Environment>
 			</Target>
 			<Target title="Win Debug (VC)">
@@ -217,8 +218,9 @@
 				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\vc\debug" />
-				<Option type="0" />
+				<Option type="1" />
 				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Option projectIncludeDirsRelation="1" />
@@ -290,16 +292,16 @@
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_VER" value="28" />
+					<Variable name="WX_CFG" value="d" />
 					<Variable name="WX_LIB" value="lib" />
 					<Variable name="WX_PLAT" value="msw" />
-					<Variable name="WX_CFG" value="d" />
+					<Variable name="WX_VER" value="28" />
 				</Environment>
 			</Target>
 			<Environment>
-				<Variable name="WX_VER" value="28" />
-				<Variable name="WX_LIB" value="lib" />
 				<Variable name="WX_CFG" value="" />
+				<Variable name="WX_LIB" value="lib" />
+				<Variable name="WX_VER" value="28" />
 			</Environment>
 		</Build>
 		<VirtualTargets>

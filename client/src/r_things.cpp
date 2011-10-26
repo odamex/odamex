@@ -58,7 +58,9 @@ extern fixed_t FocalLengthX, FocalLengthY;
 static int crosshair_lump;
 
 static void R_InitCrosshair();
+static byte crosshair_trans[256];
 
+EXTERN_CVAR (hud_crosshairhealth)
 CVAR_FUNC_IMPL (hud_crosshair)
 {
 	R_InitCrosshair();
@@ -527,6 +529,11 @@ static void R_InitCrosshair()
 		if(xhair != -1)
 			crosshair_lump = xhair;
 	}
+
+	// set up translation table for the crosshair's color
+	// initialize to default colors
+	for (size_t i = 0; i < 256; i++)
+		crosshair_trans[i] = i;
 }
 
 //
@@ -1500,6 +1507,8 @@ void R_DrawSprite (vissprite_t *spr)
 	R_DrawVisSprite (spr, spr->x1, spr->x2);
 }
 
+
+
 static void R_DrawCrosshair (void)
 {
 	if(!camera)
@@ -1519,20 +1528,39 @@ static void R_DrawCrosshair (void)
 
 	if(hud_crosshair && crosshair_lump)
 	{
+		static const byte crosshair_color = 0xB0;
+		if (hud_crosshairhealth)
+		{
+			byte health_colors[4] = { 0xB0, 0xDF, 0xE7, 0x77 }; 
+
+			if (camera->health > 75)
+				crosshair_trans[crosshair_color] = health_colors[3];
+			else if (camera->health > 50)
+				crosshair_trans[crosshair_color] = health_colors[2];
+			else if (camera->health > 25)
+				crosshair_trans[crosshair_color] = health_colors[1];
+			else
+				crosshair_trans[crosshair_color] = health_colors[0];
+		}
+		else
+			crosshair_trans[crosshair_color] = crosshair_color;	// no trans
+
+		V_ColorMap = crosshair_trans;
+
 		if (hud_crosshairdim && hud_crosshairscale)
-			screen->DrawLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
+			screen->DrawTranslatedLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
         else if (hud_crosshairscale)
-			screen->DrawPatchCleanNoMove (W_CachePatch (crosshair_lump),
+			screen->DrawTranslatedPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
         else if (hud_crosshairdim)
-			screen->DrawLucentPatch (W_CachePatch (crosshair_lump),
+			screen->DrawTranslatedLucentPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
 		else
-			screen->DrawPatch (W_CachePatch (crosshair_lump),
+			screen->DrawTranslatedPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
 	}

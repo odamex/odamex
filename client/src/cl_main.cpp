@@ -138,6 +138,7 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
@@ -172,6 +173,7 @@ void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
+void P_SetFloorCeil(AActor *mo);
 void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -214,6 +216,7 @@ void CL_QuitNetGame(void)
 	sv_freelook = 1;
 	sv_allowjump = 1;
 	sv_allowexit = 1;
+	sv_allowredscreen = 1;
 
 	actor_by_netid.clear();
 	players.clear();
@@ -277,7 +280,7 @@ void CL_ConnectClient(void)
 	if (&player == &consoleplayer())
 		return;
 		
-	S_Sound (CHAN_VOICE, "misc/pljoin", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
 }
 
 //
@@ -303,7 +306,7 @@ void CL_DisconnectClient(void)
 			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
 			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
 			if (cl_disconnectalert && &player != &consoleplayer())
-				S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
 			players.erase(players.begin() + i);
 			break;
 		}
@@ -457,6 +460,8 @@ END_COMMAND (kill)
 
 BEGIN_COMMAND (serverinfo)
 {   
+	std::vector<std::string> server_cvars;
+
     cvar_t *Cvar = GetFirstCvar();
     size_t MaxFieldLength = 0;
     
@@ -469,31 +474,32 @@ BEGIN_COMMAND (serverinfo)
             
             if (FieldLength > MaxFieldLength)
                 MaxFieldLength = FieldLength;                
+
+			// store this cvar name in our vector to be sorted later
+			server_cvars.push_back(Cvar->name());
         }
         
         Cvar = Cvar->GetNext();
     }
 
-    // [Russell] - Formatted output
-    Cvar = GetFirstCvar();
+	// sort the list of cvars
+	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
     Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
     
     // Data
-    while (Cvar)
-	{			
-        if (Cvar->flags() & CVAR_SERVERINFO)
-        {
-            Printf(PRINT_HIGH, 
-                   "%*s - %s\n", 
-                   MaxFieldLength,
-                   Cvar->name(), 
-                   Cvar->cstring());          
-        }
-        
-        Cvar = Cvar->GetNext();
-    }
+	for (size_t i = 0; i < server_cvars.size(); i++)
+	{
+		cvar_t *dummy;
+		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
+
+		Printf(PRINT_HIGH, 
+				"%*s - %s\n", 
+				MaxFieldLength,
+				Cvar->name(), 
+				Cvar->cstring());          
+	}
     
     Printf (PRINT_HIGH,	"\n");
 }
@@ -749,16 +755,8 @@ END_COMMAND(rew)
 //
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
-	P_CheckPosition (mobj, x, y);
-	mobj->UnlinkFromWorld ();
-
-	mobj->x = x;
-	mobj->y = y;
-	mobj->z = z;
-	mobj->floorz = tmfloorz;
-	mobj->ceilingz = tmceilingz;
-
-	mobj->LinkToWorld ();
+	P_CheckPosition(mobj, x, y);
+	mobj->SetOrigin(x, y, z);
 }
 
 //
@@ -1290,7 +1288,7 @@ void CL_Print (void)
 	Printf (level, "%s", str);
 
 	if ((level == PRINT_CHAT || level == PRINT_TEAMCHAT) && show_messages)
-		S_Sound (CHAN_VOICE, gameinfo.chatSound, 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 }
 
 // Print a message in the middle of the screen
@@ -1312,27 +1310,28 @@ void CL_UpdatePlayer()
 
 	if(!validplayer(*p) || !p->mo)
 	{
-		for (int i=0; i<37; i++)
-			MSG_ReadByte();
+	    // Advance 37 bytes, because we don't need the following data anymore
+		MSG_SetOffset(37, buf_t::BT_SCUR);
+
 		return;
 	}
 
 	// the server processed the player's ticcmd sent during this tic
-	p->tic = MSG_ReadLong();
+	p->tic = MSG_ReadLong();	// 4
 	
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
+	x = MSG_ReadLong(); // 8
+	y = MSG_ReadLong(); // 12
+	z = MSG_ReadLong(); // 16
 	CL_MoveThing(p->mo, x, y, z);
-	p->mo->angle = MSG_ReadLong();
-	byte frame = MSG_ReadByte();
-	p->mo->momx = MSG_ReadLong();
-	p->mo->momy = MSG_ReadLong();
-	p->mo->momz = MSG_ReadLong();
+	p->mo->angle = MSG_ReadLong(); // 20
+	byte frame = MSG_ReadByte(); // 21
+	p->mo->momx = MSG_ReadLong(); // 25
+	p->mo->momy = MSG_ReadLong(); // 29
+	p->mo->momz = MSG_ReadLong(); // 33
 
 	p->real_origin[0] = x;
 	p->real_origin[1] = y;
@@ -1343,7 +1342,7 @@ void CL_UpdatePlayer()
 	p->real_velocity[2] = p->mo->momz;
 
     // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = MSG_ReadLong();
+    p->powers[pw_invisibility] = MSG_ReadLong(); // 37
 
     if (p->powers[pw_invisibility])
     {
@@ -1389,7 +1388,9 @@ void CL_UpdateLocalPlayer(void)
 	p.real_velocity[1] = MSG_ReadLong();
 	p.real_velocity[2] = MSG_ReadLong();
 
-    p.mo->waterlevel = MSG_ReadByte();
+	byte waterlevel = MSG_ReadByte();
+	if (p.mo)
+		p.mo->waterlevel = waterlevel;
 
 //	real_plats.Clear();
 }
@@ -1434,6 +1435,16 @@ void CL_UpdatePing(void)
 {
 	player_t &p = idplayer(MSG_ReadByte());
 	p.ping = MSG_ReadLong();
+}
+
+
+//
+// CL_UpdateTimeLeft
+// Changes the value of level.timeleft
+//
+void CL_UpdateTimeLeft(void)
+{
+	level.timeleft = MSG_ReadShort() * TICRATE;	// convert from seconds to tics
 }
 
 //
@@ -1596,10 +1607,6 @@ void CL_SpawnPlayer()
 
 	G_PlayerReborn (*p);
 
-	// denis - if this concerns the local player, restart the status bar
-	if(p->id == consoleplayer_id)
-		ST_Start ();
-
 	mobj = new AActor (x, y, z, MT_PLAYER);
 
 	// set color translations for player sprites
@@ -1645,6 +1652,10 @@ void CL_SpawnPlayer()
 	if(sv_gametype != GM_COOP)
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
+
+	// denis - if this concerns the local player, restart the status bar
+	if(p->id == consoleplayer_id)
+		ST_Start ();
 }
 
 //
@@ -1934,8 +1945,16 @@ player_t* player = &players[consoleplayer];
 //
 void CL_ChangeWeapon (void)
 {
-	player_t *p = &consoleplayer();
-	p->pendingweapon = (weapontype_t)MSG_ReadByte();
+	player_t *player = &consoleplayer();
+	weapontype_t newweapon = (weapontype_t)MSG_ReadByte();
+
+	// ensure that the client has the weapon
+	player->weaponowned[newweapon] = true;
+
+	// [SL] 2011-09-22 - Only change the weapon if the client doesn't already
+	// have that weapon up.
+	if (player->readyweapon != newweapon)
+		player->pendingweapon = newweapon;
 }
 
 
@@ -2893,6 +2912,7 @@ void CL_InitCommands(void)
     cmds[svc_midprint]          = &CL_MidPrint;
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
+	cmds[svc_timeleft]			= &CL_UpdateTimeLeft;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;

@@ -114,6 +114,7 @@ enum svc_t
 	svc_connectclient,
     svc_midprint,
 	svc_svgametic,			// [SL] 2011-05-11 - [byte]
+	svc_timeleft,
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -195,6 +196,14 @@ public:
 	byte	*data;
 	size_t	allocsize, cursize, readpos;
 	bool	overflowed;  // set to true if the buffer size failed
+
+    // Buffer seeking flags
+    typedef enum
+    {
+         BT_SSET // From beginning
+        ,BT_SCUR // From current position
+        ,BT_SEND // From end
+    } seek_loc_t;
 
 public:
 
@@ -330,6 +339,49 @@ public:
 
 		return (const char *)begin;
 	}
+
+    size_t SetOffset (const size_t &offset, const seek_loc_t &loc)
+    {
+        switch (loc)
+        {
+            case BT_SSET:
+            {
+                if (offset > cursize)
+                {
+                    overflowed = true;
+                    return 0;
+                }
+
+                readpos = offset;
+            }
+            break;
+
+            case BT_SCUR:
+            {
+                if (readpos+offset > cursize)
+                {
+                    overflowed = true;
+                    return 0;
+                }
+
+                readpos += offset;
+            }
+
+            case BT_SEND:
+            {
+                if (readpos-offset < 0)
+                {
+                    // lies, an underflow occured
+                    overflowed = true;
+                    return 0;
+                }
+
+                readpos -= offset;
+            }
+        }
+
+        return readpos;
+    }
 
 	size_t BytesLeftToRead() const
 	{
@@ -492,6 +544,8 @@ int MSG_ReadLong (void);
 bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);
 const char *MSG_ReadString (void);
+
+size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc);
 
 bool MSG_DecompressMinilzo ();
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);

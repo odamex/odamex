@@ -104,7 +104,6 @@ EXTERN_CVAR(sv_clientcount)
 EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
-EXTERN_CVAR(sv_timeleft)
 
 void SexMessage (const char *from, char *to, int gender);
 void SV_RemoveDisconnectedPlayer(player_t &player);
@@ -1188,13 +1187,16 @@ void SV_SetupUserInfo (player_t &player)
 		p->userinfo.gender = GENDER_NEUTER;
 
 	// Compare names and broadcast if different.
-	if (strncmp(old_netname, "", sizeof(old_netname)) && strncmp(p->userinfo.netname, old_netname, sizeof(old_netname))) {
+	if (StdStringCompare(old_netname, "", false) && 
+     StdStringCompare(p->userinfo.netname, old_netname, false))
+    {
 		switch (p->userinfo.gender) {
 			case 0: gendermessage = "his";  break;
 			case 1: gendermessage = "her";  break;
 			default: gendermessage = "its";  break;
 		}
-		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", old_netname, gendermessage.c_str(), p->userinfo.netname);
+		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", 
+            old_netname, gendermessage.c_str(), p->userinfo.netname);
 	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
@@ -3737,7 +3739,7 @@ void SV_Suicide(player_t &player)
 
 	// merry suicide!
 	P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
-	player.mo->player = NULL;
+	//player.mo->player = NULL;
 	//player.mo = NULL;
 }
 
@@ -4143,17 +4145,19 @@ void SV_TimelimitCheck()
 	if(!sv_timelimit)
 		return;
 
-	// [ML] Update the sv_timeleft cvar for clients
-	// [SL] 2011-09-03 - Updating sv_timeleft forces the server to send all
-	// the server settings to all the clients, hogging bandwidth, so
-	// only do it sparingly
-	int timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
+	level.timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;	// in tics
 
-	// Update sv_timeleft every 10 seconds
-	if ((gametic % (10*TICRATE)) == 0)
-		sv_timeleft = timeleft;
+	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
+	if ((gametic % (TICRATE * 5)) == 0)		// every 5 seconds
+	{
+		for (size_t i = 0; i < clients.size(); i++)
+		{
+			MSG_WriteMarker(&clients[i].netbuf, svc_timeleft);
+			MSG_WriteShort(&clients[i].netbuf, level.timeleft / TICRATE);
+		}
+	}
 
-	if (timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
+	if (level.timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
 		return;
 
 	// LEVEL TIMER

@@ -256,6 +256,9 @@ public:
 
 	buf_t &operator =(const buf_t &other)
 	{
+		if (this == &other)
+            return *this;
+
 		if(data)
 			delete[] data;
 		

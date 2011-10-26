@@ -199,7 +199,7 @@ public:
 	
 	int			xviewshift;				// [RH] view shift (for earthquakes)
 
-	
+	int         psprnum;
 	pspdef_t	psprites[NUMPSPRITES];	// Overlay view sprites (gun, etc).
 	
 	int			jumpTics;				// delay the next jump for a moment

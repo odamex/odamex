@@ -253,7 +253,7 @@ void C_InitConsole (int width, int height, BOOL ingame)
 				int x, y;
 				byte f = 0, *v = NULL, *i = NULL;
 				byte *fadetable;
-				
+
 				fadetable = (byte *)W_CacheLumpName ("COLORMAP", PU_CACHE);
 
 				for (y = 0; y < conback->height; y++)
@@ -280,10 +280,10 @@ void C_InitConsole (int width, int height, BOOL ingame)
 								v = fadetable + (30 - x) * 256;
 							else if (x > 312)
 								v = fadetable + (x - 289) * 256;
-							
+
 							if (v == NULL)
                                 I_FatalError("COuld not stylize the console\n");
-							
+
 							*i = v[*i];
 							i++;
 						}
@@ -1295,7 +1295,7 @@ BOOL C_HandleKey (event_t *ev, byte *buffer, int len)
 			{
 				C_HideConsole();
 
-                // [Russell] Don't enable toggling of console when downloading 
+                // [Russell] Don't enable toggling of console when downloading
                 // or connecting, it creates screen artifacts
                 if (gamestate != GS_CONNECTING && gamestate != GS_DOWNLOAD)
                     gamestate = GS_DEMOSCREEN;
@@ -1519,7 +1519,7 @@ EXTERN_CVAR (con_midtime)
 void C_MidPrint (const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
-    
+
     if (!msgtime)
         msgtime = con_midtime.asInt();
 
@@ -1613,7 +1613,7 @@ void C_RevealSecret()
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint ("A secret is revealed!");
-	S_Sound (CHAN_AUTO, "misc/secret", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
 
 /****** Tab completion code ******/
@@ -1627,7 +1627,7 @@ tabcommand_map_t &TabCommands()
 
 void C_AddTabCommand (const char *name)
 {
-	tabcommand_map_t::iterator i = TabCommands().find(name);
+	tabcommand_map_t::iterator i = TabCommands().find(StdStringToLower(name));
 
 	if(i != TabCommands().end())
 		TabCommands()[name]++;
@@ -1637,7 +1637,7 @@ void C_AddTabCommand (const char *name)
 
 void C_RemoveTabCommand (const char *name)
 {
-	tabcommand_map_t::iterator i = TabCommands().find(name);
+	tabcommand_map_t::iterator i = TabCommands().find(StdStringToLower(name));
 
 	if(i != TabCommands().end())
 		if(!--i->second)
@@ -1661,7 +1661,7 @@ static void C_TabComplete (void)
 	}
 
 	// Find next near match
-	std::string TabPos = std::string((char *)(CmdLine + TabStart), CmdLine[0] - TabStart + 2);
+	std::string TabPos = StdStringToLower(std::string((char *)(CmdLine + TabStart), CmdLine[0] - TabStart + 2));
 	tabcommand_map_t::iterator i = TabCommands().lower_bound(TabPos);
 
 	// Does this near match fail to actually match what the user typed in?

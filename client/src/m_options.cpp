@@ -524,6 +524,7 @@ EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (hud_usehighresboard)
 EXTERN_CVAR (r_showendoom)
+EXTERN_CVAR (r_painintensity)
 
 static value_t Crosshairs[] =
 {
@@ -598,6 +599,7 @@ static menuitem_t VideoItems[] = {
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {5.0},	{1.0},  {NULL} },
+	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },	
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },	
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
@@ -912,14 +914,14 @@ void M_SizeDisplay (float diff)
 BEGIN_COMMAND (sizedown)
 {
 	M_SizeDisplay (-1.0);
-	S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 }
 END_COMMAND (sizedown)
 
 BEGIN_COMMAND (sizeup)
 {
 	M_SizeDisplay(1.0);
-	S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 }
 END_COMMAND (sizeup)
 
@@ -1361,7 +1363,7 @@ void M_OptResponder (event_t *ev)
 				if (CurrentMenu->items[CurrentItem].type == screenres)
 					CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-				S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 			break;
 
@@ -1402,7 +1404,7 @@ void M_OptResponder (event_t *ev)
 				if (CurrentMenu->items[CurrentItem].type == screenres)
 					CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-				S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 			break;
 			
@@ -1424,7 +1426,7 @@ void M_OptResponder (event_t *ev)
 					{
 						++CurrentItem;
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 				}
 			}
 			break;
@@ -1448,7 +1450,7 @@ void M_OptResponder (event_t *ev)
 					{
 						++CurrentItem;
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 				}
 			}
 			break;
@@ -1469,7 +1471,7 @@ void M_OptResponder (event_t *ev)
 						else
 							item->a.cvar->Set (newval);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case discrete:
@@ -1489,7 +1491,7 @@ void M_OptResponder (event_t *ev)
 						if (item->e.values == Depths)
 							BuildModesList (screen->width, screen->height, DisplayBits);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case screenres:
@@ -1513,7 +1515,7 @@ void M_OptResponder (event_t *ev)
 							item->a.selmode = col;
 						}
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 					break;
 
 				case joyactive:
@@ -1527,7 +1529,7 @@ void M_OptResponder (event_t *ev)
 						else if((int)item->a.cvar->value() > 0)
 							item->a.cvar->Set(item->a.cvar->value() - 1);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				default:
@@ -1551,7 +1553,7 @@ void M_OptResponder (event_t *ev)
 						else
 							item->a.cvar->Set (newval);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case discrete:
@@ -1571,7 +1573,7 @@ void M_OptResponder (event_t *ev)
 						if (item->e.values == Depths)
 							BuildModesList (screen->width, screen->height, DisplayBits);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case screenres:
@@ -1598,7 +1600,7 @@ void M_OptResponder (event_t *ev)
 							item->a.selmode = col;
 						}
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 					break;
 
 				case joyactive:
@@ -1613,7 +1615,7 @@ void M_OptResponder (event_t *ev)
 							item->a.cvar->Set(item->a.cvar->value() + 1);
 
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				default:
@@ -1643,7 +1645,7 @@ void M_OptResponder (event_t *ev)
 				}
 				NewBits = BitTranslate[(int)DummyDepthCvar];
 				setmodeneeded = true;
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				vid_defwidth.Set ((float)NewWidth);
 				vid_defheight.Set ((float)NewHeight);
 				vid_defbits.Set ((float)NewBits);
@@ -1652,7 +1654,7 @@ void M_OptResponder (event_t *ev)
 			else if (item->type == more && item->e.mfunc)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.mfunc();
 			}
 			else if (item->type == discrete || item->type == cdiscrete)
@@ -1671,7 +1673,7 @@ void M_OptResponder (event_t *ev)
 				if (item->e.values == Depths)
 					BuildModesList (screen->width, screen->height, DisplayBits);
 
-				S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
 			else if (item->type == control)
 			{
@@ -1684,7 +1686,7 @@ void M_OptResponder (event_t *ev)
 			else if (item->type == listelement)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.lfunc (CurrentItem);
 			}
 			else if (item->type == joyaxis)
@@ -1728,7 +1730,7 @@ void M_OptResponder (event_t *ev)
 					NewBits = BitTranslate[(int)DummyDepthCvar];
 					setmodeneeded = true;
 					testingmode = I_GetTime() + 5 * TICRATE;
-					S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 					SetModesMenu (NewWidth, NewHeight, NewBits);
 				}
 			}
@@ -1807,7 +1809,7 @@ static void PlayerSetup (void)
 BEGIN_COMMAND (menu_keys)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	CustomizeControls();
 }
@@ -1836,7 +1838,7 @@ void NetworkOptions (void)
 BEGIN_COMMAND (menu_display)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	M_SwitchMenu (&VideoMenu);
 }
@@ -1993,7 +1995,7 @@ static void SetVidMode (void)
 BEGIN_COMMAND (menu_video)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	SetVidMode ();
 }
