@@ -43,7 +43,6 @@
 #include "i_input.h"
 
 #define QUEUESIZE		128
-#define MESSAGESIZE		256
 #define HU_INPUTX		0
 #define HU_INPUTY		(0 + (SHORT(hu_font[0]->height) +1))
 
@@ -209,7 +208,7 @@ BOOL HU_Responder (event_t *ev)
 		if(!c)
 			return false;
 
-		if(input_text.length() < 1024)
+		if(input_text.length() < MAX_CHATSTR_LEN)
 			input_text += c;
 
 		return true;
@@ -577,8 +576,8 @@ static void ShoveChatStr (std::string str, byte who)
 	if (str.length() == 0)
 		return;
 
-	if(str.length() > MESSAGESIZE)
-		str.resize(MESSAGESIZE);
+	if(str.length() > MAX_CHATSTR_LEN)
+		str.resize(MAX_CHATSTR_LEN);
 
 	MSG_WriteMarker (&net_buffer, clc_say);
 	MSG_WriteByte (&net_buffer, who);

@@ -2847,7 +2847,7 @@ void SV_Say(player_t &player)
 	byte team = MSG_ReadByte();
     const char *s = MSG_ReadString();
 
-	if(!strlen(s) || strlen(s) > 128)
+	if(!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
 		return;
 
     // Flood protection
