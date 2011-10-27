@@ -415,7 +415,7 @@ static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
 	{ bricktext ,   "Sound Levels"                          , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
 	{ slider    ,	"Music Volume"                          , {&snd_musicvolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
-	{ discrete	,	"Disable Music System"					, {&snd_nomusic},		{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete	,	"Enable Music System"					, {&snd_nomusic},		{2.0},		{0.0},		{0.0},		{OffOn} },
 	{ slider    ,	"Sound Volume"                          , {&snd_sfxvolume},		{0.0},      {1.0},	    {0.1},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                         , {&snd_crossover},	    {2.0},		{0.0},		{0.0},		{OnOff} },	
 	{ redtext   ,	" "                                     , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
