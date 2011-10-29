@@ -64,6 +64,9 @@
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
 
+bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
+void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
+
 extern int timingdemo;
 
 extern int shotclock;
@@ -733,6 +736,7 @@ void G_InitNew (const char *mapname)
 	{
 		M_ClearRandom ();
 		level.time = 0;
+		level.timeleft = 0;
 
 		// force players to be initialized upon first level load
 		for (i = 0; i < players.size(); i++)
@@ -902,7 +906,10 @@ void G_DoCompleted (void)
 			G_SnapshotLevel ();
 		}
 		if (!(nextcluster->flags & CLUSTER_HUB) || !(thiscluster->flags & CLUSTER_HUB))
+		{
 			level.time = 0;	// Reset time to zero if not entering/staying in a hub
+			level.timeleft = 0;
+		}
 
 		if (!(sv_gametype == GM_DM) &&
 			((level.flags & LEVEL_NOINTERMISSION) ||
@@ -960,7 +967,7 @@ void G_DoLoadLevel (int position)
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
-	skytexture = R_TextureNumForName (level.skypic);
+	sky1texture = R_TextureNumForName (level.skypic);
 
 	// [RH] Set up details about sky rendering
 	R_InitSkyMap ();
@@ -999,6 +1006,40 @@ void G_DoLoadLevel (int position)
 
  	SN_StopAllSequences (); // denis - todo - equivalent?
 	P_SetupLevel (level.mapname, position);
+
+	// [SL] 2011-09-18 - Find an alternative start if the single player start
+	// point is not availible.
+	if (!multiplayer && !consoleplayer().mo && consoleplayer().ingame())
+	{
+		// Check for a co-op start point
+		for (size_t n = 0; n < playerstarts.size() && !consoleplayer().mo; n++)
+		{
+			if (G_CheckSpot(consoleplayer(), &playerstarts[n]))
+				P_SpawnPlayer(consoleplayer(), &playerstarts[n]);
+		}
+			
+		// Check for a free deathmatch start point
+		for (int n = 0; n < deathmatch_p - deathmatchstarts && !consoleplayer().mo; n++)
+		{
+			if (G_CheckSpot(consoleplayer(), &deathmatchstarts[n]))
+				P_SpawnPlayer(consoleplayer(), &deathmatchstarts[n]);
+		}
+
+		// Check for a free team start point
+		for (int n = 0; n < blueteam_p - blueteamstarts && !consoleplayer().mo; n++)
+		{
+			if (G_CheckSpot(consoleplayer(), &blueteamstarts[n]))
+				P_SpawnPlayer(consoleplayer(), &blueteamstarts[n]);
+		}
+
+		// Check for a free team start point
+		for (int n = 0; n <redteam_p - redteamstarts && !consoleplayer().mo; n++)
+		{
+			if (G_CheckSpot(consoleplayer(), &redteamstarts[n]))
+				P_SpawnPlayer(consoleplayer(), &redteamstarts[n]);
+		}
+	}
+
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
 	ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;

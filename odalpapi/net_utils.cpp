@@ -39,7 +39,7 @@ uint64_t _UnwrapTime(uint32_t now32)
 {
 	static uint64_t last = 0;
 	uint64_t now = now32;
-	static uint64_t max = std::numeric_limits<DWORD>::max();
+	static uint64_t max = std::numeric_limits<uint32_t>::max();
 
 	if(now < last%max)
 		last += (max-(last%max)) + now;

@@ -130,7 +130,7 @@ extern int NoWipe;			// [RH] Don't wipe when travelling in hubs
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
-char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
+const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
 char startmap[8];
 BOOL autostart;
@@ -153,6 +153,7 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
 EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
@@ -449,14 +450,14 @@ void D_DoomLoop (void)
 				CL_RequestConnectInfo();
 
 			// [RH] Use the consoleplayer's camera to update sounds
-			S_UpdateSounds ((consoleplayer().spectator ? displayplayer().mo : consoleplayer().mo));	// move positional sounds
+			S_UpdateSounds (listenplayer().mo);	// move positional sounds
 
 			// Update display, next frame, with current state.
 			D_Display ();
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf_Bold ("\n%s\n", error.GetMessage().c_str());
+			Printf_Bold ("\n%s\n", error.GetMsg().c_str());
 
 			CL_QuitNetGame ();
 
@@ -1415,8 +1416,8 @@ std::vector<size_t> D_DoomWadReboot(
 	return fails;
 }
 
-void CL_NetDemoRecord(const std::string filename);
-void CL_NetDemoPlay(const std::string filename);
+void CL_NetDemoRecord(const std::string &filename);
+void CL_NetDemoPlay(const std::string &filename);
 
 //
 // D_DoomMain
@@ -1621,10 +1622,17 @@ void D_DoomMain (void)
     //gamestate = GS_FULLCONSOLE;
 
 	p = Args.CheckParm("-netplay");
-	if(p){
-		std::string demoname = Args.GetArg (p+1);
-		CL_NetDemoPlay(demoname);
-		//D_DoomLoop();
+	if (p)
+	{
+		if (Args.GetArg(p + 1))
+		{
+			std::string filename = Args.GetArg(p + 1);
+			CL_NetDemoPlay(filename);
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "No netdemo filename specified.\n");
+		}
 	}
 
 	// denis - bring back the demos
@@ -1643,8 +1651,9 @@ void D_DoomMain (void)
                     sv_allowexit = "1";
                     sv_freelook = "1";
                     sv_allowjump = "1";
+                    sv_allowredscreen = "1";
                     sv_gametype = GM_COOP;
-                    
+
 					players.clear();
 					players.push_back(player_t());
 					players.back().playerstate = PST_REBORN;

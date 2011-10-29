@@ -46,6 +46,8 @@ EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_fragexitswitch) // [ML] 04/4/06: Added compromise for older exit method
 EXTERN_CVAR(sv_friendlyfire)
 EXTERN_CVAR(sv_allowexit)
+EXTERN_CVAR(sv_forcerespawn)
+EXTERN_CVAR(sv_forcerespawntime)
 
 int shotclock = 0;
 int MeansOfDeath;
@@ -228,7 +230,7 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 
 		player->pendingweapon = weapon;
 
-		S_Sound(player->mo, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NORM);
+		S_Sound(player->mo, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);
 
         WeaponPickupMessage(player->mo, weapon);
 
@@ -916,14 +918,14 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
         {
 			case 0:
 			case 3:
-				S_Sound(ent, CHAN_ITEM, "misc/i_pkup", 1, ATTN_NORM);
+				S_Sound(ent, CHAN_ITEM, "misc/i_pkup", 1, ATTN_NONE);
 				break;
 			case 1:
 				S_Sound(ent, CHAN_ITEM, "misc/p_pkup", 1,
-					!ent ? ATTN_SURROUND : ATTN_NORM);
+					!ent ? ATTN_SURROUND : ATTN_NONE);
 				break;
 			case 2:
-				S_Sound(ent, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NORM);
+				S_Sound(ent, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);
 				break;
 		}
 	}
@@ -1131,15 +1133,12 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		}
 		// [RH] Force a delay between death and respawn
 		// [Toke] Lets not fuck up deathmatch tactics ok randy?
-        if (!clientside)
-        {
-            // 1 minute forced respawn
-            tplayer->respawn_time = level.time + 60 * TICRATE;
-        }
-        else
-        {
-            target->player->respawn_time = level.time; // vanilla immediate respawn
-        }
+		if (!clientside) {
+			tplayer->respawn_time = level.time + sv_forcerespawntime.asInt() * TICRATE;
+		} else {
+			// vanilla immediate respawn
+			target->player->respawn_time = level.time;
+		}
 
 		if (target == consoleplayer().camera)
 		{

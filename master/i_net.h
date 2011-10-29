@@ -25,7 +25,9 @@
 #ifndef __I_NET_H__
 #define __I_NET_H__
 
-#define	MAX_UDP_PACKET 8192
+// Max packet size to send and receive, in bytes
+#define	MAX_UDP_PACKET	1400
+
 #define MASTERPORT     15000
 #define LAUNCHERPORT   12999
 
@@ -254,6 +256,9 @@ public:
 
 	buf_t &operator =(const buf_t &other)
 	{
+		if (this == &other)
+            return *this;
+
 		if(data)
 			delete[] data;
 		

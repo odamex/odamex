@@ -95,7 +95,14 @@ BOOL	setmodeneeded = false;
 // [RH] Resolution to change to when setmodeneeded is true
 int		NewWidth, NewHeight, NewBits;
 
-EXTERN_CVAR (vid_fullscreen)
+CVAR_FUNC_IMPL (vid_fullscreen)
+{
+	setmodeneeded = true;
+	NewWidth = screen->width;
+	NewHeight = screen->height;
+	NewBits = DisplayBits;
+}
+
 
 //
 // V_MarkRect

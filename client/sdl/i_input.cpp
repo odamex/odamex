@@ -181,26 +181,28 @@ static void UpdateFocus(void)
 //
 static void UpdateGrab(void)
 {
-    bool grab;
+	bool grab = MouseShouldBeGrabbed();
 
-    grab = MouseShouldBeGrabbed();
+	if (grab && !mousegrabbed)
+	{
+		SetCursorState(false);
+		SDL_WM_GrabInput(SDL_GRAB_ON);
+		
+		// Warp the mouse back to the middle of the screen
+		if(screen)
+			SDL_WarpMouse(screen->width/ 2, screen->height / 2);
+		
+		// eat all pending input from outside the game
+		SDL_Event ev;
+		while (SDL_PollEvent(&ev));
+	}
+	else if (!grab && mousegrabbed)
+	{
+		SetCursorState(true);
+		SDL_WM_GrabInput(SDL_GRAB_OFF);
+	}
 
-    if (grab && !mousegrabbed)
-    {
-	   if(screen)
-		  SDL_WarpMouse(screen->width/ 2, screen->height / 2);
-
-        SetCursorState(false);
-        SDL_WM_GrabInput(SDL_GRAB_ON);
-        flushmouse = true;
-    }
-    else if (!grab && mousegrabbed)
-    {
-        SetCursorState(true);
-        SDL_WM_GrabInput(SDL_GRAB_OFF);
-    }
-
-    mousegrabbed = grab;
+	mousegrabbed = grab;
 }
 
 // denis - from chocolate doom

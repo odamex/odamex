@@ -56,11 +56,12 @@ struct userinfo_s
 	team_t			team; // [Toke - Teams] 
 	fixed_t			aimdist;
 	bool			unlag;
+	byte			update_rate;
 	int				color;
 	unsigned int	skin;
 	gender_t		gender;
 
-	userinfo_s() : team(TEAM_NONE), aimdist(0), unlag(true), color(0), skin(0), gender(GENDER_MALE) { *netname = 0; }
+	userinfo_s() : team(TEAM_NONE), aimdist(0), unlag(true), update_rate(2), color(0), skin(0), gender(GENDER_MALE) { *netname = 0; }
 };
 typedef userinfo_s userinfo_t;
 

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -40,7 +40,7 @@ enum flag_state_t
 	flag_home,
 	flag_dropped,
 	flag_carried,
-	
+
 	NUMFLAGSTATES
 };
 
@@ -49,20 +49,20 @@ struct flagdata
 {
 	// Does this flag have a spawn yet?
 	bool flaglocated;
-	
+
 	// Actor when being carried by a player, follows player
 	AActor::AActorPtr actor;
 
 	// Integer representation of WHO has each flag (player id)
 	size_t flagger;
 	int	pickup_time;
-	
+
 	// Flag locations
 	int x, y, z;
-	
+
 	// Flag Timout Counters
 	size_t timeout;
-	
+
 	// True when a flag has been dropped
 	flag_state_t state;
 
@@ -116,7 +116,7 @@ mapthing2_t *CTF_SelectTeamPlaySpot(player_t &player, int selections);
 // CTF Game Data
 extern flagdata CTFdata[NUMFLAGS];
 extern int TEAMpoints[NUMFLAGS];
-extern char *team_names[NUMTEAMS+2];
+extern const char *team_names[NUMTEAMS+2];
 
 //	Colors
 #define	BLUECOLOR		200

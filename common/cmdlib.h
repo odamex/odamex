@@ -56,7 +56,20 @@ void	FixPathSeparator (std::string &path);
 int		ParseHex (char *str);
 int 	ParseNum (char *str);
 BOOL	IsNum (char *str);		// [RH] added
-int		StdStringCompare(std::string string1, std::string string2, bool CaseInsensitive);
+
+// [Russell] Returns 0 if strings are the same, optional parameter for case 
+// sensitivity
+int		StdStringCompare(const std::string &, const std::string &, bool);
+
+size_t  StdStringFind(const std::string& haystack, const std::string& needle,
+    size_t pos, size_t n, bool CIS);
+
+size_t  StdStringRFind(const std::string& haystack, const std::string& needle,
+    size_t pos, size_t n, bool CIS);
+
+std::string StdStringToLower(const std::string&);
+std::string StdStringToUpper(const std::string&);
+
 char	*COM_Parse (char *data);
 
 extern	char	com_token[8192];

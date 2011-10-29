@@ -461,7 +461,11 @@ void LstOdaServerList::AddServerToList(const Server &s,
         
         case GT_Deathmatch:
         {
-            GameType = wxT("Deathmatch");
+            // Detect a 'duel' server
+            if (s.Info.MaxPlayers < 3)
+                GameType = wxT("Duel");
+            else
+                GameType = wxT("Deathmatch");
         }
         break;
         

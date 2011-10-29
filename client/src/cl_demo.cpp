@@ -292,6 +292,12 @@ bool NetDemo::startRecording(const std::string &filename)
 bool NetDemo::startPlaying(const std::string &filename)
 {
 	this->filename = filename;
+	
+	if (filename.empty())
+	{
+		error("No netdemo filename specified.");
+		return false;
+	}	
 
 	if (isPlaying())
 	{
@@ -392,6 +398,9 @@ bool NetDemo::stopRecording()
 		return false;
 	}
 	state = NetDemo::stopped;
+
+	// write any remaining messages that have been captured
+	writeMessages();
 
 	byte marker = svc_netdemostop;
 	uint32_t len = sizeof(marker);
@@ -626,7 +635,16 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	if (cnt < len)
 	{
 		error("Can not read netdemo message.");
+
+        delete[] msgdata;
+
 		return;
+	}
+
+	// ensure netbuffer has enough free space to hold this packet
+	if (netbuffer->maxsize() - netbuffer->size() < len)
+	{
+		netbuffer->resize(len + netbuffer->size() + 1, false);
 	}
 
 	netbuffer->WriteChunk(msgdata, len);

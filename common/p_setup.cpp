@@ -1272,7 +1272,16 @@ void P_GroupLines (void)
 	for (i = 0; i < numlines; i++, li++)
 	{
 		total++;
-		li->frontsector->linecount++;
+		if (!li->frontsector && li->backsector)
+		{
+			// swap front and backsectors if a one-sided linedef
+			// does not have a front sector
+			li->frontsector = li->backsector;
+			li->backsector = NULL;
+		}
+
+        if (li->frontsector)
+            li->frontsector->linecount++;
 
 		if (li->backsector && li->backsector != li->frontsector)
 		{
@@ -1460,7 +1469,7 @@ void P_SetupLevel (char *lumpname, int position)
 		// calling P_CheckSight
 		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
 		{
-			Printf(PRINT_HIGH, "Reject matrix is not valid and will be ignored.\n");
+			DPrintf("Reject matrix is not valid and will be ignored.\n");
 			rejectempty = true;
 		}
 	}
@@ -1532,19 +1541,17 @@ void P_Init (void)
 
 // [ML] Do stuff when the timelimit is reset
 // Where else can I put this??
-EXTERN_CVAR(sv_timeleft)
 CVAR_FUNC_IMPL (sv_timelimit)
 {
-	if (var == 0)
-	{
-		level.time = 0;
-		sv_timeleft = "0";	
-	}
-	else
-	{
-		if (!sv_timeleft)
-			level.time = 0;
-	}
+	if (var < 0)
+		var.Set(0.0f);
+
+	// timeleft is transmitted as a short so cap the sv_timelimit at the maximum
+	// for timeleft, which is 9.1 hours
+	if (var > MAXSHORT / 60)
+		var.Set(MAXSHORT / 60);
+
+	level.timeleft = var * TICRATE * 60;
 }
 
 

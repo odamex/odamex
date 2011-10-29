@@ -428,7 +428,7 @@ static void _skycolumn (void (*drawfunc)(void), int x)
 
 	if (dc_yl != -1 && dc_yl <= dc_yh)
 	{
-		int angle = ((((viewangle + xtoviewangle[x])^skyflip)>>skyshift) + frontpos)>>16;
+		int angle = ((((viewangle + xtoviewangle[x])^skyflip)>>sky1shift) + frontpos)>>16;
 
 		dc_texturefrac = dc_texturemid + (dc_yl - centery + 1) * dc_iscale;
 		dc_source = R_GetColumn (skytex, angle);
@@ -558,7 +558,7 @@ void R_DrawPlanes (void)
 
 				if (pl->picnum == skyflatnum)
 				{	// use sky1 [ML] 5/11/06 - Use it always!
-					skytex = skytexture;
+					skytex = sky1texture;
 					skyflip = 0;
 				}
 				else

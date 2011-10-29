@@ -36,6 +36,9 @@ extern BOOL Fullscreen;
 // [RH] Set the display mode
 void I_SetMode (int &width, int &height, int &bits);
 
+// Returns true if the Video object has been set up and not yet destroyed
+bool I_HardwareInitialized();
+
 // Takes full 8 bit values.
 void I_SetPalette (DWORD *palette);
 

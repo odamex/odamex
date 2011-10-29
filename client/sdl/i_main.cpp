@@ -212,15 +212,15 @@ int main(int argc, char *argv[])
 	{
 		if (LOG.is_open())
         {
-            LOG << error.GetMessage() << std::endl;
+            LOG << error.GetMsg() << std::endl;
             LOG << std::endl;
         }
 #ifndef WIN32
-            fprintf(stderr, "%s\n", error.GetMessage().c_str());
+            fprintf(stderr, "%s\n", error.GetMsg().c_str());
 #elif _XBOX
 		// Use future Xbox error message handling.    -- Hyper_Eye
 #else
-		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
+		MessageBox(NULL, error.GetMsg().c_str(), "Odamex Error", MB_OK);
 #endif
 		call_terms();
 		exit (-1);

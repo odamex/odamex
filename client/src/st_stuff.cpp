@@ -72,6 +72,16 @@ static int		lu_palette;
 extern NetDemo netdemo;
 
 EXTERN_CVAR (idmypos)
+EXTERN_CVAR (sv_allowredscreen)
+
+CVAR_FUNC_IMPL (r_painintensity)
+{
+	if (var < 0.f)
+		var.Set (0.f);
+	if (var > 1.f)
+		var.Set (1.f);
+}
+
 CVAR_FUNC_IMPL (st_scale)		// Stretch status bar to full screen width?
 {
 	if (var)
@@ -1276,19 +1286,20 @@ void ST_Ticker (void)
 }
 
 static int st_palette = 0;
-
 /* Original redscreen palette method - replaces ZDoom method - ML       */
 void ST_doPaletteStuff(void)
 {
 
     int		palette;
     byte*	pal;
-    int		cnt;
+    float	cnt;
     int		bzc;
 
 	player_t *plyr = &consoleplayer();
 
-    cnt = plyr->damagecount;
+    cnt = (float)plyr->damagecount;
+	if (!multiplayer || sv_allowredscreen)
+		cnt *= r_painintensity;
 
     if (plyr->powers[pw_strength])
     {
@@ -1301,7 +1312,8 @@ void ST_doPaletteStuff(void)
 
     if (cnt)
     {
-        palette = (cnt+7)>>3;
+    	//redshift = (int)(sv_allowredshift ? r_painintensity + 3 : 3);
+        palette = ((int)cnt+7)>>3;
 
 		if (gamemode == retail_chex)
 			palette = RADIATIONPAL;
@@ -1310,6 +1322,9 @@ void ST_doPaletteStuff(void)
 				palette = NUMREDPALS-1;
 
 			palette += STARTREDPALS;
+			
+			if (palette < 0)
+				palette = 0;
 		}
     }
 

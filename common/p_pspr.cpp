@@ -63,6 +63,7 @@ P_SetPsprite
 	state_t*	state;
 
 	psp = &player->psprites[position];
+    player->psprnum = position;
 
 	do
 	{
@@ -89,10 +90,10 @@ P_SetPsprite
 
 		// Call action routine.
 		// Modified handling.
-		if (state->action.acp2)
+		if (state->action)
 		{
 			if(!player->spectator)
-				state->action.acp2(player, psp);
+				state->action(player->mo);
 			if (!psp->state)
 				break;
 		}
@@ -287,11 +288,13 @@ void P_DropWeapon (player_t *player)
 //
 void
 A_WeaponReady
-( player_t*	player,
-  pspdef_t*	psp )
+(AActor *mo)
 {
 	statenum_t	newstate;
 	int 		angle;
+
+    player_t *player = mo->player;
+    struct pspdef_s *psp = &player->psprites[player->psprnum];
 
 	// get out of attack state
 	if (player->mo->state == &states[S_PLAY_ATK1]
@@ -351,9 +354,9 @@ A_WeaponReady
 // without lowering it entirely.
 //
 void A_ReFire
-( player_t*	player,
-  pspdef_t*	psp )
+(AActor *mo)
 {
+    player_t *player = mo->player;
 
 	// check for fire
 	//	(if a weaponchange is pending, let it go through instead)
@@ -374,9 +377,10 @@ void A_ReFire
 
 void
 A_CheckReload
-( player_t*	player,
-  pspdef_t*	psp )
+(AActor *mo)
 {
+    player_t *player = mo->player;
+
 	P_CheckAmmo (player);
 #if 0
 	if (player->ammo[am_shell]<2)
@@ -391,9 +395,11 @@ A_CheckReload
 //
 void
 A_Lower
-( player_t*	player,
-  pspdef_t*	psp )
+(AActor *mo)
 {
+    player_t *player = mo->player;
+    struct pspdef_s *psp = &player->psprites[player->psprnum];
+
 	psp->sy += LOWERSPEED;
 
 	// Is already down.
@@ -430,10 +436,12 @@ A_Lower
 //
 void
 A_Raise
-( player_t*	player,
-  pspdef_t*	psp )
+(AActor *mo)
 {
 	statenum_t	newstate;
+
+    player_t *player = mo->player;
+    struct pspdef_s *psp = &player->psprites[player->psprnum];
 
 	psp->sy -= RAISESPEED;
 
@@ -454,8 +462,10 @@ A_Raise
 //
 // A_GunFlash
 //
-void A_GunFlash (player_t *player, pspdef_t *psp)
+void A_GunFlash (AActor *mo)
 {
+    player_t *player = mo->player;
+
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 	P_SetPsprite (player, ps_flash, weaponinfo[player->readyweapon].flashstate);
 }
@@ -469,11 +479,13 @@ void A_GunFlash (player_t *player, pspdef_t *psp)
 //
 // A_Punch
 //
-void A_Punch (player_t *player, pspdef_t *psp)
+void A_Punch (AActor *mo)
 {
 	angle_t 	angle;
 	int 		damage;
 	int 		slope;
+
+    player_t *player = mo->player;
 
 	damage = (P_Random (player->mo)%10+1)<<1;
 
@@ -510,10 +522,12 @@ void A_Punch (player_t *player, pspdef_t *psp)
 //
 // A_Saw
 //
-void A_Saw (player_t *player, pspdef_t *psp)
+void A_Saw (AActor *mo)
 {
 	angle_t 	angle;
 	int 		damage;
+
+    player_t *player = mo->player;
 
 	damage = 2 * (P_Random (player->mo)%10+1);
 	angle = player->mo->angle;
@@ -563,8 +577,10 @@ void A_Saw (player_t *player, pspdef_t *psp)
 //
 // A_FireMissile
 //
-void A_FireMissile (player_t *player, pspdef_t *psp)
+void A_FireMissile (AActor *mo)
 {
+    player_t *player = mo->player;
+
 	DecreaseAmmo(player, 1);
 
 	if(serverside)
@@ -576,8 +592,10 @@ void A_FireMissile (player_t *player, pspdef_t *psp)
 // A_FireBFG
 //
 
-void A_FireBFG (player_t *player, pspdef_t *psp)
+void A_FireBFG (AActor *mo)
 {
+    player_t *player = mo->player;
+    
 	// [RH] bfg can be forced to not use freeaim
 	angle_t storedpitch = player->mo->pitch;
 	int storedaimdist = player->userinfo.aimdist;
@@ -599,8 +617,10 @@ void A_FireBFG (player_t *player, pspdef_t *psp)
 //
 // A_FirePlasma
 //
-void A_FirePlasma (player_t *player, pspdef_t *psp)
+void A_FirePlasma (AActor *mo)
 {
+    player_t *player = mo->player;
+
 	DecreaseAmmo(player, 1);
 
 	P_SetPsprite (player,
@@ -731,8 +751,10 @@ void P_FireHitscan (player_t *player, size_t quantity, bool accurate, bool ssg_s
 //
 // A_FirePistol
 //
-void A_FirePistol (player_t *player, pspdef_t *psp)
+void A_FirePistol (AActor *mo)
 {
+    player_t *player = mo->player;
+    
 	A_FireSound (player, "weapons/pistol");
 
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
@@ -750,8 +772,10 @@ void A_FirePistol (player_t *player, pspdef_t *psp)
 //
 // A_FireShotgun
 //
-void A_FireShotgun (player_t *player, pspdef_t *psp)
+void A_FireShotgun (AActor *mo)
 {
+    player_t *player = mo->player;
+
 	A_FireSound (player, "weapons/shotgf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
@@ -769,8 +793,10 @@ void A_FireShotgun (player_t *player, pspdef_t *psp)
 //
 // A_FireShotgun2
 //
-void A_FireShotgun2 (player_t *player, pspdef_t *psp)
+void A_FireShotgun2 (AActor *mo)
 {
+    player_t *player = mo->player;   
+
 	A_FireSound (player, "weapons/sshotf");
 	P_SetMobjState (player->mo, S_PLAY_ATK2);
 
@@ -786,8 +812,11 @@ void A_FireShotgun2 (player_t *player, pspdef_t *psp)
 //
 // A_FireCGun
 //
-void A_FireCGun (player_t *player, pspdef_t *psp)
+void A_FireCGun (AActor *mo)
 {
+    player_t *player = mo->player;
+    struct pspdef_s *psp = &player->psprites[player->psprnum];
+    
 	A_FireSound (player, "weapons/chngun");
 
 	if (weaponinfo[player->readyweapon].ammo != am_noammo
@@ -809,19 +838,22 @@ void A_FireCGun (player_t *player, pspdef_t *psp)
 
 
 
-void A_Light0 (player_t *player, pspdef_t *psp)
+void A_Light0 (AActor *Actor)
 {
-	player->extralight = 0;
+	if (Actor->player)
+        Actor->player->extralight = 0;
 }
 
-void A_Light1 (player_t *player, pspdef_t *psp)
+void A_Light1 (AActor *Actor)
 {
-	player->extralight = 1;
+	if (Actor->player)
+        Actor->player->extralight = 1;
 }
 
-void A_Light2 (player_t *player, pspdef_t *psp)
+void A_Light2 (AActor *Actor)
 {
-	player->extralight = 2;
+	if (Actor->player)
+        Actor->player->extralight = 2;
 }
 
 
@@ -891,8 +923,10 @@ void A_BFGSpray (AActor *mo)
 //
 // A_BFGsound
 //
-void A_BFGsound (player_t *player, pspdef_t *psp)
+void A_BFGsound (AActor *mo)
 {
+    player_t *player = mo->player;
+    
 	A_FireSound(player, "weapons/bfgf");
 }
 
@@ -950,22 +984,28 @@ void P_MovePsprites (player_t* player)
 	player->psprites[ps_flash].sy = player->psprites[ps_weapon].sy;
 }
 
-void A_OpenShotgun2 (player_t *player, pspdef_t *psp)
+void A_OpenShotgun2 (AActor *mo)
 {
+    player_t *player = mo->player;
+    
 	A_FireSound(player, "weapons/sshoto");
 }
 
-void A_LoadShotgun2 (player_t *player, pspdef_t *psp)
+void A_LoadShotgun2 (AActor *mo)
 {
+    player_t *player = mo->player;
+    
 	A_FireSound(player, "weapons/sshotl");
 }
 
-void A_ReFire (player_t *player, pspdef_t *psp);
+void A_ReFire (AActor *mo);
 
-void A_CloseShotgun2 (player_t *player, pspdef_t *psp)
+void A_CloseShotgun2 (AActor *mo)
 {
+    player_t *player = mo->player;
+    
 	A_FireSound(player, "weapons/sshotc");
-	A_ReFire(player,psp);
+	A_ReFire(mo);
 }
 
 FArchive &operator<< (FArchive &arc, pspdef_t &def)

@@ -48,6 +48,7 @@
 #define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
 #define MASTERTIMEOUT       "MasterTimeout"
 #define SERVERTIMEOUT       "ServerTimeout"
+#define USEBROADCAST        "UseBroadcast"
 
 #ifdef __WXMSW__
 #define PATH_DELIMITER ';'
@@ -104,6 +105,7 @@ class dlgConfig: public wxDialog
         
         wxCheckBox *m_ChkCtrlGetListOnStart;
         wxCheckBox *m_ChkCtrlShowBlockedServers;
+        wxCheckBox *m_ChkCtrlEnableBroadcasts;
 
         wxListBox *m_LstCtrlWadDirectories;
 

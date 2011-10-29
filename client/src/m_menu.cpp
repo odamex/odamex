@@ -426,7 +426,7 @@ oldmenu_t ReadDef3 =
 //
 // LOAD GAME MENU
 //
-enum
+enum load_t
 {
 	load1,
 	load2,
@@ -488,7 +488,7 @@ oldmenu_t SaveDef =
 // through console commands.
 BEGIN_COMMAND (menu_main)
 {
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SetupNextMenu (&MainDef);
 }
@@ -497,7 +497,7 @@ END_COMMAND (menu_main)
 BEGIN_COMMAND (menu_help)
 {
     // F1
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_ReadThis(0);
 }
@@ -506,7 +506,7 @@ END_COMMAND (menu_help)
 BEGIN_COMMAND (menu_save)
 {
     // F2
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SaveGame (0);
 	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
@@ -516,7 +516,7 @@ END_COMMAND (menu_save)
 BEGIN_COMMAND (menu_load)
 {
     // F3
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_LoadGame (0);
 	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
@@ -526,7 +526,7 @@ END_COMMAND (menu_load)
 BEGIN_COMMAND (menu_options)
 {
     // F4
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
     M_StartControlPanel ();
 	M_Options(0);
 }
@@ -535,7 +535,7 @@ END_COMMAND (menu_options)
 BEGIN_COMMAND (quicksave)
 {
     // F6
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickSave ();
 	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
@@ -544,7 +544,7 @@ END_COMMAND (quicksave)
 
 BEGIN_COMMAND (menu_endgame)
 {	// F7
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_EndGame(0);
 }
@@ -553,7 +553,7 @@ END_COMMAND (menu_endgame)
 BEGIN_COMMAND (quickload)
 {
     // F9
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickLoad ();
 	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
@@ -562,7 +562,7 @@ END_COMMAND (quickload)
 
 BEGIN_COMMAND (menu_quit)
 {	// F10
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuitDOOM(0);
 }
@@ -570,7 +570,7 @@ END_COMMAND (menu_quit)
 
 BEGIN_COMMAND (menu_player)
 {
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_PlayerSetup(0);
 }
@@ -803,7 +803,7 @@ void M_QuickSaveResponse(int ch)
 	if (ch == 'y' || ch == KEY_JOY4)
 	{
 		M_DoSave (quickSaveSlot);
-		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 	}
 }
 
@@ -811,14 +811,14 @@ void M_QuickSave(void)
 {
 	if (multiplayer)
 	{
-		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
 		M_ClearMenus ();
 		return;
 	}
 
 	if (!usergame)
 	{
-		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
 		M_ClearMenus ();
 		return;
 	}
@@ -850,7 +850,7 @@ void M_QuickLoadResponse(int ch)
 	if (ch == 'y' || ch == KEY_JOY4)
 	{
 		M_LoadSelect(quickSaveSlot);
-		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 	}
 }
 
@@ -1085,7 +1085,7 @@ void M_EndGame(int choice)
 	choice = 0;
 	if (!usergame)
 	{
-		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
 		return;
 	}
 
@@ -1109,7 +1109,7 @@ void M_QuitResponse(int ch)
 	{
 		if (gameinfo.quitSounds)
 		{
-			S_Sound (CHAN_VOICE, gameinfo.quitSounds[(gametic>>2)&7],
+			S_Sound (CHAN_INTERFACE, gameinfo.quitSounds[(gametic>>2)&7],
 				1, ATTN_SURROUND);
 			I_WaitVBL (105);
 		}
@@ -1187,21 +1187,21 @@ static void M_PlayerSetupTicker (void)
 static void M_PlayerSetupDrawer (void)
 {
 	int x1,x2,y1,y2;
-	
+
 	x1 = (screen->width / 2)-(160*CleanXfac);
 	y1 = (screen->height / 2)-(100*CleanYfac);
-	
+
     x2 = (screen->width / 2)+(160*CleanXfac);
 	y2 = (screen->height / 2)+(100*CleanYfac);
-	
+
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
-	    
+
 	// Draw title
 	{
 		patch_t *patch = W_CachePatch ("M_PSTTL");
         screen->DrawPatchClean (patch, 160-patch->width()/2, 10);
-        
+
 		/*screen->DrawPatchClean (patch,
 			160 - (patch->width() >> 1),
 			PSetupDef.y - (patch->height() * 3));*/
@@ -1838,7 +1838,7 @@ bool M_Responder (event_t* ev)
 			messageRoutine(ch2);
 
 		menuactive = false;
-		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 		return true;
 	}
 
@@ -1867,7 +1867,7 @@ bool M_Responder (event_t* ev)
 		}
 		return false;
 	}
-	
+
 	if(cmd)
 	{
 		// Respond to the main menu binding
@@ -1894,7 +1894,7 @@ bool M_Responder (event_t* ev)
 					itemOn = itemOn + 2;
 				else	itemOn++;
 			}
-			S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
@@ -1911,7 +1911,7 @@ bool M_Responder (event_t* ev)
 					itemOn = itemOn - 2;
 				else itemOn--;
 			}
-			S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
@@ -1920,7 +1920,7 @@ bool M_Responder (event_t* ev)
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{
-			S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			currentMenu->menuitems[itemOn].routine(0);
 		}
 		return true;
@@ -1930,7 +1930,7 @@ bool M_Responder (event_t* ev)
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{
-			S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			currentMenu->menuitems[itemOn].routine(1);
 		}
 		return true;
@@ -1944,12 +1944,12 @@ bool M_Responder (event_t* ev)
 			if (currentMenu->menuitems[itemOn].status == 2)
 			{
 				currentMenu->menuitems[itemOn].routine(1);		// right arrow
-				S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
 			else
 			{
 				currentMenu->menuitems[itemOn].routine(itemOn);
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 			}
 		}
 		return true;
@@ -1969,14 +1969,14 @@ bool M_Responder (event_t* ev)
 				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
 				{
 					itemOn = i;
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 					return true;
 				}
 			for (i = 0;i <= itemOn;i++)
 				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
 				{
 					itemOn = i;
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 					return true;
 				}
 		}
@@ -2129,10 +2129,10 @@ void M_PopMenuStack (void)
 		}
 		drawSkull = MenuStack[MenuStackDepth].drawSkull;
 		MenuStackDepth++;
-		S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	} else {
 		M_ClearMenus ();
-		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 	}
 }
 

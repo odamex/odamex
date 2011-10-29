@@ -432,14 +432,16 @@ bool dlgMain::MonThrGetMasterList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 MasterTimeout;
+    bool UseBroadcast;
     size_t ServerCount;
     mtrs_t Signal;
 
     // Get the masters timeout from the config file
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
+    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
 
     // Query the masters with the timeout
-    MServer.QueryMasters(MasterTimeout);
+    MServer.QueryMasters(MasterTimeout, UseBroadcast);
    
     // Get the amount of servers found
     ServerCount = MServer.GetServerCount();
@@ -497,7 +499,7 @@ void dlgMain::MonThrGetServerList()
     {
         for(size_t i = 0; i < NUM_THREADS; i++)
         {
-            if((threadVector.size() != 0) && ((threadVector.size() - 1) >= i))
+            if((!threadVector.empty()) && ((threadVector.size() - 1) >= i))
             {
                 // monitor our thread vector, delete ONLY if the thread is
                 // finished
