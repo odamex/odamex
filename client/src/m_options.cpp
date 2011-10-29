@@ -97,6 +97,8 @@ EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookspring)
 EXTERN_CVAR (lookstrafe)
 EXTERN_CVAR (hud_crosshair)
+EXTERN_CVAR (hud_crosshairhealth)
+EXTERN_CVAR (hud_crosshairscale)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (r_detail)
 
@@ -605,6 +607,8 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
+	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "High-res scoreboard",  	{&hud_usehighresboard}, {2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Multiplayer Intermissions",{&wi_newintermission}, {2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
