@@ -1285,9 +1285,14 @@ void CL_Print (void)
 	const char *str = MSG_ReadString();
 
 	Printf (level, "%s", str);
-
-	if ((level == PRINT_CHAT || level == PRINT_TEAMCHAT) && show_messages)
-		S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+	
+	if (show_messages)
+	{
+		if (level == PRINT_CHAT)
+			S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		else if (level == PRINT_TEAMCHAT)
+			S_Sound (CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+	}
 }
 
 // Print a message in the middle of the screen
