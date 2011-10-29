@@ -9,11 +9,11 @@
 
 [ag-odalaunch/src/net_packet.h]
 s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
-s|(\s*#define\s+PROTOCOL_VERSION\s+)\d+|$1$protocol_version|
+#s|(\s*#define\s+PROTOCOL_VERSION\s+)\d+|$1$protocol_version|
 
 [odalpapi/net_packet.h]
 s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
-s|(\s*#define\s+PROTOCOL_VERSION\s+)\d+|$1$protocol_version|
+# s|(\s*#define\s+PROTOCOL_VERSION\s+)\d+|$1$protocol_version|
 
 [ag-odalaunch/res/Info.plist]
 s|(\s*<key>CFBundleVersion</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
@@ -33,7 +33,7 @@ s|(\s*<key>NSHumanReadableCopyright</key>\s*\n*\s*<string>)[^<]*(</string>)|$1$c
 s|(\s*#define\s*CONFIGVERSIONSTR\s*")\d*(")|$1$version_short$2|
 s|(\s*#define\s*GAMEVER\s*\(0\*256\+)\d+(\))|$1$version_short$2|
 s|(\s*#define\s*DOTVERSIONSTR\s*")\d*\.?\d*\.?\d*(")|$1$version$2|
-s|(\s*#define\s*SAVESIG\s*")[^"]*(")|$1$savesig$2|
+# s|(\s*#define\s*SAVESIG\s*")[^"]*(")|$1$savesig$2|
 
 [README]
 s|(\s*Odamex v)\d*\.?\d*\.?\d*(\s*README)|$1$version$2|
@@ -70,10 +70,4 @@ s|(OutputBaseFilename=odamex-win32-)\d*\.?\d*\.?\d*|$1$version|
 s|(VersionInfoProductVersion=)\d*\.?\d*\.?\d*|$1$version|
 
 [server/src/sv_sqp.cpp]
-s|(\s*#define\s*PROTOCOL_VERSION\s*)\d+|$1$protocol_version|
-
-
-
-
-
-
+# s|(\s*#define\s*PROTOCOL_VERSION\s*)\d+|$1$protocol_version|
