@@ -116,7 +116,7 @@ R_ClipSolidWallSegment
 	if(newend + 1 >= lastsolidseg)
 	{
 		// denis - out of solidsegs, this would crash vanilla
-		Printf(PRINT_HIGH, "warning: exceeded %d solidsegs\n", MaxSegs);
+		DPrintf("warning: exceeded %d solidsegs\n", MaxSegs);
 		if(MaxSegs >= 1024*1024)
 		{
 			// not that crazy, though
