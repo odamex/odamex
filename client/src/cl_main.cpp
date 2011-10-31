@@ -755,7 +755,14 @@ END_COMMAND(rew)
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
 	P_CheckPosition(mobj, x, y);
-	mobj->SetOrigin(x, y, z);
+	mobj->UnlinkFromWorld ();
+
+	mobj->x = x;
+	mobj->y = y;
+	mobj->z = z;
+	mobj->floorz = tmfloorz;
+	mobj->ceilingz = tmceilingz;
+	mobj->LinkToWorld ();
 }
 
 //
