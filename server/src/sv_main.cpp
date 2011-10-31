@@ -4095,7 +4095,7 @@ void SV_TimelimitCheck()
 	level.timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;	// in tics
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
-	if ((gametic % (TICRATE * 5)) == 0)		// every 5 seconds
+	if ((gametic % (TICRATE * 1)) == 0)		// every second
 	{
 		for (size_t i = 0; i < clients.size(); i++)
 		{
