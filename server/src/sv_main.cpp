@@ -104,6 +104,7 @@ EXTERN_CVAR(sv_clientcount)
 EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
+EXTERN_CVAR(sv_ticbuffer)
 
 void SexMessage (const char *from, char *to, int gender);
 void SV_RemoveDisconnectedPlayer(player_t &player);
@@ -3366,7 +3367,8 @@ void SV_ProcessPlayerCmd(player_t &player)
 	// most circumstances, it should be 1 per gametic to have the smoothest
 	// player movement possible.
 	
-	if (player.spectator || 
+	if (!sv_ticbuffer ||
+		player.spectator || 
 		player.playerstate == PST_DEAD || 
 		!P_VisibleToPlayers(player.mo))
 	{
