@@ -63,6 +63,9 @@ static AudioUnit unit;
 static CFDataRef cfd;
 #endif
 
+void S_StopMusic();
+void S_ChangeMusic (std::string musicname, int looping);
+
 // [Russell] - define a temporary midi file, for consistency
 // SDL < 1.2.7
 #ifdef _XBOX
@@ -262,13 +265,15 @@ CVAR_FUNC_IMPL (snd_nomusic)
 {
 	if (var)
 	{
+		S_StopMusic();
 		I_ShutdownMusic();
 		Printf (PRINT_HIGH, "Music playback disabled\n");
 	}
 	else
 	{
+		S_StopMusic();
 		I_InitMusic();
-		Printf(PRINT_HIGH, "Music will begin with the next level change.\n");
+		S_ChangeMusic (std::string(level.music, 8), true);
 	}
 }
 

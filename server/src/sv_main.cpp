@@ -2844,7 +2844,7 @@ void SV_Say(player_t &player)
 	byte team = MSG_ReadByte();
     const char *s = MSG_ReadString();
 
-	if(!strlen(s) || strlen(s) > 128)
+	if(!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
 		return;
 
     // Flood protection
@@ -4148,7 +4148,7 @@ void SV_TimelimitCheck()
 	level.timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;	// in tics
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
-	if ((gametic % (TICRATE * 5)) == 0)		// every 5 seconds
+	if ((gametic % (TICRATE * 1)) == 0)		// every second
 	{
 		for (size_t i = 0; i < clients.size(); i++)
 		{

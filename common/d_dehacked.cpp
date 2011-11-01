@@ -266,7 +266,8 @@ static const char *SoundMap[] = {
 	"skeleton/active",
 	"skeleton/sight",
 	"skeleton/attack",
-	"misc/chat"
+	"misc/chat",
+	"misc/teamchat"
 };
 
 // Functions used in a .bex [CODEPTR] chunk

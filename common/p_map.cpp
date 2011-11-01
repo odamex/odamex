@@ -1539,6 +1539,12 @@ BOOL PTR_AimTraverse (intercept_t* in)
 	if ((th->player && th->player->spectator))
 		return true;
 
+	// [SL] 2011-10-31 - Don't aim at teammates
+	if ((sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) &&
+		shootthing->player && th->player &&
+		shootthing->player->userinfo.team == th->player->userinfo.team)
+		return true;
+
 	// check angles to see if the thing can be aimed at
 	dist = FixedMul (attackrange, in->frac);
 	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);

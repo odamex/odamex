@@ -756,7 +756,14 @@ END_COMMAND(rew)
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
 	P_CheckPosition(mobj, x, y);
-	mobj->SetOrigin(x, y, z);
+	mobj->UnlinkFromWorld ();
+
+	mobj->x = x;
+	mobj->y = y;
+	mobj->z = z;
+	mobj->floorz = tmfloorz;
+	mobj->ceilingz = tmceilingz;
+	mobj->LinkToWorld ();
 }
 
 //
@@ -1286,9 +1293,14 @@ void CL_Print (void)
 	const char *str = MSG_ReadString();
 
 	Printf (level, "%s", str);
-
-	if ((level == PRINT_CHAT || level == PRINT_TEAMCHAT) && show_messages)
-		S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+	
+	if (show_messages)
+	{
+		if (level == PRINT_CHAT)
+			S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		else if (level == PRINT_TEAMCHAT)
+			S_Sound (CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+	}
 }
 
 // Print a message in the middle of the screen
@@ -1306,13 +1318,21 @@ void CL_UpdatePlayer()
 	byte who = MSG_ReadByte();
 	player_t *p = &idplayer(who);
 
-	int x, y, z;
+	int sv_gametic = MSG_ReadLong();
+	
+	fixed_t x = MSG_ReadLong();
+	fixed_t y = MSG_ReadLong();
+	fixed_t z = MSG_ReadLong();
+	angle_t angle = MSG_ReadLong();
+	byte frame = MSG_ReadByte();
+	fixed_t momx = MSG_ReadLong();
+	fixed_t momy = MSG_ReadLong();
+	fixed_t momz = MSG_ReadLong();
 
-	if(!validplayer(*p) || !p->mo)
+	int invisibility = MSG_ReadLong();
+
+	if	(!validplayer(*p) || !p->mo)
 	{
-	    // Advance 37 bytes, because we don't need the following data anymore
-		MSG_SetOffset(37, buf_t::BT_SCUR);
-
 		return;
 	}
 
@@ -1323,27 +1343,22 @@ void CL_UpdatePlayer()
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-	x = MSG_ReadLong(); // 8
-	y = MSG_ReadLong(); // 12
-	z = MSG_ReadLong(); // 16
+	p->mo->angle = angle;
 	CL_MoveThing(p->mo, x, y, z);
-	p->mo->angle = MSG_ReadLong(); // 20
-	byte frame = MSG_ReadByte(); // 21
-	p->mo->momx = MSG_ReadLong(); // 25
-	p->mo->momy = MSG_ReadLong(); // 29
-	p->mo->momz = MSG_ReadLong(); // 33
+	p->mo->momx = momx;
+	p->mo->momy = momy;
+	p->mo->momz = momz;
 
 	p->real_origin[0] = x;
 	p->real_origin[1] = y;
 	p->real_origin[2] = z;
 
-	p->real_velocity[0] = p->mo->momx;
-	p->real_velocity[1] = p->mo->momy;
-	p->real_velocity[2] = p->mo->momz;
+	p->real_velocity[0] = momx;
+	p->real_velocity[1] = momy;
+	p->real_velocity[2] = momz;
 
     // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = MSG_ReadLong(); // 37
-
+    p->powers[pw_invisibility] = invisibility;
     if (p->powers[pw_invisibility])
     {
         p->mo->flags |= MF_SHADOW;
