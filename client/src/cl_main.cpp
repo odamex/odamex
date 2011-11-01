@@ -1337,7 +1337,7 @@ void CL_UpdatePlayer()
 	}
 
 	// the server processed the player's ticcmd sent during this tic
-	p->tic = MSG_ReadLong();	// 4
+	p->tic = sv_gametic; 
 	
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
