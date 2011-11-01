@@ -343,7 +343,7 @@ void CL_PredictPlayers (int predtic)
 		// one tic after the last position update receieved for that player.
 		// This relies on the fact that the player's current momentum
 		// determines their position in the next tic.
-		if (predtic == gametic && (gametic - p->last_received) == 1)
+		if (predtic == gametic && (gametic - p->last_received) == 1 || netdemo.isPlaying())
 		{
 			CL_PredictPlayer(p);			
 		}

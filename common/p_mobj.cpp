@@ -2227,6 +2227,9 @@ bool P_VisibleToPlayers(AActor *mo)
 		if (mo->player && mo->player->id == players[i].id)
 			continue;
 	
+		if (!players[i].mo || players[i].spectator)
+			continue;
+	
 		if (HasBehavior && P_CheckSightEdges2(players[i].mo, mo, 5.0))
 			return true;
 		if (!HasBehavior && P_CheckSightEdges(players[i].mo, mo, 5.0))
