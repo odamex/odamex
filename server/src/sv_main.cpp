@@ -3369,8 +3369,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 	
 	if (!sv_ticbuffer ||
 		player.spectator || 
-		player.playerstate == PST_DEAD || 
-		!P_VisibleToPlayers(player.mo))
+		player.playerstate == PST_DEAD) 
 	{
 		// [SL] 2011-09-16 - The player's movement won't be visibile to anyone
 		// else so their movement doesn't need to appear smooth.  Process all
