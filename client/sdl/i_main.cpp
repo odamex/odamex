@@ -66,6 +66,10 @@ typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
 #include "i_xbox.h"
 #endif
 
+#ifdef OSX
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
@@ -215,7 +219,13 @@ int main(int argc, char *argv[])
             LOG << error.GetMsg() << std::endl;
             LOG << std::endl;
         }
-#ifndef WIN32
+
+#ifdef OSX
+		std::string errorMessage = error.GetMsg();
+		CFStringRef macErrorMessage = CFStringCreateWithCString(NULL, errorMessage.c_str(), kCFStringEncodingMacRoman);
+		CFUserNotificationDisplayAlert(0, 0, NULL, NULL, NULL, CFSTR("Odamex Error"), macErrorMessage, CFSTR("OK"), NULL, NULL, NULL);
+		CFRelease(macErrorMessage);
+#elif !defined(WIN32)
             fprintf(stderr, "%s\n", error.GetMsg().c_str());
 #elif _XBOX
 		// Use future Xbox error message handling.    -- Hyper_Eye
