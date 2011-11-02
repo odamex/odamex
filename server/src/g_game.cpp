@@ -73,6 +73,7 @@ void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (co_nosilentspawns)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -703,33 +704,42 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		// of the finesine table, and the result is what I call the "ninja spawn,"
 		// which is missing the fog and sound, as it spawns somewhere out in the
 		// far reaches of the void.
-		
-		angle_t mtangle = (angle_t)(mthing->angle / 45);
-     
-		an = ANG45 * mtangle;
 
-		switch(mtangle)
+		if (co_nosilentspawns)
 		{
-			case 4: // 180 degrees (0x80000000 >> 19 == -4096)
-				xa = finetangent[2048];
-				ya = finetangent[0];
-				break;
-			case 5: // 225 degrees (0xA0000000 >> 19 == -3072)
-				xa = finetangent[3072];
-				ya = finetangent[1024];
-				break;
-			case 6: // 270 degrees (0xC0000000 >> 19 == -2048)
-				xa = finesine[0];
-				ya = finetangent[2048];
-				break;
-			case 7: // 315 degrees (0xE0000000 >> 19 == -1024)
-				xa = finesine[1024];
-				ya = finetangent[3072];
-				break;
-			default: // everything else works properly
-				xa = finecosine[an >> ANGLETOFINESHIFT];
-				ya = finesine[an >> ANGLETOFINESHIFT];
-				break;
+			an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+			xa = x+20*finecosine[an];
+			ya = y+20*finesine[an];
+		}
+		else
+		{
+			angle_t mtangle = (angle_t)(mthing->angle / 45);
+		 
+			an = ANG45 * mtangle;
+
+			switch(mtangle)
+			{
+				case 4: // 180 degrees (0x80000000 >> 19 == -4096)
+					xa = finetangent[2048];
+					ya = finetangent[0];
+					break;
+				case 5: // 225 degrees (0xA0000000 >> 19 == -3072)
+					xa = finetangent[3072];
+					ya = finetangent[1024];
+					break;
+				case 6: // 270 degrees (0xC0000000 >> 19 == -2048)
+					xa = finesine[0];
+					ya = finetangent[2048];
+					break;
+				case 7: // 315 degrees (0xE0000000 >> 19 == -1024)
+					xa = finesine[1024];
+					ya = finetangent[3072];
+					break;
+				default: // everything else works properly
+					xa = finecosine[an >> ANGLETOFINESHIFT];
+					ya = finesine[an >> ANGLETOFINESHIFT];
+					break;
+			}
 		}
 
 		mo = new AActor (x+20*xa, y+20*ya, z, MT_TFOG);

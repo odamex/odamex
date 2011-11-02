@@ -155,6 +155,10 @@ CVAR (co_zdoomswitches, "0", "Play the switch resetting sound at map location (0
 CVAR (co_zdoomsoundcurve, "0", "Use ZDoom's sound curve instead of vanilla Doom's", 
       CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+// Turns off the west-facing silent spawns vanilla bug
+CVAR (co_nosilentspawns, "0", "Turns off the west-facing silent spawns vanilla bug", 
+      CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 // Dead player's view follows the actor who killed them
 CVAR (cl_deathcam, "1", "Dead player's view follows the actor who killed them", 
       CVAR_ARCHIVE)
