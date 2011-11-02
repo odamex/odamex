@@ -230,7 +230,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	fd_set           readfds;
 	struct timeval   tv;
 	bool             DestroyMe = false;
-    int fromlen;
+    socklen_t        fromlen;
 
 	// clear it
 	ClearBuffer();

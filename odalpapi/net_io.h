@@ -32,6 +32,7 @@
 #elif _WIN32
     #include <windows.h>
     #include <winsock.h>
+    #include <ws2tcpip.h>
 #else
     #include <sys/socket.h>
     #include <netinet/in.h>
