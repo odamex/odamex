@@ -2874,16 +2874,16 @@ void SV_Say(player_t &player)
 	if (strnicmp(s, "/me ", 4) == 0)
 	{
 		if (player.spectator && (!sv_globalspectatorchat || team))
-			SV_SpectatorPrintf(PRINT_CHAT, "<SPECTATORS> * %s %s\n", player.userinfo.netname, &s[4]);
+			SV_SpectatorPrintf(PRINT_TEAMCHAT, "<SPECTATORS> * %s %s\n", player.userinfo.netname, &s[4]);
 		else if(!team)
 			SV_BroadcastPrintf (PRINT_CHAT, "* %s %s\n", player.userinfo.netname, &s[4]);
 		else if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-			SV_TeamPrintf(PRINT_CHAT, player.id, "<TEAM> * %s %s\n", player.userinfo.netname, &s[4]);
+			SV_TeamPrintf(PRINT_TEAMCHAT, player.id, "<TEAM> * %s %s\n", player.userinfo.netname, &s[4]);
 	}
 	else
 	{
 		if (player.spectator && (!sv_globalspectatorchat || team))
-			SV_SpectatorPrintf (PRINT_CHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
+			SV_SpectatorPrintf (PRINT_TEAMCHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
 		else if(!team)
 			SV_BroadcastPrintf (PRINT_CHAT, "%s: %s\n", player.userinfo.netname, s);
 		else if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
