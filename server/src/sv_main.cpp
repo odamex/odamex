@@ -3361,6 +3361,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 	}
 
 	const int minimum_cmds = 1;
+	const int maximum_queue_size = TICRATE / 4;
 	int num_cmds;	
 
 	// [SL] 2011-09-16 - Calculate how many ticcmds should be processed.  Under
@@ -3376,12 +3377,12 @@ void SV_ProcessPlayerCmd(player_t &player)
 		// queued ticcmds.
 		num_cmds = player.cmds.size();
 	}
-	else if ((int)player.cmds.size() > 2 + player.ping / TICRATE)
+	else if ((int)player.cmds.size() > maximum_queue_size)
 	{
 		// The player connection experienced a large latency spike so try to
 		// catch up by processing more than one ticcmd at the expense of
 		// appearing perfectly smooth
-		num_cmds = 2;
+		num_cmds = 2 * minimum_cmds;
 	}
 	else
 	{
@@ -3394,13 +3395,11 @@ void SV_ProcessPlayerCmd(player_t &player)
 		usercmd_t *ucmd = &(player.cmds.front().ucmd);
 
 		// check for a dead player trying to respawn
-		if (player.playerstate == PST_DEAD && ucmd->buttons && i >= minimum_cmds)
+		if (player.playerstate == PST_DEAD && 
+			(ucmd->buttons & BT_USE) &&
+			i >= minimum_cmds)
 			break;
 		
-		// check to see if a player suddenly became visible again
-		if (P_VisibleToPlayers(player.mo) && i >= minimum_cmds)
-			break;
-
 		if (player.playerstate != PST_DEAD)
 		{
 			if (step_mode)
