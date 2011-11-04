@@ -720,10 +720,13 @@ BEGIN_COMMAND(netplay)
 		return;
 	}
 
-	if(connected)
+	if (!connected)
 	{
-		CL_QuitNetGame();
+ 		G_CheckDemoStatus();	// cleans up vanilla demo or single player game
 	}
+
+	CL_QuitNetGame();
+	connected = false;
 
 	std::string filename = argv[1];
 	CL_NetDemoPlay(filename);
