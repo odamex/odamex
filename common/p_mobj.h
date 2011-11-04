@@ -111,6 +111,7 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
 bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 void P_SpawnPlayerMissile(AActor *source, mobjtype_t type);
+bool P_VisibleToPlayers(AActor *mo);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);

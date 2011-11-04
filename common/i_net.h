@@ -162,7 +162,6 @@ enum clc_t
 	clc_kill,				// denis - suicide
 	clc_cheat,				// denis - god, pumpkins, etc
     clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
-	clc_svgametic,			// [SL] 2011-05-11 - [byte]
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,

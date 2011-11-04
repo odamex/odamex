@@ -161,5 +161,8 @@ CVAR (ctf_flagtimeout, "10",  "Time for a dropped flag to be returned automatica
 CVAR (sv_inttimecountdown, "0",  "Display time left for an intermission screen to next map",
       CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR (sv_ticbuffer, "0", "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
+	  CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 
