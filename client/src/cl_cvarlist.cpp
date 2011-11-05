@@ -69,7 +69,7 @@ CVAR (am_ovteleportcolor,	"ff a3 00", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (print_stdout, "0", "", CVAR_ARCHIVE)
 CVAR (con_notifytime, "3", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (con_scaletext, "1", "Scale notify text at high resolutions", CVAR_ARCHIVE)
-CVAR (con_scrlock, "0", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (con_scrlock, "1", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (con_midtime, "3", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 

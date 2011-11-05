@@ -50,14 +50,14 @@ public:
 	void unregisterPlayer(byte player_id);
 	void registerSector(sector_t *sector);
 	void unregisterSector(sector_t *sector);
-	void setRoundtripDelay(byte player_id, size_t delay);
+	void setRoundtripDelay(byte player_id, byte svgametic);
 	void getReconciliationOffset(	byte shooter_id, byte target_id,
 									fixed_t &x, fixed_t &y, fixed_t &z);
 	static bool enabled();
 private:
 	// keep as a power of 2 so the compiler can optimize: n % MAX_HISTORY_TICS
 	// into: n & (MAX_HISTORY_TICS - 1)
-	static const size_t MAX_HISTORY_TICS = 16;
+	static const size_t MAX_HISTORY_TICS = 32;
 		
 	typedef struct {
 		byte		player_id;
@@ -111,6 +111,8 @@ private:
 	void reconcilePlayerPositions(byte shooter_id, size_t ticsago);
 	void reconcileSectorPositions(size_t ticsago);
 	void refreshRegisteredPlayers();
+
+	void debugReconciliation(byte shooter_id);
 };
 
 

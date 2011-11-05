@@ -2209,4 +2209,34 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		P_DeactivateMobj (mobj);
 }
 
+
+//
+// P_VisibleToPlayers
+//
+// Returns true if mo is currently in any player's field of view
+//
+
+bool P_VisibleToPlayers(AActor *mo)
+{
+	if (!mo)
+		return false;
+
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		// players aren't considered visible to themselves
+		if (mo->player && mo->player->id == players[i].id)
+			continue;
+	
+		if (!players[i].mo || players[i].spectator)
+			continue;
+	
+		if (HasBehavior && P_CheckSightEdges2(players[i].mo, mo, 5.0))
+			return true;
+		if (!HasBehavior && P_CheckSightEdges(players[i].mo, mo, 5.0))
+			return true;
+	}
+
+	return false;
+}
+
 VERSION_CONTROL (p_mobj_cpp, "$Id$")

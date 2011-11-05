@@ -67,8 +67,9 @@ void STACK_ARGS M_SaveDefaults (void)
 
 	if (!DefaultsLoaded)
 		return;
-
-	std::string configfile = GetConfigPath();
+	
+	// [ML] Always save to the default.
+	std::string configfile = I_GetUserFileName ("odasrv.cfg");
 
 	// Make sure the user hasn't changed configver
 	configver.Set(CONFIGVERSIONSTR);

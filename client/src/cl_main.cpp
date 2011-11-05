@@ -77,6 +77,7 @@ buf_t     net_buffer(MAX_UDP_PACKET);
 bool      noservermsgs;
 int       last_received;
 byte      last_svgametic = 0;
+int       received_last_svgametic = 0;
 
 std::string connectpasshash = "";
 
@@ -719,10 +720,13 @@ BEGIN_COMMAND(netplay)
 		return;
 	}
 
-	if(connected)
+	if (!connected)
 	{
-		CL_QuitNetGame();
+ 		G_CheckDemoStatus();	// cleans up vanilla demo or single player game
 	}
+
+	CL_QuitNetGame();
+	connected = false;
 
 	std::string filename = argv[1];
 	CL_NetDemoPlay(filename);
@@ -755,7 +759,14 @@ END_COMMAND(rew)
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
 	P_CheckPosition(mobj, x, y);
-	mobj->SetOrigin(x, y, z);
+	mobj->UnlinkFromWorld ();
+
+	mobj->x = x;
+	mobj->y = y;
+	mobj->z = z;
+	mobj->floorz = tmfloorz;
+	mobj->ceilingz = tmceilingz;
+	mobj->LinkToWorld ();
 }
 
 //
@@ -1310,43 +1321,47 @@ void CL_UpdatePlayer()
 	byte who = MSG_ReadByte();
 	player_t *p = &idplayer(who);
 
-	int x, y, z;
+	int sv_gametic = MSG_ReadLong();
+	
+	fixed_t x = MSG_ReadLong();
+	fixed_t y = MSG_ReadLong();
+	fixed_t z = MSG_ReadLong();
+	angle_t angle = MSG_ReadLong();
+	byte frame = MSG_ReadByte();
+	fixed_t momx = MSG_ReadLong();
+	fixed_t momy = MSG_ReadLong();
+	fixed_t momz = MSG_ReadLong();
 
-	if(!validplayer(*p) || !p->mo)
+	int invisibility = MSG_ReadLong();
+
+	if	(!validplayer(*p) || !p->mo)
 	{
-	    // Advance 37 bytes, because we don't need the following data anymore
-		MSG_SetOffset(37, buf_t::BT_SCUR);
-
 		return;
 	}
 
-	int sv_gametic = MSG_ReadLong(); // 4
+	// the server processed the player's ticcmd sent during this tic
+	p->tic = sv_gametic; 
 	
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-	x = MSG_ReadLong(); // 8
-	y = MSG_ReadLong(); // 12
-	z = MSG_ReadLong(); // 16
+	p->mo->angle = angle;
 	CL_MoveThing(p->mo, x, y, z);
-	p->mo->angle = MSG_ReadLong(); // 20
-	byte frame = MSG_ReadByte(); // 21
-	p->mo->momx = MSG_ReadLong(); // 25
-	p->mo->momy = MSG_ReadLong(); // 29
-	p->mo->momz = MSG_ReadLong(); // 33
+	p->mo->momx = momx;
+	p->mo->momy = momy;
+	p->mo->momz = momz;
 
 	p->real_origin[0] = x;
 	p->real_origin[1] = y;
 	p->real_origin[2] = z;
 
-	p->real_velocity[0] = p->mo->momx;
-	p->real_velocity[1] = p->mo->momy;
-	p->real_velocity[2] = p->mo->momz;
+	p->real_velocity[0] = momx;
+	p->real_velocity[1] = momy;
+	p->real_velocity[2] = momz;
 
     // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = MSG_ReadLong(); // 37
-
+    p->powers[pw_invisibility] = invisibility;
     if (p->powers[pw_invisibility])
     {
         p->mo->flags |= MF_SHADOW;
@@ -1363,7 +1378,6 @@ void CL_UpdatePlayer()
 		return;
 
 	p->last_received = gametic;
-	p->tic = sv_gametic;
 }
 
 ticcmd_t localcmds[MAXSAVETICS];
@@ -1380,7 +1394,10 @@ void CL_UpdateLocalPlayer(void)
 {
 	player_t &p = consoleplayer();
 
+	// The server has processed the ticcmd that the local client sent
+	// during the the tic referenced below
 	p.tic = MSG_ReadLong();
+
 	p.real_origin[0] = MSG_ReadLong();
 	p.real_origin[1] = MSG_ReadLong();
 	p.real_origin[2] = MSG_ReadLong();
@@ -1407,22 +1424,11 @@ void CL_UpdateLocalPlayer(void)
 void CL_SaveSvGametic(void)
 {
 	last_svgametic = MSG_ReadByte();
+	received_last_svgametic = gametic;
+	#ifdef _UNLAG_DEBUG_
+	DPrintf("Unlag (%03d): client-tic %d, received svgametic\n", last_svgametic, gametic);
+	#endif	// _UNLAG_DEBUG_
 }    
-
-
-//
-// CL_SendSvGametic
-//
-// Sends the most recent gametic received from the server so the server can
-// accurately calculate this client's lag
-//
-// [SL] 2011-05-11
-void CL_SendSvGametic(void)
-{
-	MSG_WriteMarker(&net_buffer, clc_svgametic);
-	MSG_WriteByte(&net_buffer, last_svgametic);
-}
-
 
 //
 // CL_SendPingReply
@@ -3009,22 +3015,18 @@ void CL_ParseCommands(void)
 
 extern int outrate;
 
+
 //
 // CL_SendCmd
 //
 void CL_SendCmd(void)
 {
-	player_t *p;
+	player_t *p = &consoleplayer();
 
 	if (netdemo.isPlaying())	// we're not really connected to a server
 		return;
 
-	if (gametic < 1 )
-		return;
-
-	p = &consoleplayer();
-
-	if(!p->mo)
+	if (!p->mo || gametic < 1 )
 		return;
 
 	// denis - we know server won't accept two changes per tic, so we shouldn't
@@ -3046,14 +3048,17 @@ void CL_SendCmd(void)
 	ticcmd_t *prevcmd = &localcmds[(gametic-1) % MAXSAVETICS];
 	ticcmd_t *curcmd  = &consoleplayer().cmd;
 
-    // [SL] 2011-05-11 - Send the latest gametic we've received from the server
-	// only if the client is firing a weapon
-	if (prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK)
-		CL_SendSvGametic();
-
 	MSG_WriteMarker(&net_buffer, clc_move);
 
-    MSG_WriteLong(&net_buffer, gametic); // current tic
+	// Write current client-tic.  Server later sends this back to client
+	// when sending svc_updatelocalplayer so the client knows which ticcmds
+	// need to be used for client's positional prediction. 
+    MSG_WriteLong(&net_buffer, gametic);
+    
+    // Send the most recent server-tic.  This indicates to the server which
+    // update of player positions the client is basing his actions on.  Used
+    // by unlagging calculations.
+	MSG_WriteByte(&net_buffer, last_svgametic);
 
     // send the previous cmds in the message, so if the last packet
     // was dropped, it can be recovered
@@ -3077,10 +3082,36 @@ void CL_SendCmd(void)
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
 	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
 
+#ifdef _UNLAG_DEBUG_
+	if 	(player.size() == 2 && 
+		(prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK))
+	{
+		player_t *enemy;
+			
+		if (players[0].id != consoleplayer().id)
+			enemy = &players[0];
+		else
+			enemy = &players[1];
+			
+		int x = enemy->mo->x >> FRACBITS;
+		int y = enemy->mo->y >> FRACBITS;
+		DPrintf("Unlag: Weapon fired with svgametic = %d, enemy position = (%d, %d)\n", last_svgametic, x, y);
+	}
+#endif	// _UNLAG_DEBUG_
+	
 	NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
+    
+    // [SL] 2011-09-18 - Since momentum can be used to accurately predict a
+    // player's position if we're missing one tic worth of data, increment
+    // svgametic if we're only missing one tic
+    if (gametic - received_last_svgametic == 1)
+    {
+    	last_svgametic++;
+    }
 }
+
 
 //
 // CL_PlayerTimes
@@ -3110,10 +3141,6 @@ void CL_RunTics (void)
 
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics ();
-
-	// [SL] 2011-05-29 - Haven't received a new tic from the server yet so
-	// increment the one we've already received.
-	last_svgametic++;
 }
 
 void PickupMessage (AActor *toucher, const char *message)

@@ -32,6 +32,7 @@
 #elif _WIN32
     #include <windows.h>
     #include <winsock.h>
+    #include <ws2tcpip.h>
 #else
     #include <sys/socket.h>
     #include <netinet/in.h>
@@ -55,7 +56,7 @@ typedef int SOCKET;
 #endif
 
 // Max packet size to send and receive, in bytes
-const size_t MAX_PAYLOAD = 1400;
+const size_t MAX_PAYLOAD = 8192;
 
 typedef unsigned char byte;
 

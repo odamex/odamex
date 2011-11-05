@@ -31,7 +31,7 @@
 #include <string>
 
 // Max packet size to send and receive, in bytes
-#define	MAX_UDP_PACKET	1400
+#define	MAX_UDP_PACKET 8192
 
 #define SERVERPORT  10666
 #define CLIENTPORT  10667
@@ -162,7 +162,6 @@ enum clc_t
 	clc_kill,				// denis - suicide
 	clc_cheat,				// denis - god, pumpkins, etc
     clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
-	clc_svgametic,			// [SL] 2011-05-11 - [byte]
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,
