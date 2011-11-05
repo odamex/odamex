@@ -117,7 +117,7 @@ ticcmd_t *I_BaseTiccmd(void)
 #ifdef _XBOX
 size_t def_heapsize = 16;
 #else
-size_t def_heapsize = 64;
+size_t def_heapsize = 128;
 #endif
 const size_t min_heapsize = 8;
 
