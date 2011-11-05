@@ -30,10 +30,10 @@
 #endif
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "55"
-#define GAMEVER (0*256+55)
+#define CONFIGVERSIONSTR "56"
+#define GAMEVER (0*256+56)
 
-#define DOTVERSIONSTR "0.5.5"
+#define DOTVERSIONSTR "0.5.6"
 
 #define SERVERMAJ (gameversion / 256)
 #define SERVERMIN ((gameversion % 256) / 10)
