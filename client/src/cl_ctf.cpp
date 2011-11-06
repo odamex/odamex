@@ -378,9 +378,6 @@ void CTF_DrawHud (void)
 		else if (hasflags[1])
 			TintScreen(BestColor (DefaultPalette->basecolors, 255,
 				(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
-		else if (hasflags[2])
-			TintScreen(BestColor (DefaultPalette->basecolors, 255,
-				255, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
 	}
 }
 
