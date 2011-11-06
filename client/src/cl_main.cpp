@@ -758,6 +758,15 @@ END_COMMAND(rew)
 //
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
+	if (!mobj)
+		return;
+
+	// [SL] 2011-11-06 - Return before setting the thing's floorz value if
+	// the thing hasn't moved.  This ensures the floorz value is correct for
+	// things that have spawned (too close to a ledge) but have not yet moved.
+	if (mobj->x == x && mobj->y == y && mobj->z == z)
+		return;
+
 	P_CheckPosition(mobj, x, y);
 	mobj->UnlinkFromWorld ();
 
