@@ -2989,7 +2989,10 @@ void SV_UpdateMonsters(player_t &pl)
     {
         if (mo->flags & MF_CORPSE)
 			continue;
-        if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
+	
+        if (!(mo->flags & MF_COUNTKILL ||
+			mo->type == MT_SKULL || 
+			mo->type == MT_BARREL))
 			continue;
 
 		// update monster position every 10 tics
