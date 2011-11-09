@@ -242,21 +242,23 @@ CVAR_FUNC_DECL (st_scale, "1", "", CVAR_ARCHIVE)
 // ------------------
 
 // Gamma correction level, 1 - 4
-CVAR_FUNC_DECL (gammalevel, "1", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (gammalevel, "1", "Gamma correction level, 1 - 4", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Type of crosshair, 0 means none
-CVAR_FUNC_DECL (hud_crosshair, "0", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (hud_crosshair, "0", "Type of crosshair, 0 means no crosshair", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Column optimization method
-CVAR (r_columnmethod, "1", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+CVAR (r_columnmethod, "1", "Column optimization method", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 // Detail level (affects performance)
-CVAR_FUNC_DECL (r_detail, "0", "", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (r_detail, "0", "Detail level (affects performance)", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Disables all texturing of walls
-CVAR (r_drawflat, "0", "", CVAR_CLIENTINFO)
+CVAR (r_drawflat, "0", "Disables all texturing of walls", CVAR_CLIENTINFO)
 // Draw player sprites
-CVAR (r_drawplayersprites, "1", "", CVAR_CLIENTINFO)
+CVAR (r_drawplayersprites, "1", "Draw player sprites", CVAR_CLIENTINFO)
+// Draw particles
+CVAR (r_particles, "1","Draw particles",CVAR_CLIENTINFO)
 // Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)
 CVAR_FUNC_DECL (r_stretchsky, "2", "", CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // Invulnerability sphere changes the palette of the sky
-CVAR (r_skypalette, "0", "", CVAR_ARCHIVE)
+CVAR (r_skypalette, "0", "Invulnerability sphere changes the palette of the sky", CVAR_ARCHIVE)
 
 #ifdef _XBOX // The burn wipe works better in 720p
 CVAR (r_wipetype, "2", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)

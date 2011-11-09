@@ -88,6 +88,7 @@ int			*screenheightarray;
 #define SPRITE_NEEDS_INFO	MAXINT
 
 EXTERN_CVAR (r_drawplayersprites)
+EXTERN_CVAR (r_particles)
 
 EXTERN_CVAR (hud_crosshairdim)
 EXTERN_CVAR (hud_crosshairscale) 
@@ -108,6 +109,12 @@ static const char*		spritename;
 // [RH] skin globals
 playerskin_t	*skins;
 size_t			numskins;
+
+// [RH] particle globals
+int				NumParticles;
+int				ActiveParticles;
+int				InactiveParticles;
+particle_t		*Particles;
 
 
 void R_CacheSprite (spritedef_t *sprite)
@@ -1607,6 +1614,269 @@ void R_DrawMasked (void)
 	}
 }
 
+
+//
+// [RH] Particle functions
+//
+#ifndef _MSC_VER
+// inlined with VC++
+particle_t *NewParticle (void)
+{
+	particle_t *result = NULL;
+	if (InactiveParticles != -1)
+	{
+		result = Particles + InactiveParticles;
+		InactiveParticles = result->next;
+		result->next = ActiveParticles;
+		ActiveParticles = result - Particles;
+	}
+	return result;
+}
+#endif
+
+void R_InitParticles (void)
+{
+	const char *i;
+
+	if ((i = Args.CheckValue ("-numparticles")))
+		NumParticles = atoi (i);
+	if (NumParticles == 0)
+		NumParticles = 4000;
+	else if (NumParticles < 100)
+		NumParticles = 100;
+
+	Particles = new particle_t[NumParticles * sizeof(particle_t)];
+	R_ClearParticles ();
+}
+
+void R_ClearParticles (void)
+{
+	int i;
+
+	memset (Particles, 0, NumParticles * sizeof(particle_t));
+	ActiveParticles = -1;
+	InactiveParticles = 0;
+	for (i = 0; i < NumParticles-1; i++)
+		Particles[i].next = i + 1;
+	Particles[i].next = -1;
+}
+
+void R_ProjectParticle (particle_t *particle)
+{
+	fixed_t 			tr_x;
+	fixed_t 			tr_y;
+	fixed_t 			gxt;
+	fixed_t 			gyt;
+	fixed_t				gzt;				// killough 3/27/98
+	fixed_t 			tx;
+	fixed_t 			tz;
+	fixed_t 			xscale;
+	int 				x1;
+	int 				x2;
+	vissprite_t*		vis;
+	sector_t			*sector = NULL;
+	sector_t*			heightsec = NULL;	// killough 3/27/98
+
+	// transform the origin point
+	tr_x = particle->x - viewx;
+	tr_y = particle->y - viewy;
+		
+	gxt = FixedMul (tr_x, viewcos); 
+	gyt = -FixedMul (tr_y, viewsin);
+	
+	tz = gxt - gyt; 
+
+	// particle is behind view plane?
+	if (tz < MINZ)
+		return;
+	
+	xscale = FixedDiv (FocalLengthX, tz);
+		
+	gxt = -FixedMul (tr_x, viewsin); 
+	gyt = FixedMul (tr_y, viewcos); 
+	tx = -(gyt+gxt); 
+
+	// too far off the side?
+	if (abs(tx)>(tz<<2))
+		return;
+	
+	// calculate edges of the shape
+	x1 = (centerxfrac + FixedMul (tx,xscale)) >> FRACBITS;
+
+	// off the right side?
+	if (x1 >= viewwidth)
+		return;
+	
+	x2 = ((centerxfrac + FixedMul (tx+particle->size*(FRACUNIT/4),xscale)) >> FRACBITS);
+
+	// off the left side
+	if (x2 < 0)
+		return;
+
+	gzt = particle->z+1;
+
+	// killough 3/27/98: exclude things totally separated
+	// from the viewer, by either water or fake ceilings
+	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
+
+	{
+		subsector_t *subsector = R_PointInSubsector (particle->x, particle->y);
+		if (subsector)
+		{
+			sector = subsector->sector;
+			heightsec = sector->heightsec;
+			if (particle->z < sector->floorheight || particle->z > sector->ceilingheight)
+				return;
+		}
+	}
+
+	if (heightsec)	// only clip particles which are in special sectors
+	{
+		sector_t *phs = camera->subsector->sector->heightsec;
+
+		if (phs && viewz < phs->floorheight ?
+			particle->z >= heightsec->floorheight :
+			gzt < heightsec->floorheight)
+		  return;
+		if (phs && viewz > phs->ceilingheight ?
+			gzt < heightsec->ceilingheight &&
+			viewz >= heightsec->ceilingheight :
+			particle->z >= heightsec->ceilingheight)
+		  return;
+	}
+
+	// store information in a vissprite
+	vis = R_NewVisSprite ();
+	vis->heightsec = heightsec;
+	vis->xscale = xscale;
+	vis->yscale = FixedMul (xscale, yaspectmul);
+	vis->depth = tz;
+	vis->gx = particle->x;
+	vis->gy = particle->y;
+	vis->gz = particle->z;
+	vis->gzt = gzt;
+	vis->texturemid = FixedMul (yaspectmul, vis->gzt - viewz);
+	vis->x1 = x1 < 0 ? 0 : x1;
+	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+	vis->translation = NULL;
+	vis->startfrac = particle->color;
+	vis->patch = -1;
+	vis->mobjflags = particle->trans;
+
+	if (fixedcolormap)
+	{
+		vis->colormap = fixedcolormap;
+	}
+	else if (sector)
+	{
+		byte *map;
+
+		if (sector->heightsec == NULL)
+			map = sector->floorcolormap->maps;
+		else
+		{
+			const sector_t *s = sector->heightsec;
+			if (particle->z <= s->floorheight || particle->z > s->ceilingheight)
+				map = s->floorcolormap->maps;
+			else
+				map = sector->floorcolormap->maps;
+		}
+
+		if (fixedlightlev)
+		{
+			vis->colormap = map + fixedlightlev;
+		}
+		else
+		{
+			int index = (vis->yscale*lightscalexmul)>>(LIGHTSCALESHIFT-1);
+			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT)
+					+ (foggy ? 0 : extralight);
+
+			if (lightnum < 0)
+				lightnum = 0;
+			else if (lightnum >= LIGHTLEVELS)
+				lightnum = LIGHTLEVELS-1;
+			if (index >= MAXLIGHTSCALE) 
+				index = MAXLIGHTSCALE-1;
+
+			vis->colormap = scalelight[lightnum][index] + map;
+		}
+	}
+	else
+	{
+		vis->colormap = realcolormaps;
+	}
+}
+
+void R_DrawParticle (vissprite_t *vis, int x1, int x2)
+{
+	byte color = vis->colormap[vis->startfrac];
+	int yl = (centeryfrac - FixedMul(vis->texturemid, vis->xscale) + FRACUNIT - 1) >> FRACBITS;
+	int yh;
+	x1 = vis->x1;
+	x2 = vis->x2;
+
+	if (x1 < 0)
+		x1 = 0;
+	if (x2 < x1)
+		x2 = x1;
+	if (x2 >= viewwidth)
+		x2 = viewwidth - 1;
+
+	yh = yl + (((x2 - x1)<<detailxshift)>>detailyshift);
+
+	// Don't bother clipping each individual column
+	if (yh >= mfloorclip[x1])
+		yh = mfloorclip[x1]-1;
+	if (yl <= mceilingclip[x1])
+		yl = mceilingclip[x1]+1;
+	if (yh >= mfloorclip[x2])
+		yh = mfloorclip[x2]-1;
+	if (yl <= mceilingclip[x2])
+		yl = mceilingclip[x2]+1;
+
+	// vis->mobjflags holds translucency level (0-255)
+	{
+		unsigned int *bg2rgb;
+		int countbase = x2 - x1 + 1;
+		int ycount;
+		int colsize = ds_colsize;
+		int spacing;
+		byte *dest;
+		unsigned int fg;
+
+		ycount = yh - yl;
+		if (ycount < 0)
+			return;
+		ycount++;
+
+		{
+			fixed_t fglevel, bglevel;
+			unsigned int *fg2rgb;
+
+			fglevel = ((vis->mobjflags + 1) << 8) & ~0x3ff;
+			bglevel = FRACUNIT-fglevel;
+			fg2rgb = Col2RGB8[fglevel>>10];
+			bg2rgb = Col2RGB8[bglevel>>10];
+			fg = fg2rgb[color];
+		}
+
+		spacing = screen->pitch - (countbase << detailxshift);
+		dest = ylookup[yl] + columnofs[x1];
+
+		do
+		{
+			int count = countbase;
+			do
+			{
+				unsigned int bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest = RGB32k[0][0][bg & (bg>>15)];
+				dest += colsize;
+			} while (--count);
+			dest += spacing;
+		} while (--ycount);
+	}
+}
+
 VERSION_CONTROL (r_things_cpp, "$Id$")
-
-
