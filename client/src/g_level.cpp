@@ -658,6 +658,9 @@ void G_InitNew (const char *mapname)
 {
 	size_t i = 0, j = 0;
 
+	// [RH] Remove all particles
+	R_ClearParticles ();
+
 	for (i = 0; i < players.size(); i++)
 	{
 		players[i].mo = AActor::AActorPtr();
@@ -2656,8 +2659,3 @@ cluster_info_t ClusterInfos[] = {
 };
 
 VERSION_CONTROL (g_level_cpp, "$Id$")
-
-
-
-
-

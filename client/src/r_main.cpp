@@ -834,6 +834,8 @@ void R_Init (void)
 	R_InitLightTables ();
 	R_InitTranslationTables ();
 
+	R_InitParticles ();	// [RH] Setup particle engine
+
 	framecount = 0;
 }
 
