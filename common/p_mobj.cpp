@@ -28,6 +28,7 @@
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "p_effect.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "v_video.h"
@@ -1880,8 +1881,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// count deathmatch start positions
-	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082))
-		&& !sv_teamspawns)
+	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082)) && !sv_teamspawns)
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (deathmatch_p >= &deathmatchstarts[10] && (demoplayback || demorecording) && democlassic)
@@ -2163,8 +2163,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		S_ActivateAmbient (mobj, mobj->args[0]);
 
 	// [RH] If a fountain and not dormant, start it
-//	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
-//		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
+	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
+		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);

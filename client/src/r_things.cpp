@@ -704,8 +704,8 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	if (vis->patch == -1)
 	{ // [RH] It's a particle
-//		R_DrawParticle (vis, x1, x2);
-//		return;
+		R_DrawParticle (vis, x1, x2);
+		return;
 	}
 
 	patch = W_CachePatch (vis->patch);
@@ -1583,6 +1583,17 @@ void R_DrawMasked (void)
 
 	R_SortVisSprites ();
 
+	if (r_particles)
+	{
+		// [RH] add all the particles
+		int i = ActiveParticles;
+		while (i != -1)
+		{
+			R_ProjectParticle (Particles + i);
+			i = Particles[i].next;
+		}
+	}
+
 	if (vsprcount)
 	{
 		sorttail = spritesorter + vsprcount;
@@ -1644,6 +1655,9 @@ void R_InitParticles (void)
 		NumParticles = 4000;
 	else if (NumParticles < 100)
 		NumParticles = 100;
+
+	if(Particles)
+		delete[] Particles;
 
 	Particles = new particle_t[NumParticles * sizeof(particle_t)];
 	R_ClearParticles ();

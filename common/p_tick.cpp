@@ -23,6 +23,7 @@
 
 #include "z_zone.h"
 #include "p_local.h"
+#include "p_effect.h"
 #include "p_acs.h"
 #include "c_console.h"
 #include "doomstat.h"
@@ -42,6 +43,8 @@ void P_Ticker (void)
 
 	if (!multiplayer && !demoplayback && menuactive && players[0].viewz != 1)
 		return;
+
+	P_ThinkParticles ();	// [RH] make the particles think
 
 	if((serverside && sv_speedhackfix) || (clientside && serverside))
 	{
@@ -63,6 +66,8 @@ void P_Ticker (void)
 	
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
+
+	P_RunEffects ();	// [RH] Run particle effects
 
 	// for par times
 	level.time++;

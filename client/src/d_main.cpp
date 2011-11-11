@@ -78,6 +78,7 @@
 #include "wi_stuff.h"
 #include "st_stuff.h"
 #include "am_map.h"
+#include "p_effect.h"
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
@@ -1403,6 +1404,7 @@ std::vector<size_t> D_DoomWadReboot(
 
 	M_Init();
 	R_Init();
+	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
 	P_Init();
 
 	S_Init (snd_sfxvolume, snd_musicvolume);
@@ -1587,6 +1589,7 @@ void D_DoomMain (void)
 	R_Init ();
 
 	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
+	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
 	P_Init ();
 
 	Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");
