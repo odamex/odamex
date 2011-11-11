@@ -44,7 +44,8 @@ void P_Ticker (void)
 	if (!multiplayer && !demoplayback && menuactive && players[0].viewz != 1)
 		return;
 
-	P_ThinkParticles ();	// [RH] make the particles think
+	if (clientside)
+		P_ThinkParticles ();	// [RH] make the particles think
 
 	if((serverside && sv_speedhackfix) || (clientside && serverside))
 	{

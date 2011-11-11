@@ -20,6 +20,8 @@
 //	Particle effect thinkers
 //
 //-----------------------------------------------------------------------------
+
+
 #include "doomtype.h"
 #include "doomstat.h"
 #include "c_cvars.h"
@@ -501,3 +503,4 @@ void P_DisconnectEffect (AActor *actor)
 	}
 }
 
+VERSION_CONTROL (p_effect_cpp, "$Id$")
