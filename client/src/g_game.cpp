@@ -693,6 +693,15 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		turntick--;
 		cmd->ucmd.yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
+
+	// [SL] 2011-11-11 - Don't send rotational cmds if dead as it causes incorrect
+	// angles when a player respawns on a high latency connection
+	if (consoleplayer().playerstate == PST_DEAD)
+	{
+		cmd->ucmd.yaw = 0;
+		cmd->ucmd.pitch = 0;
+		cmd->ucmd.roll = 0;
+	}
 }
 
 

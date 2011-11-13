@@ -3347,6 +3347,45 @@ void SV_FlushPlayerCmds(player_t &player)
 }
 
 //
+// SV_CalculateNumTiccmds
+//
+// [SL] 2011-09-16 - Calculate how many ticcmds should be processed.  Under
+// most circumstances, it should be 1 per gametic to have the smoothest
+// player movement possible.
+//
+int SV_CalculateNumTiccmds(player_t &player)
+{
+	const int minimum_cmds = 1;
+	const int maximum_queue_size = TICRATE / 4;
+	
+	if (!sv_ticbuffer || player.spectator)
+	{
+		// Process all queued ticcmds.
+		return player.cmds.size();
+	}
+	else if (player.playerstate == PST_DEAD) 
+	{
+		// Dead players have no movement
+		return 2 * minimum_cmds;
+	}
+	else if ((int)player.cmds.size() > maximum_queue_size)
+	{
+		// The player experienced a large latency spike so try to catch up by
+		// processing more than one ticcmd at the expense of appearing perfectly
+		//  smooth
+		return 2 * minimum_cmds;
+	}
+	else if (!P_VisibleToPlayers(player.mo) && !(gametic % (TICRATE/2)))
+	{
+		// Every half second, run two commands if no one can see this player
+		return 2 * minimum_cmds;
+	}
+
+	// always run at least 1 ticcmd if possible
+	return minimum_cmds;
+}
+
+//
 // SV_ProcessPlayerCmd
 //
 // Decides how many of a player's queued ticcmds should be processed and
@@ -3364,54 +3403,18 @@ void SV_ProcessPlayerCmd(player_t &player)
 				player.userinfo.netname, player.cmds.size());
 	#endif	// _TICCMD_QUEUE_DEBUG_
 
-	// empty the queue and bail out if the player doesn't have a valid mobj
 	if (!player.mo)
 	{
 		SV_FlushPlayerCmds(player);
 		return;
 	}
 
-	const int minimum_cmds = 1;
-	const int maximum_queue_size = TICRATE / 4;
-
-	int num_cmds;	
-
-	// [SL] 2011-09-16 - Calculate how many ticcmds should be processed.  Under
-	// most circumstances, it should be 1 per gametic to have the smoothest
-	// player movement possible.
-	
-	if (!sv_ticbuffer ||
-		player.spectator || 
-		player.playerstate == PST_DEAD) 
-	{
-		// [SL] 2011-09-16 - The player's movement won't be visibile to anyone
-		// else so their movement doesn't need to appear smooth.  Process all
-		// queued ticcmds.
-		num_cmds = player.cmds.size();
-	}
-	else if ((int)player.cmds.size() > maximum_queue_size)
-	{
-		// The player connection experienced a large latency spike so try to
-		// catch up by processing more than one ticcmd at the expense of
-		// appearing perfectly smooth
-		num_cmds = 2 * minimum_cmds;
-	}
-	else
-	{
-		// always run at least 1 ticcmd if possible
-		num_cmds = minimum_cmds;
-	}
+	int num_cmds = SV_CalculateNumTiccmds(player);	
 
 	for (int i = 0; i < num_cmds && !player.cmds.empty(); i++)
 	{
 		usercmd_t *ucmd = &(player.cmds.front().ucmd);
 
-		// check for a dead player trying to respawn
-		if (player.playerstate == PST_DEAD && 
-			(ucmd->buttons & BT_USE) &&
-			i >= minimum_cmds)
-			break;
-			
 		if (player.playerstate != PST_DEAD)
 		{
 			if (step_mode)
