@@ -369,6 +369,7 @@
 		<Unit filename="..\src\m_menu.h" />
 		<Unit filename="..\src\m_misc.cpp" />
 		<Unit filename="..\src\m_options.cpp" />
+		<Unit filename="..\src\p_effect.cpp" />
 		<Unit filename="..\src\r_bsp.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_drawt.cpp" />
@@ -468,6 +469,7 @@
 		<Unit filename="..\..\common\p_ceiling.cpp" />
 		<Unit filename="..\..\common\p_ctf.h" />
 		<Unit filename="..\..\common\p_doors.cpp" />
+		<Unit filename="..\..\common\p_effect.h" />
 		<Unit filename="..\..\common\p_enemy.cpp" />
 		<Unit filename="..\..\common\p_floor.cpp" />
 		<Unit filename="..\..\common\p_inter.h" />
