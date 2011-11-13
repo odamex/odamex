@@ -3335,6 +3335,16 @@ void SV_PlayerTriedToCheat(player_t &player)
 	SV_DropClient(player);
 }
 
+//
+// SV_FlushPlayerCmds
+//
+// Clears a player's queue of ticcmds, ignoring and discarding them
+//
+void SV_FlushPlayerCmds(player_t &player)
+{
+	while (!player.cmds.empty())
+		player.cmds.pop();
+}
 
 //
 // SV_ProcessPlayerCmd
@@ -3357,14 +3367,13 @@ void SV_ProcessPlayerCmd(player_t &player)
 	// empty the queue and bail out if the player doesn't have a valid mobj
 	if (!player.mo)
 	{
-		while (!player.cmds.empty())
-			player.cmds.pop();
-
+		SV_FlushPlayerCmds(player);
 		return;
 	}
 
 	const int minimum_cmds = 1;
 	const int maximum_queue_size = TICRATE / 4;
+
 	int num_cmds;	
 
 	// [SL] 2011-09-16 - Calculate how many ticcmds should be processed.  Under
@@ -3402,7 +3411,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 			(ucmd->buttons & BT_USE) &&
 			i >= minimum_cmds)
 			break;
-		
+			
 		if (player.playerstate != PST_DEAD)
 		{
 			if (step_mode)
@@ -3524,8 +3533,8 @@ void SV_UpdateConsolePlayer(player_t &player)
 	AActor *mo = player.mo;
 	client_t *cl = &player.client;
 	
-	// only send updates every 3rd tic to save bandwidth
-	if (!mo || gametic % 3)		
+	// Send updates about a player's position as often as the player wishes
+	if (!mo || (gametic % player.userinfo.update_rate != 0))
 		return;
 
 	// GhostlyDeath -- Spectators are on their own really
@@ -3537,6 +3546,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 
 	// client player will update his position if packets were missed
 	MSG_WriteMarker (&cl->netbuf, svc_updatelocalplayer);
+
 	// client-tic of the most recently processed ticcmd for this client
 	MSG_WriteLong (&cl->netbuf, player.tic);
 
@@ -3551,10 +3561,6 @@ void SV_UpdateConsolePlayer(player_t &player)
     MSG_WriteByte (&cl->netbuf, mo->waterlevel);
 
     SV_UpdateMovingSectors(player); // denis - fixme - todo - only info about the sector player is standing on info should be sent. note that this is not player->mo->subsector->sector
-
-//	MSG_WriteShort (&cl->netbuf, mo->momx >> FRACBITS);
-//	MSG_WriteShort (&cl->netbuf, mo->momy >> FRACBITS);
-//	MSG_WriteShort (&cl->netbuf, mo->momz >> FRACBITS);
 }
 
 //

@@ -428,6 +428,8 @@ void P_FallingDamage (AActor *ent)
 
 void P_DeathThink (player_t *player)
 {
+	bool reduce_redness = true;
+
 	P_MovePsprites (player);
 	player->mo->onground = (player->mo->z <= player->mo->floorz);
 
@@ -442,34 +444,31 @@ void P_DeathThink (player_t *player)
 	P_CalcHeight (player);
 	
 	// adjust the player's view to follow its attacker
-	if (cl_deathcam || !clientside)
+	if (cl_deathcam && clientside &&
+		player->attacker && player->attacker != player->mo)
 	{
-		if (player->attacker && player->attacker != player->mo)
+		angle_t angle = P_PointToAngle (player->mo->x,
+								 		player->mo->y,
+								 		player->attacker->x,
+								 		player->attacker->y);
+
+		angle_t delta = angle - player->mo->angle;
+
+		if (delta < ANG5 || delta > (unsigned)-ANG5)
+			player->mo->angle = angle;
+		else
 		{
-			angle_t angle = P_PointToAngle (player->mo->x,
-									 		player->mo->y,
-									 		player->attacker->x,
-									 		player->attacker->y);
-
-			angle_t delta = angle - player->mo->angle;
-
-			if (delta < ANG5 || delta > (unsigned)-ANG5)
-			{
-				// Looking at killer so fade damage flash down.
-				player->mo->angle = angle;
-
-				if (player->damagecount && !predicting)
-					player->damagecount--;
-			}
-			else if (delta < ANG180)
+			if (delta < ANG180)
 				player->mo->angle += ANG5;
 			else
 				player->mo->angle -= ANG5;
+			
+			// not yet looking at killer so keep the red tinting
+			reduce_redness = false;
 		}
-		else if (player->damagecount && !predicting)
-			player->damagecount--;
 	}
-	else if (player->damagecount && !predicting)
+
+	if (player->damagecount && reduce_redness && !predicting)
 		player->damagecount--;
 
 	if(serverside)

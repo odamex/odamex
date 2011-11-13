@@ -77,7 +77,7 @@ buf_t     net_buffer(MAX_UDP_PACKET);
 bool      noservermsgs;
 int       last_received;
 byte      last_svgametic = 0;
-int       received_last_svgametic = 0;
+int       last_player_update = 0;
 
 std::string connectpasshash = "";
 
@@ -1330,7 +1330,9 @@ void CL_UpdatePlayer()
 	byte who = MSG_ReadByte();
 	player_t *p = &idplayer(who);
 
-	int sv_gametic = MSG_ReadLong();
+	// [SL] 2011-11-07 - Read and ignore this for now - it was used with
+	// the previous prediction code (sv_gametic)
+	MSG_ReadLong();
 	
 	fixed_t x = MSG_ReadLong();
 	fixed_t y = MSG_ReadLong();
@@ -1348,8 +1350,8 @@ void CL_UpdatePlayer()
 		return;
 	}
 
-	// the server processed the player's ticcmd sent during this tic
-	p->tic = sv_gametic; 
+	// Mark the gametic this update arrived in for prediction code
+	p->tic = gametic;
 	
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
@@ -1387,6 +1389,7 @@ void CL_UpdatePlayer()
 		return;
 
 	p->last_received = gametic;
+	last_player_update = gametic;
 }
 
 ticcmd_t localcmds[MAXSAVETICS];
@@ -1433,7 +1436,6 @@ void CL_UpdateLocalPlayer(void)
 void CL_SaveSvGametic(void)
 {
 	last_svgametic = MSG_ReadByte();
-	received_last_svgametic = gametic;
 	#ifdef _UNLAG_DEBUG_
 	DPrintf("Unlag (%03d): client-tic %d, received svgametic\n", last_svgametic, gametic);
 	#endif	// _UNLAG_DEBUG_
@@ -3024,6 +3026,7 @@ void CL_ParseCommands(void)
 
 extern int outrate;
 
+extern int extrapolation_tics;
 
 //
 // CL_SendCmd
@@ -3067,7 +3070,9 @@ void CL_SendCmd(void)
     // Send the most recent server-tic.  This indicates to the server which
     // update of player positions the client is basing his actions on.  Used
     // by unlagging calculations.
-	MSG_WriteByte(&net_buffer, last_svgametic);
+
+	// Take extrapolation into account
+	MSG_WriteByte(&net_buffer, last_svgametic + extrapolation_tics);
 
     // send the previous cmds in the message, so if the last packet
     // was dropped, it can be recovered
@@ -3104,23 +3109,15 @@ void CL_SendCmd(void)
 			
 		int x = enemy->mo->x >> FRACBITS;
 		int y = enemy->mo->y >> FRACBITS;
-		DPrintf("Unlag: Weapon fired with svgametic = %d, enemy position = (%d, %d)\n", last_svgametic, x, y);
+		DPrintf("Unlag: Weapon fired with svgametic = %d, enemy position = (%d, %d)\n",
+				last_svgametic + extrapolation_tics, x, y);
 	}
 #endif	// _UNLAG_DEBUG_
 	
 	NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
-    
-    // [SL] 2011-09-18 - Since momentum can be used to accurately predict a
-    // player's position if we're missing one tic worth of data, increment
-    // svgametic if we're only missing one tic
-    if (gametic - received_last_svgametic == 1)
-    {
-    	last_svgametic++;
-    }
 }
-
 
 //
 // CL_PlayerTimes

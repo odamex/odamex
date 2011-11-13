@@ -190,6 +190,47 @@ void DThinker::DestroyMostThinkers ()
 
 EXTERN_CVAR (sv_speedhackfix)
 
+//
+// IndependentThinker
+//
+// Returns true if a DThinker object is ticked independently elsewhere.
+// Returns false if it should be ticked in DThinker::RunThinkers
+//
+bool IndependentThinker(DThinker *thinker)
+{
+	// Only have independent thinkers in client/server mode
+	if (!multiplayer || demoplayback)
+		return false;
+
+	if (thinker->IsKindOf (RUNTIME_CLASS (AActor)))
+	{
+		AActor *mobj = static_cast<AActor*>(thinker);
+		if (!mobj->player || mobj->player->spectator)
+			return false;
+
+		// Clientside prediction takes care of ticking
+		if (clientside)
+			return true;
+
+		// Server ticks players as it processes their ticcmds
+		if (serverside)
+			return true;
+	}
+	
+/*	if (thinker->IsKindOf (RUNTIME_CLASS (DPillar)) ||
+		thinker->IsKindOf (RUNTIME_CLASS (DElevator)) ||
+		thinker->IsKindOf (RUNTIME_CLASS (DMovingFloor)) ||
+		thinker->IsKindOf (RUNTIME_CLASS (DMovingCeiling)))
+	{
+		// Client ticks movable sectors in prediction code
+		if (clientside)
+			return true;
+	} */
+
+	return false;
+}
+
+
 void DThinker::RunThinkers ()
 {
 	DThinker *currentthinker;
@@ -198,14 +239,8 @@ void DThinker::RunThinkers ()
 	currentthinker = FirstThinker;
 	while (currentthinker)
 	{
-		if ( currentthinker->IsKindOf (RUNTIME_CLASS (AActor))
-				   && static_cast<AActor *>(currentthinker)->player
-				   && static_cast<AActor *>(currentthinker)->player->playerstate != PST_DEAD
-				   && !sv_speedhackfix && !demoplayback && (serverside && !clientside))
-			;
-		else
-			currentthinker->RunThink ();
-
+		if (!IndependentThinker(currentthinker))
+			currentthinker->RunThink();
 		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);

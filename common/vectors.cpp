@@ -47,6 +47,14 @@ void VectorPosition (const AActor *thing, vec3_t out)
 	out[2] = (float)thing->z / 65536.0f;
 }
 
+// [SL] 2011-11-12 - Convert a vec3_t to a thing's position
+void PositionVector (const vec3_t in, AActor *thing)
+{
+	thing->x = in[0] * 65536.0f;
+	thing->y = in[1] * 65536.0f;
+	thing->z = in[2] * 65536.0f;
+}
+
 void FixedAngleToVector (angle_t an, int pitch, vec3_t v)
 {
 	an >>= ANGLETOFINESHIFT;
