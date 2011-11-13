@@ -3381,6 +3381,13 @@ int SV_CalculateNumTiccmds(player_t &player)
 		return 2 * minimum_cmds;
 	}
 
+	usercmd_t *ucmd = &(player.cmds.front().ucmd);
+	if (ucmd->forwardmove == 0 && ucmd->sidemove == 0 && ucmd->upmove == 0)
+	{
+		// Player is not moving
+		return 2 * minimum_cmds;
+	}
+
 	// always run at least 1 ticcmd if possible
 	return minimum_cmds;
 }
