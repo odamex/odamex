@@ -374,9 +374,15 @@ void CL_NudgeThing(AActor *thing, vec3_t dest_pos, float amount = 0.1f)
 
 	vec3_t scaled_delta, nudged_pos;
 	VectorScale(delta, amount, scaled_delta);
-
 	VectorAdd(start_pos, scaled_delta, nudged_pos);
-	PositionVector(nudged_pos, thing);
+
+	// Snap to the destination Z position for moving sectors (lifts, etc)
+	nudged_pos[2] = dest_pos[2];
+
+	CL_MoveThing(thing,
+		FLOAT2FIXED(nudged_pos[0]),
+		FLOAT2FIXED(nudged_pos[1]),
+		FLOAT2FIXED(nudged_pos[2]));
 }
 
 //
@@ -438,7 +444,7 @@ void CL_PredictMove (void)
 	// on recent position data from the server.  This avoids the disorienting
 	// "jerk" when the corrected position is drastically different from
 	// the previously predicted position.
-	const float nudge_distance_percentage = 0.1f;
+	const float nudge_distance_percentage = 0.15f;
 	CL_NudgeThing(p->mo, corrected_pos, nudge_distance_percentage);
 	
 	CL_PredictLocalPlayer(gametic);
