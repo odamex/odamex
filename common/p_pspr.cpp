@@ -23,6 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include <stdlib.h>
+#include <map>
 
 #include "doomdef.h"
 #include "d_event.h"
@@ -52,6 +53,11 @@ EXTERN_CVAR(sv_allownobob)
 EXTERN_CVAR(cl_nobob)
 EXTERN_CVAR(sv_allowpwo)
 
+// [SL] 2011-11-14 - Maintain what the vertical position of the weapon sprite
+// would be for each player if full movebob were enabled.  This allows the
+// timing of changing weapons to remain in sync with vanilla Doom. The map's
+// key is the player's id, with the value being psp->sy.
+std::map<byte, fixed_t> weapon_ypos;
 
 void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon)
 {
@@ -65,7 +71,7 @@ void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon)
 	// search weapon list for the slot that already has this weapon
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
-		if (prefs[i] == weapon && slot != i)
+		if (prefs[i] == weapon && slot != (int)i)
 		{
 			// swap this with slot's old value
 			Printf(PRINT_HIGH, "prefs[slot] (%d) = %d, prefs[i] (%d) = %d\n", slot, prefs[slot], i, prefs[i]);
@@ -80,13 +86,85 @@ void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon)
 
 
 //
+// A_CalculateBobXPosition
+//
+// Determines the horizontal position of the weapon sprite on the screen.
+// Weapon bobbing is scaled by the scale parameter, where scale is a
+// percentage between 0 and 1.
+//
+int A_CalculateBobXPosition(player_t *player, float scale)
+{
+	if (!player)
+		return FRACUNIT;
+
+	if (scale < 0.0f)
+		scale = 0.0f;
+	if (scale > 1.0f)
+		scale = 1.0f;
+
+	angle_t angle = (128*level.time)&FINEMASK;
+	
+	fixed_t bobamount = FixedMul(player->bob, finecosine[angle]);
+	fixed_t scaledbob = FixedMul(bobamount, scale * FRACUNIT);
+	return FRACUNIT + scaledbob;
+}
+
+//
+// A_CalculateBobYPosition
+//
+// Determines the vertical position of the weapon sprite on the screen.
+// Weapon bobbing is scaled by the scale parameter, where scale is a
+// percentage between 0 and 1.
+//
+static int A_CalculateBobYPosition(player_t *player, float scale)
+{
+	if (!player)
+		return WEAPONTOP;
+	
+	if (scale < 0.0f)
+		scale = 0.0f;
+	if (scale > 1.0f)
+		scale = 1.0f;
+
+	angle_t angle = (128*level.time) & FINEMASK;
+	angle &= FINEANGLES/2-1;
+	
+	fixed_t bobamount = FixedMul(player->bob, finesine[angle]);
+	fixed_t scaledbob = FixedMul(bobamount, scale * FRACUNIT);
+
+	return WEAPONTOP + scaledbob;
+}
+
+
+//
+// A_BobWeapon
+//
+// Bobs the player's weapon sprite based on movement.  The bobbing amount
+// is scaled according to the player's preference.  To maintain sync with
+// servers and vanilla demos, we also save what the vertical position of
+// the sprite would be if the player used unscaled bobbing.
+static void A_BobWeapon(player_t *player)
+{
+	if (!player)
+		return;
+
+	float scale_amount = 1.0f;
+	
+	if ((clientside && sv_allownobob) || (clientside && serverside))
+		scale_amount = 1.0f - cl_nobob;
+	
+	struct pspdef_s *psp = &player->psprites[player->psprnum];
+	psp->sx = A_CalculateBobXPosition(player, scale_amount);
+	psp->sy = A_CalculateBobYPosition(player, scale_amount);
+
+	weapon_ypos[player->id] = A_CalculateBobYPosition(player, 1.0f);
+}
+
+
+//
 // P_SetPsprite
 //
-void
-P_SetPsprite
-( player_t*	player,
-  int		position,
-  statenum_t	stnum )
+void P_SetPsprite(player_t* player, int position, statenum_t stnum)
 {
 	pspdef_t*	psp;
 	state_t*	state;
@@ -115,6 +193,7 @@ P_SetPsprite
 			// coordinate set
 			psp->sx = state->misc1 << FRACBITS;
 			psp->sy = state->misc2 << FRACBITS;
+			weapon_ypos[player->id] = psp->sy;
 		}
 
 		// Call action routine.
@@ -161,6 +240,7 @@ void P_BringUpWeapon (player_t *player)
 
 	player->pendingweapon = wp_nochange;
 	player->psprites[ps_weapon].sy = WEAPONBOTTOM;
+	weapon_ypos[player->id] = WEAPONBOTTOM;
 
 	P_SetPsprite (player, ps_weapon, newstate);
 }
@@ -328,18 +408,14 @@ void P_FireWeapon (player_t *player)
 }
 
 
-
 //
 // P_DropWeapon
 // Player died, so put the weapon away.
 //
 void P_DropWeapon (player_t *player)
 {
-	P_SetPsprite (player,
-				  ps_weapon,
-				  weaponinfo[player->readyweapon].downstate);
+	P_SetPsprite (player, ps_weapon, weaponinfo[player->readyweapon].downstate);
 }
-
 
 
 //
@@ -349,12 +425,9 @@ void P_DropWeapon (player_t *player)
 // Follows after getting weapon up,
 // or after previous attack/fire sequence.
 //
-void
-A_WeaponReady
-(AActor *mo)
+void A_WeaponReady(AActor *mo)
 {
 	statenum_t	newstate;
-	int 		angle;
 
     player_t *player = mo->player;
     struct pspdef_s *psp = &player->psprites[player->psprnum];
@@ -400,15 +473,7 @@ A_WeaponReady
 		player->attackdown = false;
 
 	// bob the weapon based on movement speed
-	if (((demoplayback || demorecording) && democlassic) ||
-		(!multiplayer && !cl_nobob) || 
-		(multiplayer && (!sv_allownobob || !cl_nobob))) 
-	{
-		angle = (128*level.time)&FINEMASK;
-		psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angle]);
-		angle &= FINEANGLES/2-1;
-		psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angle]);
-	}
+	A_BobWeapon(player);
 }
 
 //
@@ -464,15 +529,17 @@ A_Lower
     struct pspdef_s *psp = &player->psprites[player->psprnum];
 
 	psp->sy += LOWERSPEED;
+	weapon_ypos[player->id] += LOWERSPEED;
 
-	// Is already down.
-	if (psp->sy < WEAPONBOTTOM )
+	// Not yet lowered to the bottom
+	if (weapon_ypos[player->id] < WEAPONBOTTOM)
 		return;
 
 	// Player is dead.
 	if (player->playerstate == PST_DEAD)
 	{
 		psp->sy = WEAPONBOTTOM;
+		weapon_ypos[player->id] = WEAPONBOTTOM;
 
 		// don't bring weapon back up
 		return;
@@ -507,11 +574,13 @@ A_Raise
     struct pspdef_s *psp = &player->psprites[player->psprnum];
 
 	psp->sy -= RAISESPEED;
+	weapon_ypos[player->id] -= RAISESPEED;
 
-	if (psp->sy > WEAPONTOP )
+	if (weapon_ypos[player->id] > WEAPONTOP)
 		return;
 
 	psp->sy = WEAPONTOP;
+	weapon_ypos[player->id] = WEAPONTOP;
 
 	// The weapon has been raised all the way,
 	//	so change to the ready state.
@@ -994,7 +1063,6 @@ void A_BFGsound (AActor *mo)
 }
 
 
-
 //
 // P_SetupPsprites
 // Called at start of level for each player.
@@ -1011,9 +1079,6 @@ void P_SetupPsprites (player_t* player)
 	player->pendingweapon = player->readyweapon;
 	P_BringUpWeapon (player);
 }
-
-
-
 
 //
 // P_MovePsprites

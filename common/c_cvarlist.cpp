@@ -112,7 +112,7 @@ CVAR (sv_unlag,				"1", "Allow reconciliation for players on lagged connections"
       CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 // [ML] allow weapon bob changing
 CVAR (sv_allownobob, "0", "Allow weapon bob changing", 
-      CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+      CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 // [ML] Allow clients to adjust amount of red pain screen intensity
 CVAR (sv_allowredscreen, "0","Allow clients to adjust amount of red pain screen intensity", 
@@ -169,7 +169,7 @@ CVAR (cl_deathcam, "1", "Dead player's view follows the actor who killed them",
 
 // Movebob
 CVAR (cl_nobob, "0", "Movebob", 
-      CVAR_ARCHIVE | CVAR_CLIENTARCHIVE | CVAR_CLIENTINFO)
+      CVAR_CLIENTARCHIVE | CVAR_CLIENTINFO)
 
 // [AM] Force a player to respawn.
 CVAR (sv_forcerespawn, "0", "Force a player to respawn.", 
