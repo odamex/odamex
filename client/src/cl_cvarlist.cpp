@@ -23,6 +23,7 @@
 
 #include "c_cvars.h"
 #include "s_sound.h"
+#include "d_netinf.h"
 
 // Automap
 // -------
@@ -107,6 +108,17 @@ CVAR (cl_disconnectalert, "1", "Plays a sound when a player quits", CVAR_ARCHIVE
 
 CVAR_FUNC_DECL (cl_mouselook, "0", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
 
+CVAR (cl_switchweapon, "1", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	// WPSW_ALWAYS
+CVAR (cl_weaponpref1, "5", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref2, "8", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref3, "3", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref4, "2", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref5, "1", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref6, "7", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref7, "4", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref8, "6", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (cl_weaponpref9, "0", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 CVAR (mouse_acceleration, "0", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_threshold, "10", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (mouse_sensitivity,	"25.0", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -148,6 +160,7 @@ CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVA
 CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR_FUNC_DECL (cl_autoaim,	"5000", "",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 // [SL] 2011-05-11 - Client opt-in/out for serverside unlagging
 CVAR (cl_unlag,				"1", "client opt-in/out for server unlagging",		CVAR_USERINFO | CVAR_ARCHIVE)
 

@@ -27,6 +27,7 @@
 #include "doomdef.h"
 #include "d_event.h"
 
+#include "cmdlib.h"
 #include "c_cvars.h"
 
 #include "m_random.h"
@@ -49,6 +50,34 @@ EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allownobob)
 EXTERN_CVAR(cl_nobob)
+EXTERN_CVAR(sv_allowpwo)
+
+
+void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon)
+{
+	weapontype_t *prefs = player->userinfo.weapon_prefs;
+
+	if (weapon < 0 || weapon >= NUMWEAPONS)
+		return;
+
+	Printf(PRINT_HIGH, "DEBUG: Setting weapon slot %d to weapon %d\n", slot, weapon);
+
+	// search weapon list for the slot that already has this weapon
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		if (prefs[i] == weapon && slot != i)
+		{
+			// swap this with slot's old value
+			Printf(PRINT_HIGH, "prefs[slot] (%d) = %d, prefs[i] (%d) = %d\n", slot, prefs[slot], i, prefs[i]);
+			prefs[i] = prefs[slot];
+			break;
+		}
+	}
+
+	prefs[slot] = weapon;
+	Printf(PRINT_HIGH, "prefs[slot] (%d) = %d\n", slot, prefs[slot]);
+}
+
 
 //
 // P_SetPsprite
@@ -137,86 +166,120 @@ void P_BringUpWeapon (player_t *player)
 }
 
 //
+// P_EnoughAmmo
+//
+// Returns true if the player has enough ammo to switch to the specified
+// weapon.  Note that this emulates vanilla Doom bugs relating to the amount
+// of ammo needed to switch to the BFG and SSG if switching == true.
+//
+bool P_EnoughAmmo(player_t *player, weapontype_t weapon, bool switching = false)
+{
+	ammotype_t		ammo = weaponinfo[weapon].ammo;
+	int				count = 1;	// default amount of ammo for most weapons
+
+    // Minimal amount for one shot varies.
+    if (weapon == wp_bfg)
+        count = deh.BFGCells;
+	else if (weapon == wp_supershotgun)
+		count = 2;
+
+	// Vanilla Doom requires > 40 cells to switch to BFG and > 2 shells to
+	// switch to SSG when current weapon is out of ammo due to a bug. 
+	if (switching && (weapon == wp_bfg || weapon == wp_supershotgun))
+		count++;
+
+    // Some do not need ammunition anyway.
+    // Return if current ammunition sufficient.
+    if (ammo == am_noammo || player->ammo[ammo] >= count)
+        return true;
+
+	return false;
+}
+
+
+//
+// P_SwitchWeapon
+//
+// Changes to the player's most preferred weapon based on availibilty and ammo.
+// Note that this emulates vanilla Doom bugs relating to the amount of ammo 
+// needed to switch to the BFG and SSG.
+//
+void P_SwitchWeapon(player_t *player)
+{
+	const weapontype_t *prefs;
+
+	if ((multiplayer && !sv_allowpwo) || demoplayback || demorecording)
+		prefs = default_weaponprefs;
+	else
+		prefs = player->userinfo.weapon_prefs;
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		weapontype_t weapon = prefs[i];
+		if (player->weaponowned[weapon] &&
+			P_EnoughAmmo(player, weapon, true) &&
+			weapon != player->readyweapon)
+		{
+			// Switch to this weapon
+			player->pendingweapon = weapon;
+			// Now set appropriate weapon overlay.
+			P_SetPsprite (player, ps_weapon,
+				  weaponinfo[player->readyweapon].downstate);
+
+			return;
+		}
+	}
+}
+
+
+//
+// P_CheckSwitchWeapon
+//
+// Returns true if the player's current weapon should be switched
+// to the one indicated by weapon, based on the player's preference.
+// Called by P_GiveWeapon when a player touches a weapon mapthing.
+//
+bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
+{
+	// Always switch - vanilla Doom behavior
+	if ((multiplayer && !sv_allowpwo) || 
+		player->userinfo.switchweapon == WPSW_ALWAYS ||
+		demoplayback || demorecording)
+	{
+		return true;
+	}
+
+	// Never switch - player has to manually change themselves
+	if (player->userinfo.switchweapon == WPSW_NEVER)
+		return false;
+
+	// Use player's preferred weapon ordering
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		if (player->userinfo.weapon_prefs[i] == player->readyweapon)
+			return false;	// current weapon is preferable
+		else if (player->userinfo.weapon_prefs[i] == weapon)
+			return true;	// this other weapon would be preferable
+	}
+
+	// Somehow the player's weapon_preference choices are screwed up.
+	// Change anyway.
+	return true;  
+}
+
+
+//
 // P_CheckAmmo
 // Returns true if there is enough ammo to shoot.
 // If not, selects the next weapon to use.
 //
 BOOL P_CheckAmmo (player_t *player)
 {
-	ammotype_t			ammo;
-	int 				count;
-
-	ammo = weaponinfo[player->readyweapon].ammo;
-
-	// Minimal amount for one shot varies.
-	if (player->readyweapon == wp_bfg)
-		count = deh.BFGCells;
-	else if (player->readyweapon == wp_supershotgun)
-		count = 2;		// Double barrel.
-	else
-		count = 1;		// Regular.
-
-	// Some do not need ammunition anyway.
-	// Return if current ammunition sufficient.
-	if (ammo == am_noammo || player->ammo[ammo] >= count)
+	if (P_EnoughAmmo(player, player->readyweapon))
 		return true;
-
-	// Out of ammo, pick a weapon to change to.
-	// Preferences are set here.
-	do
-	{
-		if (player->weaponowned[wp_plasma]
-			&& player->ammo[am_cell])
-		{
-			player->pendingweapon = wp_plasma;
-		}
-		else if (player->weaponowned[wp_supershotgun]
-				 && player->ammo[am_shell]>2)
-		{
-			player->pendingweapon = wp_supershotgun;
-		}
-		else if (player->weaponowned[wp_chaingun]
-				 && player->ammo[am_clip])
-		{
-			player->pendingweapon = wp_chaingun;
-		}
-		else if (player->weaponowned[wp_shotgun]
-				 && player->ammo[am_shell])
-		{
-			player->pendingweapon = wp_shotgun;
-		}
-		else if (player->ammo[am_clip])
-		{
-			player->pendingweapon = wp_pistol;
-		}
-		else if (player->weaponowned[wp_chainsaw])
-		{
-			player->pendingweapon = wp_chainsaw;
-		}
-		else if (player->weaponowned[wp_missile]
-				 && player->ammo[am_misl])
-		{
-			player->pendingweapon = wp_missile;
-		}
-		else if (player->weaponowned[wp_bfg]
-				 && player->ammo[am_cell]>40)
-		{
-			player->pendingweapon = wp_bfg;
-		}
-		else
-		{
-			// If everything fails.
-			player->pendingweapon = wp_fist;
-		}
-
-	} while (player->pendingweapon == wp_nochange);
-
-
-	// Now set appropriate weapon overlay.
-	P_SetPsprite (player,
-				  ps_weapon,
-				  weaponinfo[player->readyweapon].downstate);
-
+	
+	// no enough ammo with the current weapon, choose another one
+	P_SwitchWeapon(player);
 	return false;
 }
 

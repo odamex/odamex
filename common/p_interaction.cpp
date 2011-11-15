@@ -195,6 +195,8 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num)
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
 //
+bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon);
+
 BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 {
 	bool gaveammo;
@@ -228,7 +230,8 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 			P_GiveAmmo(player, weaponinfo[weapon].ammo, 2);
         }
 
-		player->pendingweapon = weapon;
+		if (P_CheckSwitchWeapon(player, weapon))
+			player->pendingweapon = weapon;
 
 		S_Sound(player->mo, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);
 
@@ -263,7 +266,8 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 	{
 		gaveweapon = true;
 		player->weaponowned[weapon] = true;
-		player->pendingweapon = weapon;
+		if (P_CheckSwitchWeapon(player, weapon))
+			player->pendingweapon = weapon;
 	}
 
 	return (gaveweapon || gaveammo);

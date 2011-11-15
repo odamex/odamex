@@ -1183,6 +1183,21 @@ void SV_SetupUserInfo (player_t &player)
 	else if (p->userinfo.update_rate > 3)
 		p->userinfo.update_rate = 3;
 
+	// set up the preferences for switching weapons
+	p->userinfo.switchweapon = (weaponswitch_t)MSG_ReadByte();
+	if (p->userinfo.switchweapon >= WPSW_NUMTYPES || p->userinfo.switchweapon < 0)
+		p->userinfo.switchweapon = WPSW_ALWAYS;
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		p->userinfo.weapon_prefs[i] = (weapontype_t)MSG_ReadByte();
+		if (p->userinfo.weapon_prefs[i] < 0 ||
+			p->userinfo.weapon_prefs[i] >= NUMWEAPONS)
+		{
+			// erroneous choice, choose fist because it doesn't need ammo
+			p->userinfo.weapon_prefs[i] = wp_fist;
+		}
+	}
+
 	// Make sure the gender is valid
 	if(p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;

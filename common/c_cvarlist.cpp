@@ -118,6 +118,10 @@ CVAR (sv_allownobob, "0", "Allow weapon bob changing",
 CVAR (sv_allowredscreen, "0","Allow clients to adjust amount of red pain screen intensity", 
 	  CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
+// [SL] Allow PWO
+CVAR (sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon swithching",
+	CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
+
 // Compatibility options for vanilla
 // ---------------------------------
 

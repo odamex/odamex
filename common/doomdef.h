@@ -239,7 +239,13 @@ enum weapontype_t
 
 	// No pending weapon change.
 	wp_nochange
+};
 
+// The default preference ordering when the player runs out of one type of ammo
+const weapontype_t default_weaponprefs[NUMWEAPONS] =
+{
+	wp_plasma, wp_supershotgun, wp_chaingun, wp_shotgun, wp_pistol,
+	wp_chainsaw, wp_bfg, wp_missile, wp_fist
 };
 
 inline FArchive &operator<< (FArchive &arc, weapontype_t i)

@@ -153,6 +153,18 @@ EXTERN_CVAR (rate)
 EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_updaterate)
 
+// Weapon Preferences
+EXTERN_CVAR (cl_switchweapon)
+EXTERN_CVAR (cl_weaponpref1)
+EXTERN_CVAR (cl_weaponpref2)
+EXTERN_CVAR (cl_weaponpref3)
+EXTERN_CVAR (cl_weaponpref4)
+EXTERN_CVAR (cl_weaponpref5)
+EXTERN_CVAR (cl_weaponpref6)
+EXTERN_CVAR (cl_weaponpref7)
+EXTERN_CVAR (cl_weaponpref8)
+EXTERN_CVAR (cl_weaponpref9)
+
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
 void M_StartControlPanel(void);
@@ -211,6 +223,7 @@ static void VideoOptions (void);
 static void SoundOptions (void);
 static void CompatOptions (void);
 static void NetworkOptions (void);
+static void WeaponOptions (void);
 static void GoToConsole (void);
 static void GoToConsole (void);
 void Reset2Defaults (void);
@@ -221,6 +234,7 @@ static void SetVidMode (void);
 static menuitem_t OptionItems[] =
 {
     { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
+	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)WeaponOptions} },
  	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
 	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
 	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
@@ -500,6 +514,57 @@ menu_t NetworkMenu = {
 	177,
 	NetworkItems,
 };
+
+
+/*=======================================
+ *
+ * Weapon Preferences Menu
+ *
+ *=======================================*/
+
+static value_t WeapSwitch[] = {
+	{ 0.0,			"Never" },
+	{ 1.0,			"Always" },
+	{ 2.0,			"By Preference" }
+};
+
+static value_t WeapChoice[] = {
+	{ 0.0,			"Fist" },
+	{ 1.0,			"Pistol" },
+	{ 2.0,			"Shotgun" },
+	{ 3.0,			"Chaingun" },
+	{ 4.0,			"Rocket Launcher" },
+	{ 5.0,			"Plasma Rifle" },
+	{ 6.0,			"BFG9000" },
+	{ 7.0,			"Chainsaw" },
+	{ 8.0,			"Super Shotgun" }
+};
+
+static menuitem_t WeaponItems[] = {
+	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },	
+	{ bricktext,	"Configure Weapon Preferences",	{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Switch on pickup",				{&cl_switchweapon},	{3.0},		{0.0},		{0.0},		{WeapSwitch} },
+	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },	
+	{ bricktext,	"Weapon Preference Order",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Slot 1",						{&cl_weaponpref1},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Slot 2",						{&cl_weaponpref2},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Slot 3",						{&cl_weaponpref3},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Slot 4",						{&cl_weaponpref4},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Slot 5",						{&cl_weaponpref5},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Slot 6",						{&cl_weaponpref6},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Slot 7",						{&cl_weaponpref7},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Slot 8",						{&cl_weaponpref8},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Slot 9",						{&cl_weaponpref9},	{9.0},		{0.0},		{0.0},		{WeapChoice} }
+};
+
+menu_t WeaponMenu = {
+	"M_WEAPON",
+	2,
+	STACKARRAY_LENGTH(WeaponItems),
+	177,
+	WeaponItems,
+};
+
 
 /*=======================================
  *
@@ -1837,6 +1902,11 @@ void CompatOptions (void) // [Ralphis] for compatibility menu
 void NetworkOptions (void)
 {
 	M_SwitchMenu (&NetworkMenu);
+}
+
+void WeaponOptions (void)
+{
+	M_SwitchMenu (&WeaponMenu);
 }
 
 BEGIN_COMMAND (menu_display)

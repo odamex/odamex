@@ -128,6 +128,61 @@ CVAR_FUNC_IMPL (cl_updaterate)
 		var.Set(3.0f);
 }
 
+EXTERN_CVAR (cl_weaponpref1)
+EXTERN_CVAR (cl_weaponpref2)
+EXTERN_CVAR (cl_weaponpref3)
+EXTERN_CVAR (cl_weaponpref4)
+EXTERN_CVAR (cl_weaponpref5)
+EXTERN_CVAR (cl_weaponpref6)
+EXTERN_CVAR (cl_weaponpref7)
+EXTERN_CVAR (cl_weaponpref8)
+EXTERN_CVAR (cl_weaponpref9)
+
+static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
+	&cl_weaponpref1, &cl_weaponpref2, &cl_weaponpref3, &cl_weaponpref4,
+	&cl_weaponpref5, &cl_weaponpref6, &cl_weaponpref7, &cl_weaponpref8,
+	&cl_weaponpref9 };
+
+//
+// CL_SetWeaponPreferenceCvar
+//
+// Sets the value of one of the cl_weaponpref* cvars identified by slot
+//
+void CL_SetWeaponPreferenceCvar(int slot, weapontype_t weapon)
+{
+	if (slot < 0 || slot >= NUMWEAPONS)
+		return;
+
+	weaponpref_cvar_map[slot]->Set(static_cast<float>(weapon));
+}
+
+//
+// CL_RefreshWeaponPreferenceCvars
+//
+// Copies userinfo.weapon_prefs to the cl_weaponpref* cvars
+//
+void CL_RefreshWeaponPreferenceCvars()
+{
+	weapontype_t *prefs = consoleplayer().userinfo.weapon_prefs;
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+		weaponpref_cvar_map[i]->Set(static_cast<float>(prefs[i]));
+}
+
+//
+// CL_PrepareWeaponPreferenceUserInfo
+//
+// Copies the weapon order preferences from the cl_weaponpref* cvars
+// to the userinfo struct for the consoleplayer.
+//
+void CL_PrepareWeaponPreferenceUserInfo()
+{
+	weapontype_t *prefs = consoleplayer().userinfo.weapon_prefs;
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+		prefs[i] = static_cast<weapontype_t>(weaponpref_cvar_map[i]->asInt());
+}
+
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_maxclients)
 EXTERN_CVAR (sv_infiniteammo)
@@ -784,16 +839,8 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 void CL_SendUserInfo(void)
 {
 	userinfo_t *coninfo = &consoleplayer().userinfo;
-	memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
+	D_SetupUserInfo();
 
-	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
-	coninfo->team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-	coninfo->color	 = V_GetColorFromString (NULL, cl_color.cstring());
-	coninfo->skin	 = R_FindSkin (cl_skin.cstring());
-	coninfo->gender  = D_GenderByName (cl_gender.cstring());
-	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
-	coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
-	coninfo->update_rate = cl_updaterate;
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
 	MSG_WriteString	(&net_buffer, coninfo->netname);
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
@@ -803,6 +850,11 @@ void CL_SendUserInfo(void)
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
 	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
+	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		MSG_WriteByte (&net_buffer, (char)coninfo->weapon_prefs[i]);
+	}
 }
 
 
