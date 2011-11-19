@@ -1710,6 +1710,7 @@ void CL_SpawnPlayer()
 	p->extralight = 0;
 	p->fixedcolormap = 0;
 
+	p->xviewshift = 0;
 	p->viewheight = VIEWHEIGHT;
 	for (i=0; i<MAXSAVETICS; i++)
 	{

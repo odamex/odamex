@@ -99,6 +99,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->extralight = 0;
 	p->fixedcolormap = 0;
 	p->viewheight = VIEWHEIGHT;
+	p->xviewshift = 0;
 	p->attacker = AActor::AActorPtr();
 
 	// Set up some special spectator stuff
