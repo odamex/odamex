@@ -128,7 +128,6 @@ void D_SetupUserInfo(void)
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	CL_PrepareWeaponPreferenceUserInfo();
 
-	weapontype_t oldweapon = wp_fist, newweapon = wp_fist;
 	// Find which weapon preference slot was changed
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{

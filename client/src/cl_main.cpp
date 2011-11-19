@@ -490,9 +490,6 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname);
 	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.aimdist     - %d \n",	player->userinfo.aimdist);
-	Printf (PRINT_HIGH, " userinfo.unlag       - %d \n",	player->userinfo.unlag);
-	Printf (PRINT_HIGH, " userinfo.update_rate - %d \n",	player->userinfo.update_rate);
 	Printf (PRINT_HIGH, " userinfo.color       - #%06x \n",	player->userinfo.color);
 	Printf (PRINT_HIGH, " userinfo.skin        - %s \n",	skins[player->userinfo.skin].name);
 	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);

@@ -59,7 +59,7 @@ EXTERN_CVAR (r_viewsize)
 static float	LastFOV = 90.0f;
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
-int 			viewangleoffset;
+int 			viewangleoffset = 0;
 
 // increment every time a check is made
 int 			validcount = 1;

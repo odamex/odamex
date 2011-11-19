@@ -525,7 +525,7 @@ void AActor::Serialize (FArchive &arc)
 			<< pitch
 			<< angle
 			<< roll
-			<< (int)sprite
+			<< sprite
 			<< frame
 			<< effects
 			<< floorz
@@ -535,7 +535,7 @@ void AActor::Serialize (FArchive &arc)
 			<< momx
 			<< momy
 			<< momz
-			<< (int)type
+			<< type
 			<< tics
 			<< state
 			<< flags
@@ -581,7 +581,7 @@ void AActor::Serialize (FArchive &arc)
 			>> pitch
 			>> angle
 			>> roll
-			>> (int&)sprite
+			>> sprite
 			>> frame
 			>> effects
 			>> floorz
@@ -591,7 +591,7 @@ void AActor::Serialize (FArchive &arc)
 			>> momx
 			>> momy
 			>> momz
-			>> (int&)type
+			>> type
 			>> tics
 			>> state
 			>> flags
@@ -1881,7 +1881,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// count deathmatch start positions
-	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082)) && !sv_teamspawns)
+	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (deathmatch_p >= &deathmatchstarts[10] && (demoplayback || demorecording) && democlassic)

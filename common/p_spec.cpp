@@ -193,7 +193,7 @@ static void P_InitAnimDefs (void)
 		readingtexture,
 		warp
 	} state = limbo, newstate = limbo;
-	int frame, min, max;
+	int frame = 0, min = 0, max = 0;
 	char name[9];
 
 	if (lump >= 0)

@@ -718,8 +718,8 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	int yl, yh;
 	int bx, by;
 	subsector_t *newsubsec;
-	AActor *thingblocker;
-	AActor *fakedblocker;
+	AActor *thingblocker = NULL;
+	AActor *fakedblocker = NULL;
 	fixed_t realheight = thing->height;
 
 	tmthing = thing;
