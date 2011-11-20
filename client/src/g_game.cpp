@@ -351,86 +351,20 @@ BEGIN_COMMAND (turn180)
 }
 END_COMMAND (turn180)
 
-//
-// [RH] WeapNext and WeapPrev commands
-//
-
-static const char *weaponnames[] =
-{
-	"Fist",
-	"Pistol",
-	"Shotgun",
-	"Chaingun",
-	"Rocket Launcher",
-	"Plasma Gun",
-	"BFG9000",
-	"Chainsaw",
-	"Super Shotgun",
-	"Chainsaw"
-};
-
+weapontype_t P_GetNextWeapon(player_t *player, bool forward);
 BEGIN_COMMAND (weapnext)
 {
-	player_t *plyr = m_Instigator->player;
-	gitem_t *item = FindItem (weaponnames[plyr->readyweapon]);
-	int selected_weapon;
-	int i, index;
-
-	if (!item)
-		return;
-
-	selected_weapon = ITEM_INDEX(item);
-
-	for (i = 1; i <= num_items; i++)
-	{
-		index = (selected_weapon + i) % num_items;
-		if (!(itemlist[index].flags & IT_WEAPON))
-			continue;
-		if (!plyr->weaponowned[itemlist[index].offset])
-			continue;
-		if (!plyr->ammo[weaponinfo[itemlist[index].offset].ammo])
-			continue;
-		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
-			continue;
-		if (itemlist[index].offset == wp_bfg && gamemode == shareware)
-			continue;
-		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial)
-			continue;
-		Impulse = itemlist[index].offset + 50;
-		return;
-	}
+	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), true);
+	if (newweapon != wp_nochange)
+		Impulse = int(newweapon) + 50;
 }
 END_COMMAND (weapnext)
 
 BEGIN_COMMAND (weapprev)
 {
-	player_t *plyr = m_Instigator->player;
-	gitem_t *item = FindItem (weaponnames[plyr->readyweapon]);
-	int selected_weapon;
-	int i, index;
-
-	if (!item)
-		return;
-
-	selected_weapon = ITEM_INDEX(item);
-
-	for (i = 1; i <= num_items; i++) {
-		index = (selected_weapon + num_items - i) % num_items;
-		if (!(itemlist[index].flags & IT_WEAPON))
-			continue;
-		if (!plyr->weaponowned[itemlist[index].offset])
-			continue;
-		if (!plyr->ammo[weaponinfo[itemlist[index].offset].ammo])
-			continue;
-		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
-			continue;
-		if (itemlist[index].offset == wp_bfg && gamemode == shareware)
-			continue;
-		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial)
-			continue;
-		Impulse = itemlist[index].offset + 50;
-		return;
-	}
+	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), false);
+	if (newweapon != wp_nochange)
+		Impulse = int(newweapon) + 50;
 }
 END_COMMAND (weapprev)
 

@@ -53,6 +53,20 @@ EXTERN_CVAR(sv_allownobob)
 EXTERN_CVAR(cl_nobob)
 EXTERN_CVAR(sv_allowpwo)
 
+static const char *weaponnames[] =
+{
+	"Fist",
+	"Pistol",
+	"Shotgun",
+	"Chaingun",
+	"Rocket Launcher",
+	"Plasma Gun",
+	"BFG9000",
+	"Chainsaw",
+	"Super Shotgun",
+	"Chainsaw"
+};
+
 // [SL] 2011-11-14 - Maintain what the vertical position of the weapon sprite
 // would be for each player if full movebob were enabled.  This allows the
 // timing of changing weapons to remain in sync with vanilla Doom. The map's
@@ -86,13 +100,13 @@ void P_SetWeaponPreference(player_t *player, int slot, weapontype_t weapon)
 
 
 //
-// A_CalculateBobXPosition
+// P_CalculateBobXPosition
 //
 // Determines the horizontal position of the weapon sprite on the screen.
 // Weapon bobbing is scaled by the scale parameter, where scale is a
 // percentage between 0 and 1.
 //
-int A_CalculateBobXPosition(player_t *player, float scale)
+int P_CalculateBobXPosition(player_t *player, float scale)
 {
 	if (!player)
 		return FRACUNIT;
@@ -110,13 +124,13 @@ int A_CalculateBobXPosition(player_t *player, float scale)
 }
 
 //
-// A_CalculateBobYPosition
+// P_CalculateBobYPosition
 //
 // Determines the vertical position of the weapon sprite on the screen.
 // Weapon bobbing is scaled by the scale parameter, where scale is a
 // percentage between 0 and 1.
 //
-static int A_CalculateBobYPosition(player_t *player, float scale)
+static int P_CalculateBobYPosition(player_t *player, float scale)
 {
 	if (!player)
 		return WEAPONTOP;
@@ -143,7 +157,7 @@ static int A_CalculateBobYPosition(player_t *player, float scale)
 // is scaled according to the player's preference.  To maintain sync with
 // servers and vanilla demos, we also save what the vertical position of
 // the sprite would be if the player used unscaled bobbing.
-static void A_BobWeapon(player_t *player)
+static void P_BobWeapon(player_t *player)
 {
 	if (!player)
 		return;
@@ -154,10 +168,10 @@ static void A_BobWeapon(player_t *player)
 		scale_amount = 1.0f - cl_nobob;
 	
 	struct pspdef_s *psp = &player->psprites[player->psprnum];
-	psp->sx = A_CalculateBobXPosition(player, scale_amount);
-	psp->sy = A_CalculateBobYPosition(player, scale_amount);
+	psp->sx = P_CalculateBobXPosition(player, scale_amount);
+	psp->sy = P_CalculateBobYPosition(player, scale_amount);
 
-	weapon_ypos[player->id] = A_CalculateBobYPosition(player, 1.0f);
+	weapon_ypos[player->id] = P_CalculateBobYPosition(player, 1.0f);
 }
 
 
@@ -276,7 +290,6 @@ bool P_EnoughAmmo(player_t *player, weapontype_t weapon, bool switching = false)
 	return false;
 }
 
-
 //
 // P_SwitchWeapon
 //
@@ -311,6 +324,52 @@ void P_SwitchWeapon(player_t *player)
 	}
 }
 
+//
+// P_GetNextWeapon
+//
+// Returns the weapon that comes after the player's current weapon.
+// If forward is true, the next higher numbered weapon is chosen.  If forward
+// is false, the next lower numbered weapon is chosen.
+//
+weapontype_t P_GetNextWeapon(player_t *player, bool forward)
+{
+	gitem_t *item;
+
+	if (player->pendingweapon != wp_nochange)
+		item = FindItem(weaponnames[player->pendingweapon]);
+	else
+		item = FindItem(weaponnames[player->readyweapon]);
+
+	if (!item)
+		return wp_nochange;
+
+	int selected_weapon = ITEM_INDEX(item);
+
+	for (int i = 1; i <= num_items; i++)
+	{
+		int index;
+		if (forward)
+			index = (selected_weapon + i) % num_items;
+		else	// traverse backwards
+			index = (selected_weapon + num_items - i) % num_items;
+
+		if (!(itemlist[index].flags & IT_WEAPON))
+			continue;
+		if (!player->weaponowned[itemlist[index].offset])
+			continue;
+		if (!player->ammo[weaponinfo[itemlist[index].offset].ammo])
+			continue;
+		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
+			continue;
+		if (itemlist[index].offset == wp_bfg && gamemode == shareware)
+			continue;
+		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial)
+			continue;
+		return (weapontype_t)itemlist[index].offset;
+	}
+	
+	return wp_nochange;
+}
 
 //
 // P_CheckSwitchWeapon
@@ -473,7 +532,7 @@ void A_WeaponReady(AActor *mo)
 		player->attackdown = false;
 
 	// bob the weapon based on movement speed
-	A_BobWeapon(player);
+	P_BobWeapon(player);
 }
 
 //
