@@ -25,17 +25,14 @@
 // Removed all the DirectX crap.
 
 #include <list>
+#include <sstream>
+
 #ifdef WIN32
 #define _WIN32_WINNT 0x0400
 #define WIN32_LEAN_AND_MEAN
 #ifndef _XBOX
 #include <windows.h>
 #endif // !_XBOX
-#ifdef _MSC_VER
-#ifndef snprintf
-#define snprintf _snprintf
-#endif // !snprintf
-#endif // MSC_VER
 #endif // WIN32
 
 #include <SDL.h>
@@ -578,13 +575,14 @@ void I_GetEvent (void)
          {
              if (!vid_fullscreen)
              {            	
-                char Command[64];
+                std::stringstream Command;
                 
                 mousegrabbed = false;
-                
-                snprintf(Command, sizeof(Command), "vid_setmode %d %d", ev.resize.w, ev.resize.h);
 
-                AddCommandString(Command);
+                Command << "vid_setmode " << ev.resize.w << " " << ev.resize.h 
+                    << std::endl;
+
+                AddCommandString(Command.str().c_str());
 
                 vid_defwidth.Set((float)ev.resize.w);
 				vid_defheight.Set((float)ev.resize.h);
