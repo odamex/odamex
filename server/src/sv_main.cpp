@@ -81,6 +81,8 @@ bool step_mode = false;
 
 #define IPADDRSIZE 4	// GhostlyDeath -- Someone might want to do IPv6 junk
 
+std::queue<byte> free_player_ids;
+
 typedef struct
 {
 	short ip[IPADDRSIZE];
@@ -713,28 +715,31 @@ void SV_InitNetwork (void)
 
 int SV_GetFreeClient(void)
 {
-	if(players.size() >= sv_maxclients)
+	if (players.size() >= sv_maxclients)
 		return -1;
 
+	if (players.empty() && free_player_ids.empty())
+	{
+		// list of free ids needs to be initialized
+		for (int i = 1; i <= MAXPLAYERS; i++)
+			free_player_ids.push(i);
+	}
+
 	players.push_back(player_t());
+
+	// generate player id
+	players.back().id = free_player_ids.front();
+	free_player_ids.pop();
 
 	// update tracking cvar
 	sv_clientcount.ForceSet(players.size());
 
 	// repair mo after player pointers are reset
-	for(size_t i = 0; i < players.size() - 1; i++)
+	for (size_t i = 0; i < players.size() - 1; i++)
 	{
-		if(players[i].mo)
+		if (players[i].mo)
 			players[i].mo->player = &players[i];
 	}
-
-	// generate player id
-	size_t max = 0;
-	for (size_t c = 0; c < players.size() - 1; c++)
-	{
-		max = (max>players[c].id) ? max : players[c].id;
-	}
-	players[players.size() - 1].id = max + 1;
 
 	return players.size() - 1;
 }
@@ -805,7 +810,10 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 	for (size_t i=0; i<players.size(); i++)
 	{
 		if (players[i].id == player.id)
+		{
 			players.erase(players.begin() + i);
+			free_player_ids.push(player.id);
+		}
 	}
 
 	// update tracking cvar
