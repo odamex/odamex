@@ -721,7 +721,7 @@ int SV_GetFreeClient(void)
 	if (players.empty() && free_player_ids.empty())
 	{
 		// list of free ids needs to be initialized
-		for (int i = 1; i <= MAXPLAYERS; i++)
+		for (int i = 1; i < MAXPLAYERS; i++)
 			free_player_ids.push(i);
 	}
 
