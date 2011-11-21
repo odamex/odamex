@@ -235,11 +235,11 @@ void upnp_add_redir (const char * addr, int port)
     // Set a description if none exists
     if (!sv_upnp_description.cstring()[0])
     {
-        char desc[64];
+        std::stringstream desc;
 
-        snprintf(desc, sizeof(desc), "Odasrv (%s:%s)", addr, port_str);
+        desc << "Odasrv " << "(" << addr << ":" << port_str << ")" << std::endl;
 
-        sv_upnp_description.Set(desc);
+        sv_upnp_description.Set(desc.str().c_str());
     }
 
 	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
