@@ -4818,6 +4818,33 @@ void SV_ExplodeMissile(AActor *mo)
 	}
 }
 
+//
+// SV_SendPlayerInfo
+//
+// Sends a player their current weapon, ammo, health, and armor
+//
+
+void SV_SendPlayerInfo(player_t &player)
+{
+	client_t *cl = &player.client;
+
+	MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
+
+	for (int i = 0; i < NUMWEAPONS; i++)
+		MSG_WriteByte (&cl->reliablebuf, player.weaponowned[i]);
+
+	for (int i = 0; i < NUMAMMO; i++)
+	{
+		MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
+		MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
+	}
+
+	MSG_WriteByte (&cl->reliablebuf, player.health);
+	MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
+	MSG_WriteByte (&cl->reliablebuf, player.armortype);
+	MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+	MSG_WriteByte (&cl->reliablebuf, player.backpack);
+}
 
 //
 // SV_PreservePlayer
@@ -4832,28 +4859,7 @@ void SV_PreservePlayer(player_t &player)
 
 	G_DoReborn(player);
 
-	// inform client
-	{
-		size_t i;
-		client_t *cl = &player.client;
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
-
-		for(i = 0; i < NUMWEAPONS; i++)
-			MSG_WriteByte (&cl->reliablebuf, player.weaponowned[i]);
-
-		for(i = 0; i < NUMAMMO; i++)
-		{
-			MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
-			MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
-		}
-
-		MSG_WriteByte (&cl->reliablebuf, player.health);
-		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
-		MSG_WriteByte (&cl->reliablebuf, player.armortype);
-		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
-		MSG_WriteByte (&cl->reliablebuf, player.backpack);
-	}
+	SV_SendPlayerInfo(player);
 }
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")

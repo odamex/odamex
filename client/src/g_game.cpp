@@ -525,12 +525,21 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
-	if (Impulse >= 1 && Impulse <= 8)
+	if (!Impulse)
+	{
+		// [SL] 2011-11-20 - Player isn't requesting a weapon change
+		// send player's weapon to server and server will correct it if wrong
+		if (consoleplayer().pendingweapon != wp_nochange)
+			cmd->ucmd.impulse = static_cast<byte>(consoleplayer().pendingweapon);
+		else
+			cmd->ucmd.impulse = static_cast<byte>(consoleplayer().readyweapon);
+	}
+	else if (Impulse >= 1 && Impulse <= 8)
 	{
 		cmd->ucmd.buttons |= BT_CHANGE;
 		cmd->ucmd.buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
 	}
-	else
+	else 
 	{
 		cmd->ucmd.impulse = Impulse;
 	}

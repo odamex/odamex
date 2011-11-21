@@ -482,6 +482,8 @@ void P_DeathThink (player_t *player)
 	}
 }
 
+void SV_SendPlayerInfo(player_t &);
+
 //
 // P_PlayerThink
 //
@@ -586,13 +588,19 @@ void P_PlayerThink (player_t *player)
 			|| (gamemode != shareware) )
 			{
 				player->pendingweapon = newweapon;
-						
-				if (serverside)
-				{	// [ML] From Zdaemon .99: use changeweapon here
-					MSG_WriteMarker	(&cl->reliablebuf, svc_changeweapon);
-					MSG_WriteByte (&cl->reliablebuf, (byte)player->pendingweapon);	
-				}
 			}
+		}
+	}
+	else
+	{
+		// [SL] 2011-11-20 - Player didn't send a weapon change command.
+		// Verify the player is holding the correct weapon.
+		weapontype_t predweapon = static_cast<weapontype_t>(cmd->ucmd.impulse);
+		if (predweapon != player->readyweapon && predweapon != player->pendingweapon)
+		{
+			// Client is wrong so send them an update
+			if (serverside && player->health > 0)
+				SV_SendPlayerInfo(*player);
 		}
 	}
 

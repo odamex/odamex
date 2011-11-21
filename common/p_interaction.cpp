@@ -390,10 +390,9 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 		return;
     }
 
-    if (clientside && network_game && !FromServer)
-    {
-        return;
-    }
+	player = toucher->player;
+	if (!player)
+		return;
 
     if (predicting)
     {
@@ -403,15 +402,11 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
     // Dead thing touching.
     // Can happen with a sliding player corpse.
     if (toucher->health <= 0)
-    {
 		return;
-    }
 
 	// GhostlyDeath -- Spectators can't pick up things
-	if (toucher->player && toucher->player->spectator)
-    {
+	if (toucher->player->spectator)
 		return;
-    }
 
 	fixed_t delta = special->z - toucher->z;
 
@@ -429,19 +424,14 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 		return;
 	}
 
-	sound = 0;
 
-	if(!toucher->player)
-    {
+	if (clientside && !serverside && special->type != MT_CHAINGUN && 
+		special->type != MT_SHOTGUN && special->type != MT_SUPERSHOTGUN &&
+		special->type != MT_MISC25 && special->type != MT_MISC26 &&
+		special->type != MT_MISC27 && special->type != MT_MISC28 && !FromServer)
 		return;
-    }
 
-	player = toucher->player;
-
-    if (!player)
-    {
-        return;
-    }
+	sound = 0;
 
 	// Identify by sprite.
 	switch (special->sprite)
