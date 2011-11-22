@@ -386,45 +386,27 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	bool		firstgrab = false;
 
 	if (!toucher || !special) // [Toke - fix99]
-    {
 		return;
-    }
 
 	player = toucher->player;
-	if (!player)
+	if (!player || player->spectator)
 		return;
 
     if (predicting)
-    {
         return;
-    }
 
     // Dead thing touching.
     // Can happen with a sliding player corpse.
     if (toucher->health <= 0)
 		return;
 
-	// GhostlyDeath -- Spectators can't pick up things
-	if (toucher->player->spectator)
-		return;
-
 	fixed_t delta = special->z - toucher->z;
 
-    // Out of reach
-    // ...but leave this to the server to handle if the client is connected
-    // [CG] This is called the the client upon receipt of the "touched special
-    //      thing" message (whatever it actually is), so this check should only
-    //      happen if serverside.
-    /*
-	if ((delta > toucher->height || delta < -8*FRACUNIT) &&
-	    !(clientside && network_game))
-    */
-	if (serverside && (delta > toucher->height || delta < -8*FRACUNIT))
-	{
+	// Abort if it's out of reach and the server didn't say it was ok
+	if (!FromServer && (delta > toucher->height || delta < -8*FRACUNIT))
 		return;
-	}
 
-
+	// Only allow clients to predict touching weapons, not health, armor, etc
 	if (clientside && !serverside && special->type != MT_CHAINGUN && 
 		special->type != MT_SHOTGUN && special->type != MT_SUPERSHOTGUN &&
 		special->type != MT_MISC25 && special->type != MT_MISC26 &&
