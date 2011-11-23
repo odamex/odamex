@@ -530,14 +530,14 @@ static value_t WeapSwitch[] = {
 
 static value_t WeapChoice[] = {
 	{ 0.0,			"Fist" },
+	{ 7.0,			"Chainsaw" },
 	{ 1.0,			"Pistol" },
 	{ 2.0,			"Shotgun" },
+	{ 8.0,			"Super Shotgun" },
 	{ 3.0,			"Chaingun" },
 	{ 4.0,			"Rocket Launcher" },
 	{ 5.0,			"Plasma Rifle" },
-	{ 6.0,			"BFG9000" },
-	{ 7.0,			"Chainsaw" },
-	{ 8.0,			"Super Shotgun" }
+	{ 6.0,			"BFG9000" }
 };
 
 static menuitem_t WeaponItems[] = {
@@ -546,15 +546,15 @@ static menuitem_t WeaponItems[] = {
 	{ discrete,		"Switch on pickup",				{&cl_switchweapon},	{3.0},		{0.0},		{0.0},		{WeapSwitch} },
 	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },	
 	{ bricktext,	"Weapon Preference Order",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Slot 1",						{&cl_weaponpref1},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Slot 2",						{&cl_weaponpref2},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Slot 3",						{&cl_weaponpref3},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Slot 4",						{&cl_weaponpref4},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Slot 5",						{&cl_weaponpref5},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Slot 6",						{&cl_weaponpref6},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Slot 7",						{&cl_weaponpref7},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Slot 8",						{&cl_weaponpref8},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Slot 9",						{&cl_weaponpref9},	{9.0},		{0.0},		{0.0},		{WeapChoice} }
+	{ discrete,		"Preference #1",				{&cl_weaponpref1},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Preference #2",				{&cl_weaponpref2},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Preference #3",				{&cl_weaponpref3},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Preference #4",				{&cl_weaponpref4},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Preference #5",				{&cl_weaponpref5},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Preference #6",				{&cl_weaponpref6},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Preference #7",				{&cl_weaponpref7},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Preference #8",				{&cl_weaponpref8},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
+	{ discrete,		"Preference #9",				{&cl_weaponpref9},	{9.0},		{0.0},		{0.0},		{WeapChoice} }
 };
 
 menu_t WeaponMenu = {
