@@ -3014,8 +3014,7 @@ void SV_UpdateMonsters(player_t &pl)
 			continue;
 	
         if (!(mo->flags & MF_COUNTKILL ||
-			mo->type == MT_SKULL || 
-			mo->type == MT_BARREL))
+			mo->type == MT_SKULL))
 			continue;
 
 		// update monster position every 10 tics
@@ -4731,6 +4730,9 @@ void SV_SendDamagePlayer(player_t *player, int damage)
 
 void SV_SendDamageMobj(AActor *target, int pain)
 {
+	if (!target)
+		return;
+
 	for (size_t i = 0; i < players.size(); i++)
 	{
 		client_t *cl = &clients[i];
@@ -4739,12 +4741,29 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		MSG_WriteShort(&cl->reliablebuf, target->netid);
 		MSG_WriteShort(&cl->reliablebuf, target->health);
 		MSG_WriteByte(&cl->reliablebuf, pain);
+
+		MSG_WriteMarker (&cl->netbuf, svc_movemobj);
+		MSG_WriteShort (&cl->netbuf, target->netid);
+		MSG_WriteByte (&cl->netbuf, target->rndindex);
+		MSG_WriteLong (&cl->netbuf, target->x);
+		MSG_WriteLong (&cl->netbuf, target->y);
+		MSG_WriteLong (&cl->netbuf, target->z);
+
+		MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
+		MSG_WriteShort(&cl->netbuf, target->netid);
+		MSG_WriteLong (&cl->netbuf, target->angle);
+		MSG_WriteLong (&cl->netbuf, target->momx);
+		MSG_WriteLong (&cl->netbuf, target->momy);
+		MSG_WriteLong (&cl->netbuf, target->momz);
 	}
 }
 
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 				     bool joinkill)
 {
+	if (!target)
+		return;
+
 	for (size_t i = 0; i < players.size(); i++)
 	{
 		client_t *cl = &clients[i];
@@ -4759,8 +4778,15 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteLong(&cl->reliablebuf, target->x);
 		MSG_WriteLong(&cl->reliablebuf, target->y);
 		MSG_WriteLong(&cl->reliablebuf, target->z);
-		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
 
+		MSG_WriteMarker (&cl->reliablebuf, svc_mobjspeedangle);
+		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteLong (&cl->reliablebuf, target->angle);
+		MSG_WriteLong (&cl->reliablebuf, target->momx);
+		MSG_WriteLong (&cl->reliablebuf, target->momy);
+		MSG_WriteLong (&cl->reliablebuf, target->momz);
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
 		if (source)
 			MSG_WriteShort(&cl->reliablebuf, source->netid);
 		else
