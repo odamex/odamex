@@ -708,8 +708,8 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		if (co_nosilentspawns)
 		{
 			an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
-			xa = x+20*finecosine[an];
-			ya = y+20*finesine[an];
+			xa = finecosine[an];
+			ya = finesine[an];
 		}
 		else
 		{
@@ -740,6 +740,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 					ya = finesine[an >> ANGLETOFINESHIFT];
 					break;
 			}
+
 		}
 
 		mo = new AActor (x+20*xa, y+20*ya, z, MT_TFOG);
