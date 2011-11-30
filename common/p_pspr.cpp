@@ -822,6 +822,56 @@ void A_FirePlasma (AActor *mo)
 		P_SpawnPlayerMissile (player->mo, MT_PLASMA);
 }
 
+//
+// [RH] A_FireRailgun
+//
+static int RailOffset;
+
+void A_FireRailgun (AActor *mo)
+{
+	int damage;
+	
+    player_t *player = mo->player;
+
+	if (player->ammo[weaponinfo[player->readyweapon].ammo] < 10) 
+	{
+		int ammo = player->ammo[weaponinfo[player->readyweapon].ammo];
+		player->ammo[weaponinfo[player->readyweapon].ammo] = 0;
+		player->ammo[weaponinfo[player->readyweapon].ammo] = ammo;
+		return;
+	}
+
+	if (!sv_infiniteammo)
+		player->ammo[weaponinfo[player->readyweapon].ammo] -= 10;
+
+	P_SetPsprite (player,
+				  ps_flash,
+				  (statenum_t)(weaponinfo[player->readyweapon].flashstate+(P_Random (player->mo)&1)));
+
+	if (sv_gametype > 0)
+		damage = 100;
+	else
+		damage = 150;
+
+	P_RailAttack (player->mo, damage, RailOffset);
+	RailOffset = 0;
+}
+
+void A_FireRailgunRight (AActor *mo)
+{
+	RailOffset = 10;
+	A_FireRailgun (mo);
+}
+
+void A_FireRailgunLeft (AActor *mo)
+{
+	RailOffset = -10;
+	A_FireRailgun (mo);
+}
+
+void A_RailWait (AActor *mo)
+{
+}
 
 //
 // P_BulletSlope

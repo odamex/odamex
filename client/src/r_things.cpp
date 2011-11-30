@@ -1581,8 +1581,6 @@ void R_DrawMasked (void)
 	drawseg_t		 *ds;
 	struct vissort_s *sorttail;
 
-	R_SortVisSprites ();
-
 	if (r_particles)
 	{
 		// [RH] add all the particles
@@ -1593,6 +1591,8 @@ void R_DrawMasked (void)
 			i = Particles[i].next;
 		}
 	}
+
+	R_SortVisSprites ();
 
 	if (vsprcount)
 	{

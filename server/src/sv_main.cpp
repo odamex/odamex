@@ -4696,6 +4696,9 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 				case MOD_TELEFRAG:
 					message = OB_MPTELEFRAG;
 					break;
+				case MOD_RAILGUN:
+					message = OB_RAILGUN;
+					break;
 			}
 		}
 	}

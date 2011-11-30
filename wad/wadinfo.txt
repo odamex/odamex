@@ -38,6 +38,10 @@ DSQUAKE
 DSPLJOIN
 DSPLPART
 DSRADIO2
+SPARK1
+SPARK2
+SPARK3
+RAILGF1
 
 # List of Pictures (with insertion point)
 

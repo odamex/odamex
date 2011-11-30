@@ -271,6 +271,10 @@ static const char *SoundMap[] = {
 };
 
 // Functions used in a .bex [CODEPTR] chunk
+void A_FireRailgun(AActor *);
+void A_FireRailgunLeft(AActor *);
+void A_FireRailgunRight(AActor *);
+void A_RailWait(AActor *);
 void A_Light0(AActor *);
 void A_WeaponReady(AActor *);
 void A_Lower(AActor *);
@@ -345,6 +349,7 @@ void A_BrainSpit(AActor*);
 void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
+void A_MonsterRail(AActor*);
 
 struct CodePtr {
 	const char *name;
@@ -353,6 +358,11 @@ struct CodePtr {
 
 static const struct CodePtr CodePtrs[] = {
 	{ "NULL",			NULL },
+	{ "MonsterRail",	A_MonsterRail },
+	{ "FireRailgun",	A_FireRailgun },
+	{ "FireRailgunLeft", A_FireRailgunLeft },
+	{ "FireRailgunRight",A_FireRailgunRight },
+	{ "RailWait",		A_RailWait },	
 	{ "Light0",			A_Light0 },
 	{ "WeaponReady",	A_WeaponReady },
 	{ "Lower",			A_Lower },
