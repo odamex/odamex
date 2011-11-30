@@ -117,6 +117,13 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 }
 #endif
 
+void I_FlushInput()
+{
+	// eat all pending input from outside the game
+	SDL_Event ev;
+	while (SDL_PollEvent(&ev));
+}
+
 static bool MouseShouldBeGrabbed()
 {
 	// if the window doesn't have focus, never grab it
@@ -188,10 +195,8 @@ static void UpdateGrab(void)
 		// Warp the mouse back to the middle of the screen
 		if(screen)
 			SDL_WarpMouse(screen->width/ 2, screen->height / 2);
-		
-		// eat all pending input from outside the game
-		SDL_Event ev;
-		while (SDL_PollEvent(&ev));
+	
+		I_FlushInput();	
 	}
 	else if (!grab && mousegrabbed)
 	{

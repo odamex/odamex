@@ -52,7 +52,6 @@
 #include "m_swap.h"
 #include "m_menu.h"
 
-#include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
 
@@ -70,6 +69,7 @@ int DisplayWidth, DisplayHeight, DisplayBits;
 unsigned int Col2RGB8[65][256];
 byte RGB32k[32][32][32];
 
+void I_FlushInput();
 
 // [RH] The framebuffer is no longer a mere byte array.
 // There's also only one, not four.
@@ -531,6 +531,9 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 	R_InitColumnDrawers (screen->is8bit());
 	R_MultiresInit ();
+
+	// [SL] 2011-11-30 - Prevent the player's view angle from moving
+	I_FlushInput();
 
 //	M_RefreshModesList (); // [Toke - crap]
 
