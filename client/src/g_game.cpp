@@ -1262,8 +1262,8 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		if (co_nosilentspawns)
 		{
 			an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
-			xa = x*finecosine[an];
-			ya = y*finesine[an];
+			xa = finecosine[an];
+			ya = finesine[an];
 		}
 		else
 		{
