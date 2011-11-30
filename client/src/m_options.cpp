@@ -702,7 +702,7 @@ menu_t VideoMenu = {
  * Messages Menu
  *
  *=======================================*/
-EXTERN_CVAR (con_scaletext)
+EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (msg0color)
 EXTERN_CVAR (msg1color)
 EXTERN_CVAR (msg2color)
@@ -734,7 +734,7 @@ static value_t MessageLevels[] = {
 
 static menuitem_t MessagesItems[] = {
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
-	{ discrete,	"Scale message text",    {&con_scaletext},		{2.0}, {0.0}, 	{0.0}, {OnOff} },	
+	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {5.0}, 	{1.0}, {NULL} },	
     { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },

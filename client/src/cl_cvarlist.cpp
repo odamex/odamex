@@ -69,7 +69,6 @@ CVAR (am_ovteleportcolor,	"ff a3 00", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (print_stdout, "0", "", CVAR_ARCHIVE)
 CVAR (con_notifytime, "3", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (con_scaletext, "1", "Scale notify text at high resolutions", CVAR_ARCHIVE)
 CVAR (con_scrlock, "1", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (con_midtime, "3", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -197,6 +196,7 @@ CVAR (idmypos, "0", "Shows current player position on map", CVAR_NULL)
 CVAR (hud_revealsecrets, "0", "", CVAR_ARCHIVE)
 CVAR (hud_transparency, "0.5", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_scale, "0", "", CVAR_ARCHIVE)
+CVAR_FUNC_DECL (hud_scaletext, "2", "Scale notify text at high resolutions", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_targetnames, "1", "", CVAR_ARCHIVE)
 CVAR (hud_usehighresboard, "1", "",	CVAR_ARCHIVE)
 

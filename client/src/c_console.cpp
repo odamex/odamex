@@ -118,7 +118,16 @@ static int HistSize;
 #define NUMNOTIFIES 4
 
 EXTERN_CVAR (con_notifytime)
-EXTERN_CVAR (con_scaletext)
+CVAR_FUNC_IMPL (hud_scaletext)
+{
+	if (var < 1.0f)
+		var.Set(1.0f);
+	else if (var > MIN(CleanXfac,CleanYfac))
+		var.Set(MIN(CleanXfac, CleanYfac));
+}
+
+int V_TextScaleXAmount();
+int V_TextScaleYAmount();
 
 static struct NotifyText
 {
@@ -388,8 +397,8 @@ void C_AddNotifyString (int printlevel, const char *source)
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
 		return;
 
-	if (con_scaletext)
-		width = DisplayWidth / CleanXfac;
+	if (hud_scaletext)
+		width = DisplayWidth / V_TextScaleXAmount();
 	else
 		width = DisplayWidth;
 
@@ -773,10 +782,11 @@ static void C_DrawNotifyText (void)
 			else
 				color = PrintColors[NotifyStrings[i].printlevel];
 
-			if (con_scaletext)
+			if (hud_scaletext)
 			{
-				screen->DrawTextClean (color, 0, line, NotifyStrings[i].text);
-				line += 8 * CleanYfac;
+				screen->DrawTextStretched (color, 0, line, NotifyStrings[i].text,
+											V_TextScaleXAmount(), V_TextScaleYAmount());
+				line += 8 * V_TextScaleYAmount();
 			}
 			else
 			{
@@ -1545,7 +1555,7 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
 		Printf (PRINT_HIGH, "%s\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines (con_scaletext ? screen->width / CleanXfac : screen->width, (byte *)newmsg)) )
+		if ( (MidMsg = V_BreakLines (hud_scaletext ? screen->width / V_TextScaleXAmount() : screen->width, (byte *)newmsg)) )
 		{
 			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
@@ -1567,10 +1577,10 @@ void C_DrawMid (void)
 	{
 		int i, line, x, y, xscale, yscale;
 
-		if (con_scaletext)
+		if (hud_scaletext)
 		{
-			xscale = CleanXfac;
-			yscale = CleanYfac;
+			xscale = V_TextScaleXAmount();
+			yscale = V_TextScaleYAmount();
 		}
 		else
 		{
@@ -1581,12 +1591,12 @@ void C_DrawMid (void)
 		x = screen->width >> 1;
 		for (i = 0, line = (ST_Y * 3) / 8 - MidLines * 4 * yscale; i < MidLines; i++, line += y)
 		{
-			if (con_scaletext)
+			if (hud_scaletext)
 			{
-				screen->DrawTextClean (PrintColors[PRINTLEVELS],
+				screen->DrawTextStretched (PrintColors[PRINTLEVELS],
 					x - (MidMsg[i].width >> 1) * xscale,
 					line,
-					(byte *)MidMsg[i].string);
+					(byte *)MidMsg[i].string, V_TextScaleXAmount(), V_TextScaleYAmount());
 			}
 			else
 			{

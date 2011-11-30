@@ -58,10 +58,13 @@
 DCanvas *odacanvas = NULL;
 extern	DCanvas *screen;
 
-EXTERN_CVAR (con_scaletext)
+EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_scorelimit)
+
+int V_TextScaleXAmount();
+int V_TextScaleYAmount();
 
 // Chat
 void HU_Init (void);
@@ -493,9 +496,9 @@ void HU_Drawer (void)
 		static const char *prompt;
 		int i, x, c, scalex, y, promptwidth;
 
-		if (con_scaletext)
+		if (hud_scaletext)
 		{
-			scalex = CleanXfac;
+			scalex = V_TextScaleXAmount();
 			y = (!viewactive ? -30 : -10) * CleanYfac;
 		}
 		else
@@ -537,10 +540,12 @@ void HU_Drawer (void)
 		// draw the prompt, text, and cursor
 		std::string show_text = input_text;
 		show_text += '_';
-		if (con_scaletext)
+		if (hud_scaletext)
 		{
-			screen->DrawTextClean (CR_RED, 0, y, prompt);
-			screen->DrawTextClean (CR_GREY, promptwidth, y, show_text.c_str() + i);
+			screen->DrawTextStretched (	CR_RED, 0, y, prompt, 
+										V_TextScaleXAmount(), V_TextScaleYAmount());
+			screen->DrawTextStretched (	CR_GREY, promptwidth, y, show_text.c_str() + i,
+										V_TextScaleXAmount(), V_TextScaleYAmount());
 		}
 		else
 		{
