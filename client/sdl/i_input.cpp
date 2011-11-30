@@ -24,6 +24,7 @@
 // SoM 12-24-05: yeah... I'm programming on christmas eve.
 // Removed all the DirectX crap.
 
+#include <stdlib.h>
 #include <list>
 #include <sstream>
 
@@ -481,6 +482,11 @@ bool I_InitInput (void)
 	// mike - maybe not?
 	//SDL_EnableKeyRepeat(0, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL*2);
+
+	#ifdef X11
+	// [SL] 2011-11-30 - Disable mouse acceleration under X11 (see SDL_x11mouse.c)
+	putenv("SDL_VIDEO_X11_MOUSEACCEL=\"1/1/0\"");
+	#endif
 
 	// Initialize the joystick subsystem and open a joystick if use_joystick is enabled. -- Hyper_Eye
 	Printf(PRINT_HIGH, "I_InitInput: Initializing SDL's joystick subsystem.\n");
