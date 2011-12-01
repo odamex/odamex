@@ -84,6 +84,10 @@ void R_InitSkyMap ()
 	if (textureheight == NULL)
 		return;
 
+	// [SL] 2011-11-30 - Don't run if we don't know what sky texture to use
+	if (gamestate != GS_LEVEL)
+		return;
+
 	if (sky2texture && textureheight[sky1texture] != textureheight[sky2texture])
 	{
 		Printf (PRINT_HIGH,"\x1f+Both sky textures must be the same height.\x1f-\n");
