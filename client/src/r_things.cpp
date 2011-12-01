@@ -111,10 +111,10 @@ playerskin_t	*skins;
 size_t			numskins;
 
 // [RH] particle globals
-int				NumParticles;
-int				ActiveParticles;
-int				InactiveParticles;
-particle_t		*Particles;
+extern int				NumParticles;
+extern int				ActiveParticles;
+extern int				InactiveParticles;
+extern particle_t		*Particles;
 
 
 void R_CacheSprite (spritedef_t *sprite)
@@ -1624,26 +1624,6 @@ void R_DrawMasked (void)
 		R_DrawPlayerSprites ();
 	}
 }
-
-
-//
-// [RH] Particle functions
-//
-#ifndef _MSC_VER
-// inlined with VC++
-particle_t *NewParticle (void)
-{
-	particle_t *result = NULL;
-	if (InactiveParticles != -1)
-	{
-		result = Particles + InactiveParticles;
-		InactiveParticles = result->next;
-		result->next = ActiveParticles;
-		ActiveParticles = result - Particles;
-	}
-	return result;
-}
-#endif
 
 void R_InitParticles (void)
 {

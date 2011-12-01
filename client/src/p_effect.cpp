@@ -35,7 +35,7 @@
 #include "r_things.h"
 #include "s_sound.h"
 
-CVAR (cl_rockettrails, "1", "", CVAR_ARCHIVE)
+EXTERN_CVAR (cl_rockettrails)
 
 #define FADEFROMTTL(a)	(255/(a))
 
@@ -88,40 +88,7 @@ void P_InitEffects (void)
 	}
 }
 
-void P_ThinkParticles (void)
-{
-	int i;
-	particle_t *particle, *prev;
-
-	i = ActiveParticles;
-	prev = NULL;
-	while (i != -1) {
-		byte oldtrans;
-
-		particle = Particles + i;
-		i = particle->next;
-		oldtrans = particle->trans;
-		particle->trans -= particle->fade;
-		if (oldtrans < particle->trans || --particle->ttl == 0) {
-			memset (particle, 0, sizeof(particle_t));
-			if (prev)
-				prev->next = i;
-			else
-				ActiveParticles = i;
-			particle->next = InactiveParticles;
-			InactiveParticles = particle - Particles;
-			continue;
-		}
-		particle->x += particle->velx;
-		particle->y += particle->vely;
-		particle->z += particle->velz;
-		particle->velx += particle->accx;
-		particle->vely += particle->accy;
-		particle->velz += particle->accz;
-		prev = particle;
-	}
-}
-
+/*
 //
 // P_RunEffects
 //
@@ -144,65 +111,7 @@ void P_RunEffects (void)
 		}
 	}
 }
-
-//
-// AddParticle
-//
-// Creates a particle with "jitter"
-//
-particle_t *JitterParticle (int ttl)
-{
-	particle_t *particle = NewParticle ();
-
-	if (particle) {
-		fixed_t *val = &particle->velx;
-		int i;
-
-		// Set initial velocities
-		for (i = 3; i; i--, val++)
-			*val = (FRACUNIT/4096) * (M_Random () - 128);
-		// Set initial accelerations
-		for (i = 3; i; i--, val++)
-			*val = (FRACUNIT/16384) * (M_Random () - 128);
-
-		particle->trans = 255;	// fully opaque
-		particle->ttl = ttl;
-		particle->fade = FADEFROMTTL(ttl);
-	}
-	return particle;
-}
-
-static void MakeFountain (AActor *actor, int color1, int color2)
-{
-	particle_t *particle;
-
-	if (!(level.time & 1))
-		return;
-
-	particle = JitterParticle (51);
-
-	if (particle) {
-		angle_t an = M_Random()<<(24-ANGLETOFINESHIFT);
-		fixed_t out = FixedMul (actor->radius, M_Random()<<8);
-
-		particle->x = actor->x + FixedMul (out, finecosine[an]);
-		particle->y = actor->y + FixedMul (out, finesine[an]);
-		particle->z = actor->z + actor->height + FRACUNIT;
-		if (out < actor->radius/8)
-			particle->velz += FRACUNIT*10/3;
-		else
-			particle->velz += FRACUNIT*3;
-		particle->accz -= FRACUNIT/11;
-		if (M_Random() < 30) {
-			particle->size = 4;
-			particle->color = color2;
-		} else {
-			particle->size = 6;
-			particle->color = color1;
-		}
-	}
-}
-
+*//*
 void P_RunEffect (AActor *actor, int effects)
 {
 	angle_t moveangle = R_PointToAngle2(0,0,actor->momx,actor->momy);
@@ -279,7 +188,7 @@ void P_RunEffect (AActor *actor, int effects)
 		MakeFountain (actor, *fountainColors[color], *fountainColors[color+1]);
 	}
 }
-
+*/
 void P_DrawSplash (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int kind)
 {
 	int color1, color2;
@@ -481,25 +390,6 @@ void P_DrawRailTrail (vec3_t start, vec3_t end)
 				p->color = grey1;
 		}
 		p->color = white;
-	}
-}
-
-void P_DisconnectEffect (AActor *actor)
-{
-	int i;
-
-	for (i = 64; i; i--) {
-		particle_t *p = JitterParticle (TICRATE*2);
-
-		if (!p)
-			break;
-
-		p->x = actor->x + ((M_Random()-128)<<9) * (actor->radius>>FRACBITS);
-		p->y = actor->y + ((M_Random()-128)<<9) * (actor->radius>>FRACBITS);
-		p->z = actor->z + (M_Random()<<8) * (actor->height>>FRACBITS);
-		p->accz -= FRACUNIT/4096;
-		p->color = M_Random() < 128 ? maroon1 : maroon2;
-		p->size = 4;
 	}
 }
 

@@ -171,6 +171,8 @@ CVAR (cl_deathcam, "1", "Dead player's view follows the actor who killed them",
 CVAR (cl_nobob, "0", "Movebob", 
       CVAR_CLIENTARCHIVE | CVAR_CLIENTINFO)
 
+CVAR (cl_rockettrails, "0", "Rocket trails on/off (currently unused)", CVAR_ARCHIVE)
+
 // [AM] Force a player to respawn.
 CVAR (sv_forcerespawn, "0", "Force a player to respawn.", 
       CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

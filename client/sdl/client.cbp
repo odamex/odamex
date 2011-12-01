@@ -37,7 +37,6 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-file demo.wad -nomusic" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -469,6 +468,7 @@
 		<Unit filename="..\..\common\p_ceiling.cpp" />
 		<Unit filename="..\..\common\p_ctf.h" />
 		<Unit filename="..\..\common\p_doors.cpp" />
+		<Unit filename="..\..\common\p_effect.cpp" />
 		<Unit filename="..\..\common\p_effect.h" />
 		<Unit filename="..\..\common\p_enemy.cpp" />
 		<Unit filename="..\..\common\p_floor.cpp" />

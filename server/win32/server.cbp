@@ -357,6 +357,7 @@
 		<Unit filename="..\..\common\p_ceiling.cpp" />
 		<Unit filename="..\..\common\p_ctf.h" />
 		<Unit filename="..\..\common\p_doors.cpp" />
+		<Unit filename="..\..\common\p_effect.cpp" />
 		<Unit filename="..\..\common\p_effect.h" />
 		<Unit filename="..\..\common\p_enemy.cpp" />
 		<Unit filename="..\..\common\p_floor.cpp" />

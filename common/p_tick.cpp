@@ -68,7 +68,8 @@ void P_Ticker (void)
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
 
-	P_RunEffects ();	// [RH] Run particle effects
+	if (serverside)
+		P_RunEffects ();	// [RH] Run particle effects
 
 	// for par times
 	level.time++;

@@ -25,8 +25,7 @@
 
 
 void P_DrawSplash(int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int kind) {}
+void P_DrawSplash2 (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int updown, int kind) {}
 void P_DrawRailTrail (vec3_t start, vec3_t end) {}
-void P_RunEffects(void) {}
-void P_ThinkParticles(void) {}
 
 VERSION_CONTROL (p_effect_cpp, "$Id$")
