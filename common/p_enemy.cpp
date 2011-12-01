@@ -1979,13 +1979,13 @@ void P_SpawnBrainTargets (void)	// killough 3/26/98: renamed old function
 void A_BrainAwake (AActor *mo)
 {
 	// killough 3/26/98: only generates sound now
-	S_Sound (mo, CHAN_VOICE, "brain/sight", 1, ATTN_SURROUND);
+	S_Sound (mo, CHAN_VOICE, "brain/sight", 1, ATTN_NONE);
 }
 
 
 void A_BrainPain (AActor *mo)
 {
-	S_Sound (mo, CHAN_VOICE, "brain/pain", 1, ATTN_SURROUND);
+	S_Sound (mo, CHAN_VOICE, "brain/pain", 1, ATTN_NONE);
 }
 
 
@@ -2013,7 +2013,7 @@ void A_BrainScream (AActor *mo)
 			th->tics = 1;
 	}
 
-	S_Sound (mo, CHAN_VOICE, "brain/death", 1, ATTN_SURROUND);
+	S_Sound (mo, CHAN_VOICE, "brain/death", 1, ATTN_NONE);
 }
 
 
@@ -2076,7 +2076,7 @@ void A_BrainSpit (AActor *mo)
 			((targ->y - mo->y)/newmobj->momy) / newmobj->state->tics;
 	}
 
-	S_Sound (mo, CHAN_WEAPON, "brain/spit", 1, ATTN_SURROUND);
+	S_Sound (mo, CHAN_WEAPON, "brain/spit", 1, ATTN_NONE);
 }
 
 

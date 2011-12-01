@@ -1109,8 +1109,8 @@ void M_QuitResponse(int ch)
 	{
 		if (gameinfo.quitSounds)
 		{
-			S_Sound (CHAN_INTERFACE, gameinfo.quitSounds[(gametic>>2)&7],
-				1, ATTN_SURROUND);
+			S_Sound(CHAN_INTERFACE,
+					gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}

@@ -1257,14 +1257,14 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 			}
 			if (onmobj != NULL)
 			{
-				S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+				S_Sound (mo, CHAN_VOICE, "*land1", 1, ATTN_NORM);
 			}
 		}
 	}
 	else
 	{
 		// [SL] 2011-06-16 - Vanilla Doom Oomphiness
-		S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+		S_Sound (mo, CHAN_VOICE, "*land1", 1, ATTN_NORM);
 	}
 //	mo->player->centering = true;
 }

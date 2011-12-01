@@ -553,7 +553,7 @@ int S_AdjustSoundParams(AActor*		listener,
 //
 
 static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
-	                  int sfx_id, float volume, float attenuation, bool looping)
+	                  int sfx_id, float volume, int attenuation, bool looping)
 {
 
 	int		rc;
@@ -606,7 +606,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			sfx = sfx->link;
 	}
 	
-	if (listenplayer().camera && (attenuation != ATTN_NONE && attenuation != ATTN_SURROUND))
+	if (listenplayer().camera && attenuation != ATTN_NONE)
 	{
   		// Check to see if it is audible, and if not, modify the params
 		if (co_zdoomsoundcurve)
@@ -647,7 +647,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			break;
 	}
 
-	if (attenuation == ATTN_NONE || attenuation == ATTN_SURROUND)
+	if (attenuation == ATTN_NONE)
 		priority += 50;
 	else if (attenuation == ATTN_IDLE || attenuation == ATTN_STATIC)
 		priority -= 50;
@@ -761,7 +761,7 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sound_id, float volume, int 
 }
 
 static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel,
-                               const char *name, float volume, float attenuation, bool looping)
+                               const char *name, float volume, int attenuation, bool looping)
 {
 	int sfx_id = -1;
 	

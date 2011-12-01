@@ -897,8 +897,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 				S_Sound(ent, CHAN_ITEM, "misc/i_pkup", 1, ATTN_NONE);
 				break;
 			case 1:
-				S_Sound(ent, CHAN_ITEM, "misc/p_pkup", 1,
-					!ent ? ATTN_SURROUND : ATTN_NONE);
+				S_Sound(ent, CHAN_ITEM, "misc/p_pkup", 1, ATTN_NONE);
 				break;
 			case 2:
 				S_Sound(ent, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);

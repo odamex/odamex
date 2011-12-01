@@ -444,8 +444,6 @@ void F_CastTicker (void)
 
 BOOL F_CastResponder (event_t* ev)
 {
-	int attn;
-
 	if (ev->type != ev_keydown)
 		return false;
 
@@ -459,15 +457,6 @@ BOOL F_CastResponder (event_t* ev)
 	castframes = 0;
 	castattacking = false;
 	if (mobjinfo[castorder[castnum].type].deathsound) {
-		switch (castorder[castnum].type) {
-			case MT_CYBORG:
-			case MT_SPIDER:
-				attn = ATTN_SURROUND;
-				break;
-			default:
-				attn = ATTN_NONE;
-				break;
-		}
 		if (castorder[castnum].type == MT_PLAYER) {
 			static const char sndtemplate[] = "player/%s/death1";
 			static const char *genders[] = { "male", "female", "cyborg" };
@@ -484,7 +473,7 @@ BOOL F_CastResponder (event_t* ev)
 			}
 			S_SoundID (CHAN_VOICE, sndnum, 1, ATTN_NONE);
 		} else
-			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, attn);
+			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, ATTN_NONE);
 	}
 
 	return true;

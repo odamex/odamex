@@ -121,7 +121,6 @@ void S_LoopedSoundID (fixed_t *pt, int channel, int sfxid, float volume, int att
 #define ATTN_NORM				1
 #define ATTN_IDLE				2
 #define ATTN_STATIC				3	// diminish very rapidly with distance
-#define ATTN_SURROUND			4	// like ATTN_NONE, but plays in surround sound
 
 // Stops a sound emanating from one of an entity's channels
 void S_StopSound (AActor *ent, int channel);
