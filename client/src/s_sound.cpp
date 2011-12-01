@@ -70,20 +70,14 @@ typedef struct
 	int 		handle;		// handle of the sound being played
 	int			sound_id;
 	int			entchannel;	// entity's sound channel
-	int			basepriority;
 	float		attenuation;
 	float		volume;
-	int			pitch;
 	int			priority;
 	BOOL		loop;
 	int			timer;		// countdown until sound is destroyed
 } channel_t;
 
-// [RH] Hacks for pitch variance
-int sfx_sawup, sfx_sawidl, sfx_sawful, sfx_sawhit;
-int sfx_itemup, sfx_tink;
-
-int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
+int sfx_empty;
 
 // joek - hack for silent bfg
 int sfx_noway, sfx_oof;
@@ -204,7 +198,7 @@ void S_NoiseDebug (void)
 			screen->DrawText (color, 70, y, temp);
 			sprintf (temp, "%d", oy / FRACUNIT);
 			screen->DrawText (color, 120, y, temp);
-			sprintf (temp, "%g", Channel[i].volume);
+			sprintf (temp, "%.2f", Channel[i].volume);
 			screen->DrawText (color, 170, y, temp);
 			sprintf (temp, "%d", Channel[i].priority);
 			screen->DrawText (color, 200, y, temp);
@@ -237,8 +231,6 @@ void S_Init (float sfxVolume, float musicVolume)
 	int curvelump = W_GetNumForName ("SNDCURVE");
 	SoundCurve = (byte *)W_CacheLumpNum (curvelump, PU_STATIC);
 
-	unsigned int i;
-
 	//Printf (PRINT_HIGH, "S_Init: default sfx volume %f\n", sfxVolume);
 
 	// [RH] Read in sound sequences
@@ -253,7 +245,7 @@ void S_Init (float sfxVolume, float musicVolume)
 	// simultaneously) within zone memory.
 	numChannels = snd_channels.asInt();
 	Channel = (channel_t *) Z_Malloc (numChannels*sizeof(channel_t), PU_STATIC, 0);
-	for (i = 0; i < numChannels; i++)
+	for (unsigned int i = 0; i < numChannels; i++)
 	{
 		// Initialize the channel's variables
 		memset(&Channel[i], 0, sizeof(Channel[i]));
@@ -345,12 +337,7 @@ bool S_CompareChannels(const channel_t &a, const channel_t &b)
 //   If none available, return -1.  Otherwise channel #.
 //
 //   joek - added from choco, editied slightly
-int
-		S_getChannel
-		( void*		origin,
-		  sfxinfo_t*	sfxinfo,
-		  float		volume,
-		  int 		priority)
+int S_getChannel (void*	origin, sfxinfo_t* sfxinfo, float volume, int priority)
 {
     // channel number to use
 	int cnum = -1;
@@ -372,7 +359,7 @@ int
 
 	// Limit the number of identical sounds playing at once
 	// tries to keep the plasma rifle from hogging all the channels
-	const int max_duplicates = 3;
+	static const int max_duplicates = 3;
 	int duplicates = 0;
 	for (int i = (int)numChannels - 1; i >= 0; i--)
 	{
@@ -435,8 +422,7 @@ int S_AdjustZdoomSoundParams(	AActor*	listener,
 								fixed_t	x,
 								fixed_t	y,
 								float*	vol,
-								int*	sep,
-								int*	pitch)
+								int*	sep)
 {
 	const int MAX_SND_DIST = 2025;
 	
@@ -485,7 +471,7 @@ int S_AdjustZdoomSoundParams(	AActor*	listener,
 }
 
 //
-// Changes volume, stereo-separation, and pitch variables
+// Changes volume and stereo-separation
 //  from the norm of a sound effect to be played.
 // If the sound is not audible, returns a 0.
 // Otherwise, modifies parameters and returns 1.
@@ -498,8 +484,7 @@ int S_AdjustSoundParams(AActor*		listener,
 		  				fixed_t		x,
 		  				fixed_t		y,
 		  				float*		vol,
-		  				int*		sep,
-		  				int*		pitch )
+		  				int*		sep)
 {
 	fixed_t	approx_dist;
 	fixed_t	adx;
@@ -573,8 +558,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 
 	int		rc;
 	int		sep;
-	int		pitch;
-	int		priority, basepriority;
+	int		priority = 0;
 	sfxinfo_t*	sfx;
 	int		cnum;
 	int handle;
@@ -586,7 +570,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	if (sfx_id < 1 || sfx_id > numsfx)
 	{
 		Printf(PRINT_HIGH,"Bad sfx #: %d\n", sfx_id);
-                return;
+		return;
 	}
 
 	// check volume +ve
@@ -622,94 +606,60 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 			sfx = sfx->link;
 	}
 	
-	if (listenplayer().mo && attenuation != ATTN_NONE)
+	if (listenplayer().camera && (attenuation != ATTN_NONE && attenuation != ATTN_SURROUND))
 	{
   		// Check to see if it is audible, and if not, modify the params
 		if (co_zdoomsoundcurve)
-		{
-			rc = S_AdjustZdoomSoundParams(listenplayer().mo, x, y, &volume, &sep, &pitch);
-		}
+			rc = S_AdjustZdoomSoundParams(listenplayer().camera, x, y, &volume, &sep);
 		else
-		{
-			rc = S_AdjustSoundParams(listenplayer().mo, x, y, &volume, &sep, &pitch);
-		}
+			rc = S_AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep);
 
-		if (x == listenplayer().mo->x && y == listenplayer().mo->y)
-		{
+		if (x == listenplayer().camera->x && y == listenplayer().camera->y)
 			sep = NORM_SEP;
-		}
 		
 		if (!rc)
 			return;
 	}
 	else
-	{
 		sep = NORM_SEP;
+
+	// Set up the sound channel's priority
+	switch (channel)
+	{
+		case CHAN_ANNOUNCERE:
+		case CHAN_ANNOUNCERF:
+			priority = 1000;
+			break;
+		case CHAN_INTERFACE:
+			priority = 800;
+			break;
+		case CHAN_WEAPON:
+			priority = 150;
+			break;
+		case CHAN_VOICE:
+			priority = 100;
+			break;
+		case CHAN_BODY:
+			priority = 75;
+			break;
+		case CHAN_ITEM:
+			priority = 0;
+			break;
 	}
 
-	pitch = NORM_PITCH;
+	if (attenuation == ATTN_NONE || attenuation == ATTN_SURROUND)
+		priority += 50;
+	else if (attenuation == ATTN_IDLE || attenuation == ATTN_STATIC)
+		priority -= 50;
+
+	// Give extra priority to sounds made by the player we're viewing
+	if (listenplayer().camera && pt == &listenplayer().camera->x)
+		priority += 20;
 
 	if (sfx->lumpnum == sfx_empty)
-	{
-		basepriority = -1000;
-	}
-	else if (channel == CHAN_ANNOUNCERE || channel == CHAN_ANNOUNCERF)
-	{
-		basepriority = 300;
-	}
-	else if (attenuation <= ATTN_NONE)
-	{
-		basepriority = 200;
-	}
-	else
-	{
-		switch (channel)
-		{
-			case CHAN_INTERFACE:
-				basepriority = 200;
-				break;
-			case CHAN_WEAPON:
-				basepriority = 100;
-				break;
-			case CHAN_VOICE:
-				basepriority = 75;
-				break;
-			case CHAN_BODY:
-				basepriority = 50;
-				break;
-			case CHAN_ITEM:
-				basepriority = 25;
-				break;
-			default:
-				basepriority = 50;
-				break;
-		}
-		if (attenuation == ATTN_NORM)
-			basepriority += 50;
-	}
-	priority = basepriority;
+		priority = -1000;
 
-  // hacks to vary the sfx pitches
-	if (sfx_id >= sfx_sawup && sfx_id <= sfx_sawhit)
-	{
-		pitch += 8 - (M_Random()&15);
-
-		if (pitch<0)
-			pitch = 0;
-		else if (pitch>255)
-			pitch = 255;
-	}
-	else if (sfx_id != sfx_itemup && sfx_id != sfx_tink)
-	{
-		pitch += 16 - (M_Random()&31);
-
-		if (pitch<0)
-			pitch = 0;
-		else if (pitch>255)
-			pitch = 255;
-	}
-
-	// joek - hack for silent bfg
+	// joek - hack for silent bfg - stop player's weapon sounds if grunting
 	if(sfx_id == sfx_noway || sfx_id == sfx_oof)
 	{
 		for (size_t i = 0; i < numChannels; i++)
@@ -734,7 +684,7 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	handle = I_StartSound(sfx_id,
 			     volume,
 			     sep,
-			     Channel[cnum].pitch,
+			     NORM_PITCH,
 			     looping);
 
 	// I_StartSound can not find an empty channel.  Make sure this channel is clear
@@ -759,7 +709,6 @@ static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
 	Channel[cnum].pt = pt;
 	Channel[cnum].sfxinfo = sfx;
 	Channel[cnum].priority = priority;
-	Channel[cnum].basepriority = basepriority;
 	Channel[cnum].entchannel = channel;
 	Channel[cnum].attenuation = attenuation;
 	Channel[cnum].volume = volume;
@@ -1007,7 +956,6 @@ void S_UpdateSounds (void *listener_p)
 	int		cnum;
 	float		volume;
 	int		sep;
-	int		pitch;
 	sfxinfo_t*	sfx;
 	channel_t*	c;
 
@@ -1051,12 +999,10 @@ void S_UpdateSounds (void *listener_p)
 			{
 		// initialize parameters
 				volume = snd_sfxvolume;
-				pitch = NORM_PITCH;
 				sep = NORM_SEP;
 
 				if (sfx->link)
 				{
-					pitch = Channel[cnum].pitch;
 					volume += Channel[cnum].volume;
 
 					if (volume <= 0)
@@ -1091,16 +1037,14 @@ void S_UpdateSounds (void *listener_p)
 						audible = S_AdjustZdoomSoundParams(	listener, 
 															x, y,
 															&volume,
-															&sep,
-															&pitch);
+															&sep);
 					}
 					else
 					{					
 						audible = S_AdjustSoundParams(	listener, 
 														x, y,
 														&volume,
-														&sep,
-														&pitch);
+														&sep);
 					}
 
 					if (!audible)
@@ -1108,7 +1052,7 @@ void S_UpdateSounds (void *listener_p)
 						S_StopChannel(cnum);
 					}
 					else
-						I_UpdateSoundParams(c->handle, volume, sep, c->pitch);
+						I_UpdateSoundParams(c->handle, volume, sep, NORM_PITCH);
 				}
 			}
 			else
@@ -1253,7 +1197,6 @@ static void S_StopChannel (unsigned int cnum)
 		c->sound_id = -1;
 		c->pt = NULL;
 		c->priority = 0;
-		c->basepriority = 0;
 	}
 }
 
@@ -1491,19 +1434,7 @@ void S_ParseSndInfo (void)
 	}
 	S_HashSounds ();
 
-	// [RH] Hack for pitch varying
-	sfx_sawup = S_FindSound ("weapons/sawup");
-	sfx_sawidl = S_FindSound ("weapons/sawidle");
-	sfx_sawful = S_FindSound ("weapons/sawfull");
-	sfx_sawhit = S_FindSound ("weapons/sawhit");
-	sfx_itemup = S_FindSound ("misc/i_pkup");
-	sfx_tink = S_FindSound ("misc/chat2");
-
-	sfx_plasma = S_FindSound ("weapons/plasmaf");
-	sfx_chngun = S_FindSound ("weapons/chngun");
-	sfx_chainguy = S_FindSound ("chainguy/attack");
 	sfx_empty = W_CheckNumForName ("dsempty");
-
 	sfx_noway = S_FindSoundByLump (W_CheckNumForName ("dsnoway"));
 	sfx_oof = S_FindSoundByLump (W_CheckNumForName ("dsoof"));
 }
