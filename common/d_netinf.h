@@ -62,6 +62,7 @@ enum weaponswitch_t
 
 struct userinfo_s
 {
+	int				next_change_time;
 	char			netname[MAXPLAYERNAME+1];
 	team_t			team; // [Toke - Teams] 
 	fixed_t			aimdist;
@@ -75,6 +76,7 @@ struct userinfo_s
 	weapontype_t	weapon_prefs[NUMWEAPONS];
 
 	userinfo_s() :
+		next_change_time(0),
 		team(TEAM_NONE), aimdist(0), unlag(true), update_rate(2), color(0),
 		skin(0), gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
  	{

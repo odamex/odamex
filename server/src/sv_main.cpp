@@ -1148,96 +1148,105 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 //
 void SV_SetupUserInfo (player_t &player)
 {
-	int		old_team;
-	const char   *skin;
-	char	old_netname[MAXPLAYERNAME+1];
-	std::string		gendermessage;
+	// read in userinfo from packet
+	std::string		old_netname(player.userinfo.netname);
+	std::string		new_netname(MSG_ReadString());
 
-	player_t* p;
-	p = &player;
+	team_t			old_team = static_cast<team_t>(player.userinfo.team);
+	team_t			new_team = static_cast<team_t>(MSG_ReadByte());
 
-	// store players team number
-	old_team = p->userinfo.team;
+	gender_t		gender = static_cast<gender_t>(MSG_ReadLong());
+	int				color = MSG_ReadLong();
+	std::string		skin(MSG_ReadString());
 
-	// Store player's old name for comparison.
-	strncpy (old_netname, p->userinfo.netname, sizeof(old_netname));
+	int				aimdist = MSG_ReadLong();
+	bool			unlag = MSG_ReadBool();
+	byte			update_rate = MSG_ReadByte();
+	weaponswitch_t	switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
 
-	// Read user info
-	strncpy (p->userinfo.netname, MSG_ReadString(), sizeof(p->userinfo.netname));
-	p->userinfo.team	= (team_t)MSG_ReadByte();	// [Toke - Teams]
-	p->userinfo.gender	= (gender_t)MSG_ReadLong();
-	p->prefcolor		= MSG_ReadLong();
-	p->userinfo.color	= p->prefcolor;
-
-	skin = MSG_ReadString();	// [Toke - Skins] Player skin
-
-	// Make sure the skin is valid
-	p->userinfo.skin = R_FindSkin(skin);
-
-	p->userinfo.aimdist = MSG_ReadLong();
-
-	// Make sure the aimdist is valid
-	if (p->userinfo.aimdist < 0)
-		p->userinfo.aimdist = 0;
-	if (p->userinfo.aimdist > 5000)
-		p->userinfo.aimdist = 5000;
-
-	// [SL] 2011-05-11 - Client opt-in/out of serverside unlagging
-	p->userinfo.unlag = MSG_ReadByte();
-
-	// [SL] 2011-09-01 - Send client svc_moveplayer messages every N tics
-	p->userinfo.update_rate = MSG_ReadByte();
-	if (p->userinfo.update_rate < 1)
-		p->userinfo.update_rate = 1;
-	else if (p->userinfo.update_rate > 3)
-		p->userinfo.update_rate = 3;
-
-	// set up the preferences for switching weapons
-	p->userinfo.switchweapon = (weaponswitch_t)MSG_ReadByte();
-	if (p->userinfo.switchweapon >= WPSW_NUMTYPES || p->userinfo.switchweapon < 0)
-		p->userinfo.switchweapon = WPSW_ALWAYS;
+	weapontype_t	weapon_prefs[NUMWEAPONS];
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
-		p->userinfo.weapon_prefs[i] = (weapontype_t)MSG_ReadByte();
-		if (p->userinfo.weapon_prefs[i] < 0 ||
-			p->userinfo.weapon_prefs[i] >= NUMWEAPONS)
-		{
-			// erroneous choice, choose fist because it doesn't need ammo
-			p->userinfo.weapon_prefs[i] = wp_fist;
-		}
+		weapon_prefs[i] = static_cast<weapontype_t>(MSG_ReadByte());
+		if (weapon_prefs[i] < 0 || weapon_prefs[i] >= NUMWEAPONS)
+			weapon_prefs[i] = wp_fist;
 	}
 
-	// Make sure the gender is valid
-	if(p->userinfo.gender >= NUMGENDER)
-		p->userinfo.gender = GENDER_NEUTER;
+	// ensure sane values for userinfo
+	if (gender < 0 || gender >= NUMGENDER)
+		gender = GENDER_NEUTER;
 
+	if (aimdist < 0)
+		aimdist = 0;
+	if (aimdist > 5000)
+		aimdist = 5000;
+
+	if (update_rate < 1)
+		update_rate = 1;
+	else if (update_rate > 3)
+		update_rate = 3;
+
+	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
+		switchweapon = WPSW_ALWAYS;
+
+	// [SL] 2011-12-02 - Players can update these parameters whenever they like
+	player.userinfo.unlag			= unlag;
+	player.userinfo.update_rate		= update_rate;
+	player.userinfo.aimdist			= aimdist;
+	player.userinfo.switchweapon	= switchweapon;
+	memcpy(player.userinfo.weapon_prefs, weapon_prefs, sizeof(weapon_prefs));
+	
+	// [SL] 2011-12-02 - Prevent players from spamming certain userinfo updates
+	if (player.userinfo.next_change_time > gametic)
+	{
+		// Send the client's actual userinfo back to them so they can reset it
+		SV_SendUserInfo (player, &player.client);
+		return;
+	}
+
+	player.userinfo.gender			= gender;
+	player.userinfo.skin			= R_FindSkin(skin.c_str());
+	player.userinfo.team			= new_team;
+	player.userinfo.color			= color;
+	player.prefcolor				= color;
+	
+	strncpy(player.userinfo.netname, new_netname.c_str(), MAXPLAYERNAME + 1);
 	// Compare names and broadcast if different.
-	if (StdStringCompare(old_netname, "", false) && 
-     StdStringCompare(p->userinfo.netname, old_netname, false))
+	if (!old_netname.empty() && StdStringCompare(new_netname, old_netname, false))
     {
-		switch (p->userinfo.gender) {
-			case 0: gendermessage = "his";  break;
-			case 1: gendermessage = "her";  break;
-			default: gendermessage = "its";  break;
+		std::string	gendermessage;
+		switch (gender) {
+			case GENDER_MALE:	gendermessage = "his";  break;
+			case GENDER_FEMALE:	gendermessage = "her";  break;
+			default:			gendermessage = "its";  break;
 		}
+
 		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", 
-            old_netname, gendermessage.c_str(), p->userinfo.netname);
+            old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname);
 	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
 	{
 		SV_CheckTeam (player);
 
-		// kill player if team is changed
-		if (p->mo && p->userinfo.team != old_team)
-			P_DamageMobj (p->mo, 0, 0, 1000, 0);
+		if (player.mo && player.userinfo.team != old_team &&
+			player.ingame() && !player.spectator)
+		{
+			// kill player if team is changed
+			P_DamageMobj (player.mo, 0, 0, 1000, 0);
+			SV_BroadcastPrintf(PRINT_HIGH, "%s switched to the %s team.\n",
+				new_netname.c_str(), team_names[new_team]);
+		}
 	}
 
 	// inform all players of new player info
-	for (size_t i = 0; i < players.size(); i++ )
+	for (size_t i = 0; i < players.size(); i++)
 	{
 		SV_SendUserInfo (player, &clients[i]);
 	}
+
+	// [SL] 2011-12-02 - Player can update all preferences again in 5 seconds
+	player.userinfo.next_change_time = gametic + 5 * TICRATE;
 }
 
 //
