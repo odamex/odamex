@@ -50,6 +50,7 @@ proc main {} {
 
  wait 1
  # test teamplay
+ client "cl_team blue"
  server "sv_gametype 2; map 1"
  clear
  test "join" "Player joined the game on the BLUE team."
@@ -78,7 +79,7 @@ proc main {} {
  clear
  test "say %s%s%i%s\"\'" "Player: %s%s%i%s\"\'"
  wait 1
- test "say veryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstring" ""
+ test "say veryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstring" "Player: veryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringveryveryveryverylonglongstringstringstringve"
 
  # test server console
  clear
