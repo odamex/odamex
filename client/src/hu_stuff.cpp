@@ -1184,16 +1184,6 @@ void HU_TeamScores1 (player_t *player)
 				bpings = bpings + sortedplayers[i]->ping;
 				bpoints = bpoints + sortedplayers[i]->points;
 
-				// Total blue frags and points
-				if(sv_gametype == GM_CTF)
-				{
-					sprintf (str, "%d", bfrags);
-					screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	42	* CleanYfac	,	str	);
-
-					sprintf (str, "%d", bpoints);
-					screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	50	* CleanYfac	,	str	);
-				}
-
 				bluey += 8 * CleanYfac;
 
 				bcount++;
@@ -1225,16 +1215,6 @@ void HU_TeamScores1 (player_t *player)
 				rpings = rpings + sortedplayers[i]->ping;
 				rpoints = rpoints + sortedplayers[i]->points;
 
-				// Total red frags and points
-				if(sv_gametype == GM_CTF)
-				{
-					sprintf (str, "%d", rfrags);
-					screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	114	* CleanYfac	,	str	);
-
-					sprintf (str, "%d", rpoints);
-					screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	122	* CleanYfac	,	str	);
-				}
-
 				redy += 8 * CleanYfac;
 
 				rcount++;
@@ -1245,11 +1225,28 @@ void HU_TeamScores1 (player_t *player)
 	// Blue team score
 	sprintf (str, "%d", TEAMpoints[TEAM_BLUE]);
 	screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	26	* CleanYfac	,	str	);
+	// Total blue frags and points
+	if(sv_gametype == GM_CTF)
+	{
+		sprintf (str, "%d", bfrags);
+		screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	42	* CleanYfac	,	str	);
+
+		sprintf (str, "%d", bpoints);
+		screen->DrawTextClean	  (CR_BLUE	,	287	* CleanXfac	,	50	* CleanYfac	,	str	);
+	}
 
 	// Red team score
 	sprintf (str, "%d", TEAMpoints[TEAM_RED]);
 	screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	98	* CleanYfac	,	str	);
+	// Total red frags and points
+	if(sv_gametype == GM_CTF)
+	{
+		sprintf (str, "%d", rfrags);
+		screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	114	* CleanYfac	,	str	);
 
+		sprintf (str, "%d", rpoints);
+		screen->DrawTextClean	  (CR_RED	,	287	* CleanXfac	,	122	* CleanYfac	,	str	);
+	}
 
 	if (bcount)
 	{
@@ -1539,13 +1536,6 @@ void HU_TeamScores2 (player_t *player)
 				if(sv_gametype == GM_CTF)
 					bpoints = bpoints + sortedplayers[i]->points;
 
-				// TOTAL FRAGS (ctf only)
-				if(sv_gametype == GM_CTF)
-				{
-					sprintf (str, "%d", bfrags);
-					screen->DrawText	  (CR_BLUE	,blocx + 203		,blocy + 0	,	str			);
-				}
-
 				bluey += 10;
 
 				//bcount++;
@@ -1602,13 +1592,6 @@ void HU_TeamScores2 (player_t *player)
 				if(sv_gametype == GM_CTF)
 					rpoints = rpoints + sortedplayers[i]->points;
 
-				// TOTAL FRAGS (ctf only)
-				if(sv_gametype == GM_CTF)
-				{
-					sprintf (str, "%d", rfrags);
-					screen->DrawText	  (CR_RED	,rlocx + 203		,rlocy + 0	,	str			);
-				}
-
 				redy += 10;
 
 				//rcount++;
@@ -1632,6 +1615,13 @@ void HU_TeamScores2 (player_t *player)
 		else
 			sprintf (str, "%d", bpoints);
 		screen->DrawText	  (CR_BLUE	,blocx + 203		,blocy + 16	,	str			);
+
+		// TOTAL FRAGS (ctf only)
+		if(sv_gametype == GM_CTF)
+		{
+			sprintf (str, "%d", bfrags);
+			screen->DrawText	  (CR_BLUE	,blocx + 203		,blocy + 0	,	str			);
+		}
 	}
 
 	if (rcount)
@@ -1650,6 +1640,13 @@ void HU_TeamScores2 (player_t *player)
 		else
 			sprintf (str, "%d", rpoints);
 		screen->DrawText	  (CR_RED	,rlocx + 203		,rlocy + 16	,	str			);
+
+		// TOTAL FRAGS (ctf only)
+		if(sv_gametype == GM_CTF)
+		{
+			sprintf (str, "%d", rfrags);
+			screen->DrawText	  (CR_RED	,rlocx + 203		,rlocy + 0	,	str			);
+		}
 	}
 }
 
