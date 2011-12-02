@@ -1311,7 +1311,8 @@ team_t SV_GoodTeam (void)
 	// Determine the number of active players on each team
 	for (size_t i = 0; i < players.size(); i++)
 	{
-		if (players[i].ingame() && !players[i].spectator)
+		if (players[i].ingame() && !players[i].spectator && 
+				players[i].userinfo.team >= 0 && players[i].userinfo.team < teamcount)
 			teamsizes[players[i].userinfo.team]++;
 	}
 
