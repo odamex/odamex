@@ -1225,13 +1225,13 @@ void SV_SetupUserInfo (player_t &player)
 	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
 		SV_CheckTeam (player);
 
-	// kill player if team is changed
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		// kill player if team is changed
 		if (p->mo && p->userinfo.team != old_team)
 			P_DamageMobj (p->mo, 0, 0, 1000, 0);
-
+	}
 
 	// inform all players of new player info
 	for (size_t i = 0; i < players.size(); i++ )
@@ -1265,21 +1265,13 @@ EXTERN_CVAR (sv_teamsinplay)
 //
 void SV_CheckTeam (player_t &player)
 {
-	switch (player.userinfo.team)
-	{
-		case TEAM_BLUE:
-		case TEAM_RED:
+	if (sv_gametype == GM_CTF && 
+			(player.userinfo.team < 0 || player.userinfo.team >= NUMTEAMS))
+		SV_ForceSetTeam (player, SV_GoodTeam ());
 
-		if(sv_gametype == GM_CTF && player.userinfo.team < 2)
-			break;
-
-		if(sv_gametype != GM_CTF && player.userinfo.team < sv_teamsinplay)
-			break;
-
-		default:
-			SV_ForceSetTeam (player, SV_GoodTeam ());
-			break;
-	}
+	if (sv_gametype != GM_CTF && 
+			(player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay))
+		SV_ForceSetTeam (player, SV_GoodTeam ());
 
 	// Force colors
 	switch (player.userinfo.team)
@@ -1302,13 +1294,40 @@ void SV_CheckTeam (player_t &player)
 //
 team_t SV_GoodTeam (void)
 {
-	for(size_t i = 0; i < NUMTEAMS; i++)
-		if((sv_gametype == GM_CTF && i < 2) || (sv_gametype != GM_CTF && i < sv_teamsinplay))
-			return (team_t)i;
+	int teamcount = NUMTEAMS;
+	if (sv_gametype != GM_CTF && 
+			sv_teamsinplay >= 0 && sv_teamsinplay <= NUMTEAMS)
+		teamcount = sv_teamsinplay;
 
-	I_Error ("Teamplay is set and no teams are enabled!\n");
+	if (teamcount == 0)
+	{
+		I_Error ("Teamplay is set and no teams are enabled!\n");
+		return TEAM_NONE;
+	}	
 
-	return TEAM_NONE;
+	int teamsizes[teamcount];
+	memset(teamsizes, 0, sizeof(teamsizes));
+
+	// Determine the number of active players on each team
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		if (players[i].ingame() && !players[i].spectator)
+			teamsizes[players[i].userinfo.team]++;
+	}
+
+	// Find the smallest team
+	int smallest_team_size = MAXPLAYERS;
+	team_t smallest_team = (team_t)0;
+	for (int i = 0; i < teamcount; i++)
+	{
+		if (teamsizes[i] < smallest_team_size)
+		{
+			smallest_team_size = teamsizes[i];
+			smallest_team = (team_t)i;
+		}
+	}
+
+	return smallest_team;
 }
 
 

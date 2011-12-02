@@ -635,6 +635,14 @@ BEGIN_COMMAND (playerteam)
 }
 END_COMMAND (playerteam)
 
+BEGIN_COMMAND (changeteams)
+{
+	if (consoleplayer().userinfo.team == TEAM_BLUE)
+		cl_team.Set("RED");
+	else if (consoleplayer().userinfo.team == TEAM_RED)
+		cl_team.Set("BLUE");
+}
+END_COMMAND (changeteams)
 
 BEGIN_COMMAND (spectate)
 {
