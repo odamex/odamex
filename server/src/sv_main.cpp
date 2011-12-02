@@ -42,6 +42,7 @@
 #include "gi.h"
 #include "d_net.h"
 #include "g_game.h"
+#include "p_tick.h"
 #include "p_local.h"
 #include "sv_main.h"
 #include "sv_sqp.h"
@@ -3124,10 +3125,8 @@ void SV_RemoveCorpses (void)
 	if(sv_maxcorpses <= 0)
 		return;
 
-	if (gametic%35)
-	{
+	if (!P_AtInterval(TICRATE))
 		return;
-	}
 	else
 	{
 		TThinkerIterator<AActor> iterator;
@@ -3157,7 +3156,7 @@ void SV_RemoveCorpses (void)
 //
 void SV_SendPingRequest(client_t* cl)
 {
-	if ((gametic%100) != 0)
+	if (!P_AtInterval(100))
 		return;
 
 	MSG_WriteMarker (&cl->reliablebuf, svc_pingrequest);
@@ -3182,7 +3181,7 @@ void SV_CalcPing(player_t &player)
 //
 void SV_UpdatePing(client_t* cl)
 {
-	if ((gametic%101) != 0)
+	if (!P_AtInterval(101))
 		return;
 
 	for (size_t j=0; j < players.size(); j++)
@@ -3232,7 +3231,7 @@ void SV_UpdateDeadPlayers()
 //
 void SV_ClearClientsBPS(void)
 {
-	if (gametic % TICRATE)
+	if (!P_AtInterval(TICRATE))
 		return;
 
 	for (size_t i = 0; i < players.size(); i++)
@@ -3284,7 +3283,7 @@ void SV_WriteCommands(void)
 		// player and the client always knows origin on
 		// on the next tic.
 		// HOWEVER, update as often as the player requests
-		if (gametic % players[i].userinfo.update_rate == 0)
+		if (P_AtInterval(players[i].userinfo.update_rate))
 		{ 
 			// [SL] 2011-05-11 - Send the client the server's gametic
 			// this gametic is returned to the server with the client's
@@ -3377,36 +3376,32 @@ void SV_FlushPlayerCmds(player_t &player)
 //
 int SV_CalculateNumTiccmds(player_t &player)
 {
+	if (!player.mo || player.cmds.empty())
+		return 0;
+
 	const int minimum_cmds = 1;
-	const int maximum_queue_size = TICRATE / 4;
+	const size_t maximum_queue_size = TICRATE / 4;
 	
-	if (!sv_ticbuffer || player.spectator)
+	if (!sv_ticbuffer || player.spectator || player.playerstate == PST_DEAD)
 	{
 		// Process all queued ticcmds.
-		return player.cmds.size();
+		return maximum_queue_size;
 	}
-	else if (player.playerstate == PST_DEAD) 
+	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
 	{
-		// Dead players have no movement
+		// Player is not moving
 		return 2 * minimum_cmds;
 	}
-	else if ((int)player.cmds.size() > maximum_queue_size)
-	{
-		// The player experienced a large latency spike so try to catch up by
-		// processing more than one ticcmd at the expense of appearing perfectly
-		//  smooth
-		return 2 * minimum_cmds;
-	}
-	else if (!P_VisibleToPlayers(player.mo) && !(gametic % (TICRATE/2)))
+	if (!P_VisibleToPlayers(player.mo) && P_AtInterval(TICRATE/2))
 	{
 		// Every half second, run two commands if no one can see this player
 		return 2 * minimum_cmds;
 	}
-
-	usercmd_t *ucmd = &(player.cmds.front().ucmd);
-	if (ucmd->forwardmove == 0 && ucmd->sidemove == 0 && ucmd->upmove == 0)
+	if (player.cmds.size() > maximum_queue_size)
 	{
-		// Player is not moving
+		// The player experienced a large latency spike so try to catch up by
+		// processing more than one ticcmd at the expense of appearing perfectly
+		//  smooth
 		return 2 * minimum_cmds;
 	}
 
@@ -3566,7 +3561,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	client_t *cl = &player.client;
 	
 	// Send updates about a player's position as often as the player wishes
-	if (!mo || (gametic % player.userinfo.update_rate != 0))
+	if (!mo || !P_AtInterval(player.userinfo.update_rate))
 		return;
 
 	// GhostlyDeath -- Spectators are on their own really
@@ -4189,7 +4184,7 @@ void SV_TimelimitCheck()
 	level.timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;	// in tics
 
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
-	if ((gametic % (TICRATE * 1)) == 0)		// every second
+	if (P_AtInterval(1 * TICRATE))		// every second
 	{
 		for (size_t i = 0; i < clients.size(); i++)
 		{
@@ -4315,7 +4310,7 @@ void SV_StepTics (QWORD tics)
 		
 		// Since clients are only sent sector updates every 3rd tic, don't destroy
 		// the finished moving sectors until we've sent the clients the update
-		if (!(gametic % 3))
+		if (P_AtInterval(3))
 			SV_DestroyFinishedMovingSectors();
 
 		gametic++;

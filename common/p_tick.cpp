@@ -31,6 +31,17 @@
 
 EXTERN_CVAR (sv_speedhackfix)
 
+//
+// P_AtInterval
+//
+// Decides if it is time to perform a function that is to be performed
+// at regular intervals
+//
+bool P_AtInterval(int interval)
+{
+    return (gametic % interval) == 0;
+}
+
 void P_AnimationTick(AActor *mo);
 
 //
