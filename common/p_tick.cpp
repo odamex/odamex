@@ -23,7 +23,7 @@
 
 #include "z_zone.h"
 #include "p_local.h"
-#include "p_effect.h"
+#include "c_effect.h"
 #include "p_acs.h"
 #include "c_console.h"
 #include "doomstat.h"

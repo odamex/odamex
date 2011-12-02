@@ -3,6 +3,7 @@
 //
 // $Id$
 //
+// Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2010 by The Odamex Team.
 //
@@ -126,6 +127,11 @@ std::vector<player_t>		players;
 // The null player
 player_t		nullplayer;
 
+byte			consoleplayer_id;			// player taking events and displaying
+byte			displayplayer_id;			// view being displayed
+int 			gametic;
+bool			singleplayerjustdied = false;	// Nes - When it's okay for single-player servers to reload.
+
 enum demoversion_t
 {
 	LMP_DOOM_1_9,
@@ -166,21 +172,16 @@ CVAR_FUNC_IMPL(cl_mouselook)
 	R_InitSkyMap ();
 }
 
-byte			consoleplayer_id;			// player taking events and displaying
-byte			displayplayer_id;			// view being displayed
-int 			gametic;
-bool			singleplayerjustdied = false;
 
 char			demoname[256];
 BOOL 			demorecording;
 BOOL 			demoplayback;
 BOOL			democlassic;
-BOOL			demonew;				// [RH] Only used around G_InitNew for demos
-FILE *recorddemo_fp;
 extern NetDemo	netdemo;
+BOOL			demonew;				// [RH] Only used around G_InitNew for demos
+
 extern bool		simulated_connection;
 
-int			demostartgametic;
 int				iffdemover;
 byte*			demobuffer;
 byte			*demo_p, *demo_e;
@@ -188,6 +189,8 @@ size_t			maxdemosize;
 byte*			zdemformend;			// end of FORM ZDEM chunk
 byte*			zdembodyend;			// end of ZDEM BODY chunk
 BOOL 			singledemo; 			// quit after playing a demo from cmdline
+int			demostartgametic;
+FILE *recorddemo_fp;
 
 BOOL 			precache = true;		// if true, load all graphics at start
 
@@ -221,11 +224,13 @@ EXTERN_CVAR (displaymouse)
 
 int 			turnheld;								// for accelerative turning
 
+// mouse values are used once
+int 			mousex;
+int 			mousey;
+
 // [Toke - Mouse] new mouse stuff
 int	mousexleft;
-int	mousex;
 int	mouseydown;
-int	mousey;
 float			zdoomsens;
 
 
@@ -1105,57 +1110,8 @@ void G_PlayerFinishLevel (player_t &player)
 // Called after a player dies
 // almost everything is cleared and initialized
 //
-void G_PlayerReborn (player_t &p)
+void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 {
-/*	player_t*	p;
-	int 		i;
-	int			fragcount;	// [RH] Cumulative frags
-	int			deathcount;	 // [Toke - Scores - deaths]
-	int 		killcount;
-	int			ping;
-	int			GameTime;
-	int			points; // [Toke - score]
-	int			id;
-	userinfo_t	userinfo;	// [RH] Save userinfo
-
-	p = &player;
-
-	id = p->id;
-	points = p->points; // [Toke - score]
-	fragcount = p->fragcount;
-	deathcount = p->deathcount; // [Toke - Scores - deaths]
-	killcount = p->killcount;
-	ping = p->ping;
-	GameTime = p->GameTime;
-
-	memcpy (&userinfo, &p->userinfo, sizeof(userinfo));
-
-	p->camera = p->mo = p->attacker = AActor::AActorPtr();
-	memset (p, 0, sizeof(*p));
-	p->camera = p->mo = p->attacker = AActor::AActorPtr();
-
-	p->id = id;
-//	p->state = state;
-	p->points = points; // [Toke - score]
-	p->fragcount = fragcount;
-	p->deathcount = deathcount; // [Toke - Scores - deaths]
-	p->killcount = killcount;
-	p->ping = ping;
-	p->GameTime = GameTime;
-
-	memcpy (&p->userinfo, &userinfo, sizeof(userinfo));
-
-	p->usedown = p->attackdown = true;	// don't do anything immediately
-	p->playerstate = PST_LIVE;
-	p->health = deh.StartHealth;		// [RH] Used to be MAXHEALTH
-	p->readyweapon = p->pendingweapon = wp_pistol;
-	p->weaponowned[wp_fist] = true;
-	p->weaponowned[wp_pistol] = true;
-	p->ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
-
-	for (i = 0; (i < NUMAMMO); i++)
-		p->maxammo[i] = maxammo[i];*/
-
 	size_t i;
 	for (i = 0; i < NUMAMMO; i++)
 	{
@@ -1207,6 +1163,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
+	z = mthing->z << FRACBITS;
 
 	ss = R_PointInSubsector (x,y);
 	z = ss->sector->floorheight;

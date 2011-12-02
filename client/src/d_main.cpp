@@ -78,7 +78,7 @@
 #include "wi_stuff.h"
 #include "st_stuff.h"
 #include "am_map.h"
-#include "p_effect.h"
+#include "c_effect.h"
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"

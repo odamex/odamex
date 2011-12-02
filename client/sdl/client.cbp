@@ -396,6 +396,8 @@
 		<Unit filename="..\..\common\c_cvars.h" />
 		<Unit filename="..\..\common\c_dispatch.cpp" />
 		<Unit filename="..\..\common\c_dispatch.h" />
+		<Unit filename="..\..\common\c_effect.cpp" />
+		<Unit filename="..\..\common\c_effect.h" />
 		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\cmdlib.cpp" />
 		<Unit filename="..\..\common\cmdlib.h" />
@@ -468,8 +470,6 @@
 		<Unit filename="..\..\common\p_ceiling.cpp" />
 		<Unit filename="..\..\common\p_ctf.h" />
 		<Unit filename="..\..\common\p_doors.cpp" />
-		<Unit filename="..\..\common\p_effect.cpp" />
-		<Unit filename="..\..\common\p_effect.h" />
 		<Unit filename="..\..\common\p_enemy.cpp" />
 		<Unit filename="..\..\common\p_floor.cpp" />
 		<Unit filename="..\..\common\p_inter.h" />

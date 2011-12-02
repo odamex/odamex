@@ -27,7 +27,7 @@
 #include "doomtype.h"
 #include "i_system.h"
 #include "p_local.h"
-#include "p_effect.h"
+#include "c_effect.h"
 #include "p_mobj.h"
 #include "info.h"
 #include "s_sound.h"

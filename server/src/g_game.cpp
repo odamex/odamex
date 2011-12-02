@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -20,7 +21,6 @@
 //	G_GAME
 //
 //-----------------------------------------------------------------------------
-
 
 #include "version.h"
 #include "minilzo.h"
@@ -93,15 +93,15 @@ BOOL 			noblit; 				// for comparative timing purposes
 BOOL	 		viewactive;
 
 // Describes if a network game is being played
-BOOL            network_game;
+BOOL			network_game;
 // Use only for demos, it is a old variable for the old network code
-BOOL 						netgame;
+BOOL			netgame;
 // Describes if this is a multiplayer game or not
-BOOL						multiplayer;
+BOOL			multiplayer;
 // The player vector, contains all player information
 std::vector<player_t>		players;
-// null player
-player_t					nullplayer;
+// The null player
+player_t		nullplayer;
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
@@ -142,7 +142,7 @@ BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 int				demover;
 byte*			demobuffer;
-byte*			demo_p;
+byte			*demo_p, *demo_e;
 size_t			maxdemosize;
 byte*			zdemformend;			// end of FORM ZDEM chunk
 byte*			zdembodyend;			// end of ZDEM BODY chunk
@@ -237,7 +237,7 @@ bool validplayer(player_t &ref)
  * working with keybindings until I can get the
  * inventory system working.
  *
- * So this turned out to not be so temporary. It *will*
+ *	So this turned out to not be so temporary. It *will*
  * change, though.
  */
 int Impulse;
@@ -586,7 +586,7 @@ void G_PlayerFinishLevel (player_t &player)
 	memset (p->cards, 0, sizeof (p->cards));
 
 	if(p->mo)
-		p->mo->flags &= ~MF_SHADOW;		// cancel invisibility
+		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
 	p->extralight = 0;					// cancel gun flashes
 	p->fixedcolormap = 0;				// cancel ir goggles
@@ -629,6 +629,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 
 	p.respawn_time = level.time;
+	p.tic = 0;
 }
 
 //
@@ -714,7 +715,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		else
 		{
 			angle_t mtangle = (angle_t)(mthing->angle / 45);
-		 
+
 			an = ANG45 * mtangle;
 
 			switch(mtangle)
@@ -740,7 +741,6 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 					ya = finesine[an >> ANGLETOFINESHIFT];
 					break;
 			}
-
 		}
 
 		mo = new AActor (x+20*xa, y+20*ya, z, MT_TFOG);
@@ -779,8 +779,30 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	}
 
 	return closest;
-}*/
+}
 
+// [RH] Select the deathmatch spawn spot farthest from everyone.
+static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
+{
+	fixed_t bestdistance = 0;
+	mapthing2_t *bestspot = NULL;
+	int i;
+
+	for (i = 0; i < selections; i++)
+	{
+		fixed_t distance = PlayersRangeFromSpot (&deathmatchstarts[i]);
+
+		if (distance > bestdistance)
+		{
+			bestdistance = distance;
+			bestspot = &deathmatchstarts[i];
+		}
+	}
+
+	return bestspot;
+}
+
+*/
 
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
@@ -924,7 +946,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// spawn at random spot if in death match
-	if(sv_gametype != GM_COOP)
+	if (sv_gametype != GM_COOP)
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
@@ -961,8 +983,6 @@ void G_ScreenShot (char *filename)
 //	shotfile = filename;
 //	gameaction = ga_screenshot;
 }
-
-
 
 
 
@@ -1071,13 +1091,15 @@ BOOL CheckIfExitIsGood (AActor *self)
             return false;
     }
 
-	if(self->player)
+	if(self->player && multiplayer)
 		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname);
 
     return true;
-
 }
 
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
+
+
+
 

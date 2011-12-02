@@ -39,7 +39,7 @@
 #include "st_stuff.h"
 #include "m_argv.h"
 #include "cl_main.h"
-#include "p_effect.h"
+#include "c_effect.h"
 #include "c_console.h"
 #include "d_main.h"
 #include "p_ctf.h"

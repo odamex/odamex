@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "p_effect.h"
+#include "c_effect.h"
 
 
 void P_DrawSplash(int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int kind) {}

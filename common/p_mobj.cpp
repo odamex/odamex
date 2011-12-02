@@ -28,7 +28,7 @@
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
-#include "p_effect.h"
+#include "c_effect.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "v_video.h"
