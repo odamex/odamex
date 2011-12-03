@@ -53,5 +53,3 @@ void P_DrawRailTrail (vec3_t start, vec3_t end);
 void P_DrawSplash (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int kind);
 void P_DrawSplash2 (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int updown, int kind);
 void P_DisconnectEffect (AActor *actor);
-
-VERSION_CONTROL (g_level_cpp, "$Id: p_effect.h 2589 2011-11-11 02:56:03Z mike $")
