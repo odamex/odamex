@@ -254,22 +254,40 @@ size_t StdStringRFind(const std::string& haystack, const std::string& needle,
     return StdStringFind(haystack, needle, pos, n, CIS, true);
 }
 
+static std::string& StdStringToLowerBase(std::string& lower)
+{
+	std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+	return lower;
+}
+
 std::string StdStringToLower(const std::string& str)
 {
-    std::string lower(str);
+	std::string lower(str);
+	return StdStringToLowerBase(lower);
+}
 
-    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+std::string StdStringToLower(const char* str)
+{
+	std::string lower(str);
+	return StdStringToLowerBase(lower);
+}
 
-    return lower;
+static std::string& StdStringToUpperBase(std::string& upper)
+{
+	std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+    return upper;
 }
 
 std::string StdStringToUpper(const std::string& str)
 {
-    std::string upper(str);
+	std::string upper(str);
+	return StdStringToUpperBase(upper);
+}
 
-    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
-
-    return upper;
+std::string StdStringToUpper(const char* str)
+{
+	std::string upper(str);
+	return StdStringToUpperBase(upper);
 }
 
 VERSION_CONTROL (cmdlib_cpp, "$Id$")

@@ -68,7 +68,9 @@ size_t  StdStringRFind(const std::string& haystack, const std::string& needle,
     size_t pos, size_t n, bool CIS);
 
 std::string StdStringToLower(const std::string&);
+std::string StdStringToLower(const char*);
 std::string StdStringToUpper(const std::string&);
+std::string StdStringToUpper(const char*);
 
 char	*COM_Parse (char *data);
 
