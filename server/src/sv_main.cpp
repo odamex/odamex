@@ -719,8 +719,11 @@ int SV_GetFreeClient(void)
 	if (players.size() >= sv_maxclients)
 		return -1;
 
-	if (players.empty() && free_player_ids.empty())
+	if (players.empty())
 	{
+		while (!free_player_ids.empty())
+			free_player_ids.pop();
+
 		// list of free ids needs to be initialized
 		for (int i = 1; i < MAXPLAYERS; i++)
 			free_player_ids.push(i);
