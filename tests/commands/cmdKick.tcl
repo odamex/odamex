@@ -26,6 +26,7 @@ proc main {} {
  server "kick 1"
 
  expect $serverout {Player was kicked from the server!}
+ expect $serverout {}
  expect $clientout {Player was kicked from the server!} 0
  expect $clientout {} 0
  expect $clientout {Server disconnected} 0
@@ -39,6 +40,7 @@ proc main {} {
  server "kick 1 be gone"
 
  expect $serverout {Player was kicked from the server! (Reason: be gone)}
+ expect $serverout {}
  expect $clientout {Player was kicked from the server! (Reason: be gone)} 0
  expect $clientout {} 0
  expect $clientout {Server disconnected} 0

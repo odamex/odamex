@@ -17,9 +17,11 @@ proc startServer {} {
  server "sv_usemasters 0"
  server "sv_gametype 1"
  server "sv_hostname Unnamed"
+ server "sv_email \"\""
  server "sv_maxclients 2"
  server "sv_maxplayers 2"
  server "sv_timelimit 0"
+ server "sv_emptyreset 0"
  server "map 1"
 }
 

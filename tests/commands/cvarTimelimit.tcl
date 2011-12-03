@@ -48,8 +48,7 @@ proc coop {} {
  wait 5
  expect $serverout ""
  expect $serverout "COOPERATIVE"
- expect $clientout "" 0
- expect $clientout "--------------------------------------" 0
+ expect $serverout "-----------------------------------------------------------" 
 }
 
 proc teamplay {} {
