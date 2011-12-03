@@ -1317,7 +1317,7 @@ team_t SV_GoodTeam (void)
 		return TEAM_NONE;
 	}	
 
-	int teamsizes[teamcount];
+	int *teamsizes = new int[teamcount];
 	memset(teamsizes, 0, sizeof(teamsizes));
 
 	// Determine the number of active players on each team
@@ -1339,6 +1339,8 @@ team_t SV_GoodTeam (void)
 			smallest_team = (team_t)i;
 		}
 	}
+
+    delete[] teamsizes;
 
 	return smallest_team;
 }
