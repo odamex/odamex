@@ -605,7 +605,7 @@ void Unlag::debugReconciliation(byte shooter_id)
 			fixed_t y = player_history[i].history_y[cur];
 			
 			angle_t angle = P_PointToAngle (shooter->mo->x,	shooter->mo->y, x, y);
-			if (abs(angle - shooter->mo->angle) < 3 * FRACUNIT)
+			if (abs(static_cast<int>(angle - shooter->mo->angle)) < 3 * FRACUNIT)
 			{
 				DPrintf("Unlag (%03d): would have hit player %d at gametic %d (%d tics ago)\n",
 						gametic & 0xFF, player_history[i].player->id, (gametic - n) & 0xFF, n);
