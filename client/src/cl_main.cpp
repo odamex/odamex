@@ -53,6 +53,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sstream>
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -2625,6 +2626,13 @@ void CL_ExitLevel()
 		unsigned int got_bytes;
 } download = { "", "", NULL, 0 };*/
 
+extern std::string DownloadStr;
+
+void ClearDownloadProgressBar()
+{
+    DownloadStr = "";
+}
+
 // this works though!
 struct download_s
 {
@@ -2677,6 +2685,9 @@ void IntDownloadComplete(void)
 
 		download.clear();
         CL_QuitNetGame();
+
+        ClearDownloadProgressBar();
+
         return;
     }
 
@@ -2733,6 +2744,8 @@ void IntDownloadComplete(void)
 	download.clear();
     CL_QuitNetGame();
     CL_Reconnect();
+
+    ClearDownloadProgressBar();
 }
 
 //
@@ -2765,6 +2778,11 @@ void CL_RequestDownload(std::string filename, std::string filehash)
 	// pause at 100% if the server disconnected you previously, you can 
 	// reconnect a couple of times and this will let the checksum system do its
 	// work
+
+	DownloadStr += "Downloading ";
+	DownloadStr += filename;
+	DownloadStr += ": ";
+
 	if ((download.buf != NULL) && 
         (download.got_bytes >= download.buf->maxsize()))
 	{
@@ -2871,9 +2889,15 @@ void CL_Download()
 	if(percent != old_percent)
 	{
 		if(!(percent % 10))
-			Printf(PRINT_HIGH, "%d%%", percent);
+		{
+			std::stringstream pc;
+
+			pc << percent << "%";
+
+			DownloadStr.append(pc.str());
+		}
 		else
-            Printf(PRINT_HIGH, ".");
+            DownloadStr += ".";
 
 		old_percent = percent;
 	}

@@ -53,6 +53,8 @@
 #include <vector>
 #include <algorithm>
 
+std::string DownloadStr;
+
 static void C_TabComplete (void);
 static BOOL TabbedLast;		// Last key pressed was tab
 
@@ -862,6 +864,15 @@ void C_DrawConsole (void)
 			screen->PrintStr (screen->width - 8 - strlen(VersionString) * 8,
 						ConBottom - 12,
 						VersionString, strlen (VersionString));
+
+            // Download progress bar hack
+            if (gamestate == GS_DOWNLOAD)
+            {
+                screen->PrintStr (left + 4,
+						ConBottom - 10,
+						DownloadStr.c_str(), DownloadStr.length());
+            }
+
 			if (TickerMax)
 			{
 				char tickstr[256];
