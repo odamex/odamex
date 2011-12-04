@@ -2779,10 +2779,6 @@ void CL_RequestDownload(std::string filename, std::string filehash)
 	// reconnect a couple of times and this will let the checksum system do its
 	// work
 
-	DownloadStr += "Downloading ";
-	DownloadStr += filename;
-	DownloadStr += ": ";
-
 	if ((download.buf != NULL) && 
         (download.got_bytes >= download.buf->maxsize()))
 	{
@@ -2888,16 +2884,12 @@ void CL_Download()
 	int percent = (download.got_bytes*100)/download.buf->maxsize();
 	if(percent != old_percent)
 	{
-		if(!(percent % 10))
-		{
-			std::stringstream pc;
+		std::stringstream ss;
+		
+		ss << "Downloading " << download.filename << ": " << percent 
+            << "%";
 
-			pc << percent << "%";
-
-			DownloadStr.append(pc.str());
-		}
-		else
-            DownloadStr += ".";
+        DownloadStr = ss.str();
 
 		old_percent = percent;
 	}

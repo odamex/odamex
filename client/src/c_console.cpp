@@ -868,7 +868,7 @@ void C_DrawConsole (void)
             // Download progress bar hack
             if (gamestate == GS_DOWNLOAD)
             {
-                screen->PrintStr (left + 4,
+                screen->PrintStr (left + 2,
 						ConBottom - 10,
 						DownloadStr.c_str(), DownloadStr.length());
             }
