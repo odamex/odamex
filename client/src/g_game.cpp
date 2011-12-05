@@ -124,8 +124,6 @@ BOOL			netgame;
 BOOL			multiplayer;
 // The player vector, contains all player information
 std::vector<player_t>		players;
-// The null player
-player_t		nullplayer;
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
@@ -268,43 +266,6 @@ player_t		&listenplayer()
 		return displayplayer();
 
 	return consoleplayer();
-}
-
-player_t		&idplayer(size_t id)
-{
-	// attempt a quick cached resolution
-	static size_t translation[MAXPLAYERS] = {0};
-	size_t size = players.size();
-
-	if(id >= MAXPLAYERS)
-		return nullplayer;
-
-	size_t tid = translation[id];
-	if(tid < size && players[tid].id == id)
-		return players[tid];
-
-	// full search
-	for(size_t i = 0; i < size; i++)
-	{
-		if(players[i].id == id)
-		{
-			translation[id] = i;
-			return players[i];
-		}
-	}
-
-	return nullplayer;
-}
-
-bool validplayer(player_t &ref)
-{
-	if (&ref == &nullplayer)
-		return false;
-
-	if(players.empty())
-		return false;
-
-	return true;
 }
 
 // [RH] Name of screenshot file to generate (usually NULL)

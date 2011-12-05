@@ -196,43 +196,6 @@ player_t		&displayplayer()
 	return idplayer(displayplayer_id);
 }
 
-player_t		&idplayer(size_t id)
-{
-	// attempt a quick cached resolution
-	static size_t translation[MAXPLAYERS] = {0};
-	size_t size = players.size();
-
-	if(id >= MAXPLAYERS)
-		return nullplayer;
-
-	size_t tid = translation[id];
-	if(tid < size && players[tid].id == id)
-		return players[tid];
-
-	// full search
-	for(size_t i = 0; i < size; i++)
-	{
-		if(players[i].id == id)
-		{
-			translation[id] = i;
-			return players[i];
-		}
-	}
-
-	return nullplayer;
-}
-
-bool validplayer(player_t &ref)
-{
-	if (&ref == &nullplayer)
-		return false;
-
-	if(players.empty())
-		return false;
-
-	return true;
-}
-
 /* [RH] Impulses: Temporary hack to get weapon changing
  * working with keybindings until I can get the
  * inventory system working.

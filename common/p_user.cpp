@@ -50,6 +50,44 @@ EXTERN_CVAR (sv_forcerespawn)
 
 extern bool predicting, step_mode;
 
+static player_t nullplayer;		// used to indicate 'player not found' when searching
+
+player_t &idplayer(byte id)
+{
+	static size_t translation[MAXPLAYERS];
+ 
+	if (id >= MAXPLAYERS)
+ 		return nullplayer;
+ 
+	// attempt a quick cached resolution
+ 	size_t tid = translation[id];
+	if (tid < players.size() && players[tid].id == id)
+ 		return players[tid];
+ 
+ 	// full search
+	for(size_t i = 0; i < players.size(); i++)
+ 	{
+		// cache any ids we come across while searching for the correct player
+		translation[players[i].id] = i;
+		if (players[i].id == id)
+ 			return players[i];
+	}
+
+	return nullplayer;
+}
+
+bool validplayer(player_t &ref)
+{
+	if (&ref == &nullplayer)
+		return false;
+
+	if (players.empty())
+		return false;
+
+	return true;
+}
+
+
 //
 // P_Thrust
 // Moves the given origin along a given angle.
@@ -504,8 +542,6 @@ void P_PlayerThink (player_t *player)
 	else if (!player->mo)
 		I_Error ("No player %d start\n", player->id);
 		
-	client_t *cl = &player->client;
-	
 	player->xviewshift = 0;		// [RH] Make sure view is in right place
 
 	// fixme: do this in the cheat code
@@ -697,8 +733,8 @@ void player_s::Serialize (FArchive &arc)
 			<< armortype
 			<< backpack
 			<< fragcount
-			<< (int)readyweapon
-			<< (int)pendingweapon
+			<< readyweapon
+			<< pendingweapon
 			<< attackdown
 			<< usedown
 			<< cheats
@@ -745,8 +781,8 @@ void player_s::Serialize (FArchive &arc)
 			>> armortype
 			>> backpack
 			>> fragcount
-			>> (int&)readyweapon
-			>> (int&)pendingweapon
+			>> readyweapon
+			>> pendingweapon
 			>> attackdown
 			>> usedown
 			>> cheats

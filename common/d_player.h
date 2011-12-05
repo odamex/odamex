@@ -529,7 +529,7 @@ extern std::vector<player_t> players;
 player_t		&consoleplayer();
 player_t		&displayplayer();
 player_t		&listenplayer();
-player_t		&idplayer(size_t id);
+player_t		&idplayer(byte id);
 bool			validplayer(player_t &ref);
 
 extern byte consoleplayer_id;
