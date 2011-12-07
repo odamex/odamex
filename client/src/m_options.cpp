@@ -361,9 +361,9 @@ menu_t ControlsMenu = {
 // -------------------------------------------------------
 
 static value_t MouseType[] = {
-	{ 0.0,	"Doom"},
-	{ 1.0,	"Odamex"},
-	{ 2.0,	"ZDoom"}
+	{ MOUSE_DOOM,	"Doom"},
+	{ MOUSE_ODAMEX,	"Odamex"},
+	{ MOUSE_ZDOOM,	"ZDoom"}
 };
 
 static int previous_mouse_type;
@@ -391,6 +391,7 @@ static menuitem_t MouseItems[] =
 };
 
 void G_ConvertMouseSettings(int old_type, int new_type);
+
 static void M_UpdateMouseOptions()
 {
 	static size_t mouse_sens_index = M_FindCvarInMenu(mouse_sensitivity, MouseItems); 
@@ -405,7 +406,7 @@ static void M_UpdateMouseOptions()
 	static menuitem_t zdoom_pitch_menuitem =
 		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.5},		{2.5},		{0.1},		{NULL}};
 
-	if (mouse_type == 2)
+	if (mouse_type == MOUSE_ZDOOM)
 	{
 		if (mouse_sens_index < sizeof(MouseItems))
 			memcpy(&MouseItems[mouse_sens_index], &zdoom_sens_menuitem, sizeof(menuitem_t));
