@@ -72,15 +72,6 @@
 //
 // defaulted values
 //
-//CVAR (mouse_sensitivity, "1.0", CVAR_ARCHIVE)
-//CVAR (cont_preset,			"0",	CVAR_ARCHIVE)
-EXTERN_CVAR (dynres_state)
-EXTERN_CVAR (dynresval)
-//CVAR (mouse_preset,			"0",	CVAR_ARCHIVE)
-EXTERN_CVAR (mouse_sensitivity)
-EXTERN_CVAR (mouse_type)
-EXTERN_CVAR (novert)
-
 // [ML] 09/4/06: Show secret revealed message, 0 = off, 1 = on
 EXTERN_CVAR (hud_revealsecrets)
 
@@ -121,10 +112,12 @@ EXTERN_CVAR (cl_deathcam)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
+EXTERN_CVAR (mouse_type)
+EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
+EXTERN_CVAR (novert)
 EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
-EXTERN_CVAR (displaymouse)
 EXTERN_CVAR (mouse_acceleration)
 EXTERN_CVAR (mouse_threshold)
 
@@ -202,6 +195,12 @@ value_t OnOffAuto[3] = {
 	{ 2.0, "Auto" }
 };
 
+static value_t DoomOrOdamex[2] =
+{
+	{ 0.0, "Doom" },
+	{ 1.0, "Odamex" }
+};
+
 menu_t  *CurrentMenu;
 int		CurrentItem;
 static BOOL	WaitingForKey;
@@ -260,6 +259,9 @@ menu_t OptionMenu = {
 	STACKARRAY_LENGTH(OptionItems),
 	177,
 	OptionItems,
+	0,
+	0,
+	NULL
 };
 
 /*=======================================
@@ -348,6 +350,8 @@ menu_t ControlsMenu = {
 	0,
 	ControlsItems,
 	2,
+	0,
+	NULL
 };
 
 // -------------------------------------------------------
@@ -356,31 +360,85 @@ menu_t ControlsMenu = {
 //
 // -------------------------------------------------------
 
-static value_t DoomOrOdamex[] =
-{
-	{ 0.0, "Doom" },
-	{ 1.0, "Odamex" },
+static value_t MouseType[] = {
+	{ 0.0,	"Doom"},
+	{ 1.0,	"Odamex"},
+	{ 2.0,	"ZDoom"}
 };
+
+static int previous_mouse_type;
+void M_ResetMouseValues();
 
 static menuitem_t MouseItems[] =
 {
-	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{DoomOrOdamex}				},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Always FreeLook"						, {&cl_mouselook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ slider	,	"Horizontal Sensitivity" 				, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
-	{ slider	,	"Vertical Sensitivity"					, {&m_pitch},			{0.0},		{1.85},		{0.025},	{NULL}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Horizontal Movement"					, {&lookstrafe},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Vertical Movement"						, {&novert},			{2.0},		{0.0},		{0.0},		{OffOn}						},
-	{ slider	,	"Horizontal Movement Speed"				, {&m_side},			{0.0},		{15},		{0.5},		{NULL}						},
-	{ slider	,	"Vertical Movement Speed"				, {&m_forward},			{0.0},		{15},		{0.5},		{NULL}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ slider    ,   "Mouse Acceleration"					, {&mouse_acceleration},{0.0},      {10.0},     {0.5},      {NULL}                      },
-	{ slider    ,   "Mouse Threshold"						, {&mouse_threshold},   {0.0},      {20.0},     {1.0},      {NULL}                      },
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Show Mouse Values"						, {&displaymouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete,	"Mouse Type"					, {&mouse_type},		{3.0},	{0.0},		{0.0},		{MouseType}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ slider,	"Overall Sensitivity" 			, {&mouse_sensitivity},	{0.0},	{77.0},		{1.0},		{NULL}},
+	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},	{1.0},		{0.025},	{NULL}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ discrete,	"Horizontal Movement"			, {&lookstrafe},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ discrete,	"Vertical Movement"				, {&novert},			{2.0},	{0.0},		{0.0},		{OffOn}},
+	{ slider,	"Horizontal Movement Speed"		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
+	{ slider,	"Vertical Movement Speed"		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ slider,	"Mouse Acceleration"			, {&mouse_acceleration},{0.0},	{10.0},		{0.5},		{NULL}},
+	{ slider,	"Mouse Threshold"				, {&mouse_threshold},	{0.0},	{20.0},		{1.0},		{NULL}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{(value_t *)M_ResetMouseValues}},
 };
+
+void G_ConvertMouseSettings(int old_type, int new_type);
+static void M_UpdateMouseOptions()
+{
+	static size_t mouse_sens_index = M_FindCvarInMenu(mouse_sensitivity, MouseItems); 
+	static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems); 
+
+	static menuitem_t doom_sens_menuitem =
+		{ slider	,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}};
+	static menuitem_t doom_pitch_menuitem =
+		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},		{1.0},		{0.025},	{NULL}};
+	static menuitem_t zdoom_sens_menuitem =
+		{ slider	,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.5},		{2.5},		{0.1},		{NULL}};
+	static menuitem_t zdoom_pitch_menuitem =
+		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.5},		{2.5},		{0.1},		{NULL}};
+
+	if (mouse_type == 2)
+	{
+		if (mouse_sens_index < sizeof(MouseItems))
+			memcpy(&MouseItems[mouse_sens_index], &zdoom_sens_menuitem, sizeof(menuitem_t));
+		if (mouse_pitch_index < sizeof(MouseItems))
+			memcpy(&MouseItems[mouse_pitch_index], &zdoom_pitch_menuitem, sizeof(menuitem_t));
+	}
+	else
+	{
+		if (mouse_sens_index < sizeof(MouseItems))
+			memcpy(&MouseItems[mouse_sens_index], &doom_sens_menuitem, sizeof(menuitem_t));
+		if (mouse_pitch_index < sizeof(MouseItems))
+			memcpy(&MouseItems[mouse_pitch_index], &doom_pitch_menuitem, sizeof(menuitem_t));
+	}
+
+	G_ConvertMouseSettings(previous_mouse_type, mouse_type);
+	previous_mouse_type = mouse_type;
+}
+
+void M_ResetMouseValues()
+{
+	mouse_type.RestoreDefault();
+	mouse_sensitivity.RestoreDefault();
+	m_pitch.RestoreDefault();
+	cl_mouselook.RestoreDefault();
+	invertmouse.RestoreDefault();	
+	lookstrafe.RestoreDefault();
+	novert.RestoreDefault();
+	m_side.RestoreDefault();
+	m_forward.RestoreDefault();
+
+	previous_mouse_type = mouse_type;
+	M_UpdateMouseOptions();
+}
 
 menu_t MouseMenu = {
     "M_MOUSET",
@@ -388,7 +446,11 @@ menu_t MouseMenu = {
     STACKARRAY_LENGTH(MouseItems),
     177,
     MouseItems,
+	0,
+	0,
+	&M_UpdateMouseOptions
 };
+
 
 /*=======================================
  *
@@ -419,6 +481,9 @@ menu_t JoystickMenu = {
     STACKARRAY_LENGTH(JoystickItems),
     177,
     JoystickItems,
+	0,
+	0,
+	NULL
 };
 
  /*=======================================
@@ -446,6 +511,9 @@ menu_t SoundMenu = {
 	STACKARRAY_LENGTH(SoundItems),
 	177,
 	SoundItems,
+	0,
+	0,
+	NULL
 };
 
 
@@ -477,6 +545,9 @@ menu_t CompatMenu = {
 	STACKARRAY_LENGTH(CompatItems),
 	177,
 	CompatItems,
+	0,
+	0,
+	NULL,
 };
 
 
@@ -513,6 +584,9 @@ menu_t NetworkMenu = {
 	STACKARRAY_LENGTH(NetworkItems),
 	177,
 	NetworkItems,
+	0,
+	0,
+	NULL
 };
 
 
@@ -563,6 +637,9 @@ menu_t WeaponMenu = {
 	STACKARRAY_LENGTH(WeaponItems),
 	177,
 	WeaponItems,
+	0,
+	0,
+	NULL
 };
 
 
@@ -695,6 +772,8 @@ menu_t VideoMenu = {
 	0,
 	VideoItems,
 	3,
+	0,
+	NULL
 };
 
 /*=======================================
@@ -753,6 +832,9 @@ menu_t MessagesMenu = {
 	STACKARRAY_LENGTH(MessagesItems),
 	0,
 	MessagesItems,
+	0,
+	0,
+	NULL
 };
 
 /*=======================================
@@ -787,6 +869,9 @@ menu_t AutomapMenu = {
 	STACKARRAY_LENGTH(AutomapItems),
 	0,
 	AutomapItems,
+	0,
+	0,
+	NULL
 };
 
 
@@ -870,6 +955,9 @@ menu_t ModesMenu = {
 	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
+	0,
+	0,
+	NULL
 };
 
 static cvar_t *flagsvar;
@@ -1805,6 +1893,9 @@ void M_OptResponder (event_t *ev)
 			}
 			break;
 	}
+
+	if (CurrentMenu->refreshfunc)
+		(*CurrentMenu->refreshfunc)();
 }
 
 static void GoToConsole (void)
@@ -1852,6 +1943,8 @@ void ResetCustomColors (void)
 
 void MouseSetup (void) // [Toke] for mouse menu
 {
+	previous_mouse_type = mouse_type;
+	M_UpdateMouseOptions();
 	M_SwitchMenu (&MouseMenu);
 }
 

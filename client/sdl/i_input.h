@@ -26,6 +26,10 @@
 
 #include "doomtype.h"
 
+#define MOUSE_DOOM 0
+#define MOUSE_ODAMEX 1
+#define MOUSE_ZDOOM 2
+
 extern int KeyRepeatRate;
 extern int KeyRepeatDelay;
 

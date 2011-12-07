@@ -2207,6 +2207,24 @@ void M_Init (void)
 		FireRemap[i] = BestColor (DefaultPalette->basecolors, i, 0, 0, DefaultPalette->numcolors);
 }
 
+//
+// M_FindCvarInMenu
+//
+// Takes an array of menu items and returns the index in the array of the
+// menu item containing that cvar
+//
+size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu)
+{
+    for (size_t i = 0; i < sizeof(menu); i++)
+    {
+        if (menu[i].a.cvar == &cvar)
+            return i;
+    }
+
+    return sizeof(menu);    // indicate not found
+}
+
+
 VERSION_CONTROL (m_menu_cpp, "$Id$")
 
 

@@ -37,6 +37,7 @@
 #include "m_menu.h"
 #include "m_random.h"
 #include "i_system.h"
+#include "i_input.h"
 #include "hardware.h"
 #include "p_setup.h"
 #include "p_saveg.h"
@@ -159,6 +160,7 @@ EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR (dynresval) // [Toke - Mouse] Dynamic Resolution Value
 EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
+EXTERN_CVAR (m_filter)
 
 
 CVAR_FUNC_IMPL(cl_mouselook)
@@ -229,7 +231,6 @@ int 			mousey;
 // [Toke - Mouse] new mouse stuff
 int	mousexleft;
 int	mouseydown;
-float			zdoomsens;
 
 
 // Joystick values are repeated
@@ -615,6 +616,121 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 }*/
 
 
+void G_ConvertMouseSettings(int old_type, int new_type)
+{
+	if (old_type == new_type)
+		return;
+
+	// first convert to ZDoom settings
+	if (old_type == MOUSE_DOOM)
+	{
+		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) * 0.025f); 
+		m_pitch.Set(m_pitch * 4.0f);
+	}
+	else if (old_type == MOUSE_ODAMEX)
+	{
+		mouse_sensitivity.Set(mouse_sensitivity * 0.025f);
+		m_pitch.Set(m_pitch * 4.0f);
+	}
+
+	// convert to the destination type
+	if (new_type == MOUSE_DOOM)
+	{
+		mouse_sensitivity.Set((mouse_sensitivity * 40.0f) - 5.0f);
+		m_pitch.Set(m_pitch * 0.25f);
+	}
+	else if (new_type == MOUSE_ODAMEX)
+	{
+		mouse_sensitivity.Set(mouse_sensitivity * 40.0f);
+		m_pitch.Set(m_pitch * 0.25f);
+	}
+}
+
+int G_DoomMouseScaleX(int x)
+{
+	return x * (int(mouse_sensitivity) + 5) / 10;
+}
+
+int G_DoomMouseScaleY(int y)
+{
+	return G_DoomMouseScaleX(y); // identical scaling for x and y
+}
+
+int G_OdamexMouseScaleX(int x)
+{
+	return int(x * mouse_sensitivity / 10.0f);
+}
+
+int G_OdamexMouseScaleY(int y)
+{
+	return G_OdamexMouseScaleX(y);	// identical scaling for x and y
+}
+
+int G_ZDoomMouseScaleX(int x)
+{
+	return int(x * 4.0f * mouse_sensitivity);
+}
+
+int G_ZDoomMouseScaleY(int y)
+{
+	return int(y * mouse_sensitivity);
+}
+
+void G_ProcessMouseMovementEvent(const event_t *ev)
+{
+	static int prevx = 0, prevy = 0;
+	int evx = ev->data2;
+	int evy = ev->data3;
+
+	if (m_filter)
+	{
+		// smooth out the mouse input
+		evx = (evx + prevx) >> 1;
+		evy = (evy + prevy) >> 1;
+	}
+	prevx = evx;
+	prevy = evy;
+	
+	int (*scalexfunc)(int) = NULL;
+	int (*scaleyfunc)(int) = NULL;
+
+	if (mouse_type == MOUSE_DOOM)
+	{
+		scalexfunc = &G_DoomMouseScaleX;
+		scaleyfunc = &G_DoomMouseScaleY;
+	}
+	else if (mouse_type == MOUSE_ODAMEX)
+	{
+		scalexfunc = &G_OdamexMouseScaleX;
+		scaleyfunc = &G_OdamexMouseScaleY;
+	}
+	else if (mouse_type == MOUSE_ZDOOM)
+	{
+		scalexfunc = &G_ZDoomMouseScaleX;
+		scaleyfunc = &G_ZDoomMouseScaleY;
+	}
+	else
+		return;	// invalid mouse type
+
+	if (dynres_state)
+	{
+		if (evx < 0)
+			mousex = -int(pow((*scalexfunc)(-evx), dynresval));
+		else
+			mousex = int(pow((*scalexfunc)(evx), dynresval));
+
+		if (evy < 0)
+			mousey = -int(pow((*scaleyfunc)(-evy), dynresval));
+		else
+			mousey = int(pow((*scaleyfunc)(evy), dynresval));
+	}	
+	else
+	{
+		mousex = (*scalexfunc)(evx);
+		mousey = (*scaleyfunc)(evy);
+	}
+}
+
 //
 // G_Responder
 // Get info needed to make ticcmd_ts for the players.
@@ -689,68 +805,7 @@ BOOL G_Responder (event_t *ev)
 
 	  // [Toke - Mouse] New mouse code
 	  case ev_mouse:
-		zdoomsens = (float)(mouse_sensitivity / 10);
-
-		if (mouse_type == 0)
-		{
-			if (dynres_state == 0)
-			{
-				mousex = (int)(ev->data2 * (mouse_sensitivity + 5) / 10); // [Toke - Mouse] Marriage of origonal and zdoom mouse code, functions like doom2.exe code
-				mousey = (int)(ev->data3 * (mouse_sensitivity + 5) / 10);
-			}
-			else if (dynres_state == 1)
-			{
-				mousexleft = ev->data2;
-				mousexleft = -mousexleft;
-				mousex = (int) pow((ev->data2 * (mouse_sensitivity + 5) / 10), dynresval);
-
-				if (ev->data2 < 0)
-				{
-					mousexleft = (int) pow((mousexleft * (mouse_sensitivity + 5) / 10), dynresval);
-					mousex = -mousexleft;
-				}
-
-				mouseydown = ev->data3;
-				mouseydown = -mouseydown;
-				mousey = (int) pow((ev->data3 * (mouse_sensitivity + 5) / 10), dynresval);
-
-				if (ev->data3 < 0)
-				{
-					mouseydown = (int) pow((mouseydown * (mouse_sensitivity + 5) / 10), dynresval);
-					mousey = -mouseydown;
-				}
-			}
-		}
-		else if (mouse_type == 1)
-		{
-			if (dynres_state == 0)
-			{
-				mousex = (int)(ev->data2 * (zdoomsens)); // [Toke - Mouse] Zdoom mouse code
-				mousey = (int)(ev->data3 * (zdoomsens));
-			}
-			else if (dynres_state == 1)
-			{
-				mousexleft = ev->data2;
-				mousexleft = -mousexleft;
-				mousex = (int) pow((ev->data2 * (zdoomsens)), dynresval);
-
-				if (ev->data2 < 0)
-				{
-					mousexleft = (int) pow((mousexleft * (zdoomsens)), dynresval);
-					mousex = -mousexleft;
-				}
-
-				mouseydown = ev->data3;
-				mouseydown = -mouseydown;
-				mousey = (int) pow((ev->data3 * (zdoomsens)), dynresval);
-
-				if (ev->data3 < 0)
-				{
-					mouseydown = (int) pow((mouseydown * (zdoomsens)), dynresval);
-					mousey = -mouseydown;
-				}
-			}
-		}
+		G_ProcessMouseMovementEvent(ev);
 
 		if (displaymouse == 1)
 			Printf(PRINT_MEDIUM, "(%d %d) ", mousex, mousey);

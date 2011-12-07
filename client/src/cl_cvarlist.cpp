@@ -105,8 +105,6 @@ CVAR_FUNC_DECL (ui_transblue, "0", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_connectalert, "1", "Plays a sound when a player joins", CVAR_ARCHIVE)
 CVAR (cl_disconnectalert, "1", "Plays a sound when a player quits", CVAR_ARCHIVE)
 
-CVAR_FUNC_DECL (cl_mouselook, "0", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
-
 CVAR (cl_switchweapon, "1", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)	// WPSW_ALWAYS
 CVAR (cl_weaponpref1, "5", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_weaponpref2, "8", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -117,14 +115,6 @@ CVAR (cl_weaponpref6, "7", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISAB
 CVAR (cl_weaponpref7, "4", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_weaponpref8, "6", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (cl_weaponpref9, "0", "", CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR (mouse_acceleration, "0", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_threshold, "10", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_sensitivity,	"25.0", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (mouse_type,			"0", "",	CVAR_ARCHIVE)
-CVAR (novert,				"0", "",	CVAR_ARCHIVE)
-CVAR (dynres_state,			"0", "",	CVAR_ARCHIVE)
-CVAR (dynresval,			"1.0", "",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 #ifdef GCONSOLE
 	CVAR_FUNC_DECL (use_joystick, "1", "", CVAR_ARCHIVE)
@@ -179,13 +169,27 @@ CVAR (cl_team,		"blue", "",		CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE
 CVAR (chasedemo, "0", "", CVAR_NULL)
 
 CVAR (cl_run,		"1", "Always run",	CVAR_ARCHIVE)		// Always run? // [Toke - Defaults]
-CVAR (invertmouse,	"0", "Invert mouse",	CVAR_ARCHIVE)		// Invert mouse look down/up?
-CVAR (lookstrafe,	"0", "Strafe with mouse",	CVAR_ARCHIVE)		// Always strafe with mouse?
-CVAR (m_pitch,		"1.0", "",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)		    // Mouse speeds
-CVAR (m_yaw,		"1.0", "",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_forward,	"1.0", "",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (m_side,		"2.0", "",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (displaymouse,	"0", "Display mouse values",	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
+
+// Mouse settings
+// --------------
+CVAR (mouse_type,			"0", 	"",	CVAR_ARCHIVE)
+CVAR (mouse_sensitivity,	"35.0", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_FUNC_DECL (cl_mouselook, "0", "", CVAR_CLIENTINFO | CVAR_ARCHIVE)
+
+CVAR (m_pitch,				"0.25",	"",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (m_yaw,				"1.0",	"",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (m_forward,			"1.0",	"",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (m_side,				"2.0", 	"",	CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (novert,				"0", 	"",	CVAR_ARCHIVE)
+CVAR (invertmouse,			"0",	"Invert mouse",	CVAR_ARCHIVE)
+CVAR (lookstrafe,			"0",	"Strafe with mouse",	CVAR_ARCHIVE)
+CVAR (mouse_acceleration,	"0", 	"", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (mouse_threshold,		"0", 	"", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (m_filter,				"0",	"Smooth mouse input", CVAR_ARCHIVE)
+CVAR (dynres_state,			"0", 	"",	CVAR_ARCHIVE)
+CVAR (dynresval,			"1.0",	"",CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (displaymouse,			"0",	"Display mouse values",	CVAR_ARCHIVE)		// [Toke - Mouse] added for mouse menu
 
 
 CVAR (idmypos, "0", "Shows current player position on map", CVAR_NULL)
