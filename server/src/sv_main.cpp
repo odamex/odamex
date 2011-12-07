@@ -846,7 +846,7 @@ void SV_GetPackets (void)
 		if (!validplayer(player)) // no client with net_from address
 		{
 			// apparently, someone is trying to connect
-			if (gamestate == GS_LEVEL)
+			if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
 				SV_ConnectClient();
 
 			continue;
@@ -2402,6 +2402,9 @@ void SV_ConnectClient (void)
 	MSG_WriteString (&cl->reliablebuf, level.mapname);
 	G_DoReborn (players[n]);
 	SV_ClientFullUpdate (players[n]);
+	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
+	if (gamestate == GS_INTERMISSION)
+		MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
 	SV_SendPacket (players[n]);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
