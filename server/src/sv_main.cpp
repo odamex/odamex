@@ -103,6 +103,7 @@ EXTERN_CVAR(sv_website)
 EXTERN_CVAR(sv_waddownload)
 EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_emptyreset)
+EXTERN_CVAR(sv_emptyfreeze)
 EXTERN_CVAR(sv_clientcount)
 EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
@@ -868,16 +869,6 @@ void SV_GetPackets (void)
 		else
 			i++;
 	}
-
-	// [SL] 2011-05-18 - Handle sv_emptyreset
-	static size_t last_player_count = players.size();
-	if (sv_emptyreset && players.size() == 0 &&
-		last_player_count > 0 && gamestate == GS_LEVEL)
-	{
-		// The last player just disconnected so reset the level
-        G_DeferedInitNew(level.mapname);
-    }
-	last_player_count = players.size();
 }
 
 
@@ -4379,10 +4370,25 @@ void SV_RunTics (void)
 		}
 	}
 
-	if(newtics > 0 && !step_mode)
+	// Check if the level should be reset
+	static size_t previous_player_count = 0;
+	if (sv_emptyreset && players.empty() && 
+		previous_player_count > 0 && gamestate == GS_LEVEL)
 	{
-		SV_StepTics(newtics);
-		gametime = nowtime;
+		// The last player just disconnected so reset the level
+		G_DeferedInitNew(level.mapname);
+	} 
+	previous_player_count = players.size();
+
+	// Run the tickers if there are players or we're starting a new level
+	if (!(sv_emptyfreeze && players.empty() && gamestate == GS_LEVEL) || 
+		gameaction == ga_newgame)
+	{
+		if(newtics > 0 && !step_mode)
+		{
+			SV_StepTics(newtics);
+			gametime = nowtime;
+		}
 	}
 
 	// wait until a network message arrives or next tick starts

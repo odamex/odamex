@@ -55,6 +55,9 @@ CVAR (sv_waddownloadcap, "200", "Cap wad file downloading to a specific rate",
 // Reset the current map when the last player leaves
 CVAR (sv_emptyreset,   "0", "Reloads the current map when all players leave",
       CVAR_ARCHIVE | CVAR_SERVERINFO)
+// Do not run ticker functions when there are no players
+CVAR (sv_emptyfreeze,  "0", "Does not progress the game when there are no players",
+      CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Allow spectators talk to show to ingame players
 CVAR (sv_globalspectatorchat, "1", "Players can see spectator chat",
       CVAR_ARCHIVE | CVAR_SERVERINFO)
