@@ -42,6 +42,7 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
+				<Option parameters="-file 2dmmaps.wad" />
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -436,7 +437,6 @@
 		<Unit filename="..\src\i_system.cpp" />
 		<Unit filename="..\src\i_system.h" />
 		<Unit filename="..\src\m_misc.cpp" />
-		<Unit filename="..\src\p_effect.cpp" />
 		<Unit filename="..\src\r_main.cpp" />
 		<Unit filename="..\src\r_plane.cpp" />
 		<Unit filename="..\src\r_sky.cpp" />

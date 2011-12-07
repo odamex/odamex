@@ -368,7 +368,6 @@
 		<Unit filename="..\src\m_menu.h" />
 		<Unit filename="..\src\m_misc.cpp" />
 		<Unit filename="..\src\m_options.cpp" />
-		<Unit filename="..\src\p_effect.cpp" />
 		<Unit filename="..\src\r_bsp.cpp" />
 		<Unit filename="..\src\r_draw.cpp" />
 		<Unit filename="..\src\r_drawt.cpp" />

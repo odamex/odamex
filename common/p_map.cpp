@@ -2110,7 +2110,7 @@ void P_RailAttack (AActor *source, int damage, int offset)
 		}
 	}
 
-	if (serverside)
+	if (clientside)
 		P_DrawRailTrail (start, end);
 }
 

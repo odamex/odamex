@@ -39,6 +39,7 @@
 #define FX_BLACKFOUNTAIN	0x00060000
 #define FX_WHITEFOUNTAIN	0x00070000
 
+
 struct particle_s;
 
 struct particle_s *JitterParticle (int ttl);
