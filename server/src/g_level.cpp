@@ -1193,11 +1193,8 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	// if only one player allowed, then this is a single player server
-	if(sv_maxplayers == 1)
-		multiplayer = false;
-	else
-		multiplayer = true;
+	// [SL] 2012-12-08 - Multiplayer is always true for servers
+	multiplayer = true;
 
 	usergame = true;				// will be set false if a demo
 	paused = false;

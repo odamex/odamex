@@ -3697,7 +3697,7 @@ void SV_Spectate (player_t &player)
 
 			if (NumPlayers < sv_maxplayers)
 			{
-				if ((multiplayer && level.time > player.joinafterspectatortime + TICRATE*3) ||
+				if ((level.time > player.joinafterspectatortime + TICRATE*3) ||
 					level.time > player.joinafterspectatortime + TICRATE*5) {
 					player.spectator = false;
 

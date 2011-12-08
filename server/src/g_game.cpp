@@ -875,31 +875,10 @@ void G_DoReborn (player_t &player)
 	if(!serverside)
 		return;
 
-	if (!multiplayer)
-	{
-		bool canreload = false;
-
-		for (size_t i = 0; i < players.size(); i++) {
-			if (!players[i].spectator && singleplayerjustdied) {
-				canreload = true;
-				singleplayerjustdied = false;
-			}
-		}
-
-		if (canreload) {
-			// reload the level from scratch
-			gameaction = ga_newgame;
-			return;
-		}
-	}
-
 	// respawn at the start
 	// first disassociate the corpse
 	if (player.mo)
 		player.mo->player = NULL;
-
-	if(!serverside)
-		return;
 
 	// spawn at random team spot if in team game
 	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
@@ -1054,7 +1033,7 @@ BOOL CheckIfExitIsGood (AActor *self)
             return false;
     }
 
-	if(self->player && multiplayer)
+	if (self->player)
 		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname);
 
     return true;
