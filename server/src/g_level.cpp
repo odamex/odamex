@@ -729,7 +729,7 @@ void G_GenerateRandomMaps(void)
 			break;
 	}
 
-	if (Count <= 0)
+	if (!Count)
 		return;
 
 	// Allocate our bool array
