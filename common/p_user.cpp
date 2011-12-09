@@ -87,6 +87,24 @@ bool validplayer(player_t &ref)
 	return true;
 }
 
+//
+// P_NumPlayersInGame()
+//
+// Returns the number of players who are active in the current game.  This does
+// not include spectators or downloaders.
+//
+size_t P_NumPlayersInGame()
+{
+	size_t num_players = 0;
+
+	for (size_t i = 0; i < players.size(); ++i)
+	{
+		if (!players[i].spectator && players[i].ingame())
+			++num_players;
+	}
+
+	return num_players;
+}
 
 //
 // P_Thrust

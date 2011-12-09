@@ -84,7 +84,7 @@ void HU_TeamScores2 (player_t *player);
 
 extern bool HasBehavior;
 extern inline int V_StringWidth (const char *str);
-
+size_t P_NumPlayersInGame();
 static void ShoveChatStr (std::string str, byte who);
 
 static std::string input_text;
@@ -459,26 +459,13 @@ void HU_Drawer (void)
 		if (&consoleplayer() != &displayplayer())
 			YPos -= ((hu_font[0]->height() + 4) * CleanYfac);
 
-		size_t num_players = 0;
+		if (P_NumPlayersInGame() < sv_maxplayers)
+		{
+			static const std::string joinmsg("Press USE to join");
 
-        for (size_t i = 0; i < players.size(); ++i)
-		{
-            if (!players[i].spectator && players[i].playerstate != PST_CONTACT && players[i].playerstate != PST_DOWNLOAD)
-                ++num_players;
-        }
-
-		// GhostlyDeath -- X Pos from the F12 coop spy thingy
-		if (num_players == sv_maxplayers)
-		{
-            screen->DrawTextClean (CR_GREY,
-                (screen->width - V_StringWidth ("Game is full")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac),
-                YPos, "Game is full");
-		}
-		else
-		{
-            screen->DrawTextClean (CR_GREEN,
-                (screen->width - V_StringWidth ("Press USE to join")*CleanXfac) >> 1, //(screen->width / 2) - (59 * CleanXfac),
-                YPos, "Press USE to join");
+			screen->DrawTextClean(CR_GREEN,
+					(screen->width - V_StringWidth(joinmsg.c_str())*CleanXfac) >> 1,
+					YPos, joinmsg.c_str());
 		}
 	}
 

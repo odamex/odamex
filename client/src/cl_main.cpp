@@ -222,6 +222,7 @@ void CL_NetDemoSnapshot(void);
 void CalcTeamFrags (void);
 
 // some doom functions (not csDoom)
+size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
 void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
@@ -655,6 +656,12 @@ END_COMMAND (spectate)
 
 BEGIN_COMMAND (join)
 {
+	if (P_NumPlayersInGame() >= sv_maxplayers)
+	{
+		C_MidPrint("The game is currently full", NULL);
+		return;
+	}
+
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, false);
 }

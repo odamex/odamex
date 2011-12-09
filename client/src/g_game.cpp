@@ -405,8 +405,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	// GhostlyDeath -- USE takes us out of spectator mode
 	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
 	{
-		MSG_WriteMarker(&net_buffer, clc_spectate);
-		MSG_WriteByte(&net_buffer, false);
+		AddCommandString("join");
 	}
 
 	// [RH] only use two stage accelerative turning on the keyboard
