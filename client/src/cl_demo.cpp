@@ -35,8 +35,10 @@
 #include "m_swap.h"
 #include "version.h"
 
-NetDemo::NetDemo() : state(stopped), filename(""), demofp(NULL)
+NetDemo::NetDemo() : state(stopped), oldstate(stopped), filename(""), 
+    demofp(NULL), bufcursor(0)
 {
+    memset(&header, 0, sizeof(header));
 }
 
 NetDemo::~NetDemo()
