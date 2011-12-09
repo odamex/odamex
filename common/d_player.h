@@ -391,6 +391,7 @@ public:
 		attacker = AActor::AActorPtr();
 		extralight = 0;
 		fixedcolormap = 0;
+		xviewshift = 0;
 		memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
 		jumpTics = 0;
 		respawn_time = 0;
@@ -474,6 +475,8 @@ public:
 
 		extralight = other.extralight;
 		fixedcolormap = other.fixedcolormap;
+
+		xviewshift = other.xviewshift;
 
 		for(i = 0; i < NUMPSPRITES; i++)
 			psprites[i] = other.psprites[i];
