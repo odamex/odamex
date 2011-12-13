@@ -3311,6 +3311,8 @@ void CL_LocalDemoTic()
 	deltaviewheight = MSG_ReadLong();
 	jumpTics = MSG_ReadLong();
 	reactiontime = MSG_ReadLong();
+	clientPlayer->readyweapon = static_cast<weapontype_t>(MSG_ReadByte());
+	clientPlayer->pendingweapon = static_cast<weapontype_t>(MSG_ReadByte());
 
 	if(clientPlayer->mo)
 	{

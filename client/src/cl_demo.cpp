@@ -527,6 +527,8 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	MSG_WriteLong(netbuffer, player->deltaviewheight);
 	MSG_WriteLong(netbuffer, player->jumpTics);
 	MSG_WriteLong(netbuffer, mo->reactiontime);
+	MSG_WriteByte(netbuffer, player->readyweapon);
+	MSG_WriteByte(netbuffer, player->pendingweapon);
 }
 
 
