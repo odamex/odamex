@@ -205,14 +205,10 @@ void CTF_CarryFlag (player_t &player, flag_t flag)
 	CTFdata[flag].flagger = player.id;
 	CTFdata[flag].state = flag_carried;
 
-	// spawn visible flags on other players
-	if(&player != &consoleplayer())
-	{
-		AActor *actor = new AActor(0, 0, 0, flag_table[flag][flag_carried]);
-		CTFdata[flag].actor = actor->ptr();
+	AActor *actor = new AActor(0, 0, 0, flag_table[flag][flag_carried]);
+	CTFdata[flag].actor = actor->ptr();
 
-		CTF_MoveFlags();
-	}
+	CTF_MoveFlags();
 }
 
 //
@@ -229,29 +225,22 @@ void CTF_MoveFlags ()
 			player_t &player = idplayer(CTFdata[i].flagger);
 			AActor *flag = CTFdata[i].actor;
 
-			if(!player.mo || &player == &displayplayer())
+			if (!validplayer(player) || !player.mo)
 			{
-				flag->UnlinkFromWorld ();
-				return;
+				// [SL] 2012-12-13 - Remove a flag if it's being carried but
+				// there's not a valid player carrying it (should not happen)
+				CTFdata[i].flagger = 0;
+				CTFdata[i].state = flag_home;
+				if(CTFdata[i].actor)
+					CTFdata[i].actor->Destroy();
+				continue;
 			}
-
-			extern fixed_t tmfloorz;
-			extern fixed_t tmceilingz;
 
 			unsigned an = player.mo->angle >> ANGLETOFINESHIFT;
 			fixed_t x = (player.mo->x + FixedMul (-2*FRACUNIT, finecosine[an]));
 			fixed_t y = (player.mo->y + FixedMul (-2*FRACUNIT, finesine[an]));
 
-			P_CheckPosition (player.mo, player.mo->x, player.mo->y);
-			flag->UnlinkFromWorld ();
-
-			flag->x = x;
-			flag->y = y;
-			flag->z = player.mo->z;
-			flag->floorz = tmfloorz;
-			flag->ceilingz = tmceilingz;
-
-			flag->LinkToWorld ();
+			CL_MoveThing(flag, x, y, player.mo->z);
 		}
 	}
 }
@@ -327,6 +316,23 @@ void CTF_RunTics (void)
 
 	// Move the physical clientside flag sprites
 	CTF_MoveFlags();
+
+	// Don't draw the flag the display player is carrying as it blocks the view.
+	for (size_t flag = 0; flag < NUMFLAGS; flag++)
+	{
+		if (!CTFdata[flag].actor)
+			continue;
+
+		if (CTFdata[flag].flagger == displayplayer().id && 
+			CTFdata[flag].state == flag_carried)
+		{
+			CTFdata[flag].actor->flags2 |= MF2_DONTDRAW;
+		}
+		else
+		{
+			CTFdata[flag].actor->flags2 &= ~MF2_DONTDRAW;
+		}
+	}
 }
 
 //
@@ -341,11 +347,11 @@ void CTF_DrawHud (void)
 	if(sv_gametype != GM_CTF)
 		return;
 
-	player_t &co = consoleplayer();
+	player_t &player = displayplayer();
 	for(size_t i = 0; i < NUMFLAGS; i++)
 	{
 		hasflags[i] = false;
-		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == co.id)
+		if(CTFdata[i].state == flag_carried && CTFdata[i].flagger == player.id)
 		{
 			hasflag = true;
 			hasflags[i] = true;
