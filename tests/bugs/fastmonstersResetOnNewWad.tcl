@@ -14,7 +14,7 @@ proc main {} {
  wait 1
  clear
  client "playdemo demo1"
- wait 4
+ wait 8
 
  gets $clientout
  gets $clientout
