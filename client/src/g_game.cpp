@@ -1053,6 +1053,17 @@ void G_Ticker (void)
 	case GS_LEVEL:
 		if(clientside && !serverside)
 		{
+			if (!consoleplayer().mo)
+			{
+				// [SL] 2011-12-14 - Spawn message from server has not arrived
+				// yet.  Fake it and hope it arrives soon.
+				AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
+				consoleplayer().mo = mobj->ptr();
+				consoleplayer().mo->player = &consoleplayer();
+				G_PlayerReborn(consoleplayer());
+				DPrintf("Did not receive spawn for consoleplayer.\n");
+			}
+
 			// GhostlyDeath -- If we are a spectator, we do things ourselves
 			if (consoleplayer().spectator)
 			{
