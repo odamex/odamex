@@ -38,7 +38,8 @@ using namespace std;
 namespace agOdalaunch {
 
 AGOL_Settings::AGOL_Settings() :
-	DirSel(NULL), CloseEventHandler(NULL)
+	OdamexPathBox(NULL), OdamexPathLabel(NULL), DirSel(NULL),
+	CloseEventHandler(NULL), DirSelOkHandler(NULL), DirSelCancelHandler(NULL)
 {
 	SettingsDialog = AG_WindowNew(AG_WINDOW_MODAL);
 	AG_WindowSetCaptionS(SettingsDialog, "Configure Settings");
@@ -97,9 +98,9 @@ ODA_SrvOptionsBox *AGOL_Settings::CreateSrvOptionsBox(void *parent)
 	GuiConfig::Read("ShowBlockedServers", ShowBlocked);
 
 	// Read the timeout options. If they are not set use a default value of 500ms.
-	if(GuiConfig::Read("MasterTimeout", MasterTimeout) || MasterTimeout <= 0)
+	if(GuiConfig::Read("MasterTimeout", MasterTimeout) || MasterTimeout == 0)
 		MasterTimeout = 500;
-	if(GuiConfig::Read("ServerTimeout", ServerTimeout) || ServerTimeout <= 0)
+	if(GuiConfig::Read("ServerTimeout", ServerTimeout) || ServerTimeout == 0)
 		ServerTimeout = 500;
 
 	obox->masterTimeoutSpin = AG_NumericalNewUint(obox->optionsBox, 0, NULL, 
@@ -319,7 +320,7 @@ bool AGOL_Settings::IsWadDirDuplicate(const string &waddir)
 {
 	list<string>::iterator i;
 
-	for(i = WadDirs.begin(); i != WadDirs.end(); i++)
+	for(i = WadDirs.begin(); i != WadDirs.end(); ++i)
 	{
 		if(*i == waddir)
 			return true;
@@ -372,7 +373,7 @@ void AGOL_Settings::UpdateWadDirList(AG_Event *event)
 	AG_TlistBegin(WadDirList);
 
 	// Traverse the waddir list and add them to the tlist widget
-	for(i = WadDirs.begin(); i != WadDirs.end(); i++)
+	for(i = WadDirs.begin(); i != WadDirs.end(); ++i)
 		AG_TlistAddS(WadDirList, agIconDirectory.s, (*i).c_str());
 	
 	// Restore list selection
