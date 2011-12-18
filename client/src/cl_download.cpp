@@ -338,3 +338,4 @@ void CL_Download()
 	}
 }
 
+VERSION_CONTROL (cl_download_cpp, "$Id$")
