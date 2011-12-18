@@ -344,6 +344,8 @@
 		<Unit filename="..\src\cl_ctf.cpp" />
 		<Unit filename="..\src\cl_cvarlist.cpp" />
 		<Unit filename="..\src\cl_demo.cpp" />
+		<Unit filename="..\src\cl_download.cpp" />
+		<Unit filename="..\src\cl_download.h" />
 		<Unit filename="..\src\cl_main.cpp" />
 		<Unit filename="..\src\cl_main.h" />
 		<Unit filename="..\src\cl_mobj.cpp" />
