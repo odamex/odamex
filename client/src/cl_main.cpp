@@ -2633,13 +2633,6 @@ void CL_ExitLevel()
 		unsigned int got_bytes;
 } download = { "", "", NULL, 0 };*/
 
-extern std::string DownloadStr;
-
-void ClearDownloadProgressBar()
-{
-    DownloadStr = "";
-}
-
 // this works though!
 struct download_s
 {
@@ -2672,6 +2665,22 @@ struct download_s
 			}
 		}
 } download;
+
+extern std::string DownloadStr;
+
+void SetDownloadPercentage(size_t pc)
+{
+    std::stringstream ss;
+
+    ss << "Downloading " << download.filename << ": " << pc << "%";
+
+    DownloadStr = ss.str();
+}
+
+void ClearDownloadProgressBar()
+{
+    DownloadStr = "";
+}
 
 
 void IntDownloadComplete(void)
@@ -2832,6 +2841,9 @@ void CL_DownloadStart()
         Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
     
 	Printf(PRINT_HIGH, "Downloading %d bytes...\n", file_len);
+
+	// Make initial 0% show
+	SetDownloadPercentage(0);
 }
 
 //
@@ -2891,12 +2903,7 @@ void CL_Download()
 	int percent = (download.got_bytes*100)/download.buf->maxsize();
 	if(percent != old_percent)
 	{
-		std::stringstream ss;
-		
-		ss << "Downloading " << download.filename << ": " << percent 
-            << "%";
-
-        DownloadStr = ss.str();
+        SetDownloadPercentage(percent);
 
 		old_percent = percent;
 	}
