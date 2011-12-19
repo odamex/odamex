@@ -241,13 +241,6 @@ void SdlMixerMusicSystem::_UnregisterSong()
 	if (mRegisteredSong.Track)
 		Mix_FreeMusic(mRegisteredSong.Track);
 
-	// [SL] 2011-12-17 - FIXME: SDL_FrewRW causes a segfault because the data
-	// is being freed before the song finishes playing.
-	// Of course, commenting it out causes a memory leak.
-	
-	//if (mRegisteredSong.Data)
-	//	SDL_FreeRW(mRegisteredSong.Data);
-
 	mRegisteredSong.Track = NULL;
 	mRegisteredSong.Data = NULL;
 }
@@ -279,7 +272,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	else
 	{
 		mRegisteredSong.Data = SDL_RWFromMem(data, length);
-	}	
+	}
 
 	if (!mRegisteredSong.Data)
 	{
@@ -291,17 +284,32 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	// We're using an older version of SDL and must save the midi data
 	// to a temporary file first
 	FILE *fp = fopen(TEMP_MIDI, "wb+");
-	if(!fp)
+	if (!fp)
 	{
 		Printf(PRINT_HIGH, "Could not open temporary music file %s, not playing track\n", TEMP_MIDI);
 		return;
 	}
-            
-	for (int i = 0; i < mem_fsize(midi); i++)
-		fputc(mem_fgetbuf(midi)[i], fp);
-				
+    
+    // Get the size of the music data
+	SDL_RWseek(mRegisteredSong.Data, 0, SEEK_END);
+	size_t reglength = SDL_RWtell(mRegisteredSong.Data);
+	
+	// Write the music data to the temporary file
+	SDL_RWseek(mRegisteredSong.Data, 0, SEEK_SET);
+	char buf[1024];
+	while (reglength)
+	{
+		size_t chunksize = reglength > sizeof(buf) ? sizeof(buf) : reglength;
+		
+		SDL_RWread(mRegisteredSong.Data, buf, chunksize, 1);
+		fwrite(buf, chunksize, 1, fp);
+		reglength -= chunksize;
+	}
+	
 	fclose(fp);
+	// Read the midi data from the temporary file
 	mRegisteredSong.Track = Mix_LoadMUS(TEMP_MIDI);
+	unlink(TEMP_MIDI);	// remove the temporary file
 
 	#else
 	// We can read the midi data directly from memory
@@ -309,6 +317,12 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	
 	#endif	// TEMP_MIDI
 
+	if (mRegisteredSong.Data)
+	{
+		SDL_FreeRW(mRegisteredSong.Data);
+		mRegisteredSong.Data = NULL;
+	}
+	
 	if (!mRegisteredSong.Track)
 	{
 		#ifdef TEMP_MIDI
@@ -316,9 +330,6 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 		#else
 		Printf(PRINT_HIGH, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
 		#endif	// TEMP_MIDI
-
-		SDL_FreeRW(mRegisteredSong.Data);
-		mRegisteredSong.Data = NULL;
 
 		return;
 	}
