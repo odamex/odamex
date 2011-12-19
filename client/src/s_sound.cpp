@@ -930,18 +930,18 @@ bool S_GetSoundPlayingInfo (AActor *ent, int sound_id)
 //
 void S_PauseSound (void)
 {
-	if (mus_playing.handle && !mus_paused)
+	if (!mus_paused)
 	{
-		I_PauseSong(mus_playing.handle);
+		I_PauseSong();
 		mus_paused = true;
 	}
 }
 
 void S_ResumeSound (void)
 {
-	if (mus_playing.handle && mus_paused)
+	if (mus_paused)
 	{
-		I_ResumeSong (mus_playing.handle);
+		I_ResumeSong();
 		mus_paused = false;
 	}
 }
@@ -1098,11 +1098,6 @@ void S_StartMusic (const char *m_id)
 // It's up to the caller to figure out what that name is.
 void S_ChangeMusic (std::string musicname, int looping)
 {
-	int lumpnum;
-	void *data = NULL;
-	int len = 0;
-	FILE *f;
-
 	if (mus_playing.name == musicname)
 		return;
 
@@ -1113,9 +1108,11 @@ void S_ChangeMusic (std::string musicname, int looping)
 		return;
 	}
 
-	// shutdown old music
-	S_StopMusic();
-
+	byte* data = NULL;
+	size_t length = 0;
+	int lumpnum;
+	FILE *f;
+		
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
 		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
@@ -1124,41 +1121,31 @@ void S_ChangeMusic (std::string musicname, int looping)
 			return;
 		}
 
-		mus_playing.handle = I_RegisterSong((char *)W_CacheLumpNum(lumpnum, PU_CACHE), W_LumpLength (lumpnum));
-	}
-	else
+		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
+		length = W_LumpLength(lumpnum);
+		I_PlaySong(data, length, bool(looping));
+    }
+    else
 	{
 		lumpnum = -1;
-		len = M_FileLength (f);
-		data = Malloc (len);
-		fread (data, len, 1, f);
-		fclose (f);
-
-		mus_playing.handle = I_RegisterSong((char *)data, len);
-
+		length = M_FileLength(f);
+		data = static_cast<byte*>(Malloc(length));
+		size_t result = fread(data, length, 1, f);
+		fclose(f);
+	
+		if (result == 1)
+			I_PlaySong(data, length, bool(looping));
 		M_Free(data);
-	}
-
-	// load & register it
+	}		
+		
 	mus_playing.name = musicname;
-
-	// play it
-	I_PlaySong(mus_playing.handle, looping);
 }
 
 void S_StopMusic (void)
 {
-	if (mus_playing.name.length())
-	{
-		if (mus_paused)
-			I_ResumeSong(mus_playing.handle);
-
-		I_StopSong(mus_playing.handle);
-		I_UnRegisterSong(mus_playing.handle);
-
-		mus_playing.name = "";
-		mus_playing.handle = 0;
-	}
+	I_StopSong();
+	
+	mus_playing.name = "";
 }
 
 static void S_StopChannel (unsigned int cnum)
@@ -1564,14 +1551,16 @@ BEGIN_COMMAND (changemus)
 	    return;
 	}
 
+	const std::string musicname(argv[1]);
+	
 	if (argc > 2)
 	{
-		loopmus = atoi (argv[2]);
-		S_ChangeMusic (std::string(argv[1]), loopmus);
+		loopmus = (atoi(argv[2]) != 0);
+		S_ChangeMusic(musicname, loopmus);
 	}
 	else if (argc == 2)
 	{
-		S_ChangeMusic (std::string(argv[1]), 1);
+		S_ChangeMusic(musicname, true);
 	}
 }
 END_COMMAND (changemus)

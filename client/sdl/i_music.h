@@ -20,13 +20,24 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __I_MUSIC_H__
 #define __I_MUSIC_H__
 
-
-
+#include "SDL_mixer.h"
 #include "doomstat.h"
+
+typedef struct
+{
+    Mix_Music *Track;
+    SDL_RWops *Data;
+} MusicHandler_t;
+
+typedef enum
+{
+	MS_NONE			= 0,
+	MS_SDLMIXER		= 1,
+	MS_AU			= 2
+} MusicSystemType;
 
 //
 //	MUSIC I/O
@@ -36,22 +47,15 @@ void STACK_ARGS I_ShutdownMusic(void);
 // Volume.
 void I_SetMusicVolume (float volume);
 // PAUSE game handling.
-void I_PauseSong(int handle);
-void I_ResumeSong(int handle);
-// Registers a song handle to song data.
-int I_RegisterSong(char *data, size_t length);
+void I_PauseSong();
+void I_ResumeSong();
 // Called by anything that wishes to start music.
 //  plays a song, and when the song is done,
 //  starts playing it again in an endless loop.
 // Horrible thing to do, considering.
-void
-I_PlaySong
-( int		handle,
-  int		looping );
+void I_PlaySong(byte* data, size_t length, bool loop);
 // Stops a song over 3 seconds.
-void I_StopSong(int handle);
-// See above (register), then think backwards
-void I_UnRegisterSong(int handle);
+void I_StopSong();
 
 #endif //__I_MUSIC_H__
 
