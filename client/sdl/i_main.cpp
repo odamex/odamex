@@ -171,6 +171,12 @@ int main(int argc, char *argv[])
         }
 #endif
 
+#ifdef LINUX
+		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
+		// bypassing X11's mouse acceleration
+		putenv("SDL_VIDEO_X11_DGAMOUSE=1");
+#endif
+
 		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
 			I_FatalError("Could not initialize SDL:\n%s\n", SDL_GetError());
 
