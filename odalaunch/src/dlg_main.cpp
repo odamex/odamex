@@ -158,6 +158,19 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     launchercfg_s.wad_paths = wxGetCwd();
     launchercfg_s.odamex_directory = wxGetCwd();
 
+#ifdef _WIN32
+    // Fixes icon not showing in titlebar and alt-tab menu under windows 7
+    HANDLE hIcon;
+
+    hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+
+    if(hIcon)
+    {
+        SendMessage((HWND)GetHandle(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+        SendMessage((HWND)GetHandle(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+    }
+#endif
+
     // Set up icons, this is a hack because wxwidgets does not have an xml
     // handler for wxIconBundle :(
     wxIconBundle IconBundle;
