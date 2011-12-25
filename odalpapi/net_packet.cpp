@@ -419,6 +419,9 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 	if (TagPacketType == 2)
 	{
 		// Launcher is an old version
+		ReportError("Launcher is too old to parse the data from Server %s", 
+              Socket.GetRemoteAddress().c_str());
+		
 		return 0;
 	}
 
@@ -432,6 +435,12 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 			(VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
 	{
 		// Server is an older version
+		ReportError("Server %s is version %d.%d.%d which is not supported\n", 
+              Socket.GetRemoteAddress().c_str(), 
+              VERSIONMAJOR(SvVersion),
+              VERSIONMINOR(SvVersion),
+              VERSIONPATCH(SvVersion));
+		
 		return 0;
 	}
 
@@ -443,6 +452,9 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 	if (Socket.BadRead())
 	{        
 		// Bad packet data encountered
+		ReportError("Data from Server %s was out of sequence, please report!\n", 
+              Socket.GetRemoteAddress().c_str());
+		
 		return 0;
 	}
 
