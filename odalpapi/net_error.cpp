@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,7 +18,7 @@
 // DESCRIPTION:
 //	Error handling
 //
-// AUTHORS: 
+// AUTHORS:
 //  Russell Rice (russell at odamex dot net)
 //  Michael Wood (mwoodj at knology dot net)
 //
@@ -47,17 +47,17 @@
 
 #ifdef _WIN32
 // Russell - bits from msdn:
-static LPTSTR _GetFormattedMessage(DWORD errnum)
+static LPSTR _GetFormattedMessage(DWORD errnum)
 {
-    LPTSTR pBuffer = NULL;
+    LPSTR pBuffer = NULL;
 
-    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM |
                   FORMAT_MESSAGE_ALLOCATE_BUFFER,
                   NULL,
                   errnum,
                   0,
-                  (LPTSTR)&pBuffer, 
-                  0, 
+                  (LPSTR)&pBuffer,
+                  0,
                   NULL);
 
     return pBuffer;
@@ -84,7 +84,7 @@ static int _GetErrno()
 }
 
 // Formatted debug output
-void _ReportError(const char *file, int line, const char *func, 
+void _ReportError(const char *file, int line, const char *func,
     const char *fmt, ...)
 {
 	va_list ap;

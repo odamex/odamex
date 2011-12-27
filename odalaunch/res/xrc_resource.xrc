@@ -279,7 +279,7 @@
 				<object class="wxPanel" name="m_panel9">
 					<style>wxTAB_TRAVERSAL</style>
 					<object class="wxFlexGridSizer">
-						<rows>1</rows>
+						<rows>5</rows>
 						<cols>1</cols>
 						<vgap>0</vgap>
 						<hgap>0</hgap>
@@ -408,7 +408,7 @@
 											<flag>wxEXPAND</flag>
 											<border>5</border>
 											<object class="wxFlexGridSizer">
-												<rows>1</rows>
+												<rows>5</rows>
 												<cols>1</cols>
 												<vgap>0</vgap>
 												<hgap>0</hgap>
@@ -564,7 +564,7 @@
 									<flag>wxEXPAND</flag>
 									<border>5</border>
 									<object class="wxFlexGridSizer">
-										<rows>1</rows>
+										<rows>5</rows>
 										<cols>1</cols>
 										<vgap>0</vgap>
 										<hgap>0</hgap>
@@ -628,7 +628,7 @@
 											<flag>wxEXPAND</flag>
 											<border>0</border>
 											<object class="wxFlexGridSizer">
-												<rows>1</rows>
+												<rows>5</rows>
 												<cols>2</cols>
 												<vgap>0</vgap>
 												<hgap>0</hgap>
@@ -923,7 +923,7 @@
 					<flag>wxEXPAND</flag>
 					<border>5</border>
 					<object class="wxFlexGridSizer">
-						<rows>1</rows>
+						<rows>5</rows>
 						<cols>1</cols>
 						<vgap>0</vgap>
 						<hgap>0</hgap>
@@ -1012,7 +1012,7 @@
 				<object class="wxPanel">
 					<style>wxRAISED_BORDER|wxTAB_TRAVERSAL</style>
 					<object class="wxFlexGridSizer">
-						<rows>1</rows>
+						<rows>5</rows>
 						<cols>1</cols>
 						<vgap>0</vgap>
 						<hgap>0</hgap>

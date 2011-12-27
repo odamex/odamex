@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,7 +18,7 @@
 // DESCRIPTION:
 //	Low-level socket and buffer class
 //
-// AUTHORS: 
+// AUTHORS:
 //  Russell Rice (russell at odamex dot net)
 //  Michael Wood (mwoodj at knology dot net)
 //
@@ -90,7 +90,7 @@ bool BufferedSocket::CreateSocket()
 
 	if(m_Socket == INVALID_SOCKET)
 	{
-		ReportError(REPERR_NO_ARGS);
+		NET_ReportError(REPERR_NO_ARGS);
 
 		return false;
 	}
@@ -102,28 +102,28 @@ bool BufferedSocket::CreateSocket()
         int result;
 
         // Set broadcast mode on the socket
-        result = setsockopt(m_Socket, SOL_SOCKET, SO_BROADCAST, (char *)&optval, 
+        result = setsockopt(m_Socket, SOL_SOCKET, SO_BROADCAST, (char *)&optval,
                 optvallen);
 
         if (result != 0)
         {
-            ReportError(REPERR_NO_ARGS);
+            NET_ReportError(REPERR_NO_ARGS);
             return false;
         }
 
         // Need to bind to the local address otherwise it will not receive
-        // anything        
+        // anything
         m_LocalAddress.sin_family = PF_INET;
         m_LocalAddress.sin_port = htons(11510);
         m_LocalAddress.sin_addr.s_addr = htonl( INADDR_ANY );
         memset(m_LocalAddress.sin_zero, '\0', sizeof m_LocalAddress.sin_zero);
 
-        result = bind (m_Socket, (sockaddr *)&m_LocalAddress, 
+        result = bind (m_Socket, (sockaddr *)&m_LocalAddress,
                     sizeof(m_LocalAddress));
 
         if (result != 0)
         {
-            ReportError(REPERR_NO_ARGS);
+            NET_ReportError(REPERR_NO_ARGS);
             return false;
         }
     }
@@ -131,8 +131,8 @@ bool BufferedSocket::CreateSocket()
 	return true;
 }
 
-void BufferedSocket::SetBroadcast(bool enabled) 
-{ 
+void BufferedSocket::SetBroadcast(bool enabled)
+{
     m_Broadcast = enabled;
 };
 
@@ -141,19 +141,19 @@ void BufferedSocket::DestroySocket()
 	if (m_Socket != 0)
 	{
 		if (closesocket(m_Socket) != 0)
-			ReportError("Could not close socket: %d", m_Socket);
+			NET_ReportError("Could not close socket: %d", m_Socket);
 
 		m_Socket = 0;
 	}
 }
-	
+
 void BufferedSocket::SetRemoteAddress(const string &Address, const uint16_t &Port)
 {
 	struct hostent *he;
 
 	if((he = gethostbyname((const char *)Address.c_str())) == NULL)
 	{
-		ReportError(REPERR_NO_ARGS);
+		NET_ReportError(REPERR_NO_ARGS);
 		return;
     }
 
@@ -208,7 +208,7 @@ int32_t BufferedSocket::SendData(const int32_t &Timeout)
 	if (CreateSocket() == false)
 		return 0;
 
-    BytesSent = sendto(m_Socket, (const char *)m_SocketBuffer, m_BufferSize, 0, 
+    BytesSent = sendto(m_Socket, (const char *)m_SocketBuffer, m_BufferSize, 0,
         (struct sockaddr *)&m_RemoteAddress, sizeof (m_RemoteAddress));
 
 	// set the start ping
@@ -216,7 +216,7 @@ int32_t BufferedSocket::SendData(const int32_t &Timeout)
 
 	if(BytesSent < 0)
 	{
-		ReportError(REPERR_NO_ARGS);
+		NET_ReportError(REPERR_NO_ARGS);
 	}
 
 	// return the amount of bytes sent
@@ -250,7 +250,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	if (DestroyMe == true)
 	{
         if (res == -1)
-            ReportError(REPERR_NO_ARGS);
+            NET_ReportError(REPERR_NO_ARGS);
 
 		m_SendPing = 0;
 		m_ReceivePing = 0;
@@ -260,13 +260,13 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 
     fromlen = sizeof(m_RemoteAddress);
 
-    BytesReceived = recvfrom(m_Socket, (char *)m_SocketBuffer, MAX_PAYLOAD, 0, 
+    BytesReceived = recvfrom(m_Socket, (char *)m_SocketBuffer, MAX_PAYLOAD, 0,
         (struct sockaddr *)&m_RemoteAddress, &fromlen);
 
 	// -1 = Error; 0 = Closed Connection
 	if(BytesReceived <= 0)
 	{
-		ReportError(REPERR_NO_ARGS);
+		NET_ReportError(REPERR_NO_ARGS);
 
 		m_SendPing = 0;
 		m_ReceivePing = 0;
@@ -283,7 +283,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	{
 		m_BadRead = false;
 
-		// return bytes received   
+		// return bytes received
 		return m_BufferSize;
 	}
 
@@ -293,14 +293,14 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 
 	return 0;
 }
-        
+
 bool BufferedSocket::ReadString(string &str)
 {
 	signed char ch;
 
     if (!CanRead(1))
     {
-        ReportError("End of buffer reached!");
+        NET_ReportError("End of buffer reached!");
 
         str = "";
 
@@ -323,7 +323,7 @@ bool BufferedSocket::ReadString(string &str)
 
     if (!isRead)
     {
-        ReportError("End of buffer reached!");
+        NET_ReportError("End of buffer reached!");
 
         str = "";
 
@@ -339,7 +339,7 @@ bool BufferedSocket::ReadBool(bool &val)
 {
 	if (!CanRead(1))
 	{
-		ReportError("ReadBool: End of buffer reached!");
+		NET_ReportError("ReadBool: End of buffer reached!");
 
 		val = false;
 
@@ -354,7 +354,7 @@ bool BufferedSocket::ReadBool(bool &val)
 
 	if (value < 0 || value > 1)
 	{
-		ReportError("Value is not 0 or 1, possibly corrupted packet");
+		NET_ReportError("Value is not 0 or 1, possibly corrupted packet");
 
 		val = false;
 
@@ -378,16 +378,16 @@ bool BufferedSocket::Read32(int32_t &Int32)
 	{
 		Int32 = 0;
 
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
 		return false;
 	}
 
-	Int32 = m_SocketBuffer[m_BufferPos] + 
-			(m_SocketBuffer[m_BufferPos+1] << 8) + 
-			(m_SocketBuffer[m_BufferPos+2] << 16) + 
+	Int32 = m_SocketBuffer[m_BufferPos] +
+			(m_SocketBuffer[m_BufferPos+1] << 8) +
+			(m_SocketBuffer[m_BufferPos+2] << 16) +
 			(m_SocketBuffer[m_BufferPos+3] << 24);
 
 	m_BufferPos += 4;
@@ -401,14 +401,14 @@ bool BufferedSocket::Read16(int16_t &Int16)
 	{
 		Int16 = 0;
 
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
 		return false;
 	}
 
-	Int16 = m_SocketBuffer[m_BufferPos] + 
+	Int16 = m_SocketBuffer[m_BufferPos] +
 			(m_SocketBuffer[m_BufferPos+1] << 8);
 
 	m_BufferPos += 2;
@@ -422,7 +422,7 @@ bool BufferedSocket::Read8(int8_t &Int8)
 	{
 		Int8 = 0;
 
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
@@ -446,16 +446,16 @@ bool BufferedSocket::Read32(uint32_t &Uint32)
 	{
 		Uint32 = 0;
 
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
 		return false;
 	}
 
-    Uint32 = m_SocketBuffer[m_BufferPos] + 
-			(m_SocketBuffer[m_BufferPos+1] << 8) + 
-			(m_SocketBuffer[m_BufferPos+2] << 16) + 
+    Uint32 = m_SocketBuffer[m_BufferPos] +
+			(m_SocketBuffer[m_BufferPos+1] << 8) +
+			(m_SocketBuffer[m_BufferPos+2] << 16) +
 			(m_SocketBuffer[m_BufferPos+3] << 24);
 
 
@@ -470,14 +470,14 @@ bool BufferedSocket::Read16(uint16_t &Uint16)
 	{
 		Uint16 = 0;
 
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
 		return false;
 	}
 
-	Uint16 = m_SocketBuffer[m_BufferPos] + 
+	Uint16 = m_SocketBuffer[m_BufferPos] +
 			(m_SocketBuffer[m_BufferPos+1] << 8);
 
 	m_BufferPos += 2;
@@ -491,7 +491,7 @@ bool BufferedSocket::Read8(uint8_t &Uint8)
 	{
 		Uint8 = 0;
 
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadRead = true;
 
@@ -513,7 +513,7 @@ bool BufferedSocket::WriteString(const string &str)
 {
 	if (!CanWrite(str.length() + 1))
 	{
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -532,7 +532,7 @@ bool BufferedSocket::WriteBool(const bool &val)
 {
 	if (!CanWrite(1))
 	{
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -550,7 +550,7 @@ bool BufferedSocket::Write32(const int32_t &Int32)
 {
 	if (!CanWrite(4))
 	{
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -571,7 +571,7 @@ bool BufferedSocket::Write16(const int16_t &Int16)
 {
 	if (!CanWrite(2))
 	{
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -590,7 +590,7 @@ bool BufferedSocket::Write8(const int8_t &Int8)
 {
 	if (!CanWrite(1))
 	{
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -612,7 +612,7 @@ bool BufferedSocket::Write32(const uint32_t &Uint32)
 {
 	if (!CanWrite(4))
 	{
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -633,7 +633,7 @@ bool BufferedSocket::Write16(const uint16_t &Uint16)
 {
 	if (!CanWrite(2))
 	{
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -652,7 +652,7 @@ bool BufferedSocket::Write8(const uint8_t &Uint8)
 {
 	if (!CanWrite(1))
 	{
-		ReportError("End of buffer reached!");
+		NET_ReportError("End of buffer reached!");
 
 		m_BadWrite = true;
 
@@ -665,7 +665,7 @@ bool BufferedSocket::Write8(const uint8_t &Uint8)
 
 	return true;
 }
-        
+
 //
 // Can read or write X bytes to a buffer
 //
@@ -679,7 +679,7 @@ bool BufferedSocket::CanWrite(const size_t &Bytes)
 {
 	return m_BufferPos + Bytes > MAX_PAYLOAD ? 0 : 1;
 }
- 
+
 void BufferedSocket::ClearBuffer()
 {
 	delete m_SocketBuffer;
@@ -687,7 +687,7 @@ void BufferedSocket::ClearBuffer()
 	m_SocketBuffer = new byte[MAX_PAYLOAD];
 
 	if(m_SocketBuffer == NULL)
-		ReportError("Failed to allocate m_SocketBuffer!");
+		NET_ReportError("Failed to allocate m_SocketBuffer!");
 
 	m_BufferSize = 0;
 
