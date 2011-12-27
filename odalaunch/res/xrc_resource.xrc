@@ -23,16 +23,16 @@
 			<object class="wxMenu">
 				<label>Action</label>
 				<object class="wxMenuItem" name="Id_MnuItmLaunch">
-					<label>Launch</label>
+					<label>Connect</label>
 					<help>Connect to the selected server</help>
 				</object>
 				<object class="wxMenuItem" name="Id_MnuItmRunOffline">
-					<label>Run Offline</label>
+					<label>Run Odamex</label>
 					<help>Runs the Odamex Client without connecting to a server</help>
 				</object>
 				<object class="separator" />
 				<object class="wxMenuItem" name="Id_MnuItmRefreshServer">
-					<label>Refresh Selected</label>
+					<label>Refresh Server</label>
 					<help>Refresh the selected server</help>
 				</object>
 				<object class="wxMenuItem" name="Id_MnuItmRefreshAll">
@@ -40,7 +40,7 @@
 					<help>Refresh all servers currently displayed</help>
 				</object>
 				<object class="wxMenuItem" name="Id_MnuItmGetList">
-					<label>Get Master List</label>
+					<label>Get List</label>
 					<help>Get a new list of servers</help>
 				</object>
 			</object>
@@ -101,8 +101,8 @@
 				</object>
 			</object>
 		</object>
-		<object class="wxToolBar">
-			<style>wxTB_DOCKABLE|wxTB_FLAT</style>
+		<object class="wxToolBar" name="6">
+			<style>wxTB_FLAT</style>
 			<font>
 				<family>default</family>
 				<style>normal</style>
@@ -120,7 +120,7 @@
 				<bitmap>.\icon32x32x32.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmRunOffline">
-				<label></label>
+				<label>Run Odamex</label>
 				<tooltip>Runs the Odamex Client without connecting to a server</tooltip>
 				<longhelp>Runs the Odamex Client without connecting to a server</longhelp>
 				<bitmap>./odaqlaunch.ico</bitmap>
@@ -133,33 +133,33 @@
 				<bitmap>./btnrefresh.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmRefreshAll">
-				<label>Refresh All Servers</label>
+				<label>Refresh All</label>
 				<tooltip>Refresh all servers currently displayed</tooltip>
 				<longhelp>Refresh all servers currently displayed</longhelp>
 				<bitmap>./btnrefreshall.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmGetList">
-				<label>Get Master List</label>
+				<label>Get List</label>
 				<tooltip>Get a new list of servers</tooltip>
 				<longhelp>Get a new list of servers</longhelp>
 				<bitmap>./btnlist.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="Id_MnuItmSettings">
-				<label>tool</label>
+				<label>Settings</label>
 				<tooltip>Configure the launcher</tooltip>
 				<longhelp>Configure the launcher</longhelp>
 				<bitmap>./btnsettings.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmAboutOdamex">
-				<label>tool</label>
+				<label>About</label>
 				<tooltip>About the Odamex Launcher</tooltip>
 				<longhelp>About the Odamex Launcher</longhelp>
 				<bitmap>./btnhelp.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="wxID_EXIT">
-				<label>tool</label>
+				<label>Exit</label>
 				<tooltip>Exit the launcher</tooltip>
 				<longhelp>Exit the launcher</longhelp>
 				<bitmap>./btnexit.ico</bitmap>
