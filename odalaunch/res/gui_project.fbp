@@ -513,7 +513,7 @@
                 <property name="aui_row"></property>
                 <property name="best_size"></property>
                 <property name="bg"></property>
-                <property name="bitmapsize">38,38</property>
+                <property name="bitmapsize">32,32</property>
                 <property name="caption"></property>
                 <property name="caption_visible">1</property>
                 <property name="center_pane">0</property>
