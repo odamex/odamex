@@ -275,6 +275,7 @@
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DNOASM" />
+			<Add option="-D_WIN32_WINNT=0x0500" />
 			<Add directory="." />
 			<Add directory="..\src" />
 			<Add directory="..\..\common" />
