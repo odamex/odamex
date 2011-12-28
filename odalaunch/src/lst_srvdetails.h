@@ -30,7 +30,7 @@
 class LstOdaSrvDetails : public wxListCtrl
 {
     public:
-        LstOdaSrvDetails() { };
+        LstOdaSrvDetails();
         virtual ~LstOdaSrvDetails() { };
         
         void LoadDetailsFromServer(Server &);
@@ -41,10 +41,16 @@ class LstOdaSrvDetails : public wxListCtrl
 
         void InsertLine(const wxString &Name, const wxString &Value);
         void InsertHeader(const wxString &Name, 
-                          const wxColor *NameColor,
-                          const wxColor *NameBGColor);
+                          wxColor NameColor = wxNullColour,
+                          wxColor NameBGColor = wxNullColour);
         
         wxColour BGItemAlternator;
+        
+        wxColour ItemShade;
+        wxColour BgColor;
+        
+        wxColour Header;
+        wxColour HeaderText;
         
         DECLARE_DYNAMIC_CLASS(LstOdaSrvDetails)
 };
