@@ -78,9 +78,9 @@ SDLVideo::SDLVideo(int parm)
     // [Russell] - Just for windows, display the icon in the system menu and
     // alt-tab display
     #if WIN32 && !_XBOX
-    HICON Icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+    HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 
-    if (Icon != 0)
+    if (hIcon)
     {
         HWND WindowHandle;
         
@@ -90,12 +90,8 @@ SDLVideo::SDLVideo(int parm)
         
         WindowHandle = wminfo.window;
 
-		// GhostlyDeath <October 26, 2008> -- VC6 (No Service Packs or new SDKs) has no SetClassLongPtr?
-#if defined(_MSC_VER) && _MSC_VER <= 1200// && !defined(_MSC_FULL_VER)
-		SetClassLong(WindowHandle, GCL_HICON, (LONG) Icon);
-#else
-        SetClassLongPtr(WindowHandle, GCL_HICON, (LONG_PTR) Icon);
-#endif
+        SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+        SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
     }
     #endif
     
