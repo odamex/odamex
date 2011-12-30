@@ -27,13 +27,6 @@
 #include "i_musicsystem.h"
 #include "m_fileio.h"
 
-#ifdef OSX
-// denis - midi via SDL+timidity on OSX crashes miserably after a while
-// this is not our fault, but we have to live with it until someone
-// bothers to fix it, therefore use native midi on OSX for now
-#include <AudioToolbox/AudioToolbox.h>
-#endif
-
 // [Russell] - define a temporary midi file, for consistency
 // SDL < 1.2.7
 #ifdef _XBOX
@@ -413,7 +406,7 @@ AuMusicSystem::~AuMusicSystem()
 	
 	#ifdef OSX
 	DisposeMusicPlayer(mPlayer);
-	AUGraphClose(mgraph);
+	AUGraphClose(mGraph);
 	#endif	// OSX
 }
 
@@ -487,7 +480,7 @@ void AuMusicSystem::playSong(byte* data, size_t length, bool loop)
 			return;
 		}
 
-		LoopInfo.loops = _looping ? 0 : 1;
+		LoopInfo.loops = loop ? 0 : 1;
 
 		if (MusicTrackSetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo, sizeof(LoopInfo)) != noErr)
 		{

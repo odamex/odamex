@@ -13,6 +13,12 @@
 		92D2DC250B64505100FD5B07 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D53A100AB96D8E00CF2FB2 /* SDL.framework */; };
 		92D2DC260B64505100FD5B07 /* SDL_mixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D53A0A0AB96D8700CF2FB2 /* SDL_mixer.framework */; };
 		92D2DC290B6450A400FD5B07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D2DC280B6450A400FD5B07 /* Carbon.framework */; };
+		A0D7954C14869A70006AD6BA /* p_effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0D7954B14869A70006AD6BA /* p_effect.cpp */; };
+		A0D7955014869AAB006AD6BA /* p_effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0D7954E14869AAB006AD6BA /* p_effect.cpp */; };
+		A0F0F54A14AD999700C40BBF /* i_musicsystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0F0F54914AD999700C40BBF /* i_musicsystem.cpp */; };
+		A0F0F56214AD9C1600C40BBF /* c_effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0F0F56014AD9C1600C40BBF /* c_effect.cpp */; };
+		A0F0F56314AD9C1600C40BBF /* c_effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0F0F56014AD9C1600C40BBF /* c_effect.cpp */; };
+		A0F0F56614AD9C3000C40BBF /* cl_download.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0F0F56414AD9C3000C40BBF /* cl_download.cpp */; };
 		D3055E531409AA61008006EA /* hardware.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3055E421409AA61008006EA /* hardware.cpp */; };
 		D3055E541409AA61008006EA /* i_input.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3055E441409AA61008006EA /* i_input.cpp */; };
 		D3055E551409AA61008006EA /* i_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3055E461409AA61008006EA /* i_main.cpp */; };
@@ -277,6 +283,16 @@
 		92D2DC280B6450A400FD5B07 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 		92D53A0A0AB96D8700CF2FB2 /* SDL_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_mixer.framework; path = /Library/Frameworks/SDL_mixer.framework; sourceTree = "<absolute>"; };
 		92D53A100AB96D8E00CF2FB2 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
+		A0D7954A14869A70006AD6BA /* cl_pch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cl_pch.h; sourceTree = "<group>"; };
+		A0D7954B14869A70006AD6BA /* p_effect.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = p_effect.cpp; sourceTree = "<group>"; };
+		A0D7954D14869A8F006AD6BA /* c_pch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c_pch.h; sourceTree = "<group>"; };
+		A0D7954E14869AAB006AD6BA /* p_effect.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = p_effect.cpp; sourceTree = "<group>"; };
+		A0D7954F14869AAB006AD6BA /* sv_pch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sv_pch.h; sourceTree = "<group>"; };
+		A0F0F54914AD999700C40BBF /* i_musicsystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = i_musicsystem.cpp; sourceTree = "<group>"; };
+		A0F0F56014AD9C1600C40BBF /* c_effect.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c_effect.cpp; sourceTree = "<group>"; };
+		A0F0F56114AD9C1600C40BBF /* c_effect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c_effect.h; sourceTree = "<group>"; };
+		A0F0F56414AD9C3000C40BBF /* cl_download.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cl_download.cpp; sourceTree = "<group>"; };
+		A0F0F56514AD9C3000C40BBF /* cl_download.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cl_download.h; sourceTree = "<group>"; };
 		C6859E8B029090EE04C91782 /* odamex.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = odamex.1; sourceTree = "<group>"; };
 		D3055E411409AA61008006EA /* afxres.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = afxres.h; sourceTree = "<group>"; };
 		D3055E421409AA61008006EA /* hardware.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hardware.cpp; sourceTree = "<group>"; };
@@ -624,6 +640,8 @@
 		920D7ADC0B4D211D000AA4A2 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				A0D7954E14869AAB006AD6BA /* p_effect.cpp */,
+				A0D7954F14869AAB006AD6BA /* sv_pch.h */,
 				D3055EB21409AAA4008006EA /* c_console.cpp */,
 				D3055EB31409AAA4008006EA /* d_main.cpp */,
 				D3055EB41409AAA4008006EA /* d_netinfo.cpp */,
@@ -659,6 +677,9 @@
 		920D7B5A0B4D2126000AA4A2 /* common */ = {
 			isa = PBXGroup;
 			children = (
+				A0F0F56014AD9C1600C40BBF /* c_effect.cpp */,
+				A0F0F56114AD9C1600C40BBF /* c_effect.h */,
+				A0D7954D14869A8F006AD6BA /* c_pch.h */,
 				D3055EE51409AAD5008006EA /* actor.h */,
 				D3055EE61409AAD5008006EA /* c_console.h */,
 				D3055EE71409AAD5008006EA /* c_cvarlist.cpp */,
@@ -830,6 +851,7 @@
 		92D2D6AC0B62B89B00FD5B07 /* sdl */ = {
 			isa = PBXGroup;
 			children = (
+				A0F0F54914AD999700C40BBF /* i_musicsystem.cpp */,
 				D369BCB61409ABDA00D149BF /* SDLMain.m */,
 				D3055E411409AA61008006EA /* afxres.h */,
 				D3055E421409AA61008006EA /* hardware.cpp */,
@@ -856,6 +878,10 @@
 		92D2D6C10B62B89B00FD5B07 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				A0F0F56414AD9C3000C40BBF /* cl_download.cpp */,
+				A0F0F56514AD9C3000C40BBF /* cl_download.h */,
+				A0D7954A14869A70006AD6BA /* cl_pch.h */,
+				A0D7954B14869A70006AD6BA /* p_effect.cpp */,
 				D3055E5B1409AA82008006EA /* am_map.cpp */,
 				D3055E5C1409AA82008006EA /* am_map.h */,
 				D3055E5D1409AA82008006EA /* c_bind.cpp */,
@@ -1107,7 +1133,14 @@
 			isa = PBXProject;
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "odamex" */;
 			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 08FB7794FE84155DC02AAC07 /* odamex */;
 			productRefGroup = 92D2DA850B6444B300FD5B07 /* Products */;
 			projectDirPath = "";
@@ -1254,6 +1287,10 @@
 				D369BCAE1409ABB100D149BF /* txt_window_action.cpp in Sources */,
 				D369BCAF1409ABB100D149BF /* txt_window.cpp in Sources */,
 				D369BCB71409ABDA00D149BF /* SDLMain.m in Sources */,
+				A0D7954C14869A70006AD6BA /* p_effect.cpp in Sources */,
+				A0F0F54A14AD999700C40BBF /* i_musicsystem.cpp in Sources */,
+				A0F0F56214AD9C1600C40BBF /* c_effect.cpp in Sources */,
+				A0F0F56614AD9C3000C40BBF /* cl_download.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1355,6 +1392,8 @@
 				D3055FB51409AAD5008006EA /* version.cpp in Sources */,
 				D3055FB61409AAD5008006EA /* w_wad.cpp in Sources */,
 				D3055FB71409AAD5008006EA /* z_zone.cpp in Sources */,
+				A0D7955014869AAB006AD6BA /* p_effect.cpp in Sources */,
+				A0F0F56314AD9C1600C40BBF /* c_effect.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

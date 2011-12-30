@@ -26,6 +26,13 @@
 #include "SDL_mixer.h"
 #include "i_music.h"
 
+#ifdef OSX
+// denis - midi via SDL+timidity on OSX crashes miserably after a while
+// this is not our fault, but we have to live with it until someone
+// bothers to fix it, therefore use native midi on OSX for now
+#include <AudioToolbox/AudioToolbox.h>
+#endif
+
 class MusicSystem
 {
 public:
