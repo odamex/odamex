@@ -112,9 +112,23 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
     bool WindowMaximized;
     wxString Version;
+    wxIcon MainIcon;
 
     // Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain"));
+
+    // Set window icon
+    MainIcon = wxXmlResource::Get()->LoadIcon(wxT("mainicon"));
+
+    SetIcon(MainIcon);
+
+    #ifdef _WIN32
+    // Hack for windows vista/7 titlebar icon
+    SendMessage((HWND)GetHandle(), WM_SETICON, ICON_SMALL, 
+                (LPARAM)MainIcon.GetHICON());
+    // Uncomment this if it doesn't work under xp            
+    //SendMessage((HWND)GetHandle(), WM_SETICON, ICON_BIG, (LPARAM)MainIcon.GetHICON());
+    #endif
 
     // Sets the title of the application with a version string to boot
     Version = wxString::Format(
@@ -156,31 +170,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     launchercfg_s.show_blocked_servers = 1;
     launchercfg_s.wad_paths = wxGetCwd();
     launchercfg_s.odamex_directory = wxGetCwd();
-
-#ifdef _WIN32
-    // Fixes icon not showing in titlebar and alt-tab menu under windows 7
-    HANDLE hIcon;
-
-    hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
-
-    if(hIcon)
-    {
-        SendMessage((HWND)GetHandle(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-        SendMessage((HWND)GetHandle(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-    }
-#endif
-
-    // Set up icons, this is a hack because wxwidgets does not have an xml
-    // handler for wxIconBundle :(
-    wxIconBundle IconBundle;
-
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon16x16x32")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon32x32x32")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon48x48x32")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon16x16x8")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon32x32x8")));
-
-    SetIcons(IconBundle);
 
     m_LstCtrlServers = XRCCTRL(*this, Id_LstCtrlServers, LstOdaServerList);
     m_LstCtrlPlayers = XRCCTRL(*this, Id_LstCtrlPlayers, LstOdaPlayerList);
