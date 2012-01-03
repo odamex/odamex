@@ -249,6 +249,7 @@ BEGIN_CUSTOM_CVAR (snd_channels, "12", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE) 
 }
 END_CUSTOM_CVAR (snd_channels)
 CVAR_FUNC_DECL (snd_musicsystem, "1", "Music subsystem preference", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (snd_musicdevice, "", "Music output device for the chosen music subsystem", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Status bar
 // ----------

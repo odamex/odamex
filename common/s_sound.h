@@ -155,6 +155,7 @@ void S_ResumeSound (void);
 // Updates music & sounds
 //
 void S_UpdateSounds (void *listener);
+void S_UpdateMusic();
 
 void S_SetMusicVolume (float volume);
 void S_SetSfxVolume (float volume);

@@ -57,42 +57,123 @@ void S_ChangeMusic (std::string musicname, int looping);
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_musicsystem)
 
-// [Russell] - From prboom+
-#if defined(_WIN32) && !defined(_XBOX)
-void I_midiOutSetVolumes(int volume)
+//
+// S_MusicIsMus()
+//
+// Determines if a music lump is in the MUS format based on its header.
+//
+bool S_MusicIsMus(byte* data, size_t length)
 {
-  MMRESULT result;
-  int calcVolume;
-  MIDIOUTCAPS capabilities;
-  unsigned int i;
+	if (length > 4 && data[0] == 'M' && data[1] == 'U' &&
+		data[2] == 'S' && data[3] == 0x1A)
+		return true;
 
-  if (volume > 128)
-    volume = 128;
-  if (volume < 0)
-    volume = 0;
-  calcVolume = (65535 * volume / 128);
-
-  SDL_LockAudio();
-
-  //Device loop
-  for (i = 0; i < midiOutGetNumDevs(); i++)
-  {
-    //Get device capabilities
-    result = midiOutGetDevCaps(i, &capabilities, sizeof(capabilities));
-
-    if (result == MMSYSERR_NOERROR)
-    {
-      //Adjust volume on this candidate
-      if ((capabilities.dwSupport & MIDICAPS_VOLUME))
-      {
-        midiOutSetVolume((HMIDIOUT)i, MAKELONG(calcVolume, calcVolume));
-      }
-    }
-  }
-
-  SDL_UnlockAudio();
+	return false;
 }
-#endif
+
+//
+// S_MusicIsMidi()
+//
+// Determines if a music lump is in the MIDI format based on its header.
+//
+bool S_MusicIsMidi(byte* data, size_t length)
+{
+	if (length > 4 && data[0] == 'M' && data[1] == 'T' &&
+		data[2] == 'h' && data[3] == 'd')
+		return true;
+		
+	return false;
+}
+
+//
+// S_MusicIsOgg()
+//
+// Determines if a music lump is in the OGG format based on its header.
+//
+bool S_MusicIsOgg(byte* data, size_t length)
+{
+	if (length > 4 && data[0] == 'O' && data[1] == 'g' &&
+		data[2] == 'g' && data[3] == 'S')
+		return true;
+
+	return false;
+}
+
+//
+// S_MusicIsMp3()
+//
+// Determines if a music lump is in the MP3 format based on its header.
+//
+bool S_MusicIsMp3(byte* data, size_t length)
+{
+	// ID3 tag starts the file
+	if (length > 4 && data[0] == 'I' && data[1] == 'D' &&
+		data[2] == '3' && data[3] == 0x03)
+		return true;
+	
+	// MP3 frame sync starts the file	
+	if (length > 2 && data[0] == 0xFF && (data[1] & 0xE0))
+		return true;
+
+	return false;
+}
+
+//
+// S_MusicIsWave()
+//
+// Determines if a music lump is in the WAVE/RIFF format based on its header.
+//
+bool S_MusicIsWave(byte* data, size_t length)
+{
+	if (length > 4 && data[0] == 'R' && data[1] == 'I' &&
+		data[2] == 'F' && data[3] == 'F')
+		return true;
+		
+	return false;
+}
+
+
+//
+// I_ResetMidiVolume()
+//
+// [SL] 2011-12-31 - Set all midi devices' output volume to maximum in the OS.
+// This function is used to work around shortcomings of the SDL_Mixer library
+// on the Windows Vista/7 platform, where PCM and MIDI volumes are linked
+// together in the OS's audio mixer.  Because SDL_Mixer sets the volume of
+// midi output devices to 0 when not playing music, all sound
+// output (PCM & MIDI) becomes muted in Odamex (see Odamex bug 443).
+//
+void I_ResetMidiVolume()
+{
+	#if defined(_WIN32) && !defined(_XBOX)
+	SDL_LockAudio();
+
+	for (UINT device = MIDI_MAPPER; device != midiOutGetNumDevs(); device++)
+	{
+		MIDIOUTCAPS caps;
+		// Can this midi device change volume?
+		MMRESULT result = midiOutGetDevCaps(device, &caps, sizeof(caps));
+
+		// Set the midi device's volume
+		static const DWORD volume = 0xFFFF;		// maximum volume		
+		if (result == MMSYSERR_NOERROR && (caps.dwSupport & MIDICAPS_VOLUME))
+			midiOutSetVolume((HMIDIOUT)device, volume);			
+	}
+
+	SDL_UnlockAudio();
+	#endif	// _WIN32
+}
+
+//
+// I_UpdateMusic()
+//
+// Play the next chunk of music for the current gametic
+//
+void I_UpdateMusic()
+{
+	if (musicsystem)
+		musicsystem->playChunk();
+}
 
 // [Russell] - A better name, since we support multiple formats now
 void I_SetMusicVolume (float volume)
@@ -103,13 +184,11 @@ void I_SetMusicVolume (float volume)
 
 void I_InitMusic (void)
 {
-#ifndef OSX
-#ifdef UNIX
+	#if defined(UNIX) && !defined(OSX)
 	struct stat buf;
 	if(stat("/etc/timidity.cfg", &buf) && stat("/etc/timidity/timidity.cfg", &buf))
 		Args.AppendArg("-nomusic");
-#endif
-#endif
+	#endif
 
 	I_ShutdownMusic();
 
@@ -120,7 +199,7 @@ void I_InitMusic (void)
 		current_musicsystem_type = MS_NONE;
 		return;
 	}
-	
+
 	switch (snd_musicsystem.asInt())
 	{
 		#ifdef OSX
@@ -128,6 +207,12 @@ void I_InitMusic (void)
 			musicsystem = new AuMusicSystem();
 			break;
 		#endif	// OSX
+		
+		#ifdef PORTMIDI
+		case MS_PORTMIDI:
+			musicsystem = new PortMidiMusicSystem();
+			break;
+		#endif	// PORTMIDI
 		
 		case MS_SDLMIXER:	// fall through
 		default:
@@ -151,17 +236,28 @@ CVAR_FUNC_IMPL (snd_musicsystem)
 {
 	if (current_musicsystem_type == snd_musicsystem)
 		return;
-		
-	S_StopMusic();
-	I_ShutdownMusic();
+	
+	if (musicsystem)
+	{	
+		S_StopMusic();
+		I_ShutdownMusic();
+	}
 	I_InitMusic();
 	S_ChangeMusic(std::string(level.music, 8), true);
 }
 
 void I_PlaySong(byte* data, size_t length, bool loop)
 {
-	if (musicsystem)
-		musicsystem->playSong(data, length, loop);
+	if (!musicsystem)
+		return;
+		
+	musicsystem->startSong(data, length, loop);
+	
+	// Hack for problems with Windows Vista/7 & SDL_Mixer
+	// See comment for I_ResetMidiVolume().
+	I_ResetMidiVolume();
+	
+	I_SetMusicVolume(snd_musicvolume);
 }
 
 void I_PauseSong()

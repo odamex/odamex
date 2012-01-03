@@ -452,6 +452,7 @@ void D_DoomLoop (void)
 
 			// [RH] Use the consoleplayer's camera to update sounds
 			S_UpdateSounds (listenplayer().camera);	// move positional sounds
+			S_UpdateMusic();	// play another chunk of music
 
 			// Update display, next frame, with current state.
 			D_Display ();

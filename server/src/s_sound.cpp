@@ -191,6 +191,10 @@ void S_UpdateSounds (void *listener_p)
 {
 }
 
+void S_UpdateMusic()
+{
+}
+
 void S_SetMusicVolume (float volume)
 {
 }

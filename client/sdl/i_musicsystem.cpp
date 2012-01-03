@@ -20,12 +20,26 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "SDL_mixer.h"
-#include "mus2midi.h"
+#include <string>
+#include "i_system.h"
+#include "m_fileio.h"
+#include "cmdlib.h"
 
 #include "i_music.h"
+#include "i_midi.h"
+#include "mus2midi.h"
 #include "i_musicsystem.h"
-#include "m_fileio.h"
+
+#include "SDL_mixer.h"
+
+#ifdef OSX
+#include <AudioToolbox/AudioToolbox.h>
+#endif	// OSX
+
+#ifdef PORTMIDI
+#include "portmidi.h"
+#include "porttime.h"
+#endif	// PORTMIDI
 
 // [Russell] - define a temporary midi file, for consistency
 // SDL < 1.2.7
@@ -37,44 +51,41 @@
 #endif
 
 EXTERN_CVAR(snd_musicvolume)
+EXTERN_CVAR(snd_musicdevice)
 
-// ============================================================================
-//
-// General functions
-//
-// ============================================================================
+extern MusicSystem* musicsystem;
+
 
 //
-// S_ClampVolume
+// I_CalculateMsPerMidiClock()
 //
-// Returns the volume parameter fitted within the inclusive range of 0.0 to 1.0
-//
-float S_ClampVolume(float volume)
+// Returns milliseconds per midi clock based on the current tempo and
+// the time division value in the midi file's header.
+
+static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 {
-	if (volume < 0.0f)
-		return 0.0f;
-	if (volume > 1.0f)
-		return 1.0f;
+	if (timeDivision & 0x8000)
+	{
+		// timeDivision is in SMPTE frames per second format
+		double framespersecond = double((timeDivision & 0x7F00) >> 8);
+		double ticksperframe = double((timeDivision & 0xFF));
 		
-	return volume;
-}
-
-bool S_IsMus(byte* data, size_t length)
-{
-	if (length > 4 && data[0] == 'M' && data[1] == 'U' &&
-		data[2] == 'S' && data[3] == 0x1A)
-		return true;
-
-	return false;
-}
-
-bool S_IsMidi(byte* data, size_t length)
-{
-	if (length > 4 && data[0] == 'M' && data[1] == 'T' &&
-		data[2] == 'h' && data[3] == 'd')
-		return true;
+		// [SL] 2011-12-23 - An fps value of 29 in timeDivision really implies
+		// 29.97 fps.
+		if (framespersecond == 29.0)
+			framespersecond = 29.97;
 		
-	return false;
+		return 1000.0 / framespersecond / ticksperframe;
+	}
+	else
+	{
+		// timeDivision is in ticks per beat format
+		double ticsperbeat = double(timeDivision & 0x7FFF);
+		static double millisecondsperminute = 60.0 * 1000.0;
+		double millisecondsperbeat = millisecondsperminute / tempo;
+
+		return millisecondsperbeat / ticsperbeat;
+	}
 }
 
 
@@ -84,7 +95,7 @@ bool S_IsMidi(byte* data, size_t length)
 //
 // ============================================================================
 
-void MusicSystem::playSong(byte* data, size_t length, bool loop)
+void MusicSystem::startSong(byte* data, size_t length, bool loop)
 {
 	mIsPlaying = true;
 	mIsPaused = false;
@@ -106,12 +117,36 @@ void MusicSystem::resumeSong()
 	mIsPaused = false;
 }
 
+void MusicSystem::setTempo(float tempo)
+{
+	if (tempo > 0.0f)
+		mTempo = tempo;
+}
+
+void MusicSystem::setVolume(float volume)
+{
+	mVolume = clamp(volume, 0.0f, 1.0f);
+}
+
 // ============================================================================
 //
 // SdlMixerMusicSystem
 //
 // ============================================================================
 
+void SdlMixerFree()
+{
+	if (!musicsystem)
+		return;
+		
+	SdlMixerMusicSystem *sdlmusicsystem = static_cast<SdlMixerMusicSystem*>(musicsystem);
+		
+	if (sdlmusicsystem->mRegisteredSong.Data)
+	{
+		SDL_FreeRW(sdlmusicsystem->mRegisteredSong.Data);
+		sdlmusicsystem->mRegisteredSong.Data = NULL;
+	}
+}
 
 SdlMixerMusicSystem::SdlMixerMusicSystem() :
 	mIsInitialized(false), mRegisteredSong()
@@ -131,7 +166,7 @@ SdlMixerMusicSystem::~SdlMixerMusicSystem()
 	mIsInitialized = false;
 }
 
-void SdlMixerMusicSystem::playSong(byte* data, size_t length, bool loop)
+void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop)
 {
 	if (!isInitialized())
 		return;
@@ -152,7 +187,7 @@ void SdlMixerMusicSystem::playSong(byte* data, size_t length, bool loop)
 		return;
 	}
 
-    MusicSystem::playSong(data, length, loop);
+    MusicSystem::startSong(data, length, loop);
     
 	// [Russell] - Hack for setting the volume on windows vista, since it gets
 	// reset on every music change
@@ -174,6 +209,7 @@ void SdlMixerMusicSystem::_StopSong()
 		resumeSong();
 		
 	Mix_FadeOutMusic(100);
+	Mix_HookMusicFinished(I_ResetMidiVolume);
 	_UnregisterSong();
 }
 
@@ -195,7 +231,7 @@ void SdlMixerMusicSystem::pauseSong()
 {
 	MusicSystem::pauseSong();
 	
-	//setVolume(0.0f);
+	setVolume(0.0f);
 	Mix_PauseMusic();
 }
 
@@ -203,7 +239,7 @@ void SdlMixerMusicSystem::resumeSong()
 {
 	MusicSystem::resumeSong();
 	
-	setVolume(snd_musicvolume);
+	setVolume(getVolume());
 	Mix_ResumeMusic();
 }
 
@@ -216,9 +252,8 @@ void SdlMixerMusicSystem::resumeSong()
 // the SFX volume.
 void SdlMixerMusicSystem::setVolume(float volume)
 {
-	volume = S_ClampVolume(volume);
-	
-    Mix_VolumeMusic(int(volume * MIX_MAX_VOLUME));
+	MusicSystem::setVolume(volume);
+    Mix_VolumeMusic(int(getVolume() * MIX_MAX_VOLUME));
 }
 
 //
@@ -231,6 +266,8 @@ void SdlMixerMusicSystem::_UnregisterSong()
 	if (!isInitialized())
 		return;
 
+	Mix_HookMusicFinished(SdlMixerFree);
+	
 	if (mRegisteredSong.Track)
 		Mix_FreeMusic(mRegisteredSong.Track);
 
@@ -239,7 +276,7 @@ void SdlMixerMusicSystem::_UnregisterSong()
 }
 
 //
-// AuMusicSystem::_RegisterSong
+// SdlMixerMusicSystem::_RegisterSong
 //
 // Determines the format of music data and allocates the memory for the music
 // data if appropriate.  Note that _UnregisterSong should be called after
@@ -248,7 +285,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 {
 	_UnregisterSong();
 	
-	if (S_IsMus(data, length))
+	if (S_MusicIsMus(data, length))
 	{
 		MEMFILE *mus = mem_fopen_read(data, length);
 		MEMFILE *midi = mem_fopen_write();
@@ -310,12 +347,6 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	
 	#endif	// TEMP_MIDI
 
-	if (mRegisteredSong.Data)
-	{
-		SDL_FreeRW(mRegisteredSong.Data);
-		mRegisteredSong.Data = NULL;
-	}
-	
 	if (!mRegisteredSong.Track)
 	{
 		#ifdef TEMP_MIDI
@@ -335,12 +366,17 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 //
 // AuMusicSystem
 //
+// denis - midi via SDL+timidity on OSX crashes miserably after a while
+// this is not our fault, but we have to live with it until someone
+// bothers to fix it, therefore use native midi on OSX for now
+//
 // ============================================================================
+
+#ifdef OSX
 
 AuMusicSystem::AuMusicSystem() :
 	mIsInitialized(false)
 {
-	#ifdef OSX
 	NewAUGraph(&mGraph);
 
 	ComponentDescription d;
@@ -392,11 +428,6 @@ AuMusicSystem::AuMusicSystem() :
 	Printf(PRINT_HIGH, "I_InitMusic: Music playback enabled using AudioToolbox\n");
 	mIsInitialized = true;
 	return;
-	
-	#else	// !OSX
-	Printf(PRINT_HIGH, "I_InitMusic: Music player creation failed using AudioToolbox\n");
-	return;
-	#endif
 }
 
 AuMusicSystem::~AuMusicSystem()
@@ -404,13 +435,11 @@ AuMusicSystem::~AuMusicSystem()
 	_StopSong();
 	MusicSystem::stopSong();
 	
-	#ifdef OSX
 	DisposeMusicPlayer(mPlayer);
 	AUGraphClose(mGraph);
-	#endif	// OSX
 }
 
-void AuMusicSystem::playSong(byte* data, size_t length, bool loop)
+void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 {
 	if (!isInitialized())
 		return;
@@ -422,7 +451,6 @@ void AuMusicSystem::playSong(byte* data, size_t length, bool loop)
 	
 	_RegisterSong(data, length);
 	
-	#ifdef OSX	
 	if (MusicSequenceSetAUGraph(mSequence, mGraph) != noErr)
 	{
 		Printf(PRINT_HIGH, "I_PlaySong: MusicSequenceSetAUGraph failed\n");
@@ -494,9 +522,8 @@ void AuMusicSystem::playSong(byte* data, size_t length, bool loop)
 		Printf(PRINT_HIGH, "I_PlaySong: MusicPlayerStart failed\n");
 		return;
 	}
-	#endif	// OSX
 	
-	MusicSystem::playSong(data, length, loop);
+	MusicSystem::startSong(data, length, loop);
 }
 
 //
@@ -513,10 +540,7 @@ void AuMusicSystem::_StopSong()
 	if (isPaused())
 		resumeSong();
 		
-	#ifdef OSX
 	MusicPlayerStop(mPlayer);
-	#endif	// OSX
-	
 	_UnregisterSong();
 }
 
@@ -538,7 +562,6 @@ void AuMusicSystem::resumeSong()
 	setVolume(snd_musicvolume);
 
 	MusicSystem::resumeSong();
-
 }
 
 //
@@ -548,15 +571,13 @@ void AuMusicSystem::resumeSong()
 // output mixer channel.  
 void AuMusicSystem::setVolume(float volume)
 {
-	volume = S_ClampVolume(volume);
+	MusicSystem::setVolume(volume);
 	
-	#ifdef OSX
-	if (AudioUnitSetParameter(mUnit, kAudioUnitParameterUnit_LinearGain, kAudioUnitScope_Output, 0, volume, 0) != noErr)
+	if (AudioUnitSetParameter(mUnit, kAudioUnitParameterUnit_LinearGain, kAudioUnitScope_Output, 0, getVolume(), 0) != noErr)
 	{
 		Printf(PRINT_HIGH, "I_InitMusic: AudioUnitSetParameter failed\n");
 		return;
 	}
-	#endif	// OSX
 }
 
 //
@@ -569,9 +590,7 @@ void AuMusicSystem::_UnregisterSong()
 	if (!isInitialized())
 		return;
 
-	#ifdef OSX
     DisposeMusicSequence(mSequence);
-	#endif	// OSX
 }
 
 //
@@ -586,7 +605,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 	size_t reglength = length;
 	MEMFILE *mus = NULL, *midi = NULL;
 	
-	if (S_IsMus(data, length))
+	if (S_MusicIsMus(data, length))
 	{
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
@@ -604,13 +623,12 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 			reglength = 0;
 		}
 	}
-	else if (!S_IsMidi(data, length))
+	else if (!S_MusicIsMidi(data, length))
 	{
 		Printf(PRINT_HIGH, "I_PlaySong: AudioUnit does not support this music format\n");
 		return;
 	}
 	
-	#ifdef OSX
 	if (NewMusicSequence(&mSequence) != noErr)
 	{
 		Printf(PRINT_HIGH, "I_PlaySong: Unable to create AudioUnit sequence\n");
@@ -631,11 +649,478 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 		CFRelease(mCfd);
 		return;
 	}
-	#endif	// OSX
 
 	if (mus)
 		mem_fclose(mus);
 	if (midi)
 		mem_fclose(midi);
 }
+#endif	// OSX
+
+
+// ============================================================================
+//
+// MidiMusicSystem non-member helper functions
+//
+// ============================================================================
+
+//
+// I_RegisterMidiSong()
+//
+// Returns a new MidiSong object, parsing the MUS or MIDI lump stored
+// in data.
+//
+static MidiSong* I_RegisterMidiSong(byte *data, size_t length)
+{
+	byte* regdata = data;
+	size_t reglength = length;
+	MEMFILE *mus = NULL, *midi = NULL;
+	
+	// Convert from MUS format to MIDI format
+	if (S_MusicIsMus(data, length))
+	{
+		mus = mem_fopen_read(data, length);
+		midi = mem_fopen_write();
+	
+		int result = mus2mid(mus, midi);
+		if (result == 0)
+		{
+			regdata = (byte*)mem_fgetbuf(midi);
+			reglength = mem_fsize(midi);
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "I_RegisterMidiSong: MUS is not valid\n");
+			regdata = NULL;
+			reglength = 0;
+		}
+	}
+	else if (!S_MusicIsMidi(data, length))
+	{
+		Printf(PRINT_HIGH, "I_RegisterMidiSong: Only midi music formats are supported with the selected music system.\n");
+		return NULL;
+	}
+	
+	MidiSong *midisong = new MidiSong(regdata, reglength);
+	
+	if (mus)
+		mem_fclose(mus);
+	if (midi)
+		mem_fclose(midi);
+		
+	return midisong;
+}
+
+//
+// I_UnregisterMidiSong()
+//
+// Frees the memory allocated for a MidiSong object
+//
+static void I_UnregisterMidiSong(MidiSong* midisong)
+{
+	if (midisong)
+		delete midisong;
+}
+
+
+// ============================================================================
+//
+// MidiMusicSystem
+//
+// ============================================================================
+
+MidiMusicSystem::MidiMusicSystem() :
+	MusicSystem(), mMidiSong(NULL), mSongItr(), mLoop(false), mTimeDivision(96),
+	mLastEventTime(0), mPrevClockTime(0), mChannelVolume()
+{
+}
+
+MidiMusicSystem::~MidiMusicSystem()
+{
+	_StopSong();
+	
+	I_UnregisterMidiSong(mMidiSong);
+}
+
+void MidiMusicSystem::_AllNotesOff()
+{
+	for (int i = 0; i < _GetNumChannels(); i++)
+	{
+		MidiControllerEvent event_noteoff(0, MIDI_CONTROLLER_ALL_NOTES_OFF, i);
+		playEvent(&event_noteoff);
+		MidiControllerEvent event_reset(0, MIDI_CONTROLLER_RESET_ALL, i);
+		playEvent(&event_reset);
+	}
+}
+
+void MidiMusicSystem::_StopSong()
+{
+}
+
+void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
+{
+	if (!isInitialized())
+		return;
+		
+	stopSong();
+	
+	if (!data || !length)
+		return;
+	
+	mLoop = loop;
+	
+	mMidiSong = I_RegisterMidiSong(data, length);
+	if (!mMidiSong)
+	{
+		stopSong();
+		return;
+	}
+
+	MusicSystem::startSong(data, length, loop);
+	_InitializePlayback();
+}
+
+void MidiMusicSystem::stopSong()
+{
+	I_UnregisterMidiSong(mMidiSong);
+	mMidiSong = NULL;
+	
+	_AllNotesOff();
+	MusicSystem::stopSong();
+}
+
+void MidiMusicSystem::pauseSong()
+{
+	_AllNotesOff();
+	
+	MusicSystem::pauseSong();
+}
+
+void MidiMusicSystem::resumeSong()
+{
+	MusicSystem::resumeSong();
+	
+	mLastEventTime = I_MSTime();
+	
+	MidiEvent *event = *mSongItr;
+	if (event)
+		mPrevClockTime = event->getMidiClockTime();
+}
+
+//
+// MidiMusicSystem::setVolume
+//
+// Sanity checks the volume parameter and then inserts a midi controller
+// event to change the volume for all of the channels.
+//
+void MidiMusicSystem::setVolume(float volume)
+{
+	MusicSystem::setVolume(volume);
+
+	for (int i = 0; i < _GetNumChannels(); i ++)
+		_RefreshVolume(i);
+}
+
+//
+// _SetChannelVolume()
+//
+// Updates the array that tracks midi volume events.  Note that channel
+// is 0-indexed (0 - 15).
+//
+void MidiMusicSystem::_SetChannelVolume(int channel, int volume)
+{
+	if (channel >= 0 && channel < _GetNumChannels())
+		mChannelVolume[channel] = clamp(volume, 0, 127);
+}
+
+//
+// _GetChannelVolume()
+//
+// Returns the value of the last channel volume event or -1 if there was
+// an error.  Note that channel is 0-indexed (0 - 15).
+//
+int MidiMusicSystem::_GetChannelVolume(int channel) const
+{
+	if (channel < 0 || channel >= _GetNumChannels())
+		return -1;
+		
+	return mChannelVolume[channel];
+}
+
+//
+// _RefreshVolume()
+//
+// Scales the cached midi channel volume by the cached master volume for the
+// music system and sends out a volume controller event to change the volume.
+//
+void MidiMusicSystem::_RefreshVolume(int channel)
+{
+	if (channel < 0 || channel >= _GetNumChannels())
+		return;
+		
+	// backup mChannelVolume since playEvent() will modify it
+	int oldchanvol = _GetChannelVolume(channel);
+	if (oldchanvol == -1)
+		return;
+		
+	// existing channel volume (0-127) scaled by the master volume (0-1)
+	int scaledvol = _GetChannelVolume(channel) * getVolume();
+	MidiControllerEvent event(0, MIDI_CONTROLLER_MAIN_VOLUME, channel, scaledvol);
+	playEvent(&event);
+		
+	// restore mChannelVolume
+	_SetChannelVolume(channel, oldchanvol);
+}
+
+//
+// _InitializePlayback()
+//
+// Resets all of the variables used during playChunk() to determine the timing
+// of midi events as well as the event iterator.  This should be called at the
+// start of playback or when looping back to the beginning of the song.
+//
+void MidiMusicSystem::_InitializePlayback()
+{
+	if (!mMidiSong)
+		return;
+		
+	mLastEventTime = I_MSTime();
+	
+	// seek to the begining of the song
+	mSongItr = mMidiSong->begin();
+	mPrevClockTime = 0;
+	
+	// initialize all channel volumes to 100%
+	for (int i = 0; i < _GetNumChannels(); i++)
+		mChannelVolume[i] = 127;
+}
+
+void MidiMusicSystem::playChunk()
+{
+	if (!isInitialized() || !mMidiSong || !isPlaying() || isPaused())
+		return;
+		
+	unsigned int endtime = I_MSTime() + 1000 / TICRATE;
+
+	while (mSongItr != mMidiSong->end())
+	{
+		MidiEvent *event = *mSongItr;
+		if (!event)
+			break;
+	
+		double msperclock = 
+			I_CalculateMsPerMidiClock(mMidiSong->getTimeDivision(), getTempo());
+			
+		unsigned int deltatime =
+			(event->getMidiClockTime() - mPrevClockTime) * msperclock;
+
+		unsigned int eventplaytime = mLastEventTime + deltatime;
+		
+		if (eventplaytime > endtime)
+			break;
+
+		playEvent(event, eventplaytime);
+		
+		mPrevClockTime = event->getMidiClockTime();
+		mLastEventTime = eventplaytime;
+		
+		++mSongItr;
+	}
+	
+	// At the end of the song.  Either stop or loop back to the begining
+	if (mSongItr == mMidiSong->end())
+	{
+		if (!mLoop)
+		{
+			stopSong();
+			return;
+		}
+		else
+		{
+			_InitializePlayback();
+			return;
+		}
+	}
+}
+
+// ============================================================================
+//
+// PortMidiMusicSystem
+//
+// ============================================================================
+
+#ifdef PORTMIDI
+
+//
+// I_PortMidiTime()
+//
+// A wrapper function for I_MSTime() so that PortMidi can use a function
+// pointer to I_MSTime() for its event scheduling needs.
+//
+static int I_PortMidiTime(void *time_info = NULL)
+{
+	return I_MSTime();
+} 
+
+PortMidiMusicSystem::PortMidiMusicSystem() :
+	MidiMusicSystem(), mIsInitialized(false),
+	mOutputDevice(-1), mStream(NULL)
+{
+	const int output_buffer_size = 100;
+	
+	if (Pm_Initialize() != pmNoError)
+	{
+		Printf(PRINT_HIGH, "I_InitMusic: PortMidi initialization failed failed.\n");
+		return;
+	}
+
+ 	mOutputDevice = Pm_GetDefaultOutputDeviceID();
+ 	std::string prefdevicename(snd_musicdevice.cstring());
+  	
+	// List PortMidi devices
+	for (int i = 0; i < Pm_CountDevices(); i++)
+	{
+		const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
+		if (!info || !info->output)
+			continue;
+			
+		std::string curdevicename(info->name);
+		if (!prefdevicename.empty() && StdStringCompare(prefdevicename, curdevicename, true) == 0)
+			mOutputDevice = i;
+
+		Printf(PRINT_HIGH, "%d: %s, %s\n", i, info->interf, info->name);
+    }
+    
+    if (mOutputDevice == pmNoDevice)
+	{
+		Printf(PRINT_HIGH, "I_InitMusic: No PortMidi output devices available.\n");
+		Pm_Terminate ();
+		return;
+	}
+	
+	if (Pm_OpenOutput(&mStream,	mOutputDevice, NULL, output_buffer_size, I_PortMidiTime, NULL, cLatency) != pmNoError)
+	{
+		Printf(PRINT_HIGH, "I_InitMusic: Failure opening PortMidi output device %d.\n", mOutputDevice);
+		return;
+	} 
+                  
+	if (!mStream)
+		return;
+		
+	Printf(PRINT_HIGH, "I_InitMusic: Music playback enabled using PortMidi.\n");
+	mIsInitialized = true;
+}
+
+PortMidiMusicSystem::~PortMidiMusicSystem()
+{
+	if (!isInitialized())
+		return;
+	
+	_StopSong();
+	mIsInitialized = false;
+	
+	if (mStream)
+	{
+		// Sleep to allow the All-Notes-Off events to be processed
+		Pt_Sleep(cLatency * 2);
+		
+		Pm_Close(mStream);
+		Pm_Terminate();
+		mStream = NULL;
+	}
+}
+
+void PortMidiMusicSystem::stopSong()
+{
+	_StopSong();
+	MidiMusicSystem::stopSong();
+}
+
+void PortMidiMusicSystem::_StopSong()
+{
+	// non-virtual version of _AllNotesOff()
+	for (int i = 0; i < _GetNumChannels(); i++)
+	{
+		MidiControllerEvent event_noteoff(0, MIDI_CONTROLLER_ALL_NOTES_OFF, i);
+		_PlayEvent(&event_noteoff);
+		MidiControllerEvent event_reset(0, MIDI_CONTROLLER_RESET_ALL, i);
+		_PlayEvent(&event_reset);
+	}
+}
+
+//
+// PortMidiMusicSystem::playEvent
+//
+// Virtual wrapper-function for the non-virtual _PlayEvent.  We provide the
+// non-virtual version so that it can be safely called by ctors and dtors.
+//
+void PortMidiMusicSystem::playEvent(MidiEvent *event, int time)
+{
+	if (event)
+		_PlayEvent(event, time);
+}
+
+void PortMidiMusicSystem::_PlayEvent(MidiEvent *event, int time)
+{
+	if (!event)
+		return;
+		
+	// play at the current time if user specifies time 0
+	if (time == 0)
+		time = _GetLastEventTime();
+	
+	if (I_IsMidiMetaEvent(event))
+	{
+		MidiMetaEvent *metaevent = static_cast<MidiMetaEvent*>(event);
+		if (metaevent->getMetaType() == MIDI_META_SET_TEMPO)
+		{
+			double tempo = I_GetTempoChange(metaevent);
+			setTempo(tempo);
+		}
+		else if (metaevent->getMetaType() == MIDI_META_END_OF_TRACK)
+		{
+			_AllNotesOff();
+			_InitializePlayback();
+		}
+		
+		//	Just ignore other meta events for now
+	}
+	else if (I_IsMidiSysexEvent(event))
+	{
+		// Just ignore sysex events for now
+	}
+	else if (I_IsMidiControllerEvent(event))
+	{
+		MidiControllerEvent *ctrlevent = static_cast<MidiControllerEvent*>(event);
+		byte channel = ctrlevent->getChannel();
+		byte controltype = ctrlevent->getControllerType();
+		byte param1 = ctrlevent->getParam1();
+		
+		if (controltype == MIDI_CONTROLLER_MAIN_VOLUME)
+		{
+			// store the song's volume for the channel
+			_SetChannelVolume(channel, param1);
+			
+			// scale the channel's volume by the master music volume
+			param1 *= getVolume();
+		}
+			
+		PmMessage msg = Pm_Message(event->getEventType() | channel, controltype, param1);
+		Pm_WriteShort(mStream, time, msg);
+	}
+	else if (I_IsMidiChannelEvent(event))
+	{
+		MidiChannelEvent *chanevent = static_cast<MidiChannelEvent*>(event);
+		byte channel = chanevent->getChannel();
+		byte param1 = chanevent->getParam1();
+		byte param2 = chanevent->getParam2();
+		
+		PmMessage msg = Pm_Message(event->getEventType() | channel, param1, param2);
+		Pm_WriteShort(mStream, time, msg);
+	}
+}
+
+#endif	// PORTMIDI
+
+VERSION_CONTROL (i_musicsystem_cpp, "$Id: i_musicsystem.cpp 2671 2011-12-19 00:20:32Z dr_sean $")
 	

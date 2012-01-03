@@ -1070,6 +1070,11 @@ void S_UpdateSounds (void *listener_p)
     // S_StopMusic();
 }
 
+void S_UpdateMusic()
+{
+	I_UpdateMusic();
+}
+
 void S_SetMusicVolume (float volume)
 {
 	if (volume < 0.0 || volume > 1.0)

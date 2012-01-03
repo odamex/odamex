@@ -57,6 +57,7 @@
 #include "m_memio.h"
 
 #include "s_sound.h"
+#include "i_musicsystem.h"
 
 #include "doomstat.h"
 
@@ -122,6 +123,7 @@ EXTERN_CVAR (mouse_acceleration)
 EXTERN_CVAR (mouse_threshold)
 
 // [Ralphis - Menu] Sound Menu
+EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_sfxvolume)
 EXTERN_CVAR (snd_crossover)
@@ -492,17 +494,32 @@ menu_t JoystickMenu = {
   * Sound Menu [Ralphis]
   *
   *=======================================*/
- 
+
+static value_t MusSys[] = {
+	{ MS_SDLMIXER,	"SDL Mixer"},
+	#ifdef OSX
+	{ MS_AUDIOUNIT,	"AudioUnit"},
+	#endif	// OSX
+	#ifdef PORTMIDI
+	{ MS_PORTMIDI,	"PortMidi"},
+	#endif	// PORTMIDI
+	{ MS_NONE,		"No Music"}
+};
+
+static int num_mussys = STACKARRAY_LENGTH(MusSys);
+
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
-	{ bricktext ,   "Sound Levels"                          , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
-	{ slider    ,	"Music Volume"                          , {&snd_musicvolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
-	{ slider    ,	"Sound Volume"                          , {&snd_sfxvolume},		{0.0},      {1.0},	    {0.1},      {NULL} },
-	{ discrete  ,   "Stereo Switch"                         , {&snd_crossover},	    {2.0},		{0.0},		{0.0},		{OnOff} },	
-	{ redtext   ,	" "                                     , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
-	{ bricktext ,   "Multiplayer Options"                   , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
-	{ discrete  ,   "Player Connect Alert"                  , {&cl_connectalert},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete  ,   "Player Disconnect Alert"               , {&cl_disconnectalert},{2.0},		{0.0},		{0.0},		{OnOff} }	
+	{ bricktext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ slider    ,	"Music Volume"                      , {&snd_musicvolume},	{0.0},      	{1.0},	    {0.1},      {NULL} },
+	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.1},      {NULL} },
+	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },	
+	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
+	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ bricktext ,   "Multiplayer Options"               , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
+	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} }	
  };
  
 menu_t SoundMenu = {

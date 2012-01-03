@@ -28,6 +28,7 @@
 #include "doomdef.h"
 #include "f_wipe.h"
 #include "c_cvars.h"
+#include "i_music.h"
 
 //
 //		SCREEN WIPE PACKAGE
@@ -475,6 +476,10 @@ int wipe_ScreenWipe (int ticks)
 	};
 	int rc;
 
+	// [SL] 2011-12-31 - Continue to play music during screenwipe so
+	// notes do not hang
+	I_UpdateMusic();
+	
 	if (Currentr_wipetype == wipe_None)
 		return true;
 
