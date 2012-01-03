@@ -247,7 +247,7 @@ static int RegisterJoystickEvent(SDL_Event *ev, int value)
 
 	if(ev->type == SDL_JOYHATMOTION)
 	{
-		if(JoyEventList.size())
+		if(!JoyEventList.empty())
 		{
 			std::list<JoystickEvent_t*>::iterator i;
 
@@ -295,7 +295,7 @@ void UpdateJoystickEvents()
 	std::list<JoystickEvent_t*>::iterator i;
 	event_t    event;
 
-	if(!JoyEventList.size())
+	if(JoyEventList.empty())
 		return;
 
 	i = JoyEventList.begin();
@@ -315,7 +315,7 @@ void UpdateJoystickEvents()
 			}
 			else
 			{
-				i++;
+				++i;
 				continue;
 			}
 
@@ -340,7 +340,7 @@ void UpdateJoystickEvents()
 				continue;
 			}
 		}
-		i++;
+		++i;
 	}
 }
 
