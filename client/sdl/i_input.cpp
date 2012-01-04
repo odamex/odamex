@@ -899,10 +899,10 @@ void I_GetEvent (void)
 			// [Xyltol 07/21/2011] - Add support for MOUSE4 and MOUSE5 (back thumb and front thumb on most mice)
 			else if(ev.button.button == SDL_BUTTON_X1){//back thumb
 				event.data1 = KEY_MOUSE4;
-				mbuttons &= 8;
+				mbuttons &= ~8;
 			}else if(ev.button.button == SDL_BUTTON_X2){//front thumb
 				event.data1 = KEY_MOUSE5;
-				mbuttons &= 16;
+				mbuttons &= ~16;
 			}
             else if(ev.button.button == SDL_BUTTON_WHEELUP)
                event.data1 = KEY_MWHEELUP;

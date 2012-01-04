@@ -417,24 +417,24 @@ static void M_UpdateMouseOptions()
 
 	if (mouse_type == MOUSE_ZDOOM_W32)
 	{
-		if (mouse_sens_index < sizeof(MouseItems))
+		if (mouse_sens_index < menu_length)
 			memcpy(&MouseItems[mouse_sens_index], &zdoom_sens_menuitem, sizeof(menuitem_t));
-		if (mouse_pitch_index < sizeof(MouseItems))
+		if (mouse_pitch_index < menu_length)
 			memcpy(&MouseItems[mouse_pitch_index], &zdoom_pitch_menuitem, sizeof(menuitem_t));
-		if (mouse_accel_index < sizeof(MouseItems))
+		if (mouse_accel_index < menu_length)
 			memcpy(&MouseItems[mouse_accel_index], &zdoom_accel_menuitem, sizeof(menuitem_t));
-		if (mouse_thresh_index < sizeof(MouseItems))
+		if (mouse_thresh_index < menu_length)
 			memcpy(&MouseItems[mouse_thresh_index], &zdoom_thresh_menuitem, sizeof(menuitem_t));
 	}
 	else
 	{
-		if (mouse_sens_index < sizeof(MouseItems))
+		if (mouse_sens_index < menu_length)
 			memcpy(&MouseItems[mouse_sens_index], &doom_sens_menuitem, sizeof(menuitem_t));
-		if (mouse_pitch_index < sizeof(MouseItems))
+		if (mouse_pitch_index < menu_length)
 			memcpy(&MouseItems[mouse_pitch_index], &doom_pitch_menuitem, sizeof(menuitem_t));
-		if (mouse_accel_index < sizeof(MouseItems))
+		if (mouse_accel_index < menu_length)
 			memcpy(&MouseItems[mouse_accel_index], &doom_accel_menuitem, sizeof(menuitem_t));
-		if (mouse_thresh_index < sizeof(MouseItems))
+		if (mouse_thresh_index < menu_length)
 			memcpy(&MouseItems[mouse_thresh_index], &doom_thresh_menuitem, sizeof(menuitem_t));
 	}
 
@@ -453,6 +453,8 @@ void M_ResetMouseValues()
 	novert.RestoreDefault();
 	m_side.RestoreDefault();
 	m_forward.RestoreDefault();
+	mouse_acceleration.RestoreDefault();
+	mouse_threshold.RestoreDefault();
 
 	previous_mouse_type = mouse_type;
 	M_UpdateMouseOptions();
