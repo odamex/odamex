@@ -620,34 +620,37 @@ void G_ConvertMouseSettings(int old_type, int new_type)
 	if (old_type == new_type)
 		return;
 
+	if (new_type == MOUSE_ODAMEX)
+		new_type == MOUSE_DOOM;
+
 	// first convert to ZDoom settings
 	if (old_type == MOUSE_DOOM)
 	{
-		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) * 0.025f); 
-		m_pitch.Set(m_pitch * 4.0f);
+		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 30.0f); 
+		m_pitch.Set(m_pitch * 2.0f);
 	}
 	else if (old_type == MOUSE_ODAMEX)
 	{
-		mouse_sensitivity.Set(mouse_sensitivity * 0.025f);
-		m_pitch.Set(m_pitch * 4.0f);
+		mouse_sensitivity.Set(mouse_sensitivity / 30.0f);
+		m_pitch.Set(m_pitch * 2.0f);
 	}
 
 	// convert to the destination type
 	if (new_type == MOUSE_DOOM)
 	{
-		mouse_sensitivity.Set((mouse_sensitivity * 40.0f) - 5.0f);
-		m_pitch.Set(m_pitch * 0.25f);
+		mouse_sensitivity.Set((mouse_sensitivity * 30.0f) - 5.0f);
+		m_pitch.Set(m_pitch * 0.5f);
 	}
 	else if (new_type == MOUSE_ODAMEX)
 	{
-		mouse_sensitivity.Set(mouse_sensitivity * 40.0f);
-		m_pitch.Set(m_pitch * 0.25f);
+		mouse_sensitivity.Set(mouse_sensitivity * 30.0f);
+		m_pitch.Set(m_pitch * 0.5f);
 	}
 }
 
 int G_DoomMouseScaleX(int x)
 {
-	return x * (int(mouse_sensitivity) + 5) / 10;
+	return int(x * (mouse_sensitivity + 5.0f) / 10.0f);
 }
 
 int G_DoomMouseScaleY(int y)
@@ -655,24 +658,14 @@ int G_DoomMouseScaleY(int y)
 	return G_DoomMouseScaleX(y); // identical scaling for x and y
 }
 
-int G_OdamexMouseScaleX(int x)
+int G_ZDoomW32MouseScaleX(int x)
 {
-	return int(x * mouse_sensitivity / 10.0f);
+	return int(x * 3.0f * mouse_sensitivity);
 }
 
-int G_OdamexMouseScaleY(int y)
+int G_ZDoomW32MouseScaleY(int y)
 {
-	return G_OdamexMouseScaleX(y);	// identical scaling for x and y
-}
-
-int G_ZDoomMouseScaleX(int x)
-{
-	return int(x * 4.0f * mouse_sensitivity);
-}
-
-int G_ZDoomMouseScaleY(int y)
-{
-	return int(y * mouse_sensitivity);
+	return int(y * 2.0f * mouse_sensitivity);
 }
 
 void G_ProcessMouseMovementEvent(const event_t *ev)
@@ -698,15 +691,10 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 		scalexfunc = &G_DoomMouseScaleX;
 		scaleyfunc = &G_DoomMouseScaleY;
 	}
-	else if (mouse_type == MOUSE_ODAMEX)
+	else if (mouse_type == MOUSE_ZDOOM_W32)
 	{
-		scalexfunc = &G_OdamexMouseScaleX;
-		scaleyfunc = &G_OdamexMouseScaleY;
-	}
-	else if (mouse_type == MOUSE_ZDOOM)
-	{
-		scalexfunc = &G_ZDoomMouseScaleX;
-		scaleyfunc = &G_ZDoomMouseScaleY;
+		scalexfunc = &G_ZDoomW32MouseScaleX;
+		scaleyfunc = &G_ZDoomW32MouseScaleY;
 	}
 	else
 		return;	// invalid mouse type

@@ -363,9 +363,8 @@ menu_t ControlsMenu = {
 // -------------------------------------------------------
 
 static value_t MouseType[] = {
-	{ MOUSE_DOOM,	"Doom"},
-	{ MOUSE_ODAMEX,	"Odamex"},
-	{ MOUSE_ZDOOM,	"ZDoom"}
+	{ MOUSE_DOOM,		"Doom"},
+	{ MOUSE_ZDOOM_W32,	"ZDoom"}
 };
 
 static int previous_mouse_type;
@@ -373,7 +372,7 @@ void M_ResetMouseValues();
 
 static menuitem_t MouseItems[] =
 {
-	{ discrete,	"Mouse Type"					, {&mouse_type},		{3.0},	{0.0},		{0.0},		{MouseType}},
+	{ discrete,	"Mouse Type"					, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ slider,	"Overall Sensitivity" 			, {&mouse_sensitivity},	{0.0},	{77.0},		{1.0},		{NULL}},
 	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},	{1.0},		{0.025},	{NULL}},
@@ -396,24 +395,36 @@ void G_ConvertMouseSettings(int old_type, int new_type);
 
 static void M_UpdateMouseOptions()
 {
-	static size_t mouse_sens_index = M_FindCvarInMenu(mouse_sensitivity, MouseItems); 
-	static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems); 
+	const static size_t menu_length = STACKARRAY_LENGTH(MouseItems);
+	const static size_t mouse_sens_index = M_FindCvarInMenu(mouse_sensitivity, MouseItems, menu_length); 
+	const static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems, menu_length); 
+	const static size_t mouse_accel_index = M_FindCvarInMenu(mouse_acceleration, MouseItems, menu_length);
+	const static size_t mouse_thresh_index = M_FindCvarInMenu(mouse_threshold, MouseItems, menu_length);
 
-	static menuitem_t doom_sens_menuitem =
-		{ slider	,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}};
-	static menuitem_t doom_pitch_menuitem =
-		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},		{1.0},		{0.025},	{NULL}};
+	static menuitem_t doom_sens_menuitem = MouseItems[mouse_sens_index];
+	static menuitem_t doom_pitch_menuitem =	MouseItems[mouse_pitch_index];
+	static menuitem_t doom_accel_menuitem = MouseItems[mouse_accel_index];
+	static menuitem_t doom_thresh_menuitem = MouseItems[mouse_thresh_index];
+
 	static menuitem_t zdoom_sens_menuitem =
 		{ slider	,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.5},		{2.5},		{0.1},		{NULL}};
 	static menuitem_t zdoom_pitch_menuitem =
 		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.5},		{2.5},		{0.1},		{NULL}};
+	static menuitem_t zdoom_accel_menuitem =
+		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
+	static menuitem_t zdoom_thresh_menuitem =
+		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
 
-	if (mouse_type == MOUSE_ZDOOM)
+	if (mouse_type == MOUSE_ZDOOM_W32)
 	{
 		if (mouse_sens_index < sizeof(MouseItems))
 			memcpy(&MouseItems[mouse_sens_index], &zdoom_sens_menuitem, sizeof(menuitem_t));
 		if (mouse_pitch_index < sizeof(MouseItems))
 			memcpy(&MouseItems[mouse_pitch_index], &zdoom_pitch_menuitem, sizeof(menuitem_t));
+		if (mouse_accel_index < sizeof(MouseItems))
+			memcpy(&MouseItems[mouse_accel_index], &zdoom_accel_menuitem, sizeof(menuitem_t));
+		if (mouse_thresh_index < sizeof(MouseItems))
+			memcpy(&MouseItems[mouse_thresh_index], &zdoom_thresh_menuitem, sizeof(menuitem_t));
 	}
 	else
 	{
@@ -421,6 +432,10 @@ static void M_UpdateMouseOptions()
 			memcpy(&MouseItems[mouse_sens_index], &doom_sens_menuitem, sizeof(menuitem_t));
 		if (mouse_pitch_index < sizeof(MouseItems))
 			memcpy(&MouseItems[mouse_pitch_index], &doom_pitch_menuitem, sizeof(menuitem_t));
+		if (mouse_accel_index < sizeof(MouseItems))
+			memcpy(&MouseItems[mouse_accel_index], &doom_accel_menuitem, sizeof(menuitem_t));
+		if (mouse_thresh_index < sizeof(MouseItems))
+			memcpy(&MouseItems[mouse_thresh_index], &doom_thresh_menuitem, sizeof(menuitem_t));
 	}
 
 	G_ConvertMouseSettings(previous_mouse_type, mouse_type);

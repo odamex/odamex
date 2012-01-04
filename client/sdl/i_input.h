@@ -28,7 +28,7 @@
 
 #define MOUSE_DOOM 0
 #define MOUSE_ODAMEX 1
-#define MOUSE_ZDOOM 2
+#define MOUSE_ZDOOM_W32 2
 
 extern int KeyRepeatRate;
 extern int KeyRepeatDelay;

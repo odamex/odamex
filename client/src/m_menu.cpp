@@ -49,6 +49,7 @@
 #include "c_bind.h"
 
 #include "gi.h"
+#include "m_memio.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -2211,17 +2212,20 @@ void M_Init (void)
 // M_FindCvarInMenu
 //
 // Takes an array of menu items and returns the index in the array of the
-// menu item containing that cvar
+// menu item containing that cvar.  Returns MAXINT if not found.
 //
-size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu)
+size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
 {
-    for (size_t i = 0; i < sizeof(menu); i++)
-    {
-        if (menu[i].a.cvar == &cvar)
-            return i;
-    }
+	if (menu)
+	{
+    	for (size_t i = 0; i < length; i++)
+    	{
+        	if (menu[i].a.cvar == &cvar)
+            	return i;
+    	}
+	}
 
-    return sizeof(menu);    // indicate not found
+    return MAXINT;    // indicate not found
 }
 
 

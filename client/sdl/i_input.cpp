@@ -92,6 +92,8 @@ static std::list<JoystickEvent_t*> JoyEventList;
 EXTERN_CVAR (mouse_acceleration)
 EXTERN_CVAR (mouse_threshold)
 
+EXTERN_CVAR (mouse_type)
+
 // joek - sort mouse grab issue
 static BOOL mousegrabbed = false;
 
@@ -100,6 +102,170 @@ static BOOL mousegrabbed = false;
 static BOOL flushmouse = false;
 
 extern constate_e ConsoleState;
+
+
+// [SL] 2012-01-04 - Simulate the mouse sensitivity and acceleration settings
+// of Windows OS when using raw mouse input (DirectInput).
+class Win32MouseScaler
+{
+public:
+	Win32MouseScaler() :
+		mWindowsVersion(5.1f),
+		mUseAccel(false), mSensitivity(10), mScreenRes(96.0f), mScreenRate(60.0f),
+		mMouseRes(400.0f), mMouseRate(400.0f/3.5f)
+	{
+		// Default Windows acceleration curves copied from the registry
+		mMouseAccelCurve[0] = 0.0f;
+		mMouseAccelCurve[1] = 0x00006e15 / 65536.0f;
+		mMouseAccelCurve[2] = 0x00014000 / 65536.0f;
+		mMouseAccelCurve[3] = 0x0003dc29 / 65536.0f;
+		mMouseAccelCurve[4] = 0x00280000 / 65536.0f;
+
+		mPointerAccelCurve[0] = 0.0f;
+		mPointerAccelCurve[1] = 0x00015eb8 / 65536.0f;
+		mPointerAccelCurve[2] = 0x00054ccd / 65536.0f;
+		mPointerAccelCurve[3] = 0x00184ccd / 65536.0f;
+		mPointerAccelCurve[4] = 0x02380000 / 65536.0f;
+	}
+
+	void RetrieveParameters()
+	{
+		#ifdef WIN32
+		int result;
+		HKEY hKey;
+		DWORD dwReturn[10];
+		DWORD buffersize = sizeof(DWORD) * sizeof(dwReturn);
+		std::string keystr("Control Panel\\Mouse");
+
+		// Get the mouse acceleration curve from the Windows Registry
+		// in case the user has a custom one provided by a mouse driver
+		result = RegOpenKeyEx(HKEY_CURRENT_USER, keystr.c_str(), 0, KEY_READ, &hKey);
+
+		if (result != ERROR_SUCCESS)
+			return;
+
+		result = RegQueryValueEx(hKey, "SmoothMouseXCurve", NULL, NULL, (BYTE*)dwReturn, &buffersize);
+		if (result == ERROR_SUCCESS)
+		{
+			for (int i = 0; i < 5; i++)
+				mMouseAccelCurve[i] = float(dwReturn[2*i]) / 65536.0f;
+		}
+
+		result = RegQueryValueEx(hKey, "SmoothMouseYCurve", NULL, NULL, (BYTE*)dwReturn, &buffersize);
+		if (result == ERROR_SUCCESS)
+		{
+			for (int i = 0; i < 5; i++)
+				mPointerAccelCurve[i] = float(dwReturn[2*i]) / 65536.0f;
+		}
+
+		RegCloseKey(hKey);
+
+		// Get the current Windows mouse sensitivity
+		result = SystemParametersInfo(SPI_GETMOUSESPEED, 0, &mSensitivity, 0);
+
+		// Is Windows using acceleration (enhanced pointer precision)?
+		int mouseinfo[3];
+		result = SystemParametersInfo(SPI_GETMOUSE, 0, &mouseinfo, 0);
+
+		if (result)
+			mUseAccel = (mouseinfo[2] > 0);
+
+		// Read screen properties
+		HDC screen = GetDC(NULL);
+		mScreenRes = float(GetDeviceCaps(screen, LOGPIXELSX));
+		mScreenRate = float(GetDeviceCaps(screen, VREFRESH));
+
+		// Get the version of Windows
+		OSVERSIONINFO wininfo;
+		wininfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+		GetVersionEx(&wininfo);
+
+		mWindowsVersion = wininfo.dwMajorVersion + (wininfo.dwMinorVersion / 10.0f);
+
+		#endif	// WIN32
+	}
+
+	int ScaleMouse(int input)
+	{
+	    // [SL] 2012-01-04 - For an explanation of how Windows calculates
+	    // acceleration, see
+	    // http://msdn.microsoft.com/en-us/windows/hardware/gg463319.aspx
+
+        // handle negative and zero input
+	    if (input == 0)
+            return 0;
+
+	    if (input < 0)
+            return -1 * ScaleMouse(-1*input);
+
+        if (!mUseAccel)
+        {
+            // Acceleration is turned off in Windows.  Just scale based
+            // on the Windows mouse sensitivity setting
+            size_t sensindex = mSensitivity / 2;
+            static const float sensitivityScaling[] =
+                { 0.03125f, 0.0625f, 0.25f, 0.5f, 0.75f,
+                1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f };
+
+            return int(input * sensitivityScaling[sensindex]);
+        }
+
+		float vmouse = float(input) / 3.5f;
+		float vpointer;
+
+        // Windows Vista/7 use a different method of calculating vpointer
+		if (mWindowsVersion >= 6.0f)
+			vpointer = float(input) * 150.0f / mScreenRes;
+		else
+			vpointer = float(input) * mScreenRes / mScreenRate;
+
+		// Find which curve inflection points vmouse falls between
+		int curveindex = 0;
+		while (curveindex < 5 && mMouseAccelCurve[curveindex] < vmouse)
+			curveindex++;
+
+        // if vmouse is larger than the last point of the acceleration curve
+        // just extend it past the last point
+		if (curveindex == 5)
+			curveindex = 4;
+
+		float vmouse_low = mMouseAccelCurve[curveindex-1];
+		float vmouse_high = mMouseAccelCurve[curveindex];
+		float vpointer_low = mPointerAccelCurve[curveindex-1];
+		float vpointer_high = mPointerAccelCurve[curveindex];
+
+		// percentage of the way between the two inflection points
+		float pct = (vmouse - vmouse_low) / (vmouse_high - vmouse_low);
+
+        // vpointer after the acceleration curve has been applied
+		float accel_vpointer = pct * (vpointer_high - vpointer_low) + vpointer_low;
+
+        int sensindex = mSensitivity / 2;
+        static const float sensitivityScaling[] =
+            { 0.1f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f,
+            1.2f, 1.4f, 1.6f, 1.8f, 2.0f };
+
+		if (mWindowsVersion >= 6.0f)
+			return  sensitivityScaling[sensindex] *
+                    accel_vpointer * mScreenRes / 150.0f;
+		else
+			return  sensitivityScaling[sensindex] *
+                    accel_vpointer * mScreenRate / mScreenRes;
+	}
+
+private:
+	float	mWindowsVersion;
+	bool	mUseAccel;
+	int		mSensitivity;
+	float	mScreenRes;
+	float	mScreenRate;
+	float	mMouseRes;
+	float	mMouseRate;
+	float	mMouseAccelCurve[5];
+	float	mPointerAccelCurve[5];
+};
+
+Win32MouseScaler win32mousescaler;
 
 #if defined WIN32 && !defined _XBOX
 // denis - in fullscreen, prevent exit on accidental windows key press
@@ -502,6 +668,8 @@ bool I_InitInput (void)
 	UpdateFocus();
 	UpdateGrab();
 
+	win32mousescaler.RetrieveParameters();
+
 	return true;
 }
 
@@ -660,8 +828,16 @@ void I_GetEvent (void)
 			{
 				break;
 			}
-            mouseevent.data2 += AccelerateMouse(ev.motion.xrel);
-            mouseevent.data3 -= AccelerateMouse(ev.motion.yrel);
+			if (mouse_type != MOUSE_ZDOOM_W32)
+			{
+            	mouseevent.data2 += AccelerateMouse(ev.motion.xrel);
+            	mouseevent.data3 -= AccelerateMouse(ev.motion.yrel);
+            }
+            else
+            {
+				mouseevent.data2 += win32mousescaler.ScaleMouse(ev.motion.xrel);
+				mouseevent.data3 -= win32mousescaler.ScaleMouse(ev.motion.yrel);
+            }
             sendmouseevent = 1;
          break;
 
