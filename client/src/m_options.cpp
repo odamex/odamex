@@ -636,17 +636,25 @@ static value_t WeapSwitch[] = {
 	{ 2.0,			"By Preference" }
 };
 
-static value_t WeapChoice[] = {
-	{ 0.0,			"Fist" },
-	{ 7.0,			"Chainsaw" },
-	{ 1.0,			"Pistol" },
-	{ 2.0,			"Shotgun" },
-	{ 8.0,			"Super Shotgun" },
-	{ 3.0,			"Chaingun" },
-	{ 4.0,			"Rocket Launcher" },
-	{ 5.0,			"Plasma Rifle" },
-	{ 6.0,			"BFG9000" }
-};
+extern const char *weaponnames[];
+
+static const cvar_t* weaponcvars[] = {
+	&cl_weaponpref1, &cl_weaponpref2, &cl_weaponpref3, &cl_weaponpref4, &cl_weaponpref5,
+	&cl_weaponpref6, &cl_weaponpref7, &cl_weaponpref8, &cl_weaponpref9 };
+
+static value_t WeapChoice1[NUMWEAPONS];
+static value_t WeapChoice2[NUMWEAPONS-1];
+static value_t WeapChoice3[NUMWEAPONS-2];
+static value_t WeapChoice4[NUMWEAPONS-3];
+static value_t WeapChoice5[NUMWEAPONS-4];
+static value_t WeapChoice6[NUMWEAPONS-5];
+static value_t WeapChoice7[NUMWEAPONS-6];
+static value_t WeapChoice8[NUMWEAPONS-7];
+static value_t WeapChoice9[NUMWEAPONS-8];
+
+static value_t *WeapChoices[] = {
+	WeapChoice1, WeapChoice2, WeapChoice3, WeapChoice4, WeapChoice5,
+	WeapChoice6, WeapChoice7, WeapChoice8, WeapChoice9 };
 
 static menuitem_t WeaponItems[] = {
 	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },	
@@ -654,16 +662,60 @@ static menuitem_t WeaponItems[] = {
 	{ discrete,		"Switch on pickup",				{&cl_switchweapon},	{3.0},		{0.0},		{0.0},		{WeapSwitch} },
 	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },	
 	{ bricktext,	"Weapon Preference Order",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Preference #1",				{&cl_weaponpref1},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Preference #2",				{&cl_weaponpref2},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Preference #3",				{&cl_weaponpref3},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Preference #4",				{&cl_weaponpref4},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Preference #5",				{&cl_weaponpref5},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Preference #6",				{&cl_weaponpref6},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Preference #7",				{&cl_weaponpref7},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Preference #8",				{&cl_weaponpref8},	{9.0},		{0.0},		{0.0},		{WeapChoice} },
-	{ discrete,		"Preference #9",				{&cl_weaponpref9},	{9.0},		{0.0},		{0.0},		{WeapChoice} }
+	{ discrete,		"Preference #1",				{&cl_weaponpref1},	{9.0},		{0.0},		{0.0},		{WeapChoice1} },
+	{ discrete,		"Preference #2",				{&cl_weaponpref2},	{8.0},		{0.0},		{0.0},		{WeapChoice2} },
+	{ discrete,		"Preference #3",				{&cl_weaponpref3},	{7.0},		{0.0},		{0.0},		{WeapChoice3} },
+	{ discrete,		"Preference #4",				{&cl_weaponpref4},	{6.0},		{0.0},		{0.0},		{WeapChoice4} },
+	{ discrete,		"Preference #5",				{&cl_weaponpref5},	{5.0},		{0.0},		{0.0},		{WeapChoice5} },
+	{ discrete,		"Preference #6",				{&cl_weaponpref6},	{4.0},		{0.0},		{0.0},		{WeapChoice6} },
+	{ discrete,		"Preference #7",				{&cl_weaponpref7},	{3.0},		{0.0},		{0.0},		{WeapChoice7} },
+	{ discrete,		"Preference #8",				{&cl_weaponpref8},	{2.0},		{0.0},		{0.0},		{WeapChoice8} },
+	{ discrete,		"Preference #9",				{&cl_weaponpref9},	{1.0},		{0.0},		{0.0},		{WeapChoice9} }
 };
+
+//
+// M_UpdateWeaponOptions()
+//
+// Chooses the possible options for each of the weapon preference slots.
+// Slot 1 allows 9 possible choices, Slot 2 allows 8 choices with the choice
+// in Slot 1 excluded, and Slot 3 allows 7 choices with the choices in Slots 1
+// and Slot 2 excluded, etc.
+//
+static void M_UpdateWeaponOptions()
+{
+	weapontype_t pool[NUMWEAPONS] = {
+		wp_fist, wp_chainsaw, wp_pistol, wp_shotgun, wp_supershotgun,
+		wp_chaingun, wp_missile, wp_plasma, wp_bfg };
+
+	for (int slot = 0; slot < NUMWEAPONS; slot++)
+	{
+		value_t *cur_weapchoice = WeapChoices[slot];
+
+		// Compile the possible weapon options for the slot
+		for (int i = 0; i < NUMWEAPONS - slot; i++)
+		{
+			int weapon_num = pool[slot + i];
+			cur_weapchoice[i].value = float(weapon_num);
+			cur_weapchoice[i].name = weaponnames[weapon_num];
+		}
+
+		weapontype_t slotweapon =
+			static_cast<weapontype_t>(weaponcvars[slot]->asInt());
+
+		// Move the slot's weapon to the front of the remaining pool
+		for (int poolcur = slot + 1; poolcur < NUMWEAPONS; poolcur++)
+		{
+			if (pool[poolcur] == slotweapon)
+			{
+				// move the weapons over to make room at the front of the pool
+				for (int j = poolcur; j > slot; j--)
+					pool[j] = pool[j-1];
+				pool[slot] = slotweapon;
+				break;
+			}
+		}
+	}
+}
 
 menu_t WeaponMenu = {
 	"M_WEAPON",
@@ -673,7 +725,7 @@ menu_t WeaponMenu = {
 	WeaponItems,
 	0,
 	0,
-	NULL
+	&M_UpdateWeaponOptions
 };
 
 

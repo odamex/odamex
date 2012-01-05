@@ -53,7 +53,7 @@ EXTERN_CVAR(sv_allownobob)
 EXTERN_CVAR(cl_nobob)
 EXTERN_CVAR(sv_allowpwo)
 
-static const char *weaponnames[] =
+const char *weaponnames[] =
 {
 	"Fist",
 	"Pistol",
