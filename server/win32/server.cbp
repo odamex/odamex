@@ -276,9 +276,11 @@
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DNOASM" />
 			<Add option="-D_WIN32_WINNT=0x0500" />
+			<Add option="-DJSON_IS_AMALGAMATION" />
 			<Add directory="." />
 			<Add directory="..\src" />
 			<Add directory="..\..\common" />
+			<Add directory="..\..\jsoncpp" />
 		</Compiler>
 		<Unit filename="..\..\common\actor.h" />
 		<Unit filename="..\..\common\c_console.h" />
@@ -429,6 +431,9 @@
 		<Unit filename="..\..\common\w_wad.h" />
 		<Unit filename="..\..\common\z_zone.cpp" />
 		<Unit filename="..\..\common\z_zone.h" />
+		<Unit filename="..\..\jsoncpp\json\json-forwards.h" />
+		<Unit filename="..\..\jsoncpp\json\json.h" />
+		<Unit filename="..\..\jsoncpp\jsoncpp.cpp" />
 		<Unit filename="..\src\c_console.cpp" />
 		<Unit filename="..\src\d_main.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />

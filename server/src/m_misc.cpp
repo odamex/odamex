@@ -18,6 +18,7 @@
 //
 // DESCRIPTION:
 //		Default Config File.
+//		1/5/12: JSON File Functions
 //
 //-----------------------------------------------------------------------------
 
@@ -32,6 +33,7 @@
 #include "m_argv.h"
 #include "i_system.h"
 #include "version.h"
+#include "sv_main.h"
 #include "sv_master.h"
 
 
@@ -126,6 +128,35 @@ void M_LoadDefaults (void)
 	atterm (M_SaveDefaults);
 }
 
+
+// Reads a file in JSON format
+void M_ReadJSON(Json::Value &json, const char *filename) {
+	byte *buffer = NULL;
+	std::string data;
+	Json::Reader reader;
+
+	M_ReadFile(filename, &buffer);
+	data = (char *)buffer;
+
+	if (!reader.parse(data, json)) {
+		I_Error("CS_ReadJSONFromFile: Error parsing JSON: %s.\n",
+				reader.getFormattedErrorMessages().c_str());
+	}
+}
+
+// Writes a file in JSON format.  Third param is true if the output
+// should be pretty-printed.
+void M_WriteJSON(const char *filename, Json::Value &value, bool styled) {
+	std::ofstream out_file;
+	Json::FastWriter fast_writer;
+	Json::StyledWriter styled_writer;
+
+	out_file.open(filename);
+
+	if(styled)
+		out_file << styled_writer.write(value);
+	else
+		out_file << fast_writer.write(value);
+}
+
 VERSION_CONTROL (m_misc_cpp, "$Id$")
-
-
