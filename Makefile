@@ -142,7 +142,7 @@ SERVER_HEADERS = $(wildcard $(SERVER_DIR)/*.h)
 SERVER_SOURCES = $(wildcard $(SERVER_DIR)/*.cpp)
 SERVER_OBJS = $(patsubst $(SERVER_DIR)/%.cpp,$(OBJDIR)/$(SERVER_DIR)/%.o,$(SERVER_SOURCES))
 SERVER_TARGET = $(BINDIR)/odasrv
-SERVER_CFLAGS = -I../server/src -Iserver/src
+SERVER_CFLAGS = -I../server/src -Iserver/src -Ijsoncpp -DJSON_IS_AMALGAMATION
 SERVER_LFLAGS =
 
 # Client
