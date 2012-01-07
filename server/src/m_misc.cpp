@@ -128,6 +128,7 @@ void M_LoadDefaults (void)
 	atterm (M_SaveDefaults);
 }
 
+// JSON Utility Functions (based on those from EECS)
 
 // Reads a file in JSON format
 void M_ReadJSON(Json::Value &json, const char *filename) {
@@ -139,7 +140,7 @@ void M_ReadJSON(Json::Value &json, const char *filename) {
 	data = (char *)buffer;
 
 	if (!reader.parse(data, json)) {
-		I_Error("CS_ReadJSONFromFile: Error parsing JSON: %s.\n",
+		Printf(PRINT_HIGH,"M_ReadJSONFromFile: Error parsing JSON: %s.\n",
 				reader.getFormattedErrorMessages().c_str());
 	}
 }
