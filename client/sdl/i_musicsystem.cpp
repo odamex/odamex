@@ -1080,7 +1080,6 @@ void PortMidiMusicSystem::_PlayEvent(MidiEvent *event, int time)
 		else if (metaevent->getMetaType() == MIDI_META_END_OF_TRACK)
 		{
 			_AllNotesOff();
-			_InitializePlayback();
 		}
 		
 		//	Just ignore other meta events for now
