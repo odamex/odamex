@@ -101,8 +101,8 @@ void SV_SendDamageMobj(AActor *target, int pain);
 // Tells clients to remove an actor from the world as it doesn't exist anymore
 void SV_SendDestroyActor(AActor *mo);
 
-void M_ReadJSON(Json::Value &json, const char *filename);
-void M_WriteJSON(const char *filename, Json::Value &value, bool styled);
+bool M_ReadJSON(Json::Value &json, const char *filename);
+bool M_WriteJSON(const char *filename, Json::Value &value, bool styled);
 
 #endif
 

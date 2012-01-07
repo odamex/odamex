@@ -132,33 +132,50 @@ void M_LoadDefaults (void)
 // JSON Utility Functions (based on those from EECS)
 
 // Reads a file in JSON format
-void M_ReadJSON(Json::Value &json, const char *filename) {
+bool M_ReadJSON(Json::Value &json, const char *filename) {
 	byte *buffer = NULL;
 	std::string data;
 	Json::Reader reader;
 
-	M_ReadFile(filename, &buffer);
+	if (!(M_FileExists(filename))) {
+		return false;
+	}
+
+	if (!M_ReadFile(filename, &buffer)) {
+		return false;
+	}
 	data = (char *)buffer;
 
 	if (!reader.parse(data, json)) {
 		Printf(PRINT_HIGH,"M_ReadJSONFromFile: Error parsing JSON: %s.\n",
 				reader.getFormattedErrorMessages().c_str());
+		return false;
 	}
+
+	return true;
 }
 
 // Writes a file in JSON format.  Third param is true if the output
 // should be pretty-printed.
-void M_WriteJSON(const char *filename, Json::Value &value, bool styled) {
+bool M_WriteJSON(const char *filename, Json::Value &value, bool styled) {
 	std::ofstream out_file;
 	Json::FastWriter fast_writer;
 	Json::StyledWriter styled_writer;
 
 	out_file.open(filename);
 
-	if(styled)
+	if (styled) {
 		out_file << styled_writer.write(value);
-	else
+	} else {
 		out_file << fast_writer.write(value);
+	}
+
+	out_file.close();
+
+	if (out_file.fail()) {
+		return false;
+	}
+	return true;
 }
 
 VERSION_CONTROL (m_misc_cpp, "$Id$")
