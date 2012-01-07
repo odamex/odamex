@@ -31,6 +31,7 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "i_system.h"
 #include "version.h"
 #include "sv_main.h"
