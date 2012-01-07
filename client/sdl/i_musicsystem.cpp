@@ -134,19 +134,6 @@ void MusicSystem::setVolume(float volume)
 //
 // ============================================================================
 
-void SdlMixerFree()
-{
-	if (!musicsystem)
-		return;
-		
-	SdlMixerMusicSystem *sdlmusicsystem = static_cast<SdlMixerMusicSystem*>(musicsystem);
-		
-	if (sdlmusicsystem->mRegisteredSong.Data)
-	{
-		SDL_FreeRW(sdlmusicsystem->mRegisteredSong.Data);
-		sdlmusicsystem->mRegisteredSong.Data = NULL;
-	}
-}
 
 SdlMixerMusicSystem::SdlMixerMusicSystem() :
 	mIsInitialized(false), mRegisteredSong()
@@ -178,16 +165,17 @@ void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop)
 	
 	_RegisterSong(data, length);
 		
-	if (!mRegisteredSong.Track)
+	if (!mRegisteredSong.Track || !mRegisteredSong.Data)
 		return;
 
+	Mix_HookMusicFinished(I_ResetMidiVolume);
 	if (Mix_PlayMusic(mRegisteredSong.Track, loop ? -1 : 1) == -1)
 	{
 		Printf(PRINT_HIGH, "Mix_PlayMusic: %s\n", Mix_GetError());
 		return;
 	}
 
-    MusicSystem::startSong(data, length, loop);
+	MusicSystem::startSong(data, length, loop);
     
 	// [Russell] - Hack for setting the volume on windows vista, since it gets
 	// reset on every music change
@@ -207,9 +195,9 @@ void SdlMixerMusicSystem::_StopSong()
 
 	if (isPaused())
 		resumeSong();
-		
+	
 	Mix_FadeOutMusic(100);
-	Mix_HookMusicFinished(I_ResetMidiVolume);
+	
 	_UnregisterSong();
 }
 
@@ -253,7 +241,7 @@ void SdlMixerMusicSystem::resumeSong()
 void SdlMixerMusicSystem::setVolume(float volume)
 {
 	MusicSystem::setVolume(volume);
-    Mix_VolumeMusic(int(getVolume() * MIX_MAX_VOLUME));
+	Mix_VolumeMusic(int(getVolume() * MIX_MAX_VOLUME));
 }
 
 //
@@ -266,11 +254,9 @@ void SdlMixerMusicSystem::_UnregisterSong()
 	if (!isInitialized())
 		return;
 
-	Mix_HookMusicFinished(SdlMixerFree);
-	
 	if (mRegisteredSong.Track)
 		Mix_FreeMusic(mRegisteredSong.Track);
-
+		
 	mRegisteredSong.Track = NULL;
 	mRegisteredSong.Data = NULL;
 }
@@ -320,7 +306,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 		return;
 	}
     
-    // Get the size of the music data
+	// Get the size of the music data
 	SDL_RWseek(mRegisteredSong.Data, 0, SEEK_END);
 	size_t reglength = SDL_RWtell(mRegisteredSong.Data);
 	
@@ -346,7 +332,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data);
 	
 	#endif	// TEMP_MIDI
-
+	
 	if (!mRegisteredSong.Track)
 	{
 		#ifdef TEMP_MIDI
@@ -358,8 +344,6 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 		return;
 	}
 }
-
-
 
 
 // ============================================================================

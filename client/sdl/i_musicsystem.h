@@ -145,8 +145,7 @@ public:
 	virtual bool isMp3Capable() const { return true; }
 	virtual bool isModCapable() const { return true; }
 	virtual bool isWaveCapable() const { return true; }
-	
-	friend void SdlMixerFree();
+
 private:
 	bool					mIsInitialized;
 	MusicHandler_t			mRegisteredSong;
