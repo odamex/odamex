@@ -53,11 +53,14 @@ BOOL EV_Teleport (int tid, int side, AActor *thing)
 	fixed_t 	oldz;
 	player_t	*player;
 
-	// don't teleport missiles
-	// Don't teleport if hit back of line,
-	//	so you can get out of teleporter.
-	if ((thing->flags & MF_MISSILE))
-		return 0;
+    // don't teleport missiles
+    if (thing->flags & MF_MISSILE)
+	return 0;		
+
+    // Don't teleport if hit back of line,
+    //  so you can get out of teleporter.
+    if (side == 1)		
+	return 0;	
 
 	// [RH] Find destination based on it's TID rather than
 	//		the sector containing it. Also allow for destinations
@@ -78,6 +81,13 @@ BOOL EV_Teleport (int tid, int side, AActor *thing)
 	if (!P_TeleportMove (thing, m->x, m->y,
 			m->type == MT_TELEPORTMAN ? m->subsector->sector->floorheight : m->z, false))
 		return false;
+
+    // fraggle: this was changed in final doom, 
+    // problem between normal doom2 1.9 and final doom
+    // Note that although chex.exe is based on Final Doom,
+    // it does not have this quirk.
+    if (gamemission < pack_tnt || gamemission == chex)
+		    thing->z = thing->floorz;
 
 	if (player)
 		player->viewz = thing->z + thing->player->viewheight;
