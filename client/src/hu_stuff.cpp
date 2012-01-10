@@ -664,7 +664,7 @@ void HU_DrawScores (player_t *player)
 	}
 }
 
-void HU_DisplayTimer(int x, int y, bool scale = true)
+void HU_DisplayTimer(int x, int y, bool scale)
 {
 	int timeleft, hours, minutes, seconds;
 	char str[80];

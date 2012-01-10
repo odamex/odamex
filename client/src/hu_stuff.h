@@ -51,13 +51,7 @@ extern int headsupactive;
 
 class player_s;
 void HU_DrawScores (player_s *me);
-
-// GhostlyDeath -- Target Names Stuff
-/*EXTERN_CVAR(hud_targetnames)
-EXTERN_CVAR(hud_targetdead)
-EXTERN_CVAR(hud_targetenemies)
-EXTERN_CVAR(hud_targetallies)*/
-
+void HU_DisplayTimer (int x, int y, bool scale = true);
 #endif
 
 

@@ -69,6 +69,13 @@ void ST_nameDraw (int y);
 // Called on init and whenever player's skin changes
 void ST_loadGraphics (void);
 
+// [ML] HUDified status bar
+void ST_drawStatusBar (void);
+
+// [ML] New Odamex fullscreen HUD
+void ST_odamexHudDraw(void);
+void ST_odamexHudDrawCTF(void);
+
 
 // States for status bar code.
 typedef enum

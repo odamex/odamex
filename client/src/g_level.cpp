@@ -85,6 +85,7 @@ int WorldVars[NUM_WORLDVARS];
 BOOL savegamerestore;
 
 extern int mousex, mousey;
+extern bool r_underwater;
 
 extern int joyforward, joystrafe, joyturn, joylook, Impulse;
 extern BOOL sendpause, sendsave, sendcenterview;
@@ -1138,6 +1139,7 @@ void G_InitLevelLocals ()
 
 	BaseBlendA = 0.0f;		// Remove underwater blend effect, if any
 	NormalLight.maps = realcolormaps;
+	r_underwater = false;
 	
 	level.gravity = sv_gravity;
 	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);

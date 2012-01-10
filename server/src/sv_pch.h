@@ -10,6 +10,8 @@
 #include "sv_sqp.h"
 #include "sv_sqpold.h"
 
+#include <json/json.h>
+
 // common
 #include "c_pch.h"
 
