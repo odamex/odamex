@@ -107,7 +107,7 @@ static int I_ReadVariableSizeInt(MEMFILE *mf)
 	for (size_t i = 0; i < 4; i++)
 	{
 		byte curbyte = 0;
-		size_t res = mem_fread(&curbyte, 1, 1, mf);
+		size_t res = mem_fread(&curbyte, sizeof(curbyte), 1, mf);
 		if (!res)
 			return -1;
 			
@@ -230,7 +230,7 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 	
 	// Read event type
 	byte val;
-	if (!mem_fread(&val, 1, 1, mf))
+	if (!mem_fread(&val, sizeof(val), 1, mf))
 		return NULL;
 		
 	midi_event_type_t eventtype = static_cast<midi_event_type_t>(val);
@@ -264,7 +264,7 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 	if (I_IsMidiMetaEvent(eventtype))
 	{
 		byte val;
-		if (!mem_fread(&val, 1, 1, mf))
+		if (!mem_fread(&val, sizeof(val), 1, mf))
 			return NULL;
 		
 		midi_meta_event_type_t metatype = static_cast<midi_meta_event_type_t>(val);
@@ -289,12 +289,12 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 	{
 		byte val, param1 = 0;
 		
-		if (!mem_fread(&val, 1, 1, mf))
+		if (!mem_fread(&val, sizeof(val), 1, mf))
 			return NULL;
 
 		midi_controller_t controllertype = static_cast<midi_controller_t>(val);
 		
-		if (!mem_fread(&param1, 1, 1, mf))
+		if (!mem_fread(&param1, sizeof(param1), 1, mf))
 			return NULL;
 		
 		return new MidiControllerEvent(event_time, controllertype, channel, param1);
@@ -304,14 +304,14 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 	{
 		byte param1 = 0, param2 = 0;
 		
-		if (!mem_fread(&param1, 1, 1, mf))
+		if (!mem_fread(&param1, sizeof(param1), 1, mf))
 			return NULL;
 			
 		if (eventtype != MIDI_EVENT_PROGRAM_CHANGE && 
 			eventtype != MIDI_EVENT_CHAN_AFTERTOUCH)
 		{
 			// this is an event that uses two parameters
-			if (!mem_fread(&param2, 1, 1, mf))
+			if (!mem_fread(&param2, sizeof(param2), 1, mf))
 				return NULL;
 		}
 		
@@ -320,6 +320,19 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 		
 	// none of the above?
 	return NULL;
+}
+
+static void I_ClearMidiEventList(std::list<MidiEvent*> *eventlist)
+{
+	if (!eventlist)
+		return;
+		
+	while (!eventlist->empty())
+	{
+		if (eventlist->front())
+			delete eventlist->front();
+		eventlist->pop_front();
+	}
 }
 
 //
@@ -361,11 +374,10 @@ static std::list<MidiEvent*> *I_ReadMidiTrack(MEMFILE *mf)
 		if (!newevent)
 		{
 			Printf(PRINT_HIGH, "I_ReadMidiTrack: Unable to read MIDI event\n");
-			while (eventlist->begin() != eventlist->end())
-				if (eventlist->front())
-					delete eventlist->front();
 			
+			I_ClearMidiEventList(eventlist);
 			delete eventlist;
+			
 			return NULL;
 		}
 		
@@ -415,14 +427,7 @@ MidiSong::MidiSong(byte* data, size_t length) :
 
 MidiSong::~MidiSong()
 {
-	while (!mEvents.empty())
-	{
-		MidiEvent *event = mEvents.front();
-		if (event)
-			delete event;
-			
-		mEvents.pop_front();
-	}
+	I_ClearMidiEventList(&mEvents);
 }
 
 void MidiSong::_ParseSong(MEMFILE *mf)
@@ -430,6 +435,8 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 	if (!mf)
 		return;
 		
+	I_ClearMidiEventList(&mEvents);
+	
 	mem_fseek(mf, 0, MEM_SEEK_SET);
 		
 	midi_chunk_header_t chunkheader;
@@ -454,7 +461,7 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 	fileheader.time_division = ntohs(fileheader.time_division);
 	mTimeDivision = fileheader.time_division;
 
-	if (fileheader.format_type != 0 && fileheader.format_type != 2)
+	if (fileheader.format_type != 0 && fileheader.format_type != 1)
 	{
 		Printf(PRINT_HIGH, "MidiSong::_ParseSong: Only type 0 or type 1 MIDI files are supported.\n");
 		return;
@@ -471,7 +478,7 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 		}
 		
 		// add this track's list of events to the song's list
-		while (eventlist->begin() != eventlist->end())
+		while (!eventlist->empty())
 		{
 			mEvents.push_back(eventlist->front());
 			eventlist->pop_front();

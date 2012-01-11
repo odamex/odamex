@@ -114,7 +114,7 @@ public:
 	{
 		if (mLength)
 		{
-			mData = new byte(mLength);
+			mData = new byte[mLength];
 			memcpy(mData, data, mLength);
 		}
 	}
@@ -144,7 +144,7 @@ public:
 	{
 		if (mLength)
 		{
-			mData = new byte(mLength);
+			mData = new byte[mLength];
 			memcpy(mData, data, mLength);
 		}
 	}
