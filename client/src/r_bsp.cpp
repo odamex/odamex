@@ -333,9 +333,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		sector_t *heightsec = camera->subsector->sector->heightsec;
 
 		r_underwater = r_fakingunderwater || (heightsec && viewz <= heightsec->floorheight);
-		
-		if (r_underwater)
-			Printf(PRINT_HIGH,"I'm underwater lol \n");
 
 		int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
 
