@@ -877,6 +877,8 @@ void MidiMusicSystem::_InitializePlayback()
 	// initialize all channel volumes to 100%
 	for (int i = 0; i < _GetNumChannels(); i++)
 		mChannelVolume[i] = 127;
+		
+	setTempo(120.0);
 }
 
 void MidiMusicSystem::playChunk()
