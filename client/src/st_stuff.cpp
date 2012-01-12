@@ -1344,6 +1344,8 @@ void ST_doPaletteStuff(void)
 
 	if (r_underwater)
 	{
+		palette = 0;
+
 		if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet]&8)
 			SV_AddBlend (0.0f, 1.0f, 0.0f, 0.125f, blend);
 		if (plyr->bonuscount) {
