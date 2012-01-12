@@ -1259,7 +1259,6 @@ void M_OptDrawer (void)
 	int color;
 	int y, width, i, x, ytop;
 	int x1,y1,x2,y2;
-	int valx = 0, valy = 0;
 	int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
@@ -1356,12 +1355,6 @@ void M_OptDrawer (void)
 				break;
 			}
 			screen->DrawTextCleanMove (color, x, y, item->label);
-
-			if (!i)
-			{
-				valx = x;
-				valy = y;
-			}
 
 			switch (item->type)
 			{

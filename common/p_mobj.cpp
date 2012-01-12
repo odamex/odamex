@@ -1735,8 +1735,7 @@ void P_RespawnSpecials (void)
 	fixed_t 			y;
 	fixed_t 			z;
 
-	subsector_t*			ss;
-	AActor* 						mo;
+	AActor* 			mo;
 	mapthing2_t* 		mthing;
 
 	int 				i;
@@ -1783,7 +1782,6 @@ void P_RespawnSpecials (void)
 		z = ONFLOORZ;
 
 	// spawn a teleport fog at the new spot
-	ss = R_PointInSubsector (x, y);
 	mo = new AActor (x, y, z, MT_IFOG);
 	SV_SpawnMobj(mo);
     if (clientside)

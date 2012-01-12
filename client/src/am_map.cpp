@@ -762,7 +762,6 @@ END_COMMAND (togglemap)
 BOOL AM_Responder (event_t *ev)
 {
 	int rc;
-	static int cheatstate = 0;
 	static int bigstate = 0;
 
 	rc = false;
@@ -837,7 +836,6 @@ BOOL AM_Responder (event_t *ev)
 				Printf (PRINT_HIGH, "%s\n", AMSTR_MARKSCLEARED);
 				break;
 			default:
-				cheatstate=0;
 				rc = false;
 			}
 		}

@@ -231,7 +231,6 @@ fixed_t lowfloor;
 void P_LineOpening (const line_t *linedef)
 {
 	sector_t *front, *back;
-	fixed_t fc, ff, bc, bf;
 
 	if (linedef->sidenum[1] == -1)
 	{
@@ -242,13 +241,8 @@ void P_LineOpening (const line_t *linedef)
 
 	front = linedef->frontsector;
 	back = linedef->backsector;
-	
-	fc = front->ceilingheight;
-	ff = front->floorheight;
-	bc = back->ceilingheight;
-	bf = back->floorheight;
 
-	opentop = fc < bc ? fc : bc;
+	opentop = front->ceilingheight < back->ceilingheight ? front->ceilingheight : back->ceilingheight;
 
 	if (front->floorheight > back->floorheight)
 	{

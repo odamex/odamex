@@ -815,7 +815,6 @@ void C_DrawConsole (void)
 {
 	unsigned char *zap;
 	int lines, left, offset;
-	static int oldbottom = 0;
 
 	left = 8;
 	lines = (ConBottom-12)/8;
@@ -824,8 +823,6 @@ void C_DrawConsole (void)
 	else
 		offset = -12;
 	zap = Last - (SkipRows + RowAdjust) * (ConCols + 2);
-
-	oldbottom = ConBottom;
 
 	if (ConsoleState == c_up)
 	{

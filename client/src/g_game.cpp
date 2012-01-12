@@ -621,7 +621,7 @@ void G_ConvertMouseSettings(int old_type, int new_type)
 		return;
 
 	if (new_type == MOUSE_ODAMEX)
-		new_type == MOUSE_DOOM;
+		new_type = MOUSE_DOOM;
 
 	// first convert to ZDoom settings
 	if (old_type == MOUSE_DOOM)
