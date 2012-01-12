@@ -626,25 +626,25 @@ void G_ConvertMouseSettings(int old_type, int new_type)
 	// first convert to ZDoom settings
 	if (old_type == MOUSE_DOOM)
 	{
-		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 30.0f); 
-		m_pitch.Set(m_pitch * 2.0f);
+		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f); 
+		m_pitch.Set(m_pitch * 4.0f);
 	}
 	else if (old_type == MOUSE_ODAMEX)
 	{
-		mouse_sensitivity.Set(mouse_sensitivity / 30.0f);
-		m_pitch.Set(m_pitch * 2.0f);
+		mouse_sensitivity.Set(mouse_sensitivity / 40.0f);
+		m_pitch.Set(m_pitch * 4.0f);
 	}
 
 	// convert to the destination type
 	if (new_type == MOUSE_DOOM)
 	{
-		mouse_sensitivity.Set((mouse_sensitivity * 30.0f) - 5.0f);
-		m_pitch.Set(m_pitch * 0.5f);
+		mouse_sensitivity.Set((mouse_sensitivity * 40.0f) - 5.0f);
+		m_pitch.Set(m_pitch * 0.25f);
 	}
 	else if (new_type == MOUSE_ODAMEX)
 	{
-		mouse_sensitivity.Set(mouse_sensitivity * 30.0f);
-		m_pitch.Set(m_pitch * 0.5f);
+		mouse_sensitivity.Set(mouse_sensitivity * 40.0f);
+		m_pitch.Set(m_pitch * 0.25f);
 	}
 }
 
@@ -658,14 +658,14 @@ int G_DoomMouseScaleY(int y)
 	return G_DoomMouseScaleX(y); // identical scaling for x and y
 }
 
-int G_ZDoomW32MouseScaleX(int x)
+int G_ZDoomDIMouseScaleX(int x)
 {
-	return int(x * 3.0f * mouse_sensitivity);
+	return int(x * 4.0f * mouse_sensitivity);
 }
 
-int G_ZDoomW32MouseScaleY(int y)
+int G_ZDoomDIMouseScaleY(int y)
 {
-	return int(y * 2.0f * mouse_sensitivity);
+	return int(y * mouse_sensitivity);
 }
 
 void G_ProcessMouseMovementEvent(const event_t *ev)
@@ -691,10 +691,10 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 		scalexfunc = &G_DoomMouseScaleX;
 		scaleyfunc = &G_DoomMouseScaleY;
 	}
-	else if (mouse_type == MOUSE_ZDOOM_W32)
+	else if (mouse_type == MOUSE_ZDOOM_DI)
 	{
-		scalexfunc = &G_ZDoomW32MouseScaleX;
-		scaleyfunc = &G_ZDoomW32MouseScaleY;
+		scalexfunc = &G_ZDoomDIMouseScaleX;
+		scaleyfunc = &G_ZDoomDIMouseScaleY;
 	}
 	else
 		return;	// invalid mouse type
