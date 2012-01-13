@@ -83,7 +83,7 @@ int sfx_empty;
 int sfx_noway, sfx_oof;
 
 // [RH] Print sound debugging info?
-cvar_t noisedebug ("noise", "0", "", 0);
+cvar_t noisedebug ("noise", "0", "", CVARTYPE_BOOL, 0);
 
 // the set of channels available
 static channel_t *Channel;

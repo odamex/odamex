@@ -146,7 +146,7 @@ static void setmsgcolor (int index, const char *color);
 
 BOOL C_HandleKey (event_t *ev, byte *buffer, int len);
 
-cvar_t msglevel ("msg", "0", "", CVAR_ARCHIVE);
+cvar_t msglevel ("msg", "0", "", CVARTYPE_STRING, CVAR_ARCHIVE);
 
 CVAR_FUNC_IMPL (msg0color)
 {

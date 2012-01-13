@@ -982,7 +982,7 @@ EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
 
-static cvar_t DummyDepthCvar (NULL, NULL, "", 0);
+static cvar_t DummyDepthCvar (NULL, NULL, "", CVARTYPE_NONE, 0);
 
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
