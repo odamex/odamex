@@ -40,6 +40,8 @@
 // Prediction debugging info
 //#define _PRED_DBG
 
+EXTERN_CVAR (cl_prednudge)
+
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 
@@ -355,7 +357,7 @@ void CL_ExtrapolatePlayers ()
 
 void CL_NudgeThing(AActor *thing, vec3_t dest_pos, float amount = 0.1f)
 {
-	const float nudge_threshold = 2.0f;
+	const float nudge_threshold = 4.0f;
 
 	if (amount < 0.0f || amount > 1.0f)
 		amount = 1.0f;
@@ -444,8 +446,7 @@ void CL_PredictMove (void)
 	// on recent position data from the server.  This avoids the disorienting
 	// "jerk" when the corrected position is drastically different from
 	// the previously predicted position.
-	const float nudge_distance_percentage = 0.15f;
-	CL_NudgeThing(p->mo, corrected_pos, nudge_distance_percentage);
+	CL_NudgeThing(p->mo, corrected_pos, cl_prednudge);
 	
 	CL_PredictLocalPlayer(gametic);
     //CL_PredictSectors(gametic);

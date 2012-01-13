@@ -156,6 +156,8 @@ CVAR (cl_unlag,				"1", "client opt-in/out for server unlagging",		CVAR_USERINFO
 // [SL] 2011-09-01 - Server will send svc_moveplayer updates every N tics
 CVAR_FUNC_DECL (cl_updaterate, "2",	"Update players every N tics",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR (cl_prednudge,			"0.15", "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
 #ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
 	CVAR (cl_name,		"Xbox Player", "",	CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 #else
