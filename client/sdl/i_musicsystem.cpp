@@ -168,12 +168,13 @@ void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop)
 	if (!mRegisteredSong.Track || !mRegisteredSong.Data)
 		return;
 
-	Mix_HookMusicFinished(I_ResetMidiVolume);
 	if (Mix_PlayMusic(mRegisteredSong.Track, loop ? -1 : 1) == -1)
 	{
 		Printf(PRINT_HIGH, "Mix_PlayMusic: %s\n", Mix_GetError());
 		return;
 	}
+
+	Mix_HookMusicFinished(I_ResetMidiVolume);
 
 	MusicSystem::startSong(data, length, loop);
     
@@ -711,6 +712,7 @@ static void I_UnregisterMidiSong(MidiSong* midisong)
 //
 // MidiMusicSystem
 //
+// Partially based on an implementation from prboom-plus by Nicholai Main (Natt).
 // ============================================================================
 
 MidiMusicSystem::MidiMusicSystem() :
@@ -933,6 +935,7 @@ void MidiMusicSystem::playChunk()
 //
 // PortMidiMusicSystem
 //
+// Partially based on an implementation from prboom-plus by Nicholai Main (Natt).
 // ============================================================================
 
 #ifdef PORTMIDI

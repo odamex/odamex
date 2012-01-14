@@ -191,6 +191,7 @@ void I_InitMusic (void)
 	#endif
 
 	I_ShutdownMusic();
+	I_ResetMidiVolume();
 
 	if(Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_musicsystem == MS_NONE)
 	{
@@ -239,8 +240,8 @@ CVAR_FUNC_IMPL (snd_musicsystem)
 	
 	if (musicsystem)
 	{	
-		S_StopMusic();
 		I_ShutdownMusic();
+		S_StopMusic();
 	}
 	I_InitMusic();
 	S_ChangeMusic(std::string(level.music, 8), true);

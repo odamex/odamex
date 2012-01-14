@@ -87,6 +87,7 @@ static const size_t		cMaxSysexSize = 8192;
 //
 // Non-member MidiSong helper functions
 //
+// Based partially on an implementation from Chocolate Doom by Simon Howard.
 // ============================================================================
 
 //
@@ -430,6 +431,15 @@ MidiSong::~MidiSong()
 	I_ClearMidiEventList(&mEvents);
 }
 
+//
+// MidiSong::_ParseSong()
+//
+// Loads a midi song stored in the MEMFILE, parses the header, and reads
+// all of the midi events from the song.  If the midi song has multiple
+// tracks, they are merged into a single stream of events.
+//
+// Based partially on an implementation from Chocolate Doom by Simon Howard.
+//
 void MidiSong::_ParseSong(MEMFILE *mf)
 {
 	if (!mf)
