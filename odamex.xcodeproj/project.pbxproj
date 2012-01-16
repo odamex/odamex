@@ -15,6 +15,7 @@
 		92D2DC290B6450A400FD5B07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D2DC280B6450A400FD5B07 /* Carbon.framework */; };
 		A0D7954C14869A70006AD6BA /* p_effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0D7954B14869A70006AD6BA /* p_effect.cpp */; };
 		A0D7955014869AAB006AD6BA /* p_effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0D7954E14869AAB006AD6BA /* p_effect.cpp */; };
+		A0EB2FC814C3D61F0014CB94 /* i_midi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0EB2FC614C3D61F0014CB94 /* i_midi.cpp */; };
 		A0F0F54A14AD999700C40BBF /* i_musicsystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0F0F54914AD999700C40BBF /* i_musicsystem.cpp */; };
 		A0F0F56214AD9C1600C40BBF /* c_effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0F0F56014AD9C1600C40BBF /* c_effect.cpp */; };
 		A0F0F56314AD9C1600C40BBF /* c_effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0F0F56014AD9C1600C40BBF /* c_effect.cpp */; };
@@ -288,6 +289,8 @@
 		A0D7954D14869A8F006AD6BA /* c_pch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c_pch.h; sourceTree = "<group>"; };
 		A0D7954E14869AAB006AD6BA /* p_effect.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = p_effect.cpp; sourceTree = "<group>"; };
 		A0D7954F14869AAB006AD6BA /* sv_pch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sv_pch.h; sourceTree = "<group>"; };
+		A0EB2FC614C3D61F0014CB94 /* i_midi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = i_midi.cpp; sourceTree = "<group>"; };
+		A0EB2FC714C3D61F0014CB94 /* i_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = i_midi.h; sourceTree = "<group>"; };
 		A0F0F54914AD999700C40BBF /* i_musicsystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = i_musicsystem.cpp; sourceTree = "<group>"; };
 		A0F0F56014AD9C1600C40BBF /* c_effect.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c_effect.cpp; sourceTree = "<group>"; };
 		A0F0F56114AD9C1600C40BBF /* c_effect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c_effect.h; sourceTree = "<group>"; };
@@ -851,6 +854,8 @@
 		92D2D6AC0B62B89B00FD5B07 /* sdl */ = {
 			isa = PBXGroup;
 			children = (
+				A0EB2FC614C3D61F0014CB94 /* i_midi.cpp */,
+				A0EB2FC714C3D61F0014CB94 /* i_midi.h */,
 				A0F0F54914AD999700C40BBF /* i_musicsystem.cpp */,
 				D369BCB61409ABDA00D149BF /* SDLMain.m */,
 				D3055E411409AA61008006EA /* afxres.h */,
@@ -1291,6 +1296,7 @@
 				A0F0F54A14AD999700C40BBF /* i_musicsystem.cpp in Sources */,
 				A0F0F56214AD9C1600C40BBF /* c_effect.cpp in Sources */,
 				A0F0F56614AD9C3000C40BBF /* cl_download.cpp in Sources */,
+				A0EB2FC814C3D61F0014CB94 /* i_midi.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -204,7 +204,7 @@ void I_InitMusic (void)
 	switch (snd_musicsystem.asInt())
 	{
 		#ifdef OSX
-		case MS_AU:
+		case MS_AUDIOUNIT:
 			musicsystem = new AuMusicSystem();
 			break;
 		#endif	// OSX
