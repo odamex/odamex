@@ -983,6 +983,16 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	target->flags |= MF_CORPSE|MF_DROPOFF;
 	target->height >>= 2;
 
+	// [RH] If the thing has a special, execute and remove it
+	//		Note that the thing that killed it is considered
+	//		the activator of the script.
+	if ((target->flags & MF_COUNTKILL) && target->special)
+	{
+		LineSpecials[target->special] (NULL, source, target->args[0],
+									   target->args[1], target->args[2],
+									   target->args[3], target->args[4]);
+		target->special = 0;
+	}
 	// [RH] Also set the thing's tid to 0. [why?]
 	target->tid = 0;
 
