@@ -971,6 +971,7 @@ std::vector<size_t> D_DoomWadReboot(
 	if (DefaultsLoaded)	{		// [ML] This is being called while loading defaults,
 		G_SetLevelStrings ();
 		G_ParseMapInfo ();
+		G_ParseMusInfo ();
 		S_ParseSndInfo();
 
 		R_Init();
@@ -1087,6 +1088,8 @@ void D_DoomMain (void)
 	G_SetLevelStrings ();
 	// [RH] Parse through all loaded mapinfo lumps
 	G_ParseMapInfo ();
+	// [ML] Parse the musinfo lump
+	G_ParseMusInfo ();
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();
 

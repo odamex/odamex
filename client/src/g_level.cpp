@@ -514,6 +514,13 @@ void P_RemoveDefereds (void)
 		}
 }
 
+// [ML] Not sure where to put this for now...
+// 	G_ParseMusInfo
+void G_ParseMusInfo(void)
+{
+	// Nothing yet...
+}
+
 //
 // G_InitNew
 // Can be called by the startup code or the menu task,

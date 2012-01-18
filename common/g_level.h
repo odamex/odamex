@@ -200,6 +200,7 @@ level_info_t *FindLevelByNum (int num);
 char *CalcMapName (int episode, int level);
 
 void G_ParseMapInfo (void);
+void G_ParseMusInfo (void);
 
 void G_ClearSnapshots (void);
 void G_SnapshotLevel (void);
