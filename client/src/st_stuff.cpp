@@ -1366,7 +1366,7 @@ void ST_doPaletteStuff(void)
 			if (bzc > cnt)
 				cnt = bzc;
 		}
-			
+
 		if (cnt)
 		{
 			if (cnt > 237)
@@ -1401,7 +1401,7 @@ void ST_doPaletteStuff(void)
 					palette = NUMREDPALS-1;
 
 				palette += STARTREDPALS;
-				
+
 				if (palette < 0)
 					palette = 0;
 			}
@@ -1435,11 +1435,14 @@ void ST_doPaletteStuff(void)
 		I_SetOldPalette (pal);
 	}
 
-	if (r_underwater && memcmp (blend, st_zdpalette, sizeof(blend))) {
-		memcpy (st_zdpalette, blend, sizeof(blend));
-		V_SetBlend ((int)(blend[0] * 255.0f), (int)(blend[1] * 255.0f),
-					(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
-	}
+	SV_AddBlend (plyr->BlendR, plyr->BlendG, plyr->BlendB, plyr->BlendA, blend);
+
+    if (memcmp (blend, st_zdpalette, sizeof(blend)))
+        memcpy (st_zdpalette, blend, sizeof(blend));
+
+	V_SetBlend ((int)(blend[0] * 255.0f), (int)(blend[1] * 255.0f),
+				(int)(blend[2] * 255.0f), (int)(blend[3] * 256.0f));
+
 }
 
 void ST_drawWidgets(bool refresh)
@@ -1521,7 +1524,7 @@ void ST_Drawer (void)
 			if (hud_fullhudtype == 1)
 				ST_odamexHudDrawCTF();
 			else
-				ST_newDrawCTF();				
+				ST_newDrawCTF();
 		}
 		st_firsttime = true;
 	}

@@ -20,7 +20,7 @@
 //	[RH] p_acs.c: New file to handle ACS scripts
 //
 //-----------------------------------------------------------------------------
-// 
+//
 
 #include "z_zone.h"
 #include "doomdef.h"
@@ -116,6 +116,102 @@ void DACSThinker::RunThink ()
 		script = next;
 	}
 }
+
+// FlashFader class - not sure where to put this so it goes here for now...
+class DFlashFader : public DThinker
+{
+	DECLARE_SERIAL (DFlashFader, DThinker)
+public:
+	DFlashFader (float r1, float g1, float b1, float a1,
+				 float r2, float g2, float b2, float a2,
+				 float time, AActor *who);
+	~DFlashFader ();
+	virtual void RunThink ();
+	virtual void DestroyedPointer(DObject *obj);
+	AActor *WhoFor() { return ForWho; }
+	void Cancel ();
+
+protected:
+	float Blends[2][4];
+	int TotalTics;
+	int StartTic;
+	AActor *ForWho;
+
+	void SetBlend (float time);
+	DFlashFader ();
+};
+
+IMPLEMENT_SERIAL(DFlashFader, DThinker)
+
+DFlashFader::DFlashFader ()
+{
+}
+
+void DFlashFader::DestroyedPointer(DObject *obj)
+{
+	if(obj == ForWho)
+		ForWho = NULL;
+}
+
+DFlashFader::DFlashFader (float r1, float g1, float b1, float a1,
+						  float r2, float g2, float b2, float a2,
+						  float time, AActor *who)
+	: TotalTics ((int)(time*TICRATE)), StartTic (level.time), ForWho (who)
+{
+	Blends[0][0]=r1; Blends[0][1]=g1; Blends[0][2]=b1; Blends[0][3]=a1;
+	Blends[1][0]=r2; Blends[1][1]=g2; Blends[1][2]=b2; Blends[1][3]=a2;
+}
+
+DFlashFader::~DFlashFader ()
+{
+	SetBlend (1.f);
+}
+
+void DFlashFader::Serialize (FArchive &arc)
+{
+	Super::Serialize (arc);
+	arc << TotalTics << StartTic << ForWho;
+	for (int i = 1; i >= 0; --i)
+		for (int j = 3; j >= 0; --j)
+			arc << Blends[i][j];
+}
+
+void DFlashFader::RunThink ()
+{
+	if (ForWho == NULL || ForWho->player == NULL)
+	{
+		Destroy ();
+		return;
+	}
+	if (level.time >= StartTic+TotalTics)
+	{
+		SetBlend (1.f);
+		Destroy ();
+		return;
+	}
+	SetBlend ((float)(level.time - StartTic) / (float)TotalTics);
+}
+
+void DFlashFader::SetBlend (float time)
+{
+	if (ForWho == NULL || ForWho->player == NULL)
+	{
+		return;
+	}
+	player_t *player = ForWho->player;
+	float iT = 1.f - time;
+	player->BlendR = Blends[0][0]*iT + Blends[1][0]*time;
+	player->BlendG = Blends[0][1]*iT + Blends[1][1]*time;
+	player->BlendB = Blends[0][2]*iT + Blends[1][2]*time;
+	player->BlendA = Blends[0][3]*iT + Blends[1][3]*time;
+}
+
+void DFlashFader::Cancel ()
+{
+	TotalTics = level.time - StartTic;
+	Blends[1][3] = 0.f;
+}
+
 
 IMPLEMENT_SERIAL (DLevelScript, DObject)
 
@@ -298,7 +394,7 @@ int DLevelScript::ThingCount (int type, int tid)
 		if (type == 0)
 			return 0;
 	}
-	
+
 	if (tid)
 	{
 		mobj = AActor::FindByTID (NULL, tid);
@@ -354,7 +450,7 @@ int DLevelScript::CountPlayers ()
 	for (i = 0; i < players.size(); i++)
 		if (players[i].ingame())
 			count++;
-	
+
 	return count;
 }
 
@@ -393,6 +489,85 @@ void DLevelScript::SetLineTexture (int lineid, int side, int position, int name)
 	}
 }
 
+void DLevelScript::DoFadeTo (int r, int g, int b, int a, fixed_t time)
+{
+    Printf(PRINT_HIGH,"DoFadeRange now... \n");
+	DoFadeRange (0, 0, 0, -1, r, g, b, a, time);
+}
+
+void DLevelScript::DoFadeRange (int r1, int g1, int b1, int a1,
+								int r2, int g2, int b2, int a2, fixed_t time)
+{
+	player_t *viewer;
+	float ftime = (float)time / 65536.f;
+	bool fadingFrom = a1 >= 0;
+	float fr1, fg1, fb1, fa1;
+	float fr2, fg2, fb2, fa2;
+	size_t i;
+
+	fr2 = (float)r2 / 255.f;
+	fg2 = (float)g2 / 255.f;
+	fb2 = (float)b2 / 255.f;
+	fa2 = (float)a2 / 65536.f;
+
+	if (fadingFrom)
+	{
+		fr1 = (float)r1 / 255.f;
+		fg1 = (float)g1 / 255.f;
+		fb1 = (float)b1 / 255.f;
+		fa1 = (float)a1 / 65536.f;
+	}
+
+	if (activator != NULL)
+	{
+		viewer = activator->player;
+		if (viewer == NULL)
+			return;
+		i = players.size();
+		goto showme;
+	}
+	else
+	{
+		for (i = 0; i < players.size(); ++i)
+		{
+			if (players[i].ingame())
+			{
+				viewer = &players[i];
+showme:
+				if (ftime <= 0.f)
+				{
+					viewer->BlendR = fr2;
+					viewer->BlendG = fg2;
+					viewer->BlendB = fb2;
+					viewer->BlendA = fa2;
+				}
+				else
+				{
+					if (!fadingFrom)
+					{
+						if (viewer->BlendA <= 0.f)
+						{
+							fr1 = fr2;
+							fg1 = fg2;
+							fb1 = fb2;
+							fa1 = 0.f;
+						}
+						else
+						{
+							fr1 = viewer->BlendR;
+							fg1 = viewer->BlendG;
+							fb1 = viewer->BlendB;
+							fa1 = viewer->BlendA;
+						}
+					}
+					new DFlashFader (fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2, ftime, viewer->mo);
+				}
+			}
+		}
+	}
+}
+
+
 void DLevelScript::RunScript ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
@@ -417,7 +592,7 @@ void DLevelScript::RunScript ()
 		while ((secnum = P_FindSectorFromTag (statedata, secnum)) >= 0)
 			if (sectors[secnum].floordata || sectors[secnum].ceilingdata)
 				return;
-		
+
 		// If we got here, none of the tagged sectors were busy
 		state = SCRIPT_Running;
 	}
@@ -754,7 +929,7 @@ void DLevelScript::RunScript ()
 				STACK(2) = Random (STACK(2), STACK(1));
 				sp--;
 				break;
-				
+
 			case PCD_RANDOMDIRECT:
 				PushToStack (Random (pc[0], pc[1]));
 				pc += 2;
@@ -978,7 +1153,7 @@ void DLevelScript::RunScript ()
 				else
 					PushToStack (GAME_SINGLE_PLAYER);
 				break;
-					
+
 			case PCD_GAMESKILL:
 				PushToStack (sv_skill.asInt());
 				break;
@@ -1171,6 +1346,34 @@ void DLevelScript::RunScript ()
 				pc++;
 				G_AirControlChanged ();
 				break;
+
+
+            case PCD_FADETO:
+                DoFadeTo (STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
+                sp -= 5;
+                break;
+
+            case PCD_FADERANGE:
+                DoFadeRange (STACK(9), STACK(8), STACK(7), STACK(6),
+                             STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
+                sp -= 9;
+                break;
+
+            case PCD_CANCELFADE:
+                {
+                    TThinkerIterator<DFlashFader> iterator;
+                    DFlashFader *fader;
+
+                    while ( (fader = iterator.Next()) )
+                    {
+                        if (activator == NULL || fader->WhoFor() == activator)
+                        {
+                            fader->Cancel ();
+                        }
+                    }
+                }
+                break;
+
 		}
 	}
 
@@ -1289,7 +1492,7 @@ void P_DoDeferedScripts (void)
 void P_StartOpenScripts (void)
 {
 	int *script;
-	
+
 	if ( (script = level.scripts) )
 	{
 		int numscripts = *script++;
@@ -1461,3 +1664,6 @@ FArchive &operator>> (FArchive &arc, acsdefered_s* &defertop)
 	*defer = NULL;
 	return arc;
 }
+
+VERSION_CONTROL (p_acs_cpp, "$Id$")
+
