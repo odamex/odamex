@@ -23,6 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include <sstream>
+#include <iomanip>
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
@@ -86,6 +87,33 @@ struct download_s
 
 
 extern std::string DownloadStr;
+
+// Pretty prints supplied byte amount into a string
+std::string FormatNBytes(float b)
+{
+    std::ostringstream osstr;
+    float amt;
+
+    if (b >= 1048576)
+    {
+        amt = b / 1048576;
+
+        osstr << std::setprecision(4) << amt << 'M';
+    }
+    else
+    if (b >= 1024)
+    {
+        amt = b / 1024;
+
+        osstr << std::setprecision(4) << amt << 'K';
+    }
+    else
+    {
+       osstr << std::setprecision(4) << b << 'B';
+    }
+
+    return osstr.str();
+}
 
 void SetDownloadPercentage(size_t pc)
 {
@@ -259,7 +287,10 @@ void CL_DownloadStart()
     else
         Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
     
-	Printf(PRINT_HIGH, "Downloading %d bytes...\n", file_len);
+    
+    
+	Printf(PRINT_HIGH, "Downloading %s bytes...\n", 
+        FormatNBytes(file_len).c_str());
 
 	// Make initial 0% show
 	SetDownloadPercentage(0);
