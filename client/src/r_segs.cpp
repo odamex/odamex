@@ -38,6 +38,8 @@
 #include "r_sky.h"
 #include "v_video.h"
 
+#include "p_lnspec.h"
+
 // OPTIMIZE: closed two sided lines as single sided
 
 // killough 1/6/98: replaced globals with statics where appropriate
@@ -721,6 +723,14 @@ R_StoreWallRange
 	else
 	{
 		ds_p->scale2 = ds_p->scale1;
+	}
+
+	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
+	// height to 0
+	if (curline->linedef->special == Line_Horizon)
+	{
+		rw_scale = ds_p->scale1 = ds_p->scale2 = 0;
+		rw_scalestep = 0;
 	}
 
 	// calculate texture boundaries
