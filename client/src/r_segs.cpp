@@ -725,14 +725,6 @@ R_StoreWallRange
 		ds_p->scale2 = ds_p->scale1;
 	}
 
-	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
-	// height to 0
-	if (curline->linedef->special == Line_Horizon)
-	{
-		rw_scale = ds_p->scale1 = ds_p->scale2 = 0;
-		rw_scalestep = 0;
-	}
-
 	// calculate texture boundaries
 	//	and decide if floor / ceiling marks are needed
 	worldtop = frontsector->ceilingheight - viewz;
@@ -952,6 +944,15 @@ R_StoreWallRange
 
 	// calculate rw_offset (only needed for textured lines)
 	segtextured = (midtexture | toptexture) | (bottomtexture | maskedtexture);
+
+	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
+	// height to 0
+	if (curline->linedef->special == Line_Horizon)
+	{
+		rw_scale = ds_p->scale1 = ds_p->scale2 = 0;
+		rw_scalestep = 0;
+		segtextured = false;
+	}
 
 	if (segtextured)
 	{
