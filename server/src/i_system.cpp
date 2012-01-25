@@ -270,6 +270,7 @@ void I_WaitVBL (int count)
 //
 // SubsetLanguageIDs
 //
+#ifdef WIN32
 static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 {
 	char buf[8];
@@ -288,6 +289,7 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 	idp[2] = tolower(buf[2]);
 	idp[3] = 0;
 }
+#endif
 
 //
 // SetLanguageIDs
@@ -300,17 +302,22 @@ static const char *langids[] = {
 };
 
 EXTERN_CVAR (language)
+
 void SetLanguageIDs ()
 {
 	unsigned int langid = language.asInt();
 
 	if (langid == 0 || langid > 3)
 	{
+    #ifdef WIN32
 		memset (LanguageIDs, 0, sizeof(LanguageIDs));
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
 		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
 		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+    #else
+        langid = 1;     // Default to US English on non-windows systems
+    #endif
 	}
 	else
 	{

@@ -258,6 +258,7 @@ void I_WaitVBL (int count)
 //
 // SubsetLanguageIDs
 //
+#ifdef WIN32
 static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 {
 	char buf[8];
@@ -276,6 +277,7 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 	idp[2] = tolower(buf[2]);
 	idp[3] = 0;
 }
+#endif
 
 //
 // SetLanguageIDs
@@ -294,11 +296,15 @@ void SetLanguageIDs ()
 
 	if (langid == 0 || langid > 3)
 	{
+    #ifdef WIN32
 		memset (LanguageIDs, 0, sizeof(LanguageIDs));
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
 		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
 		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+    #else
+        langid = 1;     // Default to US English on non-windows systems
+    #endif
 	}
 	else
 	{
@@ -371,7 +377,7 @@ std::string I_GetHomeDir(std::string user = "")
 
 std::string I_GetUserFileName (const char *file)
 {
-#if defined(UNIX) && !defined(GEKKO) 
+#if defined(UNIX) && !defined(GEKKO)
 	std::string path = I_GetHomeDir();
 
 	if(path[path.length() - 1] != PATHSEPCHAR)
@@ -419,7 +425,7 @@ std::string I_GetUserFileName (const char *file)
 
 void I_ExpandHomeDir (std::string &path)
 {
-#if defined(UNIX) && !defined(GEKKO) 
+#if defined(UNIX) && !defined(GEKKO)
 	if(!path.length())
 		return;
 
@@ -450,7 +456,7 @@ std::string I_GetBinaryDir()
 
 #ifdef _XBOX
 	// D:\ always corresponds to the binary path whether running from DVD or HDD.
-	ret = "D:\\"; 
+	ret = "D:\\";
 #elif defined GEKKO
 	ret = "sd:/";
 #elif defined WIN32
@@ -525,10 +531,10 @@ void I_Endoom(void)
 	// Set up text mode screen
 
 	TXT_Init();
- 
+
     I_SetWindowCaption();
     I_SetWindowIcon();
-    
+
 	// Write the data to the screen memory
 
 	screendata = TXT_GetScreenData();
@@ -574,7 +580,7 @@ void STACK_ARGS I_Quit (void)
 	CL_QuitNetGame();
 
 	M_SaveDefaults();
-	
+
 	I_ShutdownHardware();
 
     CloseNetwork();
