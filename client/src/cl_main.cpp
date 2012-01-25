@@ -25,7 +25,7 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "d_player.h"
 #include "g_game.h"
 #include "d_net.h"
@@ -2942,43 +2942,43 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
     {
         case wp_shotgun:
         {
-            PickupMessage(toucher, GOTSHOTGUN);
+            PickupMessage(toucher, GStrings(GOTSHOTGUN));
         }
         break;
 
         case wp_chaingun:
         {
-            PickupMessage(toucher, GOTCHAINGUN);
+            PickupMessage(toucher, GStrings(GOTCHAINGUN));
         }
         break;
 
         case wp_missile:
         {
-            PickupMessage(toucher, GOTLAUNCHER);
+            PickupMessage(toucher, GStrings(GOTLAUNCHER));
         }
         break;
 
         case wp_plasma:
         {
-            PickupMessage(toucher, GOTPLASMA);
+            PickupMessage(toucher, GStrings(GOTPLASMA));
         }
         break;
 
         case wp_bfg:
         {
-            PickupMessage(toucher, GOTBFG9000);
+            PickupMessage(toucher, GStrings(GOTBFG9000));
         }
         break;
 
         case wp_chainsaw:
         {
-            PickupMessage(toucher, GOTCHAINSAW);
+            PickupMessage(toucher, GStrings(GOTCHAINSAW));
         }
         break;
 
         case wp_supershotgun:
         {
-            PickupMessage(toucher, GOTSHOTGUN2);
+            PickupMessage(toucher, GStrings(GOTSHOTGUN2));
         }
         break;
         

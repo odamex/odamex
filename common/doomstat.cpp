@@ -24,16 +24,33 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "stringtable.h"
 #include "doomstat.h"
 #include "c_cvars.h"
 
+// Localizable strings
+FStringTable	GStrings;
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;
 GameMission_t	gamemission = doom;
 
 // Language.
-Language_t		language = english;
+Language_t		language_old = english;
+
+BEGIN_CUSTOM_CVAR (language, "0", "", CVARTYPE_INT, CVAR_ARCHIVE)
+{
+	SetLanguageIDs ();
+	//if (level.behavior != NULL)
+	//{
+	//	level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
+	//		LanguageIDs[2], LanguageIDs[3]);
+	//}
+	GStrings.ReloadStrings ();
+	GStrings.Compact ();
+	G_SetLevelStrings ();
+}
+END_CUSTOM_CVAR (language)
 
 // Set if homebrew PWAD stuff has been added.
 BOOL			modifiedgame;

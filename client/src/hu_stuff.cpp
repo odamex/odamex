@@ -31,7 +31,7 @@
 #include "s_sound.h"
 #include "doomstat.h"
 #include "st_stuff.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_cvars.h"

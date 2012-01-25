@@ -42,7 +42,6 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
-				<Option parameters="-file 2dmmaps.wad" />
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -316,8 +315,6 @@
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />
 		<Unit filename="..\..\common\dsectoreffect.h" />
-		<Unit filename="..\..\common\dstrings.cpp" />
-		<Unit filename="..\..\common\dstrings.h" />
 		<Unit filename="..\..\common\dthinker.cpp" />
 		<Unit filename="..\..\common\dthinker.h" />
 		<Unit filename="..\..\common\errors.h" />
@@ -327,6 +324,7 @@
 		<Unit filename="..\..\common\g_level.h" />
 		<Unit filename="..\..\common\gi.cpp" />
 		<Unit filename="..\..\common\gi.h" />
+		<Unit filename="..\..\common\gstrings.h" />
 		<Unit filename="..\..\common\huffman.cpp" />
 		<Unit filename="..\..\common\huffman.h" />
 		<Unit filename="..\..\common\i_net.cpp" />
@@ -417,6 +415,9 @@
 		<Unit filename="..\..\common\st_stuff.h" />
 		<Unit filename="..\..\common\stats.cpp" />
 		<Unit filename="..\..\common\stats.h" />
+		<Unit filename="..\..\common\stringenums.h" />
+		<Unit filename="..\..\common\stringtable.cpp" />
+		<Unit filename="..\..\common\stringtable.h" />
 		<Unit filename="..\..\common\szp.h" />
 		<Unit filename="..\..\common\tables.cpp" />
 		<Unit filename="..\..\common\tables.h" />

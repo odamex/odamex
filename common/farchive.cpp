@@ -33,7 +33,7 @@
 #include "m_swap.h"
 #include "minilzo.h"
 #include "cmdlib.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "i_system.h"
 #include "c_cvars.h"
 #include "d_player.h"

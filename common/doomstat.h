@@ -57,7 +57,7 @@ extern	BOOL			modifiedgame;
 
 // -------------------------------------------
 // Language.
-extern	Language_t		language;
+extern	Language_t		language_old;
 
 
 // -------------------------------------------

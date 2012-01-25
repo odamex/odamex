@@ -23,7 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include "doomdef.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "d_main.h"
@@ -631,7 +631,7 @@ void M_ReadSaveStrings(void)
 		handle = fopen (name.c_str(), "rb");
 		if (handle == NULL)
 		{
-			strcpy (&savegamestrings[i][0], EMPTYSTRING);
+			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
 			LoadMenu[i].status = 0;
 		}
 		else
@@ -779,7 +779,7 @@ void M_SaveGame (int choice)
 
 	if (!usergame)
 	{
-		M_StartMessage(SAVEDEAD,NULL,false);
+		M_StartMessage(GStrings(SAVEDEAD),NULL,false);
 		M_ClearMenus ();
 		return;
 	}
@@ -835,7 +835,7 @@ void M_QuickSave(void)
 		quickSaveSlot = -2; 	// means to pick a slot now
 		return;
 	}
-	sprintf (tempstring, QSPROMPT, savegamestrings[quickSaveSlot]);
+	sprintf (tempstring, GStrings(QSPROMPT), savegamestrings[quickSaveSlot]);
 	M_StartMessage (tempstring, M_QuickSaveResponse, true);
 }
 
@@ -870,7 +870,7 @@ void M_QuickLoad(void)
 		M_LoadGame (0);
 		return;
 	}
-	sprintf(tempstring,QLPROMPT,savegamestrings[quickSaveSlot]);
+	sprintf(tempstring,GStrings(QLPROMPT),savegamestrings[quickSaveSlot]);
 	M_StartMessage(tempstring,M_QuickLoadResponse,true);
 }
 
@@ -1003,7 +1003,7 @@ void M_ChooseSkill(int choice)
 {
 	if (choice == nightmare)
 	{
-		M_StartMessage(NIGHTMARE,M_VerifyNightmare,true);
+		M_StartMessage(GStrings(NIGHTMARE),M_VerifyNightmare,true);
 		return;
 	}
 
@@ -1014,7 +1014,7 @@ void M_Episode (int choice)
 {
 	if ((gameinfo.flags & GI_SHAREWARE) && choice)
 	{
-		M_StartMessage(SWSTRING,NULL,false);
+		M_StartMessage(GStrings(SWSTRING),NULL,false);
 		//M_SetupNextMenu(&ReadDef1);
 		M_ClearMenus ();
 		return;
@@ -1090,7 +1090,7 @@ void M_EndGame(int choice)
 		return;
 	}
 
-	M_StartMessage((multiplayer ? NETEND : ENDGAME), M_EndGameResponse, true);
+	M_StartMessage(GStrings(multiplayer ? NETEND : ENDGAME), M_EndGameResponse, true);
 }
 
 //
@@ -1123,14 +1123,12 @@ void M_QuitResponse(int ch)
 
 void M_QuitDOOM (int choice)
 {
-  // We pick index 0 which is language sensitive,
-  //  or one at random, between 1 and maximum number.
-  if (language != english )
-	sprintf(endstring,"%s\n\n%s", endmsg[0], DOSY );
-  else
-	sprintf(endstring,"%s\n\n%s", endmsg[ (gametic%(NUM_QUITMESSAGES-2))+1 ], DOSY);
+	// We pick index 0 which is language sensitive,
+	//  or one at random, between 1 and maximum number.
+	sprintf (endstring, "%s\n\n%s",
+		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
 
-  M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring,M_QuitResponse,true);
 }
 
 
@@ -1550,7 +1548,7 @@ static void M_EditPlayerName (int choice)
 
 	saveSlot = 0;
 	strcpy(saveOldString,savegamestrings[0]);
-	if (!strcmp(savegamestrings[0],EMPTYSTRING))
+	if (!strcmp(savegamestrings[0],GStrings(EMPTYSTRING)))
 		savegamestrings[0][0] = 0;
 	saveCharIndex = strlen(savegamestrings[0]);
 }

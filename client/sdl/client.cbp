@@ -23,9 +23,9 @@
 				<Linker>
 					<Add option="-s" />
 					<Add library="mingw32" />
-					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen" />
+					<Add library="winmm" />
 					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
@@ -37,6 +37,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option parameters="-file idl2011.wad +map map26" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -47,9 +48,9 @@
 				</Compiler>
 				<Linker>
 					<Add library="mingw32" />
-					<Add library="winmm" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen-dbg" />
+					<Add library="winmm" />
 					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
@@ -307,93 +308,6 @@
 			<Add library="SDL_mixer" />
 			<Add directory="..\..\lib" />
 		</Linker>
-		<Unit filename="client.rc">
-			<Option compilerVar="WINDRES" />
-			<Option target="Win Release (GCC)" />
-			<Option target="Win Debug (GCC)" />
-			<Option target="Win Release (VC)" />
-			<Option target="Win Debug (VC)" />
-		</Unit>
-		<Unit filename="hardware.cpp" />
-		<Unit filename="hardware.h" />
-		<Unit filename="i_input.cpp" />
-		<Unit filename="i_input.h" />
-		<Unit filename="i_main.cpp" />
-		<Unit filename="i_music.cpp" />
-		<Unit filename="i_music.h" />
-		<Unit filename="i_musicsystem.cpp" />
-		<Unit filename="i_musicsystem.h" />
-		<Unit filename="i_midi.cpp" />
-		<Unit filename="i_midi.h" />
-		<Unit filename="i_sdlvideo.cpp" />
-		<Unit filename="i_sdlvideo.h" />
-		<Unit filename="i_sound.cpp" />
-		<Unit filename="i_sound.h" />
-		<Unit filename="i_system.cpp" />
-		<Unit filename="i_system.h" />
-		<Unit filename="i_video.h" />
-		<Unit filename="mus2midi.cpp" />
-		<Unit filename="mus2midi.h" />
-		<Unit filename="resource.h">
-			<Option target="Win Release (GCC)" />
-			<Option target="Win Debug (GCC)" />
-			<Option target="Win Release (VC)" />
-			<Option target="Win Debug (VC)" />
-		</Unit>
-		<Unit filename="..\src\am_map.cpp" />
-		<Unit filename="..\src\am_map.h" />
-		<Unit filename="..\src\c_bind.cpp" />
-		<Unit filename="..\src\c_bind.h" />
-		<Unit filename="..\src\c_console.cpp" />
-		<Unit filename="..\src\cl_ctf.cpp" />
-		<Unit filename="..\src\cl_cvarlist.cpp" />
-		<Unit filename="..\src\cl_demo.cpp" />
-		<Unit filename="..\src\cl_download.cpp" />
-		<Unit filename="..\src\cl_download.h" />
-		<Unit filename="..\src\cl_main.cpp" />
-		<Unit filename="..\src\cl_main.h" />
-		<Unit filename="..\src\cl_mobj.cpp" />
-		<Unit filename="..\src\cl_pch.h">
-			<Option compile="1" />
-			<Option weight="0" />
-		</Unit>
-		<Unit filename="..\src\cl_pred.cpp" />
-		<Unit filename="..\src\cl_stubs.cpp" />
-		<Unit filename="..\src\d_main.cpp" />
-		<Unit filename="..\src\d_net.cpp" />
-		<Unit filename="..\src\d_netinfo.cpp" />
-		<Unit filename="..\src\f_finale.cpp" />
-		<Unit filename="..\src\f_finale.h" />
-		<Unit filename="..\src\f_wipe.cpp" />
-		<Unit filename="..\src\f_wipe.h" />
-		<Unit filename="..\src\g_game.cpp" />
-		<Unit filename="..\src\g_level.cpp" />
-		<Unit filename="..\src\hu_stuff.cpp" />
-		<Unit filename="..\src\hu_stuff.h" />
-		<Unit filename="..\src\m_menu.cpp" />
-		<Unit filename="..\src\m_menu.h" />
-		<Unit filename="..\src\m_misc.cpp" />
-		<Unit filename="..\src\m_options.cpp" />
-		<Unit filename="..\src\r_bsp.cpp" />
-		<Unit filename="..\src\r_draw.cpp" />
-		<Unit filename="..\src\r_drawt.cpp" />
-		<Unit filename="..\src\r_main.cpp" />
-		<Unit filename="..\src\r_plane.cpp" />
-		<Unit filename="..\src\r_segs.cpp" />
-		<Unit filename="..\src\r_sky.cpp" />
-		<Unit filename="..\src\r_things.cpp" />
-		<Unit filename="..\src\s_sound.cpp" />
-		<Unit filename="..\src\st_lib.cpp" />
-		<Unit filename="..\src\st_lib.h" />
-		<Unit filename="..\src\st_new.cpp" />
-		<Unit filename="..\src\st_stuff.cpp" />
-		<Unit filename="..\src\v_draw.cpp" />
-		<Unit filename="..\src\v_palette.cpp" />
-		<Unit filename="..\src\v_text.cpp" />
-		<Unit filename="..\src\v_text.h" />
-		<Unit filename="..\src\v_video.cpp" />
-		<Unit filename="..\src\wi_stuff.cpp" />
-		<Unit filename="..\src\wi_stuff.h" />
 		<Unit filename="..\..\common\actor.h" />
 		<Unit filename="..\..\common\c_console.h" />
 		<Unit filename="..\..\common\c_cvarlist.cpp" />
@@ -428,7 +342,6 @@
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />
 		<Unit filename="..\..\common\dsectoreffect.h" />
-		<Unit filename="..\..\common\dstrings.cpp" />
 		<Unit filename="..\..\common\dstrings.h" />
 		<Unit filename="..\..\common\dthinker.cpp" />
 		<Unit filename="..\..\common\dthinker.h" />
@@ -439,6 +352,7 @@
 		<Unit filename="..\..\common\g_level.h" />
 		<Unit filename="..\..\common\gi.cpp" />
 		<Unit filename="..\..\common\gi.h" />
+		<Unit filename="..\..\common\gstrings.h" />
 		<Unit filename="..\..\common\huffman.cpp" />
 		<Unit filename="..\..\common\huffman.h" />
 		<Unit filename="..\..\common\i_net.cpp" />
@@ -529,6 +443,9 @@
 		<Unit filename="..\..\common\st_stuff.h" />
 		<Unit filename="..\..\common\stats.cpp" />
 		<Unit filename="..\..\common\stats.h" />
+		<Unit filename="..\..\common\stringenums.h" />
+		<Unit filename="..\..\common\stringtable.cpp" />
+		<Unit filename="..\..\common\stringtable.h" />
 		<Unit filename="..\..\common\szp.h" />
 		<Unit filename="..\..\common\tables.cpp" />
 		<Unit filename="..\..\common\tables.h" />
@@ -543,6 +460,93 @@
 		<Unit filename="..\..\common\w_wad.h" />
 		<Unit filename="..\..\common\z_zone.cpp" />
 		<Unit filename="..\..\common\z_zone.h" />
+		<Unit filename="..\src\am_map.cpp" />
+		<Unit filename="..\src\am_map.h" />
+		<Unit filename="..\src\c_bind.cpp" />
+		<Unit filename="..\src\c_bind.h" />
+		<Unit filename="..\src\c_console.cpp" />
+		<Unit filename="..\src\cl_ctf.cpp" />
+		<Unit filename="..\src\cl_cvarlist.cpp" />
+		<Unit filename="..\src\cl_demo.cpp" />
+		<Unit filename="..\src\cl_download.cpp" />
+		<Unit filename="..\src\cl_download.h" />
+		<Unit filename="..\src\cl_main.cpp" />
+		<Unit filename="..\src\cl_main.h" />
+		<Unit filename="..\src\cl_mobj.cpp" />
+		<Unit filename="..\src\cl_pch.h">
+			<Option compile="1" />
+			<Option weight="0" />
+		</Unit>
+		<Unit filename="..\src\cl_pred.cpp" />
+		<Unit filename="..\src\cl_stubs.cpp" />
+		<Unit filename="..\src\d_main.cpp" />
+		<Unit filename="..\src\d_net.cpp" />
+		<Unit filename="..\src\d_netinfo.cpp" />
+		<Unit filename="..\src\f_finale.cpp" />
+		<Unit filename="..\src\f_finale.h" />
+		<Unit filename="..\src\f_wipe.cpp" />
+		<Unit filename="..\src\f_wipe.h" />
+		<Unit filename="..\src\g_game.cpp" />
+		<Unit filename="..\src\g_level.cpp" />
+		<Unit filename="..\src\hu_stuff.cpp" />
+		<Unit filename="..\src\hu_stuff.h" />
+		<Unit filename="..\src\m_menu.cpp" />
+		<Unit filename="..\src\m_menu.h" />
+		<Unit filename="..\src\m_misc.cpp" />
+		<Unit filename="..\src\m_options.cpp" />
+		<Unit filename="..\src\r_bsp.cpp" />
+		<Unit filename="..\src\r_draw.cpp" />
+		<Unit filename="..\src\r_drawt.cpp" />
+		<Unit filename="..\src\r_main.cpp" />
+		<Unit filename="..\src\r_plane.cpp" />
+		<Unit filename="..\src\r_segs.cpp" />
+		<Unit filename="..\src\r_sky.cpp" />
+		<Unit filename="..\src\r_things.cpp" />
+		<Unit filename="..\src\s_sound.cpp" />
+		<Unit filename="..\src\st_lib.cpp" />
+		<Unit filename="..\src\st_lib.h" />
+		<Unit filename="..\src\st_new.cpp" />
+		<Unit filename="..\src\st_stuff.cpp" />
+		<Unit filename="..\src\v_draw.cpp" />
+		<Unit filename="..\src\v_palette.cpp" />
+		<Unit filename="..\src\v_text.cpp" />
+		<Unit filename="..\src\v_text.h" />
+		<Unit filename="..\src\v_video.cpp" />
+		<Unit filename="..\src\wi_stuff.cpp" />
+		<Unit filename="..\src\wi_stuff.h" />
+		<Unit filename="client.rc">
+			<Option compilerVar="WINDRES" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
+		</Unit>
+		<Unit filename="hardware.cpp" />
+		<Unit filename="hardware.h" />
+		<Unit filename="i_input.cpp" />
+		<Unit filename="i_input.h" />
+		<Unit filename="i_main.cpp" />
+		<Unit filename="i_midi.cpp" />
+		<Unit filename="i_midi.h" />
+		<Unit filename="i_music.cpp" />
+		<Unit filename="i_music.h" />
+		<Unit filename="i_musicsystem.cpp" />
+		<Unit filename="i_musicsystem.h" />
+		<Unit filename="i_sdlvideo.cpp" />
+		<Unit filename="i_sdlvideo.h" />
+		<Unit filename="i_sound.cpp" />
+		<Unit filename="i_sound.h" />
+		<Unit filename="i_system.cpp" />
+		<Unit filename="i_system.h" />
+		<Unit filename="i_video.h" />
+		<Unit filename="mus2midi.cpp" />
+		<Unit filename="mus2midi.h" />
+		<Unit filename="resource.h">
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />

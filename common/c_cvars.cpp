@@ -35,7 +35,7 @@
 #include "d_player.h"
 
 #include "d_netinf.h"
-#include "dstrings.h"
+#include "gstrings.h"
 
 #include "i_system.h"
 

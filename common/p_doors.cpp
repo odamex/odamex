@@ -30,7 +30,7 @@
 #include "s_sndseq.h"
 #include "doomstat.h"
 #include "r_state.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "c_console.h"
 
 #include "p_spec.h"

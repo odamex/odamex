@@ -290,7 +290,48 @@ std::string StdStringToUpper(const char* str)
 	return StdStringToUpperBase(upper);
 }
 
+
+class ReplacedStringTracker
+{
+	typedef std::map<const char *, bool> replacedStrings_t;
+	typedef replacedStrings_t:: iterator iterator;
+	replacedStrings_t rs;
+
+public:
+
+	void erase(const char *p)
+	{
+		iterator i = rs.find(p);
+		if(i != rs.end())
+		{
+			delete [] const_cast<char*>(i->first);
+			rs.erase(i);
+		}
+	}
+	void add(const char *p)
+	{
+		rs[p] = 1;
+	}
+
+	ReplacedStringTracker() : rs() {}
+	~ReplacedStringTracker()
+	{
+		for(iterator i = rs.begin(); i != rs.end(); ++i)
+			delete[] const_cast<char*>(i->first);
+	}
+}rst;
+
+
+void ReplaceString (const char **ptr, const char *str)
+{
+	if (*ptr)
+	{
+		if (*ptr == str)
+			return;
+		rst.erase(*ptr);
+	}
+	*ptr = copystring (str);
+	rst.add(*ptr);
+}
+
 VERSION_CONTROL (cmdlib_cpp, "$Id$")
-
-
-

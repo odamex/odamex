@@ -324,7 +324,10 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 #define ORIG_FRICTION_FACTOR	2048	// original value
 #define FRICTION_FLY			0xeb00
 
+#ifndef __BIG_ENDIAN__
+#define MAKE_ID(a,b,c,d)	((a)|((b)<<8)|((c)<<16)|((d)<<24))
+#else
+#define MAKE_ID(a,b,c,d)	((d)|((c)<<8)|((b)<<16)|((a)<<24))
+#endif
+
 #endif	// __DOOMDEF_H__
-
-
-

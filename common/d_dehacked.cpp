@@ -36,7 +36,7 @@
 #include "g_level.h"
 #include "m_cheat.h"
 #include "cmdlib.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "m_alloc.h"
 #include "m_misc.h"
 #include "w_wad.h"
@@ -1454,120 +1454,98 @@ static int PatchText (int oldSize)
 	int result;
 	int i;
 
-	temp = COM_Parse (Line2);		// Skip old size, since we already have it
-	if (!COM_Parse (temp)) {
-		DPrintf ("Text chunk is missing size of new string.\n");
+	// Skip old size, since we already know it
+	temp = Line2;
+	while (*temp > ' ')
+		temp++;
+	while (*temp && *temp <= ' ')
+		temp++;
+
+	if (*temp == 0)
+	{
+		Printf (PRINT_HIGH,"Text chunk is missing size of new string.\n");
 		return 2;
 	}
-	newSize = atoi (com_token);
+	newSize = atoi (temp);
 
 	oldStr = new char[oldSize + 1];
 	newStr = new char[newSize + 1];
 
-	if (!oldStr || !newStr) {
-		DPrintf ("Out of memory.\n");
+	if (!oldStr || !newStr)
+	{
+		Printf (PRINT_HIGH,"Out of memory.\n");
 		goto donewithtext;
 	}
 
 	good = ReadChars (&oldStr, oldSize);
 	good += ReadChars (&newStr, newSize);
 
-	if (!good) {
+	if (!good)
+	{
 		delete[] newStr;
 		delete[] oldStr;
-		DPrintf ("Unexpected end-of-file.\n");
+		Printf (PRINT_HIGH,"Unexpected end-of-file.\n");
 		return 0;
 	}
 
-	if (includenotext) {
-		DPrintf ("Skipping text chunk in included patch.\n");
+	if (includenotext)
+	{
+		Printf (PRINT_HIGH,"Skipping text chunk in included patch.\n");
 		goto donewithtext;
 	}
 
 	DPrintf ("Searching for text:\n%s\n", oldStr);
 	good = false;
 
+    // Search through sprite names
+    for (i = 0; i < NUMSPRITES; i++) {
+        if (!strcmp (sprnames[i], oldStr)) {
+            sprnames[i] = copystring (newStr);
+            good = true;
+            // See above.
+        }
+    }
 
-	// Search through sfx names
-#if 0
-	for (i = 0; i < NUMSFX; i++) {
-		if (S_sfx[i].name) {
-			if (!strcmp (S_sfx[i].name, oldStr)) {
-				S_sfx[i].name = copystring (newStr);
-				good = true;
-				// Yes, we really need to check them all. A sound patch could
-				// have created two sounds that point to the same name, and
-				// stopping at the first would miss the change to the second.
-			}
-		}
-	}
-	if (good)
-		goto donewithtext;
-#endif
-
-
-	// Search through sprite names
-	for (i = 0; i < NUMSPRITES; i++) {
-		if (!strcmp (sprnames[i], oldStr)) {
-			sprnames[i] = copystring (newStr);
-			good = true;
-			// See above.
-		}
-	}
-
-	if (good)
-		goto donewithtext;
-
+    if (good)
+        goto donewithtext;
 
 	// Search through music names.
-	// This is something of an even bigger hack
-	// since I changed the way music is handled.
-
-	// Music names are never >6 chars
 	if (oldSize < 7)
-	{
-        level_info_t *info = LevelInfos;
-		char MusicLumpName[9] = { 0 };
-
-		sprintf (MusicLumpName, "d_%s", oldStr);
+	{		// Music names are never >6 chars
+		char musname[9];
+		level_info_t *info = LevelInfos;
+		sprintf (musname, "d_%s", oldStr);
 
 		while (info->level_name)
 		{
-			if (!strnicmp (info->music, MusicLumpName, 8))
+			if (stricmp (info->music, musname) == 0)
 			{
 				good = true;
-				sprintf (MusicLumpName, "d_%s", newStr);
-				strncpy (info->music, MusicLumpName, 8);
+				strcpy (info->music, musname);
 			}
-
 			info++;
 		}
 	}
 
 	if (good)
 		goto donewithtext;
-
-
+	
 	// Search through most other texts
-	i = 0;
-	while(Strings[i].name)
+	i = GStrings.MatchString (oldStr);
+	if (i != -1)
 	{
-		if (!stricmp (Strings[i].builtin, oldStr)) {
-			ReplaceString (&Strings[i].string, newStr);
-			Strings[i].type = str_patched;
-			good = true;
-			break;
-		}
-
-		i++;
+		GStrings.SetString (i, newStr);
+		good = true;
 	}
 
 	if (!good)
 		DPrintf ("   (Unmatched)\n");
 
 donewithtext:
-    delete[] newStr;
-	delete[] oldStr;
+	if (newStr)
+		delete[] newStr;
+	if (oldStr)
+		delete[] oldStr;
 
 	// Fetch next identifier for main loop
 	while ((result = GetLine ()) == 1)
@@ -1587,35 +1565,59 @@ static int PatchStrings (int dummy)
 	if (!holdstring)
 		holdstring = (char *)Malloc (maxstrlen);
 
-	while ((result = GetLine()) == 1) {
+	while ((result = GetLine()) == 1)
+	{
 		int i;
 
 		*holdstring = '\0';
-		do {
-			while (maxstrlen < strlen (holdstring) + strlen (Line2)) {
+		do
+		{
+			while (maxstrlen < strlen (holdstring) + strlen (Line2) + 8)
+			{
 				maxstrlen += 128;
 				holdstring = (char *)Realloc (holdstring, maxstrlen);
 			}
 			strcat (holdstring, skipwhite (Line2));
 			stripwhite (holdstring);
-			if (holdstring[strlen(holdstring)-1] == '\\') {
+			if (holdstring[strlen(holdstring)-1] == '\\')
+			{
 				holdstring[strlen(holdstring)-1] = '\0';
 				Line2 = igets ();
 			} else
 				Line2 = NULL;
 		} while (Line2 && *Line2);
 
-		i = 0;
-		while(Strings[i].name)
-			if (!stricmp (Strings[i++].name, Line1))
-				break;
+		i = GStrings.FindString (Line1);
 
-		if (!Strings[--i].name) {
-			DPrintf ("Unknown string: %s\n", Line1);
-		} else {
+		if (i == -1)
+		{
+			Printf (PRINT_HIGH,"Unknown string: %s\n", Line1);
+		}
+		else
+		{
 			ReplaceSpecialChars (holdstring);
-			ReplaceString (&Strings[i].string, copystring (holdstring));
-			Strings[i].type = str_patched;
+			if ((i >= OB_SUICIDE && i <= OB_DEFAULT &&
+				strstr (holdstring, "%o") == NULL) ||
+				(i >= OB_FRIENDLY1 && i <= OB_FRIENDLY4 &&
+				strstr (holdstring, "%k") == NULL))
+			{
+				int len = strlen (holdstring);
+				memmove (holdstring+3, holdstring, len);
+				holdstring[0] = '%';
+				holdstring[1] = i <= OB_DEFAULT ? 'o' : 'k';
+				holdstring[2] = ' ';
+				holdstring[3+len] = '.';
+				holdstring[4+len] = 0;
+				if (i >= OB_MPFIST && i <= OB_RAILGUN)
+				{
+					char *spot = strstr (holdstring, "%s");
+					if (spot != NULL)
+					{
+						spot[1] = 'k';
+					}
+				}
+			}
+			GStrings.SetString (i, holdstring);
 			DPrintf ("%s set to:\n%s\n", Line1, holdstring);
 		}
 	}

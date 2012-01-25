@@ -34,7 +34,7 @@
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 
 #include "i_system.h"
 #include "z_zone.h"
@@ -940,7 +940,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	if (!p)
 		return false;
     
-	const char *msg = NULL;
+	int msg = NULL;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
 
@@ -1021,12 +1021,12 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
 		else
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
-		C_MidPrint (msg, p);
+		C_MidPrint (GStrings(msg), p);
 	}
 
 	if (serverside && network_game && msg != NULL)
 	{
-		C_MidPrint (msg, p);
+		C_MidPrint (GStrings(msg), p);
 	}
 
 	return false;

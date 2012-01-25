@@ -42,7 +42,7 @@
 #include "v_video.h"
 #include "v_text.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "version.h"

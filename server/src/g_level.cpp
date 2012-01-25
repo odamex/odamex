@@ -42,7 +42,7 @@
 #include "p_local.h"
 #include "r_sky.h"
 #include "c_console.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "v_video.h"
 #include "p_saveg.h"
 #include "p_acs.h"
@@ -1638,61 +1638,68 @@ void G_SetLevelStrings (void)
 	temp[0] = '0';
 	temp[1] = ':';
 	temp[2] = 0;
-	for (i = 65; i < 101; i++) {		// HUSTR_E1M1 .. HUSTR_E4M9
+	for (i = HUSTR_E1M1; i <= HUSTR_E4M9; ++i)
+	{
 		if (temp[0] < '9')
 			temp[0]++;
 		else
 			temp[0] = '1';
 
-		if ( (namepart = strstr (Strings[i].string, temp)) ) {
+		if ( (namepart = strstr (GStrings(i), temp)) )
+		{
 			namepart += 2;
 			while (*namepart && *namepart <= ' ')
 				namepart++;
-		} else {
-			namepart = Strings[i].string;
+		}
+		else
+		{
+			namepart = GStrings(i);
 		}
 
-		ReplaceString ((const char **)&LevelInfos[i-65].level_name, namepart);
+		ReplaceString (&LevelInfos[i-HUSTR_E1M1].level_name, namepart);
+		//ReplaceString (&LevelInfos[i-HUSTR_E1M1].music, Musics1[i-HUSTR_E1M1]);
 	}
 
 	for (i = 0; i < 4; i++)
-		ReplaceString ((const char **)&ClusterInfos[i].exittext, Strings[221+i].string);
+		ReplaceString (&ClusterInfos[i].exittext, GStrings(E1TEXT+i));
 
 	if (gamemission == pack_plut)
-		start = 133;		// PHUSTR_1
+		start = PHUSTR_1;
 	else if (gamemission == pack_tnt)
-		start = 165;		// THUSTR_1
+		start = THUSTR_1;
 	else
-		start = 101;		// HUSTR_1
+		start = HUSTR_1;
 
-	for (i = 0; i < 32; i++) {
-		sprintf (temp, "%d:", i + 1);
-		if ( (namepart = strstr (Strings[i+start].string, temp)) ) {
-			namepart += strlen (temp);
-			while (*namepart && *namepart <= ' ')
-				namepart++;
-		} else {
-			namepart = Strings[i+start].string;
-		}
-		ReplaceString ((const char **)&LevelInfos[36+i].level_name, namepart);
-	}
+ 	for (i = 0; i < 32; i++) {
+ 		sprintf (temp, "%d:", i + 1);
+		if ( (namepart = strstr (GStrings(i+start), temp)) ) {
+ 			namepart += strlen (temp);
+ 			while (*namepart && *namepart <= ' ')
+ 				namepart++;
+ 		} else {
+			namepart = GStrings(i+start);
+ 		}
+ 		ReplaceString (&LevelInfos[36+i].level_name, namepart);
+ 	}
 
 	if (gamemission == pack_plut)
-		start = 231;		// P1TEXT
+		start = P1TEXT;		// P1TEXT
 	else if (gamemission == pack_tnt)
-		start = 237;		// T1TEXT
+		start = T1TEXT;		// T1TEXT
 	else
-		start = 225;		// C1TEXT
+		start = C1TEXT;		// C1TEXT
 
 	for (i = 0; i < 4; i++)
-		ReplaceString ((const char **)&ClusterInfos[4 + i].exittext, Strings[start+i].string);
+		ReplaceString (&ClusterInfos[4 + i].exittext, GStrings(start+i));
 	for (; i < 6; i++)
-		ReplaceString ((const char **)&ClusterInfos[4 + i].entertext, Strings[start+i].string);
+		ReplaceString (&ClusterInfos[4 + i].entertext, GStrings(start+i));
 
-	if (level.info && level.info->level_name)
+	//for (i = 0; i < 15; i++)
+	//	ReplaceString (&ClusterInfos[i].messagemusic, Musics4[i]);
+
+	if (level.info)
 		strncpy (level.level_name, level.info->level_name, 63);
 }
-
 
 void G_AirControlChanged ()
 {

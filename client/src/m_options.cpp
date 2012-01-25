@@ -28,12 +28,13 @@
 
 
 #include "doomdef.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "minilzo.h"
 
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
+#include "cmdlib.h"
 
 #include "d_main.h"
 
@@ -93,6 +94,7 @@ EXTERN_CVAR (hud_crosshairhealth)
 EXTERN_CVAR (hud_crosshairscale)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (r_detail)
+EXTERN_CVAR (language)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_level8soundfeature)
@@ -897,7 +899,16 @@ static value_t MessageLevels[] = {
 	{ 2.0, "Critical Messages" }
 };
 
+// TODO: Put all language info in one array, auto detect what's in the lump?
+static value_t Languages[] = {
+	{ 0.0, "Auto" },
+	{ 1.0, "English" },
+	{ 2.0, "French" },
+	{ 3.0, "Italian" }
+};
+
 static menuitem_t MessagesItems[] = {
+	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {5.0}, 	{1.0}, {NULL} },	
     { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },

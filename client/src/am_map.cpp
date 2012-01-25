@@ -51,7 +51,7 @@ extern patch_t *hu_font[];
 #include "r_state.h"
 
 // Data.
-#include "dstrings.h"
+#include "gstrings.h"
 
 #include "am_map.h"
 
@@ -1652,7 +1652,7 @@ void AM_Drawer (void)
                 epsub = level.cluster - 1;
             }
 
-            sprintf (line, Strings[i+level.levelnum-epsub].string);
+            sprintf (line, GStrings(i+level.levelnum-epsub));
             if (viewactive && screenblocks == 11)
                 FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
             else if (viewactive && screenblocks == 12)

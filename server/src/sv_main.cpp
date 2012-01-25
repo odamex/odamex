@@ -36,7 +36,7 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
 #include "gi.h"
@@ -4553,31 +4553,31 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 	switch (MeansOfDeath) {
 		case MOD_SUICIDE:
-			message = OB_SUICIDE;
+			message = GStrings(OB_SUICIDE);
 			break;
 		case MOD_FALLING:
-			message = OB_FALLING;
+			message = GStrings(OB_FALLING);
 			break;
 		case MOD_CRUSH:
-			message = OB_CRUSH;
+			message = GStrings(OB_CRUSH);
 			break;
 		case MOD_EXIT:
-			message = OB_EXIT;
+			message = GStrings(OB_EXIT);
 			break;
 		case MOD_WATER:
-			message = OB_WATER;
+			message = GStrings(OB_WATER);
 			break;
 		case MOD_SLIME:
-			message = OB_SLIME;
+			message = GStrings(OB_SLIME);
 			break;
 		case MOD_LAVA:
-			message = OB_LAVA;
+			message = GStrings(OB_LAVA);
 			break;
 		case MOD_BARREL:
-			message = OB_BARREL;
+			message = GStrings(OB_BARREL);
 			break;
 		case MOD_SPLASH:
-			message = OB_SPLASH;
+			message = GStrings(OB_SPLASH);
 			break;
 	}
 
@@ -4585,38 +4585,38 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		if (attacker == self) {
 			switch (MeansOfDeath) {
 				case MOD_R_SPLASH:
-					message = OB_R_SPLASH;
+					message = GStrings(OB_R_SPLASH);
 					break;
 				case MOD_ROCKET:
-					message = OB_ROCKET;
+					message = GStrings(OB_ROCKET);
 					break;
 				default:
-					message = OB_KILLEDSELF;
+					message = GStrings(OB_KILLEDSELF);
 					break;
 			}
 		} else if (!attacker->player) {
 					if (MeansOfDeath == MOD_HIT) {
 						switch (attacker->type) {
 							case MT_UNDEAD:
-								message = OB_UNDEADHIT;
+								message = GStrings(OB_UNDEADHIT);
 								break;
 							case MT_TROOP:
-								message = OB_IMPHIT;
+								message = GStrings(OB_IMPHIT);
 								break;
 							case MT_HEAD:
-								message = OB_CACOHIT;
+								message = GStrings(OB_CACOHIT);
 								break;
 							case MT_SERGEANT:
-								message = OB_DEMONHIT;
+								message = GStrings(OB_DEMONHIT);
 								break;
 							case MT_SHADOWS:
-								message = OB_SPECTREHIT;
+								message = GStrings(OB_SPECTREHIT);
 								break;
 							case MT_BRUISER:
-								message = OB_BARONHIT;
+								message = GStrings(OB_BARONHIT);
 								break;
 							case MT_KNIGHT:
-								message = OB_KNIGHTHIT;
+								message = GStrings(OB_KNIGHTHIT);
 								break;
 							default:
 								break;
@@ -4624,49 +4624,49 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 					} else {
 						switch (attacker->type) {
 							case MT_POSSESSED:
-								message = OB_ZOMBIE;
+								message = GStrings(OB_ZOMBIE);
 								break;
 							case MT_SHOTGUY:
-								message = OB_SHOTGUY;
+								message = GStrings(OB_SHOTGUY);
 								break;
 							case MT_VILE:
-								message = OB_VILE;
+								message = GStrings(OB_VILE);
 								break;
 							case MT_UNDEAD:
-								message = OB_UNDEAD;
+								message = GStrings(OB_UNDEAD);
 								break;
 							case MT_FATSO:
-								message = OB_FATSO;
+								message = GStrings(OB_FATSO);
 								break;
 							case MT_CHAINGUY:
-								message = OB_CHAINGUY;
+								message = GStrings(OB_CHAINGUY);
 								break;
 							case MT_SKULL:
-								message = OB_SKULL;
+								message = GStrings(OB_SKULL);
 								break;
 							case MT_TROOP:
-								message = OB_IMP;
+								message = GStrings(OB_IMP);
 								break;
 							case MT_HEAD:
-								message = OB_CACO;
+								message = GStrings(OB_CACO);
 								break;
 							case MT_BRUISER:
-								message = OB_BARON;
+								message = GStrings(OB_BARON);
 								break;
 							case MT_KNIGHT:
-								message = OB_KNIGHT;
+								message = GStrings(OB_KNIGHT);
 								break;
 							case MT_SPIDER:
-								message = OB_SPIDER;
+								message = GStrings(OB_SPIDER);
 								break;
 							case MT_BABY:
-								message = OB_BABY;
+								message = GStrings(OB_BABY);
 								break;
 							case MT_CYBORG:
-								message = OB_CYBORG;
+								message = GStrings(OB_CYBORG);
 								break;
 							case MT_WOLFSS:
-								message = OB_WOLFSS;
+								message = GStrings(OB_WOLFSS);
 								break;
 							default:
 								break;
@@ -4689,53 +4689,53 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 			gender = self->player->userinfo.gender;
 
 			if (rnum < 64)
-				message = OB_FRIENDLY1;
+				message = GStrings(OB_FRIENDLY1);
 			else if (rnum < 128)
-				message = OB_FRIENDLY2;
+				message = GStrings(OB_FRIENDLY2);
 			else if (rnum < 192)
-				message = OB_FRIENDLY3;
+				message = GStrings(OB_FRIENDLY3);
 			else
-				message = OB_FRIENDLY4;
+				message = GStrings(OB_FRIENDLY4);
 		} else {
 			switch (MeansOfDeath) {
 				case MOD_FIST:
-					message = OB_MPFIST;
+					message = GStrings(OB_MPFIST);
 					break;
 				case MOD_CHAINSAW:
-					message = OB_MPCHAINSAW;
+					message = GStrings(OB_MPCHAINSAW);
 					break;
 				case MOD_PISTOL:
-					message = OB_MPPISTOL;
+					message = GStrings(OB_MPPISTOL);
 					break;
 				case MOD_SHOTGUN:
-					message = OB_MPSHOTGUN;
+					message = GStrings(OB_MPSHOTGUN);
 					break;
 				case MOD_SSHOTGUN:
-					message = OB_MPSSHOTGUN;
+					message = GStrings(OB_MPSSHOTGUN);
 					break;
 				case MOD_CHAINGUN:
-					message = OB_MPCHAINGUN;
+					message = GStrings(OB_MPCHAINGUN);
 					break;
 				case MOD_ROCKET:
-					message = OB_MPROCKET;
+					message = GStrings(OB_MPROCKET);
 					break;
 				case MOD_R_SPLASH:
-					message = OB_MPR_SPLASH;
+					message = GStrings(OB_MPR_SPLASH);
 					break;
 				case MOD_PLASMARIFLE:
-					message = OB_MPPLASMARIFLE;
+					message = GStrings(OB_MPPLASMARIFLE);
 					break;
 				case MOD_BFG_BOOM:
-					message = OB_MPBFG_BOOM;
+					message = GStrings(OB_MPBFG_BOOM);
 					break;
 				case MOD_BFG_SPLASH:
-					message = OB_MPBFG_SPLASH;
+					message = GStrings(OB_MPBFG_SPLASH);
 					break;
 				case MOD_TELEFRAG:
-					message = OB_MPTELEFRAG;
+					message = GStrings(OB_MPTELEFRAG);
 					break;
 				case MOD_RAILGUN:
-					message = OB_RAILGUN;
+					message = GStrings(OB_RAILGUN);
 					break;
 			}
 		}
@@ -4753,7 +4753,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		return;
 	}
 
-	SexMessage (OB_DEFAULT, gendermessage, gender);
+	SexMessage (GStrings(OB_DEFAULT), gendermessage, gender);
 	SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
 }
 void SV_SendDamagePlayer(player_t *player, int damage)

@@ -95,6 +95,8 @@ const size_t min_heapsize = 8;
 // The size we got back from I_ZoneBase in megabytes
 size_t got_heapsize = 0;
 
+DWORD LanguageIDs[4];
+
 //
 // I_MegabytesToBytes
 //
@@ -263,6 +265,66 @@ void I_WaitVBL (int count)
     #else
     usleep (1000000 * count / 70);
     #endif
+}
+
+//
+// SubsetLanguageIDs
+//
+static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
+{
+	char buf[8];
+	LCID langid;
+	char *idp;
+
+	if (!GetLocaleInfo (id, type, buf, 8))
+		return;
+	langid = MAKELCID (strtoul(buf, NULL, 16), SORT_DEFAULT);
+	if (!GetLocaleInfo (langid, LOCALE_SABBREVLANGNAME, buf, 8))
+		return;
+	idp = (char *)(&LanguageIDs[idx]);
+	memset (idp, 0, 4);
+	idp[0] = tolower(buf[0]);
+	idp[1] = tolower(buf[1]);
+	idp[2] = tolower(buf[2]);
+	idp[3] = 0;
+}
+
+//
+// SetLanguageIDs
+//
+static const char *langids[] = {
+	"auto",
+	"enu",
+	"fr",
+	"it"
+};
+
+EXTERN_CVAR (language)
+void SetLanguageIDs ()
+{
+	unsigned int langid = language.asInt();
+
+	if (langid == 0 || langid > 3)
+	{
+		memset (LanguageIDs, 0, sizeof(LanguageIDs));
+		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
+		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
+		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
+		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+	}
+	else
+	{
+		DWORD lang = 0;
+		const char *langtag = langids[langid];
+
+		((BYTE *)&lang)[0] = (langtag)[0];
+		((BYTE *)&lang)[1] = (langtag)[1];
+		((BYTE *)&lang)[2] = (langtag)[2];
+		LanguageIDs[0] = lang;
+		LanguageIDs[1] = lang;
+		LanguageIDs[2] = lang;
+		LanguageIDs[3] = lang;
+	}
 }
 
 //

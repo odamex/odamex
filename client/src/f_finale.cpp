@@ -34,7 +34,7 @@
 #include "v_text.h"
 #include "w_wad.h"
 #include "s_sound.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "doomstat.h"
 #include "r_state.h"
 #include "hu_stuff.h"
@@ -287,23 +287,23 @@ extern	gamestate_t 	wipegamestate;
 void F_StartCast (void)
 {
 	// [RH] Set the names for the cast
-	castorder[0].name = CC_ZOMBIE;
-	castorder[1].name = CC_SHOTGUN;
-	castorder[2].name = CC_HEAVY;
-	castorder[3].name = CC_IMP;
-	castorder[4].name = CC_DEMON;
-	castorder[5].name = CC_LOST;
-	castorder[6].name = CC_CACO;
-	castorder[7].name = CC_HELL;
-	castorder[8].name = CC_BARON;
-	castorder[9].name = CC_ARACH;
-	castorder[10].name = CC_PAIN;
-	castorder[11].name = CC_REVEN;
-	castorder[12].name = CC_MANCU;
-	castorder[13].name = CC_ARCH;
-	castorder[14].name = CC_SPIDER;
-	castorder[15].name = CC_CYBER;
-	castorder[16].name = CC_HERO;
+	castorder[0].name = GStrings(CC_ZOMBIE);
+	castorder[1].name = GStrings(CC_SHOTGUN);
+	castorder[2].name = GStrings(CC_HEAVY);
+	castorder[3].name = GStrings(CC_IMP);
+	castorder[4].name = GStrings(CC_DEMON);
+	castorder[5].name = GStrings(CC_LOST);
+	castorder[6].name = GStrings(CC_CACO);
+	castorder[7].name = GStrings(CC_HELL);
+	castorder[8].name = GStrings(CC_BARON);
+	castorder[9].name = GStrings(CC_ARACH);
+	castorder[10].name = GStrings(CC_PAIN);
+	castorder[11].name = GStrings(CC_REVEN);
+	castorder[12].name = GStrings(CC_MANCU);
+	castorder[13].name = GStrings(CC_ARCH);
+	castorder[14].name = GStrings(CC_SPIDER);
+	castorder[15].name = GStrings(CC_CYBER);
+	castorder[16].name = GStrings(CC_HERO);
 
 	wipegamestate = GS_FORCEWIPE;
 	castnum = 0;

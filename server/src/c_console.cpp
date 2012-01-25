@@ -26,7 +26,7 @@
 
 #include "m_alloc.h"
 #include "version.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "g_game.h"
 #include "c_console.h"
 #include "c_cvars.h"

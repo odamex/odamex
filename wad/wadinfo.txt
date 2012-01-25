@@ -19,6 +19,7 @@ CRBLUE2
 CRORANGE
 CRYELLOW
 X11R6RGB
+LANGUAGE
 
 # List of Sounds
 [sounds]
