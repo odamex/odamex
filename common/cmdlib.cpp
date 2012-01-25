@@ -37,6 +37,7 @@
 #include "i_system.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <map>
 
 #include "m_alloc.h"
 
@@ -207,9 +208,9 @@ BOOL IsNum (char *str)
 	return result;
 }
 
-// [Russell] Returns 0 if strings are the same, optional parameter for case 
+// [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
-int StdStringCompare(const std::string &s1, const std::string &s2, 
+int StdStringCompare(const std::string &s1, const std::string &s2,
     bool CIS = false)
 {
 	// Convert to upper case

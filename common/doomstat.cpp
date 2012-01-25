@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -27,6 +27,7 @@
 #include "stringtable.h"
 #include "doomstat.h"
 #include "c_cvars.h"
+#include "i_system.h"
 
 // Localizable strings
 FStringTable	GStrings;
