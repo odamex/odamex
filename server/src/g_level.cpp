@@ -85,7 +85,10 @@ extern int mapchange;
 int starttime;
 
 // ACS variables with world scope
-int WorldVars[NUM_WORLDVARS];
+int ACS_WorldVars[NUM_WORLDVARS];
+
+// ACS variables with global scope
+int ACS_GlobalVars[NUM_GLOBALVARS];
 
 BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
@@ -225,7 +228,7 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },	
+	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
 	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
 };
@@ -406,7 +409,7 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			SC_MustGetFloat ();
 			*((float *)(info + handler->data1)) = sc_Float;
 			break;
-			
+
 		case MITYPE_COLOR:
 			{
 				SC_MustGetString ();
@@ -743,8 +746,8 @@ void G_GenerateRandomMaps(void)
 
 	for (i = 0; i < Count; i++)
 		Used[i] = 0;
-		
-    srand((unsigned)time(0)); 
+
+    srand((unsigned)time(0));
 
 	// Now populate the list
 	for (i = 0; i < Count; i++)
@@ -955,11 +958,11 @@ void G_ChangeMap (void)
 
 	if (!MapListPointer)
 	{
-		char *next = level.nextmap;     
+		char *next = level.nextmap;
 
 		// if deathmatch, stay on same level
 		// [ML] 1/25/10: OR if next is empty
-		if(gamestate == GS_STARTUP || 
+		if(gamestate == GS_STARTUP ||
 			sv_gametype != GM_COOP || !strlen(next))
 			next = level.mapname;
 		else
@@ -1022,8 +1025,8 @@ void G_ChangeMap (void)
 
 	// run script at the end of each map
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a 
-	// reason why the mapscripts ahve to be safe mode?	
+	// when onlcvars (addcommandstring's second param) is true.  Is there a
+	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
 		AddCommandString(sv_endmapscript.cstring()/*, true*/);
 }
@@ -1059,7 +1062,7 @@ void G_DoNewGame (void)
 
 	// run script at the start of each map
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a 
+	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_startmapscript.cstring()))
 		AddCommandString(sv_startmapscript.cstring()/*,true*/);
@@ -1170,14 +1173,17 @@ void G_InitNew (const char *mapname)
 		}
 		isFast = wantFast;
 	}
-    
+
 	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
 	Unlag::getInstance().reset();
 
 	if (!savegamerestore)
 	{
 		M_ClearRandom ();
+		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
+		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
+		level.timeleft = 0;
 
 		// force players to be initialized upon first level load
 		for (size_t i = 0; i < players.size(); i++)
@@ -1193,7 +1199,7 @@ void G_InitNew (const char *mapname)
 			if(players[i].playerstate == PST_DEAD)
 				G_PlayerReborn(players[i]);
 
-			players[i].playerstate = PST_REBORN;
+			players[i].playerstate = PST_ENTER; // [BC]
 
 			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
@@ -1491,7 +1497,7 @@ void G_InitLevelLocals ()
 
 	level.gravity = sv_gravity;
 	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
-		
+
 	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
 
@@ -1513,7 +1519,7 @@ void G_InitLevelLocals ()
 		if (pinfo->aircontrol != 0.f)
 		{
 			level.aircontrol = (fixed_t)(pinfo->aircontrol * 65536.f);
-		}		
+		}
 	} else {
 		info = FindDefLevelInfo (level.mapname);
 		level.info = info;
@@ -1727,9 +1733,9 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.killed_monsters
 			<< level.gravity
 			<< level.aircontrol;
-			
+
 			G_AirControlChanged ();
-			
+
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc << level.vars[i];
 	}
@@ -1748,7 +1754,7 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc >> level.vars[i];
 	}
-	
+
 	if (!hubLoad)
 		P_SerializePlayers (arc);
 
@@ -1870,7 +1876,8 @@ void P_SerializeACSDefereds (FArchive &arc)
 				writeDefereds (arc, &LevelInfos[i]);
 
 		// Signal end of defereds
-		arc << (char)0;
+		BYTE zero = 0;
+		arc << zero;
 	}
 	else
 	{
@@ -1878,7 +1885,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 
 		P_RemoveDefereds ();
 
-		arc >> mapname[0];
+		arc << mapname[0];
 		while (mapname[0])
 		{
 			arc.Read (&mapname[1], 7);
@@ -1891,8 +1898,8 @@ void P_SerializeACSDefereds (FArchive &arc)
 				name[8] = 0;
 				I_Error ("Unknown map '%s' in savegame", name);
 			}
-			arc >> i->defered;
-			arc >> mapname[0];
+			arc << i->defered;
+			arc << mapname[0];
 		}
 	}
 }

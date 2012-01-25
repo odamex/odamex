@@ -80,7 +80,11 @@ EXTERN_CVAR(sv_aircontrol)
 int starttime;
 
 // ACS variables with world scope
-int WorldVars[NUM_WORLDVARS];
+int ACS_WorldVars[NUM_WORLDVARS];
+
+// ACS variables with global scope
+int ACS_GlobalVars[NUM_GLOBALVARS];
+
 
 BOOL savegamerestore;
 
@@ -157,7 +161,7 @@ static const char *MapInfoMapLevel[] =
 	"cd_title_track",
 	"warptrans",
 	"gravity",
-	"aircontrol",	
+	"aircontrol",
 	NULL
 };
 
@@ -222,7 +226,7 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },	
+	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
 	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
 };
@@ -403,7 +407,7 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			SC_MustGetFloat ();
 			*((float *)(info + handler->data1)) = sc_Float;
 			break;
-			
+
 		case MITYPE_COLOR:
 			{
 				SC_MustGetString ();
@@ -746,12 +750,14 @@ void G_InitNew (const char *mapname)
 	if (!savegamerestore)
 	{
 		M_ClearRandom ();
+		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
+		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
 		level.timeleft = 0;
 
 		// force players to be initialized upon first level load
 		for (i = 0; i < players.size(); i++)
-			players[i].playerstate = PST_REBORN;
+			players[i].playerstate = PST_ENTER;	// [BC]
 	}
 
 	usergame = true;				// will be set false if a demo
@@ -812,7 +818,7 @@ void G_SecretExitLevel (int position, int drawscores)
 		secretexit = false;
 	else
 		secretexit = true;
-    
+
 	shotclock = 0;
 
     goOn (position);
@@ -882,10 +888,10 @@ void G_DoCompleted (void)
 		wminfo.plyr[i].in = players[i].ingame();
 		wminfo.plyr[i].skills = players[i].killcount;
 		wminfo.plyr[i].sitems = players[i].itemcount;
-		wminfo.plyr[i].ssecret = players[i].secretcount;		
+		wminfo.plyr[i].ssecret = players[i].secretcount;
 		wminfo.plyr[i].stime = level.time;
 		//memcpy (wminfo.plyr[i].frags, players[i].frags
-		//		, sizeof(wminfo.plyr[i].frags));		
+		//		, sizeof(wminfo.plyr[i].frags));
 		wminfo.plyr[i].fragcount = players[i].fragcount;
 
 		if(&players[i] == &consoleplayer())
@@ -909,7 +915,7 @@ void G_DoCompleted (void)
 					G_PlayerFinishLevel (players[i]);	// take away cards and stuff
 
 				if (nextcluster->flags & CLUSTER_HUB) {
-					memset (WorldVars, 0, sizeof(WorldVars));
+					memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
 					P_RemoveDefereds ();
 					G_ClearSnapshots ();
 				}
@@ -929,7 +935,7 @@ void G_DoCompleted (void)
 			return;
 		}
 	}
-	
+
 	gamestate = GS_INTERMISSION;
 	viewactive = false;
 	automapactive = false;
@@ -986,7 +992,7 @@ void G_DoLoadLevel (int position)
 	for (i = 0; i < players.size(); i++)
 	{
 		if (players[i].ingame() && players[i].playerstate == PST_DEAD)
-			players[i].playerstate = PST_REBORN;
+			players[i].playerstate = PST_ENTER;	// [BC]
 
 		players[i].fragcount = 0;
 		players[i].itemcount = 0;
@@ -1028,7 +1034,7 @@ void G_DoLoadLevel (int position)
 			if (G_CheckSpot(consoleplayer(), &playerstarts[n]))
 				P_SpawnPlayer(consoleplayer(), &playerstarts[n]);
 		}
-			
+
 		// Check for a free deathmatch start point
 		for (int n = 0; n < deathmatch_p - deathmatchstarts && !consoleplayer().mo; n++)
 		{
@@ -1077,7 +1083,7 @@ void G_DoLoadLevel (int position)
 	level.starttime = I_GetTime ();
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
-    
+
 	C_FlushDisplay ();
 }
 
@@ -1147,10 +1153,10 @@ void G_InitLevelLocals ()
 	BaseBlendA = 0.0f;		// Remove underwater blend effect, if any
 	NormalLight.maps = realcolormaps;
 	r_underwater = false;
-	
+
 	level.gravity = sv_gravity;
 	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
-	
+
 	if ((i = FindWadLevelInfo (level.mapname)) > -1)
 	{
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
@@ -1390,12 +1396,12 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.killed_monsters
 			<< level.gravity
 			<< level.aircontrol;
-			
+
 		G_AirControlChanged ();
-	
+
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc << level.vars[i];
-			
+
 		arc << playernum;
 	}
 	else
@@ -1410,17 +1416,17 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			>> level.aircontrol;
 
 		G_AirControlChanged ();
-			
+
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc >> level.vars[i];
-        
+
        	arc >> playernum;
 
 		players.resize(playernum);
 	}
 	if (!hubLoad)
 		P_SerializePlayers (arc);
-		
+
 	P_SerializeThinkers (arc, hubLoad);
 	P_SerializeWorld (arc);
 	P_SerializePolyobjs (arc);
@@ -1539,7 +1545,8 @@ void P_SerializeACSDefereds (FArchive &arc)
 				writeDefereds (arc, &LevelInfos[i]);
 
 		// Signal end of defereds
-		arc << (char)0;
+		BYTE zero = 0;
+		arc << zero;
 	}
 	else
 	{
@@ -1547,7 +1554,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 
 		P_RemoveDefereds ();
 
-		arc >> mapname[0];
+		arc << mapname[0];
 		while (mapname[0])
 		{
 			arc.Read (&mapname[1], 7);
@@ -1560,8 +1567,8 @@ void P_SerializeACSDefereds (FArchive &arc)
 				name[8] = 0;
 				I_Error ("Unknown map '%s' in savegame", name);
 			}
-			arc >> i->defered;
-			arc >> mapname[0];
+			arc << i->defered;
+			arc << mapname[0];
 		}
 	}
 }

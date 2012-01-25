@@ -454,7 +454,7 @@ void G_Ticker (void)
 	// do player reborns if needed
 	if(serverside)
 		for (i = 0; i < players.size(); i++)
-			if (players[i].ingame() && players[i].playerstate == PST_REBORN)
+			if (players[i].ingame() && (players[i].playerstate == PST_REBORN || players[i].playerstate == PST_ENTER))
 				G_DoReborn (players[i]);
 
 	// do things to change the game state
@@ -653,7 +653,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		// emulate out-of-bounds access to finecosine / finesine tables
 		// which cause west-facing player spawns to have the spawn-fog
 		// and its sound located off the map in vanilla Doom.
-		
+
 		// borrowed from Eternity Engine
 
 		// haleyjd: There was a weird bug with this statement:

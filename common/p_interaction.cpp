@@ -34,6 +34,7 @@
 #include "p_inter.h"
 #include "p_lnspec.h"
 #include "p_ctf.h"
+#include "p_acs.h"
 
 #define BONUSADD 6
 
@@ -407,7 +408,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 		return;
 
 	// Only allow clients to predict touching weapons, not health, armor, etc
-	if (clientside && !serverside && special->type != MT_CHAINGUN && 
+	if (clientside && !serverside && special->type != MT_CHAINGUN &&
 		special->type != MT_SHOTGUN && special->type != MT_SUPERSHOTGUN &&
 		special->type != MT_MISC25 && special->type != MT_MISC26 &&
 		special->type != MT_MISC27 && special->type != MT_MISC28 && !FromServer)
@@ -1011,7 +1012,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	tplayer = target->player;
 
 	// [SL] 2011-06-26 - Set the player's attacker.  For some reason this
-	// was not being set clientside 
+	// was not being set clientside
 	if (tplayer)
 	{
 		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
@@ -1081,7 +1082,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			SV_UpdateFrags(*splayer);
 		}
 	}
-	
+
 	// [Toke - CTF]
 	if (sv_gametype == GM_CTF && target->player)
 	{
@@ -1094,6 +1095,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		{
 			tplayer->deathcount++;
 		}
+
+		// Death script execution, care of Skull Tag
+		if (level.behavior != NULL)
+		{
+			level.behavior->StartTypedScripts (SCRIPT_Death, target);
+		}
+
 		// count environment kills against you
 		if (!source && !joinkill && !shotclock)
 		{

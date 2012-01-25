@@ -42,11 +42,12 @@ Language_t		language_old = english;
 BEGIN_CUSTOM_CVAR (language, "0", "", CVARTYPE_INT, CVAR_ARCHIVE)
 {
 	SetLanguageIDs ();
-	//if (level.behavior != NULL)
-	//{
-	//	level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
-	//		LanguageIDs[2], LanguageIDs[3]);
-	//}
+	if (level.behavior != NULL)
+	{
+		level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
+			LanguageIDs[2], LanguageIDs[3]);
+	}
+
 	GStrings.ReloadStrings ();
 	GStrings.Compact ();
 	G_SetLevelStrings ();

@@ -77,7 +77,11 @@ typedef enum
 	PST_REBORN,
 
 	// These are cleaned up at the end of a frame
-	PST_DISCONNECT
+	PST_DISCONNECT,
+
+    // [BC] Entered the game
+	PST_ENTER
+
 } playerstate_t;
 
 
@@ -118,7 +122,8 @@ public:
 	{
 		return playerstate == PST_LIVE ||
 				playerstate == PST_DEAD ||
-				playerstate == PST_REBORN;
+				playerstate == PST_REBORN ||
+				playerstate == PST_ENTER;
 	}
 
 	// player identifier on server

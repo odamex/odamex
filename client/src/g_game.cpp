@@ -505,7 +505,7 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		cmd->ucmd.buttons |= BT_CHANGE;
 		cmd->ucmd.buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
 	}
-	else 
+	else
 	{
 		cmd->ucmd.impulse = Impulse;
 	}
@@ -626,7 +626,7 @@ void G_ConvertMouseSettings(int old_type, int new_type)
 	// first convert to ZDoom settings
 	if (old_type == MOUSE_DOOM)
 	{
-		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f); 
+		mouse_sensitivity.Set((mouse_sensitivity + 5.0f) / 40.0f);
 		m_pitch.Set(m_pitch * 4.0f);
 	}
 	else if (old_type == MOUSE_ODAMEX)
@@ -682,7 +682,7 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	}
 	prevx = evx;
 	prevy = evy;
-	
+
 	int (*scalexfunc)(int) = NULL;
 	int (*scaleyfunc)(int) = NULL;
 
@@ -710,7 +710,7 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 			mousey = -int(pow((*scaleyfunc)(-evy), dynresval));
 		else
 			mousey = int(pow((*scaleyfunc)(evy), dynresval));
-	}	
+	}
 	else
 	{
 		mousex = (*scalexfunc)(evx);
@@ -860,14 +860,14 @@ void G_Ticker (void)
 	gamestate_t	oldgamestate;
 	size_t i;
 
-		
+
 	// Run client tics;
 	CL_RunTics ();
 
 	// do player reborns if needed
 	if(serverside)
 		for (i = 0; i < players.size(); i++)
-			if (players[i].ingame() && players[i].playerstate == PST_REBORN)
+			if (players[i].ingame() && (players[i].playerstate == PST_REBORN || players[i].playerstate == PST_ENTER))
 				G_DoReborn (players[i]);
 
 	// do things to change the game state
@@ -1214,7 +1214,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 		// emulate out-of-bounds access to finecosine / finesine tables
 		// which cause west-facing player spawns to have the spawn-fog
 		// and its sound located off the map in vanilla Doom.
-		
+
 		// borrowed from Eternity Engine
 
 		// haleyjd: There was a weird bug with this statement:
@@ -1503,6 +1503,7 @@ void G_LoadGame (char* name)
 
 void G_DoLoadGame (void)
 {
+    unsigned int i;
 	char text[16];
 
 	gameaction = ga_nothing;
@@ -1566,10 +1567,13 @@ void G_DoLoadGame (void)
 
 	arc >> level.time;
 
-/*
+
 	for (i = 0; i < NUM_WORLDVARS; i++)
-		arc >> WorldVars[i];
-*/
+		arc << ACS_WorldVars[i];
+
+	for (i = 0; i < NUM_GLOBALVARS; i++)
+		arc << ACS_GlobalVars[i];
+
 	arc >> text[9];
 
 	arc.Close ();
@@ -1906,7 +1910,7 @@ void RecordCommand(int argc, char **argv)
 	if(argc > 2)
 	{
 		demorecordfile = std::string(argv[2]);
-		
+
 		if (gamestate != GS_STARTUP)
 		{
 			if(G_RecordDemo(demorecordfile.c_str()))

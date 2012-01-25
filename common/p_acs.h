@@ -4,9 +4,102 @@
 #define __P_ACS_H__
 
 #include "dobject.h"
+#include "doomtype.h"
 
-#define STACK_SIZE	200
 #define LOCAL_SIZE	10
+#define STACK_SIZE 4096
+
+struct ScriptPtr
+{
+	WORD Number;
+	BYTE Type;
+	BYTE ArgCount;
+	DWORD Address;
+};
+
+struct ScriptPtr1
+{
+	WORD Number;
+	WORD Type;
+	DWORD Address;
+	DWORD ArgCount;
+};
+
+struct ScriptPtr2
+{
+	DWORD Number;	// Type is Number / 1000
+	DWORD Address;
+	DWORD ArgCount;
+};
+
+struct ScriptFunction
+{
+	BYTE ArgCount;
+	BYTE LocalCount;
+	BYTE HasReturnValue;
+	BYTE Pad;
+	DWORD Address;
+};
+
+enum
+{
+	SCRIPT_Closed		= 0,
+	SCRIPT_Open			= 1,
+	SCRIPT_Respawn		= 2,
+	SCRIPT_Death		= 3,
+	SCRIPT_Enter		= 4,
+	SCRIPT_Pickup		= 5,
+	SCRIPT_T1Return		= 6,
+	SCRIPT_T2Return		= 7,
+	SCRIPT_Lightning	= 12
+};
+
+enum ACSFormat { ACS_Old, ACS_Enhanced, ACS_LittleEnhanced, ACS_Unknown };
+
+
+class FBehavior
+{
+public:
+	FBehavior (BYTE *object, int len);
+	~FBehavior ();
+
+	bool IsGood ();
+	BYTE *FindChunk (DWORD id) const;
+	BYTE *NextChunk (BYTE *chunk) const;
+	int *FindScript (int number) const;
+	void PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef);
+	const char *LookupString (DWORD index, DWORD ofs=0) const;
+	const char *LocalizeString (DWORD index) const;
+	void StartTypedScripts (WORD type, AActor *activator) const;
+	DWORD PC2Ofs (int *pc) const { return (BYTE *)pc - Data; }
+	int *Ofs2PC (DWORD ofs) const { return (int *)(Data + ofs); }
+	ACSFormat GetFormat() const { return Format; }
+	ScriptFunction *GetFunction (int funcnum) const;
+	int GetArrayVal (int arraynum, int index) const;
+	void SetArrayVal (int arraynum, int index, int value);
+
+private:
+	struct ArrayInfo;
+
+	ACSFormat Format;
+
+	BYTE *Data;
+	int DataSize;
+	BYTE *Chunks;
+	BYTE *Scripts;
+	int NumScripts;
+	BYTE *Functions;
+	int NumFunctions;
+	ArrayInfo *Arrays;
+	int NumArrays;
+	DWORD LanguageNeutral;
+	DWORD Localized;
+
+	static int STACK_ARGS SortScripts (const void *a, const void *b);
+	void AddLanguage (DWORD lang);
+	DWORD FindLanguage (DWORD lang, bool ignoreregion) const;
+	DWORD *CheckIfInList (DWORD lang);
+};
 
 class DLevelScript : public DObject
 {
@@ -262,7 +355,9 @@ public:
 	enum {
 		GAME_SINGLE_PLAYER =	0,
 		GAME_NET_COOPERATIVE =	1,
-		GAME_NET_DEATHMATCH =	2
+		GAME_NET_DEATHMATCH =	2,
+		GAME_NET_TEAMDEATHMATCH = 3,
+		GAME_NET_CTF = 4
 	};
 	enum {
 		CLASS_FIGHTER =			0,
@@ -308,9 +403,8 @@ public:
 protected:
 	DLevelScript	*next, *prev;
 	int				script;
-	int				stack[STACK_SIZE];
 	int				sp;
-	int				locals[LOCAL_SIZE];
+	int				localvars[LOCAL_SIZE];
 	int				*pc;
 	EScriptState	state;
 	int				statedata;
@@ -341,23 +435,12 @@ private:
 	friend class DACSThinker;
 };
 
-inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState state)
+inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState &state)
 {
-	return arc << (BYTE)state;
-}
-inline FArchive &operator>> (FArchive &arc, DLevelScript::EScriptState &state)
-{
-	BYTE in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
-}
-
-inline void DLevelScript::PushToStack (int val)
-{
-	if (sp == STACK_SIZE)
-	{
-		Printf (PRINT_HIGH, "Stack overflow in script %d\n", script);
-		state = SCRIPT_PleaseRemove;
-	}
-	stack[sp++] = val;
+	BYTE val = (BYTE)state;
+	arc << val;
+	state = (DLevelScript::EScriptState)val;
+	return arc;
 }
 
 class DACSThinker : public DThinker
@@ -371,6 +454,8 @@ public:
 
 	DLevelScript *RunningScripts[1000];	// Array of all synchronous scripts
 	static DACSThinker *ActiveThinker;
+
+    void DumpScriptStatus();
 
 private:
 	DLevelScript *LastScript;
@@ -393,11 +478,11 @@ struct acsdefered_s
 	} type;
 	int script;
 	int arg0, arg1, arg2;
+	int playernum;
 };
 typedef struct acsdefered_s acsdefered_t;
 
 FArchive &operator<< (FArchive &arc, acsdefered_s *defer);
-FArchive &operator>> (FArchive &arc, acsdefered_s* &defer);
 
 #endif //__P_ACS_H__
 
