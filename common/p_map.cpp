@@ -1656,6 +1656,10 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 			//		appear in the right place and not on a wall.
 			int ceilingpic, updown;
 
+			// [SL] 2012-01-25 - Don't show bullet puffs on horizon lines 
+			if (co_fixweaponimpacts && li->special == Line_Horizon)
+				return false;
+
 			if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li)) {
 				ceilingheight = li->frontsector->ceilingheight;
 				floorheight = li->frontsector->floorheight;

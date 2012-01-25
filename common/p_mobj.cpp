@@ -820,6 +820,14 @@ void P_XYMovement(AActor *mo)
 			}
 			else if (mo->flags & MF_MISSILE)
 			{
+				// [SL] 2012-01-25 - Don't explode missiles on horizon line
+				if (BlockingLine->special == Line_Horizon &&
+					co_fixweaponimpacts)
+				{
+					mo->Destroy();
+					return;
+				}
+
 				// explode a missile
 				if (ceilingline &&
 					ceilingline->backsector &&
