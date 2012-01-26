@@ -38,6 +38,7 @@
 #include "s_sndseq.h"
 #include "i_system.h"
 #include "vectors.h"
+#include "v_text.h"
 
 #define CLAMPCOLOR(c)	(EColorRange)((unsigned)(c)>CR_UNTRANSLATED?CR_UNTRANSLATED:(c))
 #define LANGREGIONMASK	MAKE_ID(0,0,0xff,0xff)
@@ -556,28 +557,29 @@ DACSThinker::~DACSThinker ()
 
 void DACSThinker::Serialize (FArchive &arc)
 {
+	Super::Serialize (arc);
+	arc << Scripts << LastScript;
 	if (arc.IsStoring ())
 	{
-		arc << Scripts << LastScript;
-		for (int i = 0; i < 1000; i++)
+		WORD i;
+		for (i = 0; i < 1000; i++)
 		{
 			if (RunningScripts[i])
-				arc << RunningScripts[i] << (WORD)i;
+				arc << RunningScripts[i] << i;
 		}
-		arc << (DLevelScript *)NULL;
+		DLevelScript *nil = NULL;
+		arc << nil;
 	}
 	else
 	{
-		arc >> Scripts >> LastScript;
-
 		WORD scriptnum;
-		DLevelScript *script;
-		arc >> script;
+		DLevelScript *script = NULL;
+		arc << script;
 		while (script)
 		{
-			arc >> scriptnum;
+			arc << scriptnum;
 			RunningScripts[scriptnum] = script;
-			arc >> script;
+			arc << script;
 		}
 	}
 }
@@ -828,8 +830,6 @@ void DLevelScript::Serialize (FArchive &arc)
 		arc << i;
 		pc = level.behavior->Ofs2PC (i);
 	}
-
-	//arc << activefont;
 }
 
 DLevelScript::DLevelScript ()
@@ -2866,7 +2866,7 @@ void strbin (char *str)
 		} else {
 			switch (*p) {
 				case 'c':
-					*str++ = '\x8a';
+					*str++ = TEXTCOLOR_ESCAPE;
 					break;
 				case 'n':
 					*str++ = '\n';
@@ -2926,36 +2926,43 @@ void strbin (char *str)
 	*str = 0;
 }
 
-FArchive &operator<< (FArchive &arc, acsdefered_s *defer)
+FArchive &operator<< (FArchive &arc, acsdefered_s *&defertop)
 {
-	while (defer)
-	{
-		arc << (BYTE)1;
-		arc << (BYTE)defer->type << defer->script
-			<< defer->arg0 << defer->arg1 << defer->arg2;
-		defer = defer->next;
-	}
-	arc << (BYTE)0;
-	return arc;
-}
+	BYTE more;
 
-FArchive &operator>> (FArchive &arc, acsdefered_s* &defertop)
-{
-	acsdefered_s **defer = &defertop;
-	BYTE inbyte;
-
-	arc >> inbyte;
-	while (inbyte)
+	if (arc.IsStoring ())
 	{
-		*defer = new acsdefered_s;
-		arc >> inbyte;
-		(*defer)->type = (acsdefered_s::EType)inbyte;
-		arc >> (*defer)->script
-			>> (*defer)->arg0 >> (*defer)->arg1 >> (*defer)->arg2;
-		defer = &((*defer)->next);
-		arc >> inbyte;
+		acsdefered_s *defer = defertop;
+		more = 1;
+		while (defer)
+		{
+			BYTE type;
+			arc << more;
+			type = (BYTE)defer->type;
+			arc << type << defer->script << defer->playernum
+				<< defer->arg0 << defer->arg1 << defer->arg2;
+			defer = defer->next;
+		}
+		more = 0;
+		arc << more;
 	}
-	*defer = NULL;
+	else
+	{
+		acsdefered_s **defer = &defertop;
+
+		arc << more;
+		while (more)
+		{
+			*defer = new acsdefered_s;
+			arc << more;
+			(*defer)->type = (acsdefered_s::EType)more;
+			arc << (*defer)->script << (*defer)->playernum
+				<< (*defer)->arg0 << (*defer)->arg1 << (*defer)->arg2;
+			defer = &((*defer)->next);
+			arc << more;
+		}
+		*defer = NULL;
+	}
 	return arc;
 }
 

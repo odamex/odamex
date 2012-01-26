@@ -51,7 +51,7 @@ enum EColorRange
 	NUM_TEXT_COLORS
 };
 
-#define TEXTCOLOR_ESCAPE	"\x8a"
+#define TEXTCOLOR_ESCAPE	'\x8a'
 
 #define TEXTCOLOR_BRICK		"\x8aA"
 #define TEXTCOLOR_TAN		"\x8aB"
