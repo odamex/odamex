@@ -46,6 +46,7 @@
 #include "r_local.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "p_acs.h"
 
 #include "g_game.h"
 

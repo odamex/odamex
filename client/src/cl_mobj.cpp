@@ -39,6 +39,7 @@
 #include "p_ctf.h"
 #include "st_stuff.h"
 #include "hu_stuff.h"
+#include "p_acs.h"
 
 extern BOOL demonew;
 

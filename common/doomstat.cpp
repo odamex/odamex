@@ -28,6 +28,7 @@
 #include "doomstat.h"
 #include "c_cvars.h"
 #include "i_system.h"
+#include "p_acs.h"
 
 // Localizable strings
 FStringTable	GStrings;
@@ -37,8 +38,6 @@ GameMode_t		gamemode = undetermined;
 GameMission_t	gamemission = doom;
 
 // Language.
-Language_t		language_old = english;
-
 BEGIN_CUSTOM_CVAR (language, "0", "", CVARTYPE_INT, CVAR_ARCHIVE)
 {
 	SetLanguageIDs ();

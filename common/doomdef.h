@@ -104,17 +104,6 @@ enum GameMission_t
   none
 };
 
-
-// Identify language to use, software localization.
-enum Language_t
-{
-  english,
-  french,
-  german,
-  unknown
-};
-
-
 // If rangecheck is undefined,
 // most parameter validation debugging code will not be compiled
 #define RANGECHECK

@@ -56,11 +56,6 @@ extern	BOOL			modifiedgame;
 
 
 // -------------------------------------------
-// Language.
-extern	Language_t		language_old;
-
-
-// -------------------------------------------
 // Selected skill type, map etc.
 //
 
