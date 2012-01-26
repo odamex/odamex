@@ -1343,6 +1343,7 @@ void P_LoadBehavior (int lumpnum)
 	byte *behavior = (byte *)W_CacheLumpNum (lumpnum, PU_LEVEL);
 
 	level.behavior = new FBehavior (behavior, lumpinfo[lumpnum].size);
+
 	if (!level.behavior->IsGood ())
 	{
 		delete level.behavior;
@@ -1487,11 +1488,6 @@ void P_SetupLevel (char *lumpname, int position)
 		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
 
     PO_Init ();
-
-	// [RH] Load in the BEHAVIOR lump
-	level.behavior = NULL;
-	if (HasBehavior)
-		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
 
     if (serverside)
     {
