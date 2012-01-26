@@ -38,7 +38,6 @@
 #include "s_sndseq.h"
 #include "i_system.h"
 #include "vectors.h"
-#include "v_text.h"
 
 #define CLAMPCOLOR(c)	(EColorRange)((unsigned)(c)>CR_UNTRANSLATED?CR_UNTRANSLATED:(c))
 #define LANGREGIONMASK	MAKE_ID(0,0,0xff,0xff)
@@ -2866,7 +2865,7 @@ void strbin (char *str)
 		} else {
 			switch (*p) {
 				case 'c':
-					*str++ = TEXTCOLOR_ESCAPE;
+					*str++ = '\x8a';
 					break;
 				case 'n':
 					*str++ = '\n';
