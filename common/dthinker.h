@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -77,7 +77,7 @@ public:
 	bool WasDestroyed();
 
 	size_t refCount;
-	
+
 private:
 	DThinker *m_Next, *m_Prev;
 	bool destroyed;

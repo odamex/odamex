@@ -2280,7 +2280,7 @@ void DLevelScript::RunScript ()
 			}
 			break;
 
-		/*case PCD_SETTHINGSPECIAL:
+		case PCD_SETTHINGSPECIAL:
 			{
 				FActorIterator iterator (STACK(7));
 				AActor *actor;
@@ -2313,7 +2313,7 @@ void DLevelScript::RunScript ()
 			}
 			sp -= 3;
 			break;
-        */
+
 
 		case PCD_FIXEDMUL:
 			STACK(2) = FixedMul (STACK(2), STACK(1));
