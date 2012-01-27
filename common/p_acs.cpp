@@ -2457,7 +2457,7 @@ void DLevelScript::RunScript ()
 			STACK(1) = I_PlayMovie (level.behavior->LookupString (STACK(1)));
 			break;
         */
-		/*case PCD_GETACTORX:
+		case PCD_GETACTORX:
 		case PCD_GETACTORY:
 		case PCD_GETACTORZ:
 			{
@@ -2482,7 +2482,6 @@ void DLevelScript::RunScript ()
 				}
 			}
 			break;
-        */
 
 		case PCD_SETFLOORTRIGGER:
 			new DPlaneWatcher (activator, activationline, lineSide, false, STACK(8),
