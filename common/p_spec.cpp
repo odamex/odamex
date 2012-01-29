@@ -941,7 +941,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 	if (!p)
 		return false;
 
-	int msg = NULL;
+	int msg = 0;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
 

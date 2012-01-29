@@ -41,6 +41,7 @@
 #ifdef _XBOX
 #include <xtl.h>
 #else
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif // !_XBOX
 #endif // WIN32
@@ -765,7 +766,7 @@ std::string I_GetClipboardText (void)
 	}
 
 	const char *cData = reinterpret_cast<const char *>(GlobalLock(hClipboardData));
-	u_int uiSize = static_cast<u_int>(GlobalSize(hClipboardData));
+	SIZE_T uiSize = static_cast<SIZE_T>(GlobalSize(hClipboardData));
 
 	if(cData && uiSize)
 	{

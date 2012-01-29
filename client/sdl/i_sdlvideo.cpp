@@ -29,8 +29,9 @@
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
-#if WIN32
+#ifdef WIN32
 #ifndef _XBOX
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif // !_XBOX
 #include "SDL_syswm.h"
