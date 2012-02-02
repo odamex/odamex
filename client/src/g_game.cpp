@@ -1606,7 +1606,7 @@ void G_BuildSaveName (std::string &name, int slot)
 #endif
 
 	ssName << path;
-    ssName << SAVEGAMENAME;
+    ssName << GStrings(SAVEGAMENAME);
 	ssName << slot;
 	ssName << ".ods";
 
@@ -1667,7 +1667,7 @@ void G_DoSaveGame (void)
 	gameaction = ga_nothing;
 	savedescription[0] = 0;
 
-	Printf (PRINT_HIGH, "%s\n", GGSAVED);
+	Printf (PRINT_HIGH, "%s\n", GStrings(GGSAVED));
 	arc.Close ();
 
     if (level.info->snapshot != NULL)

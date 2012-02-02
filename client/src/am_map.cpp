@@ -821,19 +821,19 @@ BOOL AM_Responder (event_t *ev)
 			case AM_FOLLOWKEY:
 				followplayer = !followplayer;
 				f_oldloc.x = MAXINT;
-				Printf (PRINT_HIGH, "%s\n", followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF);
+				Printf (PRINT_HIGH, "%s\n", followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
 				break;
 			case AM_GRIDKEY:
 				grid = !grid;
-				Printf (PRINT_HIGH, "%s\n", grid ? AMSTR_GRIDON : AMSTR_GRIDOFF);
+				Printf (PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
 				break;
 			case AM_MARKKEY:
-				Printf (PRINT_HIGH, "%s %d\n", AMSTR_MARKEDSPOT, markpointnum);
+				Printf (PRINT_HIGH, "%s %d\n",  GStrings(AMSTR_MARKEDSPOT), markpointnum);
 				AM_addMark();
 				break;
 			case AM_CLEARMARKKEY:
 				AM_clearMarks();
-				Printf (PRINT_HIGH, "%s\n", AMSTR_MARKSCLEARED);
+				Printf (PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
 				break;
 			default:
 				rc = false;

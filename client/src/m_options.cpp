@@ -1143,12 +1143,12 @@ void M_ChangeMessages (void)
 {
 	if (show_messages)
 	{
-		Printf (128, "%s\n", MSGOFF);
+		Printf (128, "%s\n", GStrings(MSGOFF));
 		show_messages.Set (0.0f);
 	}
 	else
 	{
-		Printf (128, "%s\n", MSGON);
+		Printf (128, "%s\n", GStrings(MSGON));
 		show_messages.Set (1.0f);
 	}
 }

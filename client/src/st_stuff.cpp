@@ -716,7 +716,7 @@ bool ST_Responder (event_t *ev)
             if (CheckCheatmode ())
                 return false;
 
-            Printf (PRINT_HIGH, "%s\n", STSTR_BEHOLD);
+            Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
 
         }
 
@@ -899,7 +899,7 @@ BEGIN_COMMAND (idmus)
 				map = CalcMapName (0, l);
 			else
 			{
-				Printf (PRINT_HIGH, "%s\n", STSTR_NOMUS);
+				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
 				return;
 			}
 		}
@@ -913,10 +913,10 @@ BEGIN_COMMAND (idmus)
 			if (info->music[0])
 			{
 				S_ChangeMusic (std::string(info->music, 8), 1);
-				Printf (PRINT_HIGH, "%s\n", STSTR_MUS);
+				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
 			}
 		} else
-			Printf (PRINT_HIGH, "%s\n", STSTR_NOMUS);
+			Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
 	}
 }
 END_COMMAND (idmus)
