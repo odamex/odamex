@@ -669,9 +669,24 @@ void HU_DisplayTimer(int x, int y, bool scale)
 	int timeleft, hours, minutes, seconds;
 	char str[80];
 
-	if (sv_gametype != GM_COOP && level.timeleft && gamestate == GS_LEVEL)
+	if (sv_gametype != GM_COOP)
 	{
-		timeleft = level.timeleft;
+		switch (gamestate)
+		{
+			case GS_LEVEL:
+				if (!level.timeleft)
+					return;
+				timeleft = level.timeleft;
+			break;
+			
+			case GS_INTERMISSION:
+				timeleft = level.inttimeleft * TICRATE;
+			break;
+			
+			default:
+				return;
+			break;
+		}	
 
 		if (timeleft < 0)
 			timeleft = 0;
@@ -682,10 +697,10 @@ void HU_DisplayTimer(int x, int y, bool scale)
 		timeleft -= minutes * TICRATE * 60;
 		seconds = timeleft / TICRATE;
 
-		if (hours)
-			sprintf (str, "Level ends in %02d:%02d:%02d", hours, minutes, seconds);
-		else
-			sprintf (str, "Level ends in %02d:%02d", minutes, seconds);
+		//if (hours)
+			sprintf (str, "%02d:%02d:%02d", hours, minutes, seconds);
+		//else
+		//	sprintf (str, "%02d:%02d", minutes, seconds);
 
 		if (scale)
 			screen->DrawTextClean (CR_GREY, x, y, str);
@@ -861,7 +876,7 @@ void HU_DMScores2 (player_t *player)
 				  locy + DMBOARDHEIGHT + (listsize*10) + DMBORDER);
 
 	//	Timelimit display
-	HU_DisplayTimer(locx + 225,locy - DMBORDER+8,false);
+	HU_DisplayTimer(locx + (DMBOARDWIDTH-52),locy - DMBORDER+8,false);
 
 	// Scoreboard Identify
     // Dan - Tells which current game mode is being played
@@ -1372,7 +1387,7 @@ void HU_TeamScores2 (player_t *player)
 				  rlocy + CTFBOARDHEIGHT + (listsize*10) + TEAMPLAYBORDER);
 
 	//	Timelimit display
-	HU_DisplayTimer(rlocx + 90,rlocy - TEAMPLAYBORDER+4,false);
+	HU_DisplayTimer(rlocx + 180,rlocy - TEAMPLAYBORDER+4,false);
 
 	// Player scores header
 	// Blue Bar

@@ -162,8 +162,8 @@ CVAR (ctf_flagathometoscore, "1",  "Team flag must be at home pedestal for any c
 CVAR (ctf_flagtimeout, "10",  "Time for a dropped flag to be returned automatically to its home base",
       CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 // (ALL) Display a countdown to all players during intermission screen
-CVAR (sv_inttimecountdown, "0",  "Display time left for an intermission screen to next map",
-      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+//CVAR (sv_inttimecountdown, "0",  "Display time left for an intermission screen to next map",
+//      CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR (sv_ticbuffer, "0", "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
 	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

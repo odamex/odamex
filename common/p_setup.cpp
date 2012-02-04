@@ -1548,6 +1548,20 @@ CVAR_FUNC_IMPL (sv_timelimit)
 	level.timeleft = var * TICRATE * 60;
 }
 
+CVAR_FUNC_IMPL (sv_intermissionlimit)
+{
+	if (var < 0)
+		var.Set(0.0f);
+
+	// intermissionleft is transmitted as a short so cap the sv_timelimit at the maximum
+	// for timeleft, which is 9.1 hours
+	if (var > MAXSHORT)
+		var.Set(MAXSHORT);
+
+	level.inttimeleft = (var < 1 ? DEFINTSECS : var);
+}
+
+
 
 
 VERSION_CONTROL (p_setup_cpp, "$Id$")

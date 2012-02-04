@@ -19,12 +19,15 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
+					<Add option="-DPORTMIDI" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen" />
+					<Add library="libportmidi" />
+					<Add library="libporttime" />
 					<Add library="winmm" />
 					<Add directory="..\..\lib" />
 				</Linker>
@@ -37,7 +40,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-file idl2011.wad +map map26" />
+				<Option parameters="-file demo.wad +map map04 +developer 1" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -45,11 +48,14 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
+					<Add option="-DPORTMIDI" />
 				</Compiler>
 				<Linker>
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen-dbg" />
+					<Add library="libportmidi" />
+					<Add library="libporttime" />
 					<Add library="winmm" />
 					<Add directory="..\..\lib" />
 				</Linker>

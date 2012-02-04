@@ -100,6 +100,10 @@ CVAR (sv_skill,             "3", "Sets the skill level, values are:\n" \
 // Game ends on time limit being reached
 CVAR_FUNC_DECL (sv_timelimit,		"0", "Sets the time limit for the game to end, must be greater than 1", 
       CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+      
+// Intermission ends on intermission time limit being reached
+CVAR_FUNC_DECL (sv_intermissionlimit, "10", "Sets the time limit for the intermission to end, 0 disables (defaults to 10 seconds)", 
+      CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 // Speedhack code (server related)
 CVAR (sv_speedhackfix,		"0", "", 

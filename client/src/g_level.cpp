@@ -754,6 +754,7 @@ void G_InitNew (const char *mapname)
 		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
 		level.timeleft = 0;
+		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
 		for (i = 0; i < players.size(); i++)
@@ -926,6 +927,7 @@ void G_DoCompleted (void)
 		{
 			level.time = 0;	// Reset time to zero if not entering/staying in a hub
 			level.timeleft = 0;
+			//level.inttimeleft = 0;
 		}
 
 		if (!(sv_gametype == GM_DM) &&

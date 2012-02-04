@@ -1547,6 +1547,16 @@ void CL_UpdateTimeLeft(void)
 }
 
 //
+// CL_UpdateIntTimeLeft
+// Changes the value of level.inttimeleft
+//
+void CL_UpdateIntTimeLeft(void)
+{
+	level.inttimeleft = MSG_ReadShort();	// convert from seconds to tics
+}
+
+
+//
 // CL_SpawnMobj
 //
 void CL_SpawnMobj()
@@ -2708,6 +2718,7 @@ void CL_InitCommands(void)
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
 	cmds[svc_timeleft]			= &CL_UpdateTimeLeft;
+	cmds[svc_inttimeleft]		= &CL_UpdateIntTimeLeft;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;

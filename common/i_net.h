@@ -115,6 +115,7 @@ enum svc_t
     svc_midprint,
 	svc_svgametic,			// [SL] 2011-05-11 - [byte]
 	svc_timeleft,
+	svc_inttimeleft,		// [ML] For intermission timer
 
 	// for co-op
 	svc_mobjstate = 70,

@@ -73,6 +73,7 @@ EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_gravity)
 EXTERN_CVAR (sv_aircontrol)
+EXTERN_CVAR (sv_intermissionlimit)
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
@@ -1184,6 +1185,7 @@ void G_InitNew (const char *mapname)
 		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
 		level.timeleft = 0;
+		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
 		for (size_t i = 0; i < players.size(); i++)
@@ -1232,10 +1234,12 @@ void G_ExitLevel (int position, int drawscores)
 
 	if (drawscores)
         SV_DrawScores();
+	
+	int intlimit = (sv_intermissionlimit < 1 || sv_gametype == GM_COOP ? DEFINTSECS : sv_intermissionlimit);
 
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
-	mapchange = TICRATE*10;  // wait 10 seconds
+	mapchange = TICRATE*intlimit;  // wait n seconds, default 10
 
     secretexit = false;
 
@@ -1252,10 +1256,12 @@ void G_SecretExitLevel (int position, int drawscores)
 
     if (drawscores)
         SV_DrawScores();
+        
+	int intlimit = (sv_intermissionlimit < 1 || sv_gametype == GM_COOP ? DEFINTSECS : sv_intermissionlimit);
 
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
-	mapchange = TICRATE*10;  // wait 10 seconds
+	mapchange = TICRATE*intlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gamemode == commercial)

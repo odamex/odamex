@@ -302,6 +302,9 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 // [ML] 1/5/10: Move input defs to doomkeys.h
 #include "doomkeys.h"
 
+// [ML] Default intermission length
+#define DEFINTSECS	10
+
 // phares 3/20/98:
 //
 // Player friction is variable, based on controlling

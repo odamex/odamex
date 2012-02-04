@@ -968,7 +968,8 @@ void InitNetMessageFormats()
 	MSG(svc_connectclient,		"x"),
  	MSG(svc_midprint,           "x"),
  	MSG(svc_svgametic,          "x"),
-	MSG(svc_timeleft,			"x")
+	MSG(svc_timeleft,			"x"),
+	MSG(svc_inttimeleft,		"x")
    };
 
    size_t i;

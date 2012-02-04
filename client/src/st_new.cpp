@@ -406,8 +406,7 @@ void ST_odamexHudDraw (void)
 		}
 		
 		ST_DrawNumRight (48*xscale, y-20*yscale, screen, plyr->armorpoints);
-	}	
-
+	}
 
 	// Draw Health
 	ST_DrawNumRight (48*xscale, y, screen, plyr->health);

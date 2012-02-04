@@ -43,6 +43,7 @@ static buf_t ml_message(MAX_UDP_PACKET);
 EXTERN_CVAR (sv_usemasters)
 EXTERN_CVAR (sv_hostname)
 EXTERN_CVAR (sv_maxclients)
+EXTERN_CVAR (sv_intermissionlimit)		
 
 EXTERN_CVAR (port)
 
@@ -75,6 +76,7 @@ EXTERN_CVAR (sv_website)
 EXTERN_CVAR (sv_natport)
 
 extern unsigned int last_revision;
+extern int mapchange;
 
 struct CvarField_t 
 { 
@@ -162,6 +164,12 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
         timeleft = 0;
         
     MSG_WriteShort(&ml_message, timeleft);
+    
+    int inttimeleft = level.inttimeleft = mapchange/TICRATE;
+    if (inttimeleft < 0)
+		inttimeleft = 0;
+	
+	MSG_WriteShort(&ml_message, inttimeleft);
     
     // Team data
     MSG_WriteByte(&ml_message, 2);

@@ -77,6 +77,7 @@ baseapp_t baseapp = server;
 bool        simulated_connection = false;
 
 extern bool HasBehavior;
+extern int mapchange;
 
 bool step_mode = false;
 
@@ -172,6 +173,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_maxcorpses)
 
 EXTERN_CVAR (sv_weaponstay)
@@ -4257,6 +4259,22 @@ void SV_TimelimitCheck()
 	shotclock = TICRATE*2;
 }
 
+void SV_IntermissionTimeCheck()
+{
+	level.inttimeleft = mapchange/TICRATE;
+
+	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
+	// [ML] 2012-2-1 - Copy it for intermission fun
+	if (P_AtInterval(1 * TICRATE))		// every second
+	{
+		for (size_t i = 0; i < clients.size(); i++)
+		{
+			MSG_WriteMarker(&clients[i].netbuf, svc_inttimeleft);
+			MSG_WriteShort(&clients[i].netbuf, level.inttimeleft);
+		}
+	}
+}
+
 //
 // SV_GameTics
 //
@@ -4267,11 +4285,20 @@ void SV_GameTics (void)
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics();
 
-	if(gamestate == GS_LEVEL)
+	switch (gamestate)
 	{
-		SV_RemoveCorpses();
-		SV_WinCheck();
-		SV_TimelimitCheck();
+		case GS_LEVEL:
+			SV_RemoveCorpses();
+			SV_WinCheck();
+			SV_TimelimitCheck();
+		break;
+		
+		case GS_INTERMISSION:
+			SV_IntermissionTimeCheck();
+		break;
+		
+		default:
+		break;
 	}
 
 	for (size_t i = 0; i < players.size(); i++)
