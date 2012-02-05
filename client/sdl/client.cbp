@@ -177,6 +177,8 @@
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
 					<Add directory="..\..\textscreen" />
+					<Add directory="..\..\portmidi\pm_common" />
+					<Add directory="..\..\portmidi\porttime" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
@@ -203,6 +205,7 @@
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
 					<Add library="libtextscreen" />
+					<Add library="libportmidi" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
@@ -248,6 +251,8 @@
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
 					<Add directory="..\..\textscreen" />
+					<Add directory="..\..\portmidi\pm_common" />
+					<Add directory="..\..\portmidi\porttime" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
@@ -275,6 +280,7 @@
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
 					<Add library="libtextscreen-dbg" />
+					<Add library="libportmidi-dbg" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
