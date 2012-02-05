@@ -25,6 +25,7 @@
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen" />
+					<Add library="libportmidi" />
 					<Add library="winmm" />
 					<Add directory="..\..\lib" />
 				</Linker>
@@ -50,6 +51,7 @@
 					<Add library="mingw32" />
 					<Add library="ws2_32" />
 					<Add library="libtextscreen-dbg" />
+					<Add library="libportmidi-dbg" />
 					<Add library="winmm" />
 					<Add directory="..\..\lib" />
 				</Linker>
@@ -297,10 +299,13 @@
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DNOASM" />
+			<Add option="-DPORTMIDI" />
 			<Add directory="." />
 			<Add directory="..\src" />
 			<Add directory="..\..\common" />
 			<Add directory="..\..\textscreen" />
+			<Add directory="..\..\portmidi\pm_common" />
+			<Add directory="..\..\portmidi\porttime" />
 		</Compiler>
 		<Linker>
 			<Add library="SDLmain" />
