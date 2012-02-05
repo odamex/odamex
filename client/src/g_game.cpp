@@ -677,8 +677,8 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	if (m_filter)
 	{
 		// smooth out the mouse input
-		evx = (evx + prevx) >> 1;
-		evy = (evy + prevy) >> 1;
+		evx = (evx + prevx) / 2;
+		evy = (evy + prevy) / 2;
 	}
 	prevx = evx;
 	prevy = evy;
