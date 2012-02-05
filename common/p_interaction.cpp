@@ -914,42 +914,58 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 //		%g -> he/she/it
 //		%h -> him/her/it
 //		%p -> his/her/its
+//		%o -> other (victim)
+//		%k -> killer
 //
-void SexMessage(const char *from, char *to, int gender)
+void SexMessage (const char *from, char *to, int gender, const char *victim, const char *killer)
 {
-	static const char *genderstuff[3][3] = {
+	static const char *genderstuff[3][3] =
+	{
 		{ "he",  "him", "his" },
 		{ "she", "her", "her" },
 		{ "it",  "it",  "its" }
 	};
-	static const int gendershift[3][3] = {
+	static const int gendershift[3][3] =
+	{
 		{ 2, 3, 3 },
 		{ 3, 3, 3 },
 		{ 2, 2, 3 }
 	};
-	int gendermsg;
+	const char *subst = NULL;
 
-	do {
+	do
+	{
 		if (*from != '%')
-        {
+		{
 			*to++ = *from;
 		}
-        else
-        {
+		else
+		{
+			int gendermsg = -1;
+			
 			switch (from[1])
-            {
-				case 'g':	gendermsg = 0;	break;
-				case 'h':	gendermsg = 1;	break;
-				case 'p':	gendermsg = 2;	break;
-				default:	gendermsg = -1;	break;
+			{
+			case 'g':	gendermsg = 0;	break;
+			case 'h':	gendermsg = 1;	break;
+			case 'p':	gendermsg = 2;	break;
+			case 'o':	subst = victim;	break;
+			case 'k':	subst = killer;	break;
 			}
-			if (gendermsg < 0)
-            {
+			if (subst != NULL)
+			{
+				int len = strlen (subst);
+				memcpy (to, subst, len);
+				to += len;
+				from++;
+				subst = NULL;
+			}
+			else if (gendermsg < 0)
+			{
 				*to++ = '%';
 			}
-            else
-            {
-				strcpy(to, genderstuff[gender][gendermsg]);
+			else
+			{
+				strcpy (to, genderstuff[gender][gendermsg]);
 				to += gendershift[gender][gendermsg];
 				from++;
 			}

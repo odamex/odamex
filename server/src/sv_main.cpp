@@ -111,7 +111,8 @@ EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
 EXTERN_CVAR(sv_ticbuffer)
 
-void SexMessage (const char *from, char *to, int gender);
+void SexMessage (const char *from, char *to, int gender,
+	const char *victim, const char *killer);
 void SV_RemoveDisconnectedPlayer(player_t &player);
 
 CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
@@ -4563,8 +4564,11 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 //
 void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 {
+	int	 mod;
 	const char *message;
+	int messagenum;
 	char gendermessage[1024];
+	BOOL friendly;
 	int  gender;
 
 	if (!self || !self->player)
@@ -4576,212 +4580,142 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	if (inflictor && inflictor->player == self->player)
 		MeansOfDeath = MOD_UNKNOWN;
 
-	message = NULL;
+	if (((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && self->player->userinfo.team == attacker->player->userinfo.team) || sv_gametype == GM_COOP)
+		MeansOfDeath |= MOD_FRIENDLY_FIRE;
 
-	switch (MeansOfDeath) {
-		case MOD_SUICIDE:
-			message = GStrings(OB_SUICIDE);
-			break;
-		case MOD_FALLING:
-			message = GStrings(OB_FALLING);
-			break;
-		case MOD_CRUSH:
-			message = GStrings(OB_CRUSH);
-			break;
-		case MOD_EXIT:
-			message = GStrings(OB_EXIT);
-			break;
-		case MOD_WATER:
-			message = GStrings(OB_WATER);
-			break;
-		case MOD_SLIME:
-			message = GStrings(OB_SLIME);
-			break;
-		case MOD_LAVA:
-			message = GStrings(OB_LAVA);
-			break;
-		case MOD_BARREL:
-			message = GStrings(OB_BARREL);
-			break;
-		case MOD_SPLASH:
-			message = GStrings(OB_SPLASH);
-			break;
+	friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
+	mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
+	message = NULL;
+	messagenum = 0;
+
+	switch (mod)
+	{
+		case MOD_SUICIDE:		messagenum = OB_SUICIDE;	break;
+		case MOD_FALLING:		messagenum = OB_FALLING;	break;
+		case MOD_CRUSH:			messagenum = OB_CRUSH;		break;
+		case MOD_EXIT:			messagenum = OB_EXIT;		break;
+		case MOD_WATER:			messagenum = OB_WATER;		break;
+		case MOD_SLIME:			messagenum = OB_SLIME;		break;
+		case MOD_LAVA:			messagenum = OB_LAVA;		break;
+		case MOD_BARREL:		messagenum = OB_BARREL;		break;
+		case MOD_SPLASH:		messagenum = OB_SPLASH;		break;
 	}
 
-	if (attacker && !message) {
-		if (attacker == self) {
-			switch (MeansOfDeath) {
-				case MOD_R_SPLASH:
-					message = GStrings(OB_R_SPLASH);
-					break;
-				case MOD_ROCKET:
-					message = GStrings(OB_ROCKET);
-					break;
-				default:
-					message = GStrings(OB_KILLEDSELF);
-					break;
+	if (messagenum)
+		message = GStrings(messagenum);
+
+	if (attacker && message == NULL) {
+		if (attacker == self)
+		{
+			switch (mod)
+			{
+			case MOD_R_SPLASH:	messagenum = OB_R_SPLASH;		break;
+			case MOD_ROCKET:	messagenum = OB_ROCKET;			break;
+			default:			messagenum = OB_KILLEDSELF;		break;
 			}
-		} else if (!attacker->player) {
-					if (MeansOfDeath == MOD_HIT) {
-						switch (attacker->type) {
-							case MT_UNDEAD:
-								message = GStrings(OB_UNDEADHIT);
-								break;
-							case MT_TROOP:
-								message = GStrings(OB_IMPHIT);
-								break;
-							case MT_HEAD:
-								message = GStrings(OB_CACOHIT);
-								break;
-							case MT_SERGEANT:
-								message = GStrings(OB_DEMONHIT);
-								break;
-							case MT_SHADOWS:
-								message = GStrings(OB_SPECTREHIT);
-								break;
-							case MT_BRUISER:
-								message = GStrings(OB_BARONHIT);
-								break;
-							case MT_KNIGHT:
-								message = GStrings(OB_KNIGHTHIT);
-								break;
-							default:
-								break;
-						}
-					} else {
-						switch (attacker->type) {
-							case MT_POSSESSED:
-								message = GStrings(OB_ZOMBIE);
-								break;
-							case MT_SHOTGUY:
-								message = GStrings(OB_SHOTGUY);
-								break;
-							case MT_VILE:
-								message = GStrings(OB_VILE);
-								break;
-							case MT_UNDEAD:
-								message = GStrings(OB_UNDEAD);
-								break;
-							case MT_FATSO:
-								message = GStrings(OB_FATSO);
-								break;
-							case MT_CHAINGUY:
-								message = GStrings(OB_CHAINGUY);
-								break;
-							case MT_SKULL:
-								message = GStrings(OB_SKULL);
-								break;
-							case MT_TROOP:
-								message = GStrings(OB_IMP);
-								break;
-							case MT_HEAD:
-								message = GStrings(OB_CACO);
-								break;
-							case MT_BRUISER:
-								message = GStrings(OB_BARON);
-								break;
-							case MT_KNIGHT:
-								message = GStrings(OB_KNIGHT);
-								break;
-							case MT_SPIDER:
-								message = GStrings(OB_SPIDER);
-								break;
-							case MT_BABY:
-								message = GStrings(OB_BABY);
-								break;
-							case MT_CYBORG:
-								message = GStrings(OB_CYBORG);
-								break;
-							case MT_WOLFSS:
-								message = GStrings(OB_WOLFSS);
-								break;
-							default:
-								break;
-						}
-					}
+			message = GStrings(messagenum);
 		}
+		else if (!attacker->player) {
+			if (mod == MOD_HIT) {
+				switch (attacker->type) {
+					case MT_UNDEAD:
+						messagenum = OB_UNDEADHIT;
+						break;
+					case MT_TROOP:
+						messagenum = OB_IMPHIT;
+						break;
+					case MT_HEAD:
+						messagenum = OB_CACOHIT;
+						break;
+					case MT_SERGEANT:
+						messagenum = OB_DEMONHIT;
+						break;
+					case MT_SHADOWS:
+						messagenum = OB_SPECTREHIT;
+						break;
+					case MT_BRUISER:
+						messagenum = OB_BARONHIT;
+						break;
+					case MT_KNIGHT:
+						messagenum = OB_KNIGHTHIT;
+						break;
+					default:
+						break;
+				}
+			} else {
+				switch (attacker->type) {
+					case MT_POSSESSED:	messagenum = OB_ZOMBIE;		break;
+					case MT_SHOTGUY:	messagenum = OB_SHOTGUY;	break;
+					case MT_VILE:		messagenum = OB_VILE;		break;
+					case MT_UNDEAD:		messagenum = OB_UNDEAD;		break;
+					case MT_FATSO:		messagenum = OB_FATSO;		break;
+					case MT_CHAINGUY:	messagenum = OB_CHAINGUY;	break;
+					case MT_SKULL:		messagenum = OB_SKULL;		break;
+					case MT_TROOP:		messagenum = OB_IMP;		break;
+					case MT_HEAD:		messagenum = OB_CACO;		break;
+					case MT_BRUISER:	messagenum = OB_BARON;		break;
+					case MT_KNIGHT:		messagenum = OB_KNIGHT;		break;
+					case MT_SPIDER:		messagenum = OB_SPIDER;		break;
+					case MT_BABY:		messagenum = OB_BABY;		break;
+					case MT_CYBORG:		messagenum = OB_CYBORG;		break;
+					case MT_WOLFSS:		messagenum = OB_WOLFSS;		break;
+					default:break;
+				}
+			}
+
+			if (messagenum)
+				message = GStrings(messagenum);
+			}
 	}
 
 	if (message && !shotclock) {
-		SexMessage (message, gendermessage, gender);
-		SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+		SexMessage (message, gendermessage, gender,
+			self->player->userinfo.netname, self->player->userinfo.netname);
+		SV_BroadcastPrintf (PRINT_MEDIUM, "%s.\n", gendermessage);
 		return;
 	}
 
 	if (attacker && attacker->player) {
-		if (((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && self->player->userinfo.team == attacker->player->userinfo.team) || sv_gametype == GM_COOP) {
+		if (friendly) {
 			int rnum = P_Random ();
 
 			self = attacker;
 			gender = self->player->userinfo.gender;
-
-			if (rnum < 64)
-				message = GStrings(OB_FRIENDLY1);
-			else if (rnum < 128)
-				message = GStrings(OB_FRIENDLY2);
-			else if (rnum < 192)
-				message = GStrings(OB_FRIENDLY3);
-			else
-				message = GStrings(OB_FRIENDLY4);
+			messagenum = OB_FRIENDLY1 + (rnum & 3);
+		
 		} else {
-			switch (MeansOfDeath) {
-				case MOD_FIST:
-					message = GStrings(OB_MPFIST);
-					break;
-				case MOD_CHAINSAW:
-					message = GStrings(OB_MPCHAINSAW);
-					break;
-				case MOD_PISTOL:
-					message = GStrings(OB_MPPISTOL);
-					break;
-				case MOD_SHOTGUN:
-					message = GStrings(OB_MPSHOTGUN);
-					break;
-				case MOD_SSHOTGUN:
-					message = GStrings(OB_MPSSHOTGUN);
-					break;
-				case MOD_CHAINGUN:
-					message = GStrings(OB_MPCHAINGUN);
-					break;
-				case MOD_ROCKET:
-					message = GStrings(OB_MPROCKET);
-					break;
-				case MOD_R_SPLASH:
-					message = GStrings(OB_MPR_SPLASH);
-					break;
-				case MOD_PLASMARIFLE:
-					message = GStrings(OB_MPPLASMARIFLE);
-					break;
-				case MOD_BFG_BOOM:
-					message = GStrings(OB_MPBFG_BOOM);
-					break;
-				case MOD_BFG_SPLASH:
-					message = GStrings(OB_MPBFG_SPLASH);
-					break;
-				case MOD_TELEFRAG:
-					message = GStrings(OB_MPTELEFRAG);
-					break;
-				case MOD_RAILGUN:
-					message = GStrings(OB_RAILGUN);
-					break;
+			switch (mod)
+			{
+				case MOD_FIST:			messagenum = OB_MPFIST;			break;
+				case MOD_CHAINSAW:		messagenum = OB_MPCHAINSAW;		break;
+				case MOD_PISTOL:		messagenum = OB_MPPISTOL;		break;
+				case MOD_SHOTGUN:		messagenum = OB_MPSHOTGUN;		break;
+				case MOD_SSHOTGUN:		messagenum = OB_MPSSHOTGUN;		break;
+				case MOD_CHAINGUN:		messagenum = OB_MPCHAINGUN;		break;
+				case MOD_ROCKET:		messagenum = OB_MPROCKET;		break;
+				case MOD_R_SPLASH:		messagenum = OB_MPR_SPLASH;		break;
+				case MOD_PLASMARIFLE:	messagenum = OB_MPPLASMARIFLE;	break;
+				case MOD_BFG_BOOM:		messagenum = OB_MPBFG_BOOM;		break;
+				case MOD_BFG_SPLASH:	messagenum = OB_MPBFG_SPLASH;	break;
+				case MOD_TELEFRAG:		messagenum = OB_MPTELEFRAG;		break;
+				case MOD_RAILGUN:		messagenum = OB_RAILGUN;		break;
 			}
 		}
+		if (messagenum)
+			message = GStrings(messagenum);
 	}
 
-	if (message) {
-		SexMessage (message, gendermessage, gender);
-
-		std::string work = "%s ";
-		work += gendermessage;
-		work += ".\n";
-
-		SV_BroadcastPrintf (PRINT_MEDIUM, work.c_str(), self->player->userinfo.netname,
-							attacker->player->userinfo.netname);
+	if (message)
+	{
+		SexMessage (message, gendermessage, gender,
+			self->player->userinfo.netname, attacker->player->userinfo.netname);
+		SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
 		return;
 	}
 
-	SexMessage (GStrings(OB_DEFAULT), gendermessage, gender);
-	SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+	SexMessage (GStrings(OB_DEFAULT), gendermessage, gender,
+		self->player->userinfo.netname, self->player->userinfo.netname);
+	SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
 }
 void SV_SendDamagePlayer(player_t *player, int damage)
 {
