@@ -552,7 +552,7 @@ BEGIN_COMMAND (map)
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
 		//              number. This makes sense, so why isn't there any code for it?
-		if (W_CheckNumForName (argv[1]) == -1)
+		if (W_CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
 		{ // The map name isn't valid, so lets try to make some assumptions for the user.
 			char mapname[32];
 
