@@ -46,7 +46,7 @@ int AGOL_InitVideo(const string& drivers, const int width, const int height)
 {
 	cout << "Initializing with resolution (" << width << "x" << height << ")..." << endl;
 
-	if(!drivers.size() || !drivers.compare(0, 3, "sdl"))
+	if(!drivers.size() || drivers.compare(0, 3, "sdl"))
 	{
 		/* Initialize Agar-GUI. */
 		if (AG_InitGraphics(drivers.c_str()) == -1) 
