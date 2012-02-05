@@ -702,14 +702,14 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	if (dynres_state)
 	{
 		if (evx < 0)
-			mousex = -int(pow((*scalexfunc)(-evx), dynresval));
+			mousex = -int(pow((double)(*scalexfunc)(-evx), (double)dynresval));
 		else
-			mousex = int(pow((*scalexfunc)(evx), dynresval));
+			mousex = int(pow((double)(*scalexfunc)(evx), (double)dynresval));
 
 		if (evy < 0)
-			mousey = -int(pow((*scaleyfunc)(-evy), dynresval));
+			mousey = -int(pow((double)(*scaleyfunc)(-evy), (double)dynresval));
 		else
-			mousey = int(pow((*scaleyfunc)(evy), dynresval));
+			mousey = int(pow((double)(*scaleyfunc)(evy), (double)dynresval));
 	}
 	else
 	{
