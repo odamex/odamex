@@ -34,6 +34,10 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 EXTERN_CVAR (waddirs)
 
 void CL_Reconnect(void);

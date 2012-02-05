@@ -259,7 +259,7 @@ void I_WaitVBL (int count)
 //
 // SubsetLanguageIDs
 //
-#ifdef WIN32
+#if defined WIN32 && !defined _XBOX
 static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 {
 	char buf[8];
@@ -297,7 +297,7 @@ void SetLanguageIDs ()
 
 	if (langid == 0 || langid > 3)
 	{
-    #ifdef WIN32
+    #if defined WIN32 && !defined _XBOX
 		memset (LanguageIDs, 0, sizeof(LanguageIDs));
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
 		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
