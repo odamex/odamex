@@ -173,6 +173,7 @@
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DPORTMIDI" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
@@ -247,6 +248,7 @@
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DPORTMIDI" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
