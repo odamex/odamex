@@ -423,6 +423,11 @@ public:
 
 		LastMessage.Time = 0;
 		LastMessage.Message = "";
+		
+		BlendR = 0;
+		BlendG = 0;
+		BlendB = 0;
+		BlendA = 0;
 	}
 
 	player_s &operator =(const player_s &other)
@@ -524,6 +529,11 @@ public:
 
         LastMessage.Time = other.LastMessage.Time;
 		LastMessage.Message = other.LastMessage.Message;
+		
+		BlendR = 0;
+		BlendG = 0;
+		BlendB = 0;
+		BlendA = 0;
 
 		client = other.client;
 
