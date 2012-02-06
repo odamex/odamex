@@ -530,10 +530,10 @@ public:
         LastMessage.Time = other.LastMessage.Time;
 		LastMessage.Message = other.LastMessage.Message;
 		
-		BlendR = 0;
-		BlendG = 0;
-		BlendB = 0;
-		BlendA = 0;
+		BlendR = other.BlendR;
+		BlendG = other.BlendG;
+		BlendB = other.BlendB;
+		BlendA = other.BlendA;
 
 		client = other.client;
 
