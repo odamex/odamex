@@ -28,12 +28,13 @@
 
 
 #include "doomdef.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "minilzo.h"
 
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
+#include "cmdlib.h"
 
 #include "d_main.h"
 
@@ -57,6 +58,7 @@
 #include "m_memio.h"
 
 #include "s_sound.h"
+#include "i_musicsystem.h"
 
 #include "doomstat.h"
 
@@ -72,15 +74,6 @@
 //
 // defaulted values
 //
-//CVAR (mouse_sensitivity, "1.0", CVAR_ARCHIVE)
-//CVAR (cont_preset,			"0",	CVAR_ARCHIVE)
-EXTERN_CVAR (dynres_state)
-EXTERN_CVAR (dynresval)
-//CVAR (mouse_preset,			"0",	CVAR_ARCHIVE)
-EXTERN_CVAR (mouse_sensitivity)
-EXTERN_CVAR (mouse_type)
-EXTERN_CVAR (novert)
-
 // [ML] 09/4/06: Show secret revealed message, 0 = off, 1 = on
 EXTERN_CVAR (hud_revealsecrets)
 
@@ -97,8 +90,11 @@ EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookspring)
 EXTERN_CVAR (lookstrafe)
 EXTERN_CVAR (hud_crosshair)
+EXTERN_CVAR (hud_crosshairhealth)
+EXTERN_CVAR (hud_crosshairscale)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (r_detail)
+EXTERN_CVAR (language)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_level8soundfeature)
@@ -119,16 +115,18 @@ EXTERN_CVAR (cl_deathcam)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
+EXTERN_CVAR (mouse_type)
+EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
+EXTERN_CVAR (novert)
 EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
-EXTERN_CVAR (displaymouse)
 EXTERN_CVAR (mouse_acceleration)
 EXTERN_CVAR (mouse_threshold)
 
 // [Ralphis - Menu] Sound Menu
+EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (snd_musicvolume)
-EXTERN_CVAR (snd_nomusic)
 EXTERN_CVAR (snd_sfxvolume)
 EXTERN_CVAR (snd_crossover)
 EXTERN_CVAR (cl_connectalert)
@@ -150,6 +148,18 @@ EXTERN_CVAR (joy_freelook)
 EXTERN_CVAR (rate)
 EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_updaterate)
+
+// Weapon Preferences
+EXTERN_CVAR (cl_switchweapon)
+EXTERN_CVAR (cl_weaponpref1)
+EXTERN_CVAR (cl_weaponpref2)
+EXTERN_CVAR (cl_weaponpref3)
+EXTERN_CVAR (cl_weaponpref4)
+EXTERN_CVAR (cl_weaponpref5)
+EXTERN_CVAR (cl_weaponpref6)
+EXTERN_CVAR (cl_weaponpref7)
+EXTERN_CVAR (cl_weaponpref8)
+EXTERN_CVAR (cl_weaponpref9)
 
 void M_ChangeMessages(void);
 void M_SizeDisplay(float diff);
@@ -188,6 +198,12 @@ value_t OnOffAuto[3] = {
 	{ 2.0, "Auto" }
 };
 
+static value_t DoomOrOdamex[2] =
+{
+	{ 0.0, "Doom" },
+	{ 1.0, "Odamex" }
+};
+
 menu_t  *CurrentMenu;
 int		CurrentItem;
 static BOOL	WaitingForKey;
@@ -209,6 +225,7 @@ static void VideoOptions (void);
 static void SoundOptions (void);
 static void CompatOptions (void);
 static void NetworkOptions (void);
+static void WeaponOptions (void);
 static void GoToConsole (void);
 static void GoToConsole (void);
 void Reset2Defaults (void);
@@ -219,6 +236,7 @@ static void SetVidMode (void);
 static menuitem_t OptionItems[] =
 {
     { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
+	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)WeaponOptions} },
  	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
 	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
 	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
@@ -244,6 +262,9 @@ menu_t OptionMenu = {
 	STACKARRAY_LENGTH(OptionItems),
 	177,
 	OptionItems,
+	0,
+	0,
+	NULL
 };
 
 /*=======================================
@@ -269,6 +290,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
+	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
@@ -332,6 +354,8 @@ menu_t ControlsMenu = {
 	0,
 	ControlsItems,
 	2,
+	0,
+	NULL
 };
 
 // -------------------------------------------------------
@@ -340,31 +364,103 @@ menu_t ControlsMenu = {
 //
 // -------------------------------------------------------
 
-static value_t DoomOrOdamex[] =
-{
-	{ 0.0, "Doom" },
-	{ 1.0, "Odamex" },
+static value_t MouseType[] = {
+	{ MOUSE_DOOM,		"Doom"},
+	{ MOUSE_ZDOOM_DI,	"ZDoom"}
 };
+
+static int previous_mouse_type;
+void M_ResetMouseValues();
 
 static menuitem_t MouseItems[] =
 {
-	{ discrete	,	"Mouse Type"							, {&mouse_type},		{2.0},		{0.0},		{0.0},		{DoomOrOdamex}				},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Always FreeLook"						, {&cl_mouselook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Invert Mouse"							, {&invertmouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ slider	,	"Horizontal Sensitivity" 				, {&mouse_sensitivity},	{0.0},		{77.0},		{1.0},		{NULL}						},
-	{ slider	,	"Vertical Sensitivity"					, {&m_pitch},			{0.0},		{1.85},		{0.025},	{NULL}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Horizontal Movement"					, {&lookstrafe},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Vertical Movement"						, {&novert},			{2.0},		{0.0},		{0.0},		{OffOn}						},
-	{ slider	,	"Horizontal Movement Speed"				, {&m_side},			{0.0},		{15},		{0.5},		{NULL}						},
-	{ slider	,	"Vertical Movement Speed"				, {&m_forward},			{0.0},		{15},		{0.5},		{NULL}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ slider    ,   "Mouse Acceleration"					, {&mouse_acceleration},{0.0},      {10.0},     {0.5},      {NULL}                      },
-	{ slider    ,   "Mouse Threshold"						, {&mouse_threshold},   {0.0},      {20.0},     {1.0},      {NULL}                      },
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Show Mouse Values"						, {&displaymouse},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete,	"Mouse Type"					, {&mouse_type},		{2.0},	{0.0},		{0.0},		{MouseType}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ slider,	"Overall Sensitivity" 			, {&mouse_sensitivity},	{0.0},	{77.0},		{1.0},		{NULL}},
+	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.0},	{1.0},		{0.025},	{NULL}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ discrete,	"Horizontal Movement"			, {&lookstrafe},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ discrete,	"Vertical Movement"				, {&novert},			{2.0},	{0.0},		{0.0},		{OffOn}},
+	{ slider,	"Horizontal Movement Speed"		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
+	{ slider,	"Vertical Movement Speed"		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ slider,	"Mouse Acceleration"			, {&mouse_acceleration},{0.0},	{10.0},		{0.5},		{NULL}},
+	{ slider,	"Mouse Threshold"				, {&mouse_threshold},	{0.0},	{20.0},		{1.0},		{NULL}},
+	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
+	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{(value_t *)M_ResetMouseValues}},
 };
+
+void G_ConvertMouseSettings(int old_type, int new_type);
+
+static void M_UpdateMouseOptions()
+{
+	const static size_t menu_length = STACKARRAY_LENGTH(MouseItems);
+	const static size_t mouse_sens_index = M_FindCvarInMenu(mouse_sensitivity, MouseItems, menu_length); 
+	const static size_t mouse_pitch_index = M_FindCvarInMenu(m_pitch, MouseItems, menu_length); 
+	const static size_t mouse_accel_index = M_FindCvarInMenu(mouse_acceleration, MouseItems, menu_length);
+	const static size_t mouse_thresh_index = M_FindCvarInMenu(mouse_threshold, MouseItems, menu_length);
+
+	static menuitem_t doom_sens_menuitem = MouseItems[mouse_sens_index];
+	static menuitem_t doom_pitch_menuitem =	MouseItems[mouse_pitch_index];
+	static menuitem_t doom_accel_menuitem = MouseItems[mouse_accel_index];
+	static menuitem_t doom_thresh_menuitem = MouseItems[mouse_thresh_index];
+
+	static menuitem_t zdoom_sens_menuitem =
+		{ slider	,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},		{2.5},		{0.1},		{NULL}};
+	static menuitem_t zdoom_pitch_menuitem =
+		{ slider	,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},		{2.5},		{0.1},		{NULL}};
+	static menuitem_t zdoom_accel_menuitem =
+		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
+	static menuitem_t zdoom_thresh_menuitem =
+		{ redtext	,	" "								, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}};
+
+	if (mouse_type == MOUSE_ZDOOM_DI)
+	{
+		if (mouse_sens_index < menu_length)
+			memcpy(&MouseItems[mouse_sens_index], &zdoom_sens_menuitem, sizeof(menuitem_t));
+		if (mouse_pitch_index < menu_length)
+			memcpy(&MouseItems[mouse_pitch_index], &zdoom_pitch_menuitem, sizeof(menuitem_t));
+		if (mouse_accel_index < menu_length)
+			memcpy(&MouseItems[mouse_accel_index], &zdoom_accel_menuitem, sizeof(menuitem_t));
+		if (mouse_thresh_index < menu_length)
+			memcpy(&MouseItems[mouse_thresh_index], &zdoom_thresh_menuitem, sizeof(menuitem_t));
+	}
+	else
+	{
+		if (mouse_sens_index < menu_length)
+			memcpy(&MouseItems[mouse_sens_index], &doom_sens_menuitem, sizeof(menuitem_t));
+		if (mouse_pitch_index < menu_length)
+			memcpy(&MouseItems[mouse_pitch_index], &doom_pitch_menuitem, sizeof(menuitem_t));
+		if (mouse_accel_index < menu_length)
+			memcpy(&MouseItems[mouse_accel_index], &doom_accel_menuitem, sizeof(menuitem_t));
+		if (mouse_thresh_index < menu_length)
+			memcpy(&MouseItems[mouse_thresh_index], &doom_thresh_menuitem, sizeof(menuitem_t));
+	}
+
+	G_ConvertMouseSettings(previous_mouse_type, mouse_type);
+	previous_mouse_type = mouse_type;
+}
+
+void M_ResetMouseValues()
+{
+	mouse_type.RestoreDefault();
+	mouse_sensitivity.RestoreDefault();
+	m_pitch.RestoreDefault();
+	cl_mouselook.RestoreDefault();
+	invertmouse.RestoreDefault();	
+	lookstrafe.RestoreDefault();
+	novert.RestoreDefault();
+	m_side.RestoreDefault();
+	m_forward.RestoreDefault();
+	mouse_acceleration.RestoreDefault();
+	mouse_threshold.RestoreDefault();
+
+	previous_mouse_type = mouse_type;
+	M_UpdateMouseOptions();
+}
 
 menu_t MouseMenu = {
     "M_MOUSET",
@@ -372,7 +468,11 @@ menu_t MouseMenu = {
     STACKARRAY_LENGTH(MouseItems),
     177,
     MouseItems,
+	0,
+	0,
+	&M_UpdateMouseOptions
 };
+
 
 /*=======================================
  *
@@ -403,6 +503,9 @@ menu_t JoystickMenu = {
     STACKARRAY_LENGTH(JoystickItems),
     177,
     JoystickItems,
+	0,
+	0,
+	NULL
 };
 
  /*=======================================
@@ -410,18 +513,32 @@ menu_t JoystickMenu = {
   * Sound Menu [Ralphis]
   *
   *=======================================*/
- 
+
+static value_t MusSys[] = {
+	{ MS_SDLMIXER,	"SDL Mixer"},
+	#ifdef OSX
+	{ MS_AUDIOUNIT,	"AudioUnit"},
+	#endif	// OSX
+	#ifdef PORTMIDI
+	{ MS_PORTMIDI,	"PortMidi"},
+	#endif	// PORTMIDI
+	{ MS_NONE,		"No Music"}
+};
+
+static int num_mussys = STACKARRAY_LENGTH(MusSys);
+
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },    
-	{ bricktext ,   "Sound Levels"                          , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
-	{ slider    ,	"Music Volume"                          , {&snd_musicvolume},	{0.0},      {1.0},	    {0.1},      {NULL} },
-	{ discrete	,	"Disable Music System"					, {&snd_nomusic},		{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ slider    ,	"Sound Volume"                          , {&snd_sfxvolume},		{0.0},      {1.0},	    {0.1},      {NULL} },
-	{ discrete  ,   "Stereo Switch"                         , {&snd_crossover},	    {2.0},		{0.0},		{0.0},		{OnOff} },	
-	{ redtext   ,	" "                                     , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
-	{ bricktext ,   "Multiplayer Options"                   , {NULL},	            {0.0},      {0.0},      {0.0},      {NULL} },
-	{ discrete  ,   "Player Connect Alert"                  , {&cl_connectalert},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete  ,   "Player Disconnect Alert"               , {&cl_disconnectalert},{2.0},		{0.0},		{0.0},		{OnOff} }	
+	{ bricktext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ slider    ,	"Music Volume"                      , {&snd_musicvolume},	{0.0},      	{1.0},	    {0.1},      {NULL} },
+	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.1},      {NULL} },
+	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },	
+	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
+	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ bricktext ,   "Multiplayer Options"               , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
+	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} }	
  };
  
 menu_t SoundMenu = {
@@ -430,6 +547,9 @@ menu_t SoundMenu = {
 	STACKARRAY_LENGTH(SoundItems),
 	177,
 	SoundItems,
+	0,
+	0,
+	NULL
 };
 
 
@@ -461,6 +581,9 @@ menu_t CompatMenu = {
 	STACKARRAY_LENGTH(CompatItems),
 	177,
 	CompatItems,
+	0,
+	0,
+	NULL,
 };
 
 
@@ -497,7 +620,116 @@ menu_t NetworkMenu = {
 	STACKARRAY_LENGTH(NetworkItems),
 	177,
 	NetworkItems,
+	0,
+	0,
+	NULL
 };
+
+
+/*=======================================
+ *
+ * Weapon Preferences Menu
+ *
+ *=======================================*/
+
+static value_t WeapSwitch[] = {
+	{ 0.0,			"Never" },
+	{ 1.0,			"Always" },
+	{ 2.0,			"By Preference" }
+};
+
+extern const char *weaponnames[];
+
+static const cvar_t* weaponcvars[] = {
+	&cl_weaponpref1, &cl_weaponpref2, &cl_weaponpref3, &cl_weaponpref4, &cl_weaponpref5,
+	&cl_weaponpref6, &cl_weaponpref7, &cl_weaponpref8, &cl_weaponpref9 };
+
+static value_t WeapChoice1[NUMWEAPONS];
+static value_t WeapChoice2[NUMWEAPONS-1];
+static value_t WeapChoice3[NUMWEAPONS-2];
+static value_t WeapChoice4[NUMWEAPONS-3];
+static value_t WeapChoice5[NUMWEAPONS-4];
+static value_t WeapChoice6[NUMWEAPONS-5];
+static value_t WeapChoice7[NUMWEAPONS-6];
+static value_t WeapChoice8[NUMWEAPONS-7];
+static value_t WeapChoice9[NUMWEAPONS-8];
+
+static value_t *WeapChoices[] = {
+	WeapChoice1, WeapChoice2, WeapChoice3, WeapChoice4, WeapChoice5,
+	WeapChoice6, WeapChoice7, WeapChoice8, WeapChoice9 };
+
+static menuitem_t WeaponItems[] = {
+	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },	
+	{ bricktext,	"Configure Weapon Preferences",	{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Switch on pickup",				{&cl_switchweapon},	{3.0},		{0.0},		{0.0},		{WeapSwitch} },
+	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },	
+	{ bricktext,	"Weapon Preference Order",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Preference #1",				{&cl_weaponpref1},	{9.0},		{0.0},		{0.0},		{WeapChoice1} },
+	{ discrete,		"Preference #2",				{&cl_weaponpref2},	{8.0},		{0.0},		{0.0},		{WeapChoice2} },
+	{ discrete,		"Preference #3",				{&cl_weaponpref3},	{7.0},		{0.0},		{0.0},		{WeapChoice3} },
+	{ discrete,		"Preference #4",				{&cl_weaponpref4},	{6.0},		{0.0},		{0.0},		{WeapChoice4} },
+	{ discrete,		"Preference #5",				{&cl_weaponpref5},	{5.0},		{0.0},		{0.0},		{WeapChoice5} },
+	{ discrete,		"Preference #6",				{&cl_weaponpref6},	{4.0},		{0.0},		{0.0},		{WeapChoice6} },
+	{ discrete,		"Preference #7",				{&cl_weaponpref7},	{3.0},		{0.0},		{0.0},		{WeapChoice7} },
+	{ discrete,		"Preference #8",				{&cl_weaponpref8},	{2.0},		{0.0},		{0.0},		{WeapChoice8} },
+	{ discrete,		"Preference #9",				{&cl_weaponpref9},	{1.0},		{0.0},		{0.0},		{WeapChoice9} }
+};
+
+//
+// M_UpdateWeaponOptions()
+//
+// Chooses the possible options for each of the weapon preference slots.
+// Slot 1 allows 9 possible choices, Slot 2 allows 8 choices with the choice
+// in Slot 1 excluded, and Slot 3 allows 7 choices with the choices in Slots 1
+// and Slot 2 excluded, etc.
+//
+static void M_UpdateWeaponOptions()
+{
+	weapontype_t pool[NUMWEAPONS] = {
+		wp_fist, wp_chainsaw, wp_pistol, wp_shotgun, wp_supershotgun,
+		wp_chaingun, wp_missile, wp_plasma, wp_bfg };
+
+	for (int slot = 0; slot < NUMWEAPONS; slot++)
+	{
+		value_t *cur_weapchoice = WeapChoices[slot];
+
+		// Compile the possible weapon options for the slot
+		for (int i = 0; i < NUMWEAPONS - slot; i++)
+		{
+			int weapon_num = pool[slot + i];
+			cur_weapchoice[i].value = float(weapon_num);
+			cur_weapchoice[i].name = weaponnames[weapon_num];
+		}
+
+		weapontype_t slotweapon =
+			static_cast<weapontype_t>(weaponcvars[slot]->asInt());
+
+		// Move the slot's weapon to the front of the remaining pool
+		for (int poolcur = slot + 1; poolcur < NUMWEAPONS; poolcur++)
+		{
+			if (pool[poolcur] == slotweapon)
+			{
+				// move the weapons over to make room at the front of the pool
+				for (int j = poolcur; j > slot; j--)
+					pool[j] = pool[j-1];
+				pool[slot] = slotweapon;
+				break;
+			}
+		}
+	}
+}
+
+menu_t WeaponMenu = {
+	"M_WEAPON",
+	2,
+	STACKARRAY_LENGTH(WeaponItems),
+	177,
+	WeaponItems,
+	0,
+	0,
+	&M_UpdateWeaponOptions
+};
+
 
 /*=======================================
  *
@@ -605,6 +837,8 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
+	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "High-res scoreboard",  	{&hud_usehighresboard}, {2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Multiplayer Intermissions",{&wi_newintermission}, {2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
@@ -626,6 +860,8 @@ menu_t VideoMenu = {
 	0,
 	VideoItems,
 	3,
+	0,
+	NULL
 };
 
 /*=======================================
@@ -633,7 +869,7 @@ menu_t VideoMenu = {
  * Messages Menu
  *
  *=======================================*/
-EXTERN_CVAR (con_scaletext)
+EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (msg0color)
 EXTERN_CVAR (msg1color)
 EXTERN_CVAR (msg2color)
@@ -663,9 +899,18 @@ static value_t MessageLevels[] = {
 	{ 2.0, "Critical Messages" }
 };
 
+// TODO: Put all language info in one array, auto detect what's in the lump?
+static value_t Languages[] = {
+	{ 0.0, "Auto" },
+	{ 1.0, "English" },
+	{ 2.0, "French" },
+	{ 3.0, "Italian" }
+};
+
 static menuitem_t MessagesItems[] = {
+	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
 	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
-	{ discrete,	"Scale message text",    {&con_scaletext},		{2.0}, {0.0}, 	{0.0}, {OnOff} },	
+	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {5.0}, 	{1.0}, {NULL} },	
     { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},       {2.0}, {0.0},   {0.0}, {OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -684,6 +929,9 @@ menu_t MessagesMenu = {
 	STACKARRAY_LENGTH(MessagesItems),
 	0,
 	MessagesItems,
+	0,
+	0,
+	NULL
 };
 
 /*=======================================
@@ -718,6 +966,9 @@ menu_t AutomapMenu = {
 	STACKARRAY_LENGTH(AutomapItems),
 	0,
 	AutomapItems,
+	0,
+	0,
+	NULL
 };
 
 
@@ -742,7 +993,7 @@ EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
 
-static cvar_t DummyDepthCvar (NULL, NULL, "", 0);
+static cvar_t DummyDepthCvar (NULL, NULL, "", CVARTYPE_NONE, 0);
 
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
@@ -801,6 +1052,9 @@ menu_t ModesMenu = {
 	STACKARRAY_LENGTH(ModesItems),
 	130,
 	ModesItems,
+	0,
+	0,
+	NULL
 };
 
 static cvar_t *flagsvar;
@@ -889,12 +1143,12 @@ void M_ChangeMessages (void)
 {
 	if (show_messages)
 	{
-		Printf (128, "%s\n", MSGOFF);
+		Printf (128, "%s\n", GStrings(MSGOFF));
 		show_messages.Set (0.0f);
 	}
 	else
 	{
-		Printf (128, "%s\n", MSGON);
+		Printf (128, "%s\n", GStrings(MSGON));
 		show_messages.Set (1.0f);
 	}
 }
@@ -914,14 +1168,14 @@ void M_SizeDisplay (float diff)
 BEGIN_COMMAND (sizedown)
 {
 	M_SizeDisplay (-1.0);
-	S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 }
 END_COMMAND (sizedown)
 
 BEGIN_COMMAND (sizeup)
 {
 	M_SizeDisplay(1.0);
-	S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 }
 END_COMMAND (sizeup)
 
@@ -1016,7 +1270,6 @@ void M_OptDrawer (void)
 	int color;
 	int y, width, i, x, ytop;
 	int x1,y1,x2,y2;
-	int valx = 0, valy = 0;
 	int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
@@ -1113,12 +1366,6 @@ void M_OptDrawer (void)
 				break;
 			}
 			screen->DrawTextCleanMove (color, x, y, item->label);
-
-			if (!i)
-			{
-				valx = x;
-				valy = y;
-			}
 
 			switch (item->type)
 			{
@@ -1363,7 +1610,7 @@ void M_OptResponder (event_t *ev)
 				if (CurrentMenu->items[CurrentItem].type == screenres)
 					CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-				S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 			break;
 
@@ -1404,7 +1651,7 @@ void M_OptResponder (event_t *ev)
 				if (CurrentMenu->items[CurrentItem].type == screenres)
 					CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-				S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 			break;
 			
@@ -1426,7 +1673,7 @@ void M_OptResponder (event_t *ev)
 					{
 						++CurrentItem;
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 				}
 			}
 			break;
@@ -1450,7 +1697,7 @@ void M_OptResponder (event_t *ev)
 					{
 						++CurrentItem;
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 				}
 			}
 			break;
@@ -1471,7 +1718,7 @@ void M_OptResponder (event_t *ev)
 						else
 							item->a.cvar->Set (newval);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case discrete:
@@ -1491,7 +1738,7 @@ void M_OptResponder (event_t *ev)
 						if (item->e.values == Depths)
 							BuildModesList (screen->width, screen->height, DisplayBits);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case screenres:
@@ -1515,7 +1762,7 @@ void M_OptResponder (event_t *ev)
 							item->a.selmode = col;
 						}
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 					break;
 
 				case joyactive:
@@ -1529,7 +1776,7 @@ void M_OptResponder (event_t *ev)
 						else if((int)item->a.cvar->value() > 0)
 							item->a.cvar->Set(item->a.cvar->value() - 1);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				default:
@@ -1553,7 +1800,7 @@ void M_OptResponder (event_t *ev)
 						else
 							item->a.cvar->Set (newval);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case discrete:
@@ -1573,7 +1820,7 @@ void M_OptResponder (event_t *ev)
 						if (item->e.values == Depths)
 							BuildModesList (screen->width, screen->height, DisplayBits);
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				case screenres:
@@ -1600,7 +1847,7 @@ void M_OptResponder (event_t *ev)
 							item->a.selmode = col;
 						}
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 					break;
 
 				case joyactive:
@@ -1615,7 +1862,7 @@ void M_OptResponder (event_t *ev)
 							item->a.cvar->Set(item->a.cvar->value() + 1);
 
 					}
-					S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 					break;
 
 				default:
@@ -1645,7 +1892,7 @@ void M_OptResponder (event_t *ev)
 				}
 				NewBits = BitTranslate[(int)DummyDepthCvar];
 				setmodeneeded = true;
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				vid_defwidth.Set ((float)NewWidth);
 				vid_defheight.Set ((float)NewHeight);
 				vid_defbits.Set ((float)NewBits);
@@ -1654,7 +1901,7 @@ void M_OptResponder (event_t *ev)
 			else if (item->type == more && item->e.mfunc)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.mfunc();
 			}
 			else if (item->type == discrete || item->type == cdiscrete)
@@ -1673,7 +1920,7 @@ void M_OptResponder (event_t *ev)
 				if (item->e.values == Depths)
 					BuildModesList (screen->width, screen->height, DisplayBits);
 
-				S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
 			else if (item->type == control)
 			{
@@ -1686,7 +1933,7 @@ void M_OptResponder (event_t *ev)
 			else if (item->type == listelement)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 				item->e.lfunc (CurrentItem);
 			}
 			else if (item->type == joyaxis)
@@ -1730,12 +1977,15 @@ void M_OptResponder (event_t *ev)
 					NewBits = BitTranslate[(int)DummyDepthCvar];
 					setmodeneeded = true;
 					testingmode = I_GetTime() + 5 * TICRATE;
-					S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 					SetModesMenu (NewWidth, NewHeight, NewBits);
 				}
 			}
 			break;
 	}
+
+	if (CurrentMenu->refreshfunc)
+		(*CurrentMenu->refreshfunc)();
 }
 
 static void GoToConsole (void)
@@ -1783,6 +2033,8 @@ void ResetCustomColors (void)
 
 void MouseSetup (void) // [Toke] for mouse menu
 {
+	previous_mouse_type = mouse_type;
+	M_UpdateMouseOptions();
 	M_SwitchMenu (&MouseMenu);
 }
 
@@ -1809,7 +2061,7 @@ static void PlayerSetup (void)
 BEGIN_COMMAND (menu_keys)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	CustomizeControls();
 }
@@ -1835,10 +2087,15 @@ void NetworkOptions (void)
 	M_SwitchMenu (&NetworkMenu);
 }
 
+void WeaponOptions (void)
+{
+	M_SwitchMenu (&WeaponMenu);
+}
+
 BEGIN_COMMAND (menu_display)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	M_SwitchMenu (&VideoMenu);
 }
@@ -1995,7 +2252,7 @@ static void SetVidMode (void)
 BEGIN_COMMAND (menu_video)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	SetVidMode ();
 }

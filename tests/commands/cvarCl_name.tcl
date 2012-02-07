@@ -9,16 +9,19 @@ proc main {} {
 
  # change player name
  clear
+ wait 6
  client {cl_name Fred}
  expect $serverout "Player changed his name to Fred."
 
  # long name
  clear
+ wait 6
  client {cl_name OneVeryVeryVeryLongName}
  expect $serverout "Fred changed his name to OneVeryVeryVery."
 
  # blank name
  clear
+ wait 6
  client {set cl_name ""}
  expect $serverout "OneVeryVeryVery changed his name to ."
 }

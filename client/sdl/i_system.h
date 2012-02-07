@@ -35,6 +35,17 @@
 
 #include <string>
 
+// Index values into the LanguageIDs array
+enum
+{
+	LANGIDX_UserPreferred,
+	LANGIDX_UserDefault,
+	LANGIDX_SysPreferred,
+	LANGIDX_SysDefault
+};
+extern DWORD LanguageIDs[4];
+extern void SetLanguageIDs ();
+
 // Called by DoomMain.
 void I_Init (void);
 std::string I_GetCWD();

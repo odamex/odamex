@@ -23,16 +23,16 @@
 			<object class="wxMenu">
 				<label>Action</label>
 				<object class="wxMenuItem" name="Id_MnuItmLaunch">
-					<label>Launch</label>
+					<label>Connect</label>
 					<help>Connect to the selected server</help>
 				</object>
 				<object class="wxMenuItem" name="Id_MnuItmRunOffline">
-					<label>Run Offline</label>
+					<label>Run Odamex</label>
 					<help>Runs the Odamex Client without connecting to a server</help>
 				</object>
 				<object class="separator" />
 				<object class="wxMenuItem" name="Id_MnuItmRefreshServer">
-					<label>Refresh Selected</label>
+					<label>Refresh Server</label>
 					<help>Refresh the selected server</help>
 				</object>
 				<object class="wxMenuItem" name="Id_MnuItmRefreshAll">
@@ -40,7 +40,7 @@
 					<help>Refresh all servers currently displayed</help>
 				</object>
 				<object class="wxMenuItem" name="Id_MnuItmGetList">
-					<label>Get Master List</label>
+					<label>Get List</label>
 					<help>Get a new list of servers</help>
 				</object>
 			</object>
@@ -101,15 +101,15 @@
 				</object>
 			</object>
 		</object>
-		<object class="wxToolBar">
-			<style>wxTB_DOCKABLE|wxTB_FLAT</style>
+		<object class="wxToolBar" name="6">
+			<style>wxTB_FLAT</style>
 			<font>
 				<family>default</family>
 				<style>normal</style>
 				<weight>normal</weight>
 				<underlined>0</underlined>
 			</font>
-			<bitmapsize>38,38</bitmapsize>
+			<bitmapsize>32,32</bitmapsize>
 			<margins>-1,-1</margins>
 			<packing>0</packing>
 			<separation>0</separation>
@@ -117,10 +117,10 @@
 				<label>Connect</label>
 				<tooltip>Connect to the selected server</tooltip>
 				<longhelp>Connect to the selected server</longhelp>
-				<bitmap>./icon32x32x8.ico</bitmap>
+				<bitmap>.\icon32x32x32.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmRunOffline">
-				<label></label>
+				<label>Run Odamex</label>
 				<tooltip>Runs the Odamex Client without connecting to a server</tooltip>
 				<longhelp>Runs the Odamex Client without connecting to a server</longhelp>
 				<bitmap>./odaqlaunch.ico</bitmap>
@@ -133,33 +133,33 @@
 				<bitmap>./btnrefresh.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmRefreshAll">
-				<label>Refresh All Servers</label>
+				<label>Refresh All</label>
 				<tooltip>Refresh all servers currently displayed</tooltip>
 				<longhelp>Refresh all servers currently displayed</longhelp>
 				<bitmap>./btnrefreshall.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmGetList">
-				<label>Get Master List</label>
+				<label>Get List</label>
 				<tooltip>Get a new list of servers</tooltip>
 				<longhelp>Get a new list of servers</longhelp>
 				<bitmap>./btnlist.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="Id_MnuItmSettings">
-				<label>tool</label>
+				<label>Settings</label>
 				<tooltip>Configure the launcher</tooltip>
 				<longhelp>Configure the launcher</longhelp>
 				<bitmap>./btnsettings.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmAboutOdamex">
-				<label>tool</label>
+				<label>About</label>
 				<tooltip>About the Odamex Launcher</tooltip>
 				<longhelp>About the Odamex Launcher</longhelp>
 				<bitmap>./btnhelp.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="wxID_EXIT">
-				<label>tool</label>
+				<label>Exit</label>
 				<tooltip>Exit the launcher</tooltip>
 				<longhelp>Exit the launcher</longhelp>
 				<bitmap>./btnexit.ico</bitmap>
@@ -279,7 +279,7 @@
 				<object class="wxPanel" name="m_panel9">
 					<style>wxTAB_TRAVERSAL</style>
 					<object class="wxFlexGridSizer">
-						<rows>1</rows>
+						<rows>5</rows>
 						<cols>1</cols>
 						<vgap>0</vgap>
 						<hgap>0</hgap>
@@ -408,7 +408,7 @@
 											<flag>wxEXPAND</flag>
 											<border>5</border>
 											<object class="wxFlexGridSizer">
-												<rows>1</rows>
+												<rows>5</rows>
 												<cols>1</cols>
 												<vgap>0</vgap>
 												<hgap>0</hgap>
@@ -558,116 +558,143 @@
 							<border>5</border>
 							<object class="wxStaticBoxSizer">
 								<orient>wxVERTICAL</orient>
-								<label>WAD Directories</label>
+								<label>WAD Directories (First path is used by Odamex for saving downloaded files)</label>
 								<object class="sizeritem">
 									<option>1</option>
 									<flag>wxEXPAND</flag>
 									<border>5</border>
 									<object class="wxFlexGridSizer">
-										<rows>1</rows>
+										<rows>5</rows>
 										<cols>1</cols>
 										<vgap>0</vgap>
 										<hgap>0</hgap>
 										<growablecols>0</growablecols>
 										<growablerows>0</growablerows>
 										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER</flag>
-											<border>0</border>
-											<object class="wxBoxSizer">
-												<orient>wxHORIZONTAL</orient>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL</flag>
-													<border>5</border>
-													<object class="wxButton" name="Id_BtnCtrlAddDir">
-														<label>Add</label>
-														<default>0</default>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL</flag>
-													<border>5</border>
-													<object class="wxButton" name="Id_BtnCtrlReplaceDir">
-														<label>Replace</label>
-														<default>0</default>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL</flag>
-													<border>5</border>
-													<object class="wxButton" name="Id_BtnCtrlDeleteDir">
-														<label>Delete</label>
-														<default>0</default>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL|wxEXPAND</flag>
-													<border>5</border>
-													<object class="wxStaticLine" name="16">
-														<style>wxLI_VERTICAL</style>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL</flag>
-													<border>5</border>
-													<object class="wxButton" name="Id_BtnCtrlGetEnvironment">
-														<tooltip>Loads the list with DOOMWADDIR and DOOMWADPATH environment variable data</tooltip>
-														<label>Get Environment</label>
-														<default>0</default>
-													</object>
-												</object>
-											</object>
-										</object>
-										<object class="sizeritem">
 											<option>1</option>
 											<flag>wxEXPAND</flag>
 											<border>0</border>
 											<object class="wxFlexGridSizer">
-												<rows>1</rows>
-												<cols>2</cols>
+												<rows>5</rows>
+												<cols>3</cols>
 												<vgap>0</vgap>
 												<hgap>0</hgap>
 												<growablecols>0</growablecols>
 												<growablerows>0</growablerows>
 												<object class="sizeritem">
 													<option>1</option>
-													<flag>wxALL|wxEXPAND</flag>
+													<flag>wxEXPAND</flag>
 													<border>5</border>
-													<object class="wxListBox" name="Id_LstCtrlWadDirectories">
-														<style>wxLB_SINGLE</style>
-														<pos>0,190</pos>
-														<content />
+													<object class="wxBoxSizer">
+														<orient>wxVERTICAL</orient>
+														<object class="sizeritem">
+															<option>1</option>
+															<flag>wxALL|wxEXPAND</flag>
+															<border>5</border>
+															<object class="wxListBox" name="Id_LstCtrlWadDirectories">
+																<style>wxLB_SINGLE</style>
+																<pos>0,190</pos>
+																<content />
+															</object>
+														</object>
 													</object>
 												</object>
 												<object class="sizeritem">
 													<option>0</option>
-													<flag></flag>
+													<flag>wxALIGN_CENTER</flag>
 													<border>5</border>
 													<object class="wxBoxSizer">
 														<orient>wxVERTICAL</orient>
 														<object class="sizeritem">
 															<option>0</option>
-															<flag>wxALIGN_CENTER|wxALL</flag>
+															<flag>wxALL</flag>
 															<border>5</border>
-															<object class="wxButton" name="Id_BtnCtrlMoveDirUp">
-																<label>Move Up</label>
+															<object class="wxBitmapButton" name="Id_BtnCtrlGetEnvironment">
+																<style>wxBU_AUTODRAW</style>
+																<tooltip>Import environment variables containing paths to Doom wad files (DOOMWADPATH and DOOMWADDIR)</tooltip>
+																<bitmap stock_id="wxART_HELP_SIDE_PANEL" stock_client="wxART_BUTTON">undefined.png</bitmap>
 																<default>0</default>
 															</object>
 														</object>
 														<object class="sizeritem">
 															<option>0</option>
-															<flag>wxALIGN_CENTER|wxALL</flag>
+															<flag>wxEXPAND | wxALL</flag>
 															<border>5</border>
-															<object class="wxButton" name="Id_BtnCtrlMoveDirDown">
-																<label>Move Down</label>
+															<object class="wxStaticLine" name="161">
+																<style>wxLI_VERTICAL</style>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALL</flag>
+															<border>5</border>
+															<object class="wxBitmapButton" name="Id_BtnCtrlAddDir">
+																<style>wxBU_AUTODRAW</style>
+																<tooltip>Add path to list</tooltip>
+																<bitmap stock_id="wxART_FOLDER_OPEN" stock_client="wxART_BUTTON">undefined.png</bitmap>
 																<default>0</default>
 															</object>
 														</object>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALL</flag>
+															<border>5</border>
+															<object class="wxBitmapButton" name="Id_BtnCtrlReplaceDir">
+																<style>wxBU_AUTODRAW</style>
+																<tooltip>Replace selected path in list</tooltip>
+																<bitmap stock_id="wxART_UNDO" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																<default>0</default>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALL</flag>
+															<border>5</border>
+															<object class="wxBitmapButton" name="Id_BtnCtrlDeleteDir">
+																<style>wxBU_AUTODRAW</style>
+																<tooltip>Delete path from list</tooltip>
+																<bitmap stock_id="wxART_DELETE" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																<default>0</default>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALL|wxEXPAND</flag>
+															<border>5</border>
+															<object class="wxStaticLine" name="16">
+																<style>wxLI_VERTICAL</style>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALL</flag>
+															<border>5</border>
+															<object class="wxBitmapButton" name="Id_BtnCtrlMoveDirUp">
+																<style>wxBU_AUTODRAW</style>
+																<tooltip>Move path up</tooltip>
+																<bitmap stock_id="wxART_GO_UP" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																<default>0</default>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALL</flag>
+															<border>5</border>
+															<object class="wxBitmapButton" name="Id_BtnCtrlMoveDirDown">
+																<style>wxBU_AUTODRAW</style>
+																<tooltip>Move path down</tooltip>
+																<bitmap stock_id="wxART_GO_DOWN" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																<default>0</default>
+															</object>
+														</object>
+													</object>
+												</object>
+												<object class="sizeritem">
+													<option>0</option>
+													<flag>wxALIGN_CENTER</flag>
+													<border>0</border>
+													<object class="wxBoxSizer">
+														<orient>wxHORIZONTAL</orient>
 													</object>
 												</object>
 											</object>
@@ -923,7 +950,7 @@
 					<flag>wxEXPAND</flag>
 					<border>5</border>
 					<object class="wxFlexGridSizer">
-						<rows>1</rows>
+						<rows>5</rows>
 						<cols>1</cols>
 						<vgap>0</vgap>
 						<hgap>0</hgap>
@@ -1012,7 +1039,7 @@
 				<object class="wxPanel">
 					<style>wxRAISED_BORDER|wxTAB_TRAVERSAL</style>
 					<object class="wxFlexGridSizer">
-						<rows>1</rows>
+						<rows>5</rows>
 						<cols>1</cols>
 						<vgap>0</vgap>
 						<hgap>0</hgap>

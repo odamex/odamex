@@ -41,6 +41,7 @@
 #ifdef _XBOX
 #include <xtl.h>
 #else
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif // !_XBOX
 #endif // WIN32
@@ -117,12 +118,14 @@ ticcmd_t *I_BaseTiccmd(void)
 #ifdef _XBOX
 size_t def_heapsize = 16;
 #else
-size_t def_heapsize = 64;
+size_t def_heapsize = 128;
 #endif
 const size_t min_heapsize = 8;
 
 // The size we got back from I_ZoneBase in megabytes
 size_t got_heapsize = 0;
+
+DWORD LanguageIDs[4];
 
 //
 // I_MegabytesToBytes
@@ -253,6 +256,71 @@ void I_WaitVBL (int count)
 	SDL_Delay (1000 * count / 70);
 }
 
+//
+// SubsetLanguageIDs
+//
+#if defined WIN32 && !defined _XBOX
+static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
+{
+	char buf[8];
+	LCID langid;
+	char *idp;
+
+	if (!GetLocaleInfo (id, type, buf, 8))
+		return;
+	langid = MAKELCID (strtoul(buf, NULL, 16), SORT_DEFAULT);
+	if (!GetLocaleInfo (langid, LOCALE_SABBREVLANGNAME, buf, 8))
+		return;
+	idp = (char *)(&LanguageIDs[idx]);
+	memset (idp, 0, 4);
+	idp[0] = tolower(buf[0]);
+	idp[1] = tolower(buf[1]);
+	idp[2] = tolower(buf[2]);
+	idp[3] = 0;
+}
+#endif
+
+//
+// SetLanguageIDs
+//
+static const char *langids[] = {
+	"auto",
+	"enu",
+	"fr",
+	"it"
+};
+
+EXTERN_CVAR (language)
+void SetLanguageIDs ()
+{
+	unsigned int langid = language.asInt();
+
+	if (langid == 0 || langid > 3)
+	{
+    #if defined WIN32 && !defined _XBOX
+		memset (LanguageIDs, 0, sizeof(LanguageIDs));
+		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
+		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
+		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
+		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+    #else
+        langid = 1;     // Default to US English on non-windows systems
+    #endif
+	}
+	else
+	{
+		DWORD lang = 0;
+		const char *langtag = langids[langid];
+
+		((BYTE *)&lang)[0] = (langtag)[0];
+		((BYTE *)&lang)[1] = (langtag)[1];
+		((BYTE *)&lang)[2] = (langtag)[2];
+		LanguageIDs[0] = lang;
+		LanguageIDs[1] = lang;
+		LanguageIDs[2] = lang;
+		LanguageIDs[3] = lang;
+	}
+}
 
 //
 // I_Init
@@ -310,7 +378,7 @@ std::string I_GetHomeDir(std::string user = "")
 
 std::string I_GetUserFileName (const char *file)
 {
-#if defined(UNIX) && !defined(GEKKO) 
+#if defined(UNIX) && !defined(GEKKO)
 	std::string path = I_GetHomeDir();
 
 	if(path[path.length() - 1] != PATHSEPCHAR)
@@ -358,7 +426,7 @@ std::string I_GetUserFileName (const char *file)
 
 void I_ExpandHomeDir (std::string &path)
 {
-#if defined(UNIX) && !defined(GEKKO) 
+#if defined(UNIX) && !defined(GEKKO)
 	if(!path.length())
 		return;
 
@@ -389,7 +457,7 @@ std::string I_GetBinaryDir()
 
 #ifdef _XBOX
 	// D:\ always corresponds to the binary path whether running from DVD or HDD.
-	ret = "D:\\"; 
+	ret = "D:\\";
 #elif defined GEKKO
 	ret = "sd:/";
 #elif defined WIN32
@@ -464,10 +532,10 @@ void I_Endoom(void)
 	// Set up text mode screen
 
 	TXT_Init();
- 
+
     I_SetWindowCaption();
     I_SetWindowIcon();
-    
+
 	// Write the data to the screen memory
 
 	screendata = TXT_GetScreenData();
@@ -513,7 +581,7 @@ void STACK_ARGS I_Quit (void)
 	CL_QuitNetGame();
 
 	M_SaveDefaults();
-	
+
 	I_ShutdownHardware();
 
     CloseNetwork();
@@ -698,7 +766,7 @@ std::string I_GetClipboardText (void)
 	}
 
 	const char *cData = reinterpret_cast<const char *>(GlobalLock(hClipboardData));
-	u_int uiSize = static_cast<u_int>(GlobalSize(hClipboardData));
+	SIZE_T uiSize = static_cast<SIZE_T>(GlobalSize(hClipboardData));
 
 	if(cData && uiSize)
 	{

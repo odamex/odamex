@@ -37,6 +37,7 @@
 #include "i_system.h"
 #include "m_swap.h"
 #include "st_stuff.h"
+#include "hu_stuff.h"
 #include "c_cvars.h"
 #include "p_ctf.h"
 
@@ -200,6 +201,22 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	ST_DrawNum (x, y, scrn, num);
 }
 
+void ST_nameDraw (int y)
+{
+	player_t *plyr = &displayplayer();
+
+	if (plyr == &consoleplayer())
+		return;
+	
+	char *string = plyr->userinfo.netname;
+	size_t x = (screen->width - V_StringWidth (string)*CleanXfac) >> 1;
+
+	if (level.time < NameUp)
+		screen->DrawTextClean (CR_GREEN, x, y, string);
+	else
+		screen->DrawTextCleanLuc (CR_GREEN, x, y, string);
+}
+
 void ST_newDraw (void)
 {
 	player_t *plyr = &consoleplayer();
@@ -361,20 +378,87 @@ void ST_newDrawCTF (void)
 	ST_DrawNumRight (screen->width - 20 * xscale, 20 * yscale, screen, TEAMpoints[TEAM_RED]);
 }
 
-void ST_nameDraw (int y)
+// [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
+void ST_odamexHudDraw (void)
 {
-	player_t *plyr = &displayplayer();
+	player_t *plyr = &consoleplayer();
+	int x, y, i;
+	ammotype_t ammo = weaponinfo[plyr->readyweapon].ammo;
+	int xscale = hud_scale ? CleanXfac : 1;
+	int yscale = hud_scale ? CleanYfac : 1;
 
-	if (plyr == &consoleplayer())
-		return;
-	
-	char *string = plyr->userinfo.netname;
-	size_t x = (screen->width - V_StringWidth (string)*CleanXfac) >> 1;
+	x = screen->width - 32 * xscale;
+	y = screen->height - (numheight + 4) * yscale;
 
-	if (level.time < NameUp)
-		screen->DrawTextClean (CR_GREEN, x, y, string);
+	// Draw Armor
+	if (plyr->armortype && plyr->armorpoints)
+	{
+		const patch_t *current_armor = armors[1];
+		if(plyr->armortype == 1)
+			current_armor = armors[0];
+		
+		if (current_armor)
+		{
+			//if (hud_scale)
+				screen->DrawPatchStretched (current_armor, 61*xscale, y - 14,(current_armor->width()*.75)*xscale,(current_armor->height()*.75)*yscale);
+			//else
+			//	screen->DrawLucentPatch (current_armor, 20, y - 4);
+		}
+		
+		ST_DrawNumRight (48*xscale, y-20*yscale, screen, plyr->armorpoints);
+	}
+
+	// Draw Health
+	ST_DrawNumRight (48*xscale, y, screen, plyr->health);
+
+	// Face widget time
+	//if (hud_scale)
+		screen->DrawPatchStretched(faces[st_faceindex],48*xscale,y-12,(faces[st_faceindex]->width()*.75)*xscale,(faces[st_faceindex]->height()*.75)*yscale);
+	//else
+	//	screen->DrawPatch(faces[st_faceindex],ST_FACESX*CleanXfac,168*CleanYfac);
+
+	// Draw ammo
+	if (ammo < NUMAMMO)
+	{
+		const patch_t *ammopatch = ammos[weaponinfo[plyr->readyweapon].ammo];
+
+		ST_DrawNumRight (screen->width-31*xscale, y, screen, plyr->ammo[ammo]);
+
+		if (hud_scale)
+			screen->DrawLucentPatchCleanNoMove (ammopatch,
+										  screen->width - 16 * xscale,
+										  screen->height - 4 * yscale);
+		else
+			screen->DrawLucentPatch (ammopatch, screen->width - 16,
+												screen->height - 4);
+	}
+
+	if (multiplayer)
+	{
+		// Show timer
+		HU_DisplayTimer(screen->width/2 - 30*xscale, y+(8*yscale));		
+	}
 	else
-		screen->DrawTextCleanLuc (CR_GREEN, x, y, string);
+	{
+		char line[32+10];
+		int time = level.time / TICRATE;
+
+		sprintf (line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
+		screen->DrawTextClean (CR_RED, screen->width/2 - 30*xscale, y+(8*yscale), line);
+	}
+	
+	char linetemp[16+10];
+	sprintf(linetemp, "33/50");
+	screen->DrawTextClean (CR_RED, x-((V_StringWidth(linetemp))*xscale), y-(16*yscale), linetemp);
+
+	char linetemp2[16+10];
+	sprintf(linetemp2, "+7");
+	screen->DrawTextClean (CR_GREEN, x-((V_StringWidth(linetemp2))*xscale), y-(24*yscale), linetemp2);
+}
+
+void ST_odamexHudDrawCTF (void)
+{
+
 }
 
 VERSION_CONTROL (st_new_cpp, "$Id$")

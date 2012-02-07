@@ -37,6 +37,7 @@
 #include "i_system.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <map>
 
 #include "m_alloc.h"
 
@@ -207,9 +208,9 @@ BOOL IsNum (char *str)
 	return result;
 }
 
-// [Russell] Returns 0 if strings are the same, optional parameter for case 
+// [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
-int StdStringCompare(const std::string &s1, const std::string &s2, 
+int StdStringCompare(const std::string &s1, const std::string &s2,
     bool CIS = false)
 {
 	// Convert to upper case
@@ -254,25 +255,84 @@ size_t StdStringRFind(const std::string& haystack, const std::string& needle,
     return StdStringFind(haystack, needle, pos, n, CIS, true);
 }
 
+static std::string& StdStringToLowerBase(std::string& lower)
+{
+	std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+	return lower;
+}
+
 std::string StdStringToLower(const std::string& str)
 {
-    std::string lower(str);
+	std::string lower(str);
+	return StdStringToLowerBase(lower);
+}
 
-    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+std::string StdStringToLower(const char* str)
+{
+	std::string lower(str);
+	return StdStringToLowerBase(lower);
+}
 
-    return lower;
+static std::string& StdStringToUpperBase(std::string& upper)
+{
+	std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+    return upper;
 }
 
 std::string StdStringToUpper(const std::string& str)
 {
-    std::string upper(str);
+	std::string upper(str);
+	return StdStringToUpperBase(upper);
+}
 
-    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+std::string StdStringToUpper(const char* str)
+{
+	std::string upper(str);
+	return StdStringToUpperBase(upper);
+}
 
-    return upper;
+
+class ReplacedStringTracker
+{
+	typedef std::map<const char *, bool> replacedStrings_t;
+	typedef replacedStrings_t:: iterator iterator;
+	replacedStrings_t rs;
+
+public:
+
+	void erase(const char *p)
+	{
+		iterator i = rs.find(p);
+		if(i != rs.end())
+		{
+			delete [] const_cast<char*>(i->first);
+			rs.erase(i);
+		}
+	}
+	void add(const char *p)
+	{
+		rs[p] = 1;
+	}
+
+	ReplacedStringTracker() : rs() {}
+	~ReplacedStringTracker()
+	{
+		for(iterator i = rs.begin(); i != rs.end(); ++i)
+			delete[] const_cast<char*>(i->first);
+	}
+}rst;
+
+
+void ReplaceString (const char **ptr, const char *str)
+{
+	if (*ptr)
+	{
+		if (*ptr == str)
+			return;
+		rst.erase(*ptr);
+	}
+	*ptr = copystring (str);
+	rst.add(*ptr);
 }
 
 VERSION_CONTROL (cmdlib_cpp, "$Id$")
-
-
-

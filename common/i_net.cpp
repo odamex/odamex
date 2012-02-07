@@ -235,11 +235,11 @@ void upnp_add_redir (const char * addr, int port)
     // Set a description if none exists
     if (!sv_upnp_description.cstring()[0])
     {
-        char desc[64];
+        std::stringstream desc;
 
-        snprintf(desc, sizeof(desc), "Odasrv (%s:%s)", addr, port_str);
+        desc << "Odasrv " << "(" << addr << ":" << port_str << ")" << std::endl;
 
-        sv_upnp_description.Set(desc);
+        sv_upnp_description.Set(desc.str().c_str());
     }
 
 	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
@@ -897,7 +897,6 @@ void InitNetMessageFormats()
       MSG(clc_kill,               "x"),
       MSG(clc_cheat,              "x"),
       MSG(clc_cheatpulse,         "x"),
-      MSG(clc_svgametic,          "b"),
       MSG(clc_launcher_challenge, "x"),
       MSG(clc_challenge,          "x")
    };
@@ -968,7 +967,9 @@ void InitNetMessageFormats()
 	MSG(svc_challenge,          "x"),
 	MSG(svc_connectclient,		"x"),
  	MSG(svc_midprint,           "x"),
- 	MSG(svc_svgametic,          "x")
+ 	MSG(svc_svgametic,          "x"),
+	MSG(svc_timeleft,			"x"),
+	MSG(svc_inttimeleft,		"x")
    };
 
    size_t i;

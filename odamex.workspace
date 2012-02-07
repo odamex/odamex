@@ -3,6 +3,7 @@
 	<Workspace title="odamex">
 		<Project filename="client/sdl/client.cbp" active="1">
 			<Depends filename="textscreen/textscreen.cbp" />
+			<Depends filename="portmidi/pm_common/portmidi-static.cbp" />
 		</Project>
 		<Project filename="server/win32/server.cbp">
 			<Depends filename="libminiupnpc/codeblocks/miniupnpc.cbp" />
@@ -11,5 +12,6 @@
 		<Project filename="odalaunch/odalaunch.cbp" />
 		<Project filename="textscreen/textscreen.cbp" />
 		<Project filename="libminiupnpc/codeblocks/miniupnpc.cbp" />
+		<Project filename="portmidi/pm_common/portmidi-static.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

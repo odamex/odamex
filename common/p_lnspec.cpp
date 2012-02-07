@@ -45,6 +45,7 @@
 // Used by the teleporters to know if they were
 // activated by walking across the backside of a line.
 int TeleportSide;
+extern bool HasBehavior;
 
 // Set true if this special was activated from inside a script.
 BOOL InScript;
@@ -692,7 +693,12 @@ FUNC(LS_Teleport)
 // Teleport (tid)
 {
 	if(!it) return false;
-	return EV_Teleport (arg0, TeleportSide, it);
+	BOOL result;
+	
+	if ((result = EV_Teleport (arg0, TeleportSide, it)) == false && !HasBehavior)
+		result = EV_LineTeleport (ln, TeleportSide, it);
+		
+	return result;
 }
 
 FUNC(LS_Teleport_NoFog)

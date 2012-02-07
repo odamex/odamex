@@ -46,6 +46,7 @@ sector_t*		backsector;
 int				doorclosed;
 
 bool			r_fakingunderwater;
+bool			r_underwater;
 
 int				MaxDrawSegs;
 drawseg_t		*drawsegs;
@@ -116,7 +117,7 @@ R_ClipSolidWallSegment
 	if(newend + 1 >= lastsolidseg)
 	{
 		// denis - out of solidsegs, this would crash vanilla
-		Printf(PRINT_HIGH, "warning: exceeded %d solidsegs\n", MaxSegs);
+		DPrintf("warning: exceeded %d solidsegs\n", MaxSegs);
 		if(MaxSegs >= 1024*1024)
 		{
 			// not that crazy, though
@@ -331,7 +332,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		const sector_t *s = sec->heightsec;
 		sector_t *heightsec = camera->subsector->sector->heightsec;
 
-		bool underwater = r_fakingunderwater || (heightsec && viewz <= heightsec->floorheight);
+		r_underwater = r_fakingunderwater || (heightsec && viewz <= heightsec->floorheight);
 
 		int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
 
@@ -370,12 +371,12 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 		// Replace floor and ceiling height with other sector's heights.
 
-		if (underwater && /*viewz <= s->floorheight &&*/ s->floorheight > sec->floorheight)
+		if (r_underwater && /*viewz <= s->floorheight &&*/ s->floorheight > sec->floorheight)
 		{
 			tempsec->floorheight = sec->floorheight;
 			tempsec->ceilingheight = s->floorheight-1;
 			tempsec->floorcolormap = s->floorcolormap;
-			tempsec->ceilingcolormap = s->ceilingcolormap;			
+			tempsec->ceilingcolormap = s->ceilingcolormap;
 		}
 
 		// Code for ZDoom. Allows the effect to be visible outside sectors with
@@ -383,7 +384,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		// isn't always appropriate (which it isn't).
 		// [ML] Actually it's pretty appropriate, the boom way is deficient and 
 		//  has been removed.
-		if ((underwater && !back) && (/*viewz <= s->floorheight &&*/ s->floorheight > sec->floorheight))
+		if ((r_underwater && !back) && (/*viewz <= s->floorheight &&*/ s->floorheight > sec->floorheight))
 		{
 			tempsec->floorpic = diffTex ? sec->floorpic : s->floorpic;
 			tempsec->floor_xoffs = s->floor_xoffs;
@@ -396,6 +397,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 			tempsec->ceilingheight = s->floorheight - 1;
 			tempsec->ceilingcolormap = s->ceilingcolormap;
+			tempsec->floorcolormap = s->floorcolormap;
 			if (s->ceilingpic == skyflatnum)
 			{
 				tempsec->floorheight   = tempsec->ceilingheight+1;

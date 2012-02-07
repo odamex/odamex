@@ -23,7 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include "doomdef.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "d_main.h"
@@ -49,6 +49,7 @@
 #include "c_bind.h"
 
 #include "gi.h"
+#include "m_memio.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -488,7 +489,7 @@ oldmenu_t SaveDef =
 // through console commands.
 BEGIN_COMMAND (menu_main)
 {
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SetupNextMenu (&MainDef);
 }
@@ -497,7 +498,7 @@ END_COMMAND (menu_main)
 BEGIN_COMMAND (menu_help)
 {
     // F1
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_ReadThis(0);
 }
@@ -506,7 +507,7 @@ END_COMMAND (menu_help)
 BEGIN_COMMAND (menu_save)
 {
     // F2
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SaveGame (0);
 	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
@@ -516,7 +517,7 @@ END_COMMAND (menu_save)
 BEGIN_COMMAND (menu_load)
 {
     // F3
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_LoadGame (0);
 	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
@@ -526,7 +527,7 @@ END_COMMAND (menu_load)
 BEGIN_COMMAND (menu_options)
 {
     // F4
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
     M_StartControlPanel ();
 	M_Options(0);
 }
@@ -535,7 +536,7 @@ END_COMMAND (menu_options)
 BEGIN_COMMAND (quicksave)
 {
     // F6
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickSave ();
 	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
@@ -544,7 +545,7 @@ END_COMMAND (quicksave)
 
 BEGIN_COMMAND (menu_endgame)
 {	// F7
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_EndGame(0);
 }
@@ -553,7 +554,7 @@ END_COMMAND (menu_endgame)
 BEGIN_COMMAND (quickload)
 {
     // F9
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickLoad ();
 	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
@@ -562,7 +563,7 @@ END_COMMAND (quickload)
 
 BEGIN_COMMAND (menu_quit)
 {	// F10
-	S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuitDOOM(0);
 }
@@ -570,7 +571,7 @@ END_COMMAND (menu_quit)
 
 BEGIN_COMMAND (menu_player)
 {
-    S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+    S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_PlayerSetup(0);
 }
@@ -630,7 +631,7 @@ void M_ReadSaveStrings(void)
 		handle = fopen (name.c_str(), "rb");
 		if (handle == NULL)
 		{
-			strcpy (&savegamestrings[i][0], EMPTYSTRING);
+			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
 			LoadMenu[i].status = 0;
 		}
 		else
@@ -778,7 +779,7 @@ void M_SaveGame (int choice)
 
 	if (!usergame)
 	{
-		M_StartMessage(SAVEDEAD,NULL,false);
+		M_StartMessage(GStrings(SAVEDEAD),NULL,false);
 		M_ClearMenus ();
 		return;
 	}
@@ -803,7 +804,7 @@ void M_QuickSaveResponse(int ch)
 	if (ch == 'y' || ch == KEY_JOY4)
 	{
 		M_DoSave (quickSaveSlot);
-		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 	}
 }
 
@@ -811,14 +812,14 @@ void M_QuickSave(void)
 {
 	if (multiplayer)
 	{
-		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
 		M_ClearMenus ();
 		return;
 	}
 
 	if (!usergame)
 	{
-		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
 		M_ClearMenus ();
 		return;
 	}
@@ -834,7 +835,7 @@ void M_QuickSave(void)
 		quickSaveSlot = -2; 	// means to pick a slot now
 		return;
 	}
-	sprintf (tempstring, QSPROMPT, savegamestrings[quickSaveSlot]);
+	sprintf (tempstring, GStrings(QSPROMPT), savegamestrings[quickSaveSlot]);
 	M_StartMessage (tempstring, M_QuickSaveResponse, true);
 }
 
@@ -850,7 +851,7 @@ void M_QuickLoadResponse(int ch)
 	if (ch == 'y' || ch == KEY_JOY4)
 	{
 		M_LoadSelect(quickSaveSlot);
-		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 	}
 }
 
@@ -869,7 +870,7 @@ void M_QuickLoad(void)
 		M_LoadGame (0);
 		return;
 	}
-	sprintf(tempstring,QLPROMPT,savegamestrings[quickSaveSlot]);
+	sprintf(tempstring,GStrings(QLPROMPT),savegamestrings[quickSaveSlot]);
 	M_StartMessage(tempstring,M_QuickLoadResponse,true);
 }
 
@@ -1002,7 +1003,7 @@ void M_ChooseSkill(int choice)
 {
 	if (choice == nightmare)
 	{
-		M_StartMessage(NIGHTMARE,M_VerifyNightmare,true);
+		M_StartMessage(GStrings(NIGHTMARE),M_VerifyNightmare,true);
 		return;
 	}
 
@@ -1013,7 +1014,7 @@ void M_Episode (int choice)
 {
 	if ((gameinfo.flags & GI_SHAREWARE) && choice)
 	{
-		M_StartMessage(SWSTRING,NULL,false);
+		M_StartMessage(GStrings(SWSTRING),NULL,false);
 		//M_SetupNextMenu(&ReadDef1);
 		M_ClearMenus ();
 		return;
@@ -1085,11 +1086,11 @@ void M_EndGame(int choice)
 	choice = 0;
 	if (!usergame)
 	{
-		S_Sound (CHAN_VOICE, "player/male/grunt1", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
 		return;
 	}
 
-	M_StartMessage((multiplayer ? NETEND : ENDGAME), M_EndGameResponse, true);
+	M_StartMessage(GStrings(multiplayer ? NETEND : ENDGAME), M_EndGameResponse, true);
 }
 
 //
@@ -1109,8 +1110,8 @@ void M_QuitResponse(int ch)
 	{
 		if (gameinfo.quitSounds)
 		{
-			S_Sound (CHAN_VOICE, gameinfo.quitSounds[(gametic>>2)&7],
-				1, ATTN_SURROUND);
+			S_Sound(CHAN_INTERFACE,
+					gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}
@@ -1122,14 +1123,12 @@ void M_QuitResponse(int ch)
 
 void M_QuitDOOM (int choice)
 {
-  // We pick index 0 which is language sensitive,
-  //  or one at random, between 1 and maximum number.
-  if (language != english )
-	sprintf(endstring,"%s\n\n%s", endmsg[0], DOSY );
-  else
-	sprintf(endstring,"%s\n\n%s", endmsg[ (gametic%(NUM_QUITMESSAGES-2))+1 ], DOSY);
+	// We pick index 0 which is language sensitive,
+	//  or one at random, between 1 and maximum number.
+	sprintf (endstring, "%s\n\n%s",
+		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
 
-  M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring,M_QuitResponse,true);
 }
 
 
@@ -1549,7 +1548,7 @@ static void M_EditPlayerName (int choice)
 
 	saveSlot = 0;
 	strcpy(saveOldString,savegamestrings[0]);
-	if (!strcmp(savegamestrings[0],EMPTYSTRING))
+	if (!strcmp(savegamestrings[0],GStrings(EMPTYSTRING)))
 		savegamestrings[0][0] = 0;
 	saveCharIndex = strlen(savegamestrings[0]);
 }
@@ -1838,7 +1837,7 @@ bool M_Responder (event_t* ev)
 			messageRoutine(ch2);
 
 		menuactive = false;
-		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 		return true;
 	}
 
@@ -1894,7 +1893,7 @@ bool M_Responder (event_t* ev)
 					itemOn = itemOn + 2;
 				else	itemOn++;
 			}
-			S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
@@ -1911,7 +1910,7 @@ bool M_Responder (event_t* ev)
 					itemOn = itemOn - 2;
 				else itemOn--;
 			}
-			S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		} while(currentMenu->menuitems[itemOn].status==-1);
 		return true;
 
@@ -1920,7 +1919,7 @@ bool M_Responder (event_t* ev)
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{
-			S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			currentMenu->menuitems[itemOn].routine(0);
 		}
 		return true;
@@ -1930,7 +1929,7 @@ bool M_Responder (event_t* ev)
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{
-			S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			currentMenu->menuitems[itemOn].routine(1);
 		}
 		return true;
@@ -1944,12 +1943,12 @@ bool M_Responder (event_t* ev)
 			if (currentMenu->menuitems[itemOn].status == 2)
 			{
 				currentMenu->menuitems[itemOn].routine(1);		// right arrow
-				S_Sound (CHAN_VOICE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 			}
 			else
 			{
 				currentMenu->menuitems[itemOn].routine(itemOn);
-				S_Sound (CHAN_VOICE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 			}
 		}
 		return true;
@@ -1969,14 +1968,14 @@ bool M_Responder (event_t* ev)
 				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
 				{
 					itemOn = i;
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 					return true;
 				}
 			for (i = 0;i <= itemOn;i++)
 				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
 				{
 					itemOn = i;
-					S_Sound (CHAN_VOICE, "plats/pt1_stop", 1, ATTN_NONE);
+					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 					return true;
 				}
 		}
@@ -2129,10 +2128,10 @@ void M_PopMenuStack (void)
 		}
 		drawSkull = MenuStack[MenuStackDepth].drawSkull;
 		MenuStackDepth++;
-		S_Sound (CHAN_VOICE, "switches/normbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	} else {
 		M_ClearMenus ();
-		S_Sound (CHAN_VOICE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 	}
 }
 
@@ -2206,6 +2205,27 @@ void M_Init (void)
 	for (i = 0; i < 255; i++)
 		FireRemap[i] = BestColor (DefaultPalette->basecolors, i, 0, 0, DefaultPalette->numcolors);
 }
+
+//
+// M_FindCvarInMenu
+//
+// Takes an array of menu items and returns the index in the array of the
+// menu item containing that cvar.  Returns MAXINT if not found.
+//
+size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
+{
+	if (menu)
+	{
+    	for (size_t i = 0; i < length; i++)
+    	{
+        	if (menu[i].a.cvar == &cvar)
+            	return i;
+    	}
+	}
+
+    return MAXINT;    // indicate not found
+}
+
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
 

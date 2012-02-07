@@ -25,6 +25,7 @@
 #ifndef __D_NETINFO_H__
 #define __D_NETINFO_H__
 
+#include "doomdef.h"
 #include "c_cvars.h"
 
 #define MAXPLAYERNAME	15
@@ -50,8 +51,18 @@ enum team_t
 	TEAM_NONE
 };
 
+enum weaponswitch_t
+{
+	WPSW_NEVER,
+	WPSW_ALWAYS,
+	WPSW_PWO,
+
+	WPSW_NUMTYPES
+};
+
 struct userinfo_s
 {
+	int				next_change_time;
 	char			netname[MAXPLAYERNAME+1];
 	team_t			team; // [Toke - Teams] 
 	fixed_t			aimdist;
@@ -61,7 +72,19 @@ struct userinfo_s
 	unsigned int	skin;
 	gender_t		gender;
 
-	userinfo_s() : team(TEAM_NONE), aimdist(0), unlag(true), update_rate(2), color(0), skin(0), gender(GENDER_MALE) { *netname = 0; }
+	weaponswitch_t	switchweapon;
+	weapontype_t	weapon_prefs[NUMWEAPONS];
+
+	userinfo_s() :
+		next_change_time(0),
+		team(TEAM_NONE), aimdist(0), unlag(true), update_rate(2), color(0),
+		skin(0), gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
+ 	{
+		*netname = 0;
+
+		// default doom weapon ordering when player runs out of ammo
+		memcpy(weapon_prefs, default_weaponprefs, sizeof(weapon_prefs));
+	}
 };
 typedef userinfo_s userinfo_t;
 

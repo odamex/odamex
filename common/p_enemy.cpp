@@ -23,7 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include <math.h>
 #include "m_random.h"
 #include "m_alloc.h"
 #include "i_system.h"
@@ -927,6 +927,42 @@ void A_FaceTarget (AActor *actor)
 		actor->angle += P_RandomDiff(actor)<<21;
 }
 
+//
+// [RH] A_MonsterRail
+//
+// New function to let monsters shoot a railgun
+//
+void A_MonsterRail (AActor *actor)
+{
+	if (!actor->target)
+		return;
+
+	actor->flags &= ~MF_AMBUSH;
+
+	actor->angle = R_PointToAngle2 (actor->x,
+									actor->y,
+									actor->target->x,
+									actor->target->y);
+
+	//actor->pitch = tantoangle[P_AimLineAttack (actor, actor->angle, MISSILERANGE) >> DBITS];
+	actor->pitch = -(int)(tan ((float)P_AimLineAttack (actor, actor->angle, MISSILERANGE)/65536.0f)*ANG180/PI);
+
+	// Let the aim trail behind the player
+	actor->angle = R_PointToAngle2 (actor->x,
+									actor->y,
+									actor->target->x - actor->target->momx * 3,
+									actor->target->y - actor->target->momy * 3);
+
+	if (actor->target->flags & MF_SHADOW)
+    {
+		int t = P_Random(actor);
+		actor->angle += (t-P_Random(actor))<<21;
+    }
+
+	P_RailAttack (actor, actor->info->damage, 0);
+}
+
+//
 //
 // A_PosAttack
 //
@@ -1943,13 +1979,13 @@ void P_SpawnBrainTargets (void)	// killough 3/26/98: renamed old function
 void A_BrainAwake (AActor *mo)
 {
 	// killough 3/26/98: only generates sound now
-	S_Sound (mo, CHAN_VOICE, "brain/sight", 1, ATTN_SURROUND);
+	S_Sound (mo, CHAN_VOICE, "brain/sight", 1, ATTN_NONE);
 }
 
 
 void A_BrainPain (AActor *mo)
 {
-	S_Sound (mo, CHAN_VOICE, "brain/pain", 1, ATTN_SURROUND);
+	S_Sound (mo, CHAN_VOICE, "brain/pain", 1, ATTN_NONE);
 }
 
 
@@ -1977,7 +2013,7 @@ void A_BrainScream (AActor *mo)
 			th->tics = 1;
 	}
 
-	S_Sound (mo, CHAN_VOICE, "brain/death", 1, ATTN_SURROUND);
+	S_Sound (mo, CHAN_VOICE, "brain/death", 1, ATTN_NONE);
 }
 
 
@@ -2040,7 +2076,7 @@ void A_BrainSpit (AActor *mo)
 			((targ->y - mo->y)/newmobj->momy) / newmobj->state->tics;
 	}
 
-	S_Sound (mo, CHAN_WEAPON, "brain/spit", 1, ATTN_SURROUND);
+	S_Sound (mo, CHAN_WEAPON, "brain/spit", 1, ATTN_NONE);
 }
 
 

@@ -11,10 +11,10 @@ proc main {} {
 
  # run av.wad demo1
  client "wad doom2.wad av.wad"
- wait 1
+ wait 4
  clear
  client "playdemo demo1"
- wait 4
+ wait 10
 
  gets $clientout
  gets $clientout
@@ -25,10 +25,10 @@ proc main {} {
  
  # run doom1.wad demo1
  client "wad doom1.wad"
- wait 1
+ wait 4
  clear
  client "playdemo demo1"
- wait 8
+ wait 10
 
  gets $clientout
  gets $clientout

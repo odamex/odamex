@@ -29,8 +29,9 @@
 #include "doomdef.h"
 #include "m_fixed.h"
 
-#define NUM_MAPVARS				32
-#define NUM_WORLDVARS			64
+#define NUM_MAPVARS				128
+#define NUM_WORLDVARS			256
+#define NUM_GLOBALVARS			64
 
 #define LEVEL_NOINTERMISSION	0x00000001
 #define	LEVEL_DOUBLESKY			0x00000004
@@ -63,6 +64,7 @@
 #define LEVEL_VISITED			0x80000000		// Used for intermission map
 
 struct acsdefered_s;
+class FBehavior;
 
 struct level_info_s {
 	char		mapname[9];
@@ -103,7 +105,7 @@ struct level_pwad_info_s
 	char		fadetable[8];
 	DWORD		outsidefog;
 	float		gravity;
-	float		aircontrol;	
+	float		aircontrol;
 };
 typedef struct level_pwad_info_s level_pwad_info_t;
 
@@ -112,6 +114,8 @@ struct level_locals_s {
 	int			time;
 	int			starttime;
 	int			partime;
+	int			timeleft;
+	unsigned int	inttimeleft;
 
 	level_info_t *info;
 	int			cluster;
@@ -137,16 +141,14 @@ struct level_locals_s {
 
 	int			total_monsters;
 	int			killed_monsters;
-	
+
 	float		gravity;
 	fixed_t		aircontrol;
-	fixed_t		airfriction;	
-	
+	fixed_t		airfriction;
+
 	// The following are all used for ACS scripting
-	byte		*behavior;
-	int			*scripts;
-	int			*strings;
-	SDWORD		vars[NUM_MAPVARS];	
+	FBehavior	*behavior;
+	SDWORD		vars[NUM_MAPVARS];
 };
 typedef struct level_locals_s level_locals_t;
 
@@ -168,7 +170,8 @@ extern level_locals_t level;
 extern level_info_t LevelInfos[];
 extern cluster_info_t ClusterInfos[];
 
-extern int WorldVars[NUM_WORLDVARS];
+extern int ACS_WorldVars[NUM_WORLDVARS];
+extern int ACS_GlobalVars[NUM_GLOBALVARS];
 
 extern BOOL savegamerestore;
 extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
@@ -199,6 +202,7 @@ level_info_t *FindLevelByNum (int num);
 char *CalcMapName (int episode, int level);
 
 void G_ParseMapInfo (void);
+void G_ParseMusInfo (void);
 
 void G_ClearSnapshots (void);
 void G_SnapshotLevel (void);

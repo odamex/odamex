@@ -38,21 +38,12 @@
 
 #include <algorithm>
 
-#define SELECT_ATTEN(a)			((a)==ATTN_NONE ? 0 : (a)==ATTN_SURROUND ? -1 : \
-								 (a)==ATTN_STATIC ? 3 : 1)
-
 #define NORM_PITCH				128
 #define NORM_PRIORITY			64
 #define NORM_SEP				128
 
 #define S_PITCH_PERTURB 		1
 #define S_STEREO_SWING			(96<<FRACBITS)
-
-// [RH] Hacks for pitch variance
-int sfx_sawup, sfx_sawidl, sfx_sawful, sfx_sawhit;
-int sfx_itemup, sfx_tink;
-
-int sfx_plasma, sfx_chngun, sfx_chainguy, sfx_empty;
 
 fixed_t P_AproxDistance2 (fixed_t *listener, fixed_t x, fixed_t y)
 {
@@ -101,75 +92,53 @@ void S_Start (void)
 {
 }
 
-static void S_StartSound (fixed_t *pt, fixed_t x, fixed_t y, int channel,
-						  int sound_id, float volume, float attenuation, BOOL looping)
-{
-}
-
 void S_SoundID (int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound ((fixed_t *)NULL, 0, 0, channel, sound_id, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_SoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_SoundID (fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound (pt, 0, 0, channel, sound_id, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_LoopedSoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, SELECT_ATTEN(attenuation), true);
 }
 
 void S_LoopedSoundID (fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
-{
-	S_StartSound (pt, 0, 0, channel, sound_id, volume, SELECT_ATTEN(attenuation), true);
-}
-
-static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel, 
-							   const char *name, float volume, float attenuation, BOOL looping)
 {
 }
 
 // [Russell] - Hack to stop multiple plat stop sounds
 void S_PlatSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_Sound (int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound (NULL, NULL, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_Sound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_LoopedSound (AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), true);
 }
 
 void S_LoopedSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, SELECT_ATTEN(attenuation), true);
 }
 
 void S_Sound (fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation)
 {
-	//S_StartNamedSound ((AActor *)(~0), NULL, x, y, channel, name, volume, SELECT_ATTEN(attenuation), false);
 }
 
 void S_StopSound (fixed_t *pt)
@@ -219,6 +188,10 @@ void S_ResumeSound (void)
 // Updates music & sounds
 //
 void S_UpdateSounds (void *listener_p)
+{
+}
+
+void S_UpdateMusic()
 {
 }
 
@@ -482,19 +455,6 @@ void S_ParseSndInfo (void)
 		}
 	}
 	S_HashSounds ();
-
-	// [RH] Hack for pitch varying
-	sfx_sawup = S_FindSound ("weapons/sawup");
-	sfx_sawidl = S_FindSound ("weapons/sawidle");
-	sfx_sawful = S_FindSound ("weapons/sawfull");
-	sfx_sawhit = S_FindSound ("weapons/sawhit");
-	sfx_itemup = S_FindSound ("misc/i_pkup");
-	sfx_tink = S_FindSound ("misc/chat2");
-
-	sfx_plasma = S_FindSound ("weapons/plasmaf");
-	sfx_chngun = S_FindSound ("weapons/chngun");
-	sfx_chainguy = S_FindSound ("chainguy/attack");
-	sfx_empty = W_CheckNumForName ("dsempty");
 }
 
 void A_Ambient (AActor *actor)

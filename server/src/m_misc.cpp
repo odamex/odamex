@@ -18,6 +18,7 @@
 //
 // DESCRIPTION:
 //		Default Config File.
+//		1/5/12: JSON File Functions
 //
 //-----------------------------------------------------------------------------
 
@@ -30,15 +31,17 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "i_system.h"
 #include "version.h"
+#include "sv_main.h"
 #include "sv_master.h"
 
 
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
 // put into newer configfiles.
-static CVAR (configver, CONFIGVERSIONSTR, "", CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+static CVAR (configver, CONFIGVERSIONSTR, "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // [RH] Get configfile path.
 // This file contains commands to set all
@@ -67,8 +70,9 @@ void STACK_ARGS M_SaveDefaults (void)
 
 	if (!DefaultsLoaded)
 		return;
-
-	std::string configfile = GetConfigPath();
+	
+	// [ML] Always save to the default.
+	std::string configfile = I_GetUserFileName ("odasrv.cfg");
 
 	// Make sure the user hasn't changed configver
 	configver.Set(CONFIGVERSIONSTR);
@@ -125,6 +129,53 @@ void M_LoadDefaults (void)
 	atterm (M_SaveDefaults);
 }
 
+// JSON Utility Functions (based on those from EECS)
+
+// Reads a file in JSON format
+bool M_ReadJSON(Json::Value &json, const char *filename) {
+	byte *buffer = NULL;
+	std::string data;
+	Json::Reader reader;
+
+	if (!(M_FileExists(filename))) {
+		return false;
+	}
+
+	if (!M_ReadFile(filename, &buffer)) {
+		return false;
+	}
+	data = (char *)buffer;
+
+	if (!reader.parse(data, json)) {
+		Printf(PRINT_HIGH,"M_ReadJSONFromFile: Error parsing JSON: %s.\n",
+				reader.getFormattedErrorMessages().c_str());
+		return false;
+	}
+
+	return true;
+}
+
+// Writes a file in JSON format.  Third param is true if the output
+// should be pretty-printed.
+bool M_WriteJSON(const char *filename, Json::Value &value, bool styled) {
+	std::ofstream out_file;
+	Json::FastWriter fast_writer;
+	Json::StyledWriter styled_writer;
+
+	out_file.open(filename);
+
+	if (styled) {
+		out_file << styled_writer.write(value);
+	} else {
+		out_file << fast_writer.write(value);
+	}
+
+	out_file.close();
+
+	if (out_file.fail()) {
+		return false;
+	}
+	return true;
+}
+
 VERSION_CONTROL (m_misc_cpp, "$Id$")
-
-

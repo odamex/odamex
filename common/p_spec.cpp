@@ -34,7 +34,7 @@
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 
 #include "i_system.h"
 #include "z_zone.h"
@@ -46,6 +46,7 @@
 #include "r_local.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "p_acs.h"
 
 #include "g_game.h"
 
@@ -193,7 +194,7 @@ static void P_InitAnimDefs (void)
 		readingtexture,
 		warp
 	} state = limbo, newstate = limbo;
-	int frame, min, max;
+	int frame = 0, min = 0, max = 0;
 	char name[9];
 
 	if (lump >= 0)
@@ -293,7 +294,7 @@ static void P_InitAnimDefs (void)
 					name[8] = 0;
 				}
 
-				state = (newstate == newflat) ? readingflat : 
+				state = (newstate == newflat) ? readingflat :
 						(newstate == newtexture) ? readingtexture : limbo;
 				newstate = limbo;
 			}
@@ -353,10 +354,10 @@ void P_InitPicAnims (void)
 		lastanim = 0;
 		maxanims = 0;
 	}
-	
+
 	// [RH] Load an ANIMDEFS lump first
 	P_InitAnimDefs ();
-	
+
 	if (W_CheckNumForName ("ANIMATED") == -1)
 		return;
 
@@ -939,8 +940,8 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 
 	if (!p)
 		return false;
-    
-	const char *msg = NULL;
+
+	int msg = 0;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
 
@@ -1021,12 +1022,12 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
 		else
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
-		C_MidPrint (msg, p);
+		C_MidPrint (GStrings(msg), p);
 	}
 
-	if (serverside && network_game && msg != NULL)
+	if (serverside && network_game && msg)
 	{
-		C_MidPrint (msg, p);
+		C_MidPrint (GStrings(msg), p);
 	}
 
 	return false;
@@ -1063,7 +1064,7 @@ P_CrossSpecialLine
 		    if (!(GET_SPAC(line->flags) == SPAC_CROSS)
                 && !(GET_SPAC(line->flags) == SPAC_MCROSS))
                 return;
-			
+
 			// Things that should NOT trigger specials...
 			switch(thing->type)
 			{
@@ -1078,7 +1079,7 @@ P_CrossSpecialLine
 
 				default: break;
 			}
-            
+
             // This breaks the ability for the eyes to activate the silent teleporter lines
             // in boomedit.wad, but without it vanilla demos break.
             switch (line->special)
@@ -1087,20 +1088,20 @@ P_CrossSpecialLine
 				case Teleport_NoFog:
 				case Teleport_Line:
 				break;
-				                
+
                 default:
                     if(!(line->flags & ML_MONSTERSCANACTIVATE))
-                        return;                
+                        return;
                 break;
             }
 
 		}
 		else
 		{
-		    if (!(GET_SPAC(line->flags) == SPAC_CROSS) && 
+		    if (!(GET_SPAC(line->flags) == SPAC_CROSS) &&
                 !(GET_SPAC(line->flags) == SPAC_CROSSTHROUGH))
                 return;
-                
+
 			// Likewise, player should not trigger monster lines
 			if(GET_SPAC(line->flags) == SPAC_MCROSS)
 				return;
@@ -1139,7 +1140,7 @@ P_CrossSpecialLine
 			}
 		}
 	}
-	
+
 	TeleportSide = side;
 
 	LineSpecials[line->special] (line, thing, line->args[0],
@@ -1171,7 +1172,7 @@ P_ShootSpecialLine
 		if (!thing->player && !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
-	
+
 	//TeleportSide = side;
 
 	LineSpecials[line->special] (line, thing, line->args[0],
@@ -1244,7 +1245,7 @@ P_UseSpecialLine
 				return false;
 		}
 	}
-	
+
     TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
@@ -1306,7 +1307,7 @@ P_PushSpecialLine
 				return false;
 		}
 	}
-	
+
     TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
@@ -1516,8 +1517,8 @@ CVAR_FUNC_IMPL (sv_forcewater)
 
 		for (i = 0; i < numsectors; i++)
 		{
-			if (sectors[i].heightsec && 
-				!(sectors[i].heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) && 
+			if (sectors[i].heightsec &&
+				!(sectors[i].heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 				sectors[i].heightsec->waterzone != 1)
 
 				sectors[i].heightsec->waterzone = set;
@@ -1682,7 +1683,7 @@ void P_SpawnSpecials (void)
 		// support for drawn heights coming from different sector
 		case Transfer_Heights:
 			sec = sides[*lines[i].sidenum].sector;
-			DPrintf("Sector tagged %d: TransferHeights \n",sec->tag);			
+			DPrintf("Sector tagged %d: TransferHeights \n",sec->tag);
 			if (sv_forcewater)
 			{
 				sec->waterzone = 2;
@@ -1694,28 +1695,28 @@ void P_SpawnSpecials (void)
 			if (lines[i].args[1] & 4)
 			{
 				sec->MoreFlags |= SECF_CLIPFAKEPLANES;
-				DPrintf("Sector tagged %d: CLIPFAKEPLANES \n",sec->tag);				
+				DPrintf("Sector tagged %d: CLIPFAKEPLANES \n",sec->tag);
 			}
 			if (lines[i].args[1] & 8)
 			{
 				sec->waterzone = 1;
-				DPrintf("Sector tagged %d: Sets waterzone=1 \n",sec->tag);				
+				DPrintf("Sector tagged %d: Sets waterzone=1 \n",sec->tag);
 			}
 			if (lines[i].args[1] & 16)
 			{
 				sec->MoreFlags |= SECF_IGNOREHEIGHTSEC;
-				DPrintf("Sector tagged %d: IGNOREHEIGHTSEC \n",sec->tag);				
+				DPrintf("Sector tagged %d: IGNOREHEIGHTSEC \n",sec->tag);
 			}
 			if (lines[i].args[1] & 32)
 			{
 				sec->MoreFlags |= SECF_NOFAKELIGHT;
-				DPrintf("Sector tagged %d: NOFAKELIGHTS \n",sec->tag);				
+				DPrintf("Sector tagged %d: NOFAKELIGHTS \n",sec->tag);
 			}
 			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 			{
 				sectors[s].heightsec = sec;
 			}
-			
+
 			DPrintf("Sector tagged %d: MoreFlags: %u \n",sec->tag,sec->MoreFlags);
 			break;
 
@@ -1778,8 +1779,12 @@ void P_SpawnSpecials (void)
 			break;
 		}
 
+
 	// [RH] Start running any open scripts on this map
-	P_StartOpenScripts ();
+	if (level.behavior != NULL)
+	{
+		level.behavior->StartTypedScripts (SCRIPT_Open, NULL);
+	}
 }
 
 // killough 2/28/98:

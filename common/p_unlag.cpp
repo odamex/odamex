@@ -39,7 +39,13 @@
 #include "vectors.h"
 #include "r_main.h"
 #include "p_unlag.h"
+#include "p_local.h"
 
+#ifdef _UNLAG_DEBUG_
+#include <list>
+void SV_SpawnMobj(AActor *mo);
+void SV_SendDestroyActor(AActor *mo);
+#endif	// _UNLAG_DEBUG_
 
 EXTERN_CVAR(sv_unlag)
 
@@ -138,8 +144,7 @@ void Unlag::reconcilePlayerPositions(byte shooter_id, size_t ticsago)
 			player_history[i].backup_y = player->mo->y;
 			player_history[i].backup_z = player->mo->z;
   
-			size_t cur = (player_history[i].history_size - 1 - ticsago)
-						  % Unlag::MAX_HISTORY_TICS;
+  			size_t cur = (gametic - ticsago) % Unlag::MAX_HISTORY_TICS;
 
 			dest_x = player_history[i].history_x[cur];
 			dest_y = player_history[i].history_y[cur];
@@ -153,6 +158,14 @@ void Unlag::reconcilePlayerPositions(byte shooter_id, size_t ticsago)
 				player->mo->flags &= ~(MF_SHOOTABLE | MF_SOLID);
 				player_history[i].changed_flags = true;
 			}
+
+			#ifdef _UNLAG_DEBUG_
+			// spawn a marker sprite at the reconciled position for debugging
+	        AActor *mo = new AActor(dest_x, dest_y, dest_z, MT_KEEN);
+			mo->flags &= ~(MF_SHOOTABLE | MF_SOLID);
+			mo->health = -187;
+			SV_SpawnMobj(mo);
+			#endif // _UNLAG_DEBUG_
 		}
 		else
 		{   // we're moving the player back to proper position
@@ -213,7 +226,6 @@ void Unlag::reconcileSectorPositions(size_t ticsago)
 }
 
 
-
 //
 // Unlag::reset
 //
@@ -248,14 +260,23 @@ void Unlag::recordPlayerPositions()
 		if (player->playerstate == PST_LIVE && 
 			!player->spectator && player->mo)
 		{
-			size_t cur = player_history[i].history_size++ 
-						 % Unlag::MAX_HISTORY_TICS;
+			player_history[i].history_size++;
+			
+			size_t cur = gametic % Unlag::MAX_HISTORY_TICS;
 			player_history[i].history_x[cur] = player->mo->x;
 			player_history[i].history_y[cur] = player->mo->y;
 			player_history[i].history_z[cur] = player->mo->z;
+			
+			#ifdef _UNLAG_DEBUG_
+			DPrintf("Unlag (%03d): recording player %d position (%d, %d)\n",
+					gametic & 0xFF, player->id, 
+					player->mo->x >> FRACBITS,
+					player->mo->y >> FRACBITS,
+					player->mo->z >> FRACBITS);
+			#endif	// _UNLAG_DEBUG_			
 		} 
 		else
-		{   // reset history for all dead, spectating, etc players
+		{   // reset history for dead, spectating, etc players
 			player_history[i].history_size = 0;
 		}
 	}
@@ -263,7 +284,7 @@ void Unlag::recordPlayerPositions()
 
 
 //
-// Unlag;:recordSectorPositions()
+// Unlag::recordSectorPositions()
 //
 // Saves the current ceiling and floor heights of all movable sectors
 //
@@ -441,6 +462,34 @@ void Unlag::reconcile(byte shooter_id)
 		return;
 
 	size_t lag = player_history[player_index].current_lag;
+	
+	#ifdef _UNLAG_DEBUG_
+	DPrintf("Unlag (%03d): moving players to their positions at gametic %d (%d tics ago)\n",
+			gametic & 0xFF, (gametic - lag) & 0xFF, lag);
+
+	// remove any other debugging player markers
+	AActor *mo;
+	std::list<AActor*> to_destroy;
+	TThinkerIterator<AActor> iterator;
+	while ( (mo = iterator.Next() ) )
+	{
+		if (mo->type == MT_KEEN && mo->health == -187)
+			to_destroy.push_back(mo);
+	}
+
+	while (!to_destroy.empty())
+	{
+		mo = to_destroy.front();
+		to_destroy.pop_front();
+		if (mo)
+			mo->Destroy();
+	}
+	
+	if (lag > Unlag::MAX_HISTORY_TICS)
+		DPrintf("Unlag (%03d): player %d has too great of lag (%d tics)\n",
+				gametic & 0xFF, shooter_id, lag);
+	#endif	// _UNLAG_DEBUG_
+
 	if (lag > 0 && lag <= Unlag::MAX_HISTORY_TICS) 
 	{
 		reconcileSectorPositions(lag);
@@ -468,6 +517,10 @@ void Unlag::restore(byte shooter_id)
 		reconcilePlayerPositions(shooter_id, 0);
 		reconciled = false;	 // reset after restoring original positions
 	}
+	
+	#ifdef _UNLAG_DEBUG_
+	debugReconciliation(shooter_id);
+	#endif	// _UNLAG_DEBUG_
 }
 
 
@@ -475,21 +528,27 @@ void Unlag::restore(byte shooter_id)
 // Unlag::setRoundtripDelay
 //
 // Sets the current_lag member variable for this particular player based on
-// the delay for the server to ping the client and receive a reply.  Since
-// lag can spike/have sudden changes, we only care about this value at the time
-// a player fires a weapon.  Note: delay is measured in tics
-//
+// the time it takes a message from the server to reach the client and the
+// reply to be received.  Since lag can spike/have sudden changes, we only
+// care about this value at the time a player fires a weapon.  The parameter
+// svgametic is the server gametic send when the server sends a positional
+// update, which is returned to the server when the client sends a ticcmd
+// that has the attack button pressed.
 
-void Unlag::setRoundtripDelay(byte player_id, size_t delay)
+void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 {
 	if (!Unlag::enabled())
 		return;
-
+	
+	size_t delay = ((gametic & 0xFF) + 256 - svgametic) & 0xFF;
+	
 	size_t player_index = player_id_map[player_id];
-
-	// set the lag to half the roundtrip delay since we have 
-	// clientside prediction of other players' positions
-	player_history[player_index].current_lag = delay / 2;
+	player_history[player_index].current_lag = delay;
+	
+	#ifdef _UNLAG_DEBUG_
+	DPrintf("Unlag (%03d): received gametic %d from player %d, lag = %d\n",
+					gametic & 0xFF, svgametic, player_id, delay);
+	#endif	// _UNLAG_DEBUG
 }
 
 
@@ -501,7 +560,7 @@ void Unlag::setRoundtripDelay(byte player_id, size_t delay)
 
 void Unlag::getReconciliationOffset(	byte shooter_id, byte target_id,
 			   	 			   			fixed_t &x, fixed_t &y, fixed_t &z)
-{
+{  
 	if (!reconciled)	// reconciled will only be true if sv_unlag is 1)
 		return;
 
@@ -510,8 +569,7 @@ void Unlag::getReconciliationOffset(	byte shooter_id, byte target_id,
 
 	// how many tics was the target reconciled?
 	size_t ticsago = player_history[shooter_index].current_lag;
-    size_t cur = (player_history[target_index].history_size - 1 - ticsago)
-                  % Unlag::MAX_HISTORY_TICS;
+    size_t cur = (gametic - ticsago) % Unlag::MAX_HISTORY_TICS;
 	// calculate how far the target was moved during reconciliation
 	x = player_history[target_index].backup_x 
 		- player_history[target_index].history_x[cur];
@@ -521,4 +579,42 @@ void Unlag::getReconciliationOffset(	byte shooter_id, byte target_id,
 		- player_history[target_index].history_z[cur];
 }
 
+
+//
+// Unlag::debugReconciliation
+//
+// Attempts to determine which tic would have been ideal to use for reconciling
+// a target player's position.
+void Unlag::debugReconciliation(byte shooter_id)
+{
+	player_t *shooter = &(idplayer(shooter_id));
+	
+	for (size_t i = 0; i < player_history.size(); i++)
+	{
+		if (player_history[i].player->id == shooter_id)
+			continue;	
+	
+		for (size_t n = 0; n < MAX_HISTORY_TICS; n++)
+		{
+			if (n > player_history[i].history_size)
+				break;
+				
+			size_t cur = (gametic - n) % Unlag::MAX_HISTORY_TICS;
+		
+			fixed_t x = player_history[i].history_x[cur];
+			fixed_t y = player_history[i].history_y[cur];
+			
+			angle_t angle = P_PointToAngle(shooter->mo->x,	shooter->mo->y, x, y);
+			angle_t deltaangle = 	angle - shooter->mo->angle < ANG180 ?
+									angle - shooter->mo->angle :
+									shooter->mo->angle - angle;
+
+			if (deltaangle < 3 * FRACUNIT)
+			{
+				DPrintf("Unlag (%03d): would have hit player %d at gametic %d (%d tics ago)\n",
+						gametic & 0xFF, player_history[i].player->id, (gametic - n) & 0xFF, n);
+			}
+		}
+	}
+}
 

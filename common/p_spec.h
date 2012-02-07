@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -54,7 +54,7 @@ public:
 		sc_carry_ceiling	// killough 4/11/98: carry objects hanging on ceilings
 
 	};
-	
+
 	DScroller (EScrollType type, fixed_t dx, fixed_t dy, int control, int affectee, int accel);
 	DScroller (fixed_t dx, fixed_t dy, const line_t *l, int control, int accel);
 
@@ -212,9 +212,9 @@ inline sector_t *getNextSector (line_t *line, sector_t *sec)
 {
 	if (!(line->flags & ML_TWOSIDED))
 		return NULL;
-	
+
 	return (line->frontsector == sec) ? line->backsector : line->frontsector;
-		
+
 	return line->frontsector;
 }
 
@@ -235,7 +235,7 @@ fixed_t P_FindShortestTextureAround (int secnum);	// jff 2/04/98
 fixed_t P_FindShortestUpperAround (int secnum);		// jff 2/04/98
 
 sector_t* P_FindModelFloorSector (fixed_t floordestheight, int secnum);	//jff 02/04/98
-sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, int secnum);	//jff 02/04/98 
+sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, int secnum);	//jff 02/04/98
 
 int		P_FindSectorFromTag (int tag, int start);
 int		P_FindLineFromID (int id, int start);
@@ -397,11 +397,11 @@ typedef struct
 	char		name1[9];
 	char		name2[9];
 	short		episode;
-	
+
 } switchlist_t;
 
 
-// 1 second, in ticks. 
+// 1 second, in ticks.
 #define BUTTONTIME		TICRATE
 
 void	P_ChangeSwitchTexture (line_t *line, int useAgain);
@@ -574,7 +574,7 @@ public:
 		destroy,
 		state_size
 	};
- 
+
 	DDoor (sector_t *sector);
 	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
@@ -587,7 +587,7 @@ public:
 
 	// 1 = up, 0 = waiting at top, -1 = down
 	int 		m_Direction;
-	
+
 	// tics to wait at the top
 	int 		m_TopWait;
 	// (keep in case a door going down is reset)
@@ -602,7 +602,7 @@ public:
     line_t      *m_Line;
 protected:
 	void PlayDoorSound ();
-	
+
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
 	friend void P_SpawnDoorCloseIn30 (sector_t *sec);
@@ -749,7 +749,7 @@ public:
 		floorLowerToLowestCeiling,
 		floorLowerByTexture,
 		floorLowerToCeiling,
-		 
+
 		donutRaise,
 
 		buildStair,
@@ -869,6 +869,7 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag);
 // P_TELEPT
 //
 BOOL EV_Teleport (int tid, int side, AActor *thing);
+BOOL EV_LineTeleport (line_t *line, int side, AActor *thing);
 BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing);
 BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 							BOOL reverse);
@@ -877,7 +878,7 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 // [RH] ACS (see also p_acs.h)
 //
 
-BOOL P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
 void P_SuspendScript (int script, char *map);
 void P_TerminateScript (int script, char *map);

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,7 +18,7 @@
 // DESCRIPTION:
 //	Launcher packet structure file
 //
-// AUTHORS: 
+// AUTHORS:
 //  Russell Rice (russell at odamex dot net)
 //  Michael Wood (mwoodj at huntsvegas dot org)
 //
@@ -44,7 +44,7 @@ to override this
 */
 int32_t ServerBase::Query(int32_t Timeout)
 {
-	string Address = Socket.GetRemoteAddress();   
+	string Address = Socket.GetRemoteAddress();
 
 	if (Address != "")
 	{
@@ -112,7 +112,7 @@ int32_t MasterServer::Parse()
 			Socket.Read8(ip1);
 			Socket.Read8(ip2);
 			Socket.Read8(ip3);
-			Socket.Read8(ip4);   
+			Socket.Read8(ip4);
 
 			ostringstream stream;
 
@@ -128,7 +128,7 @@ int32_t MasterServer::Parse()
 			// Don't add the same address more than once.
 			for (j = 0; j < addresses.size(); ++j)
 			{
-				if (addresses[j].ip == address.ip && 
+				if (addresses[j].ip == address.ip &&
 						addresses[j].port == address.port)
 				{
 					break;
@@ -154,7 +154,7 @@ int32_t MasterServer::Parse()
 
 // Server constructor
 Server::Server()
-{                  
+{
 	challenge = SERVER_CHALLENGE;
 
 	ResetData();
@@ -166,7 +166,7 @@ Server::~Server()
 }
 
 void Server::ResetData()
-{   
+{
 	m_ValidResponse = false;
 
 	Info.Cvars.clear();
@@ -195,7 +195,7 @@ void Server::ResetData()
 	Ping = 0;
 }
 
-/* 
+/*
    Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
    with every new major/minor version
    */
@@ -215,7 +215,7 @@ void Server::ResetData()
 // Server::ReadInformation()
 //
 // Read information built for us by the server
-void Server::ReadInformation(const uint8_t &VersionMajor, 
+void Server::ReadInformation(const uint8_t &VersionMajor,
 		const uint8_t &VersionMinor,
 		const uint8_t &VersionPatch,
 		const uint32_t &ProtocolVersion)
@@ -357,7 +357,7 @@ void Server::ReadInformation(const uint8_t &VersionMajor,
 //
 // Figures out the response from the server, deciding whether to use this data
 // or not
-int32_t Server::TranslateResponse(const uint16_t &TagId, 
+int32_t Server::TranslateResponse(const uint16_t &TagId,
 		const uint8_t &TagApplication,
 		const uint8_t &TagQRId,
 		const uint16_t &TagPacketType)
@@ -419,6 +419,9 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 	if (TagPacketType == 2)
 	{
 		// Launcher is an old version
+		NET_ReportError("Launcher is too old to parse the data from Server %s",
+              Socket.GetRemoteAddress().c_str());
+
 		return 0;
 	}
 
@@ -428,21 +431,30 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 	Socket.Read32(SvVersion);
 	Socket.Read32(SvProtocolVersion);
 
-	if ((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) || 
+	if ((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) ||
 			(VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
 	{
 		// Server is an older version
+		NET_ReportError("Server %s is version %d.%d.%d which is not supported\n",
+              Socket.GetRemoteAddress().c_str(),
+              VERSIONMAJOR(SvVersion),
+              VERSIONMINOR(SvVersion),
+              VERSIONPATCH(SvVersion));
+
 		return 0;
 	}
 
-	ReadInformation(VERSIONMAJOR(SvVersion), 
-			VERSIONMINOR(SvVersion), 
+	ReadInformation(VERSIONMAJOR(SvVersion),
+			VERSIONMINOR(SvVersion),
 			VERSIONPATCH(SvVersion),
 			SvProtocolVersion);
 
 	if (Socket.BadRead())
-	{        
+	{
 		// Bad packet data encountered
+		NET_ReportError("Data from Server %s was out of sequence, please report!\n",
+              Socket.GetRemoteAddress().c_str());
+
 		return 0;
 	}
 
@@ -451,7 +463,7 @@ int32_t Server::TranslateResponse(const uint16_t &TagId,
 }
 
 int32_t Server::Parse()
-{   
+{
 	Socket.Read32(Info.Response);
 
 	// Decode the tag into its fields
@@ -463,9 +475,9 @@ int32_t Server::Parse()
 
 	if (TagId == TAG_ID)
 	{
-		int32_t Result = TranslateResponse(TagId, 
-				TagApplication, 
-				TagQRId, 
+		int32_t Result = TranslateResponse(TagId,
+				TagApplication,
+				TagQRId,
 				TagPacketType);
 
 		Socket.ClearBuffer();
@@ -486,7 +498,7 @@ int32_t Server::Parse()
 
 int32_t Server::Query(int32_t Timeout)
 {
-	string Address = Socket.GetRemoteAddress();   
+	string Address = Socket.GetRemoteAddress();
 
 	if (Address != "")
 	{
@@ -532,6 +544,8 @@ void MasterServer::QueryBC(const uint32_t &Timeout)
     BCSocket.Write32(VERSION);
     BCSocket.Write32(PROTOCOL_VERSION);
 
+    BCSocket.Write32(0);
+
     BCSocket.SetBroadcast(true);
 
     BCSocket.SendData(Timeout);
@@ -548,7 +562,7 @@ void MasterServer::QueryBC(const uint32_t &Timeout)
         // Don't add the same address more than once.
         for (; j < addresses.size(); ++j)
         {
-            if (addresses[j].ip == address.ip && 
+            if (addresses[j].ip == address.ip &&
                 addresses[j].port == address.port)
             {
                 break;

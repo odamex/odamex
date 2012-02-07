@@ -50,6 +50,62 @@ EXTERN_CVAR (sv_forcerespawn)
 
 extern bool predicting, step_mode;
 
+static player_t nullplayer;		// used to indicate 'player not found' when searching
+
+player_t &idplayer(byte id)
+{
+	static size_t translation[MAXPLAYERS];
+ 
+	if (id >= MAXPLAYERS)
+ 		return nullplayer;
+ 
+	// attempt a quick cached resolution
+ 	size_t tid = translation[id];
+	if (tid < players.size() && players[tid].id == id)
+ 		return players[tid];
+ 
+ 	// full search
+	for(size_t i = 0; i < players.size(); i++)
+ 	{
+		// cache any ids we come across while searching for the correct player
+		translation[players[i].id] = i;
+		if (players[i].id == id)
+ 			return players[i];
+	}
+
+	return nullplayer;
+}
+
+bool validplayer(player_t &ref)
+{
+	if (&ref == &nullplayer)
+		return false;
+
+	if (players.empty())
+		return false;
+
+	return true;
+}
+
+//
+// P_NumPlayersInGame()
+//
+// Returns the number of players who are active in the current game.  This does
+// not include spectators or downloaders.
+//
+size_t P_NumPlayersInGame()
+{
+	size_t num_players = 0;
+
+	for (size_t i = 0; i < players.size(); ++i)
+	{
+		if (!players[i].spectator && players[i].ingame())
+			++num_players;
+	}
+
+	return num_players;
+}
+
 //
 // P_Thrust
 // Moves the given origin along a given angle.
@@ -428,6 +484,8 @@ void P_FallingDamage (AActor *ent)
 
 void P_DeathThink (player_t *player)
 {
+	bool reduce_redness = true;
+
 	P_MovePsprites (player);
 	player->mo->onground = (player->mo->z <= player->mo->floorz);
 
@@ -442,34 +500,31 @@ void P_DeathThink (player_t *player)
 	P_CalcHeight (player);
 	
 	// adjust the player's view to follow its attacker
-	if (cl_deathcam || !clientside)
+	if (cl_deathcam && clientside &&
+		player->attacker && player->attacker != player->mo)
 	{
-		if (player->attacker && player->attacker != player->mo)
+		angle_t angle = P_PointToAngle (player->mo->x,
+								 		player->mo->y,
+								 		player->attacker->x,
+								 		player->attacker->y);
+
+		angle_t delta = angle - player->mo->angle;
+
+		if (delta < ANG5 || delta > (unsigned)-ANG5)
+			player->mo->angle = angle;
+		else
 		{
-			angle_t angle = P_PointToAngle (player->mo->x,
-									 		player->mo->y,
-									 		player->attacker->x,
-									 		player->attacker->y);
-
-			angle_t delta = angle - player->mo->angle;
-
-			if (delta < ANG5 || delta > (unsigned)-ANG5)
-			{
-				// Looking at killer so fade damage flash down.
-				player->mo->angle = angle;
-
-				if (player->damagecount && !predicting)
-					player->damagecount--;
-			}
-			else if (delta < ANG180)
+			if (delta < ANG180)
 				player->mo->angle += ANG5;
 			else
 				player->mo->angle -= ANG5;
+			
+			// not yet looking at killer so keep the red tinting
+			reduce_redness = false;
 		}
-		else if (player->damagecount && !predicting)
-			player->damagecount--;
 	}
-	else if (player->damagecount && !predicting)
+
+	if (player->damagecount && reduce_redness && !predicting)
 		player->damagecount--;
 
 	if(serverside)
@@ -483,6 +538,8 @@ void P_DeathThink (player_t *player)
 	}
 }
 
+void SV_SendPlayerInfo(player_t &);
+
 //
 // P_PlayerThink
 //
@@ -491,13 +548,18 @@ void P_PlayerThink (player_t *player)
 	ticcmd_t *cmd;
 	weapontype_t newweapon;
 
-	// [RH] Error out if player doesn't have an mobj, but just make
-	//		it a warning if the player trying to spawn is a bot
-	if (!player->mo)
+	// [SL] 2011-10-31 - Thinker called before the client has received a message
+	// to spawn a mobj from the server.  Just bail from this function and
+	// hope the client receives the spawn message at a later time.
+	if (!player->mo && clientside && multiplayer)
+	{
+		DPrintf("Warning: P_PlayerThink called for player %s without a valid Actor.\n",
+				player->userinfo.netname);
+		return;
+	}
+	else if (!player->mo)
 		I_Error ("No player %d start\n", player->id);
 		
-	client_t *cl = &player->client;
-	
 	player->xviewshift = 0;		// [RH] Make sure view is in right place
 
 	// fixme: do this in the cheat code
@@ -580,13 +642,19 @@ void P_PlayerThink (player_t *player)
 			|| (gamemode != shareware) )
 			{
 				player->pendingweapon = newweapon;
-						
-				if (serverside)
-				{	// [ML] From Zdaemon .99: use changeweapon here
-					MSG_WriteMarker	(&cl->reliablebuf, svc_changeweapon);
-					MSG_WriteByte (&cl->reliablebuf, (byte)player->pendingweapon);	
-				}
 			}
+		}
+	}
+	else
+	{
+		// [SL] 2011-11-20 - Player didn't send a weapon change command.
+		// Verify the player is holding the correct weapon.
+		weapontype_t predweapon = static_cast<weapontype_t>(cmd->ucmd.impulse);
+		if (predweapon != player->readyweapon && predweapon != player->pendingweapon)
+		{
+			// Client is wrong so send them an update
+			if (serverside && player->health > 0)
+				SV_SendPlayerInfo(*player);
 		}
 	}
 
@@ -683,8 +751,8 @@ void player_s::Serialize (FArchive &arc)
 			<< armortype
 			<< backpack
 			<< fragcount
-			<< (int)readyweapon
-			<< (int)pendingweapon
+			<< readyweapon
+			<< pendingweapon
 			<< attackdown
 			<< usedown
 			<< cheats
@@ -731,8 +799,8 @@ void player_s::Serialize (FArchive &arc)
 			>> armortype
 			>> backpack
 			>> fragcount
-			>> (int&)readyweapon
-			>> (int&)pendingweapon
+			>> readyweapon
+			>> pendingweapon
 			>> attackdown
 			>> usedown
 			>> cheats

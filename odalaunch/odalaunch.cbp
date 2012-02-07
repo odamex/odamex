@@ -25,7 +25,7 @@
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
 					<Variable name="WX_PLAT" value="msw" />
@@ -36,8 +36,9 @@
 				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\gcc\debug" />
-				<Option type="0" />
+				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
@@ -49,11 +50,11 @@
 					<Add option="-lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lwsock32" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add before="$(#WX)\utils\wxrc\gcc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_PLAT" value="msw" />
 					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_PLAT" value="msw" />
 				</Environment>
 			</Target>
 			<Target title="Unix Release">
@@ -206,10 +207,10 @@
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_VER" value="28" />
+					<Variable name="WX_CFG" value="" />
 					<Variable name="WX_LIB" value="lib" />
 					<Variable name="WX_PLAT" value="msw" />
-					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_VER" value="28" />
 				</Environment>
 			</Target>
 			<Target title="Win Debug (VC)">
@@ -217,8 +218,9 @@
 				<Option output="..\odalaunch-dbg.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="..\" />
 				<Option object_output="..\obj\odalaunch\vc\debug" />
-				<Option type="0" />
+				<Option type="1" />
 				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Option projectIncludeDirsRelation="1" />
@@ -237,6 +239,7 @@
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
+					<Add option="/Zi" />
 					<Add option="/Zi /D_DEBUG" />
 					<Add option="/DWINVER=0x0400" />
 					<Add option="/DwxUSE_GUI=1" />
@@ -286,20 +289,20 @@
 					<Add directory=".\res" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
+					<Add before="$(#WX)\utils\wxrc\vc_$(WX_PLAT)$(WX_CFG)\wxrc /c /o res\xrc_resource.h res\xrc_resource.xrc res\icons.xrc" />
 					<Add after="mt -manifest $(TARGET_OUTPUT_FILE).manifest -outputresource:$(TARGET_OUTPUT_FILE);1" />
 				</ExtraCommands>
 				<Environment>
-					<Variable name="WX_VER" value="28" />
+					<Variable name="WX_CFG" value="d" />
 					<Variable name="WX_LIB" value="lib" />
 					<Variable name="WX_PLAT" value="msw" />
-					<Variable name="WX_CFG" value="d" />
+					<Variable name="WX_VER" value="28" />
 				</Environment>
 			</Target>
 			<Environment>
-				<Variable name="WX_VER" value="28" />
-				<Variable name="WX_LIB" value="lib" />
 				<Variable name="WX_CFG" value="" />
+				<Variable name="WX_LIB" value="lib" />
+				<Variable name="WX_VER" value="28" />
 			</Environment>
 		</Build>
 		<VirtualTargets>
@@ -438,6 +441,15 @@
 			<code_completion />
 			<envvars />
 			<debugger />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

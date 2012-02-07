@@ -37,6 +37,7 @@
 #include "w_wad.h"
 #include "doomdef.h"
 #include "p_local.h"
+#include "p_acs.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "p_lnspec.h"
@@ -1337,30 +1338,17 @@ void P_GroupLines (void)
 //
 // [RH] P_LoadBehavior
 //
-static int STACK_ARGS sortscripts (const void *a, const void *b)
-{
-	return ((*(int *)a)%1000 - (*(int *)b)%1000);
-}
-
 void P_LoadBehavior (int lumpnum)
 {
 	byte *behavior = (byte *)W_CacheLumpNum (lumpnum, PU_LEVEL);
 
-	if (behavior[0] != 'A' || behavior[1] != 'C' ||
-		behavior[2] != 'S' || behavior[3] != 0)
+	level.behavior = new FBehavior (behavior, lumpinfo[lumpnum].size);
+
+	if (!level.behavior->IsGood ())
 	{
-		Z_Free (behavior);
-		return;
+		delete level.behavior;
+		level.behavior = NULL;
 	}
-
-	level.behavior = behavior;
-	level.scripts = (int *)(behavior + ((int *)behavior)[1]);
-	level.strings = &level.scripts[level.scripts[0]*3+1];
-
-	// Make sure scripts are listed in order (to make finding them quicker)
-	qsort (&level.scripts[1], level.scripts[0], 3*sizeof(int), sortscripts);
-
-	DPrintf ("Loaded %d scripts, %d strings\n", level.scripts[0], level.strings[0]);
 }
 
 //
@@ -1411,7 +1399,7 @@ void P_SetupLevel (char *lumpname, int position)
 	{
 		for (i = 0; i < players.size(); i++)
 		{
-			players[i].killcount = players[i].secretcount 
+			players[i].killcount = players[i].secretcount
 				= players[i].itemcount = 0;
 		}
 	}
@@ -1427,7 +1415,7 @@ void P_SetupLevel (char *lumpname, int position)
 
 	// [RH] clear out the mid-screen message
 	C_MidPrint (NULL);
-	
+
 	PolyBlockMap = NULL;
 
 	DThinker::DestroyAllThinkers ();
@@ -1445,9 +1433,21 @@ void P_SetupLevel (char *lumpname, int position)
 	HasBehavior = W_CheckLumpName (lumpnum+ML_BEHAVIOR, "BEHAVIOR");
 	//oldshootactivation = !HasBehavior;
 
+	// note: most of this ordering is important
+
+	// [RH] Load in the BEHAVIOR lump
+	if (level.behavior != NULL)
+	{
+		delete level.behavior;
+		level.behavior = NULL;
+	}
+	if (HasBehavior)
+	{
+		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+	}
+
     level.time = 0;
 
-	// note: most of this ordering is important
 	P_LoadVertexes (lumpnum+ML_VERTEXES);
 	P_LoadSectors (lumpnum+ML_SECTORS);
 	P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
@@ -1465,7 +1465,7 @@ void P_SetupLevel (char *lumpname, int position)
 	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
 	{
 		// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
-		// If it's too short, the reject table should be ignored when 
+		// If it's too short, the reject table should be ignored when
 		// calling P_CheckSight
 		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
 		{
@@ -1474,7 +1474,7 @@ void P_SetupLevel (char *lumpname, int position)
 		}
 	}
 	P_GroupLines ();
-	
+
     po_NumPolyobjs = 0;
 
 	P_AllocStarts();
@@ -1486,14 +1486,8 @@ void P_SetupLevel (char *lumpname, int position)
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
-    
-    PO_Init ();
 
-	// [RH] Load in the BEHAVIOR lump
-	level.behavior = NULL;
-	level.scripts = level.strings = NULL;
-	if (HasBehavior)
-		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+    PO_Init ();
 
     if (serverside)
     {
@@ -1541,20 +1535,32 @@ void P_Init (void)
 
 // [ML] Do stuff when the timelimit is reset
 // Where else can I put this??
-EXTERN_CVAR(sv_timeleft)
 CVAR_FUNC_IMPL (sv_timelimit)
 {
-	if (var == 0)
-	{
-		level.time = 0;
-		sv_timeleft = "0";	
-	}
-	else
-	{
-		if (!sv_timeleft)
-			level.time = 0;
-	}
+	if (var < 0)
+		var.Set(0.0f);
+
+	// timeleft is transmitted as a short so cap the sv_timelimit at the maximum
+	// for timeleft, which is 9.1 hours
+	if (var > MAXSHORT / 60)
+		var.Set(MAXSHORT / 60);
+
+	level.timeleft = var * TICRATE * 60;
 }
+
+CVAR_FUNC_IMPL (sv_intermissionlimit)
+{
+	if (var < 0)
+		var.Set(0.0f);
+
+	// intermissionleft is transmitted as a short so cap the sv_timelimit at the maximum
+	// for timeleft, which is 9.1 hours
+	if (var > MAXSHORT)
+		var.Set(MAXSHORT);
+
+	level.inttimeleft = (var < 1 ? DEFINTSECS : var);
+}
+
 
 
 

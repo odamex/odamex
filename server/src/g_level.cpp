@@ -42,7 +42,7 @@
 #include "p_local.h"
 #include "r_sky.h"
 #include "c_console.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "v_video.h"
 #include "p_saveg.h"
 #include "p_acs.h"
@@ -73,6 +73,7 @@ EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
 EXTERN_CVAR (sv_gravity)
 EXTERN_CVAR (sv_aircontrol)
+EXTERN_CVAR (sv_intermissionlimit)
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
@@ -85,7 +86,10 @@ extern int mapchange;
 int starttime;
 
 // ACS variables with world scope
-int WorldVars[NUM_WORLDVARS];
+int ACS_WorldVars[NUM_WORLDVARS];
+
+// ACS variables with global scope
+int ACS_GlobalVars[NUM_GLOBALVARS];
 
 BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
@@ -225,7 +229,7 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 },	
+	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
 	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
 };
@@ -406,7 +410,7 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			SC_MustGetFloat ();
 			*((float *)(info + handler->data1)) = sc_Float;
 			break;
-			
+
 		case MITYPE_COLOR:
 			{
 				SC_MustGetString ();
@@ -517,6 +521,12 @@ void P_RemoveDefereds (void)
 		}
 }
 
+// [ML] Not sure where to put this for now...
+// 	G_ParseMusInfo
+void G_ParseMusInfo(void)
+{
+	// Nothing yet...
+}
 
 //
 // G_InitNew
@@ -542,7 +552,7 @@ BEGIN_COMMAND (map)
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
 		//              number. This makes sense, so why isn't there any code for it?
-		if (W_CheckNumForName (argv[1]) == -1)
+		if (W_CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
 		{ // The map name isn't valid, so lets try to make some assumptions for the user.
 			char mapname[32];
 
@@ -729,7 +739,7 @@ void G_GenerateRandomMaps(void)
 			break;
 	}
 
-	if (Count <= 0)
+	if (!Count)
 		return;
 
 	// Allocate our bool array
@@ -737,8 +747,8 @@ void G_GenerateRandomMaps(void)
 
 	for (i = 0; i < Count; i++)
 		Used[i] = 0;
-		
-    srand((unsigned)time(0)); 
+
+    srand((unsigned)time(0));
 
 	// Now populate the list
 	for (i = 0; i < Count; i++)
@@ -949,11 +959,11 @@ void G_ChangeMap (void)
 
 	if (!MapListPointer)
 	{
-		char *next = level.nextmap;     
+		char *next = level.nextmap;
 
 		// if deathmatch, stay on same level
 		// [ML] 1/25/10: OR if next is empty
-		if(gamestate == GS_STARTUP || 
+		if(gamestate == GS_STARTUP ||
 			sv_gametype != GM_COOP || !strlen(next))
 			next = level.mapname;
 		else
@@ -1016,8 +1026,8 @@ void G_ChangeMap (void)
 
 	// run script at the end of each map
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a 
-	// reason why the mapscripts ahve to be safe mode?	
+	// when onlcvars (addcommandstring's second param) is true.  Is there a
+	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
 		AddCommandString(sv_endmapscript.cstring()/*, true*/);
 }
@@ -1053,7 +1063,7 @@ void G_DoNewGame (void)
 
 	// run script at the start of each map
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a 
+	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_startmapscript.cstring()))
 		AddCommandString(sv_startmapscript.cstring()/*,true*/);
@@ -1164,14 +1174,18 @@ void G_InitNew (const char *mapname)
 		}
 		isFast = wantFast;
 	}
-    
+
 	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
 	Unlag::getInstance().reset();
 
 	if (!savegamerestore)
 	{
 		M_ClearRandom ();
+		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
+		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
+		level.timeleft = 0;
+		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
 		for (size_t i = 0; i < players.size(); i++)
@@ -1187,17 +1201,14 @@ void G_InitNew (const char *mapname)
 			if(players[i].playerstate == PST_DEAD)
 				G_PlayerReborn(players[i]);
 
-			players[i].playerstate = PST_REBORN;
+			players[i].playerstate = PST_ENTER; // [BC]
 
 			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
 	}
 
-	// if only one player allowed, then this is a single player server
-	if(sv_maxplayers == 1)
-		multiplayer = false;
-	else
-		multiplayer = true;
+	// [SL] 2012-12-08 - Multiplayer is always true for servers
+	multiplayer = true;
 
 	usergame = true;				// will be set false if a demo
 	paused = false;
@@ -1223,10 +1234,12 @@ void G_ExitLevel (int position, int drawscores)
 
 	if (drawscores)
         SV_DrawScores();
+	
+	int intlimit = (sv_intermissionlimit < 1 || sv_gametype == GM_COOP ? DEFINTSECS : sv_intermissionlimit);
 
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
-	mapchange = TICRATE*10;  // wait 10 seconds
+	mapchange = TICRATE*intlimit;  // wait n seconds, default 10
 
     secretexit = false;
 
@@ -1243,10 +1256,12 @@ void G_SecretExitLevel (int position, int drawscores)
 
     if (drawscores)
         SV_DrawScores();
+        
+	int intlimit = (sv_intermissionlimit < 1 || sv_gametype == GM_COOP ? DEFINTSECS : sv_intermissionlimit);
 
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
-	mapchange = TICRATE*10;  // wait 10 seconds
+	mapchange = TICRATE*intlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gamemode == commercial)
@@ -1488,7 +1503,7 @@ void G_InitLevelLocals ()
 
 	level.gravity = sv_gravity;
 	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
-		
+
 	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
 
@@ -1510,7 +1525,7 @@ void G_InitLevelLocals ()
 		if (pinfo->aircontrol != 0.f)
 		{
 			level.aircontrol = (fixed_t)(pinfo->aircontrol * 65536.f);
-		}		
+		}
 	} else {
 		info = FindDefLevelInfo (level.mapname);
 		level.info = info;
@@ -1635,61 +1650,68 @@ void G_SetLevelStrings (void)
 	temp[0] = '0';
 	temp[1] = ':';
 	temp[2] = 0;
-	for (i = 65; i < 101; i++) {		// HUSTR_E1M1 .. HUSTR_E4M9
+	for (i = HUSTR_E1M1; i <= HUSTR_E4M9; ++i)
+	{
 		if (temp[0] < '9')
 			temp[0]++;
 		else
 			temp[0] = '1';
 
-		if ( (namepart = strstr (Strings[i].string, temp)) ) {
+		if ( (namepart = strstr (GStrings(i), temp)) )
+		{
 			namepart += 2;
 			while (*namepart && *namepart <= ' ')
 				namepart++;
-		} else {
-			namepart = Strings[i].string;
+		}
+		else
+		{
+			namepart = GStrings(i);
 		}
 
-		ReplaceString ((const char **)&LevelInfos[i-65].level_name, namepart);
+		ReplaceString (&LevelInfos[i-HUSTR_E1M1].level_name, namepart);
+		//ReplaceString (&LevelInfos[i-HUSTR_E1M1].music, Musics1[i-HUSTR_E1M1]);
 	}
 
 	for (i = 0; i < 4; i++)
-		ReplaceString ((const char **)&ClusterInfos[i].exittext, Strings[221+i].string);
+		ReplaceString (&ClusterInfos[i].exittext, GStrings(E1TEXT+i));
 
 	if (gamemission == pack_plut)
-		start = 133;		// PHUSTR_1
+		start = PHUSTR_1;
 	else if (gamemission == pack_tnt)
-		start = 165;		// THUSTR_1
+		start = THUSTR_1;
 	else
-		start = 101;		// HUSTR_1
+		start = HUSTR_1;
 
-	for (i = 0; i < 32; i++) {
-		sprintf (temp, "%d:", i + 1);
-		if ( (namepart = strstr (Strings[i+start].string, temp)) ) {
-			namepart += strlen (temp);
-			while (*namepart && *namepart <= ' ')
-				namepart++;
-		} else {
-			namepart = Strings[i+start].string;
-		}
-		ReplaceString ((const char **)&LevelInfos[36+i].level_name, namepart);
-	}
+ 	for (i = 0; i < 32; i++) {
+ 		sprintf (temp, "%d:", i + 1);
+		if ( (namepart = strstr (GStrings(i+start), temp)) ) {
+ 			namepart += strlen (temp);
+ 			while (*namepart && *namepart <= ' ')
+ 				namepart++;
+ 		} else {
+			namepart = GStrings(i+start);
+ 		}
+ 		ReplaceString (&LevelInfos[36+i].level_name, namepart);
+ 	}
 
 	if (gamemission == pack_plut)
-		start = 231;		// P1TEXT
+		start = P1TEXT;		// P1TEXT
 	else if (gamemission == pack_tnt)
-		start = 237;		// T1TEXT
+		start = T1TEXT;		// T1TEXT
 	else
-		start = 225;		// C1TEXT
+		start = C1TEXT;		// C1TEXT
 
 	for (i = 0; i < 4; i++)
-		ReplaceString ((const char **)&ClusterInfos[4 + i].exittext, Strings[start+i].string);
+		ReplaceString (&ClusterInfos[4 + i].exittext, GStrings(start+i));
 	for (; i < 6; i++)
-		ReplaceString ((const char **)&ClusterInfos[4 + i].entertext, Strings[start+i].string);
+		ReplaceString (&ClusterInfos[4 + i].entertext, GStrings(start+i));
 
-	if (level.info && level.info->level_name)
+	//for (i = 0; i < 15; i++)
+	//	ReplaceString (&ClusterInfos[i].messagemusic, Musics4[i]);
+
+	if (level.info)
 		strncpy (level.level_name, level.info->level_name, 63);
 }
-
 
 void G_AirControlChanged ()
 {
@@ -1717,9 +1739,9 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.killed_monsters
 			<< level.gravity
 			<< level.aircontrol;
-			
+
 			G_AirControlChanged ();
-			
+
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc << level.vars[i];
 	}
@@ -1738,7 +1760,7 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 		for (int i = 0; i < NUM_MAPVARS; i++)
 			arc >> level.vars[i];
 	}
-	
+
 	if (!hubLoad)
 		P_SerializePlayers (arc);
 
@@ -1860,7 +1882,8 @@ void P_SerializeACSDefereds (FArchive &arc)
 				writeDefereds (arc, &LevelInfos[i]);
 
 		// Signal end of defereds
-		arc << (char)0;
+		BYTE zero = 0;
+		arc << zero;
 	}
 	else
 	{
@@ -1868,7 +1891,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 
 		P_RemoveDefereds ();
 
-		arc >> mapname[0];
+		arc << mapname[0];
 		while (mapname[0])
 		{
 			arc.Read (&mapname[1], 7);
@@ -1881,8 +1904,8 @@ void P_SerializeACSDefereds (FArchive &arc)
 				name[8] = 0;
 				I_Error ("Unknown map '%s' in savegame", name);
 			}
-			arc >> i->defered;
-			arc >> mapname[0];
+			arc << i->defered;
+			arc << mapname[0];
 		}
 	}
 }

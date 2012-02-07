@@ -38,6 +38,7 @@ typedef enum {
 	Polyobj_MoveTimes8 = 6,
 	Polyobj_DoorSwing = 7,
 	Polyobj_DoorSlide = 8,
+	Line_Horizon = 9,
 	Door_Close = 10,
 	Door_Open = 11,
 	Door_Raise = 12,

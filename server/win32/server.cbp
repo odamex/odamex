@@ -268,13 +268,18 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
+			<Add option="-Winvalid-pch" />
+			<Add option='-include &quot;sv_pch.h&quot;' />
 			<Add option="-fexceptions" />
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DNOASM" />
+			<Add option="-D_WIN32_WINNT=0x0500" />
+			<Add option="-DJSON_IS_AMALGAMATION" />
 			<Add directory="." />
 			<Add directory="..\src" />
 			<Add directory="..\..\common" />
+			<Add directory="..\..\jsoncpp" />
 		</Compiler>
 		<Unit filename="..\..\common\actor.h" />
 		<Unit filename="..\..\common\c_console.h" />
@@ -283,6 +288,9 @@
 		<Unit filename="..\..\common\c_cvars.h" />
 		<Unit filename="..\..\common\c_dispatch.cpp" />
 		<Unit filename="..\..\common\c_dispatch.h" />
+		<Unit filename="..\..\common\c_effect.cpp" />
+		<Unit filename="..\..\common\c_effect.h" />
+		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\cmdlib.cpp" />
 		<Unit filename="..\..\common\cmdlib.h" />
 		<Unit filename="..\..\common\d_dehacked.cpp" />
@@ -307,8 +315,6 @@
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />
 		<Unit filename="..\..\common\dsectoreffect.h" />
-		<Unit filename="..\..\common\dstrings.cpp" />
-		<Unit filename="..\..\common\dstrings.h" />
 		<Unit filename="..\..\common\dthinker.cpp" />
 		<Unit filename="..\..\common\dthinker.h" />
 		<Unit filename="..\..\common\errors.h" />
@@ -318,6 +324,7 @@
 		<Unit filename="..\..\common\g_level.h" />
 		<Unit filename="..\..\common\gi.cpp" />
 		<Unit filename="..\..\common\gi.h" />
+		<Unit filename="..\..\common\gstrings.h" />
 		<Unit filename="..\..\common\huffman.cpp" />
 		<Unit filename="..\..\common\huffman.h" />
 		<Unit filename="..\..\common\i_net.cpp" />
@@ -408,6 +415,9 @@
 		<Unit filename="..\..\common\st_stuff.h" />
 		<Unit filename="..\..\common\stats.cpp" />
 		<Unit filename="..\..\common\stats.h" />
+		<Unit filename="..\..\common\stringenums.h" />
+		<Unit filename="..\..\common\stringtable.cpp" />
+		<Unit filename="..\..\common\stringtable.h" />
 		<Unit filename="..\..\common\szp.h" />
 		<Unit filename="..\..\common\tables.cpp" />
 		<Unit filename="..\..\common\tables.h" />
@@ -422,6 +432,9 @@
 		<Unit filename="..\..\common\w_wad.h" />
 		<Unit filename="..\..\common\z_zone.cpp" />
 		<Unit filename="..\..\common\z_zone.h" />
+		<Unit filename="..\..\jsoncpp\json\json-forwards.h" />
+		<Unit filename="..\..\jsoncpp\json\json.h" />
+		<Unit filename="..\..\jsoncpp\jsoncpp.cpp" />
 		<Unit filename="..\src\c_console.cpp" />
 		<Unit filename="..\src\d_main.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />
@@ -443,6 +456,10 @@
 		<Unit filename="..\src\sv_master.cpp" />
 		<Unit filename="..\src\sv_master.h" />
 		<Unit filename="..\src\sv_mobj.cpp" />
+		<Unit filename="..\src\sv_pch.h">
+			<Option compile="1" />
+			<Option weight="0" />
+		</Unit>
 		<Unit filename="..\src\sv_rproto.cpp" />
 		<Unit filename="..\src\sv_sqp.cpp" />
 		<Unit filename="..\src\sv_sqp.h" />

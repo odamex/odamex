@@ -57,7 +57,7 @@
 #include "minilzo.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
 #include "s_sound.h"
@@ -78,6 +78,7 @@
 #include "wi_stuff.h"
 #include "st_stuff.h"
 #include "am_map.h"
+#include "c_effect.h"
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
@@ -450,14 +451,15 @@ void D_DoomLoop (void)
 				CL_RequestConnectInfo();
 
 			// [RH] Use the consoleplayer's camera to update sounds
-			S_UpdateSounds (listenplayer().mo);	// move positional sounds
+			S_UpdateSounds (listenplayer().camera);	// move positional sounds
+			S_UpdateMusic();	// play another chunk of music
 
 			// Update display, next frame, with current state.
 			D_Display ();
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf_Bold ("\n%s\n", error.GetMessage().c_str());
+			Printf_Bold ("\n%s\n", error.GetMsg().c_str());
 
 			CL_QuitNetGame ();
 
@@ -1385,7 +1387,11 @@ std::vector<size_t> D_DoomWadReboot(
 
     UndoDehPatch();
 
-	D_InitStrings ();
+	// [RH] Initialize localizable strings.
+	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.Compact ();
+
+	//D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
 
 	//gotconback = false;
@@ -1399,10 +1405,12 @@ std::vector<size_t> D_DoomWadReboot(
 
 	G_SetLevelStrings ();
 	G_ParseMapInfo ();
+	G_ParseMusInfo ();
 	S_ParseSndInfo();
 
 	M_Init();
 	R_Init();
+	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
 	P_Init();
 
 	S_Init (snd_sfxvolume, snd_musicvolume);
@@ -1431,6 +1439,7 @@ void D_DoomMain (void)
 	M_ClearRandom();
 
 	gamestate = GS_STARTUP;
+	SetLanguageIDs ();
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
@@ -1440,7 +1449,7 @@ void D_DoomMain (void)
 
 	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
 
-	M_LoadDefaults ();			// load before initing other systems
+	M_LoadDefaults ();					// load before initing other systems
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
 	iwad = Args.CheckValue("-iwad");
@@ -1452,8 +1461,12 @@ void D_DoomMain (void)
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
 
+	// [RH] Initialize localizable strings.
+	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.Compact ();
+
 	// [RH] Initialize configurable strings.
-	D_InitStrings ();
+	//D_InitStrings ();
 	D_DoDefDehackedPatch ();
 
 	// [RH] Moved these up here so that we can do most of our
@@ -1467,11 +1480,11 @@ void D_DoomMain (void)
 	cvar_t::EnableCallbacks ();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
-	if (STARTUP1[0])	Printf (PRINT_HIGH, "%s\n", STARTUP1);
-	if (STARTUP2[0])	Printf (PRINT_HIGH, "%s\n", STARTUP2);
-	if (STARTUP3[0])	Printf (PRINT_HIGH, "%s\n", STARTUP3);
-	if (STARTUP4[0])	Printf (PRINT_HIGH, "%s\n", STARTUP4);
-	if (STARTUP5[0])	Printf (PRINT_HIGH, "%s\n", STARTUP5);
+	if (GStrings(STARTUP1)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP1));
+	if (GStrings(STARTUP2)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP2));
+	if (GStrings(STARTUP3)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP3));
+	if (GStrings(STARTUP4)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP4));
+	if (GStrings(STARTUP5)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP5));
 
 	// Nomonsters
 	sv_nomonsters = Args.CheckParm("-nomonsters");
@@ -1559,7 +1572,7 @@ void D_DoomMain (void)
 		autostart = true;
 	}
 	if (devparm)
-		Printf (PRINT_HIGH, "%s", Strings[0].builtin);        // D_DEVSTR
+		Printf (PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
 
 	// [RH] Now that all text strings are set up,
 	// insert them into the level and cluster data.
@@ -1567,6 +1580,9 @@ void D_DoomMain (void)
 
 	// [RH] Parse through all loaded mapinfo lumps
 	G_ParseMapInfo ();
+	
+	// [ML] Parse musinfo lump
+	G_ParseMusInfo ();
 
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();
@@ -1587,6 +1603,7 @@ void D_DoomMain (void)
 	R_Init ();
 
 	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
+	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
 	P_Init ();
 
 	Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");

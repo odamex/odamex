@@ -38,6 +38,8 @@
 #include "r_sky.h"
 #include "v_video.h"
 
+#include "p_lnspec.h"
+
 // OPTIMIZE: closed two sided lines as single sided
 
 // killough 1/6/98: replaced globals with statics where appropriate
@@ -155,19 +157,16 @@ static void BlastMaskedColumn (void (*blastfunc)(column_t *column), int texnum)
 
 int R_OrthogonalLightnumAdjustment()
 {
-	int amount = 0;
-
 	// [RH] Only do it if not foggy and allowed
     if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
-    {
-        // [SL] 2011-06-05 - Check for orthogonality within a tolerance 
-        // of 1/4 map unit
-        if (abs(curline->v1->y - curline->v2->y) < (FRACUNIT >> 2))
-            amount--;
-        else if (abs(curline->v1->x - curline->v2->x) < (FRACUNIT >> 2))
-            amount++;
-    }
-	return amount;
+	{
+		if (curline->linedef->slopetype == ST_HORIZONTAL)
+			return -1;
+		else if (curline->linedef->slopetype == ST_VERTICAL)
+			return 1;
+	}
+
+	return 0;	// no adjustment for diagonal lines
 }
 
 //
@@ -945,6 +944,15 @@ R_StoreWallRange
 
 	// calculate rw_offset (only needed for textured lines)
 	segtextured = (midtexture | toptexture) | (bottomtexture | maskedtexture);
+
+	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
+	// height to 0
+	if (curline->linedef->special == Line_Horizon)
+	{
+		rw_scale = ds_p->scale1 = ds_p->scale2 = 0;
+		rw_scalestep = 0;
+		segtextured = false;
+	}
 
 	if (segtextured)
 	{

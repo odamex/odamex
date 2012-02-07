@@ -944,6 +944,46 @@ unsigned int SlopeDiv (unsigned int num, unsigned int den)
 	return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }
 
+// [ML] 11/4/06: Moved here from v_video.cpp
+// [ML] 12/6/11: Moved from v_draw.cpp, not sure where to put it now...
+/*
+===============
+BestColor
+(borrowed from Quake2 source: utils3/qdata/images.c)
+===============
+*/
+byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors)
+{
+	int		i;
+	int		dr, dg, db;
+	int		bestdistortion, distortion;
+	int		bestcolor;
+
+//
+// let any color go to 0 as a last resort
+//
+	bestdistortion = 256*256*4;
+	bestcolor = 0;
+
+	for (i = 0; i < numcolors; i++)
+	{
+		dr = r - RPART(palette[i]);
+		dg = g - GPART(palette[i]);
+		db = b - BPART(palette[i]);
+		distortion = dr*dr + dg*dg + db*db;
+		if (distortion < bestdistortion)
+		{
+			if (!distortion)
+				return i;		// perfect match
+
+			bestdistortion = distortion;
+			bestcolor = i;
+		}
+	}
+
+	return bestcolor;
+}
+
 
 VERSION_CONTROL (r_data_cpp, "$Id$")
 

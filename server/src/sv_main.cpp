@@ -36,12 +36,13 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
 #include "gi.h"
 #include "d_net.h"
 #include "g_game.h"
+#include "p_tick.h"
 #include "p_local.h"
 #include "sv_main.h"
 #include "sv_sqp.h"
@@ -76,10 +77,13 @@ baseapp_t baseapp = server;
 bool        simulated_connection = false;
 
 extern bool HasBehavior;
+extern int mapchange;
 
 bool step_mode = false;
 
 #define IPADDRSIZE 4	// GhostlyDeath -- Someone might want to do IPv6 junk
+
+std::queue<byte> free_player_ids;
 
 typedef struct
 {
@@ -100,13 +104,15 @@ EXTERN_CVAR(sv_website)
 EXTERN_CVAR(sv_waddownload)
 EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_emptyreset)
+EXTERN_CVAR(sv_emptyfreeze)
 EXTERN_CVAR(sv_clientcount)
 EXTERN_CVAR(sv_globalspectatorchat)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(sv_flooddelay)
-EXTERN_CVAR(sv_timeleft)
+EXTERN_CVAR(sv_ticbuffer)
 
-void SexMessage (const char *from, char *to, int gender);
+void SexMessage (const char *from, char *to, int gender,
+	const char *victim, const char *killer);
 void SV_RemoveDisconnectedPlayer(player_t &player);
 
 CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
@@ -168,6 +174,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_maxcorpses)
 
 EXTERN_CVAR (sv_weaponstay)
@@ -713,28 +720,34 @@ void SV_InitNetwork (void)
 
 int SV_GetFreeClient(void)
 {
-	if(players.size() >= sv_maxclients)
+	if (players.size() >= sv_maxclients)
 		return -1;
 
+	if (players.empty())
+	{
+		while (!free_player_ids.empty())
+			free_player_ids.pop();
+
+		// list of free ids needs to be initialized
+		for (int i = 1; i < MAXPLAYERS; i++)
+			free_player_ids.push(i);
+	}
+
 	players.push_back(player_t());
+
+	// generate player id
+	players.back().id = free_player_ids.front();
+	free_player_ids.pop();
 
 	// update tracking cvar
 	sv_clientcount.ForceSet(players.size());
 
 	// repair mo after player pointers are reset
-	for(size_t i = 0; i < players.size() - 1; i++)
+	for (size_t i = 0; i < players.size() - 1; i++)
 	{
-		if(players[i].mo)
+		if (players[i].mo)
 			players[i].mo->player = &players[i];
 	}
-
-	// generate player id
-	size_t max = 0;
-	for (size_t c = 0; c < players.size() - 1; c++)
-	{
-		max = (max>players[c].id) ? max : players[c].id;
-	}
-	players[players.size() - 1].id = max + 1;
 
 	return players.size() - 1;
 }
@@ -805,7 +818,10 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 	for (size_t i=0; i<players.size(); i++)
 	{
 		if (players[i].id == player.id)
+		{
 			players.erase(players.begin() + i);
+			free_player_ids.push(player.id);
+		}
 	}
 
 	// update tracking cvar
@@ -833,7 +849,7 @@ void SV_GetPackets (void)
 		if (!validplayer(player)) // no client with net_from address
 		{
 			// apparently, someone is trying to connect
-			if (gamestate == GS_LEVEL)
+			if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
 				SV_ConnectClient();
 
 			continue;
@@ -856,16 +872,6 @@ void SV_GetPackets (void)
 		else
 			i++;
 	}
-
-	// [SL] 2011-05-18 - Handle sv_emptyreset
-	static size_t last_player_count = players.size();
-	if (sv_emptyreset && players.size() == 0 &&
-		last_player_count > 0 && gamestate == GS_LEVEL)
-	{
-		// The last player just disconnected so reset the level
-        G_DeferedInitNew(level.mapname);
-    }
-	last_player_count = players.size();
 }
 
 
@@ -1139,78 +1145,105 @@ void SV_SendUserInfo (player_t &player, client_t* cl)
 //
 void SV_SetupUserInfo (player_t &player)
 {
-	int		old_team;
-	const char   *skin;
-	char	old_netname[MAXPLAYERNAME+1];
-	std::string		gendermessage;
+	// read in userinfo from packet
+	std::string		old_netname(player.userinfo.netname);
+	std::string		new_netname(MSG_ReadString());
 
-	player_t* p;
-	p = &player;
+	team_t			old_team = static_cast<team_t>(player.userinfo.team);
+	team_t			new_team = static_cast<team_t>(MSG_ReadByte());
 
-	// store players team number
-	old_team = p->userinfo.team;
+	gender_t		gender = static_cast<gender_t>(MSG_ReadLong());
+	int				color = MSG_ReadLong();
+	std::string		skin(MSG_ReadString());
 
-	// Store player's old name for comparison.
-	strncpy (old_netname, p->userinfo.netname, sizeof(old_netname));
+	int				aimdist = MSG_ReadLong();
+	bool			unlag = MSG_ReadBool();
+	byte			update_rate = MSG_ReadByte();
+	weaponswitch_t	switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
 
-	// Read user info
-	strncpy (p->userinfo.netname, MSG_ReadString(), sizeof(p->userinfo.netname));
-	p->userinfo.team	= (team_t)MSG_ReadByte();	// [Toke - Teams]
-	p->userinfo.gender	= (gender_t)MSG_ReadLong();
-	p->prefcolor		= MSG_ReadLong();
-	p->userinfo.color	= p->prefcolor;
+	weapontype_t	weapon_prefs[NUMWEAPONS];
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		weapon_prefs[i] = static_cast<weapontype_t>(MSG_ReadByte());
+		if (weapon_prefs[i] < 0 || weapon_prefs[i] >= NUMWEAPONS)
+			weapon_prefs[i] = wp_fist;
+	}
 
-	skin = MSG_ReadString();	// [Toke - Skins] Player skin
+	// ensure sane values for userinfo
+	if (gender < 0 || gender >= NUMGENDER)
+		gender = GENDER_NEUTER;
 
-	// Make sure the skin is valid
-	p->userinfo.skin = R_FindSkin(skin);
+	if (aimdist < 0)
+		aimdist = 0;
+	if (aimdist > 5000)
+		aimdist = 5000;
 
-	p->userinfo.aimdist = MSG_ReadLong();
+	if (update_rate < 1)
+		update_rate = 1;
+	else if (update_rate > 3)
+		update_rate = 3;
 
-	// Make sure the aimdist is valid
-	if (p->userinfo.aimdist < 0)
-		p->userinfo.aimdist = 0;
-	if (p->userinfo.aimdist > 5000)
-		p->userinfo.aimdist = 5000;
+	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
+		switchweapon = WPSW_ALWAYS;
 
-	// [SL] 2011-05-11 - Client opt-in/out of serverside unlagging
-	p->userinfo.unlag = MSG_ReadByte();
+	// [SL] 2011-12-02 - Players can update these parameters whenever they like
+	player.userinfo.unlag			= unlag;
+	player.userinfo.update_rate		= update_rate;
+	player.userinfo.aimdist			= aimdist;
+	player.userinfo.switchweapon	= switchweapon;
+	memcpy(player.userinfo.weapon_prefs, weapon_prefs, sizeof(weapon_prefs));
+	
+	// [SL] 2011-12-02 - Prevent players from spamming certain userinfo updates
+	if (player.userinfo.next_change_time > gametic)
+	{
+		// Send the client's actual userinfo back to them so they can reset it
+		SV_SendUserInfo (player, &player.client);
+		return;
+	}
 
-	// [SL] 2011-09-01 - Send client svc_moveplayer messages every N tics
-	p->userinfo.update_rate = MSG_ReadByte();
-	if (p->userinfo.update_rate < 1)
-		p->userinfo.update_rate = 1;
-	else if (p->userinfo.update_rate > 3)
-		p->userinfo.update_rate = 3;
-
-	// Make sure the gender is valid
-	if(p->userinfo.gender >= NUMGENDER)
-		p->userinfo.gender = GENDER_NEUTER;
-
+	player.userinfo.gender			= gender;
+	player.userinfo.skin			= R_FindSkin(skin.c_str());
+	player.userinfo.team			= new_team;
+	player.userinfo.color			= color;
+	player.prefcolor				= color;
+	
+	strncpy(player.userinfo.netname, new_netname.c_str(), MAXPLAYERNAME + 1);
 	// Compare names and broadcast if different.
-	if (strncmp(old_netname, "", sizeof(old_netname)) && strncmp(p->userinfo.netname, old_netname, sizeof(old_netname))) {
-		switch (p->userinfo.gender) {
-			case 0: gendermessage = "his";  break;
-			case 1: gendermessage = "her";  break;
-			default: gendermessage = "its";  break;
+	if (!old_netname.empty() && StdStringCompare(new_netname, old_netname, false))
+    {
+		std::string	gendermessage;
+		switch (gender) {
+			case GENDER_MALE:	gendermessage = "his";  break;
+			case GENDER_FEMALE:	gendermessage = "her";  break;
+			default:			gendermessage = "its";  break;
 		}
-		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", old_netname, gendermessage.c_str(), p->userinfo.netname);
+
+		SV_BroadcastPrintf (PRINT_HIGH, "%s changed %s name to %s.\n", 
+            old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname);
 	}
 
 	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	{
 		SV_CheckTeam (player);
 
-	// kill player if team is changed
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-		if (p->mo && p->userinfo.team != old_team)
-			P_DamageMobj (p->mo, 0, 0, 1000, 0);
-
+		if (player.mo && player.userinfo.team != old_team &&
+			player.ingame() && !player.spectator)
+		{
+			// kill player if team is changed
+			P_DamageMobj (player.mo, 0, 0, 1000, 0);
+			SV_BroadcastPrintf(PRINT_HIGH, "%s switched to the %s team.\n",
+				new_netname.c_str(), team_names[new_team]);
+		}
+	}
 
 	// inform all players of new player info
-	for (size_t i = 0; i < players.size(); i++ )
+	for (size_t i = 0; i < players.size(); i++)
 	{
 		SV_SendUserInfo (player, &clients[i]);
 	}
+
+	// [SL] 2011-12-02 - Player can update all preferences again in 5 seconds
+	player.userinfo.next_change_time = gametic + 5 * TICRATE;
 }
 
 //
@@ -1238,21 +1271,13 @@ EXTERN_CVAR (sv_teamsinplay)
 //
 void SV_CheckTeam (player_t &player)
 {
-	switch (player.userinfo.team)
-	{
-		case TEAM_BLUE:
-		case TEAM_RED:
+	if (sv_gametype == GM_CTF && 
+			(player.userinfo.team < 0 || player.userinfo.team >= NUMTEAMS))
+		SV_ForceSetTeam (player, SV_GoodTeam ());
 
-		if(sv_gametype == GM_CTF && player.userinfo.team < 2)
-			break;
-
-		if(sv_gametype != GM_CTF && player.userinfo.team < sv_teamsinplay)
-			break;
-
-		default:
-			SV_ForceSetTeam (player, SV_GoodTeam ());
-			break;
-	}
+	if (sv_gametype != GM_CTF && 
+			(player.userinfo.team < 0 || player.userinfo.team >= sv_teamsinplay))
+		SV_ForceSetTeam (player, SV_GoodTeam ());
 
 	// Force colors
 	switch (player.userinfo.team)
@@ -1275,13 +1300,43 @@ void SV_CheckTeam (player_t &player)
 //
 team_t SV_GoodTeam (void)
 {
-	for(size_t i = 0; i < NUMTEAMS; i++)
-		if((sv_gametype == GM_CTF && i < 2) || (sv_gametype != GM_CTF && i < sv_teamsinplay))
-			return (team_t)i;
+	int teamcount = NUMTEAMS;
+	if (sv_gametype != GM_CTF && 
+			sv_teamsinplay >= 0 && sv_teamsinplay <= NUMTEAMS)
+		teamcount = sv_teamsinplay;
 
-	I_Error ("Teamplay is set and no teams are enabled!\n");
+	if (teamcount == 0)
+	{
+		I_Error ("Teamplay is set and no teams are enabled!\n");
+		return TEAM_NONE;
+	}	
 
-	return TEAM_NONE;
+	int *teamsizes = new int[teamcount];
+	memset(teamsizes, 0, sizeof(teamsizes));
+
+	// Determine the number of active players on each team
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		if (players[i].ingame() && !players[i].spectator && 
+				players[i].userinfo.team >= 0 && players[i].userinfo.team < teamcount)
+			teamsizes[players[i].userinfo.team]++;
+	}
+
+	// Find the smallest team
+	int smallest_team_size = MAXPLAYERS;
+	team_t smallest_team = (team_t)0;
+	for (int i = 0; i < teamcount; i++)
+	{
+		if (teamsizes[i] < smallest_team_size)
+		{
+			smallest_team_size = teamsizes[i];
+			smallest_team = (team_t)i;
+		}
+	}
+
+    delete[] teamsizes;
+
+	return smallest_team;
 }
 
 
@@ -1785,14 +1840,11 @@ void SV_UpdateMovingSectors(player_t &pl)
 // Sends gametic to synchronize with the client
 //
 // [SL] 2011-05-11 - Instead of sending the whole gametic (4 bytes),
-// send only the least significant byte to save bandwidth.  We use
-// the difference in these gametics to calculate a client's lag, so
-// 1 byte lets us calculate lag up to 7.3 seconds, which is plenty.
-//
+// send only the least significant byte to save bandwidth. 
 void SV_SendGametic(client_t* cl)
 {
-	MSG_WriteMarker(&cl->reliablebuf, svc_svgametic);
-	MSG_WriteByte(&cl->reliablebuf, gametic & 0xFF);
+	MSG_WriteMarker	(&cl->netbuf, svc_svgametic);
+	MSG_WriteByte	(&cl->netbuf, (byte)(gametic & 0xFF));
 }
 
 
@@ -2353,6 +2405,9 @@ void SV_ConnectClient (void)
 	MSG_WriteString (&cl->reliablebuf, level.mapname);
 	G_DoReborn (players[n]);
 	SV_ClientFullUpdate (players[n]);
+	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
+	if (gamestate == GS_INTERMISSION)
+		MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
 	SV_SendPacket (players[n]);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);
@@ -2845,7 +2900,7 @@ void SV_Say(player_t &player)
 	byte team = MSG_ReadByte();
     const char *s = MSG_ReadString();
 
-	if(!strlen(s) || strlen(s) > 128)
+	if(!strlen(s) || strlen(s) > MAX_CHATSTR_LEN)
 		return;
 
     // Flood protection
@@ -2874,16 +2929,16 @@ void SV_Say(player_t &player)
 	if (strnicmp(s, "/me ", 4) == 0)
 	{
 		if (player.spectator && (!sv_globalspectatorchat || team))
-			SV_SpectatorPrintf(PRINT_CHAT, "<SPECTATORS> * %s %s\n", player.userinfo.netname, &s[4]);
+			SV_SpectatorPrintf(PRINT_TEAMCHAT, "<SPECTATORS> * %s %s\n", player.userinfo.netname, &s[4]);
 		else if(!team)
 			SV_BroadcastPrintf (PRINT_CHAT, "* %s %s\n", player.userinfo.netname, &s[4]);
 		else if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-			SV_TeamPrintf(PRINT_CHAT, player.id, "<TEAM> * %s %s\n", player.userinfo.netname, &s[4]);
+			SV_TeamPrintf(PRINT_TEAMCHAT, player.id, "<TEAM> * %s %s\n", player.userinfo.netname, &s[4]);
 	}
 	else
 	{
 		if (player.spectator && (!sv_globalspectatorchat || team))
-			SV_SpectatorPrintf (PRINT_CHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
+			SV_SpectatorPrintf (PRINT_TEAMCHAT, "<%s to SPECTATORS> %s\n", player.userinfo.netname, s);
 		else if(!team)
 			SV_BroadcastPrintf (PRINT_CHAT, "%s: %s\n", player.userinfo.netname, s);
 		else if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
@@ -2989,7 +3044,9 @@ void SV_UpdateMonsters(player_t &pl)
     {
         if (mo->flags & MF_CORPSE)
 			continue;
-        if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
+	
+        if (!(mo->flags & MF_COUNTKILL ||
+			mo->type == MT_SKULL))
 			continue;
 
 		// update monster position every 10 tics
@@ -3099,10 +3156,8 @@ void SV_RemoveCorpses (void)
 	if(sv_maxcorpses <= 0)
 		return;
 
-	if (gametic%35)
-	{
+	if (!P_AtInterval(TICRATE))
 		return;
-	}
 	else
 	{
 		TThinkerIterator<AActor> iterator;
@@ -3125,23 +3180,6 @@ void SV_RemoveCorpses (void)
 }
 
 //
-// SV_CalcRoundtripDelay
-//
-// [SL] 2011-05-11 - Calculate a client's lag based on how many
-// tics have passed since we sent the client this gametic
-//
-void SV_CalcRoundtripDelay(player_t &player)
-{
-	// We only send the least significant byte of gametic
-	byte received_tic = MSG_ReadByte();
-	// since gametic is 0-255 here, we must account for when gametic wraps
-	// around to zero again
-	size_t delay = ((gametic & 0xFF) + 256 - received_tic) & 0xFF;
-
-	Unlag::getInstance().setRoundtripDelay(player.id, delay);
-}
-
-//
 // SV_SendPingRequest
 // Pings the client and requests a reply
 //
@@ -3149,7 +3187,7 @@ void SV_CalcRoundtripDelay(player_t &player)
 //
 void SV_SendPingRequest(client_t* cl)
 {
-	if ((gametic%100) != 0)
+	if (!P_AtInterval(100))
 		return;
 
 	MSG_WriteMarker (&cl->reliablebuf, svc_pingrequest);
@@ -3174,7 +3212,7 @@ void SV_CalcPing(player_t &player)
 //
 void SV_UpdatePing(client_t* cl)
 {
-	if ((gametic%101) != 0)
+	if (!P_AtInterval(101))
 		return;
 
 	for (size_t j=0; j < players.size(); j++)
@@ -3224,7 +3262,7 @@ void SV_UpdateDeadPlayers()
 //
 void SV_ClearClientsBPS(void)
 {
-	if (gametic % TICRATE)
+	if (!P_AtInterval(TICRATE))
 		return;
 
 	for (size_t i = 0; i < players.size(); i++)
@@ -3262,31 +3300,34 @@ void SV_SendPackets(void)
 //
 void SV_WriteCommands(void)
 {
-	size_t		i, j;
-	client_t	*cl;
+	// [SL] 2011-05-11 - Save player positions and moving sector heights so
+	// they can be reconciled later for unlagging
+	Unlag::getInstance().recordPlayerPositions();
+	Unlag::getInstance().recordSectorPositions();
 
-	for (i=0; i < players.size(); i++)
+	for (size_t i=0; i < players.size(); i++)
 	{
-		cl = &clients[i];
+		client_t *cl = &clients[i];
+		
+		// Don't need to update origin every tic.
+		// The server sends origin and velocity of a
+		// player and the client always knows origin on
+		// on the next tic.
+		// HOWEVER, update as often as the player requests
+		if (P_AtInterval(players[i].userinfo.update_rate))
+		{ 
+			// [SL] 2011-05-11 - Send the client the server's gametic
+			// this gametic is returned to the server with the client's
+			// next cmd
+			if (players[i].ingame())
+				SV_SendGametic(cl);
 
-		// [SL] 2011-05-11 - Send the client the server's gametic
-		// this gametic is returned to the server with the client's
-		// next cmd
-		if (players[i].ingame())
-			SV_SendGametic(cl);
-
-		for (j=0; j < players.size(); j++)
-		{
-			// Don't need to update origin every tic.
-			// The server sends origin and velocity of a
-			// player and the client always knows origin on
-			// on the next tic.
-			// HOWEVER, update as often as the player requests
-			if (gametic % players[i].userinfo.update_rate == 0)
-			{ 
+			for (size_t j=0; j < players.size(); j++)
+			{
 				if (!players[j].ingame() || !players[j].mo)
 					continue;
 
+				// a player is updated about their own position elsewhere
 				if (j == i)
 					continue;
 
@@ -3299,7 +3340,11 @@ void SV_WriteCommands(void)
 
 				MSG_WriteMarker(&cl->netbuf, svc_moveplayer);
 				MSG_WriteByte(&cl->netbuf, players[j].id);     // player number
-				MSG_WriteLong(&cl->netbuf, cl->lastclientcmdtic);
+
+				// [SL] 2011-09-14 - the most recently processed ticcmd from the
+				// client we're sending this message to.
+				MSG_WriteLong(&cl->netbuf, players[i].tic);
+
 				MSG_WriteLong(&cl->netbuf, players[j].mo->x);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->y);
 				MSG_WriteLong(&cl->netbuf, players[j].mo->z);
@@ -3316,8 +3361,8 @@ void SV_WriteCommands(void)
 
 				// [Russell] - hack, tell the client about the partial
 				// invisibility power of another player.. (cheaters can disable
-                // this but its all we have for now)
-                MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
+				// this but its all we have for now)
+				MSG_WriteLong(&cl->netbuf, players[j].powers[pw_invisibility]);
 			}
 		}
 
@@ -3329,8 +3374,6 @@ void SV_WriteCommands(void)
 
 		SV_UpdateMonsters(players[i]);
 
-		// [SL] 2011-05-11 - Renamed SendGametic to SendPingRquest to more
-		// acurately convey its purpose
 		SV_SendPingRequest(cl);     // request ping reply
 		SV_UpdatePing(cl);          // client returns it
 	}
@@ -3344,109 +3387,200 @@ void SV_PlayerTriedToCheat(player_t &player)
 	SV_DropClient(player);
 }
 
-void SV_GetPlayerCmd(player_t &player)
+//
+// SV_FlushPlayerCmds
+//
+// Clears a player's queue of ticcmds, ignoring and discarding them
+//
+void SV_FlushPlayerCmds(player_t &player)
 {
-	client_t *cl = &player.client;
-	ticcmd_t *cmd = &player.cmd;
-	int tic = MSG_ReadLong(); // get client gametic
+	while (!player.cmds.empty())
+		player.cmds.pop();
+}
 
-	// denis - todo - (out of order packet)
-	if(!player.mo || cl->lastclientcmdtic > tic)
+//
+// SV_CalculateNumTiccmds
+//
+// [SL] 2011-09-16 - Calculate how many ticcmds should be processed.  Under
+// most circumstances, it should be 1 per gametic to have the smoothest
+// player movement possible.
+//
+int SV_CalculateNumTiccmds(player_t &player)
+{
+	if (!player.mo || player.cmds.empty())
+		return 0;
+
+	const int minimum_cmds = 1;
+	const size_t maximum_queue_size = TICRATE / 4;
+	
+	if (!sv_ticbuffer || player.spectator || player.playerstate == PST_DEAD)
 	{
-		MSG_ReadLong();
-		MSG_ReadLong();
-		MSG_ReadShort();
-		MSG_ReadLong();
-		MSG_ReadLong();
-		MSG_ReadShort();
-		MSG_ReadLong(); // 24 bytes;
+		// Process all queued ticcmds.
+		return maximum_queue_size;
+	}
+	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
+	{
+		// Player is not moving
+		return 2 * minimum_cmds;
+	}
+	if (!P_VisibleToPlayers(player.mo) && P_AtInterval(TICRATE/2))
+	{
+		// Every half second, run two commands if no one can see this player
+		return 2 * minimum_cmds;
+	}
+	if (player.cmds.size() > maximum_queue_size)
+	{
+		// The player experienced a large latency spike so try to catch up by
+		// processing more than one ticcmd at the expense of appearing perfectly
+		//  smooth
+		return 2 * minimum_cmds;
+	}
+
+	// always run at least 1 ticcmd if possible
+	return minimum_cmds;
+}
+
+//
+// SV_ProcessPlayerCmd
+//
+// Decides how many of a player's queued ticcmds should be processed and
+// prepares the player.cmd structure for P_PlayerThink().  Also has the
+// responsibility of ensuring the Unlag class has the appropriate latency
+// for the player whose ticcmd we're processing.
+//
+void SV_ProcessPlayerCmd(player_t &player)
+{
+	if (!validplayer(player))
+		return;
+
+	#ifdef _TICCMD_QUEUE_DEBUG_
+	DPrintf("Cmd queue size for %s: %d\n", 
+				player.userinfo.netname, player.cmds.size());
+	#endif	// _TICCMD_QUEUE_DEBUG_
+
+	if (!player.mo)
+	{
+		SV_FlushPlayerCmds(player);
 		return;
 	}
 
-	// get the previous cmds and angle
-	if (  cl->lastclientcmdtic && (tic - cl->lastclientcmdtic >= 2)
-		     && gamestate != GS_INTERMISSION)
-	{
-		cmd->ucmd.buttons = MSG_ReadByte(); // 1
+	int num_cmds = SV_CalculateNumTiccmds(player);	
 
-		if(player.playerstate != PST_DEAD)
+	for (int i = 0; i < num_cmds && !player.cmds.empty(); i++)
+	{
+		usercmd_t *ucmd = &(player.cmds.front().ucmd);
+
+		if (player.playerstate != PST_DEAD)
 		{
-			player.mo->angle = MSG_ReadShort() << 16; // 3
+			if (step_mode)
+				player.mo->angle = ucmd->yaw;
+			else
+				player.mo->angle = ucmd->yaw << FRACBITS;
 
 			if (!sv_freelook)
-			{
 				player.mo->pitch = 0;
-				MSG_ReadShort();
-			}
 			else
-				player.mo->pitch = MSG_ReadShort() << 16; // 5
+				player.mo->pitch = ucmd->pitch << FRACBITS;
 		}
-		else
-			MSG_ReadLong();
 
-		cmd->ucmd.forwardmove = MSG_ReadShort(); // 7
-		cmd->ucmd.sidemove = MSG_ReadShort(); // 9
-        cmd->ucmd.upmove = MSG_ReadShort(); // 11
-
-		if ( abs(cmd->ucmd.forwardmove) > 12800
-			|| abs(cmd->ucmd.sidemove) > 12800)
+		if (abs(ucmd->forwardmove) > 12800 || abs(ucmd->sidemove) > 12800)
 		{
 			SV_PlayerTriedToCheat(player);
 			return;
 		}
 
-		cmd->ucmd.impulse = MSG_ReadByte(); // 12
+		// copy this ticcmd to the player.cmd so that it will be processsed
+		player.cmd.ucmd.buttons		= ucmd->buttons;
+		player.cmd.ucmd.yaw			= ucmd->yaw;
+		player.cmd.ucmd.pitch		= ucmd->pitch;
+		player.cmd.ucmd.forwardmove	= ucmd->forwardmove;
+		player.cmd.ucmd.sidemove	= ucmd->sidemove;
+		player.cmd.ucmd.upmove		= ucmd->upmove;
+		player.cmd.ucmd.impulse		= ucmd->impulse;
+		player.cmd.ucmd.roll		= ucmd->roll;
+		player.cmd.ucmd.msec		= ucmd->msec;
+		player.cmd.ucmd.use			= ucmd->use;
+		player.tic 					= player.cmds.front().tic;
+		
+		if (ucmd->buttons & BT_ATTACK)
+		{
+			Unlag::getInstance().setRoundtripDelay(player.id, player.cmds.front().svgametic);
+		}
 
-		if(!sv_speedhackfix && gamestate == GS_LEVEL)
+		// Apply this ticcmd using the game logic
+		if (!sv_speedhackfix && gamestate == GS_LEVEL)
 		{
 			P_PlayerThink(&player);
 			player.mo->RunThink();
 		}
+
+		player.cmds.pop();		// remove this tic from the queue after being processed
 	}
-	else
-	{
-		// get 12 bytes
-		MSG_ReadLong();
-		MSG_ReadLong();
-		MSG_ReadLong();
-	}
+}
 
-	// get current cmds and angle
-	cmd->ucmd.buttons = MSG_ReadByte(); // 13
-	if (gamestate != GS_INTERMISSION && player.playerstate != PST_DEAD)
-	{
-		if(step_mode)cmd->ucmd.yaw = MSG_ReadShort(); // 15
-		else player.mo->angle = MSG_ReadShort() << 16;
+//
+// SV_GetPlayerCmd
+//
+// Extracts a player's ticcmd message from their network buffer and queues
+// the ticcmd for later processing.  The client always sends its previous
+// ticcmd followed by its current ticcmd just in case there is a dropped
+// packet.
 
-		if (!sv_freelook)
-		{
-			player.mo->pitch = 0;
-			MSG_ReadShort();
-		}
-		else
-			player.mo->pitch = MSG_ReadShort() << 16; // 17
-	}
-	else
-		MSG_ReadLong();
+void SV_GetPlayerCmd(player_t &player)
+{
+	client_t *cl = &player.client;
+	ticcmd_t prevcmd, curcmd;
 
-	cmd->ucmd.forwardmove = MSG_ReadShort(); // 19
-	cmd->ucmd.sidemove = MSG_ReadShort(); // 21
-    cmd->ucmd.upmove = MSG_ReadShort(); // 23
+	// The client-tic at the time this message was sent.  The server stores
+	// this and sends it back the next time it tells the client
+	int tic 					= MSG_ReadLong();
+	
+	// The last server-tic the client received before sending this ticcmd.
+	// The server sends server-tics with every update of player positions.
+	byte svgametic				= MSG_ReadByte();
+	
+	// Get the previous cmd
+	prevcmd.tic					= tic - 1;
+	prevcmd.svgametic			= svgametic;
+	prevcmd.ucmd.buttons 		= MSG_ReadByte();
+	prevcmd.ucmd.yaw 			= MSG_ReadShort();
+	prevcmd.ucmd.pitch 			= MSG_ReadShort();
+	prevcmd.ucmd.forwardmove 	= MSG_ReadShort();
+	prevcmd.ucmd.sidemove		= MSG_ReadShort();
+	prevcmd.ucmd.upmove			= MSG_ReadShort();
+	prevcmd.ucmd.impulse		= MSG_ReadByte();
+	prevcmd.ucmd.roll			= 0;	// unused
+	prevcmd.ucmd.msec			= 0;	// unused
+	prevcmd.ucmd.use			= 0;	// unused
 
-	if ( abs(cmd->ucmd.forwardmove) > 12800
-		|| abs(cmd->ucmd.sidemove) > 12800)
-	{
-		SV_PlayerTriedToCheat(player);
+	// Get the current cmd
+	curcmd.tic					= tic;
+	curcmd.svgametic			= svgametic;
+	curcmd.ucmd.buttons 		= MSG_ReadByte();
+	curcmd.ucmd.yaw 			= MSG_ReadShort();
+	curcmd.ucmd.pitch 			= MSG_ReadShort();
+	curcmd.ucmd.forwardmove 	= MSG_ReadShort();
+	curcmd.ucmd.sidemove		= MSG_ReadShort();
+	curcmd.ucmd.upmove			= MSG_ReadShort();
+	curcmd.ucmd.impulse			= MSG_ReadByte();
+	curcmd.ucmd.roll			= 0;	// unused
+	curcmd.ucmd.msec			= 0;	// unused
+	curcmd.ucmd.use				= 0;	// unused
+
+	// out of order packet
+	// TODO: Insert into the appropriate place in the queue
+	if (!player.mo || cl->lastclientcmdtic > tic)
 		return;
-	}
 
-	cmd->ucmd.impulse = MSG_ReadByte(); // 24
-
-	if(!sv_speedhackfix && gamestate == GS_LEVEL)
+	// if the server somehow missed the previous cmd in the last cmd
+	// (dropped packet), add it to the queue
+	if (  cl->lastclientcmdtic && (tic - cl->lastclientcmdtic >= 2)
+		     && gamestate != GS_INTERMISSION)
 	{
-		P_PlayerThink(&player);
-		player.mo->RunThink();
+		player.cmds.push(prevcmd);
 	}
+
+	player.cmds.push(curcmd);
 
 	cl->lastclientcmdtic = tic;
 	cl->lastcmdtic = gametic;
@@ -3454,30 +3588,25 @@ void SV_GetPlayerCmd(player_t &player)
 
 void SV_UpdateConsolePlayer(player_t &player)
 {
+	AActor *mo = player.mo;
+	client_t *cl = &player.client;
+	
+	// Send updates about a player's position as often as the player wishes
+	if (!mo || !P_AtInterval(player.userinfo.update_rate))
+		return;
+
 	// GhostlyDeath -- Spectators are on their own really
 	if (player.spectator)
 	{
-        if (gametic % 3)
-            return;
-
         SV_UpdateMovingSectors(player);
 		return;
 	}
 
-	// It's not a good idea to send 33 bytes every tic.
-	if (gametic % 3)
-		return;
-
-	AActor *mo = player.mo;
-
-	if(!mo)
-		return;
-
-	client_t *cl = &player.client;
-
 	// client player will update his position if packets were missed
 	MSG_WriteMarker (&cl->netbuf, svc_updatelocalplayer);
-	MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
+
+	// client-tic of the most recently processed ticcmd for this client
+	MSG_WriteLong (&cl->netbuf, player.tic);
 
 	MSG_WriteLong (&cl->netbuf, mo->x);
 	MSG_WriteLong (&cl->netbuf, mo->y);
@@ -3490,10 +3619,6 @@ void SV_UpdateConsolePlayer(player_t &player)
     MSG_WriteByte (&cl->netbuf, mo->waterlevel);
 
     SV_UpdateMovingSectors(player); // denis - fixme - todo - only info about the sector player is standing on info should be sent. note that this is not player->mo->subsector->sector
-
-//	MSG_WriteShort (&cl->netbuf, mo->momx >> FRACBITS);
-//	MSG_WriteShort (&cl->netbuf, mo->momy >> FRACBITS);
-//	MSG_WriteShort (&cl->netbuf, mo->momz >> FRACBITS);
 }
 
 //
@@ -3575,7 +3700,7 @@ void SV_Spectate (player_t &player)
 
 			if (NumPlayers < sv_maxplayers)
 			{
-				if ((multiplayer && level.time > player.joinafterspectatortime + TICRATE*3) ||
+				if ((level.time > player.joinafterspectatortime + TICRATE*3) ||
 					level.time > player.joinafterspectatortime + TICRATE*5) {
 					player.spectator = false;
 
@@ -3681,7 +3806,7 @@ void SV_Suicide(player_t &player)
 
 	// merry suicide!
 	P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
-	player.mo->player = NULL;
+	//player.mo->player = NULL;
 	//player.mo = NULL;
 }
 
@@ -3867,9 +3992,6 @@ void SV_ParseCommands(player_t &player)
 			SV_GetPlayerCmd(player);
 			break;
 
-		case clc_svgametic:  // [SL] 2011-05-11
-            SV_CalcRoundtripDelay(player);
-            break;
 		case clc_pingreply:  // [SL] 2011-05-11 - Changed to clc_pingreply
 			SV_CalcPing(player);
 			break;
@@ -4090,17 +4212,19 @@ void SV_TimelimitCheck()
 	if(!sv_timelimit)
 		return;
 
-	// [ML] Update the sv_timeleft cvar for clients
-	// [SL] 2011-09-03 - Updating sv_timeleft forces the server to send all
-	// the server settings to all the clients, hogging bandwidth, so
-	// only do it sparingly
-	int timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;
+	level.timeleft = (int)(sv_timelimit * TICRATE * 60) - level.time;	// in tics
 
-	// Update sv_timeleft every 10 seconds
-	if ((gametic % (10*TICRATE)) == 0)
-		sv_timeleft = timeleft;
+	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
+	if (P_AtInterval(1 * TICRATE))		// every second
+	{
+		for (size_t i = 0; i < clients.size(); i++)
+		{
+			MSG_WriteMarker(&clients[i].netbuf, svc_timeleft);
+			MSG_WriteShort(&clients[i].netbuf, level.timeleft / TICRATE);
+		}
+	}
 
-	if (timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
+	if (level.timeleft > 0 || shotclock || gamestate == GS_INTERMISSION)
 		return;
 
 	// LEVEL TIMER
@@ -4136,6 +4260,22 @@ void SV_TimelimitCheck()
 	shotclock = TICRATE*2;
 }
 
+void SV_IntermissionTimeCheck()
+{
+	level.inttimeleft = mapchange/TICRATE;
+
+	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
+	// [ML] 2012-2-1 - Copy it for intermission fun
+	if (P_AtInterval(1 * TICRATE))		// every second
+	{
+		for (size_t i = 0; i < clients.size(); i++)
+		{
+			MSG_WriteMarker(&clients[i].netbuf, svc_inttimeleft);
+			MSG_WriteShort(&clients[i].netbuf, level.inttimeleft);
+		}
+	}
+}
+
 //
 // SV_GameTics
 //
@@ -4146,12 +4286,24 @@ void SV_GameTics (void)
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics();
 
-	if(gamestate == GS_LEVEL)
+	switch (gamestate)
 	{
-		SV_RemoveCorpses();
-		SV_WinCheck();
-		SV_TimelimitCheck();
+		case GS_LEVEL:
+			SV_RemoveCorpses();
+			SV_WinCheck();
+			SV_TimelimitCheck();
+		break;
+		
+		case GS_INTERMISSION:
+			SV_IntermissionTimeCheck();
+		break;
+		
+		default:
+		break;
 	}
+
+	for (size_t i = 0; i < players.size(); i++)
+		SV_ProcessPlayerCmd(players[i]);
 
 	SV_WadDownloads();
 	SV_UpdateMaster();
@@ -4211,10 +4363,10 @@ void SV_StepTics (QWORD tics)
 		SV_SendPackets();
 		SV_ClearClientsBPS();
 		SV_CheckTimeouts();
-
+		
 		// Since clients are only sent sector updates every 3rd tic, don't destroy
 		// the finished moving sectors until we've sent the clients the update
-		if (!(gametic % 3))
+		if (P_AtInterval(3))
 			SV_DestroyFinishedMovingSectors();
 
 		gametic++;
@@ -4249,10 +4401,25 @@ void SV_RunTics (void)
 		}
 	}
 
-	if(newtics > 0 && !step_mode)
+	// Check if the level should be reset
+	static size_t previous_player_count = 0;
+	if (sv_emptyreset && players.empty() && 
+		previous_player_count > 0 && gamestate == GS_LEVEL)
 	{
-		SV_StepTics(newtics);
-		gametime = nowtime;
+		// The last player just disconnected so reset the level
+		G_DeferedInitNew(level.mapname);
+	} 
+	previous_player_count = players.size();
+
+	// Run the tickers if there are players or we're starting a new level
+	if (!(sv_emptyfreeze && players.empty() && gamestate == GS_LEVEL) || 
+		gameaction == ga_newgame)
+	{
+		if(newtics > 0 && !step_mode)
+		{
+			SV_StepTics(newtics);
+			gametime = nowtime;
+		}
 	}
 
 	// wait until a network message arrives or next tick starts
@@ -4397,8 +4564,11 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType)
 //
 void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 {
+	int	 mod;
 	const char *message;
+	int messagenum;
 	char gendermessage[1024];
+	BOOL friendly;
 	int  gender;
 
 	if (!self || !self->player)
@@ -4410,209 +4580,142 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	if (inflictor && inflictor->player == self->player)
 		MeansOfDeath = MOD_UNKNOWN;
 
-	message = NULL;
+	if (((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && self->player->userinfo.team == attacker->player->userinfo.team) || sv_gametype == GM_COOP)
+		MeansOfDeath |= MOD_FRIENDLY_FIRE;
 
-	switch (MeansOfDeath) {
-		case MOD_SUICIDE:
-			message = OB_SUICIDE;
-			break;
-		case MOD_FALLING:
-			message = OB_FALLING;
-			break;
-		case MOD_CRUSH:
-			message = OB_CRUSH;
-			break;
-		case MOD_EXIT:
-			message = OB_EXIT;
-			break;
-		case MOD_WATER:
-			message = OB_WATER;
-			break;
-		case MOD_SLIME:
-			message = OB_SLIME;
-			break;
-		case MOD_LAVA:
-			message = OB_LAVA;
-			break;
-		case MOD_BARREL:
-			message = OB_BARREL;
-			break;
-		case MOD_SPLASH:
-			message = OB_SPLASH;
-			break;
+	friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
+	mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
+	message = NULL;
+	messagenum = 0;
+
+	switch (mod)
+	{
+		case MOD_SUICIDE:		messagenum = OB_SUICIDE;	break;
+		case MOD_FALLING:		messagenum = OB_FALLING;	break;
+		case MOD_CRUSH:			messagenum = OB_CRUSH;		break;
+		case MOD_EXIT:			messagenum = OB_EXIT;		break;
+		case MOD_WATER:			messagenum = OB_WATER;		break;
+		case MOD_SLIME:			messagenum = OB_SLIME;		break;
+		case MOD_LAVA:			messagenum = OB_LAVA;		break;
+		case MOD_BARREL:		messagenum = OB_BARREL;		break;
+		case MOD_SPLASH:		messagenum = OB_SPLASH;		break;
 	}
 
-	if (attacker && !message) {
-		if (attacker == self) {
-			switch (MeansOfDeath) {
-				case MOD_R_SPLASH:
-					message = OB_R_SPLASH;
-					break;
-				case MOD_ROCKET:
-					message = OB_ROCKET;
-					break;
-				default:
-					message = OB_KILLEDSELF;
-					break;
+	if (messagenum)
+		message = GStrings(messagenum);
+
+	if (attacker && message == NULL) {
+		if (attacker == self)
+		{
+			switch (mod)
+			{
+			case MOD_R_SPLASH:	messagenum = OB_R_SPLASH;		break;
+			case MOD_ROCKET:	messagenum = OB_ROCKET;			break;
+			default:			messagenum = OB_KILLEDSELF;		break;
 			}
-		} else if (!attacker->player) {
-					if (MeansOfDeath == MOD_HIT) {
-						switch (attacker->type) {
-							case MT_UNDEAD:
-								message = OB_UNDEADHIT;
-								break;
-							case MT_TROOP:
-								message = OB_IMPHIT;
-								break;
-							case MT_HEAD:
-								message = OB_CACOHIT;
-								break;
-							case MT_SERGEANT:
-								message = OB_DEMONHIT;
-								break;
-							case MT_SHADOWS:
-								message = OB_SPECTREHIT;
-								break;
-							case MT_BRUISER:
-								message = OB_BARONHIT;
-								break;
-							case MT_KNIGHT:
-								message = OB_KNIGHTHIT;
-								break;
-							default:
-								break;
-						}
-					} else {
-						switch (attacker->type) {
-							case MT_POSSESSED:
-								message = OB_ZOMBIE;
-								break;
-							case MT_SHOTGUY:
-								message = OB_SHOTGUY;
-								break;
-							case MT_VILE:
-								message = OB_VILE;
-								break;
-							case MT_UNDEAD:
-								message = OB_UNDEAD;
-								break;
-							case MT_FATSO:
-								message = OB_FATSO;
-								break;
-							case MT_CHAINGUY:
-								message = OB_CHAINGUY;
-								break;
-							case MT_SKULL:
-								message = OB_SKULL;
-								break;
-							case MT_TROOP:
-								message = OB_IMP;
-								break;
-							case MT_HEAD:
-								message = OB_CACO;
-								break;
-							case MT_BRUISER:
-								message = OB_BARON;
-								break;
-							case MT_KNIGHT:
-								message = OB_KNIGHT;
-								break;
-							case MT_SPIDER:
-								message = OB_SPIDER;
-								break;
-							case MT_BABY:
-								message = OB_BABY;
-								break;
-							case MT_CYBORG:
-								message = OB_CYBORG;
-								break;
-							case MT_WOLFSS:
-								message = OB_WOLFSS;
-								break;
-							default:
-								break;
-						}
-					}
+			message = GStrings(messagenum);
 		}
+		else if (!attacker->player) {
+			if (mod == MOD_HIT) {
+				switch (attacker->type) {
+					case MT_UNDEAD:
+						messagenum = OB_UNDEADHIT;
+						break;
+					case MT_TROOP:
+						messagenum = OB_IMPHIT;
+						break;
+					case MT_HEAD:
+						messagenum = OB_CACOHIT;
+						break;
+					case MT_SERGEANT:
+						messagenum = OB_DEMONHIT;
+						break;
+					case MT_SHADOWS:
+						messagenum = OB_SPECTREHIT;
+						break;
+					case MT_BRUISER:
+						messagenum = OB_BARONHIT;
+						break;
+					case MT_KNIGHT:
+						messagenum = OB_KNIGHTHIT;
+						break;
+					default:
+						break;
+				}
+			} else {
+				switch (attacker->type) {
+					case MT_POSSESSED:	messagenum = OB_ZOMBIE;		break;
+					case MT_SHOTGUY:	messagenum = OB_SHOTGUY;	break;
+					case MT_VILE:		messagenum = OB_VILE;		break;
+					case MT_UNDEAD:		messagenum = OB_UNDEAD;		break;
+					case MT_FATSO:		messagenum = OB_FATSO;		break;
+					case MT_CHAINGUY:	messagenum = OB_CHAINGUY;	break;
+					case MT_SKULL:		messagenum = OB_SKULL;		break;
+					case MT_TROOP:		messagenum = OB_IMP;		break;
+					case MT_HEAD:		messagenum = OB_CACO;		break;
+					case MT_BRUISER:	messagenum = OB_BARON;		break;
+					case MT_KNIGHT:		messagenum = OB_KNIGHT;		break;
+					case MT_SPIDER:		messagenum = OB_SPIDER;		break;
+					case MT_BABY:		messagenum = OB_BABY;		break;
+					case MT_CYBORG:		messagenum = OB_CYBORG;		break;
+					case MT_WOLFSS:		messagenum = OB_WOLFSS;		break;
+					default:break;
+				}
+			}
+
+			if (messagenum)
+				message = GStrings(messagenum);
+			}
 	}
 
 	if (message && !shotclock) {
-		SexMessage (message, gendermessage, gender);
-		SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+		SexMessage (message, gendermessage, gender,
+			self->player->userinfo.netname, self->player->userinfo.netname);
+		SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
 		return;
 	}
 
 	if (attacker && attacker->player) {
-		if (((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && self->player->userinfo.team == attacker->player->userinfo.team) || sv_gametype == GM_COOP) {
+		if (friendly) {
 			int rnum = P_Random ();
 
 			self = attacker;
 			gender = self->player->userinfo.gender;
-
-			if (rnum < 64)
-				message = OB_FRIENDLY1;
-			else if (rnum < 128)
-				message = OB_FRIENDLY2;
-			else if (rnum < 192)
-				message = OB_FRIENDLY3;
-			else
-				message = OB_FRIENDLY4;
+			messagenum = OB_FRIENDLY1 + (rnum & 3);
+		
 		} else {
-			switch (MeansOfDeath) {
-				case MOD_FIST:
-					message = OB_MPFIST;
-					break;
-				case MOD_CHAINSAW:
-					message = OB_MPCHAINSAW;
-					break;
-				case MOD_PISTOL:
-					message = OB_MPPISTOL;
-					break;
-				case MOD_SHOTGUN:
-					message = OB_MPSHOTGUN;
-					break;
-				case MOD_SSHOTGUN:
-					message = OB_MPSSHOTGUN;
-					break;
-				case MOD_CHAINGUN:
-					message = OB_MPCHAINGUN;
-					break;
-				case MOD_ROCKET:
-					message = OB_MPROCKET;
-					break;
-				case MOD_R_SPLASH:
-					message = OB_MPR_SPLASH;
-					break;
-				case MOD_PLASMARIFLE:
-					message = OB_MPPLASMARIFLE;
-					break;
-				case MOD_BFG_BOOM:
-					message = OB_MPBFG_BOOM;
-					break;
-				case MOD_BFG_SPLASH:
-					message = OB_MPBFG_SPLASH;
-					break;
-				case MOD_TELEFRAG:
-					message = OB_MPTELEFRAG;
-					break;
+			switch (mod)
+			{
+				case MOD_FIST:			messagenum = OB_MPFIST;			break;
+				case MOD_CHAINSAW:		messagenum = OB_MPCHAINSAW;		break;
+				case MOD_PISTOL:		messagenum = OB_MPPISTOL;		break;
+				case MOD_SHOTGUN:		messagenum = OB_MPSHOTGUN;		break;
+				case MOD_SSHOTGUN:		messagenum = OB_MPSSHOTGUN;		break;
+				case MOD_CHAINGUN:		messagenum = OB_MPCHAINGUN;		break;
+				case MOD_ROCKET:		messagenum = OB_MPROCKET;		break;
+				case MOD_R_SPLASH:		messagenum = OB_MPR_SPLASH;		break;
+				case MOD_PLASMARIFLE:	messagenum = OB_MPPLASMARIFLE;	break;
+				case MOD_BFG_BOOM:		messagenum = OB_MPBFG_BOOM;		break;
+				case MOD_BFG_SPLASH:	messagenum = OB_MPBFG_SPLASH;	break;
+				case MOD_TELEFRAG:		messagenum = OB_MPTELEFRAG;		break;
+				case MOD_RAILGUN:		messagenum = OB_RAILGUN;		break;
 			}
 		}
+		if (messagenum)
+			message = GStrings(messagenum);
 	}
 
-	if (message) {
-		SexMessage (message, gendermessage, gender);
-
-		std::string work = "%s ";
-		work += gendermessage;
-		work += ".\n";
-
-		SV_BroadcastPrintf (PRINT_MEDIUM, work.c_str(), self->player->userinfo.netname,
-							attacker->player->userinfo.netname);
+	if (message)
+	{
+		SexMessage (message, gendermessage, gender,
+			self->player->userinfo.netname, attacker->player->userinfo.netname);
+		SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
 		return;
 	}
 
-	SexMessage (OB_DEFAULT, gendermessage, gender);
-	SV_BroadcastPrintf (PRINT_MEDIUM, "%s %s.\n", self->player->userinfo.netname, gendermessage);
+	SexMessage (GStrings(OB_DEFAULT), gendermessage, gender,
+		self->player->userinfo.netname, self->player->userinfo.netname);
+	SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
 }
 void SV_SendDamagePlayer(player_t *player, int damage)
 {
@@ -4629,6 +4732,9 @@ void SV_SendDamagePlayer(player_t *player, int damage)
 
 void SV_SendDamageMobj(AActor *target, int pain)
 {
+	if (!target)
+		return;
+
 	for (size_t i = 0; i < players.size(); i++)
 	{
 		client_t *cl = &clients[i];
@@ -4637,12 +4743,29 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		MSG_WriteShort(&cl->reliablebuf, target->netid);
 		MSG_WriteShort(&cl->reliablebuf, target->health);
 		MSG_WriteByte(&cl->reliablebuf, pain);
+
+		MSG_WriteMarker (&cl->netbuf, svc_movemobj);
+		MSG_WriteShort (&cl->netbuf, target->netid);
+		MSG_WriteByte (&cl->netbuf, target->rndindex);
+		MSG_WriteLong (&cl->netbuf, target->x);
+		MSG_WriteLong (&cl->netbuf, target->y);
+		MSG_WriteLong (&cl->netbuf, target->z);
+
+		MSG_WriteMarker (&cl->netbuf, svc_mobjspeedangle);
+		MSG_WriteShort(&cl->netbuf, target->netid);
+		MSG_WriteLong (&cl->netbuf, target->angle);
+		MSG_WriteLong (&cl->netbuf, target->momx);
+		MSG_WriteLong (&cl->netbuf, target->momy);
+		MSG_WriteLong (&cl->netbuf, target->momz);
 	}
 }
 
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 				     bool joinkill)
 {
+	if (!target)
+		return;
+
 	for (size_t i = 0; i < players.size(); i++)
 	{
 		client_t *cl = &clients[i];
@@ -4657,8 +4780,15 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		MSG_WriteLong(&cl->reliablebuf, target->x);
 		MSG_WriteLong(&cl->reliablebuf, target->y);
 		MSG_WriteLong(&cl->reliablebuf, target->z);
-		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
 
+		MSG_WriteMarker (&cl->reliablebuf, svc_mobjspeedangle);
+		MSG_WriteShort(&cl->reliablebuf, target->netid);
+		MSG_WriteLong (&cl->reliablebuf, target->angle);
+		MSG_WriteLong (&cl->reliablebuf, target->momx);
+		MSG_WriteLong (&cl->reliablebuf, target->momy);
+		MSG_WriteLong (&cl->reliablebuf, target->momz);
+
+		MSG_WriteMarker(&cl->reliablebuf, svc_killmobj);
 		if (source)
 			MSG_WriteShort(&cl->reliablebuf, source->netid);
 		else
@@ -4716,6 +4846,33 @@ void SV_ExplodeMissile(AActor *mo)
 	}
 }
 
+//
+// SV_SendPlayerInfo
+//
+// Sends a player their current weapon, ammo, health, and armor
+//
+
+void SV_SendPlayerInfo(player_t &player)
+{
+	client_t *cl = &player.client;
+
+	MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
+
+	for (int i = 0; i < NUMWEAPONS; i++)
+		MSG_WriteByte (&cl->reliablebuf, player.weaponowned[i]);
+
+	for (int i = 0; i < NUMAMMO; i++)
+	{
+		MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
+		MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
+	}
+
+	MSG_WriteByte (&cl->reliablebuf, player.health);
+	MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
+	MSG_WriteByte (&cl->reliablebuf, player.armortype);
+	MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
+	MSG_WriteByte (&cl->reliablebuf, player.backpack);
+}
 
 //
 // SV_PreservePlayer
@@ -4730,28 +4887,7 @@ void SV_PreservePlayer(player_t &player)
 
 	G_DoReborn(player);
 
-	// inform client
-	{
-		size_t i;
-		client_t *cl = &player.client;
-
-		MSG_WriteMarker (&cl->reliablebuf, svc_playerinfo);
-
-		for(i = 0; i < NUMWEAPONS; i++)
-			MSG_WriteByte (&cl->reliablebuf, player.weaponowned[i]);
-
-		for(i = 0; i < NUMAMMO; i++)
-		{
-			MSG_WriteShort (&cl->reliablebuf, player.maxammo[i]);
-			MSG_WriteShort (&cl->reliablebuf, player.ammo[i]);
-		}
-
-		MSG_WriteByte (&cl->reliablebuf, player.health);
-		MSG_WriteByte (&cl->reliablebuf, player.armorpoints);
-		MSG_WriteByte (&cl->reliablebuf, player.armortype);
-		MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
-		MSG_WriteByte (&cl->reliablebuf, player.backpack);
-	}
+	SV_SendPlayerInfo(player);
 }
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")

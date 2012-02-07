@@ -23,12 +23,24 @@
 
 #include "z_zone.h"
 #include "p_local.h"
+#include "c_effect.h"
 #include "p_acs.h"
 #include "c_console.h"
 #include "doomstat.h"
 #include "p_unlag.h"
 
 EXTERN_CVAR (sv_speedhackfix)
+
+//
+// P_AtInterval
+//
+// Decides if it is time to perform a function that is to be performed
+// at regular intervals
+//
+bool P_AtInterval(int interval)
+{
+    return (gametic % interval) == 0;
+}
 
 void P_AnimationTick(AActor *mo);
 
@@ -42,6 +54,9 @@ void P_Ticker (void)
 
 	if (!multiplayer && !demoplayback && menuactive && players[0].viewz != 1)
 		return;
+
+	if (clientside)
+		P_ThinkParticles ();	// [RH] make the particles think
 
 	if((serverside && sv_speedhackfix) || (clientside && serverside))
 	{
@@ -64,10 +79,8 @@ void P_Ticker (void)
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
 
-	// [SL] 2011-05-11 - Save player positions and moving sector heights so
-	// they can be reconciled later for unlagging
-	Unlag::getInstance().recordPlayerPositions();
-	Unlag::getInstance().recordSectorPositions();
+	if (serverside)
+		P_RunEffects ();	// [RH] Run particle effects
 
 	// for par times
 	level.time++;

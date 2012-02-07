@@ -326,6 +326,9 @@
 				RelativePath="..\client\src\cl_demo.cpp">
 			</File>
 			<File
+				RelativePath="..\client\src\cl_download.cpp">
+			</File>
+			<File
 				RelativePath="..\client\src\cl_main.cpp">
 			</File>
 			<File
@@ -369,6 +372,9 @@
 			</File>
 			<File
 				RelativePath="..\client\src\m_options.cpp">
+			</File>
+			<File
+				RelativePath="..\client\src\p_effect.cpp">
 			</File>
 			<File
 				RelativePath="..\client\src\r_bsp.cpp">
@@ -436,7 +442,13 @@
 				RelativePath="..\client\src\cl_demo.h">
 			</File>
 			<File
+				RelativePath="..\client\src\cl_download.h">
+			</File>
+			<File
 				RelativePath="..\client\src\cl_main.h">
+			</File>
+			<File
+				RelativePath="..\client\src\cl_pch.h">
 			</File>
 			<File
 				RelativePath="..\client\src\f_finale.h">
@@ -449,9 +461,6 @@
 			</File>
 			<File
 				RelativePath="..\client\src\m_menu.h">
-			</File>
-			<File
-				RelativePath="..\client\src\s_sndseq.h">
 			</File>
 			<File
 				RelativePath="..\client\src\st_lib.h">
@@ -486,6 +495,15 @@
 			</File>
 			<File
 				RelativePath="..\common\c_dispatch.h">
+			</File>
+			<File
+				RelativePath="..\common\c_effect.cpp">
+			</File>
+			<File
+				RelativePath="..\common\c_effect.h">
+			</File>
+			<File
+				RelativePath="..\common\c_pch.h">
 			</File>
 			<File
 				RelativePath="..\common\cmdlib.cpp">
@@ -560,12 +578,6 @@
 				RelativePath="..\common\dsectoreffect.h">
 			</File>
 			<File
-				RelativePath="..\common\dstrings.cpp">
-			</File>
-			<File
-				RelativePath="..\common\dstrings.h">
-			</File>
-			<File
 				RelativePath="..\common\dthinker.cpp">
 			</File>
 			<File
@@ -591,6 +603,9 @@
 			</File>
 			<File
 				RelativePath="..\common\gi.h">
+			</File>
+			<File
+				RelativePath="..\common\gstrings.h">
 			</File>
 			<File
 				RelativePath="..\common\huffman.cpp">
@@ -866,6 +881,15 @@
 				RelativePath="..\common\stats.h">
 			</File>
 			<File
+				RelativePath="..\common\stringenums.h">
+			</File>
+			<File
+				RelativePath="..\common\stringtable.cpp">
+			</File>
+			<File
+				RelativePath="..\common\stringtable.h">
+			</File>
+			<File
 				RelativePath="..\common\szp.h">
 			</File>
 			<File
@@ -927,10 +951,22 @@
 				RelativePath="..\client\sdl\i_main.cpp">
 			</File>
 			<File
+				RelativePath="..\client\sdl\i_midi.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_midi.h">
+			</File>
+			<File
 				RelativePath="..\client\sdl\i_music.cpp">
 			</File>
 			<File
 				RelativePath="..\client\sdl\i_music.h">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_musicsystem.cpp">
+			</File>
+			<File
+				RelativePath="..\client\sdl\i_musicsystem.h">
 			</File>
 			<File
 				RelativePath="..\client\sdl\i_sdlvideo.cpp">

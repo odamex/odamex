@@ -109,6 +109,7 @@ void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (AActor* source, mobjtype_t type);
 
+void	P_RailAttack (AActor *source, int damage, int offset);	// [RH] Shoot a railgun
 //
 // [RH] P_THINGS
 //
@@ -303,6 +304,8 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 #define MOD_EXIT			20
 #define MOD_SPLASH			21
 #define MOD_HIT				22
+#define MOD_RAILGUN			23
+#define MOD_FRIENDLY_FIRE	0x80000000
 
 extern	int MeansOfDeath;
 

@@ -39,6 +39,7 @@
 #include "p_ctf.h"
 #include "st_stuff.h"
 #include "hu_stuff.h"
+#include "p_acs.h"
 
 extern BOOL demonew;
 
@@ -70,7 +71,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	if(!p->ingame())
 		return;
 
-	if (p->playerstate == PST_REBORN)
+	if (p->playerstate == PST_REBORN || p->playerstate == PST_ENTER)
 		G_PlayerReborn (*p);
 
 	AActor *mobj = new AActor (mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
@@ -99,10 +100,11 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 	p->extralight = 0;
 	p->fixedcolormap = 0;
 	p->viewheight = VIEWHEIGHT;
+	p->xviewshift = 0;
 	p->attacker = AActor::AActorPtr();
 
 	consoleplayer().camera = displayplayer().mo;
-	
+
 	// Set up some special spectator stuff
 	if (p->spectator)
 	{
@@ -133,6 +135,23 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	// [RH] If someone is in the way, kill them
 	P_TeleportMove (mobj, mobj->x, mobj->y, mobj->z, true);
+
+	// [BC] Do script stuff
+	if (serverside)
+    {
+        if (level.behavior != NULL)
+        {
+            if (p->playerstate == PST_ENTER)
+            {
+                level.behavior->StartTypedScripts (SCRIPT_Enter, p->mo);
+            }
+            else if (p->playerstate == PST_REBORN)
+            {
+                level.behavior->StartTypedScripts (SCRIPT_Respawn, p->mo);
+            }
+        }
+    }
+
 }
 
 VERSION_CONTROL (cl_mobj_cpp, "$Id$")

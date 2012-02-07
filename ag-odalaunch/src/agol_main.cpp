@@ -52,8 +52,11 @@ using namespace std;
 namespace agOdalaunch {
 
 AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
-	SettingsDialog(NULL), SoloGameDialog(NULL), AboutDialog(NULL),
-	ManualDialog(NULL), QServer(NULL), WindowExited(false)
+	SettingsDialog(NULL), CloseSettingsHandler(NULL),
+	SoloGameDialog(NULL), CloseSoloGameHandler(NULL),
+	AboutDialog(NULL), CloseAboutHandler(NULL),
+	ManualDialog(NULL), CloseManualHandler(NULL),
+	QServer(NULL), WindowExited(false)
 {
 	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl) 
 	// make the window plain (no window decorations). No flags for multi-window drivers (glx, wgl)
@@ -423,7 +426,7 @@ int AGOL_MainWindow::GetSelectedServerArrayIndex()
 	MServer.Unlock();
 
 	// No servers
-	if(serverCount <= 0)
+	if(serverCount == 0)
 		return -1;
 
 	// Loop until the selected server array is found
@@ -494,7 +497,7 @@ int AGOL_MainWindow::GetServerArrayIndexFromListRow(int row)
 	MServer.Unlock();
 
 	// No servers
-	if(serverCount <= 0)
+	if(serverCount == 0)
 		return -1;
 
 	// Loop until the selected server array is found
@@ -953,7 +956,7 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 	// Reset the total player count statusbar
 	ResetTotalPlayerCount();
 
-	if(serverCount <= 0)
+	if(serverCount == 0)
 	{
 		AG_TableEnd(ServerList);
 		return;
@@ -1113,7 +1116,7 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 		AG_Delay(750);
 #endif
 
-	if(GuiConfig::Read("MasterTimeout", masterTimeout) || masterTimeout <= 0)
+	if(GuiConfig::Read("MasterTimeout", masterTimeout) || masterTimeout == 0)
 		masterTimeout = 500;
 
 	// Get the lock
@@ -1126,7 +1129,7 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 
 	// If there are no servers something went wrong 
 	// (either with the query or with the Odamex project ;P)
-	if(serverCount <= 0)
+	if(serverCount == 0)
 	{
 		MServer.Unlock();
 		return NULL;
@@ -1168,7 +1171,7 @@ int AGOL_MainWindow::QuerySingleServer(Server *server)
 	unsigned int serverTimeout;
 	int          ret;
 
-	if(GuiConfig::Read("ServerTimeout", serverTimeout) || serverTimeout <= 0)
+	if(GuiConfig::Read("ServerTimeout", serverTimeout) || serverTimeout == 0)
 		serverTimeout = 500;
 
 	server->GetLock();
@@ -1192,7 +1195,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	MServer.Unlock();
 
 	// There are no servers to query
-	if(serverCount <= 0)
+	if(serverCount == 0)
 		return NULL;
 
 #ifdef _XBOX
@@ -1209,7 +1212,7 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	{
 		for(size_t i = 0; i < NUM_THREADS; i++)
 		{
-			if((QServerThread.size() != 0) && ((QServerThread.size() - 1) >= i))
+			if((!QServerThread.empty()) && ((QServerThread.size() - 1) >= i))
 			{
 				// If a thread is no longer running delete it
 				if(QServerThread[i]->IsRunning())

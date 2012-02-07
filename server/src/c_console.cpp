@@ -26,7 +26,7 @@
 
 #include "m_alloc.h"
 #include "version.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "g_game.h"
 #include "c_console.h"
 #include "c_cvars.h"
@@ -181,7 +181,7 @@ char *TimeStamp()
             sprintf (stamp,
                      "[%.2d/%.2d/%.2d %.2d:%.2d:%.2d]",
                      lt->tm_mday,
-                     lt->tm_mon,
+                     lt->tm_mon + 1,	// localtime returns 0-based month
                      lt->tm_year + 1900,
                      lt->tm_hour,
                      lt->tm_min,

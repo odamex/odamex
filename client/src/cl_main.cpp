@@ -25,7 +25,7 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "d_player.h"
 #include "g_game.h"
 #include "d_net.h"
@@ -39,6 +39,7 @@
 #include "st_stuff.h"
 #include "m_argv.h"
 #include "cl_main.h"
+#include "c_effect.h"
 #include "c_console.h"
 #include "d_main.h"
 #include "p_ctf.h"
@@ -48,10 +49,12 @@
 #include "m_fileio.h"
 #include "r_sky.h"
 #include "cl_demo.h"
+#include "cl_download.h"
 
 #include <string>
 #include <vector>
 #include <map>
+#include <sstream>
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -77,6 +80,7 @@ buf_t     net_buffer(MAX_UDP_PACKET);
 bool      noservermsgs;
 int       last_received;
 byte      last_svgametic = 0;
+int       last_player_update = 0;
 
 std::string connectpasshash = "";
 
@@ -127,6 +131,61 @@ CVAR_FUNC_IMPL (cl_updaterate)
 		var.Set(3.0f);
 }
 
+EXTERN_CVAR (cl_weaponpref1)
+EXTERN_CVAR (cl_weaponpref2)
+EXTERN_CVAR (cl_weaponpref3)
+EXTERN_CVAR (cl_weaponpref4)
+EXTERN_CVAR (cl_weaponpref5)
+EXTERN_CVAR (cl_weaponpref6)
+EXTERN_CVAR (cl_weaponpref7)
+EXTERN_CVAR (cl_weaponpref8)
+EXTERN_CVAR (cl_weaponpref9)
+
+static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
+	&cl_weaponpref1, &cl_weaponpref2, &cl_weaponpref3, &cl_weaponpref4,
+	&cl_weaponpref5, &cl_weaponpref6, &cl_weaponpref7, &cl_weaponpref8,
+	&cl_weaponpref9 };
+
+//
+// CL_SetWeaponPreferenceCvar
+//
+// Sets the value of one of the cl_weaponpref* cvars identified by slot
+//
+void CL_SetWeaponPreferenceCvar(int slot, weapontype_t weapon)
+{
+	if (slot < 0 || slot >= NUMWEAPONS)
+		return;
+
+	weaponpref_cvar_map[slot]->Set(static_cast<float>(weapon));
+}
+
+//
+// CL_RefreshWeaponPreferenceCvars
+//
+// Copies userinfo.weapon_prefs to the cl_weaponpref* cvars
+//
+void CL_RefreshWeaponPreferenceCvars()
+{
+	weapontype_t *prefs = consoleplayer().userinfo.weapon_prefs;
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+		weaponpref_cvar_map[i]->Set(static_cast<float>(prefs[i]));
+}
+
+//
+// CL_PrepareWeaponPreferenceUserInfo
+//
+// Copies the weapon order preferences from the cl_weaponpref* cvars
+// to the userinfo struct for the consoleplayer.
+//
+void CL_PrepareWeaponPreferenceUserInfo()
+{
+	weapontype_t *prefs = consoleplayer().userinfo.weapon_prefs;
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+		prefs[i] = static_cast<weapontype_t>(weaponpref_cvar_map[i]->asInt());
+}
+
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_maxclients)
 EXTERN_CVAR (sv_infiniteammo)
@@ -164,6 +223,7 @@ void CL_NetDemoSnapshot(void);
 void CalcTeamFrags (void);
 
 // some doom functions (not csDoom)
+size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
 void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
@@ -279,7 +339,7 @@ void CL_ConnectClient(void)
 	if (&player == &consoleplayer())
 		return;
 		
-	S_Sound (CHAN_VOICE, "misc/pljoin", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
 }
 
 //
@@ -294,7 +354,10 @@ void CL_DisconnectClient(void)
 		displayplayer_id = consoleplayer_id;
 
 	if(player.mo)
+	{
 		player.mo->Destroy();
+		P_DisconnectEffect (player.mo);
+	}
 
 	size_t i;
 
@@ -305,7 +368,7 @@ void CL_DisconnectClient(void)
 			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
 			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
 			if (cl_disconnectalert && &player != &consoleplayer())
-				S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
 			players.erase(players.begin() + i);
 			break;
 		}
@@ -416,7 +479,7 @@ BEGIN_COMMAND (playerinfo)
 		size_t who = atoi(argv[1]);
 		player_t &p = idplayer(who);
 
-		if(!validplayer(p) || !players[who].ingame())
+		if(!validplayer(p))
 		{
 			Printf (PRINT_HIGH, "Bad player number\n");
 			return;
@@ -434,10 +497,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname);
 	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.aimdist     - %d \n",	player->userinfo.aimdist);
-    Printf (PRINT_HIGH, " userinfo.unlag       - %d \n",	player->userinfo.unlag);
-	Printf (PRINT_HIGH, " userinfo.update_rate - %d \n",	player->userinfo.update_rate);
-	Printf (PRINT_HIGH, " userinfo.color       - %d \n",	player->userinfo.color);
+	Printf (PRINT_HIGH, " userinfo.color       - #%06x \n",	player->userinfo.color);
 	Printf (PRINT_HIGH, " userinfo.skin        - %s \n",	skins[player->userinfo.skin].name);
 	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
 	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
@@ -578,6 +638,14 @@ BEGIN_COMMAND (playerteam)
 }
 END_COMMAND (playerteam)
 
+BEGIN_COMMAND (changeteams)
+{
+	if (consoleplayer().userinfo.team == TEAM_BLUE)
+		cl_team.Set("RED");
+	else if (consoleplayer().userinfo.team == TEAM_RED)
+		cl_team.Set("BLUE");
+}
+END_COMMAND (changeteams)
 
 BEGIN_COMMAND (spectate)
 {
@@ -589,6 +657,12 @@ END_COMMAND (spectate)
 
 BEGIN_COMMAND (join)
 {
+	if (P_NumPlayersInGame() >= sv_maxplayers)
+	{
+		C_MidPrint("The game is currently full", NULL);
+		return;
+	}
+
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, false);
 }
@@ -719,10 +793,13 @@ BEGIN_COMMAND(netplay)
 		return;
 	}
 
-	if(connected)
+	if (!connected)
 	{
-		CL_QuitNetGame();
+ 		G_CheckDemoStatus();	// cleans up vanilla demo or single player game
 	}
+
+	CL_QuitNetGame();
+	connected = false;
 
 	std::string filename = argv[1];
 	CL_NetDemoPlay(filename);
@@ -754,8 +831,24 @@ END_COMMAND(rew)
 //
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
+	if (!mobj)
+		return;
+
+	// [SL] 2011-11-06 - Return before setting the thing's floorz value if
+	// the thing hasn't moved.  This ensures the floorz value is correct for
+	// things that have spawned (too close to a ledge) but have not yet moved.
+	if (mobj->x == x && mobj->y == y && mobj->z == z)
+		return;
+
 	P_CheckPosition(mobj, x, y);
-	mobj->SetOrigin(x, y, z);
+	mobj->UnlinkFromWorld ();
+
+	mobj->x = x;
+	mobj->y = y;
+	mobj->z = z;
+	mobj->floorz = tmfloorz;
+	mobj->ceilingz = tmceilingz;
+	mobj->LinkToWorld ();
 }
 
 //
@@ -764,16 +857,8 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 void CL_SendUserInfo(void)
 {
 	userinfo_t *coninfo = &consoleplayer().userinfo;
-	memset (&consoleplayer().userinfo, 0, sizeof(coninfo));
+	D_SetupUserInfo();
 
-	strncpy (coninfo->netname, cl_name.cstring(), MAXPLAYERNAME);
-	coninfo->team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-	coninfo->color	 = V_GetColorFromString (NULL, cl_color.cstring());
-	coninfo->skin	 = R_FindSkin (cl_skin.cstring());
-	coninfo->gender  = D_GenderByName (cl_gender.cstring());
-	coninfo->aimdist = (fixed_t)(cl_autoaim * 16384.0);
-	coninfo->unlag   = cl_unlag;  // [SL] 2011-05-11
-	coninfo->update_rate = cl_updaterate;
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
 	MSG_WriteString	(&net_buffer, coninfo->netname);
 	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
@@ -783,6 +868,11 @@ void CL_SendUserInfo(void)
 	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
 	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
+	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		MSG_WriteByte (&net_buffer, (char)coninfo->weapon_prefs[i]);
+	}
 }
 
 
@@ -1285,9 +1375,14 @@ void CL_Print (void)
 	const char *str = MSG_ReadString();
 
 	Printf (level, "%s", str);
-
-	if ((level == PRINT_CHAT || level == PRINT_TEAMCHAT) && show_messages)
-		S_Sound (CHAN_VOICE, gameinfo.chatSound, 1, ATTN_NONE);
+	
+	if (show_messages)
+	{
+		if (level == PRINT_CHAT)
+			S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		else if (level == PRINT_TEAMCHAT)
+			S_Sound (CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+	}
 }
 
 // Print a message in the middle of the screen
@@ -1305,43 +1400,49 @@ void CL_UpdatePlayer()
 	byte who = MSG_ReadByte();
 	player_t *p = &idplayer(who);
 
-	int x, y, z;
+	// [SL] 2011-11-07 - Read and ignore this for now - it was used with
+	// the previous prediction code (sv_gametic)
+	MSG_ReadLong();
+	
+	fixed_t x = MSG_ReadLong();
+	fixed_t y = MSG_ReadLong();
+	fixed_t z = MSG_ReadLong();
+	angle_t angle = MSG_ReadLong();
+	byte frame = MSG_ReadByte();
+	fixed_t momx = MSG_ReadLong();
+	fixed_t momy = MSG_ReadLong();
+	fixed_t momz = MSG_ReadLong();
 
-	if(!validplayer(*p) || !p->mo)
+	int invisibility = MSG_ReadLong();
+
+	if	(!validplayer(*p) || !p->mo)
 	{
-	    // Advance 37 bytes, because we don't need the following data anymore
-		MSG_SetOffset(37, buf_t::BT_SCUR);
-
 		return;
 	}
 
-	int sv_gametic = MSG_ReadLong(); // 4
+	// Mark the gametic this update arrived in for prediction code
+	p->tic = gametic;
 	
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-	x = MSG_ReadLong(); // 8
-	y = MSG_ReadLong(); // 12
-	z = MSG_ReadLong(); // 16
+	p->mo->angle = angle;
 	CL_MoveThing(p->mo, x, y, z);
-	p->mo->angle = MSG_ReadLong(); // 20
-	byte frame = MSG_ReadByte(); // 21
-	p->mo->momx = MSG_ReadLong(); // 25
-	p->mo->momy = MSG_ReadLong(); // 29
-	p->mo->momz = MSG_ReadLong(); // 33
+	p->mo->momx = momx;
+	p->mo->momy = momy;
+	p->mo->momz = momz;
 
 	p->real_origin[0] = x;
 	p->real_origin[1] = y;
 	p->real_origin[2] = z;
 
-	p->real_velocity[0] = p->mo->momx;
-	p->real_velocity[1] = p->mo->momy;
-	p->real_velocity[2] = p->mo->momz;
+	p->real_velocity[0] = momx;
+	p->real_velocity[1] = momy;
+	p->real_velocity[2] = momz;
 
     // [Russell] - hack, read and set invisibility flag
-    p->powers[pw_invisibility] = MSG_ReadLong(); // 37
-
+    p->powers[pw_invisibility] = invisibility;
     if (p->powers[pw_invisibility])
     {
         p->mo->flags |= MF_SHADOW;
@@ -1358,7 +1459,7 @@ void CL_UpdatePlayer()
 		return;
 
 	p->last_received = gametic;
-	p->tic = sv_gametic;
+	last_player_update = gametic;
 }
 
 ticcmd_t localcmds[MAXSAVETICS];
@@ -1375,7 +1476,10 @@ void CL_UpdateLocalPlayer(void)
 {
 	player_t &p = consoleplayer();
 
+	// The server has processed the ticcmd that the local client sent
+	// during the the tic referenced below
 	p.tic = MSG_ReadLong();
+
 	p.real_origin[0] = MSG_ReadLong();
 	p.real_origin[1] = MSG_ReadLong();
 	p.real_origin[2] = MSG_ReadLong();
@@ -1402,22 +1506,10 @@ void CL_UpdateLocalPlayer(void)
 void CL_SaveSvGametic(void)
 {
 	last_svgametic = MSG_ReadByte();
+	#ifdef _UNLAG_DEBUG_
+	DPrintf("Unlag (%03d): client-tic %d, received svgametic\n", last_svgametic, gametic);
+	#endif	// _UNLAG_DEBUG_
 }    
-
-
-//
-// CL_SendSvGametic
-//
-// Sends the most recent gametic received from the server so the server can
-// accurately calculate this client's lag
-//
-// [SL] 2011-05-11
-void CL_SendSvGametic(void)
-{
-	MSG_WriteMarker(&net_buffer, clc_svgametic);
-	MSG_WriteByte(&net_buffer, last_svgametic);
-}
-
 
 //
 // CL_SendPingReply
@@ -1443,6 +1535,26 @@ void CL_UpdatePing(void)
 	player_t &p = idplayer(MSG_ReadByte());
 	p.ping = MSG_ReadLong();
 }
+
+
+//
+// CL_UpdateTimeLeft
+// Changes the value of level.timeleft
+//
+void CL_UpdateTimeLeft(void)
+{
+	level.timeleft = MSG_ReadShort() * TICRATE;	// convert from seconds to tics
+}
+
+//
+// CL_UpdateIntTimeLeft
+// Changes the value of level.inttimeleft
+//
+void CL_UpdateIntTimeLeft(void)
+{
+	level.inttimeleft = MSG_ReadShort();	// convert from seconds to tics
+}
+
 
 //
 // CL_SpawnMobj
@@ -1629,6 +1741,7 @@ void CL_SpawnPlayer()
 	p->extralight = 0;
 	p->fixedcolormap = 0;
 
+	p->xviewshift = 0;
 	p->viewheight = VIEWHEIGHT;
 	for (i=0; i<MAXSAVETICS; i++)
 	{
@@ -1661,18 +1774,12 @@ void CL_SpawnPlayer()
 //
 void CL_PlayerInfo(void)
 {
-	size_t j;
-	int newweapon;
-	bool newpending = false;
-
 	player_t *p = &consoleplayer();
 
-	for(j = 0; j < NUMWEAPONS; j++)
-	{
-		p->weaponowned[j] = MSG_ReadByte () ? true : false;
-	}
+	for(size_t j = 0; j < NUMWEAPONS; j++)
+		p->weaponowned[j] = MSG_ReadBool();
 
-	for(j = 0; j < NUMAMMO; j++)
+	for(size_t j = 0; j < NUMAMMO; j++)
 	{
 		p->maxammo[j] = MSG_ReadShort ();
 		p->ammo[j] = MSG_ReadShort ();
@@ -1681,36 +1788,15 @@ void CL_PlayerInfo(void)
 	p->health = MSG_ReadByte ();
 	p->armorpoints = MSG_ReadByte ();
 	p->armortype = MSG_ReadByte ();
-	newweapon = MSG_ReadByte ();
 	
-	// GhostlyDeath <July 17, 2008> -- what weapon do we change to?
-	if (newweapon & 64)		// Server sent our readyweapon (gun we have up)
-	{
-		// Does it not match our gun and are we already switching to the gun or not?
-		if ((p->readyweapon != (weapontype_t)(newweapon & ~64)) &&
-			(p->pendingweapon != (weapontype_t)(newweapon & ~64)))
-		{
-			p->pendingweapon = (weapontype_t)(newweapon & ~64);
-			newpending = true;
-		}
-	}
-	else	// Server sent our pendingweapon (gun we are changing to)
-	{
-		// Is the server switching our gun when i'm not or
-		// I am switching to a gun but it isn't what the server said?
-		if ((p->pendingweapon == wp_nochange) || (p->pendingweapon != newweapon))
-		{
-			p->pendingweapon = (weapontype_t)(newweapon);
-			newpending = true;
-		}
-	}
+	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
+	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
+		newweapon = wp_fist;
+
+	if (newweapon != p->readyweapon)
+		p->pendingweapon = newweapon;
 	
-	// If we are changing our guns, let's be sure it's valid
-	if (newpending)
-		if (p->pendingweapon > NUMWEAPONS)
-			p->pendingweapon = wp_pistol;
-	
-	p->backpack = MSG_ReadByte () ? true : false;
+	p->backpack = MSG_ReadBool();
 }
 
 //
@@ -2367,7 +2453,7 @@ void CL_GetServerSettings(void)
         {
             // [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
             // for cleanup on program termination
-            var = new cvar_t (CvarName.c_str(), NULL, "",
+            var = new cvar_t (CvarName.c_str(), NULL, "", CVARTYPE_NONE,
                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
                                   
             var->Set(CvarValue.c_str());
@@ -2544,284 +2630,6 @@ void CL_ExitLevel()
 	}
 }
 
-// GhostlyDeath <October 26, 2008> -- VC6 Compiler Error
-// C2552: 'identifier' : non-aggregates cannot be initialized with initializer list
-// What does this mean? VC6 considers std::string non-static (that it changes every time?)
-// So it complains because std::string has a constructor!
-
-/*struct download_s
-{
-	public:
-		std::string filename;
-		std::string md5;
-		buf_t *buf;
-		unsigned int got_bytes;
-} download = { "", "", NULL, 0 };*/
-
-// this works though!
-struct download_s
-{
-	public:
-		std::string filename;
-		std::string md5;
-		buf_t *buf;
-		unsigned int got_bytes;
-
-		download_s()
-		{
-			buf = NULL;
-			this->clear();
-		}
-
-		~download_s()
-		{
-		}
-
-		void clear()
-		{	
-			filename = "";
-			md5 = "";
-			got_bytes = 0;
-        	
-			if (buf != NULL)
-			{
-				delete buf;
-				buf = NULL;
-			}
-		}
-} download;
-
-
-void IntDownloadComplete(void)
-{
-    std::string actual_md5 = MD5SUM(download.buf->ptr(), download.buf->maxsize());
-
-	Printf(PRINT_HIGH, "\nDownload complete, got %u bytes\n", download.buf->maxsize());
-	Printf(PRINT_HIGH, "%s\n %s\n", download.filename.c_str(), actual_md5.c_str());
-
-	if(download.md5 == "")
-	{
-		Printf(PRINT_HIGH, "Server gave no checksum, assuming valid\n", (int)download.buf->maxsize());
-	}
-	else if(actual_md5 != download.md5)
-	{
-		Printf(PRINT_HIGH, " %s on server\n", download.md5.c_str());
-		Printf(PRINT_HIGH, "Download failed: bad checksum\n");
-
-		download.clear();
-        CL_QuitNetGame();
-        return;
-    }
-
-    // got the wad! save it!
-    std::vector<std::string> dirs;
-    std::string filename;
-    size_t i;
-#ifdef WIN32
-    const char separator = ';';
-#else
-    const char separator = ':';
-#endif
-
-    // Try to save to the wad paths in this order -- Hyper_Eye
-    D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-    D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
-    D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-    D_AddSearchDir(dirs, waddirs.cstring(), separator);
-    dirs.push_back(startdir);
-    dirs.push_back(progdir);
-
-    dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
-
-    for(i = 0; i < dirs.size(); i++)
-    {
-        filename.clear();
-        filename = dirs[i];
-        if(filename[filename.length() - 1] != PATHSEPCHAR)
-            filename += PATHSEP;
-        filename += download.filename;
-
-        // check for existing file
-   	    if(M_FileExists(filename.c_str()))
-   	    {
-   	        // there is an existing file, so use a new file whose name includes the checksum
-   	        filename += ".";
-   	        filename += actual_md5;
-   	    }
-
-        if (M_WriteFile(filename, download.buf->ptr(), download.buf->maxsize()))
-            break;
-    }
-
-    // Unable to write
-    if(i == dirs.size())
-    {
-		download.clear();
-        CL_QuitNetGame();
-        return;            
-    }
-
-    Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
-
-	download.clear();
-    CL_QuitNetGame();
-    CL_Reconnect();
-}
-
-//
-// CL_RequestDownload
-// please sir, can i have some more?
-//
-void CL_RequestDownload(std::string filename, std::string filehash)
-{
-    // [Russell] - Allow resumeable downloads
-	if ((download.filename != filename) ||
-        (download.md5 != filehash))
-    {
-        download.filename = filename;
-        download.md5 = filehash;
-        download.got_bytes = 0;
-    }
-	
-	// denis todo clear previous downloads
-	MSG_WriteMarker(&net_buffer, clc_wantwad);
-	MSG_WriteString(&net_buffer, filename.c_str());
-	MSG_WriteString(&net_buffer, filehash.c_str());
-	MSG_WriteLong(&net_buffer, download.got_bytes);
-
-	NET_SendPacket(net_buffer, serveraddr);
-
-	Printf(PRINT_HIGH, "Requesting download...\n");
-	
-	// check for completion
-	// [Russell] - We go over the boundary, because sometimes the download will
-	// pause at 100% if the server disconnected you previously, you can 
-	// reconnect a couple of times and this will let the checksum system do its
-	// work
-	if ((download.buf != NULL) && 
-        (download.got_bytes >= download.buf->maxsize()))
-	{
-        IntDownloadComplete();
-	}
-}
-
-//
-// CL_DownloadStart
-// server tells us the size of the file we are about to download
-//
-void CL_DownloadStart()
-{
-	DWORD file_len = MSG_ReadLong();
-
-	if(gamestate != GS_DOWNLOAD)
-	{
-		Printf(PRINT_HIGH, "Server initiated download failed\n");
-		return;
-	}
-
-	// don't go for more than 100 megs
-	if(file_len > 100*1024*1024)
-	{
-		Printf(PRINT_HIGH, "Download is over 100MiB, aborting!\n");
-		CL_QuitNetGame();
-		return;
-	}
-	
-    // [Russell] - Allow resumeable downloads
-	if (download.got_bytes == 0)
-    {
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }
-        
-        download.buf = new buf_t ((size_t)file_len);
-        
-        memset(download.buf->ptr(), 0, file_len);
-    }
-    else
-        Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
-    
-	Printf(PRINT_HIGH, "Downloading %d bytes...\n", file_len);
-}
-
-//
-// CL_Download
-// denis - get a little chunk of the file and store it, much like a hampster. Well, hamster; but hampsters can dance and sing. Also much like Scraps, the Ice Age squirrel thing, stores his acorn. Only with a bit more success. Actually, quite a bit more success, specifically as in that the world doesn't crack apart when we store our chunk and it does when Scraps stores his (or her?) acorn. But when Scraps does it, it is funnier. The rest of Ice Age mostly sucks.
-//
-void CL_Download()
-{
-	DWORD offset = MSG_ReadLong();
-	size_t len = MSG_ReadShort();
-	size_t left = MSG_BytesLeft();
-	void *p = MSG_ReadChunk(len);
-
-	if(gamestate != GS_DOWNLOAD)
-		return;
-
-	if (download.buf == NULL)
-	{
-		// We must have not received the svc_wadinfo message
-		Printf(PRINT_HIGH, "Unable to start download, aborting\n");
-		download.clear();
-		CL_QuitNetGame();
-		return;
-	}
-
-	// check ranges
-	if(offset + len > download.buf->maxsize() || len > left || p == NULL)
-	{
-		Printf(PRINT_HIGH, "Bad download packet (%d, %d) encountered (%d), aborting\n", (int)offset, (int)left, (int)download.buf->size());
-    	
-		download.clear();    
-		CL_QuitNetGame();
-		return;
-	}
-
-	// check for missing packet, re-request
-	if(offset < download.got_bytes || offset > download.got_bytes)
-	{
-		DPrintf("Missed a packet after/before %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
-		MSG_WriteMarker(&net_buffer, clc_wantwad);
-		MSG_WriteString(&net_buffer, download.filename.c_str());
-		MSG_WriteString(&net_buffer, download.md5.c_str());
-		MSG_WriteLong(&net_buffer, download.got_bytes);
-		NET_SendPacket(net_buffer, serveraddr);
-		return;
-	}
-
-	// send keepalive
-	NET_SendPacket(net_buffer, serveraddr);
-
-	// copy into downloaded buffer
-	memcpy(download.buf->ptr() + offset, p, len);
-	download.got_bytes += len;
-
-	// calculate percentage for the user
-	static int old_percent = 0;
-	int percent = (download.got_bytes*100)/download.buf->maxsize();
-	if(percent != old_percent)
-	{
-		if(!(percent % 10))
-			Printf(PRINT_HIGH, "%d%%", percent);
-		else
-            Printf(PRINT_HIGH, ".");
-
-		old_percent = percent;
-	}
-
-	// check for completion
-	// [Russell] - We go over the boundary, because sometimes the download will
-	// pause at 100% if the server disconnected you previously, you can 
-	// reconnect a couple of times and this will let the checksum system do its
-	// work
-	if(download.got_bytes >= download.buf->maxsize())
-	{
-        IntDownloadComplete();
-	}
-}
-
 void CL_Noop()
 {
 	// Nothing to see here. Move along.
@@ -2909,6 +2717,8 @@ void CL_InitCommands(void)
     cmds[svc_midprint]          = &CL_MidPrint;
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
+	cmds[svc_timeleft]			= &CL_UpdateTimeLeft;
+	cmds[svc_inttimeleft]		= &CL_UpdateIntTimeLeft;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;
@@ -2993,22 +2803,19 @@ void CL_ParseCommands(void)
 
 extern int outrate;
 
+extern int extrapolation_tics;
+
 //
 // CL_SendCmd
 //
 void CL_SendCmd(void)
 {
-	player_t *p;
+	player_t *p = &consoleplayer();
 
 	if (netdemo.isPlaying())	// we're not really connected to a server
 		return;
 
-	if (gametic < 1 )
-		return;
-
-	p = &consoleplayer();
-
-	if(!p->mo)
+	if (!p->mo || gametic < 1 )
 		return;
 
 	// denis - we know server won't accept two changes per tic, so we shouldn't
@@ -3030,14 +2837,19 @@ void CL_SendCmd(void)
 	ticcmd_t *prevcmd = &localcmds[(gametic-1) % MAXSAVETICS];
 	ticcmd_t *curcmd  = &consoleplayer().cmd;
 
-    // [SL] 2011-05-11 - Send the latest gametic we've received from the server
-	// only if the client is firing a weapon
-	if (prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK)
-		CL_SendSvGametic();
-
 	MSG_WriteMarker(&net_buffer, clc_move);
 
-    MSG_WriteLong(&net_buffer, gametic); // current tic
+	// Write current client-tic.  Server later sends this back to client
+	// when sending svc_updatelocalplayer so the client knows which ticcmds
+	// need to be used for client's positional prediction. 
+    MSG_WriteLong(&net_buffer, gametic);
+    
+    // Send the most recent server-tic.  This indicates to the server which
+    // update of player positions the client is basing his actions on.  Used
+    // by unlagging calculations.
+
+	// Take extrapolation into account
+	MSG_WriteByte(&net_buffer, last_svgametic + extrapolation_tics);
 
     // send the previous cmds in the message, so if the last packet
     // was dropped, it can be recovered
@@ -3061,6 +2873,24 @@ void CL_SendCmd(void)
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
 	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
 
+#ifdef _UNLAG_DEBUG_
+	if 	(player.size() == 2 && 
+		(prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK))
+	{
+		player_t *enemy;
+			
+		if (players[0].id != consoleplayer().id)
+			enemy = &players[0];
+		else
+			enemy = &players[1];
+			
+		int x = enemy->mo->x >> FRACBITS;
+		int y = enemy->mo->y >> FRACBITS;
+		DPrintf("Unlag: Weapon fired with svgametic = %d, enemy position = (%d, %d)\n",
+				last_svgametic + extrapolation_tics, x, y);
+	}
+#endif	// _UNLAG_DEBUG_
+	
 	NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
@@ -3094,10 +2924,6 @@ void CL_RunTics (void)
 
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics ();
-
-	// [SL] 2011-05-29 - Haven't received a new tic from the server yet so
-	// increment the one we've already received.
-	last_svgametic++;
 }
 
 void PickupMessage (AActor *toucher, const char *message)
@@ -3127,43 +2953,43 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
     {
         case wp_shotgun:
         {
-            PickupMessage(toucher, GOTSHOTGUN);
+            PickupMessage(toucher, GStrings(GOTSHOTGUN));
         }
         break;
 
         case wp_chaingun:
         {
-            PickupMessage(toucher, GOTCHAINGUN);
+            PickupMessage(toucher, GStrings(GOTCHAINGUN));
         }
         break;
 
         case wp_missile:
         {
-            PickupMessage(toucher, GOTLAUNCHER);
+            PickupMessage(toucher, GStrings(GOTLAUNCHER));
         }
         break;
 
         case wp_plasma:
         {
-            PickupMessage(toucher, GOTPLASMA);
+            PickupMessage(toucher, GStrings(GOTPLASMA));
         }
         break;
 
         case wp_bfg:
         {
-            PickupMessage(toucher, GOTBFG9000);
+            PickupMessage(toucher, GStrings(GOTBFG9000));
         }
         break;
 
         case wp_chainsaw:
         {
-            PickupMessage(toucher, GOTCHAINSAW);
+            PickupMessage(toucher, GStrings(GOTCHAINSAW));
         }
         break;
 
         case wp_supershotgun:
         {
-            PickupMessage(toucher, GOTSHOTGUN2);
+            PickupMessage(toucher, GStrings(GOTSHOTGUN2));
         }
         break;
         
@@ -3204,6 +3030,8 @@ void CL_LocalDemoTic()
 	deltaviewheight = MSG_ReadLong();
 	jumpTics = MSG_ReadLong();
 	reactiontime = MSG_ReadLong();
+	clientPlayer->readyweapon = static_cast<weapontype_t>(MSG_ReadByte());
+	clientPlayer->pendingweapon = static_cast<weapontype_t>(MSG_ReadByte());
 
 	if(clientPlayer->mo)
 	{

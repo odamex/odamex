@@ -32,6 +32,13 @@ proc main {} {
  expect $serverout {sv_maxplayers will be changed for next game.}
  server "map 1"
  expect $serverout {Player disconnected. (SPECTATOR, 0 FRAGS, 0 DEATHS)}
+ expect $clientout {} 0
+ expect $clientout {=================================} 0
+ expect $clientout {MAP01: entryway} 0
+ expect $clientout {} 0
+ expect $clientout {Client limit reduced. Please try connecting again later.} 0
+ expect $clientout {} 0
+ expect $clientout {Server disconnected} 0
 
  # try to connect
  clear
@@ -39,7 +46,7 @@ proc main {} {
  client "reconnect"
  expect $clientout "connecting to 127.0.0.1:$port" 0
  wait 3
- for {set i 0} {$i < 9} {incr i} { gets $clientout }
+ for {set i 0} {$i < 11} {incr i} { gets $clientout }
  expect $clientout {Server is full} 0
 
  # change sv_maxplayers (non-latched)
@@ -54,7 +61,7 @@ proc main {} {
  client "reconnect"
  expect $clientout "connecting to 127.0.0.1:$port" 0
  wait 3
- for {set i 0} {$i < 9} {incr i} { gets $clientout }
+ for {set i 0} {$i < 11} {incr i} { gets $clientout }
  expect $clientout {Server is full} 0
 
  # change sv_maxplayers and sv_maxclients
@@ -72,7 +79,7 @@ proc main {} {
  client "reconnect"
  expect $clientout "connecting to 127.0.0.1:$port" 0
  wait 3
- for {set i 0} {$i < 9} {incr i} { gets $clientout }
+ for {set i 0} {$i < 11} {incr i} { gets $clientout }
  expect $clientout {} 0
  expect $clientout {=================================} 0
  expect $clientout {MAP01: entryway} 0

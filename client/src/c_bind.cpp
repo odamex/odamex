@@ -32,7 +32,7 @@
 #include "c_dispatch.h"
 #include "c_bind.h"
 #include "g_level.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "hu_stuff.h"
 
 /* Most of these bindings are equivalent

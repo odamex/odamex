@@ -66,6 +66,10 @@ typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
 #include "i_xbox.h"
 #endif
 
+#ifdef OSX
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
@@ -167,6 +171,12 @@ int main(int argc, char *argv[])
         }
 #endif
 
+#ifdef LINUX
+		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
+		// bypassing X11's mouse acceleration
+		putenv("SDL_VIDEO_X11_DGAMOUSE=1");
+#endif
+
 		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
 			I_FatalError("Could not initialize SDL:\n%s\n", SDL_GetError());
 
@@ -212,15 +222,21 @@ int main(int argc, char *argv[])
 	{
 		if (LOG.is_open())
         {
-            LOG << error.GetMessage() << std::endl;
+            LOG << error.GetMsg() << std::endl;
             LOG << std::endl;
         }
-#ifndef WIN32
-            fprintf(stderr, "%s\n", error.GetMessage().c_str());
+
+#ifdef OSX
+		std::string errorMessage = error.GetMsg();
+		CFStringRef macErrorMessage = CFStringCreateWithCString(NULL, errorMessage.c_str(), kCFStringEncodingMacRoman);
+		CFUserNotificationDisplayAlert(0, 0, NULL, NULL, NULL, CFSTR("Odamex Error"), macErrorMessage, CFSTR("OK"), NULL, NULL, NULL);
+		CFRelease(macErrorMessage);
+#elif !defined(WIN32)
+            fprintf(stderr, "%s\n", error.GetMsg().c_str());
 #elif _XBOX
 		// Use future Xbox error message handling.    -- Hyper_Eye
 #else
-		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
+		MessageBox(NULL, error.GetMsg().c_str(), "Odamex Error", MB_OK);
 #endif
 		call_terms();
 		exit (-1);

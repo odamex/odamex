@@ -28,6 +28,7 @@
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "c_effect.h"
 #include "s_sound.h"
 #include "doomstat.h"
 #include "v_video.h"
@@ -198,7 +199,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
     validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-    reactiontime(0), threshold(0), player(NULL), lastlook(0), inext(NULL),
+    reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
     iprev(NULL), translation(NULL), translucency(0), waterlevel(0), onground(0),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0)
@@ -524,7 +525,7 @@ void AActor::Serialize (FArchive &arc)
 			<< pitch
 			<< angle
 			<< roll
-			<< (int)sprite
+			<< sprite
 			<< frame
 			<< effects
 			<< floorz
@@ -534,7 +535,7 @@ void AActor::Serialize (FArchive &arc)
 			<< momx
 			<< momy
 			<< momz
-			<< (int)type
+			<< type
 			<< tics
 			<< state
 			<< flags
@@ -580,7 +581,7 @@ void AActor::Serialize (FArchive &arc)
 			>> pitch
 			>> angle
 			>> roll
-			>> (int&)sprite
+			>> sprite
 			>> frame
 			>> effects
 			>> floorz
@@ -590,7 +591,7 @@ void AActor::Serialize (FArchive &arc)
 			>> momx
 			>> momy
 			>> momz
-			>> (int&)type
+			>> type
 			>> tics
 			>> state
 			>> flags
@@ -696,8 +697,8 @@ bool P_SetMobjState(AActor *mobj, statenum_t state)
 
 		// Modified handling.
 		// Call action functions when the state is set
-		if (st->action.acp1)
-			st->action.acp1(mobj);
+		if (st->action)
+			st->action(mobj);
 
 		state = st->nextstate;
     } while (!mobj->tics);
@@ -819,6 +820,14 @@ void P_XYMovement(AActor *mo)
 			}
 			else if (mo->flags & MF_MISSILE)
 			{
+				// [SL] 2012-01-25 - Don't explode missiles on horizon line
+				if (BlockingLine && BlockingLine->special == Line_Horizon &&
+					co_fixweaponimpacts)
+				{
+					mo->Destroy();
+					return;
+				}
+
 				// explode a missile
 				if (ceilingline &&
 					ceilingline->backsector &&
@@ -1256,14 +1265,14 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 			}
 			if (onmobj != NULL)
 			{
-				S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+				S_Sound (mo, CHAN_VOICE, "*land1", 1, ATTN_NORM);
 			}
 		}
 	}
 	else
 	{
 		// [SL] 2011-06-16 - Vanilla Doom Oomphiness
-		S_Sound (mo, CHAN_AUTO, "*land1", 1, ATTN_NORM);
+		S_Sound (mo, CHAN_VOICE, "*land1", 1, ATTN_NORM);
 	}
 //	mo->player->centering = true;
 }
@@ -1734,8 +1743,7 @@ void P_RespawnSpecials (void)
 	fixed_t 			y;
 	fixed_t 			z;
 
-	subsector_t*			ss;
-	AActor* 						mo;
+	AActor* 			mo;
 	mapthing2_t* 		mthing;
 
 	int 				i;
@@ -1782,7 +1790,6 @@ void P_RespawnSpecials (void)
 		z = ONFLOORZ;
 
 	// spawn a teleport fog at the new spot
-	ss = R_PointInSubsector (x, y);
 	mo = new AActor (x, y, z, MT_IFOG);
 	SV_SpawnMobj(mo);
     if (clientside)
@@ -1880,8 +1887,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 
 	// count deathmatch start positions
-	if (mthing->type == 11 || ((mthing->type == 5080 || mthing->type == 5081 || mthing->type == 5082))
-		&& !sv_teamspawns)
+	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (deathmatch_p >= &deathmatchstarts[10] && (demoplayback || demorecording) && democlassic)
@@ -2050,6 +2056,16 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		mthing->type = 14065;
 		i = MT_AMBIENT;
 	}
+
+	// [ML] Determine if it is a musicchanger thing, and if so,
+	//		map it to MT_MUSICCHANGE with the proper parameter.
+	if (mthing->type >= 14101 && mthing->type <= 14164)
+	{
+		mthing->args[0] = mthing->type - 14100;
+		mthing->type = 14165;
+		i = MT_MUSICCHANGE;
+	}
+
 	// [RH] Check if it's a particle fountain
 	else if (mthing->type >= 9027 && mthing->type <= 9033)
 	{
@@ -2163,8 +2179,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		S_ActivateAmbient (mobj, mobj->args[0]);
 
 	// [RH] If a fountain and not dormant, start it
-//	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
-//		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
+	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
+		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);
@@ -2207,6 +2223,36 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [RH] Go dormant as needed
 	if (mthing->flags & MTF_DORMANT)
 		P_DeactivateMobj (mobj);
+}
+
+
+//
+// P_VisibleToPlayers
+//
+// Returns true if mo is currently in any player's field of view
+//
+
+bool P_VisibleToPlayers(AActor *mo)
+{
+	if (!mo)
+		return false;
+
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		// players aren't considered visible to themselves
+		if (mo->player && mo->player->id == players[i].id)
+			continue;
+	
+		if (!players[i].mo || players[i].spectator)
+			continue;
+	
+		if (HasBehavior && P_CheckSightEdges2(players[i].mo, mo, 5.0))
+			return true;
+		if (!HasBehavior && P_CheckSightEdges(players[i].mo, mo, 5.0))
+			return true;
+	}
+
+	return false;
 }
 
 VERSION_CONTROL (p_mobj_cpp, "$Id$")

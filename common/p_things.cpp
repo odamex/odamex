@@ -27,6 +27,7 @@
 #include "doomtype.h"
 #include "i_system.h"
 #include "p_local.h"
+#include "c_effect.h"
 #include "p_mobj.h"
 #include "info.h"
 #include "s_sound.h"
@@ -308,7 +309,6 @@ BOOL P_ActivateMobj (AActor *mobj, AActor *activator)
 	{
 		switch (mobj->type)
 		{
-		    /*
 			case MT_SPARK:
 			{
 				int count = mobj->args[0];
@@ -327,7 +327,6 @@ BOOL P_ActivateMobj (AActor *mobj, AActor *activator)
 				mobj->effects &= ~FX_FOUNTAINMASK;
 				mobj->effects |= mobj->args[0] << FX_FOUNTAINSHIFT;
 				break;
-            */
 
 			case MT_SECRETTRIGGER:
 				if (activator->player->mo == consoleplayer().camera)
@@ -363,9 +362,9 @@ BOOL P_DeactivateMobj (AActor *mobj)
 	{
 		switch (mobj->type)
 		{
-			//case MT_FOUNTAIN:
-			//	mobj->effects &= ~FX_FOUNTAINMASK;
-			//	break;
+			case MT_FOUNTAIN:
+				mobj->effects &= ~FX_FOUNTAINMASK;
+				break;
 			default:
 				break;
 		}

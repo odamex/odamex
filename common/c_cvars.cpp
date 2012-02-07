@@ -35,7 +35,7 @@
 #include "d_player.h"
 
 #include "d_netinf.h"
-#include "dstrings.h"
+#include "gstrings.h"
 
 #include "i_system.h"
 
@@ -67,17 +67,17 @@ cvar_t* GetFirstCvar(void)
 
 int cvar_defflags;
 
-cvar_t::cvar_t (const char *var_name, const char *def, const char *help, DWORD flags)
+cvar_t::cvar_t (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD flags)
 {
-	InitSelf (var_name, def, help, flags, NULL);
+	InitSelf (var_name, def, help, type, flags, NULL);
 }
 
-cvar_t::cvar_t (const char *var_name, const char *def, const char *help, DWORD flags, void (*callback)(cvar_t &))
+cvar_t::cvar_t (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD flags, void (*callback)(cvar_t &))
 {
-	InitSelf (var_name, def, help, flags, callback);
+	InitSelf (var_name, def, help, type, flags, callback);
 }
 
-void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, DWORD var_flags, void (*callback)(cvar_t &))
+void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, cvartype_t type, DWORD var_flags, void (*callback)(cvar_t &))
 {
 	cvar_t *var, *dummy;
 
@@ -89,6 +89,7 @@ void cvar_t::InitSelf (const char *var_name, const char *def, const char *help, 
 	m_Flags = 0;
 	m_LatchedString = "";
     m_HelpText = help;
+    m_Type = type;
 
 	if (def)
 		m_Default = def;
@@ -415,7 +416,7 @@ cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)
 	*prev = NULL;
 	while (var)
 	{
-		if (stricmp (var->m_Name.c_str(), var_name) == 0)
+		if (StdStringCompare(var->m_Name, var_name, true) == 0)
 			break;
 		*prev = var;
 		var = var->m_Next;
@@ -517,7 +518,7 @@ BEGIN_COMMAND (set)
 
 		var = cvar_t::FindCVar (argv[1], &prev);
 		if (!var)
-			var = new cvar_t (argv[1], NULL, "", CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
+			var = new cvar_t (argv[1], NULL, "", CVARTYPE_NONE,  CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
 
 		if (var->flags() & CVAR_NOSET)
 			Printf (PRINT_HIGH, "%s is write protected.\n", argv[1]);

@@ -1234,7 +1234,7 @@ typedef struct
 	spritenum_t	sprite;
 	int			frame;
 	int			tics;
-	actionf_t 	action;
+	actionf_p1 	action;
 	statenum_t	nextstate;
 	int			misc1, misc2;
 /*
@@ -1446,6 +1446,7 @@ typedef enum {
 	MT_BRIDGE16,
 	MT_BRIDGE8,
 	MT_ZDOOMBRIDGE,
+	MT_MUSICCHANGE,
 	
 	NUMMOBJTYPES
 

@@ -33,6 +33,7 @@
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "c_effect.h"
 #include "p_mobj.h"
 
 #include "s_sound.h"
@@ -718,8 +719,8 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	int yl, yh;
 	int bx, by;
 	subsector_t *newsubsec;
-	AActor *thingblocker;
-	AActor *fakedblocker;
+	AActor *thingblocker = NULL;
+	AActor *fakedblocker = NULL;
 	fixed_t realheight = thing->height;
 
 	tmthing = thing;
@@ -1539,6 +1540,12 @@ BOOL PTR_AimTraverse (intercept_t* in)
 	if ((th->player && th->player->spectator))
 		return true;
 
+	// [SL] 2011-10-31 - Don't aim at teammates
+	if ((sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) &&
+		shootthing->player && th->player &&
+		shootthing->player->userinfo.team == th->player->userinfo.team)
+		return true;
+
 	// check angles to see if the thing can be aimed at
 	dist = FixedMul (attackrange, in->frac);
 	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
@@ -1648,6 +1655,10 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 			// [RH] If the trace went below/above the floor/ceiling, make the puff
 			//		appear in the right place and not on a wall.
 			int ceilingpic, updown;
+
+			// [SL] 2012-01-25 - Don't show bullet puffs on horizon lines 
+			if (co_fixweaponimpacts && li->special == Line_Horizon)
+				return false;
 
 			if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li)) {
 				ceilingheight = li->frontsector->ceilingheight;
@@ -1917,6 +1928,197 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 }
 
 //
+// [RH] PTR_RailTraverse
+//
+static int MaxRailHits, NumRailHits;
+static struct SRailHit {
+	AActor *hitthing;
+	fixed_t x,y,z;
+} *RailHits;
+static vec3_t RailEnd;
+
+BOOL PTR_RailTraverse (intercept_t *in)
+{
+	fixed_t 			x;
+	fixed_t 			y;
+	fixed_t 			z;
+	fixed_t 			frac;
+	
+	line_t* 			li;
+	
+	AActor* 			th;
+
+	fixed_t 			dist;
+	fixed_t 			thingtopslope;
+	fixed_t 			thingbottomslope;
+	fixed_t				floorheight;
+	fixed_t				ceilingheight;
+				
+	if (in->isaline)
+	{
+		li = in->d.line;
+		
+		frac = in->frac;
+		z = shootz + FixedMul (aimslope, FixedMul (frac, attackrange));
+
+		if (!(li->flags & ML_TWOSIDED) || (li->flags & ML_BLOCKEVERYTHING))
+			goto hitline;
+		
+		// crosses a two sided line
+		P_LineOpening (li);
+
+		if (z >= opentop || z <= openbottom)
+			goto hitline;
+
+		// shot continues
+		if (li->special)
+			P_ShootSpecialLine (shootthing, li);
+
+		return true;
+		
+		
+		// hit line
+	  hitline:
+		if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li)) {
+			ceilingheight = li->frontsector->ceilingheight;
+			floorheight = li->frontsector->floorheight;
+		} else {
+			ceilingheight = li->backsector->ceilingheight;
+			floorheight = li->backsector->floorheight;
+		}
+
+		if (z < floorheight) {
+			frac = FixedDiv (FixedMul (floorheight - shootz, frac), z - shootz);
+			z = floorheight;
+		} else if (z > ceilingheight) {
+			frac = FixedDiv (FixedMul (ceilingheight - shootz, frac), z - shootz);
+			z = ceilingheight;
+		} else {
+			if (li->backsector && z > opentop &&
+				li->frontsector->ceilingpic == skyflatnum &&
+				li->backsector->ceilingpic == skyflatnum)
+				;	// sky hack wall
+			else if (!co_fixweaponimpacts && li->special) {
+				// Shot actually hit a wall. It might be set up for shoot activation
+				P_ShootSpecialLine (shootthing, li);
+			}
+		}
+
+		x = trace.x + FixedMul (trace.dx, frac);
+		y = trace.y + FixedMul (trace.dy, frac);
+
+		// Save final position of rail shot.
+		VectorFixedSet (RailEnd, x, y, z);
+
+		// don't go any farther
+		return false;	
+	}
+	
+	// shoot a thing
+	th = in->d.thing;
+	if (th == shootthing)
+		return true;			// can't shoot self
+	
+	if (!(th->flags & MF_SHOOTABLE))
+		return true;			// corpse or something
+				
+	// check angles to see if the thing can be aimed at
+	dist = FixedMul (attackrange, in->frac);
+	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
+
+	if (thingtopslope < aimslope)
+		return true;			// shot over the thing
+
+	thingbottomslope = FixedDiv (th->z - shootz, dist);
+
+	if (thingbottomslope > aimslope)
+		return true;			// shot under the thing
+
+	
+	// hit thing
+	// if it's invulnerable, it completely blocks the shot
+	if (th->flags2 & MF2_INVULNERABLE)
+		return false;
+
+	// position a bit closer
+	frac = in->frac - FixedDiv (10*FRACUNIT,attackrange);
+
+	x = trace.x + FixedMul (trace.dx, frac);
+	y = trace.y + FixedMul (trace.dy, frac);
+	z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+
+	// Save this thing for damaging later
+	if (NumRailHits >= MaxRailHits)
+	{
+		MaxRailHits = MaxRailHits ? MaxRailHits * 2 : 16;
+		RailHits = (SRailHit *)Realloc (RailHits, sizeof(*RailHits) * MaxRailHits);
+	}
+	RailHits[NumRailHits].hitthing = th;
+	RailHits[NumRailHits].x = x;
+	RailHits[NumRailHits].y = y;
+	RailHits[NumRailHits].z = z;
+	NumRailHits++;
+
+	// continue the trace
+	return true;
+}
+
+void P_RailAttack (AActor *source, int damage, int offset)
+{
+	angle_t angle;
+	fixed_t x1, y1, x2, y2;
+	vec3_t start, end;
+
+	x1 = source->x;
+	y1 = source->y;
+	angle = (source->angle - ANG90) >> ANGLETOFINESHIFT;
+	x1 += offset*finecosine[angle];
+	y1 += offset*finesine[angle];
+	angle = source->angle >> ANGLETOFINESHIFT;
+	x2 = source->x + 8192*finecosine[angle];
+	y2 = source->y + 8192*finesine[angle];
+	shootz = source->z + (source->height >> 1) + 8*FRACUNIT;
+	attackrange = 8192*FRACUNIT;
+	aimslope = finetangent[FINEANGLES/4-(source->pitch>>ANGLETOFINESHIFT)];
+	shootthing = source;
+	NumRailHits = 0;
+	VectorFixedSet (start, x1, y1, shootz);
+
+	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_RailTraverse))
+	{
+		// Nothing hit, so just shoot the air
+		FixedAngleToVector (source->angle, source->pitch, end);
+		VectorMA (start, 8192, end, end);
+	}
+	else
+	{
+		// Hit a wall, maybe some things as well
+		int i;
+
+		VectorCopy (RailEnd, end);
+		for (i = 0; i < NumRailHits; i++)
+		{
+			if (RailHits[i].hitthing->flags & MF_NOBLOOD)
+				P_SpawnPuff (RailHits[i].x, RailHits[i].y, RailHits[i].z,
+							 R_PointToAngle2 (0, 0,
+											  FLOAT2FIXED(end[0]-start[0]),
+											  FLOAT2FIXED(end[1]-start[1])) - ANG180,
+							 1);
+			else
+				P_SpawnBlood (RailHits[i].x, RailHits[i].y, RailHits[i].z,
+							 R_PointToAngle2 (0, 0,
+											  FLOAT2FIXED(end[0]-start[0]),
+											  FLOAT2FIXED(end[1]-start[1])) - ANG180,
+							 damage);
+			P_DamageMobj (RailHits[i].hitthing, source, source, damage, MOD_RAILGUN);
+		}
+	}
+
+	if (clientside)
+		P_DrawRailTrail (start, end);
+}
+
+//
 // [RH] PTR_CameraTraverse
 //
 fixed_t CameraX, CameraY, CameraZ;
@@ -2152,7 +2354,7 @@ vec3_t			bombvec;
 // [RH] Damage scale to apply to thing that shot the missile.
 static float selfthrustscale;
 
-BEGIN_CUSTOM_CVAR (sv_splashfactor, "1.0", "", CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+BEGIN_CUSTOM_CVAR (sv_splashfactor, "1.0", "", CVARTYPE_FLOAT,  CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 {
 	if (var <= 0.0f)
 		var.Set (1.0f);

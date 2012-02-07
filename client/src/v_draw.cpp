@@ -806,45 +806,6 @@ void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
 	}
 }
 
-// [ML] 11/4/06: Moved here from v_video.cpp
-/*
-===============
-BestColor
-(borrowed from Quake2 source: utils3/qdata/images.c)
-===============
-*/
-byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors)
-{
-	int		i;
-	int		dr, dg, db;
-	int		bestdistortion, distortion;
-	int		bestcolor;
-
-//
-// let any color go to 0 as a last resort
-//
-	bestdistortion = 256*256*4;
-	bestcolor = 0;
-
-	for (i = 0; i < numcolors; i++)
-	{
-		dr = r - RPART(palette[i]);
-		dg = g - GPART(palette[i]);
-		db = b - BPART(palette[i]);
-		distortion = dr*dr + dg*dg + db*db;
-		if (distortion < bestdistortion)
-		{
-			if (!distortion)
-				return i;		// perfect match
-
-			bestdistortion = distortion;
-			bestcolor = i;
-		}
-	}
-
-	return bestcolor;
-}
-
 int V_GetColorFromString (const DWORD *palette, const char *cstr)
 {
 	int c[3], i, p;

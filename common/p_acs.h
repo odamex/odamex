@@ -4,9 +4,103 @@
 #define __P_ACS_H__
 
 #include "dobject.h"
+#include "doomtype.h"
+#include "r_defs.h"
 
-#define STACK_SIZE	200
 #define LOCAL_SIZE	10
+#define STACK_SIZE 4096
+
+struct ScriptPtr
+{
+	WORD Number;
+	BYTE Type;
+	BYTE ArgCount;
+	DWORD Address;
+};
+
+struct ScriptPtr1
+{
+	WORD Number;
+	WORD Type;
+	DWORD Address;
+	DWORD ArgCount;
+};
+
+struct ScriptPtr2
+{
+	DWORD Number;	// Type is Number / 1000
+	DWORD Address;
+	DWORD ArgCount;
+};
+
+struct ScriptFunction
+{
+	BYTE ArgCount;
+	BYTE LocalCount;
+	BYTE HasReturnValue;
+	BYTE Pad;
+	DWORD Address;
+};
+
+enum
+{
+	SCRIPT_Closed		= 0,
+	SCRIPT_Open			= 1,
+	SCRIPT_Respawn		= 2,
+	SCRIPT_Death		= 3,
+	SCRIPT_Enter		= 4,
+	SCRIPT_Pickup		= 5,
+	SCRIPT_T1Return		= 6,
+	SCRIPT_T2Return		= 7,
+	SCRIPT_Lightning	= 12
+};
+
+enum ACSFormat { ACS_Old, ACS_Enhanced, ACS_LittleEnhanced, ACS_Unknown };
+
+
+class FBehavior
+{
+public:
+	FBehavior (BYTE *object, int len);
+	~FBehavior ();
+
+	bool IsGood ();
+	BYTE *FindChunk (DWORD id) const;
+	BYTE *NextChunk (BYTE *chunk) const;
+	int *FindScript (int number) const;
+	void PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef);
+	const char *LookupString (DWORD index, DWORD ofs=0) const;
+	const char *LocalizeString (DWORD index) const;
+	void StartTypedScripts (WORD type, AActor *activator) const;
+	DWORD PC2Ofs (int *pc) const { return (BYTE *)pc - Data; }
+	int *Ofs2PC (DWORD ofs) const { return (int *)(Data + ofs); }
+	ACSFormat GetFormat() const { return Format; }
+	ScriptFunction *GetFunction (int funcnum) const;
+	int GetArrayVal (int arraynum, int index) const;
+	void SetArrayVal (int arraynum, int index, int value);
+
+private:
+	struct ArrayInfo;
+
+	ACSFormat Format;
+
+	BYTE *Data;
+	int DataSize;
+	BYTE *Chunks;
+	BYTE *Scripts;
+	int NumScripts;
+	BYTE *Functions;
+	int NumFunctions;
+	ArrayInfo *Arrays;
+	int NumArrays;
+	DWORD LanguageNeutral;
+	DWORD Localized;
+
+	static int STACK_ARGS SortScripts (const void *a, const void *b);
+	void AddLanguage (DWORD lang);
+	DWORD FindLanguage (DWORD lang, bool ignoreregion) const;
+	DWORD *CheckIfInList (DWORD lang);
+};
 
 class DLevelScript : public DObject
 {
@@ -16,117 +110,233 @@ public:
 	// P-codes for ACS scripts
 	enum
 	{
-		PCD_NOP =					0,
-		PCD_TERMINATE =				1,
-		PCD_SUSPEND =				2,
-		PCD_PUSHNUMBER =			3,
-		PCD_LSPEC1 =				4,
-		PCD_LSPEC2 =				5,
-		PCD_LSPEC3 =				6,
-		PCD_LSPEC4 =				7,
-		PCD_LSPEC5 =				8,
-		PCD_LSPEC1DIRECT =			9,
-		PCD_LSPEC2DIRECT =			10,
-		PCD_LSPEC3DIRECT =			11,
-		PCD_LSPEC4DIRECT =			12,
-		PCD_LSPEC5DIRECT =			13,
-		PCD_ADD =					14,
-		PCD_SUBTRACT =				15,
-		PCD_MULTIPLY =				16,
-		PCD_DIVIDE =				17,
-		PCD_MODULUS =				18,
-		PCD_EQ =					19,
-		PCD_NE =					20,
-		PCD_LT =					21,
-		PCD_GT =					22,
-		PCD_LE =					23,
-		PCD_GE =					24,
-		PCD_ASSIGNSCRIPTVAR =		25,
-		PCD_ASSIGNMAPVAR =			26,
-		PCD_ASSIGNWORLDVAR =		27,
-		PCD_PUSHSCRIPTVAR =			28,
-		PCD_PUSHMAPVAR =			29,
-		PCD_PUSHWORLDVAR =			30,
-		PCD_ADDSCRIPTVAR =			31,
-		PCD_ADDMAPVAR =				32,
-		PCD_ADDWORLDVAR =			33,
-		PCD_SUBSCRIPTVAR =			34,
-		PCD_SUBMAPVAR =				35,
-		PCD_SUBWORLDVAR =			36,
-		PCD_MULSCRIPTVAR =			37,
-		PCD_MULMAPVAR =				38,
-		PCD_MULWORLDVAR =			39,
-		PCD_DIVSCRIPTVAR =			40,
-		PCD_DIVMAPVAR =				41,
-		PCD_DIVWORLDVAR =			42,
-		PCD_MODSCRIPTVAR =			43,
-		PCD_MODMAPVAR =				44,
-		PCD_MODWORLDVAR =			45,
-		PCD_INCSCRIPTVAR =			46,
-		PCD_INCMAPVAR =				47,
-		PCD_INCWORLDVAR =			48,
-		PCD_DECSCRIPTVAR =			49,
-		PCD_DECMAPVAR =				50,
-		PCD_DECWORLDVAR =			51,
-		PCD_GOTO =					52,
-		PCD_IFGOTO =				53,
-		PCD_DROP =					54,
-		PCD_DELAY =					55,
-		PCD_DELAYDIRECT =			56,
-		PCD_RANDOM =				57,
-		PCD_RANDOMDIRECT =			58,
-		PCD_THINGCOUNT =			59,
-		PCD_THINGCOUNTDIRECT =		60,
-		PCD_TAGWAIT =				61,
-		PCD_TAGWAITDIRECT =			62,
-		PCD_POLYWAIT =				63,
-		PCD_POLYWAITDIRECT =		64,
-		PCD_CHANGEFLOOR =			65,
-		PCD_CHANGEFLOORDIRECT =		66,
-		PCD_CHANGECEILING =			67,
-		PCD_CHANGECEILINGDIRECT =	68,
-		PCD_RESTART =				69,
-		PCD_ANDLOGICAL =			70,
-		PCD_ORLOGICAL =				71,
-		PCD_ANDBITWISE =			72,
-		PCD_ORBITWISE =				73,
-		PCD_EORBITWISE =			74,
-		PCD_NEGATELOGICAL =			75,
-		PCD_LSHIFT =				76,
-		PCD_RSHIFT =				77,
-		PCD_UNARYMINUS =			78,
-		PCD_IFNOTGOTO =				79,
-		PCD_LINESIDE =				80,
-		PCD_SCRIPTWAIT =			81,
-		PCD_SCRIPTWAITDIRECT =		82,
-		PCD_CLEARLINESPECIAL =		83,
-		PCD_CASEGOTO =				84,
-		PCD_BEGINPRINT =			85,
-		PCD_ENDPRINT =				86,
-		PCD_PRINTSTRING =			87,
-		PCD_PRINTNUMBER =			88,
-		PCD_PRINTCHARACTER =		89,
-		PCD_PLAYERCOUNT =			90,
-		PCD_GAMETYPE =				91,
-		PCD_GAMESKILL =				92,
-		PCD_TIMER =					93,
-		PCD_SECTORSOUND =			94,
-		PCD_AMBIENTSOUND =			95,
-		PCD_SOUNDSEQUENCE =			96,
-		PCD_SETLINETEXTURE =		97,
-		PCD_SETLINEBLOCKING =		98,
-		PCD_SETLINESPECIAL =		99,
-		PCD_THINGSOUND =			100,
-		PCD_ENDPRINTBOLD =			101,
-		PCD_ACTIVATORSOUND =		102,
-		PCD_LOCALAMBIENTSOUND =		103,
-		PCD_SETLINEMONSTERBLOCKING =104,
-		PCD_FIXEDMUL			  = 136,
-		PCD_FIXEDDIV			  = 137,
-		PCD_SETGRAVITY			  = 138,
-		PCD_SETGRAVITYDIRECT	  = 139,
-		PCD_SETAIRCONTROL		  = 140,
-		PCD_SETAIRCONTROLDIRECT	  = 141		
+/*  0*/	PCD_NOP,
+		PCD_TERMINATE,
+		PCD_SUSPEND,
+		PCD_PUSHNUMBER,
+		PCD_LSPEC1,
+		PCD_LSPEC2,
+		PCD_LSPEC3,
+		PCD_LSPEC4,
+		PCD_LSPEC5,
+		PCD_LSPEC1DIRECT,
+/* 10*/	PCD_LSPEC2DIRECT,
+		PCD_LSPEC3DIRECT,
+		PCD_LSPEC4DIRECT,
+		PCD_LSPEC5DIRECT,
+		PCD_ADD,
+		PCD_SUBTRACT,
+		PCD_MULTIPLY,
+		PCD_DIVIDE,
+		PCD_MODULUS,
+		PCD_EQ,
+/* 20*/ PCD_NE,
+		PCD_LT,
+		PCD_GT,
+		PCD_LE,
+		PCD_GE,
+		PCD_ASSIGNSCRIPTVAR,
+		PCD_ASSIGNMAPVAR,
+		PCD_ASSIGNWORLDVAR,
+		PCD_PUSHSCRIPTVAR,
+		PCD_PUSHMAPVAR,
+/* 30*/	PCD_PUSHWORLDVAR,
+		PCD_ADDSCRIPTVAR,
+		PCD_ADDMAPVAR,
+		PCD_ADDWORLDVAR,
+		PCD_SUBSCRIPTVAR,
+		PCD_SUBMAPVAR,
+		PCD_SUBWORLDVAR,
+		PCD_MULSCRIPTVAR,
+		PCD_MULMAPVAR,
+		PCD_MULWORLDVAR,
+/* 40*/	PCD_DIVSCRIPTVAR,
+		PCD_DIVMAPVAR,
+		PCD_DIVWORLDVAR,
+		PCD_MODSCRIPTVAR,
+		PCD_MODMAPVAR,
+		PCD_MODWORLDVAR,
+		PCD_INCSCRIPTVAR,
+		PCD_INCMAPVAR,
+		PCD_INCWORLDVAR,
+		PCD_DECSCRIPTVAR,
+/* 50*/	PCD_DECMAPVAR,
+		PCD_DECWORLDVAR,
+		PCD_GOTO,
+		PCD_IFGOTO,
+		PCD_DROP,
+		PCD_DELAY,
+		PCD_DELAYDIRECT,
+		PCD_RANDOM,
+		PCD_RANDOMDIRECT,
+		PCD_THINGCOUNT,
+/* 60*/	PCD_THINGCOUNTDIRECT,
+		PCD_TAGWAIT,
+		PCD_TAGWAITDIRECT,
+		PCD_POLYWAIT,
+		PCD_POLYWAITDIRECT,
+		PCD_CHANGEFLOOR,
+		PCD_CHANGEFLOORDIRECT,
+		PCD_CHANGECEILING,
+		PCD_CHANGECEILINGDIRECT,
+		PCD_RESTART,
+/* 70*/	PCD_ANDLOGICAL,
+		PCD_ORLOGICAL,
+		PCD_ANDBITWISE,
+		PCD_ORBITWISE,
+		PCD_EORBITWISE,
+		PCD_NEGATELOGICAL,
+		PCD_LSHIFT,
+		PCD_RSHIFT,
+		PCD_UNARYMINUS,
+		PCD_IFNOTGOTO,
+/* 80*/	PCD_LINESIDE,
+		PCD_SCRIPTWAIT,
+		PCD_SCRIPTWAITDIRECT,
+		PCD_CLEARLINESPECIAL,
+		PCD_CASEGOTO,
+		PCD_BEGINPRINT,
+		PCD_ENDPRINT,
+		PCD_PRINTSTRING,
+		PCD_PRINTNUMBER,
+		PCD_PRINTCHARACTER,
+/* 90*/	PCD_PLAYERCOUNT,
+		PCD_GAMETYPE,
+		PCD_GAMESKILL,
+		PCD_TIMER,
+		PCD_SECTORSOUND,
+		PCD_AMBIENTSOUND,
+		PCD_SOUNDSEQUENCE,
+		PCD_SETLINETEXTURE,
+		PCD_SETLINEBLOCKING,
+		PCD_SETLINESPECIAL,
+/*100*/	PCD_THINGSOUND,
+		PCD_ENDPRINTBOLD,		// [RH] End of Hexen p-codes
+		PCD_ACTIVATORSOUND,
+		PCD_LOCALAMBIENTSOUND,
+		PCD_SETLINEMONSTERBLOCKING,
+		PCD_PLAYERBLUESKULL,	// [BC] Start of new [Skull Tag] pcodes
+		PCD_PLAYERREDSKULL,
+		PCD_PLAYERYELLOWSKULL,
+		PCD_PLAYERMASTERSKULL,
+		PCD_PLAYERBLUECARD,
+/*110*/	PCD_PLAYERREDCARD,
+		PCD_PLAYERYELLOWCARD,
+		PCD_PLAYERMASTERCARD,
+		PCD_PLAYERBLACKSKULL,
+		PCD_PLAYERSILVERSKULL,
+		PCD_PLAYERGOLDSKULL,
+		PCD_PLAYERBLACKCARD,
+		PCD_PLAYERSILVERCARD,
+		PCD_PLAYERGOLDCARD,
+		PCD_PLAYERTEAM1,
+/*120*/	PCD_PLAYERHEALTH,
+		PCD_PLAYERARMORPOINTS,
+		PCD_PLAYERFRAGS,
+		PCD_PLAYEREXPERT,
+		PCD_TEAM1COUNT,
+		PCD_TEAM2COUNT,
+		PCD_TEAM1SCORE,
+		PCD_TEAM2SCORE,
+		PCD_TEAM1FRAGPOINTS,
+		PCD_LSPEC6,				// These are never used. They should probably
+/*130*/	PCD_LSPEC6DIRECT,		// be given names like PCD_DUMMY.
+		PCD_PRINTNAME,
+		PCD_MUSICCHANGE,
+		PCD_TEAM2FRAGPOINTS,
+		PCD_CONSOLECOMMAND,
+		PCD_SINGLEPLAYER,		// [RH] End of Skull Tag p-codes
+		PCD_FIXEDMUL,
+		PCD_FIXEDDIV,
+		PCD_SETGRAVITY,
+		PCD_SETGRAVITYDIRECT,
+/*140*/	PCD_SETAIRCONTROL,
+		PCD_SETAIRCONTROLDIRECT,
+		PCD_CLEARINVENTORY,
+		PCD_GIVEINVENTORY,
+		PCD_GIVEINVENTORYDIRECT,
+		PCD_TAKEINVENTORY,
+		PCD_TAKEINVENTORYDIRECT,
+		PCD_CHECKINVENTORY,
+		PCD_CHECKINVENTORYDIRECT,
+		PCD_SPAWN,
+/*150*/	PCD_SPAWNDIRECT,
+		PCD_SPAWNSPOT,
+		PCD_SPAWNSPOTDIRECT,
+		PCD_SETMUSIC,
+		PCD_SETMUSICDIRECT,
+		PCD_LOCALSETMUSIC,
+		PCD_LOCALSETMUSICDIRECT,
+		PCD_PRINTFIXED,
+		PCD_PRINTLOCALIZED,
+		PCD_MOREHUDMESSAGE,
+/*160*/	PCD_OPTHUDMESSAGE,
+		PCD_ENDHUDMESSAGE,
+		PCD_ENDHUDMESSAGEBOLD,
+		PCD_SETSTYLE,
+		PCD_SETSTYLEDIRECT,
+		PCD_SETFONT,
+		PCD_SETFONTDIRECT,
+		PCD_PUSHBYTE,
+		PCD_LSPEC1DIRECTB,
+		PCD_LSPEC2DIRECTB,
+/*170*/	PCD_LSPEC3DIRECTB,
+		PCD_LSPEC4DIRECTB,
+		PCD_LSPEC5DIRECTB,
+		PCD_DELAYDIRECTB,
+		PCD_RANDOMDIRECTB,
+		PCD_PUSHBYTES,
+		PCD_PUSH2BYTES,
+		PCD_PUSH3BYTES,
+		PCD_PUSH4BYTES,
+		PCD_PUSH5BYTES,
+/*180*/	PCD_SETTHINGSPECIAL,
+		PCD_ASSIGNGLOBALVAR,
+		PCD_PUSHGLOBALVAR,
+		PCD_ADDGLOBALVAR,
+		PCD_SUBGLOBALVAR,
+		PCD_MULGLOBALVAR,
+		PCD_DIVGLOBALVAR,
+		PCD_MODGLOBALVAR,
+		PCD_INCGLOBALVAR,
+		PCD_DECGLOBALVAR,
+/*190*/	PCD_FADETO,
+		PCD_FADERANGE,
+		PCD_CANCELFADE,
+		PCD_PLAYMOVIE,
+		PCD_SETFLOORTRIGGER,
+		PCD_SETCEILINGTRIGGER,
+		PCD_GETACTORX,
+		PCD_GETACTORY,
+		PCD_GETACTORZ,
+		PCD_STARTTRANSLATION,
+/*200*/	PCD_TRANSLATIONRANGE1,
+		PCD_TRANSLATIONRANGE2,
+		PCD_ENDTRANSLATION,
+		PCD_CALL,
+		PCD_CALLDISCARD,
+		PCD_RETURNVOID,
+		PCD_RETURNVAL,
+		PCD_PUSHMAPARRAY,
+		PCD_ASSIGNMAPARRAY,
+		PCD_ADDMAPARRAY,
+/*210*/	PCD_SUBMAPARRAY,
+		PCD_MULMAPARRAY,
+		PCD_DIVMAPARRAY,
+		PCD_MODMAPARRAY,
+		PCD_INCMAPARRAY,
+		PCD_DECMAPARRAY,
+		PCD_DUP,
+		PCD_SWAP,
+		PCD_WRITETOINI,
+		PCD_GETFROMINI,
+/*220*/ PCD_SIN,
+		PCD_COS,
+		PCD_VECTORANGLE,
+		PCD_CHECKWEAPON,
+		PCD_SETWEAPON,
+
+		PCODE_COMMAND_COUNT
 	};
 
 	// Some constants used by ACS scripts
@@ -146,7 +356,9 @@ public:
 	enum {
 		GAME_SINGLE_PLAYER =	0,
 		GAME_NET_COOPERATIVE =	1,
-		GAME_NET_DEATHMATCH =	2
+		GAME_NET_DEATHMATCH =	2,
+		GAME_NET_TEAMDEATHMATCH = 3,
+		GAME_NET_CTF = 4
 	};
 	enum {
 		CLASS_FIGHTER =			0,
@@ -192,9 +404,8 @@ public:
 protected:
 	DLevelScript	*next, *prev;
 	int				script;
-	int				stack[STACK_SIZE];
 	int				sp;
-	int				locals[LOCAL_SIZE];
+	int				localvars[LOCAL_SIZE];
 	int				*pc;
 	EScriptState	state;
 	int				statedata;
@@ -215,29 +426,22 @@ protected:
 	static int CountPlayers ();
 	static void SetLineTexture (int lineid, int side, int position, int name);
 
+	void DoFadeTo (int r, int g, int b, int a, fixed_t time);
+	void DoFadeRange (int r1, int g1, int b1, int a1,
+		int r2, int g2, int b2, int a2, fixed_t time);
+
 private:
 	DLevelScript ();
 
 	friend class DACSThinker;
 };
 
-inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState state)
+inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState &state)
 {
-	return arc << (BYTE)state;
-}
-inline FArchive &operator>> (FArchive &arc, DLevelScript::EScriptState &state)
-{
-	BYTE in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
-}
-
-inline void DLevelScript::PushToStack (int val)
-{
-	if (sp == STACK_SIZE)
-	{
-		Printf (PRINT_HIGH, "Stack overflow in script %d\n", script);
-		state = SCRIPT_PleaseRemove;
-	}
-	stack[sp++] = val;
+	BYTE val = (BYTE)state;
+	arc << val;
+	state = (DLevelScript::EScriptState)val;
+	return arc;
 }
 
 class DACSThinker : public DThinker
@@ -251,6 +455,8 @@ public:
 
 	DLevelScript *RunningScripts[1000];	// Array of all synchronous scripts
 	static DACSThinker *ActiveThinker;
+
+    void DumpScriptStatus();
 
 private:
 	DLevelScript *LastScript;
@@ -273,11 +479,11 @@ struct acsdefered_s
 	} type;
 	int script;
 	int arg0, arg1, arg2;
+	int playernum;
 };
 typedef struct acsdefered_s acsdefered_t;
 
-FArchive &operator<< (FArchive &arc, acsdefered_s *defer);
-FArchive &operator>> (FArchive &arc, acsdefered_s* &defer);
+FArchive &operator<< (FArchive &arc, acsdefered_s *&defer);
 
 #endif //__P_ACS_H__
 

@@ -76,7 +76,8 @@ class wxAdvancedListCtrl : public wxListCtrl
         wxInt32 SortCol;
 
         wxColour ItemShade;
-
+        wxColour BgColor;
+        
     protected:               
         DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
         DECLARE_EVENT_TABLE()

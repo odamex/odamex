@@ -25,6 +25,8 @@
 #include "lst_srvdetails.h"
 #include "str_utils.h"
 
+#include <wx/settings.h>
+
 IMPLEMENT_DYNAMIC_CLASS(LstOdaSrvDetails, wxListCtrl)
 
 typedef enum
@@ -35,6 +37,15 @@ typedef enum
     ,max_srvdetails_fields
 } srvdetails_fields_t;
 
+LstOdaSrvDetails::LstOdaSrvDetails()
+{
+    ItemShade = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+    BgColor = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+    
+    Header = wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
+    HeaderText = wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT);
+}
+
 // Adjusts the width of the name and value columns to the longest item
 void LstOdaSrvDetails::ResizeNameValueColumns()
 {
@@ -43,8 +54,8 @@ void LstOdaSrvDetails::ResizeNameValueColumns()
 }
 
 void LstOdaSrvDetails::InsertHeader(const wxString &Name, 
-                                    const wxColor *NameColor,
-                                    const wxColor *NameBGColor)
+                                    wxColor NameColor,
+                                    wxColor NameBGColor)
 {
     wxListItem ListItem;
     
@@ -55,8 +66,14 @@ void LstOdaSrvDetails::InsertHeader(const wxString &Name,
     ListItem.SetColumn(srvdetails_field_name);
     ListItem.SetId(InsertItem(GetItemCount(), ListItem.GetText()));
 
-    ListItem.SetBackgroundColour(*NameBGColor);
-    ListItem.SetTextColour(*NameColor);
+    if (NameColor == wxNullColour)
+        NameColor = Header;
+
+    if (NameBGColor == wxNullColour)
+        NameBGColor = HeaderText;
+
+    ListItem.SetBackgroundColour(NameBGColor);
+    ListItem.SetTextColour(NameColor);
     SetItem(ListItem);
 }
 
@@ -71,12 +88,12 @@ void LstOdaSrvDetails::InsertLine(const wxString &Name, const wxString &Value)
     ListItem.SetColumn(srvdetails_field_name);
     ListItem.SetId(InsertItem(GetItemCount(), ListItem.GetText()));
     
-    if (BGItemAlternator == *wxWHITE)
+    if (BGItemAlternator == BgColor)
     {
-        BGItemAlternator.Set(wxUint8(245), wxUint8(245), wxUint8(245));
+        BGItemAlternator = ItemShade;
     }
     else
-        BGItemAlternator = *wxWHITE;
+        BGItemAlternator = BgColor;
     
     ListItem.SetBackgroundColour(BGItemAlternator);
     
@@ -103,9 +120,6 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     
     // Begin adding data to the control   
     
-    // Set the initial background colour
-    BGItemAlternator = *wxWHITE;
-    
     InsertColumn(srvdetails_field_name, wxT(""), wxLIST_FORMAT_LEFT, 150);
     InsertColumn(srvdetails_field_value, wxT(""), wxLIST_FORMAT_LEFT, 150);
     
@@ -121,7 +135,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
 
     // Status of the game 
     InsertLine(wxT(""), wxT(""));                            
-    InsertHeader(wxT("Game Status"), wxRED, wxWHITE);
+    InsertHeader(wxT("Game Status"));
     
     InsertLine(wxT("Time left"), wxString::Format(wxT("%u"), In.Info.TimeLeft));
     
@@ -134,7 +148,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     
     // Patch (BEX/DEH) files
     InsertLine(wxT(""), wxT(""));                            
-    InsertHeader(wxT("BEX/DEH Files"), wxRED, wxWHITE);
+    InsertHeader(wxT("BEX/DEH Files"));
     
     if (In.Info.Patches.size() == 0)
     {
@@ -168,7 +182,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(Server &In)
     
     // Gameplay variables (Cvars, others)
     InsertLine(wxT(""), wxT(""));                            
-    InsertHeader(wxT("Game Settings"), wxRED, wxWHITE);
+    InsertHeader(wxT("Game Settings"));
 
     // Sort cvars ascending
     sort(In.Info.Cvars.begin(), In.Info.Cvars.end(), CvarCompare);

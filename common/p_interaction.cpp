@@ -23,7 +23,7 @@
 
 // Data.
 #include "doomdef.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "doomstat.h"
 #include "m_random.h"
 #include "i_system.h"
@@ -34,6 +34,7 @@
 #include "p_inter.h"
 #include "p_lnspec.h"
 #include "p_ctf.h"
+#include "p_acs.h"
 
 #define BONUSADD 6
 
@@ -195,6 +196,8 @@ BOOL P_GiveAmmo(player_t *player, ammotype_t ammo, int num)
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
 //
+bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon);
+
 BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 {
 	bool gaveammo;
@@ -228,7 +231,8 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 			P_GiveAmmo(player, weaponinfo[weapon].ammo, 2);
         }
 
-		player->pendingweapon = weapon;
+		if (P_CheckSwitchWeapon(player, weapon))
+			player->pendingweapon = weapon;
 
 		S_Sound(player->mo, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);
 
@@ -263,7 +267,8 @@ BOOL P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 	{
 		gaveweapon = true;
 		player->weaponowned[weapon] = true;
-		player->pendingweapon = weapon;
+		if (P_CheckSwitchWeapon(player, weapon))
+			player->pendingweapon = weapon;
 	}
 
 	return (gaveweapon || gaveammo);
@@ -382,62 +387,34 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	bool		firstgrab = false;
 
 	if (!toucher || !special) // [Toke - fix99]
-    {
 		return;
-    }
 
-    if (clientside && network_game && !FromServer)
-    {
-        return;
-    }
+	player = toucher->player;
+	if (!player || player->spectator)
+		return;
 
     if (predicting)
-    {
         return;
-    }
 
     // Dead thing touching.
     // Can happen with a sliding player corpse.
     if (toucher->health <= 0)
-    {
 		return;
-    }
-
-	// GhostlyDeath -- Spectators can't pick up things
-	if (toucher->player && toucher->player->spectator)
-    {
-		return;
-    }
 
 	fixed_t delta = special->z - toucher->z;
 
-    // Out of reach
-    // ...but leave this to the server to handle if the client is connected
-    // [CG] This is called the the client upon receipt of the "touched special
-    //      thing" message (whatever it actually is), so this check should only
-    //      happen if serverside.
-    /*
-	if ((delta > toucher->height || delta < -8*FRACUNIT) &&
-	    !(clientside && network_game))
-    */
-	if (serverside && (delta > toucher->height || delta < -8*FRACUNIT))
-	{
+	// Abort if it's out of reach and the server didn't say it was ok
+	if (!FromServer && (delta > toucher->height || delta < -8*FRACUNIT))
 		return;
-	}
+
+	// Only allow clients to predict touching weapons, not health, armor, etc
+	if (clientside && !serverside && special->type != MT_CHAINGUN &&
+		special->type != MT_SHOTGUN && special->type != MT_SUPERSHOTGUN &&
+		special->type != MT_MISC25 && special->type != MT_MISC26 &&
+		special->type != MT_MISC27 && special->type != MT_MISC28 && !FromServer)
+		return;
 
 	sound = 0;
-
-	if(!toucher->player)
-    {
-		return;
-    }
-
-	player = toucher->player;
-
-    if (!player)
-    {
-        return;
-    }
 
 	// Identify by sprite.
 	switch (special->sprite)
@@ -449,7 +426,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
                 return;
             }
             SV_TouchSpecial(special, player);
-            PickupMessage(toucher, GOTARMOR);
+            PickupMessage(toucher, GStrings(GOTARMOR));
             break;
 
 	    case SPR_ARM2:
@@ -458,7 +435,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
                 return;
             }
             SV_TouchSpecial(special, player);
-            PickupMessage(toucher, GOTMEGA);
+            PickupMessage(toucher, GStrings(GOTMEGA));
             break;
 
 		// bonus items
@@ -470,7 +447,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             }
             player->mo->health = player->health;
             SV_TouchSpecial(special, player);
-            PickupMessage(toucher, GOTHTHBONUS);
+            PickupMessage(toucher, GStrings(GOTHTHBONUS));
             break;
 
 	    case SPR_BON2:
@@ -484,7 +461,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
                 player->armortype = deh.GreenAC;
             }
             SV_TouchSpecial(special, player);
-            PickupMessage(toucher, GOTARMBONUS);
+            PickupMessage(toucher, GStrings(GOTARMBONUS));
             break;
 
 	    case SPR_SOUL:
@@ -494,7 +471,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
                 player->health = deh.MaxSoulsphere;
             }
             player->mo->health = player->health;
-            PickupMessage(toucher, GOTSUPER);
+            PickupMessage(toucher, GStrings(GOTSUPER));
             sound = 1;
             SV_TouchSpecial(special, player);
             break;
@@ -503,7 +480,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             player->health = deh.MegasphereHealth;
             player->mo->health = player->health;
             P_GiveArmor(player,deh.BlueAC);
-            PickupMessage(toucher, GOTMSPHERE);
+            PickupMessage(toucher, GStrings(GOTMSPHERE));
             sound = 1;
             SV_TouchSpecial(special, player);
             break;
@@ -513,7 +490,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	    case SPR_BKEY:
             if (!player->cards[it_bluecard])
             {
-                PickupMessage(toucher, GOTBLUECARD);
+                PickupMessage(toucher, GStrings(GOTBLUECARD));
             }
             P_GiveCard(player, it_bluecard);
             sound = 3;
@@ -527,7 +504,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	    case SPR_YKEY:
             if (!player->cards[it_yellowcard])
             {
-                PickupMessage(toucher, GOTYELWCARD);
+                PickupMessage(toucher, GStrings(GOTYELWCARD));
             }
             P_GiveCard(player, it_yellowcard);
             sound = 3;
@@ -541,7 +518,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	    case SPR_RKEY:
             if (!player->cards[it_redcard])
             {
-                PickupMessage(toucher, GOTREDCARD);
+                PickupMessage(toucher, GStrings(GOTREDCARD));
             }
             P_GiveCard(player, it_redcard);
             sound = 3;
@@ -555,7 +532,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	    case SPR_BSKU:
             if (!player->cards[it_blueskull])
             {
-                PickupMessage(toucher, GOTBLUESKUL);
+                PickupMessage(toucher, GStrings(GOTBLUESKUL));
             }
             P_GiveCard(player, it_blueskull);
             sound = 3;
@@ -569,7 +546,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	    case SPR_YSKU:
             if (!player->cards[it_yellowskull])
             {
-                PickupMessage(toucher, GOTYELWSKUL);
+                PickupMessage(toucher, GStrings(GOTYELWSKUL));
             }
             P_GiveCard(player, it_yellowskull);
             sound = 3;
@@ -583,7 +560,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	    case SPR_RSKU:
             if (!player->cards[it_redskull])
             {
-                PickupMessage(toucher, GOTREDSKULL);
+                PickupMessage(toucher, GStrings(GOTREDSKUL));
             }
             P_GiveCard(player, it_redskull);
             sound = 3;
@@ -600,18 +577,18 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTSTIM);
+            PickupMessage(toucher, GStrings(GOTSTIM));
             SV_TouchSpecial(special, player);
             break;
 
 	    case SPR_MEDI:
             if (player->health < 25)
             {
-                PickupMessage(toucher, GOTMEDINEED);
+                PickupMessage(toucher, GStrings(GOTMEDINEED));
             }
             else if (player->health < 100)
             {
-                PickupMessage(toucher, GOTMEDIKIT);
+                PickupMessage(toucher, GStrings(GOTMEDIKIT));
             }
             if (!P_GiveBody(player, 25))
             {
@@ -626,7 +603,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTINVUL);
+            PickupMessage(toucher, GStrings(GOTINVUL));
             sound = 1;
             SV_TouchSpecial(special, player);
             break;
@@ -636,7 +613,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTBERSERK);
+            PickupMessage(toucher, GStrings(GOTBERSERK));
             if (player->readyweapon != wp_fist)
             {
                 player->pendingweapon = wp_fist;
@@ -650,7 +627,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTINVIS);
+            PickupMessage(toucher, GStrings(GOTINVIS));
             sound = 1;
             SV_TouchSpecial(special, player);
             break;
@@ -660,7 +637,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTSUIT);
+            PickupMessage(toucher, GStrings(GOTSUIT));
             sound = 1;
             SV_TouchSpecial(special, player);
             break;
@@ -670,7 +647,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTMAP);
+            PickupMessage(toucher, GStrings(GOTMAP));
             sound = 1;
             SV_TouchSpecial(special, player);
             break;
@@ -680,7 +657,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTVISOR);
+            PickupMessage(toucher, GStrings(GOTVISOR));
             sound = 1;
             SV_TouchSpecial(special, player);
             break;
@@ -701,7 +678,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
                     return;
                 }
             }
-            PickupMessage(toucher, GOTCLIP);
+            PickupMessage(toucher, GStrings(GOTCLIP));
             SV_TouchSpecial(special, player);
             break;
 
@@ -710,7 +687,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTCLIPBOX);
+            PickupMessage(toucher, GStrings(GOTCLIPBOX));
             SV_TouchSpecial(special, player);
             break;
 
@@ -719,7 +696,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTROCKET);
+            PickupMessage(toucher, GStrings(GOTROCKET));
             SV_TouchSpecial(special, player);
             break;
 
@@ -728,7 +705,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTROCKBOX);
+            PickupMessage(toucher, GStrings(GOTROCKBOX));
             SV_TouchSpecial(special, player);
             break;
 
@@ -737,7 +714,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTCELL);
+            PickupMessage(toucher, GStrings(GOTCELL));
             SV_TouchSpecial(special, player);
             break;
 
@@ -746,7 +723,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTCELLBOX);
+            PickupMessage(toucher, GStrings(GOTCELLBOX));
             SV_TouchSpecial(special, player);
             break;
 
@@ -755,7 +732,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTSHELLS);
+            PickupMessage(toucher, GStrings(GOTSHELLS));
             SV_TouchSpecial(special, player);
             break;
 
@@ -764,7 +741,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTSHELLBOX);
+            PickupMessage(toucher, GStrings(GOTSHELLBOX));
             SV_TouchSpecial(special, player);
             break;
 
@@ -781,7 +758,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 P_GiveAmmo(player, (ammotype_t)i, 1);
             }
-            PickupMessage(toucher, GOTBACKPACK);
+            PickupMessage(toucher, GStrings(GOTBACKPACK));
             SV_TouchSpecial(special, player);
             break;
 
@@ -792,7 +769,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTBFG9000);
+            PickupMessage(toucher, GStrings(GOTBFG9000));
             sound = 2;
             break;
 
@@ -802,7 +779,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTCHAINGUN);
+            PickupMessage(toucher, GStrings(GOTCHAINGUN));
             sound = 2;
             break;
 
@@ -812,7 +789,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTCHAINSAW);
+            PickupMessage(toucher, GStrings(GOTCHAINSAW));
             sound = 2;
             break;
 
@@ -822,7 +799,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTLAUNCHER);
+            PickupMessage(toucher, GStrings(GOTLAUNCHER));
             sound = 2;
             break;
 
@@ -832,7 +809,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTPLASMA);
+            PickupMessage(toucher, GStrings(GOTPLASMA));
             sound = 2;
             break;
 
@@ -842,7 +819,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTSHOTGUN);
+            PickupMessage(toucher, GStrings(GOTSHOTGUN));
             sound = 2;
             break;
 
@@ -852,7 +829,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
             {
                 return;
             }
-            PickupMessage(toucher, GOTSHOTGUN2);
+            PickupMessage(toucher, GStrings(GOTSHOTGUN2));
             sound = 2;
             break;
 
@@ -921,8 +898,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 				S_Sound(ent, CHAN_ITEM, "misc/i_pkup", 1, ATTN_NONE);
 				break;
 			case 1:
-				S_Sound(ent, CHAN_ITEM, "misc/p_pkup", 1,
-					!ent ? ATTN_SURROUND : ATTN_NONE);
+				S_Sound(ent, CHAN_ITEM, "misc/p_pkup", 1, ATTN_NONE);
 				break;
 			case 2:
 				S_Sound(ent, CHAN_ITEM, "misc/w_pkup", 1, ATTN_NONE);
@@ -938,42 +914,58 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 //		%g -> he/she/it
 //		%h -> him/her/it
 //		%p -> his/her/its
+//		%o -> other (victim)
+//		%k -> killer
 //
-void SexMessage(const char *from, char *to, int gender)
+void SexMessage (const char *from, char *to, int gender, const char *victim, const char *killer)
 {
-	static const char *genderstuff[3][3] = {
+	static const char *genderstuff[3][3] =
+	{
 		{ "he",  "him", "his" },
 		{ "she", "her", "her" },
 		{ "it",  "it",  "its" }
 	};
-	static const int gendershift[3][3] = {
+	static const int gendershift[3][3] =
+	{
 		{ 2, 3, 3 },
 		{ 3, 3, 3 },
 		{ 2, 2, 3 }
 	};
-	int gendermsg;
+	const char *subst = NULL;
 
-	do {
+	do
+	{
 		if (*from != '%')
-        {
+		{
 			*to++ = *from;
 		}
-        else
-        {
+		else
+		{
+			int gendermsg = -1;
+			
 			switch (from[1])
-            {
-				case 'g':	gendermsg = 0;	break;
-				case 'h':	gendermsg = 1;	break;
-				case 'p':	gendermsg = 2;	break;
-				default:	gendermsg = -1;	break;
+			{
+			case 'g':	gendermsg = 0;	break;
+			case 'h':	gendermsg = 1;	break;
+			case 'p':	gendermsg = 2;	break;
+			case 'o':	subst = victim;	break;
+			case 'k':	subst = killer;	break;
 			}
-			if (gendermsg < 0)
-            {
+			if (subst != NULL)
+			{
+				int len = strlen (subst);
+				memcpy (to, subst, len);
+				to += len;
+				from++;
+				subst = NULL;
+			}
+			else if (gendermsg < 0)
+			{
 				*to++ = '%';
 			}
-            else
-            {
-				strcpy(to, genderstuff[gender][gendermsg]);
+			else
+			{
+				strcpy (to, genderstuff[gender][gendermsg]);
 				to += gendershift[gender][gendermsg];
 				from++;
 			}
@@ -1008,6 +1000,16 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	target->flags |= MF_CORPSE|MF_DROPOFF;
 	target->height >>= 2;
 
+	// [RH] If the thing has a special, execute and remove it
+	//		Note that the thing that killed it is considered
+	//		the activator of the script.
+	if ((target->flags & MF_COUNTKILL) && target->special)
+	{
+		LineSpecials[target->special] (NULL, source, target->args[0],
+									   target->args[1], target->args[2],
+									   target->args[3], target->args[4]);
+		target->special = 0;
+	}
 	// [RH] Also set the thing's tid to 0. [why?]
 	target->tid = 0;
 
@@ -1026,7 +1028,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	tplayer = target->player;
 
 	// [SL] 2011-06-26 - Set the player's attacker.  For some reason this
-	// was not being set clientside 
+	// was not being set clientside
 	if (tplayer)
 	{
 		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
@@ -1096,7 +1098,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			SV_UpdateFrags(*splayer);
 		}
 	}
-	
+
 	// [Toke - CTF]
 	if (sv_gametype == GM_CTF && target->player)
 	{
@@ -1109,6 +1111,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		{
 			tplayer->deathcount++;
 		}
+
+		// Death script execution, care of Skull Tag
+		if (level.behavior != NULL)
+		{
+			level.behavior->StartTypedScripts (SCRIPT_Death, target);
+		}
+
 		// count environment kills against you
 		if (!source && !joinkill && !shotclock)
 		{
