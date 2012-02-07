@@ -42,7 +42,7 @@
 
 // External function declarations
 extern "C" { extern void __exception_setreload(int t); }
-extern int i_main(int argc, char *argv[]); // i_main.cpp
+extern int I_Main(int argc, char *argv[]); // i_main.cpp
 
 
 int wii_getsockname(int socket, struct sockaddr *address, socklen_t *address_len)
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	i_main(argc, argv); // Does not return
+	I_Main(argc, argv); // Does not return
 	
 	return 0;
 }
