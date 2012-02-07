@@ -66,6 +66,10 @@ typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
 #include "i_xbox.h"
 #endif
 
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
 #ifdef OSX
 #include <CoreFoundation/CoreFoundation.h>
 #endif
@@ -231,6 +235,10 @@ int main(int argc, char *argv[])
 		CFStringRef macErrorMessage = CFStringCreateWithCString(NULL, errorMessage.c_str(), kCFStringEncodingMacRoman);
 		CFUserNotificationDisplayAlert(0, 0, NULL, NULL, NULL, CFSTR("Odamex Error"), macErrorMessage, CFSTR("OK"), NULL, NULL, NULL);
 		CFRelease(macErrorMessage);
+#elif GEKKO // GC && Wii
+	#ifdef DEBUG
+		net_print_string(__FILE__, __LINE__, error.GetMsg().c_str());
+	#endif
 #elif !defined(WIN32)
             fprintf(stderr, "%s\n", error.GetMsg().c_str());
 #elif _XBOX

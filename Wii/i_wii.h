@@ -26,6 +26,10 @@
 
 #include <network.h>
 
+#ifdef DEBUG
+#include "net_print.h"
+#endif
+
 #define socket net_socket
 #define bind net_bind
 #define close net_close
