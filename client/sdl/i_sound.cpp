@@ -51,7 +51,7 @@ static Uint16 mixer_format;
 static int mixer_channels;
 
 static bool sound_initialized = false;
-static char channel_in_use[NUM_CHANNELS];
+static signed char channel_in_use[NUM_CHANNELS];
 static int nextchannel = 0;
 
 EXTERN_CVAR (snd_crossover)
