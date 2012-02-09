@@ -258,4 +258,10 @@ void M_ExtractFileName (std::string filename, std::string &dest)
         dest = filename.substr(l, filename.length());
 }
 
+std::string M_ExtractFileName(const std::string filename) {
+	std::string result;
+	M_ExtractFileName(filename, result);
+	return result;
+}
+
 VERSION_CONTROL (m_fileio_cpp, "$Id$")

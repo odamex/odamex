@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -103,7 +103,9 @@ char DefBindings[] =
 	"bind t messagemode; "
 	"bind \\ +showscores; "				// <- Another new command
 	"bind f11 bumpgamma; "
-	"bind f12 spynext";
+	"bind f12 spynext; "
+	"bind pgup vote_yes; "				// <- New for voting
+	"bind pgdn vote_no";				// <- New for voting
 
 
 // SoM: ok... I hate randy heit I have no idea how to translate between ascii codes to these
@@ -259,7 +261,7 @@ BEGIN_COMMAND (bind)
 		}
 	} else {
 		Printf (PRINT_HIGH, "Current key bindings:\n");
-		
+
 		for (i = 0; i < NUM_KEYS; i++) {
 			if (Bindings[i].length())
 				Printf (PRINT_HIGH, "%s \"%s\"\n", KeyName (i), Bindings[i].c_str());
@@ -306,7 +308,7 @@ BEGIN_COMMAND (doublebind)
 	else
 	{
 		Printf (PRINT_HIGH, "Current key doublebindings:\n");
-		
+
 		for (i = 0; i < NUM_KEYS; i++)
 		{
 			if (DoubleBindings[i].length())

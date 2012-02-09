@@ -291,6 +291,8 @@
 		<Unit filename="..\..\common\c_effect.cpp" />
 		<Unit filename="..\..\common\c_effect.h" />
 		<Unit filename="..\..\common\c_pch.h" />
+		<Unit filename="..\..\common\c_vote.cpp" />
+		<Unit filename="..\..\common\c_vote.h" />
 		<Unit filename="..\..\common\cmdlib.cpp" />
 		<Unit filename="..\..\common\cmdlib.h" />
 		<Unit filename="..\..\common\d_dehacked.cpp" />
@@ -453,6 +455,8 @@
 		<Unit filename="..\src\sv_cvarlist.cpp" />
 		<Unit filename="..\src\sv_main.cpp" />
 		<Unit filename="..\src\sv_main.h" />
+		<Unit filename="..\src\sv_maplist.cpp" />
+		<Unit filename="..\src\sv_maplist.h" />
 		<Unit filename="..\src\sv_master.cpp" />
 		<Unit filename="..\src\sv_master.h" />
 		<Unit filename="..\src\sv_mobj.cpp" />
@@ -466,6 +470,8 @@
 		<Unit filename="..\src\sv_sqpold.cpp" />
 		<Unit filename="..\src\sv_sqpold.h" />
 		<Unit filename="..\src\sv_stubs.cpp" />
+		<Unit filename="..\src\sv_vote.cpp" />
+		<Unit filename="..\src\sv_vote.h" />
 		<Unit filename="..\src\v_palette.cpp" />
 		<Unit filename="resource.h">
 			<Option target="Win Release (GCC)" />

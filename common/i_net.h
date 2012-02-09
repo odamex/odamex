@@ -163,6 +163,9 @@ enum clc_t
 	clc_kill,				// denis - suicide
 	clc_cheat,				// denis - god, pumpkins, etc
     clc_cheatpulse,         // Russell - one off cheats (idkfa, idfa etc)
+	clc_callvote,			// [AM] - Calling a vote
+	clc_vote,				// [AM] - Casting a vote
+	clc_maplist,			// [AM] - Query the server for the maplist
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,
