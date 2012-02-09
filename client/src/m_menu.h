@@ -105,6 +105,8 @@ typedef enum {
 	screenres,
 	bitflag,
 	listelement,
+	joyactive,
+	joyaxis,
 	nochoice
 } itemtype;
 
@@ -153,6 +155,7 @@ typedef struct menu_s {
 	menuitem_t	   *items;
 	int				scrolltop;
 	int				scrollpos;
+	void			(*refreshfunc)();	// Callback func for M_OptResponder
 } menu_t;
 
 typedef struct value_s {
@@ -211,5 +214,6 @@ extern int		CurrentItem;
 extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
+size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
 
 #endif

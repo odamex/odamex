@@ -25,15 +25,6 @@
 #ifndef DLG_CONFIG_H
 #define DLG_CONFIG_H
 
-// configuration file structure
-struct launchercfg_t
-{
-    bool     get_list_on_start;
-    bool     show_blocked_servers;
-    wxString    wad_paths;
-    wxString    odamex_directory;
-};
-
 #include <wx/dialog.h>
 #include <wx/intl.h>
 #include <wx/settings.h>
@@ -57,12 +48,22 @@ struct launchercfg_t
 #define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
 #define MASTERTIMEOUT       "MasterTimeout"
 #define SERVERTIMEOUT       "ServerTimeout"
+#define USEBROADCAST        "UseBroadcast"
 
 #ifdef __WXMSW__
 #define PATH_DELIMITER ';'
 #else
 #define PATH_DELIMITER ':'
 #endif
+
+// configuration file structure
+struct launchercfg_t
+{
+    bool     get_list_on_start;
+    bool     show_blocked_servers;
+    wxString    wad_paths;
+    wxString    odamex_directory;
+};
 
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
@@ -104,6 +105,7 @@ class dlgConfig: public wxDialog
         
         wxCheckBox *m_ChkCtrlGetListOnStart;
         wxCheckBox *m_ChkCtrlShowBlockedServers;
+        wxCheckBox *m_ChkCtrlEnableBroadcasts;
 
         wxListBox *m_LstCtrlWadDirectories;
 

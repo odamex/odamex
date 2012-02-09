@@ -26,12 +26,14 @@
 // denis - todo - remove
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#ifndef _XBOX
 #include <windows.h>
 #undef GetMessage
 typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
+#endif // !_XBOX
 #else
 #include <sched.h>
-#endif
+#endif // WIN32
 
 #ifdef UNIX
 // for getuid and geteuid
@@ -60,6 +62,14 @@ typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
 #include "i_sound.h"
 #include "r_main.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
+#ifdef OSX
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
@@ -71,17 +81,21 @@ void addterm (void (STACK_ARGS *func) (), const char *name)
 	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
-static void STACK_ARGS call_terms (void)
+void STACK_ARGS call_terms (void)
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
+#ifdef GCONSOLE
+int I_Main(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
 	try
 	{
-#ifdef UNIX
+#if defined(UNIX) && !defined(GEKKO)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
@@ -110,11 +124,15 @@ int main(int argc, char *argv[])
 				Args.AppendArg(location.substr(0, term).c_str());
 			}
 		}
-
+		
+		// Set SDL video centering
+		putenv("SDL_VIDEO_WINDOW_POS=center");
+		putenv("SDL_VIDEO_CENTERED=1");
+		
         // [Russell] - No more double-tapping of capslock to enable autorun
         putenv("SDL_DISABLE_LOCK_KEYS=1");
 
-#ifdef WIN32
+#if defined WIN32 && !defined _XBOX
     	// From the SDL 1.2.10 release notes:
     	//
     	// > The "windib" video driver is the default now, to prevent
@@ -125,11 +143,13 @@ int main(int argc, char *argv[])
 
    		// SoM: the gdi interface is much faster for windowed modes which are more
    		// commonly used. Thus, GDI is default.
-     	if (Args.CheckParm ("-directx"))
-        	putenv("SDL_VIDEODRIVER=directx");
-    	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-gdi") > 0)
+		//
+		// GDI mouse issues fill many users with great sadness. We are going back
+		// to directx as defulat for now and the people will rejoice. --Hyper_Eye
+     	if (Args.CheckParm ("-gdi"))
         	putenv("SDL_VIDEODRIVER=windib");
-
+    	else if (getenv("SDL_VIDEODRIVER") == NULL || Args.CheckParm ("-directx") > 0)
+        	putenv("SDL_VIDEODRIVER=directx");
 
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
@@ -151,6 +171,12 @@ int main(int argc, char *argv[])
         }
 #endif
 
+#ifdef LINUX
+		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
+		// bypassing X11's mouse acceleration
+		putenv("SDL_VIDEO_X11_DGAMOUSE=1");
+#endif
+
 		if (SDL_Init (SDL_INIT_TIMER|SDL_INIT_NOPARACHUTE) == -1)
 			I_FatalError("Could not initialize SDL:\n%s\n", SDL_GetError());
 
@@ -168,7 +194,11 @@ int main(int argc, char *argv[])
 			normally or abnormally.
 		*/
 
-		atexit (call_terms);
+        // But avoid calling this on windows!
+        // Good on some platforms, useless on others
+//		#ifndef _WIN32
+//		atexit (call_terms);
+//		#endif
 		Z_Init ();					// 1/18/98 killough: start up memory stuff first
 
         atterm (R_Shutdown);
@@ -182,20 +212,33 @@ int main(int argc, char *argv[])
 		// init console
 		C_InitConsole (80 * 8, 25 * 8, 8, false);
 
-		D_DoomMain ();
+		D_DoomMain (); // Usually does not return
+
+		// If D_DoomMain does return (as is the case with the +demotest parameter)
+		// proper termination needs to occur -- Hyper_Eye
+		call_terms ();
 	}
 	catch (CDoomError &error)
 	{
 		if (LOG.is_open())
         {
-            LOG << error.GetMessage() << std::endl;
+            LOG << error.GetMsg() << std::endl;
             LOG << std::endl;
         }
-#ifndef WIN32
-            fprintf(stderr, "%s\n", error.GetMessage().c_str());
+
+#ifdef OSX
+		std::string errorMessage = error.GetMsg();
+		CFStringRef macErrorMessage = CFStringCreateWithCString(NULL, errorMessage.c_str(), kCFStringEncodingMacRoman);
+		CFUserNotificationDisplayAlert(0, 0, NULL, NULL, NULL, CFSTR("Odamex Error"), macErrorMessage, CFSTR("OK"), NULL, NULL, NULL);
+		CFRelease(macErrorMessage);
+#elif !defined(WIN32)
+            fprintf(stderr, "%s\n", error.GetMsg().c_str());
+#elif _XBOX
+		// Use future Xbox error message handling.    -- Hyper_Eye
 #else
-		MessageBox(NULL, error.GetMessage().c_str(), "Odamex Error", MB_OK);
+		MessageBox(NULL, error.GetMsg().c_str(), "Odamex Error", MB_OK);
 #endif
+		call_terms();
 		exit (-1);
 	}
 #ifndef _DEBUG

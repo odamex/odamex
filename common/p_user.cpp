@@ -29,6 +29,7 @@
 #include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
+#include "i_net.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -43,8 +44,67 @@
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
+EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (cl_deathcam)
+EXTERN_CVAR (sv_forcerespawn)
 
 extern bool predicting, step_mode;
+
+static player_t nullplayer;		// used to indicate 'player not found' when searching
+
+player_t &idplayer(byte id)
+{
+	static size_t translation[MAXPLAYERS];
+ 
+	if (id >= MAXPLAYERS)
+ 		return nullplayer;
+ 
+	// attempt a quick cached resolution
+ 	size_t tid = translation[id];
+	if (tid < players.size() && players[tid].id == id)
+ 		return players[tid];
+ 
+ 	// full search
+	for(size_t i = 0; i < players.size(); i++)
+ 	{
+		// cache any ids we come across while searching for the correct player
+		translation[players[i].id] = i;
+		if (players[i].id == id)
+ 			return players[i];
+	}
+
+	return nullplayer;
+}
+
+bool validplayer(player_t &ref)
+{
+	if (&ref == &nullplayer)
+		return false;
+
+	if (players.empty())
+		return false;
+
+	return true;
+}
+
+//
+// P_NumPlayersInGame()
+//
+// Returns the number of players who are active in the current game.  This does
+// not include spectators or downloaders.
+//
+size_t P_NumPlayersInGame()
+{
+	size_t num_players = 0;
+
+	for (size_t i = 0; i < players.size(); ++i)
+	{
+		if (!players[i].spectator && players[i].ingame())
+			++num_players;
+	}
+
+	return num_players;
+}
 
 //
 // P_Thrust
@@ -199,6 +259,12 @@ void P_PlayerLookUpDown (player_t *p)
 	}
 }
 
+CVAR_FUNC_IMPL (sv_aircontrol)
+{
+	level.aircontrol = (fixed_t)((float)var * 65536.f);
+	G_AirControlChanged ();
+}
+
 //
 // P_MovePlayer
 //
@@ -225,7 +291,7 @@ void P_MovePlayer (player_t *player)
 		return;
 	}
 
-	// [RH] check for swim/jump
+	// [RH] check for jump
 	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
 	{
 		if (player->mo->waterlevel >= 2)
@@ -246,36 +312,47 @@ void P_MovePlayer (player_t *player)
             player->jumpTics = 18;				
 		}
 	}
-
-	if (cmd->ucmd.upmove == -32768)
-	{ // Only land if in the air
-		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
-		{
-			player->mo->flags2 &= ~MF2_FLY;
-			player->mo->flags &= ~MF_NOGRAVITY;
-		}
-	}
-	else if (cmd->ucmd.upmove != 0)
+	
+	if (co_zdoomphys)
 	{
-		if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
+		if (cmd->ucmd.upmove &&
+			(player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY))
 		{
 			player->mo->momz = cmd->ucmd.upmove << 8;
-        }
-        else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
-        {
-			player->mo->flags2 |= MF2_FLY;
-			player->mo->flags |= MF_NOGRAVITY;
-			if (player->mo->momz <= -39*FRACUNIT)
-            { // Stop falling scream
-				S_StopSound (player->mo, CHAN_VOICE);
-			}
-        }        
-		else if (cmd->ucmd.upmove > 0)
-		{
-			//P_PlayerUseArtifact (player, arti_fly);
-		}
+		}		
 	}
-	
+	else
+	{
+		if (cmd->ucmd.upmove == -32768)
+		{ // Only land if in the air
+			if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
+			{
+				player->mo->flags2 &= ~MF2_FLY;
+				player->mo->flags &= ~MF_NOGRAVITY;
+			}
+		}
+		else if (cmd->ucmd.upmove != 0)
+		{
+			if (player->mo->waterlevel >= 2 || (player->mo->flags2 & MF2_FLY))
+			{
+				player->mo->momz = cmd->ucmd.upmove << 8;
+			}
+			else if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+			{
+				player->mo->flags2 |= MF2_FLY;
+				player->mo->flags |= MF_NOGRAVITY;
+				if (player->mo->momz <= -39*FRACUNIT)
+				{ // Stop falling scream
+					S_StopSound (player->mo, CHAN_VOICE);
+				}
+			}        
+			else if (cmd->ucmd.upmove > 0)
+			{
+				//P_PlayerUseArtifact (player, arti_fly);
+			}
+		}		
+	}
+
 	// Look left/right
 	if(clientside || step_mode)
 	{
@@ -303,13 +380,23 @@ void P_MovePlayer (player_t *player)
 		if (!mo->onground && !(mo->flags2 & MF2_FLY) && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
-			movefactor >>= 8;
-			bobfactor >>= 8;
+			if (co_zdoomphys)
+			{
+				movefactor = FixedMul (movefactor, level.aircontrol);
+				bobfactor = FixedMul (bobfactor, level.aircontrol);
+			}
+			else
+			{
+				movefactor >>= 8;
+				bobfactor >>= 8;
+			}
 		}
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
-
-		if(mo->onground || (mo->flags2 & MF2_FLY))
+		
+		// [ML] Check for these conditions unless advanced physics is on
+		if(co_zdoomphys || 
+			(!co_zdoomphys && (mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)))
 		{
 			if (forwardmove)
 			{
@@ -325,12 +412,12 @@ void P_MovePlayer (player_t *player)
 		{
 			P_SetMobjState (player->mo, S_PLAY_RUN1); // denis - fixme - this function might destoy player->mo without setting it to 0
 		}
-	}
 
-	if (player->cheats & CF_REVERTPLEASE)
-	{
-		player->cheats &= ~CF_REVERTPLEASE;
-		player->camera = player->mo;
+		if (player->cheats & CF_REVERTPLEASE)
+		{
+			player->cheats &= ~CF_REVERTPLEASE;
+			player->camera = player->mo;
+		}
 	}
 }
 
@@ -397,8 +484,7 @@ void P_FallingDamage (AActor *ent)
 
 void P_DeathThink (player_t *player)
 {
-	angle_t 			angle;
-	angle_t 			delta;
+	bool reduce_redness = true;
 
 	P_MovePsprites (player);
 	player->mo->onground = (player->mo->z <= player->mo->floorz);
@@ -412,49 +498,47 @@ void P_DeathThink (player_t *player)
 
 	player->deltaviewheight = 0;
 	P_CalcHeight (player);
-
-	if(!serverside)
+	
+	// adjust the player's view to follow its attacker
+	if (cl_deathcam && clientside &&
+		player->attacker && player->attacker != player->mo)
 	{
-		if (player->damagecount && !predicting)
-			player->damagecount--;
+		angle_t angle = P_PointToAngle (player->mo->x,
+								 		player->mo->y,
+								 		player->attacker->x,
+								 		player->attacker->y);
 
-		return;
-	}
-
-	if (player->attacker && player->attacker != player->mo)
-	{
-		angle = P_PointToAngle (player->mo->x,
-								 player->mo->y,
-								 player->attacker->x,
-								 player->attacker->y);
-
-		delta = angle - player->mo->angle;
+		angle_t delta = angle - player->mo->angle;
 
 		if (delta < ANG5 || delta > (unsigned)-ANG5)
-		{
-			// Looking at killer,
-			//	so fade damage flash down.
 			player->mo->angle = angle;
-
-			if (player->damagecount)
-				player->damagecount--;
-		}
-		else if (delta < ANG180)
-			player->mo->angle += ANG5;
 		else
-			player->mo->angle -= ANG5;
+		{
+			if (delta < ANG180)
+				player->mo->angle += ANG5;
+			else
+				player->mo->angle -= ANG5;
+			
+			// not yet looking at killer so keep the red tinting
+			reduce_redness = false;
+		}
 	}
-	else if (player->damagecount)
+
+	if (player->damagecount && reduce_redness && !predicting)
 		player->damagecount--;
 
 	if(serverside)
 	{
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
-								 || (!clientside && level.time >= player->respawn_time))) // forced respawn
+		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE 
+			|| (!clientside && sv_forcerespawn && level.time >= player->respawn_time)))
+		{
 			player->playerstate = PST_REBORN;
+		}
 	}
 }
+
+void SV_SendPlayerInfo(player_t &);
 
 //
 // P_PlayerThink
@@ -464,10 +548,19 @@ void P_PlayerThink (player_t *player)
 	ticcmd_t *cmd;
 	weapontype_t newweapon;
 
-	// [RH] Error out if player doesn't have an mobj, but just make
-	//		it a warning if the player trying to spawn is a bot
-	if (!player->mo)
+	// [SL] 2011-10-31 - Thinker called before the client has received a message
+	// to spawn a mobj from the server.  Just bail from this function and
+	// hope the client receives the spawn message at a later time.
+	if (!player->mo && clientside && multiplayer)
+	{
+		DPrintf("Warning: P_PlayerThink called for player %s without a valid Actor.\n",
+				player->userinfo.netname);
+		return;
+	}
+	else if (!player->mo)
 		I_Error ("No player %d start\n", player->id);
+		
+	player->xviewshift = 0;		// [RH] Make sure view is in right place
 
 	// fixme: do this in the cheat code
 	if (player->cheats & CF_NOCLIP)
@@ -490,14 +583,14 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
+	if (player->playerstate == PST_DEAD)
+	{
+		P_DeathThink(player);
+		return;
+	}
+
 	if(serverside)
 	{
-		if (player->playerstate == PST_DEAD)
-		{
-			P_DeathThink (player);
-			return;
-		}
-
 		P_MovePlayer (player);
 
 		P_CalcHeight (player);
@@ -550,6 +643,18 @@ void P_PlayerThink (player_t *player)
 			{
 				player->pendingweapon = newweapon;
 			}
+		}
+	}
+	else
+	{
+		// [SL] 2011-11-20 - Player didn't send a weapon change command.
+		// Verify the player is holding the correct weapon.
+		weapontype_t predweapon = static_cast<weapontype_t>(cmd->ucmd.impulse);
+		if (predweapon != player->readyweapon && predweapon != player->pendingweapon)
+		{
+			// Client is wrong so send them an update
+			if (serverside && player->health > 0)
+				SV_SendPlayerInfo(*player);
 		}
 	}
 
@@ -646,18 +751,22 @@ void player_s::Serialize (FArchive &arc)
 			<< armortype
 			<< backpack
 			<< fragcount
-			<< (int)readyweapon
-			<< (int)pendingweapon
+			<< readyweapon
+			<< pendingweapon
 			<< attackdown
 			<< usedown
 			<< cheats
 			<< refire
 			<< killcount
+			<< itemcount
+			<< secretcount			
 			<< damagecount
 			<< bonuscount
 			/*<< attacker->netid*/
 			<< extralight
 			<< fixedcolormap
+			<< xviewshift
+			<< jumpTics			
 			<< respawn_time
 			<< air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
@@ -690,18 +799,22 @@ void player_s::Serialize (FArchive &arc)
 			>> armortype
 			>> backpack
 			>> fragcount
-			>> (int&)readyweapon
-			>> (int&)pendingweapon
+			>> readyweapon
+			>> pendingweapon
 			>> attackdown
 			>> usedown
 			>> cheats
 			>> refire
 			>> killcount
+			>> itemcount
+			>> secretcount			
 			>> damagecount
 			>> bonuscount
 			/*>> attacker->netid*/
 			>> extralight
 			>> fixedcolormap
+			>> xviewshift
+			>> jumpTics			
 			>> respawn_time
 			>> air_finished;
 		for (i = 0; i < NUMPOWERS; i++)

@@ -47,11 +47,30 @@
 #include "query_thread.h"
 #include "net_packet.h"
 
+//using namespace agOdalaunch;
+
 // custom event declarations
 BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)
 DECLARE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL, -1)
 END_DECLARE_EVENT_TYPES()
+
+typedef enum
+{
+     _oda_iav_MIN = 0         // Minimum range
+    
+    ,_oda_iav_SUCCESS         // Address is valid
+    ,_oda_iav_FAILURE         // Unknown error 
+    
+    ,_oda_iav_emptystr        // Empty address parameter
+    ,_oda_iav_interr          // Internal error (regex comp error, bad regex)
+    ,_oda_iav_colerr          // Bad or nonexistant substring after colon
+    
+    ,_oda_iav_NUMERR          // Number of errors (incl min range)
+    
+    ,_oda_iav_MAX             // Maximum range
+} _oda_iav_err_t;
+
 
 class dlgMain : public wxFrame, wxThreadHelper
 {
@@ -97,7 +116,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		wxInt32 GetSelectedServerListIndex();
 		wxInt32 GetSelectedServerArrayIndex();
 
-		bool IsAddressValid(wxString);
+		_oda_iav_err_t IsAddressValid(wxString, wxString &, long &);
 		
 		void LaunchGame(const wxString &Address, const wxString &ODX_Path, 
             const wxString &waddirs, const wxString &Password = wxT(""));

@@ -96,9 +96,25 @@ int P_Random (AActor *actor)
 	return (rndtable[++actor->rndindex]);
 }
 
+int P_RandomDiff (AActor *actor)
+{
+	int a = P_Random (actor);
+	int b = P_Random (actor);
+
+	return a - b;
+}
+
 int P_Random ()
 {
 	return (rndtable[++prndindex]);
+}
+
+int P_RandomDiff ()
+{
+	int a = P_Random ();
+	int b = P_Random ();
+
+	return a - b;
 }
 
 int M_Random()

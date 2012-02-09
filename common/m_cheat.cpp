@@ -28,7 +28,7 @@
 #include "m_cheat.h"
 #include "d_player.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "p_inter.h"
 #include "d_items.h"
 #include "p_local.h"
@@ -121,17 +121,17 @@ void cht_DoCheat (player_t *player, int cheat)
 		case CHT_GOD:
 			player->cheats ^= CF_GODMODE;
 			if (player->cheats & CF_GODMODE)
-				msg = STSTR_DQDON;
+				msg = GStrings(STSTR_DQDON);
 			else
-				msg = STSTR_DQDOFF;
+				msg = GStrings(STSTR_DQDOFF);
 			break;
 
 		case CHT_NOCLIP:
 			player->cheats ^= CF_NOCLIP;
 			if (player->cheats & CF_NOCLIP)
-				msg = STSTR_NCON;
+				msg = GStrings(STSTR_NCON);
 			else
-				msg = STSTR_NCOFF;
+				msg = GStrings(STSTR_NCOFF);
 			break;
 
 		case CHT_FLY:
@@ -143,11 +143,14 @@ void cht_DoCheat (player_t *player, int cheat)
 			break;
 
 		case CHT_NOTARGET:
-			player->cheats ^= CF_NOTARGET;
-			if (player->cheats & CF_NOTARGET)
-				msg = "notarget ON";
-			else
-				msg = "notarget OFF";
+			if (!multiplayer)
+			{
+				player->cheats ^= CF_NOTARGET;
+				if (player->cheats & CF_NOTARGET)
+					msg = "notarget ON";
+				else
+					msg = "notarget OFF";
+			}
 			break;
 
 		case CHT_CHASECAM:
@@ -161,7 +164,7 @@ void cht_DoCheat (player_t *player, int cheat)
 		case CHT_CHAINSAW:
 			player->weaponowned[wp_chainsaw] = true;
 			player->powers[pw_invulnerability] = true;
-			msg = STSTR_CHOPPERS;
+			msg = GStrings(STSTR_CHOPPERS);
 			break;
 
 		case CHT_IDKFA:
@@ -171,7 +174,7 @@ void cht_DoCheat (player_t *player, int cheat)
 			cht_Give (player, "keys");
 			player->armorpoints = deh.KFAArmor;
 			player->armortype = deh.KFAAC;
-			msg = STSTR_KFAADDED;
+			msg = GStrings(STSTR_KFAADDED);
 			break;
 
 		case CHT_IDFA:
@@ -180,7 +183,7 @@ void cht_DoCheat (player_t *player, int cheat)
 			cht_Give (player, "ammo");
 			player->armorpoints = deh.FAArmor;
 			player->armortype = deh.FAAC;
-			msg = STSTR_FAADDED;
+			msg = GStrings(STSTR_FAADDED);
 			break;
 
 		case CHT_BEHOLDV:
@@ -199,7 +202,7 @@ void cht_DoCheat (player_t *player, int cheat)
 				else
 					player->powers[i] = 0;
 			}
-			msg = STSTR_BEHOLDX;
+			msg = GStrings(STSTR_BEHOLDX);
 			break;
 
 		case CHT_MASSACRE:

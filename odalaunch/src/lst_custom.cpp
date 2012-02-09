@@ -24,6 +24,8 @@
 
 #include "lst_custom.h"
 
+#include <wx/settings.h>
+
 IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListCtrl)
 
 BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListCtrl)
@@ -89,8 +91,9 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
     SortOrder = 0; 
     SortCol = 0; 
 
-    ItemShade.Set(wxUint8(245), wxUint8(245), wxUint8(245));
-
+    ItemShade = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+    BgColor = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+    
     // Set up the image list.
     AddImageSmall(wxNullImage);
 }
@@ -494,7 +497,7 @@ void wxAdvancedListCtrl::ColourListItem(wxListItem &info)
     if (SwapColour)
         col = ItemShade;
     else
-        col = *wxWHITE;
+        col = BgColor;
 
     SwapColour = !SwapColour;
 

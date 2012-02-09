@@ -50,7 +50,7 @@ extern patch_t *hu_font[];
 #include "r_state.h"
 
 // Data.
-#include "dstrings.h"
+#include "gstrings.h"
 #include "am_map.h"
 #include "gi.h"
 
@@ -786,7 +786,6 @@ END_COMMAND (togglemap)
 BOOL AM_Responder (event_t *ev)
 {
 	int rc;
-	static int cheatstate = 0;
 	static int bigstate = 0;
 
 	rc = false;
@@ -846,22 +845,21 @@ BOOL AM_Responder (event_t *ev)
 			case AM_FOLLOWKEY:
 				followplayer = !followplayer;
 				f_oldloc.x = MAXINT;
-				Printf (PRINT_HIGH, "%s\n", followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF);
+				Printf (PRINT_HIGH, "%s\n", followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
 				break;
 			case AM_GRIDKEY:
 				grid = !grid;
-				Printf (PRINT_HIGH, "%s\n", grid ? AMSTR_GRIDON : AMSTR_GRIDOFF);
+				Printf (PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
 				break;
 			case AM_MARKKEY:
-				Printf (PRINT_HIGH, "%s %d\n", AMSTR_MARKEDSPOT, markpointnum);
+				Printf (PRINT_HIGH, "%s %d\n",  GStrings(AMSTR_MARKEDSPOT), markpointnum);
 				AM_addMark();
 				break;
 			case AM_CLEARMARKKEY:
 				AM_clearMarks();
-				Printf (PRINT_HIGH, "%s\n", AMSTR_MARKSCLEARED);
+				Printf (PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
 				break;
 			default:
-				cheatstate=0;
 				rc = false;
 			}
 		}
@@ -1286,7 +1284,7 @@ void AM_drawWalls(void)
                 (((am_usecustomcolors || viewactive) &&
                 lines[i].special != Exit_Normal &&
                 lines[i].special != Exit_Secret) ||
-                !am_usecustomcolors && !viewactive))
+                (!am_usecustomcolors && !viewactive)))
             {
 				AM_drawMline(&l, WallColor);
 			}
@@ -1655,7 +1653,7 @@ void AM_drawWidgets(void)
                 epsub = level.cluster - 1;
             }
 
-            sprintf (line, Strings[i+level.levelnum-epsub].string);
+            sprintf (line, GStrings(i+level.levelnum-epsub));
             if (viewactive && screenblocks == 11)
                 FB->DrawTextClean (CR_RED, screen->width - V_StringWidth (line) * CleanXfac, OV_Y - (height * 1) + 1, line);
             else if (viewactive && screenblocks == 12)

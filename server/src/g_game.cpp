@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -20,7 +21,6 @@
 //	G_GAME
 //
 //-----------------------------------------------------------------------------
-
 
 #include "version.h"
 #include "minilzo.h"
@@ -45,7 +45,7 @@
 #include "w_wad.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "r_data.h"
 #include "r_sky.h"
 #include "r_draw.h"
@@ -73,6 +73,7 @@ void	G_DoWorldDone (void);
 void	G_DoSaveGame (void);
 
 EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (co_nosilentspawns)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -92,15 +93,15 @@ BOOL 			noblit; 				// for comparative timing purposes
 BOOL	 		viewactive;
 
 // Describes if a network game is being played
-BOOL            network_game;
+BOOL			network_game;
 // Use only for demos, it is a old variable for the old network code
-BOOL 						netgame;
+BOOL			netgame;
 // Describes if this is a multiplayer game or not
-BOOL						multiplayer;
+BOOL			multiplayer;
 // The player vector, contains all player information
 std::vector<player_t>		players;
-// null player
-player_t					nullplayer;
+// The null player
+player_t		nullplayer;
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
@@ -141,7 +142,7 @@ BOOL 			netdemo;
 BOOL			demonew;				// [RH] Only used around G_InitNew for demos
 int				demover;
 byte*			demobuffer;
-byte*			demo_p;
+byte			*demo_p, *demo_e;
 size_t			maxdemosize;
 byte*			zdemformend;			// end of FORM ZDEM chunk
 byte*			zdembodyend;			// end of ZDEM BODY chunk
@@ -195,48 +196,11 @@ player_t		&displayplayer()
 	return idplayer(displayplayer_id);
 }
 
-player_t		&idplayer(size_t id)
-{
-	// attempt a quick cached resolution
-	size_t translation[MAXPLAYERS] = {0};
-	size_t size = players.size();
-
-	if(id >= MAXPLAYERS)
-		return nullplayer;
-
-	size_t tid = translation[id];
-	if(tid < size && players[tid].id == id)
-		return players[tid];
-
-	// full search
-	for(size_t i = 0; i < size; i++)
-	{
-		if(players[i].id == id)
-		{
-			translation[id] = i;
-			return players[i];
-		}
-	}
-
-	return nullplayer;
-}
-
-bool validplayer(player_t &ref)
-{
-	if (&ref == &nullplayer)
-		return false;
-
-	if(players.empty())
-		return false;
-
-	return true;
-}
-
 /* [RH] Impulses: Temporary hack to get weapon changing
  * working with keybindings until I can get the
  * inventory system working.
  *
- * So this turned out to not be so temporary. It *will*
+ *	So this turned out to not be so temporary. It *will*
  * change, though.
  */
 int Impulse;
@@ -368,13 +332,13 @@ void G_BeginRecording (void)
         mapid = level.mapname[3] - '0';
     }
 
-    *demo_p++ = (unsigned char)(sv_skill-1);
+    *demo_p++ = sv_skill.asInt() - 1;
     *demo_p++ = episode;
     *demo_p++ = mapid;
-    *demo_p++ = sv_gametype;
-    *demo_p++ = sv_monstersrespawn;
-    *demo_p++ = sv_fastmonsters;
-    *demo_p++ = sv_nomonsters;
+    *demo_p++ = sv_gametype.asInt();
+    *demo_p++ = sv_monstersrespawn.asInt();
+    *demo_p++ = sv_fastmonsters.asInt();
+    *demo_p++ = sv_nomonsters.asInt();
     *demo_p++ = 0;
 
     *demo_p++ = 1;
@@ -404,7 +368,7 @@ void RecordCommand(int argc, char **argv)
 			return;
 		}
 
-		sv_maxplayers = 4;
+		sv_maxplayers.Set(4.0f);
 
 		if(G_RecordDemo(argv[2]))
 		{
@@ -470,7 +434,7 @@ void G_Ticker (void)
 	// do player reborns if needed
 	if(serverside)
 		for (i = 0; i < players.size(); i++)
-			if (players[i].ingame() && players[i].playerstate == PST_REBORN)
+			if (players[i].ingame() && (players[i].playerstate == PST_REBORN || players[i].playerstate == PST_ENTER))
 				G_DoReborn (players[i]);
 
 	// do things to change the game state
@@ -526,10 +490,15 @@ void G_Ticker (void)
 		break;
 
 	case GS_INTERMISSION:
+	{
 		mapchange--; // denis - todo - check if all players are ready, proceed immediately
 		if (!mapchange)
+        {
 			G_ChangeMap ();
-	    break;
+            //intcd_oldtime = 0;
+        }
+	}
+    break;
 
 	default:
 		break;
@@ -556,7 +525,7 @@ void G_PlayerFinishLevel (player_t &player)
 	memset (p->cards, 0, sizeof (p->cards));
 
 	if(p->mo)
-		p->mo->flags &= ~MF_SHADOW;		// cancel invisibility
+		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
 	p->extralight = 0;					// cancel gun flashes
 	p->fixedcolormap = 0;				// cancel ir goggles
@@ -599,6 +568,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 
 	p.respawn_time = level.time;
+	p.tic = 0;
 }
 
 //
@@ -618,6 +588,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	unsigned			an;
 	AActor* 			mo;
 	size_t 				i;
+	fixed_t 			xa,ya;
 
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
@@ -655,15 +626,66 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	// spawn a teleport fog
 	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
 	{
-		an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+		// emulate out-of-bounds access to finecosine / finesine tables
+		// which cause west-facing player spawns to have the spawn-fog
+		// and its sound located off the map in vanilla Doom.
 
-		mo = new AActor (x+20*finecosine[an], y+20*finesine[an], z, MT_TFOG);
+		// borrowed from Eternity Engine
+
+		// haleyjd: There was a weird bug with this statement:
+		//
+		// an = (ANG45 * (mthing->angle/45)) >> ANGLETOFINESHIFT;
+		//
+		// Even though this code stores the result into an unsigned variable, most
+		// compilers seem to ignore that fact in the optimizer and use the resulting
+		// value directly in a lea instruction. This causes the signed mapthing_t
+		// angle value to generate an out-of-bounds access into the fine trig
+		// lookups. In vanilla, this accesses the finetangent table and other parts
+		// of the finesine table, and the result is what I call the "ninja spawn,"
+		// which is missing the fog and sound, as it spawns somewhere out in the
+		// far reaches of the void.
+
+		if (co_nosilentspawns)
+		{
+			an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+			xa = finecosine[an];
+			ya = finesine[an];
+		}
+		else
+		{
+			angle_t mtangle = (angle_t)(mthing->angle / 45);
+
+			an = ANG45 * mtangle;
+
+			switch(mtangle)
+			{
+				case 4: // 180 degrees (0x80000000 >> 19 == -4096)
+					xa = finetangent[2048];
+					ya = finetangent[0];
+					break;
+				case 5: // 225 degrees (0xA0000000 >> 19 == -3072)
+					xa = finetangent[3072];
+					ya = finetangent[1024];
+					break;
+				case 6: // 270 degrees (0xC0000000 >> 19 == -2048)
+					xa = finesine[0];
+					ya = finetangent[2048];
+					break;
+				case 7: // 315 degrees (0xE0000000 >> 19 == -1024)
+					xa = finesine[1024];
+					ya = finetangent[3072];
+					break;
+				default: // everything else works properly
+					xa = finecosine[an >> ANGLETOFINESHIFT];
+					ya = finesine[an >> ANGLETOFINESHIFT];
+					break;
+			}
+		}
+
+		mo = new AActor (x+20*xa, y+20*ya, z, MT_TFOG);
 
 		// send new object
 		SV_SpawnMobj(mo);
-
-		if (level.time)
-			SV_Sound (mo->x, mo->y, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 	}
 
 	return true;
@@ -696,8 +718,30 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	}
 
 	return closest;
-}*/
+}
 
+// [RH] Select the deathmatch spawn spot farthest from everyone.
+static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
+{
+	fixed_t bestdistance = 0;
+	mapthing2_t *bestspot = NULL;
+	int i;
+
+	for (i = 0; i < selections; i++)
+	{
+		fixed_t distance = PlayersRangeFromSpot (&deathmatchstarts[i]);
+
+		if (distance > bestdistance)
+		{
+			bestdistance = distance;
+			bestspot = &deathmatchstarts[i];
+		}
+	}
+
+	return bestspot;
+}
+
+*/
 
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
@@ -807,31 +851,10 @@ void G_DoReborn (player_t &player)
 	if(!serverside)
 		return;
 
-	if (!multiplayer)
-	{
-		bool canreload = false;
-
-		for (size_t i = 0; i < players.size(); i++) {
-			if (!players[i].spectator && singleplayerjustdied) {
-				canreload = true;
-				singleplayerjustdied = false;
-			}
-		}
-
-		if (canreload) {
-			// reload the level from scratch
-			gameaction = ga_newgame;
-			return;
-		}
-	}
-
 	// respawn at the start
 	// first disassociate the corpse
 	if (player.mo)
 		player.mo->player = NULL;
-
-	if(!serverside)
-		return;
 
 	// spawn at random team spot if in team game
 	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
@@ -841,7 +864,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// spawn at random spot if in death match
-	if(sv_gametype != GM_COOP)
+	if (sv_gametype != GM_COOP)
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
@@ -878,8 +901,6 @@ void G_ScreenShot (char *filename)
 //	shotfile = filename;
 //	gameaction = ga_screenshot;
 }
-
-
 
 
 
@@ -988,13 +1009,15 @@ BOOL CheckIfExitIsGood (AActor *self)
             return false;
     }
 
-	if(self->player)
+	if (self->player)
 		Printf (PRINT_HIGH, "%s exited the level.\n", self->player->userinfo.netname);
 
     return true;
-
 }
 
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
+
+
+
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 1828 2010-08-31 03:42:35Z mike $
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2010 by The Odamex Team.
@@ -24,6 +24,8 @@
 
 #ifndef __PMOBJ_H__
 #define __PMOBJ_H__
+
+#define REMOVECORPSESTIC TICRATE*80
 
 //-----------------------------------------------------------------------------
 //
@@ -109,6 +111,10 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
 bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 void P_SpawnPlayerMissile(AActor *source, mobjtype_t type);
+bool P_VisibleToPlayers(AActor *mo);
+
+// [ML] From EE
+int P_ThingInfoHeight(mobjinfo_t *mi);
 
 #endif
 

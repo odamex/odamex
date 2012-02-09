@@ -2611,7 +2611,7 @@ typedef struct
 	spritenum_t	sprite;
 	int			frame;
 	int			tics;
-	actionf_t 	action;
+	actionf_p1 	action;
 	statenum_t	nextstate;
 	int			misc1, misc2;
 /*
@@ -2818,6 +2818,13 @@ typedef enum {
 	
 	MT_BRIDGE,	
 	MT_MAPSPOT,
+	MT_MAPSPOTGRAVITY,
+	MT_BRIDGE32,
+	MT_BRIDGE16,
+	MT_BRIDGE8,
+	MT_ZDOOMBRIDGE,
+	MT_MUSICCHANGE,
+	
 			
 	NUMDOOMTYPES,
 	
@@ -3048,6 +3055,7 @@ typedef struct
 	int speed;
 	int radius;
 	int height;
+	int cdheight;
 	int mass;
 	int damage;
 	const char *activesound;	// [RH] not int

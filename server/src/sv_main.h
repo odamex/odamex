@@ -31,12 +31,11 @@
 #include "d_player.h"
 #include "i_net.h"
 
-
-#define REMOVECOPRSESTIC TICRATE*80
-
 #define GAME_NORMAL		1
 #define GAME_TEAMPLAY	2
 #define GAME_CTF		3
+
+#include <json/json.h>
 
 extern int shotclock;
 
@@ -99,6 +98,11 @@ void MSG_WriteMarker (buf_t *b, svc_t c);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, int pain);
 void SV_SendDamageMobj(AActor *target, int pain);
+// Tells clients to remove an actor from the world as it doesn't exist anymore
+void SV_SendDestroyActor(AActor *mo);
+
+bool M_ReadJSON(Json::Value &json, const char *filename);
+bool M_WriteJSON(const char *filename, Json::Value &value, bool styled);
 
 #endif
 

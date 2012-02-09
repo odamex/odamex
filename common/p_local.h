@@ -95,7 +95,7 @@ extern int				itemrespawntime[ITEMQUESIZE];
 extern int				iquehead;
 extern int				iquetail;
 
-
+void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);
 
 bool	P_SetMobjState (AActor* mobj, statenum_t state);
@@ -105,6 +105,7 @@ void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (AActor* source, mobjtype_t type);
 
+void	P_RailAttack (AActor *source, int damage, int offset);	// [RH] Shoot a railgun
 //
 // [RH] P_THINGS
 //
@@ -171,7 +172,7 @@ extern fixed_t			lowfloor;
 void	P_LineOpening (const line_t *linedef);
 
 BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*) );
-BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*) );
+BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *start=NULL);
 
 #define PT_ADDLINES 	1
 #define PT_ADDTHINGS	2
@@ -211,7 +212,7 @@ extern sector_t			*tmsector;
 
 extern	line_t* 		ceilingline;
 
-bool	P_TestMobjZ (AActor *mobj);
+bool	P_TestMobjZ (AActor *actor);
 BOOL	P_TestMobjLocation (AActor *mobj);
 bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
 AActor	*P_CheckOnmobj (AActor *thing);
@@ -220,7 +221,7 @@ BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y, bool dropoff);
 BOOL	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
 bool	P_CheckSight (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
-bool	P_CheckSight2 (const AActor* t1, const AActor* t2);
+bool	P_CheckSight2 (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
 void	P_UseLines (player_t* player);
 
 // GhostlyDeath -- I put this here
@@ -299,6 +300,8 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 #define MOD_EXIT			20
 #define MOD_SPLASH			21
 #define MOD_HIT				22
+#define MOD_RAILGUN			23
+#define MOD_FRIENDLY_FIRE	0x80000000
 
 extern	int MeansOfDeath;
 

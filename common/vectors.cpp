@@ -42,9 +42,17 @@
 // [RH] Convert a thing's position into a vec3_t
 void VectorPosition (const AActor *thing, vec3_t out)
 {
-	out[0] = (float)thing->x / 65536.0f;
-	out[1] = (float)thing->y / 65536.0f;
-	out[2] = (float)thing->z / 65536.0f;
+	out[0] = FIXED2FLOAT(thing->x);
+	out[1] = FIXED2FLOAT(thing->y);
+	out[2] = FIXED2FLOAT(thing->z);
+}
+
+// [SL] 2011-11-12 - Convert a vec3_t to a thing's position
+void PositionVector (const vec3_t in, AActor *thing)
+{
+	thing->x = FLOAT2FIXED(in[0]);
+	thing->y = FLOAT2FIXED(in[1]);
+	thing->z = FLOAT2FIXED(in[2]);
 }
 
 void FixedAngleToVector (angle_t an, int pitch, vec3_t v)
@@ -61,7 +69,7 @@ vec_t VectorLength (const vec3_t v)
 {
 	float	length;
 	
-	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];;
+	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
 	length = (float) sqrt (length);		// FIXME
 
 	return length;

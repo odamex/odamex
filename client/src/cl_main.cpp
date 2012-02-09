@@ -25,7 +25,7 @@
 
 #include "doomtype.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "d_player.h"
 #include "g_game.h"
 #include "d_net.h"
@@ -34,10 +34,12 @@
 #include "gi.h"
 #include "i_net.h"
 #include "i_system.h"
+#include "i_video.h"
 #include "c_dispatch.h"
 #include "st_stuff.h"
 #include "m_argv.h"
 #include "cl_main.h"
+#include "c_effect.h"
 #include "c_console.h"
 #include "d_main.h"
 #include "p_ctf.h"
@@ -46,10 +48,21 @@
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
+#include "cl_demo.h"
+#include "cl_download.h"
 
 #include <string>
 #include <vector>
 #include <map>
+#include <sstream>
+
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
+#if _MSC_VER == 1310
+#pragma optimize("",off)
+#endif
 
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
@@ -66,6 +79,8 @@ buf_t     net_buffer(MAX_UDP_PACKET);
 
 bool      noservermsgs;
 int       last_received;
+byte      last_svgametic = 0;
+int       last_player_update = 0;
 
 std::string connectpasshash = "";
 
@@ -86,14 +101,90 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
+// [SL] 2011-06-27 - Class to record and playback network recordings
+NetDemo netdemo;
+// [SL] 2011-07-06 - not really connected (playing back a netdemo)
+bool simulated_connection = false;		
+
 EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_color)
-EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
+EXTERN_CVAR (cl_unlag)
+
+CVAR_FUNC_IMPL (cl_autoaim)
+{
+	if (var < 0)
+		var.Set(0.0f);
+	else if (var > 5000.0f)
+		var.Set(5000.0f);
+}
+
+CVAR_FUNC_IMPL (cl_updaterate)
+{
+	if (var < 1.0f)
+		var.Set(1.0f);
+	else if (var > 3.0f)
+		var.Set(3.0f);
+}
+
+EXTERN_CVAR (cl_weaponpref1)
+EXTERN_CVAR (cl_weaponpref2)
+EXTERN_CVAR (cl_weaponpref3)
+EXTERN_CVAR (cl_weaponpref4)
+EXTERN_CVAR (cl_weaponpref5)
+EXTERN_CVAR (cl_weaponpref6)
+EXTERN_CVAR (cl_weaponpref7)
+EXTERN_CVAR (cl_weaponpref8)
+EXTERN_CVAR (cl_weaponpref9)
+
+static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
+	&cl_weaponpref1, &cl_weaponpref2, &cl_weaponpref3, &cl_weaponpref4,
+	&cl_weaponpref5, &cl_weaponpref6, &cl_weaponpref7, &cl_weaponpref8,
+	&cl_weaponpref9 };
+
+//
+// CL_SetWeaponPreferenceCvar
+//
+// Sets the value of one of the cl_weaponpref* cvars identified by slot
+//
+void CL_SetWeaponPreferenceCvar(int slot, weapontype_t weapon)
+{
+	if (slot < 0 || slot >= NUMWEAPONS)
+		return;
+
+	weaponpref_cvar_map[slot]->Set(static_cast<float>(weapon));
+}
+
+//
+// CL_RefreshWeaponPreferenceCvars
+//
+// Copies userinfo.weapon_prefs to the cl_weaponpref* cvars
+//
+void CL_RefreshWeaponPreferenceCvars()
+{
+	weapontype_t *prefs = consoleplayer().userinfo.weapon_prefs;
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+		weaponpref_cvar_map[i]->Set(static_cast<float>(prefs[i]));
+}
+
+//
+// CL_PrepareWeaponPreferenceUserInfo
+//
+// Copies the weapon order preferences from the cl_weaponpref* cvars
+// to the userinfo struct for the consoleplayer.
+//
+void CL_PrepareWeaponPreferenceUserInfo()
+{
+	weapontype_t *prefs = consoleplayer().userinfo.weapon_prefs;
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+		prefs[i] = static_cast<weapontype_t>(weaponpref_cvar_map[i]->asInt());
+}
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_maxclients)
@@ -105,16 +196,17 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
 EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (sv_scorelimit)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_allowtargetnames)
-EXTERN_CVAR(cl_mouselook)
-EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR (interscoredraw)
-EXTERN_CVAR(cl_connectalert)
-EXTERN_CVAR(cl_disconnectalert)
+EXTERN_CVAR (cl_mouselook)
+EXTERN_CVAR (sv_freelook)
+EXTERN_CVAR (cl_connectalert)
+EXTERN_CVAR (cl_disconnectalert)
+EXTERN_CVAR (waddirs)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -123,10 +215,15 @@ void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress(int sequence);
 
+void CL_LocalDemoTic(void);
+void CL_NetDemoStop(void);
+void CL_NetDemoSnapshot(void);
+
 //	[Toke - CTF]
 void CalcTeamFrags (void);
 
 // some doom functions (not csDoom)
+size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
 void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
@@ -135,6 +232,7 @@ void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
+void P_SetFloorCeil(AActor *mo);
 void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -154,9 +252,9 @@ void CL_QuitNetGame(void)
 	if(connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
-
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
+		sv_gametype = GM_COOP;
 	}
 	
 	if (paused)
@@ -176,9 +274,34 @@ void CL_QuitNetGame(void)
 	
 	sv_freelook = 1;
 	sv_allowjump = 1;
+	sv_allowexit = 1;
+	sv_allowredscreen = 1;
 
 	actor_by_netid.clear();
 	players.clear();
+
+	if (netdemo.isRecording())
+	{
+		netdemo.stopRecording();
+	}
+	if (netdemo.isPlaying())
+	{
+		netdemo.stopPlaying();
+	}
+
+	// Reset the palette to default
+	if (I_HardwareInitialized())
+	{
+		int lu_palette = W_GetNumForName("PLAYPAL");
+		if (lu_palette != -1)
+		{
+			byte *pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE);
+			if (pal)
+			{
+				I_SetOldPalette(pal);
+			}
+		}
+	}
 }
 
 
@@ -216,7 +339,7 @@ void CL_ConnectClient(void)
 	if (&player == &consoleplayer())
 		return;
 		
-	S_Sound (CHAN_VOICE, "misc/pljoin", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
 }
 
 //
@@ -231,7 +354,10 @@ void CL_DisconnectClient(void)
 		displayplayer_id = consoleplayer_id;
 
 	if(player.mo)
+	{
 		player.mo->Destroy();
+		P_DisconnectEffect (player.mo);
+	}
 
 	size_t i;
 
@@ -242,7 +368,7 @@ void CL_DisconnectClient(void)
 			// GhostlyDeath <August 1, 2008> -- Play disconnect sound
 			// GhostlyDeath <August 6, 2008> -- Only if they really are inside
 			if (cl_disconnectalert && &player != &consoleplayer())
-				S_Sound (CHAN_VOICE, "misc/plpart", 1, ATTN_NONE);
+				S_Sound (CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
 			players.erase(players.begin() + i);
 			break;
 		}
@@ -353,7 +479,7 @@ BEGIN_COMMAND (playerinfo)
 		size_t who = atoi(argv[1]);
 		player_t &p = idplayer(who);
 
-		if(!validplayer(p) || !players[who].ingame())
+		if(!validplayer(p))
 		{
 			Printf (PRINT_HIGH, "Bad player number\n");
 			return;
@@ -369,14 +495,13 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf (PRINT_HIGH, " userinfo.netname   - %s \n",		  player->userinfo.netname);
-	Printf (PRINT_HIGH, " userinfo.team      - %d \n",		  player->userinfo.team);
-	Printf (PRINT_HIGH, " userinfo.aimdist   - %d \n",		  player->userinfo.aimdist);
-	Printf (PRINT_HIGH, " userinfo.color     - %d \n",		  player->userinfo.color);
-	Printf (PRINT_HIGH, " userinfo.skin      - %s \n",		  skins[player->userinfo.skin].name);
-	Printf (PRINT_HIGH, " userinfo.gender    - %d \n",		  player->userinfo.gender);
-	Printf (PRINT_HIGH, " spectator          - %d \n",		  player->spectator);
-	Printf (PRINT_HIGH, " time               - %d \n",		  player->GameTime);
+	Printf (PRINT_HIGH, " userinfo.netname     - %s \n",	player->userinfo.netname);
+	Printf (PRINT_HIGH, " userinfo.team        - %d \n",	player->userinfo.team);
+	Printf (PRINT_HIGH, " userinfo.color       - #%06x \n",	player->userinfo.color);
+	Printf (PRINT_HIGH, " userinfo.skin        - %s \n",	skins[player->userinfo.skin].name);
+	Printf (PRINT_HIGH, " userinfo.gender      - %d \n",	player->userinfo.gender);
+	Printf (PRINT_HIGH, " spectator            - %d \n",	player->spectator);
+	Printf (PRINT_HIGH, " time                 - %d \n",	player->GameTime);
 	Printf (PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
@@ -394,51 +519,62 @@ END_COMMAND (kill)
 
 BEGIN_COMMAND (serverinfo)
 {   
+	std::vector<std::string> server_cvars;
+
     cvar_t *Cvar = GetFirstCvar();
     size_t MaxFieldLength = 0;
     
     // [Russell] - Find the largest cvar name, used for formatting
     while (Cvar)
 	{			
-        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
+        if (Cvar->flags() & CVAR_SERVERINFO)
         {
             size_t FieldLength = strlen(Cvar->name());
             
             if (FieldLength > MaxFieldLength)
                 MaxFieldLength = FieldLength;                
+
+			// store this cvar name in our vector to be sorted later
+			server_cvars.push_back(Cvar->name());
         }
         
         Cvar = Cvar->GetNext();
     }
 
-    // [Russell] - Formatted output
-    Cvar = GetFirstCvar();
+	// sort the list of cvars
+	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
     Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
     
     // Data
-    while (Cvar)
-	{			
-        if (Cvar && Cvar->flags() & CVAR_SERVERINFO)
-        {
-            Printf(PRINT_HIGH, 
-                   "%*s - %s\n", 
-                   MaxFieldLength,
-                   Cvar->name(), 
-                   Cvar->cstring());          
-        }
-        
-        Cvar = Cvar->GetNext();
-    }
+	for (size_t i = 0; i < server_cvars.size(); i++)
+	{
+		cvar_t *dummy;
+		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
+
+		Printf(PRINT_HIGH, 
+				"%*s - %s\n", 
+				MaxFieldLength,
+				Cvar->name(), 
+				Cvar->cstring());          
+	}
     
     Printf (PRINT_HIGH,	"\n");
 }
 END_COMMAND (serverinfo)
 
-// rate: takes a bps value
+// rate: takes a kbps value
 CVAR_FUNC_IMPL (rate)
 {
+/*  // [SL] 2011-09-02 - Commented out this code as it would force clients with
+	// a version that has rate in kbps to have a rate of < 5000 bps on an older
+	// server version that has rate in bps, resulting in an unplayable connection.
+
+	const int max_rate = 5000;	// 40Mbps, likely set erroneously
+	if (var > max_rate)
+		var.RestoreDefault();		
+*/
 	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_rate);
@@ -471,13 +607,29 @@ BEGIN_COMMAND (rcon_password)
 {
 	if (connected && argc > 1)
 	{
+		bool login = true;
+
 		MSG_WriteMarker(&net_buffer, clc_rcon_password);
+		MSG_WriteByte(&net_buffer, login);
 
 		std::string password = argv[1];
 		MSG_WriteString(&net_buffer, MD5SUM(password + digest).c_str());
 	}
 }
 END_COMMAND (rcon_password)
+
+BEGIN_COMMAND (rcon_logout)
+{
+	if (connected)
+	{
+		bool login = false;
+
+		MSG_WriteMarker(&net_buffer, clc_rcon_password);
+		MSG_WriteByte(&net_buffer, login);
+		MSG_WriteString(&net_buffer, "");
+	}
+}
+END_COMMAND (rcon_logout)
 
 
 BEGIN_COMMAND (playerteam)
@@ -486,6 +638,14 @@ BEGIN_COMMAND (playerteam)
 }
 END_COMMAND (playerteam)
 
+BEGIN_COMMAND (changeteams)
+{
+	if (consoleplayer().userinfo.team == TEAM_BLUE)
+		cl_team.Set("RED");
+	else if (consoleplayer().userinfo.team == TEAM_RED)
+		cl_team.Set("BLUE");
+}
+END_COMMAND (changeteams)
 
 BEGIN_COMMAND (spectate)
 {
@@ -497,23 +657,190 @@ END_COMMAND (spectate)
 
 BEGIN_COMMAND (join)
 {
+	if (P_NumPlayersInGame() >= sv_maxplayers)
+	{
+		C_MidPrint("The game is currently full", NULL);
+		return;
+	}
+
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, false);
 }
 END_COMMAND (join)
 
-BEGIN_COMMAND (quit)
+void STACK_ARGS call_terms (void);
+
+void CL_QuitCommand()
 {
+	call_terms();
 	exit (0);
 }
+
+BEGIN_COMMAND (quit)
+{
+	CL_QuitCommand();
+}
 END_COMMAND (quit)
+
+// An alias for 'quit'
+BEGIN_COMMAND (exit)
+{
+	CL_QuitCommand();
+}
+END_COMMAND (exit)
+
+
+//
+// CL_NetDemoStop
+//
+void CL_NetDemoStop()
+{
+	netdemo.stopPlaying();
+}
+
+void CL_NetDemoRecord(const std::string &filename)
+{
+	netdemo.startRecording(filename);
+}
+
+void CL_NetDemoPlay(const std::string &filename)
+{
+	netdemo.startPlaying(filename);
+}
+
+void CL_NetDemoSnapshot()
+{
+/*	// read the length of the snapshot
+	int len = MSG_ReadLong();
+
+
+	// [SL] DEBUG!
+	Printf(PRINT_HIGH, "Skipping over %d bytes of snapshot data\n", len);
+
+	// skip over the snapshot since it is handled elsewhere
+	byte b;
+	while (len--)
+		b = MSG_ReadByte(); */
+}
+
+BEGIN_COMMAND(stopnetdemo)
+{
+	if (netdemo.isRecording())
+	{
+		netdemo.stopRecording();
+	} 
+	else if (netdemo.isPlaying())
+	{
+		netdemo.stopPlaying();
+	}
+}
+END_COMMAND(stopnetdemo)
+
+BEGIN_COMMAND(netrecord)
+{
+	if (netdemo.isRecording())
+	{
+		Printf(PRINT_HIGH, "Already recording a netdemo.  Please stop recording before beginning a new netdemo recording.\n");
+		return;
+	}
+
+	if (!connected || simulated_connection)
+	{
+		Printf(PRINT_HIGH, "You must be connected to a server to record a netdemo.\n");
+		return;
+	}
+
+	std::string filename;
+	if (argc < 2)
+	{
+		filename = "demo";
+	}
+	else
+	{
+		if (strlen(argv[1]) > 0)
+			filename = argv[1];
+	}
+
+    M_AppendExtension(filename, ".odd");
+
+	CL_Reconnect();
+	CL_NetDemoRecord(filename);
+}
+END_COMMAND(netrecord)
+
+BEGIN_COMMAND(netpause)
+{
+	if (netdemo.isPaused())
+	{
+		netdemo.resume();
+		paused = false;
+		Printf(PRINT_HIGH, "Demo resumed.\n");
+	} 
+	else if (netdemo.isPlaying())
+	{
+		netdemo.pause();
+		paused = true;
+		Printf(PRINT_HIGH, "Demo paused.\n");
+	}
+}
+END_COMMAND(netpause)
+
+BEGIN_COMMAND(netplay)
+{
+	if(argc < 1)
+	{
+		Printf(PRINT_HIGH, "Usage: netplay <demoname>\n");
+		return;
+	}
+
+	if (!connected)
+	{
+ 		G_CheckDemoStatus();	// cleans up vanilla demo or single player game
+	}
+
+	CL_QuitNetGame();
+	connected = false;
+
+	std::string filename = argv[1];
+	CL_NetDemoPlay(filename);
+}
+END_COMMAND(netplay)
+
+BEGIN_COMMAND(ff)
+{
+	if (netdemo.isPlaying())
+	{
+		netdemo.skipTo(&net_message, gametic + netdemo.getSpacing());
+
+	}
+}
+END_COMMAND(ff)
+
+BEGIN_COMMAND(rew)
+{
+	if (netdemo.isPlaying())
+	{
+		netdemo.skipTo(&net_message, gametic - netdemo.getSpacing());
+
+	}
+}
+END_COMMAND(rew)
 
 //
 // CL_MoveThing
 //
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
-	P_CheckPosition (mobj, x, y);
+	if (!mobj)
+		return;
+
+	// [SL] 2011-11-06 - Return before setting the thing's floorz value if
+	// the thing hasn't moved.  This ensures the floorz value is correct for
+	// things that have spawned (too close to a ledge) but have not yet moved.
+	if (mobj->x == x && mobj->y == y && mobj->z == z)
+		return;
+
+	P_CheckPosition(mobj, x, y);
 	mobj->UnlinkFromWorld ();
 
 	mobj->x = x;
@@ -521,7 +848,6 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 	mobj->z = z;
 	mobj->floorz = tmfloorz;
 	mobj->ceilingz = tmceilingz;
-
 	mobj->LinkToWorld ();
 }
 
@@ -530,24 +856,23 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(void)
 {
-	userinfo_t coninfo;
-
-    memset (&coninfo, 0, sizeof(coninfo));
-
-	strncpy (coninfo.netname, cl_name.cstring(), MAXPLAYERNAME);
-	coninfo.team	 = D_TeamByName (cl_team.cstring()); // [Toke - Teams]
-	coninfo.aimdist = (fixed_t)(cl_autoaim * 16384.0);
-	coninfo.color	 = V_GetColorFromString (NULL, cl_color.cstring());
-	coninfo.skin	 = R_FindSkin (cl_skin.cstring());
-	coninfo.gender  = D_GenderByName (cl_gender.cstring());
+	userinfo_t *coninfo = &consoleplayer().userinfo;
+	D_SetupUserInfo();
 
 	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, coninfo.netname);
-	MSG_WriteByte	(&net_buffer, coninfo.team); // [Toke]
-	MSG_WriteLong	(&net_buffer, coninfo.gender);
-	MSG_WriteLong	(&net_buffer, coninfo.color);
-	MSG_WriteString	(&net_buffer, (char *)skins[coninfo.skin].name); // [Toke - skins]
-	MSG_WriteLong	(&net_buffer, coninfo.aimdist);
+	MSG_WriteString	(&net_buffer, coninfo->netname);
+	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
+	MSG_WriteLong	(&net_buffer, coninfo->gender);
+	MSG_WriteLong	(&net_buffer, coninfo->color);
+	MSG_WriteString	(&net_buffer, (char *)skins[coninfo->skin].name); // [Toke - skins]
+	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
+	MSG_WriteByte	(&net_buffer, (char)coninfo->unlag);  // [SL] 2011-05-11
+	MSG_WriteByte	(&net_buffer, (char)coninfo->update_rate);
+	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		MSG_WriteByte (&net_buffer, (char)coninfo->weapon_prefs[i]);
+	}
 }
 
 
@@ -870,11 +1195,20 @@ bool CL_PrepareConnect(void)
     // TODO: Allow deh/bex file downloads
 	std::vector<size_t> missing_files = D_DoomWadReboot(wadnames, PatchFiles, wadhashes);
 
-	if(missing_files.size())
+	if(!missing_files.empty())
 	{
 		// denis - download files
 		missing_file = wadnames[missing_files[0]];
 		missing_hash = wadhashes[missing_files[0]];
+
+		if (netdemo.isPlaying())
+		{
+			// Playing a netdemo and unable to download from the server
+			Printf(PRINT_HIGH, "Unable to find \"%s\".  Cannot download while playing a netdemo.\n", missing_file.c_str());
+			CL_QuitNetGame();
+			return false;
+		}
+
 		gamestate = GS_DOWNLOAD;
 		Printf(PRINT_HIGH, "Will download \"%s\" from server\n", missing_file.c_str());
 	}
@@ -918,6 +1252,7 @@ bool CL_Connect(void)
     multiplayer = true;
     network_game = true;
 	serverside = false;
+	simulated_connection = netdemo.isPlaying();
 
 	CL_Decompress(0);
 	CL_ParseCommands();
@@ -1040,9 +1375,14 @@ void CL_Print (void)
 	const char *str = MSG_ReadString();
 
 	Printf (level, "%s", str);
-
-	if ((level == PRINT_CHAT || level == PRINT_TEAMCHAT) && show_messages)
-		S_Sound (CHAN_VOICE, gameinfo.chatSound, 1, ATTN_NONE);
+	
+	if (show_messages)
+	{
+		if (level == PRINT_CHAT)
+			S_Sound (CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+		else if (level == PRINT_TEAMCHAT)
+			S_Sound (CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
+	}
 }
 
 // Print a message in the middle of the screen
@@ -1060,38 +1400,53 @@ void CL_UpdatePlayer()
 	byte who = MSG_ReadByte();
 	player_t *p = &idplayer(who);
 
-	int x, y, z;
+	// [SL] 2011-11-07 - Read and ignore this for now - it was used with
+	// the previous prediction code (sv_gametic)
+	MSG_ReadLong();
+	
+	fixed_t x = MSG_ReadLong();
+	fixed_t y = MSG_ReadLong();
+	fixed_t z = MSG_ReadLong();
+	angle_t angle = MSG_ReadLong();
+	byte frame = MSG_ReadByte();
+	fixed_t momx = MSG_ReadLong();
+	fixed_t momy = MSG_ReadLong();
+	fixed_t momz = MSG_ReadLong();
 
-	if(!validplayer(*p) || !p->mo)
+	int invisibility = MSG_ReadLong();
+
+	if	(!validplayer(*p) || !p->mo)
 	{
-		for (int i=0; i<33; i++)
-			MSG_ReadByte();
 		return;
 	}
 
-	int sv_gametic = MSG_ReadLong();
+	// Mark the gametic this update arrived in for prediction code
+	p->tic = gametic;
 	
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
 
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
+	p->mo->angle = angle;
 	CL_MoveThing(p->mo, x, y, z);
-	p->mo->angle = MSG_ReadLong();
-	byte frame = MSG_ReadByte();
-	p->mo->momx = MSG_ReadLong();
-	p->mo->momy = MSG_ReadLong();
-	p->mo->momz = MSG_ReadLong();
+	p->mo->momx = momx;
+	p->mo->momy = momy;
+	p->mo->momz = momz;
 
 	p->real_origin[0] = x;
 	p->real_origin[1] = y;
 	p->real_origin[2] = z;
 
-	p->real_velocity[0] = p->mo->momx;
-	p->real_velocity[1] = p->mo->momy;
-	p->real_velocity[2] = p->mo->momz;
+	p->real_velocity[0] = momx;
+	p->real_velocity[1] = momy;
+	p->real_velocity[2] = momz;
+
+    // [Russell] - hack, read and set invisibility flag
+    p->powers[pw_invisibility] = invisibility;
+    if (p->powers[pw_invisibility])
+    {
+        p->mo->flags |= MF_SHADOW;
+    }
 
 	p->mo->frame = frame;
 
@@ -1104,7 +1459,7 @@ void CL_UpdatePlayer()
 		return;
 
 	p->last_received = gametic;
-	p->tic = sv_gametic;
+	last_player_update = gametic;
 }
 
 ticcmd_t localcmds[MAXSAVETICS];
@@ -1121,7 +1476,10 @@ void CL_UpdateLocalPlayer(void)
 {
 	player_t &p = consoleplayer();
 
+	// The server has processed the ticcmd that the local client sent
+	// during the the tic referenced below
 	p.tic = MSG_ReadLong();
+
 	p.real_origin[0] = MSG_ReadLong();
 	p.real_origin[1] = MSG_ReadLong();
 	p.real_origin[2] = MSG_ReadLong();
@@ -1130,17 +1488,43 @@ void CL_UpdateLocalPlayer(void)
 	p.real_velocity[1] = MSG_ReadLong();
 	p.real_velocity[2] = MSG_ReadLong();
 
-	real_plats.clear();
+	byte waterlevel = MSG_ReadByte();
+	if (p.mo)
+		p.mo->waterlevel = waterlevel;
+
+//	real_plats.Clear();
 }
 
-void CL_ResendSvGametic(void)
+
+//
+// CL_SaveSvGametic
+// 
+// Receives the server's gametic at the time the packet was sent.  It will be
+// sent back to the server with the next cmd.
+//
+// [SL] 2011-05-11
+void CL_SaveSvGametic(void)
 {
-	int svgametic = MSG_ReadLong();
+	last_svgametic = MSG_ReadByte();
+	#ifdef _UNLAG_DEBUG_
+	DPrintf("Unlag (%03d): client-tic %d, received svgametic\n", last_svgametic, gametic);
+	#endif	// _UNLAG_DEBUG_
+}    
 
-	MSG_WriteMarker (&net_buffer, clc_svgametic);
-	MSG_WriteLong (&net_buffer, svgametic);
+//
+// CL_SendPingReply
+//
+// Replies to a server's ping request
+//
+// [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
+// for clarity since it sends timestamps, not gametics.
+//
+void CL_SendPingReply(void)
+{
+	int svtimestamp = MSG_ReadLong();
+	MSG_WriteMarker (&net_buffer, clc_pingreply);
+	MSG_WriteLong (&net_buffer, svtimestamp);
 }
-
 
 //
 // CL_UpdatePing
@@ -1151,6 +1535,26 @@ void CL_UpdatePing(void)
 	player_t &p = idplayer(MSG_ReadByte());
 	p.ping = MSG_ReadLong();
 }
+
+
+//
+// CL_UpdateTimeLeft
+// Changes the value of level.timeleft
+//
+void CL_UpdateTimeLeft(void)
+{
+	level.timeleft = MSG_ReadShort() * TICRATE;	// convert from seconds to tics
+}
+
+//
+// CL_UpdateIntTimeLeft
+// Changes the value of level.inttimeleft
+//
+void CL_UpdateIntTimeLeft(void)
+{
+	level.inttimeleft = MSG_ReadShort();	// convert from seconds to tics
+}
+
 
 //
 // CL_SpawnMobj
@@ -1201,7 +1605,6 @@ void CL_SpawnMobj()
 		if(target)
 			mo->target = target->ptr();
 		CL_SetMobjSpeedAndAngle();
-		P_CheckMissileSpawn(mo);
 	}
 
     if (mo->flags & MF_COUNTKILL)
@@ -1214,7 +1617,10 @@ void CL_SpawnMobj()
 		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	if (mo->type == MT_TFOG)
-		S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	{
+		if (level.time)	// don't play sound on first tic of the level
+			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+	}
 }
 
 //
@@ -1312,10 +1718,6 @@ void CL_SpawnPlayer()
 
 	G_PlayerReborn (*p);
 
-	// denis - if this concerns the local player, restart the status bar
-	if(p->id == consoleplayer_id)
-		ST_Start ();
-
 	mobj = new AActor (x, y, z, MT_PLAYER);
 
 	// set color translations for player sprites
@@ -1341,6 +1743,7 @@ void CL_SpawnPlayer()
 	p->extralight = 0;
 	p->fixedcolormap = 0;
 
+	p->xviewshift = 0;
 	p->viewheight = VIEWHEIGHT;
 	for (i=0; i<MAXSAVETICS; i++)
 	{
@@ -1361,6 +1764,10 @@ void CL_SpawnPlayer()
 	if(sv_gametype != GM_COOP)
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
+
+	// denis - if this concerns the local player, restart the status bar
+	if(p->id == consoleplayer_id)
+		ST_Start ();
 }
 
 //
@@ -1369,18 +1776,12 @@ void CL_SpawnPlayer()
 //
 void CL_PlayerInfo(void)
 {
-	size_t j;
-	int newweapon;
-	bool newpending = false;
-
 	player_t *p = &consoleplayer();
 
-	for(j = 0; j < NUMWEAPONS; j++)
-	{
-		p->weaponowned[j] = MSG_ReadByte () ? true : false;
-	}
+	for(size_t j = 0; j < NUMWEAPONS; j++)
+		p->weaponowned[j] = MSG_ReadBool();
 
-	for(j = 0; j < NUMAMMO; j++)
+	for(size_t j = 0; j < NUMAMMO; j++)
 	{
 		p->maxammo[j] = MSG_ReadShort ();
 		p->ammo[j] = MSG_ReadShort ();
@@ -1389,36 +1790,15 @@ void CL_PlayerInfo(void)
 	p->health = MSG_ReadByte ();
 	p->armorpoints = MSG_ReadByte ();
 	p->armortype = MSG_ReadByte ();
-	newweapon = MSG_ReadByte ();
 	
-	// GhostlyDeath <July 17, 2008> -- what weapon do we change to?
-	if (newweapon & 64)		// Server sent our readyweapon (gun we have up)
-	{
-		// Does it not match our gun and are we already switching to the gun or not?
-		if ((p->readyweapon != (weapontype_t)(newweapon & ~64)) &&
-			(p->pendingweapon != (weapontype_t)(newweapon & ~64)))
-		{
-			p->pendingweapon = (weapontype_t)(newweapon & ~64);
-			newpending = true;
-		}
-	}
-	else	// Server sent our pendingweapon (gun we are changing to)
-	{
-		// Is the server switching our gun when i'm not or
-		// I am switching to a gun but it isn't what the server said?
-		if ((p->pendingweapon == wp_nochange) || (p->pendingweapon != newweapon))
-		{
-			p->pendingweapon = (weapontype_t)(newweapon);
-			newpending = true;
-		}
-	}
+	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
+	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
+		newweapon = wp_fist;
+
+	if (newweapon != p->readyweapon)
+		p->pendingweapon = newweapon;
 	
-	// If we are changing our guns, let's be sure it's valid
-	if (newpending)
-		if (p->pendingweapon > NUMWEAPONS)
-			p->pendingweapon = wp_pistol;
-	
-	p->backpack = MSG_ReadByte () ? true : false;
+	p->backpack = MSG_ReadBool();
 }
 
 //
@@ -1644,6 +2024,25 @@ player_t* player = &players[consoleplayer];
 	 }
 */
 
+//
+// CL_ChangeWeapon
+// [ML] From Zdaemon .99
+//
+void CL_ChangeWeapon (void)
+{
+	player_t *player = &consoleplayer();
+	weapontype_t newweapon = (weapontype_t)MSG_ReadByte();
+
+	// ensure that the client has the weapon
+	player->weaponowned[newweapon] = true;
+
+	// [SL] 2011-09-22 - Only change the weapon if the client doesn't already
+	// have that weapon up.
+	if (player->readyweapon != newweapon)
+		player->pendingweapon = newweapon;
+}
+
+
 
 //
 // CL_Sound
@@ -1668,7 +2067,7 @@ void CL_Sound(void)
 		AActor *mo = consoleplayer().mo;
 
 		if(mo)
-			S_SoundID (mo->x, mo->y, attenuation, sfx_id, volume, attenuation);
+			S_SoundID (mo->x, mo->y, channel, sfx_id, volume, attenuation);
 
 		return;
 	}
@@ -1747,34 +2146,218 @@ void CL_UpdateMovingSector(void)
 {
 	int tic = MSG_ReadLong();
 	unsigned short s = (unsigned short)MSG_ReadShort();
-	unsigned long fh = MSG_ReadLong(); // floor height
-	MSG_ReadLong(); // ceiling height
-	byte state = MSG_ReadByte();
-	int count = MSG_ReadLong();
+    fixed_t fh = MSG_ReadLong(); // floor height
+    fixed_t ch = MSG_ReadLong(); // ceiling height
+    byte Type = MSG_ReadByte();
 
-/*
-	if(!sectors || s >= numsectors)
-		return;
+    // Replaces the data in the corresponding struct
+    // 0 = floors, 1 = ceilings, 2 = elevators/pillars 
+    byte ReplaceType;
 
-	plat_pred_t pred = {s, state, count, tic, fh};
-//	sector_t *sec = &sectors[s];
+	plat_pred_t pred;
+	
+	memset(&pred, 0, sizeof(pred));
 
-//	if(!sec->floordata)
-//		sec->floordata = new DMovingFloor(sec);
+	pred.secnum = s;
+	pred.tic = tic;
+	pred.floorheight = fh;
+	pred.ceilingheight = ch;
 
-	size_t i;
+	switch(Type)
+	{
+        // Floors
+        case 0:
+        {
+            pred.Floor.m_Type = (DFloor::EFloor)MSG_ReadLong();
+            pred.Floor.m_Crush = MSG_ReadBool();
+            pred.Floor.m_Direction = MSG_ReadLong();
+            pred.Floor.m_NewSpecial = MSG_ReadShort();
+            pred.Floor.m_Texture = MSG_ReadShort();
+            pred.Floor.m_FloorDestHeight = MSG_ReadLong();
+            pred.Floor.m_Speed = MSG_ReadLong();
+            pred.Floor.m_ResetCount = MSG_ReadLong();
+            pred.Floor.m_OrgHeight = MSG_ReadLong();
+            pred.Floor.m_Delay = MSG_ReadLong();
+            pred.Floor.m_PauseTime = MSG_ReadLong();
+            pred.Floor.m_StepTime = MSG_ReadLong(); 
+            pred.Floor.m_PerStepTime = MSG_ReadLong();
 
-	for(i = 0; i < real_plats.size(); i++)
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->floordata)
+                sec->floordata = new DFloor(sec);
+
+            ReplaceType = 0;
+        }
+        break;
+
+        // Platforms
+	    case 1:
+	    {
+            pred.Floor.m_Speed = MSG_ReadLong();
+            pred.Floor.m_Low = MSG_ReadLong();
+            pred.Floor.m_High = MSG_ReadLong();
+            pred.Floor.m_Wait = MSG_ReadLong();
+            pred.Floor.m_Count = MSG_ReadLong();
+            pred.Floor.m_Status = MSG_ReadLong();
+            pred.Floor.m_OldStatus = MSG_ReadLong();
+            pred.Floor.m_Crush = MSG_ReadBool();
+            pred.Floor.m_Tag = MSG_ReadLong();
+            pred.Floor.m_Type = MSG_ReadLong();
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->floordata)
+                sec->floordata = new DPlat(sec);
+
+            ReplaceType = 0;
+	    }
+	    break;
+
+        // Ceilings
+        case 2:
+        {
+            pred.Ceiling.m_Type = (DCeiling::ECeiling)MSG_ReadLong();
+            pred.Ceiling.m_BottomHeight = MSG_ReadLong();
+            pred.Ceiling.m_TopHeight = MSG_ReadLong();
+            pred.Ceiling.m_Speed = MSG_ReadLong();
+            pred.Ceiling.m_Speed1 = MSG_ReadLong();
+            pred.Ceiling.m_Speed2 = MSG_ReadLong();
+            pred.Ceiling.m_Crush = MSG_ReadBool();
+            pred.Ceiling.m_Silent = MSG_ReadLong();
+            pred.Ceiling.m_Direction = MSG_ReadLong();
+            pred.Ceiling.m_Texture = MSG_ReadLong();
+            pred.Ceiling.m_NewSpecial = MSG_ReadLong();
+            pred.Ceiling.m_Tag = MSG_ReadLong();
+            pred.Ceiling.m_OldDirection = MSG_ReadLong();
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->ceilingdata)
+                sec->ceilingdata = new DCeiling(sec);
+
+            ReplaceType = 1;
+        }
+        break;
+
+        // Doors
+        case 3:
+        {
+            int LineIndex;
+
+            pred.Ceiling.m_Type = (DDoor::EVlDoor)MSG_ReadLong();
+            pred.Ceiling.m_TopHeight = MSG_ReadLong();
+            pred.Ceiling.m_Speed = MSG_ReadLong();
+            pred.Ceiling.m_Direction = MSG_ReadLong();
+            pred.Ceiling.m_TopWait = MSG_ReadLong();
+            pred.Ceiling.m_TopCountdown = MSG_ReadLong();
+			pred.Ceiling.m_Status = MSG_ReadLong();
+            LineIndex = MSG_ReadLong();
+
+            if (!lines || LineIndex >= numlines)
+                return;
+
+            pred.Ceiling.m_Line = &lines[LineIndex];
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->ceilingdata)
+                sec->ceilingdata = new DDoor(sec);
+
+            ReplaceType = 1;
+        }
+        break;
+
+        // Elevators
+        case 4:
+        {
+            pred.Both.m_Type = (DElevator::EElevator)MSG_ReadLong();
+            pred.Both.m_Direction = MSG_ReadLong();
+            pred.Both.m_FloorDestHeight = MSG_ReadLong();
+            pred.Both.m_CeilingDestHeight = MSG_ReadLong();
+            pred.Both.m_Speed = MSG_ReadLong();
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->ceilingdata && !sec->floordata)
+                sec->ceilingdata = sec->floordata = new DElevator(sec);
+
+            ReplaceType = 2;
+        }
+        break;
+
+        // Pillars
+        case 5:
+        {
+            pred.Both.m_Type = (DPillar::EPillar)MSG_ReadLong();
+            pred.Both.m_FloorSpeed = MSG_ReadLong();
+            pred.Both.m_CeilingSpeed = MSG_ReadLong();
+            pred.Both.m_FloorTarget = MSG_ReadLong();
+            pred.Both.m_CeilingTarget = MSG_ReadLong();
+            pred.Both.m_Crush = MSG_ReadBool();
+
+            if(!sectors || s >= numsectors)
+                return;
+
+            sector_t *sec = &sectors[s];
+
+            if(!sec->ceilingdata && !sec->floordata)
+                sec->ceilingdata = sec->floordata = new DPillar();
+
+            ReplaceType = 2;
+        }
+        break;
+
+	    default:
+            return;
+	}
+
+    size_t i;
+
+	for(i = 0; i < real_plats.Size(); i++)
 	{
 		if(real_plats[i].secnum == s)
 		{
-			real_plats[i] = pred;
+            real_plats[i].tic = pred.tic;
+
+			if (ReplaceType == 0)
+            {
+                real_plats[i].floorheight = pred.floorheight;
+                real_plats[i].Floor = pred.Floor;
+            }
+            else if (ReplaceType == 1)
+            {
+                real_plats[i].ceilingheight = pred.ceilingheight;
+                real_plats[i].Ceiling = pred.Ceiling;
+            }
+            else
+            {
+                real_plats[i].floorheight = pred.floorheight;
+                real_plats[i].ceilingheight = pred.ceilingheight;
+                real_plats[i].Both = pred.Both;
+            }
+
 			break;
 		}
 	}
 
-	if(i == real_plats.size())
-		real_plats.push_back(pred);*/
+	if(i == real_plats.Size())
+		real_plats.Push(pred);
 }
 
 
@@ -1804,6 +2387,10 @@ void CL_CheckMissedPacket(void)
 	}
 }
 
+// Decompress the packet sequence
+// [Russell] - reason this was failing is because of huffman routines, so just
+// use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
+// if 0'd sections
 void CL_Decompress(int sequence)
 {
 	if(!MSG_BytesLeft() || MSG_NextByte() != svc_compressed)
@@ -1813,9 +2400,7 @@ void CL_Decompress(int sequence)
 
 	byte method = MSG_ReadByte();
 
-	if(method & minilzo_mask)
-		MSG_DecompressMinilzo();
-
+#if 0
 	if(method & adaptive_mask)
 		MSG_DecompressAdaptive(compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0));
 	else
@@ -1823,9 +2408,14 @@ void CL_Decompress(int sequence)
 		// otherwise compressed packets can still contain codec updates
 		compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0);
 	}
+#endif
 
+	if(method & minilzo_mask)
+		MSG_DecompressMinilzo();
+#if 0
 	if(method & adaptive_record_mask)
 		compressor.ack_sent(net_message.ptr(), MSG_BytesLeft());
+#endif
 }
 
 //
@@ -1865,7 +2455,7 @@ void CL_GetServerSettings(void)
         {
             // [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
             // for cleanup on program termination
-            var = new cvar_t (CvarName.c_str(), NULL,
+            var = new cvar_t (CvarName.c_str(), NULL, "", CVARTYPE_NONE,
                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE);
                                   
             var->Set(CvarValue.c_str());
@@ -1994,6 +2584,9 @@ void CL_ActivateLine(void)
 	case 2:
 		P_ShootSpecialLine(mo, &lines[l], true);
 		break;
+    case 3:
+        P_PushSpecialLine(mo, &lines[l], side, true);
+        break;
 	}
 }
 
@@ -2015,7 +2608,7 @@ void CL_LoadMap(void)
 
 	G_InitNew (mapname);
 
-	real_plats.clear();
+	real_plats.Clear();
 
 	CTF_CheckFlags(consoleplayer());
 
@@ -2035,274 +2628,7 @@ void CL_FullGame()
 void CL_ExitLevel()
 {
 	if(gamestate != GS_DOWNLOAD) {
-        if (multiplayer && interscoredraw)
-            AddCommandString("displayscores");
 		gameaction = ga_completed;
-	}
-}
-
-// GhostlyDeath <October 26, 2008> -- VC6 Compiler Error
-// C2552: 'identifier' : non-aggregates cannot be initialized with initializer list
-// What does this mean? VC6 considers std::string non-static (that it changes every time?)
-// So it complains because std::string has a constructor!
-
-/*struct download_s
-{
-	public:
-		std::string filename;
-		std::string md5;
-		buf_t *buf;
-		unsigned int got_bytes;
-} download = { "", "", NULL, 0 };*/
-
-// this works though!
-struct download_s
-{
-	public:
-		std::string filename;
-		std::string md5;
-		buf_t *buf;
-		unsigned int got_bytes;
-
-		download_s()
-		{
-			filename = "";
-			md5 = "";
-			buf = NULL;
-			got_bytes = 0;
-		}
-
-		~download_s()
-		{
-		}
-} download;
-
-
-void IntDownloadComplete(void)
-{
-    std::string actual_md5 = MD5SUM(download.buf->ptr(), download.buf->maxsize());
-
-	Printf(PRINT_HIGH, "\nDownload complete, got %u bytes\n", download.buf->maxsize());
-	Printf(PRINT_HIGH, "%s\n %s\n", download.filename.c_str(), actual_md5.c_str());
-
-	if(download.md5 == "")
-	{
-		Printf(PRINT_HIGH, "Server gave no checksum, assuming valid\n", (int)download.buf->maxsize());
-	}
-	else if(actual_md5 != download.md5)
-	{
-		Printf(PRINT_HIGH, " %s on server\n", download.md5.c_str());
-		Printf(PRINT_HIGH, "Download failed: bad checksum\n");
-
-        download.filename = "";
-        download.md5 = "";
-        download.got_bytes = 0;
-		
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }   
-			
-        CL_QuitNetGame();
-        return;
-    }
-
-    // got the wad! save it!
-    std::string filename = "./"; // denis - todo try first of waddir/DOOMWADDIR/startdir/progdir in that order
-    filename += download.filename;
-
-    // check for existing file
-    if(M_FileExists(filename.c_str()))
-    {
-        // there is an existing file, so use a new file whose name includes the checksum
-        filename += ".";
-        filename += actual_md5;
-    }
-
-    if (!M_WriteFile(filename, download.buf->ptr(), download.buf->maxsize()))
-    {
-        download.filename = "";
-        download.md5 = "";
-        download.got_bytes = 0;
-		
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }   
-            
-        CL_QuitNetGame();
-        return;            
-    }
-
-    Printf(PRINT_HIGH, "Saved download as \"%s\"\n", filename.c_str());
-
-    download.filename = "";
-    download.md5 = "";
-    download.got_bytes = 0;
-
-    if (download.buf != NULL)
-    {
-        delete download.buf;
-        download.buf = NULL;
-    }
-
-    CL_QuitNetGame();
-    CL_Reconnect();
-}
-
-//
-// CL_RequestDownload
-// please sir, can i have some more?
-//
-void CL_RequestDownload(std::string filename, std::string filehash)
-{
-    // [Russell] - Allow resumeable downloads
-	if ((download.filename != filename) ||
-        (download.md5 != filehash))
-    {
-        download.filename = filename;
-        download.md5 = filehash;
-        download.got_bytes = 0;
-    }
-	
-	// denis todo clear previous downloads
-	MSG_WriteMarker(&net_buffer, clc_wantwad);
-	MSG_WriteString(&net_buffer, filename.c_str());
-	MSG_WriteString(&net_buffer, filehash.c_str());
-	MSG_WriteLong(&net_buffer, download.got_bytes);
-
-	NET_SendPacket(net_buffer, serveraddr);
-
-	Printf(PRINT_HIGH, "Requesting download...\n");
-	
-	// check for completion
-	// [Russell] - We go over the boundary, because sometimes the download will
-	// pause at 100% if the server disconnected you previously, you can 
-	// reconnect a couple of times and this will let the checksum system do its
-	// work
-	if ((download.buf != NULL) && 
-        (download.got_bytes >= download.buf->maxsize()))
-	{
-        IntDownloadComplete();
-	}
-}
-
-//
-// CL_DownloadStart
-// server tells us the size of the file we are about to download
-//
-void CL_DownloadStart()
-{
-	DWORD file_len = MSG_ReadLong();
-
-	if(gamestate != GS_DOWNLOAD)
-	{
-		Printf(PRINT_HIGH, "Server initiated download failed\n");
-		return;
-	}
-
-	// don't go for more than 100 megs
-	if(file_len > 100*1024*1024)
-	{
-		Printf(PRINT_HIGH, "Download is over 100MiB, aborting!\n");
-		CL_QuitNetGame();
-		return;
-	}
-	
-    // [Russell] - Allow resumeable downloads
-	if (download.got_bytes == 0)
-    {
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }
-        
-        download.buf = new buf_t ((size_t)file_len);
-        
-        memset(download.buf->ptr(), 0, file_len);
-    }
-    else
-        Printf(PRINT_HIGH, "Resuming download of %s...\n", download.filename.c_str());
-    
-	Printf(PRINT_HIGH, "Downloading %d bytes...\n", file_len);
-}
-
-//
-// CL_Download
-// denis - get a little chunk of the file and store it, much like a hampster. Well, hamster; but hampsters can dance and sing. Also much like Scraps, the Ice Age squirrel thing, stores his acorn. Only with a bit more success. Actually, quite a bit more success, specifically as in that the world doesn't crack apart when we store our chunk and it does when Scraps stores his (or her?) acorn. But when Scraps does it, it is funnier. The rest of Ice Age mostly sucks.
-//
-void CL_Download()
-{
-	DWORD offset = MSG_ReadLong();
-	size_t len = MSG_ReadShort();
-	size_t left = MSG_BytesLeft();
-	void *p = MSG_ReadChunk(len);
-
-	if(gamestate != GS_DOWNLOAD)
-		return;
-
-	// check ranges
-	if(offset + len > download.buf->maxsize() || len > left || p == NULL)
-	{
-		Printf(PRINT_HIGH, "Bad download packet (%d, %d) encountered (%d), aborting\n", (int)offset, (int)left, (int)download.buf->size());
-        
-        download.filename = "";
-        download.md5 = "";
-        download.got_bytes = 0;
-        
-        if (download.buf != NULL)
-        {
-            delete download.buf;
-            download.buf = NULL;
-        }
-        
-		CL_QuitNetGame();
-		return;
-	}
-
-	// check for missing packet, re-request
-	if(offset < download.got_bytes || offset > download.got_bytes)
-	{
-		DPrintf("Missed a packet after/before %d bytes (got %d), re-requesting\n", download.got_bytes, offset);
-		MSG_WriteMarker(&net_buffer, clc_wantwad);
-		MSG_WriteString(&net_buffer, download.filename.c_str());
-		MSG_WriteString(&net_buffer, download.md5.c_str());
-		MSG_WriteLong(&net_buffer, download.got_bytes);
-		NET_SendPacket(net_buffer, serveraddr);
-		return;
-	}
-
-	// send keepalive
-	NET_SendPacket(net_buffer, serveraddr);
-
-	// copy into downloaded buffer
-	memcpy(download.buf->ptr() + offset, p, len);
-	download.got_bytes += len;
-
-	// calculate percentage for the user
-	static int old_percent = 0;
-	int percent = (download.got_bytes*100)/download.buf->maxsize();
-	if(percent != old_percent)
-	{
-		if(!(percent % 10))
-			Printf(PRINT_HIGH, "%d%%", percent);
-		else
-            Printf(PRINT_HIGH, ".");
-
-		old_percent = percent;
-	}
-
-	// check for completion
-	// [Russell] - We go over the boundary, because sometimes the download will
-	// pause at 100% if the server disconnected you previously, you can 
-	// reconnect a couple of times and this will let the checksum system do its
-	// work
-	if(download.got_bytes >= download.buf->maxsize())
-	{
-        IntDownloadComplete();
 	}
 }
 
@@ -2363,7 +2689,6 @@ void CL_InitCommands(void)
 	cmds[svc_userinfo]			= &CL_SetupUserInfo;
 	cmds[svc_teampoints]		= &CL_TeamPoints;
 
-	cmds[svc_svgametic]			= &CL_ResendSvGametic;
 	cmds[svc_updateping]		= &CL_UpdatePing;
 	cmds[svc_spawnmobj]			= &CL_SpawnMobj;
 	cmds[svc_mobjspeedangle]	= &CL_SetMobjSpeedAndAngle;
@@ -2383,6 +2708,7 @@ void CL_InitCommands(void)
 	cmds[svc_fireshotgun]		= &CL_FireShotgun;
 	cmds[svc_firessg]			= &CL_FireSSG;
 	cmds[svc_firechaingun]		= &CL_FireChainGun;
+	cmds[svc_changeweapon]		= &CL_ChangeWeapon;
 	cmds[svc_connectclient]		= &CL_ConnectClient;
 	cmds[svc_disconnectclient]	= &CL_DisconnectClient;
 	cmds[svc_activateline]		= &CL_ActivateLine;
@@ -2391,6 +2717,10 @@ void CL_InitCommands(void)
 	cmds[svc_switch]			= &CL_Switch;
 	cmds[svc_print]				= &CL_Print;
     cmds[svc_midprint]          = &CL_MidPrint;
+    cmds[svc_pingrequest]       = &CL_SendPingReply;
+	cmds[svc_svgametic]			= &CL_SaveSvGametic;
+	cmds[svc_timeleft]			= &CL_UpdateTimeLeft;
+	cmds[svc_inttimeleft]		= &CL_UpdateIntTimeLeft;
 
 	cmds[svc_startsound]		= &CL_Sound;
 	cmds[svc_soundorigin]		= &CL_SoundOrigin;
@@ -2417,6 +2747,10 @@ void CL_InitCommands(void)
 	cmds[svc_spectate]   		= &CL_Spectate;
 	
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
+
+	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
+	cmds[svc_netdemostop]       = &CL_NetDemoStop;
+	cmds[svc_netdemosnapshot]	= &CL_NetDemoSnapshot;
 }
 
 //
@@ -2465,26 +2799,25 @@ void CL_ParseCommands(void)
 			for(size_t j = 0; j < history.size(); j++)
 				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
 		}
+		
 	}
-
 }
 
 extern int outrate;
+
+extern int extrapolation_tics;
 
 //
 // CL_SendCmd
 //
 void CL_SendCmd(void)
 {
-	ticcmd_t *cmd;
-	player_t *p;
+	player_t *p = &consoleplayer();
 
-	if (gametic < 1 )
+	if (netdemo.isPlaying())	// we're not really connected to a server
 		return;
 
-	p = &consoleplayer();
-
-	if(!p->mo)
+	if (!p->mo || gametic < 1 )
 		return;
 
 	// denis - we know server won't accept two changes per tic, so we shouldn't
@@ -2503,33 +2836,64 @@ void CL_SendCmd(void)
 	}
 	// GhostlyDeath -- We just throw it all away down here since we need those buttons!
 
+	ticcmd_t *prevcmd = &localcmds[(gametic-1) % MAXSAVETICS];
+	ticcmd_t *curcmd  = &consoleplayer().cmd;
+
 	MSG_WriteMarker(&net_buffer, clc_move);
 
-    MSG_WriteLong(&net_buffer, gametic); // current tic
+	// Write current client-tic.  Server later sends this back to client
+	// when sending svc_updatelocalplayer so the client knows which ticcmds
+	// need to be used for client's positional prediction. 
+    MSG_WriteLong(&net_buffer, gametic);
+    
+    // Send the most recent server-tic.  This indicates to the server which
+    // update of player positions the client is basing his actions on.  Used
+    // by unlagging calculations.
+
+	// Take extrapolation into account
+	MSG_WriteByte(&net_buffer, last_svgametic + extrapolation_tics);
 
     // send the previous cmds in the message, so if the last packet
     // was dropped, it can be recovered
-    cmd = &localcmds[(gametic-1) % MAXSAVETICS];
-
-	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	MSG_WriteShort(&net_buffer, p->mo->angle >> 16);
-	MSG_WriteShort(&net_buffer, p->mo->pitch >> 16);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
-	MSG_WriteByte(&net_buffer, cmd->ucmd.impulse);
+	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.buttons);
+	MSG_WriteShort(&net_buffer,	p->mo->angle >> 16);
+	MSG_WriteShort(&net_buffer,	p->mo->pitch >> 16);
+	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.forwardmove);
+	MSG_WriteShort(&net_buffer,	prevcmd->ucmd.sidemove);
+	MSG_WriteShort(&net_buffer, prevcmd->ucmd.upmove);
+	MSG_WriteByte(&net_buffer,	prevcmd->ucmd.impulse);
 
     // send the current cmds in the message
-    cmd = &consoleplayer().cmd;
+	MSG_WriteByte(&net_buffer,	curcmd->ucmd.buttons);
+	if (step_mode) 
+		MSG_WriteShort(&net_buffer, curcmd->ucmd.yaw);
+	else 
+		MSG_WriteShort(&net_buffer, (p->mo->angle + (curcmd->ucmd.yaw << 16)) >> 16);
+	MSG_WriteShort(&net_buffer,	(p->mo->pitch + (curcmd->ucmd.pitch << 16)) >> 16);
+	MSG_WriteShort(&net_buffer,	curcmd->ucmd.forwardmove);
+	MSG_WriteShort(&net_buffer,	curcmd->ucmd.sidemove);
+	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
+	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
 
-	MSG_WriteByte(&net_buffer, cmd->ucmd.buttons);
-	if(step_mode) MSG_WriteShort(&net_buffer, cmd->ucmd.yaw);
-	else MSG_WriteShort(&net_buffer, (p->mo->angle + (cmd->ucmd.yaw << 16)) >> 16);
-	MSG_WriteShort(&net_buffer, (p->mo->pitch + (cmd->ucmd.pitch << 16)) >> 16);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.forwardmove);
-	MSG_WriteShort(&net_buffer, cmd->ucmd.sidemove);
-	MSG_WriteByte(&net_buffer, cmd->ucmd.impulse);
-
-    NET_SendPacket(net_buffer, serveraddr);
+#ifdef _UNLAG_DEBUG_
+	if 	(player.size() == 2 && 
+		(prevcmd->ucmd.buttons & BT_ATTACK || curcmd->ucmd.buttons & BT_ATTACK))
+	{
+		player_t *enemy;
+			
+		if (players[0].id != consoleplayer().id)
+			enemy = &players[0];
+		else
+			enemy = &players[1];
+			
+		int x = enemy->mo->x >> FRACBITS;
+		int y = enemy->mo->y >> FRACBITS;
+		DPrintf("Unlag: Weapon fired with svgametic = %d, enemy position = (%d, %d)\n",
+				last_svgametic + extrapolation_tics, x, y);
+	}
+#endif	// _UNLAG_DEBUG_
+	
+	NET_SendPacket(net_buffer, serveraddr);
 	outrate += net_buffer.size();
     SZ_Clear(&net_buffer);
 }
@@ -2591,43 +2955,43 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
     {
         case wp_shotgun:
         {
-            PickupMessage(toucher, GOTSHOTGUN);
+            PickupMessage(toucher, GStrings(GOTSHOTGUN));
         }
         break;
 
         case wp_chaingun:
         {
-            PickupMessage(toucher, GOTCHAINGUN);
+            PickupMessage(toucher, GStrings(GOTCHAINGUN));
         }
         break;
 
         case wp_missile:
         {
-            PickupMessage(toucher, GOTLAUNCHER);
+            PickupMessage(toucher, GStrings(GOTLAUNCHER));
         }
         break;
 
         case wp_plasma:
         {
-            PickupMessage(toucher, GOTPLASMA);
+            PickupMessage(toucher, GStrings(GOTPLASMA));
         }
         break;
 
         case wp_bfg:
         {
-            PickupMessage(toucher, GOTBFG9000);
+            PickupMessage(toucher, GStrings(GOTBFG9000));
         }
         break;
 
         case wp_chainsaw:
         {
-            PickupMessage(toucher, GOTCHAINSAW);
+            PickupMessage(toucher, GStrings(GOTCHAINSAW));
         }
         break;
 
         case wp_supershotgun:
         {
-            PickupMessage(toucher, GOTSHOTGUN2);
+            PickupMessage(toucher, GStrings(GOTSHOTGUN2));
         }
         break;
         
@@ -2636,13 +3000,62 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
     }
 }
 
+void CL_LocalDemoTic()
+{
+	player_t* clientPlayer = &consoleplayer();
+	fixed_t x, y, z;
+	fixed_t momx, momy, momz;
+	fixed_t pitch, roll, viewheight, deltaviewheight;
+	angle_t angle;
+	int jumpTics, reactiontime;
+	byte waterlevel;
+	
+	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
+	
+	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
+
+	waterlevel = MSG_ReadByte();
+	x = MSG_ReadLong();
+	y = MSG_ReadLong();
+	z = MSG_ReadLong();
+	momx = MSG_ReadLong();
+	momy = MSG_ReadLong();
+	momz = MSG_ReadLong();
+	angle = MSG_ReadLong();
+	pitch = MSG_ReadLong();
+	roll = MSG_ReadLong();
+	viewheight = MSG_ReadLong();
+	deltaviewheight = MSG_ReadLong();
+	jumpTics = MSG_ReadLong();
+	reactiontime = MSG_ReadLong();
+	clientPlayer->readyweapon = static_cast<weapontype_t>(MSG_ReadByte());
+	clientPlayer->pendingweapon = static_cast<weapontype_t>(MSG_ReadByte());
+
+	if(clientPlayer->mo)
+	{
+		clientPlayer->mo->x = x;
+		clientPlayer->mo->y = y;
+		clientPlayer->mo->z = z;
+		clientPlayer->mo->momx = momx;
+		clientPlayer->mo->momy = momy;
+		clientPlayer->mo->momz = momz;
+		clientPlayer->mo->angle = angle;
+		clientPlayer->mo->pitch = pitch;
+		clientPlayer->mo->roll = roll;
+		clientPlayer->viewheight = viewheight;
+		clientPlayer->deltaviewheight = deltaviewheight;
+		clientPlayer->jumpTics = jumpTics;
+		clientPlayer->mo->reactiontime = reactiontime;
+		clientPlayer->mo->waterlevel = waterlevel;
+	}
+
+}
+
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")
-
-
-
-
-
-

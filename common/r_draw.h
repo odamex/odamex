@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id: r_draw.h 1837 2010-09-02 04:21:09Z spleen $
@@ -192,9 +192,28 @@ extern byte*			dc_translation;
 
 extern fixed_t dc_translevel;
 
+enum
+{
+	TRANSLATION_Shaded,
+	TRANSLATION_Players,
+	TRANSLATION_PlayersExtra,
+	TRANSLATION_Standard,
+	TRANSLATION_LevelScripted,
+	TRANSLATION_Decals,
+
+	NUM_TRANSLATION_TABLES
+};
+
+extern byte*			dc_translation;
+
+#define TRANSLATION(a,b)	(((a)<<8)|(b))
+
+const int MAX_ACS_TRANSLATIONS = 32;
+
+
 
 // [RH] Double view pixels by detail mode
-//void R_DetailDouble (void);
+void R_DetailDouble (void);
 
 void
 R_InitBuffer

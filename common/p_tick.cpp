@@ -23,11 +23,26 @@
 
 #include "z_zone.h"
 #include "p_local.h"
+#include "c_effect.h"
 #include "p_acs.h"
 #include "c_console.h"
 #include "doomstat.h"
+#include "p_unlag.h"
 
 EXTERN_CVAR (sv_speedhackfix)
+
+//
+// P_AtInterval
+//
+// Decides if it is time to perform a function that is to be performed
+// at regular intervals
+//
+bool P_AtInterval(int interval)
+{
+    return (gametic % interval) == 0;
+}
+
+void P_AnimationTick(AActor *mo);
 
 //
 // P_Ticker
@@ -40,6 +55,9 @@ void P_Ticker (void)
 	if (!multiplayer && !demoplayback && menuactive && players[0].viewz != 1)
 		return;
 
+	if (clientside)
+		P_ThinkParticles ();	// [RH] make the particles think
+
 	if((serverside && sv_speedhackfix) || (clientside && serverside))
 	{
 		for(size_t i = 0; i < players.size(); i++)
@@ -47,10 +65,22 @@ void P_Ticker (void)
 				P_PlayerThink (&players[i]);
 	}
 
+	// [SL] 2011-06-05 - Tick player actor animations here since P_Ticker is
+	// called only once per tick.  AActor::RunThink is called whenever the
+	// server receives a cmd from the client, which can happen multiple times
+	// in a single gametic.
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		P_AnimationTick(players[i].mo);
+	}
+
 	DThinker::RunThinkers ();
 	
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
+
+	if (serverside)
+		P_RunEffects ();	// [RH] Run particle effects
 
 	// for par times
 	level.time++;

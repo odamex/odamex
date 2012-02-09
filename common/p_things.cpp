@@ -25,7 +25,10 @@
 #include <stdlib.h>
 
 #include "doomtype.h"
+#include "i_system.h"
 #include "p_local.h"
+#include "c_effect.h"
+#include "p_mobj.h"
 #include "info.h"
 #include "s_sound.h"
 #include "tables.h"
@@ -244,8 +247,6 @@ BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
 	return rtn != 0;
 }
 
-bool P_CheckMissileSpawn (AActor *th);
-
 BOOL P_Thing_Projectile (int tid, int type, angle_t angle,
 						 fixed_t speed, fixed_t vspeed, BOOL gravity)
 {
@@ -264,7 +265,7 @@ BOOL P_Thing_Projectile (int tid, int type, angle_t angle,
 
 	while ( (spot = AActor::FindByTID (spot, tid)) )
 	{
-		if (spot->type != MT_MAPSPOT /*&& spot->type != MT_MAPSPOTGRAVITY*/)
+		if (spot->type != MT_MAPSPOT && spot->type != MT_MAPSPOTGRAVITY)
 			continue;
 
 		mobj = new AActor (spot->x, spot->y, spot->z, (mobjtype_t)kind);
@@ -308,7 +309,6 @@ BOOL P_ActivateMobj (AActor *mobj, AActor *activator)
 	{
 		switch (mobj->type)
 		{
-		    /*
 			case MT_SPARK:
 			{
 				int count = mobj->args[0];
@@ -327,7 +327,6 @@ BOOL P_ActivateMobj (AActor *mobj, AActor *activator)
 				mobj->effects &= ~FX_FOUNTAINMASK;
 				mobj->effects |= mobj->args[0] << FX_FOUNTAINSHIFT;
 				break;
-            */
 
 			case MT_SECRETTRIGGER:
 				if (activator->player->mo == consoleplayer().camera)
@@ -363,9 +362,9 @@ BOOL P_DeactivateMobj (AActor *mobj)
 	{
 		switch (mobj->type)
 		{
-			//case MT_FOUNTAIN:
-			//	mobj->effects &= ~FX_FOUNTAINMASK;
-			//	break;
+			case MT_FOUNTAIN:
+				mobj->effects &= ~FX_FOUNTAINMASK;
+				break;
 			default:
 				break;
 		}
@@ -373,4 +372,4 @@ BOOL P_DeactivateMobj (AActor *mobj)
 	return false;
 }
 
-VERSION_CONTROL (p_spec_cpp, "$Id$")
+VERSION_CONTROL (p_things_cpp, "$Id$")

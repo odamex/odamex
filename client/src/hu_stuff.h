@@ -51,5 +51,5 @@ extern int headsupactive;
 
 class player_s;
 void HU_DrawScores (player_s *me);
-
+void HU_DisplayTimer (int x, int y, bool scale = true);
 #endif

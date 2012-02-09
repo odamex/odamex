@@ -1,9 +1,10 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.cpp 1166 2008-10-07 22:42:10Z Nes $
+// $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// sc_man.h : Heretic 2 : Raven Software, Corp.
+// Copyright (C) 2006-2010 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -15,8 +16,9 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// DESCRIPTION:
-//	Lump script parsing
+// DESCRIPTION: 
+//	
+//	    General lump script parser from Hexen (MAPINFO, etc)
 //
 //-----------------------------------------------------------------------------
 

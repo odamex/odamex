@@ -44,24 +44,35 @@
 /* [Petteri] Use Winsock for Win32: */
 #ifdef _WIN32
 #	define WIN32_LEAN_AND_MEAN
-#	include <windows.h>
-#	include <winsock.h>
+#ifdef _XBOX
+#	include <xtl.h>
 #else
-#	include <sys/types.h>
+#	include <windows.h>
+#	include <winsock2.h>
+#   include <ws2tcpip.h>
+#endif // !_XBOX
+#else
+#ifdef GEKKO // Wii/GC
+#	include <network.h>
+#else
 #	include <sys/socket.h>
 #	include <netinet/in.h>
 #	include <arpa/inet.h>
-#	include <errno.h>
-#	include <unistd.h>
 #	include <netdb.h>
 #	include <sys/ioctl.h>
+#endif // GEKKO
+#	include <sys/types.h>
+#	include <errno.h>
+#	include <unistd.h>
 #	include <sys/time.h>
-#endif
+#endif // WIN32
 
 #ifndef _WIN32
 typedef int SOCKET;
+#ifndef GEKKO
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET -1
+#endif
 #define closesocket close
 #define ioctlsocket ioctl
 #define Sleep(x)	usleep (x * 1000)
@@ -81,13 +92,29 @@ typedef int SOCKET;
 #include "g_game.h"
 #include "i_net.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
 #include "minilzo.h"
 
-int         net_socket;
-int         localport;
-netadr_t    net_from;   // address of who sent the packet
+#ifdef ODA_HAVE_MINIUPNP
+#define STATICLIB
+#include "miniwget.h"
+#include "miniupnpc.h"
+#include "upnpcommands.h"
+#endif
+
+unsigned int	inet_socket;
+int         	localport;
+netadr_t    	net_from;   // address of who sent the packet
 
 buf_t       net_message(MAX_UDP_PACKET);
+extern bool	simulated_connection;
 
 // buffer for compression/decompression
 // can't be static to a function because some
@@ -99,6 +126,164 @@ EXTERN_CVAR(port)
 
 msg_info_t clc_info[clc_max];
 msg_info_t svc_info[svc_max];
+
+#ifdef ODA_HAVE_MINIUPNP
+EXTERN_CVAR(sv_upnp)
+EXTERN_CVAR(sv_upnp_discovertimeout)
+EXTERN_CVAR(sv_upnp_description)
+EXTERN_CVAR(sv_upnp_internalip)
+EXTERN_CVAR(sv_upnp_externalip)
+
+static struct UPNPUrls urls;
+static struct IGDdatas data;
+
+static bool is_upnp_ok = false;
+
+void init_upnp (void)
+{
+	struct UPNPDev * devlist;
+	struct UPNPDev * dev;
+	char * descXML;
+	int descXMLsize = 0;
+    int res = 0;
+
+    char IPAddress[40];
+    int r;
+
+    if (!sv_upnp)
+        return;
+
+	memset(&urls, 0, sizeof(struct UPNPUrls));
+	memset(&data, 0, sizeof(struct IGDdatas));
+	
+	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
+	
+	devlist = upnpDiscover(sv_upnp_discovertimeout.asInt(), NULL, NULL, 0, 0, &res);
+	
+	if (!devlist || res != UPNPDISCOVER_SUCCESS)
+    {
+		Printf(PRINT_HIGH, "UPnP: Router not found or timed out, error %d\n", 
+            res);   
+		
+        is_upnp_ok = false;
+
+        return;
+    }
+
+    dev = devlist;
+
+    while (dev)
+    {
+        if (strstr (dev->st, "InternetGatewayDevice"))
+            break;
+        dev = dev->pNext;
+    }
+
+    if (!dev)
+        dev = devlist; /* defaulting to first device */
+
+    //Printf(PRINT_HIGH, "UPnP device :\n"
+      //      " desc: %s\n st: %s\n",
+        //    dev->descURL, dev->st);
+
+    descXML = (char *)miniwget(dev->descURL, &descXMLsize);
+
+    if (descXML)
+    {
+        parserootdesc (descXML, descXMLsize, &data);
+        free (descXML); descXML = 0;
+        GetUPNPUrls (&urls, &data, dev->descURL);
+    }
+
+    freeUPNPDevlist(devlist);
+
+    r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype, 
+            IPAddress);
+
+    if (r != 0)
+    {
+        Printf(PRINT_HIGH, 
+            "UPnP: Router found but unable to get external IP address\n");
+
+        is_upnp_ok = false;
+    }
+    else
+    {
+        Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n", 
+            IPAddress);
+
+        // Store ip address just in case admin wants it
+        sv_upnp_externalip.ForceSet(IPAddress);
+
+        is_upnp_ok = true;
+    }
+}
+
+void upnp_add_redir (const char * addr, int port)
+{
+	char port_str[16];
+	int r;
+
+    if (!sv_upnp || !is_upnp_ok)
+        return;
+
+	if(urls.controlURL == NULL)
+		return;
+
+	sprintf(port_str, "%d", port);
+
+    // Set a description if none exists
+    if (!sv_upnp_description.cstring()[0])
+    {
+        std::stringstream desc;
+
+        desc << "Odasrv " << "(" << addr << ":" << port_str << ")" << std::endl;
+
+        sv_upnp_description.Set(desc.str().c_str());
+    }
+
+	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
+            port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
+	
+	if (r != 0)
+	{
+		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
+
+        is_upnp_ok = false;
+	}
+    else
+    {
+        Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s", 
+            sv_upnp_description.cstring());
+
+        is_upnp_ok = true;
+    }
+}
+
+void upnp_rem_redir (int port)
+{
+	char port_str[16];
+	int r;
+
+    if (!is_upnp_ok)
+        return;
+
+	if(urls.controlURL == NULL)
+		return;
+
+	sprintf(port_str, "%d", port);
+	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, 
+        port_str, "UDP", 0);
+
+	if (r != 0)
+    {
+        Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
+        is_upnp_ok = false;
+    }
+    else
+        is_upnp_ok = true;
+}
+#endif
 
 //
 // UDPsocket
@@ -146,13 +331,37 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	sprintf(tmp, "%d", next - 1);
 	port.ForceSet(tmp);
 
+#ifdef ODA_HAVE_MINIUPNP
+    std::string ip = NET_GetLocalAddress();
+
+    if (!ip.empty())
+    {
+        sv_upnp_internalip.Set(ip.c_str());
+
+        Printf(PRINT_HIGH, "UPnP: Internal IP address is: %s\n", ip.c_str());
+
+        upnp_add_redir(ip.c_str(), next - 1);
+    }
+    else
+    {
+        Printf(PRINT_HIGH, "UPnP: Could not get first internal IP address, "
+            "UPnP will not function\n");
+
+        is_upnp_ok = false;
+    }
+#endif
+
 	Printf(PRINT_HIGH, "Bound to local port %d\n", next - 1);
 }
 
 
 void CloseNetwork (void)
 {
-	closesocket (net_socket);
+#ifdef ODA_HAVE_MINIUPNP
+    upnp_rem_redir (port);
+#endif
+
+	closesocket (inet_socket);
 #ifdef _WIN32
 	WSACleanup ();
 #endif
@@ -239,7 +448,7 @@ int NET_GetPacket (void)
 
     fromlen = sizeof(from);
 	net_message.clear();
-    ret = recvfrom (net_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+    ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
 
     if (ret == -1)
     {
@@ -282,9 +491,17 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
     int                   ret;
     struct sockaddr_in    addr;
 
+	// [SL] 2011-07-06 - Don't try to send a packet if we're not really connected
+	// (eg, a netdemo is being played back)
+	if (simulated_connection)
+	{
+		buf.clear();
+		return;
+	}
+
     NetadrToSockadr (&to, &addr);
 
-	ret = sendto (net_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
 
 	buf.clear();
 
@@ -306,29 +523,32 @@ void NET_SendPacket (buf_t &buf, netadr_t &to)
     }
 }
 
+
 #ifndef HOST_NAME_MAX
-#define HOST_NAME_MAX 512
+#define HOST_NAME_MAX 256
 #endif
 
-void NET_GetLocalAddress (void)
+std::string NET_GetLocalAddress (void)
 {
-	char buff[HOST_NAME_MAX];
-	struct sockaddr_in address;
-	socklen_t namelen;
-	netadr_t net_local_adr;
+	static char buff[HOST_NAME_MAX];
+    hostent *ent;
+    struct in_addr addr;
+    std::string ret_str;
 
 	gethostname(buff, HOST_NAME_MAX);
 	buff[HOST_NAME_MAX - 1] = 0;
 
-	NET_StringToAdr (buff, &net_local_adr);
+    ent = gethostbyname(buff);
 
-	namelen = sizeof(address);
-	if (getsockname (net_socket, (struct sockaddr *)&address, &namelen) == -1)
-        Printf (PRINT_HIGH, "NET_Init: getsockname:", strerror(errno));
+    // Return the first, IPv4 address
+    if (ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
+    {
+        addr.s_addr = *(u_long *)ent->h_addr_list[0];
 
-	net_local_adr.port = address.sin_port;
+        ret_str = inet_ntoa(addr);
+    }
 
-	Printf(PRINT_HIGH, "IP address %s\n", NET_AdrToString (net_local_adr) );
+    return ret_str;
 }
 
 
@@ -356,10 +576,20 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 // [ML] 8/4/10: Moved to sv_main and slightly modified to provide an adequate
 //      but temporary fix for bug 594 until netcode_bringup2 is complete.
 //      Thanks to spleen for providing good brainpower!
-/*void MSG_WriteMarker (buf_t *b, svc_t c)
+//
+// [SL] 2011-07-17 - Moved back to i_net.cpp so that it can be used by
+// both client & server code.  Client has a stub function for SV_SendPackets.
+//
+void SV_SendPackets(void);
+
+void MSG_WriteMarker (buf_t *b, svc_t c)
 {
+    //[Spleen] final check to prevent huge packets from being sent to players
+    if (b->cursize > 600)
+        SV_SendPackets();
+    
 	b->WriteByte((byte)c);
-}*/
+}
 
 //
 // MSG_WriteMarker
@@ -369,30 +599,40 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 //
 void MSG_WriteMarker (buf_t *b, clc_t c)
 {
+	if (simulated_connection)
+		return;
 	b->WriteByte((byte)c);
 }
 
 void MSG_WriteByte (buf_t *b, byte c)
 {
-    b->WriteByte((byte)c);
+	if (simulated_connection)
+		return;
+	b->WriteByte((byte)c);
 }
 
 
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 {
-    b->WriteChunk((const char *)p, l);
+	if (simulated_connection)
+		return;
+	b->WriteChunk((const char *)p, l);
 }
 
 
 void MSG_WriteShort (buf_t *b, short c)
 {
-    b->WriteShort(c);
+	if (simulated_connection)
+		return;
+	b->WriteShort(c);
 }
 
 
 void MSG_WriteLong (buf_t *b, int c)
 {
-    b->WriteLong(c);
+	if (simulated_connection)
+		return;
+	b->WriteLong(c);
 }
 
 //
@@ -401,7 +641,9 @@ void MSG_WriteLong (buf_t *b, int c)
 // Write an boolean value to a buffer
 void MSG_WriteBool(buf_t *b, bool Boolean)
 {
-    MSG_WriteByte(b, Boolean ? 1 : 0);
+	if (simulated_connection)
+		return;
+	MSG_WriteByte(b, Boolean ? 1 : 0);
 }
 
 //
@@ -410,11 +652,14 @@ void MSG_WriteBool(buf_t *b, bool Boolean)
 // Write a floating point number to a buffer
 void MSG_WriteFloat(buf_t *b, float Float)
 {
+	if (simulated_connection)
+		return;
+
     std::stringstream StringStream;
 
     StringStream << Float;
     
-    MSG_WriteString(b, (char *)StringStream.str().c_str());
+	MSG_WriteString(b, (char *)StringStream.str().c_str());
 }
 
 //
@@ -423,6 +668,8 @@ void MSG_WriteFloat(buf_t *b, float Float)
 // Write a string to a buffer and null terminate it
 void MSG_WriteString (buf_t *b, const char *s)
 {
+	if (simulated_connection)
+		return;
 	b->WriteString(s);
 }
 
@@ -444,6 +691,11 @@ int MSG_NextByte (void)
 void *MSG_ReadChunk (const size_t &size)
 {
 	return net_message.ReadChunk(size);
+}
+
+size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc)
+{
+    return net_message.SetOffset(offset, loc);
 }
 
 // Output buffer size for LZO compression, extra space in case uncompressable
@@ -633,7 +885,7 @@ void InitNetMessageFormats()
       MSG(clc_say,                "bs"),
       MSG(clc_move,               "x"),
       MSG(clc_userinfo,           "x"),
-      MSG(clc_svgametic,          "N"),
+      MSG(clc_pingreply,          "N"),
       MSG(clc_rate,               "N"),
       MSG(clc_ack,                "x"),
       MSG(clc_rcon,               "s"),
@@ -657,7 +909,7 @@ void InitNetMessageFormats()
 	MSG(svc_playerinfo,         "x"),
 	MSG(svc_moveplayer,         "x"),
 	MSG(svc_updatelocalplayer,  "x"),
-	MSG(svc_svgametic,          "x"),
+	MSG(svc_pingrequest,        "x"),
 	MSG(svc_updateping,         "x"),
 	MSG(svc_spawnmobj,          "x"),
 	MSG(svc_disconnectclient,   "x"),
@@ -714,7 +966,10 @@ void InitNetMessageFormats()
 	MSG(svc_launcher_challenge, "x"),
 	MSG(svc_challenge,          "x"),
 	MSG(svc_connectclient,		"x"),
-	MSG(svc_midprint,           "x")
+ 	MSG(svc_midprint,           "x"),
+ 	MSG(svc_svgametic,          "x"),
+	MSG(svc_timeleft,			"x"),
+	MSG(svc_inttimeleft,		"x")
    };
 
    size_t i;
@@ -739,12 +994,17 @@ void InitNetCommon(void)
 
 #ifdef _WIN32
    WSADATA   wsad;
-   WSAStartup( 0x0101, &wsad );
+   WSAStartup( MAKEWORD(2,2), &wsad );
 #endif
 
-   net_socket = UDPsocket ();
-   BindToLocalPort (net_socket, localport);
-   if (ioctlsocket (net_socket, FIONBIO, &_true) == -1)
+   inet_socket = UDPsocket ();
+
+    #ifdef ODA_HAVE_MINIUPNP
+    init_upnp();
+    #endif
+
+   BindToLocalPort (inet_socket, localport);
+   if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
 	// enter message information into message info structs
@@ -764,9 +1024,9 @@ bool NetWaitOrTimeout(size_t ms)
 	fd_set fds;
 
 	FD_ZERO(&fds);
-	FD_SET(net_socket, &fds);
+	FD_SET(inet_socket, &fds);
 
-	int ret = select(net_socket + 1, &fds, NULL, NULL, &timeout);
+	int ret = select(inet_socket + 1, &fds, NULL, NULL, &timeout);
 
 	if(ret == 1)
 		return true;

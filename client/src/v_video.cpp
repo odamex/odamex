@@ -52,7 +52,6 @@
 #include "m_swap.h"
 #include "m_menu.h"
 
-#include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
 
@@ -70,6 +69,7 @@ int DisplayWidth, DisplayHeight, DisplayBits;
 unsigned int Col2RGB8[65][256];
 byte RGB32k[32][32][32];
 
+void I_FlushInput();
 
 // [RH] The framebuffer is no longer a mere byte array.
 // There's also only one, not four.
@@ -81,6 +81,7 @@ EXTERN_CVAR (vid_defwidth)
 EXTERN_CVAR (vid_defheight)
 EXTERN_CVAR (vid_defbits)
 EXTERN_CVAR (autoadjust_video_settings)
+EXTERN_CVAR (vid_overscan)
 
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)
@@ -94,7 +95,14 @@ BOOL	setmodeneeded = false;
 // [RH] Resolution to change to when setmodeneeded is true
 int		NewWidth, NewHeight, NewBits;
 
-EXTERN_CVAR (vid_fullscreen)
+CVAR_FUNC_IMPL (vid_fullscreen)
+{
+	setmodeneeded = true;
+	NewWidth = screen->width;
+	NewHeight = screen->height;
+	NewBits = DisplayBits;
+}
+
 
 //
 // V_MarkRect
@@ -463,6 +471,8 @@ void DCanvas::Blit (int srcx, int srcy, int srcwidth, int srcheight,
 //
 BOOL V_DoModeSetup (int width, int height, int bits)
 {
+	int basew = 320, baseh = 200;
+	
 	// Free the virtual framebuffer
 	if(screen)
 	{
@@ -472,6 +482,8 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 	I_SetMode (width, height, bits);
 	
+	I_SetOverscan (vid_overscan);
+
 	/*
 	CleanXfac = ((height * 4)/3) / 320;
 
@@ -487,14 +499,18 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows con_scaletext to have some purpose...
 	
-    CleanXfac = width / 320; 
-    CleanYfac = height / 200; 
-    if (CleanXfac < CleanYfac) 
-        CleanYfac = CleanXfac; 
-    else 
-        CleanXfac = CleanYfac;
-
-
+    CleanXfac = width / basew; 
+    CleanYfac = height / baseh;
+    
+	if (CleanXfac == 0 || CleanYfac == 0)
+		CleanXfac = CleanYfac = 1;
+	else
+	{
+		if (CleanXfac < CleanYfac) 
+			CleanYfac = CleanXfac; 
+		else 
+			CleanXfac = CleanYfac;		
+	}
 
 	CleanWidth = width / CleanXfac;
 	CleanHeight = height / CleanYfac;
@@ -504,7 +520,10 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 	DisplayBits = bits;
 
 	// Allocate a new virtual framebuffer
-	screen = I_AllocateScreen (width, height, bits, true);
+	if (I_CheckVideoDriver("directx") && vid_fullscreen)
+		screen = I_AllocateScreen (width, height, bits, false);
+	else
+		screen = I_AllocateScreen (width, height, bits, true);
 
 	V_ForceBlend (0,0,0,0);
 	if (bits == 8)
@@ -512,6 +531,9 @@ BOOL V_DoModeSetup (int width, int height, int bits)
 
 	R_InitColumnDrawers (screen->is8bit());
 	R_MultiresInit ();
+
+	// [SL] 2011-11-30 - Prevent the player's view angle from moving
+	I_FlushInput();
 
 //	M_RefreshModesList (); // [Toke - crap]
 

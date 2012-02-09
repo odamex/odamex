@@ -38,6 +38,7 @@
 
 #include "doomstat.h"
 
+EXTERN_CVAR(hud_scaletext)
 
 extern patch_t *hu_font[HU_FONTSIZE];
 extern patch_t *b_font[HU_FONTSIZE-1];
@@ -46,6 +47,22 @@ extern patch_t *b_font[HU_FONTSIZE-1];
 static byte *ConChars;
 
 extern byte *Ranges;
+
+int V_TextScaleXAmount()
+{
+	if (hud_scaletext < 1.0f)
+		return 1;
+
+	return int(hud_scaletext);
+}
+
+int V_TextScaleYAmount()
+{
+	if (hud_scaletext < 1.0f)
+		return 1;
+
+	return int(hud_scaletext);
+}
 
 // Convert the CONCHARS patch into the internal format used by
 // the console font drawer.
@@ -486,6 +503,12 @@ void DCanvas::LargeTextWrapper (EWrapperCode drawer, int normalcolor, int x, int
 
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
 {
+	TextSWrapper(drawer, normalcolor, x, y, string, CleanXfac, CleanYfac);
+}
+
+void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
+							const byte *string, int scalex, int scaley) const
+{
 	int 		w;
 	const byte *ch;
 	int 		c;
@@ -540,22 +563,25 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 		if (c == '\n')
 		{
 			cx = x;
-			cy += 9 * CleanYfac;
+			cy += 9 * scalex;
 			continue;
 		}
 
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c>= HU_FONTSIZE)
 		{
-			cx += 4 * CleanXfac;
+			cx += 4 * scaley;
 			continue;
 		}
 
-		w = hu_font[c]->width() * CleanXfac;
+		w = hu_font[c]->width() * scalex;
 		if (cx+w > width)
 			break;
 
-		DrawCNMWrapper (drawer, hu_font[c], cx, cy);
+        DrawSWrapper (drawer, hu_font[c], cx, cy,
+                        hu_font[c]->width() * scalex,
+                        hu_font[c]->height() * scaley);
+
 		cx+=w;
 	}
 }

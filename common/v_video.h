@@ -124,12 +124,14 @@ public:
 	inline void DrawTextClean (int normalcolor, int x, int y, const byte *string) const;		// Does not adjust x and y
 	inline void DrawTextCleanLuc (int normalcolor, int x, int y, const byte *string) const;		// ditto
 	inline void DrawTextCleanMove (int normalcolor, int x, int y, const byte *string) const;	// This one does
+	inline void DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
 
 	inline void DrawText (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextLuc (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextClean (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextCleanLuc (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const;
+	inline void DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
 
 	// Drawing strings using FONTB
 	inline void DrawTextLarge (int normalcolor, int x, int y, const byte *string) const;
@@ -186,6 +188,7 @@ public:
 protected:
 	void TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
+	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
 
 	void LargeTextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 	void LargeTextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
@@ -259,6 +262,10 @@ inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const byt
 		(y - 100) * CleanYfac + height / 2,
 		string);
 }
+inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const
+{
+	TextSWrapper (EWrapper_Translated, normalcolor, x, y, string, scalex, scaley);
+}
 
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const char *string) const
 {
@@ -282,6 +289,10 @@ inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const cha
 		(x - 160) * CleanXfac + width / 2,
 		(y - 100) * CleanYfac + height / 2,
 		(const byte *)string);
+}
+inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
+{
+	TextSWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string, scalex, scaley);
 }
 
 inline void DCanvas::DrawTextLarge (int normalcolor, int x, int y, const byte *string) const

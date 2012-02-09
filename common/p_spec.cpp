@@ -34,7 +34,7 @@
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 
 #include "i_system.h"
 #include "z_zone.h"
@@ -46,6 +46,7 @@
 #include "r_local.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "p_acs.h"
 
 #include "g_game.h"
 
@@ -61,6 +62,7 @@
 #include "r_sky.h"
 
 EXTERN_CVAR (sv_allowexit)
+extern bool	HasBehavior;
 
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
@@ -192,7 +194,7 @@ static void P_InitAnimDefs (void)
 		readingtexture,
 		warp
 	} state = limbo, newstate = limbo;
-	int frame, min, max;
+	int frame = 0, min = 0, max = 0;
 	char name[9];
 
 	if (lump >= 0)
@@ -292,7 +294,7 @@ static void P_InitAnimDefs (void)
 					name[8] = 0;
 				}
 
-				state = (newstate == newflat) ? readingflat : 
+				state = (newstate == newflat) ? readingflat :
 						(newstate == newtexture) ? readingtexture : limbo;
 				newstate = limbo;
 			}
@@ -352,10 +354,10 @@ void P_InitPicAnims (void)
 		lastanim = 0;
 		maxanims = 0;
 	}
-	
+
 	// [RH] Load an ANIMDEFS lump first
 	P_InitAnimDefs ();
-	
+
 	if (W_CheckNumForName ("ANIMATED") == -1)
 		return;
 
@@ -938,12 +940,8 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 
 	if (!p)
 		return false;
-    
-    // [Spleen] Clients in network games don't know about keys
-    if (clientside && network_game)
-        return true;
 
-	const char *msg = NULL;
+	int msg = 0;
 	BOOL bc, rc, yc, bs, rs, ys;
 	BOOL equiv = lock & 0x80;
 
@@ -1024,12 +1022,12 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
 		else
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
-		C_MidPrint (msg, p);
+		C_MidPrint (GStrings(msg), p);
 	}
 
-	if (serverside && network_game && msg != NULL)
+	if (serverside && network_game && msg)
 	{
-		C_MidPrint (msg, p);
+		C_MidPrint (GStrings(msg), p);
 	}
 
 	return false;
@@ -1075,7 +1073,7 @@ P_CrossSpecialLine
 		    if (!(GET_SPAC(line->flags) == SPAC_CROSS)
                 && !(GET_SPAC(line->flags) == SPAC_MCROSS))
                 return;
-			
+
 			// Things that should NOT trigger specials...
 			switch(thing->type)
 			{
@@ -1090,7 +1088,7 @@ P_CrossSpecialLine
 
 				default: break;
 			}
-            
+
             // This breaks the ability for the eyes to activate the silent teleporter lines
             // in boomedit.wad, but without it vanilla demos break.
             switch (line->special)
@@ -1099,20 +1097,20 @@ P_CrossSpecialLine
 				case Teleport_NoFog:
 				case Teleport_Line:
 				break;
-				                
+
                 default:
                     if(!(line->flags & ML_MONSTERSCANACTIVATE))
-                        return;                
+                        return;
                 break;
             }
 
 		}
 		else
 		{
-		    if (!(GET_SPAC(line->flags) == SPAC_CROSS) && 
+		    if (!(GET_SPAC(line->flags) == SPAC_CROSS) &&
                 !(GET_SPAC(line->flags) == SPAC_CROSSTHROUGH))
                 return;
-                
+
 			// Likewise, player should not trigger monster lines
 			if(GET_SPAC(line->flags) == SPAC_MCROSS)
 				return;
@@ -1151,7 +1149,7 @@ P_CrossSpecialLine
 			}
 		}
 	}
-	
+
 	TeleportSide = side;
 
 	LineSpecials[line->special] (line, thing, line->args[0],
@@ -1172,9 +1170,6 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
-    if (clientside && network_game && !FromServer)
-        return;
-    
 	if(thing)
 	{
 		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
@@ -1186,7 +1181,7 @@ P_ShootSpecialLine
 		if (!thing->player && !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
-	
+
 	//TeleportSide = side;
 
 	LineSpecials[line->special] (line, thing, line->args[0],
@@ -1216,9 +1211,6 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
-    if (clientside && network_game && !FromServer)
-        return false;
-    
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1238,8 +1230,9 @@ P_UseSpecialLine
 
 	if(thing)
 	{
-		if (!(GET_SPAC(line->flags) == SPAC_USE) &&
-            !(GET_SPAC(line->flags) == SPAC_USETHROUGH))
+		if ((GET_SPAC(line->flags) != SPAC_USE) &&
+			(GET_SPAC(line->flags) != SPAC_PUSH) &&
+            (GET_SPAC(line->flags) != SPAC_USETHROUGH))
 			return false;
 
 		// Switches that other things can activate.
@@ -1261,7 +1254,7 @@ P_UseSpecialLine
 				return false;
 		}
 	}
-	
+
     TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
@@ -1270,6 +1263,68 @@ P_UseSpecialLine
 	{
 		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
 		OnActivatedLine(line, thing, side, 1);
+
+		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
+		{
+			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		}
+	}
+
+    return true;
+}
+
+
+//
+// P_PushSpecialLine
+// Called when a thing pushes a special line, only in advanced map format
+// Only the front sides of lines are pushable.
+//
+bool
+P_PushSpecialLine
+( AActor*	thing,
+  line_t*	line,
+  int		side,
+  bool      FromServer)
+{
+	// Err...
+	// Use the back sides of VERY SPECIAL lines...
+	if (side)
+		return false;
+
+	if(thing)
+	{
+		if (GET_SPAC(line->flags) != SPAC_PUSH)
+			return false;
+
+		// Switches that other things can activate.
+		if (!thing->player)
+		{
+			// not for monsters?
+			if (!(line->flags & ML_MONSTERSCANACTIVATE))
+				return false;
+
+			// never open secret doors
+			if (line->flags & ML_SECRET)
+				return false;
+		}
+		else
+		{
+			// spectators and dead players can't push walls
+			if(thing->player->spectator ||
+                           thing->player->playerstate != PST_LIVE)
+				return false;
+		}
+	}
+
+    TeleportSide = side;
+
+	if(LineSpecials[line->special] (line, thing, line->args[0],
+					line->args[1], line->args[2],
+					line->args[3], line->args[4]))
+	{
+		line->special = line->flags & ML_REPEAT_SPECIAL ? line->special : 0;
+		OnActivatedLine(line, thing, side, 3);
 
 		if(serverside)
 		{
@@ -1280,6 +1335,7 @@ P_UseSpecialLine
 
     return true;
 }
+
 
 
 //
@@ -1388,6 +1444,7 @@ void P_PlayerInSpecialSector (player_t *player)
 		}
 
 		if (sector->special & SECRET_MASK) {
+			player->secretcount++;
 			level.found_secrets++;
 			sector->special &= ~SECRET_MASK;
 			if (player->mo == consoleplayer().camera)
@@ -1460,7 +1517,7 @@ void P_UpdateSpecials (void)
 // SPECIAL SPAWNING
 //
 
-BEGIN_CUSTOM_CVAR (forcewater, "0", CVAR_ARCHIVE)
+CVAR_FUNC_IMPL (sv_forcewater)
 {
 	if (gamestate == GS_LEVEL)
 	{
@@ -1469,12 +1526,14 @@ BEGIN_CUSTOM_CVAR (forcewater, "0", CVAR_ARCHIVE)
 
 		for (i = 0; i < numsectors; i++)
 		{
-			if (sectors[i].heightsec && sectors[i].heightsec->waterzone != 1)
+			if (sectors[i].heightsec &&
+				!(sectors[i].heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
+				sectors[i].heightsec->waterzone != 1)
+
 				sectors[i].heightsec->waterzone = set;
 		}
 	}
 }
-END_CUSTOM_CVAR (forcewater)
 
 //
 // P_SpawnSpecials
@@ -1633,13 +1692,41 @@ void P_SpawnSpecials (void)
 		// support for drawn heights coming from different sector
 		case Transfer_Heights:
 			sec = sides[*lines[i].sidenum].sector;
+			DPrintf("Sector tagged %d: TransferHeights \n",sec->tag);
+			if (sv_forcewater)
+			{
+				sec->waterzone = 2;
+			}
+			if (lines[i].args[1] & 2)
+			{
+				sec->MoreFlags |= SECF_FAKEFLOORONLY;
+			}
+			if (lines[i].args[1] & 4)
+			{
+				sec->MoreFlags |= SECF_CLIPFAKEPLANES;
+				DPrintf("Sector tagged %d: CLIPFAKEPLANES \n",sec->tag);
+			}
+			if (lines[i].args[1] & 8)
+			{
+				sec->waterzone = 1;
+				DPrintf("Sector tagged %d: Sets waterzone=1 \n",sec->tag);
+			}
+			if (lines[i].args[1] & 16)
+			{
+				sec->MoreFlags |= SECF_IGNOREHEIGHTSEC;
+				DPrintf("Sector tagged %d: IGNOREHEIGHTSEC \n",sec->tag);
+			}
+			if (lines[i].args[1] & 32)
+			{
+				sec->MoreFlags |= SECF_NOFAKELIGHT;
+				DPrintf("Sector tagged %d: NOFAKELIGHTS \n",sec->tag);
+			}
 			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
 			{
 				sectors[s].heightsec = sec;
-				sectors[s].alwaysfake = !!lines[i].args[1];
-				if (forcewater)
-					sec->waterzone = 2;
 			}
+
+			DPrintf("Sector tagged %d: MoreFlags: %u \n",sec->tag,sec->MoreFlags);
 			break;
 
 		// killough 3/16/98: Add support for setting
@@ -1701,8 +1788,12 @@ void P_SpawnSpecials (void)
 			break;
 		}
 
+
 	// [RH] Start running any open scripts on this map
-	P_StartOpenScripts ();
+	if (level.behavior != NULL)
+	{
+		level.behavior->StartTypedScripts (SCRIPT_Open, NULL);
+	}
 }
 
 // killough 2/28/98:
@@ -2208,7 +2299,8 @@ BOOL PIT_PushThing (AActor *thing)
 		// If speed <= 0, you're outside the effective radius. You also have
 		// to be able to see the push/pull source point.
 
-		if ((speed > 0) && (P_CheckSight (thing, tmpusher->m_Source, true)))
+		if ((speed > 0) && ((HasBehavior && P_CheckSight2 (thing, tmpusher->m_Source, true))
+			|| (!HasBehavior && P_CheckSight (thing, tmpusher->m_Source, true))))
 		{
 			angle_t pushangle = P_PointToAngle (thing->x, thing->y, sx, sy);
 			if (tmpusher->m_Source->type == MT_PUSH)
@@ -2298,7 +2390,8 @@ void DPusher::RunThink ()
 			continue;
 		if (m_Type == p_wind)
 		{
-			if (sec->heightsec == NULL) // NOT special water sector
+			if (sec->heightsec == NULL ||
+				sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) // NOT special water sector
 			{
 				if (thing->z > thing->floorz) // above ground
 				{
@@ -2329,7 +2422,8 @@ void DPusher::RunThink ()
 		}
 		else // p_current
 		{
-			if (sec->heightsec == NULL)
+			if (sec->heightsec == NULL ||
+				sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
 			{ // NOT special water sector
 				if (thing->z > sec->floorheight) // above ground
 					xspeed = yspeed = 0; // no force

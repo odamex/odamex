@@ -33,7 +33,7 @@
 #include "m_swap.h"
 #include "minilzo.h"
 #include "cmdlib.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "i_system.h"
 #include "c_cvars.h"
 #include "d_player.h"
@@ -322,8 +322,12 @@ void FLZOFile::Explode ()
 		{
 			memcpy (expand, m_Buffer + 8, expandsize);
 		}
+
 		if (FreeOnExplode ())
-			M_Free(m_Buffer);
+		{
+			M_Free(m_Buffer);			
+		}
+
 		m_Buffer = expand;
 		m_BufferSize = expandsize;
 	}
@@ -513,7 +517,9 @@ FArchive::~FArchive ()
     m_TypeMap = NULL;
     
 	if (m_ObjectMap)
-		M_Free(m_ObjectMap);
+	{
+		M_Free(m_ObjectMap);	
+	}
 }
 
 void FArchive::Write (const void *mem, unsigned int len)

@@ -29,13 +29,15 @@
 #include "doomtype.h"
 #include "v_video.h"
 
-
 // [RH] True if the display is not in a window
 extern BOOL Fullscreen;
 
 
 // [RH] Set the display mode
 void I_SetMode (int &width, int &height, int &bits);
+
+// Returns true if the Video object has been set up and not yet destroyed
+bool I_HardwareInitialized();
 
 // Takes full 8 bit values.
 void I_SetPalette (DWORD *palette);
@@ -65,6 +67,10 @@ void I_SetWindowIcon(void);
 bool I_CheckResolution (int width, int height, int bpp);
 void I_ClosestResolution (int *width, int *height, int bits);
 bool I_SetResolution (int width, int height, int bpp);
+
+bool I_CheckVideoDriver (const char *name);
+
+bool I_SetOverscan (float scale);
 
 void I_StartModeIterator (int bits);
 bool I_NextMode (int *width, int *height);

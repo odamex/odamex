@@ -32,7 +32,7 @@
 #include "m_swap.h"
 #include "m_bbox.h"
 #include "tables.h"
-//#include "s_sndseq.h"
+#include "s_sndseq.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -237,7 +237,7 @@ BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle,
 	}
 	pe->m_Speed = (speed*direction*(ANG90/64))>>3;
 	poly->specialdata = pe;
-	//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+	SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 	
 	while ( (mirror = GetPolyobjMirror( polyNum)) )
 	{
@@ -274,7 +274,7 @@ BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle,
 		direction = -direction;
 		pe->m_Speed = (speed*direction*(ANG90/64))>>3;
 		polyNum = mirror;
-		//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+		SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 	}
 	return true;
 }
@@ -341,7 +341,7 @@ BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle,
 	pe->m_Angle = an>>ANGLETOFINESHIFT;
 	pe->m_xSpeed = FixedMul (pe->m_Speed, finecosine[pe->m_Angle]);
 	pe->m_ySpeed = FixedMul (pe->m_Speed, finesine[pe->m_Angle]);
-	//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+	SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 
 	while ( (mirror = GetPolyobjMirror(polyNum)) )
 	{
@@ -359,7 +359,7 @@ BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle,
 		pe->m_xSpeed = FixedMul (pe->m_Speed, finecosine[pe->m_Angle]);
 		pe->m_ySpeed = FixedMul (pe->m_Speed, finesine[pe->m_Angle]);
 		polyNum = mirror;
-		//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+		SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 	}
 	return true;
 }
@@ -378,7 +378,7 @@ void DPolyDoor::RunThink ()
 		if (!--m_Tics)
 		{
 			poly = GetPolyobj (m_PolyObj);
-			//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+			SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 		}
 		return;
 	}
@@ -428,7 +428,7 @@ void DPolyDoor::RunThink ()
 				m_xSpeed = -m_xSpeed;
 				m_ySpeed = -m_ySpeed;
 				m_Close = false;
-				//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+				SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 			}
 		}
 		break;
@@ -474,7 +474,7 @@ void DPolyDoor::RunThink ()
 				m_Dist = m_TotalDist - m_Dist;
 				m_Speed = -m_Speed;
 				m_Close = false;
-				//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+				SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 			}
 		}			
 		break;
@@ -513,7 +513,7 @@ BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle,
 		pd->m_Direction = angle >> ANGLETOFINESHIFT;
 		pd->m_xSpeed = FixedMul (pd->m_Speed, finecosine[pd->m_Direction]);
 		pd->m_ySpeed = FixedMul (pd->m_Speed, finesine[pd->m_Direction]);
-		//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+		SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 	}
 	else if (type == PODOOR_SWING)
 	{
@@ -521,7 +521,7 @@ BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle,
 		pd->m_Direction = 1; // ADD:  PODO'OR_SWINGL, PODOOR_SWINGR
 		pd->m_Speed = (speed*pd->m_Direction*(ANG90/64))>>3;
 		pd->m_Dist = pd->m_TotalDist = angle;
-		//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+		SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 	}
 
 	poly->specialdata = pd;
@@ -543,7 +543,7 @@ BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle,
 			pd->m_Direction = (angle + ANG180) >> ANGLETOFINESHIFT; // reverse the angle
 			pd->m_xSpeed = FixedMul (pd->m_Speed, finecosine[pd->m_Direction]);
 			pd->m_ySpeed = FixedMul (pd->m_Speed, finesine[pd->m_Direction]);
-			//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+			SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 		}
 		else if (type == PODOOR_SWING)
 		{
@@ -551,7 +551,7 @@ BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle,
 			pd->m_Direction = -1; // ADD:  same as above
 			pd->m_Speed = (speed*pd->m_Direction*(ANG90/64))>>3;
 			pd->m_Dist = pd->m_TotalDist = angle;
-			//SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
+			SN_StartSequence (poly, poly->seqType, SEQ_DOOR);
 		}
 		polyNum = mirror;
 	}

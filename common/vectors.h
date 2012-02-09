@@ -49,6 +49,7 @@ typedef vec_t	vec3_t[3];
 class AActor;
 
 void VectorPosition (const class AActor *thing, vec3_t out);
+void PositionVector (const vec3_t in, AActor *thing);
 void FixedAngleToVector (angle_t an, fixed_t pitch, vec3_t v);
 vec_t VectorLength (const vec3_t v);
 void VectorMA (const vec3_t a, float scale, const vec3_t b, vec3_t out);

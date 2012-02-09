@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -54,7 +54,7 @@ public:
 		sc_carry_ceiling	// killough 4/11/98: carry objects hanging on ceilings
 
 	};
-	
+
 	DScroller (EScrollType type, fixed_t dx, fixed_t dy, int control, int affectee, int accel);
 	DScroller (fixed_t dx, fixed_t dy, const line_t *l, int control, int accel);
 
@@ -166,6 +166,7 @@ void	P_UpdateSpecials (void);
 void    P_CrossSpecialLine (int linenum, int side, AActor*	thing, bool FromServer = false);
 void    P_ShootSpecialLine (AActor* thing, line_t*	line, bool FromServer = false);
 bool    P_UseSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
+bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
 
 void    P_PlayerInSpecialSector (player_t *player);
 
@@ -211,9 +212,9 @@ inline sector_t *getNextSector (line_t *line, sector_t *sec)
 {
 	if (!(line->flags & ML_TWOSIDED))
 		return NULL;
-	
+
 	return (line->frontsector == sec) ? line->backsector : line->frontsector;
-		
+
 	return line->frontsector;
 }
 
@@ -234,7 +235,7 @@ fixed_t P_FindShortestTextureAround (int secnum);	// jff 2/04/98
 fixed_t P_FindShortestUpperAround (int secnum);		// jff 2/04/98
 
 sector_t* P_FindModelFloorSector (fixed_t floordestheight, int secnum);	//jff 02/04/98
-sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, int secnum);	//jff 02/04/98 
+sector_t* P_FindModelCeilingSector (fixed_t ceildestheight, int secnum);	//jff 02/04/98
 
 int		P_FindSectorFromTag (int tag, int start);
 int		P_FindLineFromID (int id, int start);
@@ -396,11 +397,11 @@ typedef struct
 	char		name1[9];
 	char		name2[9];
 	short		episode;
-	
+
 } switchlist_t;
 
 
-// 1 second, in ticks. 
+// 1 second, in ticks.
 #define BUTTONTIME		TICRATE
 
 void	P_ChangeSwitchTexture (line_t *line, int useAgain);
@@ -420,10 +421,16 @@ class DPlat : public DMovingFloor
 public:
 	enum EPlatState
 	{
+		init = 0,
 		up,
 		down,
 		waiting,
-		in_stasis
+		in_stasis,
+		midup,
+		middown,
+		finished,
+		destroy,
+		state_size
 	};
 
 	enum EPlatType
@@ -445,7 +452,6 @@ public:
 	void SetState(byte state, int count) { m_Status = (EPlatState)state; m_Count = count; }
 	void GetState(byte &state, int &count) { state = (byte)m_Status; count = m_Count; }
 
-protected:
 	DPlat (sector_t *sector);
 
 	fixed_t 	m_Speed;
@@ -458,12 +464,17 @@ protected:
 	bool 		m_Crush;
 	int 		m_Tag;
 	EPlatType	m_Type;
-	bool		m_PostWait;
 
-	void PlayPlatSound (const char *sound);
+	// [SL] 2011-06-09 - The most recent sound played by this plat
+	// Used to prevent repetition of sounds due to client predicition
+	EPlatState	m_CurrentSound;
+protected:
+
+	void PlayPlatSound ();
 	void Reactivate ();
 	void Stop ();
 
+	bool m_PlayedSound[state_size];
 private:
 	DPlat ();
 
@@ -506,12 +517,13 @@ public:
 
 	};
 
+	DPillar ();
+
 	DPillar (sector_t *sector, EPillar type, fixed_t speed, fixed_t height,
 			 fixed_t height2, bool crush);
 
 	void RunThink ();
 
-protected:
 	EPillar		m_Type;
 	fixed_t		m_FloorSpeed;
 	fixed_t		m_CeilingSpeed;
@@ -519,8 +531,6 @@ protected:
 	fixed_t		m_CeilingTarget;
 	bool		m_Crush;
 
-private:
-	DPillar ();
 };
 
 inline FArchive &operator<< (FArchive &arc, DPillar::EPillar type)
@@ -553,33 +563,52 @@ public:
 		doorCloseWaitOpen
 	};
 
+	enum EVlDoorState
+	{
+		init = 0,
+		opening,
+		closing,
+		waiting,
+		reopening,
+		finished,
+		destroy,
+		state_size
+	};
+
 	DDoor (sector_t *sector);
 	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
 
 	void RunThink ();
-protected:
+
 	EVlDoor		m_Type;
 	fixed_t 	m_TopHeight;
 	fixed_t 	m_Speed;
 
 	// 1 = up, 0 = waiting at top, -1 = down
 	int 		m_Direction;
-	
+
 	// tics to wait at the top
 	int 		m_TopWait;
 	// (keep in case a door going down is reset)
 	// when it reaches 0, start going down
 	int 		m_TopCountdown;
 
-    line_t      *m_Line;
+	EVlDoorState	m_Status;
+	// [SL] 2011-06-09 - The most recent sound played by this plat
+	// Used to prevent repetition of sounds due to client predicition
+	EVlDoorState	m_CurrentSound;
 
-	void DoorSound (bool raise) const;
+    line_t      *m_Line;
+protected:
+	void PlayDoorSound ();
 
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
 	friend void P_SpawnDoorCloseIn30 (sector_t *sec);
 	friend void P_SpawnDoorRaiseIn5Mins (sector_t *sec);
+
+	bool m_PlayedSound[state_size];
 private:
 	DDoor ();
 
@@ -593,7 +622,14 @@ inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoor &out)
 {
 	BYTE in; arc >> in; out = (DDoor::EVlDoor)in; return arc;
 }
-
+inline FArchive &operator<< (FArchive &arc, DDoor::EVlDoorState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoorState &out)
+{
+	BYTE in; arc >> in; out = (DDoor::EVlDoorState)in; return arc;
+}
 
 //
 // P_CEILNG
@@ -639,7 +675,6 @@ public:
 
 	void RunThink ();
 
-protected:
 	ECeiling	m_Type;
 	fixed_t 	m_BottomHeight;
 	fixed_t 	m_TopHeight;
@@ -657,6 +692,7 @@ protected:
 	// ID
 	int 		m_Tag;
 	int 		m_OldDirection;
+protected:
 
 	void PlayCeilingSound ();
 
@@ -713,7 +749,7 @@ public:
 		floorLowerToLowestCeiling,
 		floorLowerByTexture,
 		floorLowerToCeiling,
-		 
+
 		donutRaise,
 
 		buildStair,
@@ -737,7 +773,6 @@ public:
 
 	void RunThink ();
 
-protected:
 	EFloor	 	m_Type;
 	bool 		m_Crush;
 	int 		m_Direction;
@@ -753,6 +788,8 @@ protected:
 	int			m_PauseTime;
 	int			m_StepTime;
 	int			m_PerStepTime;
+
+protected:
 
 	void StartFloorSound ();
 
@@ -793,13 +830,13 @@ public:
 
 	void RunThink ();
 
-protected:
 	EElevator	m_Type;
 	int			m_Direction;
 	fixed_t		m_FloorDestHeight;
 	fixed_t		m_CeilingDestHeight;
 	fixed_t		m_Speed;
 
+protected:
 	void StartFloorSound ();
 
 	friend BOOL EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
@@ -832,6 +869,7 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag);
 // P_TELEPT
 //
 BOOL EV_Teleport (int tid, int side, AActor *thing);
+BOOL EV_LineTeleport (line_t *line, int side, AActor *thing);
 BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing);
 BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 							BOOL reverse);
@@ -840,12 +878,18 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 // [RH] ACS (see also p_acs.h)
 //
 
-BOOL P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
 void P_SuspendScript (int script, char *map);
 void P_TerminateScript (int script, char *map);
 void P_StartOpenScripts (void);
-void P_DoDeferedScripts (void);							
+void P_DoDeferedScripts (void);
+
+
+//
+// [RH] p_quake.c
+//
+BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad);
 
 #endif
 

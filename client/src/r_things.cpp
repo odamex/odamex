@@ -44,6 +44,8 @@
 #include "cmdlib.h"
 #include "s_sound.h"
 
+#include "qsort.h"
+
 extern fixed_t FocalLengthX, FocalLengthY;
 
 
@@ -56,7 +58,9 @@ extern fixed_t FocalLengthX, FocalLengthY;
 static int crosshair_lump;
 
 static void R_InitCrosshair();
+static byte crosshair_trans[256];
 
+EXTERN_CVAR (hud_crosshairhealth)
 CVAR_FUNC_IMPL (hud_crosshair)
 {
 	R_InitCrosshair();
@@ -84,6 +88,7 @@ int			*screenheightarray;
 #define SPRITE_NEEDS_INFO	MAXINT
 
 EXTERN_CVAR (r_drawplayersprites)
+EXTERN_CVAR (r_particles)
 
 EXTERN_CVAR (hud_crosshairdim)
 EXTERN_CVAR (hud_crosshairscale) 
@@ -104,6 +109,12 @@ static const char*		spritename;
 // [RH] skin globals
 playerskin_t	*skins;
 size_t			numskins;
+
+// [RH] particle globals
+extern int				NumParticles;
+extern int				ActiveParticles;
+extern int				InactiveParticles;
+extern particle_t		*Particles;
 
 
 void R_CacheSprite (spritedef_t *sprite)
@@ -525,6 +536,11 @@ static void R_InitCrosshair()
 		if(xhair != -1)
 			crosshair_lump = xhair;
 	}
+
+	// set up translation table for the crosshair's color
+	// initialize to default colors
+	for (size_t i = 0; i < 256; i++)
+		crosshair_trans[i] = i;
 }
 
 //
@@ -688,8 +704,8 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	if (vis->patch == -1)
 	{ // [RH] It's a particle
-//		R_DrawParticle (vis, x1, x2);
-//		return;
+		R_DrawParticle (vis, x1, x2);
+		return;
 	}
 
 	patch = W_CachePatch (vis->patch);
@@ -994,7 +1010,10 @@ void R_ProjectSprite (AActor *thing)
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
 
 	heightsec = thing->subsector->sector->heightsec;
-
+	
+	if (heightsec != NULL && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
+		heightsec = NULL;
+	
 	if (heightsec)	// only clip things which are in special sectors
 	{
 		sector_t *phs = camera->subsector->sector->heightsec;
@@ -1226,6 +1245,10 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 		vis->mobjflags = MF_SHADOW;
 	}
 
+	// Don't display the weapon sprite if using spynext or spectating
+	if (displayplayer().id != consoleplayer().id || consoleplayer().spectator)
+		return;
+
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
 }
 
@@ -1314,10 +1337,7 @@ static struct vissort_s {
 static int		spritesortersize = 0;
 static int		vsprcount;
 
-static int STACK_ARGS sv_compare (const void *arg1, const void *arg2)
-{
-	return ((struct vissort_s *)arg2)->depth - ((struct vissort_s *)arg1)->depth;
-}
+#define cmp_sprites(a, b) (b->depth < a->depth)
 
 void R_SortVisSprites (void)
 {
@@ -1340,7 +1360,7 @@ void R_SortVisSprites (void)
 		spritesorter[i].depth = vissprites[i].depth;
 	}
 
-	qsort (spritesorter, vsprcount, sizeof (struct vissort_s), sv_compare);
+    QSORT(vissort_s, spritesorter, vsprcount, cmp_sprites);
 }
 
 
@@ -1434,7 +1454,8 @@ void R_DrawSprite (vissprite_t *spr)
 	// killough 4/9/98: optimize by adding mh
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
 
-	if (spr->heightsec)	// only things in specially marked sectors
+	if (spr->heightsec &&
+		!(spr->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))	// only things in specially marked sectors
 	{
 		fixed_t h,mh;
 		sector_t *phs = camera->subsector->sector->heightsec;
@@ -1493,6 +1514,8 @@ void R_DrawSprite (vissprite_t *spr)
 	R_DrawVisSprite (spr, spr->x1, spr->x2);
 }
 
+
+
 static void R_DrawCrosshair (void)
 {
 	if(!camera)
@@ -1512,20 +1535,39 @@ static void R_DrawCrosshair (void)
 
 	if(hud_crosshair && crosshair_lump)
 	{
+		static const byte crosshair_color = 0xB0;
+		if (hud_crosshairhealth)
+		{
+			byte health_colors[4] = { 0xB0, 0xDF, 0xE7, 0x77 }; 
+
+			if (camera->health > 75)
+				crosshair_trans[crosshair_color] = health_colors[3];
+			else if (camera->health > 50)
+				crosshair_trans[crosshair_color] = health_colors[2];
+			else if (camera->health > 25)
+				crosshair_trans[crosshair_color] = health_colors[1];
+			else
+				crosshair_trans[crosshair_color] = health_colors[0];
+		}
+		else
+			crosshair_trans[crosshair_color] = crosshair_color;	// no trans
+
+		V_ColorMap = crosshair_trans;
+
 		if (hud_crosshairdim && hud_crosshairscale)
-			screen->DrawLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
+			screen->DrawTranslatedLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
         else if (hud_crosshairscale)
-			screen->DrawPatchCleanNoMove (W_CachePatch (crosshair_lump),
+			screen->DrawTranslatedPatchCleanNoMove (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
         else if (hud_crosshairdim)
-			screen->DrawLucentPatch (W_CachePatch (crosshair_lump),
+			screen->DrawTranslatedLucentPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
 		else
-			screen->DrawPatch (W_CachePatch (crosshair_lump),
+			screen->DrawTranslatedPatch (W_CachePatch (crosshair_lump),
 				realviewwidth / 2 + viewwindowx,
 				realviewheight / 2 + viewwindowy);
 	}
@@ -1538,6 +1580,17 @@ void R_DrawMasked (void)
 {
 	drawseg_t		 *ds;
 	struct vissort_s *sorttail;
+
+	if (r_particles)
+	{
+		// [RH] add all the particles
+		int i = ActiveParticles;
+		while (i != -1)
+		{
+			R_ProjectParticle (Particles + i);
+			i = Particles[i].next;
+		}
+	}
 
 	R_SortVisSprites ();
 
@@ -1572,6 +1625,252 @@ void R_DrawMasked (void)
 	}
 }
 
+void R_InitParticles (void)
+{
+	const char *i;
+
+	if ((i = Args.CheckValue ("-numparticles")))
+		NumParticles = atoi (i);
+	if (NumParticles == 0)
+		NumParticles = 4000;
+	else if (NumParticles < 100)
+		NumParticles = 100;
+
+	if(Particles)
+		delete[] Particles;
+
+	Particles = new particle_t[NumParticles * sizeof(particle_t)];
+	R_ClearParticles ();
+}
+
+void R_ClearParticles (void)
+{
+	int i;
+
+	memset (Particles, 0, NumParticles * sizeof(particle_t));
+	ActiveParticles = -1;
+	InactiveParticles = 0;
+	for (i = 0; i < NumParticles-1; i++)
+		Particles[i].next = i + 1;
+	Particles[i].next = -1;
+}
+
+void R_ProjectParticle (particle_t *particle)
+{
+	fixed_t 			tr_x;
+	fixed_t 			tr_y;
+	fixed_t 			gxt;
+	fixed_t 			gyt;
+	fixed_t				gzt;				// killough 3/27/98
+	fixed_t 			tx;
+	fixed_t 			tz;
+	fixed_t 			xscale;
+	int 				x1;
+	int 				x2;
+	vissprite_t*		vis;
+	sector_t			*sector = NULL;
+	sector_t*			heightsec = NULL;	// killough 3/27/98
+
+	// transform the origin point
+	tr_x = particle->x - viewx;
+	tr_y = particle->y - viewy;
+		
+	gxt = FixedMul (tr_x, viewcos); 
+	gyt = -FixedMul (tr_y, viewsin);
+	
+	tz = gxt - gyt; 
+
+	// particle is behind view plane?
+	if (tz < MINZ)
+		return;
+	
+	xscale = FixedDiv (FocalLengthX, tz);
+		
+	gxt = -FixedMul (tr_x, viewsin); 
+	gyt = FixedMul (tr_y, viewcos); 
+	tx = -(gyt+gxt); 
+
+	// too far off the side?
+	if (abs(tx)>(tz<<2))
+		return;
+	
+	// calculate edges of the shape
+	x1 = (centerxfrac + FixedMul (tx,xscale)) >> FRACBITS;
+
+	// off the right side?
+	if (x1 >= viewwidth)
+		return;
+	
+	x2 = ((centerxfrac + FixedMul (tx+particle->size*(FRACUNIT/4),xscale)) >> FRACBITS);
+
+	// off the left side
+	if (x2 < 0)
+		return;
+
+	gzt = particle->z+1;
+
+	// killough 3/27/98: exclude things totally separated
+	// from the viewer, by either water or fake ceilings
+	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
+
+	{
+		subsector_t *subsector = R_PointInSubsector (particle->x, particle->y);
+		if (subsector)
+		{
+			sector = subsector->sector;
+			heightsec = sector->heightsec;
+			if (particle->z < sector->floorheight || particle->z > sector->ceilingheight)
+				return;
+		}
+	}
+
+	if (heightsec)	// only clip particles which are in special sectors
+	{
+		sector_t *phs = camera->subsector->sector->heightsec;
+
+		if (phs && viewz < phs->floorheight ?
+			particle->z >= heightsec->floorheight :
+			gzt < heightsec->floorheight)
+		  return;
+		if (phs && viewz > phs->ceilingheight ?
+			gzt < heightsec->ceilingheight &&
+			viewz >= heightsec->ceilingheight :
+			particle->z >= heightsec->ceilingheight)
+		  return;
+	}
+
+	// store information in a vissprite
+	vis = R_NewVisSprite ();
+	vis->heightsec = heightsec;
+	vis->xscale = xscale;
+	vis->yscale = FixedMul (xscale, yaspectmul);
+	vis->depth = tz;
+	vis->gx = particle->x;
+	vis->gy = particle->y;
+	vis->gz = particle->z;
+	vis->gzt = gzt;
+	vis->texturemid = FixedMul (yaspectmul, vis->gzt - viewz);
+	vis->x1 = x1 < 0 ? 0 : x1;
+	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+	vis->translation = NULL;
+	vis->startfrac = particle->color;
+	vis->patch = -1;
+	vis->mobjflags = particle->trans;
+
+	if (fixedcolormap)
+	{
+		vis->colormap = fixedcolormap;
+	}
+	else if (sector)
+	{
+		byte *map;
+
+		if (sector->heightsec == NULL)
+			map = sector->floorcolormap->maps;
+		else
+		{
+			const sector_t *s = sector->heightsec;
+			if (particle->z <= s->floorheight || particle->z > s->ceilingheight)
+				map = s->floorcolormap->maps;
+			else
+				map = sector->floorcolormap->maps;
+		}
+
+		if (fixedlightlev)
+		{
+			vis->colormap = map + fixedlightlev;
+		}
+		else
+		{
+			int index = (vis->yscale*lightscalexmul)>>(LIGHTSCALESHIFT-1);
+			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT)
+					+ (foggy ? 0 : extralight);
+
+			if (lightnum < 0)
+				lightnum = 0;
+			else if (lightnum >= LIGHTLEVELS)
+				lightnum = LIGHTLEVELS-1;
+			if (index >= MAXLIGHTSCALE) 
+				index = MAXLIGHTSCALE-1;
+
+			vis->colormap = scalelight[lightnum][index] + map;
+		}
+	}
+	else
+	{
+		vis->colormap = realcolormaps;
+	}
+}
+
+void R_DrawParticle (vissprite_t *vis, int x1, int x2)
+{
+	byte color = vis->colormap[vis->startfrac];
+	int yl = (centeryfrac - FixedMul(vis->texturemid, vis->xscale) + FRACUNIT - 1) >> FRACBITS;
+	int yh;
+	x1 = vis->x1;
+	x2 = vis->x2;
+
+	if (x1 < 0)
+		x1 = 0;
+	if (x2 < x1)
+		x2 = x1;
+	if (x2 >= viewwidth)
+		x2 = viewwidth - 1;
+
+	yh = yl + (((x2 - x1)<<detailxshift)>>detailyshift);
+
+	// Don't bother clipping each individual column
+	if (yh >= mfloorclip[x1])
+		yh = mfloorclip[x1]-1;
+	if (yl <= mceilingclip[x1])
+		yl = mceilingclip[x1]+1;
+	if (yh >= mfloorclip[x2])
+		yh = mfloorclip[x2]-1;
+	if (yl <= mceilingclip[x2])
+		yl = mceilingclip[x2]+1;
+
+	// vis->mobjflags holds translucency level (0-255)
+	{
+		unsigned int *bg2rgb;
+		int countbase = x2 - x1 + 1;
+		int ycount;
+		int colsize = ds_colsize;
+		int spacing;
+		byte *dest;
+		unsigned int fg;
+
+		ycount = yh - yl;
+		if (ycount < 0)
+			return;
+		ycount++;
+
+		{
+			fixed_t fglevel, bglevel;
+			unsigned int *fg2rgb;
+
+			fglevel = ((vis->mobjflags + 1) << 8) & ~0x3ff;
+			bglevel = FRACUNIT-fglevel;
+			fg2rgb = Col2RGB8[fglevel>>10];
+			bg2rgb = Col2RGB8[bglevel>>10];
+			fg = fg2rgb[color];
+		}
+
+		spacing = screen->pitch - (countbase << detailxshift);
+		dest = ylookup[yl] + columnofs[x1];
+
+		do
+		{
+			int count = countbase;
+			do
+			{
+				unsigned int bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest = RGB32k[0][0][bg & (bg>>15)];
+				dest += colsize;
+			} while (--count);
+			dest += spacing;
+		} while (--ycount);
+	}
+}
+
 VERSION_CONTROL (r_things_cpp, "$Id$")
-
-

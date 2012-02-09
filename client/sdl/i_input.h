@@ -26,6 +26,10 @@
 
 #include "doomtype.h"
 
+#define MOUSE_DOOM 0
+#define MOUSE_ODAMEX 1
+#define MOUSE_ZDOOM_DI 2
+
 extern int KeyRepeatRate;
 extern int KeyRepeatDelay;
 
@@ -33,6 +37,11 @@ bool I_InitInput (void);
 void STACK_ARGS I_ShutdownInput (void);
 void I_PauseMouse();
 void I_ResumeMouse();
+
+int I_GetJoystickCount();
+std::string I_GetJoystickNameFromIndex (int index);
+bool I_OpenJoystick();
+void I_CloseJoystick();
 
 void I_GetEvent (void);
 

@@ -110,6 +110,13 @@ void ST_nameDraw (int y);
 void ST_loadGraphics (void);
 void ST_HticLoadGraphics (void);
 
+// [ML] HUDified status bar
+void ST_drawStatusBar (void);
+
+// [ML] New Odamex fullscreen HUD
+void ST_odamexHudDraw(void);
+void ST_odamexHudDrawCTF(void);
+
 
 // States for status bar code.
 typedef enum

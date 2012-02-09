@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -24,6 +24,7 @@
 
 #include "dlg_main.h"
 #include "query_thread.h"
+#include "str_utils.h"
 
 #include "md5.h"
 
@@ -38,17 +39,28 @@
 #include <wx/artprov.h>
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
+#include <wx/process.h>
+
+#ifdef __WXMSW__
+    #include <windows.h>
+    #include <winsock.h>
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <sys/wait.h>
+    #include <netdb.h>
+#endif
 
 // Control ID assignments for events
 // application icon
 
 // lists
-static wxInt32 Id_LstCtrlServers = XRCID("Id_LstCtrlServers");
-static wxInt32 Id_LstCtrlPlayers = XRCID("Id_LstCtrlPlayers");
-static wxInt32 Id_LstCtrlServerDetails = XRCID("Id_LstCtrlServerDetails");
+const char * Id_LstCtrlServers = "Id_LstCtrlServers";
+const char * Id_LstCtrlPlayers = "Id_LstCtrlPlayers";
+const char * Id_LstCtrlServerDetails = "Id_LstCtrlServerDetails";
 
 static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
-
 static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
 
 // custom events
@@ -58,7 +70,7 @@ DEFINE_EVENT_TYPE(wxEVT_THREAD_WORKER_SIGNAL)
 // Event handlers
 BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 	EVT_MENU(wxID_EXIT, dlgMain::OnExit)
-	
+
 	// menu item events
     EVT_MENU(XRCID("Id_MnuItmCustomServers"), dlgMain::OnMenuServers)
     EVT_MENU(XRCID("Id_MnuItmManualConnect"), dlgMain::OnManualConnect)
@@ -80,104 +92,114 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_MENU(XRCID("Id_MnuItmViewChangelog"), dlgMain::OnOpenChangeLog)
     EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
 	EVT_MENU(XRCID("Id_MnuItmAboutOdamex"), dlgMain::OnAbout)
-	
+
 	EVT_SHOW(dlgMain::OnShow)
 	EVT_CLOSE(dlgMain::OnClose)
-	
+
     // thread events
-    EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)    
-    EVT_COMMAND(-1, wxEVT_THREAD_WORKER_SIGNAL, dlgMain::OnWorkerSignal)  
+    EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)
+    EVT_COMMAND(-1, wxEVT_THREAD_WORKER_SIGNAL, dlgMain::OnWorkerSignal)
 
     // misc events
-    EVT_LIST_ITEM_SELECTED(Id_LstCtrlServers, dlgMain::OnServerListClick)
-    EVT_LIST_ITEM_ACTIVATED(Id_LstCtrlServers, dlgMain::OnServerListDoubleClick)
+    EVT_LIST_ITEM_SELECTED(XRCID(Id_LstCtrlServers), dlgMain::OnServerListClick)
+    EVT_LIST_ITEM_ACTIVATED(XRCID(Id_LstCtrlServers), dlgMain::OnServerListDoubleClick)
 END_EVENT_TABLE()
 
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
-    wxFileConfig ConfigInfo;   
+    wxFileConfig ConfigInfo;
     wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
+    bool WindowMaximized;
     wxString Version;
+    wxIcon MainIcon;
 
     // Loads the frame from the xml resource file
-	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain")); 
-    
+	wxXmlResource::Get()->LoadFrame(this, parent, wxT("dlgMain"));
+
+    // Set window icon
+    MainIcon = wxXmlResource::Get()->LoadIcon(wxT("mainicon"));
+
+    SetIcon(MainIcon);
+
+    #ifdef _WIN32
+    // Hack for windows vista/7 titlebar icon
+    SendMessage((HWND)GetHandle(), WM_SETICON, ICON_SMALL, 
+                (LPARAM)MainIcon.GetHICON());
+    // Uncomment this if it doesn't work under xp            
+    //SendMessage((HWND)GetHandle(), WM_SETICON, ICON_BIG, (LPARAM)MainIcon.GetHICON());
+    #endif
+
     // Sets the title of the application with a version string to boot
     Version = wxString::Format(
-        wxT("The Odamex Launcher v%d.%d.%d"), 
+        wxT("The Odamex Launcher v%d.%d.%d"),
         VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION));
-    
+
     SetLabel(Version);
-    
+
     // Sets the window size
-    ConfigInfo.Read(wxT("MainWindowWidth"), 
-                    &WindowWidth, 
-                    GetClientSize().GetWidth());
-                    
-    ConfigInfo.Read(wxT("MainWindowHeight"), 
-                    &WindowHeight, 
-                    GetClientSize().GetHeight());
-    
-    SetClientSize(WindowWidth, WindowHeight);
-    
+    ConfigInfo.Read(wxT("MainWindowWidth"),
+                    &WindowWidth,
+                    0);
+
+    ConfigInfo.Read(wxT("MainWindowHeight"),
+                    &WindowHeight,
+                    0);
+
+    if (WindowWidth >= 0 && WindowHeight >= 0)
+        SetClientSize(WindowWidth, WindowHeight);
+
     // Set Window position
-    ConfigInfo.Read(wxT("MainWindowPosX"), 
-                    &WindowPosX, 
+    ConfigInfo.Read(wxT("MainWindowPosX"),
+                    &WindowPosX,
                     0);
-                    
-    ConfigInfo.Read(wxT("MainWindowPosY"), 
-                    &WindowPosY, 
+
+    ConfigInfo.Read(wxT("MainWindowPosY"),
+                    &WindowPosY,
                     0);
-    
-    Move(WindowPosX, WindowPosY);
-    
+
+    if (WindowPosX >= 0 && WindowPosY >= 0)
+        Move(WindowPosX, WindowPosY);
+
+    // Set whether this window is maximized or not
+    ConfigInfo.Read(wxT("MainWindowMaximized"), &WindowMaximized, false);
+
+    Maximize(WindowMaximized);
+
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 1;
     launchercfg_s.wad_paths = wxGetCwd();
     launchercfg_s.odamex_directory = wxGetCwd();
 
-    // Set up icons, this is a hack because wxwidgets does not have an xml
-    // handler for wxIconBundle :(
-    wxIconBundle IconBundle;
-    
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon16x16x32")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon32x32x32")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon48x48x32")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon16x16x8")));
-    IconBundle.AddIcon(wxXmlResource::Get()->LoadIcon(wxT("icon32x32x8")));
-    
-    SetIcons(IconBundle);
-    
-    m_LstCtrlServers = wxDynamicCast(FindWindow(Id_LstCtrlServers), LstOdaServerList);
-    m_LstCtrlPlayers = wxDynamicCast(FindWindow(Id_LstCtrlPlayers), LstOdaPlayerList);
-    m_LstOdaSrvDetails = wxDynamicCast(FindWindow(Id_LstCtrlServerDetails), LstOdaSrvDetails);
+    m_LstCtrlServers = XRCCTRL(*this, Id_LstCtrlServers, LstOdaServerList);
+    m_LstCtrlPlayers = XRCCTRL(*this, Id_LstCtrlPlayers, LstOdaPlayerList);
+    m_LstOdaSrvDetails = XRCCTRL(*this, Id_LstCtrlServerDetails, LstOdaSrvDetails);
 
     m_LstCtrlServers->SetupServerListColumns();
     m_LstCtrlPlayers->SetupPlayerListColumns();
 
 	// set up the master server information
-    MServer.AddMaster(_T("master1.odamex.net"), 15000);
-    MServer.AddMaster(_T("voxelsoft.com"), 15000);
-    
+    MServer.AddMaster("master1.odamex.net", 15000);
+    MServer.AddMaster("voxelsoft.com", 15000);
+
     /* Init sub dialogs and load settings */
     config_dlg = new dlgConfig(&launchercfg_s, this);
     server_dlg = new dlgServers(&MServer, this);
     AboutDialog = new dlgAbout(this);
-    
+
     /* Get the first directory for wad downloading */
     wxInt32 Pos = launchercfg_s.wad_paths.Find(wxT(PATH_DELIMITER), false);
     wxString FirstDirectory = launchercfg_s.wad_paths.Mid(0, Pos);
-    
+
     OdaGet = new frmOdaGet(this, -1, FirstDirectory);
-    
+
     QServer = NULL;
 
     // get master list on application start
     if (launchercfg_s.get_list_on_start)
     {
         wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
-    
+
         wxPostEvent(this, event);
     }
 }
@@ -187,9 +209,9 @@ dlgMain::~dlgMain()
 {
     // Cleanup
     delete[] QServer;
-    
+
     QServer = NULL;
-    
+
     if (config_dlg != NULL)
         config_dlg->Destroy();
 
@@ -210,7 +232,7 @@ void dlgMain::OnExit(wxCommandEvent& event)
 void dlgMain::OnClose(wxCloseEvent &event)
 {
     if (GetThread() && GetThread()->IsRunning())
-        GetThread()->Wait();
+        GetThread()->Delete();
 
     // Save GUI layout
     wxFileConfig ConfigInfo;
@@ -219,6 +241,9 @@ void dlgMain::OnClose(wxCloseEvent &event)
     ConfigInfo.Write(wxT("MainWindowHeight"), GetClientSize().GetHeight());
     ConfigInfo.Write(wxT("MainWindowPosX"), GetPosition().x);
     ConfigInfo.Write(wxT("MainWindowPosY"), GetPosition().y);
+    ConfigInfo.Write(wxT("MainWindowMaximized"), IsMaximized());
+
+    ConfigInfo.Flush();
 
     event.Skip();
 }
@@ -232,42 +257,137 @@ void dlgMain::OnShow(wxShowEvent &event)
 // manually connect to a server
 void dlgMain::OnManualConnect(wxCommandEvent &event)
 {
+    wxFileConfig ConfigInfo;
+    wxInt32 ServerTimeout;
+    Server tmp_server;
+    wxString server_hash;
+    wxString ped_hash;
     wxString ped_result;
     wxString ted_result;
-    
-    wxTextEntryDialog ted(this, wxT("Please enter IP Address and Port"), 
-        wxT("Please enter IP Address and Port"), wxT("0.0.0.0:0"));
+    wxString IPHost;
+    long Port;
 
-    wxPasswordEntryDialog ped(this, wxT("Enter an optional password"), 
-        wxT("Enter an optional password"), wxT(""));
+    const wxString HelpText = wxT("Please enter an IP Address or Hostname. \n\nAn "
+                            "optional port number can exist for IPs or Hosts\n"
+                            "by putting a : after the address.");
+
+    wxTextEntryDialog ted(this, HelpText, wxT("Manual Connect"),
+        wxT("0.0.0.0:0"));
+
+    wxPasswordEntryDialog ped(this, wxT("Server is password-protected. \n\n"
+        "Please enter the password"), wxT("Manual Connect"), wxT(""));
+
+    ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
 
     // Keep asking for a valid ip/port number
     while (1)
     {
+        bool good = false;
+
         if (ted.ShowModal() == wxID_CANCEL)
             return;
-    
+
         ted_result = ted.GetValue();
 
-        if (IsAddressValid(ted_result) == false)
+        switch (IsAddressValid(ted_result, IPHost, Port))
         {
-            wxMessageBox(wxT("Invalid IP address/Port number"));
-            continue;
+            // Correct address
+            case _oda_iav_SUCCESS:
+            {
+                good = true;
+            }
+            break;
+
+            // Empty string
+            case _oda_iav_emptystr:
+            {
+                continue;
+            }
+
+            // Colon syntax bad
+            case _oda_iav_colerr:
+            {
+                wxMessageBox(wxT("A number > 0 must exist after the :"));
+                continue;
+            }
+
+            // Internal error
+            case _oda_iav_interr:
+            {
+                wxMessageBox(wxT("Regex compiler failure, please report this"));
+                return;
+            }
+
+            // Unknown error (usually bad regex match)
+            case _oda_iav_FAILURE:
+            {
+                wxMessageBox(wxT("Invalid IP address/hostname format"));
+                continue;
+            }
         }
-        else
+
+        // Address is good to use
+        if (good == true)
             break;
     }
 
-    // Show password entry dialog
-    if (ped.ShowModal() == wxID_CANCEL)
+    // Query the server and try to acquire its password hash
+    tmp_server.SetAddress(wxstr_tostdstr(IPHost), Port);
+    tmp_server.Query(ServerTimeout);
+
+    if (tmp_server.GotResponse() == false)
+    {
+        // Server is unreachable
+        wxMessageDialog Message(this, wxT("No response from server"),
+            wxT("Manual Connect"), wxOK | wxICON_HAND);
+
+        Message.ShowModal();
+
         return;
-    
-    LaunchGame(ted_result, launchercfg_s.odamex_directory, 
-        launchercfg_s.wad_paths, ped.GetValue());
+    }
+
+    server_hash = stdstr_towxstr(tmp_server.Info.PasswordHash);
+
+    // Uppercase both hashes for easier comparison
+    server_hash.MakeUpper();
+
+    // Show password entry dialog only if the server has a password
+    if (!server_hash.IsEmpty())
+    {
+        while(1)
+        {
+            if (ped.ShowModal() == wxID_CANCEL)
+                return;
+
+            ped_result = ped.GetValue();
+
+            ped_hash = MD5SUM(ped_result);
+
+            ped_hash.MakeUpper();
+
+            if (ped_hash != server_hash)
+            {
+                wxMessageDialog Message(this, wxT("Incorrect password"),
+                    wxT("Manual Connect"), wxOK | wxICON_HAND);
+
+                Message.ShowModal();
+
+                ped.SetValue(wxT(""));
+
+                continue;
+            }
+            else
+                break;
+        }
+    }
+
+
+    LaunchGame(ted_result, launchercfg_s.odamex_directory,
+        launchercfg_s.wad_paths, ped_result);
 }
 
 // Posts a message from the main thread to the monitor thread
-bool dlgMain::MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index, 
+bool dlgMain::MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index,
     wxInt32 ListIndex)
 {
     if (GetThread() && GetThread()->IsRunning())
@@ -276,36 +396,36 @@ bool dlgMain::MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index,
     // Create monitor thread
     if (this->wxThreadHelper::Create() != wxTHREAD_NO_ERROR)
     {
-        wxMessageBox(_T("Could not create monitor thread!"), 
-                     _T("Error"), 
+        wxMessageBox(_T("Could not create monitor thread!"),
+                     _T("Error"),
                      wxOK | wxICON_ERROR);
-                     
+
         wxExit();
     }
-    
+
 	mtcs_Request.Signal = CommandSignal;
     mtcs_Request.Index = Index;
     mtcs_Request.ServerListIndex = ListIndex;
 
     GetThread()->Run();
-    
+
     return true;
 }
 
 // Posts a thread message to the main thread
-void dlgMain::MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal, 
+void dlgMain::MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal,
     wxInt32 Index, wxInt32 ListIndex)
 {
     static wxCommandEvent event(EventType, win_id);
-    
+
     mtrs_struct_t *Result = new mtrs_struct_t;
-    
-    Result->Signal = Signal;                
+
+    Result->Signal = Signal;
     Result->Index = Index;
     Result->ServerListIndex = ListIndex;
-    
+
     event.SetClientData(Result);
-    
+
     wxPostEvent(this, event);
 }
 
@@ -313,15 +433,17 @@ bool dlgMain::MonThrGetMasterList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 MasterTimeout;
+    bool UseBroadcast;
     size_t ServerCount;
     mtrs_t Signal;
 
     // Get the masters timeout from the config file
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
+    ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
 
     // Query the masters with the timeout
-    MServer.QueryMasters(MasterTimeout);
-   
+    MServer.QueryMasters(MasterTimeout, UseBroadcast);
+
     // Get the amount of servers found
     ServerCount = MServer.GetServerCount();
 
@@ -338,7 +460,7 @@ bool dlgMain::MonThrGetMasterList()
 
     // Post the result to our main thread and exit
     MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, Signal, -1, -1);
-    
+
     return (Signal == mtrs_master_success) ? true : false;
 }
 
@@ -346,35 +468,39 @@ void dlgMain::MonThrGetServerList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 ServerTimeout;
-    
+    size_t ServerCount;
+
     size_t count = 0;
     size_t serverNum = 0;
-    wxString Address = _T("");
-    wxUint16 Port = 0;
+    std::string Address;
+    uint16_t Port = 0;
 
     // [Russell] - This includes custom servers.
-    if (!MServer.GetServerCount())
+    if (!(ServerCount = MServer.GetServerCount()))
     {
-        MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
+        MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1,
             mtrs_server_noservers, -1, -1);
-        
+
         return;
     }
 
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
-    
-    /* 
+
+    delete[] QServer;
+    QServer = new Server [ServerCount];
+
+    /*
         Thread pool manager:
         Executes a number of threads that contain the same amount of
         servers, when a thread finishes, it gets deleted and another
         gets executed with a different server, eventually all the way
         down to 0 servers.
     */
-    while(count < MServer.GetServerCount())
+    while(count < ServerCount)
     {
         for(size_t i = 0; i < NUM_THREADS; i++)
         {
-            if((threadVector.size() != 0) && ((threadVector.size() - 1) >= i))
+            if((!threadVector.empty()) && ((threadVector.size() - 1) >= i))
             {
                 // monitor our thread vector, delete ONLY if the thread is
                 // finished
@@ -388,30 +514,46 @@ void dlgMain::MonThrGetServerList()
                     count++;
                 }
             }
-            if(serverNum < MServer.GetServerCount())
+            if(serverNum < ServerCount)
             {
                 MServer.GetServerAddress(serverNum, Address, Port);
                 QServer[serverNum].SetAddress(Address, Port);
 
                 // add the thread to the vector
-                threadVector.push_back(new QueryThread(this, 
+                threadVector.push_back(new QueryThread(this,
                     &QServer[serverNum], serverNum, ServerTimeout));
 
                 // create and run the thread
-                if(threadVector[threadVector.size() - 1]->Create() == 
-                   wxTHREAD_NO_ERROR)
-                {
-                    threadVector[threadVector.size() - 1]->Run();
-                }
+                if(threadVector.back()->Create() == wxTHREAD_NO_ERROR)
+                    threadVector.back()->Run();
 
                 // DUMB: our next server will be this incremented value
                 serverNum++;
-            }          
+            }
+
+            // Let other threads get some time
+            GetThread()->Sleep(20);
+
+            // We got told to exit, so we should wait for these worker threads
+            // to gracefully exit
+            if (GetThread()->TestDestroy())
+            {
+                for (size_t j = 0; j < threadVector.size(); ++j)
+                {
+                    if (threadVector[j]->IsRunning())
+                    {
+                        threadVector[j]->Wait();
+                        delete threadVector[j];
+                    }
+                }
+
+                return;
+            }
         }
     }
 
-    MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
-        mtrs_servers_querydone, -1, -1);  
+    MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1,
+        mtrs_servers_querydone, -1, -1);
 }
 
 void dlgMain::MonThrGetSingleServer()
@@ -426,16 +568,16 @@ void dlgMain::MonThrGetSingleServer()
 
     if (QServer[mtcs_Request.Index].Query(ServerTimeout))
     {
-        MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, 
-            mtrs_server_singlesuccess, mtcs_Request.Index, 
-            mtcs_Request.ServerListIndex);     
+        MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1,
+            mtrs_server_singlesuccess, mtcs_Request.Index,
+            mtcs_Request.ServerListIndex);
     }
     else
     {
-        MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, 
-            mtrs_server_singletimeout, mtrs_server_singletimeout, 
+        MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL,
+            mtrs_server_singletimeout, mtrs_server_singletimeout,
             mtcs_Request.Index, mtcs_Request.ServerListIndex);
-    }     
+    }
 }
 
 // [Russell] - Monitor thread entry point
@@ -464,14 +606,14 @@ void *dlgMain::Entry()
             MonThrGetSingleServer();
         }
         break;
-        
+
         default:
             break;
     }
 
     // Reset the signal and then exit out
     mtcs_Request.Signal = mtcs_none;
-    
+
     return NULL;
 }
 
@@ -479,7 +621,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 {
     mtrs_struct_t *Result = (mtrs_struct_t *)event.GetClientData();
     wxInt32 i;
-    
+
     switch (Result->Signal)
     {
         case mtrs_master_timeout:
@@ -488,30 +630,30 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
             // working, atleast we can get some useful data
             if (!MServer.GetServerCount())
             {
-                wxMessageBox(wxT("No master servers could be contacted"), 
+                wxMessageBox(wxT("No master servers could be contacted"),
                     wxT("Error"), wxOK | wxICON_ERROR);
-                
+
                 break;
             }
         }
-        
+
         case mtrs_master_success:
             break;
         case mtrs_server_noservers:
         {
-            wxMessageBox(wxT("There are no servers to query"), 
+            wxMessageBox(wxT("There are no servers to query"),
                 wxT("Error"), wxOK | wxICON_ERROR);
         }
         break;
-        
+
         case mtrs_server_singletimeout:
         {
-            i = FindServerInList(QServer[Result->Index].GetAddress());
+            i = FindServerInList(stdstr_towxstr(QServer[Result->Index].GetAddress()));
 
             m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
-            
+
             QServer[Result->Index].ResetData();
-            
+
             if (launchercfg_s.show_blocked_servers == false)
                 break;
 
@@ -521,31 +663,31 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
                 m_LstCtrlServers->AddServerToList(QServer[Result->Index], i, false);
         }
         break;
-        
-        case mtrs_server_singlesuccess:           
+
+        case mtrs_server_singlesuccess:
         {
             m_LstCtrlServers->AddServerToList(QServer[Result->Index], Result->ServerListIndex, false);
-            
+
             m_LstCtrlPlayers->AddPlayersToList(QServer[Result->Index]);
-            
+
             m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[Result->Index]);
-            
+
             TotalPlayers += QServer[Result->Index].Info.Players.size();
         }
         break;
 
         case mtrs_servers_querydone:
-        {            
+        {
             // Sort server list after everything has been queried
             m_LstCtrlServers->Sort();
         }
         break;
-        
+
         default:
             break;
     }
 
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %u"), MServer.GetPing()), 1);
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Master Ping: %llu"), MServer.GetPing()), 1);
     GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), TotalPlayers), 3);
 
     delete Result;
@@ -559,12 +701,12 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
     {
         case 0: // server query timed out
         {
-            i = FindServerInList(QServer[event.GetInt()].GetAddress());
+            i = FindServerInList(stdstr_towxstr(QServer[event.GetInt()].GetAddress()));
 
             m_LstCtrlPlayers->DeleteAllItems();
-            
+
             QServer[event.GetInt()].ResetData();
-            
+
             if (launchercfg_s.show_blocked_servers == false)
                 break;
 
@@ -572,29 +714,29 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
                 m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], event.GetInt());
             else
                 m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], i, false);
-            
-            break;                 
+
+            break;
         }
         case 1: // server queried successfully
         {
             m_LstCtrlServers->AddServerToList(QServer[event.GetInt()], event.GetInt());
-            
+
             TotalPlayers += QServer[event.GetInt()].Info.Players.size();
-            
-            break;      
+
+            break;
         }
     }
 
     ++QueriedServers;
-    
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Queried Server %d of %d"), 
-                                                   QueriedServers, 
-                                                   MServer.GetServerCount()), 
+
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Queried Server %d of %d"),
+                                                   QueriedServers,
+                                                   MServer.GetServerCount()),
                                                    2);
-                                                   
-    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"), 
-                                                   TotalPlayers), 
-                                                   3);   
+
+    GetStatusBar()->SetStatusText(wxString::Format(_T("Total Players: %d"),
+                                                   TotalPlayers),
+                                                   3);
 }
 
 // Custom Servers menu item
@@ -620,8 +762,8 @@ void dlgMain::OnOpenOdaGet(wxCommandEvent &event)
 // Quick-Launch button click
 void dlgMain::OnQuickLaunch(wxCommandEvent &event)
 {
-	LaunchGame(_T(""), 
-				launchercfg_s.odamex_directory, 
+	LaunchGame(_T(""),
+				launchercfg_s.odamex_directory,
 				launchercfg_s.wad_paths);
 }
 
@@ -632,47 +774,47 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
     wxString UsrPwHash;
     wxString SrvPwHash;
     wxInt32 i;
-    
+
     i = GetSelectedServerArrayIndex();
-    
+
     if (i == -1)
         return;
 
     // If the server is passworded, pop up a password entry dialog for them to
     // specify one before going any further
-    SrvPwHash = QServer[i].Info.PasswordHash;
+    SrvPwHash = stdstr_towxstr(QServer[i].Info.PasswordHash);
 
     if (SrvPwHash.IsEmpty() == false)
-    {                           
+    {
         wxPasswordEntryDialog ped(this, wxT("Please enter a password"),
             wxT("This server is passworded"), wxT(""));
-        
+
         SrvPwHash.MakeUpper();
-        
+
         while (1)
-        {          
+        {
             // Show the dialog box and get the resulting value
             ped.ShowModal();
-        
+
             Password = ped.GetValue();
-        
+
             // User possibly hit cancel or did not enter anything, just exit
             if (Password.IsEmpty())
                 return;
-            
+
             UsrPwHash = MD5SUM(Password);
             UsrPwHash.MakeUpper();
-            
+
             // Do an MD5 comparison of the password with the servers one, if it
-            // fails, keep asking the user to enter a valid password, otherwise 
+            // fails, keep asking the user to enter a valid password, otherwise
             // dive out and connect to the server
             if (SrvPwHash != UsrPwHash)
             {
-                wxMessageDialog Message(this, wxT("Incorrect password"), 
+                wxMessageDialog Message(this, wxT("Incorrect password"),
                     wxT("Incorrect password"), wxOK | wxICON_HAND);
-                
+
                 Message.ShowModal();
-                
+
                 // Reset the text so weird things don't happen
                 ped.SetValue(wxT(""));
             }
@@ -680,8 +822,8 @@ void dlgMain::OnLaunch(wxCommandEvent &event)
                 break;
         }
     }
-    
-    LaunchGame(QServer[i].GetAddress(), launchercfg_s.odamex_directory,
+
+    LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), launchercfg_s.odamex_directory,
         launchercfg_s.wad_paths, Password);
 }
 
@@ -690,27 +832,27 @@ void dlgMain::OnGetList(wxCommandEvent &event)
 {
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
-        
+
     QueriedServers = 0;
     TotalPlayers = 0;
-    
+
     MainThrPostEvent(mtcs_getmaster);
 }
 
 void dlgMain::OnRefreshServer(wxCommandEvent &event)
-{   
+{
     wxInt32 li, ai;
 
-    li = GetSelectedServerListIndex();    
+    li = GetSelectedServerListIndex();
     ai = GetSelectedServerArrayIndex();
-    
+
     if (li == -1 || ai == -1)
         return;
-    
+
     m_LstCtrlPlayers->DeleteAllItems();
-                
+
     TotalPlayers -= QServer[ai].Info.Players.size();
-    
+
     MainThrPostEvent(mtcs_getsingleserver, ai, li);
 }
 
@@ -721,48 +863,48 @@ void dlgMain::OnRefreshAll(wxCommandEvent &event)
 
     m_LstCtrlServers->DeleteAllItems();
     m_LstCtrlPlayers->DeleteAllItems();
-    
+
     QueriedServers = 0;
     TotalPlayers = 0;
-    
-    MainThrPostEvent(mtcs_getservers, -1, -1); 
+
+    MainThrPostEvent(mtcs_getservers, -1, -1);
 }
 
 // when the user clicks on the server list
 void dlgMain::OnServerListClick(wxListEvent& event)
-{   
+{
     wxInt32 i;
-    
+
     i = GetSelectedServerArrayIndex();
-    
+
     if (i == -1)
         return;
-    
+
     m_LstCtrlPlayers->DeleteAllItems();
-        
+
     m_LstCtrlPlayers->AddPlayersToList(QServer[i]);
-            
+
     if (QServer[i].GotResponse() == false)
         m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
     else
         m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[i]);
 }
 
-void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path, 
+void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     const wxString &waddirs, const wxString &Password)
 {
     wxFileConfig ConfigInfo;
     wxString ExtraCmdLineArgs;
-    
+
     if (ODX_Path.IsEmpty())
     {
         wxMessageBox(wxT("Your Odamex path is empty!"));
-        
+
         return;
     }
-    
+
     #ifdef __WXMSW__
-      wxString binname = ODX_Path + wxT('\\') + _T("odamex");
+      wxString binname = ODX_Path + wxT('\\') + wxT("odamex");
     #elif __WXMAC__
       wxString binname = ODX_Path + wxT("/odamex.app/Contents/MacOS/odamex");
     #else
@@ -772,33 +914,39 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
     wxString cmdline = wxT("");
 
     wxString dirs = waddirs.Mid(0, waddirs.Length());
-    
+
     cmdline += wxString::Format(wxT("%s"), binname.c_str());
-    
+
     if (!Address.IsEmpty())
 		cmdline += wxString::Format(wxT(" -connect %s"),
 									Address.c_str());
-	
+
 	if (!Password.IsEmpty())
         cmdline += wxString::Format(wxT(" %s"),
 									Password.c_str());
-	
+
 	// this is so the client won't mess up parsing
 	if (!dirs.IsEmpty())
-        cmdline += wxString::Format(wxT(" -waddir \"%s\""), 
+        cmdline += wxString::Format(wxT(" -waddir \"%s\""),
                                     dirs.c_str());
 
     // Check for any user command line arguments
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
-    
+
     if (!ExtraCmdLineArgs.IsEmpty())
-        cmdline += wxString::Format(_T(" %s"), 
+        cmdline += wxString::Format(wxT(" %s"),
                                     ExtraCmdLineArgs.c_str());
 
-	if (wxExecute(cmdline, wxEXEC_ASYNC, NULL) == -1)
-        wxMessageBox(wxString::Format(wxT("Could not start %s!"), 
+    // wxWidgets likes to spit out its own message box on msw after our one
+    #ifndef __WXMSW__
+	wxProcess *process = new wxProcess(wxPROCESS_REDIRECT);
+
+	if (wxExecute(cmdline, wxEXEC_ASYNC, process) <= 0)
+        wxMessageBox(wxString::Format(wxT("Could not start %s!"),
                                         binname.c_str()));
-	
+    #else
+    wxExecute(cmdline, wxEXEC_ASYNC, NULL);
+    #endif
 }
 
 
@@ -806,7 +954,7 @@ void dlgMain::LaunchGame(const wxString &Address, const wxString &ODX_Path,
 void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 {
     wxCommandEvent LaunchEvent(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmLaunch);
-    
+
     wxPostEvent(this, LaunchEvent);
 }
 
@@ -814,9 +962,9 @@ void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 wxInt32 dlgMain::FindServer(wxString Address)
 {
     for (size_t i = 0; i < MServer.GetServerCount(); i++)
-        if (QServer[i].GetAddress().IsSameAs(Address))
+        if (stdstr_towxstr(QServer[i].GetAddress()) == Address)
             return i;
-    
+
     return -1;
 }
 
@@ -825,20 +973,20 @@ wxInt32 dlgMain::FindServerInList(wxString Address)
 {
     if (!m_LstCtrlServers->GetItemCount())
         return -1;
-    
+
     for (wxInt32 i = 0; i < m_LstCtrlServers->GetItemCount(); i++)
     {
         wxListItem item;
         item.SetId(i);
         item.SetColumn(7);
         item.SetMask(wxLIST_MASK_TEXT);
-        
+
         m_LstCtrlServers->GetItem(item);
-        
+
         if (item.GetText().IsSameAs(Address))
             return i;
     }
-    
+
     return -1;
 }
 
@@ -847,15 +995,15 @@ wxInt32 dlgMain::GetSelectedServerListIndex()
 {
     wxInt32 i;
 
-    if (!m_LstCtrlServers->GetItemCount() || 
+    if (!m_LstCtrlServers->GetItemCount() ||
         !m_LstCtrlServers->GetSelectedItemCount())
     {
         return -1;
     }
-        
-    i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL, 
+
+    i = m_LstCtrlServers->GetNextItem(-1, wxLIST_NEXT_ALL,
         wxLIST_STATE_SELECTED);
-        
+
     return i;
 }
 
@@ -867,32 +1015,40 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
 
     i = GetSelectedServerListIndex();
 
+    if (i == -1)
+        return -1;
+
     item.SetId(i);
     item.SetColumn(7);
     item.SetMask(wxLIST_MASK_TEXT);
-        
+
     m_LstCtrlServers->GetItem(item);
-        
-    i = FindServer(item.GetText()); 
-    
+
+    i = FindServer(item.GetText());
+
     return i;
 }
 
-// Checks whether an odamex-style address format is valid
-bool dlgMain::IsAddressValid(wxString Address)
+// Checks whether an odamex-style address format is valid, also gives the
+// separated ip/hostname and port number back to the caller
+_oda_iav_err_t dlgMain::IsAddressValid(wxString Address, wxString &OutIPHost,
+    long &OutPort)
 {
     wxInt32 Colon;
     wxString RegEx;
     wxRegEx ReValIP;
     wxString IPHost;
-    wxUint16 Port;
+    long Port = 10666;
 
     // Get rid of any whitespace on either side of the string
     Address.Trim(false);
     Address.Trim(true);
 
+    // Don't accept nothing
     if (Address.IsEmpty() == true)
-        return false;
+    {
+        return _oda_iav_emptystr;
+    }
 
     // Set the regular expression and load it in
     RegEx = wxT("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4]"
@@ -903,29 +1059,59 @@ bool dlgMain::IsAddressValid(wxString Address)
 
     if (ReValIP.IsValid() == false)
     {
-        wxMessageBox(wxT("RegEx invalid"));
-        return false;
+        return _oda_iav_interr;
     }
 
-    // Find the colon that separates the ip address and the port number
+    // Find the colon that separates the address and the port number
     Colon = Address.Find(wxT(':'), true);
 
-    if (Colon == wxNOT_FOUND)
-        return false;
+    if (Colon != wxNOT_FOUND)
+    {
+        wxString PortStr;
+        bool IsGood;
 
-    // Check if there is something after the colon
-    if (Colon + 1 >= Address.Len())
-        return false;
+        // Try to convert the substring after the : to a port number
+        PortStr = Address.Mid(Colon + 1);
 
-    // Acquire the ip address and port number
-    Port = wxAtoi(Address.Mid(Colon + 1));
+        IsGood = PortStr.ToLong(&Port);
+
+        // Check if there is something after the colon and if its actually a
+        // numeric value
+        if ((Colon + 1 >= Address.Len()) || (IsGood == false) || (Port <= 0))
+        {
+            return _oda_iav_colerr;
+        }
+
+    }
+
+    // Finally get the address portion from the main string
     IPHost = Address.Mid(0, Colon);
 
     // Finally do the comparison
-    if ((Port > 0) && (ReValIP.Matches(IPHost) == true))
-        return true;
+    if (ReValIP.Matches(IPHost) == true)
+    {
+        OutIPHost = IPHost;
+        OutPort = Port;
+
+        return _oda_iav_SUCCESS;
+    }
     else
-        return false;
+    {
+        struct hostent *he;
+
+        // Check to see if its a hostname rather than an IP address
+        he = gethostbyname((const char *)IPHost.char_str());
+
+        if (he != NULL)
+        {
+            OutIPHost = IPHost;
+            OutPort = Port;
+
+            return _oda_iav_SUCCESS;
+        }
+        else
+            return _oda_iav_FAILURE;
+    }
 }
 
 // About information

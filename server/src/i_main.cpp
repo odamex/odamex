@@ -28,6 +28,7 @@
 
 #ifdef WIN32
 #include <windows.h>
+#include "resource.h"
 #endif
 
 #ifdef UNIX
@@ -70,7 +71,7 @@ void addterm (void (STACK_ARGS *func) (), const char *name)
 	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
-static void STACK_ARGS call_terms (void)
+void STACK_ARGS call_terms (void)
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
@@ -84,10 +85,43 @@ int PrintString (int printlevel, char const *outline)
 }
 
 #ifdef WIN32
+static HANDLE hEvent;
+
+int ShutdownNow()
+{
+    return (WaitForSingleObject(hEvent, 1) == WAIT_OBJECT_0);
+}
+
+BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
+{
+    SetEvent(hEvent);
+    return TRUE;
+}
+
 int __cdecl main(int argc, char *argv[])
 {
     try
     {
+        // Handle ctrl-c, close box, shutdown and logoff events
+        if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
+            throw CDoomError("Could not set console control handler!\n");
+
+        if (!(hEvent = CreateEvent(NULL, FALSE, FALSE, NULL)))
+            throw CDoomError("Could not create console control event!\n");
+
+        #ifdef _WIN32
+        // Fixes icon not showing in titlebar and alt-tab menu under windows 7
+        HANDLE hIcon;
+
+        hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+
+        if(hIcon)
+        {
+            SendMessage(GetConsoleWindow(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+            SendMessage(GetConsoleWindow(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+        }
+        #endif
+
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		Args.SetArgs (argc, argv);
 
@@ -103,7 +137,8 @@ int __cdecl main(int argc, char *argv[])
 
 		timeBeginPeriod (TimerPeriod);
 
-		atexit (call_terms);
+        // Don't call this on windows!
+		//atexit (call_terms);
 
 		Z_Init();
 
@@ -121,12 +156,12 @@ int __cdecl main(int argc, char *argv[])
     {
 		if (LOG.is_open())
         {
-            LOG << error.GetMessage() << std::endl;
+            LOG << error.GetMsg() << std::endl;
             LOG << std::endl;
         }
         else
         {
-            MessageBox(NULL, error.GetMessage().c_str(), "Odasrv Error", MB_OK);
+            MessageBox(NULL, error.GetMsg().c_str(), "Odasrv Error", MB_OK);
         }
 
 		exit (-1);
@@ -162,16 +197,27 @@ static void handler (int s)
 //
 void daemon_init(void)
 {
-    int   pid;
-    FILE *fpid;
+    int     pid;
+    FILE   *fpid;
+    string  pidfile;
 
     Printf(PRINT_HIGH, "Launched into the background\n");
 
     if ((pid = fork()) != 0)
-	exit(0);
+    {
+    	call_terms();
+    	exit(0);
+    }
 
+	const char *forkargs = Args.CheckValue("-fork");
+	if (forkargs)    
+		pidfile = string(forkargs);
+
+    if(!pidfile.size() || pidfile[0] == '-')
+    	pidfile = "doomsv.pid";
+	
     pid = getpid();
-    fpid = fopen("doomsv.pid", "w");
+    fpid = fopen(pidfile.c_str(), "w");
     fprintf(fpid, "%d\n", pid);
     fclose(fpid);
 }
@@ -206,7 +252,8 @@ int main (int argc, char **argv)
 		  left in an unstable state.
 		*/
 
-		atexit (call_terms);
+        // Don't use this on other platforms either
+		//atexit (call_terms);
 		Z_Init();					// 1/18/98 killough: start up memory stuff first
 
 		atterm (I_Quit);
@@ -227,14 +274,15 @@ int main (int argc, char **argv)
     }
     catch (CDoomError &error)
     {
-	fprintf (stderr, "%s\n", error.GetMessage().c_str());
+	fprintf (stderr, "%s\n", error.GetMsg().c_str());
 
 	if (LOG.is_open())
         {
-            LOG << error.GetMessage() << std::endl;
+            LOG << error.GetMsg() << std::endl;
             LOG << std::endl;
         }
 
+	call_terms();
 	exit (-1);
     }
     catch (...)

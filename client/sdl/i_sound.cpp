@@ -40,6 +40,10 @@
 
 #include "doomdef.h"
 
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
+
 #define NUM_CHANNELS 16
 
 static int mixer_freq;
@@ -267,7 +271,7 @@ void I_SetSfxVolume (float volume)
 // Pitching (that is, increased speed of playback)
 //  is set, but currently not used by mixing.
 //
-int I_StartSound (int id, int vol, int sep, int pitch, bool loop)
+int I_StartSound (int id, float vol, int sep, int pitch, bool loop)
 {
 	if(!sound_initialized)
 		return 0;

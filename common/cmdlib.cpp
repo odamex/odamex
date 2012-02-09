@@ -22,20 +22,22 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include <stdio.h>
 #include <stdlib.h>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
+#ifndef _XBOX
 #include <windows.h>
-#endif
+#endif // _XBOX
+#endif // WIN32
 
 #include "doomtype.h"
 #include "cmdlib.h"
 #include "i_system.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <map>
 
 #include "m_alloc.h"
 
@@ -46,9 +48,10 @@ std::string progdir, startdir; // denis - todo - maybe move this into Args
 
 void FixPathSeparator (std::string &path)
 {
+	// Use the platform appropriate path separator
 	for(size_t i = 0; i < path.length(); i++)
-		if(path[i] == '\\')
-			path[i] = '/';
+		if(path[i] == '\\' || path[i] == '/')
+			path[i] = PATHSEPCHAR;
 }
 
 char *copystring (const char *s)
@@ -205,28 +208,131 @@ BOOL IsNum (char *str)
 	return result;
 }
 
-// [Russell] Returns 0 if strings are the same, optional parameter for case sensitivity
-int StdStringCompare(std::string string1, std::string string2, bool CaseInsensitive = false)
+// [Russell] Returns 0 if strings are the same, optional parameter for case
+// sensitivity
+int StdStringCompare(const std::string &s1, const std::string &s2,
+    bool CIS = false)
 {
 	// Convert to upper case
-	if (CaseInsensitive)
+	if (CIS)
 	{
-		std::transform(string1.begin(), string1.end(), string1.begin(), toupper);
-		std::transform(string2.begin(), string2.end(), string2.begin(), toupper);
+		return StdStringToUpper(s1).compare(StdStringToUpper(s2));
 	}
 
-	if (string1 < string2)
-		return -1;
+    return s1.compare(s2);
+}
 
-	else if (string1 > string2)
-		return 1;
+size_t StdStringFind(const std::string& haystack, const std::string& needle,
+    size_t pos, size_t n, bool CIS, bool reverse)
+{
+    if (CIS)
+    {
+        if(reverse)
+        {
+            return StdStringToUpper(haystack).rfind(StdStringToUpper(needle).c_str(), pos, n);
+        }
 
-	// Strings are equal
-	return 0;
+        return StdStringToUpper(haystack).find(StdStringToUpper(needle).c_str(), pos, n);
+    }
+
+    if(reverse)
+    {
+        return haystack.rfind(needle.c_str(), pos, n);
+    }
+
+    return haystack.find(needle.c_str(), pos, n);
+}
+
+size_t StdStringFind(const std::string& haystack, const std::string& needle,
+    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+{
+    return StdStringFind(haystack, needle, pos, n, CIS, false);
+}
+
+size_t StdStringRFind(const std::string& haystack, const std::string& needle,
+    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+{
+    return StdStringFind(haystack, needle, pos, n, CIS, true);
+}
+
+static std::string& StdStringToLowerBase(std::string& lower)
+{
+	std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+	return lower;
+}
+
+std::string StdStringToLower(const std::string& str)
+{
+	std::string lower(str);
+	return StdStringToLowerBase(lower);
+}
+
+std::string StdStringToLower(const char* str)
+{
+	std::string lower(str);
+	return StdStringToLowerBase(lower);
+}
+
+static std::string& StdStringToUpperBase(std::string& upper)
+{
+	std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+    return upper;
+}
+
+std::string StdStringToUpper(const std::string& str)
+{
+	std::string upper(str);
+	return StdStringToUpperBase(upper);
+}
+
+std::string StdStringToUpper(const char* str)
+{
+	std::string upper(str);
+	return StdStringToUpperBase(upper);
 }
 
 
+class ReplacedStringTracker
+{
+	typedef std::map<const char *, bool> replacedStrings_t;
+	typedef replacedStrings_t:: iterator iterator;
+	replacedStrings_t rs;
+
+public:
+
+	void erase(const char *p)
+	{
+		iterator i = rs.find(p);
+		if(i != rs.end())
+		{
+			delete [] const_cast<char*>(i->first);
+			rs.erase(i);
+		}
+	}
+	void add(const char *p)
+	{
+		rs[p] = 1;
+	}
+
+	ReplacedStringTracker() : rs() {}
+	~ReplacedStringTracker()
+	{
+		for(iterator i = rs.begin(); i != rs.end(); ++i)
+			delete[] const_cast<char*>(i->first);
+	}
+}rst;
+
+
+void ReplaceString (const char **ptr, const char *str)
+{
+	if (*ptr)
+	{
+		if (*ptr == str)
+			return;
+		rst.erase(*ptr);
+	}
+	*ptr = copystring (str);
+	rst.add(*ptr);
+}
+
 VERSION_CONTROL (cmdlib_cpp, "$Id$")
-
-
-

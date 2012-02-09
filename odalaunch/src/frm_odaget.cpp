@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -39,36 +39,36 @@ END_EVENT_TABLE()
 frmOdaGet::frmOdaGet(wxTopLevelWindow* parent, wxWindowID id, wxString SaveLocation)
  : m_SaveLocation(SaveLocation)
 {
-    wxXmlResource::Get()->LoadFrame(this, parent, wxT("frmOdaGet"));    
-    
+    wxXmlResource::Get()->LoadFrame(this, parent, wxT("frmOdaGet"));
+
     if (parent)
     {
         SetIcons(parent->GetIcons());
     }
-    
+
     m_HTTPThread = NULL;
     m_FTPThread = NULL;
-    
-    m_DownloadURL = wxDynamicCast(FindWindow(XRCID("m_DownloadURL")), wxTextCtrl);
-    m_LocationDisplay = wxDynamicCast(FindWindow(XRCID("m_LocationDisplay")), wxTextCtrl);
-    m_DownloadGauge = wxDynamicCast(FindWindow(XRCID("m_DownloadGauge")), wxGauge);
+
+    m_DownloadURL = XRCCTRL(*this, "m_DownloadURL", wxTextCtrl);
+    m_LocationDisplay = XRCCTRL(*this, "m_LocationDisplay", wxTextCtrl);
+    m_DownloadGauge = XRCCTRL(*this, "m_DownloadGauge", wxGauge);
 }
 
 frmOdaGet::~frmOdaGet()
 {
     if (m_HTTPThread && m_HTTPThread->IsRunning())
     {
-        m_HTTPThread->Wait();      
+        m_HTTPThread->Wait();
         delete m_HTTPThread;
-        
+
         m_HTTPThread = NULL;
     }
-    
+
     if (m_FTPThread && m_FTPThread->IsRunning())
     {
         m_FTPThread->Wait();
         delete m_FTPThread;
-        
+
         m_FTPThread = NULL;
     }
 }
@@ -80,16 +80,16 @@ void frmOdaGet::OnClose(wxCloseEvent &event)
         m_HTTPThread->Wait();
         m_HTTPThread = NULL;
     }
-    
+
     if (m_FTPThread && m_FTPThread->IsRunning())
     {
         m_FTPThread->Wait();
         m_FTPThread = NULL;
     }
-    
+
     m_LocationDisplay->Clear();
     m_DownloadURL->Clear();
-    
+
     Hide();
 }
 
@@ -105,23 +105,23 @@ void frmOdaGet::OnCancel(wxCommandEvent &event)
 void frmOdaGet::OnDownload(wxCommandEvent &event)
 {
     wxString URL = m_DownloadURL->GetValue();
-    
+
     URL.MakeLower();
-    
+
     m_DownloadGauge->SetValue(0);
-    
+
     if (m_HTTPThread && m_HTTPThread->IsRunning())
     {
         m_HTTPThread->Wait();
         m_HTTPThread = NULL;
     }
-       
+
     if (m_FTPThread && m_FTPThread->IsRunning())
     {
         m_FTPThread->Wait();
         m_FTPThread = NULL;
     }
-       
+
     if (URL != wxT(""))
     {
         wxURI URI(m_DownloadURL->GetValue());
@@ -133,22 +133,22 @@ void frmOdaGet::OnDownload(wxCommandEvent &event)
 
         if (Scheme == wxT("http"))
         {
-            m_HTTPThread = new HTTPThread(this, 
+            m_HTTPThread = new HTTPThread(this,
                                 m_DownloadURL->GetValue(),
                                 m_SaveLocation);
-        
+
             if (m_HTTPThread->Create((unsigned int)0) == wxTHREAD_NO_ERROR)
             {
                 m_HTTPThread->Run();
             }
         }
-        
+
         if (Scheme == wxT("ftp"))
         {
-            m_FTPThread = new FTPThread(this, 
+            m_FTPThread = new FTPThread(this,
                                 m_DownloadURL->GetValue(),
                                 m_SaveLocation);
-        
+
             if (m_FTPThread->Create((unsigned int)0) == wxTHREAD_NO_ERROR)
             {
                 m_FTPThread->Run();
@@ -164,89 +164,89 @@ void frmOdaGet::OnDownload(wxCommandEvent &event)
 void frmOdaGet::OnFtpThreadMessage(wxCommandEvent &event)
 {
     wxString String;
-    
+
     switch (event.GetId())
     {
         case FTP_BADURL:
         {
-            String = wxString::Format(wxT("Invalid URL: %s\n"), 
+            String = wxString::Format(wxT("Invalid URL: %s\n"),
                                       event.GetString().c_str());
-            
-            m_LocationDisplay->AppendText(String);        
+
+            m_LocationDisplay->AppendText(String);
         }
         break;
-        
+
         case FTP_CONNECTED:
         {
-            String = wxString::Format(wxT("Connected to %s:%u\n"), 
+            String = wxString::Format(wxT("Connected to %s:%u\n"),
                                       event.GetString().c_str(),
                                       event.GetInt());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-        
+
         case FTP_DISCONNECTED:
         {
-            String = wxString::Format(wxT("Failed to connect to %s:%u\n"), 
+            String = wxString::Format(wxT("Failed to connect to %s:%u\n"),
                                       event.GetString().c_str(),
                                       event.GetInt());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-                
+
         case FTP_GOTFILEINFO:
         {
             String = wxString::Format(wxT("File size is %u\n"),
                                       (size_t)event.GetClientData());
-            
+
             m_DownloadGauge->SetRange((size_t)event.GetClientData());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-                  
+
         case FTP_DOWNLOADING:
         {
             String = wxString::Format(wxT("Now downloading file to %s\n"),
                                       event.GetString().c_str());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-          
+
         case FTP_DOWNLOADERROR:
         {
-            String = wxString::Format(wxT("Download of file %s failed\n"), 
+            String = wxString::Format(wxT("Download of file %s failed\n"),
                                         event.GetString().c_str());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-          
+
         case FTP_DOWNLOADTERMINATED:
         {
             String = wxT("User stopped download\n");
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-          
+
         case FTP_POSITION:
         {
             m_DownloadGauge->SetValue((size_t)event.GetClientData());
         }
         break;
-          
+
         case FTP_DOWNLOADCOMPLETE:
         {
             String = wxT("Download complete\n");
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-          
+
         default:
             break;
     }
@@ -259,107 +259,107 @@ void frmOdaGet::OnFtpThreadMessage(wxCommandEvent &event)
 void frmOdaGet::OnHttpThreadMessage(wxCommandEvent &event)
 {
     wxString String;
-    
+
     switch (event.GetId())
     {
         case HTTP_BADURL:
         {
-            String = wxString::Format(wxT("Invalid URL: %s\n"), 
+            String = wxString::Format(wxT("Invalid URL: %s\n"),
                                       event.GetString().c_str());
-            
-            m_LocationDisplay->AppendText(String);        
+
+            m_LocationDisplay->AppendText(String);
         }
         break;
-        
+
         case HTTP_CONNECTED:
         {
-            String = wxString::Format(wxT("Connected to %s:%u\n"), 
+            String = wxString::Format(wxT("Connected to %s:%u\n"),
                                       event.GetString().c_str(),
                                       event.GetInt());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-        
+
         case HTTP_DISCONNECTED:
         {
-            String = wxString::Format(wxT("Failed to connect to %s:%u\n"), 
+            String = wxString::Format(wxT("Failed to connect to %s:%u\n"),
                                       event.GetString().c_str(),
                                       event.GetInt());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-                
+
         case HTTP_GOTFILEINFO:
         {
             String = wxString::Format(wxT("File size is %u\n"),
                                       (size_t)event.GetClientData());
-            
+
             m_DownloadGauge->SetRange((size_t)event.GetClientData());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-                  
+
         case HTTP_DOWNLOADING:
         {
             String = wxString::Format(wxT("Now downloading file to %s\n"),
                                       event.GetString().c_str());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-          
+
         case HTTP_DOWNLOADERROR:
         {
-            String = wxString::Format(wxT("Download of file %s failed\n"), 
+            String = wxString::Format(wxT("Download of file %s failed\n"),
                                         event.GetString().c_str());
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-          
+
         case HTTP_DOWNLOADTERMINATED:
         {
             String = wxT("User stopped download\n");
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-          
+
         case HTTP_POSITION:
         {
             m_DownloadGauge->SetValue((size_t)event.GetClientData());
         }
         break;
-          
+
         case HTTP_DOWNLOADCOMPLETE:
         {
             String = wxT("Download complete\n");
-            
+
             m_LocationDisplay->AppendText(String);
         }
         break;
-          
+
         default:
             break;
     }
 }
 
 URIResult URIHandler::ParseURL(const wxString &URL)
-{   
+{
     wxURI URI(URL);
-    
+
     if (!URI.HasServer())
-    {      
+    {
         return URI_BADDOMAIN;
     }
 
     m_Server = URI.GetServer();
-    
+
     if (!URI.HasPath())
-    {      
+    {
         return URI_BADPATH;
     }
 
@@ -367,9 +367,9 @@ URIResult URIHandler::ParseURL(const wxString &URL)
 
     // We support searching directories for files, this will be used later on
     wxInt32 FilePosition = (m_Path.Find(wxT('/'), true) + 1);
-    
+
     if (FilePosition >= m_Path.Length())
-    {       
+    {
         if (m_File == wxT(""))
             return URI_BADFILE;
     }
@@ -379,36 +379,36 @@ URIResult URIHandler::ParseURL(const wxString &URL)
 
     if (m_File == wxT(""))
         m_File = m_Path.Mid(FilePosition);
-    
+
     if (URI.HasPort())
         m_Port = wxAtoi(URI.GetPort());
-    
+
     if (URI.HasUserInfo())
-    {       
+    {
         wxString UserInfo = URI.GetUserInfo();
-        
+
         // These are deprecated as of RFC 1396
         m_User = URI.GetUser();
-        
+
         if (UserInfo.Find(wxT(':'), false) != -1)
             m_Password = URI.GetPassword();
     }
-    
+
     return URI_SUCCESS;
 }
 
 wxInt32 ExtractCompressedFile(const wxString &Filename, const wxString &SaveLocation)
 {
     wxFileInputStream FileInputStream(Filename);
-    
+
     if (!FileInputStream.IsOk())
         return 0;
-        
+
     // Zip file handling
     // TODO: Complete this
     /*
     wxZipInputStream ZipInputStream(InputStream);
-    
+
     if (ZipInputStream.IsOk())
     {
         while (ZipEntry.reset(ZipInputStream.GetNextEntry()), ZipEntry.get() != NULL)
@@ -419,7 +419,7 @@ wxInt32 ExtractCompressedFile(const wxString &Filename, const wxString &SaveLoca
             ZipInputStream.
         }
     }*/
-    
+
     // Some older versions of zlib can't open gzip's
     /*
     if (wxZlibInputStream::CanHandleGZip())
@@ -439,7 +439,7 @@ void *FTPThread::Entry()
     size_t FileSize = 0;
 
     URIHandler URI(m_File);
-    
+
     switch (URI.ParseURL(m_URL))
     {
         case URI_BADDOMAIN:
@@ -447,60 +447,60 @@ void *FTPThread::Entry()
             Event.SetId(FTP_BADURL);
             Event.SetString(wxT("No domain specified"));
             wxPostEvent(m_EventHandler, Event);
-            
+
             return NULL;
         }
         break;
-        
+
         case URI_BADPATH:
         {
             Event.SetId(FTP_BADURL);
             Event.SetString(wxT("Path to file not specified"));
             wxPostEvent(m_EventHandler, Event);
-            
+
             return NULL;
         }
         break;
-        
+
         case URI_BADFILE:
         {
             Event.SetId(FTP_BADURL);
             Event.SetString(wxT("This is a directory, not a file"));
             wxPostEvent(m_EventHandler, Event);
-            
+
             return NULL;
         }
         break;
-        
+
         default:
         {
-            
+
         }
         break;
     }
-    
+
     m_File = URI.GetFile();
-    
+
     wxUint16 Port = URI.GetPort();
-    
+
     if (!Port)
         Port = 21;
-    
+
     // Blame wx
     wxString User = URI.GetUser();
     wxString Password = URI.GetPassword();
-    
+
     if (User != wxT(""))
         m_FTP.SetUser(User);
-        
+
     if (Password != wxT(""))
         m_FTP.SetPassword(Password);
-    
+
     wxIPV4address IPV4address;
-    
+
     IPV4address.Hostname(URI.GetServer());
     IPV4address.Service(Port);
-    
+
     // Try to connect to the server
     // Why can't this accept a port parameter? :'(
     if (m_FTP.Connect(IPV4address))
@@ -518,16 +518,16 @@ void *FTPThread::Entry()
         Event.SetString(URI.GetServer());
         Event.SetInt(Port);
         wxPostEvent(m_EventHandler, Event);
-        
+
         return NULL;
     }
-    
+
     // Change the directory
     m_FTP.ChDir(URI.GetDirectory());
-    
+
     // Try to locate the file
     if ((InputStream = m_FTP.GetInputStream(m_File)))
-    {           
+    {
         FileSize = InputStream->GetSize();
 
         // We now got the stream for the file, return some data
@@ -541,15 +541,15 @@ void *FTPThread::Entry()
         Event.SetId(FTP_DOWNLOADERROR);
         Event.SetString(URI.GetPath());
         wxPostEvent(m_EventHandler, Event);
-        
+
         return NULL;
     }
-    
+
     // Create the file
     wxFileName FileName(m_SaveLocation, m_File);
-    
+
     wxFileOutputStream FileOutputStream(FileName.GetFullPath());
-    
+
     if (FileOutputStream.IsOk())
     {
         Event.SetId(FTP_DOWNLOADING);
@@ -561,17 +561,17 @@ void *FTPThread::Entry()
         Event.SetId(FTP_DOWNLOADERROR);
         Event.SetString(FileName.GetFullPath());
         wxPostEvent(m_EventHandler, Event);
-    
+
         delete InputStream;
-        
+
         return NULL;
     }
-    
+
     // Download the file
     wxChar Data[1024];
-    
+
     size_t i = 0;
-    
+
     while (InputStream->CanRead())
     {
         InputStream->Read(&Data, 1024);
@@ -579,21 +579,21 @@ void *FTPThread::Entry()
         Event.SetId(FTP_POSITION);
         Event.SetClientData((void *)i);
         wxPostEvent(m_EventHandler, Event);
-    
+
         // User wanted us to exit
         if (TestDestroy())
         {
             Event.SetId(FTP_DOWNLOADTERMINATED);
             Event.SetString(m_File);
             wxPostEvent(m_EventHandler, Event);
-            
+
             delete InputStream;
-            
+
             return NULL;
         }
-    
+
         FileOutputStream.Write(&Data, InputStream->LastRead());
-        
+
         Sleep(1);
 
         if (InputStream->LastRead() == 0)
@@ -605,8 +605,8 @@ void *FTPThread::Entry()
     // Download done
     Event.SetId(FTP_DOWNLOADCOMPLETE);
     Event.SetString(FileName.GetFullPath());
-    wxPostEvent(m_EventHandler, Event);    
-    
+    wxPostEvent(m_EventHandler, Event);
+
     delete InputStream;
 
     return NULL;
@@ -623,7 +623,7 @@ void *HTTPThread::Entry()
     size_t FileSize = 0;
 
     URIHandler URI(m_File);
-    
+
     switch (URI.ParseURL(m_URL))
     {
         case URI_BADDOMAIN:
@@ -631,48 +631,48 @@ void *HTTPThread::Entry()
             Event.SetId(HTTP_BADURL);
             Event.SetString(wxT("No domain specified"));
             wxPostEvent(m_EventHandler, Event);
-            
+
             return NULL;
         }
         break;
-        
+
         case URI_BADPATH:
         {
             Event.SetId(HTTP_BADURL);
             Event.SetString(wxT("Path to file not specified"));
             wxPostEvent(m_EventHandler, Event);
-            
+
             return NULL;
         }
         break;
-        
+
         case URI_BADFILE:
         {
             Event.SetId(HTTP_BADURL);
             Event.SetString(wxT("This is a directory, not a file"));
             wxPostEvent(m_EventHandler, Event);
-            
+
             return NULL;
         }
         break;
-        
+
         default:
         {
-            
+
         }
         break;
     }
-    
+
     m_File = URI.GetFile();
-    
+
     m_HTTP.SetUser(URI.GetUser());
     m_HTTP.SetPassword(URI.GetPassword());
-    
+
     wxUint16 Port = URI.GetPort();
-    
+
     if (!Port)
         Port = 80;
-    
+
     // Try to connect to the server
     if (m_HTTP.Connect(URI.GetServer(), Port))
     {
@@ -689,13 +689,13 @@ void *HTTPThread::Entry()
         Event.SetString(URI.GetServer());
         Event.SetInt(Port);
         wxPostEvent(m_EventHandler, Event);
-        
+
         return NULL;
     }
-    
+
     // Try to locate the file
     if ((InputStream = m_HTTP.GetInputStream(URI.GetPath())))
-    {           
+    {
         FileSize = InputStream->GetSize();
 
         // We now got the stream for the file, return some data
@@ -709,15 +709,15 @@ void *HTTPThread::Entry()
         Event.SetId(HTTP_DOWNLOADERROR);
         Event.SetString(URI.GetPath());
         wxPostEvent(m_EventHandler, Event);
-        
+
         return NULL;
     }
-    
+
     // Create the file
     wxFileName FileName(m_SaveLocation, m_File);
-    
+
     wxFileOutputStream FileOutputStream(FileName.GetFullPath());
-    
+
     if (FileOutputStream.IsOk())
     {
         Event.SetId(HTTP_DOWNLOADING);
@@ -729,17 +729,17 @@ void *HTTPThread::Entry()
         Event.SetId(HTTP_DOWNLOADERROR);
         Event.SetString(FileName.GetFullPath());
         wxPostEvent(m_EventHandler, Event);
-    
+
         delete InputStream;
-        
+
         return NULL;
     }
-    
+
     // Download the file
     wxChar Data[1024];
-    
+
     size_t i = 0;
-    
+
     while (InputStream->CanRead())
     {
         InputStream->Read(&Data, 1024);
@@ -747,23 +747,23 @@ void *HTTPThread::Entry()
         Event.SetId(HTTP_POSITION);
         Event.SetClientData((void *)i);
         wxPostEvent(m_EventHandler, Event);
-    
+
         // User wanted us to exit
         if (TestDestroy())
         {
             Event.SetId(HTTP_DOWNLOADTERMINATED);
             Event.SetString(m_File);
             wxPostEvent(m_EventHandler, Event);
-            
+
             delete InputStream;
-            
+
             return NULL;
         }
-    
+
         FileOutputStream.Write(&Data, InputStream->LastRead());
-        
+
         Sleep(1);
-        
+
 
         if (InputStream->LastRead() == 0)
             break;
@@ -774,8 +774,8 @@ void *HTTPThread::Entry()
     // Download done
     Event.SetId(HTTP_DOWNLOADCOMPLETE);
     Event.SetString(FileName.GetFullPath());
-    wxPostEvent(m_EventHandler, Event);    
-    
+    wxPostEvent(m_EventHandler, Event);
+
     delete InputStream;
 
     return NULL;

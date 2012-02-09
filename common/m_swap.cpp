@@ -25,8 +25,10 @@
 // eg: 30mb compared to 13mb!
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN
+#ifndef _XBOX
 #include <windows.h>
-#endif
+#endif // !_XBOX
+#endif // MSC_VER
 
 #include "version.h"
 #include "m_swap.h"

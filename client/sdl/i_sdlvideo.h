@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -35,18 +35,21 @@ class SDLVideo : public IVideo
    SDLVideo(int parm);
 	virtual ~SDLVideo (void);
 
+	virtual std::string GetVideoDriverName();
+
 	virtual bool CanBlit (void) {return false;}
 	virtual EDisplayType GetDisplayType (void) {return DISPLAY_Both;}
 
 	virtual bool FullscreenChanged (bool fs);
 	virtual void SetWindowedScale (float scale);
+	virtual bool SetOverscan (float scale);
 
 	virtual bool SetMode (int width, int height, int bits, bool fs);
 	virtual void SetPalette (DWORD *palette);
-	
+
 	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
 	virtual void SetOldPalette (byte *doompalette);
-	
+
 	virtual void UpdateScreen (DCanvas *canvas);
 	virtual void ReadScreen (byte *block);
 
@@ -80,25 +83,60 @@ class SDLVideo : public IVideo
       cChain *next, *prev;
    };
 
-
-   struct vidMode
+   struct vidMode_t
    {
       int width, height, bits;
-   } *vidModeList;
-   int vidModeCount;
-   int vidModeIterator;
+
+      bool operator<(const vidMode_t& right) const
+      {
+         if (bits < right.bits)
+            return true;
+         else if (bits == right.bits)
+         {
+            if (width < right.width)
+               return true;
+            else if (width == right.width && height < right.height)
+               return true;
+         }
+         return false;
+      }
+
+      bool operator>(const vidMode_t& right) const
+      {
+         if (bits > right.bits)
+            return true;
+		 else if (bits == right.bits)
+         {
+            if (width > right.width)
+               return true;
+			else if (width == right.width && height > right.height)
+               return true;
+		 }
+         return false;
+      }
+
+      bool operator==(const vidMode_t& right) const
+      {
+         return (width == right.width &&
+                 height == right.height &&
+                 bits == right.bits);
+      }
+   };
+
+   std::vector<vidMode_t> vidModeList;
+   size_t vidModeIterator;
    int vidModeIteratorBits;
 
    SDL_Surface *sdlScreen;
    bool infullscreen;
    int screenw, screenh;
    int screenbits;
-   
+
    SDL_Color newPalette[256];
    SDL_Color palette[256];
    bool palettechanged;
-    
+
    cChain      *chainHead;
 };
-#endif 
+#endif
 

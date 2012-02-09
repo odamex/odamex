@@ -38,6 +38,7 @@ typedef enum {
 	Polyobj_MoveTimes8 = 6,
 	Polyobj_DoorSwing = 7,
 	Polyobj_DoorSlide = 8,
+	Line_Horizon = 9,
 	Door_Close = 10,
 	Door_Open = 11,
 	Door_Raise = 12,
@@ -121,6 +122,8 @@ typedef enum {
 	Light_Glow = 114,
 	Light_Flicker = 115,
 	Light_Strobe = 116,
+
+	Radius_Quake = 120,	// Earthquake
 
 	Line_SetIdentification = 121,
 

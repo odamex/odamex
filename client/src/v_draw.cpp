@@ -127,9 +127,9 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	unsigned int *fg2rgb, *bg2rgb;
 
 	{
-		fixed_t fglevel, bglevel, translevel;;
+		fixed_t fglevel, bglevel, translevel;
 
-		translevel = 0xFFFF * hud_transparency;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -157,7 +157,7 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 	{
 		fixed_t fglevel, bglevel, translevel;
 		
-		translevel = 0xFFFF * hud_transparency;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -211,7 +211,7 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	{
 		fixed_t fglevel, bglevel, translevel;
 		
-		translevel = 0xFFFF * hud_transparency;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -240,7 +240,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 	{
 		fixed_t fglevel, bglevel, translevel;
 		
-		translevel = 0xFFFF * hud_transparency;
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -291,7 +291,7 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 		unsigned int *fg2rgb;
 		fixed_t fglevel, bglevel, translevel;
 		
-		translevel = 0xFFFF * (hud_transparency < 0.5 ? hud_transparency : 0.5);
+		translevel = (fixed_t)(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -812,45 +812,6 @@ void DCanvas::GetBlock (int x, int y, int _width, int _height, byte *dest) const
 		src += pitch;
 		dest += _width;
 	}
-}
-
-// [ML] 11/4/06: Moved here from v_video.cpp
-/*
-===============
-BestColor
-(borrowed from Quake2 source: utils3/qdata/images.c)
-===============
-*/
-byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors)
-{
-	int		i;
-	int		dr, dg, db;
-	int		bestdistortion, distortion;
-	int		bestcolor;
-
-//
-// let any color go to 0 as a last resort
-//
-	bestdistortion = 256*256*4;
-	bestcolor = 0;
-
-	for (i = 0; i < numcolors; i++)
-	{
-		dr = r - RPART(palette[i]);
-		dg = g - GPART(palette[i]);
-		db = b - BPART(palette[i]);
-		distortion = dr*dr + dg*dg + db*db;
-		if (distortion < bestdistortion)
-		{
-			if (!distortion)
-				return i;		// perfect match
-
-			bestdistortion = distortion;
-			bestcolor = i;
-		}
-	}
-
-	return bestcolor;
 }
 
 int V_GetColorFromString (const DWORD *palette, const char *cstr)

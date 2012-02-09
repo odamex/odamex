@@ -42,7 +42,7 @@
 #include "p_local.h"
 #include "r_sky.h"
 #include "c_console.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "v_video.h"
 #include "p_saveg.h"
 #include "p_acs.h"
@@ -58,6 +58,7 @@
 
 #include "sv_main.h"
 #include "p_ctf.h"
+#include "p_unlag.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
@@ -70,6 +71,9 @@ EXTERN_CVAR (sv_startmapscript)
 EXTERN_CVAR (sv_curmap)
 EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
+EXTERN_CVAR (sv_gravity)
+EXTERN_CVAR (sv_aircontrol)
+EXTERN_CVAR (sv_intermissionlimit)
 
 static level_info_t *FindDefLevelInfo (char *mapname);
 static cluster_info_t *FindDefClusterInfo (int cluster);
@@ -130,7 +134,10 @@ extern int mapchange;
 int starttime;
 
 // ACS variables with world scope
-int WorldVars[NUM_WORLDVARS];
+int ACS_WorldVars[NUM_WORLDVARS];
+
+// ACS variables with global scope
+int ACS_GlobalVars[NUM_GLOBALVARS];
 
 BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
@@ -214,6 +221,7 @@ enum EMIType
 	MITYPE_IGNORE,
 	MITYPE_EATNEXT,
 	MITYPE_INT,
+	MITYPE_FLOAT,
 	MITYPE_COLOR,
 	MITYPE_MAPNAME,
 	MITYPE_LUMPNAME,
@@ -269,7 +277,9 @@ MapHandlers[] =
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
 	{ MITYPE_EATNEXT,	0, 0 },
-	{ MITYPE_EATNEXT,	0, 0 }
+	{ MITYPE_EATNEXT,	0, 0 },
+	{ MITYPE_FLOAT,		lioffset(gravity), 0 },
+	{ MITYPE_FLOAT,		lioffset(aircontrol), 0 },
 };
 
 static const char *MapInfoClusterLevel[] =
@@ -444,6 +454,11 @@ static void ParseMapInfoLower (MapInfoHandler *handlers,
 			*((int *)(info + handler->data1)) = sc_Number;
 			break;
 
+		case MITYPE_FLOAT:
+			SC_MustGetFloat ();
+			*((float *)(info + handler->data1)) = sc_Float;
+			break;
+
 		case MITYPE_COLOR:
 			{
 				SC_MustGetString ();
@@ -601,6 +616,12 @@ void P_RemoveDefereds (void)
 		}
 }
 
+// [ML] Not sure where to put this for now...
+// 	G_ParseMusInfo
+void G_ParseMusInfo(void)
+{
+	// Nothing yet...
+}
 
 //
 // G_InitNew
@@ -626,7 +647,7 @@ BEGIN_COMMAND (map)
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
 		//              number. This makes sense, so why isn't there any code for it?
-		if (W_CheckNumForName (argv[1]) == -1)
+		if (W_CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
 		{ // The map name isn't valid, so lets try to make some assumptions for the user.
 			char mapname[32];
 
@@ -669,13 +690,11 @@ const char* GetBase(const char* in)
 {
 	const char* out = &in[strlen(in) - 1];
 
-	while (out > in && *(out-1) != '/' && *(out-1) != '\\')
+	while (out > in && *(out-1) != PATHSEPCHAR)
 		out--;
 
 	return out;
 }
-
-std::vector<std::string> dummy_need_hashes;
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
@@ -699,7 +718,12 @@ BEGIN_COMMAND (wad) // denis - changes wads
     // add our iwad if it is one
 	if (W_IsIWAD(argv[1]))
 	{
-		wads.push_back(argv[1]);
+		std::string ext;
+
+		if(!M_ExtractFileExtension(argv[1], ext))
+			wads.push_back(std::string(argv[1]) + ".wad");
+		else
+			wads.push_back(argv[1]);
 		AddedIWAD = true;
 	} else {
         wads.push_back(wadfiles[1].c_str());
@@ -721,7 +745,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	// GhostlyDeath <August 14, 2008> -- Check our environment, if the same WADs are used, ignore this command
-	if (AddedIWAD)
+	if (AddedIWAD && !wadfiles.empty())
 	{
 		if (stricmp(GetBase(wads[0].c_str()), GetBase(wadfiles[1].c_str())) != 0)
 			Reboot = true;
@@ -810,7 +834,7 @@ void G_GenerateRandomMaps(void)
 			break;
 	}
 
-	if (Count <= 0)
+	if (!Count)
 		return;
 
 	// Allocate our bool array
@@ -818,8 +842,8 @@ void G_GenerateRandomMaps(void)
 
 	for (i = 0; i < Count; i++)
 		Used[i] = 0;
-		
-    srand((unsigned)time(0)); 
+
+    srand((unsigned)time(0));
 
 	// Now populate the list
 	for (i = 0; i < Count; i++)
@@ -1032,14 +1056,10 @@ void G_ChangeMap (void)
 	{
 		char *next = level.nextmap;
 
-        // for latched "deathmatch 0" cvar
-        if (gamestate == GS_STARTUP)
-        {
-            next = level.mapname;
-        }
-
 		// if deathmatch, stay on same level
-		if(sv_gametype != GM_COOP)
+		// [ML] 1/25/10: OR if next is empty
+		if(gamestate == GS_STARTUP ||
+			sv_gametype != GM_COOP || !strlen(next))
 			next = level.mapname;
 		else
 			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
@@ -1101,8 +1121,8 @@ void G_ChangeMap (void)
 
 	// run script at the end of each map
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a 
-	// reason why the mapscripts ahve to be safe mode?	
+	// when onlcvars (addcommandstring's second param) is true.  Is there a
+	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
 		AddCommandString(sv_endmapscript.cstring()/*, true*/);
 }
@@ -1110,7 +1130,6 @@ void G_ChangeMap (void)
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
 void G_DoReborn(player_t &playernum);
-void SV_SendServerSettings(client_t *cl);
 
 //
 // G_DoNewGame
@@ -1139,7 +1158,7 @@ void G_DoNewGame (void)
 
 	// run script at the start of each map
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a 
+	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_startmapscript.cstring()))
 		AddCommandString(sv_startmapscript.cstring()/*,true*/);
@@ -1183,7 +1202,7 @@ void G_InitNew (const char *mapname)
 			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
-	int old_gametype = sv_gametype;
+	int old_gametype = sv_gametype.asInt();
 
 	cvar_t::UnlatchCVars ();
 
@@ -1192,19 +1211,27 @@ void G_InitNew (const char *mapname)
 
 		// Nes - Force all players to be spectators when the sv_gametype is not now or previously co-op.
 		for (i = 0; i < players.size(); i++) {
+			// [SL] 2011-07-30 - Don't force downloading players to become spectators
+			// it stops their downloading
+			if (!players[i].ingame())
+				continue;
+
 			for (size_t j = 0; j < players.size(); j++) {
+				if (!players[j].ingame())
+					continue;
 				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
 				MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
 				MSG_WriteByte (&(players[j].client.reliablebuf), true);
 			}
-			players[i].mo->flags |= MF_SPECTATOR;
-			players[i].mo->flags2 |= MF2_FLY;
 			players[i].spectator = true;
 			players[i].playerstate = PST_LIVE;
 			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
 	}
 
+	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will
+	// send changed cvars
+	gamestate = GS_LEVEL;
 	SV_ServerSettingChange();
 
 	if (paused)
@@ -1243,14 +1270,25 @@ void G_InitNew (const char *mapname)
 		isFast = wantFast;
 	}
 
+	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
+	Unlag::getInstance().reset();
+
 	if (!savegamerestore)
 	{
 		M_ClearRandom ();
+		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
+		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
 		level.time = 0;
+		level.timeleft = 0;
+		level.inttimeleft = 0;
 
 		// force players to be initialized upon first level load
 		for (size_t i = 0; i < players.size(); i++)
 		{
+			// [SL] 2011-05-11 - Register the players in the reconciliation
+			// system for unlagging
+			Unlag::getInstance().registerPlayer(players[i].id);
+
 			if(!players[i].ingame())
 				continue;
 
@@ -1258,17 +1296,14 @@ void G_InitNew (const char *mapname)
 			if(players[i].playerstate == PST_DEAD)
 				G_PlayerReborn(players[i]);
 
-			players[i].playerstate = PST_REBORN;
+			players[i].playerstate = PST_ENTER; // [BC]
 
 			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
 	}
 
-	// if only one player allowed, then this is a single player server
-	if(sv_maxplayers == 1)
-		multiplayer = false;
-	else
-		multiplayer = true;
+	// [SL] 2012-12-08 - Multiplayer is always true for servers
+	multiplayer = true;
 
 	usergame = true;				// will be set false if a demo
 	paused = false;
@@ -1294,10 +1329,12 @@ void G_ExitLevel (int position, int drawscores)
 
 	if (drawscores)
         SV_DrawScores();
+	
+	int intlimit = (sv_intermissionlimit < 1 || sv_gametype == GM_COOP ? DEFINTSECS : sv_intermissionlimit);
 
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
-	mapchange = TICRATE*10;  // wait 10 seconds
+	mapchange = TICRATE*intlimit;  // wait n seconds, default 10
 
     secretexit = false;
 
@@ -1314,10 +1351,12 @@ void G_SecretExitLevel (int position, int drawscores)
 
     if (drawscores)
         SV_DrawScores();
+        
+	int intlimit = (sv_intermissionlimit < 1 || sv_gametype == GM_COOP ? DEFINTSECS : sv_intermissionlimit);
 
 	gamestate = GS_INTERMISSION;
 	shotclock = 0;
-	mapchange = TICRATE*10;  // wait 10 seconds
+	mapchange = TICRATE*intlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gamemode == commercial)
@@ -1557,8 +1596,10 @@ void G_InitLevelLocals ()
 
 	NormalLight.maps = realcolormaps;
 
-	if ((i = FindWadLevelInfo (level.mapname)) > -1)
-	{
+	level.gravity = sv_gravity;
+	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
+
+	if ((i = FindWadLevelInfo (level.mapname)) > -1) {
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
 
 		// [ML] 5/11/06 - Remove sky scrolling and sky2
@@ -1577,9 +1618,15 @@ void G_InitLevelLocals ()
 		
 		level.outsidefog = pinfo->outsidefog;
 		level.flags |= LEVEL_DEFINEDINMAPINFO;
-	}
-	else
-	{
+		if (pinfo->gravity != 0.f)
+		{
+			level.gravity = pinfo->gravity;
+		}
+		if (pinfo->aircontrol != 0.f)
+		{
+			level.aircontrol = (fixed_t)(pinfo->aircontrol * 65536.f);
+		}
+	} else {
 		info = FindDefLevelInfo (level.mapname);
 		level.info = info;
 		level.fadeto = 0;
@@ -1709,15 +1756,14 @@ void G_SetLevelStrings (void)
 	temp[0] = '0';
 	temp[1] = ':';
 	temp[2] = 0;
-
-	for (i = 65; i < 101; i++) 		// HUSTR_E1M1 .. HUSTR_E4M9
+	for (i = HUSTR_E1M1; i <= HUSTR_E4M9; ++i)
 	{
 		if (temp[0] < '9')
 			temp[0]++;
 		else
 			temp[0] = '1';
 
-		if ( (namepart = strstr (Strings[i].string, temp)) ) 
+		if ( (namepart = strstr (GStrings(i), temp)) )
 		{
 			namepart += 2;
 			while (*namepart && *namepart <= ' ')
@@ -1725,14 +1771,11 @@ void G_SetLevelStrings (void)
 		}
 		else
 		{
-			namepart = Strings[i].string;
+			namepart = GStrings(i);
 		}
 
-		if (gameinfo.gametype != GAME_Heretic)
-		{
-			ReplaceString (&LevelInfos[i-65].level_name, namepart);
-			ReplaceString (&LevelInfos[i-65].music, Musics1[i-65]);
-		}
+		ReplaceString (&LevelInfos[i-HUSTR_E1M1].level_name, namepart);
+		//ReplaceString (&LevelInfos[i-HUSTR_E1M1].music, Musics1[i-HUSTR_E1M1]);
 	}
 		
 	if (gameinfo.gametype == GAME_Heretic)
@@ -1780,50 +1823,58 @@ void G_SetLevelStrings (void)
 	}
 
 	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[i].exittext, Strings[221+i].string);
+		ReplaceString (&ClusterInfos[i].exittext, GStrings(E1TEXT+i));
 
 	if (gamemission == pack_plut)
-		start = 133;
+		start = PHUSTR_1;
 	else if (gamemission == pack_tnt)
-		start = 165;
+		start = THUSTR_1;
 	else
-		start = 101;
+		start = HUSTR_1;
 
-	for (i = 0; i < 32; i++)
-	{
-		sprintf (temp, "%d:", i + 1);
-		if ( (namepart = strstr (Strings[i+start].string, temp)) )
-		{
-			namepart += strlen (temp);
-			while (*namepart && *namepart <= ' ')
-				namepart++;
-		}
-		else
-		{
-			namepart = Strings[i+start].string;
-		}
-		ReplaceString (&LevelInfos[48+i].level_name, namepart);
-		ReplaceString (&LevelInfos[48+i].music, Musics3[i]);
-	}
+ 	for (i = 0; i < 32; i++) {
+ 		sprintf (temp, "%d:", i + 1);
+		if ( (namepart = strstr (GStrings(i+start), temp)) ) {
+ 			namepart += strlen (temp);
+ 			while (*namepart && *namepart <= ' ')
+ 				namepart++;
+ 		} else {
+			namepart = GStrings(i+start);
+ 		}
+ 		ReplaceString (&LevelInfos[36+i].level_name, namepart);
+ 	}
 
 	if (gamemission == pack_plut)
-		start = 231;		// P1TEXT
+		start = P1TEXT;		// P1TEXT
 	else if (gamemission == pack_tnt)
-		start = 237;		// T1TEXT
+		start = T1TEXT;		// T1TEXT
 	else
-		start = 225;		// C1TEXT
+		start = C1TEXT;		// C1TEXT
 
 	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[4 + i].exittext, Strings[start+i].string);
+		ReplaceString (&ClusterInfos[4 + i].exittext, GStrings(start+i));
 	for (; i < 6; i++)
-		ReplaceString (&ClusterInfos[4 + i].entertext, Strings[start+i].string);
-	for (i = 350; i <= 354; i++)
-		ReplaceString (&ClusterInfos[10 + i - 350].exittext, Strings[i].string);
-	for (i = 0; i < 15; i++)
-		ReplaceString (&ClusterInfos[i].messagemusic, Musics4[i]);
+		ReplaceString (&ClusterInfos[4 + i].entertext, GStrings(start+i));
 
-	if (level.info && level.info->level_name)
+	//for (i = 0; i < 15; i++)
+	//	ReplaceString (&ClusterInfos[i].messagemusic, Musics4[i]);
+
+	if (level.info)
 		strncpy (level.level_name, level.info->level_name, 63);
+}
+
+void G_AirControlChanged ()
+{
+	if (level.aircontrol <= 256)
+	{
+		level.airfriction = FRACUNIT;
+	}
+	else
+	{
+		// Friction is inversely proportional to the amount of control
+		float fric = ((float)level.aircontrol/65536.f) * -0.0941f + 1.0004f;
+		level.airfriction = (fixed_t)(fric * 65536.f);
+	}
 }
 
 
@@ -1835,10 +1886,14 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			<< level.fadeto
 			<< level.found_secrets
 			<< level.found_items
-			<< level.killed_monsters;
+			<< level.killed_monsters
+			<< level.gravity
+			<< level.aircontrol;
 
-//		for (i = 0; i < NUM_MAPVARS; i++)
-//			arc << level.vars[i];
+			G_AirControlChanged ();
+
+		for (int i = 0; i < NUM_MAPVARS; i++)
+			arc << level.vars[i];
 	}
 	else
 	{
@@ -1846,17 +1901,23 @@ void G_SerializeLevel (FArchive &arc, bool hubLoad)
 			>> level.fadeto
 			>> level.found_secrets
 			>> level.found_items
-			>> level.killed_monsters;
+			>> level.killed_monsters
+			>> level.gravity
+			>> level.aircontrol;
 
-//		for (i = 0; i < NUM_MAPVARS; i++)
-//			arc >> level.vars[i];
+			G_AirControlChanged ();
+
+		for (int i = 0; i < NUM_MAPVARS; i++)
+			arc >> level.vars[i];
 	}
+
+	if (!hubLoad)
+		P_SerializePlayers (arc);
+
 	P_SerializeThinkers (arc, hubLoad);
 	P_SerializeWorld (arc);
 	P_SerializePolyobjs (arc);
 	P_SerializeSounds (arc);
-	if (!hubLoad)
-		P_SerializePlayers (arc);
 }
 
 // Archives the current level
@@ -1971,7 +2032,8 @@ void P_SerializeACSDefereds (FArchive &arc)
 				writeDefereds (arc, &LevelInfos[i]);
 
 		// Signal end of defereds
-		arc << (char)0;
+		BYTE zero = 0;
+		arc << zero;
 	}
 	else
 	{
@@ -1979,7 +2041,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 
 		P_RemoveDefereds ();
 
-		arc >> mapname[0];
+		arc << mapname[0];
 		while (mapname[0])
 		{
 			arc.Read (&mapname[1], 7);
@@ -1992,8 +2054,8 @@ void P_SerializeACSDefereds (FArchive &arc)
 				name[8] = 0;
 				I_Error ("Unknown map '%s' in savegame", name);
 			}
-			arc >> i->defered;
-			arc >> mapname[0];
+			arc << i->defered;
+			arc << mapname[0];
 		}
 	}
 }

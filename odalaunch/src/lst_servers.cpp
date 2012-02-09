@@ -22,6 +22,8 @@
 
 #include "lst_servers.h"
 
+#include "str_utils.h"
+
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
 
@@ -355,7 +357,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     wxInt32 i = 0;
     wxListItem li;
     
-    wxUint32 Ping = 0;
+    wxUint64 Ping = 0;
     wxString GameType = wxT("");
     size_t WadCount = 0;
     
@@ -378,7 +380,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
        
     // Address column
     li.m_col = serverlist_field_address;    
-    li.m_text = s.GetAddress();
+    li.m_text = stdstr_towxstr(s.GetAddress());
 
     SetItem(li);
 
@@ -388,7 +390,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
 
     // Server name column
     li.m_col = serverlist_field_name;
-    li.m_text = s.Info.Name;
+    li.m_text = stdstr_towxstr(s.Info.Name);
        
     SetItem(li);
       
@@ -396,7 +398,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     Ping = s.GetPing();
 
     li.m_col = serverlist_field_ping;
-    li.m_text = wxString::Format(_T("%u"), Ping);
+    li.m_text = wxString::Format(_T("%llu"), Ping);
 
     SetItem(li);
 
@@ -406,6 +408,12 @@ void LstOdaServerList::AddServerToList(const Server &s,
     li.m_col = serverlist_field_players;
     li.m_text = wxString::Format(_T("%d/%d"),s.Info.Players.size(),s.Info.MaxClients);
     
+    // Colour the entire text column (wx/windows bug - exploited) if there are
+    // players
+    // TODO: Allow the user to select prefered colours
+    if (s.Info.Players.size())
+        li.SetTextColour(wxColor(0,192,0));
+
     SetItem(li); 
     
     // WAD files column
@@ -415,24 +423,26 @@ void LstOdaServerList::AddServerToList(const Server &s,
     if (WadCount)
     {
         // pwad list
-        wxString wadlist = _T("");
-        wxString pwad = _T("");
+        std::string wadlist;
+        std::string pwad;
             
         for (i = 2; i < WadCount; ++i)
         {
-            pwad = s.Info.Wads[i].Name.Mid(0, s.Info.Wads[i].Name.Find('.'));
-            wadlist += wxString::Format(_T("%s "), pwad.c_str());
+            pwad = s.Info.Wads[i].Name.substr(0, s.Info.Wads[i].Name.find('.'));
+            
+            wadlist.append(pwad);
+            wadlist.append(" ");
         }
             
         li.m_col = serverlist_field_wads;
-        li.m_text = wadlist;
+        li.m_text = stdstr_towxstr(wadlist);
     
         SetItem(li);
     }
 
     // Map name column
     li.m_col = serverlist_field_map;
-    li.m_text = s.Info.CurrentMap.Upper();
+    li.m_text = stdstr_towxstr(s.Info.CurrentMap).Upper();
     
     SetItem(li);
        
@@ -451,7 +461,11 @@ void LstOdaServerList::AddServerToList(const Server &s,
         
         case GT_Deathmatch:
         {
-            GameType = wxT("Deathmatch");
+            // Detect a 'duel' server
+            if (s.Info.MaxPlayers < 3)
+                GameType = wxT("Duel");
+            else
+                GameType = wxT("Deathmatch");
         }
         break;
         
@@ -482,10 +496,11 @@ void LstOdaServerList::AddServerToList(const Server &s,
     // IWAD column
     if (WadCount)
     {
-        wxString Iwad = s.Info.Wads[1].Name.Mid(0, s.Info.Wads[1].Name.Find('.'));
+        std::string iwad;
+        iwad = s.Info.Wads[1].Name.substr(0, s.Info.Wads[1].Name.find('.'));
         
         li.m_col = serverlist_field_iwad;
-        li.m_text = Iwad;
+        li.m_text = stdstr_towxstr(iwad);
     }
     
     SetItem(li);
@@ -495,7 +510,7 @@ void LstOdaServerList::AddServerToList(const Server &s,
     
     // Padlock icon for passworded servers
     SetItemColumnImage(li.m_itemId, serverlist_field_name, 
-        (s.Info.PasswordHash.Length() ? ImageList_Padlock : -1));
+        (s.Info.PasswordHash.length() ? ImageList_Padlock : -1));
     
     ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, 150);
     ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 300);

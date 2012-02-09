@@ -33,7 +33,11 @@
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
+#ifdef _XBOX
+#include <xtl.h>
+#else
 #include <windows.h>
+#endif // _XBOX
 #else
 #include <sys/stat.h>
 #endif
@@ -53,7 +57,7 @@
 #include "minilzo.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "dstrings.h"
+#include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
 #include "s_sound.h"
@@ -74,6 +78,7 @@
 #include "wi_stuff.h"
 #include "st_stuff.h"
 #include "am_map.h"
+#include "c_effect.h"
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
@@ -87,6 +92,14 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
 
 extern size_t got_heapsize;
 
@@ -110,7 +123,6 @@ extern gameinfo_t HereticSWGameInfo;
 extern QWORD testingmode;
 extern BOOL setsizeneeded;
 extern BOOL setmodeneeded;
-extern BOOL netdemo;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
 EXTERN_CVAR (st_scale)
 extern BOOL gameisdead;
@@ -121,7 +133,7 @@ extern int NoWipe;			// [RH] Don't wipe when travelling in hubs
 
 std::vector<std::string> wadfiles, wadhashes;		// [RH] remove limit on # of loaded wads
 BOOL devparm;				// started game with -devparm
-char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
+const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 int NoWipe;					// [RH] Allow wipe? (Needs to be set each time)
 char startmap[8];
 BOOL autostart;
@@ -140,8 +152,11 @@ static int pagetic;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR (sv_monstersrespawn)
+EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_allowjump)
+EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (snd_sfxvolume)				// maximum volume for sound
 EXTERN_CVAR (snd_musicvolume)			// maximum volume for music
@@ -438,14 +453,15 @@ void D_DoomLoop (void)
 				CL_RequestConnectInfo();
 
 			// [RH] Use the consoleplayer's camera to update sounds
-			S_UpdateSounds ((consoleplayer().spectator ? displayplayer().mo : consoleplayer().mo));	// move positional sounds
+			S_UpdateSounds (listenplayer().camera);	// move positional sounds
+			S_UpdateMusic();	// play another chunk of music
 
 			// Update display, next frame, with current state.
 			D_Display ();
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf_Bold ("\n%s\n", error.GetMessage().c_str());
+			Printf_Bold ("\n%s\n", error.GetMsg().c_str());
 
 			CL_QuitNetGame ();
 
@@ -712,8 +728,8 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 {
 	std::string found;
 
-	if(dir[dir.length() - 1] != '/')
-		dir += "/";
+	if(dir[dir.length() - 1] != PATHSEPCHAR)
+		dir += PATHSEP;
 
 	std::transform(hash.begin(), hash.end(), hash.begin(), toupper);
 	std::string dothash = ".";
@@ -777,18 +793,8 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 		return "";
 	}
 
-	while (true)
+	do
 	{
-		if(!FindNextFile(hFind, &FindFileData))
-		{
-			dwError = GetLastError();
-
-			if(dwError != ERROR_NO_MORE_FILES)
-				Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
-
-			break;
-		}
-
 		if(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 
@@ -812,7 +818,11 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 				Printf (PRINT_HIGH, "Required MD5: %s\n\n", hash.c_str());
 			}
 		}
-	}
+	} while(FindNextFile(hFind, &FindFileData));
+
+	dwError = GetLastError();
+	if(dwError != ERROR_NO_MORE_FILES)
+		Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
 
 	FindClose(hFind);
 #endif
@@ -821,10 +831,10 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 }
 
 //
-// denis - AddSearchDir
+// denis - D_AddSearchDir
 // Split a new directory string using the separator and append results to the output
 //
-void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
+void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
 {
 	if(!dir)
 		return;
@@ -843,8 +853,8 @@ void AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char se
 		FixPathSeparator(segment);
 		I_ExpandHomeDir(segment);
 
-		if(segment[segment.length() - 1] != '/')
-			segment += "/";
+		if(segment[segment.length() - 1] != PATHSEPCHAR)
+			segment += PATHSEP;
 
 		dirs.push_back(segment);
 	}
@@ -864,7 +874,7 @@ std::string BaseFileSearch(std::string file, std::string ext, std::string hash)
 		const char separator = ';';
 	#else
 		// absolute path?
-		if(file[0] == '/' || file[0] == '~')
+		if(file[0] == PATHSEPCHAR || file[0] == '~')
 			return file;
 
 		const char separator = ':';
@@ -882,11 +892,11 @@ std::string BaseFileSearch(std::string file, std::string ext, std::string hash)
 	dirs.push_back(startdir);
 	dirs.push_back(progdir);
 
-	AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
-	AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
-	AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
-    AddSearchDir(dirs, getenv("HOME"), separator);
-    AddSearchDir(dirs, waddirs.cstring(), separator);
+	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), separator);
+	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), separator);
+	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), separator);
+	D_AddSearchDir(dirs, getenv("HOME"), separator);
+	D_AddSearchDir(dirs, waddirs.cstring(), separator);
 
     dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
 
@@ -898,8 +908,8 @@ std::string BaseFileSearch(std::string file, std::string ext, std::string hash)
 		{
 			std::string &dir = dirs[i];
 
-			if(dir[dir.length() - 1] != '/')
-				dir += "/";
+			if(dir[dir.length() - 1] != PATHSEPCHAR)
+				dir += PATHSEP;
 
 			return dir + found;
 		}
@@ -1182,14 +1192,14 @@ void D_AddDefWads (std::string iwad)
 			int stuffstart;
 
 			std::string pd = progdir;
-			if(pd[pd.length() - 1] != '/')
-				pd += '/';
+			if(pd[pd.length() - 1] != PATHSEPCHAR)
+				pd += PATHSEPCHAR;
 
 			stuffstart = sprintf (skindir, "%sskins", pd.c_str());
 
 			if (!chdir (skindir))
 			{
-				skindir[stuffstart++] = '/';
+				skindir[stuffstart++] = PATHSEPCHAR;
 				if ((handle = I_FindFirst ("*.wad", &findstate)) != -1)
 				{
 					do
@@ -1209,10 +1219,10 @@ void D_AddDefWads (std::string iwad)
 			if (home)
 			{
 				stuffstart = sprintf (skindir, "%s%s.odamex/skins", home,
-									  home[strlen(home)-1] == '/' ? "" : "/");
+									  home[strlen(home)-1] == PATHSEPCHAR ? "" : PATHSEP);
 				if (!chdir (skindir))
 				{
-					skindir[stuffstart++] = '/';
+					skindir[stuffstart++] = PATHSEPCHAR;
 					if ((handle = I_FindFirst ("*.wad", &findstate)) != -1)
 					{
 						do
@@ -1372,7 +1382,7 @@ std::vector<size_t> D_DoomWadReboot(
 	lastWadRebootSuccess = false;
 
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_FatalError ("\nYou cannot switch WAD with the shareware version. Register!");
+		I_Error ("\nYou cannot switch WAD with the shareware version. Register!");
 
 	if(gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
@@ -1383,19 +1393,25 @@ std::vector<size_t> D_DoomWadReboot(
 
 	// Close all open WAD files
 	W_Close();
-	
+
 	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
     // I have never used memset, I hope I am not invoking satan by doing this :(
 	if (wadlevelinfos)
     {
-        memset(wadlevelinfos,0,sizeof(wadlevelinfos));        
+		for (i = 0; i < numwadlevelinfos; i++)
+			if (wadlevelinfos[i].snapshot)
+			{
+				delete wadlevelinfos[i].snapshot;
+				wadlevelinfos[i].snapshot = NULL;
+			}
+        memset(wadlevelinfos,0,sizeof(wadlevelinfos));
         numwadlevelinfos = 0;
     }
-    
+
     if (wadclusterinfos)
     {
         memset(wadclusterinfos,0,sizeof(wadclusterinfos));
-        numwadclusterinfos = 0;	        
+        numwadclusterinfos = 0;
     }
 
 	// Restart the memory manager
@@ -1405,7 +1421,7 @@ std::vector<size_t> D_DoomWadReboot(
 	gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
 
 	wadfiles.clear();
-	modifiedgame = false;	
+	modifiedgame = false;
 
 	std::string custwad;
 	if(wadnames.empty() == false)
@@ -1419,7 +1435,7 @@ std::vector<size_t> D_DoomWadReboot(
 
 		// strip absolute paths, as they present a security risk
 		FixPathSeparator(tmp);
-		size_t slash = tmp.find_last_of('/');
+		size_t slash = tmp.find_last_of(PATHSEPCHAR);
 		if(slash != std::string::npos)
 			tmp = tmp.substr(slash + 1, tmp.length() - slash);
 
@@ -1445,7 +1461,11 @@ std::vector<size_t> D_DoomWadReboot(
 
     UndoDehPatch();
 
-	D_InitStrings ();
+	// [RH] Initialize localizable strings.
+	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.Compact ();
+
+	//D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
 
 	//gotconback = false;
@@ -1458,11 +1478,13 @@ std::vector<size_t> D_DoomWadReboot(
 	V_InitPalette();
 
 	G_SetLevelStrings ();
-	G_ParseMapInfo ();	
+	G_ParseMapInfo ();
+	G_ParseMusInfo ();
 	S_ParseSndInfo();
 
 	M_Init();
 	R_Init();
+	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
 	P_Init();
 
 	S_Init (snd_sfxvolume, snd_musicvolume);
@@ -1476,6 +1498,9 @@ std::vector<size_t> D_DoomWadReboot(
 	return fails;
 }
 
+void CL_NetDemoRecord(const std::string &filename);
+void CL_NetDemoPlay(const std::string &filename);
+
 //
 // D_DoomMain
 //
@@ -1488,7 +1513,8 @@ void D_DoomMain (void)
 	M_ClearRandom();
 
 	gamestate = GS_STARTUP;
-	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in	
+	SetLanguageIDs ();
+	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError ("Could not initialize LZO routines");
@@ -1497,7 +1523,7 @@ void D_DoomMain (void)
 
 	Printf (PRINT_HIGH, "Heapsize: %u megabytes\n", got_heapsize);
 
-	M_LoadDefaults ();			// load before initing other systems
+	M_LoadDefaults ();					// load before initing other systems
 	C_ExecCmdLineParams (true, false);	// [RH] do all +set commands on the command line
 
 	iwad = Args.CheckValue("-iwad");
@@ -1509,8 +1535,12 @@ void D_DoomMain (void)
 
 	wadhashes = W_InitMultipleFiles (wadfiles);
 
+	// [RH] Initialize localizable strings.
+	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.Compact ();
+
 	// [RH] Initialize configurable strings.
-	D_InitStrings ();
+	//D_InitStrings ();
 	D_DoDefDehackedPatch ();
 
 	// [RH] Moved these up here so that we can do most of our
@@ -1524,14 +1554,24 @@ void D_DoomMain (void)
 	cvar_t::EnableCallbacks ();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
-	if (STARTUP1[0])	Printf (PRINT_HIGH, "%s\n", STARTUP1);
-	if (STARTUP2[0])	Printf (PRINT_HIGH, "%s\n", STARTUP2);
-	if (STARTUP3[0])	Printf (PRINT_HIGH, "%s\n", STARTUP3);
-	if (STARTUP4[0])	Printf (PRINT_HIGH, "%s\n", STARTUP4);
-	if (STARTUP5[0])	Printf (PRINT_HIGH, "%s\n", STARTUP5);
+	if (GStrings(STARTUP1)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP1));
+	if (GStrings(STARTUP2)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP2));
+	if (GStrings(STARTUP3)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP3));
+	if (GStrings(STARTUP4)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP4));
+	if (GStrings(STARTUP5)[0])	Printf (PRINT_HIGH, "%s\n", GStrings(STARTUP5));
 
+	// Nomonsters
+	sv_nomonsters = Args.CheckParm("-nomonsters");
+
+	// Respawn
+	sv_monstersrespawn = Args.CheckParm("-respawn");
+
+	// Fast
+	sv_fastmonsters = Args.CheckParm("-fast");
+
+    // developer mode
 	devparm = Args.CheckParm ("-devparm");
-	
+
 	// Record a vanilla demo
 	p = Args.CheckParm ("-record");
 	if (p)
@@ -1541,9 +1581,22 @@ void D_DoomMain (void)
 		demorecordfile = Args.GetArg (p+1);
 	}
 
+	p = Args.CheckParm("-netrecord");
+	if (p)
+	{
+		std::string demoname;
+		if (Args.GetArg(p + 1))
+			demoname = Args.GetArg(p + 1);
+		else
+			demoname = "demo";
+
+		CL_NetDemoRecord(demoname);
+	}
+
+
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
-		
+
 	// Check for -playdemo, play a single demo then quit.
 	p = Args.CheckParm ("-playdemo");
 	// Hack to check for +playdemo command, since if you just add it normally
@@ -1557,7 +1610,7 @@ void D_DoomMain (void)
 		singledemo = true;
 		defdemoname = Args.GetArg (p+1);
 	}
-	
+
 	const char *val = Args.CheckValue ("-skill");
 	if (val)
 	{
@@ -1593,21 +1646,24 @@ void D_DoomMain (void)
 		autostart = true;
 	}
 	if (devparm)
-		Printf (PRINT_HIGH, "%s", Strings[0].builtin);        // D_DEVSTR
+		Printf (PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
 
 	// [RH] Now that all text strings are set up,
 	// insert them into the level and cluster data.
 	G_SetLevelStrings ();
-	
+
 	// [RH] Parse through all loaded mapinfo lumps
-	G_ParseMapInfo ();	
+	G_ParseMapInfo ();
+	
+	// [ML] Parse musinfo lump
+	G_ParseMusInfo ();
 
 	// [RH] Parse any SNDINFO lumps
 	S_ParseSndInfo();
 
 	// Check for -file in shareware
 	if (modifiedgame && (gameinfo.flags & GI_SHAREWARE))
-		I_FatalError ("You cannot -file with the shareware version. Register!");
+		I_Error ("You cannot -file with the shareware version. Register!");
 
 #ifdef WIN32
 	const char *sdlv = getenv("SDL_VIDEODRIVER");
@@ -1621,6 +1677,7 @@ void D_DoomMain (void)
 	R_Init ();
 
 	Printf (PRINT_HIGH, "P_Init: Init Playloop state.\n");
+	P_InitEffects();	// [ML] Do this here so we don't have to put particle crap in server
 	P_Init ();
 
 	Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");
@@ -1655,6 +1712,20 @@ void D_DoomMain (void)
 	setmodeneeded = false; // [Fly] we don't need to set a video mode here!
     //gamestate = GS_FULLCONSOLE;
 
+	p = Args.CheckParm("-netplay");
+	if (p)
+	{
+		if (Args.GetArg(p + 1))
+		{
+			std::string filename = Args.GetArg(p + 1);
+			CL_NetDemoPlay(filename);
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "No netdemo filename specified.\n");
+		}
+	}
+
 	// denis - bring back the demos
     if ( gameaction != ga_loadgame )
     {
@@ -1669,16 +1740,17 @@ void D_DoomMain (void)
 					// single player warp (like in g_level)
 					serverside = true;
                     sv_allowexit = "1";
-                    sv_nomonsters = "0";
                     sv_freelook = "1";
                     sv_allowjump = "1";
+                    sv_allowredscreen = "1";
                     sv_gametype = GM_COOP;
+
 					players.clear();
 					players.push_back(player_t());
 					players.back().playerstate = PST_REBORN;
 					consoleplayer_id = displayplayer_id = players.back().id = 1;
 				}
-				
+
 				G_InitNew (startmap);
 				if (autorecord)
 					if (G_RecordDemo(demorecordfile.c_str()))

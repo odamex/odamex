@@ -198,15 +198,15 @@ void C_DoCommand (const char *cmd)
 		// Checking for matching commands follows this search order:
 		//	1. Check the Commands map
 		//	2. Check the CVars list
-		command_map_t::iterator c = Commands().find(argv[0]);
+		command_map_t::iterator c = Commands().find(StdStringToLower(argv[0]));
 
 		if (c != Commands().end())
 		{
 			com = c->second;
 
 			if(!safemode
-			|| strcmp(argv[0], "if")==0
-			|| strcmp(argv[0], "exec")==0)
+			|| stricmp(argv[0], "if")==0
+			|| stricmp(argv[0], "exec")==0)
 			{
 				com->argc = argc;
 				com->argv = argv;
@@ -560,7 +560,8 @@ DConsoleCommand::~DConsoleCommand ()
 }
 
 DConsoleAlias::DConsoleAlias (const char *name, const char *command)
-	: DConsoleCommand (name),  state_lock(false), m_Command(command)
+	:	DConsoleCommand (name),  state_lock(false),
+		m_Command(command)
 {
 }
 
@@ -580,7 +581,10 @@ void DConsoleAlias::Run()
 		if (argc > 1)
         {
             for (size_t i = 1; i < argc; i++)
+            {
+                m_CommandParam += " ";
                 m_CommandParam += argv[i];
+            }
         }
 
         AddCommandString (m_CommandParam.c_str());
@@ -649,7 +653,7 @@ static int DumpHash (BOOL aliases)
 {
 	int count = 0;
 
-	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; i++)
+	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; ++i)
 	{
 		DConsoleCommand *cmd = i->second;
 
@@ -673,7 +677,7 @@ void DConsoleAlias::Archive (FILE *f)
 
 void DConsoleAlias::C_ArchiveAliases (FILE *f)
 {
-	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; i++)
+	for (command_map_t::iterator i = Commands().begin(), e = Commands().end(); i != e; ++i)
 	{
 		DConsoleCommand *alias = i->second;
 
@@ -691,7 +695,7 @@ BEGIN_COMMAND (alias)
 	}
 	else
 	{
-		command_map_t::iterator i = Commands().find(argv[1]);
+		command_map_t::iterator i = Commands().find(StdStringToLower(argv[1]));
 
 		if(i != Commands().end())
 		{
@@ -717,7 +721,7 @@ BEGIN_COMMAND (alias)
 		{
 			// Build the new alias
 			std::string param = BuildString (argc - 2, (const char **)&argv[2]);
-			new DConsoleAlias (argv[1], param.c_str());
+			new DConsoleAlias (StdStringToLower(argv[1]).c_str(), param.c_str());
 		}
 	}
 }
@@ -852,7 +856,7 @@ BEGIN_COMMAND (stoplog)
 }
 END_COMMAND (stoplog)
 
-BOOL P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
 
 BEGIN_COMMAND (puke)

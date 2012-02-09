@@ -1,19 +1,27 @@
 SOURCES = src/dlg_config.cpp \
- src/lst_custom.cpp \
- src/lst_players.cpp \
- src/lst_servers.cpp \
- src/lst_srvdetails.cpp \
- src/net_packet.cpp \
- src/dlg_about.cpp \
- src/dlg_main.cpp \
- src/dlg_servers.cpp \
- src/main.cpp \
- src/net_io.cpp \
- src/query_thread.cpp \
- src/frm_odaget.cpp \
- src/md5.cpp
+	src/lst_custom.cpp \
+	src/lst_players.cpp \
+	src/lst_servers.cpp \
+	src/lst_srvdetails.cpp \
+	../odalpapi/net_packet.cpp \
+	../odalpapi/net_utils.cpp \
+	../odalpapi/net_error.cpp \
+	../odalpapi/net_io.cpp \
+	src/dlg_about.cpp \
+	src/dlg_main.cpp \
+	src/dlg_servers.cpp \
+	src/main.cpp \
+	src/query_thread.cpp \
+	src/frm_odaget.cpp \
+	src/md5.cpp \
+	src/str_utils.cpp
 
-HEADERS = src/*.h
+HEADERS = src/*.h \
+	../odalpapi/*.h
+
+INCLUDES = -I. \
+	-I./res \
+	-I../odalpapi
 
 CC = g++
 LD = g++
@@ -42,6 +50,9 @@ LFLAGS = $(shell $(WXCONFIG) $(WXVERSIONADDITION) --libs) -g
 
 # Add the universal build flags if this is wx_mac
 ifneq (,$(findstring wx_mac, $(strip $(shell $(WXCONFIG) --basename 2>&1))))
+	# g++-4.0 must be used to build with the 10.4 universal sdk
+	CC = g++-4.0
+	LD = g++-4.0
 	CFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc -isysroot /Developer/SDKs/MacOSX10.4u.sdk
 	LFLAGS += -mmacosx-version-min=10.4 -arch i386 -arch ppc -isysroot /Developer/SDKs/MacOSX10.4u.sdk
 endif
@@ -65,7 +76,7 @@ odalaunch: $(OBJECTS)
 	$(LD) $(OBJECTS) -o odalaunch $(LFLAGS)
 
 %.o: %.cpp res/xrc_resource.h $(HEADERS)
-	$(CC) -c $< -o $@ $(CFLAGS) -I. -I./res
+	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDES)
 
 res/xrc_resource.h: $(RESOURCES)
 	$(WXRC) -c -o $@ res/*.xrc

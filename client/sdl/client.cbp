@@ -3,7 +3,6 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="client" />
-		<Option pch_mode="0" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Win Release (GCC)">
@@ -24,9 +23,10 @@
 				<Linker>
 					<Add option="-s" />
 					<Add library="mingw32" />
-					<Add library="winmm" />
-					<Add library="wsock32" />
+					<Add library="ws2_32" />
 					<Add library="libtextscreen" />
+					<Add library="libportmidi" />
+					<Add library="winmm" />
 					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
@@ -38,6 +38,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option parameters="-file idl2011.wad +map map26" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -48,9 +49,10 @@
 				</Compiler>
 				<Linker>
 					<Add library="mingw32" />
-					<Add library="winmm" />
-					<Add library="wsock32" />
+					<Add library="ws2_32" />
 					<Add library="libtextscreen-dbg" />
+					<Add library="libportmidi-dbg" />
+					<Add library="winmm" />
 					<Add directory="..\..\lib" />
 				</Linker>
 			</Target>
@@ -73,6 +75,7 @@
 				<Linker>
 					<Add option="-s" />
 					<Add library="X11" />
+					<Add library="..\..\lib\libtextscreen.a" />
 				</Linker>
 			</Target>
 			<Target title="Unix Debug">
@@ -83,6 +86,7 @@
 				<Option deps_output="..\..\deps" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option parameters="-waddir ~/Games/doomwads -connect 66.170.3.2:10703" />
 				<Option projectResourceIncludeDirsRelation="0" />
 				<Compiler>
 					<Add option="-Wall" />
@@ -94,6 +98,7 @@
 				</Compiler>
 				<Linker>
 					<Add library="X11" />
+					<Add library="..\..\lib\libtextscreen-dbg.a" />
 				</Linker>
 			</Target>
 			<Target title="Mac Release">
@@ -168,10 +173,13 @@
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DPORTMIDI" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
 					<Add directory="..\..\textscreen" />
+					<Add directory="..\..\portmidi\pm_common" />
+					<Add directory="..\..\portmidi\porttime" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
@@ -183,7 +191,7 @@
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
-					<Add library="Ws2_32.lib" />
+					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -198,6 +206,7 @@
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
 					<Add library="libtextscreen" />
+					<Add library="libportmidi" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
@@ -232,17 +241,20 @@
 					<Add option="/Od" />
 					<Add option="/W2" />
 					<Add option="/Zc:forScope" />
-					<Add option="/wd4430" />
 					<Add option="/Zi" />
+					<Add option="/wd4430" />
 					<Add option="/DWIN32" />
 					<Add option="/D_WINDOWS" />
 					<Add option="/DNOASM" />
 					<Add option="/DNOMINMAX" />
 					<Add option="/D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="/DPORTMIDI" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
 					<Add directory="..\..\textscreen" />
+					<Add directory="..\..\portmidi\pm_common" />
+					<Add directory="..\..\portmidi\porttime" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="." />
@@ -251,11 +263,11 @@
 					<Add directory="..\..\libtextscreen" />
 				</ResourceCompiler>
 				<Linker>
-					<Add option="/debug" />
+					<Add option="/DEBUG" />
 					<Add library="SDLmain.lib" />
 					<Add library="SDL.lib" />
 					<Add library="SDL_mixer.lib" />
-					<Add library="Ws2_32.lib" />
+					<Add library="ws2_32.lib" />
 					<Add library="Winmm.lib" />
 					<Add library="kernel32.lib" />
 					<Add library="user32.lib" />
@@ -270,6 +282,7 @@
 					<Add library="odbc32.lib" />
 					<Add library="odbccp32.lib" />
 					<Add library="libtextscreen-dbg" />
+					<Add library="libportmidi-dbg" />
 					<Add directory="." />
 					<Add directory="..\src" />
 					<Add directory="..\..\common" />
@@ -288,14 +301,19 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-pedantic" />
+			<Add option="-Winvalid-pch" />
+			<Add option='-include &quot;cl_pch.h&quot;' />
 			<Add option="-fexceptions" />
 			<Add option="-Wno-long-long" />
 			<Add option="-fno-optimize-sibling-calls" />
 			<Add option="-DNOASM" />
+			<Add option="-DPORTMIDI" />
 			<Add directory="." />
 			<Add directory="..\src" />
 			<Add directory="..\..\common" />
 			<Add directory="..\..\textscreen" />
+			<Add directory="..\..\portmidi\pm_common" />
+			<Add directory="..\..\portmidi\porttime" />
 		</Compiler>
 		<Linker>
 			<Add library="SDLmain" />
@@ -303,83 +321,6 @@
 			<Add library="SDL_mixer" />
 			<Add directory="..\..\lib" />
 		</Linker>
-		<Unit filename="client.rc">
-			<Option compilerVar="WINDRES" />
-			<Option target="Win Release (GCC)" />
-			<Option target="Win Debug (GCC)" />
-			<Option target="Win Release (VC)" />
-			<Option target="Win Debug (VC)" />
-		</Unit>
-		<Unit filename="hardware.cpp" />
-		<Unit filename="hardware.h" />
-		<Unit filename="i_input.cpp" />
-		<Unit filename="i_input.h" />
-		<Unit filename="i_main.cpp" />
-		<Unit filename="i_music.cpp" />
-		<Unit filename="i_music.h" />
-		<Unit filename="i_sdlvideo.cpp" />
-		<Unit filename="i_sdlvideo.h" />
-		<Unit filename="i_sound.cpp" />
-		<Unit filename="i_sound.h" />
-		<Unit filename="i_system.cpp" />
-		<Unit filename="i_system.h" />
-		<Unit filename="i_video.h" />
-		<Unit filename="mus2midi.cpp" />
-		<Unit filename="mus2midi.h" />
-		<Unit filename="resource.h">
-			<Option target="Win Release (GCC)" />
-			<Option target="Win Debug (GCC)" />
-			<Option target="Win Release (VC)" />
-			<Option target="Win Debug (VC)" />
-		</Unit>
-		<Unit filename="..\src\am_map.cpp" />
-		<Unit filename="..\src\am_map.h" />
-		<Unit filename="..\src\c_bind.cpp" />
-		<Unit filename="..\src\c_bind.h" />
-		<Unit filename="..\src\c_console.cpp" />
-		<Unit filename="..\src\cl_ctf.cpp" />
-		<Unit filename="..\src\cl_cvarlist.cpp" />
-		<Unit filename="..\src\cl_main.cpp" />
-		<Unit filename="..\src\cl_main.h" />
-		<Unit filename="..\src\cl_mobj.cpp" />
-		<Unit filename="..\src\cl_pred.cpp" />
-		<Unit filename="..\src\cl_stubs.cpp" />
-		<Unit filename="..\src\d_main.cpp" />
-		<Unit filename="..\src\d_net.cpp" />
-		<Unit filename="..\src\d_netinfo.cpp" />
-		<Unit filename="..\src\f_finale.cpp" />
-		<Unit filename="..\src\f_finale.h" />
-		<Unit filename="..\src\f_wipe.cpp" />
-		<Unit filename="..\src\f_wipe.h" />
-		<Unit filename="..\src\g_game.cpp" />
-		<Unit filename="..\src\g_level.cpp" />
-		<Unit filename="..\src\hu_stuff.cpp" />
-		<Unit filename="..\src\hu_stuff.h" />
-		<Unit filename="..\src\m_menu.cpp" />
-		<Unit filename="..\src\m_menu.h" />
-		<Unit filename="..\src\m_misc.cpp" />
-		<Unit filename="..\src\m_options.cpp" />
-		<Unit filename="..\src\r_bsp.cpp" />
-		<Unit filename="..\src\r_draw.cpp" />
-		<Unit filename="..\src\r_drawt.cpp" />
-		<Unit filename="..\src\r_main.cpp" />
-		<Unit filename="..\src\r_plane.cpp" />
-		<Unit filename="..\src\r_segs.cpp" />
-		<Unit filename="..\src\r_sky.cpp" />
-		<Unit filename="..\src\r_things.cpp" />
-		<Unit filename="..\src\s_sound.cpp" />
-		<Unit filename="..\src\st_heretic.cpp" />
-		<Unit filename="..\src\st_lib.cpp" />
-		<Unit filename="..\src\st_lib.h" />
-		<Unit filename="..\src\st_new.cpp" />
-		<Unit filename="..\src\st_stuff.cpp" />
-		<Unit filename="..\src\v_draw.cpp" />
-		<Unit filename="..\src\v_palette.cpp" />
-		<Unit filename="..\src\v_text.cpp" />
-		<Unit filename="..\src\v_text.h" />
-		<Unit filename="..\src\v_video.cpp" />
-		<Unit filename="..\src\wi_stuff.cpp" />
-		<Unit filename="..\src\wi_stuff.h" />
 		<Unit filename="..\..\common\actor.h" />
 		<Unit filename="..\..\common\c_console.h" />
 		<Unit filename="..\..\common\c_cvarlist.cpp" />
@@ -387,6 +328,9 @@
 		<Unit filename="..\..\common\c_cvars.h" />
 		<Unit filename="..\..\common\c_dispatch.cpp" />
 		<Unit filename="..\..\common\c_dispatch.h" />
+		<Unit filename="..\..\common\c_effect.cpp" />
+		<Unit filename="..\..\common\c_effect.h" />
+		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\cmdlib.cpp" />
 		<Unit filename="..\..\common\cmdlib.h" />
 		<Unit filename="..\..\common\d_dehacked.cpp" />
@@ -411,7 +355,6 @@
 		<Unit filename="..\..\common\doomtype.h" />
 		<Unit filename="..\..\common\dsectoreffect.cpp" />
 		<Unit filename="..\..\common\dsectoreffect.h" />
-		<Unit filename="..\..\common\dstrings.cpp" />
 		<Unit filename="..\..\common\dstrings.h" />
 		<Unit filename="..\..\common\dthinker.cpp" />
 		<Unit filename="..\..\common\dthinker.h" />
@@ -422,6 +365,7 @@
 		<Unit filename="..\..\common\g_level.h" />
 		<Unit filename="..\..\common\gi.cpp" />
 		<Unit filename="..\..\common\gi.h" />
+		<Unit filename="..\..\common\gstrings.h" />
 		<Unit filename="..\..\common\huffman.cpp" />
 		<Unit filename="..\..\common\huffman.h" />
 		<Unit filename="..\..\common\i_net.cpp" />
@@ -474,6 +418,7 @@
 		<Unit filename="..\..\common\p_plats.cpp" />
 		<Unit filename="..\..\common\p_pspr.cpp" />
 		<Unit filename="..\..\common\p_pspr.h" />
+		<Unit filename="..\..\common\p_quake.cpp" />
 		<Unit filename="..\..\common\p_saveg.cpp" />
 		<Unit filename="..\..\common\p_saveg.h" />
 		<Unit filename="..\..\common\p_setup.cpp" />
@@ -486,6 +431,8 @@
 		<Unit filename="..\..\common\p_things.cpp" />
 		<Unit filename="..\..\common\p_tick.cpp" />
 		<Unit filename="..\..\common\p_tick.h" />
+		<Unit filename="..\..\common\p_unlag.cpp" />
+		<Unit filename="..\..\common\p_unlag.h" />
 		<Unit filename="..\..\common\p_user.cpp" />
 		<Unit filename="..\..\common\p_xlat.cpp" />
 		<Unit filename="..\..\common\po_man.cpp" />
@@ -501,12 +448,17 @@
 		<Unit filename="..\..\common\r_sky.h" />
 		<Unit filename="..\..\common\r_state.h" />
 		<Unit filename="..\..\common\r_things.h" />
+		<Unit filename="..\..\common\s_sndseq.cpp" />
+		<Unit filename="..\..\common\s_sndseq.h" />
 		<Unit filename="..\..\common\s_sound.h" />
 		<Unit filename="..\..\common\sc_man.cpp" />
 		<Unit filename="..\..\common\sc_man.h" />
 		<Unit filename="..\..\common\st_stuff.h" />
 		<Unit filename="..\..\common\stats.cpp" />
 		<Unit filename="..\..\common\stats.h" />
+		<Unit filename="..\..\common\stringenums.h" />
+		<Unit filename="..\..\common\stringtable.cpp" />
+		<Unit filename="..\..\common\stringtable.h" />
 		<Unit filename="..\..\common\szp.h" />
 		<Unit filename="..\..\common\tables.cpp" />
 		<Unit filename="..\..\common\tables.h" />
@@ -521,6 +473,93 @@
 		<Unit filename="..\..\common\w_wad.h" />
 		<Unit filename="..\..\common\z_zone.cpp" />
 		<Unit filename="..\..\common\z_zone.h" />
+		<Unit filename="..\src\am_map.cpp" />
+		<Unit filename="..\src\am_map.h" />
+		<Unit filename="..\src\c_bind.cpp" />
+		<Unit filename="..\src\c_bind.h" />
+		<Unit filename="..\src\c_console.cpp" />
+		<Unit filename="..\src\cl_ctf.cpp" />
+		<Unit filename="..\src\cl_cvarlist.cpp" />
+		<Unit filename="..\src\cl_demo.cpp" />
+		<Unit filename="..\src\cl_download.cpp" />
+		<Unit filename="..\src\cl_download.h" />
+		<Unit filename="..\src\cl_main.cpp" />
+		<Unit filename="..\src\cl_main.h" />
+		<Unit filename="..\src\cl_mobj.cpp" />
+		<Unit filename="..\src\cl_pch.h">
+			<Option compile="1" />
+			<Option weight="0" />
+		</Unit>
+		<Unit filename="..\src\cl_pred.cpp" />
+		<Unit filename="..\src\cl_stubs.cpp" />
+		<Unit filename="..\src\d_main.cpp" />
+		<Unit filename="..\src\d_net.cpp" />
+		<Unit filename="..\src\d_netinfo.cpp" />
+		<Unit filename="..\src\f_finale.cpp" />
+		<Unit filename="..\src\f_finale.h" />
+		<Unit filename="..\src\f_wipe.cpp" />
+		<Unit filename="..\src\f_wipe.h" />
+		<Unit filename="..\src\g_game.cpp" />
+		<Unit filename="..\src\g_level.cpp" />
+		<Unit filename="..\src\hu_stuff.cpp" />
+		<Unit filename="..\src\hu_stuff.h" />
+		<Unit filename="..\src\m_menu.cpp" />
+		<Unit filename="..\src\m_menu.h" />
+		<Unit filename="..\src\m_misc.cpp" />
+		<Unit filename="..\src\m_options.cpp" />
+		<Unit filename="..\src\r_bsp.cpp" />
+		<Unit filename="..\src\r_draw.cpp" />
+		<Unit filename="..\src\r_drawt.cpp" />
+		<Unit filename="..\src\r_main.cpp" />
+		<Unit filename="..\src\r_plane.cpp" />
+		<Unit filename="..\src\r_segs.cpp" />
+		<Unit filename="..\src\r_sky.cpp" />
+		<Unit filename="..\src\r_things.cpp" />
+		<Unit filename="..\src\s_sound.cpp" />
+		<Unit filename="..\src\st_lib.cpp" />
+		<Unit filename="..\src\st_lib.h" />
+		<Unit filename="..\src\st_new.cpp" />
+		<Unit filename="..\src\st_stuff.cpp" />
+		<Unit filename="..\src\v_draw.cpp" />
+		<Unit filename="..\src\v_palette.cpp" />
+		<Unit filename="..\src\v_text.cpp" />
+		<Unit filename="..\src\v_text.h" />
+		<Unit filename="..\src\v_video.cpp" />
+		<Unit filename="..\src\wi_stuff.cpp" />
+		<Unit filename="..\src\wi_stuff.h" />
+		<Unit filename="client.rc">
+			<Option compilerVar="WINDRES" />
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
+		</Unit>
+		<Unit filename="hardware.cpp" />
+		<Unit filename="hardware.h" />
+		<Unit filename="i_input.cpp" />
+		<Unit filename="i_input.h" />
+		<Unit filename="i_main.cpp" />
+		<Unit filename="i_midi.cpp" />
+		<Unit filename="i_midi.h" />
+		<Unit filename="i_music.cpp" />
+		<Unit filename="i_music.h" />
+		<Unit filename="i_musicsystem.cpp" />
+		<Unit filename="i_musicsystem.h" />
+		<Unit filename="i_sdlvideo.cpp" />
+		<Unit filename="i_sdlvideo.h" />
+		<Unit filename="i_sound.cpp" />
+		<Unit filename="i_sound.h" />
+		<Unit filename="i_system.cpp" />
+		<Unit filename="i_system.h" />
+		<Unit filename="i_video.h" />
+		<Unit filename="mus2midi.cpp" />
+		<Unit filename="mus2midi.h" />
+		<Unit filename="resource.h">
+			<Option target="Win Release (GCC)" />
+			<Option target="Win Debug (GCC)" />
+			<Option target="Win Release (VC)" />
+			<Option target="Win Debug (VC)" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />

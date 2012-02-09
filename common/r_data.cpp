@@ -47,6 +47,7 @@
 #include "v_video.h"
 
 #include <ctype.h>
+#include <cstddef>
 
 #include <algorithm>
 
@@ -57,7 +58,6 @@
 // A column is composed of zero or more posts,
 // a patch or sprite is composed of zero or more columns.
 //
-
 
 
 
@@ -74,7 +74,7 @@ texture_t** 	textures;
 
 
 int*			texturewidthmask;
-byte*		textureheightmask;		// [RH] Tutti-Frutti fix
+byte*			textureheightmask;		// [RH] Tutti-Frutti fix
 // needed for texture pegging
 fixed_t*		textureheight;
 static int*		texturecompositesize;
@@ -797,7 +797,7 @@ int R_FlatNumForName (const char* name)
 //
 int R_CheckTextureNumForName (const char *name)
 {
-	char uname[9];
+	unsigned char uname[9];
 	int  i;
 
 	// "NoTexture" marker.
@@ -805,13 +805,13 @@ int R_CheckTextureNumForName (const char *name)
 		return 0;
 
 	// [RH] Use a hash table instead of linear search
-	strncpy (uname, name, 9); // denis - todo - string limit?
+	strncpy ((char *)uname, name, 9); // denis - todo - string limit?
 	std::transform(uname, uname + sizeof(uname), uname, toupper);
 
 	i = textures[/*W_LumpNameHash (uname) % (unsigned) numtextures*/0]->index; // denis - todo - replace with map<>
 
 	while (i != -1) {
-		if (!strncmp (textures[i]->name, uname, 8))
+		if (!strncmp (textures[i]->name, (char *)uname, 8))
 			break;
 		i = textures[i]->next;
 	}
@@ -944,6 +944,46 @@ unsigned int SlopeDiv (unsigned int num, unsigned int den)
 	ans = (num << 3) / (den >> 8);
 
 	return ans <= SLOPERANGE ? ans : SLOPERANGE;
+}
+
+// [ML] 11/4/06: Moved here from v_video.cpp
+// [ML] 12/6/11: Moved from v_draw.cpp, not sure where to put it now...
+/*
+===============
+BestColor
+(borrowed from Quake2 source: utils3/qdata/images.c)
+===============
+*/
+byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors)
+{
+	int		i;
+	int		dr, dg, db;
+	int		bestdistortion, distortion;
+	int		bestcolor;
+
+//
+// let any color go to 0 as a last resort
+//
+	bestdistortion = 256*256*4;
+	bestcolor = 0;
+
+	for (i = 0; i < numcolors; i++)
+	{
+		dr = r - RPART(palette[i]);
+		dg = g - GPART(palette[i]);
+		db = b - BPART(palette[i]);
+		distortion = dr*dr + dg*dg + db*db;
+		if (distortion < bestdistortion)
+		{
+			if (!distortion)
+				return i;		// perfect match
+
+			bestdistortion = distortion;
+			bestcolor = i;
+		}
+	}
+
+	return bestcolor;
 }
 
 

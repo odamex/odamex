@@ -30,7 +30,8 @@
 
 #include <string>
 
-#define	MAX_UDP_PACKET	8192
+// Max packet size to send and receive, in bytes
+#define	MAX_UDP_PACKET 8192
 
 #define SERVERPORT  10666
 #define CLIENTPORT  10667
@@ -64,7 +65,7 @@ enum svc_t
 	svc_playerinfo,			// weapons, ammo, maxammo, raisedweapon for local player
 	svc_moveplayer,			// [byte] [int] [int] [int] [int] [byte]
 	svc_updatelocalplayer,	// [int] [int] [int] [int] [int]
-	svc_svgametic,			// [int]
+	svc_pingrequest,		// [SL] 2011-05-11 [long:timestamp]
 	svc_updateping,			// [byte] [byte]
 	svc_spawnmobj,			//
 	svc_disconnectclient,
@@ -112,6 +113,9 @@ enum svc_t
 	svc_spectate,			// [Nes] - [byte:state], [short:playernum]
 	svc_connectclient,
     svc_midprint,
+	svc_svgametic,			// [SL] 2011-05-11 - [byte]
+	svc_timeleft,
+	svc_inttimeleft,		// [ML] For intermission timer
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -123,6 +127,11 @@ enum svc_t
 	// for downloading
 	svc_wadinfo,			// denis - [ulong:filesize]
 	svc_wadchunk,			// denis - [ulong:offset], [ushort:len], [byte[]:data]
+		
+	// netdemos - NullPoint
+	svc_netdemocap = 100,
+	svc_netdemostop = 101,
+	svc_netdemosnapshot = 102,
 	
 	// for compressed packets
 	svc_compressed = 200,
@@ -142,7 +151,7 @@ enum clc_t
 	clc_say,
 	clc_move,			// send cmds
 	clc_userinfo,		// send userinfo
-	clc_svgametic,
+	clc_pingreply,		// [SL] 2011-05-11 - [long: timestamp]
 	clc_rate,
 	clc_ack,
 	clc_rcon,
@@ -188,6 +197,14 @@ public:
 	byte	*data;
 	size_t	allocsize, cursize, readpos;
 	bool	overflowed;  // set to true if the buffer size failed
+
+    // Buffer seeking flags
+    typedef enum
+    {
+         BT_SSET // From beginning
+        ,BT_SCUR // From current position
+        ,BT_SEND // From end
+    } seek_loc_t;
 
 public:
 
@@ -324,12 +341,55 @@ public:
 		return (const char *)begin;
 	}
 
-	size_t BytesLeftToRead()
+    size_t SetOffset (const size_t &offset, const seek_loc_t &loc)
+    {
+        switch (loc)
+        {
+            case BT_SSET:
+            {
+                if (offset > cursize)
+                {
+                    overflowed = true;
+                    return 0;
+                }
+
+                readpos = offset;
+            }
+            break;
+
+            case BT_SCUR:
+            {
+                if (readpos+offset > cursize)
+                {
+                    overflowed = true;
+                    return 0;
+                }
+
+                readpos += offset;
+            }
+
+            case BT_SEND:
+            {
+                if (readpos-offset < 0)
+                {
+                    // lies, an underflow occured
+                    overflowed = true;
+                    return 0;
+                }
+
+                readpos -= offset;
+            }
+        }
+
+        return readpos;
+    }
+
+	size_t BytesLeftToRead() const
 	{
 		return overflowed || cursize < readpos ? 0 : cursize - readpos;
 	}
 
-	size_t BytesRead()
+	size_t BytesRead() const
 	{
 		return readpos;
 	}
@@ -339,12 +399,12 @@ public:
 		return data;
 	}
 
-	size_t size()
+	size_t size() const
 	{
 		return cursize;
 	}
 	
-	size_t maxsize()
+	size_t maxsize() const
 	{
 		return allocsize;
 	}
@@ -361,15 +421,31 @@ public:
 		overflowed = false;
 	}
 
-	void resize(size_t len)
+	void resize(size_t len, bool clearbuf = true)
 	{
-		delete[] data;
-		
+		byte *olddata = data;
 		data = new byte[len];
 		allocsize = len;
-		cursize = 0;
-		readpos = 0;
-		overflowed = false;
+		
+		if (!clearbuf)
+		{
+			if (cursize < allocsize)
+			{
+				memcpy(data, olddata, cursize);
+			}
+			else
+			{
+				clear();
+				overflowed = true;
+				Printf (PRINT_HIGH, "buf_t::resize(): overflow\n");
+			}
+		}
+		else
+		{
+			clear();
+		}
+
+		delete[] olddata;
 	}
 
 	byte *SZ_GetSpace(size_t length)
@@ -389,6 +465,10 @@ public:
 
 	buf_t &operator =(const buf_t &other)
 	{
+	    // Avoid self-assignment
+		if (this == &other)
+            return *this;
+
 		delete[] data;
 		
 		data = new byte[other.allocsize];
@@ -439,14 +519,14 @@ bool NET_StringToAdr (const char *s, netadr_t *a);
 bool NET_CompareAdr (netadr_t a, netadr_t b);
 int  NET_GetPacket (void);
 void NET_SendPacket (buf_t &buf, netadr_t &to);
-void NET_GetLocalAddress (void);
+std::string NET_GetLocalAddress (void);
 
 void SZ_Clear (buf_t *buf);
 void SZ_Write (buf_t *b, const void *data, int length);
 void SZ_Write (buf_t *b, const byte *data, int startpos, int length);
 
 void MSG_WriteByte (buf_t *b, byte c);
-//void MSG_WriteMarker (buf_t *b, svc_t c);
+void MSG_WriteMarker (buf_t *b, svc_t c);
 void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
@@ -465,6 +545,8 @@ int MSG_ReadLong (void);
 bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);
 const char *MSG_ReadString (void);
+
+size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc);
 
 bool MSG_DecompressMinilzo ();
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);

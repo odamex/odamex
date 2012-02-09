@@ -28,10 +28,14 @@
 
 #include "version.h"
 
+#ifdef GEKKO
+#include <gctypes.h>
+#endif
+
 #ifndef __BYTEBOOL__
 #define __BYTEBOOL__
 // [RH] Some windows includes already define this
-#if !defined(_WINDEF_) && !defined(__wtypes_h__)
+#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
 typedef int BOOL;
 #endif
 #ifndef __cplusplus
@@ -56,7 +60,9 @@ typedef enum {false, true} dboolean;
 // Predefined with some OS.
 #ifndef UNIX
 #ifndef _MSC_VER
+#ifndef GEKKO
 #include <values.h>
+#endif
 #endif
 #endif
 
@@ -66,6 +72,19 @@ typedef enum {false, true} dboolean;
 
 #ifdef OSF1
 #define __int64 long
+#endif
+
+#if (defined _XBOX || defined _MSC_VER)
+	typedef signed   __int8   int8_t;
+	typedef signed   __int16  int16_t;
+	typedef signed   __int32  int32_t;
+	typedef unsigned __int8   uint8_t;
+	typedef unsigned __int16  uint16_t;
+	typedef unsigned __int32  uint32_t;
+	typedef signed   __int64  int64_t;
+	typedef unsigned __int64  uint64_t;
+#else
+	#include <stdint.h>
 #endif
 
 #ifdef UNIX
@@ -141,7 +160,13 @@ typedef DWORD				BITFIELD;
 #endif
 #endif
 
-
+#ifdef _WIN32
+#define PATHSEP "\\"
+#define PATHSEPCHAR '\\'
+#else
+#define PATHSEP "/"
+#define PATHSEPCHAR '/'
+#endif
 
 // [RH] This gets used all over; define it here:
 int STACK_ARGS Printf (int printlevel, const char *, ...);
@@ -200,6 +225,24 @@ const T MAX (const T a, const T b)
 	return a > b ? a : b;
 }
 
+
+
+
+//==========================================================================
+//
+// clamp
+//
+// Clamps in to the range [min,max].
+//==========================================================================
+#ifdef clamp
+#undef clamp
 #endif
+template<class T>
+inline
+T clamp (const T in, const T min, const T max)
+{
+	return in <= min ? min : in >= max ? max : in;
+}
 
 
+#endif

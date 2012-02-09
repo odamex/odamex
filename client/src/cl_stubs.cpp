@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: cl_stubs.cpp 1788 2010-08-24 04:42:57Z russellrice $
+// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2010 by The Odamex Team.
@@ -29,7 +29,6 @@
 
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
 
-void D_SetupUserInfo(void) {}
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
@@ -47,6 +46,15 @@ void SV_SendDamageMobj(AActor *target, int pain) {}
 void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who) {}
 void SV_UpdateFrags(player_t &player) {}
 void SV_ActorTarget(AActor *actor) {}
+void SV_SendDestroyActor(AActor *mo) {}
+void SV_ExplodeMissile(AActor *mo) {}
+void SV_SendPlayerInfo(player_t &player) {}
+void SV_PreservePlayer(player_t &player) {}
+			
+void CTF_RememberFlagPos(mapthing2_t *mthing) {}
+void CTF_SpawnFlag(flag_t f) {}
+bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
+void SV_SendPackets(void) {}
 
-VERSION_CONTROL (cl_stubs_cpp, "$Id: cl_stubs.cpp $")
+VERSION_CONTROL (cl_stubs_cpp, "$Id$")
 

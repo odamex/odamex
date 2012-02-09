@@ -35,6 +35,7 @@
 #include "d_player.h"
 
 #define C_BLINKRATE			(TICRATE/2)
+#define MAX_CHATSTR_LEN		128
 
 typedef enum cstate_t {
 	c_up=0, c_down, c_falling, c_rising, c_fallfull, c_risefull

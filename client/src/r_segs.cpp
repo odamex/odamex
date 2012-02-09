@@ -38,6 +38,8 @@
 #include "r_sky.h"
 #include "v_video.h"
 
+#include "p_lnspec.h"
+
 // OPTIMIZE: closed two sided lines as single sided
 
 // killough 1/6/98: replaced globals with statics where appropriate
@@ -148,6 +150,25 @@ static void BlastMaskedColumn (void (*blastfunc)(column_t *column), int texnum)
 	rw_light += rw_lightstep;
 }
 
+
+//
+// R_OrthogonalLightnumAdjustment
+//
+
+int R_OrthogonalLightnumAdjustment()
+{
+	// [RH] Only do it if not foggy and allowed
+    if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
+	{
+		if (curline->linedef->slopetype == ST_HORIZONTAL)
+			return -1;
+		else if (curline->linedef->slopetype == ST_VERTICAL)
+			return 1;
+	}
+
+	return 0;	// no adjustment for diagonal lines
+}
+
 //
 // R_RenderMaskedSegRange
 //
@@ -203,14 +224,7 @@ R_RenderMaskedSegRange
 	lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)
 			->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
-	// [RH] Only do it if not foggy and allowed
-	if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
-	{
-		if (curline->v1->y == curline->v2->y)
-			lightnum--;
-		else if (curline->v1->x == curline->v2->x)
-			lightnum++;
-	}
+	lightnum += R_OrthogonalLightnumAdjustment();
 
 	walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
 		lightnum <  0           ? scalelight[0] : scalelight[lightnum];
@@ -931,6 +945,15 @@ R_StoreWallRange
 	// calculate rw_offset (only needed for textured lines)
 	segtextured = (midtexture | toptexture) | (bottomtexture | maskedtexture);
 
+	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
+	// height to 0
+	if (curline->linedef->special == Line_Horizon)
+	{
+		rw_scale = ds_p->scale1 = ds_p->scale2 = 0;
+		rw_scalestep = 0;
+		segtextured = false;
+	}
+
 	if (segtextured)
 	{
 		offsetangle = rw_normalangle-rw_angle1;
@@ -958,14 +981,7 @@ R_StoreWallRange
 			int lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT)
 					+ (foggy ? 0 : extralight);
 
-			// [RH] Only do it if not foggy and allowed
-			if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
-			{
-				if (curline->v1->y == curline->v2->y)
-					lightnum--;
-				else if (curline->v1->x == curline->v2->x)
-					lightnum++;
-			}
+			lightnum += R_OrthogonalLightnumAdjustment();
 
 			if (lightnum < 0)
 				walllights = scalelight[0];
@@ -981,7 +997,8 @@ R_StoreWallRange
 	//	and doesn't need to be marked.
 
 	// killough 3/7/98: add deep water check
-	if (frontsector->heightsec == NULL)
+	if (frontsector->heightsec == NULL ||
+		(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
 		if (frontsector->floorheight >= viewz)       // above view plane
 			markfloor = false;

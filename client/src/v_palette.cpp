@@ -24,6 +24,7 @@
 
 #include <string.h>
 #include <math.h>
+#include <cstddef>
 
 #include "v_video.h"
 #include "m_alloc.h"
@@ -184,7 +185,7 @@ void V_RestoreScreenPalette(void)
     {
         DoBlending (DefPal.colors, IndexedPalette, DefPal.numcolors,
                     newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
-    
+
         I_SetPalette (IndexedPalette);
     }
 }
@@ -207,9 +208,9 @@ bool InternalCreatePalette (palette_t *palette, const char *name, byte *colors,
 	palette->flags = flags;
 	palette->usecount = 1;
 	palette->maps.colormaps = NULL;
-	
+
 	M_Free(palette->basecolors);
-	
+
 	palette->basecolors = (DWORD *)Malloc (numcolors * 2 * sizeof(DWORD));
 	palette->colors = palette->basecolors + numcolors;
 	palette->numcolors = numcolors;
@@ -406,8 +407,9 @@ void RefreshPalette (palette_t *pal)
 			r = RPART (level.fadeto);
 			g = GPART (level.fadeto);
 			b = BPART (level.fadeto);
-			if (pal->maps.colormaps && pal->maps.colormaps - pal->colormapsbase >= 256)
+			if (pal->maps.colormaps && pal->maps.colormaps - pal->colormapsbase >= 256) {
 				M_Free(pal->maps.colormaps);
+			}
 			pal->colormapsbase = (byte *)Realloc (pal->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
 			pal->maps.colormaps = (byte *)(((ptrdiff_t)(pal->colormapsbase) + 255) & ~0xff);
 
@@ -444,9 +446,9 @@ void RefreshPalette (palette_t *pal)
 			r = newgamma[RPART (level.fadeto)];
 			g = newgamma[GPART (level.fadeto)];
 			b = newgamma[BPART (level.fadeto)];
-           
+
             M_Free(pal->colormapsbase);
-			
+
 			pal->maps.shades = (DWORD *)Realloc (pal->colormapsbase, (NUMCOLORMAPS + 1)*256*sizeof(DWORD) + 255);
 
 			// build normal light mappings

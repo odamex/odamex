@@ -84,6 +84,10 @@ void R_InitSkyMap ()
 	if (textureheight == NULL)
 		return;
 
+	// [SL] 2011-11-30 - Don't run if we don't know what sky texture to use
+	if (gamestate != GS_LEVEL)
+		return;
+
 	if (sky2texture && textureheight[sky1texture] != textureheight[sky2texture])
 	{
 		Printf (PRINT_HIGH,"\x1f+Both sky textures must be the same height.\x1f-\n");
@@ -112,17 +116,17 @@ void R_InitSkyMap ()
 		j <<= 1;
 
 	textureheightmask[sky1texture] = j-1;
+	skystretch = 0;
 
 	if (textureheight[sky1texture] <= (128 << FRACBITS))
 	{
 		skytexturemid = 200/2*FRACUNIT;
 		skystretch = (r_stretchsky == 1) || (r_stretchsky == 2 && sv_freelook && cl_mouselook);
 	}
+	else if (textureheight[sky1texture] <= 200 << FRACBITS)
+		skytexturemid = 199 << FRACBITS;
 	else
-	{
-		skytexturemid = 199<<FRACBITS;//textureheight[sky1texture]-1;
-		skystretch = 0;
-	}
+		skytexturemid = textureheight[sky1texture] >> 1;
 
 	if (viewwidth && viewheight)
 	{
@@ -140,9 +144,7 @@ void R_InitSkyMap ()
 	if (texturewidthmask[sky1texture] >= 127)
 		sky1shift -= skystretch;
 	if (texturewidthmask[sky2texture] >= 127)
-		sky2shift -= skystretch;		
+		sky2shift -= skystretch;
 }
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")
-
-

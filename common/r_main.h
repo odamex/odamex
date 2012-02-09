@@ -44,7 +44,8 @@ extern int				viewheight;
 extern int				viewwindowx;
 extern int				viewwindowy;
 
-
+extern bool				r_fakingunderwater;
+extern bool				r_underwater;
 
 extern int				centerx;
 extern "C" int			centery;
