@@ -57,6 +57,8 @@ public:
 	bool randmap_check(std::string &error);
 	void randmap(void);
 private:
+	Maplist() : maplist_index(-1), nextmap_index(0) { };
+
 	std::vector<size_t> expand(const std::vector<std::string> &arguments);
 };
 
