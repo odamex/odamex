@@ -206,9 +206,9 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     tid(0)
 {
 	state_t *st;
-	
+
 	unsigned int nummobjs;
-	
+
 	if (gameinfo.gametype == GAME_Heretic)
         nummobjs = NUMMOBJTYPES - NUMDOOMTYPES;
     else
@@ -523,6 +523,8 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
+    int nummobjs = (gameinfo.gametype == GAME_Heretic ? NUMMOBJTYPES-NUMDOOMTYPES:NUMDOOMTYPES);
+
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
@@ -636,7 +638,7 @@ void AActor::Serialize (FArchive &arc)
 		else
 			translation = translationtables + trans;
 		spawnpoint.Serialize (arc);
-		if(type >= NUMMOBJTYPES)
+		if(type >= nummobjs)
 			I_Error("Unknown object type in saved game");
 		if(sprite >= NUMSPRITES)
 			I_Error("Unknown sprite in saved game");
@@ -853,7 +855,7 @@ void P_XYMovement(AActor *mo)
 
 					if (!co_fixweaponimpacts ||
 						mo->z > ceilingline->backsector->ceilingheight)
-					{	
+					{
 						mo->Destroy ();
 						return;
 					}
@@ -1073,7 +1075,7 @@ void P_ZMovement(AActor *mo)
 		mo->z = mo->floorz;
       if (mo->momz < 0)
       {
-		 
+
          if (mo->player)
          {
          	bool momsquat = false;
@@ -1198,7 +1200,7 @@ void P_ZMovement(AActor *mo)
 
 		if (mo->flags & MF_MISSILE && !(mo->flags & MF_NOCLIP))
 		{
-			if (((HasBehavior || co_fixweaponimpacts) && 
+			if (((HasBehavior || co_fixweaponimpacts) &&
 				mo->subsector->sector->ceilingpic == skyflatnum))
 			{
 				mo->Destroy ();
@@ -1261,7 +1263,7 @@ void P_ZMovement(AActor *mo)
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 {
 	mo->player->deltaviewheight = mo->momz>>3;
-	
+
 	if (co_zdoomphys)
 	{
 		// [SL] 2011-06-16 - ZDoom Oomphiness
@@ -1755,6 +1757,7 @@ void P_RespawnSpecials (void)
 	mapthing2_t* 		mthing;
 
 	int 				i;
+	int nummobjs = (gameinfo.gametype == GAME_Heretic ? NUMMOBJTYPES-NUMDOOMTYPES:NUMDOOMTYPES);
 
     // clients do no control respawning of items
 	if(!serverside)
@@ -1778,21 +1781,21 @@ void P_RespawnSpecials (void)
 	y = mthing->y << FRACBITS;
 
 	// find which type to spawn
-	for (i=0 ; i< NUMMOBJTYPES ; i++)
+	for (i=0 ; i< nummobjs ; i++)
 	{
-		if (mthing->type == mobjinfo[i].doomednum)
+		if (mthing->type == gameinfo.mobjinfo[i].doomednum)
 			break;
 	}
 
 	// [Fly] crashes sometimes without it
-	if (i >= NUMMOBJTYPES)
+	if (i >= nummobjs)
 	{
 		// pull it from the que
 		iquetail = (iquetail+1)&(ITEMQUESIZE-1);
 		return;
 	}
 
-	if (mobjinfo[i].flags & MF_SPAWNCEILING)
+	if (gameinfo.mobjinfo[i].flags & MF_SPAWNCEILING)
 		z = ONCEILINGZ;
 	else
 		z = ONFLOORZ;
@@ -1837,7 +1840,7 @@ void P_ExplodeMissile (AActor* mo)
 
 	mo->momx = mo->momy = mo->momz = 0;
 
-	P_SetMobjState (mo, mobjinfo[mo->type].deathstate);
+	P_SetMobjState (mo, gameinfo.mobjinfo[mo->type].deathstate);
 	if (mobjinfo[mo->type].deathstate != S_NULL)
 	{
 		// [RH] If the object is already translucent, don't change it.
@@ -1884,12 +1887,13 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	int bit;
 	AActor *mobj;
 	fixed_t x, y, z;
+	int nummobjs;
 
 	if (mthing->type == 0 || mthing->type == -1)
 		return;
 
 	// only servers control spawning of items
-    // EXCEPT the client must spawn Type 14 (teleport exit). 
+    // EXCEPT the client must spawn Type 14 (teleport exit).
 	// otherwise teleporters won't work well.
 	if (!serverside && (mthing->type != 14))
 		return;
@@ -2028,6 +2032,14 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (!(mthing->flags & bit))
 		return;
 
+    // Determine the number of mobjs based on game
+    if (gameinfo.gametype == GAME_Heretic)
+        nummobjs = NUMMOBJTYPES-NUMDOOMTYPES;
+    else
+        nummobjs = NUMDOOMTYPES;
+
+    int toffset = (gameinfo.gametype == GAME_Doom ? 0 : NUMDOOMTYPES);
+
 	// [RH] sound sequence overrides
 	if (mthing->type >= 1400 && mthing->type < 1410)
 	{
@@ -2084,7 +2096,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// find which type to spawn
 		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mthing->type == mobjinfo[i].doomednum)
+			if (mthing->type == gameinfo.mobjinfo[i].doomednum)
 				break;
 	}
 
@@ -2094,19 +2106,19 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		Printf (PRINT_HIGH, "Unknown type %i at (%i, %i)\n",
 			mthing->type,
 			mthing->x, mthing->y);
-		i = MT_UNKNOWNTHING;
+		i = (gameinfo.gametype == GAME_Heretic ? MT_HTIC_UNKNOWNTHING-toffset : MT_UNKNOWNTHING);
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
 	//		it to the unknown thing.
-	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
+	else if (sprites[states[gameinfo.mobjinfo[i].spawnstate].sprite].numframes == 0)
 	{
 		Printf (PRINT_HIGH, "Type %i at (%i, %i) has no frames\n",
 				mthing->type, mthing->x, mthing->y);
-		i = MT_UNKNOWNTHING;
+		i = (gameinfo.gametype == GAME_Heretic ? MT_HTIC_UNKNOWNTHING-toffset : MT_UNKNOWNTHING);
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (sv_gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (sv_gametype != GM_COOP && gameinfo.mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
@@ -2132,7 +2144,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [csDoom] don't spawn any monsters
 	if (sv_nomonsters || !serverside)
 	{
-		if (i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL) )
+		if (i == MT_SKULL || (gameinfo.mobjinfo[i].flags & MF_COUNTKILL) )
 		{
 			return;
 		}
@@ -2159,7 +2171,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (mobjinfo[i].flags & MF_SPAWNCEILING)
+	if (gameinfo.mobjinfo[i].flags & MF_SPAWNCEILING)
 		z = ONCEILINGZ;
 	else
 		z = ONFLOORZ;
@@ -2250,10 +2262,10 @@ bool P_VisibleToPlayers(AActor *mo)
 		// players aren't considered visible to themselves
 		if (mo->player && mo->player->id == players[i].id)
 			continue;
-	
+
 		if (!players[i].mo || players[i].spectator)
 			continue;
-	
+
 		if (HasBehavior && P_CheckSightEdges2(players[i].mo, mo, 5.0))
 			return true;
 		if (!HasBehavior && P_CheckSightEdges(players[i].mo, mo, 5.0))

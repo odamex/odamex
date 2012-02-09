@@ -80,15 +80,15 @@ class FBehavior;
 struct level_info_s {
 	char		mapname[9];
 	int			levelnum;
+	const char	*level_name;
 	char		pname[9];
 	char		nextmap[9];
 	char		secretmap[9];
-	char		skypic[9];
-	int			cluster;
 	int			partime;
+	char		skypic[9];
+	char		music[9];
 	DWORD		flags;
-	char		*music;
-	char		*level_name;
+	int			cluster;
 	FLZOMemFile	*snapshot;
 	struct acsdefered_s *defered;
 };
@@ -191,7 +191,7 @@ struct cluster_info_s {
 	char		finaleflat[9];
 	char		*exittext;
 	char		*entertext;
-	char		*messagemusic;	
+	char		*messagemusic;
 	int			flags;
 };
 typedef struct cluster_info_s cluster_info_t;
