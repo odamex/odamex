@@ -12,13 +12,13 @@ proc main {} {
  # kick wrong player
  clear
  server "kick 99"
- expect $serverout {bad client number: 99}
+ expect $serverout {kick could not find client 99.}
  expect $clientout {} 0
 
  # kick wrong player with reason
  clear
  server "kick 99 be gone"
- expect $serverout {bad client number: 99}
+ expect $serverout {kick could not find client 99.}
  expect $clientout {} 0
 
  # kick the player
