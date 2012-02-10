@@ -4703,7 +4703,12 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 	if (inflictor && inflictor->player == self->player)
 		MeansOfDeath = MOD_UNKNOWN;
 
-	if (((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && self->player->userinfo.team == attacker->player->userinfo.team) || sv_gametype == GM_COOP)
+	if (sv_gametype == GM_COOP)
+		MeansOfDeath |= MOD_FRIENDLY_FIRE;
+
+	if ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && 
+		attacker && attacker->player &&
+		self->player->userinfo.team == attacker->player->userinfo.team)
 		MeansOfDeath |= MOD_FRIENDLY_FIRE;
 
 	friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
