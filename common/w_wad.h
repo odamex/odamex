@@ -37,7 +37,7 @@
 #define PWAD_ID (('P')|('W'<<8)|('A'<<16)|('D'<<24))
 
 // [RH] Remove limit on number of WAD files
-extern std::vector<std::string> wadfiles, wadhashes;
+extern std::vector<std::string> wadfiles, wadhashes, patchfiles;
 
 //
 // TYPES

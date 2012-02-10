@@ -29,6 +29,9 @@
 #include "doomdef.h"
 #include "m_fixed.h"
 
+#include <string>
+#include <vector>
+
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
 #define NUM_GLOBALVARS			64
@@ -242,5 +245,7 @@ void G_ClearSnapshots (void);
 void G_SnapshotLevel (void);
 void G_UnSnapshotLevel (bool keepPlayers);
 void G_SerializeSnapshots (FArchive &arc);
+
+void cmd_maplist(const std::vector<std::string> &arguments, std::vector<std::string> &response);
 
 #endif //__G_LEVEL_H__

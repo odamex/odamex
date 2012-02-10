@@ -291,6 +291,57 @@ std::string StdStringToUpper(const char* str)
 	return StdStringToUpperBase(upper);
 }
 
+// [AM] Convert an argc/argv into a vector of strings.
+std::vector<std::string> VectorArgs(size_t argc, char **argv) {
+	std::vector<std::string> arguments(argc - 1);
+	for (unsigned i = 1;i < argc;i++) {
+		arguments[i - 1] = argv[i];
+	}
+	return arguments;
+}
+
+//==========================================================================
+//
+// CheckWildcards
+//
+// [RH] Checks if text matches the wildcard pattern using ? or *
+//
+//==========================================================================
+bool CheckWildcards (const char *pattern, const char *text)
+{
+	if (pattern == NULL || text == NULL)
+		return true;
+
+	while (*pattern)
+	{
+		if (*pattern == '*')
+		{
+			char stop = tolower (*++pattern);
+			while (*text && tolower(*text) != stop)
+			{
+				text++;
+			}
+			if (*text && tolower(*text) == stop)
+			{
+				if (CheckWildcards (pattern, text++))
+				{
+					return true;
+				}
+				pattern--;
+			}
+		}
+		else if (*pattern == '?' || tolower(*pattern) == tolower(*text))
+		{
+			pattern++;
+			text++;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return (*pattern | *text) == 0;
+}
 
 class ReplacedStringTracker
 {
@@ -321,7 +372,6 @@ public:
 			delete[] const_cast<char*>(i->first);
 	}
 }rst;
-
 
 void ReplaceString (const char **ptr, const char *str)
 {

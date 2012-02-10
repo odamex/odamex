@@ -331,6 +331,8 @@
 		<Unit filename="..\..\common\c_effect.cpp" />
 		<Unit filename="..\..\common\c_effect.h" />
 		<Unit filename="..\..\common\c_pch.h" />
+		<Unit filename="..\..\common\c_vote.cpp" />
+		<Unit filename="..\..\common\c_vote.h" />
 		<Unit filename="..\..\common\cmdlib.cpp" />
 		<Unit filename="..\..\common\cmdlib.h" />
 		<Unit filename="..\..\common\d_dehacked.cpp" />
@@ -492,6 +494,7 @@
 		</Unit>
 		<Unit filename="..\src\cl_pred.cpp" />
 		<Unit filename="..\src\cl_stubs.cpp" />
+		<Unit filename="..\src\cl_vote.cpp" />
 		<Unit filename="..\src\d_main.cpp" />
 		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />

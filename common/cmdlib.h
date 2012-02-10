@@ -25,8 +25,9 @@
 #ifndef __CMDLIB__
 #define __CMDLIB__
 
-#include <string>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS
@@ -83,10 +84,8 @@ void	CRC_Init(unsigned short *crcvalue);
 void	CRC_ProcessByte(unsigned short *crcvalue, byte data);
 unsigned short CRC_Value(unsigned short crcvalue);
 
+std::vector<std::string> VectorArgs(size_t argc, char **argv);
+bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (const char **ptr, const char *str);
 
-
 #endif
-
-
-

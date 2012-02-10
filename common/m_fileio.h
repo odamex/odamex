@@ -43,5 +43,6 @@ void M_ExtractFilePath (std::string filename, std::string &dest);
 BOOL M_ExtractFileExtension (std::string filename, std::string &dest);
 void M_ExtractFileBase (std::string filename, std::string &dest);
 void M_ExtractFileName (std::string filename, std::string &dest);
+std::string M_ExtractFileName(const std::string filename);
 
 #endif

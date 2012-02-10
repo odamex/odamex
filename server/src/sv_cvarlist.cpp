@@ -168,5 +168,30 @@ CVAR (ctf_flagtimeout, "10",  "Time for a dropped flag to be returned automatica
 CVAR (sv_ticbuffer, "0", "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
 	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+// Vote settings
+// =============
+
+// A percentage of players needed to pass a vote.
+CVAR (sv_vote_majority, "0.5", "Ratio of yes votes needed for vote to pass.",
+	  CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+// Number of seconds that a countdown lasts.
+CVAR (sv_vote_timelimit, "30", "Amount of time a vote takes in seconds.",
+	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+// Number of seconds between callvotes.
+CVAR (sv_vote_timeout, "60", "Timeout between votes in seconds.",
+	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+// Enable or disable specific votes.
+CVAR (sv_callvote_kick, "1", "Clients can votekick other players.",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_map, "1", "Clients can vote on a new map.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_fraglimit, "1", "Clients can vote a new fraglimit.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_scorelimit, "1", "Clients can vote a new scorelimit.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_timelimit, "1", "Clients can vote a new timelimit.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 

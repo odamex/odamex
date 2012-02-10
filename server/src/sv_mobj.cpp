@@ -44,8 +44,6 @@
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_maxplayers)
 
-bool unnatural_level_progression;
-
 void G_PlayerReborn(player_t &player);
 void CTF_RememberFlagPos(mapthing2_t *mthing);
 

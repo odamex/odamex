@@ -42,6 +42,7 @@
 #include "gi.h"
 #include "d_net.h"
 #include "g_game.h"
+#include "g_level.h"
 #include "p_tick.h"
 #include "p_local.h"
 #include "sv_main.h"
@@ -59,6 +60,8 @@
 #include "md5.h"
 #include "p_mobj.h"
 #include "p_unlag.h"
+#include "sv_vote.h"
+#include "sv_maplist.h"
 
 #include <algorithm>
 #include <sstream>
@@ -66,6 +69,10 @@
 
 extern void G_DeferedInitNew (char *mapname);
 extern level_locals_t level;
+
+// Unnatural Level Progression.  True if we've used 'map' or another command
+// to switch to a specific map out of order, otherwise false.
+bool unnatural_level_progression;
 
 // denis - game manipulation, but no fancy gfx
 bool clientside = false, serverside = true;
@@ -113,6 +120,7 @@ EXTERN_CVAR(sv_ticbuffer)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
+void SV_Maplist(player_t &player);
 void SV_RemoveDisconnectedPlayer(player_t &player);
 
 CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
@@ -289,37 +297,102 @@ bool P_CheckSightEdges2 (const AActor* t1, const AActor* t2, float radius_boost 
 void SV_WinCheck (void);
 
 // denis - kick player
-BEGIN_COMMAND (kick)
-{
-	if (argc < 2)
-		return;
+BEGIN_COMMAND (kick) {
+	std::vector<std::string> arguments = VectorArgs(argc, argv);
+	std::string error;
 
-	player_t &player = idplayer(atoi(argv[1]));
+	size_t pid;
+	std::string reason;
 
-	if(!validplayer(player))
-	{
-		Printf(PRINT_HIGH, "bad client number: %d\n", atoi(argv[1]));
-		return;
-	}
-
-	if(!player.ingame())
-	{
-		Printf(PRINT_HIGH, "client %d not in game\n", atoi(argv[1]));
+	bool valid = cmd_kick_check(arguments, error, pid, reason);
+	if (!valid) {
+		Printf(PRINT_HIGH, "%s\n", error.c_str());
 		return;
 	}
 
-	if (argc > 2)
-	{
-		std::string reason = BuildString(argc - 2, (const char **)(argv + 2));
+	// Run the command
+	cmd_kick(pid, reason);
+}
+END_COMMAND (kick)
+
+// Kick command check.
+bool cmd_kick_check(const std::vector<std::string> &arguments,
+					std::string &error, size_t &pid, std::string &reason) {
+	// Did we pass enough arguments?
+	if (arguments.size() < 1) {
+		error = "kick needs a player number (try 'players' command) and optionally a reason.";
+		return false;
+	}
+
+	// Did we actually pass a player number?
+	std::istringstream buffer(arguments[0]);
+	buffer >> pid;
+
+	if (!buffer) {
+		error = "kick needs a valid player number.";
+		return false;
+	}
+
+	// Verify that the player we found is a valid client.
+	player_t &player = idplayer(pid);
+
+	if (!validplayer(player)) {
+		std::ostringstream error_ss;
+		error_ss << "kick could not find client " << pid << ".";
+		error = error_ss.str();
+		return false;
+	}
+
+	// Verify that the player is actually in a kickable state.
+	if (!player.ingame()) {
+		std::ostringstream error_ss;
+		error_ss << "kick can not kick client " << pid << ".";
+		error = error_ss.str();
+		return false;
+	}
+
+	// Anything that is not the first argument is the reason
+	if (arguments.size() > 1) {
+		std::ostringstream buffer;
+		for (size_t i = 1;i < arguments.size();i++) {
+			if (i == arguments.size() - 1) {
+				buffer << arguments[i];
+			} else {
+				buffer << arguments[i] << " ";
+			}
+		}
+		reason = buffer.str();
+	}
+
+	return true;
+}
+
+// Kick command.  Make sure and call cmd_kick_check first.
+bool cmd_kick(const size_t &pid, const std::string &reason) {
+	player_t &player = idplayer(pid);
+
+	// We have to rerun the checks just to make sure
+	// the client is still there.  If they aren't there,
+	// we can safely assume that the player dodged a kick.
+	if (!validplayer(player)) {
+		return false;
+	}
+
+	if (!player.ingame()) {
+		return false;
+	}
+
+	if (reason.size() != 0) {
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
-	}
-	else
+	} else {
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server!\n", player.userinfo.netname);
+	}
 
 	player.client.displaydisconnect = false;
 	SV_DropClient(player);
+
+	return true;
 }
-END_COMMAND (kick)
 
 //
 // Nes - IP Lists: bans(BanList), exceptions(WhiteList)
@@ -2448,6 +2521,8 @@ void SV_DisconnectClient(player_t &who)
 	   MSG_WriteByte(&cl.reliablebuf, who.id);
 	}
 
+	sv::Voting::instance().event_disconnect(who);
+
 	if (who.client.displaydisconnect) {
 		// Name and reason for disconnect.
 		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
@@ -2861,6 +2936,22 @@ void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...)
 			MSG_WriteString (&cl->reliablebuf, string);
 		}
     }
+}
+
+// Print directly to a specific player.
+void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...) {
+	va_list argptr;
+	char string[2048];
+	client_t *cl;
+
+	va_start(argptr,fmt);
+	vsprintf(string, fmt,argptr);
+	va_end(argptr);
+
+	cl = &idplayer(who).client;
+	MSG_WriteMarker (&cl->reliablebuf, svc_print);
+	MSG_WriteByte (&cl->reliablebuf, level);
+	MSG_WriteString (&cl->reliablebuf, string);
 }
 
 void STACK_ARGS SV_TeamPrintf (int level, int who, const char *fmt, ...)
@@ -4078,6 +4169,20 @@ void SV_ParseCommands(player_t &player)
 			SV_DropClient(player);
 			return;
 
+		// [AM] Vote cases
+		case clc_callvote:
+			sv::Voting::instance().callvote(player);
+			break;
+
+		case clc_vote:
+			sv::Voting::instance().vote(player);
+			break;
+
+		// [AM] Maplist case
+		case clc_maplist:
+			SV_Maplist(player);
+			break;
+
 		default:
 			Printf(PRINT_HIGH, "SV_ParseCommands: Unknown client message %d.\n", (int)cmd);
 			SV_DropClient(player);
@@ -4093,6 +4198,24 @@ void SV_ParseCommands(player_t &player)
 			return;
 		}
 	 }
+}
+
+// Client-wants a list of maps.
+void SV_Maplist(player_t &player) {
+	byte argc = (byte)MSG_ReadByte();
+
+	std::vector<std::string> arguments(argc);
+	for (int i = 0;i < argc;i++) {
+		arguments[i] = std::string(MSG_ReadString());
+	}
+
+	std::vector<std::string> response;
+	sv::Maplist::instance().print_maplist(arguments, response);
+
+	// Called by the client, so print the response back to the player.
+	for (std::vector<std::string>::size_type i = 0;i < response.size();i++) {
+		SV_PlayerPrintf(PRINT_HIGH, player.id, (response[i] + "\n").c_str());
+	}
 }
 
 //
@@ -4292,8 +4415,8 @@ void SV_GameTics (void)
 			SV_RemoveCorpses();
 			SV_WinCheck();
 			SV_TimelimitCheck();
+			sv::Voting::instance().event_runtic();
 		break;
-		
 		case GS_INTERMISSION:
 			SV_IntermissionTimeCheck();
 		break;

@@ -36,7 +36,6 @@
 #include "i_system.h"
 #include "md5.h"
 #include "p_ctf.h"
-#include "g_game.h"
 
 std::vector<std::string> wadnames, wadhashes;
 extern std::vector<std::string> patchfiles;
@@ -47,7 +46,6 @@ EXTERN_CVAR (sv_scorelimit) // [CG] Should this go below in //bond ?
 EXTERN_CVAR (sv_usemasters)
 EXTERN_CVAR (sv_hostname)
 EXTERN_CVAR (sv_maxclients)
-EXTERN_CVAR (sv_intermissionlimit)
 
 EXTERN_CVAR (port)
 
@@ -231,15 +229,8 @@ void SV_SendServerInfo()
 	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 	if (timeleft<0) timeleft=0;
 
-	int inttimeleft = level.inttimeleft = mapchange/TICRATE;
-	if (inttimeleft<0) inttimeleft=0;
-
 	MSG_WriteShort(&ml_message,sv_timelimit.asInt());
 	MSG_WriteShort(&ml_message,timeleft);
-
-	MSG_WriteShort(&ml_message,sv_intermissionlimit.asInt());
-	MSG_WriteShort(&ml_message,inttimeleft);
-
 	MSG_WriteShort(&ml_message,sv_fraglimit.asInt());
 
 	MSG_WriteBool(&ml_message, (sv_itemsrespawn ? true : false));

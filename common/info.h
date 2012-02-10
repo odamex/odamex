@@ -2824,7 +2824,6 @@ typedef enum {
 	MT_BRIDGE8,
 	MT_ZDOOMBRIDGE,
 	MT_MUSICCHANGE,
-	
 			
 	NUMDOOMTYPES,
 	

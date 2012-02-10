@@ -1568,6 +1568,10 @@ void ST_diffDraw(void)
 	ST_drawWidgets(false);
 }
 
+void ST_Drawer (void)
+{
+	if (noisedebug)
+		S_NoiseDebug ();
 
 	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
 	{

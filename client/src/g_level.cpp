@@ -728,6 +728,29 @@ BEGIN_COMMAND (wad) // denis - changes wads
 }
 END_COMMAND (wad)
 
+// Clientside maplist query.
+BEGIN_COMMAND (maplist)
+{
+	// Are we even connected to a server?
+	if (!connected) {
+		Printf(PRINT_HIGH, "Invalid maplist, you are not connected to a server.\n");
+		return;
+	}
+
+	// We don't want or need more than 255 params.
+	if (argc > 255) {
+		Printf(PRINT_HIGH, "Invalid maplist, maximum argument count is 255.\n");
+		return;
+	}
+
+	MSG_WriteMarker(&net_buffer, clc_maplist);
+	MSG_WriteByte(&net_buffer, (byte)argc - 1);
+	for (unsigned int i = 1;i < argc;i++) {
+		MSG_WriteString(&net_buffer, argv[i]);
+	}
+}
+END_COMMAND (maplist)
+
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_freelook)
@@ -2254,126 +2277,163 @@ level_info_t LevelInfos[] = {
 	{
 		"E5M1",
 		41,
+		NULL,
 		{0},
 		"E5M2",
 		"E5M9",
+		0,
 		"SKY3",
+		"",
+		0,
 		15,
+		0
 	},
 	{
 		"E5M2",
 		42,
+		NULL,
 		{0},
 		"E5M3",
 		"E5M9",
+		0,
 		"SKY3",
+		0,
 		15,
+		0
 	},
 	{
 		"E5M3",
 		43,
+		NULL,
 		{0},
 		"E5M4",
 		"E5M9",
+		0,
 		"SKY3",
+		0,
 		15,
+		0
 	},
 	{
 		"E5M4",
 		44,
+		NULL,
+		NULL,
 		{0},
 		"E5M5",
 		"E5M9",
+		0,
 		"SKY3",
+		0,
 		15,
+		0,
 	},
 	{
 		"E5M5",
 		45,
+		NULL,
 		{0},
 		"E5M6",
 		"E5M9",
+		0,
 		"SKY3",
+		0,
 		15,
+		0,
 	},
 	{
 		"E5M6",
 		46,
+		NULL,
 		{0},
 		"E5M7",
 		"E5M9",
+		0,
 		"SKY3",
+		0,
 		15,
+		0,
 	},
 	{
 		"E5M7",
 		47,
+		NULL,
 		{0},
 		"E5M8",
 		"E5M9",
+		0,
 		"SKY3",
+		0,
 		15,
+		0,
 	},
 	{
 		"E5M8",
 		48,
+		NULL,
 		{0},
 		"",
 		"E5M9",
-		"SKY3",
-		15,
 		0,
-		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPECLOWERFLOOR|LEVEL_MINOTAURSPECIAL
+		"SKY3",
+		0,
+		LEVEL_NOINTERMISSION|LEVEL_NOSOUNDCLIPPING|LEVEL_SPECLOWERFLOOR|LEVEL_MINOTAURSPECIAL,
+		0,		
 	},
 	{
 		"E5M9",
 		49,
+		NULL,
 		{0},
 		"E5M4",
 		"E5M4",
+		0,
 		"SKY3",
+		0,
 		15,
+		0,
 	},
 
 	// Heretic Episode 6
 	{
 		"E6M1",
 		51,
+		NULL,
 		{0},
 		"E6M2",
 		"E6M2",
+		0,
 		"SKY1",
+		"Untitled",
 		16,
-		0,
-		0,
-		NULL,
-		"Untitled"
+		0,		
 	},
 	{
 		"E6M2",
 		52,
+		NULL,
 		{0},
 		"E6M3",
 		"E6M3",
+		0,
 		"SKY1",
+		"Untitled",
 		16,
-		0,
-		0,
-		NULL,
-		"Untitled"
+		0,		
 	},
 	{
 		"E6M3",
 		53,
+		NULL,
 		{0},
 		"E6M1",
 		"E6M1",
+		0,
 		"SKY1",
+		"SKY1",
+		"Untitled",
 		16,
-		0,
-		0,
-		NULL,
-		"Untitled"
+		0,		
 	},
 
 	// DOOM 2 Levels
@@ -2868,58 +2928,97 @@ level_info_t LevelInfos[] = {
 	}
 };
 
+
 // Episode/Cluster information
 cluster_info_t ClusterInfos[] = {
-	{		// DOOM Episode 1
-		1,	"FLOOR4_8",	NULL,	NULL,	"D_VICTOR",	0
+	{
+		1,		// DOOM Episode 1
+		"D_VICTOR",
+		"FLOOR4_8",
+//		{ 'F','L','O','O','R','4','_','8' }, // questionable
+		NULL,
+		NULL,
+		0
 	},
-	{		// DOOM Episode 2
-		2,	"SFLR6_1",	NULL,	NULL,	"D_VICTOR",	0
+	{
+		2,		// DOOM Episode 2
+		"D_VICTOR",
+		"SFLR6_1",
+		NULL,
+		NULL,
+		0
 	},
-	{		// DOOM Episode 3
-		3,	"MFLR8_4",	NULL,	NULL,	"D_VICTOR", 0
+	{
+		3,		// DOOM Episode 3
+		"D_VICTOR",
+		"MFLR8_4",
+		NULL,
+		NULL,
+		0
 	},
-	{		// DOOM Episode 4
-		4,	"MFLR8_3",	NULL,	NULL,	"D_VICTOR", 0
+	{
+		4,		// DOOM Episode 4
+		"D_VICTOR",
+		"MFLR8_3",
+		NULL,
+		NULL,
+		0
 	},
-	{		// DOOM II first cluster (up thru level 6)
-		5,	"SLIME16",	NULL,	NULL,	"D_READ_M",	0
+	{
+		5,		// DOOM II first cluster (up thru level 6)
+		"D_READ_M",
+		"SLIME16",
+		NULL,
+		NULL,
+		0
 	},
-	{		// DOOM II second cluster (up thru level 11)
-		6,	"RROCK14",	NULL,	NULL,	"D_READ_M",	0
+	{
+		6,		// DOOM II second cluster (up thru level 11)
+		"D_READ_M",
+		"RROCK14",
+		NULL,
+		NULL,
+		0
 	},
-	{		// DOOM II third cluster (up thru level 20)
-		7,	"RROCK07",	NULL,	NULL,	"D_READ_M",	0
+	{
+		7,		// DOOM II third cluster (up thru level 20)
+		"D_READ_M",
+		"RROCK07",
+		NULL,
+		NULL,
+		0
 	},
-	{		// DOOM II fourth cluster (up thru level 30)
-		8,	"RROCK17",	NULL,	NULL,	"D_READ_M",	0
+	{
+		8,		// DOOM II fourth cluster (up thru level 30)
+		"D_READ_M",
+		"RROCK17",
+		NULL,
+		NULL,
+		0
 	},
-	{		// DOOM II fifth cluster (level 31)
-		9,	"RROCK13",	NULL,	NULL,	"D_READ_M",	0
+	{
+		9,		// DOOM II fifth cluster (level 31)
+		"D_READ_M",
+		"RROCK13",
+		NULL,
+		NULL,
+		0
 	},
-	{		// DOOM II sixth cluster (level 32)
-		10,	"RROCK19",	NULL,	NULL,	"D_READ_M",	0
+	{
+		10,		// DOOM II sixth cluster (level 32)
+		"D_READ_M",
+		"RROCK19",
+		NULL,
+		NULL,
+		0
 	},
-    {		// Heretic episode 1
-		11,	"FLOOR25",	NULL,	NULL,	"",	0
-	},
-	{		// Heretic episode 2
-		12,	"FLATHUH1",	NULL,	NULL,	"",	0
-	},
-	{		// Heretic episode 3
-		13,	"FLTWAWA2",	NULL,	NULL,	"",	0
-	},
-	{		// Heretic episode 4
-		14,	"FLOOR28",	NULL,	NULL,	"",	0
-	},
-	{		// Heretic episode 5
-		15,	"FLOOR08",	NULL,	NULL,	"",	0
-	},
-	{		// Heretic episode 6
-		16, "FLOOR25",	NULL,	NULL,	"",	0
-	},
-	{		// End-of-clusters marker
-		0,	"",	NULL,	NULL,	"",	0
+	{
+		0,
+		"",
+		"",
+		NULL,
+		NULL,
+		0		// End-of-clusters marker
 	}
 };
 

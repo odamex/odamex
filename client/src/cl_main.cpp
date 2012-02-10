@@ -459,13 +459,19 @@ END_COMMAND (reconnect)
 
 BEGIN_COMMAND (players)
 {
-	Printf (PRINT_HIGH, "-----------------[Players in game]----- \n");
+	// Gather all ingame players
+	std::map<int, std::string> mplayers;
+	for (size_t i = 0; i < players.size(); ++i) {
+		if (players[i].ingame()) {
+			mplayers[players[i].id] = players[i].userinfo.netname;
+		}
+	}
 
-	for (size_t i = 0; i < players.size(); ++i)
-		if (players[i].ingame())
-			Printf (PRINT_HIGH, "%d. - %s \n", i, players[i].userinfo.netname);
-
-	Printf (PRINT_HIGH, "--------------------------------------- \n");
+	// Print them, ordered by player id.
+	Printf(PRINT_HIGH, " PLAYERS IN GAME:\n");
+	for (std::map<int, std::string>::iterator it = mplayers.begin();it != mplayers.end();++it) {
+		Printf(PRINT_HIGH, "%d. %s\n", (*it).first, (*it).second.c_str());
+	}
 }
 END_COMMAND (players)
 

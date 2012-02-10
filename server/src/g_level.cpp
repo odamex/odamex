@@ -22,7 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
+#include <sstream>
 #include <string>
+#include <algorithm>
 #include <vector>
 
 #include "d_main.h"
@@ -52,6 +54,8 @@
 #include "sc_man.h"
 #include "m_fileio.h"
 #include "m_misc.h"
+#include "sv_maplist.h"
+#include "sv_vote.h"
 
 #include "gi.h"
 #include "minilzo.h"
@@ -698,362 +702,113 @@ const char* GetBase(const char* in)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
-	std::vector<std::string> wads, patch_files, hashes;
+	std::vector<std::string> wads, patches, hashes;
 	bool AddedIWAD = false;
 	bool Reboot = false;
 	QWORD i, j;
 
 	// [Russell] print out some useful info
-	if (argc == 1)
-	{
-	    Printf(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "\n");
-	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
-	    Printf(PRINT_HIGH, "eg: wad doom\n");
+	if (argc == 1) {
+		Printf(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
+		Printf(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
+		Printf(PRINT_HIGH, "\n");
+		Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
+		Printf(PRINT_HIGH, "eg: wad doom\n");
 
-	    return;
+		return;
 	}
 
-    // add our iwad if it is one
-	if (W_IsIWAD(argv[1]))
-	{
+	// Did we pass an IWAD?
+	if (W_IsIWAD(argv[1])) {
 		std::string ext;
 
-		if(!M_ExtractFileExtension(argv[1], ext))
+		if (!M_ExtractFileExtension(argv[1], ext)) {
 			wads.push_back(std::string(argv[1]) + ".wad");
-		else
+		} else {
 			wads.push_back(argv[1]);
+		}
 		AddedIWAD = true;
-	} else {
-        wads.push_back(wadfiles[1].c_str());
 	}
 
-    // check whether they are wads or patch files
-	for (i = 1; i < argc; i++)
-	{
+	// Are the passed params WAD files or patch files?
+	for (i = 1; i < argc; i++) {
 		std::string ext;
 
-		if (M_ExtractFileExtension(argv[i], ext))
-		{
-		    // don't allow subsequent iwads to be loaded
-		    if ((ext == "wad") && !W_IsIWAD(argv[i]))
-                wads.push_back(argv[i]);
-            else if (ext == "deh" || ext == "bex")
-                patch_files.push_back(argv[i]);
+		if (M_ExtractFileExtension(argv[i], ext)) {
+			if ((ext == "wad") && !W_IsIWAD(argv[i])) {
+				// Wad that isn't an IWAD
+				wads.push_back(argv[i]);
+			} else if  (ext == "deh" || ext == "bex") {
+				// Patch file
+				patches.push_back(argv[i]);
+			}
 		}
 	}
 
-	// GhostlyDeath <August 14, 2008> -- Check our environment, if the same WADs are used, ignore this command
-	if (AddedIWAD && !wadfiles.empty())
-	{
-		if (stricmp(GetBase(wads[0].c_str()), GetBase(wadfiles[1].c_str())) != 0)
+	// Check our environment, if the same WADs are used, ignore this command.
+
+	// Did we switch IWAD files?
+	if (AddedIWAD && !wadfiles.empty()) {
+		if (StdStringCompare(M_ExtractFileName(wads[0]), M_ExtractFileName(wadfiles[1]), true) != 0) {
 			Reboot = true;
+		}
 	}
 
-	// IWAD, odamex.wad, ...
-	if (!Reboot)
-	{
-		Reboot = true;
+	// Do the sizes of the WAD lists not match up?
+	if (!Reboot) {
+		if (wadfiles.size() - 2 != wads.size() - (AddedIWAD ? 1 : 0)) {
+			Reboot = true;
+		}
+	}
 
-		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < wads.size(); i++, j++)
-		{
-			if (stricmp(GetBase(wads[j].c_str()), GetBase(wadfiles[i].c_str())) == 0)
-				Reboot = false;
-			else if (Reboot)
-			{
+	// Do our WAD lists match up exactly?
+	if (!Reboot) {
+		for (i = 2, j = (AddedIWAD ? 1 : 0); i < wadfiles.size() && j < wads.size(); i++, j++) {
+			if (StdStringCompare(M_ExtractFileName(wads[j]), M_ExtractFileName(wadfiles[i]), true) != 0) {
 				Reboot = true;
 				break;
 			}
 		}
-
-		// May be more wads...
-		if ((j == wads.size() && i < wadfiles.size()) ||
-			(j < wads.size() && i == wadfiles.size()))
-			Reboot = true;
 	}
 
-	if (Reboot)
-	{
-		D_DoomWadReboot(wads, patch_files);
+	// Do the sizes of the patch lists not match up?
+	if (!Reboot) {
+		if (patchfiles.size() != patches.size()) {
+			Reboot = true;
+		}
+	}
 
+	// Do our patchfile lists match up exactly?
+	if (!Reboot) {
+		for (i = 0, j = 0; i < patchfiles.size() && j < patches.size(); i++, j++) {
+			if (StdStringCompare(M_ExtractFileName(patches[j]), M_ExtractFileName(patchfiles[i]), true) != 0) {
+				Reboot = true;
+				break;
+			}
+		}
+	}
+
+	if (Reboot) {
+		if (!AddedIWAD) {
+			wads.insert(wads.begin(), wadfiles[1]);
+		}
+
+		D_DoomWadReboot(wads, patches);
 		unnatural_level_progression = true;
-		G_DeferedInitNew (startmap);
+		G_DeferedInitNew(startmap);
 	}
 }
 END_COMMAND (wad)
 
-
-// Handle map cycling.
-struct maplist_s
-{
-	char *MapName;
-	char *WadCmds;
-
-	struct maplist_s *Next;
-};
-
-struct maplist_s *MapListBegin = NULL;
-struct maplist_s *MapListEnd = NULL;
-struct maplist_s *MapListPointer = NULL;
-
-// GhostlyDeath <August 14, 2008> -- Random Map List
-std::vector<maplist_s*> RandomMaps;
-size_t RandomMapPos = 0;
-
-void G_ClearRandomMaps(void)
-{
-	RandomMaps.clear();
-	RandomMapPos = 0;
-}
-
-void G_GenerateRandomMaps(void)
-{
-	bool* Used = NULL;
-	size_t Count = 0;
-	maplist_s* Rover = NULL;
-	size_t i, j, random_seed;
-	std::vector<maplist_s*> Ptrs;
-
-	// Clear old map list
-	G_ClearRandomMaps();
-
-	if (!MapListBegin)
-		return;
-
-	// First count the number of entries in the map list
-	Rover = MapListBegin;
-
-	while (Rover)
-	{
-		Count++;
-		Ptrs.push_back(Rover);
-		Rover = Rover->Next;
-
-		if (Rover == MapListBegin)
-			break;
-	}
-
-	if (!Count)
-		return;
-
-	// Allocate our bool array
-	Used = new bool[Count];
-
-	for (i = 0; i < Count; i++)
-		Used[i] = 0;
-
-    srand((unsigned)time(0));
-
-	// Now populate the list
-	for (i = 0; i < Count; i++)
-	{
-	    random_seed = rand();
-		j = random_seed % Count;
-
-		// Move forward if j is used
-		while (Used[j])
-		{
-			j++;
-
-			if (j == Count)
-				j = 0;
-		}
-
-		// Add it...
-		RandomMaps.push_back(Ptrs[j]);
-
-		// Marked used
-		Used[j] = true;
-	}
-
-	delete [] Used;
-
-	RandomMapPos = 0;
-}
-
-CVAR_FUNC_IMPL (sv_shufflemaplist)
-{
-	// Create random list
-	if (var)
-		G_GenerateRandomMaps();
-	// Erase random list...
-	else
-		G_ClearRandomMaps();
-}
-
-BEGIN_COMMAND (addmap)
-{
-	if (argc > 1)
-	{
-	    if (argc > 2 && !W_IsIWAD(argv[2]))
-        {
-            Printf(PRINT_HIGH,"IWAD not specified, map will not be loaded.\n");
-            return;
-        }
-        else
-        {
-            struct maplist_s *NewMap;
-            struct maplist_s *OldMap = NULL;
-
-            // Initalize the structure
-            NewMap = (struct maplist_s *) Malloc(sizeof(struct maplist_s));
-            NewMap->WadCmds = NULL;
-
-            // Add it to our linked list
-            if ( MapListBegin == NULL )
-            { // This is the first entry
-                MapListEnd = MapListBegin = MapListPointer = NewMap->Next = NewMap;
-                OldMap = NULL;
-            }
-            else
-            { // Tag it on to the end.
-                OldMap = MapListEnd;
-                MapListEnd->Next = NewMap;
-                MapListEnd = NewMap;
-                NewMap->Next = MapListBegin;
-            }
-
-            // Fill in MapName
-            NewMap->MapName = (char *) Malloc(strlen(argv[1])+1);
-            NewMap->MapName[strlen(argv[1])] = '\0';
-            strcpy(NewMap->MapName, argv[1]);
-
-            // Any more arguments are passed to the wad ccmd
-            if ( argc > 2 )
-            {
-                std::string arglist = "wad ";
-
-                for (size_t i = 2; i < argc; ++i)
-                {
-                    arglist += argv[i];
-                    arglist += ' ';
-                }
-
-                NewMap->WadCmds = (char *) Malloc(strlen(arglist.c_str())+1);
-                NewMap->WadCmds[strlen(arglist.c_str())] = '\0';
-                strcpy(NewMap->WadCmds, arglist.c_str());
-            }
-            else// if ( NewMap == MapListBegin )
-            {
-                // GhostlyDeath <August 14, 2008> -- Changed logic, remember WAD
-                if (OldMap)
-                {
-                    NewMap->WadCmds = (char *) Malloc(strlen(OldMap->WadCmds)+1);
-                    NewMap->WadCmds[strlen(OldMap->WadCmds)] = '\0';
-                    strcpy(NewMap->WadCmds, OldMap->WadCmds);
-                }
-                else
-                {
-                    NewMap->WadCmds = (char *) Malloc(2);
-                    NewMap->WadCmds[0] = '-';
-                    NewMap->WadCmds[1] = '\0';
-                }
-            }
-
-            // GhostlyDeath <August 14, 2008> -- Regenerate New Map List
-            if (sv_shufflemaplist)
-                G_GenerateRandomMaps();
-        }
-	}
-}
-END_COMMAND (addmap)
-
-BEGIN_COMMAND (maplist)
-{
-	if ( MapListBegin == NULL )
-	{
-		Printf( PRINT_HIGH, "Map list is empty.\n" );
-		return;
-	}
-
-	struct maplist_s *Iterator = MapListBegin;
-
-	while ( 1 )
-	{
-		if ( Iterator->WadCmds )
-			Printf( PRINT_HIGH, "-> Wad: %s\n", Iterator->WadCmds);
-		Printf( PRINT_HIGH, " ^ Map: %s\n", Iterator->MapName);
-
-		Iterator = Iterator->Next;
-		if ( Iterator == MapListBegin ) // Looped back to the beginning.
-			break;
-	}
-}
-END_COMMAND (maplist)
-
-BEGIN_COMMAND (clearmaplist)
-{
-	if ( MapListBegin == NULL )
-	{
-		Printf( PRINT_HIGH, "Map list is empty.\n" );
-		return;
-	}
-
-	MapListPointer = MapListBegin;
-
-	// Rip the ends off the linked list.
-	MapListEnd->Next = NULL;
-	MapListEnd = NULL;
-	MapListBegin = NULL;
-
-	struct maplist_s *NextPointer = MapListPointer->Next;
-
-	// Crawl through the linked list zapping entries.
-	while ( 1 )
-	{
-		M_Free( MapListPointer->MapName );
-		M_Free( MapListPointer->WadCmds );
-
-		M_Free( MapListPointer );
-
-		if ( NextPointer == NULL )
-			break; // The linked list is dead.
-
-		MapListPointer = NextPointer;
-		NextPointer = NextPointer->Next;
-	}
-
-	MapListPointer = NULL; // make sure
-
-	G_ClearRandomMaps();
-}
-END_COMMAND (clearmaplist)
-
-BEGIN_COMMAND (nextmap)
-{
-	if (!MapListPointer)
-	{
-		Printf( PRINT_HIGH, "Map list is empty.\n" );
-		return;
-	}
-
-	G_ExitLevel (0, 1);
-}
-END_COMMAND (nextmap)
-
-BEGIN_COMMAND (forcenextmap)
-{
-	if (!MapListPointer)
-	{
-		Printf( PRINT_HIGH, "Map list is empty.\n" );
-		return;
-	}
-
-	G_ChangeMap ();
-}
-
-END_COMMAND (forcenextmap)
-
 BOOL 			secretexit;
 static int		startpos;	// [RH] Support for multiple starts per level
 
-void G_ChangeMap (void)
-{
+EXTERN_CVAR(sv_shufflemaplist)
+
+void G_ChangeMap (void) {
 	unnatural_level_progression = false;
 
-	if (!MapListPointer)
-	{
+	if (sv::Maplist::instance().maplist.empty()) {
 		char *next = level.nextmap;
 
 		// if deathmatch, stay on same level
@@ -1078,44 +833,27 @@ void G_ChangeMap (void)
 		}
 
 		G_DeferedInitNew(next);
-	}
-	else
-	{
-		if (sv_shufflemaplist && RandomMaps.empty() == false)
-		{
-			// Change the map
-			if (RandomMaps[RandomMapPos]->WadCmds)
-			{
-				if (strcmp(RandomMaps[RandomMapPos]->WadCmds, "-" ) != 0)
-					AddCommandString(RandomMaps[RandomMapPos]->WadCmds);
-			}
-			G_DeferedInitNew(RandomMaps[RandomMapPos]->MapName);
+	} else {
+		sv::maplist_entry_t &maplist_entry = sv::Maplist::instance().maplist[sv::Maplist::instance().nextmap_index];
 
-			// Increment position
-			RandomMapPos++;
+		// Load any wads given
+		if (maplist_entry.wads.empty() == false)
+			AddCommandString("wad " + maplist_entry.wads);
 
-			// If our counter has reached it's end, regenerate the map
-			if (RandomMapPos >= RandomMaps.size())
-				G_GenerateRandomMaps();
-		}
-		else
-		{
-			if ( MapListPointer->WadCmds )
-			{
-				if ( strcmp( MapListPointer->WadCmds, "-" ) != 0 )
-					AddCommandString(MapListPointer->WadCmds);
-			}
+		// Change the map and bump the position of the next maplist entry
+		G_DeferedInitNew((char *)maplist_entry.map.c_str());
 
-            char *next = MapListPointer->MapName;
+		// The "Next Map" is now the "Current Map"
+		sv::Maplist::instance().maplist_index = sv::Maplist::instance().nextmap_index;
 
-            // for latched "deathmatch 0" cvar
-            if (gamestate == GS_STARTUP)
-            {
-                next = level.mapname;
-            }
+		// Reset position in maplist if we go off the end
+		if (sv::Maplist::instance().nextmap_index + 1 < sv::Maplist::instance().maplist.size())
+			++sv::Maplist::instance().nextmap_index;
+		else {
+			sv::Maplist::instance().nextmap_index = 0;
 
-			G_DeferedInitNew(next);
-			MapListPointer = MapListPointer->Next;
+			if (sv_shufflemaplist)
+				sv::Maplist::instance().random_shuffle();
 		}
 	}
 
@@ -1300,6 +1038,8 @@ void G_InitNew (const char *mapname)
 
 			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
+
+		sv::Voting::instance().event_initlevel();
 	}
 
 	// [SL] 2012-12-08 - Multiplayer is always true for servers

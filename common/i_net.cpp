@@ -155,16 +155,16 @@ void init_upnp (void)
 
 	memset(&urls, 0, sizeof(struct UPNPUrls));
 	memset(&data, 0, sizeof(struct IGDdatas));
-	
+
 	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
-	
+
 	devlist = upnpDiscover(sv_upnp_discovertimeout.asInt(), NULL, NULL, 0, 0, &res);
-	
+
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
     {
-		Printf(PRINT_HIGH, "UPnP: Router not found or timed out, error %d\n", 
-            res);   
-		
+		Printf(PRINT_HIGH, "UPnP: Router not found or timed out, error %d\n",
+            res);
+
         is_upnp_ok = false;
 
         return;
@@ -197,19 +197,19 @@ void init_upnp (void)
 
     freeUPNPDevlist(devlist);
 
-    r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype, 
+    r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype,
             IPAddress);
 
     if (r != 0)
     {
-        Printf(PRINT_HIGH, 
+        Printf(PRINT_HIGH,
             "UPnP: Router found but unable to get external IP address\n");
 
         is_upnp_ok = false;
     }
     else
     {
-        Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n", 
+        Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n",
             IPAddress);
 
         // Store ip address just in case admin wants it
@@ -244,7 +244,7 @@ void upnp_add_redir (const char * addr, int port)
 
 	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
             port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
-	
+
 	if (r != 0)
 	{
 		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
@@ -253,7 +253,7 @@ void upnp_add_redir (const char * addr, int port)
 	}
     else
     {
-        Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s", 
+        Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s",
             sv_upnp_description.cstring());
 
         is_upnp_ok = true;
@@ -272,7 +272,7 @@ void upnp_rem_redir (int port)
 		return;
 
 	sprintf(port_str, "%d", port);
-	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, 
+	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
         port_str, "UDP", 0);
 
 	if (r != 0)
@@ -420,7 +420,7 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
 
     if (! (h = gethostbyname(copy)) )
         return 0;
-        
+
     *(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
 
     SockadrToNetadr (&sadr, a);
@@ -587,7 +587,7 @@ void MSG_WriteMarker (buf_t *b, svc_t c)
     //[Spleen] final check to prevent huge packets from being sent to players
     if (b->cursize > 600)
         SV_SendPackets();
-    
+
 	b->WriteByte((byte)c);
 }
 
@@ -658,7 +658,7 @@ void MSG_WriteFloat(buf_t *b, float Float)
     std::stringstream StringStream;
 
     StringStream << Float;
-    
+
 	MSG_WriteString(b, (char *)StringStream.str().c_str());
 }
 
@@ -836,20 +836,20 @@ int MSG_ReadLong (void)
 bool MSG_ReadBool(void)
 {
     int Value = net_message.ReadByte();
-    
+
     if (Value < 0 || Value > 1)
     {
         DPrintf("MSG_ReadBool: Value is not 0 or 1, possibly corrupted packet");
-                
+
         return (Value ? true : false);
     }
-    
+
     return (Value ? true : false);
 }
 
 //
 // MSG_ReadString
-// 
+//
 // Read a null terminated string
 const char *MSG_ReadString (void)
 {
@@ -861,14 +861,14 @@ const char *MSG_ReadString (void)
 //
 // Read a floating point number
 float MSG_ReadFloat(void)
-{  
+{
     std::stringstream StringStream;
     float Float;
-        
+
     StringStream << MSG_ReadString();
-    
+
     StringStream >> Float;
-    
+
     return Float;
 }
 
@@ -897,6 +897,9 @@ void InitNetMessageFormats()
       MSG(clc_kill,               "x"),
       MSG(clc_cheat,              "x"),
       MSG(clc_cheatpulse,         "x"),
+      MSG(clc_callvote,           "x"),
+      MSG(clc_vote,               "x"),
+      MSG(clc_maplist,            "x"),
       MSG(clc_launcher_challenge, "x"),
       MSG(clc_challenge,          "x")
    };

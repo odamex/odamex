@@ -125,16 +125,16 @@ typedef struct menuitem_s {
 	union {
 		float			  min;		/* aka numvalues aka invflag */
 		int				  key1;
-		char			 *res1;
+		const char			 *res1;
 	} b;
 	union {
 		float			  max;
 		int				  key2;
-		char			 *res2;
+		const char		*res2;
 	} c;
 	union {
 		float			  step;
-		char			 *res3;
+		const char		*res3;
 	} d;
 	union {
 		struct value_s	 *values;
