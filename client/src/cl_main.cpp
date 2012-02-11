@@ -2877,7 +2877,18 @@ void CL_SendCmd(void)
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.forwardmove);
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.sidemove);
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
-	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
+
+	// [SL] 2011-11-20 - Player isn't requesting a weapon change
+	// send player's weapon to server and server will correct it if wrong
+	if (!curcmd->ucmd.impulse && !(curcmd->ucmd.buttons & BT_CHANGE))
+	{
+		if (p->pendingweapon != wp_nochange)
+			MSG_WriteByte(&net_buffer, p->pendingweapon);
+		else
+			MSG_WriteByte(&net_buffer, p->readyweapon);
+	}
+	else
+		MSG_WriteByte(&net_buffer, curcmd->ucmd.impulse);
 
 #ifdef _UNLAG_DEBUG_
 	if 	(player.size() == 2 && 
