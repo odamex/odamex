@@ -73,12 +73,17 @@ texture_t** 	textures;
 
 int*			texturewidthmask;
 byte*			textureheightmask;		// [RH] Tutti-Frutti fix
+
 // needed for texture pegging
 fixed_t*		textureheight;
 static int*		texturecompositesize;
 static short** 	texturecolumnlump;
 static unsigned **texturecolumnofs;	// killough 4/9/98: make 32-bit
 static byte**	texturecomposite;
+byte*			texturescalex;			// [RH] Texture scales
+byte*			texturescaley;
+byte*			texturetype2;			// [RH] Texture uses 2 bytes for column lengths
+byte*			textureheightlog2;		// [RH] Tutti-Frutti fix (from ZDoom 1.23)
 
 // for global animation
 bool*			flatwarp;
@@ -228,7 +233,6 @@ void R_GenerateComposite (int texnum)
 static void R_GenerateLookup(int texnum, int *const errors)
 {
 	const texture_t *texture = textures[texnum];
-	const bool nottall = texture->height < 256;
 
 	// Composited texture not created yet.
 
@@ -242,46 +246,50 @@ static void R_GenerateLookup(int texnum, int *const errors)
 		unsigned short patches, posts;
 	} *count = (cs *)Calloc (sizeof *count, texture->width);
 
+	int i = texture->patchcount;
+	const texpatch_t *patch = texture->patches;
+
+	// [RH] Some wads (I forget which!) have single-patch textures 256
+	// pixels tall that have patch lengths recorded as 0. I can't think of
+	// any good reason for them to do this, and since I didn't make note
+	// of which wad made me hack in support for them, the hack is gone
+	// because I've added support for DeePsea's real tall patches.
+	while (--i >= 0)
 	{
-		int i = texture->patchcount;
-		const texpatch_t *patch = texture->patches;
+		int pat = patch->patch;
+		const patch_t *realpatch = W_CachePatch (pat);
+		int x1 = patch++->originx, x2 = x1 + SHORT(realpatch->width()), x = x1;
+		const int *cofs = realpatch->columnofs-x1;
 
-		while (--i >= 0)
+		if (x2 > texture->width)
+			x2 = texture->width;
+		if (x1 < 0)
+			x = 0;
+		for (; x < x2; x++)
 		{
-			int pat = patch->patch;
-			const patch_t *realpatch = W_CachePatch (pat);
-			int x1 = patch++->originx, x2 = x1 + realpatch->width(), x = x1;
-			const int *cofs = realpatch->columnofs-x1;
+			// killough 4/9/98: keep a count of the number of posts in column,
+			// to fix Medusa bug while allowing for transparent multipatches.
 
-			if (x2 > texture->width)
-				x2 = texture->width;
-			if (x1 < 0)
-				x = 0;
-			for ( ; x<x2 ; x++)
+			const column_t *col = (column_t*)((byte*)realpatch + LONG(cofs[x]));
+			for (;col->topdelta != 0xff; count[x].posts++)
 			{
-				// killough 4/9/98: keep a count of the number of posts in column,
-				// to fix Medusa bug while allowing for transparent multipatches.
-				const column_t *col = (column_t*)((byte*)realpatch+LONG(cofs[x]));
-
-				for (;col->topdelta != 0xff; count[x].posts++)
+				col = (column_t *)((byte *)col + col->length + 4);
+				
+				// denis - prevent a crash when col goes out of range
+				unsigned int n = (const byte *)col - (const byte *)realpatch;
+				if (n >= W_LumpLength(pat))
 				{
-					col = (column_t *)((byte *) col + (col->length || nottall ? col->length : 256) + 4);
+					if (texture->height < 256) // bigger textures are assumed to have a single post anyway
+						Printf(PRINT_HIGH, "R_GenerateLookup warning: post truncated for texture %d\n", texnum);
 
-					// denis - prevent a crash when col goes out of range
-					unsigned int n = (const byte *)col - (const byte *)realpatch;
-					if(n >= W_LumpLength(pat))
-					{
-						if(texture->height < 256) // bigger textures are assumed to have a single post anyway
-							Printf(PRINT_HIGH, "R_GenerateLookup warning: post truncated for texture %d\n", texnum);
-
-						count[x].posts--;
-						break;
-					}
-				}
-				count[x].patches++;
-				collump[x] = pat;
-				colofs[x] = LONG(cofs[x])+3;
+					count[x].posts--;
+					break;
+				}				
+				
 			}
+			count[x].patches++;
+			collump[x] = pat;
+			colofs[x] = LONG(cofs[x])+3;
 		}
 	}
 
@@ -292,19 +300,36 @@ static void R_GenerateLookup(int texnum, int *const errors)
 
 	texturecomposite[texnum] = 0;
 
-	{
-		int x = texture->width;
-		int height = texture->height;
-		int csize = 0;
+	int x = texture->width;
+	int height = texture->height;
+	int csize = 0;
 
+	while (--x >= 0)
+	{
+		if (!count[x].patches)				// killough 4/9/98
+		{
+			Printf (PRINT_HIGH, "\nR_GenerateLookup: Column %d is without a patch in texture %.8s",
+					x, texture->name);
+					++*errors;
+		}
+	}		
+
+	if (texture->patchcount > 1 || texture->height > 254)
+	{
+		// [RH] Always create a composite texture for multipatch textures
+		// or tall textures in order to keep things simpler.	
+		texturetype2[texnum] = 1;
+		x = texture->width;
+		csize = 0;
 		while (--x >= 0)
 		{
 			if (!count[x].patches)				// killough 4/9/98
 			{
-				Printf (PRINT_HIGH, "R_GenerateLookup: Column %d is without a patch in texture %.8s\n", x, texture->name);
-				++*errors; // denis - todo - commented this line before to allow freedoom 0.4.0 doom2.wad to work
+				Printf (PRINT_HIGH, "\nR_GenerateLookup: Column %d is without a patch in texture %.8s",
+						x, texture->name);
+						++*errors;
 			}
-			if (count[x].patches > 1) 			// killough 4/9/98
+			else
 			{
 				// killough 1/25/98, 4/9/98:
 				//
@@ -316,13 +341,19 @@ static void R_GenerateLookup(int texnum, int *const errors)
 				// require, and it's bounded above by this limit.
 
 				collump[x] = -1;				// mark lump as multipatched
-				colofs[x] = csize + 3;			// three header bytes in a column
-				csize += 4*count[x].posts+1;	// 1 stop byte plus 4 bytes per post
+				colofs[x] = csize + 4;			// four header bytes in a column
+				csize += 4*count[x].posts+2+height;	// 2 stop bytes plus 4 bytes per post
 			}
-			csize += height;					// height bytes of texture data
 		}
-		texturecompositesize[texnum] = csize;
 	}
+	else
+	{
+		texturetype2[texnum] = 0;	
+		csize = x*height;
+	}
+	
+	texturecompositesize[texnum] = csize;
+
 	M_Free(count);								// killough 4/9/98
 }
 
@@ -340,7 +371,7 @@ R_GetColumn
 	col &= texturewidthmask[tex];
 	lump = texturecolumnlump[tex][col];
 	ofs = texturecolumnofs[tex][col];
-	dc_mask = textureheightmask[tex];		// [RH] Tutti-Frutti fix
+	dc_mask = textureheightmask[tex];	
 
 	if (lump > 0)
 		return (byte *)W_CacheLumpNum(lump,PU_CACHE)+ofs;
@@ -452,6 +483,10 @@ void R_InitTextures (void)
 	delete[] texturewidthmask;
 	delete[] textureheightmask;
 	delete[] textureheight;
+	delete[] texturescalex;
+	delete[] texturescaley;
+	delete[] texturetype2;
+	delete[] textureheightlog2;
 
 	numtextures = numtextures1 + numtextures2;
 
@@ -463,7 +498,13 @@ void R_InitTextures (void)
 	texturewidthmask = new int[numtextures];
 	textureheightmask = new byte[numtextures];
 	textureheight = new fixed_t[numtextures];
+	texturescalex = new byte[numtextures];
+	texturescaley = new byte[numtextures];
+	texturetype2 = new byte[numtextures];
+	textureheightlog2 = new byte[numtextures];
 
+	memset (texturetype2, 0, numtextures);
+	
 	totalwidth = 0;
 
 	for (i = 0; i < numtextures; i++, directory++)
@@ -512,20 +553,30 @@ void R_InitTextures (void)
 		texturecolumnlump[i] = new short[texture->width];
 		texturecolumnofs[i] = new unsigned int[texture->width];
 
-		j = 1;
-		while (j*2 <= texture->width)
-			j<<=1;
-
+		for (j = 1; j*2 <= texture->width; j <<= 1)
+			;
 		texturewidthmask[i] = j-1;
-		textureheight[i] = texture->height<<FRACBITS;
 
 		// [RH] Tutti-Frutti fix
 		// Sorry, only power-of-2 tall textures are actually fixed.
+		// For performance reasons, I have no intention of changing this.
+		for (j = 0; (1<<j) < texture->height; ++j)
+			;
+		textureheightlog2[i] = j;
+		textureheight[i] = texture->height << FRACBITS;
+
 		j = 1;
 		while (j < texture->height)
 			j <<= 1;
 
 		textureheightmask[i] = j-1;
+			
+		// [RH] Special for beta 29: Values of 0 will use the tx/ty cvars
+		// to determine scaling instead of defaulting to 8. I will likely
+		// remove this once I finish the betas, because by then, users
+		// should be able to actually create scaled textures.
+		texturescalex[i] = mtexture->scalex ? mtexture->scalex : 0;
+		texturescaley[i] = mtexture->scaley ? mtexture->scaley : 0;		
 
 		totalwidth += texture->width;
 	}
