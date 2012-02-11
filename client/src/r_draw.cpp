@@ -702,7 +702,7 @@ void R_FillSpan (void)
 //		dscount++;
 #endif
 
-	memset (ylookup[ds_y] + columnofs[ds_x1], ds_color, ds_x2 - ds_x1 + 1);
+	memset (ylookup[ds_y] + columnofs[ds_x1], ds_color, (ds_x2 - ds_x1 + 1) * ds_colsize);
 }
 
 
