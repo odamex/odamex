@@ -40,6 +40,7 @@
 // Prediction debugging info
 //#define _PRED_DBG
 
+EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (cl_prednudge)
 
 void P_MovePlayer (player_t *player);
@@ -258,6 +259,13 @@ void CL_ResetPlayer(player_t &p)
 	p.mo->momx = p.real_velocity[0];
 	p.mo->momy = p.real_velocity[1];
 	p.mo->momz = p.real_velocity[2];
+
+	// [SL] 2012-02-13 - Determine if the player is standing on any actors
+	// since the server does not send this info
+	if (co_realactorheight && P_CheckOnmobj(p.mo))
+		p.mo->flags2 |= MF2_ONMOBJ;
+	else
+		p.mo->flags2 &= ~MF2_ONMOBJ;
 }
 
 
