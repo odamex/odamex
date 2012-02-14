@@ -1542,7 +1542,7 @@ void G_DoLoadGame (void)
 	// dearchive all the modifications
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
-	/*P_SerializeACSDefereds (arc);*/
+	P_SerializeACSDefereds (arc);
 
 	CL_QuitNetGame();
 
@@ -1560,10 +1560,10 @@ void G_DoLoadGame (void)
 
 
 	for (i = 0; i < NUM_WORLDVARS; i++)
-		arc << ACS_WorldVars[i];
+		arc >> ACS_WorldVars[i];
 
 	for (i = 0; i < NUM_GLOBALVARS; i++)
-		arc << ACS_GlobalVars[i];
+		arc >> ACS_GlobalVars[i];
 
 	arc >> text[9];
 
@@ -1597,7 +1597,7 @@ void G_BuildSaveName (std::string &name, int slot)
 #endif
 
 	ssName << path;
-    ssName << GStrings(SAVEGAMENAME);
+    ssName << "odasv";
 	ssName << slot;
 	ssName << ".ods";
 
@@ -1608,6 +1608,7 @@ void G_DoSaveGame (void)
 {
 	std::string name;
 	char *description;
+	int i;
 
 	G_SnapshotLevel ();
 
@@ -1645,13 +1646,16 @@ void G_DoSaveGame (void)
 
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
-	/*P_SerializeACSDefereds (arc);*/
+	P_SerializeACSDefereds (arc);
 
 	arc << level.time;
-/*
+
 	for (i = 0; i < NUM_WORLDVARS; i++)
-		arc << WorldVars[i];
-*/
+		arc << ACS_WorldVars[i];
+
+	for (i = 0; i < NUM_GLOBALVARS; i++)
+		arc << ACS_GlobalVars[i];
+
 
 	arc << (BYTE)0x1d;			// consistancy marker
 

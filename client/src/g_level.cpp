@@ -1579,7 +1579,7 @@ void P_SerializeACSDefereds (FArchive &arc)
 
 		P_RemoveDefereds ();
 
-		arc << mapname[0];
+		arc >> mapname[0];
 		while (mapname[0])
 		{
 			arc.Read (&mapname[1], 7);
