@@ -15,6 +15,7 @@
 #include "am_map.h"
 #include "c_bind.h"
 #include "cl_main.h"
+#include "cl_download.h"
 #include "f_finale.h"
 #include "f_wipe.h"
 #include "hu_stuff.h"

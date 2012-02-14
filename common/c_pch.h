@@ -7,6 +7,7 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "c_effect.h"
+#include "c_vote.h"
 #include "dobject.h"         
 #include "doomdata.h"        
 #include "doomdef.h"
