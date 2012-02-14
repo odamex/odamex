@@ -1592,8 +1592,8 @@ void P_SerializeACSDefereds (FArchive &arc)
 				name[8] = 0;
 				I_Error ("Unknown map '%s' in savegame", name);
 			}
-			arc << i->defered;
-			arc << mapname[0];
+			arc >> i->defered;
+			arc >> mapname[0];
 		}
 	}
 }

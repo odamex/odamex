@@ -483,7 +483,9 @@ struct acsdefered_s
 };
 typedef struct acsdefered_s acsdefered_t;
 
-FArchive &operator<< (FArchive &arc, acsdefered_s *&defer);
+
+FArchive &operator<< (FArchive &arc, acsdefered_s *defer);
+FArchive &operator>> (FArchive &arc, acsdefered_s* &defer);
 
 #endif //__P_ACS_H__
 

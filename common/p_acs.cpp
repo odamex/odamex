@@ -556,29 +556,28 @@ DACSThinker::~DACSThinker ()
 
 void DACSThinker::Serialize (FArchive &arc)
 {
-	Super::Serialize (arc);
-	arc << Scripts << LastScript;
 	if (arc.IsStoring ())
 	{
-		WORD i;
-		for (i = 0; i < 1000; i++)
+		arc << Scripts << LastScript;
+		for (int i = 0; i < 1000; i++)
 		{
 			if (RunningScripts[i])
-				arc << RunningScripts[i] << i;
+				arc << RunningScripts[i] << (WORD)i;
 		}
-		DLevelScript *nil = NULL;
-		arc << nil;
+		arc << (DLevelScript *)NULL;
 	}
 	else
 	{
+		arc >> Scripts >> LastScript;
+
 		WORD scriptnum;
-		DLevelScript *script = NULL;
-		arc << script;
+		DLevelScript *script;
+		arc >> script;
 		while (script)
 		{
-			arc << scriptnum;
+			arc >> scriptnum;
 			RunningScripts[scriptnum] = script;
-			arc << script;
+			arc >> script;
 		}
 	}
 }
@@ -2924,43 +2923,36 @@ void strbin (char *str)
 	*str = 0;
 }
 
-FArchive &operator<< (FArchive &arc, acsdefered_s *&defertop)
+FArchive &operator<< (FArchive &arc, acsdefered_s *defer)
 {
-	BYTE more;
-
-	if (arc.IsStoring ())
+	while (defer)
 	{
-		acsdefered_s *defer = defertop;
-		more = 1;
-		while (defer)
-		{
-			BYTE type;
-			arc << more;
-			type = (BYTE)defer->type;
-			arc << type << defer->script << defer->playernum
-				<< defer->arg0 << defer->arg1 << defer->arg2;
-			defer = defer->next;
-		}
-		more = 0;
-		arc << more;
+		arc << (BYTE)1;
+		arc << (BYTE)defer->type << defer->script
+			<< defer->arg0 << defer->arg1 << defer->arg2;
+		defer = defer->next;
 	}
-	else
-	{
-		acsdefered_s **defer = &defertop;
+	arc << (BYTE)0;
+	return arc;
+}
 
-		arc << more;
-		while (more)
-		{
-			*defer = new acsdefered_s;
-			arc << more;
-			(*defer)->type = (acsdefered_s::EType)more;
-			arc << (*defer)->script << (*defer)->playernum
-				<< (*defer)->arg0 << (*defer)->arg1 << (*defer)->arg2;
-			defer = &((*defer)->next);
-			arc << more;
-		}
-		*defer = NULL;
+FArchive &operator>> (FArchive &arc, acsdefered_s* &defertop)
+{
+	acsdefered_s **defer = &defertop;
+	BYTE inbyte;
+
+	arc >> inbyte;
+	while (inbyte)
+	{
+		*defer = new acsdefered_s;
+		arc >> inbyte;
+		(*defer)->type = (acsdefered_s::EType)inbyte;
+		arc >> (*defer)->script
+			>> (*defer)->arg0 >> (*defer)->arg1 >> (*defer)->arg2;
+		defer = &((*defer)->next);
+		arc >> inbyte;
 	}
+	*defer = NULL;
 	return arc;
 }
 
