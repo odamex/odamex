@@ -106,6 +106,10 @@
 				</ResourceCompiler>
 			</Target>
 		</Build>
+		<VirtualTargets>
+			<Add alias="All (WIN GCC)" targets="Win Release (GCC);Win Debug (GCC);" />
+			<Add alias="All (WIN VC)" targets="Win Release (VC);Win Debug (VC);" />
+		</VirtualTargets>
 		<Unit filename="..\pm_common\pmutil.c">
 			<Option compilerVar="CC" />
 		</Unit>
