@@ -1060,6 +1060,11 @@ static int PatchThing (int thingy)
 			hadHeight = true;
 		}
 	}
+	
+	// [ML] Set a thing's "real world height" to what's being offered here,
+	// so it's consistent from the patch
+	if (hadHeight && thingNum < sizeof(OrgHeights))
+		info->cdheight = info->height;
 
 	if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
 		info->height = OrgHeights[thingNum] * FRACUNIT;
