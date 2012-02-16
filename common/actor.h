@@ -374,7 +374,7 @@ public:
 	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
 
-	fixed_t         onground;		// NES - Fixes infinite jumping bug like a charm.
+	bool			onground;		// NES - Fixes infinite jumping bug like a charm.
 
 	// a linked list of sectors where this object appears
 	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98

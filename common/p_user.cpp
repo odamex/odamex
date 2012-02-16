@@ -171,7 +171,7 @@ void P_CalcHeight (player_t *player)
 				player->bob = MAXBOB;
 		}
 
-    if ((player->cheats & CF_NOMOMENTUM) || !player->mo->onground)
+    if (player->cheats & CF_NOMOMENTUM || (!co_zdoomphys && !player->mo->onground))
 	{
 		player->viewz = player->mo->z + VIEWHEIGHT;
 
