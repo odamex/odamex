@@ -1326,19 +1326,9 @@ BOOL PIT_VileCheck (AActor *thing)
 
 	corpsehit = thing;
 	corpsehit->momx = corpsehit->momy = 0;
-	// [RH] Check against real height and radius
-	{
-		fixed_t oldheight = corpsehit->height;
-		fixed_t oldradius = corpsehit->radius;
-		int oldflags = corpsehit->flags;
-
-		corpsehit->flags |= MF_SOLID;
-		corpsehit->height = P_ThingInfoHeight(corpsehit->info);
-		check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
-		corpsehit->flags = oldflags;
-		corpsehit->radius = oldradius;
-		corpsehit->height = oldheight;
-	}
+	corpsehit->height <<= 2;
+	check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
+	corpsehit->height >>= 2;
 
 	return !check;
 }

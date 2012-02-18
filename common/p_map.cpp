@@ -477,8 +477,8 @@ BOOL PIT_CheckThing (AActor *thing)
 	{
 		// check if a mobj passed over/under another object
 		if (/*!(thing->flags & MF_SPECIAL) &&*/
-			((tmthing->z >= thing->z + P_ThingInfoHeight(thing->info) ||
-			  tmthing->z + P_ThingInfoHeight(tmthing->info) < thing->z)))
+			((tmthing->z >= thing->z + thing->height ||
+			  tmthing->z + tmthing->height < thing->z)))
 			return true;
 	}
 
@@ -649,11 +649,11 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 	{ // Don't clip against self
 		return(true);
 	}
-	if(tmthing->z > thing->z+P_ThingInfoHeight(thing->info))
+	if(tmthing->z > thing->z + thing->height)
 	{
 		return(true);
 	}
-	else if(tmthing->z+P_ThingInfoHeight(tmthing->info) < thing->z)
+	else if(tmthing->z + tmthing->height < thing->z)
 	{ // under thing
 		return(true);
 	}
