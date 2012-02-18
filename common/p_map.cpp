@@ -1935,7 +1935,7 @@ static struct SRailHit {
 	AActor *hitthing;
 	fixed_t x,y,z;
 } *RailHits;
-static vec3_t RailEnd;
+static v3double_t RailEnd;
 
 BOOL PTR_RailTraverse (intercept_t *in)
 {
@@ -2008,7 +2008,7 @@ BOOL PTR_RailTraverse (intercept_t *in)
 		y = trace.y + FixedMul (trace.dy, frac);
 
 		// Save final position of rail shot.
-		VectorFixedSet (RailEnd, x, y, z);
+		M_SetVec3(&RailEnd, x, y, z);
 
 		// don't go any farther
 		return false;	
@@ -2067,7 +2067,7 @@ void P_RailAttack (AActor *source, int damage, int offset)
 {
 	angle_t angle;
 	fixed_t x1, y1, x2, y2;
-	vec3_t start, end;
+	v3double_t start, end;
 
 	x1 = source->x;
 	y1 = source->y;
@@ -2082,33 +2082,35 @@ void P_RailAttack (AActor *source, int damage, int offset)
 	aimslope = finetangent[FINEANGLES/4-(source->pitch>>ANGLETOFINESHIFT)];
 	shootthing = source;
 	NumRailHits = 0;
-	VectorFixedSet (start, x1, y1, shootz);
+
+	M_SetVec3(&start, x1, y1, shootz);
 
 	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_RailTraverse))
 	{
 		// Nothing hit, so just shoot the air
-		FixedAngleToVector (source->angle, source->pitch, end);
-		VectorMA (start, 8192, end, end);
+		M_AngleToVec3(&end, source->angle, source->pitch);		
+
+		M_ScaleVec3(&end, &end, 8192.0);
+		M_AddVec3(&end, &start, &end);
 	}
 	else
 	{
 		// Hit a wall, maybe some things as well
-		int i;
-
-		VectorCopy (RailEnd, end);
-		for (i = 0; i < NumRailHits; i++)
+		end = RailEnd;
+		
+		for (int i = 0; i < NumRailHits; i++)
 		{
 			if (RailHits[i].hitthing->flags & MF_NOBLOOD)
 				P_SpawnPuff (RailHits[i].x, RailHits[i].y, RailHits[i].z,
 							 R_PointToAngle2 (0, 0,
-											  FLOAT2FIXED(end[0]-start[0]),
-											  FLOAT2FIXED(end[1]-start[1])) - ANG180,
+											  FLOAT2FIXED(end.x - start.x),
+											  FLOAT2FIXED(end.y - start.y)) - ANG180,
 							 1);
 			else
 				P_SpawnBlood (RailHits[i].x, RailHits[i].y, RailHits[i].z,
 							 R_PointToAngle2 (0, 0,
-											  FLOAT2FIXED(end[0]-start[0]),
-											  FLOAT2FIXED(end[1]-start[1])) - ANG180,
+											  FLOAT2FIXED(end.x - start.x),
+											  FLOAT2FIXED(end.y - start.y)) - ANG180,
 							 damage);
 			P_DamageMobj (RailHits[i].hitthing, source, source, damage, MOD_RAILGUN);
 		}
@@ -2341,7 +2343,7 @@ AActor* 		bombspot;
 int 			bombdamage;
 float			bombdamagefloat;
 int				bombmod;
-vec3_t			bombvec;
+v3double_t		bombvec;
 
 //
 // PIT_ZdoomRadiusAttack
@@ -2378,24 +2380,22 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 	if (bombspot->type != MT_BARREL && thing->type != MT_BARREL) {
 		// [RH] New code (based on stuff in Q2)
 		float points;
-		vec3_t thingvec;
+		v3double_t thingvec;
 
-		VectorPosition (thing, thingvec);
-		thingvec[2] += (float)(thing->height >> (FRACBITS+1));
+		M_ActorPositionToVec3(&thingvec, thing);
+		thingvec.z += (double)(thing->height >> (FRACBITS+1));
 		{
-			vec3_t v;
-			float len;
+			v3double_t v;
 
-			VectorSubtract (bombvec, thingvec, v);
-			len = VectorLength (v);
-			points = bombdamagefloat - len;
+			M_SubVec3(&v, &bombvec, &thingvec);
+			points = bombdamagefloat - M_LengthVec3(&v);
 		}
 		if (thing == bombsource)
 			points = points * sv_splashfactor;
 		if (points > 0) {
 			if ((!HasBehavior && P_CheckSight (thing, bombspot, true)) ||
 				(HasBehavior && P_CheckSight2 (thing, bombspot, true))) {
-				vec3_t dir;
+				v3double_t dir;
 				float thrust;
 				fixed_t momx = thing->momx;
 				fixed_t momy = thing->momy;
@@ -2403,18 +2403,16 @@ BOOL PIT_ZdoomRadiusAttack (AActor *thing)
 				P_DamageMobj (thing, bombspot, bombsource, (int)points, bombmod);
 
 				thrust = points * 35000.0f / (float)thing->info->mass;
-				VectorSubtract (thingvec, bombvec, dir);
-				VectorScale (dir, thrust, dir);
+				M_SubVec3(&dir, &thingvec, &bombvec);
+				M_ScaleVec3(&dir, &dir, thrust);
 				if (bombsource != thing) {
-					dir[2] *= 0.5f;
+					dir.z *= 0.5f;
 				} else if (sv_splashfactor) {
-					dir[0] *= selfthrustscale;
-					dir[1] *= selfthrustscale;
-					dir[2] *= selfthrustscale;
+					M_ScaleVec3(&dir, &dir, selfthrustscale);
 				}
-				thing->momx = momx + (fixed_t)(dir[0]);
-				thing->momy = momy + (fixed_t)(dir[1]);
-				thing->momz += (fixed_t)(dir[2]);
+				thing->momx = momx + (fixed_t)(dir.x);
+				thing->momy = momy + (fixed_t)(dir.y);
+				thing->momz += (fixed_t)(dir.z);
 			}
 		}
 	} else {
@@ -2517,7 +2515,7 @@ void P_RadiusAttack (AActor *spot, AActor *source, int damage, int mod)
 	bombmod = mod;
 	bombdamagefloat = (float)damage;
 	bombmod = mod;
-	VectorPosition (spot, bombvec);
+	M_ActorPositionToVec3(&bombvec, spot);
 
 	for (y=yl ; y<=yh ; y++)
 	{

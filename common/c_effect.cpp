@@ -395,125 +395,119 @@ void P_ThinkParticles (void)
 }
 
 
-void P_DrawRailTrail (vec3_t start, vec3_t end)
+void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 {
-	float length;
-	int steps, i;
-	float deg;
-	vec3_t step, dir, pos, extend;
+	v3double_t step, dir, pos, extend, point;
 
-	VectorSubtract (end, start, dir);
-	length = VectorLength (dir);
-	steps = (int)(length*0.3333f);
+	M_SubVec3(&dir, &end, &start);
 
-	if (length) {
-		// The railgun's sound is a special case. It gets played from the
-		// point on the slug's trail that is closest to the hearing player.
-		AActor *mo = consoleplayer().camera;
-		vec3_t point;
-		float r;
-		float dirz;
+	double length = M_LengthVec3(&dir);
+	int steps = (int)(length*0.3333);
 
-		length = 1 / length;
-
-		if (abs(mo->x - FLOAT2FIXED(start[0])) < 20 * FRACUNIT
-			&& (mo->y - FLOAT2FIXED(start[1])) < 20 * FRACUNIT)
-		{ // This player (probably) fired the railgun
-			S_Sound (mo, CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
-		}
-		else
-		{
-			// Only consider sound in 2D (for now, anyway)
-			r = ((start[1] - FIXED2FLOAT(mo->y)) * (-dir[1]) -
-					(start[0] - FIXED2FLOAT(mo->x)) * (dir[0])) * length * length;
-
-			dirz = dir[2];
-			dir[2] = 0;
-			VectorMA (start, r, dir, point);
-			dir[2] = dirz;
-
-			S_Sound (FLOAT2FIXED(point[0]), FLOAT2FIXED(point[1]),
-				CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
-		}
-	} else {
-		// line is 0 length, so nothing to do
+	if (!length)	// line is 0 length, so nothing to do
 		return;
-	}
+		
+	// The railgun's sound is a special case. It gets played from the
+	// point on the slug's trail that is closest to the hearing player.
+	AActor *mo = consoleplayer().camera;
 
-	if (clientside)
+	double ilength = 1.0 / length;
+
+	if (abs(mo->x - FLOAT2FIXED(start.x)) < 20 * FRACUNIT &&
+		abs(mo->y - FLOAT2FIXED(start.y)) < 20 * FRACUNIT)
 	{
-		VectorScale2 (dir, length);
-		PerpendicularVector (extend, dir);
-		VectorScale2 (extend, 3);
-		VectorScale (dir, 3, step);
-
-		VectorCopy (start, pos);
-		deg = 270;
-		for (i = steps; i; i--) {
-			particle_t *p = NewParticle ();
-			vec3_t tempvec;
-
-			if (!p)
-				return;
-
-			p->trans = 255;
-			p->ttl = 35;
-			p->fade = FADEFROMTTL(35);
-			p->size = 3;
-
-			RotatePointAroundVector (tempvec, dir, extend, deg);
-			p->velx = FLOAT2FIXED(tempvec[0])>>4;
-			p->vely = FLOAT2FIXED(tempvec[1])>>4;
-			p->velz = FLOAT2FIXED(tempvec[2])>>4;
-			VectorAdd (tempvec, pos, tempvec);
-			deg += 14;
-			if (deg >= 360)
-				deg -= 360;
-			p->x = FLOAT2FIXED(tempvec[0]);
-			p->y = FLOAT2FIXED(tempvec[1]);
-			p->z = FLOAT2FIXED(tempvec[2]);
-			VectorAdd (pos, step, pos);
-
-			{
-				int rand = M_Random();
-
-				if (rand < 155)
-					p->color = rblue2;
-				else if (rand < 188)
-					p->color = rblue1;
-				else if (rand < 222)
-					p->color = rblue3;
-				else
-					p->color = rblue4;
-			}
-		}
-
-		VectorCopy (start, pos);
-		for (i = steps; i; i--) {
-			particle_t *p = JitterParticle (33);
-
-			if (!p)
-				return;
-
-			p->size = 2;
-			p->x = FLOAT2FIXED(pos[0]);
-			p->y = FLOAT2FIXED(pos[1]);
-			p->z = FLOAT2FIXED(pos[2]);
-			p->accz -= FRACUNIT/4096;
-			VectorAdd (pos, step, pos);
-			{
-				int rand = M_Random();
-
-				if (rand < 85)
-					p->color = grey4;
-				else if (rand < 170)
-					p->color = grey2;
-				else
-					p->color = grey1;
-			}
-			p->color = white;
-		}		
+		// This player (probably) fired the railgun
+		S_Sound (mo, CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
 	}
+	else
+	{
+		// Only consider sound in 2D (for now, anyway)
+		double r = ((start.y - FIXED2FLOAT(mo->y)) * (-dir.y) -
+				(start.x - FIXED2FLOAT(mo->x)) * (dir.x)) * ilength * ilength;
+
+		M_ScaleVec3(&point, &dir, r);
+		M_AddVec3(&point, &start, &point);
+		point.z = start.z;
+
+		S_Sound (FLOAT2FIXED(point.x), FLOAT2FIXED(point.y),
+			CHAN_WEAPON, "weapons/railgf", 1, ATTN_NORM);
+	}
+
+	if (!clientside)
+		return;
+	
+	M_ScaleVec3(&dir, &dir, ilength);	
+	M_PerpendicularVec3(&extend, &dir);
+	M_ScaleVec3(&extend, &extend, 3.0);
+	M_ScaleVec3(&step, &dir, 3.0);
+
+	pos = start;
+
+	float deg = 270.0f;
+	for (int i = steps; i; i--) {
+		particle_t *p = NewParticle ();
+
+		if (!p)
+			return;
+
+		p->trans = 255;
+		p->ttl = 35;
+		p->fade = FADEFROMTTL(35);
+		p->size = 3;
+
+		v3double_t tempvec;
+		M_RotatePointAroundVector(&tempvec, &dir, &extend, deg);
+
+		p->velx = FLOAT2FIXED(tempvec.x)>>4;
+		p->vely = FLOAT2FIXED(tempvec.y)>>4;
+		p->velz = FLOAT2FIXED(tempvec.z)>>4;
+		M_AddVec3(&tempvec, &tempvec, &pos);
+		deg += 14;
+		if (deg >= 360)
+			deg -= 360;
+		p->x = FLOAT2FIXED(tempvec.x);
+		p->y = FLOAT2FIXED(tempvec.y);
+		p->z = FLOAT2FIXED(tempvec.z);
+		M_AddVec3(&pos, &pos, &step);
+
+		int rand = M_Random();
+
+		if (rand < 155)
+			p->color = rblue2;
+		else if (rand < 188)
+			p->color = rblue1;
+		else if (rand < 222)
+			p->color = rblue3;
+		else
+			p->color = rblue4;
+	}
+
+	pos = start;
+		
+	for (int i = steps; i; i--) {
+		particle_t *p = JitterParticle (33);
+
+		if (!p)
+			return;
+
+		p->size = 2;
+		p->x = FLOAT2FIXED(pos.x);
+		p->y = FLOAT2FIXED(pos.y);
+		p->z = FLOAT2FIXED(pos.z);
+		p->accz -= FRACUNIT/4096;
+		M_AddVec3(&pos, &pos, &step);
+
+		int rand = M_Random();
+
+		if (rand < 85)
+			p->color = grey4;
+		else if (rand < 170)
+			p->color = grey2;
+		else
+			p->color = grey1;
+
+		p->color = white;
+	}		
 }
 
 void P_DisconnectEffect (AActor *actor)

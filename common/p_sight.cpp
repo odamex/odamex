@@ -485,19 +485,15 @@ bool P_CheckSightEdges2 (const AActor *t1, const AActor *t2, float radius_boost)
 	// w = r scaled by the radius of mobj t2
 	// thereby, "t2->[x,y] + or - w[x,y]" gives you the edges of t2 from t1's point of view
 	// this function used to only check the middle of t2
-	vec3_t d, r, w;
-	d[0] = FIXED2FLOAT(t1->x - t2->x);
-	d[1] = FIXED2FLOAT(t1->y - t2->y);
-	d[2] = 0;
-	VectorNormalize(d);
-	r[2] = 0;
-	r[1] = d[0];
-	r[0] = -d[1];
-	VectorScale(r, FIXED2FLOAT(t2->radius), w);
+	v3double_t d, r, w;
+	M_SetVec3(&d, t1->x - t2->x, t1->y - t2->y, 0);
+	M_NormalizeVec3(&d, &d);
+	M_SetVec3(&r, -d.y, d.x, 0.0);
+	M_ScaleVec3(&w, &r, FIXED2FLOAT(t2->radius));
 
 	return P_SightPathTraverse (t1->x, t1->y, t2->x, t2->y)
-		|| P_SightPathTraverse(t1->x, t1->y, t2->x + FLOAT2FIXED(w[0]), t2->y + FLOAT2FIXED(w[1]))
-		|| P_SightPathTraverse(t1->x, t1->y, t2->x - FLOAT2FIXED(w[0]), t2->y - FLOAT2FIXED(w[1]));
+		|| P_SightPathTraverse(t1->x, t1->y, t2->x + FLOAT2FIXED(w.x), t2->y + FLOAT2FIXED(w.y))
+		|| P_SightPathTraverse(t1->x, t1->y, t2->x - FLOAT2FIXED(w.x), t2->y - FLOAT2FIXED(w.y));
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -882,15 +878,11 @@ P_CheckSightEdges
 // w = r scaled by the radius of mobj t2
 // thereby, "t2->[x,y] + or - w[x,y]" gives you the edges of t2 from t1's point of view
 // this function used to only check the middle of t2
-	vec3_t d, r, w;
-	d[0] = FIXED2FLOAT(t1->x - t2->x);
-	d[1] = FIXED2FLOAT(t1->y - t2->y);
-	d[2] = 0;
-	VectorNormalize(d);
-	r[2] = 0;
-	r[1] = d[0];
-	r[0] = -d[1];
-	VectorScale(r, FIXED2FLOAT(t2->radius) + radius_boost, w);
+	v3double_t d, r, w;
+	M_SetVec3(&d, t1->x - t2->x, t1->y - t2->y, 0);
+	M_NormalizeVec3(&d, &d);
+	M_SetVec3(&r, -d.y, d.x, 0.0);
+	M_ScaleVec3(&w, &r, FIXED2FLOAT(t2->radius) + radius_boost);
 
 	bool contact = false;
 
@@ -898,10 +890,10 @@ P_CheckSightEdges
 							t2->x, t2->y, t2->z, t2->height);
 
 	contact |= P_CheckSight(t1->x, t1->y, t1->z, t1->height,
-							t2->x - FLOAT2FIXED(w[0]), t2->y - FLOAT2FIXED(w[1]), t2->z, t2->height);
+							t2->x - FLOAT2FIXED(w.x), t2->y - FLOAT2FIXED(w.y), t2->z, t2->height);
 
 	contact |= P_CheckSight(t1->x, t1->y, t1->z, t1->height,
-							t2->x + FLOAT2FIXED(w[0]), t2->y + FLOAT2FIXED(w[1]), t2->z, t2->height);
+							t2->x + FLOAT2FIXED(w.x), t2->y + FLOAT2FIXED(w.y), t2->z, t2->height);
 
 	return contact;
 }	

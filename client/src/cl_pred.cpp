@@ -363,36 +363,28 @@ void CL_ExtrapolatePlayers ()
 // all the way to dest_pos.
 //
 
-void CL_NudgeThing(AActor *thing, vec3_t dest_pos, float amount = 0.1f)
+void CL_NudgeThing(AActor *thing, v3fixed_t &dest_pos, float amount = 0.1f)
 {
-	const float nudge_threshold = 4.0f;
+	const fixed_t nudge_threshold = 4 * FRACUNIT;
 
 	if (amount < 0.0f || amount > 1.0f)
 		amount = 1.0f;
 
-	vec3_t start_pos, delta;
-	VectorPosition(thing, start_pos);
-	VectorSubtract(dest_pos, start_pos, delta);
+	v3fixed_t start_pos, delta;
+	M_ActorPositionToVec3Fixed(&start_pos, thing);
+	M_SubVec3Fixed(&delta, &dest_pos, &start_pos);
 
-    #ifdef _PRED_DBG
-	if (VectorLength(delta) >= 0.01f)
-		Printf(PRINT_HIGH, "Prediction off by %0.2f units.\n", VectorLength(delta));
-	#endif // _PRED_DBG
-
-	if (VectorLength(delta) <= nudge_threshold)
+	if (M_LengthVec3Fixed(&delta) <= nudge_threshold)
 		amount = 1.0f;	// snap directly to dest_pos since it won't be noticable
 
-	vec3_t scaled_delta, nudged_pos;
-	VectorScale(delta, amount, scaled_delta);
-	VectorAdd(start_pos, scaled_delta, nudged_pos);
-
+	v3fixed_t scaled_delta, nudged_pos;
+	M_ScaleVec3Fixed(&scaled_delta, &delta, amount * FRACUNIT);
+	M_AddVec3Fixed(&nudged_pos, &start_pos, &scaled_delta);
+	
 	// Snap to the destination Z position for moving sectors (lifts, etc)
-	nudged_pos[2] = dest_pos[2];
+	nudged_pos.z = dest_pos.z;
 
-	CL_MoveThing(thing,
-		FLOAT2FIXED(nudged_pos[0]),
-		FLOAT2FIXED(nudged_pos[1]),
-		FLOAT2FIXED(nudged_pos[2]));
+	CL_MoveThing(thing, nudged_pos.x, nudged_pos.y, nudged_pos.z);
 }
 
 //
@@ -423,8 +415,8 @@ void CL_PredictMove (void)
     cl_waterlevel[bufpos]		= p->mo->waterlevel;
 
 	// Backup the position predicted in the previous tic 
-	vec3_t last_predicted_pos;
-	VectorPosition(p->mo, last_predicted_pos);
+	v3fixed_t last_predicted_pos;
+	M_ActorPositionToVec3Fixed(&last_predicted_pos, p->mo);
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
@@ -446,9 +438,13 @@ void CL_PredictMove (void)
 
 	predicting = false;
 
-	vec3_t corrected_pos;
-	VectorPosition(p->mo, corrected_pos);	// backup the corrected prediction
-	PositionVector(last_predicted_pos, p->mo);	// restore the previous tic's prediction
+	v3fixed_t corrected_pos;
+	M_ActorPositionToVec3Fixed(&corrected_pos, p->mo);	// backup the corrected prediction
+	
+	// restore the previous tic's prediction
+	p->mo->x = last_predicted_pos.x;	
+	p->mo->y = last_predicted_pos.y;	
+	p->mo->z = last_predicted_pos.z;	
 
 	// Move the player's position towards the corrected position predicted based
 	// on recent position data from the server.  This avoids the disorienting
