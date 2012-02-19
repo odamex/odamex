@@ -268,6 +268,10 @@ static char *C_GetDefaultMusicSystem()
 	defaultmusicsystem = MS_AUDIOUNIT;
 	#endif
 
+	// don't overflow str
+	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
+		defaultmusicsystem = MS_NONE;
+
 	sprintf(str, "%i", defaultmusicsystem);
 	return str;
 }
