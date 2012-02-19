@@ -23,6 +23,7 @@
 
 #include "c_cvars.h"
 #include "s_sound.h"
+#include "i_music.h"
 #include "d_netinf.h"
 
 // Automap
@@ -251,7 +252,28 @@ BEGIN_CUSTOM_CVAR (snd_channels, "12", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NO
 	S_Init (snd_sfxvolume, snd_musicvolume);
 }
 END_CUSTOM_CVAR (snd_channels)
-CVAR_FUNC_DECL (snd_musicsystem, "1", "Music subsystem preference",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+//
+// C_GetDefaultMuiscSystem()
+//
+// Allows the default value for snd_musicsystem to change depending on
+// compile-time factors (eg, OS)
+//
+static char *C_GetDefaultMusicSystem()
+{
+	static char str[4];
+	
+	MusicSystemType defaultmusicsystem = MS_SDLMIXER;
+	#ifdef OSX
+	defaultmusicsystem = MS_AUDIOUNIT;
+	#endif
+
+	sprintf(str, "%i", defaultmusicsystem);
+	return str;
+}
+
+CVAR_FUNC_DECL (snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
+		CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (snd_musicdevice, "", "Music output device for the chosen music subsystem", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Status bar
