@@ -25,6 +25,8 @@
 #ifndef __P_INTER__
 #define __P_INTER__
 
+#define BONUSADD 6
+
 class player_s;
 
 BOOL P_GiveAmmo(player_s*, ammotype_t, int);

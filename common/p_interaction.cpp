@@ -36,8 +36,6 @@
 #include "p_ctf.h"
 #include "p_acs.h"
 
-#define BONUSADD 6
-
 extern bool predicting;
 extern bool singleplayerjustdied;
 

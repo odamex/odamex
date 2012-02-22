@@ -26,6 +26,7 @@
 #include	"z_zone.h"
 #include	"v_video.h"
 #include	"p_local.h"
+#include	"p_inter.h"
 #include	"p_ctf.h"
 #include    "st_stuff.h"
 
@@ -115,7 +116,11 @@ void CL_CTFEvent (void)
 		case SCORE_FIRSTGRAB:
 		case SCORE_MANUALRETURN:
 			if(validplayer(player))
+			{
 				CTF_CarryFlag(player, flag);
+				if (player.id == displayplayer().id)
+					player.bonuscount = BONUSADD;
+			}
 			break;
 
 		case SCORE_CAPTURE:
