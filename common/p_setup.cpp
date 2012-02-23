@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <set>
 
 #include "m_alloc.h"
 #include "m_argv.h"
@@ -55,6 +56,7 @@ int	P_TranslateSectorSpecial (int);
 
 extern unsigned int R_OldBlend;
 
+extern std::set<sector_t*> movable_sectors;
 //
 // MAP related Lookup tables.
 // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
@@ -1335,6 +1337,35 @@ void P_GroupLines (void)
 
 }
 
+void P_SetMovableSectors()
+{
+	// clear the old list of movable sectors
+	movable_sectors.clear();
+
+	for (int i = 0; i < numlines; i++)
+	{
+		line_t *li = &lines[i];
+
+		if (li->special && li->id)
+		{
+			// The line special is tagged.  Add all sectors with same tag.
+			for (int s = 0; s < numsectors; s++)
+			{
+				if (sectors[s].tag == li->id)
+					movable_sectors.insert(&sectors[s]);
+			}
+		}
+		else if (li->special && li->backsector)
+		{
+			// No tag is used with this special (eg, door).
+			// Add the sector on the backside of the line.
+			movable_sectors.insert(li->backsector);
+		}
+    }
+
+	Printf(PRINT_HIGH, "Number of movable sectors: %i\n", movable_sectors.size());
+}
+
 //
 // [RH] P_LoadBehavior
 //
@@ -1486,6 +1517,8 @@ void P_SetupLevel (char *lumpname, int position)
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
+
+	P_SetMovableSectors();
 
     PO_Init ();
 
