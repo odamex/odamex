@@ -29,6 +29,7 @@
 #include <cstdlib>
 
 #include "net_packet.h"
+#include "net_error.h"
 
 using namespace std;
 

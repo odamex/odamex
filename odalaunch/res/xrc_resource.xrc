@@ -117,7 +117,7 @@
 				<label>Connect</label>
 				<tooltip>Connect to the selected server</tooltip>
 				<longhelp>Connect to the selected server</longhelp>
-				<bitmap>.\icon32x32x32.ico</bitmap>
+				<bitmap>./icon32x32x32.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmRunOffline">
 				<label>Run Odamex</label>
