@@ -19,7 +19,7 @@ include_directories(${API_DIR} ${LAUNCH_DIR} ${XRCRES_DIR})
 # wxWidgets configuration
 find_package(wxWidgets)
 if(wxWidgets_FOUND)
-  include_directories(${wxWidgets_INCLUDE_DIRS})
+  include( "${wxWidgets_USE_FILE}" )
 else()
   if(wxWidgets_ROOT_DIR)
     message(WARNING "wxWidgets root directory exists but no compiled libraries were found, odalaunch target not generated.")
@@ -37,5 +37,5 @@ if(wxWidgets_FOUND)
     ${API_SOURCES} ${API_HEADERS}
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
     ${XRCRES_HEADER})
-  target_link_libraries(odalaunch ${wxWidgets_LIBRARY_DIRS})
+  target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 endif()
