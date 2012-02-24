@@ -1361,9 +1361,7 @@ void P_SetMovableSectors()
 			// Add the sector on the backside of the line.
 			movable_sectors.insert(li->backsector);
 		}
-    }
-
-	Printf(PRINT_HIGH, "Number of movable sectors: %i\n", movable_sectors.size());
+	}
 }
 
 //
