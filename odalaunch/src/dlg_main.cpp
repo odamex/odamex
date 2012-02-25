@@ -55,11 +55,6 @@
 // Control ID assignments for events
 // application icon
 
-// lists
-const char * Id_LstCtrlServers = "Id_LstCtrlServers";
-const char * Id_LstCtrlPlayers = "Id_LstCtrlPlayers";
-const char * Id_LstCtrlServerDetails = "Id_LstCtrlServerDetails";
-
 static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
 static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
 
@@ -101,8 +96,8 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
     EVT_COMMAND(-1, wxEVT_THREAD_WORKER_SIGNAL, dlgMain::OnWorkerSignal)
 
     // misc events
-    EVT_LIST_ITEM_SELECTED(XRCID(Id_LstCtrlServers), dlgMain::OnServerListClick)
-    EVT_LIST_ITEM_ACTIVATED(XRCID(Id_LstCtrlServers), dlgMain::OnServerListDoubleClick)
+    EVT_LIST_ITEM_SELECTED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListClick)
+    EVT_LIST_ITEM_ACTIVATED(XRCID("Id_LstCtrlServers"), dlgMain::OnServerListDoubleClick)
 END_EVENT_TABLE()
 
 // Main window creation
@@ -171,9 +166,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
     launchercfg_s.wad_paths = wxGetCwd();
     launchercfg_s.odamex_directory = wxGetCwd();
 
-    m_LstCtrlServers = XRCCTRL(*this, Id_LstCtrlServers, LstOdaServerList);
-    m_LstCtrlPlayers = XRCCTRL(*this, Id_LstCtrlPlayers, LstOdaPlayerList);
-    m_LstOdaSrvDetails = XRCCTRL(*this, Id_LstCtrlServerDetails, LstOdaSrvDetails);
+    m_LstCtrlServers = XRCCTRL(*this, "Id_LstCtrlServers", LstOdaServerList);
+    m_LstCtrlPlayers = XRCCTRL(*this, "Id_LstCtrlPlayers", LstOdaPlayerList);
+    m_LstOdaSrvDetails = XRCCTRL(*this, "Id_LstCtrlServerDetails", LstOdaSrvDetails);
 
     m_LstCtrlServers->SetupServerListColumns();
     m_LstCtrlPlayers->SetupPlayerListColumns();

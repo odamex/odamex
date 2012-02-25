@@ -31,13 +31,8 @@
 
 #define _ODA_COPYRIGHT_ "Copyright (C) 2006-2010 by The Odamex Team."
 
-static const wxString Id_StcTxtCopyright = "Id_StcTxtCopyright";
-static const wxString Id_StcTxtVersion = "Id_StcTxtVersion";
-static const wxString Id_TxtCtrlDevelopers = "Id_TxtCtrlDevelopers";
-static const wxString Id_StcTxtWxVer = "Id_StcTxtWxVer";
-
 BEGIN_EVENT_TABLE(dlgAbout, wxDialog)
-    EVT_TEXT_URL(XRCID(Id_TxtCtrlDevelopers), dlgAbout::OnTxtCtrlUrlClick)
+    EVT_TEXT_URL(XRCID("Id_TxtCtrlDevelopers"), dlgAbout::OnTxtCtrlUrlClick)
 END_EVENT_TABLE()
 
 dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
@@ -46,15 +41,15 @@ dlgAbout::dlgAbout(wxWindow* parent, wxWindowID id)
 
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgAbout"));
 
-    m_StcTxtCopyright = XRCCTRL(*this, Id_StcTxtCopyright,
+    m_StcTxtCopyright = XRCCTRL(*this, "Id_StcTxtCopyright",
         wxStaticText);
 
-    m_StcTxtVersion = XRCCTRL(*this, Id_StcTxtVersion,
+    m_StcTxtVersion = XRCCTRL(*this, "Id_StcTxtVersion",
         wxStaticText);
 
-    m_StcTxtWxVer = XRCCTRL(*this, Id_StcTxtWxVer, wxStaticText);
+    m_StcTxtWxVer = XRCCTRL(*this, "Id_StcTxtWxVer", wxStaticText);
 
-    m_TxtCtrlDevelopers = XRCCTRL(*this, Id_TxtCtrlDevelopers,
+    m_TxtCtrlDevelopers = XRCCTRL(*this, "Id_TxtCtrlDevelopers",
         wxTextCtrl);
 
     // wxWidgets Bug: wxTE_AUTO_URL appears to get set AFTER SetValue() has been

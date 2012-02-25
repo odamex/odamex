@@ -35,29 +35,6 @@
 
 #include "main.h"
 
-// Widget ID's
-const char *Id_ChkCtrlGetListOnStart = "Id_ChkCtrlGetListOnStart";
-const char *Id_ChkCtrlShowBlockedServers = "Id_ChkCtrlShowBlockedServers";
-const char *Id_ChkCtrlEnableBroadcasts = "Id_ChkCtrlEnableBroadcasts";
-
-const char *Id_DirCtrlChooseWadDir = "Id_DirCtrlChooseWadDir";
-const char *Id_DirCtrlChooseOdamexPath = "Id_DirCtrlChooseOdamexPath";
-
-const char *Id_LstCtrlWadDirectories = "Id_LstCtrlWadDirectories";
-
-const char *Id_SpnCtrlMasterTimeout = "Id_SpnCtrlMasterTimeout";
-const char *Id_SpnCtrlServerTimeout = "Id_SpnCtrlServerTimeout";
-const char *Id_TxtCtrlExtraCmdLineArgs = "Id_TxtCtrlExtraCmdLineArgs";
-
-const char *Id_SpnCtrlPQGood = "Id_SpnCtrlPQGood";
-const char *Id_SpnCtrlPQPlayable = "Id_SpnCtrlPQPlayable";
-const char *Id_SpnCtrlPQLaggy = "Id_SpnCtrlPQLaggy";
-
-const char *Id_StcBmpPQGood = "Id_StcBmpPQGood";
-const char *Id_StcBmpPQPlayable = "Id_StcBmpPQPlayable";
-const char *Id_StcBmpPQLaggy = "Id_StcBmpPQLaggy";
-const char *Id_StcBmpPQBad = "Id_StcBmpPQBad";
-
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
@@ -72,20 +49,20 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
 
-    EVT_DIRPICKER_CHANGED(XRCID(Id_DirCtrlChooseOdamexPath), dlgConfig::OnChooseOdamexPath)
+    EVT_DIRPICKER_CHANGED(XRCID("Id_DirCtrlChooseOdamexPath"), dlgConfig::OnChooseOdamexPath)
 
 	// Misc events
-	EVT_CHECKBOX(XRCID(Id_ChkCtrlGetListOnStart), dlgConfig::OnCheckedBox)
-	EVT_CHECKBOX(XRCID(Id_ChkCtrlShowBlockedServers), dlgConfig::OnCheckedBox)
-	EVT_CHECKBOX(XRCID(Id_ChkCtrlEnableBroadcasts), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkCtrlShowBlockedServers"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkCtrlEnableBroadcasts"), dlgConfig::OnCheckedBox)
 
-	EVT_TEXT(XRCID(Id_SpnCtrlMasterTimeout), dlgConfig::OnTextChange)
-	EVT_TEXT(XRCID(Id_SpnCtrlServerTimeout), dlgConfig::OnTextChange)
-	EVT_TEXT(XRCID(Id_TxtCtrlExtraCmdLineArgs), dlgConfig::OnTextChange)
+	EVT_TEXT(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnTextChange)
+	EVT_TEXT(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnTextChange)
+	EVT_TEXT(XRCID("Id_TxtCtrlExtraCmdLineArgs"), dlgConfig::OnTextChange)
 
-	EVT_SPINCTRL(XRCID(Id_SpnCtrlPQGood), dlgConfig::OnSpinValChange)
-	EVT_SPINCTRL(XRCID(Id_SpnCtrlPQPlayable), dlgConfig::OnSpinValChange)
-	EVT_SPINCTRL(XRCID(Id_SpnCtrlPQLaggy), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQGood"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQPlayable"), dlgConfig::OnSpinValChange)
+	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQLaggy"), dlgConfig::OnSpinValChange)
 END_EVENT_TABLE()
 
 // Window constructor
@@ -94,27 +71,27 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgConfig"));
 
-    m_ChkCtrlGetListOnStart = XRCCTRL(*this, Id_ChkCtrlGetListOnStart, wxCheckBox);
-    m_ChkCtrlShowBlockedServers = XRCCTRL(*this, Id_ChkCtrlShowBlockedServers, wxCheckBox);
-    m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, Id_ChkCtrlEnableBroadcasts, wxCheckBox);
+    m_ChkCtrlGetListOnStart = XRCCTRL(*this, "Id_ChkCtrlGetListOnStart", wxCheckBox);
+    m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
+    m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, "Id_ChkCtrlEnableBroadcasts", wxCheckBox);
 
-    m_LstCtrlWadDirectories = XRCCTRL(*this, Id_LstCtrlWadDirectories, wxListBox);
+    m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
 
-    m_DirCtrlChooseWadDir = XRCCTRL(*this, Id_DirCtrlChooseWadDir, wxDirPickerCtrl);
-    m_DirCtrlChooseOdamexPath = XRCCTRL(*this, Id_DirCtrlChooseOdamexPath, wxDirPickerCtrl);
+    m_DirCtrlChooseWadDir = XRCCTRL(*this, "Id_DirCtrlChooseWadDir", wxDirPickerCtrl);
+    m_DirCtrlChooseOdamexPath = XRCCTRL(*this, "Id_DirCtrlChooseOdamexPath", wxDirPickerCtrl);
 
-    m_SpnCtrlMasterTimeout = XRCCTRL(*this, Id_SpnCtrlMasterTimeout, wxSpinCtrl);
-    m_SpnCtrlServerTimeout = XRCCTRL(*this, Id_SpnCtrlServerTimeout, wxSpinCtrl);
-    m_TxtCtrlExtraCmdLineArgs = XRCCTRL(*this, Id_TxtCtrlExtraCmdLineArgs, wxTextCtrl);
+    m_SpnCtrlMasterTimeout = XRCCTRL(*this, "Id_SpnCtrlMasterTimeout", wxSpinCtrl);
+    m_SpnCtrlServerTimeout = XRCCTRL(*this, "Id_SpnCtrlServerTimeout", wxSpinCtrl);
+    m_TxtCtrlExtraCmdLineArgs = XRCCTRL(*this, "Id_TxtCtrlExtraCmdLineArgs", wxTextCtrl);
 
-    m_SpnCtrlPQGood = XRCCTRL(*this, Id_SpnCtrlPQGood, wxSpinCtrl);
-    m_SpnCtrlPQPlayable = XRCCTRL(*this, Id_SpnCtrlPQPlayable, wxSpinCtrl);
-    m_SpnCtrlPQLaggy = XRCCTRL(*this, Id_SpnCtrlPQLaggy, wxSpinCtrl);
+    m_SpnCtrlPQGood = XRCCTRL(*this, "Id_SpnCtrlPQGood", wxSpinCtrl);
+    m_SpnCtrlPQPlayable = XRCCTRL(*this, "Id_SpnCtrlPQPlayable", wxSpinCtrl);
+    m_SpnCtrlPQLaggy = XRCCTRL(*this, "Id_SpnCtrlPQLaggy", wxSpinCtrl);
 
-    m_StcBmpPQGood = XRCCTRL(*this, Id_StcBmpPQGood, wxStaticBitmap);
-    m_StcBmpPQPlayable = XRCCTRL(*this, Id_StcBmpPQPlayable, wxStaticBitmap);
-    m_StcBmpPQLaggy = XRCCTRL(*this, Id_StcBmpPQLaggy, wxStaticBitmap);
-    m_StcBmpPQBad = XRCCTRL(*this, Id_StcBmpPQBad, wxStaticBitmap);
+    m_StcBmpPQGood = XRCCTRL(*this, "Id_StcBmpPQGood", wxStaticBitmap);
+    m_StcBmpPQPlayable = XRCCTRL(*this, "Id_StcBmpPQPlayable", wxStaticBitmap);
+    m_StcBmpPQLaggy = XRCCTRL(*this, "Id_StcBmpPQLaggy", wxStaticBitmap);
+    m_StcBmpPQBad = XRCCTRL(*this, "Id_StcBmpPQBad", wxStaticBitmap);
 
     // Ping quality icons
     m_StcBmpPQGood->SetBitmap(wxXmlResource::Get()->LoadBitmap(wxT("bullet_green")));

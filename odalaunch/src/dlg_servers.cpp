@@ -33,17 +33,12 @@
 #include "str_utils.h"
 
 // Widget ID's
-const char * ID_SERVERLIST = "ID_SERVERLIST";
-
 static wxInt32 ID_BTNADDSERVER = XRCID("ID_BTNADDSERVER");
 static wxInt32 ID_BTNREPLACESERVER = XRCID("ID_BTNREPLACESERVER");
 static wxInt32 ID_BTNDELETESERVER = XRCID("ID_BTNDELETESERVER");
 
 static wxInt32 ID_BTNMOVEUP = XRCID("ID_MOVEUP");
 static wxInt32 ID_BTNMOVEDOWN = XRCID("ID_MOVEDOWN");
-
-const char * ID_CHKSUBSTITUTE = "ID_CHKSUBSTITUTE";
-const char * ID_TXTSUBIPPORT = "ID_TXTSUBIPPORT";
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgServers,wxDialog)
@@ -58,9 +53,9 @@ BEGIN_EVENT_TABLE(dlgServers,wxDialog)
     EVT_BUTTON(wxID_OK, dlgServers::OnButtonOK)
 
 	// Misc events
-	EVT_CHECKBOX(XRCID(ID_CHKSUBSTITUTE), dlgServers::OnSubstChecked)
+	EVT_CHECKBOX(XRCID("ID_CHKSUBSTITUTE"), dlgServers::OnSubstChecked)
 
-	EVT_LISTBOX(XRCID(ID_SERVERLIST), dlgServers::OnServerList)
+	EVT_LISTBOX(XRCID("ID_SERVERLIST"), dlgServers::OnServerList)
 END_EVENT_TABLE()
 
 // Window constructor
@@ -69,9 +64,9 @@ dlgServers::dlgServers(MasterServer *ms, wxWindow *parent, wxWindowID id)
     // Set up the dialog and its widgets
     wxXmlResource::Get()->LoadDialog(this, parent, _T("dlgServers"));
 
-    SERVER_LIST = XRCCTRL(*this, ID_SERVERLIST, wxListBox);
-    CHECK_SUBSTITUTE = XRCCTRL(*this, ID_CHKSUBSTITUTE, wxCheckBox);
-    TEXT_SUBSTITUTE = XRCCTRL(*this, ID_TXTSUBIPPORT, wxTextCtrl);
+    SERVER_LIST = XRCCTRL(*this, "ID_SERVERLIST", wxListBox);
+    CHECK_SUBSTITUTE = XRCCTRL(*this, "ID_CHKSUBSTITUTE", wxCheckBox);
+    TEXT_SUBSTITUTE = XRCCTRL(*this, "ID_TXTSUBIPPORT", wxTextCtrl);
 
     MServer = ms;
 
