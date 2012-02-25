@@ -69,6 +69,7 @@ extern byte		*Ranges;
 extern flagdata CTFdata[NUMFLAGS];
 
 EXTERN_CVAR (hud_scale)
+EXTERN_CVAR (sv_fraglimit)
 
 void ST_unloadNew (void)
 {
@@ -378,14 +379,33 @@ void ST_newDrawCTF (void)
 	ST_DrawNumRight (screen->width - 20 * xscale, 20 * yscale, screen, TEAMpoints[TEAM_RED]);
 }
 
+static bool STACK_ARGS compare_player_frags (const player_t *arg1, const player_t *arg2)
+{
+	return arg2->fragcount < arg1->fragcount;
+}
+
+static bool STACK_ARGS compare_player_kills (const player_t *arg1, const player_t *arg2)
+{
+	return arg2->killcount < arg1->killcount;
+}
+
+static bool STACK_ARGS compare_player_points (const player_t *arg1, const player_t *arg2)
+{
+	return arg2->points < arg1->points;
+}
+
+
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void ST_odamexHudDraw (void)
 {
 	player_t *plyr = &consoleplayer();
-	int x, y, i;
+	unsigned int x, y, i, j, xscale, yscale;
+	signed int f;
+	std::vector<player_t *> sortedplayers(players.size());
 	ammotype_t ammo = weaponinfo[plyr->readyweapon].ammo;
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
+
+	xscale = hud_scale ? CleanXfac : 1;
+	yscale = hud_scale ? CleanYfac : 1;
 
 	x = screen->width - 32 * xscale;
 	y = screen->height - (numheight + 4) * yscale;
@@ -433,10 +453,29 @@ void ST_odamexHudDraw (void)
 												screen->height - 4);
 	}
 
-	if (multiplayer)
+	if (multiplayer && sv_gametype > 0)
 	{
 		// Show timer
-		HU_DisplayTimer(screen->width/2 - 30*xscale, y+(8*yscale));		
+		HU_DisplayTimer(screen->width/2 - 30*xscale, y+(8*yscale));
+
+		// Player list sorting
+		for (j = 0; j < sortedplayers.size(); j++)
+			sortedplayers[j] = &players[j];	
+
+		if(sv_gametype != GM_COOP)
+			std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
+		else
+			std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
+		
+		f = plyr->fragcount - sortedplayers[0]->fragcount;
+
+		char statline1[16+10];
+		sprintf(statline1, "%d/%d",sortedplayers[0]->fragcount,sv_fraglimit.asInt());
+		screen->DrawTextClean (CR_RED, x-((V_StringWidth(linetemp))*xscale), y-(16*yscale), linetemp);
+
+		char statline2[16+10];
+		sprintf(statline2, (f > 0 ? "+%d":"%d"),f);
+		screen->DrawTextClean (CR_GREEN, x-((V_StringWidth(linetemp2))*xscale), y-(24*yscale), linetemp2);
 	}
 	else
 	{
@@ -446,19 +485,12 @@ void ST_odamexHudDraw (void)
 		sprintf (line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
 		screen->DrawTextClean (CR_RED, screen->width/2 - 30*xscale, y+(8*yscale), line);
 	}
-	
-	char linetemp[16+10];
-	sprintf(linetemp, "33/50");
-	screen->DrawTextClean (CR_RED, x-((V_StringWidth(linetemp))*xscale), y-(16*yscale), linetemp);
-
-	char linetemp2[16+10];
-	sprintf(linetemp2, "+7");
-	screen->DrawTextClean (CR_GREEN, x-((V_StringWidth(linetemp2))*xscale), y-(24*yscale), linetemp2);
 }
 
 void ST_odamexHudDrawCTF (void)
 {
-
+	// Draw the base
+	ST_odamexHudDraw();
 }
 
 VERSION_CONTROL (st_new_cpp, "$Id$")
