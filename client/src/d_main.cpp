@@ -771,7 +771,13 @@ std::string BaseFileSearchDir(std::string dir, std::string file, std::string ext
 	} while(FindNextFile(hFind, &FindFileData));
 
 	dwError = GetLastError();
-	if(dwError != ERROR_NO_MORE_FILES)
+	
+	// Note: As documented, FindNextFile sets ERROR_NO_MORE_FILES as the error 
+	// code, but when this function "fails" it does not set it we have to assume 
+	// that it completed successfully (this is actually  bad practice, because 
+    // it says in the docs that it does not set ERROR_SUCCESS, even though 
+    // GetLastError returns 0) WTF DO WE DO?!
+	if(dwError != ERROR_SUCCESS && dwError != ERROR_NO_MORE_FILES)
 		Printf (PRINT_HIGH, "FindNextFile failed. GetLastError: %d\n", dwError);
 
 	FindClose(hFind);
