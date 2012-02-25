@@ -149,7 +149,7 @@ const char *KeyNames[NUM_KEYS] = {
    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL,    NULL, // F8 - FF
 // :: End world keycodes
   "kp0",   "kp1",   "kp2",   "kp3",   "kp4",   "kp5",   "kp6",   "kp7", // 0100 - 0107
-  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "enter", // 0108 - 010F
+  "kp8",   "kp9",   "kp.",   "kp/",   "kp*",   "kp-",   "kp+", "kpenter", // 0108 - 010F
   "kp=","uparrow","downarrow","rightarrow","leftarrow","ins","home","end", // 0110 - 0117
  "pgup",  "pgdn",    "f1",    "f2",    "f3",    "f4",    "f5",    "f6", // 0118 - 011F
    "f7",    "f8",    "f9",   "f10",   "f11",   "f12",   "f13",   "f14", // 0120 - 0127
