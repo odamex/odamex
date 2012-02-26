@@ -471,11 +471,11 @@ void ST_odamexHudDraw (void)
 
 		char statline1[16+10];
 		sprintf(statline1, "%d/%d",sortedplayers[0]->fragcount,sv_fraglimit.asInt());
-		screen->DrawTextClean (CR_RED, x-((V_StringWidth(linetemp))*xscale), y-(16*yscale), linetemp);
+		screen->DrawTextClean (CR_RED, x-((V_StringWidth(statline1))*xscale), y-(16*yscale), statline1);
 
 		char statline2[16+10];
 		sprintf(statline2, (f > 0 ? "+%d":"%d"),f);
-		screen->DrawTextClean (CR_GREEN, x-((V_StringWidth(linetemp2))*xscale), y-(24*yscale), linetemp2);
+		screen->DrawTextClean (CR_GREEN, x-((V_StringWidth(statline2))*xscale), y-(24*yscale), statline2);
 	}
 	else
 	{
