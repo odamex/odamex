@@ -190,7 +190,7 @@ EXTERN_CVAR (con_scrlock)
 //
 // C_Close
 //
-void C_Close()
+void STACK_ARGS C_Close()
 {
 	if(altconback)
 	{

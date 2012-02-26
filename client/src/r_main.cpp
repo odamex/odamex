@@ -840,7 +840,7 @@ void R_Init (void)
 }
 
 // R_Shutdown
-void R_Shutdown (void)
+void STACK_ARGS R_Shutdown (void)
 {
     R_FreeTranslationTables();
 }

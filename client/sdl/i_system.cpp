@@ -582,7 +582,7 @@ void STACK_ARGS I_Quit (void)
 
 	M_SaveDefaults();
 
-	I_ShutdownHardware();
+	//I_ShutdownHardware();
 
     CloseNetwork();
 

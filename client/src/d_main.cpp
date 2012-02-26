@@ -637,7 +637,7 @@ void D_DoAdvanceDemo (void)
 //
 // D_Close
 //
-void D_Close (void)
+void STACK_ARGS D_Close (void)
 {
 	if(page)
 	{
