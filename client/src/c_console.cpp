@@ -124,8 +124,8 @@ CVAR_FUNC_IMPL (hud_scaletext)
 {
 	if (var < 1.0f)
 		var.Set(1.0f);
-	else if (var > MIN(CleanXfac,CleanYfac))
-		var.Set(MIN(CleanXfac, CleanYfac));
+	if (var > 5.0f)
+		var.Set(5.0f);
 }
 
 int V_TextScaleXAmount();
