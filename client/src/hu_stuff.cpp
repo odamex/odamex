@@ -450,23 +450,31 @@ EXTERN_CVAR (sv_maxplayers)
 //
 void HU_Drawer (void)
 {
+	// Set up text scaling
+	int scaledxfac = CleanXfac, scaledyfac = CleanYfac;
+	if (hud_scaletext)
+	{
+		scaledxfac = V_TextScaleXAmount();
+		scaledyfac = V_TextScaleYAmount();
+	}
 
 	// Draw "Press USE to join" as the bottom layer.
 	if ((&consoleplayer())->spectator && (level.time / TICRATE)%2 && gamestate != GS_INTERMISSION)
 	{
 		setsizeneeded = true;
-		int YPos = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
+		int YPos = screen->height - ((hu_font[0]->height() + 4) * scaledyfac);
 
 		if (&consoleplayer() != &displayplayer())
-			YPos -= ((hu_font[0]->height() + 4) * CleanYfac);
+			YPos -= ((hu_font[0]->height() + 4) * scaledyfac);
 
 		if (P_NumPlayersInGame() < sv_maxplayers)
 		{
 			static const std::string joinmsg("Press USE to join");
 
-			screen->DrawTextClean(CR_GREEN,
-					(screen->width - V_StringWidth(joinmsg.c_str())*CleanXfac) >> 1,
-					YPos, joinmsg.c_str());
+			screen->DrawTextStretched(CR_GREEN,
+					(screen->width - V_StringWidth(joinmsg.c_str())*scaledxfac) >> 1,
+					YPos, joinmsg.c_str(), scaledxfac, scaledyfac);
+					
 		}
 	}
 
@@ -482,19 +490,9 @@ void HU_Drawer (void)
 	if (headsupactive)
 	{
 		static const char *prompt;
-		int i, x, c, scalex, y, promptwidth;
+		int i, x, c, y, promptwidth;
 
-		if (hud_scaletext)
-		{
-			scalex = V_TextScaleXAmount();
-			y = (!viewactive ? -30 : -10) * CleanYfac;
-		}
-		else
-		{
-			scalex = 1;
-			y = (!viewactive ? -30 : -10);
-		}
-
+		y = (!viewactive ? -30 : -10) * scaledyfac;
 		y += (screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
 
 		if (headsupactive == 2)
@@ -502,8 +500,8 @@ void HU_Drawer (void)
 		else if (headsupactive == 1)
 			prompt = "Say: ";
 
-		promptwidth = V_StringWidth (prompt) * scalex;
-		x = hu_font['_' - HU_FONTSTART]->width() * scalex * 2 + promptwidth;
+		promptwidth = V_StringWidth (prompt) * scaledxfac;
+		x = hu_font['_' - HU_FONTSTART]->width() * scaledxfac * 2 + promptwidth;
 
 		// figure out if the text is wider than the screen->
 		// if so, only draw the right-most portion of it.
@@ -512,11 +510,11 @@ void HU_Drawer (void)
 			c = toupper(input_text[i] & 0x7f) - HU_FONTSTART;
 			if (c < 0 || c >= HU_FONTSIZE)
 			{
-				x += 4 * scalex;
+				x += 4 * scaledxfac;
 			}
 			else
 			{
-				x += hu_font[c]->width() * scalex;
+				x += hu_font[c]->width() * scaledxfac;
 			}
 		}
 
@@ -528,18 +526,10 @@ void HU_Drawer (void)
 		// draw the prompt, text, and cursor
 		std::string show_text = input_text;
 		show_text += '_';
-		if (hud_scaletext)
-		{
-			screen->DrawTextStretched (	CR_RED, 0, y, prompt, 
-										V_TextScaleXAmount(), V_TextScaleYAmount());
-			screen->DrawTextStretched (	CR_GREY, promptwidth, y, show_text.c_str() + i,
-										V_TextScaleXAmount(), V_TextScaleYAmount());
-		}
-		else
-		{
-			screen->DrawText (CR_RED, 0, y, prompt);
-			screen->DrawText (CR_GREY, promptwidth, y, show_text.c_str() + i);
-		}
+		screen->DrawTextStretched (	CR_RED, 0, y, prompt, 
+									scaledxfac, scaledyfac);
+		screen->DrawTextStretched (	CR_GREY, promptwidth, y, show_text.c_str() + i,
+									scaledxfac, scaledyfac);
 	}
 
 	if(multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
