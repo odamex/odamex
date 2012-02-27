@@ -413,6 +413,8 @@ void LstOdaServerList::AddServerToList(const Server &s,
     // TODO: Allow the user to select prefered colours
     if (s.Info.Players.size())
         li.SetTextColour(wxColor(0,192,0));
+    else
+        li.SetTextColour(GetTextColour());
 
     SetItem(li); 
     
