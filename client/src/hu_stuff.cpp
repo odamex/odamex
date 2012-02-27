@@ -273,9 +273,17 @@ typedef struct
 // GhostlyDeath -- Move this into it's own function!
 void HU_DrawTargetNames(void)
 {
+	// Set up text scaling
+	int scaledxfac = CleanXfac, scaledyfac = CleanYfac;
+	if (hud_scaletext)
+	{
+		scaledxfac = V_TextScaleXAmount();
+		scaledyfac = V_TextScaleYAmount();
+	}
+				
 	int ProposedColor = CR_GREY;
 	int TargetX = 0;
-	int TargetY = screen->height - ((hu_font[0]->height() + 4) * CleanYfac);
+	int TargetY = screen->height - ((hu_font[0]->height() + 4) * scaledyfac);
 	std::vector<TargetInfo_t> Targets;
 	size_t i;
 
@@ -286,11 +294,11 @@ void HU_DrawTargetNames(void)
 	if (screenblocks <= 10 && !consoleplayer().spectator)
 		TargetY -= ST_HEIGHT;
 	else if (consoleplayer().spectator)
-		TargetY -= ((hu_font[0]->height() + 4) * CleanYfac);	// Don't get in the Join messages way!
+		TargetY -= ((hu_font[0]->height() + 4) * scaledyfac);	// Don't get in the Join messages way!
 
 	// Sometimes the "Other person's name" will get blocked
 	if (&(consoleplayer()) != &(displayplayer()))
-		TargetY -= ((hu_font[0]->height() + 4) * CleanYfac);
+		TargetY -= ((hu_font[0]->height() + 4) * scaledyfac);
 
 	for (i = 0; i < players.size(); i++)
 	{
@@ -422,23 +430,16 @@ void HU_DrawTargetNames(void)
 	{
 		// So "You" (or not) is centered
 		if (Targets[i].PlayPtr == &(consoleplayer()))
-			TargetX = (screen->width - V_StringWidth ("You")*CleanXfac) >> 1;
+			TargetX = (screen->width - V_StringWidth ("You")*scaledxfac) >> 1;
 		else
-			TargetX = (screen->width - V_StringWidth (Targets[i].PlayPtr->userinfo.netname)*CleanXfac) >> 1;
+			TargetX = (screen->width - V_StringWidth (Targets[i].PlayPtr->userinfo.netname)*scaledxfac) >> 1;
 
 		// Draw the Player's name or You! (Personally, I like the You part - GhostlyDeath)
-		if (Targets[i].PlayPtr->mo->health > 0)
-			screen->DrawTextClean(Targets[i].Color,
-				TargetX,
-				TargetY,
-				(Targets[i].PlayPtr == &(consoleplayer()) ? "You" : Targets[i].PlayPtr->userinfo.netname));
-		else
-			screen->DrawTextCleanLuc(Targets[i].Color,
-				TargetX,
-				TargetY,
-				(Targets[i].PlayPtr == &(consoleplayer()) ? "You" : Targets[i].PlayPtr->userinfo.netname));
+		screen->DrawTextStretched(Targets[i].Color, TargetX, TargetY,
+				(Targets[i].PlayPtr == &(consoleplayer()) ? "You" : Targets[i].PlayPtr->userinfo.netname),
+				scaledxfac, scaledyfac);
 
-		TargetY -= ((hu_font[0]->height() + 1) * CleanYfac);
+		TargetY -= ((hu_font[0]->height() + 1) * scaledyfac);
 	}
 }
 
