@@ -124,8 +124,8 @@ CVAR_FUNC_IMPL (hud_scaletext)
 {
 	if (var < 1.0f)
 		var.Set(1.0f);
-	if (var > 5.0f)
-		var.Set(5.0f);
+	if (var > 4.0f)
+		var.Set(4.0f);
 }
 
 int V_TextScaleXAmount();
@@ -399,10 +399,7 @@ void C_AddNotifyString (int printlevel, const char *source)
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
 		return;
 
-	if (hud_scaletext)
-		width = DisplayWidth / V_TextScaleXAmount();
-	else
-		width = DisplayWidth;
+	width = DisplayWidth / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
 	{
@@ -784,17 +781,9 @@ static void C_DrawNotifyText (void)
 			else
 				color = PrintColors[NotifyStrings[i].printlevel];
 
-			if (hud_scaletext)
-			{
-				screen->DrawTextStretched (color, 0, line, NotifyStrings[i].text,
-											V_TextScaleXAmount(), V_TextScaleYAmount());
-				line += 8 * V_TextScaleYAmount();
-			}
-			else
-			{
-				screen->DrawText (color, 0, line, NotifyStrings[i].text);
-				line += 8;
-			}
+			screen->DrawTextStretched (color, 0, line, NotifyStrings[i].text,
+										V_TextScaleXAmount(), V_TextScaleYAmount());
+			line += 8 * V_TextScaleYAmount();
 		}
 	}
 }
@@ -1563,7 +1552,7 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
 		Printf (PRINT_HIGH, "%s\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines (hud_scaletext ? screen->width / V_TextScaleXAmount() : screen->width, (byte *)newmsg)) )
+		if ( (MidMsg = V_BreakLines(screen->width / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
 			MidTicker = (int)(msgtime * TICRATE) + gametic;
 
@@ -1585,34 +1574,16 @@ void C_DrawMid (void)
 	{
 		int i, line, x, y, xscale, yscale;
 
-		if (hud_scaletext)
-		{
-			xscale = V_TextScaleXAmount();
-			yscale = V_TextScaleYAmount();
-		}
-		else
-		{
-			xscale = yscale = 1;
-		}
+		xscale = V_TextScaleXAmount();
+		yscale = V_TextScaleYAmount();
 
 		y = 8 * yscale;
 		x = screen->width >> 1;
 		for (i = 0, line = (ST_Y * 3) / 8 - MidLines * 4 * yscale; i < MidLines; i++, line += y)
 		{
-			if (hud_scaletext)
-			{
-				screen->DrawTextStretched (PrintColors[PRINTLEVELS],
+			screen->DrawTextStretched (PrintColors[PRINTLEVELS],
 					x - (MidMsg[i].width >> 1) * xscale,
-					line,
-					(byte *)MidMsg[i].string, V_TextScaleXAmount(), V_TextScaleYAmount());
-			}
-			else
-			{
-				screen->DrawText (PrintColors[PRINTLEVELS],
-					x - (MidMsg[i].width >> 1) * xscale,
-					line,
-					(byte *)MidMsg[i].string);
-			}
+					line, (byte *)MidMsg[i].string, xscale, yscale);
 		}
 
 		if (gametic >= MidTicker)

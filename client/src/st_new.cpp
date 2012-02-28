@@ -70,6 +70,9 @@ extern patch_t	*keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
 extern flagdata CTFdata[NUMFLAGS];
 
+int V_TextScaleXAmount();
+int V_TextScaleYAmount();
+
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (sv_fraglimit)
 
@@ -210,14 +213,13 @@ void ST_nameDraw (int y)
 
 	if (plyr == &consoleplayer())
 		return;
+
+	int scaledxfac = V_TextScaleXAmount(), scaledyfac = V_TextScaleYAmount();
 	
 	char *string = plyr->userinfo.netname;
-	size_t x = (screen->width - V_StringWidth (string)*CleanXfac) >> 1;
+	size_t x = (screen->width - V_StringWidth (string)*scaledxfac) >> 1;
 
-	if (level.time < NameUp)
-		screen->DrawTextClean (CR_GREEN, x, y, string);
-	else
-		screen->DrawTextCleanLuc (CR_GREEN, x, y, string);
+	screen->DrawTextStretched(CR_GREEN, x, y, string, scaledxfac, scaledyfac);
 }
 
 void ST_newDraw (void)

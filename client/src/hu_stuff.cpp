@@ -274,12 +274,8 @@ typedef struct
 void HU_DrawTargetNames(void)
 {
 	// Set up text scaling
-	int scaledxfac = CleanXfac, scaledyfac = CleanYfac;
-	if (hud_scaletext)
-	{
-		scaledxfac = V_TextScaleXAmount();
-		scaledyfac = V_TextScaleYAmount();
-	}
+	int scaledxfac = V_TextScaleXAmount();
+	int scaledyfac = V_TextScaleYAmount();
 				
 	int ProposedColor = CR_GREY;
 	int TargetX = 0;
