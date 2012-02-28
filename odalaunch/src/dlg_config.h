@@ -109,8 +109,6 @@ class dlgConfig: public wxDialog
 
         wxListBox *m_LstCtrlWadDirectories;
 
-        wxDirPickerCtrl *m_DirCtrlChooseWadDir;
-
         wxDirPickerCtrl *m_DirCtrlChooseOdamexPath;
 
         wxSpinCtrl *m_SpnCtrlMasterTimeout;

@@ -699,24 +699,6 @@
 												</object>
 											</object>
 										</object>
-										<object class="sizeritem">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>0</border>
-											<object class="wxBoxSizer">
-												<orient>wxVERTICAL</orient>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL|wxEXPAND</flag>
-													<border>5</border>
-													<object class="wxDirPickerCtrl" name="Id_DirCtrlChooseWadDir">
-														<value></value>
-														<message>Select a folder containing WAD files</message>
-														<style>wxDIRP_DEFAULT_STYLE</style>
-													</object>
-												</object>
-											</object>
-										</object>
 									</object>
 								</object>
 							</object>

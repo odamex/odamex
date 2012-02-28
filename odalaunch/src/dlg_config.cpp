@@ -63,6 +63,8 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQGood"), dlgConfig::OnSpinValChange)
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQPlayable"), dlgConfig::OnSpinValChange)
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQLaggy"), dlgConfig::OnSpinValChange)
+
+	EVT_LISTBOX_DCLICK(XRCID("Id_LstCtrlWadDirectories"), dlgConfig::OnReplaceDir)
 END_EVENT_TABLE()
 
 // Window constructor
@@ -77,7 +79,6 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
 
     m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
 
-    m_DirCtrlChooseWadDir = XRCCTRL(*this, "Id_DirCtrlChooseWadDir", wxDirPickerCtrl);
     m_DirCtrlChooseOdamexPath = XRCCTRL(*this, "Id_DirCtrlChooseOdamexPath", wxDirPickerCtrl);
 
     m_SpnCtrlMasterTimeout = XRCCTRL(*this, "Id_SpnCtrlMasterTimeout", wxSpinCtrl);
@@ -251,19 +252,15 @@ void dlgConfig::OnTextChange(wxCommandEvent &event)
 // Add a directory to the listbox
 void dlgConfig::OnAddDir(wxCommandEvent &event)
 {
-    wxString WadDirectory = m_DirCtrlChooseWadDir->GetPath();
+    wxString WadDirectory;
 
-    if (WadDirectory == wxT(""))
-    {
-        wxDirDialog ChooseWadDialog(this,
-                                    wxT("Select a folder containing WAD files"));
+    wxDirDialog ChooseWadDialog(this,
+        wxT("Select a directory containing WAD files"));
 
+    if (ChooseWadDialog.ShowModal() != wxID_OK)
+        return;
 
-        if (ChooseWadDialog.ShowModal() != wxID_OK)
-            return;
-
-        WadDirectory = ChooseWadDialog.GetPath();
-    }
+    WadDirectory = ChooseWadDialog.GetPath();
 
     // Check to see if the path exists on the system
     if (wxDirExists(WadDirectory))
@@ -277,32 +274,34 @@ void dlgConfig::OnAddDir(wxCommandEvent &event)
         }
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found"), 
+                WadDirectory.c_str()));
 }
 
 // Replace a directory in the listbox
 void dlgConfig::OnReplaceDir(wxCommandEvent &event)
 {
     wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
-    wxString WadDirectory = m_DirCtrlChooseWadDir->GetPath();
+    
+    wxString WadDirectory;
 
     if (i == wxNOT_FOUND)
     {
-        wxMessageBox(_T("Select an directory from the list to replace!"));
+        wxMessageBox(_T("Select a directory from the list to replace"));
 
         return;
     }
 
-    if (WadDirectory == wxT(""))
-    {
-        wxDirDialog ChooseWadDialog(this,
-                                    wxT("Select a folder containing WAD files"));
+    WadDirectory = m_LstCtrlWadDirectories->GetStringSelection();
 
-        if (ChooseWadDialog.ShowModal() != wxID_OK)
-            return;
+    wxDirDialog ChooseWadDialog(this,
+                                wxT("Replace selected directory with.."),
+                                WadDirectory);
 
-        WadDirectory = ChooseWadDialog.GetPath();
-    }
+    if (ChooseWadDialog.ShowModal() != wxID_OK)
+        return;
+
+    WadDirectory = ChooseWadDialog.GetPath();
 
     // Check to see if the path exists on the system
     if (wxDirExists(WadDirectory))
@@ -313,7 +312,8 @@ void dlgConfig::OnReplaceDir(wxCommandEvent &event)
         UserChangedSetting = true;
     }
     else
-        wxMessageBox(wxString::Format(_T("Directory %s not found!"), WadDirectory.c_str()));
+        wxMessageBox(wxString::Format(_T("Directory %s not found"), 
+                WadDirectory.c_str()));
 }
 
 // Delete a directory from the listbox
@@ -330,7 +330,7 @@ void dlgConfig::OnDeleteDir(wxCommandEvent &event)
         UserChangedSetting = true;
     }
     else
-        wxMessageBox(_T("Select an item to delete."));
+        wxMessageBox(_T("Select a directory from the list to delete"));
 }
 
 // Move directory in list up 1 item
@@ -408,7 +408,7 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent &event)
 
     if (path_count)
     {
-        wxMessageBox(_T("Environment variables import successful!"));
+        wxMessageBox(_T("Environment variables import successful"));
 
         UserChangedSetting = true;
     }
