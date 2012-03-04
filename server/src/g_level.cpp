@@ -1356,7 +1356,7 @@ level_info_t *FindLevelByNum (int num)
 	{
 		level_info_t *i = LevelInfos;
 		while (i->level_name) {
-			if (i->levelnum == num)
+			if (i->levelnum == num && W_CheckNumForName (i->mapname) != -1)
 				return i;
 			i++;
 		}
