@@ -276,6 +276,10 @@ typedef enum {
 	dSector_DoorRaiseIn5Mins = 78,
 	dDamage_SuperHellslime = 80,
 	dLight_FireFlicker = 81,
+	dDamage_LavaWimpy = 82,
+	dDamage_LavaHefty = 83,
+	dScroll_EastLavaDamage = 84,
+
 
 	Light_IndoorLightning2 = 198,
 	Light_IndoorLightning1 = 199,

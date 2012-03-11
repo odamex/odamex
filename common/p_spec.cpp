@@ -1345,7 +1345,7 @@ void P_PlayerInSpecialSector (player_t *player)
 
 	// Has hitten ground.
 	// [RH] Normal DOOM special or BOOM specialized?
-	if (special >= dLight_Flicker && special <= dLight_FireFlicker)
+	if (special >= dLight_Flicker && special <= dDamage_LavaHefty)
 	{
 		switch (special)
 		{
@@ -1387,6 +1387,19 @@ void P_PlayerInSpecialSector (player_t *player)
 				if (gamestate == GS_LEVEL && player->health <= 10)
 					G_ExitLevel(0, 1);
 			}
+			break;
+
+		  case dDamage_LavaWimpy:
+		  case dScroll_EastLavaDamage:
+			if (!(level.time & 15))
+				P_DamageMobj(player->mo, NULL, NULL, 5, MOD_LAVA);
+
+			break;
+
+		  case dDamage_LavaHefty:
+			if(!(level.time & 15))
+				P_DamageMobj(player->mo, NULL, NULL, 8, MOD_LAVA);
+
 			break;
 
 		  default:
