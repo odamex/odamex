@@ -767,10 +767,10 @@ BEGIN_COMMAND(netrecord)
 			filename = argv[1];
 	}
 
-    M_AppendExtension(filename, ".odd");
+	M_AppendExtension(filename, ".odd");
 
 	CL_Reconnect();
-	CL_NetDemoRecord(filename);
+	CL_NetDemoRecord(I_GetUserFileName(filename.c_str()));
 }
 END_COMMAND(netrecord)
 
