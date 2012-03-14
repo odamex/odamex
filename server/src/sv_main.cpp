@@ -1901,7 +1901,8 @@ void SV_UpdateMovingSectors(player_t &pl)
                 MSG_WriteLong (&cl->netbuf, Door->m_TopWait);
                 MSG_WriteLong (&cl->netbuf, Door->m_TopCountdown);
 				MSG_WriteLong (&cl->netbuf, Door->m_Status);
-                MSG_WriteLong (&cl->netbuf, (Door->m_Line - lines));
+				// Check for an invalid m_Line (doors triggered by tag 666)
+                MSG_WriteLong (&cl->netbuf, Door->m_Line ? (Door->m_Line - lines) : -1);
             }
         }
 	}

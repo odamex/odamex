@@ -2267,7 +2267,7 @@ void CL_UpdateMovingSector(void)
 			pred.Ceiling.m_Status = MSG_ReadLong();
             LineIndex = MSG_ReadLong();
 
-            if (!lines || LineIndex >= numlines)
+            if (!lines || LineIndex >= numlines || LineIndex < 0)
                 return;
 
             pred.Ceiling.m_Line = &lines[LineIndex];
