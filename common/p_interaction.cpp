@@ -47,6 +47,7 @@ EXTERN_CVAR(sv_friendlyfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
+EXTERN_CVAR(co_zdoomphys)
 
 int shotclock = 0;
 int MeansOfDeath;
@@ -402,7 +403,8 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	fixed_t delta = special->z - toucher->z;
 
 	// Abort if it's out of reach and the server didn't say it was ok
-	if (!FromServer && (delta > toucher->height || delta < -8*FRACUNIT))
+	fixed_t lowerbound = co_zdoomphys ? -32*FRACUNIT : -8*FRACUNIT;
+	if (!FromServer && (delta > toucher->height || delta < lowerbound))
 		return;
 
 	// Only allow clients to predict touching weapons, not health, armor, etc
