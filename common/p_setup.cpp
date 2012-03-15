@@ -1337,6 +1337,37 @@ void P_GroupLines (void)
 
 }
 
+static void P_AddStairSector(sector_t *sector, int special)
+{
+	movable_sectors.insert(sector);
+					
+	for (int i = 0; i < sector->linecount; i++)
+	{
+		if (!sector->lines[i]->backsector)
+			continue;
+
+		// Vanilla Doom Stairs: line is facing the current sector and the
+		// adjoining sector has the same floor texture
+		if ((special == Stairs_BuildUpDoom || special == Generic_Stairs) &&
+			 sector->lines[i]->frontsector == sector &&
+			 sector->floorpic == sector->lines[i]->backsector->floorpic)
+		{
+			P_AddStairSector(sector->lines[i]->backsector, special);
+		}
+		
+		// ZDoom Stairs: line is facing current sector and the adjoining
+		// sector has the Stair_Special1/2 special
+		if ((special == Stairs_BuildUp || special == Stairs_BuildDown ||
+			 special == Stairs_BuildUpSync || special == Stairs_BuildDownSync) &&
+			 sector->lines[i]->frontsector == sector &&
+			(sector->lines[i]->backsector->special == Stairs_Special1 ||
+			 sector->lines[i]->backsector->special == Stairs_Special2))
+		{
+			P_AddStairSector(sector->lines[i]->backsector, special);		
+		}		  
+	}
+}
+
 void P_SetMovableSectors()
 {
 	// clear the old list of movable sectors
@@ -1346,20 +1377,115 @@ void P_SetMovableSectors()
 	{
 		line_t *li = &lines[i];
 
-		if (li->special && li->id)
+		// quickly reject any line without a special
+		if (!li->special)
+			continue;
+			
+		if (li->special == Door_Close ||
+			li->special == Door_Open ||
+			li->special == Door_Raise ||
+			li->special == Door_LockedRaise ||
+			li->special == Floor_LowerByValue ||
+			li->special == Floor_LowerToLowest ||
+			li->special == Floor_LowerToNearest ||
+			li->special == Floor_RaiseByValue ||
+			li->special == Floor_RaiseToHighest ||
+			li->special == Floor_RaiseToNearest ||
+			li->special == Stairs_BuildDown ||
+			li->special == Stairs_BuildUp ||
+			li->special == Floor_RaiseAndCrush ||
+			li->special == Pillar_Build ||
+			li->special == Pillar_Open ||
+			li->special == Stairs_BuildDownSync ||
+			li->special == Stairs_BuildUpSync ||
+			li->special == Floor_RaiseByValueTimes8 ||
+			li->special == Floor_LowerByValueTimes8 ||
+			li->special == Ceiling_LowerByValue ||
+			li->special == Ceiling_RaiseByValue ||
+			li->special == Ceiling_CrushAndRaise ||
+			li->special == Ceiling_LowerAndCrush ||
+			li->special == Ceiling_CrushStop ||
+			li->special == Ceiling_CrushRaiseAndStay ||
+			li->special == Floor_CrushStop ||
+			li->special == Plat_PerpetualRaise ||
+			li->special == Plat_Stop ||
+			li->special == Plat_DownWaitUpStay ||
+			li->special == Plat_DownByValue ||
+			li->special == Plat_UpWaitDownStay ||
+			li->special == Plat_UpByValue ||
+			li->special == Floor_LowerInstant ||
+			li->special == Floor_RaiseInstant ||
+			li->special == Floor_MoveToValueTimes8 ||
+			li->special == Ceiling_MoveToValueTimes8 ||
+			li->special == Pillar_BuildAndCrush ||
+			li->special == FloorAndCeiling_LowerByValue ||
+			li->special == FloorAndCeiling_RaiseByValue ||
+			li->special == Ceiling_LowerToHighestFloor ||
+			li->special == Ceiling_LowerInstant ||
+			li->special == Ceiling_RaiseInstant ||
+			li->special == Ceiling_CrushRaiseAndStayA ||
+			li->special == Ceiling_CrushAndRaiseA ||
+			li->special == Ceiling_CrushAndRaiseSilentA ||
+			li->special == Ceiling_RaiseByValueTimes8 ||
+			li->special == Ceiling_LowerByValueTimes8 ||
+			li->special == Generic_Floor ||
+			li->special == Generic_Ceiling ||
+			li->special == Generic_Door ||
+			li->special == Generic_Lift ||
+			li->special == Generic_Stairs ||
+			li->special == Generic_Crusher ||
+			li->special == Plat_DownWaitUpStayLip ||
+			li->special == Plat_PerpetualRaiseLip ||
+			li->special == Stairs_BuildUpDoom ||
+			li->special == Plat_RaiseAndStayTx0 ||
+			li->special == Plat_UpByValueStayTx ||
+			li->special == Plat_ToggleCeiling ||
+			li->special == Floor_RaiseToLowestCeiling ||
+			li->special == Floor_RaiseByValueTxTy ||
+			li->special == Floor_RaiseByTexture ||
+			li->special == Floor_LowerToLowestTxTy ||
+			li->special == Floor_LowerToHighest ||
+			li->special == Elevator_RaiseToNearest ||
+			li->special == Elevator_MoveToFloor ||
+			li->special == Elevator_LowerToNearest ||
+			li->special == Door_CloseWaitOpen ||
+			li->special == Floor_Donut ||
+			li->special == FloorAndCeiling_LowerRaise ||
+			li->special == Ceiling_RaiseToNearest ||
+			li->special == Ceiling_LowerToLowest ||
+			li->special == Ceiling_LowerToFloor ||
+			li->special == Ceiling_CrushRaiseAndStaySilA)
 		{
-			// The line special is tagged.  Add all sectors with same tag.
-			for (int s = 0; s < numsectors; s++)
+			if (li->special && li->id)
 			{
-				if (sectors[s].tag == li->id)
-					movable_sectors.insert(&sectors[s]);
+				// The line special is tagged.  Add all sectors with same tag.
+				for (int s = 0; s < numsectors; s++)
+				{
+					sector_t *sector = &sectors[s];
+					
+					if (sector->tag != li->id)
+						continue;
+
+					// Handle stair-builders
+					if (li->special == Stairs_BuildUpDoom ||
+						li->special == Generic_Stairs ||
+						li->special == Stairs_BuildDown ||
+						li->special == Stairs_BuildUp ||
+						li->special == Stairs_BuildDownSync ||
+						li->special == Stairs_BuildUpSync)
+					{
+						P_AddStairSector(sector, li->special);
+					}
+
+					movable_sectors.insert(sector);
+				}
 			}
-		}
-		else if (li->special && li->backsector)
-		{
-			// No tag is used with this special (eg, door).
-			// Add the sector on the backside of the line.
-			movable_sectors.insert(li->backsector);
+			else if (li->special && li->backsector)
+			{
+				// No tag is used with this special (eg, door).
+				// Add the sector on the backside of the line.
+				movable_sectors.insert(li->backsector);
+			}
 		}
 	}
 }
