@@ -2452,11 +2452,15 @@ void SV_ConnectClient (void)
 
 		return;
 	}
+#if 0
+	// [SL] 2012-03-16 - This is currently unused so do no treat this
+	// connection type differently
 	else if(connection_type == 2)
 	{
 		players[n].playerstate = PST_SPECTATE;
 		return;
 	}
+#endif
 	else
 		players[n].playerstate = PST_REBORN;
 
