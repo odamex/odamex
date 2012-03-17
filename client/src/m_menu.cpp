@@ -1761,6 +1761,8 @@ bool M_Responder (event_t* ev)
 	  case KEY_LEFTARROW:
 	  case KEY_HAT2:
 	  case KEY_RIGHTARROW:
+	  case KEYP_4:
+	  case KEYP_6:
 		if(repeatKey == ch)
 			repeatCount++;
 		else
@@ -1799,6 +1801,7 @@ bool M_Responder (event_t* ev)
 
 		  case KEY_JOY1:
 		  case KEY_ENTER:
+		  case KEYP_ENTER:
 			genStringEnter = 0;
 			M_ClearMenus ();
 			if (savegamestrings[saveSlot][0])
@@ -1882,6 +1885,7 @@ bool M_Responder (event_t* ev)
 	{
 	  case KEY_HAT3:
 	  case KEY_DOWNARROW:
+	  case KEYP_2:
 		do
 		{
 			if (itemOn+1 > currentMenu->numitems-1)
@@ -1899,6 +1903,7 @@ bool M_Responder (event_t* ev)
 
 	  case KEY_HAT1:
 	  case KEY_UPARROW:
+	  case KEYP_8:
 		do
 		{
 			if (!itemOn)
@@ -1916,6 +1921,7 @@ bool M_Responder (event_t* ev)
 
 	  case KEY_HAT4:
 	  case KEY_LEFTARROW:
+	  case KEYP_4:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{
@@ -1926,6 +1932,7 @@ bool M_Responder (event_t* ev)
 
 	  case KEY_HAT2:
 	  case KEY_RIGHTARROW:
+	  case KEYP_6:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status == 2)
 		{
@@ -1936,6 +1943,7 @@ bool M_Responder (event_t* ev)
 
 	  case KEY_JOY1:
 	  case KEY_ENTER:
+	  case KEYP_ENTER:
 		if (currentMenu->menuitems[itemOn].routine &&
 			currentMenu->menuitems[itemOn].status)
 		{
