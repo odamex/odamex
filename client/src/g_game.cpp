@@ -98,6 +98,7 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (co_nosilentspawns)
+EXTERN_CVAR (co_allowdropoff)
 
 EXTERN_CVAR (chasedemo)
 
@@ -2250,6 +2251,7 @@ void G_DoPlayDemo (bool justStreamInput)
 		sv_allowjump = "0";
 		co_realactorheight = "0";
 		co_zdoomphys = "0";
+		co_allowdropoff = "0";
 		co_fixweaponimpacts = "0";
 
 		return;
