@@ -1012,7 +1012,9 @@ void G_DoLoadLevel (int position)
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
+	// [SL] 2012-03-19 - Add sky2 back
 	sky1texture = R_TextureNumForName (level.skypic);
+    sky2texture = R_TextureNumForName (level.skypic2);
 
 	// [RH] Set up details about sky rendering
 	R_InitSkyMap ();
@@ -1190,8 +1192,10 @@ void G_InitLevelLocals ()
 		level_pwad_info_t *pinfo = wadlevelinfos + i;
 
 		// [ML] 5/11/06 - Remove sky scrolling and sky2
+		// [SL] 2012-03-19 - Add sky2 back
 		level.info = (level_info_t *)pinfo;
 		info = (level_info_t *)pinfo;
+		strncpy (level.skypic2, pinfo->skypic2, 8);
 		level.fadeto = pinfo->fadeto;
 		if (level.fadeto) {
 			NormalLight.maps = DefaultPalette->maps.colormaps;
@@ -1211,6 +1215,7 @@ void G_InitLevelLocals ()
 	} else {
 		info = FindDefLevelInfo (level.mapname);
 		level.info = info;
+		level.skypic2[0] = 0;
 		level.fadeto = 0;
 		level.outsidefog = 0xff000000;	// 0xff000000 signals not to handle it special
 		R_SetDefaultColormap ("COLORMAP");
@@ -1227,13 +1232,16 @@ void G_InitLevelLocals ()
 		strncpy (level.secretmap, info->secretmap, 8);
 		strncpy (level.music, info->music, 8);
 		strncpy (level.skypic, info->skypic, 8);
+		if (!level.skypic2[0])
+			strncpy(level.skypic2, level.skypic, 8);
 	} else {
 		level.partime = level.cluster = 0;
 		strcpy (level.level_name, "Unnamed");
 		level.nextmap[0] =
 			level.secretmap[0] =
 			level.music[0] = 0;
-			strncpy (level.skypic, "SKY1", 8);
+		strncpy (level.skypic, "SKY1", 8);
+		strncpy (level.skypic2, "SKY1", 8);
 		level.flags = 0;
 		level.levelnum = 1;
 	}

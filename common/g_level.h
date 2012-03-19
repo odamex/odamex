@@ -97,6 +97,7 @@ struct level_pwad_info_s
 	char		secretmap[9];
 	int			partime;
 	char		skypic[9];
+	char		skypic2[9];
 	char		music[9];
 	DWORD		flags;
 	int			cluster;
@@ -135,6 +136,7 @@ struct level_locals_s {
 
 	char		music[8];
 	char		skypic[8];
+	char		skypic2[8];
 
 	int			total_secrets;
 	int			found_secrets;

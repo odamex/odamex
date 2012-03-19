@@ -561,9 +561,13 @@ void R_DrawPlanes (void)
 					skytex = sky1texture;
 					skyflip = 0;
 				}
+				else if (pl->picnum == PL_SKYFLAT)
+				{	// use sky2
+					skytex = sky2texture;
+					skyflip = 0;
+				}
 				else
 				{
-
 					// MBF's linedef-controlled skies
 					// Sky Linedef
 					short picnum = (pl->picnum & ~PL_SKYFLAT)-1;

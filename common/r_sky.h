@@ -33,6 +33,7 @@ extern char SKYFLATNAME[8];
 extern int		sky1shift;				//		[ML] 5/11/06 - remove sky2 remenants
 
 extern int 		sky1texture;				//		""
+extern int 		sky2texture;				//		""
 extern fixed_t	skypos;					//		""
 extern fixed_t	skytexturemid;
 extern int		skystretch;
