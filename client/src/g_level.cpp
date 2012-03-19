@@ -130,6 +130,7 @@ static const char *MapInfoMapLevel[] =
 	"secretnext",
 	"cluster",
 	"sky1",
+	"sky2",
 	"fade",
 	"outsidefog",
 	"titlepatch",
@@ -197,6 +198,7 @@ MapHandlers[] =
 	{ MITYPE_MAPNAME,	lioffset(secretmap), 0 },
 	{ MITYPE_CLUSTER,	lioffset(cluster), 0 },
 	{ MITYPE_SKY,		lioffset(skypic), 0 },				//[ML] 5/11/06 - Remove sky scrolling
+	{ MITYPE_SKY,		lioffset(skypic2), 0 },
 	{ MITYPE_COLOR,		lioffset(fadeto), 0 },
 	{ MITYPE_COLOR,		lioffset(outsidefog), 0 },
 	{ MITYPE_LUMPNAME,	lioffset(pname), 0 },
