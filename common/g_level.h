@@ -97,7 +97,6 @@ struct level_pwad_info_s
 	char		secretmap[9];
 	int			partime;
 	char		skypic[9];
-	char		skypic2[9];
 	char		music[9];
 	DWORD		flags;
 	int			cluster;
@@ -105,6 +104,7 @@ struct level_pwad_info_s
 	struct acsdefered_s *defered;
 
 	// level_pwad_info_s				[ML] 5/11/06 Removed sky scrolling/sky2
+	char		skypic2[9];
 	DWORD		fadeto;
 	char		fadetable[8];
 	DWORD		outsidefog;

@@ -948,6 +948,7 @@ void R_PrecacheLevel (void)
 	// [ML] 5/11/06 - Not anymore!
 
 	hitlist[sky1texture] = 1;
+	hitlist[sky2texture] = 1;
 
 	for (i = numtextures - 1; i >= 0; i--)
 	{
