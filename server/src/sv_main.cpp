@@ -890,10 +890,11 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 	// remove this player from the global players vector
 	for (size_t i=0; i<players.size(); i++)
 	{
-		if (players[i].id == player.id)
+		if (players[i].id == player_id)
 		{
 			players.erase(players.begin() + i);
-			free_player_ids.push(player.id);
+			free_player_ids.push(player_id);
+			break;
 		}
 	}
 
@@ -3555,10 +3556,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 	#endif	// _TICCMD_QUEUE_DEBUG_
 
 	if (!player.mo)
-	{
-		SV_FlushPlayerCmds(player);
 		return;
-	}
 
 	int num_cmds = SV_CalculateNumTiccmds(player);	
 
