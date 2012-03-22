@@ -101,6 +101,8 @@ huffman_client compressor;
 typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
+std::string server_host = "";	// hostname of server
+
 // [SL] 2011-06-27 - Class to record and playback network recordings
 NetDemo netdemo;
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
@@ -1086,7 +1088,7 @@ bool CL_PrepareConnect(void)
 {
 	size_t i;
 	DWORD server_token = MSG_ReadLong();
-	std::string server_host = MSG_ReadString();
+	server_host = MSG_ReadString();
 
 	bool recv_teamplay_stats = 0;
 	gameversiontosend = 0;
