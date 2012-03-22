@@ -297,9 +297,7 @@ void D_Display (void)
 			// denis - freshen the borders (ffs..)
 			if (menuactive || ConsoleState != c_up || headsupactive || automapactive)
 				borderdrawcount = 3;
-			if(consoleplayer().camera)
-				if (((Actions[ACTION_SHOWSCORES]) ||
-					consoleplayer().camera->health <= 0))
+			if (Actions[ACTION_SHOWSCORES] || displayplayer().health <= 0)
 				borderdrawcount = 3;
 
 			if (borderdrawcount)

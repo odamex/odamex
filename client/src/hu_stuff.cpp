@@ -530,10 +530,10 @@ void HU_Drawer (void)
 
 	if(multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
     {
-        if (((Actions[ACTION_SHOWSCORES]) ||
-             ((consoleplayer().camera->health <= 0 && !(&consoleplayer())->spectator) && gamestate != GS_INTERMISSION)))
+        if (Actions[ACTION_SHOWSCORES] ||
+		   (displayplayer().health <= 0 && !displayplayer().spectator && gamestate != GS_INTERMISSION))
         {
-            HU_DrawScores (&consoleplayer());
+            HU_DrawScores(&displayplayer());
         }
     }
 
