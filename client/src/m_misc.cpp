@@ -178,19 +178,19 @@ std::string M_ExpandTokens(const std::string &str)
 			{
 				switch (sv_gametype.asInt())
 				{
-					case (int)GM_COOP:
+					case (int)(GM_COOP):
 						buffer << "COOP";
 						break;
-					case (int)GM_DM:
+					case (int)(GM_DM):
 						if (sv_maxplayers == 2)
 							buffer << "DUEL";
 						else
 							buffer << "DM";
 						break;
-					case (int)GM_TEAMDM:
+					case (int)(GM_TEAMDM):
 						buffer << "TDM";
 						break;
-					case (int)GM_CTF:
+					case (int)(GM_CTF):
 						buffer << "CTF";
 						break;
 				}
