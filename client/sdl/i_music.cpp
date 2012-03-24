@@ -182,7 +182,7 @@ void I_SetMusicVolume (float volume)
 		musicsystem->setVolume(volume);
 }
 
-void I_InitMusic (void)
+void I_InitMusic(MusicSystemType musicsystem_type)
 {
 	#if defined(UNIX) && !defined(OSX)
 	struct stat buf;
@@ -201,7 +201,7 @@ void I_InitMusic (void)
 		return;
 	}
 
-	switch (snd_musicsystem.asInt())
+	switch ((int)musicsystem_type)
 	{
 		#ifdef OSX
 		case MS_AUDIOUNIT:
@@ -221,7 +221,7 @@ void I_InitMusic (void)
 			break;
 	}
 	
-	current_musicsystem_type = static_cast<MusicSystemType>(snd_musicsystem.asInt());
+	current_musicsystem_type = musicsystem_type;
 }
 
 void STACK_ARGS I_ShutdownMusic(void)
@@ -235,7 +235,7 @@ void STACK_ARGS I_ShutdownMusic(void)
 
 CVAR_FUNC_IMPL (snd_musicsystem)
 {
-	if (current_musicsystem_type == snd_musicsystem)
+	if ((int)current_musicsystem_type == snd_musicsystem.asInt())
 		return;
 	
 	if (musicsystem)
@@ -247,10 +247,43 @@ CVAR_FUNC_IMPL (snd_musicsystem)
 	S_ChangeMusic(std::string(level.music, 8), true);
 }
 
+//
+// I_SelectMusicSystem
+//
+// Takes the data and length of a song and determines which music system
+// should be used to play the song, based on user preference and the song
+// type.
+//
+static MusicSystemType I_SelectMusicSystem(byte *data, size_t length)
+{
+	// Always honor the no-music preference
+	if (snd_musicsystem == MS_NONE)
+		return MS_NONE;
+
+	bool ismidi = (S_MusicIsMus(data, length) || S_MusicIsMidi(data, length));
+
+	if (ismidi)
+		return static_cast<MusicSystemType>(snd_musicsystem.asInt());
+
+	// Non-midi music always uses SDL_Mixer (for now at least)
+	return MS_SDLMIXER;
+}
+
 void I_PlaySong(byte* data, size_t length, bool loop)
 {
 	if (!musicsystem)
 		return;
+
+	MusicSystemType newtype = I_SelectMusicSystem(data, length);
+	if (newtype != current_musicsystem_type)
+	{	
+		if (musicsystem)
+		{	
+			I_ShutdownMusic();
+			S_StopMusic();
+		}
+		I_InitMusic(newtype);
+	}
 		
 	musicsystem->startSong(data, length, loop);
 	

@@ -49,7 +49,9 @@ bool S_MusicIsWave(byte* data, size_t length);
 //
 //	MUSIC I/O
 //
-void I_InitMusic(void);
+EXTERN_CVAR(snd_musicsystem)
+
+void I_InitMusic(MusicSystemType musicsystem_type = (MusicSystemType)snd_musicsystem.asInt());
 void STACK_ARGS I_ShutdownMusic(void);
 // Volume.
 void I_SetMusicVolume (float volume);
