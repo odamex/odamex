@@ -97,6 +97,9 @@ void P_InitEffects (void)
 
 void P_DrawSplash (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int kind)
 {
+	if (!clientside)
+		return;
+
 	int color1, color2;
 
 	switch (kind) {
@@ -188,6 +191,9 @@ void P_DrawSplash2 (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, i
 // inlined with VC++
 particle_t *NewParticle (void)
 {
+	if (!clientside)
+		return NULL;
+
 	particle_t *result = NULL;
 	if (InactiveParticles != -1)
 	{
@@ -202,6 +208,9 @@ particle_t *NewParticle (void)
 
 static void MakeFountain (AActor *actor, int color1, int color2)
 {
+	if (!clientside)
+		return;
+
 	particle_t *particle;
 
 	if (!(level.time & 1))
@@ -238,6 +247,9 @@ static void MakeFountain (AActor *actor, int color1, int color2)
 //
 particle_t *JitterParticle (int ttl)
 {
+	if (!clientside)
+		return NULL;
+
 	particle_t *particle = NewParticle ();
 
 	if (particle) {
@@ -265,6 +277,9 @@ particle_t *JitterParticle (int ttl)
 //
 void P_RunEffects (void)
 {
+	if (!clientside)
+		return;
+
 	//int pnum = 0;/* = (consoleplayer().camera->subsector->sector - sectors) * numsectors*/;
 	AActor *actor;
 	TThinkerIterator<AActor> iterator;
@@ -285,6 +300,9 @@ void P_RunEffects (void)
 
 void P_RunEffect (AActor *actor, int effects)
 {
+	if (!actor || !clientside)
+		return;
+
 	angle_t moveangle = R_PointToAngle2(0,0,actor->momx,actor->momy);
 	particle_t *particle;
 
@@ -362,6 +380,9 @@ void P_RunEffect (AActor *actor, int effects)
 
 void P_ThinkParticles (void)
 {
+	if (!clientside)
+		return;
+
 	int i;
 	particle_t *particle, *prev;
 
@@ -397,6 +418,9 @@ void P_ThinkParticles (void)
 
 void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 {
+	if (!clientside)
+		return;
+
 	v3double_t step, dir, pos, extend, point;
 
 	M_SubVec3(&dir, &end, &start);
@@ -512,6 +536,9 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 
 void P_DisconnectEffect (AActor *actor)
 {
+	if (!actor || !clientside)
+		return;
+
 	int i;
 
 	for (i = 64; i; i--) {
