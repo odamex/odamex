@@ -36,15 +36,15 @@ EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_timelimit)
 
-EXTERN_CVAR(sv_vote_majority);
-EXTERN_CVAR(sv_vote_timelimit);
-EXTERN_CVAR(sv_vote_timeout);
+EXTERN_CVAR(sv_vote_majority)
+EXTERN_CVAR(sv_vote_timelimit)
+EXTERN_CVAR(sv_vote_timeout)
 
-EXTERN_CVAR(sv_callvote_kick);
-EXTERN_CVAR(sv_callvote_map);
-EXTERN_CVAR(sv_callvote_fraglimit);
-EXTERN_CVAR(sv_callvote_scorelimit);
-EXTERN_CVAR(sv_callvote_timelimit);
+EXTERN_CVAR(sv_callvote_kick)
+EXTERN_CVAR(sv_callvote_map)
+EXTERN_CVAR(sv_callvote_fraglimit)
+EXTERN_CVAR(sv_callvote_scorelimit)
+EXTERN_CVAR(sv_callvote_timelimit)
 
 namespace sv {
 
