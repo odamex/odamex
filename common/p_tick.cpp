@@ -79,7 +79,7 @@ void P_Ticker (void)
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
 
-	if (serverside)
+	if (clientside)
 		P_RunEffects ();	// [RH] Run particle effects
 
 	// for par times

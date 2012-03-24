@@ -1581,6 +1581,7 @@ void CL_SpawnMobj()
 	unsigned short netid = MSG_ReadShort();
 	byte rndindex = MSG_ReadByte();
 	SWORD state = MSG_ReadShort();
+	byte arg0 = (type == MT_FOUNTAIN) ? MSG_ReadByte() : 0;
 
 	if(type >= NUMMOBJTYPES)
 		return;
@@ -1627,6 +1628,12 @@ void CL_SpawnMobj()
 		if (level.time)	// don't play sound on first tic of the level
 			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 	}
+
+	mo->effects = arg0 << FX_FOUNTAINSHIFT; 
+	mo->args[0] = arg0;
+	if (mo->effects)
+		Printf(PRINT_HIGH, "Spawnning something with effects\n");
+
 }
 
 //

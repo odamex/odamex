@@ -1476,6 +1476,9 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 	MSG_WriteByte(&cl->reliablebuf, mo->rndindex);
 	MSG_WriteShort(&cl->reliablebuf, (mo->state - states)); // denis - sending state fixes monster ghosts appearing under doors
 
+	if (mo->type == MT_FOUNTAIN)
+		MSG_WriteByte(&cl->reliablebuf, mo->args[0]);
+
 	if(mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE) // denis - check type as that is what the client will be spawning
 	{
 		MSG_WriteShort (&cl->reliablebuf, mo->target ? mo->target->netid : 0);
