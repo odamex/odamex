@@ -1631,9 +1631,6 @@ void CL_SpawnMobj()
 
 	mo->effects = arg0 << FX_FOUNTAINSHIFT; 
 	mo->args[0] = arg0;
-	if (mo->effects)
-		Printf(PRINT_HIGH, "Spawnning something with effects\n");
-
 }
 
 //
