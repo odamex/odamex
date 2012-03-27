@@ -56,9 +56,6 @@ CVAR (sv_waddownloadcap, "200", "Cap wad file downloading to a specific rate",
 // Reset the current map when the last player leaves
 CVAR (sv_emptyreset,   "0", "Reloads the current map when all players leave",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
-// Do not run ticker functions when there are no players
-CVAR (sv_emptyfreeze,  "0", "Does not progress the game when there are no players",
-      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 // Allow spectators talk to show to ingame players
 CVAR (sv_globalspectatorchat, "1", "Players can see spectator chat",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
@@ -107,6 +104,9 @@ CVAR (sv_nextmap, "", "Tracks next map to be played",
 // Determines whether Doom 1 episodes should carry over.		
 CVAR (sv_loopepisode, "0", "Determines whether Doom 1 episodes carry over",
       CVARTYPE_BOOL, CVAR_ARCHIVE)	
+// GhostlyDeath <August 14, 2008> -- Randomize the map list
+CVAR_FUNC_DECL (sv_shufflemaplist,	"0", "Randomly shuffle the maplist",
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // Network settings
 // ----------------
@@ -121,9 +121,6 @@ CVAR (sv_natport,	"0", "NAT firewall workaround, this is a port number",
 // in seconds
 CVAR (sv_flooddelay, "1.5", "Flood protection time",
       CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-// GhostlyDeath <August 14, 2008> -- Randomize the map list
-CVAR_FUNC_DECL (sv_shufflemaplist,	"0", "Randomly shuffle the maplist",
-      CVARTYPE_BOOL, CVAR_ARCHIVE)
 // [Spleen] limits the rate of clients to avoid bandwidth issues
 CVAR_FUNC_DECL (sv_maxrate, "200", "Forces clients to be on or below this rate",
       CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
@@ -192,6 +189,13 @@ CVAR (sv_callvote_scorelimit, "1", "Clients can vote a new scorelimit.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 CVAR (sv_callvote_timelimit, "1", "Clients can vote a new timelimit.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
+// Experimental settings (all categories)
+// =======================================
+
+// Do not run ticker functions when there are no players
+CVAR (sv_emptyfreeze,  "0", "Experimental: Does not progress the game when there are no players",
+      CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
 

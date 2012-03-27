@@ -105,9 +105,6 @@ CVAR_FUNC_DECL (sv_timelimit,		"0", "Sets the time limit for the game to end, mu
 CVAR_FUNC_DECL (sv_intermissionlimit, "10", "Sets the time limit for the intermission to end, 0 disables (defaults to 10 seconds)", 
       CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-// Speedhack code (server related)
-CVAR (sv_speedhackfix,		"0", "", 
-      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 // Weapons stay
 CVAR (sv_weaponstay,		"1", "Weapons stay after pickup", 
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
@@ -216,5 +213,12 @@ CVAR (sv_unblockplayers, "0", "Allows players to walk through other players",
 // [Spleen] Allow custom WAD directories to be specified in a cvar
 CVAR (waddirs, "", "Allow custom WAD directories to be specified", 
       CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+// Experimental settings (all categories)
+// =======================================
+
+// Speedhack code (server related)
+CVAR (sv_speedhackfix,		"0", "Experimental anti-speedhack code", 
+      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")
