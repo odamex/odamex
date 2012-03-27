@@ -375,46 +375,28 @@ BOOL P_GivePower(player_t *player, int /*powertype_t*/ power)
 	return true;
 }
 
-//
-// P_TouchSpecialThing
-//
-void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
+static bool P_SpecialIsWeapon(AActor *special)
 {
-	player_t*	player;
-	size_t		i;
-	int			sound;
-	bool		firstgrab = false;
+	if (!special)
+		return false;
 
-	if (!toucher || !special) // [Toke - fix99]
+	return (special->type == MT_CHAINGUN ||
+			special->type == MT_SHOTGUN  ||
+			special->type == MT_SUPERSHOTGUN ||
+			special->type == MT_MISC25 ||
+			special->type == MT_MISC26 ||
+			special->type == MT_MISC27 ||
+			special->type == MT_MISC28);
+}
+
+void P_GiveSpecial(player_t *player, AActor *special)
+{
+	if (!player || !player->mo || !special)
 		return;
-
-	player = toucher->player;
-	if (!player || player->spectator)
-		return;
-
-    if (predicting)
-        return;
-
-    // Dead thing touching.
-    // Can happen with a sliding player corpse.
-    if (toucher->health <= 0)
-		return;
-
-	fixed_t delta = special->z - toucher->z;
-
-	// Abort if it's out of reach and the server didn't say it was ok
-	fixed_t lowerbound = co_zdoomphys ? -32*FRACUNIT : -8*FRACUNIT;
-	if (!FromServer && (delta > toucher->height || delta < lowerbound))
-		return;
-
-	// Only allow clients to predict touching weapons, not health, armor, etc
-	if (clientside && !serverside && special->type != MT_CHAINGUN &&
-		special->type != MT_SHOTGUN && special->type != MT_SUPERSHOTGUN &&
-		special->type != MT_MISC25 && special->type != MT_MISC26 &&
-		special->type != MT_MISC27 && special->type != MT_MISC28 && !FromServer)
-		return;
-
-	sound = 0;
+		
+	AActor *toucher = player->mo;
+	int sound = 0;
+	bool firstgrab = false;
 
 	// Identify by sprite.
 	switch (special->sprite)
@@ -748,13 +730,13 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 	    case SPR_BPAK:
             if (!player->backpack)
             {
-                for (i=0 ; i<NUMAMMO ; i++)
+                for (int i=0 ; i<NUMAMMO ; i++)
                 {
                     player->maxammo[i] *= 2;
                 }
                 player->backpack = true;
             }
-            for (i=0 ; i<NUMAMMO ; i++)
+            for (int i=0 ; i<NUMAMMO ; i++)
             {
                 P_GiveAmmo(player, (ammotype_t)i, 1);
             }
@@ -906,6 +888,38 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher, bool FromServer)
 		}
 	}
 }
+
+
+//
+// P_TouchSpecialThing
+//
+void P_TouchSpecialThing(AActor *special, AActor *toucher)
+{
+	if (!toucher || !toucher->player || toucher->player->spectator || !special ) // [Toke - fix99]
+		return;
+
+    if (predicting)
+        return;
+
+    // Dead thing touching.
+    // Can happen with a sliding player corpse.
+    if (toucher->health <= 0)
+		return;
+
+	// out of reach?
+	fixed_t delta = special->z - toucher->z;
+	fixed_t lowerbound = co_zdoomphys ? -32*FRACUNIT : -8*FRACUNIT;
+	
+	if (delta > toucher->height || delta < lowerbound)
+		return;
+
+	// Only allow clients to predict touching weapons, not health, armor, etc
+	if (!serverside && !P_SpecialIsWeapon(special))
+		return;
+
+	P_GiveSpecial(toucher->player, special);
+}
+
 
 // [RH]
 // SexMessage: Replace parts of strings with gender-specific pronouns

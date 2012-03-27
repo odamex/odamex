@@ -1679,7 +1679,7 @@ void CL_TouchSpecialThing (void)
 	if(!consoleplayer().mo || !mo)
 		return;
 
-	P_TouchSpecialThing (mo, consoleplayer().mo, true);
+	P_GiveSpecial(&consoleplayer(), mo);
 }
 
 
