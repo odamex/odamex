@@ -1016,7 +1016,10 @@ void G_DoLoadLevel (int position)
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
 	sky1texture = R_TextureNumForName (level.skypic);
-	sky2texture = R_TextureNumForName (level.skypic2);
+	if (strlen(level.skypic2))
+		sky2texture = R_TextureNumForName (level.skypic2);
+	else
+		sky2texture = 0;
 
 	// [RH] Set up details about sky rendering
 	R_InitSkyMap ();

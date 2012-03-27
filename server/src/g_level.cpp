@@ -1076,7 +1076,10 @@ void G_DoLoadLevel (int position)
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
 	sky1texture = R_TextureNumForName (level.skypic);
-	sky2texture = R_TextureNumForName (level.skypic2);
+	if (strlen(level.skypic2))
+		sky2texture = R_TextureNumForName (level.skypic2);
+	else
+		sky2texture = 0;
 
 	for (i = 0; i < players.size(); i++)
 	{
