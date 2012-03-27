@@ -477,9 +477,13 @@ BOOL PIT_CheckThing (AActor *thing)
 	if ((tmthing->flags2 & MF2_PASSMOBJ) && co_realactorheight)
 	{
 		// check if a mobj passed over/under another object
-		if (/*!(thing->flags & MF_SPECIAL) &&*/
-			((tmthing->z >= thing->z + thing->height ||
-			  tmthing->z + tmthing->height < thing->z)))
+		// [SL] 2012-03-27 - ZDoom uses a modified thing->height value for
+		// testing (height += 24*FRACUNIT).  This allows the player to grab
+		// items above his head so just use the thing's original height
+		// (returned by P_ThingInfoHeight) for now.
+
+		if (tmthing->z >= thing->z + P_ThingInfoHeight(thing->info) ||
+			tmthing->z + P_ThingInfoHeight(tmthing->info) < thing->z)
 			return true;
 	}
 
