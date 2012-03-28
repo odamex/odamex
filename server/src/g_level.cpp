@@ -29,49 +29,49 @@
 #include <vector>
 #include <set>
 
-#include "d_main.h"
-#include "m_alloc.h"
+#include "c_console.h"
+#include "c_dispatch.h"
 #include "c_level.h"
+#include "d_event.h"
+#include "d_main.h"
+#include "doomstat.h"
+#include "d_protocol.h"
 #include "g_level.h"
 #include "g_game.h"
-#include "s_sound.h"
-#include "d_event.h"
-#include "m_random.h"
-#include "doomstat.h"
-#include "r_data.h"
-#include "w_wad.h"
-#include "c_dispatch.h"
-#include "z_zone.h"
-#include "i_system.h"
-#include "p_setup.h"
-#include "p_local.h"
-#include "r_sky.h"
-#include "c_console.h"
 #include "gstrings.h"
-#include "v_video.h"
-#include "p_saveg.h"
-#include "p_acs.h"
-#include "d_protocol.h"
-#include "d_main.h"
-#include "p_mobj.h"
-#include "sc_man.h"
+#include "gi.h"
+
+#include "i_system.h"
+#include "m_alloc.h"
 #include "m_fileio.h"
 #include "m_misc.h"
+#include "minilzo.h"
+#include "m_random.h"
+#include "p_acs.h"
+#include "p_ctf.h"
+#include "p_local.h"
+#include "p_mobj.h"
+#include "p_saveg.h"
+#include "p_setup.h"
+#include "p_unlag.h"
+#include "r_data.h"
+#include "r_sky.h"
+#include "s_sound.h"
+#include "s_sndseq.h"
+#include "sc_man.h"
+#include "sv_main.h"
 #include "sv_maplist.h"
 #include "sv_vote.h"
+#include "v_video.h"
+#include "w_wad.h"
+#include "z_zone.h"
 
-#include "gi.h"
-#include "minilzo.h"
-
-#include "sv_main.h"
-#include "p_ctf.h"
-#include "p_unlag.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
 
 extern int nextupdate;
-extern int shotclock;
+
 
 EXTERN_CVAR (sv_endmapscript)
 EXTERN_CVAR (sv_startmapscript)
@@ -88,6 +88,7 @@ static cluster_info_t *FindDefClusterInfo (int cluster);
 extern int timingdemo;
 
 extern int mapchange;
+extern int shotclock;
 
 // Start time for timing demos
 int starttime;

@@ -22,44 +22,48 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "d_main.h"
-#include "m_alloc.h"
+#include <set>
+
+#include "am_map.h"
+#include "c_console.h"
+#include "c_dispatch.h"
 #include "c_level.h"
+#include "cl_main.h"
+#include "d_event.h"
+#include "d_main.h"
+#include "doomstat.h"
+#include "d_protocol.h"
+#include "f_finale.h"
 #include "g_level.h"
 #include "g_game.h"
-#include "s_sound.h"
-#include "d_event.h"
-#include "m_random.h"
-#include "doomstat.h"
-#include "wi_stuff.h"
-#include "r_data.h"
-#include "w_wad.h"
-#include "am_map.h"
-#include "c_dispatch.h"
-#include "z_zone.h"
-#include "i_system.h"
-#include "p_setup.h"
-#include "p_local.h"
-#include "r_sky.h"
-#include "c_console.h"
-#include "f_finale.h"
 #include "gstrings.h"
-#include "v_video.h"
-#include "st_stuff.h"
+#include "gi.h"
 #include "hu_stuff.h"
-#include "p_saveg.h"
-#include "p_acs.h"
-#include "d_protocol.h"
-#include "v_text.h"
-#include "s_sndseq.h"
-#include "sc_man.h"
-#include "cl_main.h"
+#include "i_system.h"
+#include "m_alloc.h"
 #include "m_fileio.h"
 #include "m_misc.h"
-
-#include <set>
-#include "gi.h"
 #include "minilzo.h"
+#include "m_random.h"
+#include "p_acs.h"
+#include "p_ctf.h"
+#include "p_local.h"
+#include "p_mobj.h"
+#include "p_saveg.h"
+#include "p_setup.h"
+#include "p_unlag.h"
+#include "r_data.h"
+#include "r_sky.h"
+#include "s_sound.h"
+#include "s_sndseq.h"
+#include "sc_man.h"
+#include "st_stuff.h"
+#include "v_video.h"
+#include "v_text.h"
+#include "w_wad.h"
+#include "wi_stuff.h"
+#include "z_zone.h"
+
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
@@ -91,12 +95,12 @@ int ACS_GlobalVars[NUM_GLOBALVARS];
 // [SL] 2012-02-23 - Sectors that can possibly change floor/ceiling height
 std::set<sector_t*> movable_sectors;
 
+
+
+extern bool r_underwater;
 BOOL savegamerestore;
 
-extern int mousex, mousey;
-extern bool r_underwater;
-
-extern int joyforward, joystrafe, joyturn, joylook, Impulse;
+extern int mousex, mousey, joyforward, joystrafe, joyturn, joylook, Impulse;
 extern BOOL sendpause, sendsave, sendcenterview;
 
 level_locals_t level;			// info about current level
