@@ -289,6 +289,8 @@
 		<Unit filename="..\..\common\c_dispatch.h" />
 		<Unit filename="..\..\common\c_effect.cpp" />
 		<Unit filename="..\..\common\c_effect.h" />
+		<Unit filename="..\..\common\c_level.cpp" />
+		<Unit filename="..\..\common\c_level.h" />
 		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\c_vote.cpp" />
 		<Unit filename="..\..\common\c_vote.h" />
