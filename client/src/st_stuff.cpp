@@ -69,8 +69,6 @@ bool		st_firsttime;
 // lump number for PLAYPAL
 static int		lu_palette;
 
-extern NetDemo netdemo;
-
 EXTERN_CVAR (idmypos)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (hud_fullhudtype)

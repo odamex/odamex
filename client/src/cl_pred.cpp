@@ -58,8 +58,6 @@ extern int last_player_update;
 int extrapolation_tics;
 bool predicting;
 
-extern NetDemo netdemo;
-
 TArray <plat_pred_t> real_plats;
 
 //

@@ -28,6 +28,8 @@
 #include "i_net.h"
 #include "d_ticcmd.h"
 #include "r_defs.h"
+#include "cl_demo.h"
+#include <string>
 
 extern netadr_t  serveraddr;
 extern BOOL      connected;
@@ -37,6 +39,8 @@ extern bool      noservermsgs;
 extern int       last_received;
 
 extern buf_t     net_buffer;
+
+extern NetDemo	netdemo;
 
 #define MAXSAVETICS 70
 extern ticcmd_t localcmds[MAXSAVETICS];
@@ -140,5 +144,8 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictMove (void);
 void CL_SendUserInfo(void);
 bool CL_Connect(void);
+
+std::string M_ExpandTokens(const std::string &str);
+
 #endif
 

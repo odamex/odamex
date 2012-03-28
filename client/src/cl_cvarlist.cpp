@@ -349,4 +349,9 @@ CVAR_FUNC_DECL (vid_winscale, "1.0", "",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_
 // Overscan
 CVAR_FUNC_DECL (vid_overscan, "1.0", "Overscan",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
+// Record netdemos automatically
+CVAR (cl_autorecord, "0", "Automatically record netdemos", CVARTYPE_BOOL, CVAR_ARCHIVE)
+// Splits netdemos at the start of everymap
+CVAR (cl_splitnetdemos, "0", "Create separate netdemos for each map", CVARTYPE_BOOL, CVAR_ARCHIVE)
+
 VERSION_CONTROL (cl_cvarlist_cpp, "$Id$")

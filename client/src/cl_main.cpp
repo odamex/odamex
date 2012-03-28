@@ -105,6 +105,7 @@ std::string server_host = "";	// hostname of server
 
 // [SL] 2011-06-27 - Class to record and playback network recordings
 NetDemo netdemo;
+static const std::string default_netdemo_filename("%n_%g_%w-%m_%d");
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
 bool simulated_connection = false;		
 
@@ -209,6 +210,8 @@ EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
+EXTERN_CVAR (cl_autorecord)
+EXTERN_CVAR (cl_splitnetdemos)
 
 void CL_RunTics (void);
 void CL_PlayerTimes (void);
@@ -283,12 +286,23 @@ void CL_QuitNetGame(void)
 	players.clear();
 
 	if (netdemo.isRecording())
-	{
 		netdemo.stopRecording();
-	}
+
 	if (netdemo.isPlaying())
-	{
 		netdemo.stopPlaying();
+
+	// Reset the palette to default
+	if (I_HardwareInitialized())
+	{
+		int lu_palette = W_GetNumForName("PLAYPAL");
+		if (lu_palette != -1)
+		{
+			byte *pal = (byte *)W_CacheLumpNum(lu_palette, PU_CACHE);
+			if (pal)
+			{
+				I_SetOldPalette(pal);
+			}
+		}
 	}
 
 	// Reset the palette to default
@@ -697,10 +711,42 @@ BEGIN_COMMAND (exit)
 }
 END_COMMAND (exit)
 
+//
+// NetDemo related functions
+//
 
 //
-// CL_NetDemoStop
+// CL_GenerateNetDemoFileName
 //
+// 
+std::string CL_GenerateNetDemoFileName(const std::string &filename = default_netdemo_filename)
+{
+	const std::string expanded_filename(M_ExpandTokens(filename));	
+	std::string newfilename(expanded_filename + ".odd");
+	newfilename = I_GetUserFileName(newfilename.c_str());
+
+	FILE *fp;
+	int counter = 1;
+	char cntstr[5];
+
+	// keep trying to find a filename that doesn't yet exist
+	while ( (fp = fopen(newfilename.c_str(), "r")) )
+	{
+		fclose(fp);
+		
+		// add a number to the end of the filename
+		sprintf(cntstr, "%i", counter);
+		newfilename = expanded_filename + cntstr + ".odd";
+		newfilename = I_GetUserFileName(newfilename.c_str());
+
+		counter++;
+		if (counter > 9999)		// don't overflow cntstr
+			break;
+	}
+
+	return newfilename;
+}
+
 void CL_NetDemoStop()
 {
 	netdemo.stopPlaying();
@@ -714,21 +760,6 @@ void CL_NetDemoRecord(const std::string &filename)
 void CL_NetDemoPlay(const std::string &filename)
 {
 	netdemo.startPlaying(filename);
-}
-
-void CL_NetDemoSnapshot()
-{
-/*	// read the length of the snapshot
-	int len = MSG_ReadLong();
-
-
-	// [SL] DEBUG!
-	Printf(PRINT_HIGH, "Skipping over %d bytes of snapshot data\n", len);
-
-	// skip over the snapshot since it is handled elsewhere
-	byte b;
-	while (len--)
-		b = MSG_ReadByte(); */
 }
 
 BEGIN_COMMAND(stopnetdemo)
@@ -759,19 +790,11 @@ BEGIN_COMMAND(netrecord)
 	}
 
 	std::string filename;
-	if (argc < 2)
-	{
-		filename = "demo";
-	}
+	if (argc > 1 && strlen(argv[1]) > 0)
+		filename = CL_GenerateNetDemoFileName(argv[1]);
 	else
-	{
-		if (strlen(argv[1]) > 0)
-			filename = argv[1];
-	}
+		filename = CL_GenerateNetDemoFileName();
 
-	M_AppendExtension(filename, ".odd");
-
-	CL_Reconnect();
 	CL_NetDemoRecord(I_GetUserFileName(filename.c_str()));
 }
 END_COMMAND(netrecord)
@@ -814,25 +837,87 @@ BEGIN_COMMAND(netplay)
 }
 END_COMMAND(netplay)
 
-BEGIN_COMMAND(ff)
+BEGIN_COMMAND(netdemostats)
 {
-	if (netdemo.isPlaying())
-	{
-		netdemo.skipTo(&net_message, gametic + netdemo.getSpacing());
+	if (!netdemo.isPlaying())
+		return;
 
+	std::vector<int> maptimes = netdemo.getMapChangeTimes();
+	int curtime = netdemo.calculateTimeElapsed();
+	int totaltime = netdemo.calculateTotalTime();
+
+	Printf(PRINT_HIGH, "\n%s\n", netdemo.getFileName().c_str());
+	Printf(PRINT_HIGH, "============================================\n");
+	Printf(PRINT_HIGH, "Total time: %i seconds\n", totaltime);
+	Printf(PRINT_HIGH, "Current position: %i seconds (%i%%)\n",
+		curtime, curtime * 100 / totaltime);
+	Printf(PRINT_HIGH, "Number of maps: %i\n", maptimes.size());
+	for (size_t i = 0; i < maptimes.size(); i++)
+	{
+		Printf(PRINT_HIGH, "> %02i Starting time: %i seconds\n",
+			i + 1, maptimes[i]);
 	}
 }
-END_COMMAND(ff)
+END_COMMAND(netdemostats)
 
-BEGIN_COMMAND(rew)
+BEGIN_COMMAND(netff)
 {
+	int ticnum;
+
+	if (argc == 1)
+	{
+		// no arg so just go to the next snapshot
+		ticnum = gametic + netdemo.getSpacing();
+	}
+	else
+	{
+		// go forward X seconds
+		ticnum = gametic + TICRATE * atoi(argv[1]);
+	}
+
 	if (netdemo.isPlaying())
 	{
-		netdemo.skipTo(&net_message, gametic - netdemo.getSpacing());
-
+		netdemo.skipTo(&net_message, ticnum);
 	}
 }
-END_COMMAND(rew)
+END_COMMAND(netff)
+
+BEGIN_COMMAND(netrew)
+{
+	int ticnum;
+
+	if (argc == 1)
+	{
+		// no arg so just go to the next snapshot
+		ticnum = gametic - netdemo.getSpacing();
+	}
+	else
+	{
+		// go backwards X seconds
+		ticnum = gametic - TICRATE * atoi(argv[1]);
+	}
+
+	if (netdemo.isPlaying())
+	{
+		netdemo.skipTo(&net_message, ticnum);
+	}
+}
+END_COMMAND(netrew)
+
+BEGIN_COMMAND(netnextmap)
+{
+	if (netdemo.isPlaying())
+		netdemo.nextMap(&net_message);
+}
+END_COMMAND(netnextmap)
+
+BEGIN_COMMAND(netprevmap)
+{
+	if (netdemo.isPlaying())
+		netdemo.prevMap(&net_message);
+}
+END_COMMAND(netprevmap)
+
 
 //
 // CL_MoveThing
@@ -1193,8 +1278,7 @@ bool CL_PrepareConnect(void)
     Printf(PRINT_HIGH, "\n");
 
     // DEH/BEX Patch files
-    std::vector<std::string> PatchFiles;
-
+	std::vector<std::string> PatchFiles;
     size_t PatchCount = MSG_ReadByte();
     
     for (i = 0; i < PatchCount; ++i)
@@ -1804,7 +1888,7 @@ void CL_PlayerInfo(void)
 	p->health = MSG_ReadByte ();
 	p->armorpoints = MSG_ReadByte ();
 	p->armortype = MSG_ReadByte ();
-	
+
 	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
 	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
 		newweapon = wp_fist;
@@ -2148,6 +2232,7 @@ void CL_UpdateSector(void)
 		cp = numflats;
 
 	sec->ceilingpic = cp;
+	sec->moveable = true;
 
 	P_ChangeSector (sec, false);
 }
@@ -2553,6 +2638,18 @@ void CL_Actor_Tracer()
 }
 
 //
+// CL_MobjTranslation
+//
+void CL_MobjTranslation()
+{
+	AActor *mo = CL_FindThingById(MSG_ReadShort());
+	byte table = MSG_ReadByte();
+
+	mo->translation = translationtables + 256 * table;
+}
+
+
+//
 // CL_Switch
 // denis - switch state and timing
 //
@@ -2614,6 +2711,10 @@ void CL_LoadMap(void)
 {
 	const char *mapname = MSG_ReadString ();
 
+	bool splitnetdemo = netdemo.isRecording() && cl_splitnetdemos;
+	if (splitnetdemo)
+		netdemo.stopRecording();
+
 	if(gamestate == GS_DOWNLOAD)
 		return;
 
@@ -2627,7 +2728,18 @@ void CL_LoadMap(void)
 	CTF_CheckFlags(consoleplayer());
 
 	gameaction = ga_nothing;
+
+	// Autorecord netdemo or continue recording in a new file
+	if ((splitnetdemo || cl_autorecord) &&
+		(!netdemo.isPlaying() && !netdemo.isRecording() && !netdemo.isPaused()))
+	{
+		netdemo.startRecording(CL_GenerateNetDemoFileName());
+	}
+
+	if (netdemo.isRecording())
+		netdemo.writeMapChange();
 }
+
 
 void CL_EndGame()
 {
@@ -2733,6 +2845,7 @@ void CL_InitCommands(void)
     cmds[svc_midprint]          = &CL_MidPrint;
     cmds[svc_pingrequest]       = &CL_SendPingReply;
 	cmds[svc_svgametic]			= &CL_SaveSvGametic;
+	cmds[svc_mobjtranslation]	= &CL_MobjTranslation;
 	cmds[svc_timeleft]			= &CL_UpdateTimeLeft;
 	cmds[svc_inttimeleft]		= &CL_UpdateIntTimeLeft;
 
@@ -2764,7 +2877,6 @@ void CL_InitCommands(void)
 
 	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
 	cmds[svc_netdemostop]       = &CL_NetDemoStop;
-	cmds[svc_netdemosnapshot]	= &CL_NetDemoSnapshot;
 }
 
 //
@@ -2783,7 +2895,7 @@ void CL_ParseCommands(void)
 	{
 		cmd = (svc_t)MSG_ReadByte();
 		history.push_back(cmd);
-
+		
 		if(cmd == (svc_t)-1)
 			break;
 
@@ -3036,7 +3148,7 @@ void CL_LocalDemoTic()
 	byte waterlevel;
 	
 	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
-	
+	clientPlayer->cmd.ucmd.impulse = MSG_ReadByte();	
 	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();

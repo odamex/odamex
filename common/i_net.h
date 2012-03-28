@@ -116,6 +116,7 @@ enum svc_t
 	svc_svgametic,			// [SL] 2011-05-11 - [byte]
 	svc_timeleft,
 	svc_inttimeleft,		// [ML] For intermission timer
+	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -131,7 +132,6 @@ enum svc_t
 	// netdemos - NullPoint
 	svc_netdemocap = 100,
 	svc_netdemostop = 101,
-	svc_netdemosnapshot = 102,
 	
 	// for compressed packets
 	svc_compressed = 200,
