@@ -99,9 +99,6 @@ int ACS_WorldVars[NUM_WORLDVARS];
 // ACS variables with global scope
 int ACS_GlobalVars[NUM_GLOBALVARS];
 
-// [SL] 2012-02-23 - Sectors that can possibly change floor/ceiling height
-std::set<sector_t*> movable_sectors;
-
 BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
 extern BOOL netdemo;

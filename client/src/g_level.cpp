@@ -92,11 +92,6 @@ int ACS_WorldVars[NUM_WORLDVARS];
 // ACS variables with global scope
 int ACS_GlobalVars[NUM_GLOBALVARS];
 
-// [SL] 2012-02-23 - Sectors that can possibly change floor/ceiling height
-std::set<sector_t*> movable_sectors;
-
-
-
 extern bool r_underwater;
 BOOL savegamerestore;
 
