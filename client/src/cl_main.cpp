@@ -1455,6 +1455,10 @@ void CL_UpdatePlayer()
     {
         p->mo->flags |= MF_SHADOW;
     }
+    else
+    {
+        p->mo->flags &= ~MF_SHADOW;
+    }
 
 	p->mo->frame = frame;
 
