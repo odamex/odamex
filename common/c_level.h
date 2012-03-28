@@ -25,6 +25,6 @@
 #ifndef __C_LEVEL_H__
 #define __C_LEVEL_H__
 
-extern level_info_t LevelInfos[];
+
 
 #endif // __C_LEVEL_H__
