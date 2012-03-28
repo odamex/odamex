@@ -1059,8 +1059,10 @@ void WI_drawNetgameStats(void)
 
 		x = NG_STATSX;
 		// [RH] Only use one graphic for the face backgrounds
-		//V_ColorMap = translationtables + i * 256;
-		screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
+		V_ColorMap = translationtables + i * 256;
+        screen->DrawTranslatedPatchClean (p, x - p->width(), y);
+		// classic face background colour
+		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
 		if (i == me)
 			screen->DrawPatchClean (star, x-p->width(), y);
