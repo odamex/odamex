@@ -3076,6 +3076,9 @@ void SV_UpdateMissiles(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
+            statenum_t mostate = (statenum_t)(mo->state - states);
+            mobjinfo_t moinfo = mobjinfo[mo->type];
+
 			MSG_WriteMarker (&cl->netbuf, svc_movemobj);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->rndindex);
@@ -3110,18 +3113,20 @@ void SV_UpdateMissiles(player_t &pl)
                 MSG_WriteShort (&cl->netbuf, mo->tracer->netid);
             }
 
-			if ((mobjinfo[mo->type].spawnstate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].seestate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].painstate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].meleestate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].missilestate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].deathstate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].xdeathstate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].raisestate == (statenum_t)(mo->state - states)))
+            // This code is designed to send the 'starting' state, not inbetween
+            // ones
+			if ((moinfo.spawnstate == mostate) ||
+                (moinfo.seestate == mostate) ||
+                (moinfo.painstate == mostate) ||
+                (moinfo.meleestate == mostate) ||
+                (moinfo.missilestate == mostate) ||
+                (moinfo.deathstate == mostate) ||
+                (moinfo.xdeathstate == mostate) ||
+                (moinfo.raisestate == mostate))
             {
                 MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
                 MSG_WriteShort (&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, (mo->state - states));
+                MSG_WriteShort (&cl->netbuf, (short)mostate);
             }
 
             if (cl->netbuf.cursize >= 1024)
@@ -3157,6 +3162,9 @@ void SV_UpdateMonsters(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
+            statenum_t mostate = (statenum_t)(mo->state - states);
+            mobjinfo_t moinfo = mobjinfo[mo->type];
+
 			MSG_WriteMarker (&cl->netbuf, svc_movemobj);
 			MSG_WriteShort (&cl->netbuf, mo->netid);
 			MSG_WriteByte (&cl->netbuf, mo->rndindex);
@@ -3183,18 +3191,20 @@ void SV_UpdateMonsters(player_t &pl)
                 MSG_WriteShort (&cl->netbuf, mo->target->netid);
             }
 
-			if ((mobjinfo[mo->type].spawnstate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].seestate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].painstate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].meleestate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].missilestate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].deathstate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].xdeathstate == (statenum_t)(mo->state - states)) ||
-                (mobjinfo[mo->type].raisestate == (statenum_t)(mo->state - states)))
+            // This code is designed to send the 'starting' state, not inbetween
+            // ones
+			if ((moinfo.spawnstate == mostate) ||
+                (moinfo.seestate == mostate) ||
+                (moinfo.painstate == mostate) ||
+                (moinfo.meleestate == mostate) ||
+                (moinfo.missilestate == mostate) ||
+                (moinfo.deathstate == mostate) ||
+                (moinfo.xdeathstate == mostate) ||
+                (moinfo.raisestate == mostate))
             {
                 MSG_WriteMarker (&cl->netbuf, svc_mobjstate);
                 MSG_WriteShort (&cl->netbuf, mo->netid);
-                MSG_WriteShort (&cl->netbuf, (mo->state - states));
+                MSG_WriteShort (&cl->netbuf, (short)mostate);
             }
 
             if (cl->netbuf.cursize >= 1024)
