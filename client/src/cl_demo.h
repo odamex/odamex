@@ -115,7 +115,7 @@ private:
 	static const size_t MESSAGE_HEADER_SIZE = 9;
 	static const size_t INDEX_ENTRY_SIZE = 8;
 
-	static const uint16_t SNAPSHOT_SPACING = 5 * TICRATE;
+	static const uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
 
 	static const size_t MAX_SNAPSHOT_SIZE = MAX_UDP_PACKET;
 	
