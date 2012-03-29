@@ -795,7 +795,7 @@ BEGIN_COMMAND(netrecord)
 	else
 		filename = CL_GenerateNetDemoFileName();
 
-	CL_NetDemoRecord(I_GetUserFileName(filename.c_str()));
+	CL_NetDemoRecord(filename.c_str());
 }
 END_COMMAND(netrecord)
 

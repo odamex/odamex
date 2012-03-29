@@ -408,7 +408,7 @@ bool NetDemo::startRecording(const std::string &filename)
 	demofp = fopen(filename.c_str(), "wb");
 	if (!demofp)
 	{
-		error("Unable to create netdemo file.");
+		error("Unable to create netdemo file " + filename + ".");
 		return false;
 	}
 
