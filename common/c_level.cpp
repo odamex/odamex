@@ -24,6 +24,8 @@
 
 #include "c_level.h"
 
+#include "g_level.h"
+
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
 
