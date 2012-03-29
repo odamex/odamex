@@ -24,8 +24,40 @@
 
 #include "c_level.h"
 
+#include <set>
+
+#include "c_console.h"
+#include "c_dispatch.h"
+#include "c_level.h"
+#include "d_event.h"
+#include "d_main.h"
+#include "doomstat.h"
+#include "d_protocol.h"
 #include "g_level.h"
-#include "cmdlib.h"
+#include "g_game.h"
+#include "gstrings.h"
+#include "gi.h"
+#include "i_system.h"
+#include "m_alloc.h"
+#include "m_fileio.h"
+#include "m_misc.h"
+#include "minilzo.h"
+#include "m_random.h"
+#include "p_acs.h"
+#include "p_ctf.h"
+#include "p_local.h"
+#include "p_mobj.h"
+#include "p_saveg.h"
+#include "p_setup.h"
+#include "p_unlag.h"
+#include "r_data.h"
+#include "r_sky.h"
+#include "s_sound.h"
+#include "s_sndseq.h"
+#include "sc_man.h"
+#include "v_video.h"
+#include "w_wad.h"
+#include "z_zone.h"
 
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
