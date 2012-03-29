@@ -47,7 +47,7 @@ static const std::string default_netdemo_filename("%n_%g_%w-%m_%d");
 
 NetDemo::NetDemo() :
 	state(st_stopped), oldstate(st_stopped), filename(""),
-	demofp(NULL)
+	demofp(NULL), needfullupdate(false)
 {
     memset(&header, 0, sizeof(header));
 }
@@ -75,6 +75,7 @@ void NetDemo::copy(NetDemo &to, const NetDemo &from)
 	to.captured			= from.captured;
 	to.snapshot_index	= from.snapshot_index;
 	to.map_index		= from.map_index;
+	to.needfullupdate	= from.needfullupdate;
 	memcpy(&to.header, &from.header, sizeof(header));
 }
 
@@ -429,7 +430,9 @@ bool NetDemo::startRecording(const std::string &filename)
 	{
 		// write a simulation of the connection sequence since the server
 		// has already sent it to the client and it wasn't captured
-		static buf_t tempbuf(4096);
+		static buf_t tempbuf(MAX_UDP_PACKET);
+
+		needfullupdate = false;
 		
 		SZ_Clear(&tempbuf);
 		writeLauncherSequence(&tempbuf);
@@ -440,6 +443,8 @@ bool NetDemo::startRecording(const std::string &filename)
 		writeConnectionSequence(&tempbuf);
 		capture(&tempbuf);
 		writeMessages();
+
+		needfullupdate = true;
 	}
 
 	return true;
@@ -978,6 +983,18 @@ void NetDemo::writeMessages()
 
 	if (connected && gamestate == GS_LEVEL)
 	{
+		// Immediately after connecting, we don't have all the relevant data to
+		// do a full world update.  We delay writing a full update for a tic so
+		// that we have all the proper information from the server.
+		if (needfullupdate)
+		{
+			SZ_Clear(&netbuf_snapshot);
+			writeSnapshotData(&netbuf_snapshot);
+			writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_packet);
+
+			needfullupdate = false;
+		}
+
 		// is it time to write a snapshot?
 		if ((gametic - header.starting_gametic) % header.snapshot_spacing == 0
 			&& (unsigned)gametic > header.starting_gametic)
@@ -1111,7 +1128,11 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 //
 // readMessages()
 //
+//   Read the next message from the netdemo file.  The message reprepsents one
+//   tic worth of network messages and one message per tic ensures the timing
+//   of playback matches the timing of the messages when they were recorded.
 //
+//   Snapshots are skipped as they are directly read elsewhere.
 
 void NetDemo::readMessages(buf_t* netbuffer)
 {

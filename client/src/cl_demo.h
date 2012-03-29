@@ -129,6 +129,8 @@ private:
 	netdemo_header_t	header;	
 	std::vector<netdemo_index_entry_t> snapshot_index;
 	std::vector<netdemo_index_entry_t> map_index;
+
+	bool				needfullupdate;
 };
 
 
