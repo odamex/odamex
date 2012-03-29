@@ -25,6 +25,13 @@
 #ifndef __C_LEVEL_H__
 #define __C_LEVEL_H__
 
+extern bool unnatural_level_progression;
 
+void P_RemoveDefereds (void);
+int FindWadLevelInfo (char *name);
+int FindWadClusterInfo (int cluster);
+
+level_info_t *FindDefLevelInfo (char *mapname);
+cluster_info_t *FindDefClusterInfo (int cluster);
 
 #endif // __C_LEVEL_H__

@@ -27,6 +27,10 @@
 #include "doomdef.h"
 #include "d_player.h"
 
+// Unnatural Level Progression.  True if we've used 'map' or another command
+// to switch to a specific map out of order, otherwise false.
+bool unnatural_level_progression;
+
 void STACK_ARGS SV_BroadcastPrintf(int level, const char *fmt, ...) {}
 
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
