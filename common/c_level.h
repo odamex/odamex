@@ -25,6 +25,8 @@
 #ifndef __C_LEVEL_H__
 #define __C_LEVEL_H__
 
+#include "g_level.h"
+
 extern bool unnatural_level_progression;
 
 void P_RemoveDefereds (void);
