@@ -581,6 +581,10 @@ BEGIN_COMMAND (map)
 			G_DeferedInitNew (argv[1]);
 		}
 	}
+	else
+	{
+		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname, level.level_name);
+	}
 }
 END_COMMAND (map)
 
