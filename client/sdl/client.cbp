@@ -332,6 +332,8 @@
 		<Unit filename="..\..\common\c_effect.h" />
 		<Unit filename="..\..\common\c_level.cpp" />
 		<Unit filename="..\..\common\c_level.h" />
+		<Unit filename="..\..\common\c_maplist.cpp" />
+		<Unit filename="..\..\common\c_maplist.h" />
 		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\c_vote.cpp" />
 		<Unit filename="..\..\common\c_vote.h" />
@@ -489,6 +491,8 @@
 		<Unit filename="..\src\cl_download.h" />
 		<Unit filename="..\src\cl_main.cpp" />
 		<Unit filename="..\src\cl_main.h" />
+		<Unit filename="..\src\cl_maplist.cpp" />
+		<Unit filename="..\src\cl_maplist.h" />
 		<Unit filename="..\src\cl_mobj.cpp" />
 		<Unit filename="..\src\cl_pch.h">
 			<Option compile="1" />
@@ -497,6 +501,7 @@
 		<Unit filename="..\src\cl_pred.cpp" />
 		<Unit filename="..\src\cl_stubs.cpp" />
 		<Unit filename="..\src\cl_vote.cpp" />
+		<Unit filename="..\src\cl_vote.h" />
 		<Unit filename="..\src\d_main.cpp" />
 		<Unit filename="..\src\d_net.cpp" />
 		<Unit filename="..\src\d_netinfo.cpp" />

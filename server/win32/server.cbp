@@ -282,6 +282,8 @@
 		</Compiler>
 		<Unit filename="..\..\common\actor.h" />
 		<Unit filename="..\..\common\c_console.h" />
+		<Unit filename="..\..\common\c_maplist.cpp" />
+		<Unit filename="..\..\common\c_maplist.h" />
 		<Unit filename="..\..\common\c_cvarlist.cpp" />
 		<Unit filename="..\..\common\c_cvars.cpp" />
 		<Unit filename="..\..\common\c_cvars.h" />
@@ -465,6 +467,8 @@
 			<Option compile="1" />
 			<Option weight="0" />
 		</Unit>
+		<Unit filename="..\src\sv_pickup.cpp" />
+		<Unit filename="..\src\sv_pickup.h" />
 		<Unit filename="..\src\sv_rproto.cpp" />
 		<Unit filename="..\src\sv_sqp.cpp" />
 		<Unit filename="..\src\sv_sqp.h" />
