@@ -77,6 +77,9 @@ void SV_DropClient(player_t &who);
 void SV_PlayerTriedToCheat(player_t &player);
 void SV_ActorTarget(AActor *actor);
 void SV_ActorTracer(AActor *actor);
+void SV_ForceSetTeam(player_t &who, team_t team);
+void SV_CheckTeam(player_t &player);
+void SV_SendUserInfo(player_t &player, client_t* cl);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
 void SV_TouchSpecial(AActor *special, player_t *player);
@@ -103,10 +106,16 @@ void SV_SendDestroyActor(AActor *mo);
 bool M_ReadJSON(Json::Value &json, const char *filename);
 bool M_WriteJSON(const char *filename, Json::Value &value, bool styled);
 
-// [AM] Kick vote functions.
-bool cmd_kick_check(const std::vector<std::string> &arguments,
-					std::string &error, size_t &pid, std::string &reason);
-bool cmd_kick(const size_t &pid, const std::string &reason);
+// [AM] Coinflip
+void CMD_CoinFlip(std::string &result);
+
+// [AM] Spectating and Kicking
+bool CMD_KickCheck(std::vector<std::string> arguments, std::string &error,
+				   size_t &pid, std::string &reason);
+void SV_KickPlayer(player_t &player, const std::string &reason = "");
+bool CMD_ForcespecCheck(const std::vector<std::string> arguments,
+						std::string &error, size_t &pid);
+void SV_SetPlayerSpec(player_t &player, bool setting, bool silent = false);
 
 extern bool unnatural_level_progression;
 

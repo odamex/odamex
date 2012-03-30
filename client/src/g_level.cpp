@@ -169,29 +169,6 @@ BEGIN_COMMAND (wad) // denis - changes wads
 }
 END_COMMAND (wad)
 
-// Clientside maplist query.
-BEGIN_COMMAND (maplist)
-{
-	// Are we even connected to a server?
-	if (!connected) {
-		Printf(PRINT_HIGH, "Invalid maplist, you are not connected to a server.\n");
-		return;
-	}
-
-	// We don't want or need more than 255 params.
-	if (argc > 255) {
-		Printf(PRINT_HIGH, "Invalid maplist, maximum argument count is 255.\n");
-		return;
-	}
-
-	MSG_WriteMarker(&net_buffer, clc_maplist);
-	MSG_WriteByte(&net_buffer, (byte)argc - 1);
-	for (unsigned int i = 1;i < argc;i++) {
-		MSG_WriteString(&net_buffer, argv[i]);
-	}
-}
-END_COMMAND (maplist)
-
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_freelook)

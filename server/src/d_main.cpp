@@ -42,8 +42,9 @@
 #include <unistd.h>
 #endif
 
-#include <time.h>
 #include <math.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "errors.h"
 
@@ -1001,6 +1002,8 @@ void D_DoomMain (void)
 	const char *iwad;
 
 	M_ClearRandom();
+	// [AM] Init rand() PRNG, needed for non-deterministic maplist shuffling.
+	srand(time(NULL));
 
 	gamestate = GS_STARTUP;
 	SetLanguageIDs ();

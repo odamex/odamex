@@ -26,10 +26,16 @@
 const char* vote_type_cmd[] = {
 	"???",
 	"kick",
+	"forcespec",
+	"randcaps",
+	"randpickup",
 	"map",
+	"nextmap",
 	"randmap",
+	"restart",
 	"fraglimit",
 	"scorelimit",
 	"timelimit",
+	"coinflip",
 	"???"
 };

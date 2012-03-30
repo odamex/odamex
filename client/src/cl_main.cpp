@@ -50,6 +50,8 @@
 #include "r_sky.h"
 #include "cl_demo.h"
 #include "cl_download.h"
+#include "cl_maplist.h"
+#include "cl_vote.h"
 
 #include <string>
 #include <vector>
@@ -2877,6 +2879,11 @@ void CL_InitCommands(void)
 
 	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
 	cmds[svc_netdemostop]       = &CL_NetDemoStop;
+
+	cmds[svc_vote_update] = &CL_VoteUpdate;
+	cmds[svc_maplist] = &CL_Maplist;
+	cmds[svc_maplist_update] = &CL_MaplistUpdate;
+	cmds[svc_maplist_index] = &CL_MaplistIndex;
 }
 
 //
@@ -3063,6 +3070,8 @@ void CL_RunTics (void)
 
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics ();
+
+	Maplist_Runtic();
 }
 
 void PickupMessage (AActor *toucher, const char *message)

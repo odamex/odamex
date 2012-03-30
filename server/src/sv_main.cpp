@@ -120,7 +120,6 @@ EXTERN_CVAR(sv_ticbuffer)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
-void SV_Maplist(player_t &player);
 void SV_RemoveDisconnectedPlayer(player_t &player);
 
 CVAR_FUNC_IMPL (sv_maxclients)	// Describes the max number of clients that are allowed to connect. - does not work yet
@@ -284,7 +283,6 @@ void SV_UpdateConsolePlayer(player_t &player);
 
 void SV_CheckTeam (player_t & playernum);
 team_t SV_GoodTeam (void);
-void SV_ForceSetTeam (player_t &who, int team);
 
 void SV_SendServerSettings (client_t *cl);
 void SV_ServerSettingChange (void);
@@ -296,6 +294,19 @@ bool P_CheckSightEdges2 (const AActor* t1, const AActor* t2, float radius_boost 
 
 void SV_WinCheck (void);
 
+// [AM] Flip a coin between heads and tails
+BEGIN_COMMAND (coinflip) {
+	std::string result;
+	CMD_CoinFlip(result);
+
+	SV_BroadcastPrintf(PRINT_HIGH, "%s\n", result.c_str());
+} END_COMMAND (coinflip)
+
+void CMD_CoinFlip(std::string &result) {
+	result = (P_Random() % 2 == 0) ? "Coin came up Heads." : "Coin came up Tails.";
+	return;
+}
+
 // denis - kick player
 BEGIN_COMMAND (kick) {
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
@@ -304,23 +315,20 @@ BEGIN_COMMAND (kick) {
 	size_t pid;
 	std::string reason;
 
-	bool valid = cmd_kick_check(arguments, error, pid, reason);
-	if (!valid) {
-		Printf(PRINT_HIGH, "%s\n", error.c_str());
+	if (!CMD_KickCheck(arguments, error, pid, reason)) {
+		Printf(PRINT_HIGH, "kick: %s\n", error.c_str());
 		return;
 	}
 
-	// Run the command
-	cmd_kick(pid, reason);
-}
-END_COMMAND (kick)
+	SV_KickPlayer(idplayer(pid), reason);
+} END_COMMAND (kick)
 
 // Kick command check.
-bool cmd_kick_check(const std::vector<std::string> &arguments,
-					std::string &error, size_t &pid, std::string &reason) {
+bool CMD_KickCheck(std::vector<std::string> arguments, std::string &error,
+				   size_t &pid, std::string &reason) {
 	// Did we pass enough arguments?
 	if (arguments.size() < 1) {
-		error = "kick needs a player number (try 'players' command) and optionally a reason.";
+		error = "need a player id (try 'players') and optionally a reason.";
 		return false;
 	}
 
@@ -329,7 +337,7 @@ bool cmd_kick_check(const std::vector<std::string> &arguments,
 	buffer >> pid;
 
 	if (!buffer) {
-		error = "kick needs a valid player number.";
+		error = "need a valid player number.";
 		return false;
 	}
 
@@ -338,60 +346,33 @@ bool cmd_kick_check(const std::vector<std::string> &arguments,
 
 	if (!validplayer(player)) {
 		std::ostringstream error_ss;
-		error_ss << "kick could not find client " << pid << ".";
+		error_ss << "could not find client " << pid << ".";
 		error = error_ss.str();
 		return false;
 	}
 
-	// Verify that the player is actually in a kickable state.
-	if (!player.ingame()) {
-		std::ostringstream error_ss;
-		error_ss << "kick can not kick client " << pid << ".";
-		error = error_ss.str();
-		return false;
-	}
-
-	// Anything that is not the first argument is the reason
-	if (arguments.size() > 1) {
-		std::ostringstream buffer;
-		for (size_t i = 1;i < arguments.size();i++) {
-			if (i == arguments.size() - 1) {
-				buffer << arguments[i];
-			} else {
-				buffer << arguments[i] << " ";
-			}
-		}
-		reason = buffer.str();
-	}
+	// Anything that is not the first argument is the reason.
+	arguments.erase(arguments.begin());
+	reason = JoinStrings(arguments, " ");
 
 	return true;
 }
 
-// Kick command.  Make sure and call cmd_kick_check first.
-bool cmd_kick(const size_t &pid, const std::string &reason) {
-	player_t &player = idplayer(pid);
-
-	// We have to rerun the checks just to make sure
-	// the client is still there.  If they aren't there,
-	// we can safely assume that the player dodged a kick.
+// Kick a player.
+void SV_KickPlayer(player_t &player, const std::string &reason) {
+	// Avoid a segfault from an invalid player.
 	if (!validplayer(player)) {
-		return false;
+		return;
 	}
 
-	if (!player.ingame()) {
-		return false;
-	}
-
-	if (reason.size() != 0) {
-		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
-	} else {
+	if (reason.empty()) {
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server!\n", player.userinfo.netname);
+	} else {
+		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked from the server! (Reason: %s)\n", player.userinfo.netname, reason.c_str());
 	}
 
 	player.client.displaydisconnect = false;
 	SV_DropClient(player);
-
-	return true;
 }
 
 //
@@ -2530,7 +2511,8 @@ void SV_DisconnectClient(player_t &who)
 	   MSG_WriteByte(&cl.reliablebuf, who.id);
 	}
 
-	sv::Voting::instance().event_disconnect(who);
+	Maplist_Disconnect(who);
+	Vote_Disconnect(who);
 
 	if (who.client.displaydisconnect) {
 		// Name and reason for disconnect.
@@ -3773,17 +3755,18 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 //
 // SV_Spectate
 //
-void SV_Spectate (player_t &player)
-{
+void SV_Spectate (player_t &player) {
+	// [AM] Code has three possible values; true, false and 5.  True specs the
+	//      player, false unspecs him and 5 updates the server with the spec's
+	//      new position.
 	byte Code = MSG_ReadByte();
 
-	if (Code == 5)
-	{
+	if (Code == 5) {
 		// GhostlyDeath -- Prevent Cheaters
-		if (!player.spectator || !player.mo)
-		{
-			for (int i = 0; i < 3; i++)
+		if (!player.spectator || !player.mo) {
+			for (int i = 0; i < 3; i++) {
 				MSG_ReadLong();
+			}
 			return;
 		}
 
@@ -3791,69 +3774,149 @@ void SV_Spectate (player_t &player)
 		player.mo->x = MSG_ReadLong();
 		player.mo->y = MSG_ReadLong();
 		player.mo->z = MSG_ReadLong();
+	} else {
+		SV_SetPlayerSpec(player, Code);
 	}
-	else if (!(BOOL)Code) {
-		if (gamestate == GS_INTERMISSION)
-			return;
+}
 
-		if (player.spectator){
+// Change a player into a spectator or vice-versa.  Pass 'true' for silent
+// param to spec or unspec the player without a broadcasted message.
+void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
+	// We don't care about spectators during intermission
+	if (gamestate == GS_INTERMISSION) {
+		return;
+	}
+
+	if (!setting && player.spectator) {
+		// We want to unspectate the player.
+		if ((level.time > player.joinafterspectatortime + TICRATE * 3) ||
+			level.time > player.joinafterspectatortime + TICRATE * 5) {
+
+			// Check to see if there is an empty spot on the server
 			int NumPlayers = 0;
-			// Check to see if there are enough "activeplayers"
-			for (size_t i = 0; i < players.size(); i++)
-			{
-				if (!players[i].spectator && players[i].playerstate != PST_CONTACT && players[i].playerstate != PST_DOWNLOAD)
-					NumPlayers++;
-			}
-
-			if (NumPlayers < sv_maxplayers)
-			{
-				if ((level.time > player.joinafterspectatortime + TICRATE*3) ||
-					level.time > player.joinafterspectatortime + TICRATE*5) {
-					player.spectator = false;
-
-					// [SL] 2011-09-01 - Clear any previous SV_MidPrint (sv_motd for example)
-					SV_MidPrint("", &player, 0);
-
-					for (size_t j = 0; j < players.size(); j++) {
-						MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
-						MSG_WriteByte (&(players[j].client.reliablebuf), player.id);
-						MSG_WriteByte (&(players[j].client.reliablebuf), false);
-					}
-
-					if (player.mo)
-						P_KillMobj(NULL, player.mo, NULL, true);
-					player.playerstate = PST_REBORN;
-					if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname);
-					else
-						SV_BroadcastPrintf (PRINT_HIGH, "%s joined the game on the %s team.\n",
-							player.userinfo.netname, team_names[player.userinfo.team]);
-					// GhostlyDeath -- Reset Frags, Deaths and Kills
-					player.fragcount = 0;
-					player.deathcount = 0;
-					player.killcount = 0;
-					SV_UpdateFrags(player);
+			for (size_t i = 0;i < players.size();i++) {
+				if (!players[i].spectator &&
+					players[i].playerstate != PST_CONTACT &&
+					players[i].playerstate != PST_DOWNLOAD) {
+					NumPlayers += 1;
 				}
 			}
-		}
-	} else if (gamestate != GS_INTERMISSION) {
-		if (!player.spectator) {
-			for (size_t j = 0; j < players.size(); j++) {
-				MSG_WriteMarker (&(players[j].client.reliablebuf), svc_spectate);
-				MSG_WriteByte (&(players[j].client.reliablebuf), player.id);
-				MSG_WriteByte (&(players[j].client.reliablebuf), true);
+
+			// Too many players.
+			if (!(NumPlayers < sv_maxplayers)) {
+				return;
 			}
-			player.spectator = true;
-			player.playerstate = PST_LIVE;
-			player.joinafterspectatortime = level.time;
 
-			if (sv_gametype == GM_CTF)
-				CTF_CheckFlags (player);
+			// [SL] 2011-09-01 - Clear any previous SV_MidPrint (sv_motd for example)
+			SV_MidPrint("", &player, 0);
 
+			player.spectator = false;
+			for (size_t j = 0;j < players.size();j++) {
+				MSG_WriteMarker(&(players[j].client.reliablebuf), svc_spectate);
+				MSG_WriteByte(&(players[j].client.reliablebuf), player.id);
+				MSG_WriteByte(&(players[j].client.reliablebuf), false);
+			}
+
+			if (player.mo) {
+				P_KillMobj(NULL, player.mo, NULL, true);
+			}
+			player.playerstate = PST_REBORN;
+
+			if (!silent) {
+				if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF) {
+					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game.\n", player.userinfo.netname);
+				} else {
+					SV_BroadcastPrintf(PRINT_HIGH, "%s joined the game on the %s team.\n",
+									   player.userinfo.netname, team_names[player.userinfo.team]);
+				}
+			}
+
+			// GhostlyDeath -- Reset Frags, Deaths and Kills
+			player.fragcount = 0;
+			player.deathcount = 0;
+			player.killcount = 0;
+			SV_UpdateFrags(player);
+		}
+	} else if (setting && !player.spectator) {
+		// We want to spectate the player
+		for (size_t j = 0;j < players.size();j++) {
+			MSG_WriteMarker(&(players[j].client.reliablebuf), svc_spectate);
+			MSG_WriteByte(&(players[j].client.reliablebuf), player.id);
+			MSG_WriteByte(&(players[j].client.reliablebuf), true);
+		}
+
+		player.spectator = true;
+		player.playerstate = PST_LIVE;
+		player.joinafterspectatortime = level.time;
+
+		if (sv_gametype == GM_CTF) {
+			CTF_CheckFlags(player);
+		}
+
+		if (!silent) {
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
 		}
 	}
 }
+
+bool CMD_ForcespecCheck(const std::vector<std::string> arguments,
+						std::string &error, size_t &pid) {
+	if (arguments.empty()) {
+		error = "need a player id (try 'players').";
+		return false;
+	}
+
+	std::istringstream buffer(arguments[0]);
+	buffer >> pid;
+
+	if (!buffer) {
+		error = "player id needs to be a numeric value.";
+		return false;
+	}
+
+	// Verify the player actually exists.
+	player_t &player = idplayer(pid);
+	if (!validplayer(player)) {
+		std::ostringstream error_ss;
+		error_ss << "could not find client " << pid << ".";
+		error = error_ss.str();
+		return false;
+	}
+
+	// Verify that the player is actually in a spectatable state.
+	if (!player.ingame()) {
+		std::ostringstream error_ss;
+		error_ss << "cannot spectate client " << pid << ".";
+		error = error_ss.str();
+		return false;
+	}
+
+	// Verify that the player isn't already spectating.
+	if (player.spectator) {
+		std::ostringstream error_ss;
+		error_ss << "client " << pid << " is already a spectator.";
+		error = error_ss.str();
+		return false;
+	}
+
+	return true;
+}
+
+BEGIN_COMMAND (forcespec) {
+	std::vector<std::string> arguments = VectorArgs(argc, argv);
+	std::string error;
+
+	size_t pid;
+
+	if (!CMD_ForcespecCheck(arguments, error, pid)) {
+		Printf(PRINT_HIGH, "forcespec: %s\n", error.c_str());
+		return;
+	}
+
+	// Actually spec the given player
+	player_t &player = idplayer(pid);
+	SV_SetPlayerSpec(player, true);
+} END_COMMAND (forcespec)
 
 //
 // SV_RConLogout
@@ -4185,18 +4248,20 @@ void SV_ParseCommands(player_t &player)
 			SV_DropClient(player);
 			return;
 
-		// [AM] Vote cases
+		// [AM] Vote
 		case clc_callvote:
-			sv::Voting::instance().callvote(player);
+			SV_Callvote(player);
 			break;
-
 		case clc_vote:
-			sv::Voting::instance().vote(player);
+			SV_Vote(player);
 			break;
 
-		// [AM] Maplist case
+		// [AM] Maplist
 		case clc_maplist:
 			SV_Maplist(player);
+			break;
+		case clc_maplist_update:
+			SV_MaplistUpdate(player);
 			break;
 
 		default:
@@ -4214,24 +4279,6 @@ void SV_ParseCommands(player_t &player)
 			return;
 		}
 	 }
-}
-
-// Client-wants a list of maps.
-void SV_Maplist(player_t &player) {
-	byte argc = (byte)MSG_ReadByte();
-
-	std::vector<std::string> arguments(argc);
-	for (int i = 0;i < argc;i++) {
-		arguments[i] = std::string(MSG_ReadString());
-	}
-
-	std::vector<std::string> response;
-	sv::Maplist::instance().print_maplist(arguments, response);
-
-	// Called by the client, so print the response back to the player.
-	for (std::vector<std::string>::size_type i = 0;i < response.size();i++) {
-		SV_PlayerPrintf(PRINT_HIGH, player.id, (response[i] + "\n").c_str());
-	}
 }
 
 //
@@ -4431,7 +4478,7 @@ void SV_GameTics (void)
 			SV_RemoveCorpses();
 			SV_WinCheck();
 			SV_TimelimitCheck();
-			sv::Voting::instance().event_runtic();
+			Vote_Runtic();
 		break;
 		case GS_INTERMISSION:
 			SV_IntermissionTimeCheck();

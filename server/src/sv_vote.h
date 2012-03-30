@@ -26,51 +26,64 @@
 #include "c_vote.h"
 #include "d_player.h"
 
-namespace sv {
-
-typedef enum {
-	VOTE_UNDEC,
-	VOTE_NO,
-	VOTE_YES
-} vote_result_t;
-
-class Voting {
+class Vote {
+protected:
+	byte caller_id;
+	unsigned int countdown;
+	std::string error;
+	vote_result_t result;
+	std::map<int, vote_result_t> tally;
+	std::string votestring;
 public:
-	static Voting& instance(void);
-	void callvote(player_t &player);
-	void vote(player_t &player);
-	void event_initlevel(void);
-	void event_clearmaplist(void);
-	void event_disconnect(player_t &player);
-	void event_runtic(void);
-private:
-	// State of votes
-	vote_type_t vote_type; // Type of vote
-	std::string vote_argstring; // Vote string
-	byte vote_pid; // Player id who is casting the vote
-	unsigned int vote_countdown; // Amount of time left in the vote
-	std::map<int, vote_result_t> vote_tally; // Who voted and what they voted
-	std::map<int, int> vote_timeout; // The last time someone started a vote
-	int vote_argument_int; // Integer vote argument
-	size_t vote_argument_size_t; // size_t vote argument
-	float vote_argument_float; // float vote argument
-
-	void voting_init(void);
-	int voting_yes(void);
-	int voting_no(void);
-	vote_result_t voting_check(void);
-	void voting_parse(vote_result_t vote_result);
-	bool vcmd_votemap_check(std::vector<std::string> &arguments,
-							std::string &argstring, std::string &error,
-							size_t &index);
-	bool cv_fraglimit_check(std::vector<std::string> &arguments,
-							std::string &error, int &fraglimit);
-	bool cv_scorelimit_check(std::vector<std::string> &arguments,
-							 std::string &error, int &scorelimit);
-	bool cv_timelimit_check(std::vector<std::string> &arguments,
-							std::string &error, float &timelimit);
+	Vote() : countdown(0), error(""), result(VOTE_UNDEC), votestring("") { };
+	unsigned int get_countdown(void) {
+		return this->countdown;
+	};
+	std::string get_error(void) {
+		return this->error;
+	};
+	vote_result_t get_result(void) {
+		return this->result;
+	}
+	std::string get_votestring(void) {
+		return this->votestring;
+	};
+	vote_result_t check(void);
+	size_t count_yes(void);
+	size_t count_no(void);
+	size_t count_abs(void);
+	size_t calc_yes(void);
+	size_t calc_no(void);
+	void ev_disconnect(player_t &player);
+	bool ev_tic(void);
+	bool init(const std::vector<std::string> &args, const player_t &player);
+	void parse(vote_result_t vote_result);
+	bool vote(const player_t &player, bool ballot);
+	// Subclass this method with checks that should run before a vote is
+	// started.  If the vote can start, you should store enough state to
+	// successfully execute the vote once the vote is over, set the
+	// votestring, and return true.  Otherwise, set an error and return false.
+	virtual bool setup(const std::vector<std::string> &args, const player_t &player) {
+		return true;
+	};
+	// Subclass this method with checks that should run every tic.  If the
+	// vote should be aborted, set an error and return false.  Otherwise,
+	// return true.
+	virtual bool tic(void) {
+		return true;
+	}
+	// Subclass this method with the actual commands that should be executed
+	// if the vote passes.
+	virtual bool exec(void) {
+		return true;
+	};
 };
 
-}
+void SV_Callvote(player_t &player);
+void SV_Vote(player_t &player);
+
+void Vote_InitLevel(void);
+void Vote_Disconnect(player_t &player);
+void Vote_Runtic(void);
 
 #endif

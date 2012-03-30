@@ -183,6 +183,8 @@ extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
 void G_InitNew (const char *mapname);
 void G_ChangeMap (void);
+void G_ChangeMap (size_t index);
+void G_RestartMap (void);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,

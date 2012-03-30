@@ -126,6 +126,7 @@ BOOL DrawNewSpecHUD;	// [Nes] Draw the new spectator HUD?
 // functions in st_new.c
 void ST_initNew (void);
 void ST_unloadNew (void);
+void ST_voteDraw (int y);
 void ST_newDraw (void);
 void ST_newDrawCTF (void);
 
@@ -1549,6 +1550,9 @@ void ST_Drawer (void)
 		ST_nameDraw (ST_Y - 11 * CleanYfac);
 	else
 		ST_nameDraw (screen->height - 11 * CleanYfac);
+
+	// [AM] Voting HUD!
+	ST_voteDraw(11 * CleanYfac);
 
 	// Do red-/gold-shifts from damage/items
 	ST_doPaletteStuff();

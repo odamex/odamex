@@ -67,6 +67,9 @@
 #include "z_zone.h"
 
 
+// FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
+#include "cmdlib.h"
+
 #define lioffset(x)		myoffsetof(level_pwad_info_t,x)
 #define cioffset(x)		myoffsetof(cluster_info_t,x)
 
@@ -243,56 +246,56 @@ static int		startpos;	// [RH] Support for multiple starts per level
 
 EXTERN_CVAR(sv_shufflemaplist)
 
-void G_ChangeMap (void) {
+// Returns the next map, assuming there is no maplist.
+std::string G_NextMap(void) {
+	std::string next = level.nextmap;
+
+	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || !strlen(next.c_str())) {
+		// if not coop, stay on same level
+		// [ML] 1/25/10: OR if next is empty
+		next = level.mapname;
+	} else if (secretexit && W_CheckNumForName(level.secretmap) != -1) {
+		// if we hit a secret exit switch, go there instead.
+		next = level.secretmap;
+	}
+
+	// NES - exiting a Doom 1 episode moves to the next episode,
+	// rather than always going back to E1M1
+	if (!strncmp(next.c_str(), "EndGame", 7) ||
+		(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
+		if (gameinfo.flags & GI_MAPxx || gamemode == shareware ||
+			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) || (gamemode == retail && level.cluster == 4)))) {
+			next = CalcMapName(1, 1);
+		} else if (sv_loopepisode) {
+			next = CalcMapName(level.cluster, 1);
+		} else {
+			next = CalcMapName(level.cluster + 1, 1);
+		}
+	}
+	return next;
+}
+
+// Determine the "next map" and change to it.
+void G_ChangeMap() {
 	unnatural_level_progression = false;
 
-	if (sv::Maplist::instance().maplist.empty()) {
-		char *next = level.nextmap;
-
-		// if deathmatch, stay on same level
-		// [ML] 1/25/10: OR if next is empty
-		if(gamestate == GS_STARTUP ||
-			sv_gametype != GM_COOP || !strlen(next))
-			next = level.mapname;
-		else
-			if(secretexit && W_CheckNumForName (level.secretmap) != -1)
-				next = level.secretmap;
-
-		if (!strncmp (next, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))
-		{
-			// NES - exiting a Doom 1 episode moves to the next episode, rather than always going back to E1M1
-			if (gameinfo.flags & GI_MAPxx || gamemode == shareware || (!sv_loopepisode &&
-				((gamemode == registered && level.cluster == 3) || (gamemode == retail && level.cluster == 4))))
-					next = CalcMapName(1, 1);
-				else if (sv_loopepisode)
-					next = CalcMapName(level.cluster, 1);
-				else
-					next = CalcMapName(level.cluster+1, 1);
-		}
-
-		G_DeferedInitNew(next);
+	size_t next_index;
+	if (!Maplist::instance().get_next_index(next_index)) {
+		// We don't have a maplist, so grab the next 'natural' map lump.
+		std::string next = G_NextMap();
+		G_DeferedInitNew((char *)next.c_str());
 	} else {
-		sv::maplist_entry_t &maplist_entry = sv::Maplist::instance().maplist[sv::Maplist::instance().nextmap_index];
+		maplist_entry_t maplist_entry;
+		Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-		// Load any wads given
-		if (maplist_entry.wads.empty() == false)
-			AddCommandString("wad " + maplist_entry.wads);
-
-		// Change the map and bump the position of the next maplist entry
+		// Change the map and bump the position of the next maplist entry.
+		// FIXME: AddCommandString is evil, kill it and call a Wad-changing
+		//        function directly.
+		AddCommandString("wad " + JoinStrings(maplist_entry.wads, " "));
 		G_DeferedInitNew((char *)maplist_entry.map.c_str());
 
-		// The "Next Map" is now the "Current Map"
-		sv::Maplist::instance().maplist_index = sv::Maplist::instance().nextmap_index;
-
-		// Reset position in maplist if we go off the end
-		if (sv::Maplist::instance().nextmap_index + 1 < sv::Maplist::instance().maplist.size())
-			++sv::Maplist::instance().nextmap_index;
-		else {
-			sv::Maplist::instance().nextmap_index = 0;
-
-			if (sv_shufflemaplist)
-				sv::Maplist::instance().random_shuffle();
-		}
+		// Set the new map as the current map
+		Maplist::instance().set_index(next_index);
 	}
 
 	// run script at the end of each map
@@ -302,6 +305,57 @@ void G_ChangeMap (void) {
 	if(strlen(sv_endmapscript.cstring()))
 		AddCommandString(sv_endmapscript.cstring()/*, true*/);
 }
+
+// Change to a map based on a maplist index.
+void G_ChangeMap(size_t index) {
+	maplist_entry_t maplist_entry;
+	if (!Maplist::instance().get_map_by_index(index, maplist_entry)) {
+		// That maplist index doesn't actually exist
+		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		return;
+	}
+
+	// Change the map and bump the position of the next maplist entry.
+	// FIXME: AddCommandString is evil, kill it and call a Wad-changing
+	//        function directly.
+	AddCommandString("wad " + JoinStrings(maplist_entry.wads, " "));
+	G_DeferedInitNew((char *)maplist_entry.map.c_str());
+
+	// Set the new map as the current map
+	Maplist::instance().set_index(index);
+
+	// run script at the end of each map
+	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
+	// when onlcvars (addcommandstring's second param) is true.  Is there a
+	// reason why the mapscripts ahve to be safe mode?
+	if(strlen(sv_endmapscript.cstring()))
+		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+}
+
+// Restart the current map.
+void G_RestartMap() {
+	// Restart the current map.
+	G_DeferedInitNew(level.mapname);
+
+	// run script at the end of each map
+	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
+	// when onlcvars (addcommandstring's second param) is true.  Is there a
+	// reason why the mapscripts ahve to be safe mode?
+	if(strlen(sv_endmapscript.cstring()))
+		AddCommandString(sv_endmapscript.cstring()/*, true*/);
+}
+
+BEGIN_COMMAND (nextmap) {
+	G_ExitLevel(0, 1);
+} END_COMMAND (nextmap)
+
+BEGIN_COMMAND (forcenextmap) {
+	G_ChangeMap();
+} END_COMMAND (forcenextmap)
+
+BEGIN_COMMAND (restart) {
+	G_RestartMap();
+} END_COMMAND (restart)
 
 void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
@@ -479,7 +533,7 @@ void G_InitNew (const char *mapname)
 			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
 
-		sv::Voting::instance().event_initlevel();
+		Vote_InitLevel();
 	}
 
 	// [SL] 2012-12-08 - Multiplayer is always true for servers

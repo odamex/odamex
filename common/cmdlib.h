@@ -85,6 +85,7 @@ void	CRC_ProcessByte(unsigned short *crcvalue, byte data);
 unsigned short CRC_Value(unsigned short crcvalue);
 
 std::vector<std::string> VectorArgs(size_t argc, char **argv);
+std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue = "");
 bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (const char **ptr, const char *str);
 

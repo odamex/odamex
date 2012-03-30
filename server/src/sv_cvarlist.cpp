@@ -179,15 +179,29 @@ CVAR (sv_vote_timeout, "60", "Timeout between votes in seconds.",
 	  CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Enable or disable specific votes.
-CVAR (sv_callvote_kick, "1", "Clients can votekick other players.",
-     CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR (sv_callvote_map, "1", "Clients can vote on a new map.",
+CVAR (sv_callvote_coinflip, "0", "Clients can flip a coin.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR (sv_callvote_fraglimit, "1", "Clients can vote a new fraglimit.",
+CVAR (sv_callvote_kick, "0", "Clients can votekick other players.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR (sv_callvote_scorelimit, "1", "Clients can vote a new scorelimit.",
+CVAR (sv_callvote_forcespec, "0", "Clients can vote to force a player to spectate.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-CVAR (sv_callvote_timelimit, "1", "Clients can vote a new timelimit.",
+CVAR (sv_callvote_map, "0", "Clients can vote to switch to a specific map from the server's maplist.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_nextmap, "0", "Clients can vote on progressing to the next map.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_randmap, "0", "Clients can vote to switch to a random map from the server's maplist.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_randcaps, "0", "Clients can vote to force the server to pick two players from the pool of ingame players and force-spectate everyone else.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_randpickup, "0", "Clients can vote to force the server to pick a certian number of players from the pool of ingame players and force-spectate everyone else.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_restart, "0", "Clients can vote to reload the current map.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_fraglimit, "0", "Clients can vote a new fraglimit.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
+	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+CVAR (sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 	  CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 // Experimental settings (all categories)

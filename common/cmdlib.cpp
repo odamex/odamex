@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sstream>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -298,6 +299,19 @@ std::vector<std::string> VectorArgs(size_t argc, char **argv) {
 		arguments[i - 1] = argv[i];
 	}
 	return arguments;
+}
+
+// [AM] Return a joined string based on a vector of strings
+std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue) {
+	std::ostringstream result;
+	for (std::vector<std::string>::const_iterator it = pieces.begin();
+		 it != pieces.end();++it) {
+		result << *it;
+		if (it != (pieces.end() - 1)) {
+			result << glue;
+		}
+	}
+	return result.str();
 }
 
 //==========================================================================

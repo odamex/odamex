@@ -27,6 +27,9 @@
 #include <stdlib.h>
 
 #include <algorithm>
+#include <cmath>
+#include <sstream>
+#include <string>
 
 #include "doomtype.h"
 #include "doomdef.h"
@@ -42,6 +45,7 @@
 #include "hu_stuff.h"
 #include "c_cvars.h"
 #include "p_ctf.h"
+#include "cl_vote.h"
 
 static int		widestnum, numheight;
 static const patch_t	*medi;
@@ -59,6 +63,14 @@ static const patch_t	*flagicongtakenbyb;
 static const patch_t	*flagicongtakenbyr;
 static const patch_t	*flagiconbdropped;
 static const patch_t	*flagiconrdropped;
+static const patch_t *line_leftempty;
+static const patch_t *line_leftfull;
+static const patch_t *line_centerempty;
+static const patch_t *line_centerleft;
+static const patch_t *line_centerright;
+static const patch_t *line_centerfull;
+static const patch_t *line_rightempty;
+static const patch_t *line_rightfull;
 static const char		ammopatches[4][8] = { "CLIPA0", "SHELA0", "CELLA0", "ROCKA0" };
 static int		NameUp = -1;
 
@@ -94,6 +106,14 @@ void ST_unloadNew (void)
 	Z_ChangeTag (flagicongtakenbyr, PU_CACHE);
 	Z_ChangeTag (flagiconbdropped, PU_CACHE);
 	Z_ChangeTag (flagiconrdropped, PU_CACHE);
+	Z_ChangeTag (line_leftempty, PU_CACHE);
+	Z_ChangeTag (line_leftfull, PU_CACHE);
+	Z_ChangeTag (line_centerempty, PU_CACHE);
+	Z_ChangeTag (line_centerleft, PU_CACHE);
+	Z_ChangeTag (line_centerright, PU_CACHE);
+	Z_ChangeTag (line_centerfull, PU_CACHE);
+	Z_ChangeTag (line_rightempty, PU_CACHE);
+	Z_ChangeTag (line_rightfull, PU_CACHE);
 
 	for (i = 0; i < 2; i++)
 		Z_ChangeTag (armors[i], PU_CACHE);
@@ -149,6 +169,15 @@ void ST_initNew (void)
 
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback || !netgame) && level.time)
 		NameUp = level.time + 2*TICRATE;
+
+	line_leftempty = W_CachePatch ("ODABARLE", PU_STATIC);
+	line_leftfull = W_CachePatch ("ODABARLF", PU_STATIC);
+	line_centerempty = W_CachePatch ("ODABARCE", PU_STATIC);
+	line_centerleft = W_CachePatch ("ODABARCL", PU_STATIC);
+	line_centerright = W_CachePatch ("ODABARCR", PU_STATIC);
+	line_centerfull = W_CachePatch ("ODABARCF", PU_STATIC);
+	line_rightempty = W_CachePatch ("ODABARRE", PU_STATIC);
+	line_rightfull = W_CachePatch ("ODABARRF", PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -215,11 +244,192 @@ void ST_nameDraw (int y)
 		return;
 
 	int scaledxfac = V_TextScaleXAmount(), scaledyfac = V_TextScaleYAmount();
-	
+
 	char *string = plyr->userinfo.netname;
 	size_t x = (screen->width - V_StringWidth (string)*scaledxfac) >> 1;
 
 	screen->DrawTextStretched(CR_GREEN, x, y, string, scaledxfac, scaledyfac);
+}
+
+/**
+ * Draw a bar on the screen.
+ *
+ * @param normalcolor Bar color.  Uses text colors (i.e. CR_RED).
+ * @param value Value of the bar.
+ * @param total Maximum value of the bar.
+ * @param x Unscaled leftmost X position to draw from.
+ * @param y Unscaled topmost Y position to draw from.
+ * @param width Width of the bar in unscaled pixels.
+ * @param reverse If true, the bar is drawn with the 'baseline' on the right.
+ * @param cutleft True if you want the left end of the bar to not have a cap.
+ * @param cutright True if you want the right end of the bar to not have a cap.
+ */
+void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
+				 int x, int y, int width, bool reverse = false,
+				 bool cutleft = false, bool cutright = false) {
+	int xscale = hud_scale ? CleanXfac : 1;
+
+	if (normalcolor > NUM_TEXT_COLORS || normalcolor == CR_GREY) {
+		normalcolor = CR_RED;
+	}
+
+	if (width < (4 * xscale)) {
+		width = 4 * xscale;
+	}
+	width -= (width % (2 * xscale));
+
+	int bar_width = width / (2 * xscale);
+
+	int bar_filled;
+	if (value == 0) {
+		// Bar is forced empty.
+		bar_filled = 0;
+	} else if (value >= total) {
+		// Bar is forced full.
+		bar_filled = bar_width;
+	} else {
+		bar_filled = (value * bar_width) / total;
+		if (bar_filled == 0) {
+			// Bar is prevented from being empty.
+			bar_filled = 1;
+		} else if (bar_filled >= bar_width) {
+			// Bar is prevented from being full.
+			bar_filled = bar_width - 1;
+		}
+	}
+
+	V_ColorMap = Ranges + normalcolor * 256;
+	for (int i = 0;i < bar_width;i++) {
+		const patch_t* linepatch;
+		if (!reverse) {
+			if (i == 0 && !cutleft) {
+				if (bar_filled == 0) {
+					linepatch = line_leftempty;
+				} else {
+					linepatch = line_leftfull;
+				}
+			} else if (i == bar_width - 1 && !cutright) {
+				if (bar_filled == bar_width) {
+					linepatch = line_rightfull;
+				} else {
+					linepatch = line_rightempty;
+				}
+			} else {
+				if (i == bar_filled - 1) {
+					linepatch = line_centerleft;
+				} else if (i < bar_filled) {
+					linepatch = line_centerfull;
+				} else {
+					linepatch = line_centerempty;
+				}
+			}
+		} else {
+			if (i == 0 && !cutleft) {
+				if (bar_filled == bar_width) {
+					linepatch = line_leftfull;
+				} else {
+					linepatch = line_leftempty;
+				}
+			} else if (i == bar_width - 1 && !cutright) {
+				if (bar_filled == 0) {
+					linepatch = line_rightempty;
+				} else {
+					linepatch = line_rightfull;
+				}
+			} else {
+				if (i == (bar_width - bar_filled)) {
+					linepatch = line_centerright;
+				} else if (i >= (bar_width - bar_filled)) {
+					linepatch = line_centerfull;
+				} else {
+					linepatch = line_centerempty;
+				}
+			}
+		}
+
+		int xi = x + (i * xscale * 2);
+		if (hud_scale) {
+			screen->DrawTranslatedPatchCleanNoMove(linepatch, xi, y);
+		} else {
+			screen->DrawTranslatedPatch(linepatch, xi, y);
+		}
+	}
+}
+
+// [AM] Draw the state of voting
+void ST_voteDraw (int y) {
+	vote_state_t vote_state;
+	if (!VoteState::instance().get(vote_state)) {
+		return;
+	}
+
+	int xscale = hud_scale ? CleanXfac : 1;
+	int yscale = hud_scale ? CleanYfac : 1;
+
+	// Vote Result/Countdown
+	std::ostringstream buffer;
+	std::string result_string;
+	EColorRange result_color;
+
+	switch (vote_state.result) {
+	case VOTE_YES:
+		result_string = "VOTE PASSED";
+		result_color = CR_GREEN;
+		break;
+	case VOTE_NO:
+		result_string = "VOTE FAILED";
+		result_color = CR_RED;
+		break;
+	case VOTE_INTERRUPT:
+		result_string = "VOTE INTERRUPTED";
+		result_color = CR_TAN;
+		break;
+	case VOTE_ABANDON:
+		result_string = "VOTE ABANDONED";
+		result_color = CR_TAN;
+		break;
+	case VOTE_UNDEC:
+		buffer << "VOTE NOW: " << vote_state.countdown;
+		result_string = buffer.str();
+		if (vote_state.countdown <= 5 && (I_MSTime() % 1000) < 500) {
+			result_color = CR_BRICK;
+		} else {
+			result_color = CR_GOLD;
+		}
+		break;
+	default:
+		return;
+	}
+
+	size_t x1, x2;
+	x1 = (screen->width - V_StringWidth(result_string.c_str()) * xscale) >> 1;
+	if (hud_scale) {
+		screen->DrawTextClean(result_color, x1, y, result_string.c_str());
+	} else {
+		screen->DrawText(result_color, x1, y, result_string.c_str());
+	}
+
+	// Votestring
+	x2 = (screen->width - V_StringWidth(vote_state.votestring.c_str()) * xscale) >> 1;
+	y += yscale * 8;
+	if (hud_scale) {
+		screen->DrawTextClean(CR_GREY, x2, y, vote_state.votestring.c_str());
+	} else {
+		screen->DrawText(CR_GREY, x2, y, vote_state.votestring.c_str());
+	}
+
+	if (vote_state.result == VOTE_ABANDON) {
+		return;
+	}
+
+	// Voting Bar
+	y += yscale * 8;
+
+	ST_DrawBar(CR_RED, vote_state.no, vote_state.no_needed,
+			   (screen->width >> 1) - xscale * 40, y, xscale * 40,
+			   true, false, true);
+	ST_DrawBar(CR_GREEN, vote_state.yes, vote_state.yes_needed,
+			   (screen->width >> 1), y, xscale * 40, false, true);
 }
 
 void ST_newDraw (void)
@@ -246,7 +456,7 @@ void ST_newDraw (void)
 		const patch_t *current_armor = armors[1];
 		if(plyr->armortype == 1)
 			current_armor = armors[0];
-		
+
 		if (current_armor)
 		{
 			if (hud_scale)
@@ -420,7 +630,7 @@ void ST_odamexHudDraw (void)
 		const patch_t *current_armor = armors[1];
 		if(plyr->armortype == 1)
 			current_armor = armors[0];
-		
+
 		if (current_armor)
 		{
 			//if (hud_scale)
@@ -428,7 +638,7 @@ void ST_odamexHudDraw (void)
 			//else
 			//	screen->DrawLucentPatch (current_armor, 20, y - 4);
 		}
-		
+
 		ST_DrawNumRight (48*xscale, y-20*yscale, screen, plyr->armorpoints);
 	}
 
@@ -464,13 +674,13 @@ void ST_odamexHudDraw (void)
 
 		// Player list sorting
 		for (j = 0; j < sortedplayers.size(); j++)
-			sortedplayers[j] = &players[j];	
+			sortedplayers[j] = &players[j];
 
 		if(sv_gametype != GM_COOP)
 			std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_frags);
 		else
 			std::sort(sortedplayers.begin(), sortedplayers.end(), compare_player_kills);
-		
+
 		f = plyr->fragcount - sortedplayers[0]->fragcount;
 
 		char statline1[16+10];
