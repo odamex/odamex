@@ -34,6 +34,9 @@
 #include "g_level.h"
 #include "gstrings.h"
 #include "hu_stuff.h"
+#include "cl_demo.h"
+
+extern NetDemo netdemo;
 
 /* Most of these bindings are equivalent
  * to the original DOOM's keymappings.
@@ -187,6 +190,7 @@ const char *KeyNames[NUM_KEYS] = {
 
 static std::string Bindings[NUM_KEYS];
 static std::string DoubleBindings[NUM_KEYS];
+static std::string NetDemoBindings[NUM_KEYS];
 static int DClickTime[NUM_KEYS];
 static byte DClicked[(NUM_KEYS+7)/8];
 
@@ -324,6 +328,47 @@ BEGIN_COMMAND (binddefaults)
 }
 END_COMMAND (binddefaults)
 
+//
+// C_DoNetDemoKey
+//
+// [SL] 2012-03-29 - Handles the hard-coded key bindings used during
+// NetDemo playback.  Returns false if the key pressed is not
+// bound to any netdemo command.
+//
+bool C_DoNetDemoKey (event_t *ev)
+{
+	if (!netdemo.isPlaying() && !netdemo.isPaused())
+		return false;
+
+	static bool initialized = false;
+	std::string *binding;
+
+	if (!initialized)
+	{
+		NetDemoBindings[GetKeyFromName("leftarrow")]	= "netrew";
+		NetDemoBindings[GetKeyFromName("rightarrow")]	= "netff";
+		NetDemoBindings[GetKeyFromName("uparrow")]		= "netprevmap";
+		NetDemoBindings[GetKeyFromName("downarrow")]	= "netnextmap";
+		NetDemoBindings[GetKeyFromName("space")]		= "netpause";
+
+		initialized = true;
+	}
+
+	if (ev->type != ev_keydown && ev->type != ev_keyup)
+		return false;
+
+	binding = &NetDemoBindings[ev->data1];
+	
+	// nothing bound to this key specific to netdemos?
+	if (!binding->length())
+		return false;
+
+	if (ev->type == ev_keydown)
+		AddCommandString(binding->c_str());
+	
+	return true;
+}
+
 BOOL C_DoKey (event_t *ev)
 {
 	std::string *binding;
@@ -332,6 +377,10 @@ BOOL C_DoKey (event_t *ev)
 
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
+
+	// Override bindings with netdemo playback bindings
+	if ((netdemo.isPlaying() || netdemo.isPaused()) && C_DoNetDemoKey(ev))
+		return true;
 
 	dclickspot = ev->data1 >> 3;
 	dclickmask = 1 << (ev->data1 & 7);
