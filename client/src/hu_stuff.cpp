@@ -1645,30 +1645,10 @@ void HU_TeamScores2 (player_t *player)
 //
 void OdamexEffect (int xa, int ya, int xb, int yb)
 {
-	static int odawidth, odaheight;
-	static DCanvas *odacanvas = NULL;
-
-	if (odawidth != xb - xa || odaheight != yb - ya)
-	{
-		if (odacanvas)
-		{
-			I_FreeScreen(odacanvas);
-			odacanvas = NULL;
-		}
-	}
-
-	odawidth  = xb - xa;
-	odaheight = yb - ya;
-
 	if (xa < 0 || ya < 0 || xb > screen->width || yb > screen->height)
 		return;
 
-	if (!odacanvas)
-		odacanvas = I_AllocateScreen((xb - xa), (yb - ya), 8);
-
-	screen->CopyRect(xa, ya, (xb - xa), (yb - ya), 0, 0, odacanvas);
-	odacanvas->Dim ();
-	odacanvas->Blit(0, 0, (xb - xa), (yb - ya), screen, xa, ya, (xb - xa), (yb - ya));
+	screen->Dim(xa, ya, xb - xa, yb - ya);
 }
 
 //

@@ -240,7 +240,7 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 }
 
 
-void DCanvas::Dim () const
+void DCanvas::Dim(int x1, int y1, int w, int h) const
 {
 	if (ui_dimamount < 0)
 		ui_dimamount.Set (0.0f);
@@ -252,33 +252,40 @@ void DCanvas::Dim () const
 
 	if (is8bit())
 	{
-		unsigned int *bg2rgb;
-		unsigned int fg;
-		int gap;
-		byte *spot;
+		int bg;
 		int x, y;
 
-		{
-			unsigned int *fg2rgb;
-			fixed_t amount;
+		fixed_t amount = (fixed_t)(ui_dimamount * 64);
+		unsigned int *fg2rgb = Col2RGB8[amount];
+		unsigned int *bg2rgb = Col2RGB8[64-amount];
+		unsigned int fg = 
+				fg2rgb[V_GetColorFromString(DefaultPalette->basecolors, ui_dimcolor.cstring())];
+		
+		byte *dest = buffer + y1 * pitch + x1;
+		int gap = pitch - w;
 
-			amount = (fixed_t)(ui_dimamount * 64);
-			fg2rgb = Col2RGB8[amount];
-			bg2rgb = Col2RGB8[64-amount];
-			fg = fg2rgb[V_GetColorFromString (DefaultPalette->basecolors, ui_dimcolor.cstring())];
-		}
-
-		spot = buffer;
-		gap = pitch - width;
-		for (y = 0; y < height; y++)
+		for (y = h; y > 0; y--)
 		{
-			for (x = 0; x < width; x++)
+			for (x = w / 4; x > 0; x--)
 			{
-				unsigned int bg = bg2rgb[*spot];
+				// Unroll the loop for a speed improvement
+				bg = bg2rgb[*dest];
 				bg = (fg+bg) | 0x1f07c1f;
-				*spot++ = RGB32k[0][0][bg&(bg>>15)];
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+
+				bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+
+				bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+
+				bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
 			}
-			spot += gap;
+			dest += gap;
 		}
 	}
 	else
@@ -292,9 +299,9 @@ void DCanvas::Dim () const
 		if (ui_dimamount == 1.0)
 		{
 			fill = (fill >> 2) & 0x3f3f3f;
-			for (y = 0; y < height; y++)
+			for (y = y1; y < y1 + h; y++)
 			{
-				for (x = 0; x < width; x++)
+				for (x = x1; x < x1 + w; x++)
 				{
 					line[x] = (line[x] - ((line[x] >> 2) & 0x3f3f3f)) + fill;
 				}
@@ -304,9 +311,9 @@ void DCanvas::Dim () const
 		else if (ui_dimamount == 2.0)
 		{
 			fill = (fill >> 1) & 0x7f7f7f;
-			for (y = 0; y < height; y++)
+			for (y = y1; y < y1 + h; y++)
 			{
-				for (x = 0; x < width; x++)
+				for (x = x1; x < x1 + w; x++)
 				{
 					line[x] = ((line[x] >> 1) & 0x7f7f7f) + fill;
 				}
@@ -316,9 +323,9 @@ void DCanvas::Dim () const
 		else if (ui_dimamount == 3.0)
 		{
 			fill = fill - ((fill >> 2) & 0x3f3f3f);
-			for (y = 0; y < height; y++)
+			for (y = y1; y < y1 + h; y++)
 			{
-				for (x = 0; x < width; x++)
+				for (x = x1; x < x1 + w; x++)
 				{
 					line[x] = ((line[x] >> 2) & 0x3f3f3f) + fill;
 				}

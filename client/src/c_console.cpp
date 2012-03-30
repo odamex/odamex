@@ -60,9 +60,6 @@ static BOOL TabbedLast;		// Last key pressed was tab
 
 static DCanvas *conback;
 
-static DCanvas *altconback = NULL;      // SoM: this will be used for dimming the console screen
-static BOOL    altinfullscreen = false; // SoM: set to true to use altconback instead of conback
-
 extern int KeyRepeatRate, KeyRepeatDelay;
 
 extern int		gametic;
@@ -192,11 +189,6 @@ EXTERN_CVAR (con_scrlock)
 //
 void STACK_ARGS C_Close()
 {
-	if(altconback)
-	{
-		I_FreeScreen(altconback);
-		altconback = NULL;
-	}
 	if(conback)
 	{
 		I_FreeScreen(conback);
@@ -220,12 +212,6 @@ void C_InitConsole (int width, int height, BOOL ingame)
 
 	if ( (vidactive = ingame) )
 	{
-      // SoM: Init the console's secondary buffer. This will be used to dim the screen in game
-      // and to store the disconnect screenshot
-      delete altconback;
-
-      altconback = I_AllocateScreen(width, height, 8);
-
 		if (!gotconback)
 		{
 			BOOL stylize = false;
@@ -824,26 +810,15 @@ void C_DrawConsole (void)
 
 		visheight = ConBottom;
 
-      if(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
-      {
-         altinfullscreen = false;
-         screen->CopyRect(0, 0, screen->width, visheight, 0, 0, altconback);
-         altconback->Dim();
-         altconback->CopyRect(0, 0, screen->width, visheight, 0, 0, screen);
-      }
-      else
-      {
-         if(altinfullscreen)
-         {
-            altconback->Blit (0, 0, altconback->width, altconback->height,
-                           screen, 0, 0, altconback->width, altconback->height);
-         }
-         else
-         {
-            conback->Blit (0, 0, conback->width, conback->height,
-                           screen, 0, 0, screen->width, screen->height);
-         }
-      }
+		if(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+		{
+			screen->Dim(0, 0, screen->width, visheight);
+		}
+		else
+		{
+			conback->Blit (0, 0, conback->width, conback->height,
+						screen, 0, 0, screen->width, screen->height);
+		}
 
 		if (ConBottom >= 12)
 		{
@@ -998,10 +973,7 @@ void C_HideConsole (void)
 // Setup the server disconnect effect.
 void C_ServerDisconnectEffect(void)
 {
-   screen->Blit(0, 0, screen->width, screen->height, altconback, 0, 0, altconback->width, altconback->height);
-
-   altconback->Dim();
-   altinfullscreen = true;
+   screen->Dim(0, 0, screen->width, screen->height);
 }
 
 

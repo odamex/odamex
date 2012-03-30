@@ -95,8 +95,8 @@ public:
 	// Reads a linear block of pixels into the view buffer.
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;
 
-	// Darken the entire canvas
-	void Dim () const;
+	// Darken a rectangle of th canvas
+	void Dim (int x, int y, int width, int height) const;
 
 	// Fill an area with a 64x64 flat texture
 	void FlatFill (int left, int top, int right, int bottom, const byte *src) const;
