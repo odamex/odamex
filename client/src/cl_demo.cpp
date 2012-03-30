@@ -921,7 +921,7 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	MSG_WriteShort(netbuffer, player->cmd.ucmd.forwardmove);
 	MSG_WriteShort(netbuffer, player->cmd.ucmd.sidemove);
 	MSG_WriteShort(netbuffer, player->cmd.ucmd.upmove);
-	MSG_WriteShort(netbuffer, player->cmd.ucmd.roll);
+	MSG_WriteShort(netbuffer, player->cmd.ucmd.pitch);
 
 	MSG_WriteByte(netbuffer, mo->waterlevel);
 	MSG_WriteLong(netbuffer, mo->x);
@@ -932,7 +932,6 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	MSG_WriteLong(netbuffer, mo->momz);
 	MSG_WriteLong(netbuffer, mo->angle);
 	MSG_WriteLong(netbuffer, mo->pitch);
-	MSG_WriteLong(netbuffer, mo->roll);
 	MSG_WriteLong(netbuffer, player->viewheight);
 	MSG_WriteLong(netbuffer, player->deltaviewheight);
 	MSG_WriteLong(netbuffer, player->jumpTics);
@@ -986,14 +985,14 @@ void NetDemo::writeMessages()
 		// Immediately after connecting, we don't have all the relevant data to
 		// do a full world update.  We delay writing a full update for a tic so
 		// that we have all the proper information from the server.
-		if (needfullupdate)
+/*		if (needfullupdate)
 		{
 			SZ_Clear(&netbuf_snapshot);
 			writeSnapshotData(&netbuf_snapshot);
 			writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_packet);
 
 			needfullupdate = false;
-		}
+		} */
 
 		// is it time to write a snapshot?
 		if ((gametic - header.starting_gametic) % header.snapshot_spacing == 0

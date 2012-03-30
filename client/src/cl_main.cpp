@@ -3142,18 +3142,19 @@ void CL_LocalDemoTic()
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
 	fixed_t momx, momy, momz;
-	fixed_t pitch, roll, viewheight, deltaviewheight;
+	fixed_t pitch, viewheight, deltaviewheight;
 	angle_t angle;
 	int jumpTics, reactiontime;
 	byte waterlevel;
-	
+
+	memset(&clientPlayer->cmd, 0, sizeof(ticcmd_t));	
 	clientPlayer->cmd.ucmd.buttons = MSG_ReadByte();
 	clientPlayer->cmd.ucmd.impulse = MSG_ReadByte();	
 	clientPlayer->cmd.ucmd.yaw = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.forwardmove = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.sidemove = MSG_ReadShort();
 	clientPlayer->cmd.ucmd.upmove = MSG_ReadShort();
-	clientPlayer->cmd.ucmd.roll = MSG_ReadShort();
+	clientPlayer->cmd.ucmd.pitch = MSG_ReadShort();
 
 	waterlevel = MSG_ReadByte();
 	x = MSG_ReadLong();
@@ -3164,7 +3165,6 @@ void CL_LocalDemoTic()
 	momz = MSG_ReadLong();
 	angle = MSG_ReadLong();
 	pitch = MSG_ReadLong();
-	roll = MSG_ReadLong();
 	viewheight = MSG_ReadLong();
 	deltaviewheight = MSG_ReadLong();
 	jumpTics = MSG_ReadLong();
@@ -3182,7 +3182,6 @@ void CL_LocalDemoTic()
 		clientPlayer->mo->momz = momz;
 		clientPlayer->mo->angle = angle;
 		clientPlayer->mo->pitch = pitch;
-		clientPlayer->mo->roll = roll;
 		clientPlayer->viewheight = viewheight;
 		clientPlayer->deltaviewheight = deltaviewheight;
 		clientPlayer->jumpTics = jumpTics;
