@@ -41,7 +41,7 @@ typedef enum {
 	// from the server but ran out of time.
 	MAPLIST_TIMEOUT,
 	// The maplist cache tried to update but was throttled by the server.
-	MAPLIST_THROTTLED,
+	MAPLIST_THROTTLED
 } maplist_status_t;
 
 // Map list entry structure

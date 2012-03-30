@@ -282,8 +282,6 @@
 		</Compiler>
 		<Unit filename="..\..\common\actor.h" />
 		<Unit filename="..\..\common\c_console.h" />
-		<Unit filename="..\..\common\c_maplist.cpp" />
-		<Unit filename="..\..\common\c_maplist.h" />
 		<Unit filename="..\..\common\c_cvarlist.cpp" />
 		<Unit filename="..\..\common\c_cvars.cpp" />
 		<Unit filename="..\..\common\c_cvars.h" />
@@ -293,6 +291,7 @@
 		<Unit filename="..\..\common\c_effect.h" />
 		<Unit filename="..\..\common\c_level.cpp" />
 		<Unit filename="..\..\common\c_level.h" />
+		<Unit filename="..\..\common\c_maplist.h" />
 		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\c_vote.cpp" />
 		<Unit filename="..\..\common\c_vote.h" />

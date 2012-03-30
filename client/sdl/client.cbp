@@ -332,7 +332,6 @@
 		<Unit filename="..\..\common\c_effect.h" />
 		<Unit filename="..\..\common\c_level.cpp" />
 		<Unit filename="..\..\common\c_level.h" />
-		<Unit filename="..\..\common\c_maplist.cpp" />
 		<Unit filename="..\..\common\c_maplist.h" />
 		<Unit filename="..\..\common\c_pch.h" />
 		<Unit filename="..\..\common\c_vote.cpp" />

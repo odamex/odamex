@@ -44,18 +44,18 @@ EXTERN_CVAR(sv_vote_majority)
 EXTERN_CVAR(sv_vote_timelimit)
 EXTERN_CVAR(sv_vote_timeout)
 
-EXTERN_CVAR(sv_callvote_coinflip);
-EXTERN_CVAR(sv_callvote_forcespec);
-EXTERN_CVAR(sv_callvote_kick);
-EXTERN_CVAR(sv_callvote_map);
-EXTERN_CVAR(sv_callvote_nextmap);
-EXTERN_CVAR(sv_callvote_randcaps);
-EXTERN_CVAR(sv_callvote_randmap);
-EXTERN_CVAR(sv_callvote_randpickup);
-EXTERN_CVAR(sv_callvote_restart);
-EXTERN_CVAR(sv_callvote_fraglimit);
-EXTERN_CVAR(sv_callvote_scorelimit);
-EXTERN_CVAR(sv_callvote_timelimit);
+EXTERN_CVAR(sv_callvote_coinflip)
+EXTERN_CVAR(sv_callvote_forcespec)
+EXTERN_CVAR(sv_callvote_kick)
+EXTERN_CVAR(sv_callvote_map)
+EXTERN_CVAR(sv_callvote_nextmap)
+EXTERN_CVAR(sv_callvote_randcaps)
+EXTERN_CVAR(sv_callvote_randmap)
+EXTERN_CVAR(sv_callvote_randpickup)
+EXTERN_CVAR(sv_callvote_restart)
+EXTERN_CVAR(sv_callvote_fraglimit)
+EXTERN_CVAR(sv_callvote_scorelimit)
+EXTERN_CVAR(sv_callvote_timelimit)
 
 // Vote class goes here
 Vote *vote = 0;
