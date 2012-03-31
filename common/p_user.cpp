@@ -633,6 +633,12 @@ void P_PlayerThink (player_t *player)
 			}
 		}
 
+		// [SL] 2012-03-31 - Client is trying to switch to a weapon they don't own
+		// Server should send them their weapon inventory
+		if (!clientside && newweapon >= 0 && newweapon < NUMWEAPONS && 
+			!player->weaponowned[newweapon])
+			SV_SendPlayerInfo(*player);
+			
 		if ((newweapon >= 0 && newweapon < NUMWEAPONS)
 			&& player->weaponowned[newweapon]
 			&& newweapon != player->readyweapon)
@@ -643,18 +649,6 @@ void P_PlayerThink (player_t *player)
 			{
 				player->pendingweapon = newweapon;
 			}
-		}
-	}
-	else
-	{
-		// [SL] 2011-11-20 - Player didn't send a weapon change command.
-		// Verify the player is holding the correct weapon.
-		weapontype_t predweapon = static_cast<weapontype_t>(cmd->ucmd.impulse);
-		if (predweapon != player->readyweapon && predweapon != player->pendingweapon)
-		{
-			// Client is wrong so send them an update
-			if (serverside && player->health > 0)
-				SV_SendPlayerInfo(*player);
 		}
 	}
 
