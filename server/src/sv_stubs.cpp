@@ -25,6 +25,7 @@
 #include "c_cvars.h"
 #include "d_player.h"
 #include "doomdef.h"
+#include "v_palette.h"
 
 float BaseBlendA;
 bool r_underwater;
