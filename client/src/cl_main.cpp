@@ -864,45 +864,15 @@ END_COMMAND(netdemostats)
 
 BEGIN_COMMAND(netff)
 {
-	int ticnum;
-
-	if (argc == 1)
-	{
-		// no arg so just go to the next snapshot
-		ticnum = gametic + netdemo.getSpacing();
-	}
-	else
-	{
-		// go forward X seconds
-		ticnum = gametic + TICRATE * atoi(argv[1]);
-	}
-
 	if (netdemo.isPlaying())
-	{
-		netdemo.skipTo(&net_message, ticnum);
-	}
+		netdemo.nextSnapshot(&net_message);
 }
 END_COMMAND(netff)
 
 BEGIN_COMMAND(netrew)
 {
-	int ticnum;
-
-	if (argc == 1)
-	{
-		// no arg so just go to the next snapshot
-		ticnum = gametic - netdemo.getSpacing();
-	}
-	else
-	{
-		// go backwards X seconds
-		ticnum = gametic - TICRATE * atoi(argv[1]);
-	}
-
 	if (netdemo.isPlaying())
-	{
-		netdemo.skipTo(&net_message, ticnum);
-	}
+		netdemo.prevSnapshot(&net_message);
 }
 END_COMMAND(netrew)
 
@@ -2569,6 +2539,19 @@ void CL_GetServerSettings(void)
 }
 
 //
+// CL_FinishedFullUpdate
+//
+// Takes care of any business that needs to be done once the client has a full
+// view of the game world.
+//
+void CL_FinishedFullUpdate()
+{
+	// Write the first map snapshot to a netdemo
+	if (netdemo.isRecording())
+		netdemo.writeMapChange();
+}
+
+//
 // CL_SetMobjState
 //
 void CL_SetMobjState()
@@ -2731,15 +2714,16 @@ void CL_LoadMap(void)
 
 	gameaction = ga_nothing;
 
+	// Add a netdemo snapshot at the start of this new map
+	if (netdemo.isRecording())
+		netdemo.writeMapChange();
+
 	// Autorecord netdemo or continue recording in a new file
 	if ((splitnetdemo || cl_autorecord) &&
 		(!netdemo.isPlaying() && !netdemo.isRecording() && !netdemo.isPaused()))
 	{
 		netdemo.startRecording(CL_GenerateNetDemoFileName());
 	}
-
-	if (netdemo.isRecording())
-		netdemo.writeMapChange();
 }
 
 
@@ -2757,6 +2741,9 @@ void CL_ExitLevel()
 {
 	if(gamestate != GS_DOWNLOAD) {
 		gameaction = ga_completed;
+
+		if (netdemo.isRecording())
+			netdemo.writeIntermission();
 	}
 }
 
@@ -2879,6 +2866,7 @@ void CL_InitCommands(void)
 
 	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
 	cmds[svc_netdemostop]       = &CL_NetDemoStop;
+	cmds[svc_fullupdatedone]	= &CL_FinishedFullUpdate;
 
 	cmds[svc_vote_update] = &CL_VoteUpdate;
 	cmds[svc_maplist] = &CL_Maplist;

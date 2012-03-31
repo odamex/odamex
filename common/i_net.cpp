@@ -973,7 +973,8 @@ void InitNetMessageFormats()
  	MSG(svc_svgametic,          "x"),
 	MSG(svc_timeleft,			"x"),
 	MSG(svc_inttimeleft,		"x"),
-	MSG(svc_mobjtranslation,	"x")
+	MSG(svc_mobjtranslation,	"x"),
+	MSG(svc_fullupdatedone,		"x")
    };
 
    size_t i;

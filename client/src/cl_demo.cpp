@@ -45,9 +45,11 @@ extern std::vector<std::string> wadfiles, wadhashes;
 
 static const std::string default_netdemo_filename("%n_%g_%w-%m_%d");
 
+static buf_t netbuf_snapshot(MAX_UDP_PACKET);
+
 NetDemo::NetDemo() :
 	state(st_stopped), oldstate(st_stopped), filename(""),
-	demofp(NULL), needfullupdate(false)
+	demofp(NULL)
 {
     memset(&header, 0, sizeof(header));
 }
@@ -75,7 +77,6 @@ void NetDemo::copy(NetDemo &to, const NetDemo &from)
 	to.captured			= from.captured;
 	to.snapshot_index	= from.snapshot_index;
 	to.map_index		= from.map_index;
-	to.needfullupdate	= from.needfullupdate;
 	memcpy(&to.header, &from.header, sizeof(header));
 }
 
@@ -252,13 +253,13 @@ bool NetDemo::readHeader()
 
 
 //
-// writeIndex()
+// writeSnapshotIndex()
 //
 //   Writes the snapshot index to the netdemo file, converting it to
 //   little-endian format from whatever the client's architecture uses.  Assumes
 //   that demofp has been opened correctly elsewhere.  Does not close the file.
 
-bool NetDemo::writeIndex()
+bool NetDemo::writeSnapshotIndex()
 {
 	fseek(demofp, header.snapshot_index_offset, SEEK_SET);
 
@@ -286,13 +287,13 @@ bool NetDemo::writeIndex()
 
 
 //
-// readIndex()
+// readSnapshotIndex()
 //
 //   Reads the snapshot index from the netdemo file, converting it from
 //   little-endian format to whatever the client's architecture uses.  Assumes
 //   that demofp has been opened correctly elsewhere.  Does not close the file.
 
-bool NetDemo::readIndex()
+bool NetDemo::readSnapshotIndex()
 {
 	fseek(demofp, header.snapshot_index_offset, SEEK_SET);
 
@@ -432,19 +433,21 @@ bool NetDemo::startRecording(const std::string &filename)
 		// has already sent it to the client and it wasn't captured
 		static buf_t tempbuf(MAX_UDP_PACKET);
 
-		needfullupdate = false;
-		
+		// Fake the launcher query response
 		SZ_Clear(&tempbuf);
 		writeLauncherSequence(&tempbuf);
 		capture(&tempbuf);
 		writeMessages();
 		
+		// Fake the server's side of the connection sequence
 		SZ_Clear(&tempbuf);
 		writeConnectionSequence(&tempbuf);
 		capture(&tempbuf);
 		writeMessages();
 
-		needfullupdate = true;
+		// Record any additional messages (usually a full update if auto-recording))
+		capture(&net_message);
+		writeMessages();
 	}
 
 	return true;
@@ -499,13 +502,13 @@ bool NetDemo::startPlaying(const std::string &filename)
 	// read the demo's index
 	if (fseek(demofp, header.snapshot_index_offset, SEEK_SET) != 0)
 	{
-		error("Unable to find netdemo index.\n");
+		error("Unable to find netdemo snapshot index.\n");
 		return false;
 	}
 
-	if (!readIndex())
+	if (!readSnapshotIndex())
 	{
-		error("Unable to read netdemo index.\n");
+		error("Unable to read netdemo snapshot index.\n");
 		return false;
 	}
 
@@ -596,9 +599,9 @@ bool NetDemo::stopRecording()
 	header.snapshot_index_offset = ftell(demofp);
 	header.snapshot_index_size = snapshot_index.size();
 
-	if (!writeIndex())
+	if (!writeSnapshotIndex())
 	{
-		error("Unable to write netdemo index.");
+		error("Unable to write netdemo snapshot index.");
 		return false;
 	}
 
@@ -855,21 +858,6 @@ void NetDemo::writeSnapshotData(buf_t *netbuffer)
 
 
 //
-// writeSnapshot()
-//
-//   
-
-void NetDemo::writeSnapshot(buf_t *netbuffer)
-{
-	buf_t tempbuf(NetDemo::MAX_SNAPSHOT_SIZE);
-
-	writeSnapshotData(&tempbuf);
-	MSG_WriteChunk(netbuffer, tempbuf.data, tempbuf.size());
-}
-
-
-
-//
 // writeSnapshotIndexEntry()
 //
 //   
@@ -966,6 +954,25 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 	}
 }
 
+
+//
+// atSnapshotInterval()
+//
+//    Returns true if it is the appropriate time to write a snapshot
+//
+bool NetDemo::atSnapshotInterval()
+{
+	if (!connected || map_index.empty() || gamestate != GS_LEVEL)
+		return false;
+
+	int last_map_tic = map_index.back().ticnum;
+	if (gametic == last_map_tic)
+		return false;
+
+	return ((gametic - last_map_tic) % header.snapshot_spacing == 0);
+}
+
+
 //
 // writeMessages()
 //
@@ -978,36 +985,22 @@ void NetDemo::writeMessages()
 	if (!isRecording())
 		return;
 
-	static buf_t netbuf_snapshot(NetDemo::MAX_SNAPSHOT_SIZE);
+	static buf_t netbuf_localcmd(1024);
 
-	if (connected && gamestate == GS_LEVEL)
+	if (atSnapshotInterval())
 	{
-		// Immediately after connecting, we don't have all the relevant data to
-		// do a full world update.  We delay writing a full update for a tic so
-		// that we have all the proper information from the server.
-/*		if (needfullupdate)
-		{
-			SZ_Clear(&netbuf_snapshot);
-			writeSnapshotData(&netbuf_snapshot);
-			writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_packet);
+		SZ_Clear(&netbuf_snapshot);	
 
-			needfullupdate = false;
-		} */
-
-		// is it time to write a snapshot?
-		if ((gametic - header.starting_gametic) % header.snapshot_spacing == 0
-			&& (unsigned)gametic > header.starting_gametic)
-		{
-			SZ_Clear(&netbuf_snapshot);	
-
-			writeSnapshotData(&netbuf_snapshot);
-			writeSnapshotIndexEntry();
+		writeSnapshotData(&netbuf_snapshot);
+		writeSnapshotIndexEntry();
 			
-			writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_snapshot);
-		}
-		
+		writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_snapshot);
+	}
+
+	if (connected)
+	{	
 		// Write the console player's game data
-		buf_t netbuf_localcmd(128);
+		SZ_Clear(&netbuf_localcmd);
 		writeLocalCmd(&netbuf_localcmd);
 		captured.push_back(netbuf_localcmd);
 	}
@@ -1414,34 +1407,38 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 //
 const NetDemo::netdemo_index_entry_t *NetDemo::snapshotLookup(int ticnum) const
 {
-	int index = (ticnum - header.starting_gametic) / header.snapshot_spacing;
-	if (ticnum < gametic)
-		index--;
-
-	if (index < 0)
-		index = 0;
+	int index = (ticnum - header.starting_gametic) / header.snapshot_spacing - 1;
 
 	if (index >= header.snapshot_index_size)
 		return NULL;
+
+	int mapindex = getCurrentMapIndex();
+	if (index < 0 || snapshot_index[index].ticnum < map_index[mapindex].ticnum)
+		return &map_index[mapindex];
 
 	return &snapshot_index[index];
 }
 
 //
-// skipTo()
+// getCurrentSnapshotIndex()
 //
-//		Reads the snapshot that preceeds the ticnum parameter and fills
-//		netbuffer with its contents.
+//		Returns the index into the snapshot_index vector that immediately
+//		preceeds the current gametic.
 //
-void NetDemo::skipTo(buf_t *netbuffer, int ticnum)
+int NetDemo::getCurrentSnapshotIndex() const
 {
-	const NetDemo::netdemo_index_entry_t *snap = snapshotLookup(ticnum);
-	if (!snap)
-		return;
+	if (!header.snapshot_index_size)
+		return -1;
 
-	SZ_Clear(netbuffer);
-	readSnapshot(netbuffer, snap);
+	for (int i = 0; i < header.snapshot_index_size - 1; i++)
+	{
+		if ((int)snapshot_index[i + 1].ticnum > gametic)
+			return i;
+	}
+
+	return header.snapshot_index_size - 1;
 }
+
 
 //
 // getCurrentMapIndex()
@@ -1449,8 +1446,11 @@ void NetDemo::skipTo(buf_t *netbuffer, int ticnum)
 //		Returns the index into the map_index vector for the map that the
 //		is currently being played.
 //
-int NetDemo::getCurrentMapIndex()
+int NetDemo::getCurrentMapIndex() const
 {
+	if (!header.map_index_size)
+		return -1;
+
 	for (int i = 0; i < header.map_index_size - 1; i++)
 	{
 		if ((int)map_index[i + 1].ticnum > gametic)
@@ -1458,6 +1458,49 @@ int NetDemo::getCurrentMapIndex()
 	}
 
 	return header.map_index_size - 1;
+}
+
+
+//
+// nextSnapshot()
+//
+//		Reads the snapshot that follows the current gametic and fills netbuffer
+//		with its contents.
+//
+void NetDemo::nextSnapshot(buf_t *netbuffer)
+{
+	if (!header.snapshot_index_size)
+		return;
+
+	int nextsnapindex = getCurrentSnapshotIndex() + 1;
+
+	// don't read past the last snapshot
+	if (nextsnapindex >= header.snapshot_index_size)
+		return;
+	
+	SZ_Clear(netbuffer);
+	readSnapshot(netbuffer, &snapshot_index[nextsnapindex]);
+}
+
+
+//
+// prevSnapshot()
+//
+//		Reads the snapshot that preceeds the current gametic and fills netbuffer
+//		with its contents.
+//
+void NetDemo::prevSnapshot(buf_t *netbuffer)
+{
+	if (!header.snapshot_index_size)
+		return;
+
+	int prevsnapindex = getCurrentSnapshotIndex() - 1;
+
+	if (prevsnapindex < 0)
+		prevsnapindex = 0;
+
+	SZ_Clear(netbuffer);
+	readSnapshot(netbuffer, &snapshot_index[prevsnapindex]);
 }
 
 //
@@ -1468,6 +1511,9 @@ int NetDemo::getCurrentMapIndex()
 //
 void NetDemo::nextMap(buf_t *netbuffer)
 {
+	if (!header.map_index_size)
+		return;
+
 	int nextmapindex = getCurrentMapIndex() + 1;
 	if (nextmapindex >= header.map_index_size)
 		return;
@@ -1486,6 +1532,9 @@ void NetDemo::nextMap(buf_t *netbuffer)
 //
 void NetDemo::prevMap(buf_t *netbuffer)
 {
+	if (!header.map_index_size)
+		return;
+
 	int prevmapindex = getCurrentMapIndex() - 1; 
 	if (prevmapindex < 0)
 		prevmapindex = 0;
@@ -1586,15 +1635,27 @@ const std::vector<int> NetDemo::getMapChangeTimes()
 
 void NetDemo::writeMapChange()
 {
-	static buf_t netbuf_snapshot(NetDemo::MAX_SNAPSHOT_SIZE);
-
 	if (connected && gamestate == GS_LEVEL)
 	{
 		SZ_Clear(&netbuf_snapshot);	
 	
 		writeSnapshotData(&netbuf_snapshot);
 		writeMapIndexEntry();
+		writeSnapshotIndexEntry();
 		
+		writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_snapshot);
+	}
+}
+
+void NetDemo::writeIntermission()
+{
+	if (connected && gamestate == GS_INTERMISSION)
+	{
+		SZ_Clear(&netbuf_snapshot);
+	
+		writeSnapshotData(&netbuf_snapshot);
+		writeSnapshotIndexEntry();
+
 		writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_snapshot);
 	}
 }

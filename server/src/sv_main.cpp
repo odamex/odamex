@@ -2471,6 +2471,7 @@ void SV_ConnectClient (void)
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
 		MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
+	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 	SV_SendPacket (players[n]);
 
 	SV_BroadcastPrintf (PRINT_HIGH, "%s has connected.\n", players[n].userinfo.netname);

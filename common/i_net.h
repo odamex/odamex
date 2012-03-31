@@ -117,6 +117,7 @@ enum svc_t
 	svc_timeleft,
 	svc_inttimeleft,		// [ML] For intermission timer
 	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
+	svc_fullupdatedone,		// [SL] Inform client the full update is over
 
 	// for co-op
 	svc_mobjstate = 70,
