@@ -674,6 +674,8 @@ void G_DoLoadLevel (int position)
 			players[i].playerstate = PST_REBORN;
 
 		players[i].fragcount = 0;
+		players[i].itemcount = 0;
+		players[i].secretcount = 0;
 		players[i].deathcount = 0; // [Toke - Scores - deaths]
 		players[i].killcount = 0; // [deathz0r] Coop kills
 		players[i].points = 0;
@@ -695,6 +697,7 @@ void G_DoLoadLevel (int position)
 		extern msecnode_t *headsecnode; // phares 3/25/98
 		headsecnode = NULL;
 
+		// denis - todo - wtf is this crap?
 		// [RH] Need to prevent the AActor destructor from trying to
 		//		free the nodes
 		AActor *actor;

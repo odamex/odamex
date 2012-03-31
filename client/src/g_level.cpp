@@ -533,7 +533,7 @@ void G_DoLoadLevel (int position)
 	for (i = 0; i < players.size(); i++)
 	{
 		if (players[i].ingame() && players[i].playerstate == PST_DEAD)
-			players[i].playerstate = PST_ENTER;	// [BC]
+			players[i].playerstate = PST_REBORN;
 
 		players[i].fragcount = 0;
 		players[i].itemcount = 0;
@@ -603,7 +603,7 @@ void G_DoLoadLevel (int position)
 	gameaction = ga_nothing;
 	Z_CheckHeap ();
 
-	// clear cmd building stuff
+	// clear cmd building stuff // denis - todo - could we get rid of this?
 	Impulse = 0;
 	for (i = 0; i < NUM_ACTIONS; i++)
 		if (i != ACTION_MLOOK && i != ACTION_KLOOK)
@@ -627,7 +627,6 @@ void G_DoLoadLevel (int position)
 
 	C_FlushDisplay ();
 }
-
 
 //
 // G_WorldDone
