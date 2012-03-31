@@ -2722,10 +2722,23 @@ void CL_LoadMap(void)
 		netdemo.writeMapChange();
 
 	// Autorecord netdemo or continue recording in a new file
-	if ((splitnetdemo || cl_autorecord) &&
-		(!netdemo.isPlaying() && !netdemo.isRecording() && !netdemo.isPaused()))
+	if (!(netdemo.isPlaying() || netdemo.isRecording() || netdemo.isPaused()))
 	{
-		netdemo.startRecording(CL_GenerateNetDemoFileName());
+		std::string filename;
+
+		size_t param = Args.CheckParm("-netrecord");
+		if (param && Args.GetArg(param + 1))
+			filename = Args.GetArg(param + 1);
+
+		if (splitnetdemo || cl_autorecord || param)
+		{
+			if (filename.empty())
+				filename = CL_GenerateNetDemoFileName(default_netdemo_filename);
+			else
+				filename = CL_GenerateNetDemoFileName(filename);
+
+			netdemo.startRecording(filename);
+		}
 	}
 }
 

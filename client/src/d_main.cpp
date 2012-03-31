@@ -1511,19 +1511,6 @@ void D_DoomMain (void)
 		demorecordfile = Args.GetArg (p+1);
 	}
 
-	p = Args.CheckParm("-netrecord");
-	if (p)
-	{
-		std::string demoname;
-		if (Args.GetArg(p + 1))
-			demoname = Args.GetArg(p + 1);
-		else
-			demoname = "demo";
-
-		CL_NetDemoRecord(demoname);
-	}
-
-
 	// get skill / episode / map from parms
 	strcpy (startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
