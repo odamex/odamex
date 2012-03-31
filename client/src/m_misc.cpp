@@ -46,6 +46,7 @@ static CVAR (configver, CONFIGVERSIONSTR, "", CVARTYPE_STRING, CVAR_ARCHIVE | CV
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (sv_maxplayers)
 
+extern unsigned int last_revision;
 extern std::vector<std::string> wadfiles;
 
 // [RH] Get configfile path.
@@ -208,6 +209,9 @@ std::string M_ExpandTokens(const std::string &str)
 				break;
 			case 'm':
 				buffer << level.mapname;
+				break;
+			case 'r':
+				buffer << "r" << last_revision;
 				break;
 			case '%':
 				// Literal percent

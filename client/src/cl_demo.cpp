@@ -39,6 +39,7 @@
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
 
+extern std::string server_host;
 extern std::string digest;
 extern playerskin_t* skins;
 extern std::vector<std::string> wadfiles, wadhashes;
@@ -1201,7 +1202,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	
 	// get sv_hostname and write it
 	var = cvar_t::FindCVar("sv_hostname", &prev_cvar);
-	MSG_WriteString (netbuffer, "server_hostname");
+	MSG_WriteString (netbuffer, server_host.c_str());
 	
 	int playersingame = 0;
 	for (size_t i = 0; i < players.size(); i++)

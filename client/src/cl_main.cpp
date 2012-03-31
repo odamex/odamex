@@ -107,7 +107,7 @@ std::string server_host = "";	// hostname of server
 
 // [SL] 2011-06-27 - Class to record and playback network recordings
 NetDemo netdemo;
-static const std::string default_netdemo_filename("%n_%g_%w-%m_%d");
+static const std::string default_netdemo_filename("%n_%g_%w-%m_%d_%r");
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
 bool simulated_connection = false;		
 
