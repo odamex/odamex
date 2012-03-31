@@ -923,6 +923,8 @@ extern dyncolormap_t NormalLight;
 EXTERN_CVAR (sv_gravity)
 EXTERN_CVAR (sv_aircontrol)
 
+extern float BaseBlendA;
+
 void G_InitLevelLocals ()
 {
 	unsigned long oldfade = level.fadeto;

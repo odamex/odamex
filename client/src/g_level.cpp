@@ -483,7 +483,7 @@ void G_DoCompleted (void)
 // G_DoLoadLevel
 //
 extern gamestate_t 	wipegamestate;
-extern float BaseBlendA;
+
 
 void G_DoLoadLevel (int position)
 {
