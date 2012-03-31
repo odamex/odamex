@@ -81,8 +81,6 @@ EXTERN_CVAR (sv_startmapscript)
 EXTERN_CVAR (sv_curmap)
 EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
-EXTERN_CVAR (sv_gravity)
-EXTERN_CVAR (sv_aircontrol)
 EXTERN_CVAR (sv_intermissionlimit)
 
 
@@ -242,7 +240,6 @@ BEGIN_COMMAND (wad) // denis - changes wads
 END_COMMAND (wad)
 
 BOOL 			secretexit;
-static int		startpos;	// [RH] Support for multiple starts per level
 
 EXTERN_CVAR(sv_shufflemaplist)
 
@@ -812,97 +809,5 @@ void G_WorldDone (void)
 		mapchange += strlen(finaletext)*2;
 }
 
-void G_DoWorldDone (void)
-{
-	gamestate = GS_LEVEL;
-	if (wminfo.next[0] == 0) {
-		// Don't die if no next map is given,
-		// just repeat the current one.
-		Printf (PRINT_HIGH, "No next map specified.\n");
-	} else {
-		strncpy (level.mapname, wminfo.next, 8);
-	}
-	G_DoLoadLevel (startpos);
-	startpos = 0;
-	gameaction = ga_nothing;
-	viewactive = true;
-}
-
-
-extern dyncolormap_t NormalLight;
-
-void G_InitLevelLocals ()
-{
-//	unsigned long oldfade = level.fadeto;
-	level_info_t *info;
-	int i;
-
-	NormalLight.maps = realcolormaps;
-
-	level.gravity = sv_gravity;
-	level.aircontrol = (fixed_t)(sv_aircontrol * 65536.f);
-
-	if ((i = FindWadLevelInfo (level.mapname)) > -1)
-	{
-		level_pwad_info_t *pinfo = wadlevelinfos + i;
-
-		// [ML] 5/11/06 - Remove sky scrolling and sky2
-		// [SL] 2012-03-19 - Add sky2 back
-		level.info = (level_info_t *)pinfo;
-		info = (level_info_t *)pinfo;
-		strncpy (level.skypic2, pinfo->skypic2, 8);
-		level.fadeto = pinfo->fadeto;
-		if (level.fadeto) {
-//			NormalLight.maps = DefaultPalette->maps.colormaps;
-		} else {
-//			R_SetDefaultColormap (pinfo->fadetable);
-		}
-		level.outsidefog = pinfo->outsidefog;
-		level.flags |= LEVEL_DEFINEDINMAPINFO;
-		if (pinfo->gravity != 0.f)
-		{
-			level.gravity = pinfo->gravity;
-		}
-		if (pinfo->aircontrol != 0.f)
-		{
-			level.aircontrol = (fixed_t)(pinfo->aircontrol * 65536.f);
-		}
-	} else {
-		info = FindDefLevelInfo (level.mapname);
-		level.info = info;
-		level.skypic2[0] = 0;
-		level.fadeto = 0;
-		level.outsidefog = 0xff000000;	// 0xff000000 signals not to handle it special
-		R_SetDefaultColormap ("COLORMAP");
-	}
-
-	if (info->level_name) {
-		level.partime = info->partime;
-		level.cluster = info->cluster;
-		level.flags = info->flags;
-		level.levelnum = info->levelnum;
-
-		strncpy (level.level_name, info->level_name, 63);
-		strncpy (level.nextmap, info->nextmap, 8);
-		strncpy (level.secretmap, info->secretmap, 8);
-		strncpy (level.music, info->music, 8);
-		strncpy (level.skypic, info->skypic, 8);
-		if (!level.skypic2[0])
-			strncpy(level.skypic2, level.skypic, 8);
-	} else {
-		level.partime = level.cluster = 0;
-		strcpy (level.level_name, "Unnamed");
-		level.nextmap[0] =
-			level.secretmap[0] =
-			level.music[0] = 0;
-		strncpy (level.skypic, "SKY1", 8);
-		strncpy (level.skypic2, "SKY1", 8);
-		level.flags = 0;
-		level.levelnum = 1;
-	}
-//  [deathz0r] Doesn't appear to affect client
-//	if (oldfade != level.fadeto)
-//		RefreshPalettes ();
-}
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

@@ -26,6 +26,11 @@
 #include "d_player.h"
 #include "doomdef.h"
 
+float BaseBlendA;
+bool r_underwater;
+palette_t dummypalette = { 0 };
+palette_t *DefaultPalette = &dummypalette;
+
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {} 
 void D_DoServerInfoChange (byte **stream) {} 
@@ -46,6 +51,8 @@ void PickupMessage(AActor *toucher, const char *message) {}
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon) {}
 
 void AM_Stop(void) {}
+
+void RefreshPalettes (void) {}
 
 VERSION_CONTROL (sv_stubs_cpp, "$Id: sv_stubs.cpp $")
 
