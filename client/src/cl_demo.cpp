@@ -838,7 +838,7 @@ void NetDemo::writeSnapshotData(buf_t *netbuffer)
 	MSG_WriteMarker	(netbuffer, svc_playerinfo);
 
 	for (int n = 0; n < NUMWEAPONS; n++)
-		MSG_WriteByte	(netbuffer, consoleplayer().weaponowned[n]);
+		MSG_WriteBool	(netbuffer, consoleplayer().weaponowned[n]);
 
 	for (int n = 0; n < NUMAMMO; n++)
 	{
@@ -851,6 +851,9 @@ void NetDemo::writeSnapshotData(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, consoleplayer().armortype);
 	MSG_WriteByte	(netbuffer, consoleplayer().readyweapon);
 	MSG_WriteByte	(netbuffer, consoleplayer().backpack);
+	
+	for (int n = 0; n < NUMCARDS; n++)
+		MSG_WriteBool	(netbuffer, consoleplayer().cards[n]);
 
 	// update the server settings
 	// TODO!	

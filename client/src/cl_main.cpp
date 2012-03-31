@@ -1869,6 +1869,9 @@ void CL_PlayerInfo(void)
 		p->pendingweapon = newweapon;
 	
 	p->backpack = MSG_ReadBool();
+
+	for (size_t j = 0; j < NUMCARDS; j++)
+		p->cards[j] = MSG_ReadBool();
 }
 
 //
