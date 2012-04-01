@@ -186,6 +186,9 @@ CVAR_FUNC_DECL (sv_gravity, "800", "Gravity of the environment",
 CVAR_FUNC_DECL (sv_aircontrol, "0.00390625", "How much control the player has in the air", 
       CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
+CVAR_FUNC_DECL (sv_splashfactor, "1.0", "Rocket explosion thrust effect?", 
+      CVARTYPE_FLOAT,  CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 
 // Misc stuff
 // ----------

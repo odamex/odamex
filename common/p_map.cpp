@@ -2361,14 +2361,14 @@ v3double_t		bombvec;
 // [RH] Damage scale to apply to thing that shot the missile.
 static float selfthrustscale;
 
-BEGIN_CUSTOM_CVAR (sv_splashfactor, "1.0", "", CVARTYPE_FLOAT,  CVAR_ARCHIVE | CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+CVAR_FUNC_IMPL (sv_splashfactor)
 {
 	if (var <= 0.0f)
 		var.Set (1.0f);
 	else
 		selfthrustscale = 1.0f / var;
 }
-END_CUSTOM_CVAR (sv_splashfactor)
+
 
 //
 // PIT_RadiusAttack
