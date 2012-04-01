@@ -242,6 +242,12 @@ void DCanvas::Clear (int left, int top, int right, int bottom, int color) const
 
 void DCanvas::Dim(int x1, int y1, int w, int h) const
 {
+	if (!buffer)
+		return;
+
+	if (x1 < 0 || x1 + w > width || y1 < 0 || y1 + h > height)
+		return;
+
 	if (ui_dimamount < 0)
 		ui_dimamount.Set (0.0f);
 	else if (ui_dimamount > 1)
@@ -264,9 +270,12 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 		byte *dest = buffer + y1 * pitch + x1;
 		int gap = pitch - w;
 
+		int xcount = w / 4;
+		int xcount_remainder = w % 4;
+
 		for (y = h; y > 0; y--)
 		{
-			for (x = w / 4; x > 0; x--)
+			for (x = xcount; x > 0; x--)
 			{
 				// Unroll the loop for a speed improvement
 				bg = bg2rgb[*dest];
@@ -281,6 +290,13 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 				bg = (fg+bg) | 0x1f07c1f;
 				*dest++ = RGB32k[0][0][bg&(bg>>15)];
 
+				bg = bg2rgb[*dest];
+				bg = (fg+bg) | 0x1f07c1f;
+				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+			}
+			for (x = xcount_remainder; x > 0; x--)
+			{
+				// account for widths that aren't multiples of 4
 				bg = bg2rgb[*dest];
 				bg = (fg+bg) | 0x1f07c1f;
 				*dest++ = RGB32k[0][0][bg&(bg>>15)];
