@@ -32,15 +32,12 @@ proc main {} {
  client "wad 404"
  wait 4
 
+ expect $clientout {I_InitMusic: Music playback disabled.} 0
  expect $clientout {} 0
  expect $clientout {=================================} 0
  expect $clientout {DOOM 2: Hell on Earth} 0
- expect $clientout {} 0
+ gets $clientout
  expect $clientout {adding odamex.wad} 0
- gets $clientout
- gets $clientout
- gets $clientout
- expect $clientout {} 0
 }
 
 startClient
