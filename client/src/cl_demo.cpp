@@ -1340,6 +1340,7 @@ void NetDemo::readSnapshot(buf_t *netbuffer, const netdemo_index_entry_t *snap)
 	}
 
 	readSnapshotData(snapbuf, len);
+	netdemotic = snap->ticnum - header.starting_gametic;
 }
 
 
