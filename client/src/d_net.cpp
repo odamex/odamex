@@ -42,6 +42,9 @@
 #include "gi.h"
 #include "cl_main.h"
 #include "m_argv.h"
+#include "cl_demo.h"
+
+extern NetDemo netdemo;
 
 extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
 
@@ -119,6 +122,8 @@ void TryStepTics(QWORD tics)
 		M_Ticker ();
 		G_Ticker ();
 		gametic++;
+		if (netdemo.isPlaying() && !netdemo.isPaused())
+			netdemo.ticker();
 	}
 	
 	DObject::EndFrame ();

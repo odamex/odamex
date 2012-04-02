@@ -1595,6 +1595,7 @@ void NetDemo::readSnapshot(buf_t *netbuffer, const netdemo_index_entry_t *snap)
 		error("Unable to read snapshot from data file");
 	}
 	
+	netdemotic = snap->ticnum - header.starting_gametic;
 	netbuffer->WriteChunk((char *)data, len, netbuffer->size());
 	
 	delete [] data;
@@ -1625,7 +1626,13 @@ int NetDemo::calculateTimeElapsed()
 	if (!isPlaying() && !isPaused())
 		return 0;
 
-	return (netdemotic / TICRATE);	
+	int elapsed = netdemotic / TICRATE;
+	int totaltime = calculateTotalTime();
+
+	if (elapsed > totaltime)
+		return totaltime;
+
+	return elapsed;
 }
 
 const std::vector<int> NetDemo::getMapChangeTimes()
