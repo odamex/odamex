@@ -34,8 +34,6 @@ void M_LoadDefaults (void);
 void STACK_ARGS M_SaveDefaults (void);
 
 std::string GetConfigPath (void);
+std::string M_ExpandTokens(const std::string &str);
 
 #endif
-
-
-

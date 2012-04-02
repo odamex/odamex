@@ -104,7 +104,6 @@ std::string server_host = "";	// hostname of server
 
 // [SL] 2011-06-27 - Class to record and playback network recordings
 NetDemo netdemo;
-static const std::string default_netdemo_filename("%n_%g_%w-%m_%d_%r");
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
 bool simulated_connection = false;		
 
@@ -222,6 +221,7 @@ void CL_Decompress(int sequence);
 void CL_LocalDemoTic(void);
 void CL_NetDemoStop(void);
 void CL_NetDemoSnapshot(void);
+bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 //	[Toke - CTF]
 void CalcTeamFrags (void);
@@ -714,14 +714,21 @@ END_COMMAND (exit)
 // NetDemo related functions
 //
 
+CVAR_FUNC_IMPL (cl_netdemoname)
+{
+	// No empty format strings allowed.
+	if (strlen(var.cstring()) == 0)
+		var.RestoreDefault();
+}
+
 //
 // CL_GenerateNetDemoFileName
 //
 // 
-std::string CL_GenerateNetDemoFileName(const std::string &filename = default_netdemo_filename)
+std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemoname.cstring())
 {
 	const std::string expanded_filename(M_ExpandTokens(filename));	
-	std::string newfilename(expanded_filename + ".odd");
+	std::string newfilename(expanded_filename);
 	newfilename = I_GetUserFileName(newfilename.c_str());
 
 	FILE *fp;
@@ -729,20 +736,10 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = default_net
 	char cntstr[5];
 
 	// keep trying to find a filename that doesn't yet exist
-	while ( (fp = fopen(newfilename.c_str(), "r")) )
-	{
-		fclose(fp);
-		
-		// add a number to the end of the filename
-		sprintf(cntstr, "%i", counter);
-		newfilename = expanded_filename + cntstr + ".odd";
-		newfilename = I_GetUserFileName(newfilename.c_str());
-
-		counter++;
-		if (counter > 9999)		// don't overflow cntstr
-			break;
-	}
-
+	
+	if (!M_FindFreeName(newfilename, "odd"))
+		I_Error("Unable to generate netdemo file name.  Please delete some netdemos.");
+	
 	return newfilename;
 }
 
@@ -2695,7 +2692,7 @@ void CL_LoadMap(void)
 		if (splitnetdemo || cl_autorecord || param)
 		{
 			if (filename.empty())
-				filename = CL_GenerateNetDemoFileName(default_netdemo_filename);
+				filename = CL_GenerateNetDemoFileName();
 			else
 				filename = CL_GenerateNetDemoFileName(filename);
 

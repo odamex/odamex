@@ -106,6 +106,6 @@ void STACK_ARGS I_ShutdownHardware ();
 
 // [RH] M_ScreenShot now accepts a filename parameter.
 //		Pass a NULL to get the original behavior.
-void I_ScreenShot (const char *filename);
+void I_ScreenShot(std::string filename);
 
 #endif	// __HARDWARE_H__

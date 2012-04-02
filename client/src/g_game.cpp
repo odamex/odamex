@@ -899,7 +899,7 @@ void G_Ticker (void)
 			G_DoWorldDone ();
 			break;
 		case ga_screenshot:
-			I_ScreenShot(shotfile.c_str());
+			I_ScreenShot(shotfile);
 			gameaction = ga_nothing;
 			break;
 		case ga_fullconsole:

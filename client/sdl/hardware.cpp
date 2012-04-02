@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <sstream>
+#include <string>
+
 #include "hardware.h"
 #undef MINCHAR
 #undef MAXCHAR
@@ -37,9 +40,12 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "m_argv.h"
+#include "m_misc.h"
 #include "i_sdlvideo.h"
 #include "m_fileio.h"
 #include "g_game.h"
+
+bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 extern constate_e ConsoleState;
 extern int NewWidth, NewHeight, NewBits, DisplayBits;
@@ -211,86 +217,67 @@ void I_SetWindowIcon(void)
 
 }
 
-// Find a free filename that isn't taken
-static BOOL FindFreeName (char *lbmname, const char *extension)
-{
-	int i;
-
-	for (i=0 ; i<=9999 ; i++)
-	{
-		sprintf (lbmname, "DOOM%04d.%s", i, extension);
-		if (!M_FileExists (lbmname))
-			break;		// file doesn't exist
-	}
-	if (i==10000)
-		return false;
-	else
-		return true;
-}
-
 extern DWORD IndexedPalette[256];
+EXTERN_CVAR(cl_screenshotname)
 
 /*
     Dump a screenshot as a bitmap (BMP) file
 */
-void I_ScreenShot (const char *filename)
+void I_ScreenShot(std::string filename)
 {
-	char  autoname[32];
-	char *lbmname;
-    SDL_Surface *surface;
-    SDL_Color colors[256];
-    DWORD *pal;
+	SDL_Surface *surface;
+	SDL_Color colors[256];
+	DWORD *pal;
 
-	// find a file name to save it to
-	if (!filename || !strlen(filename))
-	{
-		lbmname = autoname;
-		if (!FindFreeName (lbmname, "bmp\0bmp" + (screen->is8bit() << 2)))
-		{
-			Printf (PRINT_HIGH, "I_ScreenShot: Delete some screenshots\n");
-			return;
-		}
-		filename = autoname;
+	// If no filename was passed, use the screenshot format variable.
+	if (filename.empty()) {
+		filename = cl_screenshotname.cstring();
 	}
 
-    // Create an SDL_Surface object from our screen buffer
-    screen->Lock();
+	// Expand tokens
+	filename = M_ExpandTokens(filename).c_str();
 
-    surface = SDL_CreateRGBSurfaceFrom(screen->buffer, screen->width, 
-        screen->height, 8, screen->pitch, 0, 0, 0, 0);
-    
-    screen->Unlock();
+	// If the file already exists, append numbers.
+	if (!M_FindFreeName(filename, "bmp")) {
+		Printf(PRINT_HIGH, "I_ScreenShot: Delete some screenshots\n");
+		return;
+	}
 
-    if(surface == NULL) {
-        Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
-        return;
-    }
+	// Create an SDL_Surface object from our screen buffer
+	screen->Lock();
 
-    // Set up the palette for our screen shot
-    pal = IndexedPalette;
+	surface = SDL_CreateRGBSurfaceFrom(screen->buffer, screen->width,
+									   screen->height, 8, screen->pitch,
+									   0, 0, 0, 0);
 
-    for (int i = 0; i < 256; i+=1, pal++)
-    {
-        colors[i].r = RPART(*pal);
-        colors[i].g = GPART(*pal);
-        colors[i].b = BPART(*pal);
-        colors[i].unused = 0;
-    }
-        
-    SDL_SetColors(surface, colors, 0, 256);
+	screen->Unlock();
 
-    // save the bmp file
-    if (SDL_SaveBMP(surface, filename) == -1)
-    {
-        Printf (PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
+	if (surface == NULL) {
+		Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
+		return;
+	}
 
-        SDL_FreeSurface(surface);
-        return;
-    }
+	// Set up the palette for our screen shot
+	pal = IndexedPalette;
 
-    SDL_FreeSurface(surface);
+	for (int i = 0;i < 256;i += 1, pal++) {
+		colors[i].r = RPART(*pal);
+		colors[i].g = GPART(*pal);
+		colors[i].b = BPART(*pal);
+		colors[i].unused = 0;
+	}
 
-	Printf (PRINT_HIGH, "screen shot taken: %s\n", filename);
+	SDL_SetColors(surface, colors, 0, 256);
+
+	// save the bmp file
+	if(SDL_SaveBMP(surface, filename.c_str()) == -1) {
+		Printf(PRINT_HIGH, "SDL_SaveBMP Error: %s\n", SDL_GetError());
+		SDL_FreeSurface(surface);
+		return;
+	}
+
+	SDL_FreeSurface(surface);
+	Printf(PRINT_HIGH, "Screenshot taken: %s\n", filename.c_str());
 }
 
 BEGIN_COMMAND (screenshot)
@@ -301,6 +288,14 @@ BEGIN_COMMAND (screenshot)
 		G_ScreenShot (argv[1]);
 }
 END_COMMAND (screenshot)
+
+CVAR_FUNC_IMPL (cl_screenshotname)
+{
+	// No empty format strings allowed.
+	if (strlen(var.cstring()) == 0) {
+		var.RestoreDefault();
+	}
+}
 
 //
 // I_SetOldPalette - Just for the red screen for now I guess

@@ -159,7 +159,7 @@ std::string M_ExpandTokens(const std::string &str)
 				// Date
 				time_t now = time(NULL);
 				char date[11] = {0};
-				strftime(date, sizeof(date), "%Y-%m-%d", localtime(&now));
+				strftime(date, sizeof(date), "%Y%m%d", localtime(&now));
 				buffer << date;
 				break;
 			}
@@ -168,7 +168,7 @@ std::string M_ExpandTokens(const std::string &str)
 				// Time
 				time_t now = time(NULL);
 				char date[9] = {0};
-				strftime(date, sizeof(date), "%H:%M:%S", localtime(&now));
+				strftime(date, sizeof(date), "%H%M%S", localtime(&now));
 				buffer << date;
 				break;
 			}
@@ -180,7 +180,10 @@ std::string M_ExpandTokens(const std::string &str)
 				switch (sv_gametype.asInt())
 				{
 					case (int)(GM_COOP):
-						buffer << "COOP";
+						if (!multiplayer)
+							buffer << "SOLO";
+						else
+							buffer << "COOP";
 						break;
 					case (int)(GM_DM):
 						if (sv_maxplayers == 2)
@@ -225,6 +228,33 @@ std::string M_ExpandTokens(const std::string &str)
 	return buffer.str();
 }
 
+// Find a free filename that isn't taken
+bool M_FindFreeName(std::string &filename, const std::string &extension)
+{
+	std::string unmodified = filename + '.' + extension;
+	if (!M_FileExists(unmodified.c_str())) {
+		// Name requires no modification.
+		filename = unmodified;
+		return true;
+	}
+
+	int i;
+
+	for (i=1; i <= 9999;i++) {
+		std::ostringstream buffer;
+		buffer << filename << '.' << i << "." << extension;
+		if (!M_FileExists(buffer.str().c_str())) {
+			// File doesn't exist.
+			filename = buffer.str();
+			break;
+		}
+	}
+
+	if (i == 10000)
+		return false;
+	else
+		return true;
+}
 
 VERSION_CONTROL (m_misc_cpp, "$Id$")
 
