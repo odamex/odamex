@@ -1044,6 +1044,8 @@ void G_Ticker (void)
 				// [SL] 2011-12-14 - Spawn message from server has not arrived
 				// yet.  Fake it and hope it arrives soon.
 				AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
+				mobj->flags &= ~MF_SOLID;
+				mobj->flags2 |= MF2_DONTDRAW;
 				consoleplayer().mo = mobj->ptr();
 				consoleplayer().mo->player = &consoleplayer();
 				G_PlayerReborn(consoleplayer());
