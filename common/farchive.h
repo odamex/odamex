@@ -118,6 +118,9 @@ public:
 
 	void Serialize (FArchive &arc);
 
+	size_t Length() const;
+	void WriteToBuffer(void *buf, size_t length) const;
+	
 protected:
 	bool FreeOnExplode () { return !m_SourceFromMem; }
 

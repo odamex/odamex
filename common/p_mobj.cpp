@@ -575,7 +575,8 @@ void AActor::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		int playerid = player ? player->id : 0;
-		arc << x
+		arc << netid
+			<< x
 			<< y
 			<< z
 			<< pitch
@@ -631,7 +632,10 @@ void AActor::Serialize (FArchive &arc)
 	{
 		unsigned dummy;
 		unsigned playerid;
-		arc >> x
+		int newnetid;
+
+		arc >> newnetid
+			>> x
 			>> y
 			>> z
 			>> pitch
@@ -676,6 +680,8 @@ void AActor::Serialize (FArchive &arc)
 			>> dummy
 			>> translucency
 			>> waterlevel;
+
+		P_SetThingId(this, newnetid);
 
 		DWORD trans;
 		arc >> trans;

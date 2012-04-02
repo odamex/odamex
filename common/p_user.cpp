@@ -734,6 +734,7 @@ void player_s::Serialize (FArchive &arc)
 	{ // saving to archive
 		arc << id
 			<< playerstate
+			<< spectator
 			<< cmd
 			<< userinfo
 			<< viewz
@@ -782,8 +783,9 @@ void player_s::Serialize (FArchive &arc)
 
 		arc >> id
 			>> playerstate
+			>> spectator
 			>> cmd
-			>> dummyuserinfo // Q: Would it be better to restore the userinfo from the archive?
+			>> userinfo // Q: Would it be better to restore the userinfo from the archive?
 			>> viewz
 			>> viewheight
 			>> deltaviewheight
@@ -826,8 +828,8 @@ void player_s::Serialize (FArchive &arc)
 
 		camera = mo;
 
-		if (&consoleplayer() != this)
-			userinfo = dummyuserinfo;
+//		if (&consoleplayer() != this)
+//			userinfo = dummyuserinfo;
 	}
 }
 

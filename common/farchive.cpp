@@ -472,6 +472,25 @@ bool FLZOMemFile::IsOpen () const
 	return !!m_Buffer;
 }
 
+size_t FLZOMemFile::Length() const
+{
+	return m_BufferSize + 8;
+}
+
+void FLZOMemFile::WriteToBuffer(void *buf, size_t length) const
+{
+	length = length < (m_BufferSize + 8) ? length : (m_BufferSize + 8);
+	
+	if (m_ImplodedBuffer)
+	{
+		memcpy(buf, m_ImplodedBuffer, length);
+	}
+	else
+	{
+		memcpy(buf, m_Buffer, length);
+	}
+}
+
 //============================================
 //
 // FArchive

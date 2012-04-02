@@ -34,6 +34,7 @@
 #include "d_net.h"
 #include "cl_demo.h"
 #include "m_swap.h"
+#include "p_saveg.h"
 #include "version.h"
 
 EXTERN_CVAR(sv_maxclients)
@@ -43,10 +44,6 @@ extern std::string server_host;
 extern std::string digest;
 extern playerskin_t* skins;
 extern std::vector<std::string> wadfiles, wadhashes;
-
-static const std::string default_netdemo_filename("%n_%g_%w-%m_%d");
-
-static buf_t netbuf_snapshot(MAX_UDP_PACKET);
 
 NetDemo::NetDemo() :
 	state(st_stopped), oldstate(st_stopped), filename(""),
@@ -192,9 +189,7 @@ bool NetDemo::writeHeader()
 		fwrite(&tmpheader.reserved, sizeof(tmpheader.reserved), 1, demofp);
 	
 	if (cnt < NetDemo::HEADER_SIZE)
-	{
 		return false;
-	}
 
 	return true;
 }
@@ -236,9 +231,7 @@ bool NetDemo::readHeader()
 		fread(&header.reserved, sizeof(header.reserved), 1, demofp);
 	
 	if (cnt < NetDemo::HEADER_SIZE)
-	{
 		return false;
-	}
 
 	// convert from little-endian to native byte ordering
 	header.snapshot_index_size 		= SHORT(header.snapshot_index_size);
@@ -264,6 +257,7 @@ bool NetDemo::writeSnapshotIndex()
 {
 	fseek(demofp, header.snapshot_index_offset, SEEK_SET);
 
+
 	for (size_t i = 0; i < snapshot_index.size(); i++)
 	{
 		netdemo_index_entry_t entry;
@@ -278,9 +272,7 @@ bool NetDemo::writeSnapshotIndex()
 			fwrite(&entry.offset, sizeof(entry.offset), 1, demofp);
 		
 		if (cnt < NetDemo::INDEX_ENTRY_SIZE)
-		{
 			return false;
-		}
 	}
 
 	return true;
@@ -309,9 +301,7 @@ bool NetDemo::readSnapshotIndex()
 			fread(&entry.offset, sizeof(entry.offset), 1, demofp);
 		
 		if (cnt < INDEX_ENTRY_SIZE)
-		{
 			return false;
-		}
 
 		// convert from little-endian to native
 		entry.ticnum = LONG(entry.ticnum);	
@@ -342,9 +332,7 @@ bool NetDemo::writeMapIndex()
 			fwrite(&entry.offset, sizeof(entry.offset), 1, demofp);
 		
 		if (cnt < NetDemo::INDEX_ENTRY_SIZE)
-		{
 			return false;
-		}
 	}
 
 	return true;
@@ -365,9 +353,7 @@ bool NetDemo::readMapIndex()
 			fread(&entry.offset, sizeof(entry.offset), 1, demofp);
 		
 		if (cnt < INDEX_ENTRY_SIZE)
-		{
 			return false;
-		}
 
 		// convert from little-endian to native
 		entry.ticnum = LONG(entry.ticnum);	
@@ -660,238 +646,6 @@ bool NetDemo::stopPlaying()
 	return true;
 }
 
-
-//
-// writeSnapshotData()
-//
-//   Write the entire state of the game to netbuffer.  Called by
-//   writeSnapshot() and used to simulate SV_ClientFullUpdate() when
-//   writing the connection sequence at the start of a netdemo.
-//
-
-void NetDemo::writeSnapshotData(buf_t *netbuffer)
-{
-	// Make sure the gamestate will be correct when loading a snapshot
-	if (gamestate == GS_LEVEL)
-	{
-		MSG_WriteMarker		(netbuffer, svc_loadmap);
-		MSG_WriteString		(netbuffer, level.mapname);
-	}
-	else if (gamestate == GS_INTERMISSION)
-	{
-		// Force clients into intermission
-		MSG_WriteMarker		(netbuffer, svc_exitlevel);
-	}
-	else
-		return;
-
-	for (size_t i = 0; i < players.size(); i++)
-	{
-		if (players[i].mo)
-		{
-			// Server spawns player
-			MSG_WriteMarker	(netbuffer, svc_spawnplayer);
-			MSG_WriteByte	(netbuffer, players[i].id);
-			MSG_WriteShort	(netbuffer, players[i].mo->netid);
-			MSG_WriteLong	(netbuffer, players[i].mo->angle);
-			MSG_WriteLong	(netbuffer, players[i].mo->x);
-			MSG_WriteLong	(netbuffer, players[i].mo->y);
-			MSG_WriteLong	(netbuffer, players[i].mo->z);
-		}
-	    
-		// userinfo updates
-		MSG_WriteMarker (netbuffer, svc_userinfo);
-		MSG_WriteByte   (netbuffer, players[i].id);
-		MSG_WriteString (netbuffer, players[i].userinfo.netname);
-		MSG_WriteByte   (netbuffer, players[i].userinfo.team);
-		MSG_WriteLong   (netbuffer, players[i].userinfo.gender);
-		MSG_WriteLong   (netbuffer, players[i].userinfo.color);
-		MSG_WriteString (netbuffer, skins[players[i].userinfo.skin].name);
-		MSG_WriteShort  (netbuffer, players[i].GameTime);
-
-		// updates for frag/kill count
-		MSG_WriteMarker	(netbuffer, svc_updatefrags);
-		MSG_WriteByte	(netbuffer, players[i].id);
-		if (sv_gametype != GM_COOP)
-			MSG_WriteShort	(netbuffer, players[i].fragcount);
-		else
-			MSG_WriteShort	(netbuffer, players[i].killcount);
-		MSG_WriteShort	(netbuffer, players[i].deathcount);
-		MSG_WriteShort	(netbuffer, players[i].points);
-
-		// whether or not player is a spectator
-		MSG_WriteMarker	(netbuffer, svc_spectate);
-		MSG_WriteByte	(netbuffer, players[i].id);
-		MSG_WriteByte	(netbuffer, players[i].spectator);
-	}
-
-	// team point updates
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
-	{
-		MSG_WriteMarker	(netbuffer, svc_teampoints);
-		for (int n = 0; n < NUMTEAMS; n++)
-			MSG_WriteShort	(netbuffer, TEAMpoints[n]);
-	}
-
-	// updates for all mobjs
-	AActor *mo;
-	TThinkerIterator<AActor> iterator;
-	while ( (mo = iterator.Next() ) )
-	{
-		if (!mo || mo->player)
-			continue;
-	
-		MSG_WriteMarker	(netbuffer, svc_spawnmobj);
-		MSG_WriteLong	(netbuffer, mo->x);
-		MSG_WriteLong	(netbuffer, mo->y);
-		MSG_WriteLong	(netbuffer, mo->z);
-		MSG_WriteLong	(netbuffer, mo->angle);
-		MSG_WriteShort	(netbuffer, mo->type);
-		MSG_WriteShort	(netbuffer, mo->netid);
-		MSG_WriteByte	(netbuffer, mo->rndindex);
-		MSG_WriteShort	(netbuffer, mo->state - states);
-
-		if (mo->translation)
-		{
-			MSG_WriteMarker	(netbuffer, svc_mobjtranslation);
-			MSG_WriteShort	(netbuffer, mo->netid);
-			MSG_WriteByte	(netbuffer, (mo->translation - translationtables) >> 8);
-		}
-				
-		if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE)
-		{
-			MSG_WriteShort	(netbuffer, mo->target ? mo->target->netid : 0);
-			MSG_WriteShort	(netbuffer, mo->netid);
-			MSG_WriteLong	(netbuffer, mo->angle);
-			MSG_WriteLong	(netbuffer, mo->momx);
-			MSG_WriteLong	(netbuffer, mo->momy);
-			MSG_WriteLong	(netbuffer, mo->momz);
-		}
-		else if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
-		{
-			MSG_WriteMarker	(netbuffer, svc_mobjinfo);
-			MSG_WriteShort	(netbuffer, mo->netid);
-			MSG_WriteLong	(netbuffer, mo->flags);
-		}
-		
-		if ((mo->flags & MF_CORPSE) && (mo->state - states != S_GIBS))
-		{
-			MSG_WriteMarker	(netbuffer, svc_corpse);
-			MSG_WriteShort	(netbuffer, mo->netid);
-			MSG_WriteByte	(netbuffer, mo->frame);
-			MSG_WriteByte	(netbuffer, mo->tics);
-		}
-	}
-
-	// updates about flags in CTF
-	if (sv_gametype == GM_CTF)
-	{
-		MSG_WriteMarker	(netbuffer, svc_ctfevent);
-		MSG_WriteByte	(netbuffer, SCORE_NONE);
-
-		for (size_t n = 0; n < NUMFLAGS; n++)
-		{
-			MSG_WriteByte	(netbuffer, CTFdata[n].state);
-			MSG_WriteByte	(netbuffer, CTFdata[n].flagger); 
-    	}
-
-		MSG_WriteMarker	(netbuffer, svc_ctfevent);
-		MSG_WriteByte	(netbuffer, SCORE_REFRESH);
-		MSG_WriteByte	(netbuffer, 0);
-		MSG_WriteByte	(netbuffer, consoleplayer().id);
-		MSG_WriteByte	(netbuffer, consoleplayer().points);
-
-		for (size_t n = 0; n < NUMFLAGS; n++)
-			MSG_WriteLong	(netbuffer, TEAMpoints[n]);
-	}
-
-	// updates about moving sectors
-	for (int n = 0; n < numsectors; n++)
-	{
-		sector_t *sec = &sectors[n];
-		
-		if (sec->moveable)
-		{
-			MSG_WriteMarker	(netbuffer, svc_sector);
-			MSG_WriteShort	(netbuffer, n);
-			MSG_WriteShort	(netbuffer, sec->floorheight >> FRACBITS);
-			MSG_WriteShort	(netbuffer, sec->ceilingheight >> FRACBITS);
-			MSG_WriteShort	(netbuffer, sec->floorpic);
-			MSG_WriteShort	(netbuffer, sec->ceilingpic);
-		}
-	}
-
-	// updates about switches on walls
-	for (int n = 0; n < numlines; n++)
-	{
-		unsigned int state = 0, time = 0;
-		if (P_GetButtonInfo(&lines[n], state, time) || lines[n].wastoggled)
-		{
-			MSG_WriteMarker	(netbuffer, svc_switch);
-			MSG_WriteLong	(netbuffer, n);
-			MSG_WriteByte	(netbuffer, lines[n].wastoggled);
-			MSG_WriteLong	(netbuffer, state);
-			MSG_WriteLong	(netbuffer, time);
-		}
-	}
-
-	// updates about guns & ammo & health
-	MSG_WriteMarker	(netbuffer, svc_playerinfo);
-
-	for (int n = 0; n < NUMWEAPONS; n++)
-		MSG_WriteBool	(netbuffer, consoleplayer().weaponowned[n]);
-
-	for (int n = 0; n < NUMAMMO; n++)
-	{
-		MSG_WriteShort	(netbuffer, consoleplayer().maxammo[n]);
-		MSG_WriteShort	(netbuffer, consoleplayer().ammo[n]);
-	}
-
-	MSG_WriteByte	(netbuffer, consoleplayer().health);
-	MSG_WriteByte	(netbuffer, consoleplayer().armorpoints);
-	MSG_WriteByte	(netbuffer, consoleplayer().armortype);
-	MSG_WriteByte	(netbuffer, consoleplayer().readyweapon);
-	MSG_WriteByte	(netbuffer, consoleplayer().backpack);
-	
-	for (int n = 0; n < NUMCARDS; n++)
-		MSG_WriteBool	(netbuffer, consoleplayer().cards[n]);
-
-	// update the server settings
-	// TODO!	
-}
-
-
-//
-// writeSnapshotIndexEntry()
-//
-//   
-void NetDemo::writeSnapshotIndexEntry()
-{
-	// Update the snapshot index
-	netdemo_index_entry_t entry;
-	
-	fflush(demofp);
-	entry.offset = ftell(demofp);
-	entry.ticnum = gametic;
-	snapshot_index.push_back(entry);
-}
-
-//
-// writeMapIndexEntry()
-//
-//   
-void NetDemo::writeMapIndexEntry()
-{
-	// Update the map index
-	netdemo_index_entry_t entry;
-	
-	fflush(demofp);
-	entry.offset = ftell(demofp);
-	entry.ticnum = gametic;
-	map_index.push_back(entry);
-}
-
-
 //
 // writeLocalCmd()
 //
@@ -998,12 +752,11 @@ void NetDemo::writeMessages()
 
 	if (atSnapshotInterval())
 	{
-		SZ_Clear(&netbuf_snapshot);	
-
-		writeSnapshotData(&netbuf_snapshot);
+		size_t length;
+		writeSnapshotData(snapbuf, length);
 		writeSnapshotIndexEntry();
 			
-		writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_snapshot);
+		writeChunk(snapbuf, length, NetDemo::msg_snapshot);
 	}
 
 	if (connected)
@@ -1564,17 +1317,6 @@ void NetDemo::readSnapshot(buf_t *netbuffer, const netdemo_index_entry_t *snap)
 	if (!isPlaying() || !snap)
 		return;
 
-	// Remove all players
-	players.clear();
-
-	// Remove all actors
-	TThinkerIterator<AActor> iterator;
-	AActor *mo;
-	while ( (mo = iterator.Next() ) )
-	{
-		mo->Destroy();
-	}
-
 	gametic = snap->ticnum;
 	int file_offset = snap->offset;
 	fseek(demofp, file_offset, SEEK_SET);
@@ -1584,21 +1326,20 @@ void NetDemo::readSnapshot(buf_t *netbuffer, const netdemo_index_entry_t *snap)
 	uint32_t len = 0, tic = 0;
 	readMessageHeader(type, len, tic);
 
-	if (netbuffer->maxsize() - netbuffer->size() < len)
-		netbuffer->resize(netbuffer->size() + len + 1, false);
-	
-	byte *data = new byte[len];
-	size_t cnt = fread(data, 1, len, demofp);
+	if (len > NetDemo::MAX_SNAPSHOT_SIZE)
+	{
+		error("Snapshot too large to read");
+		return;
+	}
+		
+	size_t cnt = fread(snapbuf, 1, len, demofp);
 	if (cnt < len)
 	{
-		delete [] data;
 		error("Unable to read snapshot from data file");
+		return;
 	}
-	
-	netdemotic = snap->ticnum - header.starting_gametic;
-	netbuffer->WriteChunk((char *)data, len, netbuffer->size());
-	
-	delete [] data;
+
+	readSnapshotData(snapbuf, len);
 }
 
 
@@ -1653,13 +1394,12 @@ void NetDemo::writeMapChange()
 {
 	if (connected && gamestate == GS_LEVEL)
 	{
-		SZ_Clear(&netbuf_snapshot);	
-	
-		writeSnapshotData(&netbuf_snapshot);
+		size_t length;
+		writeSnapshotData(snapbuf, length);
 		writeMapIndexEntry();
 		writeSnapshotIndexEntry();
 		
-		writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_snapshot);
+		writeChunk(snapbuf, length, NetDemo::msg_snapshot);
 	}
 }
 
@@ -1667,13 +1407,178 @@ void NetDemo::writeIntermission()
 {
 	if (connected && gamestate == GS_INTERMISSION)
 	{
-		SZ_Clear(&netbuf_snapshot);
-	
-		writeSnapshotData(&netbuf_snapshot);
+		size_t length;
+		writeSnapshotData(snapbuf, length);
 		writeSnapshotIndexEntry();
-
-		writeChunk(netbuf_snapshot.ptr(), netbuf_snapshot.size(), NetDemo::msg_snapshot);
+		
+		writeChunk(snapbuf, length, NetDemo::msg_snapshot);
 	}
+}
+
+//
+// writeSnapshotData()
+//
+//   Write the entire state of the game to netbuffer.  Called by
+//   writeSnapshot() and used to simulate SV_ClientFullUpdate() when
+//   writing the connection sequence at the start of a netdemo.
+//
+
+void NetDemo::writeSnapshotData(byte *buf, size_t &length)
+{
+	G_SnapshotLevel();
+
+	FLZOMemFile memfile;
+	memfile.Open();			// open for writing
+
+	FArchive arc(memfile);
+
+	// Save the server cvars
+	byte vars[4096], *vars_p;
+	vars_p = vars;
+
+	cvar_t::C_WriteCVars(&vars_p, CVAR_SERVERINFO);
+	arc.WriteCount(vars_p - vars);
+	arc.Write(vars, vars_p - vars);
+
+	arc << level.mapname;
+	arc << (BYTE)(gamestate == GS_INTERMISSION);
+
+	G_SerializeSnapshots(arc);
+	P_SerializeRNGState(arc);
+	P_SerializeACSDefereds(arc);
+	
+	arc << level.time;
+
+	for (int i = 0; i < NUM_WORLDVARS; i++)
+		arc << ACS_WorldVars[i];
+
+	for (int i = 0; i < NUM_GLOBALVARS; i++)
+		arc << ACS_GlobalVars[i];
+
+	byte check = 0x1d;
+	arc << check;          // consistancy marker
+
+	gameaction = ga_nothing;
+
+	arc.Close();
+
+	// get the size of the snapshot data	
+	length = memfile.Length();
+	memfile.WriteToBuffer(buf, NetDemo::MAX_SNAPSHOT_SIZE);
+			
+    if (level.info->snapshot != NULL)
+    {
+        delete level.info->snapshot;
+        level.info->snapshot = NULL;
+    }
+
+}
+
+
+void NetDemo::readSnapshotData(byte *buf, size_t length)
+{
+	byte cid = consoleplayer_id;
+	byte did = displayplayer_id;
+
+	// Remove all players	
+	players.clear();
+	
+	// Remove all actors
+	TThinkerIterator<AActor> iterator;
+	AActor *mo;
+	while ( (mo = iterator.Next() ) )
+		mo->Destroy();
+	
+	gameaction = ga_nothing;
+	
+	FLZOMemFile memfile;
+	
+	length = 0;
+	memfile.Open(buf);		// open for reading
+
+	FArchive arc(memfile);
+
+	// Read the server cvars
+	byte vars[4096], *vars_p;
+	vars_p = vars;
+	size_t len = arc.ReadCount ();
+	arc.Read(vars, len);
+	cvar_t::C_ReadCVars(&vars_p);
+
+	std::string mapname;
+	bool intermission;
+	arc >> mapname;
+	arc >> intermission;
+
+	G_SerializeSnapshots(arc);
+	P_SerializeRNGState(arc);
+	P_SerializeACSDefereds(arc);
+	
+	arc >> level.time;
+
+	for (int i = 0; i < NUM_WORLDVARS; i++)
+		arc >> ACS_WorldVars[i];
+
+	for (int i = 0; i < NUM_GLOBALVARS; i++)
+		arc >> ACS_GlobalVars[i];
+
+	netgame = multiplayer = true;
+
+	// load a base level
+	savegamerestore = true;     // Use the player actors in the savegame
+	serverside = false;
+	G_InitNew(mapname.c_str());
+	displayplayer_id = consoleplayer_id = 1;
+	savegamerestore = false;
+
+	// read consistancy marker
+	byte check;
+	arc >> check;
+
+	arc.Close();
+
+	if (check != 0x1d)
+		error("Bad snapshot");
+	
+	consoleplayer_id = cid;
+	
+	// try to restore display player
+	player_t *disp = &idplayer(did);
+	if (validplayer(*disp) && disp->ingame() && !disp->spectator)
+		displayplayer_id = did;
+	else
+		displayplayer_id = cid;
+}
+
+
+//
+// writeSnapshotIndexEntry()
+//
+//   
+void NetDemo::writeSnapshotIndexEntry()
+{
+	// Update the snapshot index
+	netdemo_index_entry_t entry;
+	
+	fflush(demofp);
+	entry.offset = ftell(demofp);
+	entry.ticnum = gametic;
+	snapshot_index.push_back(entry);
+}
+
+//
+// writeMapIndexEntry()
+//
+//   
+void NetDemo::writeMapIndexEntry()
+{
+	// Update the map index
+	netdemo_index_entry_t entry;
+	
+	fflush(demofp);
+	entry.offset = ftell(demofp);
+	entry.ticnum = gametic;
+	map_index.push_back(entry);
 }
 
 VERSION_CONTROL (cl_demo_cpp, "$Id: cl_demo.cpp 2290 2011-06-27 05:05:38Z dr_sean $")

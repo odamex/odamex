@@ -82,7 +82,10 @@ private:
 	const netdemo_index_entry_t *snapshotLookup(int ticnum) const;
 	void writeLauncherSequence(buf_t *netbuffer);
 	void writeConnectionSequence(buf_t *netbuffer);
-	void writeSnapshotData(buf_t *netbuffer);
+	
+	void readSnapshotData(byte *buf, size_t length);
+	void writeSnapshotData(byte *buf, size_t &length);
+	
 	void writeSnapshotIndexEntry();
 	void writeMapIndexEntry();
 	void readSnapshot(buf_t *netbuffer, const netdemo_index_entry_t *snap);
@@ -91,6 +94,7 @@ private:
 	bool readHeader();
 	
 	bool atSnapshotInterval();
+	
 	bool writeSnapshotIndex();
 	bool readSnapshotIndex();
 	bool writeMapIndex();
@@ -122,9 +126,9 @@ private:
 	static const size_t MESSAGE_HEADER_SIZE = 9;
 	static const size_t INDEX_ENTRY_SIZE = 8;
 
-	static const uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
+	static const uint16_t SNAPSHOT_SPACING = 5 * TICRATE;
 
-	static const size_t MAX_SNAPSHOT_SIZE = MAX_UDP_PACKET;
+	static const size_t MAX_SNAPSHOT_SIZE = 65536;
 	
 	netdemo_state_t		state;
 	netdemo_state_t		oldstate;	// used when unpausing
@@ -136,7 +140,8 @@ private:
 	netdemo_header_t	header;	
 	std::vector<netdemo_index_entry_t> snapshot_index;
 	std::vector<netdemo_index_entry_t> map_index;
-
+	
+	byte				snapbuf[NetDemo::MAX_SNAPSHOT_SIZE];
 	int					netdemotic;
 };
 
