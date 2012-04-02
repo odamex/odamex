@@ -362,7 +362,8 @@ BEGIN_COMMAND (spynext)
 		else if (consoleplayer().spectator ||
 			 sv_gametype == GM_COOP ||
 			 (sv_gametype != GM_DM &&
-				players[curr].userinfo.team == consoleplayer().userinfo.team) || netdemo.isPlaying())
+				players[curr].userinfo.team == consoleplayer().userinfo.team) || 
+				(netdemo.isPlaying() || netdemo.isPaused()))
 		{
 			displayplayer_id = players[curr].id;
 			break;

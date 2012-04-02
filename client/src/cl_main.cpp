@@ -820,7 +820,7 @@ END_COMMAND(netpause)
 
 BEGIN_COMMAND(netplay)
 {
-	if(argc < 1)
+	if(argc <= 1)
 	{
 		Printf(PRINT_HIGH, "Usage: netplay <demoname>\n");
 		return;
@@ -841,7 +841,7 @@ END_COMMAND(netplay)
 
 BEGIN_COMMAND(netdemostats)
 {
-	if (!netdemo.isPlaying())
+	if (!netdemo.isPlaying() && !netdemo.isPaused())
 		return;
 
 	std::vector<int> maptimes = netdemo.getMapChangeTimes();
