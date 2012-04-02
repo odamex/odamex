@@ -5064,9 +5064,6 @@ void SV_SendPlayerInfo(player_t &player)
 	MSG_WriteByte (&cl->reliablebuf, player.armortype);
 	MSG_WriteByte (&cl->reliablebuf, player.readyweapon);
 	MSG_WriteByte (&cl->reliablebuf, player.backpack);
-
-	for (int i = 0; i < NUMCARDS; i++)
-		MSG_WriteBool (&cl->reliablebuf, player.cards[i]);
 }
 
 //
