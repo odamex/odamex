@@ -1068,11 +1068,19 @@ void G_Ticker (void)
 		P_Ticker ();
 		ST_Ticker ();
 		AM_Ticker ();
+		
+		if (netdemo.isPlaying())
+			netdemo.ticker();
+
 		break;
 
 	case GS_INTERMISSION:
 		ST_Ticker ();
 		WI_Ticker ();
+
+		if (netdemo.isPlaying())
+			netdemo.ticker();
+
 		break;
 
 	case GS_FINALE:

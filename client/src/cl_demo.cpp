@@ -977,6 +977,11 @@ bool NetDemo::atSnapshotInterval()
 }
 
 
+void NetDemo::ticker()
+{
+	netdemotic++;
+}
+
 //
 // writeMessages()
 //
@@ -1603,7 +1608,7 @@ void NetDemo::readSnapshot(buf_t *netbuffer, const netdemo_index_entry_t *snap)
 //
 int NetDemo::calculateTotalTime()
 {
-	if (!isPlaying())
+	if (!isPlaying() && !isPaused())
 		return 0;
 
 	return ((header.ending_gametic - header.starting_gametic) / TICRATE);
@@ -1617,10 +1622,10 @@ int NetDemo::calculateTotalTime()
 //
 int NetDemo::calculateTimeElapsed()
 {
-	if (!isPlaying())
+	if (!isPlaying() && !isPaused())
 		return 0;
 
-	return ((gametic - header.starting_gametic) / TICRATE);	
+	return (netdemotic / TICRATE);	
 }
 
 const std::vector<int> NetDemo::getMapChangeTimes()

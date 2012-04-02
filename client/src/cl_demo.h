@@ -40,6 +40,7 @@ public:
 	void nextMap(buf_t *netbuffer);
 	void prevMap(buf_t *netbuffer);
 
+	void ticker();
 	int calculateTimeElapsed();
 	int calculateTotalTime();
 	const std::vector<int> getMapChangeTimes();
@@ -135,6 +136,8 @@ private:
 	netdemo_header_t	header;	
 	std::vector<netdemo_index_entry_t> snapshot_index;
 	std::vector<netdemo_index_entry_t> map_index;
+
+	int					netdemotic;
 };
 
 
