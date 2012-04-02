@@ -52,6 +52,7 @@
 #include "cl_download.h"
 #include "cl_maplist.h"
 #include "cl_vote.h"
+#include "p_mobj.h"
 
 #include <string>
 #include <vector>
@@ -98,10 +99,6 @@ std::string digest;
 
 // denis - clientside compressor, used for decompression
 huffman_client compressor;
-
-// denis - fast netid lookup
-typedef std::map<size_t, AActor::AActorPtr> netid_map_t;
-netid_map_t actor_by_netid;
 
 std::string server_host = "";	// hostname of server
 
@@ -284,7 +281,7 @@ void CL_QuitNetGame(void)
 	sv_allowexit = 1;
 	sv_allowredscreen = 1;
 
-	actor_by_netid.clear();
+	P_ClearAllNetIds();
 	players.clear();
 
 	if (netdemo.isRecording())
@@ -333,7 +330,7 @@ void CL_Reconnect(void)
 		connected = false;
 		gameaction = ga_fullconsole;
 
-		actor_by_netid.clear();
+		P_ClearAllNetIds();
 	}
 	else if (lastconaddr.ip[0])
 	{
@@ -1025,43 +1022,6 @@ void CL_TeamPoints (void)
 }
 
 //
-// denis - fast netid lookup
-//
-AActor* CL_FindThingById(size_t id)
-{
-	netid_map_t::iterator i = actor_by_netid.find(id);
-
-	if(i == actor_by_netid.end())
-		return AActor::AActorPtr();
-	else
-		return i->second;
-}
-
-void CL_SetThingId(AActor *mo, size_t newnetid)
-{
-	mo->netid = newnetid;
-	actor_by_netid[newnetid] = mo->ptr();
-}
-
-void CL_ClearID(size_t id)
-{
-    AActor *mo = CL_FindThingById(id);
-
-	if(!mo)
-		return;
-
-	if(mo->player)
-	{
-		if(mo->player->mo == mo)
-			mo->player->mo = AActor::AActorPtr();
-
-		mo->player = NULL;
-	}
-
-	mo->Destroy();
-}
-
-//
 // CL_MoveMobj
 //
 void CL_MoveMobj(void)
@@ -1071,7 +1031,7 @@ void CL_MoveMobj(void)
 	fixed_t  x, y, z;
 
 	netid = MSG_ReadShort();
-	mo = CL_FindThingById (netid);
+	mo = P_FindThingById (netid);
 
 	byte rndindex = MSG_ReadByte();
 	x = MSG_ReadLong();
@@ -1097,7 +1057,7 @@ void CL_DamageMobj()
 	health = MSG_ReadShort();
 	pain = MSG_ReadByte();
 
-	mo = CL_FindThingById (netid);
+	mo = P_FindThingById (netid);
 
 	if (!mo)
 		return;
@@ -1646,7 +1606,7 @@ void CL_SpawnMobj()
 	if(type >= NUMMOBJTYPES)
 		return;
 
-	CL_ClearID(netid);
+	P_ClearId(netid);
 
 	mo = new AActor (x, y, z, (mobjtype_t)type);
 
@@ -1660,7 +1620,7 @@ void CL_SpawnMobj()
 	}
 
 	mo->angle = angle;
-	CL_SetThingId(mo, netid);
+	P_SetThingId(mo, netid);
 	mo->rndindex = rndindex;
 
 	if (state < NUMSTATES)
@@ -1668,7 +1628,7 @@ void CL_SpawnMobj()
 
 	if(mo->flags & MF_MISSILE)
 	{
-		AActor *target = CL_FindThingById(MSG_ReadShort());
+		AActor *target = P_FindThingById(MSG_ReadShort());
 		if(target)
 			mo->target = target->ptr();
 		CL_SetMobjSpeedAndAngle();
@@ -1699,7 +1659,7 @@ void CL_SpawnMobj()
 //
 void CL_Corpse(void)
 {
-	AActor *mo = CL_FindThingById(MSG_ReadShort());
+	AActor *mo = P_FindThingById(MSG_ReadShort());
 	int frame = MSG_ReadByte();
 	int tics = MSG_ReadByte();
 	
@@ -1734,7 +1694,7 @@ void CL_Corpse(void)
 //
 void CL_TouchSpecialThing (void)
 {
-	AActor *mo = CL_FindThingById(MSG_ReadShort());
+	AActor *mo = P_FindThingById(MSG_ReadShort());
 
 	if(!consoleplayer().mo || !mo)
 		return;
@@ -1777,7 +1737,7 @@ void CL_SpawnPlayer()
 	p->real_velocity[1] = 0;
 	p->real_velocity[2] = 0;
 
-	CL_ClearID(netid);
+	P_ClearId(netid);
 
 	// first disassociate the corpse
 	if (p->mo)
@@ -1796,7 +1756,7 @@ void CL_SpawnPlayer()
 	mobj->pitch = mobj->roll = 0;
 	mobj->player = p;
 	mobj->health = p->health;
-	CL_SetThingId(mobj, netid);
+	P_SetThingId(mobj, netid);
 
 	// [RH] Set player sprite based on skin
 	if(p->userinfo.skin >= numskins)
@@ -1883,7 +1843,7 @@ void CL_SetMobjSpeedAndAngle(void)
 	int     netid;
 
 	netid = MSG_ReadShort();
-	mo = CL_FindThingById(netid);
+	mo = P_FindThingById(netid);
 
 	if (!mo)
 	{
@@ -1907,7 +1867,7 @@ void CL_ExplodeMissile(void)
 	int     netid;
 
 	netid = MSG_ReadShort();
-	mo = CL_FindThingById(netid);
+	mo = P_FindThingById(netid);
 
 	if (!mo)
 		return;
@@ -1925,7 +1885,7 @@ void CL_UpdateMobjInfo(void)
 	int flags = MSG_ReadLong();
 	//int flags2 = MSG_ReadLong();
 
-	AActor *mo = CL_FindThingById(netid);
+	AActor *mo = P_FindThingById(netid);
 
 	if (!mo)
 		return;
@@ -1940,7 +1900,7 @@ void CL_UpdateMobjInfo(void)
 //
 void CL_RemoveMobj(void)
 {
-	CL_ClearID(MSG_ReadShort());
+	P_ClearId(MSG_ReadShort());
 }
 
 
@@ -1988,9 +1948,9 @@ extern int MeansOfDeath;
 //
 void CL_KillMobj(void)
 {
- 	AActor *source = CL_FindThingById (MSG_ReadShort() );
-	AActor *target = CL_FindThingById (MSG_ReadShort() );
-	AActor *inflictor = CL_FindThingById (MSG_ReadShort() );
+ 	AActor *source = P_FindThingById (MSG_ReadShort() );
+	AActor *target = P_FindThingById (MSG_ReadShort() );
+	AActor *inflictor = P_FindThingById (MSG_ReadShort() );
 	int health = MSG_ReadShort();
 
 	MeansOfDeath = MSG_ReadLong();
@@ -2130,7 +2090,7 @@ void CL_Sound(void)
 	byte attenuation = MSG_ReadByte();
 	byte vol = MSG_ReadByte();
 
-	AActor *mo = CL_FindThingById (netid);
+	AActor *mo = P_FindThingById (netid);
 
 	float volume = vol/(float)255;
 
@@ -2559,7 +2519,7 @@ void CL_FinishedFullUpdate()
 //
 void CL_SetMobjState()
 {
-	AActor *mo = CL_FindThingById (MSG_ReadShort() );
+	AActor *mo = P_FindThingById (MSG_ReadShort() );
 	SWORD s = MSG_ReadShort();
 
 	if (!mo || s >= NUMSTATES)
@@ -2586,7 +2546,7 @@ void CL_ForceSetTeam (void)
 //
 void CL_Actor_Movedir()
 {
-	AActor *actor = CL_FindThingById (MSG_ReadShort());
+	AActor *actor = P_FindThingById (MSG_ReadShort());
 	BYTE movedir = MSG_ReadByte();
     SDWORD movecount = MSG_ReadLong();
     
@@ -2602,8 +2562,8 @@ void CL_Actor_Movedir()
 //
 void CL_Actor_Target()
 {
-	AActor *actor = CL_FindThingById (MSG_ReadShort());
-	AActor *target = CL_FindThingById (MSG_ReadShort());
+	AActor *actor = P_FindThingById (MSG_ReadShort());
+	AActor *target = P_FindThingById (MSG_ReadShort());
 
 	if (!actor || !target)
 		return;
@@ -2616,8 +2576,8 @@ void CL_Actor_Target()
 //
 void CL_Actor_Tracer()
 {
-	AActor *actor = CL_FindThingById (MSG_ReadShort());
-	AActor *tracer = CL_FindThingById (MSG_ReadShort());
+	AActor *actor = P_FindThingById (MSG_ReadShort());
+	AActor *tracer = P_FindThingById (MSG_ReadShort());
 
 	if (!actor || !tracer)
 		return;
@@ -2630,7 +2590,7 @@ void CL_Actor_Tracer()
 //
 void CL_MobjTranslation()
 {
-	AActor *mo = CL_FindThingById(MSG_ReadShort());
+	AActor *mo = P_FindThingById(MSG_ReadShort());
 	byte table = MSG_ReadByte();
 
 	mo->translation = translationtables + 256 * table;
@@ -2662,7 +2622,7 @@ void CL_Switch()
 void CL_ActivateLine(void)
 {
 	unsigned l = MSG_ReadLong();
-	AActor *mo = CL_FindThingById(MSG_ReadShort());
+	AActor *mo = P_FindThingById(MSG_ReadShort());
 	byte side = MSG_ReadByte();
 	byte activationType = MSG_ReadByte();
 
