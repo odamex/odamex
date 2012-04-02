@@ -133,6 +133,7 @@ enum svc_t
 	// netdemos - NullPoint
 	svc_netdemocap = 100,
 	svc_netdemostop = 101,
+	svc_netdemoloadsnap = 102,
 
 	svc_vote_update = 150, // [AM] - Send the latest voting state to the client.
 	svc_maplist = 155, // [AM] - Return a maplist status.

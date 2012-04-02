@@ -258,6 +258,7 @@ bool NetDemo::writeSnapshotIndex()
 	fseek(demofp, header.snapshot_index_offset, SEEK_SET);
 
 
+
 	for (size_t i = 0; i < snapshot_index.size(); i++)
 	{
 		netdemo_index_entry_t entry;
@@ -435,6 +436,11 @@ bool NetDemo::startRecording(const std::string &filename)
 		// Record any additional messages (usually a full update if auto-recording))
 		capture(&net_message);
 		writeMessages();
+		
+		SZ_Clear(&tempbuf);
+		MSG_WriteMarker(&tempbuf, svc_netdemoloadsnap);
+		capture(&tempbuf);
+		writeMessages();
 	}
 
 	return true;
@@ -517,6 +523,7 @@ bool NetDemo::startPlaying(const std::string &filename)
 	state = NetDemo::st_playing;
 
 	Printf(PRINT_HIGH, "Playing netdemo %s.\n", filename.c_str());
+	
 	return true;
 }
 
@@ -1226,10 +1233,10 @@ int NetDemo::getCurrentMapIndex() const
 //
 // nextSnapshot()
 //
-//		Reads the snapshot that follows the current gametic and fills netbuffer
-//		with its contents.
+//		Reads the snapshot that follows the current gametic and
+//		restores the world state to the snapshot
 //
-void NetDemo::nextSnapshot(buf_t *netbuffer)
+void NetDemo::nextSnapshot()
 {
 	if (!header.snapshot_index_size)
 		return;
@@ -1240,18 +1247,17 @@ void NetDemo::nextSnapshot(buf_t *netbuffer)
 	if (nextsnapindex >= header.snapshot_index_size)
 		return;
 	
-	SZ_Clear(netbuffer);
-	readSnapshot(netbuffer, &snapshot_index[nextsnapindex]);
+	readSnapshot(&snapshot_index[nextsnapindex]);
 }
 
 
 //
 // prevSnapshot()
 //
-//		Reads the snapshot that preceeds the current gametic and fills netbuffer
-//		with its contents.
+//		Reads the snapshot that preceeds the current gametic and
+//		restores the world state to the snapshot
 //
-void NetDemo::prevSnapshot(buf_t *netbuffer)
+void NetDemo::prevSnapshot()
 {
 	if (!header.snapshot_index_size)
 		return;
@@ -1261,17 +1267,16 @@ void NetDemo::prevSnapshot(buf_t *netbuffer)
 	if (prevsnapindex < 0)
 		prevsnapindex = 0;
 
-	SZ_Clear(netbuffer);
-	readSnapshot(netbuffer, &snapshot_index[prevsnapindex]);
+	readSnapshot(&snapshot_index[prevsnapindex]);
 }
 
 //
 // nextMap()
 //
-//		Reads the snapshot at the begining of the next map and fills netbuffer
-//		with its contents.
+//		Reads the snapshot at the begining of the next map and 
+//		restores the world state to the snapshot
 //
-void NetDemo::nextMap(buf_t *netbuffer)
+void NetDemo::nextMap()
 {
 	if (!header.map_index_size)
 		return;
@@ -1282,17 +1287,16 @@ void NetDemo::nextMap(buf_t *netbuffer)
 
 	const NetDemo::netdemo_index_entry_t *snap = &map_index[nextmapindex];
 	
-	SZ_Clear(netbuffer);
-	readSnapshot(netbuffer, snap);
+	readSnapshot(snap);
 }
 
 //
 // prevMap()
 //
-//		Reads the snapshot at the begining of the previous map and fills netbuffer
-//		with its contents.
+//		Reads the snapshot at the begining of the previous map and
+//		restores the world state to the snapshot
 //
-void NetDemo::prevMap(buf_t *netbuffer)
+void NetDemo::prevMap()
 {
 	if (!header.map_index_size)
 		return;
@@ -1302,9 +1306,8 @@ void NetDemo::prevMap(buf_t *netbuffer)
 		prevmapindex = 0;
 
 	const NetDemo::netdemo_index_entry_t *snap = &map_index[prevmapindex];
-	
-	SZ_Clear(netbuffer);
-	readSnapshot(netbuffer, snap);
+
+	readSnapshot(snap);
 }
 
 
@@ -1312,7 +1315,7 @@ void NetDemo::prevMap(buf_t *netbuffer)
 // readSnapshot()
 //
 //
-void NetDemo::readSnapshot(buf_t *netbuffer, const netdemo_index_entry_t *snap)
+void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 {
 	if (!isPlaying() || !snap)
 		return;

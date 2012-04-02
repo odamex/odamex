@@ -795,6 +795,7 @@ BEGIN_COMMAND(netrecord)
 		filename = CL_GenerateNetDemoFileName();
 
 	CL_NetDemoRecord(filename.c_str());
+	netdemo.writeMapChange();
 }
 END_COMMAND(netrecord)
 
@@ -862,31 +863,35 @@ END_COMMAND(netdemostats)
 BEGIN_COMMAND(netff)
 {
 	if (netdemo.isPlaying())
-		netdemo.nextSnapshot(&net_message);
+		netdemo.nextSnapshot();
 }
 END_COMMAND(netff)
 
 BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
-		netdemo.prevSnapshot(&net_message);
+		netdemo.prevSnapshot();
 }
 END_COMMAND(netrew)
 
 BEGIN_COMMAND(netnextmap)
 {
 	if (netdemo.isPlaying())
-		netdemo.nextMap(&net_message);
+		netdemo.nextMap();
 }
 END_COMMAND(netnextmap)
 
 BEGIN_COMMAND(netprevmap)
 {
 	if (netdemo.isPlaying())
-		netdemo.prevMap(&net_message);
+		netdemo.prevMap();
 }
 END_COMMAND(netprevmap)
 
+void CL_NetDemoLoadSnap()
+{
+	AddCommandString("netprevmap");
+}
 
 //
 // CL_MoveThing
@@ -2839,6 +2844,7 @@ void CL_InitCommands(void)
 
 	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
 	cmds[svc_netdemostop]       = &CL_NetDemoStop;
+	cmds[svc_netdemoloadsnap]	= &CL_NetDemoLoadSnap;
 	cmds[svc_fullupdatedone]	= &CL_FinishedFullUpdate;
 
 	cmds[svc_vote_update] = &CL_VoteUpdate;

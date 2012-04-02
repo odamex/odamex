@@ -35,10 +35,10 @@ public:
 	
 	int getSpacing() const { return header.snapshot_spacing; }
 	
-	void nextSnapshot(buf_t *netbuffer);
-	void prevSnapshot(buf_t *netbuffer);
-	void nextMap(buf_t *netbuffer);
-	void prevMap(buf_t *netbuffer);
+	void nextSnapshot();
+	void prevSnapshot();
+	void nextMap();
+	void prevMap();
 
 	void ticker();
 	int calculateTimeElapsed();
@@ -88,7 +88,7 @@ private:
 	
 	void writeSnapshotIndexEntry();
 	void writeMapIndexEntry();
-	void readSnapshot(buf_t *netbuffer, const netdemo_index_entry_t *snap);
+	void readSnapshot(const netdemo_index_entry_t *snap);
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
 	bool writeHeader();
 	bool readHeader();
