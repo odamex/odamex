@@ -351,12 +351,12 @@ CVAR_FUNC_DECL (vid_overscan, "1.0", "Overscan",	CVARTYPE_FLOAT, CVAR_CLIENTINFO
 
 // Netdemo format string
 CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t",
-				"Default netdemo name.  Parses the following tokens:\n %d: date in YYYYMMDD format\n %t: time in HHMMSS format\n %n: player name\n %g: gametype\n %w: WAD file loaded; either the first PWAD or the IWAD\n %m: Map lump\n %%: Literal percent sign",
+				"Default netdemo name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Screenshot format string
 CVAR_FUNC_DECL (cl_screenshotname, "Odamex_%g_%d_%t",
-				"Default screenshot name.  Parses the following tokens:\n %d: date in YYYYMMDD format\n %t: time in HHMMSS format\n %n: player name\n %g: gametype\n %w: WAD file loaded; either the first PWAD or the IWAD\n %m: Map lump\n %%: Literal percent sign",
+				"Default screenshot name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Record netdemos automatically
