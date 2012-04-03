@@ -731,12 +731,7 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 	std::string newfilename(expanded_filename);
 	newfilename = I_GetUserFileName(newfilename.c_str());
 
-	FILE *fp;
-	int counter = 1;
-	char cntstr[5];
-
 	// keep trying to find a filename that doesn't yet exist
-	
 	if (!M_FindFreeName(newfilename, "odd"))
 		I_Error("Unable to generate netdemo file name.  Please delete some netdemos.");
 	
