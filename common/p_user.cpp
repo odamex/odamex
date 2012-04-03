@@ -51,6 +51,7 @@ EXTERN_CVAR (sv_forcerespawn)
 extern bool predicting, step_mode;
 
 static player_t nullplayer;		// used to indicate 'player not found' when searching
+EXTERN_CVAR (cl_movebob);
 
 player_t &idplayer(byte id)
 {
@@ -160,7 +161,7 @@ void P_CalcHeight (player_t *player)
 		player->bob = FRACUNIT / 2;
 	}	
 
-	if (!player->spectator)
+	if (!(player->spectator && displayplayer_id == consoleplayer_id))
 		if (serverside || !predicting)
 		{
 			player->bob = FixedMul (player->mo->momx, player->mo->momx)
@@ -211,6 +212,8 @@ void P_CalcHeight (player_t *player)
 				player->deltaviewheight = 1;
 		}
 	}
+
+	bob *= cl_movebob;
 	player->viewz = player->mo->z + player->viewheight + bob;
 
 	if (player->viewz > player->mo->ceilingz-4*FRACUNIT)

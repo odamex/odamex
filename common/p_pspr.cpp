@@ -49,9 +49,16 @@
 
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(sv_allownobob)
-EXTERN_CVAR(cl_nobob)
+EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(sv_allowpwo)
+
+CVAR_FUNC_IMPL(cl_movebob)
+{
+	if (var > 1.0f)
+		var.Set(1.0f);
+	if (var < 0.0f)
+		var.Set(0.0f);
+}
 
 const char *weaponnames[] =
 {
@@ -164,8 +171,8 @@ static void P_BobWeapon(player_t *player)
 
 	float scale_amount = 1.0f;
 	
-	if ((clientside && sv_allownobob) || (clientside && serverside))
-		scale_amount = 1.0f - cl_nobob;
+	if ((clientside && sv_allowmovebob) || (clientside && serverside))
+		scale_amount = cl_movebob;
 	
 	struct pspdef_s *psp = &player->psprites[player->psprnum];
 	psp->sx = P_CalculateBobXPosition(player, scale_amount);

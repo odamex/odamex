@@ -111,8 +111,8 @@ CVAR (sv_weaponstay,		"1", "Weapons stay after pickup",
 // [SL] 2011-05-11 - Allow reconciliation for players on lagged connections
 CVAR (sv_unlag,				"1", "Allow reconciliation for players on lagged connections", 
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-// [ML] allow weapon bob changing
-CVAR (sv_allownobob, "0", "Allow weapon bob changing", 
+// [ML] allow weapon & view bob changing
+CVAR (sv_allowmovebob, "0", "Allow weapon & view bob changing", 
       CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 // [ML] Allow clients to adjust amount of red pain screen intensity
@@ -169,8 +169,8 @@ CVAR (cl_deathcam, "1", "Dead player's view follows the actor who killed them",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // Movebob
-CVAR (cl_nobob, "0", "Movebob", 
-      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_CLIENTINFO)
+CVAR_FUNC_DECL (cl_movebob, "1.0", "Adjust weapon and movement bobbing", 
+      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE | CVAR_CLIENTINFO)
 
 CVAR (cl_rockettrails, "0", "Rocket trails on/off (currently unused)", CVARTYPE_BOOL,  CVAR_ARCHIVE)
 
