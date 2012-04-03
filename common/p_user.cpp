@@ -757,6 +757,7 @@ void player_s::Serialize (FArchive &arc)
 			<< secretcount			
 			<< damagecount
 			<< bonuscount
+			<< points
 			/*<< attacker->netid*/
 			<< extralight
 			<< fixedcolormap
@@ -806,6 +807,7 @@ void player_s::Serialize (FArchive &arc)
 			>> secretcount			
 			>> damagecount
 			>> bonuscount
+			>> points
 			/*>> attacker->netid*/
 			>> extralight
 			>> fixedcolormap

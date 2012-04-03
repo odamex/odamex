@@ -341,7 +341,6 @@ bool C_DoNetDemoKey (event_t *ev)
 		return false;
 
 	static bool initialized = false;
-	std::string *binding;
 
 	if (!initialized)
 	{
@@ -357,15 +356,15 @@ bool C_DoNetDemoKey (event_t *ev)
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
 
-	binding = &NetDemoBindings[ev->data1];
+	std::string *binding = &NetDemoBindings[ev->data1];
 	
 	// nothing bound to this key specific to netdemos?
-	if (!binding->length())
+	if (binding->empty())
 		return false;
 
 	if (ev->type == ev_keydown)
 		AddCommandString(binding->c_str());
-	
+
 	return true;
 }
 
@@ -377,10 +376,6 @@ BOOL C_DoKey (event_t *ev)
 
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;
-
-	// Override bindings with netdemo playback bindings
-	if ((netdemo.isPlaying() || netdemo.isPaused()) && C_DoNetDemoKey(ev))
-		return true;
 
 	dclickspot = ev->data1 >> 3;
 	dclickmask = 1 << (ev->data1 & 7);

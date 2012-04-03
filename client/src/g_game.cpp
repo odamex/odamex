@@ -92,6 +92,8 @@ void	G_DoSaveGame (void);
 
 void	CL_RunTics (void);
 
+bool	C_DoNetDemoKey(event_t *ev);
+
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
@@ -763,6 +765,9 @@ BOOL G_Responder (event_t *ev)
 
 	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
 	{
+		if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
+			return true;
+
 		if (HU_Responder (ev))
 			return true;		// chat ate the event
 		if (ST_Responder (ev))

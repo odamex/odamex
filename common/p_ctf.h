@@ -54,7 +54,7 @@ struct flagdata
 	AActor::AActorPtr actor;
 
 	// Integer representation of WHO has each flag (player id)
-	size_t flagger;
+	byte flagger;
 	int	pickup_time;
 
 	// Flag locations
