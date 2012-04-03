@@ -53,10 +53,17 @@
 #include "cl_maplist.h"
 #include "cl_vote.h"
 #include "p_mobj.h"
+#include "p_snapshot.h"
+#include "p_lnspec.h"
+#include "cl_netgraph.h"
+#include "cl_maplist.h"
+#include "cl_vote.h"
+#include "p_mobj.h"
 
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <sstream>
 
 #ifdef _XBOX
@@ -82,7 +89,14 @@ buf_t     net_buffer(MAX_UDP_PACKET);
 
 bool      noservermsgs;
 int       last_received;
-byte      last_svgametic = 0;
+
+// [SL] 2012-03-17 - world_index is the gametic on the server that the client
+// is currently simulating.  world_index_accum is a continuous accumulator that
+// is used to advance world_index if appropriate.
+int       world_index = 0;
+float     world_index_accum = 0.0f;
+
+int       last_svgametic = 0;
 int       last_player_update = 0;
 
 std::string connectpasshash = "";
@@ -105,7 +119,12 @@ std::string server_host = "";	// hostname of server
 // [SL] 2011-06-27 - Class to record and playback network recordings
 NetDemo netdemo;
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
-bool simulated_connection = false;		
+bool simulated_connection = false;	
+
+extern NetGraph netgraph;
+
+// [SL] 2012-03-07 - Players that were teleported during the current gametic
+std::set<byte> teleported_players;
 
 EXTERN_CVAR (sv_weaponstay)
 
@@ -115,6 +134,7 @@ EXTERN_CVAR (cl_team)
 EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_unlag)
+EXTERN_CVAR (cl_interp)
 
 CVAR_FUNC_IMPL (cl_autoaim)
 {
@@ -146,6 +166,7 @@ static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
 	&cl_weaponpref1, &cl_weaponpref2, &cl_weaponpref3, &cl_weaponpref4,
 	&cl_weaponpref5, &cl_weaponpref6, &cl_weaponpref7, &cl_weaponpref8,
 	&cl_weaponpref9 };
+
 
 //
 // CL_SetWeaponPreferenceCvar
@@ -223,6 +244,8 @@ void CL_NetDemoStop(void);
 void CL_NetDemoSnapshot(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
+void CL_SimulateWorld();
+
 //	[Toke - CTF]
 void CalcTeamFrags (void);
 
@@ -244,6 +267,17 @@ team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 void AM_Stop();
+
+void CL_ClearWorldIndexSync()
+{
+	last_svgametic = world_index = 0;
+	world_index_accum = 0.0f;
+}
+
+int CL_CalculateWorldIndexSync()
+{
+	return last_svgametic - cl_interp;
+}
 
 void Host_EndGame(const char *msg)
 {
@@ -1415,21 +1449,41 @@ void CL_MidPrint (void)
     C_MidPrint(str,NULL,msgtime);
 }
 
+//
+// CL_PlayerJustTeleported
+//
+// Returns true if we have received a svc_activateline message from the server
+// involving this player and teleportation
+//
+bool CL_PlayerJustTeleported(player_t *player)
+{
+	if (player && teleported_players.find(player->id) != teleported_players.end())
+		return true;
+
+	return false;
+}
+
+//
+// CL_ClearPlayerJustTeleported
+//
+void CL_ClearPlayerJustTeleported(player_t *player)
+{
+	if (player)
+		teleported_players.erase(player->id);
+}
 
 void CL_UpdatePlayer()
 {
 	byte who = MSG_ReadByte();
 	player_t *p = &idplayer(who);
 
-	// [SL] 2011-11-07 - Read and ignore this for now - it was used with
-	// the previous prediction code (sv_gametic)
-	MSG_ReadLong();
-	
+	MSG_ReadLong();	// Read and ignore for now
+
 	fixed_t x = MSG_ReadLong();
 	fixed_t y = MSG_ReadLong();
 	fixed_t z = MSG_ReadLong();
 	angle_t angle = MSG_ReadLong();
-	byte frame = MSG_ReadByte();
+	int frame = MSG_ReadByte();
 	fixed_t momx = MSG_ReadLong();
 	fixed_t momy = MSG_ReadLong();
 	fixed_t momz = MSG_ReadLong();
@@ -1437,9 +1491,7 @@ void CL_UpdatePlayer()
 	int invisibility = MSG_ReadLong();
 
 	if	(!validplayer(*p) || !p->mo)
-	{
 		return;
-	}
 
 	// Mark the gametic this update arrived in for prediction code
 	p->tic = gametic;
@@ -1447,20 +1499,6 @@ void CL_UpdatePlayer()
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p->spectator && (p != &consoleplayer()))
 		p->spectator = 0;
-
-	p->mo->angle = angle;
-	CL_MoveThing(p->mo, x, y, z);
-	p->mo->momx = momx;
-	p->mo->momy = momy;
-	p->mo->momz = momz;
-
-	p->real_origin[0] = x;
-	p->real_origin[1] = y;
-	p->real_origin[2] = z;
-
-	p->real_velocity[0] = momx;
-	p->real_velocity[1] = momy;
-	p->real_velocity[2] = momz;
 
     // [Russell] - hack, read and set invisibility flag
     p->powers[pw_invisibility] = invisibility;
@@ -1473,11 +1511,9 @@ void CL_UpdatePlayer()
         p->mo->flags &= ~MF_SHADOW;
     }
 
-	p->mo->frame = frame;
-
 	// This is a very bright frame. Looks cool :)
-	if (p->mo->frame == PLAYER_FULLBRIGHTFRAME)
-		p->mo->frame = 32773;
+	if (frame == PLAYER_FULLBRIGHTFRAME)
+		frame = 32773;
 
 	// denis - fixme - security
 	if(!p->mo->sprite || (p->mo->frame&FF_FRAMEMASK) >= sprites[p->mo->sprite].numframes)
@@ -1485,6 +1521,27 @@ void CL_UpdatePlayer()
 
 	p->last_received = gametic;
 	last_player_update = gametic;
+	
+	// [SL] 2012-02-21 - Save the position information to a snapshot
+	int snaptime = last_svgametic;
+	PlayerSnapshot newsnap(snaptime);
+	newsnap.setAuthoritative(true);
+	
+	newsnap.setX(x);
+	newsnap.setY(y);
+	newsnap.setZ(z);
+	newsnap.setMomX(momx);
+	newsnap.setMomY(momy);
+	newsnap.setMomZ(momz);
+	newsnap.setAngle(angle);
+	newsnap.setFrame(frame);
+
+	// Mark the snapshot as continuous unless the player just teleported
+	// and lerping should be disabled
+	newsnap.setContinuous(!CL_PlayerJustTeleported(p));
+	CL_ClearPlayerJustTeleported(p);
+	
+	p->snapshots.addSnapshot(newsnap);
 }
 
 ticcmd_t localcmds[MAXSAVETICS];
@@ -1505,17 +1562,33 @@ void CL_UpdateLocalPlayer(void)
 	// during the the tic referenced below
 	p.tic = MSG_ReadLong();
 
-	p.real_origin[0] = MSG_ReadLong();
-	p.real_origin[1] = MSG_ReadLong();
-	p.real_origin[2] = MSG_ReadLong();
+	fixed_t x = MSG_ReadLong();
+	fixed_t y = MSG_ReadLong();
+	fixed_t z = MSG_ReadLong();
 
-	p.real_velocity[0] = MSG_ReadLong();
-	p.real_velocity[1] = MSG_ReadLong();
-	p.real_velocity[2] = MSG_ReadLong();
-
+	fixed_t momx = MSG_ReadLong();
+	fixed_t momy = MSG_ReadLong();
+	fixed_t momz = MSG_ReadLong();
+	
 	byte waterlevel = MSG_ReadByte();
-	if (p.mo)
-		p.mo->waterlevel = waterlevel;
+
+	int snaptime = last_svgametic;
+	PlayerSnapshot newsnapshot(snaptime);
+	newsnapshot.setAuthoritative(true);
+	newsnapshot.setX(x);
+	newsnapshot.setY(y);
+	newsnapshot.setZ(z);
+	newsnapshot.setMomX(momx);
+	newsnapshot.setMomY(momy);	
+	newsnapshot.setMomZ(momz);
+	newsnapshot.setWaterLevel(waterlevel);
+
+	// Mark the snapshot as continuous unless the player just teleported
+	// and lerping should be disabled
+	newsnapshot.setContinuous(!CL_PlayerJustTeleported(&p));
+	CL_ClearPlayerJustTeleported(&p);
+
+	consoleplayer().snapshots.addSnapshot(newsnapshot);
 
 //	real_plats.Clear();
 }
@@ -1530,10 +1603,18 @@ void CL_UpdateLocalPlayer(void)
 // [SL] 2011-05-11
 void CL_SaveSvGametic(void)
 {
-	last_svgametic = MSG_ReadByte();
-	#ifdef _UNLAG_DEBUG_
-	DPrintf("Unlag (%03d): client-tic %d, received svgametic\n", last_svgametic, gametic);
-	#endif	// _UNLAG_DEBUG_
+	byte t = MSG_ReadByte();
+	
+	int newtic = (last_svgametic & 0xFFFFFF00) + t;
+
+	if (last_svgametic > newtic + 127)
+		newtic += 256;
+
+	last_svgametic = newtic;
+	
+	#ifdef _WORLD_INDEX_DEBUG_
+	Printf(PRINT_HIGH, "Gametic %i, received world index %i\n", gametic, last_svgametic);
+	#endif	// _WORLD_INDEX_DEBUG_
 }    
 
 //
@@ -1700,9 +1781,6 @@ void CL_TouchSpecialThing (void)
 }
 
 
-extern fixed_t cl_viewheight[MAXSAVETICS];
-extern fixed_t cl_deltaviewheight[MAXSAVETICS];
-
 //
 // CL_SpawnPlayer
 //
@@ -1724,15 +1802,6 @@ void CL_SpawnPlayer()
 	x = MSG_ReadLong();
 	y = MSG_ReadLong();
 	z = MSG_ReadLong();
-		
-	// GhostlyDeath -- reset prediction
-	p->real_origin[0] = x;
-	p->real_origin[1] = y;
-	p->real_origin[2] = z;
-
-	p->real_velocity[0] = 0;
-	p->real_velocity[1] = 0;
-	p->real_velocity[2] = 0;
 
 	P_ClearId(netid);
 
@@ -1746,6 +1815,8 @@ void CL_SpawnPlayer()
 	G_PlayerReborn (*p);
 
 	mobj = new AActor (x, y, z, MT_PLAYER);
+	
+	mobj->momx = mobj->momy = mobj->momz = 0;
 
 	// set color translations for player sprites
 	mobj->translation = translationtables + 256*playernum;
@@ -1772,11 +1843,6 @@ void CL_SpawnPlayer()
 
 	p->xviewshift = 0;
 	p->viewheight = VIEWHEIGHT;
-	for (i=0; i<MAXSAVETICS; i++)
-	{
-		cl_viewheight[i] = VIEWHEIGHT;
-		cl_deltaviewheight[i] = 0;
-	}
 
 	p->attacker = AActor::AActorPtr();
 	p->viewz = z + VIEWHEIGHT;
@@ -1792,9 +1858,26 @@ void CL_SpawnPlayer()
 		for (i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 
-	// denis - if this concerns the local player, restart the status bar
 	if(p->id == consoleplayer_id)
+	{
+		// denis - if this concerns the local player, restart the status bar
 		ST_Start ();
+	}
+	
+	if (p->id == displayplayer().id)
+	{	
+		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
+		// about players/sectors jumping to new positions when the displayplayer spawns
+		world_index = CL_CalculateWorldIndexSync();
+		world_index_accum = (float)world_index;
+	}
+
+	int snaptime = last_svgametic;
+	PlayerSnapshot newsnap(snaptime, p);
+	newsnap.setAuthoritative(true);
+	newsnap.setContinuous(false);
+	p->snapshots.clearSnapshots();
+	p->snapshots.addSnapshot(newsnap);
 }
 
 //
@@ -2174,6 +2257,7 @@ void CL_UpdateMovingSector(void)
 {
 	int tic = MSG_ReadLong();
 	unsigned short s = (unsigned short)MSG_ReadShort();
+
     fixed_t fh = MSG_ReadLong(); // floor height
     fixed_t ch = MSG_ReadLong(); // ceiling height
     byte Type = MSG_ReadByte();
@@ -2623,8 +2707,19 @@ void CL_ActivateLine(void)
 	if (!lines || l >= (unsigned)numlines)
 		return;
 
-	//if(mo == consoleplayer().mo && activationType != 2)
-		//return;
+	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
+	// the set of recently teleported players.  This is used to flush past
+	// positions since they cannot be used for interpolation.
+	if ((mo && mo->player) && 
+		(lines[l].special == Teleport || lines[l].special == Teleport_NoFog ||
+		 lines[l].special == Teleport_Line))
+	{	
+		teleported_players.insert(mo->player->id);
+		
+		// [SL] 2012-03-21 - Server takes care of moving players that teleport.
+		// Don't allow client to process it since it screws up interpolation.
+		return;
+	}
 
 	switch (activationType)
 	{
@@ -2666,6 +2761,14 @@ void CL_LoadMap(void)
 	G_InitNew (mapname);
 
 	real_plats.Clear();
+
+	teleported_players.clear();
+	
+	for (size_t i = 0; i < players.size(); i++)
+		players[i].snapshots.clearSnapshots();
+		
+	// reset the world_index (force it to sync)
+	CL_ClearWorldIndexSync();
 
 	CTF_CheckFlags(consoleplayer());
 
@@ -2897,8 +3000,6 @@ void CL_ParseCommands(void)
 
 extern int outrate;
 
-extern int extrapolation_tics;
-
 //
 // CL_SendCmd
 //
@@ -2938,12 +3039,10 @@ void CL_SendCmd(void)
 	// need to be used for client's positional prediction. 
     MSG_WriteLong(&net_buffer, gametic);
     
-    // Send the most recent server-tic.  This indicates to the server which
-    // update of player positions the client is basing his actions on.  Used
-    // by unlagging calculations.
-
-	// Take extrapolation into account
-	MSG_WriteByte(&net_buffer, last_svgametic + extrapolation_tics);
+    // Send the server's tic we are currently simulating.  This indicates to the
+	// server which update of player positions the client is basing his actions
+	//  on.  Used by unlagging calculations.
+	MSG_WriteByte(&net_buffer, world_index & 0xFF);
 
     // send the previous cmds in the message, so if the last packet
     // was dropped, it can be recovered
@@ -2992,7 +3091,7 @@ void CL_SendCmd(void)
 		int x = enemy->mo->x >> FRACBITS;
 		int y = enemy->mo->y >> FRACBITS;
 		DPrintf("Unlag: Weapon fired with svgametic = %d, enemy position = (%d, %d)\n",
-				last_svgametic + extrapolation_tics, x, y);
+				last_svgametic, x, y);
 	}
 #endif	// _UNLAG_DEBUG_
 	
@@ -3157,6 +3256,134 @@ void CL_LocalDemoTic()
 		clientPlayer->mo->waterlevel = waterlevel;
 	}
 
+}
+
+CVAR_FUNC_IMPL (cl_interp)
+{
+	if (var < 0.0f)
+		var.Set(0.0f);
+	if (var > 4.0f)
+		var.Set(4.0f);
+
+	// Resync the world index since the sync offset has changed		
+	world_index = CL_CalculateWorldIndexSync();
+	world_index_accum = (float)world_index;
+	
+	netgraph.setInterpolation(var);
+}
+
+//
+// CL_SimulateWorld
+//
+// 
+void CL_SimulateWorld()
+{
+	if (gamestate != GS_LEVEL || netdemo.isPaused())
+		return;
+		
+	// if the world_index falls outside this range, resync it
+	static const int MAX_BEHIND = 6;
+	static const int MAX_AHEAD = 6;
+
+	int lower_sync_limit = CL_CalculateWorldIndexSync() - MAX_BEHIND;
+	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;
+	
+	// Was the displayplayer just teleported?
+	bool continuous = displayplayer().snapshots.getSnapshot(world_index).isContinuous();
+	
+	// Reset the synchronization with the server if needed
+	if (world_index <= 0 || !continuous ||
+		world_index > upper_sync_limit || world_index < lower_sync_limit)
+	{
+		#ifdef _WORLD_INDEX_DEBUG_
+		std::string reason;
+		if (!continuous)
+			reason = "discontinuous";
+		else if (world_index > upper_sync_limit)
+			reason = "too far ahead of server";
+		else if (world_index < lower_sync_limit)
+			reason == "too far behind server";
+			
+		Printf(PRINT_HIGH, "Gametic %i, world_index %i, Resynching world index (%s).\n",
+			gametic, world_index, reason.c_str());
+		#endif // _WORLD_INDEX_DEBUG_
+		
+		world_index = CL_CalculateWorldIndexSync();
+		world_index_accum = (float)world_index;
+	}
+	
+	#ifdef _WORLD_INDEX_DEBUG_
+	Printf(PRINT_HIGH, "Gametic %i, simulating world_index %i\n",
+		gametic, world_index);
+	#endif // _WORLD_INDEX_DEBUG_
+
+	// [SL] 2012-03-29 - Add sync information to the netgraph
+	netgraph.setWorldIndexSync(world_index - (last_svgametic - cl_interp));
+	
+	// Move players
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		player_t *player = &players[i];
+		if (!player || !player->mo || player->spectator)
+			continue;
+		
+		// Consoleplayer is handled in CL_PredictWorld
+		if (player->id == consoleplayer().id)
+			continue;
+		
+		PlayerSnapshot snap = player->snapshots.getSnapshot(world_index);
+		if (snap.isValid())
+		{
+			// Examine the old position.  If it doesn't match the snapshot for the
+			// previous world_index, then old position was probably extrapolated
+			// and should be smoothly moved towards the corrected position instead
+			// of snapping to it.
+		
+			PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
+			v3fixed_t offset;
+			M_SetVec3Fixed(&offset, prevsnap.getX() - player->mo->x,
+									prevsnap.getY() - player->mo->y,
+									prevsnap.getZ() - player->mo->z);
+
+			static const fixed_t correction_amount = FRACUNIT * 0.20f; 
+			M_ScaleVec3Fixed(&offset, &offset, correction_amount);
+		
+			#ifdef _SNAPSHOT_DEBUG_
+			if (offset.x != 0 || offset.y != 0 || offset.z != 0)
+				Printf(PRINT_HIGH, "Snapshot %i, Correcting extrapolation error\n", world_index);
+			#endif // _SNAPSHOT_DEBUG_
+	
+			// Apply the current snapshot to the player (with smoothing offset)
+			snap.setX(snap.getX() - offset.x);
+			snap.setY(snap.getY() - offset.y);
+			snap.setZ(snap.getZ() - offset.z);
+
+			snap.toPlayer(player);
+		}
+	}
+
+	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
+	// slowing down or speeding up world_index
+	if (last_svgametic - cl_interp > world_index)
+		world_index_accum += 1.25f;		// behind server so speed up time
+	else if (last_svgametic - cl_interp < world_index)
+		world_index_accum += 0.75f;		// ahead of server so slow down time
+	else
+		world_index_accum += 1.0f;
+
+	int diff = int(world_index_accum - world_index);
+	
+	#ifdef _WORLD_INDEX_DEBUG_
+	if (diff != 1)
+		Printf(PRINT_HIGH, "Gametic %i, increasing world index by %i.",
+				gametic, diff);
+	#endif // _WORLD_INDEX_DEBUG_
+	
+	// FIXME: the current world_index_accum scheme causes skipping movement
+	// disable for now until more testing can be done
+	diff = 1;
+
+	world_index += diff;
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}

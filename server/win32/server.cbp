@@ -387,6 +387,8 @@
 		<Unit filename="..\..\common\p_setup.cpp" />
 		<Unit filename="..\..\common\p_setup.h" />
 		<Unit filename="..\..\common\p_sight.cpp" />
+		<Unit filename="..\..\common\p_snapshot.cpp" />
+		<Unit filename="..\..\common\p_snapshot.h" />
 		<Unit filename="..\..\common\p_spec.cpp" />
 		<Unit filename="..\..\common\p_spec.h" />
 		<Unit filename="..\..\common\p_switch.cpp" />

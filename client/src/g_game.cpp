@@ -165,7 +165,6 @@ EXTERN_CVAR (dynres_state) // [Toke - Mouse] Dynamic Resolution on/off
 EXTERN_CVAR (mouse_type) // [Toke - Mouse] Zdoom or standard mouse code
 EXTERN_CVAR (m_filter)
 
-
 CVAR_FUNC_IMPL(cl_mouselook)
 {
 	// Nes - center the view
@@ -174,7 +173,6 @@ CVAR_FUNC_IMPL(cl_mouselook)
 	// Nes - update skies
 	R_InitSkyMap ();
 }
-
 
 char			demoname[256];
 BOOL 			demorecording;
@@ -849,7 +847,7 @@ END_COMMAND(netstat)
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 void P_DeathThink (player_t *player);
-
+void CL_SimulateWorld();
 //
 // G_Ticker
 // Make ticcmd_ts for the players.
@@ -1057,20 +1055,8 @@ void G_Ticker (void)
 				DPrintf("Did not receive spawn for consoleplayer.\n");
 			}
 
-			// GhostlyDeath -- If we are a spectator, we do things ourselves
-			if (consoleplayer().spectator)
-			{
-				if (displayplayer().health <= 0 && (&displayplayer() != &consoleplayer()))
-					P_DeathThink(&displayplayer());
-				else
-					P_PlayerThink(&consoleplayer());
-
-				P_MovePlayer(&consoleplayer());
-				P_CalcHeight(&consoleplayer());
-				P_CalcHeight(&displayplayer());
-			}
-
-			CL_PredictMove();
+			CL_SimulateWorld();
+			CL_PredictWorld();
 		}
 		P_Ticker ();
 		ST_Ticker ();

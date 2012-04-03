@@ -36,34 +36,40 @@
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "vectors.h"
+#include "cl_netgraph.h"
 
-// Prediction debugging info
-//#define _PRED_DBG
+#include "p_snapshot.h"
 
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (cl_prednudge)
 
+extern NetGraph netgraph;
+
+void P_DeathThink (player_t *player);
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 
-angle_t cl_angle[MAXSAVETICS];
-angle_t cl_pitch[MAXSAVETICS];
-fixed_t cl_viewheight[MAXSAVETICS];
-fixed_t cl_deltaviewheight[MAXSAVETICS];
-fixed_t cl_jumpTics[MAXSAVETICS];
-int     cl_reactiontime[MAXSAVETICS];
-byte    cl_waterlevel[MAXSAVETICS];
+static ticcmd_t cl_savedticcmds[MAXSAVETICS];
+static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
 
-extern int last_player_update;
-int extrapolation_tics;
 bool predicting;
 
 TArray <plat_pred_t> real_plats;
 
+CVAR_FUNC_IMPL(cl_prednudge)
+{
+	// [SL] 2012-03-23 - Don't allow the client to set it to 0
+	// That would ignore position updates from the server
+	if (var < 0.05f)
+		var.Set(0.05f);
+	if (var > 1.0f)
+		var.Set(1.0f);
+}
+
 //
 // CL_ResetSectors
 //
-void CL_ResetSectors (void)
+static void CL_ResetSectors (void)
 {
 	for(size_t i = 0; i < real_plats.Size(); i++)
 	{
@@ -201,7 +207,7 @@ void CL_ResetSectors (void)
 //
 // CL_PredictSectors
 //
-void CL_PredictSectors (int predtic)
+static void CL_PredictSectors (int predtic)
 {
 	for(size_t i = 0; i < real_plats.Size(); i++)
 	{
@@ -235,64 +241,26 @@ void CL_PredictSectors (int predtic)
             }
 		}
 	}
-}
-
-
-//
-// CL_ResetPlayer
-//
-// Resets a player's position to their last known position according
-// to the server
-//
-
-void CL_ResetPlayer(player_t &p)
-{
-	if (!p.mo || p.spectator)
-		return;
-		
-	// set the position
-	CL_MoveThing (p.mo, p.real_origin[0], p.real_origin[1], p.real_origin[2]);
-
-	// set the velocity
-	p.mo->momx = p.real_velocity[0];
-	p.mo->momy = p.real_velocity[1];
-	p.mo->momz = p.real_velocity[2];
-
-	// [SL] 2012-02-13 - Determine if the player is standing on any actors
-	// since the server does not send this info
-	if (co_realactorheight && P_CheckOnmobj(p.mo))
-		p.mo->flags2 |= MF2_ONMOBJ;
-	else
-		p.mo->flags2 &= ~MF2_ONMOBJ;
-}
-
-
+} 
 
 //
 // CL_PredictLocalPlayer
 //
-// Processes all of consoleplayer's ticcmds since the last ticcmd the server
-// has acknowledged processing.
-void CL_PredictLocalPlayer (int predtic)
+// 
+static void CL_PredictLocalPlayer(int predtic)
 {
 	player_t &p = consoleplayer();
 	
-	if (!p.ingame() || !p.mo || p.spectator || p.tic >= predtic)
+	if (!p.ingame() || !p.mo || p.tic >= predtic)
 		return;
-		
-	int bufpos = predtic % MAXSAVETICS;
-
-	// backup the consoleplayer's ticcmd
-	ticcmd_t *cmd = &(p.cmd);
-	memcpy(cmd, &localcmds[bufpos], sizeof(ticcmd_t));
-
-	p.mo->angle			= cl_angle[bufpos];
-	p.mo->pitch			= cl_pitch[bufpos];
-	p.viewheight		= cl_viewheight[bufpos];
-	p.deltaviewheight	= cl_deltaviewheight[bufpos];
-	p.jumpTics			= cl_jumpTics[bufpos];
-	p.mo->reactiontime	= cl_reactiontime[bufpos];
-	p.mo->waterlevel	= cl_waterlevel[bufpos];
+	
+	// Copy the player's previous input ticcmd for the tic 'predtic'
+	// to player.cmd so that P_MovePlayer can simulate their movement in
+	// that tic
+	memcpy(&p.cmd, &cl_savedticcmds[predtic % MAXSAVETICS], sizeof(ticcmd_t));
+	
+	// Restore the angle, viewheight, etc for the player
+	P_SetPlayerSnapshotNoPosition(&consoleplayer(), cl_savedsnaps[predtic % MAXSAVETICS]);
 
 	if (p.playerstate != PST_DEAD)
 		P_MovePlayer(&p);
@@ -300,162 +268,110 @@ void CL_PredictLocalPlayer (int predtic)
 	if (!predicting)
 		P_PlayerThink(&p);
 
+	P_CalcHeight(&p);
 	p.mo->RunThink();
 }
 
 
 //
-// CL_IsValidOtherPlayer
-//
-// Indicates if a player is in the game and not the console player
-//
-bool CL_IsValidOtherPlayer(player_t &player)
-{
-	return (player.id != consoleplayer().id &&
-			player.ingame() &&
-			player.mo && !player.spectator);
-}
-
-//
-// CL_ExtrapolatePlayers
-//
-void CL_ExtrapolatePlayers ()
-{
-	const int maximum_extrapolation = 1;
-
-	extrapolation_tics = gametic - last_player_update;
-	if (extrapolation_tics > maximum_extrapolation)
-		extrapolation_tics = maximum_extrapolation;
-
-	if (!last_player_update)
-		extrapolation_tics = 0;
-
-	for (size_t i = 0; i < players.size(); i++)
-	{
-		if (CL_IsValidOtherPlayer(players[i]))
-			CL_ResetPlayer(players[i]);
-	}
-
-    #ifdef _PRED_DBG
-	Printf(PRINT_HIGH, "tic %d, extrapolating %d tics.\n", gametic, extrapolation_tics);
-	#endif // _PRED_DBG
-
-	for (int j = 1; j <= extrapolation_tics; j++)
-	{
-		for (size_t i = 0; i < players.size(); i++)
-		{
-			if (CL_IsValidOtherPlayer(players[i]))
-				players[i].mo->RunThink();
-		}
-	}
-}
-
-
-//
-// CL_NudgeThing
-//
-// Moves a thing's position a percentage of the way between it's initial
-// position and dest_pos, determined by the parameter amount,
-// where amount is between 0 and 1.  If the difference between the initial
-// position and dest_pos is below nudge_threshold, the position will be snapped
-// all the way to dest_pos.
-//
-
-void CL_NudgeThing(AActor *thing, v3fixed_t &dest_pos, float amount = 0.1f)
-{
-	const fixed_t nudge_threshold = 4 * FRACUNIT;
-
-	if (amount < 0.0f || amount > 1.0f)
-		amount = 1.0f;
-
-	v3fixed_t start_pos, delta;
-	M_ActorPositionToVec3Fixed(&start_pos, thing);
-	M_SubVec3Fixed(&delta, &dest_pos, &start_pos);
-
-	if (M_LengthVec3Fixed(&delta) <= nudge_threshold)
-		amount = 1.0f;	// snap directly to dest_pos since it won't be noticable
-
-	v3fixed_t scaled_delta, nudged_pos;
-	M_ScaleVec3Fixed(&scaled_delta, &delta, amount * FRACUNIT);
-	M_AddVec3Fixed(&nudged_pos, &start_pos, &scaled_delta);
-	
-	// Snap to the destination Z position for moving sectors (lifts, etc)
-	nudged_pos.z = dest_pos.z;
-
-	CL_MoveThing(thing, nudged_pos.x, nudged_pos.y, nudged_pos.z);
-}
-
-//
-// CL_PredictMove
+// CL_PredictWorld
 //
 // Main function for client-side prediction.
 // 
-void CL_PredictMove (void)
+void CL_PredictWorld(void)
 {
+	if (gamestate != GS_LEVEL)
+		return;
+
 	player_t *p = &consoleplayer();
 
 	if (!validplayer(*p) || !p->mo || noservermsgs || netdemo.isPaused())
 		return;
-	
-	if (!p->spectator && !p->tic)	// No verified position from the server
+
+	// tenatively tell the netgraph that our prediction was successful
+	netgraph.setMisprediction(false);
+
+	// [SL] 2012-03-10 - Spectators can predict their position without server
+	// correction.  Handle them as a special case and leave.
+	if (consoleplayer().spectator)
+	{
+		if (displayplayer().health <= 0 && (&displayplayer() != &consoleplayer()))
+			P_DeathThink(&displayplayer());
+		else
+			P_PlayerThink(&consoleplayer());
+
+		P_MovePlayer(&consoleplayer());
+		P_CalcHeight(&consoleplayer());
+		P_CalcHeight(&displayplayer());
+		
+		return;
+	}
+
+	if (p->tic <= 0)	// No verified position from the server
 		return;
 
-	// Save player angle, viewheight,deltaviewheight and jumpTics.
-	// Will use it later to predict movements
-	int bufpos = gametic % MAXSAVETICS;
+	// Figure out where to start predicting from
+	int predtic = consoleplayer().tic > 0 ? consoleplayer().tic: 0;
+	// Last position update from the server is too old!
+	if (predtic < gametic - MAXSAVETICS)
+		predtic = gametic - MAXSAVETICS;
 	
-	cl_angle[bufpos]			= p->mo->angle;
-	cl_pitch[bufpos]			= p->mo->pitch;
-	cl_viewheight[bufpos]		= p->viewheight;
-	cl_deltaviewheight[bufpos]	= p->deltaviewheight;
-	cl_jumpTics[bufpos]			= p->jumpTics;
-	cl_reactiontime[bufpos]		= p->mo->reactiontime;
-    cl_waterlevel[bufpos]		= p->mo->waterlevel;
+	// Save a copy of the player's input for the current tic
+	memcpy(&cl_savedticcmds[gametic % MAXSAVETICS], &p->cmd, sizeof(ticcmd_t));
 
-	// Backup the position predicted in the previous tic 
-	v3fixed_t last_predicted_pos;
-	M_ActorPositionToVec3Fixed(&last_predicted_pos, p->mo);
+	// Save a snapshot of the player's state before prediction
+	PlayerSnapshot prevsnap(p->tic, p);
+	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
+
+	// Move sectors to the last position received from the server
+	CL_ResetSectors();
+
+	// Move the client to the last position received from the sever
+	int snaptime = p->snapshots.getMostRecentTime();
+	PlayerSnapshot snap = p->snapshots.getSnapshot(snaptime);
+	snap.toPlayer(p);
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
 
-	// Set predictable items to their last received positions
-	CL_ResetSectors();
-
-	CL_ExtrapolatePlayers();
-
-	CL_ResetPlayer(consoleplayer());
-	int predtic = consoleplayer().tic >= 0 ? consoleplayer().tic : 0;
-
-	// Predict each tic
-	while(++predtic < gametic)
+	while (++predtic < gametic)
 	{
 		CL_PredictSectors(predtic);
 		CL_PredictLocalPlayer(predtic);
 	}
 
+	// If the player didn't just spawn or teleport, nudge the player from
+	// his position last tic to this new corrected position.  This smooths the
+	// view when there's a misprediction.
+	if (snap.isContinuous())
+	{
+		PlayerSnapshot correctedprevsnap(p->tic, p);
+
+		// Did we predict correctly?
+		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
+					   (correctedprevsnap.getY() == prevsnap.getY()) &&
+					   (correctedprevsnap.getZ() == prevsnap.getZ());
+
+		if (!correct)
+		{
+			// Update the netgraph concerning our prediction's error
+			netgraph.setMisprediction(true);
+
+			// Lerp from the our previous position to the correct position
+			PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);	
+			lerpedsnap.toPlayer(p);
+		}
+	}
+
 	predicting = false;
 
-	v3fixed_t corrected_pos;
-	M_ActorPositionToVec3Fixed(&corrected_pos, p->mo);	// backup the corrected prediction
-	
-	// restore the previous tic's prediction
-	p->mo->x = last_predicted_pos.x;	
-	p->mo->y = last_predicted_pos.y;	
-	p->mo->z = last_predicted_pos.z;	
-
-	// Move the player's position towards the corrected position predicted based
-	// on recent position data from the server.  This avoids the disorienting
-	// "jerk" when the corrected position is drastically different from
-	// the previously predicted position.
-	CL_NudgeThing(p->mo, corrected_pos, cl_prednudge);
-	
+	CL_PredictSectors(gametic);
 	CL_PredictLocalPlayer(gametic);
-    //CL_PredictSectors(gametic);
 
-	// Ensure the viewheight is correct for whatever player we're viewing 
-	P_CalcHeight(&displayplayer());
+	if (consoleplayer().id != displayplayer().id)
+		P_CalcHeight(&displayplayer());
 }
+
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
 

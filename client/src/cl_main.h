@@ -141,7 +141,7 @@ void CL_ReadPacketHeader(void);
 void CL_SendCmd(void);
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
-void CL_PredictMove (void);
+void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect(void);
 

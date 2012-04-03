@@ -41,6 +41,7 @@
 #include "p_ctf.h"
 #include "i_video.h"
 #include "i_input.h"
+#include "cl_netgraph.h"
 
 #define QUEUESIZE		128
 #define HU_INPUTX		0
@@ -62,6 +63,7 @@ EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_scorelimit)
+EXTERN_CVAR (cl_netgraph)
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
@@ -90,6 +92,8 @@ static void ShoveChatStr (std::string str, byte who);
 static std::string input_text;
 int headsupactive;
 BOOL altdown;
+
+NetGraph netgraph(10, 100);
 
 EXTERN_CVAR (chatmacro0)
 EXTERN_CVAR (chatmacro1)
@@ -547,6 +551,9 @@ void HU_Drawer (void)
 		// SoM: Not here.
 		//screen->Dim ();
 	}
+
+	if (cl_netgraph)
+		netgraph.draw();
 }
 
 static void ShoveChatStr (std::string str, byte who)

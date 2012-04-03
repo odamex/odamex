@@ -29,6 +29,8 @@
 #include "r_local.h"
 #endif
 
+#include <set>
+
 #define FLOATSPEED		(FRACUNIT*4)
 
 #define MAXHEALTH		100
@@ -216,6 +218,8 @@ extern sector_t			*tmsector;
 
 extern	line_t* 		ceilingline;
 
+void	P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
+						fixed_t &destx, fixed_t &desty, fixed_t &destz);
 bool	P_TestMobjZ (AActor *actor);
 BOOL	P_TestMobjLocation (AActor *mobj);
 bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
@@ -266,6 +270,7 @@ extern fixed_t			bmaporgx;
 extern fixed_t			bmaporgy;		// origin of block map
 extern AActor** 		blocklinks; 	// for thing chains
 
+extern std::set<short>	movable_sectors;
 
 
 //

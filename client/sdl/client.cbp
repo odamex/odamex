@@ -429,6 +429,8 @@
 		<Unit filename="..\..\common\p_setup.cpp" />
 		<Unit filename="..\..\common\p_setup.h" />
 		<Unit filename="..\..\common\p_sight.cpp" />
+		<Unit filename="..\..\common\p_snapshot.cpp" />
+		<Unit filename="..\..\common\p_snapshot.h" />
 		<Unit filename="..\..\common\p_spec.cpp" />
 		<Unit filename="..\..\common\p_spec.h" />
 		<Unit filename="..\..\common\p_switch.cpp" />
@@ -497,6 +499,8 @@
 			<Option compile="1" />
 			<Option weight="0" />
 		</Unit>
+		<Unit filename="..\src\cl_netgraph.h" />
+		<Unit filename="..\src\cl_netgraph.cpp" />
 		<Unit filename="..\src\cl_pred.cpp" />
 		<Unit filename="..\src\cl_stubs.cpp" />
 		<Unit filename="..\src\cl_vote.cpp" />

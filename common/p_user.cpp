@@ -31,6 +31,8 @@
 #include "i_system.h"
 #include "i_net.h"
 
+#include "p_snapshot.h"
+
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
 
@@ -218,6 +220,8 @@ void P_CalcHeight (player_t *player)
 
 	if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
 		player->viewz = player->mo->ceilingz-4*FRACUNIT;
+	if (player->viewz < player->mo->floorz + 4*FRACUNIT)
+		player->viewz = player->mo->floorz + 4*FRACUNIT;
 }
 
 //
@@ -836,6 +840,185 @@ void player_s::Serialize (FArchive &arc)
 //		if (&consoleplayer() != this)
 //			userinfo = dummyuserinfo;
 	}
+}
+
+player_s::player_s()
+{
+	size_t i;
+
+	// GhostlyDeath -- Initialize EVERYTHING
+	id = 0;
+	playerstate = PST_LIVE;
+	mo = AActor::AActorPtr();
+	memset(&cmd, 0, sizeof(ticcmd_t));
+	fov = 90.0;
+	viewz = 0 << FRACBITS;
+	viewheight = 0 << FRACBITS;
+	deltaviewheight = 0 << FRACBITS;
+	bob = 0 << FRACBITS;
+	health = 0;
+	armorpoints = 0;
+	armortype = 0;
+	for (i = 0; i < NUMPOWERS; i++)
+		powers[i] = 0;
+	for (i = 0; i < NUMCARDS; i++)
+		cards[i] = false;
+	backpack = false;
+	points = 0;
+	for (i = 0; i < NUMFLAGS; i++)
+		flags[i] = false;
+	fragcount = 0;
+	deathcount = 0;
+	killcount = 0;
+	pendingweapon = wp_nochange;
+	readyweapon = wp_nochange;
+	for (i = 0; i < NUMWEAPONS; i++)
+		weaponowned[i] = false;
+	for (i = 0; i < NUMAMMO; i++)
+	{
+		ammo[i] = 0;
+		maxammo[i] = 0;
+	}
+	attackdown = 0;
+	usedown = 0;
+	cheats = 0;
+	refire = 0;
+	damagecount = 0;
+	bonuscount = 0;
+	attacker = AActor::AActorPtr();
+	extralight = 0;
+	fixedcolormap = 0;
+	xviewshift = 0;
+	memset(psprites, 0, sizeof(pspdef_t) * NUMPSPRITES);
+	jumpTics = 0;
+	respawn_time = 0;
+	memset(oldvelocity, 0, sizeof(oldvelocity));
+	camera = AActor::AActorPtr();
+	air_finished = 0;
+	GameTime = 0;
+	ping = 0;
+	last_received = 0;
+	tic = 0;
+	spectator = false;
+
+	joinafterspectatortime = level.time - TICRATE*5;
+	prefcolor = 0;
+
+	LastMessage.Time = 0;
+	LastMessage.Message = "";
+	
+	BlendR = 0;
+	BlendG = 0;
+	BlendB = 0;
+	BlendA = 0;
+}
+
+player_s &player_s::operator =(const player_s &other)
+{
+	size_t i;
+
+	id = other.id;
+	playerstate = other.playerstate;
+	mo = other.mo;
+	cmd = other.cmd;
+	userinfo = other.userinfo;
+	fov = other.fov;
+	viewz = other.viewz;
+	viewheight = other.viewheight;
+	deltaviewheight = other.deltaviewheight;
+	bob = other.bob;
+
+	health = other.health;
+	armorpoints = other.armorpoints;
+	armortype = other.armortype;
+
+	for(i = 0; i < NUMPOWERS; i++)
+		powers[i] = other.powers[i];
+
+	for(i = 0; i < NUMCARDS; i++)
+		cards[i] = other.cards[i];
+
+	for(i = 0; i < NUMFLAGS; i++)
+		flags[i] = other.flags[i];
+
+	points = other.points;
+	backpack = other.backpack;
+
+	fragcount = other.fragcount;
+	deathcount = other.deathcount;
+	killcount = other.killcount;
+
+	pendingweapon = other.pendingweapon;
+	readyweapon = other.readyweapon;
+
+	for(i = 0; i < NUMWEAPONS; i++)
+		weaponowned[i] = other.weaponowned[i];
+	for(i = 0; i < NUMAMMO; i++)
+		ammo[i] = other.ammo[i];
+	for(i = 0; i < NUMAMMO; i++)
+		maxammo[i] = other.maxammo[i];
+
+	attackdown = other.attackdown;
+	usedown = other.usedown;
+
+	cheats = other.cheats;
+
+	refire = other.refire;
+
+	damagecount = other.damagecount;
+	bonuscount = other.bonuscount;
+
+	attacker = other.attacker;
+
+	extralight = other.extralight;
+	fixedcolormap = other.fixedcolormap;
+
+	xviewshift = other.xviewshift;
+
+	for(i = 0; i < NUMPSPRITES; i++)
+		psprites[i] = other.psprites[i];
+
+    jumpTics = other.jumpTics;
+
+	respawn_time = other.respawn_time;
+
+	memcpy(oldvelocity, other.oldvelocity, sizeof(oldvelocity));
+
+	camera = other.camera;
+	air_finished = other.air_finished;
+
+	JoinTime = other.JoinTime;
+	GameTime = other.GameTime;
+	ping = other.ping;
+
+	last_received = other.last_received;
+
+	tic = other.tic;
+	spectator = other.spectator;
+	joinafterspectatortime = other.joinafterspectatortime;
+
+	prefcolor = other.prefcolor;
+
+	for(i = 0; i < BACKUPTICS; i++)
+		netcmds[i] = other.netcmds[i];
+
+    LastMessage.Time = other.LastMessage.Time;
+	LastMessage.Message = other.LastMessage.Message;
+	
+	BlendR = other.BlendR;
+	BlendG = other.BlendG;
+	BlendB = other.BlendB;
+	BlendA = other.BlendA;
+
+	client = other.client;
+
+	snapshots = other.snapshots;
+		
+	return *this;
+}
+
+player_s::~player_s()
+{
 }
 
 VERSION_CONTROL (p_user_cpp, "$Id$")
