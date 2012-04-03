@@ -112,7 +112,7 @@ CVAR_FUNC_DECL (sv_shufflemaplist,	"0", "Randomly shuffle the maplist",
 // ----------------
 
 // Network compression (experimental)
-CVAR (sv_networkcompression, "0", "Experimental network compression",
+CVAR (sv_networkcompression, "1", "Network compression",
       CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 // NAT firewall workaround port number
 CVAR (sv_natport,	"0", "NAT firewall workaround, this is a port number",

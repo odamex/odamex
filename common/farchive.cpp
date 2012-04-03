@@ -241,8 +241,6 @@ FFile &FLZOFile::Seek (int pos, ESeekPos ofs)
 	return *this;
 }
 
-EXTERN_CVAR (filecompression)
-
 void FLZOFile::Implode ()
 {
 	lzo_uint outlen;
@@ -252,7 +250,7 @@ void FLZOFile::Implode ()
 	byte *oldbuf = m_Buffer;
 	int r;
 
-	if (filecompression && !m_NoCompress)
+	if (!m_NoCompress)
 	{
 		compressed = new lzo_byte[OUT_LEN(len)];
 		wrkmem = new lzo_byte[LZO1X_1_MEM_COMPRESS];

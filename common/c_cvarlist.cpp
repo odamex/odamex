@@ -199,9 +199,6 @@ CVAR (developer, "0", "debugging mode",
 // Port (???)
 CVAR (port, "0", "Display currently used port number", 
       CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)
-// File compression (???)
-CVAR (filecompression,	"1", "", 
-      CVARTYPE_BOOL, CVAR_ARCHIVE)
 // Chase camera settings
 CVAR (chase_height,		"-8", "Height of chase camera", 
       CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
