@@ -1552,6 +1552,10 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 		displayplayer_id = did;
 	else
 		displayplayer_id = cid;
+
+	// restore player colors
+	for (size_t i = 0; i < players.size(); i++)
+		R_BuildPlayerTranslation(players[i].id, players[i].userinfo.color);
 }
 
 
