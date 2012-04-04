@@ -761,6 +761,7 @@ EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (hud_usehighresboard)
 EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (r_painintensity)
+EXTERN_CVAR (cl_movebob)
 
 static value_t Crosshairs[] =
 {
@@ -836,6 +837,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {5.0},	{1.0},  {NULL} },
 	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },	
+	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },	
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
