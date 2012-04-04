@@ -207,7 +207,7 @@ CVAR (hud_scale, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR_FUNC_DECL (hud_scaletext, "2", "Scale notify text at high resolutions",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_targetnames, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
 CVAR (hud_usehighresboard, "1", "",	CVARTYPE_BOOL,	CVAR_ARCHIVE)
-CVAR (hud_fullhudtype, "0","The fullscreen hud to display: 0=zdoom,1=odamex", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (hud_fullhudtype, "1","The fullscreen hud to display: 0=zdoom,1=odamex", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR (hud_crosshairdim, "0", "Crosshair transparency",	CVARTYPE_BOOL, CVAR_ARCHIVE)      // Crosshair transparency
 CVAR (hud_crosshairscale, "0", "Crosshair scaling",	CVARTYPE_WORD, CVAR_ARCHIVE)    // Crosshair scaling
