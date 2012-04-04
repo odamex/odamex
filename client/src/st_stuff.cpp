@@ -134,6 +134,7 @@ void ST_newDrawCTF (void);
 int BaseBlendR, BaseBlendG, BaseBlendB;
 float BaseBlendA;
 
+extern bool simulated_connection;
 
 //
 // STATUS BAR DATA
@@ -542,6 +543,11 @@ EXTERN_CVAR (sv_allowcheats)
 // and false if they ARE enabled (stupid huh? not my work [Russell])
 BOOL CheckCheatmode (void)
 {
+	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
+	// back a netdemo
+	if (simulated_connection)
+		return true;
+
 	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
 	// are disabled
 	if (sv_skill == sk_nightmare && !multiplayer)
