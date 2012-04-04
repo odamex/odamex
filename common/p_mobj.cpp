@@ -440,7 +440,8 @@ void P_MoveActor(AActor *mo)
 					minmom = (co_zdoomphys ? (fixed_t)(level.gravity * mo->subsector->sector->gravity * -655.36f) :
 											 (fixed_t)(GRAVITY*mo->subsector->sector->gravity*-8));
 
-					if (mo->momz < minmom && !(mo->flags2&MF2_FLY))
+					if (mo->momz < minmom && !(mo->flags2&MF2_FLY) &&
+						clientside && !predicting)
 					{
 						PlayerLandedOnThing(mo, onmo);
 					}
