@@ -1262,6 +1262,16 @@ void SV_SetupUserInfo (player_t &player)
 	player.userinfo.color			= color;
 	player.prefcolor				= color;
 	
+	// sanitize the client's name
+	new_netname = TrimString(new_netname);
+	if (new_netname.empty())
+	{
+		if (old_netname.empty())
+			new_netname = "PLAYER";
+		else
+			new_netname = old_netname;
+	}
+
 	strncpy(player.userinfo.netname, new_netname.c_str(), MAXPLAYERNAME + 1);
 	// Compare names and broadcast if different.
 	if (!old_netname.empty() && StdStringCompare(new_netname, old_netname, false))

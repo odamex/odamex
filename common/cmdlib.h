@@ -73,6 +73,11 @@ std::string StdStringToLower(const char*);
 std::string StdStringToUpper(const std::string&);
 std::string StdStringToUpper(const char*);
 
+std::string &TrimString(std::string &s);
+std::string &TrimStringStart(std::string &s);
+std::string &TrimStringEnd(std::string &s);
+
+
 char	*COM_Parse (char *data);
 
 extern	char	com_token[8192];
