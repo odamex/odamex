@@ -424,7 +424,7 @@ void Maplist_Runtic() {
 // Clientside maplist query callback.
 void CMD_MaplistCallback(const query_result_t &result) {
 	// Rip through the result set and print it
-	size_t this_index, next_index;
+	size_t this_index = 0, next_index = 0;
 	bool show_this_map = MaplistCache::instance().get_this_index(this_index);
 	MaplistCache::instance().get_next_index(next_index);
 	for (query_result_t::const_iterator it = result.begin();it != result.end();++it) {
