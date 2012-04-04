@@ -880,6 +880,9 @@ void MidiMusicSystem::_InitializePlayback()
 	for (int i = 0; i < _GetNumChannels(); i++)
 		mChannelVolume[i] = 127;
 		
+	// shut off all notes and reset all controllers
+	_AllNotesOff();
+
 	setTempo(120.0);
 }
 
