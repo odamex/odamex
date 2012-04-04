@@ -126,9 +126,9 @@ private:
 	static const size_t MESSAGE_HEADER_SIZE = 9;
 	static const size_t INDEX_ENTRY_SIZE = 8;
 
-	static const uint16_t SNAPSHOT_SPACING = 5 * TICRATE;
+	static const uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
 
-	static const size_t MAX_SNAPSHOT_SIZE = 65536;
+	static const size_t MAX_SNAPSHOT_SIZE = 131072;
 	
 	netdemo_state_t		state;
 	netdemo_state_t		oldstate;	// used when unpausing

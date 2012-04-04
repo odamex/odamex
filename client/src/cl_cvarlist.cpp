@@ -351,7 +351,7 @@ CVAR_FUNC_DECL (vid_winscale, "1.0", "",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_
 CVAR_FUNC_DECL (vid_overscan, "1.0", "Overscan",	CVARTYPE_FLOAT, CVAR_CLIENTINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Netdemo format string
-CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t",
+CVAR_FUNC_DECL (cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
 				"Default netdemo name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 				CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
