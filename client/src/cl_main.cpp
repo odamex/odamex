@@ -99,6 +99,8 @@ float     world_index_accum = 0.0f;
 int       last_svgametic = 0;
 int       last_player_update = 0;
 
+bool		recv_full_update = false;
+
 std::string connectpasshash = "";
 
 BOOL      connected;
@@ -2587,6 +2589,8 @@ void CL_GetServerSettings(void)
 //
 void CL_FinishedFullUpdate()
 {
+	recv_full_update = true;
+
 	// Write the first map snapshot to a netdemo
 	if (netdemo.isRecording())
 		netdemo.writeMapChange();
@@ -2774,10 +2778,6 @@ void CL_LoadMap(void)
 
 	gameaction = ga_nothing;
 
-	// Add a netdemo snapshot at the start of this new map
-	if (netdemo.isRecording())
-		netdemo.writeMapChange();
-
 	// Autorecord netdemo or continue recording in a new file
 	if (!(netdemo.isPlaying() || netdemo.isRecording() || netdemo.isPaused()))
 	{
@@ -2797,6 +2797,10 @@ void CL_LoadMap(void)
 			netdemo.startRecording(filename);
 		}
 	}
+
+	// write the map index to the netdemo
+	if (netdemo.isRecording() && recv_full_update)
+		netdemo.writeMapChange();
 }
 
 
