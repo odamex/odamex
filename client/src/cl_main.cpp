@@ -406,8 +406,8 @@ void CL_DisconnectClient(void)
 
 	if(player.mo)
 	{
-		player.mo->Destroy();
 		P_DisconnectEffect (player.mo);
+		player.mo->Destroy();		
 	}
 
 	size_t i;
