@@ -53,20 +53,20 @@ EXTERN_CVAR (sv_forcerespawn)
 extern bool predicting, step_mode;
 
 static player_t nullplayer;		// used to indicate 'player not found' when searching
-EXTERN_CVAR (cl_movebob);
+EXTERN_CVAR (cl_movebob)
 
 player_t &idplayer(byte id)
 {
 	static size_t translation[MAXPLAYERS];
- 
+
 	if (id >= MAXPLAYERS)
  		return nullplayer;
- 
+
 	// attempt a quick cached resolution
  	size_t tid = translation[id];
 	if (tid < players.size() && players[tid].id == id)
  		return players[tid];
- 
+
  	// full search
 	for(size_t i = 0; i < players.size(); i++)
  	{
@@ -157,11 +157,11 @@ void P_CalcHeight (player_t *player)
 	// Note: don't reduce bobbing here if on ice: if you reduce bobbing here,
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
-	
+
 	if ((player->mo->flags2 & MF2_FLY) && !player->mo->onground)
 	{
 		player->bob = FRACUNIT / 2;
-	}	
+	}
 
 	if (!(player->spectator && displayplayer_id == consoleplayer_id))
 		if (serverside || !predicting)
@@ -279,16 +279,16 @@ void P_MovePlayer (player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
-	
+
 	if (player->jumpTics)
 		player->jumpTics--;
-	
+
 	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
 
 	// [RH] Don't let frozen players move
 	if (player->cheats & CF_FROZEN)
 		return;
-		
+
 	// Move around.
 	// Reactiontime is used to prevent movement
 	//	for a bit after a teleport.
@@ -308,25 +308,25 @@ void P_MovePlayer (player_t *player)
 		else if (player->mo->flags2 & MF2_FLY)
 		{
 			player->mo->momz = 3*FRACUNIT;
-		}		
+		}
 		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
 		{
 			player->mo->momz += 8*FRACUNIT;
 			if(!player->spectator)
 				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
-				
+
             player->mo->flags2 &= ~MF2_ONMOBJ;
-            player->jumpTics = 18;				
+            player->jumpTics = 18;
 		}
 	}
-	
+
 	if (co_zdoomphys)
 	{
 		if (cmd->ucmd.upmove &&
 			(player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY))
 		{
 			player->mo->momz = cmd->ucmd.upmove << 8;
-		}		
+		}
 	}
 	else
 	{
@@ -352,12 +352,12 @@ void P_MovePlayer (player_t *player)
 				{ // Stop falling scream
 					S_StopSound (player->mo, CHAN_VOICE);
 				}
-			}        
+			}
 			else if (cmd->ucmd.upmove > 0)
 			{
 				//P_PlayerUseArtifact (player, arti_fly);
 			}
-		}		
+		}
 	}
 
 	// Look left/right
@@ -400,9 +400,9 @@ void P_MovePlayer (player_t *player)
 		}
 		forwardmove = (cmd->ucmd.forwardmove * movefactor) >> 8;
 		sidemove = (cmd->ucmd.sidemove * movefactor) >> 8;
-		
+
 		// [ML] Check for these conditions unless advanced physics is on
-		if(co_zdoomphys || 
+		if(co_zdoomphys ||
 			(!co_zdoomphys && (mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)))
 		{
 			if (forwardmove)
@@ -505,7 +505,7 @@ void P_DeathThink (player_t *player)
 
 	player->deltaviewheight = 0;
 	P_CalcHeight (player);
-	
+
 	// adjust the player's view to follow its attacker
 	if (cl_deathcam && clientside &&
 		player->attacker && player->attacker != player->mo)
@@ -525,7 +525,7 @@ void P_DeathThink (player_t *player)
 				player->mo->angle += ANG5;
 			else
 				player->mo->angle -= ANG5;
-			
+
 			// not yet looking at killer so keep the red tinting
 			reduce_redness = false;
 		}
@@ -537,7 +537,7 @@ void P_DeathThink (player_t *player)
 	if(serverside)
 	{
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE 
+		if (player->ingame() && (player->cmd.ucmd.buttons & BT_USE
 			|| (!clientside && sv_forcerespawn && level.time >= player->respawn_time)))
 		{
 			player->playerstate = PST_REBORN;
@@ -566,7 +566,7 @@ void P_PlayerThink (player_t *player)
 	}
 	else if (!player->mo)
 		I_Error ("No player %d start\n", player->id);
-		
+
 	player->xviewshift = 0;		// [RH] Make sure view is in right place
 
 	// fixme: do this in the cheat code
@@ -574,7 +574,7 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags |= MF_NOCLIP;
 	else
 		player->mo->flags &= ~MF_NOCLIP;
-		
+
 	if (player->cheats & CF_FLY)
 		player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
 	else
@@ -642,10 +642,10 @@ void P_PlayerThink (player_t *player)
 
 		// [SL] 2012-03-31 - Client is trying to switch to a weapon they don't own
 		// Server should send them their weapon inventory
-		if (!clientside && newweapon >= 0 && newweapon < NUMWEAPONS && 
+		if (!clientside && newweapon >= 0 && newweapon < NUMWEAPONS &&
 			!player->weaponowned[newweapon])
 			SV_SendPlayerInfo(*player);
-			
+
 		if ((newweapon >= 0 && newweapon < NUMWEAPONS)
 			&& player->weaponowned[newweapon]
 			&& newweapon != player->readyweapon)
@@ -761,7 +761,7 @@ void player_s::Serialize (FArchive &arc)
 			<< refire
 			<< killcount
 			<< itemcount
-			<< secretcount			
+			<< secretcount
 			<< damagecount
 			<< bonuscount
 			<< points
@@ -769,7 +769,7 @@ void player_s::Serialize (FArchive &arc)
 			<< extralight
 			<< fixedcolormap
 			<< xviewshift
-			<< jumpTics			
+			<< jumpTics
 			<< respawn_time
 			<< air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
@@ -811,7 +811,7 @@ void player_s::Serialize (FArchive &arc)
 			>> refire
 			>> killcount
 			>> itemcount
-			>> secretcount			
+			>> secretcount
 			>> damagecount
 			>> bonuscount
 			>> points
@@ -819,7 +819,7 @@ void player_s::Serialize (FArchive &arc)
 			>> extralight
 			>> fixedcolormap
 			>> xviewshift
-			>> jumpTics			
+			>> jumpTics
 			>> respawn_time
 			>> air_finished;
 		for (i = 0; i < NUMPOWERS; i++)
@@ -906,7 +906,7 @@ player_s::player_s()
 
 	LastMessage.Time = 0;
 	LastMessage.Message = "";
-	
+
 	BlendR = 0;
 	BlendG = 0;
 	BlendB = 0;
@@ -1004,7 +1004,7 @@ player_s &player_s::operator =(const player_s &other)
 
     LastMessage.Time = other.LastMessage.Time;
 	LastMessage.Message = other.LastMessage.Message;
-	
+
 	BlendR = other.BlendR;
 	BlendG = other.BlendG;
 	BlendB = other.BlendB;
@@ -1013,7 +1013,7 @@ player_s &player_s::operator =(const player_s &other)
 	client = other.client;
 
 	snapshots = other.snapshots;
-		
+
 	return *this;
 }
 
