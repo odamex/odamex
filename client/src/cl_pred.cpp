@@ -249,29 +249,29 @@ static void CL_PredictSectors (int predtic)
 // 
 static void CL_PredictLocalPlayer(int predtic)
 {
-	player_t &p = consoleplayer();
+	player_t *player = &consoleplayer();
 	
-	if (!p.ingame() || !p.mo || p.tic >= predtic)
+	if (!player->ingame() || !player->mo || player->tic >= predtic)
 		return;
 
 	// Copy the player's previous input ticcmd for the tic 'predtic'
 	// to player.cmd so that P_MovePlayer can simulate their movement in
 	// that tic
-	memcpy(&p.cmd, &cl_savedticcmds[predtic % MAXSAVETICS], sizeof(ticcmd_t));
+	memcpy(&player->cmd, &cl_savedticcmds[predtic % MAXSAVETICS], sizeof(ticcmd_t));
 	
 	// Restore the angle, viewheight, etc for the player
-	P_SetPlayerSnapshotNoPosition(&consoleplayer(), cl_savedsnaps[predtic % MAXSAVETICS]);
+	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
 
-	if (p.playerstate != PST_DEAD)
-		P_MovePlayer(&p);
-
+	if (player->playerstate != PST_DEAD)
+		P_MovePlayer(player);
+		
 	if (!predicting)
-		P_PlayerThink(&p);
-
-	P_CalcHeight(&p);
-	p.mo->RunThink();
+		P_PlayerThink(player);
+		
+	P_CalcHeight(player);	
+	
+	player->mo->RunThink();
 }
-
 
 //
 // CL_PredictWorld
@@ -295,14 +295,15 @@ void CL_PredictWorld(void)
 	// correction.  Handle them as a special case and leave.
 	if (consoleplayer().spectator)
 	{
-		if (displayplayer().health <= 0 && (&displayplayer() != &consoleplayer()))
-			P_DeathThink(&displayplayer());
-		else
-			P_PlayerThink(&consoleplayer());
-
 		P_MovePlayer(&consoleplayer());
+		P_PlayerThink(&consoleplayer());
 		P_CalcHeight(&consoleplayer());
-		P_CalcHeight(&displayplayer());
+		
+		if (consoleplayer_id != displayplayer_id)
+		{
+			P_PlayerThink(&displayplayer());
+			P_CalcHeight(&displayplayer());		
+		}
 		
 		return;
 	}
@@ -373,8 +374,11 @@ void CL_PredictWorld(void)
 	CL_PredictSectors(gametic);
 	CL_PredictLocalPlayer(gametic);
 
-	if (consoleplayer().id != displayplayer().id)
-		P_CalcHeight(&displayplayer());
+	if (consoleplayer_id != displayplayer_id)
+	{
+		P_PlayerThink(&displayplayer());
+		P_CalcHeight(&displayplayer());		
+	}
 }
 
 

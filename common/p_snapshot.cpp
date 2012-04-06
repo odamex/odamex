@@ -198,8 +198,11 @@ void ActorSnapshot::toActor(AActor *mo) const
 		mo->momz = mMomZ;
 	}
 	
-	if (mFields & ACT_ANGLE)
+	// Only set a player's angle if he is alive.  Otherwise it will
+	// interfere with the deathcam 
+	if (mFields & ACT_ANGLE && (!mo->player || mo->player->playerstate != PST_DEAD))
 		mo->angle = mAngle;
+		
 	if (mFields & ACT_PITCH)
 		mo->angle = mPitch;
 	if (mFields & ACT_ONGROUND)

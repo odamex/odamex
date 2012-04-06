@@ -181,16 +181,15 @@ void P_CalcHeight (player_t *player)
 		player->bob = FRACUNIT / 2;
 	}
 
-	if (!(player->spectator && displayplayer_id == consoleplayer_id))
-		if (serverside || !predicting)
-		{
-			player->bob = FixedMul (player->mo->momx, player->mo->momx)
-						+ FixedMul (player->mo->momy, player->mo->momy);
-			player->bob >>= 2;
+	if ((serverside || !predicting) && !player->spectator)
+	{
+		player->bob = FixedMul (player->mo->momx, player->mo->momx)
+					+ FixedMul (player->mo->momy, player->mo->momy);
+		player->bob >>= 2;
 
-			if (player->bob > MAXBOB)
-				player->bob = MAXBOB;
-		}
+		if (player->bob > MAXBOB)
+			player->bob = MAXBOB;
+	}
 
     if (player->cheats & CF_NOMOMENTUM || (!co_zdoomphys && !player->mo->onground))
 	{
