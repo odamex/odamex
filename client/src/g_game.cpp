@@ -599,6 +599,11 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		turntick--;
 		cmd->ucmd.yaw = (ANG180 / TURN180_TICKS) >> 16;
 	}
+
+	// [SL] 2012-04-05 - If the player is dead, tell the server not to process
+	// any of its movement or turning by setting impulse to 40
+	if (consoleplayer().playerstate == PST_DEAD)
+		cmd->ucmd.impulse = DEADIMPULSE;
 }
 
 

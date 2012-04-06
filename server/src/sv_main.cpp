@@ -3570,7 +3570,11 @@ void SV_ProcessPlayerCmd(player_t &player)
 	{
 		usercmd_t *ucmd = &(player.cmds.front().ucmd);
 
-		if (player.playerstate != PST_DEAD)
+		// if the server thinks a player is alive and the player also thinks
+		// he's alive, we can update his angle
+		bool valid_ticcmd = (player.playerstate != PST_DEAD && ucmd->impulse != DEADIMPULSE);
+
+		if (valid_ticcmd)
 		{
 			if (step_mode)
 				player.mo->angle = ucmd->yaw;
@@ -3582,6 +3586,8 @@ void SV_ProcessPlayerCmd(player_t &player)
 			else
 				player.mo->pitch = ucmd->pitch << FRACBITS;
 		}
+		else
+			P_ClearTiccmdMovement(&player.cmds.front());
 
 		if (abs(ucmd->forwardmove) > 12800 || abs(ucmd->sidemove) > 12800)
 		{

@@ -253,7 +253,7 @@ static void CL_PredictLocalPlayer(int predtic)
 	
 	if (!p.ingame() || !p.mo || p.tic >= predtic)
 		return;
-	
+
 	// Copy the player's previous input ticcmd for the tic 'predtic'
 	// to player.cmd so that P_MovePlayer can simulate their movement in
 	// that tic
@@ -309,6 +309,11 @@ void CL_PredictWorld(void)
 
 	if (p->tic <= 0)	// No verified position from the server
 		return;
+
+	// Clear out past movements if we're dead!
+	if (consoleplayer().playerstate == PST_DEAD)
+		for (int i = 0; i < MAXSAVETICS; i++)
+			P_ClearTiccmdMovement(&cl_savedticcmds[i]);
 
 	// Figure out where to start predicting from
 	int predtic = consoleplayer().tic > 0 ? consoleplayer().tic: 0;
