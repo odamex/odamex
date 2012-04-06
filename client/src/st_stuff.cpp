@@ -1566,10 +1566,10 @@ void ST_Drawer (void)
 	// [RH] Hey, it's somewhere to put the idmypos stuff!
 	if (idmypos)
 		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
-				consoleplayer().camera->angle/FRACUNIT,
-				consoleplayer().camera->x/FRACUNIT,
-				consoleplayer().camera->y/FRACUNIT,
-				consoleplayer().camera->z/FRACUNIT);
+				displayplayer().camera->angle/FRACUNIT,
+				displayplayer().camera->x/FRACUNIT,
+				displayplayer().camera->y/FRACUNIT,
+				displayplayer().camera->z/FRACUNIT);
 }
 
 static patch_t *LoadFaceGraphic (char *name, int namespc)

@@ -86,8 +86,17 @@ void NetGraph::drawWorldIndexSync(int x, int y)
 		int width = NetGraph::BAR_WIDTH_WORLD_INDEX;
 		int height = abs(mWorldIndexSync[index] * NetGraph::BAR_HEIGHT_WORLD_INDEX);
 		int startx = x + i * NetGraph::BAR_WIDTH_WORLD_INDEX;
-		int starty = centery - mWorldIndexSync[index] * NetGraph::BAR_HEIGHT_WORLD_INDEX;
-		int color = mWorldIndexSync[index] >= 0 ? 160 : 152;
+		int starty, color;
+		if (mWorldIndexSync[index] >= 0)
+		{
+			color = 160;
+			starty = centery - mWorldIndexSync[index] * NetGraph::BAR_HEIGHT_WORLD_INDEX;
+		}
+		else
+		{
+			color = 152;
+			starty = centery - (mWorldIndexSync[index] + 1) * NetGraph::BAR_HEIGHT_WORLD_INDEX;
+		}
 		
 		if (height != 0)
 			NetGraphDrawBar(startx, starty, width, height, color);

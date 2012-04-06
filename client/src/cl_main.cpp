@@ -1871,7 +1871,7 @@ void CL_SpawnPlayer()
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
 		world_index = CL_CalculateWorldIndexSync();
-		world_index_accum = (float)world_index;
+		world_index_accum = 0.0f;
 	}
 
 	int snaptime = last_svgametic;
@@ -3271,7 +3271,7 @@ CVAR_FUNC_IMPL (cl_interp)
 
 	// Resync the world index since the sync offset has changed		
 	world_index = CL_CalculateWorldIndexSync();
-	world_index_accum = (float)world_index;
+	world_index_accum = 0.0f;
 	
 	netgraph.setInterpolation(var);
 }
@@ -3286,8 +3286,8 @@ void CL_SimulateWorld()
 		return;
 		
 	// if the world_index falls outside this range, resync it
-	static const int MAX_BEHIND = 6;
-	static const int MAX_AHEAD = 6;
+	static const int MAX_BEHIND = 16;
+	static const int MAX_AHEAD = 16;
 
 	int lower_sync_limit = CL_CalculateWorldIndexSync() - MAX_BEHIND;
 	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;
@@ -3313,9 +3313,13 @@ void CL_SimulateWorld()
 		#endif // _WORLD_INDEX_DEBUG_
 		
 		world_index = CL_CalculateWorldIndexSync();
-		world_index_accum = (float)world_index;
+		world_index_accum = 0.0f;
 	}
 	
+	// Not using interpolation?  Use the last update always
+	if (!cl_interp)
+		world_index = last_svgametic;
+		
 	#ifdef _WORLD_INDEX_DEBUG_
 	Printf(PRINT_HIGH, "Gametic %i, simulating world_index %i\n",
 		gametic, world_index);
@@ -3368,26 +3372,19 @@ void CL_SimulateWorld()
 
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index
-	if (last_svgametic - cl_interp > world_index)
-		world_index_accum += 1.25f;		// behind server so speed up time
-	else if (last_svgametic - cl_interp < world_index)
-		world_index_accum += 0.75f;		// ahead of server so slow down time
-	else
-		world_index_accum += 1.0f;
-
-	int diff = int(world_index_accum - world_index);
+	world_index_accum += float(last_svgametic - cl_interp - world_index) / float(MAX_AHEAD);
+	int drift_correction = int(world_index_accum + 0.5f);	// round
 	
 	#ifdef _WORLD_INDEX_DEBUG_
-	if (diff != 1)
-		Printf(PRINT_HIGH, "Gametic %i, increasing world index by %i.",
-				gametic, diff);
+	if (drift_correction != 0)
+		Printf(PRINT_HIGH, "Gametic %i, increasing world index by %i.\n",
+				gametic, drift_correction);
 	#endif // _WORLD_INDEX_DEBUG_
 	
-	// FIXME: the current world_index_accum scheme causes skipping movement
-	// disable for now until more testing can be done
-	diff = 1;
-
-	world_index += diff;
+	// [SL] 2012-04-06 - Sync correction still needs work.  Just increment index by 1 for now
+	drift_correction = 0;
+	
+	world_index += 1 + drift_correction;
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
