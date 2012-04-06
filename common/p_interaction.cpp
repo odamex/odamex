@@ -913,8 +913,15 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 	if (delta > toucher->height || delta < lowerbound)
 		return;
 
+/*	// [SL] 2012-04-06 - Commented out as it occasionally desyncs when a player
+	// spawns on top of a weapon.  Needs to be investigated more thoroughly
+	// before being enabled.
+
 	// Only allow clients to predict touching weapons, not health, armor, etc
 	if (!serverside && !P_SpecialIsWeapon(special))
+		return;
+*/
+	if (!serverside)
 		return;
 
 	P_GiveSpecial(toucher->player, special);
