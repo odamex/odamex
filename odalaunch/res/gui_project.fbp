@@ -586,7 +586,7 @@
                 <event name="OnSize"></event>
                 <event name="OnUpdateUI"></event>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; ./icon32x32x32.ico</property>
+                    <property name="bitmap">Load From File; D:\Russell\Projects\multi\odamex2\branches\0.6-dev\odalaunch\res\btnlaunch.ico</property>
                     <property name="context_menu">0</property>
                     <property name="id">ID_MNULAUNCH</property>
                     <property name="kind">wxITEM_NORMAL</property>
@@ -607,7 +607,7 @@
                     <event name="OnUpdateUI"></event>
                 </object>
                 <object class="tool" expanded="0">
-                    <property name="bitmap">Load From File; ./odaqlaunch.ico</property>
+                    <property name="bitmap">Load From File; D:\Russell\Projects\multi\odamex2\branches\0.6-dev\odalaunch\res\btnqlaunch.ico</property>
                     <property name="context_menu">0</property>
                     <property name="id">wxID_ANY</property>
                     <property name="kind">wxITEM_NORMAL</property>

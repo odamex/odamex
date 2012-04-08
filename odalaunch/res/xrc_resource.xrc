@@ -117,13 +117,13 @@
 				<label>Connect</label>
 				<tooltip>Connect to the selected server</tooltip>
 				<longhelp>Connect to the selected server</longhelp>
-				<bitmap>./icon32x32x32.ico</bitmap>
+				<bitmap>D:\Russell\Projects\multi\odamex2\branches\0.6-dev\odalaunch\res\btnlaunch.ico</bitmap>
 			</object>
 			<object class="tool" name="Id_MnuItmRunOffline">
 				<label>Run Odamex</label>
 				<tooltip>Runs the Odamex Client without connecting to a server</tooltip>
 				<longhelp>Runs the Odamex Client without connecting to a server</longhelp>
-				<bitmap>./odaqlaunch.ico</bitmap>
+				<bitmap>D:\Russell\Projects\multi\odamex2\branches\0.6-dev\odalaunch\res\btnqlaunch.ico</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="Id_MnuItmRefreshServer">
