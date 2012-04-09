@@ -252,7 +252,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 		m_SendPing = 0;
 		m_ReceivePing = 0;
 
-		return 0;
+		return -1;
 	}
 
     fromlen = sizeof(m_RemoteAddress);
@@ -268,7 +268,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 		m_SendPing = 0;
 		m_ReceivePing = 0;
 
-		return 0;
+		return -2;
 	}
 
     m_BufferSize = BytesReceived;
@@ -291,7 +291,7 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	m_ReceivePing = 0;
 
 
-	return 0;
+	return -3;
 }
 
 bool BufferedSocket::ReadString(string &str)

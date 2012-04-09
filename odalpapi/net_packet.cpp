@@ -53,16 +53,33 @@ int32_t ServerBase::Query(int32_t Timeout)
 	{
 		Socket.ClearBuffer();
 
-		Socket.Write32(challenge);
-
         // If we didn't get it the first time, try again
-        while (Retry--)
+        while (Retry)
         {
+            Socket.Write32(challenge);
+
             if (!Socket.SendData(Timeout))
                 return 0;
 
-            if (Socket.GetData(Timeout))
-                goto ok;
+            int32_t err = Socket.GetData(Timeout);
+
+            switch (err)
+            {
+                case -1:
+                case -3: 
+                {
+                    Socket.ResetBuffer();
+                    Socket.ResetSize();
+                    --Retry;
+                    continue;
+                };
+
+                case -2:
+                    return 0;
+
+                default:
+                    goto ok;
+            }
         }
 
         if (!Retry)
@@ -520,20 +537,37 @@ int32_t Server::Query(int32_t Timeout)
 
 		ResetData();
 
-		Socket.Write32(challenge);
-		Socket.Write32(VERSION);
-		Socket.Write32(PROTOCOL_VERSION);
-		// bond - time
-        Socket.Write32(Info.PTime);
-
         // If we didn't get it the first time, try again
-        while (Retry--)
+        while (Retry)
         {
+            Socket.Write32(challenge);
+            Socket.Write32(VERSION);
+            Socket.Write32(PROTOCOL_VERSION);
+            // bond - time
+            Socket.Write32(Info.PTime);
+
             if (!Socket.SendData(Timeout))
                 return 0;
 
-            if (Socket.GetData(Timeout))
-                goto ok;
+            int32_t err = Socket.GetData(Timeout);
+
+            switch (err)
+            {
+                case -1:
+                case -3: 
+                {
+                    Socket.ResetBuffer();
+                    Socket.ResetSize();
+                    --Retry;
+                    continue;
+                };
+
+                case -2:
+                    return 0;
+
+                default:
+                    goto ok;
+            }
         }
 
         if (!Retry)

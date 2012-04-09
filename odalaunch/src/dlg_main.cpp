@@ -559,11 +559,15 @@ void dlgMain::MonThrGetSingleServer()
 {
     wxFileConfig ConfigInfo;
     wxInt32 ServerTimeout;
+    wxInt32 RetryCount;
 
     if (!MServer.GetServerCount())
         return;
 
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
+
+    QServer[mtcs_Request.Index].SetRetries(RetryCount);
 
     if (QServer[mtcs_Request.Index].Query(ServerTimeout))
     {

@@ -124,7 +124,8 @@ public:
 	bool CanWrite(const size_t &);
 
 	// Reset Buffer
-	void ResetBuffer() { m_BufferPos = 0; }
+	inline void ResetBuffer() { m_BufferPos = 0; }
+	inline void ResetSize() { m_BufferSize = 0; }
 
 	// Clear buffer
 	void ClearBuffer();
