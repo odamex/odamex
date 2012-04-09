@@ -314,10 +314,16 @@ std::string JoinStrings(const std::vector<std::string> &pieces, const std::strin
 	return result.str();
 }
 
+// [SL] Reimplement std::isspace 
+static int _isspace(int c)
+{
+	return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f' || c == '\r');
+}
+
 // Trim whitespace from the start and end of a string
 std::string &TrimString(std::string &s)
 {
-	s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
+	s.erase(remove_if(s.begin(), s.end(), _isspace), s.end());
 	return s;
 }
 
