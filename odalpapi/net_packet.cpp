@@ -45,6 +45,8 @@ to override this
 */
 int32_t ServerBase::Query(int32_t Timeout)
 {
+	int8_t Retry = m_RetryCount;
+
 	string Address = Socket.GetRemoteAddress();
 
 	if (Address != "")
@@ -53,11 +55,20 @@ int32_t ServerBase::Query(int32_t Timeout)
 
 		Socket.Write32(challenge);
 
-		if(!Socket.SendData(Timeout))
-			return 0;
+        // If we didn't get it the first time, try again
+        while (Retry--)
+        {
+            if (!Socket.SendData(Timeout))
+                return 0;
 
-		if (!Socket.GetData(Timeout))
-			return 0;
+            if (Socket.GetData(Timeout))
+                goto ok;
+        }
+
+        if (!Retry)
+            return 0;
+
+        ok:
 
 		Ping = Socket.GetPing();
 
@@ -499,6 +510,8 @@ int32_t Server::Parse()
 
 int32_t Server::Query(int32_t Timeout)
 {
+    int8_t Retry = m_RetryCount;
+
 	string Address = Socket.GetRemoteAddress();
 
 	if (Address != "")
@@ -513,11 +526,20 @@ int32_t Server::Query(int32_t Timeout)
 		// bond - time
         Socket.Write32(Info.PTime);
 
-		if(!Socket.SendData(Timeout))
-			return 0;
+        // If we didn't get it the first time, try again
+        while (Retry--)
+        {
+            if (!Socket.SendData(Timeout))
+                return 0;
 
-		if (!Socket.GetData(Timeout))
-			return 0;
+            if (Socket.GetData(Timeout))
+                goto ok;
+        }
+
+        if (!Retry)
+            return 0;
+
+        ok:
 
 		Ping = Socket.GetPing();
 

@@ -49,6 +49,7 @@
 #define MASTERTIMEOUT       "MasterTimeout"
 #define SERVERTIMEOUT       "ServerTimeout"
 #define USEBROADCAST        "UseBroadcast"
+#define RETRYCOUNT          "RetryCount"
 
 #ifdef __WXMSW__
 #define PATH_DELIMITER ';'
@@ -113,6 +114,7 @@ class dlgConfig: public wxDialog
 
         wxSpinCtrl *m_SpnCtrlMasterTimeout;
         wxSpinCtrl *m_SpnCtrlServerTimeout;
+        wxSpinCtrl *m_SpnCtrlRetry;
         wxTextCtrl *m_TxtCtrlExtraCmdLineArgs;
 
         wxSpinCtrl *m_SpnCtrlPQGood;

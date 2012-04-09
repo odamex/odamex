@@ -58,6 +58,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	EVT_TEXT(XRCID("Id_SpnCtrlMasterTimeout"), dlgConfig::OnTextChange)
 	EVT_TEXT(XRCID("Id_SpnCtrlServerTimeout"), dlgConfig::OnTextChange)
+	EVT_TEXT(XRCID("Id_SpnCtrlRetry"), dlgConfig::OnTextChange)
 	EVT_TEXT(XRCID("Id_TxtCtrlExtraCmdLineArgs"), dlgConfig::OnTextChange)
 
 	EVT_SPINCTRL(XRCID("Id_SpnCtrlPQGood"), dlgConfig::OnSpinValChange)
@@ -83,6 +84,7 @@ dlgConfig::dlgConfig(launchercfg_t *cfg, wxWindow *parent, wxWindowID id)
 
     m_SpnCtrlMasterTimeout = XRCCTRL(*this, "Id_SpnCtrlMasterTimeout", wxSpinCtrl);
     m_SpnCtrlServerTimeout = XRCCTRL(*this, "Id_SpnCtrlServerTimeout", wxSpinCtrl);
+    m_SpnCtrlRetry = XRCCTRL(*this, "Id_SpnCtrlRetry", wxSpinCtrl);
     m_TxtCtrlExtraCmdLineArgs = XRCCTRL(*this, "Id_TxtCtrlExtraCmdLineArgs", wxTextCtrl);
 
     m_SpnCtrlPQGood = XRCCTRL(*this, "Id_SpnCtrlPQGood", wxSpinCtrl);
@@ -137,14 +139,16 @@ void dlgConfig::Show()
 
     m_DirCtrlChooseOdamexPath->SetPath(cfg_file->odamex_directory);
 
-    wxString MasterTimeout, ServerTimeout, ExtraCmdLineArgs;
+    wxString MasterTimeout, ServerTimeout, RetryCount, ExtraCmdLineArgs;
 
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, wxT("500"));
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, wxT("1000"));
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, wxT("2"));
     ConfigInfo.Read(wxT(EXTRACMDLINEARGS), &ExtraCmdLineArgs, wxT(""));
 
     m_SpnCtrlMasterTimeout->SetValue(MasterTimeout);
     m_SpnCtrlServerTimeout->SetValue(ServerTimeout);
+    m_SpnCtrlRetry->SetValue(RetryCount);
     m_TxtCtrlExtraCmdLineArgs->SetValue(ExtraCmdLineArgs);
 
     wxInt32 PQGood, PQPlayable, PQLaggy;
@@ -437,6 +441,7 @@ void dlgConfig::SaveSettings()
 {
     ConfigInfo.Write(wxT(MASTERTIMEOUT), m_SpnCtrlMasterTimeout->GetValue());
     ConfigInfo.Write(wxT(SERVERTIMEOUT), m_SpnCtrlServerTimeout->GetValue());
+    ConfigInfo.Write(wxT(RETRYCOUNT), m_SpnCtrlRetry->GetValue());
     ConfigInfo.Write(wxT(EXTRACMDLINEARGS), m_TxtCtrlExtraCmdLineArgs->GetValue());
     ConfigInfo.Write(wxT(GETLISTONSTART), cfg_file->get_list_on_start);
 	ConfigInfo.Write(wxT(SHOWBLOCKEDSERVERS), cfg_file->show_blocked_servers);

@@ -428,16 +428,18 @@ bool dlgMain::MonThrGetMasterList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 MasterTimeout;
+    wxInt32 RetryCount;
     bool UseBroadcast;
     size_t ServerCount;
     mtrs_t Signal;
 
     // Get the masters timeout from the config file
     ConfigInfo.Read(wxT(MASTERTIMEOUT), &MasterTimeout, 500);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
     ConfigInfo.Read(wxT(USEBROADCAST), &UseBroadcast, false);
 
     // Query the masters with the timeout
-    MServer.QueryMasters(MasterTimeout, UseBroadcast);
+    MServer.QueryMasters(MasterTimeout, UseBroadcast, RetryCount);
 
     // Get the amount of servers found
     ServerCount = MServer.GetServerCount();
@@ -463,6 +465,7 @@ void dlgMain::MonThrGetServerList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 ServerTimeout;
+    wxInt32 RetryCount;
     size_t ServerCount;
 
     size_t count = 0;
@@ -480,6 +483,7 @@ void dlgMain::MonThrGetServerList()
     }
 
     ConfigInfo.Read(wxT(SERVERTIMEOUT), &ServerTimeout, 500);
+    ConfigInfo.Read(wxT(RETRYCOUNT), &RetryCount, 2);
 
     delete[] QServer;
     QServer = new Server [ServerCount];
@@ -516,7 +520,7 @@ void dlgMain::MonThrGetServerList()
 
                 // add the thread to the vector
                 threadVector.push_back(new QueryThread(this,
-                    &QServer[serverNum], serverNum, ServerTimeout));
+                    &QServer[serverNum], serverNum, ServerTimeout, RetryCount));
 
                 // create and run the thread
                 if(threadVector.back()->Create() == wxTHREAD_NO_ERROR)

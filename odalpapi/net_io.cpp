@@ -232,9 +232,6 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	bool             DestroyMe = false;
     socklen_t        fromlen;
 
-	// clear it
-	ClearBuffer();
-
 	// Wait for read with timeout
 	if(Timeout >= 0)
 	{
@@ -275,6 +272,9 @@ int32_t BufferedSocket::GetData(const int32_t &Timeout)
 	}
 
     m_BufferSize = BytesReceived;
+
+	// Reset buffers position
+	ResetBuffer();
 
 	// apply the receive ping
 	m_ReceivePing = GetMillisNow();

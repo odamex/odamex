@@ -147,6 +147,8 @@ protected:
 	// The time in milliseconds a packet was received
 	uint64_t Ping;
 
+    uint8_t m_RetryCount;
+
 //	AG_Mutex m_Mutex;
 public:
 	// Constructor
@@ -155,6 +157,8 @@ public:
 		Ping = 0;
 		challenge = 0;
 		response = 0;
+
+        m_RetryCount = 2;
 
     // todo: replace with a generic implementation
 //		AG_MutexInit(&m_Mutex);
@@ -182,6 +186,8 @@ public:
         Socket.GetRemoteAddress(Address, Port);
 	}
 	uint64_t GetPing() const { return Ping; }
+
+    void SetRetries(int8_t Count) { m_RetryCount = Count; }
 
 #ifdef AG_DEBUG
 	// These funtions will cause termination on error when AG_DEBUG is enabled
@@ -249,9 +255,12 @@ public:
 			masteraddresses.push_back(Master);
 	}
 
-	void QueryMasters(const uint32_t &Timeout, const bool &Broadcast)
+	void QueryMasters(const uint32_t &Timeout, const bool &Broadcast, 
+            const int8_t &Retries)
 	{           
 		DeleteAllNormalServers();
+
+        m_RetryCount = Retries;
 
         if (Broadcast)
             QueryBC(Timeout);

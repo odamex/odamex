@@ -394,6 +394,36 @@
 												</object>
 											</object>
 										</object>
+										<object class="sizeritem">
+											<option>1</option>
+											<flag>wxEXPAND</flag>
+											<border>5</border>
+											<object class="wxBoxSizer">
+												<orient>wxHORIZONTAL</orient>
+												<object class="sizeritem">
+													<option>1</option>
+													<flag>wxALIGN_CENTER|wxALL</flag>
+													<border>5</border>
+													<object class="wxStaticText" name="61">
+														<style>wxALIGN_RIGHT</style>
+														<label>Retry Queries</label>
+														<wrap>-1</wrap>
+													</object>
+												</object>
+												<object class="sizeritem">
+													<option>0</option>
+													<flag>wxALL</flag>
+													<border>5</border>
+													<object class="wxSpinCtrl" name="Id_SpnCtrlRetry">
+														<style>wxSP_ARROW_KEYS</style>
+														<tooltip>Requery master/servers that don&apos;t respond first time round</tooltip>
+														<value>2</value>
+														<min>1</min>
+														<max>255</max>
+													</object>
+												</object>
+											</object>
+										</object>
 									</object>
 								</object>
 								<object class="sizeritem">
