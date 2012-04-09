@@ -40,7 +40,7 @@ static int ImageList_SortArrowDown = -1;
 // Sorting arrow XPM images
 static const char *SortArrowAscending[] =
 {
-    "16 15 3 1",
+    "16 16 3 1",
     "  c None",
     "0 c #808080",
     "1 c #FFFFFF",
@@ -59,12 +59,13 @@ static const char *SortArrowAscending[] =
     "                ",
     "                ",
     "                ",
+    "                ",
     "                "
 };
 
 static const char *SortArrowDescending[] =
 {
-    "16 15 3 1",
+    "16 16 3 1",
     "  c None",
     "0 c #808080",
     "1 c #FFFFFF",
@@ -80,6 +81,7 @@ static const char *SortArrowDescending[] =
     "      0  1      ",
     "      0011      ",
     "       01       ",
+    "                ",
     "                ",
     "                ",
     "                ",
@@ -103,8 +105,7 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 {
     if (GetImageList(wxIMAGE_LIST_SMALL) == NULL)
     {
-        // Art provider images are 16x15, WTF?! Kept for compatibility :'(
-        wxImageList *ImageList = new wxImageList(16, 15, true);
+        wxImageList *ImageList = new wxImageList(16, 16, true);
         AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
         
         // Add our sort icons by default.
