@@ -49,53 +49,51 @@ int32_t ServerBase::Query(int32_t Timeout)
 
 	string Address = Socket.GetRemoteAddress();
 
-	if (Address != "")
-	{
-		Socket.ClearBuffer();
+	if (Address.empty())
+        return 0;
 
-        // If we didn't get it the first time, try again
-        while (Retry)
-        {
-            Socket.Write32(challenge);
+    Socket.ClearBuffer();
 
-            if (!Socket.SendData(Timeout))
-                return 0;
+    // If we didn't get it the first time, try again
+    while (Retry)
+    {
+        Socket.Write32(challenge);
 
-            int32_t err = Socket.GetData(Timeout);
-
-            switch (err)
-            {
-                case -1:
-                case -3: 
-                {
-                    Socket.ResetBuffer();
-                    Socket.ResetSize();
-                    --Retry;
-                    continue;
-                };
-
-                case -2:
-                    return 0;
-
-                default:
-                    goto ok;
-            }
-        }
-
-        if (!Retry)
+        if (!Socket.SendData(Timeout))
             return 0;
 
-        ok:
+        int32_t err = Socket.GetData(Timeout);
 
-		Ping = Socket.GetPing();
+        switch (err)
+        {
+            case -1:
+            case -3: 
+            {
+                Socket.ResetBuffer();
+                Socket.ResetSize();
+                --Retry;
+                continue;
+            };
 
-		if (!Parse())
-			return 0;
+            case -2:
+                return 0;
 
-		return 1;
-	}
+            default:
+                goto ok;
+        }
+    }
 
-	return 0;
+    if (!Retry)
+        return 0;
+
+    ok:
+
+    Ping = Socket.GetPing();
+
+    if (!Parse())
+        return 0;
+
+    return 1;
 }
 
 /*
@@ -531,59 +529,57 @@ int32_t Server::Query(int32_t Timeout)
 
 	string Address = Socket.GetRemoteAddress();
 
-	if (Address != "")
-	{
-		Socket.ClearBuffer();
+	if (Address.empty())
+        return 0;
 
-		ResetData();
+	Socket.ClearBuffer();
 
-        // If we didn't get it the first time, try again
-        while (Retry)
-        {
-            Socket.Write32(challenge);
-            Socket.Write32(VERSION);
-            Socket.Write32(PROTOCOL_VERSION);
-            // bond - time
-            Socket.Write32(Info.PTime);
+	ResetData();
 
-            if (!Socket.SendData(Timeout))
-                return 0;
+    // If we didn't get it the first time, try again
+    while (Retry)
+    {
+        Socket.Write32(challenge);
+        Socket.Write32(VERSION);
+        Socket.Write32(PROTOCOL_VERSION);
+        // bond - time
+        Socket.Write32(Info.PTime);
 
-            int32_t err = Socket.GetData(Timeout);
-
-            switch (err)
-            {
-                case -1:
-                case -3: 
-                {
-                    Socket.ResetBuffer();
-                    Socket.ResetSize();
-                    --Retry;
-                    continue;
-                };
-
-                case -2:
-                    return 0;
-
-                default:
-                    goto ok;
-            }
-        }
-
-        if (!Retry)
+        if (!Socket.SendData(Timeout))
             return 0;
 
-        ok:
+        int32_t err = Socket.GetData(Timeout);
 
-		Ping = Socket.GetPing();
+        switch (err)
+        {
+            case -1:
+            case -3: 
+            {
+                Socket.ResetBuffer();
+                Socket.ResetSize();
+                --Retry;
+                continue;
+            };
 
-		if (!Parse())
-			return 0;
+            case -2:
+                return 0;
 
-		return 1;
-	}
+            default:
+                goto ok;
+        }
+    }
 
-	return 0;
+    if (!Retry)
+        return 0;
+
+    ok:
+
+    Ping = Socket.GetPing();
+
+    if (!Parse())
+        return 0;
+
+    return 1;
 }
 
 // Send network-wide broadcasts
