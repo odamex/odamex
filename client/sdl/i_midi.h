@@ -140,7 +140,7 @@ class MidiSysexEvent : public MidiEvent
 {
 public:
 	MidiSysexEvent(unsigned int time, byte* data, size_t length) :
-		MidiEvent(time, MIDI_EVENT_CONTROLLER), mData(NULL), mLength(length)
+		MidiEvent(time, MIDI_EVENT_SYSEX), mData(NULL), mLength(length)
 	{
 		if (mLength)
 		{
