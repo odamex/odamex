@@ -91,6 +91,8 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 	EVT_SHOW(dlgMain::OnShow)
 	EVT_CLOSE(dlgMain::OnClose)
 
+    EVT_WINDOW_CREATE(dlgMain::OnWindowCreate)
+
     // thread events
     EVT_COMMAND(-1, wxEVT_THREAD_MONITOR_SIGNAL, dlgMain::OnMonitorSignal)
     EVT_COMMAND(-1, wxEVT_THREAD_WORKER_SIGNAL, dlgMain::OnWorkerSignal)
@@ -103,9 +105,6 @@ END_EVENT_TABLE()
 // Main window creation
 dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 {
-    wxFileConfig ConfigInfo;
-    wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
-    bool WindowMaximized;
     wxString Version;
     wxIcon MainIcon;
 
@@ -132,37 +131,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     SetLabel(Version);
 
-    // Sets the window size
-    ConfigInfo.Read(wxT("MainWindowWidth"),
-                    &WindowWidth,
-                    0);
-
-    ConfigInfo.Read(wxT("MainWindowHeight"),
-                    &WindowHeight,
-                    0);
-
-    if (WindowWidth >= 0 && WindowHeight >= 0)
-        SetClientSize(WindowWidth, WindowHeight);
-
-    // Set Window position
-    ConfigInfo.Read(wxT("MainWindowPosX"),
-                    &WindowPosX,
-                    0);
-
-    ConfigInfo.Read(wxT("MainWindowPosY"),
-                    &WindowPosY,
-                    0);
-
-    if (WindowPosX >= 0 && WindowPosY >= 0)
-        Move(WindowPosX, WindowPosY);
-
-    // Set whether this window is maximized or not
-    ConfigInfo.Read(wxT("MainWindowMaximized"), &WindowMaximized, false);
-
-    Maximize(WindowMaximized);
 
     launchercfg_s.get_list_on_start = 1;
-    launchercfg_s.show_blocked_servers = 1;
+    launchercfg_s.show_blocked_servers = 0;
     launchercfg_s.wad_paths = wxGetCwd();
     launchercfg_s.odamex_directory = wxGetCwd();
 
@@ -215,6 +186,42 @@ dlgMain::~dlgMain()
 
     if (OdaGet != NULL)
         OdaGet->Destroy();
+}
+
+void dlgMain::OnWindowCreate(wxWindowCreateEvent &event)
+{
+    wxFileConfig ConfigInfo;
+    wxInt32 WindowPosX, WindowPosY, WindowWidth, WindowHeight;
+    bool WindowMaximized;
+
+    // Sets the window size
+    ConfigInfo.Read(wxT("MainWindowWidth"),
+                    &WindowWidth,
+                    -1);
+
+    ConfigInfo.Read(wxT("MainWindowHeight"),
+                    &WindowHeight,
+                    -1);
+
+    if (WindowWidth >= 0 && WindowHeight >= 0)
+        SetClientSize(WindowWidth, WindowHeight);
+
+    // Set Window position
+    ConfigInfo.Read(wxT("MainWindowPosX"),
+                    &WindowPosX,
+                    -1);
+
+    ConfigInfo.Read(wxT("MainWindowPosY"),
+                    &WindowPosY,
+                    -1);
+
+    if (WindowPosX >= 0 && WindowPosY >= 0)
+        Move(WindowPosX, WindowPosY);
+
+    // Set whether this window is maximized or not
+    ConfigInfo.Read(wxT("MainWindowMaximized"), &WindowMaximized, true);
+
+    Maximize(WindowMaximized);
 }
 
 // Called when the menu exit item or exit button is clicked

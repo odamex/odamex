@@ -108,6 +108,7 @@ class dlgMain : public wxFrame, wxThreadHelper
 		
 		void OnShow(wxShowEvent &event);
 		void OnClose(wxCloseEvent &event);
+		void OnWindowCreate(wxWindowCreateEvent &event);
 		
 		void OnExit(wxCommandEvent& event);
 		
