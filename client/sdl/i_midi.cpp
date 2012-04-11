@@ -83,6 +83,8 @@ static const size_t		cHeaderSize = 6;
 static const size_t		cTrackHeaderSize = 8;
 static const size_t		cMaxSysexSize = 8192;
 
+bool continuing_sysex = false;
+
 // ============================================================================
 //
 // Non-member MidiSong helper functions
@@ -237,6 +239,15 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 	midi_event_type_t eventtype = static_cast<midi_event_type_t>(val);
 	static midi_event_type_t prev_eventtype = eventtype;
 	
+	// Interpret non-standard MIDI that omits the MIDI_EVENT_SYSEX_SPLIT
+	// on all sysex messages following the first until a message
+	// terminates with 0xF7
+	if (continuing_sysex && eventtype != MIDI_EVENT_SYSEX_SPLIT)
+	{
+		eventtype = MIDI_EVENT_SYSEX_SPLIT;
+		mem_fseek(mf, -1, MEM_SEEK_CUR);
+	}
+	
 	// All event types have their top bit set.  Therefore, if
 	// the top bit is not set, it is because we are using the "same
 	// as previous event type" shortcut to save a byte.  Skip back
@@ -259,6 +270,13 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 		if (!data)
 			return NULL;
 
+		if (eventtype == MIDI_EVENT_SYSEX)
+			continuing_sysex = true;
+
+		// is the sysex message properly terminated?			
+		if (length > 0 && data[length - 1] == 0xf7)
+			continuing_sysex = false;
+			
 		return new MidiSysexEvent(event_time, data, length);
 	}
 	
@@ -297,7 +315,7 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 		
 		if (!mem_fread(&param1, sizeof(param1), 1, mf))
 			return NULL;
-		
+			
 		return new MidiControllerEvent(event_time, controllertype, channel, param1);
 	}
 	
@@ -308,8 +326,9 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 		if (!mem_fread(&param1, sizeof(param1), 1, mf))
 			return NULL;
 			
-		if (eventtype != MIDI_EVENT_PROGRAM_CHANGE && 
-			eventtype != MIDI_EVENT_CHAN_AFTERTOUCH)
+		if (eventtype == MIDI_EVENT_NOTE_OFF || 
+			eventtype == MIDI_EVENT_NOTE_ON ||
+			eventtype == MIDI_EVENT_AFTERTOUCH)
 		{
 			// this is an event that uses two parameters
 			if (!mem_fread(&param2, sizeof(param2), 1, mf))
@@ -351,6 +370,7 @@ static std::list<MidiEvent*> *I_ReadMidiTrack(MEMFILE *mf)
 		
 	midi_chunk_header_t chunkheader;
 	unsigned int track_time = 0;
+	continuing_sysex = false;
 	
     size_t res = mem_fread(&chunkheader, cTrackHeaderSize, 1, mf); 
 	if (!res)
