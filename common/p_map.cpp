@@ -98,6 +98,8 @@ EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_boomlinecheck)
 EXTERN_CVAR (co_zdoomphys)
+EXTERN_CVAR (sv_friendlyfire)
+
 CVAR_FUNC_IMPL (sv_gravity)
 {
 	level.gravity = var;
@@ -1553,7 +1555,8 @@ BOOL PTR_AimTraverse (intercept_t* in)
 	// [SL] 2011-10-31 - Don't aim at teammates
 	if ((sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) &&
 		shootthing->player && th->player &&
-		shootthing->player->userinfo.team == th->player->userinfo.team)
+		shootthing->player->userinfo.team == th->player->userinfo.team &&
+		!sv_friendlyfire)
 		return true;
 
 	// check angles to see if the thing can be aimed at
