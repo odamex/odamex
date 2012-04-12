@@ -440,11 +440,8 @@ void P_MoveActor(AActor *mo)
 					minmom = (co_zdoomphys ? (fixed_t)(level.gravity * mo->subsector->sector->gravity * -655.36f) :
 											 (fixed_t)(GRAVITY*mo->subsector->sector->gravity*-8));
 
-					if (mo->momz < minmom && !(mo->flags2&MF2_FLY) &&
-						clientside && !predicting)
-					{
+					if (mo->momz < minmom && !(mo->flags2&MF2_FLY))
 						PlayerLandedOnThing(mo, onmo);
-					}
 				}
 				if (onmo->z + onmo->height - mo->z <= 24 * FRACUNIT)
 				{
@@ -1202,9 +1199,7 @@ void P_ZMovement(AActor *mo)
 					// Decrease viewheight for a moment
 					// after hitting the ground (hard),
 					// and utter appropriate sound.
-
-					if (clientside && !predicting)
-						PlayerLandedOnThing(mo, NULL);
+					PlayerLandedOnThing(mo, NULL);
 				}
 			}
 
@@ -1359,6 +1354,9 @@ void P_ZMovement(AActor *mo)
 //
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 {
+	if (clientside && predicting)
+		return;
+
 	mo->player->deltaviewheight = mo->momz>>3;
 	
 	if (co_zdoomphys)
@@ -1367,19 +1365,16 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 		if (mo->health > 0)
 		{
 			if (mo->momz < (fixed_t)(level.gravity * mo->subsector->sector->gravity * -983.04f))
-			{
-				S_Sound (mo, CHAN_VOICE, "*grunt1", 1, ATTN_NORM);
-			}
+				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+
 			if (onmobj != NULL)
-			{
-				S_Sound (mo, CHAN_VOICE, "*land1", 1, ATTN_NORM);
-			}
+				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 		}
 	}
 	else
 	{
 		// [SL] 2011-06-16 - Vanilla Doom Oomphiness
-		S_Sound (mo, CHAN_VOICE, "*land1", 1, ATTN_NORM);
+		UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 	}
 //	mo->player->centering = true;
 }

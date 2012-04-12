@@ -330,7 +330,7 @@ void P_MovePlayer (player_t *player)
 		{
 			player->mo->momz += 8*FRACUNIT;
 			if(!player->spectator)
-				S_Sound (player->mo, CHAN_BODY, "*jump1", 1, ATTN_NORM);
+				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
             player->mo->flags2 &= ~MF2_ONMOBJ;
             player->jumpTics = 18;
