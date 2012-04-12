@@ -1359,6 +1359,10 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 
 	mo->player->deltaviewheight = mo->momz>>3;
 	
+	// The server sends the sound to us for other players
+	if (mo->player->id != consoleplayer_id && !serverside)
+		return;
+
 	if (co_zdoomphys)
 	{
 		// [SL] 2011-06-16 - ZDoom Oomphiness
