@@ -514,6 +514,10 @@
 		<Unit filename="..\src\f_wipe.h" />
 		<Unit filename="..\src\g_game.cpp" />
 		<Unit filename="..\src\g_level.cpp" />
+		<Unit filename="..\src\hu_drawers.cpp" />
+		<Unit filename="..\src\hu_drawers.h" />
+		<Unit filename="..\src\hu_elements.cpp" />
+		<Unit filename="..\src\hu_elements.h" />
 		<Unit filename="..\src\hu_stuff.cpp" />
 		<Unit filename="..\src\hu_stuff.h" />
 		<Unit filename="..\src\m_menu.cpp" />
