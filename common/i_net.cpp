@@ -976,7 +976,8 @@ void InitNetMessageFormats()
 	MSG(svc_timeleft,			"x"),
 	MSG(svc_inttimeleft,		"x"),
 	MSG(svc_mobjtranslation,	"x"),
-	MSG(svc_fullupdatedone,		"x")
+	MSG(svc_fullupdatedone,		"x"),
+	MSG(svc_railtrail,			"x")
    };
 
    size_t i;

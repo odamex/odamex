@@ -118,6 +118,7 @@ enum svc_t
 	svc_inttimeleft,		// [ML] For intermission timer
 	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
 	svc_fullupdatedone,		// [SL] Inform client the full update is over
+	svc_railtrail,			// [SL] Draw railgun trail and play sound
 
 	// for co-op
 	svc_mobjstate = 70,

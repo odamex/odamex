@@ -2132,6 +2132,24 @@ void P_RailAttack (AActor *source, int damage, int offset)
 
 	if (clientside)
 		P_DrawRailTrail (start, end);
+	else
+	{
+		for (size_t i = 0; i < players.size(); i++)
+		{
+			AActor *mo = players[i].mo;
+			if (!mo || mo == source)
+				continue;
+
+			buf_t* buf = &players[i].client.netbuf;
+			MSG_WriteMarker(buf, svc_railtrail);
+			MSG_WriteShort(buf, short(start.x));
+			MSG_WriteShort(buf, short(start.y));
+			MSG_WriteShort(buf, short(start.z));
+			MSG_WriteShort(buf, short(end.x));
+			MSG_WriteShort(buf, short(end.y));
+			MSG_WriteShort(buf, short(end.z));
+		}
+	}
 }
 
 //

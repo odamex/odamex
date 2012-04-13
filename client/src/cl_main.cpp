@@ -1956,6 +1956,23 @@ void CL_ExplodeMissile(void)
 
 
 //
+// CL_RailTrail
+//
+void CL_RailTrail()
+{
+	v3double_t start, end;
+	
+	start.x = double(MSG_ReadShort());
+	start.y = double(MSG_ReadShort());
+	start.z = double(MSG_ReadShort());
+	end.x = double(MSG_ReadShort());
+	end.y = double(MSG_ReadShort());
+	end.z = double(MSG_ReadShort());
+
+	P_DrawRailTrail(start, end);
+}
+
+//
 // CL_UpdateMobjInfo
 //
 void CL_UpdateMobjInfo(void)
@@ -2901,6 +2918,7 @@ void CL_InitCommands(void)
 	cmds[svc_firessg]			= &CL_FireSSG;
 	cmds[svc_firechaingun]		= &CL_FireChainGun;
 	cmds[svc_changeweapon]		= &CL_ChangeWeapon;
+	cmds[svc_railtrail]			= &CL_RailTrail;
 	cmds[svc_connectclient]		= &CL_ConnectClient;
 	cmds[svc_disconnectclient]	= &CL_DisconnectClient;
 	cmds[svc_activateline]		= &CL_ActivateLine;
