@@ -22,8 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
 #include <string>
 #include <sstream>
 #include <vector>

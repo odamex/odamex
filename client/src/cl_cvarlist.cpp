@@ -200,19 +200,27 @@ CVAR (idmypos, "0", "Shows current player position on map",	CVARTYPE_BOOL, CVAR_
 
 // Heads up display
 // ----------------
-
+CVAR (hud_crosshairdim, "0", "Crosshair transparency",
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR (hud_crosshairscale, "0", "Crosshair scaling",
+      CVARTYPE_WORD, CVAR_ARCHIVE)
+CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level",
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR (hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",
+      CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (hud_revealsecrets, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (hud_transparency, "0.5", "",	CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_scale, "0", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR_FUNC_DECL (hud_scaletext, "2", "Scale notify text at high resolutions",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (hud_targetnames, "1", "",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR (hud_usehighresboard, "1", "",	CVARTYPE_BOOL,	CVAR_ARCHIVE)
-CVAR (hud_fullhudtype, "1","The fullscreen hud to display: 0=zdoom,1=odamex", CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR (hud_crosshairdim, "0", "Crosshair transparency",	CVARTYPE_BOOL, CVAR_ARCHIVE)      // Crosshair transparency
-CVAR (hud_crosshairscale, "0", "Crosshair scaling",	CVARTYPE_WORD, CVAR_ARCHIVE)    // Crosshair scaling
-CVAR (hud_crosshairhealth, "0", "Color of crosshair represents health level",	CVARTYPE_BOOL, CVAR_ARCHIVE)
-CVAR_FUNC_DECL (hud_targetcount, "2", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)  // Show target counts
+CVAR (hud_scale, "0", "HUD scaling", CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR (hud_scalescoreboard, "0", "Scoreboard scaling", CVARTYPE_FLOAT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (hud_scaletext, "2", "Scaling multiplier for chat and midprint",
+                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR_FUNC_DECL (hud_targetcount, "2", "Number of players to reveal",
+                CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+CVAR (hud_targetnames, "1", "Show names of players you're aiming at",
+      CVARTYPE_BOOL, CVAR_ARCHIVE)
+CVAR (hud_timer, "1", "Show the HUD timer", CVARTYPE_BOOL,
+      CVAR_ARCHIVE);
+CVAR (hud_transparency, "0.5", "HUD transparency",	CVARTYPE_FLOAT,
+      CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)                       // A

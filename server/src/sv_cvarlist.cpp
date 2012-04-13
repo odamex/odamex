@@ -38,9 +38,7 @@ CVAR (log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
 // Server "message of the day" that gets to displayed to clients upon connecting
 CVAR (sv_motd,		"Welcome to Odamex", "Message Of The Day", CVARTYPE_STRING,
       CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-// Server name that appears to masters, clients and launchers
-CVAR (sv_hostname,		"Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
-      CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 // Administrator email address
 CVAR (sv_email,		"email@domain.com", "Administrator email address",
       CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)

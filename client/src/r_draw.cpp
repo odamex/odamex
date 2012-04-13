@@ -972,7 +972,7 @@ static byte *translationtablesmem = NULL;
 
 void R_InitTranslationTables (void)
 {
-	static const char ranges[11][8] = {
+	static const char ranges[23][8] = {
 		"CRBRICK",
 		"CRTAN",
 		"CRGRAY",
@@ -982,14 +982,25 @@ void R_InitTranslationTables (void)
 		"CRRED",
 		"CRBLUE2",
 		{ 'C','R','O','R','A','N','G','E' },
+		"CRGRAY", // "White"
 		{ 'C','R','Y','E','L','L','O','W' },
-		"CRBLUE"
+		"CRRED", // "Untranslated"
+		"CRGRAY", // "Black"
+		"CRBLUE",
+		"CRTAN", // "Cream"
+		"CRGREEN", // "Olive"
+		"CRGREEN", // "Dark Green"
+		"CRRED", // "Dark Red"
+		"CRBROWN", // "Dark Brown"
+		"CRRED", // "Purple"
+		"CRGRAY", // "Dark Gray"
+		"CRBLUE" // "Cyan"
 	};
 	int i;
 	
     R_FreeTranslationTables();
 	
-	translationtablesmem = new byte[256*(MAXPLAYERS+3+11)+255]; // denis - fixme - magic numbers?
+	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
 
 	// [Toke - fix13]
 	// denis - cleaned this up somewhat
@@ -1016,7 +1027,7 @@ void R_InitTranslationTables (void)
 	}
 
 	Ranges = translationtables + (MAXPLAYERS+3)*256;
-	for (i = 0; i < 11; i++)
+	for (i = 0; i < 22; i++)
 		W_ReadLump (W_GetNumForName (ranges[i]), Ranges + 256 * i);
 
 }

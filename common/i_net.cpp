@@ -548,6 +548,8 @@ std::string NET_GetLocalAddress (void)
         ret_str = inet_ntoa(addr);
     }
 
+	Printf(PRINT_HIGH, "Bound to IP: %s\n",ret_str.c_str());
+
     return ret_str;
 }
 

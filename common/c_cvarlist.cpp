@@ -213,6 +213,9 @@ CVAR (sv_unblockplayers, "0", "Allows players to walk through other players",
 // [Spleen] Allow custom WAD directories to be specified in a cvar
 CVAR (waddirs, "", "Allow custom WAD directories to be specified", 
       CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// [Xyltol 02/27/2012] Hostname retrieval for Scoreboard
+CVAR (sv_hostname,		"Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
+	CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
 // Experimental settings (all categories)
 // =======================================

@@ -1517,19 +1517,14 @@ void ST_Drawer (void)
 
 	if ((realviewheight == screen->height && viewactive) || (&consoleplayer())->spectator)
 	{
-		if (DrawNewHUD)
-		{
-			if (hud_fullhudtype == 1)
-				ST_odamexHudDraw();
-			else
-				ST_newDraw ();
-		}
-		else if (DrawNewSpecHUD && sv_gametype == GM_CTF) // [Nes] - Only specator new HUD is in ctf.
-		{
-			if (hud_fullhudtype == 1)
-				ST_odamexHudDrawCTF();
-			else
-				ST_newDrawCTF();
+		if (DrawNewHUD) {
+			if (hud_fullhudtype >= 1) {
+				hud::OdamexHUD();
+			} else {
+				hud::ZDoomHUD();
+			}
+		} else if (DrawNewSpecHUD) {
+			hud::SpectatorHUD();
 		}
 		st_firsttime = true;
 	}
@@ -1549,13 +1544,9 @@ void ST_Drawer (void)
 
 		stnumscreen->Unlock ();
 		stbarscreen->Unlock ();
+
+		hud::DoomHUD();
 	}
-
-
-	if (viewheight <= ST_Y)
-		ST_nameDraw (ST_Y - 11 * CleanYfac);
-	else
-		ST_nameDraw (screen->height - 11 * CleanYfac);
 
 	// [AM] Voting HUD!
 	ST_voteDraw(11 * CleanYfac);

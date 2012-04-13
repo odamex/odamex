@@ -124,6 +124,7 @@ public:
 	inline void DrawTextCleanLuc (int normalcolor, int x, int y, const byte *string) const;		// ditto
 	inline void DrawTextCleanMove (int normalcolor, int x, int y, const byte *string) const;	// This one does
 	inline void DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
+	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
 
 	inline void DrawText (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextLuc (int normalcolor, int x, int y, const char *string) const;
@@ -131,6 +132,7 @@ public:
 	inline void DrawTextCleanLuc (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const;
 	inline void DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
+	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
 
 	// Patch drawing functions
 	void DrawPatchFlipped (const patch_t *patch, int x, int y) const;
@@ -256,6 +258,11 @@ inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const byt
 	TextSWrapper (EWrapper_Translated, normalcolor, x, y, string, scalex, scaley);
 }
 
+inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const
+{
+	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, string, scalex, scaley);
+}
+
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const char *string) const
 {
 	TextWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string);
@@ -282,6 +289,10 @@ inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const cha
 inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
 {
 	TextSWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string, scalex, scaley);
+}
+inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
+{
+	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, (const byte *)string, scalex, scaley);
 }
 
 inline void DCanvas::DrawPatch (const patch_t *patch, int x, int y) const

@@ -100,6 +100,8 @@ EXTERN_CVAR (language)
 EXTERN_CVAR (co_level8soundfeature)
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (hud_scale)
+EXTERN_CVAR (hud_scalescoreboard)
+EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (r_showendoom)
@@ -760,7 +762,6 @@ EXTERN_CVAR (r_skypalette)
 EXTERN_CVAR (r_wipetype)
 EXTERN_CVAR (screenblocks)
 EXTERN_CVAR (ui_dimamount)
-EXTERN_CVAR (hud_usehighresboard)
 EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
@@ -844,10 +845,11 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },	
+	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},  {NULL} },
+	{ discrete, "HUD Timer Visibility",     {&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
 	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "High-res scoreboard",  	{&hud_usehighresboard}, {2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Multiplayer Intermissions",{&wi_newintermission}, {2.0}, {0.0},	{0.0},  {DoomOrOdamex} },	
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
