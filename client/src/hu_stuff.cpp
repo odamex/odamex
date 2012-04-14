@@ -500,7 +500,9 @@ void drawHeader(player_t *player, int y) {
 	scorelimit = buffer.str();
 
 	int rw = V_StringWidth("00:00");
-	if (timer.size() > 5) {
+	if (sv_timelimit.asInt() == 0) {
+		rw = V_StringWidth("N/A");
+	} else if (timer.size() > 5) {
 		rw = V_StringWidth("00:00:00");
 	}
 	if (V_StringWidth(fraglimit.c_str()) > rw) {
@@ -538,10 +540,18 @@ void drawHeader(player_t *player, int y) {
 
 	// Line
 	color = BestColor(DefaultPalette->basecolors,
-	                  RPART(0xffffff),
-	                  GPART(0xffffff),
-	                  BPART(0xffffff), DefaultPalette->numcolors);
-	hud::Clear(0, y + 24, 472, 2, hud_scalescoreboard,
+	                  RPART(0xdddddd),
+	                  GPART(0xdddddd),
+	                  BPART(0xdddddd), DefaultPalette->numcolors);
+	hud::Clear(0, y + 24, 472, 1, hud_scalescoreboard,
+	           hud::X_CENTER, hud::Y_MIDDLE,
+	           hud::X_CENTER, hud::Y_TOP,
+	           color);
+	color = BestColor(DefaultPalette->basecolors,
+	                  RPART(0x3f3f3f),
+	                  GPART(0x3f3f3f),
+	                  BPART(0x3f3f3f), DefaultPalette->numcolors);
+	hud::Clear(0, y + 25, 472, 1, hud_scalescoreboard,
 	           hud::X_CENTER, hud::Y_MIDDLE,
 	           hud::X_CENTER, hud::Y_TOP,
 	           color);
@@ -591,10 +601,18 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	color = BestColor(DefaultPalette->basecolors,
-	                  RPART(0xffffff),
-	                  GPART(0xffffff),
-	                  BPART(0xffffff), DefaultPalette->numcolors);
-	hud::Clear(0, y + 8, 472, 2, hud_scalescoreboard,
+	                  RPART(0xdddddd),
+	                  GPART(0xdddddd),
+	                  BPART(0xdddddd), DefaultPalette->numcolors);
+	hud::Clear(0, y + 8, 472, 1, hud_scalescoreboard,
+	           hud::X_CENTER, hud::Y_MIDDLE,
+	           hud::X_CENTER, hud::Y_TOP,
+	           color);
+	color = BestColor(DefaultPalette->basecolors,
+	                  RPART(0x3f3f3f),
+	                  GPART(0x3f3f3f),
+	                  BPART(0x3f3f3f), DefaultPalette->numcolors);
+	hud::Clear(0, y + 9, 472, 1, hud_scalescoreboard,
 	           hud::X_CENTER, hud::Y_MIDDLE,
 	           hud::X_CENTER, hud::Y_TOP,
 	           color);
@@ -682,21 +700,39 @@ void drawTeamScores(player_t *player, int y, byte extra_rows) {
 		// Lines
 		if (i == 0) {
 			color = BestColor(DefaultPalette->basecolors,
-			                  RPART(0x0000ff), GPART(0x0000ff), BPART(0x0000ff),
+			                  RPART(0x0000dd), GPART(0x0000dd), BPART(0x0000dd),
 			                  DefaultPalette->numcolors);
 		} else {
 			color = BestColor(DefaultPalette->basecolors,
-			                  RPART(0xff0000), GPART(0xff0000), BPART(0xff0000),
+			                  RPART(0xdd0000), GPART(0xdd0000), BPART(0xdd0000),
 			                  DefaultPalette->numcolors);
 		}
-		hud::Clear(tx[i], y + 8, 232, 2, hud_scalescoreboard,
+		hud::Clear(tx[i], y + 8, 232, 1, hud_scalescoreboard,
 		           hud::X_CENTER, hud::Y_MIDDLE,
 		           hud::X_LEFT, hud::Y_TOP,
 		           color);
-		hud::Clear(tx[i], y + 19, 232, 2, hud_scalescoreboard,
+		hud::Clear(tx[i], y + 19, 232, 1, hud_scalescoreboard,
 		           hud::X_CENTER, hud::Y_MIDDLE,
 		           hud::X_LEFT, hud::Y_TOP,
 		           color);
+		if (i == 0) {
+			color = BestColor(DefaultPalette->basecolors,
+			                  RPART(0x00003f), GPART(0x00003f), BPART(0x00003f),
+			                  DefaultPalette->numcolors);
+		} else {
+			color = BestColor(DefaultPalette->basecolors,
+			                  RPART(0x3f0000), GPART(0x3f0000), BPART(0x3f0000),
+			                  DefaultPalette->numcolors);
+		}
+		hud::Clear(tx[i], y + 9, 232, 1, hud_scalescoreboard,
+		           hud::X_CENTER, hud::Y_MIDDLE,
+		           hud::X_LEFT, hud::Y_TOP,
+		           color);
+		hud::Clear(tx[i], y + 20, 232, 1, hud_scalescoreboard,
+		           hud::X_CENTER, hud::Y_MIDDLE,
+		           hud::X_LEFT, hud::Y_TOP,
+		           color);
+
 
 		// Team Info
 		hud::DrawText(tx[i] + 9, y + 11, hud_scalescoreboard,
@@ -771,10 +807,18 @@ void drawSpectators(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	color = BestColor(DefaultPalette->basecolors,
-	                  RPART(0xffffff),
-	                  GPART(0xffffff),
-	                  BPART(0xffffff), DefaultPalette->numcolors);
-	hud::Clear(0, y, 472, 2, hud_scalescoreboard,
+	                  RPART(0xdddddd),
+	                  GPART(0xdddddd),
+	                  BPART(0xdddddd), DefaultPalette->numcolors);
+	hud::Clear(0, y, 472, 1, hud_scalescoreboard,
+	           hud::X_CENTER, hud::Y_MIDDLE,
+	           hud::X_CENTER, hud::Y_TOP,
+	           color);
+	color = BestColor(DefaultPalette->basecolors,
+	                  RPART(0x3f3f3f),
+	                  GPART(0x3f3f3f),
+	                  BPART(0x3f3f3f), DefaultPalette->numcolors);
+	hud::Clear(0, y + 1, 472, 1, hud_scalescoreboard,
 	           hud::X_CENTER, hud::Y_MIDDLE,
 	           hud::X_CENTER, hud::Y_TOP,
 	           color);
@@ -896,10 +940,18 @@ void drawLowHeader(player_t *player, int y) {
 
 	// Line
 	color = BestColor(DefaultPalette->basecolors,
-	                  RPART(0xffffff),
-	                  GPART(0xffffff),
-	                  BPART(0xffffff), DefaultPalette->numcolors);
-	hud::Clear(0, y + 8, 292, 2, hud_scalescoreboard,
+	                  RPART(0xdddddd),
+	                  GPART(0xdddddd),
+	                  BPART(0xdddddd), DefaultPalette->numcolors);
+	hud::Clear(0, y + 8, 292, 1, hud_scalescoreboard,
+	           hud::X_CENTER, hud::Y_MIDDLE,
+	           hud::X_CENTER, hud::Y_TOP,
+	           color);
+	color = BestColor(DefaultPalette->basecolors,
+	                  RPART(0x3f3f3f),
+	                  GPART(0x3f3f3f),
+	                  BPART(0x3f3f3f), DefaultPalette->numcolors);
+	hud::Clear(0, y + 9, 292, 1, hud_scalescoreboard,
 	           hud::X_CENTER, hud::Y_MIDDLE,
 	           hud::X_CENTER, hud::Y_TOP,
 	           color);
@@ -949,10 +1001,18 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	color = BestColor(DefaultPalette->basecolors,
-	                  RPART(0xffffff),
-	                  GPART(0xffffff),
-	                  BPART(0xffffff), DefaultPalette->numcolors);
-	hud::Clear(0, y + 8, 292, 2, hud_scalescoreboard,
+	                  RPART(0xdddddd),
+	                  GPART(0xdddddd),
+	                  BPART(0xdddddd), DefaultPalette->numcolors);
+	hud::Clear(0, y + 8, 292, 1, hud_scalescoreboard,
+	           hud::X_CENTER, hud::Y_MIDDLE,
+	           hud::X_CENTER, hud::Y_TOP,
+	           color);
+	color = BestColor(DefaultPalette->basecolors,
+	                  RPART(0x3f3f3f),
+	                  GPART(0x3f3f3f),
+	                  BPART(0x3f3f3f), DefaultPalette->numcolors);
+	hud::Clear(0, y + 9, 292, 1, hud_scalescoreboard,
 	           hud::X_CENTER, hud::Y_MIDDLE,
 	           hud::X_CENTER, hud::Y_TOP,
 	           color);
@@ -1058,18 +1118,35 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	for (byte i = 0;i < 2;i++) {
 		if (i == TEAM_BLUE) {
 			color = BestColor(DefaultPalette->basecolors,
-				                  RPART(0x0000ff), GPART(0x0000ff), BPART(0x0000ff),
+				                  RPART(0x0000dd), GPART(0x0000dd), BPART(0x0000dd),
 				                  DefaultPalette->numcolors);
 		} else {
 			color = BestColor(DefaultPalette->basecolors,
-				                  RPART(0xff0000), GPART(0xff0000), BPART(0xff0000),
+				                  RPART(0xdd0000), GPART(0xdd0000), BPART(0xdd0000),
 				                  DefaultPalette->numcolors);
 		}
-		hud::Clear(0, y + ty[i], 292, 2, hud_scalescoreboard,
+		hud::Clear(0, y + ty[i], 292, 1, hud_scalescoreboard,
 		           hud::X_CENTER, hud::Y_MIDDLE,
 		           hud::X_CENTER, hud::Y_TOP,
 		           color);
-		hud::Clear(0, y + ty[i] + 11, 292, 2, hud_scalescoreboard,
+		hud::Clear(0, y + ty[i] + 11, 292, 1, hud_scalescoreboard,
+		           hud::X_CENTER, hud::Y_MIDDLE,
+		           hud::X_CENTER, hud::Y_TOP,
+		           color);
+		if (i == TEAM_BLUE) {
+			color = BestColor(DefaultPalette->basecolors,
+				                  RPART(0x00003f), GPART(0x00003f), BPART(0x00003f),
+				                  DefaultPalette->numcolors);
+		} else {
+			color = BestColor(DefaultPalette->basecolors,
+				                  RPART(0x3f0000), GPART(0x3f0000), BPART(0x3f0000),
+				                  DefaultPalette->numcolors);
+		}
+		hud::Clear(0, y + ty[i] + 1, 292, 1, hud_scalescoreboard,
+		           hud::X_CENTER, hud::Y_MIDDLE,
+		           hud::X_CENTER, hud::Y_TOP,
+		           color);
+		hud::Clear(0, y + ty[i] + 12, 292, 1, hud_scalescoreboard,
 		           hud::X_CENTER, hud::Y_MIDDLE,
 		           hud::X_CENTER, hud::Y_TOP,
 		           color);
@@ -1155,10 +1232,18 @@ void drawLowSpectators(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	color = BestColor(DefaultPalette->basecolors,
-	                  RPART(0xffffff),
-	                  GPART(0xffffff),
-	                  BPART(0xffffff), DefaultPalette->numcolors);
-	hud::Clear(0, y, 292, 2, hud_scalescoreboard,
+	                  RPART(0xdddddd),
+	                  GPART(0xdddddd),
+	                  BPART(0xdddddd), DefaultPalette->numcolors);
+	hud::Clear(0, y, 292, 1, hud_scalescoreboard,
+	           hud::X_CENTER, hud::Y_MIDDLE,
+	           hud::X_CENTER, hud::Y_TOP,
+	           color);
+	color = BestColor(DefaultPalette->basecolors,
+	                  RPART(0x3f3f3f),
+	                  GPART(0x3f3f3f),
+	                  BPART(0x3f3f3f), DefaultPalette->numcolors);
+	hud::Clear(0, y + 1, 292, 1, hud_scalescoreboard,
 	           hud::X_CENTER, hud::Y_MIDDLE,
 	           hud::X_CENTER, hud::Y_TOP,
 	           color);

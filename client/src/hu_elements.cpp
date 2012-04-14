@@ -722,11 +722,11 @@ void EASpectatorNames(int x, int y, const float scale,
 				}
 				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 				              player->userinfo.netname, color, force_opaque);
+				y += 7 + padding;
+				drawn += 1;
 			} else {
 				skip -= 1;
 			}
-			y += 7 + padding;
-			drawn += 1;
 		}
 	}
 }
@@ -1064,11 +1064,11 @@ void EASpectatorPings(int x, int y, const float scale,
 				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 				              buffer.str().c_str(), pingTextColor(player->ping),
 				              force_opaque);
+				y += 7 + padding;
+				drawn += 1;
 			} else {
 				skip -= 1;
 			}
-			y += 7 + padding;
-			drawn += 1;
 		}
 	}
 }

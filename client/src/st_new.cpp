@@ -672,6 +672,18 @@ void OdamexHUD() {
 	              hud::X_RIGHT, hud::Y_BOTTOM,
 	              str.c_str(), color);
 
+	// Draw keys in coop
+	if (sv_gametype == GM_COOP) {
+		for (byte i = 0;i < NUMCARDS;i++) {
+			if (plyr->cards[i]) {
+				hud::DrawPatch(4 + (i * 10), 24, hud_scale,
+				               hud::X_RIGHT, hud::Y_BOTTOM,
+				               hud::X_RIGHT, hud::Y_BOTTOM,
+				               keys[i]);
+			}
+		}
+	}
+
 	// Draw CTF scoreboard
 	hud::drawCTF();
 
