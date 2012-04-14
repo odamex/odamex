@@ -297,14 +297,12 @@ void HU_Drawer (void)
 									scaledxfac, scaledyfac);
 	}
 
-	if(multiplayer && consoleplayer().camera && !(demoplayback && democlassic))
-    {
-        if (Actions[ACTION_SHOWSCORES] ||
-		   (displayplayer().health <= 0 && !displayplayer().spectator && gamestate != GS_INTERMISSION))
-        {
-            HU_DrawScores(&displayplayer());
-        }
-    }
+	if (multiplayer && consoleplayer().camera && !(demoplayback && democlassic)) {
+		if ((Actions[ACTION_SHOWSCORES] && gamestate != GS_INTERMISSION) ||
+		    (displayplayer().health <= 0 && !displayplayer().spectator && gamestate != GS_INTERMISSION)) {
+			HU_DrawScores(&displayplayer());
+		}
+	}
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
@@ -657,16 +655,25 @@ void drawTeamScores(player_t *player, int y, byte extra_rows) {
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_LEFT, hud::Y_TOP,
 		              "Name", CR_GREY, true);
-		str = (sv_gametype == GM_CTF) ? "PTS" : "FRG";
-		hud::DrawText(tx[i] + 164, y, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              str.c_str(), CR_GREY, true);
-		str = (sv_gametype == GM_CTF) ? "FRG" : "K/D";
-		hud::DrawText(tx[i] + 200, y, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              str.c_str(), CR_GREY, true);
+		if (sv_gametype == GM_CTF) {
+			hud::DrawText(tx[i] + 168, y, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              "PTS", CR_GREY, true);
+			hud::DrawText(tx[i] + 200, y, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              "FRG", CR_GREY, true);
+		} else {
+			hud::DrawText(tx[i] + 164, y, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              "FRG", CR_GREY, true);
+			hud::DrawText(tx[i] + 200, y, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              "K/D", CR_GREY, true);
+		}
 		hud::DrawText(tx[i] + 232, y, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_RIGHT, hud::Y_TOP,
@@ -697,7 +704,7 @@ void drawTeamScores(player_t *player, int y, byte extra_rows) {
 		              hud::X_LEFT, hud::Y_TOP,
 		              hud::TeamName(i).c_str(), CR_GREY, true);
 		if (sv_gametype == GM_CTF) {
-			hud::DrawText(tx[i] + 164, y + 11, hud_scalescoreboard,
+			hud::DrawText(tx[i] + 168, y + 11, hud_scalescoreboard,
 			              hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP,
 			              hud::TeamPoints(i).c_str(), CR_GREY, true);
@@ -1010,7 +1017,7 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_RIGHT, hud::Y_TOP,
 	              "PPL", CR_GREY, true);
-	if (sv_gametype == GM_COOP) {
+	if (sv_gametype == GM_CTF) {
 		hud::DrawText(62, y, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_RIGHT, hud::Y_TOP,

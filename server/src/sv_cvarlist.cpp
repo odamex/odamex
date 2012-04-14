@@ -39,6 +39,7 @@ CVAR (log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
 CVAR (sv_motd,		"Welcome to Odamex", "Message Of The Day", CVARTYPE_STRING,
       CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
+
 // Administrator email address
 CVAR (sv_email,		"email@domain.com", "Administrator email address",
       CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)

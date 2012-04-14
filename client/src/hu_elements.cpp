@@ -508,7 +508,7 @@ std::string TeamFrags(byte team) {
 		return "---";
 	}
 
-	unsigned int fragcount = 0;
+	int fragcount = 0;
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
@@ -536,12 +536,12 @@ std::string TeamKD(byte team) {
 		return "---";
 	}
 
-	unsigned int killcount = 0;
+	int killcount = 0;
 	unsigned int deathcount = 0;
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
-			killcount += player->killcount;
+			killcount += player->fragcount;
 			deathcount += player->deathcount;
 		}
 	}
@@ -704,7 +704,7 @@ void EATeamPlayerNames(int x, int y, const float scale,
 void EASpectatorNames(int x, int y, const float scale,
                       const x_align_t x_align, const y_align_t y_align,
                       const x_align_t x_origin, const y_align_t y_origin,
-                      const short padding, const short skip, const short limit,
+                      const short padding, short skip, const short limit,
                       const bool force_opaque) {
 	byte drawn = 0;
 	for (size_t i = skip;i < sortedPlayers().size();i++) {
@@ -715,12 +715,16 @@ void EASpectatorNames(int x, int y, const float scale,
 
 		player_t* player = sortedPlayers()[i];
 		if (spectatingPlayer(player)) {
-			int color = CR_GREY;
-			if (player->id == displayplayer().id) {
-				color = CR_GOLD;
+			if (skip <= 0) {
+				int color = CR_GREY;
+				if (player->id == displayplayer().id) {
+					color = CR_GOLD;
+				}
+				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+				              player->userinfo.netname, color, force_opaque);
+			} else {
+				skip -= 1;
 			}
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              player->userinfo.netname, color, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
 		}
@@ -1042,7 +1046,7 @@ void EATeamPlayerPings(int x, int y, const float scale,
 void EASpectatorPings(int x, int y, const float scale,
                       const x_align_t x_align, const y_align_t y_align,
                       const x_align_t x_origin, const y_align_t y_origin,
-                      const short padding, const short skip, const short limit,
+                      const short padding, short skip, const short limit,
                       const bool force_opaque) {
 	byte drawn = 0;
 	for (size_t i = skip;i < sortedPlayers().size();i++) {
@@ -1053,12 +1057,16 @@ void EASpectatorPings(int x, int y, const float scale,
 
 		player_t* player = sortedPlayers()[i];
 		if (spectatingPlayer(player)) {
-			std::ostringstream buffer;
-			buffer << player->ping;
+			if (skip <= 0) {
+				std::ostringstream buffer;
+				buffer << player->ping;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              buffer.str().c_str(), pingTextColor(player->ping),
-			              force_opaque);
+				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+				              buffer.str().c_str(), pingTextColor(player->ping),
+				              force_opaque);
+			} else {
+				skip -= 1;
+			}
 			y += 7 + padding;
 			drawn += 1;
 		}
