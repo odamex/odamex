@@ -17,7 +17,9 @@ if(NOT MSVC)
 endif()
 
 # Platform definitions
-if(UNIX)
+if(APPLE)
+  add_definitions(-DOSX -DUNIX)
+elseif(UNIX)
   add_definitions(-DUNIX)
 elseif(WIN32)
   add_definitions(-DWIN32)
