@@ -113,7 +113,7 @@ std::vector<player_t *> sortedPlayers(void) {
 	static int sp_tic = -1;
 	static std::vector<player_t *> sortedplayers(players.size());
 
-	if (sp_tic == level.time) {
+	if (sp_tic == gametic) {
 		return sortedplayers;
 	}
 
@@ -131,7 +131,7 @@ std::vector<player_t *> sortedPlayers(void) {
 		}
 	}
 
-	sp_tic = level.time;
+	sp_tic = gametic; 
 	return sortedplayers;
 }
 
