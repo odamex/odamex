@@ -15,6 +15,9 @@ file(GLOB CLIENT_SOURCES sdl/*.cpp src/*.cpp)
 if(WIN32)
   set(CLIENT_WIN32_RESOURCES sdl/client.rc)
 endif()
+if(APPLE)
+  set(CLIENT_MAC_OBJC_SOURCES sdl/SDLMain.m)
+endif()
 
 # Client definitions
 add_definitions(-DNOASM)
@@ -47,7 +50,8 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
   add_executable(odamex WIN32
     ${COMMON_SOURCES} ${COMMON_HEADERS}
     ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS}
-    ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES})
+    ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
+    ${CLIENT_MAC_OBJC_SOURCES})
   target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY})
   if(WIN32)
     target_link_libraries(odamex winmm wsock32)
