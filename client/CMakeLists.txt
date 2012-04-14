@@ -45,6 +45,15 @@ else()
   message(WARNING "SDL_mixer not found, client target not generated.")
 endif()
 
+# Find Mac frameworks
+if(APPLE)
+  find_library(CARBON_LIBRARY Carbon)
+  find_library(AUDIOTBOX_LIBRARY AudioToolbox)
+  find_library(AUDIOUNIT_LIBRARY AudioUnit)
+  set(APPLE_FRAMEWORKS ${CARBON_LIBRARY} ${AUDIOTBOX_LIBRARY}
+    ${AUDIOUNIT_LIBRARY})
+endif()
+
 # Client target
 if(SDL_FOUND AND SDLMIXER_FOUND)
   add_executable(odamex WIN32
@@ -55,5 +64,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
   target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY})
   if(WIN32)
     target_link_libraries(odamex winmm wsock32)
+  elseif(APPLE)
+    target_link_libraries(odamex ${APPLE_FRAMEWORKS})
   endif()
 endif()
