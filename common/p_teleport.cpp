@@ -78,8 +78,9 @@ BOOL EV_Teleport (int tid, int side, AActor *thing)
 	oldy = thing->y;
 	oldz = thing->z;
 
-	if (!P_TeleportMove (thing, m->x, m->y,
-			m->type == MT_TELEPORTMAN ? m->subsector->sector->floorheight : m->z, false))
+	fixed_t destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
+
+	if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 		return false;
 
     // fraggle: this was changed in final doom, 
@@ -160,8 +161,9 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 				oldy = thing->y;
 				oldz = thing->z;
 
-				if (!P_TeleportMove (thing, m->x, m->y,
-						m->type == MT_TELEPORTMAN ? m->subsector->sector->floorheight : m->z, false))
+				fixed_t destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
+
+				if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 					return false;
 
 				// fraggle: this was changed in final doom, 
@@ -324,13 +326,11 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 			player_t *player = thing->player && thing->player->mo == thing ?
 				thing->player : NULL;
 
-			// Whether walking towards first side of exit linedef steps down
-			int stepdown =
-				l->frontsector->floorheight < l->backsector->floorheight;
-
 			// Height of thing above ground
-			fixed_t z = thing->z - thing->floorz;
-
+			fixed_t z = thing->z -
+						P_FloorHeight(thing->x, thing->y, sides[line->sidenum[1]].sector) +
+						P_FloorHeight(x, y, sides[l->sidenum[0]].sector);		
+	
 			// Side to exit the linedef on positionally.
 			//
 			// Notes:
@@ -353,7 +353,7 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 			// Exiting on side 1 slightly improves player viewing
 			// when going down a step on a non-reversed teleporter.
 
-			int side = reverse || (player && stepdown);
+			int side = reverse;
 
 			// Make sure we are on correct side of exit linedef.
 			while (P_PointOnLineSide(x, y, l) != side && --fudge>=0)
@@ -366,8 +366,7 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 			// Adjust z position to be same height above ground as before.
 			// Ground level at the exit is measured as the higher of the
 			// two floor heights at the exit linedef.
-			if (!P_TeleportMove (thing, x, y,
-								 z + sides[l->sidenum[stepdown]].sector->floorheight, false))
+			if (!P_TeleportMove (thing, x, y, z, false))
 				return false;
 
 			// Rotate thing's orientation according to difference in linedef angles

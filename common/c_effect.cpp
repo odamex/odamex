@@ -58,11 +58,11 @@ static const struct ColorList {
 	{&grey3,	50,  50,  50 },
 	{&grey4,	210, 210, 210},
 	{&grey5,	128, 128, 128},
-	{&red,		255, 0,   0  },  
-	{&green,	0,   200, 0  },  
+	{&red,		255, 0,   0  },
+	{&green,	0,   200, 0  },
 	{&blue,		0,   0,   255},
-	{&yellow,	255, 255, 0  },  
-	{&black,	0,   0,   0  },  
+	{&yellow,	255, 255, 0  },
+	{&black,	0,   0,   0  },
 	{&red1,		255, 127, 127},
 	{&green1,	127, 255, 127},
 	{&blue1,	127, 127, 255},
@@ -195,7 +195,7 @@ particle_t *NewParticle (void)
 		return NULL;
 
 	particle_t *result = NULL;
-	if (InactiveParticles != -1)
+	if (InactiveParticles != NO_PARTICLE)
 	{
 		result = Particles + InactiveParticles;
 		InactiveParticles = result->next;
@@ -363,7 +363,7 @@ void P_RunEffect (AActor *actor, int effects)
 	if (effects & FX_FOUNTAINMASK) {
 		// Particle fountain
 
-		static const int *fountainColors[16] = 
+		static const int *fountainColors[16] =
 			{ &black,	&black,
 			  &red,		&red1,
 			  &green,	&green1,
@@ -388,7 +388,7 @@ void P_ThinkParticles (void)
 
 	i = ActiveParticles;
 	prev = NULL;
-	while (i != -1) {
+	while (i != NO_PARTICLE) {
 		byte oldtrans;
 
 		particle = Particles + i;
@@ -430,7 +430,7 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 
 	if (!length)	// line is 0 length, so nothing to do
 		return;
-		
+
 	// The railgun's sound is a special case. It gets played from the
 	// point on the slug's trail that is closest to the hearing player.
 	AActor *mo = consoleplayer().camera;
@@ -459,8 +459,8 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 
 	if (!clientside)
 		return;
-	
-	M_ScaleVec3(&dir, &dir, ilength);	
+
+	M_ScaleVec3(&dir, &dir, ilength);
 	M_PerpendicularVec3(&extend, &dir);
 	M_ScaleVec3(&extend, &extend, 3.0);
 	M_ScaleVec3(&step, &dir, 3.0);
@@ -507,7 +507,7 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	}
 
 	pos = start;
-		
+
 	for (int i = steps; i; i--) {
 		particle_t *p = JitterParticle (33);
 
@@ -531,7 +531,7 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 			p->color = grey1;
 
 		p->color = white;
-	}		
+	}
 }
 
 void P_DisconnectEffect (AActor *actor)

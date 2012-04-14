@@ -91,8 +91,8 @@ static void CL_ResetSectors (void)
 		{
 			DPillar *Pillar = (DPillar *)sec->ceilingdata;
             
-            sec->floorheight = pred->floorheight;
-            sec->ceilingheight = pred->ceilingheight;
+			P_SetFloorHeight(sec, pred->floorheight);
+			P_SetCeilingHeight(sec, pred->ceilingheight);
             P_ChangeSector(sec, false);
 
             Pillar->m_Type = (DPillar::EPillar)pred->Both.m_Type;
@@ -109,8 +109,8 @@ static void CL_ResetSectors (void)
         {
             DElevator *Elevator = (DElevator *)sec->ceilingdata;
 
-            sec->floorheight = pred->floorheight;
-            sec->ceilingheight = pred->ceilingheight;
+			P_SetFloorHeight(sec, pred->floorheight);
+			P_SetCeilingHeight(sec, pred->ceilingheight);
             P_ChangeSector(sec, false);
 
             Elevator->m_Type = (DElevator::EElevator)pred->Both.m_Type;
@@ -126,7 +126,7 @@ static void CL_ResetSectors (void)
         {
             DFloor *Floor = (DFloor *)sec->floordata;
 
-            sec->floorheight = pred->floorheight;
+			P_SetFloorHeight(sec, pred->floorheight);
             P_ChangeSector(sec, false);
 
             Floor->m_Type = (DFloor::EFloor)pred->Floor.m_Type;
@@ -148,7 +148,7 @@ static void CL_ResetSectors (void)
 		{
 			DPlat *Plat = (DPlat *)sec->floordata;
             
-            sec->floorheight = pred->floorheight;
+			P_SetFloorHeight(sec, pred->floorheight);
             P_ChangeSector(sec, false);
 
             Plat->m_Speed = pred->Floor.m_Speed;
@@ -167,7 +167,7 @@ static void CL_ResetSectors (void)
         {
             DCeiling *Ceiling = (DCeiling *)sec->ceilingdata;
 
-            sec->ceilingheight = pred->ceilingheight;
+			P_SetCeilingHeight(sec, pred->ceilingheight);
             P_ChangeSector(sec, false);
 
             Ceiling->m_Type = (DCeiling::ECeiling)pred->Ceiling.m_Type;
@@ -189,7 +189,7 @@ static void CL_ResetSectors (void)
         {
             DDoor *Door = (DDoor *)sec->ceilingdata;
 
-            sec->ceilingheight = pred->ceilingheight;
+			P_SetCeilingHeight(sec, pred->ceilingheight);
             P_ChangeSector(sec, false);
 
             Door->m_Type = (DDoor::EVlDoor)pred->Ceiling.m_Type;

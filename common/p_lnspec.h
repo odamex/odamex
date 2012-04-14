@@ -143,6 +143,7 @@ typedef enum {
 	Sector_ChangeSound = 140,
 
 // [RH] Begin new specials for ZDoom
+	Plane_Align = 181,
 	Line_AlignCeiling = 183,
 	Line_AlignFloor = 184,
 

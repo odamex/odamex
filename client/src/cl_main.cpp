@@ -50,6 +50,7 @@
 #include "r_sky.h"
 #include "cl_demo.h"
 #include "cl_download.h"
+#include "p_local.h"
 #include "cl_maplist.h"
 #include "cl_vote.h"
 #include "p_mobj.h"
@@ -261,7 +262,6 @@ void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
-void P_SetFloorCeil(AActor *mo);
 void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -943,6 +943,8 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 	mobj->z = z;
 	mobj->floorz = tmfloorz;
 	mobj->ceilingz = tmceilingz;
+	mobj->dropoffz = tmdropoffz;
+	mobj->floorsector = tmfloorsector;
 	mobj->LinkToWorld ();
 }
 
@@ -2251,8 +2253,9 @@ void CL_UpdateSector(void)
 		return;
 
 	sector_t *sec = &sectors[s];
-	sec->floorheight = fh << FRACBITS;
-	sec->ceilingheight = ch << FRACBITS;
+
+	P_SetFloorHeight(sec, fh << FRACBITS);
+	P_SetCeilingHeight(sec, ch << FRACBITS);
 
 	if(fp >= numflats)
 		fp = numflats;

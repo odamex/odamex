@@ -297,9 +297,6 @@ void P_MovePlayer (player_t *player)
 	ticcmd_t *cmd = &player->cmd;
 	AActor *mo = player->mo;
 
-	if (player->jumpTics)
-		player->jumpTics--;
-
 	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
 
 	// [RH] Don't let frozen players move
@@ -313,28 +310,6 @@ void P_MovePlayer (player_t *player)
 	{
 		player->mo->reactiontime--;
 		return;
-	}
-
-	// [RH] check for jump
-	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
-	{
-		if (player->mo->waterlevel >= 2)
-		{
-			player->mo->momz = 4*FRACUNIT;
-		}
-		else if (player->mo->flags2 & MF2_FLY)
-		{
-			player->mo->momz = 3*FRACUNIT;
-		}
-		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
-		{
-			player->mo->momz += 8*FRACUNIT;
-			if(!player->spectator)
-				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
-
-            player->mo->flags2 &= ~MF2_ONMOBJ;
-            player->jumpTics = 18;
-		}
 	}
 
 	if (co_zdoomphys)
@@ -434,13 +409,36 @@ void P_MovePlayer (player_t *player)
 
 		if (mo->state == &states[S_PLAY])
 		{
-			P_SetMobjState (player->mo, S_PLAY_RUN1); // denis - fixme - this function might destoy player->mo without setting it to 0
+			// denis - fixme - this function might destoy player->mo without setting it to 0
+			P_SetMobjState (player->mo, S_PLAY_RUN1); 
 		}
 
 		if (player->cheats & CF_REVERTPLEASE)
 		{
 			player->cheats &= ~CF_REVERTPLEASE;
 			player->camera = player->mo;
+		}
+	}
+	
+	// [RH] check for jump
+	if ((cmd->ucmd.buttons & BT_JUMP) == BT_JUMP)
+	{
+		if (player->mo->waterlevel >= 2)
+		{
+			player->mo->momz = 4*FRACUNIT;
+		}
+		else if (player->mo->flags2 & MF2_FLY)
+		{
+			player->mo->momz = 3*FRACUNIT;
+		}		
+		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
+		{
+			player->mo->momz += 8*FRACUNIT;
+			if(!player->spectator)
+				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
+				
+            player->mo->flags2 &= ~MF2_ONMOBJ;
+            player->jumpTics = 18;				
 		}
 	}
 }
@@ -607,6 +605,9 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
+	if (player->jumpTics)
+		player->jumpTics--;
+		
 	if (player->playerstate == PST_DEAD)
 	{
 		P_DeathThink(player);

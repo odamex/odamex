@@ -79,6 +79,9 @@ void DDoor::Serialize (FArchive &arc)
 //
 void DDoor::RunThink ()
 {
+	fixed_t ceilingheight = P_CeilingHeight(m_Sector);
+	fixed_t floorheight = P_FloorHeight(m_Sector);
+	
 	if (clientside && m_Status == destroy)
 	{
 		if (serverside)	// single player game
@@ -143,15 +146,11 @@ void DDoor::RunThink ()
 		
     case -1:
 		// DOWN
-        res = MoveCeiling (m_Speed, m_Sector->floorheight, false, m_Direction);
+        res = MoveCeiling (m_Speed, floorheight, false, m_Direction);
         if (m_Line && m_Line->id)
         {
             EV_LightTurnOnPartway(m_Line->id,
-                FixedDiv(
-                    m_Sector->ceilingheight - m_Sector->floorheight,
-                    m_TopHeight - m_Sector->floorheight
-                )
-            );
+                FixedDiv(ceilingheight - floorheight, m_TopHeight - floorheight));
         }
 		if (res == pastdest)
 		{
@@ -213,11 +212,7 @@ void DDoor::RunThink ()
         if (m_Line && m_Line->id)
         {
             EV_LightTurnOnPartway(m_Line->id,
-                FixedDiv(
-                    m_Sector->ceilingheight - m_Sector->floorheight,
-                    m_TopHeight - m_Sector->floorheight
-                )
-            );
+                FixedDiv(ceilingheight - floorheight, m_TopHeight - floorheight));
         }
 		if (res == pastdest)
 		{
@@ -332,6 +327,8 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	memset(m_PlayedSound, false, sizeof(m_PlayedSound));
 	m_Status = init;
 
+	fixed_t ceilingheight = P_CeilingHeight(sec);
+	
 	switch (type)
 	{
 	case doorClose:
@@ -347,14 +344,14 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 		m_Direction = 1;
 		m_Status = opening;
 		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
-		if (m_TopHeight != sec->ceilingheight)
+		if (m_TopHeight != ceilingheight)
 		{
 			PlayDoorSound();
 		}
 		break;
 
 	case doorCloseWaitOpen:
-		m_TopHeight = sec->ceilingheight;
+		m_TopHeight = ceilingheight;
 		m_Direction = -1;
 		m_Status = closing;
 		PlayDoorSound();

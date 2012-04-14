@@ -73,6 +73,8 @@ extern void (*R_DrawTranslatedColumn)(void);
 // No Sepctre effect needed.
 extern void (*R_DrawSpan)(void);
 
+extern void (*R_DrawSlopeSpan)(void);
+
 // [RH] Span blit into an interleaved intermediate buffer
 extern void (*R_DrawColumnHoriz)(void);
 void R_DrawMaskedColumnHoriz (column_t *column);
@@ -135,6 +137,7 @@ void	R_DrawFuzzColumnP_C (void);
 void	R_DrawTranslucentColumnP_C (void);
 void	R_DrawTranslatedColumnP_C (void);
 void	R_DrawSpanP_C (void);
+void	R_DrawSlopeSpanIdealP_C (void);
 
 void	R_DrawColumnD_C (void);
 void	R_DrawFuzzColumnD_C (void);
@@ -152,6 +155,7 @@ extern "C" void	R_DrawFuzzColumnP_ASM (void);
 void	R_DrawTranslucentColumnP_C (void);
 void	R_DrawTranslatedColumnP_C (void);
 extern "C" void	R_DrawSpanP_ASM (void);
+void	R_DrawSlopeSpanIdealP_C (void);		// [SL] NO ASM version yet
 
 void	R_DrawColumnD_C (void);
 void	R_DrawFuzzColumnD_C (void);
@@ -186,6 +190,15 @@ extern "C" dsfixed_t		ds_ystep;
 extern "C" byte*			ds_source;
 
 extern "C" int				ds_color;		// [RH] For flat color (no texturing)
+
+// [SL] 2012-03-19 - For sloped planes
+extern "C" double			ds_iu;
+extern "C" double			ds_iv;
+extern "C" double			ds_iustep;
+extern "C" double			ds_ivstep;
+extern "C" double			ds_id;
+extern "C" double			ds_idstep;
+extern "C" byte				*slopelighting[MAXWIDTH];
 
 extern byte*			translationtables;
 extern byte*			dc_translation;

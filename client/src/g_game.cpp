@@ -1165,7 +1165,6 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	fixed_t 			x;
 	fixed_t 			y;
 	fixed_t				z, oldz;
-	subsector_t*		ss;
 	unsigned			an;
 	AActor* 			mo;
 	size_t 				i;
@@ -1175,8 +1174,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	y = mthing->y << FRACBITS;
 	z = mthing->z << FRACBITS;
 
-	ss = R_PointInSubsector (x,y);
-	z = ss->sector->floorheight;
+	z = P_FloorHeight(x, y);
 
 	if (!player.mo)
 	{

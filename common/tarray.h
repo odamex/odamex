@@ -84,6 +84,43 @@ public:
 	{
 		Count = 0;
 	}
+	// Grow Array to be large enough to hold amount more entries without
+	// further growing.
+	void Grow (size_t amount)
+	{
+		if (Count + amount > Most)
+		{
+			const size_t choicea = Count + amount;
+			const size_t choiceb = Most + Most/2;
+			Most = (choicea > choiceb ? choicea : choiceb);
+			Array = (T *)Realloc (Array, sizeof(T)*Most);
+		}
+	}
+	// Resize Array so that it has exactly amount entries in use.
+	void Resize (size_t amount)
+	{
+		if (Count < amount)
+		{
+			Grow (amount - Count);
+		}
+		else if (Count > amount)
+		{
+			Count = amount;
+		}
+	}
+	// Reserves amount entries at the end of the array, but does nothing
+	// with them.
+	size_t Reserve (size_t amount)
+	{	
+		if (Count + amount > Most)
+		{
+			Grow (amount);
+		}
+		size_t place = Count;
+		Count += amount;
+		return place;
+	}
+
 private:
 	T *Array;
 	size_t Most;

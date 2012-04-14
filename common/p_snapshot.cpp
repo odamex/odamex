@@ -186,7 +186,9 @@ void ActorSnapshot::toActor(AActor *mo) const
 		
 			mo->ceilingz = tmceilingz;
 			mo->floorz = tmfloorz;
-				
+			mo->dropoffz = tmdropoffz;
+			mo->floorsector = tmfloorsector;	
+			
 			mo->LinkToWorld();
 		}	
 	}
@@ -216,7 +218,9 @@ void ActorSnapshot::toActor(AActor *mo) const
 	if (mFields & ACT_FLAGS2)
 		mo->flags2 = mFlags2;
 	if (mFields & ACT_FRAME)
-		mo->frame = mFrame;		
+		mo->frame = mFrame;
+	if (mFields & ACT_FLOORZ)
+		mo->floorz = mFloorZ;
 }
 
 // ============================================================================

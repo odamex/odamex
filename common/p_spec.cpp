@@ -471,7 +471,7 @@ fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t floor = sec->floorheight;
+	fixed_t height = P_FloorHeight(sec);
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -481,10 +481,17 @@ fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
 		if (!other)
 			continue;
 
-		if (other->floorheight < floor)
-			floor = other->floorheight;
+		fixed_t v1height = 
+			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		fixed_t v2height =
+			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+
+		if (v1height < height)
+			height = v1height;
+		if (v2height < height)
+			height = v2height;
 	}
-	return floor;
+	return height;
 }
 
 
@@ -498,7 +505,7 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t floor = MININT;
+	fixed_t height = MININT;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -508,13 +515,18 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		if (other->floorheight > floor)
-			floor = other->floorheight;
+		fixed_t v1height = 
+			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		fixed_t v2height =
+			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+
+		if (v1height > height)
+			height = v1height;
+		if (v2height > height)
+			height = v2height;
 	}
-	return floor;
+	return height;
 }
-
-
 
 //
 // P_FindNextHighestFloor()
@@ -524,33 +536,39 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 // the floor height passed. If no such height exists the floorheight
 // passed is returned.
 //
-// Rewritten by Lee Killough to avoid fixed array and to be faster
+// [SL] Changed to use ZDoom 1.23's version of this function to account
+// for sloped sectors.
 //
-fixed_t P_FindNextHighestFloor (sector_t *sec, int currentheight)
+fixed_t P_FindNextHighestFloor (sector_t *sec)
 {
 	sector_t *other;
-	int i;
+	fixed_t height, heightdiff = MAXINT;
+	height = P_FloorHeight(sec->lines[0]->v1->x, sec->lines[0]->v1->y, sec);	
 
-	for (i = 0; i < sec->linecount; i++)
-	{
-		if ((other = getNextSector(sec->lines[i],sec)) &&
-			 other->floorheight > currentheight)
-		{
-			int height = other->floorheight;
-
-			while (++i < sec->linecount)
+    for (int i = 0; i < sec->linecount; i++)
+    {
+		if (NULL != (other = getNextSector(sec->lines[i], sec)))
+        {
+			fixed_t ofloor = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+			fixed_t floor = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, sec);
+			
+			if (ofloor > floor && ofloor - floor < heightdiff)
 			{
-				if ((other = getNextSector(sec->lines[i],sec)) &&
-					 other->floorheight < height &&
-					 other->floorheight > currentheight)
-				{
-					height = other->floorheight;
-				}
+				heightdiff = ofloor - floor;
+				height = ofloor;
 			}
-			return height;
-		}
-	}
-	return currentheight;
+
+			ofloor = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
+			floor = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, sec);
+
+            if (ofloor > floor && ofloor - floor < heightdiff)
+            {
+                heightdiff = ofloor - floor;
+                height = ofloor;
+            }
+        }
+    }
+    return height;
 }
 
 
@@ -563,30 +581,39 @@ fixed_t P_FindNextHighestFloor (sector_t *sec, int currentheight)
 // passed is returned.
 //
 // jff 02/03/98 Twiddled Lee's P_FindNextHighestFloor to make this
+// [SL] Changed to use ZDoom 1.23's version of this function to account
+// for sloped sectors.
 //
-fixed_t P_FindNextLowestFloor(sector_t *sec, int currentheight)
+fixed_t P_FindNextLowestFloor(sector_t *sec)
 {
 	sector_t *other;
-	int i;
+	fixed_t height, heightdiff = MAXINT;
+	height = P_FloorHeight(sec->lines[0]->v1->x, sec->lines[0]->v1->y, sec);	
 
-	for (i = 0; i < sec->linecount; i++)
-	if ((other = getNextSector(sec->lines[i],sec)) &&
-		 other->floorheight < currentheight)
-	{
-		int height = other->floorheight;
-
-		while (++i < sec->linecount)
-		{
-			if ((other = getNextSector(sec->lines[i],sec)) &&
-				 other->floorheight > height &&
-				 other->floorheight < currentheight)
+    for (int i = 0; i < sec->linecount; i++)
+    {
+		if (NULL != (other = getNextSector(sec->lines[i], sec)))
+        {
+			fixed_t ofloor = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+			fixed_t floor = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, sec);
+			
+			if (ofloor < floor && floor - ofloor < heightdiff)
 			{
-				height = other->floorheight;
+				heightdiff = ofloor - floor;
+				height = ofloor;
 			}
-		}
-		return height;
-	}
-	return currentheight;
+
+			ofloor = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
+			floor = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, sec);
+
+            if (ofloor < floor && floor - ofloor < heightdiff)
+            {
+                heightdiff = ofloor - floor;
+                height = ofloor;
+            }
+        }
+    }
+    return height;
 }
 
 //
@@ -598,25 +625,39 @@ fixed_t P_FindNextLowestFloor(sector_t *sec, int currentheight)
 // passed is returned.
 //
 // jff 02/03/98 Twiddled Lee's P_FindNextHighestFloor to make this
+// [SL] Changed to use ZDoom 1.23's version of this function to account
+// for sloped sectors.
 //
-fixed_t P_FindNextLowestCeiling (sector_t *sec, int currentheight)
+fixed_t P_FindNextLowestCeiling (sector_t *sec)
 {
 	sector_t *other;
-	int i;
+	fixed_t height, heightdiff = MAXINT;
+	height = P_CeilingHeight(sec->lines[0]->v1->x, sec->lines[0]->v1->y, sec);	
 
-	for (i = 0; i < sec->linecount; i++)
-		if ((other = getNextSector(sec->lines[i],sec)) &&
-			other->ceilingheight < currentheight)
-		{
-			int height = other->ceilingheight;
-			while (++i < sec->linecount)
-				if ((other = getNextSector(sec->lines[i],sec)) &&
-					 other->ceilingheight > height &&
-					 other->ceilingheight < currentheight)
-					height = other->ceilingheight;
-			return height;
-		}
-	return currentheight;
+    for (int i = 0; i < sec->linecount; i++)
+    {
+		if (NULL != (other = getNextSector(sec->lines[i], sec)))
+        {
+			fixed_t oceil = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+			fixed_t ceil = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, sec);
+			
+			if (oceil < ceil && ceil - oceil < heightdiff)
+			{
+				heightdiff = ceil - oceil;
+				height = oceil;
+			}
+
+			oceil = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
+			ceil = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, sec);
+
+            if (oceil < ceil && ceil - oceil < heightdiff)
+            {
+                heightdiff = ceil - oceil;
+                height = oceil;
+            }
+        }
+    }
+    return height;
 }
 
 
@@ -629,25 +670,39 @@ fixed_t P_FindNextLowestCeiling (sector_t *sec, int currentheight)
 // passed is returned.
 //
 // jff 02/03/98 Twiddled Lee's P_FindNextHighestFloor to make this
+// [SL] Changed to use ZDoom 1.23's version of this function to account
+// for sloped sectors.
 //
-fixed_t P_FindNextHighestCeiling (sector_t *sec, int currentheight)
+fixed_t P_FindNextHighestCeiling (sector_t *sec)
 {
 	sector_t *other;
-	int i;
+	fixed_t height, heightdiff = MAXINT;
+	height = P_CeilingHeight(sec->lines[0]->v1->x, sec->lines[0]->v1->y, sec);
 
-	for (i = 0; i < sec->linecount; i++)
-		if ((other = getNextSector(sec->lines[i],sec)) &&
-			 other->ceilingheight > currentheight)
-		{
-			int height = other->ceilingheight;
-			while (++i < sec->linecount)
-				if ((other = getNextSector(sec->lines[i],sec)) &&
-					 other->ceilingheight < height &&
-					 other->ceilingheight > currentheight)
-					height = other->ceilingheight;
-			return height;
-		}
-	return currentheight;
+    for (int i = 0; i < sec->linecount; i++)
+    {
+		if (NULL != (other = getNextSector(sec->lines[i], sec)))
+        {
+			fixed_t oceil = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+			fixed_t ceil = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, sec);
+			
+			if (oceil > ceil && oceil - ceil < heightdiff)
+			{
+				heightdiff = oceil - ceil;
+				height = oceil;
+			}
+
+			oceil = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
+			ceil = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, sec);
+
+            if (oceil > ceil && oceil - ceil < heightdiff)
+            {
+                heightdiff = oceil - ceil;
+                height = oceil;
+            }
+        }
+    }
+    return height;
 }
 
 //
@@ -668,8 +723,15 @@ fixed_t P_FindLowestCeilingSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		if (other->ceilingheight < height)
-			height = other->ceilingheight;
+		fixed_t v1height = 
+			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		fixed_t v2height =
+			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+
+		if (v1height < height)
+			height = v1height;
+		if (v2height < height)
+			height = v2height;
 	}
 	return height;
 }
@@ -693,8 +755,15 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		if (other->ceilingheight > height)
-			height = other->ceilingheight;
+		fixed_t v1height = 
+			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		fixed_t v2height =
+			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+
+		if (v1height > height)
+			height = v1height;
+		if (v2height > height)
+			height = v2height;
 	}
 	return height;
 }
@@ -782,30 +851,26 @@ fixed_t P_FindShortestUpperAround (int secnum)
 //  around a sector specified by sector number
 // jff 3/14/98 change first parameter to plain height to allow call
 //  from routine not using floormove_t
+// [SL] Changed to use ZDoom 1.23's version of this function to account
+// for sloped sectors.
 //
 sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
 {
-	int i;
-	sector_t *sec = &sectors[secnum];
-	int linecount;
+	sector_t *other, *sec = &sectors[secnum];
 
-	//jff 5/23/98 don't disturb sec->linecount while searching
-	// but allow early exit in old demos
-	linecount = sec->linecount;
-	for (i = 0; i < linecount; i++)
-	{
-		if (twoSided (secnum, i))
-		{
-			if (getSide (secnum,i,0)->sector-sectors == secnum)
-				sec = getSector (secnum, i, 1);
-			else
-				sec = getSector (secnum, i, 0);
-
-			if (sec->floorheight == floordestheight)
-				return sec;
-		}
-	}
-	return NULL;
+    //jff 5/23/98 don't disturb sec->linecount while searching
+    // but allow early exit in old demos
+    for (int i = 0; i < sec->linecount; i++)
+    {
+        other = getNextSector(sec->lines[i], sec);
+        if (other != NULL &&
+        	(P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other) == floordestheight ||
+        	 P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other) == floordestheight))
+        {
+            return other;
+        }
+    }
+    return NULL;
 }
 
 
@@ -823,29 +888,26 @@ sector_t *P_FindModelFloorSector (fixed_t floordestheight, int secnum)
 //  used only from generalized ceiling types
 // jff 3/14/98 change first parameter to plain height to allow call
 //  from routine not using ceiling_t
+// [SL] Changed to use ZDoom 1.23's version of this function to account
+// for sloped sectors.
 //
 sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, int secnum)
 {
-	int i;
-	sector_t *sec = &sectors[secnum];
-	int linecount;
+	sector_t *other, *sec = &sectors[secnum];
 
-	//jff 5/23/98 don't disturb sec->linecount while searching
-	linecount = sec->linecount;
-	for (i = 0; i < linecount; i++)
-	{
-		if (twoSided (secnum, i))
-		{
-			if (getSide (secnum,i,0)->sector-sectors == secnum)
-				sec = getSector (secnum,i,1);
-			else
-				sec = getSector (secnum,i,0);
-
-			if (sec->ceilingheight == ceildestheight)
-				return sec;
-		}
-	}
-	return NULL;
+    //jff 5/23/98 don't disturb sec->linecount while searching
+    // but allow early exit in old demos
+    for (int i = 0; i < sec->linecount; i++)
+    {
+        other = getNextSector(sec->lines[i], sec);
+        if (other != NULL &&
+        	(P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other) == ceildestheight ||
+        	 P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other) == ceildestheight))
+        {
+            return other;
+        }
+    }
+    return NULL;
 }
 
 
@@ -1340,7 +1402,7 @@ void P_PlayerInSpecialSector (player_t *player)
 	int special = sector->special & ~SECRET_MASK;
 
 	// Falling, not all the way down yet?
-	if (player->mo->z != sector->floorheight && !player->mo->waterlevel)
+	if (player->mo->z != P_FloorHeight(player->mo) && !player->mo->waterlevel)
 		return;
 
 	// Has hitten ground.
@@ -1822,11 +1884,14 @@ void P_SpawnSpecials (void)
 void DScroller::RunThink ()
 {
 	fixed_t dx = m_dx, dy = m_dy;
-
+        
 	if (m_Control != -1)
 	{	// compute scroll amounts based on a sector's height changes
-		fixed_t height = sectors[m_Control].floorheight +
-						 sectors[m_Control].ceilingheight;
+		sector_t *sector = &sectors[m_Control];
+		fixed_t centerfloor = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t centerceiling = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+
+		fixed_t height = centerfloor + centerceiling; 
 		fixed_t delta = height - m_LastHeight;
 		m_LastHeight = height;
 		dx = FixedMul(dx, delta);
@@ -1836,8 +1901,8 @@ void DScroller::RunThink ()
 	// killough 3/14/98: Add acceleration
 	if (m_Accel)
 	{
-            m_vdx = (dx += m_vdx);
-            m_vdy = (dy += m_vdy);
+		m_vdx = (dx += m_vdx);
+		m_vdy = (dy += m_vdy);
 	}
 
 	if (!(dx | dy))			// no-op if both (x,y) offsets 0
@@ -1851,7 +1916,7 @@ void DScroller::RunThink ()
 		msecnode_t *node;
 		AActor *thing;
 
-                case sc_side:				// killough 3/7/98: Scroll wall texture
+		case sc_side:				// killough 3/7/98: Scroll wall texture
 			side = sides + m_Affectee;
 			side->textureoffset += dx;
 			side->rowoffset += dy;
@@ -1870,17 +1935,16 @@ void DScroller::RunThink ()
 			break;
 
 		case sc_carry:
-
+		{
 			// killough 3/7/98: Carry things on floor
 			// killough 3/20/98: use new sector list which reflects true members
 			// killough 3/27/98: fix carrier bug
 			// killough 4/4/98: Underwater, carry things even w/o gravity
-
 			sec = sectors + m_Affectee;
-			height = sec->floorheight;
+			height = P_HighestHeightOfFloor(sec);
 			waterheight = sec->heightsec &&
-				sec->heightsec->floorheight > height ?
-				sec->heightsec->floorheight : MININT;
+				P_HighestHeightOfFloor(sec->heightsec) > height ?
+				P_HighestHeightOfFloor(sec->heightsec) : MININT;
 
 			for (node = sec->touching_thinglist; node; node = node->m_snext)
 				if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
@@ -1893,7 +1957,8 @@ void DScroller::RunThink ()
 					thing->momy += dy;
 				  }
 			break;
-
+		}
+		
 		case sc_carry_ceiling:       // to be added later
 			break;
 	}
@@ -1927,8 +1992,15 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
         m_vdy = 0;
         m_Accel = accel;
 	if ((m_Control = control) != -1)
-		m_LastHeight =
-			sectors[control].floorheight + sectors[control].ceilingheight;
+	{
+		sector_t *sector = &sectors[control];
+		fixed_t centerfloor =
+			P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector); 
+		fixed_t centerceiling =
+			P_CeilingHeight(sector->soundorg[0], sector->soundorg[1], sector); 
+
+		m_LastHeight = centerfloor + centerceiling;
+	}
 	m_Affectee = affectee;
 }
 
@@ -1953,11 +2025,19 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 	m_Type = sc_side;
 	m_dx = x;
 	m_dy = y;
-        m_vdx = 0;
-        m_vdy = 0;
+	m_vdx = m_vdy = 0;
 	m_Accel = accel;
+	
 	if ((m_Control = control) != -1)
-		m_LastHeight = sectors[control].floorheight + sectors[control].ceilingheight;
+	{
+		sector_t *sector = &sectors[control];
+		fixed_t centerfloor =
+			P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t centerceiling =
+			P_CeilingHeight(sector->soundorg[0], sector->soundorg[1], sector);
+
+		m_LastHeight = centerfloor + centerceiling;
+	}
 	m_Affectee = *l->sidenum;
 }
 
@@ -1985,23 +2065,30 @@ static void P_SpawnScrollers(void)
 		// killough 3/15/98: Add acceleration. Types 214-218 are the same but
 		// are accelerative.
 
+		// [RH] Assume that it's a scroller and zero the line's special.
+		l->special = 0;
+
 		if (special == Scroll_Ceiling ||
 			special == Scroll_Floor ||
-			special == Scroll_Texture_Model) {
-			if (l->args[1] & 3) {
+			special == Scroll_Texture_Model)
+		{
+			if (l->args[1] & 3)
+			{
 				// if 1, then displacement
 				// if 2, then accelerative (also if 3)
 				control = sides[*l->sidenum].sector - sectors;
 				if (l->args[1] & 2)
 					accel = 1;
 			}
-			if (special == Scroll_Texture_Model ||
-				l->args[1] & 4) {
+			if (special == Scroll_Texture_Model || l->args[1] & 4)
+			{
 				// The line housing the special controls the
 				// direction and speed of scrolling.
 				dx = l->dx >> SCROLL_SHIFT;
 				dy = l->dy >> SCROLL_SHIFT;
-			} else {
+			}
+			else
+			{
 				// The speed and direction are parameters to the special.
 				dx = (l->args[3] - 128) * (FRACUNIT / 32);
 				dy = (l->args[4] - 128) * (FRACUNIT / 32);
@@ -2385,7 +2472,7 @@ void DPusher::RunThink ()
 	// constant pushers p_wind and p_current
 
 	if (sec->heightsec) // special water sector?
-		ht = sec->heightsec->floorheight;
+		ht = P_FloorHeight(sec->heightsec);
 	node = sec->touching_thinglist; // things touching this sector
 	for ( ; node ; node = node->m_snext)
 	{
@@ -2429,7 +2516,7 @@ void DPusher::RunThink ()
 			if (sec->heightsec == NULL ||
 				sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
 			{ // NOT special water sector
-				if (thing->z > sec->floorheight) // above ground
+				if (thing->z > P_FloorHeight(sec)) // above ground
 					xspeed = yspeed = 0; // no force
 				else // on ground
 				{

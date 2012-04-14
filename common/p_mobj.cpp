@@ -61,6 +61,7 @@ EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(co_fixweaponimpacts)
+EXTERN_CVAR(co_allowdropoff)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -101,11 +102,11 @@ void MapThing::Serialize (FArchive &arc)
 AActor::AActor () :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
-    floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
+    floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0),
+    momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
     flags(0), flags2(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
     visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), onground(false),
+    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0)
 {
@@ -117,16 +118,16 @@ AActor::AActor (const AActor &other) :
     angle(other.angle), sprite(other.sprite), frame(other.frame),
     pitch(other.pitch), roll(other.roll), effects(other.effects),
     bnext(other.bnext), bprev(other.bprev), subsector(other.subsector),
-    floorz(other.floorz), ceilingz(other.ceilingz), radius(other.radius),
-    height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
-    validcount(other.validcount), type(other.type), info(other.info),
-    tics(other.tics), state(other.state), flags(other.flags), flags2(other.flags2),
-    special1(other.special1), special2(other.special2),
-    health(other.health), movedir(other.movedir), movecount(other.movecount),
-    visdir(other.visdir), reactiontime(other.reactiontime),
+    floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
+    floorsector(other.floorsector),	radius(other.radius), height(other.height), momx(other.momx),
+	momy(other.momy), momz(other.momz), validcount(other.validcount),
+	type(other.type), info(other.info), tics(other.tics), state(other.state),
+	flags(other.flags), flags2(other.flags2), special1(other.special1),
+	special2(other.special2), health(other.health), movedir(other.movedir),
+	movecount(other.movecount), visdir(other.visdir), reactiontime(other.reactiontime),
     threshold(other.threshold), player(other.player), lastlook(other.lastlook),
     special(other.special),inext(other.inext), iprev(other.iprev), translation(other.translation),
-    translucency(other.translucency), waterlevel(other.waterlevel),
+    translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
     onground(other.onground), touching_sectorlist(other.touching_sectorlist),
     deadtic(other.deadtic), oldframe(other.oldframe),
     rndindex(other.rndindex), netid(other.netid), tid(other.tid)
@@ -152,6 +153,8 @@ AActor &AActor::operator= (const AActor &other)
     subsector = other.subsector;
     floorz = other.floorz;
     ceilingz = other.ceilingz;
+	dropoffz = other.dropoffz;
+	floorsector = other.floorsector;
     radius = other.radius;
     height = other.height;
     momx = other.momx;
@@ -179,6 +182,7 @@ AActor &AActor::operator= (const AActor &other)
     translation = other.translation;
     translucency = other.translucency;
     waterlevel = other.waterlevel;
+	gear = other.gear;
     onground = other.onground;
     touching_sectorlist = other.touching_sectorlist;
     deadtic = other.deadtic;
@@ -200,11 +204,11 @@ AActor &AActor::operator= (const AActor &other)
 AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
     x(0), y(0), z(0), snext(NULL), sprev(NULL), angle(0), sprite(SPR_UNKN), frame(0),
     pitch(0), roll(0), effects(0), bnext(NULL), bprev(NULL), subsector(NULL),
-    floorz(0), ceilingz(0), radius(0), height(0), momx(0), momy(0), momz(0),
+    floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0), momx(0), momy(0), momz(0),
     validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), flags(0), flags2(0),
     special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
     reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), onground(false),
+    iprev(NULL), translation(NULL), translucency(0), waterlevel(0), gear(0), onground(false),
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0)
 {
@@ -255,9 +259,11 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	if(!subsector)
 		return;
 
-	floorz = subsector->sector->floorheight;
-	ceilingz = subsector->sector->ceilingheight;
-
+	floorz = P_FloorHeight(this);
+	ceilingz = P_CeilingHeight(this);
+	dropoffz = floorz;
+	floorsector = subsector->sector;
+	
 	if (iz == ONFLOORZ)
 	{
 		z = floorz;
@@ -406,6 +412,36 @@ void P_MoveActor(AActor *mo)
 	AActor *onmo = NULL;
     fixed_t minmom;
 	
+	// [RH] If standing on a steep slope, fall down it
+	if (!(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) && mo->momz <= 0 &&
+		mo->floorz == mo->z && mo->floorsector->floorplane.c < STEEPSLOPE &&
+		P_FloorHeight(mo->x, mo->y, mo->floorsector) <= mo->floorz)
+	{
+		const msecnode_t *node;
+		bool dopush = true;
+
+		if (mo->floorsector->floorplane.c > STEEPSLOPE*2/3)
+		{
+			for (node = mo->touching_sectorlist; node; node = node->m_tnext)
+			{
+				const sector_t *sec = node->m_sector;
+				if (sec->floorplane.c >= STEEPSLOPE)
+				{
+					if (P_FloorHeight(mo->x, mo->y, sec) >= mo->z - 24*FRACUNIT)
+					{
+						dopush = false;
+						break;
+					}
+				}
+			}
+		}
+		if (dopush)
+		{
+			mo->momx += mo->floorsector->floorplane.a;
+			mo->momy += mo->floorsector->floorplane.b;
+		}
+	}
+
 	// Handle X and Y momemtums
     BlockingMobj = NULL;
 	if (mo->momx || mo->momy || (mo->flags & MF_SKULLFLY))
@@ -420,7 +456,7 @@ void P_MoveActor(AActor *mo)
 	{ // Floating item bobbing motion (special1 is height)
 		mo->z = mo->floorz + mo->special1;
 	}
-	else if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
+	if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
 	{
 	    // Handle Z momentum and gravity
 		if (co_realactorheight && (mo->flags2 & MF2_PASSMOBJ))
@@ -462,7 +498,7 @@ void P_MoveActor(AActor *mo)
 	    {
             P_ZMovement(mo);
 	    }
-
+		
         if (mo->ObjectFlags & OF_MassDestruction)
             return;		// actor was destroyed
 	}
@@ -479,12 +515,20 @@ void P_MoveActor(AActor *mo)
 		{
 			if (mo->z < hsec->floorheight)
 			{
-				mo->waterlevel = 1;
-				if (mo->z + mo->height/2 < hsec->floorheight)
+				fixed_t floorheight = P_FloorHeight(mo->x, mo->y, hsec);
+				if (mo->z < floorheight)
 				{
-					mo->waterlevel = 2;
-					if (mo->z + mo->height <= hsec->floorheight)
-						mo->waterlevel = 3;
+					mo->waterlevel = 1;
+					if (mo->z + mo->height/2 < floorheight)
+					{
+						mo->waterlevel = 2;
+						if (mo->z + mo->height <= floorheight)
+							mo->waterlevel = 3;
+					}
+				}
+				else if (mo->z + mo->height > P_CeilingHeight(mo->x, mo->y, hsec))
+				{
+					mo->waterlevel = 3;
 				}
 			}
 			else if (mo->z + mo->height > hsec->ceilingheight)
@@ -492,6 +536,21 @@ void P_MoveActor(AActor *mo)
 				mo->waterlevel = 3;
 			}
 		}
+	}
+	
+	// killough 9/12/98: objects fall off ledges if they are hanging off
+	// slightly push off of ledge if hanging more than halfway off
+	// [RH] Be more restrictive to avoid pushing monsters/players down steps	
+	if (!(mo->flags & MF_NOGRAVITY) && !(mo->flags2 & MF2_FLOATBOB) && (mo->z > mo->dropoffz) &&
+		 (mo->health <= 0 || (mo->flags & MF_COUNTKILL && mo->z - mo->dropoffz > 24*FRACUNIT)) &&
+		  co_allowdropoff)	
+	{
+		P_ApplyTorque(mo);   // Apply torque
+	}
+	else
+	{
+		mo->flags &= ~MF_FALLING;
+		mo->gear = 0;           // Reset torque
 	}
 }
 
@@ -630,6 +689,7 @@ void AActor::Serialize (FArchive &arc)
 			<< effects
 			<< floorz
 			<< ceilingz
+			<< dropoffz
 			<< radius
 			<< height
 			<< momx
@@ -663,7 +723,8 @@ void AActor::Serialize (FArchive &arc)
 			/*<< goal ? goal->netid : 0*/
 			<< (unsigned)0
 			<< translucency
-			<< waterlevel;
+			<< waterlevel
+			<< gear;
 
 		if (translation)
 			arc << (DWORD)(translation - translationtables);
@@ -689,6 +750,7 @@ void AActor::Serialize (FArchive &arc)
 			>> effects
 			>> floorz
 			>> ceilingz
+			>> dropoffz
 			>> radius
 			>> height
 			>> momx
@@ -722,7 +784,8 @@ void AActor::Serialize (FArchive &arc)
 			/*>> goal->netid*/
 			>> dummy
 			>> translucency
-			>> waterlevel;
+			>> waterlevel
+			>> gear;
 
 		P_SetThingId(this, newnetid);
 
@@ -820,6 +883,7 @@ void P_XYMovement(AActor *mo)
 	fixed_t ptryx, ptryy;
 	player_t *player = NULL;
 	fixed_t xmove, ymove;
+	bool walkplane;
 	fixed_t maxmove;
 	static const int windTab[3] = {2048*5, 2048*10, 2048*25};
 
@@ -871,6 +935,9 @@ void P_XYMovement(AActor *mo)
 
 	maxmove /= 2;
 
+	// [RH] Adjust player movement on sloped floors
+	walkplane = P_CheckSlopeWalk (mo, xmove, ymove);
+	
 	do
 	{
 		if ((xmove > maxmove || ymove > maxmove)
@@ -889,7 +956,7 @@ void P_XYMovement(AActor *mo)
 		}
 
 		// killough 3/15/98: Allow objects to drop off
-		if (!P_TryMove (mo, ptryx, ptryy, true))
+		if (!P_TryMove (mo, ptryx, ptryy, true, walkplane))
 		{
 			// blocked move
             if (mo->flags2 & MF2_SLIDE)
@@ -909,17 +976,21 @@ void P_XYMovement(AActor *mo)
 				}
 				else
 				{ // slide against mobj
-					if (P_TryMove (mo, mo->x, ptryy, true))
-					{
+					
+					// try sliding in the x direction
+					fixed_t tx = 0, ty = ptryy - mo->y;
+					walkplane = P_CheckSlopeWalk(mo, tx, ty);
+					if (P_TryMove(mo, mo->x, ptryy, true, walkplane))
 						mo->momx = 0;
-					}
-					else if (P_TryMove (mo, ptryx, mo->y, true))
-					{
-						mo->momy = 0;
-					}
 					else
 					{
-						mo->momx = mo->momy = 0;
+						// try sliding n the y direction
+						tx = ptryx - mo->x, ty = 0;
+						walkplane = P_CheckSlopeWalk (mo, tx, ty);
+						if (P_TryMove(mo, ptryx, mo->y, true, walkplane))
+							mo->momy = 0;
+						else
+							mo->momx = mo->momy = 0;
 					}
 				}
 			}
@@ -949,7 +1020,7 @@ void P_XYMovement(AActor *mo)
 					// instead of exploding.
 
 					if (!co_fixweaponimpacts ||
-						mo->z > ceilingline->backsector->ceilingheight)
+						mo->z > P_CeilingHeight(mo->x, mo->y, ceilingline->backsector))
 					{	
 						mo->Destroy ();
 						return;
@@ -1005,7 +1076,7 @@ void P_XYMovement(AActor *mo)
 		if (mo->momx > FRACUNIT/4 || mo->momx < -FRACUNIT/4
 			|| mo->momy > FRACUNIT/4 || mo->momy < -FRACUNIT/4)
 		{
-			if (mo->floorz != mo->subsector->sector->floorheight)
+			if (mo->floorz > P_FloorHeight(mo))
 				return;
 		}
 	}
@@ -1060,7 +1131,7 @@ void P_ZMovement(AActor *mo)
 	fixed_t	dist;
 	fixed_t	delta;
 
-		// check for smooth step up
+	// check for smooth step up
 	if (mo->player && mo->z < mo->floorz)
 	{
 		mo->player->viewheight -= mo->floorz-mo->z;
@@ -1308,7 +1379,7 @@ void P_ZMovement(AActor *mo)
 	if (mo->subsector->sector->heightsec != NULL && mo->subsector->sector->SecActTarget != NULL)
 	{
 		sector_t *hs = mo->subsector->sector->heightsec;
-		fixed_t waterz = hs->floorheight;
+		fixed_t waterz = P_FloorHeight(mo->x, mo->y, hs);
 		fixed_t newz;
 		fixed_t viewheight;
 
@@ -1407,7 +1478,7 @@ void P_NightmareRespawn (AActor *mobj)
 	mo = new AActor(
         mobj->x,
         mobj->y,
-        mobj->subsector->sector->floorheight,
+        P_FloorHeight(mobj),
         MT_TFOG
     );
 	// initiate teleport sound
@@ -1418,7 +1489,7 @@ void P_NightmareRespawn (AActor *mobj)
     ss = R_PointInSubsector (x,y);
 
 	// spawn a teleport fog at the new spot
-    mo = new AActor (x, y, ss->sector->floorheight , MT_TFOG);
+    mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector), MT_TFOG);
     if (clientside)
         S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 
@@ -1593,7 +1664,7 @@ AActor *AActor::FindGoal (const AActor *actor, int tid, int kind)
 //
 // P_SpawnPuff
 //
-void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
+void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 {
     if (!serverside)
         return;
@@ -1619,7 +1690,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown)
 //
 // P_SpawnBlood
 //
-void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage)
+void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage)
 {
 	// denis - not clientside
 	if(!serverside)

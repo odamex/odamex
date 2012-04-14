@@ -88,6 +88,9 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 
 	sector->floordata = sector->ceilingdata = this;
 
+	fixed_t floorheight = P_FloorHeight(sector);
+	fixed_t ceilingheight = P_CeilingHeight(sector);
+
 	m_Type = type;
 	m_Crush = crush;
 
@@ -97,16 +100,15 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 		if (height == 0)
 		{
 			m_FloorTarget = m_CeilingTarget =
-				(sector->ceilingheight - sector->floorheight) / 2 + sector->floorheight;
-			floordist = m_FloorTarget - sector->floorheight;
+				 (ceilingheight - floorheight) / 2 + floorheight;
+			floordist = m_FloorTarget - floorheight;
 		}
 		else
 		{
-			m_FloorTarget = m_CeilingTarget =
-				sector->floorheight + height;
+			m_FloorTarget = m_CeilingTarget = floorheight + height;
 			floordist = height;
 		}
-		ceilingdist = sector->ceilingheight - m_CeilingTarget;
+		ceilingdist = ceilingheight - m_CeilingTarget;
 	}
 	else
 	{
@@ -115,21 +117,21 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 		if (height == 0)
 		{
 			m_FloorTarget = P_FindLowestFloorSurrounding (sector);
-			floordist = sector->floorheight - m_FloorTarget;
+			floordist = floorheight - m_FloorTarget;
 		}
 		else
 		{
 			floordist = height;
-			m_FloorTarget = sector->floorheight - height;
+			m_FloorTarget = floorheight - height;
 		}
 		if (height2 == 0)
 		{
 			m_CeilingTarget = P_FindHighestCeilingSurrounding (sector);
-			ceilingdist = m_CeilingTarget - sector->ceilingheight;
+			ceilingdist = m_CeilingTarget - ceilingheight;
 		}
 		else
 		{
-			m_CeilingTarget = sector->ceilingheight + height2;
+			m_CeilingTarget = ceilingheight + height2;
 			ceilingdist = height2;
 		}
 	}
@@ -160,14 +162,16 @@ BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
 		sector_t *sec = &sectors[secnum];
+		fixed_t floorheight = P_FloorHeight(sec);
+		fixed_t ceilingheight = P_CeilingHeight(sec);
 
 		if (sec->floordata || sec->ceilingdata)
 			continue;
 
-		if (type == DPillar::pillarBuild && sec->floorheight == sec->ceilingheight)
+		if (type == DPillar::pillarBuild && floorheight == ceilingheight)
 			continue;
 
-		if (type == DPillar::pillarOpen && sec->floorheight != sec->ceilingheight)
+		if (type == DPillar::pillarOpen && floorheight != ceilingheight)
 			continue;
 
 		rtn = true;

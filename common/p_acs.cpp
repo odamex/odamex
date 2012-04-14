@@ -731,19 +731,19 @@ DPlaneWatcher::DPlaneWatcher (AActor *it, line_t *line, int lineSide, bool ceili
 	secnum = P_FindSectorFromTag (tag, -1);
 	if (secnum >= 0)
 	{
-		fixed_t plane;
-
 		Sector = &sectors[secnum];
 		if (bCeiling)
 		{
-			plane = Sector->ceilingheight;
+			LastD = Sector->ceilingplane.d;
+			P_ChangeCeilingHeight(Sector, height << FRACBITS);
+			WatchD = Sector->ceilingplane.d;
 		}
 		else
 		{
-			plane = Sector->floorheight;
+			LastD = Sector->floorplane.d;
+			P_ChangeFloorHeight(Sector, height << FRACBITS);
+			WatchD = Sector->floorplane.d;
 		}
-		LastD = plane;
-		WatchD = plane - (height << FRACBITS);
 	}
 	else
 	{
@@ -773,11 +773,11 @@ void DPlaneWatcher::RunThink ()
 
 	if (bCeiling)
 	{
-		newd = Sector->ceilingheight;
+		newd = Sector->ceilingplane.d;
 	}
 	else
 	{
-		newd = Sector->floorheight;
+		newd = Sector->floorplane.d;
 	}
 
 	if ((LastD < WatchD && newd >= WatchD) ||

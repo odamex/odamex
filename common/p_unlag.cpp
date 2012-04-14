@@ -106,8 +106,8 @@ void Unlag::movePlayer(player_t *player, fixed_t x, fixed_t y, fixed_t z)
 void Unlag::moveSector(sector_t *sector, fixed_t ceilingheight, 
 					   fixed_t floorheight)
 {
-	sector->ceilingheight = ceilingheight;
-	sector->floorheight = floorheight;
+	P_SetCeilingHeight(sector, ceilingheight);
+	P_SetFloorHeight(sector, floorheight);
 }
 
 
@@ -208,8 +208,8 @@ void Unlag::reconcileSectorPositions(size_t ticsago)
 		{
 			// record the player's current position, which hasn't yet
 			// been saved to the history arrays
-			sector_history[i].backup_ceilingheight = sector->ceilingheight;
-			sector_history[i].backup_floorheight = sector->floorheight;
+			sector_history[i].backup_ceilingheight = P_CeilingHeight(sector);
+			sector_history[i].backup_floorheight = P_FloorHeight(sector);
 
 			size_t cur = (sector_history[i].history_size - 1 - ticsago) 
 						  % Unlag::MAX_HISTORY_TICS;
@@ -300,8 +300,8 @@ void Unlag::recordSectorPositions()
 
 		size_t cur = sector_history[i].history_size++ 
 					 % Unlag::MAX_HISTORY_TICS;
-		sector_history[i].history_ceilingheight[cur] = sector->ceilingheight;
-		sector_history[i].history_floorheight[cur] = sector->floorheight;
+		sector_history[i].history_ceilingheight[cur] = P_CeilingHeight(sector);
+		sector_history[i].history_floorheight[cur] = P_FloorHeight(sector);
 	}
 }
 
@@ -410,9 +410,9 @@ void Unlag::registerSector(sector_t *sector)
 	for (size_t i = 0; i < Unlag::MAX_HISTORY_TICS; i++)
 	{
 		sector_history[new_index].history_ceilingheight[i]
-			= sector->ceilingheight;
+			= P_CeilingHeight(sector);
 		sector_history[new_index].history_floorheight[i]
-			= sector->floorheight;
+			= P_FloorHeight(sector);
 	}
 }
 

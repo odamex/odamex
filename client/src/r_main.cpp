@@ -41,6 +41,7 @@
 #include "stats.h"
 #include "z_zone.h"
 #include "i_video.h"
+#include "vectors.h"
 
 #define DISTMAP			2
 
@@ -138,6 +139,7 @@ void (*lucentcolfunc) (void);
 void (*transcolfunc) (void);
 void (*tlatedlucentcolfunc) (void);
 void (*spanfunc) (void);
+void (*spanslopefunc) (void);
 
 void (*hcolfunc_pre) (void);
 void (*hcolfunc_post1) (int hx, int sx, int yl, int yh);
@@ -412,6 +414,86 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 		scale = 64*FRACUNIT;
 	return scale;
 }
+
+
+
+void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+{
+	int index = ang >> ANGLETOFINESHIFT;
+	
+	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
+	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
+}
+
+//
+// R_ColumnToPointOnSeg
+//
+// Sets the x and y parameters to their respective values at the point
+// where line intersects with a ray drawn through the column on the screen
+// projection.  Uses parametric line equations to find the point of intercept.
+//
+void R_ColumnToPointOnSeg(int column, line_t *line, fixed_t &x, fixed_t &y)
+{
+	// Transform the end points of the seg in relation to the camera position
+	fixed_t dx1 = line->v1->x - viewx;
+	fixed_t dy1 = line->v1->y - viewy;
+	fixed_t dx2 = line->v2->x - viewx;
+	fixed_t dy2 = line->v2->y - viewy;
+
+	// Rotate the end points by viewangle
+	angle_t rotation_ang1 = (angle_t)(-(int)viewangle);
+	fixed_t x1, y1, x2, y2;
+	R_RotatePoint(dx1, dy1, rotation_ang1, x1, y1);
+	R_RotatePoint(dx2, dy2, rotation_ang1, x2, y2);
+
+	// (fx1, fy1) and (fx2, fy2) are the end points for the lineseg
+	float fx1 = FIXED2FLOAT(x1), fx2 = FIXED2FLOAT(x2);
+	float fy1 = FIXED2FLOAT(y1), fy2 = FIXED2FLOAT(y2);
+
+	// (fx3, fy3) and (fx4, fy4) are two points on a line from the origin
+	// through the screen column
+	angle_t ang = xtoviewangle[column];
+	float fx3 = 0.0f, fx4 = FIXED2FLOAT(finecosine[ang >> ANGLETOFINESHIFT]);
+	float fy3 = 0.0f, fy4 = FIXED2FLOAT(finesine[ang >> ANGLETOFINESHIFT]);
+
+	// (xint, yint) is the point where the line from the viewpoint intersects
+	// the lineseg
+	fixed_t xint, yint;
+
+	float tnum = (fx4 - fx3) * (fy1 - fy3) - (fy4 - fy3) * (fx1 - fx3);
+	float tden = (fy4 - fy3) * (fx2 - fx1) - (fx4 - fx3) * (fy2 - fy1);
+
+	if (fabs(tden) > 0.0f)
+	{
+		float t = tnum / tden;
+
+		xint = FLOAT2FIXED(fx1 + t * (fx2 - fx1));
+		yint = FLOAT2FIXED(fy1 + t * (fy2 - fy1));
+	}
+	else
+	{
+		// the lineseg and the line from viewpoint are parallel
+		// just give the closest endpoint of the lineseg
+		float dist1 = sqrtf(fx1 * fx1 + fy1 * fy1);
+		float dist2 = sqrtf(fx2 * fx2 + fy2 * fy2);
+		if (dist1 <= dist2)
+		{
+			xint = FLOAT2FIXED(fx1);
+			yint = FLOAT2FIXED(fy1);
+		}
+		else
+		{
+			xint = FLOAT2FIXED(fx2);
+			yint = FLOAT2FIXED(fy2);
+		}
+	}
+
+	// rotate (x, y) back by +viewangle to translate back to camera space
+	angle_t rotation_ang2 = viewangle;
+	R_RotatePoint(xint, yint, rotation_ang2, x, y);
+	x += viewx;
+	y += viewy;
+} 
 
 //
 //
@@ -726,6 +808,7 @@ void R_ExecuteSetViewSize (void)
 	transcolfunc = R_DrawTranslatedColumn;
 	tlatedlucentcolfunc = R_DrawTlatedLucentColumn;
 	spanfunc = R_DrawSpan;
+	spanslopefunc = R_DrawSlopeSpan;
 
 	// [RH] Horizontal column drawers
 	hcolfunc_pre = R_DrawColumnHoriz;
@@ -926,8 +1009,9 @@ void R_SetupFrame (player_t *player)
 		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
 		const sector_t *s = camera->subsector->sector->heightsec;
-		newblend = viewz < s->floorheight ? s->bottommap : viewz > s->ceilingheight ?
-				   s->topmap : s->midmap;
+		newblend = viewz < P_FloorHeight(viewx, viewy, s) ? s->bottommap : 
+					viewz > P_CeilingHeight(viewx, viewy, s) ? s->topmap : s->midmap;
+
 		if (!screen->is8bit())
 			newblend = R_BlendForColormap (newblend);
 		else if (APART(newblend) == 0 && newblend >= numfakecmaps)
@@ -1114,6 +1198,7 @@ void R_RenderPlayerView (player_t *player)
 		hcolfunc_post4 = rt_copy4cols;
 		colfunc = R_FillColumnP;
 		spanfunc = R_FillSpan;
+		spanslopefunc = R_FillSpan;
 	}
 	else
 	{
@@ -1122,10 +1207,15 @@ void R_RenderPlayerView (player_t *player)
 		hcolfunc_post1 = rt_map1col;
 		hcolfunc_post2 = rt_map2cols;
 		hcolfunc_post4 = rt_map4cols;
+		spanfunc = R_DrawSpan;
+		spanslopefunc = R_DrawSlopeSpan;
 	}
 
 	// [RH] Hack to make windows into underwater areas possible
 	r_fakingunderwater = false;
+
+	// [RH] Setup particles for this frame
+	R_FindParticleSubsectors();
 
     // [Russell] - From zdoom 1.22 source, added camera pointer check
 	// Never draw the player unless in chasecam mode
@@ -1139,8 +1229,6 @@ void R_RenderPlayerView (player_t *player)
 		R_RenderBSPNode (numnodes-1);	// The head node is the last node output.
 
 	R_DrawPlanes ();
-
-	spanfunc = R_DrawSpan;
 
 	R_DrawMasked ();
 

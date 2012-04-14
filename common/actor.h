@@ -215,6 +215,10 @@ typedef enum
 #define TRANSLUC66			((FRACUNIT*2)/3)
 #define TRANSLUC75			((FRACUNIT*3)/4)
 
+// killough 11/98: For torque simulation:
+#define OVERDRIVE 6
+#define MAXGEAR (OVERDRIVE+16)
+
 // Map Object definition.
 class AActor : public DThinker
 {
@@ -308,6 +312,8 @@ public:
     // The closest interval over all contacted Sectors.
     fixed_t		floorz;
     fixed_t		ceilingz;
+	fixed_t		dropoffz;
+	struct sector_s		*floorsector;
 
     // For movement checking.
     fixed_t		radius;
@@ -373,6 +379,7 @@ public:
 	byte			*translation;	// Translation table (or NULL)
 	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
+	SWORD			gear;			// killough 11/98: used in torque simulation
 
 	bool			onground;		// NES - Fixes infinite jumping bug like a charm.
 

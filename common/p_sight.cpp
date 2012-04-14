@@ -73,19 +73,23 @@ bool PTR_SightTraverse (intercept_t *in)
 //
 // crosses a two sided line
 //
-	P_LineOpening (li);
+	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
+	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);	
+	P_LineOpening(li, crossx, crossy);
 
 	if (openbottom >= opentop)		// quick test for totally closed doors
 		return false;	// stop
 
-	if (li->frontsector->floorheight != li->backsector->floorheight)
+	if (P_FloorHeight(crossx, crossy, li->frontsector) !=
+		P_FloorHeight(crossx, crossy, li->backsector))
 	{
 		slope = FixedDiv (openbottom - sightzstart , in->frac);
 		if (slope > bottomslope)
 			bottomslope = slope;
 	}
 
-	if (li->frontsector->ceilingheight != li->backsector->ceilingheight)
+	if (P_CeilingHeight(crossx, crossy, li->frontsector) !=
+		P_CeilingHeight(crossx, crossy, li->backsector))
 	{
 		slope = FixedDiv (opentop - sightzstart , in->frac);
 		if (slope < topslope)
@@ -411,17 +415,26 @@ bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 //
 	// killough 4/19/98: make fake floors and ceilings block monster view
 
+	fixed_t s1_floorheight_t1 = P_FloorHeight(t1->x, t1->y, s1->heightsec);
+	fixed_t s1_floorheight_t2 = P_FloorHeight(t2->x, t2->y, s1->heightsec);
+	fixed_t s1_ceilingheight_t1 = P_CeilingHeight(t1->x, t1->y, s1->heightsec);
+	fixed_t s1_ceilingheight_t2 = P_CeilingHeight(t2->x, t2->y, s1->heightsec);
+	fixed_t s2_floorheight_t1 = P_FloorHeight(t1->x, t1->y, s2->heightsec);
+	fixed_t s2_floorheight_t2 = P_FloorHeight(t2->x, t2->y, s2->heightsec);
+	fixed_t s2_ceilingheight_t1 = P_CeilingHeight(t1->x, t1->y, s2->heightsec);
+	fixed_t s2_ceilingheight_t2 = P_CeilingHeight(t2->x, t2->y, s2->heightsec);
+
 	if ((s1->heightsec && !(s1->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
-		((t1->z + t1->height <= s1->heightsec->floorheight &&
-		  t2->z >= s1->heightsec->floorheight) ||
-		 (t1->z >= s1->heightsec->ceilingheight &&
-		  t2->z + t1->height <= s1->heightsec->ceilingheight)))
+		((t1->z + t1->height <= s1_floorheight_t1 &&
+		  t2->z >= s1_floorheight_t2) ||
+		 (t1->z >= s1_ceilingheight_t1 &&
+		  t2->z + t1->height <= s1_ceilingheight_t2)))
 		||
 		(s2->heightsec && !(s2->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
-		 ((t2->z + t2->height <= s2->heightsec->floorheight &&
-		   t1->z >= s2->heightsec->floorheight) ||
-		  (t2->z >= s2->heightsec->ceilingheight &&
-		   t1->z + t2->height <= s2->heightsec->ceilingheight))))
+		 ((t2->z + t2->height <= s2_floorheight_t2 &&
+		   t1->z >= s2_floorheight_t1) ||
+		  (t2->z >= s2_ceilingheight_t2 &&
+		   t1->z + t2->height <= s2_ceilingheight_t1))))
 		return false;
 
 	validcount++;
@@ -446,39 +459,47 @@ bool P_CheckSight2 (const AActor *t1, const AActor *t2,bool ignoreInvisibility)
 
 bool P_CheckSightEdges2 (const AActor *t1, const AActor *t2, float radius_boost)
 {
-        const sector_t *s1 = t1->subsector->sector;
-        const sector_t *s2 = t2->subsector->sector;
-        int pnum = (s1 - sectors) * numsectors + (s2 - sectors);
+	const sector_t *s1 = t1->subsector->sector;
+	const sector_t *s2 = t2->subsector->sector;
+	int pnum = (s1 - sectors) * numsectors + (s2 - sectors);
 
 //
 // check for trivial rejection
 //
-        if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
-				sightcounts2[0]++;
-                return false;                   // can't possibly be connected
-        }
+	if (!rejectempty && rejectmatrix[pnum>>3] & (1 << (pnum & 7))) {
+		sightcounts2[0]++;
+		return false;                   // can't possibly be connected
+	}
 
 //
 // check precisely
 //
         // killough 4/19/98: make fake floors and ceilings block monster view
 
-        if ((s1->heightsec  &&
-                ((t1->z + t1->height <= s1->heightsec->floorheight &&
-                  t2->z >= s1->heightsec->floorheight) ||
-                 (t1->z >= s1->heightsec->ceilingheight &&
-                  t2->z + t1->height <= s1->heightsec->ceilingheight)))
-                ||
-                (s2->heightsec &&
-                 ((t2->z + t2->height <= s2->heightsec->floorheight &&
-                   t1->z >= s2->heightsec->floorheight) ||
-                  (t2->z >= s2->heightsec->ceilingheight &&
-                   t1->z + t2->height <= s2->heightsec->ceilingheight))))
-                return false;
+	fixed_t s1_floorheight_t1 = P_FloorHeight(t1->x, t1->y, s1->heightsec);
+	fixed_t s1_floorheight_t2 = P_FloorHeight(t2->x, t2->y, s1->heightsec);
+	fixed_t s1_ceilingheight_t1 = P_CeilingHeight(t1->x, t1->y, s1->heightsec);
+	fixed_t s1_ceilingheight_t2 = P_CeilingHeight(t2->x, t2->y, s1->heightsec);
+	fixed_t s2_floorheight_t1 = P_FloorHeight(t1->x, t1->y, s2->heightsec);
+	fixed_t s2_floorheight_t2 = P_FloorHeight(t2->x, t2->y, s2->heightsec);
+	fixed_t s2_ceilingheight_t1 = P_CeilingHeight(t1->x, t1->y, s2->heightsec);
+	fixed_t s2_ceilingheight_t2 = P_CeilingHeight(t2->x, t2->y, s2->heightsec);
+	if ((s1->heightsec && !(s1->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
+		((t1->z + t1->height <= s1_floorheight_t1 &&
+		  t2->z >= s1_floorheight_t2) ||
+		 (t1->z >= s1_ceilingheight_t1 &&
+		  t2->z + t1->height <= s1_ceilingheight_t2)))
+		||
+		(s2->heightsec && !(s2->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
+		 ((t2->z + t2->height <= s2_floorheight_t2 &&
+		   t1->z >= s2_floorheight_t1) ||
+		  (t2->z >= s2_ceilingheight_t2 &&
+		   t1->z + t2->height <= s2_ceilingheight_t1))))
+		return false;
 
-        sightzstart = t1->z + t1->height - (t1->height >> 2);
-        bottomslope = (t2->z) - sightzstart;
-        topslope = bottomslope + t2->height;
+	sightzstart = t1->z + t1->height - (t1->height >> 2);
+	bottomslope = (t2->z) - sightzstart;
+	topslope = bottomslope + t2->height;
 
 	// d = normalized euclidian distance between points
 	// r = normalized vector perpendicular to d
@@ -654,39 +675,46 @@ bool P_CrossSubsector (int num)
 		// crosses a two sided line
 		front = seg->frontsector;
 		back = seg->backsector;
+
+		frac = P_InterceptVector2 (&strace, &divl);
 		
 		// no wall to block sight with?
-		if (front->floorheight == back->floorheight
-			&& front->ceilingheight == back->ceilingheight)
+		fixed_t crossx = divl.x + FixedMul(frac, divl.dx);
+		fixed_t crossy = divl.y + FixedMul(frac, divl.dy);
+
+		fixed_t ff = P_FloorHeight(crossx, crossy, front);
+		fixed_t fc = P_CeilingHeight(crossx, crossy, front);
+		fixed_t bf = P_FloorHeight(crossx, crossy, back);
+		fixed_t bc = P_CeilingHeight(crossx, crossy, back);
+
+		if (ff == bf && fc == bc)
 			continue;	
 		
 		// possible occluder
 		// because of ceiling height differences
-		if (front->ceilingheight < back->ceilingheight)
-			opentop = front->ceilingheight;
+		if (fc < bc)
+			opentop = fc;
 		else
-			opentop = back->ceilingheight;
+			opentop = bc;
 		
 		// because of ceiling height differences
-		if (front->floorheight > back->floorheight)
-			openbottom = front->floorheight;
+		if (ff > bf)
+			openbottom = ff;
 		else
-			openbottom = back->floorheight;
+			openbottom = bf;
 		
 		// quick test for totally closed doors
 		if (openbottom >= opentop)	
 			return false;		// stop
 		
-		frac = P_InterceptVector2 (&strace, &divl);
-		
-		if (front->floorheight != back->floorheight)
+		if (ff != bf)
 		{
 			slope = FixedDiv (openbottom - sightzstart , frac);
 			if (slope > bottomslope)
 				bottomslope = slope;
 		}
 		
-		if (front->ceilingheight != back->ceilingheight)
+		if (fc != bc)
 		{
 			slope = FixedDiv (opentop - sightzstart , frac);
 			if (slope < topslope)

@@ -114,6 +114,7 @@ extern void				(*transcolfunc) (void);
 extern void				(*tlatedlucentcolfunc) (void);
 // No shadow effects on floors.
 extern void 			(*spanfunc) (void);
+extern void				(*spanslopefunc) (void);
 
 // [RH] Function pointers for the horizontal column drawers.
 extern void (*hcolfunc_pre) (void);
@@ -153,6 +154,8 @@ R_PointToDist
 
 
 fixed_t R_ScaleFromGlobalAngle (angle_t visangle);
+
+void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
 
 subsector_t*
 R_PointInSubsector

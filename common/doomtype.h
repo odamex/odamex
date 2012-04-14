@@ -130,6 +130,9 @@ typedef enum {false, true} dboolean;
 #endif
 #endif
 
+#define MINFIXED		(signed)(0x80000000)
+#define MAXFIXED		(signed)(0x7fffffff)
+
 typedef unsigned char		BYTE;
 typedef signed char			SBYTE;
 

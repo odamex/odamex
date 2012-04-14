@@ -214,7 +214,7 @@ void DPlat::RunThink ()
 	case waiting:
 		if (!--m_Count)
 		{
-			if (m_Sector->floorheight == m_Low)
+			if (P_FloorHeight(m_Sector) == m_Low)
 				m_Status = up;
 			else
 				m_Status = down;
@@ -328,7 +328,7 @@ manual_plat:
 
 		//jff 1/26/98 Avoid raise plat bouncing a head off a ceiling and then
 		//going down forever -- default lower to plat height when triggered
-		plat->m_Low = sec->floorheight;
+		plat->m_Low = P_FloorHeight(sec);
 
 		if (change)
 		{
@@ -341,20 +341,20 @@ manual_plat:
 		switch (type)
 		{
 		case DPlat::platRaiseAndStay:
-			plat->m_High = P_FindNextHighestFloor (sec, sec->floorheight);
+			plat->m_High = P_FindNextHighestFloor(sec);
 			plat->m_Status = DPlat::midup;
 			plat->PlayPlatSound();
 			break;
 
 		case DPlat::platUpByValue:
 		case DPlat::platUpByValueStay:
-			plat->m_High = sec->floorheight + height;
+			plat->m_High = P_FloorHeight(sec) + height;
 			plat->m_Status = DPlat::midup;
 			plat->PlayPlatSound();
 			break;
 		
 		case DPlat::platDownByValue:
-			plat->m_Low = sec->floorheight - height;
+			plat->m_Low = P_FloorHeight(sec) - height;
 			plat->m_Status = DPlat::middown;
 			plat->PlayPlatSound();
 			break;
@@ -362,10 +362,10 @@ manual_plat:
 		case DPlat::platDownWaitUpStay:
 			plat->m_Low = P_FindLowestFloorSurrounding (sec) + lip*FRACUNIT;
 
-			if (plat->m_Low > sec->floorheight)
-				plat->m_Low = sec->floorheight;
+			if (plat->m_Low > P_FloorHeight(sec))
+				plat->m_Low = P_FloorHeight(sec);
 
-			plat->m_High = sec->floorheight;
+			plat->m_High = P_FloorHeight(sec);
 			plat->m_Status = DPlat::down;
 			plat->PlayPlatSound();
 			break;
@@ -373,8 +373,8 @@ manual_plat:
 		case DPlat::platUpWaitDownStay:
 			plat->m_High = P_FindHighestFloorSurrounding (sec);
 
-			if (plat->m_High < sec->floorheight)
-				plat->m_High = sec->floorheight;
+			if (plat->m_High < P_FloorHeight(sec))
+				plat->m_High = P_FloorHeight(sec);
 
 			plat->m_Status = DPlat::up;
 			plat->PlayPlatSound();
@@ -383,13 +383,13 @@ manual_plat:
 		case DPlat::platPerpetualRaise:
 			plat->m_Low = P_FindLowestFloorSurrounding (sec) + lip*FRACUNIT;
 
-			if (plat->m_Low > sec->floorheight)
-				plat->m_Low = sec->floorheight;
+			if (plat->m_Low > P_FloorHeight(sec))
+				plat->m_Low = P_FloorHeight(sec);
 
 			plat->m_High = P_FindHighestFloorSurrounding (sec);
 
-			if (plat->m_High < sec->floorheight)
-				plat->m_High = sec->floorheight;
+			if (plat->m_High < P_FloorHeight(sec))
+				plat->m_High = P_FloorHeight(sec);
 
 			plat->m_Status = P_Random () & 1 ? DPlat::down : DPlat::up;
 
@@ -400,25 +400,25 @@ manual_plat:
 			plat->m_Crush = false;	//jff 3/14/98 crush anything in the way
 
 			// set up toggling between ceiling, floor inclusive
-			plat->m_Low = sec->ceilingheight;
-			plat->m_High = sec->floorheight;
+			plat->m_Low = P_CeilingHeight(sec);
+			plat->m_High = P_FloorHeight(sec);
 			plat->m_Status = DPlat::down;
 // 			SN_StartSequence (sec, "Silence");
 			break;
 
 		case DPlat::platDownToNearestFloor:
-			plat->m_Low = P_FindNextLowestFloor (sec, sec->floorheight) + lip*FRACUNIT;
+			plat->m_Low = P_FindNextLowestFloor(sec) + lip*FRACUNIT;
 			plat->m_Status = DPlat::down;
-			plat->m_High = sec->floorheight;
+			plat->m_High = P_FloorHeight(sec);
 			plat->PlayPlatSound();
 			break;
 
 		case DPlat::platDownToLowestCeiling:
 		    plat->m_Low = P_FindLowestCeilingSurrounding (sec);
-			plat->m_High = sec->floorheight;
+			plat->m_High = P_FloorHeight(sec);
 
-			if (plat->m_Low > sec->floorheight)
-				plat->m_Low = sec->floorheight;
+			if (plat->m_Low > P_FloorHeight(sec))
+				plat->m_Low = P_FloorHeight(sec);
 
 			plat->m_Status = DPlat::down;
 			plat->PlayPlatSound();

@@ -33,6 +33,8 @@
 
 #define FLOATSPEED		(FRACUNIT*4)
 
+#define STEEPSLOPE		46341	// [RH] Minimum floorplane.c value for walking
+
 #define MAXHEALTH		100
 #define VIEWHEIGHT		(41*FRACUNIT)
 
@@ -109,8 +111,8 @@ void	P_RespawnSpecials (void);
 
 bool	P_SetMobjState (AActor* mobj, statenum_t state);
 
-void	P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int updown);
-void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
+void	P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z);
+void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (AActor* source, mobjtype_t type);
 
@@ -178,7 +180,8 @@ extern fixed_t			openbottom;
 extern fixed_t			openrange;
 extern fixed_t			lowfloor;
 
-void	P_LineOpening (const line_t *linedef);
+void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=MINFIXED, fixed_t refy=0);
+void P_LineOpeningIntercept(const line_t *line, const intercept_t *in);
 
 BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*) );
 BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *start=NULL);
@@ -218,6 +221,7 @@ extern line_t			*BlockingLine;		// Used only by P_Move
 //Added by MC: tmsectortype
 extern fixed_t			tmdropoffz; //Needed in b_move.c
 extern sector_t			*tmsector;
+extern sector_t			*tmfloorsector;
 
 extern	line_t* 		ceilingline;
 
@@ -228,12 +232,41 @@ BOOL	P_TestMobjLocation (AActor *mobj);
 bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
 AActor	*P_CheckOnmobj (AActor *thing);
 void	P_FakeZMovement (AActor *mo);
-BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y, bool dropoff);
+bool	P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
+BOOL	P_TryMove (AActor* thing, fixed_t x, fixed_t y, bool dropoff, bool onfloor = false);
 BOOL	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
 bool	P_CheckSight (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
 bool	P_CheckSight2 (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
 void	P_UseLines (player_t* player);
+void	P_ApplyTorque(AActor *mo);
+
+fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
+fixed_t P_FloorHeight(fixed_t x, fixed_t y, const sector_t *sec = NULL);
+fixed_t P_FloorHeight(const AActor *mo);
+fixed_t P_FloorHeight(const sector_t *sector);
+fixed_t P_CeilingHeight(fixed_t x, fixed_t y, const sector_t *sec = NULL);
+fixed_t P_CeilingHeight(const AActor *mo);
+fixed_t P_CeilingHeight(const sector_t *sector);
+fixed_t P_LowestHeightOfCeiling(sector_t *sector);
+fixed_t P_LowestHeightOfFloor(sector_t *sector);
+fixed_t P_HighestHeightOfCeiling(sector_t *sector);
+fixed_t P_HighestHeightOfFloor(sector_t *sector);
+
+bool P_IsPlaneLevel(const plane_t *plane);
+bool P_IdenticalPlanes(const plane_t *pl1, const plane_t *pl2);
+void P_InvertPlane(plane_t *plane);
+void P_ChangeCeilingHeight(sector_t *sector, fixed_t amount);
+void P_ChangeFloorHeight(sector_t *sector, fixed_t amount);
+void P_SetCeilingHeight(sector_t *sector, fixed_t value);
+void P_SetFloorHeight(sector_t *sector, fixed_t value);
+bool P_PointOnPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
+bool P_PointAbovePlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
+bool P_PointBelowPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
+
+struct v3fixed_t;
+v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg, const v3fixed_t &linedir);
+
 
 // GhostlyDeath -- I put this here
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);

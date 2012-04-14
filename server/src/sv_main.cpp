@@ -1680,8 +1680,8 @@ void SV_UpdateSectors(client_t* cl)
 		{
 			MSG_WriteMarker (&cl->reliablebuf, svc_sector);
 			MSG_WriteShort (&cl->reliablebuf, s);
-			MSG_WriteShort (&cl->reliablebuf, sec->floorheight>>FRACBITS);
-			MSG_WriteShort (&cl->reliablebuf, sec->ceilingheight>>FRACBITS);
+			MSG_WriteShort (&cl->reliablebuf, P_FloorHeight(sec)>>FRACBITS);
+			MSG_WriteShort (&cl->reliablebuf, P_CeilingHeight(sec)>>FRACBITS);
 			MSG_WriteShort (&cl->reliablebuf, sec->floorpic);
 			MSG_WriteShort (&cl->reliablebuf, sec->ceilingpic);
 
@@ -1765,8 +1765,8 @@ void SV_UpdateMovingSectors(player_t &pl)
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
 				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
-				MSG_WriteLong (&cl->netbuf, sec->floorheight);
-                MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
+				MSG_WriteLong (&cl->netbuf, P_FloorHeight(sec));
+                MSG_WriteLong (&cl->netbuf, P_CeilingHeight(sec));
                 MSG_WriteByte (&cl->netbuf, 4);
 
 				DElevator *Elevator = (DElevator *)sec->floordata;
@@ -1783,8 +1783,8 @@ void SV_UpdateMovingSectors(player_t &pl)
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
 				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
-				MSG_WriteLong (&cl->netbuf, sec->floorheight);
-                MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
+				MSG_WriteLong (&cl->netbuf, P_FloorHeight(sec));
+                MSG_WriteLong (&cl->netbuf, P_CeilingHeight(sec));
                 MSG_WriteByte (&cl->netbuf, 5);
 
 				DPillar *Pillar = (DPillar *)sec->floordata;
@@ -1805,8 +1805,8 @@ void SV_UpdateMovingSectors(player_t &pl)
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
 				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
-				MSG_WriteLong (&cl->netbuf, sec->floorheight);
-                MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
+				MSG_WriteLong (&cl->netbuf, P_FloorHeight(sec));
+                MSG_WriteLong (&cl->netbuf, P_CeilingHeight(sec));
                 MSG_WriteByte (&cl->netbuf, 0);
 
 				DFloor *Floor = (DFloor *)sec->floordata;
@@ -1831,8 +1831,8 @@ void SV_UpdateMovingSectors(player_t &pl)
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
 				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
-				MSG_WriteLong (&cl->netbuf, sec->floorheight);
-                MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
+				MSG_WriteLong (&cl->netbuf, P_FloorHeight(sec));
+                MSG_WriteLong (&cl->netbuf, P_CeilingHeight(sec));
                 MSG_WriteByte (&cl->netbuf, 1);
 
 				DPlat *Plat = (DPlat *)sec->floordata;
@@ -1857,8 +1857,8 @@ void SV_UpdateMovingSectors(player_t &pl)
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
 				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
-				MSG_WriteLong (&cl->netbuf, sec->floorheight);
-                MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
+				MSG_WriteLong (&cl->netbuf, P_FloorHeight(sec));
+                MSG_WriteLong (&cl->netbuf, P_CeilingHeight(sec));
                 MSG_WriteByte (&cl->netbuf, 2);
 
 				DCeiling *Ceiling = (DCeiling *)sec->ceilingdata;
@@ -1883,8 +1883,8 @@ void SV_UpdateMovingSectors(player_t &pl)
 				MSG_WriteMarker (&cl->netbuf, svc_movingsector);
 				MSG_WriteLong (&cl->netbuf, cl->lastclientcmdtic);
 				MSG_WriteShort (&cl->netbuf, s);
-				MSG_WriteLong (&cl->netbuf, sec->floorheight);
-                MSG_WriteLong (&cl->netbuf, sec->ceilingheight);
+				MSG_WriteLong (&cl->netbuf, P_FloorHeight(sec));
+                MSG_WriteLong (&cl->netbuf, P_CeilingHeight(sec));
                 MSG_WriteByte (&cl->netbuf, 3);
 
 				DDoor *Door = (DDoor *)sec->ceilingdata;

@@ -222,14 +222,14 @@ inline sector_t *getNextSector (line_t *line, sector_t *sec)
 fixed_t	P_FindLowestFloorSurrounding (sector_t *sec);
 fixed_t	P_FindHighestFloorSurrounding (sector_t *sec);
 
-fixed_t	P_FindNextHighestFloor (sector_t *sec, int currentheight);
-fixed_t P_FindNextLowestFloor (sector_t* sec, int currentheight);
+fixed_t	P_FindNextHighestFloor (sector_t *sec);
+fixed_t P_FindNextLowestFloor (sector_t* sec);
 
 fixed_t	P_FindLowestCeilingSurrounding (sector_t *sec);		// jff 2/04/98
 fixed_t	P_FindHighestCeilingSurrounding (sector_t *sec);	// jff 2/04/98
 
-fixed_t P_FindNextLowestCeiling (sector_t *sec, int currentheight);		// jff 2/04/98
-fixed_t P_FindNextHighestCeiling (sector_t *sec, int currentheight);	// jff 2/04/98
+fixed_t P_FindNextLowestCeiling (sector_t *sec);		// jff 2/04/98
+fixed_t P_FindNextHighestCeiling (sector_t *sec);	// jff 2/04/98
 
 fixed_t P_FindShortestTextureAround (int secnum);	// jff 2/04/98
 fixed_t P_FindShortestUpperAround (int secnum);		// jff 2/04/98

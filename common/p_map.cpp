@@ -46,6 +46,7 @@
 
 #include "z_zone.h"
 #include "p_unlag.h"
+#include "vectors.h"
 #include <math.h>
 
 fixed_t 		tmbbox[4];
@@ -67,9 +68,12 @@ extern bool 	HasBehavior;	// ZDoom in Hexen Format
 fixed_t 		tmfloorz;
 fixed_t 		tmceilingz;
 fixed_t 		tmdropoffz;
+sector_t*		tmfloorsector;
 
 //Added by MC: So bot will know what kind of sector it's entering.
 sector_t*		tmsector;
+
+extern sector_t *openbottomsec;
 
 // keep track of the line that lowers the ceiling,
 // so missiles don't explode against sky hack walls
@@ -194,8 +198,9 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	// that contains the point.
 	// Any contacted lines the step closer together
 	// will adjust them.
-	tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
-	tmceilingz = newsubsec->sector->ceilingheight;
+	tmfloorz = tmdropoffz = P_FloorHeight(x, y, newsubsec->sector);
+	tmceilingz = P_CeilingHeight(x, y, newsubsec->sector);
+	tmfloorsector = newsubsec->sector;
 
 	validcount++;
 	numspechit = 0;
@@ -221,6 +226,8 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	thing->SetOrigin (x, y, z);
 	thing->floorz = tmfloorz;
 	thing->ceilingz = tmceilingz;
+	thing->dropoffz = tmfloorz;
+	thing->floorsector = tmfloorsector;
 
 	return true;
 }
@@ -257,9 +264,9 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 		for (m = mo->touching_sectorlist; m; m = m->m_tnext)
 			if ((sec = m->m_sector)->special & FRICTION_MASK &&
 				(sec->friction < friction || friction == ORIG_FRICTION) &&
-				(mo->z <= sec->floorheight ||
+				(mo->z <= P_FloorHeight(mo) ||
 				(sec->heightsec && !(sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
-				mo->z <= sec->heightsec->floorheight)))
+				mo->z <= P_FloorHeight(mo))))
 			  friction = sec->friction, movefactor = sec->movefactor;
 	}
 
@@ -415,8 +422,67 @@ BOOL PIT_CheckLine (line_t *ld)
 		}
     }
 
+	// [RH] Steep sectors count as dropoffs (unless already in one)
+	if (!(tmthing->flags & MF_DROPOFF) &&
+		!(tmthing->flags & (MF_NOGRAVITY|MF_NOCLIP)))
+	{
+		if (ld->frontsector->floorplane.c < STEEPSLOPE ||
+			ld->backsector->floorplane.c < STEEPSLOPE)
+		{
+			const msecnode_t *node = tmthing->touching_sectorlist;
+			bool allow = false;
+			int count = 0;
+			while (node != NULL)
+			{
+				count++;
+				if (node->m_sector->floorplane.c < STEEPSLOPE)
+				{
+					allow = true;
+					break;
+				}
+				node = node->m_tnext;
+			}
+			
+			if (!allow)
+				return false;
+		}
+	}
+
 	// set openrange, opentop, openbottom
-	P_LineOpening (ld);
+	
+	// Are the sectors on both sides of the line non-sloped?
+	if (P_IsPlaneLevel(&ld->frontsector->floorplane) &&
+		P_IsPlaneLevel(&ld->backsector->floorplane) &&
+		P_IsPlaneLevel(&ld->frontsector->ceilingplane) &&
+		P_IsPlaneLevel(&ld->backsector->floorplane))
+	{
+		P_LineOpening(ld, tmx, tmy);
+	}
+	else
+	{
+		// Find the point on the line closest to the actor's center, and use
+		// that to calculate openings
+		float dx = (float)ld->dx;
+		float dy = (float)ld->dy;
+		fixed_t r = (fixed_t)(((float)(tmx - ld->v1->x) * dx +
+				 			   (float)(tmy - ld->v1->y) * dy) /
+							  (dx*dx + dy*dy) * 16777216.f);
+							  
+		if (r <= 0)
+		{
+			P_LineOpening (ld, ld->v1->x, ld->v1->y, tmx, tmy);
+		}
+		else if (r >= 16777216)
+		{
+			P_LineOpening (ld, ld->v2->x, ld->v2->y, tmthing->x, tmthing->y);
+		}
+		else
+		{
+			fixed_t sx = ld->v1->x + float(r) / 16777216 * ld->dx;
+			fixed_t sy = ld->v1->y + float(r) / 16777216 * ld->dy;
+			P_LineOpening (ld, sx, sy, tmx, tmy);
+		}
+	}
 
 	// adjust floor / ceiling heights
 	if (opentop < tmceilingz)
@@ -429,6 +495,7 @@ BOOL PIT_CheckLine (line_t *ld)
 	if (openbottom > tmfloorz)
 	{
 		tmfloorz = openbottom;
+		tmfloorsector = openbottomsec;
 		BlockingLine = ld;
 	}
 
@@ -481,6 +548,7 @@ BOOL PIT_CheckThing (AActor *thing)
 
 	if (co_realactorheight)
 		BlockingMobj = thing;
+
 	if ((tmthing->flags2 & MF2_PASSMOBJ) && co_realactorheight)
 	{
 		// check if a mobj passed over/under another object
@@ -646,36 +714,31 @@ BOOL Check_Sides(AActor* actor, int x, int y)
 
 BOOL PIT_CheckOnmobjZ (AActor *thing)
 {
-	fixed_t blockdist;
+	if (!(thing->flags & MF_SOLID))
+		return true;
 
-	if(!(thing->flags&(MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)))
-	{ // Can't hit thing
-		return(true);
-	}
-	blockdist = thing->radius+tmthing->radius;
-	if(abs(thing->x-tmx) >= blockdist || abs(thing->y-tmy) >= blockdist)
+	// [RH] Corpses and specials don't block moves
+	if (thing->flags & (MF_CORPSE|MF_SPECIAL))
+		return true;
+
+	// Don't clip against self
+	if (thing == tmthing)
+		return true;
+
+	// over / under thing
+	if (tmthing->z > thing->z + thing->height)
+		return true;
+	else if (tmthing->z + tmthing->height < thing->z)
+		return true;
+	fixed_t blockdist = thing->radius+tmthing->radius;
+	if (abs(thing->x-tmx) >= blockdist || abs(thing->y-tmy) >= blockdist)
 	{ // Didn't hit thing
-		return(true);
+		return true;
 	}
-	if(thing == tmthing)
-	{ // Don't clip against self
-		return(true);
-	}
-	if(tmthing->z > thing->z + thing->height)
-	{
-		return(true);
-	}
-	else if(tmthing->z + tmthing->height < thing->z)
-	{ // under thing
-		return(true);
-	}
-	if(thing->flags&MF_SOLID)
-	{
-		onmobj = thing;
-	}
-	return(!(thing->flags&MF_SOLID));
+	
+	onmobj = thing;
+	return false;
 }
-
 
 //
 // MOVEMENT CLIPPING
@@ -749,13 +812,14 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	newsubsec = R_PointInSubsector (x,y);
 	ceilingline = BlockingLine = NULL;
 
-	if(!newsubsec)
+	if (!newsubsec)
 		return false;
 
 // The base floor / ceiling is from the subsector that contains the point.
 // Any contacted lines the step closer together will adjust them.
-	tmfloorz = tmdropoffz = newsubsec->sector->floorheight;
-	tmceilingz = newsubsec->sector->ceilingheight;
+	tmfloorz = tmdropoffz = P_FloorHeight(x, y, newsubsec->sector);
+	tmceilingz = P_CeilingHeight(x, y, newsubsec->sector);
+	tmfloorsector = newsubsec->sector;
 
 	//Added by MC: Fill the tmsector.
 	tmsector = newsubsec->sector;
@@ -780,8 +844,6 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 	if (co_realactorheight)
 	{
-		thingblocker = NULL;
-		fakedblocker = NULL;
 		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
 			thing->height = realheight + 24*FRACUNIT;
 
@@ -803,13 +865,11 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 							return false;
 						}
 						else if (!BlockingMobj->player && thing->player &&
-							BlockingMobj->z+BlockingMobj->height-thing->z <= 24*FRACUNIT)
+							BlockingMobj->z + BlockingMobj->height - thing->z <= 24*FRACUNIT)
 						{
-							if (thingblocker == NULL ||
-								BlockingMobj->z > thingblocker->z)
-							{
+							if (thingblocker == NULL ||	BlockingMobj->z > thingblocker->z)
 								thingblocker = BlockingMobj;
-							}
+
 							robin = BlockingMobj->bnext;
 							BlockingMobj = NULL;
 						}
@@ -852,6 +912,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	}
 	else
 	{
+		// vanilla Doom's check for blocking things
 		for (bx=xl ; bx<=xh ; bx++)
 			for (by=yl ; by<=yh ; by++)
 				if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
@@ -873,31 +934,11 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 		for (by=yl ; by<=yh ; by++)
 			if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
 				return false;
+	
 	if (co_realactorheight)
 		return (BlockingMobj = thingblocker) == NULL;
 
 	return true;
-}
-
-
-//
-// P_SetFloorCeil
-//
-// Sets the floorz and ceilingz attributes of an actor based on the
-// actor's current sector
-
-void P_SetFloorCeil(AActor *mo)
-{
-	if (!mo)
-		return;
-
-	subsector_t *subsec = R_PointInSubsector(mo->x, mo->y);
-
-	if (subsec && subsec->sector)
-	{
-		mo->floorz		= subsec->sector->floorheight;
-		mo->ceilingz	= subsec->sector->ceilingheight;
-	}
 }
 
 
@@ -998,46 +1039,48 @@ void P_FakeZMovement(AActor *mo)
 	}
 }
 
-
-
-
 //
 // P_TryMove
 // Attempt to move to a new position,
 // crossing special lines unless MF_TELEPORT is set.
 //
-BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
+BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
+				bool dropoff, // killough 3/15/98: allow dropoff as option
+				bool onfloor) // [RH] Let P_TryMove keep the thing on the floor
 {
-	fixed_t 	oldx;
-	fixed_t 	oldy;
+	fixed_t 	oldx = thing->x;
+	fixed_t 	oldy = thing->y;
+	fixed_t		oldz = thing->z;
 	int 		side;
 	int 		oldside;
 	line_t* 	ld;
 
 	floatok = false;
-    if (!P_CheckPosition (thing, x, y))
-    {
-         // solid wall or thing
-         if (!BlockingMobj)
-            goto pushline;
-         else
-         {
-             if (BlockingMobj->player || !thing->player)
-                 goto pushline;
 
-             else if (BlockingMobj->z+BlockingMobj->height-thing->z
-                 > 24*FRACUNIT
-                 || (BlockingMobj->subsector->sector->ceilingheight
-                 -(BlockingMobj->z+BlockingMobj->height) < thing->height)
-                 || (tmceilingz-(BlockingMobj->z+BlockingMobj->height)
-                 < thing->height))
-             {
-                 goto pushline;
-            }
-        }
-        if (!(co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ)))
-            return false;
-    }
+	if (co_zdoomphys && onfloor)
+		thing->z = P_FloorHeight(x, y, thing->floorsector);
+
+	if (!P_CheckPosition(thing, x, y))
+	{
+		// Solid wall or thing
+		if ((!BlockingMobj || BlockingMobj->player || !thing->player) ||
+			(BlockingMobj->z + BlockingMobj->height - thing->z > (24 * FRACUNIT) ||
+			(P_CeilingHeight(x, y, BlockingMobj->subsector->sector) -
+			(BlockingMobj->z + BlockingMobj->height) < thing->height) ||
+			(tmceilingz - (BlockingMobj->z + BlockingMobj->height) < thing->height)))
+		{
+			goto pushline;
+		}
+		
+		if (!(co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ)))
+		{
+			thing->z = oldz;
+			return false;
+		}
+	}
+
+	if (co_zdoomphys && onfloor && tmfloorsector == thing->floorsector)
+		thing->z = tmfloorz;
 
 	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
 	{
@@ -1045,35 +1088,21 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 			goto pushline;		// doesn't fit
 
 		floatok = true;
-
+	
 		if (!(thing->flags & MF_TELEPORT)
 			&& tmceilingz - thing->z < thing->height
 			&& !(thing->flags2 & MF2_FLY))
 		{
 			goto pushline;		// mobj must lower itself to fit
 		}
-
-		if (thing->flags2 & MF2_FLY)
-		{
-			// When flying, slide up or down blocking lines until the actor
-			// is not blocked.
-			if (thing->z+thing->height > tmceilingz)
-			{
-				thing->momz = -8*FRACUNIT;
-				goto pushline;
-			}
-			else if (thing->z < tmfloorz && tmfloorz-tmdropoffz > 24*FRACUNIT)
-			{
-				thing->momz = 8*FRACUNIT;
-				goto pushline;
-			}
-		}
+	
+		if (thing->flags2 & MF2_FLY && thing->z + thing->height > tmceilingz)
+			goto pushline;
 
 		if (!(thing->flags & MF_TELEPORT))
 		{
 			if (tmfloorz-thing->z > 24*FRACUNIT)
-			{
-				// too big a step up
+			{ // too big a step up
 				goto pushline;
 			}
 			else if (co_fixweaponimpacts && thing->flags & MF_MISSILE &&
@@ -1083,23 +1112,46 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 				// missiles to climb stairs.
 				goto pushline;
 			}
+			// FIXME: [SL] this causes problems in the tunnel of zdctfmp.wad map04
+/*			else if (co_zdoomphys && thing->z < tmfloorz)
+			{ // [RH] Check to make sure there's nothing in the way for the step up
+				fixed_t savedz = thing->z;
+				bool good;
+				thing->z = tmfloorz;
+				good = P_TestMobjZ (thing);
+				thing->z = savedz;
+				if (!good)
+					goto pushline;
+			} */
 		}
 
 		// killough 3/15/98: Allow certain objects to drop off
-		// [Spleen] Unless co_allowdropoff is true, monsters can now get pushed or thrusted off of ledges like in BOOM
-		if (!((thing->flags&(MF_DROPOFF|MF_FLOAT)) || (dropoff && co_allowdropoff))
-			&& tmfloorz - tmdropoffz > 24*FRACUNIT)
-			return false;	// don't stand over a dropoff
+		if (!(co_allowdropoff && dropoff) && 
+			!(thing->flags & (MF_DROPOFF|MF_FLOAT|MF_MISSILE)) &&
+			  tmfloorz - tmdropoffz > 24*FRACUNIT &&
+			!(thing->flags2 & MF2_BLASTED))
+		{ // Can't move over a dropoff unless it's been blasted
+			thing->z = oldz;
+			return false;
+		}
+
+		// killough 11/98: prevent falling objects from going up too many steps
+		if (co_zdoomphys && thing->flags & MF_FALLING && tmfloorz - thing->z >
+			FixedMul(thing->momx, thing->momx) + FixedMul(thing->momy, thing->momy))
+		{
+			return false;
+		}
 	}
 
-	// the move is ok,
-	// so link the thing into its new position
+	// the move is ok, so link the thing into its new position
 	thing->UnlinkFromWorld ();
 
 	oldx = thing->x;
 	oldy = thing->y;
 	thing->floorz = tmfloorz;
 	thing->ceilingz = tmceilingz;
+	thing->dropoffz = tmdropoffz;		// killough 11/98: keep track of dropoffs
+	thing->floorsector = tmfloorsector;
 	thing->x = x;
 	thing->y = y;
 
@@ -1123,11 +1175,14 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y, bool dropoff)
 	}
 
 	return true;
-
+	
 pushline:
+	thing->z = oldz;
+	
 	if (!HasBehavior)
 		return false;
-	else if(!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
+	
+	if(!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
 	{
 		int numSpecHitTemp;
 
@@ -1141,9 +1196,137 @@ pushline:
 			CheckForPushSpecial (ld, side, thing);
 		}
 	}
+
 	return false;
 }
 
+
+//
+// killough 9/12/98:
+//
+// Apply "torque" to objects hanging off of ledges, so that they
+// fall off. It's not really torque, since Doom has no concept of
+// rotation, but it's a convincing effect which avoids anomalies
+// such as lifeless objects hanging more than halfway off of ledges,
+// and allows objects to roll off of the edges of moving lifts, or
+// to slide up and then back down stairs, or to fall into a ditch.
+// If more than one linedef is contacted, the effects are cumulative,
+// so balancing is possible.
+//
+
+static BOOL PIT_ApplyTorque (line_t *ld)
+{
+	if (ld->backsector &&		// If thing touches two-sided pivot linedef
+		tmbbox[BOXRIGHT]  > ld->bbox[BOXLEFT]  &&
+		tmbbox[BOXLEFT]   < ld->bbox[BOXRIGHT] &&
+		tmbbox[BOXTOP]    > ld->bbox[BOXBOTTOM] &&
+		tmbbox[BOXBOTTOM] < ld->bbox[BOXTOP] &&
+		P_BoxOnLineSide(tmbbox, ld) == -1)
+	{
+		AActor *mo = tmthing;
+
+		fixed_t dist =								// lever arm
+	  + (ld->dx >> FRACBITS) * (mo->y >> FRACBITS)
+	  - (ld->dy >> FRACBITS) * (mo->x >> FRACBITS) 
+	  - (ld->dx >> FRACBITS) * (ld->v1->y >> FRACBITS)
+	  + (ld->dy >> FRACBITS) * (ld->v1->x >> FRACBITS);
+
+		if (dist < 0 ?								// dropoff direction
+			P_FloorHeight(mo->x, mo->y, ld->frontsector) < mo->z &&
+			P_FloorHeight(mo->x, mo->y, ld->backsector) >= mo->z :
+				P_FloorHeight(mo->x, mo->y, ld->backsector) < mo->z &&
+				P_FloorHeight(mo->x, mo->y, ld->frontsector) >= mo->z)
+		{
+		// At this point, we know that the object straddles a two-sided
+		// linedef, and that the object's center of mass is above-ground.
+
+			fixed_t x = abs(ld->dx), y = abs(ld->dy);
+
+			if (y > x)
+			{
+				fixed_t t = x;
+				x = y;
+				y = t;
+			}
+
+			y = finesine[(tantoangle[FixedDiv(y,x)>>DBITS] +
+				ANG90) >> ANGLETOFINESHIFT];
+
+			// Momentum is proportional to distance between the
+			// object's center of mass and the pivot linedef.
+			//
+			// It is scaled by 2^(OVERDRIVE - gear). When gear is
+			// increased, the momentum gradually decreases to 0 for
+			// the same amount of pseudotorque, so that oscillations
+			// are prevented, yet it has a chance to reach equilibrium.
+
+			dist = FixedDiv(FixedMul(dist, (mo->gear < OVERDRIVE) ?
+							y << -(mo->gear - OVERDRIVE) :
+							y >> +(mo->gear - OVERDRIVE)), x);
+
+			// Apply momentum away from the pivot linedef.
+
+			x = FixedMul(ld->dy, dist);
+			y = FixedMul(ld->dx, dist);
+
+			// Avoid moving too fast all of a sudden (step into "overdrive")
+
+			dist = FixedMul(x,x) + FixedMul(y,y);
+
+			while (dist > FRACUNIT*4 && mo->gear < MAXGEAR)
+				++mo->gear, x >>= 1, y >>= 1, dist >>= 1;
+
+			mo->momx -= x;
+			mo->momy += y;
+		}
+	}
+	return true;
+}
+
+//
+// killough 9/12/98
+//
+// Applies "torque" to objects, based on all contacted linedefs
+//
+
+void P_ApplyTorque (AActor *mo)
+{
+	int xl = ((tmbbox[BOXLEFT] = 
+			mo->x - mo->radius) - bmaporgx) >> MAPBLOCKSHIFT;
+	int xh = ((tmbbox[BOXRIGHT] = 
+			mo->x + mo->radius) - bmaporgx) >> MAPBLOCKSHIFT;
+	int yl = ((tmbbox[BOXBOTTOM] =
+			mo->y - mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
+	int yh = ((tmbbox[BOXTOP] = 
+			mo->y + mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
+	int bx,by;
+	int flags = mo->flags;	//Remember the current state, for gear-change
+
+	tmthing = mo;
+	++validcount; // prevents checking same line twice
+
+	for (bx = xl ; bx <= xh ; bx++)
+		for (by = yl ; by <= yh ; by++)
+			P_BlockLinesIterator(bx, by, PIT_ApplyTorque);
+
+	// If any momentum, mark object as 'falling' using engine-internal flags
+	if (mo->momx | mo->momy)
+		mo->flags |= MF_FALLING;
+	else  // Clear the engine-internal flag indicating falling object.
+		mo->flags &= ~MF_FALLING;
+
+	// If the object has been moving, step up the gear.
+	// This helps reach equilibrium and avoid oscillations.
+	//
+	// Doom has no concept of potential energy, much less
+	// of rotation, so we have to creatively simulate these 
+	// systems somehow :)
+
+	if (!((mo->flags | flags) & MF_FALLING))	// If not falling for a while,
+		mo->gear = 0;							// Reset it to full strength
+	else if (mo->gear < MAXGEAR)				// Else if not at max gear,
+		mo->gear++;								// move up a gear
+}
 
 //
 // P_ThingHeightClip
@@ -1157,15 +1340,17 @@ pushline:
 //
 BOOL P_ThingHeightClip (AActor* thing)
 {
-    BOOL             onfloor;
-
-    onfloor = (thing->z == thing->floorz);
+	// [SL] 2012-02-04 - Changed to <= instead of == to account for imprecise
+	// slope plane calculations
+	bool onfloor = (thing->z <= thing->floorz);
 
     P_CheckPosition (thing, thing->x, thing->y);
     // what about stranding a monster partially off an edge?
 
     thing->floorz = tmfloorz;
     thing->ceilingz = tmceilingz;
+    thing->dropoffz = tmdropoffz;
+    thing->floorsector = tmfloorsector;
 
     if (onfloor)
     {
@@ -1185,6 +1370,99 @@ BOOL P_ThingHeightClip (AActor* thing)
     return true;
 }
 
+
+//============================================================================
+//
+// P_CheckSlopeWalk
+//
+//============================================================================
+
+bool P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove)
+{
+	if (!actor || actor->flags & MF_NOGRAVITY)
+		return false;
+
+	const plane_t *plane = &actor->floorsector->floorplane;
+
+	// Don't bother with non-sloping floors
+	if (P_IsPlaneLevel(plane))
+		return false;
+
+	fixed_t floorheight = P_FloorHeight(actor->x, actor->y, actor->floorsector);
+
+// [SL] 2012-03-16 - TODO: this seems to break the jump from the flag to the
+// upper walkway on zdectf2 map19
+//	if (actor->floorsector != actor->subsector->sector)
+//		return false;
+
+	// not on floor ?
+	if (actor->z - floorheight > FRACUNIT)
+		return false;
+
+	fixed_t destx = actor->x + xmove;
+	fixed_t desty = actor->y + ymove;
+	fixed_t t = FixedMul(plane->a, destx) + FixedMul(plane->b, desty) +
+				FixedMul(plane->c, actor->z) + plane->d;
+
+	if (t < 0)
+	{ // Desired location is behind (below) the plane
+	  // (i.e. Walking up the plane)
+		if (plane->c < STEEPSLOPE)
+		{
+			// Can't climb up slopes of ~45 degrees or more
+			if (actor->flags & MF_NOCLIP)
+				return true;
+			else
+			{
+				const msecnode_t *node;
+				bool dopush = true;
+
+				if (plane->c > STEEPSLOPE*2/3)
+				{
+					for (node = actor->touching_sectorlist; node; node = node->m_tnext)
+					{
+						const sector_t *sec = node->m_sector;
+						if (sec->floorplane.c >= STEEPSLOPE)
+						{
+							if (P_FloorHeight(destx, desty, sec) >= actor->z - 24*FRACUNIT)
+							{
+								dopush = false;
+								break;
+							}
+						}
+					}
+				}
+				if (dopush)
+				{
+					xmove = actor->momx = plane->a * 2;
+					ymove = actor->momy = plane->b * 2;
+				}
+				return false;
+			}
+		}
+		// Slide the desired location along the plane's normal
+		// so that it lies on the plane's surface
+		destx -= FixedMul(plane->a, t);
+		desty -= FixedMul(plane->b, t);
+		xmove = destx - actor->x;
+		ymove = desty - actor->y;
+		return true;
+	}
+	else if (t > 0)
+	{ // Desired location is in front of (above) the plane
+		if (floorheight == actor->z)
+		{ // Actor's current spot is on/in the plane, so walk down it
+		  // Same principle as walking up, except reversed
+			destx += FixedMul(plane->a, t);
+			desty += FixedMul(plane->b, t);
+			xmove = destx - actor->x;
+			ymove = desty - actor->y;
+			return true;//(plane->c >= STEEPSLOPE);
+		}
+	}
+
+	return false;
+}
 
 //
 // SLIDE MOVE
@@ -1326,7 +1604,7 @@ BOOL PTR_SlideTraverse (intercept_t* in)
 	}
 
 	// set openrange, opentop, openbottom
-	P_LineOpening (li);
+	P_LineOpeningIntercept(li, in);
 
 	if (openrange < slidemo->height)
 		goto isblocking;				// doesn't fit
@@ -1375,6 +1653,8 @@ void P_SlideMove (AActor *mo)
     fixed_t		newy;
     int			hitcount;
 
+    bool		walkplane;
+
 	slidemo = mo;
 	hitcount = 3;
 
@@ -1420,10 +1700,20 @@ void P_SlideMove (AActor *mo)
 		// the move must have hit the middle, so stairstep
 	  stairstep:
 		// killough 3/15/98: Allow objects to drop off ledges
-		if (!P_TryMove (mo, mo->x, mo->y + mo->momy, true))
+		fixed_t xmove = 0, ymove = mo->momy;
+		walkplane = P_CheckSlopeWalk(mo, xmove, ymove);
+		if (!P_TryMove(mo, mo->x, mo->y + mo->momy, true, walkplane))
 		{
-			P_TryMove (mo, mo->x + mo->momx, mo->y, true);
+			ymove = 0;
+			if (co_zdoomphys)
+				xmove = mo->momy;
+			else
+				xmove = mo->momx; 
+
+			walkplane = P_CheckSlopeWalk(mo, xmove, ymove);
+			P_TryMove(mo, mo->x + mo->momx, mo->y, true, walkplane);
 		}
+		
 		return;
 	}
 
@@ -1463,7 +1753,9 @@ void P_SlideMove (AActor *mo)
 			mo->player->momy = tmymove;
 	}*/
 
-	if (!P_TryMove (mo, mo->x+tmxmove, mo->y+tmymove, true))
+	walkplane = P_CheckSlopeWalk (mo, tmxmove, tmymove);
+	
+	if (!P_TryMove (mo, mo->x+tmxmove, mo->y+tmymove, true, walkplane))
 	{
 		goto retry;
 	}
@@ -1481,12 +1773,10 @@ fixed_t 		shootz;
 
 int 			la_damage;
 fixed_t 		attackrange;
-
 fixed_t 		aimslope;
 
 // slopes to top and bottom of target
 // killough 4/20/98: make static instead of using ones in p_sight.c
-
 static fixed_t	topslope;
 static fixed_t	bottomslope;
 
@@ -1514,21 +1804,28 @@ BOOL PTR_AimTraverse (intercept_t* in)
 		// Crosses a two sided line.
 		// A two sided line will restrict
 		// the possible target ranges.
-		P_LineOpening (li);
+		P_LineOpeningIntercept(li, in);
 
 		if (openbottom >= opentop)
 			return false;				// stop
 
 		dist = FixedMul (attackrange, in->frac);
 
-		if (li->frontsector->floorheight != li->backsector->floorheight)
+		// [SL] 2012-02-08 - Calculate the point where the intercept crosses
+		// the line
+		fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
+		fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);
+
+		if (P_FloorHeight(crossx, crossy, li->frontsector) != 
+			P_FloorHeight(crossx, crossy, li->backsector))
 		{
 			slope = FixedDiv (openbottom - shootz , dist);
 			if (slope > bottomslope)
 				bottomslope = slope;
 		}
 
-		if (li->frontsector->ceilingheight != li->backsector->ceilingheight)
+		if (P_CeilingHeight(crossx, crossy, li->frontsector) != 
+			P_CeilingHeight(crossx, crossy, li->backsector))
 		{
 			slope = FixedDiv (opentop - shootz , dist);
 			if (slope < topslope)
@@ -1595,10 +1892,20 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 	fixed_t frac;
 	line_t *li;
 	AActor *th;
-	fixed_t dist, slope;
+	fixed_t slope;
+	fixed_t dist = FixedMul(attackrange, in->frac);
 	fixed_t thingtopslope, thingbottomslope;
 	fixed_t ceilingheight, floorheight;
 	bool spawnprecise;
+	
+	// [SL] 2012-03-18 - origin and direction vectors for the shot
+	v3fixed_t lineorg, linedir;
+	M_SetVec3Fixed(&lineorg, trace.x, trace.y, shootz);
+	M_SetVec3Fixed(&linedir, trace.dx, trace.dy, FixedMul(aimslope, attackrange));
+			
+	// [SL] 2012-02-08 - Calculates where the intercept crosses the line
+	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
+	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);
 	
 	spawnprecise = (bool)co_fixweaponimpacts;
 
@@ -1620,7 +1927,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 			goto hitline;
 
 		// crosses a two sided line
-		P_LineOpening (li);
+		P_LineOpeningIntercept(li, in);
 
 		if (spawnprecise)
 		{
@@ -1630,27 +1937,27 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 			// [RH] set opentop and openbottom for P_LineAttack
 			if (P_PointOnLineSide (trace.x, trace.y, li))
 			{
-				opentop = li->frontsector->ceilingheight;
-				openbottom = li->frontsector->floorheight;
+				opentop = P_CeilingHeight(crossx, crossy, li->frontsector);
+				openbottom = P_FloorHeight(crossx, crossy, li->frontsector);
 			}
 			else 
 			{
-				opentop = li->backsector->ceilingheight;
-				openbottom = li->backsector->floorheight;
+				opentop = P_CeilingHeight(crossx, crossy, li->backsector);
+				openbottom = P_FloorHeight(crossx, crossy, li->backsector);
 			}
 		}
 		else
 		{
-			dist = FixedMul (attackrange, in->frac);
-
-			if (li->frontsector->floorheight != li->backsector->floorheight)
+			if (P_FloorHeight(crossx, crossy, li->frontsector) !=
+				P_FloorHeight(crossx, crossy, li->backsector))
 			{
 				slope = FixedDiv (openbottom - shootz , dist);
 				if (slope > aimslope)
 					goto hitline;
 			}
 
-			if (li->frontsector->ceilingheight != li->backsector->ceilingheight)
+			if (P_CeilingHeight(crossx, crossy, li->frontsector) !=
+				P_CeilingHeight(crossx, crossy, li->backsector))			
 			{
 				slope = FixedDiv (opentop - shootz , dist);
 				if (slope < aimslope)
@@ -1666,56 +1973,73 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 		// position a bit closer
 		if (spawnprecise)
 		{
-			// [RH] If the trace went below/above the floor/ceiling, make the puff
-			//		appear in the right place and not on a wall.
-			int ceilingpic, updown;
+			plane_t *floorplane, *ceilingplane;
+			int ceilingpic;
 
 			// [SL] 2012-01-25 - Don't show bullet puffs on horizon lines 
-			if (co_fixweaponimpacts && li->special == Line_Horizon)
+			if (li->special == Line_Horizon)
 				return false;
 
 			if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li)) {
-				ceilingheight = li->frontsector->ceilingheight;
-				floorheight = li->frontsector->floorheight;
+				ceilingplane = &li->frontsector->ceilingplane;
+				floorplane = &li->frontsector->floorplane;
+				
+				ceilingheight = P_CeilingHeight(crossx, crossy, li->frontsector);
+				floorheight = P_FloorHeight(crossx, crossy, li->frontsector);
 				ceilingpic = li->frontsector->ceilingpic;
 			} else {
-				ceilingheight = li->backsector->ceilingheight;
-				floorheight = li->backsector->floorheight;
+				ceilingplane = &li->backsector->ceilingplane;
+				floorplane = &li->backsector->floorplane;
+				
+				ceilingheight = P_CeilingHeight(crossx, crossy, li->backsector);
+				floorheight = P_FloorHeight(crossx, crossy, li->backsector);
 				ceilingpic = li->backsector->ceilingpic;
 			}
 
-			if (z < floorheight) {
-				frac = FixedDiv (FixedMul (floorheight - shootz, frac), z - shootz);
-				z = floorheight;
-				updown = 0;
-			} else if (z > ceilingheight) {
-				// don't shoot the sky!
-				if (ceilingpic == skyflatnum) {
+			// [RH] If the trace went below/above the floor/ceiling, make the puff
+			//		appear in the right place and not on a wall.
+			if (z < floorheight)
+			{
+				// [SL] 2012-03-18 - Calculate where the the tracer intersects
+				// with the floor plane
+				v3fixed_t pt = P_LinePlaneIntersection(floorplane, lineorg, linedir);
+				x = pt.x;
+				y = pt.y;
+				z = pt.z;
+			}
+			else if (z > ceilingheight)
+			{
+				if (ceilingpic == skyflatnum)			// don't shoot the sky!
 					return false;
-				} else {
-					// Puffs on the ceiling need to be lowered to compensate for
-					// the height of the puff
-					ceilingheight -= mobjinfo[MT_PUFF].height;
-					frac = FixedDiv (FixedMul (ceilingheight - shootz, frac), z - shootz);
-					z = ceilingheight;
-				}
-				updown = 1;
-			} else {
+
+				// [SL] 2012-03-18 - Calculate where the the tracer intersects
+				// with the ceiling plane
+				v3fixed_t pt = P_LinePlaneIntersection(ceilingplane, lineorg, linedir);
+				x = pt.x;
+				y = pt.y;
+				
+				// Puffs on the ceiling need to be lowered to compensate for
+				// the height of the puff
+				// [SL] 2012-03-18 - FIXME: the puffs are too low
+				z = pt.z - mobjinfo[MT_PUFF].height;
+			}
+			else
+			{
 				if (li->backsector && z > opentop &&
 					li->frontsector->ceilingpic == skyflatnum &&
-					li->backsector->ceilingpic == skyflatnum)
+					li->backsector->ceilingpic == skyflatnum &&
+					li->backsector->ceilingheight < z)
 				{
-					if (!co_fixweaponimpacts || li->backsector->ceilingheight < z)
-						return false;	// sky hack wall
+					return false;	// sky hack wall
 				}
-				updown = 2;
+
+				// Hit a wall				
+				x = trace.x + FixedMul(trace.dx, frac);
+				y = trace.y + FixedMul(trace.dy, frac);
 			}
 
-			x = trace.x + FixedMul (trace.dx, frac);
-			y = trace.y + FixedMul (trace.dy, frac);
-
 			// Spawn bullet puffs.
-			P_SpawnPuff (x, y, z, R_PointToAngle2 (0, 0, li->dx, li->dy) - ANG90, updown);
+			P_SpawnPuff(x, y, z);
 		}
 		else
 		{
@@ -1727,7 +2051,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 			if (li->frontsector->ceilingpic == skyflatnum)
 			{
 			// don't shoot the sky!
-				if (z > li->frontsector->ceilingheight)
+				if (z > P_CeilingHeight(crossx, crossy, li->frontsector))
 					return false;
 
 			// it's a sky hack wall
@@ -1736,7 +2060,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 			}
 
 			// Spawn bullet puffs.
-			P_SpawnPuff (x,y,z,0,0);
+			P_SpawnPuff(x, y, z);
 		}
 		
 		// don't go any farther
@@ -1756,7 +2080,6 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 		return true;
 
 	// check angles to see if the thing can be aimed at
-	dist = FixedMul (attackrange, in->frac);
 	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
 
 	if (thingtopslope < aimslope)
@@ -1766,7 +2089,6 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	if (thingbottomslope > aimslope)
 		return true;			// shot under the thing
-
 
 	// hit thing
 	// position a bit closer
@@ -1778,9 +2100,8 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	// Spawn bullet puffs or blod spots,
 	// depending on target type.
-	angle_t dir = P_PointToAngle (0, 0, trace.dx, trace.dy) - ANG180;
 	if ((in->d.thing->flags & MF_NOBLOOD))
-		P_SpawnPuff (x,y,z, dir, 2);
+		P_SpawnPuff (x, y, z);
 	else
 	{
 		fixed_t xoffs = 0, yoffs = 0, zoffs = 0;
@@ -1793,7 +2114,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 													    	xoffs, yoffs, zoffs);
 		}
 
-		P_SpawnBlood (x + xoffs, y + yoffs, z + zoffs, dir, la_damage);
+		P_SpawnBlood(x + xoffs, y + yoffs, z + zoffs, la_damage);
 	}
 
 	if (la_damage) {
@@ -1866,7 +2187,6 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	else
 		bottomslope = finetangent[FINEANGLES/4-((signed)bottomangle>>ANGLETOFINESHIFT)];
 
-
 	attackrange = distance;
 	linetarget = NULL;
 
@@ -1899,8 +2219,8 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 	aimslope = slope;
 
 	// [RH] If any lines are crossed in the shot's path, these will be changed
-	opentop = t1->subsector->sector->ceilingheight;
-	openbottom = t1->subsector->sector->floorheight;
+	opentop = P_CeilingHeight(t1);
+	openbottom = P_FloorHeight(t1);
 
 	if (P_PathTraverse (t1->x, t1->y, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_ShootTraverse)) {
 		// [RH] No lines or things were hit in the shot's path, but	it
@@ -1972,6 +2292,9 @@ BOOL PTR_RailTraverse (intercept_t *in)
 	{
 		li = in->d.line;
 		
+		fixed_t crossx = trace.x + FixedMul (trace.dx, in->frac);
+		fixed_t crossy = trace.y + FixedMul (trace.dy, in->frac);
+		
 		frac = in->frac;
 		z = shootz + FixedMul (aimslope, FixedMul (frac, attackrange));
 
@@ -1979,7 +2302,7 @@ BOOL PTR_RailTraverse (intercept_t *in)
 			goto hitline;
 		
 		// crosses a two sided line
-		P_LineOpening (li);
+		P_LineOpeningIntercept(li, in);
 
 		if (z >= opentop || z <= openbottom)
 			goto hitline;
@@ -1994,11 +2317,11 @@ BOOL PTR_RailTraverse (intercept_t *in)
 		// hit line
 	  hitline:
 		if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li)) {
-			ceilingheight = li->frontsector->ceilingheight;
-			floorheight = li->frontsector->floorheight;
+			ceilingheight = P_CeilingHeight(crossx, crossy, li->frontsector);
+			floorheight = P_FloorHeight(crossx, crossy, li->frontsector);			
 		} else {
-			ceilingheight = li->backsector->ceilingheight;
-			floorheight = li->backsector->floorheight;
+			ceilingheight = P_CeilingHeight(crossx, crossy, li->backsector);			
+			floorheight = P_CeilingHeight(crossx, crossy, li->backsector);			
 		}
 
 		if (z < floorheight) {
@@ -2115,17 +2438,9 @@ void P_RailAttack (AActor *source, int damage, int offset)
 		for (int i = 0; i < NumRailHits; i++)
 		{
 			if (RailHits[i].hitthing->flags & MF_NOBLOOD)
-				P_SpawnPuff (RailHits[i].x, RailHits[i].y, RailHits[i].z,
-							 R_PointToAngle2 (0, 0,
-											  FLOAT2FIXED(end.x - start.x),
-											  FLOAT2FIXED(end.y - start.y)) - ANG180,
-							 1);
+				P_SpawnPuff(RailHits[i].x, RailHits[i].y, RailHits[i].z);
 			else
-				P_SpawnBlood (RailHits[i].x, RailHits[i].y, RailHits[i].z,
-							 R_PointToAngle2 (0, 0,
-											  FLOAT2FIXED(end.x - start.x),
-											  FLOAT2FIXED(end.y - start.y)) - ANG180,
-							 damage);
+				P_SpawnBlood(RailHits[i].x, RailHits[i].y, RailHits[i].z, damage);
 			P_DamageMobj (RailHits[i].hitthing, source, source, damage, MOD_RAILGUN);
 		}
 	}
@@ -2168,6 +2483,9 @@ BOOL PTR_CameraTraverse (intercept_t* in)
 	if (!in->isaline)
 		return true;
 
+	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
+	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);
+	
 	frac = in->frac - CAMERA_DIST;
 	z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
@@ -2177,7 +2495,7 @@ BOOL PTR_CameraTraverse (intercept_t* in)
 		goto hitline;
 
 	// crosses a two sided line
-	P_LineOpening (li);
+	P_LineOpeningIntercept(li, in);
 
 	if (z >= opentop || z <= openbottom)
 		goto hitline;
@@ -2192,12 +2510,14 @@ BOOL PTR_CameraTraverse (intercept_t* in)
 		fixed_t ceilingheight, floorheight;
 
 		if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li)) {
-			ceilingheight = li->frontsector->ceilingheight - CAMERA_DIST;
-			floorheight = li->frontsector->floorheight + CAMERA_DIST;
+			ceilingheight = P_CeilingHeight(crossx, crossy, li->frontsector);
+			floorheight = P_FloorHeight(crossx, crossy, li->frontsector);
 		} else {
-			ceilingheight = li->backsector->ceilingheight - CAMERA_DIST;
-			floorheight = li->backsector->floorheight + CAMERA_DIST;
+			ceilingheight = P_CeilingHeight(crossx, crossy, li->backsector);			
+			floorheight = P_FloorHeight(crossx, crossy, li->backsector);			
 		}
+		ceilingheight -= CAMERA_DIST;
+		floorheight += CAMERA_DIST;
 
 		if (z < floorheight) {
 			frac = FixedDiv (FixedMul (floorheight - shootz, frac), z - shootz);
@@ -2238,8 +2558,8 @@ void P_AimCamera (AActor *t1)
 	CameraZ = shootz + (fixed_t)(chase_dist * aimslope);
 	subsector = R_PointInSubsector (x2, y2);
 	if (subsector) {
-		fixed_t ceilingheight = subsector->sector->ceilingheight - CAMERA_DIST;
-		fixed_t floorheight = subsector->sector->floorheight + CAMERA_DIST;
+		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
+		fixed_t floorheight = P_FloorHeight(x2, y2, subsector->sector) + CAMERA_DIST;		
 		fixed_t frac = FRACUNIT;
 
 		if (CameraZ < floorheight) {
@@ -2273,7 +2593,7 @@ BOOL PTR_UseTraverse (intercept_t *in)
 
 	if (!in->d.line->special)
 	{
-		P_LineOpening (in->d.line);
+		P_LineOpeningIntercept(in->d.line, in);
 		if (openrange <= 0)
 		{
 			UV_SoundAvoidPlayer (usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
@@ -2321,7 +2641,7 @@ BOOL PTR_NoWayTraverse (intercept_t *in)
 
 	return ld->special || !(					// Ignore specials
 		ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING) || (		// Always blocking
-		P_LineOpening(ld),						// Find openings
+		P_LineOpeningIntercept(ld, in),			// Find openings
 		openrange <= 0 ||						// No opening
 		openbottom > usething->z+24*FRACUNIT ||	// Too high it blocks
 		opentop < usething->z+usething->height	// Too low it blocks
@@ -2928,6 +3248,350 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 	tmbbox[2] = last_tmbbox[2];
 	tmbbox[3] = last_tmbbox[3];
 }
+
+//
+// P_InvertPlane
+//
+// Changes the direction of a plane's normal vector to the opposite direction
+//
+void P_InvertPlane(plane_t *plane)
+{
+	if (plane)
+	{
+		plane->a = -plane->a;
+		plane->b = -plane->b;
+		plane->c = -plane->c;
+		plane->d = -plane->d;
+		plane->invc = -plane->invc;
+	}
+}
+
+//
+// P_IsPlaneLevel
+//
+// Returns true if the z-value is the same for all points on the plane.
+// This occurs when the a and b coefficents of the planar equation are 0
+// since 0*x + 0*y + c*z + d = 0
+//
+// In other words, is this a plain vanilla Doom floor/ceiling or a sloping one?
+//
+bool P_IsPlaneLevel(const plane_t *plane)
+{
+	if (!plane)
+		return false;
+
+	return (plane->a | plane->b) == 0;
+}
+
+fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane)
+{
+	if (!plane)
+		return MAXINT;
+
+	// Is the plane level?  (Z value is constant for entire plane)
+	if (P_IsPlaneLevel(plane))
+		return -FixedMul(plane->c, plane->d);
+
+	return -FixedMul(plane->invc, FixedMul(plane->a, x) + FixedMul(plane->b, y) + plane->d);
+}
+
+
+//
+// P_FloorHeight()
+//
+// Returns the height of a floor plane at the point (x, y).  The subsector
+// parameter is optional but provides a speedup if used because P_PlaneZ
+// can avoid a call to R_PointInSubsector().
+//
+// Note that there is no check made to ensure the point (x, y) is actually
+// within the subsector.
+//
+// MAXINT is returned if the point is not within any sector.
+//
+fixed_t P_FloorHeight(fixed_t x, fixed_t y, const sector_t *sector)
+{
+	if (!sector && !(sector = R_PointInSubsector(x, y)->sector))
+		return MAXINT;
+
+	return P_PlaneZ(x, y, &sector->floorplane);
+}
+
+fixed_t P_FloorHeight(const AActor *mo)
+{
+	if (mo && mo->subsector && mo->subsector->sector)
+		return P_PlaneZ(mo->x, mo->y, &mo->subsector->sector->floorplane);
+	else
+		return MAXINT;
+}
+
+fixed_t P_FloorHeight(const sector_t *sector)
+{
+	if (sector)
+		return -FixedMul(sector->floorplane.c, sector->floorplane.d);
+	else
+		return MAXINT;
+}
+
+//
+// P_CeilingHeight()
+//
+// Returns the height of a ceiling plane at the point (x, y).  The subsector
+// parameter is optional but provides a speedup if used because P_PlaneZ
+// can avoid a call to R_PointInSubsector().
+//
+// Note that there is no check made to ensure the point (x, y) is actually
+// within the subsector.
+//
+// MAXINT is returned if the point is not within any sector.
+//
+fixed_t P_CeilingHeight(fixed_t x, fixed_t y, const sector_t *sector)
+{
+	if (!sector && !(sector = R_PointInSubsector(x, y)->sector))
+		return MAXINT;
+
+	return P_PlaneZ(x, y, &sector->ceilingplane);
+}
+
+fixed_t P_CeilingHeight(const AActor *mo)
+{
+	if (mo && mo->subsector && mo->subsector->sector)
+		return P_PlaneZ(mo->x, mo->y, &mo->subsector->sector->ceilingplane);
+	else
+		return MAXINT;
+}
+
+fixed_t P_CeilingHeight(const sector_t *sector)
+{
+	if (sector)
+		return -FixedMul(sector->ceilingplane.c, sector->ceilingplane.d);
+	else
+		return MAXINT;
+}
+
+//
+// P_LinePlaneIntersection
+//
+// Calculates the point of intersection of a plane and a line that begins
+// at lineorg and is along the direction of linedir.
+//
+// If the line does not intersect the plane, it must be parallel to the surface
+// of the plane.  In that case, a vector with the value MAXINT for all
+// components is returned.
+//
+v3fixed_t P_LinePlaneIntersection(const plane_t *plane, 
+									const v3fixed_t &lineorg,
+									const v3fixed_t &linedir)
+{
+	v3fixed_t pt;
+	M_SetVec3Fixed(&pt, MAXINT, MAXINT, MAXINT);	// marks as invalid
+	
+	if (!plane)		// sanity check
+		return pt;
+
+	fixed_t numer = -plane->d -
+					FixedMul(plane->a, lineorg.x) -
+					FixedMul(plane->b, lineorg.y) -
+					FixedMul(plane->c, lineorg.z);
+
+	fixed_t denom = FixedMul(plane->a, linedir.x) +
+					FixedMul(plane->b, linedir.y) +
+					FixedMul(plane->c, linedir.z);
+
+	if (!denom)	// line is parallel to the surface of plane
+		return pt;
+		
+	fixed_t t = FixedDiv(numer, denom);
+	M_SetVec3Fixed(&pt, lineorg.x + FixedMul(t, linedir.x),
+						lineorg.y + FixedMul(t, linedir.y),
+						lineorg.z + FixedMul(t, linedir.z));
+
+	return pt;
+}
+
+bool P_PointOnPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z)
+{
+	static const fixed_t threshold = FRACUNIT >> 6;
+	 
+	if (!plane)
+		return false;
+	
+	fixed_t result =
+		(FixedMul(plane->a, x) + FixedMul(plane->b, y) + FixedMul(plane->c, z) + plane->d);
+		
+	return abs(result) < threshold;
+}
+
+bool P_PointAbovePlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z)
+{
+	if (!plane)
+		return false;
+		
+	return (FixedMul(plane->a, x) + FixedMul(plane->b, y) + FixedMul(plane->c, z)) > 0;
+}
+
+bool P_PointBelowPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z)
+{
+	if (!plane)
+		return false;
+		
+	return (FixedMul(plane->a, x) + FixedMul(plane->b, y) + FixedMul(plane->c, z)) < 0;
+}
+
+bool P_IdenticalPlanes(const plane_t *pl1, const plane_t *pl2)
+{
+	if (!pl1 || !pl2)
+		return false;
+		
+	return (pl1 == pl2) || 
+		(pl1->a == pl2->a && pl1->b == pl2->b && pl1->c == pl2->c && pl1->d == pl2->d);
+}
+
+void P_ChangeCeilingHeight(sector_t *sector, fixed_t amount)
+{
+	if (!sector)
+		return;
+
+	plane_t *plane = &sector->ceilingplane;			
+	plane->d -= FixedMul(amount, plane->c);
+
+	// The sector's ceilingheight variable is still used for (among other things)
+	// calculating wall texture offsets
+	sector->ceilingheight += amount;
+}
+
+void P_ChangeFloorHeight(sector_t *sector, fixed_t amount)
+{
+	if (!sector)
+		return;
+			
+	plane_t *plane = &sector->floorplane;
+	plane->d -= FixedMul(amount, plane->c);
+
+	// The sector's floorheight variable is still used for (among other things)
+	// calculating wall texture offsets
+	sector->floorheight += amount;
+}
+
+void P_SetCeilingHeight(sector_t *sector, fixed_t value)
+{
+	if (!sector)
+		return;
+
+	P_ChangeCeilingHeight(sector, value - P_CeilingHeight(sector));
+}
+
+void P_SetFloorHeight(sector_t *sector, fixed_t value)
+{
+	if (!sector)
+		return;
+
+	P_ChangeFloorHeight(sector, value - P_FloorHeight(sector));
+}
+
+//
+// P_LowestHeightOfCeiling
+//
+// Returns the lowest height of any point of the ceiling
+//
+fixed_t P_LowestHeightOfCeiling(sector_t *sector)
+{
+	fixed_t height = MAXINT;
+	if (!sector)
+		return height;
+
+	for (int i = 0; i < sector->linecount; i++)
+	{
+		vertex_t *v1 = sector->lines[i]->v1;
+		vertex_t *v2 = sector->lines[i]->v2;
+
+		fixed_t thisheight;
+		if ((thisheight = P_CeilingHeight(v1->x, v1->y, sector)) < height)
+			height = thisheight;
+		if ((thisheight = P_CeilingHeight(v2->x, v2->y, sector)) < height)
+			height = thisheight;
+	}
+
+	return height;
+}
+
+//
+// P_LowestHeightOfFloor
+//
+// Returns the lowest height of any point of the floor
+//
+fixed_t P_LowestHeightOfFloor(sector_t *sector)
+{
+	fixed_t height = MAXINT;
+	if (!sector)
+		return height;
+
+	for (int i = 0; i < sector->linecount; i++)
+	{
+		vertex_t *v1 = sector->lines[i]->v1;
+		vertex_t *v2 = sector->lines[i]->v2;
+
+		fixed_t thisheight;
+		if ((thisheight = P_FloorHeight(v1->x, v1->y, sector)) < height)
+			height = thisheight;
+		if ((thisheight = P_FloorHeight(v2->x, v2->y, sector)) < height)
+			height = thisheight;
+	}
+
+	return height;
+}
+
+//
+// P_HighestHeightOfCeiling
+//
+// Returns the highest height of any point of the ceiling
+//
+fixed_t P_HighestHeightOfCeiling(sector_t *sector)
+{
+	fixed_t height = MININT;
+	if (!sector)
+		return height;
+
+	for (int i = 0; i < sector->linecount; i++)
+	{
+		vertex_t *v1 = sector->lines[i]->v1;
+		vertex_t *v2 = sector->lines[i]->v2;
+
+		fixed_t thisheight;
+		if ((thisheight = P_CeilingHeight(v1->x, v1->y, sector)) > height)
+			height = thisheight;
+		if ((thisheight = P_CeilingHeight(v2->x, v2->y, sector)) > height)
+			height = thisheight;
+	}
+
+	return height;
+}
+
+//
+// P_HighestHeightOfFloor
+//
+// Returns the highest height of any point of the floor
+//
+fixed_t P_HighestHeightOfFloor(sector_t *sector)
+{
+	fixed_t height = MININT;
+	if (!sector)
+		return height;
+
+	for (int i = 0; i < sector->linecount; i++)
+	{
+		vertex_t *v1 = sector->lines[i]->v1;
+		vertex_t *v2 = sector->lines[i]->v2;
+
+		fixed_t thisheight;
+		if ((thisheight = P_FloorHeight(v1->x, v1->y, sector)) > height)
+			height = thisheight;
+		if ((thisheight = P_FloorHeight(v2->x, v2->y, sector)) > height)
+			height = thisheight;
+	}
+
+	return height;
+}
+
 
 VERSION_CONTROL (p_map_cpp, "$Id$")
 

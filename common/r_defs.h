@@ -53,7 +53,8 @@
 
 extern int MaxDrawSegs;
 
-
+#define MAXWIDTH				2048
+#define MAXHEIGHT				1536
 
 
 
@@ -75,6 +76,7 @@ typedef struct vertex_s vertex_t;
 
 // Forward of LineDefs, for Sectors.
 struct line_s;
+struct sector_s;
 
 class player_s;
 
@@ -105,6 +107,19 @@ enum
 	FAKED_BelowFloor,
 	FAKED_AboveCeiling
 };
+
+//
+// Plane
+//
+// Stores the coefficients for the variable that defines a plane (sloping sector)
+struct plane_s
+{
+	// Planes are defined by the equation ax + by + cz + d = 0
+	fixed_t		a, b, c, d;
+	fixed_t		invc;		// pre-calculated 1/c, used to solve for z value
+	sector_s	*sector;
+};
+typedef struct plane_s plane_t;
 
 struct dyncolormap_s;
 
@@ -207,6 +222,9 @@ struct sector_s
 	// occurs, SecActTarget's TriggerAction method is called.
 	// [ML] Not yet...
 	// ASectorAction *SecActTarget;
+
+	// [SL] 2012-01-16 - planes for sloping ceilings/floors
+	plane_t floorplane, ceilingplane;
 };
 typedef struct sector_s sector_t;
 
@@ -342,6 +360,8 @@ struct seg_s
 	// Could be retrieved from linedef, too.
 	sector_t*	frontsector;
 	sector_t*	backsector;		// NULL for one-sided lines
+	
+	fixed_t		length;
 
 };
 typedef struct seg_s seg_t;
@@ -448,6 +468,11 @@ struct drawseg_s
     int*		sprtopclip;		
     int*		sprbottomclip;	
     int*		maskedtexturecol;
+    
+    fixed_t		topclipstart;
+    fixed_t		topclipstep;
+    fixed_t		bottomclipstart;
+    fixed_t		bottomclipstep;
 };
 typedef struct drawseg_s drawseg_t;
 
@@ -514,6 +539,7 @@ struct vissprite_s
 	byte			*translation;	// [RH] for translation;
 	sector_t		*heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
 	fixed_t			translucency;
+	BYTE			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
 };
 typedef struct vissprite_s vissprite_t;
 
@@ -584,7 +610,8 @@ struct visplane_s
 {
 	struct visplane_s *next;		// Next visplane in hash chain -- killough
 
-	fixed_t		height;
+	plane_t		secplane;
+
 	int			picnum;
 	int			lightlevel;
 	fixed_t		xoffs, yoffs;		// killough 2/28/98: Support scrolling flats
