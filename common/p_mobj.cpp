@@ -2360,6 +2360,13 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
 		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
 
+	// [SL] ZDoom Custom Bridge Things
+	if (i == MT_ZDOOMBRIDGE)
+	{
+		mobj->radius = mobj->args[0] << FRACBITS;
+		mobj->height = mobj->args[1] << FRACBITS;
+	}
+
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);
 

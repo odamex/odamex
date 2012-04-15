@@ -1470,6 +1470,12 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 	if (mo->type == MT_FOUNTAIN)
 		MSG_WriteByte(&cl->reliablebuf, mo->args[0]);
 
+	if (mo->type == MT_ZDOOMBRIDGE)
+	{
+		MSG_WriteByte(&cl->reliablebuf, mo->args[0]);
+		MSG_WriteByte(&cl->reliablebuf, mo->args[1]);
+	}
+
 	if(mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE) // denis - check type as that is what the client will be spawning
 	{
 		MSG_WriteShort (&cl->reliablebuf, mo->target ? mo->target->netid : 0);

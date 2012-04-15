@@ -1671,19 +1671,17 @@ void CL_UpdateIntTimeLeft(void)
 //
 void CL_SpawnMobj()
 {
-	fixed_t  x = 0, y = 0, z = 0;
 	AActor  *mo;
 
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
+	fixed_t x = MSG_ReadLong();
+	fixed_t y = MSG_ReadLong();
+	fixed_t z = MSG_ReadLong();
 	angle_t angle = MSG_ReadLong();
 
 	unsigned short type = MSG_ReadShort();
 	unsigned short netid = MSG_ReadShort();
 	byte rndindex = MSG_ReadByte();
 	SWORD state = MSG_ReadShort();
-	byte arg0 = (type == MT_FOUNTAIN) ? MSG_ReadByte() : 0;
 
 	if(type >= NUMMOBJTYPES)
 		return;
@@ -1731,8 +1729,16 @@ void CL_SpawnMobj()
 			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 	}
 
-	mo->effects = arg0 << FX_FOUNTAINSHIFT; 
-	mo->args[0] = arg0;
+	if (type == MT_FOUNTAIN)
+	{
+		mo->effects = int(MSG_ReadByte()) << FX_FOUNTAINSHIFT;
+	}
+
+	if (type == MT_ZDOOMBRIDGE)
+	{
+		mo->radius = int(MSG_ReadByte()) << FRACBITS;
+		mo->height = int(MSG_ReadByte()) << FRACBITS;
+	}
 }
 
 //
