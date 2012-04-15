@@ -258,7 +258,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 	{
 		int pat = patch->patch;
 		const patch_t *realpatch = W_CachePatch (pat);
-		int x1 = patch++->originx, x2 = x1 + SHORT(realpatch->width()), x = x1;
+		int x1 = patch++->originx, x2 = x1 + realpatch->width(), x = x1;
 		const int *cofs = realpatch->columnofs-x1;
 
 		if (x2 > texture->width)
@@ -271,8 +271,7 @@ static void R_GenerateLookup(int texnum, int *const errors)
 			// to fix Medusa bug while allowing for transparent multipatches.
 
 			const column_t *col = (column_t*)((byte*)realpatch + LONG(cofs[x]));
-			unsigned int n = (const byte *)col - (const byte *)realpatch;
-			for (;(n < W_LumpLength(pat)) && (col->topdelta != 0xff); count[x].posts++)
+			for (;col->topdelta != 0xff; count[x].posts++)
 			{
 				col = (column_t *)((byte *)col + col->length + 4);
 				
