@@ -38,17 +38,17 @@ class QueryThread : public wxThread
     public:
 
         QueryThread();
-        QueryThread(wxEvtHandler *EventHandler, Server *QueryServer, wxInt32 ServerIndex, wxUint32 ServerTimeout, wxInt8 Retries) : wxThread(wxTHREAD_JOINABLE),
+        QueryThread(wxEvtHandler *EventHandler, odalpapi::Server *QueryServer, wxInt32 ServerIndex, wxUint32 ServerTimeout, wxInt8 Retries) : wxThread(wxTHREAD_JOINABLE),
             m_EventHandler(EventHandler), m_QueryServer(QueryServer), m_ServerIndex(ServerIndex), m_ServerTimeout(ServerTimeout), m_Retries(Retries) {}
 
         virtual void *Entry();
 
     private:
-        wxEvtHandler  *m_EventHandler;
-        Server        *m_QueryServer;
-        wxInt32       m_ServerIndex;
-        wxUint32      m_ServerTimeout;
-        wxInt8        m_Retries;
+        wxEvtHandler      *m_EventHandler;
+        odalpapi::Server  *m_QueryServer;
+        wxInt32            m_ServerIndex;
+        wxUint32           m_ServerTimeout;
+        wxInt8             m_Retries;
 };
 
 #endif // QUERY_THREAD_H_INCLUDED

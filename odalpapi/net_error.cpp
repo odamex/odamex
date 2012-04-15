@@ -45,6 +45,8 @@
 #include "xbox_main.h"
 #endif
 
+namespace odalpapi {
+
 #ifdef _WIN32
 // Russell - bits from msdn:
 static LPSTR _GetFormattedMessage(DWORD errnum)
@@ -115,3 +117,5 @@ void _ReportError(const char *file, int line, const char *func,
     LocalFree(syserrmsg);
     #endif
 }
+
+} // namespace

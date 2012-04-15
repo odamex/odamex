@@ -27,6 +27,8 @@
 #include <wx/fileconf.h>
 #include <wx/xrc/xmlres.h>
 
+using namespace odalpapi;
+
 IMPLEMENT_DYNAMIC_CLASS(LstOdaServerList, wxAdvancedListCtrl)
 
 /* XPM */

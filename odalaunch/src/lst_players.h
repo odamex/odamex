@@ -26,15 +26,13 @@
 #include "net_packet.h"
 #include "lst_custom.h"
 
-using namespace odalpapi;
-
 class LstOdaPlayerList : public wxAdvancedListCtrl
 {
     public:
         LstOdaPlayerList() { };
         virtual ~LstOdaPlayerList();
 
-        void AddPlayersToList(const Server &s);
+        void AddPlayersToList(const odalpapi::Server &s);
         void SetupPlayerListColumns();
 
     protected:

@@ -27,6 +27,8 @@
 
 #include <wx/settings.h>
 
+using namespace odalpapi;
+
 IMPLEMENT_DYNAMIC_CLASS(LstOdaSrvDetails, wxListCtrl)
 
 typedef enum

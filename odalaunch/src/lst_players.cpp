@@ -26,6 +26,8 @@
 #include "lst_players.h"
 #include "str_utils.h"
 
+using namespace odalpapi;
+
 /* XPM */
 static const char *find_xpm[] = {
 /* columns rows colors chars-per-pixel */

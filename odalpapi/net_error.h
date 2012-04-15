@@ -27,11 +27,15 @@
 #ifndef __NET_ERROR_H__
 #define __NET_ERROR_H__
 
+namespace odalpapi {
+
 void _ReportError(const char *file, int line, const char *func,
     const char *fmt, ...);
 #define NET_ReportError(...) \
     _ReportError(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 
 #define REPERR_NO_ARGS ""
+
+} // namespace
 
 #endif // __NET_ERROR_H__

@@ -47,8 +47,6 @@
 #include "query_thread.h"
 #include "net_packet.h"
 
-using namespace odalpapi;
-
 // custom event declarations
 BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE(wxEVT_THREAD_MONITOR_SIGNAL, -1)
@@ -79,9 +77,9 @@ class dlgMain : public wxFrame, wxThreadHelper
 		dlgMain(wxWindow* parent,wxWindowID id = -1);
 		virtual ~dlgMain();
 		
-		Server          NullServer;
-        Server          *QServer;
-        MasterServer    MServer;
+        odalpapi::Server         NullServer;
+        odalpapi::Server        *QServer;
+        odalpapi::MasterServer   MServer;
         
         launchercfg_t launchercfg_s;
 	protected:

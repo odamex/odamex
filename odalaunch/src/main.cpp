@@ -36,6 +36,8 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
 
+using namespace odalpapi;
+
 IMPLEMENT_APP(Application)
 
 bool Application::OnInit()

@@ -62,7 +62,7 @@ class dlgServers: public wxDialog
 {
 	public:
 
-		dlgServers(MasterServer *ms, wxWindow* parent, wxWindowID id = -1);
+		dlgServers(odalpapi::MasterServer *ms, wxWindow* parent, wxWindowID id = -1);
 		virtual ~dlgServers();
 
         CustomServer_t GetCustomServer(wxUint32);
@@ -105,7 +105,7 @@ class dlgServers: public wxDialog
 
         bool UserChangedSetting;
 
-        MasterServer *MServer;
+        odalpapi::MasterServer *MServer;
 
 	private:
 

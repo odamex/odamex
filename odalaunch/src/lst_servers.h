@@ -33,7 +33,7 @@ class LstOdaServerList : public wxAdvancedListCtrl
         virtual ~LstOdaServerList();
 
         void SetupServerListColumns();
-        void AddServerToList(const Server &s, wxInt32 index, bool insert = true);
+        void AddServerToList(const odalpapi::Server &s, wxInt32 index, bool insert = true);
 
     protected:
         

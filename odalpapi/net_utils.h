@@ -29,6 +29,16 @@
 
 #include "typedefs.h"
 
+/**
+ * odalpapi namespace.
+ *
+ * All code for the odamex launcher protocol api is contained within the odalpapi
+ * namespace.
+ */
+namespace odalpapi {
+
 uint64_t GetMillisNow();
+
+} // namespace
 
 #endif // __NET_UTILS_H__

@@ -32,6 +32,8 @@
 #include "dlg_servers.h"
 #include "str_utils.h"
 
+using namespace odalpapi;
+
 // Widget ID's
 static wxInt32 ID_BTNADDSERVER = XRCID("ID_BTNADDSERVER");
 static wxInt32 ID_BTNREPLACESERVER = XRCID("ID_BTNREPLACESERVER");

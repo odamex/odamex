@@ -31,6 +31,8 @@
 
 #include "net_utils.h"
 
+namespace odalpapi {
+
 // GetMillisNow()
 
 // denis - use this unless you want your program
@@ -62,6 +64,8 @@ uint64_t GetMillisNow()
 {
     return _UnwrapTime(_Millis());
 }
+
+} // namespace
 
 // ???
 // ---

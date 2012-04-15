@@ -52,6 +52,8 @@
     #include <netdb.h>
 #endif
 
+using namespace odalpapi;
+
 // Control ID assignments for events
 // application icon
 
