@@ -34,6 +34,7 @@
 
 #ifdef OSX
 #include <AudioToolbox/AudioToolbox.h>
+#include <CoreServices/CoreServices.h>
 #endif	// OSX
 
 #ifdef PORTMIDI
