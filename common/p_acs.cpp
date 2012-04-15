@@ -841,6 +841,8 @@ DLevelScript::DLevelScript ()
 void DLevelScript::Unlink ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	if (controller->LastScript == this)
 		controller->LastScript = prev;
@@ -855,6 +857,8 @@ void DLevelScript::Unlink ()
 void DLevelScript::Link ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	next = controller->Scripts;
 	if (controller->Scripts)
@@ -868,6 +872,8 @@ void DLevelScript::Link ()
 void DLevelScript::PutLast ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	if (controller->LastScript == this)
 		return;
@@ -890,6 +896,8 @@ void DLevelScript::PutLast ()
 void DLevelScript::PutFirst ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	if (controller->Scripts == this)
 		return;
@@ -1038,7 +1046,7 @@ void DLevelScript::DoFadeRange (int r1, int g1, int b1, int a1,
 	player_t *viewer;
 	float ftime = (float)time / 65536.f;
 	bool fadingFrom = a1 >= 0;
-	float fr1, fg1, fb1, fa1;
+	float fr1 = 0.f, fg1 = 0.f, fb1 = 0.f, fa1 = 0.f;
 	float fr2, fg2, fb2, fa2;
 	size_t i;
 
@@ -1115,10 +1123,12 @@ inline int getbyte (int *&pc)
 void DLevelScript::RunScript ()
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
+
     TeleportSide = lineSide;
     int *locals = localvars;
     ScriptFunction *activeFunction = NULL;
-    BYTE *translation = 0;
 
 	switch (state)
 	{
@@ -2672,6 +2682,9 @@ void DLevelScript::RunScript ()
 	if (state == SCRIPT_PleaseRemove)
 	{
 		Unlink ();
+		if (!controller)
+			return;
+
 		if (controller->RunningScripts[script] == this)
 			controller->RunningScripts[script] = NULL;
 		this->Destroy ();
@@ -2735,6 +2748,8 @@ DLevelScript::DLevelScript (AActor *who, line_t *where, int num, int *code, int 
 static void SetScriptState (int script, DLevelScript::EScriptState state)
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
+	if (!controller)
+		return;
 
 	if (controller->RunningScripts[script])
 		controller->RunningScripts[script]->SetState (state);
