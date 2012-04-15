@@ -85,8 +85,8 @@ class DConsoleAlias : public DConsoleCommand
 public:
 	DConsoleAlias (const char *name, const char *command);
 	virtual ~DConsoleAlias ();
-	void Run ();
-	bool IsAlias () { return true; }
+	virtual void Run ();
+	virtual bool IsAlias () { return true; }
 	void PrintAlias () { Printf (PRINT_HIGH, "%s : %s\n", m_Name.c_str(), m_Command.c_str()); }
 	void Archive (FILE *f);
 
