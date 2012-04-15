@@ -271,7 +271,8 @@ static void R_GenerateLookup(int texnum, int *const errors)
 			// to fix Medusa bug while allowing for transparent multipatches.
 
 			const column_t *col = (column_t*)((byte*)realpatch + LONG(cofs[x]));
-			for (;col->topdelta != 0xff; count[x].posts++)
+			unsigned int n = (const byte *)col - (const byte *)realpatch;
+			for (;(n < W_LumpLength(pat)) && (col->topdelta != 0xff); count[x].posts++)
 			{
 				col = (column_t *)((byte *)col + col->length + 4);
 				
