@@ -62,6 +62,8 @@ public:
 		mInterpolated(false), mExtrapolated(false)
 	{}
 	
+	virtual ~Snapshot() {};
+
 	void operator=(const Snapshot &other);
 	
 	bool operator==(const Snapshot &other) const;
@@ -107,6 +109,8 @@ public:
 	ActorSnapshot(int time = -1);	
 	ActorSnapshot(int time, const AActor *mo);
 	
+	virtual ~ActorSnapshot() {};
+
 	void operator=(const ActorSnapshot &other);	
 	bool operator==(const ActorSnapshot &other) const;
 	
@@ -282,6 +286,8 @@ public:
 	PlayerSnapshot(int time = -1);
 	PlayerSnapshot(int time, player_t *player);
 	
+	virtual ~PlayerSnapshot() {};
+
 	void operator=(const PlayerSnapshot &other);
 	bool operator==(const PlayerSnapshot &other) const;
 	
