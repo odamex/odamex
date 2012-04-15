@@ -707,7 +707,7 @@ void EASpectatorNames(int x, int y, const float scale,
                       const short padding, short skip, const short limit,
                       const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = skip;i < sortedPlayers().size();i++) {
+	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
@@ -1049,7 +1049,7 @@ void EASpectatorPings(int x, int y, const float scale,
                       const short padding, short skip, const short limit,
                       const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = skip;i < sortedPlayers().size();i++) {
+	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
