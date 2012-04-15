@@ -25,22 +25,6 @@ elseif(WIN32)
   add_definitions(-DWIN32)
 endif()
 
-# Custom Variables
-if(CXX_COMPILER)
-  set(CMAKE_CXX_COMPILER ${CXX_COMPILER})
-endif()
-
-# OS X Environment Variables
-if(OSX_ARCHITECTURES)
-  set(CMAKE_OSX_ARCHITECTURES ${OSX_ARCHITECTURES})
-endif()
-if(OSX_DEPLOYMENT_TARGET)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET ${OSX_DEPLOYMENT_TARGET})
-endif()
-if(OSX_SYSROOT)
-  set(CMAKE_OSX_SYSROOT ${OSX_SYSROOT})
-endif()
-
 # Subdirectories for individual projects
 add_subdirectory(client)
 add_subdirectory(server)
