@@ -165,13 +165,16 @@ void AGOL_Manual::OnOK(AG_Event *event)
 		if(password && strlen(password) > 0)
 		{
 			cmd.AddParameter(password);
-			free(password);
 		}
 
 		cmd.Launch();
-
-		free(server);
 	}
+
+	if(server)
+		free(server);
+
+	if(password)
+		free(password);
 
 	// Detach and destroy the window + contents
 	AG_ObjectDetach(ManualDialog);

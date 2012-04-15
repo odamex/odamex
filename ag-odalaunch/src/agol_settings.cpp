@@ -617,6 +617,9 @@ void AGOL_Settings::SaveExtraParams()
 		GuiConfig::Write("ExtraParams", extraParams);
 	else
 		GuiConfig::Unset("ExtraParams");
+
+	if(extraParams)
+		free(extraParams);
 }
 
 //******************//

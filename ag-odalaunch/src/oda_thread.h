@@ -83,7 +83,9 @@ public:
 		targ->running = &m_Running;
 		targ->arg = arg;
 
-		return AG_ThreadCreate(&m_Thread, CallThreadFunc, targ);
+		AG_ThreadCreate(&m_Thread, CallThreadFunc, targ);
+
+		return 0;
 	}
 
 	static void *CallThreadFunc(void *arg)

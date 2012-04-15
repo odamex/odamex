@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <string>
+#include <memory>
 
 #ifdef _XBOX
 #include <xtl.h>
