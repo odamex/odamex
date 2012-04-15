@@ -33,7 +33,7 @@
 
 using namespace std;
 
-//namespace agOdalaunch {
+namespace odalpapi {
 
 /*
    Create a packet to send, which in turn will
@@ -628,4 +628,4 @@ void MasterServer::QueryBC(const uint32_t &Timeout)
     }
 }
 
-//} // namespace
+} // namespace

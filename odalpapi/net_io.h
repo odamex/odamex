@@ -44,12 +44,12 @@
 #include "typedefs.h"
 
 /**
- * agOdalaunch namespace.
+ * odalpapi namespace.
  *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * All code for the odamex launcher api is contained within the odalpapi
  * namespace.
  */
-//namespace agOdalaunch {
+namespace odalpapi {
 
 #ifndef _WIN32
 typedef int SOCKET;
@@ -160,6 +160,6 @@ private:
 	uint64_t m_SendPing, m_ReceivePing;
 };
 
-//} // namespace
+} // namespace
 
 #endif

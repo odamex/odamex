@@ -27,12 +27,12 @@
 #define _TYPEDEFS_H
 
 /**
- * agOdalaunch namespace.
+ * odalpapi namespace.
  *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * All code for the odamex launcher protocol api is contained within the odalpapi
  * namespace.
  */
-//namespace agOdalaunch {
+namespace odalpapi {
 
 #ifdef _MSC_VER
 	typedef signed   __int8   int8_t;
@@ -51,6 +51,6 @@
 	#endif
 #endif
 
-//} // namespace
+} // namespace
 
 #endif

@@ -58,12 +58,12 @@
 #define TAG_ID 0xAD0
 
 /**
- * agOdalaunch namespace.
+ * odalpapi namespace.
  *
- * All code for the ag-odalaunch launcher is contained within the agOdalaunch
+ * All code for the odamex launcher api is contained within the odalpapi
  * namespace.
  */
-//namespace agOdalaunch {
+namespace odalpapi {
 
 const uint32_t MASTER_CHALLENGE = 777123;
 const uint32_t MASTER_RESPONSE  = 777123;
@@ -378,6 +378,6 @@ protected:
 	bool m_ValidResponse;
 };
 
-//} // namespace
+} // namespace
 
 #endif // NETPACKET_H

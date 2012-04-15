@@ -37,7 +37,8 @@
 #include "net_utils.h"
 #include "net_error.h"
 
-//namespace agOdalaunch {
+
+namespace odalpapi {
 
 #ifndef _WIN32
 #define closesocket close
@@ -694,4 +695,4 @@ void BufferedSocket::ClearBuffer()
 	ResetBuffer();
 }
 
-//} // namespace
+} // namespace

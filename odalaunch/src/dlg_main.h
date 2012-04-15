@@ -47,7 +47,7 @@
 #include "query_thread.h"
 #include "net_packet.h"
 
-//using namespace agOdalaunch;
+using namespace odalpapi;
 
 // custom event declarations
 BEGIN_DECLARE_EVENT_TYPES()
