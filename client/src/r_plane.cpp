@@ -190,7 +190,8 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 
 		for (int i = 0; i < len; i++)
 		{
-			int index = (int)(map >> FRACBITS) + 1 - extralight;
+			int index = (int)(map >> FRACBITS) + 1;
+			index -= (foggy ? 0 : extralight << 2);
 			
 			if (index < 0)
 				slopelighting[i] = basecolormap;
