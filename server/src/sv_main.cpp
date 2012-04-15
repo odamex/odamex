@@ -4782,7 +4782,11 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 
 	if (!self || !self->player)
 		return;
-
+		
+	// Don't print obituaries after the end of a round		
+	if (shotclock || gamestate != GS_LEVEL)
+		return;
+		
 	gender = self->player->userinfo.gender;
 
 	// Treat voodoo dolls as unknown deaths
@@ -4882,7 +4886,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 			}
 	}
 
-	if (message && !shotclock) {
+	if (message) {
 		SexMessage (message, gendermessage, gender,
 			self->player->userinfo.netname, self->player->userinfo.netname);
 		SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
@@ -4918,6 +4922,9 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		if (messagenum)
 			message = GStrings(messagenum);
 	}
+	
+	if (!attacker)
+		return;
 
 	if (message)
 	{
