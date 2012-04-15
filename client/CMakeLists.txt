@@ -56,7 +56,7 @@ endif()
 
 # Client target
 if(SDL_FOUND AND SDLMIXER_FOUND)
-  add_executable(odamex WIN32
+  add_executable(odamex MACOSX_BUNDLE WIN32
     ${COMMON_SOURCES} ${COMMON_HEADERS}
     ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
@@ -66,5 +66,30 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     target_link_libraries(odamex winmm wsock32)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
+  endif()
+
+  set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
+  set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
+  set(MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}")
+  set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
+  set(MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
+  set(MACOSX_BUNDLE_ICON_FILE odamex.icns)
+
+  if(APPLE)
+    # Install into bundle under client directory
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+
+    string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
+    string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
+
+    install(DIRECTORY ${SDL_DIR} DESTINATION odamex.app/Contents/Frameworks)
+    install(DIRECTORY ${SDLMIXER_DIR} DESTINATION odamex.app/Contents/Frameworks)
+    install(FILES ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} DESTINATION odamex.app/Contents/Resources)
+    install(FILES ${CMAKE_SOURCE_DIR}/odamex.wad DESTINATION odamex.app/Contents/MacOS)
+    install(CODE "execute_process(COMMAND 
+      install_name_tool -change @rpath/SDL.framework/Versions/A/SDL
+      @executable_path/../Frameworks/SDL.framework/Versions/A/SDL
+      odamex.app/Contents/MacOS/odamex)
+      " )
   endif()
 endif()
