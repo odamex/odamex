@@ -603,7 +603,7 @@ void MasterServer::QueryBC(const uint32_t &Timeout)
 
     BCSocket.SendData(Timeout);
 
-    while (BCSocket.GetData(Timeout) != 0)
+    while (BCSocket.GetData(Timeout) > 0)
     {
         addr_t address = { "", 0, false};
         size_t j = 0;
