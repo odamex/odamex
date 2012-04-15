@@ -1379,7 +1379,7 @@ BOOL P_ThingHeightClip (AActor* thing)
 
 bool P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove)
 {
-	if (!actor || actor->flags & MF_NOGRAVITY)
+	if (!actor || actor->flags & MF_NOGRAVITY || !actor->floorsector)
 		return false;
 
 	const plane_t *plane = &actor->floorsector->floorplane;

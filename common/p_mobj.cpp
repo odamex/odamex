@@ -803,7 +803,10 @@ void AActor::Serialize (FArchive &arc)
 			I_Error("Unknown sprite in saved game");
 		info = &mobjinfo[type];
 		touching_sectorlist = NULL;
+
 		LinkToWorld ();
+		floorsector = subsector->sector;
+
 		AddToHash ();
 		if(playerid && validplayer(idplayer(playerid)))
 		{
