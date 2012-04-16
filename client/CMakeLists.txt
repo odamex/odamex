@@ -19,6 +19,9 @@ if(APPLE)
   set(CLIENT_MAC_OBJC_SOURCES sdl/SDLMain.m)
 endif()
 
+# Platform definitions
+define_platform()
+
 # Client definitions
 add_definitions(-DNOASM)
 include_directories(${COMMON_DIR} ${TEXTSCREEN_DIR} ${CLIENT_DIR})

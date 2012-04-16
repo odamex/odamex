@@ -18,6 +18,9 @@ set(JSONCPP_DIR ../jsoncpp)
 file(GLOB JSONCPP_HEADERS ${JSONCPP_DIR}/json/*.h)
 set(JSONCPP_SOURCE ${JSONCPP_DIR}/jsoncpp.cpp)
 
+# Platform definitions
+define_platform()
+
 # Server definitions
 add_definitions(-DNOASM -DJSON_IS_AMALGAMATION)
 if(WIN32 AND NOT MSVC)

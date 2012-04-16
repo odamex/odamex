@@ -19,14 +19,16 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 endif()
 
-# Platform definitions
-if(APPLE)
-  add_definitions(-DOSX -DUNIX)
-elseif(UNIX)
-  add_definitions(-DUNIX)
-elseif(WIN32)
-  add_definitions(-DWIN32)
-endif()
+macro(define_platform)
+  # Platform definitions
+  if(APPLE)
+    add_definitions(-DOSX -DUNIX)
+  elseif(UNIX)
+    add_definitions(-DUNIX)
+  elseif(WIN32)
+    add_definitions(-DWIN32)
+  endif()
+endmacro(define_platform)
 
 # Subdirectories for individual projects
 add_subdirectory(client)
