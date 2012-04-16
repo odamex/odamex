@@ -32,7 +32,8 @@ endif()
 if(wxWidgets_FOUND)
   add_custom_command(
     OUTPUT ${XRCRES_HEADER}
-    COMMAND ${wxWidgets_wxrc_EXECUTABLE} -c -o ${XRCRES_HEADER} res/*.xrc)
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/res
+    COMMAND ${wxWidgets_wxrc_EXECUTABLE} -c -o ${XRCRES_HEADER} ${CMAKE_CURRENT_SOURCE_DIR}/res/*.xrc)
   add_executable(odalaunch MACOSX_BUNDLE WIN32
     ${API_SOURCES} ${API_HEADERS}
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
