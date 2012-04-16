@@ -797,6 +797,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	AActor *thingblocker = NULL;
 	AActor *fakedblocker = NULL;
 	fixed_t realheight = thing->height;
+	bool spectator = thing->player && thing->player->spectator;
 
 	tmthing = thing;
 	tmflags = thing->flags;
@@ -842,7 +843,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 	BlockingMobj = NULL;
 
-	if (co_realactorheight)
+	if (co_realactorheight && !spectator)
 	{
 		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
 			thing->height = realheight + 24*FRACUNIT;
