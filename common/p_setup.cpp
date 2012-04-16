@@ -1598,8 +1598,8 @@ static void P_SetupLevelCeilingPlane(sector_t *sector)
 		return;
 	
 	sector->ceilingplane.a = sector->ceilingplane.b = 0;
-	sector->ceilingplane.c = sector->ceilingplane.invc = FRACUNIT;
-	sector->ceilingplane.d = -sector->ceilingheight;
+	sector->ceilingplane.c = sector->ceilingplane.invc = -FRACUNIT;
+	sector->ceilingplane.d = sector->ceilingheight;
 	sector->ceilingplane.sector = sector;
 }
 
@@ -1698,7 +1698,7 @@ void P_SetupPlane(sector_t *refsector, line_t *refline, bool floor)
 	plane->d = -FLOAT2FIXED(M_DotProductVec3(&normal, &p1));
 
 	// Flip inverted normals
-	if (normal.z < 0.0f)
+	if ((floor && normal.z < 0.0f) || (!floor && normal.z > 0.0f))
 		P_InvertPlane(plane);
 }
 
