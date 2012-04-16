@@ -108,7 +108,8 @@ char DefBindings[] =
 	"bind f11 bumpgamma; "
 	"bind f12 spynext; "
 	"bind pgup vote_yes; "				// <- New for voting
-	"bind pgdn vote_no";				// <- New for voting
+	"bind pgdn vote_no; "				// <- New for voting
+	"bind m changeteams ";
 
 
 // SoM: ok... I hate randy heit I have no idea how to translate between ascii codes to these
