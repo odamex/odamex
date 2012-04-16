@@ -33,9 +33,25 @@ if(wxWidgets_FOUND)
   add_custom_command(
     OUTPUT ${XRCRES_HEADER}
     COMMAND ${wxWidgets_wxrc_EXECUTABLE} -c -o ${XRCRES_HEADER} res/*.xrc)
-  add_executable(odalaunch
+  add_executable(odalaunch MACOSX_BUNDLE WIN32
     ${API_SOURCES} ${API_HEADERS}
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
     ${XRCRES_HEADER})
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
+
+  set(MACOSX_BUNDLE_BUNDLE_NAME OdaLaunch)
+  set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
+  set(MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}")
+  set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
+  set(MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
+  set(MACOSX_BUNDLE_ICON_FILE odalaunch.icns)
+
+  if(APPLE)
+    add_custom_command(
+      TARGET odalaunch
+	  POST_BUILD
+	  COMMAND ${CMAKE_COMMAND} -E make_directory odalaunch.app/Contents/Resources
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} odalaunch.app/Contents/Resources/
+    )
+  endif()
 endif()
