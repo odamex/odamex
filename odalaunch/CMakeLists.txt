@@ -32,7 +32,7 @@ endif()
 if(wxWidgets_FOUND)
   add_custom_command(
     OUTPUT ${XRCRES_HEADER}
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/res
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/res
     COMMAND ${wxWidgets_wxrc_EXECUTABLE} -c -o ${XRCRES_HEADER} ${CMAKE_CURRENT_SOURCE_DIR}/res/*.xrc)
   add_executable(odalaunch MACOSX_BUNDLE WIN32
     ${API_SOURCES} ${API_HEADERS}
@@ -50,9 +50,9 @@ if(wxWidgets_FOUND)
   if(APPLE)
     add_custom_command(
       TARGET odalaunch
-	  POST_BUILD
-	  COMMAND ${CMAKE_COMMAND} -E make_directory odalaunch.app/Contents/Resources
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} odalaunch.app/Contents/Resources/
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} ${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/
     )
   endif()
 endif()

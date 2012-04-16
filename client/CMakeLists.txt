@@ -82,23 +82,23 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     # Install into bundle under client directory
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 
-    install(FILES ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} DESTINATION odamex.app/Contents/Resources)
-    install(FILES ${CMAKE_SOURCE_DIR}/odamex.wad DESTINATION odamex.app/Contents/MacOS)
+    install(FILES ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources)
+    install(FILES ${CMAKE_SOURCE_DIR}/odamex.wad DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS)
 
     string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
     string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
 
     if(IS_DIRECTORY ${SDL_DIR})
-      install(DIRECTORY ${SDL_DIR} DESTINATION odamex.app/Contents/Frameworks)
+      install(DIRECTORY ${SDL_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks)
       install(CODE "execute_process(COMMAND 
         install_name_tool -change @rpath/SDL.framework/Versions/A/SDL
         @executable_path/../Frameworks/SDL.framework/Versions/A/SDL
-        odamex.app/Contents/MacOS/odamex)
+        ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
         " )
     endif()
 
     if(IS_DIRECTORY ${SDLMIXER_DIR})
-      install(DIRECTORY ${SDLMIXER_DIR} DESTINATION odamex.app/Contents/Frameworks)
+      install(DIRECTORY ${SDLMIXER_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks)
     endif()
 
   endif()
