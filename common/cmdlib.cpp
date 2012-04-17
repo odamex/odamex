@@ -320,13 +320,25 @@ static int _isspace(int c)
 	return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f' || c == '\r');
 }
 
+// Trim whitespace from the start of a string
+std::string &TrimStringStart(std::string &s)
+{
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(_isspace))));
+	return s;
+}
+ 
+// Trim whitespace from the end of a string
+std::string &TrimStringEnd(std::string &s)
+{
+	s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(_isspace))).base(), s.end());
+	return s;
+}
+ 
 // Trim whitespace from the start and end of a string
 std::string &TrimString(std::string &s)
 {
-	s.erase(remove_if(s.begin(), s.end(), _isspace), s.end());
-	return s;
+	return TrimStringStart(TrimStringEnd(s));
 }
-
 
 //==========================================================================
 //
