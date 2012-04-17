@@ -65,9 +65,6 @@ Vote *vote = 0;
 // that survives Wolfram Alpha scrutiny would be nice.
 const float vote_epsilon = (float)1 / (MAXPLAYERS * 2);
 
-// The last time someone started a vote
-std::map<int, int> vote_timeout;
-
 //////// VOTE SUBCLASSES ////////
 
 class CoinFlipVote : public Vote {
@@ -658,8 +655,8 @@ bool Vote::init(const std::vector<std::string> &args, const player_t &player) {
 	}
 
 	// Check the vote timeout.
-	if (vote_timeout.count(player.id) > 0) {
-		int timeout = level.time - vote_timeout[player.id];
+	if (player.timeout_callvote > 0) {
+		int timeout = level.time - player.timeout_callvote;
 		int timeout_check, timeout_waitsec;
 		if (players.size() == 1) {
 			// A single player is made to always wait 10 seconds.
@@ -710,8 +707,10 @@ void Vote::parse(vote_result_t vote_result) {
 	// Make sure the clients have the final state of the vote
 	// before we do anything else.
 	SVC_GlobalVoteUpdate();
-	for (size_t i=0; i < players.size(); i++) {
-		SV_SendPacket(players[i]);
+	for (size_t i = 0; i < players.size(); i++) {
+		if (validplayer(players[i])) {
+			SV_SendPacket(players[i]);
+		}
 	}
 
 	if (this->tally.empty() || vote_result == VOTE_ABANDON) {
@@ -728,10 +727,15 @@ void Vote::parse(vote_result_t vote_result) {
 		return;
 	}
 
-	vote_timeout[this->caller_id] = level.time;
-
 	if (vote_result != VOTE_YES) {
 		SV_BroadcastPrintf(PRINT_HIGH, "Vote %s failed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+
+		// Only set the timeout tic if the vote failed.
+		player_t caller = idplayer(this->caller_id);
+		if (validplayer(caller)) {
+			caller.timeout_callvote = level.time;
+		}
+
 		return;
 	}
 
@@ -768,7 +772,7 @@ bool Vote::ev_tic(void) {
 
 // This method is used to change the vote tally.  It will return false
 // if the player already voted the same way beforehand.
-bool Vote::vote(const player_t &player, bool ballot) {
+bool Vote::vote(player_t &player, bool ballot) {
 	vote_result_t ballot_r = (ballot == true) ? VOTE_YES : VOTE_NO;
 
 	// Does the user actually have an entry in the tally?
@@ -782,7 +786,23 @@ bool Vote::vote(const player_t &player, bool ballot) {
 		return false;
 	}
 
+	// Has the user voted too soon after his last vote?
+	if (player.timeout_vote > 0) {
+		int timeout = level.time - player.timeout_vote;
+
+		// Players can only change their minds once every 3 seconds.
+		int timeout_check = 3 * TICRATE;
+		int timeout_waitsec = 3 - (timeout / TICRATE);
+
+		if (timeout < timeout_check) {
+			SV_PlayerPrintf(PRINT_HIGH, player.id, "Please wait another %d second%s to change your vote.\n",
+			                timeout_waitsec, timeout_waitsec != 1 ? "s" : "");
+			return false;
+		}
+	}
+
 	this->tally[player.id] = ballot_r;
+	player.timeout_vote = level.time;
 	return true;
 }
 
@@ -937,20 +957,25 @@ void SV_Vote(player_t &player) {
 
 // Prepare a fresh level for voting.
 void Vote_InitLevel(void) {
+	// If there is a vote in progress, delete it.
 	if (vote != 0) {
 		delete vote;
 		vote = 0;
 	}
-	vote_timeout.clear();
+
+	// Everyone starts off with a clean slate.
+	for (size_t i = 0;i < players.size();i++) {
+		if (!validplayer(players[i])) {
+			continue;
+		}
+
+		players[i].timeout_callvote = 0;
+		players[i].timeout_vote = 0;
+	}
 }
 
 // Remove a disconnected player from the tally.
 void Vote_Disconnect(player_t &player) {
-	// If they had an entry in the timeout map, delete it.
-	if (vote_timeout.find(player.id) != vote_timeout.end()) {
-		vote_timeout.erase(player.id);
-	}
-
 	// Is there even a vote happening?  If not, we don't really care.
 	if (vote == 0) {
 		return;

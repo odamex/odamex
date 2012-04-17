@@ -58,7 +58,7 @@ public:
 	bool ev_tic(void);
 	bool init(const std::vector<std::string> &args, const player_t &player);
 	void parse(vote_result_t vote_result);
-	bool vote(const player_t &player, bool ballot);
+	bool vote(player_t &player, bool ballot);
 	// Subclass this method with checks that should run before a vote is
 	// started.  If the vote can start, you should store enough state to
 	// successfully execute the vote once the vote is over, set the

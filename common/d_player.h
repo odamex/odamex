@@ -227,8 +227,10 @@ public:
 	
 	PlayerSnapshotManager snapshots;	// Previous player positions
 
-    bool		spectator;			// [GhostlyDeath] spectating?
-    int			joinafterspectatortime; // Nes - Join after spectator time.
+	bool spectator;             // [GhostlyDeath] spectating?
+	int joinafterspectatortime; // Nes - Join after spectator time.
+	int timeout_callvote;       // [AM] Tic when a vote last finished.
+	int timeout_vote;           // [AM] Tic when a player last voted.
 
     int			prefcolor;			// Nes - Preferred color. Server only.
 	float		BlendR;		        // [RH] Final blending values
