@@ -39,11 +39,11 @@ std::string ClientsSplit(void);
 std::string PlayersSplit(void);
 byte CountTeamPlayers(byte team);
 byte CountSpectators(void);
-std::string TeamPlayers(byte team);
-std::string TeamName(byte team);
-std::string TeamFrags(byte team);
-std::string TeamPoints(byte team);
-std::string TeamKD(byte team);
+std::string TeamPlayers(int& color, byte team);
+std::string TeamName(int& color, byte team);
+std::string TeamFrags(int& color, byte team);
+std::string TeamPoints(int& color, byte team);
+std::string TeamKD(int& color, byte team);
 std::string TeamPing(int& color, byte team);
 
 void EAPlayerColors(int x, int y,

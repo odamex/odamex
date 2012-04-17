@@ -60,9 +60,6 @@ void ST_Init (void);
 // Draw the HUD (only if old status bar is not drawn)
 void ST_newDraw (void);
 
-// Draws name of player currently in control of the status bar
-void ST_nameDraw (int y);
-
 // Called on init and whenever player's skin changes
 void ST_loadGraphics (void);
 

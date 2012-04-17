@@ -245,21 +245,6 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	ST_DrawNum (x, y, scrn, num);
 }
 
-void ST_nameDraw(int y) {
-	DPrintf("ST_nameDraw commented out!\n");
-	/*player_t *plyr = &displayplayer();
-
-	if (plyr == &consoleplayer())
-		return;
-
-	int scaledxfac = V_TextScaleXAmount(), scaledyfac = V_TextScaleYAmount();
-
-	char *string = plyr->userinfo.netname;
-	size_t x = (screen->width - V_StringWidth (string)*scaledxfac) >> 1;
-
-	screen->DrawTextStretched(CR_GREEN, x, y, string, scaledxfac, scaledyfac);*/
-}
-
 /**
  * Draw a bar on the screen.
  *

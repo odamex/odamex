@@ -220,6 +220,39 @@ void DrawPatch(int x, int y, const float scale,
 	}
 }
 
+// Draw a color-translated patch.
+void DrawTranslatedPatch(int x, int y, const float scale,
+                         const x_align_t x_align, const y_align_t y_align,
+                         const x_align_t x_origin, const y_align_t y_origin,
+                         const patch_t* patch, byte* translation,
+                         const bool force_opaque, const bool use_patch_offsets) {
+	// Calculate width and height of patch
+	unsigned short w = patch->width();
+	unsigned short h = patch->height();
+
+	// Turn our scaled coordinates into real coordinates.
+	int x_scale, y_scale;
+	calculateOrigin(x, y, w, h, scale, x_scale, y_scale,
+	                x_align, y_align, x_origin, y_origin);
+
+	if (!use_patch_offsets) {
+		// Negate scaled patch offsets.
+		x += patch->leftoffset() * x_scale;
+		y += patch->topoffset() * y_scale;
+	}
+
+	V_ColorMap = translation;
+
+	if (force_opaque) {
+		screen->DrawTranslatedPatchStretched(patch, x, y,
+		                                     w * x_scale, h * y_scale);
+	} else {
+		screen->DrawTranslatedLucentPatchStretched(patch, x, y,
+		                                           w * x_scale, h * y_scale);
+	}
+}
+
+
 // Draw a patch stretched to a specific width and height.
 void DrawPatchStretched(int x, int y,
                         const unsigned short w, const unsigned short h,

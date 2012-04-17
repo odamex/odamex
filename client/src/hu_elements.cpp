@@ -153,10 +153,10 @@ int teamTextColor(byte team) {
 
 	switch (team) {
 	case TEAM_BLUE:
-		color = CR_LIGHTBLUE;
+		color = CR_BLUE;
 		break;
 	case TEAM_RED:
-		color = CR_BRICK;
+		color = CR_RED;
 		break;
 	default:
 		color = CR_GREY;
@@ -263,7 +263,7 @@ std::string IntermissionTimer() {
 // Return a "spread" of personal frags or team points that the
 // current player or team is ahead or behind by.
 std::string PersonalSpread(int& color) {
-	color = CR_RED;
+	color = CR_BRICK;
 	player_t *plyr = &consoleplayer();
 
 	if (sv_gametype == GM_DM) {
@@ -475,12 +475,7 @@ byte CountTeamPlayers(byte team) {
 	return count;
 }
 
-std::string TeamPlayers(byte team) {
-	std::ostringstream buffer;
-	buffer << (short)CountTeamPlayers(team);
-	return buffer.str();
-}
-
+// Returns the number of spectators on a team
 byte CountSpectators() {
 	byte count = 0;
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
@@ -492,7 +487,17 @@ byte CountSpectators() {
 	return count;
 }
 
-std::string TeamName(byte team) {
+std::string TeamPlayers(int& color, byte team) {
+	color = teamTextColor(team);
+
+	std::ostringstream buffer;
+	buffer << (short)CountTeamPlayers(team);
+	return buffer.str();
+}
+
+std::string TeamName(int& color, byte team) {
+	color = teamTextColor(team);
+
 	switch (team) {
 	case TEAM_BLUE:
 		return "BLUE TEAM";
@@ -503,10 +508,13 @@ std::string TeamName(byte team) {
 	}
 }
 
-std::string TeamFrags(byte team) {
+std::string TeamFrags(int& color, byte team) {
 	if (CountTeamPlayers(team) == 0) {
+		color = CR_GREY;
 		return "---";
 	}
+
+	color = teamTextColor(team);
 
 	int fragcount = 0;
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
@@ -521,20 +529,26 @@ std::string TeamFrags(byte team) {
 	return buffer.str();
 }
 
-std::string TeamPoints(byte team) {
+std::string TeamPoints(int& color, byte team) {
 	if (team >= NUMTEAMS) {
+		color = CR_GREY;
 		return "---";
 	}
+
+	color = teamTextColor(team);
 
 	std::ostringstream buffer;
 	buffer << TEAMpoints[team];
 	return buffer.str();
 }
 
-std::string TeamKD(byte team) {
+std::string TeamKD(int& color, byte team) {
 	if (CountTeamPlayers(team) == 0) {
+		color = CR_GREY;
 		return "---";
 	}
+
+	color = teamTextColor(team);
 
 	int killcount = 0;
 	unsigned int deathcount = 0;

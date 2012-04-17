@@ -58,6 +58,12 @@ void DrawPatch(int x, int y, const float scale,
                const x_align_t x_origin, const y_align_t y_origin,
                const patch_t* patch, const bool force_opaque = false,
                const bool use_patch_offsets = false);
+void DrawTranslatedPatch(int x, int y, const float scale,
+                         const x_align_t x_align, const y_align_t y_align,
+                         const x_align_t x_origin, const y_align_t y_origin,
+                         const patch_t* patch, byte* translation,
+                         const bool force_opaque = false,
+                         const bool use_patch_offsets = false);
 void DrawPatchStretched(int x, int y,
                         const unsigned short w, const unsigned short h,
                         const float scale,
