@@ -524,13 +524,13 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 		int rand = M_Random();
 
 		if (rand < 85)
-			p->color = grey4;
+			p->color = orange;
 		else if (rand < 170)
 			p->color = grey2;
 		else
-			p->color = grey1;
+			p->color = yorange;
 
-		p->color = white;
+		p->color = yellow;
 	}
 }
 
