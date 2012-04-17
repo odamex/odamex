@@ -1429,7 +1429,7 @@ void P_ZMovement(AActor *mo)
 //
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 {
-	if (clientside && predicting)
+	if ((clientside && predicting) || (mo->player && mo->player->spectator))
 		return;
 
 	mo->player->deltaviewheight = mo->momz>>3;
