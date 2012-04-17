@@ -79,11 +79,16 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
   set(MACOSX_BUNDLE_ICON_FILE odamex.icns)
 
   if(APPLE)
+    add_custom_command(
+      TARGET odamex
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/odamex.wad ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS
+    )
+
     # Install into bundle under client directory
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-
-    install(FILES ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources)
-    install(FILES ${CMAKE_SOURCE_DIR}/odamex.wad DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS)
 
     string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
     string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
