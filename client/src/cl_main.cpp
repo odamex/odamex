@@ -262,6 +262,7 @@ void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
+void P_MovePsprites (player_t* player);
 void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -2146,40 +2147,33 @@ void CL_FireChainGun(void)
 		S_Sound (p.mo, CHAN_WEAPON, "weapons/chngun", 1, ATTN_NORM);
 }
 
-/////////////////////////////////////////////////////////
-/*
-void CL_ChangeWeapon (void)
-{
-player_t* player = &players[consoleplayer];
-
-	player->pendingweapon = (weapontype_t)MSG_ReadByte();
-
-	 // Now set appropriate weapon overlay.
-	 P_SetPsprite (player,
-	 ps_weapon,
-	 weaponinfo[player->readyweapon].downstate);
-	 }
-*/
-
 //
 // CL_ChangeWeapon
-// [ML] From Zdaemon .99
+//
+// Immediately changes the client's weapon to the weapon specified by the
+// server.  Sets the weapons animation state as well.
 //
 void CL_ChangeWeapon (void)
 {
 	player_t *player = &consoleplayer();
-	weapontype_t newweapon = (weapontype_t)MSG_ReadByte();
+	
+	int when = MSG_ReadLong();
+	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
+	statenum_t stnum = static_cast<statenum_t>(MSG_ReadShort());
+	byte tics = MSG_ReadByte();
+
+	if (newweapon > NUMWEAPONS)
+		return;
 
 	// ensure that the client has the weapon
 	player->weaponowned[newweapon] = true;
 
-	// [SL] 2011-09-22 - Only change the weapon if the client doesn't already
-	// have that weapon up.
-	if (player->readyweapon != newweapon)
-		player->pendingweapon = newweapon;
+	A_ForceWeaponChange(player->mo, newweapon, stnum, tics);
+
+	// Move the animation forward to account for latency
+	for (int i = 0; i < gametic - when; i++)
+		P_MovePsprites(player);
 }
-
-
 
 //
 // CL_Sound
@@ -3095,18 +3089,7 @@ void CL_SendCmd(void)
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.forwardmove);
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.sidemove);
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
-
-	// [SL] 2011-11-20 - Player isn't requesting a weapon change
-	// send player's weapon to server and server will correct it if wrong
-	if (!curcmd->ucmd.impulse && !(curcmd->ucmd.buttons & BT_CHANGE))
-	{
-		if (p->pendingweapon != wp_nochange)
-			MSG_WriteByte(&net_buffer, p->pendingweapon);
-		else
-			MSG_WriteByte(&net_buffer, p->readyweapon);
-	}
-	else
-		MSG_WriteByte(&net_buffer, curcmd->ucmd.impulse);
+	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
 
 #ifdef _UNLAG_DEBUG_
 	if 	(player.size() == 2 && 

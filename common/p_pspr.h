@@ -62,6 +62,8 @@ typedef enum
 
 } psprnum_t;
 
+void A_ForceWeaponChange(AActor *mo, weapontype_t weapon, statenum_t state, int tics);
+
 inline FArchive &operator<< (FArchive &arc, psprnum_t i)
 {
 	return arc << (BYTE)i;

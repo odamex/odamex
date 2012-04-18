@@ -279,6 +279,7 @@ client_c clients;
 
 QWORD gametime;
 
+void SV_SendPlayerInfo(player_t &player);
 void SV_UpdateConsolePlayer(player_t &player);
 
 void SV_CheckTeam (player_t & playernum);
@@ -3288,6 +3289,22 @@ void SV_RemoveCorpses (void)
 	}
 }
 
+
+void SV_SendCurrentWeapon(player_t *player)
+{
+	if (!player)
+		return;
+
+	buf_t *netbuffer = &player->client.reliablebuf;
+	struct pspdef_s *psp = &player->psprites[player->psprnum];
+
+	MSG_WriteMarker(netbuffer, svc_changeweapon);
+	MSG_WriteLong(netbuffer, player->tic);
+	MSG_WriteByte(netbuffer, static_cast<byte>(player->readyweapon));
+	MSG_WriteShort(netbuffer, psp->state - states); 
+	MSG_WriteByte(netbuffer, psp->tics);
+}
+
 //
 // SV_SendPingRequest
 // Pings the client and requests a reply
@@ -3617,6 +3634,19 @@ void SV_ProcessPlayerCmd(player_t &player)
 		if (ucmd->buttons & BT_ATTACK)
 		{
 			Unlag::getInstance().setRoundtripDelay(player.id, player.cmds.front().svgametic);
+
+			// Handle the client holding the wrong weapon
+			if (ucmd->impulse >= 25 && ucmd->impulse < 25 + NUMWEAPONS)
+			{
+				weapontype_t clientweapon =
+					static_cast<weapontype_t>(ucmd->impulse - 25);
+				if (player.readyweapon != clientweapon)
+				{
+					SV_SendPlayerInfo(player);
+					SV_SendCurrentWeapon(&player);
+				}
+					
+			}
 		}
 
 		// Apply this ticcmd using the game logic

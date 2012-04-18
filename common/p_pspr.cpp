@@ -1254,6 +1254,27 @@ void A_CloseShotgun2 (AActor *mo)
 	A_ReFire(mo);
 }
 
+//
+// A_ForceWeaponChange
+//
+// Immediately changes a players weapon to a new weapon and new animation state
+// 
+void A_ForceWeaponChange(AActor *mo, weapontype_t weapon, statenum_t stnum, int tics)
+{
+	player_t *player = mo->player;
+	struct pspdef_s *psp = &player->psprites[player->psprnum];
+
+	if (weapon < NUMWEAPONS && player->readyweapon != weapon)
+	{
+		player->readyweapon = weapon;
+
+		P_SetPsprite(player, ps_weapon, stnum);
+	
+		psp->sy = WEAPONTOP;
+//		psp->tics = tics;
+	}
+}
+
 FArchive &operator<< (FArchive &arc, pspdef_t &def)
 {
 	return arc << def.state << def.tics << def.sx << def.sy;
