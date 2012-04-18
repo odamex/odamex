@@ -705,6 +705,18 @@ void EATeamPlayerNames(int x, int y, const float scale,
 			int color = CR_GREY;
 			if (player->id == displayplayer().id) {
 				color = CR_GOLD;
+			} else if (player->userinfo.team == TEAM_BLUE) {
+				if (player->flags[it_redflag]) {
+					color = CR_RED;
+				} else if (player->flags[it_blueflag]) {
+					color = CR_BLUE;
+				}
+			} else if (player->userinfo.team == TEAM_RED) {
+				if (player->flags[it_blueflag]) {
+					color = CR_BLUE;
+				} else if (player->flags[it_redflag]) {
+					color = CR_RED;
+				}
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              player->userinfo.netname, color, force_opaque);
