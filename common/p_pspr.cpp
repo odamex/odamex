@@ -1271,7 +1271,7 @@ void A_ForceWeaponChange(AActor *mo, weapontype_t weapon, statenum_t stnum, int 
 		P_SetPsprite(player, ps_weapon, stnum);
 	
 		psp->sy = WEAPONTOP;
-//		psp->tics = tics;
+		psp->tics = tics;
 	}
 }
 
