@@ -963,7 +963,7 @@ PortMidiMusicSystem::PortMidiMusicSystem() :
 	
 	if (Pm_Initialize() != pmNoError)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: PortMidi initialization failed failed.\n");
+		Printf(PRINT_HIGH, "I_InitMusic: PortMidi initialization failed.\n");
 		return;
 	}
 
@@ -1069,10 +1069,6 @@ void PortMidiMusicSystem::_PlayEvent(MidiEvent *event, int time)
 		{
 			double tempo = I_GetTempoChange(metaevent);
 			setTempo(tempo);
-		}
-		else if (metaevent->getMetaType() == MIDI_META_END_OF_TRACK)
-		{
-			_AllNotesOff();
 		}
 		
 		//	Just ignore other meta events for now
