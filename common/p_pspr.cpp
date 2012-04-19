@@ -860,7 +860,16 @@ void A_FireRailgun (AActor *mo)
 	else
 		damage = 150;
 
+	// [SL] 2012-04-18 - Move players and sectors back to their positions when
+	// this player hit the fire button clientside.
+	Unlag::getInstance().reconcile(player->id);
+
 	P_RailAttack (player->mo, damage, RailOffset);
+
+	// [SL] 2012-04-18 - Restore players and sectors to their current position
+	// according to the server.
+	Unlag::getInstance().restore(player->id);
+
 	RailOffset = 0;
 }
 
