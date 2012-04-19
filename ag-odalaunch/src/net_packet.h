@@ -54,6 +54,10 @@
 
 #define TAG_ID 0xAD0
 
+#if !AG_VERSION_ATLEAST(1,4,2)
+	#define AG_MutexTryLock AG_MutexTrylock
+#endif
+
 /**
  * agOdalaunch namespace.
  *
