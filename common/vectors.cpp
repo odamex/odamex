@@ -455,17 +455,17 @@ void M_ActorMomentumToVec3Fixed(v3fixed_t *dest, const AActor *thing)
 //
 void M_AngleToVec3f(v3float_t *dest, angle_t ang, int pitch)
 {
-	dest->x = float(finecosine[ang >> ANGLETOFINESHIFT]) * invfixedfacf;
-	dest->y = float(finesine[ang >> ANGLETOFINESHIFT]) * invfixedfacf;
-	dest->z = float(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]) * invfixedfacf;
+	dest->x = float(finecosine[ang >> ANGLETOFINESHIFT]);
+	dest->y = float(finesine[ang >> ANGLETOFINESHIFT]);
+	dest->z = float(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]);
 	M_NormalizeVec3f(dest, dest);
 }
 	
 void M_AngleToVec3(v3double_t *dest, angle_t ang, int pitch)
 {
-	dest->x = double(finecosine[ang >> ANGLETOFINESHIFT]) * invfixedfac;
-	dest->y = double(finesine[ang >> ANGLETOFINESHIFT]) * invfixedfac;
-	dest->z = double(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]) * invfixedfac;
+	dest->x = double(finecosine[ang >> ANGLETOFINESHIFT]);
+	dest->y = double(finesine[ang >> ANGLETOFINESHIFT]) ;
+	dest->z = double(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]);
 	M_NormalizeVec3(dest, dest);
 }
 

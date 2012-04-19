@@ -2322,7 +2322,7 @@ BOOL PTR_RailTraverse (intercept_t *in)
 			floorheight = P_FloorHeight(crossx, crossy, li->frontsector);			
 		} else {
 			ceilingheight = P_CeilingHeight(crossx, crossy, li->backsector);			
-			floorheight = P_CeilingHeight(crossx, crossy, li->backsector);			
+			floorheight = P_FloorHeight(crossx, crossy, li->backsector);			
 		}
 
 		if (z < floorheight) {
