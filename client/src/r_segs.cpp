@@ -238,15 +238,19 @@ R_RenderMaskedSegRange
 	// find positioning
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
 	{
-		dc_texturemid = frontsector->floorheight > backsector->floorheight
-			? frontsector->floorheight : backsector->floorheight;
-		dc_texturemid = dc_texturemid + textureheight[texnum] - viewz;
+		fixed_t ff = P_FloorHeight(frontsector);
+		fixed_t bf = P_FloorHeight(backsector);
+
+		dc_texturemid = ff > bf ? ff : bf;
+		dc_texturemid += textureheight[texnum] - viewz;
 	}
 	else
 	{
-		dc_texturemid =frontsector->ceilingheight<backsector->ceilingheight
-			? frontsector->ceilingheight : backsector->ceilingheight;
-		dc_texturemid = dc_texturemid - viewz;
+		fixed_t fc = P_CeilingHeight(frontsector);
+		fixed_t bc = P_CeilingHeight(backsector);
+
+		dc_texturemid = fc < bc ? fc : bc;
+		dc_texturemid -= viewz;
 	}
 	dc_texturemid += curline->sidedef->rowoffset;
 
@@ -753,13 +757,14 @@ void R_StoreWallRange(int start, int stop)
 		if (linedef->flags & ML_DONTPEGBOTTOM)
 		{
 			// bottom of texture at bottom
-			rw_midtexturemid = frontsector->floorheight - viewz + 
-									textureheight[sidedef->midtexture];
+			fixed_t ff = P_FloorHeight(frontsector);
+			rw_midtexturemid = ff - viewz + textureheight[sidedef->midtexture];
 		}
 		else
 		{
 			// top of texture at top
-			rw_midtexturemid = frontsector->ceilingheight - viewz;
+			fixed_t fc = P_CeilingHeight(frontsector);
+			rw_midtexturemid = fc - viewz;
 		}
 
 		rw_midtexturemid += sidedef->rowoffset;
@@ -927,13 +932,14 @@ void R_StoreWallRange(int start, int stop)
 			if (linedef->flags & ML_DONTPEGTOP)
 			{
 				// top of texture at top
-				rw_toptexturemid = frontsector->ceilingheight - viewz;
+				fixed_t fc = P_CeilingHeight(frontsector);
+				rw_toptexturemid = fc - viewz;
 			}
 			else
 			{
 				// bottom of texture
-				rw_toptexturemid = backsector->ceilingheight - viewz +
-								   textureheight[sidedef->toptexture];				
+				fixed_t bc = P_CeilingHeight(backsector);
+				rw_toptexturemid = bc - viewz + textureheight[sidedef->toptexture];				
 			}
 		}
 		if (rw_backfz1 > rw_frontfz1 || rw_backfz2 > rw_frontfz2)
@@ -944,11 +950,15 @@ void R_StoreWallRange(int start, int stop)
 			if (linedef->flags & ML_DONTPEGBOTTOM)
 			{
 				// bottom of texture at bottom, top of texture at top
-				rw_bottomtexturemid = frontsector->ceilingheight - viewz;
+				fixed_t fc = P_CeilingHeight(frontsector);
+				rw_bottomtexturemid = fc - viewz;
 			}
 			else
+			{
 				// top of texture at top
-				rw_bottomtexturemid = backsector->floorheight - viewz;
+				fixed_t bf = P_FloorHeight(backsector);
+				rw_bottomtexturemid = bf - viewz;
+			}
 		}
 
 		rw_toptexturemid += sidedef->rowoffset;

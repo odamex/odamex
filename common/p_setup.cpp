@@ -1589,6 +1589,7 @@ static void P_SetupLevelFloorPlane(sector_t *sector)
 	sector->floorplane.a = sector->floorplane.b = 0;
 	sector->floorplane.c = sector->floorplane.invc = FRACUNIT;
 	sector->floorplane.d = -sector->floorheight;
+	sector->floorplane.texx = sector->floorplane.texy = 0;
 	sector->floorplane.sector = sector;
 }
 
@@ -1600,6 +1601,7 @@ static void P_SetupLevelCeilingPlane(sector_t *sector)
 	sector->ceilingplane.a = sector->ceilingplane.b = 0;
 	sector->ceilingplane.c = sector->ceilingplane.invc = -FRACUNIT;
 	sector->ceilingplane.d = sector->ceilingheight;
+	sector->ceilingplane.texx = sector->ceilingplane.texy = 0;
 	sector->ceilingplane.sector = sector;
 }
 
@@ -1700,6 +1702,19 @@ void P_SetupPlane(sector_t *refsector, line_t *refline, bool floor)
 	// Flip inverted normals
 	if ((floor && normal.z < 0.0f) || (!floor && normal.z > 0.0f))
 		P_InvertPlane(plane);
+
+	// determine the point that can be used for aligning wall textures
+	// we use the point on the plane that has the same Z value as
+	// ceilingheight/floorheight
+	plane->texx = refline->v1->x;
+	plane->texy = refline->v1->y;
+
+	if ((floor && refsector->floorheight != align_sector->floorheight) ||
+	   (!floor && refsector->ceilingheight != align_sector->ceilingheight))
+	{
+		plane->texx = farthest_vertex->x;
+		plane->texy = farthest_vertex->y;
+	}
 }
 
 

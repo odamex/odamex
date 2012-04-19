@@ -3351,10 +3351,11 @@ fixed_t P_FloorHeight(const AActor *mo)
 
 fixed_t P_FloorHeight(const sector_t *sector)
 {
-	if (sector)
-		return -FixedMul(sector->floorplane.c, sector->floorplane.d);
-	else
+	if (!sector)
 		return MAXINT;
+
+	const plane_t *plane = &sector->floorplane;
+	return P_PlaneZ(plane->texx, plane->texy, plane);
 }
 
 //
@@ -3387,10 +3388,11 @@ fixed_t P_CeilingHeight(const AActor *mo)
 
 fixed_t P_CeilingHeight(const sector_t *sector)
 {
-	if (sector)
-		return -FixedMul(sector->ceilingplane.c, sector->ceilingplane.d);
-	else
+	if (!sector)
 		return MAXINT;
+
+	const plane_t *plane = &sector->ceilingplane;
+	return P_PlaneZ(plane->texx, plane->texy, plane);
 }
 
 //
@@ -3502,7 +3504,10 @@ void P_SetCeilingHeight(sector_t *sector, fixed_t value)
 	if (!sector)
 		return;
 
-	P_ChangeCeilingHeight(sector, value - P_CeilingHeight(sector));
+	plane_t *plane = &sector->ceilingplane;
+	fixed_t oldvalue = P_PlaneZ(plane->texx, plane->texy, plane);
+
+	P_ChangeCeilingHeight(sector, value - oldvalue);
 }
 
 void P_SetFloorHeight(sector_t *sector, fixed_t value)
@@ -3510,7 +3515,10 @@ void P_SetFloorHeight(sector_t *sector, fixed_t value)
 	if (!sector)
 		return;
 
-	P_ChangeFloorHeight(sector, value - P_FloorHeight(sector));
+	plane_t *plane = &sector->floorplane;
+	fixed_t oldvalue = P_PlaneZ(plane->texx, plane->texy, plane);
+
+	P_ChangeFloorHeight(sector, value - oldvalue);
 }
 
 //
