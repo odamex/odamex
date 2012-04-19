@@ -2296,6 +2296,11 @@ BOOL PTR_RailTraverse (intercept_t *in)
 		fixed_t crossx = trace.x + FixedMul (trace.dx, in->frac);
 		fixed_t crossy = trace.y + FixedMul (trace.dy, in->frac);
 		
+		// [SL] 2012-04-18 - origin and direction vectors for the shot
+		v3fixed_t lineorg, linedir;
+		M_SetVec3Fixed(&lineorg, trace.x, trace.y, shootz);
+		M_SetVec3Fixed(&linedir, trace.dx, trace.dy, FixedMul(aimslope, attackrange));		
+		
 		frac = in->frac;
 		z = shootz + FixedMul (aimslope, FixedMul (frac, attackrange));
 
@@ -2317,33 +2322,53 @@ BOOL PTR_RailTraverse (intercept_t *in)
 		
 		// hit line
 	  hitline:
-		if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li)) {
+		plane_t *floorplane, *ceilingplane;
+	  	
+		if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li))
+		{
+			ceilingplane = &li->frontsector->ceilingplane;
+			floorplane = &li->frontsector->floorplane;
+						
 			ceilingheight = P_CeilingHeight(crossx, crossy, li->frontsector);
 			floorheight = P_FloorHeight(crossx, crossy, li->frontsector);			
-		} else {
+		}
+		else
+		{
+			ceilingplane = &li->backsector->ceilingplane;
+			floorplane = &li->backsector->floorplane;
+					
 			ceilingheight = P_CeilingHeight(crossx, crossy, li->backsector);			
 			floorheight = P_FloorHeight(crossx, crossy, li->backsector);			
 		}
 
 		if (z < floorheight) {
-			frac = FixedDiv (FixedMul (floorheight - shootz, frac), z - shootz);
-			z = floorheight;
+			// [SL] 2012-04-18 - Calculate where the the tracer intersects
+			// with the floor plane
+			v3fixed_t pt = P_LinePlaneIntersection(floorplane, lineorg, linedir);
+			x = pt.x;
+			y = pt.y;
+			z = pt.z;
 		} else if (z > ceilingheight) {
-			frac = FixedDiv (FixedMul (ceilingheight - shootz, frac), z - shootz);
-			z = ceilingheight;
+			// [SL] 2012-04-18 - Calculate where the the tracer intersects
+			// with the ceiling plane
+			v3fixed_t pt = P_LinePlaneIntersection(ceilingplane, lineorg, linedir);
+			x = pt.x;
+			y = pt.y;
+			z = pt.z;
 		} else {
 			if (li->backsector && z > opentop &&
 				li->frontsector->ceilingpic == skyflatnum &&
 				li->backsector->ceilingpic == skyflatnum)
-				;	// sky hack wall
-			else if (!co_fixweaponimpacts && li->special) {
+				return false;	// sky hack wall
+				
+			x = trace.x + FixedMul(trace.dx, frac);
+			y = trace.y + FixedMul(trace.dy, frac);
+			
+			if (!co_fixweaponimpacts && li->special) {
 				// Shot actually hit a wall. It might be set up for shoot activation
 				P_ShootSpecialLine (shootthing, li);
 			}
 		}
-
-		x = trace.x + FixedMul (trace.dx, frac);
-		y = trace.y + FixedMul (trace.dy, frac);
 
 		// Save final position of rail shot.
 		M_SetVec3(&RailEnd, x, y, z);
@@ -2371,7 +2396,6 @@ BOOL PTR_RailTraverse (intercept_t *in)
 
 	if (thingbottomslope > aimslope)
 		return true;			// shot under the thing
-
 	
 	// hit thing
 	// if it's invulnerable, it completely blocks the shot
