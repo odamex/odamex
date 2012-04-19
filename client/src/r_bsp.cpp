@@ -368,8 +368,12 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 	if (sec->heightsec && !(sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
-		const sector_t *s = sec->heightsec;
+		if (!camera || !camera->subsector || !camera->subsector->sector)
+			return sec;
 		sector_t *heightsec = camera->subsector->sector->heightsec;
+
+		const sector_t *s = sec->heightsec;
+
 		bool underwater = r_fakingunderwater ||
 			(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
 		bool doorunderwater = false;
