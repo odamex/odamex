@@ -193,6 +193,10 @@ void MaplistCache::ev_tic() {
 		break;
 	case MAPLIST_TIMEOUT:
 		this->error = "Maplist update timed out.";
+		DPrintf("MaplistCache::ev_tic: Maplist Cache Update Timeout.\n");
+		DPrintf("- Successfully Cached Maps: %d\n", this->maplist.size());
+		DPrintf("- Destionation Maplist Size: %d\n", this->size);
+		DPrintf("- Valid Indexes: %d\n", this->valid_indexes);
 		break;
 	case MAPLIST_THROTTLED:
 		this->error = "Server refused to send the maplist.";
@@ -324,6 +328,7 @@ void MaplistCache::unset_this_index() {
 	}
 
 	this->valid_indexes = 1;
+	this->check_complete();
 }
 
 // Sets the next map index
@@ -336,6 +341,7 @@ void MaplistCache::set_next_index(const size_t index) {
 		this->valid_indexes = 1;
 	}
 	this->next_index = index;
+	this->check_complete();
 }
 
 // Sets the desired maplist cache size
@@ -345,6 +351,7 @@ void MaplistCache::set_size(const size_t size) {
 	}
 
 	this->size = size;
+	this->check_complete();
 }
 
 // Updates an entry in the cache.
