@@ -55,21 +55,12 @@ extern int gametic;
 class Snapshot
 {
 public:
-	Snapshot(const Snapshot &other);
-	Snapshot(int time = -1) :
-		mTime(time), mValid(time > 0),
-		mAuthoritative(false), mContinuous(true),
-		mInterpolated(false), mExtrapolated(false)
-	{}
-	
+	Snapshot(int time = -1);	
 	virtual ~Snapshot() {};
 
-	void operator=(const Snapshot &other);
-	
 	bool operator==(const Snapshot &other) const;
 	
 	bool isValid() const { return mValid; }
-
 	bool isAuthoritative() const { return mAuthoritative; }
 	bool isContinuous() const { return mContinuous; }
 	bool isInterpolated() const { return mInterpolated; }
@@ -81,7 +72,6 @@ public:
 	virtual void setExtrapolated(bool val) { mExtrapolated = val; }
 	
 	int getTime() const { return mTime; }
-	
 	void setTime(int time) { mTime = time; }
 
 private:
@@ -105,13 +95,10 @@ private:
 class ActorSnapshot : public Snapshot
 {
 public:
-	ActorSnapshot(const ActorSnapshot &other);
 	ActorSnapshot(int time = -1);	
 	ActorSnapshot(int time, const AActor *mo);
-	
 	virtual ~ActorSnapshot() {};
 
-	void operator=(const ActorSnapshot &other);	
 	bool operator==(const ActorSnapshot &other) const;
 	
 	void toActor(AActor *mo) const;
@@ -282,13 +269,10 @@ private:
 class PlayerSnapshot : public Snapshot
 {
 public:
-	PlayerSnapshot(const PlayerSnapshot &other);
 	PlayerSnapshot(int time = -1);
 	PlayerSnapshot(int time, player_t *player);
-	
 	virtual ~PlayerSnapshot() {};
 
-	void operator=(const PlayerSnapshot &other);
 	bool operator==(const PlayerSnapshot &other) const;
 	
 	void toPlayer(player_t *player) const;
@@ -497,8 +481,6 @@ class PlayerSnapshotManager
 {
 public:
 	PlayerSnapshotManager();	
-	PlayerSnapshotManager(const PlayerSnapshotManager &other);
-	PlayerSnapshotManager &operator=(const PlayerSnapshotManager &other);
 	
 	void clearSnapshots();
 	
@@ -507,13 +489,11 @@ public:
 	void addSnapshot(const PlayerSnapshot &snap);
 	PlayerSnapshot getSnapshot(int time) const;
 
-
 private:
 	bool mValidSnapshot(int time) const;
 	int mFindValidSnapshot(int starttime, int endtime) const;
 	PlayerSnapshot mInterpolateSnapshots(int from, int to, int time) const;
 	PlayerSnapshot mExtrapolateSnapshot(int from, int time) const;
-	
 	
 	PlayerSnapshot	mSnaps[NUM_SNAPSHOTS];
 	int				mMostRecent;
@@ -526,8 +506,6 @@ private:
 //
 // ============================================================================
 
-void P_SetActorSnapshot(AActor *mo, const ActorSnapshot &snap);
-void P_SetPlayerSnapshot(player_t *player, const PlayerSnapshot &snap);
 void P_SetPlayerSnapshotNoPosition(player_t *player, const PlayerSnapshot &snap);
 
 ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot &to, float amount);

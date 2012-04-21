@@ -44,22 +44,11 @@ static const fixed_t SECTOR_LERP_THRESHOLD = 2 * FRACUNIT;
 //
 // ============================================================================
 
-Snapshot::Snapshot(const Snapshot &other) :
-		mTime(other.mTime),
-		mValid(other.mValid), mAuthoritative(other.mAuthoritative),
-		mContinuous(other.mContinuous), mInterpolated(other.mInterpolated),
-		mExtrapolated(other.mExtrapolated)
+Snapshot::Snapshot(int time) :
+		mTime(time), mValid(time > 0),
+		mAuthoritative(false), mContinuous(true),
+		mInterpolated(false), mExtrapolated(false)
 {
-}
-
-void Snapshot::operator=(const Snapshot &other)
-{
-	mTime = other.mTime;
-	mValid = other.mValid;
-	mAuthoritative = other.mAuthoritative;
-	mContinuous = other.mContinuous;
-	mInterpolated = other.mInterpolated;
-	mExtrapolated = other.mExtrapolated;
 }
 
 bool Snapshot::operator==(const Snapshot &other) const
@@ -77,17 +66,6 @@ bool Snapshot::operator==(const Snapshot &other) const
 // ActorSnapshot implementation
 //
 // ============================================================================
-
-ActorSnapshot::ActorSnapshot(const ActorSnapshot &other) :
-		Snapshot(other), mFields(other.mFields),
-		mX(other.mX), mY(other.mY), mZ(other.mZ),
-		mMomX(other.mMomX), mMomY(other.mMomY), mMomZ(other.mMomZ),
-		mAngle(other.mAngle), mPitch(other.mPitch), mOnGround(other.mOnGround),
-		mCeilingZ(other.mCeilingZ), mFloorZ(other.mFloorZ),
-		mReactionTime(other.mReactionTime), mWaterLevel(other.mWaterLevel),
-		mFlags(other.mFlags), mFlags2(other.mFlags2), mFrame(other.mFrame)
-{
-}
 
 ActorSnapshot::ActorSnapshot(int time) :
 		Snapshot(time), mFields(0),
@@ -107,28 +85,6 @@ ActorSnapshot::ActorSnapshot(int time, const AActor *mo) :
 		mReactionTime(mo->reactiontime), mWaterLevel(mo->waterlevel),
 		mFlags(mo->flags), mFlags2(mo->flags2), mFrame(mo->frame)
 {
-}
-
-void ActorSnapshot::operator=(const ActorSnapshot &other)
-{
-	Snapshot::operator=(other);
-	mFields = other.mFields;
-	mX = other.mX;
-	mY = other.mY;
-	mZ = other.mZ;
-	mMomX = other.mMomX;
-	mMomY = other.mMomY;
-	mMomZ = other.mMomZ;
-	mAngle = other.mAngle;
-	mPitch = other.mPitch;
-	mOnGround = other.mOnGround;
-	mCeilingZ = other.mCeilingZ;
-	mFloorZ = other.mFloorZ;
-	mReactionTime = other.mReactionTime;
-	mWaterLevel = other.mWaterLevel;
-	mFlags = other.mFlags;
-	mFlags2 = other.mFlags2;
-	mFrame = other.mFrame;
 }
 
 bool ActorSnapshot::operator==(const ActorSnapshot &other) const
@@ -209,6 +165,10 @@ void ActorSnapshot::toActor(AActor *mo) const
 		mo->angle = mPitch;
 	if (mFields & ACT_ONGROUND)
 		mo->onground = mOnGround;
+	if (mFields & ACT_CEILINGZ)
+		mo->ceilingz = mCeilingZ;
+	if (mFields & ACT_FLOORZ)
+		mo->floorz = mFloorZ;		
 	if (mFields & ACT_REACTIONTIME)
 		mo->reactiontime = mReactionTime;
 	if (mFields & ACT_WATERLEVEL)
@@ -219,8 +179,6 @@ void ActorSnapshot::toActor(AActor *mo) const
 		mo->flags2 = mFlags2;
 	if (mFields & ACT_FRAME)
 		mo->frame = mFrame;
-	if (mFields & ACT_FLOORZ)
-		mo->floorz = mFloorZ;
 }
 
 // ============================================================================
@@ -229,18 +187,10 @@ void ActorSnapshot::toActor(AActor *mo) const
 //
 // ============================================================================
 
-PlayerSnapshot::PlayerSnapshot(const PlayerSnapshot &other) :
-		Snapshot(other), mFields(other.mFields),
-		mActorSnap(other.mActorSnap),
-		mViewHeight(other.mViewHeight), mDeltaViewHeight(other.mDeltaViewHeight),
-		mJumpTime(other.mJumpTime)
-{
-}
-
 PlayerSnapshot::PlayerSnapshot(int time) :
 		Snapshot(time), mFields(0),
 		mActorSnap(time),
-		mViewHeight(VIEWHEIGHT), mDeltaViewHeight(0), mJumpTime(0)
+		mViewHeight(0), mDeltaViewHeight(0), mJumpTime(0)
 {
 }
 
@@ -250,16 +200,6 @@ PlayerSnapshot::PlayerSnapshot(int time, player_t *player) :
 		mViewHeight(player->viewheight), mDeltaViewHeight(player->deltaviewheight),
 		mJumpTime(player->jumpTics)
 {
-}
-
-void PlayerSnapshot::operator=(const PlayerSnapshot &other)
-{
-	Snapshot::operator=(other);
-	mFields = other.mFields;
-	mActorSnap = other.mActorSnap;
-	mViewHeight = other.mViewHeight;
-	mDeltaViewHeight = other.mDeltaViewHeight;
-	mJumpTime = other.mJumpTime;
 }
 
 bool PlayerSnapshot::operator==(const PlayerSnapshot &other) const
@@ -298,23 +238,6 @@ PlayerSnapshotManager::PlayerSnapshotManager() :
 	mMostRecent(0)
 {
 	clearSnapshots();
-}
-
-PlayerSnapshotManager::PlayerSnapshotManager(const PlayerSnapshotManager &other) :
-	mMostRecent(other.mMostRecent)
-{
-	for (int i = 0; i < NUM_SNAPSHOTS; i++)
-		mSnaps[i] = other.mSnaps[i];
-}
-
-PlayerSnapshotManager &PlayerSnapshotManager::operator=(const PlayerSnapshotManager &other)
-{
-	for (int i = 0; i < NUM_SNAPSHOTS; i++)
-		mSnaps[i] = other.mSnaps[i];
-		
-	mMostRecent = other.mMostRecent;
-	
-	return *this;	
 }
 
 //
