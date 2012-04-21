@@ -925,6 +925,8 @@ player_s::player_s()
 	BlendG = 0;
 	BlendB = 0;
 	BlendA = 0;
+	
+	memset(netcmds, 0, sizeof(ticcmd_t) * BACKUPTICS);
 }
 
 player_s &player_s::operator =(const player_s &other)
