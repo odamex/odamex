@@ -935,6 +935,7 @@ player_s &player_s::operator =(const player_s &other)
 	playerstate = other.playerstate;
 	mo = other.mo;
 	cmd = other.cmd;
+	cmds = other.cmds;
 	userinfo = other.userinfo;
 	fov = other.fov;
 	viewz = other.viewz;
@@ -1029,6 +1030,8 @@ player_s &player_s::operator =(const player_s &other)
 	client = other.client;
 
 	snapshots = other.snapshots;
+	
+	to_spawn = other.to_spawn;
 
 	return *this;
 }
