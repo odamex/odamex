@@ -69,8 +69,7 @@ int32_t ServerBase::Query(int32_t Timeout)
             case -1:
             case -3: 
             {
-                Socket.ResetBuffer();
-                Socket.ResetSize();
+                Socket.ClearBuffer();
                 --Retry;
                 continue;
             };

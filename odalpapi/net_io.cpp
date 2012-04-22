@@ -51,9 +51,13 @@ BufferedSocket::BufferedSocket() :	m_BadRead(false), m_BadWrite(false),
 									m_Socket(0), m_SendPing(0), m_ReceivePing(0)
 {
     m_Broadcast = false;
-	m_SocketBuffer = NULL;
 	memset(&m_RemoteAddress, 0, sizeof(struct sockaddr_in));
-	ClearBuffer();
+	
+	m_SocketBuffer = new byte[MAX_PAYLOAD];
+
+	if(m_SocketBuffer == NULL)
+		NET_ReportError("Failed to allocate m_SocketBuffer!");
+
 }
 
 BufferedSocket::~BufferedSocket()
@@ -683,16 +687,8 @@ bool BufferedSocket::CanWrite(const size_t &Bytes)
 
 void BufferedSocket::ClearBuffer()
 {
-	delete m_SocketBuffer;
-
-	m_SocketBuffer = new byte[MAX_PAYLOAD];
-
-	if(m_SocketBuffer == NULL)
-		NET_ReportError("Failed to allocate m_SocketBuffer!");
-
-	m_BufferSize = 0;
-
-	ResetBuffer();
+    m_BufferSize = 0;
+    m_BufferPos = 0;
 }
 
 } // namespace
