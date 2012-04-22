@@ -262,8 +262,24 @@ void HU_Drawer (void)
 		static const char *prompt;
 		int i, x, c, y, promptwidth;
 
-		y = (!viewactive ? -30 : -10) * scaledyfac;
-		y += (screen->height == realviewheight && viewactive) ? screen->height : ST_Y;
+		// Determine what Y height to display the chat prompt at.
+		// * screen->height is the "actual" screen height.
+		// * realviewheight is how big the view is, taking into account the
+		//   status bar and current "screen size".
+		// * viewactive is false if you have a fullscreen automap or
+		//   intermission on-screen.
+		// * ST_Y is the current Y height of the status bar.
+
+		if (!viewactive && gamestate != GS_INTERMISSION) {
+			// Fullscreen automap is visible
+			y = ST_Y - (20 * scaledyfac);
+		} else if (viewactive && screen->height != realviewheight) {
+			// Status bar is visible
+			y = ST_Y - (10 * scaledyfac);
+		} else {
+			// Must be fullscreen HUD or intermission
+			y = screen->height - (10 * scaledyfac);
+		}
 
 		if (headsupactive == 2)
 			prompt = "Say (TEAM): ";
