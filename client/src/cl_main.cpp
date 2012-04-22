@@ -461,6 +461,9 @@ BEGIN_COMMAND (connect)
 	    return;
 	}
 	
+	C_FullConsole();
+	gamestate = GS_CONNECTING;
+
 	CL_QuitNetGame();
 
 	if (argc > 1)
