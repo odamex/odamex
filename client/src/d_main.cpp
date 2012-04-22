@@ -217,7 +217,6 @@ void D_PostEvent (const event_t* ev)
 void D_Display (void)
 {
 	BOOL wipe;
-    static  int			borderdrawcount;
 
 	if (nodrawers)
 		return; 				// for comparative timing / profiling
@@ -246,8 +245,6 @@ void D_Display (void)
 		st_scale.Callback ();
 		// Refresh the console.
 		C_NewModeAdjust ();
-		// denis - redraw border
-		borderdrawcount = 3;
 	}
 
 	// change the view size if needed
@@ -255,7 +252,6 @@ void D_Display (void)
 	{
 		R_ExecuteSetViewSize ();
 		setmodeneeded = false;
-		borderdrawcount = 3;
 	}
 
 	I_BeginUpdate ();
@@ -272,7 +268,6 @@ void D_Display (void)
 		wipe = true;
 		wipe_StartScreen ();
 		wipegamestate = gamestate;
-		borderdrawcount = 3;
 	}
 	else
 	{
@@ -293,18 +288,8 @@ void D_Display (void)
 			if (!gametic)
 				break;
 
-
 			// denis - freshen the borders (ffs..)
-			if (menuactive || ConsoleState != c_up || headsupactive || automapactive)
-				borderdrawcount = 3;
-			if (Actions[ACTION_SHOWSCORES] || displayplayer().health <= 0)
-				borderdrawcount = 3;
-
-			if (borderdrawcount)
-			{
-				R_DrawViewBorder ();    // erase old menu stuff
-				borderdrawcount--;
-			}
+			R_DrawViewBorder ();    // erase old menu stuff
 
 			if (viewactive)
 				R_RenderPlayerView (&displayplayer());
