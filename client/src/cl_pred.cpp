@@ -239,7 +239,10 @@ void CL_PredictWorld(void)
 	// [SL] 2012-03-10 - Spectators can predict their position without server
 	// correction.  Handle them as a special case and leave.
 	if (consoleplayer().spectator)
+	{
 		CL_PredictSpectator();
+		return;
+	}
 		
 	if (p->tic <= 0)	// No verified position from the server
 		return;

@@ -1886,6 +1886,9 @@ void CL_SpawnPlayer()
 	{
 		// denis - if this concerns the local player, restart the status bar
 		ST_Start ();
+		
+		// [SL] 2012-04-23 - Clear predicted sectors
+		movingsectors.clear();
 	}
 	
 	if (p->id == displayplayer().id)
