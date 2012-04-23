@@ -916,6 +916,10 @@ player_s::player_s()
 	joinafterspectatortime = level.time - TICRATE*5;
 	timeout_callvote = 0;
 	timeout_vote = 0;
+
+	ready = false;
+	timeout_ready = 0;
+
 	prefcolor = 0;
 
 	LastMessage.Time = 0;
@@ -1015,6 +1019,9 @@ player_s &player_s::operator =(const player_s &other)
 	joinafterspectatortime = other.joinafterspectatortime;
 	timeout_callvote = other.timeout_callvote;
 	timeout_vote = other.timeout_vote;
+
+	ready = other.ready;
+	timeout_ready = other.timeout_ready;
 
 	prefcolor = other.prefcolor;
 

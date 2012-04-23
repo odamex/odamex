@@ -1948,7 +1948,7 @@ void SV_ClientFullUpdate (player_t &pl)
 				return;
 	}
 
-	// update frags/points/spectate
+	// update frags/points/spectate/ready
 	for (i = 0; i < players.size(); i++)
 	{
 		if (!players[i].ingame())
@@ -1966,6 +1966,10 @@ void SV_ClientFullUpdate (player_t &pl)
 		MSG_WriteMarker (&cl->reliablebuf, svc_spectate);
 		MSG_WriteByte (&cl->reliablebuf, players[i].id);
 		MSG_WriteByte (&cl->reliablebuf, players[i].spectator);
+
+		MSG_WriteMarker (&cl->reliablebuf, svc_readystate);
+		MSG_WriteByte (&cl->reliablebuf, players[i].id);
+		MSG_WriteByte (&cl->reliablebuf, players[i].ready);
 	}
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
@@ -3971,6 +3975,67 @@ BEGIN_COMMAND (forcespec) {
 	SV_SetPlayerSpec(player, true);
 } END_COMMAND (forcespec)
 
+// Change the player's ready state and broadcast it to all connected players.
+void SV_SetReady(player_t &player, bool setting)
+{
+	if (!validplayer(player) || !player.ingame())
+		return;
+
+	// Change the player's ready state only if the new state is different from
+	// the current state.
+	bool changed = true;
+	if (player.ready && !setting) {
+		player.ready = false;
+	} else if (!player.ready && setting) {
+		player.ready = true;
+	} else {
+		changed = false;
+	}
+
+	if (changed) {
+		// Broadcast the new ready state to all connected players.
+		for (size_t j = 0;j < players.size();j++) {
+			MSG_WriteMarker(&(players[j].client.reliablebuf), svc_readystate);
+			MSG_WriteByte(&(players[j].client.reliablebuf), player.id);
+			MSG_WriteBool(&(players[j].client.reliablebuf), setting);
+		}
+	}
+}
+
+void SV_Ready(player_t &player)
+{
+	// If the player is not ingame, he shouldn't be sending us ready packets.
+	if (!player.ingame()) {
+		return;
+	}
+
+	if (player.timeout_ready > level.time) {
+		// We must be on a new map.  Reset the timeout.
+		player.timeout_ready = 0;
+	}
+
+	// Check to see if the player's timeout has expired.
+	if (player.timeout_ready > 0) {
+		int timeout = level.time - player.timeout_ready;
+
+		// Players can only toggle their ready state every 3 seconds.
+		int timeout_check = 3 * TICRATE;
+		int timeout_waitsec = 3 - (timeout / TICRATE);
+
+		if (timeout < timeout_check) {
+			SV_PlayerPrintf(PRINT_HIGH, player.id, "Please wait another %d second%s to change your ready state.\n",
+			                timeout_waitsec, timeout_waitsec != 1 ? "s" : "");
+			return;
+		}
+	}
+
+	// Set the timeout.
+	player.timeout_ready = level.time;
+
+	// Toggle ready state
+	SV_SetReady(player, !player.ready);
+}
+
 //
 // SV_RConLogout
 //
@@ -4259,6 +4324,10 @@ void SV_ParseCommands(player_t &player)
             {
                 SV_Spectate (player);
             }
+			break;
+
+		case clc_ready:
+			SV_Ready(player);
 			break;
 
 		case clc_kill:

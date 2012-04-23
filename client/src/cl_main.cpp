@@ -715,6 +715,9 @@ BEGIN_COMMAND (spectate)
 }
 END_COMMAND (spectate)
 
+BEGIN_COMMAND (ready) {
+	MSG_WriteMarker(&net_buffer, clc_ready);
+} END_COMMAND (ready)
 
 BEGIN_COMMAND (join)
 {
@@ -2884,6 +2887,21 @@ void CL_Spectate()
 		displayplayer_id = consoleplayer_id;
 }
 
+void CL_ReadyState() {
+	bool oldready = consoleplayer().ready;
+
+	player_t &player = CL_FindPlayer(MSG_ReadByte());
+	player.ready = MSG_ReadBool();
+
+	if (&player == &consoleplayer()) {
+		if (player.ready == true && oldready == false) {
+			Printf(PRINT_HIGH, "You are now ready.\n");
+		} else if (player.ready == false && oldready == true) {
+			Printf(PRINT_HIGH, "You are no longer ready.\n");
+		}
+	}
+}
+
 // client source (once)
 typedef void (*client_callback)();
 typedef std::map<svc_t, client_callback> cmdmap;
@@ -2962,7 +2980,8 @@ void CL_InitCommands(void)
 	cmds[svc_launcher_challenge]= &CL_Clear;
 	
 	cmds[svc_spectate]   		= &CL_Spectate;
-	
+	cmds[svc_readystate]		= &CL_ReadyState;
+
 	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
 
 	cmds[svc_netdemocap]        = &CL_LocalDemoTic;

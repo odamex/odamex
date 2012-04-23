@@ -745,6 +745,8 @@ void EASpectatorNames(int x, int y, const float scale,
 				int color = CR_GREY;
 				if (player->id == displayplayer().id) {
 					color = CR_GOLD;
+				} else if (player->ready) {
+					color = CR_GREEN;
 				}
 				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 				              player->userinfo.netname, color, force_opaque);

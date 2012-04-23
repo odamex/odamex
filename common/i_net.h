@@ -119,6 +119,7 @@ enum svc_t
 	svc_mobjtranslation,	// [SL] 2011-09-11 - [byte]
 	svc_fullupdatedone,		// [SL] Inform client the full update is over
 	svc_railtrail,			// [SL] Draw railgun trail and play sound
+	svc_readystate,			// [AM] Broadcast ready state to client
 
 	// for co-op
 	svc_mobjstate = 70,
@@ -175,6 +176,7 @@ enum clc_t
 	clc_vote,				// [AM] - Casting a vote
 	clc_maplist,			// [AM] - Maplist status request.
 	clc_maplist_update,     // [AM] - Request the entire maplist from the server.
+	clc_ready,				// [AM] Toggle ready state.
 
 	// for when launcher packets go astray
 	clc_launcher_challenge = 212,
