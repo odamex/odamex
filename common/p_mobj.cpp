@@ -1444,16 +1444,16 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 		if (mo->health > 0)
 		{
 			if (mo->momz < (fixed_t)(level.gravity * mo->subsector->sector->gravity * -983.04f))
-				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
 
 			if (onmobj != NULL)
-				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
 		}
 	}
 	else
 	{
 		// [SL] 2011-06-16 - Vanilla Doom Oomphiness
-		UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+		UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
 	}
 //	mo->player->centering = true;
 }
