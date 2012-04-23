@@ -46,6 +46,7 @@
 #include "r_local.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "p_spec.h"
 #include "p_acs.h"
 
 #include "g_game.h"
@@ -60,6 +61,171 @@
 
 // [RH] Needed for sky scrolling
 #include "r_sky.h"
+
+std::list<movingsector_t> movingsectors;
+
+//
+// P_AddMovingCeiling
+//
+// Updates the movingsectors list to include the passed sector, which
+// tracks which sectors currently have a moving ceiling/floor
+//
+void P_AddMovingCeiling(sector_t *sector)
+{
+	if (!sector)
+		return;
+		
+	// Check if this already exists
+	std::list<movingsector_t>::iterator itr;
+	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
+	{
+		if (sector == itr->sector)
+		{
+			if (itr->ceiling_start_tic < 0)
+			{
+				itr->ceiling_start_tic = gametic;
+				itr->ceiling_done = false;
+			}
+				
+			return;
+		}
+	}
+
+	// Add to the list of moving sectors	
+	movingsector_t msec;
+	msec.sector = sector;
+	msec.ceiling_start_tic = gametic;
+	msec.ceiling_done = false;
+
+	movingsectors.push_back(msec);
+}
+
+//
+// P_AddMovingFloor
+//
+// Updates the movingsectors list to include the passed sector, which
+// tracks which sectors currently have a moving ceiling/floor
+//
+void P_AddMovingFloor(sector_t *sector)
+{
+	if (!sector)
+		return;
+		
+	// Check if this already exists
+	std::list<movingsector_t>::iterator itr;
+	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
+	{
+		if (sector == itr->sector)
+		{
+			if (itr->floor_start_tic < 0)
+			{
+				itr->floor_start_tic = gametic;
+				itr->floor_done = false;
+			}
+				
+			return;
+		}
+	}
+
+	// Add to the list of moving sectors	
+	movingsector_t msec;
+	msec.sector = sector;
+	msec.floor_start_tic = gametic;
+	msec.floor_done = false;
+	
+	movingsectors.push_back(msec);
+}
+
+//
+// P_RemoveMovingCeiling
+//
+// Removes the passed sector from the movingsectors list, which tracks
+// which sectors currently have a moving ceiling/floor
+//
+void P_RemoveMovingCeiling(sector_t *sector)
+{
+	if (!sector)
+		return;
+		
+	std::list<movingsector_t>::iterator itr;
+	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
+	{
+		if (sector == itr->sector)
+		{
+			// Does this sector have a moving floor as well?  If so, just
+			// mark the ceiling as invalid but don't remove from the list
+			if (itr->floor_start_tic != -1)
+			{
+				itr->ceiling_start_tic = -1;
+				itr->ceiling_done = true;
+				return;
+			}
+			
+			movingsectors.erase(itr);
+			return;
+		}
+	}
+}
+
+//
+// P_RemoveMovingFloor
+//
+// Removes the passed sector from the movingsectors list, which tracks
+// which sectors currently have a moving ceiling/floor
+//
+void P_RemoveMovingFloor(sector_t *sector)
+{
+	if (!sector)
+		return;
+		
+	std::list<movingsector_t>::iterator itr;
+	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
+	{
+		if (sector == itr->sector)
+		{
+			// Does this sector have a moving ceiling as well?  If so, just
+			// mark the ceiling as invalid but don't remove from the list
+			if (itr->ceiling_start_tic != -1)
+			{
+				itr->floor_start_tic = -1;
+				itr->floor_done = true;
+				return;
+			}
+			
+			movingsectors.erase(itr);
+			return;
+		}
+	}
+}
+
+bool P_MovingCeilingCompleted(sector_t *sector)
+{
+	if (!sector || !sector->ceilingdata)
+		return true;
+	
+	if (sector->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
+	{
+		DDoor *door = static_cast<DDoor *>(sector->ceilingdata);
+		return (door->m_Status == DDoor::destroy);
+	}
+	
+	return false;
+}
+
+bool P_MovingFloorCompleted(sector_t *sector)
+{
+	if (!sector || !sector->floordata)
+		return true;
+	
+	if (sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
+	{
+		DPlat *plat = static_cast<DPlat *>(sector->floordata);
+		return (plat->m_Status == DPlat::destroy);
+	}
+	
+	return false;
+}
+
 
 EXTERN_CVAR (sv_allowexit)
 extern bool	HasBehavior;

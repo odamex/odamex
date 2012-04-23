@@ -54,7 +54,8 @@ static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
 
 bool predicting;
 
-TArray <plat_pred_t> real_plats;
+extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
+
 
 CVAR_FUNC_IMPL(cl_prednudge)
 {
@@ -67,181 +68,125 @@ CVAR_FUNC_IMPL(cl_prednudge)
 }
 
 //
+// CL_GetSnapshotManager
+//
+// Returns the SectorSnapshotManager for the sector.
+// Returns NULL if a snapshots aren't currently stored for the sector.
+//
+static SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
+{
+	unsigned short sectornum = sector - sectors;
+	if (!sector || sectornum < 0 || sectornum >= numsectors)
+		return NULL;
+
+	std::map<unsigned short, SectorSnapshotManager>::iterator mgr_itr;
+	mgr_itr = sector_snaps.find(sectornum);
+	
+	if (mgr_itr != sector_snaps.end())
+		return &(mgr_itr->second);
+	
+	return NULL;
+}
+
+static bool CL_SectorHasSnapshots(sector_t *sector)
+{
+	SectorSnapshotManager *mgr = CL_GetSectorSnapshotManager(sector);
+	
+	return (mgr && !mgr->empty());
+}
+
+//
 // CL_ResetSectors
 //
-static void CL_ResetSectors (void)
+// Moves predicting sectors to their most recent snapshot received from the
+// server.  Also performs cleanup on the list of predicting sectors when
+// sectors have finished their movement.
+//
+static void CL_ResetSectors()
 {
-	for(size_t i = 0; i < real_plats.Size(); i++)
+	std::list<movingsector_t>::iterator itr;
+	itr = movingsectors.begin();
+	
+	// Iterate through all predicted sectors
+	while (itr != movingsectors.end())
 	{
-		plat_pred_t *pred = &real_plats[i];
-		sector_t *sec = &sectors[pred->secnum];
-
-		if(!sec->floordata && !sec->ceilingdata)
-		{
-			real_plats.Pop(real_plats[i]);
-
-            if (!real_plats.Size())
-                break;
-
+		sector_t *sector = itr->sector;
+		unsigned short sectornum = sector - sectors;
+		if (sectornum < 0 || sectornum >= numsectors)
 			continue;
-		}
-
-		// Pillars and elevators set both floordata and ceilingdata
-		if(sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
+		
+		// Find the most recent snapshot received from the server for this sector
+		SectorSnapshotManager *mgr = CL_GetSectorSnapshotManager(sector);
+		
+		if (mgr && !mgr->empty())
 		{
-			DPillar *Pillar = (DPillar *)sec->ceilingdata;
-            
-			P_SetFloorHeight(sec, pred->floorheight);
-			P_SetCeilingHeight(sec, pred->ceilingheight);
-            P_ChangeSector(sec, false);
-
-            Pillar->m_Type = (DPillar::EPillar)pred->Both.m_Type;
-            Pillar->m_FloorSpeed = pred->Both.m_FloorSpeed;
-            Pillar->m_CeilingSpeed = pred->Both.m_CeilingSpeed;
-            Pillar->m_FloorTarget = pred->Both.m_FloorTarget;
-            Pillar->m_CeilingTarget = pred->Both.m_CeilingTarget;
-            Pillar->m_Crush = pred->Both.m_Crush;
-            
-            continue;
+			// reset this sector to the most recent snapshot from the server
+			int mostrecent = mgr->getMostRecentTime();
+			SectorSnapshot snap = mgr->getSnapshot(mostrecent);
+			snap.toSector(sector);
 		}
-
-        if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
-        {
-            DElevator *Elevator = (DElevator *)sec->ceilingdata;
-
-			P_SetFloorHeight(sec, pred->floorheight);
-			P_SetCeilingHeight(sec, pred->ceilingheight);
-            P_ChangeSector(sec, false);
-
-            Elevator->m_Type = (DElevator::EElevator)pred->Both.m_Type;
-            Elevator->m_Direction = pred->Both.m_Direction;
-            Elevator->m_FloorDestHeight = pred->Both.m_FloorDestHeight;
-            Elevator->m_CeilingDestHeight = pred->Both.m_CeilingDestHeight;
-            Elevator->m_Speed = pred->Both.m_Speed;
-            
-            continue;
-        }
-
-		if (sec->floordata && sec->floordata->IsA(RUNTIME_CLASS(DFloor)))
-        {
-            DFloor *Floor = (DFloor *)sec->floordata;
-
-			P_SetFloorHeight(sec, pred->floorheight);
-            P_ChangeSector(sec, false);
-
-            Floor->m_Type = (DFloor::EFloor)pred->Floor.m_Type;
-            Floor->m_Crush = pred->Floor.m_Crush;
-            Floor->m_Direction = pred->Floor.m_Direction;
-            Floor->m_NewSpecial = pred->Floor.m_NewSpecial;
-            Floor->m_Texture = pred->Floor.m_Texture;
-            Floor->m_FloorDestHeight = pred->Floor.m_FloorDestHeight;
-            Floor->m_Speed = pred->Floor.m_Speed;
-            Floor->m_ResetCount = pred->Floor.m_ResetCount;
-            Floor->m_OrgHeight = pred->Floor.m_OrgHeight;
-            Floor->m_Delay = pred->Floor.m_Delay;
-            Floor->m_PauseTime = pred->Floor.m_PauseTime;
-            Floor->m_StepTime = pred->Floor.m_StepTime;
-            Floor->m_PerStepTime = pred->Floor.m_PerStepTime;
-        }
-
-		if(sec->floordata && sec->floordata->IsA(RUNTIME_CLASS(DPlat)))
+		else
 		{
-			DPlat *Plat = (DPlat *)sec->floordata;
-            
-			P_SetFloorHeight(sec, pred->floorheight);
-            P_ChangeSector(sec, false);
-
-            Plat->m_Speed = pred->Floor.m_Speed;
-            Plat->m_Low = pred->Floor.m_Low;
-            Plat->m_High = pred->Floor.m_High;
-            Plat->m_Wait = pred->Floor.m_Wait;
-            Plat->m_Count = pred->Floor.m_Count;
-            Plat->m_Status = (DPlat::EPlatState)pred->Floor.m_Status;
-            Plat->m_OldStatus = (DPlat::EPlatState)pred->Floor.m_OldStatus;
-            Plat->m_Crush = pred->Floor.m_Crush;
-            Plat->m_Tag = pred->Floor.m_Tag;
-            Plat->m_Type = (DPlat::EPlatType)pred->Floor.m_Type;
+			// Has the predicted sector stopped moving?
+			itr->ceiling_done = P_MovingCeilingCompleted(sector);
+			itr->floor_done = P_MovingFloorCompleted(sector);
+		
+			// no snapshot container found so remove this sector from the
+			// movingsectors list whenever prediction is done
+			if (itr->ceiling_done && itr->floor_done)
+			{
+				movingsectors.erase(itr++);			
+				continue;
+			}
 		}
-
-		if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
-        {
-            DCeiling *Ceiling = (DCeiling *)sec->ceilingdata;
-
-			P_SetCeilingHeight(sec, pred->ceilingheight);
-            P_ChangeSector(sec, false);
-
-            Ceiling->m_Type = (DCeiling::ECeiling)pred->Ceiling.m_Type;
-            Ceiling->m_BottomHeight = pred->Ceiling.m_BottomHeight;
-            Ceiling->m_TopHeight = pred->Ceiling.m_TopHeight;
-            Ceiling->m_Speed = pred->Ceiling.m_Speed;
-            Ceiling->m_Speed1 = pred->Ceiling.m_Speed1;
-            Ceiling->m_Speed2 = pred->Ceiling.m_Speed2;
-            Ceiling->m_Crush = pred->Ceiling.m_Crush;
-            Ceiling->m_Silent = pred->Ceiling.m_Silent;
-            Ceiling->m_Direction = pred->Ceiling.m_Direction;
-            Ceiling->m_Texture = pred->Ceiling.m_Texture;
-            Ceiling->m_NewSpecial = pred->Ceiling.m_NewSpecial;
-            Ceiling->m_Tag = pred->Ceiling.m_Tag;
-            Ceiling->m_OldDirection = pred->Ceiling.m_OldDirection;
-        }
-
-		if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
-        {
-            DDoor *Door = (DDoor *)sec->ceilingdata;
-
-			P_SetCeilingHeight(sec, pred->ceilingheight);
-            P_ChangeSector(sec, false);
-
-            Door->m_Type = (DDoor::EVlDoor)pred->Ceiling.m_Type;
-            Door->m_TopHeight = pred->Ceiling.m_TopHeight;
-            Door->m_Speed = pred->Ceiling.m_Speed;
-            Door->m_Direction = pred->Ceiling.m_Direction;
-            Door->m_TopWait = pred->Ceiling.m_TopWait;
-            Door->m_TopCountdown = pred->Ceiling.m_TopCountdown;
-			Door->m_Status = (DDoor::EVlDoorState)pred->Ceiling.m_Status;
-            Door->m_Line = pred->Ceiling.m_Line;
-        }
-	}
+		
+		++itr;		
+	}	
 }
 
 //
 // CL_PredictSectors
 //
-static void CL_PredictSectors (int predtic)
+//
+static void CL_PredictSectors(int predtic)
 {
-	for(size_t i = 0; i < real_plats.Size(); i++)
+	std::list<movingsector_t>::iterator itr;
+	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
 	{
-		plat_pred_t *pred = &real_plats[i];
-		sector_t *sec = &sectors[pred->secnum];
+		sector_t *sector = itr->sector;
+		
+		// If we haven't started receiving updates for this sector from the server,
+		// we only need to run the thinker for the current tic, not any past tics
+		if (predtic < gametic && !CL_SectorHasSnapshots(sector))
+			continue;
 
-		if(pred->tic < predtic)
-		{
-            if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
-            {
-                sec->ceilingdata->RunThink();
-
-                continue;
-            } 
-
-            if (sec->ceilingdata && sec->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
-            {
-                sec->ceilingdata->RunThink();
-
-                continue;
-            }  
-
-            if (sec->floordata && sec->floordata->IsKindOf(RUNTIME_CLASS(DMovingFloor)))
-            {
-                sec->floordata->RunThink();
-            }
-
-            if (sec->ceilingdata && sec->ceilingdata->IsKindOf(RUNTIME_CLASS(DMovingCeiling)))
-            {
-                sec->ceilingdata->RunThink();
-            }
-		}
+		if (sector && sector->ceilingdata && itr->ceiling_start_tic > 0 && itr->ceiling_start_tic < predtic)
+			sector->ceilingdata->RunThink();
+		if (sector && sector->floordata && itr->floor_start_tic > 0 && itr->floor_start_tic < predtic)
+			sector->floordata->RunThink();				
 	}
-} 
+}
+
+//
+// CL_PredictSpectator
+//
+//
+static void CL_PredictSpectator()
+{
+	player_t *player = &consoleplayer();
+	if (!player->spectator)
+		return;
+		
+	P_MovePlayer(player);
+	P_PlayerThink(player);
+	P_CalcHeight(player);
+	
+	if (consoleplayer_id != displayplayer_id)
+	{
+		P_PlayerThink(&displayplayer());
+		P_CalcHeight(&displayplayer());		
+	}
+}
 
 //
 // CL_PredictLocalPlayer
@@ -257,7 +202,7 @@ static void CL_PredictLocalPlayer(int predtic)
 	// Copy the player's previous input ticcmd for the tic 'predtic'
 	// to player.cmd so that P_MovePlayer can simulate their movement in
 	// that tic
-	memcpy(&player->cmd, &cl_savedticcmds[predtic % MAXSAVETICS], sizeof(ticcmd_t));
+	player->cmd = cl_savedticcmds[predtic % MAXSAVETICS];
 	
 	// Restore the angle, viewheight, etc for the player
 	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
@@ -294,20 +239,8 @@ void CL_PredictWorld(void)
 	// [SL] 2012-03-10 - Spectators can predict their position without server
 	// correction.  Handle them as a special case and leave.
 	if (consoleplayer().spectator)
-	{
-		P_MovePlayer(&consoleplayer());
-		P_PlayerThink(&consoleplayer());
-		P_CalcHeight(&consoleplayer());
+		CL_PredictSpectator();
 		
-		if (consoleplayer_id != displayplayer_id)
-		{
-			P_PlayerThink(&displayplayer());
-			P_CalcHeight(&displayplayer());		
-		}
-		
-		return;
-	}
-
 	if (p->tic <= 0)	// No verified position from the server
 		return;
 
@@ -323,7 +256,7 @@ void CL_PredictWorld(void)
 		predtic = gametic - MAXSAVETICS;
 	
 	// Save a copy of the player's input for the current tic
-	memcpy(&cl_savedticcmds[gametic % MAXSAVETICS], &p->cmd, sizeof(ticcmd_t));
+	cl_savedticcmds[gametic % MAXSAVETICS] = p->cmd;
 
 	// Save a snapshot of the player's state before prediction
 	PlayerSnapshot prevsnap(p->tic, p);

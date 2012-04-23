@@ -319,6 +319,7 @@ manual_plat:
 		// Find lowest & highest floors around sector
 		rtn = true;
 		plat = new DPlat (sec);
+		P_AddMovingFloor(sec);
 
 		plat->m_Type = type;
 		plat->m_Crush = false;

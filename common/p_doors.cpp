@@ -435,6 +435,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
         else
         {
             door = new DDoor(sec, line, type, speed, delay);
+            P_AddMovingCeiling(sec);
         }
 		if (door)
         {

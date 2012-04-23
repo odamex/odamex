@@ -278,6 +278,7 @@ manual_ceiling:
 		// new door thinker
 		rtn = 1;
 		ceiling = new DCeiling (sec, speed, speed2, silent);
+		P_AddMovingCeiling(sec);
 
 		switch (type)
 		{

@@ -28,6 +28,7 @@
 
 #include "m_fixed.h"
 #include "doomdef.h"
+#include "dsectoreffect.h"
 
 class AActor;
 class player_s;
@@ -496,6 +497,197 @@ private:
 	PlayerSnapshot mExtrapolateSnapshot(int from, int time) const;
 	
 	PlayerSnapshot	mSnaps[NUM_SNAPSHOTS];
+	int				mMostRecent;
+};
+
+
+// ============================================================================
+//
+// SectorSnapshot Class Interface
+//
+// ============================================================================
+
+class SectorSnapshot : public Snapshot
+{
+public:
+	SectorSnapshot(int time = -1);
+	SectorSnapshot(int time, sector_t *sector);
+	virtual ~SectorSnapshot() {};
+
+	void clear();
+	void toSector(sector_t *sector) const;
+
+	void setCeilingMoverType(movertype_t v)	{ mCeilingMoverType = v; }
+	void setFloorMoverType(movertype_t val)	{ mFloorMoverType = val; }
+	void setCeilingType(int val)			{ mCeilingType = val; }
+	void setFloorType(int val)				{ mFloorType = val; }	
+	void setCeilingTag(int val)				{ mCeilingTag = val; }
+	void setFloorTag(int val)				{ mFloorTag = val; }	
+	void setLine(line_t *val)				{ mLine = val; }
+	void setCeilingHeight(fixed_t val)		{ mCeilingHeight = val; }
+	void setFloorHeight(fixed_t val)		{ mFloorHeight = val; }
+	void setCeilingSpeed(fixed_t val)		{ mCeilingSpeed = val; }	
+	void setFloorSpeed(fixed_t val)			{ mFloorSpeed = val; }
+	void setCeilingDestination(fixed_t val)	{ mCeilingDestination = val; }
+	void setFloorDestination(fixed_t val)	{ mFloorDestination = val; }
+	void setCeilingDirection(int val)		{ mCeilingDirection = val; }
+	void setFloorDirection(int val)			{ mFloorDirection = val; }
+	void setCeilingOldDirection(int val)	{ mCeilingOldDirection = val; }
+	void setFloorOldDirection(int val)		{ mFloorOldDirection = val; }
+	void setCeilingTexture(short val)		{ mCeilingTexture = val; }
+	void setFloorTexture(short val)			{ mFloorTexture = val; }
+	void setCeilingSpecial(short val)		{ mNewCeilingSpecial = val; }
+	void setFloorSpecial(short val)			{ mNewFloorSpecial = val; }
+	void setCeilingLow(fixed_t val)			{ mCeilingLow = val; }
+	void setCeilingHigh(fixed_t val)		{ mCeilingHigh = val; }
+	void setFloorLow(fixed_t val)			{ mFloorLow = val; }
+	void setFloorHigh(fixed_t val)			{ mFloorHigh = val; }
+	void setCeilingCrush(bool val)			{ mCeilingCrush = val; }
+	void setFloorCrush(bool val)			{ mFloorCrush = val; }	
+	void setSilent(bool val)				{ mSilent = val; }
+	void setCeilingWait(int val)			{ mCeilingWait = val; }
+	void setFloorWait(int val)				{ mFloorWait = val; }	
+	void setCeilingCounter(int val)			{ mCeilingCounter = val; }
+	void setFloorCounter(int val)			{ mFloorCounter = val; }	
+	void setResetCounter(int val)			{ mResetCounter = val; }
+	void setCeilingStatus(int val)			{ mCeilingStatus = val; }
+	void setFloorStatus(int val)			{ mFloorStatus = val; }	
+	void setOldFloorStatus(int val)			{ mOldFloorStatus = val; }
+	void setCrusherSpeed1(fixed_t val)		{ mCrusherSpeed1 = val; }
+	void setCrusherSpeed2(fixed_t val)		{ mCrusherSpeed2 = val; }
+	void setStepTime(int val)				{ mStepTime = val; }
+	void setPerStepTime(int val)			{ mPerStepTime = val; }
+	void setPauseTime(int val)				{ mPauseTime = val; }
+	void setOrgHeight(int val)				{ mOrgHeight = val; }
+	void setDelay(int val)					{ mDelay = val; }
+		
+	movertype_t	getCeilingMoverType() const	{ return mCeilingMoverType; }
+	movertype_t	getFloorMoverType() const	{ return mFloorMoverType; }	
+	int		getCeilingType() const			{ return mCeilingType; }
+	int		getFloorType() const			{ return mFloorType; }	
+	int		getCeilingTag() const			{ return mCeilingTag; }
+	int		getFloorTag() const				{ return mFloorTag; }	
+	line_t*	getLine() const					{ return mLine; }		
+	fixed_t	getCeilingHeight() const		{ return mCeilingHeight; }
+	fixed_t	getFloorHeight() const			{ return mFloorHeight; }
+	fixed_t getCeilingSpeed() const			{ return mCeilingSpeed; }
+	fixed_t getFloorSpeed() const			{ return mFloorSpeed; }	
+	fixed_t getCeilingDestination() const	{ return mCeilingDestination; }
+	fixed_t getFloorDestination() const		{ return mFloorDestination; }
+	int		getCeilingDirection() const		{ return mCeilingDirection; }
+	int		getFloorDirection() const		{ return mFloorDirection; }
+	int		getCeilingOldDirection() const	{ return mCeilingOldDirection; }
+	int		getFloorOldDirection() const	{ return mFloorOldDirection; }
+	short	getCeilingTexture() const		{ return mCeilingTexture; }
+	short	getFloorTexture() const			{ return mFloorTexture; }
+	short	getCeilingSpecial() const		{ return mNewCeilingSpecial; }
+	short	getFloorSpecial() const			{ return mNewFloorSpecial; }
+	fixed_t	getCeilingLow() const			{ return mCeilingLow; }
+	fixed_t	getCeilingHigh() const			{ return mCeilingHigh; }	
+	fixed_t	getFloorLow() const				{ return mFloorLow; }
+	fixed_t	getFloorHigh() const			{ return mFloorHigh; }
+	bool	getCeilingCrush() const			{ return mCeilingCrush; }
+	bool	getFloorCrush() const			{ return mFloorCrush; }	
+	bool	getSilent() const				{ return mSilent; }
+	int		getCeilingWait() const			{ return mCeilingWait; }
+	int		getFloorWait() const			{ return mFloorWait; }	
+	int		getCeilingCounter() const		{ return mCeilingCounter; }
+	int		getFloorCounter() const			{ return mFloorCounter; }	
+	int		getResetCounter() const			{ return mResetCounter; }
+	int		getCeilingStatus() const		{ return mCeilingStatus; }
+	int		getFloorStatus() const			{ return mFloorStatus; }	
+	int		getOldFloorStatus() const		{ return mOldFloorStatus; }
+	fixed_t	getCrusherSpeed1() const		{ return mCrusherSpeed1; }
+	fixed_t	getCrusherSpeed2() const		{ return mCrusherSpeed1; }
+	int		getStepTime() const				{ return mStepTime; }
+	int		getPerStepTime() const			{ return mPerStepTime; }
+	int		getPauseTime() const			{ return mPauseTime; }
+	int		getOrgHeight() const			{ return mOrgHeight; }
+	int		getDelay() const				{ return mDelay; }
+
+private:
+	movertype_t		mCeilingMoverType;
+	movertype_t		mFloorMoverType;
+
+	int				mCeilingType;
+	int				mFloorType;
+	int				mCeilingTag;
+	int				mFloorTag;
+	line_t*			mLine;
+		
+	fixed_t			mCeilingHeight;
+	fixed_t			mFloorHeight;
+		
+	fixed_t			mCeilingSpeed;
+	fixed_t			mFloorSpeed;
+	
+	fixed_t			mCeilingDestination;
+	fixed_t			mFloorDestination;
+	
+	int				mCeilingDirection;
+	int				mFloorDirection;
+	
+	int				mCeilingOldDirection;
+	int				mFloorOldDirection;
+	
+	short			mCeilingTexture;
+	short			mFloorTexture;
+	
+	short			mNewCeilingSpecial;
+	short			mNewFloorSpecial;
+
+	fixed_t			mCeilingLow;
+	fixed_t			mCeilingHigh;
+	
+	fixed_t			mFloorLow;
+	fixed_t			mFloorHigh;
+	
+	bool			mCeilingCrush;
+	bool			mFloorCrush;
+	bool			mSilent;
+	int				mCeilingWait;
+	int				mFloorWait;	
+	int				mCeilingCounter;
+	int				mFloorCounter;
+	int				mResetCounter;
+	int				mCeilingStatus;
+	int				mFloorStatus;
+	int				mOldFloorStatus;
+	
+	fixed_t			mCrusherSpeed1;
+	fixed_t			mCrusherSpeed2;
+	
+	int				mStepTime;
+	int				mPerStepTime;
+	int				mPauseTime;
+	int				mOrgHeight;
+	int				mDelay;
+};
+
+
+// ============================================================================
+//
+// SectorSnapshotManager Interface
+//
+// ============================================================================
+
+class SectorSnapshotManager
+{
+public:
+	SectorSnapshotManager();
+
+	bool empty();
+	void clearSnapshots();
+	
+	int getMostRecentTime() const { return mMostRecent; }
+	
+	void addSnapshot(const SectorSnapshot &snap);
+	SectorSnapshot getSnapshot(int time) const;
+	
+private:
+	bool mValidSnapshot(int time) const;
+	
+	SectorSnapshot	mSnaps[NUM_SNAPSHOTS];
 	int				mMostRecent;
 };
 

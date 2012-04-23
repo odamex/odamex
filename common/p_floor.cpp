@@ -320,6 +320,8 @@ manual_floor:
 		// new floor thinker
 		rtn = true;
 		floor = new DFloor (sec);
+		P_AddMovingFloor(sec);
+				
 		floor->m_Type = floortype;
 		floor->m_Crush = false;
 		floor->m_Speed = speed;
@@ -633,6 +635,8 @@ manual_stair:
 		// new floor thinker
 		rtn = true;
 		floor = new DFloor (sec);
+		P_AddMovingFloor(sec);
+		
 		floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
 		floor->m_Type = DFloor::buildStair;	//jff 3/31/98 do not leave uninited
 		floor->m_ResetCount = reset;	// [RH] Tics until reset (0 if never)
@@ -729,7 +733,9 @@ manual_stair:
 
 				// create and initialize a thinker for the next step
 				floor = new DFloor (sec);
-                                floor->StartFloorSound ();
+				P_AddMovingFloor(sec);
+				
+				floor->StartFloorSound();
 				floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
 				floor->m_FloorDestHeight = height;
 				// [RH] Set up delay values
@@ -797,6 +803,8 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 
 			//	Spawn rising slime
 			floor = new DFloor (s2);
+			P_AddMovingFloor(s2);
+						
 			floor->m_Type = DFloor::donutRaise;
 			floor->m_Crush = false;
 			floor->m_Direction = 1;
@@ -809,6 +817,8 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 
 			//	Spawn lowering donut-hole
 			floor = new DFloor (s1);
+			P_AddMovingFloor(s1);
+			
 			floor->m_Type = DFloor::floorLowerToNearest;
 			floor->m_Crush = false;
 			floor->m_Direction = -1;
@@ -865,6 +875,11 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 		// create and initialize new elevator thinker
 		rtn = true;
 		elevator = new DElevator (sec);
+		
+		// [SL] 2012-04-19 - Elevators have both moving ceilings and floors.
+		// Consider them as moving ceilings for consistency sake.
+		P_AddMovingCeiling(sec);
+		
 		elevator->m_Type = elevtype;
 		elevator->m_Speed = speed;
 		elevator->StartFloorSound ();

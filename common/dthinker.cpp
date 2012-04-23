@@ -217,15 +217,17 @@ bool IndependentThinker(DThinker *thinker)
 			return true;
 	}
 	
-/*	if (thinker->IsKindOf (RUNTIME_CLASS (DPillar)) ||
-		thinker->IsKindOf (RUNTIME_CLASS (DElevator)) ||
-		thinker->IsKindOf (RUNTIME_CLASS (DMovingFloor)) ||
-		thinker->IsKindOf (RUNTIME_CLASS (DMovingCeiling)))
+	if (thinker->IsA(RUNTIME_CLASS (DPillar)) ||
+		thinker->IsA(RUNTIME_CLASS (DElevator)) ||
+		thinker->IsA(RUNTIME_CLASS (DFloor)) ||
+		thinker->IsA(RUNTIME_CLASS (DCeiling)) ||
+		thinker->IsA(RUNTIME_CLASS (DPlat)) ||
+		thinker->IsA(RUNTIME_CLASS (DDoor)))
 	{
 		// Client ticks movable sectors in prediction code
 		if (clientside)
 			return true;
-	} */
+	}
 
 	return false;
 }

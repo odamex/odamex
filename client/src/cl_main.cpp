@@ -129,6 +129,9 @@ extern NetGraph netgraph;
 // [SL] 2012-03-07 - Players that were teleported during the current gametic
 std::set<byte> teleported_players;
 
+// [SL] 2012-04-06 - moving sector snapshots received from the server
+std::map<unsigned short, SectorSnapshotManager> sector_snaps;
+
 EXTERN_CVAR (sv_weaponstay)
 
 EXTERN_CVAR (cl_name)
@@ -271,15 +274,21 @@ gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 void AM_Stop();
 
-void CL_ClearWorldIndexSync()
+static void CL_ClearWorldIndexSync()
 {
 	last_svgametic = world_index = 0;
 	world_index_accum = 0.0f;
 }
 
-int CL_CalculateWorldIndexSync()
+static int CL_CalculateWorldIndexSync()
 {
-	return last_svgametic - cl_interp;
+	return last_svgametic ? last_svgametic - cl_interp : 0;
+}
+
+static void CL_ResyncWorldIndex()
+{
+	world_index = CL_CalculateWorldIndexSync();
+	world_index_accum = 0.0f;
 }
 
 void Host_EndGame(const char *msg)
@@ -1600,8 +1609,6 @@ void CL_UpdateLocalPlayer(void)
 	CL_ClearPlayerJustTeleported(&p);
 
 	consoleplayer().snapshots.addSnapshot(newsnapshot);
-
-//	real_plats.Clear();
 }
 
 
@@ -1885,8 +1892,7 @@ void CL_SpawnPlayer()
 	{	
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
-		world_index = CL_CalculateWorldIndexSync();
-		world_index_accum = 0.0f;
+		CL_ResyncWorldIndex();
 	}
 
 	int snaptime = last_svgametic;
@@ -2243,38 +2249,50 @@ void CL_SoundOrigin(void)
 }
 
 //
+// CL_ClearSectorSnapshots
+//
+// Removes all sector snapshots at the start of a map, etc
+//
+void CL_ClearSectorSnapshots()
+{
+	sector_snaps.clear();
+}
+
+//
 // CL_UpdateSector
 // Updates floorheight and ceilingheight of a sector.
 //
 void CL_UpdateSector(void)
 {
-	unsigned short s = (unsigned short)MSG_ReadShort();
-	unsigned short fh = MSG_ReadShort();
-	unsigned short ch = MSG_ReadShort();
+	unsigned short sectornum = (unsigned short)MSG_ReadShort();
+	unsigned short floorheight = MSG_ReadShort();
+	unsigned short ceilingheight = MSG_ReadShort();
 
 	unsigned short fp = MSG_ReadShort();
 	unsigned short cp = MSG_ReadShort();
 
-	if(!sectors || s >= numsectors)
+	if (!sectors || sectornum >= numsectors)
 		return;
 
-	sector_t *sec = &sectors[s];
-
-	P_SetFloorHeight(sec, fh << FRACBITS);
-	P_SetCeilingHeight(sec, ch << FRACBITS);
+	sector_t *sector = &sectors[sectornum];
+	P_SetCeilingHeight(sector, ceilingheight << FRACBITS);	
+	P_SetFloorHeight(sector, floorheight << FRACBITS);
 
 	if(fp >= numflats)
 		fp = numflats;
 
-	sec->floorpic = fp;
+	sector->floorpic = fp;
 
 	if(cp >= numflats)
 		cp = numflats;
 
-	sec->ceilingpic = cp;
-	sec->moveable = true;
+	sector->ceilingpic = cp;
+	sector->moveable = true;
 
-	P_ChangeSector (sec, false);
+	P_ChangeSector(sector, false);
+	
+	SectorSnapshot snap(last_svgametic, sector);
+	sector_snaps[sectornum].addSnapshot(snap);
 }
 
 //
@@ -2283,221 +2301,134 @@ void CL_UpdateSector(void)
 //
 void CL_UpdateMovingSector(void)
 {
-	int tic = MSG_ReadLong();
-	unsigned short s = (unsigned short)MSG_ReadShort();
+	unsigned short sectornum = (unsigned short)MSG_ReadShort();
 
-    fixed_t fh = MSG_ReadLong(); // floor height
-    fixed_t ch = MSG_ReadLong(); // ceiling height
-    byte Type = MSG_ReadByte();
+    fixed_t ceilingheight = MSG_ReadShort() << FRACBITS;
+    fixed_t floorheight = MSG_ReadShort() << FRACBITS;
 
-    // Replaces the data in the corresponding struct
-    // 0 = floors, 1 = ceilings, 2 = elevators/pillars 
-    byte ReplaceType;
-
-	plat_pred_t pred;
+	byte movers = MSG_ReadByte();
+	movertype_t ceiling_mover = static_cast<movertype_t>(movers & 0x0F);
+	movertype_t floor_mover = static_cast<movertype_t>((movers & 0xF0) >> 4);
 	
-	memset(&pred, 0, sizeof(pred));
+	if (ceiling_mover == SEC_ELEVATOR)
+		floor_mover = SEC_INVALID;
+	if (ceiling_mover == SEC_PILLAR)
+		floor_mover = SEC_INVALID;
 
-	pred.secnum = s;
-	pred.tic = tic;
-	pred.floorheight = fh;
-	pred.ceilingheight = ch;
+	SectorSnapshot snap(last_svgametic);
+	
+	snap.setCeilingHeight(ceilingheight);
+	snap.setFloorHeight(floorheight);
 
-	switch(Type)
+	if (floor_mover == SEC_FLOOR)
 	{
-        // Floors
-        case 0:
-        {
-            pred.Floor.m_Type = (DFloor::EFloor)MSG_ReadLong();
-            pred.Floor.m_Crush = MSG_ReadBool();
-            pred.Floor.m_Direction = MSG_ReadLong();
-            pred.Floor.m_NewSpecial = MSG_ReadShort();
-            pred.Floor.m_Texture = MSG_ReadShort();
-            pred.Floor.m_FloorDestHeight = MSG_ReadLong();
-            pred.Floor.m_Speed = MSG_ReadLong();
-            pred.Floor.m_ResetCount = MSG_ReadLong();
-            pred.Floor.m_OrgHeight = MSG_ReadLong();
-            pred.Floor.m_Delay = MSG_ReadLong();
-            pred.Floor.m_PauseTime = MSG_ReadLong();
-            pred.Floor.m_StepTime = MSG_ReadLong(); 
-            pred.Floor.m_PerStepTime = MSG_ReadLong();
-
-            if(!sectors || s >= numsectors)
-                return;
-
-            sector_t *sec = &sectors[s];
-
-            if(!sec->floordata)
-                sec->floordata = new DFloor(sec);
-
-            ReplaceType = 0;
-        }
-        break;
-
-        // Platforms
-	    case 1:
-	    {
-            pred.Floor.m_Speed = MSG_ReadLong();
-            pred.Floor.m_Low = MSG_ReadLong();
-            pred.Floor.m_High = MSG_ReadLong();
-            pred.Floor.m_Wait = MSG_ReadLong();
-            pred.Floor.m_Count = MSG_ReadLong();
-            pred.Floor.m_Status = MSG_ReadLong();
-            pred.Floor.m_OldStatus = MSG_ReadLong();
-            pred.Floor.m_Crush = MSG_ReadBool();
-            pred.Floor.m_Tag = MSG_ReadLong();
-            pred.Floor.m_Type = MSG_ReadLong();
-
-            if(!sectors || s >= numsectors)
-                return;
-
-            sector_t *sec = &sectors[s];
-
-            if(!sec->floordata)
-                sec->floordata = new DPlat(sec);
-
-            ReplaceType = 0;
-	    }
-	    break;
-
-        // Ceilings
-        case 2:
-        {
-            pred.Ceiling.m_Type = (DCeiling::ECeiling)MSG_ReadLong();
-            pred.Ceiling.m_BottomHeight = MSG_ReadLong();
-            pred.Ceiling.m_TopHeight = MSG_ReadLong();
-            pred.Ceiling.m_Speed = MSG_ReadLong();
-            pred.Ceiling.m_Speed1 = MSG_ReadLong();
-            pred.Ceiling.m_Speed2 = MSG_ReadLong();
-            pred.Ceiling.m_Crush = MSG_ReadBool();
-            pred.Ceiling.m_Silent = MSG_ReadLong();
-            pred.Ceiling.m_Direction = MSG_ReadLong();
-            pred.Ceiling.m_Texture = MSG_ReadLong();
-            pred.Ceiling.m_NewSpecial = MSG_ReadLong();
-            pred.Ceiling.m_Tag = MSG_ReadLong();
-            pred.Ceiling.m_OldDirection = MSG_ReadLong();
-
-            if(!sectors || s >= numsectors)
-                return;
-
-            sector_t *sec = &sectors[s];
-
-            if(!sec->ceilingdata)
-                sec->ceilingdata = new DCeiling(sec);
-
-            ReplaceType = 1;
-        }
-        break;
-
-        // Doors
-        case 3:
-        {
-            int LineIndex;
-
-            pred.Ceiling.m_Type = (DDoor::EVlDoor)MSG_ReadLong();
-            pred.Ceiling.m_TopHeight = MSG_ReadLong();
-            pred.Ceiling.m_Speed = MSG_ReadLong();
-            pred.Ceiling.m_Direction = MSG_ReadLong();
-            pred.Ceiling.m_TopWait = MSG_ReadLong();
-            pred.Ceiling.m_TopCountdown = MSG_ReadLong();
-			pred.Ceiling.m_Status = MSG_ReadLong();
-            LineIndex = MSG_ReadLong();
-
-            if (!lines || LineIndex >= numlines || LineIndex < 0)
-                return;
-
-            pred.Ceiling.m_Line = &lines[LineIndex];
-
-            if(!sectors || s >= numsectors)
-                return;
-
-            sector_t *sec = &sectors[s];
-
-            if(!sec->ceilingdata)
-                sec->ceilingdata = new DDoor(sec);
-
-            ReplaceType = 1;
-        }
-        break;
-
-        // Elevators
-        case 4:
-        {
-            pred.Both.m_Type = (DElevator::EElevator)MSG_ReadLong();
-            pred.Both.m_Direction = MSG_ReadLong();
-            pred.Both.m_FloorDestHeight = MSG_ReadLong();
-            pred.Both.m_CeilingDestHeight = MSG_ReadLong();
-            pred.Both.m_Speed = MSG_ReadLong();
-
-            if(!sectors || s >= numsectors)
-                return;
-
-            sector_t *sec = &sectors[s];
-
-            if(!sec->ceilingdata && !sec->floordata)
-                sec->ceilingdata = sec->floordata = new DElevator(sec);
-
-            ReplaceType = 2;
-        }
-        break;
-
-        // Pillars
-        case 5:
-        {
-            pred.Both.m_Type = (DPillar::EPillar)MSG_ReadLong();
-            pred.Both.m_FloorSpeed = MSG_ReadLong();
-            pred.Both.m_CeilingSpeed = MSG_ReadLong();
-            pred.Both.m_FloorTarget = MSG_ReadLong();
-            pred.Both.m_CeilingTarget = MSG_ReadLong();
-            pred.Both.m_Crush = MSG_ReadBool();
-
-            if(!sectors || s >= numsectors)
-                return;
-
-            sector_t *sec = &sectors[s];
-
-            if(!sec->ceilingdata && !sec->floordata)
-                sec->ceilingdata = sec->floordata = new DPillar();
-
-            ReplaceType = 2;
-        }
-        break;
-
-	    default:
-            return;
+		// Floors/Stairbuilders
+		snap.setFloorMoverType(SEC_FLOOR);
+		snap.setFloorType(static_cast<DFloor::EFloor>(MSG_ReadByte()));
+		snap.setFloorCrush(MSG_ReadBool());        
+		snap.setFloorDirection(char(MSG_ReadByte()));
+		snap.setFloorSpecial(MSG_ReadShort());
+		snap.setFloorTexture(MSG_ReadShort());
+		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setResetCounter(MSG_ReadLong());
+		snap.setOrgHeight(MSG_ReadShort() << FRACBITS);
+		snap.setDelay(MSG_ReadLong());
+		snap.setPauseTime(MSG_ReadLong());
+		snap.setStepTime(MSG_ReadLong());          
+		snap.setPerStepTime(MSG_ReadLong());
+	}
+	
+	if (floor_mover == SEC_PLAT)
+	{
+		// Platforms/Lifts
+		snap.setFloorMoverType(SEC_PLAT);		
+		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorLow(MSG_ReadShort() << FRACBITS);
+		snap.setFloorHigh(MSG_ReadShort() << FRACBITS);
+		snap.setFloorWait(MSG_ReadLong());
+		snap.setFloorCounter(MSG_ReadLong());
+		snap.setFloorStatus(MSG_ReadByte());
+		snap.setOldFloorStatus(MSG_ReadByte());
+		snap.setFloorCrush(MSG_ReadBool());
+		snap.setFloorTag(MSG_ReadShort());
+		snap.setFloorType(MSG_ReadByte());
 	}
 
-    size_t i;
-
-	for(i = 0; i < real_plats.Size(); i++)
+	if (ceiling_mover == SEC_CEILING)
 	{
-		if(real_plats[i].secnum == s)
-		{
-            real_plats[i].tic = pred.tic;
+		// Ceilings / Crushers
+		snap.setCeilingMoverType(SEC_CEILING);
+		snap.setCeilingType(MSG_ReadByte());
+		snap.setCeilingLow(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setCrusherSpeed1(MSG_ReadShort() << FRACBITS);
+		snap.setCrusherSpeed2(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingCrush(MSG_ReadBool());
+		snap.setSilent(MSG_ReadBool());
+		snap.setCeilingDirection(char(MSG_ReadByte()));
+		snap.setCeilingTexture(MSG_ReadShort());
+		snap.setCeilingSpecial(MSG_ReadShort());
+		snap.setCeilingTag(MSG_ReadShort());
+		snap.setCeilingOldDirection(char(MSG_ReadByte()));
+    }
 
-			if (ReplaceType == 0)
-            {
-                real_plats[i].floorheight = pred.floorheight;
-                real_plats[i].Floor = pred.Floor;
-            }
-            else if (ReplaceType == 1)
-            {
-                real_plats[i].ceilingheight = pred.ceilingheight;
-                real_plats[i].Ceiling = pred.Ceiling;
-            }
-            else
-            {
-                real_plats[i].floorheight = pred.floorheight;
-                real_plats[i].ceilingheight = pred.ceilingheight;
-                real_plats[i].Both = pred.Both;
-            }
+	if (ceiling_mover == SEC_DOOR)
+	{
+		// Doors
+		snap.setCeilingMoverType(SEC_DOOR);		
+		snap.setCeilingType(static_cast<DDoor::EVlDoor>(MSG_ReadByte()));
+		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingDirection(char(MSG_ReadByte()));
+		snap.setCeilingWait(MSG_ReadLong());
+		snap.setCeilingCounter(MSG_ReadLong());
+		snap.setCeilingStatus(MSG_ReadByte());
+		
+		int LineIndex = MSG_ReadLong();
 
-			break;
-		}
+		// If the moving sector's line is -1, it is likely a type 666 door
+		if (!lines || LineIndex >= numlines || LineIndex < 0)
+			return;
+		
+		snap.setLine(&lines[LineIndex]);
 	}
 
-	if(i == real_plats.Size())
-		real_plats.Push(pred);
+	if (ceiling_mover == SEC_ELEVATOR)
+    {
+		// Elevators
+		snap.setCeilingMoverType(SEC_ELEVATOR);			
+		snap.setFloorMoverType(SEC_ELEVATOR);		
+		snap.setCeilingType(static_cast<DElevator::EElevator>(MSG_ReadByte()));
+		snap.setFloorType(snap.getCeilingType());
+		snap.setCeilingDirection(char(MSG_ReadByte()));
+		snap.setFloorDirection(snap.getCeilingDirection());
+		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorSpeed(snap.getCeilingSpeed());
+	}
+
+	if (ceiling_mover == SEC_PILLAR)
+	{
+		// Pillars
+		snap.setCeilingMoverType(SEC_PILLAR);		
+		snap.setFloorMoverType(SEC_PILLAR);		
+		snap.setCeilingType(static_cast<DPillar::EPillar>(MSG_ReadByte()));
+		snap.setFloorType(snap.getCeilingType());
+		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
+		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
+		snap.setCeilingCrush(MSG_ReadBool());
+		snap.setFloorCrush(snap.getCeilingCrush());
+	}
+	
+	if (!sectors || sectornum >= numsectors)
+		return;
+
+	sector_snaps[sectornum].addSnapshot(snap);
 }
 
 
@@ -2763,8 +2694,8 @@ void CL_ActivateLine(void)
 		P_ShootSpecialLine(mo, &lines[l], true);
 		break;
     case 3:
-        P_PushSpecialLine(mo, &lines[l], side, true);
-        break;
+		P_PushSpecialLine(mo, &lines[l], side, true);
+		break;
 	}
 }
 
@@ -2790,10 +2721,10 @@ void CL_LoadMap(void)
 
 	G_InitNew (mapname);
 
-	real_plats.Clear();
-
+	movingsectors.clear();
 	teleported_players.clear();
-	
+
+	CL_ClearSectorSnapshots();	
 	for (size_t i = 0; i < players.size(); i++)
 		players[i].snapshots.clearSnapshots();
 		
@@ -3284,6 +3215,24 @@ void CL_LocalDemoTic()
 
 }
 
+void CL_RemoveCompletedMovingSectors()
+{
+	std::map<unsigned short, SectorSnapshotManager>::iterator itr;
+	itr = sector_snaps.begin();
+	
+	while (itr != sector_snaps.end())
+	{
+		SectorSnapshotManager *mgr = &(itr->second);
+		int time = mgr->getMostRecentTime();
+		
+		// are all the snapshots in the container invalid or too old?
+		if (world_index - time > NUM_SNAPSHOTS || mgr->empty())
+			sector_snaps.erase(itr++);
+		else
+			++itr;
+	}
+}
+
 CVAR_FUNC_IMPL (cl_interp)
 {
 	if (var < 0.0f)
@@ -3291,9 +3240,8 @@ CVAR_FUNC_IMPL (cl_interp)
 	if (var > 4.0f)
 		var.Set(4.0f);
 
-	// Resync the world index since the sync offset has changed		
-	world_index = CL_CalculateWorldIndexSync();
-	world_index_accum = 0.0f;
+	// Resync the world index since the sync offset has changed	
+	CL_ResyncWorldIndex();	
 	
 	netgraph.setInterpolation(var);
 }
@@ -3334,8 +3282,7 @@ void CL_SimulateWorld()
 			gametic, world_index, reason.c_str());
 		#endif // _WORLD_INDEX_DEBUG_
 		
-		world_index = CL_CalculateWorldIndexSync();
-		world_index_accum = 0.0f;
+		CL_ResyncWorldIndex();
 	}
 	
 	// Not using interpolation?  Use the last update always
@@ -3349,7 +3296,25 @@ void CL_SimulateWorld()
 
 	// [SL] 2012-03-29 - Add sync information to the netgraph
 	netgraph.setWorldIndexSync(world_index - (last_svgametic - cl_interp));
-	
+
+	// Get rid of snapshots for sectors that are done moving
+	CL_RemoveCompletedMovingSectors();
+
+	// Move sectors	
+	std::map<unsigned short, SectorSnapshotManager>::iterator itr;
+	for (itr = sector_snaps.begin(); itr != sector_snaps.end(); ++itr)
+	{
+		unsigned short sectornum = itr->first;
+		if (sectornum >= numsectors)
+			continue;
+			
+		sector_t *sector = &sectors[sectornum];
+
+		SectorSnapshot snap = itr->second.getSnapshot(world_index);
+		if (snap.isValid())
+			snap.toSector(sector);
+	}
+		
 	// Move players
 	for (size_t i = 0; i < players.size(); i++)
 	{
@@ -3358,7 +3323,7 @@ void CL_SimulateWorld()
 			continue;
 		
 		// Consoleplayer is handled in CL_PredictWorld
-		if (player->id == consoleplayer().id)
+		if (player->id == consoleplayer_id)
 			continue;
 		
 		PlayerSnapshot snap = player->snapshots.getSnapshot(world_index);
@@ -3394,7 +3359,7 @@ void CL_SimulateWorld()
 
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index
-	world_index_accum += float(last_svgametic - cl_interp - world_index) / float(MAX_AHEAD);
+	world_index_accum += float(CL_CalculateWorldIndexSync() - world_index) / float(MAX_AHEAD);
 	int drift_correction = int(world_index_accum + 0.5f);	// round
 	
 	#ifdef _WORLD_INDEX_DEBUG_

@@ -28,7 +28,30 @@
 #ifndef __P_SPEC__
 #define __P_SPEC__
 
+#include <list>
 #include "dsectoreffect.h"
+
+typedef struct movingsector_s
+{
+	movingsector_s() :
+		sector(NULL), ceiling_done(true), floor_done(true),
+		ceiling_start_tic(-1), floor_start_tic(-1)
+	{}
+	
+	sector_t	*sector;
+	bool		ceiling_done;
+	bool		floor_done;
+	int			ceiling_start_tic;
+	int			floor_start_tic;
+} movingsector_t;
+
+extern std::list<movingsector_t> movingsectors;
+void P_AddMovingCeiling(sector_t *sector);
+void P_AddMovingFloor(sector_t *sector);
+void P_RemoveMovingCeiling(sector_t *sector);
+void P_RemoveMovingFloor(sector_t *sector);
+bool P_MovingCeilingCompleted(sector_t *sector);
+bool P_MovingFloorCompleted(sector_t *sector);
 
 //jff 2/23/98 identify the special classes that can share sectors
 
