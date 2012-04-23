@@ -116,6 +116,7 @@ void SV_KickPlayer(player_t &player, const std::string &reason = "");
 bool CMD_ForcespecCheck(const std::vector<std::string> arguments,
 						std::string &error, size_t &pid);
 void SV_SetPlayerSpec(player_t &player, bool setting, bool silent = false);
+void SV_SetReady(player_t &player, bool setting, bool silent = false);
 
 extern bool unnatural_level_progression;
 

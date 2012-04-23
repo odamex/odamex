@@ -3893,6 +3893,9 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 			player.deathcount = 0;
 			player.killcount = 0;
 			SV_UpdateFrags(player);
+
+			// [AN] Make player unready
+			SV_SetReady(player, false, true);
 		}
 	} else if (setting && !player.spectator) {
 		// We want to spectate the player
@@ -3913,6 +3916,9 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		if (!silent) {
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
 		}
+
+		// [AN] Make player unready.
+		SV_SetReady(player, false, true);
 	}
 }
 
@@ -3976,7 +3982,7 @@ BEGIN_COMMAND (forcespec) {
 } END_COMMAND (forcespec)
 
 // Change the player's ready state and broadcast it to all connected players.
-void SV_SetReady(player_t &player, bool setting)
+void SV_SetReady(player_t &player, bool setting, bool silent)
 {
 	if (!validplayer(player) || !player.ingame())
 		return;
@@ -3986,8 +3992,14 @@ void SV_SetReady(player_t &player, bool setting)
 	bool changed = true;
 	if (player.ready && !setting) {
 		player.ready = false;
+		if (!silent) {
+			SV_PlayerPrintf(PRINT_HIGH, player.id, "You are no longer ready.\n");
+		}
 	} else if (!player.ready && setting) {
 		player.ready = true;
+		if (!silent) {
+			SV_PlayerPrintf(PRINT_HIGH, player.id, "You are now ready.\n");
+		}
 	} else {
 		changed = false;
 	}

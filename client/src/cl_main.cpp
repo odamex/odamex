@@ -2888,18 +2888,8 @@ void CL_Spectate()
 }
 
 void CL_ReadyState() {
-	bool oldready = consoleplayer().ready;
-
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
 	player.ready = MSG_ReadBool();
-
-	if (&player == &consoleplayer()) {
-		if (player.ready == true && oldready == false) {
-			Printf(PRINT_HIGH, "You are now ready.\n");
-		} else if (player.ready == false && oldready == true) {
-			Printf(PRINT_HIGH, "You are no longer ready.\n");
-		}
-	}
 }
 
 // client source (once)

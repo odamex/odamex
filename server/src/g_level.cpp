@@ -458,19 +458,7 @@ void G_InitNew (const char *mapname)
 
 	// [AM] Force everybody to be unready on new map no matter what gametype.
 	for (i = 0;i < players.size();i++) {
-		players[i].ready = false;
-
-		if (!players[i].ingame())
-			continue;
-
-		for (size_t j = 0;j < players.size();j++) {
-			if (!players[j].ingame())
-				continue;
-
-			MSG_WriteMarker (&(players[j].client.reliablebuf), svc_readystate);
-			MSG_WriteByte (&(players[j].client.reliablebuf), players[i].id);
-			MSG_WriteByte (&(players[j].client.reliablebuf), false);
-		}
+		SV_SetReady(players[i], false, true);
 	}
 
 	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will

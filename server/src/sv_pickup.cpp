@@ -37,8 +37,6 @@
 EXTERN_CVAR(sv_gametype)
 
 // Distribute X number of players between teams.
-// TODO: Once "readiness" is implemented this should only distribute ready
-//       players.  Until then, we distribute non-spectating players.
 bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	// This function shouldn't do anything unless you're in a teamgame.
 	if (!(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)) {
@@ -56,8 +54,8 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	std::vector<size_t> eligible;
 
 	for (size_t i = 0;i < players.size();i++) {
-		// TODO: Tweak to check for readiness instead of not-spectatorness.
-		if (validplayer(players[i]) && players[i].ingame() && !players[i].spectator) {
+		if (validplayer(players[i]) && players[i].ingame() &&
+		    (!players[i].spectator || players[i].ready)) {
 			eligible.push_back(i);
 		}
 	}
