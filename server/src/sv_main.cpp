@@ -4952,11 +4952,8 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		if (messagenum)
 			message = GStrings(messagenum);
 	}
-	
-	if (!attacker)
-		return;
 
-	if (message)
+	if (message && attacker && attacker->player)
 	{
 		SexMessage (message, gendermessage, gender,
 			self->player->userinfo.netname, attacker->player->userinfo.netname);
@@ -4968,6 +4965,7 @@ void ClientObituary (AActor *self, AActor *inflictor, AActor *attacker)
 		self->player->userinfo.netname, self->player->userinfo.netname);
 	SV_BroadcastPrintf (PRINT_MEDIUM, "%s\n", gendermessage);
 }
+
 void SV_SendDamagePlayer(player_t *player, int damage)
 {
 	for (size_t i=0; i < players.size(); i++)
