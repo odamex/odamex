@@ -1381,6 +1381,18 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			return;
 		}
 
+		// [AM] No damage with sv_friendlyfire (was armor-only)
+		if (!sv_friendlyfire && source && source->player && target != source &&
+			 mod != MOD_TELEFRAG)
+		{
+			if (sv_gametype == GM_COOP ||
+			  ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
+				target->player->userinfo.team == source->player->userinfo.team))
+			{
+				damage = 0;
+			}
+		}
+
 		if (player->armortype && !(flags & DMG_NO_ARMOR))
 		{
 			if (player->armortype == deh.GreenAC)
@@ -1401,18 +1413,6 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			player->armorpoints -= saved;
 			damage -= saved;
 		}
-
-		// only armordamage with sv_friendlyfire
-        if (!sv_friendlyfire && source && source->player && target != source &&
-             mod != MOD_TELEFRAG)
-        {
-            if (sv_gametype == GM_COOP ||
-                ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
-                 target->player->userinfo.team == source->player->userinfo.team))
-            {
-                damage = 0;
-            }
-        }
 
 		player->health -= damage;		// mirror mobj health here for Dave
 
