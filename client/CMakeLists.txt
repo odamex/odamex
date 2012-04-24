@@ -87,6 +87,11 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/odamex.wad ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS
     )
 
+    set_directory_properties(
+      PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+      "${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources/${MACOSX_BUNDLE_ICON_FILE};${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex.wad"
+    )
+
     # Install into bundle under client directory
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 

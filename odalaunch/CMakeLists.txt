@@ -54,5 +54,10 @@ if(wxWidgets_FOUND)
       COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE} ${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/
     )
+
+    set_directory_properties(
+      PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+      "${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/${MACOSX_BUNDLE_ICON_FILE}"
+    )
   endif()
 endif()
