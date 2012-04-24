@@ -1220,7 +1220,7 @@ void P_LoadBlockMap (int lump)
 {
 	int count;
 
-	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000)
+	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000 || count < 4) 
 		P_CreateBlockMap();
 	else
 	{

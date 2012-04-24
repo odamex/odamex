@@ -157,6 +157,7 @@ static void CL_PredictSectors(int predtic)
 		
 		// If we haven't started receiving updates for this sector from the server,
 		// we only need to run the thinker for the current tic, not any past tics
+		// since the sector hasn't been reset to a previous update snapshot
 		if (predtic < gametic && !CL_SectorHasSnapshots(sector))
 			continue;
 
