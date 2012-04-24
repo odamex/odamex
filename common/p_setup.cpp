@@ -1178,10 +1178,22 @@ void P_CreateBlockMap()
 	blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * (4+NBlocks+linetotal), PU_LEVEL, 0);
 
 	// blockmap header
-	blockmaplump[0] = bmaporgx = xorg << FRACBITS;
-	blockmaplump[1] = bmaporgy = yorg << FRACBITS;
-	blockmaplump[2] = bmapwidth  = ncols;
-	blockmaplump[3] = bmapheight = nrows;
+	//
+	// Rjy: P_CreateBlockMap should not initialise bmaporg{x,y} as P_LoadBlockMap
+	// does so again, resulting in their being left-shifted by FRACBITS twice.
+	//
+	// Thus any map having its blockmap built by the engine would have its
+	// origin at (0,0) regardless of where the walls and monsters actually are,
+	// breaking all collision detection.
+	//
+	// Instead have P_CreateBlockMap create blockmaplump only, so that both
+	// clauses of the conditional in P_LoadBlockMap have the same effect, and
+	// bmap* are only initialised from blockmaplump[0..3] once in the latter.
+	//
+	blockmaplump[0] = xorg;
+	blockmaplump[1] = yorg;
+	blockmaplump[2] = ncols;
+	blockmaplump[3] = nrows;
 
 	// offsets to lists and block lists
 	for (i = 0; i < NBlocks; i++)
