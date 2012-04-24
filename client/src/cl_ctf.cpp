@@ -252,7 +252,7 @@ void CTF_MoveFlags ()
 
 void TintScreen(int color)
 {
-	// if there's no status bar, draw border around the full screen
+	// draw border around the screen excluding the status bar
 	// NOTE: status bar is not currently drawn when spectating
 	if (screenblocks < 11 && !consoleplayer().spectator)
 	{
@@ -280,7 +280,8 @@ void TintScreen(int color)
 						   screen->height - ST_HEIGHT,
 						   color);
 	}
-	// draw border around the screen excluding the status bar
+
+	// if there's no status bar, draw border around the full screen
 	else
 	{
 			screen->Clear (0,
