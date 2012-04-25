@@ -87,7 +87,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 2
+#define PROTOCOL_VERSION 1
 
 /* 
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -114,16 +114,12 @@ static void IntQryBuildInformation(const DWORD &EqProtocolVersion,
 {
     std::vector<CvarField_t> Cvars;
 
-    // TODO: Remove guard for next release
-    QRYNEWINFO(2)
-    {
-        // bond - time
-        MSG_WriteLong(&ml_message, EqTime);
+    // bond - time
+    MSG_WriteLong(&ml_message, EqTime);
 
-        // The servers real protocol version
-        // bond - real protocol
-        MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
-    }
+    // The servers real protocol version
+    // bond - real protocol
+    MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
     // Built revision of server
     MSG_WriteLong(&ml_message, last_revision);
@@ -316,12 +312,7 @@ static DWORD IntQrySendResponse(const WORD &TagId,
     DWORD EqProtocolVersion = MSG_ReadLong();
     DWORD EqTime = 0;
 
-    // TODO: Remove guard for next release
-    // bond - time
-    QRYNEWINFO(2)
-    {
-        EqTime = MSG_ReadLong();
-    }
+    EqTime = MSG_ReadLong();
 
     // Override other packet types for older enquirer version response
     if (VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) || 
@@ -348,12 +339,7 @@ static DWORD IntQrySendResponse(const WORD &TagId,
         // bond - real protocol
         MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
-        // TODO: Remove guard for next release
-        // bond - time
-        QRYNEWINFO(2)
-        {
-            MSG_WriteLong(&ml_message, EqTime);
-        }
+        MSG_WriteLong(&ml_message, EqTime);
 
         NET_SendPacket(ml_message, net_from);
         
