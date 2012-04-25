@@ -3254,9 +3254,107 @@ CVAR_FUNC_IMPL (cl_interp)
 }
 
 //
+// CL_SimulateSectors
+//
+// Iterates through the list of moving sector snapshot containers
+// and loads the world_index snapshot for each sector that is not
+// currently being predicted.  Predicted sectors are handled elsewhere.
+//
+void CL_SimulateSectors()
+{
+	// Get rid of snapshots for sectors that are done moving
+	CL_RemoveCompletedMovingSectors();
+
+	// Move sectors	
+	std::map<unsigned short, SectorSnapshotManager>::iterator itr;
+	for (itr = sector_snaps.begin(); itr != sector_snaps.end(); ++itr)
+	{
+		unsigned short sectornum = itr->first;
+		if (sectornum >= numsectors)
+			continue;
+			
+		sector_t *sector = &sectors[sectornum];
+
+		// will this sector be handled when predicting sectors?
+		if (CL_SectorIsPredicting(sector))
+			continue;
+
+		// Fetch the snapshot for this world_index and run the sector's
+		// thinkers to play any sector sounds
+		SectorSnapshot snap = itr->second.getSnapshot(world_index);
+		if (snap.isValid())
+		{
+			snap.toSector(sector);
+
+			if (sector->ceilingdata)
+				sector->ceilingdata->RunThink();
+			if (sector->floordata && sector->ceilingdata != sector->floordata)
+				sector->floordata->RunThink();
+
+			snap.toSector(sector);
+		}				
+	}
+}
+
+//
+// CL_SimulatePlayers()
+//
+// Iterates through the players vector and loads the world_index snapshot
+// for all players except consoleplayer, as this is handled by the prediction
+// functions.
+//
+void CL_SimulatePlayers()
+{
+	for (size_t i = 0; i < players.size(); i++)
+	{
+		player_t *player = &players[i];
+		if (!player || !player->mo || player->spectator)
+			continue;
+		
+		// Consoleplayer is handled in CL_PredictWorld
+		if (player->id == consoleplayer_id)
+			continue;
+		
+		PlayerSnapshot snap = player->snapshots.getSnapshot(world_index);
+		if (snap.isValid())
+		{
+			// Examine the old position.  If it doesn't match the snapshot for the
+			// previous world_index, then old position was probably extrapolated
+			// and should be smoothly moved towards the corrected position instead
+			// of snapping to it.
+		
+			PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
+			v3fixed_t offset;
+			M_SetVec3Fixed(&offset, prevsnap.getX() - player->mo->x,
+									prevsnap.getY() - player->mo->y,
+									prevsnap.getZ() - player->mo->z);
+
+			static const fixed_t correction_amount = FRACUNIT * 0.20f; 
+			M_ScaleVec3Fixed(&offset, &offset, correction_amount);
+		
+			#ifdef _SNAPSHOT_DEBUG_
+			if (offset.x != 0 || offset.y != 0 || offset.z != 0)
+				Printf(PRINT_HIGH, "Snapshot %i, Correcting extrapolation error\n", world_index);
+			#endif // _SNAPSHOT_DEBUG_
+	
+			// Apply the current snapshot to the player (with smoothing offset)
+			snap.setX(snap.getX() - offset.x);
+			snap.setY(snap.getY() - offset.y);
+			snap.setZ(snap.getZ() - offset.z);
+
+			snap.toPlayer(player);
+		}
+	}
+}
+
+
+//
 // CL_SimulateWorld
 //
-// 
+// Maintains synchronization with the server by manipulating world_index.
+// Loads snapshots for all moving sectors and players for the server gametic
+// denoted by world_index.
+//
 void CL_SimulateWorld()
 {
 	if (gamestate != GS_LEVEL || netdemo.isPaused())
@@ -3304,80 +3402,8 @@ void CL_SimulateWorld()
 	// [SL] 2012-03-29 - Add sync information to the netgraph
 	netgraph.setWorldIndexSync(world_index - (last_svgametic - cl_interp));
 
-	// Get rid of snapshots for sectors that are done moving
-	CL_RemoveCompletedMovingSectors();
-
-	// Move sectors	
-	std::map<unsigned short, SectorSnapshotManager>::iterator itr;
-	for (itr = sector_snaps.begin(); itr != sector_snaps.end(); ++itr)
-	{
-		unsigned short sectornum = itr->first;
-		if (sectornum >= numsectors)
-			continue;
-			
-		sector_t *sector = &sectors[sectornum];
-
-		// will this sector be handled when predicting sectors?
-		if (CL_SectorIsPredicting(sector))
-			continue;
-
-		// Fetch the snapshot for this world_index and run the sector's
-		// thinkers to play any sector sounds
-		SectorSnapshot snap = itr->second.getSnapshot(world_index);
-		if (snap.isValid())
-		{
-			snap.toSector(sector);
-
-			if (sector->ceilingdata)
-				sector->ceilingdata->RunThink();
-			if (sector->floordata && sector->ceilingdata != sector->floordata)
-				sector->floordata->RunThink();
-
-			snap.toSector(sector);
-		}				
-	}
-		
-	// Move players
-	for (size_t i = 0; i < players.size(); i++)
-	{
-		player_t *player = &players[i];
-		if (!player || !player->mo || player->spectator)
-			continue;
-		
-		// Consoleplayer is handled in CL_PredictWorld
-		if (player->id == consoleplayer_id)
-			continue;
-		
-		PlayerSnapshot snap = player->snapshots.getSnapshot(world_index);
-		if (snap.isValid())
-		{
-			// Examine the old position.  If it doesn't match the snapshot for the
-			// previous world_index, then old position was probably extrapolated
-			// and should be smoothly moved towards the corrected position instead
-			// of snapping to it.
-		
-			PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
-			v3fixed_t offset;
-			M_SetVec3Fixed(&offset, prevsnap.getX() - player->mo->x,
-									prevsnap.getY() - player->mo->y,
-									prevsnap.getZ() - player->mo->z);
-
-			static const fixed_t correction_amount = FRACUNIT * 0.20f; 
-			M_ScaleVec3Fixed(&offset, &offset, correction_amount);
-		
-			#ifdef _SNAPSHOT_DEBUG_
-			if (offset.x != 0 || offset.y != 0 || offset.z != 0)
-				Printf(PRINT_HIGH, "Snapshot %i, Correcting extrapolation error\n", world_index);
-			#endif // _SNAPSHOT_DEBUG_
-	
-			// Apply the current snapshot to the player (with smoothing offset)
-			snap.setX(snap.getX() - offset.x);
-			snap.setY(snap.getY() - offset.y);
-			snap.setZ(snap.getZ() - offset.z);
-
-			snap.toPlayer(player);
-		}
-	}
+	CL_SimulateSectors();
+	CL_SimulatePlayers();		
 
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index
