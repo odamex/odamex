@@ -2328,6 +2328,7 @@ void CL_UpdateMovingSector(void)
 		// Floors/Stairbuilders
 		snap.setFloorMoverType(SEC_FLOOR);
 		snap.setFloorType(static_cast<DFloor::EFloor>(MSG_ReadByte()));
+		snap.setFloorStatus(MSG_ReadByte());
 		snap.setFloorCrush(MSG_ReadBool());        
 		snap.setFloorDirection(char(MSG_ReadByte()));
 		snap.setFloorSpecial(MSG_ReadShort());
@@ -2402,9 +2403,11 @@ void CL_UpdateMovingSector(void)
     {
 		// Elevators
 		snap.setCeilingMoverType(SEC_ELEVATOR);			
-		snap.setFloorMoverType(SEC_ELEVATOR);		
+		snap.setFloorMoverType(SEC_ELEVATOR);	
 		snap.setCeilingType(static_cast<DElevator::EElevator>(MSG_ReadByte()));
 		snap.setFloorType(snap.getCeilingType());
+		snap.setCeilingStatus(MSG_ReadByte());
+		snap.setFloorStatus(snap.getCeilingStatus());
 		snap.setCeilingDirection(char(MSG_ReadByte()));
 		snap.setFloorDirection(snap.getCeilingDirection());
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
@@ -2420,6 +2423,8 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorMoverType(SEC_PILLAR);		
 		snap.setCeilingType(static_cast<DPillar::EPillar>(MSG_ReadByte()));
 		snap.setFloorType(snap.getCeilingType());
+		snap.setCeilingStatus(MSG_ReadByte());
+		snap.setFloorStatus(snap.getCeilingStatus());		
 		snap.setFloorSpeed(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
 		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);

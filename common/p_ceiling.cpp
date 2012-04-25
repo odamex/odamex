@@ -47,6 +47,7 @@ void DCeiling::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		arc << m_Type
+			<< m_Status
 			<< m_BottomHeight
 			<< m_TopHeight
 			<< m_Speed
@@ -63,6 +64,7 @@ void DCeiling::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type
+			>> m_Status
 			>> m_BottomHeight
 			>> m_TopHeight
 			>> m_Speed
@@ -192,12 +194,12 @@ void DCeiling::RunThink ()
 }
 
 DCeiling::DCeiling (sector_t *sec)
-	: DMovingCeiling (sec)
+	: DMovingCeiling (sec), m_Status(init)
 {
 }
 
 DCeiling::DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent)
-	: DMovingCeiling (sec)
+	: DMovingCeiling (sec), m_Status(init)
 {
 	m_Crush = false;
 	m_Speed = m_Speed1 = speed1;

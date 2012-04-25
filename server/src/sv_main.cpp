@@ -1702,170 +1702,193 @@ void SV_UpdateSectors(client_t* cl)
 //
 void SV_DestroyFinishedMovingSectors()
 {
-	for (int i = 0; i < numsectors; i++)
+	std::list<movingsector_t>::iterator itr;
+	itr = movingsectors.begin();
+	
+	while (itr != movingsectors.end())
 	{
-		if (sectors[i].floordata &&
-			sectors[i].floordata->IsA(RUNTIME_CLASS(DPlat)))
+		sector_t *sector = itr->sector;
+		
+		if (P_MovingCeilingCompleted(sector))
 		{
-			DPlat *plat = (DPlat *)sectors[i].floordata;
-			if (plat->m_Status == DPlat::destroy)
-			{
-				sectors[i].floordata = NULL;
-				plat->Destroy();
-			}
+			itr->moving_ceiling = false;
+			if (sector->ceilingdata)
+				sector->ceilingdata->Destroy();
+			sector->ceilingdata = NULL;
+		}
+		if (P_MovingFloorCompleted(sector))
+		{
+			itr->moving_floor = false;
+			if (sector->floordata)
+				sector->floordata->Destroy();
+			sector->floordata = NULL;
 		}
 
-		if (sectors[i].ceilingdata &&
-			sectors[i].ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
-		{
-			DDoor *door = (DDoor *)sectors[i].ceilingdata;
-			if (door->m_Status == DDoor::destroy)
-			{
-				sectors[i].ceilingdata = NULL;
-				door->Destroy();
-			}
-		}
+		if (!itr->moving_ceiling && !itr->moving_floor)
+			movingsectors.erase(itr++);
+		else
+			++itr;
 	}
 }
+
+//
+// SV_SendMovingSectorUpdate
+//
+// 
+void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
+{
+	if (!sector || !validplayer(player))
+		return;
+
+	int sectornum = sector - sectors;
+	if (sectornum < 0 || sectornum >= numsectors)
+		return;
+		
+	buf_t *netbuf = &(player.client.netbuf);
+    
+	// Determine which moving planes are in this sector
+	movertype_t floor_mover = SEC_INVALID, ceiling_mover = SEC_INVALID;
+
+	if (sector->ceilingdata && sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
+		ceiling_mover = SEC_CEILING;
+	if (sector->ceilingdata && sector->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
+		ceiling_mover = SEC_DOOR;
+	if (sector->floordata && sector->floordata->IsA(RUNTIME_CLASS(DFloor)))
+		floor_mover = SEC_FLOOR;
+	if (sector->floordata && sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
+		floor_mover = SEC_PLAT;
+	if (sector->ceilingdata && sector->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
+	{
+		ceiling_mover = SEC_ELEVATOR;
+		floor_mover = SEC_INVALID;
+	}
+	if (sector->ceilingdata && sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
+	{
+		ceiling_mover = SEC_PILLAR;
+		floor_mover = SEC_INVALID;
+	}
+
+	// no moving planes?  skip it.
+	if (ceiling_mover == SEC_INVALID && floor_mover == SEC_INVALID)
+		return;
+
+	// Create bitfield to denote moving planes in this sector
+	byte movers = byte(ceiling_mover) | (byte(floor_mover) << 4);
+				
+	MSG_WriteMarker(netbuf, svc_movingsector);
+	MSG_WriteShort(netbuf, sectornum);
+	MSG_WriteShort(netbuf, P_CeilingHeight(sector) >> FRACBITS);
+	MSG_WriteShort(netbuf, P_FloorHeight(sector) >> FRACBITS);
+	MSG_WriteByte(netbuf, movers);
+
+	if (ceiling_mover == SEC_ELEVATOR)
+	{
+		DElevator *Elevator = (DElevator *)sector->ceilingdata;
+
+        MSG_WriteByte(netbuf, Elevator->m_Type);
+        MSG_WriteByte(netbuf, Elevator->m_Status);
+        MSG_WriteByte(netbuf, Elevator->m_Direction);
+        MSG_WriteShort(netbuf, Elevator->m_FloorDestHeight >> FRACBITS);
+        MSG_WriteShort(netbuf, Elevator->m_CeilingDestHeight >> FRACBITS);
+        MSG_WriteShort(netbuf, Elevator->m_Speed >> FRACBITS);
+	}
+	
+	if (ceiling_mover == SEC_PILLAR)
+	{
+		DPillar *Pillar = (DPillar *)sector->ceilingdata;
+
+        MSG_WriteByte(netbuf, Pillar->m_Type);
+        MSG_WriteByte(netbuf, Pillar->m_Status);
+        MSG_WriteShort(netbuf, Pillar->m_FloorSpeed >> FRACBITS);
+        MSG_WriteShort(netbuf, Pillar->m_CeilingSpeed >> FRACBITS);
+        MSG_WriteShort(netbuf, Pillar->m_FloorTarget >> FRACBITS);
+        MSG_WriteShort(netbuf, Pillar->m_CeilingTarget >> FRACBITS);
+        MSG_WriteBool(netbuf, Pillar->m_Crush);
+	}
+
+	if (ceiling_mover == SEC_CEILING)
+	{
+		DCeiling *Ceiling = (DCeiling *)sector->ceilingdata;
+		
+        MSG_WriteByte(netbuf, Ceiling->m_Type);
+        MSG_WriteShort(netbuf, Ceiling->m_BottomHeight >> FRACBITS);
+        MSG_WriteShort(netbuf, Ceiling->m_TopHeight >> FRACBITS);
+        MSG_WriteShort(netbuf, Ceiling->m_Speed >> FRACBITS);
+        MSG_WriteShort(netbuf, Ceiling->m_Speed1 >> FRACBITS);
+        MSG_WriteShort(netbuf, Ceiling->m_Speed2 >> FRACBITS);
+        MSG_WriteBool(netbuf, Ceiling->m_Crush);
+        MSG_WriteBool(netbuf, Ceiling->m_Silent);
+        MSG_WriteByte(netbuf, Ceiling->m_Direction);
+        MSG_WriteShort(netbuf, Ceiling->m_Texture);
+        MSG_WriteShort(netbuf, Ceiling->m_NewSpecial);
+        MSG_WriteShort(netbuf, Ceiling->m_Tag);
+        MSG_WriteByte(netbuf, Ceiling->m_OldDirection);
+	}
+
+	if (ceiling_mover == SEC_DOOR)
+	{
+		DDoor *Door = (DDoor *)sector->ceilingdata;
+
+        MSG_WriteByte(netbuf, Door->m_Type);
+        MSG_WriteShort(netbuf, Door->m_TopHeight >> FRACBITS);
+        MSG_WriteShort(netbuf, Door->m_Speed >> FRACBITS);
+        MSG_WriteByte(netbuf, Door->m_Direction);
+        MSG_WriteLong(netbuf, Door->m_TopWait);
+        MSG_WriteLong(netbuf, Door->m_TopCountdown);
+		MSG_WriteByte(netbuf, Door->m_Status);
+		// Check for an invalid m_Line (doors triggered by tag 666)
+        MSG_WriteLong(netbuf, Door->m_Line ? (Door->m_Line - lines) : -1);
+	}
+
+	if (floor_mover == SEC_FLOOR)
+	{
+		DFloor *Floor = (DFloor *)sector->floordata;
+
+        MSG_WriteByte(netbuf, Floor->m_Type);
+        MSG_WriteByte(netbuf, Floor->m_Status);
+        MSG_WriteBool(netbuf, Floor->m_Crush);
+        MSG_WriteByte(netbuf, Floor->m_Direction);
+        MSG_WriteShort(netbuf, Floor->m_NewSpecial);
+        MSG_WriteShort(netbuf, Floor->m_Texture);
+        MSG_WriteShort(netbuf, Floor->m_FloorDestHeight >> FRACBITS);
+        MSG_WriteShort(netbuf, Floor->m_Speed >> FRACBITS);
+        MSG_WriteLong(netbuf, Floor->m_ResetCount);
+        MSG_WriteShort(netbuf, Floor->m_OrgHeight >> FRACBITS);
+        MSG_WriteLong(netbuf, Floor->m_Delay);
+        MSG_WriteLong(netbuf, Floor->m_PauseTime);
+        MSG_WriteLong(netbuf, Floor->m_StepTime);
+        MSG_WriteLong(netbuf, Floor->m_PerStepTime);
+	}
+
+	if (floor_mover == SEC_PLAT)
+	{
+		DPlat *Plat = (DPlat *)sector->floordata;
+
+        MSG_WriteShort(netbuf, Plat->m_Speed >> FRACBITS);
+        MSG_WriteShort(netbuf, Plat->m_Low >> FRACBITS);
+        MSG_WriteShort(netbuf, Plat->m_High >> FRACBITS);
+        MSG_WriteLong(netbuf, Plat->m_Wait);
+        MSG_WriteLong(netbuf, Plat->m_Count);
+        MSG_WriteByte(netbuf, Plat->m_Status);
+        MSG_WriteByte(netbuf, Plat->m_OldStatus);
+        MSG_WriteBool(netbuf, Plat->m_Crush);
+        MSG_WriteShort(netbuf, Plat->m_Tag);
+        MSG_WriteByte(netbuf, Plat->m_Type);
+	}
+}	
 
 //
 // SV_UpdateMovingSectors
 // Update doors, floors, ceilings etc... that are actively moving
 //
-void SV_UpdateMovingSectors(player_t &pl)
+void SV_UpdateMovingSectors(player_t &player)
 {
-    client_t *cl = &pl.client;
-
-	for (int sectornum = 0; sectornum < numsectors; sectornum++)
+	std::list<movingsector_t>::iterator itr;
+	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
 	{
-        sector_t* sector = &sectors[sectornum];
-
-		// Determine which moving planes are in this sector
-		movertype_t floor_mover = SEC_INVALID, ceiling_mover = SEC_INVALID;
-
-		if (sector->ceilingdata && sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
-			ceiling_mover = SEC_CEILING;
-		if (sector->ceilingdata && sector->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
-			ceiling_mover = SEC_DOOR;
-		if (sector->floordata && sector->floordata->IsA(RUNTIME_CLASS(DFloor)))
-			floor_mover = SEC_FLOOR;
-		if (sector->floordata && sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
-			floor_mover = SEC_PLAT;
-		if (sector->ceilingdata && sector->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
-		{
-			ceiling_mover = SEC_ELEVATOR;
-			floor_mover = SEC_INVALID;
-		}
-		if (sector->ceilingdata && sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
-		{
-			ceiling_mover = SEC_PILLAR;
-			floor_mover = SEC_INVALID;
-		}
-	
-		// no moving planes?  skip it.
-		if (ceiling_mover == SEC_INVALID && floor_mover == SEC_INVALID)
-			continue;
-
-		// Create bitfield to denote moving planes in this sector
-		byte movers = byte(ceiling_mover) | (byte(floor_mover) << 4);
-					
-		MSG_WriteMarker(&cl->netbuf, svc_movingsector);
-		MSG_WriteShort(&cl->netbuf, sectornum);
-		MSG_WriteShort(&cl->netbuf, P_CeilingHeight(sector) >> FRACBITS);
-		MSG_WriteShort(&cl->netbuf, P_FloorHeight(sector) >> FRACBITS);
-		MSG_WriteByte(&cl->netbuf, movers);
-
-		if (ceiling_mover == SEC_ELEVATOR)
-		{
-			DElevator *Elevator = (DElevator *)sector->ceilingdata;
-
-            MSG_WriteByte(&cl->netbuf, Elevator->m_Type);
-            MSG_WriteByte(&cl->netbuf, Elevator->m_Direction);
-            MSG_WriteShort(&cl->netbuf, Elevator->m_FloorDestHeight >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Elevator->m_CeilingDestHeight >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Elevator->m_Speed >> FRACBITS);
-		}
+		sector_t *sector = itr->sector;
 		
-		if (ceiling_mover == SEC_PILLAR)
-		{
-			DPillar *Pillar = (DPillar *)sector->ceilingdata;
-
-            MSG_WriteByte(&cl->netbuf, Pillar->m_Type);
-            MSG_WriteShort(&cl->netbuf, Pillar->m_FloorSpeed >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Pillar->m_CeilingSpeed >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Pillar->m_FloorTarget >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Pillar->m_CeilingTarget >> FRACBITS);
-            MSG_WriteBool(&cl->netbuf, Pillar->m_Crush);
-		}
-
-		if (ceiling_mover == SEC_CEILING)
-		{
-			DCeiling *Ceiling = (DCeiling *)sector->ceilingdata;
-			
-            MSG_WriteByte(&cl->netbuf, Ceiling->m_Type);
-            MSG_WriteShort(&cl->netbuf, Ceiling->m_BottomHeight >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Ceiling->m_TopHeight >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Ceiling->m_Speed >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Ceiling->m_Speed1 >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Ceiling->m_Speed2 >> FRACBITS);
-            MSG_WriteBool(&cl->netbuf, Ceiling->m_Crush);
-            MSG_WriteBool(&cl->netbuf, Ceiling->m_Silent);
-            MSG_WriteByte(&cl->netbuf, Ceiling->m_Direction);
-            MSG_WriteShort(&cl->netbuf, Ceiling->m_Texture);
-            MSG_WriteShort(&cl->netbuf, Ceiling->m_NewSpecial);
-            MSG_WriteShort(&cl->netbuf, Ceiling->m_Tag);
-            MSG_WriteByte(&cl->netbuf, Ceiling->m_OldDirection);
-		}
-
-		if (ceiling_mover == SEC_DOOR)
-		{
-			DDoor *Door = (DDoor *)sector->ceilingdata;
-
-            MSG_WriteByte(&cl->netbuf, Door->m_Type);
-            MSG_WriteShort(&cl->netbuf, Door->m_TopHeight >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Door->m_Speed >> FRACBITS);
-            MSG_WriteByte(&cl->netbuf, Door->m_Direction);
-            MSG_WriteLong(&cl->netbuf, Door->m_TopWait);
-            MSG_WriteLong(&cl->netbuf, Door->m_TopCountdown);
-			MSG_WriteByte(&cl->netbuf, Door->m_Status);
-			// Check for an invalid m_Line (doors triggered by tag 666)
-            MSG_WriteLong(&cl->netbuf, Door->m_Line ? (Door->m_Line - lines) : -1);
-		}
-
-		if (floor_mover == SEC_FLOOR)
-		{
-			DFloor *Floor = (DFloor *)sector->floordata;
-
-            MSG_WriteByte(&cl->netbuf, Floor->m_Type);
-            MSG_WriteBool(&cl->netbuf, Floor->m_Crush);
-            MSG_WriteByte(&cl->netbuf, Floor->m_Direction);
-            MSG_WriteShort(&cl->netbuf, Floor->m_NewSpecial);
-            MSG_WriteShort(&cl->netbuf, Floor->m_Texture);
-            MSG_WriteShort(&cl->netbuf, Floor->m_FloorDestHeight >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Floor->m_Speed >> FRACBITS);
-            MSG_WriteLong(&cl->netbuf, Floor->m_ResetCount);
-            MSG_WriteShort(&cl->netbuf, Floor->m_OrgHeight >> FRACBITS);
-            MSG_WriteLong(&cl->netbuf, Floor->m_Delay);
-            MSG_WriteLong(&cl->netbuf, Floor->m_PauseTime);
-            MSG_WriteLong(&cl->netbuf, Floor->m_StepTime);
-            MSG_WriteLong(&cl->netbuf, Floor->m_PerStepTime);
-		}
-
-		if (floor_mover == SEC_PLAT)
-		{
-			DPlat *Plat = (DPlat *)sector->floordata;
-
-            MSG_WriteShort(&cl->netbuf, Plat->m_Speed >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Plat->m_Low >> FRACBITS);
-            MSG_WriteShort(&cl->netbuf, Plat->m_High >> FRACBITS);
-            MSG_WriteLong(&cl->netbuf, Plat->m_Wait);
-            MSG_WriteLong(&cl->netbuf, Plat->m_Count);
-            MSG_WriteByte(&cl->netbuf, Plat->m_Status);
-            MSG_WriteByte(&cl->netbuf, Plat->m_OldStatus);
-            MSG_WriteBool(&cl->netbuf, Plat->m_Crush);
-            MSG_WriteShort(&cl->netbuf, Plat->m_Tag);
-            MSG_WriteByte(&cl->netbuf, Plat->m_Type);
-		}
+		SV_SendMovingSectorUpdate(player, sector);
 	}
 }
 
@@ -3723,7 +3746,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 
     MSG_WriteByte (&cl->netbuf, mo->waterlevel);
 
-    SV_UpdateMovingSectors(player); // denis - fixme - todo - only info about the sector player is standing on info should be sent. note that this is not player->mo->subsector->sector
+    SV_UpdateMovingSectors(player);
 }
 
 //

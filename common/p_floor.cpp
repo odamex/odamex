@@ -38,7 +38,8 @@
 
 IMPLEMENT_SERIAL (DFloor, DMovingFloor)
 
-DFloor::DFloor ()
+DFloor::DFloor () :
+	m_Status(init)
 {
 }
 
@@ -48,6 +49,7 @@ void DFloor::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		arc << m_Type
+			<< m_Status
 			<< m_Crush
 			<< m_Direction
 			<< m_NewSpecial
@@ -64,6 +66,7 @@ void DFloor::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type
+			>> m_Status
 			>> m_Crush
 			>> m_Direction
 			>> m_NewSpecial
@@ -81,7 +84,8 @@ void DFloor::Serialize (FArchive &arc)
 
 IMPLEMENT_SERIAL (DElevator, DMover)
 
-DElevator::DElevator ()
+DElevator::DElevator () :
+	m_Status(init)
 {
 }
 
@@ -91,6 +95,7 @@ void DElevator::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		arc << m_Type
+			<< m_Status
 			<< m_Direction
 			<< m_FloorDestHeight
 			<< m_CeilingDestHeight
@@ -99,6 +104,7 @@ void DElevator::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type
+			>> m_Status
 			>> m_Direction
 			>> m_FloorDestHeight
 			>> m_CeilingDestHeight
@@ -320,6 +326,7 @@ manual_floor:
 		// new floor thinker
 		rtn = true;
 		floor = new DFloor (sec);
+		sec->floordata = floor;
 		P_AddMovingFloor(sec);
 				
 		floor->m_Type = floortype;
@@ -328,7 +335,6 @@ manual_floor:
 		floor->m_ResetCount = 0;				// [RH]
 		floor->m_OrgHeight = floorheight;
 		
-
 		StartFloorSound (sec);
 
 		switch (floortype)

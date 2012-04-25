@@ -65,6 +65,20 @@
 std::list<movingsector_t> movingsectors;
 
 //
+// P_FindMovingSector
+//
+std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector)
+{
+	std::list<movingsector_t>::iterator itr;
+	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
+		if (sector == itr->sector)
+			return itr;
+	
+	// not found
+	return movingsectors.end();
+}
+
+//
 // P_AddMovingCeiling
 //
 // Updates the movingsectors list to include the passed sector, which
@@ -75,29 +89,23 @@ void P_AddMovingCeiling(sector_t *sector)
 	if (!sector)
 		return;
 		
+	movingsector_t *movesec;
+	
 	// Check if this already exists
-	std::list<movingsector_t>::iterator itr;
-	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
+	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
+	if (itr != movingsectors.end())
 	{
-		if (sector == itr->sector)
-		{
-			if (itr->ceiling_start_tic < 0)
-			{
-				itr->ceiling_start_tic = gametic;
-				itr->ceiling_done = false;
-			}
-				
-			return;
-		}
+		// this sector already is moving
+		movesec = &(*itr);
 	}
-
-	// Add to the list of moving sectors	
-	movingsector_t msec;
-	msec.sector = sector;
-	msec.ceiling_start_tic = gametic;
-	msec.ceiling_done = false;
-
-	movingsectors.push_back(msec);
+	else
+	{
+		movingsectors.push_back(movingsector_t());	
+		movesec = &(movingsectors.back());
+	}
+	
+	movesec->sector = sector;
+	movesec->moving_ceiling = true;
 }
 
 //
@@ -111,29 +119,23 @@ void P_AddMovingFloor(sector_t *sector)
 	if (!sector)
 		return;
 		
-	// Check if this already exists
-	std::list<movingsector_t>::iterator itr;
-	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
-	{
-		if (sector == itr->sector)
-		{
-			if (itr->floor_start_tic < 0)
-			{
-				itr->floor_start_tic = gametic;
-				itr->floor_done = false;
-			}
-				
-			return;
-		}
-	}
-
-	// Add to the list of moving sectors	
-	movingsector_t msec;
-	msec.sector = sector;
-	msec.floor_start_tic = gametic;
-	msec.floor_done = false;
+	movingsector_t *movesec;
 	
-	movingsectors.push_back(msec);
+	// Check if this already exists
+	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
+	if (itr != movingsectors.end())
+	{
+		// this sector already is moving
+		movesec = &(*itr);
+	}
+	else
+	{
+		movingsectors.push_back(movingsector_t());	
+		movesec = &(movingsectors.back());
+	}
+	
+	movesec->sector = sector;
+	movesec->moving_floor = true;
 }
 
 //
@@ -147,23 +149,17 @@ void P_RemoveMovingCeiling(sector_t *sector)
 	if (!sector)
 		return;
 		
-	std::list<movingsector_t>::iterator itr;
-	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
+	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
+	if (itr != movingsectors.end())	
 	{
-		if (sector == itr->sector)
-		{
-			// Does this sector have a moving floor as well?  If so, just
-			// mark the ceiling as invalid but don't remove from the list
-			if (itr->floor_start_tic != -1)
-			{
-				itr->ceiling_start_tic = -1;
-				itr->ceiling_done = true;
-				return;
-			}
-			
+		itr->moving_ceiling = false;
+
+		// Does this sector have a moving floor as well?  If so, just
+		// mark the ceiling as invalid but don't remove from the list
+		if (!itr->moving_floor)
 			movingsectors.erase(itr);
-			return;
-		}
+			
+		return;
 	}
 }
 
@@ -178,23 +174,17 @@ void P_RemoveMovingFloor(sector_t *sector)
 	if (!sector)
 		return;
 		
-	std::list<movingsector_t>::iterator itr;
-	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
+	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
+	if (itr != movingsectors.end())	
 	{
-		if (sector == itr->sector)
-		{
-			// Does this sector have a moving ceiling as well?  If so, just
-			// mark the ceiling as invalid but don't remove from the list
-			if (itr->ceiling_start_tic != -1)
-			{
-				itr->floor_start_tic = -1;
-				itr->floor_done = true;
-				return;
-			}
-			
+		itr->moving_floor = false;
+
+		// Does this sector have a moving ceiling as well?  If so, just
+		// mark the floor as invalid but don't remove from the list
+		if (!itr->moving_ceiling)
 			movingsectors.erase(itr);
-			return;
-		}
+			
+		return;
 	}
 }
 
@@ -207,6 +197,11 @@ bool P_MovingCeilingCompleted(sector_t *sector)
 	{
 		DDoor *door = static_cast<DDoor *>(sector->ceilingdata);
 		return (door->m_Status == DDoor::destroy);
+	}
+	if (sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
+	{
+		DCeiling *ceiling = static_cast<DCeiling *>(sector->ceilingdata);
+		return (ceiling->m_Status == DCeiling::destroy);
 	}
 	
 	return false;
@@ -221,6 +216,11 @@ bool P_MovingFloorCompleted(sector_t *sector)
 	{
 		DPlat *plat = static_cast<DPlat *>(sector->floordata);
 		return (plat->m_Status == DPlat::destroy);
+	}
+	if (sector->floordata->IsA(RUNTIME_CLASS(DFloor)))
+	{
+		DFloor *floor = static_cast<DFloor *>(sector->floordata);
+		return (floor->m_Status == DFloor::destroy);
 	}
 	
 	return false;

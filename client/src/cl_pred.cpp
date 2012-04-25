@@ -96,6 +96,28 @@ static bool CL_SectorHasSnapshots(sector_t *sector)
 }
 
 //
+// CL_SectorIsPredicting
+//
+// Returns true if the client is predicting sector
+//
+static bool CL_SectorIsPredicting(sector_t *sector)
+{
+	if (!sector)
+		return false;
+		
+	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
+	if (itr != movingsectors.end() && sector == itr->sector)
+	{
+		if (P_MovingCeilingCompleted(sector) &&
+			P_MovingFloorCompleted(sector))
+			return true;
+	}
+
+	// sector not found	
+	return false;
+}
+
+//
 // CL_ResetSectors
 //
 // Moves predicting sectors to their most recent snapshot received from the
@@ -120,6 +142,7 @@ static void CL_ResetSectors()
 		
 		if (mgr && !mgr->empty())
 		{
+			// snapshots have been received for this sector recently, so
 			// reset this sector to the most recent snapshot from the server
 			int mostrecent = mgr->getMostRecentTime();
 			SectorSnapshot snap = mgr->getSnapshot(mostrecent);
@@ -127,15 +150,11 @@ static void CL_ResetSectors()
 		}
 		else
 		{
-			// Has the predicted sector stopped moving?
-			itr->ceiling_done = P_MovingCeilingCompleted(sector);
-			itr->floor_done = P_MovingFloorCompleted(sector);
-		
 			// no snapshot container found so remove this sector from the
 			// movingsectors list whenever prediction is done
-			if (itr->ceiling_done && itr->floor_done)
+			if (P_MovingCeilingCompleted(sector) && P_MovingFloorCompleted(sector))
 			{
-				movingsectors.erase(itr++);			
+				movingsectors.erase(itr++);	
 				continue;
 			}
 		}
@@ -161,9 +180,9 @@ static void CL_PredictSectors(int predtic)
 		if (predtic < gametic && !CL_SectorHasSnapshots(sector))
 			continue;
 
-		if (sector && sector->ceilingdata && itr->ceiling_start_tic > 0 && itr->ceiling_start_tic < predtic)
+		if (sector && sector->ceilingdata && itr->moving_ceiling)
 			sector->ceilingdata->RunThink();
-		if (sector && sector->floordata && itr->floor_start_tic > 0 && itr->floor_start_tic < predtic)
+		if (sector && sector->floordata && itr->moving_floor)
 			sector->floordata->RunThink();				
 	}
 }

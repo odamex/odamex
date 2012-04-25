@@ -31,7 +31,8 @@
 
 IMPLEMENT_SERIAL (DPillar, DMover)
 
-DPillar::DPillar ()
+DPillar::DPillar () :
+	m_Status(init)
 {
 }
 
@@ -41,6 +42,7 @@ void DPillar::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		arc << m_Type
+			<< m_Status
 			<< m_FloorSpeed
 			<< m_CeilingSpeed
 			<< m_FloorTarget
@@ -50,6 +52,7 @@ void DPillar::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type
+			>> m_Status
 			>> m_FloorSpeed
 			>> m_CeilingSpeed
 			>> m_FloorTarget

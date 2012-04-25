@@ -34,18 +34,17 @@
 typedef struct movingsector_s
 {
 	movingsector_s() :
-		sector(NULL), ceiling_done(true), floor_done(true),
-		ceiling_start_tic(-1), floor_start_tic(-1)
+		sector(NULL), moving_ceiling(false), moving_floor(false)
 	{}
 	
 	sector_t	*sector;
-	bool		ceiling_done;
-	bool		floor_done;
-	int			ceiling_start_tic;
-	int			floor_start_tic;
+	bool		moving_ceiling;
+	bool		moving_floor;
 } movingsector_t;
 
 extern std::list<movingsector_t> movingsectors;
+
+std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
 void P_AddMovingCeiling(sector_t *sector);
 void P_AddMovingFloor(sector_t *sector);
 void P_RemoveMovingCeiling(sector_t *sector);
@@ -533,6 +532,14 @@ class DPillar : public DMover
 {
 	DECLARE_SERIAL (DPillar, DMover)
 public:
+	enum EPillarState
+	{
+		init = 0,
+		finished,
+		destroy,
+		state_size
+	};
+	
 	enum EPillar
 	{
 		pillarBuild,
@@ -553,6 +560,8 @@ public:
 	fixed_t		m_FloorTarget;
 	fixed_t		m_CeilingTarget;
 	bool		m_Crush;
+	
+	EPillarState m_Status;
 
 };
 
@@ -563,6 +572,14 @@ inline FArchive &operator<< (FArchive &arc, DPillar::EPillar type)
 inline FArchive &operator>> (FArchive &arc, DPillar::EPillar &out)
 {
 	BYTE in; arc >> in; out = (DPillar::EPillar)in; return arc;
+}
+inline FArchive &operator<< (FArchive &arc, DPillar::EPillarState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DPillar::EPillarState &out)
+{
+	BYTE in; arc >> in; out = (DPillar::EPillarState)in; return arc;
 }
 
 BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
@@ -586,7 +603,7 @@ public:
 		doorCloseWaitOpen
 	};
 
-	enum EVlDoorState
+	enum EDoorState
 	{
 		init = 0,
 		opening,
@@ -617,10 +634,10 @@ public:
 	// when it reaches 0, start going down
 	int 		m_TopCountdown;
 
-	EVlDoorState	m_Status;
+	EDoorState	m_Status;
 	// [SL] 2011-06-09 - The most recent sound played by this plat
 	// Used to prevent repetition of sounds due to client predicition
-	EVlDoorState	m_CurrentSound;
+	EDoorState	m_CurrentSound;
 
     line_t      *m_Line;
 protected:
@@ -645,13 +662,13 @@ inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoor &out)
 {
 	BYTE in; arc >> in; out = (DDoor::EVlDoor)in; return arc;
 }
-inline FArchive &operator<< (FArchive &arc, DDoor::EVlDoorState state)
+inline FArchive &operator<< (FArchive &arc, DDoor::EDoorState state)
 {
 	return arc << (BYTE)state;
 }
-inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoorState &out)
+inline FArchive &operator>> (FArchive &arc, DDoor::EDoorState &out)
 {
-	BYTE in; arc >> in; out = (DDoor::EVlDoorState)in; return arc;
+	BYTE in; arc >> in; out = (DDoor::EDoorState)in; return arc;
 }
 
 //
@@ -663,6 +680,14 @@ class DCeiling : public DMovingCeiling
 {
 	DECLARE_SERIAL (DCeiling, DMovingCeiling)
 public:
+	enum ECeilingState
+	{
+		init = 0,
+		finished,
+		destroy,
+		state_size
+	};
+	
 	enum ECeiling
 	{
 		ceilLowerByValue,
@@ -715,6 +740,9 @@ public:
 	// ID
 	int 		m_Tag;
 	int 		m_OldDirection;
+	
+	ECeilingState m_Status;
+	
 protected:
 
 	void PlayCeilingSound ();
@@ -737,6 +765,14 @@ inline FArchive &operator>> (FArchive &arc, DCeiling::ECeiling &type)
 {
 	BYTE in; arc >> in; type = (DCeiling::ECeiling)in; return arc;
 }
+inline FArchive &operator<< (FArchive &arc, DCeiling::ECeilingState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DCeiling::ECeilingState &out)
+{
+	BYTE in; arc >> in; out = (DCeiling::ECeilingState)in; return arc;
+}
 
 
 //
@@ -747,6 +783,14 @@ class DFloor : public DMovingFloor
 {
 	DECLARE_SERIAL (DFloor, DMovingFloor)
 public:
+	enum EFloorState
+	{
+		init = 0,
+		finished,
+		destroy,
+		state_size
+	};
+	
 	enum EFloor
 	{
 		floorLowerToLowest,
@@ -797,6 +841,7 @@ public:
 	void RunThink ();
 
 	EFloor	 	m_Type;
+	EFloorState	m_Status;
 	bool 		m_Crush;
 	int 		m_Direction;
 	short 		m_NewSpecial;
@@ -834,11 +879,27 @@ inline FArchive &operator>> (FArchive &arc, DFloor::EFloor &type)
 {
 	BYTE in; arc >> in; type = (DFloor::EFloor)in; return arc;
 }
+inline FArchive &operator<< (FArchive &arc, DFloor::EFloorState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DFloor::EFloorState &out)
+{
+	BYTE in; arc >> in; out = (DFloor::EFloorState)in; return arc;
+}
 
 class DElevator : public DMover
 {
 	DECLARE_SERIAL (DElevator, DMover)
 public:
+	enum EElevatorState
+	{
+		init = 0,
+		finished,
+		destroy,
+		state_size
+	};
+
 	enum EElevator
 	{
 		elevateUp,
@@ -858,7 +919,9 @@ public:
 	fixed_t		m_FloorDestHeight;
 	fixed_t		m_CeilingDestHeight;
 	fixed_t		m_Speed;
-
+	
+	EElevatorState m_Status;
+	
 protected:
 	void StartFloorSound ();
 
@@ -875,6 +938,14 @@ inline FArchive &operator<< (FArchive &arc, DElevator::EElevator type)
 inline FArchive &operator>> (FArchive &arc, DElevator::EElevator &out)
 {
 	BYTE in; arc >> in; out = (DElevator::EElevator)in; return arc;
+}
+inline FArchive &operator<< (FArchive &arc, DElevator::EElevatorState state)
+{
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
+{
+	BYTE in; arc >> in; out = (DElevator::EElevatorState)in; return arc;
 }
 
 //jff 3/15/98 pure texture/type change for better generalized support

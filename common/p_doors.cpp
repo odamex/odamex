@@ -37,10 +37,9 @@
 
 IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 
-DDoor::DDoor ()
+DDoor::DDoor () :
+	m_Status(init),	m_Line(NULL)
 {
-	m_Line = NULL;
-	m_Status = init;
 	memset(m_PlayedSound, false, sizeof(m_PlayedSound));
 }
 

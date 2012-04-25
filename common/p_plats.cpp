@@ -37,7 +37,8 @@
 
 IMPLEMENT_SERIAL (DPlat, DMovingFloor)
 
-DPlat::DPlat ()
+DPlat::DPlat () :
+	m_Status(init)
 {
 }
 

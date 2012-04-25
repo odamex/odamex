@@ -646,6 +646,8 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mFloorMoverType		= SEC_ELEVATOR;
 			mCeilingType		= elevator->m_Type;
 			mFloorType			= elevator->m_Type;
+			mCeilingStatus		= elevator->m_Status;
+			mFloorStatus		= elevator->m_Status;
 			mCeilingDirection	= elevator->m_Direction;
 			mFloorDirection		= elevator->m_Direction;
 			mCeilingDestination	= elevator->m_CeilingDestHeight;
@@ -659,7 +661,9 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mCeilingMoverType	= SEC_PILLAR;
 			mFloorMoverType		= SEC_PILLAR;	
 			mCeilingType		= pillar->m_Type;
-			mFloorType			= pillar->m_Type;			
+			mFloorType			= pillar->m_Type;
+			mCeilingStatus		= pillar->m_Status;
+			mFloorStatus		= pillar->m_Status;		
 			mCeilingSpeed		= pillar->m_CeilingSpeed;
 			mFloorSpeed			= pillar->m_FloorSpeed;
 			mCeilingDestination	= pillar->m_CeilingTarget;
@@ -672,6 +676,7 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			DFloor *floor		= static_cast<DFloor *>(sector->floordata);
 			mFloorMoverType		= SEC_FLOOR;			
 			mFloorType			= floor->m_Type;
+			mFloorStatus		= floor->m_Status;
 			mFloorCrush			= floor->m_Crush;
 			mFloorDirection		= floor->m_Direction;
 			mNewFloorSpecial	= floor->m_NewSpecial;
@@ -709,6 +714,7 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			DCeiling *ceiling	= static_cast<DCeiling *>(sector->ceilingdata);
 			mCeilingMoverType	= SEC_CEILING;			
 			mCeilingType		= ceiling->m_Type;
+			mCeilingStatus		= ceiling->m_Status;
 			mCeilingTag			= ceiling->m_Tag;
 			mCeilingCrush		= ceiling->m_Crush;
 			mSilent				= ceiling->m_Silent;
@@ -772,6 +778,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		
 		DPillar *pillar				= static_cast<DPillar *>(sector->ceilingdata);
 		pillar->m_Type				= static_cast<DPillar::EPillar>(mCeilingType);
+		pillar->m_Status			= static_cast<DPillar::EPillarState>(mCeilingStatus);
 		pillar->m_CeilingSpeed		= mCeilingSpeed;
 		pillar->m_FloorSpeed		= mFloorSpeed;
 		pillar->m_CeilingTarget		= mCeilingDestination;
@@ -786,6 +793,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		
 		DElevator *elevator			= static_cast<DElevator *>(sector->ceilingdata);
 		elevator->m_Type			= static_cast<DElevator::EElevator>(mCeilingType);
+		elevator->m_Status			= static_cast<DElevator::EElevatorState>(mCeilingStatus);		
 		elevator->m_Direction		= mCeilingDirection;
 		elevator->m_CeilingDestHeight = mCeilingDestination;
 		elevator->m_FloorDestHeight	= mFloorDestination;
@@ -798,6 +806,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		
 		DCeiling *ceiling			= static_cast<DCeiling *>(sector->ceilingdata);
 		ceiling->m_Type				= static_cast<DCeiling::ECeiling>(mCeilingType);
+		ceiling->m_Status			= static_cast<DCeiling::ECeilingState>(mCeilingStatus);
 		ceiling->m_Tag				= mCeilingTag;
 		ceiling->m_BottomHeight		= mCeilingLow;
 		ceiling->m_TopHeight		= mCeilingHigh;
@@ -818,7 +827,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 		DDoor *door					= static_cast<DDoor *>(sector->ceilingdata);
 		door->m_Type				= static_cast<DDoor::EVlDoor>(mCeilingType);
-		door->m_Status				= static_cast<DDoor::EVlDoorState>(mCeilingStatus);
+		door->m_Status				= static_cast<DDoor::EDoorState>(mCeilingStatus);
 		door->m_TopHeight			= mCeilingHigh;
 		door->m_Speed				= mCeilingSpeed;
 		door->m_Direction			= mCeilingDirection;
@@ -833,6 +842,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		
 		DFloor *floor				= static_cast<DFloor *>(sector->floordata);
 		floor->m_Type				= static_cast<DFloor::EFloor>(mFloorType);
+		floor->m_Status				= static_cast<DFloor::EFloorState>(mFloorStatus);
 		floor->m_Crush				= mFloorCrush;
 		floor->m_Direction			= mFloorDirection;
 		floor->m_NewSpecial			= mNewFloorSpecial;
