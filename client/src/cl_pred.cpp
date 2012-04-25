@@ -100,18 +100,14 @@ static bool CL_SectorHasSnapshots(sector_t *sector)
 //
 // Returns true if the client is predicting sector
 //
-static bool CL_SectorIsPredicting(sector_t *sector)
+bool CL_SectorIsPredicting(sector_t *sector)
 {
 	if (!sector)
 		return false;
 		
 	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
 	if (itr != movingsectors.end() && sector == itr->sector)
-	{
-		if (P_MovingCeilingCompleted(sector) &&
-			P_MovingFloorCompleted(sector))
-			return true;
-	}
+		return (itr->moving_ceiling || itr->moving_floor);
 
 	// sector not found	
 	return false;
@@ -197,6 +193,8 @@ static void CL_PredictSpectator()
 	if (!player->spectator)
 		return;
 		
+	predicting = true;
+	
 	P_MovePlayer(player);
 	P_PlayerThink(player);
 	P_CalcHeight(player);
@@ -206,6 +204,8 @@ static void CL_PredictSpectator()
 		P_PlayerThink(&displayplayer());
 		P_CalcHeight(&displayplayer());		
 	}
+	
+	predicting = false;
 }
 
 //
@@ -267,6 +267,9 @@ void CL_PredictWorld(void)
 	if (p->tic <= 0)	// No verified position from the server
 		return;
 
+	// Disable sounds, etc, during prediction
+	predicting = true;
+	
 	// Clear out past movements if we're dead!
 	if (consoleplayer().playerstate == PST_DEAD)
 		for (int i = 0; i < MAXSAVETICS; i++)
@@ -293,13 +296,10 @@ void CL_PredictWorld(void)
 	PlayerSnapshot snap = p->snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
-	// Disable sounds, etc, during prediction
-	predicting = true;
-
 	while (++predtic < gametic)
 	{
-		CL_PredictSectors(predtic);
 		CL_PredictLocalPlayer(predtic);
+		CL_PredictSectors(predtic);		
 	}
 
 	// If the player didn't just spawn or teleport, nudge the player from
@@ -327,8 +327,8 @@ void CL_PredictWorld(void)
 
 	predicting = false;
 
-	CL_PredictSectors(gametic);
 	CL_PredictLocalPlayer(gametic);
+	CL_PredictSectors(gametic);
 
 	if (consoleplayer_id != displayplayer_id)
 	{

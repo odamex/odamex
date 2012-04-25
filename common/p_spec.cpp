@@ -203,7 +203,17 @@ bool P_MovingCeilingCompleted(sector_t *sector)
 		DCeiling *ceiling = static_cast<DCeiling *>(sector->ceilingdata);
 		return (ceiling->m_Status == DCeiling::destroy);
 	}
-	
+	if (sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
+	{
+		DPillar *pillar = static_cast<DPillar *>(sector->ceilingdata);
+		return (pillar->m_Status == DPillar::destroy);	
+	}
+	if (sector->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
+	{
+		DElevator *elevator = static_cast<DElevator *>(sector->ceilingdata);
+		return (elevator->m_Status == DElevator::destroy);	
+	}
+		
 	return false;
 }
 

@@ -487,16 +487,12 @@ public:
 	int 		m_Tag;
 	EPlatType	m_Type;
 
-	// [SL] 2011-06-09 - The most recent sound played by this plat
-	// Used to prevent repetition of sounds due to client predicition
-	EPlatState	m_CurrentSound;
 protected:
 
 	void PlayPlatSound ();
 	void Reactivate ();
 	void Stop ();
 
-	bool m_PlayedSound[state_size];
 private:
 	DPlat ();
 
@@ -625,9 +621,6 @@ public:
 	fixed_t 	m_TopHeight;
 	fixed_t 	m_Speed;
 
-	// 1 = up, 0 = waiting at top, -1 = down
-	int 		m_Direction;
-
 	// tics to wait at the top
 	int 		m_TopWait;
 	// (keep in case a door going down is reset)
@@ -635,9 +628,6 @@ public:
 	int 		m_TopCountdown;
 
 	EDoorState	m_Status;
-	// [SL] 2011-06-09 - The most recent sound played by this plat
-	// Used to prevent repetition of sounds due to client predicition
-	EDoorState	m_CurrentSound;
 
     line_t      *m_Line;
 protected:
@@ -648,7 +638,6 @@ protected:
 	friend void P_SpawnDoorCloseIn30 (sector_t *sec);
 	friend void P_SpawnDoorRaiseIn5Mins (sector_t *sec);
 
-	bool m_PlayedSound[state_size];
 private:
 	DDoor ();
 
@@ -683,6 +672,9 @@ public:
 	enum ECeilingState
 	{
 		init = 0,
+		up,
+		down,
+		waiting,
 		finished,
 		destroy,
 		state_size
@@ -786,6 +778,9 @@ public:
 	enum EFloorState
 	{
 		init = 0,
+		up,
+		down,
+		waiting,
 		finished,
 		destroy,
 		state_size

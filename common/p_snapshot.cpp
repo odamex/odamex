@@ -735,7 +735,6 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mCeilingType		= door->m_Type;
 			mCeilingHigh		= door->m_TopHeight;
 			mCeilingSpeed		= door->m_Speed;
-			mCeilingDirection	= door->m_Direction;
 			mCeilingWait		= door->m_TopWait;
 			mCeilingCounter		= door->m_TopCountdown;
 			mCeilingStatus		= door->m_Status;
@@ -830,7 +829,6 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		door->m_Status				= static_cast<DDoor::EDoorState>(mCeilingStatus);
 		door->m_TopHeight			= mCeilingHigh;
 		door->m_Speed				= mCeilingSpeed;
-		door->m_Direction			= mCeilingDirection;
 		door->m_TopWait				= mCeilingWait;
 		door->m_TopCountdown		= mCeilingCounter;
 		door->m_Line				= mLine;

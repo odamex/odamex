@@ -2385,7 +2385,6 @@ void CL_UpdateMovingSector(void)
 		snap.setCeilingType(static_cast<DDoor::EVlDoor>(MSG_ReadByte()));
 		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
 		snap.setCeilingSpeed(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingDirection(char(MSG_ReadByte()));
 		snap.setCeilingWait(MSG_ReadLong());
 		snap.setCeilingCounter(MSG_ReadLong());
 		snap.setCeilingStatus(MSG_ReadByte());
@@ -3318,9 +3317,24 @@ void CL_SimulateWorld()
 			
 		sector_t *sector = &sectors[sectornum];
 
+		// will this sector be handled when predicting sectors?
+		if (CL_SectorIsPredicting(sector))
+			continue;
+
+		// Fetch the snapshot for this world_index and run the sector's
+		// thinkers to play any sector sounds
 		SectorSnapshot snap = itr->second.getSnapshot(world_index);
 		if (snap.isValid())
+		{
 			snap.toSector(sector);
+
+			if (sector->ceilingdata)
+				sector->ceilingdata->RunThink();
+			if (sector->floordata && sector->ceilingdata != sector->floordata)
+				sector->floordata->RunThink();
+
+			snap.toSector(sector);
+		}				
 	}
 		
 	// Move players

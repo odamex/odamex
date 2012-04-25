@@ -794,7 +794,7 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
 		return;
 
-	if (name == NULL ||
+	if (name == NULL || strlen(name) == 0 ||
 			(ent && ent != (AActor *)(~0) && ent->subsector && ent->subsector->sector && 
 			ent->subsector->sector->MoreFlags & SECF_SILENT))
 	{

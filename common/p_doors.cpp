@@ -35,12 +35,13 @@
 
 #include "p_spec.h"
 
+extern bool predicting;
+
 IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 
 DDoor::DDoor () :
 	m_Status(init),	m_Line(NULL)
 {
-	memset(m_PlayedSound, false, sizeof(m_PlayedSound));
 }
 
 void DDoor::Serialize (FArchive &arc)
@@ -49,25 +50,22 @@ void DDoor::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		arc << m_Type
+			<< m_Status
 			<< m_TopHeight
 			<< m_Speed
-			<< m_Direction
 			<< m_TopWait
-			<< m_TopCountdown
-			<< m_Status;
+			<< m_TopCountdown;
 	}
 	else
 	{
 		arc >> m_Type
+			>> m_Status
 			>> m_TopHeight
 			>> m_Speed
-			>> m_Direction
 			>> m_TopWait
-			>> m_TopCountdown
-			>> m_Status;
+			>> m_TopCountdown;
 	}
 }
-
 
 //
 // VERTICAL DOORS
@@ -98,22 +96,21 @@ void DDoor::RunThink ()
 
 	EResult res;
 		
-	switch (m_Direction)
+	switch (m_Status)
 	{
-	case 0:
+	case waiting:
 		// WAITING
 		if (!--m_TopCountdown)
 		{
 			switch (m_Type)
 			{
 			case doorRaise:
-				m_Direction = -1; // time to go back down
+				// time to go back down
 				m_Status = closing;
 				PlayDoorSound();
 				break;
 				
 			case doorCloseWaitOpen:
-				m_Direction = 1;
 				m_Status = opening;
 				PlayDoorSound();
 				break;
@@ -124,14 +121,13 @@ void DDoor::RunThink ()
 		}
 		break;
 		
-	case 2:
+	case init:
 		//	INITIAL WAIT
 		if (!--m_TopCountdown)
 		{
 			switch (m_Type)
 			{
 			case doorRaiseIn5Mins:
-				m_Direction = 1;
 				m_Type = doorRaise;
 				m_Status = opening;
 				PlayDoorSound();
@@ -143,9 +139,9 @@ void DDoor::RunThink ()
 		}
 		break;
 		
-    case -1:
-		// DOWN
-        res = MoveCeiling (m_Speed, floorheight, false, m_Direction);
+	case closing:
+		res = MoveCeiling(m_Speed, floorheight, false, -1);
+		
         if (m_Line && m_Line->id)
         {
             EV_LightTurnOnPartway(m_Line->id,
@@ -163,19 +159,12 @@ void DDoor::RunThink ()
 					m_Status = destroy;
 				else
 				{
-					// if the server sends the ceiling height of the door at the
-					// floor but prediction code says we're at the top, ignore it
-					if (!m_PlayedSound[closing] == opening)
-						break;	
-					// we really have finished
 					m_Status = finished;
 					PlayDoorSound();
-					break;
 				}
 				break;
 				
 			case doorCloseWaitOpen:
-				m_Direction = 0;
 				m_TopCountdown = m_TopWait;
 				m_Status = waiting;
 				break;
@@ -196,7 +185,6 @@ void DDoor::RunThink ()
 				break;
 				
 			default:
-				m_Direction = 1;
 				m_Status = reopening;
 				PlayDoorSound();
 				break;
@@ -204,9 +192,9 @@ void DDoor::RunThink ()
 		}
 		break;
 		
-	case 1:
-		// UP
-		res = MoveCeiling (m_Speed, m_TopHeight, false, m_Direction);
+	case reopening:
+	case opening:
+		res = MoveCeiling(m_Speed, m_TopHeight, false, 1);
 		
         if (m_Line && m_Line->id)
         {
@@ -220,7 +208,7 @@ void DDoor::RunThink ()
 			switch (m_Type)
 			{
 			case doorRaise:
-				m_Direction = 0; // wait at top
+				// wait at top
 				m_TopCountdown = m_TopWait;
 				m_Status = waiting;
 				break;
@@ -249,66 +237,71 @@ void DDoor::RunThink ()
 	}
 }
 
+//
+// IsBlazingDoor
+//
+// Returns true if the door is a fast door that should use
+// the dr2_open/dr2_close sounds
+//
+static bool IsBlazingDoor(DDoor *door)
+{
+	if (!door)
+		return false;
+	
+	return (door->m_Speed >= (8 << FRACBITS));
+}
+
 // [RH] PlayDoorSound: Plays door sound depending on direction and speed
 void DDoor::PlayDoorSound ()
 {
-	// We've already played this sound so don't repeat it
-	if (m_PlayedSound[m_Status])
+	if (predicting)
 		return;
-	m_PlayedSound[m_Status] = true;	
-
-	const char *snd;
+		
 	if (m_Sector->seqType >= 0)
 	{
 		SN_StartSequence (m_Sector, m_Sector->seqType, SEQ_DOOR);
+		return;
 	}
-	else
-	{
-		switch(m_Status)
-		{
-		case opening:
-			if((m_Speed >= FRACUNIT*8))
-				snd = "doors/dr2_open";
-			else
-				snd = "doors/dr1_open";
-			break;
-		case reopening:
-			// [SL] 2011-06-10 - emulate vanilla Doom bug that plays the
-			// slower door opening sound when a door is forced to reopen
-			// due to a player standing underneath it when it's closing.
-			snd = "doors/dr1_open";
-			break;
-		case closing:
-			m_PlayedSound[opening] = false;
-			m_PlayedSound[reopening] = false;
-			if((m_Speed >= FRACUNIT*8))
-				snd = "doors/dr2_clos";
-			else
-				snd = "doors/dr1_clos";
-			break;
-		case finished:
-			// [SL] 2011-06-10 - emulate vanilla Doom bug that plays the
-			// blazing-door sound twice: when the door begins to close
-			// and when the door finishes closing.
-			if ((m_Speed >= FRACUNIT*8))
-				snd = "doors/dr2_clos";
-			else
-				return;
-			break;
-		default:
-			return;
-		}
 
-		S_Sound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
+	const char *snd = NULL;	
+	switch(m_Status)
+	{
+	case opening:
+		if (IsBlazingDoor(this))
+			snd = "doors/dr2_open";
+		else
+			snd = "doors/dr1_open";
+		break;
+	case reopening:
+		// [SL] 2011-06-10 - emulate vanilla Doom bug that plays the
+		// slower door opening sound when a door is forced to reopen
+		// due to a player standing underneath it when it's closing.
+		snd = "doors/dr1_open";
+		break;
+	case closing:
+		if (IsBlazingDoor(this))
+			snd = "doors/dr2_clos";
+		else
+			snd = "doors/dr1_clos";
+		break;
+	case finished:
+		// [SL] 2011-06-10 - emulate vanilla Doom bug that plays the
+		// blazing-door sound twice: when the door begins to close
+		// and when the door finishes closing.
+		if (!IsBlazingDoor(this))
+			return;
+		snd = "doors/dr2_clos";
+		break;
+	default:
+		return;
 	}
+
+	S_Sound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
 }
 
 DDoor::DDoor (sector_t *sector)
-	: DMovingCeiling (sector)
+	: DMovingCeiling(sector), m_Status(init), m_Line(NULL)
 {
-	m_Line = NULL;
-	m_Status = init;
-	memset(m_PlayedSound, false, sizeof(m_PlayedSound));
 }
 
 // [RH] Merged EV_VerticalDoor and EV_DoLockedDoor into EV_DoDoor
@@ -316,42 +309,35 @@ DDoor::DDoor (sector_t *sector)
 
 // [RH] SpawnDoor: Helper function for EV_DoDoor
 DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
-	: DMovingCeiling (sec)
+	: DMovingCeiling (sec), m_Status(init)
 {
 	m_Type = type;
 	m_TopWait = delay;
 	m_TopCountdown = -1;
 	m_Speed = speed;
     m_Line = ln;
-	memset(m_PlayedSound, false, sizeof(m_PlayedSound));
-	m_Status = init;
 
 	fixed_t ceilingheight = P_CeilingHeight(sec);
 	
 	switch (type)
 	{
 	case doorClose:
-		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
-		//m_TopHeight -= 4*FRACUNIT;
-		m_Direction = -1;
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4*FRACUNIT;
 		m_Status = closing;
 		PlayDoorSound();
 		break;
 
 	case doorOpen:
 	case doorRaise:
-		m_Direction = 1;
 		m_Status = opening;
-		m_TopHeight = P_FindLowestCeilingSurrounding (sec) - 4*FRACUNIT;
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4*FRACUNIT;
 		if (m_TopHeight != ceilingheight)
-		{
 			PlayDoorSound();
-		}
+
 		break;
 
 	case doorCloseWaitOpen:
 		m_TopHeight = ceilingheight;
-		m_Direction = -1;
 		m_Status = closing;
 		PlayDoorSound();
 		break;
@@ -406,10 +392,10 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 			{
 				if (sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DDoor)))
 				{
-					if (door->m_Direction == -1)
+					if (door->m_Status == DDoor::closing)
 					{
-						door->m_Direction = 1;	// go back up
-						door->m_Status = DDoor::opening;
+						// go back up
+						door->m_Status = DDoor::reopening;
 						door->PlayDoorSound();
 						return true;
 					}
@@ -423,7 +409,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 					}
 					else if (thing && thing->player)
 					{
-						door->m_Direction = -1;	// go back down
+						// go back down
 						door->m_Status = DDoor::closing;
 						return true;
 					}
@@ -443,7 +429,6 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 	}
 	else
 	{	// [RH] Remote door
-
 		secnum = -1;
 		while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
 		{
@@ -452,11 +437,14 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 			if (sec->ceilingdata)
 				continue;
 
-			if (new DDoor (sec, line, type, speed, delay))
+			door = new DDoor(sec, line, type, speed, delay);
+			P_AddMovingCeiling(sec);
+			
+			if (door)
 				rtn = true;
 		}
-				
 	}
+	
 	return rtn;
 }
 
@@ -467,11 +455,11 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 void P_SpawnDoorCloseIn30 (sector_t *sec)
 {
 	DDoor *door = new DDoor (sec);
+	P_AddMovingCeiling(sec);	
 
 	sec->special = 0;
 
 	door->m_Sector = sec;
-	door->m_Direction = 0;
 	door->m_Type = DDoor::doorRaise;
 	door->m_Speed = FRACUNIT*2;
 	door->m_TopCountdown = 30 * TICRATE;
@@ -484,10 +472,10 @@ void P_SpawnDoorCloseIn30 (sector_t *sec)
 void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 {
 	DDoor *door = new DDoor (sec);
+	P_AddMovingCeiling(sec);
 
 	sec->special = 0;
 
-	door->m_Direction = 2;
 	door->m_Type = DDoor::doorRaiseIn5Mins;
 	door->m_Speed = FRACUNIT * 2;
 	door->m_TopHeight = P_FindLowestCeilingSurrounding (sec);

@@ -145,6 +145,8 @@ void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect(void);
 
+bool CL_SectorIsPredicting(sector_t *sector);
+
 std::string M_ExpandTokens(const std::string &str);
 
 #endif

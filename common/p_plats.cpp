@@ -35,6 +35,8 @@
 #include "r_state.h"
 #include "s_sound.h"
 
+extern bool predicting;
+
 IMPLEMENT_SERIAL (DPlat, DMovingFloor)
 
 DPlat::DPlat () :
@@ -75,12 +77,10 @@ void DPlat::Serialize (FArchive &arc)
 
 void DPlat::PlayPlatSound ()
 {
-	// Already played this sound so don't repeat it
-	if (m_PlayedSound[m_Status])
+	if (predicting)
 		return;
-	m_PlayedSound[m_Status] = true;
-
-	const char *snd;
+		
+	const char *snd = NULL;
 	switch (m_Status)
 	{
 	case midup:
@@ -89,11 +89,9 @@ void DPlat::PlayPlatSound ()
 		S_LoopedSound (m_Sector->soundorg, CHAN_BODY, snd, 1, ATTN_NORM);
 		return;
 	case up:
-		m_PlayedSound[down] = false;
 		snd = "plats/pt1_strt";
 		break;
 	case down:
-		m_PlayedSound[up] = false;
 		snd = "plats/pt1_strt";
 		break;
 	case waiting:
@@ -123,7 +121,6 @@ void DPlat::RunThink ()
 										
 		if (res == crushed && !m_Crush)
 		{
-			m_PlayedSound[waiting] = false;
 			m_Count = m_Wait;
 			m_Status = down;
 			PlayPlatSound();
@@ -252,10 +249,8 @@ void DPlat::RunThink ()
 }
 
 DPlat::DPlat (sector_t *sector)
-	: DMovingFloor (sector)
+	: DMovingFloor (sector), m_Status(init)
 {
-	m_Status = init;
-    memset(m_PlayedSound, false, sizeof(m_PlayedSound));
 }
 
 void P_ActivateInStasis (int tag)

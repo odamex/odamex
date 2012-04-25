@@ -1832,7 +1832,6 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteByte(netbuf, Door->m_Type);
         MSG_WriteShort(netbuf, Door->m_TopHeight >> FRACBITS);
         MSG_WriteShort(netbuf, Door->m_Speed >> FRACBITS);
-        MSG_WriteByte(netbuf, Door->m_Direction);
         MSG_WriteLong(netbuf, Door->m_TopWait);
         MSG_WriteLong(netbuf, Door->m_TopCountdown);
 		MSG_WriteByte(netbuf, Door->m_Status);
