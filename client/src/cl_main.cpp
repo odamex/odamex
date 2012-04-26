@@ -274,12 +274,12 @@ gender_t D_GenderByName (const char *gender);
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);
 void AM_Stop();
 
-static void CL_ClearWorldIndexSync()
-{
-	last_svgametic = world_index = 0;
-	world_index_accum = 0.0f;
-}
-
+//
+// CL_CalculateWorldIndexSync
+//
+// Calculates world_index based on the most recently received gametic from the
+// server and the number of tics the client wants to withold for interpolation.
+//
 static int CL_CalculateWorldIndexSync()
 {
 	return last_svgametic ? last_svgametic - cl_interp : 0;
@@ -311,6 +311,12 @@ static int CL_CalculateWorldIndexDriftCorrection()
 	return correction;	
 }
 
+//
+// CL_ResyncWorldIndex
+//
+// Recalculate world_index based and resets world_index_accum, which keeps
+// track of how much the sync has drifted.
+//
 static void CL_ResyncWorldIndex()
 {
 	world_index = CL_CalculateWorldIndexSync();
@@ -2767,7 +2773,8 @@ void CL_LoadMap(void)
 		players[i].snapshots.clearSnapshots();
 		
 	// reset the world_index (force it to sync)
-	CL_ClearWorldIndexSync();
+	CL_ResyncWorldIndex();
+	last_svgametic = 0;
 
 	CTF_CheckFlags(consoleplayer());
 
