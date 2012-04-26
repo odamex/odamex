@@ -285,6 +285,32 @@ static int CL_CalculateWorldIndexSync()
 	return last_svgametic ? last_svgametic - cl_interp : 0;
 }
 
+//
+// CL_CalculateWorldIndexDriftCorrection
+//
+// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
+// slowing down or speeding up world_index
+//
+static int CL_CalculateWorldIndexDriftCorrection()
+{
+	static const float CORRECTION_PERIOD = 1.0f / 16.0f;
+
+	int delta = CL_CalculateWorldIndexSync() - world_index;
+	if (delta == 0)
+		world_index_accum = 0.0f;
+	else
+		world_index_accum += CORRECTION_PERIOD * delta;
+	
+	// truncate the decimal portion of world_index_accum	
+	int correction = int(world_index_accum);
+	
+	// reset world_index_accum if our correction will affect world_index
+	if (correction != 0)
+		world_index_accum = 0.0f;
+		
+	return correction;	
+}
+
 static void CL_ResyncWorldIndex()
 {
 	world_index = CL_CalculateWorldIndexSync();
@@ -3368,8 +3394,6 @@ void CL_SimulateWorld()
 	// if the world_index falls outside this range, resync it
 	static const int MAX_BEHIND = 16;
 	static const int MAX_AHEAD = 16;
-	
-	static const float CORRECTION_PERIOD = 1.0f/16.0f;
 
 	int lower_sync_limit = CL_CalculateWorldIndexSync() - MAX_BEHIND;
 	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;
@@ -3414,10 +3438,7 @@ void CL_SimulateWorld()
 
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index
-	world_index_accum += CORRECTION_PERIOD * (CL_CalculateWorldIndexSync() - world_index);
-	int drift_correction = int(world_index_accum);
-	if (drift_correction != 0)
-		world_index_accum  = 0.0f;
+	int drift_correction = CL_CalculateWorldIndexDriftCorrection();
 	
 	#ifdef _WORLD_INDEX_DEBUG_
 	if (drift_correction != 0)
