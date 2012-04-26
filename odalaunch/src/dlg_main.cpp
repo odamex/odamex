@@ -221,7 +221,7 @@ void dlgMain::OnWindowCreate(wxWindowCreateEvent &event)
         Move(WindowPosX, WindowPosY);
 
     // Set whether this window is maximized or not
-    ConfigInfo.Read(wxT("MainWindowMaximized"), &WindowMaximized, true);
+    ConfigInfo.Read(wxT("MainWindowMaximized"), &WindowMaximized, false);
 
     Maximize(WindowMaximized);
 }

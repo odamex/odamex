@@ -287,466 +287,493 @@
 						<growablerows></growablerows>
 						<object class="sizeritem">
 							<option>1</option>
-							<flag>wxEXPAND</flag>
-							<border>5</border>
-							<object class="wxBoxSizer">
-								<orient>wxHORIZONTAL</orient>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL</flag>
-									<border>5</border>
-									<object class="wxStaticBoxSizer">
-										<orient>wxVERTICAL</orient>
-										<label>Masters and Servers</label>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
-											<border>5</border>
-											<object class="wxBoxSizer">
-												<orient>wxVERTICAL</orient>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-													<border>5</border>
-													<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
-														<pos>0,76</pos>
-														<label>Get Master List on application start</label>
-														<checked>0</checked>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-													<border>5</border>
-													<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
-														<pos>0,114</pos>
-														<label>Show blocked servers</label>
-														<checked>0</checked>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL</flag>
-													<border>5</border>
-													<object class="wxCheckBox" name="Id_ChkCtrlEnableBroadcasts">
-														<tooltip>Sends queries to all servers on every network connection on port 10666 when getting a new master list</tooltip>
-														<label>Enable Network Broadcasting</label>
-														<checked>0</checked>
-													</object>
-												</object>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<object class="wxBoxSizer">
-												<orient>wxHORIZONTAL</orient>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALIGN_CENTER|wxALL</flag>
-													<border>5</border>
-													<object class="wxStaticText" name="4">
-														<label>Master Timeout (ms):</label>
-														<wrap>-1</wrap>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL</flag>
-													<border>5</border>
-													<object class="wxSpinCtrl" name="Id_SpnCtrlMasterTimeout">
-														<style>wxSP_ARROW_KEYS</style>
-														<tooltip>Timeout for the master servers</tooltip>
-														<value>500</value>
-														<min>0</min>
-														<max>5000</max>
-													</object>
-												</object>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<object class="wxBoxSizer">
-												<orient>wxHORIZONTAL</orient>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALIGN_CENTER|wxALL</flag>
-													<border>5</border>
-													<object class="wxStaticText" name="6">
-														<label>Server Timeout (ms):</label>
-														<wrap>-1</wrap>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL</flag>
-													<border>5</border>
-													<object class="wxSpinCtrl" name="Id_SpnCtrlServerTimeout">
-														<style>wxSP_ARROW_KEYS</style>
-														<tooltip>Timeout for all servers</tooltip>
-														<value>1000</value>
-														<min>0</min>
-														<max>5000</max>
-													</object>
-												</object>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<object class="wxBoxSizer">
-												<orient>wxHORIZONTAL</orient>
-												<object class="sizeritem">
-													<option>1</option>
-													<flag>wxALIGN_CENTER|wxALL</flag>
-													<border>5</border>
-													<object class="wxStaticText" name="61">
-														<style>wxALIGN_RIGHT</style>
-														<label>Retry Queries</label>
-														<wrap>-1</wrap>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALL</flag>
-													<border>5</border>
-													<object class="wxSpinCtrl" name="Id_SpnCtrlRetry">
-														<style>wxSP_ARROW_KEYS</style>
-														<tooltip>Requery master/servers that don&apos;t respond first time round</tooltip>
-														<value>2</value>
-														<min>1</min>
-														<max>255</max>
-													</object>
-												</object>
-											</object>
-										</object>
-									</object>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL</flag>
-									<border>5</border>
-									<object class="wxStaticBoxSizer">
-										<orient>wxHORIZONTAL</orient>
-										<label>Ping Quality</label>
-										<object class="sizeritem">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<object class="wxFlexGridSizer">
-												<rows>5</rows>
-												<cols>1</cols>
-												<vgap>0</vgap>
-												<hgap>0</hgap>
-												<growablecols></growablecols>
-												<growablerows></growablerows>
-												<object class="sizeritem">
-													<option>1</option>
-													<flag>wxEXPAND</flag>
-													<border>5</border>
-													<object class="wxBoxSizer">
-														<orient>wxHORIZONTAL</orient>
-														<object class="sizeritem">
-															<option>1</option>
-															<flag>wxALIGN_CENTER|wxALL</flag>
-															<border>5</border>
-															<object class="wxStaticBitmap" name="Id_StcBmpPQGood">
-																<tooltip>Green is good</tooltip>
-																<bitmap>bullet_green-16x15.png</bitmap>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL</flag>
-															<border>5</border>
-															<object class="wxSpinCtrl" name="Id_SpnCtrlPQGood">
-																<style>wxSP_ARROW_KEYS</style>
-																<tooltip>Green is good</tooltip>
-																<value>150</value>
-																<min>0</min>
-																<max>995</max>
-															</object>
-														</object>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>1</option>
-													<flag>wxEXPAND</flag>
-													<border>5</border>
-													<object class="wxBoxSizer">
-														<orient>wxHORIZONTAL</orient>
-														<object class="sizeritem">
-															<option>1</option>
-															<flag>wxALIGN_CENTER|wxALL</flag>
-															<border>5</border>
-															<object class="wxStaticBitmap" name="Id_StcBmpPQPlayable">
-																<tooltip>Orange is playable</tooltip>
-																<bitmap>bullet_orange-16x15.png</bitmap>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL</flag>
-															<border>5</border>
-															<object class="wxSpinCtrl" name="Id_SpnCtrlPQPlayable">
-																<style>wxSP_ARROW_KEYS</style>
-																<tooltip>Orange is playable</tooltip>
-																<value>300</value>
-																<min>0</min>
-																<max>997</max>
-															</object>
-														</object>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>1</option>
-													<flag>wxEXPAND</flag>
-													<border>5</border>
-													<object class="wxBoxSizer">
-														<orient>wxHORIZONTAL</orient>
-														<object class="sizeritem">
-															<option>1</option>
-															<flag>wxALIGN_CENTER|wxALL</flag>
-															<border>5</border>
-															<object class="wxStaticBitmap" name="Id_StcBmpPQLaggy">
-																<tooltip>Red means server is laggy</tooltip>
-																<bitmap>bullet_red-16x15.png</bitmap>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL</flag>
-															<border>5</border>
-															<object class="wxSpinCtrl" name="Id_SpnCtrlPQLaggy">
-																<style>wxSP_ARROW_KEYS</style>
-																<tooltip>Red means server is laggy</tooltip>
-																<value>350</value>
-																<min>0</min>
-																<max>999</max>
-															</object>
-														</object>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>1</option>
-													<flag>wxEXPAND</flag>
-													<border>5</border>
-													<object class="wxBoxSizer">
-														<orient>wxHORIZONTAL</orient>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALIGN_CENTER|wxALL</flag>
-															<border>5</border>
-															<object class="wxStaticBitmap" name="Id_StcBmpPQBad">
-																<tooltip>Gray possibly means unplayable</tooltip>
-																<bitmap>bullet_gray-16x15.png</bitmap>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>1</option>
-															<flag>wxALIGN_CENTER|wxALL</flag>
-															<border>5</border>
-															<object class="wxStaticLine" name="m_staticline4">
-																<style>wxLI_HORIZONTAL</style>
-																<tooltip>Gray possibly means unplayable</tooltip>
-															</object>
-														</object>
-													</object>
-												</object>
-											</object>
-										</object>
-									</object>
-								</object>
-							</object>
-						</object>
-						<object class="sizeritem">
-							<option>1</option>
 							<flag>wxALL|wxEXPAND</flag>
 							<border>5</border>
-							<object class="wxStaticBoxSizer">
-								<orient>wxVERTICAL</orient>
-								<label>Odamex Path</label>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL|wxEXPAND</flag>
-									<border>5</border>
-									<object class="wxDirPickerCtrl" name="Id_DirCtrlChooseOdamexPath">
-										<value></value>
-										<message>Select your Odamex folder</message>
-										<style>wxDIRP_DEFAULT_STYLE</style>
-									</object>
-								</object>
-							</object>
-						</object>
-						<object class="sizeritem">
-							<option>1</option>
-							<flag>wxALL|wxEXPAND</flag>
-							<border>5</border>
-							<object class="wxStaticBoxSizer">
-								<orient>wxVERTICAL</orient>
-								<label>WAD Directories (First path is used by Odamex for saving downloaded files)</label>
-								<object class="sizeritem">
-									<option>1</option>
-									<flag>wxEXPAND</flag>
-									<border>5</border>
-									<object class="wxFlexGridSizer">
-										<rows>5</rows>
-										<cols>1</cols>
-										<vgap>0</vgap>
-										<hgap>0</hgap>
-										<growablecols>0</growablecols>
-										<growablerows>0</growablerows>
-										<object class="sizeritem">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>0</border>
-											<object class="wxFlexGridSizer">
-												<rows>5</rows>
-												<cols>3</cols>
-												<vgap>0</vgap>
-												<hgap>0</hgap>
-												<growablecols>0</growablecols>
-												<growablerows>0</growablerows>
-												<object class="sizeritem">
-													<option>1</option>
-													<flag>wxEXPAND</flag>
-													<border>5</border>
-													<object class="wxBoxSizer">
-														<orient>wxVERTICAL</orient>
-														<object class="sizeritem">
-															<option>1</option>
-															<flag>wxALL|wxEXPAND</flag>
-															<border>5</border>
-															<object class="wxListBox" name="Id_LstCtrlWadDirectories">
-																<style>wxLB_SINGLE</style>
-																<pos>0,190</pos>
-																<content />
+							<object class="wxListbook" name="m_listbook2">
+								<style>wxLB_TOP</style>
+								<object class="listbookpage">
+									<label>Network Options</label>
+									<selected>1</selected>
+									<object class="wxPanel" name="m_panel91">
+										<style>wxTAB_TRAVERSAL</style>
+										<object class="wxBoxSizer">
+											<orient>wxHORIZONTAL</orient>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBoxSizer">
+													<orient>wxVERTICAL</orient>
+													<label>Masters and Servers</label>
+													<object class="sizeritem">
+														<option>0</option>
+														<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+														<border>5</border>
+														<object class="wxBoxSizer">
+															<orient>wxVERTICAL</orient>
+															<object class="sizeritem">
+																<option>0</option>
+																<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+																<border>5</border>
+																<object class="wxCheckBox" name="Id_ChkCtrlGetListOnStart">
+																	<pos>0,76</pos>
+																	<label>Get Master List on application start</label>
+																	<checked>0</checked>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>0</option>
+																<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+																<border>5</border>
+																<object class="wxCheckBox" name="Id_ChkCtrlShowBlockedServers">
+																	<pos>0,114</pos>
+																	<label>Show blocked servers</label>
+																	<checked>0</checked>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>0</option>
+																<flag>wxALL</flag>
+																<border>5</border>
+																<object class="wxCheckBox" name="Id_ChkCtrlEnableBroadcasts">
+																	<tooltip>Sends queries to all servers on every network connection on port 10666 when getting a new master list</tooltip>
+																	<label>Enable Network Broadcasting</label>
+																	<checked>0</checked>
+																</object>
+															</object>
+														</object>
+													</object>
+													<object class="sizeritem">
+														<option>1</option>
+														<flag>wxEXPAND</flag>
+														<border>5</border>
+														<object class="wxBoxSizer">
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<option>0</option>
+																<flag>wxALIGN_CENTER|wxALL</flag>
+																<border>5</border>
+																<object class="wxStaticText" name="4">
+																	<label>Master Timeout (ms):</label>
+																	<wrap>-1</wrap>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>0</option>
+																<flag>wxALL</flag>
+																<border>5</border>
+																<object class="wxSpinCtrl" name="Id_SpnCtrlMasterTimeout">
+																	<style>wxSP_ARROW_KEYS</style>
+																	<tooltip>Timeout for the master servers</tooltip>
+																	<value>500</value>
+																	<min>0</min>
+																	<max>5000</max>
+																</object>
+															</object>
+														</object>
+													</object>
+													<object class="sizeritem">
+														<option>1</option>
+														<flag>wxEXPAND</flag>
+														<border>5</border>
+														<object class="wxBoxSizer">
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<option>0</option>
+																<flag>wxALIGN_CENTER|wxALL</flag>
+																<border>5</border>
+																<object class="wxStaticText" name="6">
+																	<label>Server Timeout (ms):</label>
+																	<wrap>-1</wrap>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>0</option>
+																<flag>wxALL</flag>
+																<border>5</border>
+																<object class="wxSpinCtrl" name="Id_SpnCtrlServerTimeout">
+																	<style>wxSP_ARROW_KEYS</style>
+																	<tooltip>Timeout for all servers</tooltip>
+																	<value>1000</value>
+																	<min>0</min>
+																	<max>5000</max>
+																</object>
+															</object>
+														</object>
+													</object>
+													<object class="sizeritem">
+														<option>1</option>
+														<flag>wxEXPAND</flag>
+														<border>5</border>
+														<object class="wxBoxSizer">
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<option>1</option>
+																<flag>wxALIGN_CENTER|wxALL</flag>
+																<border>5</border>
+																<object class="wxStaticText" name="61">
+																	<style>wxALIGN_RIGHT</style>
+																	<label>Retry Queries</label>
+																	<wrap>-1</wrap>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>0</option>
+																<flag>wxALL</flag>
+																<border>5</border>
+																<object class="wxSpinCtrl" name="Id_SpnCtrlRetry">
+																	<style>wxSP_ARROW_KEYS</style>
+																	<tooltip>Requery master/servers that don&apos;t respond first time round</tooltip>
+																	<value>2</value>
+																	<min>1</min>
+																	<max>255</max>
+																</object>
 															</object>
 														</object>
 													</object>
 												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALIGN_CENTER</flag>
-													<border>5</border>
-													<object class="wxBoxSizer">
-														<orient>wxVERTICAL</orient>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL</flag>
-															<border>5</border>
-															<object class="wxBitmapButton" name="Id_BtnCtrlGetEnvironment">
-																<style>wxBU_AUTODRAW</style>
-																<tooltip>Import environment variables containing paths to Doom wad files (DOOMWADPATH and DOOMWADDIR)</tooltip>
-																<bitmap stock_id="wxART_HELP_SIDE_PANEL" stock_client="wxART_BUTTON">undefined.png</bitmap>
-																<default>0</default>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>5</border>
+												<object class="wxStaticBoxSizer">
+													<orient>wxHORIZONTAL</orient>
+													<label>Ping Quality</label>
+													<object class="sizeritem">
+														<option>1</option>
+														<flag>wxEXPAND</flag>
+														<border>5</border>
+														<object class="wxFlexGridSizer">
+															<rows>5</rows>
+															<cols>1</cols>
+															<vgap>0</vgap>
+															<hgap>0</hgap>
+															<growablecols></growablecols>
+															<growablerows></growablerows>
+															<object class="sizeritem">
+																<option>1</option>
+																<flag>wxEXPAND</flag>
+																<border>5</border>
+																<object class="wxBoxSizer">
+																	<orient>wxHORIZONTAL</orient>
+																	<object class="sizeritem">
+																		<option>1</option>
+																		<flag>wxALIGN_CENTER|wxALL</flag>
+																		<border>5</border>
+																		<object class="wxStaticBitmap" name="Id_StcBmpPQGood">
+																			<tooltip>Green is good</tooltip>
+																			<bitmap>bullet_green-16x15.png</bitmap>
+																		</object>
+																	</object>
+																	<object class="sizeritem">
+																		<option>0</option>
+																		<flag>wxALL</flag>
+																		<border>5</border>
+																		<object class="wxSpinCtrl" name="Id_SpnCtrlPQGood">
+																			<style>wxSP_ARROW_KEYS</style>
+																			<tooltip>Green is good</tooltip>
+																			<value>150</value>
+																			<min>0</min>
+																			<max>995</max>
+																		</object>
+																	</object>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>1</option>
+																<flag>wxEXPAND</flag>
+																<border>5</border>
+																<object class="wxBoxSizer">
+																	<orient>wxHORIZONTAL</orient>
+																	<object class="sizeritem">
+																		<option>1</option>
+																		<flag>wxALIGN_CENTER|wxALL</flag>
+																		<border>5</border>
+																		<object class="wxStaticBitmap" name="Id_StcBmpPQPlayable">
+																			<tooltip>Orange is playable</tooltip>
+																			<bitmap>bullet_orange-16x15.png</bitmap>
+																		</object>
+																	</object>
+																	<object class="sizeritem">
+																		<option>0</option>
+																		<flag>wxALL</flag>
+																		<border>5</border>
+																		<object class="wxSpinCtrl" name="Id_SpnCtrlPQPlayable">
+																			<style>wxSP_ARROW_KEYS</style>
+																			<tooltip>Orange is playable</tooltip>
+																			<value>300</value>
+																			<min>0</min>
+																			<max>997</max>
+																		</object>
+																	</object>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>1</option>
+																<flag>wxEXPAND</flag>
+																<border>5</border>
+																<object class="wxBoxSizer">
+																	<orient>wxHORIZONTAL</orient>
+																	<object class="sizeritem">
+																		<option>1</option>
+																		<flag>wxALIGN_CENTER|wxALL</flag>
+																		<border>5</border>
+																		<object class="wxStaticBitmap" name="Id_StcBmpPQLaggy">
+																			<tooltip>Red means server is laggy</tooltip>
+																			<bitmap>bullet_red-16x15.png</bitmap>
+																		</object>
+																	</object>
+																	<object class="sizeritem">
+																		<option>0</option>
+																		<flag>wxALL</flag>
+																		<border>5</border>
+																		<object class="wxSpinCtrl" name="Id_SpnCtrlPQLaggy">
+																			<style>wxSP_ARROW_KEYS</style>
+																			<tooltip>Red means server is laggy</tooltip>
+																			<value>350</value>
+																			<min>0</min>
+																			<max>999</max>
+																		</object>
+																	</object>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<option>1</option>
+																<flag>wxEXPAND</flag>
+																<border>5</border>
+																<object class="wxBoxSizer">
+																	<orient>wxHORIZONTAL</orient>
+																	<object class="sizeritem">
+																		<option>0</option>
+																		<flag>wxALIGN_CENTER|wxALL</flag>
+																		<border>5</border>
+																		<object class="wxStaticBitmap" name="Id_StcBmpPQBad">
+																			<tooltip>Gray possibly means unplayable</tooltip>
+																			<bitmap>bullet_gray-16x15.png</bitmap>
+																		</object>
+																	</object>
+																	<object class="sizeritem">
+																		<option>1</option>
+																		<flag>wxALIGN_CENTER|wxALL</flag>
+																		<border>5</border>
+																		<object class="wxStaticLine" name="m_staticline4">
+																			<style>wxLI_HORIZONTAL</style>
+																			<tooltip>Gray possibly means unplayable</tooltip>
+																		</object>
+																	</object>
+																</object>
 															</object>
 														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxEXPAND | wxALL</flag>
-															<border>5</border>
-															<object class="wxStaticLine" name="161">
-																<style>wxLI_VERTICAL</style>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL</flag>
-															<border>5</border>
-															<object class="wxBitmapButton" name="Id_BtnCtrlAddDir">
-																<style>wxBU_AUTODRAW</style>
-																<tooltip>Add path to list</tooltip>
-																<bitmap stock_id="wxART_FOLDER_OPEN" stock_client="wxART_BUTTON">undefined.png</bitmap>
-																<default>0</default>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL</flag>
-															<border>5</border>
-															<object class="wxBitmapButton" name="Id_BtnCtrlReplaceDir">
-																<style>wxBU_AUTODRAW</style>
-																<tooltip>Replace selected path in list</tooltip>
-																<bitmap stock_id="wxART_UNDO" stock_client="wxART_BUTTON">undefined.png</bitmap>
-																<default>0</default>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL</flag>
-															<border>5</border>
-															<object class="wxBitmapButton" name="Id_BtnCtrlDeleteDir">
-																<style>wxBU_AUTODRAW</style>
-																<tooltip>Delete path from list</tooltip>
-																<bitmap stock_id="wxART_DELETE" stock_client="wxART_BUTTON">undefined.png</bitmap>
-																<default>0</default>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL|wxEXPAND</flag>
-															<border>5</border>
-															<object class="wxStaticLine" name="16">
-																<style>wxLI_VERTICAL</style>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL</flag>
-															<border>5</border>
-															<object class="wxBitmapButton" name="Id_BtnCtrlMoveDirUp">
-																<style>wxBU_AUTODRAW</style>
-																<tooltip>Move path up</tooltip>
-																<bitmap stock_id="wxART_GO_UP" stock_client="wxART_BUTTON">undefined.png</bitmap>
-																<default>0</default>
-															</object>
-														</object>
-														<object class="sizeritem">
-															<option>0</option>
-															<flag>wxALL</flag>
-															<border>5</border>
-															<object class="wxBitmapButton" name="Id_BtnCtrlMoveDirDown">
-																<style>wxBU_AUTODRAW</style>
-																<tooltip>Move path down</tooltip>
-																<bitmap stock_id="wxART_GO_DOWN" stock_client="wxART_BUTTON">undefined.png</bitmap>
-																<default>0</default>
-															</object>
-														</object>
-													</object>
-												</object>
-												<object class="sizeritem">
-													<option>0</option>
-													<flag>wxALIGN_CENTER</flag>
-													<border>0</border>
-													<object class="wxBoxSizer">
-														<orient>wxHORIZONTAL</orient>
 													</object>
 												</object>
 											</object>
 										</object>
 									</object>
 								</object>
-							</object>
-						</object>
-						<object class="sizeritem">
-							<option>1</option>
-							<flag>wxALL|wxEXPAND</flag>
-							<border>5</border>
-							<object class="wxStaticBoxSizer">
-								<orient>wxVERTICAL</orient>
-								<label>Extra command line arguments</label>
-								<object class="sizeritem">
-									<option>1</option>
-									<flag>wxALL|wxEXPAND</flag>
-									<border>5</border>
-									<object class="wxTextCtrl" name="Id_TxtCtrlExtraCmdLineArgs">
-										<value></value>
-										<maxlength>0</maxlength>
+								<object class="listbookpage">
+									<label>File Location</label>
+									<selected>0</selected>
+									<object class="wxPanel" name="m_panel10">
+										<style>wxTAB_TRAVERSAL</style>
+										<object class="wxFlexGridSizer">
+											<rows>1</rows>
+											<cols>1</cols>
+											<vgap>0</vgap>
+											<hgap>0</hgap>
+											<growablecols>0</growablecols>
+											<growablerows></growablerows>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxEXPAND</flag>
+												<border>5</border>
+												<object class="wxStaticBoxSizer">
+													<orient>wxVERTICAL</orient>
+													<label>Odamex Path</label>
+													<object class="sizeritem">
+														<option>0</option>
+														<flag>wxALL|wxEXPAND</flag>
+														<border>5</border>
+														<object class="wxDirPickerCtrl" name="Id_DirCtrlChooseOdamexPath">
+															<value></value>
+															<message>Select your Odamex folder</message>
+															<style>wxDIRP_DEFAULT_STYLE</style>
+														</object>
+													</object>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxEXPAND</flag>
+												<border>5</border>
+												<object class="wxStaticBoxSizer">
+													<orient>wxVERTICAL</orient>
+													<label>WAD Directories (First path is used by Odamex for saving downloaded files)</label>
+													<object class="sizeritem">
+														<option>1</option>
+														<flag>wxEXPAND</flag>
+														<border>5</border>
+														<object class="wxFlexGridSizer">
+															<rows>5</rows>
+															<cols>1</cols>
+															<vgap>0</vgap>
+															<hgap>0</hgap>
+															<growablecols>0</growablecols>
+															<growablerows>0</growablerows>
+															<object class="sizeritem">
+																<option>1</option>
+																<flag>wxEXPAND</flag>
+																<border>0</border>
+																<object class="wxFlexGridSizer">
+																	<rows>5</rows>
+																	<cols>3</cols>
+																	<vgap>0</vgap>
+																	<hgap>0</hgap>
+																	<growablecols>0</growablecols>
+																	<growablerows>0</growablerows>
+																	<object class="sizeritem">
+																		<option>1</option>
+																		<flag>wxEXPAND</flag>
+																		<border>5</border>
+																		<object class="wxBoxSizer">
+																			<orient>wxVERTICAL</orient>
+																			<object class="sizeritem">
+																				<option>1</option>
+																				<flag>wxALL|wxEXPAND</flag>
+																				<border>5</border>
+																				<object class="wxListBox" name="Id_LstCtrlWadDirectories">
+																					<style>wxLB_SINGLE</style>
+																					<pos>0,190</pos>
+																					<content />
+																				</object>
+																			</object>
+																		</object>
+																	</object>
+																	<object class="sizeritem">
+																		<option>0</option>
+																		<flag>wxALIGN_CENTER</flag>
+																		<border>5</border>
+																		<object class="wxBoxSizer">
+																			<orient>wxVERTICAL</orient>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxALL</flag>
+																				<border>5</border>
+																				<object class="wxBitmapButton" name="Id_BtnCtrlGetEnvironment">
+																					<style>wxBU_AUTODRAW</style>
+																					<tooltip>Import environment variables containing paths to Doom wad files (DOOMWADPATH and DOOMWADDIR)</tooltip>
+																					<bitmap stock_id="wxART_HELP_SIDE_PANEL" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																					<default>0</default>
+																				</object>
+																			</object>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxEXPAND | wxALL</flag>
+																				<border>5</border>
+																				<object class="wxStaticLine" name="161">
+																					<style>wxLI_VERTICAL</style>
+																				</object>
+																			</object>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxALL</flag>
+																				<border>5</border>
+																				<object class="wxBitmapButton" name="Id_BtnCtrlAddDir">
+																					<style>wxBU_AUTODRAW</style>
+																					<tooltip>Add path to list</tooltip>
+																					<bitmap stock_id="wxART_FOLDER_OPEN" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																					<default>0</default>
+																				</object>
+																			</object>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxALL</flag>
+																				<border>5</border>
+																				<object class="wxBitmapButton" name="Id_BtnCtrlReplaceDir">
+																					<style>wxBU_AUTODRAW</style>
+																					<tooltip>Replace selected path in list</tooltip>
+																					<bitmap stock_id="wxART_UNDO" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																					<default>0</default>
+																				</object>
+																			</object>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxALL</flag>
+																				<border>5</border>
+																				<object class="wxBitmapButton" name="Id_BtnCtrlDeleteDir">
+																					<style>wxBU_AUTODRAW</style>
+																					<tooltip>Delete path from list</tooltip>
+																					<bitmap stock_id="wxART_DELETE" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																					<default>0</default>
+																				</object>
+																			</object>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxALL|wxEXPAND</flag>
+																				<border>5</border>
+																				<object class="wxStaticLine" name="16">
+																					<style>wxLI_VERTICAL</style>
+																				</object>
+																			</object>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxALL</flag>
+																				<border>5</border>
+																				<object class="wxBitmapButton" name="Id_BtnCtrlMoveDirUp">
+																					<style>wxBU_AUTODRAW</style>
+																					<tooltip>Move path up</tooltip>
+																					<bitmap stock_id="wxART_GO_UP" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																					<default>0</default>
+																				</object>
+																			</object>
+																			<object class="sizeritem">
+																				<option>0</option>
+																				<flag>wxALL</flag>
+																				<border>5</border>
+																				<object class="wxBitmapButton" name="Id_BtnCtrlMoveDirDown">
+																					<style>wxBU_AUTODRAW</style>
+																					<tooltip>Move path down</tooltip>
+																					<bitmap stock_id="wxART_GO_DOWN" stock_client="wxART_BUTTON">undefined.png</bitmap>
+																					<default>0</default>
+																				</object>
+																			</object>
+																		</object>
+																	</object>
+																	<object class="sizeritem">
+																		<option>0</option>
+																		<flag>wxALIGN_CENTER</flag>
+																		<border>0</border>
+																		<object class="wxBoxSizer">
+																			<orient>wxHORIZONTAL</orient>
+																		</object>
+																	</object>
+																</object>
+															</object>
+														</object>
+													</object>
+												</object>
+											</object>
+										</object>
+									</object>
+								</object>
+								<object class="listbookpage">
+									<label>Other Settings</label>
+									<selected>0</selected>
+									<object class="wxPanel" name="m_panel12">
+										<style>wxTAB_TRAVERSAL</style>
+										<object class="wxStaticBoxSizer">
+											<orient>wxVERTICAL</orient>
+											<label>Extra command line arguments</label>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxALL|wxEXPAND</flag>
+												<border>5</border>
+												<object class="wxTextCtrl" name="Id_TxtCtrlExtraCmdLineArgs">
+													<value></value>
+													<maxlength>0</maxlength>
+												</object>
+											</object>
+										</object>
 									</object>
 								</object>
 							</object>
