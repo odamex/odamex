@@ -528,7 +528,13 @@ long wxAdvancedListCtrl::ALCInsertItem(const wxString &Text)
     wxListItem ListItem;
     
     ListItem.m_itemId = InsertItem(GetItemCount(), Text, -1);
-   
+
+#ifdef __WXMAC__
+// Work around bug 695. This is caused by a bug in wxwidgets.
+    if(SortOrder == 1)
+        ListItem.m_itemId = 0;
+#endif
+
     ColourListItem(ListItem.m_itemId);
 
     SetItem(ListItem);
