@@ -2689,6 +2689,11 @@ void CL_ActivateLine(void)
 		return;
 	}
 
+	// [SL] 2012-04-25 - Clients will receive updates for sectors so they do not
+	// need to create moving sectors on their own in response to svc_activateline
+	if (P_LineSpecialMovesSector(&lines[l]))
+		return;
+		
 	switch (activationType)
 	{
 	case 0:

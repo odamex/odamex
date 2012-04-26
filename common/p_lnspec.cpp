@@ -57,6 +57,105 @@ BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle, fixed_t d
 BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle, int delay, int distance, podoortype_t type);
 BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int direction, BOOL overRide);
 
+//
+// P_LineSpecialMovesSector
+//
+// Returns true if the special for line will cause a DMovingFloor or
+// DMovingCeiling object to be created.
+//
+bool P_LineSpecialMovesSector(line_t *line)
+{
+	if (!line)
+		return false;
+		
+	static bool initialized = false;
+	static bool specials[256];
+	
+	if (!initialized)
+	{
+		// generate a lookup table for line specials
+		initialized = true;
+		memset(specials, 0, sizeof(specials));
+		
+		specials[Door_Close]					= true;		// 10
+		specials[Door_Open]						= true;		// 11
+		specials[Door_Raise]					= true;		// 12
+		specials[Door_LockedRaise]				= true;		// 13
+		specials[Floor_LowerByValue]			= true;		// 20
+		specials[Floor_LowerToLowest]			= true;		// 21
+		specials[Floor_LowerToNearest]			= true;		// 22
+		specials[Floor_RaiseByValue]			= true;		// 23
+		specials[Floor_RaiseToHighest]			= true;		// 24
+		specials[Floor_RaiseToNearest]			= true;		// 25
+		specials[Stairs_BuildDown]				= true;		// 26
+		specials[Stairs_BuildUp]				= true;		// 27
+		specials[Floor_RaiseAndCrush]			= true;		// 28
+		specials[Pillar_Build]					= true;		// 29
+		specials[Pillar_Open]					= true;		// 30
+		specials[Stairs_BuildDownSync]			= true;		// 31
+		specials[Stairs_BuildUpSync]			= true;		// 32
+		specials[Floor_RaiseByValueTimes8]		= true;		// 35
+		specials[Floor_LowerByValueTimes8]		= true;		// 36
+		specials[Ceiling_LowerByValue]			= true;		// 40			
+		specials[Ceiling_RaiseByValue]			= true;		// 41
+		specials[Ceiling_CrushAndRaise]			= true;		// 42
+		specials[Ceiling_LowerAndCrush]			= true;		// 43
+		specials[Ceiling_CrushStop]				= true;		// 44
+		specials[Ceiling_CrushRaiseAndStay]		= true;		// 45
+		specials[Floor_CrushStop]				= true;		// 46
+		specials[Plat_PerpetualRaise]			= true;		// 60
+		specials[Plat_Stop]						= true;		// 61
+		specials[Plat_DownWaitUpStay]			= true;		// 62
+		specials[Plat_DownByValue]				= true;		// 63
+		specials[Plat_UpWaitDownStay]			= true;		// 64
+		specials[Plat_UpByValue]				= true;		// 65
+		specials[Floor_LowerInstant]			= true;		// 66
+		specials[Floor_RaiseInstant]			= true;		// 67
+		specials[Floor_MoveToValueTimes8]		= true;		// 68
+		specials[Ceiling_MoveToValueTimes8]		= true;		// 69
+		specials[Pillar_BuildAndCrush]			= true;		// 94
+		specials[FloorAndCeiling_LowerByValue]	= true;		// 95
+		specials[FloorAndCeiling_RaiseByValue]	= true;		// 96
+		specials[Ceiling_LowerToHighestFloor]	= true;		// 192
+		specials[Ceiling_LowerInstant]			= true;		// 193
+		specials[Ceiling_RaiseInstant]			= true;		// 194
+		specials[Ceiling_CrushRaiseAndStayA]	= true;		// 195
+		specials[Ceiling_CrushAndRaiseA]		= true;		// 196
+		specials[Ceiling_CrushAndRaiseSilentA]	= true;		// 197
+		specials[Ceiling_RaiseByValueTimes8]	= true;		// 198
+		specials[Ceiling_LowerByValueTimes8]	= true;		// 199
+		specials[Generic_Floor]					= true;		// 200
+		specials[Generic_Ceiling]				= true;		// 201
+		specials[Generic_Door]					= true;		// 202
+		specials[Generic_Lift]					= true;		// 203
+		specials[Generic_Stairs]				= true;		// 204
+		specials[Generic_Crusher]				= true;		// 205
+		specials[Plat_DownWaitUpStayLip]		= true;		// 206
+		specials[Plat_PerpetualRaiseLip]		= true;		// 207
+		specials[Stairs_BuildUpDoom]			= true;		// 217
+		specials[Plat_RaiseAndStayTx0]			= true;		// 228
+		specials[Plat_UpByValueStayTx]			= true;		// 230
+		specials[Plat_ToggleCeiling]			= true;		// 231
+		specials[Floor_RaiseToLowestCeiling]	= true;		// 238
+		specials[Floor_RaiseByValueTxTy]		= true;		// 239
+		specials[Floor_RaiseByTexture]			= true;		// 240
+		specials[Floor_LowerToLowestTxTy]		= true;		// 241
+		specials[Floor_LowerToHighest]			= true;		// 242
+		specials[Elevator_RaiseToNearest]		= true;		// 245
+		specials[Elevator_MoveToFloor]			= true;		// 246
+		specials[Elevator_LowerToNearest]		= true;		// 247
+		specials[Door_CloseWaitOpen]			= true;		// 249
+		specials[Floor_Donut]					= true;		// 250
+		specials[FloorAndCeiling_LowerRaise]	= true;		// 251
+		specials[Ceiling_RaiseToNearest]		= true;		// 252
+		specials[Ceiling_LowerToLowest]			= true;		// 253
+		specials[Ceiling_LowerToFloor]			= true;		// 254
+		specials[Ceiling_CrushRaiseAndStaySilA]	= true;		// 255								
+	}
+
+	return specials[line->special];
+}
+
 FUNC(LS_NOP)
 {
 	return false;
