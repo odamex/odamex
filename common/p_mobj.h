@@ -58,15 +58,15 @@ class NetIDHandler
 {
 	private:
 
-	size_t NumAllocated;
 	std::queue<int> free_ids;
-	const size_t ChunkSize;
 
 	public:
 
-	NetIDHandler(size_t chunk_size = 512)
-		: NumAllocated(0), ChunkSize(chunk_size)
-	{}
+	NetIDHandler()
+	{
+		for (int i = 1; i <= MAX_NETID; i++)
+			free_ids.push(i);
+	}
 
 	~NetIDHandler()
 	{
@@ -75,19 +75,7 @@ class NetIDHandler
 	int ObtainNetID()
 	{
 		if (free_ids.empty())
-		{
-			if(NumAllocated >= MAX_NETID - 1)
-				I_Error("Exceeded maximum number of netids");
-
-			int OldAllocated = NumAllocated;
-			NumAllocated += ChunkSize;
-
-			if(NumAllocated >= MAX_NETID - 1)
-				NumAllocated = MAX_NETID - 1;
-
-			for (size_t i = OldAllocated + 1; i <= NumAllocated; i++)
-				free_ids.push(i);
-		}
+			I_Error("Exceeded maximum number of netids");
 
 		int netid = free_ids.front();
 		free_ids.pop();
@@ -97,7 +85,7 @@ class NetIDHandler
 
 	void ReleaseNetID(int NetID)
 	{
-		if (!NetID || NetID > (int)NumAllocated)
+		if (!NetID || NetID < 1 || NetID > MAX_NETID)
 			I_Error("Released a non-existant netid %d", NetID);
 
 		free_ids.push(NetID);
