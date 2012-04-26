@@ -31,7 +31,7 @@
 #include <wx/image.h>
 #include <wx/imaglist.h>
 
-class wxAdvancedListCtrl : public wxListCtrl
+class wxAdvancedListCtrl : public wxListView
 {      
     public:
         wxAdvancedListCtrl() { };

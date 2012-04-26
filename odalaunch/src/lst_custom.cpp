@@ -459,13 +459,9 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
 
 void wxAdvancedListCtrl::ResetSortArrows(void)
 {
-    wxListItem li;
-    li.SetMask(wxLIST_MASK_IMAGE);    
-    li.SetImage(-1);
-
     for (wxInt32 i = 0; i < GetColumnCount(); ++i)
     {
-        SetColumn(i, li);        
+        ClearColumnImage(i);
     }
 }
 
@@ -474,11 +470,7 @@ void wxAdvancedListCtrl::SetSortArrow(wxInt32 Column, wxInt32 ArrowState)
     // nuke any previously set sort arrows
     ResetSortArrows();
 
-    wxListItem li;
-    li.SetMask(wxLIST_MASK_IMAGE);
-    li.SetImage(ArrowState);
-
-    SetColumn(SortCol, li);
+    SetColumnImage(SortCol, ArrowState);
 }
 
 void wxAdvancedListCtrl::ColourListItem(wxListItem &info)
@@ -519,7 +511,9 @@ void wxAdvancedListCtrl::ColourListItem(long item)
 void wxAdvancedListCtrl::ColourList()
 {      
     for (long i = 0; i < GetItemCount(); ++i)
+    {
         ColourListItem(i);
+    }
 }
 
 // Our variation of InsertItem, so we can do magical things!
