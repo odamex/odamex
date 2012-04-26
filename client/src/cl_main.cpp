@@ -3363,6 +3363,8 @@ void CL_SimulateWorld()
 	// if the world_index falls outside this range, resync it
 	static const int MAX_BEHIND = 16;
 	static const int MAX_AHEAD = 16;
+	
+	static const float CORRECTION_PERIOD = 1.0f/16.0f;
 
 	int lower_sync_limit = CL_CalculateWorldIndexSync() - MAX_BEHIND;
 	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;
@@ -3407,19 +3409,18 @@ void CL_SimulateWorld()
 
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index
-	world_index_accum += float(CL_CalculateWorldIndexSync() - world_index) / float(MAX_AHEAD);
-	int drift_correction = int(world_index_accum + 0.5f);	// round
+	world_index_accum += CORRECTION_PERIOD * (CL_CalculateWorldIndexSync() - world_index);
+	int drift_correction = int(world_index_accum);
+	if (drift_correction != 0)
+		world_index_accum  = 0.0f;
 	
 	#ifdef _WORLD_INDEX_DEBUG_
 	if (drift_correction != 0)
 		Printf(PRINT_HIGH, "Gametic %i, increasing world index by %i.\n",
 				gametic, drift_correction);
 	#endif // _WORLD_INDEX_DEBUG_
-	
-	// [SL] 2012-04-06 - Sync correction still needs work.  Just increment index by 1 for now
-	drift_correction = 0;
-	
-	world_index += 1 + drift_correction;
+
+	world_index = world_index + 1 + drift_correction;
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
