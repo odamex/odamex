@@ -1341,34 +1341,48 @@ void P_ApplyTorque (AActor *mo)
 //
 BOOL P_ThingHeightClip (AActor* thing)
 {
+	if (!thing)
+		return true;
+		
+	AActor *other = P_CheckOnmobj(thing);
+	
 	// [SL] 2012-02-04 - Changed to <= instead of == to account for imprecise
 	// slope plane calculations
 	bool onfloor = (thing->z <= thing->floorz);
 
-    P_CheckPosition (thing, thing->x, thing->y);
-    // what about stranding a monster partially off an edge?
+	P_CheckPosition (thing, thing->x, thing->y);
+	// what about stranding a monster partially off an edge?
 
-    thing->floorz = tmfloorz;
-    thing->ceilingz = tmceilingz;
-    thing->dropoffz = tmdropoffz;
-    thing->floorsector = tmfloorsector;
+	thing->floorz = tmfloorz;
+	thing->ceilingz = tmceilingz;
+	thing->dropoffz = tmdropoffz;
+	thing->floorsector = tmfloorsector;
 
-    if (onfloor)
-    {
-        // walking monsters rise and fall with the floor
-        thing->z = thing->floorz;
-    }
-    else
-    {
-        // don't adjust a floating monster unless forced to
-        if (thing->z+thing->height > thing->ceilingz)
-            thing->z = thing->ceilingz - thing->height;
-    }
+	if (other)
+	{
+		// standing on another actor
+		thing->z = other->z + other->height;	
 
-    if (thing->ceilingz - thing->floorz < thing->height)
-        return false;
+		if (thing->ceilingz - thing->z < thing->height)
+			return false;	
+	}
+	else if (onfloor)
+	{
+		// walking monsters rise and fall with the floor
+		thing->z = thing->floorz;
+	}
+	else
+	{
+		// don't adjust a floating monster unless forced to
+		if (thing->z+thing->height > thing->ceilingz)
+			thing->z = thing->ceilingz - thing->height;
+	}
 
-    return true;
+	// thing won't fit
+	if (thing->ceilingz - thing->floorz < thing->height)
+		return false;
+
+	return true;
 }
 
 
