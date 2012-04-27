@@ -2617,6 +2617,20 @@ void CL_ForceSetTeam (void)
 
 	if(t < NUMTEAMS || t == TEAM_NONE)
 		consoleplayer().userinfo.team = (team_t)t;
+
+	// Setting the cl_team will send a playerinfo packet back to the server.
+	// Unfortunately, this is unavoidable until we rework the team system.
+	switch (consoleplayer().userinfo.team) {
+	case TEAM_BLUE:
+		cl_team.Set("BLUE");
+		break;
+	case TEAM_RED:
+		cl_team.Set("RED");
+		break;
+	default:
+		cl_team.Set("NONE");
+		break;
+	}
 }
 
 //
