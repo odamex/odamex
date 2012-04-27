@@ -43,8 +43,10 @@ IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {   
+#ifdef __WXMAC__
     // The native listctrl on Mac is problematic for us so always use the generic listctrl
     wxSystemOptions::SetOption(wxMAC_ALWAYS_USE_GENERIC_LISTCTRL, true);
+#endif
 
     if (BufferedSocket::InitializeSocketAPI() == false)
         return false;
