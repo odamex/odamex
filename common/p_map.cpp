@@ -3004,6 +3004,9 @@ BOOL PIT_ChangeSector (AActor *thing)
 
 bool P_ChangeSector (sector_t *sector, bool crunch)
 {
+	if (!sector)
+		return true;
+
 	int x, y;
 
 	nofit = false;
