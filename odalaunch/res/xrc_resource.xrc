@@ -350,10 +350,11 @@
 														<object class="wxBoxSizer">
 															<orient>wxHORIZONTAL</orient>
 															<object class="sizeritem">
-																<option>0</option>
-																<flag>wxALIGN_CENTER|wxALL</flag>
+																<option>1</option>
+																<flag>wxALL|wxEXPAND</flag>
 																<border>5</border>
 																<object class="wxStaticText" name="4">
+																	<style>wxALIGN_RIGHT</style>
 																	<label>Master Timeout (ms):</label>
 																	<wrap>-1</wrap>
 																</object>
@@ -379,10 +380,11 @@
 														<object class="wxBoxSizer">
 															<orient>wxHORIZONTAL</orient>
 															<object class="sizeritem">
-																<option>0</option>
-																<flag>wxALIGN_CENTER|wxALL</flag>
+																<option>1</option>
+																<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
 																<border>5</border>
 																<object class="wxStaticText" name="6">
+																	<style>wxALIGN_RIGHT</style>
 																	<label>Server Timeout (ms):</label>
 																	<wrap>-1</wrap>
 																</object>
@@ -409,11 +411,11 @@
 															<orient>wxHORIZONTAL</orient>
 															<object class="sizeritem">
 																<option>1</option>
-																<flag>wxALIGN_CENTER|wxALL</flag>
+																<flag>wxALL|wxEXPAND</flag>
 																<border>5</border>
 																<object class="wxStaticText" name="61">
 																	<style>wxALIGN_RIGHT</style>
-																	<label>Retry Queries</label>
+																	<label>Retry Queries:</label>
 																	<wrap>-1</wrap>
 																</object>
 															</object>
