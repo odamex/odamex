@@ -354,7 +354,7 @@
 																<flag>wxALL|wxEXPAND</flag>
 																<border>5</border>
 																<object class="wxStaticText" name="4">
-																	<style>wxALIGN_RIGHT</style>
+																	<style>wxALIGN_LEFT</style>
 																	<label>Master Timeout (ms):</label>
 																	<wrap>-1</wrap>
 																</object>
@@ -384,7 +384,7 @@
 																<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
 																<border>5</border>
 																<object class="wxStaticText" name="6">
-																	<style>wxALIGN_RIGHT</style>
+																	<style>wxALIGN_LEFT</style>
 																	<label>Server Timeout (ms):</label>
 																	<wrap>-1</wrap>
 																</object>
@@ -414,7 +414,7 @@
 																<flag>wxALL|wxEXPAND</flag>
 																<border>5</border>
 																<object class="wxStaticText" name="61">
-																	<style>wxALIGN_RIGHT</style>
+																	<style>wxALIGN_LEFT</style>
 																	<label>Retry Queries:</label>
 																	<wrap>-1</wrap>
 																</object>
