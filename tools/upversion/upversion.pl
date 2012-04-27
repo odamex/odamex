@@ -55,9 +55,6 @@ my $version_short;
 my $version_commas;
 ($version_commas = $version) =~ s/^(\d+)\.(\d+)\.(\d+)/$1,$2,$3,0/;
 
-# protocol version used by launcher and server
-my $protocol_version = "2";
-
 # $savesig should be exactly 16 characters long, of the form "ODAMEXSAVE053   "
 my $savesig;
 ($savesig = $version) =~ s/^(\d+)\.(\d+)\.(\d+)/ODAMEXSAVE$1$2$3/;
@@ -69,8 +66,10 @@ my @months = qw( January February March April May June July August September Oct
 $year += 1900;	# year was stored as number of years after 1900
 my $release_date = "$months[$mon] $mday, $year"; 
 
+my $copyright_years = "2006-$year";
+
 # copyright information
-my $copyright = "Copyright © 2006-$year The Odamex Team";
+my $copyright = "Copyright © $copyright_years The Odamex Team";
 
 
 # parse_input

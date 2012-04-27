@@ -2,18 +2,16 @@
 #   $version = "0.5.3";
 #   $version_short = "53";
 #   $version_commas = "0,5,3,0";
-#   $protocol_version = "2";
+#	$copyright_years = "2006-2011"
 #   $copyright = "Copyright © 2005-2011 The Odamex Team";
 #   $savesig = "ODAMEXSAVE053   ";
 #   $release_date = "June 18th, 2011";
 
 [ag-odalaunch/src/net_packet.h]
 s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
-#s|(\s*#define\s+PROTOCOL_VERSION\s+)\d+|$1$protocol_version|
 
 [odalpapi/net_packet.h]
 s|(\s*#define\s+VERSION\s+\(0\*256\+)\d+(\))|$1$version_short$2|
-# s|(\s*#define\s+PROTOCOL_VERSION\s+)\d+|$1$protocol_version|
 
 [ag-odalaunch/res/Info.plist]
 s|(\s*<key>CFBundleVersion</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
@@ -69,5 +67,7 @@ s|(AppVerName=Odamex\s*)\d*\.?\d*\.?\d*|$1$version|
 s|(OutputBaseFilename=odamex-win32-)\d*\.?\d*\.?\d*|$1$version|
 s|(VersionInfoProductVersion=)\d*\.?\d*\.?\d*|$1$version|
 
-[server/src/sv_sqp.cpp]
-# s|(\s*#define\s*PROTOCOL_VERSION\s*)\d+|$1$protocol_version|
+[CMakeLists.txt]
+s|(PROJECT_VERSION\s*)\d*\.\d*\.*\d*|$1$version|
+s|(PROJECT_COPYRIGHT\s*")\d\d\d\d\s*-\s*\d\d\d\d|$1$copyright_years|
+
