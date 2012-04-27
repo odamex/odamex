@@ -58,12 +58,15 @@ class NetIDHandler
 {
 	private:
 
-	std::queue<int> free_ids;
+	std::queue<unsigned short> free_ids;
 
 	public:
 
 	NetIDHandler()
 	{
+		if (clientside)
+			return;
+
 		for (int i = 1; i <= MAX_NETID; i++)
 			free_ids.push(i);
 	}
@@ -74,6 +77,9 @@ class NetIDHandler
 
 	int ObtainNetID()
 	{
+		if (clientside)		// only servers can assign netids
+			return 0;
+
 		if (free_ids.empty())
 			I_Error("Exceeded maximum number of netids");
 
@@ -85,6 +91,9 @@ class NetIDHandler
 
 	void ReleaseNetID(int NetID)
 	{
+		if (clientside)
+			return;
+
 		if (!NetID || NetID < 1 || NetID > MAX_NETID)
 			I_Error("Released a non-existant netid %d", NetID);
 
