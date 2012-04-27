@@ -3874,9 +3874,6 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 			player.deathcount = 0;
 			player.killcount = 0;
 			SV_UpdateFrags(player);
-
-			// [AN] Make player unready
-			SV_SetReady(player, false, true);
 		}
 	} else if (setting && !player.spectator) {
 		// We want to spectate the player
@@ -3897,9 +3894,6 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent) {
 		if (!silent) {
 			SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname);
 		}
-
-		// [AN] Make player unready.
-		SV_SetReady(player, false, true);
 	}
 }
 
