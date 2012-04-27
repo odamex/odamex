@@ -26,9 +26,9 @@
 
 #include <wx/settings.h>
 
-IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListCtrl)
+IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListView)
 
-BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListCtrl)
+BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListView)
      EVT_LIST_COL_CLICK(-1, wxAdvancedListCtrl::OnHeaderColumnButtonClick)
      EVT_WINDOW_CREATE(wxAdvancedListCtrl::OnCreateControl)
 END_EVENT_TABLE()
