@@ -35,6 +35,7 @@
 
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
+#include <wx/sysopt.h>
 
 using namespace odalpapi;
 
@@ -42,6 +43,9 @@ IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {   
+    // The native listctrl on Mac is problematic for us so always use the generic listctrl
+    wxSystemOptions::SetOption(wxMAC_ALWAYS_USE_GENERIC_LISTCTRL, true);
+
     if (BufferedSocket::InitializeSocketAPI() == false)
         return false;
     
