@@ -1482,6 +1482,11 @@ static void SetTicker (int *tics, struct AmbientSound *ambient)
 	{
 		*tics = ambient->periodmin;
 	}
+
+	// [SL] 2012-04-27 - Do not allow updates every 0 tics as it causes
+	// an infinite loop
+	if (*tics == 0)
+		*tics = 1;
 }
 
 void A_Ambient (AActor *actor)
@@ -1523,11 +1528,18 @@ void A_Ambient (AActor *actor)
 
 void S_ActivateAmbient (AActor *origin, int ambient)
 {
+	if (!origin)
+		return;
+
 	struct AmbientSound *amb = &Ambients[ambient];
 
 	if (!(amb->type & 3) && !amb->periodmin)
 	{
-		sfxinfo_t *sfx = S_sfx + S_FindSound (amb->sound);
+		int sndnum = S_FindSound(amb->sound);
+		if (sndnum == 0)
+			return;
+
+		sfxinfo_t *sfx = S_sfx + sndnum;
 
 		// Make sure the sound has been loaded so we know how long it is
 		if (!sfx->data)
