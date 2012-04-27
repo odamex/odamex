@@ -10,7 +10,7 @@
 			<label></label>
 			<object class="wxMenu">
 				<label>File</label>
-				<object class="wxMenuItem" name="Id_MnuItmSettings">
+				<object class="wxMenuItem" name="wxID_PREFERENCES">
 					<label>Settings</label>
 					<help>Configure the launcher</help>
 				</object>
@@ -95,7 +95,7 @@
 					<help>Report a bug</help>
 				</object>
 				<object class="separator" />
-				<object class="wxMenuItem" name="Id_MnuItmAboutOdamex">
+				<object class="wxMenuItem" name="wxID_ABOUT">
 					<label>About</label>
 					<help>About the Odamex Launcher</help>
 				</object>
@@ -145,13 +145,13 @@
 				<bitmap>./btnlist.ico</bitmap>
 			</object>
 			<object class="separator" />
-			<object class="tool" name="Id_MnuItmSettings">
+			<object class="tool" name="wxID_PREFERENCES">
 				<label>Settings</label>
 				<tooltip>Configure the launcher</tooltip>
 				<longhelp>Configure the launcher</longhelp>
 				<bitmap>./btnsettings.ico</bitmap>
 			</object>
-			<object class="tool" name="Id_MnuItmAboutOdamex">
+			<object class="tool" name="wxID_ABOUT">
 				<label>About</label>
 				<tooltip>About the Odamex Launcher</tooltip>
 				<longhelp>About the Odamex Launcher</longhelp>

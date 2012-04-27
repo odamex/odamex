@@ -20,7 +20,7 @@
 //	AUTHOR:	Russell Rice, John D Corrado
 //
 //-----------------------------------------------------------------------------
-
+#include <iostream>
 
 #include "dlg_main.h"
 #include "query_thread.h"
@@ -40,6 +40,7 @@
 #include <wx/iconbndl.h>
 #include <wx/regex.h>
 #include <wx/process.h>
+#include <wx/xrc/xmlres.h>
 
 #ifdef __WXMSW__
     #include <windows.h>
@@ -81,14 +82,14 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 
     EVT_MENU(XRCID("Id_MnuItmDownloadWad"), dlgMain::OnOpenOdaGet)
 
-	EVT_MENU(XRCID("Id_MnuItmSettings"), dlgMain::OnOpenSettingsDialog)
+	EVT_MENU(wxID_PREFERENCES, dlgMain::OnOpenSettingsDialog)
 
 	EVT_MENU(XRCID("Id_MnuItmVisitWebsite"), dlgMain::OnOpenWebsite)
 	EVT_MENU(XRCID("Id_MnuItmVisitForum"), dlgMain::OnOpenForum)
 	EVT_MENU(XRCID("Id_MnuItmVisitWiki"), dlgMain::OnOpenWiki)
     EVT_MENU(XRCID("Id_MnuItmViewChangelog"), dlgMain::OnOpenChangeLog)
     EVT_MENU(XRCID("Id_MnuItmSubmitBugReport"), dlgMain::OnOpenReportBug)
-	EVT_MENU(XRCID("Id_MnuItmAboutOdamex"), dlgMain::OnAbout)
+	EVT_MENU(wxID_ABOUT, dlgMain::OnAbout)
 
 	EVT_SHOW(dlgMain::OnShow)
 	EVT_CLOSE(dlgMain::OnClose)
@@ -133,6 +134,14 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     SetLabel(Version);
 
+    #ifdef __WXMAC__
+    {
+        // Remove the file menu on Mac as it will be empty
+        wxMenu* fileMenu = GetMenuBar()->Remove(GetMenuBar()->FindMenu(_("File")));
+        if(fileMenu)
+            delete fileMenu;
+    }
+    #endif
 
     launchercfg_s.get_list_on_start = 1;
     launchercfg_s.show_blocked_servers = 0;
