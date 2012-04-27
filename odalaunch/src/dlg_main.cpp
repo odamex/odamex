@@ -139,7 +139,19 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
         // Remove the file menu on Mac as it will be empty
         wxMenu* fileMenu = GetMenuBar()->Remove(GetMenuBar()->FindMenu(_("File")));
         if(fileMenu)
+        {
+            wxMenuItem* prefMenuItem = fileMenu->Remove(wxID_PREFERENCES);
+            wxMenu* helpMenu = GetMenuBar()->GetMenu(GetMenuBar()->FindMenu(_("Help")));
+
+            // Before deleting the file menu the preferences menu item must be moved or
+            // it will not work after this even though it has been placed somewhere else.
+            // Attaching it to the help menu is the only way to not duplicate it as Help is
+            // a special menu just as Preferences is a special menu itme.
+            if(helpMenu)
+                helpMenu->Append(prefMenuItem);
+
             delete fileMenu;
+        }
     }
     #endif
 
