@@ -1358,15 +1358,18 @@ BOOL P_ThingHeightClip (AActor* thing)
 	thing->dropoffz = tmdropoffz;
 	thing->floorsector = tmfloorsector;
 
-	if (other)
+	if (co_realactorheight && other)
 	{
 		// standing on another actor
 		thing->z = other->z + other->height;	
 
 		if (thing->ceilingz - thing->z < thing->height)
-			return false;	
+			return false;
+			
+		return true;
 	}
-	else if (onfloor)
+	
+	if (onfloor)
 	{
 		// walking monsters rise and fall with the floor
 		thing->z = thing->floorz;
