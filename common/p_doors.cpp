@@ -234,6 +234,8 @@ void DDoor::RunThink ()
             }
 		}
 		break;
+	default:
+		break;
 	}
 }
 
