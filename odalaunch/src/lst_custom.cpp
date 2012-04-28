@@ -89,13 +89,16 @@ static const char *SortArrowDescending[] =
     "                "
 };
 
-void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
+wxAdvancedListCtrl::wxAdvancedListCtrl()
 {
     SortOrder = 0; 
     SortCol = 0; 
 
     m_SpecialColumn = -1;
+}
 
+void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
+{
     ItemShade = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
     BgColor = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
     

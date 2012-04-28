@@ -34,7 +34,7 @@
 class wxAdvancedListCtrl : public wxListView
 {      
     public:
-        wxAdvancedListCtrl() { };
+        wxAdvancedListCtrl();
         virtual ~wxAdvancedListCtrl() { };
         
         void SetSortColumnAndOrder(wxInt32 &Column, wxInt32 &Order)
