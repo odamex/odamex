@@ -711,6 +711,8 @@ void EATeamPlayerNames(int x, int y, const float scale,
 						color = CR_BLUE;
 					} else if (player->ready) {
 						color = CR_GREEN;
+					} else if (player->id == displayplayer().id) {
+						color = CR_GOLD;
 					}
 				} else if (player->userinfo.team == TEAM_RED) {
 					if (player->flags[it_blueflag]) {
@@ -719,6 +721,8 @@ void EATeamPlayerNames(int x, int y, const float scale,
 						color = CR_RED;
 					} else if (player->ready) {
 						color = CR_GREEN;
+					} else if (player->id == displayplayer().id) {
+						color = CR_GOLD;
 					}
 				}
 			} else {
@@ -754,6 +758,8 @@ void EASpectatorNames(int x, int y, const float scale,
 				if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) {
 					if (player->ready) {
 						color = CR_GREEN;
+					} else if (player->id == displayplayer().id) {
+						color = CR_GOLD;
 					}
 				} else {
 					if (player->id == displayplayer().id) {

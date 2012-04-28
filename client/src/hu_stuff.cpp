@@ -1033,11 +1033,11 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_LEFT, hud::Y_TOP,
 	              "Name", CR_GREY, true);
-	hud::DrawText(-17, y, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_RIGHT, hud::Y_TOP,
-	              "PPL", CR_GREY, true);
 	if (sv_gametype == GM_CTF) {
+		hud::DrawText(34, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "PPL", CR_GREY, true);
 		hud::DrawText(62, y, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_RIGHT, hud::Y_TOP,
@@ -1047,6 +1047,10 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 		              hud::X_RIGHT, hud::Y_TOP,
 		              "FRG", CR_GREY, true);
 	} else {
+		hud::DrawText(22, y, hud_scalescoreboard,
+		              hud::X_CENTER, hud::Y_MIDDLE,
+		              hud::X_RIGHT, hud::Y_TOP,
+		              "PPL", CR_GREY, true);
 		hud::DrawText(50, y, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_RIGHT, hud::Y_TOP,
@@ -1100,11 +1104,11 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_LEFT, hud::Y_TOP,
 		              str.c_str(), color, true);
-		hud::DrawText(-17, y + ty[i] + 3, hud_scalescoreboard,
-		              hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP,
-		              TeamPlayers(color, i).c_str(), color, true);
 		if (sv_gametype == GM_CTF) {
+			hud::DrawText(34, y + ty[i] + 3, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              TeamPlayers(color, i).c_str(), color, true);
 			hud::DrawText(62, y + ty[i] + 3, hud_scalescoreboard,
 			              hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP,
@@ -1115,6 +1119,10 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 			              hud::X_RIGHT, hud::Y_TOP,
 			              str.c_str(), color, true);
 		} else {
+			hud::DrawText(22, y + ty[i] + 3, hud_scalescoreboard,
+			              hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP,
+			              TeamPlayers(color, i).c_str(), color, true);
 			hud::DrawText(50, y + ty[i] + 3, hud_scalescoreboard,
 			              hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP,
