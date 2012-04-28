@@ -70,6 +70,8 @@ private:
 	AG_Button    *CreateOKButton(void *parent);
 
 	void          OnOK(AG_Event *event);
+	void          OnLicensePrechg(AG_Event *event);
+	void          OnLicensePostchg(AG_Event *event);
 
 	AG_Window    *AboutDialog;
 	AG_Box       *TopBox;
@@ -78,6 +80,8 @@ private:
 	AG_Button    *OKButton;
 
 	EventHandler *CloseEventHandler;
+
+	int           LicenseCursorPos;
 };
 
 } // namespace

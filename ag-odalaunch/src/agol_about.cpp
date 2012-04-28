@@ -38,11 +38,23 @@ using namespace std;
 
 namespace agOdalaunch {
 
+static const string license(
+			"This program is free software; you can redistribute it"
+			" and/or modify it under the terms of the GNU General"
+			" Public License as published by the Free Software"
+			" Foundation; either version 2 of the License, or (at your"
+			" option) any later version.\n\n"
+			"This program is distributed in the hope that it will be"
+			" useful, but WITHOUT ANY WARRANTY; without even the"
+			" implied warranty of MERCHANTABILITY or FITNESS FOR"
+			" A PARTICULAR PURPOSE.  See the GNU General Public"
+			" License for more details.");
+
 AGOL_About::AGOL_About()
 {
 	AboutDialog = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
 	AG_WindowSetCaptionS(AboutDialog, "About The Odamex Launcher");
-	AG_WindowSetGeometryAligned(AboutDialog, AG_WINDOW_MC, 350, 400);
+	AG_WindowSetGeometryAligned(AboutDialog, AG_WINDOW_MC, 360, 415);
 
 	TopBox = CreateTopBox(AboutDialog);
 	DevBox = CreateDevBox(AboutDialog);
@@ -50,6 +62,8 @@ AGOL_About::AGOL_About()
 	OKButton = CreateOKButton(AboutDialog);
 
 	CloseEventHandler = NULL;
+
+	LicenseCursorPos = 0;
 
 	AG_WindowShow(AboutDialog);
 }
@@ -77,7 +91,7 @@ AG_Box *AGOL_About::CreateTopBox(void *parent)
 	box = AG_BoxNewVert(tbox, 0);
 	label = AG_LabelNewS(box, AG_LABEL_HFILL, "The Odamex Launcher");
 	AG_LabelJustify(label, AG_TEXT_CENTER);
-	label = AG_LabelNewS(box, AG_LABEL_HFILL, "Copyright (C) 2010 by The Odamex Team");
+	label = AG_LabelNewS(box, AG_LABEL_HFILL, "Copyright (C) 2010-2012 by The Odamex Team");
 	AG_LabelJustify(label, AG_TEXT_CENTER);
 	label = AG_LabelNew(box, AG_LABEL_HFILL, "Version %d.%d.%d - Protocol Version %d",
 			VERSIONMAJOR(VERSION), VERSIONMINOR(VERSION), VERSIONPATCH(VERSION), PROTOCOL_VERSION);
@@ -131,17 +145,13 @@ AG_Box *AGOL_About::CreateLicenseBox(void *parent)
 	text = AG_TextboxNewS(lbox, AG_TEXTBOX_MULTILINE | AG_TEXTBOX_EXPAND, "");
 	AG_TextboxSetWordWrap(text, true);
 
-	AG_TextboxSetString(text,
-			"This program is free software; you can redistribute it"
-			" and/or modify it under the terms of the GNU General"
-			" Public License as published by the Free Software"
-			" Foundation; either version 2 of the License, or (at your"
-			" option) any later version.\n\n"
-			"This program is distributed in the hope that it will be"
-			" useful, but WITHOUT ANY WARRANTY; without even the"
-			" implied warranty of MERCHANTABILITY or FITNESS FOR"
-			" A PARTICULAR PURPOSE.  See the GNU General Public"
-			" License for more details.");
+	AG_TextboxSetString(text, license.c_str());
+
+	AG_SetEvent(text, "textbox-prechg", EventReceiver, "%p",
+		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_About::OnLicensePrechg));
+
+	AG_SetEvent(text, "textbox-postchg", EventReceiver, "%p",
+		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_About::OnLicensePostchg));
 
 	return lbox;
 }
@@ -174,6 +184,34 @@ void AGOL_About::OnOK(AG_Event *event)
 	// Call the close handler if one was set
 	if(CloseEventHandler)
 		CloseEventHandler->Trigger(event);
+}
+
+void AGOL_About::OnLicensePrechg(AG_Event *event)
+{
+	AG_Textbox *text = static_cast<AG_Textbox*>(AG_SELF());
+
+	// Lock to get valid cursor position
+	AG_ObjectLock(text);
+
+	// Store the cursor position before change
+	LicenseCursorPos = AG_TextboxGetCursorPos(text);
+
+	AG_ObjectUnlock(text);
+}
+
+void AGOL_About::OnLicensePostchg(AG_Event *event)
+{
+	AG_Textbox *text = static_cast<AG_Textbox*>(AG_SELF());
+
+	AG_ObjectLock(text);
+
+	// Force the widget to use the unmodified license text
+	AG_TextboxSetString(text, license.c_str());
+
+	// Return the cursor to the previous position so the view doesn't change
+	AG_TextboxSetCursorPos(text, LicenseCursorPos);
+
+	AG_ObjectUnlock(text);
 }
 
 //******************//

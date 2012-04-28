@@ -113,7 +113,7 @@ int GameCommand::Launch()
 
 	AGOBJECT_FOREACH_CHILD(drv, &agDrivers, ag_driver)
 	{
-		if((mainWindow = (AG_Window*)AG_ObjectFindChild(drv, "MainWindow")) != NULL)
+		if((mainWindow = static_cast<AG_Window*>(AG_ObjectFindChild(drv, "MainWindow")) != NULL))
 			break;
 	}
 

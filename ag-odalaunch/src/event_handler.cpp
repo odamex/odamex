@@ -33,7 +33,7 @@ namespace agOdalaunch {
 
 void EventReceiver(AG_Event *event)
 {
-	EventHandler *handler = (EventHandler *)AG_PTR(1);
+	EventHandler *handler = static_cast<EventHandler*>(AG_PTR(1));
 
 	if(handler)
 		handler->Trigger(event);
