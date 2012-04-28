@@ -36,6 +36,7 @@ protected:
 	std::string votestring;
 public:
 	Vote() : countdown(0), error(""), result(VOTE_UNDEC), votestring("") { };
+	virtual ~Vote() { };
 	unsigned int get_countdown(void) {
 		return this->countdown;
 	};
