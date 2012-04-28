@@ -292,6 +292,14 @@ void LstOdaServerList::SetupServerListColumns()
     ImageList_PingOrange = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_orange")).ConvertToImage());
     ImageList_PingRed = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_red")).ConvertToImage());
     ImageList_PingGray = AddImageSmall(wxXmlResource::Get()->LoadBitmap(wxT("bullet_gray")).ConvertToImage());
+
+    // Sorting info
+    wxInt32 ServerListSortOrder, ServerListSortColumn;
+
+    ConfigInfo.Read(wxT("ServerListSortOrder"), &ServerListSortOrder, 1);
+    ConfigInfo.Read(wxT("ServerListSortColumn"), &ServerListSortColumn, (int)serverlist_field_name);
+
+    SetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
 }
 
 LstOdaServerList::~LstOdaServerList()
@@ -319,6 +327,14 @@ LstOdaServerList::~LstOdaServerList()
     ConfigInfo.Write(wxT("ServerListWidthType"), WidthType);
     ConfigInfo.Write(wxT("ServerListWidthIwad"), WidthIwad);
     ConfigInfo.Write(wxT("ServerListWidthAddress"), WidthAddress);
+
+	// Sorting info
+    wxInt32 ServerListSortOrder, ServerListSortColumn;
+
+    GetSortColumnAndOrder(ServerListSortColumn, ServerListSortOrder);
+
+    ConfigInfo.Write(wxT("ServerListSortOrder"), ServerListSortOrder);
+    ConfigInfo.Write(wxT("ServerListSortColumn"), ServerListSortColumn);
 }
 
 // Clears text and images located in all cells of a particular item

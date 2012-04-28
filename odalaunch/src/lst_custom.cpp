@@ -25,6 +25,7 @@
 #include "lst_custom.h"
 
 #include <wx/settings.h>
+#include <wx/defs.h>
 
 IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListView)
 
