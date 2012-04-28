@@ -51,6 +51,11 @@ class wxAdvancedListCtrl : public wxListView
             Order = SortOrder;
         }
 
+        void SetSortColumnIsSpecial(const wxInt32 &Column)
+        {
+            m_SpecialColumn = Column;
+        }
+
         void Sort();
                 
         int AddImageSmall(wxImage Image);
@@ -77,6 +82,8 @@ class wxAdvancedListCtrl : public wxListView
 
         wxColour ItemShade;
         wxColour BgColor;
+
+        wxInt32 m_SpecialColumn;
         
     protected:               
         DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)

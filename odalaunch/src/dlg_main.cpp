@@ -1051,7 +1051,7 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
         return -1;
 
     item.SetId(i);
-    item.SetColumn(7);
+    item.SetColumn(serverlist_field_address);
     item.SetMask(wxLIST_MASK_TEXT);
 
     m_LstCtrlServers->GetItem(item);

@@ -26,6 +26,21 @@
 #include "net_packet.h"
 #include "lst_custom.h"
 
+typedef enum
+{
+    serverlist_field_attr
+    ,serverlist_field_name
+    ,serverlist_field_ping
+    ,serverlist_field_players
+    ,serverlist_field_wads
+    ,serverlist_field_map
+    ,serverlist_field_type
+    ,serverlist_field_iwad
+    ,serverlist_field_address
+    
+    ,max_serverlist_fields
+} serverlist_fields_t;
+
 class LstOdaServerList : public wxAdvancedListCtrl
 {
     public:

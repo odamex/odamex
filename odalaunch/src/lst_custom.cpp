@@ -93,6 +93,8 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent &event)
     SortOrder = 0; 
     SortCol = 0; 
 
+    m_SpecialColumn = -1;
+
     ItemShade = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
     BgColor = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
     
@@ -427,7 +429,7 @@ void wxAdvancedListCtrl::Sort(wxInt32 Column, wxInt32 Order, wxInt32 Lowest, wxI
 void wxAdvancedListCtrl::Sort()
 {
     SetSortArrow(SortCol, SortOrder);
-
+#if 0
     // prime 'er up
     long item = GetNextItem(-1);
       
@@ -437,9 +439,33 @@ void wxAdvancedListCtrl::Sort()
  
         item = GetNextItem(item);
     }
-
+#endif
     // sort the list by column
     Sort(SortCol, SortOrder);
+}
+
+// Numerical sort function for special columns
+int wxCALLBACK wxListCompareFunction(wxIntPtr item1, wxIntPtr item2, 
+        wxIntPtr sortData)
+{
+    if (sortData == 1)
+    {
+        if (item1 < item2)
+            return -1;
+        else if (item1 > item2)
+            return 1;
+        else 
+            return 0;
+    }
+    else
+    {
+        if (item2 < item1)
+            return -1;
+        else if (item2 > item1)
+            return 1;
+        else 
+            return 0;
+    }
 }
 
 void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
@@ -453,6 +479,17 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent &event)
     // column that needs to be sorted, so the rest of the list
     // can be sorted by it
     SortCol = event.GetColumn();
+
+    if (SortCol == m_SpecialColumn)
+    {
+        SetSortArrow(SortCol, SortOrder);
+
+        SortItems(wxListCompareFunction, SortOrder);
+
+        ColourList();
+
+        return;
+    }
 
     Sort();
 }

@@ -216,29 +216,17 @@ static int ImageList_PingOrange = -1;
 static int ImageList_PingRed = -1;
 static int ImageList_PingGray = -1;
 
-typedef enum
-{
-    serverlist_field_name
-    ,serverlist_field_ping
-    ,serverlist_field_players
-    ,serverlist_field_wads
-    ,serverlist_field_map
-    ,serverlist_field_type
-    ,serverlist_field_iwad
-    ,serverlist_field_address
-    
-    ,max_serverlist_fields
-} serverlist_fields_t;
-
 void LstOdaServerList::SetupServerListColumns()
 {
 	wxFileConfig ConfigInfo;
-	wxInt32 WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap, WidthType;
-	wxInt32 WidthIwad, WidthAddress;
+	wxInt32 WidthAttr, WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap, 
+        WidthType, WidthIwad, WidthAddress;
 	
 	DeleteAllColumns();
 
     // Read in the column widths
+    //ConfigInfo.Read(wxT("ServerListWidthAttr"), &WidthAttr, 40);
+    WidthAttr = 24; // fixed column size
     ConfigInfo.Read(wxT("ServerListWidthName"), &WidthName, 150);
     ConfigInfo.Read(wxT("ServerListWidthPing"), &WidthPing, 60);
     ConfigInfo.Read(wxT("ServerListWidthPlayers"), &WidthPlayers, 80);
@@ -249,6 +237,15 @@ void LstOdaServerList::SetupServerListColumns()
     ConfigInfo.Read(wxT("ServerListWidthAddress"), &WidthAddress, 130);
 
 	// set up the list columns
+    InsertColumn(serverlist_field_attr, 
+        wxT(""), 
+        wxLIST_FORMAT_LEFT,
+        WidthAttr);
+	
+	// We sort by the numerical value of the item data field, so we can sort
+	// passworded servers
+	SetSortColumnIsSpecial((wxInt32)serverlist_field_attr);
+	
     InsertColumn(serverlist_field_name, 
         wxT("Server name"), 
         wxLIST_FORMAT_LEFT,
@@ -300,9 +297,10 @@ void LstOdaServerList::SetupServerListColumns()
 LstOdaServerList::~LstOdaServerList()
 {
 	wxFileConfig ConfigInfo;
-	wxInt32 WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap, WidthType;
-	wxInt32 WidthIwad, WidthAddress;
+	wxInt32 WidthAttr, WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap, 
+        WidthType, WidthIwad, WidthAddress;
 	
+	//WidthAttr = GetColumnWidth(serverlist_field_attr);
 	WidthName = GetColumnWidth(serverlist_field_name);
 	WidthPing = GetColumnWidth(serverlist_field_ping);
 	WidthPlayers = GetColumnWidth(serverlist_field_players);
@@ -312,6 +310,7 @@ LstOdaServerList::~LstOdaServerList()
 	WidthIwad = GetColumnWidth(serverlist_field_iwad);
 	WidthAddress = GetColumnWidth(serverlist_field_address);
 
+    //ConfigInfo.Write(wxT("ServerListWidthAttr"), WidthAttr);
     ConfigInfo.Write(wxT("ServerListWidthName"), WidthName);
     ConfigInfo.Write(wxT("ServerListWidthPing"), WidthPing);
     ConfigInfo.Write(wxT("ServerListWidthPlayers"), WidthPlayers);
@@ -513,8 +512,13 @@ void LstOdaServerList::AddServerToList(const Server &s,
     // -----
     
     // Padlock icon for passworded servers
-    SetItemColumnImage(li.m_itemId, serverlist_field_name, 
-        (s.Info.PasswordHash.length() ? ImageList_Padlock : -1));
+    bool IsPasswordEmpty = s.Info.PasswordHash.empty();
+
+    SetItemColumnImage(li.m_itemId, serverlist_field_attr, 
+        (IsPasswordEmpty ? -1 : ImageList_Padlock));   
+
+    // Allows us to sort by passworded servers as well
+    SetItemData(li.m_itemId, (IsPasswordEmpty ? 0 : 1));
     
     ConfigInfo.Read(wxT("IconPingQualityGood"), &PQGood, 150);
     ConfigInfo.Read(wxT("IconPingQualityPlayable"), &PQPlayable, 300);
