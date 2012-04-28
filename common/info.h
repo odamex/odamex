@@ -201,7 +201,7 @@ typedef enum
 
 } spritenum_t;
 
-inline FArchive &operator<< (FArchive &arc, spritenum_t i) { return arc << (DWORD&)i; }
+inline FArchive &operator<< (FArchive &arc, spritenum_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { DWORD in; arc >> in; i = (spritenum_t)in; return arc; }
 
 typedef enum
@@ -1226,7 +1226,7 @@ typedef enum
 	NUMSTATES
 } statenum_t;
 
-inline FArchive &operator<< (FArchive &arc, statenum_t i) { return arc << (DWORD&)i; }
+inline FArchive &operator<< (FArchive &arc, statenum_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, statenum_t &i) { DWORD in; arc >> in; i = (statenum_t)in; return arc; }
 
 typedef struct
@@ -1452,7 +1452,7 @@ typedef enum {
 
 } mobjtype_t;
 
-inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { return arc << (DWORD&)i; }
+inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { DWORD in; arc >> in; i = (mobjtype_t)in; return arc; }
 
 typedef struct
