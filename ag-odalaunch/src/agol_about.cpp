@@ -54,7 +54,7 @@ AGOL_About::AGOL_About()
 {
 	AboutDialog = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_DIALOG);
 	AG_WindowSetCaptionS(AboutDialog, "About The Odamex Launcher");
-	AG_WindowSetGeometryAligned(AboutDialog, AG_WINDOW_MC, 360, 415);
+	AG_WindowSetGeometryAligned(AboutDialog, AG_WINDOW_MC, 375, 415);
 
 	TopBox = CreateTopBox(AboutDialog);
 	DevBox = CreateDevBox(AboutDialog);
