@@ -32,9 +32,25 @@
 #include "r_state.h"
 #include "tables.h"
 
-//
+extern bool predicting;
+
+// ============================================================================
 // FLOORS
-//
+// ============================================================================
+
+void P_SetFloorDestroy(DFloor *floor)
+{
+	if (!floor)
+		return;
+
+	floor->m_Status = DFloor::destroy;
+	
+	if (clientside && floor->m_Sector)
+	{
+		floor->m_Sector->floordata = NULL;
+		floor->Destroy();
+	}
+}
 
 IMPLEMENT_SERIAL (DFloor, DMovingFloor)
 
@@ -82,34 +98,17 @@ void DFloor::Serialize (FArchive &arc)
 	}
 }
 
-IMPLEMENT_SERIAL (DElevator, DMover)
-
-DElevator::DElevator () :
-	m_Status(init)
+void DFloor::PlayFloorSound()
 {
-}
+	if (predicting || !m_Sector)
+		return;
 
-void DElevator::Serialize (FArchive &arc)
-{
-	Super::Serialize (arc);
-	if (arc.IsStoring ())
-	{
-		arc << m_Type
-			<< m_Status
-			<< m_Direction
-			<< m_FloorDestHeight
-			<< m_CeilingDestHeight
-			<< m_Speed;
-	}
+	S_StopSound(m_Sector->soundorg);
+		
+	if (m_Status == init)
+		S_LoopedSound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
 	else
-	{
-		arc >> m_Type
-			>> m_Status
-			>> m_Direction
-			>> m_FloorDestHeight
-			>> m_CeilingDestHeight
-			>> m_Speed;
-	}
+		S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);	
 }
 
 //
@@ -153,8 +152,7 @@ void DFloor::RunThink ()
 
 	if (res == pastdest)
 	{
-		S_StopSound (m_Sector->soundorg);
-		S_Sound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
+		PlayFloorSound();
 
 		if (m_Type == buildStair)
 			m_Type = waitStair;
@@ -194,8 +192,7 @@ void DFloor::RunThink ()
 				}
 			}
 
-			m_Sector->floordata = NULL; //jff 2/22/98
-			Destroy ();
+			P_SetFloorDestroy(this);
 
 			//jff 2/26/98 implement stair retrigger lockout while still building
 			// note this only applies to the retriggerable generalized stairs
@@ -227,63 +224,8 @@ void DFloor::RunThink ()
 	}
 }
 
-//
-// T_MoveElevator()
-//
-// Move an elevator to it's destination (up or down)
-// Called once per tick for each moving floor.
-//
-// Passed an elevator_t structure that contains all pertinent info about the
-// move. See P_SPEC.H for fields.
-// No return.
-//
-// jff 02/22/98 added to support parallel floor/ceiling motion
-//
-void DElevator::RunThink ()
-{
-	EResult res;
-
-	if (m_Direction < 0)	// moving down
-	{
-		res = MoveCeiling (m_Speed, m_CeilingDestHeight, m_Direction);
-		if (res == ok || res == pastdest)
-			MoveFloor (m_Speed, m_FloorDestHeight, m_Direction);
-	}
-	else // up
-	{
-		res = MoveFloor (m_Speed, m_FloorDestHeight, m_Direction);
-		if (res == ok || res == pastdest)
-			MoveCeiling (m_Speed, m_CeilingDestHeight, m_Direction);
-	}
-
-	if (res == pastdest)	// if destination height acheived
-	{
-		// make floor stop sound
-		S_StopSound (m_Sector->soundorg);
-
-		m_Sector->floordata = NULL;	//jff 2/22/98
-		m_Sector->ceilingdata = NULL;	//jff 2/22/98
-		Destroy ();		// remove elevator from actives
-	}
-}
-
-static void StartFloorSound (sector_t *sec)
-{
-	S_LoopedSound (sec->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
-}
-
-void DFloor::StartFloorSound ()
-{
-	::StartFloorSound (m_Sector);
-}
-
-void DElevator::StartFloorSound ()
-{
-	::StartFloorSound (m_Sector);
-}
-
 DFloor::DFloor (sector_t *sec)
-	: DMovingFloor (sec)
+	: DMovingFloor (sec), m_Status(init)
 {
 }
 
@@ -335,7 +277,7 @@ manual_floor:
 		floor->m_ResetCount = 0;				// [RH]
 		floor->m_OrgHeight = floorheight;
 		
-		StartFloorSound (sec);
+		floor->PlayFloorSound();
 
 		switch (floortype)
 		{
@@ -741,7 +683,7 @@ manual_stair:
 				floor = new DFloor (sec);
 				P_AddMovingFloor(sec);
 				
-				floor->StartFloorSound();
+				floor->PlayFloorSound();
 				floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
 				floor->m_FloorDestHeight = height;
 				// [RH] Set up delay values
@@ -819,7 +761,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_Texture = s3->floorpic;
 			floor->m_NewSpecial = 0;
 			floor->m_FloorDestHeight = P_FloorHeight(s3);
-			floor->StartFloorSound ();
+			floor->PlayFloorSound();
 
 			//	Spawn lowering donut-hole
 			floor = new DFloor (s1);
@@ -831,11 +773,111 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_Sector = s1;
 			floor->m_Speed = pillarspeed;
 			floor->m_FloorDestHeight = P_FloorHeight(s3);
-			floor->StartFloorSound ();
+			floor->PlayFloorSound();
 			break;
 		}
 	}
 	return rtn;
+}
+
+// ============================================================================
+// ELEVATORS
+// ============================================================================
+
+void P_SetElevatorDestroy(DElevator *elevator)
+{
+	if (!elevator)
+		return;
+
+	elevator->m_Status = DElevator::destroy;
+	
+	if (clientside && elevator->m_Sector)
+	{
+		elevator->m_Sector->ceilingdata = NULL;	
+		elevator->m_Sector->floordata = NULL;
+		elevator->Destroy();
+	}
+}
+
+IMPLEMENT_SERIAL (DElevator, DMover)
+
+DElevator::DElevator () :
+	m_Status(init)
+{
+}
+
+void DElevator::Serialize (FArchive &arc)
+{
+	Super::Serialize (arc);
+	if (arc.IsStoring ())
+	{
+		arc << m_Type
+			<< m_Status
+			<< m_Direction
+			<< m_FloorDestHeight
+			<< m_CeilingDestHeight
+			<< m_Speed;
+	}
+	else
+	{
+		arc >> m_Type
+			>> m_Status
+			>> m_Direction
+			>> m_FloorDestHeight
+			>> m_CeilingDestHeight
+			>> m_Speed;
+	}
+}
+
+void DElevator::PlayElevatorSound()
+{
+	if (predicting || !m_Sector)
+		return;
+
+	S_StopSound(m_Sector->soundorg);
+		
+	if (m_Status == init)
+		S_LoopedSound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
+	else
+		S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);	
+}
+
+//
+// T_MoveElevator()
+//
+// Move an elevator to it's destination (up or down)
+// Called once per tick for each moving floor.
+//
+// Passed an elevator_t structure that contains all pertinent info about the
+// move. See P_SPEC.H for fields.
+// No return.
+//
+// jff 02/22/98 added to support parallel floor/ceiling motion
+//
+void DElevator::RunThink ()
+{
+	EResult res;
+
+	if (m_Direction < 0)	// moving down
+	{
+		res = MoveCeiling (m_Speed, m_CeilingDestHeight, m_Direction);
+		if (res == ok || res == pastdest)
+			MoveFloor (m_Speed, m_FloorDestHeight, m_Direction);
+	}
+	else // up
+	{
+		res = MoveFloor (m_Speed, m_FloorDestHeight, m_Direction);
+		if (res == ok || res == pastdest)
+			MoveCeiling (m_Speed, m_CeilingDestHeight, m_Direction);
+	}
+
+	if (res == pastdest)	// if destination height acheived
+	{
+		// make floor stop sound
+		PlayElevatorSound();
+
+		P_SetElevatorDestroy(this);
+	}
 }
 
 DElevator::DElevator (sector_t *sec)
@@ -888,7 +930,7 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 		
 		elevator->m_Type = elevtype;
 		elevator->m_Speed = speed;
-		elevator->StartFloorSound ();
+		elevator->PlayElevatorSound();
 
         sec->floordata = sec->ceilingdata = elevator;
 

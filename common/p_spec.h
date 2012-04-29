@@ -475,6 +475,7 @@ public:
 	void GetState(byte &state, int &count) { state = (byte)m_Status; count = m_Count; }
 
 	DPlat (sector_t *sector);
+	friend void P_SetPlatDestroy(DPlat *plat);
 
 	fixed_t 	m_Speed;
 	fixed_t 	m_Low;
@@ -547,8 +548,10 @@ public:
 
 	DPillar (sector_t *sector, EPillar type, fixed_t speed, fixed_t height,
 			 fixed_t height2, bool crush);
-
+	friend void P_SetPillarDestroy(DPillar *pillar);	
+	
 	void RunThink ();
+	void PlayPillarSound();
 
 	EPillar		m_Type;
 	fixed_t		m_FloorSpeed;
@@ -615,6 +618,8 @@ public:
 	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
 
+	friend void P_SetDoorDestroy(DDoor *door);
+	
 	void RunThink ();
 
 	EVlDoor		m_Type;
@@ -712,9 +717,11 @@ public:
 
 	DCeiling (sector_t *sec);
 	DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent);
-
+	friend void P_SetCeilingDestroy(DCeiling *ceiling);
+	
 	void RunThink ();
-
+	void PlayCeilingSound();	
+	
 	ECeiling	m_Type;
 	fixed_t 	m_BottomHeight;
 	fixed_t 	m_TopHeight;
@@ -737,7 +744,6 @@ public:
 	
 protected:
 
-	void PlayCeilingSound ();
 
 private:
 	DCeiling ();
@@ -832,8 +838,10 @@ public:
 	};
 
 	DFloor (sector_t *sec);
-
+	friend void P_SetFloorDestroy(DFloor *floor);
+		
 	void RunThink ();
+	void PlayFloorSound();	
 
 	EFloor	 	m_Type;
 	EFloorState	m_Status;
@@ -853,9 +861,6 @@ public:
 	int			m_PerStepTime;
 
 protected:
-
-	void StartFloorSound ();
-
 	friend BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 		fixed_t stairsize, fixed_t speed, int delay, int reset, int igntxt,
 		int usespecials);
@@ -906,8 +911,10 @@ public:
 	};
 
 	DElevator (sector_t *sec);
+	friend void P_SetElevatorDestroy(DElevator *elevator);	
 
 	void RunThink ();
+	void PlayElevatorSound();
 
 	EElevator	m_Type;
 	int			m_Direction;
@@ -918,8 +925,6 @@ public:
 	EElevatorState m_Status;
 	
 protected:
-	void StartFloorSound ();
-
 	friend BOOL EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
 		fixed_t height, int tag);
 private:

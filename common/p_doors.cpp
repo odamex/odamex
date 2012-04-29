@@ -37,6 +37,20 @@
 
 extern bool predicting;
 
+void P_SetDoorDestroy(DDoor *door)
+{
+	if (!door)
+		return;
+
+	door->m_Status = DDoor::destroy;
+	
+	if (clientside && door->m_Sector)
+	{
+		door->m_Sector->ceilingdata = NULL;
+		door->Destroy();
+	}
+}
+
 IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 
 DDoor::DDoor () :
@@ -79,25 +93,17 @@ void DDoor::RunThink ()
 	fixed_t ceilingheight = P_CeilingHeight(m_Sector);
 	fixed_t floorheight = P_FloorHeight(m_Sector);
 	
-	if (clientside && m_Status == destroy)
-	{
-		if (serverside)	// single player game
-		{
-			// make sure we play the finished sound because it doesn't
-			// get called for servers otherwise
-			m_Status = finished;
-			PlayDoorSound();
-			m_Status = destroy;
-		}
-
-		m_Sector->ceilingdata = NULL;
-		Destroy();
-	}
-
 	EResult res;
 		
 	switch (m_Status)
 	{
+	case finished:
+		PlayDoorSound();
+		// fall through
+	case destroy:
+		P_SetDoorDestroy(this);
+		return;
+		
 	case waiting:
 		// WAITING
 		if (!--m_TopCountdown)
@@ -155,14 +161,8 @@ void DDoor::RunThink ()
 			{
 			case doorRaise:
 			case doorClose:
-				if (serverside)
-					m_Status = destroy;
-				else
-				{
-					m_Status = finished;
-					PlayDoorSound();
-				}
-				break;
+				m_Status = finished;
+				return;
 				
 			case doorCloseWaitOpen:
 				m_TopCountdown = m_TopWait;
@@ -215,15 +215,8 @@ void DDoor::RunThink ()
 				
 			case doorCloseWaitOpen:
 			case doorOpen:
-				if (serverside)
-					m_Status = destroy;
-				else
-				{
-					m_Status = finished;
-					PlayDoorSound();
-					return;
-				}
-				break;
+				m_Status = finished;
+				return;
 				
 			default:
 				break;

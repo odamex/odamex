@@ -37,6 +37,20 @@
 
 extern bool predicting;
 
+void P_SetPlatDestroy(DPlat *plat)
+{
+	if (!plat)
+		return;
+
+	plat->m_Status = DPlat::destroy;
+	
+	if (clientside && plat->m_Sector)
+	{
+		plat->m_Sector->floordata = NULL;
+		plat->Destroy();
+	}
+}
+
 IMPLEMENT_SERIAL (DPlat, DMovingFloor)
 
 DPlat::DPlat () :
@@ -139,11 +153,9 @@ void DPlat::RunThink ()
 					case platUpByValueStay:
 					case platDownToNearestFloor:
 					case platDownToLowestCeiling:
-						if (serverside)
-							m_Status = destroy;	
-						else
-							m_Status = finished;
+						m_Status = finished;
 						break;
+
 					default:
 						break;
 				}
@@ -173,11 +185,9 @@ void DPlat::RunThink ()
 				{
 					case platUpWaitDownStay:
 					case platUpByValue:
-						if (serverside)
-							m_Status = destroy;
-						else
-							m_Status = finished;
+						m_Status = finished;
 						break;
+
 					default:
 						break;
 				}
@@ -198,11 +208,9 @@ void DPlat::RunThink ()
 		{
 			case platUpByValueStay:
 			case platRaiseAndStay:
-				if (serverside)
-					m_Status = destroy;
-				else
-					m_Status = finished;
+				m_Status = finished;
 				break;
+
 			default:
 				break;
 		}
@@ -212,40 +220,29 @@ void DPlat::RunThink ()
 	case waiting:
 		if (!--m_Count)
 		{
-			if (P_FloorHeight(m_Sector) == m_Low)
+			if (P_FloorHeight(m_Sector) <= m_Low)
 				m_Status = up;
 			else
 				m_Status = down;
-			/*
-			if (m_Type == platToggle)
-				SN_StartSequence (m_Sector, "Silence");
-			else
-				PlayPlatSound ("Platform");
-			*/
+
 			PlayPlatSound();
 		}
 		break;
 	case in_stasis:
 		break;
+
 	default:
 		break;
 	}
-
-	if (clientside && m_Status == destroy)
+		
+	if (m_Status == finished)
 	{
-		if (serverside) // single player game
-		{
-			// make sure we play the finished sound because it doesn't
-			// get called for servers otherwise
-			m_Status = finished;
-			PlayPlatSound();
-			m_Status = destroy;
-		}
-
-		m_Sector->floordata = NULL;
-		Destroy();
-		return;
+		PlayPlatSound();
+		m_Status = destroy;
 	}
+	
+	if (m_Status == destroy)
+		P_SetPlatDestroy(this);
 }
 
 DPlat::DPlat (sector_t *sector)

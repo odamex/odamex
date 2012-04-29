@@ -31,9 +31,25 @@
 #include "doomstat.h"
 #include "r_state.h"
 
+extern bool predicting;
+
 //
 // CEILINGS
 //
+
+void P_SetCeilingDestroy(DCeiling *ceiling)
+{
+	if (!ceiling)
+		return;
+
+	ceiling->m_Status = DCeiling::destroy;
+	
+	if (clientside && ceiling->m_Sector)
+	{
+		ceiling->m_Sector->ceilingdata = NULL;
+		ceiling->Destroy();
+	}
+}
 
 IMPLEMENT_SERIAL (DCeiling, DMovingCeiling)
 
@@ -82,6 +98,9 @@ void DCeiling::Serialize (FArchive &arc)
 
 void DCeiling::PlayCeilingSound ()
 {
+	if (predicting || !m_Sector)
+		return;
+	
 	if (m_Sector->seqType >= 0)
 	{
 		SN_StartSequence (m_Sector, m_Sector->seqType, SEQ_PLATFORM);
