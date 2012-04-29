@@ -61,6 +61,7 @@ void I_ReadScreen (byte *scr);
 void I_BeginRead (void);
 void I_EndRead (void);
 
+void I_SetWindowCaption(const std::string& caption);
 void I_SetWindowCaption(void);
 void I_SetWindowIcon(void);
 
