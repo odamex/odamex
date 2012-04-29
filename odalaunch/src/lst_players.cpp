@@ -182,6 +182,7 @@ LstOdaPlayerList::~LstOdaPlayerList()
 {
     wxFileConfig ConfigInfo;
     wxInt32 PlayerListSortOrder, PlayerListSortColumn;
+    wxListItem li;
 
 	// Write to the global configuration
 	
@@ -209,12 +210,15 @@ LstOdaPlayerList::~LstOdaPlayerList()
     ConfigInfo.Write(wxT("PlayerListWidthTime"), WidthTime);
 
     // Team and Team Scores are shown dynamically, so handle the case of them
-    // being hidden
+    // not existing
+    if (!GetColumn((int)playerlist_field_team, li) || 
+        !GetColumn((int)playerlist_field_teamscore, li))
+    {
+        return;
+    }
+
     WidthTeam = GetColumnWidth(playerlist_field_team);
     WidthTeamScore = GetColumnWidth(playerlist_field_teamscore);
-
-    if (!WidthTeam || !WidthTeamScore)
-        return;
 
     ConfigInfo.Write(wxT("PlayerListWidthTeam"), WidthTeam);
     ConfigInfo.Write(wxT("PlayerListWidthTeamScore"), WidthTeamScore);
