@@ -298,8 +298,8 @@ void CL_PredictWorld(void)
 
 	while (++predtic < gametic)
 	{
+		CL_PredictSectors(predtic);
 		CL_PredictLocalPlayer(predtic);
-		CL_PredictSectors(predtic);		
 	}
 
 	// If the player didn't just spawn or teleport, nudge the player from
@@ -332,8 +332,8 @@ void CL_PredictWorld(void)
 
 	predicting = false;
 
+	CL_PredictSectors(gametic);		
 	CL_PredictLocalPlayer(gametic);
-	CL_PredictSectors(gametic);
 
 	if (consoleplayer_id != displayplayer_id)
 	{
