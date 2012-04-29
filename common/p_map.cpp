@@ -3065,6 +3065,9 @@ msecnode_t *P_GetSecnode()
 
 void P_PutSecnode (msecnode_t *node)
 {
+	if (!node)
+		return;
+
 	node->m_snext = headsecnode;
 	headsecnode = node;
 }
@@ -3078,6 +3081,9 @@ void P_PutSecnode (msecnode_t *node)
 
 msecnode_t *P_AddSecnode (sector_t *s, AActor *thing, msecnode_t *nextnode)
 {
+	if (!s)
+		return NULL;
+
 	msecnode_t *node;
 
 	node = nextnode;
