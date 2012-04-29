@@ -503,14 +503,11 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 	}
 	Impulse = 0;
 
-	// [SL] 2012-04-18 - Set the impulse to denote the current weapon when
-	// firing.  The server will correct the client if this is incorrect.
+	// [SL] 2012-03-31 - Let the server know when the client is predicting a
+	// weapon change due to a weapon pickup
 	if (!cmd->ucmd.impulse && !(cmd->ucmd.buttons & BT_CHANGE) &&
-		consoleplayer().pendingweapon == wp_nochange &&
-		cmd->ucmd.buttons & BT_ATTACK)
-	{
-		cmd->ucmd.impulse = 25 + static_cast<int>(consoleplayer().readyweapon);
-	}
+		consoleplayer().pendingweapon != wp_nochange)
+		cmd->ucmd.impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
 
 	if (strafe || lookstrafe)
 		side += (int)(((float)joyturn / (float)SHRT_MAX) * sidemove[speed]);

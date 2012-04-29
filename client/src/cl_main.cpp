@@ -60,6 +60,7 @@
 #include "cl_maplist.h"
 #include "cl_vote.h"
 #include "p_mobj.h"
+#include "p_pspr.h"
 
 #include <string>
 #include <vector>
@@ -265,7 +266,6 @@ void P_ExplodeMissile (AActor* mo);
 void G_SetDefaultTurbo (void);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
-void P_MovePsprites (player_t* player);
 void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -2125,6 +2125,27 @@ void CL_KillMobj(void)
 ///// CL_Fire* called when someone uses a weapon  /////////
 ///////////////////////////////////////////////////////////
 
+// [tm512] attempt at squashing weapon desyncs.
+// The server will send us what weapon we fired, and if that
+// doesn't match the weapon we have up at the moment, fix it
+// and request that we get a full update of playerinfo - apr 14 2012
+void CL_FireWeapon (void)
+{
+	player_t *p = &consoleplayer ();
+	weapontype_t firedweap = (weapontype_t) MSG_ReadByte ();
+	int servertic = MSG_ReadLong ();
+
+	if (firedweap != p->readyweapon)
+	{
+		DPrintf("CL_FireWeapon: weapon misprediction\n");
+		A_ForceWeaponFire(p->mo, firedweap, servertic);
+		
+		// Request the player's ammo status from the server
+		MSG_WriteMarker (&net_buffer, clc_getplayerinfo);
+	}
+
+}
+
 //
 // CL_FirePistol
 //
@@ -2196,31 +2217,22 @@ void CL_FireChainGun(void)
 
 //
 // CL_ChangeWeapon
-//
-// Immediately changes the client's weapon to the weapon specified by the
-// server.  Sets the weapons animation state as well.
+// [ML] From Zdaemon .99
 //
 void CL_ChangeWeapon (void)
 {
 	player_t *player = &consoleplayer();
-	
-	int when = MSG_ReadLong();
-	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
-	statenum_t stnum = static_cast<statenum_t>(MSG_ReadShort());
-	byte tics = MSG_ReadByte();
-
-	if (newweapon > NUMWEAPONS)
-		return;
+	weapontype_t newweapon = (weapontype_t)MSG_ReadByte();
 
 	// ensure that the client has the weapon
 	player->weaponowned[newweapon] = true;
 
-	A_ForceWeaponChange(player->mo, newweapon, stnum, tics);
-
-	// Move the animation forward to account for latency
-	for (int i = 0; i < gametic - when; i++)
-		P_MovePsprites(player);
+	// [SL] 2011-09-22 - Only change the weapon if the client doesn't already
+	// have that weapon up.
+	if (player->readyweapon != newweapon)
+		player->pendingweapon = newweapon;
 }
+
 
 //
 // CL_Sound
@@ -2917,6 +2929,7 @@ void CL_InitCommands(void)
 //	cmds[svc_spawnhiddenplayer]	= &CL_SpawnHiddenPlayer;
 	cmds[svc_damageplayer]		= &CL_DamagePlayer;
 	cmds[svc_firepistol]		= &CL_FirePistol;
+	cmds[svc_fireweapon]		= &CL_FireWeapon;
 
 	cmds[svc_fireshotgun]		= &CL_FireShotgun;
 	cmds[svc_firessg]			= &CL_FireSSG;
@@ -3091,7 +3104,18 @@ void CL_SendCmd(void)
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.forwardmove);
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.sidemove);
 	MSG_WriteShort(&net_buffer,	curcmd->ucmd.upmove);
-	MSG_WriteByte(&net_buffer,	curcmd->ucmd.impulse);
+
+	// [SL] 2011-11-20 - Player isn't requesting a weapon change
+	// send player's weapon to server and server will correct it if wrong
+	if (!curcmd->ucmd.impulse && !(curcmd->ucmd.buttons & BT_CHANGE))
+	{
+		if (p->pendingweapon != wp_nochange)
+			MSG_WriteByte(&net_buffer, p->pendingweapon);
+		else
+			MSG_WriteByte(&net_buffer, p->readyweapon);
+	}
+	else
+		MSG_WriteByte(&net_buffer, curcmd->ucmd.impulse);
 
 #ifdef _UNLAG_DEBUG_
 	if 	(player.size() == 2 && 

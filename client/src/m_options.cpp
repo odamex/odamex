@@ -152,6 +152,7 @@ EXTERN_CVAR (rate)
 EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_updaterate)
 EXTERN_CVAR (cl_interp)
+EXTERN_CVAR (cl_predictpickup)
 
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
@@ -622,6 +623,7 @@ static menuitem_t NetworkItems[] = {
 	{ discrete,		"Position update freq",			{&cl_updaterate},	{3.0},		{0.0},		{0.0},		{UpdateRate} },
 	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
 	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
 };
 
 menu_t NetworkMenu = {

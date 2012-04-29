@@ -48,6 +48,7 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
 EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR (cl_predictpickup)
 
 int shotclock = 0;
 int MeansOfDeath;
@@ -914,7 +915,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 		return;
 
 	// Only allow clients to predict touching weapons, not health, armor, etc
-	if (!serverside && !P_SpecialIsWeapon(special))
+	if (!serverside && (!cl_predictpickup || !P_SpecialIsWeapon(special)))
 		return;
 
 	P_GiveSpecial(toucher->player, special);

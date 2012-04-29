@@ -176,6 +176,7 @@ enum clc_t
 	clc_vote,				// [AM] - Casting a vote
 	clc_maplist,			// [AM] - Maplist status request.
 	clc_maplist_update,     // [AM] - Request the entire maplist from the server.
+	clc_getplayerinfo,
 	clc_ready,				// [AM] Toggle ready state.
 
 	// for when launcher packets go astray

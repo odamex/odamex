@@ -43,7 +43,6 @@
 
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
-
 #define WEAPONBOTTOM			128*FRACUNIT
 #define WEAPONTOP				32*FRACUNIT
 
@@ -466,6 +465,15 @@ void P_FireWeapon (player_t *player)
 
 	if (!P_CheckAmmo (player))
 		return;
+
+	// [tm512] Send the client the weapon they just fired so
+	// that they can fix any weapon desyncs that they get - apr 14 2012
+	if (serverside && !clientside)
+	{
+		MSG_WriteMarker (&player->client.reliablebuf, svc_fireweapon);
+		MSG_WriteByte (&player->client.reliablebuf, player->readyweapon);
+		MSG_WriteLong (&player->client.reliablebuf, player->tic);
+	}
 
 	P_SetMobjState (player->mo, S_PLAY_ATK1);
 	newstate = weaponinfo[player->readyweapon].atkstate;
@@ -1263,25 +1271,26 @@ void A_CloseShotgun2 (AActor *mo)
 	A_ReFire(mo);
 }
 
+
 //
-// A_ForceWeaponChange
+// A_ForceWeaponFire
 //
 // Immediately changes a players weapon to a new weapon and new animation state
 // 
-void A_ForceWeaponChange(AActor *mo, weapontype_t weapon, statenum_t stnum, int tics)
+void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic)
 {
+	if (!mo || !mo->player)
+		return;
+		
 	player_t *player = mo->player;
-	struct pspdef_s *psp = &player->psprites[player->psprnum];
-
-	if (weapon < NUMWEAPONS && player->readyweapon != weapon)
-	{
-		player->readyweapon = weapon;
-
-		P_SetPsprite(player, ps_weapon, stnum);
 	
-		psp->sy = WEAPONTOP;
-		psp->tics = tics;
-	}
+	player->weaponowned[weapon] = true;
+	player->readyweapon = weapon;
+	P_SetPsprite(player, ps_weapon, weaponinfo[player->readyweapon].atkstate);
+	player->psprites[player->psprnum].sy = WEAPONTOP;
+		
+	while (tic++ < gametic)
+		P_MovePsprites(player);
 }
 
 FArchive &operator<< (FArchive &arc, pspdef_t &def)
