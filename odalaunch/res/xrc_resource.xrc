@@ -578,7 +578,7 @@
 									<object class="wxPanel" name="m_panel10">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxFlexGridSizer">
-											<rows>1</rows>
+											<rows>2</rows>
 											<cols>1</cols>
 											<vgap>0</vgap>
 											<hgap>0</hgap>
