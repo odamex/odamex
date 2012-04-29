@@ -287,13 +287,12 @@
 						<growablerows></growablerows>
 						<object class="sizeritem">
 							<option>1</option>
-							<flag>wxALL|wxEXPAND</flag>
+							<flag>wxEXPAND | wxALL</flag>
 							<border>5</border>
-							<object class="wxListbook" name="m_listbook2">
-								<style>wxLB_TOP</style>
-								<object class="listbookpage">
+							<object class="wxNotebook" name="m_notebook1">
+								<object class="notebookpage">
 									<label>Network Options</label>
-									<selected>1</selected>
+									<selected>0</selected>
 									<object class="wxPanel" name="m_panel91">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
@@ -573,8 +572,8 @@
 										</object>
 									</object>
 								</object>
-								<object class="listbookpage">
-									<label>File Location</label>
+								<object class="notebookpage">
+									<label>File Locations</label>
 									<selected>0</selected>
 									<object class="wxPanel" name="m_panel10">
 										<style>wxTAB_TRAVERSAL</style>
@@ -758,7 +757,7 @@
 										</object>
 									</object>
 								</object>
-								<object class="listbookpage">
+								<object class="notebookpage">
 									<label>Other Settings</label>
 									<selected>0</selected>
 									<object class="wxPanel" name="m_panel12">
