@@ -17,6 +17,7 @@ endif()
 # Build type definitions
 if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 endif()
 
 macro(define_platform)
