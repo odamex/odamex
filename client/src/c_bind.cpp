@@ -109,6 +109,8 @@ char DefBindings[] =
 	"bind f12 spynext; "
 	"bind pgup vote_yes; "				// <- New for voting
 	"bind pgdn vote_no; "				// <- New for voting
+	"bind home ready; "
+	"bind end spectate; "
 	"bind m changeteams ";
 
 
