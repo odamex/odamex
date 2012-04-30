@@ -428,7 +428,6 @@ typedef struct wbstartstruct_s
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;
 
-
 #endif // __D_PLAYER_H__
 
 

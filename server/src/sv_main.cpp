@@ -849,12 +849,7 @@ void SV_RemoveDisconnectedPlayer(player_t &player)
 	AActor *mo;
 	TThinkerIterator<AActor> iterator;
 	while ( (mo = iterator.Next() ) )
-	{
-		mo->players_aware.erase(
-				std::remove(mo->players_aware.begin(),
-							mo->players_aware.end(), player.id),
-				mo->players_aware.end());
-	}
+		mo->players_aware.unset(player.id);
 
 	// remove this player's actor object
 	if (player.mo)
@@ -1556,14 +1551,13 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
          ((HasBehavior && P_CheckSightEdges2(player.mo, mo, 5)) || (!HasBehavior && P_CheckSightEdges(player.mo, mo, 5)))/*player.awaresector[sectors - mo->subsector->sector]*/)
 		ok = true;
 
-	std::vector<size_t>::iterator a = std::find(mo->players_aware.begin(), mo->players_aware.end(), player.id);
-	bool previously_ok = (a != mo->players_aware.end());
-
+	bool previously_ok = mo->players_aware.get(player.id);
+	
 	client_t *cl = &player.client;
 
 	if(!ok && previously_ok)
 	{
-		mo->players_aware.erase(a);
+		mo->players_aware.unset(player.id);
 
 		MSG_WriteMarker (&cl->reliablebuf, svc_removemobj);
 		MSG_WriteShort (&cl->reliablebuf, mo->netid);
@@ -1572,7 +1566,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	}
 	else if(!previously_ok && ok)
 	{
-		mo->players_aware.push_back(player.id);
+		mo->players_aware.set(player.id);
 
 		if(!mo->player || mo->player->playerstate != PST_LIVE)
 		{
@@ -1625,7 +1619,7 @@ bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
 	if (mo->flags & MF_SPECTATOR)
 		return false; // GhostlyDeath -- always false, as usual!
 	else
-		return std::find(mo->players_aware.begin(), mo->players_aware.end(), p.id) != mo->players_aware.end();
+		return mo->players_aware.get(p.id);
 }
 
 #define HARDWARE_CAPABILITY 1000
@@ -5089,15 +5083,18 @@ void SV_SendDestroyActor(AActor *mo)
 {
 	if (mo->netid && mo->type != MT_PUFF)
 	{
-		for (size_t i = 0; i < mo->players_aware.size(); i++)
+		for (size_t i = 0; i < players.size(); i++)
 		{
-			client_t *cl = &idplayer(mo->players_aware[i]).client;
+			if (mo->players_aware.get(players[i].id))
+			{
+				client_t *cl = &players[i].client;
 
-            // denis - todo - need a queue for destroyed (lost awareness)
-            // objects, as a flood of destroyed things could easily overflow a
-            // buffer
-			MSG_WriteMarker(&cl->reliablebuf, svc_removemobj);
-			MSG_WriteShort(&cl->reliablebuf, mo->netid);
+            	// denis - todo - need a queue for destroyed (lost awareness)
+            	// objects, as a flood of destroyed things could easily overflow a
+            	// buffer
+				MSG_WriteMarker(&cl->reliablebuf, svc_removemobj);
+				MSG_WriteShort(&cl->reliablebuf, mo->netid);			
+			}
 		}
 	}
 

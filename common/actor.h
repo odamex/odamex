@@ -112,6 +112,48 @@
 //
 
 //
+// [SL] 2012-04-30 - A bit field to store a bool value for every player.
+// 
+class PlayerBitField
+{
+public:
+	PlayerBitField() { memset(bitfield, 0, sizeof(bitfield)); }
+	
+	void set(byte id)
+	{
+		int bytenum = id / bytesize;
+		int bitnum = id & bytemask;
+	
+		bitfield[bytenum] |= (1 << bitnum);
+	}
+	
+	void unset(byte id)
+	{
+		int bytenum = id / bytesize;
+		int bitnum = id & bytemask;
+	
+		bitfield[bytenum] &= ~(1 << bitnum);
+	}
+	
+	bool get(byte id)
+	{
+		int bytenum = id / bytesize;
+		int bitnum = id & bytemask;	
+	
+		return (bitfield[bytenum] & (1 << bitnum));
+	}
+	
+private:
+	static const int bytesize = sizeof(byte);
+	static const int bytemask = bytesize - 1;
+	
+	// Hacky way of getting ceil() at compile-time
+	static const size_t fieldsize = (MAXPLAYERS / bytesize) + (MAXPLAYERS % bytesize) ? 1 : 0;
+	
+	byte	bitfield[fieldsize];
+};
+
+//
 // Misc. mobj flags
 //
 typedef enum
@@ -373,7 +415,8 @@ public:
 	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
 
 	// denis - playerids of players to whom this object has been sent
-	std::vector<size_t>	players_aware;
+	// [SL] changed to use a bitfield instead of a vector for O(1) lookups
+	PlayerBitField	players_aware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
 	byte			*translation;	// Translation table (or NULL)
