@@ -121,7 +121,7 @@ public:
 	
 	void set(byte id)
 	{
-		int bytenum = id / bytesize;
+		int bytenum = id >> 3;
 		int bitnum = id & bytemask;
 	
 		bitfield[bytenum] |= (1 << bitnum);
@@ -129,7 +129,7 @@ public:
 	
 	void unset(byte id)
 	{
-		int bytenum = id / bytesize;
+		int bytenum = id >> 3;
 		int bitnum = id & bytemask;
 	
 		bitfield[bytenum] &= ~(1 << bitnum);
@@ -137,14 +137,14 @@ public:
 	
 	bool get(byte id)
 	{
-		int bytenum = id / bytesize;
+		int bytenum = id >> 3;
 		int bitnum = id & bytemask;	
 	
 		return (bitfield[bytenum] & (1 << bitnum));
 	}
 	
 private:
-	static const int bytesize = sizeof(byte);
+	static const int bytesize = 8*sizeof(byte);
 	static const int bytemask = bytesize - 1;
 	
 	// Hacky way of getting ceil() at compile-time
