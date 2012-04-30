@@ -31,6 +31,8 @@ macro(define_platform)
   endif()
 endmacro(define_platform)
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+
 # Subdirectories for individual projects
 add_subdirectory(client)
 add_subdirectory(server)

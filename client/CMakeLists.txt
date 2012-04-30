@@ -1,3 +1,5 @@
+include(FindPortMidi)
+
 # Common
 set(COMMON_DIR ../common)
 file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h)
@@ -48,6 +50,13 @@ else()
   message(WARNING "SDL_mixer not found, client target not generated.")
 endif()
 
+# Portmidi configuration
+find_package(PortMidi)
+if(PortMidi_FOUND)
+  include_directories(${PortMidi_INCLUDE_DIR})
+  ADD_DEFINITIONS(-DPORTMIDI ${PortMidi_CFLAGS})
+endif()
+
 # Find Mac frameworks
 if(APPLE)
   find_library(CARBON_LIBRARY Carbon)
@@ -64,7 +73,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
     ${CLIENT_MAC_OBJC_SOURCES})
-  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY})
+  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${PortMidi_LIBRARY})
   if(WIN32)
     target_link_libraries(odamex winmm wsock32)
   elseif(APPLE)
