@@ -190,7 +190,7 @@ void SV_AcknowledgePacket(player_t &player)
 			if  (needfullupdate)
 			{
 				// do full update
-				Printf(PRINT_HIGH, "need full update\n");
+				DPrintf("need full update\n");
 				cl->last_sequence = sequence;
 				return;
 			}
@@ -205,7 +205,7 @@ void SV_AcknowledgePacket(player_t &player)
 			if (cl->reliablebuf.overflowed)
 			{
 				// do full update
-				Printf(PRINT_HIGH, "reliablebuf overflowed, need full update\n");
+				DPrintf("reliablebuf overflowed, need full update\n");
 				cl->last_sequence = sequence;
 				return;
 			}
