@@ -148,7 +148,7 @@ private:
 	static const int bytemask = bytesize - 1;
 	
 	// Hacky way of getting ceil() at compile-time
-	static const size_t fieldsize = (MAXPLAYERS / bytesize) + (MAXPLAYERS % bytesize) ? 1 : 0;
+	static const size_t fieldsize = (MAXPLAYERS + bytemask) / bytesize;
 	
 	byte	bitfield[fieldsize];
 };
