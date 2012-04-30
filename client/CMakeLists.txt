@@ -55,6 +55,8 @@ find_package(PortMidi)
 if(PortMidi_FOUND)
   include_directories(${PortMidi_INCLUDE_DIR})
   ADD_DEFINITIONS(-DPORTMIDI ${PortMidi_CFLAGS})
+else()
+  set(PortMidi_LIBRARY "")
 endif()
 
 # Find Mac frameworks
