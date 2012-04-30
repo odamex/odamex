@@ -476,6 +476,8 @@ public:
 
 	DPlat (sector_t *sector);
 	friend void P_SetPlatDestroy(DPlat *plat);
+	
+	void PlayPlatSound ();
 
 	fixed_t 	m_Speed;
 	fixed_t 	m_Low;
@@ -490,7 +492,6 @@ public:
 
 protected:
 
-	void PlayPlatSound ();
 	void Reactivate ();
 	void Stop ();
 
@@ -621,6 +622,7 @@ public:
 	friend void P_SetDoorDestroy(DDoor *door);
 	
 	void RunThink ();
+	void PlayDoorSound();	
 
 	EVlDoor		m_Type;
 	fixed_t 	m_TopHeight;
@@ -635,9 +637,8 @@ public:
 	EDoorState	m_Status;
 
     line_t      *m_Line;
-protected:
-	void PlayDoorSound ();
 
+protected:
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
 	friend void P_SpawnDoorCloseIn30 (sector_t *sec);

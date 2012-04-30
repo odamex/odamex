@@ -755,16 +755,23 @@ void SectorSnapshot::toSector(sector_t *sector) const
 	if (!sector)
 		return;
 
+	bool newfloor = false, newceiling = false;
+	
 	if (sector->ceilingdata)
 	{
 		sector->ceilingdata->Destroy();
 		sector->ceilingdata = NULL;
 	}
+	else
+		newceiling = true;
+		
 	if (sector->floordata)
 	{
 		sector->floordata->Destroy();
 		sector->floordata = NULL;
 	}
+	else
+		newfloor = true;
 
 	P_SetCeilingHeight(sector, mCeilingHeight);
 	P_SetFloorHeight(sector, mFloorHeight);
@@ -783,6 +790,10 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		pillar->m_CeilingTarget		= mCeilingDestination;
 		pillar->m_FloorTarget		= mFloorDestination;
 		pillar->m_Crush				= mCeilingCrush;
+		
+		// [SL] 2012-04-29 - Ensure the initial sound gets played
+		if (newceiling)
+			pillar->PlayPillarSound();		
 	}
 	
 	if (mCeilingMoverType == SEC_ELEVATOR)
@@ -797,6 +808,10 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		elevator->m_CeilingDestHeight = mCeilingDestination;
 		elevator->m_FloorDestHeight	= mFloorDestination;
 		elevator->m_Speed			= mCeilingSpeed;
+		
+		// [SL] 2012-04-29 - Ensure the initial sound gets played
+		if (newceiling)
+			elevator->PlayElevatorSound();
 	}
 
 	if (mCeilingMoverType == SEC_CEILING)
@@ -818,6 +833,10 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		ceiling->m_OldDirection		= mCeilingOldDirection;
 		ceiling->m_Texture			= mCeilingTexture;
 		ceiling->m_NewSpecial		= mNewCeilingSpecial;
+		
+		// [SL] 2012-04-29 - Ensure the initial sound gets played
+		if (newceiling)
+			ceiling->PlayCeilingSound();
 	}
 		
 	if (mCeilingMoverType == SEC_DOOR)
@@ -832,6 +851,10 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		door->m_TopWait				= mCeilingWait;
 		door->m_TopCountdown		= mCeilingCounter;
 		door->m_Line				= mLine;
+		
+		// [SL] 2012-04-29 - Ensure the initial sound gets played
+		if (newceiling)
+			door->PlayDoorSound();
 	}
 
 	if (mFloorMoverType == SEC_FLOOR)
@@ -852,6 +875,10 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		floor->m_PauseTime			= mPauseTime;
 		floor->m_StepTime			= mStepTime;
 		floor->m_PerStepTime		= mPerStepTime;
+
+		// [SL] 2012-04-29 - Ensure the initial sound gets played
+		if (newfloor)
+			floor->PlayFloorSound();		
 	}
 		
 	if (mFloorMoverType == SEC_PLAT)
@@ -869,6 +896,10 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		plat->m_Speed				= mFloorSpeed;
 		plat->m_Wait				= mFloorWait;
 		plat->m_Count				= mFloorCounter;
+		
+		// [SL] 2012-04-29 - Ensure the initial sound gets played
+		if (newfloor)
+			plat->PlayPlatSound();
 	}
 }
 

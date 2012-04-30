@@ -107,7 +107,7 @@ void DFloor::PlayFloorSound()
 		
 	if (m_Status == init)
 		S_LoopedSound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
-	else
+	if (m_Status == finished)
 		S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);	
 }
 
@@ -152,6 +152,7 @@ void DFloor::RunThink ()
 
 	if (res == pastdest)
 	{
+		m_Status = finished;
 		PlayFloorSound();
 
 		if (m_Type == buildStair)
