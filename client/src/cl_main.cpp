@@ -2868,9 +2868,13 @@ EXTERN_CVAR (st_scale)
 void CL_Spectate()
 {
 	player_t &player = CL_FindPlayer(MSG_ReadByte());
-	
+
+	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
 	player.spectator = MSG_ReadByte();
-	
+
+	if (player.spectator && wasalive)
+		P_DisconnectEffect(player.mo);
+
 	if (&player == &consoleplayer()) {
 		st_scale.Callback (); // refresh status bar size
 		if (player.spectator) {
@@ -2883,7 +2887,7 @@ void CL_Spectate()
 			displayplayer_id = consoleplayer_id; // get out of spynext
 		}
 	}
-	
+
 	// GhostlyDeath -- If the player matches our display player...
 	if (&player == &displayplayer())
 		displayplayer_id = consoleplayer_id;
