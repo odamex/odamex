@@ -41,6 +41,7 @@
 namespace odalpapi {
 
 #ifndef _WIN32
+#include <unistd.h>
 #define closesocket close
 const int INVALID_SOCKET = -1;
 #endif
