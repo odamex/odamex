@@ -1075,6 +1075,14 @@ void CL_SetupUserInfo(void)
 	if (p->mo)
 		p->mo->sprite = skins[p->userinfo.skin].sprite;
 
+	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
+	// to the other team?
+	bool teammate = p->userinfo.team == consoleplayer().userinfo.team;
+	bool teamgame = (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF);
+
+	if (p->id == displayplayer_id && !consoleplayer().spectator && teamgame && !teammate)
+		displayplayer_id = consoleplayer_id;
+
 	extern bool st_firsttime;
 	st_firsttime = true;
 }
