@@ -1454,10 +1454,7 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 
 	// Save the status of the flags in CTF
 	for (int i = 0; i < NUMFLAGS; i++)
-	{
-		arc << static_cast<byte>(CTFdata[i].state);
-		arc << CTFdata[i].flagger;
-	}
+		arc << CTFdata[i];
 
 	// Save team points
 	for (int i = 0; i < NUMTEAMS; i++)
@@ -1531,12 +1528,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 
 	// Read the status of flags in CTF
 	for (int i = 0; i < NUMFLAGS; i++)
-	{
-		byte state;
-		arc >> state;
-		CTFdata[i].state = static_cast<flag_state_t>(state);
-		arc >> CTFdata[i].flagger;
-	}
+		arc >> CTFdata[i];
 
 	// Read team points
 	for (int i = 0; i < NUMTEAMS; i++)

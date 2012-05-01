@@ -61,7 +61,7 @@ struct flagdata
 	int x, y, z;
 
 	// Flag Timout Counters
-	size_t timeout;
+	int timeout;
 
 	// True when a flag has been dropped
 	flag_state_t state;
@@ -117,6 +117,9 @@ mapthing2_t *CTF_SelectTeamPlaySpot(player_t &player, int selections);
 extern flagdata CTFdata[NUMFLAGS];
 extern int TEAMpoints[NUMFLAGS];
 extern const char *team_names[NUMTEAMS+2];
+
+FArchive &operator<< (FArchive &arc, flagdata &flag);
+FArchive &operator>> (FArchive &arc, flagdata &flag);
 
 //	Colors
 #define	BLUECOLOR		200

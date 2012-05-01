@@ -497,5 +497,15 @@ void CTF_Sound (flag_t f, flag_score_t event)
 }
 
 
+FArchive &operator<< (FArchive &arc, flagdata &flag)
+{
+	return arc;
+}
+
+FArchive &operator>> (FArchive &arc, flagdata &flag)
+{
+	return arc;
+}
+
 VERSION_CONTROL (sv_ctf_cpp, "$Id$")
 

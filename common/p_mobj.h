@@ -50,6 +50,7 @@
 // to avoid reassigning a recently freed netid to a different actor.  Otherwise
 // clients can get confused when packets are dropped.
 
+#include "i_system.h"
 #include <queue>
 
 #define MAX_NETID 0xFFFF
