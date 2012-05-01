@@ -117,8 +117,13 @@
 class PlayerBitField
 {
 public:
-	PlayerBitField() { memset(bitfield, 0, sizeof(bitfield)); }
+	PlayerBitField() { clear(); }
 	
+	void clear()
+	{
+		memset(bitfield, 0, sizeof(bitfield));
+	}
+
 	void set(byte id)
 	{
 		int bytenum = id >> 3;
@@ -135,7 +140,7 @@ public:
 		bitfield[bytenum] &= ~(1 << bitnum);
 	}
 	
-	bool get(byte id)
+	bool get(byte id) const
 	{
 		int bytenum = id >> 3;
 		int bitnum = id & bytemask;	
