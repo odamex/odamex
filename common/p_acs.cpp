@@ -647,10 +647,23 @@ DFlashFader::~DFlashFader ()
 void DFlashFader::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
-	arc << TotalTics << StartTic << ForWho;
-	for (int i = 1; i >= 0; --i)
-		for (int j = 3; j >= 0; --j)
-			arc << Blends[i][j];
+
+	if (arc.IsStoring ())
+	{
+		arc << TotalTics << StartTic << ForWho;
+	
+		for (int i = 1; i >= 0; --i)
+			for (int j = 3; j >= 0; --j)
+				arc << Blends[i][j];			
+	}
+	else
+	{
+		arc >> TotalTics >> StartTic >> ForWho;
+
+		for (int i = 1; i >= 0; --i)
+			for (int j = 3; j >= 0; --j)
+				arc >> Blends[i][j];		
+	}
 }
 
 void DFlashFader::RunThink ()
@@ -756,9 +769,18 @@ void DPlaneWatcher::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
 
-	arc << Special << Arg0 << Arg1 << Arg2 << Arg3 << Arg4
-		<< Sector << bCeiling << WatchD << LastD << Activator
-		<< Line << LineSide << bCeiling;
+	if (arc.IsStoring ())
+	{
+		arc << Special << Arg0 << Arg1 << Arg2 << Arg3 << Arg4
+			<< Sector << bCeiling << WatchD << LastD << Activator
+			<< Line << LineSide << bCeiling;
+	}
+	else
+	{
+		arc >> Special >> Arg0 >> Arg1 >> Arg2 >> Arg3 >> Arg4
+			>> Sector >> bCeiling >> WatchD >> LastD >> Activator
+			>> Line >> LineSide >> bCeiling;	
+	}
 }
 
 void DPlaneWatcher::RunThink ()
@@ -807,25 +829,39 @@ void DLevelScript::Serialize (FArchive &arc)
 	DWORD i;
 
 	Super::Serialize (arc);
-	arc << next << prev
-		<< script
-		<< sp
-		<< state
-		<< statedata
-		<< activator
-		<< activationline
-		<< lineSide;
-	for (i = 0; i < LOCAL_SIZE; i++)
-		arc << localvars[i];
 
 	if (arc.IsStoring ())
 	{
-		i = level.behavior->PC2Ofs (pc);
+		arc << next << prev
+			<< script
+			<< sp
+			<< state
+			<< statedata
+			<< activator
+			<< activationline
+			<< lineSide;
+			
+		for (i = 0; i < LOCAL_SIZE; i++)
+			arc << localvars[i];
+
+		i = level.behavior->PC2Ofs(pc);
 		arc << i;
 	}
 	else
 	{
-		arc << i;
+		arc >> next >> prev
+			>> script
+			>> sp
+			>> state
+			>> statedata
+			>> activator
+			>> activationline
+			>> lineSide;
+			
+		for (i = 0; i < LOCAL_SIZE; i++)
+			arc >> localvars[i];	
+	
+		arc >> i;
 		pc = level.behavior->Ofs2PC (i);
 	}
 }

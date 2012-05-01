@@ -436,12 +436,13 @@ private:
 	friend class DACSThinker;
 };
 
-inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState &state)
+inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState state)
 {
-	BYTE val = (BYTE)state;
-	arc << val;
-	state = (DLevelScript::EScriptState)val;
-	return arc;
+	return arc << (BYTE)state;
+}
+inline FArchive &operator>> (FArchive &arc, DLevelScript::EScriptState &state)
+{
+	BYTE in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
 }
 
 class DACSThinker : public DThinker
