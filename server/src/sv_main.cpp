@@ -3520,16 +3520,16 @@ int SV_CalculateNumTiccmds(player_t &player)
 		// Player is not moving
 		return 2 * minimum_cmds;
 	}
-	if (!P_VisibleToPlayers(player.mo) && P_AtInterval(TICRATE/2))
-	{
-		// Every half second, run two commands if no one can see this player
-		return 2 * minimum_cmds;
-	}
 	if (player.cmds.size() > maximum_queue_size)
 	{
 		// The player experienced a large latency spike so try to catch up by
 		// processing more than one ticcmd at the expense of appearing perfectly
 		//  smooth
+		return 2 * minimum_cmds;
+	}
+	if (P_AtInterval(TICRATE/2) && !P_VisibleToPlayers(player.mo))
+	{
+		// Every half second, run two commands if no one can see this player
 		return 2 * minimum_cmds;
 	}
 
