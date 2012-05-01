@@ -56,7 +56,7 @@ if(PortMidi_FOUND)
   include_directories(${PortMidi_INCLUDE_DIR})
   ADD_DEFINITIONS(-DPORTMIDI ${PortMidi_CFLAGS})
 else()
-  set(PortMidi_LIBRARY "")
+  set(PortMidi_LIBRARIES "")
 endif()
 
 # Find Mac frameworks
@@ -75,7 +75,7 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS}
     ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${CLIENT_WIN32_RESOURCES}
     ${CLIENT_MAC_OBJC_SOURCES})
-  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${PortMidi_LIBRARY})
+  target_link_libraries(odamex ${SDL_LIBRARY} ${SDLMIXER_LIBRARY} ${PortMidi_LIBRARIES})
   if(WIN32)
     target_link_libraries(odamex winmm wsock32)
   elseif(APPLE)
@@ -103,12 +103,18 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
       "${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Resources/${MACOSX_BUNDLE_ICON_FILE};${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex.wad"
     )
 
+    #****
+    # The remaining commands are issued on 'make install'. They make the app
+    # bundle "stand-alone" by packaging dependencies inside.
+    #****
+
     # Install into bundle under client directory
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 
     string(REPLACE "-framework Cocoa" "" SDL_DIR ${SDL_LIBRARY})
     string(REPLACE "-framework Cocoa" "" SDLMIXER_DIR ${SDLMIXER_LIBRARY})
 
+    # Install the SDL framework into the bundle
     if(IS_DIRECTORY ${SDL_DIR})
       install(DIRECTORY ${SDL_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks)
       install(CODE "execute_process(COMMAND 
@@ -118,8 +124,19 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
         " )
     endif()
 
+    # Install the SDL_mixer framework into the bundle
     if(IS_DIRECTORY ${SDLMIXER_DIR})
       install(DIRECTORY ${SDLMIXER_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks)
+    endif()
+
+    # If PortMidi was built in install the PortMidi library into the bundle
+    if(PortMidi_FOUND)
+      install(FILES ${PortMidi_LIBRARIES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/Frameworks/)
+      install(CODE "execute_process(COMMAND 
+        install_name_tool -change libportmidi.dylib
+        @executable_path/../Frameworks/libportmidi.dylib
+        ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS/odamex)
+        " )
     endif()
 
   endif()
