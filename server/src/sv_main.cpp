@@ -2470,11 +2470,14 @@ void SV_ConnectClient (void)
 	// send a map name
 	MSG_WriteMarker   (&cl->reliablebuf, svc_loadmap);
 	MSG_WriteString (&cl->reliablebuf, level.mapname);
-	G_DoReborn (players[n]);
-	SV_ClientFullUpdate (players[n]);
+
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
 		MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
+
+	G_DoReborn (players[n]);
+	SV_ClientFullUpdate (players[n]);
+
 	MSG_WriteMarker(&cl->reliablebuf, svc_fullupdatedone);
 	SV_SendPacket (players[n]);
 
