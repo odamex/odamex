@@ -36,6 +36,7 @@
 #include "m_swap.h"
 #include "p_saveg.h"
 #include "version.h"
+#include "st_stuff.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -1579,6 +1580,9 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	// restore player colors
 	for (size_t i = 0; i < players.size(); i++)
 		R_BuildPlayerTranslation(players[i].id, players[i].userinfo.color);
+
+	// Make sure the status bar is displayed correctly
+	ST_Start();
 }
 
 
