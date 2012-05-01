@@ -456,11 +456,6 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	// [AM] Force everybody to be unready on new map no matter what gametype.
-	for (i = 0;i < players.size();i++) {
-		SV_SetReady(players[i], false, true);
-	}
-
 	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will
 	// send changed cvars
 	gamestate = GS_LEVEL;
