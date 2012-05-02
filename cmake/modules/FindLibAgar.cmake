@@ -58,5 +58,6 @@ if(CMAKE_LibAgar_CONFIG)
  
   ## replace space separated string by semicolon separated vector
   separate_arguments(LibAgar_LIBRARIES)
+  string(REPLACE "-framework;" "-framework " LibAgar_LIBRARIES "${LibAgar_LIBRARIES}")
   string(STRIP "${LibAgar_LIBRARIES}" LibAgar_LIBRARIES)
 endif()
