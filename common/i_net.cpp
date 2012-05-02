@@ -1046,8 +1046,8 @@ bool NetWaitOrTimeout(size_t ms)
 			Printf(PRINT_HIGH, "select returned SOCKET_ERROR: %d\n", WSAGetLastError());
 	#else
 		// handle -1
-		if(ret < 0)
-			Printf(PRINT_HIGH, "select returned %d: %d\n", ret, errno);
+		if(ret == -1 && ret != EINTR)
+			Printf(PRINT_HIGH, "select returned -1: %s\n", strerror(errno));
 	#endif
 
 	return false;
