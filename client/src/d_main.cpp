@@ -1675,8 +1675,6 @@ void D_DoomMain (void)
 	p = Args.CheckParm ("+demotest");
 	if (p && p < Args.NumArgs()-1)
 	{
-		void	G_DoPlayDemo (bool justStreamInput = false);
-		void	G_Ticker (void);
 		demotest = 1;
 		defdemoname = Args.GetArg (p+1);
 		G_DoPlayDemo();
