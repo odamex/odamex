@@ -1,4 +1,6 @@
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+
 import fr.free.miniupnp.*;
 
 /**
@@ -27,7 +29,7 @@ public class JavaBridgeTest {
             return;
         }
 
-        devlist = miniupnpc.upnpDiscover(UPNP_DELAY, (String) null, (String) null, 0, null);
+        devlist = miniupnpc.upnpDiscover(UPNP_DELAY, (String) null, (String) null, 0, 0, IntBuffer.allocate(1));
         if (devlist != null) {
             System.out.println("List of UPNP devices found on the network :");
             for (UPNPDev device = devlist; device != null; device = device.pNext) {
@@ -75,7 +77,7 @@ public class JavaBridgeTest {
                 if (ret != MiniupnpcLibrary.UPNPCOMMAND_SUCCESS)
                     System.out.println("GetSpecificPortMappingEntry() failed with code " + ret);
                 System.out.println("InternalIP:Port = " +
-                        new String(intClient.array()) + ":" + new String(intPort.array()) + 
+                        new String(intClient.array()) + ":" + new String(intPort.array()) +
                         " (" + new String(desc.array()) + ")");
                 ret = miniupnpc.UPNP_DeletePortMapping(
                         urls.controlURL.getString(0),

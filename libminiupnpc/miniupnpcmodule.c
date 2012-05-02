@@ -1,8 +1,8 @@
-/* $Id: miniupnpcmodule.c,v 1.18 2011/04/10 11:21:23 nanard Exp $*/
+/* $Id: miniupnpcmodule.c,v 1.20 2012/03/05 19:42:47 nanard Exp $*/
 /* Project : miniupnp
  * Author : Thomas BERNARD
  * website : http://miniupnp.tuxfamily.org/
- * copyright (c) 2007-2009 Thomas Bernard
+ * copyright (c) 2007-2012 Thomas Bernard
  * This software is subjet to the conditions detailed in the
  * provided LICENCE file. */
 #include <Python.h>
@@ -72,7 +72,7 @@ UPnP_discover(UPnPObject *self)
 	{
 		freeUPNPDevlist(self->devlist);
 		self->devlist = 0;
-	} 
+	}
 	Py_BEGIN_ALLOW_THREADS
 	self->devlist = upnpDiscover((int)self->discoverdelay/*timeout in ms*/,
 	                             0/* multicast if*/,
@@ -215,7 +215,7 @@ Py_END_ALLOW_THREADS
 }
 
 /* AddPortMapping(externalPort, protocol, internalHost, internalPort, desc,
- *                remoteHost) 
+ *                remoteHost)
  * protocol is 'UDP' or 'TCP' */
 static PyObject *
 UPnP_addportmapping(UPnPObject *self, PyObject *args)
@@ -300,7 +300,7 @@ Py_END_ALLOW_THREADS
 	}
 }
 
-/* GetSpecificPortMapping(ePort, proto) 
+/* GetSpecificPortMapping(ePort, proto)
  * proto = 'UDP' or 'TCP' */
 static PyObject *
 UPnP_getspecificportmapping(UPnPObject *self, PyObject *args)
@@ -472,7 +472,7 @@ static PyTypeObject UPnPType = {
     0,                         /* tp_dictoffset */
     0,/*(initproc)UPnP_init,*/      /* tp_init */
     0,                         /* tp_alloc */
-#ifndef WIN32
+#ifndef _WIN32
     PyType_GenericNew,/*UPnP_new,*/      /* tp_new */
 #else
     0,
@@ -488,11 +488,11 @@ static PyMethodDef miniupnpc_methods[] = {
 #define PyMODINIT_FUNC void
 #endif
 PyMODINIT_FUNC
-initminiupnpc(void) 
+initminiupnpc(void)
 {
     PyObject* m;
 
-#ifdef WIN32
+#ifdef _WIN32
     UPnPType.tp_new = PyType_GenericNew;
 #endif
     if (PyType_Ready(&UPnPType) < 0)
