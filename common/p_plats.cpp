@@ -72,7 +72,9 @@ void DPlat::Serialize (FArchive &arc)
 			<< m_OldStatus
 			<< m_Crush
 			<< m_Tag
-			<< m_Type;
+			<< m_Type
+			<< m_Height
+			<< m_Lip;
 	}
 	else
 	{
@@ -85,7 +87,9 @@ void DPlat::Serialize (FArchive &arc)
 			>> m_OldStatus
 			>> m_Crush
 			>> m_Tag
-			>> m_Type;
+			>> m_Type
+			>> m_Height
+			>> m_Lip;
 	}
 }
 
