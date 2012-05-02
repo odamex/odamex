@@ -2457,9 +2457,9 @@ void CL_UpdateMovingSector(void)
 
 		// If the moving sector's line is -1, it is likely a type 666 door
 		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			return;
-		
-		snap.setLine(&lines[LineIndex]);
+			snap.setLine(NULL);
+		else
+			snap.setLine(&lines[LineIndex]);
 	}
 
 	if (ceiling_mover == SEC_ELEVATOR)
