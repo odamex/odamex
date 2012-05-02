@@ -123,7 +123,8 @@ std::string server_host = "";	// hostname of server
 // [SL] 2011-06-27 - Class to record and playback network recordings
 NetDemo netdemo;
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
-bool simulated_connection = false;	
+bool simulated_connection = false;
+bool forcenetdemosplit = false;		// need to split demo due to svc_reconnect
 
 extern NetGraph netgraph;
 
@@ -362,6 +363,8 @@ void CL_QuitNetGame(void)
 	P_ClearAllNetIds();
 	players.clear();
 
+	recv_full_update = false;
+	
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
 
@@ -400,6 +403,11 @@ void CL_QuitNetGame(void)
 
 void CL_Reconnect(void)
 {
+	recv_full_update = false;
+	
+	if (netdemo.isRecording())
+		forcenetdemosplit = true;	
+		
 	if (connected)
 	{
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
@@ -1328,6 +1336,8 @@ bool CL_PrepareConnect(void)
 		Printf(PRINT_HIGH, "Will download \"%s\" from server\n", missing_file.c_str());
 	}
 
+	recv_full_update = false;
+	
 	connecttimeout = 0;
 	CL_TryToConnect(server_token);
 
@@ -2789,10 +2799,12 @@ void CL_LoadMap(void)
 {
 	const char *mapname = MSG_ReadString ();
 
-	bool splitnetdemo = netdemo.isRecording() && cl_splitnetdemos;
+	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
+	forcenetdemosplit = false;
+	
 	if (splitnetdemo)
 		netdemo.stopRecording();
-
+	
 	if(gamestate == GS_DOWNLOAD)
 		return;
 
