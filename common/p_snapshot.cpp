@@ -755,32 +755,32 @@ void SectorSnapshot::toSector(sector_t *sector) const
 	if (!sector)
 		return;
 
-	bool newfloor = false, newceiling = false;
-	
-	if (sector->ceilingdata)
-	{
-		sector->ceilingdata->Destroy();
-		sector->ceilingdata = NULL;
-	}
-	else
-		newceiling = true;
-		
-	if (sector->floordata)
-	{
-		sector->floordata->Destroy();
-		sector->floordata = NULL;
-	}
-	else
-		newfloor = true;
-
 	P_SetCeilingHeight(sector, mCeilingHeight);
 	P_SetFloorHeight(sector, mFloorHeight);
 	P_ChangeSector(sector, false);
 
 	if (mCeilingMoverType == SEC_PILLAR)
 	{
-		sector->ceilingdata = new DPillar();
-		sector->floordata = sector->ceilingdata;
+		if (mCeilingStatus == DPillar::destroy)
+			return;
+			
+		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
+		{
+			sector->ceilingdata->Destroy();
+			sector->ceilingdata = NULL;
+
+		}
+		if (sector->floordata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
+		{
+			sector->floordata->Destroy();
+			sector->floordata = NULL;
+		}
+		
+		if (!sector->ceilingdata)
+		{
+			sector->ceilingdata = new DPillar();
+			sector->floordata = sector->ceilingdata;
+		}
 		
 		DPillar *pillar				= static_cast<DPillar *>(sector->ceilingdata);
 		pillar->m_Type				= static_cast<DPillar::EPillar>(mCeilingType);
@@ -790,17 +790,30 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		pillar->m_CeilingTarget		= mCeilingDestination;
 		pillar->m_FloorTarget		= mFloorDestination;
 		pillar->m_Crush				= mCeilingCrush;
-		
-		// [SL] 2012-04-29 - Ensure the initial sound gets played
-		if (newceiling)
-			pillar->PlayPillarSound();		
 	}
 	
 	if (mCeilingMoverType == SEC_ELEVATOR)
 	{
-		sector->ceilingdata = new DElevator(sector);
-		sector->floordata = sector->ceilingdata;
+		if (mCeilingStatus == DElevator::destroy)
+			return;
+			
+		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
+		{
+			sector->ceilingdata->Destroy();
+			sector->ceilingdata = NULL;
+		}
+		if (sector->floordata && !sector->floordata->IsA(RUNTIME_CLASS(DElevator)))
+		{
+				sector->floordata->Destroy();
+				sector->floordata = NULL;
+		}
 		
+		if (!sector->ceilingdata)
+		{
+			sector->ceilingdata = new DElevator(sector);
+			sector->floordata = sector->ceilingdata;
+		}
+	
 		DElevator *elevator			= static_cast<DElevator *>(sector->ceilingdata);
 		elevator->m_Type			= static_cast<DElevator::EElevator>(mCeilingType);
 		elevator->m_Status			= static_cast<DElevator::EElevatorState>(mCeilingStatus);		
@@ -808,15 +821,21 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		elevator->m_CeilingDestHeight = mCeilingDestination;
 		elevator->m_FloorDestHeight	= mFloorDestination;
 		elevator->m_Speed			= mCeilingSpeed;
-		
-		// [SL] 2012-04-29 - Ensure the initial sound gets played
-		if (newceiling)
-			elevator->PlayElevatorSound();
 	}
 
 	if (mCeilingMoverType == SEC_CEILING)
 	{
-		sector->ceilingdata = new DCeiling(sector);
+		if (mCeilingStatus == DCeiling::destroy)
+			return;
+			
+		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
+		{
+			sector->ceilingdata->Destroy();
+			sector->ceilingdata = NULL;
+		}
+		
+		if (!sector->ceilingdata)
+			sector->ceilingdata = new DCeiling(sector);
 		
 		DCeiling *ceiling			= static_cast<DCeiling *>(sector->ceilingdata);
 		ceiling->m_Type				= static_cast<DCeiling::ECeiling>(mCeilingType);
@@ -833,15 +852,25 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		ceiling->m_OldDirection		= mCeilingOldDirection;
 		ceiling->m_Texture			= mCeilingTexture;
 		ceiling->m_NewSpecial		= mNewCeilingSpecial;
-		
-		// [SL] 2012-04-29 - Ensure the initial sound gets played
-		if (newceiling)
-			ceiling->PlayCeilingSound();
 	}
 		
 	if (mCeilingMoverType == SEC_DOOR)
 	{
-		sector->ceilingdata	= new DDoor(sector);
+		if (mCeilingStatus == DDoor::destroy)
+			return;
+			
+		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
+		{
+			sector->ceilingdata->Destroy();
+			sector->ceilingdata = NULL;
+		}
+		
+		if (!sector->ceilingdata)
+		{
+			sector->ceilingdata =
+				new DDoor(sector, mLine, static_cast<DDoor::EVlDoor>(mCeilingType),
+						  mCeilingSpeed, mCeilingWait);
+		}
 
 		DDoor *door					= static_cast<DDoor *>(sector->ceilingdata);
 		door->m_Type				= static_cast<DDoor::EVlDoor>(mCeilingType);
@@ -851,15 +880,21 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		door->m_TopWait				= mCeilingWait;
 		door->m_TopCountdown		= mCeilingCounter;
 		door->m_Line				= mLine;
-		
-		// [SL] 2012-04-29 - Ensure the initial sound gets played
-		if (newceiling)
-			door->PlayDoorSound();
 	}
 
 	if (mFloorMoverType == SEC_FLOOR)
 	{
-		sector->floordata = new DFloor(sector);
+		if (mFloorStatus == DFloor::destroy)
+			return;
+			
+		if (sector->floordata && !sector->floordata->IsA(RUNTIME_CLASS(DFloor)))
+		{
+			sector->floordata->Destroy();
+			sector->floordata = NULL;
+		}
+		
+		if (!sector->floordata)	
+			sector->floordata = new DFloor(sector);
 		
 		DFloor *floor				= static_cast<DFloor *>(sector->floordata);
 		floor->m_Type				= static_cast<DFloor::EFloor>(mFloorType);
@@ -875,16 +910,26 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		floor->m_PauseTime			= mPauseTime;
 		floor->m_StepTime			= mStepTime;
 		floor->m_PerStepTime		= mPerStepTime;
-
-		// [SL] 2012-04-29 - Ensure the initial sound gets played
-		if (newfloor)
-			floor->PlayFloorSound();		
 	}
 		
 	if (mFloorMoverType == SEC_PLAT)
 	{
-		sector->floordata = new DPlat(sector);
-						
+		if (mFloorStatus == DPlat::destroy)
+			return;
+			
+		if (sector->floordata && !sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
+		{
+			sector->floordata->Destroy();
+			sector->floordata = NULL;
+		}
+		
+		if (!sector->floordata)
+		{
+			sector->floordata =
+				new DPlat(sector, static_cast<DPlat::EPlatType>(mFloorType),
+						  mFloorOffset, mFloorSpeed, mFloorWait, mFloorLip);
+		}
+
 		DPlat *plat					= static_cast<DPlat *>(sector->floordata);
 		plat->m_Type				= static_cast<DPlat::EPlatType>(mFloorType);
 		plat->m_Tag					= mFloorTag;
@@ -896,10 +941,8 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		plat->m_Speed				= mFloorSpeed;
 		plat->m_Wait				= mFloorWait;
 		plat->m_Count				= mFloorCounter;
-		
-		// [SL] 2012-04-29 - Ensure the initial sound gets played
-		if (newfloor)
-			plat->PlayPlatSound();
+		plat->m_Height				= mFloorOffset;
+		plat->m_Lip					= mFloorLip;
 	}
 }
 

@@ -560,6 +560,8 @@ public:
 	void setPauseTime(int val)				{ mPauseTime = val; }
 	void setOrgHeight(int val)				{ mOrgHeight = val; }
 	void setDelay(int val)					{ mDelay = val; }
+	void setFloorLip(fixed_t val)			{ mFloorLip = val; }
+	void setFloorOffset(fixed_t val)		{ mFloorOffset = val; }
 		
 	movertype_t	getCeilingMoverType() const	{ return mCeilingMoverType; }
 	movertype_t	getFloorMoverType() const	{ return mFloorMoverType; }	
@@ -604,6 +606,8 @@ public:
 	int		getPauseTime() const			{ return mPauseTime; }
 	int		getOrgHeight() const			{ return mOrgHeight; }
 	int		getDelay() const				{ return mDelay; }
+	fixed_t	getFloorLip() const				{ return mFloorLip; }
+	fixed_t	getFloorOffset() const			{ return mFloorOffset; }
 
 private:
 	movertype_t		mCeilingMoverType;
@@ -662,6 +666,9 @@ private:
 	int				mPauseTime;
 	int				mOrgHeight;
 	int				mDelay;
+	
+	fixed_t			mFloorLip;
+	fixed_t			mFloorOffset;
 };
 
 

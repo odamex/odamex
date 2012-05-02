@@ -474,7 +474,8 @@ public:
 	void SetState(byte state, int count) { m_Status = (EPlatState)state; m_Count = count; }
 	void GetState(byte &state, int &count) { state = (byte)m_Status; count = m_Count; }
 
-	DPlat (sector_t *sector);
+	DPlat(sector_t *sector);
+	DPlat(sector_t *sector, DPlat::EPlatType type, fixed_t height, int speed, int delay, fixed_t lip);
 	friend void P_SetPlatDestroy(DPlat *plat);
 	
 	void PlayPlatSound ();
@@ -489,6 +490,8 @@ public:
 	bool 		m_Crush;
 	int 		m_Tag;
 	EPlatType	m_Type;
+	fixed_t		m_Height;
+	fixed_t		m_Lip;
 
 protected:
 
@@ -499,7 +502,7 @@ private:
 	DPlat ();
 
 	friend BOOL	EV_DoPlat (int tag, line_t *line, EPlatType type,
-						   int height, int speed, int delay, int lip, int change);
+						   fixed_t height, int speed, int delay, fixed_t lip, int change);
 	friend void EV_StopPlat (int tag);
 	friend void P_ActivateInStasis (int tag);
 };

@@ -262,13 +262,121 @@ void P_ActivateInStasis (int tag)
 	}
 }
 
+
+DPlat::DPlat(sector_t *sec, DPlat::EPlatType type, fixed_t height,
+			 int speed, int delay, fixed_t lip)
+	: DMovingFloor(sec), m_Status(init)
+{
+	m_Type = type;
+	m_Crush = false;
+	m_Speed = speed;
+	m_Wait = delay;
+	m_Height = height;
+	m_Lip = lip;
+
+	//jff 1/26/98 Avoid raise plat bouncing a head off a ceiling and then
+	//going down forever -- default lower to plat height when triggered
+	m_Low = P_FloorHeight(sec);
+
+	switch (type)
+	{
+	case DPlat::platRaiseAndStay:
+		m_High = P_FindNextHighestFloor(sec);
+		m_Status = DPlat::midup;
+		PlayPlatSound();
+		break;
+
+	case DPlat::platUpByValue:
+	case DPlat::platUpByValueStay:
+		m_High = P_FloorHeight(sec) + height;
+		m_Status = DPlat::midup;
+		PlayPlatSound();
+		break;
+	
+	case DPlat::platDownByValue:
+		m_Low = P_FloorHeight(sec) - height;
+		m_Status = DPlat::middown;
+		PlayPlatSound();
+		break;
+
+	case DPlat::platDownWaitUpStay:
+		m_Low = P_FindLowestFloorSurrounding(sec) + lip;
+
+		if (m_Low > P_FloorHeight(sec))
+			m_Low = P_FloorHeight(sec);
+
+		m_High = P_FloorHeight(sec);
+		m_Status = DPlat::down;
+		PlayPlatSound();
+		break;
+	
+	case DPlat::platUpWaitDownStay:
+		m_High = P_FindHighestFloorSurrounding(sec);
+
+		if (m_High < P_FloorHeight(sec))
+			m_High = P_FloorHeight(sec);
+
+		m_Status = DPlat::up;
+		PlayPlatSound();
+		break;
+
+	case DPlat::platPerpetualRaise:
+		m_Low = P_FindLowestFloorSurrounding(sec) + lip;
+
+		if (m_Low > P_FloorHeight(sec))
+			m_Low = P_FloorHeight(sec);
+
+		m_High = P_FindHighestFloorSurrounding (sec);
+
+		if (m_High < P_FloorHeight(sec))
+			m_High = P_FloorHeight(sec);
+
+		m_Status = P_Random () & 1 ? DPlat::down : DPlat::up;
+
+		PlayPlatSound();
+		break;
+
+	case DPlat::platToggle:	//jff 3/14/98 add new type to support instant toggle
+		m_Crush = false;	//jff 3/14/98 crush anything in the way
+
+		// set up toggling between ceiling, floor inclusive
+		m_Low = P_CeilingHeight(sec);
+		m_High = P_FloorHeight(sec);
+		m_Status = DPlat::down;
+// 			SN_StartSequence (sec, "Silence");
+		break;
+
+	case DPlat::platDownToNearestFloor:
+		m_Low = P_FindNextLowestFloor(sec) + lip;
+		m_Status = DPlat::down;
+		m_High = P_FloorHeight(sec);
+		PlayPlatSound();
+		break;
+
+	case DPlat::platDownToLowestCeiling:
+	    m_Low = P_FindLowestCeilingSurrounding (sec);
+		m_High = P_FloorHeight(sec);
+
+		if (m_Low > P_FloorHeight(sec))
+			m_Low = P_FloorHeight(sec);
+
+		m_Status = DPlat::down;
+		PlayPlatSound();
+		break;
+
+	default:
+		break;
+	}	
+}
+
+
 //
 // Do Platforms
 //	[RH] Changed amount to height and added delay,
 //		 lip, change, tag, and speed parameters.
 //
-BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, int height,
-				int speed, int delay, int lip, int change)
+BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
+				int speed, int delay, fixed_t lip, int change)
 {
 	DPlat *plat;
 	int secnum;
@@ -311,18 +419,10 @@ manual_plat:
 		
 		// Find lowest & highest floors around sector
 		rtn = true;
-		plat = new DPlat (sec);
+		plat = new DPlat(sec,type, height, speed, delay, lip);
 		P_AddMovingFloor(sec);
 
-		plat->m_Type = type;
-		plat->m_Crush = false;
 		plat->m_Tag = tag;
-		plat->m_Speed = speed;
-		plat->m_Wait = delay;
-
-		//jff 1/26/98 Avoid raise plat bouncing a head off a ceiling and then
-		//going down forever -- default lower to plat height when triggered
-		plat->m_Low = P_FloorHeight(sec);
 
 		if (change)
 		{
@@ -332,95 +432,6 @@ manual_plat:
 				sec->special = 0;	// Stop damage and other stuff, if any
 		}
 
-		switch (type)
-		{
-		case DPlat::platRaiseAndStay:
-			plat->m_High = P_FindNextHighestFloor(sec);
-			plat->m_Status = DPlat::midup;
-			plat->PlayPlatSound();
-			break;
-
-		case DPlat::platUpByValue:
-		case DPlat::platUpByValueStay:
-			plat->m_High = P_FloorHeight(sec) + height;
-			plat->m_Status = DPlat::midup;
-			plat->PlayPlatSound();
-			break;
-		
-		case DPlat::platDownByValue:
-			plat->m_Low = P_FloorHeight(sec) - height;
-			plat->m_Status = DPlat::middown;
-			plat->PlayPlatSound();
-			break;
-
-		case DPlat::platDownWaitUpStay:
-			plat->m_Low = P_FindLowestFloorSurrounding (sec) + lip*FRACUNIT;
-
-			if (plat->m_Low > P_FloorHeight(sec))
-				plat->m_Low = P_FloorHeight(sec);
-
-			plat->m_High = P_FloorHeight(sec);
-			plat->m_Status = DPlat::down;
-			plat->PlayPlatSound();
-			break;
-		
-		case DPlat::platUpWaitDownStay:
-			plat->m_High = P_FindHighestFloorSurrounding (sec);
-
-			if (plat->m_High < P_FloorHeight(sec))
-				plat->m_High = P_FloorHeight(sec);
-
-			plat->m_Status = DPlat::up;
-			plat->PlayPlatSound();
-			break;
-
-		case DPlat::platPerpetualRaise:
-			plat->m_Low = P_FindLowestFloorSurrounding (sec) + lip*FRACUNIT;
-
-			if (plat->m_Low > P_FloorHeight(sec))
-				plat->m_Low = P_FloorHeight(sec);
-
-			plat->m_High = P_FindHighestFloorSurrounding (sec);
-
-			if (plat->m_High < P_FloorHeight(sec))
-				plat->m_High = P_FloorHeight(sec);
-
-			plat->m_Status = P_Random () & 1 ? DPlat::down : DPlat::up;
-
-			plat->PlayPlatSound();
-			break;
-
-		case DPlat::platToggle:	//jff 3/14/98 add new type to support instant toggle
-			plat->m_Crush = false;	//jff 3/14/98 crush anything in the way
-
-			// set up toggling between ceiling, floor inclusive
-			plat->m_Low = P_CeilingHeight(sec);
-			plat->m_High = P_FloorHeight(sec);
-			plat->m_Status = DPlat::down;
-// 			SN_StartSequence (sec, "Silence");
-			break;
-
-		case DPlat::platDownToNearestFloor:
-			plat->m_Low = P_FindNextLowestFloor(sec) + lip*FRACUNIT;
-			plat->m_Status = DPlat::down;
-			plat->m_High = P_FloorHeight(sec);
-			plat->PlayPlatSound();
-			break;
-
-		case DPlat::platDownToLowestCeiling:
-		    plat->m_Low = P_FindLowestCeilingSurrounding (sec);
-			plat->m_High = P_FloorHeight(sec);
-
-			if (plat->m_Low > P_FloorHeight(sec))
-				plat->m_Low = P_FloorHeight(sec);
-
-			plat->m_Status = DPlat::down;
-			plat->PlayPlatSound();
-			break;
-
-		default:
-			break;
-		}
 		if (manual)
 			return rtn;
 	}

@@ -1875,6 +1875,8 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteBool(netbuf, Plat->m_Crush);
         MSG_WriteShort(netbuf, Plat->m_Tag);
         MSG_WriteByte(netbuf, Plat->m_Type);
+        MSG_WriteShort(netbuf, Plat->m_Height >> FRACBITS);
+        MSG_WriteShort(netbuf, Plat->m_Lip >> FRACBITS);
 	}
 }	
 

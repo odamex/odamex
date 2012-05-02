@@ -2409,6 +2409,8 @@ void CL_UpdateMovingSector(void)
 		snap.setFloorCrush(MSG_ReadBool());
 		snap.setFloorTag(MSG_ReadShort());
 		snap.setFloorType(MSG_ReadByte());
+		snap.setFloorOffset(MSG_ReadShort() << FRACBITS);
+		snap.setFloorLip(MSG_ReadShort() << FRACBITS);		
 	}
 
 	if (ceiling_mover == SEC_CEILING)
