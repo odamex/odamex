@@ -278,6 +278,10 @@ static char *C_GetDefaultMusicSystem()
 	defaultmusicsystem = MS_AUDIOUNIT;
 	#endif
 
+	#if defined WIN32 && !defined _XBOX
+	defaultmusicsystem = MS_PORTMIDI;
+	#endif
+
 	// don't overflow str
 	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
 		defaultmusicsystem = MS_NONE;
