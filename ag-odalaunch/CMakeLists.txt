@@ -1,4 +1,4 @@
-cmake_policy(SET CMP0004 OLD)
+include(FindLibAgar)
 
 # Odalaunch
 set(LAUNCH_DIR src)
@@ -8,11 +8,10 @@ file(GLOB LAUNCH_SOURCES src/*.cpp)
 # AG-Odalaunch definitions
 include_directories(${LAUNCH_DIR})
 
-FIND_PROGRAM(AGAR_CONFIG agar-config)
-if(AGAR_CONFIG)
-  execute_process(COMMAND ${AGAR_CONFIG} --cflags OUTPUT_VARIABLE AGAR_CFLAGS)
-  execute_process(COMMAND ${AGAR_CONFIG} --libs OUTPUT_VARIABLE AGAR_LIBRARIES)
-  add_definitions(${AGAR_CFLAGS})
+find_package(LibAgar)
+if(LibAgar_FOUND)
+  include_directories(${LibAgar_INCLUDE_DIRS})
+  add_definitions(${LibAgar_DEFINITIONS})
 else()
   message(WARNING "Agar libraries not found, ag-odalaunch target not generated.")
 endif()
@@ -25,7 +24,7 @@ else()
 endif()
 
 # AG-Odalaunch target
-if(AGAR_CONFIG AND SDLIMAGE_FOUND)
+if(LibAgar_FOUND AND SDLIMAGE_FOUND)
   add_custom_command(
     TARGET ag-odalaunch
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/res
@@ -33,7 +32,7 @@ if(AGAR_CONFIG AND SDLIMAGE_FOUND)
   add_executable(ag-odalaunch MACOSX_BUNDLE WIN32
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
   )
-  target_link_libraries(ag-odalaunch ${AGAR_LIBRARIES} ${SDLIMAGE_LIBRARY})
+  target_link_libraries(ag-odalaunch ${LibAgar_LIBRARIES} ${SDLIMAGE_LIBRARY})
 
   set(MACOSX_BUNDLE_BUNDLE_NAME AG-OdaLaunch)
   set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
