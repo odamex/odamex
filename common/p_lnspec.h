@@ -127,6 +127,8 @@ typedef enum {
 
 	Line_SetIdentification = 121,
 
+    ThrustThingZ = 128,
+
 	UsePuzzleItem = 129,
 
 	Thing_Activate = 130,

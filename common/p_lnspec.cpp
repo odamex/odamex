@@ -839,6 +839,40 @@ FUNC(LS_ThrustThing)
 	return true;
 }
 
+FUNC(LS_ThrustThingZ)
+// ThrustThingZ (tid, zthrust, down/up, set)
+{
+	AActor *victim;
+	fixed_t thrust = arg1*FRACUNIT/4;
+
+	// [BC] Up is default
+	if (arg2)
+		thrust = -thrust;
+
+	if (arg0 != 0)
+	{
+		FActorIterator iterator (arg0);
+
+		while ( (victim = iterator.Next ()) )
+		{
+			if (!arg3)
+				victim->momz = thrust;
+			else
+				victim->momz += thrust;
+		}
+		return true;
+	}
+	else if (it)
+	{
+		if (!arg3)
+			it->momz = thrust;
+		else
+			it->momz += thrust;
+		return true;
+	}
+	return false;
+}
+
 FUNC(LS_DamageThing)
 // DamageThing (damage)
 {
@@ -1761,7 +1795,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 125
 	LS_NOP,		// 126
 	LS_NOP,		// 127
-	LS_NOP,		// 128
+	LS_ThrustThingZ,		// 128
 	LS_UsePuzzleItem,
 	LS_Thing_Activate,
 	LS_Thing_Deactivate,
