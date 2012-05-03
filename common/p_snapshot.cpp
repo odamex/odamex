@@ -626,7 +626,7 @@ SectorSnapshot::SectorSnapshot(int time) :
 }
 
 SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
-	Snapshot(time)
+	Snapshot(time), mCeilingMoverType(SEC_INVALID), mFloorMoverType(SEC_INVALID)
 {
 	if (!sector)
 	{
