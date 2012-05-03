@@ -612,7 +612,7 @@ void P_SetPlayerSnapshotNoPosition(player_t *player, const PlayerSnapshot &snap)
 SectorSnapshot::SectorSnapshot(int time) :
 	Snapshot(time),	mCeilingMoverType(SEC_INVALID), mFloorMoverType(SEC_INVALID),
 	mCeilingType(0), mFloorType(0), mCeilingTag(0), mFloorTag(0),
-	mLine(NULL), mCeilingHeight(0), mFloorHeight(0),
+	mCeilingLine(NULL), mFloorLine(NULL), mCeilingHeight(0), mFloorHeight(0),
 	mCeilingSpeed(0), mFloorSpeed(0), mCeilingDestination(0), mFloorDestination(0),
 	mCeilingDirection(0), mFloorDirection(0), mCeilingOldDirection(0), mFloorOldDirection(0),
 	mCeilingTexture(0), mFloorTexture(0),
@@ -621,7 +621,7 @@ SectorSnapshot::SectorSnapshot(int time) :
 	mCeilingWait(0), mFloorWait(0), mCeilingCounter(0), mFloorCounter(0),
 	mCeilingStatus(0), mFloorStatus(0), mOldFloorStatus(0),
 	mCrusherSpeed1(0), mCrusherSpeed2(0), mStepTime(0), mPerStepTime(0), mPauseTime(0),
-	mOrgHeight(0), mDelay(0)
+	mOrgHeight(0), mDelay(0), mFloorLip(0), mFloorOffset(0), mCeilingChange(0), mFloorChange(0)
 {
 }
 
@@ -689,6 +689,9 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mPauseTime			= floor->m_PauseTime;
 			mDelay				= floor->m_Delay;
 			mOrgHeight			= floor->m_OrgHeight;
+			mFloorLine			= floor->m_Line;
+			mFloorOffset		= floor->m_Height;
+			mFloorChange		= floor->m_Change;
 		}
 		else if (sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
 		{
@@ -704,6 +707,8 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mFloorCounter		= plat->m_Count;
 			mFloorStatus		= plat->m_Status;
 			mOldFloorStatus		= plat->m_OldStatus;
+			mFloorOffset		= plat->m_Height;
+			mFloorLip			= plat->m_Lip;
 		}
 	}
 	
@@ -738,7 +743,7 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mCeilingWait		= door->m_TopWait;
 			mCeilingCounter		= door->m_TopCountdown;
 			mCeilingStatus		= door->m_Status;
-			mLine				= door->m_Line;
+			mCeilingLine		= door->m_Line;
 		}
 	}
 }
@@ -856,7 +861,8 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		if (!sector->ceilingdata)
 		{
 			sector->ceilingdata =
-				new DDoor(sector, mLine, static_cast<DDoor::EVlDoor>(mCeilingType),
+				new DDoor(sector, mCeilingLine,
+						  static_cast<DDoor::EVlDoor>(mCeilingType),
 						  mCeilingSpeed, mCeilingWait);
 		}
 
@@ -867,7 +873,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		door->m_Speed				= mCeilingSpeed;
 		door->m_TopWait				= mCeilingWait;
 		door->m_TopCountdown		= mCeilingCounter;
-		door->m_Line				= mLine;
+		door->m_Line				= mCeilingLine;
 	}
 
 	if (mFloorMoverType == SEC_FLOOR && mFloorStatus != DFloor::destroy)
@@ -878,8 +884,13 @@ void SectorSnapshot::toSector(sector_t *sector) const
 			sector->floordata = NULL;
 		}
 		
-		if (!sector->floordata)	
-			sector->floordata = new DFloor(sector);
+		if (!sector->floordata)
+		{
+			sector->floordata =
+				new DFloor(sector, static_cast<DFloor::EFloor>(mFloorType),
+						   mFloorLine, mFloorSpeed, mFloorOffset,
+						   mFloorCrush, mFloorChange);			
+		}
 		
 		DFloor *floor				= static_cast<DFloor *>(sector->floordata);
 		floor->m_Type				= static_cast<DFloor::EFloor>(mFloorType);
@@ -895,6 +906,9 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		floor->m_PauseTime			= mPauseTime;
 		floor->m_StepTime			= mStepTime;
 		floor->m_PerStepTime		= mPerStepTime;
+		floor->m_Line				= mFloorLine;
+		floor->m_Height				= mFloorOffset;
+		floor->m_Change				= mFloorChange;
 	}
 		
 	if (mFloorMoverType == SEC_PLAT && mFloorStatus != DPlat::destroy)

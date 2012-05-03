@@ -2403,6 +2403,15 @@ void CL_UpdateMovingSector(void)
 		snap.setPauseTime(MSG_ReadLong());
 		snap.setStepTime(MSG_ReadLong());          
 		snap.setPerStepTime(MSG_ReadLong());
+		snap.setFloorOffset(MSG_ReadShort() << FRACBITS);
+		snap.setFloorChange(MSG_ReadByte());
+		
+		int LineIndex = MSG_ReadLong();
+		
+		if (!lines || LineIndex >= numlines || LineIndex < 0)
+			snap.setFloorLine(NULL);
+		else
+			snap.setFloorLine(&lines[LineIndex]);
 	}
 	
 	if (floor_mover == SEC_PLAT)
@@ -2457,9 +2466,9 @@ void CL_UpdateMovingSector(void)
 
 		// If the moving sector's line is -1, it is likely a type 666 door
 		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			snap.setLine(NULL);
+			snap.setCeilingLine(NULL);
 		else
-			snap.setLine(&lines[LineIndex]);
+			snap.setCeilingLine(&lines[LineIndex]);
 	}
 
 	if (ceiling_mover == SEC_ELEVATOR)

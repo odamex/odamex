@@ -523,7 +523,8 @@ public:
 	void setFloorType(int val)				{ mFloorType = val; }	
 	void setCeilingTag(int val)				{ mCeilingTag = val; }
 	void setFloorTag(int val)				{ mFloorTag = val; }	
-	void setLine(line_t *val)				{ mLine = val; }
+	void setCeilingLine(line_t *val)		{ mCeilingLine = val; }
+	void setFloorLine(line_t *val)			{ mFloorLine = val; }	
 	void setCeilingHeight(fixed_t val)		{ mCeilingHeight = val; }
 	void setFloorHeight(fixed_t val)		{ mFloorHeight = val; }
 	void setCeilingSpeed(fixed_t val)		{ mCeilingSpeed = val; }	
@@ -562,6 +563,8 @@ public:
 	void setDelay(int val)					{ mDelay = val; }
 	void setFloorLip(fixed_t val)			{ mFloorLip = val; }
 	void setFloorOffset(fixed_t val)		{ mFloorOffset = val; }
+	void setCeilingChange(int val)			{ mCeilingChange = val; }
+	void setFloorChange(int val)			{ mFloorChange = val; }
 		
 	movertype_t	getCeilingMoverType() const	{ return mCeilingMoverType; }
 	movertype_t	getFloorMoverType() const	{ return mFloorMoverType; }	
@@ -569,7 +572,8 @@ public:
 	int		getFloorType() const			{ return mFloorType; }	
 	int		getCeilingTag() const			{ return mCeilingTag; }
 	int		getFloorTag() const				{ return mFloorTag; }	
-	line_t*	getLine() const					{ return mLine; }		
+	line_t*	getCeilingLine() const			{ return mCeilingLine; }
+	line_t*	getFloorLine() const			{ return mFloorLine; }			
 	fixed_t	getCeilingHeight() const		{ return mCeilingHeight; }
 	fixed_t	getFloorHeight() const			{ return mFloorHeight; }
 	fixed_t getCeilingSpeed() const			{ return mCeilingSpeed; }
@@ -608,6 +612,8 @@ public:
 	int		getDelay() const				{ return mDelay; }
 	fixed_t	getFloorLip() const				{ return mFloorLip; }
 	fixed_t	getFloorOffset() const			{ return mFloorOffset; }
+	int		getCeilingChange() const		{ return mCeilingChange; }
+	int		getFloorChange() const			{ return mFloorChange; }
 
 private:
 	movertype_t		mCeilingMoverType;
@@ -617,7 +623,8 @@ private:
 	int				mFloorType;
 	int				mCeilingTag;
 	int				mFloorTag;
-	line_t*			mLine;
+	line_t*			mCeilingLine;
+	line_t*			mFloorLine;
 		
 	fixed_t			mCeilingHeight;
 	fixed_t			mFloorHeight;
@@ -669,6 +676,9 @@ private:
 	
 	fixed_t			mFloorLip;
 	fixed_t			mFloorOffset;
+	
+	int				mCeilingChange;
+	int				mFloorChange;
 };
 
 

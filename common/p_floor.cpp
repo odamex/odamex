@@ -116,7 +116,14 @@ void DFloor::PlayFloorSound()
 //
 void DFloor::RunThink ()
 {
-	EResult res;
+	if (m_Status == finished)
+	{
+		PlayFloorSound();
+		P_SetFloorDestroy(this);	
+	}
+	
+	if (m_Status == destroy)
+		return;
 
 	// [RH] Handle resetting stairs
 	if (m_Type == buildStair || m_Type == waitStair)
@@ -148,7 +155,7 @@ void DFloor::RunThink ()
 	if (m_Type == waitStair)
 		return;
 
-	res = MoveFloor (m_Speed, m_FloorDestHeight, m_Crush, m_Direction);
+	EResult res = MoveFloor (m_Speed, m_FloorDestHeight, m_Crush, m_Direction);
 
 	if (res == pastdest)
 	{
@@ -193,8 +200,6 @@ void DFloor::RunThink ()
 				}
 			}
 
-			P_SetFloorDestroy(this);
-
 			//jff 2/26/98 implement stair retrigger lockout while still building
 			// note this only applies to the retriggerable generalized stairs
 
@@ -230,6 +235,214 @@ DFloor::DFloor (sector_t *sec)
 {
 }
 
+DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
+			   fixed_t speed, fixed_t height, bool crush, int change)
+	: DMovingFloor (sec), m_Status(init)
+{
+	int secnum = sec - sectors;
+	
+	fixed_t floorheight = P_FloorHeight(sec);
+	fixed_t ceilingheight = P_CeilingHeight(sec);
+
+	m_Type = floortype;
+	m_Crush = false;
+	m_Speed = speed;
+	m_ResetCount = 0;				// [RH]
+	m_Direction = 1;
+	m_OrgHeight = floorheight;
+	
+	PlayFloorSound();
+
+	switch (floortype)
+	{
+	case DFloor::floorLowerToHighest:
+		m_Direction = -1;
+		m_FloorDestHeight = P_FindHighestFloorSurrounding(sec);
+		// [RH] DOOM's turboLower type did this. I've just extended it
+		//		to be applicable to all LowerToHighest types.
+		if (m_FloorDestHeight != floorheight)
+			m_FloorDestHeight += height;
+		break;
+
+	case DFloor::floorLowerToLowest:
+		m_Direction = -1;
+		m_FloorDestHeight = P_FindLowestFloorSurrounding(sec);
+		break;
+
+	case DFloor::floorLowerToNearest:
+		//jff 02/03/30 support lowering floor to next lowest floor
+		m_Direction = -1;
+		m_FloorDestHeight = P_FindNextLowestFloor(sec);
+		break;
+
+	case DFloor::floorLowerInstant:
+		m_Speed = height;
+	case DFloor::floorLowerByValue:
+		m_Direction = -1;
+		m_FloorDestHeight = floorheight - height;
+		break;
+
+	case DFloor::floorRaiseInstant:
+		m_Speed = height;
+	case DFloor::floorRaiseByValue:
+		m_Direction = 1;
+		m_FloorDestHeight = floorheight + height;
+		break;
+
+	case DFloor::floorMoveToValue:
+		m_Direction = (height - floorheight) > 0 ? 1 : -1;
+		m_FloorDestHeight = height;
+		break;
+
+	case DFloor::floorRaiseAndCrush:
+		m_Crush = crush;
+	case DFloor::floorRaiseToLowestCeiling:
+		m_Direction = 1;
+		m_FloorDestHeight =
+			P_FindLowestCeilingSurrounding(sec);
+		if (m_FloorDestHeight > ceilingheight)
+			m_FloorDestHeight = ceilingheight;
+		if (floortype == DFloor::floorRaiseAndCrush)
+			m_FloorDestHeight -= 8 * FRACUNIT;
+		break;
+
+	case DFloor::floorRaiseToHighest:
+		m_Direction = 1;
+		m_FloorDestHeight = P_FindHighestFloorSurrounding(sec);
+		break;
+
+	case DFloor::floorRaiseToNearest:
+		m_Direction = 1;
+		m_FloorDestHeight = P_FindNextHighestFloor(sec);
+		break;
+
+	case DFloor::floorRaiseToLowest:
+		m_Direction = 1;
+		m_FloorDestHeight = P_FindLowestFloorSurrounding(sec);
+		break;
+
+	case DFloor::floorRaiseToCeiling:
+		m_Direction = 1;
+		m_FloorDestHeight = ceilingheight;
+		break;
+
+	case DFloor::floorLowerToLowestCeiling:
+		m_Direction = -1;
+		m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);
+		break;
+
+	case DFloor::floorLowerByTexture:
+		m_Direction = -1;
+		m_FloorDestHeight = floorheight -
+			P_FindShortestTextureAround (secnum);
+		break;
+
+	case DFloor::floorLowerToCeiling:
+		// [RH] Essentially instantly raises the floor to the ceiling
+		m_Direction = -1;
+		m_FloorDestHeight = ceilingheight;
+		break;
+
+	case DFloor::floorRaiseByTexture:
+		m_Direction = 1;
+		// [RH] Use P_FindShortestTextureAround from BOOM to do this
+		//		since the code is identical to what was here. (Oddly
+		//		enough, BOOM preserved the code here even though it
+		//		also had this function.)
+		m_FloorDestHeight = floorheight +
+			P_FindShortestTextureAround (secnum);
+		break;
+
+	case DFloor::floorRaiseAndChange:
+		m_Direction = 1;
+		m_FloorDestHeight = floorheight + height;
+		if (line)
+		{
+			sec->floorpic = line->frontsector->floorpic;
+			sec->special = line->frontsector->special;
+		}
+		break;
+
+	case DFloor::floorLowerAndChange:
+		m_Direction = -1;
+		m_FloorDestHeight =
+			P_FindLowestFloorSurrounding (sec);
+		m_Texture = sec->floorpic;
+		// jff 1/24/98 make sure m_NewSpecial gets initialized
+		// in case no surrounding sector is at floordestheight
+		// --> should not affect compatibility <--
+		m_NewSpecial = sec->special;
+
+		//jff 5/23/98 use model subroutine to unify fixes and handling
+		sec = P_FindModelFloorSector (m_FloorDestHeight,sec-sectors);
+		if (sec)
+		{
+			m_Texture = sec->floorpic;
+			m_NewSpecial = sec->special;
+		}
+		break;
+
+	  default:
+		break;
+	}
+	
+	if (m_Direction == 1)
+		m_Status = up;
+	else if (m_Direction == -1)
+		m_Status = down;
+
+	if (change & 3)
+	{
+		// [RH] Need to do some transferring
+		if (change & 4)
+		{
+			// Numeric model change
+			sector_t *sec;
+
+			sec = (floortype == DFloor::floorRaiseToLowestCeiling ||
+				   floortype == DFloor::floorLowerToLowestCeiling ||
+				   floortype == DFloor::floorRaiseToCeiling ||
+				   floortype == DFloor::floorLowerToCeiling) ?
+				  P_FindModelCeilingSector (m_FloorDestHeight, secnum) :
+				  P_FindModelFloorSector (m_FloorDestHeight, secnum);
+
+			if (sec) {
+				m_Texture = sec->floorpic;
+				switch (change & 3) {
+					case 1:
+						m_NewSpecial = 0;
+						m_Type = DFloor::genFloorChg0;
+						break;
+					case 2:
+						m_NewSpecial = sec->special;
+						m_Type = DFloor::genFloorChgT;
+						break;
+					case 3:
+						m_Type = DFloor::genFloorChg;
+						break;
+				}
+			}
+		} else if (line) {
+			// Trigger model change
+			m_Texture = line->frontsector->floorpic;
+
+			switch (change & 3) {
+				case 1:
+					m_NewSpecial = 0;
+					m_Type = DFloor::genFloorChg0;
+					break;
+				case 2:
+					m_NewSpecial = sec->special;
+					m_Type = DFloor::genFloorChgT;
+					break;
+				case 3:
+					m_Type = DFloor::genFloorChg;
+					break;
+			}
+		}
+	}	
+}
+
 //
 // HANDLE FLOOR TYPES
 // [RH] Added tag, speed, height, crush, change params.
@@ -263,203 +476,11 @@ manual_floor:
 		if (sec->floordata)
 			continue;
 
-		fixed_t floorheight = P_FloorHeight(sec);
-		fixed_t ceilingheight = P_CeilingHeight(sec);
-
 		// new floor thinker
 		rtn = true;
-		floor = new DFloor (sec);
-		sec->floordata = floor;
+		floor = new DFloor(sec, floortype, line, speed, height, crush, change);
 		P_AddMovingFloor(sec);
-				
-		floor->m_Type = floortype;
-		floor->m_Crush = false;
-		floor->m_Speed = speed;
-		floor->m_ResetCount = 0;				// [RH]
-		floor->m_OrgHeight = floorheight;
 		
-		floor->PlayFloorSound();
-
-		switch (floortype)
-		{
-		case DFloor::floorLowerToHighest:
-			floor->m_Direction = -1;
-			floor->m_FloorDestHeight = P_FindHighestFloorSurrounding(sec);
-			// [RH] DOOM's turboLower type did this. I've just extended it
-			//		to be applicable to all LowerToHighest types.
-			if (floor->m_FloorDestHeight != floorheight)
-				floor->m_FloorDestHeight += height;
-			break;
-
-		case DFloor::floorLowerToLowest:
-			floor->m_Direction = -1;
-			floor->m_FloorDestHeight = P_FindLowestFloorSurrounding(sec);
-			break;
-
-		case DFloor::floorLowerToNearest:
-			//jff 02/03/30 support lowering floor to next lowest floor
-			floor->m_Direction = -1;
-			floor->m_FloorDestHeight = P_FindNextLowestFloor(sec);
-			break;
-
-		case DFloor::floorLowerInstant:
-			floor->m_Speed = height;
-		case DFloor::floorLowerByValue:
-			floor->m_Direction = -1;
-			floor->m_FloorDestHeight = floorheight - height;
-			break;
-
-		case DFloor::floorRaiseInstant:
-			floor->m_Speed = height;
-		case DFloor::floorRaiseByValue:
-			floor->m_Direction = 1;
-			floor->m_FloorDestHeight = floorheight + height;
-			break;
-
-		case DFloor::floorMoveToValue:
-			floor->m_Direction = (height - floorheight) > 0 ? 1 : -1;
-			floor->m_FloorDestHeight = height;
-			break;
-
-		case DFloor::floorRaiseAndCrush:
-			floor->m_Crush = crush;
-		case DFloor::floorRaiseToLowestCeiling:
-			floor->m_Direction = 1;
-			floor->m_FloorDestHeight =
-				P_FindLowestCeilingSurrounding(sec);
-			if (floor->m_FloorDestHeight > ceilingheight)
-				floor->m_FloorDestHeight = ceilingheight;
-			if (floortype == DFloor::floorRaiseAndCrush)
-				floor->m_FloorDestHeight -= 8 * FRACUNIT;
-			break;
-
-		case DFloor::floorRaiseToHighest:
-			floor->m_Direction = 1;
-			floor->m_FloorDestHeight = P_FindHighestFloorSurrounding(sec);
-			break;
-
-		case DFloor::floorRaiseToNearest:
-			floor->m_Direction = 1;
-			floor->m_FloorDestHeight = P_FindNextHighestFloor(sec);
-			break;
-
-		case DFloor::floorRaiseToLowest:
-			floor->m_Direction = 1;
-			floor->m_FloorDestHeight = P_FindLowestFloorSurrounding(sec);
-			break;
-
-		case DFloor::floorRaiseToCeiling:
-			floor->m_Direction = 1;
-			floor->m_FloorDestHeight = ceilingheight;
-			break;
-
-		case DFloor::floorLowerToLowestCeiling:
-			floor->m_Direction = -1;
-			floor->m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);
-			break;
-
-		case DFloor::floorLowerByTexture:
-			floor->m_Direction = -1;
-			floor->m_FloorDestHeight = floorheight -
-				P_FindShortestTextureAround (secnum);
-			break;
-
-		case DFloor::floorLowerToCeiling:
-			// [RH] Essentially instantly raises the floor to the ceiling
-			floor->m_Direction = -1;
-			floor->m_FloorDestHeight = ceilingheight;
-			break;
-
-		case DFloor::floorRaiseByTexture:
-			floor->m_Direction = 1;
-			// [RH] Use P_FindShortestTextureAround from BOOM to do this
-			//		since the code is identical to what was here. (Oddly
-			//		enough, BOOM preserved the code here even though it
-			//		also had this function.)
-			floor->m_FloorDestHeight = floorheight +
-				P_FindShortestTextureAround (secnum);
-			break;
-
-		case DFloor::floorRaiseAndChange:
-			floor->m_Direction = 1;
-			floor->m_FloorDestHeight = floorheight + height;
-			sec->floorpic = line->frontsector->floorpic;
-			sec->special = line->frontsector->special;
-			break;
-
-		case DFloor::floorLowerAndChange:
-			floor->m_Direction = -1;
-			floor->m_FloorDestHeight =
-				P_FindLowestFloorSurrounding (sec);
-			floor->m_Texture = sec->floorpic;
-			// jff 1/24/98 make sure floor->m_NewSpecial gets initialized
-			// in case no surrounding sector is at floordestheight
-			// --> should not affect compatibility <--
-			floor->m_NewSpecial = sec->special;
-
-			//jff 5/23/98 use model subroutine to unify fixes and handling
-			sec = P_FindModelFloorSector (floor->m_FloorDestHeight,sec-sectors);
-			if (sec)
-			{
-				floor->m_Texture = sec->floorpic;
-				floor->m_NewSpecial = sec->special;
-			}
-			break;
-
-		  default:
-			break;
-		}
-
-		if (change & 3)
-		{
-			// [RH] Need to do some transferring
-			if (change & 4)
-			{
-				// Numeric model change
-				sector_t *sec;
-
-				sec = (floortype == DFloor::floorRaiseToLowestCeiling ||
-					   floortype == DFloor::floorLowerToLowestCeiling ||
-					   floortype == DFloor::floorRaiseToCeiling ||
-					   floortype == DFloor::floorLowerToCeiling) ?
-					  P_FindModelCeilingSector (floor->m_FloorDestHeight, secnum) :
-					  P_FindModelFloorSector (floor->m_FloorDestHeight, secnum);
-
-				if (sec) {
-					floor->m_Texture = sec->floorpic;
-					switch (change & 3) {
-						case 1:
-							floor->m_NewSpecial = 0;
-							floor->m_Type = DFloor::genFloorChg0;
-							break;
-						case 2:
-							floor->m_NewSpecial = sec->special;
-							floor->m_Type = DFloor::genFloorChgT;
-							break;
-						case 3:
-							floor->m_Type = DFloor::genFloorChg;
-							break;
-					}
-				}
-			} else if (line) {
-				// Trigger model change
-				floor->m_Texture = line->frontsector->floorpic;
-
-				switch (change & 3) {
-					case 1:
-						floor->m_NewSpecial = 0;
-						floor->m_Type = DFloor::genFloorChg0;
-						break;
-					case 2:
-						floor->m_NewSpecial = sec->special;
-						floor->m_Type = DFloor::genFloorChgT;
-						break;
-					case 3:
-						floor->m_Type = DFloor::genFloorChg;
-						break;
-				}
-			}
-		}
 		if (manual)
 			return rtn;
 	}

@@ -841,7 +841,9 @@ public:
 		buildDown
 	};
 
-	DFloor (sector_t *sec);
+	DFloor(sector_t *sec);
+	DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line, fixed_t speed,
+		   fixed_t height, bool crush, int change);
 	friend void P_SetFloorDestroy(DFloor *floor);
 		
 	void RunThink ();
@@ -863,6 +865,10 @@ public:
 	int			m_PauseTime;
 	int			m_StepTime;
 	int			m_PerStepTime;
+	
+	fixed_t		m_Height;
+	line_t		*m_Line;
+	int			m_Change;
 
 protected:
 	friend BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,

@@ -1859,6 +1859,9 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
         MSG_WriteLong(netbuf, Floor->m_PauseTime);
         MSG_WriteLong(netbuf, Floor->m_StepTime);
         MSG_WriteLong(netbuf, Floor->m_PerStepTime);
+        MSG_WriteShort(netbuf, Floor->m_Height >> FRACBITS);
+        MSG_WriteByte(netbuf, Floor->m_Change);
+		MSG_WriteLong(netbuf, Floor->m_Line ? (Floor->m_Line - lines) : -1);
 	}
 
 	if (floor_mover == SEC_PLAT)
