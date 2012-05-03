@@ -1001,6 +1001,8 @@ void G_InitLevelLocals ()
 
 	if (oldfade != level.fadeto)
 		RefreshPalettes ();
+
+	movingsectors.clear();
 }
 
 // Static level info from original game
