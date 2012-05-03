@@ -135,27 +135,41 @@ static void CL_ResetSectors()
 		
 		// Find the most recent snapshot received from the server for this sector
 		SectorSnapshotManager *mgr = CL_GetSectorSnapshotManager(sector);
+
+		bool snapfinished = false;
 		
 		if (mgr && !mgr->empty())
 		{
-			// snapshots have been received for this sector recently, so
-			// reset this sector to the most recent snapshot from the server
 			int mostrecent = mgr->getMostRecentTime();
 			SectorSnapshot snap = mgr->getSnapshot(mostrecent);
-			snap.toSector(sector);
+			
+			bool ceilingdone = P_CeilingSnapshotDone(&snap);
+			bool floordone = P_FloorSnapshotDone(&snap);
+			
+			if (ceilingdone && floordone)
+				snapfinished = true;
+			else
+			{
+				// snapshots have been received for this sector recently, so
+				// reset this sector to the most recent snapshot from the server
+				snap.toSector(sector);
+			}
+		}
+		else
+			snapfinished = true;
+
+
+		if (snapfinished && P_MovingCeilingCompleted(sector) &&
+			P_MovingFloorCompleted(sector))
+		{
+			// no valid snapshots in the container so remove this sector from the
+			// movingsectors list whenever prediction is done
+			movingsectors.erase(itr++);
 		}
 		else
 		{
-			// no snapshot container found so remove this sector from the
-			// movingsectors list whenever prediction is done
-			if (P_MovingCeilingCompleted(sector) && P_MovingFloorCompleted(sector))
-			{
-				movingsectors.erase(itr++);	
-				continue;
-			}
+			++itr;
 		}
-		
-		++itr;		
 	}	
 }
 

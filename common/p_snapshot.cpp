@@ -759,11 +759,8 @@ void SectorSnapshot::toSector(sector_t *sector) const
 	P_SetFloorHeight(sector, mFloorHeight);
 	P_ChangeSector(sector, false);
 
-	if (mCeilingMoverType == SEC_PILLAR)
+	if (mCeilingMoverType == SEC_PILLAR && mCeilingStatus != DPillar::destroy)
 	{
-		if (mCeilingStatus == DPillar::destroy)
-			return;
-			
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
 		{
 			sector->ceilingdata->Destroy();
@@ -792,11 +789,8 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		pillar->m_Crush				= mCeilingCrush;
 	}
 	
-	if (mCeilingMoverType == SEC_ELEVATOR)
+	if (mCeilingMoverType == SEC_ELEVATOR && mCeilingStatus != DElevator::destroy)
 	{
-		if (mCeilingStatus == DElevator::destroy)
-			return;
-			
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
 		{
 			sector->ceilingdata->Destroy();
@@ -823,11 +817,8 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		elevator->m_Speed			= mCeilingSpeed;
 	}
 
-	if (mCeilingMoverType == SEC_CEILING)
+	if (mCeilingMoverType == SEC_CEILING && mCeilingStatus != DCeiling::destroy)
 	{
-		if (mCeilingStatus == DCeiling::destroy)
-			return;
-			
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
 		{
 			sector->ceilingdata->Destroy();
@@ -854,11 +845,8 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		ceiling->m_NewSpecial		= mNewCeilingSpecial;
 	}
 		
-	if (mCeilingMoverType == SEC_DOOR)
+	if (mCeilingMoverType == SEC_DOOR && mCeilingStatus != DDoor::destroy)
 	{
-		if (mCeilingStatus == DDoor::destroy)
-			return;
-			
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
 		{
 			sector->ceilingdata->Destroy();
@@ -882,11 +870,8 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		door->m_Line				= mLine;
 	}
 
-	if (mFloorMoverType == SEC_FLOOR)
+	if (mFloorMoverType == SEC_FLOOR && mFloorStatus != DFloor::destroy)
 	{
-		if (mFloorStatus == DFloor::destroy)
-			return;
-			
 		if (sector->floordata && !sector->floordata->IsA(RUNTIME_CLASS(DFloor)))
 		{
 			sector->floordata->Destroy();
@@ -912,11 +897,8 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		floor->m_PerStepTime		= mPerStepTime;
 	}
 		
-	if (mFloorMoverType == SEC_PLAT)
+	if (mFloorMoverType == SEC_PLAT && mFloorStatus != DPlat::destroy)
 	{
-		if (mFloorStatus == DPlat::destroy)
-			return;
-			
 		if (sector->floordata && !sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
 		{
 			sector->floordata->Destroy();
@@ -1095,6 +1077,43 @@ SectorSnapshot SectorSnapshotManager::getSnapshot(int time) const
 		
 	// Could not find a valid snapshot so return a blank (invalid) one
 	return SectorSnapshot();
+}
+
+
+bool P_CeilingSnapshotDone(SectorSnapshot *snap)
+{
+	if (!snap || !snap->isValid() || snap->getCeilingMoverType() == SEC_INVALID)
+		return true;
+			
+	if ((snap->getCeilingMoverType() == SEC_CEILING &&
+		 snap->getCeilingStatus() == DCeiling::destroy) ||
+		(snap->getCeilingMoverType() == SEC_DOOR &&
+		 snap->getCeilingStatus() == DDoor::destroy) ||
+		(snap->getCeilingMoverType() == SEC_PILLAR &&
+		 snap->getCeilingStatus() == DPillar::destroy) ||
+		(snap->getCeilingMoverType() == SEC_ELEVATOR &&
+		 snap->getCeilingStatus() == DElevator::destroy))
+		return true;
+		
+	return false;
+}
+
+bool P_FloorSnapshotDone(SectorSnapshot *snap)
+{
+	if (!snap || !snap->isValid() || snap->getFloorMoverType() == SEC_INVALID)
+		return true;
+			
+	if ((snap->getFloorMoverType() == SEC_FLOOR &&
+		 snap->getFloorStatus() == DFloor::destroy) ||
+		(snap->getFloorMoverType() == SEC_PLAT &&
+		 snap->getFloorStatus() == DPlat::destroy) ||
+		(snap->getFloorMoverType() == SEC_PILLAR &&
+		 snap->getFloorStatus() == DPillar::destroy) ||
+		(snap->getFloorMoverType() == SEC_ELEVATOR &&
+		 snap->getFloorStatus() == DElevator::destroy))
+		return true;
+		
+	return false;
 }
 
 VERSION_CONTROL (p_snapshot_cpp, "$Id: p_snapshot.cpp 2785 2012-02-18 23:22:07Z dr_sean $")

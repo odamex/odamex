@@ -713,6 +713,8 @@ ActorSnapshot P_ExtrapolateActorPosition(const ActorSnapshot &from, float amount
 PlayerSnapshot P_LerpPlayerPosition(const PlayerSnapshot &from, const PlayerSnapshot &to, float amount);
 PlayerSnapshot P_ExtrapolatePlayerPosition(const PlayerSnapshot &from, float amount);
 
+bool P_CeilingSnapshotDone(SectorSnapshot *snap);
+bool P_FloorSnapshotDone(SectorSnapshot *snap);
 
 #endif	// __P_SNAPSHOT_H__
 
