@@ -97,7 +97,8 @@ IMPLEMENT_DYNAMIC_CLASS(LstOdaPlayerList, wxAdvancedListCtrl)
 
 typedef enum
 {
-    playerlist_field_name
+     playerlist_field_attr
+    ,playerlist_field_name
     ,playerlist_field_ping
     ,playerlist_field_timeingame
     ,playerlist_field_frags
@@ -125,9 +126,11 @@ void LstOdaPlayerList::SetupPlayerListColumns()
     wxInt32 PlayerListSortOrder, PlayerListSortColumn;
 
     // Read from the global configuration
-	wxInt32 WidthName, WidthPing, WidthFrags, WidthKillCount, WidthDeathCount,
-        WidthTime;
+	wxInt32 WidthAttr, WidthName, WidthPing, WidthFrags, WidthKillCount, 
+        WidthDeathCount, WidthTime;
 
+    //ConfigInfo.Read(wxT("PlayerListWidthName"), &WidthName, 150);
+    WidthAttr = 24; // fixed column size
     ConfigInfo.Read(wxT("PlayerListWidthName"), &WidthName, 150);
     ConfigInfo.Read(wxT("PlayerListWidthPing"), &WidthPing, 60);
     ConfigInfo.Read(wxT("PlayerListWidthFrags"), &WidthFrags, 70);
@@ -137,6 +140,15 @@ void LstOdaPlayerList::SetupPlayerListColumns()
     ConfigInfo.Read(wxT("PlayerListWidthTeam"), &WidthTeam, 65);
     ConfigInfo.Read(wxT("PlayerListWidthTeamScore"), &WidthTeamScore, 100);
     
+	InsertColumn(playerlist_field_attr,
+                wxT(""),
+                wxLIST_FORMAT_LEFT,
+                WidthAttr);
+
+	// We sort by the numerical value of the item data field, so we can sort
+	// spectators/downloaders etc
+	SetSortColumnIsSpecial((wxInt32)playerlist_field_attr);
+
 	InsertColumn(playerlist_field_name,
                 wxT("Player name"),
                 wxLIST_FORMAT_LEFT,
@@ -251,12 +263,16 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
     {
         wxListItem li;
         
-        li.m_itemId = ALCInsertItem(stdstr_towxstr(s.Info.Players[i].Name));
+        li.m_itemId = ALCInsertItem();
         
         li.SetMask(wxLIST_MASK_TEXT);
-               
+        
+        li.SetColumn(playerlist_field_name);
+        li.SetText(stdstr_towxstr(s.Info.Players[i].Name));
+
+        SetItem(li);
+
         li.SetColumn(playerlist_field_ping);
-        li.SetMask(wxLIST_MASK_TEXT);
 
         li.SetText(wxString::Format(_T("%d"),
                                     s.Info.Players[i].Ping));
@@ -358,10 +374,15 @@ void LstOdaPlayerList::AddPlayersToList(const Server &s)
         
         // Icons
         // -----
+
+        bool IsSpectator = s.Info.Players[i].Spectator;
         
         // Magnifying glass icon for spectating players
-        SetItemColumnImage(li.m_itemId, playerlist_field_name, 
-            s.Info.Players[i].Spectator ? ImageList_Spectator : -1);
+        SetItemColumnImage(li.m_itemId, playerlist_field_attr, 
+             IsSpectator ? ImageList_Spectator : -1);
+
+        // Allows us to sort by spectators
+        SetItemData(li.m_itemId, (IsSpectator ? 1 : 0));
     }
         
     Sort();
