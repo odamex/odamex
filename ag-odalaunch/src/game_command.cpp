@@ -108,17 +108,18 @@ int GameCommand::Launch()
 	// Game consoles will not return from this method if Odamex is successfully
 	// launched as the launcher will terminate. On game consoles the main windows
 	// widget states need to be saved before launch or changes will be lost.
-	AG_Window *mainWindow = NULL;
 	AG_Driver *drv;
 
 	AGOBJECT_FOREACH_CHILD(drv, &agDrivers, ag_driver)
 	{
-		if((mainWindow = static_cast<AG_Window*>(AG_ObjectFindChild(drv, "MainWindow"))) != NULL)
-			break;
-	}
+		AG_Window *mainWindow;
 
-	if(mainWindow)
-		AG_PostEvent(mainWindow, mainWindow, "save-wstates", NULL);
+		if((mainWindow = static_cast<AG_Window*>(AG_ObjectFindChild(drv, "MainWindow"))) != NULL)
+		{
+			AG_PostEvent(mainWindow, mainWindow, "save-wstates", NULL);
+			break;
+		}
+	}
 
 	GuiConfig::Save();
 #endif
