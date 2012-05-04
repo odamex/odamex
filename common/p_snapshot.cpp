@@ -611,7 +611,7 @@ void P_SetPlayerSnapshotNoPosition(player_t *player, const PlayerSnapshot &snap)
 
 SectorSnapshot::SectorSnapshot(int time) :
 	Snapshot(time),	mCeilingMoverType(SEC_INVALID), mFloorMoverType(SEC_INVALID),
-	mCeilingType(0), mFloorType(0), mCeilingTag(0), mFloorTag(0),
+	mSector(NULL), mCeilingType(0), mFloorType(0), mCeilingTag(0), mFloorTag(0),
 	mCeilingLine(NULL), mFloorLine(NULL), mCeilingHeight(0), mFloorHeight(0),
 	mCeilingSpeed(0), mFloorSpeed(0), mCeilingDestination(0), mFloorDestination(0),
 	mCeilingDirection(0), mFloorDirection(0), mCeilingOldDirection(0), mFloorOldDirection(0),
@@ -626,7 +626,8 @@ SectorSnapshot::SectorSnapshot(int time) :
 }
 
 SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
-	Snapshot(time), mCeilingMoverType(SEC_INVALID), mFloorMoverType(SEC_INVALID)
+	Snapshot(time), mCeilingMoverType(SEC_INVALID), mFloorMoverType(SEC_INVALID),
+	mSector(sector)
 {
 	if (!sector)
 	{
@@ -1048,21 +1049,22 @@ SectorSnapshot SectorSnapshotManager::getSnapshot(int time) const
 	{
 		if (mValidSnapshot(prevsnaptime))
 		{
+			const SectorSnapshot *snap = &mSnaps[prevsnaptime % NUM_SNAPSHOTS];
+			
 			// turn off any sector movement sounds from RunThink()
 			bool oldpredicting = predicting;
 			predicting = true;
-	
+		
 			// create a temporary sector for the snapshot and run the
 			// sector movement til we get to the desired time
 			sector_t tempsector;
-			memset(&tempsector, 0, sizeof(sector_t));
+			memcpy(&tempsector, snap->getSector(), sizeof(sector_t));
 			
 			// set values for the Z parameter of the sector's planes so that
 			// P_SetCeilingHeight/P_SetFloorHeight will work properly
 			tempsector.floorplane.c = tempsector.floorplane.invc = FRACUNIT;
 			tempsector.ceilingplane.c = tempsector.ceilingplane.invc = -FRACUNIT;
 						
-			const SectorSnapshot *snap = &mSnaps[prevsnaptime % NUM_SNAPSHOTS];
 			snap->toSector(&tempsector);
 
 			for (int i = 0; i < time - prevsnaptime; i++)

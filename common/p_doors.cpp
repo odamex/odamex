@@ -369,6 +369,12 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 		sec = sides[line->sidenum[1]].sector;
 		secnum = sec-sectors;
 
+		if (sec->ceilingdata && P_MovingCeilingCompleted(sec))
+		{
+			sec->ceilingdata->Destroy();
+			sec->ceilingdata = NULL;
+		}
+		
 		// if door already has a thinker, use it
 		door = static_cast<DDoor *>(sec->ceilingdata);
 		// cph 2001/04/05 -

@@ -519,6 +519,7 @@ public:
 
 	void setCeilingMoverType(movertype_t v)	{ mCeilingMoverType = v; }
 	void setFloorMoverType(movertype_t val)	{ mFloorMoverType = val; }
+	void setSector(sector_t *val)			{ mSector = val; }
 	void setCeilingType(int val)			{ mCeilingType = val; }
 	void setFloorType(int val)				{ mFloorType = val; }	
 	void setCeilingTag(int val)				{ mCeilingTag = val; }
@@ -568,6 +569,7 @@ public:
 		
 	movertype_t	getCeilingMoverType() const	{ return mCeilingMoverType; }
 	movertype_t	getFloorMoverType() const	{ return mFloorMoverType; }	
+	sector_t* getSector() const				{ return mSector; }
 	int		getCeilingType() const			{ return mCeilingType; }
 	int		getFloorType() const			{ return mFloorType; }	
 	int		getCeilingTag() const			{ return mCeilingTag; }
@@ -619,6 +621,8 @@ private:
 	movertype_t		mCeilingMoverType;
 	movertype_t		mFloorMoverType;
 
+	sector_t*		mSector;
+	
 	int				mCeilingType;
 	int				mFloorType;
 	int				mCeilingTag;

@@ -718,32 +718,30 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 fixed_t P_FindNextHighestFloor (sector_t *sec)
 {
 	sector_t *other;
-	fixed_t height, heightdiff = MAXINT;
-	height = P_FloorHeight(sec->lines[0]->v1->x, sec->lines[0]->v1->y, sec);	
+	fixed_t ogheight = P_FloorHeight(sec);
+	fixed_t height = MAXINT;
 
     for (int i = 0; i < sec->linecount; i++)
     {
 		if (NULL != (other = getNextSector(sec->lines[i], sec)))
         {
-			fixed_t ofloor = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-			fixed_t floor = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, sec);
-			
-			if (ofloor > floor && ofloor - floor < heightdiff)
-			{
-				heightdiff = ofloor - floor;
+        	vertex_t *v = sec->lines[i]->v1;
+			fixed_t ofloor = P_FloorHeight(v->x, v->y, other);
+
+			if (ofloor < height && ofloor > ogheight)
 				height = ofloor;
-			}
 
-			ofloor = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
-			floor = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, sec);
+			v = sec->lines[i]->v2;
+			ofloor = P_FloorHeight(v->x, v->y, other);
 
-            if (ofloor > floor && ofloor - floor < heightdiff)
-            {
-                heightdiff = ofloor - floor;
+			if (ofloor < height && ofloor > ogheight)
                 height = ofloor;
-            }
         }
     }
+    
+    if (height == MAXINT)
+    	height = ogheight;
+
     return height;
 }
 
@@ -763,32 +761,30 @@ fixed_t P_FindNextHighestFloor (sector_t *sec)
 fixed_t P_FindNextLowestFloor(sector_t *sec)
 {
 	sector_t *other;
-	fixed_t height, heightdiff = MAXINT;
-	height = P_FloorHeight(sec->lines[0]->v1->x, sec->lines[0]->v1->y, sec);	
+	fixed_t ogheight = P_FloorHeight(sec);
+	fixed_t height = MININT;
 
     for (int i = 0; i < sec->linecount; i++)
     {
 		if (NULL != (other = getNextSector(sec->lines[i], sec)))
         {
-			fixed_t ofloor = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-			fixed_t floor = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, sec);
-			
-			if (ofloor < floor && floor - ofloor < heightdiff)
-			{
-				heightdiff = ofloor - floor;
+        	vertex_t *v = sec->lines[i]->v1;
+			fixed_t ofloor = P_FloorHeight(v->x, v->y, other);
+
+			if (ofloor > height && ofloor < ogheight)
 				height = ofloor;
-			}
 
-			ofloor = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
-			floor = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, sec);
+			v = sec->lines[i]->v2;
+			ofloor = P_FloorHeight(v->x, v->y, other);
 
-            if (ofloor < floor && floor - ofloor < heightdiff)
-            {
-                heightdiff = ofloor - floor;
+			if (ofloor > height && ofloor < ogheight)
                 height = ofloor;
-            }
         }
     }
+    
+    if (height == MININT)
+    	height = ogheight;
+
     return height;
 }
 
@@ -807,32 +803,30 @@ fixed_t P_FindNextLowestFloor(sector_t *sec)
 fixed_t P_FindNextLowestCeiling (sector_t *sec)
 {
 	sector_t *other;
-	fixed_t height, heightdiff = MAXINT;
-	height = P_CeilingHeight(sec->lines[0]->v1->x, sec->lines[0]->v1->y, sec);	
+	fixed_t ogheight = P_CeilingHeight(sec);
+	fixed_t height = MININT;
 
     for (int i = 0; i < sec->linecount; i++)
     {
 		if (NULL != (other = getNextSector(sec->lines[i], sec)))
         {
-			fixed_t oceil = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-			fixed_t ceil = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, sec);
-			
-			if (oceil < ceil && ceil - oceil < heightdiff)
-			{
-				heightdiff = ceil - oceil;
-				height = oceil;
-			}
+        	vertex_t *v = sec->lines[i]->v1;
+			fixed_t oceiling = P_CeilingHeight(v->x, v->y, other);
 
-			oceil = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
-			ceil = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, sec);
+			if (oceiling > height && oceiling < ogheight)
+				height = oceiling;
 
-            if (oceil < ceil && ceil - oceil < heightdiff)
-            {
-                heightdiff = ceil - oceil;
-                height = oceil;
-            }
+			v = sec->lines[i]->v2;
+			oceiling = P_CeilingHeight(v->x, v->y, other);
+
+			if (oceiling > height && oceiling < ogheight)
+                height = oceiling;
         }
     }
+    
+    if (height == MININT)
+    	height = ogheight;
+
     return height;
 }
 
@@ -852,32 +846,30 @@ fixed_t P_FindNextLowestCeiling (sector_t *sec)
 fixed_t P_FindNextHighestCeiling (sector_t *sec)
 {
 	sector_t *other;
-	fixed_t height, heightdiff = MAXINT;
-	height = P_CeilingHeight(sec->lines[0]->v1->x, sec->lines[0]->v1->y, sec);
+	fixed_t ogheight = P_CeilingHeight(sec);
+	fixed_t height = MAXINT;
 
     for (int i = 0; i < sec->linecount; i++)
     {
 		if (NULL != (other = getNextSector(sec->lines[i], sec)))
         {
-			fixed_t oceil = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-			fixed_t ceil = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, sec);
-			
-			if (oceil > ceil && oceil - ceil < heightdiff)
-			{
-				heightdiff = oceil - ceil;
-				height = oceil;
-			}
+        	vertex_t *v = sec->lines[i]->v1;
+			fixed_t oceiling = P_CeilingHeight(v->x, v->y, other);
 
-			oceil = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
-			ceil = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, sec);
+			if (oceiling < height && oceiling > ogheight)
+				height = oceiling;
 
-            if (oceil > ceil && oceil - ceil < heightdiff)
-            {
-                heightdiff = oceil - ceil;
-                height = oceil;
-            }
+			v = sec->lines[i]->v2;
+			oceiling = P_CeilingHeight(v->x, v->y, other);
+
+			if (oceiling < height && oceiling > ogheight)
+                height = oceiling;
         }
     }
+    
+    if (height == MAXINT)
+    	height = ogheight;
+
     return height;
 }
 

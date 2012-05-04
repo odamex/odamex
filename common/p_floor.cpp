@@ -477,7 +477,12 @@ BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 manual_floor:
 		// ALREADY MOVING?	IF SO, KEEP GOING...
 		if (sec->floordata)
-			continue;
+		{
+			if (P_MovingFloorCompleted(sec))
+				sec->floordata->Destroy();
+			else
+				continue;
+		}
 
 		// new floor thinker
 		rtn = true;
@@ -786,6 +791,9 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_Texture = s3->floorpic;
 			floor->m_NewSpecial = 0;
 			floor->m_FloorDestHeight = P_FloorHeight(s3);
+			floor->m_Change = 0;
+			floor->m_Height = 0;
+			floor->m_Line = NULL;
 			floor->PlayFloorSound();
 
 			//	Spawn lowering donut-hole
@@ -798,6 +806,9 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor->m_Sector = s1;
 			floor->m_Speed = pillarspeed;
 			floor->m_FloorDestHeight = P_FloorHeight(s3);
+			floor->m_Change = 0;
+			floor->m_Height = 0;
+			floor->m_Line = NULL;			
 			floor->PlayFloorSound();
 			break;
 		}
@@ -881,6 +892,9 @@ void DElevator::PlayElevatorSound()
 //
 void DElevator::RunThink ()
 {
+	if (m_Status == destroy)
+		return;
+		
 	EResult res;
 
 	if (m_Direction < 0)	// moving down
@@ -939,6 +953,17 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 		sec = &sectors[secnum];
 
 		// If either floor or ceiling is already activated, skip it
+		if (sec->ceilingdata && P_MovingCeilingCompleted(sec))
+		{
+			sec->ceilingdata->Destroy();
+			sec->ceilingdata = NULL;
+		}
+		if (sec->floordata && P_MovingFloorCompleted(sec))
+		{
+			sec->floordata->Destroy();
+			sec->floordata = NULL;
+		}
+		
 		if (sec->floordata || sec->ceilingdata) //jff 2/22/98
 			continue;
 		

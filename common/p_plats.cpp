@@ -419,7 +419,12 @@ BOOL EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 
 manual_plat:
 		if (sec->floordata)
-			continue;
+		{
+			if (P_MovingFloorCompleted(sec))
+				sec->floordata->Destroy();
+			else
+				continue;
+		}
 		
 		// Find lowest & highest floors around sector
 		rtn = true;

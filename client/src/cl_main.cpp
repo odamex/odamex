@@ -2508,6 +2508,8 @@ void CL_UpdateMovingSector(void)
 	if (!sectors || sectornum >= numsectors)
 		return;
 
+	snap.setSector(&sectors[sectornum]);
+	
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
