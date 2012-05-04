@@ -3651,6 +3651,80 @@ fixed_t P_HighestHeightOfFloor(sector_t *sector)
 	return height;
 }
 
+//
+// P_CopySector
+//
+void P_CopySector(sector_t *dest, sector_t *src)
+{
+	if (!dest || !src)
+		return;
+		
+	dest->floorheight			= src->floorheight;
+	dest->ceilingheight			= src->ceilingheight;
+	dest->floorpic				= src->floorpic;
+	dest->ceilingpic			= src->ceilingpic;
+	dest->lightlevel			= src->lightlevel;
+	dest->special				= src->special;
+	dest->tag					= src->tag;
+	dest->nexttag				= src->nexttag;
+	dest->firsttag				= src->firsttag;
+	dest->soundtraversed		= src->soundtraversed;
+	dest->validcount			= src->validcount;
+	dest->seqType				= src->seqType;
+	dest->sky					= src->sky;
+	dest->friction				= src->friction;
+	dest->movefactor			= src->movefactor;
+	dest->moveable				= src->moveable;
+	dest->stairlock				= src->stairlock;
+	dest->prevsec				= src->prevsec;
+	dest->floor_xoffs			= src->floor_xoffs;
+	dest->floor_yoffs			= src->floor_yoffs;	
+	dest->ceiling_xoffs			= src->ceiling_xoffs;
+	dest->ceiling_yoffs			= src->ceiling_yoffs;
+	dest->floor_xscale			= src->floor_xscale;
+	dest->floor_yscale			= src->floor_yscale;
+	dest->ceiling_xscale		= src->ceiling_xscale;
+	dest->ceiling_yscale		= src->ceiling_yscale;
+	dest->floor_angle			= src->floor_angle;
+	dest->ceiling_angle			= src->ceiling_angle;
+	dest->base_floor_angle		= src->base_floor_angle;	
+	dest->base_ceiling_angle	= src->base_ceiling_angle;
+	dest->base_floor_yoffs		= src->base_floor_yoffs;
+	dest->base_ceiling_yoffs	= src->base_ceiling_yoffs;
+	dest->bottommap				= src->bottommap;
+	dest->midmap				= src->midmap;
+	dest->topmap				= src->topmap;
+	dest->gravity				= src->gravity;
+	dest->damage				= src->damage;
+	dest->mod					= src->mod;
+	dest->floorcolormap			= src->floorcolormap;
+	dest->ceilingcolormap		= src->ceilingcolormap;
+	dest->alwaysfake			= src->alwaysfake;
+	dest->waterzone				= src->waterzone;
+	dest->MoreFlags				= src->MoreFlags;
+	
+	dest->heightsec				= src->heightsec;
+	dest->floorlightsec			= src->floorlightsec;
+	dest->ceilinglightsec		= src->ceilinglightsec;
+	
+	dest->linecount				= src->linecount;
+	dest->lines					= src->lines;
+		
+	memcpy(dest->blockbox, src->blockbox, sizeof(src->blockbox));
+	memcpy(dest->soundorg, src->soundorg, sizeof(src->soundorg));
+	
+	dest->floorplane			= src->floorplane;
+	dest->ceilingplane			= src->ceilingplane;
+	
+	dest->touching_thinglist	= src->touching_thinglist;
+	dest->thinglist				= src->thinglist;
+	dest->soundtarget			= src->soundtarget;
+	
+	dest->ceilingdata			= src->ceilingdata;
+	dest->floordata				= src->floordata;
+	dest->lightingdata			= src->lightingdata;
+}
+
 
 VERSION_CONTROL (p_map_cpp, "$Id$")
 

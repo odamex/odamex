@@ -1058,7 +1058,7 @@ SectorSnapshot SectorSnapshotManager::getSnapshot(int time) const
 			// create a temporary sector for the snapshot and run the
 			// sector movement til we get to the desired time
 			sector_t tempsector;
-			memcpy(&tempsector, snap->getSector(), sizeof(sector_t));
+			P_CopySector(&tempsector, snap->getSector());
 			
 			// set values for the Z parameter of the sector's planes so that
 			// P_SetCeilingHeight/P_SetFloorHeight will work properly

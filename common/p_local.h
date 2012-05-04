@@ -240,6 +240,7 @@ bool	P_CheckSight (const AActor* t1, const AActor* t2, bool ignoreInvisibility =
 bool	P_CheckSight2 (const AActor* t1, const AActor* t2, bool ignoreInvisibility = false);
 void	P_UseLines (player_t* player);
 void	P_ApplyTorque(AActor *mo);
+void	P_CopySector(sector_t *dest, sector_t *src);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 fixed_t P_FloorHeight(fixed_t x, fixed_t y, const sector_t *sec = NULL);
