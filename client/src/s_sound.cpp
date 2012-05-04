@@ -1491,6 +1491,9 @@ static void SetTicker (int *tics, struct AmbientSound *ambient)
 
 void A_Ambient (AActor *actor)
 {
+	if (!actor)
+		return;
+		
 	struct AmbientSound *ambient = &Ambients[actor->args[0]];
 
 	if ((ambient->type & CONTINUOUS) == CONTINUOUS)

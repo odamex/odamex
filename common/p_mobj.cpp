@@ -110,6 +110,7 @@ AActor::AActor () :
     touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
     tid(0)
 {
+	memset(args, 0, sizeof(args));
 	self.init(this);
 }
 
@@ -132,6 +133,7 @@ AActor::AActor (const AActor &other) :
     deadtic(other.deadtic), oldframe(other.oldframe),
     rndindex(other.rndindex), netid(other.netid), tid(other.tid)
 {
+	memcpy(args, other.args, sizeof(args));
 	self.init(this);
 }
 
@@ -191,6 +193,7 @@ AActor &AActor::operator= (const AActor &other)
     netid = other.netid;
     tid = other.tid;
     special = other.special;
+    memcpy(args, other.args, sizeof(args));
 
 	return *this;
 }
@@ -280,6 +283,8 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 	{
 		z = iz;
 	}
+	
+	memset(args, 0, sizeof(args));
 }
 
 //
