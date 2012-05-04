@@ -105,6 +105,10 @@ bool SV_SendPacket(player_t &pl)
 		if (cl->netbuf.overflowed)
 			SZ_Clear(&cl->netbuf);
 
+	// [SL] 2012-05-04 - Don't send empty packets - they still have overhead
+	if (cl->reliablebuf.cursize + cl->netbuf.cursize == 0)
+		return true;
+
 	sendd.clear();
 
 	// save the reliable message 
