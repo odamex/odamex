@@ -4592,28 +4592,6 @@ void SV_GameTics (void)
 	SV_UpdateMaster();
 }
 
-//
-// SV_SetMoveableSectors
-//
-void SV_SetMoveableSectors()
-{
-	// [csDoom] if the floor or the ceiling of a sector is moving,
-	// mark it as moveable
-	for (int i=0; i<numsectors; i++)
-	{
-		sector_t* sec = &sectors[i];
-
- 		if ((sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DMover)))
- 		|| (sec->floordata && sec->floordata->IsKindOf (RUNTIME_CLASS(DMover))))
-		{
- 			sec->moveable = true;
-			// [SL] 2011-05-11 - Register this sector as a moveable sector with the
-			// reconciliation system for unlagging
-			Unlag::getInstance().registerSector(sec);
-		}
-	}
-}
-
 void SV_TouchSpecial(AActor *special, player_t *player)
 {
     client_t *cl = &player->client;
@@ -4635,7 +4613,6 @@ void SV_StepTics (QWORD tics)
 	// run the newtime tics
 	while (tics--)
 	{
-		SV_SetMoveableSectors();
 		C_Ticker ();
 
 		SV_GameTics ();

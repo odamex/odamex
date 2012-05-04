@@ -50,6 +50,7 @@
 #include "p_acs.h"
 
 #include "g_game.h"
+#include "p_unlag.h"
 
 #include "s_sound.h"
 #include "sc_man.h"
@@ -106,6 +107,11 @@ void P_AddMovingCeiling(sector_t *sector)
 	
 	movesec->sector = sector;
 	movesec->moving_ceiling = true;
+
+	sector->moveable = true;
+	// [SL] 2012-05-04 - Register this sector as a moveable sector with the
+	// reconciliation system for unlagging
+	Unlag::getInstance().registerSector(sector);
 }
 
 //
@@ -136,6 +142,11 @@ void P_AddMovingFloor(sector_t *sector)
 	
 	movesec->sector = sector;
 	movesec->moving_floor = true;
+
+	sector->moveable = true;
+	// [SL] 2012-05-04 - Register this sector as a moveable sector with the
+	// reconciliation system for unlagging
+	Unlag::getInstance().registerSector(sector);
 }
 
 //
