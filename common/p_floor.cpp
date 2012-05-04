@@ -250,6 +250,9 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 	m_ResetCount = 0;				// [RH]
 	m_Direction = 1;
 	m_OrgHeight = floorheight;
+	m_Height = height;
+	m_Change = change;
+	m_Line = line;
 	
 	PlayFloorSound();
 
