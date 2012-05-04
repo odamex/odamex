@@ -80,6 +80,8 @@ if(SDL_FOUND AND SDLMIXER_FOUND)
     target_link_libraries(odamex winmm wsock32)
   elseif(APPLE)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
+  elseif(SOLARIS)
+    target_link_libraries(odamex socket nsl)
   endif()
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})

@@ -36,4 +36,6 @@ add_executable(odasrv
   ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
 if(WIN32)
   target_link_libraries(odasrv winmm wsock32)
+elseif(SOLARIS)
+  target_link_libraries(odasrv socket nsl)
 endif()

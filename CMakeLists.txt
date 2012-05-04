@@ -20,10 +20,16 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 endif()
 
+if( ${CMAKE_SYSTEM_NAME} MATCHES SunOS )
+  set(SOLARIS 1)
+endif()
+
 macro(define_platform)
   # Platform definitions
   if(APPLE)
     add_definitions(-DOSX -DUNIX)
+  elseif(SOLARIS)
+    add_definitions(-DSOLARIS -DUNIX -DBSD_COMP -gstabs+)
   elseif(UNIX)
     add_definitions(-DUNIX)
   elseif(WIN32)
