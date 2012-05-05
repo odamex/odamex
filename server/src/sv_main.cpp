@@ -2637,7 +2637,7 @@ void SV_ExitLevel()
 	{
 	   client_t *cl = &clients[i];
 
-	   MSG_WriteMarker(&cl->netbuf, svc_exitlevel);
+	   MSG_WriteMarker(&cl->reliablebuf, svc_exitlevel);
 	}
 }
 
