@@ -83,7 +83,6 @@ public:
 void SV_Callvote(player_t &player);
 void SV_Vote(player_t &player);
 
-void Vote_InitLevel(void);
 void Vote_Disconnect(player_t &player);
 void Vote_Runtic(void);
 

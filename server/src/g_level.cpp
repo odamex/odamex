@@ -529,8 +529,6 @@ void G_InitNew (const char *mapname)
 
 			players[i].joinafterspectatortime = -(TICRATE*5);
 		}
-
-		Vote_InitLevel();
 	}
 
 	// [SL] 2012-12-08 - Multiplayer is always true for servers
