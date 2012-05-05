@@ -558,6 +558,9 @@ static BOOL ReadChars (char **stuff, int size);
 static char *igets (void);
 static int GetLine (void);
 
+static int filelen = 0;	// Be quiet, gcc
+
+#define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == filelen)
 
 static int HandleMode (const char *mode, int num)
 {
@@ -792,7 +795,7 @@ static char *igets (void)
 {
 	char *line;
 
-	if(!PatchPt)
+	if(!PatchPt || IS_AT_PATCH_SIZE)
 		return NULL;
 
 	if (*PatchPt == '\0')
@@ -1678,7 +1681,6 @@ endinclude:
 bool DoDehPatch (const char *patchfile, BOOL autoloading)
 {
 	int cont;
-	int filelen = 0;	// Be quiet, gcc
 	int lump;
 	std::string file;
 

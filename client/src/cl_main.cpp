@@ -2728,6 +2728,9 @@ void CL_MobjTranslation()
 	AActor *mo = P_FindThingById(MSG_ReadShort());
 	byte table = MSG_ReadByte();
 
+    if (!mo)
+        return;
+
 	mo->translation = translationtables + 256 * table;
 }
 
