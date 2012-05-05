@@ -834,7 +834,7 @@ void DoomHUD() {
 	// ST_Y is the number of pixels of viewable space, taking into account the
 	// status bar.  We need to convert this into scaled pixels as best we can.
 	int st_y;
-	if (st_scale) {
+	if (hud_scale) {
 		st_y = (screen->height - ST_Y) / CleanYfac;
 	} else {
 		st_y = screen->height - ST_Y;
