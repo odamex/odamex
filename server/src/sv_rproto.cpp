@@ -32,7 +32,10 @@
 #include "huffman.h"
 #include "i_net.h"
 
+QWORD I_MSTime (void);
+
 EXTERN_CVAR (sv_networkcompression)
+EXTERN_CVAR (log_packetdebug)
 
 buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
 buf_t sendd(MAX_UDP_PACKET);
@@ -146,6 +149,7 @@ bool SV_SendPacket(player_t &pl)
 	    bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
 
     if (bps < cl->rate*1000)
+
 	  if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
 	  {
          SZ_Write (&sendd, cl->netbuf.data, cl->netbuf.cursize);
@@ -158,6 +162,12 @@ bool SV_SendPacket(player_t &pl)
 	// compress the packet, but not the sequence id
 	if(sv_networkcompression && sendd.size() > sizeof(int))
 		SV_CompressPacket(sendd, sizeof(int), cl);
+
+	if (log_packetdebug)
+	{
+		Printf(PRINT_HIGH, "ply %03u, pkt %06u, size %04u, tic %07u, time %011u\n",
+			   pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
+	}
 
 	NET_SendPacket(sendd, cl->address);
 

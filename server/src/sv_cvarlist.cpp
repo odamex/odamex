@@ -30,7 +30,8 @@
 // Extended timestamp info (dd/mm/yyyy hh:mm:ss)
 CVAR (log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
       CVARTYPE_BOOL, CVAR_ARCHIVE)
-
+CVAR (log_packetdebug, "0", "Print debugging messages for each packet sent",
+	  CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // Server administrative settings
 // ------------------------------
