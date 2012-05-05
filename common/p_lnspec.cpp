@@ -156,6 +156,13 @@ bool P_LineSpecialMovesSector(line_t *line)
 	return specials[line->special];
 }
 
+EXTERN_CVAR (cl_predictsectors)
+
+bool P_CanActivateSpecials()
+{
+	return serverside || cl_predictsectors;
+}
+
 FUNC(LS_NOP)
 {
 	return false;

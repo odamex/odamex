@@ -168,6 +168,9 @@ CVAR (co_nosilentspawns, "0", "Turns off the west-facing silent spawns vanilla b
 CVAR (cl_deathcam, "1", "Dead player's view follows the actor who killed them", 
       CVARTYPE_BOOL, CVAR_ARCHIVE)
 
+CVAR (cl_predictsectors, "1", "Move floors and ceilings immediately instead of waiting for confirmation",
+	  CVARTYPE_BOOL, CVAR_ARCHIVE)
+
 CVAR (cl_predictpickup, "1", "Predict weapon pickups", CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 // Movebob

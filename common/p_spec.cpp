@@ -1295,6 +1295,9 @@ P_CrossSpecialLine
   AActor*	thing,
   bool      FromServer)
 {
+	if (!P_CanActivateSpecials())
+		return;
+
     line_t*	line = &lines[linenum];
 
 	if(thing)
@@ -1402,6 +1405,9 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
+	if (!P_CanActivateSpecials())
+		return;
+
 	if(thing)
 	{
 		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
@@ -1443,6 +1449,9 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
+	if (!P_CanActivateSpecials())
+		return false;
+
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
@@ -1519,6 +1528,9 @@ P_PushSpecialLine
   int		side,
   bool      FromServer)
 {
+	if (!P_CanActivateSpecials())
+		return false;
+
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
 	if (side)
