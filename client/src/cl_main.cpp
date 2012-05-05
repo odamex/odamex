@@ -143,6 +143,7 @@ EXTERN_CVAR (cl_skin)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_unlag)
 EXTERN_CVAR (cl_interp)
+EXTERN_CVAR (cl_predictsectors)
 
 CVAR_FUNC_IMPL (cl_autoaim)
 {
@@ -3392,7 +3393,7 @@ void CL_SimulateSectors()
 		sector_t *sector = &sectors[sectornum];
 
 		// will this sector be handled when predicting sectors?
-		if (CL_SectorIsPredicting(sector))
+		if (cl_predictsectors && CL_SectorIsPredicting(sector))
 			continue;
 
 		// Fetch the snapshot for this world_index and run the sector's

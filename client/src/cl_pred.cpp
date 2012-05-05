@@ -42,6 +42,7 @@
 
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (cl_prednudge)
+EXTERN_CVAR (cl_predictsectors)
 
 extern NetGraph netgraph;
 
@@ -102,7 +103,7 @@ static bool CL_SectorHasSnapshots(sector_t *sector)
 //
 bool CL_SectorIsPredicting(sector_t *sector)
 {
-	if (!sector)
+	if (!sector || !cl_predictsectors)
 		return false;
 		
 	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
@@ -303,7 +304,8 @@ void CL_PredictWorld(void)
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
 
 	// Move sectors to the last position received from the server
-	CL_ResetSectors();
+	if (cl_predictsectors)
+		CL_ResetSectors();
 
 	// Move the client to the last position received from the sever
 	int snaptime = p->snapshots.getMostRecentTime();
@@ -312,7 +314,8 @@ void CL_PredictWorld(void)
 
 	while (++predtic < gametic)
 	{
-		CL_PredictSectors(predtic);
+		if (cl_predictsectors)
+			CL_PredictSectors(predtic);
 		CL_PredictLocalPlayer(predtic);
 	}
 
@@ -346,7 +349,8 @@ void CL_PredictWorld(void)
 
 	predicting = false;
 
-	CL_PredictSectors(gametic);		
+	if (cl_predictsectors)
+		CL_PredictSectors(gametic);		
 	CL_PredictLocalPlayer(gametic);
 
 	if (consoleplayer_id != displayplayer_id)
