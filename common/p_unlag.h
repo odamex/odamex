@@ -83,16 +83,21 @@ private:
 		size_t		current_lag;
 	} PlayerHistoryRecord;
    
-	typedef struct {
+	class SectorHistoryRecord
+	{
+	public:
+		SectorHistoryRecord();
+		SectorHistoryRecord(sector_t *sec);
+
 		sector_t*	sector;
+		size_t		history_size;
 		fixed_t		history_ceilingheight[Unlag::MAX_HISTORY_TICS];
 		fixed_t		history_floorheight[Unlag::MAX_HISTORY_TICS];
-		size_t		history_size;
 
 		// current position. restore this position after reconciliation.
 		fixed_t		backup_ceilingheight;
 		fixed_t		backup_floorheight;
-	} SectorHistoryRecord;
+	};
 
 	std::vector<PlayerHistoryRecord> player_history;
 	std::vector<SectorHistoryRecord> sector_history;
