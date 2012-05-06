@@ -1096,7 +1096,7 @@
 									<flag>wxALIGN_CENTER|wxALL</flag>
 									<border>5</border>
 									<object class="wxStaticBitmap" name="m_bitmap5">
-										<bitmap>./odalaunch.ico</bitmap>
+										<bitmap>..\..\media\icon_odalaunch_96.png</bitmap>
 									</object>
 								</object>
 								<object class="sizeritem">
