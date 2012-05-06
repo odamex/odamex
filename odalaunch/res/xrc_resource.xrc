@@ -1096,7 +1096,7 @@
 									<flag>wxALIGN_CENTER|wxALL</flag>
 									<border>5</border>
 									<object class="wxStaticBitmap" name="m_bitmap5">
-										<bitmap>../../media/icon_odalaunch_96.png</bitmap>
+										<bitmap>./odalaunch.ico</bitmap>
 									</object>
 								</object>
 								<object class="sizeritem">
@@ -1131,10 +1131,11 @@
 											</object>
 										</object>
 										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER|wxALL</flag>
+											<option>1</option>
+											<flag>wxALIGN_CENTER|wxALL|wxEXPAND</flag>
 											<border>5</border>
 											<object class="wxStaticText" name="Id_StcTxtVersion">
+												<style>wxALIGN_CENTRE|wxST_NO_AUTORESIZE</style>
 												<label>Version %d.%d.%d - Protocol Version %d</label>
 												<wrap>-1</wrap>
 											</object>
