@@ -17,6 +17,7 @@
 				<Option projectResourceIncludeDirsRelation="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-DNDEBUG" />
@@ -45,6 +46,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-gdwarf-2" />
+					<Add option="-fno-inline" />
 					<Add option="-DWIN32" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_DEBUG" />
