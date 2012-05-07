@@ -158,9 +158,9 @@ bool P_LineSpecialMovesSector(line_t *line)
 
 EXTERN_CVAR (cl_predictsectors)
 
-bool P_CanActivateSpecials()
+bool P_CanActivateSpecials(line_t *line)
 {
-	return serverside || cl_predictsectors;
+	return serverside || cl_predictsectors || !P_LineSpecialMovesSector(line);
 }
 
 FUNC(LS_NOP)

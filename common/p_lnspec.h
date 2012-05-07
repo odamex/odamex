@@ -340,7 +340,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
 void EV_StopPlat (int tag);
 
 bool P_LineSpecialMovesSector(line_s *line);
-bool P_CanActivateSpecials();
+bool P_CanActivateSpecials(line_s *line);
 
 extern int TeleportSide;
 

@@ -1295,10 +1295,10 @@ P_CrossSpecialLine
   AActor*	thing,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials())
-		return;
-
     line_t*	line = &lines[linenum];
+
+	if (!P_CanActivateSpecials(line))
+		return;
 
 	if(thing)
 	{
@@ -1405,7 +1405,7 @@ P_ShootSpecialLine
   line_t*	line,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials())
+	if (!P_CanActivateSpecials(line))
 		return;
 
 	if(thing)
@@ -1449,7 +1449,7 @@ P_UseSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials())
+	if (!P_CanActivateSpecials(line))
 		return false;
 
 	// Err...
@@ -1528,7 +1528,7 @@ P_PushSpecialLine
   int		side,
   bool      FromServer)
 {
-	if (!P_CanActivateSpecials())
+	if (!P_CanActivateSpecials(line))
 		return false;
 
 	// Err...
