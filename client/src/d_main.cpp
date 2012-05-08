@@ -1378,10 +1378,9 @@ std::vector<size_t> D_DoomWadReboot(
     UndoDehPatch();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.ResetStrings ();
 	GStrings.Compact ();
 
-	//D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
 
 	//gotconback = false;

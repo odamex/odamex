@@ -969,10 +969,9 @@ std::vector<size_t> D_DoomWadReboot(
     patchfiles.clear();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings (W_GetNumForName ("LANGUAGE"), STRING_TABLE_SIZE, false);
+	GStrings.ResetStrings ();
 	GStrings.Compact ();
 
-	//D_InitStrings ();
 	D_DoDefDehackedPatch(patch_files);
 
 	if (DefaultsLoaded)	{		// [ML] This is being called while loading defaults,

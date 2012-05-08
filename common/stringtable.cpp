@@ -168,6 +168,13 @@ void FStringTable::ReloadStrings ()
 	LoadStrings (LumpNum, -1, false);
 }
 
+// Like ReloadStrings, but clears all the strings before reloading
+void FStringTable::ResetStrings ()
+{
+	FreeData ();
+	LoadStrings (LumpNum, -1, false);
+}
+
 int FStringTable::LoadLanguage (DWORD code, bool exactMatch, BYTE *start, BYTE *end)
 {
 	const DWORD orMask = exactMatch ? 0 : MAKE_ID(0,0,0xff,0);
