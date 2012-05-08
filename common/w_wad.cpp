@@ -341,6 +341,9 @@ std::string W_AddFile (std::string filename)
 		lump_p->position = LONG(fileinfo->filepos);
 		lump_p->size = LONG(fileinfo->size);
 		strncpy (lump_p->name, fileinfo->name, 8);
+
+		// W_CheckNumForName needs all lump names in upper case
+		std::transform(lump_p->name, lump_p->name+8, lump_p->name, toupper);
 	}
 
 	return W_MD5(filename);
