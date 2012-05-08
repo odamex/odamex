@@ -625,7 +625,7 @@ static menuitem_t NetworkItems[] = {
 	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
 	{ discrete,		"Adjust weapons for lag",		{&cl_unlag},		{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete,		"Predict sector movements",		{&cl_predictsectors},{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ discrete,		"Predict sectors",				{&cl_predictsectors},{2.0},		{0.0},		{0.0},		{OnOff} },
 };
 
 menu_t NetworkMenu = {
