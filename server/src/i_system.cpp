@@ -54,6 +54,7 @@
 #include <sys/time.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <limits.h>
 
 #endif
 
