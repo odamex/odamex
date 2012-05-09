@@ -399,6 +399,32 @@ void AActor::Destroy ()
 	Super::Destroy ();
 }
 
+//
+// P_CalculateMinMom
+//
+// Determines the value for mo->momz that will cause the player to grunt when
+// landing.
+//
+// [SL] Factored out of P_MoveActor for reuse and changed to fixed-point math
+// for consistency purposes.
+//
+fixed_t P_CalculateMinMom(AActor *mo)
+{
+	fixed_t levelgravity, sectorgravity;
+
+	if (co_zdoomphys)
+	{
+		levelgravity = FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS);
+		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
+	}
+	else
+	{
+		levelgravity = GRAVITY * 8;
+		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
+	}
+
+	return -FixedMul(levelgravity, sectorgravity);
+}
 
 //
 // P_MoveActor
@@ -479,8 +505,7 @@ void P_MoveActor(AActor *mo)
 			{
 			    if (mo->player)
 				{
-					minmom = (co_zdoomphys ? (fixed_t)(level.gravity * mo->subsector->sector->gravity * -655.36f) :
-											 (fixed_t)(GRAVITY*mo->subsector->sector->gravity*-8));
+					minmom = P_CalculateMinMom(mo);
 
 					if (mo->momz < minmom && !(mo->flags2&MF2_FLY))
 						PlayerLandedOnThing(mo, onmo);
@@ -1254,23 +1279,10 @@ void P_ZMovement(AActor *mo)
 			{
 				bool momsquat = false;
 
-				if (co_zdoomphys)
-				{
-					float minmom = level.gravity * 
-								   mo->subsector->sector->gravity * -655.36f;
-					float mom = (float)mo->momz;
-
-					if (mom < minmom)
-						momsquat = true;
-				}
-				else
-				{
-					fixed_t minmom = (fixed_t)(GRAVITY*mo->subsector->sector->gravity*-8);
-					fixed_t mom = mo->momz;
-
-					if (mom < minmom)
-						momsquat = true;
-				}
+				fixed_t minmom = P_CalculateMinMom(mo);
+				if (mo->momz < minmom)
+					momsquat = true;
+			
 
 				mo->player->jumpTics = 7;	// delay any jumping for a short while
 				if (momsquat && !(mo->player->spectator) && !(mo->flags2 & MF2_FLY))
@@ -1451,8 +1463,7 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 			if (mo->momz < (fixed_t)(level.gravity * mo->subsector->sector->gravity * -983.04f))
 				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
 
-			if (onmobj != NULL)
-				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
+			UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
 		}
 	}
 	else
