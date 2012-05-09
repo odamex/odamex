@@ -37,6 +37,7 @@
 #include "p_saveg.h"
 #include "version.h"
 #include "st_stuff.h"
+#include "p_mobj.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -1492,9 +1493,11 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	byte cid = consoleplayer_id;
 	byte did = displayplayer_id;
 
+	P_ClearAllNetIds();
+
 	// Remove all players	
 	players.clear();
-	
+
 	// Remove all actors
 	TThinkerIterator<AActor> iterator;
 	AActor *mo;
@@ -1572,6 +1575,16 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	// restore player colors
 	for (size_t i = 0; i < players.size(); i++)
 		R_BuildPlayerTranslation(players[i].id, players[i].userinfo.color);
+
+	// Link the CTF flag actors to CTFdata[i].actor
+	TThinkerIterator<AActor> flagiterator;
+	while ( (mo = flagiterator.Next() ) )
+	{
+		if (mo->type == MT_BFLG || mo->type == MT_BDWN || mo->type == MT_BCAR)
+			CTFdata[it_blueflag].actor = mo->ptr();
+		if (mo->type == MT_RFLG || mo->type == MT_RDWN || mo->type == MT_RCAR)
+			CTFdata[it_redflag].actor = mo->ptr();
+	}
 
 	// Make sure the status bar is displayed correctly
 	ST_Start();

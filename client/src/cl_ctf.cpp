@@ -433,12 +433,8 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 	arc >> dummy;
 	
 	flag.state = static_cast<flag_state_t>(state);
-	AActor *mo = P_FindThingById(netid);
-	if (mo)
-		flag.actor = mo->ptr();
-	else
-		flag.actor = AActor::AActorPtr();
-	
+	flag.actor = AActor::AActorPtr();
+
 	return arc;
 }
 
