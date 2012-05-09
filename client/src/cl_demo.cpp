@@ -1580,9 +1580,9 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	TThinkerIterator<AActor> flagiterator;
 	while ( (mo = flagiterator.Next() ) )
 	{
-		if (mo->type == MT_BFLG || mo->type == MT_BDWN || mo->type == MT_BCAR)
+		if (mo->type == MT_BDWN || mo->type == MT_BCAR)
 			CTFdata[it_blueflag].actor = mo->ptr();
-		if (mo->type == MT_RFLG || mo->type == MT_RDWN || mo->type == MT_RCAR)
+		if (mo->type == MT_RDWN || mo->type == MT_RCAR)
 			CTFdata[it_redflag].actor = mo->ptr();
 	}
 
