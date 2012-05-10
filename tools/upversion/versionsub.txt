@@ -38,7 +38,7 @@ s|(\s*#define\s*CONFIGVERSIONSTR\s*")\d*(")|$1$version_short$2|
 s|(\s*#define\s*GAMEVER\s*\(0\*256\+)\d+(\))|$1$version_short$2|
 s|(\s*#define\s*DOTVERSIONSTR\s*")\d*\.?\d*\.?\d*(")|$1$version$2|
 s|(\s*#define\s*COPYRIGHTSTR\s*")[^"]*(")|$1$copyright2$2|
-# s|(\s*#define\s*SAVESIG\s*")[^"]*(")|$1$savesig$2|
+s|(\s*#define\s*SAVESIG\s*")[^"]*(")|$1$savesig$2|
 
 [README]
 s|(\s*Odamex v)\d*\.?\d*\.?\d*(\s*README)|$1$version$2|
