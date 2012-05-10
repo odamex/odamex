@@ -70,6 +70,7 @@ my $copyright_years = "2006-$year";
 
 # copyright information
 my $copyright = "Copyright © $copyright_years The Odamex Team";
+my $copyright2 = "Copyright (C) $copyright_years The Odamex Team";
 
 
 # parse_input
