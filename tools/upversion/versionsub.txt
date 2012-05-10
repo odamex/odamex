@@ -20,6 +20,12 @@ s|(\s*<key>CFBundleLongVersionString</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</st
 s|(\s*<key>CFBundleGetInfoString</key>\s*\n*\s*<string>)[^<]*(</string>)|$1$copyright$2|
 s|(\s*<key>NSHumanReadableCopyright</key>\s*\n*\s*<string>)[^<]*(</string>)|$1$copyright$2|
 
+[odalaunch/src/dlg_about.cpp]
+s|(\s*#define\s_ODA_COPYRIGHT_\s+")[^"]*("\s*)|$1$copyright2$2|
+
+[odalaunch/res/gui_project.fbp]
+s|(\s*<property name="label">)Copyright[^<]*(</property>)|$1$copyright2$2|
+
 [odalaunch/res/Info.plist]
 s|(\s*<key>CFBundleVersion</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
 s|(\s*<key>CFBundleShortVersionString</key>\s*\n*\s*<string>)\d*\.?\d*\.?\d*(</string>)|$1$version$2|
@@ -31,6 +37,7 @@ s|(\s*<key>NSHumanReadableCopyright</key>\s*\n*\s*<string>)[^<]*(</string>)|$1$c
 s|(\s*#define\s*CONFIGVERSIONSTR\s*")\d*(")|$1$version_short$2|
 s|(\s*#define\s*GAMEVER\s*\(0\*256\+)\d+(\))|$1$version_short$2|
 s|(\s*#define\s*DOTVERSIONSTR\s*")\d*\.?\d*\.?\d*(")|$1$version$2|
+s|(\s*#define\s*COPYRIGHTSTR\s*")[^"]*(")|$1$copyright2$2|
 # s|(\s*#define\s*SAVESIG\s*")[^"]*(")|$1$savesig$2|
 
 [README]

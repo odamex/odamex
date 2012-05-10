@@ -35,6 +35,8 @@
 
 #define DOTVERSIONSTR "0.6.0"
 
+#define COPYRIGHTSTR "Copyright (C) 2006-2012 The Odamex Team"
+
 #define SERVERMAJ (gameversion / 256)
 #define SERVERMIN ((gameversion % 256) / 10)
 #define SERVERREL ((gameversion % 256) % 10)
